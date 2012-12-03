@@ -77,11 +77,14 @@ Json::Value WSConnection::invokeCommand(Json::Value& jvRequest)
 	// Currently we will simply unwrap errors returned by the RPC
 	// API, in the future maybe we can make the responses
 	// consistent.
+	//
+	// Regularize result. This is duplicate code.
 	if (jvResult["result"].isObject() && jvResult["result"].isMember("error"))
 	{
-		jvResult = jvResult["result"];
+		jvResult			= jvResult["result"];
 		jvResult["status"]	= "error";
 		jvResult["request"]	= jvRequest;
+
 	} else {
 		jvResult["status"]	= "success";
 	}

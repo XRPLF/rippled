@@ -113,6 +113,11 @@ Json::Value RPCParser::parseAccountTransactions(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+Json::Value RPCParser::parseEvented(const Json::Value& jvParams)
+{
+	return rpcError(rpcNO_EVENTS);
+}
+
 // Convert a rpc method and params to a request.
 // <-- { method: xyz, params: [... ] } or { error: ..., ... }
 Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
@@ -132,55 +137,53 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"accept_ledger",		&RPCParser::parseAsIs,					0,	0	},
 		{	"account_info",			&RPCParser::parseAccountInfo,			1,  2	},
 		{	"account_tx",			&RPCParser::parseAccountTransactions,	2,  3	},
-#if 0
-		{	"connect",				&RPCParser::doConnect,				1,  2, true,	false,	optNone		},
-		{	"data_delete",			&RPCParser::doDataDelete,			1,  1, true,	false,	optNone		},
-		{	"data_fetch",			&RPCParser::doDataFetch,			1,  1, true,	false,	optNone		},
-		{	"data_store",			&RPCParser::doDataStore,			2,  2, true,	false,	optNone		},
-		{	"get_counts",			&RPCParser::doGetCounts,			0,	1, true,	false,	optNone		},
-		{	"ledger",				&RPCParser::doLedger,				0,  2, false,	false,	optNetwork	},
-		{	"ledger_accept",		&RPCParser::doLedgerAccept,		0,  0, true,	false,	optCurrent	},
-		{	"ledger_closed",		&RPCParser::doLedgerClosed,		0,  0, false,	false,	optClosed	},
-		{	"ledger_current",		&RPCParser::doLedgerCurrent,		0,  0, false,	false,	optCurrent	},
-		{	"ledger_entry",			&RPCParser::doLedgerEntry,		   -1, -1, false,	false,	optCurrent	},
-		{	"ledger_header",		&RPCParser::doLedgerHeader,	   -1, -1, false,	false,	optCurrent	},
-		{	"log_level",			&RPCParser::doLogLevel,			0,  2, true,	false,	optNone		},
-		{	"logrotate",			&RPCParser::doLogRotate,			0,  0, true,	false,	optNone		},
-		{	"nickname_info",		&RPCParser::doNicknameInfo,		1,  1, false,	false,	optCurrent	},
-		{	"owner_info",			&RPCParser::doOwnerInfo,			1,  2, false,	false,	optCurrent	},
-		{	"peers",				&RPCParser::doPeers,				0,  0, true,	false,	optNone		},
-		{	"profile",				&RPCParser::doProfile,				1,  9, false,	false,	optCurrent	},
-		{	"ripple_lines_get",		&RPCParser::doRippleLinesGet,		1,  2, false,	false,	optCurrent	},
-		{	"ripple_path_find",		&RPCParser::doRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
-		{	"submit",				&RPCParser::doSubmit,				2,  2, false,	false,	optCurrent	},
-		{	"submit_json",			&RPCParser::doSubmitJson,			-1,  -1, false,	false,	optCurrent	},
-		{	"server_info",			&RPCParser::doServerInfo,			0,  0, true,	false,	optNone		},
-		{	"stop",					&RPCParser::doStop,				0,  0, true,	false,	optNone		},
-		{	"transaction_entry",	&RPCParser::doTransactionEntry,	-1,  -1, false,	false,	optCurrent	},
-		{	"tx",					&RPCParser::doTx,					1,  1, true,	false,	optNone		},
-		{	"tx_history",			&RPCParser::doTxHistory,			1,  1, false,	false,	optNone		},
+//		{	"connect",				&RPCParser::doConnect,				1,  2, true,	false,	optNone		},
+//		{	"data_delete",			&RPCParser::doDataDelete,			1,  1, true,	false,	optNone		},
+//		{	"data_fetch",			&RPCParser::doDataFetch,			1,  1, true,	false,	optNone		},
+//		{	"data_store",			&RPCParser::doDataStore,			2,  2, true,	false,	optNone		},
+//		{	"get_counts",			&RPCParser::doGetCounts,			0,	1, true,	false,	optNone		},
+//		{	"ledger",				&RPCParser::doLedger,				0,  2, false,	false,	optNetwork	},
+		{	"ledger_accept",		&RPCParser::parseAsIs,					0,  0	},
+		{	"ledger_closed",		&RPCParser::parseAsIs,					0,  0	},
+		{	"ledger_current",		&RPCParser::parseAsIs,					0,  0	},
+//		{	"ledger_entry",			&RPCParser::doLedgerEntry,		   -1, -1, false,	false,	optCurrent	},
+//		{	"ledger_header",		&RPCParser::doLedgerHeader,	   -1, -1, false,	false,	optCurrent	},
+//		{	"log_level",			&RPCParser::doLogLevel,			0,  2, true,	false,	optNone		},
+		{	"logrotate",			&RPCParser::parseAsIs,					0,  0	},
+//		{	"nickname_info",		&RPCParser::doNicknameInfo,		1,  1, false,	false,	optCurrent	},
+//		{	"owner_info",			&RPCParser::doOwnerInfo,			1,  2, false,	false,	optCurrent	},
+		{	"peers",				&RPCParser::parseAsIs,					0,  0	},
+//		{	"profile",				&RPCParser::doProfile,				1,  9, false,	false,	optCurrent	},
+//		{	"ripple_lines_get",		&RPCParser::doRippleLinesGet,		1,  2, false,	false,	optCurrent	},
+//		{	"ripple_path_find",		&RPCParser::doRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
+//		{	"submit",				&RPCParser::doSubmit,				2,  2, false,	false,	optCurrent	},
+//		{	"submit_json",			&RPCParser::doSubmitJson,			-1,  -1, false,	false,	optCurrent	},
+		{	"server_info",			&RPCParser::parseAsIs,					0,  0	},
+		{	"stop",					&RPCParser::parseAsIs,					0,  0	},
+//		{	"transaction_entry",	&RPCParser::doTransactionEntry,	-1,  -1, false,	false,	optCurrent	},
+//		{	"tx",					&RPCParser::doTx,					1,  1, true,	false,	optNone		},
+//		{	"tx_history",			&RPCParser::doTxHistory,			1,  1, false,	false,	optNone		},
+//
+//		{	"unl_add",				&RPCParser::doUnlAdd,				1,  2, true,	false,	optNone		},
+//		{	"unl_delete",			&RPCParser::doUnlDelete,			1,  1, true,	false,	optNone		},
+		{	"unl_list",				&RPCParser::parseAsIs,					0,	0	},
+		{	"unl_load",				&RPCParser::parseAsIs,					0,	0	},
+		{	"unl_network",			&RPCParser::parseAsIs,					0,	0	},
+		{	"unl_reset",			&RPCParser::parseAsIs,					0,	0	},
+		{	"unl_score",			&RPCParser::parseAsIs,					0,	0	},
 
-		{	"unl_add",				&RPCParser::doUnlAdd,				1,  2, true,	false,	optNone		},
-		{	"unl_delete",			&RPCParser::doUnlDelete,			1,  1, true,	false,	optNone		},
-		{	"unl_list",				&RPCParser::doUnlList,				0,  0, true,	false,	optNone		},
-		{	"unl_load",				&RPCParser::doUnlLoad,				0,  0, true,	false,	optNone		},
-		{	"unl_network",			&RPCParser::doUnlNetwork,			0,  0, true,	false,	optNone		},
-		{	"unl_reset",			&RPCParser::doUnlReset,			0,  0, true,	false,	optNone		},
-		{	"unl_score",			&RPCParser::doUnlScore,			0,  0, true,	false,	optNone		},
+//		{	"validation_create",	&RPCParser::doValidationCreate,	0,  1, false,	false,	optNone		},
+//		{	"validation_seed",		&RPCParser::doValidationSeed,		0,  1, false,	false,	optNone		},
 
-		{	"validation_create",	&RPCParser::doValidationCreate,	0,  1, false,	false,	optNone		},
-		{	"validation_seed",		&RPCParser::doValidationSeed,		0,  1, false,	false,	optNone		},
-
-		{	"wallet_accounts",		&RPCParser::doWalletAccounts,		1,  1, false,	false,	optCurrent	},
-		{	"wallet_propose",		&RPCParser::doWalletPropose,		0,  1, false,	false,	optNone		},
-		{	"wallet_seed",			&RPCParser::doWalletSeed,			0,  1, false,	false,	optNone		},
-
-		{	"login",				&RPCParser::doLogin,				2,  2, true,	false,	optNone		},
+//		{	"wallet_accounts",		&RPCParser::doWalletAccounts,		1,  1, false,	false,	optCurrent	},
+//		{	"wallet_propose",		&RPCParser::doWalletPropose,		0,  1, false,	false,	optNone		},
+//		{	"wallet_seed",			&RPCParser::doWalletSeed,			0,  1, false,	false,	optNone		},
+//
+//		{	"login",				&RPCParser::doLogin,				2,  2, true,	false,	optNone		},
 
 		// Evented methods
-		{	"subscribe",			&RPCParser::doSubscribe,			-1,	-1,	false,	true,	optNone		},
-		{	"unsubscribe",			&RPCParser::doUnsubscribe,			-1,	-1,	false,	true,	optNone		},
-#endif
+		{	"subscribe",			&RPCParser::parseEvented,				-1,	-1	},
+		{	"unsubscribe",			&RPCParser::parseEvented,				-1,	-1	},
 	};
 
 	int		i = NUMBER(commandsA);
@@ -229,7 +232,6 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 		if (jvRequest.isMember("error"))
 		{
 			jvOutput			= jvRequest;
-			jvOutput["status"]	= "error";
 			jvOutput["rpc"]		= jvRpc;
 		}
 		else
@@ -242,20 +244,40 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 				jvRequest.isMember("method")			// Allow parser to rewrite method.
 					? jvRequest["method"].asString()
 					: vCmd[0],
-				jvParams);					// Parsed, execute.
+				jvParams);								// Parsed, execute.
 
+			if (jvOutput.isMember("result"))
+			{
+				// Had a successful JSON-RPC 2.0 call.
+				jvOutput	= jvOutput["result"];
+
+				// jvOutput may report a server side error.
+				// It should report "status".
+			}
+			else
+			{
+				// Transport error.
+				Json::Value	jvRpcError	= jvOutput;
+
+				jvOutput			= rpcError(rpcJSON_RPC);
+				jvOutput["result"]	= jvRpcError;
+			}
+
+			// If had an error, supply invokation in result.
 			if (jvOutput.isMember("error"))
 			{
-				jvOutput["rpc"]		= jvRpc;			// How the command was seen as method + params.
-				jvOutput["request"]	= jvRequest;		// How the command was translated.
+				jvOutput["rpc"]				= jvRpc;			// How the command was seen as method + params.
+				jvOutput["request_sent"]	= jvRequest;		// How the command was translated.
 			}
 		}
 
 		if (jvOutput.isMember("error"))
 		{
-			nRet		= jvOutput.isMember("error_code")
-							? lexical_cast_s<int>(jvOutput["error_code"].asString())
-							: 1;
+			jvOutput["status"]	= "error";
+
+			nRet	= jvOutput.isMember("error_code")
+						? lexical_cast_s<int>(jvOutput["error_code"].asString())
+						: 1;
 		}
 
 		// YYY We could have a command line flag for single line output for scripts.

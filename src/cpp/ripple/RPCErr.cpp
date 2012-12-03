@@ -30,6 +30,7 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 		{ rpcINSUF_FUNDS,			"insufFunds",		"Insufficient funds."									},
 		{ rpcINTERNAL,				"internal",			"Internal error."										},
 		{ rpcINVALID_PARAMS,		"invalidParams",	"Invalid parameters."									},
+		{ rpcJSON_RPC,				"json_rpc",			"JSON-RPC transport error."								},
 		{ rpcLGR_IDXS_INVALID,		"lgrIdxsInvalid",	"Ledger indexes invalid."								},
 		{ rpcLGR_IDX_MALFORMED,		"lgrIdxMalformed",	"Ledger index malformed."								},
 		{ rpcLGR_NOT_FOUND,			"lgrNotFound",		"Ledger not found."										},
@@ -72,8 +73,10 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 	jvResult["error_code"]		= iError;
 
 	if (i >= 0)
+	{
 		cLog(lsDEBUG) << "rpcError: "
 			<< errorInfoA[i].pToken << ": " << errorInfoA[i].pMessage << std::endl;
+	}
 
 	return jvResult;
 }

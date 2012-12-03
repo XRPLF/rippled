@@ -459,7 +459,7 @@ Json::Value RPCHandler::doOwnerInfo(Json::Value params)
 	return ret;
 }
 
-Json::Value RPCHandler::doPeers(Json::Value params)
+Json::Value RPCHandler::doPeers(Json::Value)
 {
 	Json::Value obj(Json::objectValue);
 
@@ -1074,7 +1074,7 @@ Json::Value RPCHandler::handleJSONSubmit(Json::Value jvRequest)
 	}
 }
 
-Json::Value RPCHandler::doServerInfo(Json::Value params)
+Json::Value RPCHandler::doServerInfo(Json::Value)
 {
 	Json::Value ret(Json::objectValue);
 
@@ -1142,7 +1142,7 @@ Json::Value RPCHandler::doTx(Json::Value params)
 	return rpcError(rpcNOT_IMPL);
 }
 
-Json::Value RPCHandler::doLedgerClosed(Json::Value params)
+Json::Value RPCHandler::doLedgerClosed(Json::Value)
 {
 	Json::Value jvResult;
 	uint256	uLedger	= mNetOps->getClosedLedgerHash();
@@ -1153,7 +1153,7 @@ Json::Value RPCHandler::doLedgerClosed(Json::Value params)
 	return jvResult;
 }
 
-Json::Value RPCHandler::doLedgerCurrent(Json::Value params)
+Json::Value RPCHandler::doLedgerCurrent(Json::Value)
 {
 	Json::Value jvResult;
 	jvResult["ledger_current_index"]	= mNetOps->getCurrentLedgerID();
@@ -1408,7 +1408,7 @@ Json::Value RPCHandler::doWalletAccounts(Json::Value params)
 	}
 }
 
-Json::Value RPCHandler::doLogRotate(Json::Value params)
+Json::Value RPCHandler::doLogRotate(Json::Value)
 {
 	return Log::rotateLog();
 }
@@ -1573,7 +1573,7 @@ Json::Value RPCHandler::doUnlScore(Json::Value params)
 	return "scoring requested";
 }
 
-Json::Value RPCHandler::doStop(Json::Value params)
+Json::Value RPCHandler::doStop(Json::Value)
 {
 	theApp->stop();
 
@@ -1621,7 +1621,7 @@ Json::Value RPCHandler::doUnlLoad(Json::Value params)
 	return "loading";
 }
 
-Json::Value RPCHandler::doLedgerAccept(Json::Value )
+Json::Value RPCHandler::doLedgerAccept(Json::Value)
 {
 	Json::Value jvResult;
 
@@ -2142,6 +2142,7 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 	return jvResult;
 }
 
+// Provide the JSON-RPC "result" value.
 Json::Value RPCHandler::doRpcCommand(const std::string& strCommand, Json::Value& jvParams, int iRole)
 {
 	// cLog(lsTRACE) << "doRpcCommand:" << strCommand << ":" << jvParams;
@@ -2153,7 +2154,35 @@ Json::Value RPCHandler::doRpcCommand(const std::string& strCommand, Json::Value&
 
 	jvRequest["command"]	= strCommand;
 
-	return doCommand(jvRequest, iRole);
+	Json::Value	jvResult;
+
+	Json::Value	jvRaw		= doCommand(jvRequest, iRole);
+
+	// Regularize result.
+	if (jvRaw.isObject())
+	{
+		// Got an object.
+		jvResult			= jvRaw;
+	}
+	else
+	{
+		// Probably got a string.
+		jvResult			= Json::Value(Json::objectValue);
+
+		jvResult["message"]	= jvRaw;
+	}
+
+	// Always report "status".  On an error report the request as received.
+	if (jvResult.isMember("error"))
+	{
+		jvResult["status"]	= "error";
+		jvResult["request"]	= jvRequest;
+
+	} else {
+		jvResult["status"]	= "success";
+	}
+
+	return jvResult;
 }
 
 Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
