@@ -785,6 +785,10 @@ Amount.prototype.parse_issuer = function (issuer) {
   return this;
 };
 
+Amount.prototype.is_negative = function () {
+  return this._is_negative;
+};
+
 // Check BigInteger NaN
 // Checks currency, does not check issuer.
 Amount.prototype.equals = function (d) {
