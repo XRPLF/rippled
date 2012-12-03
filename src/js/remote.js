@@ -773,7 +773,7 @@ Remote.prototype.submit = function (transaction) {
     else {
       // Convert the transaction into a request and submit it.
 
-      (new Request(this, 'submit_json'))
+      (new Request(this, 'submit'))
         .build_path(transaction._build_path)
         .tx_json(transaction.tx_json)
         .secret(transaction._secret)

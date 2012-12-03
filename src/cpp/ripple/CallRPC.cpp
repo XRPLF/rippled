@@ -113,6 +113,26 @@ Json::Value RPCParser::parseAccountTransactions(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+// submit any transaction to the network
+// submit private_key json
+Json::Value RPCParser::parseSubmit(const Json::Value& jvParams)
+{
+	Json::Value		txJSON;
+	Json::Reader	reader;
+
+	if (reader.parse(jvParams[1u].asString(), txJSON))
+	{
+		Json::Value	jvRequest;
+
+		jvRequest["secret"]		= params[0u].asString();
+		jvRequest["tx_json"]	= txJSON;
+
+		return jvRequest;
+	}
+
+	return rpcError(rpcINVALID_PARAMS);
+}
+
 Json::Value RPCParser::parseEvented(const Json::Value& jvParams)
 {
 	return rpcError(rpcNO_EVENTS);
@@ -156,8 +176,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 //		{	"profile",				&RPCParser::doProfile,				1,  9, false,	false,	optCurrent	},
 //		{	"ripple_lines_get",		&RPCParser::doRippleLinesGet,		1,  2, false,	false,	optCurrent	},
 //		{	"ripple_path_find",		&RPCParser::doRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
-//		{	"submit",				&RPCParser::doSubmit,				2,  2, false,	false,	optCurrent	},
-//		{	"submit_json",			&RPCParser::doSubmitJson,			-1,  -1, false,	false,	optCurrent	},
+		{	"submit",				&RPCParser::parseSubmit,				2,  2	},
 		{	"server_info",			&RPCParser::parseAsIs,					0,  0	},
 		{	"stop",					&RPCParser::parseAsIs,					0,  0	},
 //		{	"transaction_entry",	&RPCParser::doTransactionEntry,	-1,  -1, false,	false,	optCurrent	},

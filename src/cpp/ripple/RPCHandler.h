@@ -61,7 +61,6 @@ class RPCHandler
 	Json::Value doLogLevel(Json::Value params);
 	Json::Value doStop(Json::Value params);
 	Json::Value doSubmit(Json::Value params);
-	Json::Value doSubmitJson(Json::Value jvRequest);
 	Json::Value doTx(Json::Value params);
 	Json::Value doTxHistory(Json::Value params);
 
@@ -108,8 +107,6 @@ public:
 
 	Json::Value doCommand(Json::Value& jvRequest, int role);
 	Json::Value doRpcCommand(const std::string& strCommand, Json::Value& jvParams, int iRole);
-
-	Json::Value handleJSONSubmit(Json::Value jvRequest);
 };
 
 #endif

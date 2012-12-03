@@ -801,39 +801,21 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 	return jvResult;
 }
 
-// submit any transaction to the network
-// submit private_key json
-Json::Value RPCHandler::doSubmit(Json::Value params)
-{
-	Json::Value		txJSON;
-	Json::Reader	reader;
-
-	//std::string hello=params[1u].asString();
-
-	if (reader.parse(params[1u].asString(), txJSON))
-	{
-		Json::Value	jvRequest;
-
-		jvRequest["secret"]		= params[0u].asString();
-		jvRequest["tx_json"]	= txJSON;
-
-		return handleJSONSubmit(jvRequest);
-	}
-
-	return rpcError(rpcINVALID_PARAMS);
-}
-
-Json::Value RPCHandler::doSubmitJson(Json::Value jvRequest)
-{
-	return handleJSONSubmit(jvRequest);
-}
-
-
-Json::Value RPCHandler::handleJSONSubmit(Json::Value jvRequest)
+// {
+//   tx_json: <object>,
+//   secret: <secret>
+// }
+Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 {
 	Json::Value		jvResult;
 	RippleAddress	naSeed;
 	RippleAddress	raSrcAddressID;
+
+	if (!jvRequest.isMember("secret") || !jvRequest.isMember("tx_json"))
+	{
+		return rpcError(rpcINVALID_PARAMS);
+	}
+
 	Json::Value		txJSON		= jvRequest["tx_json"];
 
 	if (!naSeed.setSeedGeneric(jvRequest["secret"].asString()))
@@ -2215,8 +2197,7 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		{	"profile",				&RPCHandler::doProfile,				1,  9, false,	false,	optCurrent	},
 		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,		1,  2, false,	false,	optCurrent	},
 		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
-		{	"submit",				&RPCHandler::doSubmit,				2,  2, false,	false,	optCurrent	},
-		{	"submit_json",			&RPCHandler::doSubmitJson,			-1,  -1, false,	false,	optCurrent	},
+		{	"submit",				&RPCHandler::doSubmit,			   -1,  -1, false,	false,	optCurrent	},
 		{	"server_info",			&RPCHandler::doServerInfo,			0,  0, true,	false,	optNone		},
 		{	"stop",					&RPCHandler::doStop,				0,  0, true,	false,	optNone		},
 		{	"transaction_entry",	&RPCHandler::doTransactionEntry,	-1,  -1, false,	false,	optCurrent	},
