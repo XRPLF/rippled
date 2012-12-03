@@ -2154,23 +2154,7 @@ Json::Value RPCHandler::doRpcCommand(const std::string& strCommand, Json::Value&
 
 	jvRequest["command"]	= strCommand;
 
-	Json::Value	jvResult;
-
-	Json::Value	jvRaw		= doCommand(jvRequest, iRole);
-
-	// Regularize result.
-	if (jvRaw.isObject())
-	{
-		// Got an object.
-		jvResult			= jvRaw;
-	}
-	else
-	{
-		// Probably got a string.
-		jvResult			= Json::Value(Json::objectValue);
-
-		jvResult["message"]	= jvRaw;
-	}
+	Json::Value	jvResult	= doCommand(jvRequest, iRole);
 
 	// Always report "status".  On an error report the request as received.
 	if (jvResult.isMember("error"))
@@ -2306,7 +2290,23 @@ cLog(lsDEBUG) << "params.size: " << jvParams.size() << " array: " << jvParams.is
 	else
 	{
 		try {
-			return (this->*(commandsA[i].dfpFunc))(jvParams);
+			Json::Value	jvRaw		= (this->*(commandsA[i].dfpFunc))(jvParams);
+
+			// Regularize result.
+			if (jvRaw.isObject())
+			{
+				// Got an object.
+				return jvRaw;
+			}
+			else
+			{
+				// Probably got a string.
+				Json::Value	jvResult(Json::objectValue);
+
+				jvResult["message"]	= jvRaw;
+
+				return jvResult;
+			}
 		}
 		catch (std::exception& e)
 		{

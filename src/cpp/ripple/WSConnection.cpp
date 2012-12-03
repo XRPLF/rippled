@@ -79,7 +79,7 @@ Json::Value WSConnection::invokeCommand(Json::Value& jvRequest)
 	// consistent.
 	//
 	// Regularize result. This is duplicate code.
-	if (jvResult["result"].isObject() && jvResult["result"].isMember("error"))
+	if (jvResult["result"].isMember("error"))
 	{
 		jvResult			= jvResult["result"];
 		jvResult["status"]	= "error";
