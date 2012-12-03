@@ -56,6 +56,26 @@ Json::Value RPCParser::parseAsIs(const Json::Value &params)
 	return Json::Value(Json::objectValue);
 }
 
+// account_info <account>|<nickname>|<account_public_key>
+// account_info <seed>|<pass_phrase>|<key> [<index>]
+Json::Value RPCParser::parseAccountInfo(const Json::Value &jvParams)
+{
+	Json::Value		jvRequest(Json::objectValue);
+	std::string		strIdent	= jvParams[0u].asString();
+	// YYY This could be more strict and report casting errors.
+	int				iIndex		= 2 == jvParams.size() ? lexical_cast_s<int>(jvParams[1u].asString()) : 0;
+
+	RippleAddress	raAddress;
+
+	if (!raAddress.setAccountPublic(strIdent) && !raAddress.setAccountID(strIdent) && !raAddress.setSeedGeneric(strIdent))
+		return rpcError(rpcACT_MALFORMED);
+
+	jvRequest["ident"]	= strIdent;
+	jvRequest["index"]	= iIndex;
+
+	return jvRequest;
+}
+
 // Convert a rpc method and params to a request.
 // <-- { method: xyz, params: [... ] } or { error: ..., ... }
 Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
@@ -70,9 +90,11 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		int				iMaxParams;
 	} commandsA[] = {
 		// Request-response methods
-		{	"accept_ledger",		&RPCParser::parseAsIs,		0,	0	},
+		// - Returns an error, or the request.
+		// - To modify the method, provide a new method in the request.
+		{	"accept_ledger",		&RPCParser::parseAsIs,			0,	0	},
+		{	"account_info",			&RPCParser::parseAccountInfo,	1,  2	},
 #if 0
-		{	"account_info",			&RPCParser::doAccountInfo,			1,  2, false,	false,	optCurrent	},
 		{	"account_tx",			&RPCParser::doAccountTransactions,	2,  3, false,	false,	optNetwork	},
 		{	"connect",				&RPCParser::doConnect,				1,  2, true,	false,	optNone		},
 		{	"data_delete",			&RPCParser::doDataDelete,			1,  1, true,	false,	optNone		},
@@ -175,11 +197,15 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 		}
 		else
 		{
+			Json::Value	jvParams(Json::arrayValue);
+
+			jvParams.append(jvRequest);
+
 			jvOutput	= callRPC(
-				jvRequest.isMember("method")
+				jvRequest.isMember("method")			// Allow parser to rewrite method.
 					? jvRequest["method"].asString()
 					: vCmd[0],
-				jvRequest["params"]);					// Parsed, execute.
+				jvParams);					// Parsed, execute.
 
 			if (jvOutput.isMember("error"))
 			{

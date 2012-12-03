@@ -260,23 +260,27 @@ Json::Value RPCHandler::doAcceptLedger(Json::Value jvRequest)
 	if (!theConfig.RUN_STANDALONE)
 		return rpcError(rpcNOT_STANDALONE);
 
-	Json::Value obj(Json::objectValue);
+	Json::Value jvResult(Json::objectValue);
 
-	jvRequest["newLedger"] = theApp->getOPs().acceptLedger();
+	jvResult["newLedger"] = theApp->getOPs().acceptLedger();
 
-	return jvRequest;
+	return jvResult;
 }
 
-// account_info <account>|<nickname>|<account_public_key>
-// account_info <seed>|<pass_phrase>|<key> [<index>]
-Json::Value RPCHandler::doAccountInfo(Json::Value params)
+// { 'ident' : _indent_, 'index' : _index_ // optional }
+Json::Value RPCHandler::doAccountInfo(Json::Value jvRequest)
 {
-	std::string		strIdent	= params[0u].asString();
+	// cLog(lsDEBUG) << "doAccountInfo: " << jvRequest;
+
+	if (!jvRequest.isMember("ident"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	std::string		strIdent	= jvRequest["ident"].asString();
 	bool			bIndex;
-	int				iIndex		= 2 == params.size() ? lexical_cast_s<int>(params[1u].asString()) : 0;
+	int				iIndex		= jvRequest.isMember("index") ? jvRequest["index"].asUInt() : 0;
 	RippleAddress	naAccount;
 
-	Json::Value		ret;
+	Json::Value		jvResult;
 
 	// Get info on account.
 
@@ -291,7 +295,7 @@ Json::Value RPCHandler::doAccountInfo(Json::Value params)
 			asAccepted->addJson(jAccepted);
 	}
 
-	ret["accepted"]	= jAccepted;
+	jvResult["accepted"]	= jAccepted;
 
 	Json::Value		jCurrent	= accountFromString(uint256(0), naAccount, bIndex, strIdent, iIndex);
 
@@ -303,18 +307,18 @@ Json::Value RPCHandler::doAccountInfo(Json::Value params)
 			asCurrent->addJson(jCurrent);
 	}
 
-	ret["current"]	= jCurrent;
+	jvResult["current"]	= jCurrent;
 
 #if 0
 	if (!jAccepted && !asCurrent)
 	{
-		ret["account"]	= naAccount.humanAccountID();
-		ret["status"]	= "NotFound";
+		jvResult["account"]	= naAccount.humanAccountID();
+		jvResult["status"]	= "NotFound";
 		if (bIndex)
-			ret["index"]	= iIndex;
+			jvResult["index"]	= iIndex;
 	}
 #endif
-	return ret;
+	return jvResult;
 }
 
 Json::Value RPCHandler::doConnect(Json::Value params)
@@ -2138,6 +2142,8 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 
 Json::Value RPCHandler::doRpcCommand(const std::string& strCommand, Json::Value& jvParams, int iRole)
 {
+	// cLog(lsTRACE) << "doRpcCommand:" << strCommand << ":" << jvParams;
+
 	if (!jvParams.isArray() || jvParams.size() > 1)
 		return rpcError(rpcINVALID_PARAMS);
 
@@ -2172,8 +2178,8 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		unsigned int	iOptions;
 	} commandsA[] = {
 		// Request-response methods
-		{	"accept_ledger",		&RPCHandler::doAcceptLedger,	   -1, -1, true,	false,  optNone		},
-		{	"account_info",			&RPCHandler::doAccountInfo,			1,  2, false,	false,	optCurrent	},
+		{	"accept_ledger",		&RPCHandler::doAcceptLedger,	   -1, -1, true,	false,  optCurrent	},
+		{	"account_info",			&RPCHandler::doAccountInfo,		   -1, -1, false,	false,	optCurrent	},
 		{	"account_tx",			&RPCHandler::doAccountTransactions,	2,  3, false,	false,	optNetwork	},
 		{	"connect",				&RPCHandler::doConnect,				1,  2, true,	false,	optNone		},
 		{	"data_delete",			&RPCHandler::doDataDelete,			1,  1, true,	false,	optNone		},
