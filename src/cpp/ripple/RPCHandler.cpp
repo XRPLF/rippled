@@ -1198,34 +1198,36 @@ Json::Value RPCHandler::doLedger(Json::Value params)
 	return ret;
 }
 
-// account_tx <account> <minledger> <maxledger>
-// account_tx <account> <ledger>
-Json::Value RPCHandler::doAccountTransactions(Json::Value params)
+// { account: <account>, ledger: <integer> }
+// { account: <account>, ledger_min: <integer>, ledger_max: <integer> }
+Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 {
-	std::string param;
-	uint32 minLedger, maxLedger;
+	RippleAddress	raAccount;
+	uint32			minLedger;
+	uint32			maxLedger;
 
-	if (!extractString(param, params, 0))
+	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
 
-	RippleAddress account;
-	if (!account.setAccountID(param))
+	if (!raAccount.setAccountID(jvRequest["account"].asString()))
 		return rpcError(rpcACT_MALFORMED);
 
-	if (!extractString(param, params, 1))
-		return rpcError(rpcLGR_IDX_MALFORMED);
-
-	minLedger = lexical_cast_s<uint32>(param);
-
-	if ((params.size() == 3) && extractString(param, params, 2))
-		maxLedger = lexical_cast_s<uint32>(param);
+	if (jvRequest.isMember("ledger"))
+	{
+		minLedger	= maxLedger	= jvRequest["ledger"].asUInt();
+	}
+	else if (jvRequest.isMember("ledger_min") && jvRequest.isMember("ledger_max"))
+	{
+		minLedger	= jvRequest["ledger_min"].asUInt();
+		maxLedger	= jvRequest["ledger_max"].asUInt();
+	}
 	else
-		maxLedger = minLedger;
+	{
+		return rpcError(rpcLGR_IDX_MALFORMED);
+	}
 
 	if ((maxLedger < minLedger) || (maxLedger == 0))
 	{
-		std::cerr << "minL=" << minLedger << ", maxL=" << maxLedger << std::endl;
-
 		return rpcError(rpcLGR_IDXS_INVALID);
 	}
 
@@ -1233,9 +1235,9 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value params)
 	try
 	{
 #endif
-		std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(account, minLedger, maxLedger);
+		std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(raAccount, minLedger, maxLedger);
 		Json::Value ret(Json::objectValue);
-		ret["account"] = account.humanAccountID();
+		ret["account"] = raAccount.humanAccountID();
 		Json::Value ledgers(Json::arrayValue);
 
 		//		uint32 currentLedger = 0;
@@ -2180,7 +2182,7 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		// Request-response methods
 		{	"accept_ledger",		&RPCHandler::doAcceptLedger,	   -1, -1, true,	false,  optCurrent	},
 		{	"account_info",			&RPCHandler::doAccountInfo,		   -1, -1, false,	false,	optCurrent	},
-		{	"account_tx",			&RPCHandler::doAccountTransactions,	2,  3, false,	false,	optNetwork	},
+		{	"account_tx",			&RPCHandler::doAccountTransactions,	-1,  -1, false,	false,	optNetwork	},
 		{	"connect",				&RPCHandler::doConnect,				1,  2, true,	false,	optNone		},
 		{	"data_delete",			&RPCHandler::doDataDelete,			1,  1, true,	false,	optNone		},
 		{	"data_fetch",			&RPCHandler::doDataFetch,			1,  1, true,	false,	optNone		},

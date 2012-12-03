@@ -51,14 +51,14 @@ std::string EncodeBase64(const std::string& s)
 	return result;
 }
 
-Json::Value RPCParser::parseAsIs(const Json::Value &params)
+Json::Value RPCParser::parseAsIs(const Json::Value& jvParams)
 {
 	return Json::Value(Json::objectValue);
 }
 
 // account_info <account>|<nickname>|<account_public_key>
 // account_info <seed>|<pass_phrase>|<key> [<index>]
-Json::Value RPCParser::parseAccountInfo(const Json::Value &jvParams)
+Json::Value RPCParser::parseAccountInfo(const Json::Value& jvParams)
 {
 	Json::Value		jvRequest(Json::objectValue);
 	std::string		strIdent	= jvParams[0u].asString();
@@ -72,6 +72,43 @@ Json::Value RPCParser::parseAccountInfo(const Json::Value &jvParams)
 
 	jvRequest["ident"]	= strIdent;
 	jvRequest["index"]	= iIndex;
+
+	return jvRequest;
+}
+
+// account_tx <account> <minledger> <maxledger>
+// account_tx <account> <ledger>
+Json::Value RPCParser::parseAccountTransactions(const Json::Value& jvParams)
+{
+	Json::Value		jvRequest(Json::objectValue);
+	RippleAddress	raAccount;
+
+	if (jvParams.size() < 2 || jvParams.size() > 3)
+		return rpcError(rpcINVALID_PARAMS);
+
+	if (!raAccount.setAccountID(jvParams[0u].asString()))
+		return rpcError(rpcACT_MALFORMED);
+
+	// YYY This could be more strict and report casting errors.
+	if (jvParams.size() == 2)
+	{
+		jvRequest["ledger"]		= jvParams[1u].asUInt();
+	}
+	else
+	{
+		uint32	uLedgerMin	= jvParams[1u].asUInt();
+		uint32	uLedgerMax	= jvParams[2u].asUInt();
+
+		if ((uLedgerMax < uLedgerMin) || (uLedgerMax == 0))
+		{
+			return rpcError(rpcLGR_IDXS_INVALID);
+		}
+
+		jvRequest["ledger_min"]	= uLedgerMin;
+		jvRequest["ledger_max"]	= uLedgerMax;
+	}
+
+	jvRequest["account"]	= raAccount.humanAccountID();
 
 	return jvRequest;
 }
@@ -92,10 +129,10 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		// Request-response methods
 		// - Returns an error, or the request.
 		// - To modify the method, provide a new method in the request.
-		{	"accept_ledger",		&RPCParser::parseAsIs,			0,	0	},
-		{	"account_info",			&RPCParser::parseAccountInfo,	1,  2	},
+		{	"accept_ledger",		&RPCParser::parseAsIs,					0,	0	},
+		{	"account_info",			&RPCParser::parseAccountInfo,			1,  2	},
+		{	"account_tx",			&RPCParser::parseAccountTransactions,	2,  3	},
 #if 0
-		{	"account_tx",			&RPCParser::doAccountTransactions,	2,  3, false,	false,	optNetwork	},
 		{	"connect",				&RPCParser::doConnect,				1,  2, true,	false,	optNone		},
 		{	"data_delete",			&RPCParser::doDataDelete,			1,  1, true,	false,	optNone		},
 		{	"data_fetch",			&RPCParser::doDataFetch,			1,  1, true,	false,	optNone		},
@@ -209,7 +246,8 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 
 			if (jvOutput.isMember("error"))
 			{
-				jvOutput["rpc"]		= jvRpc;
+				jvOutput["rpc"]		= jvRpc;			// How the command was seen as method + params.
+				jvOutput["request"]	= jvRequest;		// How the command was translated.
 			}
 		}
 
