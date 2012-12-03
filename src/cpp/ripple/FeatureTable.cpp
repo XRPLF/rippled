@@ -91,7 +91,7 @@ FeatureTable::featureList_t FeatureTable::getEnabledFeatures()
 
 bool FeatureTable::shouldEnable(uint32 closeTime, const FeatureState& fs)
 {
-	if (fs.mVetoed || fs.mEnabled || (fs.mLastMajority != mLastReport))
+	if (fs.mVetoed || fs.mEnabled || !fs.mSupported || (fs.mLastMajority != mLastReport))
 		return false;
 
 	if (fs.mFirstMajority == mFirstReport)
@@ -116,7 +116,7 @@ FeatureTable::featureList_t FeatureTable::getFeaturesToEnable(uint32 closeTime)
 		BOOST_FOREACH(const featureIt_t& it, mFeatureMap)
 		{
 			if (shouldEnable(closeTime, it.second))
-			ret.insert(it.first);
+				ret.insert(it.first);
 		}
 	}
 	return ret;
@@ -173,6 +173,19 @@ void FeatureTable::setEnabledFeatures(const std::vector<uint256>& features)
 	}
 }
 
+void FeatureTable::setSupportedFeatures(const std::vector<uint256>& features)
+{
+	boost::mutex::scoped_lock sl(mMutex);
+	BOOST_FOREACH(featureIt_t& it, mFeatureMap)
+	{
+		it.second.mSupported = false;
+	}
+	BOOST_FOREACH(const uint256& it, features)
+	{
+		mFeatureMap[it].mSupported = true;
+	}
+}
+
 Json::Value FeatureTable::getJson(int)
 {
 	Json::Value ret(Json::objectValue);
@@ -181,6 +194,8 @@ Json::Value FeatureTable::getJson(int)
 		BOOST_FOREACH(const featureIt_t& it, mFeatureMap)
 		{
 			Json::Value v(Json::objectValue);
+
+			v["supported"] = it.second.mSupported ? "true" : "false";
 
 			if (it.second.mEnabled)
 				v["enabled"] = "true";

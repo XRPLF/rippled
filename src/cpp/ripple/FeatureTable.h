@@ -29,11 +29,12 @@ protected:
 	public:
 		bool	mVetoed;			// We don't want this feature enabled
 		bool	mEnabled;
+		bool	mSupported;
 
 		uint32	mFirstMajority;		// First time we saw a majority (close time)
 		uint32	mLastMajority;		// Most recent time we saw a majority (close time)
 
-		FeatureState() : mVetoed(false), mEnabled(false), mFirstMajority(0), mLastMajority(0) { ; }
+		FeatureState() : mVetoed(false), mEnabled(false), mSupported(false), mFirstMajority(0), mLastMajority(0) { ; }
 	};
 
 	typedef boost::unordered_map<uint256, FeatureState> featureMap_t;
@@ -65,6 +66,7 @@ public:
 	bool isFeatureEnabled(const uint256& feature);
 
 	void setEnabledFeatures(const std::vector<uint256>& features);
+	void setSupportedFeatures(const std::vector<uint256>& features);
 
 	featureList_t getVetoedFeatures();
 	featureList_t getEnabledFeatures();
