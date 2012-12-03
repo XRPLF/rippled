@@ -549,42 +549,42 @@ Json::Value RPCHandler::doProfile(Json::Value params)
 	return obj;
 }
 
-// ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]
-Json::Value RPCHandler::doRippleLinesGet(Json::Value params)
+// {
+//   account: <account>|<nickname>|<account_public_key> [<index>]
+//   index: <number>		// optional, defaults to 0.
+// }
+Json::Value RPCHandler::doRippleLinesGet(Json::Value jvRequest)
 {
-	//	uint256			uAccepted	= mNetOps->getClosedLedgerHash();
+	std::string		strIdent	= jvRequest["account"].asString();
+	bool			bIndex		= jvRequest.isMember("index");
+	int				iIndex		= bIndex ? jvRequest["index"].asUInt() : 0;
 
-	std::string		strIdent	= params[0u].asString();
-	bool			bIndex;
-	int				iIndex		= 2 == params.size() ? lexical_cast_s<int>(params[1u].asString()) : 0;
+	RippleAddress	raAccount;
 
-	RippleAddress	naAccount;
+	Json::Value jvResult;
 
-	Json::Value ret;
+	jvResult	= accountFromString(uint256(0), raAccount, bIndex, strIdent, iIndex);
 
-	ret	= accountFromString(uint256(0), naAccount, bIndex, strIdent, iIndex);
-
-	if (!ret.empty())
-		return ret;
+	if (!jvResult.empty())
+		return jvResult;
 
 	// Get info on account.
-	ret	= Json::Value(Json::objectValue);
 
-	ret["account"]	= naAccount.humanAccountID();
+	jvResult["account"]	= raAccount.humanAccountID();
 	if (bIndex)
-		ret["index"]	= iIndex;
+		jvResult["index"]	= iIndex;
 
-	AccountState::pointer	as		= mNetOps->getAccountState(uint256(0), naAccount);
+	AccountState::pointer	as		= mNetOps->getAccountState(uint256(0), raAccount);
 	if (as)
 	{
 		Json::Value	jsonLines(Json::arrayValue);
 
-		ret["account"]	= naAccount.humanAccountID();
+		jvResult["account"]	= raAccount.humanAccountID();
 
 		// XXX This is wrong, we do access the current ledger and do need to worry about changes.
 		// We access a committed ledger and need not worry about changes.
 
-		RippleLines rippleLines(naAccount.getAccountID());
+		RippleLines rippleLines(raAccount.getAccountID());
 		BOOST_FOREACH(RippleState::pointer line, rippleLines.getLines())
 		{
 			STAmount		saBalance	= line->getBalance();
@@ -607,14 +607,14 @@ Json::Value RPCHandler::doRippleLinesGet(Json::Value params)
 
 			jsonLines.append(jPeer);
 		}
-		ret["lines"]	= jsonLines;
+		jvResult["lines"]	= jsonLines;
 	}
 	else
 	{
-		ret	= rpcError(rpcACT_NOT_FOUND);
+		jvResult	= rpcError(rpcACT_NOT_FOUND);
 	}
 
-	return ret;
+	return jvResult;
 }
 
 // TODO:

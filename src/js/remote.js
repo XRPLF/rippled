@@ -698,14 +698,16 @@ Remote.prototype.request_transaction_entry = function (hash) {
     .tx_hash(hash);
 };
 
-Remote.prototype.request_ripple_lines_get = function (accountID) {
+Remote.prototype.request_ripple_lines_get = function (accountID, index) {
   // XXX Does this require the server to be trusted?
   //assert(this.trusted);
 
   var request = new Request(this, 'ripple_lines_get');
 
-  // XXX Convert API call to JSON
-  request.message.params = [accountID];
+  request.message.account = accountID;
+
+  if (index)
+    request.message.index   = index;
 
   return request;
 };
@@ -1001,10 +1003,13 @@ Remote.prototype.request_unl_list = function () {
   return new Request(this, 'unl_list');
 };
 
-Remote.prototype.request_unl_add = function (addr, note) {
+Remote.prototype.request_unl_add = function (addr, comment) {
   var request = new Request(this, 'unl_add');
 
-  request.message.params = [addr, note];
+  request.message.node    = addr;
+
+  if (comment !== undefined)
+    request.message.comment = note;
 
   return request;
 };

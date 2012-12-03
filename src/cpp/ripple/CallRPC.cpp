@@ -156,6 +156,26 @@ Json::Value RPCParser::parseLedger(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+// ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]
+Json::Value RPCParser::parseRippleLinesGet(const Json::Value& jvParams)
+{
+	std::string		strIdent	= jvParams[0u].asString();
+	bool			bIndex		= 2 == jvParams.size();
+	int				iIndex		= bIndex ? lexical_cast_s<int>(jvParams[1u].asString()) : 0;
+
+	if (bIndex && !iIndex)	// Don't send default.
+		bIndex	= false;
+
+	// Get info on account.
+	Json::Value jvRequest(Json::objectValue);
+
+	jvRequest["account"]	= strIdent;
+	if (bIndex)
+		jvRequest["index"]	= iIndex;
+
+	return jvRequest;
+}
+
 // submit any transaction to the network
 // submit private_key json
 Json::Value RPCParser::parseSubmit(const Json::Value& jvParams)
@@ -248,7 +268,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 //		{	"owner_info",			&RPCParser::doOwnerInfo,			1,  2, false,	false,	optCurrent	},
 		{	"peers",				&RPCParser::parseAsIs,					0,  0	},
 //		{	"profile",				&RPCParser::doProfile,				1,  9, false,	false,	optCurrent	},
-//		{	"ripple_lines_get",		&RPCParser::doRippleLinesGet,		1,  2, false,	false,	optCurrent	},
+		{	"ripple_lines_get",		&RPCParser::parseRippleLinesGet,		1,  2	},
 //		{	"ripple_path_find",		&RPCParser::doRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
 		{	"submit",				&RPCParser::parseSubmit,				2,  2	},
 		{	"server_info",			&RPCParser::parseAsIs,					0,  0	},
