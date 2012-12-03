@@ -161,6 +161,15 @@ Json::Value RPCParser::parseUnlAdd(const Json::Value& jvParams)
 	return rpcError(rpcINVALID_PARAMS);
 }
 
+// unl_delete <domain>|<public_key>
+Json::Value RPCParser::parseUnlDelete(const Json::Value& jvParams)
+{
+	Json::Value	jvRequest;
+
+	jvRequest["node"]		= jvParams[0u].asString();
+
+	return jvRequest;
+}
 //
 // parseCommand
 //
@@ -211,7 +220,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 //		{	"tx_history",			&RPCParser::doTxHistory,			1,  1, false,	false,	optNone		},
 //
 		{	"unl_add",				&RPCParser::parseUnlAdd,				1,  2	},
-//		{	"unl_delete",			&RPCParser::doUnlDelete,			1,  1, true,	false,	optNone		},
+		{	"unl_delete",			&RPCParser::parseUnlDelete,				1,  1	},
 		{	"unl_list",				&RPCParser::parseAsIs,					0,	0	},
 		{	"unl_load",				&RPCParser::parseAsIs,					0,	0	},
 		{	"unl_network",			&RPCParser::parseAsIs,					0,	0	},

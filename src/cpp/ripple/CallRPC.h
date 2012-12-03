@@ -19,6 +19,7 @@ protected:
 	Json::Value parseEvented(const Json::Value& jvParams);
 
 	Json::Value parseUnlAdd(const Json::Value& jvParams);
+	Json::Value parseUnlDelete(const Json::Value& jvParams);
 
 public:
 	Json::Value parseCommand(std::string strMethod, Json::Value jvParams);

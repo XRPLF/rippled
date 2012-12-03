@@ -1240,31 +1240,6 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 #endif
 }
 
-// {
-//   node: <domain>|<node_public>,
-//   comment: <comment>				// optional
-// }
-Json::Value RPCHandler::doUnlAdd(Json::Value jvParams)
-{
-	std::string	strNode		= jvParams.isMember("node") ? jvParams["node"].asString() : "";
-	std::string	strComment	= jvParams.isMember("comment") ? jvParams["comment"].asString() : "";
-
-	RippleAddress	raNodePublic;
-
-	if (raNodePublic.setNodePublic(strNode))
-	{
-		theApp->getUNL().nodeAddPublic(raNodePublic, UniqueNodeList::vsManual, strComment);
-
-		return "adding node by public key";
-	}
-	else
-	{
-		theApp->getUNL().nodeAddDomain(strNode, UniqueNodeList::vsManual, strComment);
-
-		return "adding node by domain";
-	}
-}
-
 // validation_create [<pass_phrase>|<seed>|<seed_key>]
 //
 // NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
@@ -1532,6 +1507,73 @@ Json::Value RPCHandler::doLogLevel(Json::Value params)
 	return rpcError(rpcINVALID_PARAMS);
 }
 
+// {
+//   node: <domain>|<node_public>,
+//   comment: <comment>				// optional
+// }
+Json::Value RPCHandler::doUnlAdd(Json::Value jvParams)
+{
+	std::string	strNode		= jvParams.isMember("node") ? jvParams["node"].asString() : "";
+	std::string	strComment	= jvParams.isMember("comment") ? jvParams["comment"].asString() : "";
+
+	RippleAddress	raNodePublic;
+
+	if (raNodePublic.setNodePublic(strNode))
+	{
+		theApp->getUNL().nodeAddPublic(raNodePublic, UniqueNodeList::vsManual, strComment);
+
+		return "adding node by public key";
+	}
+	else
+	{
+		theApp->getUNL().nodeAddDomain(strNode, UniqueNodeList::vsManual, strComment);
+
+		return "adding node by domain";
+	}
+}
+
+// {
+//   node: <domain>|<public_key>
+// }
+Json::Value RPCHandler::doUnlDelete(Json::Value jvParams)
+{
+	std::string	strNode		= jvParams[0u].asString();
+
+	RippleAddress	raNodePublic;
+
+	if (raNodePublic.setNodePublic(strNode))
+	{
+		theApp->getUNL().nodeRemovePublic(raNodePublic);
+
+		return "removing node by public key";
+	}
+	else
+	{
+		theApp->getUNL().nodeRemoveDomain(strNode);
+
+		return "removing node by domain";
+	}
+}
+
+Json::Value RPCHandler::doUnlList(Json::Value params)
+{
+	Json::Value obj(Json::objectValue);
+
+	obj["unl"]=theApp->getUNL().getUnlJson();
+
+	return obj;
+}
+
+// Populate the UNL from a local validators.txt file.
+Json::Value RPCHandler::doUnlLoad(Json::Value params)
+{
+	if (theConfig.VALIDATORS_FILE.empty() || !theApp->getUNL().nodeLoad(theConfig.VALIDATORS_FILE))
+	{
+		return rpcError(rpcLOAD_FAILED);
+	}
+
+	return "loading";
+}
 
 
 // Populate the UNL from ripple.com's validators.txt file.
@@ -1563,47 +1605,6 @@ Json::Value RPCHandler::doStop(Json::Value)
 	theApp->stop();
 
 	return SYSTEM_NAME " server stopping";
-}
-
-// unl_delete <domain>|<public_key>
-Json::Value RPCHandler::doUnlDelete(Json::Value params)
-{
-	std::string	strNode		= params[0u].asString();
-
-	RippleAddress	naNodePublic;
-
-	if (naNodePublic.setNodePublic(strNode))
-	{
-		theApp->getUNL().nodeRemovePublic(naNodePublic);
-
-		return "removing node by public key";
-	}
-	else
-	{
-		theApp->getUNL().nodeRemoveDomain(strNode);
-
-		return "removing node by domain";
-	}
-}
-
-Json::Value RPCHandler::doUnlList(Json::Value params)
-{
-	Json::Value obj(Json::objectValue);
-
-	obj["unl"]=theApp->getUNL().getUnlJson();
-
-	return obj;
-}
-
-// Populate the UNL from a local validators.txt file.
-Json::Value RPCHandler::doUnlLoad(Json::Value params)
-{
-	if (theConfig.VALIDATORS_FILE.empty() || !theApp->getUNL().nodeLoad(theConfig.VALIDATORS_FILE))
-	{
-		return rpcError(rpcLOAD_FAILED);
-	}
-
-	return "loading";
 }
 
 Json::Value RPCHandler::doLedgerAccept(Json::Value)
@@ -2203,12 +2204,12 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		{	"submit",				&RPCHandler::doSubmit,			   -1,  -1, false,	false,	optCurrent	},
 		{	"server_info",			&RPCHandler::doServerInfo,		   -1, -1, true,	false,	optNone		},
 		{	"stop",					&RPCHandler::doStop,			   -1, -1, true,	false,	optNone		},
-		{	"transaction_entry",	&RPCHandler::doTransactionEntry,	-1,  -1, false,	false,	optCurrent	},
+		{	"transaction_entry",	&RPCHandler::doTransactionEntry,   -1,  -1, false,	false,	optCurrent	},
 		{	"tx",					&RPCHandler::doTx,					1,  1, true,	false,	optNone		},
 		{	"tx_history",			&RPCHandler::doTxHistory,			1,  1, false,	false,	optNone		},
 
-		{	"unl_add",				&RPCHandler::doUnlAdd,				1,  2, true,	false,	optNone		},
-		{	"unl_delete",			&RPCHandler::doUnlDelete,			1,  1, true,	false,	optNone		},
+		{	"unl_add",				&RPCHandler::doUnlAdd,			   -1, -1, true,	false,	optNone		},
+		{	"unl_delete",			&RPCHandler::doUnlDelete,		   -1, -1, true,	false,	optNone		},
 		{	"unl_list",				&RPCHandler::doUnlList,			   -1, -1, true,	false,	optNone		},
 		{	"unl_load",				&RPCHandler::doUnlLoad,			   -1, -1, true,	false,	optNone		},
 		{	"unl_network",			&RPCHandler::doUnlNetwork,		   -1, -1, true,	false,	optNone		},
