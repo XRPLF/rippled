@@ -62,25 +62,30 @@ public:
 	bool adjust(LoadSource&, int credits) const;	// return value: false = balance okay, true = warn/cutoff
 };
 
-class LoadTrack
+class LoadFeeTrack
 { // structure that tracks our current fee/load schedule
 protected:
 
-	uint32 mLocalTxnLoadFee;		// Scale factor, 256 = normal fee
-	uint32 mRemoteTxnLoadFee;		// Scale factor, 256 = normal fee
+	static const int lftNormalFee = 256;		// 256 is the minimum/normal load factor
+	static const int lftFeeIncFraction = 16;	// increase fee by 1/16
+	static const int lftFeeDecFraction = 16;	// decrease fee by 1/16	
+	static const int lftFeeMax = lftNormalFee * 1000000;
+
+	uint32 mLocalTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
+	uint32 mRemoteTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
 	uint32 mPeerLoadSchedule;		// Schedule setting, 0 = normal schedule
 	uint32 mClientLoadSchedule;		// Schedule setting, 0 = normal schedule
 
 public:
 
-	LoadTrack() : mLocalTxnLoadFee(256), mRemoteTxnLoadFee(256), mPeerLoadSchedule(0), mClientLoadSchedule(0)
+	LoadFeeTrack()
+		: mLocalTxnLoadFee(lftNormalFee), mRemoteTxnLoadFee(lftNormalFee), mPeerLoadSchedule(0), mClientLoadSchedule(0)
 	{ ; }
 
 	uint64 scaleFee(uint64 fee);
 
-	void raiseRemoteFee();
+	void setRemoteFee(uint32);
 	void raiseLocalFee();
-	void lowerRemoteFee();
 	void lowerLocalFee();
 };
 
