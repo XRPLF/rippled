@@ -904,6 +904,8 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 	RippleAddress	raSrcAddressID;
 	Json::Value		txJSON		= jvRequest["tx_json"];
 
+
+
 	if (!naSeed.setSeedGeneric(jvRequest["secret"].asString()))
 	{
 		return rpcError(rpcBAD_SEED);
@@ -950,7 +952,7 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 				txJSON["Fee"] = (int) theConfig.FEE_ACCOUNT_CREATE;
 		}
 
-		if (!txJSON.isMember("Paths") && txJSON.isMember("Amount") && jvRequest.isMember("build_path"))
+		if (!txJSON.isMember("Paths") && txJSON.isMember("Amount")  && jvRequest.isMember("build_path"))
 		{
 			// Need a ripple path.
 			STPathSet	spsPaths;

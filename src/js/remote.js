@@ -489,7 +489,7 @@ Remote.prototype._connect_message = function (ws, json) {
         this._ledger_hash           = message.ledger_hash;
         this._ledger_current_index  = message.ledger_index + 1;
 
-        this.emit('ledger_closed', message.ledger_hash, message.ledger_index);
+        this.emit('ledger_closed', message);
         break;
 
       // All other messages

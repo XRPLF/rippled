@@ -404,6 +404,16 @@ Amount.prototype.set_currency = function(c) {
   return this;
 };
 
+Amount.prototype.set_issuer = function (issuer) {
+  if (issuer instanceof UInt160) {
+    issuer.copyTo(this._issuer);
+  } else {
+    this._issuer.parse_json(issuer);
+  }
+
+  return this;
+};
+
 // Only checks the value. Not the currency and issuer.
 Amount.prototype.is_valid = function() {
   return !isNaN(this._value);
@@ -773,6 +783,10 @@ Amount.prototype.parse_issuer = function (issuer) {
   this._issuer.parse_json(issuer);
 
   return this;
+};
+
+Amount.prototype.is_negative = function () {
+  return this._is_negative;
 };
 
 // Check BigInteger NaN
