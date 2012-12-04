@@ -3,6 +3,8 @@
 
 #include <boost/thread/mutex.hpp>
 
+#include "types.h"
+
 class LoadSource
 { // a single endpoint that can impose load
 	friend class LoadManager;
@@ -60,4 +62,29 @@ public:
 	bool adjust(LoadSource&, int credits) const;	// return value: false = balance okay, true = warn/cutoff
 };
 
+class LoadTrack
+{ // structure that tracks our current fee/load schedule
+protected:
+
+	uint32 mLocalTxnLoadFee;		// Scale factor, 256 = normal fee
+	uint32 mRemoteTxnLoadFee;		// Scale factor, 256 = normal fee
+	uint32 mPeerLoadSchedule;		// Schedule setting, 0 = normal schedule
+	uint32 mClientLoadSchedule;		// Schedule setting, 0 = normal schedule
+
+public:
+
+	LoadTrack() : mLocalTxnLoadFee(256), mRemoteTxnLoadFee(256), mPeerLoadSchedule(0), mClientLoadSchedule(0)
+	{ ; }
+
+	uint64 scaleFee(uint64 fee);
+
+	void raiseRemoteFee();
+	void raiseLocalFee();
+	void lowerRemoteFee();
+	void lowerLocalFee();
+};
+
+
 #endif
+
+// vim:ts=4

@@ -105,3 +105,50 @@ bool LoadManager::adjust(LoadSource& source, int credits) const
 
 	return false;
 }
+
+uint64 LoadTrack::scaleFee(uint64 fee)
+{
+	static uint64 midrange(0x00000000FFFFFFFF);
+	int factor = (mLocalTxnLoadFee > mRemoteTxnLoadFee) ? mLocalTxnLoadFee : mRemoteTxnLoadFee;
+
+	if (fee > midrange)			// large fee, divide first
+		return (fee >> 16) * factor;
+	else						// small fee, multiply first
+		return (fee * factor) >> 16;
+}
+
+void LoadTrack::raiseRemoteFee()
+{
+	if (mRemoteTxnLoadFee < mLocalTxnLoadFee) // make sure this fee takes effect
+		mRemoteTxnLoadFee = mLocalTxnLoadFee;
+
+	if (mRemoteTxnLoadFee < 268435456) // no more than a million
+		mRemoteTxnLoadFee += (mRemoteTxnLoadFee >> 4); // increment by 1/16th
+}
+
+void LoadTrack::lowerRemoteFee()
+{
+	mLocalTxnLoadFee -= (mLocalTxnLoadFee >> 4); // reduce by 1/16th
+
+	if (mLocalTxnLoadFee < 256)
+		mLocalTxnLoadFee = 256;
+}
+
+void LoadTrack::raiseLocalFee()
+{
+	if (mLocalTxnLoadFee < mLocalTxnLoadFee) // make sure this fee takes effect
+		mLocalTxnLoadFee = mLocalTxnLoadFee;
+
+	if (mLocalTxnLoadFee < 268435456) // no more than a million
+		mLocalTxnLoadFee += (mLocalTxnLoadFee >> 4); // increment by 1/16th
+}
+
+void LoadTrack::lowerLocalFee()
+{
+	mLocalTxnLoadFee -= (mLocalTxnLoadFee >> 4); // reduce by 1/16th
+
+	if (mLocalTxnLoadFee < 256)
+		mLocalTxnLoadFee = 256;
+}
+
+// vim:ts=4
