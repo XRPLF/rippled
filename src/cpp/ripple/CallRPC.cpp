@@ -126,6 +126,37 @@ Json::Value RPCParser::parseConnect(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+// data_delete <key>
+Json::Value RPCParser::parseDataDelete(const Json::Value& jvParams)
+{
+	Json::Value		jvRequest(Json::objectValue);
+
+	jvRequest["key"]	= jvParams[0u].asString();
+
+	return jvRequest;
+}
+
+// data_fetch <key>
+Json::Value RPCParser::parseDataFetch(const Json::Value& jvParams)
+{
+	Json::Value		jvRequest(Json::objectValue);
+
+	jvRequest["key"]	= jvParams[0u].asString();
+
+	return jvRequest;
+}
+
+// data_store <key> <value>
+Json::Value RPCParser::parseDataStore(const Json::Value& jvParams)
+{
+	Json::Value		jvRequest(Json::objectValue);
+
+	jvRequest["key"]	= jvParams[0u].asString();
+	jvRequest["value"]	= jvParams[1u].asString();
+
+	return jvRequest;
+}
+
 // Return an error for attemping to subscribe/unsubscribe via RPC.
 Json::Value RPCParser::parseEvented(const Json::Value& jvParams)
 {
@@ -376,9 +407,9 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 
 		// XXX Unnecessary commands which should be removed.
 		{	"login",				&RPCParser::parseLogin,					2,  2	},
-//		{	"data_delete",			&RPCParser::parseDataDelete,			1,  1, true,	false,	optNone		},
-//		{	"data_fetch",			&RPCParser::parseDataFetch,			1,  1, true,	false,	optNone		},
-//		{	"data_store",			&RPCParser::parseDataStore,			2,  2, true,	false,	optNone		},
+		{	"data_delete",			&RPCParser::parseDataDelete,			1,  1	},
+		{	"data_fetch",			&RPCParser::parseDataFetch,				1,  1	},
+		{	"data_store",			&RPCParser::parseDataStore,				2,  2	},
 
 		// Evented methods
 		{	"subscribe",			&RPCParser::parseEvented,				-1,	-1	},

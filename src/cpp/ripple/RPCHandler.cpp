@@ -340,10 +340,12 @@ Json::Value RPCHandler::doConnect(Json::Value jvParams)
 	return "connecting";
 }
 
-// data_delete <key>
-Json::Value RPCHandler::doDataDelete(Json::Value params)
+// {
+//   key: <string>
+// }
+Json::Value RPCHandler::doDataDelete(Json::Value jvRequest)
 {
-	std::string	strKey = params[0u].asString();
+	std::string	strKey = jvRequest["key"].asString();
 
 	Json::Value	ret = Json::Value(Json::objectValue);
 
@@ -359,10 +361,12 @@ Json::Value RPCHandler::doDataDelete(Json::Value params)
 	return ret;
 }
 
-// data_fetch <key>
-Json::Value RPCHandler::doDataFetch(Json::Value params)
+// {
+//   key: <string>
+// }
+Json::Value RPCHandler::doDataFetch(Json::Value jvRequest)
 {
-	std::string	strKey = params[0u].asString();
+	std::string	strKey = jvRequest["key"].asString();
 	std::string	strValue;
 
 	Json::Value	ret = Json::Value(Json::objectValue);
@@ -374,11 +378,14 @@ Json::Value RPCHandler::doDataFetch(Json::Value params)
 	return ret;
 }
 
-// data_store <key> <value>
-Json::Value RPCHandler::doDataStore(Json::Value params)
+// {
+//   key: <string>
+//   value: <string>
+// }
+Json::Value RPCHandler::doDataStore(Json::Value jvRequest)
 {
-	std::string	strKey		= params[0u].asString();
-	std::string	strValue	= params[1u].asString();
+	std::string	strKey		= jvRequest["key"].asString();
+	std::string	strValue	= jvRequest["value"].asString();
 
 	Json::Value	ret = Json::Value(Json::objectValue);
 
@@ -2239,9 +2246,9 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 
 		// XXX Unnecessary commands which should be removed.
 		{	"login",				&RPCHandler::doLogin,			   -1, -1, true,	false,	optNone		},
-		{	"data_delete",			&RPCHandler::doDataDelete,			1,  1, true,	false,	optNone		},
-		{	"data_fetch",			&RPCHandler::doDataFetch,			1,  1, true,	false,	optNone		},
-		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true,	false,	optNone		},
+		{	"data_delete",			&RPCHandler::doDataDelete,		   -1, -1, true,	false,	optNone		},
+		{	"data_fetch",			&RPCHandler::doDataFetch,		   -1, -1, true,	false,	optNone		},
+		{	"data_store",			&RPCHandler::doDataStore,		   -1, -1, true,	false,	optNone		},
 
 		// Evented methods
 		{	"subscribe",			&RPCHandler::doSubscribe,			-1,	-1,	false,	true,	optNone		},
