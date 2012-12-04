@@ -1262,14 +1262,13 @@ Json::Value RPCHandler::doValidationCreate(Json::Value jvParams) {
 	return obj;
 }
 
-// validation_seed [<pass_phrase>|<seed>|<seed_key>]
-//
-// NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
-// shell history file (e.g. .bash_history) and it may be leaked via the process status command (i.e. ps).
-Json::Value RPCHandler::doValidationSeed(Json::Value params) {
+// {
+//   secret: <string>
+// }
+Json::Value RPCHandler::doValidationSeed(Json::Value jvRequest) {
 	Json::Value obj(Json::objectValue);
 
-	if (params.empty())
+	if (!jvRequest.isMember("secret"))
 	{
 		std::cerr << "Unset validation seed." << std::endl;
 
@@ -1277,16 +1276,18 @@ Json::Value RPCHandler::doValidationSeed(Json::Value params) {
 		theConfig.VALIDATION_PUB.clear();
 		theConfig.VALIDATION_PRIV.clear();
 	}
-	else if (!theConfig.VALIDATION_SEED.setSeedGeneric(params[0u].asString()))
+	else if (!theConfig.VALIDATION_SEED.setSeedGeneric(jvRequest["secret"].asString()))
 	{
 		theConfig.VALIDATION_PUB.clear();
 		theConfig.VALIDATION_PRIV.clear();
+
 		return rpcError(rpcBAD_SEED);
 	}
 	else
 	{
 		theConfig.VALIDATION_PUB = RippleAddress::createNodePublic(theConfig.VALIDATION_SEED);
 		theConfig.VALIDATION_PRIV = RippleAddress::createNodePrivate(theConfig.VALIDATION_SEED);
+
 		obj["validation_public_key"]	= theConfig.VALIDATION_PUB.humanNodePublic();
 		obj["validation_seed"]			= theConfig.VALIDATION_SEED.humanSeed();
 		obj["validation_key"]			= theConfig.VALIDATION_SEED.humanSeed1751();
@@ -2217,7 +2218,7 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		{	"unl_score",			&RPCHandler::doUnlScore,		   -1, -1, true,	false,	optNone		},
 
 		{	"validation_create",	&RPCHandler::doValidationCreate,   -1, -1, false,	false,	optNone		},
-		{	"validation_seed",		&RPCHandler::doValidationSeed,		0,  1, false,	false,	optNone		},
+		{	"validation_seed",		&RPCHandler::doValidationSeed,	   -1, -1, false,	false,	optNone		},
 
 		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,	   -1, -1, false,	false,	optCurrent	},
 		{	"wallet_propose",		&RPCHandler::doWalletPropose,	   -1, -1, false,	false,	optNone		},
