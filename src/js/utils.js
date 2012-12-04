@@ -87,13 +87,19 @@ var logObject = function (msg, obj) {
   console.log(msg, JSON.stringify(obj, undefined, 2));
 };
 
+var assert = function (assertion, msg) {
+  if (!assertion) {
+    throw new Error("Assertion failed" + (msg ? ": "+msg : "."));
+  }
+};
 
 exports.trace         = trace;
 exports.arraySet      = arraySet;
 exports.hexToString   = hexToString;
 exports.stringToArray = stringToArray;
 exports.stringToHex   = stringToHex;
-exports.logObject     = logObject;
 exports.chunkString   = chunkString;
+exports.logObject     = logObject;
+exports.assert        = assert;
 
 // vim:sw=2:sts=2:ts=8:et

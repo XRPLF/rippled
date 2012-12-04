@@ -551,7 +551,7 @@ Remote.prototype.request_server_info = function () {
 // XXX This is a bad command. Some varients don't scale.
 // XXX Require the server to be trusted.
 Remote.prototype.request_ledger = function (ledger, full) {
-  //assert(this.trusted);
+  //utils.assert(this.trusted);
 
   var request = new Request(this, 'ledger');
 
@@ -566,7 +566,7 @@ Remote.prototype.request_ledger = function (ledger, full) {
 
 // Only for unit testing.
 Remote.prototype.request_ledger_hash = function () {
-  //assert(this.trusted);   // If not trusted, need to check proof.
+  //utils.assert(this.trusted);   // If not trusted, need to check proof.
 
   return new Request(this, 'ledger_closed');
 };
@@ -588,7 +588,7 @@ Remote.prototype.request_ledger_current = function () {
 // .ledger_index()
 // .offer_id()
 Remote.prototype.request_ledger_entry = function (type) {
-  //assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
+  //utils.assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
 
   var self    = this;
   var request = new Request(this, 'ledger_entry');
@@ -692,7 +692,7 @@ Remote.prototype.request_unsubscribe = function (streams) {
 };
 
 Remote.prototype.request_transaction_entry = function (hash) {
-  //assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
+  //utils.assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
 
   return (new Request(this, 'transaction_entry'))
     .tx_hash(hash);
@@ -700,7 +700,7 @@ Remote.prototype.request_transaction_entry = function (hash) {
 
 Remote.prototype.request_ripple_lines_get = function (accountID, index) {
   // XXX Does this require the server to be trusted?
-  //assert(this.trusted);
+  //utils.assert(this.trusted);
 
   var request = new Request(this, 'ripple_lines_get');
 
@@ -713,7 +713,7 @@ Remote.prototype.request_ripple_lines_get = function (accountID, index) {
 };
 
 Remote.prototype.request_wallet_accounts = function (seed) {
-  assert(this.trusted);     // Don't send secrets.
+  utils.assert(this.trusted);     // Don't send secrets.
 
   var request = new Request(this, 'wallet_accounts');
 
@@ -724,7 +724,7 @@ Remote.prototype.request_wallet_accounts = function (seed) {
 
 Remote.prototype.request_account_tx = function (accountID, ledger_min, ledger_max) {
   // XXX Does this require the server to be trusted?
-  //assert(this.trusted);
+  //utils.assert(this.trusted);
 
   var request = new Request(this, 'account_tx');
 
