@@ -267,7 +267,10 @@ Json::Value RPCHandler::doAcceptLedger(Json::Value jvRequest)
 	return jvResult;
 }
 
-// { 'ident' : _indent_, 'index' : _index_ // optional }
+// {
+//   'ident' : <indent>,
+//   'index' : <index> // optional
+// }
 Json::Value RPCHandler::doAccountInfo(Json::Value jvRequest)
 {
 	// cLog(lsDEBUG) << "doAccountInfo: " << jvRequest;
@@ -402,6 +405,7 @@ Json::Value RPCHandler::doDataStore(Json::Value jvRequest)
 	return ret;
 }
 
+// XXX Needs to be revised for new paradigm
 // nickname_info <nickname>
 // Note: Nicknames are not automatically looked up by commands as they are advisory and can be changed.
 Json::Value RPCHandler::doNicknameInfo(Json::Value params)
@@ -430,27 +434,29 @@ Json::Value RPCHandler::doNicknameInfo(Json::Value params)
 }
 
 
-// owner_info <account>|<nickname>|<account_public_key>
-// owner_info <seed>|<pass_phrase>|<key> [<index>]
-Json::Value RPCHandler::doOwnerInfo(Json::Value params)
+// {
+//   'ident' : <indent>,
+//   'index' : <index> // optional
+// }
+Json::Value RPCHandler::doOwnerInfo(Json::Value jvRequest)
 {
-	std::string		strIdent	= params[0u].asString();
+	std::string		strIdent	= jvRequest["ident"].asString();
 	bool			bIndex;
-	int				iIndex		= 2 == params.size() ? lexical_cast_s<int>(params[1u].asString()) : 0;
-	RippleAddress	naAccount;
+	int				iIndex		= jvRequest.isMember("index") ? jvRequest["index"].asUInt() : 0;
+	RippleAddress	raAccount;
 
 	Json::Value		ret;
 
 	// Get info on account.
 
 	uint256			uAccepted	= mNetOps->getClosedLedgerHash();
-	Json::Value		jAccepted	= accountFromString(uAccepted, naAccount, bIndex, strIdent, iIndex);
+	Json::Value		jAccepted	= accountFromString(uAccepted, raAccount, bIndex, strIdent, iIndex);
 
-	ret["accepted"]	= jAccepted.empty() ? mNetOps->getOwnerInfo(uAccepted, naAccount) : jAccepted;
+	ret["accepted"]	= jAccepted.empty() ? mNetOps->getOwnerInfo(uAccepted, raAccount) : jAccepted;
 
-	Json::Value		jCurrent	= accountFromString(uint256(0), naAccount, bIndex, strIdent, iIndex);
+	Json::Value		jCurrent	= accountFromString(uint256(0), raAccount, bIndex, strIdent, iIndex);
 
-	ret["current"]	= jCurrent.empty() ? mNetOps->getOwnerInfo(uint256(0), naAccount) : jCurrent;
+	ret["current"]	= jCurrent.empty() ? mNetOps->getOwnerInfo(uint256(0), raAccount) : jCurrent;
 
 	return ret;
 }
@@ -2216,8 +2222,8 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		{	"ledger_header",		&RPCHandler::doLedgerHeader,	   -1, -1, false,	false,	optCurrent	},
 		{	"log_level",			&RPCHandler::doLogLevel,			0,  2, true,	false,	optNone		},
 		{	"logrotate",			&RPCHandler::doLogRotate,		   -1, -1, true,	false,	optNone		},
-		{	"nickname_info",		&RPCHandler::doNicknameInfo,		1,  1, false,	false,	optCurrent	},
-		{	"owner_info",			&RPCHandler::doOwnerInfo,			1,  2, false,	false,	optCurrent	},
+//		{	"nickname_info",		&RPCHandler::doNicknameInfo,		1,  1, false,	false,	optCurrent	},
+		{	"owner_info",			&RPCHandler::doOwnerInfo,		   -1, -1, false,	false,	optCurrent	},
 		{	"peers",				&RPCHandler::doPeers,			   -1, -1, true,	false,	optNone		},
 		{	"profile",				&RPCHandler::doProfile,				1,  9, false,	false,	optCurrent	},
 		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,	   -1, -1, false,	false,	optCurrent	},

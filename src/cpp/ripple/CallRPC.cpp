@@ -210,6 +210,13 @@ Json::Value RPCParser::parseLogin(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+// owner_info <account>|<nickname>|<account_public_key>
+// owner_info <seed>|<pass_phrase>|<key> [<index>]
+Json::Value RPCParser::parseOwnerInfo(const Json::Value& jvParams)
+{
+	return parseAccountInfo(jvParams);
+}
+
 // ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]
 Json::Value RPCParser::parseRippleLinesGet(const Json::Value& jvParams)
 {
@@ -373,20 +380,20 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"ledger_accept",		&RPCParser::parseAsIs,					0,  0	},
 		{	"ledger_closed",		&RPCParser::parseAsIs,					0,  0	},
 		{	"ledger_current",		&RPCParser::parseAsIs,					0,  0	},
-//		{	"ledger_entry",			&RPCParser::parseLedgerEntry,		   -1, -1, false,	false,	optCurrent	},
-//		{	"ledger_header",		&RPCParser::parseLedgerHeader,	   -1, -1, false,	false,	optCurrent	},
+//		{	"ledger_entry",			&RPCParser::parseLedgerEntry,		   -1, -1	},
+//		{	"ledger_header",		&RPCParser::parseLedgerHeader,		   -1, -1	},
 //		{	"log_level",			&RPCParser::parseLogLevel,				0,  2	},
 		{	"logrotate",			&RPCParser::parseAsIs,					0,  0	},
-//		{	"nickname_info",		&RPCParser::parseNicknameInfo,		1,  1, false,	false,	optCurrent	},
-//		{	"owner_info",			&RPCParser::parseOwnerInfo,			1,  2, false,	false,	optCurrent	},
+//		{	"nickname_info",		&RPCParser::parseNicknameInfo,			1,  1	},
+		{	"owner_info",			&RPCParser::parseOwnerInfo,				1,  2	},
 		{	"peers",				&RPCParser::parseAsIs,					0,  0	},
 //		{	"profile",				&RPCParser::parseProfile,				1,  9, false,	false,	optCurrent	},
 		{	"ripple_lines_get",		&RPCParser::parseRippleLinesGet,		1,  2	},
-//		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
+//		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	   -1, -1	},
 		{	"submit",				&RPCParser::parseSubmit,				2,  2	},
 		{	"server_info",			&RPCParser::parseAsIs,					0,  0	},
 		{	"stop",					&RPCParser::parseAsIs,					0,  0	},
-//		{	"transaction_entry",	&RPCParser::parseTransactionEntry,	-1,  -1, false,	false,	optCurrent	},
+//		{	"transaction_entry",	&RPCParser::parseTransactionEntry,	   -1,  -1	},
 //		{	"tx",					&RPCParser::parseTx,					1,  1, true,	false,	optNone		},
 //		{	"tx_history",			&RPCParser::parseTxHistory,			1,  1, false,	false,	optNone		},
 //
