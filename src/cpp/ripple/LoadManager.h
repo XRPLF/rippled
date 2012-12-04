@@ -19,8 +19,8 @@ protected:
 	time_t	mLastWarning;
 
 public:
-	LoadSource() : mBalance(0), mFlags(0), mLastUpdate(0), mLastWarning(0)
-									{ ; }
+	LoadSource() : mBalance(0), mFlags(0), mLastWarning(0)
+									{ mLastUpdate = time(NULL); }
 
 	bool	isPrivileged() const	{ return (mFlags & lsfPrivileged) != 0; }
 	void	setPrivileged()			{ mFlags |= lsfPrivileged; }
@@ -35,28 +35,29 @@ protected:
 	int mCreditRate;			// credits gained/lost per second
 	int mCreditLimit;			// the most credits a source can have
 	int	mDebitWarn;				// when a source drops below this, we warn
-	int mDebitLimit;			// when a source drops below this, we cut it off
+	int mDebitLimit;			// when a source drops below this, we cut it off (should be negative)
 
-	boost::mutex	mLock;
+	mutable boost::mutex mLock;
+
+	void canonicalize(LoadSource&, const time_t now) const;
 
 public:
 
 	LoadManager(int creditRate, int creditLimit, int debitWarn, int debitLimit) :
 		mCreditRate(creditRate), mCreditLimit(creditLimit), mDebitWarn(debitWarn), mDebitLimit(debitLimit) { ; }
 
-	int getCreditRate();
-	int getCreditLimit();
-	int getDebitWarn();
-	int getDebitLimit();
+	int getCreditRate() const;
+	int getCreditLimit() const;
+	int getDebitWarn() const;
+	int getDebitLimit() const;
 	void setCreditRate(int);
 	void setCreditLimit(int);
 	void setDebitWarn(int);
 	void setDebitLimit(int);
 
-	bool shouldWarn(const LoadSource&);
-	bool shouldCutoff(const LoadSource&);
-	void credit(LoadSource&, int credits);
-	bool debit(LoadSource&, int credits);	// return value: false = balance okay, true = warn/cutoff
+	bool shouldWarn(LoadSource&) const;
+	bool shouldCutoff(LoadSource&) const;
+	bool adjust(LoadSource&, int credits) const;	// return value: false = balance okay, true = warn/cutoff
 };
 
 #endif
