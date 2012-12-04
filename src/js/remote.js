@@ -1029,7 +1029,10 @@ Remote.prototype.request_peers = function () {
 Remote.prototype.request_connect = function (ip, port) {
   var request = new Request(this, 'connect');
 
-  request.message.params = [ip, port];
+  request.message.ip = ip;
+
+  if (port)
+    request.message.port = port;
 
   return request;
 };
