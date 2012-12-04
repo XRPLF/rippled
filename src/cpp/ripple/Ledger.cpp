@@ -179,7 +179,6 @@ AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
 #ifdef DEBUG
 //	std::cerr << "Ledger:getAccountState(" << accountID.humanAccountID() << ")" << std::endl;
 #endif
-	ScopedLock l(mAccountStateMap->Lock());
 	SHAMapItem::pointer item = mAccountStateMap->peekItem(Ledger::getAccountRootIndex(accountID));
 	if (!item)
 	{
@@ -197,7 +196,6 @@ AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
 
 NicknameState::pointer Ledger::getNicknameState(const uint256& uNickname)
 {
-	ScopedLock l(mAccountStateMap->Lock());
 	SHAMapItem::pointer item = mAccountStateMap->peekItem(Ledger::getNicknameIndex(uNickname));
 	if (!item)
 	{
@@ -370,81 +368,88 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 	assert (getTransHash() == mTransactionMap->getHash());
 
 	{
-		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
-
-		if (SQL_EXISTS(theApp->getLedgerDB()->getDB(), boost::str(ledgerExists % mLedgerSeq)))
-			theApp->getLedgerDB()->getDB()->executeSQL(boost::str(deleteLedger % mLedgerSeq));
+		{
+			ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+			if (SQL_EXISTS(theApp->getLedgerDB()->getDB(), boost::str(ledgerExists % mLedgerSeq)))
+				theApp->getLedgerDB()->getDB()->executeSQL(boost::str(deleteLedger % mLedgerSeq));
+		}
 
 		SHAMap& txSet = *peekTransactionMap();
 		Database *db = theApp->getTxnDB()->getDB();
-		ScopedLock dbLock(theApp->getTxnDB()->getDBLock());
-		db->executeSQL("BEGIN TRANSACTION;");
-		SHAMapTreeNode::TNType type;
-		for (SHAMapItem::pointer item = txSet.peekFirstItem(type); !!item;
-			item = txSet.peekNextItem(item->getTag(), type))
 		{
-			assert(type == SHAMapTreeNode::tnTRANSACTION_MD);
-			SerializerIterator sit(item->peekSerializer());
-			Serializer rawTxn(sit.getVL());
-			std::string escMeta(sqlEscape(sit.getVL()));
-
-			SerializerIterator txnIt(rawTxn);
-			SerializedTransaction txn(txnIt);
-			assert(txn.getTransactionID() == item->getTag());
-
-			// Make sure transaction is in AccountTransactions.
-			if (!SQL_EXISTS(db, boost::str(AcctTransExists % item->getTag().GetHex())))
+			ScopedLock dbLock(theApp->getTxnDB()->getDBLock());
+			db->executeSQL("BEGIN TRANSACTION;");
+			SHAMapTreeNode::TNType type;
+			for (SHAMapItem::pointer item = txSet.peekFirstItem(type); !!item;
+				item = txSet.peekNextItem(item->getTag(), type))
 			{
-				// Transaction not in AccountTransactions
-				std::vector<RippleAddress> accts = txn.getAffectedAccounts();
+				assert(type == SHAMapTreeNode::tnTRANSACTION_MD);
+				SerializerIterator sit(item->peekSerializer());
+				Serializer rawTxn(sit.getVL());
+				std::string escMeta(sqlEscape(sit.getVL()));
 
-				std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
-				bool first = true;
-				for (std::vector<RippleAddress>::iterator it = accts.begin(), end = accts.end(); it != end; ++it)
+				SerializerIterator txnIt(rawTxn);
+				SerializedTransaction txn(txnIt);
+				assert(txn.getTransactionID() == item->getTag());
+
+				// Make sure transaction is in AccountTransactions.
+				if (!SQL_EXISTS(db, boost::str(AcctTransExists % item->getTag().GetHex())))
 				{
-					if (!first)
-						sql += ", ('";
-					else
-					{
-						sql += "('";
-						first = false;
-					}
-					sql += txn.getTransactionID().GetHex();
-					sql += "','";
-					sql += it->humanAccountID();
-					sql += "',";
-					sql += boost::lexical_cast<std::string>(getLedgerSeq());
-					sql += ")";
-				}
-				sql += ";";
-				Log(lsTRACE) << "ActTx: " << sql;
-				db->executeSQL(sql); // may already be in there
-			}
+					// Transaction not in AccountTransactions
+					std::vector<RippleAddress> accts = txn.getAffectedAccounts();
 
-			if (SQL_EXISTS(db, boost::str(transExists %	txn.getTransactionID().GetHex())))
-			{
-				// In Transactions, update LedgerSeq, metadata and Status.
-				db->executeSQL(boost::str(updateTx
-					% getLedgerSeq()
-					% TXN_SQL_VALIDATED
-					% escMeta
-					% txn.getTransactionID().GetHex()));
+					std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
+					bool first = true;
+					for (std::vector<RippleAddress>::iterator it = accts.begin(), end = accts.end(); it != end; ++it)
+					{
+						if (!first)
+							sql += ", ('";
+						else
+						{
+							sql += "('";
+							first = false;
+						}
+						sql += txn.getTransactionID().GetHex();
+						sql += "','";
+						sql += it->humanAccountID();
+						sql += "',";
+						sql += boost::lexical_cast<std::string>(getLedgerSeq());
+						sql += ")";
+					}
+					sql += ";";
+					Log(lsTRACE) << "ActTx: " << sql;
+					db->executeSQL(sql); // may already be in there
+				}
+
+				if (SQL_EXISTS(db, boost::str(transExists %	txn.getTransactionID().GetHex())))
+				{
+					// In Transactions, update LedgerSeq, metadata and Status.
+					db->executeSQL(boost::str(updateTx
+						% getLedgerSeq()
+						% TXN_SQL_VALIDATED
+						% escMeta
+						% txn.getTransactionID().GetHex()));
+				}
+				else
+				{
+					// Not in Transactions, insert the whole thing..
+					db->executeSQL(
+						txn.getMetaSQLInsertHeader() + txn.getMetaSQL(getLedgerSeq(), escMeta) + ";");
+				}
 			}
-			else
-			{
-				// Not in Transactions, insert the whole thing..
-				db->executeSQL(
-					txn.getMetaSQLInsertHeader() + txn.getMetaSQL(getLedgerSeq(), escMeta) + ";");
-			}
+			db->executeSQL("COMMIT TRANSACTION;");
 		}
-		db->executeSQL("COMMIT TRANSACTION;");
 
 		theApp->getHashedObjectStore().waitWrite(); // wait until all nodes are written
-		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
-			getHash().GetHex() % mLedgerSeq % mParentHash.GetHex() %
-			boost::lexical_cast<std::string>(mTotCoins) % mCloseTime % mParentCloseTime %
-			mCloseResolution % mCloseFlags %
-			mAccountHash.GetHex() % mTransHash.GetHex()));
+
+		{
+			ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+			theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
+				getHash().GetHex() % mLedgerSeq % mParentHash.GetHex() %
+				boost::lexical_cast<std::string>(mTotCoins) % mCloseTime % mParentCloseTime %
+				mCloseResolution % mCloseFlags %
+				mAccountHash.GetHex() % mTransHash.GetHex()));
+		}
 	}
 
 	if (!fromConsensus)
@@ -812,8 +817,6 @@ SLE::pointer Ledger::getAccountRoot(const RippleAddress& naAccountID)
 
 SLE::pointer Ledger::getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex)
 {
-	ScopedLock l(mAccountStateMap->Lock());
-
 	return getASNode(parms, uNodeIndex, ltDIR_NODE);
 }
 
@@ -823,8 +826,6 @@ SLE::pointer Ledger::getDirNode(LedgerStateParms& parms, const uint256& uNodeInd
 
 SLE::pointer Ledger::getGenerator(LedgerStateParms& parms, const uint160& uGeneratorID)
 {
-	ScopedLock l(mAccountStateMap->Lock());
-
 	return getASNode(parms, getGeneratorIndex(uGeneratorID), ltGENERATOR_MAP);
 }
 
@@ -834,8 +835,6 @@ SLE::pointer Ledger::getGenerator(LedgerStateParms& parms, const uint160& uGener
 
 SLE::pointer Ledger::getNickname(LedgerStateParms& parms, const uint256& uNickname)
 {
-	ScopedLock l(mAccountStateMap->Lock());
-
 	return getASNode(parms, uNickname, ltNICKNAME);
 }
 
@@ -846,8 +845,6 @@ SLE::pointer Ledger::getNickname(LedgerStateParms& parms, const uint256& uNickna
 
 SLE::pointer Ledger::getOffer(LedgerStateParms& parms, const uint256& uIndex)
 {
-	ScopedLock l(mAccountStateMap->Lock());
-
 	return getASNode(parms, uIndex, ltOFFER);
 }
 
@@ -857,8 +854,6 @@ SLE::pointer Ledger::getOffer(LedgerStateParms& parms, const uint256& uIndex)
 
 SLE::pointer Ledger::getRippleState(LedgerStateParms& parms, const uint256& uNode)
 {
-	ScopedLock l(mAccountStateMap->Lock());
-
 	return getASNode(parms, uNode, ltRIPPLE_STATE);
 }
 
