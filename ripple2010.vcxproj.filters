@@ -348,6 +348,9 @@
     <ClCompile Include="src\cpp\ripple\LoadMonitor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\RPCErr.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="util\pugiconfig.hpp">

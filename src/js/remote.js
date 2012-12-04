@@ -712,6 +712,15 @@ Remote.prototype.request_ripple_lines_get = function (accountID, index) {
   return request;
 };
 
+Remote.prototype.request_account_offers = function (accountID) {
+ 
+  var request = new Request(this, 'account_offers');
+
+  request.message.account = accountID;
+
+  return request;
+};
+
 Remote.prototype.request_wallet_accounts = function (seed) {
   utils.assert(this.trusted);     // Don't send secrets.
 
