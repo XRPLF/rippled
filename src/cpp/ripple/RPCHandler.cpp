@@ -1438,12 +1438,13 @@ Json::Value RPCHandler::doWalletSeed(Json::Value jvRequest)
 // TODO: for now this simply checks if this is the admin account
 // TODO: need to prevent them hammering this over and over
 // TODO: maybe a better way is only allow admin from local host
-Json::Value RPCHandler::doLogin(Json::Value params)
+// {
+//   username: <string>,
+//   password: <string>
+// }
+Json::Value RPCHandler::doLogin(Json::Value jvRequest)
 {
-	std::string	username		= params[0u].asString();
-	std::string	password		= params[1u].asString();
-
-	if (username == theConfig.RPC_USER && password == theConfig.RPC_PASSWORD)
+	if (jvRequest["username"].asString() == theConfig.RPC_USER && jvRequest["password"].asString() == theConfig.RPC_PASSWORD)
 	{
 		//mRole=ADMIN;
 		return "logged in";
@@ -1476,6 +1477,7 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest)
 
 Json::Value RPCHandler::doLogLevel(Json::Value params)
 {
+	// log_level
 	if (params.size() == 0)
 	{ // get log severities
 		Json::Value ret = Json::objectValue;
@@ -1486,27 +1488,35 @@ Json::Value RPCHandler::doLogLevel(Json::Value params)
 		typedef std::pair<std::string, std::string> stringPair;
 		BOOST_FOREACH(const stringPair& it, logTable)
 			ret[it.first] = it.second;
+
 		return ret;
 	}
 
+	// log_level severity
 	if (params.size() == 1)
 	{ // set base log severity
 		LogSeverity sv = Log::stringToSeverity(params[0u].asString());
 		if (sv == lsINVALID)
 			return rpcError(rpcINVALID_PARAMS);
+
 		Log::setMinSeverity(sv,true);
+
 		return rpcError(rpcSUCCESS);
 	}
 
+	// log_level partition severity base?
 	if (params.size() == 2)
 	{ // set partition severity
 		LogSeverity sv = Log::stringToSeverity(params[1u].asString());
+
 		if (sv == lsINVALID)
 			return rpcError(rpcINVALID_PARAMS);
+
 		if (params[2u].asString() == "base")
 			Log::setMinSeverity(sv,false);
 		else if (!LogPartition::setSeverity(params[0u].asString(), sv))
 			return rpcError(rpcINVALID_PARAMS);
+
 		return rpcError(rpcSUCCESS);
 	}
 
@@ -2228,7 +2238,7 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		{	"wallet_seed",			&RPCHandler::doWalletSeed,		   -1, -1, false,	false,	optNone		},
 
 		// XXX Unnecessary commands which should be removed.
-		{	"login",				&RPCHandler::doLogin,				2,  2, true,	false,	optNone		},
+		{	"login",				&RPCHandler::doLogin,			   -1, -1, true,	false,	optNone		},
 		{	"data_delete",			&RPCHandler::doDataDelete,			1,  1, true,	false,	optNone		},
 		{	"data_fetch",			&RPCHandler::doDataFetch,			1,  1, true,	false,	optNone		},
 		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true,	false,	optNone		},

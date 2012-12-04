@@ -168,6 +168,17 @@ Json::Value RPCParser::parseLedger(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+// login <username> <password>
+Json::Value RPCParser::parseLogin(const Json::Value& jvParams)
+{
+	Json::Value		jvRequest(Json::objectValue);
+
+	jvRequest["username"]	= jvParams[0u].asString();
+	jvRequest["password"]	= jvParams[1u].asString();
+
+	return jvRequest;
+}
+
 // ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]
 Json::Value RPCParser::parseRippleLinesGet(const Json::Value& jvParams)
 {
@@ -333,7 +344,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"ledger_current",		&RPCParser::parseAsIs,					0,  0	},
 //		{	"ledger_entry",			&RPCParser::parseLedgerEntry,		   -1, -1, false,	false,	optCurrent	},
 //		{	"ledger_header",		&RPCParser::parseLedgerHeader,	   -1, -1, false,	false,	optCurrent	},
-//		{	"log_level",			&RPCParser::parseLogLevel,			0,  2, true,	false,	optNone		},
+//		{	"log_level",			&RPCParser::parseLogLevel,				0,  2	},
 		{	"logrotate",			&RPCParser::parseAsIs,					0,  0	},
 //		{	"nickname_info",		&RPCParser::parseNicknameInfo,		1,  1, false,	false,	optCurrent	},
 //		{	"owner_info",			&RPCParser::parseOwnerInfo,			1,  2, false,	false,	optCurrent	},
@@ -364,7 +375,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"wallet_seed",			&RPCParser::parseWalletSeed,			0,  1	},
 
 		// XXX Unnecessary commands which should be removed.
-//		{	"login",				&RPCParser::parseLogin,				2,  2, true,	false,	optNone		},
+		{	"login",				&RPCParser::parseLogin,					2,  2	},
 //		{	"data_delete",			&RPCParser::parseDataDelete,			1,  1, true,	false,	optNone		},
 //		{	"data_fetch",			&RPCParser::parseDataFetch,			1,  1, true,	false,	optNone		},
 //		{	"data_store",			&RPCParser::parseDataStore,			2,  2, true,	false,	optNone		},
