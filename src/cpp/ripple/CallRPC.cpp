@@ -239,6 +239,17 @@ Json::Value RPCParser::parseWalletAccounts(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+// wallet_propose [<passphrase>]
+// <passphrase> is only for testing. Master seeds should only be generated randomly.
+Json::Value RPCParser::parseWalletPropose(const Json::Value& jvParams)
+{
+	Json::Value	jvRequest;
+
+	jvRequest["passphrase"]		= jvParams[0u].asString();
+
+	return jvRequest;
+}
+
 //
 // parseCommand
 //
@@ -300,7 +311,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 //		{	"validation_seed",		&RPCParser::doValidationSeed,		0,  1, false,	false,	optNone		},
 
 		{	"wallet_accounts",		&RPCParser::parseWalletAccounts,	    1,  1	},
-//		{	"wallet_propose",		&RPCParser::doWalletPropose,		0,  1, false,	false,	optNone		},
+		{	"wallet_propose",		&RPCParser::parseWalletPropose,			0,  1	},
 //		{	"wallet_seed",			&RPCParser::doWalletSeed,			0,  1, false,	false,	optNone		},
 //
 //		{	"login",				&RPCParser::doLogin,				2,  2, true,	false,	optNone		},

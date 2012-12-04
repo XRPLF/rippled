@@ -1372,20 +1372,21 @@ Json::Value RPCHandler::doLogRotate(Json::Value)
 	return Log::rotateLog();
 }
 
-// wallet_propose [<passphrase>]
-// <passphrase> is only for testing. Master seeds should only be generated randomly.
-Json::Value RPCHandler::doWalletPropose(Json::Value params)
+// {
+//  passphrase: <string>
+// }
+Json::Value RPCHandler::doWalletPropose(Json::Value jvRequest)
 {
 	RippleAddress	naSeed;
 	RippleAddress	naAccount;
 
-	if (params.empty())
+	if (jvRequest.isMember("passphrase"))
 	{
-		naSeed.setSeedRandom();
+		naSeed	= RippleAddress::createSeedGeneric(jvRequest["passphrase"].asString());
 	}
 	else
 	{
-		naSeed	= RippleAddress::createSeedGeneric(params[0u].asString());
+		naSeed.setSeedRandom();
 	}
 
 	RippleAddress	naGenerator	= RippleAddress::createGeneratorPublic(naSeed);
@@ -2219,7 +2220,7 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		{	"validation_seed",		&RPCHandler::doValidationSeed,		0,  1, false,	false,	optNone		},
 
 		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,	   -1, -1, false,	false,	optCurrent	},
-		{	"wallet_propose",		&RPCHandler::doWalletPropose,		0,  1, false,	false,	optNone		},
+		{	"wallet_propose",		&RPCHandler::doWalletPropose,	   -1, -1, false,	false,	optNone		},
 		{	"wallet_seed",			&RPCHandler::doWalletSeed,			0,  1, false,	false,	optNone		},
 
 		{	"login",				&RPCHandler::doLogin,				2,  2, true,	false,	optNone		},
