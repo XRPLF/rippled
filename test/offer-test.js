@@ -57,7 +57,7 @@ buster.testCase("Offer tests", {
           },
           function (m, callback) {
             self.remote
-              .once('ledger_closed', function (ledger_hash, ledger_index) {
+              .once('ledger_closed', function (message) {
                   // console.log("LEDGER_CLOSED: %d: %s", ledger_index, ledger_hash);
                 })
               .ledger_accept();
@@ -101,7 +101,7 @@ buster.testCase("Offer tests", {
           function (callback) {
             if (!final_create) {
               self.remote
-                .once('ledger_closed', function (ledger_hash, ledger_index) {
+                .once('ledger_closed', function (mesage) {
                     // console.log("LEDGER_CLOSED: %d: %s", ledger_index, ledger_hash);
 
                   })
@@ -133,7 +133,7 @@ buster.testCase("Offer tests", {
           // See if ledger_accept will crash.
           function (callback) {
             self.remote
-              .once('ledger_closed', function (ledger_hash, ledger_index) {
+              .once('ledger_closed', function (mesage) {
                   // console.log("LEDGER_CLOSED: A: %d: %s", ledger_index, ledger_hash);
                   callback();
                 })
@@ -141,7 +141,7 @@ buster.testCase("Offer tests", {
           },
           function (callback) {
             self.remote
-              .once('ledger_closed', function (ledger_hash, ledger_index) {
+              .once('ledger_closed', function (mesage) {
                   // console.log("LEDGER_CLOSED: B: %d: %s", ledger_index, ledger_hash);
                   callback();
                 })
@@ -198,7 +198,7 @@ buster.testCase("Offer tests", {
           function (callback) {
             if (!final_create) {
               self.remote
-                .once('ledger_closed', function (ledger_hash, ledger_index) {
+                .once('ledger_closed', function (mesage) {
                     // console.log("LEDGER_CLOSED: %d: %s", ledger_index, ledger_hash);
 
                   })
@@ -230,7 +230,7 @@ buster.testCase("Offer tests", {
           // See if ledger_accept will crash.
           function (callback) {
             self.remote
-              .once('ledger_closed', function (ledger_hash, ledger_index) {
+              .once('ledger_closed', function (mesage) {
                   // console.log("LEDGER_CLOSED: A: %d: %s", ledger_index, ledger_hash);
                   callback();
                 })
@@ -238,7 +238,7 @@ buster.testCase("Offer tests", {
           },
           function (callback) {
             self.remote
-              .once('ledger_closed', function (ledger_hash, ledger_index) {
+              .once('ledger_closed', function (mesage) {
                   // console.log("LEDGER_CLOSED: B: %d: %s", ledger_index, ledger_hash);
                   callback();
                 })
@@ -309,7 +309,7 @@ buster.testCase("Offer tests", {
           // See if ledger_accept will crash.
           function (callback) {
             self.remote
-              .once('ledger_closed', function (ledger_hash, ledger_index) {
+              .once('ledger_closed', function (mesage) {
                   // console.log("LEDGER_CLOSED: A: %d: %s", ledger_index, ledger_hash);
                   callback();
                 })
@@ -317,7 +317,7 @@ buster.testCase("Offer tests", {
           },
           function (callback) {
             self.remote
-              .once('ledger_closed', function (ledger_hash, ledger_index) {
+              .once('ledger_closed', function (mesage) {
                   // console.log("LEDGER_CLOSED: B: %d: %s", ledger_index, ledger_hash);
                   callback();
                 })

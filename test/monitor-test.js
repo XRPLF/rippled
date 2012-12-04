@@ -29,7 +29,7 @@ buster.testCase("//Monitor account", {
           function (callback) {
             self.what = "Close ledger.";
 
-            self.remote.once('ledger_closed', function (ledger_closed, ledger_index) {
+            self.remote.once('ledger_closed', function () {
                 callback();
               });
 

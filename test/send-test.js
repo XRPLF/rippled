@@ -442,7 +442,7 @@ buster.testCase("Sending future", {
 //          self.what = "Close the ledger and check balance.";
 //
 //          self.remote
-//            .once('ledger_closed', function (ledger_closed, ledger_closed_index) {
+//            .once('ledger_closed', function (message) {
 //                // console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
 //                callback();
 //              })

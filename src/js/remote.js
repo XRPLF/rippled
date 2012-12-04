@@ -815,7 +815,7 @@ Remote.prototype._server_subscribe = function () {
           self._ledger_hash           = message.ledger_hash;
           self._ledger_current_index  = message.ledger_index+1;
 
-          self.emit('ledger_closed', self._ledger_hash, self._ledger_current_index-1);
+          self.emit('ledger_closed', message);
         }
 
         self.emit('subscribed');
@@ -1228,8 +1228,10 @@ Transaction.prototype.submit = function (callback) {
     this.submit_index = this.remote._ledger_current_index;
 
     // When a ledger closes, look for the result.
-    var on_ledger_closed = function (ledger_hash, ledger_index) {
-        var stop  = false;
+    var on_ledger_closed = function (message) {
+        var ledger_hash   = message.ledger_hash;
+        var ledger_index  = message.ledger_index;
+        var stop          = false;
 
 // XXX make sure self.hash is available.
         self.remote.request_transaction_entry(self.hash)
