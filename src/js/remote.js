@@ -1014,10 +1014,11 @@ Remote.prototype.request_unl_add = function (addr, comment) {
   return request;
 };
 
-Remote.prototype.request_unl_delete = function (publicKey) {
+// --> node: <domain> | <public_key>
+Remote.prototype.request_unl_delete = function (node) {
   var request = new Request(this, 'unl_delete');
 
-  request.message.params = [publicKey];
+  request.message.node = node;
 
   return request;
 };
