@@ -21,6 +21,7 @@ protected:
 	Json::Value parseSubmit(const Json::Value& jvParams);
 	Json::Value parseUnlAdd(const Json::Value& jvParams);
 	Json::Value parseUnlDelete(const Json::Value& jvParams);
+	Json::Value parseValidationCreate(const Json::Value& jvParams);
 	Json::Value parseWalletAccounts(const Json::Value& jvParams);
 	Json::Value parseWalletPropose(const Json::Value& jvParams);
 	Json::Value parseWalletSeed(const Json::Value& jvParams);

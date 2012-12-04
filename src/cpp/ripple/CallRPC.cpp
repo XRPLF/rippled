@@ -229,6 +229,20 @@ Json::Value RPCParser::parseUnlDelete(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+// validation_create [<pass_phrase>|<seed>|<seed_key>]
+//
+// NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
+// shell history file (e.g. .bash_history) and it may be leaked via the process status command (i.e. ps).
+Json::Value RPCParser::parseValidationCreate(const Json::Value& jvParams)
+{
+	Json::Value	jvRequest;
+
+	if (jvParams.size())
+		jvRequest["secret"]		= jvParams[0u].asString();
+
+	return jvRequest;
+}
+
 // wallet_accounts <seed>
 Json::Value RPCParser::parseWalletAccounts(const Json::Value& jvParams)
 {
@@ -319,7 +333,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"unl_reset",			&RPCParser::parseAsIs,					0,	0	},
 		{	"unl_score",			&RPCParser::parseAsIs,					0,	0	},
 
-//		{	"validation_create",	&RPCParser::doValidationCreate,	0,  1, false,	false,	optNone		},
+		{	"validation_create",	&RPCParser::parseValidationCreate,		0,  1	},
 //		{	"validation_seed",		&RPCParser::doValidationSeed,		0,  1, false,	false,	optNone		},
 
 		{	"wallet_accounts",		&RPCParser::parseWalletAccounts,	    1,  1	},
