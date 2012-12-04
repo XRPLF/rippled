@@ -1237,40 +1237,38 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 #endif
 }
 
-// validation_create [<pass_phrase>|<seed>|<seed_key>]
-//
-// NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
-// shell history file (e.g. .bash_history) and it may be leaked via the process status command (i.e. ps).
-Json::Value RPCHandler::doValidationCreate(Json::Value params) {
-	RippleAddress	naSeed;
+// {
+//   secret: <string>
+// }
+Json::Value RPCHandler::doValidationCreate(Json::Value jvParams) {
+	RippleAddress	raSeed;
 	Json::Value		obj(Json::objectValue);
 
-	if (params.empty())
+	if (!jvParams.isMember("secret"))
 	{
-		std::cerr << "Creating random validation seed." << std::endl;
+		cLog(lsDEBUG) << "Creating random validation seed.";
 
-		naSeed.setSeedRandom();					// Get a random seed.
+		raSeed.setSeedRandom();					// Get a random seed.
 	}
-	else if (!naSeed.setSeedGeneric(params[0u].asString()))
+	else if (!raSeed.setSeedGeneric(jvParams["secret"].asString()))
 	{
 		return rpcError(rpcBAD_SEED);
 	}
 
-	obj["validation_public_key"]	= RippleAddress::createNodePublic(naSeed).humanNodePublic();
-	obj["validation_seed"]			= naSeed.humanSeed();
-	obj["validation_key"]			= naSeed.humanSeed1751();
+	obj["validation_public_key"]	= RippleAddress::createNodePublic(raSeed).humanNodePublic();
+	obj["validation_seed"]			= raSeed.humanSeed();
+	obj["validation_key"]			= raSeed.humanSeed1751();
 
 	return obj;
 }
 
-// validation_seed [<pass_phrase>|<seed>|<seed_key>]
-//
-// NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
-// shell history file (e.g. .bash_history) and it may be leaked via the process status command (i.e. ps).
-Json::Value RPCHandler::doValidationSeed(Json::Value params) {
+// {
+//   secret: <string>
+// }
+Json::Value RPCHandler::doValidationSeed(Json::Value jvRequest) {
 	Json::Value obj(Json::objectValue);
 
-	if (params.empty())
+	if (!jvRequest.isMember("secret"))
 	{
 		std::cerr << "Unset validation seed." << std::endl;
 
@@ -1278,16 +1276,18 @@ Json::Value RPCHandler::doValidationSeed(Json::Value params) {
 		theConfig.VALIDATION_PUB.clear();
 		theConfig.VALIDATION_PRIV.clear();
 	}
-	else if (!theConfig.VALIDATION_SEED.setSeedGeneric(params[0u].asString()))
+	else if (!theConfig.VALIDATION_SEED.setSeedGeneric(jvRequest["secret"].asString()))
 	{
 		theConfig.VALIDATION_PUB.clear();
 		theConfig.VALIDATION_PRIV.clear();
+
 		return rpcError(rpcBAD_SEED);
 	}
 	else
 	{
 		theConfig.VALIDATION_PUB = RippleAddress::createNodePublic(theConfig.VALIDATION_SEED);
 		theConfig.VALIDATION_PRIV = RippleAddress::createNodePrivate(theConfig.VALIDATION_SEED);
+
 		obj["validation_public_key"]	= theConfig.VALIDATION_PUB.humanNodePublic();
 		obj["validation_seed"]			= theConfig.VALIDATION_SEED.humanSeed();
 		obj["validation_key"]			= theConfig.VALIDATION_SEED.humanSeed1751();
@@ -1372,20 +1372,21 @@ Json::Value RPCHandler::doLogRotate(Json::Value)
 	return Log::rotateLog();
 }
 
-// wallet_propose [<passphrase>]
-// <passphrase> is only for testing. Master seeds should only be generated randomly.
-Json::Value RPCHandler::doWalletPropose(Json::Value params)
+// {
+//  passphrase: <string>
+// }
+Json::Value RPCHandler::doWalletPropose(Json::Value jvRequest)
 {
 	RippleAddress	naSeed;
 	RippleAddress	naAccount;
 
-	if (params.empty())
+	if (jvRequest.isMember("passphrase"))
 	{
-		naSeed.setSeedRandom();
+		naSeed	= RippleAddress::createSeedGeneric(jvRequest["passphrase"].asString());
 	}
 	else
 	{
-		naSeed	= RippleAddress::createSeedGeneric(params[0u].asString());
+		naSeed.setSeedRandom();
 	}
 
 	RippleAddress	naGenerator	= RippleAddress::createGeneratorPublic(naSeed);
@@ -1400,38 +1401,39 @@ Json::Value RPCHandler::doWalletPropose(Json::Value params)
 	return obj;
 }
 
-// wallet_seed [<seed>|<passphrase>|<passkey>]
-Json::Value RPCHandler::doWalletSeed(Json::Value params)
+// {
+//   secret: <string>
+// }
+Json::Value RPCHandler::doWalletSeed(Json::Value jvRequest)
 {
-	RippleAddress	naSeed;
+	RippleAddress	raSeed;
+	bool			bSecret	= jvRequest.isMember("secret");
 
-	if (params.size()
-		&& !naSeed.setSeedGeneric(params[0u].asString()))
+	if (bSecret && !raSeed.setSeedGeneric(jvRequest["secret"].asString()))
 	{
 		return rpcError(rpcBAD_SEED);
 	}
 	else
 	{
-		RippleAddress	naAccount;
+		RippleAddress	raAccount;
 
-		if (!params.size())
+		if (!bSecret)
 		{
-			naSeed.setSeedRandom();
+			raSeed.setSeedRandom();
 		}
 
-		RippleAddress	naGenerator	= RippleAddress::createGeneratorPublic(naSeed);
+		RippleAddress	raGenerator	= RippleAddress::createGeneratorPublic(raSeed);
 
-		naAccount.setAccountPublic(naGenerator, 0);
+		raAccount.setAccountPublic(raGenerator, 0);
 
 		Json::Value obj(Json::objectValue);
 
-		obj["seed"]		= naSeed.humanSeed();
-		obj["key"]		= naSeed.humanSeed1751();
+		obj["seed"]		= raSeed.humanSeed();
+		obj["key"]		= raSeed.humanSeed1751();
 
 		return obj;
 	}
 }
-
 
 // TODO: for now this simply checks if this is the admin account
 // TODO: need to prevent them hammering this over and over
@@ -2182,9 +2184,6 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		{	"account_info",			&RPCHandler::doAccountInfo,		   -1, -1, false,	false,	optCurrent	},
 		{	"account_tx",			&RPCHandler::doAccountTransactions,	-1,  -1, false,	false,	optNetwork	},
 		{	"connect",				&RPCHandler::doConnect,				1,  2, true,	false,	optNone		},
-		{	"data_delete",			&RPCHandler::doDataDelete,			1,  1, true,	false,	optNone		},
-		{	"data_fetch",			&RPCHandler::doDataFetch,			1,  1, true,	false,	optNone		},
-		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true,	false,	optNone		},
 		{	"get_counts",			&RPCHandler::doGetCounts,			0,	1, true,	false,	optNone		},
 		{	"ledger",				&RPCHandler::doLedger,			   -1, -1, false,	false,	optNetwork	},
 		{	"ledger_accept",		&RPCHandler::doLedgerAccept,	   -1, -1, true,	false,	optCurrent	},
@@ -2215,14 +2214,18 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		{	"unl_reset",			&RPCHandler::doUnlReset,		   -1, -1, true,	false,	optNone		},
 		{	"unl_score",			&RPCHandler::doUnlScore,		   -1, -1, true,	false,	optNone		},
 
-		{	"validation_create",	&RPCHandler::doValidationCreate,	0,  1, false,	false,	optNone		},
-		{	"validation_seed",		&RPCHandler::doValidationSeed,		0,  1, false,	false,	optNone		},
+		{	"validation_create",	&RPCHandler::doValidationCreate,   -1, -1, false,	false,	optNone		},
+		{	"validation_seed",		&RPCHandler::doValidationSeed,	   -1, -1, false,	false,	optNone		},
 
 		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,	   -1, -1, false,	false,	optCurrent	},
-		{	"wallet_propose",		&RPCHandler::doWalletPropose,		0,  1, false,	false,	optNone		},
-		{	"wallet_seed",			&RPCHandler::doWalletSeed,			0,  1, false,	false,	optNone		},
+		{	"wallet_propose",		&RPCHandler::doWalletPropose,	   -1, -1, false,	false,	optNone		},
+		{	"wallet_seed",			&RPCHandler::doWalletSeed,		   -1, -1, false,	false,	optNone		},
 
+		// XXX Unnecessary commands which should be removed.
 		{	"login",				&RPCHandler::doLogin,				2,  2, true,	false,	optNone		},
+		{	"data_delete",			&RPCHandler::doDataDelete,			1,  1, true,	false,	optNone		},
+		{	"data_fetch",			&RPCHandler::doDataFetch,			1,  1, true,	false,	optNone		},
+		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true,	false,	optNone		},
 
 		// Evented methods
 		{	"subscribe",			&RPCHandler::doSubscribe,			-1,	-1,	false,	true,	optNone		},
