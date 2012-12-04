@@ -2197,7 +2197,7 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		{	"owner_info",			&RPCHandler::doOwnerInfo,			1,  2, false,	false,	optCurrent	},
 		{	"peers",				&RPCHandler::doPeers,			   -1, -1, true,	false,	optNone		},
 		{	"profile",				&RPCHandler::doProfile,				1,  9, false,	false,	optCurrent	},
-		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,		1,  2, false,	false,	optCurrent	},
+		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,	   -1, -1, false,	false,	optCurrent	},
 		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
 		{	"submit",				&RPCHandler::doSubmit,			   -1,  -1, false,	false,	optCurrent	},
 		{	"server_info",			&RPCHandler::doServerInfo,		   -1, -1, true,	false,	optNone		},
