@@ -724,14 +724,22 @@ Remote.prototype.request_wallet_accounts = function (key) {
   return request;
 };
 
-Remote.prototype.request_account_tx = function (accountID, minLedger, maxLedger) {
+Remote.prototype.request_account_tx = function (accountID, ledger_min, ledger_max) {
   // XXX Does this require the server to be trusted?
   //assert(this.trusted);
 
   var request = new Request(this, 'account_tx');
 
   // XXX Convert API call to JSON
-  request.message.params = [accountID, minLedger, maxLedger];
+  request.message.account     = accountID;
+
+  if (ledger_min === ledger_max) {
+    request.message.ledger      = ledger_min;
+  }
+  else {
+    request.message.ledger_min  = ledger_min;
+    request.message.ledger_max  = ledger_max;
+  }
 
   return request;
 };
