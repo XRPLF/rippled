@@ -266,6 +266,16 @@ Json::Value RPCParser::parseTx(const Json::Value& jvParams)
 		return jvRequest;
 }
 
+// tx_history <index>
+Json::Value RPCParser::parseTxHistory(const Json::Value& jvParams)
+{
+	Json::Value	jvRequest;
+
+	jvRequest["start"]	= jvParams[0u].asUInt();
+
+	return jvRequest;
+}
+
 // unl_add <domain>|<node_public> [<comment>]
 Json::Value RPCParser::parseUnlAdd(const Json::Value& jvParams)
 {
@@ -404,8 +414,8 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"stop",					&RPCParser::parseAsIs,					0,  0	},
 //		{	"transaction_entry",	&RPCParser::parseTransactionEntry,	   -1,  -1	},
 		{	"tx",					&RPCParser::parseTx,					1,  1	},
-//		{	"tx_history",			&RPCParser::parseTxHistory,				1,  1	},
-//
+		{	"tx_history",			&RPCParser::parseTxHistory,				1,  1	},
+
 		{	"unl_add",				&RPCParser::parseUnlAdd,				1,  2	},
 		{	"unl_delete",			&RPCParser::parseUnlDelete,				1,  1	},
 		{	"unl_list",				&RPCParser::parseAsIs,					0,	0	},

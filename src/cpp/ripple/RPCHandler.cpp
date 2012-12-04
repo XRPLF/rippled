@@ -329,13 +329,13 @@ Json::Value RPCHandler::doAccountInfo(Json::Value jvRequest)
 //   port: <number>
 // }
 // XXX Might allow domain for manual connections.
-Json::Value RPCHandler::doConnect(Json::Value jvParams)
+Json::Value RPCHandler::doConnect(Json::Value jvRequest)
 {
 	if (theConfig.RUN_STANDALONE)
 		return "cannot connect in standalone mode";
 
-	std::string strIp	= jvParams["ip"].asString();
-	int			iPort	= jvParams.isMember("port") ? jvParams["port"].asInt() : -1;
+	std::string strIp	= jvRequest["ip"].asString();
+	int			iPort	= jvRequest.isMember("port") ? jvRequest["port"].asInt() : -1;
 
 	// XXX Validate legal IP and port
 	theApp->getConnectionPool().connectTo(strIp, iPort);
@@ -1069,37 +1069,35 @@ Json::Value RPCHandler::doServerInfo(Json::Value)
 	return ret;
 }
 
-Json::Value RPCHandler::doTxHistory(Json::Value params)
+// {
+//   start: <index>
+// }
+Json::Value RPCHandler::doTxHistory(Json::Value jvRequest)
 {
-	if (params.size() == 1)
+	unsigned int startIndex = jvRequest["start"].asUInt();
+	Json::Value	obj;
+	Json::Value	txs;
+
+	obj["index"]=startIndex;
+
+	std::string sql =
+		boost::str(boost::format("SELECT * FROM Transactions ORDER BY LedgerSeq desc LIMIT %u,20")
+		% startIndex);
+
 	{
-		unsigned int startIndex = params[0u].asInt();
-		Json::Value	obj;
-		Json::Value	txs;
+		Database* db = theApp->getTxnDB()->getDB();
+		ScopedLock sl (theApp->getTxnDB()->getDBLock());
 
-		obj["index"]=startIndex;
-
-		std::string sql =
-			boost::str(boost::format("SELECT * FROM Transactions ORDER BY LedgerSeq desc LIMIT %u,20")
-			% startIndex);
-
+		SQL_FOREACH(db, sql)
 		{
-			Database* db = theApp->getTxnDB()->getDB();
-			ScopedLock sl (theApp->getTxnDB()->getDBLock());
-
-			SQL_FOREACH(db, sql)
-			{
-				Transaction::pointer trans=Transaction::transactionFromSQL(db, false);
-				if(trans) txs.append(trans->getJson(0));
-			}
+			Transaction::pointer trans=Transaction::transactionFromSQL(db, false);
+			if(trans) txs.append(trans->getJson(0));
 		}
-
-		obj["txs"]=txs;
-
-		return obj;
 	}
 
-	return rpcError(rpcSRC_ACT_MALFORMED);
+	obj["txs"]=txs;
+
+	return obj;
 }
 
 // {
@@ -1147,9 +1145,9 @@ Json::Value RPCHandler::doLedgerCurrent(Json::Value)
 //    ledger: 'ledger_current' | 'ledger_closed' | <hex> | <number>,	// optional
 //    full: true | false	// optional, defaults to false.
 // }
-Json::Value RPCHandler::doLedger(Json::Value jvParams)
+Json::Value RPCHandler::doLedger(Json::Value jvRequest)
 {
-	if (!jvParams.isMember("ledger"))
+	if (!jvRequest.isMember("ledger"))
 	{
 		Json::Value ret(Json::objectValue), current(Json::objectValue), closed(Json::objectValue);
 
@@ -1162,7 +1160,7 @@ Json::Value RPCHandler::doLedger(Json::Value jvParams)
 		return ret;
 	}
 
-	std::string		strLedger	= jvParams["ledger"].asString();
+	std::string		strLedger	= jvRequest["ledger"].asString();
 	Ledger::pointer ledger;
 
 	if (strLedger == "ledger_current")
@@ -1172,12 +1170,12 @@ Json::Value RPCHandler::doLedger(Json::Value jvParams)
 	else if (strLedger.size() > 12)
 		ledger = theApp->getLedgerMaster().getLedgerByHash(uint256(strLedger));
 	else
-		ledger = theApp->getLedgerMaster().getLedgerBySeq(jvParams["ledger"].asUInt());
+		ledger = theApp->getLedgerMaster().getLedgerBySeq(jvRequest["ledger"].asUInt());
 
 	if (!ledger)
 		return rpcError(rpcLGR_NOT_FOUND);
 
-	bool full = jvParams.isMember("full") && jvParams["full"].asBool();
+	bool full = jvRequest.isMember("full") && jvRequest["full"].asBool();
 
 	Json::Value ret(Json::objectValue);
 
@@ -1249,17 +1247,17 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 // {
 //   secret: <string>
 // }
-Json::Value RPCHandler::doValidationCreate(Json::Value jvParams) {
+Json::Value RPCHandler::doValidationCreate(Json::Value jvRequest) {
 	RippleAddress	raSeed;
 	Json::Value		obj(Json::objectValue);
 
-	if (!jvParams.isMember("secret"))
+	if (!jvRequest.isMember("secret"))
 	{
 		cLog(lsDEBUG) << "Creating random validation seed.";
 
 		raSeed.setSeedRandom();					// Get a random seed.
 	}
-	else if (!raSeed.setSeedGeneric(jvParams["secret"].asString()))
+	else if (!raSeed.setSeedGeneric(jvRequest["secret"].asString()))
 	{
 		return rpcError(rpcBAD_SEED);
 	}
@@ -1339,11 +1337,11 @@ Json::Value RPCHandler::accounts(const uint256& uLedger, const RippleAddress& na
 // {
 //   seed: <string>
 // }
-Json::Value RPCHandler::doWalletAccounts(Json::Value jvParams)
+Json::Value RPCHandler::doWalletAccounts(Json::Value jvRequest)
 {
 	RippleAddress	naSeed;
 
-	if (!jvParams.isMember("seed") || !naSeed.setSeedGeneric(jvParams["seed"].asString()))
+	if (!jvRequest.isMember("seed") || !naSeed.setSeedGeneric(jvRequest["seed"].asString()))
 	{
 		return rpcError(rpcBAD_SEED);
 	}
@@ -1537,10 +1535,10 @@ Json::Value RPCHandler::doLogLevel(Json::Value params)
 //   node: <domain>|<node_public>,
 //   comment: <comment>				// optional
 // }
-Json::Value RPCHandler::doUnlAdd(Json::Value jvParams)
+Json::Value RPCHandler::doUnlAdd(Json::Value jvRequest)
 {
-	std::string	strNode		= jvParams.isMember("node") ? jvParams["node"].asString() : "";
-	std::string	strComment	= jvParams.isMember("comment") ? jvParams["comment"].asString() : "";
+	std::string	strNode		= jvRequest.isMember("node") ? jvRequest["node"].asString() : "";
+	std::string	strComment	= jvRequest.isMember("comment") ? jvRequest["comment"].asString() : "";
 
 	RippleAddress	raNodePublic;
 
@@ -1561,9 +1559,9 @@ Json::Value RPCHandler::doUnlAdd(Json::Value jvParams)
 // {
 //   node: <domain>|<public_key>
 // }
-Json::Value RPCHandler::doUnlDelete(Json::Value jvParams)
+Json::Value RPCHandler::doUnlDelete(Json::Value jvRequest)
 {
-	std::string	strNode		= jvParams[0u].asString();
+	std::string	strNode		= jvRequest[0u].asString();
 
 	RippleAddress	raNodePublic;
 
@@ -2181,15 +2179,15 @@ Json::Value RPCHandler::doRpcCommand(const std::string& strCommand, Json::Value&
 	return jvResult;
 }
 
-Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
+Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 {
-	if (!jvParams.isMember("command"))
+	if (!jvRequest.isMember("command"))
 		return rpcError(rpcINVALID_PARAMS);
 
-	std::string		strCommand	= jvParams["command"].asString();
+	std::string		strCommand	= jvRequest["command"].asString();
 
 	cLog(lsTRACE) << "COMMAND:" << strCommand;
-	cLog(lsTRACE) << "REQUEST:" << jvParams;
+	cLog(lsTRACE) << "REQUEST:" << jvRequest;
 
 	LoadEvent::autoptr le(theApp->getJobQueue().getLoadEventAP(jtRPC));
 
@@ -2198,63 +2196,61 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 	static struct {
 		const char*		pCommand;
 		doFuncPtr		dfpFunc;
-		int				iMinParams;
-		int				iMaxParams;
 		bool			bAdminRequired;
 		bool			bEvented;
 		unsigned int	iOptions;
 	} commandsA[] = {
 		// Request-response methods
-		{	"accept_ledger",		&RPCHandler::doAcceptLedger,	   -1, -1, true,	false,  optCurrent	},
-		{	"account_info",			&RPCHandler::doAccountInfo,		   -1, -1, false,	false,	optCurrent	},
-		{	"account_tx",			&RPCHandler::doAccountTransactions,-1, -1, false,	false,	optNetwork	},
-		{	"connect",				&RPCHandler::doConnect,			   -1, -1, true,	false,	optNone		},
-		{	"get_counts",			&RPCHandler::doGetCounts,		   -1, -1, true,	false,	optNone		},
-		{	"ledger",				&RPCHandler::doLedger,			   -1, -1, false,	false,	optNetwork	},
-		{	"ledger_accept",		&RPCHandler::doLedgerAccept,	   -1, -1, true,	false,	optCurrent	},
-		{	"ledger_closed",		&RPCHandler::doLedgerClosed,	   -1, -1, false,	false,	optClosed	},
-		{	"ledger_current",		&RPCHandler::doLedgerCurrent,	   -1, -1, false,	false,	optCurrent	},
-		{	"ledger_entry",			&RPCHandler::doLedgerEntry,		   -1, -1, false,	false,	optCurrent	},
-		{	"ledger_header",		&RPCHandler::doLedgerHeader,	   -1, -1, false,	false,	optCurrent	},
-		{	"log_level",			&RPCHandler::doLogLevel,			0,  2, true,	false,	optNone		},
-		{	"logrotate",			&RPCHandler::doLogRotate,		   -1, -1, true,	false,	optNone		},
-//		{	"nickname_info",		&RPCHandler::doNicknameInfo,		1,  1, false,	false,	optCurrent	},
-		{	"owner_info",			&RPCHandler::doOwnerInfo,		   -1, -1, false,	false,	optCurrent	},
-		{	"peers",				&RPCHandler::doPeers,			   -1, -1, true,	false,	optNone		},
-//		{	"profile",				&RPCHandler::doProfile,			   -1, -1, false,	false,	optCurrent	},
-		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,	   -1, -1, false,	false,	optCurrent	},
-		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
-		{	"submit",				&RPCHandler::doSubmit,			   -1, -1, false,	false,	optCurrent	},
-		{	"server_info",			&RPCHandler::doServerInfo,		   -1, -1, true,	false,	optNone		},
-		{	"stop",					&RPCHandler::doStop,			   -1, -1, true,	false,	optNone		},
-		{	"transaction_entry",	&RPCHandler::doTransactionEntry,   -1, -1, false,	false,	optCurrent	},
-		{	"tx",					&RPCHandler::doTx,				   -1, -1, true,	false,	optNone		},
-		{	"tx_history",			&RPCHandler::doTxHistory,			1,  1, false,	false,	optNone		},
+		{	"accept_ledger",		&RPCHandler::doAcceptLedger,	    true,	false,  optCurrent	},
+		{	"account_info",			&RPCHandler::doAccountInfo,		    false,	false,	optCurrent	},
+		{	"account_tx",			&RPCHandler::doAccountTransactions, false,	false,	optNetwork	},
+		{	"connect",				&RPCHandler::doConnect,			    true,	false,	optNone		},
+		{	"get_counts",			&RPCHandler::doGetCounts,		    true,	false,	optNone		},
+		{	"ledger",				&RPCHandler::doLedger,			    false,	false,	optNetwork	},
+		{	"ledger_accept",		&RPCHandler::doLedgerAccept,	    true,	false,	optCurrent	},
+		{	"ledger_closed",		&RPCHandler::doLedgerClosed,	    false,	false,	optClosed	},
+		{	"ledger_current",		&RPCHandler::doLedgerCurrent,	    false,	false,	optCurrent	},
+		{	"ledger_entry",			&RPCHandler::doLedgerEntry,		    false,	false,	optCurrent	},
+		{	"ledger_header",		&RPCHandler::doLedgerHeader,	    false,	false,	optCurrent	},
+		{	"log_level",			&RPCHandler::doLogLevel,		    true,	false,	optNone		},
+		{	"logrotate",			&RPCHandler::doLogRotate,		    true,	false,	optNone		},
+//		{	"nickname_info",		&RPCHandler::doNicknameInfo,	    false,	false,	optCurrent	},
+		{	"owner_info",			&RPCHandler::doOwnerInfo,		    false,	false,	optCurrent	},
+		{	"peers",				&RPCHandler::doPeers,			    true,	false,	optNone		},
+//		{	"profile",				&RPCHandler::doProfile,			    false,	false,	optCurrent	},
+		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,	    false,	false,	optCurrent	},
+		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	    false,	false,	optCurrent	},
+		{	"submit",				&RPCHandler::doSubmit,			    false,	false,	optCurrent	},
+		{	"server_info",			&RPCHandler::doServerInfo,		    true,	false,	optNone		},
+		{	"stop",					&RPCHandler::doStop,			    true,	false,	optNone		},
+		{	"transaction_entry",	&RPCHandler::doTransactionEntry,    false,	false,	optCurrent	},
+		{	"tx",					&RPCHandler::doTx,				    true,	false,	optNone		},
+		{	"tx_history",			&RPCHandler::doTxHistory,		    false,	false,	optNone		},
 
-		{	"unl_add",				&RPCHandler::doUnlAdd,			   -1, -1, true,	false,	optNone		},
-		{	"unl_delete",			&RPCHandler::doUnlDelete,		   -1, -1, true,	false,	optNone		},
-		{	"unl_list",				&RPCHandler::doUnlList,			   -1, -1, true,	false,	optNone		},
-		{	"unl_load",				&RPCHandler::doUnlLoad,			   -1, -1, true,	false,	optNone		},
-		{	"unl_network",			&RPCHandler::doUnlNetwork,		   -1, -1, true,	false,	optNone		},
-		{	"unl_reset",			&RPCHandler::doUnlReset,		   -1, -1, true,	false,	optNone		},
-		{	"unl_score",			&RPCHandler::doUnlScore,		   -1, -1, true,	false,	optNone		},
+		{	"unl_add",				&RPCHandler::doUnlAdd,			    true,	false,	optNone		},
+		{	"unl_delete",			&RPCHandler::doUnlDelete,		    true,	false,	optNone		},
+		{	"unl_list",				&RPCHandler::doUnlList,			    true,	false,	optNone		},
+		{	"unl_load",				&RPCHandler::doUnlLoad,			    true,	false,	optNone		},
+		{	"unl_network",			&RPCHandler::doUnlNetwork,		    true,	false,	optNone		},
+		{	"unl_reset",			&RPCHandler::doUnlReset,		    true,	false,	optNone		},
+		{	"unl_score",			&RPCHandler::doUnlScore,		    true,	false,	optNone		},
 
-		{	"validation_create",	&RPCHandler::doValidationCreate,   -1, -1, false,	false,	optNone		},
-		{	"validation_seed",		&RPCHandler::doValidationSeed,	   -1, -1, false,	false,	optNone		},
+		{	"validation_create",	&RPCHandler::doValidationCreate,    false,	false,	optNone		},
+		{	"validation_seed",		&RPCHandler::doValidationSeed,	    false,	false,	optNone		},
 
-		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,	   -1, -1, false,	false,	optCurrent	},
-		{	"wallet_propose",		&RPCHandler::doWalletPropose,	   -1, -1, false,	false,	optNone		},
-		{	"wallet_seed",			&RPCHandler::doWalletSeed,		   -1, -1, false,	false,	optNone		},
+		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,	    false,	false,	optCurrent	},
+		{	"wallet_propose",		&RPCHandler::doWalletPropose,	    false,	false,	optNone		},
+		{	"wallet_seed",			&RPCHandler::doWalletSeed,		    false,	false,	optNone		},
 
 		// XXX Unnecessary commands which should be removed.
-		{	"login",				&RPCHandler::doLogin,			   -1, -1, true,	false,	optNone		},
-		{	"data_delete",			&RPCHandler::doDataDelete,		   -1, -1, true,	false,	optNone		},
-		{	"data_fetch",			&RPCHandler::doDataFetch,		   -1, -1, true,	false,	optNone		},
-		{	"data_store",			&RPCHandler::doDataStore,		   -1, -1, true,	false,	optNone		},
+		{	"login",				&RPCHandler::doLogin,			    true,	false,	optNone		},
+		{	"data_delete",			&RPCHandler::doDataDelete,		    true,	false,	optNone		},
+		{	"data_fetch",			&RPCHandler::doDataFetch,		    true,	false,	optNone		},
+		{	"data_store",			&RPCHandler::doDataStore,		    true,	false,	optNone		},
 
 		// Evented methods
-		{	"subscribe",			&RPCHandler::doSubscribe,			-1,	-1,	false,	true,	optNone		},
-		{	"unsubscribe",			&RPCHandler::doUnsubscribe,			-1,	-1,	false,	true,	optNone		},
+		{	"subscribe",			&RPCHandler::doSubscribe,			false,	true,	optNone		},
+		{	"unsubscribe",			&RPCHandler::doUnsubscribe,			false,	true,	optNone		},
 	};
 
 	int		i = NUMBER(commandsA);
@@ -2274,16 +2270,6 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 	{
 		return rpcError(rpcNO_EVENTS);
 	}
-	else if (commandsA[i].iMinParams >= 0
-		? commandsA[i].iMaxParams
-			? (jvParams.size() < commandsA[i].iMinParams
-				|| (commandsA[i].iMaxParams >= 0 && jvParams.size() > commandsA[i].iMaxParams))
-			: false
-		: jvParams.isArray())
-	{
-cLog(lsDEBUG) << "params.size: " << jvParams.size() << " array: " << jvParams.isArray();
-		return rpcError(rpcINVALID_PARAMS);
-	}
 	else if ((commandsA[i].iOptions & optNetwork) && !mNetOps->available())
 	{
 		return rpcError(rpcNO_NETWORK);
@@ -2302,7 +2288,7 @@ cLog(lsDEBUG) << "params.size: " << jvParams.size() << " array: " << jvParams.is
 	else
 	{
 		try {
-			Json::Value	jvRaw		= (this->*(commandsA[i].dfpFunc))(jvParams);
+			Json::Value	jvRaw		= (this->*(commandsA[i].dfpFunc))(jvRequest);
 
 			// Regularize result.
 			if (jvRaw.isObject())
