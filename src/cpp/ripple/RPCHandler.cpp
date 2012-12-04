@@ -514,7 +514,7 @@ Json::Value RPCHandler::doProfile(Json::Value params)
 
 	boost::posix_time::ptime			ptStart(boost::posix_time::microsec_clock::local_time());
 
-	for(unsigned int n=0; n<iCount; n++) 
+	for(unsigned int n=0; n<iCount; n++)
 	{
 		RippleAddress			naMasterGeneratorA;
 		RippleAddress			naAccountPublicA;
@@ -1102,21 +1102,17 @@ Json::Value RPCHandler::doTxHistory(Json::Value params)
 	return rpcError(rpcSRC_ACT_MALFORMED);
 }
 
-Json::Value RPCHandler::doTx(Json::Value params)
+// {
+//   transaction: <hex>
+// }
+Json::Value RPCHandler::doTx(Json::Value jvRequest)
 {
-	// tx <txID>
-	// tx <account>
+	std::string strTransaction	= jvRequest["transaction"].asString();
 
-	std::string param1, param2;
-	if (!extractString(param1, params, 0))
-	{
-		return rpcError(rpcINVALID_PARAMS);
-	}
-
-	if (Transaction::isHexTxID(param1))
+	if (Transaction::isHexTxID(strTransaction))
 	{ // transaction by ID
 		Json::Value ret;
-		uint256 txid(param1);
+		uint256 txid(strTransaction);
 
 		Transaction::pointer txn = theApp->getMasterTransaction().fetch(txid, true);
 
@@ -2211,8 +2207,8 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		// Request-response methods
 		{	"accept_ledger",		&RPCHandler::doAcceptLedger,	   -1, -1, true,	false,  optCurrent	},
 		{	"account_info",			&RPCHandler::doAccountInfo,		   -1, -1, false,	false,	optCurrent	},
-		{	"account_tx",			&RPCHandler::doAccountTransactions,	-1,  -1, false,	false,	optNetwork	},
-		{	"connect",				&RPCHandler::doConnect,				1,  2, true,	false,	optNone		},
+		{	"account_tx",			&RPCHandler::doAccountTransactions,-1, -1, false,	false,	optNetwork	},
+		{	"connect",				&RPCHandler::doConnect,			   -1, -1, true,	false,	optNone		},
 		{	"get_counts",			&RPCHandler::doGetCounts,		   -1, -1, true,	false,	optNone		},
 		{	"ledger",				&RPCHandler::doLedger,			   -1, -1, false,	false,	optNetwork	},
 		{	"ledger_accept",		&RPCHandler::doLedgerAccept,	   -1, -1, true,	false,	optCurrent	},
@@ -2225,14 +2221,14 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 //		{	"nickname_info",		&RPCHandler::doNicknameInfo,		1,  1, false,	false,	optCurrent	},
 		{	"owner_info",			&RPCHandler::doOwnerInfo,		   -1, -1, false,	false,	optCurrent	},
 		{	"peers",				&RPCHandler::doPeers,			   -1, -1, true,	false,	optNone		},
-		{	"profile",				&RPCHandler::doProfile,				1,  9, false,	false,	optCurrent	},
+//		{	"profile",				&RPCHandler::doProfile,			   -1, -1, false,	false,	optCurrent	},
 		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,	   -1, -1, false,	false,	optCurrent	},
 		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
-		{	"submit",				&RPCHandler::doSubmit,			   -1,  -1, false,	false,	optCurrent	},
+		{	"submit",				&RPCHandler::doSubmit,			   -1, -1, false,	false,	optCurrent	},
 		{	"server_info",			&RPCHandler::doServerInfo,		   -1, -1, true,	false,	optNone		},
 		{	"stop",					&RPCHandler::doStop,			   -1, -1, true,	false,	optNone		},
-		{	"transaction_entry",	&RPCHandler::doTransactionEntry,   -1,  -1, false,	false,	optCurrent	},
-		{	"tx",					&RPCHandler::doTx,					1,  1, true,	false,	optNone		},
+		{	"transaction_entry",	&RPCHandler::doTransactionEntry,   -1, -1, false,	false,	optCurrent	},
+		{	"tx",					&RPCHandler::doTx,				   -1, -1, true,	false,	optNone		},
 		{	"tx_history",			&RPCHandler::doTxHistory,			1,  1, false,	false,	optNone		},
 
 		{	"unl_add",				&RPCHandler::doUnlAdd,			   -1, -1, true,	false,	optNone		},

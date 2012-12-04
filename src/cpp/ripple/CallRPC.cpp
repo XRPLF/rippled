@@ -257,6 +257,15 @@ Json::Value RPCParser::parseSubmit(const Json::Value& jvParams)
 	return rpcError(rpcINVALID_PARAMS);
 }
 
+// tx <transaction_id>
+Json::Value RPCParser::parseTx(const Json::Value& jvParams)
+{
+	Json::Value	jvRequest;
+
+	jvRequest["transaction"]	= jvParams[0u].asString();
+		return jvRequest;
+}
+
 // unl_add <domain>|<node_public> [<comment>]
 Json::Value RPCParser::parseUnlAdd(const Json::Value& jvParams)
 {
@@ -387,15 +396,15 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 //		{	"nickname_info",		&RPCParser::parseNicknameInfo,			1,  1	},
 		{	"owner_info",			&RPCParser::parseOwnerInfo,				1,  2	},
 		{	"peers",				&RPCParser::parseAsIs,					0,  0	},
-//		{	"profile",				&RPCParser::parseProfile,				1,  9, false,	false,	optCurrent	},
+//		{	"profile",				&RPCParser::parseProfile,				1,  9	},
 		{	"ripple_lines_get",		&RPCParser::parseRippleLinesGet,		1,  2	},
 //		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	   -1, -1	},
 		{	"submit",				&RPCParser::parseSubmit,				2,  2	},
 		{	"server_info",			&RPCParser::parseAsIs,					0,  0	},
 		{	"stop",					&RPCParser::parseAsIs,					0,  0	},
 //		{	"transaction_entry",	&RPCParser::parseTransactionEntry,	   -1,  -1	},
-//		{	"tx",					&RPCParser::parseTx,					1,  1, true,	false,	optNone		},
-//		{	"tx_history",			&RPCParser::parseTxHistory,			1,  1, false,	false,	optNone		},
+		{	"tx",					&RPCParser::parseTx,					1,  1	},
+//		{	"tx_history",			&RPCParser::parseTxHistory,				1,  1	},
 //
 		{	"unl_add",				&RPCParser::parseUnlAdd,				1,  2	},
 		{	"unl_delete",			&RPCParser::parseUnlDelete,				1,  1	},
