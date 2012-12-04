@@ -101,7 +101,7 @@ bool ConnectionPool::savePeer(const std::string& strIp, int iPort, char code)
 	}
 	else
 	{
-		std::cout << "Error saving Peer" << std::endl;
+		std::cerr << "Error saving Peer" << std::endl;
 	}
 
 	if (bNew)

@@ -282,7 +282,7 @@ void Application::loadOldLedger()
 
 		if (!lastLedger)
 		{
-			std::cout << "No Ledger found?" << std::endl;
+			cLog(lsFATAL) << "No Ledger found?" << std::endl;
 			exit(-1);
 		}
 		lastLedger->setClosed();

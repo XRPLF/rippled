@@ -1,5 +1,5 @@
-#ifndef RPCHANDLER__H
-#define RPCHANDLER__H
+#ifndef __RPCHANDLER__
+#define __RPCHANDLER__
 
 // used by the RPCServer or WSDoor to carry out these RPC commands
 class NetworkOPs;
@@ -10,7 +10,7 @@ class RPCHandler
 	InfoSub*		mInfoSub;
 	int				mRole;
 
-	typedef Json::Value (RPCHandler::*doFuncPtr)(const Json::Value& params);
+	typedef Json::Value (RPCHandler::*doFuncPtr)(Json::Value params);
 	enum {
 		optNone		= 0,
 		optNetwork	= 1,				// Need network
@@ -21,10 +21,10 @@ class RPCHandler
 	// Utilities
 	void addSubmitPath(Json::Value& txJSON);
 	boost::unordered_set<RippleAddress> parseAccountIds(const Json::Value& jvArray);
-	int getParamCount(const Json::Value& params);
+	int getParamCount(Json::Value params);
 	bool extractString(std::string& param, const Json::Value& params, int index);
 
-	Json::Value lookupLedger(const Json::Value& jvRequest, Ledger::pointer& lpLedger);
+	Json::Value lookupLedger(Json::Value jvRequest, Ledger::pointer& lpLedger);
 
 	Json::Value getMasterGenerator(const uint256& uLedger, const RippleAddress& naRegularSeed, RippleAddress& naMasterGenerator);
 	Json::Value authorize(const uint256& uLedger, const RippleAddress& naRegularSeed, const RippleAddress& naSrcAccountID,
@@ -35,142 +35,78 @@ class RPCHandler
 
 	Json::Value accountFromString(const uint256& uLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
 
-	Json::Value doAcceptLedger(const Json::Value& params);
+	Json::Value doAcceptLedger(Json::Value jvRequest);
 
-	Json::Value doAccountInfo(const Json::Value& params);
-	Json::Value doAccountTransactions(const Json::Value& params);
-	Json::Value doConnect(const Json::Value& params);
-	Json::Value doDataDelete(const Json::Value& params);
-	Json::Value doDataFetch(const Json::Value& params);
-	Json::Value doDataStore(const Json::Value& params);
-	Json::Value doGetCounts(const Json::Value& params);
-	Json::Value doLedger(const Json::Value& params);
-	Json::Value doLogRotate(const Json::Value& params);
-	Json::Value doNicknameInfo(const Json::Value& params);
+	Json::Value doAccountInfo(Json::Value params);
+	Json::Value doAccountTransactions(Json::Value params);
+	Json::Value doConnect(Json::Value params);
+	Json::Value doDataDelete(Json::Value params);
+	Json::Value doDataFetch(Json::Value params);
+	Json::Value doDataStore(Json::Value params);
+	Json::Value doGetCounts(Json::Value params);
+	Json::Value doLedger(Json::Value params);
+	Json::Value doLogRotate(Json::Value params);
+	Json::Value doNicknameInfo(Json::Value params);
 
-	Json::Value doOwnerInfo(const Json::Value& params);
+	Json::Value doOwnerInfo(Json::Value params);
 
-	Json::Value doProfile(const Json::Value& params);
-	Json::Value doPeers(const Json::Value& params);
+	Json::Value doProfile(Json::Value params);
+	Json::Value doPeers(Json::Value params);
 
-	Json::Value doRippleLinesGet(const Json::Value& params);
-	Json::Value doRipplePathFind(const Json::Value& jvRequest);
-	Json::Value doServerInfo(const Json::Value& params);
-	Json::Value doSessionClose(const Json::Value& params);
-	Json::Value doSessionOpen(const Json::Value& params);
-	Json::Value doLogLevel(const Json::Value& params);
-	Json::Value doStop(const Json::Value& params);
-	Json::Value doSubmit(const Json::Value& params);
-	Json::Value doSubmitJson(const Json::Value& jvRequest);
-	Json::Value doTx(const Json::Value& params);
-	Json::Value doTxHistory(const Json::Value& params);
+	Json::Value doRippleLinesGet(Json::Value params);
+	Json::Value doRipplePathFind(Json::Value jvRequest);
+	Json::Value doServerInfo(Json::Value params);
+	Json::Value doSessionClose(Json::Value params);
+	Json::Value doSessionOpen(Json::Value params);
+	Json::Value doLogLevel(Json::Value params);
+	Json::Value doStop(Json::Value params);
+	Json::Value doSubmit(Json::Value params);
+	Json::Value doTx(Json::Value params);
+	Json::Value doTxHistory(Json::Value params);
 
 
-	Json::Value doUnlAdd(const Json::Value& params);
-	Json::Value doUnlDelete(const Json::Value& params);
-	Json::Value doUnlFetch(const Json::Value& params);
-	Json::Value doUnlList(const Json::Value& params);
-	Json::Value doUnlLoad(const Json::Value& params);
-	Json::Value doUnlNetwork(const Json::Value& params);
-	Json::Value doUnlReset(const Json::Value& params);
-	Json::Value doUnlScore(const Json::Value& params);
+	Json::Value doUnlAdd(Json::Value params);
+	Json::Value doUnlDelete(Json::Value params);
+	Json::Value doUnlFetch(Json::Value params);
+	Json::Value doUnlList(Json::Value params);
+	Json::Value doUnlLoad(Json::Value params);
+	Json::Value doUnlNetwork(Json::Value params);
+	Json::Value doUnlReset(Json::Value params);
+	Json::Value doUnlScore(Json::Value params);
 
-	Json::Value doValidationCreate(const Json::Value& params);
-	Json::Value doValidationSeed(const Json::Value& params);
+	Json::Value doValidationCreate(Json::Value params);
+	Json::Value doValidationSeed(Json::Value params);
 
-	Json::Value doWalletAccounts(const Json::Value& params);
-	Json::Value doWalletLock(const Json::Value& params);
-	Json::Value doWalletPropose(const Json::Value& params);
-	Json::Value doWalletSeed(const Json::Value& params);
-	Json::Value doWalletUnlock(const Json::Value& params);
-	Json::Value doWalletVerify(const Json::Value& params);
+	Json::Value doWalletAccounts(Json::Value params);
+	Json::Value doWalletLock(Json::Value params);
+	Json::Value doWalletPropose(Json::Value params);
+	Json::Value doWalletSeed(Json::Value params);
+	Json::Value doWalletUnlock(Json::Value params);
+	Json::Value doWalletVerify(Json::Value params);
 
-	Json::Value doLogin(const Json::Value& params);
+	Json::Value doLogin(Json::Value params);
 
-	Json::Value doLedgerAccept(const Json::Value& params);
-	Json::Value doLedgerClosed(const Json::Value& params);
-	Json::Value doLedgerCurrent(const Json::Value& params);
-	Json::Value doLedgerEntry(const Json::Value& params);
-	Json::Value doLedgerHeader(const Json::Value& params);
-	Json::Value doTransactionEntry(const Json::Value& params);
+	Json::Value doLedgerAccept(Json::Value params);
+	Json::Value doLedgerClosed(Json::Value params);
+	Json::Value doLedgerCurrent(Json::Value params);
+	Json::Value doLedgerEntry(Json::Value params);
+	Json::Value doLedgerHeader(Json::Value params);
+	Json::Value doTransactionEntry(Json::Value params);
 
-	Json::Value doSubscribe(const Json::Value& params);
-	Json::Value doUnsubscribe(const Json::Value& params);
+	Json::Value doSubscribe(Json::Value params);
+	Json::Value doUnsubscribe(Json::Value params);
 
 
 public:
 
-	enum {
-		rpcSUCCESS,
-
-		// Misc failure
-		rpcLOAD_FAILED,
-		rpcNO_PERMISSION,
-		rpcNO_EVENTS,
-		rpcNOT_STANDALONE,
-
-		// Networking
-		rpcNO_CLOSED,
-		rpcNO_CURRENT,
-		rpcNO_NETWORK,
-
-		// Ledger state
-		rpcACT_EXISTS,
-		rpcACT_NOT_FOUND,
-		rpcINSUF_FUNDS,
-		rpcLGR_NOT_FOUND,
-		rpcNICKNAME_MISSING,
-		rpcNO_ACCOUNT,
-		rpcNO_PATH,
-		rpcPASSWD_CHANGED,
-		rpcSRC_MISSING,
-		rpcSRC_UNCLAIMED,
-		rpcTXN_NOT_FOUND,
-		rpcWRONG_SEED,
-
-		// Malformed command
-		rpcINVALID_PARAMS,
-		rpcUNKNOWN_COMMAND,
-
-		// Bad parameter
-		rpcACT_MALFORMED,
-		rpcQUALITY_MALFORMED,
-		rpcBAD_SEED,
-		rpcDST_ACT_MALFORMED,
-		rpcDST_ACT_MISSING,
-		rpcDST_AMT_MALFORMED,
-		rpcGETS_ACT_MALFORMED,
-		rpcGETS_AMT_MALFORMED,
-		rpcHOST_IP_MALFORMED,
-		rpcLGR_IDXS_INVALID,
-		rpcLGR_IDX_MALFORMED,
-		rpcNICKNAME_MALFORMED,
-		rpcNICKNAME_PERM,
-		rpcPAYS_ACT_MALFORMED,
-		rpcPAYS_AMT_MALFORMED,
-		rpcPORT_MALFORMED,
-		rpcPUBLIC_MALFORMED,
-		rpcSRC_ACT_MALFORMED,
-		rpcSRC_ACT_MISSING,
-		rpcSRC_AMT_MALFORMED,
-
-		// Internal error (should never happen)
-		rpcINTERNAL,		// Generic internal error.
-		rpcFAIL_GEN_DECRPYT,
-		rpcNOT_IMPL,
-		rpcNO_GEN_DECRPYT,
-	};
 
 	enum { GUEST, USER, ADMIN };
 
 	RPCHandler(NetworkOPs* netOps);
 	RPCHandler(NetworkOPs* netOps, InfoSub* infoSub);
 
-	Json::Value doCommand(const std::string& command, Json::Value& params, int role);
-	Json::Value rpcError(int iError);
-
-	Json::Value handleJSONSubmit(const Json::Value& jvRequest);
-
+	Json::Value doCommand(Json::Value& jvRequest, int role);
+	Json::Value doRpcCommand(const std::string& strCommand, Json::Value& jvParams, int iRole);
 };
 
 #endif
