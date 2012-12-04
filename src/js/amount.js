@@ -513,6 +513,7 @@ Amount.prototype.to_human = function (opts)
   }
 
   var formatted = '';
+  if (opts.signed && this._is_negative) formatted += "- ";
   formatted += int_part.length ? int_part : '0';
   formatted += fraction_part.length ? '.'+fraction_part : '';
 

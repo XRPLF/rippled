@@ -54,7 +54,7 @@ void PeerDoor::handleConnect(Peer::pointer new_connection,
 	{
 		new_connection->connected(error);
 	}
-	else cout << "Error: " << error;
+	else cerr << "Error: " << error;
 
 	startListening();
 }

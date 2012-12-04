@@ -46,6 +46,8 @@ class Config
 {
 public:
 	// Configuration parameters
+	bool						QUIET;
+
 	boost::filesystem::path		CONFIG_FILE;
 	boost::filesystem::path		CONFIG_DIR;
 	boost::filesystem::path		DATA_DIR;
@@ -113,7 +115,7 @@ public:
 	// Client behavior
 	int							ACCOUNT_PROBE_MAX;		// How far to scan for accounts.
 
-	void setup(const std::string& strConf);
+	void setup(const std::string& strConf, bool bQuiet);
 	void load();
 };
 

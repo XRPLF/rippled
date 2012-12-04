@@ -548,13 +548,18 @@ Remote.prototype.request_server_info = function () {
   return new Request(this, 'server_info');
 };
 
-Remote.prototype.request_ledger = function (params) {
-  // XXX Does this require the server to be trusted?
+// XXX This is a bad command. Some varients don't scale.
+// XXX Require the server to be trusted.
+Remote.prototype.request_ledger = function (ledger, full) {
   //assert(this.trusted);
 
   var request = new Request(this, 'ledger');
 
-  request.message.params  = params;
+  if (ledger)
+    request.message.ledger  = ledger;
+
+  if (full)
+    request.message.full    = true;
 
   return request;
 };
@@ -693,38 +698,45 @@ Remote.prototype.request_transaction_entry = function (hash) {
     .tx_hash(hash);
 };
 
-Remote.prototype.request_ripple_lines_get = function (accountID) {
+Remote.prototype.request_ripple_lines_get = function (accountID, index) {
   // XXX Does this require the server to be trusted?
   //assert(this.trusted);
 
   var request = new Request(this, 'ripple_lines_get');
 
-  // XXX Convert API call to JSON
-  request.message.params = [accountID];
+  request.message.account = accountID;
+
+  if (index)
+    request.message.index   = index;
 
   return request;
 };
 
-Remote.prototype.request_wallet_accounts = function (key) {
-  // XXX Does this require the server to be trusted?
-  //assert(this.trusted);
+Remote.prototype.request_wallet_accounts = function (seed) {
+  assert(this.trusted);     // Don't send secrets.
 
   var request = new Request(this, 'wallet_accounts');
 
-  // XXX Convert API call to JSON
-  request.message.params = [key];
+  request.message.seed = seed;
 
   return request;
 };
 
-Remote.prototype.request_account_tx = function (accountID, minLedger, maxLedger) {
+Remote.prototype.request_account_tx = function (accountID, ledger_min, ledger_max) {
   // XXX Does this require the server to be trusted?
   //assert(this.trusted);
 
   var request = new Request(this, 'account_tx');
 
-  // XXX Convert API call to JSON
-  request.message.params = [accountID, minLedger, maxLedger];
+  request.message.account     = accountID;
+
+  if (ledger_min === ledger_max) {
+    request.message.ledger      = ledger_min;
+  }
+  else {
+    request.message.ledger_min  = ledger_min;
+    request.message.ledger_max  = ledger_max;
+  }
 
   return request;
 };
@@ -773,7 +785,7 @@ Remote.prototype.submit = function (transaction) {
     else {
       // Convert the transaction into a request and submit it.
 
-      (new Request(this, 'submit_json'))
+      (new Request(this, 'submit'))
         .build_path(transaction._build_path)
         .tx_json(transaction.tx_json)
         .secret(transaction._secret)
@@ -803,7 +815,7 @@ Remote.prototype._server_subscribe = function () {
           self._ledger_hash           = message.ledger_hash;
           self._ledger_current_index  = message.ledger_index+1;
 
-          self.emit('ledger_closed', self._ledger_hash, self._ledger_current_index-1);
+          self.emit('ledger_closed', message);
         }
 
         self.emit('subscribed');
@@ -996,18 +1008,22 @@ Remote.prototype.request_unl_list = function () {
   return new Request(this, 'unl_list');
 };
 
-Remote.prototype.request_unl_add = function (addr, note) {
+Remote.prototype.request_unl_add = function (addr, comment) {
   var request = new Request(this, 'unl_add');
 
-  request.message.params = [addr, note];
+  request.message.node    = addr;
+
+  if (comment !== undefined)
+    request.message.comment = note;
 
   return request;
 };
 
-Remote.prototype.request_unl_delete = function (publicKey) {
+// --> node: <domain> | <public_key>
+Remote.prototype.request_unl_delete = function (node) {
   var request = new Request(this, 'unl_delete');
 
-  request.message.params = [publicKey];
+  request.message.node = node;
 
   return request;
 };
@@ -1019,7 +1035,10 @@ Remote.prototype.request_peers = function () {
 Remote.prototype.request_connect = function (ip, port) {
   var request = new Request(this, 'connect');
 
-  request.message.params = [ip, port];
+  request.message.ip = ip;
+
+  if (port)
+    request.message.port = port;
 
   return request;
 };
@@ -1209,8 +1228,10 @@ Transaction.prototype.submit = function (callback) {
     this.submit_index = this.remote._ledger_current_index;
 
     // When a ledger closes, look for the result.
-    var on_ledger_closed = function (ledger_hash, ledger_index) {
-        var stop  = false;
+    var on_ledger_closed = function (message) {
+        var ledger_hash   = message.ledger_hash;
+        var ledger_index  = message.ledger_index;
+        var stop          = false;
 
 // XXX make sure self.hash is available.
         self.remote.request_transaction_entry(self.hash)

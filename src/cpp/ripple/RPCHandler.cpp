@@ -10,6 +10,7 @@
 #include "Wallet.h"
 #include "RippleAddress.h"
 #include "RippleCalc.h"
+#include "RPCErr.h"
 #include "AccountState.h"
 #include "NicknameState.h"
 #include "InstanceCounter.h"
@@ -19,77 +20,6 @@
 #include <openssl/md5.h>
 
 SETUP_LOG();
-
-Json::Value RPCHandler::rpcError(int iError)
-{
-	static struct {
-		int			iError;
-		const char*	pToken;
-		const char*	pMessage;
-	} errorInfoA[] = {
-		{ rpcACT_EXISTS,			"actExists",		"Account already exists."								},
-		{ rpcACT_MALFORMED,			"actMalformed",		"Account malformed."									},
-		{ rpcACT_NOT_FOUND,			"actNotFound",		"Account not found."									},
-		{ rpcBAD_SEED,				"badSeed",			"Disallowed seed."										},
-		{ rpcDST_ACT_MALFORMED,		"dstActMalformed",	"Destination account is malformed."						},
-		{ rpcDST_ACT_MISSING,		"dstActMissing",	"Destination account does not exists."					},
-		{ rpcDST_AMT_MALFORMED,		"dstAmtMalformed",	"Destination amount/currency/issuer is malformed."		},
-		{ rpcFAIL_GEN_DECRPYT,		"failGenDecrypt",	"Failed to decrypt generator."							},
-		{ rpcGETS_ACT_MALFORMED,	"getsActMalformed",	"Gets account malformed."								},
-		{ rpcGETS_AMT_MALFORMED,	"getsAmtMalformed",	"Gets amount malformed."								},
-		{ rpcHOST_IP_MALFORMED,		"hostIpMalformed",	"Host IP is malformed."									},
-		{ rpcINSUF_FUNDS,			"insufFunds",		"Insufficient funds."									},
-		{ rpcINTERNAL,				"internal",			"Internal error."										},
-		{ rpcINVALID_PARAMS,		"invalidParams",	"Invalid parameters."									},
-		{ rpcLGR_IDXS_INVALID,		"lgrIdxsInvalid",	"Ledger indexes invalid."								},
-		{ rpcLGR_IDX_MALFORMED,		"lgrIdxMalformed",	"Ledger index malformed."								},
-		{ rpcLGR_NOT_FOUND,			"lgrNotFound",		"Ledger not found."										},
-		{ rpcNICKNAME_MALFORMED,	"nicknameMalformed","Nickname is malformed."								},
-		{ rpcNICKNAME_MISSING,		"nicknameMissing",	"Nickname does not exist."								},
-		{ rpcNICKNAME_PERM,			"nicknamePerm",		"Account does not control nickname."					},
-		{ rpcNOT_IMPL,				"notImpl",			"Not implemented."										},
-		{ rpcNO_ACCOUNT,			"noAccount",		"No such account."										},
-		{ rpcNO_CLOSED,				"noClosed",			"Closed ledger is unavailable."							},
-		{ rpcNO_CURRENT,			"noCurrent",		"Current ledger is unavailable."						},
-		{ rpcNO_EVENTS,				"noEvents",			"Current transport does not support events."			},
-		{ rpcNO_GEN_DECRPYT,		"noGenDectypt",		"Password failed to decrypt master public generator."	},
-		{ rpcNO_NETWORK,			"noNetwork",		"Network not available."								},
-		{ rpcNO_PATH,				"noPath",			"Unable to find a ripple path."							},
-		{ rpcNO_PERMISSION,			"noPermission",		"You don't have permission for this command."			},
-		{ rpcNOT_STANDALONE,		"notStandAlone",	"Operation valid in debug mode only."					},
-		{ rpcPASSWD_CHANGED,		"passwdChanged",	"Wrong key, password changed."							},
-		{ rpcPAYS_ACT_MALFORMED,	"paysActMalformed",	"Pays account malformed."								},
-		{ rpcPAYS_AMT_MALFORMED,	"paysAmtMalformed",	"Pays amount malformed."								},
-		{ rpcPORT_MALFORMED,		"portMalformed",	"Port is malformed."									},
-		{ rpcPUBLIC_MALFORMED,		"publicMalformed",	"Public key is malformed."								},
-		{ rpcQUALITY_MALFORMED,		"qualityMalformed",	"Quality malformed."									},
-		{ rpcSRC_ACT_MALFORMED,		"srcActMalformed",	"Source account is malformed."							},
-		{ rpcSRC_ACT_MISSING,		"srcActMissing",	"Source account does not exist."						},
-		{ rpcSRC_AMT_MALFORMED,		"srcAmtMalformed",	"Source amount/currency/issuer is malformed."			},
-		{ rpcSRC_UNCLAIMED,			"srcUnclaimed",		"Source account is not claimed."						},
-		{ rpcSUCCESS,				"success",			"Success."												},
-		{ rpcTXN_NOT_FOUND,			"txnNotFound",		"Transaction not found."								},
-		{ rpcUNKNOWN_COMMAND,		"unknownCmd",		"Unknown command."										},
-		{ rpcWRONG_SEED,			"wrongSeed",		"The regular key does not point as the master key."		},
-	};
-
-	int		i;
-
-	for (i=NUMBER(errorInfoA); i-- && errorInfoA[i].iError != iError;)
-		;
-
-	Json::Value	jsonResult(Json::objectValue);
-
-	jsonResult["error"]			= i >= 0 ? errorInfoA[i].pToken : lexical_cast_i(iError);
-	jsonResult["error_message"]	= i >= 0 ? errorInfoA[i].pMessage : lexical_cast_i(iError);
-	jsonResult["error_code"]	= iError;
-	if (i >= 0)
-		std::cerr << "rpcError: "
-		<< errorInfoA[i].pToken << ": " << errorInfoA[i].pMessage << std::endl;
-
-	return jsonResult;
-}
-
 
 RPCHandler::RPCHandler(NetworkOPs* netOps)
 {
@@ -103,7 +33,7 @@ RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub* infoSub)
 	mInfoSub=infoSub;
 }
 
-int RPCHandler::getParamCount(const Json::Value& params)
+int RPCHandler::getParamCount(Json::Value params)
 { // If non-array, only counts strings
 	if (params.isNull()) return 0;
 	if (params.isArray()) return params.size();
@@ -325,26 +255,32 @@ Json::Value RPCHandler::accountFromString(const uint256& uLedger, RippleAddress&
 	return Json::Value(Json::objectValue);
 }
 
-Json::Value RPCHandler::doAcceptLedger(const Json::Value &params)
+Json::Value RPCHandler::doAcceptLedger(Json::Value jvRequest)
 {
 	if (!theConfig.RUN_STANDALONE)
 		return rpcError(rpcNOT_STANDALONE);
 
-	Json::Value obj(Json::objectValue);
-	obj["newLedger"] = theApp->getOPs().acceptLedger();
-	return obj;
+	Json::Value jvResult(Json::objectValue);
+
+	jvResult["newLedger"] = theApp->getOPs().acceptLedger();
+
+	return jvResult;
 }
 
-// account_info <account>|<nickname>|<account_public_key>
-// account_info <seed>|<pass_phrase>|<key> [<index>]
-Json::Value RPCHandler::doAccountInfo(const Json::Value &params)
+// { 'ident' : _indent_, 'index' : _index_ // optional }
+Json::Value RPCHandler::doAccountInfo(Json::Value jvRequest)
 {
-	std::string		strIdent	= params[0u].asString();
+	// cLog(lsDEBUG) << "doAccountInfo: " << jvRequest;
+
+	if (!jvRequest.isMember("ident"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	std::string		strIdent	= jvRequest["ident"].asString();
 	bool			bIndex;
-	int				iIndex		= 2 == params.size() ? lexical_cast_s<int>(params[1u].asString()) : 0;
+	int				iIndex		= jvRequest.isMember("index") ? jvRequest["index"].asUInt() : 0;
 	RippleAddress	naAccount;
 
-	Json::Value		ret;
+	Json::Value		jvResult;
 
 	// Get info on account.
 
@@ -359,7 +295,7 @@ Json::Value RPCHandler::doAccountInfo(const Json::Value &params)
 			asAccepted->addJson(jAccepted);
 	}
 
-	ret["accepted"]	= jAccepted;
+	jvResult["accepted"]	= jAccepted;
 
 	Json::Value		jCurrent	= accountFromString(uint256(0), naAccount, bIndex, strIdent, iIndex);
 
@@ -371,46 +307,32 @@ Json::Value RPCHandler::doAccountInfo(const Json::Value &params)
 			asCurrent->addJson(jCurrent);
 	}
 
-	ret["current"]	= jCurrent;
+	jvResult["current"]	= jCurrent;
 
 #if 0
 	if (!jAccepted && !asCurrent)
 	{
-		ret["account"]	= naAccount.humanAccountID();
-		ret["status"]	= "NotFound";
+		jvResult["account"]	= naAccount.humanAccountID();
+		jvResult["status"]	= "NotFound";
 		if (bIndex)
-			ret["index"]	= iIndex;
+			jvResult["index"]	= iIndex;
 	}
 #endif
-	return ret;
+	return jvResult;
 }
 
-
-
-
-Json::Value RPCHandler::doConnect(const Json::Value& params)
+// {
+//   ip: <string>,
+//   port: <number>
+// }
+// XXX Might allow domain for manual connections.
+Json::Value RPCHandler::doConnect(Json::Value jvParams)
 {
 	if (theConfig.RUN_STANDALONE)
 		return "cannot connect in standalone mode";
 
-	// connect <ip> [port]
-	std::string strIp;
-	int			iPort	= -1;
-
-	// XXX Might allow domain for manual connections.
-	if (!extractString(strIp, params, 0))
-		return rpcError(rpcHOST_IP_MALFORMED);
-
-	if (params.size() == 2)
-	{
-		std::string strPort;
-
-		// YYY Should make an extract int.
-		if (!extractString(strPort, params, 1))
-			return rpcError(rpcPORT_MALFORMED);
-
-		iPort	= lexical_cast_s<int>(strPort);
-	}
+	std::string strIp	= jvParams["ip"].asString();
+	int			iPort	= jvParams.isMember("port") ? jvParams["port"].asInt() : -1;
 
 	// XXX Validate legal IP and port
 	theApp->getConnectionPool().connectTo(strIp, iPort);
@@ -419,7 +341,7 @@ Json::Value RPCHandler::doConnect(const Json::Value& params)
 }
 
 // data_delete <key>
-Json::Value RPCHandler::doDataDelete(const Json::Value& params)
+Json::Value RPCHandler::doDataDelete(Json::Value params)
 {
 	std::string	strKey = params[0u].asString();
 
@@ -438,7 +360,7 @@ Json::Value RPCHandler::doDataDelete(const Json::Value& params)
 }
 
 // data_fetch <key>
-Json::Value RPCHandler::doDataFetch(const Json::Value& params)
+Json::Value RPCHandler::doDataFetch(Json::Value params)
 {
 	std::string	strKey = params[0u].asString();
 	std::string	strValue;
@@ -453,7 +375,7 @@ Json::Value RPCHandler::doDataFetch(const Json::Value& params)
 }
 
 // data_store <key> <value>
-Json::Value RPCHandler::doDataStore(const Json::Value& params)
+Json::Value RPCHandler::doDataStore(Json::Value params)
 {
 	std::string	strKey		= params[0u].asString();
 	std::string	strValue	= params[1u].asString();
@@ -475,7 +397,7 @@ Json::Value RPCHandler::doDataStore(const Json::Value& params)
 
 // nickname_info <nickname>
 // Note: Nicknames are not automatically looked up by commands as they are advisory and can be changed.
-Json::Value RPCHandler::doNicknameInfo(const Json::Value& params)
+Json::Value RPCHandler::doNicknameInfo(Json::Value params)
 {
 	std::string	strNickname	= params[0u].asString();
 	boost::trim(strNickname);
@@ -503,7 +425,7 @@ Json::Value RPCHandler::doNicknameInfo(const Json::Value& params)
 
 // owner_info <account>|<nickname>|<account_public_key>
 // owner_info <seed>|<pass_phrase>|<key> [<index>]
-Json::Value RPCHandler::doOwnerInfo(const Json::Value& params)
+Json::Value RPCHandler::doOwnerInfo(Json::Value params)
 {
 	std::string		strIdent	= params[0u].asString();
 	bool			bIndex;
@@ -526,8 +448,7 @@ Json::Value RPCHandler::doOwnerInfo(const Json::Value& params)
 	return ret;
 }
 
-
-Json::Value RPCHandler::doPeers(const Json::Value& params)
+Json::Value RPCHandler::doPeers(Json::Value)
 {
 	Json::Value obj(Json::objectValue);
 
@@ -541,7 +462,7 @@ Json::Value RPCHandler::doPeers(const Json::Value& params)
 // issuer is the offering account
 // --> submit: 'submit|true|false': defaults to false
 // Prior to running allow each to have a credit line of what they will be getting from the other account.
-Json::Value RPCHandler::doProfile(const Json::Value &params)
+Json::Value RPCHandler::doProfile(Json::Value params)
 {
 	/* need to fix now that sharedOfferCreate is gone
 	int				iArgs	= params.size();
@@ -628,42 +549,42 @@ Json::Value RPCHandler::doProfile(const Json::Value &params)
 	return obj;
 }
 
-// ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]
-Json::Value RPCHandler::doRippleLinesGet(const Json::Value &params)
+// {
+//   account: <account>|<nickname>|<account_public_key> [<index>]
+//   index: <number>		// optional, defaults to 0.
+// }
+Json::Value RPCHandler::doRippleLinesGet(Json::Value jvRequest)
 {
-	//	uint256			uAccepted	= mNetOps->getClosedLedgerHash();
+	std::string		strIdent	= jvRequest["account"].asString();
+	bool			bIndex		= jvRequest.isMember("index");
+	int				iIndex		= bIndex ? jvRequest["index"].asUInt() : 0;
 
-	std::string		strIdent	= params[0u].asString();
-	bool			bIndex;
-	int				iIndex		= 2 == params.size() ? lexical_cast_s<int>(params[1u].asString()) : 0;
+	RippleAddress	raAccount;
 
-	RippleAddress	naAccount;
+	Json::Value jvResult;
 
-	Json::Value ret;
+	jvResult	= accountFromString(uint256(0), raAccount, bIndex, strIdent, iIndex);
 
-	ret	= accountFromString(uint256(0), naAccount, bIndex, strIdent, iIndex);
-
-	if (!ret.empty())
-		return ret;
+	if (!jvResult.empty())
+		return jvResult;
 
 	// Get info on account.
-	ret	= Json::Value(Json::objectValue);
 
-	ret["account"]	= naAccount.humanAccountID();
+	jvResult["account"]	= raAccount.humanAccountID();
 	if (bIndex)
-		ret["index"]	= iIndex;
+		jvResult["index"]	= iIndex;
 
-	AccountState::pointer	as		= mNetOps->getAccountState(uint256(0), naAccount);
+	AccountState::pointer	as		= mNetOps->getAccountState(uint256(0), raAccount);
 	if (as)
 	{
 		Json::Value	jsonLines(Json::arrayValue);
 
-		ret["account"]	= naAccount.humanAccountID();
+		jvResult["account"]	= raAccount.humanAccountID();
 
 		// XXX This is wrong, we do access the current ledger and do need to worry about changes.
 		// We access a committed ledger and need not worry about changes.
 
-		RippleLines rippleLines(naAccount.getAccountID());
+		RippleLines rippleLines(raAccount.getAccountID());
 		BOOST_FOREACH(RippleState::pointer line, rippleLines.getLines())
 		{
 			STAmount		saBalance	= line->getBalance();
@@ -686,14 +607,14 @@ Json::Value RPCHandler::doRippleLinesGet(const Json::Value &params)
 
 			jsonLines.append(jPeer);
 		}
-		ret["lines"]	= jsonLines;
+		jvResult["lines"]	= jsonLines;
 	}
 	else
 	{
-		ret	= rpcError(rpcACT_NOT_FOUND);
+		jvResult	= rpcError(rpcACT_NOT_FOUND);
 	}
 
-	return ret;
+	return jvResult;
 }
 
 // TODO:
@@ -702,7 +623,7 @@ Json::Value RPCHandler::doRippleLinesGet(const Json::Value &params)
 //   - Allows clients to verify path exists.
 // - Return canonicalized path.
 //   - From a trusted server, allows clients to use path without manipulation.
-Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
+Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 {
 	Json::Value		jvResult(Json::objectValue);
 	RippleAddress	raSrc;
@@ -869,39 +790,21 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 	return jvResult;
 }
 
-// submit any transaction to the network
-// submit private_key json
-Json::Value RPCHandler::doSubmit(const Json::Value& params)
-{
-	Json::Value		txJSON;
-	Json::Reader	reader;
-
-	//std::string hello=params[1u].asString();
-
-	if (reader.parse(params[1u].asString(), txJSON))
-	{
-		Json::Value	jvRequest;
-
-		jvRequest["secret"]		= params[0u].asString();
-		jvRequest["tx_json"]	= txJSON;
-
-		return handleJSONSubmit(jvRequest);
-	}
-
-	return rpcError(rpcINVALID_PARAMS);
-}
-
-Json::Value RPCHandler::doSubmitJson(const Json::Value& jvRequest)
-{
-	return handleJSONSubmit(jvRequest);
-}
-
-
-Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
+// {
+//   tx_json: <object>,
+//   secret: <secret>
+// }
+Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 {
 	Json::Value		jvResult;
 	RippleAddress	naSeed;
 	RippleAddress	raSrcAddressID;
+
+	if (!jvRequest.isMember("secret") || !jvRequest.isMember("tx_json"))
+	{
+		return rpcError(rpcINVALID_PARAMS);
+	}
+
 	Json::Value		txJSON		= jvRequest["tx_json"];
 
 
@@ -1144,7 +1047,7 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 	}
 }
 
-Json::Value RPCHandler::doServerInfo(const Json::Value& params)
+Json::Value RPCHandler::doServerInfo(Json::Value)
 {
 	Json::Value ret(Json::objectValue);
 
@@ -1153,7 +1056,7 @@ Json::Value RPCHandler::doServerInfo(const Json::Value& params)
 	return ret;
 }
 
-Json::Value RPCHandler::doTxHistory(const Json::Value& params)
+Json::Value RPCHandler::doTxHistory(Json::Value params)
 {
 	if (params.size() == 1)
 	{
@@ -1186,7 +1089,7 @@ Json::Value RPCHandler::doTxHistory(const Json::Value& params)
 	return rpcError(rpcSRC_ACT_MALFORMED);
 }
 
-Json::Value RPCHandler::doTx(const Json::Value& params)
+Json::Value RPCHandler::doTx(Json::Value params)
 {
 	// tx <txID>
 	// tx <account>
@@ -1212,7 +1115,7 @@ Json::Value RPCHandler::doTx(const Json::Value& params)
 	return rpcError(rpcNOT_IMPL);
 }
 
-Json::Value RPCHandler::doLedgerClosed(const Json::Value& params)
+Json::Value RPCHandler::doLedgerClosed(Json::Value)
 {
 	Json::Value jvResult;
 	uint256	uLedger	= mNetOps->getClosedLedgerHash();
@@ -1223,79 +1126,87 @@ Json::Value RPCHandler::doLedgerClosed(const Json::Value& params)
 	return jvResult;
 }
 
-Json::Value RPCHandler::doLedgerCurrent(const Json::Value& params)
+Json::Value RPCHandler::doLedgerCurrent(Json::Value)
 {
 	Json::Value jvResult;
 	jvResult["ledger_current_index"]	= mNetOps->getCurrentLedgerID();
 	return jvResult;
 }
 
-// ledger [id|current|lastclosed] [full]
-Json::Value RPCHandler::doLedger(const Json::Value& params)
+// ledger [id|ledger_current|lastclosed] [full]
+// {
+//    ledger: 'ledger_current' | 'ledger_closed' | <hex> | <number>,	// optional
+//    full: true | false	// optional, defaults to false.
+// }
+Json::Value RPCHandler::doLedger(Json::Value jvParams)
 {
-	if (getParamCount(params) == 0)
+	if (!jvParams.isMember("ledger"))
 	{
 		Json::Value ret(Json::objectValue), current(Json::objectValue), closed(Json::objectValue);
+
 		theApp->getLedgerMaster().getCurrentLedger()->addJson(current, 0);
 		theApp->getLedgerMaster().getClosedLedger()->addJson(closed, 0);
+
 		ret["open"] = current;
 		ret["closed"] = closed;
+
 		return ret;
 	}
 
-	std::string param;
-	if (!extractString(param, params, 0))
-	{
-		return "bad params";
-	}
-
+	std::string		strLedger	= jvParams["ledger"].asString();
 	Ledger::pointer ledger;
-	if (param == "current")
+
+	if (strLedger == "ledger_current")
 		ledger = theApp->getLedgerMaster().getCurrentLedger();
-	else if ((param == "lastclosed") || (param == "lastaccepted"))
+	else if (strLedger == "ledger_closed")
 		ledger = theApp->getLedgerMaster().getClosedLedger();
-	else if (param.size() > 12)
-		ledger = theApp->getLedgerMaster().getLedgerByHash(uint256(param));
+	else if (strLedger.size() > 12)
+		ledger = theApp->getLedgerMaster().getLedgerByHash(uint256(strLedger));
 	else
-		ledger = theApp->getLedgerMaster().getLedgerBySeq(lexical_cast_s<uint32>(param));
+		ledger = theApp->getLedgerMaster().getLedgerBySeq(jvParams["ledger"].asUInt());
 
 	if (!ledger)
 		return rpcError(rpcLGR_NOT_FOUND);
 
-	bool full = extractString(param, params, 1) && (param == "full");
+	bool full = jvParams.isMember("full") && jvParams["full"].asBool();
+
 	Json::Value ret(Json::objectValue);
+
 	ledger->addJson(ret, full ? LEDGER_JSON_FULL : 0);
+
 	return ret;
 }
 
-// account_tx <account> <minledger> <maxledger>
-// account_tx <account> <ledger>
-Json::Value RPCHandler::doAccountTransactions(const Json::Value& params)
+// { account: <account>, ledger: <integer> }
+// { account: <account>, ledger_min: <integer>, ledger_max: <integer> }
+Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 {
-	std::string param;
-	uint32 minLedger, maxLedger;
+	RippleAddress	raAccount;
+	uint32			minLedger;
+	uint32			maxLedger;
 
-	if (!extractString(param, params, 0))
+	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
 
-	RippleAddress account;
-	if (!account.setAccountID(param))
+	if (!raAccount.setAccountID(jvRequest["account"].asString()))
 		return rpcError(rpcACT_MALFORMED);
 
-	if (!extractString(param, params, 1))
-		return rpcError(rpcLGR_IDX_MALFORMED);
-
-	minLedger = lexical_cast_s<uint32>(param);
-
-	if ((params.size() == 3) && extractString(param, params, 2))
-		maxLedger = lexical_cast_s<uint32>(param);
+	if (jvRequest.isMember("ledger"))
+	{
+		minLedger	= maxLedger	= jvRequest["ledger"].asUInt();
+	}
+	else if (jvRequest.isMember("ledger_min") && jvRequest.isMember("ledger_max"))
+	{
+		minLedger	= jvRequest["ledger_min"].asUInt();
+		maxLedger	= jvRequest["ledger_max"].asUInt();
+	}
 	else
-		maxLedger = minLedger;
+	{
+		return rpcError(rpcLGR_IDX_MALFORMED);
+	}
 
 	if ((maxLedger < minLedger) || (maxLedger == 0))
 	{
-		std::cerr << "minL=" << minLedger << ", maxL=" << maxLedger << std::endl;
-
 		return rpcError(rpcLGR_IDXS_INVALID);
 	}
 
@@ -1303,9 +1214,9 @@ Json::Value RPCHandler::doAccountTransactions(const Json::Value& params)
 	try
 	{
 #endif
-		std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(account, minLedger, maxLedger);
+		std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(raAccount, minLedger, maxLedger);
 		Json::Value ret(Json::objectValue);
-		ret["account"] = account.humanAccountID();
+		ret["account"] = raAccount.humanAccountID();
 		Json::Value ledgers(Json::arrayValue);
 
 		//		uint32 currentLedger = 0;
@@ -1326,33 +1237,11 @@ Json::Value RPCHandler::doAccountTransactions(const Json::Value& params)
 #endif
 }
 
-// unl_add <domain>|<node_public> [<comment>]
-Json::Value RPCHandler::doUnlAdd(const Json::Value& params)
-{
-	std::string	strNode		= params[0u].asString();
-	std::string strComment	= (params.size() == 2) ? params[1u].asString() : "";
-
-	RippleAddress	naNodePublic;
-
-	if (naNodePublic.setNodePublic(strNode))
-	{
-		theApp->getUNL().nodeAddPublic(naNodePublic, UniqueNodeList::vsManual, strComment);
-
-		return "adding node by public key";
-	}
-	else
-	{
-		theApp->getUNL().nodeAddDomain(strNode, UniqueNodeList::vsManual, strComment);
-
-		return "adding node by domain";
-	}
-}
-
 // validation_create [<pass_phrase>|<seed>|<seed_key>]
 //
 // NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
 // shell history file (e.g. .bash_history) and it may be leaked via the process status command (i.e. ps).
-Json::Value RPCHandler::doValidationCreate(const Json::Value& params) {
+Json::Value RPCHandler::doValidationCreate(Json::Value params) {
 	RippleAddress	naSeed;
 	Json::Value		obj(Json::objectValue);
 
@@ -1378,7 +1267,7 @@ Json::Value RPCHandler::doValidationCreate(const Json::Value& params) {
 //
 // NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
 // shell history file (e.g. .bash_history) and it may be leaked via the process status command (i.e. ps).
-Json::Value RPCHandler::doValidationSeed(const Json::Value& params) {
+Json::Value RPCHandler::doValidationSeed(Json::Value params) {
 	Json::Value obj(Json::objectValue);
 
 	if (params.empty())
@@ -1438,12 +1327,14 @@ Json::Value RPCHandler::accounts(const uint256& uLedger, const RippleAddress& na
 	return jsonAccounts;
 }
 
-// wallet_accounts <seed>
-Json::Value RPCHandler::doWalletAccounts(const Json::Value& params)
+// {
+//   seed: <string>
+// }
+Json::Value RPCHandler::doWalletAccounts(Json::Value jvParams)
 {
 	RippleAddress	naSeed;
 
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
+	if (!jvParams.isMember("seed") || !naSeed.setSeedGeneric(jvParams["seed"].asString()))
 	{
 		return rpcError(rpcBAD_SEED);
 	}
@@ -1476,143 +1367,14 @@ Json::Value RPCHandler::doWalletAccounts(const Json::Value& params)
 	}
 }
 
-Json::Value RPCHandler::doLogRotate(const Json::Value& params)
+Json::Value RPCHandler::doLogRotate(Json::Value)
 {
 	return Log::rotateLog();
 }
 
-Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& params, int role)
-{
-	cLog(lsTRACE) << "RPC:" << command;
-	cLog(lsTRACE) << "RPC params:" << params;
-
-	LoadEvent::autoptr le(theApp->getJobQueue().getLoadEventAP(jtRPC));
-
-	mRole	= role;
-
-	static struct {
-		const char*		pCommand;
-		doFuncPtr		dfpFunc;
-		int				iMinParams;
-		int				iMaxParams;
-		bool			bAdminRequired;
-		bool			bEvented;
-		unsigned int	iOptions;
-	} commandsA[] = {
-		// Request-response methods
-		{	"accept_ledger",		&RPCHandler::doAcceptLedger,		0,	0, true,	false,  optNone		},
-		{	"account_info",			&RPCHandler::doAccountInfo,			1,  2, false,	false,	optCurrent	},
-		{	"account_tx",			&RPCHandler::doAccountTransactions,	2,  3, false,	false,	optNetwork	},
-		{	"connect",				&RPCHandler::doConnect,				1,  2, true,	false,	optNone		},
-		{	"data_delete",			&RPCHandler::doDataDelete,			1,  1, true,	false,	optNone		},
-		{	"data_fetch",			&RPCHandler::doDataFetch,			1,  1, true,	false,	optNone		},
-		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true,	false,	optNone		},
-		{	"get_counts",			&RPCHandler::doGetCounts,			0,	1, true,	false,	optNone		},
-		{	"ledger",				&RPCHandler::doLedger,				0,  2, false,	false,	optNetwork	},
-		{	"ledger_accept",		&RPCHandler::doLedgerAccept,		0,  0, true,	false,	optCurrent	},
-		{	"ledger_closed",		&RPCHandler::doLedgerClosed,		0,  0, false,	false,	optClosed	},
-		{	"ledger_current",		&RPCHandler::doLedgerCurrent,		0,  0, false,	false,	optCurrent	},
-		{	"ledger_entry",			&RPCHandler::doLedgerEntry,		   -1, -1, false,	false,	optCurrent	},
-		{	"ledger_header",		&RPCHandler::doLedgerHeader,	   -1, -1, false,	false,	optCurrent	},
-		{	"log_level",			&RPCHandler::doLogLevel,			0,  2, true,	false,	optNone		},
-		{	"logrotate",			&RPCHandler::doLogRotate,			0,  0, true,	false,	optNone		},
-		{	"nickname_info",		&RPCHandler::doNicknameInfo,		1,  1, false,	false,	optCurrent	},
-		{	"owner_info",			&RPCHandler::doOwnerInfo,			1,  2, false,	false,	optCurrent	},
-		{	"peers",				&RPCHandler::doPeers,				0,  0, true,	false,	optNone		},
-		{	"profile",				&RPCHandler::doProfile,				1,  9, false,	false,	optCurrent	},
-		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,		1,  2, false,	false,	optCurrent	},
-		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
-		{	"submit",				&RPCHandler::doSubmit,				2,  2, false,	false,	optCurrent	},
-		{	"submit_json",			&RPCHandler::doSubmitJson,			-1,  -1, false,	false,	optCurrent	},
-		{	"server_info",			&RPCHandler::doServerInfo,			0,  0, true,	false,	optNone		},
-		{	"stop",					&RPCHandler::doStop,				0,  0, true,	false,	optNone		},
-		{	"transaction_entry",	&RPCHandler::doTransactionEntry,	-1,  -1, false,	false,	optCurrent	},
-		{	"tx",					&RPCHandler::doTx,					1,  1, true,	false,	optNone		},
-		{	"tx_history",			&RPCHandler::doTxHistory,			1,  1, false,	false,	optNone		},
-
-		{	"unl_add",				&RPCHandler::doUnlAdd,				1,  2, true,	false,	optNone		},
-		{	"unl_delete",			&RPCHandler::doUnlDelete,			1,  1, true,	false,	optNone		},
-		{	"unl_list",				&RPCHandler::doUnlList,				0,  0, true,	false,	optNone		},
-		{	"unl_load",				&RPCHandler::doUnlLoad,				0,  0, true,	false,	optNone		},
-		{	"unl_network",			&RPCHandler::doUnlNetwork,			0,  0, true,	false,	optNone		},
-		{	"unl_reset",			&RPCHandler::doUnlReset,			0,  0, true,	false,	optNone		},
-		{	"unl_score",			&RPCHandler::doUnlScore,			0,  0, true,	false,	optNone		},
-
-		{	"validation_create",	&RPCHandler::doValidationCreate,	0,  1, false,	false,	optNone		},
-		{	"validation_seed",		&RPCHandler::doValidationSeed,		0,  1, false,	false,	optNone		},
-
-		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,		1,  1, false,	false,	optCurrent	},
-		{	"wallet_propose",		&RPCHandler::doWalletPropose,		0,  1, false,	false,	optNone		},
-		{	"wallet_seed",			&RPCHandler::doWalletSeed,			0,  1, false,	false,	optNone		},
-
-		{	"login",				&RPCHandler::doLogin,				2,  2, true,	false,	optNone		},
-
-		// Evented methods
-		{	"subscribe",			&RPCHandler::doSubscribe,			-1,	-1,	false,	true,	optNone		},
-		{	"unsubscribe",			&RPCHandler::doUnsubscribe,			-1,	-1,	false,	true,	optNone		},
-	};
-
-	int		i = NUMBER(commandsA);
-
-	while (i-- && command != commandsA[i].pCommand)
-		;
-
-	if (i < 0)
-	{
-		return rpcError(rpcUNKNOWN_COMMAND);
-	}
-	else if (commandsA[i].bAdminRequired && mRole != ADMIN)
-	{
-		return rpcError(rpcNO_PERMISSION);
-	}
-	else if (commandsA[i].bEvented && mInfoSub == NULL)
-	{
-		return rpcError(rpcNO_EVENTS);
-	}
-	else if (commandsA[i].iMinParams >= 0
-		? commandsA[i].iMaxParams
-			? (params.size() < commandsA[i].iMinParams
-				|| (commandsA[i].iMaxParams >= 0 && params.size() > commandsA[i].iMaxParams))
-			: false
-		: params.isArray())
-	{
-		return rpcError(rpcINVALID_PARAMS);
-	}
-	else if ((commandsA[i].iOptions & optNetwork) && !mNetOps->available())
-	{
-		return rpcError(rpcNO_NETWORK);
-	}
-	// XXX Should verify we have a current ledger.
-
-	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
-	if ((commandsA[i].iOptions & optCurrent) && false)
-	{
-		return rpcError(rpcNO_CURRENT);
-	}
-	else if ((commandsA[i].iOptions & optClosed) && !mNetOps->getClosedLedger())
-	{
-		return rpcError(rpcNO_CLOSED);
-	}
-	else
-	{
-		try {
-			return (this->*(commandsA[i].dfpFunc))(params);
-		}
-		catch (std::exception& e)
-		{
-			cLog(lsINFO) << "Caught throw: " << e.what();
-
-			return rpcError(rpcINTERNAL);
-		}
-	}
-}
-
-
-
-
 // wallet_propose [<passphrase>]
 // <passphrase> is only for testing. Master seeds should only be generated randomly.
-Json::Value RPCHandler::doWalletPropose(const Json::Value& params)
+Json::Value RPCHandler::doWalletPropose(Json::Value params)
 {
 	RippleAddress	naSeed;
 	RippleAddress	naAccount;
@@ -1639,7 +1401,7 @@ Json::Value RPCHandler::doWalletPropose(const Json::Value& params)
 }
 
 // wallet_seed [<seed>|<passphrase>|<passkey>]
-Json::Value RPCHandler::doWalletSeed(const Json::Value& params)
+Json::Value RPCHandler::doWalletSeed(Json::Value params)
 {
 	RippleAddress	naSeed;
 
@@ -1674,7 +1436,7 @@ Json::Value RPCHandler::doWalletSeed(const Json::Value& params)
 // TODO: for now this simply checks if this is the admin account
 // TODO: need to prevent them hammering this over and over
 // TODO: maybe a better way is only allow admin from local host
-Json::Value RPCHandler::doLogin(const Json::Value& params)
+Json::Value RPCHandler::doLogin(Json::Value params)
 {
 	std::string	username		= params[0u].asString();
 	std::string	password		= params[1u].asString();
@@ -1690,7 +1452,7 @@ Json::Value RPCHandler::doLogin(const Json::Value& params)
 	}
 }
 
-Json::Value RPCHandler::doGetCounts(const Json::Value& params)
+Json::Value RPCHandler::doGetCounts(Json::Value params)
 {
 	int minCount = 10;
 	if (params.size() > 0)
@@ -1704,7 +1466,7 @@ Json::Value RPCHandler::doGetCounts(const Json::Value& params)
 	return ret;
 }
 
-Json::Value RPCHandler::doLogLevel(const Json::Value& params)
+Json::Value RPCHandler::doLogLevel(Json::Value params)
 {
 	if (params.size() == 0)
 	{ // get log severities
@@ -1744,49 +1506,43 @@ Json::Value RPCHandler::doLogLevel(const Json::Value& params)
 	return rpcError(rpcINVALID_PARAMS);
 }
 
-
-
-// Populate the UNL from ripple.com's validators.txt file.
-Json::Value RPCHandler::doUnlNetwork(const Json::Value& params)
+// {
+//   node: <domain>|<node_public>,
+//   comment: <comment>				// optional
+// }
+Json::Value RPCHandler::doUnlAdd(Json::Value jvParams)
 {
-	theApp->getUNL().nodeNetwork();
+	std::string	strNode		= jvParams.isMember("node") ? jvParams["node"].asString() : "";
+	std::string	strComment	= jvParams.isMember("comment") ? jvParams["comment"].asString() : "";
 
-	return "fetching";
-}
+	RippleAddress	raNodePublic;
 
-// unl_reset
-Json::Value RPCHandler::doUnlReset(const Json::Value& params)
-{
-	theApp->getUNL().nodeReset();
-
-	return "removing nodes";
-}
-
-// unl_score
-Json::Value RPCHandler::doUnlScore(const Json::Value& params)
-{
-	theApp->getUNL().nodeScore();
-
-	return "scoring requested";
-}
-
-Json::Value RPCHandler::doStop(const Json::Value& params)
-{
-	theApp->stop();
-
-	return SYSTEM_NAME " server stopping";
-}
-
-// unl_delete <domain>|<public_key>
-Json::Value RPCHandler::doUnlDelete(const Json::Value& params)
-{
-	std::string	strNode		= params[0u].asString();
-
-	RippleAddress	naNodePublic;
-
-	if (naNodePublic.setNodePublic(strNode))
+	if (raNodePublic.setNodePublic(strNode))
 	{
-		theApp->getUNL().nodeRemovePublic(naNodePublic);
+		theApp->getUNL().nodeAddPublic(raNodePublic, UniqueNodeList::vsManual, strComment);
+
+		return "adding node by public key";
+	}
+	else
+	{
+		theApp->getUNL().nodeAddDomain(strNode, UniqueNodeList::vsManual, strComment);
+
+		return "adding node by domain";
+	}
+}
+
+// {
+//   node: <domain>|<public_key>
+// }
+Json::Value RPCHandler::doUnlDelete(Json::Value jvParams)
+{
+	std::string	strNode		= jvParams[0u].asString();
+
+	RippleAddress	raNodePublic;
+
+	if (raNodePublic.setNodePublic(strNode))
+	{
+		theApp->getUNL().nodeRemovePublic(raNodePublic);
 
 		return "removing node by public key";
 	}
@@ -1798,7 +1554,7 @@ Json::Value RPCHandler::doUnlDelete(const Json::Value& params)
 	}
 }
 
-Json::Value RPCHandler::doUnlList(const Json::Value& params)
+Json::Value RPCHandler::doUnlList(Json::Value params)
 {
 	Json::Value obj(Json::objectValue);
 
@@ -1808,7 +1564,7 @@ Json::Value RPCHandler::doUnlList(const Json::Value& params)
 }
 
 // Populate the UNL from a local validators.txt file.
-Json::Value RPCHandler::doUnlLoad(const Json::Value& params)
+Json::Value RPCHandler::doUnlLoad(Json::Value params)
 {
 	if (theConfig.VALIDATORS_FILE.empty() || !theApp->getUNL().nodeLoad(theConfig.VALIDATORS_FILE))
 	{
@@ -1818,7 +1574,39 @@ Json::Value RPCHandler::doUnlLoad(const Json::Value& params)
 	return "loading";
 }
 
-Json::Value RPCHandler::doLedgerAccept(const Json::Value& )
+
+// Populate the UNL from ripple.com's validators.txt file.
+Json::Value RPCHandler::doUnlNetwork(Json::Value params)
+{
+	theApp->getUNL().nodeNetwork();
+
+	return "fetching";
+}
+
+// unl_reset
+Json::Value RPCHandler::doUnlReset(Json::Value params)
+{
+	theApp->getUNL().nodeReset();
+
+	return "removing nodes";
+}
+
+// unl_score
+Json::Value RPCHandler::doUnlScore(Json::Value params)
+{
+	theApp->getUNL().nodeScore();
+
+	return "scoring requested";
+}
+
+Json::Value RPCHandler::doStop(Json::Value)
+{
+	theApp->stop();
+
+	return SYSTEM_NAME " server stopping";
+}
+
+Json::Value RPCHandler::doLedgerAccept(Json::Value)
 {
 	Json::Value jvResult;
 
@@ -1836,7 +1624,7 @@ Json::Value RPCHandler::doLedgerAccept(const Json::Value& )
 	return jvResult;
 }
 
-Json::Value RPCHandler::doTransactionEntry(const Json::Value& jvRequest)
+Json::Value RPCHandler::doTransactionEntry(Json::Value jvRequest)
 {
 	Json::Value jvResult;
 
@@ -1886,7 +1674,7 @@ Json::Value RPCHandler::doTransactionEntry(const Json::Value& jvRequest)
 	return jvResult;
 }
 
-Json::Value RPCHandler::lookupLedger(const Json::Value& jvRequest, Ledger::pointer& lpLedger)
+Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpLedger)
 {
 	Json::Value jvResult;
 
@@ -1938,7 +1726,7 @@ Json::Value RPCHandler::lookupLedger(const Json::Value& jvRequest, Ledger::point
 	return jvResult;
 }
 
-Json::Value RPCHandler::doLedgerEntry(const Json::Value& jvRequest)
+Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest)
 {
 	Ledger::pointer		lpLedger;
 	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
@@ -2141,7 +1929,7 @@ Json::Value RPCHandler::doLedgerEntry(const Json::Value& jvRequest)
 	return jvResult;
 }
 
-Json::Value RPCHandler::doLedgerHeader(const Json::Value& jvRequest)
+Json::Value RPCHandler::doLedgerHeader(Json::Value jvRequest)
 {
 	Ledger::pointer		lpLedger;
 	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
@@ -2191,7 +1979,7 @@ rt_transactions
 accounts
 rt_accounts
 */
-Json::Value RPCHandler::doSubscribe(const Json::Value& jvRequest)
+Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 {
 	Json::Value jvResult(Json::objectValue);
 
@@ -2265,7 +2053,7 @@ Json::Value RPCHandler::doSubscribe(const Json::Value& jvRequest)
 	return jvResult;
 }
 
-Json::Value RPCHandler::doUnsubscribe(const Json::Value& jvRequest)
+Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 {
 	Json::Value jvResult(Json::objectValue);
 
@@ -2337,6 +2125,180 @@ Json::Value RPCHandler::doUnsubscribe(const Json::Value& jvRequest)
 	}
 
 	return jvResult;
+}
+
+// Provide the JSON-RPC "result" value.
+Json::Value RPCHandler::doRpcCommand(const std::string& strCommand, Json::Value& jvParams, int iRole)
+{
+	// cLog(lsTRACE) << "doRpcCommand:" << strCommand << ":" << jvParams;
+
+	if (!jvParams.isArray() || jvParams.size() > 1)
+		return rpcError(rpcINVALID_PARAMS);
+
+	Json::Value	jvRequest	= jvParams[0u];
+
+	jvRequest["command"]	= strCommand;
+
+	Json::Value	jvResult	= doCommand(jvRequest, iRole);
+
+	// Always report "status".  On an error report the request as received.
+	if (jvResult.isMember("error"))
+	{
+		jvResult["status"]	= "error";
+		jvResult["request"]	= jvRequest;
+
+	} else {
+		jvResult["status"]	= "success";
+	}
+
+	return jvResult;
+}
+
+Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
+{
+	if (!jvParams.isMember("command"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	std::string		strCommand	= jvParams["command"].asString();
+
+	cLog(lsTRACE) << "COMMAND:" << strCommand;
+	cLog(lsTRACE) << "REQUEST:" << jvParams;
+
+	LoadEvent::autoptr le(theApp->getJobQueue().getLoadEventAP(jtRPC));
+
+	mRole	= iRole;
+
+	static struct {
+		const char*		pCommand;
+		doFuncPtr		dfpFunc;
+		int				iMinParams;
+		int				iMaxParams;
+		bool			bAdminRequired;
+		bool			bEvented;
+		unsigned int	iOptions;
+	} commandsA[] = {
+		// Request-response methods
+		{	"accept_ledger",		&RPCHandler::doAcceptLedger,	   -1, -1, true,	false,  optCurrent	},
+		{	"account_info",			&RPCHandler::doAccountInfo,		   -1, -1, false,	false,	optCurrent	},
+		{	"account_tx",			&RPCHandler::doAccountTransactions,	-1,  -1, false,	false,	optNetwork	},
+		{	"connect",				&RPCHandler::doConnect,				1,  2, true,	false,	optNone		},
+		{	"data_delete",			&RPCHandler::doDataDelete,			1,  1, true,	false,	optNone		},
+		{	"data_fetch",			&RPCHandler::doDataFetch,			1,  1, true,	false,	optNone		},
+		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true,	false,	optNone		},
+		{	"get_counts",			&RPCHandler::doGetCounts,			0,	1, true,	false,	optNone		},
+		{	"ledger",				&RPCHandler::doLedger,			   -1, -1, false,	false,	optNetwork	},
+		{	"ledger_accept",		&RPCHandler::doLedgerAccept,	   -1, -1, true,	false,	optCurrent	},
+		{	"ledger_closed",		&RPCHandler::doLedgerClosed,	   -1, -1, false,	false,	optClosed	},
+		{	"ledger_current",		&RPCHandler::doLedgerCurrent,	   -1, -1, false,	false,	optCurrent	},
+		{	"ledger_entry",			&RPCHandler::doLedgerEntry,		   -1, -1, false,	false,	optCurrent	},
+		{	"ledger_header",		&RPCHandler::doLedgerHeader,	   -1, -1, false,	false,	optCurrent	},
+		{	"log_level",			&RPCHandler::doLogLevel,			0,  2, true,	false,	optNone		},
+		{	"logrotate",			&RPCHandler::doLogRotate,		   -1, -1, true,	false,	optNone		},
+		{	"nickname_info",		&RPCHandler::doNicknameInfo,		1,  1, false,	false,	optCurrent	},
+		{	"owner_info",			&RPCHandler::doOwnerInfo,			1,  2, false,	false,	optCurrent	},
+		{	"peers",				&RPCHandler::doPeers,			   -1, -1, true,	false,	optNone		},
+		{	"profile",				&RPCHandler::doProfile,				1,  9, false,	false,	optCurrent	},
+		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,		1,  2, false,	false,	optCurrent	},
+		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
+		{	"submit",				&RPCHandler::doSubmit,			   -1,  -1, false,	false,	optCurrent	},
+		{	"server_info",			&RPCHandler::doServerInfo,		   -1, -1, true,	false,	optNone		},
+		{	"stop",					&RPCHandler::doStop,			   -1, -1, true,	false,	optNone		},
+		{	"transaction_entry",	&RPCHandler::doTransactionEntry,   -1,  -1, false,	false,	optCurrent	},
+		{	"tx",					&RPCHandler::doTx,					1,  1, true,	false,	optNone		},
+		{	"tx_history",			&RPCHandler::doTxHistory,			1,  1, false,	false,	optNone		},
+
+		{	"unl_add",				&RPCHandler::doUnlAdd,			   -1, -1, true,	false,	optNone		},
+		{	"unl_delete",			&RPCHandler::doUnlDelete,		   -1, -1, true,	false,	optNone		},
+		{	"unl_list",				&RPCHandler::doUnlList,			   -1, -1, true,	false,	optNone		},
+		{	"unl_load",				&RPCHandler::doUnlLoad,			   -1, -1, true,	false,	optNone		},
+		{	"unl_network",			&RPCHandler::doUnlNetwork,		   -1, -1, true,	false,	optNone		},
+		{	"unl_reset",			&RPCHandler::doUnlReset,		   -1, -1, true,	false,	optNone		},
+		{	"unl_score",			&RPCHandler::doUnlScore,		   -1, -1, true,	false,	optNone		},
+
+		{	"validation_create",	&RPCHandler::doValidationCreate,	0,  1, false,	false,	optNone		},
+		{	"validation_seed",		&RPCHandler::doValidationSeed,		0,  1, false,	false,	optNone		},
+
+		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,	   -1, -1, false,	false,	optCurrent	},
+		{	"wallet_propose",		&RPCHandler::doWalletPropose,		0,  1, false,	false,	optNone		},
+		{	"wallet_seed",			&RPCHandler::doWalletSeed,			0,  1, false,	false,	optNone		},
+
+		{	"login",				&RPCHandler::doLogin,				2,  2, true,	false,	optNone		},
+
+		// Evented methods
+		{	"subscribe",			&RPCHandler::doSubscribe,			-1,	-1,	false,	true,	optNone		},
+		{	"unsubscribe",			&RPCHandler::doUnsubscribe,			-1,	-1,	false,	true,	optNone		},
+	};
+
+	int		i = NUMBER(commandsA);
+
+	while (i-- && strCommand != commandsA[i].pCommand)
+		;
+
+	if (i < 0)
+	{
+		return rpcError(rpcUNKNOWN_COMMAND);
+	}
+	else if (commandsA[i].bAdminRequired && mRole != ADMIN)
+	{
+		return rpcError(rpcNO_PERMISSION);
+	}
+	else if (commandsA[i].bEvented && mInfoSub == NULL)
+	{
+		return rpcError(rpcNO_EVENTS);
+	}
+	else if (commandsA[i].iMinParams >= 0
+		? commandsA[i].iMaxParams
+			? (jvParams.size() < commandsA[i].iMinParams
+				|| (commandsA[i].iMaxParams >= 0 && jvParams.size() > commandsA[i].iMaxParams))
+			: false
+		: jvParams.isArray())
+	{
+cLog(lsDEBUG) << "params.size: " << jvParams.size() << " array: " << jvParams.isArray();
+		return rpcError(rpcINVALID_PARAMS);
+	}
+	else if ((commandsA[i].iOptions & optNetwork) && !mNetOps->available())
+	{
+		return rpcError(rpcNO_NETWORK);
+	}
+	// XXX Should verify we have a current ledger.
+
+	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+	if ((commandsA[i].iOptions & optCurrent) && false)
+	{
+		return rpcError(rpcNO_CURRENT);
+	}
+	else if ((commandsA[i].iOptions & optClosed) && !mNetOps->getClosedLedger())
+	{
+		return rpcError(rpcNO_CLOSED);
+	}
+	else
+	{
+		try {
+			Json::Value	jvRaw		= (this->*(commandsA[i].dfpFunc))(jvParams);
+
+			// Regularize result.
+			if (jvRaw.isObject())
+			{
+				// Got an object.
+				return jvRaw;
+			}
+			else
+			{
+				// Probably got a string.
+				Json::Value	jvResult(Json::objectValue);
+
+				jvResult["message"]	= jvRaw;
+
+				return jvResult;
+			}
+		}
+		catch (std::exception& e)
+		{
+			cLog(lsINFO) << "Caught throw: " << e.what();
+
+			return rpcError(rpcINTERNAL);
+		}
+	}
 }
 
 // vim:ts=4
