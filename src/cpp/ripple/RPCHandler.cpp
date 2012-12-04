@@ -2184,9 +2184,6 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		{	"account_info",			&RPCHandler::doAccountInfo,		   -1, -1, false,	false,	optCurrent	},
 		{	"account_tx",			&RPCHandler::doAccountTransactions,	-1,  -1, false,	false,	optNetwork	},
 		{	"connect",				&RPCHandler::doConnect,				1,  2, true,	false,	optNone		},
-		{	"data_delete",			&RPCHandler::doDataDelete,			1,  1, true,	false,	optNone		},
-		{	"data_fetch",			&RPCHandler::doDataFetch,			1,  1, true,	false,	optNone		},
-		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true,	false,	optNone		},
 		{	"get_counts",			&RPCHandler::doGetCounts,			0,	1, true,	false,	optNone		},
 		{	"ledger",				&RPCHandler::doLedger,			   -1, -1, false,	false,	optNetwork	},
 		{	"ledger_accept",		&RPCHandler::doLedgerAccept,	   -1, -1, true,	false,	optCurrent	},
@@ -2224,7 +2221,11 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		{	"wallet_propose",		&RPCHandler::doWalletPropose,	   -1, -1, false,	false,	optNone		},
 		{	"wallet_seed",			&RPCHandler::doWalletSeed,		   -1, -1, false,	false,	optNone		},
 
+		// XXX Unnecessary commands which should be removed.
 		{	"login",				&RPCHandler::doLogin,				2,  2, true,	false,	optNone		},
+		{	"data_delete",			&RPCHandler::doDataDelete,			1,  1, true,	false,	optNone		},
+		{	"data_fetch",			&RPCHandler::doDataFetch,			1,  1, true,	false,	optNone		},
+		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true,	false,	optNone		},
 
 		// Evented methods
 		{	"subscribe",			&RPCHandler::doSubscribe,			-1,	-1,	false,	true,	optNone		},

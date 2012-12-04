@@ -314,9 +314,6 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"account_info",			&RPCParser::parseAccountInfo,			1,  2	},
 		{	"account_tx",			&RPCParser::parseAccountTransactions,	2,  3	},
 		{	"connect",				&RPCParser::parseConnect,				1,  2	},
-//		{	"data_delete",			&RPCParser::doDataDelete,			1,  1, true,	false,	optNone		},
-//		{	"data_fetch",			&RPCParser::doDataFetch,			1,  1, true,	false,	optNone		},
-//		{	"data_store",			&RPCParser::doDataStore,			2,  2, true,	false,	optNone		},
 //		{	"get_counts",			&RPCParser::doGetCounts,			0,	1, true,	false,	optNone		},
 		{	"ledger",				&RPCParser::parseLedger,				0,  2	},
 		{	"ledger_accept",		&RPCParser::parseAsIs,					0,  0	},
@@ -353,8 +350,12 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"wallet_accounts",		&RPCParser::parseWalletAccounts,	    1,  1	},
 		{	"wallet_propose",		&RPCParser::parseWalletPropose,			0,  1	},
 		{	"wallet_seed",			&RPCParser::parseWalletSeed,			0,  1	},
-//
+
+		// XXX Unnecessary commands which should be removed.
 //		{	"login",				&RPCParser::doLogin,				2,  2, true,	false,	optNone		},
+//		{	"data_delete",			&RPCParser::doDataDelete,			1,  1, true,	false,	optNone		},
+//		{	"data_fetch",			&RPCParser::doDataFetch,			1,  1, true,	false,	optNone		},
+//		{	"data_store",			&RPCParser::doDataStore,			2,  2, true,	false,	optNone		},
 
 		// Evented methods
 		{	"subscribe",			&RPCParser::parseEvented,				-1,	-1	},
