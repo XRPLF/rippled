@@ -1454,17 +1454,23 @@ Json::Value RPCHandler::doLogin(Json::Value params)
 	}
 }
 
-Json::Value RPCHandler::doGetCounts(Json::Value params)
+// {
+//   min_count: <number>  // optional, defaults to 10
+// }
+Json::Value RPCHandler::doGetCounts(Json::Value jvRequest)
 {
 	int minCount = 10;
-	if (params.size() > 0)
-		minCount = params[0u].asInt();
+
+	if (jvRequest.isMember("min_count"))
+		minCount = jvRequest["min_count"].asUInt();
 
 	std::vector<InstanceType::InstanceCount> count = InstanceType::getInstanceCounts(minCount);
 
 	Json::Value ret(Json::objectValue);
+
 	BOOST_FOREACH(InstanceType::InstanceCount& it, count)
 		ret[it.first] = it.second;
+
 	return ret;
 }
 
@@ -2184,7 +2190,7 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		{	"account_info",			&RPCHandler::doAccountInfo,		   -1, -1, false,	false,	optCurrent	},
 		{	"account_tx",			&RPCHandler::doAccountTransactions,	-1,  -1, false,	false,	optNetwork	},
 		{	"connect",				&RPCHandler::doConnect,				1,  2, true,	false,	optNone		},
-		{	"get_counts",			&RPCHandler::doGetCounts,			0,	1, true,	false,	optNone		},
+		{	"get_counts",			&RPCHandler::doGetCounts,		   -1, -1, true,	false,	optNone		},
 		{	"ledger",				&RPCHandler::doLedger,			   -1, -1, false,	false,	optNetwork	},
 		{	"ledger_accept",		&RPCHandler::doLedgerAccept,	   -1, -1, true,	false,	optCurrent	},
 		{	"ledger_closed",		&RPCHandler::doLedgerClosed,	   -1, -1, false,	false,	optClosed	},

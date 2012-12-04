@@ -16,6 +16,7 @@ protected:
 	Json::Value parseAsIs(const Json::Value& jvParams);
 	Json::Value parseConnect(const Json::Value& jvParams);
 	Json::Value parseEvented(const Json::Value& jvParams);
+	Json::Value parseGetCounts(const Json::Value& jvParams);
 	Json::Value parseLedger(const Json::Value& jvParams);
 	Json::Value parseRippleLinesGet(const Json::Value& jvParams);
 	Json::Value parseSubmit(const Json::Value& jvParams);

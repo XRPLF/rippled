@@ -126,9 +126,21 @@ Json::Value RPCParser::parseConnect(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+// Return an error for attemping to subscribe/unsubscribe via RPC.
 Json::Value RPCParser::parseEvented(const Json::Value& jvParams)
 {
 	return rpcError(rpcNO_EVENTS);
+}
+
+// get_counts [<min_count>]
+Json::Value RPCParser::parseGetCounts(const Json::Value& jvParams)
+{
+	Json::Value		jvRequest(Json::objectValue);
+
+	if (jvParams.size())
+		jvRequest["min_count"]	= jvParams[0u].asUInt();
+
+	return jvRequest;
 }
 
 // ledger [id|ledger_current|ledger_closed] [full]
@@ -314,27 +326,27 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"account_info",			&RPCParser::parseAccountInfo,			1,  2	},
 		{	"account_tx",			&RPCParser::parseAccountTransactions,	2,  3	},
 		{	"connect",				&RPCParser::parseConnect,				1,  2	},
-//		{	"get_counts",			&RPCParser::doGetCounts,			0,	1, true,	false,	optNone		},
+		{	"get_counts",			&RPCParser::parseGetCounts,				0,	1	},
 		{	"ledger",				&RPCParser::parseLedger,				0,  2	},
 		{	"ledger_accept",		&RPCParser::parseAsIs,					0,  0	},
 		{	"ledger_closed",		&RPCParser::parseAsIs,					0,  0	},
 		{	"ledger_current",		&RPCParser::parseAsIs,					0,  0	},
-//		{	"ledger_entry",			&RPCParser::doLedgerEntry,		   -1, -1, false,	false,	optCurrent	},
-//		{	"ledger_header",		&RPCParser::doLedgerHeader,	   -1, -1, false,	false,	optCurrent	},
-//		{	"log_level",			&RPCParser::doLogLevel,			0,  2, true,	false,	optNone		},
+//		{	"ledger_entry",			&RPCParser::parseLedgerEntry,		   -1, -1, false,	false,	optCurrent	},
+//		{	"ledger_header",		&RPCParser::parseLedgerHeader,	   -1, -1, false,	false,	optCurrent	},
+//		{	"log_level",			&RPCParser::parseLogLevel,			0,  2, true,	false,	optNone		},
 		{	"logrotate",			&RPCParser::parseAsIs,					0,  0	},
-//		{	"nickname_info",		&RPCParser::doNicknameInfo,		1,  1, false,	false,	optCurrent	},
-//		{	"owner_info",			&RPCParser::doOwnerInfo,			1,  2, false,	false,	optCurrent	},
+//		{	"nickname_info",		&RPCParser::parseNicknameInfo,		1,  1, false,	false,	optCurrent	},
+//		{	"owner_info",			&RPCParser::parseOwnerInfo,			1,  2, false,	false,	optCurrent	},
 		{	"peers",				&RPCParser::parseAsIs,					0,  0	},
-//		{	"profile",				&RPCParser::doProfile,				1,  9, false,	false,	optCurrent	},
+//		{	"profile",				&RPCParser::parseProfile,				1,  9, false,	false,	optCurrent	},
 		{	"ripple_lines_get",		&RPCParser::parseRippleLinesGet,		1,  2	},
-//		{	"ripple_path_find",		&RPCParser::doRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
+//		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
 		{	"submit",				&RPCParser::parseSubmit,				2,  2	},
 		{	"server_info",			&RPCParser::parseAsIs,					0,  0	},
 		{	"stop",					&RPCParser::parseAsIs,					0,  0	},
-//		{	"transaction_entry",	&RPCParser::doTransactionEntry,	-1,  -1, false,	false,	optCurrent	},
-//		{	"tx",					&RPCParser::doTx,					1,  1, true,	false,	optNone		},
-//		{	"tx_history",			&RPCParser::doTxHistory,			1,  1, false,	false,	optNone		},
+//		{	"transaction_entry",	&RPCParser::parseTransactionEntry,	-1,  -1, false,	false,	optCurrent	},
+//		{	"tx",					&RPCParser::parseTx,					1,  1, true,	false,	optNone		},
+//		{	"tx_history",			&RPCParser::parseTxHistory,			1,  1, false,	false,	optNone		},
 //
 		{	"unl_add",				&RPCParser::parseUnlAdd,				1,  2	},
 		{	"unl_delete",			&RPCParser::parseUnlDelete,				1,  1	},
@@ -352,10 +364,10 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"wallet_seed",			&RPCParser::parseWalletSeed,			0,  1	},
 
 		// XXX Unnecessary commands which should be removed.
-//		{	"login",				&RPCParser::doLogin,				2,  2, true,	false,	optNone		},
-//		{	"data_delete",			&RPCParser::doDataDelete,			1,  1, true,	false,	optNone		},
-//		{	"data_fetch",			&RPCParser::doDataFetch,			1,  1, true,	false,	optNone		},
-//		{	"data_store",			&RPCParser::doDataStore,			2,  2, true,	false,	optNone		},
+//		{	"login",				&RPCParser::parseLogin,				2,  2, true,	false,	optNone		},
+//		{	"data_delete",			&RPCParser::parseDataDelete,			1,  1, true,	false,	optNone		},
+//		{	"data_fetch",			&RPCParser::parseDataFetch,			1,  1, true,	false,	optNone		},
+//		{	"data_store",			&RPCParser::parseDataStore,			2,  2, true,	false,	optNone		},
 
 		// Evented methods
 		{	"subscribe",			&RPCParser::parseEvented,				-1,	-1	},
