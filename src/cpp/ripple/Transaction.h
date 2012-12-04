@@ -44,6 +44,7 @@ class Transaction : public boost::enable_shared_from_this<Transaction>, private 
 {
 public:
 	typedef boost::shared_ptr<Transaction> pointer;
+	typedef const pointer& ref;
 
 private:
 	uint256			mTransactionID;
@@ -96,7 +97,7 @@ public:
 	void setLedger(uint32 ledger) { mInLedger = ledger; }
 
 	// database functions
-	static void saveTransaction(const Transaction::pointer&);
+	static void saveTransaction(Transaction::ref);
 	bool save();
 	static Transaction::pointer load(const uint256& id);
 	static Transaction::pointer findFrom(const RippleAddress& fromID, uint32 seq);

@@ -11,7 +11,7 @@ class Offer : public AccountItem
 	Offer(SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
 public:
 	Offer(){}
-	AccountItem::pointer makeItem(uint160&, SerializedLedgerEntry::pointer ledgerEntry);
+	AccountItem::pointer makeItem(const uint160&, SerializedLedgerEntry::ref ledgerEntry);
 	LedgerEntryType getType(){ return(ltOFFER); }
 
 	STAmount getTakerPays(){ return(mTakerPays); }

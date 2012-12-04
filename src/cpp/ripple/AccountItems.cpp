@@ -7,25 +7,25 @@
 
 SETUP_LOG();
 
-AccountItem::AccountItem(SerializedLedgerEntry::pointer ledger) : mLedgerEntry(ledger)
+AccountItem::AccountItem(SerializedLedgerEntry::ref ledger) : mLedgerEntry(ledger)
 {
 
 }
 
-AccountItems::AccountItems(uint160& accountID, Ledger::ref ledger, AccountItem::pointer ofType)
+AccountItems::AccountItems(const uint160& accountID, Ledger::ref ledger, AccountItem::pointer ofType)
 {
 	mOfType=ofType;
 	fillItems(accountID, ledger);
 }
 
 // looks in the current ledger
-AccountItems::AccountItems(uint160& accountID, AccountItem::pointer ofType )
+AccountItems::AccountItems(const uint160& accountID, AccountItem::pointer ofType )
 {
 	mOfType=ofType;
 	fillItems(accountID,theApp->getLedgerMaster().getClosedLedger());
 }
 
-void AccountItems::fillItems(uint160& accountID, Ledger::ref ledger)
+void AccountItems::fillItems(const uint160& accountID, Ledger::ref ledger)
 {
 	uint256 rootIndex		= Ledger::getOwnerDirIndex(accountID);
 	uint256 currentIndex	= rootIndex;

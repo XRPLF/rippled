@@ -33,10 +33,10 @@ private:
 	bool							mValid;
 	bool							mViewLowest;
 
-	RippleState(SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
+	RippleState(SerializedLedgerEntry::ref ledgerEntry);	// For accounts in a ledger
 public:
 	RippleState(){ }
-	AccountItem::pointer makeItem(uint160& accountID, SerializedLedgerEntry::pointer ledgerEntry);
+	AccountItem::pointer makeItem(const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry);
 	LedgerEntryType getType(){ return(ltRIPPLE_STATE); }
 
 	void					setViewAccount(const uint160& accountID);

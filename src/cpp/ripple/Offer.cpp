@@ -1,6 +1,6 @@
 #include "Offer.h"
 
-AccountItem::pointer Offer::makeItem(uint160& ,SerializedLedgerEntry::pointer ledgerEntry)
+AccountItem::pointer Offer::makeItem(const uint160& ,SerializedLedgerEntry::ref ledgerEntry)
 {
 	if (!mLedgerEntry || mLedgerEntry->getType() != ltOFFER) return(AccountItem::pointer());
 	Offer* offer=new Offer(ledgerEntry);

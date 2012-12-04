@@ -1,7 +1,7 @@
 #include "RippleState.h"
 
 
-AccountItem::pointer RippleState::makeItem(uint160& accountID, SerializedLedgerEntry::pointer ledgerEntry)
+AccountItem::pointer RippleState::makeItem(const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry)
 {
 	if (!mLedgerEntry || mLedgerEntry->getType() != ltRIPPLE_STATE) return(AccountItem::pointer());
 	RippleState* rs=new RippleState(ledgerEntry);
@@ -10,7 +10,7 @@ AccountItem::pointer RippleState::makeItem(uint160& accountID, SerializedLedgerE
 	return(AccountItem::pointer(rs));
 }
 
-RippleState::RippleState(SerializedLedgerEntry::pointer ledgerEntry) : AccountItem(ledgerEntry),
+RippleState::RippleState(SerializedLedgerEntry::ref ledgerEntry) : AccountItem(ledgerEntry),
 	mValid(false),
 	mViewLowest(true)
 {
