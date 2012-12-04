@@ -228,6 +228,17 @@ Json::Value RPCParser::parseUnlDelete(const Json::Value& jvParams)
 
 	return jvRequest;
 }
+
+// wallet_accounts <seed>
+Json::Value RPCParser::parseWalletAccounts(const Json::Value& jvParams)
+{
+	Json::Value	jvRequest;
+
+	jvRequest["seed"]		= jvParams[0u].asString();
+
+	return jvRequest;
+}
+
 //
 // parseCommand
 //
@@ -288,7 +299,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 //		{	"validation_create",	&RPCParser::doValidationCreate,	0,  1, false,	false,	optNone		},
 //		{	"validation_seed",		&RPCParser::doValidationSeed,		0,  1, false,	false,	optNone		},
 
-//		{	"wallet_accounts",		&RPCParser::doWalletAccounts,		1,  1, false,	false,	optCurrent	},
+		{	"wallet_accounts",		&RPCParser::parseWalletAccounts,	    1,  1	},
 //		{	"wallet_propose",		&RPCParser::doWalletPropose,		0,  1, false,	false,	optNone		},
 //		{	"wallet_seed",			&RPCParser::doWalletSeed,			0,  1, false,	false,	optNone		},
 //

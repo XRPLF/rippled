@@ -712,14 +712,12 @@ Remote.prototype.request_ripple_lines_get = function (accountID, index) {
   return request;
 };
 
-Remote.prototype.request_wallet_accounts = function (key) {
-  // XXX Does this require the server to be trusted?
-  //assert(this.trusted);
+Remote.prototype.request_wallet_accounts = function (seed) {
+  assert(this.trusted);     // Don't send secrets.
 
   var request = new Request(this, 'wallet_accounts');
 
-  // XXX Convert API call to JSON
-  request.message.params = [key];
+  request.message.seed = seed;
 
   return request;
 };
@@ -730,7 +728,6 @@ Remote.prototype.request_account_tx = function (accountID, ledger_min, ledger_ma
 
   var request = new Request(this, 'account_tx');
 
-  // XXX Convert API call to JSON
   request.message.account     = accountID;
 
   if (ledger_min === ledger_max) {

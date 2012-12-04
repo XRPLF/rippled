@@ -1325,12 +1325,14 @@ Json::Value RPCHandler::accounts(const uint256& uLedger, const RippleAddress& na
 	return jsonAccounts;
 }
 
-// wallet_accounts <seed>
-Json::Value RPCHandler::doWalletAccounts(Json::Value params)
+// {
+//   seed: <string>
+// }
+Json::Value RPCHandler::doWalletAccounts(Json::Value jvParams)
 {
 	RippleAddress	naSeed;
 
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
+	if (!jvParams.isMember("seed") || !naSeed.setSeedGeneric(jvParams["seed"].asString()))
 	{
 		return rpcError(rpcBAD_SEED);
 	}
@@ -2214,7 +2216,7 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		{	"validation_create",	&RPCHandler::doValidationCreate,	0,  1, false,	false,	optNone		},
 		{	"validation_seed",		&RPCHandler::doValidationSeed,		0,  1, false,	false,	optNone		},
 
-		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,		1,  1, false,	false,	optCurrent	},
+		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,	   -1, -1, false,	false,	optCurrent	},
 		{	"wallet_propose",		&RPCHandler::doWalletPropose,		0,  1, false,	false,	optNone		},
 		{	"wallet_seed",			&RPCHandler::doWalletSeed,			0,  1, false,	false,	optNone		},
 
