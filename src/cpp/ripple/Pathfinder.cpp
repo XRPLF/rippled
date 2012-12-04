@@ -1,6 +1,6 @@
 #include "Pathfinder.h"
 #include "Application.h"
-#include "RippleLines.h"
+#include "AccountItems.h"
 #include "Log.h"
 #include <boost/foreach.hpp>
 
@@ -221,10 +221,12 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 				// Last element is for non-XRP continue by adding ripple lines and order books.
 
 				// Create new paths for each outbound account not already in the path.
-				RippleLines rippleLines(ele.mAccountID);
+				AccountItems rippleLines(ele.mAccountID, AccountItem::pointer(new RippleState()));
 
-				BOOST_FOREACH(RippleState::pointer line, rippleLines.getLines())
+				BOOST_FOREACH(AccountItem::pointer item, rippleLines.getItems())
 				{
+					RippleState* line=(RippleState*)item.get();
+
 					if (!path.hasSeen(line->getAccountIDPeer().getAccountID()))
 					{
 						STPath			new_path(path);

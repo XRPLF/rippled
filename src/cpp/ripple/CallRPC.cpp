@@ -217,8 +217,9 @@ Json::Value RPCParser::parseOwnerInfo(const Json::Value& jvParams)
 	return parseAccountInfo(jvParams);
 }
 
-// ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]
-Json::Value RPCParser::parseRippleLinesGet(const Json::Value& jvParams)
+// account_lines <account>|<nickname>|<account_public_key> [<index>]
+// account_offers <account>|<nickname>|<account_public_key> [<index>]
+Json::Value RPCParser::parseAccountItems(const Json::Value& jvParams)
 {
 	std::string		strIdent	= jvParams[0u].asString();
 	bool			bIndex		= 2 == jvParams.size();
@@ -236,6 +237,7 @@ Json::Value RPCParser::parseRippleLinesGet(const Json::Value& jvParams)
 
 	return jvRequest;
 }
+
 
 // submit any transaction to the network
 // submit private_key json
@@ -407,7 +409,8 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"owner_info",			&RPCParser::parseOwnerInfo,				1,  2	},
 		{	"peers",				&RPCParser::parseAsIs,					0,  0	},
 //		{	"profile",				&RPCParser::parseProfile,				1,  9	},
-		{	"ripple_lines_get",		&RPCParser::parseRippleLinesGet,		1,  2	},
+		{	"account_lines",		&RPCParser::parseAccountItems,			1,  2	},
+		{	"account_offers",		&RPCParser::parseAccountItems,			1,  2	},
 //		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	   -1, -1	},
 		{	"submit",				&RPCParser::parseSubmit,				2,  2	},
 		{	"server_info",			&RPCParser::parseAsIs,					0,  0	},

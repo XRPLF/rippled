@@ -7,17 +7,16 @@
 //
 
 #include "SerializedLedger.h"
+#include "AccountItems.h"
 
 #include <boost/shared_ptr.hpp>
 
-class RippleState
+class RippleState : public AccountItem
 {
 public:
 	typedef boost::shared_ptr<RippleState> pointer;
 
 private:
-	SerializedLedgerEntry::pointer	mLedgerEntry;
-
 	RippleAddress					mLowID;
 	RippleAddress					mHighID;
 
@@ -34,8 +33,11 @@ private:
 	bool							mValid;
 	bool							mViewLowest;
 
-public:
 	RippleState(SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
+public:
+	RippleState(){ }
+	AccountItem::pointer makeItem(uint160& accountID, SerializedLedgerEntry::pointer ledgerEntry);
+	LedgerEntryType getType(){ return(ltRIPPLE_STATE); }
 
 	void					setViewAccount(const uint160& accountID);
 

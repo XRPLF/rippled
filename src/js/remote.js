@@ -698,11 +698,11 @@ Remote.prototype.request_transaction_entry = function (hash) {
     .tx_hash(hash);
 };
 
-Remote.prototype.request_ripple_lines_get = function (accountID, index) {
+Remote.prototype.request_account_lines = function (accountID, index) {
   // XXX Does this require the server to be trusted?
   //utils.assert(this.trusted);
 
-  var request = new Request(this, 'ripple_lines_get');
+  var request = new Request(this, 'account_lines');
 
   request.message.account = accountID;
 

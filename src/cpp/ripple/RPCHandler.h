@@ -53,7 +53,8 @@ class RPCHandler
 	Json::Value doProfile(Json::Value params);
 	Json::Value doPeers(Json::Value params);
 
-	Json::Value doRippleLinesGet(Json::Value params);
+	Json::Value doAccountLines(Json::Value params);
+	Json::Value doAccountOffers(Json::Value params);
 	Json::Value doRipplePathFind(Json::Value jvRequest);
 	Json::Value doServerInfo(Json::Value params);
 	Json::Value doSessionClose(Json::Value params);

@@ -6,7 +6,7 @@
 #include "NetworkOPs.h"
 #include "RPCHandler.h"
 #include "Application.h"
-#include "RippleLines.h"
+#include "AccountItems.h"
 #include "Wallet.h"
 #include "RippleAddress.h"
 #include "RippleCalc.h"
@@ -14,6 +14,7 @@
 #include "AccountState.h"
 #include "NicknameState.h"
 #include "InstanceCounter.h"
+#include "Offer.h"
 
 #include "Pathfinder.h"
 #include <boost/foreach.hpp>
@@ -566,7 +567,7 @@ Json::Value RPCHandler::doProfile(Json::Value params)
 //   account: <account>|<nickname>|<account_public_key> [<index>]
 //   index: <number>		// optional, defaults to 0.
 // }
-Json::Value RPCHandler::doRippleLinesGet(Json::Value jvRequest)
+Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 {
 	std::string		strIdent	= jvRequest["account"].asString();
 	bool			bIndex		= jvRequest.isMember("index");
@@ -597,17 +598,18 @@ Json::Value RPCHandler::doRippleLinesGet(Json::Value jvRequest)
 		// XXX This is wrong, we do access the current ledger and do need to worry about changes.
 		// We access a committed ledger and need not worry about changes.
 
-		RippleLines rippleLines(raAccount.getAccountID());
-		BOOST_FOREACH(RippleState::pointer line, rippleLines.getLines())
+		AccountItems rippleLines(raAccount.getAccountID(), AccountItem::pointer(new RippleState()));
+		BOOST_FOREACH(AccountItem::pointer item, rippleLines.getItems())
 		{
+			RippleState* line=(RippleState*)item.get();
+
 			STAmount		saBalance	= line->getBalance();
 			STAmount		saLimit		= line->getLimit();
 			STAmount		saLimitPeer	= line->getLimitPeer();
 
 			Json::Value			jPeer	= Json::Value(Json::objectValue);
 
-			//jPeer["node"]			= uNode.ToString();
-
+		
 			jPeer["account"]		= line->getAccountIDPeer().humanAccountID();
 			// Amount reported is positive if current account holds other account's IOUs.
 			// Amount reported is negative if other account holds current account's IOUs.
@@ -621,6 +623,63 @@ Json::Value RPCHandler::doRippleLinesGet(Json::Value jvRequest)
 			jsonLines.append(jPeer);
 		}
 		jvResult["lines"]	= jsonLines;
+	}
+	else
+	{
+		jvResult	= rpcError(rpcACT_NOT_FOUND);
+	}
+
+	return jvResult;
+}
+
+// {
+//   account: <account>|<nickname>|<account_public_key> [<index>]
+//   index: <number>		// optional, defaults to 0.
+// }
+Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
+{
+	std::string		strIdent	= jvRequest["account"].asString();
+	bool			bIndex		= jvRequest.isMember("index");
+	int				iIndex		= bIndex ? jvRequest["index"].asUInt() : 0;
+
+	RippleAddress	raAccount;
+
+	Json::Value jvResult;
+
+	jvResult	= accountFromString(uint256(0), raAccount, bIndex, strIdent, iIndex);
+
+	if (!jvResult.empty())
+		return jvResult;
+
+	// Get info on account.
+
+	jvResult["account"]	= raAccount.humanAccountID();
+	if (bIndex)
+		jvResult["index"]	= iIndex;
+
+	AccountState::pointer	as		= mNetOps->getAccountState(uint256(0), raAccount);
+	if (as)
+	{
+		Json::Value	jsonLines(Json::arrayValue);
+
+		AccountItems offers(raAccount.getAccountID(), AccountItem::pointer(new Offer()));
+		BOOST_FOREACH(AccountItem::pointer item, offers.getItems())
+		{
+			Offer* offer=(Offer*)item.get();
+
+			STAmount takerPays	= offer->getTakerPays();
+			STAmount takerGets	= offer->getTakerGets();
+			//RippleAddress account	= offer->getAccount();
+
+			Json::Value	obj	= Json::Value(Json::objectValue);
+
+			//obj["account"]		= account.humanAccountID();
+			obj["taker_pays"]		= takerPays.getJson(0);
+			obj["taker_gets"]		= takerGets.getJson(0);
+
+			jsonLines.append(obj);
+		}
+		jvResult["offers"]	= jsonLines;
 	}
 	else
 	{
@@ -2218,7 +2277,8 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 		{	"owner_info",			&RPCHandler::doOwnerInfo,		    false,	false,	optCurrent	},
 		{	"peers",				&RPCHandler::doPeers,			    true,	false,	optNone		},
 //		{	"profile",				&RPCHandler::doProfile,			    false,	false,	optCurrent	},
-		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,	    false,	false,	optCurrent	},
+		{	"account_lines",		&RPCHandler::doAccountLines,	    false,	false,	optCurrent	},
+		{	"account_offers",		&RPCHandler::doAccountOffers,	    false,	false,	optCurrent	},
 		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	    false,	false,	optCurrent	},
 		{	"submit",				&RPCHandler::doSubmit,			    false,	false,	optCurrent	},
 		{	"server_info",			&RPCHandler::doServerInfo,		    true,	false,	optNone		},

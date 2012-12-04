@@ -13,7 +13,6 @@
 #include "Transaction.h"
 #include "TransactionMeta.h"
 #include "AccountState.h"
-#include "RippleState.h"
 #include "NicknameState.h"
 #include "types.h"
 #include "BitcoinUtil.h"
@@ -290,8 +289,6 @@ public:
 	static uint256 getRippleStateIndex(const RippleAddress& naA, const RippleAddress& naB, const uint160& uCurrency);
 	static uint256 getRippleStateIndex(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
 		{ return getRippleStateIndex(RippleAddress::createAccountID(uiA), RippleAddress::createAccountID(uiB), uCurrency); }
-
-	RippleState::pointer accessRippleState(const uint256& uNode);
 
 	SLE::pointer getRippleState(LedgerStateParms& parms, const uint256& uNode);
 

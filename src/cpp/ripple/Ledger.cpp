@@ -210,21 +210,6 @@ NicknameState::pointer Ledger::getNicknameState(const uint256& uNickname)
 	return boost::make_shared<NicknameState>(sle);
 }
 
-RippleState::pointer Ledger::accessRippleState(const uint256& uNode)
-{
-	ScopedLock l(mAccountStateMap->Lock());
-	SHAMapItem::pointer item = mAccountStateMap->peekItem(uNode);
-	if (!item)
-	{
-		return RippleState::pointer();
-	}
-
-	SerializedLedgerEntry::pointer sle =
-		boost::make_shared<SerializedLedgerEntry>(item->peekSerializer(), item->getTag());
-	if (sle->getType() != ltRIPPLE_STATE) return RippleState::pointer();
-	return boost::make_shared<RippleState>(sle);
-}
-
 bool Ledger::addTransaction(const uint256& txID, const Serializer& txn)
 { // low-level - just add to table
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(txID, txn.peekData());

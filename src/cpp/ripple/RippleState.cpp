@@ -1,12 +1,19 @@
 #include "RippleState.h"
 
-RippleState::RippleState(SerializedLedgerEntry::pointer ledgerEntry) :
-	mLedgerEntry(ledgerEntry),
+
+AccountItem::pointer RippleState::makeItem(uint160& accountID, SerializedLedgerEntry::pointer ledgerEntry)
+{
+	if (!mLedgerEntry || mLedgerEntry->getType() != ltRIPPLE_STATE) return(AccountItem::pointer());
+	RippleState* rs=new RippleState(ledgerEntry);
+	rs->setViewAccount(accountID);
+
+	return(AccountItem::pointer(rs));
+}
+
+RippleState::RippleState(SerializedLedgerEntry::pointer ledgerEntry) : AccountItem(ledgerEntry),
 	mValid(false),
 	mViewLowest(true)
 {
-	if (!mLedgerEntry || mLedgerEntry->getType() != ltRIPPLE_STATE) return;
-
 	mLowLimit		= mLedgerEntry->getFieldAmount(sfLowLimit);
 	mHighLimit		= mLedgerEntry->getFieldAmount(sfHighLimit);
 

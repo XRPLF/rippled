@@ -40,6 +40,8 @@ void printHelp(const po::options_description& desc)
 	cerr << "Commands: " << endl;
 	cerr << "     account_domain_set <seed> <paying_account> [<domain>]" << endl;
 	cerr << "     account_email_set <seed> <paying_account> [<email_address>]" << endl;
+	cerr << "     account_lines <account>|<nickname>|<account_public_key> [<index>]" << endl;
+	cerr << "     account_offers <account>|<nickname>|<account_public_key> [<index>]" << endl;
 	cerr << "     account_info <account>|<nickname>" << endl;
 	cerr << "     account_info <seed>|<pass_phrase>|<key> [<index>]" << endl;
 	cerr << "     account_message_set <seed> <paying_account> <pub_key>" << endl;
@@ -60,7 +62,6 @@ void printHelp(const po::options_description& desc)
 	cerr << "     password_set <master_seed> <regular_seed> [<account>]" << endl;
 	cerr << "     peers" << endl;
 	cerr << "     ripple ..." << endl;
-	cerr << "     ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]" << endl;
 	cerr << "     ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<quality_in>] [<quality_out>]" << endl;
 	cerr << "     send <seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;
 	cerr << "     stop" << endl;
