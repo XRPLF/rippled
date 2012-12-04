@@ -79,7 +79,7 @@ std::string SerializedTransaction::getText() const
 }
 
 std::vector<RippleAddress> SerializedTransaction::getAffectedAccounts() const
-{
+{ // FIXME: This needs to be thought out better
 	std::vector<RippleAddress> accounts;
 
 	BOOST_FOREACH(const SerializedType& it, peekData())
@@ -99,6 +99,26 @@ std::vector<RippleAddress> SerializedTransaction::getAffectedAccounts() const
 			}
 			if (!found)
 				accounts.push_back(na);
+		}
+		if (it.getFName() == sfLimitAmount)
+		{
+			uint160 issuer = dynamic_cast<const STAmount*>(&it)->getIssuer();
+			if (issuer.isNonZero())
+			{
+				RippleAddress na;
+				na.setAccountID(issuer);
+				bool found = false;
+				BOOST_FOREACH(const RippleAddress& it, accounts)
+				{
+					if (it == na)
+					{
+						found = true;
+						break;
+					}
+				}
+				if (!found)
+					accounts.push_back(na);
+			}
 		}
 	}
 	return accounts;
