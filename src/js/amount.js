@@ -483,12 +483,19 @@ Amount.prototype.to_text = function(allow_nan) {
  *
  * @param opts Options for formatter.
  * @param opts.precision {Number} Max. number of digits after decimal point.
+ * @param opts.group_sep {Boolean|String} Whether to show a separator every n
+ *   digits, if a string, that value will be used as the separator. Default: ","
+ * @param opts.group_width {Number} How many numbers will be grouped together,
+ *   default: 3.
+ * @param opts.signed {Boolean|String} Whether negative numbers will have a
+ *   prefix. If String, that string will be used as the prefix. Default: "-"
  */
 Amount.prototype.to_human = function (opts)
 {
   opts = opts || {};
 
   // Default options
+  if ("undefined" === typeof opts.signed) opts.signed = true;
   if ("undefined" === typeof opts.group_sep) opts.group_sep = true;
   opts.group_width = opts.group_width || 3;
 
@@ -513,7 +520,12 @@ Amount.prototype.to_human = function (opts)
   }
 
   var formatted = '';
-  if (opts.signed && this._is_negative) formatted += "- ";
+  if (opts.signed && this._is_negative) {
+    if ("string" !== typeof opts.signed) {
+      opts.signed = '-';
+    }
+    formatted += opts.signed;
+  }
   formatted += int_part.length ? int_part : '0';
   formatted += fraction_part.length ? '.'+fraction_part : '';
 
