@@ -1401,38 +1401,39 @@ Json::Value RPCHandler::doWalletPropose(Json::Value jvRequest)
 	return obj;
 }
 
-// wallet_seed [<seed>|<passphrase>|<passkey>]
-Json::Value RPCHandler::doWalletSeed(Json::Value params)
+// {
+//   secret: <string>
+// }
+Json::Value RPCHandler::doWalletSeed(Json::Value jvRequest)
 {
-	RippleAddress	naSeed;
+	RippleAddress	raSeed;
+	bool			bSecret	= jvRequest.isMember("secret");
 
-	if (params.size()
-		&& !naSeed.setSeedGeneric(params[0u].asString()))
+	if (bSecret && !raSeed.setSeedGeneric(jvRequest["secret"].asString()))
 	{
 		return rpcError(rpcBAD_SEED);
 	}
 	else
 	{
-		RippleAddress	naAccount;
+		RippleAddress	raAccount;
 
-		if (!params.size())
+		if (!bSecret)
 		{
-			naSeed.setSeedRandom();
+			raSeed.setSeedRandom();
 		}
 
-		RippleAddress	naGenerator	= RippleAddress::createGeneratorPublic(naSeed);
+		RippleAddress	raGenerator	= RippleAddress::createGeneratorPublic(raSeed);
 
-		naAccount.setAccountPublic(naGenerator, 0);
+		raAccount.setAccountPublic(raGenerator, 0);
 
 		Json::Value obj(Json::objectValue);
 
-		obj["seed"]		= naSeed.humanSeed();
-		obj["key"]		= naSeed.humanSeed1751();
+		obj["seed"]		= raSeed.humanSeed();
+		obj["key"]		= raSeed.humanSeed1751();
 
 		return obj;
 	}
 }
-
 
 // TODO: for now this simply checks if this is the admin account
 // TODO: need to prevent them hammering this over and over
@@ -2221,7 +2222,7 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 
 		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,	   -1, -1, false,	false,	optCurrent	},
 		{	"wallet_propose",		&RPCHandler::doWalletPropose,	   -1, -1, false,	false,	optNone		},
-		{	"wallet_seed",			&RPCHandler::doWalletSeed,			0,  1, false,	false,	optNone		},
+		{	"wallet_seed",			&RPCHandler::doWalletSeed,		   -1, -1, false,	false,	optNone		},
 
 		{	"login",				&RPCHandler::doLogin,				2,  2, true,	false,	optNone		},
 

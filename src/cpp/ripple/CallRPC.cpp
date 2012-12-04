@@ -245,7 +245,19 @@ Json::Value RPCParser::parseWalletPropose(const Json::Value& jvParams)
 {
 	Json::Value	jvRequest;
 
-	jvRequest["passphrase"]		= jvParams[0u].asString();
+	if (jvParams.size())
+		jvRequest["passphrase"]		= jvParams[0u].asString();
+
+	return jvRequest;
+}
+
+// wallet_seed [<seed>|<passphrase>|<passkey>]
+Json::Value RPCParser::parseWalletSeed(const Json::Value& jvParams)
+{
+	Json::Value	jvRequest;
+
+	if (jvParams.size())
+		jvRequest["secret"]		= jvParams[0u].asString();
 
 	return jvRequest;
 }
@@ -312,7 +324,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 
 		{	"wallet_accounts",		&RPCParser::parseWalletAccounts,	    1,  1	},
 		{	"wallet_propose",		&RPCParser::parseWalletPropose,			0,  1	},
-//		{	"wallet_seed",			&RPCParser::doWalletSeed,			0,  1, false,	false,	optNone		},
+		{	"wallet_seed",			&RPCParser::parseWalletSeed,			0,  1	},
 //
 //		{	"login",				&RPCParser::doLogin,				2,  2, true,	false,	optNone		},
 
