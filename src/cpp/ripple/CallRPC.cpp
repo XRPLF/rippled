@@ -394,6 +394,8 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		// - To modify the method, provide a new method in the request.
 		{	"accept_ledger",		&RPCParser::parseAsIs,					0,	0	},
 		{	"account_info",			&RPCParser::parseAccountInfo,			1,  2	},
+		{	"account_lines",		&RPCParser::parseAccountItems,			1,  2	},
+		{	"account_offers",		&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_tx",			&RPCParser::parseAccountTransactions,	2,  3	},
 		{	"connect",				&RPCParser::parseConnect,				1,  2	},
 		{	"get_counts",			&RPCParser::parseGetCounts,				0,	1	},
@@ -409,8 +411,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"owner_info",			&RPCParser::parseOwnerInfo,				1,  2	},
 		{	"peers",				&RPCParser::parseAsIs,					0,  0	},
 //		{	"profile",				&RPCParser::parseProfile,				1,  9	},
-		{	"account_lines",		&RPCParser::parseAccountItems,			1,  2	},
-		{	"account_offers",		&RPCParser::parseAccountItems,			1,  2	},
+		{	"random",				&RPCParser::parseAsIs,					0,  0	},
 //		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	   -1, -1	},
 		{	"submit",				&RPCParser::parseSubmit,				2,  2	},
 		{	"server_info",			&RPCParser::parseAsIs,					0,  0	},

@@ -689,6 +689,23 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 	return jvResult;
 }
 
+// Result:
+// {
+//   random: <uint160>
+// }
+Json::Value RPCHandler::doRandom(Json::Value jvRequest)
+{
+	uint160			uRandom;
+
+	RAND_bytes(uRandom.begin(), uRandom.size());
+
+	Json::Value jvResult;
+
+	jvResult["random"]	= uRandom.ToString();
+
+	return jvResult;
+}
+
 // TODO:
 // - Add support for specifying non-endpoint issuer.
 // - Return fully expanded path with proof.
@@ -2262,6 +2279,8 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 		// Request-response methods
 		{	"accept_ledger",		&RPCHandler::doAcceptLedger,	    true,	false,  optCurrent	},
 		{	"account_info",			&RPCHandler::doAccountInfo,		    false,	false,	optCurrent	},
+		{	"account_lines",		&RPCHandler::doAccountLines,	    false,	false,	optCurrent	},
+		{	"account_offers",		&RPCHandler::doAccountOffers,	    false,	false,	optCurrent	},
 		{	"account_tx",			&RPCHandler::doAccountTransactions, false,	false,	optNetwork	},
 		{	"connect",				&RPCHandler::doConnect,			    true,	false,	optNone		},
 		{	"get_counts",			&RPCHandler::doGetCounts,		    true,	false,	optNone		},
@@ -2277,8 +2296,7 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 		{	"owner_info",			&RPCHandler::doOwnerInfo,		    false,	false,	optCurrent	},
 		{	"peers",				&RPCHandler::doPeers,			    true,	false,	optNone		},
 //		{	"profile",				&RPCHandler::doProfile,			    false,	false,	optCurrent	},
-		{	"account_lines",		&RPCHandler::doAccountLines,	    false,	false,	optCurrent	},
-		{	"account_offers",		&RPCHandler::doAccountOffers,	    false,	false,	optCurrent	},
+		{	"random",				&RPCHandler::doRandom,				false,	false,	optNone		},
 		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	    false,	false,	optCurrent	},
 		{	"submit",				&RPCHandler::doSubmit,			    false,	false,	optCurrent	},
 		{	"server_info",			&RPCHandler::doServerInfo,		    true,	false,	optNone		},
