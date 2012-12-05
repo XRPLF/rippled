@@ -47,6 +47,7 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 		{ rpcNO_PATH,				"noPath",			"Unable to find a ripple path."							},
 		{ rpcNO_PERMISSION,			"noPermission",		"You don't have permission for this command."			},
 		{ rpcNOT_STANDALONE,		"notStandAlone",	"Operation valid in debug mode only."					},
+		{ rpcNOT_SUPPORTED,			"notSupported",		"Operation not supported."								},
 		{ rpcPASSWD_CHANGED,		"passwdChanged",	"Wrong key, password changed."							},
 		{ rpcPAYS_ACT_MALFORMED,	"paysActMalformed",	"Pays account malformed."								},
 		{ rpcPAYS_AMT_MALFORMED,	"paysAmtMalformed",	"Pays amount malformed."								},

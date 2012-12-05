@@ -67,6 +67,7 @@ enum {
 	rpcINTERNAL,		// Generic internal error.
 	rpcFAIL_GEN_DECRPYT,
 	rpcNOT_IMPL,
+	rpcNOT_SUPPORTED,
 	rpcNO_GEN_DECRPYT,
 };
 
