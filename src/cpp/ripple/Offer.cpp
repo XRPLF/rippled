@@ -2,7 +2,7 @@
 
 AccountItem::pointer Offer::makeItem(const uint160& ,SerializedLedgerEntry::ref ledgerEntry)
 {
-	if (!mLedgerEntry || mLedgerEntry->getType() != ltOFFER) return(AccountItem::pointer());
+	if (!ledgerEntry || ledgerEntry->getType() != ltOFFER) return(AccountItem::pointer());
 	Offer* offer=new Offer(ledgerEntry);
 	return(AccountItem::pointer(offer));
 }

@@ -3,7 +3,7 @@
 
 AccountItem::pointer RippleState::makeItem(const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry)
 {
-	if (!mLedgerEntry || mLedgerEntry->getType() != ltRIPPLE_STATE) return(AccountItem::pointer());
+	if (!ledgerEntry || ledgerEntry->getType() != ltRIPPLE_STATE) return(AccountItem::pointer());
 	RippleState* rs=new RippleState(ledgerEntry);
 	rs->setViewAccount(accountID);
 
