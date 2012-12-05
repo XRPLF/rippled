@@ -1575,15 +1575,16 @@ Json::Value RPCHandler::doLogLevel(Json::Value jvRequest)
 	// log_level
 	if (!jvRequest.isMember("severity"))
 	{ // get log severities
-		Json::Value ret = Json::objectValue;
+		Json::Value ret(Json::objectValue);
+		Json::Value lev(Json::objectValue);
 
-		ret["base"] = Log::severityToString(Log::getMinSeverity());
-
+		lev["base"] = Log::severityToString(Log::getMinSeverity());
 		std::vector< std::pair<std::string, std::string> > logTable = LogPartition::getSeverities();
 		typedef std::pair<std::string, std::string> stringPair;
 		BOOST_FOREACH(const stringPair& it, logTable)
-			ret[it.first] = it.second;
+			lev[it.first] = it.second;
 
+		ret["levels"] = lev;
 		return ret;
 	}
 
