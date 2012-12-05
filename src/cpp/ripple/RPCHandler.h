@@ -38,6 +38,8 @@ class RPCHandler
 	Json::Value doAcceptLedger(Json::Value jvRequest);
 
 	Json::Value doAccountInfo(Json::Value params);
+	Json::Value doAccountLines(Json::Value params);
+	Json::Value doAccountOffers(Json::Value params);
 	Json::Value doAccountTransactions(Json::Value params);
 	Json::Value doConnect(Json::Value params);
 	Json::Value doDataDelete(Json::Value params);
@@ -45,27 +47,21 @@ class RPCHandler
 	Json::Value doDataStore(Json::Value params);
 	Json::Value doGetCounts(Json::Value params);
 	Json::Value doLedger(Json::Value params);
+	Json::Value doLogLevel(Json::Value params);
 	Json::Value doLogRotate(Json::Value params);
 	Json::Value doNicknameInfo(Json::Value params);
-
 	Json::Value doOwnerInfo(Json::Value params);
-
-	Json::Value doProfile(Json::Value params);
 	Json::Value doPeers(Json::Value params);
-
-	Json::Value doAccountLines(Json::Value params);
-	Json::Value doAccountOffers(Json::Value params);
+	Json::Value doProfile(Json::Value params);
+	Json::Value doRandom(Json::Value jvRequest);
 	Json::Value doRipplePathFind(Json::Value jvRequest);
 	Json::Value doServerInfo(Json::Value params);
 	Json::Value doSessionClose(Json::Value params);
 	Json::Value doSessionOpen(Json::Value params);
-	Json::Value doLogLevel(Json::Value params);
 	Json::Value doStop(Json::Value params);
 	Json::Value doSubmit(Json::Value params);
 	Json::Value doTx(Json::Value params);
 	Json::Value doTxHistory(Json::Value params);
-
-
 	Json::Value doUnlAdd(Json::Value params);
 	Json::Value doUnlDelete(Json::Value params);
 	Json::Value doUnlFetch(Json::Value params);

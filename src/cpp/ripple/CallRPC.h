@@ -12,6 +12,7 @@ protected:
 	typedef Json::Value (RPCParser::*parseFuncPtr)(const Json::Value &jvParams);
 
 	Json::Value parseAccountInfo(const Json::Value& jvParams);
+	Json::Value parseAccountItems(const Json::Value& jvParams);
 	Json::Value parseAccountTransactions(const Json::Value& jvParams);
 	Json::Value parseAsIs(const Json::Value& jvParams);
 	Json::Value parseConnect(const Json::Value& jvParams);
@@ -23,7 +24,7 @@ protected:
 	Json::Value parseLedger(const Json::Value& jvParams);
 	Json::Value parseLogin(const Json::Value& jvParams);
 	Json::Value parseOwnerInfo(const Json::Value& jvParams);
-	Json::Value parseAccountItems(const Json::Value& jvParams);
+	Json::Value parseRandom(const Json::Value& jvParams);
 	Json::Value parseSubmit(const Json::Value& jvParams);
 	Json::Value parseTx(const Json::Value& jvParams);
 	Json::Value parseTxHistory(const Json::Value& jvParams);

@@ -61,6 +61,7 @@ void printHelp(const po::options_description& desc)
 	cerr << "     password_fund <seed> <paying_account> [<account>]" << endl;
 	cerr << "     password_set <master_seed> <regular_seed> [<account>]" << endl;
 	cerr << "     peers" << endl;
+	cerr << "     random" << endl;
 	cerr << "     ripple ..." << endl;
 	cerr << "     ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<quality_in>] [<quality_out>]" << endl;
 	cerr << "     send <seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;

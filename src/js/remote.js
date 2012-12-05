@@ -359,6 +359,7 @@ Remote.prototype._connect_retry = function () {
     this.online_state = 'connecting';
     this.retry        = 0;
 
+    this._set_state('offline'); // Report newly offline.
     this._connect_start();
   }
   else
@@ -413,7 +414,7 @@ Remote.prototype._connect_start = function () {
     if (self.online_target) {
       self._set_state('online');
 
-      // Note, we could get disconnected before tis go through.
+      // Note, we could get disconnected before this goes through.
       self._server_subscribe();     // Automatically subscribe.
     }
     else {
