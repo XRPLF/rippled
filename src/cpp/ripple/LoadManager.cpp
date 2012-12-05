@@ -70,6 +70,7 @@ bool LoadManager::shouldWarn(LoadSource& source) const
 	canonicalize(source, now);
 	if (source.isPrivileged() || (source.mBalance < mDebitWarn) || (source.mLastWarning == now))
 		return false;
+
 	source.mLastWarning = now;
 	return true;
 }
@@ -84,7 +85,7 @@ bool LoadManager::shouldCutoff(LoadSource& source) const
 }
 
 bool LoadManager::adjust(LoadSource& source, int credits) const
-{
+{ // return: true = need to warn/cutoff
 	time_t now = time(NULL);
 	boost::mutex::scoped_lock sl(mLock);
 
