@@ -1570,10 +1570,10 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest)
 	return ret;
 }
 
-Json::Value RPCHandler::doLogLevel(Json::Value params)
+Json::Value RPCHandler::doLogLevel(Json::Value jvRequest)
 {
 	// log_level
-	if (params.size() == 0)
+	if (!jvRequest.isMember("severity"))
 	{ // get log severities
 		Json::Value ret = Json::objectValue;
 
@@ -1587,35 +1587,29 @@ Json::Value RPCHandler::doLogLevel(Json::Value params)
 		return ret;
 	}
 
+	LogSeverity sv = Log::stringToSeverity(jvRequest["severity"].asString());
+	if (sv == lsINVALID)
+		return rpcError(rpcINVALID_PARAMS);
+
 	// log_level severity
-	if (params.size() == 1)
+	if (!jvRequest.isMember("partition"))
 	{ // set base log severity
-		LogSeverity sv = Log::stringToSeverity(params[0u].asString());
-		if (sv == lsINVALID)
-			return rpcError(rpcINVALID_PARAMS);
-
-		Log::setMinSeverity(sv,true);
-
+		Log::setMinSeverity(sv, true);
 		return rpcError(rpcSUCCESS);
 	}
 
 	// log_level partition severity base?
-	if (params.size() == 2)
+	if (jvRequest.isMember("partition"))
 	{ // set partition severity
-		LogSeverity sv = Log::stringToSeverity(params[1u].asString());
-
-		if (sv == lsINVALID)
-			return rpcError(rpcINVALID_PARAMS);
-
-		if (params[2u].asString() == "base")
+		std::string partition(jvRequest["partition"].asString());
+		if (boost::iequals(partition, "base"))
 			Log::setMinSeverity(sv,false);
-		else if (!LogPartition::setSeverity(params[0u].asString(), sv))
+		else if (!LogPartition::setSeverity(partition, sv))
 			return rpcError(rpcINVALID_PARAMS);
 
 		return rpcError(rpcSUCCESS);
 	}
 
-	assert(false);
 	return rpcError(rpcINVALID_PARAMS);
 }
 
