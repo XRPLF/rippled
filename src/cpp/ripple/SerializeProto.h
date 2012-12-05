@@ -58,6 +58,7 @@
 	FIELD(FirstLedgerSequence,	UINT32, 26)
 	FIELD(LastLedgerSequence,	UINT32, 27)
 	FIELD(TransactionIndex,		UINT32, 28)
+	FIELD(OperationLimit,		UINT32, 29)
 
 	// 64-bit integers
 	FIELD(IndexNext,			UINT64, 1)

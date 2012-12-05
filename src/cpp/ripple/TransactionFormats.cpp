@@ -10,6 +10,7 @@ std::map<std::string, TransactionFormat*> TransactionFormat::byName;
 		<< SOElement(sfAccount,				SOE_REQUIRED)	\
 		<< SOElement(sfSequence,			SOE_REQUIRED)	\
 		<< SOElement(sfFee,					SOE_REQUIRED)	\
+		<< SOElement(sfOperationLimit,		SOE_OPTIONAL)   \
 		<< SOElement(sfSigningPubKey,		SOE_REQUIRED)	\
 		<< SOElement(sfTxnSignature,		SOE_OPTIONAL)
 
