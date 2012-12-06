@@ -23,6 +23,7 @@ protected:
 	Json::Value parseGetCounts(const Json::Value& jvParams);
 	Json::Value parseLedger(const Json::Value& jvParams);
 	Json::Value parseLogin(const Json::Value& jvParams);
+	Json::Value parseLogLevel(const Json::Value& jvParams);
 	Json::Value parseOwnerInfo(const Json::Value& jvParams);
 	Json::Value parseRandom(const Json::Value& jvParams);
 	Json::Value parseSubmit(const Json::Value& jvParams);

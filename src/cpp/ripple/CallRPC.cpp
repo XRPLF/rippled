@@ -210,6 +210,24 @@ Json::Value RPCParser::parseLogin(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+// log_level:							Get log levels
+// log_level <severity>:				Set master log level to the specified severity
+// log_level <partition> <severity>:	Set specified partition to specified severity
+Json::Value RPCParser::parseLogLevel(const Json::Value& jvParams)
+{
+	Json::Value		jvRequest(Json::objectValue);
+
+	if (jvParams.size() == 1)
+		jvRequest["severity"] = jvParams[0u].asString();
+	else if (jvParams.size() == 2)
+	{
+		jvRequest["partition"] = jvParams[0u].asString();
+		jvRequest["severity"] = jvParams[1u].asString();
+	}
+
+	return jvRequest;
+}
+
 // owner_info <account>|<nickname>|<account_public_key>
 // owner_info <seed>|<pass_phrase>|<key> [<index>]
 Json::Value RPCParser::parseOwnerInfo(const Json::Value& jvParams)
@@ -405,7 +423,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"ledger_current",		&RPCParser::parseAsIs,					0,  0	},
 //		{	"ledger_entry",			&RPCParser::parseLedgerEntry,		   -1, -1	},
 //		{	"ledger_header",		&RPCParser::parseLedgerHeader,		   -1, -1	},
-//		{	"log_level",			&RPCParser::parseLogLevel,				0,  2	},
+		{	"log_level",			&RPCParser::parseLogLevel,				0,  2	},
 		{	"logrotate",			&RPCParser::parseAsIs,					0,  0	},
 //		{	"nickname_info",		&RPCParser::parseNicknameInfo,			1,  1	},
 		{	"owner_info",			&RPCParser::parseOwnerInfo,				1,  2	},

@@ -59,7 +59,7 @@ public:
 
 	bool shouldWarn(LoadSource&) const;
 	bool shouldCutoff(LoadSource&) const;
-	bool adjust(LoadSource&, int credits) const;	// return value: false = balance okay, true = warn/cutoff
+	bool adjust(LoadSource&, int credits) const; // return value: false=balance okay, true=warn/cutoff
 };
 
 class LoadFeeTrack
@@ -73,14 +73,10 @@ protected:
 
 	uint32 mLocalTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
 	uint32 mRemoteTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
-	uint32 mPeerLoadSchedule;		// Schedule setting, 0 = normal schedule
-	uint32 mClientLoadSchedule;		// Schedule setting, 0 = normal schedule
 
 public:
 
-	LoadFeeTrack()
-		: mLocalTxnLoadFee(lftNormalFee), mRemoteTxnLoadFee(lftNormalFee), mPeerLoadSchedule(0), mClientLoadSchedule(0)
-	{ ; }
+	LoadFeeTrack()	: mLocalTxnLoadFee(lftNormalFee), mRemoteTxnLoadFee(lftNormalFee) { ; }
 
 	uint64 scaleFee(uint64 fee);
 
