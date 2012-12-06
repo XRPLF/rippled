@@ -35,8 +35,8 @@ public:
 
 	void setTargetLatency(uint64 avg, uint64 pk)
 	{
-		mTargetLatencyAvg = avg;
-		mTargetLatencyPk = pk;
+		mTargetLatencyAvg = avg * 4;
+		mTargetLatencyPk = pk * 4;
 	}
 
 	bool isOverTarget()
