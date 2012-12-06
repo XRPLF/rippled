@@ -164,7 +164,7 @@ static bool shouldAcquire(uint32 currentLedger, uint32 ledgerHistory, uint32 can
 	if (candidateLedger >= currentLedger)
 		ret = true;
 	else ret = (currentLedger - candidateLedger) <= ledgerHistory;
-	cLog(lsDEBUG) << "Missing ledger " << candidateLedger << (ret ? "will" : "will NOT") << " be acquired";
+	cLog(lsDEBUG) << "Missing ledger " << candidateLedger << (ret ? " will" : " will NOT") << " be acquired";
 	return ret;
 }
 
