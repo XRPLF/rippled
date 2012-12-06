@@ -70,8 +70,8 @@ Json::Value RPCParser::parseAccountInfo(const Json::Value& jvParams)
 	if (!raAddress.setAccountPublic(strIdent) && !raAddress.setAccountID(strIdent) && !raAddress.setSeedGeneric(strIdent))
 		return rpcError(rpcACT_MALFORMED);
 
-	jvRequest["ident"]	= strIdent;
-	jvRequest["index"]	= iIndex;
+	jvRequest["ident"]			= strIdent;
+	jvRequest["account_index"]	= iIndex;
 
 	return jvRequest;
 }
@@ -233,7 +233,7 @@ Json::Value RPCParser::parseAccountItems(const Json::Value& jvParams)
 
 	jvRequest["account"]	= strIdent;
 	if (bIndex)
-		jvRequest["index"]	= iIndex;
+		jvRequest["account_index"]	= iIndex;
 
 	return jvRequest;
 }

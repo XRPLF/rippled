@@ -692,44 +692,44 @@ Remote.prototype.request_unsubscribe = function (streams) {
   return request;
 };
 
-Remote.prototype.request_transaction_entry = function (hash) {
+// --> current: true, for the current ledger.
+Remote.prototype.request_transaction_entry = function (hash, current) {
   //utils.assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
 
   return (new Request(this, 'transaction_entry'))
+    .ledger_choose(current)
     .tx_hash(hash);
 };
 
-Remote.prototype.request_account_lines = function (accountID, index) {
+// --> account_index: sub_account index (optional)
+// --> current: true, for the current ledger.
+Remote.prototype.request_account_lines = function (accountID, account_index, current) {
   // XXX Does this require the server to be trusted?
   //utils.assert(this.trusted);
 
   var request = new Request(this, 'account_lines');
 
-  request.message.account = accountID;
+  request.message.account = UInt160.json_rewrite(accountID);
 
-  if (index)
-    request.message.index   = index;
+  if (account_index)
+    request.message.index   = account_index;
 
-  return request;
+  return request
+    .ledger_choose(current);
 };
 
-Remote.prototype.request_account_offers = function (accountID) {
- 
+// --> account_index: sub_account index (optional)
+// --> current: true, for the current ledger.
+Remote.prototype.request_account_offers = function (accountID, account_index, current) {
   var request = new Request(this, 'account_offers');
 
-  request.message.account = accountID;
+  request.message.account = UInt160.json_rewrite(accountID);
 
-  return request;
-};
+  if (account_index)
+    request.message.index   = account_index;
 
-Remote.prototype.request_wallet_accounts = function (seed) {
-  utils.assert(this.trusted);     // Don't send secrets.
-
-  var request = new Request(this, 'wallet_accounts');
-
-  request.message.seed = seed;
-
-  return request;
+  return request
+    .ledger_choose(current);
 };
 
 Remote.prototype.request_account_tx = function (accountID, ledger_min, ledger_max) {
@@ -747,6 +747,27 @@ Remote.prototype.request_account_tx = function (accountID, ledger_min, ledger_ma
     request.message.ledger_min  = ledger_min;
     request.message.ledger_max  = ledger_max;
   }
+
+  return request;
+};
+
+Remote.prototype.request_ledger = function (ledger, full) {
+  var request = new Request(this, 'ledger');
+
+  request.message.ledger = ledger;
+
+  if (full)
+    request.message.full = true;
+
+  return request;
+};
+
+Remote.prototype.request_wallet_accounts = function (seed) {
+  utils.assert(this.trusted);     // Don't send secrets.
+
+  var request = new Request(this, 'wallet_accounts');
+
+  request.message.seed = seed;
 
   return request;
 };

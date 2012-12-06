@@ -21,19 +21,17 @@ class RPCHandler
 	// Utilities
 	void addSubmitPath(Json::Value& txJSON);
 	boost::unordered_set<RippleAddress> parseAccountIds(const Json::Value& jvArray);
-	int getParamCount(Json::Value params);
-	bool extractString(std::string& param, const Json::Value& params, int index);
 
 	Json::Value lookupLedger(Json::Value jvRequest, Ledger::pointer& lpLedger);
 
-	Json::Value getMasterGenerator(const uint256& uLedger, const RippleAddress& naRegularSeed, RippleAddress& naMasterGenerator);
-	Json::Value authorize(const uint256& uLedger, const RippleAddress& naRegularSeed, const RippleAddress& naSrcAccountID,
+	Json::Value getMasterGenerator(Ledger::ref lrLedger, const RippleAddress& naRegularSeed, RippleAddress& naMasterGenerator);
+	Json::Value authorize(Ledger::ref lrLedger, const RippleAddress& naRegularSeed, const RippleAddress& naSrcAccountID,
 		RippleAddress& naAccountPublic, RippleAddress& naAccountPrivate,
 		STAmount& saSrcBalance, const STAmount& saFee, AccountState::pointer& asSrc,
 		const RippleAddress& naVerifyGenerator);
-	Json::Value accounts(const uint256& uLedger, const RippleAddress& naMasterGenerator);
+	Json::Value accounts(Ledger::ref lrLedger, const RippleAddress& naMasterGenerator);
 
-	Json::Value accountFromString(const uint256& uLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
+	Json::Value accountFromString(Ledger::ref lrLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
 
 	Json::Value doAcceptLedger(Json::Value jvRequest);
 

@@ -34,47 +34,10 @@ RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub* infoSub)
 	mInfoSub=infoSub;
 }
 
-int RPCHandler::getParamCount(Json::Value params)
-{ // If non-array, only counts strings
-	if (params.isNull()) return 0;
-	if (params.isArray()) return params.size();
-	if (!params.isConvertibleTo(Json::stringValue))
-		return 0;
-	return 1;
-}
-bool RPCHandler::extractString(std::string& param, const Json::Value& params, int index)
-{
-	if (params.isNull()) return false;
-
-	if (index!=0)
-	{
-		if (!params.isArray() || !params.isValidIndex(index))
-			return false;
-		Json::Value p(params.get(index, Json::nullValue));
-		if (p.isNull() || !p.isConvertibleTo(Json::stringValue))
-			return false;
-		param = p.asString();
-		return true;
-	}
-
-	if (params.isArray())
-	{
-		if ( (!params.isValidIndex(0)) || (!params[0u].isConvertibleTo(Json::stringValue)) )
-			return false;
-		param = params[0u].asString();
-		return true;
-	}
-
-	if (!params.isConvertibleTo(Json::stringValue))
-		return false;
-	param = params.asString();
-	return true;
-}
-
 // Look up the master public generator for a regular seed so we may index source accounts ids.
 // --> naRegularSeed
 // <-- naMasterGenerator
-Json::Value RPCHandler::getMasterGenerator(const uint256& uLedger, const RippleAddress& naRegularSeed, RippleAddress& naMasterGenerator)
+Json::Value RPCHandler::getMasterGenerator(Ledger::ref lrLedger, const RippleAddress& naRegularSeed, RippleAddress& naMasterGenerator)
 {
 	RippleAddress		na0Public;		// To find the generator's index.
 	RippleAddress		na0Private;		// To decrypt the master generator's cipher.
@@ -83,7 +46,7 @@ Json::Value RPCHandler::getMasterGenerator(const uint256& uLedger, const RippleA
 	na0Public.setAccountPublic(naGenerator, 0);
 	na0Private.setAccountPrivate(naGenerator, naRegularSeed, 0);
 
-	SLE::pointer		sleGen			= mNetOps->getGenerator(uLedger, na0Public.getAccountID());
+	SLE::pointer		sleGen			= mNetOps->getGenerator(lrLedger, na0Public.getAccountID());
 
 	if (!sleGen)
 	{
@@ -112,14 +75,14 @@ Json::Value RPCHandler::getMasterGenerator(const uint256& uLedger, const RippleA
 // <-- saSrcBalance: Balance minus fee.
 // --> naVerifyGenerator : If provided, the found master public generator must match.
 // XXX Be more lenient, allow use of master generator on claimed accounts.
-Json::Value RPCHandler::authorize(const uint256& uLedger,
+Json::Value RPCHandler::authorize(Ledger::ref lrLedger,
 	const RippleAddress& naRegularSeed, const RippleAddress& naSrcAccountID,
 	RippleAddress& naAccountPublic, RippleAddress& naAccountPrivate,
 	STAmount& saSrcBalance, const STAmount& saFee, AccountState::pointer& asSrc,
 	const RippleAddress& naVerifyGenerator)
 {
 	// Source/paying account must exist.
-	asSrc	= mNetOps->getAccountState(uLedger, naSrcAccountID);
+	asSrc	= mNetOps->getAccountState(lrLedger, naSrcAccountID);
 	if (!asSrc)
 	{
 		return rpcError(rpcSRC_ACT_MISSING);
@@ -129,7 +92,7 @@ Json::Value RPCHandler::authorize(const uint256& uLedger,
 
 	if (asSrc->bHaveAuthorizedKey())
 	{
-		Json::Value	obj	= getMasterGenerator(uLedger, naRegularSeed, naMasterGenerator);
+		Json::Value	obj	= getMasterGenerator(lrLedger, naRegularSeed, naMasterGenerator);
 
 		if (!obj.empty())
 			return obj;
@@ -202,7 +165,7 @@ Json::Value RPCHandler::authorize(const uint256& uLedger,
 
 // --> strIdent: public key, account ID, or regular seed.
 // <-- bIndex: true if iIndex > 0 and used the index.
-Json::Value RPCHandler::accountFromString(const uint256& uLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex)
+Json::Value RPCHandler::accountFromString(Ledger::ref lrLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex)
 {
 	RippleAddress	naSeed;
 
@@ -229,7 +192,7 @@ Json::Value RPCHandler::accountFromString(const uint256& uLedger, RippleAddress&
 		naRegular0Private.setAccountPrivate(naGenerator, naSeed, 0);
 
 		//		uint160				uGeneratorID	= naRegular0Public.getAccountID();
-		SLE::pointer		sleGen			= mNetOps->getGenerator(uLedger, naRegular0Public.getAccountID());
+		SLE::pointer		sleGen			= mNetOps->getGenerator(lrLedger, naRegular0Public.getAccountID());
 		if (!sleGen)
 		{
 			// Didn't find a generator map, assume it is a master generator.
@@ -269,49 +232,40 @@ Json::Value RPCHandler::doAcceptLedger(Json::Value jvRequest)
 }
 
 // {
-//   'ident' : <indent>,
-//   'index' : <index> // optional
+//   ident : <indent>,
+//   account_index : <index> // optional
+//   ledger_hash : <ledger>
+//   ledger_index : <ledger_index>
 // }
 Json::Value RPCHandler::doAccountInfo(Json::Value jvRequest)
 {
-	// cLog(lsDEBUG) << "doAccountInfo: " << jvRequest;
+	Ledger::pointer		lpLedger;
+	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
+
+	if (!lpLedger)
+		return jvResult;
 
 	if (!jvRequest.isMember("ident"))
 		return rpcError(rpcINVALID_PARAMS);
 
 	std::string		strIdent	= jvRequest["ident"].asString();
 	bool			bIndex;
-	int				iIndex		= jvRequest.isMember("index") ? jvRequest["index"].asUInt() : 0;
+	int				iIndex		= jvRequest.isMember("account_index") ? jvRequest["account_index"].asUInt() : 0;
 	RippleAddress	naAccount;
-
-	Json::Value		jvResult;
 
 	// Get info on account.
 
-	uint256			uAccepted		= mNetOps->getClosedLedgerHash();
-	Json::Value		jAccepted		= accountFromString(uAccepted, naAccount, bIndex, strIdent, iIndex);
+	Json::Value		jAccepted		= accountFromString(lpLedger, naAccount, bIndex, strIdent, iIndex);
 
 	if (jAccepted.empty())
 	{
-		AccountState::pointer asAccepted	= mNetOps->getAccountState(uAccepted, naAccount);
+		AccountState::pointer asAccepted	= mNetOps->getAccountState(lpLedger, naAccount);
 
 		if (asAccepted)
 			asAccepted->addJson(jAccepted);
 	}
 
-	jvResult["accepted"]	= jAccepted;
-
-	Json::Value		jCurrent	= accountFromString(uint256(0), naAccount, bIndex, strIdent, iIndex);
-
-	if (jCurrent.empty())
-	{
-		AccountState::pointer asCurrent	= mNetOps->getAccountState(uint256(0), naAccount);
-
-		if (asCurrent)
-			asCurrent->addJson(jCurrent);
-	}
-
-	jvResult["current"]	= jCurrent;
+	jvResult["account_data"]	= jAccepted;
 
 #if 0
 	if (!jAccepted && !asCurrent)
@@ -319,7 +273,7 @@ Json::Value RPCHandler::doAccountInfo(Json::Value jvRequest)
 		jvResult["account"]	= naAccount.humanAccountID();
 		jvResult["status"]	= "NotFound";
 		if (bIndex)
-			jvResult["index"]	= iIndex;
+			jvResult["account_index"]	= iIndex;
 	}
 #endif
 	return jvResult;
@@ -406,6 +360,7 @@ Json::Value RPCHandler::doDataStore(Json::Value jvRequest)
 	return ret;
 }
 
+#if 0
 // XXX Needs to be revised for new paradigm
 // nickname_info <nickname>
 // Note: Nicknames are not automatically looked up by commands as they are advisory and can be changed.
@@ -433,31 +388,31 @@ Json::Value RPCHandler::doNicknameInfo(Json::Value params)
 
 	return ret;
 }
-
+#endif
 
 // {
 //   'ident' : <indent>,
-//   'index' : <index> // optional
+//   'account_index' : <index> // optional
 // }
+// XXX This would be better if it too the ledger.
 Json::Value RPCHandler::doOwnerInfo(Json::Value jvRequest)
 {
 	std::string		strIdent	= jvRequest["ident"].asString();
 	bool			bIndex;
-	int				iIndex		= jvRequest.isMember("index") ? jvRequest["index"].asUInt() : 0;
+	int				iIndex		= jvRequest.isMember("account_index") ? jvRequest["account_index"].asUInt() : 0;
 	RippleAddress	raAccount;
 
 	Json::Value		ret;
 
 	// Get info on account.
 
-	uint256			uAccepted	= mNetOps->getClosedLedgerHash();
-	Json::Value		jAccepted	= accountFromString(uAccepted, raAccount, bIndex, strIdent, iIndex);
+	Json::Value		jAccepted	= accountFromString(mNetOps->getClosedLedger(), raAccount, bIndex, strIdent, iIndex);
 
-	ret["accepted"]	= jAccepted.empty() ? mNetOps->getOwnerInfo(uAccepted, raAccount) : jAccepted;
+	ret["accepted"]	= jAccepted.empty() ? mNetOps->getOwnerInfo(mNetOps->getClosedLedger(), raAccount) : jAccepted;
 
-	Json::Value		jCurrent	= accountFromString(uint256(0), raAccount, bIndex, strIdent, iIndex);
+	Json::Value		jCurrent	= accountFromString(mNetOps->getCurrentLedger(), raAccount, bIndex, strIdent, iIndex);
 
-	ret["current"]	= jCurrent.empty() ? mNetOps->getOwnerInfo(uint256(0), raAccount) : jCurrent;
+	ret["current"]	= jCurrent.empty() ? mNetOps->getOwnerInfo(mNetOps->getCurrentLedger(), raAccount) : jCurrent;
 
 	return ret;
 }
@@ -476,10 +431,10 @@ Json::Value RPCHandler::doPeers(Json::Value)
 // issuer is the offering account
 // --> submit: 'submit|true|false': defaults to false
 // Prior to running allow each to have a credit line of what they will be getting from the other account.
-Json::Value RPCHandler::doProfile(Json::Value params)
+Json::Value RPCHandler::doProfile(Json::Value jvRequest)
 {
 	/* need to fix now that sharedOfferCreate is gone
-	int				iArgs	= params.size();
+	int				iArgs	= jvRequest.size();
 	RippleAddress	naSeedA;
 	RippleAddress	naAccountA;
 	uint160			uCurrencyOfferA;
@@ -489,26 +444,26 @@ Json::Value RPCHandler::doProfile(Json::Value params)
 	uint32			iCount	= 100;
 	bool			bSubmit	= false;
 
-	if (iArgs < 6 || "offers" != params[0u].asString())
+	if (iArgs < 6 || "offers" != jvRequest[0u].asString())
 	{
 		return rpcError(rpcINVALID_PARAMS);
 	}
 
-	if (!naSeedA.setSeedGeneric(params[1u].asString()))							// <pass_a>
+	if (!naSeedA.setSeedGeneric(jvRequest[1u].asString()))							// <pass_a>
 		return rpcError(rpcINVALID_PARAMS);
 
-	naAccountA.setAccountID(params[2u].asString());								// <account_a>
+	naAccountA.setAccountID(jvRequest[2u].asString());								// <account_a>
 
-	if (!STAmount::currencyFromString(uCurrencyOfferA, params[3u].asString()))	// <currency_offer_a>
+	if (!STAmount::currencyFromString(uCurrencyOfferA, jvRequest[3u].asString()))	// <currency_offer_a>
 		return rpcError(rpcINVALID_PARAMS);
 
-	naAccountB.setAccountID(params[4u].asString());								// <account_b>
-	if (!STAmount::currencyFromString(uCurrencyOfferB, params[5u].asString()))	// <currency_offer_b>
+	naAccountB.setAccountID(jvRequest[4u].asString());								// <account_b>
+	if (!STAmount::currencyFromString(uCurrencyOfferB, jvRequest[5u].asString()))	// <currency_offer_b>
 		return rpcError(rpcINVALID_PARAMS);
 
-	iCount	= lexical_cast_s<uint32>(params[6u].asString());
+	iCount	= lexical_cast_s<uint32>(jvRequest[6u].asString());
 
-	if (iArgs >= 8 && "false" != params[7u].asString())
+	if (iArgs >= 8 && "false" != jvRequest[7u].asString())
 		bSubmit	= true;
 
 	Log::setMinSeverity(lsFATAL,true);
@@ -566,18 +521,24 @@ Json::Value RPCHandler::doProfile(Json::Value params)
 // {
 //   account: <account>|<nickname>|<account_public_key> [<index>]
 //   index: <number>		// optional, defaults to 0.
+//   ledger_hash : <ledger>
+//   ledger_index : <ledger_index>
 // }
 Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 {
+	Ledger::pointer		lpLedger;
+	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
+
+	if (!lpLedger)
+		return jvResult;
+
 	std::string		strIdent	= jvRequest["account"].asString();
-	bool			bIndex		= jvRequest.isMember("index");
-	int				iIndex		= bIndex ? jvRequest["index"].asUInt() : 0;
+	bool			bIndex		= jvRequest.isMember("account_index");
+	int				iIndex		= bIndex ? jvRequest["account_index"].asUInt() : 0;
 
 	RippleAddress	raAccount;
 
-	Json::Value jvResult;
-
-	jvResult	= accountFromString(uint256(0), raAccount, bIndex, strIdent, iIndex);
+	jvResult	= accountFromString(lpLedger, raAccount, bIndex, strIdent, iIndex);
 
 	if (!jvResult.empty())
 		return jvResult;
@@ -586,11 +547,13 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 
 	jvResult["account"]	= raAccount.humanAccountID();
 	if (bIndex)
-		jvResult["index"]	= iIndex;
+		jvResult["account_index"]	= iIndex;
 
-	AccountState::pointer	as		= mNetOps->getAccountState(uint256(0), raAccount);
+	AccountState::pointer	as		= mNetOps->getAccountState(lpLedger, raAccount);
 	if (as)
 	{
+cLog(lsDEBUG) << "AccountState: ";
+as->dump();
 		Json::Value	jsonLines(Json::arrayValue);
 
 		jvResult["account"]	= raAccount.humanAccountID();
@@ -599,6 +562,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 		// We access a committed ledger and need not worry about changes.
 
 		AccountItems rippleLines(raAccount.getAccountID(), AccountItem::pointer(new RippleState()));
+
 		BOOST_FOREACH(AccountItem::pointer item, rippleLines.getItems())
 		{
 			RippleState* line=(RippleState*)item.get();
@@ -609,7 +573,6 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 
 			Json::Value			jPeer	= Json::Value(Json::objectValue);
 
-		
 			jPeer["account"]		= line->getAccountIDPeer().humanAccountID();
 			// Amount reported is positive if current account holds other account's IOUs.
 			// Amount reported is negative if other account holds current account's IOUs.
@@ -635,18 +598,24 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 // {
 //   account: <account>|<nickname>|<account_public_key> [<index>]
 //   index: <number>		// optional, defaults to 0.
+//   ledger_hash : <ledger>
+//   ledger_index : <ledger_index>
 // }
 Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 {
+	Ledger::pointer		lpLedger;
+	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
+
+	if (!lpLedger)
+		return jvResult;
+
 	std::string		strIdent	= jvRequest["account"].asString();
-	bool			bIndex		= jvRequest.isMember("index");
-	int				iIndex		= bIndex ? jvRequest["index"].asUInt() : 0;
+	bool			bIndex		= jvRequest.isMember("account_index");
+	int				iIndex		= bIndex ? jvRequest["account_index"].asUInt() : 0;
 
 	RippleAddress	raAccount;
 
-	Json::Value jvResult;
-
-	jvResult	= accountFromString(uint256(0), raAccount, bIndex, strIdent, iIndex);
+	jvResult	= accountFromString(lpLedger, raAccount, bIndex, strIdent, iIndex);
 
 	if (!jvResult.empty())
 		return jvResult;
@@ -655,9 +624,9 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 
 	jvResult["account"]	= raAccount.humanAccountID();
 	if (bIndex)
-		jvResult["index"]	= iIndex;
+		jvResult["account_index"]	= iIndex;
 
-	AccountState::pointer	as		= mNetOps->getAccountState(uint256(0), raAccount);
+	AccountState::pointer	as		= mNetOps->getAccountState(lpLedger, raAccount);
 	if (as)
 	{
 		Json::Value	jsonLines(Json::arrayValue);
@@ -908,8 +877,6 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 
 	Json::Value		txJSON		= jvRequest["tx_json"];
 
-
-
 	if (!naSeed.setSeedGeneric(jvRequest["secret"].asString()))
 	{
 		return rpcError(rpcBAD_SEED);
@@ -923,7 +890,7 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 		return rpcError(rpcSRC_ACT_MALFORMED);
 	}
 
-	AccountState::pointer asSrc	= mNetOps->getAccountState(uint256(0), raSrcAddressID);
+	AccountState::pointer asSrc	= mNetOps->getAccountState(mNetOps->getCurrentLedger(), raSrcAddressID);
 	if (!asSrc) return rpcError(rpcSRC_ACT_MALFORMED);
 
 	if (!txJSON.isMember("Fee")
@@ -950,7 +917,7 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 
 		if (!txJSON.isMember("Fee"))
 		{
-			if (mNetOps->getAccountState(uint256(0), dstAccountID))
+			if (mNetOps->getAccountState(mNetOps->getCurrentLedger(), dstAccountID))
 				txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
 			else
 				txJSON["Fee"] = (int) theConfig.FEE_ACCOUNT_CREATE;
@@ -1166,7 +1133,7 @@ Json::Value RPCHandler::doTxHistory(Json::Value jvRequest)
 	Json::Value	obj;
 	Json::Value	txs;
 
-	obj["index"]=startIndex;
+	obj["index"] = startIndex;
 
 	std::string sql =
 		boost::str(boost::format("SELECT * FROM Transactions ORDER BY LedgerSeq desc LIMIT %u,20")
@@ -1218,13 +1185,16 @@ Json::Value RPCHandler::doLedgerClosed(Json::Value)
 	jvResult["ledger_index"]		= mNetOps->getLedgerID(uLedger);
 	jvResult["ledger_hash"]			= uLedger.ToString();
 	//jvResult["ledger_time"]		= uLedger.
+
 	return jvResult;
 }
 
 Json::Value RPCHandler::doLedgerCurrent(Json::Value)
 {
 	Json::Value jvResult;
+
 	jvResult["ledger_current_index"]	= mNetOps->getCurrentLedgerID();
+
 	return jvResult;
 }
 
@@ -1391,7 +1361,7 @@ Json::Value RPCHandler::doValidationSeed(Json::Value jvRequest) {
 	return obj;
 }
 
-Json::Value RPCHandler::accounts(const uint256& uLedger, const RippleAddress& naMasterGenerator)
+Json::Value RPCHandler::accounts(Ledger::ref lrLedger, const RippleAddress& naMasterGenerator)
 {
 	Json::Value jsonAccounts(Json::arrayValue);
 
@@ -1404,7 +1374,7 @@ Json::Value RPCHandler::accounts(const uint256& uLedger, const RippleAddress& na
 
 		naAccount.setAccountPublic(naMasterGenerator, uIndex++);
 
-		AccountState::pointer as	= mNetOps->getAccountState(uLedger, naAccount);
+		AccountState::pointer as	= mNetOps->getAccountState(lrLedger, naAccount);
 		if (as)
 		{
 			Json::Value	jsonAccount(Json::objectValue);
@@ -1424,9 +1394,17 @@ Json::Value RPCHandler::accounts(const uint256& uLedger, const RippleAddress& na
 
 // {
 //   seed: <string>
+//   ledger_hash : <ledger>
+//   ledger_index : <ledger_index>
 // }
 Json::Value RPCHandler::doWalletAccounts(Json::Value jvRequest)
 {
+	Ledger::pointer		lpLedger;
+	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
+
+	if (!lpLedger)
+		return jvResult;
+
 	RippleAddress	naSeed;
 
 	if (!jvRequest.isMember("seed") || !naSeed.setSeedGeneric(jvRequest["seed"].asString()))
@@ -1437,17 +1415,17 @@ Json::Value RPCHandler::doWalletAccounts(Json::Value jvRequest)
 	// Try the seed as a master seed.
 	RippleAddress	naMasterGenerator	= RippleAddress::createGeneratorPublic(naSeed);
 
-	Json::Value jsonAccounts	= accounts(uint256(0), naMasterGenerator);
+	Json::Value jsonAccounts	= accounts(lpLedger, naMasterGenerator);
 
 	if (jsonAccounts.empty())
 	{
 		// No account via seed as master, try seed a regular.
-		Json::Value	ret	= getMasterGenerator(uint256(0), naSeed, naMasterGenerator);
+		Json::Value	ret	= getMasterGenerator(lpLedger, naSeed, naMasterGenerator);
 
 		if (!ret.empty())
 			return ret;
 
-		ret["accounts"]	= accounts(uint256(0), naMasterGenerator);
+		ret["accounts"]	= accounts(lpLedger, naMasterGenerator);
 
 		return ret;
 	}
@@ -1667,7 +1645,7 @@ Json::Value RPCHandler::doUnlDelete(Json::Value jvRequest)
 	}
 }
 
-Json::Value RPCHandler::doUnlList(Json::Value params)
+Json::Value RPCHandler::doUnlList(Json::Value)
 {
 	Json::Value obj(Json::objectValue);
 
@@ -1677,7 +1655,7 @@ Json::Value RPCHandler::doUnlList(Json::Value params)
 }
 
 // Populate the UNL from a local validators.txt file.
-Json::Value RPCHandler::doUnlLoad(Json::Value params)
+Json::Value RPCHandler::doUnlLoad(Json::Value)
 {
 	if (theConfig.VALIDATORS_FILE.empty() || !theApp->getUNL().nodeLoad(theConfig.VALIDATORS_FILE))
 	{
@@ -1689,7 +1667,7 @@ Json::Value RPCHandler::doUnlLoad(Json::Value params)
 
 
 // Populate the UNL from ripple.com's validators.txt file.
-Json::Value RPCHandler::doUnlNetwork(Json::Value params)
+Json::Value RPCHandler::doUnlNetwork(Json::Value jvRequest)
 {
 	theApp->getUNL().nodeNetwork();
 
@@ -1697,7 +1675,7 @@ Json::Value RPCHandler::doUnlNetwork(Json::Value params)
 }
 
 // unl_reset
-Json::Value RPCHandler::doUnlReset(Json::Value params)
+Json::Value RPCHandler::doUnlReset(Json::Value jvRequest)
 {
 	theApp->getUNL().nodeReset();
 
@@ -1705,7 +1683,7 @@ Json::Value RPCHandler::doUnlReset(Json::Value params)
 }
 
 // unl_score
-Json::Value RPCHandler::doUnlScore(Json::Value params)
+Json::Value RPCHandler::doUnlScore(Json::Value)
 {
 	theApp->getUNL().nodeScore();
 
@@ -1737,16 +1715,27 @@ Json::Value RPCHandler::doLedgerAccept(Json::Value)
 	return jvResult;
 }
 
+// {
+//   ledger_hash : <ledger>,
+//   ledger_index : <ledger_index>
+// }
+// XXX In this case, not specify either ledger does not mean ledger current. It means any ledger.
 Json::Value RPCHandler::doTransactionEntry(Json::Value jvRequest)
 {
-	Json::Value jvResult;
+	Ledger::pointer		lpLedger;
+	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
+
+	if (!lpLedger)
+		return jvResult;
 
 	if (!jvRequest.isMember("tx_hash"))
 	{
 		jvResult["error"]	= "fieldNotFoundTransaction";
 	}
-	if (!jvRequest.isMember("ledger_hash"))
+	else if (!jvRequest.isMember("ledger_hash") && !jvRequest.isMember("ledger_index"))
 	{
+		// We don't work on ledger current.
+
 		jvResult["error"]	= "notYetImplemented";	// XXX We don't support any transaction yet.
 	}
 	else
@@ -1754,12 +1743,6 @@ Json::Value RPCHandler::doTransactionEntry(Json::Value jvRequest)
 		uint256						uTransID;
 		// XXX Relying on trusted WSS client. Would be better to have a strict routine, returning success or failure.
 		uTransID.SetHex(jvRequest["tx_hash"].asString());
-
-		uint256						uLedgerID;
-		// XXX Relying on trusted WSS client. Would be better to have a strict routine, returning success or failure.
-		uLedgerID.SetHex(jvRequest["ledger_hash"].asString());
-
-		Ledger::pointer				lpLedger	= theApp->getLedgerMaster().getLedgerByHash(uLedgerID);
 
 		if (!lpLedger) {
 			jvResult["error"]	= "ledgerNotFound";
@@ -1787,6 +1770,7 @@ Json::Value RPCHandler::doTransactionEntry(Json::Value jvRequest)
 	return jvResult;
 }
 
+// XXX ledger_index needs to be allowed as a string (32-bits is to small).
 Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpLedger)
 {
 	Json::Value jvResult;
@@ -1839,6 +1823,10 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 	return jvResult;
 }
 
+// {
+//   ledger_hash : <ledger>
+//   ledger_index : <ledger_index>
+// }
 Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest)
 {
 	Ledger::pointer		lpLedger;
@@ -2042,6 +2030,10 @@ Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest)
 	return jvResult;
 }
 
+// {
+//   ledger_hash : <ledger>
+//   ledger_index : <ledger_index>
+// }
 Json::Value RPCHandler::doLedgerHeader(Json::Value jvRequest)
 {
 	Ledger::pointer		lpLedger;

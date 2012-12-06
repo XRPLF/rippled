@@ -156,8 +156,10 @@ public:
 	{ return processTransaction(transaction, stCallback()); }
 
 	Transaction::pointer findTransactionByID(const uint256& transactionID);
+#if 0
 	int findTransactionsBySource(const uint256& uLedger, std::list<Transaction::pointer>&, const RippleAddress& sourceAccount,
 		uint32 minSeq, uint32 maxSeq);
+#endif
 	int findTransactionsByDestination(std::list<Transaction::pointer>&, const RippleAddress& destinationAccount,
 		uint32 startLedgerSeq, uint32 endLedgerSeq, int maxTransactions);
 
@@ -165,27 +167,28 @@ public:
 	// Account functions
 	//
 
-	AccountState::pointer	getAccountState(const uint256& uLedger, const RippleAddress& accountID);
-	SLE::pointer			getGenerator(const uint256& uLedger, const uint160& uGeneratorID);
+	AccountState::pointer	getAccountState(Ledger::ref lrLedger, const RippleAddress& accountID);
+	SLE::pointer			getGenerator(Ledger::ref lrLedger, const uint160& uGeneratorID);
 
 	//
 	// Directory functions
 	//
 
-	STVector256				getDirNodeInfo(const uint256& uLedger, const uint256& uRootIndex,
+	STVector256				getDirNodeInfo(Ledger::ref lrLedger, const uint256& uRootIndex,
 								uint64& uNodePrevious, uint64& uNodeNext);
 
+#if 0
 	//
 	// Nickname functions
 	//
 
 	NicknameState::pointer	getNicknameState(const uint256& uLedger, const std::string& strNickname);
+#endif
 
 	//
 	// Owner functions
 	//
 
-	Json::Value getOwnerInfo(const uint256& uLedger, const RippleAddress& naAccount);
 	Json::Value getOwnerInfo(Ledger::pointer lpLedger, const RippleAddress& naAccount);
 
 	// raw object operations

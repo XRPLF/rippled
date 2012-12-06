@@ -268,6 +268,7 @@ Transaction::pointer NetworkOPs::findTransactionByID(const uint256& transactionI
 	return Transaction::load(transactionID);
 }
 
+#if 0
 int NetworkOPs::findTransactionsBySource(const uint256& uLedger, std::list<Transaction::pointer>& txns,
 	const RippleAddress& sourceAccount, uint32 minSeq, uint32 maxSeq)
 {
@@ -289,6 +290,7 @@ int NetworkOPs::findTransactionsBySource(const uint256& uLedger, std::list<Trans
 	}
 	return count;
 }
+#endif
 
 int NetworkOPs::findTransactionsByDestination(std::list<Transaction::pointer>& txns,
 	const RippleAddress& destinationAccount, uint32 startLedgerSeq, uint32 endLedgerSeq, int maxTransactions)
@@ -301,20 +303,19 @@ int NetworkOPs::findTransactionsByDestination(std::list<Transaction::pointer>& t
 // Account functions
 //
 
-AccountState::pointer NetworkOPs::getAccountState(const uint256& uLedger, const RippleAddress& accountID)
+AccountState::pointer NetworkOPs::getAccountState(Ledger::ref lrLedger, const RippleAddress& accountID)
 {
-	return mLedgerMaster->getLedgerByHash(uLedger)->getAccountState(accountID);
+	return lrLedger->getAccountState(accountID);
 }
 
-SLE::pointer NetworkOPs::getGenerator(const uint256& uLedger, const uint160& uGeneratorID)
+SLE::pointer NetworkOPs::getGenerator(Ledger::ref lrLedger, const uint160& uGeneratorID)
 {
 	LedgerStateParms	qry				= lepNONE;
 
-	Ledger::pointer ledger = mLedgerMaster->getLedgerByHash(uLedger);
-	if (!ledger)
+	if (!lrLedger)
 		return SLE::pointer();
 	else
-		return ledger->getGenerator(qry, uGeneratorID);
+		return lrLedger->getGenerator(qry, uGeneratorID);
 }
 
 //
@@ -323,14 +324,14 @@ SLE::pointer NetworkOPs::getGenerator(const uint256& uLedger, const uint160& uGe
 
 // <-- false : no entrieS
 STVector256 NetworkOPs::getDirNodeInfo(
-	const uint256&		uLedger,
+	Ledger::ref			lrLedger,
 	const uint256&		uNodeIndex,
 	uint64&				uNodePrevious,
 	uint64&				uNodeNext)
 {
 	STVector256			svIndexes;
 	LedgerStateParms	lspNode		= lepNONE;
-	SLE::pointer		sleNode		= mLedgerMaster->getLedgerByHash(uLedger)->getDirNode(lspNode, uNodeIndex);
+	SLE::pointer		sleNode		= lrLedger->getDirNode(lspNode, uNodeIndex);
 
 	if (sleNode)
 	{
@@ -357,6 +358,7 @@ STVector256 NetworkOPs::getDirNodeInfo(
 	return svIndexes;
 }
 
+#if 0
 //
 // Nickname functions
 //
@@ -365,15 +367,11 @@ NicknameState::pointer NetworkOPs::getNicknameState(const uint256& uLedger, cons
 {
 	return mLedgerMaster->getLedgerByHash(uLedger)->getNicknameState(strNickname);
 }
+#endif
 
 //
 // Owner functions
 //
-
-Json::Value NetworkOPs::getOwnerInfo(const uint256& uLedger, const RippleAddress& naAccount)
-{
-	return getOwnerInfo(mLedgerMaster->getLedgerByHash(uLedger), naAccount);
-}
 
 Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const RippleAddress& naAccount)
 {
