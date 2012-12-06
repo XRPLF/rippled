@@ -1,6 +1,10 @@
+#ifndef __PATHFINDER__
+#define __PATHFINDER__
+
 #include "SerializedTypes.h"
 #include "RippleAddress.h"
 #include "OrderBookDB.h"
+#include "RippleCalc.h"
 #include <boost/shared_ptr.hpp>
 
 #if 0
@@ -30,14 +34,16 @@ public:
 
 class Pathfinder
 {
-	uint160			mSrcAccountID;
-	uint160			mDstAccountID;
-	STAmount		mDstAmount;
-	uint160			mSrcCurrencyID;
-	uint160			mSrcIssuerID;
+	uint160				mSrcAccountID;
+	uint160				mDstAccountID;
+	STAmount			mDstAmount;
+	uint160				mSrcCurrencyID;
+	uint160				mSrcIssuerID;
+	STAmount			mSrcAmount;
 
-	OrderBookDB		mOrderBook;
-	Ledger::pointer mLedger;
+	OrderBookDB			mOrderBook;
+	Ledger::pointer		mLedger;
+	PathState::pointer	mPsDefault;
 
 //	std::list<PathOption::pointer> mBuildingPaths;
 //	std::list<PathOption::pointer> mCompletePaths;
@@ -56,4 +62,6 @@ public:
 
 	bool bDefaultPath(const STPath& spPath);
 };
+#endif
+
 // vim:ts=4

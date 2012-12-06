@@ -76,21 +76,57 @@ PathOption::PathOption(PathOption::pointer other)
 #endif
 
 // Return true, if path is a default path with an element.
+// A path is a default path if it is implied via src, dst, send, and sendmax.
 // XXX Could be determined via STAmount
 bool Pathfinder::bDefaultPath(const STPath& spPath)
 {
+	if (2 == spPath.mPath.size()) {
+		// Empty path is a default. Don't need to add it to return set.
+		cLog(lsDEBUG) << "findPaths: empty path: direct";
+
+		return true;
+	}
+
+	PathState::pointer	pspCurrent	= boost::make_shared<PathState>(mDstAmount, mSrcAmount, mLedger);
+
+	if (pspCurrent)
+	{
+		bool			bDefault;
+		LedgerEntrySet	lesActive(mLedger);
+
+		pspCurrent->setExpanded(lesActive, spPath, mDstAccountID, mSrcAccountID);
+
+		bDefault	= pspCurrent->vpnNodes == mPsDefault->vpnNodes;
+
+		// Path is a default (implied). Don't need to add it to return set.
+		cLog(lsDEBUG) << "findPaths: default path: indirect: " << spPath.getJson(0);
+
+		return bDefault;
+	}
+
 	return false;
-	// return spPath.size() == 3 && spPath.mPath[1].mType;
 }
 
 //
 // XXX Optionally, specifying a source and destination issuer might be nice. Especially, to convert between issuers. However, this
 // functionality is left to the future.
 //
-Pathfinder::Pathfinder(const RippleAddress& srcAccountID, const RippleAddress& dstAccountID, const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount)
-	: mSrcAccountID(srcAccountID.getAccountID()), mDstAccountID(dstAccountID.getAccountID()), mDstAmount(dstAmount), mSrcCurrencyID(srcCurrencyID), mSrcIssuerID(srcIssuerID), mOrderBook(theApp->getLedgerMaster().getCurrentLedger())
+Pathfinder::Pathfinder(const RippleAddress& uSrcAccountID, const RippleAddress& uDstAccountID, const uint160& uSrcCurrencyID, const uint160& uSrcIssuerID, const STAmount& saDstAmount)
+	: mSrcAccountID(uSrcAccountID.getAccountID()), mDstAccountID(uDstAccountID.getAccountID()), mDstAmount(saDstAmount), mSrcCurrencyID(uSrcCurrencyID), mSrcIssuerID(uSrcIssuerID), mOrderBook(theApp->getLedgerMaster().getCurrentLedger())
 {
-	mLedger=theApp->getLedgerMaster().getCurrentLedger();
+	mLedger		= theApp->getLedgerMaster().getCurrentLedger();
+	mSrcAmount	= STAmount(uSrcCurrencyID, uSrcIssuerID, 1, 0, true);	// -1/uSrcIssuerID/uSrcIssuerID
+
+	// Construct the default path for later comparison.
+
+	mPsDefault	= boost::make_shared<PathState>(mDstAmount, mSrcAmount, mLedger);
+
+	if (mPsDefault)
+	{
+		LedgerEntrySet	lesActive(mLedger);
+
+		mPsDefault->setExpanded(lesActive, STPath(), mDstAccountID, mSrcAccountID);
+	}
 }
 
 // If possible, returns a single path.
@@ -114,7 +150,14 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 		% RippleAddress::createHumanAccountID(mSrcIssuerID)
 		);
 
-	if (mLedger) {
+	if (!mPsDefault)
+	{
+		cLog(lsDEBUG) << boost::str(boost::format("findPaths: failed to generate default path."));
+
+		return false;
+	}
+	else if (mLedger)
+	{
 		std::queue<STPath> pqueue;
 		STPathElement ele(mSrcAccountID,
 				  mSrcCurrencyID,
@@ -160,16 +203,8 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 			if (ele.mAccountID == mDstAccountID						// Tail is destination account.
 				&& ele.mCurrencyID == mDstAmount.getCurrency()) {	// With correct output currency.
 				// Found a path to the destination.
-
-				if (2 == path.mPath.size()) {
-					// Empty path is a default. Don't need to add it to return set.
-					cLog(lsDEBUG) << "findPaths: empty path: direct";
-
-					return true;
-				}
-				else if (bDefaultPath(path)) {
-					// Path is a default (implied). Don't need to add it to return set.
-					cLog(lsDEBUG) << "findPaths: default path: indirect: " << path.getJson(0);
+				if (bDefaultPath(path)) {
+					cLog(lsDEBUG) << "findPaths: default path: dropping: " << path.getJson(0);
 
 					return true;
 				}
@@ -245,6 +280,15 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 						pqueue.push(new_path);
 
 						bContinued	= true;
+					}
+					else
+					{
+						cLog(lsDEBUG) <<
+							boost::str(boost::format("findPaths: SEEN: %s/%s --> %s/%s")
+								% RippleAddress::createHumanAccountID(ele.mAccountID)
+								% STAmount::createHumanCurrency(ele.mCurrencyID)
+								% RippleAddress::createHumanAccountID(line->getAccountIDPeer().getAccountID())
+								% STAmount::createHumanCurrency(ele.mCurrencyID));
 					}
 				}
 
