@@ -1146,7 +1146,27 @@ void Peer::recvProofWork(ripple::TMProofWork& packet)
 
 	if (packet.has_target() && packet.has_challenge() && packet.has_iterations())
 	{ // this is a challenge
-		// WRITEME
+		// WRITEME: Reject from inbound connections
+
+		uint256 challenge, target;
+		if ((packet.challenge().size() != (256 / 8)) || (packet.target().size() != (256 / 8)))
+		{
+			punishPeer(PP_INVALID_REQUEST);
+			return;
+		}
+		memcpy(challenge.begin(), packet.challenge().data(), 256 / 8);
+		memcpy(target.begin(), packet.target().data(), 256 / 8);
+		ProofOfWork::pointer pow = boost::make_shared<ProofOfWork>(packet.token(), packet.iterations(),
+			challenge, target);
+		if (!pow->isValid())
+		{
+			punishPeer(PP_INVALID_REQUEST);
+			return;
+		}
+
+		theApp->getJobQueue().addJob(jtPROOFWORK,
+			boost::bind(&Peer::doProofOfWork, _1, boost::weak_ptr<Peer>(shared_from_this()), pow));
+
 		return;
 	}
 
@@ -1585,6 +1605,33 @@ void Peer::sendGetPeers()
 
 void Peer::punishPeer(PeerPunish)
 {
+}
+
+void Peer::doProofOfWork(Job&, boost::weak_ptr<Peer> peer, ProofOfWork::pointer pow)
+{
+	if (peer.expired())
+		return;
+
+	uint256 solution = pow->solve();
+	if (solution.isZero())
+	{
+		cLog(lsWARNING) << "Failed to solve proof of work";
+	}
+	else
+	{
+		Peer::pointer pptr(peer.lock());
+		if (pptr)
+		{
+			ripple::TMProofWork reply;
+			reply.set_token(pow->getToken());
+			reply.set_response(solution.begin(), solution.size());
+			pptr->sendPacket(boost::make_shared<PackedMessage>(reply, ripple::mtPROOFOFWORK));
+		}
+		else
+		{
+			// WRITEME: Save solved proof of work for new connection
+		}
+	}
 }
 
 Json::Value Peer::getJson()

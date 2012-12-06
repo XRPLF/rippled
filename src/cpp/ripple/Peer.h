@@ -13,6 +13,8 @@
 #include "Ledger.h"
 #include "Transaction.h"
 #include "InstanceCounter.h"
+#include "JobQueue.h"
+#include "ProofOfWork.h"
 
 enum PeerPunish
 {
@@ -115,6 +117,8 @@ protected:
 
 	void addLedger(const uint256& ledger);
 	void addTxSet(const uint256& TxSet);
+
+	static void doProofOfWork(Job&, boost::weak_ptr<Peer>, ProofOfWork::pointer);
 
 public:
 
