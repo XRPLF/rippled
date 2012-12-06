@@ -841,6 +841,9 @@ Remote.prototype._server_subscribe = function () {
     .on('success', function (message) {
         self.stand_alone          = !!message.stand_alone;
 
+        if (message.random)
+          self.emit('random', utils.hexToArray(message.random));
+
         if (message.ledger_hash && message.ledger_index) {
           self._ledger_time           = message.ledger_time;
           self._ledger_hash           = message.ledger_hash;
