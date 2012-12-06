@@ -116,8 +116,7 @@ std::vector<unsigned char> CKey::encryptECIES(CKey& otherKey, const std::vector<
 {
 
 	ECIES_ENC_IV_TYPE iv;
-	if (RAND_bytes(static_cast<unsigned char *>(iv.begin()), ECIES_ENC_BLK_SIZE) != 1)
-		throw std::runtime_error("insufficient entropy");
+	getRand(static_cast<unsigned char *>(iv.begin()), ECIES_ENC_BLK_SIZE);
 
 	ECIES_ENC_KEY_TYPE secret;
 	ECIES_HMAC_KEY_TYPE hmacKey;
@@ -280,8 +279,7 @@ bool checkECIES(void)
 		std::vector<unsigned char> message(4096);
 		int msglen = i%3000;
 
-		if (RAND_bytes(static_cast<unsigned char *>(&message.front()), msglen) != 1)
-			throw std::runtime_error("insufficient entropy");
+		getRand(static_cast<unsigned char *>(&message.front()), msglen);
 		message.resize(msglen);
 
 		// encrypt message with sender's private key and recipient's public key

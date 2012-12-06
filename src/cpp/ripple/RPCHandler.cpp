@@ -664,24 +664,16 @@ Json::Value RPCHandler::doRandom(Json::Value jvRequest)
 {
 	uint256			uRandom;
 
-	switch (RAND_bytes(uRandom.begin(), uRandom.size()))
+	try
 	{
-		case 0:
-		case 1:
-			{
-				Json::Value jvResult;
-
-				jvResult["random"]	= uRandom.ToString();
-
-				return jvResult;
-			}
-			break;
-
-		case -1:
-			return rpcError(rpcNOT_SUPPORTED);
-
-		default:
-			return rpcError(rpcINTERNAL);
+		getRand(uRandom.begin(), uRandom.size());
+		Json::Value jvResult;
+		jvResult["random"]	= uRandom.ToString();
+		return jvResult;
+	}
+	catch (...)
+	{
+		return rpcError(rpcINTERNAL);
 	}
 }
 

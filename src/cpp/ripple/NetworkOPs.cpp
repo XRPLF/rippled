@@ -1311,19 +1311,8 @@ bool NetworkOPs::subServer(InfoSub* ispListener, Json::Value& jvResult)
 
 	jvResult["stand_alone"]	= theConfig.RUN_STANDALONE;
 
-	switch (RAND_bytes(uRandom.begin(), uRandom.size()))
-	{
-		case 0:
-		case 1:
-			jvResult["random"]	= uRandom.ToString();
-			break;
-
-		case -1:
-		default:
-			// XXX Should probably stop running.
-			cLog(lsFATAL) << "Internal error: unable to generate secure random.";
-			break;
-	}
+	getRand(uRandom.begin(), uRandom.size());
+	jvResult["random"]	= uRandom.ToString();
 
 	return mSubServer.insert(ispListener).second;
 }
