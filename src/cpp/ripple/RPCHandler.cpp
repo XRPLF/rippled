@@ -1188,9 +1188,9 @@ Json::Value RPCHandler::doLedgerCurrent(Json::Value)
 	return jvResult;
 }
 
-// ledger [id|ledger_current|lastclosed] [full]
+// ledger [id|index|current|closed] [full]
 // {
-//    ledger: 'ledger_current' | 'ledger_closed' | <hex> | <number>,	// optional
+//    ledger: 'current' | 'closed' | <uint256> | <number>,	// optional
 //    full: true | false	// optional, defaults to false.
 // }
 Json::Value RPCHandler::doLedger(Json::Value jvRequest)
@@ -1211,9 +1211,9 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest)
 	std::string		strLedger	= jvRequest["ledger"].asString();
 	Ledger::pointer ledger;
 
-	if (strLedger == "ledger_current")
+	if (strLedger == "current")
 		ledger = theApp->getLedgerMaster().getCurrentLedger();
-	else if (strLedger == "ledger_closed")
+	else if (strLedger == "closed")
 		ledger = theApp->getLedgerMaster().getClosedLedger();
 	else if (strLedger.size() > 12)
 		ledger = theApp->getLedgerMaster().getLedgerByHash(uint256(strLedger));
