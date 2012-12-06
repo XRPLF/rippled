@@ -34,10 +34,11 @@ void AccountItems::fillItems(const uint160& accountID, Ledger::ref ledger)
 
 	while (1)
 	{
-		SLE::pointer ownerDir=ledger->getDirNode(lspNode, currentIndex);
+		SLE::pointer ownerDir	= ledger->getDirNode(lspNode, currentIndex);
 		if (!ownerDir) return;
 
-		STVector256 svOwnerNodes		= ownerDir->getFieldV256(sfIndexes);
+		STVector256 svOwnerNodes	= ownerDir->getFieldV256(sfIndexes);
+
 		BOOST_FOREACH(uint256& uNode, svOwnerNodes.peekValue())
 		{
 			SLE::pointer sleCur	= ledger->getSLE(uNode);
@@ -55,3 +56,5 @@ void AccountItems::fillItems(const uint160& accountID, Ledger::ref ledger)
 		currentIndex	= Ledger::getDirNodeIndex(rootIndex, uNodeNext);
 	}
 }
+
+// vim:ts=4
