@@ -70,6 +70,10 @@ var stringToArray = function (s) {
   return a;
 };
 
+var hexToArray = function (h) {
+  return stringToArray(hexToString(h));
+}
+
 var chunkString = function (str, n, leftAlign) {
   var ret = [];
   var i=0, len=str.length;
@@ -96,6 +100,7 @@ var assert = function (assertion, msg) {
 exports.trace         = trace;
 exports.arraySet      = arraySet;
 exports.hexToString   = hexToString;
+exports.hexToArray    = hexToArray;
 exports.stringToArray = stringToArray;
 exports.stringToHex   = stringToHex;
 exports.chunkString   = chunkString;

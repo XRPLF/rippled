@@ -658,13 +658,13 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 
 // Result:
 // {
-//   random: <uint160>
+//   random: <uint256>
 // }
 Json::Value RPCHandler::doRandom(Json::Value jvRequest)
 {
-	uint160			uRandom;
+	uint256			uRandom;
 
-	switch (RAND_pseudo_bytes(uRandom.begin(), uRandom.size()))
+	switch (RAND_bytes(uRandom.begin(), uRandom.size()))
 	{
 		case 0:
 		case 1:
