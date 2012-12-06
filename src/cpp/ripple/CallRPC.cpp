@@ -218,7 +218,9 @@ Json::Value RPCParser::parseLogLevel(const Json::Value& jvParams)
 	Json::Value		jvRequest(Json::objectValue);
 
 	if (jvParams.size() == 1)
+	{
 		jvRequest["severity"] = jvParams[0u].asString();
+	}
 	else if (jvParams.size() == 2)
 	{
 		jvRequest["partition"] = jvParams[0u].asString();

@@ -552,8 +552,6 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 	AccountState::pointer	as		= mNetOps->getAccountState(lpLedger, raAccount);
 	if (as)
 	{
-cLog(lsDEBUG) << "AccountState: ";
-as->dump();
 		Json::Value	jsonLines(Json::arrayValue);
 
 		jvResult["account"]	= raAccount.humanAccountID();
