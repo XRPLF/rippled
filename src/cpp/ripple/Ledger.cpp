@@ -774,14 +774,13 @@ SLE::pointer Ledger::getASNode(LedgerStateParms& parms, const uint256& nodeID,
 		if ( (parms & lepCREATE) == 0 )
 		{
 			parms = lepMISSING;
-cLog(lsDEBUG) << "getASNode: MISSING";
+
 			return SLE::pointer();
 		}
 
 		parms = parms | lepCREATED | lepOKAY;
 		SLE::pointer sle=boost::make_shared<SLE>(let, nodeID);
 
-cLog(lsDEBUG) << "getASNode: CREATED";
 		return sle;
 	}
 
@@ -790,14 +789,12 @@ cLog(lsDEBUG) << "getASNode: CREATED";
 
 	if (sle->getType() != let)
 	{ // maybe it's a currency or something
-cLog(lsDEBUG) << "getASNode: WRONG TYPE";
 		parms = parms | lepWRONGTYPE;
 		return SLE::pointer();
 	}
 
 	parms = parms | lepOKAY;
 
-cLog(lsDEBUG) << "getASNode: FOUND";
 	return sle;
 }
 
