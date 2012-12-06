@@ -412,8 +412,6 @@ Remote.prototype._connect_start = function () {
     };
 
     if (self.online_target) {
-      self._set_state('online');
-
       // Note, we could get disconnected before this goes through.
       self._server_subscribe();     // Automatically subscribe.
     }
@@ -491,6 +489,10 @@ Remote.prototype._connect_message = function (ws, json) {
         this._ledger_current_index  = message.ledger_index + 1;
 
         this.emit('ledger_closed', message);
+        break;
+
+      case 'serverStatus':
+        this._set_state(message.server_status === 'ok' ? 'online' : 'offline');
         break;
 
       // All other messages
@@ -850,6 +852,10 @@ Remote.prototype._server_subscribe = function () {
           self._ledger_current_index  = message.ledger_index+1;
 
           self.emit('ledger_closed', message);
+        }
+
+        if (message.server_status === "ok") {
+          self._set_state('online');
         }
 
         self.emit('subscribed');
