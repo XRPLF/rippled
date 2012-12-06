@@ -2084,6 +2084,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 				if(streamName=="server")
 				{
 					mNetOps->subServer(mInfoSub, jvResult);
+					jvResult["server_status"] = mNetOps->available() ? "ok" : "noNetwork";
 				}else if(streamName=="ledger")
 				{
 					mNetOps->subLedger(mInfoSub, jvResult);

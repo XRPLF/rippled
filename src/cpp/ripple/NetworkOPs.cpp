@@ -867,8 +867,10 @@ void NetworkOPs::consensusViewChange()
 void NetworkOPs::setMode(OperatingMode om)
 {
 	if (mMode == om) return;
+
 	if ((om >= omCONNECTED) && (mMode == omDISCONNECTED))
 		mConnectTime = boost::posix_time::second_clock::universal_time();
+
 	Log lg((om < mMode) ? lsWARNING : lsINFO);
 	if (om == omDISCONNECTED)
 		lg << "STATE->Disconnected";
@@ -878,6 +880,25 @@ void NetworkOPs::setMode(OperatingMode om)
 		lg << "STATE->Tracking";
 	else
 		lg << "STATE->Full";
+
+	if ((om == omDISCONNECTED) || (mMode == omDISCONNECTED))
+	{
+		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
+
+		if (!mSubServer.empty())
+		{
+			Json::Value jvObj(Json::objectValue);
+
+			jvObj["type"] = "serverStatus";
+			jvObj["server_status"] = om >= omCONNECTED ? "ok" : "noNetwork";
+
+			BOOST_FOREACH(InfoSub* ispListener, mSubServer)
+			{
+				ispListener->send(jvObj);
+			}
+		}
+	}
+
 	mMode = om;
 }
 
