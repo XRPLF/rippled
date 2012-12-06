@@ -244,7 +244,7 @@ boost::shared_ptr<c_Data> TaggedCache<c_Key, c_Data>::fetch(const key_type& key)
 template<typename c_Key, typename c_Data>
 bool TaggedCache<c_Key, c_Data>::store(const key_type& key, const c_Data& data)
 {
-	boost::shared_ptr<c_Data> d = boost::make_shared<c_Data>(boost::ref(data));
+	boost::shared_ptr<c_Data> d = boost::make_shared<c_Data>(boost::cref(data));
 	return canonicalize(key, d);
 }
 

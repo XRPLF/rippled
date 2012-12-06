@@ -87,5 +87,5 @@ void LoadMonitor::getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& 
 		latencyAvg = mLatencyMSAvg / (mLatencyEvents * 4);
 		latencyPeak = mLatencyMSPeak / (mLatencyEvents * 4);
 	}
-	isOver = isOverTarget();
+	isOver = isOverTarget(latencyAvg, latencyPeak);
 }
