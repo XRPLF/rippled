@@ -33,13 +33,15 @@ protected:
 	static const int sMaxIterations;
 
 public:
+	typedef boost::shared_ptr<ProofOfWork> pointer;
+
 	ProofOfWork(const std::string& token, int iterations, const uint256& challenge, const uint256& target) :
 		mToken(token), mChallenge(challenge), mTarget(target), mIterations(iterations)
 	{ ; }
 
 	bool isValid() const;
 
-	uint256 solve(int maxIterations) const;
+	uint256 solve(int maxIterations = 2 * sMaxIterations) const;
 	bool checkSolution(const uint256& solution) const;
 
 	const std::string& getToken() const		{ return mToken; }

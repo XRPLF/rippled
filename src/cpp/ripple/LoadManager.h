@@ -13,6 +13,7 @@ public:
 
 	// load source flags
 	static const int lsfPrivileged	= 1;
+	static const int lsfOutbound	= 2; // outbound connection
 
 protected:
 	int		mBalance;
@@ -27,6 +28,9 @@ public:
 	bool	isPrivileged() const	{ return (mFlags & lsfPrivileged) != 0; }
 	void	setPrivileged()			{ mFlags |= lsfPrivileged; }
 	int		getBalance() const		{ return mBalance; }
+
+	void	setOutbound()			{ mFlags |= lsfOutbound; }
+	bool	isOutbound() const		{ return (mFlags & lsfOutbound) != 0; }
 };
 
 
