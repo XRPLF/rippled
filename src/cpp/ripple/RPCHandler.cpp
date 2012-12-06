@@ -2230,10 +2230,13 @@ Json::Value RPCHandler::doRpcCommand(const std::string& strCommand, Json::Value&
 {
 	// cLog(lsTRACE) << "doRpcCommand:" << strCommand << ":" << jvParams;
 
-	if (!jvParams.isArray() || jvParams.size() > 1)
+	if (!jvParams.isArray() || jvParams.size() < 1)
 		return rpcError(rpcINVALID_PARAMS);
 
 	Json::Value	jvRequest	= jvParams[0u];
+
+	if (!jvRequest.isObject() || !jvRequest.isMember("command"))
+		return rpcError(rpcINVALID_PARAMS);
 
 	jvRequest["command"]	= strCommand;
 
