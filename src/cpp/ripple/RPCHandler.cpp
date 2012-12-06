@@ -2226,9 +2226,12 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 }
 
 // Provide the JSON-RPC "result" value.
-Json::Value RPCHandler::doRpcCommand(const std::string& strCommand, Json::Value& jvParams, int iRole)
+//
+// JSON-RPC provides a method and an array of params. JSON-RPC is used as a transport for a command and a request object. The
+// command is the method. The request object is supplied as the first element of the params.
+Json::Value RPCHandler::doRpcCommand(const std::string& strMethod, Json::Value& jvParams, int iRole)
 {
-	// cLog(lsTRACE) << "doRpcCommand:" << strCommand << ":" << jvParams;
+	// cLog(lsTRACE) << "doRpcCommand:" << strMethod << ":" << jvParams;
 
 	if (!jvParams.isArray() || jvParams.size() < 1)
 		return rpcError(rpcINVALID_PARAMS);
@@ -2238,7 +2241,8 @@ Json::Value RPCHandler::doRpcCommand(const std::string& strCommand, Json::Value&
 	if (!jvRequest.isObject() || !jvRequest.isMember("command"))
 		return rpcError(rpcINVALID_PARAMS);
 
-	jvRequest["command"]	= strCommand;
+	// Provide the JSON-RPC method as the field "command" in the request.
+	jvRequest["command"]	= strMethod;
 
 	Json::Value	jvResult	= doCommand(jvRequest, iRole);
 
