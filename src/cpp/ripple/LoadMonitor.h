@@ -39,10 +39,10 @@ public:
 		mTargetLatencyPk = pk * 4;
 	}
 
-	bool isOverTarget()
+	bool isOverTarget(uint64 avg, uint64 peak)
 	{
-		return (mTargetLatencyPk && (mLatencyMSPeak > mTargetLatencyPk)) ||
-			(mTargetLatencyAvg && (mLatencyMSAvg > mTargetLatencyAvg));
+		return (mTargetLatencyPk && (peak > mTargetLatencyPk)) ||
+			(mTargetLatencyAvg && (avg > mTargetLatencyAvg));
 	}
 
 	void getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& latencyPeak, bool& isOver);
