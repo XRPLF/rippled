@@ -53,6 +53,9 @@ protected:
 	STAmount						saOfferFunds;
 	STAmount						saTakerPays;
 	STAmount						saTakerGets;
+
+public:
+	bool operator==(const PaymentNode& pnOther) const;
 };
 
 // account id, currency id, issuer id :: node

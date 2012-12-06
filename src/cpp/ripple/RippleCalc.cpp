@@ -27,6 +27,14 @@ std::size_t hash_value(const aciSource& asValue)
 	return seed;
 }
 
+// Compare the non-calculated fields.
+bool PaymentNode::operator==(const PaymentNode& pnOther) const {
+	return pnOther.uFlags == uFlags
+		&& pnOther.uAccountID == uAccountID
+		&& pnOther.uCurrencyID == uCurrencyID
+		&& pnOther.uIssuerID == uIssuerID;
+}
+
 //
 // PathState implementation
 //
@@ -272,6 +280,8 @@ TER PathState::pushNode(
 	return terResult;
 }
 
+// Set to an expanded path.
+//
 // terStatus = tesSUCCESS, temBAD_PATH, terNO_LINE, or temBAD_PATH_LOOP
 void PathState::setExpanded(
 	const LedgerEntrySet&	lesSource,
@@ -428,6 +438,7 @@ cLog(lsDEBUG) << boost::str(boost::format("PathState: receiver implied: account=
 		% getJson());
 }
 
+// Set to a canonical path.
 void PathState::setCanonical(
 	const PathState&	psExpanded
 	)
