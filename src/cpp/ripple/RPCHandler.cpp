@@ -2238,7 +2238,7 @@ Json::Value RPCHandler::doRpcCommand(const std::string& strMethod, Json::Value& 
 
 	Json::Value	jvRequest	= jvParams[0u];
 
-	if (!jvRequest.isObject() || !jvRequest.isMember("command"))
+	if (!jvRequest.isObject())
 		return rpcError(rpcINVALID_PARAMS);
 
 	// Provide the JSON-RPC method as the field "command" in the request.
