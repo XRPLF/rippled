@@ -191,6 +191,7 @@ var Remote = function (opts, trace) {
   this.trusted                = opts.trusted;
   this.websocket_ip           = opts.websocket_ip;
   this.websocket_port         = opts.websocket_port;
+  this.websocket_ssl          = opts.websocket_ssl;
   this.local_sequence         = opts.local_sequence; // Locally track sequence numbers
   this.local_fee              = opts.local_fee;      // Locally set fees
   this.id                     = 0;
@@ -384,7 +385,8 @@ Remote.prototype._connect_start = function () {
   // with self-signed certs as the user must have pre-approved the self-signed certs.
 
   var self = this;
-  var url  = "ws://" + this.websocket_ip + ":" + this.websocket_port;
+  var url  = (this.websocket_ssl ? "wss://" : "ws://") +
+        this.websocket_ip + ":" + this.websocket_port;
 
   if (this.trace) console.log("remote: connect: %s", url);
 
