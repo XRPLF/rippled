@@ -76,7 +76,7 @@ public:
 	{
 		boost::mutex::scoped_lock	sl(mMapLock);
 
-		mMap[cpClient]	= boost::make_shared<WSConnection>(this, cpClient);
+		mMap[cpClient]	= boost::make_shared< WSConnection<endpoint_type> >(this, cpClient);
 	}
 
 	void on_close(connection_ptr cpClient)
@@ -115,7 +115,7 @@ public:
 		}
 		else
 		{
-			boost::shared_ptr<WSConnection> conn;
+			boost::shared_ptr< WSConnection<endpoint_type> > conn;
 			{
 				boost::mutex::scoped_lock	sl(mMapLock);
 				conn = mMap[cpClient];
@@ -136,9 +136,11 @@ public:
 				context->set_options(boost::asio::ssl::context::default_workarounds |
 					boost::asio::ssl::context::no_sslv2 |
 					boost::asio::ssl::context::single_dh_use);
-				context->set_password_callback(boost::bind(&type::get_password, this));
-				context->use_certificate_chain_file(theConfig.WEBSOCKET_SSL_CERT);
-				context->use_private_key_file(theConfig.WEBSOCKET_SSL_CERT, boost::asio::ssl::context::pem);
+//				context->set_password_callback(boost::bind(&type::get_password, this));
+				if (!theConfig.WEBSOCKET_SSL_CERT.empty())
+					context->use_private_key_file(theConfig.WEBSOCKET_SSL_CERT, boost::asio::ssl::context::pem);
+				if (!theConfig.WEBSOCKET_SSL_CHAIN.empty())
+					context->use_certificate_chain_file(theConfig.WEBSOCKET_SSL_CHAIN);
 				//context->use_tmp_dh_file("../../src/ssl/dh512.pem");
 			} catch (std::exception& e) {
 				std::cout << e.what() << std::endl;
