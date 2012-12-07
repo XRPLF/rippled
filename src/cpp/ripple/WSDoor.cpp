@@ -111,7 +111,11 @@ void WSDoor::stop()
 {
 	if (mThread)
 	{
-		mEndpoint->stop();
+		if (mEndpoint)
+			mEndpoint->stop();
+		if (mSEndpoint)
+			mSEndpoint->stop();
+
 
 		mThread->join();
 	}
