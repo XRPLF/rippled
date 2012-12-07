@@ -94,6 +94,7 @@ public:
 	bool						WEBSOCKET_SECURE;
 	std::string					WEBSOCKET_SSL_CERT;
 	std::string					WEBSOCKET_SSL_CHAIN;
+	std::string					WEBSOCKET_SSL_KEY;
 
 	// RPC parameters
 	std::string					RPC_IP;

@@ -41,6 +41,8 @@
 #define SECTION_WEBSOCKET_PORT			"websocket_port"
 #define SECTION_WEBSOCKET_SECURE		"websocket_secure"
 #define SECTION_WEBSOCKET_SSL_CERT		"websocket_ssl_cert"
+#define SECTION_WEBSOCKET_SSL_CHAIN		"websocket_ssl_chain"
+#define SECTION_WEBSOCKET_SSL_KEY		"websocket_ssl_key"
 #define SECTION_VALIDATORS				"validators"
 #define SECTION_VALIDATORS_SITE			"validators_site"
 
@@ -263,6 +265,8 @@ void Config::load()
 				WEBSOCKET_SECURE	= boost::lexical_cast<bool>(strTemp);
 
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_CERT, WEBSOCKET_SSL_CERT);
+			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_CHAIN, WEBSOCKET_SSL_CHAIN);
+			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_KEY, WEBSOCKET_SSL_KEY);
 			
 
 			if (sectionSingleB(secConfig, SECTION_VALIDATION_SEED, strTemp))

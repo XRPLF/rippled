@@ -138,7 +138,9 @@ public:
 					boost::asio::ssl::context::single_dh_use);
 //				context->set_password_callback(boost::bind(&type::get_password, this));
 				if (!theConfig.WEBSOCKET_SSL_CERT.empty())
-					context->use_private_key_file(theConfig.WEBSOCKET_SSL_CERT, boost::asio::ssl::context::pem);
+					context->use_certificate_file(theConfig.WEBSOCKET_SSL_CERT, boost::asio::ssl::context::pem);
+				if (!theConfig.WEBSOCKET_SSL_KEY.empty())
+					context->use_private_key_file(theConfig.WEBSOCKET_SSL_KEY, boost::asio::ssl::context::pem);
 				if (!theConfig.WEBSOCKET_SSL_CHAIN.empty())
 					context->use_certificate_chain_file(theConfig.WEBSOCKET_SSL_CHAIN);
 				//context->use_tmp_dh_file("../../src/ssl/dh512.pem");
