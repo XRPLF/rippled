@@ -58,7 +58,6 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 		{ rpcSRC_ACT_MISSING,		"srcActMissing",	"Source account does not exist."						},
 		{ rpcSRC_AMT_MALFORMED,		"srcAmtMalformed",	"Source amount/currency/issuer is malformed."			},
 		{ rpcSRC_UNCLAIMED,			"srcUnclaimed",		"Source account is not claimed."						},
-		{ rpcSUCCESS,				"success",			"Success."												},
 		{ rpcTXN_NOT_FOUND,			"txnNotFound",		"Transaction not found."								},
 		{ rpcUNKNOWN_COMMAND,		"unknownCmd",		"Unknown command."										},
 		{ rpcWRONG_SEED,			"wrongSeed",		"The regular key does not point as the master key."		},

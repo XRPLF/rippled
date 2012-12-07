@@ -1564,7 +1564,7 @@ Json::Value RPCHandler::doLogLevel(Json::Value jvRequest)
 	if (!jvRequest.isMember("partition"))
 	{ // set base log severity
 		Log::setMinSeverity(sv, true);
-		return rpcError(rpcSUCCESS);
+		return Json::objectValue;
 	}
 
 	// log_level partition severity base?
@@ -1576,7 +1576,7 @@ Json::Value RPCHandler::doLogLevel(Json::Value jvRequest)
 		else if (!LogPartition::setSeverity(partition, sv))
 			return rpcError(rpcINVALID_PARAMS);
 
-		return rpcError(rpcSUCCESS);
+		return Json::objectValue;
 	}
 
 	return rpcError(rpcINVALID_PARAMS);
