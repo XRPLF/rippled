@@ -38,7 +38,6 @@ public:
 	WSConnection(WSServerHandler<endpoint_type>* wshpHandler, connection_ptr cpConnection)
 		: mHandler(wshpHandler), mConnection(cpConnection), mNetwork(theApp->getOPs()) { ; }
 
-	
 	virtual ~WSConnection()
 	{
 		mNetwork.unsubTransactions(this);
@@ -70,33 +69,12 @@ public:
 			return jvResult;
 		}
 
-		RPCHandler mRPCHandler(&mNetwork, this);
+		RPCHandler	mRPCHandler(&mNetwork, this);
 		Json::Value	jvResult(Json::objectValue);
 
-		// XXX Temporarily support RPC style commands over websocket. Remove this.
-		if (jvRequest.isMember("params"))
-		{
-			RPCParser	rpParser;
-
-			Json::Value	jvRpcRequest	= rpParser.parseCommand(jvRequest["command"].asString(), jvRequest["params"]);
-
-			if (jvRpcRequest.isMember("error"))
-			{
-				jvResult		= jvRpcRequest;
-			}
-			else
-			{
-				jvResult["result"] = mRPCHandler.doCommand(
-					jvRpcRequest,
-					mHandler->getPublic() ? RPCHandler::GUEST : RPCHandler::ADMIN);
-			}
-		}
-		else
-		{
-			jvResult["result"] = mRPCHandler.doCommand(
-				jvRequest,
-				mHandler->getPublic() ? RPCHandler::GUEST : RPCHandler::ADMIN);
-		}
+		jvResult["result"] = mRPCHandler.doCommand(
+			jvRequest,
+			mHandler->getPublic() ? RPCHandler::GUEST : RPCHandler::ADMIN);
 
 		// Currently we will simply unwrap errors returned by the RPC
 		// API, in the future maybe we can make the responses
@@ -122,7 +100,6 @@ public:
 
 		return jvResult;
 	}
-
 };
 
 
