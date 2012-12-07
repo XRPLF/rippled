@@ -13,25 +13,25 @@ SETUP_LOG();
 #include "../json/reader.h"
 #include "../json/writer.h"
 
-WSConnection::~WSConnection()
-{
-	mNetwork.unsubTransactions(this);
-	mNetwork.unsubRTTransactions(this);
-	mNetwork.unsubLedger(this);
-	mNetwork.unsubServer(this);
-	mNetwork.unsubAccount(this, mSubAccountInfo, true);
-	mNetwork.unsubAccount(this, mSubAccountInfo, false);
-}
 
-void WSConnection::send(const Json::Value& jvObj)
+//template <typename endpoint_type>
+//WSConnection::~WSConnection()
+
+//template WSConnection::~WSConnection<server>();
+//template WSConnection::~WSConnection<server_tls>();
+
+template <typename endpoint_type>
+void WSConnection<endpoint_type>::send(const Json::Value& jvObj)
 {
 	mHandler->send(mConnection, jvObj);
 }
+template void WSConnection::send<server>(const Json::Value& jvObj);
+template void WSConnection::send<server_tls>(const Json::Value& jvObj);
 
 //
 // Utilities
 //
-
+template <typename endpoint_type>
 Json::Value WSConnection::invokeCommand(Json::Value& jvRequest)
 {
 	if (!jvRequest.isMember("command"))

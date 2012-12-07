@@ -39,6 +39,8 @@
 #define SECTION_WEBSOCKET_PUBLIC_PORT	"websocket_public_port"
 #define SECTION_WEBSOCKET_IP			"websocket_ip"
 #define SECTION_WEBSOCKET_PORT			"websocket_port"
+#define SECTION_WEBSOCKET_SECURE		"websocket_secure"
+#define SECTION_WEBSOCKET_SSL_CERT		"websocket_ssl_cert"
 #define SECTION_VALIDATORS				"validators"
 #define SECTION_VALIDATORS_SITE			"validators_site"
 
@@ -134,6 +136,7 @@ void Config::setup(const std::string& strConf, bool bQuiet)
 	RPC_PORT				= 5001;
 	WEBSOCKET_PORT			= SYSTEM_WEBSOCKET_PORT;
 	WEBSOCKET_PUBLIC_PORT	= SYSTEM_WEBSOCKET_PUBLIC_PORT;
+	WEBSOCKET_SECURE		= false;
 	NUMBER_CONNECTIONS		= 30;
 
 	// a new ledger every minute
@@ -255,6 +258,12 @@ void Config::load()
 
 			if (sectionSingleB(secConfig, SECTION_WEBSOCKET_PUBLIC_PORT, strTemp))
 				WEBSOCKET_PUBLIC_PORT	= boost::lexical_cast<int>(strTemp);
+
+			if (sectionSingleB(secConfig, SECTION_WEBSOCKET_SECURE, strTemp))
+				WEBSOCKET_SECURE	= boost::lexical_cast<bool>(strTemp);
+
+			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_CERT, WEBSOCKET_SSL_CERT);
+			
 
 			if (sectionSingleB(secConfig, SECTION_VALIDATION_SEED, strTemp))
 			{

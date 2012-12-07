@@ -12,16 +12,17 @@ class WSServerHandler;
 // Storage for connection specific info
 // - Subscriptions
 //
+template <typename endpoint_type>
 class WSConnection : public InfoSub
 {
 public:
-	typedef websocketpp::WSDOOR_SERVER::handler::connection_ptr connection_ptr;
-	typedef websocketpp::WSDOOR_SERVER::handler::message_ptr message_ptr;
+	typedef typename endpoint_type::handler::connection_ptr connection_ptr;
+	typedef typename endpoint_type::handler::message_ptr message_ptr;
 
 protected:
 	typedef void (WSConnection::*doFuncPtr)(Json::Value& jvResult, Json::Value &jvRequest);
 
-	WSServerHandler<websocketpp::WSDOOR_SERVER>*	mHandler;
+	WSServerHandler<endpoint_type>*	mHandler;
 	connection_ptr									mConnection;
 	NetworkOPs&										mNetwork;
 
@@ -30,17 +31,29 @@ public:
 	//		: mHandler((WSServerHandler<websocketpp::WSDOOR_SERVER>*)(NULL)),
 	//			mConnection(connection_ptr()) { ; }
 
-	WSConnection(WSServerHandler<websocketpp::WSDOOR_SERVER>* wshpHandler, connection_ptr cpConnection)
+	WSConnection(WSServerHandler<endpoint_type>* wshpHandler, connection_ptr cpConnection)
 		: mHandler(wshpHandler), mConnection(cpConnection), mNetwork(theApp->getOPs()) { ; }
 
-	virtual ~WSConnection();
+	
+	virtual ~WSConnection()
+	{
+		mNetwork.unsubTransactions(this);
+		mNetwork.unsubRTTransactions(this);
+		mNetwork.unsubLedger(this);
+		mNetwork.unsubServer(this);
+		mNetwork.unsubAccount(this, mSubAccountInfo, true);
+		mNetwork.unsubAccount(this, mSubAccountInfo, false);
+	}
 
 	// Implement overridden functions from base class:
+	template <typename endpoint_type>
 	void send(const Json::Value& jvObj);
 
 	// Utilities
+	template <typename endpoint_type>
 	Json::Value invokeCommand(Json::Value& jvRequest);
 
 };
+
 
 // vim:ts=4

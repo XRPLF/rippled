@@ -10,16 +10,12 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
-#if 1
-#define WSDOOR_SERVER	server
-#else
-#define WSDOOR_SERVER	server_tls
-#endif
-
 class WSDoor
 {
 private:
-	websocketpp::WSDOOR_SERVER*	mEndpoint;
+	websocketpp::server*		mEndpoint;
+	websocketpp::server_tls*	mSEndpoint;
+
 	boost::thread*				mThread;
 	bool						mPublic;
 	std::string					mIp;
@@ -29,7 +25,7 @@ private:
 
 public:
 
-	WSDoor(const std::string& strIp, int iPort, bool bPublic) : mEndpoint(0), mThread(0), mPublic(bPublic), mIp(strIp), mPort(iPort) { ; }
+	WSDoor(const std::string& strIp, int iPort, bool bPublic) : mEndpoint(0), mSEndpoint(0), mThread(0), mPublic(bPublic), mIp(strIp), mPort(iPort) { ; }
 
 	void		stop();
 

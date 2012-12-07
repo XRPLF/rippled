@@ -2,7 +2,9 @@
 #define __WSHANDLER__
 
 #include "Application.h"
+#include "Config.h"
 
+template <typename endpoint_type>
 class WSConnection;
 
 // A single instance of this object is made.
@@ -25,7 +27,7 @@ private:
 protected:
 	boost::mutex															mMapLock;
 	// For each connection maintain an associated object to track subscriptions.
-	boost::unordered_map<connection_ptr, boost::shared_ptr<WSConnection> >	mMap;
+	boost::unordered_map<connection_ptr, boost::shared_ptr< WSConnection<endpoint_type> > >	mMap;
 	bool																	mPublic;
 
 public:
@@ -33,10 +35,7 @@ public:
 
 	bool		getPublic() { return mPublic; };
 
-	boost::shared_ptr<boost::asio::ssl::context> on_tls_init()
-	{
-		return mCtx;
-	}
+	
 
 	void send(connection_ptr cpClient, message_ptr mpMessage)
 	{
@@ -125,6 +124,31 @@ public:
 				return;
 			send(cpClient, conn->invokeCommand(jvRequest));
 		}
+	}
+
+	boost::shared_ptr<boost::asio::ssl::context> on_tls_init()
+	{
+		if(theConfig.WEBSOCKET_SECURE)
+		{
+			// create a tls context, init, and return.
+			boost::shared_ptr<boost::asio::ssl::context> context(new boost::asio::ssl::context(boost::asio::ssl::context::tlsv1));
+			try {
+				context->set_options(boost::asio::ssl::context::default_workarounds |
+					boost::asio::ssl::context::no_sslv2 |
+					boost::asio::ssl::context::single_dh_use);
+				context->set_password_callback(boost::bind(&type::get_password, this));
+				context->use_certificate_chain_file(theConfig.WEBSOCKET_SSL_CERT);
+				context->use_private_key_file(theConfig.WEBSOCKET_SSL_CERT, boost::asio::ssl::context::pem);
+				//context->use_tmp_dh_file("../../src/ssl/dh512.pem");
+			} catch (std::exception& e) {
+				std::cout << e.what() << std::endl;
+			}
+			return context;
+		}else 
+		{
+			return mCtx;
+		}
+		
 	}
 
 	// Respond to http requests.
