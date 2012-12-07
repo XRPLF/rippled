@@ -499,11 +499,15 @@ Amount.prototype.to_human = function (opts)
   if ("undefined" === typeof opts.group_sep) opts.group_sep = true;
   opts.group_width = opts.group_width || 3;
 
-  var denominator = this._is_native ?
-        consts.bi_xns_unit :
-        consts.bi_10.clone().pow(-this._offset);
+  var order = this._is_native ? consts.xns_precision : -this._offset;
+  var denominator = consts.bi_10.clone().pow(order);
   var int_part = this._value.divide(denominator).toString(10);
   var fraction_part = this._value.mod(denominator).toString(10);
+
+  // Add leading zeros to fraction
+  while (fraction_part.length < order) {
+    fraction_part = "0" + fraction_part;
+  }
 
   int_part = int_part.replace(/^0*/, '');
   fraction_part = fraction_part.replace(/0*$/, '');

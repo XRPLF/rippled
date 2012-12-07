@@ -143,6 +143,7 @@
     <ClCompile Include="src\cpp\ripple\Peer.cpp" />
     <ClCompile Include="src\cpp\ripple\PeerDoor.cpp" />
     <ClCompile Include="src\cpp\ripple\PlatRand.cpp" />
+    <ClCompile Include="src\cpp\ripple\ProofOfWork.cpp" />
     <ClCompile Include="src\cpp\ripple\PubKeyCache.cpp" />
     <ClCompile Include="src\cpp\ripple\RangeSet.cpp" />
     <ClCompile Include="src\cpp\ripple\RegularKeySetTransactor.cpp" />
@@ -184,6 +185,7 @@
     <ClCompile Include="src\cpp\ripple\WalletAddTransactor.cpp" />
     <ClCompile Include="src\cpp\ripple\WSConnection.cpp" />
     <ClCompile Include="src\cpp\ripple\WSDoor.cpp" />
+    <ClCompile Include="src\cpp\ripple\WSHandler.cpp" />
     <ClCompile Include="src\cpp\websocketpp\src\base64\base64.cpp" />
     <ClCompile Include="src\cpp\websocketpp\src\md5\md5.c" />
     <ClCompile Include="src\cpp\websocketpp\src\messages\data.cpp" />
@@ -295,6 +297,17 @@
     <ClInclude Include="src\cpp\ripple\WSConnection.h" />
     <ClInclude Include="src\cpp\ripple\WSDoor.h" />
     <ClInclude Include="src\cpp\ripple\WSHandler.h" />
+    <ClInclude Include="src\cpp\websocketpp\src\common.hpp" />
+    <ClInclude Include="src\cpp\websocketpp\src\connection.hpp" />
+    <ClInclude Include="src\cpp\websocketpp\src\endpoint.hpp" />
+    <ClInclude Include="src\cpp\websocketpp\src\network_utilities.hpp" />
+    <ClInclude Include="src\cpp\websocketpp\src\shared_const_buffer.hpp" />
+    <ClInclude Include="src\cpp\websocketpp\src\sockets\plain.hpp" />
+    <ClInclude Include="src\cpp\websocketpp\src\sockets\socket_base.hpp" />
+    <ClInclude Include="src\cpp\websocketpp\src\sockets\tls.hpp" />
+    <ClInclude Include="src\cpp\websocketpp\src\uri.hpp" />
+    <ClInclude Include="src\cpp\websocketpp\src\websocketpp.hpp" />
+    <ClInclude Include="src\cpp\websocketpp\src\websocket_frame.hpp" />
     <ClInclude Include="util\pugiconfig.hpp" />
     <ClInclude Include="util\pugixml.hpp" />
   </ItemGroup>

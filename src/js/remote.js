@@ -191,6 +191,7 @@ var Remote = function (opts, trace) {
   this.trusted                = opts.trusted;
   this.websocket_ip           = opts.websocket_ip;
   this.websocket_port         = opts.websocket_port;
+  this.websocket_ssl          = opts.websocket_ssl;
   this.local_sequence         = opts.local_sequence; // Locally track sequence numbers
   this.local_fee              = opts.local_fee;      // Locally set fees
   this.id                     = 0;
@@ -384,7 +385,8 @@ Remote.prototype._connect_start = function () {
   // with self-signed certs as the user must have pre-approved the self-signed certs.
 
   var self = this;
-  var url  = "ws://" + this.websocket_ip + ":" + this.websocket_port;
+  var url  = (this.websocket_ssl ? "wss://" : "ws://") +
+        this.websocket_ip + ":" + this.websocket_port;
 
   if (this.trace) console.log("remote: connect: %s", url);
 
@@ -412,8 +414,6 @@ Remote.prototype._connect_start = function () {
     };
 
     if (self.online_target) {
-      self._set_state('online');
-
       // Note, we could get disconnected before this goes through.
       self._server_subscribe();     // Automatically subscribe.
     }
@@ -491,6 +491,10 @@ Remote.prototype._connect_message = function (ws, json) {
         this._ledger_current_index  = message.ledger_index + 1;
 
         this.emit('ledger_closed', message);
+        break;
+
+      case 'serverStatus':
+        this._set_state(message.server_status === 'ok' ? 'online' : 'offline');
         break;
 
       // All other messages
@@ -850,6 +854,10 @@ Remote.prototype._server_subscribe = function () {
           self._ledger_current_index  = message.ledger_index+1;
 
           self.emit('ledger_closed', message);
+        }
+
+        if (message.server_status === "ok") {
+          self._set_state('online');
         }
 
         self.emit('subscribed');

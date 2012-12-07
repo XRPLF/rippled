@@ -664,24 +664,16 @@ Json::Value RPCHandler::doRandom(Json::Value jvRequest)
 {
 	uint256			uRandom;
 
-	switch (RAND_bytes(uRandom.begin(), uRandom.size()))
+	try
 	{
-		case 0:
-		case 1:
-			{
-				Json::Value jvResult;
-
-				jvResult["random"]	= uRandom.ToString();
-
-				return jvResult;
-			}
-			break;
-
-		case -1:
-			return rpcError(rpcNOT_SUPPORTED);
-
-		default:
-			return rpcError(rpcINTERNAL);
+		getRand(uRandom.begin(), uRandom.size());
+		Json::Value jvResult;
+		jvResult["random"]	= uRandom.ToString();
+		return jvResult;
+	}
+	catch (...)
+	{
+		return rpcError(rpcINTERNAL);
 	}
 }
 
@@ -1572,7 +1564,7 @@ Json::Value RPCHandler::doLogLevel(Json::Value jvRequest)
 	if (!jvRequest.isMember("partition"))
 	{ // set base log severity
 		Log::setMinSeverity(sv, true);
-		return rpcError(rpcSUCCESS);
+		return Json::objectValue;
 	}
 
 	// log_level partition severity base?
@@ -1584,7 +1576,7 @@ Json::Value RPCHandler::doLogLevel(Json::Value jvRequest)
 		else if (!LogPartition::setSeverity(partition, sv))
 			return rpcError(rpcINVALID_PARAMS);
 
-		return rpcError(rpcSUCCESS);
+		return Json::objectValue;
 	}
 
 	return rpcError(rpcINVALID_PARAMS);
@@ -2092,6 +2084,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 				if(streamName=="server")
 				{
 					mNetOps->subServer(mInfoSub, jvResult);
+					jvResult["server_status"] = mNetOps->available() ? "ok" : "noNetwork";
 				}else if(streamName=="ledger")
 				{
 					mNetOps->subLedger(mInfoSub, jvResult);

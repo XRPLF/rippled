@@ -45,8 +45,8 @@ Application::Application() :
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
 	mSweepTimer(mAuxService)
 {
-	RAND_bytes(mNonce256.begin(), mNonce256.size());
-	RAND_bytes(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
+	getRand(mNonce256.begin(), mNonce256.size());
+	getRand(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
 	mJobQueue.setThreadCount();
 	mSweepTimer.expires_from_now(boost::posix_time::seconds(60));
 	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));

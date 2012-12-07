@@ -4,8 +4,7 @@
 #include "../json/value.h"
 
 enum {
-	rpcSUCCESS,
-
+	rpcSUCCESS = 0,
 	rpcBAD_SYNTAX,	// Must be 1 to print usage to command line.
 	rpcJSON_RPC,
 

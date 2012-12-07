@@ -31,6 +31,9 @@
     <Filter Include="Source Files\websocketpp">
       <UniqueIdentifier>{92775c5f-dc9f-4a97-a9a6-6d4bd4e424b4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\websocket">
+      <UniqueIdentifier>{cd4c41c0-3ee6-49f8-8322-d11422b892f9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\database.cpp">
@@ -351,6 +354,12 @@
     <ClCompile Include="src\cpp\ripple\AccountItems.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ProofOfWork.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\WSHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="util\pugiconfig.hpp">
@@ -655,6 +664,39 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\AccountItems.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\common.hpp">
+      <Filter>Header Files\websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\connection.hpp">
+      <Filter>Header Files\websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\endpoint.hpp">
+      <Filter>Header Files\websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\network_utilities.hpp">
+      <Filter>Header Files\websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\shared_const_buffer.hpp">
+      <Filter>Header Files\websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\uri.hpp">
+      <Filter>Header Files\websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\websocket_frame.hpp">
+      <Filter>Header Files\websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\websocketpp.hpp">
+      <Filter>Header Files\websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\sockets\plain.hpp">
+      <Filter>Header Files\websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\sockets\socket_base.hpp">
+      <Filter>Header Files\websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\sockets\tls.hpp">
+      <Filter>Header Files\websocket</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

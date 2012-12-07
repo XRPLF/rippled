@@ -9,6 +9,7 @@ SETUP_LOG();
 #include "utils.h"
 #include "WSConnection.h"
 #include "WSHandler.h"
+#include "Config.h"
 
 #include "WSDoor.h"
 
@@ -53,21 +54,42 @@ void WSDoor::startListening()
 
 	SSL_CTX_set_tmp_dh_callback(mCtx->native_handle(), handleTmpDh);
 
-	// Construct a single handler for all requests.
-	websocketpp::WSDOOR_SERVER::handler::ptr	handler(new WSServerHandler<websocketpp::WSDOOR_SERVER>(mCtx, mPublic));
+	if(theConfig.WEBSOCKET_SECURE)
+	{
+		// Construct a single handler for all requests.
+		websocketpp::server_tls::handler::ptr	handler(new WSServerHandler<websocketpp::server_tls>(mCtx, mPublic));
 
-	// Construct a websocket server.
-	mEndpoint		= new websocketpp::WSDOOR_SERVER(handler);
+		// Construct a websocket server.
+		mSEndpoint		= new websocketpp::server_tls(handler);
 
-	// mEndpoint->alog().unset_level(websocketpp::log::alevel::ALL);
-	// mEndpoint->elog().unset_level(websocketpp::log::elevel::ALL);
+		// mEndpoint->alog().unset_level(websocketpp::log::alevel::ALL);
+		// mEndpoint->elog().unset_level(websocketpp::log::elevel::ALL);
 
-	// Call the main-event-loop of the websocket server.
-	mEndpoint->listen(
-		boost::asio::ip::tcp::endpoint(
-		boost::asio::ip::address().from_string(mIp), mPort));
+		// Call the main-event-loop of the websocket server.
+		mSEndpoint->listen(
+			boost::asio::ip::tcp::endpoint(
+			boost::asio::ip::address().from_string(mIp), mPort));
 
-	delete mEndpoint;
+		delete mSEndpoint;
+	}else
+	{
+		// Construct a single handler for all requests.
+		websocketpp::server::handler::ptr	handler(new WSServerHandler<websocketpp::server>(mCtx, mPublic));
+
+		// Construct a websocket server.
+		mEndpoint		= new websocketpp::server(handler);
+
+		// mEndpoint->alog().unset_level(websocketpp::log::alevel::ALL);
+		// mEndpoint->elog().unset_level(websocketpp::log::elevel::ALL);
+
+		// Call the main-event-loop of the websocket server.
+		mEndpoint->listen(
+			boost::asio::ip::tcp::endpoint(
+			boost::asio::ip::address().from_string(mIp), mPort));
+
+		delete mEndpoint;
+	}
+	
 }
 
 WSDoor* WSDoor::createWSDoor(const std::string& strIp, const int iPort, bool bPublic)
@@ -89,7 +111,11 @@ void WSDoor::stop()
 {
 	if (mThread)
 	{
-		mEndpoint->stop();
+		if (mEndpoint)
+			mEndpoint->stop();
+		if (mSEndpoint)
+			mSEndpoint->stop();
+
 
 		mThread->join();
 	}

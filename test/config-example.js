@@ -23,6 +23,7 @@ exports.servers = {
     'rpc_port' : 5005,
     'websocket_ip' : "127.0.0.1",
     'websocket_port' : 5006,
+    'websocket_ssl' : false,
     'local_sequence' : true,
     'local_fee' : true,
     // 'validation_seed' : "shhDFVsmS2GSu5vUyZSPXYfj1r79h",

@@ -189,6 +189,10 @@ bool parseQuality(const std::string& strSource, uint32& uQuality);
 DH* DH_der_load(const std::string& strDer);
 std::string DH_der_gen(int iKeyLength);
 
+void getRand(unsigned char *buf, int num);
+inline static void getRand(char *buf, int num)		{ return getRand(reinterpret_cast<unsigned char *>(buf), num); } 
+inline static void getRand(void *buf, int num)		{ return getRand(reinterpret_cast<unsigned char *>(buf), num); } 
+
 inline std::string strGetEnv(const std::string& strKey)
 {
 	return getenv(strKey.c_str()) ? getenv(strKey.c_str()) : "";

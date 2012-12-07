@@ -5,6 +5,17 @@
 #include <boost/foreach.hpp>
 #include <boost/regex.hpp>
 
+#include <openssl/rand.h>
+
+void getRand(unsigned char *buf, int num)
+{
+	if (RAND_bytes(buf, num) != 1)
+	{
+		assert(false);
+		throw std::runtime_error("Entropy pool not seeded");
+	}
+}
+
 //
 // Time support
 // We have our own epoch.
