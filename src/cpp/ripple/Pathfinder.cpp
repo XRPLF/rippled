@@ -256,7 +256,7 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 				// Last element is for non-XRP continue by adding ripple lines and order books.
 
 				// Create new paths for each outbound account not already in the path.
-				AccountItems rippleLines(ele.mAccountID, AccountItem::pointer(new RippleState()));
+				AccountItems rippleLines(ele.mAccountID, mLedger, AccountItem::pointer(new RippleState()));
 
 				BOOST_FOREACH(AccountItem::pointer item, rippleLines.getItems())
 				{

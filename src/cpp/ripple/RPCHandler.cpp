@@ -559,7 +559,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 		// XXX This is wrong, we do access the current ledger and do need to worry about changes.
 		// We access a committed ledger and need not worry about changes.
 
-		AccountItems rippleLines(raAccount.getAccountID(), AccountItem::pointer(new RippleState()));
+		AccountItems rippleLines(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new RippleState()));
 
 		BOOST_FOREACH(AccountItem::pointer item, rippleLines.getItems())
 		{
@@ -629,7 +629,7 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 	{
 		Json::Value	jsonLines(Json::arrayValue);
 
-		AccountItems offers(raAccount.getAccountID(), AccountItem::pointer(new Offer()));
+		AccountItems offers(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new Offer()));
 		BOOST_FOREACH(AccountItem::pointer item, offers.getItems())
 		{
 			Offer* offer=(Offer*)item.get();
@@ -827,7 +827,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 					RippleCalc::setCanonical(spsCanonical, vpsExpanded);
 
 					jvEntry["source_amount"]	= saMaxAmountAct.getJson(0);
-//					jvEntry["paths_expanded"]	= spsExpanded.getJson(0);
+//					jvEntry["paths_expanded"]	= vpsExpanded.getJson(0);
 					jvEntry["paths_canonical"]	= spsCanonical.getJson(0);
 
 					jvArray.append(jvEntry);

@@ -470,9 +470,10 @@ void PathState::setCanonical(
 
 	// saInAct
 	// - currency is always the same as vpnNodes[0].
-	if (uMaxIssuerID != uAccountID);
+	if (uNode != uEnd && uMaxIssuerID != uAccountID)
 	{
 		// saInAct issuer is not the sender. This forces an implied node.
+		// cLog(lsDEBUG) << boost::str(boost::format("setCanonical: in diff: uNode=%d uEnd=%d") % uNode % uEnd);
 
 		// skip node 1
 
@@ -483,6 +484,7 @@ void PathState::setCanonical(
 
 	if (uNode != uEnd && !!uOutCurrencyID && uOutIssuerID != uDstAccountID)
 	{
+		// cLog(lsDEBUG) << boost::str(boost::format("setCanonical: out diff: uNode=%d uEnd=%d") % uNode % uEnd);
 		// The next to last node is saOutAct if an issuer different from receiver is supplied.
 		// The next to last node can be implied.
 
@@ -495,19 +497,21 @@ void PathState::setCanonical(
 		&& !pnEnd.uAccountID && pnEnd.uCurrencyID == uOutCurrencyID && pnEnd.uIssuerID == uOutIssuerID)
 	{
 		// The current end node is an offer converting to saOutAct's currency and issuer and can be implied.
+		// cLog(lsDEBUG) << boost::str(boost::format("setCanonical: out offer: uNode=%d uEnd=%d") % uNode % uEnd);
+
 		--uEnd;
 	}
 
 	// Do not include uEnd.
 	for (; uNode != uEnd; ++uNode)
 	{
+		// cLog(lsDEBUG) << boost::str(boost::format("setCanonical: loop: uNode=%d uEnd=%d") % uNode % uEnd);
 		const PaymentNode&	pnPrv	= psExpanded.vpnNodes[uNode-1];
 		const PaymentNode&	pnCur	= psExpanded.vpnNodes[uNode];
 		const PaymentNode&	pnNxt	= psExpanded.vpnNodes[uNode+1];
 
 		const bool		bPrvAccount		= isSetBit(pnPrv.uFlags, STPathElement::typeAccount);
 		const bool		bCurAccount		= isSetBit(pnCur.uFlags, STPathElement::typeAccount);
-		const bool		bNxtAccount		= isSetBit(pnNxt.uFlags, STPathElement::typeAccount);
 
 		bool			bSkip	= false;
 
@@ -525,6 +529,7 @@ void PathState::setCanonical(
 		else
 		{
 			// Currently at an offer.
+			const bool		bNxtAccount		= isSetBit(pnNxt.uFlags, STPathElement::typeAccount);
 
 			if (bPrvAccount && bNxtAccount	// Offer surrounded by accounts.
 				&& pnPrv.uCurrencyID != pnNxt.uCurrencyID)

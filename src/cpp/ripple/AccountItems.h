@@ -37,7 +37,6 @@ class AccountItems
 public:
 
 	AccountItems(const uint160& accountID, Ledger::ref ledger, AccountItem::pointer ofType);
-	AccountItems(const uint160& accountID, AccountItem::pointer ofType ); // looks in the current ledger
 
 	std::vector<AccountItem::pointer>& getItems() { return(mItems); }
 };

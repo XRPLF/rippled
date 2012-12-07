@@ -14,15 +14,9 @@ AccountItem::AccountItem(SerializedLedgerEntry::ref ledger) : mLedgerEntry(ledge
 
 AccountItems::AccountItems(const uint160& accountID, Ledger::ref ledger, AccountItem::pointer ofType)
 {
-	mOfType=ofType;
-	fillItems(accountID, ledger);
-}
+	mOfType	= ofType;
 
-// looks in the current ledger
-AccountItems::AccountItems(const uint160& accountID, AccountItem::pointer ofType )
-{
-	mOfType=ofType;
-	fillItems(accountID,theApp->getLedgerMaster().getClosedLedger());
+	fillItems(accountID, ledger);
 }
 
 void AccountItems::fillItems(const uint160& accountID, Ledger::ref ledger)
