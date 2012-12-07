@@ -3,6 +3,7 @@
 
 #include "Application.h"
 #include "Config.h"
+#include "Log.h"
 
 template <typename endpoint_type>
 class WSConnection;
@@ -138,11 +139,43 @@ public:
 					boost::asio::ssl::context::single_dh_use);
 //				context->set_password_callback(boost::bind(&type::get_password, this));
 				if (!theConfig.WEBSOCKET_SSL_CERT.empty())
-					context->use_certificate_file(theConfig.WEBSOCKET_SSL_CERT, boost::asio::ssl::context::pem);
-				if (!theConfig.WEBSOCKET_SSL_KEY.empty())
-					context->use_private_key_file(theConfig.WEBSOCKET_SSL_KEY, boost::asio::ssl::context::pem);
+				{
+					boost::system::error_code error;
+					context->use_certificate_file(theConfig.WEBSOCKET_SSL_CERT, boost::asio::ssl::context::pem, error);
+					if (error)
+					{
+						Log(lsFATAL) << "Unable to set certificate: " << error;
+						assert(false);
+					}
+					else Log(lsINFO) << "cert set";
+				}
 				if (!theConfig.WEBSOCKET_SSL_CHAIN.empty())
-					context->use_certificate_chain_file(theConfig.WEBSOCKET_SSL_CHAIN);
+				{
+					boost::system::error_code error;
+					context->use_certificate_chain_file(theConfig.WEBSOCKET_SSL_CHAIN, error);
+					if (error)
+					{
+						Log(lsFATAL) << "Unable to set certificate chain: " << error;
+						assert(false);
+					}
+					else Log(lsINFO) << "chain set";
+				}
+				if (!theConfig.WEBSOCKET_SSL_KEY.empty())
+				{
+					boost::system::error_code error;
+					context->use_private_key_file(theConfig.WEBSOCKET_SSL_KEY, boost::asio::ssl::context::pem, error);
+					if (error)
+					{
+						Log(lsFATAL) << "Unable to set private key: " << error;
+						assert(false);
+					}
+					else Log(lsINFO) << "key set";
+				}
+				if (SSL_CTX_check_private_key(context->native_handle()) != 1)
+				{
+					Log(lsFATAL) << "private key not valid";
+					assert(false);
+				}
 				//context->use_tmp_dh_file("../../src/ssl/dh512.pem");
 			} catch (std::exception& e) {
 				std::cout << e.what() << std::endl;
