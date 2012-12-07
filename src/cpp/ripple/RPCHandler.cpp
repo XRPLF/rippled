@@ -913,7 +913,13 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 				txJSON["Fee"] = (int) theConfig.FEE_ACCOUNT_CREATE;
 		}
 
-		if (!txJSON.isMember("Paths") && txJSON.isMember("Amount")  && jvRequest.isMember("build_path"))
+		if (txJSON.isMember("Paths") && jvRequest.isMember("build_path"))
+		{
+			// Asking to build a path when providing one is an error.
+			return rpcError(rpcINVALID_PARAMS);
+		}
+
+		if (!txJSON.isMember("Paths") && txJSON.isMember("Amount") && jvRequest.isMember("build_path"))
 		{
 			// Need a ripple path.
 			STPathSet	spsPaths;
@@ -937,6 +943,12 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 				// If no SendMax, default to Amount with sender as issuer.
 				saSendMax		= saSend;
 				saSendMax.setIssuer(raSrcAddressID.getAccountID());
+			}
+
+			if (saSendMax.isNative() && saSend.isNative())
+			{
+				// Asking to build a path for XRP to XRP is an error.
+				return rpcError(rpcINVALID_PARAMS);
 			}
 
 			Pathfinder pf(raSrcAddressID, dstAccountID, saSendMax.getCurrency(), saSendMax.getIssuer(), saSend);
