@@ -26,7 +26,7 @@ public:
 protected:
 	typedef void (WSConnection::*doFuncPtr)(Json::Value& jvResult, Json::Value &jvRequest);
 
-	WSServerHandler<endpoint_type>*					 mHandler;
+	WSServerHandler<endpoint_type>*					mHandler;
 	connection_ptr									mConnection;
 	NetworkOPs&										mNetwork;
 
