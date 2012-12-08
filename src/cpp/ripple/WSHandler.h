@@ -35,7 +35,14 @@ protected:
 	bool																	mPublic;
 
 public:
-	WSServerHandler(boost::shared_ptr<boost::asio::ssl::context> spCtx, bool bPublic) : mCtx(spCtx), mPublic(bPublic) {}
+	WSServerHandler(boost::shared_ptr<boost::asio::ssl::context> spCtx, bool bPublic) : mCtx(spCtx), mPublic(bPublic)
+	{
+		if (theConfig.WEBSOCKET_SECURE)
+		{
+			initSSLContext(*mCtx, theConfig.WEBSOCKET_SSL_KEY,
+				theConfig.WEBSOCKET_SSL_CERT, theConfig.WEBSOCKET_SSL_CHAIN);
+		}
+	}
 
 	bool		getPublic() { return mPublic; };
 
@@ -132,22 +139,7 @@ public:
 
 	boost::shared_ptr<boost::asio::ssl::context> on_tls_init()
 	{
-		if(theConfig.WEBSOCKET_SECURE)
-		{
-			// create a tls context, init, and return.
-			boost::shared_ptr<boost::asio::ssl::context> context(new boost::asio::ssl::context(boost::asio::ssl::context::tlsv1));
-			try {
-				initSSLContext(*context, theConfig.WEBSOCKET_SSL_KEY,
-					theConfig.WEBSOCKET_SSL_CERT, theConfig.WEBSOCKET_SSL_CHAIN);
-			} catch (std::exception& e) {
-				std::cout << e.what() << std::endl;
-			}
-			return context;
-		}else 
-		{
-			return mCtx;
-		}
-		
+		return mCtx;
 	}
 
 	// Respond to http requests.
