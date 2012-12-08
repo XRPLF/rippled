@@ -287,7 +287,7 @@ Currency.prototype.copyTo = function(d) {
 Currency.prototype.equals = function(d) {
   return ('string' !== typeof this._value && isNaN(this._value))
     || ('string' !== typeof d._value && isNaN(d._value)) ? false : this._value === d._value;
-}
+};
 
 // this._value = NaN on error.
 Currency.prototype.parse_json = function(j) {
@@ -302,6 +302,10 @@ Currency.prototype.parse_json = function(j) {
   }
 
   return this;
+};
+
+Currency.prototype.is_native = function () {
+  return !isNaN(this._value) && !this._value;
 };
 
 Currency.prototype.is_valid = function () {
