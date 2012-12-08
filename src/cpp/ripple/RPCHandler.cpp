@@ -761,10 +761,8 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 				return rpcError(rpcINVALID_PARAMS);
 			}
 
-			STPathSet						spsComputed;
-			std::vector<PathState::pointer>	vpsExpanded;
-
-			Pathfinder				pf(raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount);
+			STPathSet	spsComputed;
+			Pathfinder	pf(raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount);
 
 			if (!pf.findPaths(5, 1, spsComputed))
 			{
@@ -772,36 +770,39 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 			}
 			else
 			{
-				STAmount	saMaxAmountAct;
-				STAmount	saDstAmountAct;
-				STAmount	saMaxAmount(
-					uSrcCurrencyID,
-					!!uSrcIssuerID
-						? uSrcIssuerID
-						: !!uSrcCurrencyID
-							? raSrc.getAccountID()
-							: ACCOUNT_XRP,
-					1);
+				std::vector<PathState::pointer>	vpsExpanded;
+				STAmount						saMaxAmountAct;
+				STAmount						saDstAmountAct;
+				STAmount						saMaxAmount(
+													uSrcCurrencyID,
+													!!uSrcIssuerID
+														? uSrcIssuerID
+														: !!uSrcCurrencyID
+															? raSrc.getAccountID()
+															: ACCOUNT_XRP,
+													1);
 					saMaxAmount.negate();
-
-				cLog(lsDEBUG) << "ripple_path_find: PATHS: " << spsComputed.size();
 
 				TER	terResult	=
 					RippleCalc::rippleCalc(
 						lesSnapshot,
-						saMaxAmountAct,
-						saDstAmountAct,
-						vpsExpanded,
+						saMaxAmountAct,			// <--
+						saDstAmountAct,			// <--
+						vpsExpanded,			// <--
 						saMaxAmount,			// --> Amount to send is unlimited to get an estimate.
 						saDstAmount,			// --> Amount to deliver.
 						raDst.getAccountID(),	// --> Account to deliver to.
 						raSrc.getAccountID(),	// --> Account sending from.
 						spsComputed,			// --> Path set.
 						false,					// --> Don't allow partial payment. This is for normal fill or kill payments.
-												// Must achive delivery goal.
+												// Must achieve delivery goal.
 						false,					// --> Don't limit quality. Average quality is wanted for normal payments.
-						false,					// --> Allow direct ripple.
+						false,					// --> Allow direct ripple to be added to path set. to path set.
 						true);					// --> Stand alone mode, no point in deleting unfundeds.
+
+				// cLog(lsDEBUG) << "ripple_path_find: PATHS IN: " << spsComputed.size() << " : " << spsComputed.getJson(0);
+				// cLog(lsDEBUG) << "ripple_path_find: PATHS EXP: " << vpsExpanded.size();
+
 
 				cLog(lsDEBUG)
 					<< boost::str(boost::format("ripple_path_find: saMaxAmount=%s saDstAmount=%s saMaxAmountAct=%s saDstAmountAct=%s")
@@ -816,7 +817,9 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 
 					STPathSet	spsCanonical;
 
-					RippleCalc::setCanonical(spsCanonical, vpsExpanded);
+					// Reuse the expanded as it would need to be calcuated anyway to produce the canonical.
+					// (At least unless we make a direct canonical.)
+					RippleCalc::setCanonical(spsCanonical, vpsExpanded, false);
 
 					jvEntry["source_amount"]	= saMaxAmountAct.getJson(0);
 //					jvEntry["paths_expanded"]	= vpsExpanded.getJson(0);
@@ -840,6 +843,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 			}
 		}
 
+		// Each alternative differs by source currency.
 		jvResult["alternatives"] = jvArray;
 	}
 

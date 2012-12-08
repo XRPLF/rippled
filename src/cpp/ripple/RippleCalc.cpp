@@ -580,24 +580,39 @@ void PathState::setCanonical(
 		% getJson());
 }
 
-void RippleCalc::setCanonical(STPathSet& spsDst, const std::vector<PathState::pointer>& vpsExpanded)
+void RippleCalc::setCanonical(STPathSet& spsDst, const std::vector<PathState::pointer>& vpsExpanded, bool bKeepDefault)
 {
+	// cLog(lsDEBUG) << boost::str(boost::format("SET: setCanonical> %d") % vpsExpanded.size());
+
 	BOOST_FOREACH(PathState::ref pspExpanded, vpsExpanded)
 	{
-		PathState	psCanonical(*pspExpanded, false);
-
-		psCanonical.setCanonical(*pspExpanded);
-
-		STPath spCanonical;
-
-		BOOST_FOREACH(const PaymentNode& pnElem, psCanonical.vpnNodes)
+		// Obvious defaults have 2 nodes when expanded.
+		if (bKeepDefault || 2 != pspExpanded->vpnNodes.size())
 		{
-			STPathElement	speElem(pnElem.uFlags, pnElem.uAccountID, pnElem.uCurrencyID, pnElem.uIssuerID);
-			spCanonical.addElement(speElem);
-		}
+			PathState	psCanonical(*pspExpanded, false);
 
-		spsDst.addPath(spCanonical);
+			// cLog(lsDEBUG) << boost::str(boost::format("SET: setCanonical: %d %d %s") % bKeepDirect % pspExpanded->vpnNodes.size() % pspExpanded->getJson());
+
+			psCanonical.setCanonical(*pspExpanded);
+
+			// Non-obvious defaults have 0 nodes when canonicalized.
+			if (bKeepDefault || psCanonical.vpnNodes.size())
+			{
+				STPath spCanonical;
+
+				BOOST_FOREACH(const PaymentNode& pnElem, psCanonical.vpnNodes)
+				{
+					STPathElement	speElem(pnElem.uFlags, pnElem.uAccountID, pnElem.uCurrencyID, pnElem.uIssuerID);
+
+					spCanonical.addElement(speElem);
+				}
+
+				spsDst.addPath(spCanonical);
+			}
+		}
 	}
+
+	// cLog(lsDEBUG) << boost::str(boost::format("SET: setCanonical< %d") % spsDst.size());
 }
 
 Json::Value	PathState::getJson() const

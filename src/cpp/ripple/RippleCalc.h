@@ -210,7 +210,7 @@ public:
 		const bool						bStandAlone
 		);
 
-	static void setCanonical(STPathSet& spsDst, const std::vector<PathState::pointer>& vpsExpanded);
+	static void setCanonical(STPathSet& spsDst, const std::vector<PathState::pointer>& vpsExpanded, bool bKeepDefault);
 };
 
 #endif
