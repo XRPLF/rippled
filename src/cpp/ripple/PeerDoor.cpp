@@ -103,6 +103,7 @@ void initSSLContext(boost::asio::ssl::context& context,
 					throw std::runtime_error("Unable to add chain certificate");
 				}
 			}
+			fclose(f);
 		}
 		catch (...)
 		{
