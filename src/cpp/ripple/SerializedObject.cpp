@@ -943,7 +943,7 @@ STArray* STArray::construct(SerializerIterator& sit, SField::ref field)
 
 void STArray::sort(bool (*compare)(const STObject&, const STObject&))
 {
-	std::sort(value.begin(), value.end(), compare);
+	value.sort(compare);
 }
 
 std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::ref inName, int depth)
