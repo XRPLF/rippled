@@ -425,6 +425,51 @@ Amount.prototype.clone = function(negate) {
   return this.copyTo(new Amount(), negate);
 };
 
+Amount.prototype.compareTo = function(v) {
+  var result;
+
+  if (!this.is_comparable(v)) {
+    result  = Amount.NaN();
+  }
+  else if (this._is_native) {
+    result  = this._value.compareTo(v._value);
+
+    if (result > 1)
+      result  = 1;
+    else if (result < -1)
+      result  = -1;
+  }
+  else if (this._is_negative != v._is_negative) {
+    result  = this._is_negative ? -1 : 1;
+  }
+  else if (this._value.equals(BigInteger.ZERO)) {
+    result  = v._is_negative
+                ? 1
+                : v._value.equals(BigInteger.ZERO)
+                  ? 0
+                  : 1;
+  }
+  else if (v._value.equals(BigInteger.ZERO)) {
+    result  = 1;
+  }
+  else if (this._offset > v._offset) {
+    result  = this._is_negative ? -1 : 1;
+  }
+  else if (this._offset < v._offset) {
+    result  = this._is_negative ? 1 : -1;
+  }
+  else {
+    result  = this._value.compareTo(v._value);
+
+    if (result > 1)
+      result  = 1;
+    else if (result < -1)
+      result  = -1;
+  }
+
+  return result;
+};
+
 // Returns copy.
 Amount.prototype.copyTo = function(d, negate) {
   if ('object' === typeof this._value)
@@ -503,6 +548,12 @@ Amount.prototype.is_valid_full = function() {
   return this.is_valid() && this._currency.is_valid() && this._issuer.is_valid();
 };
 
+Amount.prototype.is_zero = function() {
+  return this._value instanceof BigInteger
+          ? this._value.equals(BigInteger.ZERO)
+          : false;
+};
+
 Amount.prototype.issuer = function() {
   return this._issuer;
 };
@@ -536,7 +587,7 @@ Amount.prototype.to_text = function(allow_nan) {
       return this._value.toString();
     }
   }
-  else if (this._value.equals(BigInteger.ZERO))
+  else if (this.is_zero())
   {
     return "0";
   }
@@ -632,7 +683,7 @@ Amount.prototype.canonicalize = function() {
     // Native.
     // nothing
   }
-  else if (this._value.equals(BigInteger.ZERO)) {
+  else if (this.is_zero()) {
     this._offset      = -100;
     this._is_negative = false;
   }
