@@ -21,10 +21,11 @@
 enum JobType
 { // must be in priority order, low to high
 	jtINVALID		= -1,
-	jtVALIDATION_ut	= 0,	// A validation from an untrusted source
+	jtVALIDATION_ut	= 1,	// A validation from an untrusted source
 	jtPROOFWORK		= 2,	// A proof of work demand from another server
-	jtTRANSACTION	= 3,	// A transaction received from the network
-	jtPROPOSAL_ut	= 4,	// A proposal from an untrusted source
+	jtPROPOSAL_ut	= 3,	// A proposal from an untrusted source
+	jtCLIENT		= 4,	// A websocket command from the client
+	jtTRANSACTION	= 5,	// A transaction received from the network
 	jtVALIDATION_t	= 6,	// A validation from a trusted source
 	jtTRANSACTION_l	= 7,	// A local transaction
 	jtPROPOSAL_t	= 8,	// A proposal from a trusted source
@@ -32,7 +33,6 @@ enum JobType
 	jtDEATH			= 10,	// job of death, used internally
 
 // special types not dispatched by the job pool
-	jtCLIENT		= 16,
 	jtPEER			= 17,
 	jtDISK			= 18,
 	jtRPC			= 19,
