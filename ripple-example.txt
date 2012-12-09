@@ -1,6 +1,8 @@
 #
 # Sample ripple.txt
 #
+# More information: https://ripple.com/wiki/Ripple.txt
+#
 # Publishing this file allows a site to declare in a trustworthy manor ripple
 # associated information.
 #
