@@ -27,11 +27,16 @@ var consts = exports.consts = {
 
   // BigInteger values prefixed with bi_.
   'bi_10'	      : new BigInteger('10'),
+  'bi_1e14'           : new BigInteger('100000000000000'),
+  'bi_1e16'           : new BigInteger('10000000000000000'),
   'bi_man_max_value'  : new BigInteger('9999999999999999'),
   'bi_man_min_value'  : new BigInteger('1000000000000000'),
   'bi_xns_max'	      : new BigInteger("9000000000000000000"),	  // Json wire limit.
   'bi_xns_min'	      : new BigInteger("-9000000000000000000"),	  // Json wire limit.
   'bi_xns_unit'	      : new BigInteger('1000000'),
+
+  'cMinOffset'        : -96,
+  'cMaxOffset'        : 80,
 };
 
 // --> input: big-endian array of bytes.
@@ -396,12 +401,12 @@ Amount.prototype.add = function (v) {
     var o2  = v._offset;
 
     while (o1 < o2) {
-      v1  = v1.multiply(consts.bi_10);
+      v1  = v1.divide(consts.bi_10);
       o1  += 1;
     }
 
     while (o2 < o1) {
-      v2  = v2.multiply(consts.bi_10);
+      v2  = v2.divide(consts.bi_10);
       o2  += 1;
     }
 
@@ -432,7 +437,7 @@ Amount.prototype.canonicalize = function () {
   }
   else if (this._is_native) {
     // Native.
-    // nothing
+    // XXX Make sure not bigger than supported. Throw if so.
   }
   else if (this.is_zero()) {
     this._offset      = -100;
@@ -552,6 +557,66 @@ Amount.prototype.equals = function (d) {
 	      : false));
 };
 
+// Result in terms of this' currency and issuer.
+Amount.prototype.divide = function (d) {
+  var result;
+
+  if (!this.is_comparable(d)) {
+    // XXX We might want to allow mixed division. In that case convert d to same terms as this.
+    result              = Amount.NaN();
+  }
+  else if (d.is_zero()) {
+    throw "divide by zero";
+  }
+  else if (this.is_zero()) {
+    result  = this;
+  }
+  else if (this._is_native) {
+    var vn  = this._value;
+    var on  = this._offset;
+    var vd  = d._value;
+    var od  = d._offset;
+
+    while (vn.compareTo(consts.bi_man_min_value) < 0) {
+      vn  = vn.multiply(consts.bi_10);
+      on  -= 1;
+    }
+
+    while (dn.compareTo(consts.bi_man_min_value) < 0) {
+      vd  = vn.multiply(consts.bi_10);
+      od  -= 1;
+    }
+
+    result              = new Amount();
+    result._value       = vn.multiply(consts.bi_1e16).divide(vd);
+    result._is_negative = this._is_negative != d._is_negative;
+
+    // XXX Check range?
+  }
+  else {
+    var vn  = this._value.multiply(consts.bi_10).add(3);
+    var on  = this._offset - 1;
+    var vd  = d._value.multiply(consts.bi_10).add(3);
+    var od  = d._offset - 1;
+
+    result              = new Amount();
+    result._offset      = on+od-16;
+    result._value       = vn.multiply(consts.bi_1e16).divide(vd);
+    result._is_negative = this._is_negative != d._is_negative;
+    result._currency    = this._currency.clone();
+    result._issuer      = this._issuer.clone();
+    
+    if (result._offset > cMaxOffset || result._offset < cMaxOffset)
+      throw "division result out of range.";
+
+    // XXX Check value is in legal range here or have canonicalize do it?
+
+    result.canonicalize();
+  }
+
+  return result;
+};
+
 // True if Amounts are valid and both native or non-native.
 Amount.prototype.is_comparable = function (v) {
   return this._value instanceof BigInteger
@@ -588,6 +653,39 @@ Amount.prototype.is_zero = function () {
 
 Amount.prototype.issuer = function () {
   return this._issuer;
+};
+
+// Result in terms of this' currency and issuer.
+Amount.prototype.multiply = function (v) {
+  var result;
+
+  if (!this.is_comparable(v)) {
+    result              = Amount.NaN();
+  }
+  else if (this._is_native) {
+    result              = new Amount();
+    result._value       = this._value.multiply(v._value);
+  }
+  else {
+    var v1  = this._value.multiply(consts.bi_10).add(3);
+    var o1  = this._offset - 1;
+    var v2  = v._value.multiply(consts.bi_10).add(3);
+    var o2  = v._offset - 1;
+
+    // XXX Do we really need to do the offer +14 and divide? Can't canonicalize adjust.
+    result              = new Amount();
+    result._offset      = o1+o2+14;
+    result._value       = v1.multiply(v2).divide(consts.bi_1e14);
+    result._is_negative = this._is_negative != v._is_negative;
+    result._currency    = this._currency.clone();
+    result._issuer      = this._issuer.clone();
+    
+    // XXX Check value is in legal range here or have canonicalize do it?
+
+    result.canonicalize();
+  }
+
+  return result;
 };
 
 // Return a new value.
