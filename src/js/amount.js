@@ -161,18 +161,18 @@ UInt160.is_valid = function (j) {
   return UInt160.from_json(j).is_valid();
 };
 
-UInt160.prototype.clone = function() {
+UInt160.prototype.clone = function () {
   return this.copyTo(new UInt160());
 };
 
 // Returns copy.
-UInt160.prototype.copyTo = function(d) {
+UInt160.prototype.copyTo = function (d) {
   d._value = this._value;
 
   return d;
 };
 
-UInt160.prototype.equals = function(d) {
+UInt160.prototype.equals = function (d) {
   return isNaN(this._value) || isNaN(d._value) ? false : this._value.equals(d._value);
 };
 
@@ -259,7 +259,7 @@ var Currency = function () {
 }
 
 // Given "USD" return the json.
-Currency.json_rewrite = function(j) {
+Currency.json_rewrite = function (j) {
   return Currency.from_json(j).to_json();
 };
 
@@ -278,19 +278,19 @@ Currency.prototype.clone = function() {
 };
 
 // Returns copy.
-Currency.prototype.copyTo = function(d) {
+Currency.prototype.copyTo = function (d) {
   d._value = this._value;
 
   return d;
 };
 
-Currency.prototype.equals = function(d) {
+Currency.prototype.equals = function (d) {
   return ('string' !== typeof this._value && isNaN(this._value))
     || ('string' !== typeof d._value && isNaN(d._value)) ? false : this._value === d._value;
 };
 
 // this._value = NaN on error.
-Currency.prototype.parse_json = function(j) {
+Currency.prototype.parse_json = function (j) {
   if ("" === j || "0" === j || "XRP" === j) {
     this._value	= 0;
   }
@@ -316,7 +316,7 @@ Currency.prototype.to_json = function () {
   return this._value ? this._value : "XRP";
 };
 
-Currency.prototype.to_human = function() {
+Currency.prototype.to_human = function () {
   return this._value ? this._value : "XRP";
 };
 
@@ -345,15 +345,15 @@ Amount.text_full_rewrite = function (j) {
 }
 
 // Given "100/USD/mtgox" return the json.
-Amount.json_rewrite = function(j) {
+Amount.json_rewrite = function (j) {
   return Amount.from_json(j).to_json();
 };
 
-Amount.from_json = function(j) {
+Amount.from_json = function (j) {
   return (new Amount()).parse_json(j);
 };
 
-Amount.from_human = function(j) {
+Amount.from_human = function (j) {
   return (new Amount()).parse_human(j);
 };
 
@@ -374,12 +374,12 @@ Amount.NaN = function () {
 };
 
 // Returns a new value which is the absolute value of this.
-Amount.prototype.abs = function() {
+Amount.prototype.abs = function () {
   return this.clone(this.is_negative());
 };
 
 // Result in terms of this' currency and issuer.
-Amount.prototype.add = function(v) {
+Amount.prototype.add = function (v) {
   var result;
 
   if (!this.is_comparable(v)) {
@@ -418,18 +418,47 @@ Amount.prototype.add = function(v) {
     result._currency    = this._currency.clone();
     result._issuer      = this._issuer.clone();
 
-    // XXX Do we need to worry about overflow? Maybe only in to_json.
     result.canonicalize();
   }
 
   return result;
 };
 
-Amount.prototype.clone = function(negate) {
+Amount.prototype.canonicalize = function () {
+  if ((!this._value instanceof BigInteger))
+  {
+    // NaN.
+    // nothing
+  }
+  else if (this._is_native) {
+    // Native.
+    // nothing
+  }
+  else if (this.is_zero()) {
+    this._offset      = -100;
+    this._is_negative = false;
+  }
+  else
+  {
+    while (this._value.compareTo(consts.bi_man_min_value) < 0) {
+      this._value  = this._value.multiply(consts.bi_10);
+      this._offset -= 1;
+    }
+
+    while (this._value.compareTo(consts.bi_man_max_value) > 0) {
+      this._value  = this._value.divide(consts.bi_10);
+      this._offset += 1;
+    }
+  }
+
+  return this;
+};
+
+Amount.prototype.clone = function (negate) {
   return this.copyTo(new Amount(), negate);
 };
 
-Amount.prototype.compareTo = function(v) {
+Amount.prototype.compareTo = function (v) {
   var result;
 
   if (!this.is_comparable(v)) {
@@ -475,7 +504,7 @@ Amount.prototype.compareTo = function(v) {
 };
 
 // Returns copy.
-Amount.prototype.copyTo = function(d, negate) {
+Amount.prototype.copyTo = function (d, negate) {
   if ('object' === typeof this._value)
   {
     if (this._is_native && negate)
@@ -502,11 +531,279 @@ Amount.prototype.copyTo = function(d, negate) {
   return d;
 };
 
-Amount.prototype.currency = function() {
+Amount.prototype.currency = function () {
   return this._currency;
 };
 
-Amount.prototype.set_currency = function(c) {
+// Check BigInteger NaN
+// Checks currency, does not check issuer.
+Amount.prototype.equals = function (d) {
+  return 'string' === typeof (d)
+    ? this.equals(Amount.from_json(d))
+    : this === d
+      || (d instanceof Amount
+	&& this._is_native === d._is_native
+	&& (this._is_native
+	    ? this._value.equals(d._value)
+	    : this._currency.equals(d._currency)
+	      ? this._is_negative === d._is_negative
+		? this._value.equals(d._value)
+		: this._value.equals(BigInteger.ZERO) && d._value.equals(BigInteger.ZERO)
+	      : false));
+};
+
+// True if Amounts are valid and both native or non-native.
+Amount.prototype.is_comparable = function (v) {
+  return this._value instanceof BigInteger
+    && v._value instanceof BigInteger
+    && this._is_native === v.is_native;
+};
+
+Amount.prototype.is_native = function () {
+  return this._is_native;
+};
+
+Amount.prototype.is_negative = function () {
+  return this._value instanceof BigInteger
+          ? this.is_native
+            ? this._value.compareTo(BigInteger.ZERO) < 0
+            : this._is_negative
+          : false;                          // NaN is not negative
+};
+
+// Only checks the value. Not the currency and issuer.
+Amount.prototype.is_valid = function () {
+  return this._value instanceof BigInteger;
+};
+
+Amount.prototype.is_valid_full = function () {
+  return this.is_valid() && this._currency.is_valid() && this._issuer.is_valid();
+};
+
+Amount.prototype.is_zero = function () {
+  return this._value instanceof BigInteger
+          ? this._value.equals(BigInteger.ZERO)
+          : false;
+};
+
+Amount.prototype.issuer = function () {
+  return this._issuer;
+};
+
+// Return a new value.
+Amount.prototype.negate = function () {
+  return this.clone('NEGATE');
+};
+
+/**
+ * Tries to correctly interpret an amount as entered by a user.
+ *
+ * Examples:
+ *
+ *   XRP 250     => 250000000/XRP
+ *   25.2 XRP    => 25200000/XRP
+ *   USD 100.40  => 100.4/USD/?
+ *   100         => 100000000/XRP
+ */
+Amount.prototype.parse_human = function (j) {
+  // Cast to string
+  j = ""+j;
+
+  // Parse
+  var m = j.match(/^\s*([a-z]{3})?\s*(-)?(\d+)(?:\.(\d*))?\s*([a-z]{3})?\s*$/i);
+
+  if (m) {
+    var currency   = m[1] || m[5] || "XRP",
+        integer    = m[3] || "0",
+        fraction   = m[4] || "",
+        precision  = null;
+
+    currency = currency.toUpperCase();
+
+    this._value = new BigInteger(integer);
+    this.set_currency(currency);
+
+    // XRP have exactly six digits of precision
+    if (currency === 'XRP') {
+      fraction = fraction.slice(0, 6);
+      while (fraction.length < 6) {
+        fraction += "0";
+      }
+      this._is_native   = true;
+      this._value       = this._value.multiply(consts.bi_xns_unit).add(new BigInteger(fraction));
+    }
+    // Other currencies have arbitrary precision
+    else {
+      while (fraction[fraction.length - 1] === "0") {
+        fraction = fraction.slice(0, fraction.length - 1);
+      }
+
+      precision = fraction.length;
+
+      this._is_native   = false;
+      var multiplier    = consts.bi_10.clone().pow(precision);
+      this._value      	= this._value.multiply(multiplier).add(new BigInteger(fraction));
+      this._offset     	= -precision;
+
+      this.canonicalize();
+    }
+
+    this._is_negative = !!m[2];
+  } else {
+    this._value	      = NaN;
+  }
+
+  return this;
+};
+
+Amount.prototype.parse_issuer = function (issuer) {
+  this._issuer.parse_json(issuer);
+
+  return this;
+};
+
+// <-> j
+Amount.prototype.parse_json = function (j) {
+  if ('string' === typeof j) {
+    // .../.../... notation is not a wire format.  But allowed for easier testing.
+    var	m = j.match(/^(.+)\/(...)\/(.+)$/);
+
+    if (m) {
+      this._currency  = Currency.from_json(m[2]);
+      this._issuer    = UInt160.from_json(m[3]);
+      this.parse_value(m[1]);
+    }
+    else {
+      this.parse_native(j);
+      this._currency  = new Currency();
+      this._issuer    = new UInt160();
+    }
+  }
+  else if ('object' === typeof j && j instanceof Amount) {
+    j.copyTo(this);
+  }
+  else if ('object' === typeof j && 'value' in j) {
+    // Parse the passed value to sanitize and copy it.
+
+    this._currency.parse_json(j.currency);     // Never XRP.
+    if ("string" === typeof j.issuer) this._issuer.parse_json(j.issuer);
+    this.parse_value(j.value);
+  }
+  else {
+    this._value	    = NaN;
+  }
+
+  return this;
+};
+
+// Parse a XRP value from untrusted input.
+// - integer = raw units
+// - float = with precision 6
+// XXX Improvements: disallow leading zeros.
+Amount.prototype.parse_native = function (j) {
+  var m;
+
+  if ('string' === typeof j)
+    m = j.match(/^(-?)(\d+)(\.\d{0,6})?$/);
+
+  if (m) {
+    if (undefined === m[3]) {
+      // Integer notation
+
+      this._value	  = new BigInteger(m[2]);
+    }
+    else {
+      // Float notation : values multiplied by 1,000,000.
+
+      var   int_part	  = (new BigInteger(m[2])).multiply(consts.bi_xns_unit);
+      var   fraction_part = (new BigInteger(m[3])).multiply(new BigInteger(String(Math.pow(10, 1+consts.xns_precision-m[3].length))));
+
+      this._value	  = int_part.add(fraction_part);
+    }
+
+    if (m[1])
+      this._value  = this._value.negate();
+
+    this._is_native   = true;
+    this._offset      = undefined;
+    this._is_negative = undefined;
+
+    if (this._value.compareTo(consts.bi_xns_max) > 0 || this._value.compareTo(consts.bi_xns_min) < 0)
+    {
+      this._value	  = NaN;
+    }
+  }
+  else {
+    this._value	      = NaN;
+  }
+
+  return this;
+};
+
+// Parse a non-native value for the json wire format.
+// Requires _currency to be set!
+Amount.prototype.parse_value = function (j) {
+  this._is_native    = false;
+
+  if ('number' === typeof j) {
+    this._is_negative  = j < 0;
+      if (this._is_negative) j = -j;
+    this._value	      = new BigInteger(j);
+    this._offset      = 0;
+
+    this.canonicalize();
+  }
+  else if ('string' === typeof j) {
+    var	i = j.match(/^(-?)(\d+)$/);
+    var	d = !i && j.match(/^(-?)(\d+)\.(\d*)$/);
+    var	e = !e && j.match(/^(-?)(\d+)e(\d+)$/);
+
+    if (e) {
+      // e notation
+
+      this._value	= new BigInteger(e[2]);
+      this._offset 	= parseInt(e[3]);
+      this._is_negative	= !!e[1];
+
+      this.canonicalize();
+    }
+    else if (d) {
+      // float notation
+
+      var integer	= new BigInteger(d[2]);
+      var fraction    	= new BigInteger(d[3]);
+      var precision	= d[3].length;
+
+      this._value      	= integer.multiply(consts.bi_10.clone().pow(precision)).add(fraction);
+      this._offset     	= -precision;
+      this._is_negative = !!d[1];
+
+      this.canonicalize();
+    }
+    else if (i) {
+      // integer notation
+
+      this._value	= new BigInteger(i[2]);
+      this._offset 	= 0;
+      this._is_negative  = !!i[1];
+
+      this.canonicalize();
+    }
+    else {
+      this._value	= NaN;
+    }
+  }
+  else if (j instanceof BigInteger) {
+    this._value	      = j.clone();
+  }
+  else {
+    this._value	      = NaN;
+  }
+
+  return this;
+};
+
+Amount.prototype.set_currency = function (c) {
   if ('string' === typeof c) {
     this._currency.parse_json(c);  
   }
@@ -528,54 +825,20 @@ Amount.prototype.set_issuer = function (issuer) {
   return this;
 };
 
-// True if Amounts are valid and both native or non-native.
-Amount.prototype.is_comparable = function (v) {
-  return this._value instanceof BigInteger
-    && v._value instanceof BigInteger
-    && this._is_native === v.is_native;
-};
-
-Amount.prototype.is_negative = function() {
-  return this._value instanceof BigInteger
-          ? this.is_native
-            ? this._value.compareTo(BigInteger.ZERO) < 0
-            : this._is_negative
-          : false;                          // NaN is not negative
-};
-
-// Only checks the value. Not the currency and issuer.
-Amount.prototype.is_valid = function() {
-  return this._value instanceof BigInteger;
-};
-
-Amount.prototype.is_valid_full = function() {
-  return this.is_valid() && this._currency.is_valid() && this._issuer.is_valid();
-};
-
-Amount.prototype.is_zero = function() {
-  return this._value instanceof BigInteger
-          ? this._value.equals(BigInteger.ZERO)
-          : false;
-};
-
-Amount.prototype.issuer = function() {
-  return this._issuer;
-};
-
 // Result in terms of this' currency and issuer.
-Amount.prototype.subtract = function(v) {
+Amount.prototype.subtract = function (v) {
   // Correctness over speed, less code has less bugs, reuse add code.
   return this.add(v.negate());
 };
 
-Amount.prototype.to_number = function(allow_nan) {
+Amount.prototype.to_number = function (allow_nan) {
   var s = this.to_text(allow_nan);
 
   return ('string' === typeof s) ? Number(s) : s;
 }
 
 // Convert only value to JSON wire format.
-Amount.prototype.to_text = function(allow_nan) {
+Amount.prototype.to_text = function (allow_nan) {
   if (!(this._value instanceof BigInteger)) {
     // Never should happen.
     return allow_nan ? NaN : "0";
@@ -677,46 +940,7 @@ Amount.prototype.to_human = function (opts)
   return formatted;
 };
 
-Amount.prototype.canonicalize = function() {
-  if ((!this._value instanceof BigInteger))
-  {
-    // NaN.
-    // nothing
-  }
-  else if (this._is_native) {
-    // Native.
-    // nothing
-  }
-  else if (this.is_zero()) {
-    this._offset      = -100;
-    this._is_negative = false;
-  }
-  else
-  {
-    while (this._value.compareTo(consts.bi_man_min_value) < 0) {
-      this._value  = this._value.multiply(consts.bi_10);
-      this._offset -= 1;
-    }
-
-    while (this._value.compareTo(consts.bi_man_max_value) > 0) {
-      this._value  = this._value.divide(consts.bi_10);
-      this._offset += 1;
-    }
-  }
-
-  return this;
-};
-
-Amount.prototype.is_native = function () {
-  return this._is_native;
-};
-
-// Return a new value.
-Amount.prototype.negate = function () {
-  return this.clone('NEGATE');
-};
-
-Amount.prototype.to_json = function() {
+Amount.prototype.to_json = function () {
   if (this._is_native) {
     return this.to_text();
   }
@@ -733,241 +957,12 @@ Amount.prototype.to_json = function() {
   }
 };
 
-Amount.prototype.to_text_full = function() {
+Amount.prototype.to_text_full = function () {
   return this._value instanceof BigInteger
     ? this._is_native
       ? this.to_text() + "/XRP"
       : this.to_text() + "/" + this._currency.to_json() + "/" + this._issuer.to_json()
     : NaN;
-};
-
-/**
- * Tries to correctly interpret an amount as entered by a user.
- *
- * Examples:
- *
- *   XRP 250     => 250000000/XRP
- *   25.2 XRP    => 25200000/XRP
- *   USD 100.40  => 100.4/USD/?
- *   100         => 100000000/XRP
- */
-Amount.prototype.parse_human = function(j) {
-  // Cast to string
-  j = ""+j;
-
-  // Parse
-  var m = j.match(/^\s*([a-z]{3})?\s*(-)?(\d+)(?:\.(\d*))?\s*([a-z]{3})?\s*$/i);
-
-  if (m) {
-    var currency   = m[1] || m[5] || "XRP",
-        integer    = m[3] || "0",
-        fraction   = m[4] || "",
-        precision  = null;
-
-    currency = currency.toUpperCase();
-
-    this._value = new BigInteger(integer);
-    this.set_currency(currency);
-
-    // XRP have exactly six digits of precision
-    if (currency === 'XRP') {
-      fraction = fraction.slice(0, 6);
-      while (fraction.length < 6) {
-        fraction += "0";
-      }
-      this._is_native   = true;
-      this._value       = this._value.multiply(consts.bi_xns_unit).add(new BigInteger(fraction));
-    }
-    // Other currencies have arbitrary precision
-    else {
-      while (fraction[fraction.length - 1] === "0") {
-        fraction = fraction.slice(0, fraction.length - 1);
-      }
-
-      precision = fraction.length;
-
-      this._is_native   = false;
-      var multiplier    = consts.bi_10.clone().pow(precision);
-      this._value      	= this._value.multiply(multiplier).add(new BigInteger(fraction));
-      this._offset     	= -precision;
-
-      this.canonicalize();
-    }
-
-    this._is_negative = !!m[2];
-  } else {
-    this._value	      = NaN;
-  }
-
-  return this;
-};
-
-// Parse a XRP value from untrusted input.
-// - integer = raw units
-// - float = with precision 6
-// XXX Improvements: disallow leading zeros.
-Amount.prototype.parse_native = function(j) {
-  var m;
-
-  if ('string' === typeof j)
-    m = j.match(/^(-?)(\d+)(\.\d{0,6})?$/);
-
-  if (m) {
-    if (undefined === m[3]) {
-      // Integer notation
-
-      this._value	  = new BigInteger(m[2]);
-    }
-    else {
-      // Float notation : values multiplied by 1,000,000.
-
-      var   int_part	  = (new BigInteger(m[2])).multiply(consts.bi_xns_unit);
-      var   fraction_part = (new BigInteger(m[3])).multiply(new BigInteger(String(Math.pow(10, 1+consts.xns_precision-m[3].length))));
-
-      this._value	  = int_part.add(fraction_part);
-    }
-
-    if (m[1])
-      this._value  = this._value.negate();
-
-    this._is_native   = true;
-    this._offset      = undefined;
-    this._is_negative = undefined;
-
-    if (this._value.compareTo(consts.bi_xns_max) > 0 || this._value.compareTo(consts.bi_xns_min) < 0)
-    {
-      this._value	  = NaN;
-    }
-  }
-  else {
-    this._value	      = NaN;
-  }
-
-  return this;
-};
-
-// Parse a non-native value for the json wire format.
-// Requires _currency to be set!
-Amount.prototype.parse_value = function(j) {
-  this._is_native    = false;
-
-  if ('number' === typeof j) {
-    this._is_negative  = j < 0;
-      if (this._is_negative) j = -j;
-    this._value	      = new BigInteger(j);
-    this._offset      = 0;
-
-    this.canonicalize();
-  }
-  else if ('string' === typeof j) {
-    var	i = j.match(/^(-?)(\d+)$/);
-    var	d = !i && j.match(/^(-?)(\d+)\.(\d*)$/);
-    var	e = !e && j.match(/^(-?)(\d+)e(\d+)$/);
-
-    if (e) {
-      // e notation
-
-      this._value	= new BigInteger(e[2]);
-      this._offset 	= parseInt(e[3]);
-      this._is_negative	= !!e[1];
-
-      this.canonicalize();
-    }
-    else if (d) {
-      // float notation
-
-      var integer	= new BigInteger(d[2]);
-      var fraction    	= new BigInteger(d[3]);
-      var precision	= d[3].length;
-
-      this._value      	= integer.multiply(consts.bi_10.clone().pow(precision)).add(fraction);
-      this._offset     	= -precision;
-      this._is_negative = !!d[1];
-
-      this.canonicalize();
-    }
-    else if (i) {
-      // integer notation
-
-      this._value	= new BigInteger(i[2]);
-      this._offset 	= 0;
-      this._is_negative  = !!i[1];
-
-      this.canonicalize();
-    }
-    else {
-      this._value	= NaN;
-    }
-  }
-  else if (j instanceof BigInteger) {
-    this._value	      = j.clone();
-  }
-  else {
-    this._value	      = NaN;
-  }
-
-  return this;
-};
-
-// <-> j
-Amount.prototype.parse_json = function(j) {
-  if ('string' === typeof j) {
-    // .../.../... notation is not a wire format.  But allowed for easier testing.
-    var	m = j.match(/^(.+)\/(...)\/(.+)$/);
-
-    if (m) {
-      this._currency  = Currency.from_json(m[2]);
-      this._issuer    = UInt160.from_json(m[3]);
-      this.parse_value(m[1]);
-    }
-    else {
-      this.parse_native(j);
-      this._currency  = new Currency();
-      this._issuer    = new UInt160();
-    }
-  }
-  else if ('object' === typeof j && j instanceof Amount) {
-    j.copyTo(this);
-  }
-  else if ('object' === typeof j && 'value' in j) {
-    // Parse the passed value to sanitize and copy it.
-
-    this._currency.parse_json(j.currency);     // Never XRP.
-    if ("string" === typeof j.issuer) this._issuer.parse_json(j.issuer);
-    this.parse_value(j.value);
-  }
-  else {
-    this._value	    = NaN;
-  }
-
-  return this;
-};
-
-Amount.prototype.parse_issuer = function (issuer) {
-  this._issuer.parse_json(issuer);
-
-  return this;
-};
-
-Amount.prototype.is_negative = function () {
-  return this._is_negative;
-};
-
-// Check BigInteger NaN
-// Checks currency, does not check issuer.
-Amount.prototype.equals = function (d) {
-  return 'string' === typeof (d)
-    ? this.equals(Amount.from_json(d))
-    : this === d
-      || (d instanceof Amount
-	&& this._is_native === d._is_native
-	&& (this._is_native
-	    ? this._value.equals(d._value)
-	    : this._currency.equals(d._currency)
-	      ? this._is_negative === d._is_negative
-		? this._value.equals(d._value)
-		: this._value.equals(BigInteger.ZERO) && d._value.equals(BigInteger.ZERO)
-	      : false));
 };
 
 // For debugging.
