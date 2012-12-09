@@ -383,7 +383,7 @@ Amount.prototype.add = function(v) {
   var result;
 
   if (!this.is_comparable(v)) {
-    result  = Amount.NaN();
+    result              = Amount.NaN();
   }
   else if (this._is_native) {
     result              = new Amount();
@@ -411,8 +411,12 @@ Amount.prototype.add = function(v) {
     result._is_negative = result._value.compareTo(BigInteger.ZERO) < 0;
     
     if (result._is_negative) {
-      result._value = result._value.negate();
+      result._value       = result._value.negate();
+      result._is_negative = false;
     }
+
+    result._currency    = this._currency.clone();
+    result._issuer      = this._issuer.clone();
 
     // XXX Do we need to worry about overflow? Maybe only in to_json.
     result.canonicalize();
