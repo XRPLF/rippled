@@ -33,8 +33,8 @@ static int initFields()
 	sfSignature.notSigningField();
 
 	sfIndexes.setMeta(SField::sMD_Never);
-	sfPreviousTxnID.setMeta(SField::sMD_Never);
-	sfPreviousTxnLgrSeq.setMeta(SField::sMD_Never);
+	sfPreviousTxnID.setMeta(SField::sMD_DeleteFinal);
+	sfPreviousTxnLgrSeq.setMeta(SField::sMD_DeleteFinal);
 	sfLedgerEntryType.setMeta(SField::sMD_Never);
 	sfRootIndex.setMeta(SField::sMD_Always);
 

@@ -99,7 +99,12 @@ public:
 
 	void on_message(connection_ptr cpClient, message_ptr mpMessage)
 	{
-		LoadEvent::pointer event = theApp->getJobQueue().getLoadEvent(jtCLIENT);
+		theApp->getJobQueue().addJob(jtCLIENT,
+			boost::bind(&WSServerHandler<endpoint_type>::do_message, this, _1, cpClient, mpMessage));
+	}
+
+	void do_message(Job&, connection_ptr cpClient, message_ptr mpMessage)
+	{
 		Json::Value		jvRequest;
 		Json::Reader	jrReader;
 

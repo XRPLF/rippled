@@ -968,10 +968,6 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 		--offset2;
 	}
 
-	int finOffset = offset1 + offset2;
-	if ((finOffset > 80) || (finOffset < -96))
-		throw std::runtime_error("multiplication produces out of range result");
-
 	// Compute (numerator*10 * denominator*10) / 10^18 with rounding
 	CBigNum v;
 	if ((BN_add_word(&v, value1) != 1) ||
