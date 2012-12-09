@@ -320,6 +320,11 @@ Currency.prototype.to_human = function() {
   return this._value ? this._value : "XRP";
 };
 
+//
+// Amount class in the style of Java's BigInteger class
+// http://docs.oracle.com/javase/1.3/docs/api/java/math/BigInteger.html
+//
+
 var Amount = function () {
   // Json format:
   //  integer : XRP
@@ -358,6 +363,14 @@ Amount.is_valid = function (j) {
 
 Amount.is_valid_full = function (j) {
   return Amount.from_json(j).is_valid_full();
+};
+
+Amount.NaN = function () {
+  var result = new Amount();
+  
+  result._value = NaN;
+  
+  return result;
 };
 
 Amount.prototype.clone = function(negate) {
@@ -418,9 +431,24 @@ Amount.prototype.set_issuer = function (issuer) {
   return this;
 };
 
+// True if Amounts are valid and both native or non-native.
+Amount.prototype.is_comparable = function (v) {
+  return this._value instanceof BigInteger
+    && v._value instanceof BigInteger
+    && this._is_native === v.is_native;
+};
+
+Amount.prototype.is_negative = function() {
+  return this._value instanceof BigInteger
+          ? this.is_native
+            ? this._value.compareTo(BigInteger.ZERO) < 0
+            : this._is_negative
+          : false;                          // NaN is not negative
+};
+
 // Only checks the value. Not the currency and issuer.
 Amount.prototype.is_valid = function() {
-  return !isNaN(this._value);
+  return this._value instanceof BigInteger;
 };
 
 Amount.prototype.is_valid_full = function() {
@@ -439,7 +467,7 @@ Amount.prototype.to_number = function(allow_nan) {
 
 // Convert only value to JSON wire format.
 Amount.prototype.to_text = function(allow_nan) {
-  if (isNaN(this._value)) {
+  if (!(this._value instanceof BigInteger)) {
     // Never should happen.
     return allow_nan ? NaN : "0";
   }
@@ -541,7 +569,13 @@ Amount.prototype.to_human = function (opts)
 };
 
 Amount.prototype.canonicalize = function() {
-  if (isNaN(this._value) || !this._currency) {
+  if ((!this._value instanceof BigInteger))
+  {
+    // NaN.
+    // nothing
+  }
+  else if (this._is_native) {
+    // Native.
     // nothing
   }
   else if (this._value.equals(BigInteger.ZERO)) {
@@ -591,11 +625,11 @@ Amount.prototype.to_json = function() {
 };
 
 Amount.prototype.to_text_full = function() {
-  return isNaN(this._value)
-    ? NaN
-    : this._is_native
+  return this._value instanceof BigInteger
+    ? this._is_native
       ? this.to_text() + "/XRP"
-      : this.to_text() + "/" + this._currency.to_json() + "/" + this._issuer.to_json();
+      : this.to_text() + "/" + this._currency.to_json() + "/" + this._issuer.to_json()
+    : NaN;
 };
 
 /**
@@ -633,7 +667,7 @@ Amount.prototype.parse_human = function(j) {
         fraction += "0";
       }
       this._is_native   = true;
-      this._value  = this._value.multiply(consts.bi_xns_unit).add(new BigInteger(fraction));
+      this._value       = this._value.multiply(consts.bi_xns_unit).add(new BigInteger(fraction));
     }
     // Other currencies have arbitrary precision
     else {
@@ -756,7 +790,7 @@ Amount.prototype.parse_value = function(j) {
       this._value	= NaN;
     }
   }
-  else if (j.constructor == BigInteger) {
+  else if (j instanceof BigInteger) {
     this._value	      = j.clone();
   }
   else {
@@ -783,7 +817,7 @@ Amount.prototype.parse_json = function(j) {
       this._issuer    = new UInt160();
     }
   }
-  else if ('object' === typeof j && j.constructor == Amount) {
+  else if ('object' === typeof j && j instanceof Amount) {
     j.copyTo(this);
   }
   else if ('object' === typeof j && 'value' in j) {
@@ -816,7 +850,7 @@ Amount.prototype.equals = function (d) {
   return 'string' === typeof (d)
     ? this.equals(Amount.from_json(d))
     : this === d
-      || (d.constructor === Amount
+      || (d instanceof Amount
 	&& this._is_native === d._is_native
 	&& (this._is_native
 	    ? this._value.equals(d._value)
@@ -827,12 +861,13 @@ Amount.prototype.equals = function (d) {
 	      : false));
 };
 
+// For debugging.
 Amount.prototype.not_equals_why = function (d) {
   return 'string' === typeof (d)
     ? this.not_equals_why(Amount.from_json(d))
     : this === d
       ? false
-      : d.constructor === Amount
+      : d instanceof Amount
 	  ? this._is_native === d._is_native
 	    ? this._is_native
 		? this._value.equals(d._value)
