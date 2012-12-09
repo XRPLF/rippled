@@ -589,7 +589,9 @@ Amount.prototype.divide = function (d) {
 
     result              = new Amount();
     result._value       = vn.multiply(consts.bi_1e16).divide(vd);
-    result._is_negative = this._is_negative != d._is_negative;
+
+    if (this._is_negative != d._is_negative)
+      result._value = result._value.negate();
 
     // XXX Check range?
   }
