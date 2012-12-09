@@ -373,6 +373,54 @@ Amount.NaN = function () {
   return result;
 };
 
+// Returns a new value which is the absolute value of this.
+Amount.prototype.abs = function() {
+  return this.clone(this.is_negative());
+};
+
+// Result in terms of this' currency and issuer.
+Amount.prototype.add = function(v) {
+  var result;
+
+  if (!this.is_comparable(v)) {
+    result  = Amount.NaN();
+  }
+  else if (this._is_native) {
+    result              = new Amount();
+    result._value       = this._value.add(v._value);
+  }
+  else {
+    var v1  = this._is_negative ? this._value.negate() : this._value;
+    var o1  = this._offset;
+    var v2  = v._is_negative ? v._value.negate() : v._value;
+    var o2  = v._offset;
+
+    while (o1 < o2) {
+      v1  = v1.multiply(consts.bi_10);
+      o1  += 1;
+    }
+
+    while (o2 < o1) {
+      v2  = v2.multiply(consts.bi_10);
+      o2  += 1;
+    }
+
+    result              = new Amount();
+    result._offset      = o1;
+    result._value       = v1.add(v2);
+    result._is_negative = result._value.compareTo(BigInteger.ZERO) < 0;
+    
+    if (result._is_negative) {
+      result._value = result._value.negate();
+    }
+
+    // XXX Do we need to worry about overflow? Maybe only in to_json.
+    result.canonicalize();
+  }
+
+  return result;
+};
+
 Amount.prototype.clone = function(negate) {
   return this.copyTo(new Amount(), negate);
 };
@@ -394,10 +442,10 @@ Amount.prototype.copyTo = function(d, negate) {
   d._offset	  = this._offset;
   d._is_native	  = this._is_native;
   d._is_negative  = this._is_native
-		      ? undefined		    // Native sign in BigInteger.
+		      ? undefined	        // Native sign in BigInteger.
 		      : negate
-			? !this._is_negative   // Negating.
-			: this._is_negative;   // Just copying.
+			? !this._is_negative    // Negating.
+			: this._is_negative;    // Just copying.
 
   this._currency.copyTo(d._currency);
   this._issuer.copyTo(d._issuer);
@@ -457,6 +505,12 @@ Amount.prototype.is_valid_full = function() {
 
 Amount.prototype.issuer = function() {
   return this._issuer;
+};
+
+// Result in terms of this' currency and issuer.
+Amount.prototype.subtract = function(v) {
+  // Correctness over speed, less code has less bugs, reuse add code.
+  return this.add(v.negate());
 };
 
 Amount.prototype.to_number = function(allow_nan) {
