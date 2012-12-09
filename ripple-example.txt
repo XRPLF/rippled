@@ -10,6 +10,9 @@
 # - https://www.DOMAIN/ripple.txt
 # - https://DOMAIN/ripple.txt
 #
+# The server MUST set the following HTTP header when serving this file:
+#  Access-Control-Allow-Origin: *
+#
 # This file is UTF-8 with Dos, UNIX, or Mac style end of lines.
 # Blank lines and lines beginning with '#' are ignored.
 # Undefined sections are reserved.
