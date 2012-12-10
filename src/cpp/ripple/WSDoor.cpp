@@ -66,9 +66,28 @@ void WSDoor::startListening()
 		// mEndpoint->elog().unset_level(websocketpp::log::elevel::ALL);
 
 		// Call the main-event-loop of the websocket server.
-		mSEndpoint->listen(
-			boost::asio::ip::tcp::endpoint(
-			boost::asio::ip::address().from_string(mIp), mPort));
+		try
+		{
+			mSEndpoint->listen(
+				boost::asio::ip::tcp::endpoint(
+				boost::asio::ip::address().from_string(mIp), mPort));
+		}
+		catch (websocketpp::exception& e)
+		{
+			Log(lsWARNING) << "websocketpp exception: " << e.what();
+			while (1) // temporary workaround for websocketpp throwing exceptions on access/close races
+			{ // https://github.com/zaphoyd/websocketpp/issues/98
+				try
+				{
+					mSEndpoint->get_io_service().run();
+					break;
+				}
+				catch (websocketpp::exception& e)
+				{
+					Log(lsWARNING) << "websocketpp exception: " << e.what();
+				}
+			}
+		}
 
 		delete mSEndpoint;
 	}else
@@ -83,9 +102,28 @@ void WSDoor::startListening()
 		// mEndpoint->elog().unset_level(websocketpp::log::elevel::ALL);
 
 		// Call the main-event-loop of the websocket server.
-		mEndpoint->listen(
-			boost::asio::ip::tcp::endpoint(
-			boost::asio::ip::address().from_string(mIp), mPort));
+		try
+		{
+			mEndpoint->listen(
+				boost::asio::ip::tcp::endpoint(
+				boost::asio::ip::address().from_string(mIp), mPort));
+		}
+		catch (websocketpp::exception& e)
+		{
+			Log(lsWARNING) << "websocketpp exception: " << e.what();
+			while (1) // temporary workaround for websocketpp throwing exceptions on access/close races
+			{ // https://github.com/zaphoyd/websocketpp/issues/98
+				try
+				{
+					mEndpoint->get_io_service().run();
+					break;
+				}
+				catch (websocketpp::exception& e)
+				{
+					Log(lsWARNING) << "websocketpp exception: " << e.what();
+				}
+			}
+		}
 
 		delete mEndpoint;
 	}
