@@ -1,9 +1,45 @@
 #ifndef LOADSOURCE__H
 #define LOADSOURCE__H
 
+#include <vector>
+
 #include <boost/thread/mutex.hpp>
 
 #include "types.h"
+
+enum LoadType
+{ // types of load that can be placed on the server
+
+	// Bad things
+	LT_InvalidRequest,			// A request that we can immediately tell is invalid
+	LT_RequestNoReply,			// A request that we cannot satisfy
+	LT_InvalidSignature,		// An object whose signature we had to check and it failed
+	LT_UnwantedData,			// Data we have no use for
+
+	// Good things
+	LT_NewTrusted,				// A new transaction/validation/proposal we trust
+	LT_NewTransaction,			// A new, valid transaction
+	LT_NeededData,				// Data we requested
+
+	// Requests
+	LT_RequestData,				// A request that is hard to satisfy, disk access
+	LT_CheapQuery,				// A query that is trivial, cached data
+};
+
+// load categoryies
+static const int LC_Disk	= 1;
+static const int LC_CPU		= 2;
+static const int LC_Network	= 4;
+
+class LoadCost
+{
+public:
+	LoadType	mType;
+	int			mCost;
+	int			mCategories;
+
+	LoadCost(LoadType t, int cost, int cat) : mType(t), mCost(cost), mCategories(cat) { ; }
+};
 
 class LoadSource
 { // a single endpoint that can impose load
@@ -47,10 +83,13 @@ protected:
 
 	void canonicalize(LoadSource&, const time_t now) const;
 
+	std::vector<LoadCost>	mCosts;
+
+	void addLoadCost(const LoadCost& c) { mCosts[static_cast<int>(c.mType)] = c; }
+
 public:
 
-	LoadManager(int creditRate, int creditLimit, int debitWarn, int debitLimit) :
-		mCreditRate(creditRate), mCreditLimit(creditLimit), mDebitWarn(debitWarn), mDebitLimit(debitLimit) { ; }
+	LoadManager(int creditRate, int creditLimit, int debitWarn, int debitLimit);
 
 	int getCreditRate() const;
 	int getCreditLimit() const;
@@ -64,6 +103,8 @@ public:
 	bool shouldWarn(LoadSource&) const;
 	bool shouldCutoff(LoadSource&) const;
 	bool adjust(LoadSource&, int credits) const; // return value: false=balance okay, true=warn/cutoff
+
+	int getCost(LoadType t)		{ return mCosts[static_cast<int>(t)].mCost; }
 };
 
 class LoadFeeTrack
