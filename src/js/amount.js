@@ -1190,6 +1190,7 @@ Amount.prototype.not_equals_why = function (d) {
 
 exports.Amount	      = Amount;
 exports.Currency      = Currency;
+exports.Seed          = Seed;
 exports.UInt160	      = UInt160;
 
 exports.config	      = {};
