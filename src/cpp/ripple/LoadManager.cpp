@@ -101,6 +101,12 @@ bool LoadManager::shouldCutoff(LoadSource& source) const
 	return !source.isPrivileged() && (source.mBalance < mDebitLimit);
 }
 
+bool LoadManager::adjust(LoadSource& source, LoadType t) const
+{ // FIXME: Scale by category
+	LoadCost cost = mCosts[static_cast<int>(t)];
+	return adjust(source, cost.mCost);
+}
+
 bool LoadManager::adjust(LoadSource& source, int credits) const
 { // return: true = need to warn/cutoff
 	time_t now = time(NULL);

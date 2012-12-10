@@ -15,6 +15,7 @@ enum LoadType
 	LT_RequestNoReply,			// A request that we cannot satisfy
 	LT_InvalidSignature,		// An object whose signature we had to check and it failed
 	LT_UnwantedData,			// Data we have no use for
+	LT_BadPoW,					// Proof of work not valid
 
 	// Good things
 	LT_NewTrusted,				// A new transaction/validation/proposal we trust
@@ -76,7 +77,7 @@ protected:
 
 	int mCreditRate;			// credits gained/lost per second
 	int mCreditLimit;			// the most credits a source can have
-	int	mDebitWarn;				// when a source drops below this, we warn
+	int mDebitWarn;				// when a source drops below this, we warn
 	int mDebitLimit;			// when a source drops below this, we cut it off (should be negative)
 
 	mutable boost::mutex mLock;
@@ -89,7 +90,7 @@ protected:
 
 public:
 
-	LoadManager(int creditRate, int creditLimit, int debitWarn, int debitLimit);
+	LoadManager(int creditRate = 10, int creditLimit = 50, int debitWarn = -50, int debitLimit = -100);
 
 	int getCreditRate() const;
 	int getCreditLimit() const;
@@ -103,6 +104,7 @@ public:
 	bool shouldWarn(LoadSource&) const;
 	bool shouldCutoff(LoadSource&) const;
 	bool adjust(LoadSource&, int credits) const; // return value: false=balance okay, true=warn/cutoff
+	bool adjust(LoadSource&, LoadType l) const;
 
 	int getCost(LoadType t)		{ return mCosts[static_cast<int>(t)].mCost; }
 };
