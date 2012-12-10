@@ -643,6 +643,7 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 			//obj["account"]		= account.humanAccountID();
 			obj["taker_pays"]		= takerPays.getJson(0);
 			obj["taker_gets"]		= takerGets.getJson(0);
+			obj["seq"]				= offer->getSeq();
 
 			jsonLines.append(obj);
 		}

@@ -3,6 +3,8 @@
 
 #include <boost/asio.hpp>
 
+#include "../database/database.h"
+
 #include "LedgerMaster.h"
 #include "UniqueNodeList.h"
 #include "ConnectionPool.h"
@@ -17,9 +19,10 @@
 #include "ValidationCollection.h"
 #include "Suppression.h"
 #include "SNTPClient.h"
-#include "../database/database.h"
 #include "JobQueue.h"
 #include "RPCHandler.h"
+#include "ProofOfWork.h"
+#include "LoadManager.h"
 
 class RPCDoor;
 class PeerDoor;
@@ -58,6 +61,8 @@ class Application
 	SNTPClient				mSNTPClient;
 	JobQueue				mJobQueue;
 	RPCHandler				mRPCHandler;
+	ProofOfWorkGenerator	mPOWGen;
+	LoadManager				mLoadMgr;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 
@@ -102,6 +107,8 @@ public:
 	SuppressionTable& getSuppression()				{ return mSuppressions; }
 	RPCHandler& getRPCHandler()						{ return mRPCHandler; }
 	boost::recursive_mutex& getMasterLock()			{ return mMasterLock; }
+	ProofOfWorkGenerator& getPowGen()				{ return mPOWGen; }
+	LoadManager& getLoadManager()					{ return mLoadMgr; }
 
 
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }

@@ -15,22 +15,7 @@
 #include "InstanceCounter.h"
 #include "JobQueue.h"
 #include "ProofOfWork.h"
-
-enum PeerPunish
-{
-	PP_INVALID_REQUEST	= 1,	// The peer sent a request that makes no sense
-	PP_UNKNOWN_REQUEST	= 2,	// The peer sent a request that might be garbage
-	PP_UNWANTED_DATA	= 3,	// The peer sent us data we didn't want/need
-	PP_BAD_SIGNATURE	= 4,	// Object had bad signature
-};
-
-enum PeerReward
-{
-	PR_NEEDED_DATA		= 1,	// The peer gave us some data we needed
-	PR_NEW_TRANSACTION	= 2,	// The peer gave us a new transaction
-	PR_FIRST_USEFUL		= 3,	// The peer was first to give us something like a trusted proposal
-	PR_USEFUL			= 4		// The peer gave us a trusted proposal, just not quite first
-};
+#include "LoadManager.h"
 
 typedef std::pair<std::string,int> ipPort;
 
@@ -57,6 +42,7 @@ private:
 	uint256			mCookieHash;
 	uint64			mPeerId;
 	bool			mPrivate;			// Keep peer IP private.
+	LoadSource		mLoad;
 
 	uint256			mClosedLedgerHash, mPreviousLedgerHash;
 	std::list<uint256>	mRecentLedgers;
@@ -151,8 +137,8 @@ public:
 	void sendGetFullLedger(uint256& hash);
 	void sendGetPeers();
 
-	void punishPeer(PeerPunish pp);
-	static void punishPeer(const boost::weak_ptr<Peer>&, PeerPunish);
+	void punishPeer(LoadType);
+	static void punishPeer(const boost::weak_ptr<Peer>&, LoadType);
 
 	Json::Value getJson();
 	bool isConnected() const				{ return mHelloed && !mDetaching; }

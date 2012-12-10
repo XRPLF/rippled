@@ -125,6 +125,7 @@
     <ClCompile Include="src\cpp\ripple\LedgerMaster.cpp" />
     <ClCompile Include="src\cpp\ripple\LedgerProposal.cpp" />
     <ClCompile Include="src\cpp\ripple\LedgerTiming.cpp" />
+    <ClCompile Include="src\cpp\ripple\LoadManager.cpp" />
     <ClCompile Include="src\cpp\ripple\LoadMonitor.cpp" />
     <ClCompile Include="src\cpp\ripple\Log.cpp" />
     <ClCompile Include="src\cpp\ripple\main.cpp" />
@@ -183,7 +184,6 @@
     <ClCompile Include="src\cpp\ripple\ValidationCollection.cpp" />
     <ClCompile Include="src\cpp\ripple\Wallet.cpp" />
     <ClCompile Include="src\cpp\ripple\WalletAddTransactor.cpp" />
-    <ClCompile Include="src\cpp\ripple\WSConnection.cpp" />
     <ClCompile Include="src\cpp\ripple\WSDoor.cpp" />
     <ClCompile Include="src\cpp\ripple\WSHandler.cpp" />
     <ClCompile Include="src\cpp\websocketpp\src\base64\base64.cpp" />
