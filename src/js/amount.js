@@ -15,28 +15,37 @@ var alphabets	= {
 };
 
 var consts = exports.consts = {
-  'address_xns'	      : "rrrrrrrrrrrrrrrrrrrrrhoLvTp",
-  'address_one'	      : "rrrrrrrrrrrrrrrrrrrrBZbvji",
-  'currency_xns'      : 0,
-  'currency_one'      : 1,
-  'uint160_xns'	      : utils.hexToString("0000000000000000000000000000000000000000"),
-  'uint160_one'	      : utils.hexToString("0000000000000000000000000000000000000001"),
-  'hex_xns'	      : "0000000000000000000000000000000000000000",
-  'hex_one'	      : "0000000000000000000000000000000000000001",
-  'xns_precision'     : 6,
+  'address_xns'	          : "rrrrrrrrrrrrrrrrrrrrrhoLvTp",
+  'address_one'	          : "rrrrrrrrrrrrrrrrrrrrBZbvji",
+  'currency_xns'          : 0,
+  'currency_one'          : 1,
+  'uint160_xns'	          : utils.hexToString("0000000000000000000000000000000000000000"),
+  'uint160_one'	          : utils.hexToString("0000000000000000000000000000000000000001"),
+  'hex_xns'	          : "0000000000000000000000000000000000000000",
+  'hex_one'	          : "0000000000000000000000000000000000000001",
+  'xns_precision'         : 6,
 
   // BigInteger values prefixed with bi_.
-  'bi_10'	      : new BigInteger('10'),
-  'bi_1e14'           : new BigInteger('100000000000000'),
-  'bi_1e16'           : new BigInteger('10000000000000000'),
-  'bi_man_max_value'  : new BigInteger('9999999999999999'),
-  'bi_man_min_value'  : new BigInteger('1000000000000000'),
-  'bi_xns_max'	      : new BigInteger("9000000000000000000"),	  // Json wire limit.
-  'bi_xns_min'	      : new BigInteger("-9000000000000000000"),	  // Json wire limit.
-  'bi_xns_unit'	      : new BigInteger('1000000'),
+  'bi_10'	          : new BigInteger('10'),
+  'bi_1e14'               : new BigInteger('100000000000000'),
+  'bi_1e16'               : new BigInteger('10000000000000000'),
+  'bi_man_max_value'      : new BigInteger('9999999999999999'),
+  'bi_man_min_value'      : new BigInteger('1000000000000000'),
+  'bi_xns_max'	          : new BigInteger("9000000000000000000"),	  // Json wire limit.
+  'bi_xns_min'	          : new BigInteger("-9000000000000000000"),	  // Json wire limit.
+  'bi_xns_unit'	          : new BigInteger('1000000'),
 
-  'cMinOffset'        : -96,
-  'cMaxOffset'        : 80,
+  'cMinOffset'            : -96,
+  'cMaxOffset'            : 80,
+
+  'VER_NONE'              : 1,
+  'VER_NODE_PUBLIC'       : 28,
+  'VER_NODE_PRIVATE'      : 32,
+  'VER_ACCOUNT_ID'        : 0,
+  'VER_ACCOUNT_PUBLIC'    : 35,
+  'VER_ACCOUNT_PRIVATE'   : 34,
+  'VER_FAMILY_GENERATOR'  : 41,
+  'VER_FAMILY_SEED'       : 33,
 };
 
 // --> input: big-endian array of bytes.
@@ -146,6 +155,91 @@ var decode_base_check = function (version, input, alphabet) {
   return new BigInteger(buffer.slice(1, -4));
 }
 
+//
+// Seed support
+//
+
+var Seed = function () {
+  // Internal form: NaN or BigInteger
+  this._value  = NaN;
+};
+
+Seed.json_rewrite = function (j) {
+  return Seed.from_json(j).to_json();
+};
+
+// Return a new Seed from j.
+Seed.from_json = function (j) {
+  return 'string' === typeof j
+      ? (new Seed()).parse_json(j)
+      : j.clone();
+};
+
+Seed.is_valid = function (j) {
+  return Seed.from_json(j).is_valid();
+};
+
+Seed.prototype.clone = function () {
+  return this.copyTo(new Seed());
+};
+
+// Returns copy.
+Seed.prototype.copyTo = function (d) {
+  d._value = this._value;
+
+  return d;
+};
+
+Seed.prototype.equals = function (d) {
+  return this._value instanceof BigInteger && d._value instanceof BigInteger && this._value.equals(d._value);
+};
+
+Seed.prototype.is_valid = function () {
+  return this._value instanceof BigInteger;
+};
+
+// value = NaN on error.
+// One day this will support rfc1751 too.
+Seed.prototype.parse_json = function (j) {
+  if ('string' !== typeof j) {
+    this._value  = NaN;
+  }
+  else if (j[0] === "s") {
+    this._value  = decode_base_check(consts.VER_FAMILY_SEED, j);
+  }
+  else if (16 === j.length) {
+    this._value  = new BigInteger(utils.stringToArray(j), 128);
+  }
+  else {
+    this._value  = NaN;
+  }
+
+  return this;
+};
+
+// Convert from internal form.
+Seed.prototype.to_json = function () {
+  if (!(this._value instanceof BigInteger))
+    return NaN;
+
+  var bytes   = this._value.toByteArray().map(function (b) { return b ? b < 0 ? 256+b : b : 0});
+  var target  = 20;
+
+  // XXX Make sure only trim off leading zeros.
+  var array = bytes.length < target
+		? bytes.length
+		  ? [].concat(utils.arraySet(target - bytes.length, 0), bytes)
+		  : utils.arraySet(target, 0)
+		: bytes.slice(target - bytes.length);
+  var output = encode_base_check(consts.VER_FAMILY_SEED, array);
+
+  return output;
+};
+
+//
+// UInt160 support
+//
+
 var UInt160 = function () {
   // Internal form: NaN or BigInteger
   this._value  = NaN;
@@ -178,7 +272,11 @@ UInt160.prototype.copyTo = function (d) {
 };
 
 UInt160.prototype.equals = function (d) {
-  return isNaN(this._value) || isNaN(d._value) ? false : this._value.equals(d._value);
+  return this._value instanceof BigInteger && d._value instanceof BigInteger && this._value.equals(d._value);
+};
+
+UInt160.prototype.is_valid = function () {
+  return this._value instanceof BigInteger;
 };
 
 // value = NaN on error.
@@ -208,15 +306,15 @@ UInt160.prototype.parse_json = function (j) {
       if ('string' !== typeof j) {
 	this._value  = NaN;
       }
+      else if (j[0] === "r") {
+	this._value  = decode_base_check(consts.VER_ACCOUNT_ID, j);
+      }
       else if (20 === j.length) {
 	this._value  = new BigInteger(utils.stringToArray(j), 256);
       }
       else if (40 === j.length) {
 	// XXX Check char set!
 	this._value  = new BigInteger(j, 16);
-      }
-      else if (j[0] === "r") {
-	this._value  = decode_base_check(0, j);
       }
       else {
 	this._value  = NaN;
@@ -229,7 +327,7 @@ UInt160.prototype.parse_json = function (j) {
 // Convert from internal form.
 // XXX Json form should allow 0 and 1, C++ doesn't currently allow it.
 UInt160.prototype.to_json = function () {
-  if (isNaN(this._value))
+  if (!(this._value instanceof BigInteger))
     return NaN;
 
   var bytes   = this._value.toByteArray().map(function (b) { return b ? b < 0 ? 256+b : b : 0});
@@ -241,14 +339,14 @@ UInt160.prototype.to_json = function () {
 		  ? [].concat(utils.arraySet(target - bytes.length, 0), bytes)
 		  : utils.arraySet(target, 0)
 		: bytes.slice(target - bytes.length);
-  var output = encode_base_check(0, array);
+  var output = encode_base_check(consts.VER_ACCOUNT_ID, array);
 
   return output;
 };
 
-UInt160.prototype.is_valid = function () {
-  return !isNaN(this._value);
-};
+//
+// Currency support
+//
 
 // XXX Internal form should be UInt160.
 var Currency = function () {
@@ -430,7 +528,7 @@ Amount.prototype.add = function (v) {
 };
 
 Amount.prototype.canonicalize = function () {
-  if ((!this._value instanceof BigInteger))
+  if (!(this._value instanceof BigInteger))
   {
     // NaN.
     // nothing
