@@ -25,6 +25,8 @@ enum LoadType
 	// Requests
 	LT_RequestData,				// A request that is hard to satisfy, disk access
 	LT_CheapQuery,				// A query that is trivial, cached data
+
+	LT_MAX = LT_CheapQuery
 };
 
 // load categoryies
@@ -39,6 +41,7 @@ public:
 	int			mCost;
 	int			mCategories;
 
+	LoadCost() : mType(), mCost(0), mCategories(0) { ; }
 	LoadCost(LoadType t, int cost, int cat) : mType(t), mCost(cost), mCategories(cat) { ; }
 };
 

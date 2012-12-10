@@ -1,7 +1,7 @@
 #include "LoadManager.h"
 
 LoadManager::LoadManager(int creditRate, int creditLimit, int debitWarn, int debitLimit) :
-		mCreditRate(creditRate), mCreditLimit(creditLimit), mDebitWarn(debitWarn), mDebitLimit(debitLimit)
+		mCreditRate(creditRate), mCreditLimit(creditLimit), mDebitWarn(debitWarn), mDebitLimit(debitLimit), mCosts(LT_MAX)
 {
 	addLoadCost(LoadCost(LT_InvalidRequest,		10,		LC_CPU | LC_Network));
 	addLoadCost(LoadCost(LT_RequestNoReply,		1,		LC_CPU | LC_Disk));
