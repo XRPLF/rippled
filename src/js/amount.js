@@ -610,10 +610,7 @@ Amount.prototype.compareTo = function (v) {
 Amount.prototype.copyTo = function (d, negate) {
   if ('object' === typeof this._value)
   {
-    if (this._is_native && negate)
-      this._value.negate().copyTo(d._value);
-    else
-      this._value.copyTo(d._value);
+    this._value.copyTo(d._value);
   }
   else
   {
@@ -622,9 +619,7 @@ Amount.prototype.copyTo = function (d, negate) {
 
   d._offset	  = this._offset;
   d._is_native	  = this._is_native;
-  d._is_negative  = this._is_native
-		      ? undefined	        // Native sign in BigInteger.
-		      : negate
+  d._is_negative  = negate
 			? !this._is_negative    // Negating.
 			: this._is_negative;    // Just copying.
 
@@ -657,62 +652,57 @@ Amount.prototype.equals = function (d) {
 
 // Result in terms of this' currency and issuer.
 Amount.prototype.divide = function (d) {
-  var result;
+  var result, vn, on, vd, od;
 
-  if (!this.is_comparable(d)) {
-    // XXX We might want to allow mixed division. In that case convert d to same terms as this.
-    result              = Amount.NaN();
-  }
-  else if (d.is_zero()) {
+  if (d.is_zero()) {
     throw "divide by zero";
   }
   else if (this.is_zero()) {
-    result  = this;
+    result = this.clone();
   }
-  else if (this._is_native) {
-    var vn  = this._value;
-    var on  = this._offset;
-    var vd  = d._value;
-    var od  = d._offset;
-
-    while (vn.compareTo(consts.bi_man_min_value) < 0) {
-      vn  = vn.multiply(consts.bi_10);
-      on  -= 1;
-    }
-
-    while (dn.compareTo(consts.bi_man_min_value) < 0) {
-      vd  = vn.multiply(consts.bi_10);
-      od  -= 1;
-    }
-
-    result              = new Amount();
-    result._value       = vn.multiply(consts.bi_1e16).divide(vd);
-
-    if (this._is_negative != d._is_negative)
-      result._value = result._value.negate();
-
-    // XXX Check range?
+  else if (!this.is_valid()) {
+    throw new Error("Invalid dividend");
   }
-  else {
-    var vn  = this._value.multiply(consts.bi_10).add(3);
-    var on  = this._offset - 1;
-    var vd  = d._value.multiply(consts.bi_10).add(3);
-    var od  = d._offset - 1;
-
-    result              = new Amount();
-    result._offset      = on+od-16;
-    result._value       = vn.multiply(consts.bi_1e16).divide(vd);
-    result._is_negative = this._is_negative != d._is_negative;
-    result._currency    = this._currency.clone();
-    result._issuer      = this._issuer.clone();
-    
-    if (result._offset > cMaxOffset || result._offset < cMaxOffset)
-      throw "division result out of range.";
-
-    // XXX Check value is in legal range here or have canonicalize do it?
-
-    result.canonicalize();
+  else if (!d.is_valid()) {
+    throw new Error("Invalid divisor");
   }
+
+  if (this._is_native) {
+    vn  = this._value.multiply(consts.bi_1e16);
+    on  = 0 - 16;
+  } else {
+    vn  = this._value.multiply(consts.bi_1e16);
+    on  = this._offset - 16;
+  }
+
+  if (d._is_native) {
+    vd  = d._value;
+    od  = 0;
+  } else {
+    vd  = d._value;
+    od  = d._offset;
+  }
+
+  result              = new Amount();
+  result._offset      = on-od;
+  result._value       = vn.divide(vd).abs();
+  result._is_native   = this._is_native;
+  result._is_negative = !!this._is_negative !== !!d._is_negative;
+  result._currency    = this._currency.clone();
+  result._issuer      = this._issuer.clone();
+
+  if (result._is_native) {
+    // For native results, we need to manually normalize
+    result._value = result._value.divide(consts.bi_10.pow(result._offset+4));
+    result._offset = undefined;
+  }
+
+  //if (result._offset > consts.cMaxOffset || result._offset < consts.cMaxOffset)
+  //  throw new Error("division result out of range.");
+
+  // XXX Check value is in legal range here or have canonicalize do it?
+
+  result.canonicalize();
 
   return result;
 };
@@ -919,12 +909,9 @@ Amount.prototype.parse_native = function (j) {
       this._value	  = int_part.add(fraction_part);
     }
 
-    if (m[1])
-      this._value  = this._value.negate();
-
     this._is_native   = true;
     this._offset      = undefined;
-    this._is_negative = undefined;
+    this._is_negative = !!m[1] && this._value.compareTo(BigInteger.ZERO) !== 0;
 
     if (this._value.compareTo(consts.bi_xns_max) > 0 || this._value.compareTo(consts.bi_xns_min) < 0)
     {
@@ -1049,7 +1036,7 @@ Amount.prototype.to_text = function (allow_nan) {
     }
     else
     {
-      return this._value.toString();
+      return (this._is_negative ? "-" : "") + this._value.toString();
     }
   }
   else if (this.is_zero())
