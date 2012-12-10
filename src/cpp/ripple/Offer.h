@@ -6,6 +6,7 @@ class Offer : public AccountItem
 	RippleAddress mAccount;
 	STAmount mTakerGets;
 	STAmount mTakerPays;
+	int mSeq;
 
 
 	Offer(SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
@@ -17,5 +18,6 @@ public:
 	STAmount getTakerPays(){ return(mTakerPays); }
 	STAmount getTakerGets(){ return(mTakerGets); }
 	RippleAddress getAccount(){ return(mAccount); }
+	int getSeq(){ return(mSeq); }
 
 };

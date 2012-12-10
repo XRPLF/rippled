@@ -276,9 +276,6 @@
     <ClCompile Include="src\cpp\ripple\Wallet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\WSConnection.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\WSDoor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -358,6 +355,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\WSHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
