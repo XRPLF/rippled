@@ -434,9 +434,9 @@ var Amount = function () {
   //  { 'value' : ..., 'currency' : ..., 'issuer' : ...}
 
   this._value	    = new BigInteger();	// NaN for bad value. Always positive for non-XRP.
-  this._offset	    = undefined;	// For non-XRP.
+  this._offset	    = 0;	        // Always 0 for XRP.
   this._is_native   = true;		// Default to XRP. Only valid if value is not NaN.
-  this._is_negative = undefined;	// For non-XRP. Undefined for XRP.
+  this._is_negative = false;
 
   this._currency    = new Currency();
   this._issuer	    = new UInt160();
@@ -490,7 +490,13 @@ Amount.prototype.add = function (v) {
   }
   else if (this._is_native) {
     result              = new Amount();
-    result._value       = this._value.add(v._value);
+
+    var v1  = this._is_negative ? this._value.negate() : this._value;
+    var v2  = v._is_negative ? v._value.negate() : v._value;
+    var s   = v1.add(v2);
+
+    result._is_negative = s.compareTo(BigInteger.ZERO) < 0;
+    result._value       = result._is_negative ? s.negate() : s;
   }
   else {
     var v1  = this._is_negative ? this._value.negate() : this._value;
@@ -535,6 +541,25 @@ Amount.prototype.canonicalize = function () {
   }
   else if (this._is_native) {
     // Native.
+
+    if (this._value.equals(BigInteger.ZERO)) {
+      this._offset      = 0;
+      this._is_negative = false;
+    }
+    else {
+      // Normalize _offset to 0.
+
+      while (this._offset < 0) {
+        this._value  = this._value.divide(consts.bi_10);
+        this._offset += 1;
+      }
+
+      while (this._offset > 0) {
+        this._value  = this._value.multiply(consts.bi_10);
+        this._offset -= 1;
+      }
+    }
+
     // XXX Make sure not bigger than supported. Throw if so.
   }
   else if (this.is_zero()) {
@@ -543,6 +568,8 @@ Amount.prototype.canonicalize = function () {
   }
   else
   {
+    // Normalize mantissa to valid range.
+
     while (this._value.compareTo(consts.bi_man_min_value) < 0) {
       this._value  = this._value.multiply(consts.bi_10);
       this._offset -= 1;
@@ -575,7 +602,7 @@ Amount.prototype.compareTo = function (v) {
     else if (result < -1)
       result  = -1;
   }
-  else if (this._is_negative != v._is_negative) {
+  else if (this._is_negative !== v._is_negative) {
     result  = this._is_negative ? -1 : 1;
   }
   else if (this._value.equals(BigInteger.ZERO)) {
@@ -652,7 +679,7 @@ Amount.prototype.equals = function (d) {
 
 // Result in terms of this' currency and issuer.
 Amount.prototype.divide = function (d) {
-  var result, vn, on, vd, od;
+  var result;
 
   if (d.is_zero()) {
     throw "divide by zero";
@@ -667,40 +694,16 @@ Amount.prototype.divide = function (d) {
     throw new Error("Invalid divisor");
   }
 
-  if (this._is_native) {
-    vn  = this._value.multiply(consts.bi_1e16);
-    on  = 0 - 16;
-  } else {
-    vn  = this._value.multiply(consts.bi_1e16);
-    on  = this._offset - 16;
-  }
-
-  if (d._is_native) {
-    vd  = d._value;
-    od  = 0;
-  } else {
-    vd  = d._value;
-    od  = d._offset;
-  }
-
   result              = new Amount();
-  result._offset      = on-od;
-  result._value       = vn.divide(vd).abs();
+  result._offset      = this._offset-d._offset-16;
+  result._value       = this._value.multiply(consts.bi_1e16).divide(d._value);
   result._is_native   = this._is_native;
-  result._is_negative = !!this._is_negative !== !!d._is_negative;
+  result._is_negative = this._is_negative !== d._is_negative;
   result._currency    = this._currency.clone();
   result._issuer      = this._issuer.clone();
 
-  if (result._is_native) {
-    // For native results, we need to manually normalize
-    result._value = result._value.divide(consts.bi_10.pow(result._offset+4));
-    result._offset = undefined;
-  }
-
-  //if (result._offset > consts.cMaxOffset || result._offset < consts.cMaxOffset)
-  //  throw new Error("division result out of range.");
-
-  // XXX Check value is in legal range here or have canonicalize do it?
+  if (result._offset > consts.cMaxOffset || result._offset < consts.cMaxOffset)
+    throw new Error("division result out of range.");
 
   result.canonicalize();
 
@@ -764,7 +767,7 @@ Amount.prototype.multiply = function (v) {
     result              = new Amount();
     result._offset      = o1+o2+14;
     result._value       = v1.multiply(v2).divide(consts.bi_1e14);
-    result._is_negative = this._is_negative != v._is_negative;
+    result._is_negative = this._is_negative !== v._is_negative;
     result._currency    = this._currency.clone();
     result._issuer      = this._issuer.clone();
     
@@ -911,7 +914,7 @@ Amount.prototype.parse_native = function (j) {
     this._offset      = undefined;
     this._is_negative = !!m[1] && this._value.compareTo(BigInteger.ZERO) !== 0;
 
-    if (this._value.compareTo(consts.bi_xns_max) > 0 || this._value.compareTo(consts.bi_xns_min) < 0)
+    if (this._value.compareTo(consts.bi_xns_max) > 0)
     {
       this._value	  = NaN;
     }
@@ -929,9 +932,8 @@ Amount.prototype.parse_value = function (j) {
   this._is_native    = false;
 
   if ('number' === typeof j) {
-    this._is_negative  = j < 0;
-      if (this._is_negative) j = -j;
-    this._value	      = new BigInteger(j);
+    this._is_negative = j < 0;
+    this._value	      = new BigInteger(this._is_negative ? -j : j);
     this._offset      = 0;
 
     this.canonicalize();
@@ -1027,7 +1029,7 @@ Amount.prototype.to_text = function (allow_nan) {
     return allow_nan ? NaN : "0";
   }
   else if (this._is_native) {
-    if (this._value.compareTo(consts.bi_xns_max) > 0 || this._value.compareTo(consts.bi_xns_min) < 0)
+    if (this._value.compareTo(consts.bi_xns_max) > 0)
     {
       // Never should happen.
       return allow_nan ? NaN : "0";
