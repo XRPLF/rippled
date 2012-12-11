@@ -58,7 +58,7 @@ class Pathfinder
 public:
 	Pathfinder(const RippleAddress& srcAccountID, const RippleAddress& dstAccountID, const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount);
 
-	bool findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet);
+	bool findPaths(const unsigned int iMaxSteps, const unsigned int iMaxPaths, STPathSet& spsDst);
 
 	bool bDefaultPath(const STPath& spPath);
 };

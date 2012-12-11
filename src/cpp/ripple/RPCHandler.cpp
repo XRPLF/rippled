@@ -765,7 +765,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 			STPathSet	spsComputed;
 			Pathfinder	pf(raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount);
 
-			if (!pf.findPaths(5, 1, spsComputed))
+			if (!pf.findPaths(5, 3, spsComputed))
 			{
 				cLog(lsDEBUG) << "ripple_path_find: No paths found.";
 			}
@@ -958,7 +958,7 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 
 			Pathfinder pf(raSrcAddressID, dstAccountID, saSendMax.getCurrency(), saSendMax.getIssuer(), saSend);
 
-			if (!pf.findPaths(5, 1, spsPaths))
+			if (!pf.findPaths(5, 3, spsPaths))
 			{
 				cLog(lsDEBUG) << "payment: build_path: No paths found.";
 

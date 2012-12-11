@@ -75,6 +75,11 @@ PathOption::PathOption(PathOption::pointer other)
 }
 #endif
 
+static bool bQualityCmp(std::pair<uint32, unsigned int> a, std::pair<uint32, unsigned int> b)
+{
+	return a.first < b.first;
+}
+
 // Return true, if path is a default path with an element.
 // A path is a default path if it is implied via src, dst, send, and sendmax.
 bool Pathfinder::bDefaultPath(const STPath& spPath)
@@ -150,17 +155,17 @@ Pathfinder::Pathfinder(const RippleAddress& uSrcAccountID, const RippleAddress& 
 }
 
 // If possible, returns a single path.
-// --> maxSearchSteps: unused XXX
-// --> maxPay: unused XXX
+// --> iMaxSteps: Maximum nodes in paths to return.
+// --> iMaxPaths: Maximum number of paths to return.
 // <-- retPathSet: founds paths not including default paths.
 // Returns true if found paths.
 //
 // When generating a path set blindly, don't allow the empty path, it is implied by default.
 // When generating a path set for estimates, allow an empty path instead of no paths to indicate a path exists. The caller will
 // need to strip the empty path when submitting the transaction.
-bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet)
+bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMaxPaths, STPathSet& spsDst)
 {
-	bool	bFound	= false;
+	bool	bFound		= false;	// True, iff found a path.
 
 	cLog(lsDEBUG) << boost::str(boost::format("findPaths> mSrcAccountID=%s mDstAccountID=%s mDstAmount=%s mSrcCurrencyID=%s mSrcIssuerID=%s")
 		% RippleAddress::createHumanAccountID(mSrcAccountID)
@@ -172,72 +177,85 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 
 	if (mLedger)
 	{
-		std::queue<STPath> pqueue;
-		STPathElement ele(mSrcAccountID,
-				  mSrcCurrencyID,
-				  uint160());	// XXX Might add source issuer.
+		std::vector<STPath>	vspResults;
+		std::queue<STPath>	qspExplore;
+
+		STPathElement		speEnd(mSrcAccountID,
+								  mSrcCurrencyID,
+								  uint160());	// XXX Might add source issuer.
 		STPath path;
 
-		path.addElement(ele);	// Add the source.
+		path.addElement(speEnd);				// Add the source.
 
-		pqueue.push(path);
+		qspExplore.push(path);
 
-		while (pqueue.size()) {
-			STPath path = pqueue.front();
+		while (qspExplore.size()) {
+			STPath spPath = qspExplore.front();
 
-			pqueue.pop();				// Pop the first path from the queue.
+			qspExplore.pop();						// Pop the first path from the queue.
 
-			ele = path.mPath.back();	// Get the last node from the path.
+			speEnd = spPath.mPath.back();		// Get the last node from the path.
 
 			// Done, if dest wants XRP and last element produces XRP.
-			if (!ele.mCurrencyID									// Tail output is XRP.
+			if (!speEnd.mCurrencyID									// Tail output is XRP.
 				&& !mDstAmount.getCurrency()) {						// Which is dst currency.
 
 				// Remove implied first.
-				path.mPath.erase(path.mPath.begin());
+				spPath.mPath.erase(spPath.mPath.begin());
 
-				if (path.size())
+				if (spPath.size())
 				{
 					// There is an actual path element.
 
-					retPathSet.addPath(path);						// Return the path.
+					vspResults.push_back(spPath);						// Potential result.
 
-					cLog(lsDEBUG) << "findPaths: adding: " << path.getJson(0);
+					cLog(lsDEBUG) << "findPaths: adding: " << spPath.getJson(0);
 				}
 				else
 				{
 					cLog(lsDEBUG) << "findPaths: empty path: XRP->XRP";
 				}
 
-				return true;
+				continue;
 			}
 
 			// Done, if dest wants non-XRP and last element is dest.
 			// YYY Allows going through self.  Is this wanted?
-			if (ele.mAccountID == mDstAccountID						// Tail is destination account.
-				&& ele.mCurrencyID == mDstAmount.getCurrency()) {	// With correct output currency.
+			if (speEnd.mAccountID == mDstAccountID						// Tail is destination account.
+				&& speEnd.mCurrencyID == mDstAmount.getCurrency()) {	// With correct output currency.
 				// Found a path to the destination.
-				if (bDefaultPath(path)) {
-					cLog(lsDEBUG) << "findPaths: default path: dropping: " << path.getJson(0);
 
-					return true;
+				if (bDefaultPath(spPath)) {
+					cLog(lsDEBUG) << "findPaths: default path: dropping: " << spPath.getJson(0);
+
+					bFound	= true;
+				}
+				else
+				{
+
+					// Remove implied first and last nodes.
+					spPath.mPath.erase(spPath.mPath.begin());
+					spPath.mPath.erase(spPath.mPath.begin() + spPath.mPath.size()-1);
+
+					vspResults.push_back(spPath);							// Potential result.
+
+					cLog(lsDEBUG) << "findPaths: adding: " << spPath.getJson(0);
 				}
 
-				// Remove implied first and last nodes.
-				path.mPath.erase(path.mPath.begin());
-				path.mPath.erase(path.mPath.begin() + path.mPath.size()-1);
-
-				// Return the path.
-				retPathSet.addPath(path);
-
-				cLog(lsDEBUG) << "findPaths: adding: " << path.getJson(0);
-
-				return true;
+				continue;
 			}
 
 			bool	bContinued	= false;
 
-			if (!ele.mCurrencyID) {
+			if (spPath.mPath.size() == iMaxSteps)
+			{
+				// Path is at maximum size. Don't want to add more.
+
+				cLog(lsDEBUG)
+					<< boost::str(boost::format("findPaths: path would exceed max steps: dropping"));
+			}
+			else if (!speEnd.mCurrencyID)
+			{
 				// Last element is for XRP continue with qualifying books.
 				BOOST_FOREACH(OrderBook::pointer book, mOrderBook.getXRPInBooks())
 				{
@@ -245,7 +263,7 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 
 					//if (!path.hasSeen(line->getAccountIDPeer().getAccountID()))
 					{
-						STPath			new_path(path);
+						STPath			new_path(spPath);
 						STPathElement	new_ele(uint160(), book->getCurrencyOut(), book->getIssuerOut());
 
 						new_path.mPath.push_back(new_ele);
@@ -257,7 +275,7 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 								% STAmount::createHumanCurrency(new_path.mCurrencyID)
 								% RippleAddress::createHumanAccountID(new_path.mCurrentAccount));
 
-						pqueue.push(new_path);
+						qspExplore.push(new_path);
 
 						bContinued	= true;
 					}
@@ -265,33 +283,34 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 
 				tLog(!bContinued, lsDEBUG)
 					<< boost::str(boost::format("findPaths: XRP input - dead end"));
-
-			} else {
+			}
+			else
+			{
 				// Last element is for non-XRP continue by adding ripple lines and order books.
 
 				// Create new paths for each outbound account not already in the path.
-				AccountItems rippleLines(ele.mAccountID, mLedger, AccountItem::pointer(new RippleState()));
+				AccountItems rippleLines(speEnd.mAccountID, mLedger, AccountItem::pointer(new RippleState()));
 
 				BOOST_FOREACH(AccountItem::pointer item, rippleLines.getItems())
 				{
 					RippleState* line=(RippleState*)item.get();
 
-					if (!path.hasSeen(line->getAccountIDPeer().getAccountID()))
+					if (!spPath.hasSeen(line->getAccountIDPeer().getAccountID()))
 					{
-						STPath			new_path(path);
+						STPath			new_path(spPath);
 						STPathElement	new_ele(line->getAccountIDPeer().getAccountID(),
-											ele.mCurrencyID,
+											speEnd.mCurrencyID,
 											uint160());
 
 						cLog(lsDEBUG) <<
 							boost::str(boost::format("findPaths: %s/%s --> %s/%s")
-								% RippleAddress::createHumanAccountID(ele.mAccountID)
-								% STAmount::createHumanCurrency(ele.mCurrencyID)
+								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
+								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
 								% RippleAddress::createHumanAccountID(line->getAccountIDPeer().getAccountID())
-								% STAmount::createHumanCurrency(ele.mCurrencyID));
+								% STAmount::createHumanCurrency(speEnd.mCurrencyID));
 
 						new_path.mPath.push_back(new_ele);
-						pqueue.push(new_path);
+						qspExplore.push(new_path);
 
 						bContinued	= true;
 					}
@@ -299,27 +318,27 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 					{
 						cLog(lsDEBUG) <<
 							boost::str(boost::format("findPaths: SEEN: %s/%s --> %s/%s")
-								% RippleAddress::createHumanAccountID(ele.mAccountID)
-								% STAmount::createHumanCurrency(ele.mCurrencyID)
+								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
+								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
 								% RippleAddress::createHumanAccountID(line->getAccountIDPeer().getAccountID())
-								% STAmount::createHumanCurrency(ele.mCurrencyID));
+								% STAmount::createHumanCurrency(speEnd.mCurrencyID));
 					}
 				}
 
 				// Every book that wants the source currency.
 				std::vector<OrderBook::pointer> books;
 
-				mOrderBook.getBooks(path.mCurrentAccount, path.mCurrencyID, books);
+				mOrderBook.getBooks(spPath.mCurrentAccount, spPath.mCurrencyID, books);
 
 				BOOST_FOREACH(OrderBook::pointer book,books)
 				{
-					STPath			new_path(path);
+					STPath			new_path(spPath);
 					STPathElement	new_ele(uint160(), book->getCurrencyOut(), book->getIssuerOut());
 
 					cLog(lsDEBUG) <<
 						boost::str(boost::format("findPaths: %s/%s :: %s/%s")
-							% STAmount::createHumanCurrency(ele.mCurrencyID)
-							% RippleAddress::createHumanAccountID(ele.mAccountID)
+							% STAmount::createHumanCurrency(speEnd.mCurrencyID)
+							% RippleAddress::createHumanAccountID(speEnd.mAccountID)
 							% STAmount::createHumanCurrency(book->getCurrencyOut())
 							% RippleAddress::createHumanAccountID(book->getIssuerOut()));
 
@@ -327,14 +346,42 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 					new_path.mCurrentAccount=book->getIssuerOut();
 					new_path.mCurrencyID=book->getCurrencyOut();
 
-					pqueue.push(new_path);
+					qspExplore.push(new_path);
 
 					bContinued	= true;
 				}
+
+				tLog(!bContinued, lsDEBUG)
+					<< boost::str(boost::format("findPaths: non-XRP input - dead end"));
+			}
+		}
+
+		unsigned int iLimit  = std::min(iMaxPaths, (unsigned int) vspResults.size());
+
+		if (iLimit)
+		{
+			std::vector< std::pair<uint32, unsigned int> > vMap;
+
+			// Build map of quality to entry.
+			for (int i = vspResults.size(); i--;)
+			{
+				uint32	uQuality	= 1;
+
+				if (uQuality)
+					vMap.push_back(std::make_pair(uQuality, i));
 			}
 
-			tLog(!bContinued, lsDEBUG)
-				<< boost::str(boost::format("findPaths: non-XRP input - dead end"));
+			std::sort(vMap.begin(), vMap.end(), bQualityCmp);
+
+			// Output best quality entries.
+			for (int i = 0; i != iLimit; ++i)
+			{
+				spsDst.addPath(vspResults[vMap[i].second]);
+			}
+
+			bFound	= true;
+
+			cLog(lsWARNING) << boost::str(boost::format("findPaths: RESULTS: %s") % spsDst.getJson(0));
 		}
 	}
 	else
