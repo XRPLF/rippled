@@ -913,9 +913,7 @@ STAmount STAmount::divide(const STAmount& num, const STAmount& den, const uint16
 	// 10^15 <= quotient <= 10^17
 	assert(BN_num_bytes(&v) <= 64);
 
-	if (num.mIsNegative != den.mIsNegative)
-		return -STAmount(uCurrencyID, uIssuerID, v.getulong(), finOffset);
-	else return STAmount(uCurrencyID, uIssuerID, v.getulong(), finOffset);
+	return STAmount(uCurrencyID, uIssuerID, v.getulong(), finOffset, num.mIsNegative != den.mIsNegative);
 }
 
 STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint160& uCurrencyID, const uint160& uIssuerID)
