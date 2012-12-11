@@ -911,7 +911,7 @@ Amount.prototype.parse_native = function (j) {
     }
 
     this._is_native   = true;
-    this._offset      = undefined;
+    this._offset      = 0;
     this._is_negative = !!m[1] && this._value.compareTo(BigInteger.ZERO) !== 0;
 
     if (this._value.compareTo(consts.bi_xns_max) > 0)
