@@ -720,9 +720,7 @@ Amount.prototype.is_native = function () {
 
 Amount.prototype.is_negative = function () {
   return this._value instanceof BigInteger
-          ? this.is_native
-            ? this._value.compareTo(BigInteger.ZERO) < 0
-            : this._is_negative
+          ? this._is_negative
           : false;                          // NaN is not negative
 };
 
