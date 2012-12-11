@@ -941,11 +941,6 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 			--offset1;
 		}
 	}
-	else
-	{ // round
-		value1 *= 10;
-		--offset1;
-	}
 
 	if (v2.mIsNative)
 	{
@@ -955,17 +950,11 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 			--offset2;
 		}
 	}
-	else
-	{ // round
-		value2 *= 10;
-		--offset2;
-	}
 
 	// Compute (numerator*10 * denominator*10) / 10^18 with rounding
 	CBigNum v;
 	if ((BN_add_word(&v, value1) != 1) ||
 		(BN_mul_word(&v, value2) != 1) ||
-		(BN_add_word(&v, 50) != 1) ||
 		(BN_div_word(&v, 100000000000000ul) == ((BN_ULONG) -1)))
 	{
 		throw std::runtime_error("internal bn error");
