@@ -104,6 +104,12 @@ buster.testCase("Amount", {
     "Clone non-native -123" : function () {
       buster.assert.equals("-123/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", Amount.from_json("-123/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh").clone().to_text_full());
     },
+    "Add XRP to XRP" : function () {
+      buster.assert.equals("200/XRP", Amount.from_json("150").add(Amount.from_json("50")).to_text_full());
+    },
+    "Add USD to USD" : function () {
+      buster.assert.equals("200.52/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", Amount.from_json("150.02/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh").add(Amount.from_json("50.5/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")).to_text_full());
+    },
     "Divide XRP by USD" : function () {
       buster.assert.equals("20/XRP", Amount.from_json("200").divide(Amount.from_json("10/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")).to_text_full());
     },
