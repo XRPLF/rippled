@@ -949,7 +949,6 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 	else
 	{ // round
 		value1 *= 10;
-		value1 += 3;
 		--offset1;
 	}
 
@@ -964,7 +963,6 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 	else
 	{ // round
 		value2 *= 10;
-		value2 += 3;
 		--offset2;
 	}
 
@@ -972,6 +970,7 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 	CBigNum v;
 	if ((BN_add_word(&v, value1) != 1) ||
 		(BN_mul_word(&v, value2) != 1) ||
+		(BN_add_word(&v, 5) != 1) ||
 		(BN_div_word(&v, 100000000000000ul) == ((BN_ULONG) -1)))
 	{
 		throw std::runtime_error("internal bn error");
@@ -980,9 +979,7 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 	// 10^16 <= product <= 10^18
 	assert(BN_num_bytes(&v) <= 64);
 
-	if (v1.mIsNegative != v2.mIsNegative)
-		return -STAmount(uCurrencyID, uIssuerID, v.getulong(), offset1 + offset2 + 14);
-	else return STAmount(uCurrencyID, uIssuerID, v.getulong(), offset1 + offset2 + 14);
+	return STAmount(uCurrencyID, uIssuerID, v.getulong(), offset1 + offset2 + 14, v1.mIsNegative != v2.mIsNegative);
 }
 
 // Convert an offer into an index amount so they sort by rate.
@@ -1135,8 +1132,11 @@ uint64 STAmount::muldiv(uint64 a, uint64 b, uint64 c)
 	if ((a == 0) || (b == 0)) return 0;
 
 	CBigNum v;
-	if ((BN_add_word(&v, a * 10 + 3) != 1) || (BN_mul_word(&v, b * 10 + 3) != 1) ||
-		(BN_div_word(&v, c) == ((BN_ULONG) -1)) || (BN_div_word(&v, 100) == ((BN_ULONG) -1)))
+	if ((BN_add_word(&v, a * 10) != 1) ||
+		(BN_mul_word(&v, b * 10) != 1) ||
+		(BN_add_word(&v, 5) != 1) ||
+		(BN_div_word(&v, c) == ((BN_ULONG) -1)) ||
+		(BN_div_word(&v, 100) == ((BN_ULONG) -1)))
 		throw std::runtime_error("muldiv error");
 
 	return v.getulong();
