@@ -897,10 +897,6 @@ STAmount STAmount::divide(const STAmount& num, const STAmount& den, const uint16
 			--denOffset;
 		}
 
-	int finOffset = numOffset - denOffset - 16;
-	if ((finOffset > cMaxOffset) || (finOffset < cMinOffset))
-		throw std::runtime_error("division produces out of range result");
-
 	// Compute (numerator * 10^16) / denominator
 	CBigNum v;
 	if ((BN_add_word(&v, numVal) != 1) ||
@@ -913,7 +909,8 @@ STAmount STAmount::divide(const STAmount& num, const STAmount& den, const uint16
 	// 10^15 <= quotient <= 10^17
 	assert(BN_num_bytes(&v) <= 64);
 
-	return STAmount(uCurrencyID, uIssuerID, v.getulong(), finOffset, num.mIsNegative != den.mIsNegative);
+	return STAmount(uCurrencyID, uIssuerID, v.getulong(),
+		numOffset - denOffset - 16, num.mIsNegative != den.mIsNegative);
 }
 
 STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint160& uCurrencyID, const uint160& uIssuerID)
