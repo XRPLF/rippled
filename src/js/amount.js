@@ -516,6 +516,7 @@ Amount.prototype.add = function (v) {
     }
 
     result              = new Amount();
+    result._is_native   = false;
     result._offset      = o1;
     result._value       = v1.add(v2);
     result._is_negative = result._value.compareTo(BigInteger.ZERO) < 0;
@@ -713,7 +714,7 @@ Amount.prototype.divide = function (d) {
 Amount.prototype.is_comparable = function (v) {
   return this._value instanceof BigInteger
     && v._value instanceof BigInteger
-    && this._is_native === v.is_native;
+    && this._is_native === v._is_native;
 };
 
 Amount.prototype.is_native = function () {
