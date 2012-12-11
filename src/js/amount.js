@@ -27,8 +27,9 @@ var consts = exports.consts = {
 
   // BigInteger values prefixed with bi_.
   'bi_10'	          : new BigInteger('10'),
-  'bi_1e14'               : new BigInteger('100000000000000'),
-  'bi_1e16'               : new BigInteger('10000000000000000'),
+  'bi_1e14'               : new BigInteger(String(1e14)),
+  'bi_1e16'               : new BigInteger(String(1e16)),
+  'bi_1e32'               : new BigInteger('100000000000000000000000000000000'),
   'bi_man_max_value'      : new BigInteger('9999999999999999'),
   'bi_man_min_value'      : new BigInteger('1000000000000000'),
   'bi_xns_max'	          : new BigInteger("9000000000000000000"),	  // Json wire limit.
@@ -693,19 +694,17 @@ Amount.prototype.divide = function (d) {
   else if (!d.is_valid()) {
     throw new Error("Invalid divisor");
   }
+  else {
+    result              = new Amount();
+    result._offset      = this._offset-d._offset-32;
+    result._value       = this._value.multiply(consts.bi_1e32).divide(d._value);
+    result._is_native   = this._is_native;
+    result._is_negative = this._is_negative !== d._is_negative;
+    result._currency    = this._currency.clone();
+    result._issuer      = this._issuer.clone();
 
-  result              = new Amount();
-  result._offset      = this._offset-d._offset-16;
-  result._value       = this._value.multiply(consts.bi_1e16).divide(d._value);
-  result._is_native   = this._is_native;
-  result._is_negative = this._is_negative !== d._is_negative;
-  result._currency    = this._currency.clone();
-  result._issuer      = this._issuer.clone();
-
-  if (result._offset > consts.cMaxOffset || result._offset < consts.cMaxOffset)
-    throw new Error("division result out of range.");
-
-  result.canonicalize();
+    result.canonicalize();
+  }
 
   return result;
 };
