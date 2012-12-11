@@ -970,7 +970,7 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 	CBigNum v;
 	if ((BN_add_word(&v, value1) != 1) ||
 		(BN_mul_word(&v, value2) != 1) ||
-		(BN_add_word(&v, 5) != 1) ||
+		(BN_add_word(&v, 50) != 1) ||
 		(BN_div_word(&v, 100000000000000ul) == ((BN_ULONG) -1)))
 	{
 		throw std::runtime_error("internal bn error");
@@ -1134,7 +1134,7 @@ uint64 STAmount::muldiv(uint64 a, uint64 b, uint64 c)
 	CBigNum v;
 	if ((BN_add_word(&v, a * 10) != 1) ||
 		(BN_mul_word(&v, b * 10) != 1) ||
-		(BN_add_word(&v, 5) != 1) ||
+		(BN_add_word(&v, 50) != 1) ||
 		(BN_div_word(&v, c) == ((BN_ULONG) -1)) ||
 		(BN_div_word(&v, 100) == ((BN_ULONG) -1)))
 		throw std::runtime_error("muldiv error");
