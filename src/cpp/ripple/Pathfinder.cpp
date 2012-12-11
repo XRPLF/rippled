@@ -77,7 +77,6 @@ PathOption::PathOption(PathOption::pointer other)
 
 // Return true, if path is a default path with an element.
 // A path is a default path if it is implied via src, dst, send, and sendmax.
-// XXX Could be determined via STAmount
 bool Pathfinder::bDefaultPath(const STPath& spPath)
 {
 	if (2 == spPath.mPath.size()) {
@@ -85,6 +84,15 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 		cLog(lsDEBUG) << "findPaths: empty path: direct";
 
 		return true;
+	}
+
+	if (!mPsDefault)
+	{
+		// No default path.
+		// There might not be a direct credit line or there may be no implied nodes
+		// in send and sendmax.
+
+		return false;			// Didn't generate a default path. So can't match.
 	}
 
 	PathState::pointer	pspCurrent	= boost::make_shared<PathState>(mDstAmount, mSrcAmount, mLedger);
@@ -97,6 +105,8 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 		pspCurrent->setExpanded(lesActive, spPath, mDstAccountID, mSrcAccountID);
 
 		bDefault	= pspCurrent->vpnNodes == mPsDefault->vpnNodes;
+
+		cLog(lsDEBUG) << "findPaths: expanded path: " << pspCurrent->getJson();
 
 		// Path is a default (implied). Don't need to add it to return set.
 		cLog(lsDEBUG) << "findPaths: default path: indirect: " << spPath.getJson(0);
@@ -119,13 +129,23 @@ Pathfinder::Pathfinder(const RippleAddress& uSrcAccountID, const RippleAddress& 
 
 	// Construct the default path for later comparison.
 
-	mPsDefault	= boost::make_shared<PathState>(mDstAmount, mSrcAmount, mLedger);
+	PathState::pointer	psDefault	= boost::make_shared<PathState>(mDstAmount, mSrcAmount, mLedger);
 
-	if (mPsDefault)
+	if (psDefault)
 	{
 		LedgerEntrySet	lesActive(mLedger);
 
-		mPsDefault->setExpanded(lesActive, STPath(), mDstAccountID, mSrcAccountID);
+		psDefault->setExpanded(lesActive, STPath(), mDstAccountID, mSrcAccountID);
+
+		if (tesSUCCESS == psDefault->terStatus)
+		{
+			cLog(lsDEBUG) << "Pathfinder: reference path: " << psDefault->getJson();
+			mPsDefault	= psDefault;
+		}
+		else
+		{
+			cLog(lsDEBUG) << "Pathfinder: reference path: NONE: " << transToken(psDefault->terStatus);
+		}
 	}
 }
 
@@ -150,13 +170,7 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 		% RippleAddress::createHumanAccountID(mSrcIssuerID)
 		);
 
-	if (!mPsDefault)
-	{
-		cLog(lsDEBUG) << boost::str(boost::format("findPaths: failed to generate default path."));
-
-		return false;
-	}
-	else if (mLedger)
+	if (mLedger)
 	{
 		std::queue<STPath> pqueue;
 		STPathElement ele(mSrcAccountID,

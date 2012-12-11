@@ -62,6 +62,7 @@ bool PathState::lessPriority(PathState& lhs, PathState& rhs)
 // - A node names it's output.
 // - A ripple nodes output issuer must be the node's account or the next node's account.
 // - Offers can only go directly to another offer if the currency and issuer are an exact match.
+// - Real issuers must be specified for non-XRP.
 TER PathState::pushImply(
 	const uint160& uAccountID,	// --> Delivering to this account.
 	const uint160& uCurrencyID,	// --> Delivering this currency.
@@ -186,6 +187,8 @@ TER PathState::pushNode(
 		else
 		{
 			// Add required intermediate nodes to deliver to current account.
+			cLog(lsDEBUG) << "pushNode: imply for account.";
+
 			terResult	= pushImply(
 				pnCur.uAccountID,									// Current account.
 				pnCur.uCurrencyID,									// Wanted currency.
@@ -262,6 +265,7 @@ TER PathState::pushNode(
 		else if (!!pnPrv.uAccountID)
 		{
 			// Previous is an account.
+			cLog(lsDEBUG) << "pushNode: imply for offer.";
 
 			// Insert intermediary issuer account if needed.
 			terResult	= pushImply(
@@ -364,7 +368,10 @@ cLog(lsDEBUG) << boost::str(boost::format("PathState: sender implied: account=%s
 	BOOST_FOREACH(const STPathElement& speElement, spSourcePath)
 	{
 		if (tesSUCCESS == terStatus)
+		{
+cLog(lsDEBUG) << boost::str(boost::format("PathState: element in path:"));
 			terStatus	= pushNode(speElement.getNodeType(), speElement.getAccountID(), speElement.getCurrency(), speElement.getIssuerID());
+		}
 	}
 
 	const PaymentNode&	pnPrv			= vpnNodes.back();
