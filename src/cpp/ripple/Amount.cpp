@@ -15,6 +15,8 @@
 SETUP_LOG();
 
 uint64	STAmount::uRateOne	= STAmount::getRate(STAmount(1), STAmount(1));
+static const uint64_t tenTo16 = 10000000000000000ul;
+static const uint64_t tenTo18 = 1000000000000000000ul;
 
 bool STAmount::issuerFromString(uint160& uDstIssuer, const std::string& sIssuer)
 {
@@ -900,7 +902,7 @@ STAmount STAmount::divide(const STAmount& num, const STAmount& den, const uint16
 	// Compute (numerator * 10^16) / denominator
 	CBigNum v;
 	if ((BN_add_word(&v, numVal) != 1) ||
-		(BN_mul_word(&v, 10000000000000000ul) != 1) ||
+		(BN_mul_word(&v, tenTo16) != 1) ||
 		(BN_div_word(&v, denVal) == ((BN_ULONG) -1)))
 	{
 		throw std::runtime_error("internal bn error");
@@ -953,9 +955,9 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 
 	// Compute (numerator*10 * denominator*10) / 10^18 with rounding
 	CBigNum v;
-	if ((BN_add_word(&v, value1) != 1) ||
-		(BN_mul_word(&v, value2) != 1) ||
-		(BN_div_word(&v, 100000000000000ul) == ((BN_ULONG) -1)))
+	if ((BN_add_word(&v, value1 * 10 + 3) != 1) ||
+		(BN_mul_word(&v, value2 * 10 + 3) != 1) ||
+		(BN_div_word(&v, tenTo18) == ((BN_ULONG) -1)))
 	{
 		throw std::runtime_error("internal bn error");
 	}
@@ -963,7 +965,7 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 	// 10^16 <= product <= 10^18
 	assert(BN_num_bytes(&v) <= 64);
 
-	return STAmount(uCurrencyID, uIssuerID, v.getulong(), offset1 + offset2 + 14, v1.mIsNegative != v2.mIsNegative);
+	return STAmount(uCurrencyID, uIssuerID, v.getulong(), offset1 + offset2 + 16, v1.mIsNegative != v2.mIsNegative);
 }
 
 // Convert an offer into an index amount so they sort by rate.
@@ -1116,8 +1118,8 @@ uint64 STAmount::muldiv(uint64 a, uint64 b, uint64 c)
 	if ((a == 0) || (b == 0)) return 0;
 
 	CBigNum v;
-	if ((BN_add_word(&v, a * 10) != 1) ||
-		(BN_mul_word(&v, b * 10) != 1) ||
+	if ((BN_add_word(&v, a * 10 + 3) != 1) ||
+		(BN_mul_word(&v, b * 10 + 3) != 1) ||
 		(BN_add_word(&v, 50) != 1) ||
 		(BN_div_word(&v, c) == ((BN_ULONG) -1)) ||
 		(BN_div_word(&v, 100) == ((BN_ULONG) -1)))
