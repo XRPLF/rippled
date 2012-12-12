@@ -161,7 +161,7 @@ public:
 	// If the transaction fails to meet some constraint, still need to delete unfunded offers.
 	boost::unordered_set<uint256>	musUnfundedFound;	// Offers that were found unfunded.
 
-	void				pathNext(PathState& psCur, const int iPaths, const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent);
+	void				pathNext(PathState::ref psrCur, const int iPaths, const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent);
 	TER					calcNode(const unsigned int uNode, PathState& psCur, const bool bMultiQuality);
 	TER					calcNodeRev(const unsigned int uNode, PathState& psCur, const bool bMultiQuality);
 	TER					calcNodeFwd(const unsigned int uNode, PathState& psCur, const bool bMultiQuality);

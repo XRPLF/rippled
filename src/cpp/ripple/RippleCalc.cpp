@@ -42,14 +42,15 @@ bool PaymentNode::operator==(const PaymentNode& pnOther) const {
 // Return true, iff lhs has less priority than rhs.
 bool PathState::lessPriority(PathState& lhs, PathState& rhs)
 {
+	// First rank is quality.
 	if (lhs.uQuality != rhs.uQuality)
 		return lhs.uQuality > rhs.uQuality;		// Bigger is worse.
 
-	// Best quanity is second rank.
+	// Second rank is best quantity.
 	if (lhs.saOutPass != rhs.saOutPass)
 		return lhs.saOutPass < rhs.saOutPass;	// Smaller is worse.
 
-	// Path index is third rank.
+	// Third rank is path index.
 	return lhs.mIndex > rhs.mIndex;				// Bigger is worse.
 }
 
@@ -2271,58 +2272,58 @@ TER RippleCalc::calcNodeRev(const unsigned int uNode, PathState& psCur, const bo
 // Calculate the next increment of a path.
 // The increment is what can satisfy a portion or all of the requested output at the best quality.
 // <-- psCur.uQuality
-void RippleCalc::pathNext(PathState& psCur, const int iPaths, const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent)
+void RippleCalc::pathNext(PathState::ref psrCur, const int iPaths, const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent)
 {
 	// The next state is what is available in preference order.
 	// This is calculated when referenced accounts changed.
 	const bool			bMultiQuality	= iPaths == 1;
-	const unsigned int	uLast			= psCur.vpnNodes.size() - 1;
+	const unsigned int	uLast			= psrCur->vpnNodes.size() - 1;
 
-	psCur.bConsumed	= false;
+	psrCur->bConsumed	= false;
 
 	// YYY This clearing should only be needed for nice logging.
-	psCur.saInPass	= STAmount(psCur.saInReq.getCurrency(), psCur.saInReq.getIssuer());
-	psCur.saOutPass	= STAmount(psCur.saOutReq.getCurrency(), psCur.saOutReq.getIssuer());
+	psrCur->saInPass	= STAmount(psrCur->saInReq.getCurrency(), psrCur->saInReq.getIssuer());
+	psrCur->saOutPass	= STAmount(psrCur->saOutReq.getCurrency(), psrCur->saOutReq.getIssuer());
 
-	psCur.vUnfundedBecame.clear();
-	psCur.umReverse.clear();
+	psrCur->vUnfundedBecame.clear();
+	psrCur->umReverse.clear();
 
-	cLog(lsINFO) << "Path In: " << psCur.getJson();
+	cLog(lsINFO) << "pathNext: Path In: " << psrCur->getJson();
 
-	assert(psCur.vpnNodes.size() >= 2);
+	assert(psrCur->vpnNodes.size() >= 2);
 
 	lesCurrent	= lesCheckpoint;					// Restore from checkpoint.
 	lesCurrent.bumpSeq();							// Begin ledger varance.
 
-	psCur.terStatus	= calcNodeRev(uLast, psCur, bMultiQuality);
+	psrCur->terStatus	= calcNodeRev(uLast, *psrCur, bMultiQuality);
 
-	cLog(lsINFO) << "Path after reverse: " << psCur.getJson();
+	cLog(lsINFO) << "pathNext: Path after reverse: " << psrCur->getJson();
 
-	if (tesSUCCESS == psCur.terStatus)
+	if (tesSUCCESS == psrCur->terStatus)
 	{
 		// Do forward.
 		lesCurrent	= lesCheckpoint;				// Restore from checkpoint.
 		lesCurrent.bumpSeq();						// Begin ledger varance.
 
-		psCur.terStatus	= calcNodeFwd(0, psCur, bMultiQuality);
+		psrCur->terStatus	= calcNodeFwd(0, *psrCur, bMultiQuality);
 	}
 
-	if (tesSUCCESS == psCur.terStatus)
+	if (tesSUCCESS == psrCur->terStatus)
 	{
-		tLog(!psCur.saInPass || !psCur.saOutPass, lsDEBUG)
-			<< boost::str(boost::format("saOutPass=%s saInPass=%s")
-				% psCur.saOutPass.getFullText()
-				% psCur.saInPass.getFullText());
+		tLog(!psrCur->saInPass || !psrCur->saOutPass, lsDEBUG)
+			<< boost::str(boost::format("pathNext: saOutPass=%s saInPass=%s")
+				% psrCur->saOutPass.getFullText()
+				% psrCur->saInPass.getFullText());
 
-		assert(!!psCur.saOutPass && !!psCur.saInPass);
+		assert(!!psrCur->saOutPass && !!psrCur->saInPass);
 
-		psCur.uQuality	= STAmount::getRate(psCur.saOutPass, psCur.saInPass);	// Calculate relative quality.
+		psrCur->uQuality	= STAmount::getRate(psrCur->saOutPass, psrCur->saInPass);	// Calculate relative quality.
 
-		cLog(lsINFO) << "Path after forward: " << psCur.getJson();
+		cLog(lsINFO) << "pathNext: Path after forward: " << psrCur->getJson();
 	}
 	else
 	{
-		psCur.uQuality	= 0;
+		psrCur->uQuality	= 0;
 	}
 }
 
@@ -2458,14 +2459,18 @@ int iPass	= 0;
 		int						iDry			= 0;
 
 	    // Find the best path.
-	    BOOST_FOREACH(PathState::pointer pspCur, vpsExpanded)
+	    BOOST_FOREACH(PathState::ref pspCur, vpsExpanded)
 	    {
 		    if (pspCur->uQuality)
 			{
-				pspCur->saInAct		= saMaxAmountAct;								// Update to current amount processed.
+				pspCur->saInAct		= saMaxAmountAct;									// Update to current amount processed.
 				pspCur->saOutAct	= saDstAmountAct;
 
-				rc.pathNext(*pspCur, vpsExpanded.size(), lesCheckpoint, lesActive);		// Compute increment.
+				rc.pathNext(pspCur, vpsExpanded.size(), lesCheckpoint, lesActive);		// Compute increment.
+	cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: AFTER: mIndex=%d uQuality=%d rate=%s")
+		% pspCur->mIndex
+		% pspCur->uQuality
+		% STAmount::saFromRate(pspCur->uQuality));
 
 				if (!pspCur->uQuality) {
 					// Path was dry.
@@ -2485,7 +2490,9 @@ int iPass	= 0;
 						&& (iBest < 0													// Best is not yet set.
 							|| PathState::lessPriority(*vpsExpanded[iBest], *pspCur)))	// Current is better than set.
 					{
-						cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: better: uQuality=%s saInPass=%s saOutPass=%s")
+						cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: better: mIndex=%d uQuality=%s rate=%s saInPass=%s saOutPass=%s")
+							% pspCur->mIndex
+							% pspCur->uQuality
 							% STAmount::saFromRate(pspCur->uQuality)
 							% pspCur->saInPass.getFullText()
 							% pspCur->saOutPass.getFullText());
@@ -2499,7 +2506,12 @@ int iPass	= 0;
 cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: Pass: %d Dry: %d Paths: %d") % ++iPass % iDry % vpsExpanded.size());
 	    BOOST_FOREACH(PathState::ref pspCur, vpsExpanded)
 	    {
-cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: %d quality:%d best: %d consumed: %d") % pspCur->mIndex % pspCur->uQuality % (iBest == pspCur->getIndex()) % pspCur->bConsumed);
+cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: %d rate: %s quality:%d best: %d consumed: %d")
+				% pspCur->mIndex
+				% STAmount::saFromRate(pspCur->uQuality)
+				% pspCur->uQuality
+				% (iBest == pspCur->getIndex())
+				% pspCur->bConsumed);
 		}
 
 	    if (iBest >= 0)
