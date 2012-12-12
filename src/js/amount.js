@@ -758,8 +758,14 @@ Amount.prototype.multiply = function (v) {
     result._value       = this._value.multiply(v._value);
   }
   else {
+
+    var v1 = this._value.multiply(consts.bi_10).add(3);
+    var o1 = this._offset - 1;
+    var v2 = v._value.multiply(consts.bi_10).add(3);
+    var o2 = v._offset - 1;
+
     result              = new Amount();
-    result._offset      = o1 + o2;
+    result._offset      = o1 + o2 + 2;
     result._value       = v1.multiply(v2);
     result._is_negative = this._is_negative !== v._is_negative;
     result._currency    = this._currency.clone();
