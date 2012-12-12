@@ -224,7 +224,7 @@ buster.testCase("Basic Path finding", {
 
 buster.testCase("Extended Path finding", {
   // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
-  'setUp' : testutils.build_setup({ verbose: true }),
+  // 'setUp' : testutils.build_setup({ verbose: true }),
   // 'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
@@ -360,7 +360,7 @@ buster.testCase("Extended Path finding", {
         });
     },
 
-  "=>alternative paths - consume best transfer first" :
+  "alternative paths - consume best transfer first" :
     function (done) {
       var self = this;
 
@@ -408,6 +408,7 @@ buster.testCase("Extended Path finding", {
             self.remote.transaction()
               .payment('alice', 'bob', "77/USD/bob")
               .build_path(true)
+              .send_max("100/USD/alice")
               .once('proposed', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
@@ -419,9 +420,9 @@ buster.testCase("Extended Path finding", {
 
             testutils.verify_balances(self.remote,
               {
-                "alice"     : [ "0/USD/mtgox", "63.63636363636363/USD/bitstamp" ],
+                "alice"     : [ "0/USD/mtgox", "62.3/USD/bitstamp" ],
                 "bob"       : [ "70/USD/mtgox", "7/USD/bitstamp" ],
-                "bitstamp"  : [ "-63.63636363636363/USD/alice", "-7/USD/bob" ],
+                "bitstamp"  : [ "-62.3/USD/alice", "-7/USD/bob" ],
                 "mtgox"     : [ "0/USD/alice", "-70/USD/bob" ],
               },
               callback);

@@ -692,7 +692,7 @@ Json::Value	PathState::getJson() const
 		jvPathState["out_pass"]	= saOutPass.getJson(0);
 
 	if (uQuality)
-		jvPathState["uQuality"]	= Json::Value::UInt(uQuality);
+		jvPathState["uQuality"]	= boost::str(boost::format("%d") % uQuality);
 
 	return jvPathState;
 }

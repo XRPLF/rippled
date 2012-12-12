@@ -1451,6 +1451,7 @@ Transaction.prototype._account_secret = function (account) {
 //  .message_key()      NYI
 //  .transfer_rate()
 //  .wallet_locator()   NYI
+//  .wallet_size()      NYI
 Transaction.prototype.account_set = function (src) {
   this._secret                  = this._account_secret(src);
   this.tx_json.TransactionType  = 'AccountSet';
