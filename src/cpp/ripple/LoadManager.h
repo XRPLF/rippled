@@ -26,10 +26,10 @@ enum LoadType
 	LT_RequestData,				// A request that is hard to satisfy, disk access
 	LT_CheapQuery,				// A query that is trivial, cached data
 
-	LT_MAX = LT_CheapQuery
+	LT_MAX						// MUST BE LAST
 };
 
-// load categoryies
+// load categories
 static const int LC_Disk	= 1;
 static const int LC_CPU		= 2;
 static const int LC_Network	= 4;
