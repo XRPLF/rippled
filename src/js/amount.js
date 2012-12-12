@@ -771,9 +771,9 @@ Amount.prototype.multiply = function (v) {
       o2 -= 1;
     }
 
-    v1 = v1.multiply(consts.bi_10).add(3);
+    v1 = v1.multiply(consts.bi_10).add(5);
     o1 -= 1;
-    v2 = v2.multiply(consts.bi_10).add(3);
+    v2 = v2.multiply(consts.bi_10).add(5);
     o2 -= 1;
 
     result              = new Amount();
