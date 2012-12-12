@@ -955,8 +955,8 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 
 	// Compute (numerator*10 * denominator*10) / 10^18 with rounding
 	CBigNum v;
-	if ((BN_add_word(&v, value1 * 10 + 3) != 1) ||
-		(BN_mul_word(&v, value2 * 10 + 3) != 1) ||
+	if ((BN_add_word(&v, value1 * 10 + 5) != 1) ||
+		(BN_mul_word(&v, value2 * 10 + 5) != 1) ||
 		(BN_div_word(&v, tenTo18) == ((BN_ULONG) -1)))
 	{
 		throw std::runtime_error("internal bn error");
@@ -1118,9 +1118,8 @@ uint64 STAmount::muldiv(uint64 a, uint64 b, uint64 c)
 	if ((a == 0) || (b == 0)) return 0;
 
 	CBigNum v;
-	if ((BN_add_word(&v, a * 10 + 3) != 1) ||
-		(BN_mul_word(&v, b * 10 + 3) != 1) ||
-		(BN_add_word(&v, 50) != 1) ||
+	if ((BN_add_word(&v, a * 10 + 5) != 1) ||
+		(BN_mul_word(&v, b * 10 + 5) != 1) ||
 		(BN_div_word(&v, c) == ((BN_ULONG) -1)) ||
 		(BN_div_word(&v, 100) == ((BN_ULONG) -1)))
 		throw std::runtime_error("muldiv error");
@@ -1410,6 +1409,27 @@ BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 	BOOST_TEST_MESSAGE("Amount CC Complete");
 }
 
+static void roundTest(int n, int d, int m)
+{ // check STAmount rounding
+	STAmount num(CURRENCY_ONE, ACCOUNT_ONE, n);
+	STAmount den(CURRENCY_ONE, ACCOUNT_ONE, d);
+	STAmount mul(CURRENCY_ONE, ACCOUNT_ONE, m);
+	STAmount res = STAmount::multiply(STAmount::divide(n, d, CURRENCY_ONE, ACCOUNT_ONE), mul, CURRENCY_ONE, ACCOUNT_ONE);
+	if (res.isNative())
+		BOOST_FAIL("Product is native");
+
+	STAmount cmp(CURRENCY_ONE, ACCOUNT_ONE, (n * m) / d);
+	if (cmp.isNative())
+		BOOST_FAIL("Comparison amount is native");
+
+	if (res == cmp)
+		return;
+	cmp.throwComparable(res);
+	Log(lsWARNING) << "(" << num.getText() << "/" << den.getText() << ") X " << mul.getText() << " = "
+		<< res.getText() << " not " << cmp.getText();
+	BOOST_FAIL("STAmount rounding failure");
+}
+
 BOOST_AUTO_TEST_CASE( CurrencyMulDivTests )
 {
 	// Test currency multiplication and division operations such as
@@ -1432,6 +1452,12 @@ BOOST_AUTO_TEST_CASE( CurrencyMulDivTests )
 	if (STAmount::getRate(STAmount(10), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
 		BOOST_FAIL("STAmount getRate fail");
 
+	roundTest(1, 3, 3);
+	roundTest(2, 3, 9);
+	roundTest(1, 7, 21);
+	roundTest(1, 2, 4);
+	roundTest(3, 9, 18);
+	roundTest(7, 11, 44);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
