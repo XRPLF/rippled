@@ -724,7 +724,7 @@ buster.testCase("Indirect ripple", {
 
             testutils.verify_balances(self.remote,
               {
-                "alice"   : [ "-100/USD/bob", "-65.00000000000001/USD/carol" ],
+                "alice"   : [ "-100/USD/bob", "-65/USD/carol" ],
                 "amazon"  : "150/USD/mtgox",
                 "bob"     : "0/USD/mtgox",
                 "carol"   : "35/USD/mtgox",
