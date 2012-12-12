@@ -14,8 +14,8 @@ require("../src/js/remote.js").config = require("./config.js");
 buster.testRunner.timeout = 5000;
 
 buster.testCase("Offer tests", {
-  'setUp' : testutils.build_setup(),
-  'tearDown' : testutils.build_teardown(),
+  'setUp'     : testutils.build_setup(),
+  'tearDown'  : testutils.build_teardown(),
 
   "offer create then cancel in one ledger" :
     function (done) {
@@ -35,7 +35,7 @@ buster.testCase("Offer tests", {
 
                   buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
 
-                  final_create  = m;
+                  buster.assert(final_create);
                 })
               .submit();
           },
@@ -47,7 +47,7 @@ buster.testCase("Offer tests", {
                   callback(m.result !== 'tesSUCCESS', m);
                 })
               .on('final', function (m) {
-                  // console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
+                  // console.log("FINAL: offer_cancel: %s", JSON.stringify(m, undefined, 2));
 
                   buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
                   buster.assert(final_create);
@@ -59,6 +59,7 @@ buster.testCase("Offer tests", {
             self.remote
               .once('ledger_closed', function (message) {
                   // console.log("LEDGER_CLOSED: %d: %s", ledger_index, ledger_hash);
+                  final_create  = message;
                 })
               .ledger_accept();
           }
