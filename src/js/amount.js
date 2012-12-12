@@ -750,19 +750,31 @@ Amount.prototype.issuer = function () {
 Amount.prototype.multiply = function (v) {
   var result;
 
-  if (!this.is_comparable(v)) {
-    result              = Amount.NaN();
-  }
-  else if (this._is_native) {
+  if (this._is_native && v._is_native) {
     result              = new Amount();
     result._value       = this._value.multiply(v._value);
   }
   else {
 
-    var v1 = this._value.multiply(consts.bi_10).add(3);
-    var o1 = this._offset - 1;
-    var v2 = v._value.multiply(consts.bi_10).add(3);
-    var o2 = v._offset - 1;
+    var v1 = this._value;
+    var o1 = this._offset;
+    var v2 = v._value;
+    var o2 = v._offset;
+
+    while (o1._value.compareTo(consts.bi_man_min_value) < 0 ) {
+      v1 = v1.multiply(consts.bi_10);
+      o1 -= 1;
+    }
+
+    while (o2._value.compareTo(consts.bi_man_min_value) < 0 ) {
+      v2 = v2.multiply(consts.bi_10);
+      o2 -= 1;
+    }
+
+    v1 = v1.multiply(consts.bi_10).add(3);
+    o1 -= 1;
+    v2 = v2.multiply(consts.bi_10).add(3);
+    o2 -= 1;
 
     result              = new Amount();
     result._offset      = o1 + o2 + 2;
