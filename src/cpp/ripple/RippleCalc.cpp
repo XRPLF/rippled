@@ -2327,6 +2327,7 @@ void RippleCalc::pathNext(PathState::ref psrCur, const int iPaths, const LedgerE
 	}
 }
 
+// <-- TER: Only returns tepPATH_PARTIAL if !bPartialPayment.
 TER RippleCalc::rippleCalc(
 	// Compute paths vs this ledger entry set.  Up to caller to actually apply to ledger.
 	LedgerEntrySet&			lesActive,				// <-> --> = Fee already applied to src balance.

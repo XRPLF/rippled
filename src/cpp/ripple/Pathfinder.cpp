@@ -75,6 +75,7 @@ PathOption::PathOption(PathOption::pointer other)
 }
 #endif
 
+// Lower numbers have better quality. Sort higher quality first.
 static bool bQualityCmp(std::pair<uint32, unsigned int> a, std::pair<uint32, unsigned int> b)
 {
 	return a.first < b.first;
@@ -163,6 +164,11 @@ Pathfinder::Pathfinder(const RippleAddress& uSrcAccountID, const RippleAddress& 
 // When generating a path set blindly, don't allow the empty path, it is implied by default.
 // When generating a path set for estimates, allow an empty path instead of no paths to indicate a path exists. The caller will
 // need to strip the empty path when submitting the transaction.
+//
+// Assumes rippling (not XRP to XRP)
+//
+// Leaves to the caller figuring out overall liquidity.
+// Optimization opportunity: For some simple cases, this routine has figured out the overall liquidity.
 bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMaxPaths, STPathSet& spsDst)
 {
 	bool	bFound		= false;	// True, iff found a path.
@@ -177,6 +183,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 	if (mLedger)
 	{
+		LedgerEntrySet		lesActive(mLedger);
 		std::vector<STPath>	vspResults;
 		std::queue<STPath>	qspExplore;
 
@@ -192,24 +199,23 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 		while (qspExplore.size()) {
 			STPath spPath = qspExplore.front();
 
-			qspExplore.pop();						// Pop the first path from the queue.
+			qspExplore.pop();											// Pop the first path from the queue.
 
-			speEnd = spPath.mPath.back();		// Get the last node from the path.
+			speEnd = spPath.mPath.back();								// Get the last node from the path.
 
 			// Done, if dest wants XRP and last element produces XRP.
-			if (!speEnd.mCurrencyID									// Tail output is XRP.
-				&& !mDstAmount.getCurrency()) {						// Which is dst currency.
-
+			if (!speEnd.mCurrencyID										// Tail output is XRP.
+				&& !mDstAmount.getCurrency())							// Which is dst currency.
+			{
 				// Remove implied first.
 				spPath.mPath.erase(spPath.mPath.begin());
 
 				if (spPath.size())
 				{
 					// There is an actual path element.
+					cLog(lsDEBUG) << "findPaths: adding: " << spPath.getJson(0);
 
 					vspResults.push_back(spPath);						// Potential result.
-
-					cLog(lsDEBUG) << "findPaths: adding: " << spPath.getJson(0);
 				}
 				else
 				{
@@ -222,7 +228,8 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			// Done, if dest wants non-XRP and last element is dest.
 			// YYY Allows going through self.  Is this wanted?
 			if (speEnd.mAccountID == mDstAccountID						// Tail is destination account.
-				&& speEnd.mCurrencyID == mDstAmount.getCurrency()) {	// With correct output currency.
+				&& speEnd.mCurrencyID == mDstAmount.getCurrency())		// With correct output currency.
+			{
 				// Found a path to the destination.
 
 				if (bDefaultPath(spPath)) {
@@ -237,7 +244,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					spPath.mPath.erase(spPath.mPath.begin());
 					spPath.mPath.erase(spPath.mPath.begin() + spPath.mPath.size()-1);
 
-					vspResults.push_back(spPath);							// Potential result.
+					vspResults.push_back(spPath);						// Potential result.
 
 					cLog(lsDEBUG) << "findPaths: adding: " << spPath.getJson(0);
 				}
@@ -358,35 +365,82 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 		unsigned int iLimit  = std::min(iMaxPaths, (unsigned int) vspResults.size());
 
+		// Only filter, sort, and limit if have non-default paths.
 		if (iLimit)
 		{
-			std::vector< std::pair<uint32, unsigned int> > vMap;
+			std::vector< std::pair<uint64, unsigned int> > vMap;
 
 			// Build map of quality to entry.
 			for (int i = vspResults.size(); i--;)
 			{
-				uint32	uQuality	= 1;
+				STAmount	saMaxAmountAct;
+				STAmount	saDstAmountAct;
+				std::vector<PathState::pointer>	vpsExpanded;
+				STPathSet	spsPaths;
+				STPath&		spCurrent	= vspResults[i];
 
-				if (uQuality)
+				spsPaths.addPath(spCurrent);				// Just checking the current path.
+
+				TER			terResult	= RippleCalc::rippleCalc(
+					lesActive,
+					saMaxAmountAct,
+					saDstAmountAct,
+					vpsExpanded,
+					mSrcAmount,			// --> amount to send max.
+					mDstAmount,			// --> amount to deliver.
+					mDstAccountID,
+					mSrcAccountID,
+					spsPaths,
+					true,				// --> bPartialPayment: Allow, it might contribute.
+					false,				// --> bLimitQuality: Assume normal transaction.
+					true,				// --> bNoRippleDirect: Providing the only path.
+					true);				// --> bStandAlone: Don't need to delete unfundeds.
+
+				if (tesSUCCESS == terResult)
+				{
+					uint64	uQuality	= STAmount::getRate(saDstAmountAct, saMaxAmountAct);
+
+					cLog(lsDEBUG)
+						<< boost::str(boost::format("findPaths: quality: %d: %s")
+							% uQuality
+							% spCurrent.getJson(0));
+
 					vMap.push_back(std::make_pair(uQuality, i));
+				}
+				else
+				{
+					cLog(lsDEBUG)
+						<< boost::str(boost::format("findPaths: dropping: %s: %s")
+							% transToken(terResult)
+							% spCurrent.getJson(0));
+				}
 			}
 
-			std::sort(vMap.begin(), vMap.end(), bQualityCmp);
-
-			// Output best quality entries.
-			for (int i = 0; i != iLimit; ++i)
+			if (vMap.size())
 			{
-				spsDst.addPath(vspResults[vMap[i].second]);
+				iLimit	= std::min(iMaxPaths, (unsigned int) vMap.size());
+
+				bFound	= true;
+
+				std::sort(vMap.begin(), vMap.end(), bQualityCmp);	// Lower is better and should be first.
+
+				// Output best quality entries.
+				for (int i = 0; i != vMap.size(); ++i)
+				{
+					spsDst.addPath(vspResults[vMap[i].second]);
+				}
+
+				cLog(lsDEBUG) << boost::str(boost::format("findPaths: RESULTS: %s") % spsDst.getJson(0));
 			}
-
-			bFound	= true;
-
-			cLog(lsWARNING) << boost::str(boost::format("findPaths: RESULTS: %s") % spsDst.getJson(0));
+			else
+			{
+				cLog(lsDEBUG) << boost::str(boost::format("findPaths: RESULTS: non-defaults filtered away"));
+			}
 		}
 	}
 	else
 	{
-		cLog(lsWARNING) << boost::str(boost::format("findPaths: no ledger"));
+		cLog(lsDEBUG) << boost::str(boost::format("findPaths: no ledger"));
 	}
 
 	return bFound;
