@@ -225,7 +225,7 @@ buster.testCase("Basic Path finding", {
 buster.testCase("Extended Path finding", {
   // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
   // 'setUp' : testutils.build_setup({ verbose: true }),
-  // 'setUp' : testutils.build_setup(),
+  'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
   "alternative paths - consume both" :
