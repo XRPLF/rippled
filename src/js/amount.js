@@ -834,28 +834,30 @@ Amount.prototype.multiply = function (v) {
     var v2 = v._value;
     var o2 = v._offset;
 
-    while (o1._value.compareTo(consts.bi_man_min_value) < 0 ) {
+    while (v1.compareTo(consts.bi_man_min_value) < 0 ) {
       v1 = v1.multiply(consts.bi_10);
       o1 -= 1;
     }
 
-    while (o2._value.compareTo(consts.bi_man_min_value) < 0 ) {
+    while (v2.compareTo(consts.bi_man_min_value) < 0 ) {
       v2 = v2.multiply(consts.bi_10);
       o2 -= 1;
     }
 
-    v1 = v1.multiply(consts.bi_10).add(5);
+    // XXX Causes errors
+    v1 = v1.multiply(consts.bi_10).add(new BigInteger("5"));
     o1 -= 1;
-    v2 = v2.multiply(consts.bi_10).add(5);
+    v2 = v2.multiply(consts.bi_10).add(new BigInteger("5"));
     o2 -= 1;
 
     result              = new Amount();
     result._offset      = o1 + o2 + 2;
     result._value       = v1.multiply(v2);
+    result._is_native   = this._is_native;
     result._is_negative = this._is_negative !== v._is_negative;
     result._currency    = this._currency.clone();
     result._issuer      = this._issuer.clone();
-    
+
     // XXX Check value is in legal range here or have canonicalize do it?
 
     result.canonicalize();
