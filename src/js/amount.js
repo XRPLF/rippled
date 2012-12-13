@@ -1127,7 +1127,7 @@ Amount.prototype.to_text = function (allow_nan) {
   {
     return "0";
   }
-  else if (this._offset < -25 || this._offset > -5)
+  else if (this._offset < -25 || this._offset > -4)
   {
     // Use e notation.
     // XXX Clamp output.
