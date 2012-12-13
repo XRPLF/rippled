@@ -1439,11 +1439,21 @@ static void mulTest(int a, int b)
 		BOOST_FAIL("product is native");
 
 	STAmount prod2(CURRENCY_ONE, ACCOUNT_ONE, a * b);
-	if (prod1 == prod2)
-		return;
-	Log(lsWARNING) << "(" << aa.getFullText() << " * " << bb.getFullText() << ") = " << prod1.getFullText()
-		<< " not " << prod2.getFullText();
-	BOOST_FAIL("Multiplication result is not exact");
+	if (prod1 != prod2)
+	{
+		Log(lsWARNING) << "nn(" << aa.getFullText() << " * " << bb.getFullText() << ") = " << prod1.getFullText()
+			<< " not " << prod2.getFullText();
+		BOOST_FAIL("Multiplication result is not exact");
+	}
+	aa = a;
+	prod1 = STAmount::multiply(aa, bb, CURRENCY_ONE, ACCOUNT_ONE);
+	if (prod1 != prod2)
+	{
+		Log(lsWARNING) << "n(" << aa.getFullText() << " * " << bb.getFullText() << ") = " << prod1.getFullText()
+			<< " not " << prod2.getFullText();
+		BOOST_FAIL("Multiplication result is not exact");
+	}
+	
 }
 
 BOOST_AUTO_TEST_CASE( CurrencyMulDivTests )
