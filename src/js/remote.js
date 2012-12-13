@@ -376,7 +376,13 @@ Remote.prototype._connect_retry = function () {
         else {
           self._connect_retry();
         }
-      }, this.retry < 40 ? 1000/20 : 1000); // 20 times per second for 2 seconds then once per second.
+      }, this.retry < 40
+          ? 1000/20           // First, for 2 seconds: 20 times per second
+          : this.retry < 40+60
+            ? 1000            // Then, for 1 minute: once per second
+            : this.retry < 40+60+60
+              ? 10*1000       // Then, for 10 minutes: once every 10 seconds
+              : 30*1000);     // Then: once every 30 seconds
   }
 };
 
