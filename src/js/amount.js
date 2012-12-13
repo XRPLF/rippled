@@ -728,24 +728,60 @@ Amount.prototype.divide = function (d) {
  * @return {Amount} The resulting ratio. Unit will be the same as numerator.
  */
 Amount.prototype.ratio_human = function (denominator) {
+  var numerator = this;
   denominator = Amount.from_json(denominator);
 
-  var ratio = this.divide(denominator);
-
-  // Special case: The denominator is a native (XRP) amount expressed as base
-  // units (1 XRP = 10^xns_precision base units).
+  // Special case: The denominator is a native (XRP) amount.
   //
-  // However, the information that we divided by an XRP amount is lost in the
-  // result, because we simply call it USD instead of the more correct unit
-  // USD/XRP.
+  // In that case, it's going to be expressed as base units (1 XRP =
+  // 10^xns_precision base units).
   //
-  // To compensate, we multiply the result by the XRP factor.
-  if (!this._is_native && denominator._is_native) {
-    ratio._value = ratio._value.multiply(consts.bi_xns_unit);
+  // However, the unit of the denominator is lost, so when the resulting ratio
+  // is printed, the ratio is going to be too small by a factor of
+  // 10^xns_precision.
+  //
+  // To compensate, we multiply the numerator by 10^xns_precision.
+  if (denominator._is_native) {
+    numerator = numerator.clone();
+    numerator._value = numerator._value.multiply(consts.bi_xns_unit);
   }
 
-  return ratio;
+  return numerator.divide(denominator);
 };
+
+/**
+ * Calculate a product of two amounts.
+ *
+ * This function allows you to calculate a product between two amounts which
+ * retains XRPs human/external interpretation (i.e. 1 XRP = 1,000,000 base
+ * units).
+ *
+ * Intended use is to calculate something like: 10 USD * 10 XRP/USD = 100 XRP
+ *
+ * @example
+ *   var sell_amount = buy_amount.product_human(price);
+ *
+ * @see Amount#ratio_human
+ *
+ * @this {Amount} The first factor of the product.
+ * @param {Amount} factor The second factor of the product.
+ * @return {Amount} The product. Unit will be the same as the first factor.
+ */
+Amount.prototype.product_human = function (factor) {
+  factor = Amount.from_json(factor);
+
+  var product = this.multiply(factor);
+
+  // Special case: The second factor is a native (XRP) amount expressed as base
+  // units (1 XRP = 10^xns_precision base units).
+  //
+  // See also Amount#ratio_human.
+  if (factor._is_native) {
+    product._value = product._value.divide(consts.bi_xns_unit);
+  }
+
+  return product;
+}
 
 // True if Amounts are valid and both native or non-native.
 Amount.prototype.is_comparable = function (v) {
@@ -1131,6 +1167,8 @@ Amount.prototype.to_text = function (allow_nan) {
 Amount.prototype.to_human = function (opts)
 {
   opts = opts || {};
+
+  if (!this.is_valid()) return "";
 
   // Default options
   if ("undefined" === typeof opts.signed) opts.signed = true;
