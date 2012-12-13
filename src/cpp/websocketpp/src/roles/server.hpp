@@ -301,7 +301,14 @@ void server<endpoint>::start_listen(const boost::asio::ip::tcp::endpoint& e,size
 
     if(num_threads == 0)
     {
-        m_endpoint.run_internal();
+        for (;;) {
+          try {
+		        m_endpoint.run_internal();
+		        break;
+			} catch (const std::exception & e) { // Don't let an exception trash the endpoint DJS
+				m_endpoint.elog().at(log::elevel::RERROR) << "run_internal exception: " << e.what() << log::endl;
+			}
+		}
         m_state = IDLE;
     }
 }
@@ -382,35 +389,43 @@ void server<endpoint>::handle_accept(connection_ptr con,
                                      const boost::system::error_code& error)
 {
     boost::lock_guard<boost::recursive_mutex> lock(m_endpoint.m_lock);
-    
-    if (error) {
-        con->m_fail_code = fail::status::SYSTEM;
-        con->m_fail_system = error;
-        
-        if (error == boost::system::errc::too_many_files_open) {
-            con->m_fail_reason = "too many files open";
-            
-            // TODO: make this configurable
-            //m_timer.expires_from_now(boost::posix_time::milliseconds(1000));
-            //m_timer.async_wait(boost::bind(&type::start_accept,this));
-        } else if (error == boost::asio::error::operation_aborted) {
-            con->m_fail_reason = "io_service operation canceled";
-            
-            // the operation was canceled. This was probably due to the 
-            // io_service being stopped.
-        } else {
-            con->m_fail_reason = "unknown";
-        }
-        
-        m_endpoint.m_elog->at(log::elevel::RERROR) 
-                << "async_accept returned error: " << error 
-                << " (" << con->m_fail_reason << ")" << log::endl;
-        
-        con->terminate(false);
-    } else {
-        con->start();
-    }
-    
+
+    try
+    {
+	    if (error) {
+	        con->m_fail_code = fail::status::SYSTEM;
+	        con->m_fail_system = error;
+
+	        if (error == boost::system::errc::too_many_files_open) {
+	            con->m_fail_reason = "too many files open";
+
+	            // TODO: make this configurable
+	            //m_timer.expires_from_now(boost::posix_time::milliseconds(1000));
+	            //m_timer.async_wait(boost::bind(&type::start_accept,this));
+	        } else if (error == boost::asio::error::operation_aborted) {
+	            con->m_fail_reason = "io_service operation canceled";
+
+	            // the operation was canceled. This was probably due to the
+	            // io_service being stopped.
+	        } else {
+	            con->m_fail_reason = "unknown";
+	        }
+
+	        m_endpoint.m_elog->at(log::elevel::RERROR)
+	                << "async_accept returned error: " << error
+	                << " (" << con->m_fail_reason << ")" << log::endl;
+
+	        con->terminate(false);
+	    } else {
+	        con->start();
+	    }
+	}
+	catch (const std::exception & e)
+	{ // We must call start_accept, even if we throw DJS
+		m_endpoint.m_elog->at(log::elevel::RERROR)
+			<< "handle_accept caught exception: " << e.what() << log::endl;
+	}
+
     this->start_accept();
 }
     
