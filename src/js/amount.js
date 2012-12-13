@@ -845,13 +845,15 @@ Amount.prototype.multiply = function (v) {
     }
 
     // XXX Causes errors
+    /*
     v1 = v1.multiply(consts.bi_10).add(new BigInteger("5"));
     o1 -= 1;
     v2 = v2.multiply(consts.bi_10).add(new BigInteger("5"));
     o2 -= 1;
+    */
 
     result              = new Amount();
-    result._offset      = o1 + o2 + 2;
+    result._offset      = o1 + o2;
     result._value       = v1.multiply(v2);
     result._is_native   = this._is_native;
     result._is_negative = this._is_negative !== v._is_negative;
