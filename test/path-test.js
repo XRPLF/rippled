@@ -27,7 +27,7 @@ buster.testCase("Basic Path finding", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob"], callback);
           },
           function (callback) {
             self.what = "Find path from alice to bob";
@@ -55,7 +55,7 @@ buster.testCase("Basic Path finding", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob"], callback);
           },
           function (callback) {
             self.what = "Set credit limits.";
@@ -119,7 +119,7 @@ buster.testCase("Basic Path finding", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox"], callback);
           },
           function (callback) {
             self.what = "Set credit limits.";
@@ -177,7 +177,7 @@ buster.testCase("Basic Path finding", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox"], callback);
           },
           function (callback) {
             self.what = "Set credit limits.";
@@ -236,7 +236,7 @@ buster.testCase("Extended Path finding", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox", "bitstamp"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox", "bitstamp"], callback);
           },
           function (callback) {
             self.what = "Set credit limits.";
@@ -296,7 +296,7 @@ buster.testCase("Extended Path finding", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox", "bitstamp"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox", "bitstamp"], callback);
           },
           function (callback) {
             self.what = "Set transfer rate.";
@@ -368,7 +368,7 @@ buster.testCase("Extended Path finding", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox", "bitstamp"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox", "bitstamp"], callback);
           },
           function (callback) {
             self.what = "Set transfer rate.";

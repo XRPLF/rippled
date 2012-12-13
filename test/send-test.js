@@ -40,17 +40,17 @@ buster.testCase("Fee Changes", {
   */
 
 buster.testCase("Sending", {
-  'setUp' : testutils.build_setup(),
-  'tearDown' : testutils.build_teardown(),
+  'setUp'     : testutils.build_setup(),
+  'tearDown'  : testutils.build_teardown(),
 
-  "send XRP to non-existent account without create." :
+  "send XRP to non-existent account with insufficent fee" :
     function (done) {
       var self    = this;
       var ledgers = 20;
       var got_proposed;
 
       this.remote.transaction()
-        .payment('root', 'alice', "10000")
+        .payment('root', 'alice', "1")
         .on('success', function (r) {
             // Transaction sent.
 
@@ -123,7 +123,7 @@ buster.testCase("Sending", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox"], callback);
           },
           function (callback) {
             self.what = "Check a non-existent credit limit.";
@@ -275,7 +275,7 @@ buster.testCase("Sending future", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob"], callback);
           },
           function (callback) {
             self.what = "Set alice's limit.";
@@ -475,8 +475,9 @@ buster.testCase("Sending future", {
 });
 
 buster.testCase("Indirect ripple", {
-  'setUp' : testutils.build_setup(),
-  'tearDown' : testutils.build_teardown(),
+  // 'setUp'     : testutils.build_setup({ verbose: true }),
+  'setUp'     : testutils.build_setup(),
+  'tearDown'  : testutils.build_teardown(),
 
   "indirect ripple" :
     function (done) {
@@ -488,7 +489,7 @@ buster.testCase("Indirect ripple", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox"], callback);
           },
           function (callback) {
             self.what = "Set credit limits.";
@@ -557,7 +558,7 @@ buster.testCase("Indirect ripple", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox"], callback);
           },
           function (callback) {
             self.what = "Set credit limits.";
@@ -615,7 +616,7 @@ buster.testCase("Indirect ripple", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "carol", "amazon", "mtgox"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "carol", "amazon", "mtgox"], callback);
           },
           function (callback) {
             self.what = "Set credit limits.";
@@ -677,7 +678,7 @@ buster.testCase("Indirect ripple", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "carol", "amazon", "mtgox"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "carol", "amazon", "mtgox"], callback);
           },
           function (callback) {
             self.what = "Set mtgox transfer rate.";
