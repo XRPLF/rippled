@@ -100,7 +100,7 @@ public:
 			if (it == mMap.end())
 				return;
 			ptr = it->second;		// prevent the WSConnection from being destroyed until we release the lock
-			mMap.erase(cpClient);
+			mMap.erase(it);
 		}
 	}
 
