@@ -157,7 +157,7 @@ buster.testCase("Offer tests", {
     },
 
 
-  "new user offer_create then ledger_accept then offer_cancel then ledger_accept." :
+  "//new user offer_create then ledger_accept then offer_cancel then ledger_accept." :
     function (done) {
       var self = this;
       var final_create;
@@ -167,7 +167,6 @@ buster.testCase("Offer tests", {
           function (callback) {
             self.remote.transaction()
               .payment('root', 'alice', "1000")
-              .set_flags('CreateAccount')
               .on('proposed', function (m) {
                 // console.log("proposed: %s", JSON.stringify(m));
                 buster.assert.equals(m.result, 'tesSUCCESS');
@@ -260,8 +259,7 @@ buster.testCase("Offer tests", {
       async.waterfall([
           function (callback) {
             self.remote.transaction()
-              .payment('root', 'alice', Amount.from_json("10000"))
-              .set_flags('CreateAccount')
+              .payment('root', 'alice', Amount.from_json("10000.0"))
               .on('proposed', function (m) {
                   // console.log("PROPOSED: CreateAccount: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS', m);
@@ -345,7 +343,7 @@ buster.testCase("Offer tests", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox"], callback);
           },
           function (callback) {
             self.what = "Set limits.";
@@ -402,7 +400,7 @@ buster.testCase("Offer tests", {
 
             testutils.verify_balances(self.remote,
               {
-                "alice"   : [ "0/USD/mtgox", String(10000+500-2*(Remote.fees['default'].to_number())) ],
+                "alice"   : [ "0/USD/mtgox", String(10000000000+500-2*(Remote.fees['default'].to_number())) ],
                 "bob"     : "100/USD/mtgox",
               },
               callback);
@@ -427,7 +425,7 @@ buster.testCase("Offer tests", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox"], callback);
           },
           function (callback) {
             self.what = "Set limits.";
@@ -484,7 +482,7 @@ buster.testCase("Offer tests", {
 
             testutils.verify_balances(self.remote,
               {
-                "alice"   : [ "160/USD/mtgox", String(10000+200-2*(Remote.fees['default'].to_number())) ],
+                "alice"   : [ "160/USD/mtgox", String(10000000000+200-2*(Remote.fees['default'].to_number())) ],
                 "bob"     : "40/USD/mtgox",
               },
               callback);
@@ -526,7 +524,7 @@ buster.testCase("Offer tests", {
 
             testutils.verify_balances(self.remote,
               {
-                "alice"   : [ "100/USD/mtgox", String(10000+200+300-4*(Remote.fees['default'].to_number())) ],
+                "alice"   : [ "100/USD/mtgox", String(10000000000+200+300-4*(Remote.fees['default'].to_number())) ],
                 "bob"     : "100/USD/mtgox",
               },
               callback);
@@ -555,7 +553,7 @@ buster.testCase("Offer cross currency", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "carol", "mtgox"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "carol", "mtgox"], callback);
           },
           function (callback) {
             self.what = "Set limits.";
@@ -637,7 +635,7 @@ buster.testCase("Offer cross currency", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "carol", "mtgox"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "carol", "mtgox"], callback);
           },
           function (callback) {
             self.what = "Set limits.";
@@ -690,7 +688,7 @@ buster.testCase("Offer cross currency", {
             testutils.verify_balances(self.remote,
               {
                 "alice"   : "475/USD/mtgox",
-                "bob"     : "10250",
+                "bob"     : "10000000250",
                 "carol"   : "25/USD/mtgox",
               },
               callback);
@@ -720,7 +718,7 @@ buster.testCase("Offer cross currency", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "carol", "dan", "bitstamp", "mtgox"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "carol", "dan", "bitstamp", "mtgox"], callback);
           },
           function (callback) {
             self.what = "Set limits.";

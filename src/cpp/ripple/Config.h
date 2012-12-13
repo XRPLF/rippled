@@ -106,9 +106,9 @@ public:
 	// Validation
 	RippleAddress				VALIDATION_SEED, VALIDATION_PUB, VALIDATION_PRIV;
 
-	// Fees
+	// Fee schedule
 	uint64						FEE_DEFAULT;			// Default fee.
-	uint64						FEE_ACCOUNT_CREATE;		// Fee to create an account.
+	uint64						FEE_RESERVE;			// Amount of XRP not allowed to send.
 	uint64						FEE_NICKNAME_CREATE;	// Fee to create a nickname.
 	uint64						FEE_OFFER;				// Rate per day.
 	int							FEE_CONTRACT_OPERATION; // fee for each contract operation

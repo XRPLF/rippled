@@ -141,7 +141,6 @@ var create_accounts = function (remote, src, amount, accounts, callback) {
   async.forEachSeries(accounts, function (account, callback) {
     remote.transaction()
       .payment(src, account, amount)
-      .set_flags('CreateAccount')
       .on('proposed', function (m) {
           // console.log("proposed: %s", JSON.stringify(m));
 

@@ -185,8 +185,7 @@ buster.testCase("Remote functions", {
   "create account" :
     function (done) {
       this.remote.transaction()
-        .payment('root', 'alice', Amount.from_json("10000"))
-        .set_flags('CreateAccount')
+        .payment('root', 'alice', "10000.0")
         .on('success', function (r) {
             // console.log("account_root: %s", JSON.stringify(r));
 
@@ -210,8 +209,7 @@ buster.testCase("Remote functions", {
       var   got_success;
 
       this.remote.transaction()
-        .payment('root', 'alice', Amount.from_json("10000"))
-        .set_flags('CreateAccount')
+        .payment('root', 'alice', "10000.0")
         .on('success', function (r) {
             // console.log("create_account: %s", JSON.stringify(r));
 

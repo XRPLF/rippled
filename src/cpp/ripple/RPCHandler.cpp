@@ -912,10 +912,7 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 
 		if (!txJSON.isMember("Fee"))
 		{
-			if (mNetOps->getAccountState(mNetOps->getCurrentLedger(), dstAccountID))
-				txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
-			else
-				txJSON["Fee"] = (int) theConfig.FEE_ACCOUNT_CREATE;
+			txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
 		}
 
 		if (txJSON.isMember("Paths") && jvRequest.isMember("build_path"))
