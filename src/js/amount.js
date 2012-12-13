@@ -710,6 +710,43 @@ Amount.prototype.divide = function (d) {
   return result;
 };
 
+/**
+ * Calculate a ratio between two amounts.
+ *
+ * This function calculates a ratio - such as a price - between two Amount
+ * objects.
+ *
+ * The return value will have the same type (currency) as the numerator. This is
+ * a simplification, which should be sane in most cases. For example, a USD/XRP
+ * price would be rendered as USD.
+ *
+ * @example
+ *   var price = buy_amount.ratio_human(sell_amount);
+ *
+ * @this {Amount} The numerator (top half) of the fraction.
+ * @param {Amount} denominator The denominator (bottom half) of the fraction.
+ * @return {Amount} The resulting ratio. Unit will be the same as numerator.
+ */
+Amount.prototype.ratio_human = function (denominator) {
+  denominator = Amount.from_json(denominator);
+
+  var ratio = this.divide(denominator);
+
+  // Special case: The denominator is a native (XRP) amount expressed as base
+  // units (1 XRP = 10^xns_precision base units).
+  //
+  // However, the information that we divided by an XRP amount is lost in the
+  // result, because we simply call it USD instead of the more correct unit
+  // USD/XRP.
+  //
+  // To compensate, we multiply the result by the XRP factor.
+  if (!this._is_native && denominator._is_native) {
+    ratio._value = ratio._value.multiply(consts.bi_xns_unit);
+  }
+
+  return ratio;
+};
+
 // True if Amounts are valid and both native or non-native.
 Amount.prototype.is_comparable = function (v) {
   return this._value instanceof BigInteger
