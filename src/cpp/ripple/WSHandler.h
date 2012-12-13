@@ -91,10 +91,17 @@ public:
 	}
 
 	void on_close(connection_ptr cpClient)
-	{
-		boost::mutex::scoped_lock	sl(mMapLock);
-
-		mMap.erase(cpClient);
+	{ // we cannot destroy the connection while holding the map lock or we deadlock with pubLedger
+		typedef boost::shared_ptr< WSConnection<endpoint_type> > wsc_ptr;
+		wsc_ptr ptr;
+		{
+			boost::mutex::scoped_lock	sl(mMapLock);
+			typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find(cpClient);
+			if (it == mMap.end())
+				return;
+			ptr = it->second;		// prevent the WSConnection from being destroyed until we release the lock
+			mMap.erase(cpClient);
+		}
 	}
 
 	void on_message(connection_ptr cpClient, message_ptr mpMessage)
