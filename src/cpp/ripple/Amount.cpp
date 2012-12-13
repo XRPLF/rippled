@@ -920,7 +920,7 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 	if (v1.isZero() || v2.isZero())
 		return STAmount(uCurrencyID, uIssuerID);
 
-	if (v1.mIsNative && v2.mIsNative)
+	if (v1.mIsNative && v2.mIsNative && uCurrencyID.isZero())
 	{
 		uint64 minV = (v1.getSNValue() < v2.getSNValue()) ? v1.getSNValue() : v2.getSNValue();
 		uint64 maxV = (v1.getSNValue() < v2.getSNValue()) ? v2.getSNValue() : v1.getSNValue();
@@ -1430,6 +1430,22 @@ static void roundTest(int n, int d, int m)
 	BOOST_FAIL("STAmount rounding failure");
 }
 
+static void mulTest(int a, int b)
+{
+	STAmount aa(CURRENCY_ONE, ACCOUNT_ONE, a);
+	STAmount bb(CURRENCY_ONE, ACCOUNT_ONE, b);
+	STAmount prod1(STAmount::multiply(aa, bb, CURRENCY_ONE, ACCOUNT_ONE));
+	if (prod1.isNative())
+		BOOST_FAIL("product is native");
+
+	STAmount prod2(CURRENCY_ONE, ACCOUNT_ONE, a * b);
+	if (prod1 == prod2)
+		return;
+	Log(lsWARNING) << "(" << aa.getFullText() << " * " << bb.getFullText() << ") = " << prod1.getFullText()
+		<< " not " << prod2.getFullText();
+	BOOST_FAIL("Multiplication result is not exact");
+}
+
 BOOST_AUTO_TEST_CASE( CurrencyMulDivTests )
 {
 	// Test currency multiplication and division operations such as
@@ -1452,12 +1468,10 @@ BOOST_AUTO_TEST_CASE( CurrencyMulDivTests )
 	if (STAmount::getRate(STAmount(10), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
 		BOOST_FAIL("STAmount getRate fail");
 
-	roundTest(1, 3, 3);
-	roundTest(2, 3, 9);
-	roundTest(1, 7, 21);
-	roundTest(1, 2, 4);
-	roundTest(3, 9, 18);
-	roundTest(7, 11, 44);
+	roundTest(1, 3, 3); roundTest(2, 3, 9); roundTest(1, 7, 21); roundTest(1, 2, 4);
+	roundTest(3, 9, 18); roundTest(7, 11, 44);
+
+	mulTest(100, 1000); mulTest(1, 2); mulTest(32, 15); mulTest(981, 4012);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
