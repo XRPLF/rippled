@@ -324,8 +324,12 @@ BOOST_AUTO_TEST_CASE( ProofOfWork_test )
 		BOOST_FAIL("Solution did not check");
 
 	cLog(lsDEBUG) << "A bad nonce error is expected";
-	if (gen.checkProof(pow.getToken(), uint256()) != powBADNONCE)
+	POWResult r = gen.checkProof(pow.getToken(), uint256());
+	if (r != powBADNONCE)
+	{
+		Log(lsFATAL) << "POWResult = " << static_cast<int>(r);
 		BOOST_FAIL("Empty solution didn't show bad nonce");
+	}
 	if (gen.checkProof(pow.getToken(), solution) != powOK)
 		BOOST_FAIL("Solution did not check with issuer");
 	cLog(lsDEBUG) << "A reused nonce error is expected";
