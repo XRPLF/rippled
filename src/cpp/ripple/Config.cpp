@@ -13,11 +13,11 @@
 
 #define SECTION_ACCOUNT_PROBE_MAX		"account_probe_max"
 #define SECTION_DEBUG_LOGFILE			"debug_logfile"
-#define SECTION_FEE_ACCOUNT_CREATE		"fee_account_create"
 #define SECTION_FEE_DEFAULT				"fee_default"
 #define SECTION_FEE_NICKNAME_CREATE		"fee_nickname_create"
 #define SECTION_FEE_OFFER				"fee_offer"
 #define SECTION_FEE_OPERATION			"fee_operation"
+#define SECTION_FEE_RESERVE				"fee_reserve"
 #define SECTION_LEDGER_HISTORY			"ledger_history"
 #define SECTION_IPS						"ips"
 #define SECTION_NETWORK_QUORUM			"network_quorum"
@@ -48,7 +48,7 @@
 
 // Fees are in XRP.
 #define DEFAULT_FEE_DEFAULT				10
-#define DEFAULT_FEE_ACCOUNT_CREATE		200*SYSTEM_CURRENCY_PARTS
+#define DEFAULT_FEE_RESERVE				200*SYSTEM_CURRENCY_PARTS
 #define DEFAULT_FEE_NICKNAME_CREATE		1000
 #define DEFAULT_FEE_OFFER				DEFAULT_FEE_DEFAULT
 #define DEFAULT_FEE_OPERATION			1
@@ -162,7 +162,7 @@ void Config::setup(const std::string& strConf, bool bQuiet)
 	NETWORK_QUORUM			= 0;	// Don't need to see other nodes
 	VALIDATION_QUORUM		= 1;	// Only need one node to vouch
 
-	FEE_ACCOUNT_CREATE		= DEFAULT_FEE_ACCOUNT_CREATE;
+	FEE_RESERVE				= DEFAULT_FEE_RESERVE;
 	FEE_NICKNAME_CREATE		= DEFAULT_FEE_NICKNAME_CREATE;
 	FEE_OFFER				= DEFAULT_FEE_OFFER;
 	FEE_DEFAULT				= DEFAULT_FEE_DEFAULT;
@@ -297,8 +297,8 @@ void Config::load()
 			if (sectionSingleB(secConfig, SECTION_VALIDATION_QUORUM, strTemp))
 				VALIDATION_QUORUM	= std::max(0, boost::lexical_cast<int>(strTemp));
 
-			if (sectionSingleB(secConfig, SECTION_FEE_ACCOUNT_CREATE, strTemp))
-				FEE_ACCOUNT_CREATE	= boost::lexical_cast<int>(strTemp);
+			if (sectionSingleB(secConfig, SECTION_FEE_RESERVE, strTemp))
+				FEE_RESERVE			= boost::lexical_cast<uint64>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_FEE_NICKNAME_CREATE, strTemp))
 				FEE_NICKNAME_CREATE	= boost::lexical_cast<int>(strTemp);

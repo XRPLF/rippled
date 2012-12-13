@@ -267,7 +267,7 @@ Remote.flags = {
   },
 
   'Payment' : {
-    'CreateAccount'           : 0x00010000,
+    'PaymentLegacy'           : 0x00010000,
     'PartialPayment'          : 0x00020000,
     'LimitQuality'            : 0x00040000,
     'NoRippleDirect'          : 0x00080000,
@@ -277,7 +277,6 @@ Remote.flags = {
 // XXX This needs to be determined from the network.
 Remote.fees = {
   'default'         : Amount.from_json("10"),
-  'account_create'  : Amount.from_json("1000000000"),
   'nickname_create' : Amount.from_json("1000"),
   'offer'           : Amount.from_json("10"),
 };
@@ -1260,14 +1259,7 @@ Transaction.prototype.submit = function (callback) {
   // YYY Might check paths for invalid accounts.
 
   if (this.remote.local_fee && undefined === tx_json.Fee) {
-    if ('Payment' === tx_json.TransactionType
-      && tx_json.Flags & Remote.flags.Payment.CreateAccount) {
-
-      tx_json.Fee    = Remote.fees.account_create.to_json();
-    }
-    else {
-      tx_json.Fee    = Remote.fees['default'].to_json();
-    }
+    tx_json.Fee    = Remote.fees['default'].to_json();
   }
 
   if (this.callback || this.listeners('final').length || this.listeners('lost').length || this.listeners('pending').length) {
@@ -1435,9 +1427,6 @@ Transaction.prototype.set_flags = function (flags) {
           // XXX Immediately report an error or mark it.
         }
       }
-
-      if (this.remote.local_fee && (this.tx_json.Flags & Remote.flags.Payment.CreateAccount))
-        this.tx_json.Fee        = Remote.fees.account_create.to_json();
   }
 
   return this;

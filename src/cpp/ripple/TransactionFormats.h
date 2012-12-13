@@ -61,12 +61,12 @@ const uint32 tfPassive				= 0x00010000;
 const uint32 tfOfferCreateMask		= ~(tfPassive);
 
 // Payment flags:
-const uint32 tfCreateAccount		= 0x00010000;
+const uint32 tfPaymentLegacy		= 0x00010000;	// Left here to avoid ledger change.
 const uint32 tfPartialPayment		= 0x00020000;
 const uint32 tfLimitQuality			= 0x00040000;
 const uint32 tfNoRippleDirect		= 0x00080000;
 
-const uint32 tfPaymentMask			= ~(tfCreateAccount|tfPartialPayment|tfLimitQuality|tfNoRippleDirect);
+const uint32 tfPaymentMask			= ~(tfPartialPayment|tfLimitQuality|tfNoRippleDirect);
 
 #endif
 // vim:ts=4

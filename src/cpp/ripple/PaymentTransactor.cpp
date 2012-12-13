@@ -4,23 +4,10 @@
 
 #define RIPPLE_PATHS_MAX	3
 
-// only have the higher fee if the account doesn't in fact exist
-void PaymentTransactor::calculateFee()
-{
-	if (mTxn.getFlags() & tfCreateAccount)
-	{
-		const uint160	uDstAccountID	= mTxn.getFieldAccount160(sfDestination);
-		SLE::pointer	sleDst	= mEngine->entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
-		if(!sleDst) mFeeDue	= theConfig.FEE_ACCOUNT_CREATE;
-		else Transactor::calculateFee();
-	}else Transactor::calculateFee();
-}
-
 TER PaymentTransactor::doApply()
 {
 	// Ripple if source or destination is non-native or if there are paths.
 	const uint32	uTxFlags		= mTxn.getFlags();
-	const bool		bCreate			= isSetBit(uTxFlags, tfCreateAccount);
 	const bool		bPartialPayment	= isSetBit(uTxFlags, tfPartialPayment);
 	const bool		bLimitQuality	= isSetBit(uTxFlags, tfLimitQuality);
 	const bool		bNoRippleDirect	= isSetBit(uTxFlags, tfNoRippleDirect);
@@ -87,17 +74,20 @@ TER PaymentTransactor::doApply()
 	if (!sleDst)
 	{
 		// Destination account does not exist.
-		if (bCreate && !saDstAmount.isNative())
+
+		if (!saDstAmount.isNative())
 		{
 			// This restriction could be relaxed.
 			Log(lsINFO) << "doPayment: Malformed transaction: Create account may only fund XRP.";
 
 			return temCREATEXRP;
 		}
-		else if (!bCreate)
+		else if (isSetBit(mParams, tapOPEN_LEDGER)					// Ledger is not final, we can vote.
+			&& saDstAmount.getNValue() < theConfig.FEE_RESERVE)		// Reserve is not scaled by fee.
 		{
-			Log(lsINFO) << "doPayment: Delay transaction: Destination account does not exist.";
+			Log(lsINFO) << "doPayment: Delay transaction: Destination account does not exist insufficent payment to create account.";
 
+			// Not a local failure. Another transaction could create account and then this transaction would succeed.
 			return terNO_DST;
 		}
 
@@ -148,7 +138,7 @@ TER PaymentTransactor::doApply()
 
 		STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
 
-		if (saSrcXRPBalance < saDstAmount)
+		if (saSrcXRPBalance < saDstAmount + theConfig.FEE_RESERVE)		// Reserve is not scaled by fee.
 		{
 			// Transaction might succeed, if applied in a different order.
 			Log(lsINFO) << "doPayment: Delay transaction: Insufficient funds.";
@@ -158,13 +148,18 @@ TER PaymentTransactor::doApply()
 		else
 		{
 			mTxnAccount->setFieldAmount(sfBalance, saSrcXRPBalance - saDstAmount);
+
 			// re-arm the password change fee if we can and need to
 			if ( (sleDst->getFlags() & lsfPasswordSpent) &&
 				 (saDstAmount > theConfig.FEE_DEFAULT) )
 			{
 				sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount-theConfig.FEE_DEFAULT);
 				sleDst->clearFlag(lsfPasswordSpent);
-			}else sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount);
+			}
+			else
+			{
+				sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount);
+			}
 
 			terResult	= tesSUCCESS;
 		}
