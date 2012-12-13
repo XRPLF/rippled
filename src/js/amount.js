@@ -827,6 +827,13 @@ Amount.prototype.multiply = function (v) {
     result              = new Amount();
     result._value       = this._value.multiply(v._value);
   }
+  else if (this.is_zero()) {
+    result = this.clone();
+  }
+  else if (v.is_zero()) {
+    result = this.clone();
+    result._value = BigInteger.ZERO.clone();
+  }
   else {
 
     var v1 = this._value;
