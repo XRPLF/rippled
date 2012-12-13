@@ -1,6 +1,10 @@
 
 #include "Log.h"
 
+#define WSDOOR_CPP
+#include "../websocketpp/src/sockets/tls.hpp"
+#include "../websocketpp/src/websocketpp.hpp"
+
 SETUP_LOG();
 
 #include "Application.h"

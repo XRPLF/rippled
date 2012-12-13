@@ -1,14 +1,21 @@
 #ifndef __WSDOOR__
 #define __WSDOOR__
 
-#include "../websocketpp/src/sockets/tls.hpp"
-#include "../websocketpp/src/websocketpp.hpp"
-
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
+
+#ifndef WSDOOR_CPP
+
+namespace websocketpp
+{
+	class server;
+	class server_tls;
+}
+
+#endif
 
 class WSDoor
 {

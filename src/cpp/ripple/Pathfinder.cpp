@@ -1,8 +1,13 @@
+
 #include "Pathfinder.h"
+
+#include <queue>
+
+#include <boost/foreach.hpp>
+
 #include "Application.h"
 #include "AccountItems.h"
 #include "Log.h"
-#include <boost/foreach.hpp>
 
 SETUP_LOG();
 

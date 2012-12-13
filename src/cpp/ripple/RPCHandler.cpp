@@ -2,6 +2,12 @@
 // carries out the RPC
 //
 
+#include <openssl/md5.h>
+
+#include <boost/foreach.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+
+#include "Pathfinder.h"
 #include "Log.h"
 #include "NetworkOPs.h"
 #include "RPCHandler.h"
@@ -16,9 +22,6 @@
 #include "InstanceCounter.h"
 #include "Offer.h"
 
-#include "Pathfinder.h"
-#include <boost/foreach.hpp>
-#include <openssl/md5.h>
 
 SETUP_LOG();
 
