@@ -43,6 +43,7 @@
 	FIELD(Expiration,			UINT32, 10)
 	FIELD(TransferRate,			UINT32, 11)
 	FIELD(WalletSize,			UINT32, 12)
+	FIELD(OwnerCount,			UINT32, 13)	// Reorder on ledger reset.
 
 	// 32-bit integers (uncommon)
 	FIELD(HighQualityIn,		UINT32, 16)

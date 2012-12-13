@@ -28,6 +28,7 @@ static bool LEFInit()
 		<< SOElement(sfMessageKey,			SOE_OPTIONAL)
 		<< SOElement(sfTransferRate,		SOE_OPTIONAL)
 		<< SOElement(sfDomain,				SOE_OPTIONAL)
+		<< SOElement(sfOwnerCount,			SOE_OPTIONAL)
 		;
 
 	DECLARE_LEF(Contract, ltCONTRACT)

@@ -82,8 +82,8 @@ TER PaymentTransactor::doApply()
 
 			return temCREATEXRP;
 		}
-		else if (isSetBit(mParams, tapOPEN_LEDGER)					// Ledger is not final, we can vote.
-			&& saDstAmount.getNValue() < theConfig.FEE_RESERVE)		// Reserve is not scaled by fee.
+		else if (isSetBit(mParams, tapOPEN_LEDGER)							// Ledger is not final, we can vote.
+			&& saDstAmount.getNValue() < theConfig.FEE_ACCOUNT_RESERVE)		// Reserve is not scaled by fee.
 		{
 			Log(lsINFO) << "doPayment: Delay transaction: Destination account does not exist insufficent payment to create account.";
 
@@ -136,11 +136,15 @@ TER PaymentTransactor::doApply()
 	{
 		// Direct XRP payment.
 
-		STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
+		const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
+		const uint32	uOwnerCount		= mTxn.getFieldU32(sfOwnerCount);
+		const uint64	uReserve		= theConfig.FEE_ACCOUNT_RESERVE+uOwnerCount*theConfig.FEE_OWNER_RESERVE;
 
-		if (saSrcXRPBalance < saDstAmount + theConfig.FEE_RESERVE)		// Reserve is not scaled by fee.
+		// Make sure have enough reserve to send.
+		if (isSetBit(mParams, tapOPEN_LEDGER)					// Ledger is not final, we can vote.
+			&& saSrcXRPBalance < saDstAmount + uReserve)		// Reserve is not scaled by fee.
 		{
-			// Transaction might succeed, if applied in a different order.
+			// Vote no. However, transaction might succeed, if applied in a different order.
 			Log(lsINFO) << "doPayment: Delay transaction: Insufficient funds.";
 
 			terResult	= terUNFUNDED;
