@@ -26,9 +26,12 @@ var consts = exports.consts = {
   'xns_precision'         : 6,
 
   // BigInteger values prefixed with bi_.
+  'bi_5'	          : new BigInteger('5'),
+  'bi_7'	          : new BigInteger('7'),
   'bi_10'	          : new BigInteger('10'),
   'bi_1e14'               : new BigInteger(String(1e14)),
   'bi_1e16'               : new BigInteger(String(1e16)),
+  'bi_1e17'               : new BigInteger(String(1e17)),
   'bi_1e32'               : new BigInteger('100000000000000000000000000000000'),
   'bi_man_max_value'      : new BigInteger('9999999999999999'),
   'bi_man_min_value'      : new BigInteger('1000000000000000'),
@@ -697,8 +700,8 @@ Amount.prototype.divide = function (d) {
   }
   else {
     result              = new Amount();
-    result._offset      = this._offset-d._offset-32;
-    result._value       = this._value.multiply(consts.bi_1e32).divide(d._value);
+    result._offset      = this._offset - d._offset - 17;
+    result._value       = this._value.multiply(consts.bi_1e17).divide(d._value).add(consts.bi_5);
     result._is_native   = this._is_native;
     result._is_negative = this._is_negative !== d._is_negative;
     result._currency    = this._currency.clone();
@@ -823,11 +826,7 @@ Amount.prototype.issuer = function () {
 Amount.prototype.multiply = function (v) {
   var result;
 
-  if (this._is_native && v._is_native) {
-    result              = new Amount();
-    result._value       = this._value.multiply(v._value);
-  }
-  else if (this.is_zero()) {
+ if (this.is_zero()) {
     result = this.clone();
   }
   else if (v.is_zero()) {
@@ -835,7 +834,6 @@ Amount.prototype.multiply = function (v) {
     result._value = BigInteger.ZERO.clone();
   }
   else {
-
     var v1 = this._value;
     var o1 = this._offset;
     var v2 = v._value;
@@ -851,23 +849,13 @@ Amount.prototype.multiply = function (v) {
       o2 -= 1;
     }
 
-    // XXX Causes errors
-    /*
-    v1 = v1.multiply(consts.bi_10).add(new BigInteger("5"));
-    o1 -= 1;
-    v2 = v2.multiply(consts.bi_10).add(new BigInteger("5"));
-    o2 -= 1;
-    */
-
     result              = new Amount();
-    result._offset      = o1 + o2;
-    result._value       = v1.multiply(v2);
+    result._offset      = o1 + o2 + 14;
+    result._value       = v1.multiply(v2).divide(consts.bi_1e14).add(consts.bi_7);
     result._is_native   = this._is_native;
     result._is_negative = this._is_negative !== v._is_negative;
     result._currency    = this._currency.clone();
     result._issuer      = this._issuer.clone();
-
-    // XXX Check value is in legal range here or have canonicalize do it?
 
     result.canonicalize();
   }
