@@ -1,6 +1,3 @@
-[submodule "src/cpp/websocketpp"]
-	path = src/cpp/websocketpp
-	url = https://github.com/zaphoyd/websocketpp.git
 [submodule "src/js/cryptojs"]
 	path = src/js/cryptojs
 	url = git://github.com/gwjjeff/cryptojs.git
