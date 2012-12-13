@@ -110,6 +110,33 @@ buster.testCase("Amount", {
     "Add USD to USD" : function () {
       buster.assert.equals("200.52/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", Amount.from_json("150.02/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh").add(Amount.from_json("50.5/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")).to_text_full());
     },
+    "Multiply 0 XRP with 0 XRP" : function () {
+      buster.assert.equals("0/XRP", Amount.from_json("0").multiply(Amount.from_json("0")).to_text_full());
+    },
+    "Multiply 0 USD with 0 XRP" : function () {
+      buster.assert.equals("0/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", Amount.from_json("0/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh").multiply(Amount.from_json("0")).to_text_full());
+    },
+    "Multiply 0 XRP with 0 USD" : function () {
+      buster.assert.equals("0/XRP", Amount.from_json("0").multiply(Amount.from_json("0/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")).to_text_full());
+    },
+    "Multiply 1 XRP with 0 XRP" : function () {
+      buster.assert.equals("0/XRP", Amount.from_json("1").multiply(Amount.from_json("0")).to_text_full());
+    },
+    "Multiply 1 USD with 0 XRP" : function () {
+      buster.assert.equals("0/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", Amount.from_json("1/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh").multiply(Amount.from_json("0")).to_text_full());
+    },
+    "Multiply 1 XRP with 0 USD" : function () {
+      buster.assert.equals("0/XRP", Amount.from_json("1").multiply(Amount.from_json("0/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")).to_text_full());
+    },
+    "Multiply 0 XRP with 1 XRP" : function () {
+      buster.assert.equals("0/XRP", Amount.from_json("0").multiply(Amount.from_json("1")).to_text_full());
+    },
+    "Multiply 0 USD with 1 XRP" : function () {
+      buster.assert.equals("0/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", Amount.from_json("0/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh").multiply(Amount.from_json("1")).to_text_full());
+    },
+    "Multiply 0 XRP with 1 USD" : function () {
+      buster.assert.equals("0/XRP", Amount.from_json("0").multiply(Amount.from_json("1/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")).to_text_full());
+    },
     "Multiply XRP with USD" : function () {
       buster.assert.equals("2000/XRP", Amount.from_json("200").multiply(Amount.from_json("10/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")).to_text_full());
     },
