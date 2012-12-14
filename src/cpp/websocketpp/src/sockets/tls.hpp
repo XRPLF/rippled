@@ -52,7 +52,7 @@ public:
         return m_io_service;
     }
 
-    static void dummy_handler(const boost::system::error_code&) {
+    static void handle_shutdown(tls_socket_ptr, const boost::system::error_code&) {
     }
 
     // should be private friended?
@@ -140,7 +140,13 @@ public:
         bool shutdown() {
             boost::system::error_code ignored_ec;
             
-            m_socket_ptr->async_shutdown(dummy_handler); // don't block on SSL shutdown DJS
+            m_socket_ptr->async_shutdown( // Don't block on connection shutdown DJS
+                boost::bind(
+		            &tls<endpoint_type>::handle_shutdown,
+                    m_socket_ptr,
+                    boost::asio::placeholders::error
+				)
+			);
             
             if (ignored_ec) {
                 return false;
