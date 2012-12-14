@@ -51,7 +51,10 @@ public:
     boost::asio::io_service& get_io_service() {
         return m_io_service;
     }
-    
+
+    static void dummy_handler(const boost::system::error_code&) {
+    }
+
     // should be private friended?
     tls_socket::handshake_type get_handshake_type() {
         if (static_cast< endpoint_type* >(this)->is_server()) {
@@ -137,7 +140,7 @@ public:
         bool shutdown() {
             boost::system::error_code ignored_ec;
             
-            m_socket_ptr->shutdown(ignored_ec);
+            m_socket_ptr->async_shutdown(dummy_handler); // don't block on SSL shutdown DJS
             
             if (ignored_ec) {
                 return false;
