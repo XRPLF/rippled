@@ -300,7 +300,7 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previou
 		handleLCL(mPrevLedgerHash);
 		if (!mHaveCorrectLCL)
 		{
-			mProposing = mValidating = false;
+//			mProposing = mValidating = false;
 			cLog(lsINFO) << "Entering consensus with: " << previousLedger->getHash();
 			cLog(lsINFO) << "Correct LCL is: " << prevLCLHash;
 		}
@@ -399,7 +399,7 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 			propose();
 		}
 		mProposing = false;
-		mValidating = false;
+//		mValidating = false;
 		mPeerPositions.clear();
 		mDisputes.clear();
 		mCloseTimes.clear();
