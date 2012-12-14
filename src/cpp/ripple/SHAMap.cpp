@@ -150,7 +150,7 @@ SHAMapTreeNode::ref SHAMap::checkCacheNode(const SHAMapNode& iNode)
 	return it->second;
 }
 
-SHAMapTreeNode::ref SHAMap::walkTo(const uint256& id, bool modify)
+SHAMapTreeNode::pointer SHAMap::walkTo(const uint256& id, bool modify)
 { // walk down to the terminal node for this ID
 
 	SHAMapTreeNode::pointer inNode = root;
@@ -173,7 +173,7 @@ SHAMapTreeNode::ref SHAMap::walkTo(const uint256& id, bool modify)
 		}
 	}
 	if (inNode->getTag() != id)
-		return SHAMapTreeNode::pointer();
+		return no_node;
 	if (modify)
 		returnNode(inNode, true);
 	return inNode;
@@ -188,8 +188,7 @@ SHAMapTreeNode* SHAMap::walkToPointer(const uint256& id)
 		const uint256& nextHash = inNode->getChildHash(branch);
 		if (nextHash.isZero()) return NULL;
 		inNode = getNodePointer(inNode->getChildNodeID(branch), nextHash);
-		if (!inNode)
-			throw SHAMapMissingNode(mType, inNode->getChildNodeID(branch), nextHash, id);
+		assert(inNode);
 	}
 	return (inNode->getTag() == id) ? inNode : NULL;
 }
@@ -214,11 +213,7 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& id, const uint256& has
 		return node;
 	}
 
-	node = fetchNodeExternal(id, hash);
-	if (!mTNByID.insert(std::make_pair(id, node)).second)
-		assert(false);
-	trackNewNode(node);
-	return node;
+	return fetchNodeExternal(id, hash);
 }
 
 SHAMapTreeNode* SHAMap::getNodePointer(const SHAMapNode& id, const uint256& hash)
@@ -227,11 +222,7 @@ SHAMapTreeNode* SHAMap::getNodePointer(const SHAMapNode& id, const uint256& hash
 	if (it != mTNByID.end())
 		return it->second.get();
 
-	SHAMapTreeNode::pointer node = fetchNodeExternal(id, hash);
-	if (!mTNByID.insert(std::make_pair(id, node)).second)
-		assert(false);
-	trackNewNode(node);
-	return node.get();
+	return fetchNodeExternal(id, hash).get();
 }
 
 void SHAMap::returnNode(SHAMapTreeNode::pointer& node, bool modify)
@@ -432,8 +423,7 @@ SHAMapItem::ref SHAMap::peekNextItem(const uint256& id, SHAMapTreeNode::TNType& 
 				if (!node->isEmptyBranch(i))
 				{
 					SHAMapTreeNode *firstNode = getNodePointer(node->getChildNodeID(i), node->getChildHash(i));
-					if (!firstNode)
-						throw std::runtime_error("missing node");
+					assert(firstNode);
 					firstNode = firstBelow(firstNode);
 					if (!firstNode)
 						throw std::runtime_error("missing node");
@@ -680,7 +670,8 @@ bool SHAMap::updateGiveItem(SHAMapItem::ref item, bool isTransaction, bool hasMe
 	assert(mState != smsImmutable);
 
 	std::stack<SHAMapTreeNode::pointer> stack = getStack(tag, true, false);
-	if (stack.empty()) throw std::runtime_error("missing node");
+	if (stack.empty())
+		throw std::runtime_error("missing node");
 
 	SHAMapTreeNode::pointer node = stack.top();
 	stack.pop();
@@ -735,6 +726,9 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 			assert(false);
 			return SHAMapTreeNode::pointer();
 		}
+		if (!mTNByID.insert(std::make_pair(id, ret)).second)
+			assert(false);
+		trackNewNode(ret);
 		return ret;
 	}
 	catch (...)
@@ -756,7 +750,6 @@ void SHAMap::fetchRoot(const uint256& hash)
 			Log(lsTRACE) << "Fetch root SHAMap node " << hash;
 	}
 	root = fetchNodeExternal(SHAMapNode(), hash);
-	mTNByID[*root] = root;
 	assert(root->getNodeHash() == hash);
 }
 
@@ -804,7 +797,8 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& nodeID)
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	SHAMapTreeNode::pointer node = checkCacheNode(nodeID);
-	if (node) return node;
+	if (node)
+		return node;
 
 	node = root;
 	while (nodeID != *node)
@@ -815,7 +809,7 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& nodeID)
 			return SHAMapTreeNode::pointer();
 
 		node = getNode(node->getChildNodeID(branch), node->getChildHash(branch), false);
-		if (!node) throw std::runtime_error("missing node");
+		assert(node);
 	}
 	return node;
 }
@@ -838,8 +832,7 @@ bool SHAMap::getPath(const uint256& index, std::vector< std::vector<unsigned cha
 		if (inNode->isEmptyBranch(branch)) // paths leads to empty branch
 			return false;
 		inNode = getNodePointer(inNode->getChildNodeID(branch), inNode->getChildHash(branch));
-		if (!inNode)
-			throw SHAMapMissingNode(mType, inNode->getChildNodeID(branch), inNode->getChildHash(branch), index);
+		assert(inNode);
 	}
 
 	if (inNode->getTag() != index) // path leads to different leaf
