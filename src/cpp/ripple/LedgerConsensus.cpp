@@ -300,7 +300,7 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previou
 		handleLCL(mPrevLedgerHash);
 		if (!mHaveCorrectLCL)
 		{
-			mProposing = mValidating = false;
+//			mProposing = mValidating = false;
 			cLog(lsINFO) << "Entering consensus with: " << previousLedger->getHash();
 			cLog(lsINFO) << "Correct LCL is: " << prevLCLHash;
 		}
@@ -331,8 +331,10 @@ void LedgerConsensus::checkOurValidation()
 	std::vector<unsigned char> validation = v->getSigned();
 	ripple::TMValidation val;
 	val.set_validation(&validation[0], validation.size());
+#if 0
 	theApp->getConnectionPool().relayMessage(NULL,
 		boost::make_shared<PackedMessage>(val, ripple::mtVALIDATION));
+#endif
 	theApp->getOPs().setLastValidation(v);
 	cLog(lsWARNING) << "Sending partial validation";
 }
@@ -397,7 +399,7 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 			propose();
 		}
 		mProposing = false;
-		mValidating = false;
+//		mValidating = false;
 		mPeerPositions.clear();
 		mDisputes.clear();
 		mCloseTimes.clear();
