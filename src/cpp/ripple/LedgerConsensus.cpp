@@ -331,8 +331,10 @@ void LedgerConsensus::checkOurValidation()
 	std::vector<unsigned char> validation = v->getSigned();
 	ripple::TMValidation val;
 	val.set_validation(&validation[0], validation.size());
+#if 0
 	theApp->getConnectionPool().relayMessage(NULL,
 		boost::make_shared<PackedMessage>(val, ripple::mtVALIDATION));
+#endif
 	theApp->getOPs().setLastValidation(v);
 	cLog(lsWARNING) << "Sending partial validation";
 }
