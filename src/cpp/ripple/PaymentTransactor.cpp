@@ -137,8 +137,7 @@ TER PaymentTransactor::doApply()
 		// Direct XRP payment.
 
 		const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
-		const bool		bOwnerCount		= mTxn.isFieldPresent(sfPaths);
-		const uint32	uOwnerCount		= bOwnerCount ? mTxn.getFieldU32(sfOwnerCount) : 0;
+		const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
 		const uint64	uReserve		= theConfig.FEE_ACCOUNT_RESERVE+uOwnerCount*theConfig.FEE_OWNER_RESERVE;
 
 		// Make sure have enough reserve to send.
