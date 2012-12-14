@@ -141,10 +141,12 @@ public:
 			boost::shared_ptr< WSConnection<endpoint_type> > conn;
 			{
 				boost::mutex::scoped_lock	sl(mMapLock);
-				conn = mMap[cpClient];
+				typedef boost::shared_ptr< WSConnection<endpoint_type> > wsc_ptr;
+				typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find(cpClient);
+				if (it == mMap.end())
+					return;
+				conn = it->second;
 			}
-			if (!conn)
-				return;
 			send(cpClient, conn->invokeCommand(jvRequest));
 		}
 	}
