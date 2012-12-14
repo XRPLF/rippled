@@ -262,8 +262,9 @@ buster.testCase("Sending", {
 
 // XXX In the future add ledger_accept after partial retry is implemented in the server.
 buster.testCase("Sending future", {
-  'setUp' : testutils.build_setup(),
-  'tearDown' : testutils.build_teardown(),
+  'setUp'     : testutils.build_setup(),
+  // 'setUp'     : testutils.build_setup({ verbose : true }),
+  'tearDown'  : testutils.build_teardown(),
 
   "direct ripple" :
     function (done) {
@@ -670,7 +671,7 @@ buster.testCase("Indirect ripple", {
         });
     },
 
-  "indirect ripple with path and transfer fee" :
+  "//indirect ripple with path and transfer fee" :
     function (done) {
       var self = this;
 
@@ -720,6 +721,17 @@ buster.testCase("Indirect ripple", {
                 })
               .submit();
           },
+//          function (callback) {
+//            self.what = "Display ledger";
+//
+//            self.remote.request_ledger('current', true)
+//              .on('success', function (m) {
+//                  console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+//
+//                  callback();
+//                })
+//              .request();
+//          },
           function (callback) {
             self.what = "Verify balances.";
 

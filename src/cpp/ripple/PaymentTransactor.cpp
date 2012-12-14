@@ -137,7 +137,8 @@ TER PaymentTransactor::doApply()
 		// Direct XRP payment.
 
 		const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
-		const uint32	uOwnerCount		= mTxn.getFieldU32(sfOwnerCount);
+		const bool		bOwnerCount		= mTxn.isFieldPresent(sfPaths);
+		const uint32	uOwnerCount		= bOwnerCount ? mTxn.getFieldU32(sfOwnerCount) : 0;
 		const uint64	uReserve		= theConfig.FEE_ACCOUNT_RESERVE+uOwnerCount*theConfig.FEE_OWNER_RESERVE;
 
 		// Make sure have enough reserve to send.
@@ -145,7 +146,9 @@ TER PaymentTransactor::doApply()
 			&& saSrcXRPBalance < saDstAmount + uReserve)		// Reserve is not scaled by fee.
 		{
 			// Vote no. However, transaction might succeed, if applied in a different order.
-			Log(lsINFO) << "doPayment: Delay transaction: Insufficient funds.";
+			Log(lsINFO) << "";
+			Log(lsINFO) << boost::str(boost::format("doPayment: Delay transaction: Insufficient funds: %s / %s (%d)")
+				% saSrcXRPBalance.getText() % (saDstAmount + uReserve).getText() % uReserve);
 
 			terResult	= terUNFUNDED;
 		}
