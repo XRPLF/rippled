@@ -144,6 +144,7 @@ SHAMapTreeNode::pointer SHAMap::checkCacheNode(const SHAMapNode& iNode)
 	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.find(iNode);
 	if (it == mTNByID.end())
 		return SHAMapTreeNode::pointer();
+	it->second->touch(mSeq);
 	return it->second;
 }
 

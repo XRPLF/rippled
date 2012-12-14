@@ -161,7 +161,7 @@ private:
 	uint256	mHash;
 	uint256 mHashes[16];
 	SHAMapItem::pointer mItem;
-	uint32 mSeq;
+	uint32 mSeq, mAccessSeq;
 	TNType mType;
 	bool mFullBelow;
 
@@ -183,7 +183,8 @@ public:
 
 	// node functions
 	uint32 getSeq() const				{ return mSeq; }
-	void setSeq(uint32 s)				{ mSeq = s; }
+	void setSeq(uint32 s)				{ mAccessSeq = mSeq = s; }
+	void touch(uint32 s)				{ mAccessSeq = s; }
 	const uint256& getNodeHash() const	{ return mHash; }
 	TNType getType() const				{ return mType; }
 

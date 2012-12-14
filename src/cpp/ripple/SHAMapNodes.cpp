@@ -173,8 +173,8 @@ void SHAMapNode::dump() const
 	Log(lsDEBUG) << getString();
 }
 
-SHAMapTreeNode::SHAMapTreeNode(uint32 seq, const SHAMapNode& nodeID) : SHAMapNode(nodeID), mHash(0), mSeq(seq),
-	mType(tnERROR), mFullBelow(false)
+SHAMapTreeNode::SHAMapTreeNode(uint32 seq, const SHAMapNode& nodeID) : SHAMapNode(nodeID), mHash(0),
+	mSeq(seq), mAccessSeq(seq),	mType(tnERROR), mFullBelow(false)
 {
 }
 
