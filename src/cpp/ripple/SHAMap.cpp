@@ -139,16 +139,18 @@ void SHAMap::dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& 
 	}
 }
 
-SHAMapTreeNode::pointer SHAMap::checkCacheNode(const SHAMapNode& iNode)
+static const SHAMapTreeNode::pointer no_node;
+
+SHAMapTreeNode::ref SHAMap::checkCacheNode(const SHAMapNode& iNode)
 {
 	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.find(iNode);
 	if (it == mTNByID.end())
-		return SHAMapTreeNode::pointer();
+		return no_node;
 	it->second->touch(mSeq);
 	return it->second;
 }
 
-SHAMapTreeNode::pointer SHAMap::walkTo(const uint256& id, bool modify)
+SHAMapTreeNode::ref SHAMap::walkTo(const uint256& id, bool modify)
 { // walk down to the terminal node for this ID
 
 	SHAMapTreeNode::pointer inNode = root;
@@ -370,42 +372,44 @@ void SHAMap::eraseChildren(SHAMapTreeNode::pointer node)
 	return;
 }
 
-SHAMapItem::pointer SHAMap::peekFirstItem()
+static const SHAMapItem::pointer no_item;
+
+SHAMapItem::ref SHAMap::peekFirstItem()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapTreeNode *node = firstBelow(root.get());
 	if (!node)
-		return SHAMapItem::pointer();
+		return no_item;
 	return node->peekItem();
 }
 
-SHAMapItem::pointer SHAMap::peekFirstItem(SHAMapTreeNode::TNType& type)
+SHAMapItem::ref SHAMap::peekFirstItem(SHAMapTreeNode::TNType& type)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapTreeNode *node = firstBelow(root.get());
 	if (!node)
-		return SHAMapItem::pointer();
+		return no_item;
 	type = node->getType();
 	return node->peekItem();
 }
 
-SHAMapItem::pointer SHAMap::peekLastItem()
+SHAMapItem::ref SHAMap::peekLastItem()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapTreeNode *node = lastBelow(root.get());
 	if (!node)
-		return SHAMapItem::pointer();
+		return no_item;
 	return node->peekItem();
 }
 
-SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
+SHAMapItem::ref SHAMap::peekNextItem(const uint256& id)
 {
 	SHAMapTreeNode::TNType type;
 	return peekNextItem(id, type);
 }
 
 
-SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id, SHAMapTreeNode::TNType& type)
+SHAMapItem::ref SHAMap::peekNextItem(const uint256& id, SHAMapTreeNode::TNType& type)
 { // Get a pointer to the next item in the tree after a given item - item must be in tree
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -438,10 +442,10 @@ SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id, SHAMapTreeNode::TNTy
 				}
 	}
 	// must be last item
-	return SHAMapItem::pointer();
+	return no_item;
 }
 
-SHAMapItem::pointer SHAMap::peekPrevItem(const uint256& id)
+SHAMapItem::ref SHAMap::peekPrevItem(const uint256& id)
 { // Get a pointer to the previous item in the tree after a given item - item must be in tree
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -467,24 +471,24 @@ SHAMapItem::pointer SHAMap::peekPrevItem(const uint256& id)
 				}
 	}
 	// must be last item
-	return SHAMapItem::pointer();
+	return no_item;
 }
 
-SHAMapItem::pointer SHAMap::peekItem(const uint256& id)
+SHAMapItem::ref SHAMap::peekItem(const uint256& id)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapTreeNode* leaf = walkToPointer(id);
 	if (!leaf)
-		return SHAMapItem::pointer();
+		return no_item;
 	return leaf->peekItem();
 }
 
-SHAMapItem::pointer SHAMap::peekItem(const uint256& id, SHAMapTreeNode::TNType& type)
+SHAMapItem::ref SHAMap::peekItem(const uint256& id, SHAMapTreeNode::TNType& type)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapTreeNode* leaf = walkToPointer(id);
 	if (!leaf)
-		return SHAMapItem::pointer();
+		return no_item;
 	type = leaf->getType();
 	return leaf->peekItem();
 }
