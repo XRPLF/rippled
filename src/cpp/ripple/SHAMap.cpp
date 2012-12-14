@@ -726,7 +726,9 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 			assert(false);
 			return SHAMapTreeNode::pointer();
 		}
-		if (!mTNByID.insert(std::make_pair(id, ret)).second)
+		if (id.isRoot())
+			mTNByID[id] = ret;
+		else if (!mTNByID.insert(std::make_pair(id, ret)).second)
 			assert(false);
 		trackNewNode(ret);
 		return ret;
