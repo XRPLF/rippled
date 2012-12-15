@@ -289,6 +289,7 @@ Remote.prototype._set_state = function (state) {
     this.state = state;
 
     this.emit('state', state);
+
     switch (state) {
       case 'online':
         this.online_state       = 'open';
@@ -499,7 +500,11 @@ Remote.prototype._connect_message = function (ws, json) {
         break;
 
       case 'serverStatus':
-        this._set_state(message.server_status === 'ok' ? 'online' : 'offline');
+        // This message is only received when online. As we are connected, it is the definative final state.
+        this._set_state(
+          message.server_status === 'tracking' ||  message.server_status === 'full'
+            ? 'online'
+            : 'offline');
         break;
 
       // All other messages
@@ -861,7 +866,7 @@ Remote.prototype._server_subscribe = function () {
           self.emit('ledger_closed', message);
         }
 
-        if (message.server_status === "ok") {
+        if (message.server_status === 'tracking' ||  message.server_status === 'full') {
           self._set_state('online');
         }
 

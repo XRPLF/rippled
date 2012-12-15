@@ -33,6 +33,18 @@ NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedge
 {
 }
 
+std::string NetworkOPs::strOperatingMode()
+{
+	static const char*	paStatusToken[] = {
+		"disconnected",
+		"connected",
+		"tracking",
+		"full"
+	};
+
+	return paStatusToken[mMode];
+}
+
 boost::posix_time::ptime NetworkOPs::getNetworkTimePT()
 {
 	int offset = 0;
@@ -871,17 +883,12 @@ void NetworkOPs::setMode(OperatingMode om)
 	if ((om >= omCONNECTED) && (mMode == omDISCONNECTED))
 		mConnectTime = boost::posix_time::second_clock::universal_time();
 
-	Log lg((om < mMode) ? lsWARNING : lsINFO);
-	if (om == omDISCONNECTED)
-		lg << "STATE->Disconnected";
-	else if (om == omCONNECTED)
-		lg << "STATE->Connected";
-	else if (om == omTRACKING)
-		lg << "STATE->Tracking";
-	else
-		lg << "STATE->Full";
+	mMode = om;
 
-	if ((om == omDISCONNECTED) || (mMode == omDISCONNECTED))
+	Log lg((om < mMode) ? lsWARNING : lsINFO);
+
+	lg << "STATE->" << strOperatingMode();
+
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 
@@ -889,8 +896,8 @@ void NetworkOPs::setMode(OperatingMode om)
 		{
 			Json::Value jvObj(Json::objectValue);
 
-			jvObj["type"] = "serverStatus";
-			jvObj["server_status"] = om >= omCONNECTED ? "ok" : "noNetwork";
+			jvObj["type"]			= "serverStatus";
+			jvObj["server_status"]	= strOperatingMode();
 
 			BOOST_FOREACH(InfoSub* ispListener, mSubServer)
 			{
@@ -898,8 +905,6 @@ void NetworkOPs::setMode(OperatingMode om)
 			}
 		}
 	}
-
-	mMode = om;
 }
 
 

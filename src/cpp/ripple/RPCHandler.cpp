@@ -2101,21 +2101,24 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 				if(streamName=="server")
 				{
 					mNetOps->subServer(mInfoSub, jvResult);
-					jvResult["server_status"] = mNetOps->available() ? "ok" : "noNetwork";
-				}else if(streamName=="ledger")
+					jvResult["server_status"] = mNetOps->strOperatingMode();
+
+				} else if(streamName=="ledger")
 				{
 					mNetOps->subLedger(mInfoSub, jvResult);
-				}else if(streamName=="transactions")
+
+				} else if(streamName=="transactions")
 				{
 					mNetOps->subTransactions(mInfoSub);
-				}else if(streamName=="rt_transactions")
+
+				} else if(streamName=="rt_transactions")
 				{
 					mNetOps->subRTTransactions(mInfoSub);
-				}else
-				{
+				}
+				else {
 					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
 				}
-			}else
+			} else
 			{
 				jvResult["error"]	= "malformedSteam";
 			}
@@ -2362,7 +2365,9 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 	{
 		return rpcError(rpcNO_EVENTS);
 	}
-	else if ((commandsA[i].iOptions & optNetwork) && !mNetOps->available())
+	else if (commandsA[i].iOptions & optNetwork
+		&& mNetOps->getOperatingMode() != NetworkOPs::omTRACKING
+		&& mNetOps->getOperatingMode() != NetworkOPs::omFULL)
 	{
 		return rpcError(rpcNO_NETWORK);
 	}

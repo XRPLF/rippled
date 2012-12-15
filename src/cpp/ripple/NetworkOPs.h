@@ -124,10 +124,7 @@ public:
 	uint32 getLedgerID(const uint256& hash);
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }
-	inline bool available() {
-		// XXX Later this can be relaxed to omCONNECTED
-		return mMode >= omTRACKING;
-	}
+	std::string strOperatingMode();
 
 	Ledger::pointer	getClosedLedger()						{ return mLedgerMaster->getClosedLedger(); }
 	Ledger::pointer	getCurrentLedger()						{ return mLedgerMaster->getCurrentLedger(); }
