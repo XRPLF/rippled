@@ -161,7 +161,7 @@ private:
 	uint256	mHash;
 	uint256 mHashes[16];
 	SHAMapItem::pointer mItem;
-	uint32 mSeq;
+	uint32 mSeq, mAccessSeq;
 	TNType mType;
 	bool mFullBelow;
 
@@ -183,7 +183,8 @@ public:
 
 	// node functions
 	uint32 getSeq() const				{ return mSeq; }
-	void setSeq(uint32 s)				{ mSeq = s; }
+	void setSeq(uint32 s)				{ mAccessSeq = mSeq = s; }
+	void touch(uint32 s)				{ mAccessSeq = s; }
 	const uint256& getNodeHash() const	{ return mHash; }
 	TNType getType() const				{ return mType; }
 
@@ -348,7 +349,7 @@ protected:
 	std::stack<SHAMapTreeNode::pointer> getStack(const uint256& id, bool include_nonmatching_leaf, bool partialOk);
 	SHAMapTreeNode::pointer walkTo(const uint256& id, bool modify);
 	SHAMapTreeNode* walkToPointer(const uint256& id);
-	SHAMapTreeNode::pointer checkCacheNode(const SHAMapNode&);
+	SHAMapTreeNode::ref checkCacheNode(const SHAMapNode&);
 	void returnNode(SHAMapTreeNode::pointer&, bool modify);
 	void trackNewNode(SHAMapTreeNode::pointer&);
 
@@ -395,16 +396,16 @@ public:
 	bool addGiveItem(SHAMapItem::ref, bool isTransaction, bool hasMeta);
 
 	// save a copy if you only need a temporary
-	SHAMapItem::pointer peekItem(const uint256& id);
-	SHAMapItem::pointer peekItem(const uint256& id, SHAMapTreeNode::TNType& type);
+	SHAMapItem::ref peekItem(const uint256& id);
+	SHAMapItem::ref peekItem(const uint256& id, SHAMapTreeNode::TNType& type);
 
 	// traverse functions
-	SHAMapItem::pointer peekFirstItem();
-	SHAMapItem::pointer peekFirstItem(SHAMapTreeNode::TNType& type);
-	SHAMapItem::pointer peekLastItem();
-	SHAMapItem::pointer peekNextItem(const uint256&);
-	SHAMapItem::pointer peekNextItem(const uint256&, SHAMapTreeNode::TNType& type);
-	SHAMapItem::pointer peekPrevItem(const uint256&);
+	SHAMapItem::ref peekFirstItem();
+	SHAMapItem::ref peekFirstItem(SHAMapTreeNode::TNType& type);
+	SHAMapItem::ref peekLastItem();
+	SHAMapItem::ref peekNextItem(const uint256&);
+	SHAMapItem::ref peekNextItem(const uint256&, SHAMapTreeNode::TNType& type);
+	SHAMapItem::ref peekPrevItem(const uint256&);
 
 	// comparison/sync functions
 	void getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max,

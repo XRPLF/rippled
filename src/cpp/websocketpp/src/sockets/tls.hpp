@@ -51,7 +51,10 @@ public:
     boost::asio::io_service& get_io_service() {
         return m_io_service;
     }
-    
+
+    static void handle_shutdown(tls_socket_ptr, const boost::system::error_code&) {
+    }
+
     // should be private friended?
     tls_socket::handshake_type get_handshake_type() {
         if (static_cast< endpoint_type* >(this)->is_server()) {
@@ -137,7 +140,13 @@ public:
         bool shutdown() {
             boost::system::error_code ignored_ec;
             
-            m_socket_ptr->shutdown(ignored_ec);
+            m_socket_ptr->async_shutdown( // Don't block on connection shutdown DJS
+                boost::bind(
+		            &tls<endpoint_type>::handle_shutdown,
+                    m_socket_ptr,
+                    boost::asio::placeholders::error
+				)
+			);
             
             if (ignored_ec) {
                 return false;
