@@ -156,7 +156,6 @@ buster.testCase("Offer tests", {
         });
     },
 
-
   "//new user offer_create then ledger_accept then offer_cancel then ledger_accept." :
     function (done) {
       var self = this;

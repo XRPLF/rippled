@@ -138,7 +138,11 @@ var build_teardown = function (host) {
 var create_accounts = function (remote, src, amount, accounts, callback) {
   assert(5 === arguments.length);
 
-  async.forEachSeries(accounts, function (account, callback) {
+  async.forEach(accounts, function (account, callback) {
+    // Cache the seq as 1.
+    // Otherwise, when other operations attempt to opperate async against the account they may get confused.
+    remote.set_account_seq(account, 1);
+
     remote.transaction()
       .payment(src, account, amount)
       .on('proposed', function (m) {
