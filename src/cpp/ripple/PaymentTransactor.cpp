@@ -77,18 +77,18 @@ TER PaymentTransactor::doApply()
 
 		if (!saDstAmount.isNative())
 		{
-			// This restriction could be relaxed.
-			Log(lsINFO) << "doPayment: Malformed transaction: Create account may only fund XRP.";
+			Log(lsINFO) << "doPayment: Delay transaction: Destination account does not exist.";
 
-			return temCREATEXRP;
+			// Another transaction could create the account and then this transaction would succeed.
+			return terNO_DST;
 		}
 		else if (isSetBit(mParams, tapOPEN_LEDGER)							// Ledger is not final, we can vote.
 			&& saDstAmount.getNValue() < theConfig.FEE_ACCOUNT_RESERVE)		// Reserve is not scaled by fee.
 		{
-			Log(lsINFO) << "doPayment: Delay transaction: Destination account does not exist insufficent payment to create account.";
+			Log(lsINFO) << "doPayment: Delay transaction: Destination account does not exist. Insufficent payment to create account.";
 
-			// Not a local failure. Another transaction could create account and then this transaction would succeed.
-			return terNO_DST;
+			// Another transaction could create the account and then this transaction would succeed.
+			return terNO_DST_INSUF_XRP;
 		}
 
 		// Create the account.
