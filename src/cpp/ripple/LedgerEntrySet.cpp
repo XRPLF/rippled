@@ -861,7 +861,8 @@ TER LedgerEntrySet::ownerCountAdjust(const uint160& uOwnerID, int iAmount, SLE::
 	{
 		const uint32	uOwnerCount		= sleRoot->getFieldU32(sfOwnerCount);
 
-		sleRoot->setFieldU32(sfOwnerCount, uOwnerCount+iAmount);
+		if (iAmount + int(uOwnerCount) >= 0)
+			sleRoot->setFieldU32(sfOwnerCount, uOwnerCount+iAmount);
 
 		terResult	= tesSUCCESS;
 	}
