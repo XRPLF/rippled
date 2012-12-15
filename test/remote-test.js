@@ -229,7 +229,7 @@ buster.testCase("Remote functions", {
         .on('proposed', function (m) {
             // console.log("proposed: %s", JSON.stringify(m));
 
-            // buster.assert.equals(m.result, 'terNO_DST');
+            // buster.assert.equals(m.result, 'terNO_DST_INSUF_XRP');
             buster.assert.equals(m.result, 'tesSUCCESS');
 
             got_proposed  = true;

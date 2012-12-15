@@ -80,7 +80,7 @@ buster.testCase("Sending", {
             // Transaction got an error.
             // console.log("proposed: %s", JSON.stringify(m));
 
-            buster.assert.equals(m.result, 'terNO_DST');
+            buster.assert.equals(m.result, 'terNO_DST_INSUF_XRP');
 
             got_proposed  = true;
 
