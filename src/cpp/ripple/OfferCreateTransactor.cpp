@@ -113,8 +113,8 @@ TER OfferCreateTransactor::takeOffers(
 
 				Log(lsINFO) << "takeOffers: saOfferPays=" << saOfferPays.getFullText();
 
-				STAmount		saOfferFunds	= mEngine->getNodes().accountFunds(uOfferOwnerID, saOfferPays);
-				STAmount		saTakerFunds	= mEngine->getNodes().accountFunds(uTakerAccountID, saTakerPays);
+				STAmount		saOfferFunds	= mEngine->getNodes().accountFunds(uOfferOwnerID, saOfferPays, true);
+				STAmount		saTakerFunds	= mEngine->getNodes().accountFunds(uTakerAccountID, saTakerPays, true);
 				SLE::pointer	sleOfferAccount;	// Owner of offer.
 
 				if (!saOfferFunds.isPositive())
@@ -317,7 +317,7 @@ TER OfferCreateTransactor::doApply()
 
 		terResult	= temBAD_ISSUER;
 	}
-	else if (!mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets).isPositive())
+	else if (!mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets, true).isPositive())
 	{
 		Log(lsWARNING) << "doOfferCreate: delay: Offers must be at least partially funded.";
 
@@ -348,7 +348,6 @@ TER OfferCreateTransactor::doApply()
 			% saTakerPays.getFullText());
 
 		// Take using the parameters of the offer.
-#if 1
 		Log(lsWARNING) << "doOfferCreate: takeOffers: BEFORE saTakerGets=" << saTakerGets.getFullText();
 		terResult	= takeOffers(
 			bPassive,
@@ -360,9 +359,7 @@ TER OfferCreateTransactor::doApply()
 			saOfferPaid,	// How much was spent.
 			saOfferGot		// How much was got.
 			);
-#else
-		terResult	= tesSUCCESS;
-#endif
+
 		Log(lsWARNING) << "doOfferCreate: takeOffers=" << terResult;
 		Log(lsWARNING) << "doOfferCreate: takeOffers: saOfferPaid=" << saOfferPaid.getFullText();
 		Log(lsWARNING) << "doOfferCreate: takeOffers:  saOfferGot=" << saOfferGot.getFullText();
@@ -379,7 +376,7 @@ TER OfferCreateTransactor::doApply()
 	Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerPays=" << saTakerPays.getFullText();
 	Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerGets=" << saTakerGets.getFullText();
 	Log(lsWARNING) << "doOfferCreate: takeOffers: mTxnAccountID=" << RippleAddress::createHumanAccountID(mTxnAccountID);
-	Log(lsWARNING) << "doOfferCreate: takeOffers:         FUNDS=" << mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets).getFullText();
+	Log(lsWARNING) << "doOfferCreate: takeOffers:         FUNDS=" << mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets, true).getFullText();
 
 	// Log(lsWARNING) << "doOfferCreate: takeOffers: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
 	// Log(lsWARNING) << "doOfferCreate: takeOffers: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
@@ -387,7 +384,7 @@ TER OfferCreateTransactor::doApply()
 	if (tesSUCCESS == terResult
 		&& saTakerPays														// Still wanting something.
 		&& saTakerGets														// Still offering something.
-		&& mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets).isPositive())	// Still funded.
+		&& mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets, true).isPositive())	// Still funded.
 	{
 		// We need to place the remainder of the offer into its order book.
 		Log(lsINFO) << boost::str(boost::format("doOfferCreate: offer not fully consumed: saTakerPays=%s saTakerGets=%s")

@@ -15,7 +15,7 @@ buster.testRunner.timeout = 5000;
 
 buster.testCase("Offer tests", {
   'setUp'     : testutils.build_setup(),
-  // 'setUp'     : testutils.build_setup({ verbose: true }),
+  // 'setUp'     : testutils.build_setup({ verbose: true, standalone: false }),
   'tearDown'  : testutils.build_teardown(),
 
   "offer create then cancel in one ledger" :
@@ -444,6 +444,90 @@ buster.testCase("Offer tests", {
                 "bob" : 1,
               },
               callback);
+          },
+        ], function (error) {
+          buster.refute(error, self.what);
+          done();
+        });
+    },
+
+  "//=>ripple currency conversion : offerer into debt" :
+    // alice in, carol out
+    function (done) {
+      var self = this;
+      var seq;
+
+      async.waterfall([
+          function (callback) {
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "carol"], callback);
+          },
+          function (callback) {
+            self.what = "Set limits.";
+
+            testutils.credit_limits(self.remote,
+              {
+                "alice" : "2000/EUR/carol",
+                "bob" : "100/USD/alice",
+                "carol" : "1000/EUR/bob"
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Create offer to exchange.";
+
+            self.remote.transaction()
+              .offer_create("bob", "50/USD/alice", "200/EUR/carol")
+              .on('proposed', function (m) {
+                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+
+                  seq = m.tx_json.Sequence;
+                })
+              .submit();
+          },
+//          function (callback) {
+//            self.what = "Alice converts USD to EUR via ripple.";
+//
+//            self.remote.transaction()
+//              .payment("alice", "alice", "10/EUR/carol")
+//              .send_max("50/USD/alice")
+//              .on('proposed', function (m) {
+//                  // console.log("proposed: %s", JSON.stringify(m));
+//
+//                  callback(m.result !== 'tesSUCCESS');
+//                })
+//              .submit();
+//          },
+          function (callback) {
+            self.what = "Alice converts USD to EUR via offer.";
+
+            self.remote.transaction()
+              .offer_create("alice", "200/EUR/carol", "50/USD/alice")
+              .on('proposed', function (m) {
+                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+
+                  seq = m.tx_json.Sequence;
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Verify balances.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "alice"   : [ "-50/USD/bob", "200/EUR/carol" ],
+                "bob"     : [ "50/USD/alice", "-200/EUR/carol" ],
+                "carol"   : [ "-200/EUR/alice", "200/EUR/bob" ],
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Verify offer consumed.";
+
+            testutils.verify_offer_not_found(self.remote, "bob", seq, callback);
           },
         ], function (error) {
           buster.refute(error, self.what);

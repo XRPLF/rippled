@@ -119,14 +119,14 @@ public:
 	uint32				rippleQualityOut(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
 	{ return rippleQualityIn(uToAccountID, uFromAccountID, uCurrencyID, sfLowQualityOut, sfHighQualityOut); }
 
-	STAmount			rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
+	STAmount			rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID, bool bAvail=false);
 	STAmount			rippleTransferFee(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
 	void				rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer=true);
 	STAmount			rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 
-	STAmount			accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
+	STAmount			accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID, bool bAvail=false);
+	STAmount			accountFunds(const uint160& uAccountID, const STAmount& saDefault, bool bAvail=false);
 	void				accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
-	STAmount			accountFunds(const uint160& uAccountID, const STAmount& saDefault);
 
 	Json::Value getJson(int) const;
 	void calcRawMeta(Serializer&, TER result, uint32 index);

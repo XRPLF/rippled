@@ -1023,25 +1023,51 @@ uint32 LedgerEntrySet::rippleQualityIn(const uint160& uToAccountID, const uint16
 }
 
 // Return how much of uIssuerID's uCurrencyID IOUs that uAccountID holds.  May be negative.
-// <-- IOU's uAccountID has of uIssuerID
-STAmount LedgerEntrySet::rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID)
+// <-- IOU's uAccountID has of uIssuerID.
+STAmount LedgerEntrySet::rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID, bool bAvail)
 {
 	STAmount			saBalance;
 	SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uAccountID, uIssuerID, uCurrencyID));
 
-	if (sleRippleState)
+	if (!sleRippleState)
 	{
-		saBalance	= sleRippleState->getFieldAmount(sfBalance);
-
-		if (uAccountID > uIssuerID)
+		saBalance.zero(uCurrencyID, uIssuerID);
+	}
+	else if (uAccountID > uIssuerID)
+	{
+		if (bAvail)
+		{
+			saBalance	= sleRippleState->getFieldAmount(sfLowLimit);
+			saBalance	-= sleRippleState->getFieldAmount(sfBalance);
+		}
+		else
+		{
+			saBalance	= sleRippleState->getFieldAmount(sfBalance);
 			saBalance.negate();		// Put balance in uAccountID terms.
+		}
+
+		saBalance.setIssuer(uIssuerID);
+	}
+	else
+	{
+		if (bAvail)
+		{
+			saBalance	= sleRippleState->getFieldAmount(sfHighLimit);
+			saBalance	+= sleRippleState->getFieldAmount(sfBalance);
+		}
+		else
+		{
+			saBalance	= sleRippleState->getFieldAmount(sfBalance);
+		}
+
+		saBalance.setIssuer(uIssuerID);
 	}
 
 	return saBalance;
 }
 
 // <-- saAmount: amount of uCurrencyID held by uAccountID. May be negative.
-STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID)
+STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID, bool bAvail)
 {
 	STAmount	saAmount;
 
@@ -1053,12 +1079,13 @@ STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& 
 	}
 	else
 	{
-		saAmount	= rippleHolds(uAccountID, uCurrencyID, uIssuerID);
+		saAmount	= rippleHolds(uAccountID, uCurrencyID, uIssuerID, bAvail);
 	}
 
-	cLog(lsINFO) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s")
+	cLog(lsINFO) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s bAvail=%d")
 		% RippleAddress::createHumanAccountID(uAccountID)
-		% saAmount.getFullText());
+		% saAmount.getFullText()
+		% bAvail);
 
 	return saAmount;
 }
@@ -1068,7 +1095,7 @@ STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& 
 // --> saDefault/currency/issuer
 // <-- saFunds: Funds available. May be negative.
 //              If the issuer is the same as uAccountID, funds are unlimited, use result is saDefault.
-STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount& saDefault)
+STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount& saDefault, bool bAvail)
 {
 	STAmount	saFunds;
 
@@ -1082,12 +1109,13 @@ STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount&
 	}
 	else
 	{
-		saFunds	= accountHolds(uAccountID, saDefault.getCurrency(), saDefault.getIssuer());
+		saFunds	= accountHolds(uAccountID, saDefault.getCurrency(), saDefault.getIssuer(), bAvail);
 
-		cLog(lsINFO) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s saFunds=%s")
+		cLog(lsINFO) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s saFunds=%s bAvail=%d")
 			% RippleAddress::createHumanAccountID(uAccountID)
 			% saDefault.getFullText()
-			% saFunds.getFullText());
+			% saFunds.getFullText()
+			% bAvail);
 	}
 
 	return saFunds;
