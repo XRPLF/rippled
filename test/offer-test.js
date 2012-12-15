@@ -15,6 +15,7 @@ buster.testRunner.timeout = 5000;
 
 buster.testCase("Offer tests", {
   'setUp'     : testutils.build_setup(),
+  // 'setUp'     : testutils.build_setup({ verbose: true }),
   'tearDown'  : testutils.build_teardown(),
 
   "offer create then cancel in one ledger" :
@@ -345,12 +346,27 @@ buster.testCase("Offer tests", {
             testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox"], callback);
           },
           function (callback) {
+            self.what = "Owner count undefined.";
+
+            testutils.verify_owner_count(self.remote, "bob", undefined, callback);
+          },
+          function (callback) {
             self.what = "Set limits.";
 
             testutils.credit_limits(self.remote,
               {
                 "alice" : "100/USD/mtgox",
                 "bob" : "1000/USD/mtgox"
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Owner counts after trust.";
+
+            testutils.verify_owner_counts(self.remote,
+              {
+                "alice" : 1,
+                "bob" : 1,
               },
               callback);
           },
@@ -375,6 +391,16 @@ buster.testCase("Offer tests", {
                   seq = m.tx_json.Sequence;
                 })
               .submit();
+          },
+          function (callback) {
+            self.what = "Owner counts after offer create.";
+
+            testutils.verify_owner_counts(self.remote,
+              {
+                "alice" : 1,
+                "bob" : 2,
+              },
+              callback);
           },
           function (callback) {
             self.what = "Verify offer balance.";
@@ -408,6 +434,16 @@ buster.testCase("Offer tests", {
             self.what = "Verify offer consumed.";
 
             testutils.verify_offer_not_found(self.remote, "bob", seq, callback);
+          },
+          function (callback) {
+            self.what = "Owner counts after consumed.";
+
+            testutils.verify_owner_counts(self.remote,
+              {
+                "alice" : 1,
+                "bob" : 1,
+              },
+              callback);
           },
         ], function (error) {
           buster.refute(error, self.what);

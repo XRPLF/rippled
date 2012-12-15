@@ -622,7 +622,6 @@ Remote.prototype.request_ledger_entry = function (type) {
 
       // console.log('request_ledger_entry: caught');
 
-
       if (self._ledger_hash) {
         // A specific ledger is requested.
 
@@ -910,6 +909,19 @@ Remote.prototype.request_account_balance = function (account, current) {
     .on('success', function (message) {
         // If the caller also waits for 'success', they might run before this.
         request.emit('account_balance', Amount.from_json(message.node.Balance));
+      });
+};
+
+// Return a request to emit the owner count.
+Remote.prototype.request_owner_count = function (account, current) {
+  var request = this.request_ledger_entry('account_root');
+
+  return request
+    .account_root(account)
+    .ledger_choose(current)
+    .on('success', function (message) {
+        // If the caller also waits for 'success', they might run before this.
+        request.emit('owner_count', message.node.OwnerCount);
       });
 };
 

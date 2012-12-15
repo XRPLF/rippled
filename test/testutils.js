@@ -138,6 +138,8 @@ var build_teardown = function (host) {
 var create_accounts = function (remote, src, amount, accounts, callback) {
   assert(5 === arguments.length);
 
+  remote.set_account_seq(src, 1);
+
   async.forEach(accounts, function (account, callback) {
     // Cache the seq as 1.
     // Otherwise, when other operations attempt to opperate async against the account they may get confused.
@@ -364,6 +366,36 @@ var verify_offer_not_found = function (remote, owner, seq, callback) {
     .request();
 };
 
+var verify_owner_count = function (remote, account, value, callback) {
+  assert(4 === arguments.length);
+
+  remote.request_owner_count(account, 'CURRENT')
+    .once('owner_count', function (owner_count) {
+        if (owner_count !== value)
+          console.log("owner_count: %s/%d", owner_count, value);
+
+        callback(owner_count !== value);
+      })
+    .request();
+};
+
+var verify_owner_counts = function (remote, counts, callback) {
+  var tests = [];
+
+  for (var src in counts) {
+      tests.push( { "source" : src, "count" : counts[src] } );
+  }
+
+  async.every(tests,
+    function (check, callback) {
+      verify_owner_count(remote, check.source, check.count,
+        function (mismatch) { callback(!mismatch); });
+    },
+    function (every) {
+      callback(!every);
+    });
+};
+
 exports.account_dump            = account_dump;
 
 exports.build_setup             = build_setup;
@@ -378,5 +410,7 @@ exports.verify_balance          = verify_balance;
 exports.verify_balances         = verify_balances;
 exports.verify_offer            = verify_offer;
 exports.verify_offer_not_found  = verify_offer_not_found;
+exports.verify_owner_count      = verify_owner_count;
+exports.verify_owner_counts     = verify_owner_counts;
 
 // vim:sw=2:sts=2:ts=8:et
