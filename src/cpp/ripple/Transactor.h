@@ -9,25 +9,25 @@
 class Transactor
 {
 protected:
-	const SerializedTransaction& mTxn;
-	TransactionEngine* mEngine;
-	TransactionEngineParams mParams;
+	const SerializedTransaction&	mTxn;
+	TransactionEngine*		mEngine;
+	TransactionEngineParams		mParams;
 
-	uint160 mTxnAccountID;
-	STAmount mFeeDue;
-	STAmount mSourceBalance;
-	SLE::pointer mTxnAccount;
-	bool mHasAuthKey;
-	RippleAddress mSigningPubKey;
-	
+	uint160				mTxnAccountID;
+	STAmount			mFeeDue;
+	STAmount			mSourceBalance;
+	SLE::pointer			mTxnAccount;
+	bool				mHasAuthKey;
+	RippleAddress			mSigningPubKey;
 
 	TER preCheck();
 	TER checkSeq();
 	TER payFee();
+
 	virtual void calculateFee();
 	virtual TER checkSig();
 	virtual TER doApply()=0;
-	
+
 	Transactor(const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine);
 
 public:
@@ -39,3 +39,5 @@ public:
 };
 
 #endif
+
+// vim:ts=4

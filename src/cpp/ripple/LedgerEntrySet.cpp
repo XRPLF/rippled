@@ -486,6 +486,35 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result, uint32 index)
 	cLog(lsTRACE) << "Metadata:" << mSet.getJson(0);
 }
 
+TER LedgerEntrySet::dirCount(const uint256& uRootIndex, uint32& uCount)
+{
+	uint64	uNodeDir	= 0;
+
+	uCount	= 0;
+
+	do
+	{
+		SLE::pointer	sleNode	= entryCache(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uNodeDir));
+
+		if (sleNode)
+		{
+			uCount		+= sleNode->getFieldV256(sfIndexes).peekValue().size();
+
+			uNodeDir	= sleNode->getFieldU64(sfIndexNext);		// Get next node.
+		}
+		else if (uNodeDir)
+		{
+			cLog(lsWARNING) << "dirCount: no such node";
+
+			assert(false);
+
+			return tefBAD_LEDGER;
+		}
+	} while (uNodeDir);
+
+	return tesSUCCESS;
+}
+
 // <--     uNodeDir: For deletion, present to make dirDelete efficient.
 // -->   uRootIndex: The index of the base of the directory.  Nodes are based off of this.
 // --> uLedgerIndex: Value to add to directory.
@@ -814,10 +843,52 @@ bool LedgerEntrySet::dirNext(
 	return true;
 }
 
+// If there is a count, adjust the owner count by iAmount. Otherwise, compute the owner count and store it.
+TER LedgerEntrySet::ownerCountAdjust(const uint160& uOwnerID, int iAmount, SLE::ref sleAccountRoot)
+{
+	SLE::pointer	sleHold	= sleAccountRoot
+								? SLE::pointer()
+								: entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uOwnerID));
+
+	SLE::ref		sleRoot	= sleAccountRoot
+								? sleAccountRoot
+								: sleHold;
+
+	const bool		bHaveOwnerCount	= sleRoot->isFieldPresent(sfOwnerCount);
+	TER				terResult;
+
+	if (bHaveOwnerCount)
+	{
+		const uint32	uOwnerCount		= sleRoot->getFieldU32(sfOwnerCount);
+
+		sleRoot->setFieldU32(sfOwnerCount, uOwnerCount+iAmount);
+
+		terResult	= tesSUCCESS;
+	}
+	else
+	{
+		uint32	uActualCount;
+
+		terResult	= dirCount(Ledger::getOwnerDirIndex(uOwnerID), uActualCount);
+
+		if (tesSUCCESS == terResult)
+		{
+			sleRoot->setFieldU32(sfOwnerCount, uActualCount);
+		}
+	}
+
+	return terResult;
+}
+
 TER LedgerEntrySet::offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID)
 {
 	uint64	uOwnerNode	= sleOffer->getFieldU64(sfOwnerNode);
 	TER		terResult	= dirDelete(false, uOwnerNode, Ledger::getOwnerDirIndex(uOwnerID), uOfferIndex, false);
+
+	if (tesSUCCESS == terResult)
+	{
+		terResult	= ownerCountAdjust(uOwnerID, -1);
+	}
 
 	if (tesSUCCESS == terResult)
 	{

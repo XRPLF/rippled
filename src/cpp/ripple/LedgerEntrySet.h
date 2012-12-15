@@ -99,8 +99,11 @@ public:
 		const uint256&					uLedgerIndex,	// Item being deleted
 		const bool						bStable);
 
-	bool dirFirst(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
-	bool dirNext(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
+	bool				dirFirst(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
+	bool				dirNext(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
+	TER					dirCount(const uint256& uDirIndex, uint32& uCount);
+
+	TER					ownerCountAdjust(const uint160& uOwnerID, int iAmount, SLE::ref sleAccountRoot=SLE::pointer());
 
 	// Offer functions.
 	TER					offerDelete(const uint256& uOfferIndex);

@@ -39,3 +39,5 @@ TER OfferCancelTransactor::doApply()
 
 	return terResult;
 }
+
+// vim:ts=4

@@ -399,6 +399,12 @@ TER OfferCreateTransactor::doApply()
 			boost::bind(&Ledger::qualityDirDescriber, _1, saTakerPays.getCurrency(), uPaysIssuerID,
 				saTakerGets.getCurrency(), uGetsIssuerID, uRate));
 
+		// Update owner count.
+		if (tesSUCCESS == terResult)
+		{
+			terResult	= mEngine->getNodes().ownerCountAdjust(mTxnAccountID, 1, mTxnAccount);
+		}
+
 		if (tesSUCCESS == terResult)
 		{
 			uint256	uBookBase	= Ledger::getBookBase(uPaysCurrency, uPaysIssuerID, uGetsCurrency, uGetsIssuerID);

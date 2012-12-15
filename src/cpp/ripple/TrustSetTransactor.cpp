@@ -53,7 +53,12 @@ TER TrustSetTransactor::doApply()
 	if (sleRippleState)
 	{
 		// A line exists in one or more directions.
+
 #if 0
+		// We might delete a ripple state node if everything is set to defaults.
+		// However, this is problematic as it may make predicting reserve amounts harder for users.
+		// The code here is incomplete.
+
 		if (!saLimitAmount)
 		{
 			// Zeroing line.
@@ -135,7 +140,7 @@ TER TrustSetTransactor::doApply()
 		if (uQualityOut)
 			sleRippleState->setFieldU32(bFlipped ? sfHighQualityOut : sfLowQualityOut, uQualityOut);
 
-		uint64			uSrcRef;							// Ignored, dirs never delete.
+		uint64			uSrcRef;							// <-- Ignored, dirs never delete.
 
 		terResult	= mEngine->getNodes().dirAdd(
 			uSrcRef,
@@ -144,11 +149,17 @@ TER TrustSetTransactor::doApply()
 			boost::bind(&Ledger::ownerDirDescriber, _1, mTxnAccountID));
 
 		if (tesSUCCESS == terResult)
+			terResult	= mEngine->getNodes().ownerCountAdjust(mTxnAccountID, 1, mTxnAccount);
+
+		if (tesSUCCESS == terResult)
 			terResult	= mEngine->getNodes().dirAdd(
 				uSrcRef,
 				Ledger::getOwnerDirIndex(uDstAccountID),
 				sleRippleState->getIndex(),
 				boost::bind(&Ledger::ownerDirDescriber, _1, uDstAccountID));
+
+		if (tesSUCCESS == terResult)
+			terResult	= mEngine->getNodes().ownerCountAdjust(uDstAccountID, 1, sleDst);
 	}
 
 	Log(lsINFO) << "doTrustSet<";
