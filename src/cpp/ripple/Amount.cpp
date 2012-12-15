@@ -1446,7 +1446,7 @@ static void mulTest(int a, int b)
 	if (prod1.isNative())
 		BOOST_FAIL("product is native");
 
-	STAmount prod2(CURRENCY_ONE, ACCOUNT_ONE, a * b);
+	STAmount prod2(CURRENCY_ONE, ACCOUNT_ONE, static_cast<uint64>(a) * static_cast<uint64>(b));
 	if (prod1 != prod2)
 	{
 		Log(lsWARNING) << "nn(" << aa.getFullText() << " * " << bb.getFullText() << ") = " << prod1.getFullText()
@@ -1489,8 +1489,8 @@ BOOST_AUTO_TEST_CASE( CurrencyMulDivTests )
 	roundTest(1, 3, 3); roundTest(2, 3, 9); roundTest(1, 7, 21); roundTest(1, 2, 4);
 	roundTest(3, 9, 18); roundTest(7, 11, 44);
 
-	mulTest(100, 1000); mulTest(1, 2); mulTest(32, 15); mulTest(981, 4012);
-	mulTest(100, 5);
+	for (int i = 0; i <= 100000; ++i)
+			mulTest(rand() % 10000000, rand() % 10000000);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
