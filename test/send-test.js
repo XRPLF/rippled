@@ -476,8 +476,8 @@ buster.testCase("Sending future", {
 });
 
 buster.testCase("Indirect ripple", {
-  // 'setUp'     : testutils.build_setup({ verbose: true }),
-  'setUp'     : testutils.build_setup(),
+  'setUp'     : testutils.build_setup({ verbose: true }),
+  // 'setUp'     : testutils.build_setup(),
   'tearDown'  : testutils.build_teardown(),
 
   "indirect ripple" :
@@ -671,7 +671,7 @@ buster.testCase("Indirect ripple", {
         });
     },
 
-  "//indirect ripple with path and transfer fee" :
+  "indirect ripple with path and transfer fee" :
     function (done) {
       var self = this;
 
@@ -735,9 +735,11 @@ buster.testCase("Indirect ripple", {
           function (callback) {
             self.what = "Verify balances.";
 
+            // 65.00000000000001 is correct.
+            // This is result of limited precision.
             testutils.verify_balances(self.remote,
               {
-                "alice"   : [ "-100/USD/bob", "-65/USD/carol" ],
+                "alice"   : [ "-100/USD/bob", "-65.00000000000001/USD/carol" ],
                 "amazon"  : "150/USD/mtgox",
                 "bob"     : "0/USD/mtgox",
                 "carol"   : "35/USD/mtgox",
