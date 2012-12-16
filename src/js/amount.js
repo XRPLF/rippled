@@ -1156,6 +1156,9 @@ Amount.prototype.to_text = function (allow_nan) {
  *
  * @param opts Options for formatter.
  * @param opts.precision {Number} Max. number of digits after decimal point.
+ * @param opts.min_precision {Number} Min. number of digits after dec. point.
+ * @param opts.skip_empty_fraction {Boolean} Don't show fraction if it is zero,
+ *   even if min_precision is set.
  * @param opts.group_sep {Boolean|String} Whether to show a separator every n
  *   digits, if a string, that value will be used as the separator. Default: ","
  * @param opts.group_width {Number} How many numbers will be grouped together,
@@ -1187,8 +1190,16 @@ Amount.prototype.to_human = function (opts)
   int_part = int_part.replace(/^0*/, '');
   fraction_part = fraction_part.replace(/0*$/, '');
 
-  if ("number" === typeof opts.precision) {
-    fraction_part = fraction_part.slice(0, opts.precision);
+  if (fraction_part.length || !opts.skip_empty_fraction) {
+    if ("number" === typeof opts.precision) {
+      fraction_part = fraction_part.slice(0, opts.precision);
+    }
+
+    if ("number" === typeof opts.min_precision) {
+      while (fraction_part.length < opts.min_precision) {
+        fraction_part += "0";
+      }
+    }
   }
 
   if (opts.group_sep) {
