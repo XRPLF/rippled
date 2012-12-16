@@ -3,6 +3,8 @@
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
+SETUP_LOG();
+
 // Take as much as possible. Adjusts account balances. Charges fees on top to taker.
 // -->   uBookBase: The order book to take against.
 // --> saTakerPays: What the taker offers (w/ issuer)
@@ -262,7 +264,6 @@ TER OfferCreateTransactor::doApply()
 	const uint32			uSequence		= mTxn.getSequence();
 
 	const uint256			uLedgerIndex	= Ledger::getOfferIndex(mTxnAccountID, uSequence);
-	SLE::pointer			sleOffer		= mEngine->entryCreate(ltOFFER, uLedgerIndex);
 
 	Log(lsINFO) << "doOfferCreate: Creating offer node: " << uLedgerIndex.ToString() << " uSequence=" << uSequence;
 
@@ -431,6 +432,8 @@ TER OfferCreateTransactor::doApply()
 			Log(lsWARNING) << "doOfferCreate: uPaysCurrency=" << saTakerPays.getHumanCurrency();
 			Log(lsWARNING) << "doOfferCreate: uGetsCurrency=" << saTakerGets.getHumanCurrency();
 
+			SLE::pointer			sleOffer		= mEngine->entryCreate(ltOFFER, uLedgerIndex);
+
 			sleOffer->setFieldAccount(sfAccount, mTxnAccountID);
 			sleOffer->setFieldU32(sfSequence, uSequence);
 			sleOffer->setFieldH256(sfBookDirectory, uDirectory);
@@ -444,11 +447,16 @@ TER OfferCreateTransactor::doApply()
 
 			if (bPassive)
 				sleOffer->setFlag(lsfPassive);
+
+			Log(lsINFO) << boost::str(boost::format("doOfferCreate: final terResult=%s sleOffer=%s")
+				% transToken(terResult)
+				% sleOffer->getJson(0));
 		}
 	}
 
-	Log(lsINFO) << "doOfferCreate: final sleOffer=" << sleOffer->getJson(0);
+	tLog(tesSUCCESS != terResult, lsINFO) << boost::str(boost::format("doOfferCreate: final terResult=%s") % transToken(terResult));
 
 	return terResult;
 }
+
 // vim:ts=4

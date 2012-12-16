@@ -451,7 +451,7 @@ buster.testCase("Offer tests", {
         });
     },
 
-  "//=>ripple currency conversion : offerer into debt" :
+  "ripple currency conversion : offerer into debt" :
     // alice in, carol out
     function (done) {
       var self = this;

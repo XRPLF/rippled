@@ -7,6 +7,7 @@
 #include "Log.h"
 
 SETUP_LOG();
+
 DECLARE_INSTANCE(LedgerEntrySetEntry);
 DECLARE_INSTANCE(LedgerEntrySet)
 
@@ -1284,4 +1285,5 @@ void LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uRecei
 		rippleSend(uSenderID, uReceiverID, saAmount);
 	}
 }
+
 // vim:ts=4

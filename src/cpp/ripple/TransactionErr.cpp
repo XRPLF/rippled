@@ -91,4 +91,5 @@ std::string transHuman(TER terCode)
 
 	return transResultInfo(terCode, strToken, strHuman) ? strHuman : "-";
 }
+
 // vim:ts=4

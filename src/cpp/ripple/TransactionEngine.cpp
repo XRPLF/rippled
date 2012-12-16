@@ -17,6 +17,7 @@
 #include "utils.h"
 
 SETUP_LOG();
+
 DECLARE_INSTANCE(TransactionEngine);
 
 void TransactionEngine::txnWrite()
