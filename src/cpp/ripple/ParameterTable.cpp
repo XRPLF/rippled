@@ -81,7 +81,7 @@ bool ParameterNode::addNode(const std::string& name, Parameter::ref node)
 Json::Value ParameterNode::getValue(int i) const
 {
 	Json::Value v(Json::objectValue);
-	typedef std::pair<std::string, Parameter::ref> string_ref_pair;
+	typedef std::pair<std::string, Parameter::pointer> string_ref_pair;
 	BOOST_FOREACH(string_ref_pair it, mChildren)
 	{
 		v[it.first] = it.second->getValue(i);
@@ -95,7 +95,7 @@ bool ParameterNode::setValue(const Json::Value& value, Json::Value& error)
 	error["error"] = "Cannot end on an inner node";
 
 	Json::Value nodes(Json::arrayValue);
-	typedef std::pair<std::string, Parameter::ref> string_ref_pair;
+	typedef std::pair<std::string, Parameter::pointer> string_ref_pair;
 	BOOST_FOREACH(string_ref_pair it, mChildren)
 	{
 		nodes.append(it.first);
