@@ -82,7 +82,7 @@ Json::Value ParameterNode::getValue(int i) const
 {
 	Json::Value v(Json::objectValue);
 	typedef std::pair<std::string, Parameter::ref> string_ref_pair;
-	BOOST_FOREACH(const string_ref_pair& it, mChildren)
+	BOOST_FOREACH(string_ref_pair it, mChildren)
 	{
 		v[it.first] = it.second->getValue(i);
 	}
@@ -96,7 +96,7 @@ bool ParameterNode::setValue(const Json::Value& value, Json::Value& error)
 
 	Json::Value nodes(Json::arrayValue);
 	typedef std::pair<std::string, Parameter::ref> string_ref_pair;
-	BOOST_FOREACH(const string_ref_pair& it, mChildren)
+	BOOST_FOREACH(string_ref_pair it, mChildren)
 	{
 		nodes.append(it.first);
 	}
