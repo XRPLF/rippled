@@ -131,24 +131,83 @@ bool LoadManager::adjust(LoadSource& source, int credits) const
 	return false;
 }
 
-uint64 LoadFeeTrack::scaleFee(uint64 fee)
+uint64 LoadFeeTrack::mulDiv(uint64 value, uint32 mul, uint32 div)
+{ // compute (value)*(mul)/(div) - avoid overflow but keep precision
+	static uint64 boundary = (0x00000000FFFFFFFF);
+	if (value > boundary)							// Large value, avoid overflow
+		return (value / div) * mul;
+	else											// Normal value, preserve accuracy
+		return (value * mul) / div;
+}
+
+uint64 LoadFeeTrack::scaleFeeLoad(uint64 fee)
 {
 	static uint64 midrange(0x00000000FFFFFFFF);
-	int factor = (mLocalTxnLoadFee > mRemoteTxnLoadFee) ? mLocalTxnLoadFee : mRemoteTxnLoadFee;
+	bool big = (fee > midrange);
 
-	if (fee > midrange)			// large fee, divide first
-		return (fee / lftNormalFee) * factor;
-	else						// small fee, multiply first
-		return (fee * factor) / lftNormalFee;
+	{
+		boost::mutex::scoped_lock sl(mLock);
+
+		if (big)				// big fee, divide first to avoid overflow
+			fee /= mBaseFee;
+		else					// normal fee, multiply first for accuracy
+			fee *= mBaseRef;
+
+		fee = mulDiv(fee, std::max(mLocalTxnLoadFee, mRemoteTxnLoadFee), lftNormalFee);
+
+		if (big)				// Fee was big to start, must now multiply
+			fee *= mBaseRef;
+		else					// Fee was small to start, mst now divide
+			fee /= mBaseFee;
+	}
+
+	return fee;
+}
+
+uint64 LoadFeeTrack::scaleFeeBase(uint64 fee)
+{
+
+	{
+		boost::mutex::scoped_lock sl(mLock);
+		fee = mulDiv(fee, mBaseRef, mBaseFee);
+	}
+
+	return fee;
+}
+
+uint32 LoadFeeTrack::getBaseFee()
+{
+	boost::mutex::scoped_lock sl(mLock);
+	return mBaseFee;
+}
+
+uint32 LoadFeeTrack::getRemoteFee()
+{
+	boost::mutex::scoped_lock sl(mLock);
+	return mRemoteTxnLoadFee;
+}
+
+uint32 LoadFeeTrack::getLocalFee()
+{
+	boost::mutex::scoped_lock sl(mLock);
+	return mLocalTxnLoadFee;
+}
+
+uint32 LoadFeeTrack::getBaseRef()
+{
+	boost::mutex::scoped_lock sl(mLock);
+	return mBaseRef;
 }
 
 void LoadFeeTrack::setRemoteFee(uint32 f)
 {
+	boost::mutex::scoped_lock sl(mLock);
 	mRemoteTxnLoadFee = f;
 }
 
 void LoadFeeTrack::raiseLocalFee()
 {
+	boost::mutex::scoped_lock sl(mLock);
 	if (mLocalTxnLoadFee < mLocalTxnLoadFee) // make sure this fee takes effect
 		mLocalTxnLoadFee = mLocalTxnLoadFee;
 
@@ -160,10 +219,29 @@ void LoadFeeTrack::raiseLocalFee()
 
 void LoadFeeTrack::lowerLocalFee()
 {
+	boost::mutex::scoped_lock sl(mLock);
 	mLocalTxnLoadFee -= (mLocalTxnLoadFee / lftFeeDecFraction ); // reduce by 1/16th
 
 	if (mLocalTxnLoadFee < lftNormalFee)
 		mLocalTxnLoadFee = lftNormalFee;
+}
+
+Json::Value LoadFeeTrack::getJson(int)
+{
+	Json::Value j(Json::objectValue);
+
+	{
+		boost::mutex::scoped_lock sl(mLock);
+
+		// base_fee = The cost to send a "reference" transaction under no load, in millionths of a Ripple
+		j["base_fee"] = Json::Value::UInt(mBaseFee);
+
+		// load_fee = The cost to send a "reference" transaction now, in millionths of a Ripple
+		j["load_fee"] = Json::Value::UInt(
+			mulDiv(mBaseFee, std::max(mLocalTxnLoadFee, mRemoteTxnLoadFee), lftNormalFee));
+	}
+
+	return j;
 }
 
 // vim:ts=4

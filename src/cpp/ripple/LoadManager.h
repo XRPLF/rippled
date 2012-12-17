@@ -1,9 +1,11 @@
-#ifndef LOADSOURCE__H
-#define LOADSOURCE__H
+#ifndef LOADMANAGER__H
+#define LOADMANAGER__H
 
 #include <vector>
 
 #include <boost/thread/mutex.hpp>
+
+#include "../json/value.h"
 
 #include "types.h"
 
@@ -121,15 +123,30 @@ protected:
 	static const int lftFeeDecFraction = 16;	// decrease fee by 1/16	
 	static const int lftFeeMax = lftNormalFee * 1000000;
 
+	uint32 mBaseRef;				// The number of fee units a reference transaction costs
+	uint32 mBaseFee;				// The cost in millionths of a ripple of a reference transaction
 	uint32 mLocalTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
 	uint32 mRemoteTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
+
+	boost::mutex mLock;
+
+	static uint64 mulDiv(uint64 value, uint32 mul, uint32 div);
 
 public:
 
 	LoadFeeTrack()	: mLocalTxnLoadFee(lftNormalFee), mRemoteTxnLoadFee(lftNormalFee) { ; }
 
-	uint64 scaleFee(uint64 fee);
+	uint64 scaleFeeBase(uint64 fee);	// Scale from fee units to millionths of a ripple
+	uint64 scaleFeeLoad(uint64 fee);	// Scale using load as well as base rate
 
+	uint32 getRemoteFee();
+	uint32 getLocalFee();
+	uint32 getBaseRef();
+	uint32 getBaseFee();
+
+	Json::Value getJson(int);
+
+	void setBaseFee(uint32);
 	void setRemoteFee(uint32);
 	void raiseLocalFee();
 	void lowerLocalFee();
