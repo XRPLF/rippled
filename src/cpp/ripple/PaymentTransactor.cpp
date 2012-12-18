@@ -158,7 +158,7 @@ TER PaymentTransactor::doApply()
 			sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount);
 
 			// re-arm the password change fee if we can and need to
-			if ((sleDst->getFlags() & lsfPasswordSpent)
+			if ((sleDst->getFlags() & lsfPasswordSpent))
 				sleDst->clearFlag(lsfPasswordSpent);
 
 			terResult	= tesSUCCESS;
