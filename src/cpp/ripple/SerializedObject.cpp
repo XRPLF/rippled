@@ -294,7 +294,7 @@ void STObject::add(Serializer& s, bool withSigningFields) const
 	}
 
 
-	typedef std::pair<const int, const SerializedType*> field_iterator;
+	typedef std::map<int, const SerializedType*>::value_type field_iterator;
 	BOOST_FOREACH(field_iterator& it, fields)
 	{ // insert them in sorted order
 		const SerializedType* field = it.second;

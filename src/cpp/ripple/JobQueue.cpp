@@ -111,7 +111,7 @@ int JobQueue::getJobCountGE(JobType t)
 
 	boost::mutex::scoped_lock sl(mJobLock);
 
-	typedef std::pair<JobType, int> jt_int_pair;
+	typedef std::map<JobType, int>::value_type jt_int_pair;
 	BOOST_FOREACH(const jt_int_pair& it, mJobCounts)
 		if (it.first >= t)
 			ret += it.second;
@@ -125,7 +125,7 @@ std::vector< std::pair<JobType, int> > JobQueue::getJobCounts()
 	boost::mutex::scoped_lock sl(mJobLock);
 	ret.reserve(mJobCounts.size());
 
-	typedef std::pair<JobType, int> jt_int_pair;
+	typedef std::map<JobType, int>::value_type jt_int_pair;
 	BOOST_FOREACH(const jt_int_pair& it, mJobCounts)
 		ret.push_back(it);
 

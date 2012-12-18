@@ -21,6 +21,7 @@ private:
 
 	typedef std::pair<RippleAddress, Peer::pointer>		naPeer;
 	typedef std::pair<ipPort, Peer::pointer>			pipPeer;
+	typedef std::map<ipPort, Peer::pointer>::value_type	vtPeer;
 
 	// Peers we are connecting with and non-thin peers we are connected to.
 	// Only peers we know the connection ip for are listed.
@@ -31,6 +32,7 @@ private:
 
 	// Non-thin peers which we are connected to.
 	// Peers we have the public key for.
+	typedef boost::unordered_map<RippleAddress, Peer::pointer>::value_type vtConMap;
     boost::unordered_map<RippleAddress, Peer::pointer>	mConnectedMap;
 
     // Connections with have a 64-bit identifier

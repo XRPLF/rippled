@@ -20,8 +20,8 @@
 
 #define LC_DEBUG
 
-typedef std::pair<const uint160, LedgerProposal::pointer> u160_prop_pair;
-typedef std::pair<const uint256, LCTransaction::pointer> u256_lct_pair;
+typedef std::map<uint160, LedgerProposal::pointer>::value_type u160_prop_pair;
+typedef std::map<uint256, LCTransaction::pointer>::value_type u256_lct_pair;
 
 SETUP_LOG();
 DECLARE_INSTANCE(LedgerConsensus);
@@ -348,7 +348,7 @@ void LedgerConsensus::checkLCL()
 	boost::unordered_map<uint256, currentValidationCount> vals =
 		theApp->getValidations().getCurrentValidations(favoredLedger);
 
-	typedef std::pair<const uint256, currentValidationCount> u256_cvc_pair;
+	typedef std::map<uint256, currentValidationCount>::value_type u256_cvc_pair;
 	BOOST_FOREACH(u256_cvc_pair& it, vals)
 		if (it.second.first > netLgrCount)
 		{
@@ -471,7 +471,7 @@ void LedgerConsensus::createDisputes(SHAMap::ref m1, SHAMap::ref m2)
 	SHAMap::SHAMapDiff differences;
 	m1->compare(m2, differences, 16384);
 
-	typedef std::pair<const uint256, SHAMap::SHAMapDiffItem> u256_diff_pair;
+	typedef std::map<uint256, SHAMap::SHAMapDiffItem>::value_type u256_diff_pair;
 	BOOST_FOREACH (u256_diff_pair& pos, differences)
 	{ // create disputed transactions (from the ledger that has them)
 		if (pos.second.first)
