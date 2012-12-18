@@ -1006,7 +1006,7 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 	{
 		naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
 
-		Log(lsWARNING) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << raSrcAddressID.humanAccountID();
+		cLog(lsWARNING) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << raSrcAddressID.humanAccountID();
 
 		bFound	= raSrcAddressID.getAccountID() == naMasterAccountPublic.getAccountID();
 		if (!bFound)

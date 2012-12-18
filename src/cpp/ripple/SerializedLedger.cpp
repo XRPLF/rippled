@@ -6,6 +6,7 @@
 #include "Log.h"
 
 DECLARE_INSTANCE(SerializedLedgerEntry)
+SETUP_LOG();
 
 SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint256& index)
 	: STObject(sfLedgerEntry), mIndex(index)
@@ -33,8 +34,8 @@ SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256&
 	mType = mFormat->t_type;
 	if (!setType(mFormat->elements))
 	{
-		Log(lsWARNING) << "Ledger entry not valid for type " << mFormat->t_name;
-		Log(lsWARNING) << getJson(0);
+		cLog(lsWARNING) << "Ledger entry not valid for type " << mFormat->t_name;
+		cLog(lsWARNING) << getJson(0);
 		throw std::runtime_error("ledger entry not valid for type");
 	}
 }
@@ -99,7 +100,7 @@ uint32 SerializedLedgerEntry::getThreadedLedger()
 bool SerializedLedgerEntry::thread(const uint256& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID)
 {
 	uint256 oldPrevTxID = getFieldH256(sfPreviousTxnID);
-	Log(lsTRACE) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
+	cLog(lsTRACE) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
 	if (oldPrevTxID == txID)
 	{ // this transaction is already threaded
 		assert(getFieldU32(sfPreviousTxnLgrSeq) == ledgerSeq);

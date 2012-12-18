@@ -277,7 +277,7 @@ bool STAmount::setValue(const std::string& sAmount)
 		}
 		catch (...)
 		{
-			Log(lsINFO) << "Bad integer amount: " << sAmount;
+			cLog(lsINFO) << "Bad integer amount: " << sAmount;
 
 			return false;
 		}
@@ -304,7 +304,7 @@ bool STAmount::setValue(const std::string& sAmount)
 		}
 		catch (...)
 		{
-			Log(lsINFO) << "Bad e amount: " << sAmount;
+			cLog(lsINFO) << "Bad e amount: " << sAmount;
 
 			return false;
 		}
@@ -346,7 +346,7 @@ bool STAmount::setValue(const std::string& sAmount)
 		}
 		catch (...)
 		{
-			Log(lsINFO) << "Bad float amount: " << sAmount;
+			cLog(lsINFO) << "Bad float amount: " << sAmount;
 
 			return false;
 		}
@@ -391,7 +391,7 @@ bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurr
 	//
 	if (!currencyFromString(mCurrency, sCurrency))
 	{
-		Log(lsINFO) << "Currency malformed: " << sCurrency;
+		cLog(lsINFO) << "Currency malformed: " << sCurrency;
 
 		return false;
 	}
@@ -406,7 +406,7 @@ bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurr
 	// Issuer must be "" or a valid account string.
 	if (!naIssuerID.setAccountID(sIssuer))
 	{
-		Log(lsINFO) << "Issuer malformed: " << sIssuer;
+		cLog(lsINFO) << "Issuer malformed: " << sIssuer;
 
 		return false;
 	}
@@ -416,7 +416,7 @@ bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurr
 	// Stamps not must have an issuer.
 	if (mIsNative && !mIssuer.isZero())
 	{
-		Log(lsINFO) << "Issuer specified for XRP: " << sIssuer;
+		cLog(lsINFO) << "Issuer specified for XRP: " << sIssuer;
 
 		return false;
 	}
@@ -1050,7 +1050,7 @@ bool STAmount::applyOffer(
 		saTakerPaid			= saOfferGets;		// Taker paid what offer could get.
 		saTakerGot			= saOfferPays;		// Taker got what offer could pay.
 
-		Log(lsINFO) << "applyOffer: took all outright";
+		cLog(lsINFO) << "applyOffer: took all outright";
 	}
 	else if (saTakerFunds >= saOfferGetsAvailable)
 	{
@@ -1058,7 +1058,7 @@ bool STAmount::applyOffer(
 		saTakerPaid	= saOfferGetsAvailable;		// Taker paid what offer could get.
 		saTakerGot	= saOfferPaysAvailable;		// Taker got what offer could pay.
 
-		Log(lsINFO) << "applyOffer: took all available";
+		cLog(lsINFO) << "applyOffer: took all available";
 	}
 	else
 	{
@@ -1066,8 +1066,8 @@ bool STAmount::applyOffer(
 		saTakerPaid	= saTakerFunds;					// Taker paid all he had.
 		saTakerGot	= divide(multiply(saTakerFunds, saOfferPaysAvailable, CURRENCY_ONE, ACCOUNT_ONE), saOfferGetsAvailable, saOfferPays.getCurrency(), saOfferPays.getIssuer());
 
-		Log(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
-		Log(lsINFO) << "applyOffer: saOfferPaysAvailable=" << saOfferPaysAvailable.getFullText();
+		cLog(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
+		cLog(lsINFO) << "applyOffer: saOfferPaysAvailable=" << saOfferPaysAvailable.getFullText();
 	}
 
 	if (uTakerPaysRate == QUALITY_ONE)
@@ -1394,7 +1394,7 @@ BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 		BOOST_FAIL("STAmount multiply fail");
 	if (STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount(3), CURRENCY_ONE, ACCOUNT_ONE).getText() != "20")
 	{
-		Log(lsFATAL) << "60/3 = " <<
+		cLog(lsFATAL) << "60/3 = " <<
 			STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60),
 				STAmount(3), CURRENCY_ONE, ACCOUNT_ONE).getText();
 		BOOST_FAIL("STAmount divide fail");
@@ -1449,7 +1449,7 @@ static void mulTest(int a, int b)
 	STAmount prod2(CURRENCY_ONE, ACCOUNT_ONE, static_cast<uint64>(a) * static_cast<uint64>(b));
 	if (prod1 != prod2)
 	{
-		Log(lsWARNING) << "nn(" << aa.getFullText() << " * " << bb.getFullText() << ") = " << prod1.getFullText()
+		cLog(lsWARNING) << "nn(" << aa.getFullText() << " * " << bb.getFullText() << ") = " << prod1.getFullText()
 			<< " not " << prod2.getFullText();
 		BOOST_WARN("Multiplication result is not exact");
 	}
@@ -1457,7 +1457,7 @@ static void mulTest(int a, int b)
 	prod1 = STAmount::multiply(aa, bb, CURRENCY_ONE, ACCOUNT_ONE);
 	if (prod1 != prod2)
 	{
-		Log(lsWARNING) << "n(" << aa.getFullText() << " * " << bb.getFullText() << ") = " << prod1.getFullText()
+		cLog(lsWARNING) << "n(" << aa.getFullText() << " * " << bb.getFullText() << ") = " << prod1.getFullText()
 			<< " not " << prod2.getFullText();
 		BOOST_WARN("Multiplication result is not exact");
 	}
