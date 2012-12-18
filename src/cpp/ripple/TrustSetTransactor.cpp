@@ -1,3 +1,5 @@
+#include "Application.h"
+
 #include "TrustSetTransactor.h"
 
 #include <boost/bind.hpp>
@@ -51,6 +53,11 @@ TER TrustSetTransactor::doApply()
 
 		return terNO_DST;
 	}
+
+	const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
+	const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
+	// The reserve required to create the line.
+	const uint64	uReserveCreate	= theApp->scaleFeeBase(theConfig.FEE_ACCOUNT_RESERVE + (uOwnerCount+1)* theConfig.FEE_OWNER_RESERVE);
 
 	STAmount			saLimitAllow	= saLimitAmount;
 	saLimitAllow.setIssuer(mTxnAccountID);
@@ -167,15 +174,20 @@ TER TrustSetTransactor::doApply()
 		const bool	bLowReserved		= isSetBit(uFlagsIn, lsfLowReserve);
 		const bool	bHighReserved		= isSetBit(uFlagsIn, lsfHighReserve);
 
+		bool		bReserveIncrease	= false;
+
 		if (bLowReserveSet && !bLowReserved)
 		{
 			// Set reserve for low account.
 
-			terResult	= mEngine->getNodes().ownerCountAdjust(uLowAccountID, 1, sleLowAccount);
-			uFlagsOut	|= lsfLowReserve;
+			terResult			= mEngine->getNodes().ownerCountAdjust(uLowAccountID, 1, sleLowAccount);
+			uFlagsOut			|= lsfLowReserve;
+
+			if (!bHigh)
+				bReserveIncrease	= true;
 		}
 
-		if (bLowReserveClear && bLowReserved)
+		if (tesSUCCESS == terResult && bLowReserveClear && bLowReserved)
 		{
 			// Clear reserve for low account.
 
@@ -183,15 +195,18 @@ TER TrustSetTransactor::doApply()
 			uFlagsOut	&= ~lsfLowReserve;
 		}
 
-		if (bHighReserveSet && !bHighReserved)
+		if (tesSUCCESS == terResult && bHighReserveSet && !bHighReserved)
 		{
 			// Set reserve for high account.
 
 			terResult	= mEngine->getNodes().ownerCountAdjust(uHighAccountID, 1, sleHighAccount);
 			uFlagsOut	|= lsfHighReserve;
+
+			if (bHigh)
+				bReserveIncrease	= true;
 		}
 
-		if (bHighReserveClear && bHighReserved)
+		if (tesSUCCESS == terResult && bHighReserveClear && bHighReserved)
 		{
 			// Clear reserve for high account.
 
@@ -202,11 +217,17 @@ TER TrustSetTransactor::doApply()
 		if (uFlagsIn != uFlagsOut)
 			sleRippleState->setFieldU32(sfFlags, uFlagsOut);
 
-		if (bDefault)
+		if (tesSUCCESS != terResult)
+		{
+			Log(lsINFO) << "doTrustSet: Error";
+
+			nothing();
+		}
+		else if (bDefault)
 		{
 			// Can delete.
 
-			uint64		uSrcRef;							// <-- Ignored, dirs never delete.
+			uint64		uSrcRef;								// <-- Ignored, dirs never delete.
 
 			terResult	= mEngine->getNodes().dirDelete(false, uSrcRef, Ledger::getOwnerDirIndex(uLowAccountID), sleRippleState->getIndex(), false);
 
@@ -217,6 +238,15 @@ TER TrustSetTransactor::doApply()
 
 			Log(lsINFO) << "doTrustSet: Deleting ripple line";
 		}
+		else if (bReserveIncrease
+			&& isSetBit(mParams, tapOPEN_LEDGER)				// Ledger is not final, we can vote no.
+			&& saSrcXRPBalance.getNValue() < uReserveCreate)	// Reserve is not scaled by load.
+		{
+			Log(lsINFO) << "doTrustSet: Delay transaction: Insufficent reserve to add trust line.";
+
+			// Another transaction could provide XRP to the account and then this transaction would succeed.
+			terResult	= terINSUF_RESERVE;
+		}
 		else
 		{
 			mEngine->entryModify(sleRippleState);
@@ -225,13 +255,21 @@ TER TrustSetTransactor::doApply()
 		}
 	}
 	// Line does not exist.
-	else if (!saLimitAmount									// Setting default limit.
-		&& (!bQualityIn || !uQualityIn)						// Not setting quality in or setting default quality in.
-		&& (!bQualityOut || !uQualityOut))					// Not setting quality out or setting default quality out.
+	else if (!saLimitAmount										// Setting default limit.
+		&& (!bQualityIn || !uQualityIn)							// Not setting quality in or setting default quality in.
+		&& (!bQualityOut || !uQualityOut))						// Not setting quality out or setting default quality out.
 	{
 		Log(lsINFO) << "doTrustSet: Redundant: Setting non-existent ripple line to defaults.";
 
 		return terNO_LINE_REDUNDANT;
+	}
+	else if (isSetBit(mParams, tapOPEN_LEDGER)					// Ledger is not final, we can vote no.
+		&& saSrcXRPBalance.getNValue() < uReserveCreate)		// Reserve is not scaled by load.
+	{
+		Log(lsINFO) << "doTrustSet: Delay transaction: Line does not exist. Insufficent reserve to create line.";
+
+		// Another transaction could create the account and then this transaction would succeed.
+		terResult	= terNO_LINE_INSUF_RESERVE;
 	}
 	else
 	{
