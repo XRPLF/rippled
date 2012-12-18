@@ -16,6 +16,8 @@
 #include "Log.h"
 #include "HashPrefixes.h"
 
+SETUP_LOG();
+
 std::string SHAMapNode::getString() const
 {
 	static boost::format NodeID("NodeID(%s,%s)");
@@ -170,7 +172,7 @@ int SHAMapNode::selectBranch(const uint256& hash) const
 
 void SHAMapNode::dump() const
 {
-	Log(lsDEBUG) << getString();
+	cLog(lsDEBUG) << getString();
 }
 
 SHAMapTreeNode::SHAMapTreeNode(uint32 seq, const SHAMapNode& nodeID) : SHAMapNode(nodeID), mHash(0),
@@ -265,7 +267,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 	{
 		if (rawNode.size() < 4)
 		{
-			Log(lsINFO) << "size < 4";
+			cLog(lsINFO) << "size < 4";
 			throw std::runtime_error("invalid P node");
 		}
 
@@ -287,7 +289,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 			s.chop(32);
 			if (u.isZero())
 			{
-				Log(lsINFO) << "invalid PLN node";
+				cLog(lsINFO) << "invalid PLN node";
 				throw std::runtime_error("invalid PLN node");
 			}
 			mItem = boost::make_shared<SHAMapItem>(u, s.peekData()); 
@@ -313,7 +315,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 		else
 		{
-			Log(lsINFO) << "Unknown node prefix " << std::hex << prefix << std::dec;
+			cLog(lsINFO) << "Unknown node prefix " << std::hex << prefix << std::dec;
 			throw std::runtime_error("invalid node prefix");
 		}
 	}
@@ -510,7 +512,7 @@ void SHAMapTreeNode::makeInner()
 
 void SHAMapTreeNode::dump()
 {
-	Log(lsDEBUG) << "SHAMapTreeNode(" << getNodeID() << ")";
+	cLog(lsDEBUG) << "SHAMapTreeNode(" << getNodeID() << ")";
 }
 
 std::string SHAMapTreeNode::getString() const

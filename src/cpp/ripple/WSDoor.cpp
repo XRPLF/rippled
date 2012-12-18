@@ -78,7 +78,7 @@ void WSDoor::startListening()
 		}
 		catch (websocketpp::exception& e)
 		{
-			Log(lsWARNING) << "websocketpp exception: " << e.what();
+			cLog(lsWARNING) << "websocketpp exception: " << e.what();
 			while (1) // temporary workaround for websocketpp throwing exceptions on access/close races
 			{ // https://github.com/zaphoyd/websocketpp/issues/98
 				try
@@ -88,7 +88,7 @@ void WSDoor::startListening()
 				}
 				catch (websocketpp::exception& e)
 				{
-					Log(lsWARNING) << "websocketpp exception: " << e.what();
+					cLog(lsWARNING) << "websocketpp exception: " << e.what();
 				}
 			}
 		}
@@ -114,7 +114,7 @@ void WSDoor::startListening()
 		}
 		catch (websocketpp::exception& e)
 		{
-			Log(lsWARNING) << "websocketpp exception: " << e.what();
+			cLog(lsWARNING) << "websocketpp exception: " << e.what();
 			while (1) // temporary workaround for websocketpp throwing exceptions on access/close races
 			{ // https://github.com/zaphoyd/websocketpp/issues/98
 				try
@@ -124,7 +124,7 @@ void WSDoor::startListening()
 				}
 				catch (websocketpp::exception& e)
 				{
-					Log(lsWARNING) << "websocketpp exception: " << e.what();
+					cLog(lsWARNING) << "websocketpp exception: " << e.what();
 				}
 			}
 		}

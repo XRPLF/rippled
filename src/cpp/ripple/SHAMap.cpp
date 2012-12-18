@@ -707,7 +707,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 	HashedObject::pointer obj(theApp->getHashedObjectStore().retrieve(hash));
 	if (!obj)
 	{
-//		Log(lsTRACE) << "fetchNodeExternal: missing " << hash;
+//		cLog(lsTRACE) << "fetchNodeExternal: missing " << hash;
 		throw SHAMapMissingNode(mType, id, hash);
 	}
 
@@ -716,13 +716,13 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 		SHAMapTreeNode::pointer ret = boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq - 1, snfPREFIX);
 		if (id != *ret)
 		{
-			Log(lsFATAL) << "id:" << id << ", got:" << *ret;
+			cLog(lsFATAL) << "id:" << id << ", got:" << *ret;
 			assert(false);
 			return SHAMapTreeNode::pointer();
 		}
 		if (ret->getNodeHash() != hash)
 		{
-			Log(lsFATAL) << "Hashes don't match";
+			cLog(lsFATAL) << "Hashes don't match";
 			assert(false);
 			return SHAMapTreeNode::pointer();
 		}
@@ -745,11 +745,11 @@ void SHAMap::fetchRoot(const uint256& hash)
 	if (sLog(lsTRACE))
 	{
 		if (mType == smtTRANSACTION)
-			Log(lsTRACE) << "Fetch root TXN node " << hash;
+			cLog(lsTRACE) << "Fetch root TXN node " << hash;
 		else if (mType == smtSTATE)
-			Log(lsTRACE) << "Fetch root STATE node " << hash;
+			cLog(lsTRACE) << "Fetch root STATE node " << hash;
 		else
-			Log(lsTRACE) << "Fetch root SHAMap node " << hash;
+			cLog(lsTRACE) << "Fetch root SHAMap node " << hash;
 	}
 	root = fetchNodeExternal(SHAMapNode(), hash);
 	assert(root->getNodeHash() == hash);

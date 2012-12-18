@@ -1232,10 +1232,10 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 
 	if (sLog(lsTRACE))
 	{
-		Log(lsTRACE) << "newLCL";
+		cLog(lsTRACE) << "newLCL";
 		Json::Value p;
 		newLCL->addJson(p, LEDGER_JSON_DUMP_TXRP | LEDGER_JSON_DUMP_STATE);
-		Log(lsTRACE) << p;
+		cLog(lsTRACE) << p;
 	}
 
 	statusChange(ripple::neACCEPTED_LEDGER, *newLCL);
