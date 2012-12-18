@@ -5,6 +5,7 @@
 #include <boost/thread.hpp>
 
 #include "Log.h"
+#include "Config.h"
 
 SETUP_LOG();
 
@@ -184,7 +185,9 @@ void JobQueue::shutdown()
 
 void JobQueue::setThreadCount(int c)
 { // set the number of thread serving the job queue to precisely this number
-	if (c == 0)
+	if (theConfig.RUN_STANDALONE)
+		c = 1;
+	else if (c == 0)
 	{
 		c = boost::thread::hardware_concurrency();
 		if (c < 2)
