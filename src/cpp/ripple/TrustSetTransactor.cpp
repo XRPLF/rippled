@@ -12,7 +12,7 @@ TER TrustSetTransactor::doApply()
 	const bool			bQualityOut		= mTxn.isFieldPresent(sfQualityOut);
 	const uint160		uCurrencyID		= saLimitAmount.getCurrency();
 	uint160				uDstAccountID	= saLimitAmount.getIssuer();
-	const bool			bFlipped		= mTxnAccountID > uDstAccountID;		// true, iff current is not lowest.
+	const bool			bHigh			= mTxnAccountID > uDstAccountID;		// true, iff current is high account.
 
 	uint32				uQualityIn		= bQualityIn ? mTxn.getFieldU32(sfQualityIn) : 0;
 	uint32				uQualityOut		= bQualityIn ? mTxn.getFieldU32(sfQualityOut) : 0;
@@ -66,45 +66,26 @@ TER TrustSetTransactor::doApply()
 		uint32			uLowQualityOut;
 		uint32			uHighQualityIn;
 		uint32			uHighQualityOut;
-		const uint160&	uLowAccountID	= !bFlipped ? mTxnAccountID : uDstAccountID;
-		const uint160&	uHighAccountID	=  bFlipped ? mTxnAccountID : uDstAccountID;
-		SLE::ref		sleLowAccount	= !bFlipped ? mTxnAccount : sleDst;
-		SLE::ref		sleHighAccount	=  bFlipped ? mTxnAccount : sleDst;
+		const uint160&	uLowAccountID	= !bHigh ? mTxnAccountID : uDstAccountID;
+		const uint160&	uHighAccountID	=  bHigh ? mTxnAccountID : uDstAccountID;
+		SLE::ref		sleLowAccount	= !bHigh ? mTxnAccount : sleDst;
+		SLE::ref		sleHighAccount	=  bHigh ? mTxnAccount : sleDst;
 
 		//
 		// Balances
 		//
 
 		saLowBalance	= sleRippleState->getFieldAmount(sfBalance);
-		saHighBalance	= saLowBalance;
-
-		if (bFlipped)
-		{
-			saLowBalance.negate();
-		}
-		else
-		{
-			saHighBalance.negate();
-		}
+		saHighBalance	= -saLowBalance;
 
 		//
 		// Limits
 		//
 
-		if (bFlipped)
-		{
-			sleRippleState->setFieldAmount(sfHighLimit, saLimitAllow);
+		sleRippleState->setFieldAmount(!bHigh ? sfLowLimit : sfHighLimit, saLimitAllow);
 
-			saLowLimit	= sleRippleState->getFieldAmount(sfLowLimit);
-			saHighLimit	= saLimitAllow;
-		}
-		else
-		{
-			sleRippleState->setFieldAmount(sfLowLimit, saLimitAllow);
-
-			saLowLimit	= saLimitAllow;
-			saHighLimit	= sleRippleState->getFieldAmount(sfHighLimit);
-		}
+		saLowLimit	= !bHigh ? saLimitAllow : sleRippleState->getFieldAmount(sfLowLimit);
+		saHighLimit	=  bHigh ? saLimitAllow : sleRippleState->getFieldAmount(sfHighLimit);
 
 		//
 		// Quality in
@@ -121,20 +102,23 @@ TER TrustSetTransactor::doApply()
 		{
 			// Setting.
 
-			sleRippleState->setFieldU32(!bFlipped ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
+			sleRippleState->setFieldU32(!bHigh ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
 
-			uLowQualityIn	= !bFlipped ? uQualityIn : sleRippleState->getFieldU32(sfLowQualityIn);
-			uHighQualityIn	=  bFlipped ? uQualityIn : sleRippleState->getFieldU32(sfHighQualityIn);
+			uLowQualityIn	= !bHigh ? uQualityIn : sleRippleState->getFieldU32(sfLowQualityIn);
+			uHighQualityIn	=  bHigh ? uQualityIn : sleRippleState->getFieldU32(sfHighQualityIn);
 		}
 		else
 		{
 			// Clearing.
 
-			sleRippleState->makeFieldAbsent(!bFlipped ? sfLowQualityIn : sfHighQualityIn);
+			sleRippleState->makeFieldAbsent(!bHigh ? sfLowQualityIn : sfHighQualityIn);
 
-			uLowQualityIn	= !bFlipped ? 0 : sleRippleState->getFieldU32(sfLowQualityIn);
-			uHighQualityIn	=  bFlipped ? 0 : sleRippleState->getFieldU32(sfHighQualityIn);
+			uLowQualityIn	= !bHigh ? 0 : sleRippleState->getFieldU32(sfLowQualityIn);
+			uHighQualityIn	=  bHigh ? 0 : sleRippleState->getFieldU32(sfHighQualityIn);
 		}
+
+		if (QUALITY_ONE == uLowQualityIn)	uLowQualityIn	= 0;
+		if (QUALITY_ONE == uHighQualityIn)	uHighQualityIn	= 0;
 
 		//
 		// Quality out
@@ -151,31 +135,30 @@ TER TrustSetTransactor::doApply()
 		{
 			// Setting.
 
-			sleRippleState->setFieldU32(!bFlipped ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
+			sleRippleState->setFieldU32(!bHigh ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
 
-			uLowQualityOut	= !bFlipped ? uQualityOut : sleRippleState->getFieldU32(sfLowQualityOut);
-			uHighQualityOut	=  bFlipped ? uQualityOut : sleRippleState->getFieldU32(sfHighQualityOut);
+			uLowQualityOut	= !bHigh ? uQualityOut : sleRippleState->getFieldU32(sfLowQualityOut);
+			uHighQualityOut	=  bHigh ? uQualityOut : sleRippleState->getFieldU32(sfHighQualityOut);
 		}
 		else
 		{
 			// Clearing.
 
-			sleRippleState->makeFieldAbsent(!bFlipped ? sfLowQualityOut : sfHighQualityOut);
+			sleRippleState->makeFieldAbsent(!bHigh ? sfLowQualityOut : sfHighQualityOut);
 
-			uLowQualityOut	= !bFlipped ? 0 : sleRippleState->getFieldU32(sfLowQualityOut);
-			uHighQualityOut	=  bFlipped ? 0 : sleRippleState->getFieldU32(sfHighQualityOut);
+			uLowQualityOut	= !bHigh ? 0 : sleRippleState->getFieldU32(sfLowQualityOut);
+			uHighQualityOut	=  bHigh ? 0 : sleRippleState->getFieldU32(sfHighQualityOut);
 		}
 
-		if (QUALITY_ONE == uLowQualityIn)	uLowQualityIn	= 0;
-		if (QUALITY_ONE == uHighQualityIn)	uHighQualityIn	= 0;
 		if (QUALITY_ONE == uLowQualityOut)	uLowQualityOut	= 0;
 		if (QUALITY_ONE == uHighQualityOut)	uHighQualityOut	= 0;
 
 		const bool	bLowReserveSet		= uLowQualityIn || uLowQualityOut || !!saLowLimit || saLowBalance.isPositive();
-		const bool	bLowReserveClear	= !uLowQualityIn && !uLowQualityOut && !saLowLimit && !saLowBalance.isPositive();
+		const bool	bLowReserveClear	= !bLowReserveSet;
 
 		const bool	bHighReserveSet		= uHighQualityIn || uHighQualityOut || !!saHighLimit || saHighBalance.isPositive();
-		const bool	bHighReserveClear	= !uHighQualityIn && !uHighQualityOut && !saHighLimit && !saHighBalance.isPositive();
+		const bool	bHighReserveClear	= !bHighReserveSet;
+
 		const bool	bDefault			= bLowReserveClear && bHighReserveClear;
 
 		const uint32	uFlagsIn		= sleRippleState->getFieldU32(sfFlags);
@@ -243,9 +226,8 @@ TER TrustSetTransactor::doApply()
 	}
 	// Line does not exist.
 	else if (!saLimitAmount									// Setting default limit.
-		&& bQualityIn && !uQualityIn						// Setting default quality in.
-		&& bQualityOut && !uQualityOut						// Setting default quality out.
-		)
+		&& (!bQualityIn || !uQualityIn)						// Not setting quality in or setting default quality in.
+		&& (!bQualityOut || !uQualityOut))					// Not setting quality out or setting default quality out.
 	{
 		Log(lsINFO) << "doTrustSet: Redundant: Setting non-existent ripple line to defaults.";
 
@@ -259,16 +241,16 @@ TER TrustSetTransactor::doApply()
 		Log(lsINFO) << "doTrustSet: Creating ripple line: " << sleRippleState->getIndex().ToString();
 
 		sleRippleState->setFieldAmount(sfBalance, STAmount(uCurrencyID, ACCOUNT_ONE));	// Zero balance in currency.
-		sleRippleState->setFieldAmount(!bFlipped ? sfLowLimit : sfHighLimit, saLimitAllow);
-		sleRippleState->setFieldAmount( bFlipped ? sfLowLimit : sfHighLimit, STAmount(uCurrencyID, uDstAccountID));
+		sleRippleState->setFieldAmount(!bHigh ? sfLowLimit : sfHighLimit, saLimitAllow);
+		sleRippleState->setFieldAmount( bHigh ? sfLowLimit : sfHighLimit, STAmount(uCurrencyID, uDstAccountID));
 
 		if (uQualityIn)
-			sleRippleState->setFieldU32(!bFlipped ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
+			sleRippleState->setFieldU32(!bHigh ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
 
 		if (uQualityOut)
-			sleRippleState->setFieldU32(!bFlipped ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
+			sleRippleState->setFieldU32(!bHigh ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
 
-		sleRippleState->setFieldU32(sfFlags, !bFlipped ? lsfLowReserve : lsfHighReserve);
+		sleRippleState->setFieldU32(sfFlags, !bHigh ? lsfLowReserve : lsfHighReserve);
 
 		uint64			uSrcRef;							// <-- Ignored, dirs never delete.
 
