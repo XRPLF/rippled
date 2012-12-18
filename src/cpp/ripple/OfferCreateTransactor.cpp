@@ -1,3 +1,5 @@
+#include "Application.h"
+
 #include "OfferCreateTransactor.h"
 
 #include <boost/foreach.hpp>
@@ -382,10 +384,16 @@ TER OfferCreateTransactor::doApply()
 	// Log(lsWARNING) << "doOfferCreate: takeOffers: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
 	// Log(lsWARNING) << "doOfferCreate: takeOffers: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
 
+	const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
+	const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
+	// The reserve required to create the line.
+	const uint64	uReserveCreate	= theApp->scaleFeeBase(theConfig.FEE_ACCOUNT_RESERVE + (uOwnerCount+1)* theConfig.FEE_OWNER_RESERVE);
+
 	if (tesSUCCESS == terResult
 		&& saTakerPays														// Still wanting something.
 		&& saTakerGets														// Still offering something.
-		&& mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets, true).isPositive())	// Still funded.
+		&& mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets, true).isPositive()	// Still funded.
+		&& saSrcXRPBalance.getNValue() >= uReserveCreate)					// Have enough reserve to create offer.
 	{
 		// We need to place the remainder of the offer into its order book.
 		Log(lsINFO) << boost::str(boost::format("doOfferCreate: offer not fully consumed: saTakerPays=%s saTakerGets=%s")
