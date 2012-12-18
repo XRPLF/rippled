@@ -63,6 +63,7 @@ class Application
 	RPCHandler				mRPCHandler;
 	ProofOfWorkGenerator	mPOWGen;
 	LoadManager				mLoadMgr;
+	LoadFeeTrack			mFeeTrack;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 
@@ -117,6 +118,8 @@ public:
 	bool isNewFlag(const uint256& s, int f)			{ return mSuppressions.setFlag(s, f); }
 	bool running()									{ return mTxnDB != NULL; }
 	bool getSystemTimeOffset(int& offset)			{ return mSNTPClient.getOffset(offset); }
+	void scaleFeeBase(uint64 fee)					{ return mFeeTrack.scaleFeeBase(fee); }
+	void scaleFeeLoad(uint64 fee)					{ return mFeeTrack.scaleFeeLoad(fee); }
 
 	DatabaseCon* getRpcDB()			{ return mRpcDB; }
 	DatabaseCon* getTxnDB()			{ return mTxnDB; }

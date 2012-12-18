@@ -83,7 +83,7 @@ TER PaymentTransactor::doApply()
 			return terNO_DST;
 		}
 		else if (isSetBit(mParams, tapOPEN_LEDGER)							// Ledger is not final, we can vote.
-			&& saDstAmount.getNValue() < theConfig.FEE_ACCOUNT_RESERVE)		// Reserve is not scaled by fee.
+			&& saDstAmount.getNValue() < theApp->scaleFeeBase(theConfig.FEE_ACCOUNT_RESERVE))	// Reserve is not scaled by load.
 		{
 			Log(lsINFO) << "doPayment: Delay transaction: Destination account does not exist. Insufficent payment to create account.";
 
@@ -138,7 +138,7 @@ TER PaymentTransactor::doApply()
 
 		const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
 		const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
-		const uint64	uReserve		= theConfig.FEE_ACCOUNT_RESERVE+uOwnerCount*theConfig.FEE_OWNER_RESERVE;
+		const uint64	uReserve		= theApp->scaleFeeBase(theConfig.FEE_ACCOUNT_RESERVE + uOwnerCount * theConfig.FEE_OWNER_RESERVE);
 
 		// Make sure have enough reserve to send.
 		if (isSetBit(mParams, tapOPEN_LEDGER)					// Ledger is not final, we can vote.
@@ -157,7 +157,7 @@ TER PaymentTransactor::doApply()
 
 			// re-arm the password change fee if we can and need to
 			if ( (sleDst->getFlags() & lsfPasswordSpent) &&
-				 (saDstAmount > theConfig.FEE_DEFAULT) )
+				 (saDstAmount > theConfig.FEE_DEFAULT) ) // FIXME: Can't access FEE_DEFAULT here
 			{
 				sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount-theConfig.FEE_DEFAULT);
 				sleDst->clearFlag(lsfPasswordSpent);

@@ -64,7 +64,7 @@ public:
 
 	// Network parameters
 	int							NETWORK_START_TIME;		// The Unix time we start ledger 0.
-	int							TRANSACTION_FEE_BASE;
+	int							TRANSACTION_FEE_BASE;	// The number of fee units a reference transaction costs
 	int							LEDGER_SECONDS;
 	int							LEDGER_PROPOSAL_DELAY_SECONDS;
 	int							LEDGER_AVALANCHE_SECONDS;
@@ -106,10 +106,10 @@ public:
 	// Validation
 	RippleAddress				VALIDATION_SEED, VALIDATION_PUB, VALIDATION_PRIV;
 
-	// Fee schedule
+	// Fee schedule (All below values are in fee units)
 	uint64						FEE_DEFAULT;			// Default fee.
-	uint64						FEE_ACCOUNT_RESERVE;	// Amount of XRP not allowed to send.
-	uint64						FEE_OWNER_RESERVE;		// Amount of XRP not allowed to send per owner entry.
+	uint64						FEE_ACCOUNT_RESERVE;	// Amount of units not allowed to send.
+	uint64						FEE_OWNER_RESERVE;		// Amount of units not allowed to send per owner entry.
 	uint64						FEE_NICKNAME_CREATE;	// Fee to create a nickname.
 	uint64						FEE_OFFER;				// Rate per day.
 	int							FEE_CONTRACT_OPERATION; // fee for each contract operation
@@ -120,6 +120,7 @@ public:
 	// Client behavior
 	int							ACCOUNT_PROBE_MAX;		// How far to scan for accounts.
 
+	Config();
 	void setup(const std::string& strConf, bool bQuiet);
 	void load();
 };

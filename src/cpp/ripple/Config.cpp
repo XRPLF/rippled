@@ -130,6 +130,12 @@ void Config::setup(const std::string& strConf, bool bQuiet)
 	// std::cerr << "CONFIG DIR: " << CONFIG_DIR << std::endl;
 	// std::cerr << "DATA DIR: " << DATA_DIR << std::endl;
 
+	// Update default values
+	load();
+}
+
+Config::Config()
+{
 	//
 	// Defaults
 	//
@@ -159,7 +165,7 @@ void Config::setup(const std::string& strConf, bool bQuiet)
 
 	PEER_PRIVATE			= false;
 
-	TRANSACTION_FEE_BASE	= 1000;
+	TRANSACTION_FEE_BASE	= DEFAULT_FEE_DEFAULT;
 
 	NETWORK_QUORUM			= 0;	// Don't need to see other nodes
 	VALIDATION_QUORUM		= 1;	// Only need one node to vouch
@@ -179,8 +185,6 @@ void Config::setup(const std::string& strConf, bool bQuiet)
 
 	RUN_STANDALONE			= false;
 	START_UP				= NORMAL;
-
-	load();
 }
 
 void Config::load()

@@ -40,7 +40,7 @@ DatabaseCon::~DatabaseCon()
 Application::Application() :
 	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService), mNetOps(mIOService, &mLedgerMaster),
 	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300),
-	mSNTPClient(mAuxService), mRPCHandler(&mNetOps), 
+	mSNTPClient(mAuxService), mRPCHandler(&mNetOps), mFeeTrack(theConfig.TRANSACTION_FEE_BASE, theConfig.FEE_DEFAULT),
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
 	mSweepTimer(mAuxService)

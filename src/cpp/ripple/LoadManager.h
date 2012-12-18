@@ -134,7 +134,9 @@ protected:
 
 public:
 
-	LoadFeeTrack()	: mLocalTxnLoadFee(lftNormalFee), mRemoteTxnLoadFee(lftNormalFee) { ; }
+	LoadFeeTrack(uint32 baseRef, uint32 baseFee) : mBaseRef(baseRef), mBaseFee(baseFee),
+		mLocalTxnLoadFee(lftNormalFee), mRemoteTxnLoadFee(lftNormalFee)
+	{ ; }
 
 	uint64 scaleFeeBase(uint64 fee);	// Scale from fee units to millionths of a ripple
 	uint64 scaleFeeLoad(uint64 fee);	// Scale using load as well as base rate
