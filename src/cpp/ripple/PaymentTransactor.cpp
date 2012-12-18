@@ -159,7 +159,7 @@ TER PaymentTransactor::doApply()
 			// re-arm the password change fee if we can and need to
 			if ( (sleDst->getFlags() & lsfPasswordSpent) &&
 				 (saDstAmount > theConfig.FEE_DEFAULT) ) // FIXME: Can't access FEE_DEFAULT here
-			{
+			{ // FIXME: The line below is disastrous, it leaks XRP
 				sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount-theConfig.FEE_DEFAULT);
 				sleDst->clearFlag(lsfPasswordSpent);
 			}
