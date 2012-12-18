@@ -60,7 +60,7 @@ const int TransactionMaxLen			= 1048576;
 const uint32 tfPassive				= 0x00010000;
 const uint32 tfOfferCreateMask		= ~(tfPassive);
 
-// Payment flags:
+// Payment flags: (renumber on ledger wipe)
 const uint32 tfPaymentLegacy		= 0x00010000;	// Left here to avoid ledger change.
 const uint32 tfPartialPayment		= 0x00020000;
 const uint32 tfLimitQuality			= 0x00040000;
