@@ -365,7 +365,7 @@ Json::Value ConnectionPool::getPeersJson()
     Json::Value					ret(Json::arrayValue);
 	std::vector<Peer::pointer>	vppPeers	= getPeerVector();
 
-	BOOST_FOREACH(Peer::pointer peer, vppPeers)
+	BOOST_FOREACH(Peer::ref peer, vppPeers)
 	{
 		ret.append(peer->getJson());
     }

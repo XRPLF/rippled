@@ -564,7 +564,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 
 		AccountItems rippleLines(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new RippleState()));
 
-		BOOST_FOREACH(AccountItem::pointer item, rippleLines.getItems())
+		BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 		{
 			RippleState* line=(RippleState*)item.get();
 
@@ -633,7 +633,7 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 		Json::Value	jsonLines(Json::arrayValue);
 
 		AccountItems offers(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new Offer()));
-		BOOST_FOREACH(AccountItem::pointer item, offers.getItems())
+		BOOST_FOREACH(AccountItem::ref item, offers.getItems())
 		{
 			Offer* offer=(Offer*)item.get();
 

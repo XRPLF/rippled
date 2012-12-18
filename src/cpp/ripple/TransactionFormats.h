@@ -28,7 +28,7 @@ class TransactionFormat
 public:
 	std::string					t_name;
 	TransactionType				t_type;
-	std::vector<SOElement::ptr>	elements;
+	std::vector<SOElement::ref>	elements;
 
 	static std::map<int, TransactionFormat*>			byType;
     static std::map<std::string, TransactionFormat*>	byName;

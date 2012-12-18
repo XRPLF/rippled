@@ -18,6 +18,7 @@ class PathOption
 {
 public:
 	typedef boost::shared_ptr<PathOption> pointer;
+	typedef const boost::shared_ptr<PathOption>& ref;
 
 	STPath		mPath;
 	bool		mCorrectCurrency;	// for the sorting

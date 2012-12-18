@@ -48,7 +48,7 @@ class LedgerEntryFormat
 public:
 	std::string					t_name;
 	LedgerEntryType				t_type;
-	std::vector<SOElement::ptr>	elements;
+	std::vector<SOElement::ref>	elements;
 
 	static std::map<int, LedgerEntryFormat*>			byType;
 	static std::map<std::string, LedgerEntryFormat*>	byName;

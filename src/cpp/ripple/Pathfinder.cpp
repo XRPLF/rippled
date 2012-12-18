@@ -269,7 +269,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			else if (!speEnd.mCurrencyID)
 			{
 				// Last element is for XRP continue with qualifying books.
-				BOOST_FOREACH(OrderBook::pointer book, mOrderBook.getXRPInBooks())
+				BOOST_FOREACH(OrderBook::ref book, mOrderBook.getXRPInBooks())
 				{
 					// XXX Don't allow looping through same order books.
 
@@ -303,7 +303,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				// Create new paths for each outbound account not already in the path.
 				AccountItems rippleLines(speEnd.mAccountID, mLedger, AccountItem::pointer(new RippleState()));
 
-				BOOST_FOREACH(AccountItem::pointer item, rippleLines.getItems())
+				BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 				{
 					RippleState* line=(RippleState*)item.get();
 
@@ -342,7 +342,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 				mOrderBook.getBooks(spPath.mCurrentAccount, spPath.mCurrencyID, books);
 
-				BOOST_FOREACH(OrderBook::pointer book,books)
+				BOOST_FOREACH(OrderBook::ref book,books)
 				{
 					STPath			new_path(spPath);
 					STPathElement	new_ele(uint160(), book->getCurrencyOut(), book->getIssuerOut());
@@ -457,7 +457,7 @@ bool Pathfinder::checkComplete(STPathSet& retPathSet)
 	if (mCompletePaths.size())
 	{ // TODO: look through these and pick the most promising
 		int count=0;
-		BOOST_FOREACH(PathOption::pointer pathOption,mCompletePaths)
+		BOOST_FOREACH(PathOption::ref pathOption,mCompletePaths)
 		{
 			retPathSet.addPath(pathOption->mPath);
 			count++;
@@ -480,7 +480,7 @@ void Pathfinder::addOptions(PathOption::pointer tail)
 {
 	if (!tail->mCurrencyID)
 	{ // source XRP
-		BOOST_FOREACH(OrderBook::pointer book, mOrderBook.getXRPInBooks())
+		BOOST_FOREACH(OrderBook::ref book, mOrderBook.getXRPInBooks())
 		{
 			PathOption::pointer pathOption(new PathOption(tail));
 
@@ -495,7 +495,7 @@ void Pathfinder::addOptions(PathOption::pointer tail)
 	else
 	{ // ripple
 		RippleLines rippleLines(tail->mCurrentAccount);
-		BOOST_FOREACH(RippleState::pointer line,rippleLines.getLines())
+		BOOST_FOREACH(RippleState::ref line,rippleLines.getLines())
 		{
 			// TODO: make sure we can move in the correct direction
 			STAmount balance=line->getBalance();
@@ -516,7 +516,7 @@ void Pathfinder::addOptions(PathOption::pointer tail)
 		std::vector<OrderBook::pointer> books;
 		mOrderBook.getBooks(tail->mCurrentAccount, tail->mCurrencyID, books);
 
-		BOOST_FOREACH(OrderBook::pointer book,books)
+		BOOST_FOREACH(OrderBook::ref book,books)
 		{
 			PathOption::pointer pathOption(new PathOption(tail));
 
