@@ -845,7 +845,7 @@ bool LedgerEntrySet::dirNext(
 }
 
 // If there is a count, adjust the owner count by iAmount. Otherwise, compute the owner count and store it.
-TER LedgerEntrySet::ownerCountAdjust(const uint160& uOwnerID, int iAmount, SLE::ref sleAccountRoot)
+void LedgerEntrySet::ownerCountAdjust(const uint160& uOwnerID, int iAmount, SLE::ref sleAccountRoot)
 {
 	SLE::pointer	sleHold	= sleAccountRoot
 								? SLE::pointer()
@@ -855,31 +855,10 @@ TER LedgerEntrySet::ownerCountAdjust(const uint160& uOwnerID, int iAmount, SLE::
 								? sleAccountRoot
 								: sleHold;
 
-	const bool		bHaveOwnerCount	= sleRoot->isFieldPresent(sfOwnerCount);
-	TER				terResult;
+	const uint32	uOwnerCount		= sleRoot->getFieldU32(sfOwnerCount);
 
-	if (bHaveOwnerCount)
-	{
-		const uint32	uOwnerCount		= sleRoot->getFieldU32(sfOwnerCount);
-
-		if (iAmount + int(uOwnerCount) >= 0)
-			sleRoot->setFieldU32(sfOwnerCount, uOwnerCount+iAmount);
-
-		terResult	= tesSUCCESS;
-	}
-	else
-	{
-		uint32	uActualCount;
-
-		terResult	= dirCount(Ledger::getOwnerDirIndex(uOwnerID), uActualCount);
-
-		if (tesSUCCESS == terResult)
-		{
-			sleRoot->setFieldU32(sfOwnerCount, uActualCount);
-		}
-	}
-
-	return terResult;
+	if (iAmount + int(uOwnerCount) >= 0)
+		sleRoot->setFieldU32(sfOwnerCount, uOwnerCount+iAmount);
 }
 
 TER LedgerEntrySet::offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID)
@@ -889,11 +868,8 @@ TER LedgerEntrySet::offerDelete(const SLE::pointer& sleOffer, const uint256& uOf
 
 	if (tesSUCCESS == terResult)
 	{
-		terResult	= ownerCountAdjust(uOwnerID, -1);
-	}
+		ownerCountAdjust(uOwnerID, -1);
 
-	if (tesSUCCESS == terResult)
-	{
 		uint256		uDirectory	= sleOffer->getFieldH256(sfBookDirectory);
 		uint64		uBookNode	= sleOffer->getFieldU64(sfBookNode);
 

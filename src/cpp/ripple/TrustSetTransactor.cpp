@@ -180,50 +180,44 @@ TER TrustSetTransactor::doApply()
 		{
 			// Set reserve for low account.
 
-			terResult			= mEngine->getNodes().ownerCountAdjust(uLowAccountID, 1, sleLowAccount);
+			mEngine->getNodes().ownerCountAdjust(uLowAccountID, 1, sleLowAccount);
 			uFlagsOut			|= lsfLowReserve;
 
 			if (!bHigh)
 				bReserveIncrease	= true;
 		}
 
-		if (tesSUCCESS == terResult && bLowReserveClear && bLowReserved)
+		if (bLowReserveClear && bLowReserved)
 		{
 			// Clear reserve for low account.
 
-			terResult	= mEngine->getNodes().ownerCountAdjust(uLowAccountID, -1, sleLowAccount);
+			mEngine->getNodes().ownerCountAdjust(uLowAccountID, -1, sleLowAccount);
 			uFlagsOut	&= ~lsfLowReserve;
 		}
 
-		if (tesSUCCESS == terResult && bHighReserveSet && !bHighReserved)
+		if (bHighReserveSet && !bHighReserved)
 		{
 			// Set reserve for high account.
 
-			terResult	= mEngine->getNodes().ownerCountAdjust(uHighAccountID, 1, sleHighAccount);
+			mEngine->getNodes().ownerCountAdjust(uHighAccountID, 1, sleHighAccount);
 			uFlagsOut	|= lsfHighReserve;
 
 			if (bHigh)
 				bReserveIncrease	= true;
 		}
 
-		if (tesSUCCESS == terResult && bHighReserveClear && bHighReserved)
+		if (bHighReserveClear && bHighReserved)
 		{
 			// Clear reserve for high account.
 
-			terResult	= mEngine->getNodes().ownerCountAdjust(uHighAccountID, -1, sleHighAccount);
+			mEngine->getNodes().ownerCountAdjust(uHighAccountID, -1, sleHighAccount);
 			uFlagsOut	&= ~lsfHighReserve;
 		}
 
 		if (uFlagsIn != uFlagsOut)
 			sleRippleState->setFieldU32(sfFlags, uFlagsOut);
 
-		if (tesSUCCESS != terResult)
-		{
-			Log(lsINFO) << "doTrustSet: Error";
-
-			nothing();
-		}
-		else if (bDefault)
+		if (bDefault)
 		{
 			// Can delete.
 
@@ -299,14 +293,15 @@ TER TrustSetTransactor::doApply()
 			boost::bind(&Ledger::ownerDirDescriber, _1, mTxnAccountID));
 
 		if (tesSUCCESS == terResult)
-			terResult	= mEngine->getNodes().ownerCountAdjust(mTxnAccountID, 1, mTxnAccount);
+		{
+			mEngine->getNodes().ownerCountAdjust(mTxnAccountID, 1, mTxnAccount);
 
-		if (tesSUCCESS == terResult)
 			terResult	= mEngine->getNodes().dirAdd(
 				uSrcRef,
 				Ledger::getOwnerDirIndex(uDstAccountID),
 				sleRippleState->getIndex(),
 				boost::bind(&Ledger::ownerDirDescriber, _1, uDstAccountID));
+		}
 	}
 
 	Log(lsINFO) << "doTrustSet<";
