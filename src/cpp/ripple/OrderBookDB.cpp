@@ -45,7 +45,7 @@ void OrderBookDB::getBooks(const uint160& issuerID, const uint160& currencyID, s
 {
 	if( mIssuerMap.find(issuerID) == mIssuerMap.end() )
 	{
-		BOOST_FOREACH(OrderBook::pointer book, mIssuerMap[issuerID])
+		BOOST_FOREACH(OrderBook::ref book, mIssuerMap[issuerID])
 		{
 			if(book->getCurrencyIn()==currencyID)
 			{

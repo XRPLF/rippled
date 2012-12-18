@@ -468,8 +468,8 @@ void UniqueNodeList::scoreCompute()
 	// map of pair<IP,Port> :: score
 	epScore	umScore;
 
-	std::pair< std::string, int> vc;
-	BOOST_FOREACH(vc, umValidators)
+	typedef boost::unordered_map<std::string, int>::value_type vcType;
+	BOOST_FOREACH(vcType& vc, umValidators)
 	{
 		std::string	strValidator	= vc.first;
 
@@ -506,8 +506,8 @@ void UniqueNodeList::scoreCompute()
 
 		vstrValues.reserve(umScore.size());
 
-		std::pair< ipPort, score>	ipScore;
-		BOOST_FOREACH(ipScore, umScore)
+		typedef boost::unordered_map<std::pair< std::string, int>, score>::value_type ipScoreType;
+		BOOST_FOREACH(ipScoreType& ipScore, umScore)
 		{
 			ipPort		ipEndpoint	= ipScore.first;
 			std::string	strIpPort	= str(boost::format("%s %d") % ipEndpoint.first % ipEndpoint.second);
@@ -638,7 +638,7 @@ void UniqueNodeList::processIps(const std::string& strSite, const RippleAddress&
 		vstrValues.resize(MIN(pmtVecStrIps->size(), REFERRAL_IPS_MAX));
 
 		int	iValues = 0;
-		BOOST_FOREACH(std::string strReferral, *pmtVecStrIps)
+		BOOST_FOREACH(const std::string& strReferral, *pmtVecStrIps)
 		{
 			if (iValues == REFERRAL_VALIDATORS_MAX)
 				break;
@@ -709,7 +709,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 
 		vstrValues.reserve(MIN(pmtVecStrValidators->size(), REFERRAL_VALIDATORS_MAX));
 
-		BOOST_FOREACH(std::string strReferral, *pmtVecStrValidators)
+		BOOST_FOREACH(const std::string& strReferral, *pmtVecStrValidators)
 		{
 			if (iValues == REFERRAL_VALIDATORS_MAX)
 				break;

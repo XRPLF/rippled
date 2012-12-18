@@ -564,7 +564,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 
 		AccountItems rippleLines(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new RippleState()));
 
-		BOOST_FOREACH(AccountItem::pointer item, rippleLines.getItems())
+		BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 		{
 			RippleState* line=(RippleState*)item.get();
 
@@ -633,7 +633,7 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 		Json::Value	jsonLines(Json::arrayValue);
 
 		AccountItems offers(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new Offer()));
-		BOOST_FOREACH(AccountItem::pointer item, offers.getItems())
+		BOOST_FOREACH(AccountItem::ref item, offers.getItems())
 		{
 			Offer* offer=(Offer*)item.get();
 
@@ -1565,7 +1565,7 @@ Json::Value RPCHandler::doLogLevel(Json::Value jvRequest)
 
 		lev["base"] = Log::severityToString(Log::getMinSeverity());
 		std::vector< std::pair<std::string, std::string> > logTable = LogPartition::getSeverities();
-		typedef std::pair<std::string, std::string> stringPair;
+		typedef std::map<std::string, std::string>::value_type stringPair;
 		BOOST_FOREACH(const stringPair& it, logTable)
 			lev[it.first] = it.second;
 

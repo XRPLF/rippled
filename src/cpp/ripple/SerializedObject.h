@@ -18,7 +18,7 @@ DEFINE_INSTANCE(SerializedArray);
 class SOElement
 { // An element in the description of a serialized object
 public:
-	typedef SOElement const * ptr;			// used to point to one element
+	typedef SOElement const * ref;			// used to point to one element
 
 	SField::ref e_field;
 	const SOE_Flags flags;
@@ -29,8 +29,8 @@ public:
 class STObject : public SerializedType, private IS_INSTANCE(SerializedObject)
 {
 protected:
-	boost::ptr_vector<SerializedType> mData;
-	std::vector<SOElement::ptr> mType;
+	boost::ptr_vector<SerializedType>	mData;
+	std::vector<SOElement::ref>			mType;
 
 	STObject* duplicate() const { return new STObject(*this); }
 	STObject(SField::ref name, boost::ptr_vector<SerializedType>& data) : SerializedType(name) { mData.swap(data); }
@@ -40,10 +40,10 @@ public:
 
 	STObject(SField::ref name) : SerializedType(name)	{ ; }
 
-	STObject(const std::vector<SOElement::ptr>& type, SField::ref name) : SerializedType(name)
+	STObject(const std::vector<SOElement::ref>& type, SField::ref name) : SerializedType(name)
 	{ set(type); }
 
-	STObject(const std::vector<SOElement::ptr>& type, SerializerIterator& sit, SField::ref name) : SerializedType(name)
+	STObject(const std::vector<SOElement::ref>& type, SerializerIterator& sit, SField::ref name) : SerializedType(name)
 	{ set(sit); setType(type); }
 
 	std::auto_ptr<STObject> oClone() const { return std::auto_ptr<STObject>(new STObject(*this)); }
@@ -54,12 +54,12 @@ public:
 
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name);
 
-	bool setType(const std::vector<SOElement::ptr>& type);
+	bool setType(const std::vector<SOElement::ref>& type);
 	bool isValidForType();
 	bool isFieldAllowed(SField::ref);
 	bool isFree() const { return mType.empty(); }
 
-	void set(const std::vector<SOElement::ptr>&);
+	void set(const std::vector<SOElement::ref>&);
 	bool set(SerializerIterator& u, int depth = 0);
 
 	virtual SerializedTypeID getSType() const { return STI_OBJECT; }

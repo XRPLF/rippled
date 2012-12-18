@@ -48,8 +48,8 @@ std::string createHTTPPost(const std::string& strMsg, const std::map<std::string
 	  << "Content-Length: " << strMsg.size() << "\r\n"
 	  << "Accept: application/json\r\n";
 
-	typedef const std::pair<std::string, std::string> HeaderType;
-	BOOST_FOREACH(HeaderType& item, mapRequestHeaders)
+	typedef std::map<std::string, std::string>::value_type HeaderType;
+	BOOST_FOREACH(const HeaderType& item, mapRequestHeaders)
 		s << item.first << ": " << item.second << "\r\n";
 	s << "\r\n" << strMsg;
 

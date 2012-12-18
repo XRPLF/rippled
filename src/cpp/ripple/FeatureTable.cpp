@@ -128,7 +128,7 @@ void FeatureTable::reportValidations(const FeatureSet& set)
 		return;
 	int threshold = (set.mTrustedValidations * mMajorityFraction) / 256;
 
-	typedef std::pair<const uint256, int> u256_int_pair;
+	typedef std::map<uint256, int>::value_type u256_int_pair;
 
 	boost::mutex::scoped_lock sl(mMutex);
 

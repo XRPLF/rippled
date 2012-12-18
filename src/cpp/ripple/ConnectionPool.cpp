@@ -140,7 +140,7 @@ bool ConnectionPool::peerAvailable(std::string& strIp, int& iPort)
 
 		vstrIpPort.reserve(mIpMap.size());
 
-		BOOST_FOREACH(pipPeer ipPeer, mIpMap)
+		BOOST_FOREACH(const vtPeer& ipPeer, mIpMap)
 		{
 			const std::string&	strIp	= ipPeer.first.first;
 			int					iPort	= ipPeer.first.second;
@@ -251,7 +251,7 @@ int ConnectionPool::relayMessage(Peer* fromPeer, const PackedMessage::pointer& m
 	int sentTo = 0;
 	boost::mutex::scoped_lock sl(mPeerLock);
 
-	BOOST_FOREACH(naPeer pair, mConnectedMap)
+	BOOST_FOREACH(const vtConMap& pair, mConnectedMap)
 	{
 		Peer::ref peer	= pair.second;
 		if (!peer)
@@ -270,7 +270,7 @@ void ConnectionPool::relayMessageBut(const std::set<uint64>& fromPeers, const Pa
 { // Relay message to all but the specified peers
 	boost::mutex::scoped_lock sl(mPeerLock);
 
-	BOOST_FOREACH(naPeer pair, mConnectedMap)
+	BOOST_FOREACH(const vtConMap& pair, mConnectedMap)
 	{
 		Peer::ref peer	= pair.second;
 		if (peer->isConnected() && (fromPeers.count(peer->getPeerId()) == 0))
@@ -365,7 +365,7 @@ Json::Value ConnectionPool::getPeersJson()
     Json::Value					ret(Json::arrayValue);
 	std::vector<Peer::pointer>	vppPeers	= getPeerVector();
 
-	BOOST_FOREACH(Peer::pointer peer, vppPeers)
+	BOOST_FOREACH(Peer::ref peer, vppPeers)
 	{
 		ret.append(peer->getJson());
     }
@@ -388,7 +388,7 @@ std::vector<Peer::pointer> ConnectionPool::getPeerVector()
 
 	ret.reserve(mConnectedMap.size());
 
-	BOOST_FOREACH(naPeer pair, mConnectedMap)
+	BOOST_FOREACH(const vtConMap& pair, mConnectedMap)
 	{
 		assert(!!pair.second);
 		ret.push_back(pair.second);

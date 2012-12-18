@@ -6,7 +6,7 @@
 
 DECLARE_INSTANCE(SerializedValidation);
 
-std::vector<SOElement::ptr> sValidationFormat;
+std::vector<SOElement::ref> sValidationFormat;
 
 static bool SVFInit()
 {

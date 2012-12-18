@@ -16,6 +16,7 @@ class OrderBook
 	OrderBook(SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
 public:
 	typedef boost::shared_ptr<OrderBook> pointer;
+	typedef const boost::shared_ptr<OrderBook>& ref;
 
 	// returns NULL if ledgerEntry doesn't point to an order
 	// if ledgerEntry is an Order it creates the OrderBook this order would live in

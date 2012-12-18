@@ -366,7 +366,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result, uint32 index)
 	// Entries modified only as a result of building the transaction metadata
 	boost::unordered_map<uint256, SLE::pointer> newMod;
 
-	typedef std::pair<const uint256, LedgerEntrySetEntry> u256_LES_pair;
+	typedef std::map<uint256, LedgerEntrySetEntry>::value_type u256_LES_pair;
 	BOOST_FOREACH(u256_LES_pair& it, mEntries)
 	{
 		SField::ptr type = &sfGeneric;
@@ -479,7 +479,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result, uint32 index)
 	}
 
 	// add any new modified nodes to the modification set
-	typedef std::pair<const uint256, SLE::pointer> u256_sle_pair;
+	typedef std::map<uint256, SLE::pointer>::value_type u256_sle_pair;
 	BOOST_FOREACH(u256_sle_pair& it, newMod)
 		entryModify(it.second);
 

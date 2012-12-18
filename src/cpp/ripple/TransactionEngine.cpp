@@ -23,7 +23,7 @@ DECLARE_INSTANCE(TransactionEngine);
 void TransactionEngine::txnWrite()
 {
 	// Write back the account states
-	typedef std::pair<const uint256, LedgerEntrySetEntry> u256_LES_pair;
+	typedef std::map<uint256, LedgerEntrySetEntry>::value_type u256_LES_pair;
 	BOOST_FOREACH(u256_LES_pair& it, mNodes)
 	{
 		const SLE::pointer&	sleEntry	= it.second.mEntry;

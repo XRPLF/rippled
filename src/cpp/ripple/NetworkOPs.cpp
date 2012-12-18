@@ -570,8 +570,8 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	{
 		boost::unordered_map<uint256, currentValidationCount> current =
 			theApp->getValidations().getCurrentValidations(closedLedger);
-		typedef std::pair<const uint256, currentValidationCount> u256_cvc_pair;
-		BOOST_FOREACH(u256_cvc_pair& it, current)
+		typedef std::map<uint256, currentValidationCount>::value_type u256_cvc_pair;
+		BOOST_FOREACH(const u256_cvc_pair& it, current)
 		{
 			ValidationCount& vc = ledgers[it.first];
 			vc.trustedValidations += it.second.first;
@@ -1152,8 +1152,8 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 
 		if (!mSubAccount.empty() || (!mSubRTAccount.empty()) )
 		{
-			typedef const std::pair<RippleAddress,bool> AccountPair;
-			BOOST_FOREACH(AccountPair& affectedAccount, getAffectedAccounts(stTxn))
+			typedef std::map<RippleAddress, bool>::value_type AccountPair;
+			BOOST_FOREACH(const AccountPair& affectedAccount, getAffectedAccounts(stTxn))
 			{
 				subInfoMapIterator	simiIt	= mSubRTAccount.find(affectedAccount.first.getAccountID());
 
