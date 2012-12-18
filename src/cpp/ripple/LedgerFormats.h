@@ -37,10 +37,14 @@ enum LedgerNameSpace
 enum LedgerSpecificFlags
 {
 	// ltACCOUNT_ROOT
-	lsfPasswordSpent	= 0x00010000,	// True if password set fee is spent.
+	lsfPasswordSpent	= 0x00010000,	// True, if password set fee is spent.
 
 	// ltOFFER
 	lsfPassive			= 0x00010000,
+
+	// ltRIPPLE_STATE
+	lsfLowReserve		= 0x00010000,	// True, if entry counts toward reserve.
+	lsfHighReserve		= 0x00020000,
 };
 
 class LedgerEntryFormat
