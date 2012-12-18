@@ -1025,7 +1025,7 @@ Amount.prototype.parse_value = function (j) {
   else if ('string' === typeof j) {
     var	i = j.match(/^(-?)(\d+)$/);
     var	d = !i && j.match(/^(-?)(\d+)\.(\d*)$/);
-    var	e = !e && j.match(/^(-?)(\d+)e(\d+)$/);
+    var	e = !e && j.match(/^(-?)(\d+)e(-?\d+)$/);
 
     if (e) {
       // e notation
