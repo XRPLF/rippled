@@ -71,7 +71,7 @@ namespace alevel {
 }
 
 namespace elevel {
-    typedef uint16_t value;
+    typedef uint32_t value; // make these two values different types DJS
     
     static const value OFF = 0x0;
     
@@ -84,15 +84,16 @@ namespace elevel {
     
     static const value ALL = 0xFFFF;
 }
+
+extern void websocketLog(alevel::value, const std::string&);
+extern void websocketLog(elevel::value, const std::string&);
     
 template <typename level_type>
 class logger {
 public:
     template <typename T>
     logger<level_type>& operator<<(T a) {
-        if (test_level(m_write_level)) {
-            m_oss << a;
-        }
+            m_oss << a; // For now, make this unconditional DJS
         return *this;
     }
     
@@ -130,6 +131,9 @@ public:
     }
     
     logger<level_type>& print() {
+            websocketLog(m_write_level, m_oss.str()); // Hand to our logger DJS
+            m_oss.str("");
+#if 0
         if (test_level(m_write_level)) {
             std::cout << m_prefix << 
                 boost::posix_time::to_iso_extended_string(
@@ -137,8 +141,8 @@ public:
                 ) << " [" << m_write_level << "] " << m_oss.str() << std::endl;
             m_oss.str("");
         }
-        
-        return *this;
+#endif
+       return *this;
     }
     
     logger<level_type>& at(level_type l) {
