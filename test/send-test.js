@@ -180,25 +180,6 @@ buster.testCase("Sending", {
                 })
               .request();
           },
-          function (callback) {
-            self.what = "Zero a credit limit.";
-
-            testutils.credit_limit(self.remote, "alice", "0/USD/mtgox", callback);
-          },
-          function (callback) {
-            self.what = "Make sure still exists.";
-
-            self.remote.request_ripple_balance("alice", "mtgox", "USD", 'CURRENT')
-              .on('ripple_state', function (m) {
-                  buster.assert(m.account_balance.equals("0/USD/alice"));
-                  buster.assert(m.account_limit.equals("0/USD/alice"));
-                  buster.assert(m.issuer_balance.equals("0/USD/mtgox"));
-                  buster.assert(m.issuer_limit.equals("0/USD/mtgox"));
-
-                  callback();
-                })
-              .request();
-          },
           // Set negative limit.
           function (callback) {
             self.remote.transaction()
@@ -211,6 +192,33 @@ buster.testCase("Sending", {
                   callback('temBAD_AMOUNT' !== m.result);
                 })
               .submit();
+          },
+          function (callback) {
+            self.what = "Zero a credit limit.";
+
+            testutils.credit_limit(self.remote, "alice", "0/USD/mtgox", callback);
+          },
+          function (callback) {
+            self.what = "Make sure line is deleted.";
+
+            self.remote.request_ripple_balance("alice", "mtgox", "USD", 'CURRENT')
+              .on('ripple_state', function (m) {
+                  // Used to keep lines.
+                  // buster.assert(m.account_balance.equals("0/USD/alice"));
+                  // buster.assert(m.account_limit.equals("0/USD/alice"));
+                  // buster.assert(m.issuer_balance.equals("0/USD/mtgox"));
+                  // buster.assert(m.issuer_limit.equals("0/USD/mtgox"));
+
+                  buster.assert(false);
+                })
+              .on('error', function (m) {
+                  // console.log("error: %s", JSON.stringify(m));
+                  buster.assert.equals('remoteError', m.error);
+                  buster.assert.equals('entryNotFound', m.remote.error);
+
+                  callback();
+                })
+              .request();
           },
           // TODO Check in both owner books.
           function (callback) {
