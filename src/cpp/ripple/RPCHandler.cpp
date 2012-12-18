@@ -2319,7 +2319,7 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 		{	"server_info",			&RPCHandler::doServerInfo,		    true,	false,	optNone		},
 		{	"stop",					&RPCHandler::doStop,			    true,	false,	optNone		},
 		{	"transaction_entry",	&RPCHandler::doTransactionEntry,    false,	false,	optCurrent	},
-		{	"tx",					&RPCHandler::doTx,				    true,	false,	optNone		},
+		{	"tx",					&RPCHandler::doTx,				    false,	false,	optNetwork	},
 		{	"tx_history",			&RPCHandler::doTxHistory,		    false,	false,	optNone		},
 
 		{	"unl_add",				&RPCHandler::doUnlAdd,			    true,	false,	optNone		},
