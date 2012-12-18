@@ -12,7 +12,11 @@ exports.rippled = path.resolve("build/rippled");
 
 exports.server_default  = "alpha";
 
+//
 // Configuration for servers.
+//
+// For testing, you might choose to target a persistent server at alternate ports.
+//
 exports.servers = {
   // A local test server.
   "alpha" : {
