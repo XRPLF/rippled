@@ -54,7 +54,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	terNO_DST,				"terNO_DST",				"Destination does not exist. Send XRP to create it."	},
 		{	terNO_DST_INSUF_XRP,	"terNO_DST_INSUF_XRP",		"Destination does not exist. Too little XRP sent to create it."		},
 		{	terNO_LINE,				"terNO_LINE",				"No such line."											},
-		{	terNO_LINE_NO_ZERO,		"terNO_LINE_NO_ZERO",		"Can't zero non-existant line, destination might make it."	},
+		{	terNO_LINE_REDUNDANT,	"terNO_LINE_REDUNDANT",		"Can't set non-existant line to default."				},
 		{	terPRE_SEQ,				"terPRE_SEQ",				"Missing/inapplicable prior transaction."				},
 		{	terSET_MISSING_DST,		"terSET_MISSING_DST",		"Can't set password, destination missing."				},
 		{	terUNFUNDED,			"terUNFUNDED",				"Source account had insufficient balance for transaction."	},

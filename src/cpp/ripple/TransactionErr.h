@@ -84,7 +84,7 @@ enum TER	// aka TransactionEngineResult
 	terNO_DST,
 	terNO_DST_INSUF_XRP,
 	terNO_LINE,
-	terNO_LINE_NO_ZERO,
+	terNO_LINE_REDUNDANT,
 	terPRE_SEQ,
 	terSET_MISSING_DST,
 	terUNFUNDED,
