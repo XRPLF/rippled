@@ -1,6 +1,7 @@
 #include "PaymentTransactor.h"
 #include "Config.h"
 #include "RippleCalc.h"
+#include "Application.h"
 
 #define RIPPLE_PATHS_MAX	3
 
