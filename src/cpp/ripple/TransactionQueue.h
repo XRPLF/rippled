@@ -3,6 +3,7 @@
 
 // Allow transactions to be signature checked out of sequence but retired in sequence
 
+#include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/bimap.hpp>
@@ -20,10 +21,14 @@ class TXQEntry
 public:
 	typedef boost::shared_ptr<TXQEntry> pointer;
 	typedef const boost::shared_ptr<TXQEntry>& ref;
+    typedef boost::function<void (Transaction::pointer, TER)> stCallback; // must complete immediately
 
 protected:
 	Transaction::pointer	mTxn;
 	bool					mSigChecked;
+	std::list<stCallback>	mCallbacks;
+
+	void addCallbacks(const TXQEntry& otherEntry);
 
 public:
 	TXQEntry(Transaction::ref tx, bool sigChecked) : mTxn(tx), mSigChecked(sigChecked) { ; }
@@ -32,6 +37,8 @@ public:
 	Transaction::ref getTransaction() const		{ return mTxn; }
 	bool getSigChecked() const					{ return mSigChecked; }
 	const uint256& getID() const				{ return mTxn->getID(); }
+
+	void doCallbacks(TER);
 };
 
 class TXQueue
@@ -56,8 +63,8 @@ public:
 	// Call only if signature is okay. Returns true if new account, must dispatch
 	bool addEntryForExecution(TXQEntry::ref);
 
-	// Call if signature is bad
-	void removeEntry(const uint256& txID);
+	// Call if signature is bad (returns entry so you can run its callbacks)
+	TXQEntry::pointer removeEntry(const uint256& txID);
 
 	// Transaction execution interface
 	void getJob(TXQEntry::pointer&);
