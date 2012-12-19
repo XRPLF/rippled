@@ -3,15 +3,13 @@
 
 // Allow transactions to be signature checked out of sequence but retired in sequence
 
-#include <list>
-
 #include <boost/shared_ptr.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/bimap.hpp>
+#include <boost/bimap/unordered_set_of.hpp>
+#include <boost/bimap/list_of.hpp>
 
 #include "Transaction.h"
-#include "RippleAddress.h"
 
 class TXQeueue;
 
@@ -24,28 +22,29 @@ public:
 	typedef const boost::shared_ptr<TXQEntry>& ref;
 
 protected:
-	RippleAddress			mAccount;
 	Transaction::pointer	mTxn;
 	bool					mSigChecked;
 
 public:
-	TXQEntry(const RippleAddress& ra, Transaction::ref tx, bool sigChecked)
-		: mAccount(ra), mTxn(tx), mSigChecked(sigChecked) { ; }
+	TXQEntry(Transaction::ref tx, bool sigChecked) : mTxn(tx), mSigChecked(sigChecked) { ; }
 	TXQEntry() : mSigChecked(false) { ; }
 
-	const RippleAddress& getAccount() const		{ return mAccount; }
 	Transaction::ref getTransaction() const		{ return mTxn; }
 	bool getSigChecked() const					{ return mSigChecked; }
+	const uint256& getID() const				{ return mTxn->getID(); }
 };
 
 class TXQueue
 {
 protected:
-	typedef std::list<TXQEntry::pointer>			listType;
+	typedef boost::bimaps::unordered_set_of<uint256>	leftType;
+	typedef boost::bimaps::list_of<TXQEntry::pointer>	rightType;
+	typedef boost::bimap<leftType, rightType>			mapType;
+	typedef mapType::value_type							valueType;
 
-	boost::unordered_set<RippleAddress>				mThreads;
-	boost::unordered_map<RippleAddress, listType>	mQueue;
-	boost::mutex									mLock;
+	mapType			mTxMap;
+	bool			mRunning;
+	boost::mutex	mLock;
 
 public:
 
@@ -55,13 +54,14 @@ public:
 	bool addEntryForSigCheck(TXQEntry::ref);
 
 	// Call only if signature is okay. Returns true if new account, must dispatch
-	bool addEntryForExecution(TXQEntry::ref, bool isNew);
+	bool addEntryForExecution(TXQEntry::ref);
 
 	// Call if signature is bad
-	void removeEntry(TXQEntry::ref);
+	void removeEntry(const uint256& txID);
 
 	// Transaction execution interface
-	TXQEntry::pointer getJob(const RippleAddress& account, TXQEntry::ref finishedJob);
+	void getJob(TXQEntry::pointer&);
+	bool stopProcessing();
 };
 
 #endif
