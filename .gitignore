@@ -32,4 +32,5 @@ db/*.db-journal
 
 # Ignore customized configs
 rippled.cfg
+validators.txt
 test/config.js
