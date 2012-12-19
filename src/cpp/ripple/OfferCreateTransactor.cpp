@@ -326,6 +326,16 @@ TER OfferCreateTransactor::doApply()
 
 		terResult	= terUNFUNDED;
 	}
+	else if (isSetBit(mParams, tapOPEN_LEDGER)) // Ledger is not final, can vote no.
+	{
+		const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
+		const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
+		// The reserve required to create the line.
+		const uint64	uReserveCreate	= theApp->scaleFeeBase(theConfig.FEE_ACCOUNT_RESERVE + uOwnerCount*theConfig.FEE_OWNER_RESERVE);
+
+		if (saSrcXRPBalance.getNValue() < uReserveCreate)					// Have enough reserve prior to creating offer?
+			terResult	= terINSUF_RESERVE_OFFER;
+	}
 
 	if (tesSUCCESS == terResult && !saTakerPays.isNative())
 	{
@@ -384,16 +394,10 @@ TER OfferCreateTransactor::doApply()
 	// Log(lsWARNING) << "doOfferCreate: takeOffers: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
 	// Log(lsWARNING) << "doOfferCreate: takeOffers: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
 
-	const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
-	const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
-	// The reserve required to create the line.
-	const uint64	uReserveCreate	= theApp->scaleFeeBase(theConfig.FEE_ACCOUNT_RESERVE + (uOwnerCount+1)* theConfig.FEE_OWNER_RESERVE);
-
 	if (tesSUCCESS == terResult
 		&& saTakerPays														// Still wanting something.
 		&& saTakerGets														// Still offering something.
-		&& mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets, true).isPositive()	// Still funded.
-		&& saSrcXRPBalance.getNValue() >= uReserveCreate)					// Have enough reserve to create offer.
+		&& mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets, true).isPositive())	// Still funded.
 	{
 		// We need to place the remainder of the offer into its order book.
 		Log(lsINFO) << boost::str(boost::format("doOfferCreate: offer not fully consumed: saTakerPays=%s saTakerGets=%s")

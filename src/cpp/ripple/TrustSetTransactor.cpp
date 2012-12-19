@@ -239,7 +239,7 @@ TER TrustSetTransactor::doApply()
 			Log(lsINFO) << "doTrustSet: Delay transaction: Insufficent reserve to add trust line.";
 
 			// Another transaction could provide XRP to the account and then this transaction would succeed.
-			terResult	= terINSUF_RESERVE;
+			terResult	= terINSUF_RESERVE_LINE;
 		}
 		else
 		{

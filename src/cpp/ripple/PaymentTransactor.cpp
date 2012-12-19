@@ -83,7 +83,7 @@ TER PaymentTransactor::doApply()
 			// Another transaction could create the account and then this transaction would succeed.
 			return terNO_DST;
 		}
-		else if (isSetBit(mParams, tapOPEN_LEDGER)							// Ledger is not final, we can vote.
+		else if (isSetBit(mParams, tapOPEN_LEDGER)												// Ledger is not final, can vote no.
 			&& saDstAmount.getNValue() < theApp->scaleFeeBase(theConfig.FEE_ACCOUNT_RESERVE))	// Reserve is not scaled by load.
 		{
 			Log(lsINFO) << "doPayment: Delay transaction: Destination account does not exist. Insufficent payment to create account.";
