@@ -499,7 +499,7 @@ Json::Value RPCHandler::doProfile(Json::Value jvRequest)
 			0);															// uExpiration
 
 		if(bSubmit)
-			tpOfferA	= mNetOps->submitTransactionSync(tpOfferA);
+			tpOfferA	= mNetOps->submitTransactionSync(tpOfferA); // FIXME: Don't use synch interface
 	}
 
 	boost::posix_time::ptime			ptEnd(boost::posix_time::microsec_clock::local_time());
