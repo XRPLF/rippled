@@ -9,6 +9,9 @@
 # Ignore python compiled files.
 *.pyc
 
+# Ignore Macintosh Desktop Services Store files.
+.DS_Store
+
 # Ignore backup/temps
 *~
 
