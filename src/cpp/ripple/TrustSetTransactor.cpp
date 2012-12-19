@@ -4,10 +4,12 @@
 
 #include <boost/bind.hpp>
 
+SETUP_LOG();
+
 TER TrustSetTransactor::doApply()
 {
 	TER			terResult		= tesSUCCESS;
-	Log(lsINFO) << "doTrustSet>";
+	cLog(lsINFO) << "doTrustSet>";
 
 	const STAmount		saLimitAmount	= mTxn.getFieldAmount(sfLimitAmount);
 	const bool			bQualityIn		= mTxn.isFieldPresent(sfQualityIn);
@@ -29,19 +31,19 @@ TER TrustSetTransactor::doApply()
 
 	if (saLimitAmount.isNegative())
 	{
-		Log(lsINFO) << "doTrustSet: Malformed transaction: Negatived credit limit.";
+		cLog(lsINFO) << "doTrustSet: Malformed transaction: Negatived credit limit.";
 
 		return temBAD_AMOUNT;
 	}
 	else if (!uDstAccountID || uDstAccountID == ACCOUNT_ONE)
 	{
-		Log(lsINFO) << "doTrustSet: Malformed transaction: Destination account not specified.";
+		cLog(lsINFO) << "doTrustSet: Malformed transaction: Destination account not specified.";
 
 		return temDST_NEEDED;
 	}
 	else if (mTxnAccountID == uDstAccountID)
 	{
-		Log(lsINFO) << "doTrustSet: Malformed transaction: Can not extend credit to self.";
+		cLog(lsINFO) << "doTrustSet: Malformed transaction: Can not extend credit to self.";
 
 		return temDST_IS_SRC;
 	}
@@ -49,7 +51,7 @@ TER TrustSetTransactor::doApply()
 	SLE::pointer		sleDst			= mEngine->entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 	if (!sleDst)
 	{
-		Log(lsINFO) << "doTrustSet: Delay transaction: Destination account does not exist.";
+		cLog(lsINFO) << "doTrustSet: Delay transaction: Destination account does not exist.";
 
 		return terNO_DST;
 	}
@@ -230,13 +232,13 @@ TER TrustSetTransactor::doApply()
 
 			mEngine->entryDelete(sleRippleState);
 
-			Log(lsINFO) << "doTrustSet: Deleting ripple line";
+			cLog(lsINFO) << "doTrustSet: Deleting ripple line";
 		}
 		else if (bReserveIncrease
 			&& isSetBit(mParams, tapOPEN_LEDGER)				// Ledger is not final, we can vote no.
 			&& saSrcXRPBalance.getNValue() < uReserveCreate)	// Reserve is not scaled by load.
 		{
-			Log(lsINFO) << "doTrustSet: Delay transaction: Insufficent reserve to add trust line.";
+			cLog(lsINFO) << "doTrustSet: Delay transaction: Insufficent reserve to add trust line.";
 
 			// Another transaction could provide XRP to the account and then this transaction would succeed.
 			terResult	= terINSUF_RESERVE_LINE;
@@ -245,7 +247,7 @@ TER TrustSetTransactor::doApply()
 		{
 			mEngine->entryModify(sleRippleState);
 
-			Log(lsINFO) << "doTrustSet: Modify ripple line";
+			cLog(lsINFO) << "doTrustSet: Modify ripple line";
 		}
 	}
 	// Line does not exist.
@@ -253,14 +255,14 @@ TER TrustSetTransactor::doApply()
 		&& (!bQualityIn || !uQualityIn)							// Not setting quality in or setting default quality in.
 		&& (!bQualityOut || !uQualityOut))						// Not setting quality out or setting default quality out.
 	{
-		Log(lsINFO) << "doTrustSet: Redundant: Setting non-existent ripple line to defaults.";
+		cLog(lsINFO) << "doTrustSet: Redundant: Setting non-existent ripple line to defaults.";
 
 		return terNO_LINE_REDUNDANT;
 	}
 	else if (isSetBit(mParams, tapOPEN_LEDGER)					// Ledger is not final, we can vote no.
 		&& saSrcXRPBalance.getNValue() < uReserveCreate)		// Reserve is not scaled by load.
 	{
-		Log(lsINFO) << "doTrustSet: Delay transaction: Line does not exist. Insufficent reserve to create line.";
+		cLog(lsINFO) << "doTrustSet: Delay transaction: Line does not exist. Insufficent reserve to create line.";
 
 		// Another transaction could create the account and then this transaction would succeed.
 		terResult	= terNO_LINE_INSUF_RESERVE;
@@ -270,7 +272,7 @@ TER TrustSetTransactor::doApply()
 		// Create a new ripple line.
 		sleRippleState	= mEngine->entryCreate(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID));
 
-		Log(lsINFO) << "doTrustSet: Creating ripple line: " << sleRippleState->getIndex().ToString();
+		cLog(lsINFO) << "doTrustSet: Creating ripple line: " << sleRippleState->getIndex().ToString();
 
 		sleRippleState->setFieldAmount(sfBalance, STAmount(uCurrencyID, ACCOUNT_ONE));	// Zero balance in currency.
 		sleRippleState->setFieldAmount(!bHigh ? sfLowLimit : sfHighLimit, saLimitAllow);
@@ -304,7 +306,7 @@ TER TrustSetTransactor::doApply()
 		}
 	}
 
-	Log(lsINFO) << "doTrustSet<";
+	cLog(lsINFO) << "doTrustSet<";
 
 	return terResult;
 }

@@ -1,8 +1,10 @@
 #include "AccountSetTransactor.h"
 
+SETUP_LOG();
+
 TER AccountSetTransactor::doApply()
 {
-	Log(lsINFO) << "doAccountSet>";
+	cLog(lsINFO) << "doAccountSet>";
 
 	//
 	// EmailHash
@@ -14,13 +16,13 @@ TER AccountSetTransactor::doApply()
 
 		if (!uHash)
 		{
-			Log(lsINFO) << "doAccountSet: unset email hash";
+			cLog(lsINFO) << "doAccountSet: unset email hash";
 
 			mTxnAccount->makeFieldAbsent(sfEmailHash);
 		}
 		else
 		{
-			Log(lsINFO) << "doAccountSet: set email hash";
+			cLog(lsINFO) << "doAccountSet: set email hash";
 
 			mTxnAccount->setFieldH128(sfEmailHash, uHash);
 		}
@@ -36,13 +38,13 @@ TER AccountSetTransactor::doApply()
 
 		if (!uHash)
 		{
-			Log(lsINFO) << "doAccountSet: unset wallet locator";
+			cLog(lsINFO) << "doAccountSet: unset wallet locator";
 
 			mTxnAccount->makeFieldAbsent(sfEmailHash);
 		}
 		else
 		{
-			Log(lsINFO) << "doAccountSet: set wallet locator";
+			cLog(lsINFO) << "doAccountSet: set wallet locator";
 
 			mTxnAccount->setFieldH256(sfWalletLocator, uHash);
 		}
@@ -58,7 +60,7 @@ TER AccountSetTransactor::doApply()
 	}
 	else
 	{
-		Log(lsINFO) << "doAccountSet: set message key";
+		cLog(lsINFO) << "doAccountSet: set message key";
 
 		mTxnAccount->setFieldVL(sfMessageKey, mTxn.getFieldVL(sfMessageKey));
 	}
@@ -73,13 +75,13 @@ TER AccountSetTransactor::doApply()
 
 		if (vucDomain.empty())
 		{
-			Log(lsINFO) << "doAccountSet: unset domain";
+			cLog(lsINFO) << "doAccountSet: unset domain";
 
 			mTxnAccount->makeFieldAbsent(sfDomain);
 		}
 		else
 		{
-			Log(lsINFO) << "doAccountSet: set domain";
+			cLog(lsINFO) << "doAccountSet: set domain";
 
 			mTxnAccount->setFieldVL(sfDomain, vucDomain);
 		}
@@ -95,25 +97,25 @@ TER AccountSetTransactor::doApply()
 
 		if (!uRate || uRate == QUALITY_ONE)
 		{
-			Log(lsINFO) << "doAccountSet: unset transfer rate";
+			cLog(lsINFO) << "doAccountSet: unset transfer rate";
 
 			mTxnAccount->makeFieldAbsent(sfTransferRate);
 		}
 		else if (uRate > QUALITY_ONE)
 		{
-			Log(lsINFO) << "doAccountSet: set transfer rate";
+			cLog(lsINFO) << "doAccountSet: set transfer rate";
 
 			mTxnAccount->setFieldU32(sfTransferRate, uRate);
 		}
 		else
 		{
-			Log(lsINFO) << "doAccountSet: bad transfer rate";
+			cLog(lsINFO) << "doAccountSet: bad transfer rate";
 
 			return temBAD_TRANSFER_RATE;
 		}
 	}
 
-	Log(lsINFO) << "doAccountSet<";
+	cLog(lsINFO) << "doAccountSet<";
 
 	return tesSUCCESS;
 }

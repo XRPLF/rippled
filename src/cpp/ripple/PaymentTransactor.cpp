@@ -5,6 +5,8 @@
 
 #define RIPPLE_PATHS_MAX	3
 
+SETUP_LOG();
+
 TER PaymentTransactor::doApply()
 {
 	// Ripple if source or destination is non-native or if there are paths.
@@ -24,37 +26,37 @@ TER PaymentTransactor::doApply()
 	const uint160	uSrcCurrency	= saMaxAmount.getCurrency();
 	const uint160	uDstCurrency	= saDstAmount.getCurrency();
 
-	Log(lsINFO) << boost::str(boost::format("doPayment> saMaxAmount=%s saDstAmount=%s")
+	cLog(lsINFO) << boost::str(boost::format("doPayment> saMaxAmount=%s saDstAmount=%s")
 		% saMaxAmount.getFullText()
 		% saDstAmount.getFullText());
 
 	if (uTxFlags & tfPaymentMask)
 	{
-		Log(lsINFO) << "doPayment: Malformed transaction: Invalid flags set.";
+		cLog(lsINFO) << "doPayment: Malformed transaction: Invalid flags set.";
 
 		return temINVALID_FLAG;
 	}
 	else if (!uDstAccountID)
 	{
-		Log(lsINFO) << "doPayment: Malformed transaction: Payment destination account not specified.";
+		cLog(lsINFO) << "doPayment: Malformed transaction: Payment destination account not specified.";
 
 		return temDST_NEEDED;
 	}
 	else if (bMax && !saMaxAmount.isPositive())
 	{
-		Log(lsINFO) << "doPayment: Malformed transaction: bad max amount: " << saMaxAmount.getFullText();
+		cLog(lsINFO) << "doPayment: Malformed transaction: bad max amount: " << saMaxAmount.getFullText();
 
 		return temBAD_AMOUNT;
 	}
 	else if (!saDstAmount.isPositive())
 	{
-		Log(lsINFO) << "doPayment: Malformed transaction: bad dst amount: " << saDstAmount.getFullText();
+		cLog(lsINFO) << "doPayment: Malformed transaction: bad dst amount: " << saDstAmount.getFullText();
 
 		return temBAD_AMOUNT;
 	}
 	else if (mTxnAccountID == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
 	{
-		Log(lsINFO) << boost::str(boost::format("doPayment: Malformed transaction: Redundant transaction: src=%s, dst=%s, src_cur=%s, dst_cur=%s")
+		cLog(lsINFO) << boost::str(boost::format("doPayment: Malformed transaction: Redundant transaction: src=%s, dst=%s, src_cur=%s, dst_cur=%s")
 			% mTxnAccountID.ToString()
 			% uDstAccountID.ToString()
 			% uSrcCurrency.ToString()
@@ -66,7 +68,7 @@ TER PaymentTransactor::doApply()
 		&& ((saMaxAmount == saDstAmount && saMaxAmount.getCurrency() == saDstAmount.getCurrency())
 		|| (saDstAmount.isNative() && saMaxAmount.isNative())))
 	{
-		Log(lsINFO) << "doPayment: Malformed transaction: bad SendMax.";
+		cLog(lsINFO) << "doPayment: Malformed transaction: bad SendMax.";
 
 		return temINVALID;
 	}
@@ -78,7 +80,7 @@ TER PaymentTransactor::doApply()
 
 		if (!saDstAmount.isNative())
 		{
-			Log(lsINFO) << "doPayment: Delay transaction: Destination account does not exist.";
+			cLog(lsINFO) << "doPayment: Delay transaction: Destination account does not exist.";
 
 			// Another transaction could create the account and then this transaction would succeed.
 			return terNO_DST;
@@ -86,7 +88,7 @@ TER PaymentTransactor::doApply()
 		else if (isSetBit(mParams, tapOPEN_LEDGER)												// Ledger is not final, can vote no.
 			&& saDstAmount.getNValue() < theApp->scaleFeeBase(theConfig.FEE_ACCOUNT_RESERVE))	// Reserve is not scaled by load.
 		{
-			Log(lsINFO) << "doPayment: Delay transaction: Destination account does not exist. Insufficent payment to create account.";
+			cLog(lsINFO) << "doPayment: Delay transaction: Destination account does not exist. Insufficent payment to create account.";
 
 			// Another transaction could create the account and then this transaction would succeed.
 			return terNO_DST_INSUF_XRP;
@@ -146,8 +148,8 @@ TER PaymentTransactor::doApply()
 			&& saSrcXRPBalance < saDstAmount + uReserve)		// Reserve is not scaled by fee.
 		{
 			// Vote no. However, transaction might succeed, if applied in a different order.
-			Log(lsINFO) << "";
-			Log(lsINFO) << boost::str(boost::format("doPayment: Delay transaction: Insufficient funds: %s / %s (%d)")
+			cLog(lsINFO) << "";
+			cLog(lsINFO) << boost::str(boost::format("doPayment: Delay transaction: Insufficient funds: %s / %s (%d)")
 				% saSrcXRPBalance.getText() % (saDstAmount + uReserve).getText() % uReserve);
 
 			terResult	= terUNFUNDED;
@@ -170,7 +172,7 @@ TER PaymentTransactor::doApply()
 
 	if (transResultInfo(terResult, strToken, strHuman))
 	{
-		Log(lsINFO) << boost::str(boost::format("doPayment: %s: %s") % strToken % strHuman);
+		cLog(lsINFO) << boost::str(boost::format("doPayment: %s: %s") % strToken % strHuman);
 	}
 	else
 	{
