@@ -927,14 +927,15 @@
 			children = (
 				C10365C8168147D200D9D15C /* ripple.pb.cc */,
 			);
-			name = build;
+			path = build;
 			sourceTree = "<group>";
 		};
 		C14F811C1681323300AAB80A = {
 			isa = PBXGroup;
 			children = (
+				C14F812D1681323400AAB80A /* rippled.1 */,
+				C14F81341681326600AAB80A /* src */,
 				C10365CA168147DF00D9D15C /* build */,
-				C14F812A1681323400AAB80A /* rippled */,
 				C14F81281681323400AAB80A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -947,23 +948,13 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		C14F812A1681323400AAB80A /* rippled */ = {
-			isa = PBXGroup;
-			children = (
-				C14F81341681326600AAB80A /* src */,
-				C14F812D1681323400AAB80A /* rippled.1 */,
-			);
-			path = rippled;
-			sourceTree = "<group>";
-		};
 		C14F81341681326600AAB80A /* src */ = {
 			isa = PBXGroup;
 			children = (
 				C14F81351681326600AAB80A /* cpp */,
 				C14F832E1681326600AAB80A /* js */,
 			);
-			name = src;
-			path = ../../src;
+			path = src;
 			sourceTree = "<group>";
 		};
 		C14F81351681326600AAB80A /* cpp */ = {
@@ -2657,6 +2648,11 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
 				CLANG_CXX_LIBRARY = "libstdc++";
 				GCC_C_LANGUAGE_STANDARD = "compiler-default";
+				HEADER_SEARCH_PATHS = (
+					build/proto/,
+					/usr/local/include/,
+					/opt/local/include/,
+				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					/opt/local/lib,
@@ -2687,6 +2683,11 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
 				CLANG_CXX_LIBRARY = "libstdc++";
 				GCC_C_LANGUAGE_STANDARD = "compiler-default";
+				HEADER_SEARCH_PATHS = (
+					build/proto/,
+					/usr/local/include/,
+					/opt/local/include/,
+				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					/opt/local/lib,
