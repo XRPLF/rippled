@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C10365C9168147D200D9D15C /* ripple.pb.cc in Sources */ = {isa = PBXBuildFile; fileRef = C10365C8168147D200D9D15C /* ripple.pb.cc */; };
 		C14F812E1681323400AAB80A /* rippled.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = C14F812D1681323400AAB80A /* rippled.1 */; };
 		C14F842F1681326700AAB80A /* database.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C14F81371681326600AAB80A /* database.cpp */; };
 		C14F84311681326700AAB80A /* sqlite3.c in Sources */ = {isa = PBXBuildFile; fileRef = C14F813C1681326600AAB80A /* sqlite3.c */; };
@@ -116,6 +115,8 @@
 		C14F84DF1681326700AAB80A /* boost_rng.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C14F82E11681326600AAB80A /* boost_rng.cpp */; };
 		C14F84E21681326700AAB80A /* sha1.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C14F82EC1681326600AAB80A /* sha1.cpp */; };
 		C14F84E51681326700AAB80A /* uri.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C14F82FA1681326600AAB80A /* uri.cpp */; };
+		C1637B0416827C5B0067A9B4 /* ripple.pb.cc in Sources */ = {isa = PBXBuildFile; fileRef = C1637B0216827C5B0067A9B4 /* ripple.pb.cc */; };
+		C1637B07168284510067A9B4 /* TransactionQueue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C1637B05168284510067A9B4 /* TransactionQueue.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -239,7 +240,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		C10365C8168147D200D9D15C /* ripple.pb.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ripple.pb.cc; path = ../build/proto/ripple.pb.cc; sourceTree = "<group>"; };
 		C14F81271681323400AAB80A /* rippled */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = rippled; sourceTree = BUILT_PRODUCTS_DIR; };
 		C14F812D1681323400AAB80A /* rippled.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = rippled.1; sourceTree = "<group>"; };
 		C14F81371681326600AAB80A /* database.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = database.cpp; sourceTree = "<group>"; };
@@ -909,6 +909,10 @@
 		C14F841E1681326600AAB80A /* test.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = test.js; sourceTree = "<group>"; };
 		C14F841F1681326600AAB80A /* utils.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = utils.js; sourceTree = "<group>"; };
 		C14F84201681326600AAB80A /* utils.web.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = utils.web.js; sourceTree = "<group>"; };
+		C1637B0216827C5B0067A9B4 /* ripple.pb.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ripple.pb.cc; sourceTree = "<group>"; };
+		C1637B0316827C5B0067A9B4 /* ripple.pb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ripple.pb.h; sourceTree = "<group>"; };
+		C1637B05168284510067A9B4 /* TransactionQueue.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TransactionQueue.cpp; sourceTree = "<group>"; };
+		C1637B06168284510067A9B4 /* TransactionQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TransactionQueue.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -925,7 +929,7 @@
 		C10365CA168147DF00D9D15C /* build */ = {
 			isa = PBXGroup;
 			children = (
-				C10365C8168147D200D9D15C /* ripple.pb.cc */,
+				C1637B0116827C5B0067A9B4 /* proto */,
 			);
 			path = build;
 			sourceTree = "<group>";
@@ -1030,6 +1034,8 @@
 		C14F81571681326600AAB80A /* ripple */ = {
 			isa = PBXGroup;
 			children = (
+				C1637B05168284510067A9B4 /* TransactionQueue.cpp */,
+				C1637B06168284510067A9B4 /* TransactionQueue.h */,
 				C14F81581681326600AAB80A /* AccountItems.cpp */,
 				C14F81591681326600AAB80A /* AccountItems.h */,
 				C14F815A1681326600AAB80A /* AccountSetTransactor.cpp */,
@@ -2274,6 +2280,15 @@
 			path = test;
 			sourceTree = "<group>";
 		};
+		C1637B0116827C5B0067A9B4 /* proto */ = {
+			isa = PBXGroup;
+			children = (
+				C1637B0216827C5B0067A9B4 /* ripple.pb.cc */,
+				C1637B0316827C5B0067A9B4 /* ripple.pb.h */,
+			);
+			path = proto;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -2453,6 +2468,7 @@
 				C14F84481681326700AAB80A /* HTTPRequest.cpp in Sources */,
 				C14F84491681326700AAB80A /* HttpsClient.cpp in Sources */,
 				C14F844A1681326700AAB80A /* InstanceCounter.cpp in Sources */,
+				C1637B0416827C5B0067A9B4 /* ripple.pb.cc in Sources */,
 				C14F844B1681326700AAB80A /* Interpreter.cpp in Sources */,
 				C14F844C1681326700AAB80A /* JobQueue.cpp in Sources */,
 				C14F844D1681326700AAB80A /* Ledger.cpp in Sources */,
@@ -2534,7 +2550,7 @@
 				C14F84DF1681326700AAB80A /* boost_rng.cpp in Sources */,
 				C14F84E21681326700AAB80A /* sha1.cpp in Sources */,
 				C14F84E51681326700AAB80A /* uri.cpp in Sources */,
-				C10365C9168147D200D9D15C /* ripple.pb.cc in Sources */,
+				C1637B07168284510067A9B4 /* TransactionQueue.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2568,7 +2584,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					../build/proto/,
+					build/proto/,
 					/usr/local/include/,
 					/opt/local/include/,
 				);
@@ -2615,7 +2631,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					../build/proto/,
+					build/proto/,
 					/usr/local/include/,
 					/opt/local/include/,
 				);
