@@ -264,6 +264,9 @@
     <ClCompile Include="src\cpp\ripple\TransactionMeta.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\TransactionQueue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\UniqueNodeList.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -603,6 +606,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\TransactionMeta.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\TransactionQueue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\types.h">

@@ -23,6 +23,7 @@
 #include "RPCHandler.h"
 #include "ProofOfWork.h"
 #include "LoadManager.h"
+#include "TransactionQueue.h"
 
 class RPCDoor;
 class PeerDoor;
@@ -64,6 +65,7 @@ class Application
 	ProofOfWorkGenerator	mPOWGen;
 	LoadManager				mLoadMgr;
 	LoadFeeTrack			mFeeTrack;
+	TXQueue					mTxnQueue;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 
@@ -110,6 +112,7 @@ public:
 	boost::recursive_mutex& getMasterLock()			{ return mMasterLock; }
 	ProofOfWorkGenerator& getPowGen()				{ return mPOWGen; }
 	LoadManager& getLoadManager()					{ return mLoadMgr; }
+	TXQueue& getTxnQueue()							{ return mTxnQueue; }
 
 
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }

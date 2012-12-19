@@ -67,20 +67,32 @@ TXQEntry::pointer TXQueue::removeEntry(const uint256& id)
 void TXQueue::getJob(TXQEntry::pointer &job)
 {
 	boost::mutex::scoped_lock sl(mLock);
+	assert(mRunning);
 
 	if (job)
 		mTxMap.left.erase(job->getID());
 
 	mapType::left_map::iterator it = mTxMap.left.begin();
 	if (it == mTxMap.left.end() || !it->second->mSigChecked)
+	{
 		job.reset();
-	else job = it->second;
+		mRunning = false;
+	}
+	else
+		job = it->second;
 }
 
-bool TXQueue::stopProcessing()
+bool TXQueue::stopProcessing(TXQEntry::ref finishedJob)
 { // returns true if a new thread must be dispatched
 	boost::mutex::scoped_lock sl(mLock);
+	assert(mRunning);
+
+	mTxMap.left.erase(finishedJob->getID());
 
 	mapType::left_map::iterator it = mTxMap.left.begin();
-	return (it != mTxMap.left.end()) && it->second->mSigChecked;
+	if ((it != mTxMap.left.end()) && it->second->mSigChecked)
+		return true;
+
+	mRunning = false;
+	return false;
 }

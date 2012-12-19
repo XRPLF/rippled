@@ -177,6 +177,88 @@ Transaction::pointer NetworkOPs::submitTransactionSync(const Transaction::pointe
 	return tpTransNew;
 }
 
+void NetworkOPs::runTransactionQueue()
+{
+	TXQEntry::pointer txn;
+
+	for (int i = 0; i < 10; ++i)
+	{
+		theApp->getTxnQueue().getJob(txn);
+		if (!txn)
+			return;
+
+		{
+			LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC);
+
+			boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+
+			Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(txn->getID(), true);
+			assert(dbtx);
+
+			TER r = mLedgerMaster->doTransaction(*dbtx->getSTransaction(), tapOPEN_LEDGER | tapNO_CHECK_SIGN);
+			dbtx->setResult(r);
+
+			if (isTemMalformed(r)) // malformed, cache bad
+				theApp->isNewFlag(txn->getID(), SF_BAD);
+			else if(isTelLocal(r) || isTerRetry(r)) // can be retried
+				theApp->isNewFlag(txn->getID(), SF_RETRY);
+
+
+			bool relay = true;
+
+			if (isTerRetry(r))
+			{ // transaction should be held
+				cLog(lsDEBUG) << "Transaction should be held: " << r;
+				dbtx->setStatus(HELD);
+				theApp->getMasterTransaction().canonicalize(dbtx, true);
+				mLedgerMaster->addHeldTransaction(dbtx);
+				relay = false;
+			}
+			else if (r == tefPAST_SEQ)
+			{ // duplicate or conflict
+				cLog(lsINFO) << "Transaction is obsolete";
+				dbtx->setStatus(OBSOLETE);
+				relay = false;
+			}
+			else if (r == tesSUCCESS)
+			{
+				cLog(lsINFO) << "Transaction is now included in open ledger";
+				dbtx->setStatus(INCLUDED);
+				theApp->getMasterTransaction().canonicalize(dbtx, true);
+			}
+			else
+			{
+				cLog(lsDEBUG) << "Status other than success " << r;
+				if (mMode == omFULL)
+					relay = false;
+				dbtx->setStatus(INVALID);
+			}
+
+			if (relay)
+			{
+				std::set<uint64> peers;
+				if (theApp->getSuppression().swapSet(txn->getID(), peers, SF_RELAYED))
+				{
+					ripple::TMTransaction tx;
+					Serializer s;
+					dbtx->getSTransaction()->add(s);
+					tx.set_rawtransaction(&s.getData().front(), s.getLength());
+					tx.set_status(ripple::tsCURRENT);
+					tx.set_receivetimestamp(getNetworkTimeNC()); // FIXME: This should be when we received it
+
+					PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
+					theApp->getConnectionPool().relayMessageBut(peers, packet);
+				}
+			}
+
+			txn->doCallbacks(r);
+		}
+	}
+
+	if (theApp->getTxnQueue().stopProcessing(txn))
+		theApp->getIOService().post(boost::bind(&NetworkOPs::runTransactionQueue, this));
+}
+
 Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, stCallback callback)
 {
 	LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC);

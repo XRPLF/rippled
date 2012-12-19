@@ -173,6 +173,7 @@
     <ClCompile Include="src\cpp\ripple\TransactionFormats.cpp" />
     <ClCompile Include="src\cpp\ripple\TransactionMaster.cpp" />
     <ClCompile Include="src\cpp\ripple\TransactionMeta.cpp" />
+    <ClCompile Include="src\cpp\ripple\TransactionQueue.cpp" />
     <ClCompile Include="src\cpp\ripple\Transactor.cpp" />
     <ClCompile Include="src\cpp\ripple\TrustSetTransactor.cpp" />
     <ClCompile Include="src\cpp\ripple\UniqueNodeList.cpp" />
@@ -274,6 +275,7 @@
     <ClInclude Include="src\cpp\ripple\TransactionFormats.h" />
     <ClInclude Include="src\cpp\ripple\TransactionMaster.h" />
     <ClInclude Include="src\cpp\ripple\TransactionMeta.h" />
+    <ClInclude Include="src\cpp\ripple\TransactionQueue.h" />
     <ClInclude Include="src\cpp\ripple\types.h" />
     <ClInclude Include="src\cpp\ripple\uint256.h" />
     <ClInclude Include="src\cpp\ripple\UniqueNodeList.h" />

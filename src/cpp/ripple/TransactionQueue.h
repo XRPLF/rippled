@@ -68,7 +68,7 @@ public:
 
 	// Transaction execution interface
 	void getJob(TXQEntry::pointer&);
-	bool stopProcessing();
+	bool stopProcessing(TXQEntry::ref finishedJob);
 };
 
 #endif

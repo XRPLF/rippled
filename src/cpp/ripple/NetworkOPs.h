@@ -148,6 +148,7 @@ public:
 	void submitTransaction(Job&, SerializedTransaction::pointer, stCallback callback = stCallback());
 	Transaction::pointer submitTransactionSync(const Transaction::pointer& tpTrans);
 
+	void runTransactionQueue();
 	Transaction::pointer processTransaction(Transaction::pointer, stCallback);
 	Transaction::pointer processTransaction(Transaction::pointer transaction)
 	{ return processTransaction(transaction, stCallback()); }
