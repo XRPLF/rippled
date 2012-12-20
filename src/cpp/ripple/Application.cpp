@@ -57,6 +57,7 @@ extern int RpcDBCount, TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount
 
 void Application::stop()
 {
+	cLog(lsINFO) << "Received shutdown request";
 	mIOService.stop();
 	mJobQueue.shutdown();
 	mHashedObjectStore.bulkWrite();

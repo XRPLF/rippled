@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
 	//
 	// Set up option parsing.
 	//
-	po::options_description desc("Options");
+	po::options_description desc("General Options");
 	desc.add_options()
 		("help,h", "Display this message.")
 		("conf", po::value<std::string>(), "Specify the configuration file.")
@@ -99,11 +99,20 @@ int main(int argc, char* argv[])
 		("test,t", "Perform unit tests.")
 		("parameters", po::value< vector<string> >(), "Specify comma separated parameters.")
 		("quiet,q", "Reduce diagnotics.")
-		("verbose,v", "Increase log level.")
+		("verbose,v", "Verbose logging.")
 		("load", "Load the current ledger from the local DB.")
 		("start", "Start from a fresh Ledger.")
 		("net", "Get the initial ledger from the network.")
 	;
+
+	po::options_description hidden("Hidden Options");
+	hidden.add_options()
+		("trace,vvv",		"Trace level logging")
+		("debug,vv",		"Debug level logging")
+	;
+
+	po::options_description all("All Options");
+	all.add(desc).add(hidden);
 
 	// Interpret positional arguments as --parameters.
 	po::positional_options_description p;
@@ -129,7 +138,7 @@ int main(int argc, char* argv[])
 		// Parse options, if no error.
 		try {
 			po::store(po::command_line_parser(argc, argv)
-				.options(desc)											// Parse options.
+				.options(all)											// Parse options.
 				.positional(p)											// Remainder as --parameters.
 				.run(),
 				vm);
@@ -141,10 +150,16 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	if (vm.count("verbose"))
+	if (vm.count("trace"))
 		Log::setMinSeverity(lsTRACE, true);
+	else if (vm.count("debug"))
+		Log::setMinSeverity(lsDEBUG, true);
+	else if (vm.count("verbose"))
+		Log::setMinSeverity(lsINFO, true);
 	else
 		Log::setMinSeverity(lsWARNING, true);
+
+	InstanceType::multiThread();
 
 	if (vm.count("test"))
 	{

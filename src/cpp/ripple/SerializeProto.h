@@ -60,6 +60,9 @@
 	FIELD(LastLedgerSequence,	UINT32, 27)
 	FIELD(TransactionIndex,		UINT32, 28)
 	FIELD(OperationLimit,		UINT32, 29)
+	FIELD(ReferenceFeeUnits,	UINT32, 30)
+	FIELD(ReserveBase,			UINT32, 31)
+	FIELD(ReserveIncrement,		UINT32, 32)
 
 	// 64-bit integers
 	FIELD(IndexNext,			UINT64, 1)
@@ -68,6 +71,7 @@
 	FIELD(OwnerNode,			UINT64, 4)
 	FIELD(BaseFee,				UINT64, 5)
 	FIELD(ExchangeRate,			UINT64, 6)
+
 
 	// 128-bit
 	FIELD(EmailHash,			HASH128, 1)

@@ -6,6 +6,7 @@
 enum TransactionType
 {
 	ttINVALID			= -1,
+
 	ttPAYMENT			= 0,
 	ttCLAIM				= 1, // open
 	ttWALLET_ADD		= 2,
@@ -21,6 +22,7 @@ enum TransactionType
 	ttTRUST_SET		= 20,
 
 	ttFEATURE		= 100,
+	ttFEE			= 101,
 };
 
 class TransactionFormat
