@@ -6,6 +6,9 @@ var Remote    = require("../src/js/remote.js").Remote;
 var Server    = require("./server.js").Server;
 
 
+var child         = require("child_process"); //Testing spawn
+
+
 var testutils = require("./testutils.js");
 
 buster.spec.expose();
@@ -14,7 +17,26 @@ describe("My thing", function () {
     it("states the obvious", function () {
         expect(true).toBe(true);;
     });
+    
+    //var spawn = child.spawn,
+    
+    ls = child.spawn('ls', ['-lh', '/']);
+
+	ls.stdout.on('data', function (data) {
+  		console.log('stdout: ' + data);
+	});
+
+	ls.stderr.on('data', function (data) {
+ 		console.log('stderr: ' + data);
+	});
+
+	ls.on('exit', function (code) {
+ 		console.log('child process exited with code ' + code);
+	});
+
 });
+
+/*
 
 buster.testCase("Basic Path finding", {
   'setUp' : testutils.build_setup(),
@@ -64,3 +86,5 @@ buster.testCase("Basic Path finding", {
     },
     
 });
+
+*/

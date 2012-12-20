@@ -1,5 +1,5 @@
 var buster  = require("buster");
-
+var testutils = require("./testutils.js");
 var Server  = require("./server.js").Server;
 
 // How long to wait for server to start.
@@ -8,6 +8,8 @@ var Server  = require("./server.js").Server;
 var alpha;
 
 buster.testCase("Standalone server startup", {
+
+
   "server start and stop" : function (done) {
       alpha = Server.from_config("alpha",true); //ADD ,true for verbosity
 

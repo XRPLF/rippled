@@ -40,10 +40,10 @@ buster.testCase("Fee Changes", {
   */
 
 buster.testCase("Sending", {
-  'setUp'     : testutils.build_setup(),
-  'tearDown'  : testutils.build_teardown(),
+  'setUp' : testutils.build_setup(),  //
+  'tearDown' : testutils.build_teardown(),
 
-  "send XRP to non-existent account with insufficent fee" :
+  "send XRP to non-existent account with insufficent fee" : // => to run only that.
     function (done) {
       var self    = this;
       var ledgers = 20;

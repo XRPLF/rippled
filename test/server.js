@@ -31,7 +31,7 @@ var Server = function (name, config, verbose) {
   this.config   = config;
   this.started  = false;
   this.quiet    = !verbose;
-  this.stopping = false; //Not sure if we need this...
+  this.stopping = false;
 };
 
 Server.prototype  = new EventEmitter;
@@ -100,7 +100,7 @@ Server.prototype._serverSpawnSync = function() {
   this.child.on('exit', function(code, signal) {
       // If could not exec: code=127, signal=null
       // If regular exit: code=0, signal=null
-      buster.assert(!self.stopping); //Fail the test if the server is exiting without having called "stop"
+      buster.assert(!self.stopping); //Fail the test if the server has called "stop"
       if (!self.quiet) console.log("server: spawn: server exited code=%s: signal=%s", code, signal);
     });
 };
@@ -150,7 +150,7 @@ Server.prototype.start = function () {
 // Stop a standalone server.
 Server.prototype.stop = function () {
   var self  = this;
-  self.stopping = true; //Tell the caller that the server is properly stopping.
+  self.stopping = true;
   if (this.child) {
     // Update the on exit to invoke done.
     this.child.on('exit', function (code, signal) {
