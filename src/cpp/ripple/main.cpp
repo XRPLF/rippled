@@ -105,15 +105,6 @@ int main(int argc, char* argv[])
 		("net", "Get the initial ledger from the network.")
 	;
 
-	po::options_description hidden("Hidden Options");
-	hidden.add_options()
-		("trace,vvv",		"Trace level logging")
-		("debug,vv",		"Debug level logging")
-	;
-
-	po::options_description all("All Options");
-	all.add(desc).add(hidden);
-
 	// Interpret positional arguments as --parameters.
 	po::positional_options_description p;
 	p.add("parameters", -1);
@@ -138,7 +129,7 @@ int main(int argc, char* argv[])
 		// Parse options, if no error.
 		try {
 			po::store(po::command_line_parser(argc, argv)
-				.options(all)											// Parse options.
+				.options(desc)											// Parse options.
 				.positional(p)											// Remainder as --parameters.
 				.run(),
 				vm);
@@ -150,14 +141,12 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	if (vm.count("trace"))
-		Log::setMinSeverity(lsTRACE, true);
-	else if (vm.count("debug"))
-		Log::setMinSeverity(lsDEBUG, true);
+	if (vm.count("quiet"))
+		Log::setMinSeverity(lsFATAL, true);
 	else if (vm.count("verbose"))
-		Log::setMinSeverity(lsINFO, true);
+		Log::setMinSeverity(lsTRACE, true);
 	else
-		Log::setMinSeverity(lsWARNING, true);
+		Log::setMinSeverity(lsINFO, true);
 
 	InstanceType::multiThread();
 
