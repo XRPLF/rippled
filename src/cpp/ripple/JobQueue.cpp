@@ -181,6 +181,7 @@ void JobQueue::shutdown()
 	mJobCond.notify_all();
 	while (mThreadCount != 0)
 		mJobCond.wait(sl);
+	cLog(lsDEBUG) << "Job queue has shut down";
 }
 
 void JobQueue::setThreadCount(int c)

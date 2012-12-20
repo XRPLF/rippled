@@ -260,6 +260,7 @@ void ValidationCollection::flush()
 {
 		bool anyNew = false;
 
+		cLog(lsINFO) << "Flushing validations";
 		boost::mutex::scoped_lock sl(mValidationLock);
 		BOOST_FOREACH(u160_val_pair& it, mCurrentValidations)
 		{
@@ -276,6 +277,7 @@ void ValidationCollection::flush()
 			boost::this_thread::sleep(boost::posix_time::milliseconds(100));
 			sl.lock();
 		}
+		cLog(lsDEBUG) << "Validations flushed";
 }
 
 void ValidationCollection::condWrite()
