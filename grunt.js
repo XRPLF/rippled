@@ -1,4 +1,6 @@
 module.exports = function(grunt) {
+  grunt.loadNpmTasks('grunt-webpack');
+
   grunt.initConfig({
     pkg: '<json:package.json',
     meta: {
@@ -34,8 +36,24 @@ module.exports = function(grunt) {
         dest: 'build/sjcl.js'
       }
     },
+    webpack: {
+      lib: {
+        src: "src/js/index.js",
+        dest: "build/ripple-<%= pkg.version %>.js"
+      },
+      lib_debug: {
+        src: "src/js/index.js",
+        dest: "build/ripple-<%= pkg.version %>.js",
+        debug: true
+      },
+      lib_min: {
+        src: "src/js/index.js",
+        dest: "build/ripple-<%= pkg.version %>.js",
+        minimize: true
+      }
+    }
   });
 
   // Tasks
-  grunt.registerTask('default', 'concat:sjcl');
+  grunt.registerTask('default', 'concat:sjcl webpack');
 };
