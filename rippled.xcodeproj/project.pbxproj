@@ -2675,6 +2675,7 @@
 					/usr/local/Cellar/boost/1.50.0/lib,
 					/usr/local/Cellar/protobuf/2.4.1/lib,
 				);
+				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
 					"-lssl",
 					"-lcrypto",
@@ -2710,6 +2711,7 @@
 					/usr/local/Cellar/boost/1.50.0/lib,
 					/usr/local/Cellar/protobuf/2.4.1/lib,
 				);
+				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
 					"-lssl",
 					"-lcrypto",
