@@ -9,7 +9,7 @@ var alpha;
 
 buster.testCase("Standalone server startup", {
   "server start and stop" : function (done) {
-      alpha = Server.from_config("alpha");
+      alpha = Server.from_config("alpha",true);
 
       alpha
         .on('started', function () {
