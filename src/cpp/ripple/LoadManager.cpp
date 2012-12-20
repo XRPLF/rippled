@@ -138,7 +138,7 @@ bool LoadManager::adjust(LoadSource& source, int credits) const
 	return false;
 }
 
-uint64 LoadFeeTrack::mulDiv(uint64 value, uint32 mul, uint32 div)
+uint64 LoadFeeTrack::mulDiv(uint64 value, uint32 mul, uint64 div)
 { // compute (value)*(mul)/(div) - avoid overflow but keep precision
 	static uint64 boundary = (0x00000000FFFFFFFF);
 	if (value > boundary)							// Large value, avoid overflow
@@ -147,45 +147,32 @@ uint64 LoadFeeTrack::mulDiv(uint64 value, uint32 mul, uint32 div)
 		return (value * mul) / div;
 }
 
-uint64 LoadFeeTrack::scaleFeeLoad(uint64 fee)
+uint64 LoadFeeTrack::scaleFeeLoad(uint64 fee, uint64 baseFee, uint32 referenceFeeUnits)
 {
 	static uint64 midrange(0x00000000FFFFFFFF);
+
 	bool big = (fee > midrange);
+	if (big)				// big fee, divide first to avoid overflow
+		fee /= baseFee;
+	else					// normal fee, multiply first for accuracy
+		fee *= referenceFeeUnits;
 
 	{
 		boost::mutex::scoped_lock sl(mLock);
-
-		if (big)				// big fee, divide first to avoid overflow
-			fee /= mBaseFee;
-		else					// normal fee, multiply first for accuracy
-			fee *= mBaseRef;
-
 		fee = mulDiv(fee, std::max(mLocalTxnLoadFee, mRemoteTxnLoadFee), lftNormalFee);
-
-		if (big)				// Fee was big to start, must now multiply
-			fee *= mBaseRef;
-		else					// Fee was small to start, mst now divide
-			fee /= mBaseFee;
 	}
+
+	if (big)				// Fee was big to start, must now multiply
+		fee *= referenceFeeUnits;
+	else					// Fee was small to start, mst now divide
+		fee /= baseFee;
 
 	return fee;
 }
 
-uint64 LoadFeeTrack::scaleFeeBase(uint64 fee)
+uint64 LoadFeeTrack::scaleFeeBase(uint64 fee, uint64 baseFee, uint32 referenceFeeUnits)
 {
-
-	{
-		boost::mutex::scoped_lock sl(mLock);
-		fee = mulDiv(fee, mBaseRef, mBaseFee);
-	}
-
-	return fee;
-}
-
-uint32 LoadFeeTrack::getBaseFee()
-{
-	boost::mutex::scoped_lock sl(mLock);
-	return mBaseFee;
+	return mulDiv(fee, referenceFeeUnits, baseFee);
 }
 
 uint32 LoadFeeTrack::getRemoteFee()
@@ -198,12 +185,6 @@ uint32 LoadFeeTrack::getLocalFee()
 {
 	boost::mutex::scoped_lock sl(mLock);
 	return mLocalTxnLoadFee;
-}
-
-uint32 LoadFeeTrack::getBaseRef()
-{
-	boost::mutex::scoped_lock sl(mLock);
-	return mBaseRef;
 }
 
 void LoadFeeTrack::setRemoteFee(uint32 f)
@@ -233,7 +214,7 @@ void LoadFeeTrack::lowerLocalFee()
 		mLocalTxnLoadFee = lftNormalFee;
 }
 
-Json::Value LoadFeeTrack::getJson(int)
+Json::Value LoadFeeTrack::getJson(uint64 baseFee, uint32 referenceFeeUnits)
 {
 	Json::Value j(Json::objectValue);
 
@@ -241,11 +222,11 @@ Json::Value LoadFeeTrack::getJson(int)
 		boost::mutex::scoped_lock sl(mLock);
 
 		// base_fee = The cost to send a "reference" transaction under no load, in millionths of a Ripple
-		j["base_fee"] = Json::Value::UInt(mBaseFee);
+		j["base_fee"] = Json::Value::UInt(baseFee);
 
 		// load_fee = The cost to send a "reference" transaction now, in millionths of a Ripple
 		j["load_fee"] = Json::Value::UInt(
-			mulDiv(mBaseFee, std::max(mLocalTxnLoadFee, mRemoteTxnLoadFee), lftNormalFee));
+			mulDiv(baseFee, std::max(mLocalTxnLoadFee, mRemoteTxnLoadFee), lftNormalFee));
 	}
 
 	return j;
@@ -258,20 +239,20 @@ BOOST_AUTO_TEST_CASE(LoadFeeTrack_test)
 	cLog(lsDEBUG) << "Running load fee track test";
 
 	Config d; // get a default configuration object
-	LoadFeeTrack l(d.TRANSACTION_FEE_BASE, d.FEE_DEFAULT);
+	LoadFeeTrack l;
 
-	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(10000), 10000);
-	BOOST_REQUIRE_EQUAL(l.scaleFeeLoad(10000), 10000);
-	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(1), 1);
-	BOOST_REQUIRE_EQUAL(l.scaleFeeLoad(1), 1);
+	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(10000, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE), 10000);
+	BOOST_REQUIRE_EQUAL(l.scaleFeeLoad(10000, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE), 10000);
+	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(1, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE), 1);
+	BOOST_REQUIRE_EQUAL(l.scaleFeeLoad(1, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE), 1);
 
 	// Check new default fee values give same fees as old defaults
-	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(d.FEE_DEFAULT), 10);
-	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(d.FEE_ACCOUNT_RESERVE), 200 * SYSTEM_CURRENCY_PARTS);
-	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(d.FEE_OWNER_RESERVE), 50 * SYSTEM_CURRENCY_PARTS);
-	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(d.FEE_NICKNAME_CREATE), 1000);
-	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(d.FEE_OFFER), 10);
-	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(d.FEE_CONTRACT_OPERATION), 1);
+	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(d.FEE_DEFAULT, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE), 10);
+	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(d.FEE_ACCOUNT_RESERVE, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE), 200 * SYSTEM_CURRENCY_PARTS);
+	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(d.FEE_OWNER_RESERVE, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE), 50 * SYSTEM_CURRENCY_PARTS);
+	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(d.FEE_NICKNAME_CREATE, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE), 1000);
+	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(d.FEE_OFFER, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE), 10);
+	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(d.FEE_CONTRACT_OPERATION, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE), 1);
 
 }
 

@@ -112,6 +112,7 @@ public:
 	boost::recursive_mutex& getMasterLock()			{ return mMasterLock; }
 	ProofOfWorkGenerator& getPowGen()				{ return mPOWGen; }
 	LoadManager& getLoadManager()					{ return mLoadMgr; }
+	LoadFeeTrack& getFeeTrack()						{ return mFeeTrack; }
 	TXQueue& getTxnQueue()							{ return mTxnQueue; }
 
 
@@ -121,8 +122,6 @@ public:
 	bool isNewFlag(const uint256& s, int f)			{ return mSuppressions.setFlag(s, f); }
 	bool running()									{ return mTxnDB != NULL; }
 	bool getSystemTimeOffset(int& offset)			{ return mSNTPClient.getOffset(offset); }
-	uint64 scaleFeeBase(uint64 fee)					{ return mFeeTrack.scaleFeeBase(fee); }
-	uint64 scaleFeeLoad(uint64 fee)					{ return mFeeTrack.scaleFeeLoad(fee); }
 
 	DatabaseCon* getRpcDB()			{ return mRpcDB; }
 	DatabaseCon* getTxnDB()			{ return mTxnDB; }

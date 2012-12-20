@@ -331,7 +331,7 @@ TER OfferCreateTransactor::doApply()
 		const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
 		const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
 		// The reserve required to create the line.
-		const uint64	uReserveCreate	= theApp->scaleFeeBase(theConfig.FEE_ACCOUNT_RESERVE + uOwnerCount*theConfig.FEE_OWNER_RESERVE);
+		const uint64	uReserveCreate	= mEngine->getLedger()->getReserve(uOwnerCount);
 
 		if (saSrcXRPBalance.getNValue() < uReserveCreate)					// Have enough reserve prior to creating offer?
 			terResult	= terINSUF_RESERVE_OFFER;

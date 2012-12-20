@@ -59,7 +59,7 @@ TER TrustSetTransactor::doApply()
 	const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
 	const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
 	// The reserve required to create the line.
-	const uint64	uReserveCreate	= theApp->scaleFeeBase(theConfig.FEE_ACCOUNT_RESERVE + (uOwnerCount+1)* theConfig.FEE_OWNER_RESERVE);
+	const uint64	uReserveCreate	= mEngine->getLedger()->getReserve(uOwnerCount + 1);
 
 	STAmount			saLimitAllow	= saLimitAmount;
 	saLimitAllow.setIssuer(mTxnAccountID);

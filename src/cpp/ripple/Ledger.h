@@ -78,6 +78,10 @@ private:
 	uint32		mCloseFlags;		// flags indicating how this ledger close took place
 	bool		mClosed, mValidHash, mAccepted, mImmutable;
 
+	uint32		mReferenceFeeUnits;					// Fee units for the reference transaction
+	uint32		mReserveBase, mReserveIncrement;	// Reserve basse and increment in fee units
+	uint64		mBaseFee;							// Ripple cost of the reference transaction
+
 	SHAMap::pointer mTransactionMap, mAccountStateMap;
 
 	mutable boost::recursive_mutex mLock;
@@ -94,6 +98,9 @@ protected:
 	static void incPendingSaves();
 	static void decPendingSaves();
 	void saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer);
+
+	void updateFees();
+	void zeroFees();
 
 public:
 	Ledger(const RippleAddress& masterID, uint64 startAmount); // used for the starting bootstrap ledger
@@ -193,6 +200,7 @@ public:
 	static int getLedgerHashOffset(uint32 desiredLedgerIndex, uint32 currentLedgerIndex);
 
 	static uint256 getLedgerFeatureIndex();
+	static uint256 getLedgerFeeIndex();
 
 	// index calculation functions
 	static uint256 getAccountRootIndex(const uint160& uAccountID);
@@ -303,6 +311,28 @@ public:
 
 	SLE::pointer getRippleState(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
 		{ return getRippleState(getRippleStateIndex(RippleAddress::createAccountID(uiA), RippleAddress::createAccountID(uiB), uCurrency)); }
+
+	uint32 getReferenceFeeUnits()
+	{
+		if (!mBaseFee) updateFees();
+		return mReferenceFeeUnits;
+	}
+
+	uint64 getBaseFee()
+	{
+		if (!mBaseFee) updateFees();
+		return mBaseFee;
+	}
+
+	uint64 getReserve(int increments)
+	{
+		if (!mBaseFee) updateFees();
+		return scaleFeeBase(static_cast<uint64>(increments) * mReserveIncrement + mReserveBase);
+	}
+
+	uint64 scaleFeeBase(uint64 fee);
+	uint64 scaleFeeLoad(uint64 fee);
+
 
 	Json::Value getJson(int options);
 	void addJson(Json::Value&, int options);

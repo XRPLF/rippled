@@ -37,6 +37,7 @@ Ledger::Ledger(const RippleAddress& masterID, uint64 startAmount) : mTotCoins(st
 	mAccountStateMap->armDirty();
 	writeBack(lepCREATE, startAccount->getSLE());
 	SHAMap::flushDirty(*mAccountStateMap->disarmDirty(), 256, hotACCOUNT_NODE, mLedgerSeq);
+	zeroFees();
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
@@ -55,6 +56,7 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 		mAccountStateMap->fetchRoot(mAccountHash);
 	mTransactionMap->setImmutable();
 	mAccountStateMap->setImmutable();
+	zeroFees();
 }
 
 Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins), mLedgerSeq(ledger.mLedgerSeq),
@@ -65,6 +67,7 @@ Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins), mL
 	mAccountStateMap(ledger.mAccountStateMap->snapShot(isMutable))
 { // Create a new ledger that's a snapshot of this one
 	updateHash();
+	zeroFees();
 }
 
 
@@ -88,6 +91,7 @@ Ledger::Ledger(bool /* dummy */, Ledger& prevLedger) :
 	}
 	else
 		mCloseTime = prevLedger.mCloseTime + mCloseResolution;
+	zeroFees();
 }
 
 Ledger::Ledger(const std::vector<unsigned char>& rawLedger) :
@@ -95,6 +99,7 @@ Ledger::Ledger(const std::vector<unsigned char>& rawLedger) :
 {
 	Serializer s(rawLedger);
 	setRaw(s);
+	zeroFees();
 }
 
 Ledger::Ledger(const std::string& rawLedger) :
@@ -102,6 +107,7 @@ Ledger::Ledger(const std::string& rawLedger) :
 {
 	Serializer s(rawLedger);
 	setRaw(s);
+	zeroFees();
 }
 
 void Ledger::updateHash()
@@ -899,6 +905,13 @@ uint256 Ledger::getAccountRootIndex(const uint160& uAccountID)
 	return s.getSHA512Half();
 }
 
+uint256 Ledger::getLedgerFeeIndex()
+{ // get the index of the node that holds the fee schedul
+	Serializer s(2);
+	s.add16(spaceFee);
+	return s.getSHA512Half();
+}
+
 uint256 Ledger::getLedgerFeatureIndex()
 { // get the index of the node that holds the last 256 ledgers
 	Serializer s(2);
@@ -1185,5 +1198,51 @@ void Ledger::qualityDirDescriber(SLE::ref sle,
 	sle->setFieldU64(sfExchangeRate, uRate);
 }
 
+void Ledger::zeroFees()
+{
+	mBaseFee = 0;
+	mReferenceFeeUnits = 0;
+	mReserveBase = 0;
+	mReserveIncrement = 0;
+}
+
+void Ledger::updateFees()
+{
+	mBaseFee = theConfig.FEE_DEFAULT;
+	mReferenceFeeUnits = 10;
+	mReserveBase = theConfig.FEE_ACCOUNT_RESERVE;
+	mReserveIncrement = theConfig.FEE_OWNER_RESERVE;
+
+	LedgerStateParms p = lepNONE;
+	SLE::pointer sle = getASNode(p, Ledger::getLedgerFeeIndex(), ltFEE_SETTINGS);
+	if (!sle)
+		return;
+
+	if (sle->getFieldIndex(sfBaseFee) != -1)
+		mBaseFee = sle->getFieldU64(sfBaseFee);
+
+	if (sle->getFieldIndex(sfReferenceFeeUnits) != -1)
+		mReferenceFeeUnits = sle->getFieldU32(sfReferenceFeeUnits);
+
+	if (sle->getFieldIndex(sfReserveBase) != -1)
+		mReserveBase = sle->getFieldU32(sfReserveBase);
+
+	if (sle->getFieldIndex(sfReserveIncrement) != -1)
+		mReserveIncrement = sle->getFieldU32(sfReserveIncrement);
+}
+
+uint64 Ledger::scaleFeeBase(uint64 fee)
+{
+	if (!mBaseFee)
+		updateFees();
+	return theApp->getFeeTrack().scaleFeeBase(fee, mBaseFee, mReferenceFeeUnits);
+}
+
+uint64 Ledger::scaleFeeLoad(uint64 fee)
+{
+	if (!mBaseFee)
+		updateFees();
+	return theApp->getFeeTrack().scaleFeeLoad(fee, mBaseFee, mReferenceFeeUnits);
+}
 
 // vim:ts=4

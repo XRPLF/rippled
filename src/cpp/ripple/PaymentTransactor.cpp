@@ -86,7 +86,7 @@ TER PaymentTransactor::doApply()
 			return terNO_DST;
 		}
 		else if (isSetBit(mParams, tapOPEN_LEDGER)												// Ledger is not final, can vote no.
-			&& saDstAmount.getNValue() < theApp->scaleFeeBase(theConfig.FEE_ACCOUNT_RESERVE))	// Reserve is not scaled by load.
+			&& saDstAmount.getNValue() < mEngine->getLedger()->getReserve(0))	// Reserve is not scaled by load.
 		{
 			cLog(lsINFO) << "doPayment: Delay transaction: Destination account does not exist. Insufficent payment to create account.";
 
@@ -141,7 +141,7 @@ TER PaymentTransactor::doApply()
 
 		const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
 		const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
-		const uint64	uReserve		= theApp->scaleFeeBase(theConfig.FEE_ACCOUNT_RESERVE + uOwnerCount * theConfig.FEE_OWNER_RESERVE);
+		const uint64	uReserve		= mEngine->getLedger()->getReserve(uOwnerCount);
 
 		// Make sure have enough reserve to send.
 		if (isSetBit(mParams, tapOPEN_LEDGER)					// Ledger is not final, we can vote.

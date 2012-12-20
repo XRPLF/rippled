@@ -123,32 +123,29 @@ protected:
 	static const int lftFeeDecFraction = 16;	// decrease fee by 1/16	
 	static const int lftFeeMax = lftNormalFee * 1000000;
 
-	uint32 mBaseRef;				// The number of fee units a reference transaction costs
-	uint32 mBaseFee;				// The cost in millionths of a ripple of a reference transaction
 	uint32 mLocalTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
 	uint32 mRemoteTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
 
 	boost::mutex mLock;
 
-	static uint64 mulDiv(uint64 value, uint32 mul, uint32 div);
+	static uint64 mulDiv(uint64 value, uint32 mul, uint64 div);
 
 public:
 
-	LoadFeeTrack(uint32 baseRef, uint32 baseFee) : mBaseRef(baseRef), mBaseFee(baseFee),
-		mLocalTxnLoadFee(lftNormalFee), mRemoteTxnLoadFee(lftNormalFee)
+	LoadFeeTrack() : mLocalTxnLoadFee(lftNormalFee), mRemoteTxnLoadFee(lftNormalFee)
 	{ ; }
 
-	uint64 scaleFeeBase(uint64 fee);	// Scale from fee units to millionths of a ripple
-	uint64 scaleFeeLoad(uint64 fee);	// Scale using load as well as base rate
+	// Scale from fee units to millionths of a ripple
+	uint64 scaleFeeBase(uint64 fee, uint64 baseFee, uint32 referenceFeeUnits);
+
+	// Scale using load as well as base rate
+	uint64 scaleFeeLoad(uint64 fee, uint64 baseFee, uint32 referenceFeeUnits);
 
 	uint32 getRemoteFee();
 	uint32 getLocalFee();
-	uint32 getBaseRef();
-	uint32 getBaseFee();
 
-	Json::Value getJson(int);
+	Json::Value getJson(uint64 baseFee, uint32 referenceFeeUnits);
 
-	void setBaseFee(uint32);
 	void setRemoteFee(uint32);
 	void raiseLocalFee();
 	void lowerLocalFee();
