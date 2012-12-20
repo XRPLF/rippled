@@ -103,6 +103,13 @@ static bool LEFInit()
 		<< SOElement(sfFeatures, SOE_REQUIRED)
 		;
 
+	DECLARE_LEF(FeeSettings, ltFEE_SETTINGS)
+		<< SOElement(sfBaseFee,				SOE_REQUIRED)
+		<< SOElement(sfReferenceFeeUnits,	SOE_REQUIRED)
+		<< SOElement(sfReserveBase,			SOE_REQUIRED)
+		<< SOElement(sfReserveIncrement,	SOE_REQUIRED)
+		;
+
 		return true;
 }
 

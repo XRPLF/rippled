@@ -16,6 +16,7 @@ enum LedgerEntryType
 	ltCONTRACT			= 'c',
 	ltLEDGER_HASHES		= 'h',
 	ltFEATURES			= 'f',
+	ltFEE_SETTINGS		= 's',
 };
 
 // Used as a prefix for computing ledger indexes (keys).
@@ -32,6 +33,7 @@ enum LedgerNameSpace
 	spaceContract		= 'c',
 	spaceSkipList		= 's',
 	spaceFeature		= 'f',
+	spaceFee			= 's',
 };
 
 enum LedgerSpecificFlags
