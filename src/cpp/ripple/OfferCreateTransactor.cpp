@@ -326,16 +326,6 @@ TER OfferCreateTransactor::doApply()
 
 		terResult	= terUNFUNDED;
 	}
-	else if (isSetBit(mParams, tapOPEN_LEDGER)) // Ledger is not final, can vote no.
-	{
-		const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
-		const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
-		// The reserve required to create the line.
-		const uint64	uReserveCreate	= mEngine->getLedger()->getReserve(uOwnerCount);
-
-		if (saSrcXRPBalance.getNValue() < uReserveCreate)					// Have enough reserve prior to creating offer?
-			terResult	= terINSUF_RESERVE_OFFER;
-	}
 
 	if (tesSUCCESS == terResult && !saTakerPays.isNative())
 	{
@@ -349,10 +339,11 @@ TER OfferCreateTransactor::doApply()
 		}
 	}
 
+	STAmount		saOfferPaid;
+	STAmount		saOfferGot;
+
 	if (tesSUCCESS == terResult)
 	{
-		STAmount		saOfferPaid;
-		STAmount		saOfferGot;
 		const uint256	uTakeBookBase	= Ledger::getBookBase(uGetsCurrency, uGetsIssuerID, uPaysCurrency, uPaysIssuerID);
 
 		cLog(lsINFO) << boost::str(boost::format("doOfferCreate: take against book: %s for %s -> %s")
@@ -394,10 +385,36 @@ TER OfferCreateTransactor::doApply()
 	// cLog(lsWARNING) << "doOfferCreate: takeOffers: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
 	// cLog(lsWARNING) << "doOfferCreate: takeOffers: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
 
-	if (tesSUCCESS == terResult
-		&& saTakerPays														// Still wanting something.
-		&& saTakerGets														// Still offering something.
-		&& mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets, true).isPositive())	// Still funded.
+	if (tesSUCCESS != terResult
+		|| !saTakerPays														// Wants nothing more.
+		|| !saTakerGets														// Offering nothing more.
+		|| !mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets, true).isPositive())	// Not funded.
+	{
+		// Complete as is.
+		nothing();
+	}
+	else if (mTxnAccount->getFieldAmount(sfBalance).getNValue() < mEngine->getLedger()->getReserve(mTxnAccount->getFieldU32(sfOwnerCount)+1))
+	{
+		if (isSetBit(mParams, tapOPEN_LEDGER)) // Ledger is not final, can vote no.
+		{
+			// Hope for more reserve to come in or more offers to consume.
+			terResult	= terINSUF_RESERVE_OFFER;
+		}
+		else if (!saOfferPaid && !saOfferGot)
+		{
+			// Ledger is final, insufficent reserve to create offer, processed nothing.
+
+			terResult	= tepINSUF_RESERVE_OFFER;
+		}
+		else
+		{
+			// Ledger is final, insufficent reserve to create offer, processed something.
+
+			// Consider the offer unfunded. Treat as tesSUCCESS.
+			nothing();
+		}
+	}
+	else
 	{
 		// We need to place the remainder of the offer into its order book.
 		cLog(lsINFO) << boost::str(boost::format("doOfferCreate: offer not fully consumed: saTakerPays=%s saTakerGets=%s")
