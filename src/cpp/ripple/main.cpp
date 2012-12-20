@@ -145,6 +145,7 @@ int main(int argc, char* argv[])
 		Log::setMinSeverity(lsTRACE, true);
 	else
 		Log::setMinSeverity(lsWARNING, true);
+	InstanceType::multiThread();
 
 	if (vm.count("test"))
 	{
