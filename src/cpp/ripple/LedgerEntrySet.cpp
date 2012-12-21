@@ -19,9 +19,9 @@ DECLARE_INSTANCE(LedgerEntrySet)
 void LedgerEntrySet::init(Ledger::ref ledger, const uint256& transactionID, uint32 ledgerID)
 {
 	mEntries.clear();
-	mLedger = ledger;
+	mLedger	= ledger;
 	mSet.init(transactionID, ledgerID);
-	mSeq = 0;
+	mSeq	= 0;
 }
 
 void LedgerEntrySet::clear()
@@ -1013,7 +1013,7 @@ STAmount LedgerEntrySet::rippleHolds(const uint160& uAccountID, const uint160& u
 	}
 	else if (uAccountID > uIssuerID)
 	{
-		if (bAvail)
+		if (false && bAvail)
 		{
 			saBalance	= sleRippleState->getFieldAmount(sfLowLimit);
 			saBalance	-= sleRippleState->getFieldAmount(sfBalance);
@@ -1028,7 +1028,7 @@ STAmount LedgerEntrySet::rippleHolds(const uint160& uAccountID, const uint160& u
 	}
 	else
 	{
-		if (bAvail)
+		if (false && bAvail)
 		{
 			saBalance	= sleRippleState->getFieldAmount(sfHighLimit);
 			saBalance	+= sleRippleState->getFieldAmount(sfBalance);
@@ -1052,8 +1052,18 @@ STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& 
 	if (!uCurrencyID)
 	{
 		SLE::pointer	sleAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uAccountID));
+		uint64			uReserve	= mLedger->getReserve(sleAccount->getFieldU32(sfOwnerCount));
 
-		saAmount	= sleAccount->getFieldAmount(sfBalance);
+		saAmount	= sleAccount->getFieldAmount(sfBalance)-uReserve;
+
+		if (saAmount < uReserve)
+		{
+			saAmount.zero();
+		}
+		else
+		{
+			saAmount	-= uReserve;
+		}
 	}
 	else
 	{
@@ -1070,7 +1080,9 @@ STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& 
 
 // Returns the funds available for uAccountID for a currency/issuer.
 // Use when you need a default for rippling uAccountID's currency.
+// XXX Should take into account quality?
 // --> saDefault/currency/issuer
+// --> bAvail: true to include going into debt.
 // <-- saFunds: Funds available. May be negative.
 //              If the issuer is the same as uAccountID, funds are unlimited, use result is saDefault.
 STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount& saDefault, bool bAvail)

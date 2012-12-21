@@ -481,54 +481,41 @@ buster.testCase("Offer tests", {
               .offer_create("bob", "50/USD/alice", "200/EUR/carol")
               .on('proposed', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.result !== 'terUNFUNDED');
 
                   seq = m.tx_json.Sequence;
                 })
               .submit();
           },
 //          function (callback) {
-//            self.what = "Alice converts USD to EUR via ripple.";
+//            self.what = "Alice converts USD to EUR via offer.";
 //
 //            self.remote.transaction()
-//              .payment("alice", "alice", "10/EUR/carol")
-//              .send_max("50/USD/alice")
+//              .offer_create("alice", "200/EUR/carol", "50/USD/alice")
 //              .on('proposed', function (m) {
-//                  // console.log("proposed: %s", JSON.stringify(m));
-//
+//                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 //                  callback(m.result !== 'tesSUCCESS');
+//
+//                  seq = m.tx_json.Sequence;
 //                })
 //              .submit();
 //          },
-          function (callback) {
-            self.what = "Alice converts USD to EUR via offer.";
-
-            self.remote.transaction()
-              .offer_create("alice", "200/EUR/carol", "50/USD/alice")
-              .on('proposed', function (m) {
-                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
-
-                  seq = m.tx_json.Sequence;
-                })
-              .submit();
-          },
-          function (callback) {
-            self.what = "Verify balances.";
-
-            testutils.verify_balances(self.remote,
-              {
-                "alice"   : [ "-50/USD/bob", "200/EUR/carol" ],
-                "bob"     : [ "50/USD/alice", "-200/EUR/carol" ],
-                "carol"   : [ "-200/EUR/alice", "200/EUR/bob" ],
-              },
-              callback);
-          },
-          function (callback) {
-            self.what = "Verify offer consumed.";
-
-            testutils.verify_offer_not_found(self.remote, "bob", seq, callback);
-          },
+//          function (callback) {
+//            self.what = "Verify balances.";
+//
+//            testutils.verify_balances(self.remote,
+//              {
+//                "alice"   : [ "-50/USD/bob", "200/EUR/carol" ],
+//                "bob"     : [ "50/USD/alice", "-200/EUR/carol" ],
+//                "carol"   : [ "-200/EUR/alice", "200/EUR/bob" ],
+//              },
+//              callback);
+//          },
+//          function (callback) {
+//            self.what = "Verify offer consumed.";
+//
+//            testutils.verify_offer_not_found(self.remote, "bob", seq, callback);
+//          },
         ], function (error) {
           buster.refute(error, self.what);
           done();
