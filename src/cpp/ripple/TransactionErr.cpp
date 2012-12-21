@@ -46,6 +46,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 
 		{	tepPATH_DRY,			"tepPATH_DRY",				"Path could not send partial amount."					},
 		{	tepPATH_PARTIAL,		"tepPATH_PARTIAL",			"Path could not send full amount."						},
+		{	tepINSUF_RESERVE_OFFER,	"tepINSUF_RESERVE_OFFER",	"Insufficent reserve to create offer."					},
 
 		{	terDIR_FULL,			"terDIR_FULL",				"Can not add entry to full dir."						},
 		{	terFUNDS_SPENT,			"terFUNDS_SPENT",			"Can't set password, password set funds already spent."	},

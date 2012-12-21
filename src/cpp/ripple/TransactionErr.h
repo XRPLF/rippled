@@ -108,9 +108,10 @@ enum TER	// aka TransactionEngineResult
 	// - Forwarded
 	// Only allowed as a return code of appliedTransaction when !tapRetry. Otherwise, treated as terRETRY.
 	// CAUTION: The numerical values for these results are part of the binary formats
-	tepPARTIAL		= 100,
-	tepPATH_DRY		= 101,
-	tepPATH_PARTIAL	= 102,
+	tepPARTIAL				= 100,
+	tepPATH_DRY				= 101,
+	tepPATH_PARTIAL			= 102,
+	tepINSUF_RESERVE_OFFER	= 103,
 };
 
 #define isTelLocal(x)		((x) >= telLOCAL_ERROR && (x) < temMALFORMED)
