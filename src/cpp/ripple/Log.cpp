@@ -166,9 +166,9 @@ void Log::setLogFile(boost::filesystem::path path)
 	if (outStream != NULL)
 		delete outStream;
 	outStream = newStream;
-	if (outStream)
-		Log(lsINFO) << "Starting up";
 
+	if (pathToLog != NULL)
+		delete pathToLog;
 	pathToLog = new boost::filesystem::path(path);
 }
 
