@@ -124,11 +124,13 @@ void Application::run()
 	if (theConfig.START_UP == Config::FRESH)
 	{
 		cLog(lsINFO) << "Starting new Ledger";
+
 		startNewLedger();
 	}
 	else if (theConfig.START_UP == Config::LOAD)
 	{
 		cLog(lsINFO) << "Loading Old Ledger";
+
 		loadOldLedger();
 	}
 	else if (theConfig.START_UP == Config::NETWORK)
@@ -251,6 +253,7 @@ void Application::run()
 	if (theConfig.RUN_STANDALONE)
 	{
 		cLog(lsWARNING) << "Running in standalone mode";
+
 		mNetOps.setStandAlone();
 	}
 	else
@@ -360,4 +363,5 @@ void Application::loadOldLedger()
 		exit(-1);
 	}
 }
+
 // vim:ts=4
