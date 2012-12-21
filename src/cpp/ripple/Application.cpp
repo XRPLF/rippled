@@ -103,9 +103,7 @@ void Application::run()
 			LogPartition::setSeverity(lsDEBUG);
 	}
 
-	boost::thread auxThread(boost::bind(&boost::asio::io_service::run, &mAuxService));
-	auxThread.detach();
-
+	boost::thread(boost::bind(&boost::asio::io_service::run, &mAuxService)).detach();
 
 	if (!theConfig.RUN_STANDALONE)
 		mSNTPClient.init(theConfig.SNTP_SERVERS);
