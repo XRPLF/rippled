@@ -5,18 +5,20 @@
 #include <boost/bind.hpp>
 #include <iostream>
 
+SETUP_LOG();
+
 using namespace std;
 using namespace boost::asio::ip;
 
 RPCDoor::RPCDoor(boost::asio::io_service& io_service) :
 	mAcceptor(io_service, tcp::endpoint(address::from_string(theConfig.RPC_IP), theConfig.RPC_PORT))
 {
-	Log(lsINFO) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
+	cLog(lsINFO) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
 	startListening();
 }
 RPCDoor::~RPCDoor()
 {
-	Log(lsINFO) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
+	cLog(lsINFO) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
 }
 
 void RPCDoor::startListening()
@@ -31,25 +33,26 @@ void RPCDoor::startListening()
 
 bool RPCDoor::isClientAllowed(const std::string& ip)
 {
-	if(theConfig.RPC_ALLOW_REMOTE) return(true);
-	if(ip=="127.0.0.1") return(true);
+	if (theConfig.RPC_ALLOW_REMOTE) return(true);
+	if (ip=="127.0.0.1") return(true);
+
 	return(false);
 }
 
 void RPCDoor::handleConnect(RPCServer::pointer new_connection,
 	const boost::system::error_code& error)
 {
-	if(!error)
+	if (!error)
 	{
 		// Restrict callers by IP
-		if(!isClientAllowed(new_connection->getSocket().remote_endpoint().address().to_string()))
+		if (!isClientAllowed(new_connection->getSocket().remote_endpoint().address().to_string()))
 		{
 			return;
 		}
 
 		new_connection->connected();
 	}
-	else Log(lsINFO) << "RPCDoor::handleConnect Error: " << error;
+	else cLog(lsINFO) << "RPCDoor::handleConnect Error: " << error;
 
 	startListening();
 }

@@ -58,7 +58,7 @@ void WSDoor::startListening()
 
 	SSL_CTX_set_tmp_dh_callback(mCtx->native_handle(), handleTmpDh);
 
-	if(theConfig.WEBSOCKET_SECURE)
+	if (theConfig.WEBSOCKET_SECURE)
 	{
 		// Construct a single handler for all requests.
 		websocketpp::server_tls::handler::ptr	handler(new WSServerHandler<websocketpp::server_tls>(mCtx, mPublic));
@@ -94,7 +94,8 @@ void WSDoor::startListening()
 		}
 
 		delete mSEndpoint;
-	}else
+	}
+	else
 	{
 		// Construct a single handler for all requests.
 		websocketpp::server::handler::ptr	handler(new WSServerHandler<websocketpp::server>(mCtx, mPublic));
@@ -131,7 +132,6 @@ void WSDoor::startListening()
 
 		delete mEndpoint;
 	}
-	
 }
 
 WSDoor* WSDoor::createWSDoor(const std::string& strIp, const int iPort, bool bPublic)
@@ -162,6 +162,5 @@ void WSDoor::stop()
 		mThread->join();
 	}
 }
-
 
 // vim:ts=4
