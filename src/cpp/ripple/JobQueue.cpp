@@ -204,8 +204,7 @@ void JobQueue::setThreadCount(int c)
 	while (mThreadCount < c)
 	{
 		++mThreadCount;
-		boost::thread t(boost::bind(&JobQueue::threadEntry, this));
-		t.detach();
+		boost::thread(boost::bind(&JobQueue::threadEntry, this)).detach();
 	}
 	while (mThreadCount > c)
 	{

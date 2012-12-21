@@ -9,6 +9,9 @@
 #include "Application.h"
 #include "Config.h"
 #include "utils.h"
+#include "Log.h"
+
+SETUP_LOG();
 
 using namespace std;
 using namespace boost::asio::ip;
@@ -21,7 +24,7 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 
 PeerDoor::PeerDoor(boost::asio::io_service& io_service) :
 	mAcceptor(io_service, tcp::endpoint(address().from_string(theConfig.PEER_IP), theConfig.PEER_PORT)),
-	mCtx(boost::asio::ssl::context::sslv23)
+	mCtx(boost::asio::ssl::context::sslv23), mDelayTimer(io_service)
 {
 	mCtx.set_options(
 		boost::asio::ssl::context::default_workarounds
@@ -32,7 +35,7 @@ PeerDoor::PeerDoor(boost::asio::io_service& io_service) :
 	if (1 != SSL_CTX_set_cipher_list(mCtx.native_handle(), theConfig.PEER_SSL_CIPHER_LIST.c_str()))
 		std::runtime_error("Error setting cipher list (no valid ciphers).");
 
-	cerr << "Peer port: " << theConfig.PEER_IP << " " << theConfig.PEER_PORT << endl;
+	Log(lsINFO) << "Peer port: " << theConfig.PEER_IP << " " << theConfig.PEER_PORT;
 
 	startListening();
 }
@@ -50,13 +53,25 @@ void PeerDoor::startListening()
 void PeerDoor::handleConnect(Peer::pointer new_connection,
 	const boost::system::error_code& error)
 {
+	bool delay = false;
 	if (!error)
 	{
 		new_connection->connected(error);
 	}
-	else cerr << "Error: " << error;
+	else
+	{
+		if (error == boost::system::errc::too_many_files_open)
+			delay = true;
+		cLog(lsERROR) << error;
+	}
 
-	startListening();
+	if (delay)
+	{
+		mDelayTimer.expires_from_now(boost::posix_time::milliseconds(500));
+		mDelayTimer.async_wait(boost::bind(&PeerDoor::startListening, this));
+	}
+	else
+		startListening();
 }
 
 void initSSLContext(boost::asio::ssl::context& context,

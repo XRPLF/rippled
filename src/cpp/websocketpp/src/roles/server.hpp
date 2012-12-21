@@ -388,6 +388,8 @@ template <class endpoint>
 void server<endpoint>::handle_accept(connection_ptr con, 
                                      const boost::system::error_code& error)
 {
+	bool delay = false;
+
     boost::lock_guard<boost::recursive_mutex> lock(m_endpoint.m_lock);
 
     try
@@ -398,10 +400,8 @@ void server<endpoint>::handle_accept(connection_ptr con,
 
 	        if (error == boost::system::errc::too_many_files_open) {
 	            con->m_fail_reason = "too many files open";
+	            delay = true;
 
-	            // TODO: make this configurable
-	            //m_timer.expires_from_now(boost::posix_time::milliseconds(1000));
-	            //m_timer.async_wait(boost::bind(&type::start_accept,this));
 	        } else if (error == boost::asio::error::operation_aborted) {
 	            con->m_fail_reason = "io_service operation canceled";
 
@@ -426,7 +426,13 @@ void server<endpoint>::handle_accept(connection_ptr con,
 			<< "handle_accept caught exception: " << e.what() << log::endl;
 	}
 
-    this->start_accept();
+	if (delay)
+	{ // Don't spin if too many files are open DJS
+		m_timer.expires_from_now(boost::posix_time::milliseconds(500));
+		m_timer.async_wait(boost::bind(&type::start_accept,this));
+	}
+	else
+	    this->start_accept();
 }
     
 // server<endpoint>::connection<connnection_type> Implimentation

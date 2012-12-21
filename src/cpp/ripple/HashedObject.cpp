@@ -42,8 +42,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 		if (!mWritePending)
 		{
 			mWritePending = true;
-			boost::thread t(boost::bind(&HashedObjectStore::bulkWrite, this));
-			t.detach();
+			boost::thread(boost::bind(&HashedObjectStore::bulkWrite, this)).detach();
 		}
 	}
 //	else
