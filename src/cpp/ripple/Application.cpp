@@ -158,7 +158,17 @@ void Application::run()
 	//
 	if (!theConfig.RUN_STANDALONE && !theConfig.PEER_IP.empty() && theConfig.PEER_PORT)
 	{
-		mPeerDoor = new PeerDoor(mIOService);
+		try
+		{
+			mPeerDoor = new PeerDoor(mIOService);
+		}
+		catch (const std::exception& e)
+		{
+			// Must run as directed or exit.
+			cLog(lsFATAL) << boost::str(boost::format("Can not open peer service: %s") % e.what());
+
+			exit(3);
+		}
 	}
 	else
 	{
@@ -170,7 +180,17 @@ void Application::run()
 	//
 	if (!theConfig.RPC_IP.empty() && theConfig.RPC_PORT)
 	{
-		mRPCDoor = new RPCDoor(mIOService);
+		try
+		{
+			mRPCDoor = new RPCDoor(mIOService);
+		}
+		catch (const std::exception& e)
+		{
+			// Must run as directed or exit.
+			cLog(lsFATAL) << boost::str(boost::format("Can not open RPC service: %s") % e.what());
+
+			exit(3);
+		}
 	}
 	else
 	{
@@ -182,7 +202,17 @@ void Application::run()
 	//
 	if (!theConfig.WEBSOCKET_IP.empty() && theConfig.WEBSOCKET_PORT)
 	{
-		mWSPrivateDoor	= WSDoor::createWSDoor(theConfig.WEBSOCKET_IP, theConfig.WEBSOCKET_PORT, false);
+		try
+		{
+			mWSPrivateDoor	= WSDoor::createWSDoor(theConfig.WEBSOCKET_IP, theConfig.WEBSOCKET_PORT, false);
+		}
+		catch (const std::exception& e)
+		{
+			// Must run as directed or exit.
+			cLog(lsFATAL) << boost::str(boost::format("Can not open private websocket service: %s") % e.what());
+
+			exit(3);
+		}
 	}
 	else
 	{
@@ -194,7 +224,17 @@ void Application::run()
 	//
 	if (!theConfig.WEBSOCKET_PUBLIC_IP.empty() && theConfig.WEBSOCKET_PUBLIC_PORT)
 	{
-		mWSPublicDoor	= WSDoor::createWSDoor(theConfig.WEBSOCKET_PUBLIC_IP, theConfig.WEBSOCKET_PUBLIC_PORT, true);
+		try
+		{
+			mWSPublicDoor	= WSDoor::createWSDoor(theConfig.WEBSOCKET_PUBLIC_IP, theConfig.WEBSOCKET_PUBLIC_PORT, true);
+		}
+		catch (const std::exception& e)
+		{
+			// Must run as directed or exit.
+			cLog(lsFATAL) << boost::str(boost::format("Can not open public websocket service: %s") % e.what());
+
+			exit(3);
+		}
 	}
 	else
 	{
