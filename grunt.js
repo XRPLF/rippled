@@ -51,6 +51,16 @@ module.exports = function(grunt) {
         dest: "build/ripple-<%= pkg.version %>.js",
         minimize: true
       }
+    },
+    watch: {
+      sjcl: {
+        files: ['<config:concat.sjcl.src>'],
+        tasks: 'concat:sjcl'
+      },
+      lib: {
+        files: 'src/js/*.js',
+        tasks: 'webpack'
+      }
     }
   });
 
