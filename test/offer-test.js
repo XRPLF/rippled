@@ -346,9 +346,9 @@ buster.testCase("Offer tests", {
             testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox"], callback);
           },
           function (callback) {
-            self.what = "Owner count undefined.";
+            self.what = "Owner count 0.";
 
-            testutils.verify_owner_count(self.remote, "bob", undefined, callback);
+            testutils.verify_owner_count(self.remote, "bob", 0, callback);
           },
           function (callback) {
             self.what = "Set limits.";

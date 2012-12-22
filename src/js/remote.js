@@ -267,10 +267,9 @@ Remote.flags = {
   },
 
   'Payment' : {
-    'PaymentLegacy'           : 0x00010000,
+    'NoRippleDirect'          : 0x00010000,
     'PartialPayment'          : 0x00020000,
     'LimitQuality'            : 0x00040000,
-    'NoRippleDirect'          : 0x00080000,
   },
 };
 
