@@ -114,7 +114,7 @@ TER PathState::pushImply(
 
 // Append a node and insert before it any implied nodes.
 // Offers may go back to back.
-// <-- terResult: tesSUCCESS, temBAD_PATH, terNO_LINE, tepPATH_DRY
+// <-- terResult: tesSUCCESS, temBAD_PATH, terNO_LINE, tecPATH_DRY
 TER PathState::pushNode(
 	const int iType,
 	const uint160& uAccountID,
@@ -235,7 +235,7 @@ TER PathState::pushNode(
 
 					if (!saOwed.isPositive() && *saOwed.negate() >= lesEntries.rippleLimit(pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID))
 					{
-						terResult	= tepPATH_DRY;
+						terResult	= tecPATH_DRY;
 					}
 				}
 			}
@@ -1148,7 +1148,7 @@ TER RippleCalc::calcNodeDeliverRev(
 	}
 
 	if (!saOutAct)
-		terResult	= tepPATH_DRY;
+		terResult	= tecPATH_DRY;
 
 	return terResult;
 }
@@ -1540,7 +1540,7 @@ void RippleCalc::calcNodeRipple(
 // Reedems are limited based on IOUs previous has on hand.
 // Issues are limited based on credit limits and amount owed.
 // No account balance adjustments as we don't know how much is going to actually be pushed through yet.
-// <-- tesSUCCESS or tepPATH_DRY
+// <-- tesSUCCESS or tecPATH_DRY
 TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, const bool bMultiQuality)
 {
 	TER					terResult		= tesSUCCESS;
@@ -1688,7 +1688,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 			if (!saCurWantedAct)
 			{
 				// Must have processed something.
-				terResult	= tepPATH_DRY;
+				terResult	= tecPATH_DRY;
 			}
 		}
 		else
@@ -1751,7 +1751,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 			if (!saCurRedeemAct && !saCurIssueAct)
 			{
 				// Did not make progress.
-				terResult	= tepPATH_DRY;
+				terResult	= tecPATH_DRY;
 			}
 
 			cLog(lsINFO) << boost::str(boost::format("calcNodeAccountRev: ^|account --> ACCOUNT --> account : saCurRedeemReq=%s saCurIssueReq=%s saPrvOwed=%s saCurRedeemAct=%s saCurIssueAct=%s")
@@ -1790,7 +1790,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 		if (!saCurDeliverAct)
 		{
 			// Must want something.
-			terResult	= tepPATH_DRY;
+			terResult	= tecPATH_DRY;
 		}
 
 		cLog(lsINFO) << boost::str(boost::format("calcNodeAccountRev: saCurDeliverReq=%s saCurDeliverAct=%s saPrvOwed=%s")
@@ -1870,7 +1870,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 		if (!saCurDeliverAct)
 		{
 			// Must want something.
-			terResult	= tepPATH_DRY;
+			terResult	= tecPATH_DRY;
 		}
 	}
 
@@ -2224,7 +2224,7 @@ TER RippleCalc::calcNodeFwd(const unsigned int uNode, PathState& psCur, const bo
 // Calculate a node and its previous nodes.
 // From the destination work in reverse towards the source calculating how much must be asked for.
 // Then work forward, figuring out how much can actually be delivered.
-// <-- terResult: tesSUCCESS or tepPATH_DRY
+// <-- terResult: tesSUCCESS or tecPATH_DRY
 // <-> pnNodes:
 //     --> [end]saWanted.mAmount
 //     --> [all]saWanted.mCurrency
@@ -2579,8 +2579,7 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: %d rate: %s qual
 	    else if (!saDstAmountAct)
 	    {
 		    // No payment at all.
-		    terResult	= tepPATH_DRY;
-		    lesActive	= lesBase;				// Revert to just fees charged.
+		    terResult	= tecPATH_DRY;			// Revert to just fees charged is built into tec.
 	    }
 	    else
 	    {

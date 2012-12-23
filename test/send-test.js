@@ -80,7 +80,7 @@ buster.testCase("Sending", {
             // Transaction got an error.
             // console.log("proposed: %s", JSON.stringify(m));
 
-            buster.assert.equals(m.result, 'terNO_DST_INSUF_XRP');
+            buster.assert.equals(m.result, 'tecNO_DST_INSUF_XRP');
 
             got_proposed  = true;
 
@@ -100,15 +100,15 @@ buster.testCase("Sending", {
         .submit();
     },
 
-  // Also test transaction becomes lost after terNO_DST.
-  "credit_limit to non-existent account = terNO_DST" :
+  // Also test transaction becomes lost after tecNO_DST.
+  "credit_limit to non-existent account = tecNO_DST" :
     function (done) {
       this.remote.transaction()
         .ripple_line_set("root", "100/USD/alice")
         .on('proposed', function (m) {
             //console.log("proposed: %s", JSON.stringify(m));
 
-            buster.assert.equals(m.result, 'terNO_DST');
+            buster.assert.equals(m.result, 'tecNO_DST');
 
             done();
           })
@@ -431,7 +431,7 @@ buster.testCase("Sending future", {
               .payment('bob', 'alice', "1/USD/bob")
               .once('proposed', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
-                  callback(m.result !== 'tepPATH_DRY');
+                  callback(m.result !== 'tecPATH_DRY');
                 })
               .submit();
           },

@@ -53,7 +53,7 @@ TER TrustSetTransactor::doApply()
 	{
 		cLog(lsINFO) << "doTrustSet: Delay transaction: Destination account does not exist.";
 
-		return terNO_DST;
+		return tecNO_DST;
 	}
 
 	const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
@@ -241,7 +241,7 @@ TER TrustSetTransactor::doApply()
 			cLog(lsINFO) << "doTrustSet: Delay transaction: Insufficent reserve to add trust line.";
 
 			// Another transaction could provide XRP to the account and then this transaction would succeed.
-			terResult	= terINSUF_RESERVE_LINE;
+			terResult	= tecINSUF_RESERVE_LINE;
 		}
 		else
 		{
@@ -257,7 +257,7 @@ TER TrustSetTransactor::doApply()
 	{
 		cLog(lsINFO) << "doTrustSet: Redundant: Setting non-existent ripple line to defaults.";
 
-		return terNO_LINE_REDUNDANT;
+		return tecNO_LINE_REDUNDANT;
 	}
 	else if (isSetBit(mParams, tapOPEN_LEDGER)					// Ledger is not final, we can vote no.
 		&& saSrcXRPBalance.getNValue() < uReserveCreate)		// Reserve is not scaled by load.
@@ -265,7 +265,7 @@ TER TrustSetTransactor::doApply()
 		cLog(lsINFO) << "doTrustSet: Delay transaction: Line does not exist. Insufficent reserve to create line.";
 
 		// Another transaction could create the account and then this transaction would succeed.
-		terResult	= terNO_LINE_INSUF_RESERVE;
+		terResult	= tecNO_LINE_INSUF_RESERVE;
 	}
 	else
 	{

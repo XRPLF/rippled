@@ -8,6 +8,18 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		const char*		cpToken;
 		const char*		cpHuman;
 	} transResultInfoA[] = {
+		{	tecCLAIM,				"tecCLAIM",					"Fee claim. Sequence used. No action."					},
+		{	tecDIR_FULL,			"tecDIR_FULL",				"Can not add entry to full dir."						},
+		{	tecINSUF_RESERVE_LINE,	"tecINSUF_RESERVE_LINE",	"Insufficent reserve to add trust line."				},
+		{	tecINSUF_RESERVE_OFFER,	"tecINSUF_RESERVE_OFFER",	"Insufficent reserve to create offer."					},
+		{	tecNO_DST,				"tecNO_DST",				"Destination does not exist. Send XRP to create it."	},
+		{	tecNO_DST_INSUF_XRP,	"tecNO_DST_INSUF_XRP",		"Destination does not exist. Too little XRP sent to create it."		},
+		{	tecNO_LINE_INSUF_RESERVE,	"tecNO_LINE_INSUF_RESERVE",	"No such line. Too little reserve to create it."	},
+		{	tecNO_LINE_REDUNDANT,	"tecNO_LINE_REDUNDANT",		"Can't set non-existant line to default."				},
+		{	tecPATH_DRY,			"tecPATH_DRY",				"Path could not send partial amount."					},
+		{	tecUNFUNDED,			"tecUNFUNDED",				"Source account had insufficient balance for transaction."	},
+
+		{	tefFAILURE,				"tefFAILURE",				"Failed to apply."										},
 		{	tefALREADY,				"tefALREADY",				"The exact transaction was already in this ledger."		},
 		{	tefBAD_ADD_AUTH,		"tefBAD_ADD_AUTH",			"Not authorized to add account."						},
 		{	tefBAD_AUTH,			"tefBAD_AUTH",				"Transaction's public key is not authorized."			},
@@ -20,9 +32,11 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	tefGEN_IN_USE,			"tefGEN_IN_USE",			"Generator already in use."								},
 		{	tefPAST_SEQ,			"tefPAST_SEQ",				"This sequence number has already past"					},
 
+		{	telLOCAL_ERROR,			"telLOCAL_ERROR",			"Local failure."										},
 		{	telBAD_PATH_COUNT,		"telBAD_PATH_COUNT",		"Malformed: too many paths."							},
 		{	telINSUF_FEE_P,			"telINSUF_FEE_P",			"Fee insufficient."										},
 
+		{	temMALFORMED,			"temMALFORMED",				"Malformed transaction."								},
 		{	temBAD_AMOUNT,			"temBAD_AMOUNT",			"Can only send positive amounts."						},
 		{	temBAD_AUTH_MASTER,		"temBAD_AUTH_MASTER",		"Auth for unclaimed account needs correct master key."	},
 		{	temBAD_EXPIRATION,		"temBAD_EXPIRATION",		"Malformed."											},
@@ -44,24 +58,17 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	temUNCERTAIN,			"temUNCERTAIN",				"In process of determining result. Never returned."		},
 		{	temUNKNOWN,				"temUNKNOWN",				"The transactions requires logic not implemented yet."	},
 
-		{	tepPATH_DRY,			"tepPATH_DRY",				"Path could not send partial amount."					},
-		{	tepPATH_PARTIAL,		"tepPATH_PARTIAL",			"Path could not send full amount."						},
+		{	tepPARTIAL,				"tepPARTIAL",				"Partial success."										},
 		{	tepINSUF_RESERVE_OFFER,	"tepINSUF_RESERVE_OFFER",	"Insufficent reserve to create offer."					},
+		{	tepPATH_DRY,			"tepPATH_DRY",				"Path could not send partial amount. Obsolete."			},
+		{	tepPATH_PARTIAL,		"tepPATH_PARTIAL",			"Path could not send full amount."						},
 
-		{	terDIR_FULL,			"terDIR_FULL",				"Can not add entry to full dir."						},
+		{	terRETRY,				"terRETRY",					"Retry transaction."									},
 		{	terFUNDS_SPENT,			"terFUNDS_SPENT",			"Can't set password, password set funds already spent."	},
 		{	terINSUF_FEE_B,			"terINSUF_FEE_B",			"Account balance can't pay fee."						},
-		{	terINSUF_RESERVE_LINE,	"terINSUF_RESERVE_LINE",	"Insufficent reserve to add trust line."				},
-		{	terINSUF_RESERVE_OFFER,	"terINSUF_RESERVE_OFFER",	"Insufficent reserve to create offer."					},
 		{	terNO_ACCOUNT,			"terNO_ACCOUNT",			"The source account does not exist."					},
-		{	terNO_DST,				"terNO_DST",				"Destination does not exist. Send XRP to create it."	},
-		{	terNO_DST_INSUF_XRP,	"terNO_DST_INSUF_XRP",		"Destination does not exist. Too little XRP sent to create it."		},
 		{	terNO_LINE,				"terNO_LINE",				"No such line."											},
-		{	terNO_LINE_INSUF_RESERVE,	"terNO_LINE_INSUF_RESERVE",	"No such line. Too little reserve to create it."	},
-		{	terNO_LINE_REDUNDANT,	"terNO_LINE_REDUNDANT",		"Can't set non-existant line to default."				},
 		{	terPRE_SEQ,				"terPRE_SEQ",				"Missing/inapplicable prior transaction."				},
-		{	terSET_MISSING_DST,		"terSET_MISSING_DST",		"Can't set password, destination missing."				},
-		{	terUNFUNDED,			"terUNFUNDED",				"Source account had insufficient balance for transaction."	},
 
 		{	tesSUCCESS,				"tesSUCCESS",				"The transaction was applied."							},
 	};

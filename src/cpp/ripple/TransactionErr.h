@@ -76,21 +76,13 @@ enum TER	// aka TransactionEngineResult
 	// - Not forwarded
 	// - Might succeed later
 	// - Hold
+	// - Makes hole in sequence which jams transactions.
 	terRETRY		= -99,
-	terDIR_FULL,
-	terFUNDS_SPENT,
-	terINSUF_FEE_B,
-	terINSUF_RESERVE_LINE,
-	terINSUF_RESERVE_OFFER,
-	terNO_ACCOUNT,
-	terNO_DST,
-	terNO_DST_INSUF_XRP,
-	terNO_LINE,
-	terNO_LINE_INSUF_RESERVE,
-	terNO_LINE_REDUNDANT,
-	terPRE_SEQ,
-	terSET_MISSING_DST,
-	terUNFUNDED,
+	terFUNDS_SPENT,			// This is a free transaction, therefore don't burden network.
+	terINSUF_FEE_B,			// Can't pay fee, therefore don't burden network.
+	terNO_ACCOUNT,			// Can't pay fee, therefore don't burden network.
+	terNO_LINE,				// Internal flag.
+	terPRE_SEQ,				// Can't pay fee, no point in forwarding, therefore don't burden network.
 
 	// 0: S Success (success)
 	// Causes:
@@ -100,18 +92,39 @@ enum TER	// aka TransactionEngineResult
 	// - Forwarded
 	tesSUCCESS		= 0,
 
-	// 100 .. P Partial success (SR) (ripple transaction with no good paths, pay to non-existent account)
+	// 100 .. 119 P Partial success (SR) (ripple transaction with no good paths, pay to non-existent account)
 	// Causes:
 	// - Success, but does not achieve optimal result.
 	// Implications:
 	// - Applied
 	// - Forwarded
 	// Only allowed as a return code of appliedTransaction when !tapRetry. Otherwise, treated as terRETRY.
-	// CAUTION: The numerical values for these results are part of the binary formats
+	//
+	// DO NOT CHANGE THESE NUMBERS: They appear in ledger meta data.
 	tepPARTIAL				= 100,
-	tepPATH_DRY				= 101,
+	tepPATH_DRY				= 101,	// Obsolete. May exist in ledger.
 	tepPATH_PARTIAL			= 102,
-	tepINSUF_RESERVE_OFFER	= 103,
+	tepINSUF_RESERVE_OFFER	= 103,	// Obsolete. May exist in ledger.
+
+	// 120 .. C Claim fee only (CO) (no path)
+	// Causes:
+	// - Invalid transaction or no effect, but claim fee to use the sequence number.
+	// Implications:
+	// - Applied
+	// - Forwarded
+	// Only allowed as a return code of appliedTransaction when !tapRetry. Otherwise, treated as terRETRY.
+	//
+	// DO NOT CHANGE THESE NUMBERS: They appear in ledger meta data.
+	tecCLAIM					= 120,
+	tecDIR_FULL					= 121,
+	tecINSUF_RESERVE_LINE		= 122,
+	tecINSUF_RESERVE_OFFER		= 123,
+	tecNO_DST					= 124,
+	tecNO_DST_INSUF_XRP			= 125,
+	tecNO_LINE_INSUF_RESERVE	= 126,
+	tecNO_LINE_REDUNDANT		= 127,
+	tecPATH_DRY					= 128,
+	tecUNFUNDED					= 129,
 };
 
 #define isTelLocal(x)		((x) >= telLOCAL_ERROR && (x) < temMALFORMED)
@@ -119,7 +132,8 @@ enum TER	// aka TransactionEngineResult
 #define isTefFailure(x)		((x) >= tefFAILURE && (x) < terRETRY)
 #define isTerRetry(x)		((x) >= terRETRY && (x) < tesSUCCESS)
 #define isTepSuccess(x)		((x) >= tesSUCCESS)
-#define isTepPartial(x)		((x) >= tepPATH_PARTIAL)
+#define isTepPartial(x)		((x) >= tepPATH_PARTIAL && (x) < tecCLAIM)
+#define isTecClaim(x)		((x) >= tepCLAIM)
 
 bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman);
 std::string transToken(TER terCode);

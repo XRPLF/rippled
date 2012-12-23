@@ -83,7 +83,7 @@ TER PaymentTransactor::doApply()
 			cLog(lsINFO) << "doPayment: Delay transaction: Destination account does not exist.";
 
 			// Another transaction could create the account and then this transaction would succeed.
-			return terNO_DST;
+			return tecNO_DST;
 		}
 		else if (isSetBit(mParams, tapOPEN_LEDGER)												// Ledger is not final, can vote no.
 			&& saDstAmount.getNValue() < mEngine->getLedger()->getReserve(0))	// Reserve is not scaled by load.
@@ -91,7 +91,7 @@ TER PaymentTransactor::doApply()
 			cLog(lsINFO) << "doPayment: Delay transaction: Destination account does not exist. Insufficent payment to create account.";
 
 			// Another transaction could create the account and then this transaction would succeed.
-			return terNO_DST_INSUF_XRP;
+			return tecNO_DST_INSUF_XRP;
 		}
 
 		// Create the account.
@@ -152,7 +152,7 @@ TER PaymentTransactor::doApply()
 			cLog(lsINFO) << boost::str(boost::format("doPayment: Delay transaction: Insufficient funds: %s / %s (%d)")
 				% saSrcXRPBalance.getText() % (saDstAmount + uReserve).getText() % uReserve);
 
-			terResult	= terUNFUNDED;
+			terResult	= tecUNFUNDED;
 		}
 		else
 		{

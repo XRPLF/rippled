@@ -568,7 +568,7 @@ TER LedgerEntrySet::dirAdd(
 		// Add to new node.
 		else if (!++uNodeDir)
 		{
-			return terDIR_FULL;
+			return tecDIR_FULL;
 		}
 		else
 		{

@@ -38,7 +38,7 @@ TER WalletAddTransactor::doApply()
 			% saAmount.getText())
 			<< std::endl;
 
-		return terUNFUNDED;
+		return tecUNFUNDED;
 	}
 
 	// Deduct initial balance from source account.
@@ -56,3 +56,5 @@ TER WalletAddTransactor::doApply()
 
 	return tesSUCCESS;
 }
+
+// vim:ts=4

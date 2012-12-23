@@ -324,7 +324,7 @@ TER OfferCreateTransactor::doApply()
 	{
 		cLog(lsWARNING) << "doOfferCreate: delay: Offers must be at least partially funded.";
 
-		terResult	= terUNFUNDED;
+		terResult	= tecUNFUNDED;
 	}
 
 	if (tesSUCCESS == terResult && !saTakerPays.isNative())
@@ -398,13 +398,13 @@ TER OfferCreateTransactor::doApply()
 		if (isSetBit(mParams, tapOPEN_LEDGER)) // Ledger is not final, can vote no.
 		{
 			// Hope for more reserve to come in or more offers to consume.
-			terResult	= terINSUF_RESERVE_OFFER;
+			terResult	= tecINSUF_RESERVE_OFFER;
 		}
 		else if (!saOfferPaid && !saOfferGot)
 		{
 			// Ledger is final, insufficent reserve to create offer, processed nothing.
 
-			terResult	= tepINSUF_RESERVE_OFFER;
+			terResult	= tecINSUF_RESERVE_OFFER;
 		}
 		else
 		{
