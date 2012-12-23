@@ -121,16 +121,35 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 			mNodes.clear();
 
 			SLE::pointer txnAcct = entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(txn.getSourceAccount()));
-			STAmount fee = txn.getTransactionFee();
-			STAmount balance = txnAcct->getFieldAmount(sfBalance);
-
-			if (balance < fee)
-				terResult = terINSUF_FEE_B;
+			if (!txnAcct)
+				terResult = terNO_ACCOUNT;
 			else
 			{
-				txnAcct->setFieldAmount(sfBalance, balance - fee);
-				applyTransaction = true;
-				entryModify(txnAcct);
+				uint32 t_seq = txn.getSequence();
+				uint32 a_seq = txnAcct->getFieldU32(sfSequence);
+
+				if (t_seq != a_seq)
+				{
+					if (a_seq < t_seq)
+						terResult = terPRE_SEQ;
+					else
+						terResult = tefPAST_SEQ;
+				}
+				else
+				{
+					STAmount fee = txn.getTransactionFee();
+					STAmount balance = txnAcct->getFieldAmount(sfBalance);
+
+					if (balance < fee)
+						terResult = terINSUF_FEE_B;
+					else
+					{
+						txnAcct->setFieldAmount(sfBalance, balance - fee);
+						txnAcct->setFieldU32(sfSequence, t_seq + 1);
+						applyTransaction = true;
+						entryModify(txnAcct);
+					}
+				}
 			}
 		}
 
