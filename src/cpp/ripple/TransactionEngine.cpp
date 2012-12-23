@@ -110,13 +110,31 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 
 		cLog(lsINFO) << "applyTransaction: terResult=" << strToken << " : " << terResult << " : " << strHuman;
 
-		if (isTepPartial(terResult) && isSetBit(params, tapRETRY))
-		{
-			// Partial result and allowed to retry, reclassify as a retry.
-			terResult	= terRETRY;
+		bool applyTransaction = false;
+
+		if (terResult == tesSUCCESS)
+			applyTransaction = true;
+		else if (isTepPartial(terResult) && !isSetBit(params, tapRETRY))
+			applyTransaction = true;
+		else if (isTecClaim(terResult) && !isSetBit(params, tapRETRY))
+		{ // only claim the transaction fee
+			mNodes.clear();
+
+			SLE::pointer txnAcct = entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(txn.getSourceAccount()));
+			STAmount fee = txn.getTransactionFee();
+			STAmount balance = txnAcct->getFieldAmount(sfBalance);
+
+			if (balance < fee)
+				terResult = terINSUF_FEE_B;
+			else
+			{
+				txnAcct->setFieldAmount(sfBalance, balance - fee);
+				applyTransaction = true;
+				entryModify(txnAcct);
+			}
 		}
 
-		if ((tesSUCCESS == terResult) || isTepPartial(terResult))
+		if (applyTransaction)
 		{
 			// Transaction succeeded fully or (retries are not allowed and the transaction succeeded partially).
 			Serializer m;
