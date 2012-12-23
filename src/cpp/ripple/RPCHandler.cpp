@@ -868,6 +868,10 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 	RippleAddress	naSeed;
 	RippleAddress	raSrcAddressID;
 
+	cLog(lsDEBUG)
+		<< boost::str(boost::format("doSubmit: %s")
+			% jvRequest);
+
 	if (!jvRequest.isMember("secret") || !jvRequest.isMember("tx_json"))
 	{
 		return rpcError(rpcINVALID_PARAMS);
@@ -875,6 +879,10 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 
 	Json::Value		txJSON		= jvRequest["tx_json"];
 
+	if (!txJSON.isObject())
+	{
+		return rpcError(rpcINVALID_PARAMS);
+	}
 	if (!naSeed.setSeedGeneric(jvRequest["secret"].asString()))
 	{
 		return rpcError(rpcBAD_SEED);
@@ -887,17 +895,13 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 	{
 		return rpcError(rpcSRC_ACT_MALFORMED);
 	}
+	if (!txJSON.isMember("TransactionType"))
+	{
+		return rpcError(rpcINVALID_PARAMS);
+	}
 
 	AccountState::pointer asSrc	= mNetOps->getAccountState(mNetOps->getCurrentLedger(), raSrcAddressID);
 	if (!asSrc) return rpcError(rpcSRC_ACT_MALFORMED);
-
-	if (!txJSON.isMember("Fee")
-		&& ("OfferCreate" == txJSON["TransactionType"].asString()
-			|| "OfferCancel" == txJSON["TransactionType"].asString()
-			|| "TrustSet" == txJSON["TransactionType"].asString()))
-	{
-		txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
-	}
 
 	if ("Payment" == txJSON["TransactionType"].asString())
 	{
@@ -976,8 +980,16 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 		}
 	}
 
-	if (!txJSON.isMember("Sequence")) txJSON["Sequence"]=asSrc->getSeq();
-	if (!txJSON.isMember("Flags")) txJSON["Flags"]=0;
+	if (!txJSON.isMember("Fee")
+		&& ("OfferCreate" == txJSON["TransactionType"].asString()
+			|| "OfferCancel" == txJSON["TransactionType"].asString()
+			|| "TrustSet" == txJSON["TransactionType"].asString()))
+	{
+		txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
+	}
+
+	if (!txJSON.isMember("Sequence")) txJSON["Sequence"] = asSrc->getSeq();
+	if (!txJSON.isMember("Flags")) txJSON["Flags"] = 0;
 
 	Ledger::pointer	lpCurrent		= mNetOps->getCurrentLedger();
 	SLE::pointer	sleAccountRoot	= mNetOps->getSLE(lpCurrent, Ledger::getAccountRootIndex(raSrcAddressID.getAccountID()));
@@ -990,7 +1002,6 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 
 	bool			bHaveAuthKey	= false;
 	RippleAddress	naAuthorizedPublic;
-
 
 	RippleAddress	naSecret			= RippleAddress::createSeedGeneric(jvRequest["secret"].asString());
 	RippleAddress	naMasterGenerator	= RippleAddress::createGeneratorPublic(naSecret);
