@@ -292,6 +292,9 @@ Json::Value RPCHandler::doConnect(Json::Value jvRequest)
 	if (theConfig.RUN_STANDALONE)
 		return "cannot connect in standalone mode";
 
+	if (!jvRequest.isMember("ip"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	std::string strIp	= jvRequest["ip"].asString();
 	int			iPort	= jvRequest.isMember("port") ? jvRequest["port"].asInt() : -1;
 
@@ -306,6 +309,9 @@ Json::Value RPCHandler::doConnect(Json::Value jvRequest)
 // }
 Json::Value RPCHandler::doDataDelete(Json::Value jvRequest)
 {
+	if (!jvRequest.isMember("key"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	std::string	strKey = jvRequest["key"].asString();
 
 	Json::Value	ret = Json::Value(Json::objectValue);
@@ -327,6 +333,9 @@ Json::Value RPCHandler::doDataDelete(Json::Value jvRequest)
 // }
 Json::Value RPCHandler::doDataFetch(Json::Value jvRequest)
 {
+	if (!jvRequest.isMember("key"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	std::string	strKey = jvRequest["key"].asString();
 	std::string	strValue;
 
@@ -345,6 +354,10 @@ Json::Value RPCHandler::doDataFetch(Json::Value jvRequest)
 // }
 Json::Value RPCHandler::doDataStore(Json::Value jvRequest)
 {
+	if (!jvRequest.isMember("key")
+		|| !jvRequest.isMember("value"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	std::string	strKey		= jvRequest["key"].asString();
 	std::string	strValue	= jvRequest["value"].asString();
 
@@ -400,6 +413,9 @@ Json::Value RPCHandler::doNicknameInfo(Json::Value params)
 // XXX This would be better if it too the ledger.
 Json::Value RPCHandler::doOwnerInfo(Json::Value jvRequest)
 {
+	if (!jvRequest.isMember("ident"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	std::string		strIdent	= jvRequest["ident"].asString();
 	bool			bIndex;
 	int				iIndex		= jvRequest.isMember("account_index") ? jvRequest["account_index"].asUInt() : 0;
@@ -535,6 +551,9 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 	if (!lpLedger)
 		return jvResult;
 
+	if (!jvRequest.isMember("account"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	std::string		strIdent	= jvRequest["account"].asString();
 	bool			bIndex		= jvRequest.isMember("account_index");
 	int				iIndex		= bIndex ? jvRequest["account_index"].asUInt() : 0;
@@ -610,6 +629,9 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 	if (!lpLedger)
 		return jvResult;
 
+	if (!jvRequest.isMember("account"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	std::string		strIdent	= jvRequest["account"].asString();
 	bool			bIndex		= jvRequest.isMember("account_index");
 	int				iIndex		= bIndex ? jvRequest["account_index"].asUInt() : 0;
@@ -671,8 +693,11 @@ Json::Value RPCHandler::doRandom(Json::Value jvRequest)
 	try
 	{
 		getRand(uRandom.begin(), uRandom.size());
+
 		Json::Value jvResult;
+
 		jvResult["random"]	= uRandom.ToString();
+
 		return jvResult;
 	}
 	catch (...)
@@ -1147,6 +1172,9 @@ Json::Value RPCHandler::doServerInfo(Json::Value)
 // }
 Json::Value RPCHandler::doTxHistory(Json::Value jvRequest)
 {
+	if (!jvRequest.isMember("start"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	unsigned int startIndex = jvRequest["start"].asUInt();
 	Json::Value	obj;
 	Json::Value	txs;
@@ -1178,6 +1206,9 @@ Json::Value RPCHandler::doTxHistory(Json::Value jvRequest)
 // }
 Json::Value RPCHandler::doTx(Json::Value jvRequest)
 {
+	if (!jvRequest.isMember("transaction"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	std::string strTransaction	= jvRequest["transaction"].asString();
 
 	if (Transaction::isHexTxID(strTransaction))
@@ -1198,6 +1229,7 @@ Json::Value RPCHandler::doTx(Json::Value jvRequest)
 Json::Value RPCHandler::doLedgerClosed(Json::Value)
 {
 	Json::Value jvResult;
+
 	uint256	uLedger	= mNetOps->getClosedLedgerHash();
 
 	jvResult["ledger_index"]		= mNetOps->getLedgerID(uLedger);
@@ -1535,6 +1567,10 @@ Json::Value RPCHandler::doWalletSeed(Json::Value jvRequest)
 // }
 Json::Value RPCHandler::doLogin(Json::Value jvRequest)
 {
+	if (!jvRequest.isMember("username")
+		|| !jvRequest.isMember("password"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	if (jvRequest["username"].asString() == theConfig.RPC_USER && jvRequest["password"].asString() == theConfig.RPC_PASSWORD)
 	{
 		//mRole=ADMIN;
@@ -1640,7 +1676,10 @@ Json::Value RPCHandler::doUnlAdd(Json::Value jvRequest)
 // }
 Json::Value RPCHandler::doUnlDelete(Json::Value jvRequest)
 {
-	std::string	strNode		= jvRequest[0u].asString();
+	if (!jvRequest.isMember("node"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	std::string	strNode		= jvRequest["node"].asString();
 
 	RippleAddress	raNodePublic;
 
