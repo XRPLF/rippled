@@ -626,12 +626,11 @@ TER LedgerEntrySet::dirDelete(
 	uint64				uNodeCur	= uNodeDir;
 	SLE::pointer		sleNode		= entryCache(ltDIR_NODE, uNodeCur ? Ledger::getDirNodeIndex(uRootIndex, uNodeCur) : uRootIndex);
 
-	assert(sleNode);
-
 	if (!sleNode)
 	{
 		cLog(lsWARNING) << "dirDelete: no such node";
 
+		assert(false);
 		return tefBAD_LEDGER;
 	}
 
