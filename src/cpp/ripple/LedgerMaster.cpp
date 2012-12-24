@@ -91,8 +91,9 @@ Ledger::pointer LedgerMaster::closeLedger(bool recover)
 		{
 			try
 			{
-				TER result = mEngine.applyTransaction(*it->second, tapOPEN_LEDGER);
-				if (isTepSuccess(result))
+				bool didApply;
+				mEngine.applyTransaction(*it->second, tapOPEN_LEDGER, didApply);
+				if (didApply)
 					++recovers;
 			}
 			catch (...)
@@ -112,7 +113,9 @@ Ledger::pointer LedgerMaster::closeLedger(bool recover)
 
 TER LedgerMaster::doTransaction(const SerializedTransaction& txn, TransactionEngineParams params)
 {
-	TER result = mEngine.applyTransaction(txn, params);
+	bool didApply;
+	TER result = mEngine.applyTransaction(txn, params, didApply);
+	// CHECKME: Should we call this even on gross failures?
 	theApp->getOPs().pubProposedTransaction(mEngine.getLedger(), txn, result);
 	return result;
 }

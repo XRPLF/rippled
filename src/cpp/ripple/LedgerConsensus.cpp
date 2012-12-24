@@ -1090,14 +1090,15 @@ void LedgerConsensus::playbackProposals()
 
 void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTransaction::ref txn,
 	Ledger::ref ledger, CanonicalTXSet& failedTransactions, bool openLedger)
-{
+{ // FIXME: Needs to handle partial success
 	TransactionEngineParams parms = openLedger ? tapOPEN_LEDGER : tapNONE;
 #ifndef TRUST_NETWORK
 	try
 	{
 #endif
-		TER result = engine.applyTransaction(*txn, parms);
-		if (isTerRetry(result))
+		bool didApply;
+		TER result = engine.applyTransaction(*txn, parms, didApply);
+		if (!didApply && !isTefFailure(result) && !isTemMalformed(result))
 		{
 			cLog(lsINFO) << "   retry";
 			assert(!ledger->hasTransaction(txn->getTransactionID()));
@@ -1108,12 +1109,6 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTran
 			cLog(lsTRACE) << "   success";
 			assert(ledger->hasTransaction(txn->getTransactionID()));
 		}
-		else if (isTemMalformed(result) || isTefFailure(result))
-		{
-			cLog(lsINFO) << "   hard fail";
-		}
-		else
-			assert(false);
 #ifndef TRUST_NETWORK
 	}
 	catch (...)
@@ -1160,14 +1155,24 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 		{
 			try
 			{
-				TER result = engine.applyTransaction(*it->second, parms);
-				if (result <= 0)
-				{
-					if (result == 0) ++successes;
+				bool didApply;
+				TER result = engine.applyTransaction(*it->second, parms, didApply);
+				if (isTelLocal(result))
+				{ // should never happen
+					assert(false);
+					it = failedTransactions.erase(it);
+				}
+				else if (didApply)
+				{ // transaction was applied, remove from set
+					++successes;
+					it = failedTransactions.erase(it);
+				}
+				else if (isTefFailure(result) || isTemMalformed(result))
+				{ // transaction cannot apply. tef is expected, tem should never happen
 					it = failedTransactions.erase(it);
 				}
 				else
-				{
+				{ // try again
 					++it;
 				}
 			}

@@ -78,7 +78,7 @@ public:
 	void				entryDelete(SLE::ref sleEntry)								{ mNodes.entryDelete(sleEntry); }
 	void				entryModify(SLE::ref sleEntry)								{ mNodes.entryModify(sleEntry); }
 
-	TER applyTransaction(const SerializedTransaction&, TransactionEngineParams);
+	TER applyTransaction(const SerializedTransaction&, TransactionEngineParams, bool& didApply);
 };
 
 inline TransactionEngineParams operator|(const TransactionEngineParams& l1, const TransactionEngineParams& l2)

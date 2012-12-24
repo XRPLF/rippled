@@ -67,9 +67,11 @@ void TransactionEngine::txnWrite()
 	}
 }
 
-TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, TransactionEngineParams params)
+TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, TransactionEngineParams params,
+	bool& didApply)
 {
 	cLog(lsTRACE) << "applyTransaction>";
+	didApply = false;
 	assert(mLedger);
 	mNodes.init(mLedger, txn.getTransactionID(), mLedger->getLedgerSeq());
 
@@ -110,12 +112,10 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 
 		cLog(lsINFO) << "applyTransaction: terResult=" << strToken << " : " << terResult << " : " << strHuman;
 
-		bool applyTransaction = false;
-
 		if (terResult == tesSUCCESS)
-			applyTransaction = true;
+			didApply = true;
 		else if (isTepPartial(terResult) && !isSetBit(params, tapRETRY))
-			applyTransaction = true;
+			didApply = true;
 		else if (isTecClaim(terResult) && !isSetBit(params, tapRETRY))
 		{ // only claim the transaction fee
 			mNodes.clear();
@@ -146,14 +146,14 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 					{
 						txnAcct->setFieldAmount(sfBalance, balance - fee);
 						txnAcct->setFieldU32(sfSequence, t_seq + 1);
-						applyTransaction = true;
+						didApply = true;
 						entryModify(txnAcct);
 					}
 				}
 			}
 		}
 
-		if (applyTransaction)
+		if (didApply)
 		{
 			// Transaction succeeded fully or (retries are not allowed and the transaction succeeded partially).
 			Serializer m;
@@ -183,8 +183,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 		mTxnAccount.reset();
 		mNodes.clear();
 
-		if (!isSetBit(params, tapOPEN_LEDGER)
-			&& (isTemMalformed(terResult) || isTefFailure(terResult)))
+		if (!isSetBit(params, tapOPEN_LEDGER) && isTemMalformed(terResult))
 		{
 			// XXX Malformed or failed transaction in closed ledger must bow out.
 		}
