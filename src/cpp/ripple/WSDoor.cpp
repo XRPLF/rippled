@@ -24,6 +24,7 @@ SETUP_LOG();
 #include <boost/mem_fn.hpp>
 #include <boost/unordered_set.hpp>
 
+DECLARE_INSTANCE(WebSocketConnection);
 
 //
 // This is a light weight, untrusted interface for web clients.

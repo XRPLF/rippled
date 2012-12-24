@@ -4,11 +4,16 @@
 
 #include "../json/value.h"
 
+#include <boost/weak_ptr.hpp>
+
 #include "WSDoor.h"
 #include "Application.h"
 #include "Log.h"
 #include "NetworkOPs.h"
 #include "CallRPC.h"
+#include "InstanceCounter.h"
+
+DEFINE_INSTANCE(WebSocketConnection);
 
 template <typename endpoint_type>
 class WSServerHandler;
@@ -17,17 +22,19 @@ class WSServerHandler;
 // - Subscriptions
 //
 template <typename endpoint_type>
-class WSConnection : public InfoSub
+class WSConnection : public InfoSub, public IS_INSTANCE(WebSocketConnection)
 {
 public:
-	typedef typename endpoint_type::handler::connection_ptr connection_ptr;
+	typedef typename endpoint_type::connection_type connection;
+	typedef typename boost::shared_ptr<connection> connection_ptr;
+	typedef typename boost::weak_ptr<connection> weak_connection_ptr;
 	typedef typename endpoint_type::handler::message_ptr message_ptr;
 
 protected:
 	typedef void (WSConnection::*doFuncPtr)(Json::Value& jvResult, Json::Value &jvRequest);
 
 	WSServerHandler<endpoint_type>*					mHandler;
-	connection_ptr									mConnection;
+	weak_connection_ptr								mConnection;
 	NetworkOPs&										mNetwork;
 
 public:
@@ -35,7 +42,7 @@ public:
 	//		: mHandler((WSServerHandler<websocketpp::WSDOOR_SERVER>*)(NULL)),
 	//			mConnection(connection_ptr()) { ; }
 
-	WSConnection(WSServerHandler<endpoint_type>* wshpHandler, connection_ptr cpConnection)
+	WSConnection(WSServerHandler<endpoint_type>* wshpHandler, const connection_ptr& cpConnection)
 		: mHandler(wshpHandler), mConnection(cpConnection), mNetwork(theApp->getOPs()) { ; }
 
 	virtual ~WSConnection()
@@ -51,7 +58,9 @@ public:
 	// Implement overridden functions from base class:
 	void send(const Json::Value& jvObj)
 	{
-		mHandler->send(mConnection, jvObj);
+		connection_ptr ptr = mConnection.lock();
+		if (ptr)
+			mHandler->send(ptr, jvObj);
 	}
 
 	// Utilities
