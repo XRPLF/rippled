@@ -3,6 +3,11 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/format.hpp>
+#include <boost/version.hpp>
+
+#if BOOST_VERSION < 104700
+#error Boost 1.47 or later is required
+#endif
 
 #include <openssl/dh.h>
 #include "types.h"
