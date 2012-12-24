@@ -43,7 +43,7 @@ buster.testCase("Sending", {
   'setUp' : testutils.build_setup(),  //
   'tearDown' : testutils.build_teardown(),
 
-  "send XRP to non-existent account with insufficent fee" : // => to run only that.
+  "send XRP to non-existent account with insufficent fee" :
     function (done) {
       var self    = this;
       var ledgers = 20;
@@ -87,9 +87,9 @@ buster.testCase("Sending", {
             self.remote.ledger_accept();    // Move it along.
           })
         .on('final', function (m) {
-            // console.log("final: %s", JSON.stringify(m));
+            // console.log("final: %s", JSON.stringify(m, undefined, 2));
 
-            buster.assert(false, "Should not have got a final.");
+            buster.assert.equals(m.metadata.TransactionResult, 'tecNO_DST_INSUF_XRP');
             done();
           })
         .on('error', function(m) {
