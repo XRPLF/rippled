@@ -57,7 +57,7 @@ TER Transactor::payFee()
 		return telINSUF_FEE_P;
 	}
 
-	if( !saPaid ) return tesSUCCESS;
+	if (!saPaid) return tesSUCCESS;
 
 	// Deduct the fee, so it's not available during the transaction.
 	// Will only write the account back, if the transaction succeeds.

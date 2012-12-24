@@ -235,7 +235,6 @@ TER TrustSetTransactor::doApply()
 			cLog(lsINFO) << "doTrustSet: Deleting ripple line";
 		}
 		else if (bReserveIncrease
-			&& isSetBit(mParams, tapOPEN_LEDGER)				// Ledger is not final, we can vote no.
 			&& saSrcXRPBalance.getNValue() < uReserveCreate)	// Reserve is not scaled by load.
 		{
 			cLog(lsINFO) << "doTrustSet: Delay transaction: Insufficent reserve to add trust line.";
@@ -259,8 +258,7 @@ TER TrustSetTransactor::doApply()
 
 		return tecNO_LINE_REDUNDANT;
 	}
-	else if (isSetBit(mParams, tapOPEN_LEDGER)					// Ledger is not final, we can vote no.
-		&& saSrcXRPBalance.getNValue() < uReserveCreate)		// Reserve is not scaled by load.
+	else if (saSrcXRPBalance.getNValue() < uReserveCreate)		// Reserve is not scaled by load.
 	{
 		cLog(lsINFO) << "doTrustSet: Delay transaction: Line does not exist. Insufficent reserve to create line.";
 

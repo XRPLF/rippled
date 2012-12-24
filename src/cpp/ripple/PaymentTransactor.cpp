@@ -143,8 +143,7 @@ TER PaymentTransactor::doApply()
 		const uint64	uReserve		= mEngine->getLedger()->getReserve(uOwnerCount);
 
 		// Make sure have enough reserve to send.
-		if (isSetBit(mParams, tapOPEN_LEDGER)					// Ledger is not final, we can vote.
-			&& saSrcXRPBalance < saDstAmount + uReserve)		// Reserve is not scaled by fee.
+		if (saSrcXRPBalance < saDstAmount + uReserve)		// Reserve is not scaled by fee.
 		{
 			// Vote no. However, transaction might succeed, if applied in a different order.
 			cLog(lsINFO) << "";
