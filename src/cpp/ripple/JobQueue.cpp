@@ -34,18 +34,22 @@ const char* Job::toString(JobType t)
 	{
 		case jtINVALID:			return "invalid";
 		case jtVALIDATION_ut:	return "untrustedValidation";
-		case jtTRANSACTION:		return "transaction";
+		case jtPROOFWORK:		return "proofOfWork";
 		case jtPROPOSAL_ut:		return "untrustedProposal";
+		case jtCLIENT:			return "clientCommand";
+		case jtTRANSACTION:		return "transaction";
 		case jtVALIDATION_t:	return "trustedValidation";
+		case jtTRANSACTION_l:	return "localTransaction";
 		case jtPROPOSAL_t:		return "trustedProposal";
 		case jtADMIN:			return "administration";
 		case jtDEATH:			return "jobOfDeath";
-		case jtCLIENT:			return "clientCommand";
+
 		case jtPEER:			return "peerCommand";
 		case jtDISK:			return "diskAccess";
 		case jtRPC:				return "rpc";
 		case jtACCEPTLEDGER:	return "acceptLedger";
 		case jtPUBLEDGER:		return "pubLedger";
+		case jtTXN_PROC:		return "processTransaction";
 		default:				assert(false); return "unknown";
 	}
 }

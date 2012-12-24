@@ -39,7 +39,7 @@ enum JobType
 	jtACCEPTLEDGER	= 20,
 	jtPUBLEDGER		= 21,
 	jtTXN_PROC		= 22,
-};
+}; // CAUTION: If you add new types, add them to JobType.cpp too
 #define NUM_JOB_TYPES 24
 
 class Job
