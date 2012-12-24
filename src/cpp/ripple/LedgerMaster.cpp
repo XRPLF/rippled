@@ -210,7 +210,7 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 	{
 		if (!shouldAcquire(mCurrentLedger->getLedgerSeq(), theConfig.LEDGER_HISTORY, ledger->getLedgerSeq() - 1))
 			return;
-		cLog(lsINFO) << "We need the ledger before the ledger we just accepted";
+		cLog(lsDEBUG) << "We need the ledger before the ledger we just accepted: " << ledger->getLedgerSeq() - 1;
 		acquireMissingLedger(ledger->getParentHash(), ledger->getLedgerSeq() - 1);
 	}
 	else
