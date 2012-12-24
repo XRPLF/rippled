@@ -118,6 +118,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 			didApply = true;
 		else if (isTecClaim(terResult) && !isSetBit(params, tapRETRY))
 		{ // only claim the transaction fee
+			cLog(lsINFO) << "Reprocessing to only claim fee";
 			mNodes.clear();
 
 			SLE::pointer txnAcct = entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(txn.getSourceAccount()));
@@ -152,6 +153,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				}
 			}
 		}
+		else cLog(lsINFO) << "Not applying transaction";
 
 		if (didApply)
 		{

@@ -1104,7 +1104,7 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTran
 			assert(!ledger->hasTransaction(txn->getTransactionID()));
 			failedTransactions.push_back(txn);
 		}
-		else if (isTepSuccess(result)) // FIXME: Need to do partial success
+		else if (didApply) // FIXME: Need to do partial success
 		{
 			cLog(lsTRACE) << "   success";
 			assert(ledger->hasTransaction(txn->getTransactionID()));
