@@ -133,7 +133,7 @@ enum TER	// aka TransactionEngineResult
 #define isTerRetry(x)		((x) >= terRETRY && (x) < tesSUCCESS)
 #define isTepSuccess(x)		((x) >= tesSUCCESS)
 #define isTepPartial(x)		((x) >= tepPATH_PARTIAL && (x) < tecCLAIM)
-#define isTecClaim(x)		((x) >= tepCLAIM)
+#define isTecClaim(x)		((x) >= tecCLAIM)
 
 bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman);
 std::string transToken(TER terCode);
