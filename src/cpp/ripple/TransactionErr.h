@@ -102,9 +102,7 @@ enum TER	// aka TransactionEngineResult
 	//
 	// DO NOT CHANGE THESE NUMBERS: They appear in ledger meta data.
 	tepPARTIAL				= 100,
-	tepPATH_DRY				= 101,	// Obsolete. May exist in ledger.
-	tepPATH_PARTIAL			= 102,
-	tepINSUF_RESERVE_OFFER	= 103,	// Obsolete. May exist in ledger.
+	tepPATH_PARTIAL			= 101,
 
 	// 120 .. C Claim fee only (CO) (no path)
 	// Causes:
