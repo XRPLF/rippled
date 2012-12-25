@@ -99,6 +99,10 @@ public:
 			cLog(lsWARNING) << "Connection pings out";
 			cpClient->close(websocketpp::close::status::PROTOCOL_ERROR, "ping timeout");
 		}
+		else
+		{
+			cpClient->ping("ping");
+		}
 	}
 
 	void on_open(connection_ptr cpClient)
