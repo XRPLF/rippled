@@ -1428,24 +1428,44 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		}
 		std::vector<SHAMapNode> nodeIDs;
 		std::list< std::vector<unsigned char> > rawNodes;
-		if(map->getNodeFat(mn, nodeIDs, rawNodes, fatRoot, fatLeaves))
+		try
 		{
-			assert(nodeIDs.size() == rawNodes.size());
-			cLog(lsDEBUG) << "getNodeFat got " << rawNodes.size() << " nodes";
-			std::vector<SHAMapNode>::iterator nodeIDIterator;
-			std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
-			for(nodeIDIterator = nodeIDs.begin(), rawNodeIterator = rawNodes.begin();
-				nodeIDIterator != nodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
+			if(map->getNodeFat(mn, nodeIDs, rawNodes, fatRoot, fatLeaves))
 			{
-				Serializer nID(33);
-				nodeIDIterator->addIDRaw(nID);
-				ripple::TMLedgerNode* node = reply.add_nodes();
-				node->set_nodeid(nID.getDataPtr(), nID.getLength());
-				node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
+				assert(nodeIDs.size() == rawNodes.size());
+				cLog(lsDEBUG) << "getNodeFat got " << rawNodes.size() << " nodes";
+				std::vector<SHAMapNode>::iterator nodeIDIterator;
+				std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
+				for(nodeIDIterator = nodeIDs.begin(), rawNodeIterator = rawNodes.begin();
+					nodeIDIterator != nodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
+				{
+					Serializer nID(33);
+					nodeIDIterator->addIDRaw(nID);
+					ripple::TMLedgerNode* node = reply.add_nodes();
+					node->set_nodeid(nID.getDataPtr(), nID.getLength());
+					node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
+				}
 			}
+			else
+				cLog(lsWARNING) << "getNodeFat returns false";
 		}
-		else
-			cLog(lsWARNING) << "getNodeFat returns false";
+		catch (std::exception& e)
+		{
+			std::string info;
+			if (packet.itype() == ripple::liTS_CANDIDATE)
+				info = "TS candidate";
+			else if (packet.itype() == ripple::liBASE)
+				info = "Ledger base";
+			else if (packet.itype() == ripple::liTX_NODE)
+				info = "TX node";
+			else if (packet.itype() == ripple::liAS_NODE)
+				info = "AS node";
+
+			if (!packet.has_ledgerhash())
+				info += ", no hash specified";
+
+			cLog(lsWARNING) << "getNodeFat( " << mn <<") throws exception: " << info;
+		}
 	}
 	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, ripple::mtLEDGER_DATA);
 	sendPacket(oPacket);

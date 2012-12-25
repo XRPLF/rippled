@@ -99,8 +99,8 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 	SHAMapTreeNode::pointer node = getNode(wanted);
 	if (!node)
 	{
-		cLog(lsWARNING) << "peer requested node we don't have: " << wanted;
-		return false;
+		cLog(lsWARNING) << "peer requested node that not in the map: " << wanted;
+		throw std::runtime_error("Peer requested node not in map");
 	}
 
 	nodeIDs.push_back(*node);
