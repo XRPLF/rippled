@@ -1819,7 +1819,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 			if (!saCurWantedAct)
 			{
 				// Must have processed something.
-				terResult	= tepPATH_DRY;
+				terResult	= tecPATH_DRY;
 			}
 		}
 		else
@@ -1852,7 +1852,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 			if (!saPrvDeliverAct)
 			{
 				// Must want something.
-				terResult	= tepPATH_DRY;
+				terResult	= tecPATH_DRY;
 			}
 		}
 	}

@@ -59,8 +59,6 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	temUNKNOWN,				"temUNKNOWN",				"The transactions requires logic not implemented yet."	},
 
 		{	tepPARTIAL,				"tepPARTIAL",				"Partial success."										},
-		{	tepINSUF_RESERVE_OFFER,	"tepINSUF_RESERVE_OFFER",	"Insufficent reserve to create offer."					},
-		{	tepPATH_DRY,			"tepPATH_DRY",				"Path could not send partial amount. Obsolete."			},
 		{	tepPATH_PARTIAL,		"tepPATH_PARTIAL",			"Path could not send full amount."						},
 
 		{	terRETRY,				"terRETRY",					"Retry transaction."									},
