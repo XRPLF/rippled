@@ -1386,6 +1386,17 @@ void NetworkOPs::storeProposal(const LedgerProposal::pointer& proposal, const Ri
 	props.push_back(proposal);
 }
 
+InfoSub::~InfoSub()
+{
+	NetworkOPs& ops = theApp->getOPs();
+	ops.unsubTransactions(this);
+	ops.unsubRTTransactions(this);
+	ops.unsubLedger(this);
+	ops.unsubServer(this);
+	ops.unsubAccount(this, mSubAccountInfo, true);
+	ops.unsubAccount(this, mSubAccountInfo, false);
+}
+
 #if 0
 void NetworkOPs::subAccountChanges(InfoSub* ispListener, const uint256 uLedgerHash)
 {

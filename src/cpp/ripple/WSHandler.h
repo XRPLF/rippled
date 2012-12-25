@@ -83,11 +83,44 @@ public:
 		send(cpClient, jfwWriter.write(jvObj));
 	}
 
+	void pingTimer(connection_ptr cpClient)
+	{
+		typedef boost::shared_ptr< WSConnection<endpoint_type> > wsc_ptr;
+		wsc_ptr ptr;
+		{
+			boost::mutex::scoped_lock	sl(mMapLock);
+			typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find(cpClient);
+			if (it == mMap.end())
+				return;
+			ptr = it->second;
+		}
+		if (ptr->onPingTimer())
+		{
+			cLog(lsWARNING) << "Connection pings out";
+			cpClient->close(websocketpp::close::status::PROTOCOL_ERROR, "ping timeout");
+		}
+	}
+
 	void on_open(connection_ptr cpClient)
 	{
 		boost::mutex::scoped_lock	sl(mMapLock);
 
 		mMap[cpClient]	= boost::make_shared< WSConnection<endpoint_type> >(this, cpClient);
+	}
+
+	void on_pong(connection_ptr cpClient, std::string)
+	{
+		cLog(lsTRACE) << "Pong received";
+		typedef boost::shared_ptr< WSConnection<endpoint_type> > wsc_ptr;
+		wsc_ptr ptr;
+		{
+			boost::mutex::scoped_lock	sl(mMapLock);
+			typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find(cpClient);
+			if (it == mMap.end())
+				return;
+			ptr = it->second;
+		}
+		ptr->onPong();
 	}
 
 	void on_close(connection_ptr cpClient)

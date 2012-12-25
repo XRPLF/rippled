@@ -26,7 +26,7 @@ class InfoSub : public IS_INSTANCE(InfoSub)
 {
 public:
 
-	virtual ~InfoSub() { ; }
+	virtual ~InfoSub();
 
 	virtual	void send(const Json::Value& jvObj) = 0;
 
