@@ -193,7 +193,7 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 		}
 	}
 
-	if (mMissingLedger && mMissingLedger->isComplete())
+	if (mMissingLedger && (mMissingLedger->isComplete() || mMissingLedger->isFailed()))
 		mMissingLedger.reset();
 
 	if (mMissingLedger || !theConfig.LEDGER_HISTORY)
