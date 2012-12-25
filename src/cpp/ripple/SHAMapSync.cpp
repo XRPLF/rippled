@@ -99,7 +99,7 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 	SHAMapTreeNode::pointer node = getNode(wanted);
 	if (!node)
 	{
-		assert(false); // FIXME Remove for release, this can happen if we get a bogus request
+		cLog(lsWARNING) << "peer requested node we don't have: " << wanted;
 		return false;
 	}
 
