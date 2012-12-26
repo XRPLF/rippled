@@ -97,7 +97,8 @@ public:
 		const uint64&					uNodeDir,		// Node item is mentioned in.
 		const uint256&					uRootIndex,
 		const uint256&					uLedgerIndex,	// Item being deleted
-		const bool						bStable);
+		const bool						bStable,
+		const bool						bSoft);
 
 	bool				dirFirst(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
 	bool				dirNext(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);

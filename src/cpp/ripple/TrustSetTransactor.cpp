@@ -221,16 +221,18 @@ TER TrustSetTransactor::doApply()
 		{
 			// Can delete.
 
+			bool		bLowNode	= sleRippleState->isFieldPresent(sfLowNode);	// Detect legacy dirs.
+			bool		bHighNode	= sleRippleState->isFieldPresent(sfHighNode);
 			uint64		uLowNode	= sleRippleState->getFieldU64(sfLowNode);
 			uint64		uHighNode	= sleRippleState->getFieldU64(sfHighNode);
 
 			cLog(lsTRACE) << "doTrustSet: Deleting ripple line: low";
-			terResult	= mEngine->getNodes().dirDelete(false, uLowNode, Ledger::getOwnerDirIndex(uLowAccountID), sleRippleState->getIndex(), false);
+			terResult	= mEngine->getNodes().dirDelete(false, uLowNode, Ledger::getOwnerDirIndex(uLowAccountID), sleRippleState->getIndex(), false, !bLowNode);
 
 			if (tesSUCCESS == terResult)
 			{
 				cLog(lsTRACE) << "doTrustSet: Deleting ripple line: high";
-				terResult	= mEngine->getNodes().dirDelete(false, uHighNode, Ledger::getOwnerDirIndex(uHighAccountID), sleRippleState->getIndex(), false);
+				terResult	= mEngine->getNodes().dirDelete(false, uHighNode, Ledger::getOwnerDirIndex(uHighAccountID), sleRippleState->getIndex(), false, !bHighNode);
 			}
 
 			cLog(lsINFO) << "doTrustSet: Deleting ripple line: state";

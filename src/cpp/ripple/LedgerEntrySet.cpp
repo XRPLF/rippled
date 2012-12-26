@@ -621,7 +621,8 @@ TER LedgerEntrySet::dirDelete(
 	const uint64&					uNodeDir,		// --> Node containing entry.
 	const uint256&					uRootIndex,		// --> The index of the base of the directory.  Nodes are based off of this.
 	const uint256&					uLedgerIndex,	// --> Value to remove from directory.
-	const bool						bStable)		// --> True, not to change relative order of entries.
+	const bool						bStable,		// --> True, not to change relative order of entries.
+	const bool						bSoft)			// --> True, uNodeDir is not hard and fast (pass uNodeDir=0).
 {
 	uint64				uNodeCur	= uNodeDir;
 	SLE::pointer		sleNode		= entryCache(ltDIR_NODE, uNodeCur ? Ledger::getDirNodeIndex(uRootIndex, uNodeCur) : uRootIndex);
@@ -634,8 +635,21 @@ TER LedgerEntrySet::dirDelete(
 				% strHex(uNodeDir)
 				% uLedgerIndex.ToString());
 
-		assert(false);
-		return tefBAD_LEDGER;
+		if (!bSoft)
+		{
+			assert(false);
+			return tefBAD_LEDGER;
+		}
+		else if (uNodeDir < 20)
+		{
+			// Go the extra mile. Even if node doesn't exist, try the next node.
+
+			return dirDelete(bKeepRoot, uNodeDir+1, uRootIndex, uLedgerIndex, bStable, true);
+		}
+		else
+		{
+			return tefBAD_LEDGER;
+		}
 	}
 
 	STVector256						svIndexes	= sleNode->getFieldV256(sfIndexes);
@@ -647,11 +661,24 @@ TER LedgerEntrySet::dirDelete(
 	assert(vuiIndexes.end() != it);
 	if (vuiIndexes.end() == it)
 	{
-		assert(false);
+		if (!bSoft)
+		{
+			assert(false);
 
-		cLog(lsWARNING) << "dirDelete: no such entry";
+			cLog(lsWARNING) << "dirDelete: no such entry";
 
-		return tefBAD_LEDGER;
+			return tefBAD_LEDGER;
+		}
+		else if (uNodeDir < 20)
+		{
+			// Go the extra mile. Even if entry not in node, try the next node.
+
+			return dirDelete(bKeepRoot, uNodeDir+1, uRootIndex, uLedgerIndex, bStable, true);
+		}
+		else
+		{
+			return tefBAD_LEDGER;
+		}
 	}
 
 	// Remove the element.
@@ -866,8 +893,9 @@ void LedgerEntrySet::ownerCountAdjust(const uint160& uOwnerID, int iAmount, SLE:
 
 TER LedgerEntrySet::offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID)
 {
+	bool	bOwnerNode	= sleOffer->isFieldPresent(sfOwnerNode);	// Detect legacy dirs.
 	uint64	uOwnerNode	= sleOffer->getFieldU64(sfOwnerNode);
-	TER		terResult	= dirDelete(false, uOwnerNode, Ledger::getOwnerDirIndex(uOwnerID), uOfferIndex, false);
+	TER		terResult	= dirDelete(false, uOwnerNode, Ledger::getOwnerDirIndex(uOwnerID), uOfferIndex, false, !bOwnerNode);
 
 	if (tesSUCCESS == terResult)
 	{
@@ -876,7 +904,8 @@ TER LedgerEntrySet::offerDelete(const SLE::pointer& sleOffer, const uint256& uOf
 		uint256		uDirectory	= sleOffer->getFieldH256(sfBookDirectory);
 		uint64		uBookNode	= sleOffer->getFieldU64(sfBookNode);
 
-		terResult	= dirDelete(false, uBookNode, uDirectory, uOfferIndex, true);
+		// Offer delete is always hard. Always have hints.
+		terResult	= dirDelete(false, uBookNode, uDirectory, uOfferIndex, true, true);
 	}
 
 	entryDelete(sleOffer);
