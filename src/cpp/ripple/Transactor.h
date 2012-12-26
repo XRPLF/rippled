@@ -33,7 +33,7 @@ protected:
 public:
 	typedef boost::shared_ptr<Transactor> pointer;
 
-	static Transactor::pointer makeTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine);
+	static std::auto_ptr<Transactor> makeTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine);
 
 	TER apply();
 };

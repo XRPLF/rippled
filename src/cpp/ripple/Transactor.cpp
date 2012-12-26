@@ -11,26 +11,26 @@
 
 SETUP_LOG();
 
-Transactor::pointer Transactor::makeTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine)
+std::auto_ptr<Transactor> Transactor::makeTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine)
 {
 	switch(txn.getTxnType())
 	{
 	case ttPAYMENT:
-		return( Transactor::pointer(new PaymentTransactor(txn,params,engine)) );
+		return std::auto_ptr<Transactor>(new PaymentTransactor(txn, params, engine));
 	case ttACCOUNT_SET:
-		return( Transactor::pointer(new AccountSetTransactor(txn,params,engine)) );
+		return std::auto_ptr<Transactor>(new AccountSetTransactor(txn, params, engine));
 	case ttREGULAR_KEY_SET:
-		return( Transactor::pointer(new RegularKeySetTransactor(txn,params,engine)) );
+		return std::auto_ptr<Transactor>(new RegularKeySetTransactor(txn, params, engine));
 	case ttTRUST_SET:
-		return( Transactor::pointer(new TrustSetTransactor(txn,params,engine)) );
+		return std::auto_ptr<Transactor>(new TrustSetTransactor(txn, params, engine));
 	case ttOFFER_CREATE:
-		return( Transactor::pointer(new OfferCreateTransactor(txn,params,engine)) );
+		return std::auto_ptr<Transactor>(new OfferCreateTransactor(txn, params, engine));
 	case ttOFFER_CANCEL:
-		return( Transactor::pointer(new OfferCancelTransactor(txn,params,engine)) );
+		return std::auto_ptr<Transactor>(new OfferCancelTransactor(txn, params, engine));
 	case ttWALLET_ADD:
-		return( Transactor::pointer(new WalletAddTransactor(txn,params,engine)) );
+		return std::auto_ptr<Transactor>(new WalletAddTransactor(txn, params, engine));
 	default:
-		return(Transactor::pointer());
+		return std::auto_ptr<Transactor>();
 	}
 }
 
