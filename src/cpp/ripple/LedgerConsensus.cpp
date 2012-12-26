@@ -67,6 +67,7 @@ void TransactionAcquire::onTimer(bool progress)
 			BOOST_FOREACH(Peer::ref peer, peerList)
 				peerHas(peer);
 		}
+		resetTimer();
 	}
 	else if (!progress)
 		trigger(Peer::pointer(), true);
