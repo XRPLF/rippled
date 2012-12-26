@@ -1194,7 +1194,7 @@ TER LedgerEntrySet::trustCreate(
 }
 
 // Direct send w/o fees: redeeming IOUs and/or sending own IOUs.
-void LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer)
+TER LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer)
 {
 	uint160				uIssuerID		= saAmount.getIssuer();
 	uint160				uCurrencyID		= saAmount.getCurrency();
@@ -1204,6 +1204,8 @@ void LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRece
 	bool				bSenderHigh		= uSenderID > uReceiverID;
 	uint256				uIndex			= Ledger::getRippleStateIndex(uSenderID, uReceiverID, saAmount.getCurrency());
 	SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, uIndex);
+
+	TER					terResult;
 
 	assert(!!uSenderID && uSenderID != ACCOUNT_ONE);
 	assert(!!uReceiverID && uReceiverID != ACCOUNT_ONE);
@@ -1221,8 +1223,7 @@ void LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRece
 			% RippleAddress::createHumanAccountID(uReceiverID)
 			% saAmount.getFullText());
 
-		// XXX Pass back result.
-		TER		terResult	= trustCreate(
+		terResult	= trustCreate(
 			bSenderHigh,
 			uSenderID,
 			entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uSenderID)),
@@ -1252,25 +1253,31 @@ void LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRece
 		sleRippleState->setFieldAmount(sfBalance, saBalance);
 
 		entryModify(sleRippleState);
+
+		terResult	= tesSUCCESS;
 	}
+
+	return terResult;
 }
 
 // Send regardless of limits.
 // --> saAmount: Amount/currency/issuer for receiver to get.
 // <-- saActual: Amount actually sent.  Sender pay's fees.
-STAmount LedgerEntrySet::rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount)
+TER LedgerEntrySet::rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, STAmount& saActual)
 {
-	STAmount		saActual;
 	const uint160	uIssuerID	= saAmount.getIssuer();
+	TER				terResult;
 
 	assert(!!uSenderID && !!uReceiverID);
 
 	if (uSenderID == uIssuerID || uReceiverID == uIssuerID || uIssuerID == ACCOUNT_ONE)
 	{
 		// Direct send: redeeming IOUs and/or sending own IOUs.
-		rippleCredit(uSenderID, uReceiverID, saAmount, false);
+		terResult	= rippleCredit(uSenderID, uReceiverID, saAmount, false);
 
 		saActual	= saAmount;
+
+		terResult	= tesSUCCESS;
 	}
 	else
 	{
@@ -1282,16 +1289,19 @@ STAmount LedgerEntrySet::rippleSend(const uint160& uSenderID, const uint160& uRe
 
 		saActual.setIssuer(uIssuerID);	// XXX Make sure this done in + above.
 
-		rippleCredit(uIssuerID, uReceiverID, saAmount);
-		rippleCredit(uSenderID, uIssuerID, saActual);
+		terResult	= rippleCredit(uIssuerID, uReceiverID, saAmount);
+
+		if (tesSUCCESS == terResult)
+			terResult	= rippleCredit(uSenderID, uIssuerID, saActual);
 	}
 
-	return saActual;
+	return terResult;
 }
 
-void LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount)
+TER LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount)
 {
 	assert(!saAmount.isNegative());
+	TER	terResult	= tesSUCCESS;
 
 	if (!saAmount)
 	{
@@ -1334,8 +1344,12 @@ void LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uRecei
 	}
 	else
 	{
-		rippleSend(uSenderID, uReceiverID, saAmount);
+		STAmount	saActual;
+
+		terResult	= rippleSend(uSenderID, uReceiverID, saAmount, saActual);
 	}
+
+	return terResult;
 }
 
 // vim:ts=4

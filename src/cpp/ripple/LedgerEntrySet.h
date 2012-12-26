@@ -121,12 +121,12 @@ public:
 
 	STAmount			rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID, bool bAvail=false);
 	STAmount			rippleTransferFee(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
-	void				rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer=true);
-	STAmount			rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	TER					rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer=true);
+	TER					rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, STAmount& saActual);
 
 	STAmount			accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID, bool bAvail=false);
 	STAmount			accountFunds(const uint160& uAccountID, const STAmount& saDefault, bool bAvail=false);
-	void				accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	TER					accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 
 	TER					trustCreate(
 							const bool		bSrcHigh,

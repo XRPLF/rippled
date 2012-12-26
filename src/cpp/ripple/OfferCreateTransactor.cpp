@@ -200,23 +200,30 @@ TER OfferCreateTransactor::takeOffers(
 						cLog(lsINFO) << "takeOffers: offer partial claim.";
 					}
 
-					// Offer owner pays taker.
-					// saSubTakerGot.setIssuer(uTakerGetsAccountID);	// XXX Move this earlier?
 					assert(!!saSubTakerGot.getIssuer());
-
-					mEngine->getNodes().accountSend(uOfferOwnerID, uTakerAccountID, saSubTakerGot);
-					mEngine->getNodes().accountSend(uOfferOwnerID, uTakerGetsAccountID, saOfferIssuerFee);
-
-					saTakerGot	+= saSubTakerGot;
-
-					// Taker pays offer owner.
-					//	saSubTakerPaid.setIssuer(uTakerPaysAccountID);
 					assert(!!saSubTakerPaid.getIssuer());
 
-					mEngine->getNodes().accountSend(uTakerAccountID, uOfferOwnerID, saSubTakerPaid);
-					mEngine->getNodes().accountSend(uTakerAccountID, uTakerPaysAccountID, saTakerIssuerFee);
+					// Offer owner pays taker.
+					// saSubTakerGot.setIssuer(uTakerGetsAccountID);	// XXX Move this earlier?
 
+					terResult	= mEngine->getNodes().accountSend(uOfferOwnerID, uTakerAccountID, saSubTakerGot);
+
+					if (tesSUCCESS == terResult)
+						terResult	= mEngine->getNodes().accountSend(uOfferOwnerID, uTakerGetsAccountID, saOfferIssuerFee);
+					// Taker pays offer owner.
+					//	saSubTakerPaid.setIssuer(uTakerPaysAccountID);
+
+					if (tesSUCCESS == terResult)
+						terResult	= mEngine->getNodes().accountSend(uTakerAccountID, uOfferOwnerID, saSubTakerPaid);
+
+					if (tesSUCCESS == terResult)
+						terResult	= mEngine->getNodes().accountSend(uTakerAccountID, uTakerPaysAccountID, saTakerIssuerFee);
+
+					saTakerGot	+= saSubTakerGot;
 					saTakerPaid	+= saSubTakerPaid;
+
+					if (tesSUCCESS == terResult)
+						terResult	= temUNCERTAIN;
 				}
 			}
 		}

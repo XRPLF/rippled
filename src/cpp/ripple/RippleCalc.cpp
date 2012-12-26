@@ -1127,7 +1127,10 @@ TER RippleCalc::calcNodeDeliverRev(
 		// Sending could be complicated: could fund a previous offer not yet visited.
 		// However, these deductions and adjustments are tenative.
 		// Must reset balances when going forward to perform actual transfers.
-		lesActive.accountSend(uOfrOwnerID, uCurIssuerID, saOutPass);
+		terResult	= lesActive.accountSend(uOfrOwnerID, uCurIssuerID, saOutPass);
+
+		if (tesSUCCESS != terResult)
+			break;
 
 		// Adjust offer
 		sleOffer->setFieldAmount(sfTakerGets, saTakerGets - saOutPass);
@@ -1147,7 +1150,7 @@ TER RippleCalc::calcNodeDeliverRev(
 		saPrvDlvReq	+= saInPassAct;
 	}
 
-	if (!saOutAct)
+	if (tesSUCCESS == terResult && !saOutAct)
 		terResult	= tecPATH_DRY;
 
 	return terResult;
@@ -1253,7 +1256,10 @@ TER RippleCalc::calcNodeDeliverFwd(
 					% saOutPassAct.getFullText());
 
 				// Output: Debit offer owner, send XRP or non-XPR to next account.
-				lesActive.accountSend(uOfrOwnerID, uNxtAccountID, saOutPassAct);
+				terResult	= lesActive.accountSend(uOfrOwnerID, uNxtAccountID, saOutPassAct);
+
+				if (tesSUCCESS != terResult)
+					break;
 			}
 			else
 			{
@@ -1314,7 +1320,10 @@ TER RippleCalc::calcNodeDeliverFwd(
 
 			// Do inbound crediting.
 			// Credit offer owner from in issuer/limbo (input transfer fees left with owner).
-			lesActive.accountSend(!!uPrvCurrencyID ? uInAccountID : ACCOUNT_XRP, uOfrOwnerID, saInPassAct);
+			terResult		= lesActive.accountSend(!!uPrvCurrencyID ? uInAccountID : ACCOUNT_XRP, uOfrOwnerID, saInPassAct);
+
+			if (tesSUCCESS != terResult)
+				break;
 
 			// Adjust offer
 			// Fees are considered paid from a seperate budget and are not named in the offer.
@@ -2017,7 +2026,7 @@ TER RippleCalc::calcNodeAccountFwd(
 			saCurReceive	= saPrvRedeemReq+saIssueCrd;
 
 			// Actually receive.
-			lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq+saPrvIssueReq, false);
+			terResult	= lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq+saPrvIssueReq, false);
 		}
 		else
 		{
@@ -2060,7 +2069,7 @@ TER RippleCalc::calcNodeAccountFwd(
 			}
 
 			// Adjust prv --> cur balance : take all inbound
-			lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false);
+			terResult	= lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false);
 		}
 	}
 	else if (bPrvAccount && !bNxtAccount)
@@ -2096,7 +2105,7 @@ TER RippleCalc::calcNodeAccountFwd(
 			}
 
 			// Adjust prv --> cur balance : take all inbound
-			lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false);
+			terResult	= lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false);
 		}
 		else
 		{
@@ -2133,7 +2142,7 @@ TER RippleCalc::calcNodeAccountFwd(
 				cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountFwd: ^ --> ACCOUNT -- XRP --> offer"));
 
 				// Deliver XRP to limbo.
-				lesActive.accountSend(uCurAccountID, ACCOUNT_XRP, saCurDeliverAct);
+				terResult	= lesActive.accountSend(uCurAccountID, ACCOUNT_XRP, saCurDeliverAct);
 			}
 		}
 	}
