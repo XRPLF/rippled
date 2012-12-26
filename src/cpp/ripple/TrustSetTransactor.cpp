@@ -2,8 +2,6 @@
 
 #include "TrustSetTransactor.h"
 
-#include <boost/bind.hpp>
-
 SETUP_LOG();
 
 TER TrustSetTransactor::doApply()
@@ -33,7 +31,7 @@ TER TrustSetTransactor::doApply()
 	{
 		cLog(lsINFO) << "doTrustSet: Malformed transaction: Negatived credit limit.";
 
-		return temBAD_AMOUNT;
+		return temBAD_LIMIT;
 	}
 	else if (!uDstAccountID || uDstAccountID == ACCOUNT_ONE)
 	{
@@ -223,16 +221,20 @@ TER TrustSetTransactor::doApply()
 		{
 			// Can delete.
 
-			uint64		uSrcRef;								// <-- Ignored, dirs never delete.
+			uint64		uLowNode	= sleRippleState->getFieldU64(sfLowNode);
+			uint64		uHighNode	= sleRippleState->getFieldU64(sfHighNode);
 
-			terResult	= mEngine->getNodes().dirDelete(false, uSrcRef, Ledger::getOwnerDirIndex(uLowAccountID), sleRippleState->getIndex(), false);
+			cLog(lsTRACE) << "doTrustSet: Deleting ripple line: low";
+			terResult	= mEngine->getNodes().dirDelete(false, uLowNode, Ledger::getOwnerDirIndex(uLowAccountID), sleRippleState->getIndex(), false);
 
 			if (tesSUCCESS == terResult)
-				terResult	= mEngine->getNodes().dirDelete(false, uSrcRef, Ledger::getOwnerDirIndex(uHighAccountID), sleRippleState->getIndex(), false);
+			{
+				cLog(lsTRACE) << "doTrustSet: Deleting ripple line: high";
+				terResult	= mEngine->getNodes().dirDelete(false, uHighNode, Ledger::getOwnerDirIndex(uHighAccountID), sleRippleState->getIndex(), false);
+			}
 
+			cLog(lsINFO) << "doTrustSet: Deleting ripple line: state";
 			mEngine->entryDelete(sleRippleState);
-
-			cLog(lsINFO) << "doTrustSet: Deleting ripple line";
 		}
 		else if (bReserveIncrease
 			&& saSrcXRPBalance.getNValue() < uReserveCreate)	// Reserve is not scaled by load.
@@ -267,41 +269,22 @@ TER TrustSetTransactor::doApply()
 	}
 	else
 	{
+		STAmount	saBalance	= STAmount(uCurrencyID, ACCOUNT_ONE);	// Zero balance in currency.
+
+		cLog(lsINFO) << "doTrustSet: Creating ripple line: "
+			<< Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID).ToString();
+
 		// Create a new ripple line.
-		sleRippleState	= mEngine->entryCreate(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID));
-
-		cLog(lsINFO) << "doTrustSet: Creating ripple line: " << sleRippleState->getIndex().ToString();
-
-		sleRippleState->setFieldAmount(sfBalance, STAmount(uCurrencyID, ACCOUNT_ONE));	// Zero balance in currency.
-		sleRippleState->setFieldAmount(!bHigh ? sfLowLimit : sfHighLimit, saLimitAllow);
-		sleRippleState->setFieldAmount( bHigh ? sfLowLimit : sfHighLimit, STAmount(uCurrencyID, uDstAccountID));
-
-		if (uQualityIn)
-			sleRippleState->setFieldU32(!bHigh ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
-
-		if (uQualityOut)
-			sleRippleState->setFieldU32(!bHigh ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
-
-		sleRippleState->setFieldU32(sfFlags, !bHigh ? lsfLowReserve : lsfHighReserve);
-
-		uint64			uSrcRef;							// <-- Ignored, dirs never delete.
-
-		terResult	= mEngine->getNodes().dirAdd(
-			uSrcRef,
-			Ledger::getOwnerDirIndex(mTxnAccountID),
-			sleRippleState->getIndex(),
-			boost::bind(&Ledger::ownerDirDescriber, _1, mTxnAccountID));
-
-		if (tesSUCCESS == terResult)
-		{
-			mEngine->getNodes().ownerCountAdjust(mTxnAccountID, 1, mTxnAccount);
-
-			terResult	= mEngine->getNodes().dirAdd(
-				uSrcRef,
-				Ledger::getOwnerDirIndex(uDstAccountID),
-				sleRippleState->getIndex(),
-				boost::bind(&Ledger::ownerDirDescriber, _1, uDstAccountID));
-		}
+		terResult	= mEngine->getNodes().trustCreate(
+			bHigh,					// Who to charge with reserve.
+			mTxnAccountID,
+			mTxnAccount,
+			uDstAccountID,
+			Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID),
+			saBalance,
+			saLimitAllow,
+			uQualityIn,
+			uQualityOut);
 	}
 
 	cLog(lsINFO) << "doTrustSet<";

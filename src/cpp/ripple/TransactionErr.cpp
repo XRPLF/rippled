@@ -41,6 +41,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	temBAD_AUTH_MASTER,		"temBAD_AUTH_MASTER",		"Auth for unclaimed account needs correct master key."	},
 		{	temBAD_EXPIRATION,		"temBAD_EXPIRATION",		"Malformed."											},
 		{	temBAD_ISSUER,			"temBAD_ISSUER",			"Malformed."											},
+		{	temBAD_LIMIT,			"temBAD_LIMIT",				"Limits must be non-negative."							},
 		{	temBAD_OFFER,			"temBAD_OFFER",				"Malformed."											},
 		{	temBAD_PATH,			"temBAD_PATH",				"Malformed."											},
 		{	temBAD_PATH_LOOP,		"temBAD_PATH_LOOP",			"Malformed."											},

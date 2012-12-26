@@ -128,6 +128,17 @@ public:
 	STAmount			accountFunds(const uint160& uAccountID, const STAmount& saDefault, bool bAvail=false);
 	void				accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 
+	TER					trustCreate(
+							const bool		bSrcHigh,
+							const uint160&	uSrcAccountID,
+							SLE::ref		sleSrcAccount,
+							const uint160&	uDstAccountID,
+							const uint256&	uIndex,
+							const STAmount& saSrcBalance,
+							const STAmount& saSrcLimit,
+							const uint32	uSrcQualityIn = 0,
+							const uint32	uSrcQualityOut = 0);
+
 	Json::Value getJson(int) const;
 	void calcRawMeta(Serializer&, TER result, uint32 index);
 

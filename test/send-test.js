@@ -40,8 +40,9 @@ buster.testCase("Fee Changes", {
   */
 
 buster.testCase("Sending", {
-  'setUp' : testutils.build_setup(),  //
-  'tearDown' : testutils.build_teardown(),
+  'setUp'     : testutils.build_setup(),
+  // 'setUp'     : testutils.build_setup({verbose: true , no_server: true}),
+  'tearDown'  : testutils.build_teardown(),
 
   "send XRP to non-existent account with insufficent fee" :
     function (done) {
@@ -185,14 +186,25 @@ buster.testCase("Sending", {
             self.remote.transaction()
               .ripple_line_set("alice", "-1/USD/mtgox")
               .on('proposed', function (m) {
-                  buster.assert.equals('temBAD_AMOUNT', m.result);
+                  buster.assert.equals('temBAD_LIMIT', m.result);
 
                   // After a malformed transaction, need to recover correct sequence.
                   self.remote.set_account_seq("alice", self.remote.account_seq("alice")-1);
-                  callback('temBAD_AMOUNT' !== m.result);
+                  callback('temBAD_LIMIT' !== m.result);
                 })
               .submit();
           },
+//          function (callback) {
+//            self.what = "Display ledger";
+//
+//            self.remote.request_ledger('current', true)
+//              .on('success', function (m) {
+//                  console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+//
+//                  callback();
+//                })
+//              .request();
+//          },
           function (callback) {
             self.what = "Zero a credit limit.";
 

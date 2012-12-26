@@ -77,7 +77,6 @@ TER Transactor::payFee()
 	return tesSUCCESS;
 }
 
-
 TER Transactor::checkSig()
 {
 	// Consistency: Check signature
@@ -199,14 +198,14 @@ TER Transactor::apply()
 		mHasAuthKey	= mTxnAccount->isFieldPresent(sfRegularKey);
 	}
 
-	terResult=payFee();
-	if(terResult != tesSUCCESS) return(terResult);
+	terResult = payFee();
+	if (terResult != tesSUCCESS) return(terResult);
 
-	terResult=checkSig();
-	if(terResult != tesSUCCESS) return(terResult);
+	terResult = checkSig();
+	if (terResult != tesSUCCESS) return(terResult);
 
-	terResult=checkSeq();
-	if(terResult != tesSUCCESS) return(terResult);
+	terResult = checkSeq();
+	if (terResult != tesSUCCESS) return(terResult);
 
 	mEngine->entryModify(mTxnAccount);
 

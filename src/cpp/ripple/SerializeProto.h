@@ -71,6 +71,8 @@
 	FIELD(OwnerNode,			UINT64, 4)
 	FIELD(BaseFee,				UINT64, 5)
 	FIELD(ExchangeRate,			UINT64, 6)
+	FIELD(LowNode,				UINT64, 7)
+	FIELD(HighNode,				UINT64, 8)
 
 
 	// 128-bit

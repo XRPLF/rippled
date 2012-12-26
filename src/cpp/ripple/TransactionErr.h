@@ -29,6 +29,7 @@ enum TER	// aka TransactionEngineResult
 	temBAD_AUTH_MASTER,
 	temBAD_EXPIRATION,
 	temBAD_ISSUER,
+	temBAD_LIMIT,
 	temBAD_OFFER,
 	temBAD_PATH,
 	temBAD_PATH_LOOP,
