@@ -658,7 +658,6 @@ TER LedgerEntrySet::dirDelete(
 
 	it = std::find(vuiIndexes.begin(), vuiIndexes.end(), uLedgerIndex);
 
-	assert(vuiIndexes.end() != it);
 	if (vuiIndexes.end() == it)
 	{
 		if (!bSoft)
