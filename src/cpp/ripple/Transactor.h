@@ -24,7 +24,11 @@ protected:
 	TER checkSeq();
 	TER payFee();
 
-	virtual void calculateFee();
+	void calculateFee();
+
+	// Returns the fee, not scaled for load (Should be in fee units. FIXME)
+	virtual uint64_t calculateBaseFee();
+
 	virtual TER checkSig();
 	virtual TER doApply()=0;
 

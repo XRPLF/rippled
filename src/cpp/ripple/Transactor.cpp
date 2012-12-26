@@ -42,7 +42,12 @@ Transactor::Transactor(const SerializedTransaction& txn,TransactionEngineParams 
 
 void Transactor::calculateFee()
 {
-	mFeeDue	= theConfig.FEE_DEFAULT;
+	mFeeDue	= STAmount(mEngine->getLedger()->scaleFeeLoad(calculateBaseFee()));
+}
+
+uint64_t Transactor::calculateBaseFee()
+{
+	return theConfig.FEE_DEFAULT;
 }
 
 TER Transactor::payFee()

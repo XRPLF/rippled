@@ -5,17 +5,14 @@
 SETUP_LOG();
 
 
-void RegularKeySetTransactor::calculateFee()
+uint64_t RegularKeySetTransactor::calculateBaseFee()
 {
-	Transactor::calculateFee();
-
 	if ( !(mTxnAccount->getFlags() & lsfPasswordSpent) && 
 		 (mSigningPubKey.getAccountID() == mTxnAccountID))
 	{  // flag is armed and they signed with the right account
-		
-		mSourceBalance	= mTxnAccount->getFieldAmount(sfBalance);
-		if(mSourceBalance < mFeeDue) mFeeDue	= 0;
+		return 0;
 	}
+	return Transactor::calculateBaseFee();
 }
 
 
