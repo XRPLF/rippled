@@ -62,7 +62,7 @@ TER Transactor::payFee()
 		return telINSUF_FEE_P;
 	}
 
-	if (saPaid.isNegative())
+	if (saPaid.isNegative() || !saPaid.isNative())
 		return temBAD_AMOUNT;
 
 	if (!saPaid) return tesSUCCESS;
