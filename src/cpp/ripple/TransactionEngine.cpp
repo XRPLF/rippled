@@ -113,9 +113,13 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 		cLog(lsINFO) << "applyTransaction: terResult=" << strToken << " : " << terResult << " : " << strHuman;
 
 		if (terResult == tesSUCCESS)
+		{
 			didApply = true;
+		}
 		else if (isTepPartial(terResult) && !isSetBit(params, tapRETRY))
+		{
 			didApply = true;
+		}
 		else if (isTecClaim(terResult) && !isSetBit(params, tapRETRY))
 		{ // only claim the transaction fee
 			cLog(lsINFO) << "Reprocessing to only claim fee";
@@ -138,11 +142,13 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				}
 				else
 				{
-					STAmount fee = txn.getTransactionFee();
-					STAmount balance = txnAcct->getFieldAmount(sfBalance);
+					STAmount fee		= txn.getTransactionFee();
+					STAmount balance	= txnAcct->getFieldAmount(sfBalance);
 
 					if (balance < fee)
+					{
 						terResult = terINSUF_FEE_B;
+					}
 					else
 					{
 						txnAcct->setFieldAmount(sfBalance, balance - fee);

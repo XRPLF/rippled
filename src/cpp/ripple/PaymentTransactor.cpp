@@ -141,9 +141,10 @@ TER PaymentTransactor::doApply()
 		const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
 		const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
 		const uint64	uReserve		= mEngine->getLedger()->getReserve(uOwnerCount);
+		STAmount		saPaid			= mTxn.getTransactionFee();
 
-		// Make sure have enough reserve to send.
-		if (saSrcXRPBalance < saDstAmount + uReserve)		// Reserve is not scaled by fee.
+		// Make sure have enough reserve to send. Allow final spend to use reserve for fee.
+		if (saSrcXRPBalance + saPaid < saDstAmount + uReserve)		// Reserve is not scaled by fee.
 		{
 			// Vote no. However, transaction might succeed, if applied in a different order.
 			cLog(lsINFO) << "";
