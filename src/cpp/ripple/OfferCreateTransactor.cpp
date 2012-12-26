@@ -117,8 +117,8 @@ TER OfferCreateTransactor::takeOffers(
 
 				cLog(lsINFO) << "takeOffers: saOfferPays=" << saOfferPays.getFullText();
 
-				STAmount		saOfferFunds	= mEngine->getNodes().accountFunds(uOfferOwnerID, saOfferPays, true);
-				STAmount		saTakerFunds	= mEngine->getNodes().accountFunds(uTakerAccountID, saTakerPays, true);
+				STAmount		saOfferFunds	= mEngine->getNodes().accountFunds(uOfferOwnerID, saOfferPays);
+				STAmount		saTakerFunds	= mEngine->getNodes().accountFunds(uTakerAccountID, saTakerPays);
 				SLE::pointer	sleOfferAccount;	// Owner of offer.
 
 				if (!saOfferFunds.isPositive())
@@ -327,7 +327,7 @@ TER OfferCreateTransactor::doApply()
 
 		terResult	= temBAD_ISSUER;
 	}
-	else if (!mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets, true).isPositive())
+	else if (!mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets).isPositive())
 	{
 		cLog(lsWARNING) << "doOfferCreate: delay: Offers must be at least partially funded.";
 
@@ -387,7 +387,7 @@ TER OfferCreateTransactor::doApply()
 	cLog(lsWARNING) << "doOfferCreate: takeOffers: saTakerPays=" << saTakerPays.getFullText();
 	cLog(lsWARNING) << "doOfferCreate: takeOffers: saTakerGets=" << saTakerGets.getFullText();
 	cLog(lsWARNING) << "doOfferCreate: takeOffers: mTxnAccountID=" << RippleAddress::createHumanAccountID(mTxnAccountID);
-	cLog(lsWARNING) << "doOfferCreate: takeOffers:         FUNDS=" << mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets, true).getFullText();
+	cLog(lsWARNING) << "doOfferCreate: takeOffers:         FUNDS=" << mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets).getFullText();
 
 	// cLog(lsWARNING) << "doOfferCreate: takeOffers: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
 	// cLog(lsWARNING) << "doOfferCreate: takeOffers: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
@@ -395,7 +395,7 @@ TER OfferCreateTransactor::doApply()
 	if (tesSUCCESS != terResult
 		|| !saTakerPays														// Wants nothing more.
 		|| !saTakerGets														// Offering nothing more.
-		|| !mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets, true).isPositive())	// Not funded.
+		|| !mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets).isPositive())	// Not funded.
 	{
 		// Complete as is.
 		nothing();
