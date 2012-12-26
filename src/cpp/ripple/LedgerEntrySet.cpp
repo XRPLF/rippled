@@ -14,8 +14,7 @@ DECLARE_INSTANCE(LedgerEntrySet)
 
 // #define META_DEBUG
 
-// Small for testing, should likely be 32 or 64.
-#define DIR_NODE_MAX		2
+#define DIR_NODE_MAX		32
 
 void LedgerEntrySet::init(Ledger::ref ledger, const uint256& transactionID, uint32 ledgerID)
 {
