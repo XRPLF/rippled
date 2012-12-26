@@ -57,6 +57,9 @@ TER Transactor::payFee()
 		return telINSUF_FEE_P;
 	}
 
+	if (saPaid.isNegative())
+		return temBAD_AMOUNT;
+
 	if (!saPaid) return tesSUCCESS;
 
 	// Deduct the fee, so it's not available during the transaction.
