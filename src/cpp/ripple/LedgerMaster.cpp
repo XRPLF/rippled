@@ -178,7 +178,7 @@ void LedgerMaster::resumeAcquiring()
 		return;
 	mTooFast = false;
 
-	if (mMissingLedger && (mMissingLedger->isComplete() || mMissingLedger->isFailed()))
+	if (mMissingLedger && mMissingLedger->isDone())
 		mMissingLedger.reset();
 
 	if (mMissingLedger || !theConfig.LEDGER_HISTORY)
@@ -231,7 +231,7 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 		}
 	}
 
-	if (mMissingLedger && (mMissingLedger->isComplete() || mMissingLedger->isFailed()))
+	if (mMissingLedger && mMissingLedger->isDone())
 		mMissingLedger.reset();
 
 	if (mMissingLedger || !theConfig.LEDGER_HISTORY)

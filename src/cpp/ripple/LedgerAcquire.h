@@ -90,6 +90,7 @@ public:
 	bool isBase() const					{ return mHaveBase; }
 	bool isAcctStComplete() const		{ return mHaveState; }
 	bool isTransComplete() const		{ return mHaveTransactions; }
+	bool isDone() const					{ return mAborted || isComplete() || isFailed(); } 
 	Ledger::pointer getLedger()			{ return mLedger; }
 	void abort()						{ mAborted = true; }
 	bool setAccept()					{ if (mAccept) return false; mAccept = true; return true; }
