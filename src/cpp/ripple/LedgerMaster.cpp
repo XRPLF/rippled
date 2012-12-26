@@ -171,8 +171,46 @@ static bool shouldAcquire(uint32 currentLedger, uint32 ledgerHistory, uint32 can
 	return ret;
 }
 
+void LedgerMaster::resumeAcquiring()
+{
+	boost::recursive_mutex::scoped_lock ml(mLock);
+	if (!mTooFast)
+		return;
+	mTooFast = false;
+
+	if (mMissingLedger && (mMissingLedger->isComplete() || mMissingLedger->isFailed()))
+		mMissingLedger.reset();
+
+	if (mMissingLedger || !theConfig.LEDGER_HISTORY)
+	{
+		tLog(mMissingLedger, lsDEBUG) << "Fetch already in progress, not resuming";
+		return;
+	}
+
+	uint32 prevMissing = mCompleteLedgers.prevMissing(mFinalizedLedger->getLedgerSeq());
+	if (prevMissing == RangeSet::RangeSetAbsent)
+	{
+		cLog(lsDEBUG) << "no prior missing ledger, not resuming";
+		return;
+	}
+	if (shouldAcquire(mCurrentLedger->getLedgerSeq(), theConfig.LEDGER_HISTORY, prevMissing))
+	{
+		cLog(lsINFO) << "Resuming at " << prevMissing;
+		assert(!mCompleteLedgers.hasValue(prevMissing));
+		Ledger::pointer nextLedger = getLedgerBySeq(prevMissing + 1);
+		if (nextLedger)
+			acquireMissingLedger(nextLedger->getParentHash(), nextLedger->getLedgerSeq() - 1);
+		else
+		{
+			mCompleteLedgers.clearValue(prevMissing);
+			cLog(lsWARNING) << "We have a gap at: " << prevMissing + 1;
+		}
+	}
+}
+
 void LedgerMaster::setFullLedger(Ledger::ref ledger)
 { // A new ledger has been accepted as part of the trusted chain
+	cLog(lsDEBUG) << "Ledger " << ledger->getLedgerSeq() << " accepted :" << ledger->getHash();
 
 	boost::recursive_mutex::scoped_lock ml(mLock);
 
@@ -197,10 +235,14 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 		mMissingLedger.reset();
 
 	if (mMissingLedger || !theConfig.LEDGER_HISTORY)
-		return;
-
-	if (Ledger::getPendingSaves() > 3)
 	{
+		tLog(mMissingLedger, lsDEBUG) << "Fetch already in progress, " << mMissingLedger->getTimeouts() << " timeouts";
+		return;
+	}
+
+	if (Ledger::getPendingSaves() > 2)
+	{
+		mTooFast = true;
 		cLog(lsINFO) << "Too many pending ledger saves";
 		return;
 	}
@@ -217,10 +259,14 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 	{
 		uint32 prevMissing = mCompleteLedgers.prevMissing(ledger->getLedgerSeq());
 		if (prevMissing == RangeSet::RangeSetAbsent)
+		{
+			cLog(lsDEBUG) << "no prior missing ledger";
 			return;
+		}
+		cLog(lsTRACE) << "Ledger " << prevMissing << " is missing";
 		if (shouldAcquire(mCurrentLedger->getLedgerSeq(), theConfig.LEDGER_HISTORY, prevMissing))
 		{
-			cLog(lsINFO) << "Ledger " << prevMissing << " is missing";
+			cLog(lsINFO) << "Ledger " << prevMissing << " is needed";
 			assert(!mCompleteLedgers.hasValue(prevMissing));
 			Ledger::pointer nextLedger = getLedgerBySeq(prevMissing + 1);
 			if (nextLedger)

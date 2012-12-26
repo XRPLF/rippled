@@ -1176,8 +1176,13 @@ void Ledger::pendSave(bool fromConsensus)
 
 void Ledger::decPendingSaves()
 {
-	boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
-	--sPendingSaves;
+	{
+		boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
+		--sPendingSaves;
+		if (sPendingSaves != 0)
+			return;
+	}
+	theApp->getLedgerMaster().resumeAcquiring();
 }
 
 void Ledger::ownerDirDescriber(SLE::ref sle, const uint160& owner)

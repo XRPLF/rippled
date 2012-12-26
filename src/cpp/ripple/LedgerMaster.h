@@ -31,6 +31,7 @@ class LedgerMaster
 	RangeSet mCompleteLedgers;
 	LedgerAcquire::pointer mMissingLedger;
 	uint32 mMissingSeq;
+	bool mTooFast;	// We are acquiring faster than we're writing
 
 	void applyFutureTransactions(uint32 ledgerIndex);
 	bool isValidTransaction(const Transaction::pointer& trans);
@@ -41,7 +42,7 @@ class LedgerMaster
 
 public:
 
-	LedgerMaster() : mHeldTransactions(uint256()), mMissingSeq(0)	{ ; }
+	LedgerMaster() : mHeldTransactions(uint256()), mMissingSeq(0), mTooFast(false)	{ ; }
 
 	uint32 getCurrentLedgerIndex();
 
@@ -94,6 +95,8 @@ public:
 	void addHeldTransaction(const Transaction::pointer& trans);
 
 	bool haveLedgerRange(uint32 from, uint32 to);
+
+	void resumeAcquiring();
 
 	void sweep(void) { mLedgerHistory.sweep(); }
 };

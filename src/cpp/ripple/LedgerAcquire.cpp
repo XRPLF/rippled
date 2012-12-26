@@ -124,7 +124,10 @@ void LedgerAcquire::onTimer(bool progress)
 	else if (!progress)
 	{
 		if (!getPeerCount())
+		{
 			addPeers();
+			resetTimer();
+		}
 		else
 			trigger(Peer::pointer(), true);
 	}
