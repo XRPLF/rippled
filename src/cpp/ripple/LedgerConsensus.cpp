@@ -1198,12 +1198,7 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 
 	uint32 closeTime = roundCloseTime(mOurPosition->getCloseTime());
 
-	cLog(lsINFO) << "Computing new LCL based on network consensus";
-	if (mHaveCorrectLCL)
-	{
-		cLog(lsINFO) << "CNF tx " << mOurPosition->getCurrentHash() << ", close " << closeTime;
-		cLog(lsINFO) << "CNF mode " << theApp->getOPs().getOperatingMode() << ", oldLCL " << mPrevLedgerHash;
-	}
+	cLog(lsDEBUG) << "Computing new LCL based on network consensus";
 
 	CanonicalTXSet failedTransactions(set->getHash());
 
@@ -1217,6 +1212,7 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 	boost::shared_ptr<SHAMap::SHADirtyMap> acctNodes = newLCL->peekAccountStateMap()->disarmDirty();
 	boost::shared_ptr<SHAMap::SHADirtyMap> txnNodes = newLCL->peekTransactionMap()->disarmDirty();
 
+
 	// write out dirty nodes (temporarily done here) Most come before setAccepted
 	int fc;
 	while ((fc = SHAMap::flushDirty(*acctNodes, 256, hotACCOUNT_NODE, newLCL->getLedgerSeq())) > 0)
@@ -1229,8 +1225,13 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 	{ // we agreed to disagree
 		closeTimeCorrect = false;
 		closeTime = mPreviousLedger->getCloseTimeNC() + 1;
-		cLog(lsINFO) << "CNF badclose " << closeTime;
 	}
+
+	cLog(lsINFO) << "Report: Prop=" << (mProposing ? "yes" : "no") << " val=" << (mValidating ? "yes" : "no") <<
+		" corLCL=" << (mHaveCorrectLCL ? "yes" : "no") << " fail="<< (mConsensusFail ? "yes" : "no"); 
+	cLog(lsINFO) << "Report: Prev = " << mPrevLedgerHash << ":" << mPreviousLedger->getLedgerSeq();
+	cLog(lsINFO) << "Report: TxSt = " << set->getHash() << ", close " << closeTime << (closeTimeCorrect ? "" : "X");
+	cLog(lsINFO) << "Report: NewL  = " << newLCL->getHash() << ":" << newLCL->getLedgerSeq();
 
 	newLCL->setAccepted(closeTime, mCloseResolution, closeTimeCorrect);
 	newLCL->updateHash();
