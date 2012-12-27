@@ -144,6 +144,9 @@ public:
 	uint32 getRemoteFee();
 	uint32 getLocalFee();
 
+	uint32 getLoadBase()		{ return lftNormalFee; }
+	uint32 getLoadFactor();
+
 	Json::Value getJson(uint64 baseFee, uint32 referenceFeeUnits);
 
 	void setRemoteFee(uint32);

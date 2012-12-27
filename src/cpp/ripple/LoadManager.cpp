@@ -187,6 +187,12 @@ uint32 LoadFeeTrack::getLocalFee()
 	return mLocalTxnLoadFee;
 }
 
+uint32 LoadFeeTrack::getLoadFactor()
+{
+		boost::mutex::scoped_lock sl(mLock);
+		return std::max(mLocalTxnLoadFee, mRemoteTxnLoadFee);
+}
+
 void LoadFeeTrack::setRemoteFee(uint32 f)
 {
 	boost::mutex::scoped_lock sl(mLock);
