@@ -49,10 +49,10 @@ public:
 	ScopedLock getLock()				{ return ScopedLock(mLock); }
 
 	// The current ledger is the ledger we believe new transactions should go in
-	Ledger::pointer getCurrentLedger()	{ return mCurrentLedger; }
+	Ledger::ref getCurrentLedger()	{ return mCurrentLedger; }
 
 	// The finalized ledger is the last closed/accepted ledger
-	Ledger::pointer getClosedLedger()	{ return mFinalizedLedger; }
+	Ledger::ref getClosedLedger()	{ return mFinalizedLedger; }
 
 	TER doTransaction(const SerializedTransaction& txn, TransactionEngineParams params);
 
