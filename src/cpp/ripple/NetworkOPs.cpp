@@ -1,6 +1,9 @@
 
 #include "NetworkOPs.h"
 
+#include <boost/bind.hpp>
+#include <boost/foreach.hpp>
+
 #include "utils.h"
 #include "Application.h"
 #include "Transaction.h"
@@ -9,8 +12,6 @@
 #include "Log.h"
 #include "RippleAddress.h"
 
-#include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 
 // This is the primary interface into the "client" portion of the program.
 // Code that wants to do normal operations on the network such as
@@ -638,8 +639,6 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	// agree? And do we have no better ledger available?
 	// If so, we are either tracking or full.
 
-	// FIXME: We may have a ledger with many recent validations but that no directly-connected
-	// node is using. THis is kind of fundamental.
 	cLog(lsTRACE) << "NetworkOPs::checkLastClosedLedger";
 
 	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
@@ -958,6 +957,26 @@ void NetworkOPs::consensusViewChange()
 		setMode(omCONNECTED);
 }
 
+void NetworkOPs::pubServer()
+{
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
+
+	if (!mSubServer.empty())
+	{
+		Json::Value jvObj(Json::objectValue);
+
+		jvObj["type"]			= "serverStatus";
+		jvObj["server_status"]	= strOperatingMode();
+		jvObj["load_base"]		= theApp->getFeeTrack().getLoadBase();
+		jvObj["load_fee"]		= theApp->getFeeTrack().getLoadFactor();
+
+		BOOST_FOREACH(InfoSub* ispListener, mSubServer)
+		{
+			ispListener->send(jvObj);
+		}
+	}
+}
+
 void NetworkOPs::setMode(OperatingMode om)
 {
 	if (mMode == om) return;
@@ -967,26 +986,8 @@ void NetworkOPs::setMode(OperatingMode om)
 
 	mMode = om;
 
-	Log lg((om < mMode) ? lsWARNING : lsINFO);
-
-	lg << "STATE->" << strOperatingMode();
-
-	{
-		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
-
-		if (!mSubServer.empty())
-		{
-			Json::Value jvObj(Json::objectValue);
-
-			jvObj["type"]			= "serverStatus";
-			jvObj["server_status"]	= strOperatingMode();
-
-			BOOST_FOREACH(InfoSub* ispListener, mSubServer)
-			{
-				ispListener->send(jvObj);
-			}
-		}
-	}
+	Log((om < mMode) ? lsWARNING : lsINFO) << "STATE->" << strOperatingMode();
+	pubServer();
 }
 
 
@@ -1142,6 +1143,11 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 			jvObj["ledger_index"]	= lpAccepted->getLedgerSeq();
 			jvObj["ledger_hash"]	= lpAccepted->getHash().ToString();
 			jvObj["ledger_time"]	= Json::Value::UInt(utFromSeconds(lpAccepted->getCloseTimeNC()));
+
+			jvObj["fee_ref"]		= Json::UInt(lpAccepted->getReferenceFeeUnits());
+			jvObj["fee_base"]		= Json::UInt(lpAccepted->getBaseFee());
+			jvObj["reserve_base"]	= Json::UInt(lpAccepted->getReserve(0));
+			jvObj["reserve_inc"]	= Json::UInt(lpAccepted->getReserveInc());
 
 			BOOST_FOREACH(InfoSub* ispListener, mSubLedger)
 			{
@@ -1410,9 +1416,15 @@ void NetworkOPs::unsubAccountChanges(InfoSub* ispListener)
 // <-- bool: true=added, false=already there
 bool NetworkOPs::subLedger(InfoSub* ispListener, Json::Value& jvResult)
 {
-	jvResult["ledger_index"]	= getClosedLedger()->getLedgerSeq();
-	jvResult["ledger_hash"]		= getClosedLedger()->getHash().ToString();
-	jvResult["ledger_time"]		= Json::Value::UInt(utFromSeconds(getClosedLedger()->getCloseTimeNC()));
+	Ledger::pointer closedLgr	= getClosedLedger();
+	jvResult["ledger_index"]	= closedLgr->getLedgerSeq();
+	jvResult["ledger_hash"]		= closedLgr->getHash().ToString();
+	jvResult["ledger_time"]		= Json::Value::UInt(utFromSeconds(closedLgr->getCloseTimeNC()));
+
+	jvResult["fee_ref"]			= Json::UInt(closedLgr->getReferenceFeeUnits());
+	jvResult["fee_base"]		= Json::UInt(closedLgr->getBaseFee());
+	jvResult["reserve_base"]	= Json::UInt(closedLgr->getReserve(0));
+	jvResult["reserve_inc"]		= Json::UInt(closedLgr->getReserveInc());
 
 	return mSubLedger.insert(ispListener).second;
 }

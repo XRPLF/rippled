@@ -112,6 +112,8 @@ protected:
 	void pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,bool accepted,TransactionMetaSet::pointer& meta);
 	std::map<RippleAddress,bool> getAffectedAccounts(const SerializedTransaction& stTxn);
 
+	void pubServer();
+
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
 
@@ -126,8 +128,8 @@ public:
 	OperatingMode getOperatingMode() { return mMode; }
 	std::string strOperatingMode();
 
-	Ledger::pointer	getClosedLedger()						{ return mLedgerMaster->getClosedLedger(); }
-	Ledger::pointer	getCurrentLedger()						{ return mLedgerMaster->getCurrentLedger(); }
+	Ledger::ref		getClosedLedger()						{ return mLedgerMaster->getClosedLedger(); }
+	Ledger::ref		getCurrentLedger()						{ return mLedgerMaster->getCurrentLedger(); }
 	Ledger::pointer	getLedgerByHash(const uint256& hash)	{ return mLedgerMaster->getLedgerByHash(hash); }
 	Ledger::pointer	getLedgerBySeq(const uint32 seq)		{ return mLedgerMaster->getLedgerBySeq(seq); }
 
