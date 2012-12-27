@@ -301,10 +301,10 @@ public:
 	SLE::pointer getRippleState(LedgerStateParms& parms, const uint256& uNode);
 
 	SLE::pointer getRippleState(const uint256& uNode)
-		{
-			LedgerStateParms	qry				= lepNONE;
-			return getRippleState(qry, uNode);
-		}
+	{
+		LedgerStateParms	qry				= lepNONE;
+		return getRippleState(qry, uNode);
+	}
 
 	SLE::pointer getRippleState(const RippleAddress& naA, const RippleAddress& naB, const uint160& uCurrency)
 		{ return getRippleState(getRippleStateIndex(naA, naB, uCurrency)); }
@@ -328,6 +328,12 @@ public:
 	{
 		if (!mBaseFee) updateFees();
 		return scaleFeeBase(static_cast<uint64>(increments) * mReserveIncrement + mReserveBase);
+	}
+
+	uint64 getReserveInc()
+	{
+		if (!mBaseFee) updateFees();
+		return mReserveIncrement;
 	}
 
 	uint64 scaleFeeBase(uint64 fee);
