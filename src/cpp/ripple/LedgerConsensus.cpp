@@ -827,7 +827,6 @@ SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool do
 			SHAMap::pointer currentMap = theApp->getLedgerMaster().getCurrentLedger()->peekTransactionMap();
 			if (currentMap->getHash() == hash)
 			{
-				cLog(lsINFO) << "node proposes our open transaction set";
 				currentMap = currentMap->snapShot(false);
 				mapComplete(hash, currentMap, false);
 				return currentMap;
@@ -1193,6 +1192,9 @@ uint32 LedgerConsensus::roundCloseTime(uint32 closeTime)
 
 void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 {
+	if (set->getHash().isNonZero())
+		theApp->getOPs().takePosition(mPreviousLedger->getLedgerSeq(), set);
+
 	boost::recursive_mutex::scoped_lock masterLock(theApp->getMasterLock());
 	assert(set->getHash() == mOurPosition->getCurrentHash());
 

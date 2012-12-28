@@ -906,9 +906,30 @@ void NetworkOPs::processTrustedProposal(LedgerProposal::pointer proposal,
 
 SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
 {
+	std::map<uint256, std::pair<int, SHAMap::pointer> >::iterator it = mRecentPositions.find(hash);
+	if (it != mRecentPositions.end())
+		return it->second.second;
 	if (!haveConsensusObject())
 		return SHAMap::pointer();
 	return mConsensus->getTransactionTree(hash, false);
+}
+
+void NetworkOPs::takePosition(int seq, SHAMap::ref position)
+{
+	mRecentPositions[position->getHash()] = std::make_pair(seq, position);
+	if (mRecentPositions.size() > 4)
+	{
+		std::map<uint256, std::pair<int, SHAMap::pointer> >::iterator it = mRecentPositions.begin();
+		while (it != mRecentPositions.end())
+		{
+			if (it->second.first < (seq - 2))
+			{
+				mRecentPositions.erase(it);
+				return;
+			}
+			++it;
+		}
+	}
 }
 
 SMAddNode NetworkOPs::gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
@@ -1443,7 +1464,10 @@ bool NetworkOPs::subServer(InfoSub* ispListener, Json::Value& jvResult)
 	jvResult["stand_alone"]	= theConfig.RUN_STANDALONE;
 
 	getRand(uRandom.begin(), uRandom.size());
-	jvResult["random"]	= uRandom.ToString();
+	jvResult["random"]			= uRandom.ToString();
+	jvResult["server_status"]	= strOperatingMode();
+	jvResult["load_base"]		= theApp->getFeeTrack().getLoadBase();
+	jvResult["load_fee"]		= theApp->getFeeTrack().getLoadFactor();
 
 	return mSubServer.insert(ispListener).second;
 }

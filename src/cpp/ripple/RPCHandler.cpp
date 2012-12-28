@@ -2151,7 +2151,6 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 				if(streamName=="server")
 				{
 					mNetOps->subServer(mInfoSub, jvResult);
-					jvResult["server_status"] = mNetOps->strOperatingMode();
 
 				} else if(streamName=="ledger")
 				{

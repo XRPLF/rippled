@@ -88,6 +88,8 @@ protected:
 	uint32								mLastValidationTime;
 	SerializedValidation::pointer		mLastValidation;
 
+	// Recent positions taken
+	std::map<uint256, std::pair<int, SHAMap::pointer> >	mRecentPositions;
 
 	// XXX Split into more locks.
     boost::recursive_mutex								mMonitorLock;
@@ -209,6 +211,7 @@ public:
 	SMAddNode gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
 	bool recvValidation(const SerializedValidation::pointer& val);
+	void takePosition(int seq, SHAMap::ref position);
 	SHAMap::pointer getTXMap(const uint256& hash);
 	bool hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, ripple::TxSetStatus status);
 	void mapComplete(const uint256& hash, SHAMap::ref map);
