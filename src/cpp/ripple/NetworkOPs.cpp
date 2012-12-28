@@ -1444,6 +1444,9 @@ bool NetworkOPs::subServer(InfoSub* ispListener, Json::Value& jvResult)
 
 	getRand(uRandom.begin(), uRandom.size());
 	jvResult["random"]	= uRandom.ToString();
+	jvResult["server_status"] = mNetOps->strOperatingMode();
+	jvObj["load_base"]      = theApp->getFeeTrack().getLoadBase();
+	jvObj["load_fee"]       = theApp->getFeeTrack().getLoadFactor();
 
 	return mSubServer.insert(ispListener).second;
 }
