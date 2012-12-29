@@ -265,6 +265,8 @@ template<typename T, typename U> T range_check_cast(const U& value, const T& min
 	return static_cast<T>(value);
 }
 
+bool parseUrl(const std::string& strUrl, std::string& strScheme, std::string& strDomain, std::string& strPath);
+
 #endif
 
 // vim:ts=4

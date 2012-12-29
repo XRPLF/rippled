@@ -1,9 +1,11 @@
 #include "utils.h"
 #include "uint256.h"
 
+#include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
 #include <boost/foreach.hpp>
 #include <boost/regex.hpp>
+#include <boost/test/unit_test.hpp>
 
 #include <openssl/rand.h>
 
@@ -191,6 +193,27 @@ bool parseIpPort(const std::string& strSource, std::string& strIP, int& iPort)
 	return bValid;
 }
 
+bool parseUrl(const std::string& strUrl, std::string& strScheme, std::string& strDomain, std::string& strPath)
+{
+	// scheme://username:password@hostname:port/rest
+	static boost::regex	reUrl("(?i)\\`\\s*([[:alpha:]][-+.[:alpha:][:digit:]]*)://([^/]+)(/.*)?\\s*?\\'");
+	boost::smatch	smMatch;
+
+	bool	bMatch	= boost::regex_match(strUrl, smMatch, reUrl);			// Match status code.
+
+	if (bMatch)
+	{
+		strScheme	= smMatch[1];
+		strDomain	= smMatch[2];
+		strPath		= smMatch[3];
+
+		boost::algorithm::to_lower(strScheme);
+	}
+	// std::cerr << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPath << "'" << std::endl;
+
+	return bMatch;
+}
+
 //
 // Quality parsing
 // - integers as is.
@@ -266,5 +289,46 @@ uint32_t htobe32(uint32_t value)
 uint32_t be32toh(uint32_t value){ return(value); }
 
 #endif
+
+BOOST_AUTO_TEST_SUITE( Utils)
+
+BOOST_AUTO_TEST_CASE( ParseUrl )
+{
+	std::string	strScheme;
+	std::string	strDomain;
+	std::string	strPath;
+
+	if (!parseUrl("lower://domain", strScheme, strDomain, strPath))
+		BOOST_FAIL("parseUrl: lower://domain failed");
+
+	if (strScheme != "lower")
+		BOOST_FAIL("parseUrl: lower://domain : scheme failed");
+
+	if (strDomain != "domain")
+		BOOST_FAIL("parseUrl: lower://domain : domain failed");
+
+	if (strPath != "")
+		BOOST_FAIL("parseUrl: lower://domain : path failed");
+
+	if (!parseUrl("UPPER://domain/", strScheme, strDomain, strPath))
+		BOOST_FAIL("parseUrl: UPPER://domain/ failed");
+
+	if (strScheme != "upper")
+		BOOST_FAIL("parseUrl: UPPER://domain : scheme failed");
+
+	if (strPath != "/")
+		BOOST_FAIL("parseUrl: UPPER://domain : scheme failed");
+
+	if (!parseUrl("Mixed://domain/path", strScheme, strDomain, strPath))
+		BOOST_FAIL("parseUrl: Mixed://domain/path failed");
+
+	if (strScheme != "mixed")
+		BOOST_FAIL("parseUrl: Mixed://domain/path tolower failed");
+
+	if (strPath != "/path")
+		BOOST_FAIL("parseUrl: Mixed://domain/path path failed");
+}
+
+BOOST_AUTO_TEST_SUITE_END()
 
 // vim:ts=4

@@ -14,8 +14,6 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/asio/read_until.hpp>
 
-
-
 #include "../json/reader.h"
 #include "../json/writer.h"
 
@@ -28,11 +26,8 @@ SETUP_LOG();
 RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
 	: mNetOps(nopNetwork), mSocket(io_service)
 {
-
 	mRole = RPCHandler::GUEST;
 }
-
-
 
 void RPCServer::connected()
 {
@@ -151,7 +146,6 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	std::string strReply = JSONRPCReply(result, Json::Value(), id);
 	return HTTPReply(200, strReply);
 }
-
 
 #if 0
 // now, expire, n

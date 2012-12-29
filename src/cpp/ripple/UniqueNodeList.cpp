@@ -798,12 +798,14 @@ void UniqueNodeList::responseIps(const std::string& strSite, const RippleAddress
 void UniqueNodeList::getIpsUrl(const RippleAddress& naNodePublic, section secSite)
 {
 	std::string	strIpsUrl;
+	std::string	strScheme;
 	std::string	strDomain;
 	std::string	strPath;
 
 	if (sectionSingleB(secSite, SECTION_IPS_URL, strIpsUrl)
 		&& !strIpsUrl.empty()
-		&& HttpsClient::httpsParseUrl(strIpsUrl, strDomain, strPath))
+		&& parseUrl(strIpsUrl, strScheme, strDomain, strPath)
+		&& strScheme == "https")
 	{
 		HttpsClient::httpsGet(
 			theApp->getIOService(),
@@ -837,12 +839,14 @@ void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, con
 void UniqueNodeList::getValidatorsUrl(const RippleAddress& naNodePublic, section secSite)
 {
 	std::string strValidatorsUrl;
+	std::string	strScheme;
 	std::string	strDomain;
 	std::string	strPath;
 
 	if (sectionSingleB(secSite, SECTION_VALIDATORS_URL, strValidatorsUrl)
 		&& !strValidatorsUrl.empty()
-		&& HttpsClient::httpsParseUrl(strValidatorsUrl, strDomain, strPath))
+		&& parseUrl(strValidatorsUrl, strScheme, strDomain, strPath)
+		&& strScheme == "https")
 	{
 		HttpsClient::httpsGet(
 			theApp->getIOService(),

@@ -362,22 +362,4 @@ void HttpsClient::httpsGet(
 	client->httpsGet(deqSites, timeout, complete);
 }
 
-bool HttpsClient::httpsParseUrl(const std::string& strUrl, std::string& strDomain, std::string& strPath)
-{
-	static boost::regex	reUrl("(?i)\\`\\s*https://([^/]+)(/.*)\\s*\\'");	// https://DOMAINPATH
-
-	boost::smatch	smMatch;
-
-	bool	bMatch	= boost::regex_match(strUrl, smMatch, reUrl);			// Match status code.
-
-	if (bMatch)
-	{
-		strDomain	= smMatch[1];
-		strPath		= smMatch[2];
-	}
-	// std::cerr << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPath << "'" << std::endl;
-
-	return bMatch;
-}
-
 // vim:ts=4

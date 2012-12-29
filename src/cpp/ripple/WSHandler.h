@@ -46,8 +46,6 @@ public:
 
 	bool		getPublic() { return mPublic; };
 
-	
-
 	void send(connection_ptr cpClient, message_ptr mpMessage)
 	{
 		try

@@ -22,7 +22,7 @@ HTTPRequestAction HTTPRequest::requestDone(bool forceClose)
 	if (forceClose || bShouldClose)
 		return haCLOSE_CONN;
 	reset();
-	return haREAD_LINE;	
+	return haREAD_LINE;
 }
 
 std::string HTTPRequest::getReplyHeaders(bool forceClose)
@@ -91,7 +91,6 @@ HTTPRequestAction HTTPRequest::consume(boost::asio::streambuf& buf)
 
 			if (headerName == "authorization")
 				sAuthorization = headerValue;
-				
 		}
 
 		return haREAD_LINE;
@@ -100,3 +99,5 @@ HTTPRequestAction HTTPRequest::consume(boost::asio::streambuf& buf)
 	assert(false);
 	return haERROR;
 }
+
+// vim:ts=4

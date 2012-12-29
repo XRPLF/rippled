@@ -91,9 +91,7 @@ class RPCHandler
 	Json::Value doSubscribe(Json::Value params);
 	Json::Value doUnsubscribe(Json::Value params);
 
-
 public:
-
 
 	enum { GUEST, USER, ADMIN };
 
