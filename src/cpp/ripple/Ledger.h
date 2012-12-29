@@ -198,6 +198,7 @@ public:
 	static uint256 getLedgerHashIndex(uint32 desiredLedgerIndex);
 	static int getLedgerHashOffset(uint32 desiredLedgerIndex);
 	static int getLedgerHashOffset(uint32 desiredLedgerIndex, uint32 currentLedgerIndex);
+	uint256 getLedgerHash(uint32 ledgerIndex);
 
 	static uint256 getLedgerFeatureIndex();
 	static uint256 getLedgerFeeIndex();
