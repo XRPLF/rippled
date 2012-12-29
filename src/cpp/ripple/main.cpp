@@ -96,7 +96,8 @@ int main(int argc, char* argv[])
 		("conf", po::value<std::string>(), "Specify the configuration file.")
 		("rpc", "Perform rpc command (default).")
 		("standalone,a", "Run with no peers.")
-		("test,t", "Perform unit tests.")
+		("testnet,t", "Run in test net mode.")
+		("unittest,u", "Perform unit tests.")
 		("parameters", po::value< vector<string> >(), "Specify comma separated parameters.")
 		("quiet,q", "Reduce diagnotics.")
 		("verbose,v", "Verbose logging.")
@@ -150,7 +151,7 @@ int main(int argc, char* argv[])
 
 	InstanceType::multiThread();
 
-	if (vm.count("test"))
+	if (vm.count("unittest"))
 	{
 		unit_test_main(init_unit_test, argc, argv);
 		return 0;
