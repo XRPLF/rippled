@@ -22,6 +22,8 @@ class LedgerConsensus;
 
 DEFINE_INSTANCE(InfoSub);
 
+class RPCSub;
+
 class InfoSub : public IS_INSTANCE(InfoSub)
 {
 public:
@@ -34,12 +36,12 @@ protected:
 	boost::unordered_set<RippleAddress>			mSubAccountInfo;
 	boost::unordered_set<RippleAddress>			mSubAccountTransaction;
 
-	boost::mutex								mLock;
+	boost::mutex								mLockInfo;
 
 public:
 	void insertSubAccountInfo(RippleAddress addr)
 	{
-		boost::mutex::scoped_lock sl(mLock);
+		boost::mutex::scoped_lock sl(mLockInfo);
 		mSubAccountInfo.insert(addr);
 	}
 };
@@ -67,6 +69,8 @@ protected:
 	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator		subInfoMapIterator;
 
 	typedef boost::unordered_map<uint160,std::pair<InfoSub*,uint32> >					subSubmitMapType;
+
+	typedef boost::unordered_map<std::string, InfoSub* >								subRpcMapType;
 
 	OperatingMode						mMode;
 	bool								mNeedNetworkLedger;
@@ -97,11 +101,12 @@ protected:
 	subInfoMapType										mSubRTAccount;
 	subSubmitMapType									mSubmitMap;   // TODO: probably dump this
 
+	subRpcMapType										mRpcSubMap;
+
 	boost::unordered_set<InfoSub*>						mSubLedger;				// accepted ledgers
 	boost::unordered_set<InfoSub*>						mSubServer;				// when server changes connectivity state
 	boost::unordered_set<InfoSub*>						mSubTransactions;		// all accepted transactions
 	boost::unordered_set<InfoSub*>						mSubRTTransactions;		// all proposed and accepted transactions
-
 
 	void setMode(OperatingMode);
 
@@ -270,6 +275,9 @@ public:
 
 	bool subRTTransactions(InfoSub* ispListener);
 	bool unsubRTTransactions(InfoSub* ispListener);
+
+	RPCSub*	findRpcSub(const std::string& strRpc);
+	RPCSub*	addRpcSub(const std::string& strRpc, RPCSub* rspEntry);
 };
 
 #endif

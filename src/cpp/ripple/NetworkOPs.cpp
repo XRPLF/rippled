@@ -1502,4 +1502,15 @@ bool NetworkOPs::unsubRTTransactions(InfoSub* ispListener)
 	return !!mSubTransactions.erase(ispListener);
 }
 
+RPCSub* NetworkOPs::findRpcSub(const std::string& strRpc)
+{
+	return (RPCSub*)(0);
+}
+
+RPCSub* NetworkOPs::addRpcSub(const std::string& strRpc, RPCSub* rspEntry)
+{
+	return rspEntry;
+}
+
+
 // vim:ts=4

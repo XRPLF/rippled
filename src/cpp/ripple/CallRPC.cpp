@@ -503,6 +503,10 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 		RPCParser	rpParser;
 		Json::Value jvRpcParams(Json::arrayValue);
 
+		if (theConfig.RPC_USER.empty() && theConfig.RPC_PASSWORD.empty())
+			throw std::runtime_error("You must set rpcpassword=<password> in the configuration file. "
+			"If the file does not exist, create it with owner-readable-only file permissions.");
+
 		if (vCmd.empty()) return 1;												// 1 = print usage.
 
 		for (int i = 1; i != vCmd.size(); i++)
@@ -529,6 +533,10 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 			jvParams.append(jvRequest);
 
 			jvOutput	= callRPC(
+				theConfig.RPC_IP,
+				theConfig.RPC_PORT,
+				theConfig.RPC_USER,
+				theConfig.RPC_PASSWORD,
 				jvRequest.isMember("method")			// Allow parser to rewrite method.
 					? jvRequest["method"].asString()
 					: vCmd[0],
@@ -589,25 +597,21 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 	return nRet;
 }
 
-Json::Value callRPC(const std::string& strMethod, const Json::Value& params)
+Json::Value callRPC(const std::string& strIp, const int iPort, const std::string& strUsername, const std::string& strPassword, const std::string& strMethod, const Json::Value& params)
 {
-	if (theConfig.RPC_USER.empty() && theConfig.RPC_PASSWORD.empty())
-		throw std::runtime_error("You must set rpcpassword=<password> in the configuration file. "
-		"If the file does not exist, create it with owner-readable-only file permissions.");
-
 	// Connect to localhost
 	if (!theConfig.QUIET)
 		std::cerr << "Connecting to: " << theConfig.RPC_IP << ":" << theConfig.RPC_PORT << std::endl;
 
 	boost::asio::ip::tcp::endpoint
-		endpoint(boost::asio::ip::address::from_string(theConfig.RPC_IP), theConfig.RPC_PORT);
+		endpoint(boost::asio::ip::address::from_string(strIp), iPort);
 	boost::asio::ip::tcp::iostream stream;
 	stream.connect(endpoint);
 	if (stream.fail())
 		throw std::runtime_error("couldn't connect to server");
 
 	// HTTP basic authentication
-	std::string strUserPass64 = EncodeBase64(theConfig.RPC_USER + ":" + theConfig.RPC_PASSWORD);
+	std::string strUserPass64 = EncodeBase64(strUsername + ":" + strPassword);
 	std::map<std::string, std::string> mapRequestHeaders;
 	mapRequestHeaders["Authorization"] = std::string("Basic ") + strUserPass64;
 

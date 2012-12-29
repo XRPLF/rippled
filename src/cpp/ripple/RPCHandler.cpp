@@ -1,5 +1,5 @@
 //
-// carries out the RPC
+// Carries out the RPC.
 //
 
 #include <openssl/md5.h>
@@ -11,6 +11,7 @@
 #include "Log.h"
 #include "NetworkOPs.h"
 #include "RPCHandler.h"
+#include "RPCSub.h"
 #include "Application.h"
 #include "AccountItems.h"
 #include "Wallet.h"
@@ -22,19 +23,18 @@
 #include "InstanceCounter.h"
 #include "Offer.h"
 
-
 SETUP_LOG();
 
 RPCHandler::RPCHandler(NetworkOPs* netOps)
 {
-	mNetOps=netOps;
-	mInfoSub=NULL;
+	mNetOps		= netOps;
+	mInfoSub	= NULL;
 }
 
 RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub* infoSub)
 {
-	mNetOps=netOps;
-	mInfoSub=infoSub;
+	mNetOps		= netOps;
+	mInfoSub	= infoSub;
 }
 
 // Look up the master public generator for a regular seed so we may index source accounts ids.
@@ -2138,7 +2138,44 @@ rt_accounts
 */
 Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 {
+	InfoSub*	ispSub;
 	Json::Value jvResult(Json::objectValue);
+
+	if (!mInfoSub && !jvRequest.isMember("url"))
+	{
+		// Must be a JSON-RPC call.
+		return rpcError(rpcINVALID_PARAMS);
+	}
+
+	if (jvRequest.isMember("url"))
+	{
+		if (mRole != ADMIN)
+			return rpcError(rpcNO_PERMISSION);
+
+		std::string	strUrl		= jvRequest["url"].asString();
+		std::string	strUsername	= jvRequest.isMember("username") ? jvRequest["username"].asString() : "";
+		std::string	strPassword	= jvRequest.isMember("password") ? jvRequest["password"].asString() : "";
+
+		RPCSub	*rspSub	= mNetOps->findRpcSub(strUrl);
+		if (!rspSub)
+		{
+			rspSub	= mNetOps->addRpcSub(strUrl, new RPCSub(strUrl, strUsername, strPassword));
+		}
+		else
+		{
+			if (jvRequest.isMember("username"))
+				rspSub->setUsername(strUsername);
+
+			if (jvRequest.isMember("password"))
+				rspSub->setPassword(strPassword);
+		}
+
+		ispSub	= rspSub;
+	}
+	else
+	{
+		ispSub	= mInfoSub;
+	}
 
 	if (jvRequest.isMember("streams"))
 	{
@@ -2148,26 +2185,31 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 			{
 				std::string streamName=(*it).asString();
 
-				if(streamName=="server")
+				if (streamName=="server")
 				{
-					mNetOps->subServer(mInfoSub, jvResult);
+					mNetOps->subServer(ispSub, jvResult);
 
-				} else if(streamName=="ledger")
-				{
-					mNetOps->subLedger(mInfoSub, jvResult);
-
-				} else if(streamName=="transactions")
-				{
-					mNetOps->subTransactions(mInfoSub);
-
-				} else if(streamName=="rt_transactions")
-				{
-					mNetOps->subRTTransactions(mInfoSub);
 				}
-				else {
+				else if (streamName=="ledger")
+				{
+					mNetOps->subLedger(ispSub, jvResult);
+
+				}
+				else if (streamName=="transactions")
+				{
+					mNetOps->subTransactions(ispSub);
+
+				}
+				else if (streamName=="rt_transactions")
+				{
+					mNetOps->subRTTransactions(ispSub);
+				}
+				else
+				{
 					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
 				}
-			} else
+			}
+			else
 			{
 				jvResult["error"]	= "malformedSteam";
 			}
@@ -2181,14 +2223,15 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 		if (usnaAccoundIds.empty())
 		{
 			jvResult["error"]	= "malformedAccount";
-		}else
+		}
+		else
 		{
 			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
-				mInfoSub->insertSubAccountInfo(naAccountID);
+				ispSub->insertSubAccountInfo(naAccountID);
 			}
 
-			mNetOps->subAccount(mInfoSub, usnaAccoundIds, true);
+			mNetOps->subAccount(ispSub, usnaAccoundIds, true);
 		}
 	}
 
@@ -2199,23 +2242,50 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 		if (usnaAccoundIds.empty())
 		{
 			jvResult["error"]	= "malformedAccount";
-		}else
+		}
+		else
 		{
 			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
-				mInfoSub->insertSubAccountInfo(naAccountID);
+				ispSub->insertSubAccountInfo(naAccountID);
 			}
 
-			mNetOps->subAccount(mInfoSub, usnaAccoundIds, false);
+			mNetOps->subAccount(ispSub, usnaAccoundIds, false);
 		}
 	}
 
 	return jvResult;
 }
 
+// This leaks RPCSub objects for JSON-RPC.  Shouldn't matter for anyone sane.
 Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 {
+	InfoSub*	ispSub;
 	Json::Value jvResult(Json::objectValue);
+
+	if (!mInfoSub && !jvRequest.isMember("url"))
+	{
+		// Must be a JSON-RPC call.
+		return rpcError(rpcINVALID_PARAMS);
+	}
+
+	if (jvRequest.isMember("url"))
+	{
+		if (mRole != ADMIN)
+			return rpcError(rpcNO_PERMISSION);
+
+		std::string	strUrl	= jvRequest["url"].asString();
+
+		RPCSub	*rspSub	= mNetOps->findRpcSub(strUrl);
+		if (!rspSub)
+			return jvResult;
+
+		ispSub		= rspSub;
+	}
+	else
+	{
+		ispSub	= mInfoSub;
+	}
 
 	if (jvRequest.isMember("streams"))
 	{
@@ -2225,23 +2295,28 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 			{
 				std::string streamName=(*it).asString();
 
-				if(streamName=="server")
+				if (streamName == "server")
 				{
-					mNetOps->unsubServer(mInfoSub);
-				}else if(streamName=="ledger")
+					mNetOps->unsubServer(ispSub);
+				}
+				else if (streamName == "ledger")
 				{
-					mNetOps->unsubLedger(mInfoSub);
-				}else if(streamName=="transactions")
+					mNetOps->unsubLedger(ispSub);
+				}
+				else if (streamName == "transactions")
 				{
-					mNetOps->unsubTransactions(mInfoSub);
-				}else if(streamName=="rt_transactions")
+					mNetOps->unsubTransactions(ispSub);
+				}
+				else if (streamName == "rt_transactions")
 				{
-					mNetOps->unsubRTTransactions(mInfoSub);
-				}else
+					mNetOps->unsubRTTransactions(ispSub);
+				}
+				else
 				{
 					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
 				}
-			}else
+			}
+			else
 			{
 				jvResult["error"]	= "malformedSteam";
 			}
@@ -2255,14 +2330,15 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 		if (usnaAccoundIds.empty())
 		{
 			jvResult["error"]	= "malformedAccount";
-		}else
+		}
+		else
 		{
 			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
-				mInfoSub->insertSubAccountInfo(naAccountID);
+				ispSub->insertSubAccountInfo(naAccountID);
 			}
 
-			mNetOps->unsubAccount(mInfoSub, usnaAccoundIds,true);
+			mNetOps->unsubAccount(ispSub, usnaAccoundIds,true);
 		}
 	}
 
@@ -2273,14 +2349,15 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 		if (usnaAccoundIds.empty())
 		{
 			jvResult["error"]	= "malformedAccount";
-		}else
+		}
+		else
 		{
 			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
-				mInfoSub->insertSubAccountInfo(naAccountID);
+				ispSub->insertSubAccountInfo(naAccountID);
 			}
 
-			mNetOps->unsubAccount(mInfoSub, usnaAccoundIds,false);
+			mNetOps->unsubAccount(ispSub, usnaAccoundIds,false);
 		}
 	}
 
