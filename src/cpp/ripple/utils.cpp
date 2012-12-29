@@ -193,21 +193,27 @@ bool parseIpPort(const std::string& strSource, std::string& strIP, int& iPort)
 	return bValid;
 }
 
-bool parseUrl(const std::string& strUrl, std::string& strScheme, std::string& strDomain, std::string& strPath)
+bool parseUrl(const std::string& strUrl, std::string& strScheme, std::string& strDomain, int& iPort, std::string& strPath)
 {
 	// scheme://username:password@hostname:port/rest
-	static boost::regex	reUrl("(?i)\\`\\s*([[:alpha:]][-+.[:alpha:][:digit:]]*)://([^/]+)(/.*)?\\s*?\\'");
+	static boost::regex	reUrl("(?i)\\`\\s*([[:alpha:]][-+.[:alpha:][:digit:]]*)://([^:/]+)(?::(\\d+))?(/.*)?\\s*?\\'");
 	boost::smatch	smMatch;
 
 	bool	bMatch	= boost::regex_match(strUrl, smMatch, reUrl);			// Match status code.
 
 	if (bMatch)
 	{
+		std::string	strPort;
+
 		strScheme	= smMatch[1];
 		strDomain	= smMatch[2];
-		strPath		= smMatch[3];
+		strPort		= smMatch[3];
+		strPath		= smMatch[4];
 
 		boost::algorithm::to_lower(strScheme);
+
+		iPort	= strPort.empty() ? -1 : lexical_cast_s<int>(strPort);
+		// std::cerr << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPort << "' : " << iPort << " : '" << strPath << "'" << std::endl;
 	}
 	// std::cerr << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPath << "'" << std::endl;
 
@@ -296,9 +302,10 @@ BOOST_AUTO_TEST_CASE( ParseUrl )
 {
 	std::string	strScheme;
 	std::string	strDomain;
+	int			iPort;
 	std::string	strPath;
 
-	if (!parseUrl("lower://domain", strScheme, strDomain, strPath))
+	if (!parseUrl("lower://domain", strScheme, strDomain, iPort, strPath))
 		BOOST_FAIL("parseUrl: lower://domain failed");
 
 	if (strScheme != "lower")
@@ -307,19 +314,25 @@ BOOST_AUTO_TEST_CASE( ParseUrl )
 	if (strDomain != "domain")
 		BOOST_FAIL("parseUrl: lower://domain : domain failed");
 
+	if (iPort != -1)
+		BOOST_FAIL("parseUrl: lower://domain : port failed");
+
 	if (strPath != "")
 		BOOST_FAIL("parseUrl: lower://domain : path failed");
 
-	if (!parseUrl("UPPER://domain/", strScheme, strDomain, strPath))
-		BOOST_FAIL("parseUrl: UPPER://domain/ failed");
+	if (!parseUrl("UPPER://domain:234/", strScheme, strDomain, iPort, strPath))
+		BOOST_FAIL("parseUrl: UPPER://domain:234/ failed");
 
 	if (strScheme != "upper")
-		BOOST_FAIL("parseUrl: UPPER://domain : scheme failed");
+		BOOST_FAIL("parseUrl: UPPER://domain:234/ : scheme failed");
+
+	if (iPort != 234)
+		BOOST_FAIL(boost::str(boost::format("parseUrl: UPPER://domain:234/ : port failed: %d") % iPort));
 
 	if (strPath != "/")
-		BOOST_FAIL("parseUrl: UPPER://domain : scheme failed");
+		BOOST_FAIL("parseUrl: UPPER://domain:234/ : path failed");
 
-	if (!parseUrl("Mixed://domain/path", strScheme, strDomain, strPath))
+	if (!parseUrl("Mixed://domain/path", strScheme, strDomain, iPort, strPath))
 		BOOST_FAIL("parseUrl: Mixed://domain/path failed");
 
 	if (strScheme != "mixed")

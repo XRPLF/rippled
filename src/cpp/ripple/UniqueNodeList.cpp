@@ -800,11 +800,13 @@ void UniqueNodeList::getIpsUrl(const RippleAddress& naNodePublic, section secSit
 	std::string	strIpsUrl;
 	std::string	strScheme;
 	std::string	strDomain;
+	int			iPort;
 	std::string	strPath;
 
 	if (sectionSingleB(secSite, SECTION_IPS_URL, strIpsUrl)
 		&& !strIpsUrl.empty()
-		&& parseUrl(strIpsUrl, strScheme, strDomain, strPath)
+		&& parseUrl(strIpsUrl, strScheme, strDomain, iPort, strPath)
+		&& -1 == iPort
 		&& strScheme == "https")
 	{
 		HttpsClient::httpsGet(
@@ -841,11 +843,13 @@ void UniqueNodeList::getValidatorsUrl(const RippleAddress& naNodePublic, section
 	std::string strValidatorsUrl;
 	std::string	strScheme;
 	std::string	strDomain;
+	int			iPort;
 	std::string	strPath;
 
 	if (sectionSingleB(secSite, SECTION_VALIDATORS_URL, strValidatorsUrl)
 		&& !strValidatorsUrl.empty()
-		&& parseUrl(strValidatorsUrl, strScheme, strDomain, strPath)
+		&& parseUrl(strValidatorsUrl, strScheme, strDomain, iPort, strPath)
+		&& -1 == iPort
 		&& strScheme == "https")
 	{
 		HttpsClient::httpsGet(
