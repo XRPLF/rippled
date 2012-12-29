@@ -206,6 +206,14 @@ var Remote = function (opts, trace) {
   this.retry_timer            = undefined;
   this.retry                  = undefined;
 
+  this._load_base             = 256;
+  this._load_fee              = 256;
+  this._load_base             = undefined;
+  this._load_fee              = undefined;
+  this._reserve_base          = undefined;
+  this._reserve_inc           = undefined;
+  this._server_status         = undefined;
+
   // Cache information for accounts.
   this.accounts = {
     // Consider sequence numbers stable if you know you're not generating bad transactions.
@@ -863,6 +871,15 @@ Remote.prototype._server_subscribe = function () {
 
           self.emit('ledger_closed', message);
         }
+
+        // FIXME Use this to estimate fee.
+        self._load_base     = message.load_base || 256;
+        self._load_fee      = message.load_fee || 256;
+        self._load_base     = message.fee_ref;
+        self._load_fee      = message.fee_base;
+        self._reserve_base  = message.reverse_base;
+        self._reserve_inc   = message.reserve_inc;
+        self._server_status = message.server_status;
 
         if (message.server_status === 'tracking' ||  message.server_status === 'full') {
           self._set_state('online');
