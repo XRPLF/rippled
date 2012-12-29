@@ -647,6 +647,14 @@ Json::Value Ledger::getJson(int options)
 		}
 		ledger["accountState"] = state;
 	}
+	if (mAccountStateMap && ((options & LEDGER_JSON_HISTORY) != 0))
+	{
+		SLE::pointer hashIndex = getSLE(getLedgerHashIndex());
+		if (hashIndex)
+			ledger["previousHashes"] = hashIndex->getJson(0);
+		else
+			ledger["previousHashes"] = "missing";
+	}
 	ledger["seqNum"] = boost::lexical_cast<std::string>(mLedgerSeq);
 	return ledger;
 }
@@ -1112,7 +1120,6 @@ void Ledger::updateSkipList()
 		if (!skipList)
 		{
 			skipList = boost::make_shared<SLE>(ltLEDGER_HASHES, hash);
-			skipList->setFieldU32(sfFirstLedgerSequence, prevIndex);
 		}
 		else
 			hashes = skipList->getFieldV256(sfHashes).peekValue();
@@ -1135,7 +1142,6 @@ void Ledger::updateSkipList()
 	if (!skipList)
 	{
 		skipList = boost::make_shared<SLE>(ltLEDGER_HASHES, hash);
-		skipList->setFieldU32(sfFirstLedgerSequence, prevIndex);
 	}
 	else
 		hashes = skipList->getFieldV256(sfHashes).peekValue();
