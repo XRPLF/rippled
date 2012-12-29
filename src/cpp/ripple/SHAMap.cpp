@@ -540,6 +540,7 @@ bool SHAMap::delItem(const uint256& id)
 				SHAMapItem::pointer item = onlyBelow(node.get());
 				if (item)
 				{
+					returnNode(node, true);
 					eraseChildren(node);
 #ifdef ST_DEBUG
 					std::cerr << "Making item node " << *node << std::endl;

@@ -56,7 +56,7 @@
 	FIELD(BondAmount,			UINT32, 23)
 	FIELD(LoadFee,				UINT32, 24)
 	FIELD(OfferSequence,		UINT32, 25)
-	FIELD(FirstLedgerSequence,	UINT32, 26)
+	FIELD(FirstLedgerSequence,	UINT32, 26) // Deprecated: do not use
 	FIELD(LastLedgerSequence,	UINT32, 27)
 	FIELD(TransactionIndex,		UINT32, 28)
 	FIELD(OperationLimit,		UINT32, 29)

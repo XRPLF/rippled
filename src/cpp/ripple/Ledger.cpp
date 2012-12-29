@@ -954,6 +954,40 @@ int Ledger::getLedgerHashOffset(uint32 desiredLedgerIndex, uint32 currentLedgerI
 	return currentLedgerIndex - desiredLedgerIndex - 1;
 }
 
+uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
+{ // return the hash of the specified ledger, 0 if not available
+
+	// easy cases
+	if (ledgerIndex > mLedgerSeq)
+		return uint256();
+	if (ledgerIndex == mLedgerSeq)
+		return getHash();
+	if (ledgerIndex == (mLedgerSeq - 1))
+		return mParentHash;
+
+	// within 255
+	int offset = getLedgerHashOffset(ledgerIndex, mLedgerSeq);
+	if (offset != -1)
+	{
+		SLE::pointer hashIndex = getSLE(getLedgerHashIndex());
+		if (hashIndex)
+			return hashIndex->getFieldV256(sfHashes).peekValue().at(offset);
+		else
+			assert(false);
+	}
+
+	if ((ledgerIndex & 0xff) != 0)
+		return uint256();
+
+	SLE::pointer hashIndex = getSLE(getLedgerHashIndex(ledgerIndex));
+	if (hashIndex)
+		return hashIndex->getFieldV256(sfHashes).peekValue().at(getLedgerHashOffset(ledgerIndex, mLedgerSeq));
+	else
+		assert(false);
+
+	return uint256();
+}
+
 uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuerID,
 	const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuerID)
 {
@@ -1112,7 +1146,6 @@ void Ledger::updateSkipList()
 		if (!skipList)
 		{
 			skipList = boost::make_shared<SLE>(ltLEDGER_HASHES, hash);
-			skipList->setFieldU32(sfFirstLedgerSequence, prevIndex);
 		}
 		else
 			hashes = skipList->getFieldV256(sfHashes).peekValue();
@@ -1135,7 +1168,6 @@ void Ledger::updateSkipList()
 	if (!skipList)
 	{
 		skipList = boost::make_shared<SLE>(ltLEDGER_HASHES, hash);
-		skipList->setFieldU32(sfFirstLedgerSequence, prevIndex);
 	}
 	else
 		hashes = skipList->getFieldV256(sfHashes).peekValue();

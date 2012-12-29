@@ -96,7 +96,7 @@ static bool LEFInit()
 		;
 
 	DECLARE_LEF(LedgerHashes, ltLEDGER_HASHES)
-		<< SOElement(sfFirstLedgerSequence,	SOE_OPTIONAL)
+		<< SOElement(sfFirstLedgerSequence,	SOE_OPTIONAL) // Remove if we do a ledger restart
 		<< SOElement(sfLastLedgerSequence,	SOE_OPTIONAL)
 		<< SOElement(sfHashes,				SOE_REQUIRED)
 		;
