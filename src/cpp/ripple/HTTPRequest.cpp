@@ -7,6 +7,8 @@
 #include "Log.h"
 SETUP_LOG();
 
+// Logic to handle incoming HTTP reqests
+
 void HTTPRequest::reset()
 {
 	vHeaders.clear();

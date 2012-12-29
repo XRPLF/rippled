@@ -16,7 +16,7 @@ enum HTTPRequestAction
 };
 
 class HTTPRequest
-{ // an HTTP request in progress
+{ // an HTTP request we are handling from a client
 protected:
 
 	enum state
