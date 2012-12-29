@@ -25,11 +25,12 @@ using namespace boost::asio;
 Json::Value JSONRPCError(int code, const std::string& message)
 {
 	Json::Value error(Json::objectValue);
-	error["code"]=Json::Value(code);
-	error["message"]=Json::Value(message);
+
+	error["code"]		= Json::Value(code);
+	error["message"]	= Json::Value(message);
+
 	return error;
 }
-
 
 //
 // HTTP protocol
@@ -41,16 +42,19 @@ Json::Value JSONRPCError(int code, const std::string& message)
 std::string createHTTPPost(const std::string& strMsg, const std::map<std::string, std::string>& mapRequestHeaders)
 {
 	std::ostringstream s;
+
 	s << "POST / HTTP/1.1\r\n"
-	  << "User-Agent: coin-json-rpc/" << FormatFullVersion() << "\r\n"
+	  << "User-Agent: " SYSTEM_NAME "-json-rpc/" << FormatFullVersion() << "\r\n"
 	  << "Host: 127.0.0.1\r\n"
 	  << "Content-Type: application/json\r\n"
 	  << "Content-Length: " << strMsg.size() << "\r\n"
 	  << "Accept: application/json\r\n";
 
 	typedef std::map<std::string, std::string>::value_type HeaderType;
+
 	BOOST_FOREACH(const HeaderType& item, mapRequestHeaders)
 		s << item.first << ": " << item.second << "\r\n";
+
 	s << "\r\n" << strMsg;
 
 	return s.str();
@@ -76,7 +80,7 @@ std::string HTTPReply(int nStatus, const std::string& strMsg)
 	if (nStatus == 401)
 		return strprintf("HTTP/1.0 401 Authorization Required\r\n"
 			"Date: %s\r\n"
-			"Server: coin-json-rpc/%s\r\n"
+			"Server: " SYSTEM_NAME "-json-rpc/%s\r\n"
 			"WWW-Authenticate: Basic realm=\"jsonrpc\"\r\n"
 			"Content-Type: text/html\r\n"
 			"Content-Length: 296\r\n"
@@ -107,7 +111,7 @@ std::string HTTPReply(int nStatus, const std::string& strMsg)
 			"%s"
 			"Content-Length: %d\r\n"
 			"Content-Type: application/json; charset=UTF-8\r\n"
-			"Server: coin-json-rpc/%s\r\n"
+			"Server: " SYSTEM_NAME "-json-rpc/%s\r\n"
 			"\r\n"
 			"%s\r\n",
 		nStatus,
@@ -116,7 +120,7 @@ std::string HTTPReply(int nStatus, const std::string& strMsg)
 		access.c_str(),
 		strMsg.size() + 2,
 		SERVER_VERSION,
-		strMsg.c_str());	
+		strMsg.c_str());
 }
 
 int ReadHTTPStatus(std::basic_istream<char>& stream)
@@ -180,7 +184,6 @@ int ReadHTTP(std::basic_istream<char>& stream, std::map<std::string, std::string
 	return nStatus;
 }
 
-
 std::string DecodeBase64(std::string s)
 { // FIXME: This performs badly
 	BIO *b64, *bmem;
@@ -198,6 +201,7 @@ std::string DecodeBase64(std::string s)
 	free(buffer);
 	return result;
 }
+
 /*
 bool HTTPAuthorized(map<std::string, std::string>& mapHeaders)
 {
@@ -253,3 +257,5 @@ void ErrorReply(std::ostream& stream, const Json::Value& objError, const Json::V
 	std::string strReply = JSONRPCReply(Json::Value(), objError, id);
 	stream << HTTPReply(nStatus, strReply) << std::flush;
 }
+
+// vim:ts=4
