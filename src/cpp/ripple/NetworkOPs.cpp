@@ -1502,13 +1502,32 @@ bool NetworkOPs::unsubRTTransactions(InfoSub* ispListener)
 	return !!mSubTransactions.erase(ispListener);
 }
 
-RPCSub* NetworkOPs::findRpcSub(const std::string& strRpc)
+RPCSub* NetworkOPs::findRpcSub(const std::string& strUrl)
 {
-	return (RPCSub*)(0);
+	RPCSub*								rspResult;
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
+
+	subRpcMapType::iterator	it;
+
+	it	= mRpcSubMap.find(strUrl);
+	if (it == mRpcSubMap.end())
+	{
+		rspResult = (RPCSub*)(0);
+	}
+	else
+	{
+		rspResult	= it->second;
+	}
+
+	return rspResult;
 }
 
-RPCSub* NetworkOPs::addRpcSub(const std::string& strRpc, RPCSub* rspEntry)
+RPCSub* NetworkOPs::addRpcSub(const std::string& strUrl, RPCSub* rspEntry)
 {
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
+
+	mRpcSubMap.insert(std::make_pair(strUrl, rspEntry));
+
 	return rspEntry;
 }
 

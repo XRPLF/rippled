@@ -2257,7 +2257,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 	return jvResult;
 }
 
-// This leaks RPCSub objects for JSON-RPC.  Shouldn't matter for anyone sane.
+// FIXME: This leaks RPCSub objects for JSON-RPC.  Shouldn't matter for anyone sane.
 Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 {
 	InfoSub*	ispSub;
@@ -2416,62 +2416,61 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 		const char*		pCommand;
 		doFuncPtr		dfpFunc;
 		bool			bAdminRequired;
-		bool			bEvented;
 		unsigned int	iOptions;
 	} commandsA[] = {
 		// Request-response methods
-		{	"accept_ledger",		&RPCHandler::doAcceptLedger,	    true,	false,  optCurrent	},
-		{	"account_info",			&RPCHandler::doAccountInfo,		    false,	false,	optCurrent	},
-		{	"account_lines",		&RPCHandler::doAccountLines,	    false,	false,	optCurrent	},
-		{	"account_offers",		&RPCHandler::doAccountOffers,	    false,	false,	optCurrent	},
-		{	"account_tx",			&RPCHandler::doAccountTransactions, false,	false,	optNetwork	},
-		{	"connect",				&RPCHandler::doConnect,			    true,	false,	optNone		},
-		{	"get_counts",			&RPCHandler::doGetCounts,		    true,	false,	optNone		},
-		{	"ledger",				&RPCHandler::doLedger,			    false,	false,	optNetwork	},
-		{	"ledger_accept",		&RPCHandler::doLedgerAccept,	    true,	false,	optCurrent	},
-		{	"ledger_closed",		&RPCHandler::doLedgerClosed,	    false,	false,	optClosed	},
-		{	"ledger_current",		&RPCHandler::doLedgerCurrent,	    false,	false,	optCurrent	},
-		{	"ledger_entry",			&RPCHandler::doLedgerEntry,		    false,	false,	optCurrent	},
-		{	"ledger_header",		&RPCHandler::doLedgerHeader,	    false,	false,	optCurrent	},
-		{	"log_level",			&RPCHandler::doLogLevel,		    true,	false,	optNone		},
-		{	"logrotate",			&RPCHandler::doLogRotate,		    true,	false,	optNone		},
-//		{	"nickname_info",		&RPCHandler::doNicknameInfo,	    false,	false,	optCurrent	},
-		{	"owner_info",			&RPCHandler::doOwnerInfo,		    false,	false,	optCurrent	},
-		{	"peers",				&RPCHandler::doPeers,			    true,	false,	optNone		},
-//		{	"profile",				&RPCHandler::doProfile,			    false,	false,	optCurrent	},
-		{	"random",				&RPCHandler::doRandom,				false,	false,	optNone		},
-		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	    false,	false,	optCurrent	},
-		{	"submit",				&RPCHandler::doSubmit,			    false,	false,	optCurrent	},
-		{	"server_info",			&RPCHandler::doServerInfo,		    true,	false,	optNone		},
-		{	"stop",					&RPCHandler::doStop,			    true,	false,	optNone		},
-		{	"transaction_entry",	&RPCHandler::doTransactionEntry,    false,	false,	optCurrent	},
-		{	"tx",					&RPCHandler::doTx,				    false,	false,	optNetwork	},
-		{	"tx_history",			&RPCHandler::doTxHistory,		    false,	false,	optNone		},
+		{	"accept_ledger",		&RPCHandler::doAcceptLedger,	    true,	optCurrent	},
+		{	"account_info",			&RPCHandler::doAccountInfo,		    false,	optCurrent	},
+		{	"account_lines",		&RPCHandler::doAccountLines,	    false,	optCurrent	},
+		{	"account_offers",		&RPCHandler::doAccountOffers,	    false,	optCurrent	},
+		{	"account_tx",			&RPCHandler::doAccountTransactions, false,	optNetwork	},
+		{	"connect",				&RPCHandler::doConnect,			    true,	optNone		},
+		{	"get_counts",			&RPCHandler::doGetCounts,		    true,	optNone		},
+		{	"ledger",				&RPCHandler::doLedger,			    false,	optNetwork	},
+		{	"ledger_accept",		&RPCHandler::doLedgerAccept,	    true,	optCurrent	},
+		{	"ledger_closed",		&RPCHandler::doLedgerClosed,	    false,	optClosed	},
+		{	"ledger_current",		&RPCHandler::doLedgerCurrent,	    false,	optCurrent	},
+		{	"ledger_entry",			&RPCHandler::doLedgerEntry,		    false,	optCurrent	},
+		{	"ledger_header",		&RPCHandler::doLedgerHeader,	    false,	optCurrent	},
+		{	"log_level",			&RPCHandler::doLogLevel,		    true,	optNone		},
+		{	"logrotate",			&RPCHandler::doLogRotate,		    true,	optNone		},
+//		{	"nickname_info",		&RPCHandler::doNicknameInfo,	    false,	optCurrent	},
+		{	"owner_info",			&RPCHandler::doOwnerInfo,		    false,	optCurrent	},
+		{	"peers",				&RPCHandler::doPeers,			    true,	optNone		},
+//		{	"profile",				&RPCHandler::doProfile,			    false,	optCurrent	},
+		{	"random",				&RPCHandler::doRandom,				false,	optNone		},
+		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	    false,	optCurrent	},
+		{	"submit",				&RPCHandler::doSubmit,			    false,	optCurrent	},
+		{	"server_info",			&RPCHandler::doServerInfo,		    true,	optNone		},
+		{	"stop",					&RPCHandler::doStop,			    true,	optNone		},
+		{	"transaction_entry",	&RPCHandler::doTransactionEntry,    false,	optCurrent	},
+		{	"tx",					&RPCHandler::doTx,				    false,	optNetwork	},
+		{	"tx_history",			&RPCHandler::doTxHistory,		    false,	optNone		},
 
-		{	"unl_add",				&RPCHandler::doUnlAdd,			    true,	false,	optNone		},
-		{	"unl_delete",			&RPCHandler::doUnlDelete,		    true,	false,	optNone		},
-		{	"unl_list",				&RPCHandler::doUnlList,			    true,	false,	optNone		},
-		{	"unl_load",				&RPCHandler::doUnlLoad,			    true,	false,	optNone		},
-		{	"unl_network",			&RPCHandler::doUnlNetwork,		    true,	false,	optNone		},
-		{	"unl_reset",			&RPCHandler::doUnlReset,		    true,	false,	optNone		},
-		{	"unl_score",			&RPCHandler::doUnlScore,		    true,	false,	optNone		},
+		{	"unl_add",				&RPCHandler::doUnlAdd,			    true,	optNone		},
+		{	"unl_delete",			&RPCHandler::doUnlDelete,		    true,	optNone		},
+		{	"unl_list",				&RPCHandler::doUnlList,			    true,	optNone		},
+		{	"unl_load",				&RPCHandler::doUnlLoad,			    true,	optNone		},
+		{	"unl_network",			&RPCHandler::doUnlNetwork,		    true,	optNone		},
+		{	"unl_reset",			&RPCHandler::doUnlReset,		    true,	optNone		},
+		{	"unl_score",			&RPCHandler::doUnlScore,		    true,	optNone		},
 
-		{	"validation_create",	&RPCHandler::doValidationCreate,    false,	false,	optNone		},
-		{	"validation_seed",		&RPCHandler::doValidationSeed,	    false,	false,	optNone		},
+		{	"validation_create",	&RPCHandler::doValidationCreate,    false,	optNone		},
+		{	"validation_seed",		&RPCHandler::doValidationSeed,	    false,	optNone		},
 
-		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,	    false,	false,	optCurrent	},
-		{	"wallet_propose",		&RPCHandler::doWalletPropose,	    false,	false,	optNone		},
-		{	"wallet_seed",			&RPCHandler::doWalletSeed,		    false,	false,	optNone		},
+		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,	    false,	optCurrent	},
+		{	"wallet_propose",		&RPCHandler::doWalletPropose,	    false,	optNone		},
+		{	"wallet_seed",			&RPCHandler::doWalletSeed,		    false,	optNone		},
 
 		// XXX Unnecessary commands which should be removed.
-		{	"login",				&RPCHandler::doLogin,			    true,	false,	optNone		},
-		{	"data_delete",			&RPCHandler::doDataDelete,		    true,	false,	optNone		},
-		{	"data_fetch",			&RPCHandler::doDataFetch,		    true,	false,	optNone		},
-		{	"data_store",			&RPCHandler::doDataStore,		    true,	false,	optNone		},
+		{	"login",				&RPCHandler::doLogin,			    true,	optNone		},
+		{	"data_delete",			&RPCHandler::doDataDelete,		    true,	optNone		},
+		{	"data_fetch",			&RPCHandler::doDataFetch,		    true,	optNone		},
+		{	"data_store",			&RPCHandler::doDataStore,		    true,	optNone		},
 
 		// Evented methods
-		{	"subscribe",			&RPCHandler::doSubscribe,			false,	true,	optNone		},
-		{	"unsubscribe",			&RPCHandler::doUnsubscribe,			false,	true,	optNone		},
+		{	"subscribe",			&RPCHandler::doSubscribe,			false,	optNone		},
+		{	"unsubscribe",			&RPCHandler::doUnsubscribe,			false,	optNone		},
 	};
 
 	int		i = NUMBER(commandsA);
@@ -2486,10 +2485,6 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 	else if (commandsA[i].bAdminRequired && mRole != ADMIN)
 	{
 		return rpcError(rpcNO_PERMISSION);
-	}
-	else if (commandsA[i].bEvented && mInfoSub == NULL)
-	{
-		return rpcError(rpcNO_EVENTS);
 	}
 	else if (commandsA[i].iOptions & optNetwork
 		&& mNetOps->getOperatingMode() != NetworkOPs::omTRACKING

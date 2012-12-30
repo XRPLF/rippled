@@ -70,7 +70,7 @@ protected:
 
 	typedef boost::unordered_map<uint160,std::pair<InfoSub*,uint32> >					subSubmitMapType;
 
-	typedef boost::unordered_map<std::string, InfoSub* >								subRpcMapType;
+	typedef boost::unordered_map<std::string, RPCSub* >									subRpcMapType;
 
 	OperatingMode						mMode;
 	bool								mNeedNetworkLedger;
@@ -276,8 +276,8 @@ public:
 	bool subRTTransactions(InfoSub* ispListener);
 	bool unsubRTTransactions(InfoSub* ispListener);
 
-	RPCSub*	findRpcSub(const std::string& strRpc);
-	RPCSub*	addRpcSub(const std::string& strRpc, RPCSub* rspEntry);
+	RPCSub*	findRpcSub(const std::string& strUrl);
+	RPCSub*	addRpcSub(const std::string& strUrl, RPCSub* rspEntry);
 };
 
 #endif

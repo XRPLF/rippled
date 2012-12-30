@@ -1,7 +1,6 @@
 #ifndef __CALLRPC__
 #define __CALLRPC__
 
-
 #include <string>
 
 #include "../json/value.h"
