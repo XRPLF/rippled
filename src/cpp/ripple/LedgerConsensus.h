@@ -43,7 +43,7 @@ public:
 	TransactionAcquire(const uint256& hash);
 	virtual ~TransactionAcquire()		{ ; }
 
-	SHAMap::pointer getMap()			{ return mMap; }
+	SHAMap::ref getMap()				{ return mMap; }
 
 	SMAddNode takeNodes(const std::list<SHAMapNode>& IDs,
 		const std::list< std::vector<unsigned char> >& data, Peer::ref);
@@ -161,8 +161,8 @@ public:
 	int startup();
 	Json::Value getJson();
 
-	Ledger::pointer peekPreviousLedger()	{ return mPreviousLedger; }
-	uint256 getLCL()						{ return mPrevLedgerHash; }
+	Ledger::ref peekPreviousLedger()	{ return mPreviousLedger; }
+	uint256 getLCL()					{ return mPrevLedgerHash; }
 
 	SHAMap::pointer getTransactionTree(const uint256& hash, bool doAcquire);
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);

@@ -70,7 +70,7 @@ public:
 	TransactionEngine(Ledger::ref ledger) : mLedger(ledger), mTxnSeq(0) { assert(mLedger); }
 
 	LedgerEntrySet& getNodes()			{ return mNodes; }
-	Ledger::pointer getLedger()			{ return mLedger; }
+	Ledger::ref getLedger()				{ return mLedger; }
 	void setLedger(Ledger::ref ledger)	{ assert(ledger); mLedger = ledger; }
 
 	SLE::pointer		entryCreate(LedgerEntryType type, const uint256& index)		{ return mNodes.entryCreate(type, index); }
