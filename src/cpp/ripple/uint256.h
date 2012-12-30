@@ -219,14 +219,18 @@ public:
 		return strHex(begin(), size());
 	}
 
-	void SetHex(const char* psz)
+	// Allow leading whitespace.
+	// Allow leading "0x".
+	// To be valid must be '\0' terminated.
+	bool SetHex(const char* psz, bool bStrict=false)
 	{
 		// skip leading spaces
-		while (isspace(*psz))
-			psz++;
+		if (!bStrict)
+			while (isspace(*psz))
+				psz++;
 
 		// skip 0x
-		if (psz[0] == '0' && tolower(psz[1]) == 'x')
+		if (!bStrict && psz[0] == '0' && tolower(psz[1]) == 'x')
 			psz += 2;
 
 		// hex char to int
@@ -278,11 +282,13 @@ public:
 										: phexdigit[*pBegin++];
 			*pOut++	= cHigh | cLow;
 		}
+
+		return !*pEnd;
 	}
 
-	void SetHex(const std::string& str)
+	bool SetHex(const std::string& str, bool bStrict=false)
 	{
-		SetHex(str.c_str());
+		return SetHex(str.c_str(), bStrict);
 	}
 
 	std::string ToString() const
