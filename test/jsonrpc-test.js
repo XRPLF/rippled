@@ -113,7 +113,8 @@ buster.testCase("JSON-RPC", {
           'url' :  "http://" + http_config.ip + ":" + http_config.port,
           'streams' : [ 'server' ],
         }], function (result) {
-          console.log(JSON.stringify(result, undefined, 2));
+          // console.log(JSON.stringify(result, undefined, 2));
+
           buster.assert('random' in result);
 
           done();
