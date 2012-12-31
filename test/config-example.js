@@ -35,4 +35,12 @@ exports.servers = {
   }
 };
 
+exports.http_servers = {
+  // A local test server
+  "alpha-http" : {
+    "ip" : "127.0.0.1",
+    "port" : 8088,
+  }
+};
+
 // vim:sw=2:sts=2:ts=8:et
