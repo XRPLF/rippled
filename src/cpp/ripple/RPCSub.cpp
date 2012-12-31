@@ -64,8 +64,6 @@ void RPCSub::sendThread()
 	    {
 		cLog(lsDEBUG) << boost::str(boost::format("callRPC exception: %s") % e.what());
 	    }
-
-	    sendThread();
 	}
     } while (bSend);
 }
