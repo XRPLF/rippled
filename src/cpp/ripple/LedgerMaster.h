@@ -93,6 +93,7 @@ public:
 	void setLedgerRangePresent(uint32 minV, uint32 maxV) { mCompleteLedgers.setRange(minV, maxV); }
 
 	void addHeldTransaction(const Transaction::pointer& trans);
+	void fixMismatch(Ledger::ref ledger);
 
 	bool haveLedgerRange(uint32 from, uint32 to);
 

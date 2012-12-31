@@ -78,7 +78,6 @@ void LedgerMaster::storeLedger(Ledger::ref ledger)
 		mLedgerHistory.addAcceptedLedger(ledger, false);
 }
 
-
 Ledger::pointer LedgerMaster::closeLedger(bool recover)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
@@ -208,6 +207,37 @@ void LedgerMaster::resumeAcquiring()
 	}
 }
 
+void LedgerMaster::fixMismatch(Ledger::ref ledger)
+{
+	int invalidate = 0;
+
+	for (uint32 lSeq = ledger->getLedgerSeq() - 1; lSeq > 0; --lSeq)
+		if (mCompleteLedgers.hasValue(lSeq))
+		{
+			uint256 hash = ledger->getLedgerHash(lSeq);
+			if (hash.isNonZero())
+			{ // try to close the seam
+				Ledger::pointer otherLedger = getLedgerBySeq(lSeq);
+				if (otherLedger && (otherLedger->getHash() == hash))
+				{ // we closed the seam
+					tLog(invalidate != 0, lsWARNING) << "Match at " << lSeq << ", " <<
+						invalidate << " prior ledgers invalidated";
+					return;
+				}
+			}
+			mCompleteLedgers.clearValue(lSeq);
+			if (mMissingSeq == lSeq)
+			{
+				mMissingLedger.reset();
+				mMissingSeq = 0;
+			}
+			++invalidate;
+		}
+
+	// all prior ledgers invalidated
+	tLog(invalidate != 0, lsWARNING) << "All " << invalidate << " prior ledgers invalidated";
+}
+
 void LedgerMaster::setFullLedger(Ledger::ref ledger)
 { // A new ledger has been accepted as part of the trusted chain
 	cLog(lsDEBUG) << "Ledger " << ledger->getLedgerSeq() << " accepted :" << ledger->getHash();
@@ -219,15 +249,11 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 	if ((ledger->getLedgerSeq() != 0) && mCompleteLedgers.hasValue(ledger->getLedgerSeq() - 1))
 	{ // we think we have the previous ledger, double check
 		Ledger::pointer prevLedger = getLedgerBySeq(ledger->getLedgerSeq() - 1);
-		if (!prevLedger)
+		if (!prevLedger || (prevLedger->getHash() != ledger->getParentHash()))
 		{
-			cLog(lsWARNING) << "Ledger " << ledger->getLedgerSeq() - 1 << " missing";
-			mCompleteLedgers.clearValue(ledger->getLedgerSeq() - 1);
-		}
-		else if (prevLedger->getHash() != ledger->getParentHash())
-		{
-			cLog(lsWARNING) << "Ledger " << ledger->getLedgerSeq() << " invalidates prior ledger";
-			mCompleteLedgers.clearValue(prevLedger->getLedgerSeq());
+			cLog(lsWARNING) << "Acquired ledger invalidates previous ledger: " <<
+				(prevLedger ? "hashMismatch" : "missingLedger");
+			fixMismatch(ledger);
 		}
 	}
 
