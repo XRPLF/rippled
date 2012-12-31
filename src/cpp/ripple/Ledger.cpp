@@ -935,55 +935,49 @@ uint256 Ledger::getLedgerHashIndex(uint32 desiredLedgerIndex)
 	return s.getSHA512Half();
 }
 
-int Ledger::getLedgerHashOffset(uint32 ledgerIndex)
-{ // get the offset for this ledger's hash (or the first one after it) in the every-256-ledger table
-	return (ledgerIndex >> 8) % 256;
-}
-
-int Ledger::getLedgerHashOffset(uint32 desiredLedgerIndex, uint32 currentLedgerIndex)
-{ // get the offset for this ledger's hash in the every-ledger table, -1 if not in it
-	if (desiredLedgerIndex >= currentLedgerIndex)
-		return -1;
-
-	if (currentLedgerIndex < 256)
-		return desiredLedgerIndex;
-
-	if (desiredLedgerIndex < (currentLedgerIndex - 256))
-		return -1;
-
-	return currentLedgerIndex - desiredLedgerIndex - 1;
-}
-
 uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 { // return the hash of the specified ledger, 0 if not available
 
 	// easy cases
 	if (ledgerIndex > mLedgerSeq)
 		return uint256();
+
 	if (ledgerIndex == mLedgerSeq)
 		return getHash();
+
 	if (ledgerIndex == (mLedgerSeq - 1))
 		return mParentHash;
 
-	// within 255
-	int offset = getLedgerHashOffset(ledgerIndex, mLedgerSeq);
-	if (offset != -1)
+	// within 256
+	int diff = mLedgerSeq - ledgerIndex;
+	if (diff <= 256)
 	{
 		SLE::pointer hashIndex = getSLE(getLedgerHashIndex());
 		if (hashIndex)
-			return hashIndex->getFieldV256(sfHashes).peekValue().at(offset);
-		else
-			assert(false);
+		{
+			assert(hashIndex->getFieldU32(sfLastLedgerSequence) == (mLedgerSeq - 1));
+			STVector256 vec = hashIndex->getFieldV256(sfHashes);
+			if (vec.size() >= diff)
+				return vec.at(vec.size() - diff);
+		}
 	}
 
 	if ((ledgerIndex & 0xff) != 0)
 		return uint256();
 
+	// in skiplist
 	SLE::pointer hashIndex = getSLE(getLedgerHashIndex(ledgerIndex));
 	if (hashIndex)
-		return hashIndex->getFieldV256(sfHashes).peekValue().at(getLedgerHashOffset(ledgerIndex, mLedgerSeq));
-	else
-		assert(false);
+	{
+		int lastSeq = hashIndex->getFieldU32(sfLastLedgerSequence);
+		assert(lastSeq >= ledgerIndex);
+		assert((lastSeq & 0xff) == 0);
+		int sDiff = (lastSeq - ledgerIndex) >> 8;
+
+		STVector256 vec = hashIndex->getFieldV256(sfHashes);
+		if (vec.size() > sDiff)
+			return vec.at(vec.size() - sDiff - 1);
+	}
 
 	return uint256();
 }
@@ -1144,9 +1138,7 @@ void Ledger::updateSkipList()
 		std::vector<uint256> hashes;
 
 		if (!skipList)
-		{
 			skipList = boost::make_shared<SLE>(ltLEDGER_HASHES, hash);
-		}
 		else
 			hashes = skipList->getFieldV256(sfHashes).peekValue();
 
