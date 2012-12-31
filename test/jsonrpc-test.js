@@ -120,7 +120,7 @@ buster.testCase("JSON-RPC", {
         });
     },
 
-  "=>subscribe ledger" :
+  "subscribe ledger" :
     function (done) {
       var self = this;
 
@@ -189,59 +189,5 @@ buster.testCase("JSON-RPC", {
           buster.refute(error, self.what);
           done();
         });
-    },
-
-//      var self    = this;
-//      var ledgers = 20;
-//      var got_proposed;
-//
-//      this.remote.transaction()
-//        .payment('root', 'alice', "1")
-//        .on('success', function (r) {
-//            // Transaction sent.
-//
-//            // console.log("success: %s", JSON.stringify(r));
-//          })
-//        .on('pending', function() {
-//            // Moving ledgers along.
-//            // console.log("missing: %d", ledgers);
-//
-//            ledgers    -= 1;
-//            if (ledgers) {
-//              self.remote.ledger_accept();
-//            }
-//            else {
-//              buster.assert(false, "Final never received.");
-//              done();
-//            }
-//          })
-//        .on('lost', function () {
-//            // Transaction did not make it in.
-//            // console.log("lost");
-//
-//            buster.assert(true);
-//            done();
-//          })
-//        .on('proposed', function (m) {
-//            // Transaction got an error.
-//            // console.log("proposed: %s", JSON.stringify(m));
-//
-//            buster.assert.equals(m.result, 'tecNO_DST_INSUF_XRP');
-//
-//            got_proposed  = true;
-//
-//            self.remote.ledger_accept();    // Move it along.
-//          })
-//        .on('final', function (m) {
-//            // console.log("final: %s", JSON.stringify(m, undefined, 2));
-//
-//            buster.assert.equals(m.metadata.TransactionResult, 'tecNO_DST_INSUF_XRP');
-//            done();
-//          })
-//        .on('error', function(m) {
-//            // console.log("error: %s", m);
-//
-//            buster.assert(false);
-//          })
-//        .submit();
+    }
 });
