@@ -39,11 +39,13 @@ Json::Value JSONRPCError(int code, const std::string& message)
 // and to be compatible with other JSON-RPC implementations.
 //
 
-std::string createHTTPPost(const std::string& strMsg, const std::map<std::string, std::string>& mapRequestHeaders)
+std::string createHTTPPost(const std::string& strPath, const std::string& strMsg, const std::map<std::string, std::string>& mapRequestHeaders)
 {
 	std::ostringstream s;
 
-	s << "POST / HTTP/1.1\r\n"
+	s << "POST "
+	  << (strPath.empty() ? "/" : strPath)
+	  << " HTTP/1.1\r\n"
 	  << "User-Agent: " SYSTEM_NAME "-json-rpc/" << FormatFullVersion() << "\r\n"
 	  << "Host: 127.0.0.1\r\n"
 	  << "Content-Type: application/json\r\n"

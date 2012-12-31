@@ -107,8 +107,6 @@ var build_setup = function (opts, host) {
 var build_teardown = function (host) {
 
   return function (done) {
-
-
     host = host || config.server_default;
 
     var data = this.store[host];

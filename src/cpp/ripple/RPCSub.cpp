@@ -4,10 +4,23 @@
 
 #include "CallRPC.h"
 
+SETUP_LOG();
+
 RPCSub::RPCSub(const std::string& strUrl, const std::string& strUsername, const std::string& strPassword)
     : mUrl(strUrl), mUsername(strUsername), mPassword(strPassword)
 {
-    mId	= 1;
+    std::string	strScheme;
+
+    if (!parseUrl(strUrl, strScheme, mIp, mPort, mPath))
+    {
+	throw std::runtime_error("Failed to parse url.");
+    }
+    else if (strScheme != "http")
+    {
+	throw std::runtime_error("Only http is supported.");
+    }
+
+    mSeq	= 1;
 }
 
 void RPCSub::sendThread()
@@ -33,7 +46,7 @@ void RPCSub::sendThread()
 		mDeque.pop_front();
 
 		jvEvent		= pEvent.second;
-		jvEvent["id"]	= pEvent.first;
+		jvEvent["seq"]	= pEvent.first;
 
 		bSend		= true;
 	    }
@@ -43,9 +56,14 @@ void RPCSub::sendThread()
 	if (bSend)
 	{
 	    // Drop result.
-	    (void) callRPC(mIp, mPort, mUsername, mPassword, "event", jvEvent);
-
-	    sendThread();
+	    try
+	    {
+		(void) callRPC(mIp, mPort, mUsername, mPassword, mPath, "event", jvEvent);
+	    }
+	    catch (const std::exception& e)
+	    {
+		cLog(lsDEBUG) << boost::str(boost::format("callRPC exception: %s") % e.what());
+	    }
 	}
     } while (bSend);
 }
@@ -61,7 +79,7 @@ void RPCSub::send(const Json::Value& jvObj)
 	mDeque.pop_back();
     }
 
-    mDeque.push_back(std::make_pair(mId++, jvObj));
+    mDeque.push_back(std::make_pair(mSeq++, jvObj));
 
     if (!mSending)
     {

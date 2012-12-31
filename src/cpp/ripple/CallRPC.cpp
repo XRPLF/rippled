@@ -537,6 +537,7 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 				theConfig.RPC_PORT,
 				theConfig.RPC_USER,
 				theConfig.RPC_PASSWORD,
+				"",
 				jvRequest.isMember("method")			// Allow parser to rewrite method.
 					? jvRequest["method"].asString()
 					: vCmd[0],
@@ -597,11 +598,11 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 	return nRet;
 }
 
-Json::Value callRPC(const std::string& strIp, const int iPort, const std::string& strUsername, const std::string& strPassword, const std::string& strMethod, const Json::Value& params)
+Json::Value callRPC(const std::string& strIp, const int iPort, const std::string& strUsername, const std::string& strPassword, const std::string& strPath, const std::string& strMethod, const Json::Value& params)
 {
 	// Connect to localhost
 	if (!theConfig.QUIET)
-		std::cerr << "Connecting to: " << theConfig.RPC_IP << ":" << theConfig.RPC_PORT << std::endl;
+		std::cerr << "Connecting to: " << strIp << ":" << iPort << std::endl;
 
 	boost::asio::ip::tcp::endpoint
 		endpoint(boost::asio::ip::address::from_string(strIp), iPort);
@@ -618,7 +619,7 @@ Json::Value callRPC(const std::string& strIp, const int iPort, const std::string
 	// Send request
 	std::string strRequest = JSONRPCRequest(strMethod, params, Json::Value(1));
 	cLog(lsDEBUG) << "send request " << strMethod << " : " << strRequest << std::endl;
-	std::string strPost = createHTTPPost(strRequest, mapRequestHeaders);
+	std::string strPost = createHTTPPost(strPath, strRequest, mapRequestHeaders);
 	stream << strPost << std::flush;
 
 	// std::cerr << "post  " << strPost << std::endl;

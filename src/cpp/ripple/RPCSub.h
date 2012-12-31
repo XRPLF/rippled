@@ -17,8 +17,9 @@ class RPCSub : public InfoSub
 	int						mPort;
 	std::string				mUsername;
 	std::string				mPassword;
+	std::string				mPath;
 
-	int						mId;						// Next id to allocate.
+	int						mSeq;						// Next id to allocate.
 
 	bool					mSending;					// Sending threead is active.
 

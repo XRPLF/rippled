@@ -2370,12 +2370,12 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 // command is the method. The request object is supplied as the first element of the params.
 Json::Value RPCHandler::doRpcCommand(const std::string& strMethod, Json::Value& jvParams, int iRole)
 {
-	// cLog(lsTRACE) << "doRpcCommand:" << strMethod << ":" << jvParams;
+	cLog(lsTRACE) << "doRpcCommand:" << strMethod << ":" << jvParams;
 
-	if (!jvParams.isArray() || jvParams.size() != 1)
+	if (!jvParams.isArray() || jvParams.size() > 1)
 		return rpcError(rpcINVALID_PARAMS);
 
-	Json::Value	jvRequest	= jvParams[0u];
+	Json::Value	jvRequest	= jvParams.size() ? jvParams[0u] : Json::Value(Json::objectValue);
 
 	if (!jvRequest.isObject())
 		return rpcError(rpcINVALID_PARAMS);
