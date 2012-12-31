@@ -17,6 +17,7 @@ class RPCSub : public InfoSub
 	int						mPort;
 	std::string				mUsername;
 	std::string				mPassword;
+	std::string				mPath;
 
 	int						mSeq;						// Next id to allocate.
 

@@ -10,20 +10,14 @@ RPCSub::RPCSub(const std::string& strUrl, const std::string& strUsername, const 
     : mUrl(strUrl), mUsername(strUsername), mPassword(strPassword)
 {
     std::string	strScheme;
-    std::string	strPath;
 
-    if (!parseUrl(strUrl, strScheme, mIp, mPort, strPath))
+    if (!parseUrl(strUrl, strScheme, mIp, mPort, mPath))
     {
 	throw std::runtime_error("Failed to parse url.");
     }
     else if (strScheme != "http")
     {
 	throw std::runtime_error("Only http is supported.");
-    }
-    else if (!strPath.empty())
-    {
-	// XXX FIXME: support path
-	throw std::runtime_error("Only empty path is supported.");
     }
 
     mSeq	= 1;
@@ -64,7 +58,7 @@ void RPCSub::sendThread()
 	    // Drop result.
 	    try
 	    {
-		(void) callRPC(mIp, mPort, mUsername, mPassword, "event", jvEvent);
+		(void) callRPC(mIp, mPort, mUsername, mPassword, mPath, "event", jvEvent);
 	    }
 	    catch (const std::exception& e)
 	    {
