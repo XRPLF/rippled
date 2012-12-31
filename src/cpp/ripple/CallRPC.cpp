@@ -601,7 +601,7 @@ Json::Value callRPC(const std::string& strIp, const int iPort, const std::string
 {
 	// Connect to localhost
 	if (!theConfig.QUIET)
-		std::cerr << "Connecting to: " << theConfig.RPC_IP << ":" << theConfig.RPC_PORT << std::endl;
+		std::cerr << "Connecting to: " << strIp << ":" << iPort << std::endl;
 
 	boost::asio::ip::tcp::endpoint
 		endpoint(boost::asio::ip::address::from_string(strIp), iPort);
