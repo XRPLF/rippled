@@ -20,9 +20,6 @@ var serverDelay = 1500;
 
 buster.testRunner.timeout = 5000;
 
-var HttpServer = function () {
-};
-
 var server;
 var server_events;
 

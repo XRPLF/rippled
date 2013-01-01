@@ -1,6 +1,6 @@
 #!/usr/bin/node
 //
-// Returns hex of string.
+// Returns hex of lowercasing a string.
 //
 
 var stringToHex = function (s) {
