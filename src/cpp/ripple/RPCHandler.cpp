@@ -1006,7 +1006,9 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 	}
 
 	if (!txJSON.isMember("Fee")
-		&& ("OfferCreate" == txJSON["TransactionType"].asString()
+		&& (
+			"AccountSet" == txJSON["TransactionType"].asString()
+			|| "OfferCreate" == txJSON["TransactionType"].asString()
 			|| "OfferCancel" == txJSON["TransactionType"].asString()
 			|| "TrustSet" == txJSON["TransactionType"].asString()))
 	{
