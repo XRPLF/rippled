@@ -1353,8 +1353,10 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 }
 
 // {
-//   secret: <string>
+//   secret: <string>	// optional
 // }
+//
+// This command requires admin access because it makes no sense to ask an untrusted server for this.
 Json::Value RPCHandler::doValidationCreate(Json::Value jvRequest) {
 	RippleAddress	raSeed;
 	Json::Value		obj(Json::objectValue);
@@ -1518,6 +1520,7 @@ Json::Value RPCHandler::doWalletPropose(Json::Value jvRequest)
 	Json::Value obj(Json::objectValue);
 
 	obj["master_seed"]		= naSeed.humanSeed();
+	obj["master_seed_hex"]	= naSeed.getSeed().ToString();
 	//obj["master_key"]		= naSeed.humanSeed1751();
 	obj["account_id"]		= naAccount.humanAccountID();
 
@@ -2455,7 +2458,7 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 		{	"unl_reset",			&RPCHandler::doUnlReset,		    true,	optNone		},
 		{	"unl_score",			&RPCHandler::doUnlScore,		    true,	optNone		},
 
-		{	"validation_create",	&RPCHandler::doValidationCreate,    false,	optNone		},
+		{	"validation_create",	&RPCHandler::doValidationCreate,    true,	optNone		},
 		{	"validation_seed",		&RPCHandler::doValidationSeed,	    false,	optNone		},
 
 		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,	    false,	optCurrent	},
