@@ -770,6 +770,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 			}
 			return true;
 		}
+		clearNeedNetworkLedger();
 		consensus = mAcquiringLedger->getLedger();
 	}
 
