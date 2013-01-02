@@ -41,6 +41,16 @@ void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger, bool fromConsensus
 	ledger->pendSave(fromConsensus);
 }
 
+uint256 LedgerHistory::getLedgerHash(uint32 index)
+{
+	boost::recursive_mutex::scoped_lock sl(mLedgersByHash.peekMutex());
+	std::map<uint32, uint256>::iterator it(mLedgersByIndex.find(index));
+	if (it != mLedgersByIndex.end())
+		return it->second;
+	sl.unlock();
+	return uint256();
+}
+
 Ledger::pointer LedgerHistory::getLedgerBySeq(uint32 index)
 {
 	boost::recursive_mutex::scoped_lock sl(mLedgersByHash.peekMutex());
