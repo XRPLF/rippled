@@ -31,7 +31,7 @@ public:
 
 	typedef boost::weak_ptr<data_type>			weak_data_ptr;
 	typedef boost::shared_ptr<data_type>		data_ptr;
-	typedef std::pair<time_t, weak_data_ptr>	cache_entry;
+	typedef std::pair<time_t, data_ptr>			cache_entry;
 	typedef std::pair<key_type, cache_entry>	cache_pair;
 
 protected:
@@ -157,7 +157,7 @@ template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::touch
 	}
 
 	// In map but not cache, put in cache
-	mCache.insert(cache_pair(key, cache_entry(time(NULL), weak_data_ptr(cit->second.second))));
+	mCache.insert(cache_pair(key, cache_entry(time(NULL), data_ptr(cit->second.second))));
 	return true;
 }
 
