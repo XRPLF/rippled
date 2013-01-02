@@ -322,62 +322,89 @@ void LedgerMaster::checkPublish(const uint256& hash)
 
 void LedgerMaster::checkPublish(const uint256& hash, uint32 seq)
 { // check if we need to publish any held ledgers
-	std::list<Ledger::pointer> pubLedgers;
+	boost::recursive_mutex::scoped_lock ml(mLock);
 
-	boost::recursive_mutex::scoped_lock pl(mPubLock);
+	if (seq <= mLastValidateSeq)
+		return;
+
+	int minVal = mMinValidations;
+
+	if (mLastValidateHash.isNonZero())
 	{
-		boost::recursive_mutex::scoped_lock ml(mLock);
+		int val = theApp->getValidations().getTrustedValidationCount(mLastValidateHash);
+		val *= MIN_VALIDATION_RATIO;
+		val /= 256;
+		if (val > minVal)
+			minVal = val;
+	}
 
-		if (seq <= mLastValidateSeq)
-			return;
+	if (theConfig.RUN_STANDALONE)
+		minVal = 0;
 
-		int minVal = mMinValidations;
+	cLog(lsTRACE) << "Sweeping for ledgers to publish: minval=" << minVal;
 
-		if (mLastValidateHash.isNonZero())
-		{
-			int val = theApp->getValidations().getTrustedValidationCount(mLastValidateHash);
-			val *= MIN_VALIDATION_RATIO;
-			val /= 256;
-			if (val > minVal)
-				minVal = val;
-		}
-		cLog(lsTRACE) << "Sweeping for leders to publish: minval=" << minVal;
+	// See if any later ledgers have at least the minimum number of validations
+	for (seq = mFinalizedLedger->getLedgerSeq(); seq > mLastValidateSeq; --seq)
+	{
+		Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq(seq);
+		if (ledger && (theApp->getValidations().getTrustedValidationCount(ledger->getHash()) >= minVal))
+		{ // this ledger (and any priors) can be published
+			if (ledger->getLedgerSeq() > (mLastValidateSeq + MAX_LEDGER_GAP))
+				mLastValidateSeq = ledger->getLedgerSeq() - MAX_LEDGER_GAP;
 
-		// See if any later ledgers have at least the minimum number of validations
-		for (seq = mFinalizedLedger->getLedgerSeq(); seq > mLastValidateSeq; --seq)
-		{
-			Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq(seq);
-			if (ledger && (theApp->getValidations().getTrustedValidationCount(ledger->getHash()) >= minVal))
-			{ // this ledger (and any priors) can be published
-				if (ledger->getLedgerSeq() > (mLastValidateSeq + MAX_LEDGER_GAP))
-					mLastValidateSeq = ledger->getLedgerSeq() - MAX_LEDGER_GAP;
-
-				cLog(lsTRACE) << "Ledger " << ledger->getLedgerSeq() << " can be published";
-				for (uint32 pubSeq = mLastValidateSeq + 1; pubSeq <= seq; ++pubSeq)
+			cLog(lsTRACE) << "Ledger " << ledger->getLedgerSeq() << " can be published";
+			for (uint32 pubSeq = mLastValidateSeq + 1; pubSeq <= seq; ++pubSeq)
+			{
+				uint256 pubHash = ledger->getLedgerHash(pubSeq);
+				if (pubHash.isZero()) // CHECKME: Should we double-check validations in this case?
+					pubHash = mLedgerHistory.getLedgerHash(pubSeq);
+				if (pubHash.isNonZero())
 				{
-					uint256 pubHash = ledger->getLedgerHash(pubSeq);
-					if (pubHash.isZero()) // CHECKME: Should we double-check validations in this case?
-						pubHash = mLedgerHistory.getLedgerHash(pubSeq);
-					if (pubHash.isNonZero())
+					Ledger::pointer ledger = mLedgerHistory.getLedgerByHash(pubHash);
+					if (ledger)
 					{
-						Ledger::pointer pubLedger = mLedgerHistory.getLedgerByHash(pubHash);
-						if (pubLedger)
-						{
-							pubLedgers.push_back(pubLedger);
-							mLastValidateSeq = pubLedger->getLedgerSeq();
-							mLastValidateHash = pubLedger->getHash();
-						}
+						mPubLedgers.push_back(ledger);
+						mValidLedger = ledger;
+						mLastValidateSeq = ledger->getLedgerSeq();
+						mLastValidateHash = ledger->getHash();
 					}
 				}
 			}
 		}
 	}
 
-	BOOST_FOREACH(Ledger::ref l, pubLedgers)
+	if (!mPubThread)
 	{
-		BOOST_FOREACH(callback& c, mOnValidate)
+		mPubThread = true;
+		theApp->getJobQueue().addJob(jtPUBLEDGER, boost::bind(&LedgerMaster::pubThread, this));
+	}
+}
+
+void LedgerMaster::pubThread()
+{
+	std::list<Ledger::pointer> ledgers;
+
+	while (1)
+	{
+		ledgers.clear();
+
 		{
-			c(l);
+			boost::recursive_mutex::scoped_lock ml(mLock);
+			mPubLedgers.swap(ledgers);
+			if (ledgers.empty())
+			{
+				mPubThread = false;
+				return;
+			}
+		}
+
+		BOOST_FOREACH(Ledger::ref l, ledgers)
+		{
+			theApp->getOPs().pubLedger(l);
+			BOOST_FOREACH(callback& c, mOnValidate)
+			{
+				c(l);
+			}
 		}
 	}
 }

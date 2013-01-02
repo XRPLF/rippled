@@ -27,6 +27,7 @@ protected:
 
 	Ledger::pointer mCurrentLedger;		// The ledger we are currently processiong
 	Ledger::pointer mFinalizedLedger;	// The ledger that most recently closed
+	Ledger::pointer mValidLedger;		// The ledger we most recently fully accepted
 
 	LedgerHistory mLedgerHistory;
 
@@ -37,11 +38,13 @@ protected:
 	uint32 mMissingSeq;
 	bool mTooFast;	// We are acquiring faster than we're writing
 
-	boost::recursive_mutex		mPubLock;
 	int							mMinValidations;	// The minimum validations to publish a ledger
 	uint256						mLastValidateHash;
 	uint32						mLastValidateSeq;
 	std::list<callback>			mOnValidate;		// Called when a ledger has enough validations
+
+	std::list<Ledger::pointer>	mPubLedgers;		// List of ledgers to publish
+	bool						mPubThread;			// Publish thread is running
 
 	void applyFutureTransactions(uint32 ledgerIndex);
 	bool isValidTransaction(const Transaction::pointer& trans);
@@ -49,11 +52,12 @@ protected:
 
 	void acquireMissingLedger(const uint256& ledgerHash, uint32 ledgerSeq);
 	void missingAcquireComplete(LedgerAcquire::pointer);
+	void pubThread();
 
 public:
 
 	LedgerMaster() : mHeldTransactions(uint256()), mMissingSeq(0), mTooFast(false),
-		mMinValidations(0), mLastValidateSeq(0)
+		mMinValidations(0), mLastValidateSeq(0), mPubThread(false)
 	{ ; }
 
 	uint32 getCurrentLedgerIndex();

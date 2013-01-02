@@ -1149,11 +1149,6 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 {
 	// Don't publish to clients ledgers we don't trust.
 	// TODO: we need to publish old transactions when we get reconnected to the network otherwise clients can miss transactions
-	if (NetworkOPs::omDISCONNECTED == getOperatingMode())
-		return;
-
-	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtPUBLEDGER));
-
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 
@@ -1178,26 +1173,24 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 		}
 	}
 
+	// we don't lock since pubAcceptedTransaction is locking
+	if (!mSubTransactions.empty() || !mSubRTTransactions.empty() || !mSubAccount.empty() || !mSubRTAccount.empty() || !mSubmitMap.empty() )
 	{
-		// we don't lock since pubAcceptedTransaction is locking
-		if (!mSubTransactions.empty() || !mSubRTTransactions.empty() || !mSubAccount.empty() || !mSubRTAccount.empty() || !mSubmitMap.empty() )
+		SHAMap&		txSet	= *lpAccepted->peekTransactionMap();
+
+		for (SHAMapItem::pointer item = txSet.peekFirstItem(); !!item; item = txSet.peekNextItem(item->getTag()))
 		{
-			SHAMap&		txSet	= *lpAccepted->peekTransactionMap();
+			SerializerIterator it(item->peekSerializer());
 
-			for (SHAMapItem::pointer item = txSet.peekFirstItem(); !!item; item = txSet.peekNextItem(item->getTag()))
-			{
-				SerializerIterator it(item->peekSerializer());
+			// OPTIMIZEME: Could get transaction from txn master, but still must call getVL
+			Serializer				txnSer(it.getVL());
+			SerializerIterator		txnIt(txnSer);
+			SerializedTransaction	stTxn(txnIt);
 
-				// OPTIMIZEME: Could get transaction from txn master, but still must call getVL
-				Serializer				txnSer(it.getVL());
-				SerializerIterator		txnIt(txnSer);
-				SerializedTransaction	stTxn(txnIt);
+			TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet>(
+				stTxn.getTransactionID(), lpAccepted->getLedgerSeq(), it.getVL());
 
-				TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet>(
-					stTxn.getTransactionID(), lpAccepted->getLedgerSeq(), it.getVL());
-
-				pubAcceptedTransaction(lpAccepted, stTxn, meta->getResultTER(), meta);
-			}
+			pubAcceptedTransaction(lpAccepted, stTxn, meta->getResultTER(), meta);
 		}
 	}
 }

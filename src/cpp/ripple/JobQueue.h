@@ -26,19 +26,19 @@ enum JobType
 	jtPROPOSAL_ut	= 3,	// A proposal from an untrusted source
 	jtCLIENT		= 4,	// A websocket command from the client
 	jtTRANSACTION	= 5,	// A transaction received from the network
-	jtVALIDATION_t	= 6,	// A validation from a trusted source
-	jtTRANSACTION_l	= 7,	// A local transaction
-	jtPROPOSAL_t	= 8,	// A proposal from a trusted source
-	jtADMIN			= 9,	// An administrative operation
-	jtDEATH			= 10,	// job of death, used internally
+	jtPUBLEDGER		= 6,	// Publish a fully-accepted ledger
+	jtVALIDATION_t	= 7,	// A validation from a trusted source
+	jtTRANSACTION_l	= 8,	// A local transaction
+	jtPROPOSAL_t	= 9,	// A proposal from a trusted source
+	jtADMIN			= 10,	// An administrative operation
+	jtDEATH			= 11,	// job of death, used internally
 
 // special types not dispatched by the job pool
 	jtPEER			= 17,
 	jtDISK			= 18,
 	jtRPC			= 19,
 	jtACCEPTLEDGER	= 20,
-	jtPUBLEDGER		= 21,
-	jtTXN_PROC		= 22,
+	jtTXN_PROC		= 21,
 }; // CAUTION: If you add new types, add them to JobType.cpp too
 #define NUM_JOB_TYPES 24
 

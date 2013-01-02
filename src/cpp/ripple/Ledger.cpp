@@ -467,9 +467,6 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 	theApp->getLedgerMaster().setFullLedger(shared_from_this());
 	event->stop();
 
-	// FIXME: Need to put on hold until the ledger acquires sufficient validations
-	theApp->getOPs().pubLedger(shared_from_this());
-
 	decPendingSaves();
 }
 

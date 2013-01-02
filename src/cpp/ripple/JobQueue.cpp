@@ -15,6 +15,7 @@ JobQueue::JobQueue() : mLastJob(0), mThreadCount(0), mShuttingDown(false)
 	mJobLoads[jtPROOFWORK].setTargetLatency(2000, 5000);
 	mJobLoads[jtTRANSACTION].setTargetLatency(250, 1000);
 	mJobLoads[jtPROPOSAL_ut].setTargetLatency(500, 1250);
+	mJobLoads[jtPUBLEDGER].setTargetLatency(1000, 2500);
 	mJobLoads[jtVALIDATION_t].setTargetLatency(500, 1500);
 	mJobLoads[jtTRANSACTION_l].setTargetLatency(100, 500);
 	mJobLoads[jtPROPOSAL_t].setTargetLatency(100, 500);
@@ -24,7 +25,6 @@ JobQueue::JobQueue() : mLastJob(0), mThreadCount(0), mShuttingDown(false)
 	mJobLoads[jtDISK].setTargetLatency(500, 1000);
 	mJobLoads[jtRPC].setTargetLatency(250, 750);
 	mJobLoads[jtACCEPTLEDGER].setTargetLatency(1000, 2500);
-	mJobLoads[jtPUBLEDGER].setTargetLatency(1000, 2500);
 }
 
 
@@ -38,6 +38,7 @@ const char* Job::toString(JobType t)
 		case jtPROPOSAL_ut:		return "untrustedProposal";
 		case jtCLIENT:			return "clientCommand";
 		case jtTRANSACTION:		return "transaction";
+		case jtPUBLEDGER:		return "publishLedger";
 		case jtVALIDATION_t:	return "trustedValidation";
 		case jtTRANSACTION_l:	return "localTransaction";
 		case jtPROPOSAL_t:		return "trustedProposal";
@@ -48,7 +49,6 @@ const char* Job::toString(JobType t)
 		case jtDISK:			return "diskAccess";
 		case jtRPC:				return "rpc";
 		case jtACCEPTLEDGER:	return "acceptLedger";
-		case jtPUBLEDGER:		return "pubLedger";
 		case jtTXN_PROC:		return "processTransaction";
 		default:				assert(false); return "unknown";
 	}
