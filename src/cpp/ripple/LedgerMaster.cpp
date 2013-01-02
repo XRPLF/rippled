@@ -341,10 +341,9 @@ void LedgerMaster::checkPublish(const uint256& hash, uint32 seq)
 			if (val > minVal)
 				minVal = val;
 		}
-		cLog(lsDEBUG) << "Sweeping for leders to publish: minval=" << minVal;
+		cLog(lsTRACE) << "Sweeping for leders to publish: minval=" << minVal;
 
 		// See if any later ledgers have at least the minimum number of validations
-		cLog(lsDEBUG) << "Last published: " << mLastValidateSeq << " candidate:" << seq;
 		for (seq = mFinalizedLedger->getLedgerSeq(); seq > mLastValidateSeq; --seq)
 		{
 			Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq(seq);
@@ -353,7 +352,7 @@ void LedgerMaster::checkPublish(const uint256& hash, uint32 seq)
 				if (ledger->getLedgerSeq() > (mLastValidateSeq + MAX_LEDGER_GAP))
 					mLastValidateSeq = ledger->getLedgerSeq() - MAX_LEDGER_GAP;
 
-				cLog(lsDEBUG) << "Ledger " << ledger->getLedgerSeq() << " can be published";
+				cLog(lsTRACE) << "Ledger " << ledger->getLedgerSeq() << " can be published";
 				for (uint32 pubSeq = mLastValidateSeq + 1; pubSeq <= seq; ++pubSeq)
 				{
 					uint256 pubHash = ledger->getLedgerHash(pubSeq);
@@ -366,6 +365,7 @@ void LedgerMaster::checkPublish(const uint256& hash, uint32 seq)
 						{
 							pubLedgers.push_back(pubLedger);
 							mLastValidateSeq = pubLedger->getLedgerSeq();
+							mLastValidateHash = pubLedger->getHash();
 						}
 					}
 				}
@@ -375,7 +375,6 @@ void LedgerMaster::checkPublish(const uint256& hash, uint32 seq)
 
 	BOOST_FOREACH(Ledger::ref l, pubLedgers)
 	{
-		cLog(lsDEBUG) << "Publishing " << l->getLedgerSeq() << " : " << l->getHash();
 		BOOST_FOREACH(callback& c, mOnValidate)
 		{
 			c(l);
