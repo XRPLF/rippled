@@ -20,7 +20,7 @@ class ValidationCollection
 protected:
 
 	boost::mutex mValidationLock;
-	TaggedCache<uint256, ValidationSet>			 					mValidations;
+	TaggedCache<uint256, ValidationSet>								mValidations;
 	boost::unordered_map<uint160, SerializedValidation::pointer> 	mCurrentValidations;
 	std::vector<SerializedValidation::pointer> 						mStaleValidations;
 
@@ -33,7 +33,7 @@ protected:
 	boost::shared_ptr<ValidationSet> findSet(const uint256& ledgerHash);
 
 public:
-	ValidationCollection() : mValidations("Validations", 128, 500), mWriting(false) { ; }
+	ValidationCollection() : mValidations("Validations", 128, 600), mWriting(false) { ; }
 
 	bool addValidation(const SerializedValidation::pointer&);
 	ValidationSet getValidations(const uint256& ledger);
