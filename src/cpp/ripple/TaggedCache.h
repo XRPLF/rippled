@@ -61,7 +61,7 @@ public:
 	void sweep();
 
 	bool touch(const key_type& key);
-	bool del(const key_type& key);
+	bool del(const key_type& key, bool valid);
 	bool canonicalize(const key_type& key, boost::shared_ptr<c_Data>& data, bool replace = false);
 	bool store(const key_type& key, const c_Data& data);
 	boost::shared_ptr<c_Data> fetch(const key_type& key);
@@ -161,9 +161,17 @@ template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::touch
 	return true;
 }
 
-template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::del(const key_type& key)
-{	// Remove from cache, map unaffected
+template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::del(const key_type& key, bool valid)
+{	// Remove from cache, if !valid, remove from map too. Returns true if removed from cache
 	boost::recursive_mutex::scoped_lock sl(mLock);
+
+	if (!valid)
+	{ // remove from map too
+		typename boost::unordered_map<key_type, weak_data_ptr>::iterator mit = mMap.find(key);
+		if (mit == mMap.end()) // not in map, cannot be in cache
+			return false;
+		mMap.erase(mit);
+	}
 
 	typename boost::unordered_map<key_type, cache_entry>::iterator cit = mCache.find(key);
 	if (cit == mCache.end())
