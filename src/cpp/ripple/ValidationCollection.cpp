@@ -75,6 +75,8 @@ bool ValidationCollection::addValidation(const SerializedValidation::pointer& va
 
 	cLog(lsINFO) << "Val for " << hash << " from " << signer.humanNodePublic()
 		<< " added " << (val->isTrusted() ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
+	if (val->isTrusted())
+		theApp->getLedgerMaster().checkPublish(hash);
 	return isCurrent;
 }
 

@@ -49,10 +49,13 @@ void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL, bool fromCo
 		cLog(lsINFO) << "StashAccepted: " << newLCL->getHash();
 	}
 
-	boost::recursive_mutex::scoped_lock ml(mLock);
-	mFinalizedLedger = newLCL;
-	mCurrentLedger = newOL;
-	mEngine.setLedger(newOL);
+	{
+		boost::recursive_mutex::scoped_lock ml(mLock);
+		mFinalizedLedger = newLCL;
+		mCurrentLedger = newOL;
+		mEngine.setLedger(newOL);
+	}
+	checkPublish(newLCL->getHash(), newLCL->getLedgerSeq());
 }
 
 void LedgerMaster::switchLedgers(Ledger::ref lastClosed, Ledger::ref current)
@@ -69,6 +72,7 @@ void LedgerMaster::switchLedgers(Ledger::ref lastClosed, Ledger::ref current)
 
 	assert(!mCurrentLedger->isClosed());
 	mEngine.setLedger(mCurrentLedger);
+	checkPublish(lastClosed->getHash(), lastClosed->getLedgerSeq());
 }
 
 void LedgerMaster::storeLedger(Ledger::ref ledger)
@@ -304,6 +308,21 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 			}
 		}
 	}
+}
+
+void LedgerMaster::checkPublish(const uint256& hash)
+{
+	Ledger::pointer ledger = mLedgerHistory.getLedgerByHash(hash);
+	if (ledger)
+		checkPublish(hash, ledger->getLedgerSeq());
+}
+
+void LedgerMaster::checkPublish(const uint256& hash, uint32 seq)
+{ // check if we need to publish any held ledgers
+	boost::recursive_mutex::scoped_lock ml(mLock);
+
+	if (seq <= mLastValidateSeq)
+		return;
 }
 
 // vim:ts=4

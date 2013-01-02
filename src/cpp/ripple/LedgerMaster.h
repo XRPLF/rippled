@@ -17,6 +17,10 @@
 
 class LedgerMaster
 {
+public:
+	typedef boost::function<void(Ledger::ref)> callback;
+
+protected:
 	boost::recursive_mutex mLock;
 
 	TransactionEngine mEngine;
@@ -33,6 +37,11 @@ class LedgerMaster
 	uint32 mMissingSeq;
 	bool mTooFast;	// We are acquiring faster than we're writing
 
+	int							mMinValidations;	// The minimum validations to publish a ledger
+	uint256						mLastValidateHash;
+	uint32						mLastValidateSeq;
+	std::list<callback>			mOnValidate;		// Called when a ledger has enough validations
+
 	void applyFutureTransactions(uint32 ledgerIndex);
 	bool isValidTransaction(const Transaction::pointer& trans);
 	bool isTransactionOnFutureList(const Transaction::pointer& trans);
@@ -42,7 +51,9 @@ class LedgerMaster
 
 public:
 
-	LedgerMaster() : mHeldTransactions(uint256()), mMissingSeq(0), mTooFast(false)	{ ; }
+	LedgerMaster() : mHeldTransactions(uint256()), mMissingSeq(0), mTooFast(false),
+		mMinValidations(0), mLastValidateSeq(0)
+	{ ; }
 
 	uint32 getCurrentLedgerIndex();
 
@@ -100,6 +111,11 @@ public:
 	void resumeAcquiring();
 
 	void sweep(void) { mLedgerHistory.sweep(); }
+
+	void addValidateCallback(callback& c) { mOnValidate.push_back(c); }
+
+	void checkPublish(const uint256& hash);
+	void checkPublish(const uint256& hash, uint32 seq);
 };
 
 #endif
