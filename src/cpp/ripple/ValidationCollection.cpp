@@ -85,8 +85,8 @@ ValidationSet ValidationCollection::getValidations(const uint256& ledger)
 	{
 		boost::mutex::scoped_lock sl(mValidationLock);
 		VSpointer set = findSet(ledger);
-		if (set != VSpointer())
-			return *set;
+		if (set)
+			return ValidationSet(*set);
 	}
 	return ValidationSet();
 }
@@ -96,9 +96,9 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 	trusted = untrusted = 0;
 	boost::mutex::scoped_lock sl(mValidationLock);
 	VSpointer set = findSet(ledger);
-	uint32 now = theApp->getOPs().getNetworkTimeNC();
 	if (set)
 	{
+		uint32 now = theApp->getOPs().getNetworkTimeNC();
 		BOOST_FOREACH(u160_val_pair& it, *set)
 		{
 			bool isTrusted = it.second->isTrusted();
@@ -260,26 +260,26 @@ ValidationCollection::getCurrentValidations(uint256 currentLedger)
 
 void ValidationCollection::flush()
 {
-		bool anyNew = false;
+	bool anyNew = false;
 
-		cLog(lsINFO) << "Flushing validations";
-		boost::mutex::scoped_lock sl(mValidationLock);
-		BOOST_FOREACH(u160_val_pair& it, mCurrentValidations)
-		{
-			if (it.second)
-				mStaleValidations.push_back(it.second);
-			anyNew = true;
-		}
-		mCurrentValidations.clear();
-		if (anyNew)
-			condWrite();
-		while (mWriting)
-		{
-			sl.unlock();
-			boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-			sl.lock();
-		}
-		cLog(lsDEBUG) << "Validations flushed";
+	cLog(lsINFO) << "Flushing validations";
+	boost::mutex::scoped_lock sl(mValidationLock);
+	BOOST_FOREACH(u160_val_pair& it, mCurrentValidations)
+	{
+		if (it.second)
+			mStaleValidations.push_back(it.second);
+		anyNew = true;
+	}
+	mCurrentValidations.clear();
+	if (anyNew)
+		condWrite();
+	while (mWriting)
+	{
+		sl.unlock();
+		boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+		sl.lock();
+	}
+	cLog(lsDEBUG) << "Validations flushed";
 }
 
 void ValidationCollection::condWrite()
