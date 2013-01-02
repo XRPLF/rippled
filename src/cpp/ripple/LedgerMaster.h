@@ -37,6 +37,7 @@ protected:
 	uint32 mMissingSeq;
 	bool mTooFast;	// We are acquiring faster than we're writing
 
+	boost::recursive_mutex		mPubLock;
 	int							mMinValidations;	// The minimum validations to publish a ledger
 	uint256						mLastValidateHash;
 	uint32						mLastValidateSeq;

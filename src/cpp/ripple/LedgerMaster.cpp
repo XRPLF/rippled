@@ -9,6 +9,9 @@
 
 SETUP_LOG();
 
+#define MIN_VALIDATION_RATIO	150		// 150/256ths of validations of previous ledger
+#define MAX_LEDGER_GAP			100		// Don't catch up more than 100 ledgers
+
 uint32 LedgerMaster::getCurrentLedgerIndex()
 {
 	return mCurrentLedger->getLedgerSeq();
@@ -319,10 +322,65 @@ void LedgerMaster::checkPublish(const uint256& hash)
 
 void LedgerMaster::checkPublish(const uint256& hash, uint32 seq)
 { // check if we need to publish any held ledgers
-	boost::recursive_mutex::scoped_lock ml(mLock);
+	std::list<Ledger::pointer> pubLedgers;
 
-	if (seq <= mLastValidateSeq)
-		return;
+	boost::recursive_mutex::scoped_lock pl(mPubLock);
+	{
+		boost::recursive_mutex::scoped_lock ml(mLock);
+
+		if (seq <= mLastValidateSeq)
+			return;
+
+		int minVal = mMinValidations;
+
+		if (mLastValidateHash.isNonZero())
+		{
+			int val = theApp->getValidations().getTrustedValidationCount(mLastValidateHash);
+			val *= MIN_VALIDATION_RATIO;
+			val /= 256;
+			if (val > minVal)
+				minVal = val;
+		}
+		cLog(lsDEBUG) << "Sweeping for leders to publish: minval=" << minVal;
+
+		// See if any later ledgers have at least the minimum number of validations
+		cLog(lsDEBUG) << "Last published: " << mLastValidateSeq << " candidate:" << seq;
+		for (seq = mFinalizedLedger->getLedgerSeq(); seq > mLastValidateSeq; --seq)
+		{
+			Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq(seq);
+			if (ledger && (theApp->getValidations().getTrustedValidationCount(ledger->getHash()) >= minVal))
+			{ // this ledger (and any priors) can be published
+				if (ledger->getLedgerSeq() > (mLastValidateSeq + MAX_LEDGER_GAP))
+					mLastValidateSeq = ledger->getLedgerSeq() - MAX_LEDGER_GAP;
+
+				cLog(lsDEBUG) << "Ledger " << ledger->getLedgerSeq() << " can be published";
+				for (uint32 pubSeq = mLastValidateSeq + 1; pubSeq <= seq; ++pubSeq)
+				{
+					uint256 pubHash = ledger->getLedgerHash(pubSeq);
+					if (pubHash.isZero()) // CHECKME: Should we double-check validations in this case?
+						pubHash = mLedgerHistory.getLedgerHash(pubSeq);
+					if (pubHash.isNonZero())
+					{
+						Ledger::pointer pubLedger = mLedgerHistory.getLedgerByHash(pubHash);
+						if (pubLedger)
+						{
+							pubLedgers.push_back(pubLedger);
+							mLastValidateSeq = pubLedger->getLedgerSeq();
+						}
+					}
+				}
+			}
+		}
+	}
+
+	BOOST_FOREACH(Ledger::ref l, pubLedgers)
+	{
+		cLog(lsDEBUG) << "Publishing " << l->getLedgerSeq() << " : " << l->getHash();
+		BOOST_FOREACH(callback& c, mOnValidate)
+		{
+			c(l);
+		}
+	}
 }
 
 // vim:ts=4
