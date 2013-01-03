@@ -1,6 +1,6 @@
 #!/usr/bin/node
 //
-// Returns a Gravatar stle hash as per: http://en.gravatar.com/site/implement/hash/
+// Returns a Gravatar style hash as per: http://en.gravatar.com/site/implement/hash/
 //
 
 if (process.argv.length != 3) {
