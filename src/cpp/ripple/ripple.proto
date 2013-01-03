@@ -71,6 +71,7 @@ message TMHello {
 	optional bytes			ledgerPrevious	= 10; // the ledger before the last closed ledger
 	optional bool			nodePrivate		= 11; // Request to not forward IP.
 	optional TMProofWork	proofOfWork		= 12; // request/provide proof of work
+	optional bool			testNet			= 13; // Running as testnet.
 }
 
 
