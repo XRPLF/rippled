@@ -154,7 +154,7 @@ template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::touch
 	}
 
 	// Is the object in the cache?
-	map_iterator cit = mCache.find(key);
+	cache_iterator cit = mCache.find(key);
 	if (cit != mCache.end())
 	{ // in both map and cache
 		cit->second.first = time(NULL);
