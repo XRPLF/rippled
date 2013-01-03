@@ -120,7 +120,6 @@ int main(int argc, char* argv[])
 		iResult	= 2;
 	}
 
-
 	if (iResult)
 	{
 		nothing();
@@ -154,6 +153,7 @@ int main(int argc, char* argv[])
 	if (vm.count("unittest"))
 	{
 		unit_test_main(init_unit_test, argc, argv);
+
 		return 0;
 	}
 
@@ -161,6 +161,7 @@ int main(int argc, char* argv[])
 	{
 		theConfig.setup(
 			vm.count("conf") ? vm["conf"].as<std::string>() : "",	// Config file.
+			!!vm.count("testnet"),									// Testnet flag.
 			!!vm.count("quiet"));									// Quiet flag.
 
 		if (vm.count("standalone"))
