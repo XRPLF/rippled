@@ -256,13 +256,13 @@ TER OfferCreateTransactor::takeOffers(
 
 TER OfferCreateTransactor::doApply()
 {
-	cLog(lsWARNING) << "doOfferCreate> " << mTxn.getJson(0);
+	cLog(lsWARNING) << "OfferCreate> " << mTxn.getJson(0);
 	const uint32			uTxFlags		= mTxn.getFlags();
 	const bool				bPassive		= isSetBit(uTxFlags, tfPassive);
 	STAmount				saTakerPays		= mTxn.getFieldAmount(sfTakerPays);
 	STAmount				saTakerGets		= mTxn.getFieldAmount(sfTakerGets);
 
-	cLog(lsINFO) << boost::str(boost::format("doOfferCreate: saTakerPays=%s saTakerGets=%s")
+	cLog(lsINFO) << boost::str(boost::format("OfferCreate: saTakerPays=%s saTakerGets=%s")
 		% saTakerPays.getFullText()
 		% saTakerGets.getFullText());
 
@@ -274,7 +274,7 @@ TER OfferCreateTransactor::doApply()
 
 	const uint256			uLedgerIndex	= Ledger::getOfferIndex(mTxnAccountID, uSequence);
 
-	cLog(lsINFO) << "doOfferCreate: Creating offer node: " << uLedgerIndex.ToString() << " uSequence=" << uSequence;
+	cLog(lsINFO) << "OfferCreate: Creating offer node: " << uLedgerIndex.ToString() << " uSequence=" << uSequence;
 
 	const uint160			uPaysCurrency	= saTakerPays.getCurrency();
 	const uint160			uGetsCurrency	= saTakerGets.getCurrency();
@@ -287,49 +287,49 @@ TER OfferCreateTransactor::doApply()
 
 	if (uTxFlags & tfOfferCreateMask)
 	{
-		cLog(lsINFO) << "doOfferCreate: Malformed transaction: Invalid flags set.";
+		cLog(lsINFO) << "OfferCreate: Malformed transaction: Invalid flags set.";
 
 		return temINVALID_FLAG;
 	}
 	else if (bHaveExpiration && !uExpiration)
 	{
-		cLog(lsWARNING) << "doOfferCreate: Malformed offer: bad expiration";
+		cLog(lsWARNING) << "OfferCreate: Malformed offer: bad expiration";
 
 		terResult	= temBAD_EXPIRATION;
 	}
 	else if (bHaveExpiration && mEngine->getLedger()->getParentCloseTimeNC() >= uExpiration)
 	{
-		cLog(lsWARNING) << "doOfferCreate: Expired transaction: offer expired";
+		cLog(lsWARNING) << "OfferCreate: Expired transaction: offer expired";
 
 		terResult	= tesSUCCESS;				// Only charged fee.
 	}
 	else if (saTakerPays.isNative() && saTakerGets.isNative())
 	{
-		cLog(lsWARNING) << "doOfferCreate: Malformed offer: XRP for XRP";
+		cLog(lsWARNING) << "OfferCreate: Malformed offer: XRP for XRP";
 
 		terResult	= temBAD_OFFER;
 	}
 	else if (!saTakerPays.isPositive() || !saTakerGets.isPositive())
 	{
-		cLog(lsWARNING) << "doOfferCreate: Malformed offer: bad amount";
+		cLog(lsWARNING) << "OfferCreate: Malformed offer: bad amount";
 
 		terResult	= temBAD_OFFER;
 	}
 	else if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)
 	{
-		cLog(lsWARNING) << "doOfferCreate: Malformed offer: redundant offer";
+		cLog(lsWARNING) << "OfferCreate: Malformed offer: redundant offer";
 
 		terResult	= temREDUNDANT;
 	}
 	else if (saTakerPays.isNative() != !uPaysIssuerID || saTakerGets.isNative() != !uGetsIssuerID)
 	{
-		cLog(lsWARNING) << "doOfferCreate: Malformed offer: bad issuer";
+		cLog(lsWARNING) << "OfferCreate: Malformed offer: bad issuer";
 
 		terResult	= temBAD_ISSUER;
 	}
 	else if (!mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets).isPositive())
 	{
-		cLog(lsWARNING) << "doOfferCreate: delay: Offers must be at least partially funded.";
+		cLog(lsWARNING) << "OfferCreate: delay: Offers must be at least partially funded.";
 
 		terResult	= tecUNFUNDED;
 	}
@@ -340,7 +340,7 @@ TER OfferCreateTransactor::doApply()
 
 		if (!sleTakerPays)
 		{
-			cLog(lsWARNING) << "doOfferCreate: delay: can't receive IOUs from non-existent issuer: " << RippleAddress::createHumanAccountID(uPaysIssuerID);
+			cLog(lsWARNING) << "OfferCreate: delay: can't receive IOUs from non-existent issuer: " << RippleAddress::createHumanAccountID(uPaysIssuerID);
 
 			terResult	= terNO_ACCOUNT;
 		}
@@ -353,13 +353,13 @@ TER OfferCreateTransactor::doApply()
 	{
 		const uint256	uTakeBookBase	= Ledger::getBookBase(uGetsCurrency, uGetsIssuerID, uPaysCurrency, uPaysIssuerID);
 
-		cLog(lsINFO) << boost::str(boost::format("doOfferCreate: take against book: %s for %s -> %s")
+		cLog(lsINFO) << boost::str(boost::format("OfferCreate: take against book: %s for %s -> %s")
 			% uTakeBookBase.ToString()
 			% saTakerGets.getFullText()
 			% saTakerPays.getFullText());
 
 		// Take using the parameters of the offer.
-		cLog(lsWARNING) << "doOfferCreate: takeOffers: BEFORE saTakerGets=" << saTakerGets.getFullText();
+		cLog(lsWARNING) << "OfferCreate: takeOffers: BEFORE saTakerGets=" << saTakerGets.getFullText();
 		terResult	= takeOffers(
 			bPassive,
 			uTakeBookBase,
@@ -371,11 +371,11 @@ TER OfferCreateTransactor::doApply()
 			saOfferGot		// How much was got.
 			);
 
-		cLog(lsWARNING) << "doOfferCreate: takeOffers=" << terResult;
-		cLog(lsWARNING) << "doOfferCreate: takeOffers: saOfferPaid=" << saOfferPaid.getFullText();
-		cLog(lsWARNING) << "doOfferCreate: takeOffers:  saOfferGot=" << saOfferGot.getFullText();
-		cLog(lsWARNING) << "doOfferCreate: takeOffers: saTakerPays=" << saTakerPays.getFullText();
-		cLog(lsWARNING) << "doOfferCreate: takeOffers: AFTER saTakerGets=" << saTakerGets.getFullText();
+		cLog(lsWARNING) << "OfferCreate: takeOffers=" << terResult;
+		cLog(lsWARNING) << "OfferCreate: takeOffers: saOfferPaid=" << saOfferPaid.getFullText();
+		cLog(lsWARNING) << "OfferCreate: takeOffers:  saOfferGot=" << saOfferGot.getFullText();
+		cLog(lsWARNING) << "OfferCreate: takeOffers: saTakerPays=" << saTakerPays.getFullText();
+		cLog(lsWARNING) << "OfferCreate: takeOffers: AFTER saTakerGets=" << saTakerGets.getFullText();
 
 		if (tesSUCCESS == terResult)
 		{
@@ -384,13 +384,13 @@ TER OfferCreateTransactor::doApply()
 		}
 	}
 
-	cLog(lsWARNING) << "doOfferCreate: takeOffers: saTakerPays=" << saTakerPays.getFullText();
-	cLog(lsWARNING) << "doOfferCreate: takeOffers: saTakerGets=" << saTakerGets.getFullText();
-	cLog(lsWARNING) << "doOfferCreate: takeOffers: mTxnAccountID=" << RippleAddress::createHumanAccountID(mTxnAccountID);
-	cLog(lsWARNING) << "doOfferCreate: takeOffers:         FUNDS=" << mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets).getFullText();
+	cLog(lsWARNING) << "OfferCreate: takeOffers: saTakerPays=" << saTakerPays.getFullText();
+	cLog(lsWARNING) << "OfferCreate: takeOffers: saTakerGets=" << saTakerGets.getFullText();
+	cLog(lsWARNING) << "OfferCreate: takeOffers: mTxnAccountID=" << RippleAddress::createHumanAccountID(mTxnAccountID);
+	cLog(lsWARNING) << "OfferCreate: takeOffers:         FUNDS=" << mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets).getFullText();
 
-	// cLog(lsWARNING) << "doOfferCreate: takeOffers: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
-	// cLog(lsWARNING) << "doOfferCreate: takeOffers: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
+	// cLog(lsWARNING) << "OfferCreate: takeOffers: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
+	// cLog(lsWARNING) << "OfferCreate: takeOffers: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
 
 	if (tesSUCCESS != terResult
 		|| !saTakerPays														// Wants nothing more.
@@ -424,7 +424,7 @@ TER OfferCreateTransactor::doApply()
 	else
 	{
 		// We need to place the remainder of the offer into its order book.
-		cLog(lsINFO) << boost::str(boost::format("doOfferCreate: offer not fully consumed: saTakerPays=%s saTakerGets=%s")
+		cLog(lsINFO) << boost::str(boost::format("OfferCreate: offer not fully consumed: saTakerPays=%s saTakerGets=%s")
 			% saTakerPays.getFullText()
 			% saTakerGets.getFullText());
 
@@ -440,7 +440,7 @@ TER OfferCreateTransactor::doApply()
 
 			uint256	uBookBase	= Ledger::getBookBase(uPaysCurrency, uPaysIssuerID, uGetsCurrency, uGetsIssuerID);
 
-			cLog(lsINFO) << boost::str(boost::format("doOfferCreate: adding to book: %s : %s/%s -> %s/%s")
+			cLog(lsINFO) << boost::str(boost::format("OfferCreate: adding to book: %s : %s/%s -> %s/%s")
 				% uBookBase.ToString()
 				% saTakerPays.getHumanCurrency()
 				% RippleAddress::createHumanAccountID(saTakerPays.getIssuer())
@@ -457,13 +457,13 @@ TER OfferCreateTransactor::doApply()
 
 		if (tesSUCCESS == terResult)
 		{
-			cLog(lsWARNING) << "doOfferCreate: sfAccount=" << RippleAddress::createHumanAccountID(mTxnAccountID);
-			cLog(lsWARNING) << "doOfferCreate: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
-			cLog(lsWARNING) << "doOfferCreate: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
-			cLog(lsWARNING) << "doOfferCreate: saTakerPays.isNative()=" << saTakerPays.isNative();
-			cLog(lsWARNING) << "doOfferCreate: saTakerGets.isNative()=" << saTakerGets.isNative();
-			cLog(lsWARNING) << "doOfferCreate: uPaysCurrency=" << saTakerPays.getHumanCurrency();
-			cLog(lsWARNING) << "doOfferCreate: uGetsCurrency=" << saTakerGets.getHumanCurrency();
+			cLog(lsWARNING) << "OfferCreate: sfAccount=" << RippleAddress::createHumanAccountID(mTxnAccountID);
+			cLog(lsWARNING) << "OfferCreate: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
+			cLog(lsWARNING) << "OfferCreate: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
+			cLog(lsWARNING) << "OfferCreate: saTakerPays.isNative()=" << saTakerPays.isNative();
+			cLog(lsWARNING) << "OfferCreate: saTakerGets.isNative()=" << saTakerGets.isNative();
+			cLog(lsWARNING) << "OfferCreate: uPaysCurrency=" << saTakerPays.getHumanCurrency();
+			cLog(lsWARNING) << "OfferCreate: uGetsCurrency=" << saTakerGets.getHumanCurrency();
 
 			SLE::pointer			sleOffer		= mEngine->entryCreate(ltOFFER, uLedgerIndex);
 
@@ -481,13 +481,13 @@ TER OfferCreateTransactor::doApply()
 			if (bPassive)
 				sleOffer->setFlag(lsfPassive);
 
-			cLog(lsINFO) << boost::str(boost::format("doOfferCreate: final terResult=%s sleOffer=%s")
+			cLog(lsINFO) << boost::str(boost::format("OfferCreate: final terResult=%s sleOffer=%s")
 				% transToken(terResult)
 				% sleOffer->getJson(0));
 		}
 	}
 
-	tLog(tesSUCCESS != terResult, lsINFO) << boost::str(boost::format("doOfferCreate: final terResult=%s") % transToken(terResult));
+	tLog(tesSUCCESS != terResult, lsINFO) << boost::str(boost::format("OfferCreate: final terResult=%s") % transToken(terResult));
 
 	return terResult;
 }

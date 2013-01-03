@@ -1,5 +1,7 @@
 #include "WalletAddTransactor.h"
 
+SETUP_LOG();
+
 TER WalletAddTransactor::doApply()
 {
 	std::cerr << "WalletAdd>" << std::endl;
@@ -7,8 +9,17 @@ TER WalletAddTransactor::doApply()
 	const std::vector<unsigned char>	vucPubKey		= mTxn.getFieldVL(sfPublicKey);
 	const std::vector<unsigned char>	vucSignature	= mTxn.getFieldVL(sfSignature);
 	const uint160						uAuthKeyID		= mTxn.getFieldAccount160(sfRegularKey);
-	const RippleAddress				naMasterPubKey	= RippleAddress::createAccountPublic(vucPubKey);
+	const RippleAddress					naMasterPubKey	= RippleAddress::createAccountPublic(vucPubKey);
 	const uint160						uDstAccountID	= naMasterPubKey.getAccountID();
+
+	const uint32						uTxFlags		= mTxn.getFlags();
+
+	if (uTxFlags)
+	{
+		cLog(lsINFO) << "WalletAdd: Malformed transaction: Invalid flags set.";
+
+		return temINVALID_FLAG;
+	}
 
 	// FIXME: This should be moved to the transaction's signature check logic and cached
 	if (!naMasterPubKey.accountPublicVerify(Serializer::getSHA512Half(uAuthKeyID.begin(), uAuthKeyID.size()), vucSignature))

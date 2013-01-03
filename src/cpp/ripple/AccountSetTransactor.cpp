@@ -4,7 +4,16 @@ SETUP_LOG();
 
 TER AccountSetTransactor::doApply()
 {
-	cLog(lsINFO) << "doAccountSet>";
+	cLog(lsINFO) << "AccountSet>";
+
+	const uint32	uTxFlags	= mTxn.getFlags();
+
+	if (uTxFlags)
+	{
+		cLog(lsINFO) << "AccountSet: Malformed transaction: Invalid flags set.";
+
+		return temINVALID_FLAG;
+	}
 
 	//
 	// EmailHash
@@ -16,13 +25,13 @@ TER AccountSetTransactor::doApply()
 
 		if (!uHash)
 		{
-			cLog(lsINFO) << "doAccountSet: unset email hash";
+			cLog(lsINFO) << "AccountSet: unset email hash";
 
 			mTxnAccount->makeFieldAbsent(sfEmailHash);
 		}
 		else
 		{
-			cLog(lsINFO) << "doAccountSet: set email hash";
+			cLog(lsINFO) << "AccountSet: set email hash";
 
 			mTxnAccount->setFieldH128(sfEmailHash, uHash);
 		}
@@ -38,13 +47,13 @@ TER AccountSetTransactor::doApply()
 
 		if (!uHash)
 		{
-			cLog(lsINFO) << "doAccountSet: unset wallet locator";
+			cLog(lsINFO) << "AccountSet: unset wallet locator";
 
 			mTxnAccount->makeFieldAbsent(sfEmailHash);
 		}
 		else
 		{
-			cLog(lsINFO) << "doAccountSet: set wallet locator";
+			cLog(lsINFO) << "AccountSet: set wallet locator";
 
 			mTxnAccount->setFieldH256(sfWalletLocator, uHash);
 		}
@@ -60,7 +69,7 @@ TER AccountSetTransactor::doApply()
 	}
 	else
 	{
-		cLog(lsINFO) << "doAccountSet: set message key";
+		cLog(lsINFO) << "AccountSet: set message key";
 
 		mTxnAccount->setFieldVL(sfMessageKey, mTxn.getFieldVL(sfMessageKey));
 	}
@@ -75,13 +84,13 @@ TER AccountSetTransactor::doApply()
 
 		if (vucDomain.empty())
 		{
-			cLog(lsINFO) << "doAccountSet: unset domain";
+			cLog(lsINFO) << "AccountSet: unset domain";
 
 			mTxnAccount->makeFieldAbsent(sfDomain);
 		}
 		else
 		{
-			cLog(lsINFO) << "doAccountSet: set domain";
+			cLog(lsINFO) << "AccountSet: set domain";
 
 			mTxnAccount->setFieldVL(sfDomain, vucDomain);
 		}
@@ -97,25 +106,27 @@ TER AccountSetTransactor::doApply()
 
 		if (!uRate || uRate == QUALITY_ONE)
 		{
-			cLog(lsINFO) << "doAccountSet: unset transfer rate";
+			cLog(lsINFO) << "AccountSet: unset transfer rate";
 
 			mTxnAccount->makeFieldAbsent(sfTransferRate);
 		}
 		else if (uRate > QUALITY_ONE)
 		{
-			cLog(lsINFO) << "doAccountSet: set transfer rate";
+			cLog(lsINFO) << "AccountSet: set transfer rate";
 
 			mTxnAccount->setFieldU32(sfTransferRate, uRate);
 		}
 		else
 		{
-			cLog(lsINFO) << "doAccountSet: bad transfer rate";
+			cLog(lsINFO) << "AccountSet: bad transfer rate";
 
 			return temBAD_TRANSFER_RATE;
 		}
 	}
 
-	cLog(lsINFO) << "doAccountSet<";
+	cLog(lsINFO) << "AccountSet<";
 
 	return tesSUCCESS;
 }
+
+// vim:ts=4
