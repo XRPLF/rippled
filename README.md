@@ -3,7 +3,7 @@ Ripple - P2P Payment Network
 
 Some portions of this source code are currently closed source.
 
-This the repository for Ripple's:
+This is the repository for Ripple's:
 * rippled - P2P network server
 * ripple.js - JavaScript client libraries.
 
