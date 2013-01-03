@@ -3,6 +3,7 @@
 
 #include "UniqueNodeList.h"
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 
@@ -24,7 +25,6 @@
 SETUP_LOG();
 
 #define VALIDATORS_FETCH_SECONDS	30
-#define VALIDATORS_FILE_PATH		"/" VALIDATORS_FILE_NAME
 #define VALIDATORS_FILE_BYTES_MAX	(50 << 10)
 
 // Gather string constants.
@@ -40,10 +40,6 @@ SETUP_LOG();
 // YYY Move to config file.
 #define REFERRAL_VALIDATORS_MAX	50
 #define REFERRAL_IPS_MAX		50
-
-#ifndef MIN
-#define MIN(x,y) ((x)<(y)?(x):(y))
-#endif
 
 UniqueNodeList::UniqueNodeList(boost::asio::io_service& io_service) :
 	mdtScoreTimer(io_service),
@@ -633,9 +629,9 @@ void UniqueNodeList::processIps(const std::string& strSite, const RippleAddress&
 
 	// Add new referral entries.
 	if (pmtVecStrIps && !pmtVecStrIps->empty()) {
-		std::vector<std::string> vstrValues;
+		std::vector<std::string>	vstrValues;
 
-		vstrValues.resize(MIN(pmtVecStrIps->size(), REFERRAL_IPS_MAX));
+		vstrValues.resize(std::min((int) pmtVecStrIps->size(), REFERRAL_IPS_MAX));
 
 		int	iValues = 0;
 		BOOST_FOREACH(const std::string& strReferral, *pmtVecStrIps)
@@ -707,7 +703,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 	if (pmtVecStrValidators && pmtVecStrValidators->size()) {
 		std::vector<std::string> vstrValues;
 
-		vstrValues.reserve(MIN(pmtVecStrValidators->size(), REFERRAL_VALIDATORS_MAX));
+		vstrValues.reserve(std::min((int) pmtVecStrValidators->size(), REFERRAL_VALIDATORS_MAX));
 
 		BOOST_FOREACH(const std::string& strReferral, *pmtVecStrValidators)
 		{
@@ -1555,13 +1551,13 @@ void UniqueNodeList::validatorsResponse(const boost::system::error_code& err, st
 
 void UniqueNodeList::nodeNetwork()
 {
-	if(!theConfig.VALIDATORS_SITE.empty())
+	if (!theConfig.VALIDATORS_SITE.empty())
 	{
 		HttpsClient::httpsGet(
 			theApp->getIOService(),
 			theConfig.VALIDATORS_SITE,
 			443,
-			VALIDATORS_FILE_PATH,
+			theConfig.VALIDATORS_URI,
 			VALIDATORS_FILE_BYTES_MAX,
 			boost::posix_time::seconds(VALIDATORS_FETCH_SECONDS),
 			boost::bind(&UniqueNodeList::validatorsResponse, this, _1, _2));
@@ -1597,9 +1593,10 @@ void UniqueNodeList::nodeBootstrap()
 	// If never loaded anything try the current directory.
 	if (!bLoaded && theConfig.VALIDATORS_FILE.empty())
 	{
-		cLog(lsINFO) << "Bootstrapping UNL: loading from '" VALIDATORS_FILE_NAME "'.";
+		cLog(lsINFO) << boost::str(boost::format("Bootstrapping UNL: loading from '%s'.")
+			% theConfig.VALIDATORS_BASE);
 
-		bLoaded	= nodeLoad(VALIDATORS_FILE_NAME);
+		bLoaded	= nodeLoad(theConfig.VALIDATORS_BASE);
 	}
 
 	// Always load from rippled.cfg
@@ -1607,15 +1604,17 @@ void UniqueNodeList::nodeBootstrap()
 	{
 		RippleAddress	naInvalid;	// Don't want a referrer on added entries.
 
-		cLog(lsINFO) << "Bootstrapping UNL: loading from " CONFIG_FILE_NAME ".";
+		cLog(lsINFO) << boost::str(boost::format("Bootstrapping UNL: loading from '%s'.")
+			% theConfig.CONFIG_FILE);
 
-		if (processValidators("local", CONFIG_FILE_NAME, naInvalid, vsConfig, &theConfig.VALIDATORS))
+		if (processValidators("local", theConfig.CONFIG_FILE.native(), naInvalid, vsConfig, &theConfig.VALIDATORS))
 			bLoaded	= true;
 	}
 
 	if (!bLoaded)
 	{
-		cLog(lsINFO) << "Bootstrapping UNL: loading from " << theConfig.VALIDATORS_SITE << ".";
+		cLog(lsINFO) << boost::str(boost::format("Bootstrapping UNL: loading from '%s'.")
+			% theConfig.VALIDATORS_SITE);
 
 		nodeNetwork();
 	}
@@ -1667,7 +1666,8 @@ void UniqueNodeList::nodeProcess(const std::string& strSite, const std::string& 
 	}
 	else
 	{
-		cLog(lsWARNING) << "'" VALIDATORS_FILE_NAME "' missing [" SECTION_VALIDATORS "].";
+		cLog(lsWARNING) << boost::str(boost::format("'%s' missing [" SECTION_VALIDATORS "].")
+			% theConfig.VALIDATORS_BASE);
 	}
 }
 
