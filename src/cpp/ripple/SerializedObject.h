@@ -77,8 +77,8 @@ public:
 	int giveObject(std::auto_ptr<SerializedType> t)	{ mData.push_back(t); return mData.size() - 1; }
 	int giveObject(SerializedType* t)				{ mData.push_back(t); return mData.size() - 1; }
 	const boost::ptr_vector<SerializedType>& peekData() const { return mData; }
-	boost::ptr_vector<SerializedType>& peekData() 	{ return mData; }
-	SerializedType& front() 						{ return mData.front(); }
+	boost::ptr_vector<SerializedType>& peekData()	{ return mData; }
+	SerializedType& front()							{ return mData.front(); }
 	const SerializedType& front() const				{ return mData.front(); }
 	SerializedType& back()							{ return mData.back(); }
 	const SerializedType& back() const				{ return mData.back(); }
@@ -248,7 +248,7 @@ public:
 	bool operator==(const STArray &s)				{ return value == s.value; }
 	bool operator!=(const STArray &s)				{ return value != s.value; }
 
-	virtual SerializedTypeID getSType() const 		{ return STI_ARRAY; }
+	virtual SerializedTypeID getSType() const		{ return STI_ARRAY; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 	virtual bool isDefault() const					{ return value.empty(); }
 };
