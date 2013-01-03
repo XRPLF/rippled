@@ -9,6 +9,7 @@ This is the repository for Ripple's:
 
 Build instructions:
 * https://ripple.com/wiki/Rippled_build_instructions
+* https://ripple.com/wiki/Ripple_JavaScript_library
 
 Setup instructions:
 * https://ripple.com/wiki/Rippled_setup_instructions
