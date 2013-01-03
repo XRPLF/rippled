@@ -255,6 +255,13 @@ UInt160.json_rewrite = function (j) {
 };
 
 // Return a new UInt160 from j.
+UInt160.from_generic = function (j) {
+  return 'string' === typeof j
+      ? (new UInt160()).parse_generic(j)
+      : j.clone();
+};
+
+// Return a new UInt160 from j.
 UInt160.from_json = function (j) {
   return 'string' === typeof j
       ? (new UInt160()).parse_json(j)
@@ -285,7 +292,7 @@ UInt160.prototype.is_valid = function () {
 };
 
 // value = NaN on error.
-UInt160.prototype.parse_json = function (j) {
+UInt160.prototype.parse_generic = function (j) {
   // Canonicalize and validate
   if (exports.config.accounts && j in exports.config.accounts)
     j = exports.config.accounts[j].account;
@@ -324,6 +331,25 @@ UInt160.prototype.parse_json = function (j) {
       else {
 	this._value  = NaN;
       }
+  }
+
+  return this;
+};
+
+// value = NaN on error.
+UInt160.prototype.parse_json = function (j) {
+  // Canonicalize and validate
+  if (exports.config.accounts && j in exports.config.accounts)
+    j = exports.config.accounts[j].account;
+
+  if ('string' !== typeof j) {
+    this._value  = NaN;
+  }
+  else if (j[0] === "r") {
+    this._value  = decode_base_check(consts.VER_ACCOUNT_ID, j);
+  }
+  else {
+    this._value  = NaN;
   }
 
   return this;

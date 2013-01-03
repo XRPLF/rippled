@@ -19,7 +19,7 @@
 #define SYSTEM_CURRENCY_PARTS		1000000ull		// 10^SYSTEM_CURRENCY_PRECISION
 #define SYSTEM_CURRENCY_START		(SYSTEM_CURRENCY_GIFT*SYSTEM_CURRENCY_USERS*SYSTEM_CURRENCY_PARTS)
 
-#define CONFIG_FILE_NAME				SYSTEM_NAME "d.cfg"	// rippled.cfg
+#define CONFIG_FILE_NAME			SYSTEM_NAME "d.cfg"	// rippled.cfg
 
 #define DEFAULT_VALIDATORS_SITE		""
 #define VALIDATORS_FILE_NAME		"validators.txt"
@@ -47,14 +47,17 @@ class Config
 public:
 	// Configuration parameters
 	bool						QUIET;
+	bool						TESTNET;
 
 	boost::filesystem::path		CONFIG_FILE;
 	boost::filesystem::path		CONFIG_DIR;
 	boost::filesystem::path		DATA_DIR;
 	boost::filesystem::path		DEBUG_LOGFILE;
-	boost::filesystem::path		VALIDATORS_FILE;
+	boost::filesystem::path		VALIDATORS_FILE;		// As specifed in rippled.cfg.
 
 	std::string					VALIDATORS_SITE;		// Where to find validators.txt on the Internet.
+	std::string					VALIDATORS_URI;			// URI of validators.txt.
+	std::string					VALIDATORS_BASE;		// Name with testnet-, if needed.
 	std::vector<std::string>	VALIDATORS;				// Validators from rippled.cfg.
 	std::vector<std::string>	IPS;					// Peer IPs from rippled.cfg.
 	std::vector<std::string>	SNTP_SERVERS;			// SNTP servers from rippled.cfg.
@@ -120,12 +123,19 @@ public:
 	// Client behavior
 	int							ACCOUNT_PROBE_MAX;		// How far to scan for accounts.
 
+	// Signing signatures.
+	uint32						SIGN_TRANSACTION;
+	uint32						SIGN_VALIDATION;
+	uint32						SIGN_PROPOSAL;
+
 	Config();
-	void setup(const std::string& strConf, bool bQuiet);
+
+	void setup(const std::string& strConf, bool bTestNet, bool bQuiet);
 	void load();
 };
 
 extern Config theConfig;
+
 #endif
 
 // vim:ts=4

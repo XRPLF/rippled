@@ -4,6 +4,7 @@
 #include "Config.h"
 
 #include "utils.h"
+#include "HashPrefixes.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
@@ -56,10 +57,12 @@
 #define DEFAULT_FEE_OPERATION			1
 
 Config theConfig;
+const char* ALPHABET;
 
-void Config::setup(const std::string& strConf, bool bQuiet)
+void Config::setup(const std::string& strConf, bool bTestNet, bool bQuiet)
 {
 	boost::system::error_code	ec;
+	std::string					strDbPath, strConfFile;
 
 	//
 	// Determine the config and data directories.
@@ -67,21 +70,39 @@ void Config::setup(const std::string& strConf, bool bQuiet)
 	// that with "db" as the data directory.
 	//
 
+	TESTNET	= bTestNet;
 	QUIET	= bQuiet;
+
+	// TESTNET forces a "testnet-" prefix on the conf file and db directory.
+	strDbPath			= TESTNET ? "testnet-db" : "db";
+	strConfFile			= boost::str(boost::format(TESTNET ? "testnet-%s" : "%s")
+							% (strConf.empty() ? CONFIG_FILE_NAME : strConf));
+
+	VALIDATORS_BASE		= boost::str(boost::format(TESTNET ? "testnet-%s" : "%s")
+							% VALIDATORS_FILE_NAME);
+	VALIDATORS_URI		= boost::str(boost::format("/%s") % VALIDATORS_BASE);
+
+	SIGN_TRANSACTION	= TESTNET ? sHP_TestNetTransactionSign	: sHP_TransactionSign;
+	SIGN_VALIDATION		= TESTNET ? sHP_TestNetValidation		: sHP_Validation;
+	SIGN_PROPOSAL		= TESTNET ? sHP_TestNetProposal			: sHP_Proposal;
+
+	ALPHABET			= TESTNET
+		? "RPShNAF39wBUDnEGHJKLM4pQrsT7VWXYZ2bcdeCg65jkm8ofqi1tuvaxyz"
+		: "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
 	if (!strConf.empty())
 	{
 		// --conf=<path> : everything is relative that file.
-		CONFIG_FILE				= strConf;
+		CONFIG_FILE				= strConfFile;
 		CONFIG_DIR				= CONFIG_FILE;
 			CONFIG_DIR.remove_filename();
-		DATA_DIR				= CONFIG_DIR / "db";
+		DATA_DIR				= CONFIG_DIR / strDbPath;
 	}
 	else
 	{
 		CONFIG_DIR				= boost::filesystem::current_path();
-		CONFIG_FILE				= CONFIG_DIR / CONFIG_FILE_NAME;
-		DATA_DIR				= CONFIG_DIR / "db";
+		CONFIG_FILE				= CONFIG_DIR / strConfFile;
+		DATA_DIR				= CONFIG_DIR / strDbPath;
 
 		if (exists(CONFIG_FILE)
 			// Can we figure out XDG dirs?
@@ -111,7 +132,7 @@ void Config::setup(const std::string& strConf, bool bQuiet)
 			}
 
 			CONFIG_DIR			= str(boost::format("%s/" SYSTEM_NAME) % strXdgConfigHome);
-			CONFIG_FILE			= CONFIG_DIR / CONFIG_FILE_NAME;
+			CONFIG_FILE			= CONFIG_DIR / strConfFile;
 			DATA_DIR			= str(boost::format("%s/" SYSTEM_NAME) % strXdgDataHome);
 
 			boost::filesystem::create_directories(CONFIG_DIR, ec);
@@ -140,6 +161,7 @@ Config::Config()
 	// Defaults
 	//
 
+	TESTNET					= false;
 	NETWORK_START_TIME		= 1319844908;
 
 	PEER_PORT				= SYSTEM_PEER_PORT;

@@ -23,7 +23,7 @@
 #include "bignum.h"
 #include "BitcoinUtil.h"
 
-static const char* pszBase58 = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
+extern const char* ALPHABET;
 
 inline std::string EncodeBase58(const unsigned char* pbegin, const unsigned char* pend)
 {
@@ -52,12 +52,12 @@ inline std::string EncodeBase58(const unsigned char* pbegin, const unsigned char
             throw bignum_error("EncodeBase58 : BN_div failed");
         bn = dv;
         unsigned int c = rem.getulong();
-        str += pszBase58[c];
+        str += ALPHABET[c];
     }
 
     // Leading zeroes encoded as base58 zeros
     for (const unsigned char* p = pbegin; p < pend && *p == 0; p++)
-        str += pszBase58[0];
+        str += ALPHABET[0];
 
     // Convert little endian std::string to big endian
     reverse(str.begin(), str.end());
@@ -82,7 +82,7 @@ inline bool DecodeBase58(const char* psz, std::vector<unsigned char>& vchRet)
     // Convert big endian string to bignum
     for (const char* p = psz; *p; p++)
     {
-        const char* p1 = strchr(pszBase58, *p);
+        const char* p1 = strchr(ALPHABET, *p);
         if (p1 == NULL)
         {
             while (isspace(*p))
@@ -91,7 +91,7 @@ inline bool DecodeBase58(const char* psz, std::vector<unsigned char>& vchRet)
                 return false;
             break;
         }
-        bnChar.setulong(p1 - pszBase58);
+        bnChar.setulong(p1 - ALPHABET);
         if (!BN_mul(&bn, &bn, &bn58, pctx))
             throw bignum_error("DecodeBase58 : BN_mul failed");
         bn += bnChar;
@@ -106,7 +106,7 @@ inline bool DecodeBase58(const char* psz, std::vector<unsigned char>& vchRet)
 
     // Restore leading zeros
     int nLeadingZeros = 0;
-    for (const char* p = psz; *p == pszBase58[0]; p++)
+    for (const char* p = psz; *p == ALPHABET[0]; p++)
         nLeadingZeros++;
     vchRet.assign(nLeadingZeros + vchTmp.size(), 0);
 
