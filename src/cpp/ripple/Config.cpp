@@ -73,12 +73,12 @@ void Config::setup(const std::string& strConf, bool bTestNet, bool bQuiet)
 	TESTNET	= bTestNet;
 	QUIET	= bQuiet;
 
-	// TESTNET forces a "test-" prefix on the conf file and db directory.
-	strDbPath			= TESTNET ? "test-db" : "db";
-	strConfFile			= boost::str(boost::format(TESTNET ? "test-%s" : "%s")
+	// TESTNET forces a "testnet-" prefix on the conf file and db directory.
+	strDbPath			= TESTNET ? "testnet-db" : "db";
+	strConfFile			= boost::str(boost::format(TESTNET ? "testnet-%s" : "%s")
 							% (strConf.empty() ? CONFIG_FILE_NAME : strConf));
 
-	VALIDATORS_BASE		= boost::str(boost::format(TESTNET ? "test-%s" : "%s")
+	VALIDATORS_BASE		= boost::str(boost::format(TESTNET ? "testnet-%s" : "%s")
 							% VALIDATORS_FILE_NAME);
 	VALIDATORS_URI		= boost::str(boost::format("/%s") % VALIDATORS_BASE);
 
