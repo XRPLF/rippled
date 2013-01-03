@@ -1162,7 +1162,7 @@ Remote.prototype.transaction = function () {
 //       |/
 //       |- 'tesSUCCESS'     - Transaction in ledger as expected.
 //       |- 'ter...'         - Transaction failed.
-//       \- 'tep...'         - Transaction partially succeeded.
+//       \- 'tec...'         - Transaction claimed fee only.
 //
 // Notes:
 // - All transactions including those with local and malformed errors may be
@@ -1225,7 +1225,7 @@ Transaction.prototype.consts = {
   'tefFAILURE'      : -199,
   'terRETRY'        : -99,
   'tesSUCCESS'      : 0,
-  'tepPARTIAL'      : 100,
+  'tecCLAIMED'      : 100,
 };
 
 Transaction.prototype.isTelLocal = function (ter) {
@@ -1248,8 +1248,8 @@ Transaction.prototype.isTepSuccess = function (ter) {
   return ter >= this.consts.tesSUCCESS;
 };
 
-Transaction.prototype.isTepPartial = function (ter) {
-  return ter >= this.consts.tepPATH_PARTIAL;
+Transaction.prototype.isTecClaimed = function (ter) {
+  return ter >= this.consts.tecCLAIMED;
 };
 
 Transaction.prototype.isRejected = function (ter) {

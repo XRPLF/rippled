@@ -602,7 +602,7 @@ buster.testCase("Offer tests", {
               .on('proposed', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tepPATH_PARTIAL');
+                  callback(m.result !== 'tecPATH_PARTIAL');
                 })
               .submit();
           },

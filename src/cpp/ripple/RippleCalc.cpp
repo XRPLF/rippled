@@ -2567,8 +2567,7 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: %d rate: %s qual
 			{
 				// Have sent maximum allowed. Partial payment not allowed.
 
-				terResult	= tepPATH_PARTIAL;
-				lesActive	= lesBase;				// Revert to just fees charged.
+				terResult	= tecPATH_PARTIAL;
 			}
 			else
 			{
@@ -2581,14 +2580,13 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: %d rate: %s qual
 	    else if (!bPartialPayment)
 	    {
 		    // Partial payment not allowed.
-		    terResult	= tepPATH_PARTIAL;
-		    lesActive	= lesBase;				// Revert to just fees charged.
+		    terResult	= tecPATH_PARTIAL;
 	    }
 	    // Partial payment ok.
 	    else if (!saDstAmountAct)
 	    {
 		    // No payment at all.
-		    terResult	= tecPATH_DRY;			// Revert to just fees charged is built into tec.
+		    terResult	= tecPATH_DRY;
 	    }
 	    else
 	    {
