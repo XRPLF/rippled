@@ -20,10 +20,10 @@ enum TransactionType
 	ttCONTRACT			= 9,
 	ttCONTRACT_REMOVE	= 10,  // can we use the same msg as offer cancel
 
-	ttTRUST_SET		= 20,
+	ttTRUST_SET			= 20,
 
-	ttFEATURE		= 100,
-	ttFEE			= 101,
+	ttFEATURE			= 100,
+	ttFEE				= 101,
 };
 
 class TransactionFormat
