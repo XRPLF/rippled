@@ -5,7 +5,7 @@ std::map<std::string, TransactionFormat*> TransactionFormat::byName;
 
 #define TF_BASE												\
 		<< SOElement(sfTransactionType,		SOE_REQUIRED)	\
-		<< SOElement(sfFlags,				SOE_REQUIRED)	\
+		<< SOElement(sfFlags,				SOE_OPTIONAL)	\
 		<< SOElement(sfSourceTag,			SOE_OPTIONAL)	\
 		<< SOElement(sfAccount,				SOE_REQUIRED)	\
 		<< SOElement(sfSequence,			SOE_REQUIRED)	\
