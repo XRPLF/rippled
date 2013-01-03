@@ -199,7 +199,8 @@ var Remote = function (opts, trace) {
   this._ledger_current_index  = undefined;
   this._ledger_hash           = undefined;
   this._ledger_time           = undefined;
-  this.stand_alone            = undefined;
+  this._stand_alone           = undefined;
+  this._testnet               = undefined;
   this.online_target          = false;
   this.online_state           = 'closed';         // 'open', 'closed', 'connecting', 'closing'
   this.state                  = 'offline';        // 'online', 'offline'
@@ -859,7 +860,8 @@ Remote.prototype._server_subscribe = function () {
 
   this.request_subscribe([ 'ledger', 'server' ])
     .on('success', function (message) {
-        self.stand_alone          = !!message.stand_alone;
+        self._stand_alone       = !!message.stand_alone;
+        self._testnet           = !!message.testnet;
 
         if (message.random)
           self.emit('random', utils.hexToArray(message.random));
@@ -899,7 +901,7 @@ Remote.prototype._server_subscribe = function () {
 // A good way to be notified of the result of this is:
 //    remote.once('ledger_closed', function (ledger_closed, ledger_index) { ... } );
 Remote.prototype.ledger_accept = function () {
-  if (this.stand_alone || undefined === this.stand_alone)
+  if (this._stand_alone || undefined === this._stand_alone)
   {
     var request = new Request(this, 'ledger_accept');
 

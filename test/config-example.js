@@ -37,7 +37,7 @@ exports.servers = {
 
 exports.http_servers = {
   // A local test server
-  "alpha-http" : {
+  "zed" : {
     "ip" : "127.0.0.1",
     "port" : 8088,
   }

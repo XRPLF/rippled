@@ -627,7 +627,14 @@ void Peer::recvHello(ripple::TMHello& packet)
 	}
 #endif
 
-	if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
+	if ((packet.has_testnet() && packet.testnet()) != theConfig.TESTNET)
+	{
+		// Format: actual/requested.
+		cLog(lsINFO) << boost::str(boost::format("Recv(Hello): Network mismatch: %d/%d")
+			% packet.testnet()
+			% theConfig.TESTNET);
+	}
+	else if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
 	{
 		if (packet.nettime() > maxTime)
 		{
@@ -1619,6 +1626,7 @@ void Peer::sendHello()
 	h.set_nodeproof(&vchSig[0], vchSig.size());
 	h.set_ipv4port(theConfig.PEER_PORT);
 	h.set_nodeprivate(theConfig.PEER_PRIVATE);
+	h.set_testnet(theConfig.TESTNET);
 
 	Ledger::pointer closedLedger = theApp->getLedgerMaster().getClosedLedger();
 	if (closedLedger && closedLedger->isClosed())

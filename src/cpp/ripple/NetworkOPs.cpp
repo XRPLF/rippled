@@ -1079,6 +1079,9 @@ Json::Value NetworkOPs::getServerInfo()
 {
 	Json::Value info = Json::objectValue;
 
+	if (theConfig.TESTNET)
+		info["testnet"]		= theConfig.TESTNET;
+
 	switch (mMode)
 	{
 		case omDISCONNECTED: info["serverState"] = "disconnected"; break;
@@ -1455,7 +1458,11 @@ bool NetworkOPs::subServer(InfoSub* ispListener, Json::Value& jvResult)
 {
 	uint256			uRandom;
 
-	jvResult["stand_alone"]	= theConfig.RUN_STANDALONE;
+	if (theConfig.RUN_STANDALONE)
+		jvResult["stand_alone"]	= theConfig.RUN_STANDALONE;
+
+	if (theConfig.TESTNET)
+		jvResult["testnet"]		= theConfig.TESTNET;
 
 	getRand(uRandom.begin(), uRandom.size());
 	jvResult["random"]			= uRandom.ToString();
