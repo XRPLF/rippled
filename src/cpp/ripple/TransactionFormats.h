@@ -2,6 +2,7 @@
 #define __TRANSACTIONFORMATS__
 
 #include "SerializedObject.h"
+#include "LedgerFormats.h"
 
 enum TransactionType
 {
@@ -57,6 +58,13 @@ const int TransactionMaxLen			= 1048576;
 //
 // Transaction flags.
 //
+
+#if ENABLE_REQUIRE_DEST_TAG
+// AccountSet flags:
+const uint32 tfRequireDestTag		= 0x00010000;
+const uint32 tfOptionalDestTag		= 0x00020000;
+const uint32 tfAccountSetMask		= ~(tfRequireDestTag|tfOptionalDestTag);
+#endif
 
 // OfferCreate flags:
 const uint32 tfPassive				= 0x00010000;

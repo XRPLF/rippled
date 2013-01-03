@@ -8,12 +8,49 @@ TER AccountSetTransactor::doApply()
 
 	const uint32	uTxFlags	= mTxn.getFlags();
 
+#if ENABLE_REQUIRE_DEST_TAG
+	const uint32	uFlagsIn	= mTxnAccount->getFieldU32(sfFlags);
+	uint32			uFlagsOut	= uFlagsIn;
+
+	if (uTxFlags & tfAccountSetMask)
+#else
 	if (uTxFlags)
+#endif
 	{
 		cLog(lsINFO) << "AccountSet: Malformed transaction: Invalid flags set.";
 
 		return temINVALID_FLAG;
 	}
+
+#if ENABLE_REQUIRE_DEST_TAG
+	//
+	// RequireDestTag
+	//
+
+	if ((tfRequireDestTag|tfOptionalDestTag) == (uTxFlags & (tfRequireDestTag|tfOptionalDestTag)))
+	{
+		cLog(lsINFO) << "AccountSet: Malformed transaction: Contradictory flags set.";
+
+		return temINVALID_FLAG;
+	}
+
+	if (uTxFlags & tfRequireDestTag)
+	{
+		cLog(lsINFO) << "AccountSet: Set RequireDestTag.";
+
+		uFlagsOut	|= lsfRequireDestTag;
+	}
+
+	if (uTxFlags & tfOptionalDestTag)
+	{
+		cLog(lsINFO) << "AccountSet: Clear RequireDestTag.";
+
+		uFlagsOut	&= ~lsfRequireDestTag;
+	}
+
+	if (uFlagsIn != uFlagsOut)
+		mTxnAccount->setFieldU32(sfFlags, uFlagsOut);
+#endif
 
 	//
 	// EmailHash
