@@ -39,6 +39,9 @@ enum TER	// aka TransactionEngineResult
 	temBAD_SEQUENCE,
 	temDST_IS_SRC,
 	temDST_NEEDED,
+#if ENABLE_REQUIRE_DEST_TAG
+	temDST_TAG_NEEDED,
+#endif
 	temINVALID,
 	temINVALID_FLAG,
 	temREDUNDANT,

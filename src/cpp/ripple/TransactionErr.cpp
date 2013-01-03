@@ -53,6 +53,9 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	temBAD_SEQUENCE,		"temBAD_SEQUENCE",			"Malformed: Sequence is not in the past."				},
 		{	temDST_IS_SRC,			"temDST_IS_SRC",			"Destination may not be source."						},
 		{	temDST_NEEDED,			"temDST_NEEDED",			"Destination not specified."							},
+#if ENABLE_REQUIRE_DEST_TAG
+		{	temDST_TAG_NEEDED,		"temDST_TAG_NEEDED",		"Destination tag required."								},
+#endif
 		{	temINVALID,				"temINVALID",				"The transaction is ill-formed."						},
 		{	temINVALID_FLAG,		"temINVALID_FLAG",			"The transaction has an invalid flag."					},
 		{	temREDUNDANT,			"temREDUNDANT",				"Sends same currency to self."							},

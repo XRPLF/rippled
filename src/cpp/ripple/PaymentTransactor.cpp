@@ -99,6 +99,14 @@ TER PaymentTransactor::doApply()
 		sleDst->setFieldAccount(sfAccount, uDstAccountID);
 		sleDst->setFieldU32(sfSequence, 1);
 	}
+#if ENABLE_REQUIRE_DEST_TAG
+	else if ((sleDst->getFlags() & lsfRequireDestTag) && !mTxn.isFieldPresent(sfDestinationTag))
+	{
+		cLog(lsINFO) << "doPayment: Malformed transaction: DestinationTag required.";
+
+		return temINVALID;
+	}
+#endif
 	else
 	{
 		mEngine->entryModify(sleDst);
