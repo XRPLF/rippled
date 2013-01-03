@@ -11,8 +11,9 @@ var stringToHex = function (s) {
     }).join("");
 };
 
-if (process.argv.length != 3) {
+if (3 != process.argv.length) {
   process.stderr.write("Usage: " + process.argv[1] + " string\n\nReturns hex of lowercasing string.\n");
+  process.exit(1);
 
 } else {
 

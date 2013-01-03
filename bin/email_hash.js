@@ -3,8 +3,9 @@
 // Returns a Gravatar style hash as per: http://en.gravatar.com/site/implement/hash/
 //
 
-if (process.argv.length != 3) {
+if (3 != process.argv.length) {
   process.stderr.write("Usage: " + process.argv[1] + " email_address\n\nReturns gravitar style hash.\n");
+  process.exit(1);
 
 } else {
   var md5 = require('crypto').createHash('md5');
