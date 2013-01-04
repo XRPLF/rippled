@@ -131,6 +131,8 @@ void LedgerAcquire::onTimer(bool progress)
 		else
 			trigger(Peer::pointer(), true);
 	}
+	else
+		resetTimer();
 }
 
 void LedgerAcquire::addPeers()
@@ -509,7 +511,6 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 	if (ptr)
 		return ptr;
 	ptr = boost::make_shared<LedgerAcquire>(hash);
-	assert(mLedgers[hash] == ptr);
 	ptr->addPeers();
 	ptr->resetTimer(); // Cannot call in constructor
 	return ptr;
