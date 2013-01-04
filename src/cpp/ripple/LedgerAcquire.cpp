@@ -37,7 +37,7 @@ void PeerSet::badPeer(Peer::ref ptr)
 	mPeers.erase(ptr->getPeerId());
 }
 
-void PeerSet::resetTimer()
+void PeerSet::setTimer()
 {
 	mTimer.expires_from_now(boost::posix_time::milliseconds(mTimerInterval));
 	mTimer.async_wait(boost::bind(&PeerSet::TimerEntry, pmDowncast(), boost::asio::placeholders::error));
@@ -45,6 +45,9 @@ void PeerSet::resetTimer()
 
 void PeerSet::invokeOnTimer()
 {
+	if (isDone())
+		return;
+
 	if (!mProgress)
 	{
 		++mTimeouts;
@@ -56,6 +59,9 @@ void PeerSet::invokeOnTimer()
 		mProgress = false;
 		onTimer(true);
 	}
+
+	if (!isDone())
+		setTimer();
 }
 
 void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::error_code& result)
@@ -120,19 +126,16 @@ void LedgerAcquire::onTimer(bool progress)
 	{
 		setFailed();
 		done();
+		return;
 	}
-	else if (!progress)
+
+	if (!progress)
 	{
 		if (!getPeerCount())
-		{
 			addPeers();
-			resetTimer();
-		}
 		else
 			trigger(Peer::pointer(), true);
 	}
-	else
-		resetTimer();
 }
 
 void LedgerAcquire::addPeers()
@@ -226,8 +229,6 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 		tmGL.set_itype(ripple::liBASE);
 		cLog(lsTRACE) << "Sending base request to " << (peer ? "selected peer" : "all peers");
 		sendRequest(tmGL, peer);
-		if (timer)
-			resetTimer();
 		return;
 	}
 
@@ -319,8 +320,6 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 		cLog(lsDEBUG) << "Done:" << (mComplete ? " complete" : "") << (mFailed ? " failed" : "");
 		done();
 	}
-	else if (timer)
-		resetTimer();
 }
 
 void PeerSet::sendRequest(const ripple::TMGetLedger& tmGL, Peer::ref peer)
@@ -512,7 +511,7 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 		return ptr;
 	ptr = boost::make_shared<LedgerAcquire>(hash);
 	ptr->addPeers();
-	ptr->resetTimer(); // Cannot call in constructor
+	ptr->setTimer(); // Cannot call in constructor
 	return ptr;
 }
 

@@ -47,10 +47,11 @@ public:
 
 	void peerHas(Peer::ref);
 	void badPeer(Peer::ref);
-	void resetTimer();
+	void setTimer();
 
 	int takePeerSetFrom(const PeerSet& s);
 	int getPeerCount() const;
+	virtual bool isDone() const			{ return mComplete || mFailed; }
 
 protected:
 	virtual void newPeer(Peer::ref) = 0;

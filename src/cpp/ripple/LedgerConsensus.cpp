@@ -67,7 +67,6 @@ void TransactionAcquire::onTimer(bool progress)
 			BOOST_FOREACH(Peer::ref peer, peerList)
 				peerHas(peer);
 		}
-		resetTimer();
 	}
 	else if (!progress)
 		trigger(Peer::pointer(), true);
@@ -111,20 +110,15 @@ void TransactionAcquire::trigger(Peer::ref peer, bool timer)
 			done();
 			return;
 		}
-		else
-		{
-			ripple::TMGetLedger tmGL;
-			tmGL.set_ledgerhash(mHash.begin(), mHash.size());
-			tmGL.set_itype(ripple::liTS_CANDIDATE);
-			if (getTimeouts() != 0)
-				tmGL.set_querytype(ripple::qtINDIRECT);
-			BOOST_FOREACH(SHAMapNode& it, nodeIDs)
-				*(tmGL.add_nodeids()) = it.getRawString();
-			sendRequest(tmGL, peer);
-		}
+		ripple::TMGetLedger tmGL;
+		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
+		tmGL.set_itype(ripple::liTS_CANDIDATE);
+		if (getTimeouts() != 0)
+			tmGL.set_querytype(ripple::qtINDIRECT);
+		BOOST_FOREACH(SHAMapNode& it, nodeIDs)
+			*(tmGL.add_nodeids()) = it.getRawString();
+		sendRequest(tmGL, peer);
 	}
-	if (timer)
-		resetTimer();
 }
 
 SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
@@ -882,7 +876,7 @@ void LedgerConsensus::startAcquiring(const TransactionAcquire::pointer& acquire)
 			acquire->peerHas(peer);
 	}
 
-	acquire->resetTimer();
+	acquire->setTimer();
 }
 
 void LedgerConsensus::propose()
