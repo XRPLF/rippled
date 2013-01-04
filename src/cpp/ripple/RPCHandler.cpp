@@ -1296,6 +1296,10 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest)
 
 // { account: <account>, ledger: <integer> }
 // { account: <account>, ledger_min: <integer>, ledger_max: <integer> }
+// THIS ROUTINE DOESN'T SCALE.
+// FIXME: Require admin.
+// FIXME: Doesn't report database holes.
+// FIXME: For consistency change inputs to: ledger_index, ledger_index_min, ledger_index_max.
 Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 {
 	RippleAddress	raAccount;

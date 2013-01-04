@@ -3,8 +3,6 @@
 
 #include "SerializedObject.h"
 
-#define ENABLE_REQUIRE_DEST_TAG		0
-
 // Used as the type of a transaction or the type of a ledger entry.
 enum LedgerEntryType
 {
@@ -42,9 +40,7 @@ enum LedgerSpecificFlags
 {
 	// ltACCOUNT_ROOT
 	lsfPasswordSpent	= 0x00010000,	// True, if password set fee is spent.
-#if ENABLE_REQUIRE_DEST_TAG
 	lsfRequireDestTag	= 0x00020000,	// True, to require a DestinationTag for payments.
-#endif
 
 	// ltOFFER
 	lsfPassive			= 0x00010000,
