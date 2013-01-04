@@ -39,16 +39,22 @@ module.exports = function(grunt) {
     webpack: {
       lib: {
         src: "src/js/index.js",
-        dest: "build/ripple-<%= pkg.version %>.js"
+        dest: "build/ripple-<%= pkg.version %>.js",
+        libary: "ripple", // misspelling fixed in later versions of webpack
+        library: "ripple"
       },
       lib_debug: {
         src: "src/js/index.js",
         dest: "build/ripple-<%= pkg.version %>-debug.js",
+        libary: "ripple", // misspelling fixed in later versions of webpack
+        library: "ripple",
         debug: true
       },
       lib_min: {
         src: "src/js/index.js",
         dest: "build/ripple-<%= pkg.version %>-min.js",
+        libary: "ripple", // misspelling fixed in later versions of webpack
+        library: "ripple",
         minimize: true
       }
     },
