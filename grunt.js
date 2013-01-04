@@ -2,7 +2,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-webpack');
 
   grunt.initConfig({
-    pkg: '<json:package.json',
+    pkg: '<json:package.json>',
     meta: {
       banner: '/*! <%= pkg.name %> - v<%= pkg.version %> - ' +
         '<%= grunt.template.today("yyyy-mm-dd") %>\n' +
@@ -43,12 +43,12 @@ module.exports = function(grunt) {
       },
       lib_debug: {
         src: "src/js/index.js",
-        dest: "build/ripple-<%= pkg.version %>.js",
+        dest: "build/ripple-<%= pkg.version %>-debug.js",
         debug: true
       },
       lib_min: {
         src: "src/js/index.js",
-        dest: "build/ripple-<%= pkg.version %>.js",
+        dest: "build/ripple-<%= pkg.version %>-min.js",
         minimize: true
       }
     },
