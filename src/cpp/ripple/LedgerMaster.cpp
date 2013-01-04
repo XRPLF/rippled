@@ -132,8 +132,35 @@ bool LedgerMaster::haveLedgerRange(uint32 from, uint32 to)
 	return (prevMissing == RangeSet::RangeSetAbsent) || (prevMissing < from);
 }
 
+void LedgerMaster::asyncAccept(Ledger::pointer ledger)
+{
+	do
+	{
+		{
+			boost::recursive_mutex::scoped_lock ml(mLock);
+			mCompleteLedgers.setValue(ledger->getLedgerSeq());
+			if ((ledger->getLedgerSeq() == 0) || mCompleteLedgers.hasValue(ledger->getLedgerSeq() - 1))
+				break;
+		}
+		Ledger::pointer prevLedger = Ledger::loadByIndex(ledger->getLedgerSeq() - 1);
+		if (!prevLedger || (prevLedger->getHash() != ledger->getParentHash()))
+			break;
+		ledger = prevLedger;
+	} while(1);
+	resumeAcquiring();
+}
+
 void LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledgerSeq)
 {
+	Ledger::pointer ledger = Ledger::loadByIndex(ledgerSeq);
+	if (ledger && (ledger->getHash() == ledgerHash))
+	{
+		cLog(lsDEBUG) << "Ledger found is database, doing async accept";
+		mTooFast = true;
+		theApp->getJobQueue().addJob(jtPUBLEDGER, boost::bind(&LedgerMaster::asyncAccept, this, ledger));
+		return;
+	}
+
 	mMissingLedger = theApp->getMasterLedgerAcquire().findCreate(ledgerHash);
 	if (mMissingLedger->isComplete())
 	{
@@ -294,10 +321,9 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 			cLog(lsDEBUG) << "no prior missing ledger";
 			return;
 		}
-		cLog(lsTRACE) << "Ledger " << prevMissing << " is missing";
 		if (shouldAcquire(mCurrentLedger->getLedgerSeq(), theConfig.LEDGER_HISTORY, prevMissing))
 		{
-			cLog(lsINFO) << "Ledger " << prevMissing << " is needed";
+			cLog(lsDEBUG) << "Ledger " << prevMissing << " is needed";
 			assert(!mCompleteLedgers.hasValue(prevMissing));
 			Ledger::pointer nextLedger = getLedgerBySeq(prevMissing + 1);
 			if (nextLedger)

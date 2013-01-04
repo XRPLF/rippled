@@ -51,6 +51,7 @@ protected:
 	bool isTransactionOnFutureList(const Transaction::pointer& trans);
 
 	void acquireMissingLedger(const uint256& ledgerHash, uint32 ledgerSeq);
+	void asyncAccept(Ledger::pointer);
 	void missingAcquireComplete(LedgerAcquire::pointer);
 	void pubThread();
 
