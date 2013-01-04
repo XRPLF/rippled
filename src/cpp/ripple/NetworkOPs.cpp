@@ -789,7 +789,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringCo
 	else
 		cLog(lsERROR) << "JUMP last closed ledger to " << newLedger->getHash();
 
-	mNeedNetworkLedger = false;
+	clearNeedNetworkLedger();
 	newLedger->setClosed();
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*newLedger));
 	mLedgerMaster->switchLedgers(newLedger, openLedger);
