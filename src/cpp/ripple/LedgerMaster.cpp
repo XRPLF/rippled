@@ -406,7 +406,7 @@ void LedgerMaster::checkPublish(const uint256& hash, uint32 seq)
 		}
 	}
 
-	if (!mPubThread)
+	if (!mPubLedgers.empty() && !mPubThread)
 	{
 		mPubThread = true;
 		theApp->getJobQueue().addJob(jtPUBLEDGER, boost::bind(&LedgerMaster::pubThread, this));
