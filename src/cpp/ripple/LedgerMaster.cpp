@@ -170,6 +170,11 @@ void LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledger
 		mMissingLedger.reset();
 		return;
 	}
+	else if (mMissingLedger->isDone())
+	{
+		mMissingLedger.reset();
+		return;
+	}
 	mMissingSeq = ledgerSeq;
 	if (mMissingLedger->setAccept())
 		mMissingLedger->addOnComplete(boost::bind(&LedgerMaster::missingAcquireComplete, this, _1));
