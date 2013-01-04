@@ -79,6 +79,7 @@ LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE
 #ifdef LA_DEBUG
 	cLog(lsTRACE) << "Acquiring ledger " << mHash;
 #endif
+	tryLocal();
 }
 
 bool LedgerAcquire::tryLocal()
@@ -87,7 +88,7 @@ bool LedgerAcquire::tryLocal()
 	if (!node)
 		return false;
 
-	mLedger = boost::make_shared<Ledger>(strCopy(node->getData()));
+	mLedger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
 	assert(mLedger->getHash() == mHash);
 	mHaveBase = true;
 
@@ -254,7 +255,8 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 			mLedger->peekTransactionMap()->getMissingNodes(nodeIDs, nodeHashes, 128, &tFilter);
 			if (nodeIDs.empty())
 			{
-				if (!mLedger->peekTransactionMap()->isValid()) mFailed = true;
+				if (!mLedger->peekTransactionMap()->isValid())
+					mFailed = true;
 				else
 				{
 					mHaveTransactions = true;
@@ -294,7 +296,8 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 			mLedger->peekAccountStateMap()->getMissingNodes(nodeIDs, nodeHashes, 128, &aFilter);
 			if (nodeIDs.empty())
 			{
- 				if (!mLedger->peekAccountStateMap()->isValid()) mFailed = true;
+				if (!mLedger->peekAccountStateMap()->isValid())
+					mFailed = true;
 				else
 				{
 					mHaveState = true;
@@ -367,14 +370,14 @@ int PeerSet::getPeerCount() const
 	return ret;
 }
 
-bool LedgerAcquire::takeBase(const std::string& data)
+bool LedgerAcquire::takeBase(const std::string& data) // data must not have hash prefix
 { // Return value: true=normal, false=bad data
 #ifdef LA_DEBUG
 	cLog(lsTRACE) << "got base acquiring ledger " << mHash;
 #endif
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (mHaveBase) return true;
-	mLedger = boost::make_shared<Ledger>(data);
+	mLedger = boost::make_shared<Ledger>(data, false);
 	if (mLedger->getHash() != mHash)
 	{
 		cLog(lsWARNING) << "Acquire hash mismatch";

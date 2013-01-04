@@ -109,9 +109,8 @@ public:
 		uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution,
 		uint32 ledgerSeq); // used for database ledgers
 
-	Ledger(const std::vector<unsigned char>& rawLedger);
-
-	Ledger(const std::string& rawLedger);
+	Ledger(const std::vector<unsigned char>& rawLedger, bool hasPrefix);
+	Ledger(const std::string& rawLedger, bool hasPrefix);
 
 	Ledger(bool dummy, Ledger& previous);	// ledger after this one
 
@@ -132,7 +131,7 @@ public:
 
 	// ledger signature operations
 	void addRaw(Serializer &s) const;
-	void setRaw(Serializer& s);
+	void setRaw(Serializer& s, bool hasPrefix);
 
 	uint256 getHash();
 	const uint256& getParentHash() const	{ return mParentHash; }

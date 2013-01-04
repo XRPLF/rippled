@@ -94,19 +94,19 @@ Ledger::Ledger(bool /* dummy */, Ledger& prevLedger) :
 	zeroFees();
 }
 
-Ledger::Ledger(const std::vector<unsigned char>& rawLedger) :
+Ledger::Ledger(const std::vector<unsigned char>& rawLedger, bool hasPrefix) :
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
 	Serializer s(rawLedger);
-	setRaw(s);
+	setRaw(s, hasPrefix);
 	zeroFees();
 }
 
-Ledger::Ledger(const std::string& rawLedger) :
+Ledger::Ledger(const std::string& rawLedger, bool hasPrefix) :
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
 	Serializer s(rawLedger);
-	setRaw(s);
+	setRaw(s, hasPrefix);
 	zeroFees();
 }
 
@@ -127,9 +127,10 @@ void Ledger::updateHash()
 	mValidHash = true;
 }
 
-void Ledger::setRaw(Serializer &s)
+void Ledger::setRaw(Serializer &s, bool hasPrefix)
 {
 	SerializerIterator sit(s);
+	if (hasPrefix) sit.get32();
 	mLedgerSeq =		sit.get32();
 	mTotCoins =			sit.get64();
 	mParentHash =		sit.get256();
