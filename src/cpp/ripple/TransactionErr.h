@@ -39,6 +39,9 @@ enum TER	// aka TransactionEngineResult
 	temBAD_SEQUENCE,
 	temDST_IS_SRC,
 	temDST_NEEDED,
+#if ENABLE_REQUIRE_DEST_TAG
+	temDST_TAG_NEEDED,
+#endif
 	temINVALID,
 	temINVALID_FLAG,
 	temREDUNDANT,
@@ -92,20 +95,9 @@ enum TER	// aka TransactionEngineResult
 	// - Forwarded
 	tesSUCCESS		= 0,
 
-	// 100 .. 119 P Partial success (SR) (ripple transaction with no good paths, pay to non-existent account)
+	// 100 .. 129 C Claim fee only (ripple transaction with no good paths, pay to non-existent account, no path)
 	// Causes:
 	// - Success, but does not achieve optimal result.
-	// Implications:
-	// - Applied
-	// - Forwarded
-	// Only allowed as a return code of appliedTransaction when !tapRetry. Otherwise, treated as terRETRY.
-	//
-	// DO NOT CHANGE THESE NUMBERS: They appear in ledger meta data.
-	tepPARTIAL				= 100,
-	tepPATH_PARTIAL			= 101,
-
-	// 120 .. C Claim fee only (CO) (no path)
-	// Causes:
 	// - Invalid transaction or no effect, but claim fee to use the sequence number.
 	// Implications:
 	// - Applied
@@ -113,7 +105,8 @@ enum TER	// aka TransactionEngineResult
 	// Only allowed as a return code of appliedTransaction when !tapRetry. Otherwise, treated as terRETRY.
 	//
 	// DO NOT CHANGE THESE NUMBERS: They appear in ledger meta data.
-	tecCLAIM					= 120,
+	tecCLAIM					= 100,
+	tecPATH_PARTIAL				= 101,
 	tecDIR_FULL					= 121,
 	tecINSUF_RESERVE_LINE		= 122,
 	tecINSUF_RESERVE_OFFER		= 123,
@@ -130,7 +123,6 @@ enum TER	// aka TransactionEngineResult
 #define isTefFailure(x)		((x) >= tefFAILURE && (x) < terRETRY)
 #define isTerRetry(x)		((x) >= terRETRY && (x) < tesSUCCESS)
 #define isTepSuccess(x)		((x) >= tesSUCCESS)
-#define isTepPartial(x)		((x) >= tepPATH_PARTIAL && (x) < tecCLAIM)
 #define isTecClaim(x)		((x) >= tecCLAIM)
 
 bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman);

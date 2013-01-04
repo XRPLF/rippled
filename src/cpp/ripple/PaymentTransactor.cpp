@@ -26,37 +26,37 @@ TER PaymentTransactor::doApply()
 	const uint160	uSrcCurrency	= saMaxAmount.getCurrency();
 	const uint160	uDstCurrency	= saDstAmount.getCurrency();
 
-	cLog(lsINFO) << boost::str(boost::format("doPayment> saMaxAmount=%s saDstAmount=%s")
+	cLog(lsINFO) << boost::str(boost::format("Payment> saMaxAmount=%s saDstAmount=%s")
 		% saMaxAmount.getFullText()
 		% saDstAmount.getFullText());
 
 	if (uTxFlags & tfPaymentMask)
 	{
-		cLog(lsINFO) << "doPayment: Malformed transaction: Invalid flags set.";
+		cLog(lsINFO) << "Payment: Malformed transaction: Invalid flags set.";
 
 		return temINVALID_FLAG;
 	}
 	else if (!uDstAccountID)
 	{
-		cLog(lsINFO) << "doPayment: Malformed transaction: Payment destination account not specified.";
+		cLog(lsINFO) << "Payment: Malformed transaction: Payment destination account not specified.";
 
 		return temDST_NEEDED;
 	}
 	else if (bMax && !saMaxAmount.isPositive())
 	{
-		cLog(lsINFO) << "doPayment: Malformed transaction: bad max amount: " << saMaxAmount.getFullText();
+		cLog(lsINFO) << "Payment: Malformed transaction: bad max amount: " << saMaxAmount.getFullText();
 
 		return temBAD_AMOUNT;
 	}
 	else if (!saDstAmount.isPositive())
 	{
-		cLog(lsINFO) << "doPayment: Malformed transaction: bad dst amount: " << saDstAmount.getFullText();
+		cLog(lsINFO) << "Payment: Malformed transaction: bad dst amount: " << saDstAmount.getFullText();
 
 		return temBAD_AMOUNT;
 	}
 	else if (mTxnAccountID == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
 	{
-		cLog(lsINFO) << boost::str(boost::format("doPayment: Malformed transaction: Redundant transaction: src=%s, dst=%s, src_cur=%s, dst_cur=%s")
+		cLog(lsINFO) << boost::str(boost::format("Payment: Malformed transaction: Redundant transaction: src=%s, dst=%s, src_cur=%s, dst_cur=%s")
 			% mTxnAccountID.ToString()
 			% uDstAccountID.ToString()
 			% uSrcCurrency.ToString()
@@ -68,7 +68,7 @@ TER PaymentTransactor::doApply()
 		&& ((saMaxAmount == saDstAmount && saMaxAmount.getCurrency() == saDstAmount.getCurrency())
 		|| (saDstAmount.isNative() && saMaxAmount.isNative())))
 	{
-		cLog(lsINFO) << "doPayment: Malformed transaction: bad SendMax.";
+		cLog(lsINFO) << "Payment: Malformed transaction: bad SendMax.";
 
 		return temINVALID;
 	}
@@ -80,14 +80,14 @@ TER PaymentTransactor::doApply()
 
 		if (!saDstAmount.isNative())
 		{
-			cLog(lsINFO) << "doPayment: Delay transaction: Destination account does not exist.";
+			cLog(lsINFO) << "Payment: Delay transaction: Destination account does not exist.";
 
 			// Another transaction could create the account and then this transaction would succeed.
 			return tecNO_DST;
 		}
 		else if (saDstAmount.getNValue() < mEngine->getLedger()->getReserve(0))	// Reserve is not scaled by load.
 		{
-			cLog(lsINFO) << "doPayment: Delay transaction: Destination account does not exist. Insufficent payment to create account.";
+			cLog(lsINFO) << "Payment: Delay transaction: Destination account does not exist. Insufficent payment to create account.";
 
 			// Another transaction could create the account and then this transaction would succeed.
 			return tecNO_DST_INSUF_XRP;
@@ -99,6 +99,14 @@ TER PaymentTransactor::doApply()
 		sleDst->setFieldAccount(sfAccount, uDstAccountID);
 		sleDst->setFieldU32(sfSequence, 1);
 	}
+#if ENABLE_REQUIRE_DEST_TAG
+	else if ((sleDst->getFlags() & lsfRequireDestTag) && !mTxn.isFieldPresent(sfDestinationTag))
+	{
+		cLog(lsINFO) << "Payment: Malformed transaction: DestinationTag required.";
+
+		return temINVALID;
+	}
+#endif
 	else
 	{
 		mEngine->entryModify(sleDst);
@@ -148,7 +156,7 @@ TER PaymentTransactor::doApply()
 		{
 			// Vote no. However, transaction might succeed, if applied in a different order.
 			cLog(lsINFO) << "";
-			cLog(lsINFO) << boost::str(boost::format("doPayment: Delay transaction: Insufficient funds: %s / %s (%d)")
+			cLog(lsINFO) << boost::str(boost::format("Payment: Delay transaction: Insufficient funds: %s / %s (%d)")
 				% saSrcXRPBalance.getText() % (saDstAmount + uReserve).getText() % uReserve);
 
 			terResult	= tecUNFUNDED;
@@ -171,7 +179,7 @@ TER PaymentTransactor::doApply()
 
 	if (transResultInfo(terResult, strToken, strHuman))
 	{
-		cLog(lsINFO) << boost::str(boost::format("doPayment: %s: %s") % strToken % strHuman);
+		cLog(lsINFO) << boost::str(boost::format("Payment: %s: %s") % strToken % strHuman);
 	}
 	else
 	{

@@ -116,10 +116,6 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 		{
 			didApply = true;
 		}
-		else if (isTepPartial(terResult) && !isSetBit(params, tapRETRY))
-		{
-			didApply = true;
-		}
 		else if (isTecClaim(terResult) && !isSetBit(params, tapRETRY))
 		{ // only claim the transaction fee
 			cLog(lsINFO) << "Reprocessing to only claim fee";

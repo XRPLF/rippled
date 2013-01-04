@@ -55,6 +55,9 @@ static bool TFInit()
 		<< SOElement(sfSendMax,			SOE_OPTIONAL)
 		<< SOElement(sfPaths,			SOE_DEFAULT)
 		<< SOElement(sfInvoiceID,		SOE_OPTIONAL)
+#if ENABLE_DESTINATION_TAG
+		<< SOElement(sfDestinationTag,	SOE_OPTIONAL)
+#endif
 		;
 
 	DECLARE_TF(Contract, ttCONTRACT)

@@ -25,6 +25,15 @@ TER TrustSetTransactor::doApply()
 	if (bQualityOut && QUALITY_ONE == uQualityOut)
 		uQualityOut	= 0;
 
+	const uint32		uTxFlags		= mTxn.getFlags();
+
+	if (uTxFlags)
+	{
+		cLog(lsINFO) << "doTrustSet: Malformed transaction: Invalid flags set.";
+
+		return temINVALID_FLAG;
+	}
+
 	// Check if destination makes sense.
 
 	if (saLimitAmount.isNegative())

@@ -549,7 +549,7 @@ buster.testCase("Indirect ripple", {
               .on('proposed', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tepPATH_PARTIAL');
+                  callback(m.result !== 'tecPATH_PARTIAL');
                 })
               .submit();
           },
@@ -561,7 +561,7 @@ buster.testCase("Indirect ripple", {
               .on('proposed', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tepPATH_PARTIAL');
+                  callback(m.result !== 'tecPATH_PARTIAL');
                 })
               .submit();
           },

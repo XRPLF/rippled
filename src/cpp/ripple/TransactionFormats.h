@@ -2,6 +2,7 @@
 #define __TRANSACTIONFORMATS__
 
 #include "SerializedObject.h"
+#include "LedgerFormats.h"
 
 enum TransactionType
 {
@@ -19,10 +20,10 @@ enum TransactionType
 	ttCONTRACT			= 9,
 	ttCONTRACT_REMOVE	= 10,  // can we use the same msg as offer cancel
 
-	ttTRUST_SET		= 20,
+	ttTRUST_SET			= 20,
 
-	ttFEATURE		= 100,
-	ttFEE			= 101,
+	ttFEATURE			= 100,
+	ttFEE				= 101,
 };
 
 class TransactionFormat
@@ -57,6 +58,13 @@ const int TransactionMaxLen			= 1048576;
 //
 // Transaction flags.
 //
+
+#if ENABLE_REQUIRE_DEST_TAG
+// AccountSet flags:
+const uint32 tfRequireDestTag		= 0x00010000;
+const uint32 tfOptionalDestTag		= 0x00020000;
+const uint32 tfAccountSetMask		= ~(tfRequireDestTag|tfOptionalDestTag);
+#endif
 
 // OfferCreate flags:
 const uint32 tfPassive				= 0x00010000;

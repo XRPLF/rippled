@@ -17,6 +17,8 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	tecNO_LINE_INSUF_RESERVE,	"tecNO_LINE_INSUF_RESERVE",	"No such line. Too little reserve to create it."	},
 		{	tecNO_LINE_REDUNDANT,	"tecNO_LINE_REDUNDANT",		"Can't set non-existant line to default."				},
 		{	tecPATH_DRY,			"tecPATH_DRY",				"Path could not send partial amount."					},
+		{	tecPATH_PARTIAL,		"tecPATH_PARTIAL",			"Path could not send full amount."						},
+
 		{	tecUNFUNDED,			"tecUNFUNDED",				"Source account had insufficient balance for transaction."	},
 
 		{	tefFAILURE,				"tefFAILURE",				"Failed to apply."										},
@@ -51,15 +53,15 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	temBAD_SEQUENCE,		"temBAD_SEQUENCE",			"Malformed: Sequence is not in the past."				},
 		{	temDST_IS_SRC,			"temDST_IS_SRC",			"Destination may not be source."						},
 		{	temDST_NEEDED,			"temDST_NEEDED",			"Destination not specified."							},
+#if ENABLE_REQUIRE_DEST_TAG
+		{	temDST_TAG_NEEDED,		"temDST_TAG_NEEDED",		"Destination tag required."								},
+#endif
 		{	temINVALID,				"temINVALID",				"The transaction is ill-formed."						},
 		{	temINVALID_FLAG,		"temINVALID_FLAG",			"The transaction has an invalid flag."					},
 		{	temREDUNDANT,			"temREDUNDANT",				"Sends same currency to self."							},
 		{	temRIPPLE_EMPTY,		"temRIPPLE_EMPTY",			"PathSet with no paths."								},
 		{	temUNCERTAIN,			"temUNCERTAIN",				"In process of determining result. Never returned."		},
 		{	temUNKNOWN,				"temUNKNOWN",				"The transactions requires logic not implemented yet."	},
-
-		{	tepPARTIAL,				"tepPARTIAL",				"Partial success."										},
-		{	tepPATH_PARTIAL,		"tepPATH_PARTIAL",			"Path could not send full amount."						},
 
 		{	terRETRY,				"terRETRY",					"Retry transaction."									},
 		{	terFUNDS_SPENT,			"terFUNDS_SPENT",			"Can't set password, password set funds already spent."	},

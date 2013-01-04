@@ -1,6 +1,8 @@
 // This is not really a header file, but it can be used as one with
 // appropriate #define statements.
 
+#define ENABLE_DESTINATION_TAG		0
+
 	// types (common)
 	TYPE(Int16,				UINT16,		1)
 	TYPE(Int32,				UINT32,		2)
@@ -44,6 +46,9 @@
 	FIELD(TransferRate,			UINT32, 11)
 	FIELD(WalletSize,			UINT32, 12)
 	FIELD(OwnerCount,			UINT32, 13)
+#if ENABLE_DESTINATION_TAG
+	FIELD(DestinationTag,		UINT32, 14)
+#endif
 
 	// 32-bit integers (uncommon)
 	FIELD(HighQualityIn,		UINT32, 16)
