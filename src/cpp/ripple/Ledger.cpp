@@ -464,7 +464,6 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 		return;
 	}
 
-	theApp->getLedgerMaster().setFullLedger(shared_from_this());
 	event->stop();
 
 	decPendingSaves();

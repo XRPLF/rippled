@@ -218,6 +218,9 @@ void LedgerMaster::fixMismatch(Ledger::ref ledger)
 {
 	int invalidate = 0;
 
+	mMissingLedger.reset();
+	mMissingSeq = 0;
+
 	for (uint32 lSeq = ledger->getLedgerSeq() - 1; lSeq > 0; --lSeq)
 		if (mCompleteLedgers.hasValue(lSeq))
 		{
@@ -233,11 +236,6 @@ void LedgerMaster::fixMismatch(Ledger::ref ledger)
 				}
 			}
 			mCompleteLedgers.clearValue(lSeq);
-			if (mMissingSeq == lSeq)
-			{
-				mMissingLedger.reset();
-				mMissingSeq = 0;
-			}
 			++invalidate;
 		}
 
@@ -400,6 +398,7 @@ void LedgerMaster::pubThread()
 
 		BOOST_FOREACH(Ledger::ref l, ledgers)
 		{
+			setFullLedger(l); // OPTIMIZEME: This is actually more work than we need to do
 			theApp->getOPs().pubLedger(l);
 			BOOST_FOREACH(callback& c, mOnValidate)
 			{
