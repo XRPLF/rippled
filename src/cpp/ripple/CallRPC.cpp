@@ -439,6 +439,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 //		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	   -1, -1	},
 		{	"submit",				&RPCParser::parseSubmit,				2,  2	},
 		{	"server_info",			&RPCParser::parseAsIs,					0,  0	},
+		{	"ledger_okay",			&RPCParser::parseAsIs,					0,	0	},
 		{	"stop",					&RPCParser::parseAsIs,					0,  0	},
 //		{	"transaction_entry",	&RPCParser::parseTransactionEntry,	   -1,  -1	},
 		{	"tx",					&RPCParser::parseTx,					1,  1	},
