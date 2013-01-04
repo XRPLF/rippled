@@ -290,7 +290,11 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 	}
 
 	if (mMissingLedger && mMissingLedger->isDone())
+	{
+		if (mMissingLedger->isFailed())
+			theApp->getMasterLedgerAcquire().dropLedger(mMissingLedger->getHash());
 		mMissingLedger.reset();
+	}
 
 	if (mMissingLedger || !theConfig.LEDGER_HISTORY)
 	{
