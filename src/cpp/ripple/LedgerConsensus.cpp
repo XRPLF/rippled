@@ -277,7 +277,7 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previou
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
 		mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(), previousLedger->getLedgerSeq() + 1);
 
-	if (mValPublic.isValid() && mValPrivate.isValid())
+	if (mValPublic.isValid() && mValPrivate.isValid() && !theApp->getOPs().isNeedNetworkLedger())
 	{
 		cLog(lsINFO) << "Entering consensus process, validating";
 		mValidating = true;
