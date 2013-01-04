@@ -265,7 +265,7 @@ UInt160.from_generic = function (j) {
 UInt160.from_json = function (j) {
   if ('string' === typeof j) {
     return (new UInt160()).parse_json(j);
-  } else if (j instanceof Uint160) {
+  } else if (j instanceof UInt160) {
     return j.clone();
   } else {
     return new UInt160();
