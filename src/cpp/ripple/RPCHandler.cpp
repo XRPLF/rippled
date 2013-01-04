@@ -1160,6 +1160,16 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 	}
 }
 
+Json::Value RPCHandler::doLedgerOkay(Json::Value)
+{
+	theApp->getOPs().clearNeedNetworkLedger();
+	Json::Value ret(Json::objectValue);
+
+	ret["okay"]	= true;
+
+	return ret;
+}
+
 Json::Value RPCHandler::doServerInfo(Json::Value)
 {
 	Json::Value ret(Json::objectValue);
@@ -2447,6 +2457,7 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	    false,	optCurrent	},
 		{	"submit",				&RPCHandler::doSubmit,			    false,	optCurrent	},
 		{	"server_info",			&RPCHandler::doServerInfo,		    true,	optNone		},
+		{	"ledger_okay",			&RPCHandler::doLedgerOkay,			true,	optNone		},
 		{	"stop",					&RPCHandler::doStop,			    true,	optNone		},
 		{	"transaction_entry",	&RPCHandler::doTransactionEntry,    false,	optCurrent	},
 		{	"tx",					&RPCHandler::doTx,				    false,	optNetwork	},

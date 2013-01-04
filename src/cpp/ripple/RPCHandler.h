@@ -90,6 +90,7 @@ class RPCHandler
 
 	Json::Value doSubscribe(Json::Value params);
 	Json::Value doUnsubscribe(Json::Value params);
+	Json::Value doLedgerOkay(Json::Value params);
 
 public:
 
