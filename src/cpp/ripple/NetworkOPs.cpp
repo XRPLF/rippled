@@ -1150,8 +1150,9 @@ void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, const SerializedT
 
 void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 {
-	// Don't publish to clients ledgers we don't trust.
-	// TODO: we need to publish old transactions when we get reconnected to the network otherwise clients can miss transactions
+	// Ledgers are published only when they acquire sufficient validations
+	// Holes are filled across connection loss or other catastrophe
+
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 
