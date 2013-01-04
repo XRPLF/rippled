@@ -263,9 +263,13 @@ UInt160.from_generic = function (j) {
 
 // Return a new UInt160 from j.
 UInt160.from_json = function (j) {
-  return 'string' === typeof j
-      ? (new UInt160()).parse_json(j)
-      : j.clone();
+  if ('string' === typeof j) {
+    return (new UInt160()).parse_json(j);
+  } else if (j instanceof Uint160) {
+    return j.clone();
+  } else {
+    return new UInt160();
+  }
 };
 
 UInt160.is_valid = function (j) {
