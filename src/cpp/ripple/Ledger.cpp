@@ -1188,11 +1188,14 @@ void Ledger::pendSave(bool fromConsensus)
 	if (!fromConsensus && !theApp->isNewFlag(getHash(), SF_SAVED))
 		return;
 
+	{
+		boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
+		++sPendingSaves;
+	}
+
 	boost::thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(),
 		fromConsensus, theApp->getJobQueue().getLoadEvent(jtDISK))).detach();
 
-	boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
-	++sPendingSaves;
 }
 
 void Ledger::decPendingSaves()
