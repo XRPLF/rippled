@@ -338,6 +338,8 @@ void LedgerMaster::checkPublish(const uint256& hash, uint32 seq)
 
 	if (theConfig.RUN_STANDALONE)
 		minVal = 0;
+	else if (theApp->getOPs().isNeedNetworkLedger())
+		minVal = 1;
 
 	cLog(lsTRACE) << "Sweeping for ledgers to publish: minval=" << minVal;
 
@@ -347,6 +349,7 @@ void LedgerMaster::checkPublish(const uint256& hash, uint32 seq)
 		Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq(seq);
 		if (ledger && (theApp->getValidations().getTrustedValidationCount(ledger->getHash()) >= minVal))
 		{ // this ledger (and any priors) can be published
+			theApp->getOPs().clearNeedNetworkLedger();
 			if (ledger->getLedgerSeq() > (mLastValidateSeq + MAX_LEDGER_GAP))
 				mLastValidateSeq = ledger->getLedgerSeq() - MAX_LEDGER_GAP;
 
