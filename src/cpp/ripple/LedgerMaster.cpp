@@ -369,32 +369,29 @@ void LedgerMaster::checkPublish(const uint256& hash, uint32 seq)
 
 	cLog(lsTRACE) << "Sweeping for ledgers to publish: minval=" << minVal;
 
-	// See if any later ledgers have at least the minimum number of validations
-	for (seq = mFinalizedLedger->getLedgerSeq(); seq > mLastValidateSeq; --seq)
-	{
-		Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq(seq);
-		if (ledger && (theApp->getValidations().getTrustedValidationCount(ledger->getHash()) >= minVal))
-		{ // this ledger (and any priors) can be published
-			theApp->getOPs().clearNeedNetworkLedger();
-			if (ledger->getLedgerSeq() > (mLastValidateSeq + MAX_LEDGER_GAP))
-				mLastValidateSeq = ledger->getLedgerSeq() - MAX_LEDGER_GAP;
+	// See if this ledger have at least the minimum number of validations
+	Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq(seq);
+	if (ledger && (theApp->getValidations().getTrustedValidationCount(ledger->getHash()) >= minVal))
+	{ // this ledger (and any priors) can be published
+		theApp->getOPs().clearNeedNetworkLedger();
+		if (ledger->getLedgerSeq() > (mLastValidateSeq + MAX_LEDGER_GAP))
+			mLastValidateSeq = ledger->getLedgerSeq() - MAX_LEDGER_GAP;
 
-			cLog(lsTRACE) << "Ledger " << ledger->getLedgerSeq() << " can be published";
-			for (uint32 pubSeq = mLastValidateSeq + 1; pubSeq <= seq; ++pubSeq)
+		cLog(lsTRACE) << "Ledger " << ledger->getLedgerSeq() << " can be published";
+		for (uint32 pubSeq = mLastValidateSeq + 1; pubSeq <= seq; ++pubSeq)
+		{
+			uint256 pubHash = ledger->getLedgerHash(pubSeq);
+			if (pubHash.isZero()) // CHECKME: Should we double-check validations in this case?
+				pubHash = mLedgerHistory.getLedgerHash(pubSeq);
+			if (pubHash.isNonZero())
 			{
-				uint256 pubHash = ledger->getLedgerHash(pubSeq);
-				if (pubHash.isZero()) // CHECKME: Should we double-check validations in this case?
-					pubHash = mLedgerHistory.getLedgerHash(pubSeq);
-				if (pubHash.isNonZero())
+				Ledger::pointer ledger = mLedgerHistory.getLedgerByHash(pubHash);
+				if (ledger)
 				{
-					Ledger::pointer ledger = mLedgerHistory.getLedgerByHash(pubHash);
-					if (ledger)
-					{
-						mPubLedgers.push_back(ledger);
-						mValidLedger = ledger;
-						mLastValidateSeq = ledger->getLedgerSeq();
-						mLastValidateHash = ledger->getHash();
-					}
+					mPubLedgers.push_back(ledger);
+					mValidLedger = ledger;
+					mLastValidateSeq = ledger->getLedgerSeq();
+					mLastValidateHash = ledger->getHash();
 				}
 			}
 		}
