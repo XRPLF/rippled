@@ -195,8 +195,9 @@ void JobQueue::setThreadCount(int c)
 	else if (c == 0)
 	{
 		c = boost::thread::hardware_concurrency();
-		if (c < 2)
-			c = 2;
+		if (c < 0)
+			c = 0;
+		c += 2;
 		cLog(lsINFO) << "Auto-tuning to " << c << " validation/transaction/proposal threads";
 	}
 
