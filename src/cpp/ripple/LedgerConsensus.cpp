@@ -69,7 +69,7 @@ void TransactionAcquire::onTimer(bool progress)
 		}
 	}
 	else if (!progress)
-		trigger(Peer::pointer(), true);
+		trigger(Peer::pointer());
 }
 
 boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast()
@@ -77,7 +77,7 @@ boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast()
 	return boost::shared_polymorphic_downcast<PeerSet>(shared_from_this());
 }
 
-void TransactionAcquire::trigger(Peer::ref peer, bool timer)
+void TransactionAcquire::trigger(Peer::ref peer)
 {
 	if (mComplete || mFailed)
 	{
@@ -166,7 +166,7 @@ SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 			++nodeIDit;
 			++nodeDatait;
 		}
-		trigger(peer, false);
+		trigger(peer);
 		progress();
 		return SMAddNode::useful();
 	}

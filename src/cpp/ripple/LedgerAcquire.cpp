@@ -135,7 +135,7 @@ void LedgerAcquire::onTimer(bool progress)
 		if (!getPeerCount())
 			addPeers();
 		else
-			trigger(Peer::pointer(), true);
+			trigger(Peer::pointer());
 	}
 }
 
@@ -202,7 +202,7 @@ void LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)>
 	mLock.unlock();
 }
 
-void LedgerAcquire::trigger(Peer::ref peer, bool timer)
+void LedgerAcquire::trigger(Peer::ref peer)
 {
 	if (mAborted || mComplete || mFailed)
 	{
@@ -599,7 +599,7 @@ SMAddNode LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer:
 		{
 			cLog(lsWARNING) << "Included TXbase invalid";
 		}
-		ledger->trigger(peer, false);
+		ledger->trigger(peer);
 		return san;
 	}
 
@@ -631,7 +631,7 @@ SMAddNode LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer:
 		else
 			ledger->takeAsNode(nodeIDs, nodeData, ret);
 		if (!ret.isInvalid())
-			ledger->trigger(peer, false);
+			ledger->trigger(peer);
 		return ret;
 	}
 

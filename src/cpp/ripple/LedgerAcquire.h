@@ -80,7 +80,7 @@ protected:
 	void done();
 	void onTimer(bool progress);
 
-	void newPeer(Peer::ref peer) { trigger(peer, false); }
+	void newPeer(Peer::ref peer) { trigger(peer); }
 
 	boost::weak_ptr<PeerSet> pmDowncast();
 
@@ -105,7 +105,7 @@ public:
 	bool takeAsNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data,
 		SMAddNode&);
 	bool takeAsRootNode(const std::vector<unsigned char>& data, SMAddNode&);
-	void trigger(Peer::ref, bool timer);
+	void trigger(Peer::ref);
 	bool tryLocal();
 	void addPeers();
 

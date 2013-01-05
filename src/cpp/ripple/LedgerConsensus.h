@@ -32,10 +32,10 @@ protected:
 	bool				mHaveRoot;
 
 	void onTimer(bool progress);
-	void newPeer(Peer::ref peer)	{ trigger(peer, false); }
+	void newPeer(Peer::ref peer)	{ trigger(peer); }
 
 	void done();
-	void trigger(Peer::ref, bool timer);
+	void trigger(Peer::ref);
 	boost::weak_ptr<PeerSet> pmDowncast();
 
 public:
