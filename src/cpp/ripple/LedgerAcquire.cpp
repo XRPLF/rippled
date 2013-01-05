@@ -226,7 +226,21 @@ void LedgerAcquire::trigger(Peer::ref peer)
 	ripple::TMGetLedger tmGL;
 	tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 	if (getTimeouts() != 0)
+	{
 		tmGL.set_querytype(ripple::qtINDIRECT);
+
+#if 0
+		if (!isProgress())
+		{
+			std::vector< std::pair<ripple::TMGetObjectByHash::ObjectType, uint256> > need = getNeededHashes();
+			if (!need.empty())
+			{
+				ripple::TMGetObjectByHash tmBH;
+				tmBH.
+			}
+		}
+#endif
+	}
 
 	if (!mHaveBase)
 	{
@@ -531,18 +545,26 @@ LedgerAcquire::pointer LedgerAcquireMaster::find(const uint256& hash)
 	return LedgerAcquire::pointer();
 }
 
-std::vector<uint256> LedgerAcquire::getNeededHashes()
+std::vector< std::pair<ripple::TMGetObjectByHash::ObjectType, uint256> > LedgerAcquire::getNeededHashes()
 {
-	std::vector<uint256> ret;
+	std::vector< std::pair<ripple::TMGetObjectByHash::ObjectType, uint256> > ret;
 	if (!mHaveBase)
 	{
-		ret.push_back(mHash);
+		ret.push_back(std::make_pair(ripple::TMGetObjectByHash::otLEDGER, mHash));
 		return ret;
 	}
 	if (!mHaveState)
-		mLedger->peekAccountStateMap()->getNeededHashes(ret, 16);
+	{
+		std::vector<uint256> v = mLedger->peekAccountStateMap()->getNeededHashes(16);
+		BOOST_FOREACH(const uint256& h, v)
+			ret.push_back(std::make_pair(ripple::TMGetObjectByHash::otSTATE_NODE, h));
+	}
 	if (!mHaveTransactions)
-		mLedger->peekTransactionMap()->getNeededHashes(ret, 16);
+	{
+		std::vector<uint256> v = mLedger->peekTransactionMap()->getNeededHashes(16);
+		BOOST_FOREACH(const uint256& h, v)
+			ret.push_back(std::make_pair(ripple::TMGetObjectByHash::otTRANSACTION_NODE, h));
+	}
 	return ret;
 }
 

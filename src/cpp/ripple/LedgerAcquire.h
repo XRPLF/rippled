@@ -44,6 +44,7 @@ public:
 	int getTimeouts() const				{ return mTimeouts; }
 
 	void progress()						{ mProgress = true; }
+	bool isProgress()					{ return mProgress; }
 
 	void peerHas(Peer::ref);
 	void badPeer(Peer::ref);
@@ -109,7 +110,7 @@ public:
 	bool tryLocal();
 	void addPeers();
 
-	std::vector<uint256> getNeededHashes();
+	std::vector< std::pair<ripple::TMGetObjectByHash::ObjectType, uint256> > getNeededHashes();
 };
 
 class LedgerAcquireMaster

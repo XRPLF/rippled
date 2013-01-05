@@ -91,8 +91,9 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 	}
 }
 
-void SHAMap::getNeededHashes(std::vector<uint256>& ret, int max)
+std::vector<uint256> SHAMap::getNeededHashes(int max)
 {
+	std::vector<uint256> ret;
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	assert(root->isValid());
@@ -100,7 +101,7 @@ void SHAMap::getNeededHashes(std::vector<uint256>& ret, int max)
 	if (root->isFullBelow() || !root->isInner())
 	{
 		clearSynching();
-		return;
+		return ret;
 	}
 
 	std::stack<SHAMapTreeNode*> stack;
@@ -133,13 +134,14 @@ void SHAMap::getNeededHashes(std::vector<uint256>& ret, int max)
 					have_all = false;
 					ret.push_back(childHash);
 					if (--max <= 0)
-						return;
+						return ret;
 				}
 			}
 		}
 		if (have_all)
 			node->setFullBelow();
 	}
+	return ret;
 }
 
 bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeIDs,
