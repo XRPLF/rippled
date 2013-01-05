@@ -19,7 +19,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	assert(root->isValid());
-	
+
 	if (root->isFullBelow())
 	{
 		clearSynching();
@@ -84,6 +84,57 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 				}
 				else if (d->isInner() && !d->isFullBelow()) // we might need children of this node
 					stack.push(d);
+			}
+		}
+		if (have_all)
+			node->setFullBelow();
+	}
+}
+
+void SHAMap::getNeededHashes(std::vector<uint256>& ret, int max)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+
+	assert(root->isValid());
+
+	if (root->isFullBelow() || !root->isInner())
+	{
+		clearSynching();
+		return;
+	}
+
+	std::stack<SHAMapTreeNode*> stack;
+	stack.push(root.get());
+
+	while (!stack.empty())
+	{
+		SHAMapTreeNode* node = stack.top();
+		stack.pop();
+
+		int base = rand() % 256;
+		bool have_all = false;
+		for (int ii = 0; ii < 16; ++ii)
+		{ // traverse in semi-random order
+			int branch = (base + ii) % 16;
+			if (!node->isEmptyBranch(branch))
+			{
+				SHAMapNode childID = node->getChildNodeID(branch);
+				const uint256& childHash = node->getChildHash(branch);
+				SHAMapTreeNode* d;
+				try
+				{
+					d = getNodePointer(childID, childHash);
+					assert(d);
+					if (d->isInner() && !d->isFullBelow())
+						stack.push(d);
+				}
+				catch (SHAMapMissingNode&)
+				{ // node is not in the map
+					have_all = false;
+					ret.push_back(childHash);
+					if (--max <= 0)
+						return;
+				}
 			}
 		}
 		if (have_all)

@@ -170,6 +170,11 @@ void LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledger
 		mMissingLedger.reset();
 		return;
 	}
+	else if (mMissingLedger->isDone())
+	{
+		mMissingLedger.reset();
+		return;
+	}
 	mMissingSeq = ledgerSeq;
 	if (mMissingLedger->setAccept())
 		mMissingLedger->addOnComplete(boost::bind(&LedgerMaster::missingAcquireComplete, this, _1));
@@ -290,7 +295,11 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 	}
 
 	if (mMissingLedger && mMissingLedger->isDone())
+	{
+		if (mMissingLedger->isFailed())
+			theApp->getMasterLedgerAcquire().dropLedger(mMissingLedger->getHash());
 		mMissingLedger.reset();
+	}
 
 	if (mMissingLedger || !theConfig.LEDGER_HISTORY)
 	{
@@ -397,7 +406,7 @@ void LedgerMaster::checkPublish(const uint256& hash, uint32 seq)
 		}
 	}
 
-	if (!mPubThread)
+	if (!mPubLedgers.empty() && !mPubThread)
 	{
 		mPubThread = true;
 		theApp->getJobQueue().addJob(jtPUBLEDGER, boost::bind(&LedgerMaster::pubThread, this));

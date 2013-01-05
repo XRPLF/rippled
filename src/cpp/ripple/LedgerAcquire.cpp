@@ -175,18 +175,21 @@ void LedgerAcquire::done()
 #endif
 	std::vector< boost::function<void (LedgerAcquire::pointer)> > triggers;
 
-	setComplete();
+	assert(isComplete() || isFailed());
+
 	mLock.lock();
 	triggers = mOnComplete;
 	mOnComplete.clear();
 	mLock.unlock();
 
-	if (mLedger)
+	if (isComplete() && mLedger)
 	{
 		if (mAccept)
 			mLedger->setAccepted();
 		theApp->getLedgerMaster().storeLedger(mLedger);
 	}
+	else if (isFailed())
+		theApp->getMasterLedgerAcquire().logFailure(mHash);
 
 	for (unsigned int i = 0; i < triggers.size(); ++i)
 		triggers[i](shared_from_this());
@@ -528,6 +531,21 @@ LedgerAcquire::pointer LedgerAcquireMaster::find(const uint256& hash)
 	return LedgerAcquire::pointer();
 }
 
+std::vector<uint256> LedgerAcquire::getNeededHashes()
+{
+	std::vector<uint256> ret;
+	if (!mHaveBase)
+	{
+		ret.push_back(mHash);
+		return ret;
+	}
+	if (!mHaveState)
+		mLedger->peekAccountStateMap()->getNeededHashes(ret, 16);
+	if (!mHaveTransactions)
+		mLedger->peekTransactionMap()->getNeededHashes(ret, 16);
+	return ret;
+}
+
 bool LedgerAcquireMaster::hasLedger(const uint256& hash)
 {
 	assert(hash.isNonZero());
@@ -619,6 +637,38 @@ SMAddNode LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer:
 
 	cLog(lsWARNING) << "Not sure what ledger data we got";
 	return SMAddNode::invalid();
+}
+
+void LedgerAcquireMaster::logFailure(const uint256& hash)
+{
+	time_t now = time(NULL);
+	boost::mutex::scoped_lock sl(mLock);
+
+	std::map<uint256, time_t>::iterator it = mRecentFailures.begin();
+	while (it != mRecentFailures.end())
+	{
+		if (it->first == hash)
+		{
+			it->second = now;
+			return;
+		}
+		if (it->second > now)
+		{ // time jump or discontinuity
+			it->second = now;
+			++it;
+		}
+		else if ((it->second + 180) < now)
+			mRecentFailures.erase(it++);
+		else
+			++it;
+	}
+	mRecentFailures[hash] = now;
+}
+
+bool LedgerAcquireMaster::isFailure(const uint256& hash)
+{
+	boost::mutex::scoped_lock sl(mLock);
+	return mRecentFailures.find(hash) != mRecentFailures.end();
 }
 
 // vim:ts=4

@@ -108,6 +108,8 @@ public:
 	void trigger(Peer::ref, bool timer);
 	bool tryLocal();
 	void addPeers();
+
+	std::vector<uint256> getNeededHashes();
 };
 
 class LedgerAcquireMaster
@@ -115,6 +117,7 @@ class LedgerAcquireMaster
 protected:
 	boost::mutex mLock;
 	std::map<uint256, LedgerAcquire::pointer> mLedgers;
+	std::map<uint256, time_t> mRecentFailures;
 
 public:
 	LedgerAcquireMaster() { ; }
@@ -124,6 +127,9 @@ public:
 	bool hasLedger(const uint256& ledgerHash);
 	void dropLedger(const uint256& ledgerHash);
 	SMAddNode gotLedgerData(ripple::TMLedgerData& packet, Peer::ref);
+
+	void logFailure(const uint256&);
+	bool isFailure(const uint256&);
 };
 
 #endif
