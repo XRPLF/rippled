@@ -209,8 +209,8 @@ var Remote = function (opts, trace) {
 
   this._load_base             = 256;
   this._load_fee              = 256;
-  this._load_base             = undefined;
-  this._load_fee              = undefined;
+  this._fee_ref               = undefined;
+  this._fee_base              = undefined;
   this._reserve_base          = undefined;
   this._reserve_inc           = undefined;
   this._server_status         = undefined;
@@ -877,8 +877,8 @@ Remote.prototype._server_subscribe = function () {
         // FIXME Use this to estimate fee.
         self._load_base     = message.load_base || 256;
         self._load_fee      = message.load_fee || 256;
-        self._load_base     = message.fee_ref;
-        self._load_fee      = message.fee_base;
+        self._fee_ref       = message.fee_ref;
+        self._fee_base      = message.fee_base;
         self._reserve_base  = message.reverse_base;
         self._reserve_inc   = message.reserve_inc;
         self._server_status = message.server_status;
