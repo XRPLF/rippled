@@ -65,6 +65,9 @@ public:
 	enum StartUpType { FRESH, NORMAL, LOAD, NETWORK };
 	StartUpType					START_UP;
 
+	// Database
+	std::string					DATABASE_PATH;
+
 	// Network parameters
 	int							NETWORK_START_TIME;		// The Unix time we start ledger 0.
 	int							TRANSACTION_FEE_BASE;	// The number of fee units a reference transaction costs

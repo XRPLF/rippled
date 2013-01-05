@@ -13,6 +13,7 @@
 #include <algorithm>
 
 #define SECTION_ACCOUNT_PROBE_MAX		"account_probe_max"
+#define SECTION_DATABASE_PATH			"database_path"
 #define SECTION_DEBUG_LOGFILE			"debug_logfile"
 #define SECTION_FEE_DEFAULT				"fee_default"
 #define SECTION_FEE_NICKNAME_CREATE		"fee_nickname_create"
@@ -142,17 +143,17 @@ void Config::setup(const std::string& strConf, bool bTestNet, bool bQuiet)
 		}
 	}
 
-	boost::filesystem::create_directories(DATA_DIR, ec);
-
-	if (ec)
-		throw std::runtime_error(str(boost::format("Can not create %s") % DATA_DIR));
+	// Update default values
+	load();
 
 	// std::cerr << "CONFIG FILE: " << CONFIG_FILE << std::endl;
 	// std::cerr << "CONFIG DIR: " << CONFIG_DIR << std::endl;
 	// std::cerr << "DATA DIR: " << DATA_DIR << std::endl;
 
-	// Update default values
-	load();
+	boost::filesystem::create_directories(DATA_DIR, ec);
+
+	if (ec)
+		throw std::runtime_error(str(boost::format("Can not create %s") % DATA_DIR));
 }
 
 Config::Config()
@@ -258,6 +259,9 @@ void Config::load()
 			{
 				SNTP_SERVERS = *smtTmp;
 			}
+
+			if (sectionSingleB(secConfig, SECTION_DATABASE_PATH, DATABASE_PATH))
+				DATA_DIR	= DATABASE_PATH;
 
 			(void) sectionSingleB(secConfig, SECTION_VALIDATORS_SITE, VALIDATORS_SITE);
 
