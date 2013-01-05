@@ -108,6 +108,9 @@ protected:
 	boost::unordered_set<InfoSub*>						mSubTransactions;		// all accepted transactions
 	boost::unordered_set<InfoSub*>						mSubRTTransactions;		// all proposed and accepted transactions
 
+	boost::recursive_mutex								mWantedHashLock;
+	boost::unordered_set<uint256>						mWantedHashes;
+
 	void setMode(OperatingMode);
 
 	Json::Value transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent, const std::string& strType);
@@ -244,6 +247,9 @@ public:
 		std::list<LedgerProposal::pointer> >& peekStoredProposals() { return mStoredProposals; }
 	void storeProposal(const LedgerProposal::pointer& proposal,	const RippleAddress& peerPublic);
 	uint256 getConsensusLCL();
+
+	bool addWantedHash(const uint256& h);
+	bool isWantedHash(const uint256& h, bool remove);
 
 	// client information retrieval functions
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >

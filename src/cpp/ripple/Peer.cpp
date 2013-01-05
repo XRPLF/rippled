@@ -1111,6 +1111,8 @@ void Peer::recvGetObjectByHash(ripple::TMGetObjectByHash& packet)
 					newObj.set_data(&hObj->getData().front(), hObj->getData().size());
 					if (obj.has_nodeid())
 						newObj.set_index(obj.nodeid());
+					if (!packet.has_seq() && (hObj->getIndex() != 0))
+						packet.set_seq(hObj->getIndex());
 				}
 			}
 		}
@@ -1119,7 +1121,37 @@ void Peer::recvGetObjectByHash(ripple::TMGetObjectByHash& packet)
 	}
 	else
 	{ // this is a reply
-		// WRITEME
+		uint32 seq = packet.has_seq() ? packet.seq() : 0;
+		HashedObjectType type;
+		switch (packet.type())
+		{
+			case ripple::TMGetObjectByHash::otLEDGER: type = hotLEDGER; break;
+			case ripple::TMGetObjectByHash::otTRANSACTION: type = hotTRANSACTION; break;
+			case ripple::TMGetObjectByHash::otSTATE_NODE: type = hotACCOUNT_NODE; break;
+			case ripple::TMGetObjectByHash::otTRANSACTION_NODE: type = hotTRANSACTION_NODE; break;
+			default: type = hotUNKNOWN;
+		}
+		for (int i = 0; i < packet.objects_size(); ++i)
+		{
+			const ripple::TMIndexedObject& obj = packet.objects(i);
+			if (obj.has_hash() && (obj.hash().size() == (256/8)))
+			{
+				uint256 hash;
+				memcpy(hash.begin(), obj.hash().data(), 256 / 8);
+				if (theApp->getOPs().isWantedHash(hash, true))
+				{
+					std::vector<unsigned char> data(obj.data().begin(), obj.data().end());
+					if (Serializer::getSHA512Half(data) != hash)
+					{
+						cLog(lsWARNING) << "Bad hash in data from peer";
+						theApp->getOPs().addWantedHash(hash);
+						punishPeer(LT_BadData);
+					}
+					else
+						theApp->getHashedObjectStore().store(type, seq, data, hash);
+				}
+			}
+		}
 	}
 }
 

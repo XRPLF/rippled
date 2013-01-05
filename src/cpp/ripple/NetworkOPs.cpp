@@ -100,6 +100,18 @@ bool NetworkOPs::haveLedgerRange(uint32 from, uint32 to)
 	return mLedgerMaster->haveLedgerRange(from, to);
 }
 
+bool NetworkOPs::addWantedHash(const uint256& h)
+{
+	boost::recursive_mutex::scoped_lock sl(mWantedHashLock);
+	return mWantedHashes.insert(h).second;
+}
+
+bool NetworkOPs::isWantedHash(const uint256& h, bool remove)
+{
+	boost::recursive_mutex::scoped_lock sl(mWantedHashLock);
+	return (remove ? mWantedHashes.erase(h) : mWantedHashes.count(h)) != 0;
+}
+
 void NetworkOPs::submitTransaction(Job&, SerializedTransaction::pointer iTrans, stCallback callback)
 { // this is an asynchronous interface
 	Serializer s;

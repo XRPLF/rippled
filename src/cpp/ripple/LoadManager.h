@@ -18,6 +18,7 @@ enum LoadType
 	LT_InvalidSignature,		// An object whose signature we had to check and it failed
 	LT_UnwantedData,			// Data we have no use for
 	LT_BadPoW,					// Proof of work not valid
+	LT_BadData,					// Data we have to verify before rejecting
 
 	// Good things
 	LT_NewTrusted,				// A new transaction/validation/proposal we trust

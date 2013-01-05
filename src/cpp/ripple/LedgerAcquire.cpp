@@ -229,14 +229,16 @@ void LedgerAcquire::trigger(Peer::ref peer)
 	{
 		tmGL.set_querytype(ripple::qtINDIRECT);
 
-#if 0
 		if (!isProgress())
 		{
 			std::vector<neededHash_t> need = getNeededHashes();
 			if (!need.empty())
 			{
 				ripple::TMGetObjectByHash tmBH;
+				tmBH.set_query(true);
 				tmBH.set_ledgerhash(mHash.begin(), mHash.size());
+				if (mHaveBase)
+					tmBH.set_seq(mLedger->getLedgerSeq());
 				bool typeSet = false;
 				BOOST_FOREACH(neededHash_t& p, need)
 				{
@@ -247,17 +249,27 @@ void LedgerAcquire::trigger(Peer::ref peer)
 					}
 					if (p.first == tmBH.type())
 					{
-						// WRITEME: Approve this hash for local inclusion
+						theApp->getOPs().addWantedHash(p.second);
 						ripple::TMIndexedObject *io = tmBH.add_objects();
 						io->set_hash(p.second.begin(), p.second.size());
 					}
 				}
-
-				// WRITEME: Do something with this object
-
+				PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tmBH, ripple::mtGET_OBJECTS);
+				if (peer)
+					peer->sendPacket(packet);
+				else
+				{
+					boost::recursive_mutex::scoped_lock sl(mLock);
+					for (boost::unordered_map<uint64, int>::iterator it = mPeers.begin(), end = mPeers.end();
+						it != end; ++it)
+					{
+						Peer::pointer iPeer = theApp->getConnectionPool().getPeerById(it->first);
+						if (iPeer)
+							iPeer->sendPacket(packet);
+					}
+				}
 			}
 		}
-#endif
 
 	}
 
