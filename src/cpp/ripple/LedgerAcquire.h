@@ -110,7 +110,8 @@ public:
 	bool tryLocal();
 	void addPeers();
 
-	std::vector< std::pair<ripple::TMGetObjectByHash::ObjectType, uint256> > getNeededHashes();
+	typedef std::pair<ripple::TMGetObjectByHash::ObjectType, uint256> neededHash_t;
+	std::vector<neededHash_t> getNeededHashes();
 };
 
 class LedgerAcquireMaster

@@ -232,14 +232,33 @@ void LedgerAcquire::trigger(Peer::ref peer)
 #if 0
 		if (!isProgress())
 		{
-			std::vector< std::pair<ripple::TMGetObjectByHash::ObjectType, uint256> > need = getNeededHashes();
+			std::vector<neededHash_t> need = getNeededHashes();
 			if (!need.empty())
 			{
 				ripple::TMGetObjectByHash tmBH;
-				tmBH.
+				tmBH.set_ledgerhash(mHash.begin(), mHash.size());
+				bool typeSet = false;
+				BOOST_FOREACH(neededHash_t& p, need)
+				{
+					if (!typeSet)
+					{
+						tmBH.set_type(p.first);
+						typeSet = true;
+					}
+					if (p.first == tmBH.type())
+					{
+						// WRITEME: Approve this hash for local inclusion
+						ripple::TMIndexedObject *io = tmBH.add_objects();
+						io->set_hash(p.second.begin(), p.second.size());
+					}
+				}
+
+				// WRITEME: Do something with this object
+
 			}
 		}
 #endif
+
 	}
 
 	if (!mHaveBase)
@@ -545,9 +564,9 @@ LedgerAcquire::pointer LedgerAcquireMaster::find(const uint256& hash)
 	return LedgerAcquire::pointer();
 }
 
-std::vector< std::pair<ripple::TMGetObjectByHash::ObjectType, uint256> > LedgerAcquire::getNeededHashes()
+std::vector<LedgerAcquire::neededHash_t> LedgerAcquire::getNeededHashes()
 {
-	std::vector< std::pair<ripple::TMGetObjectByHash::ObjectType, uint256> > ret;
+	std::vector<neededHash_t> ret;
 	if (!mHaveBase)
 	{
 		ret.push_back(std::make_pair(ripple::TMGetObjectByHash::otLEDGER, mHash));
