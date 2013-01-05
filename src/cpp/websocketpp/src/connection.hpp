@@ -1225,7 +1225,9 @@ public:
                 alog()->at(log::alevel::DEBUG_CLOSE) 
                     << "Exit after inturrupt" << log::endl;
                 terminate(false);
-            }
+            } else {
+		m_handler->on_send_empty(type::shared_from_this());
+	    }
         }
     }
     
@@ -1267,7 +1269,7 @@ public:
         if (m_write_queue.size() == 0) {
             alog()->at(log::alevel::DEBUG_CLOSE) 
                 << "handle_write called with empty queue" << log::endl;
-            return;
+	    return;
         }
         
         m_write_buffer -= m_write_queue.front()->get_payload().size();

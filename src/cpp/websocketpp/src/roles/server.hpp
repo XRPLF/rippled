@@ -189,6 +189,8 @@ public:
         virtual void on_pong(connection_ptr con,std::string) {}
         virtual void on_pong_timeout(connection_ptr con,std::string) {}
         virtual void http(connection_ptr con) {}
+
+        virtual void on_send_empty(connection_ptr con) {}
     };
     
     server(boost::asio::io_service& m) 
