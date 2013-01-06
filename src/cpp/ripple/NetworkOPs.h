@@ -26,12 +26,6 @@ class RPCSub;
 
 class InfoSub : public IS_INSTANCE(InfoSub)
 {
-public:
-
-	virtual ~InfoSub();
-
-	virtual	void send(const Json::Value& jvObj) = 0;
-
 protected:
 	boost::unordered_set<RippleAddress>			mSubAccountInfo;
 	boost::unordered_set<RippleAddress>			mSubAccountTransaction;
@@ -39,9 +33,17 @@ protected:
 	boost::mutex								mLockInfo;
 
 public:
-	void insertSubAccountInfo(RippleAddress addr)
+
+	virtual ~InfoSub();
+
+	virtual	void send(const Json::Value& jvObj) = 0;
+
+	void onSendEmpty();
+
+	void insertSubAccountInfo(RippleAddress addr, uint32 uLedgerIndex)
 	{
 		boost::mutex::scoped_lock sl(mLockInfo);
+
 		mSubAccountInfo.insert(addr);
 	}
 };
@@ -267,8 +269,8 @@ public:
 	//
 	// Monitoring: subscriber side
 	//
-	void subAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs,bool rt);
-	void unsubAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs,bool rt);
+	void subAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs, uint32 uLedgerIndex, bool rt);
+	void unsubAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs, bool rt);
 
 	bool subLedger(InfoSub* ispListener, Json::Value& jvResult);
 	bool unsubLedger(InfoSub* ispListener);

@@ -514,7 +514,7 @@ Json::Value RPCHandler::doProfile(Json::Value jvRequest)
 			STAmount(uCurrencyOfferB, naAccountB.getAccountID(), 1+n),	// saTakerGets
 			0);															// uExpiration
 
-		if(bSubmit)
+		if (bSubmit)
 			tpOfferA	= mNetOps->submitTransactionSync(tpOfferA); // FIXME: Don't use synch interface
 	}
 
@@ -1194,7 +1194,7 @@ Json::Value RPCHandler::doTxHistory(Json::Value jvRequest)
 		SQL_FOREACH(db, sql)
 		{
 			Transaction::pointer trans=Transaction::transactionFromSQL(db, false);
-			if(trans) txs.append(trans->getJson(0));
+			if (trans) txs.append(trans->getJson(0));
 		}
 	}
 
@@ -1344,8 +1344,10 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 		for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
 		{
 			Json::Value	obj(Json::objectValue);
-			if(it->first) obj["tx"]=it->first->getJson(1);
-			if(it->second) obj["meta"]=it->second->getJson(0);
+
+			if (it->first) obj["tx"] = it->first->getJson(1);
+			if (it->second) obj["meta"] = it->second->getJson(0);
+
 			ret["transactions"].append(obj);
 		}
 		return ret;
@@ -2149,6 +2151,9 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 {
 	InfoSub*	ispSub;
 	Json::Value jvResult(Json::objectValue);
+	uint32		uLedgerIndex = jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric()
+									? jvRequest["ledger_index"].asUInt()
+									: 0;
 
 	if (!mInfoSub && !jvRequest.isMember("url"))
 	{
@@ -2235,12 +2240,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 		}
 		else
 		{
-			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
-			{
-				ispSub->insertSubAccountInfo(naAccountID);
-			}
-
-			mNetOps->subAccount(ispSub, usnaAccoundIds, true);
+			mNetOps->subAccount(ispSub, usnaAccoundIds, uLedgerIndex, true);
 		}
 	}
 
@@ -2254,12 +2254,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 		}
 		else
 		{
-			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
-			{
-				ispSub->insertSubAccountInfo(naAccountID);
-			}
-
-			mNetOps->subAccount(ispSub, usnaAccoundIds, false);
+			mNetOps->subAccount(ispSub, usnaAccoundIds, uLedgerIndex, false);
 		}
 	}
 
@@ -2342,12 +2337,7 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 		}
 		else
 		{
-			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
-			{
-				ispSub->insertSubAccountInfo(naAccountID);
-			}
-
-			mNetOps->unsubAccount(ispSub, usnaAccoundIds,true);
+			mNetOps->unsubAccount(ispSub, usnaAccoundIds, true);
 		}
 	}
 
@@ -2361,12 +2351,7 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 		}
 		else
 		{
-			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
-			{
-				ispSub->insertSubAccountInfo(naAccountID);
-			}
-
-			mNetOps->unsubAccount(ispSub, usnaAccoundIds,false);
+			mNetOps->unsubAccount(ispSub, usnaAccoundIds, false);
 		}
 	}
 

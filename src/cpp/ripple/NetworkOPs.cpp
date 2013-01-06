@@ -27,6 +27,11 @@
 SETUP_LOG();
 DECLARE_INSTANCE(InfoSub);
 
+void InfoSub::onSendEmpty()
+{
+
+}
+
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
 	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mNetTimer(io_service), mLedgerMaster(pLedgerMaster),
 	mCloseTimeOffset(0), mLastCloseProposers(0), mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL),
@@ -1189,7 +1194,7 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 		}
 	}
 
-	// we don't lock since pubAcceptedTransaction is locking
+	// Don't lock since pubAcceptedTransaction is locking.
 	if (!mSubTransactions.empty() || !mSubRTTransactions.empty() || !mSubAccount.empty() || !mSubRTAccount.empty() || !mSubmitMap.empty() )
 	{
 		SHAMap&		txSet	= *lpAccepted->peekTransactionMap();
@@ -1241,10 +1246,12 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta)
 {
 	Json::Value	jvObj	= transJson(stTxn, terResult, true, lpCurrent, "transaction");
-	if(meta) jvObj["meta"]=meta->getJson(0);
+
+	if (meta) jvObj["meta"] = meta->getJson(0);
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
+
 		BOOST_FOREACH(InfoSub* ispListener, mSubTransactions)
 		{
 			ispListener->send(jvObj);
@@ -1256,22 +1263,22 @@ void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedT
 		}
 	}
 
-	pubAccountTransaction(lpCurrent,stTxn,terResult,true,meta);
+	pubAccountTransaction(lpCurrent, stTxn, terResult, true, meta);
 }
 
-
-void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted,TransactionMetaSet::pointer& meta)
+void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted, TransactionMetaSet::pointer& meta)
 {
 	boost::unordered_set<InfoSub*>	notify;
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 
-		if(!bAccepted && mSubRTAccount.empty()) return;
+		if (!bAccepted && mSubRTAccount.empty()) return;
 
 		if (!mSubAccount.empty() || (!mSubRTAccount.empty()) )
 		{
 			typedef std::map<RippleAddress, bool>::value_type AccountPair;
+
 			BOOST_FOREACH(const AccountPair& affectedAccount, getAffectedAccounts(stTxn))
 			{
 				subInfoMapIterator	simiIt	= mSubRTAccount.find(affectedAccount.first.getAccountID());
@@ -1283,7 +1290,8 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 						notify.insert(ispListener);
 					}
 				}
-				if(bAccepted)
+
+				if (bAccepted)
 				{
 					simiIt	= mSubAccount.find(affectedAccount.first.getAccountID());
 
@@ -1302,7 +1310,8 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 	if (!notify.empty())
 	{
 		Json::Value	jvObj	= transJson(stTxn, terResult, bAccepted, lpCurrent, "account");
-		if(meta) jvObj["meta"]=meta->getJson(0);
+
+		if (meta) jvObj["meta"] = meta->getJson(0);
 
 		BOOST_FOREACH(InfoSub* ispListener, notify)
 		{
@@ -1344,12 +1353,15 @@ std::map<RippleAddress,bool> NetworkOPs::getAffectedAccounts(const SerializedTra
 // Monitoring
 //
 
-
-
-void NetworkOPs::subAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs,bool rt)
+void NetworkOPs::subAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs, uint32 uLedgerIndex, bool rt)
 {
-	subInfoMapType& subMap=mSubAccount;
-	if(rt) subMap=mSubRTAccount;
+	subInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
+
+	// For the connection, monitor each account.
+	BOOST_FOREACH(const RippleAddress& naAccountID, vnaAccountIDs)
+	{
+		ispListener->insertSubAccountInfo(naAccountID, uLedgerIndex);
+	}
 
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 
@@ -1358,7 +1370,7 @@ void NetworkOPs::subAccount(InfoSub* ispListener, const boost::unordered_set<Rip
 		subInfoMapType::iterator	simIterator	= subMap.find(naAccountID.getAccountID());
 		if (simIterator == subMap.end())
 		{
-			// Not found
+			// Not found, note that account has a new single listner.
 			boost::unordered_set<InfoSub*>	usisElement;
 
 			usisElement.insert(ispListener);
@@ -1366,21 +1378,30 @@ void NetworkOPs::subAccount(InfoSub* ispListener, const boost::unordered_set<Rip
 		}
 		else
 		{
-			// Found
+			// Found, note that the account has another listener.
 			simIterator->second.insert(ispListener);
 		}
 	}
 }
 
-void NetworkOPs::unsubAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs,bool rt)
+void NetworkOPs::unsubAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs, bool rt)
 {
-	subInfoMapType& subMap= rt ? mSubRTAccount : mSubAccount;
+	subInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
+
+	// For the connection, unmonitor each account.
+	// FIXME: Don't we need to unsub?
+	// BOOST_FOREACH(const RippleAddress& naAccountID, vnaAccountIDs)
+	// {
+	//	ispListener->deleteSubAccountInfo(naAccountID);
+	// }
 
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 
 	BOOST_FOREACH(const RippleAddress& naAccountID, vnaAccountIDs)
 	{
 		subInfoMapType::iterator	simIterator	= subMap.find(naAccountID.getAccountID());
+
+
 		if (simIterator == mSubAccount.end())
 		{
 			// Not found.  Done.

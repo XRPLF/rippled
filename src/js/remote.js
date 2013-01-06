@@ -687,6 +687,7 @@ Remote.prototype.request_ledger_entry = function (type) {
   return request;
 };
 
+// .accounts(accounts, realtime)
 Remote.prototype.request_subscribe = function (streams) {
   var request = new Request(this, 'subscribe');
 
@@ -700,6 +701,7 @@ Remote.prototype.request_subscribe = function (streams) {
   return request;
 };
 
+// .accounts(accounts, realtime)
 Remote.prototype.request_unsubscribe = function (streams) {
   var request = new Request(this, 'unsubscribe');
 

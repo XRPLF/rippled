@@ -103,6 +103,22 @@ public:
 		}
 	}
 
+	void on_send_empty(connection_ptr cpClient)
+	{
+		typedef boost::shared_ptr< WSConnection<endpoint_type> > wsc_ptr;
+
+		wsc_ptr ptr;
+		{
+			boost::mutex::scoped_lock	sl(mMapLock);
+			typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find(cpClient);
+			if (it == mMap.end())
+				return;
+			ptr = it->second;
+		}
+
+		ptr->onSendEmpty();
+	}
+
 	void on_open(connection_ptr cpClient)
 	{
 		boost::mutex::scoped_lock	sl(mMapLock);
