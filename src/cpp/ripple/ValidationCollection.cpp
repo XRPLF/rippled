@@ -312,7 +312,7 @@ void ValidationCollection::doWrite()
 			BOOST_FOREACH(const SerializedValidation::pointer& it, vector)
 				db->executeSQL(boost::str(insVal % it->getLedgerHash().GetHex()
 					% it->getSignerPublic().humanNodePublic() % it->getFlags() % it->getSignTime()
-					% db->escape(strCopy(it->getSignature()))));
+					% sqlEscape(it->getSignature())));
 			db->executeSQL("END TRANSACTION;");
 		}
 		sl.lock();

@@ -49,17 +49,16 @@ CKey::pointer PubKeyCache::store(const RippleAddress& id, const CKey::pointer& k
 	}
 
 	std::vector<unsigned char> pk = key->GetPubKey();
-	std::string encodedPK;
-	theApp->getTxnDB()->getDB()->escape(&(pk.front()), pk.size(), encodedPK);
 
 	std::string sql = "INSERT INTO PubKeys (ID,PubKey) VALUES ('";
 	sql += id.humanAccountID();
 	sql += "',";
-	sql += encodedPK;
+	sql += sqlEscape(pk);
 	sql.append(");");
 
 	ScopedLock dbl(theApp->getTxnDB()->getDBLock());
 	theApp->getTxnDB()->getDB()->executeSQL(sql, true);
+
 	return key;
 }
 

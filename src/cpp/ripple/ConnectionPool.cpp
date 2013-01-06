@@ -532,7 +532,7 @@ bool ConnectionPool::peerScanSet(const std::string& strIp, int iPort)
 			db->executeSQL(str(boost::format("UPDATE PeerIps SET ScanNext=%d,ScanInterval=%d WHERE IpPort=%s;")
 				% iToSeconds(tpNext)
 				% iInterval
-				% db->escape(strIpPort)));
+				% sqlEscape(strIpPort)));
 
 			bScanDirty	= true;
 		}
@@ -632,8 +632,8 @@ void ConnectionPool::peerVerified(Peer::ref peer)
 			ScopedLock sl(theApp->getWalletDB()->getDBLock());
 			Database *db=theApp->getWalletDB()->getDB();
 
-			db->executeSQL(str(boost::format("UPDATE PeerIps SET ScanNext=NULL,ScanInterval=0 WHERE IpPort=%s;")
-				% db->escape(strIpPort)));
+			db->executeSQL(boost::str(boost::format("UPDATE PeerIps SET ScanNext=NULL,ScanInterval=0 WHERE IpPort=%s;")
+				% sqlEscape(strIpPort)));
 			// XXX Check error.
 		}
 
@@ -726,10 +726,10 @@ void ConnectionPool::scanRefresh()
 				ScopedLock sl(theApp->getWalletDB()->getDBLock());
 				Database *db=theApp->getWalletDB()->getDB();
 
-				db->executeSQL(str(boost::format("UPDATE PeerIps SET ScanNext=%d,ScanInterval=%d WHERE IpPort=%s;")
+				db->executeSQL(boost::str(boost::format("UPDATE PeerIps SET ScanNext=%d,ScanInterval=%d WHERE IpPort=%s;")
 					% iToSeconds(tpNext)
 					% iInterval
-					% db->escape(strIpPort)));
+					% sqlEscape(strIpPort)));
 				// XXX Check error.
 			}
 

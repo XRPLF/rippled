@@ -95,6 +95,7 @@ void HashedObjectStore::bulkWrite()
 				if (!SQL_EXISTS(db, boost::str(fExists % it->getHash().GetHex())))
 				{
 					char type;
+
 					switch(it->getType())
 					{
 						case hotLEDGER:				type = 'L'; break;
@@ -103,9 +104,7 @@ void HashedObjectStore::bulkWrite()
 						case hotTRANSACTION_NODE:	type = 'N'; break;
 						default:					type = 'U';
 					}
-					std::string rawData;
-					db->escape(&(it->getData().front()), it->getData().size(), rawData);
-					db->executeSQL(boost::str(fAdd % it->getHash().GetHex() % type % it->getIndex() % rawData ));
+					db->executeSQL(boost::str(fAdd % it->getHash().GetHex() % type % it->getIndex() % sqlEscape(it->getData())));
 				}
 			}
 

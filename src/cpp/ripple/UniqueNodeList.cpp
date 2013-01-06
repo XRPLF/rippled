@@ -306,8 +306,8 @@ void UniqueNodeList::scoreCompute()
 
 		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
 
-		SQL_FOREACH(db, str(boost::format("SELECT Referral FROM ValidatorReferrals WHERE Validator=%s ORDER BY Entry;")
-					% db->escape(strValidator)))
+		SQL_FOREACH(db, boost::str(boost::format("SELECT Referral FROM ValidatorReferrals WHERE Validator=%s ORDER BY Entry;")
+					% sqlEscape(strValidator)))
 		{
 			std::string	strReferral	= db->getStrBinary("Referral");
 			int			iReferral;
@@ -399,7 +399,7 @@ void UniqueNodeList::scoreCompute()
 
 		for (int iNode=vsnNodes.size(); iNode--;)
 		{
-			vstrPublicKeys[iNode]	= db->escape(vsnNodes[iNode].strValidator);
+			vstrPublicKeys[iNode]	= sqlEscape(vsnNodes[iNode].strValidator);
 		}
 
 		SQL_FOREACH(db, str(boost::format("SELECT PublicKey,Seen FROM TrustedNodes WHERE PublicKey IN (%s);")
@@ -478,7 +478,7 @@ void UniqueNodeList::scoreCompute()
 			int			iEntry			= 0;
 
 			SQL_FOREACH(db, str(boost::format("SELECT IP,Port FROM IpReferrals WHERE Validator=%s ORDER BY Entry;")
-				% db->escape(strValidator)))
+				% sqlEscape(strValidator)))
 			{
 				score		iPoints	= iBase * (iEntries - iEntry) / iEntries;
 				int			iPort;
@@ -510,7 +510,7 @@ void UniqueNodeList::scoreCompute()
 			score		iPoints		= ipScore.second;
 
 			vstrValues.push_back(str(boost::format("(%s,%d,'%c')")
-				% db->escape(strIpPort)
+				% sqlEscape(strIpPort)
 				% iPoints
 				% vsValidator));
 		}
@@ -649,7 +649,7 @@ void UniqueNodeList::processIps(const std::string& strSite, const RippleAddress&
 			if (bValid)
 			{
 				vstrValues[iValues]	= str(boost::format("(%s,%d,%s,%d)")
-					% strEscNodePublic % iValues % db->escape(strIP) % iPort);
+					% strEscNodePublic % iValues % sqlEscape(strIP) % iPort);
 				iValues++;
 			}
 			else
@@ -1153,8 +1153,8 @@ bool UniqueNodeList::getSeedDomains(const std::string& strDomain, seedDomain& ds
 	bool		bResult;
 	Database*	db=theApp->getWalletDB()->getDB();
 
-	std::string strSql	= str(boost::format("SELECT * FROM SeedDomains WHERE Domain=%s;")
-		% db->escape(strDomain));
+	std::string strSql	= boost::str(boost::format("SELECT * FROM SeedDomains WHERE Domain=%s;")
+		% sqlEscape(strDomain));
 
 	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
 
@@ -1215,15 +1215,15 @@ void UniqueNodeList::setSeedDomains(const seedDomain& sdSource, bool bNext)
 
 	// cLog(lsTRACE) << str(boost::format("setSeedDomains: iNext=%s tpNext=%s") % iNext % sdSource.tpNext);
 
-	std::string strSql	= str(boost::format("REPLACE INTO SeedDomains (Domain,PublicKey,Source,Next,Scan,Fetch,Sha256,Comment) VALUES (%s, %s, %s, %d, %d, %d, '%s', %s);")
-		% db->escape(sdSource.strDomain)
-		% (sdSource.naPublicKey.isValid() ? db->escape(sdSource.naPublicKey.humanNodePublic()) : "NULL")
+	std::string strSql	= boost::str(boost::format("REPLACE INTO SeedDomains (Domain,PublicKey,Source,Next,Scan,Fetch,Sha256,Comment) VALUES (%s, %s, %s, %d, %d, %d, '%s', %s);")
+		% sqlEscape(sdSource.strDomain)
+		% (sdSource.naPublicKey.isValid() ? sqlEscape(sdSource.naPublicKey.humanNodePublic()) : "NULL")
 		% sqlEscape(std::string(1, static_cast<char>(sdSource.vsSource)))
 		% iNext
 		% iScan
 		% iFetch
 		% sdSource.iSha256.GetHex()
-		% db->escape(sdSource.strComment)
+		% sqlEscape(sdSource.strComment)
 		);
 
 	ScopedLock	sl(theApp->getWalletDB()->getDBLock());

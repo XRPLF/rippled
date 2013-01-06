@@ -121,7 +121,7 @@ bool Wallet::dataDelete(const std::string& strKey)
 	ScopedLock sl(theApp->getRpcDB()->getDBLock());
 
 	return db->executeSQL(str(boost::format("DELETE FROM RPCData WHERE Key=%s;")
-		% db->escape(strKey)));
+		% sqlEscape(strKey)));
 }
 
 bool Wallet::dataFetch(const std::string& strKey, std::string& strValue)
@@ -133,7 +133,7 @@ bool Wallet::dataFetch(const std::string& strKey, std::string& strValue)
 	bool		bSuccess	= false;
 
 	if (db->executeSQL(str(boost::format("SELECT Value FROM RPCData WHERE Key=%s;")
-		% db->escape(strKey))) && db->startIterRows())
+		% sqlEscape(strKey))) && db->startIterRows())
 	{
 		std::vector<unsigned char> vucData	= db->getBinary("Value");
 		strValue.assign(vucData.begin(), vucData.end());
@@ -155,8 +155,8 @@ bool Wallet::dataStore(const std::string& strKey, const std::string& strValue)
 	bool		bSuccess	= false;
 
 	return (db->executeSQL(str(boost::format("REPLACE INTO RPCData (Key, Value) VALUES (%s,%s);")
-		% db->escape(strKey)
-		% db->escape(strValue)
+		% sqlEscape(strKey)
+		% sqlEscape(strValue)
 		)));
 
 	return bSuccess;

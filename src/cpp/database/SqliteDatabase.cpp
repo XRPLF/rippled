@@ -8,14 +8,14 @@ using namespace std;
 
 SqliteDatabase::SqliteDatabase(const char* host) : Database(host,"","")
 {
-	mConnection=NULL;
-	mCurrentStmt=NULL;
+	mConnection		= NULL;
+	mCurrentStmt	= NULL;
 }
 
 void SqliteDatabase::connect()
 {
 	int rc = sqlite3_open(mHost.c_str(), &mConnection);
-	if( rc )
+	if (rc)
 	{
 		cout << "Can't open database: " << mHost << " " << rc << endl;
 		sqlite3_close(mConnection);
@@ -32,8 +32,10 @@ void SqliteDatabase::disconnect()
 bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 {
 	sqlite3_finalize(mCurrentStmt);
+
 	int rc = sqlite3_prepare_v2(mConnection, sql, -1, &mCurrentStmt, NULL);
-	if (rc != SQLITE_OK )
+
+	if (SQLITE_OK != rc)
 	{
 		if (!fail_ok)
 		{
@@ -57,6 +59,7 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 	else
 	{
 		mMoreRows = false;
+
 		if (!fail_ok)
 		{
 #ifdef DEBUG
@@ -106,16 +109,18 @@ void SqliteDatabase::endIterRows()
 // will return false if there are no more rows
 bool SqliteDatabase::getNextRow()
 {
-	if(!mMoreRows) return(false);
+	if (!mMoreRows) return(false);
 
 	int rc=sqlite3_step(mCurrentStmt);
-	if(rc==SQLITE_ROW)
+	if (rc==SQLITE_ROW)
 	{
 		return(true);
-	}else if(rc==SQLITE_DONE)
+	}
+	else if (rc==SQLITE_DONE)
 	{
 		return(false);
-	}else
+	}
+	else
 	{
 		cout << "SQL Rerror:" << rc << endl;
 		return(false);
@@ -172,30 +177,6 @@ std::vector<unsigned char> SqliteDatabase::getBinary(int colIndex)
 uint64 SqliteDatabase::getBigInt(int colIndex)
 {
 	return(sqlite3_column_int64(mCurrentStmt, colIndex));
-}
-
-
-/* http://www.sqlite.org/lang_expr.html
-BLOB literals are string literals containing hexadecimal data and preceded by a single "x" or "X" character. For example:
-X'53514C697465'
-*/
-void SqliteDatabase::escape(const unsigned char* start, int size, std::string& retStr)
-{
-	static const char toHex[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-		'A', 'B', 'C', 'D', 'E', 'F' };
-
-	retStr.resize(3 + (size * 2));
-
-	int pos = 0;
-	retStr[pos++] = 'X';
-	retStr[pos++] = '\'';
-
-	for (int n = 0; n < size; ++n)
-	{
-		retStr[pos++] = toHex[start[n] >> 4];
-		retStr[pos++] = toHex[start[n] & 0x0f];
-	}
-	retStr[pos] = '\'';
 }
 
 // vim:ts=4

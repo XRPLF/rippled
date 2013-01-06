@@ -38,8 +38,6 @@ public:
 	int getBinary(int colIndex,unsigned char* buf,int maxSize);
 	std::vector<unsigned char> getBinary(int colIndex);
 	uint64 getBigInt(int colIndex);
-
-	void escape(const unsigned char* start,int size,std::string& retStr);
 };
 
 // vim:ts=4

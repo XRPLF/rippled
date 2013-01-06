@@ -37,9 +37,6 @@ public:
 
 	std::string& getPass(){ return(mDBPass); }
 
-	virtual void escape(const unsigned char* start,int size,std::string& retStr)=0;
-	std::string escape(const std::string strValue);
-
 	// returns true if the query went ok
 	virtual bool executeSQL(const char* sql, bool fail_okay=false)=0;
 

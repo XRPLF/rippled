@@ -28,7 +28,7 @@ class HashedObject : private IS_INSTANCE(HashedObject)
 public:
 	typedef boost::shared_ptr<HashedObject> pointer;
 
-	HashedObjectType 			mType;
+	HashedObjectType			mType;
 	uint256						mHash;
 	uint32						mLedgerIndex;
 	std::vector<unsigned char>	mData;
@@ -69,3 +69,4 @@ public:
 };
 
 #endif
+// vim:ts=4
