@@ -12,7 +12,7 @@ require("../src/js/remote.js").config = require("./config.js");
 
 buster.testRunner.timeout = 5000;
 
-buster.testCase("// Basic Path finding", {
+buster.testCase("Basic Path finding", {
   // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
   // 'setUp' : testutils.build_setup({ verbose: true }),
   'setUp' : testutils.build_setup(),
@@ -221,7 +221,7 @@ buster.testCase("// Basic Path finding", {
     },
 });
 
-buster.testCase("// Extended Path finding", {
+buster.testCase("Extended Path finding", {
   // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
   // 'setUp' : testutils.build_setup({ verbose: true }),
   'setUp' : testutils.build_setup(),
@@ -435,13 +435,13 @@ buster.testCase("// Extended Path finding", {
     // Test alternative paths with qualities.
 });
 
-buster.testCase("// More Path finding", {
+buster.testCase("More Path finding", {
   // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
   // 'setUp' : testutils.build_setup({ verbose: true }),
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
-  "alternative paths - limit returned paths to best quality" :
+  "// alternative paths - limit returned paths to best quality" :
     // alice +- bitstamp         -+ bob
     //       |- carol(fee)       -|     // To be excluded.
     //       |- dan(issue)       -|
@@ -453,7 +453,7 @@ buster.testCase("// More Path finding", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "carol", "dan", "mtgox", "bitstamp"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "carol", "dan", "mtgox", "bitstamp"], callback);
           },
           function (callback) {
             self.what = "Set transfer rate.";
@@ -489,6 +489,7 @@ buster.testCase("// More Path finding", {
               },
               callback);
           },
+// XXX What should this check?
           function (callback) {
             self.what = "Find path from alice to bob";
 
@@ -520,7 +521,7 @@ buster.testCase("// More Path finding", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox", "bitstamp"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox", "bitstamp"], callback);
           },
           function (callback) {
             self.what = "Set transfer rate.";
@@ -592,7 +593,7 @@ buster.testCase("// More Path finding", {
           function (callback) {
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox", "bitstamp"], callback);
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox", "bitstamp"], callback);
           },
           function (callback) {
             self.what = "Set transfer rate.";
