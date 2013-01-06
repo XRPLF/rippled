@@ -126,6 +126,7 @@ Json::Value RPCParser::parseConnect(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+#if ENABLE_INSECURE
 // data_delete <key>
 Json::Value RPCParser::parseDataDelete(const Json::Value& jvParams)
 {
@@ -135,7 +136,9 @@ Json::Value RPCParser::parseDataDelete(const Json::Value& jvParams)
 
 	return jvRequest;
 }
+#endif
 
+#if ENABLE_INSECURE
 // data_fetch <key>
 Json::Value RPCParser::parseDataFetch(const Json::Value& jvParams)
 {
@@ -145,7 +148,9 @@ Json::Value RPCParser::parseDataFetch(const Json::Value& jvParams)
 
 	return jvRequest;
 }
+#endif
 
+#if ENABLE_INSECURE
 // data_store <key> <value>
 Json::Value RPCParser::parseDataStore(const Json::Value& jvParams)
 {
@@ -156,6 +161,7 @@ Json::Value RPCParser::parseDataStore(const Json::Value& jvParams)
 
 	return jvRequest;
 }
+#endif
 
 // Return an error for attemping to subscribe/unsubscribe via RPC.
 Json::Value RPCParser::parseEvented(const Json::Value& jvParams)
@@ -203,6 +209,7 @@ Json::Value RPCParser::parseLedger(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+#if ENABLE_INSECURE
 // login <username> <password>
 Json::Value RPCParser::parseLogin(const Json::Value& jvParams)
 {
@@ -213,6 +220,7 @@ Json::Value RPCParser::parseLogin(const Json::Value& jvParams)
 
 	return jvRequest;
 }
+#endif
 
 // log_level:							Get log levels
 // log_level <severity>:				Set master log level to the specified severity
@@ -459,11 +467,13 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"wallet_propose",		&RPCParser::parseWalletPropose,			0,  1	},
 		{	"wallet_seed",			&RPCParser::parseWalletSeed,			0,  1	},
 
+#if ENABLE_INSECURE
 		// XXX Unnecessary commands which should be removed.
 		{	"login",				&RPCParser::parseLogin,					2,  2	},
 		{	"data_delete",			&RPCParser::parseDataDelete,			1,  1	},
 		{	"data_fetch",			&RPCParser::parseDataFetch,				1,  1	},
 		{	"data_store",			&RPCParser::parseDataStore,				2,  2	},
+#endif
 
 		// Evented methods
 		{	"subscribe",			&RPCParser::parseEvented,				-1,	-1	},

@@ -15,13 +15,17 @@ protected:
 	Json::Value parseAccountTransactions(const Json::Value& jvParams);
 	Json::Value parseAsIs(const Json::Value& jvParams);
 	Json::Value parseConnect(const Json::Value& jvParams);
+#if ENABLE_INSECURE
 	Json::Value parseDataDelete(const Json::Value& jvParams);
 	Json::Value parseDataFetch(const Json::Value& jvParams);
 	Json::Value parseDataStore(const Json::Value& jvParams);
+#endif
 	Json::Value parseEvented(const Json::Value& jvParams);
 	Json::Value parseGetCounts(const Json::Value& jvParams);
 	Json::Value parseLedger(const Json::Value& jvParams);
+#if ENABLE_INSECURE
 	Json::Value parseLogin(const Json::Value& jvParams);
+#endif
 	Json::Value parseLogLevel(const Json::Value& jvParams);
 	Json::Value parseOwnerInfo(const Json::Value& jvParams);
 	Json::Value parseRandom(const Json::Value& jvParams);
