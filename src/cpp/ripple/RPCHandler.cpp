@@ -304,6 +304,7 @@ Json::Value RPCHandler::doConnect(Json::Value jvRequest)
 	return "connecting";
 }
 
+#if ENABLE_INSECURE
 // {
 //   key: <string>
 // }
@@ -327,7 +328,9 @@ Json::Value RPCHandler::doDataDelete(Json::Value jvRequest)
 
 	return ret;
 }
+#endif
 
+#if ENABLE_INSECURE
 // {
 //   key: <string>
 // }
@@ -347,7 +350,9 @@ Json::Value RPCHandler::doDataFetch(Json::Value jvRequest)
 
 	return ret;
 }
+#endif
 
+#if ENABLE_INSECURE
 // {
 //   key: <string>
 //   value: <string>
@@ -375,6 +380,7 @@ Json::Value RPCHandler::doDataStore(Json::Value jvRequest)
 
 	return ret;
 }
+#endif
 
 #if 0
 // XXX Needs to be revised for new paradigm
@@ -1569,6 +1575,7 @@ Json::Value RPCHandler::doWalletSeed(Json::Value jvRequest)
 	}
 }
 
+#if ENABLE_INSECURE
 // TODO: for now this simply checks if this is the admin account
 // TODO: need to prevent them hammering this over and over
 // TODO: maybe a better way is only allow admin from local host
@@ -1592,6 +1599,7 @@ Json::Value RPCHandler::doLogin(Json::Value jvRequest)
 		return "nope";
 	}
 }
+#endif
 
 // {
 //   min_count: <number>  // optional, defaults to 10
@@ -2456,11 +2464,13 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 		{	"wallet_propose",		&RPCHandler::doWalletPropose,	    false,	optNone		},
 		{	"wallet_seed",			&RPCHandler::doWalletSeed,		    false,	optNone		},
 
+#if ENABLE_INSECURE
 		// XXX Unnecessary commands which should be removed.
 		{	"login",				&RPCHandler::doLogin,			    true,	optNone		},
 		{	"data_delete",			&RPCHandler::doDataDelete,		    true,	optNone		},
 		{	"data_fetch",			&RPCHandler::doDataFetch,		    true,	optNone		},
 		{	"data_store",			&RPCHandler::doDataStore,		    true,	optNone		},
+#endif
 
 		// Evented methods
 		{	"subscribe",			&RPCHandler::doSubscribe,			false,	optNone		},

@@ -40,9 +40,11 @@ class RPCHandler
 	Json::Value doAccountOffers(Json::Value params);
 	Json::Value doAccountTransactions(Json::Value params);
 	Json::Value doConnect(Json::Value params);
+#if ENABLE_INSECURE
 	Json::Value doDataDelete(Json::Value params);
 	Json::Value doDataFetch(Json::Value params);
 	Json::Value doDataStore(Json::Value params);
+#endif
 	Json::Value doGetCounts(Json::Value params);
 	Json::Value doLedger(Json::Value params);
 	Json::Value doLogLevel(Json::Value params);
@@ -79,7 +81,9 @@ class RPCHandler
 	Json::Value doWalletUnlock(Json::Value params);
 	Json::Value doWalletVerify(Json::Value params);
 
+#if ENABLE_INSECURE
 	Json::Value doLogin(Json::Value params);
+#endif
 
 	Json::Value doLedgerAccept(Json::Value params);
 	Json::Value doLedgerClosed(Json::Value params);

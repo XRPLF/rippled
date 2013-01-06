@@ -9,6 +9,8 @@
 #include <string>
 #include <boost/filesystem.hpp>
 
+#define ENABLE_INSECURE				0				// 1, to enable unnecessary features.
+
 #define SYSTEM_NAME					"ripple"
 #define SYSTEM_CURRENCY_CODE		"XRP"
 #define SYSTEM_CURRENCY_PRECISION	6
