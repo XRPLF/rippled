@@ -1841,7 +1841,6 @@ Json::Value RPCHandler::doTransactionEntry(Json::Value jvRequest)
 	return jvResult;
 }
 
-// XXX ledger_index needs to be allowed as a string (32-bits is to small).
 Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpLedger)
 {
 	Json::Value jvResult;
