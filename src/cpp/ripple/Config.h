@@ -33,10 +33,9 @@ const int SYSTEM_WEBSOCKET_PUBLIC_PORT	= 6563;	// XXX Going away.
 // Allow anonymous DH.
 #define DEFAULT_PEER_SSL_CIPHER_LIST	"ALL:!LOW:!EXP:!MD5:@STRENGTH"
 
-// Normal, recommend 1 hour.
-// #define DEFAULT_PEER_SCAN_INTERVAL_MIN	(60*60)
-// Testing, recommend 1 minute.
-#define DEFAULT_PEER_SCAN_INTERVAL_MIN	(60)
+// Normal, recommend 1 hour: 60*60
+// Testing, recommend 1 minute: 60
+#define DEFAULT_PEER_SCAN_INTERVAL_MIN	(60*60)	// Seconds
 
 // Maximum number of peers to try to connect to as client at once.
 #define DEFAULT_PEER_START_MAX			5
