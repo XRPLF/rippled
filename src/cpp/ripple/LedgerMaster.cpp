@@ -439,7 +439,10 @@ void LedgerMaster::tryPublish()
 			{
 				LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(hash);
 				if (!acq->isDone())
+				{
+					acq->setAccept();
 					break;
+				}
 				else if (acq->isComplete() && !acq->isFailed())
 				{
 					mPubLedger = acq->getLedger();
