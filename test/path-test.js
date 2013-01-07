@@ -696,7 +696,7 @@ buster.testCase("Path negatives", {
             testutils.payments(self.remote,
               {
                 // 4. acct 2 sent acct 3 a 75 iou
-                "bob" : "25/USD/carol",
+                "bob" : "75/USD/carol",
               },
               callback);
           },
@@ -705,8 +705,8 @@ buster.testCase("Path negatives", {
 
             testutils.verify_balances(self.remote,
               {
-                "bob"   : [ "-25/USD/carol" ],
-                "carol"   : "25/USD/bob",
+                "bob"   : [ "-75/USD/carol" ],
+                "carol"   : "75/USD/bob",
               },
               callback);
           },
@@ -754,8 +754,8 @@ buster.testCase("Path negatives", {
             testutils.verify_balances(self.remote,
               {
                 "alice" : [ "0/USD/bob", "0/USD/dan"],
-                "bob"   : [ "0/USD/alice", "-25/USD/carol", "0/USD/dan" ],
-                "carol" : [ "25/USD/bob", "0/USD/dan" ],
+                "bob"   : [ "0/USD/alice", "-75/USD/carol", "0/USD/dan" ],
+                "carol" : [ "75/USD/bob", "0/USD/dan" ],
                 "dan" : [ "0/USD/alice", "0/USD/bob", "0/USD/carol" ],
               },
               callback);
