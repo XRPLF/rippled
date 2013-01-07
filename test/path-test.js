@@ -667,11 +667,7 @@ buster.testCase("Path negatives", {
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
-  "=>Issue #5" :
-    // alice +- bitstamp         -+ bob
-    //       |- carol(fee)       -|     // To be excluded.
-    //       |- dan(issue)       -|
-    //       |- mtgox            -|
+  "Issue #5" :
     function (done) {
       var self = this;
 
