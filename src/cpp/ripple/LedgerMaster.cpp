@@ -150,16 +150,19 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 	resumeAcquiring();
 }
 
-void LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledgerSeq)
-{
+bool LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledgerSeq)
+{ // return: false = already gave up recently
 	Ledger::pointer ledger = Ledger::loadByIndex(ledgerSeq);
 	if (ledger && (ledger->getHash() == ledgerHash))
 	{
 		cLog(lsDEBUG) << "Ledger found is database, doing async accept";
 		mTooFast = true;
 		theApp->getJobQueue().addJob(jtPUBLEDGER, boost::bind(&LedgerMaster::asyncAccept, this, ledger));
-		return;
+		return true;
 	}
+
+	if (theApp->getMasterLedgerAcquire().isFailure(ledgerHash))
+		return false;
 
 	mMissingLedger = theApp->getMasterLedgerAcquire().findCreate(ledgerHash);
 	if (mMissingLedger->isComplete())
@@ -168,16 +171,17 @@ void LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledger
 		if (lgr && (lgr->getLedgerSeq() == ledgerSeq))
 			missingAcquireComplete(mMissingLedger);
 		mMissingLedger.reset();
-		return;
+		return true;
 	}
 	else if (mMissingLedger->isDone())
 	{
 		mMissingLedger.reset();
-		return;
+		return false;
 	}
 	mMissingSeq = ledgerSeq;
 	if (mMissingLedger->setAccept())
 		mMissingLedger->addOnComplete(boost::bind(&LedgerMaster::missingAcquireComplete, this, _1));
+	return true;
 }
 
 void LedgerMaster::missingAcquireComplete(LedgerAcquire::pointer acq)
