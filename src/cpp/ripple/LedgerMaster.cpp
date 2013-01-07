@@ -10,7 +10,7 @@
 SETUP_LOG();
 
 #define MIN_VALIDATION_RATIO	150		// 150/256ths of validations of previous ledger
-#define MAX_LEDGER_GAP			100		// Don't catch up more than 100 ledgers
+#define MAX_LEDGER_GAP			100		// Don't catch up more than 100 ledgers  (cannot exceed 256)
 
 uint32 LedgerMaster::getCurrentLedgerIndex()
 {
@@ -58,7 +58,7 @@ void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL, bool fromCo
 		mCurrentLedger = newOL;
 		mEngine.setLedger(newOL);
 	}
-	checkPublish(newLCL->getHash(), newLCL->getLedgerSeq());
+	checkAccept(newLCL->getHash(), newLCL->getLedgerSeq());
 }
 
 void LedgerMaster::switchLedgers(Ledger::ref lastClosed, Ledger::ref current)
@@ -75,7 +75,7 @@ void LedgerMaster::switchLedgers(Ledger::ref lastClosed, Ledger::ref current)
 
 	assert(!mCurrentLedger->isClosed());
 	mEngine.setLedger(mCurrentLedger);
-	checkPublish(lastClosed->getHash(), lastClosed->getLedgerSeq());
+	checkAccept(lastClosed->getHash(), lastClosed->getLedgerSeq());
 }
 
 void LedgerMaster::storeLedger(Ledger::ref ledger)
@@ -346,21 +346,18 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 	}
 }
 
-void LedgerMaster::checkPublish(const uint256& hash)
+void LedgerMaster::checkAccept(const uint256& hash)
 {
 	Ledger::pointer ledger = mLedgerHistory.getLedgerByHash(hash);
 	if (ledger)
-		checkPublish(hash, ledger->getLedgerSeq());
+		checkAccept(hash, ledger->getLedgerSeq());
 }
 
-void LedgerMaster::checkPublish(const uint256& hash, uint32 seq)
-{ // check if we need to publish any held ledgers
+void LedgerMaster::checkAccept(const uint256& hash, uint32 seq)
+{ // Can we advance the last fully accepted ledger? If so, can we publish?
 	boost::recursive_mutex::scoped_lock ml(mLock);
 
-	// FIXME: This code needs to try much more aggressively to fill holes
-	// before publishing them.
-
-	if (seq <= mLastValidateSeq)
+	if (mValidLedger && (seq <= mValidLedger->getLedgerSeq()))
 		return;
 
 	int minVal = mMinValidations;
@@ -379,32 +376,73 @@ void LedgerMaster::checkPublish(const uint256& hash, uint32 seq)
 	else if (theApp->getOPs().isNeedNetworkLedger())
 		minVal = 1;
 
-	cLog(lsTRACE) << "Sweeping for ledgers to publish: minval=" << minVal;
+	if (theApp->getValidations().getTrustedValidationCount(hash) < minVal) // nothing we can do
+		return;
 
-	// See if this ledger have at least the minimum number of validations
-	Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq(seq);
-	if (ledger && (theApp->getValidations().getTrustedValidationCount(ledger->getHash()) >= minVal))
-	{ // this ledger (and any priors) can be published
-		theApp->getOPs().clearNeedNetworkLedger();
-		if (ledger->getLedgerSeq() > (mLastValidateSeq + MAX_LEDGER_GAP))
-			mLastValidateSeq = ledger->getLedgerSeq() - MAX_LEDGER_GAP;
+	mLastValidateHash = hash;
+	mLastValidateSeq = seq;
 
-		cLog(lsTRACE) << "Ledger " << ledger->getLedgerSeq() << " can be published";
-		for (uint32 pubSeq = mLastValidateSeq + 1; pubSeq <= seq; ++pubSeq)
+	Ledger::pointer ledger = mLedgerHistory.getLedgerByHash(hash);
+	if (!ledger)
+		return;
+	mValidLedger = ledger;
+
+	tryPublish();
+}
+
+void LedgerMaster::tryPublish()
+{
+	boost::recursive_mutex::scoped_lock ml(mLock);
+	assert(mValidLedger);
+
+	if (!mPubLedger)
+	{
+		mPubLedger = mValidLedger;
+		mPubLedgers.push_back(mValidLedger);
+	}
+	else if (mValidLedger->getLedgerSeq() > (mPubLedger->getLedgerSeq() + MAX_LEDGER_GAP))
+	{
+		mPubLedger = mValidLedger;
+		mPubLedgers.push_back(mValidLedger);
+	}
+	else if (mValidLedger->getLedgerSeq() > mPubLedger->getLedgerSeq())
+	{
+		for (uint32 seq = mPubLedger->getLedgerSeq() + 1; seq <= mValidLedger->getLedgerSeq(); ++seq)
 		{
-			uint256 pubHash = ledger->getLedgerHash(pubSeq);
-			if (pubHash.isZero()) // CHECKME: Should we double-check validations in this case?
-				pubHash = mLedgerHistory.getLedgerHash(pubSeq);
-			if (pubHash.isNonZero())
+			cLog(lsDEBUG) << "Trying to publish ledger " << seq;
+
+			Ledger::pointer ledger;
+			uint256 hash;
+
+			if (seq == mValidLedger->getLedgerSeq())
 			{
-				Ledger::pointer ledger = mLedgerHistory.getLedgerByHash(pubHash);
-				if (ledger)
+				ledger = mValidLedger;
+				hash = ledger->getHash();
+			}
+			else
+			{
+				hash = mValidLedger->getLedgerHash(seq);
+				assert(hash.isNonZero());
+				ledger = mLedgerHistory.getLedgerByHash(hash);
+			}
+
+			if (ledger)
+			{
+				mPubLedger = ledger;
+				mPubLedgers.push_back(ledger);
+			}
+			else
+			{
+				LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(hash);
+				if (!acq->isDone())
+					break;
+				else if (acq->isComplete() && !acq->isFailed())
 				{
-					mPubLedgers.push_back(ledger);
-					mValidLedger = ledger;
-					mLastValidateSeq = ledger->getLedgerSeq();
-					mLastValidateHash = ledger->getHash();
+					mPubLedger = acq->getLedger();
+					mPubLedgers.push_back(mPubLedger);
 				}
+				else
+					cLog(lsWARNING) << "Failed to acquire a published ledger";
 			}
 		}
 	}
@@ -436,6 +474,7 @@ void LedgerMaster::pubThread()
 
 		BOOST_FOREACH(Ledger::ref l, ledgers)
 		{
+			cLog(lsDEBUG) << "Publishing ledger " << l->getLedgerSeq();
 			setFullLedger(l); // OPTIMIZEME: This is actually more work than we need to do
 			theApp->getOPs().pubLedger(l);
 			BOOST_FOREACH(callback& c, mOnValidate)

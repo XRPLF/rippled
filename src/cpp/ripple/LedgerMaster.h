@@ -27,7 +27,8 @@ protected:
 
 	Ledger::pointer mCurrentLedger;		// The ledger we are currently processiong
 	Ledger::pointer mFinalizedLedger;	// The ledger that most recently closed
-	Ledger::pointer mValidLedger;		// The ledger we most recently fully accepted
+	Ledger::pointer mValidLedger;		// The highest-sequence ledger we have fully accepted
+	Ledger::pointer mPubLedger;			// The last ledger we have published
 
 	LedgerHistory mLedgerHistory;
 
@@ -120,8 +121,9 @@ public:
 
 	void addValidateCallback(callback& c) { mOnValidate.push_back(c); }
 
-	void checkPublish(const uint256& hash);
-	void checkPublish(const uint256& hash, uint32 seq);
+	void checkAccept(const uint256& hash);
+	void checkAccept(const uint256& hash, uint32 seq);
+	void tryPublish();
 };
 
 #endif
