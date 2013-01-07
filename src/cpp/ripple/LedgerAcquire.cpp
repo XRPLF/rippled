@@ -724,4 +724,18 @@ bool LedgerAcquireMaster::isFailure(const uint256& hash)
 	return mRecentFailures.find(hash) != mRecentFailures.end();
 }
 
+void LedgerAcquireMaster::sweep()
+{
+	boost::mutex::scoped_lock sl(mLock);
+
+	std::map<uint256, LedgerAcquire::pointer>::iterator it = mLedgers.begin();
+	while (it != mLedgers.end())
+	{
+		if (it->second->isDone())
+			mLedgers.erase(it++);
+		else
+			++it;
+	}
+}
+
 // vim:ts=4

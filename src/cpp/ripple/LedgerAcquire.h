@@ -133,6 +133,8 @@ public:
 
 	void logFailure(const uint256&);
 	bool isFailure(const uint256&);
+
+	void sweep();
 };
 
 #endif
