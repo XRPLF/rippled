@@ -26,6 +26,7 @@ protected:
 	uint256 mHash;
 	int mTimerInterval, mTimeouts;
 	bool mComplete, mFailed, mProgress;
+	time_t mLastAction;
 
 	boost::recursive_mutex					mLock;
 	boost::asio::deadline_timer				mTimer;
@@ -45,6 +46,8 @@ public:
 
 	void progress()						{ mProgress = true; }
 	bool isProgress()					{ return mProgress; }
+	void touch()						{ mLastAction = time(NULL); }
+	time_t getLastAction()				{ return mLastAction; }
 
 	void peerHas(Peer::ref);
 	void badPeer(Peer::ref);

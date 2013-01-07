@@ -20,6 +20,7 @@ DECLARE_INSTANCE(LedgerAcquire);
 PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterval(interval), mTimeouts(0),
 	mComplete(false), mFailed(false), mProgress(true), mTimer(theApp->getIOService())
 {
+	mLastAction = time(NULL);
 	assert((mTimerInterval > 10) && (mTimerInterval < 30000));
 }
 
@@ -170,6 +171,7 @@ void LedgerAcquire::done()
 	if (mSignaled)
 		return;
 	mSignaled = true;
+	touch();
 #ifdef LA_DEBUG
 	cLog(lsTRACE) << "Done acquiring ledger " << mHash;
 #endif
@@ -559,7 +561,10 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 	boost::mutex::scoped_lock sl(mLock);
 	LedgerAcquire::pointer& ptr = mLedgers[hash];
 	if (ptr)
+	{
+		ptr->touch();
 		return ptr;
+	}
 	ptr = boost::make_shared<LedgerAcquire>(hash);
 	ptr->addPeers();
 	ptr->setTimer(); // Cannot call in constructor
@@ -572,7 +577,10 @@ LedgerAcquire::pointer LedgerAcquireMaster::find(const uint256& hash)
 	boost::mutex::scoped_lock sl(mLock);
 	std::map<uint256, LedgerAcquire::pointer>::iterator it = mLedgers.find(hash);
 	if (it != mLedgers.end())
+	{
+		it->second->touch();
 		return it->second;
+	}
 	return LedgerAcquire::pointer();
 }
 
@@ -726,12 +734,15 @@ bool LedgerAcquireMaster::isFailure(const uint256& hash)
 
 void LedgerAcquireMaster::sweep()
 {
+	time_t now = time(NULL);
 	boost::mutex::scoped_lock sl(mLock);
 
 	std::map<uint256, LedgerAcquire::pointer>::iterator it = mLedgers.begin();
 	while (it != mLedgers.end())
 	{
-		if (it->second->isDone())
+		if (it->second->getLastAction() > now)
+			it->second->touch();
+		else if ((it->second->getLastAction() + 500) < now)
 			mLedgers.erase(it++);
 		else
 			++it;
