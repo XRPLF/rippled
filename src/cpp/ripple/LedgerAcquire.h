@@ -18,9 +18,9 @@
 #include "InstanceCounter.h"
 #include "ripple.pb.h"
 
-DEFINE_INSTANCE(PeerSet);
+DEFINE_INSTANCE(LedgerAcquire);
 
-class PeerSet : private IS_INSTANCE(PeerSet)
+class PeerSet
 {
 protected:
 	uint256 mHash;
@@ -67,7 +67,8 @@ private:
 	static void TimerEntry(boost::weak_ptr<PeerSet>, const boost::system::error_code& result);
 };
 
-class LedgerAcquire : public PeerSet, public boost::enable_shared_from_this<LedgerAcquire>
+class LedgerAcquire :
+	private IS_INSTANCE(LedgerAcquire), public PeerSet, public boost::enable_shared_from_this<LedgerAcquire>
 { // A ledger we are trying to acquire
 public:
 	typedef boost::shared_ptr<LedgerAcquire> pointer;

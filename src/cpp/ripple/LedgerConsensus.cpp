@@ -25,6 +25,7 @@ typedef std::map<uint256, LCTransaction::pointer>::value_type u256_lct_pair;
 
 SETUP_LOG();
 DECLARE_INSTANCE(LedgerConsensus);
+DECLARE_INSTANCE(TransactionAcquire);
 
 TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, TX_ACQUIRE_TIMEOUT), mHaveRoot(false)
 {

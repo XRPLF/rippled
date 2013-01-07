@@ -357,6 +357,9 @@ void LedgerMaster::checkPublish(const uint256& hash, uint32 seq)
 { // check if we need to publish any held ledgers
 	boost::recursive_mutex::scoped_lock ml(mLock);
 
+	// FIXME: This code needs to try much more aggressively to fill holes
+	// before publishing them.
+
 	if (seq <= mLastValidateSeq)
 		return;
 
