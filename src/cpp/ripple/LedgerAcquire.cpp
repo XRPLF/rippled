@@ -11,7 +11,7 @@
 #include "HashPrefixes.h"
 
 SETUP_LOG();
-DECLARE_INSTANCE(PeerSet);
+DECLARE_INSTANCE(LedgerAcquire);
 
 #define LA_DEBUG
 #define LEDGER_ACQUIRE_TIMEOUT 750

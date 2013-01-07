@@ -21,8 +21,10 @@
 #include "LoadMonitor.h"
 
 DEFINE_INSTANCE(LedgerConsensus);
+DEFINE_INSTANCE(TransactionAcquire);
 
-class TransactionAcquire : public PeerSet, public boost::enable_shared_from_this<TransactionAcquire>
+class TransactionAcquire :
+	private IS_INSTANCE(TransactionAcquire), public PeerSet, public boost::enable_shared_from_this<TransactionAcquire>
 { // A transaction set we are trying to acquire
 public:
 	typedef boost::shared_ptr<TransactionAcquire> pointer;
