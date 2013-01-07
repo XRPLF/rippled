@@ -45,6 +45,7 @@ void TransactionAcquire::done()
 		mMap->setImmutable();
 		theApp->getOPs().mapComplete(mHash, mMap);
 	}
+	theApp->getMasterLedgerAcquire().dropLedger(mHash);
 }
 
 void TransactionAcquire::onTimer(bool progress)
