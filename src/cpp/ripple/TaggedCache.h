@@ -31,6 +31,8 @@ public:
 	typedef boost::weak_ptr<data_type>		weak_data_ptr;
 	typedef boost::shared_ptr<data_type>	data_ptr;
 
+	typedef bool (*visitor_func)(const c_Key&, c_Data&);
+
 protected:
 
 	typedef std::pair<time_t, data_ptr>						cache_entry;
@@ -43,7 +45,7 @@ protected:
 	mutable boost::recursive_mutex mLock;
 
 	std::string	mName;			// Used for logging
-	int			mTargetSize;	// Desired number of cache entries
+	int			mTargetSize;	// Desired number of cache entries (0 = ignore)
 	int			mTargetAge;		// Desired maximum cache age
 
 	cache_type	mCache;			// Hold strong reference to recent objects
@@ -64,6 +66,8 @@ public:
 	void setTargetSize(int size);
 	void setTargetAge(int age);
 	void sweep();
+	void visitAll(visitor_func);		// Visits all tracked objects, removes selected objects
+	void visitCached(visitor_func);		// Visits all cached objects, uncaches selected objects
 
 	bool touch(const key_type& key);
 	bool del(const key_type& key, bool valid);
@@ -108,16 +112,19 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 
 	// Pass 1, remove old objects from cache
 	int cacheRemovals = 0;
-	cache_iterator cit = mCache.begin();
-	while (cit != mCache.end())
+	if ((mTargetSize == 0) || (mCache.size() > mTargetSize))
 	{
-		if (cit->second.first < target)
+		cache_iterator cit = mCache.begin();
+		while (cit != mCache.end())
 		{
-			++cacheRemovals;
-			mCache.erase(cit++);
+			if (cit->second.first < target)
+			{
+				++cacheRemovals;
+				mCache.erase(cit++);
+			}
+			else
+				++cit;
 		}
-		else
-			++cit;
 	}
 
 	// Pass 2, remove dead objects from map
@@ -137,6 +144,40 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 	if (TaggedCachePartition.doLog(lsTRACE) && (mapRemovals || cacheRemovals))
 		Log(lsTRACE, TaggedCachePartition) << mName << ": cache = " << mCache.size() << "-" << cacheRemovals <<
 		", map = " << mMap.size() << "-" << mapRemovals;
+}
+
+template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::visitAll(visitor_func func)
+{ // Visits all tracked objects, removes selected objects
+	boost::recursive_mutex::scoped_lock sl(mLock);
+
+	map_iterator mit = mMap.begin();
+	while (mit != mMap.end())
+	{
+		data_ptr cachedData = mit->second.lock();
+		if (!cachedData)
+			mMap.erase(mit++); // dead reference found
+		else if (func(mit->first, mit->second))
+		{
+			mCache.erase(mit->first);
+			mMap.erase(mit++);
+		}
+		else
+			++mit;
+	}
+}
+
+template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::visitCached(visitor_func func)
+{ // Visits all cached objects, uncaches selected objects
+	boost::recursive_mutex::scoped_lock sl(mLock);
+
+	cache_iterator cit = mCache.begin();
+	while (cit != mCache.end())
+	{
+		if (func(cit->first, cit->second.second))
+			mCache.erase(cit++);
+		else
+			++cit;
+	}
 }
 
 template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::touch(const key_type& key)
