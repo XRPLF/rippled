@@ -292,8 +292,8 @@ message TMLedgerData {
 
 message TMPing {
 	enum pingType {
-		PING = 0; // we want a reply
-		PONG = 1; // this is a reply
+		ptPING = 0; // we want a reply
+		ptPONG = 1; // this is a reply
 	}
 	required pingType type		= 1;
 	optional uint32 seq			= 2; // detect stale replies, ensure other side is reading

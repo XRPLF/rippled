@@ -36,6 +36,7 @@ private:
 	bool			mClientConnect;		// In process of connecting as client.
 	bool			mHelloed;			// True, if hello accepted.
 	bool			mDetaching;			// True, if detaching.
+	bool 			mActive;
 	RippleAddress	mNodePublic;		// Node public key of peer.
 	ipPort			mIpPort;
 	ipPort			mIpPortConnect;
@@ -50,7 +51,7 @@ private:
 
 	boost::asio::ssl::stream<boost::asio::ip::tcp::socket>		mSocketSsl;
 
-	boost::asio::deadline_timer									mVerifyTimer;
+	boost::asio::deadline_timer									mActivityTimer;
 
 	void			handleStart(const boost::system::error_code& ecResult);
 	void			handleVerifyTimer(const boost::system::error_code& ecResult);

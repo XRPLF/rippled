@@ -27,9 +27,10 @@ DECLARE_INSTANCE(Peer);
 Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 peerID) :
 	mHelloed(false),
 	mDetaching(false),
+	mActive(true),
 	mPeerId(peerID),
 	mSocketSsl(io_service, ctx),
-	mVerifyTimer(io_service)
+	mActivityTimer(io_service)
 {
 	cLog(lsDEBUG) << "CREATING PEER: " << ADDRESS(this);
 }
@@ -91,7 +92,7 @@ void Peer::detach(const char *rsn)
 
 		mSendQ.clear();
 
-		(void) mVerifyTimer.cancel();
+		(void) mActivityTimer.cancel();
 		mSocketSsl.async_shutdown(boost::bind(&Peer::handleShutdown, shared_from_this(), boost::asio::placeholders::error));
 
 		if (mNodePublic.isValid())
@@ -168,8 +169,8 @@ void Peer::connect(const std::string& strIp, int iPort)
 	}
 	else
 	{
-		mVerifyTimer.expires_from_now(boost::posix_time::seconds(NODE_VERIFY_SECONDS), err);
-		mVerifyTimer.async_wait(boost::bind(&Peer::handleVerifyTimer, shared_from_this(),
+		mActivityTimer.expires_from_now(boost::posix_time::seconds(NODE_VERIFY_SECONDS), err);
+		mActivityTimer.async_wait(boost::bind(&Peer::handleVerifyTimer, shared_from_this(),
 			boost::asio::placeholders::error));
 
 		if (err)
@@ -611,8 +612,8 @@ void Peer::recvHello(ripple::TMHello& packet)
 {
 	bool	bDetach	= true;
 
-	// Cancel verification timeout.
-	(void) mVerifyTimer.cancel();
+	// Cancel verification timeout. - FIXME Start ping/pong timer
+	(void) mActivityTimer.cancel();
 
 	uint32 ourTime = theApp->getOPs().getNetworkTimeNC();
 	uint32 minTime = ourTime - 20;
@@ -1157,10 +1158,14 @@ void Peer::recvGetObjectByHash(ripple::TMGetObjectByHash& packet)
 
 void Peer::recvPing(ripple::TMPing& packet)
 {
-	if (packet.type() == ripple::TMPing::PING)
+	if (packet.type() == ripple::TMPing::ptPING)
 	{
-		packet.set_type(ripple::TMPing::PONG);
+		packet.set_type(ripple::TMPing::ptPONG);
 		sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtPING));
+	}
+	else if (packet.type() == ripple::TMPing::ptPONG)
+	{
+		mActive = true;
 	}
 }
 
