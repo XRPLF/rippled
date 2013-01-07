@@ -268,7 +268,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			}
 			else if (!speEnd.mCurrencyID)
 			{
-				// Last element is for XRP continue with qualifying books.
+				// Last element is for XRP, continue with qualifying books.
 				BOOST_FOREACH(OrderBook::ref book, mOrderBook.getXRPInBooks())
 				{
 					// XXX Don't allow looping through same order books.
@@ -298,19 +298,42 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			}
 			else
 			{
-				// Last element is for non-XRP continue by adding ripple lines and order books.
+				// Last element is for non-XRP, continue by adding ripple lines and order books.
 
 				// Create new paths for each outbound account not already in the path.
 				AccountItems rippleLines(speEnd.mAccountID, mLedger, AccountItem::pointer(new RippleState()));
 
 				BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 				{
-					RippleState* line=(RippleState*)item.get();
+					RippleState* rspEntry = (RippleState*) item.get();
 
-					if (!spPath.hasSeen(line->getAccountIDPeer().getAccountID()))
+					if (spPath.hasSeen(rspEntry->getAccountIDPeer().getAccountID()))
 					{
+						// Peer is in path already. Ignore it to avoid a loop.
+						cLog(lsDEBUG) <<
+							boost::str(boost::format("findPaths: SEEN: %s/%s --> %s/%s")
+								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
+								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
+								% RippleAddress::createHumanAccountID(rspEntry->getAccountIDPeer().getAccountID())
+								% STAmount::createHumanCurrency(speEnd.mCurrencyID));
+					}
+					else if (!rspEntry->getBalance().isPositive()	// Have IOUs to send.
+						&& (!rspEntry->getLimitPeer()				// Peer does not extend credit.
+							|| *rspEntry->getBalance().negate() >= rspEntry->getLimitPeer()))	// No credit left.
+					{
+						// Path has no credit left. Ignore it.
+						cLog(lsDEBUG) <<
+							boost::str(boost::format("findPaths: No credit: %s/%s --> %s/%s")
+								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
+								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
+								% RippleAddress::createHumanAccountID(rspEntry->getAccountIDPeer().getAccountID())
+								% STAmount::createHumanCurrency(speEnd.mCurrencyID));
+					}
+					else
+					{
+						// Can transmit IOUs.
 						STPath			new_path(spPath);
-						STPathElement	new_ele(line->getAccountIDPeer().getAccountID(),
+						STPathElement	new_ele(rspEntry->getAccountIDPeer().getAccountID(),
 											speEnd.mCurrencyID,
 											uint160());
 
@@ -318,22 +341,13 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 							boost::str(boost::format("findPaths: %s/%s --> %s/%s")
 								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
 								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
-								% RippleAddress::createHumanAccountID(line->getAccountIDPeer().getAccountID())
+								% RippleAddress::createHumanAccountID(rspEntry->getAccountIDPeer().getAccountID())
 								% STAmount::createHumanCurrency(speEnd.mCurrencyID));
 
 						new_path.mPath.push_back(new_ele);
 						qspExplore.push(new_path);
 
 						bContinued	= true;
-					}
-					else
-					{
-						cLog(lsDEBUG) <<
-							boost::str(boost::format("findPaths: SEEN: %s/%s --> %s/%s")
-								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
-								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
-								% RippleAddress::createHumanAccountID(line->getAccountIDPeer().getAccountID())
-								% STAmount::createHumanCurrency(speEnd.mCurrencyID));
 					}
 				}
 
@@ -447,6 +461,8 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 	{
 		cLog(lsDEBUG) << boost::str(boost::format("findPaths: no ledger"));
 	}
+
+	cLog(lsDEBUG) << boost::str(boost::format("findPaths< bFound=%d") % bFound);
 
 	return bFound;
 }
