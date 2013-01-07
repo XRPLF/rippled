@@ -1157,6 +1157,11 @@ void Peer::recvGetObjectByHash(ripple::TMGetObjectByHash& packet)
 
 void Peer::recvPing(ripple::TMPing& packet)
 {
+	if (packet.type() == ripple::TMPing::PING)
+	{
+		packet.set_type(ripple::TMPing::PONG);
+		sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtPING));
+	}
 }
 
 void Peer::recvErrorMessage(ripple::TMErrorMsg& packet)
