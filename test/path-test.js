@@ -660,4 +660,114 @@ buster.testCase("More Path finding", {
 
     // Test alternative paths with qualities.
 });
+
+buster.testCase("Path negatives", {
+  // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
+  // 'setUp' : testutils.build_setup({ verbose: true }),
+  'setUp' : testutils.build_setup(),
+  'tearDown' : testutils.build_teardown(),
+
+  "=>Issue #5" :
+    // alice +- bitstamp         -+ bob
+    //       |- carol(fee)       -|     // To be excluded.
+    //       |- dan(issue)       -|
+    //       |- mtgox            -|
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+          function (callback) {
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "carol", "dan"], callback);
+          },
+          function (callback) {
+            self.what = "Set credit limits.";
+
+            testutils.credit_limits(self.remote,
+              {
+                //  2. acct 4 trusted all the other accts for 100 usd
+                "dan"   : [ "100/USD/alice", "100/USD/bob", "100/USD/carol" ],
+                //  3. acct 2 acted as a nexus for acct 1 and 3, was trusted by 1 and 3 for 100 usd
+                "alice" : [ "100/USD/bob" ],
+                "carol" : [ "100/USD/bob" ],
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Distribute funds.";
+
+            testutils.payments(self.remote,
+              {
+                // 4. acct 2 sent acct 3 a 75 iou
+                "bob" : "25/USD/carol",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Verify balances.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "bob"   : [ "-25/USD/carol" ],
+                "carol"   : "25/USD/bob",
+              },
+              callback);
+          },
+//          function (callback) {
+//            self.what = "Display ledger";
+//
+//            self.remote.request_ledger('current', true)
+//              .on('success', function (m) {
+//                  console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+//
+//                  callback();
+//                })
+//              .request();
+//          },
+          function (callback) {
+            self.what = "Find path from alice to bob";
+
+            // 5. acct 1 sent a 25 usd iou to acct 2
+            self.remote.request_ripple_path_find("alice", "bob", "25/USD/bob",
+              [ { 'currency' : "USD" } ])
+              .on('success', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+
+                  // 0 alternatives.
+                  buster.assert.equals(0, m.alternatives.length)
+
+                  callback();
+                })
+              .request();
+          },
+          function (callback) {
+            self.what = "alice fails to send to bob.";
+
+            self.remote.transaction()
+              .payment('alice', 'bob', "25/USD/alice")
+              .once('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+                  callback(m.result !== 'tecPATH_DRY');
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Verify balances final.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "alice" : [ "0/USD/bob", "0/USD/dan"],
+                "bob"   : [ "0/USD/alice", "-25/USD/carol", "0/USD/dan" ],
+                "carol" : [ "25/USD/bob", "0/USD/dan" ],
+                "dan" : [ "0/USD/alice", "0/USD/bob", "0/USD/carol" ],
+              },
+              callback);
+          },
+        ], function (error) {
+          buster.refute(error, self.what);
+          done();
+        });
+    }
+});
 // vim:sw=2:sts=2:ts=8:et
