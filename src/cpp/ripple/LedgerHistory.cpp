@@ -10,11 +10,11 @@
 #include "Application.h"
 
 #ifndef CACHED_LEDGER_NUM
-#define CACHED_LEDGER_NUM 64
+#define CACHED_LEDGER_NUM 96
 #endif
 
 #ifndef CACHED_LEDGER_AGE
-#define CACHED_LEDGER_AGE 60
+#define CACHED_LEDGER_AGE 120
 #endif
 
 // FIXME: Need to clean up ledgers by index at some point
