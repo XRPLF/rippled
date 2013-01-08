@@ -237,7 +237,7 @@ void LedgerMaster::resumeAcquiring()
 	}
 	if (shouldAcquire(mCurrentLedger->getLedgerSeq(), theConfig.LEDGER_HISTORY, prevMissing))
 	{
-		cLog(lsINFO) << "Resuming at " << prevMissing;
+		cLog(lsTRACE) << "Resuming at " << prevMissing;
 		assert(!mCompleteLedgers.hasValue(prevMissing));
 		Ledger::pointer nextLedger = getLedgerBySeq(prevMissing + 1);
 		if (nextLedger)
