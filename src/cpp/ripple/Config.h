@@ -65,6 +65,7 @@ public:
 
 	enum StartUpType { FRESH, NORMAL, LOAD, NETWORK };
 	StartUpType					START_UP;
+	std::string					START_LEDGER;
 
 	// Database
 	std::string					DATABASE_PATH;

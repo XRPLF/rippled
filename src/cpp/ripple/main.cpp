@@ -102,6 +102,7 @@ int main(int argc, char* argv[])
 		("quiet,q", "Reduce diagnotics.")
 		("verbose,v", "Verbose logging.")
 		("load", "Load the current ledger from the local DB.")
+		("ledger", po::value<std::string>(), "Load the specified ledger and start from .")
 		("start", "Start from a fresh Ledger.")
 		("net", "Get the initial ledger from the network.")
 	;
@@ -171,7 +172,15 @@ int main(int argc, char* argv[])
 	}
 
 	if (vm.count("start")) theConfig.START_UP = Config::FRESH;
-	else if (vm.count("load")) theConfig.START_UP = Config::LOAD;
+	if (vm.count("ledger"))
+	{
+		theConfig.START_LEDGER = vm["ledger"].as<std::string>();
+		theConfig.START_UP = Config::LOAD;
+	}
+	else if (vm.count("load"))
+	{
+		theConfig.START_UP = Config::LOAD;
+	}
 	else if (vm.count("net")) theConfig.START_UP = Config::NETWORK;
 
 	if (iResult)

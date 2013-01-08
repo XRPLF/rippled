@@ -129,7 +129,7 @@ void Application::run()
 	{
 		cLog(lsINFO) << "Loading Old Ledger";
 
-		loadOldLedger();
+		loadOldLedger(theConfig.START_LEDGER);
 	}
 	else if (theConfig.START_UP == Config::NETWORK)
 	{ // This should probably become the default once we have a stable network
@@ -317,44 +317,54 @@ void Application::startNewLedger()
 	}
 }
 
-void Application::loadOldLedger()
+void Application::loadOldLedger(const std::string& l)
 {
 	try
 	{
-		Ledger::pointer lastLedger = Ledger::getLastFullLedger();
+		Ledger::pointer loadLedger;
+		if (l.empty() || (l == "latest"))
+			loadLedger = Ledger::getLastFullLedger();
+		if (l.length() == 64)
+		{
+			uint256 hash;
+			hash.SetHex(l);
+			loadLedger = Ledger::loadByHash(hash);
+		}
+		else
+			loadLedger = Ledger::loadByIndex(boost::lexical_cast<uint32>(l));
 
-		if (!lastLedger)
+		if (!loadLedger)
 		{
 			cLog(lsFATAL) << "No Ledger found?" << std::endl;
 			exit(-1);
 		}
-		lastLedger->setClosed();
+		loadLedger->setClosed();
 
-		cLog(lsINFO) << "Loading ledger " << lastLedger->getHash() << " seq:" << lastLedger->getLedgerSeq();
+		cLog(lsINFO) << "Loading ledger " << loadLedger->getHash() << " seq:" << loadLedger->getLedgerSeq();
 
-		if (lastLedger->getAccountHash().isZero())
+		if (loadLedger->getAccountHash().isZero())
 		{
 			cLog(lsFATAL) << "Ledger is empty.";
 			assert(false);
 			exit(-1);
 		}
 
-		if (!lastLedger->walkLedger())
+		if (!loadLedger->walkLedger())
 		{
 			cLog(lsFATAL) << "Ledger is missing nodes.";
 			exit(-1);
 		}
 
-		if (!lastLedger->assertSane())
+		if (!loadLedger->assertSane())
 		{
 			cLog(lsFATAL) << "Ledger is not sane.";
 			exit(-1);
 		}
-		mLedgerMaster.setLedgerRangePresent(0, lastLedger->getLedgerSeq());
+		mLedgerMaster.setLedgerRangePresent(loadLedger->getLedgerSeq(), loadLedger->getLedgerSeq());
 
-		Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*lastLedger));
-		mLedgerMaster.switchLedgers(lastLedger, openLedger);
-		mNetOps.setLastCloseTime(lastLedger->getCloseTimeNC());
+		Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*loadLedger));
+		mLedgerMaster.switchLedgers(loadLedger, openLedger);
+		mNetOps.setLastCloseTime(loadLedger->getCloseTimeNC());
 	}
 	catch (SHAMapMissingNode& mn)
 	{

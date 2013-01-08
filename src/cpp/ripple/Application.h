@@ -84,7 +84,7 @@ class Application
 	boost::recursive_mutex	mPeerMapLock;
 
 	void startNewLedger();
-	void loadOldLedger();
+	void loadOldLedger(const std::string&);
 
 public:
 	Application();
