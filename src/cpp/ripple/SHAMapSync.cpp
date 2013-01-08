@@ -61,17 +61,9 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 						std::vector<unsigned char> nodeData;
 						if (filter->haveNode(childID, childHash, nodeData))
 						{
-							d = boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq, snfPREFIX);
-							if (childHash != d->getNodeHash())
-							{
-								cLog(lsERROR) << "Wrong hash from cached object";
-								d.reset();
-							}
-							else
-							{
-								cLog(lsTRACE) << "Got sync node from cache: " << *d;
-								mTNByID[*d] = d;
-							}
+							d = boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq, snfPREFIX, childHash);
+							cLog(lsTRACE) << "Got sync node from cache: " << *d;
+							mTNByID[*d] = d;
 						}
 					}
 				}
@@ -200,7 +192,7 @@ SMAddNode SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, SHANod
 		return SMAddNode::okay();
 	}
 
-	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, format);
+	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, format, uint256());
 	if (!node)
 		return SMAddNode::invalid();
 
@@ -240,7 +232,7 @@ SMAddNode SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned ch
 		return SMAddNode::okay();
 	}
 
-	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, format);
+	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, format, uint256());
 	if (!node || node->getNodeHash() != hash)
 		return SMAddNode::invalid();
 
@@ -318,7 +310,7 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigne
 		return SMAddNode::invalid();
 	}
 
-	SHAMapTreeNode::pointer newNode = boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq, snfWIRE);
+	SHAMapTreeNode::pointer newNode = boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq, snfWIRE, uint256());
 	if (hash != newNode->getNodeHash()) // these aren't the droids we're looking for
 		return SMAddNode::invalid();
 

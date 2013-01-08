@@ -714,7 +714,8 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 
 	try
 	{
-		SHAMapTreeNode::pointer ret = boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq - 1, snfPREFIX);
+		SHAMapTreeNode::pointer ret =
+			boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq - 1, snfPREFIX, hash);
 		if (id != *ret)
 		{
 			cLog(lsFATAL) << "id:" << id << ", got:" << *ret;
