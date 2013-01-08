@@ -1301,6 +1301,8 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 	if (packet.has_requestcookie())
 		reply.set_requestcookie(packet.requestcookie());
 
+	std::string logMe;
+
 	if (packet.itype() == ripple::liTS_CANDIDATE)
 	{ // Request is for a transaction candidate set
 		cLog(lsINFO) << "Received request for TX candidate set data " << getIP();
@@ -1360,6 +1362,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 				return;
 			}
 			memcpy(ledgerhash.begin(), packet.ledgerhash().data(), 32);
+			logMe += "LedgerHash:"; logMe += ledgerhash.GetHex();
 			ledger = theApp->getLedgerMaster().getLedgerByHash(ledgerhash);
 
 			tLog(!ledger, lsINFO) << "Don't have ledger " << ledgerhash;
@@ -1457,9 +1460,15 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		}
 
 		if (packet.itype() == ripple::liTX_NODE)
+		{
 			map = ledger->peekTransactionMap();
+			logMe += " TX:"; logMe += map->getHash().GetHex();
+		}
 		else if (packet.itype() == ripple::liAS_NODE)
+		{
 			map = ledger->peekAccountStateMap();
+			logMe += " AS:"; logMe += map->getHash().GetHex();
+		}
 	}
 
 	if ((!map) || (packet.nodeids_size() == 0))
@@ -1469,6 +1478,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		return;
 	}
 
+	cLog(lsINFO) << "Request: " << logMe;
 	for(int i = 0; i < packet.nodeids().size(); ++i)
 	{
 		SHAMapNode mn(packet.nodeids(i).data(), packet.nodeids(i).size());
