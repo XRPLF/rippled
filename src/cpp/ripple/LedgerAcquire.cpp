@@ -225,6 +225,9 @@ void LedgerAcquire::trigger(Peer::ref peer)
 			cLog(lsTRACE) << "base=" << mHaveBase << " tx=" << mHaveTransactions << " as=" << mHaveState;
 	}
 
+	if (!mHaveBase)
+		tryLocal();
+
 	ripple::TMGetLedger tmGL;
 	tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 	if (getTimeouts() != 0)
@@ -244,6 +247,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 				bool typeSet = false;
 				BOOST_FOREACH(neededHash_t& p, need)
 				{
+					theApp->getOPs().addWantedHash(p.second);
 					if (!typeSet)
 					{
 						tmBH.set_type(p.first);
@@ -251,7 +255,6 @@ void LedgerAcquire::trigger(Peer::ref peer)
 					}
 					if (p.first == tmBH.type())
 					{
-						theApp->getOPs().addWantedHash(p.second);
 						ripple::TMIndexedObject *io = tmBH.add_objects();
 						io->set_hash(p.second.begin(), p.second.size());
 					}

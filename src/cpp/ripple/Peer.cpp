@@ -1117,7 +1117,8 @@ void Peer::recvGetObjectByHash(ripple::TMGetObjectByHash& packet)
 				}
 			}
 		}
-		cLog(lsDEBUG) << "GetObjByHash query: had " << reply.objects_size() << " of " << packet.objects_size();
+		cLog(lsDEBUG) << "GetObjByHash query: had " << reply.objects_size() << " of " << packet.objects_size()
+			<< " for " << getIP();
 		sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtGET_OBJECTS));
 	}
 	else
@@ -1151,6 +1152,8 @@ void Peer::recvGetObjectByHash(ripple::TMGetObjectByHash& packet)
 					else
 						theApp->getHashedObjectStore().store(type, seq, data, hash);
 				}
+				else
+					cLog(lsWARNING) << "Received unwanted hash from peer " << getIP();
 			}
 		}
 	}
