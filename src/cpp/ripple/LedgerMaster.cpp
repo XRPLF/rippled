@@ -426,7 +426,12 @@ void LedgerMaster::tryPublish()
 			else
 			{
 				hash = mValidLedger->getLedgerHash(seq);
-				assert(hash.isNonZero());
+				if (hash.isZero())
+				{
+					cLog(lsFATAL) << "Ledger: " << mValidLedger->getLedgerSeq() << " does not have hash for " <<
+						seq;
+					assert(false);
+				}
 				ledger = mLedgerHistory.getLedgerByHash(hash);
 			}
 

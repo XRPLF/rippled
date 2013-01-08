@@ -955,7 +955,10 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 
 	// easy cases
 	if (ledgerIndex > mLedgerSeq)
+	{
+		cLog(lsWARNING) << "Can't get seq " << ledgerIndex << " from " << mLedgerSeq << " future";
 		return uint256();
+	}
 
 	if (ledgerIndex == mLedgerSeq)
 		return getHash();
@@ -978,7 +981,10 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 	}
 
 	if ((ledgerIndex & 0xff) != 0)
+	{
+		cLog(lsWARNING) << "Can't get seq " << ledgerIndex << " from " << mLedgerSeq << " past";
 		return uint256();
+	}
 
 	// in skiplist
 	SLE::pointer hashIndex = getSLE(getLedgerHashIndex(ledgerIndex));
@@ -994,6 +1000,7 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 			return vec.at(vec.size() - sDiff - 1);
 	}
 
+	cLog(lsWARNING) << "Can't get seq " << ledgerIndex << " from " << mLedgerSeq << " error";
 	return uint256();
 }
 
