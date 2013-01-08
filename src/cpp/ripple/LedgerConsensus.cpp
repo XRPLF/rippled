@@ -569,7 +569,7 @@ void LedgerConsensus::statusChange(ripple::NodeEvent event, Ledger& ledger)
 	s.set_ledgerhash(hash.begin(), hash.size());
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, ripple::mtSTATUS_CHANGE);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
-	cLog(lsINFO) << "send status change to peer";
+	cLog(lsTRACE) << "send status change to peer";
 }
 
 int LedgerConsensus::startup()
@@ -974,7 +974,7 @@ bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
 	}
 
 
-	cLog(lsINFO) << "Processing peer proposal " << newPosition->getProposeSeq() << "/" << newPosition->getCurrentHash();
+	cLog(lsTRACE) << "Processing peer proposal " << newPosition->getProposeSeq() << "/" << newPosition->getCurrentHash();
 	currentPosition = newPosition;
 
 	SHAMap::pointer set = getTransactionTree(newPosition->getCurrentHash(), true);
@@ -1216,9 +1216,9 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 	// write out dirty nodes (temporarily done here) Most come before setAccepted
 	int fc;
 	while ((fc = SHAMap::flushDirty(*acctNodes, 256, hotACCOUNT_NODE, newLCL->getLedgerSeq())) > 0)
-	{ cLog(lsINFO) << "Flushed " << fc << " dirty state nodes"; }
+	{ cLog(lsTRACE) << "Flushed " << fc << " dirty state nodes"; }
 	while ((fc = SHAMap::flushDirty(*txnNodes, 256, hotTRANSACTION_NODE, newLCL->getLedgerSeq())) > 0)
-	{ cLog(lsINFO) << "Flushed " << fc << " dirty transaction nodes"; }
+	{ cLog(lsTRACE) << "Flushed " << fc << " dirty transaction nodes"; }
 
 	bool closeTimeCorrect = true;
 	if (closeTime == 0)
@@ -1227,11 +1227,11 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 		closeTime = mPreviousLedger->getCloseTimeNC() + 1;
 	}
 
-	cLog(lsINFO) << "Report: Prop=" << (mProposing ? "yes" : "no") << " val=" << (mValidating ? "yes" : "no") <<
+	cLog(lsDEBUG) << "Report: Prop=" << (mProposing ? "yes" : "no") << " val=" << (mValidating ? "yes" : "no") <<
 		" corLCL=" << (mHaveCorrectLCL ? "yes" : "no") << " fail="<< (mConsensusFail ? "yes" : "no"); 
-	cLog(lsINFO) << "Report: Prev = " << mPrevLedgerHash << ":" << mPreviousLedger->getLedgerSeq();
-	cLog(lsINFO) << "Report: TxSt = " << set->getHash() << ", close " << closeTime << (closeTimeCorrect ? "" : "X");
-	cLog(lsINFO) << "Report: NewL  = " << newLCL->getHash() << ":" << newLCL->getLedgerSeq();
+	cLog(lsDEBUG) << "Report: Prev = " << mPrevLedgerHash << ":" << mPreviousLedger->getLedgerSeq();
+	cLog(lsDEBUG) << "Report: TxSt = " << set->getHash() << ", close " << closeTime << (closeTimeCorrect ? "" : "X");
+	cLog(lsDEBUG) << "Report: NewL  = " << newLCL->getHash() << ":" << newLCL->getLedgerSeq();
 
 	newLCL->setAccepted(closeTime, mCloseResolution, closeTimeCorrect);
 	newLCL->updateHash();

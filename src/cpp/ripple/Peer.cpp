@@ -1117,7 +1117,7 @@ void Peer::recvGetObjectByHash(ripple::TMGetObjectByHash& packet)
 				}
 			}
 		}
-		cLog(lsDEBUG) << "GetObjByHash query: had " << reply.objects_size() << " of " << packet.objects_size()
+		cLog(lsTRACE) << "GetObjByHash query: had " << reply.objects_size() << " of " << packet.objects_size()
 			<< " for " << getIP();
 		sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtGET_OBJECTS));
 	}
@@ -1485,7 +1485,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			if(map->getNodeFat(mn, nodeIDs, rawNodes, fatRoot, fatLeaves))
 			{
 				assert(nodeIDs.size() == rawNodes.size());
-				cLog(lsDEBUG) << "getNodeFat got " << rawNodes.size() << " nodes";
+				cLog(lsTRACE) << "getNodeFat got " << rawNodes.size() << " nodes";
 				std::vector<SHAMapNode>::iterator nodeIDIterator;
 				std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
 				for(nodeIDIterator = nodeIDs.begin(), rawNodeIterator = rawNodes.begin();

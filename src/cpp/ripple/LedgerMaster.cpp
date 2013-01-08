@@ -155,7 +155,7 @@ bool LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledger
 	Ledger::pointer ledger = Ledger::loadByIndex(ledgerSeq);
 	if (ledger && (ledger->getHash() == ledgerHash))
 	{
-		cLog(lsDEBUG) << "Ledger found is database, doing async accept";
+		cLog(lsDEBUG) << "Ledger hash found in database";
 		mTooFast = true;
 		theApp->getJobQueue().addJob(jtPUBLEDGER, boost::bind(&LedgerMaster::asyncAccept, this, ledger));
 		return true;

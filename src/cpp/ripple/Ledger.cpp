@@ -506,7 +506,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		db->endIterRows();
 	}
 
-	Log(lsTRACE) << "Constructing ledger " << ledgerSeq << " from SQL";
+//	Log(lsTRACE) << "Constructing ledger " << ledgerSeq << " from SQL";
 	Ledger::pointer ret = boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
 		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq);
 	if (ret->getHash() != ledgerHash)
