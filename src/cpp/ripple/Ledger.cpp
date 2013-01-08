@@ -526,7 +526,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 }
 
 Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
-{
+{ // This is a low-level function with no caching
 	std::string sql="SELECT * from Ledgers WHERE LedgerSeq='";
 	sql.append(boost::lexical_cast<std::string>(ledgerIndex));
 	sql.append("';");
@@ -534,7 +534,7 @@ Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
 }
 
 Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
-{
+{ // This is a low-level function with no caching
 	std::string sql="SELECT * from Ledgers WHERE LedgerHash='";
 	sql.append(ledgerHash.GetHex());
 	sql.append("';");
