@@ -731,8 +731,25 @@ void LedgerAcquireMaster::logFailure(const uint256& hash)
 
 bool LedgerAcquireMaster::isFailure(const uint256& hash)
 {
+	time_t now = time(NULL);
 	boost::mutex::scoped_lock sl(mLock);
-	return mRecentFailures.find(hash) != mRecentFailures.end();
+
+	std::map<uint256, time_t>::iterator it = mRecentFailures.find(hash);
+	if (it == mRecentFailures.end())
+		return false;
+
+	if (it->second > now)
+	{
+		it->second = now;
+		return true;
+	}
+
+	if ((it->second + 180) < now)
+	{
+		mRecentFailures.erase(it);
+		return false;
+	}
+	return true;
 }
 
 void LedgerAcquireMaster::sweep()
