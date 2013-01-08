@@ -456,6 +456,7 @@ void LedgerMaster::tryPublish()
 
 	if (!mPubLedgers.empty() && !mPubThread)
 	{
+		theApp->getOPs().clearNeedNetworkLedger();
 		mPubThread = true;
 		theApp->getJobQueue().addJob(jtPUBLEDGER, boost::bind(&LedgerMaster::pubThread, this));
 	}
