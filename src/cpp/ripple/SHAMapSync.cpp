@@ -268,7 +268,7 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigne
 	assert(!node.isRoot());
 	if (!isSynching())
 	{
-		cLog(lsINFO) << "AddKnownNode while not synching";
+		cLog(lsDEBUG) << "AddKnownNode while not synching";
 		return SMAddNode::okay();
 	}
 
