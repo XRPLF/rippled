@@ -10,6 +10,7 @@
 #include "uint256.h"
 #include "ScopedLock.h"
 #include "TaggedCache.h"
+#include "KeyCache.h"
 #include "InstanceCounter.h"
 
 DEFINE_INSTANCE(HashedObject);
@@ -45,7 +46,8 @@ public:
 class HashedObjectStore
 {
 protected:
-	TaggedCache<uint256, HashedObject> mCache;
+	TaggedCache<uint256, HashedObject>	mCache;
+	KeyCache<uint256>					mNegativeCache;
 
 	boost::mutex				mWriteMutex;
 	boost::condition_variable	mWriteCondition;
@@ -65,7 +67,7 @@ public:
 
 	void bulkWrite();
 	void waitWrite();
-	void sweep() { mCache.sweep(); }
+	void sweep() { mCache.sweep(); mNegativeCache.sweep(); }
 };
 
 #endif

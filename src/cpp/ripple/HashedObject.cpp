@@ -33,6 +33,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	}
 	assert(hash == Serializer::getSHA512Half(data));
 
+	mNegativeCache.del(hash);
 	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data, hash);
 	if (!mCache.canonicalize(hash, object))
 	{
@@ -115,6 +116,7 @@ void HashedObjectStore::bulkWrite()
 
 HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 {
+
 	HashedObject::pointer obj;
 	{
 		obj = mCache.fetch(hash);
@@ -124,6 +126,9 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 			return obj;
 		}
 	}
+
+	if (mNegativeCache.isPresent(hash))
+		return HashedObject::pointer();
 
 	if (!theApp || !theApp->getHashNodeDB())
 		return HashedObject::pointer();
@@ -139,12 +144,17 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		if (!db->executeSQL(sql) || !db->startIterRows())
 		{
 //			cLog(lsTRACE) << "HOS: " << hash << " fetch: not in db";
+			mNegativeCache.add(hash);
 			return HashedObject::pointer();
 		}
 
 		std::string type;
 		db->getStr("ObjType", type);
-		if (type.size() == 0) return HashedObject::pointer();
+		if (type.size() == 0)
+		{
+			mNegativeCache.add(hash);
+			return HashedObject::pointer();
+		}
 
 		uint32 index = db->getBigInt("LedgerIndex");
 
@@ -164,6 +174,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 			case 'N': htype = hotTRANSACTION_NODE; break;
 			default:
 				cLog(lsERROR) << "Invalid hashed object";
+				mNegativeCache.add(hash);
 				return HashedObject::pointer();
 		}
 
