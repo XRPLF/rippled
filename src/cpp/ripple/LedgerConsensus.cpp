@@ -756,10 +756,10 @@ void LedgerConsensus::updateOurPositions()
 
 		for (std::map<uint32, int>::iterator it = closeTimes.begin(), end = closeTimes.end(); it != end; ++it)
 		{
-			cLog(lsINFO) << "CCTime: " << it->first << " has " << it->second << ", " << thresh << " required";
+			cLog(lsTRACE) << "CCTime: " << it->first << " has " << it->second << ", " << thresh << " required";
 			if (it->second >= thresh)
 			{
-				cLog(lsINFO) << "Close time consensus reached: " << it->first;
+				cLog(lsDEBUG) << "Close time consensus reached: " << it->first;
 				mHaveCloseTimeConsensus = true;
 				closeTime = it->first;
 				thresh = it->second;
