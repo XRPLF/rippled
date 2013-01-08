@@ -10,11 +10,11 @@
 #include "Application.h"
 
 #ifndef CACHED_LEDGER_NUM
-#define CACHED_LEDGER_NUM 128
+#define CACHED_LEDGER_NUM 64
 #endif
 
 #ifndef CACHED_LEDGER_AGE
-#define CACHED_LEDGER_AGE 900
+#define CACHED_LEDGER_AGE 60
 #endif
 
 // FIXME: Need to clean up ledgers by index at some point
@@ -84,6 +84,7 @@ Ledger::pointer LedgerHistory::getLedgerByHash(const uint256& hash)
 	if (!ret)
 		return ret;
 	assert(ret->getHash() == hash);
+	mLedgersByHash.canonicalize(ret->getHash(), ret);
 
 	return ret;
 }

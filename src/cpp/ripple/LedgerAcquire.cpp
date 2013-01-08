@@ -745,7 +745,7 @@ void LedgerAcquireMaster::sweep()
 	{
 		if (it->second->getLastAction() > now)
 			it->second->touch();
-		else if ((it->second->getLastAction() + 500) < now)
+		else if ((it->second->getLastAction() + 60) < now)
 			mLedgers.erase(it++);
 		else
 			++it;
