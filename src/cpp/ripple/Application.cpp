@@ -127,7 +127,7 @@ void Application::run()
 	}
 	else if (theConfig.START_UP == Config::LOAD)
 	{
-		cLog(lsINFO) << "Loading Old Ledger";
+		cLog(lsINFO) << "Loading specified Ledger";
 
 		loadOldLedger(theConfig.START_LEDGER);
 	}
@@ -270,6 +270,14 @@ void Application::run()
 
 void Application::sweep()
 {
+
+	boost::filesystem::space_info space = boost::filesystem::space(theConfig.DATA_DIR);
+	if (space.available < (128 * 1024 * 1024))
+	{
+		cLog(lsFATAL) << "Remaining free disk space is less than 128MB";
+		theApp->stop();
+	}
+
 	mMasterTransaction.sweep();
 	mHashedObjectStore.sweep();
 	mLedgerMaster.sweep();
@@ -324,13 +332,13 @@ void Application::loadOldLedger(const std::string& l)
 		Ledger::pointer loadLedger;
 		if (l.empty() || (l == "latest"))
 			loadLedger = Ledger::getLastFullLedger();
-		if (l.length() == 64)
-		{
+		else if (l.length() == 64)
+		{ // by hash
 			uint256 hash;
 			hash.SetHex(l);
 			loadLedger = Ledger::loadByHash(hash);
 		}
-		else
+		else // assume by sequence
 			loadLedger = Ledger::loadByIndex(boost::lexical_cast<uint32>(l));
 
 		if (!loadLedger)
@@ -368,7 +376,12 @@ void Application::loadOldLedger(const std::string& l)
 	}
 	catch (SHAMapMissingNode& mn)
 	{
-		cLog(lsFATAL) << "Cannot load ledger. " << mn;
+		cLog(lsFATAL) << "Data is missing for selected ledger";
+		exit(-1);
+	}
+	catch (boost::bad_lexical_cast& blc)
+	{
+		cLog(lsFATAL) << "Ledger specified '" << l << "' is not valid";
 		exit(-1);
 	}
 }
