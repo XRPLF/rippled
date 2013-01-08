@@ -107,13 +107,26 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	mLastSweep = time(NULL);
+	time_t mLastSweep = time(NULL);
 	time_t target = mLastSweep - mTargetAge;
 
 	// Pass 1, remove old objects from cache
 	int cacheRemovals = 0;
 	if ((mTargetSize == 0) || (mCache.size() > mTargetSize))
 	{
+		if (mTargetSize != 0)
+		{
+			target = mLastSweep - (mTargetAge * mCache.size() / mTargetSize);
+			if (target > (mLastSweep - 2))
+				target = mLastSweep - 2;
+
+			Log(lsINFO, TaggedCachePartition) << mName << " is growing fast " <<
+				mCache.size() << " of " << mTargetSize <<
+				" aging at " << (mLastSweep - target) << " of " << mTargetAge;
+		}
+		else
+			target = mLastSweep - mTargetAge;
+
 		cache_iterator cit = mCache.begin();
 		while (cit != mCache.end())
 		{
