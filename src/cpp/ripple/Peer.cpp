@@ -1476,7 +1476,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		return;
 	}
 
-	cLog(lsINFO) << "Request: " << logMe;
+	cLog(lsDEBUG) << "Request: " << logMe;
 	for(int i = 0; i < packet.nodeids().size(); ++i)
 	{
 		SHAMapNode mn(packet.nodeids(i).data(), packet.nodeids(i).size());
