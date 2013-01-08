@@ -1350,7 +1350,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 	}
 	else
 	{ // Figure out what ledger they want
-		cLog(lsINFO) << "Received request for ledger data " << getIP();
+		cLog(lsTRACE) << "Received request for ledger data " << getIP();
 		Ledger::pointer ledger;
 		if (packet.has_ledgerhash())
 		{
@@ -1415,8 +1415,6 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			{
 				if (ledger)
 					Log(lsWARNING) << "Ledger has wrong sequence";
-				else
-					Log(lsWARNING) << "Can't find the ledger they want";
 			}
 			return;
 		}
