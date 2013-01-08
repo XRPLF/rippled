@@ -116,7 +116,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 	{
 		if (mTargetSize != 0)
 		{
-			target = mLastSweep - (mTargetAge * mTargeSize / mCache.size());
+			target = mLastSweep - (mTargetAge * mTargetSize / mCache.size());
 			if (target > (mLastSweep - 2))
 				target = mLastSweep - 2;
 
