@@ -186,18 +186,22 @@ AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
 #ifdef DEBUG
 //	std::cerr << "Ledger:getAccountState(" << accountID.humanAccountID() << ")" << std::endl;
 #endif
+
 	SHAMapItem::pointer item = mAccountStateMap->peekItem(Ledger::getAccountRootIndex(accountID));
 	if (!item)
 	{
-#ifdef DEBUG
-//		std::cerr << " notfound" << std::endl;
-#endif
+		cLog(lsDEBUG) << boost::str(boost::format("Ledger:getAccountState: not found: %s: %s")
+			% accountID.humanAccountID()
+			% Ledger::getAccountRootIndex(accountID).GetHex());
+
 		return AccountState::pointer();
 	}
+
 	SerializedLedgerEntry::pointer sle =
 		boost::make_shared<SerializedLedgerEntry>(item->peekSerializer(), item->getTag());
 	if (sle->getType() != ltACCOUNT_ROOT)
 		return AccountState::pointer();
+
 	return boost::make_shared<AccountState>(sle,accountID);
 }
 

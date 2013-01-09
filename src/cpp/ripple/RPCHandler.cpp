@@ -932,7 +932,13 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 	}
 
 	AccountState::pointer asSrc	= mNetOps->getAccountState(mNetOps->getCurrentLedger(), raSrcAddressID);
-	if (!asSrc) return rpcError(rpcSRC_ACT_MALFORMED);
+	if (!asSrc)
+	{
+		cLog(lsDEBUG) << boost::str(boost::format("doSubmit: Failed to find source account in current ledger: %s")
+			% raSrcAddressID.humanAccountID());
+
+		return rpcError(rpcSRC_ACT_NOT_FOUND);
+	}
 
 	if ("Payment" == txJSON["TransactionType"].asString())
 	{

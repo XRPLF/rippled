@@ -60,6 +60,7 @@ enum {
 	rpcPUBLIC_MALFORMED,
 	rpcSRC_ACT_MALFORMED,
 	rpcSRC_ACT_MISSING,
+	rpcSRC_ACT_NOT_FOUND,
 	rpcSRC_AMT_MALFORMED,
 
 	// Internal error (should never happen)
