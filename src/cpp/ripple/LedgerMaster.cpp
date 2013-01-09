@@ -196,7 +196,7 @@ void LedgerMaster::missingAcquireComplete(LedgerAcquire::pointer acq)
 	mMissingLedger.reset();
 	mMissingSeq = 0;
 
-	if (!acq->isFailed())
+	if (acq->isComplete())
 	{
 		setFullLedger(acq->getLedger());
 		acq->getLedger()->pendSave(false);
