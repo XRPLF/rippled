@@ -286,6 +286,14 @@ boost::shared_ptr<c_Data> TaggedCache<c_Key, c_Data>::fetch(const key_type& key)
 { // fetch us a shared pointer to the stored data object
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
+	// Is it in the cache?
+	cache_iterator cit = mCache.find(key);
+	if (cit != mCache.end())
+	{
+		cit->second.first = time(NULL); // Yes, refresh
+		return cit->second.second;
+	}
+
 	// Is it in the map?
 	map_iterator mit = mMap.find(key);
 	if (mit == mMap.end())
@@ -298,13 +306,8 @@ boost::shared_ptr<c_Data> TaggedCache<c_Key, c_Data>::fetch(const key_type& key)
 		return cachedData;
 	}
 
-	// Valid in map, is it in the cache?
-	cache_iterator cit = mCache.find(key);
-	if (cit != mCache.end())
-		cit->second.first = time(NULL); // Yes, refresh
-	else // No, add to cache
-		mCache.insert(cache_pair(key, cache_entry(time(NULL), cachedData)));
-
+	// Put it back in the cache
+	mCache.insert(cache_pair(key, cache_entry(time(NULL), cachedData)));
 	return cachedData;
 }
 
