@@ -90,7 +90,11 @@ bool LedgerAcquire::tryLocal()
 		return false;
 
 	mLedger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
-	assert(mLedger->getHash() == mHash);
+	if (mLedger->getHash() != mHash)
+	{ // We know for a fact the ledger can never be acquired
+		mFailed = true;
+		return true;
+	}
 	mHaveBase = true;
 
 	if (!mLedger->getTransHash())
@@ -236,7 +240,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 	{
 		tmGL.set_querytype(ripple::qtINDIRECT);
 
-		if (!isProgress() && mByHash)
+		if (!isProgress() && !mFailed && mByHash)
 		{
 			std::vector<neededHash_t> need = getNeededHashes();
 			if (!need.empty())
@@ -287,7 +291,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 
 	}
 
-	if (!mHaveBase)
+	if (!mHaveBase && !mFailed)
 	{
 		tmGL.set_itype(ripple::liBASE);
 		cLog(lsTRACE) << "Sending base request to " << (peer ? "selected peer" : "all peers");
@@ -299,7 +303,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 	if (mLedger)
 		tmGL.set_ledgerseq(mLedger->getLedgerSeq());
 
-	if (mHaveBase && !mHaveTransactions)
+	if (mHaveBase && !mHaveTransactions && !mFailed)
 	{
 		assert(mLedger);
 		if (mLedger->peekTransactionMap()->getHash().isZero())
@@ -340,7 +344,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 		}
 	}
 
-	if (mHaveBase && !mHaveState)
+	if (mHaveBase && !mHaveState && !mFailed)
 	{
 		assert(mLedger);
 		if (mLedger->peekAccountStateMap()->getHash().isZero())
