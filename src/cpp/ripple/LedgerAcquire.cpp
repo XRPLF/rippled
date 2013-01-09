@@ -92,6 +92,7 @@ bool LedgerAcquire::tryLocal()
 	mLedger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
 	if (mLedger->getHash() != mHash)
 	{ // We know for a fact the ledger can never be acquired
+		cLog(lsWARNING) << mHash << " cannot be a ledger";
 		mFailed = true;
 		return true;
 	}
@@ -130,6 +131,7 @@ void LedgerAcquire::onTimer(bool progress)
 {
 	if (getTimeouts() > 6)
 	{
+		cLog(lsWARNING) << "Six timeouts for ledger " << mHash;
 		setFailed();
 		done();
 		return;
@@ -137,6 +139,7 @@ void LedgerAcquire::onTimer(bool progress)
 
 	if (!progress)
 	{
+		cLog(lsDEBUG) << "No progress for ledger " << mHash;
 		if (!getPeerCount())
 			addPeers();
 		else
@@ -232,7 +235,11 @@ void LedgerAcquire::trigger(Peer::ref peer)
 	}
 
 	if (!mHaveBase)
+	{
 		tryLocal();
+		if (mFailed)
+			cLog(lsWARNING) << " failed local for " << mHash;
+	}
 
 	ripple::TMGetLedger tmGL;
 	tmGL.set_ledgerhash(mHash.begin(), mHash.size());
@@ -288,7 +295,6 @@ void LedgerAcquire::trigger(Peer::ref peer)
 				mHaveState = true;
 			}
 		}
-
 	}
 
 	if (!mHaveBase && !mFailed)
