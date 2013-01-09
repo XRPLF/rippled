@@ -977,6 +977,8 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 			STVector256 vec = hashIndex->getFieldV256(sfHashes);
 			if (vec.size() >= diff)
 				return vec.at(vec.size() - diff);
+			cLog(lsWARNING) << "Ledger " << mLedgerSeq << " missing hash for " << ledgerIndex
+				<< " (" << vec.size() << "," << diff << ")";
 		}
 		else cLog(lsWARNING) << "Ledger " << ledgerIndex << ":" << getHash() << " missing skiplist";
 	}
