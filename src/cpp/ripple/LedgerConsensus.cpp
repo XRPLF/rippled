@@ -1190,7 +1190,7 @@ uint32 LedgerConsensus::roundCloseTime(uint32 closeTime)
 
 void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 {
-	if (set->getHash().isNonZero())
+	if (set->getHash().isNonZero()) // put our set where others can get it later
 		theApp->getOPs().takePosition(mPreviousLedger->getLedgerSeq(), set);
 
 	boost::recursive_mutex::scoped_lock masterLock(theApp->getMasterLock());
@@ -1198,7 +1198,10 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 
 	uint32 closeTime = roundCloseTime(mOurPosition->getCloseTime());
 
-	cLog(lsDEBUG) << "Computing new LCL based on network consensus";
+	cLog(lsDEBUG) << "Report: Prop=" << (mProposing ? "yes" : "no") << " val=" << (mValidating ? "yes" : "no") <<
+		" corLCL=" << (mHaveCorrectLCL ? "yes" : "no") << " fail="<< (mConsensusFail ? "yes" : "no");
+	cLog(lsDEBUG) << "Report: Prev = " << mPrevLedgerHash << ":" << mPreviousLedger->getLedgerSeq();
+	cLog(lsDEBUG) << "Report: TxSt = " << set->getHash() << ", close " << closeTime << (closeTimeCorrect ? "" : "X");
 
 	CanonicalTXSet failedTransactions(set->getHash());
 
@@ -1227,10 +1230,6 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 		closeTime = mPreviousLedger->getCloseTimeNC() + 1;
 	}
 
-	cLog(lsDEBUG) << "Report: Prop=" << (mProposing ? "yes" : "no") << " val=" << (mValidating ? "yes" : "no") <<
-		" corLCL=" << (mHaveCorrectLCL ? "yes" : "no") << " fail="<< (mConsensusFail ? "yes" : "no"); 
-	cLog(lsDEBUG) << "Report: Prev = " << mPrevLedgerHash << ":" << mPreviousLedger->getLedgerSeq();
-	cLog(lsDEBUG) << "Report: TxSt = " << set->getHash() << ", close " << closeTime << (closeTimeCorrect ? "" : "X");
 	cLog(lsDEBUG) << "Report: NewL  = " << newLCL->getHash() << ":" << newLCL->getLedgerSeq();
 
 	newLCL->setAccepted(closeTime, mCloseResolution, closeTimeCorrect);
