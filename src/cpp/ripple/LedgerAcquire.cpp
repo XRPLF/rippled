@@ -193,13 +193,13 @@ void LedgerAcquire::done()
 	mOnComplete.clear();
 	mLock.unlock();
 
-	if (isComplete() && mLedger)
+	if (isComplete() && !isFailed() && mLedger)
 	{
 		if (mAccept)
 			mLedger->setAccepted();
 		theApp->getLedgerMaster().storeLedger(mLedger);
 	}
-	else if (isFailed())
+	else
 		theApp->getMasterLedgerAcquire().logFailure(mHash);
 
 	for (unsigned int i = 0; i < triggers.size(); ++i)
