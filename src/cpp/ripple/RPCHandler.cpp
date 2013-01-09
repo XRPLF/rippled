@@ -88,7 +88,7 @@ Json::Value RPCHandler::authorize(Ledger::ref lrLedger,
 	asSrc	= mNetOps->getAccountState(lrLedger, naSrcAccountID);
 	if (!asSrc)
 	{
-		return rpcError(rpcSRC_ACT_MISSING);
+		return rpcError(rpcSRC_ACT_NOT_FOUND);
 	}
 
 	RippleAddress	naMasterGenerator;
@@ -1036,7 +1036,7 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 	if (!sleAccountRoot)
 	{
 		// XXX Ignore transactions for accounts not created.
-		return rpcError(rpcSRC_ACT_MISSING);
+		return rpcError(rpcSRC_ACT_NOT_FOUND);
 	}
 
 	bool			bHaveAuthKey	= false;
@@ -1065,7 +1065,7 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 
 	if (!bFound)
 	{
-		return rpcError(rpcSRC_ACT_MISSING);
+		return rpcError(rpcSRC_ACT_NOT_FOUND);
 	}
 
 	// Use the generator to determine the associated public and private keys.
@@ -1083,7 +1083,7 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 		// std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID()) << std::endl;
 		// std::cerr << "naAccountPublic: " << strHex(naAccountPublic.getAccountID()) << std::endl;
 
-		return rpcError(rpcSRC_ACT_MISSING);
+		return rpcError(rpcSRC_ACT_NOT_FOUND);
 	}
 
 	std::auto_ptr<STObject>	sopTrans;
