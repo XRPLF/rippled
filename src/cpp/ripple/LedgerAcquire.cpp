@@ -238,7 +238,9 @@ void LedgerAcquire::trigger(Peer::ref peer)
 	{
 		tryLocal();
 		if (mFailed)
+		{
 			cLog(lsWARNING) << " failed local for " << mHash;
+		}
 	}
 
 	ripple::TMGetLedger tmGL;
