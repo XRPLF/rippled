@@ -1368,7 +1368,6 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			tLog(!ledger, lsINFO) << "Don't have ledger " << ledgerhash;
 			if (!ledger && (packet.has_querytype() && !packet.has_requestcookie()))
 			{
-				cLog(lsINFO) << "Trying to route ledger request";
 				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 				std::vector<Peer::pointer> usablePeers;
 				BOOST_FOREACH(Peer::ref peer, peerList)
@@ -1378,7 +1377,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 				}
 				if (usablePeers.empty())
 				{
-					cLog(lsINFO) << "Unable to route ledger request";
+					cLog(lsDEBUG) << "Unable to route ledger request";
 					return;
 				}
 				Peer::ref selectedPeer = usablePeers[rand() % usablePeers.size()];
