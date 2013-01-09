@@ -383,6 +383,8 @@ void LedgerMaster::checkAccept(const uint256& hash, uint32 seq)
 	if (theApp->getValidations().getTrustedValidationCount(hash) < minVal) // nothing we can do
 		return;
 
+	cLog(lsINFO) << "Advancing accepted ledger to " << seq << " with >= " << minVal << " validations";
+
 	mLastValidateHash = hash;
 	mLastValidateSeq = seq;
 
