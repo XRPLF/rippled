@@ -1089,7 +1089,7 @@ void Peer::recvGetObjectByHash(ripple::TMGetObjectByHash& packet)
 	{ // this is a query
 		ripple::TMGetObjectByHash reply;
 
-		reply.clear_query();
+		reply.set_query(false);
 		if (packet.has_seq())
 			reply.set_seq(packet.seq());
 		reply.set_type(packet.type());
@@ -1117,7 +1117,7 @@ void Peer::recvGetObjectByHash(ripple::TMGetObjectByHash& packet)
 				}
 			}
 		}
-		cLog(lsTRACE) << "GetObjByHash query: had " << reply.objects_size() << " of " << packet.objects_size()
+		cLog(lsTRACE) << "GetObjByHash had " << reply.objects_size() << " of " << packet.objects_size()
 			<< " for " << getIP();
 		sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtGET_OBJECTS));
 	}
