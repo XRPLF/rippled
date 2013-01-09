@@ -1,6 +1,8 @@
 #ifndef KEY_CACHE__H
 #define KEY_CACHE__H
 
+#include <string>
+
 #include <boost/unordered_map.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -12,40 +14,58 @@ public:
 	typedef typename map_type::iterator				map_iterator;
 
 protected:
-	boost::mutex mNCLock;
-	map_type	mCache;
-	int mTargetSize, mTargetAge;
+	const std::string	mName;
+	boost::mutex		mNCLock;
+	map_type			mCache;
+	int					mTargetSize, mTargetAge;
 
-	uint64_t mHits, mMisses;
-	
 public:
 
-	KeyCache(int size = 0, int age = 120) : mTargetSize(size), mTargetAge(age), mHits(0), mMisses(0)
+	KeyCache(const std::string& name, int size = 0, int age = 120) : mName(name), mTargetSize(size), mTargetAge(age)
 	{
 		assert((mTargetSize >= 0) && (mTargetAge > 2));
 	}
 
-	void getStats(int& size, uint64_t& hits, uint64_t& misses)
+	void getSize()
 	{
 		boost::mutex::scoped_lock sl(mNCLock);
-
-		size = mCache.size();
-		hits = mHits;
-		misses = mMisses;
+		return mCache.size();
 	}
 
-	bool isPresent(const key_type& key)
+	void getTargetSize()
+	{
+		boost::mutex::scoped_lock sl(mNCLock);
+		return mTargetSize;
+	}
+
+	void getTargetAge()
+	{
+		boost::mutex::scoped_lock sl(mNCLock);
+		return mTargetAge;
+	}
+
+	void setTargets(int size, int age)
+	{
+		boost::mutex::scoped_lock sl(mNCLock);
+		mTargetSize = size;
+		mTargetAge = age;
+		assert((mTargetSize >= 0) && (mTargetAge > 2));
+	}
+
+	const std::string& getName()
+	{
+		return mName;
+	}
+
+	bool isPresent(const key_type& key, bool refresh = true)
 	{ // Check if an entry is cached, refresh it if so
 		boost::mutex::scoped_lock sl(mNCLock);
 
 		map_iterator it = mCache.find(key);
 		if (it == mCache.end())
-		{
-			++mMisses;
 			return false;
-		}
-		it->second = time(NULL);
-		++mHits;
+		if (refresh)
+			it->second = time(NULL);
 		return true;
 	}
 

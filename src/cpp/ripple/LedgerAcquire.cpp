@@ -74,8 +74,9 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 		ptr->invokeOnTimer();
 }
 
-LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT),  mHaveBase(false),
-	mHaveState(false), mHaveTransactions(false), mAborted(false), mSignaled(false), mAccept(false), mByHash(true)
+LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT),
+	mHaveBase(false), mHaveState(false), mHaveTransactions(false), mAborted(false), mSignaled(false), mAccept(false),
+	mByHash(true)
 {
 #ifdef LA_DEBUG
 	cLog(lsTRACE) << "Acquiring ledger " << mHash;
@@ -724,57 +725,10 @@ SMAddNode LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer:
 	return SMAddNode::invalid();
 }
 
-void LedgerAcquireMaster::logFailure(const uint256& hash)
-{
-	time_t now = time(NULL);
-	boost::mutex::scoped_lock sl(mLock);
-
-	std::map<uint256, time_t>::iterator it = mRecentFailures.begin();
-	while (it != mRecentFailures.end())
-	{
-		if (it->first == hash)
-		{
-			it->second = now;
-			return;
-		}
-		if (it->second > now)
-		{ // time jump or discontinuity
-			it->second = now;
-			++it;
-		}
-		else if ((it->second + 180) < now)
-			mRecentFailures.erase(it++);
-		else
-			++it;
-	}
-	mRecentFailures[hash] = now;
-}
-
-bool LedgerAcquireMaster::isFailure(const uint256& hash)
-{
-	time_t now = time(NULL);
-	boost::mutex::scoped_lock sl(mLock);
-
-	std::map<uint256, time_t>::iterator it = mRecentFailures.find(hash);
-	if (it == mRecentFailures.end())
-		return false;
-
-	if (it->second > now)
-	{
-		it->second = now;
-		return true;
-	}
-
-	if ((it->second + 180) < now)
-	{
-		mRecentFailures.erase(it);
-		return false;
-	}
-	return true;
-}
-
 void LedgerAcquireMaster::sweep()
 {
+	mRecentFailures.sweep();
+
 	time_t now = time(NULL);
 	boost::mutex::scoped_lock sl(mLock);
 

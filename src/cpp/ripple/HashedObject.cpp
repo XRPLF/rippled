@@ -12,7 +12,8 @@ SETUP_LOG();
 DECLARE_INSTANCE(HashedObject);
 
 HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
-	mCache("HashedObjectStore", cacheSize, cacheAge), mWriteGeneration(0), mWritePending(false)
+	mCache("HashedObjectStore", cacheSize, cacheAge), mNegativeCache("HashedObjectNegativeCache", 0, 120),
+	mWriteGeneration(0), mWritePending(false)
 {
 	mWriteSet.reserve(128);
 }
