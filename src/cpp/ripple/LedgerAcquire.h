@@ -78,7 +78,7 @@ public:
 
 protected:
 	Ledger::pointer mLedger;
-	bool mHaveBase, mHaveState, mHaveTransactions, mAborted, mSignaled, mAccept;
+	bool mHaveBase, mHaveState, mHaveTransactions, mAborted, mSignaled, mAccept, mByHash;
 
 	std::vector< boost::function<void (LedgerAcquire::pointer)> > mOnComplete;
 

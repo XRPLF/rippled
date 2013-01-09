@@ -74,8 +74,8 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 		ptr->invokeOnTimer();
 }
 
-LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT), 
-	mHaveBase(false), mHaveState(false), mHaveTransactions(false), mAborted(false), mSignaled(false), mAccept(false)
+LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT),  mHaveBase(false),
+	mHaveState(false), mHaveTransactions(false), mAborted(false), mSignaled(false), mAccept(false), mByHash(true)
 {
 #ifdef LA_DEBUG
 	cLog(lsTRACE) << "Acquiring ledger " << mHash;
@@ -138,6 +138,8 @@ void LedgerAcquire::onTimer(bool progress)
 		else
 			trigger(Peer::pointer());
 	}
+	else
+		mByHash = true;
 }
 
 void LedgerAcquire::addPeers()
@@ -234,7 +236,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 	{
 		tmGL.set_querytype(ripple::qtINDIRECT);
 
-		if (!isProgress())
+		if (!isProgress() && mByHash)
 		{
 			std::vector<neededHash_t> need = getNeededHashes();
 			if (!need.empty())
@@ -260,9 +262,6 @@ void LedgerAcquire::trigger(Peer::ref peer)
 					}
 				}
 				PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tmBH, ripple::mtGET_OBJECTS);
-				if (peer)
-					peer->sendPacket(packet);
-				else
 				{
 					boost::recursive_mutex::scoped_lock sl(mLock);
 					for (boost::unordered_map<uint64, int>::iterator it = mPeers.begin(), end = mPeers.end();
@@ -270,9 +269,19 @@ void LedgerAcquire::trigger(Peer::ref peer)
 					{
 						Peer::pointer iPeer = theApp->getConnectionPool().getPeerById(it->first);
 						if (iPeer)
+						{
+							mByHash = false;
 							iPeer->sendPacket(packet);
+						}
 					}
 				}
+			}
+			else
+			{
+				cLog(lsINFO) << "getNeededHashes says acquire is complete";
+				mHaveBase = true;
+				mHaveTransactions = true;
+				mHaveState = true;
 			}
 		}
 
