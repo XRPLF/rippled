@@ -1197,6 +1197,12 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 	assert(set->getHash() == mOurPosition->getCurrentHash());
 
 	uint32 closeTime = roundCloseTime(mOurPosition->getCloseTime());
+	bool closeTimeCorrect = true;
+	if (closeTime == 0)
+	{ // we agreed to disagree
+		closeTimeCorrect = false;
+		closeTime = mPreviousLedger->getCloseTimeNC() + 1;
+	}
 
 	cLog(lsDEBUG) << "Report: Prop=" << (mProposing ? "yes" : "no") << " val=" << (mValidating ? "yes" : "no") <<
 		" corLCL=" << (mHaveCorrectLCL ? "yes" : "no") << " fail="<< (mConsensusFail ? "yes" : "no");
@@ -1215,20 +1221,12 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 	boost::shared_ptr<SHAMap::SHADirtyMap> acctNodes = newLCL->peekAccountStateMap()->disarmDirty();
 	boost::shared_ptr<SHAMap::SHADirtyMap> txnNodes = newLCL->peekTransactionMap()->disarmDirty();
 
-
 	// write out dirty nodes (temporarily done here) Most come before setAccepted
 	int fc;
 	while ((fc = SHAMap::flushDirty(*acctNodes, 256, hotACCOUNT_NODE, newLCL->getLedgerSeq())) > 0)
 	{ cLog(lsTRACE) << "Flushed " << fc << " dirty state nodes"; }
 	while ((fc = SHAMap::flushDirty(*txnNodes, 256, hotTRANSACTION_NODE, newLCL->getLedgerSeq())) > 0)
 	{ cLog(lsTRACE) << "Flushed " << fc << " dirty transaction nodes"; }
-
-	bool closeTimeCorrect = true;
-	if (closeTime == 0)
-	{ // we agreed to disagree
-		closeTimeCorrect = false;
-		closeTime = mPreviousLedger->getCloseTimeNC() + 1;
-	}
 
 	cLog(lsDEBUG) << "Report: NewL  = " << newLCL->getHash() << ":" << newLCL->getLedgerSeq();
 
