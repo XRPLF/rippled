@@ -444,19 +444,26 @@ void LedgerMaster::tryPublish()
 			}
 			else
 			{
-				LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(hash);
-				if (!acq->isDone())
+				if (theApp->getMasterLedgerAcquire().isFailure(hash))
 				{
-					acq->setAccept();
-					break;
-				}
-				else if (acq->isComplete() && !acq->isFailed())
-				{
-					mPubLedger = acq->getLedger();
-					mPubLedgers.push_back(mPubLedger);
+					cLog(lsFATAL) << "Unable to acquire a recent validated ledger";
 				}
 				else
-					cLog(lsWARNING) << "Failed to acquire a published ledger";
+				{
+					LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(hash);
+					if (!acq->isDone())
+					{
+						acq->setAccept();
+						break;
+					}
+					else if (acq->isComplete() && !acq->isFailed())
+					{
+						mPubLedger = acq->getLedger();
+						mPubLedgers.push_back(mPubLedger);
+					}
+					else
+						cLog(lsWARNING) << "Failed to acquire a published ledger";
+				}
 			}
 		}
 	}
