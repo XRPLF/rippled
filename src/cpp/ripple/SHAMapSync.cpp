@@ -49,7 +49,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 			{
 				SHAMapNode childID = node->getChildNodeID(branch);
 				const uint256& childHash = node->getChildHash(branch);
-				SHAMapTreeNode* d;
+				SHAMapTreeNode* d = NULL;
 				try
 				{
 					d = getNodePointer(childID, childHash);
