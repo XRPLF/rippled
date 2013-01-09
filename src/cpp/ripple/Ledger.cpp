@@ -525,7 +525,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		assert(false);
 		return Ledger::pointer();
 	}
-	Log(lsTRACE) << "Loaded ledger: " << ledgerHash;
+	cLog(lsTRACE) << "Loaded ledger: " << ledgerHash;
 	return ret;
 }
 
