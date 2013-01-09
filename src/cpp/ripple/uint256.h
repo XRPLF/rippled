@@ -206,12 +206,12 @@ public:
 
 	friend inline bool operator==(const base_uint& a, const base_uint& b)
 	{
-		return !compare(a, b);
+		return memcmp(a.pn, b.pn, sizeof(a.pn)) == 0;
 	}
 
 	friend inline bool operator!=(const base_uint& a, const base_uint& b)
 	{
-		return !!compare(a, b);
+		return memcmp(a.pn, b.pn, sizeof(a.pn)) != 0;
 	}
 
 	std::string GetHex() const
