@@ -978,7 +978,7 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 			if (vec.size() >= diff)
 				return vec.at(vec.size() - diff);
 		}
-		cLog(lsWARNING) << "Ledger " << ledgerIndex << ":" << getHash() << " missing skiplist";
+		else cLog(lsWARNING) << "Ledger " << ledgerIndex << ":" << getHash() << " missing skiplist";
 	}
 
 	if ((ledgerIndex & 0xff) != 0)
