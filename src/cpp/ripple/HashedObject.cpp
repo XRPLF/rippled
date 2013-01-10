@@ -123,7 +123,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		obj = mCache.fetch(hash);
 		if (obj)
 		{
-			cLog(lsTRACE) << "HOS: " << hash << " fetch: incache";
+//			cLog(lsTRACE) << "HOS: " << hash << " fetch: incache";
 			return obj;
 		}
 	}
