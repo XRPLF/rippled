@@ -525,7 +525,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		assert(false);
 		return Ledger::pointer();
 	}
-	Log(lsTRACE) << "Loaded ledger: " << ledgerHash;
+	cLog(lsTRACE) << "Loaded ledger: " << ledgerHash;
 	return ret;
 }
 
@@ -538,28 +538,11 @@ Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
 }
 
 Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
-{ // This is a low-level function with no caching
+{ // This is a low-level function with no caching and only gets accepted ledgers
 	std::string sql="SELECT * from Ledgers WHERE LedgerHash='";
 	sql.append(ledgerHash.GetHex());
 	sql.append("';");
-	Ledger::pointer ret = getSQL(sql);
-	if (ret)
-		return ret;
-	HashedObject::pointer node = theApp->getHashedObjectStore().retrieve(ledgerHash);
-	if (!node)
-		return Ledger::pointer();
-	try
-	{
-		Ledger::pointer ledger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
-		if (ledger->getHash() == ledgerHash)
-			return ledger;
-	}
-	catch (...)
-	{
-		cLog(lsDEBUG) << "Exception trying to load ledger by hash: " << ledgerHash;
-		return Ledger::pointer();
-	}
-	return Ledger::pointer();
+	return getSQL(sql);
 }
 
 Ledger::pointer Ledger::getLastFullLedger()

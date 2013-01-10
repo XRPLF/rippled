@@ -72,6 +72,53 @@ buster.testCase("Offer tests", {
         });
     },
 
+  "offer create then crossing offer, no trust lines" :
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+        function (callback) {
+          self.remote.transaction()
+            .offer_create("root", "500/BTC/root", "100/USD/root")
+              .on('proposed', function (m) {
+                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .on('final', function (m) {
+                  // console.log("FINAL: offer_create: %s", JSON.stringify(m));
+
+                  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
+
+                  callback();
+                })
+              .submit();
+        },
+        function (callback) {
+          self.remote.transaction()
+            .offer_create("root", "100/USD/root", "500/BTC/root")
+              .on('proposed', function (m) {
+                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .on('final', function (m) {
+                  // console.log("FINAL: offer_create: %s", JSON.stringify(m));
+
+                  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
+
+                  callback();
+                })
+              .submit();
+        }
+      ], function (error) {
+        // console.log("result: error=%s", error);
+        buster.refute(error);
+
+        if (error) done();
+      });
+    },
+
   "offer_create then ledger_accept then offer_cancel then ledger_accept." :
     function (done) {
       var self = this;

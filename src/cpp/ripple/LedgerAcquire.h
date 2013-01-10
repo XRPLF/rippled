@@ -18,6 +18,11 @@
 #include "InstanceCounter.h"
 #include "ripple.pb.h"
 
+// How long before we try again to acquire the same ledger
+#ifndef LEDGER_REACQUIRE_INTERVAL
+#define LEDGER_REACQUIRE_INTERVAL 180
+#endif
+
 DEFINE_INSTANCE(LedgerAcquire);
 
 class PeerSet
@@ -78,7 +83,7 @@ public:
 
 protected:
 	Ledger::pointer mLedger;
-	bool mHaveBase, mHaveState, mHaveTransactions, mAborted, mSignaled, mAccept;
+	bool mHaveBase, mHaveState, mHaveTransactions, mAborted, mSignaled, mAccept, mByHash;
 
 	std::vector< boost::function<void (LedgerAcquire::pointer)> > mOnComplete;
 
@@ -123,10 +128,10 @@ class LedgerAcquireMaster
 protected:
 	boost::mutex mLock;
 	std::map<uint256, LedgerAcquire::pointer> mLedgers;
-	std::map<uint256, time_t> mRecentFailures;
+	KeyCache<uint256> mRecentFailures;
 
 public:
-	LedgerAcquireMaster() { ; }
+	LedgerAcquireMaster() : mRecentFailures("LedgerAcquireRecentFailures", 0, LEDGER_REACQUIRE_INTERVAL) { ; }
 
 	LedgerAcquire::pointer findCreate(const uint256& hash);
 	LedgerAcquire::pointer find(const uint256& hash);
@@ -134,8 +139,8 @@ public:
 	void dropLedger(const uint256& ledgerHash);
 	SMAddNode gotLedgerData(ripple::TMLedgerData& packet, Peer::ref);
 
-	void logFailure(const uint256&);
-	bool isFailure(const uint256&);
+	void logFailure(const uint256& h)	{ mRecentFailures.add(h); }
+	bool isFailure(const uint256& h)	{ return mRecentFailures.isPresent(h, false); }
 
 	void sweep();
 };

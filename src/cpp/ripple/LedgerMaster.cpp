@@ -142,7 +142,7 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 			if ((ledger->getLedgerSeq() == 0) || mCompleteLedgers.hasValue(ledger->getLedgerSeq() - 1))
 				break;
 		}
-		Ledger::pointer prevLedger = Ledger::loadByIndex(ledger->getLedgerSeq() - 1);
+		Ledger::pointer prevLedger = mLedgerHistory.getLedgerBySeq(ledger->getLedgerSeq() - 1);
 		if (!prevLedger || (prevLedger->getHash() != ledger->getParentHash()))
 			break;
 		ledger = prevLedger;
@@ -152,7 +152,7 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 
 bool LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledgerSeq)
 { // return: false = already gave up recently
-	Ledger::pointer ledger = Ledger::loadByIndex(ledgerSeq);
+	Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq(ledgerSeq);
 	if (ledger && (ledger->getHash() == ledgerHash))
 	{
 		cLog(lsDEBUG) << "Ledger hash found in database";
@@ -196,7 +196,7 @@ void LedgerMaster::missingAcquireComplete(LedgerAcquire::pointer acq)
 	mMissingLedger.reset();
 	mMissingSeq = 0;
 
-	if (!acq->isFailed())
+	if (acq->isComplete())
 	{
 		setFullLedger(acq->getLedger());
 		acq->getLedger()->pendSave(false);
@@ -383,6 +383,8 @@ void LedgerMaster::checkAccept(const uint256& hash, uint32 seq)
 	if (theApp->getValidations().getTrustedValidationCount(hash) < minVal) // nothing we can do
 		return;
 
+	cLog(lsINFO) << "Advancing accepted ledger to " << seq << " with >= " << minVal << " validations";
+
 	mLastValidateHash = hash;
 	mLastValidateSeq = seq;
 
@@ -442,19 +444,26 @@ void LedgerMaster::tryPublish()
 			}
 			else
 			{
-				LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(hash);
-				if (!acq->isDone())
+				if (theApp->getMasterLedgerAcquire().isFailure(hash))
 				{
-					acq->setAccept();
-					break;
-				}
-				else if (acq->isComplete() && !acq->isFailed())
-				{
-					mPubLedger = acq->getLedger();
-					mPubLedgers.push_back(mPubLedger);
+					cLog(lsFATAL) << "Unable to acquire a recent validated ledger";
 				}
 				else
-					cLog(lsWARNING) << "Failed to acquire a published ledger";
+				{
+					LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(hash);
+					if (!acq->isDone())
+					{
+						acq->setAccept();
+						break;
+					}
+					else if (acq->isComplete() && !acq->isFailed())
+					{
+						mPubLedger = acq->getLedger();
+						mPubLedgers.push_back(mPubLedger);
+					}
+					else
+						cLog(lsWARNING) << "Failed to acquire a published ledger";
+				}
 			}
 		}
 	}

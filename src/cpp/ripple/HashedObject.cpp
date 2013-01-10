@@ -12,7 +12,8 @@ SETUP_LOG();
 DECLARE_INSTANCE(HashedObject);
 
 HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
-	mCache("HashedObjectStore", cacheSize, cacheAge), mWriteGeneration(0), mWritePending(false)
+	mCache("HashedObjectStore", cacheSize, cacheAge), mNegativeCache("HashedObjectNegativeCache", 0, 120),
+	mWriteGeneration(0), mWritePending(false)
 {
 	mWriteSet.reserve(128);
 }
@@ -33,7 +34,6 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	}
 	assert(hash == Serializer::getSHA512Half(data));
 
-	mNegativeCache.del(hash);
 	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data, hash);
 	if (!mCache.canonicalize(hash, object))
 	{
@@ -48,6 +48,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	}
 //	else
 //		cLog(lsTRACE) << "HOS: already had " << hash;
+	mNegativeCache.del(hash);
 	return true;
 }
 
@@ -152,6 +153,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		db->getStr("ObjType", type);
 		if (type.size() == 0)
 		{
+			assert(false);
 			mNegativeCache.add(hash);
 			return HashedObject::pointer();
 		}
@@ -173,6 +175,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 			case 'A': htype = hotACCOUNT_NODE; break;
 			case 'N': htype = hotTRANSACTION_NODE; break;
 			default:
+				assert(false);
 				cLog(lsERROR) << "Invalid hashed object";
 				mNegativeCache.add(hash);
 				return HashedObject::pointer();
