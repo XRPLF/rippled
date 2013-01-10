@@ -133,6 +133,7 @@ public:
 	uint256 getNonce256()			{ return mNonce256; }
 	std::size_t getNonceST()		{ return mNonceST; }
 
+	void setup();
 	void run();
 	void stop();
 	void sweep();

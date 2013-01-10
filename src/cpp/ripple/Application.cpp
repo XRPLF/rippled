@@ -81,7 +81,7 @@ void sigIntHandler(int)
 }
 #endif
 
-void Application::run()
+void Application::setup()
 {
 #ifndef WIN32
 #ifdef SIGINT
@@ -256,7 +256,10 @@ void Application::run()
 	}
 	else
 		mNetOps.setStateTimer();
+}
 
+void Application::run()
+{
 	mIOService.run(); // This blocks
 
 	if (mWSPublicDoor)

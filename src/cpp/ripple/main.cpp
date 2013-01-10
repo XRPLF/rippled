@@ -17,9 +17,14 @@ extern bool AddSystemEntropy();
 using namespace std;
 using namespace boost::unit_test;
 
-void startServer()
+void setupServer()
 {
 	theApp = new Application();
+	theApp->setup();
+}
+
+void startServer()
+{
 	theApp->run();					// Blocks till we get a stop RPC.
 }
 
@@ -194,6 +199,7 @@ int main(int argc, char* argv[])
 	else if (!vm.count("parameters"))
 	{
 		// No arguments. Run server.
+		setupServer();
 		startServer();
 	}
 	else
