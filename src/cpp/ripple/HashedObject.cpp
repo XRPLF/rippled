@@ -90,7 +90,7 @@ void HashedObjectStore::bulkWrite()
 				"(Hash,ObjType,LedgerIndex,Object) VALUES ('%s','%c','%u',%s);");
 
 		Database* db = theApp->getHashNodeDB()->getDB();
-		{ // FIXME: We're holding the lock too long!
+		{
 			ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
 
 			db->executeSQL("BEGIN TRANSACTION;");
