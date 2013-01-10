@@ -98,12 +98,19 @@ Server.prototype._serverSpawnSync = function() {
 
   // By default, just log exits.
   this.child.on('exit', function(code, signal) {
-      // If could not exec: code=127, signal=null
-      // If regular exit: code=0, signal=null
-      buster.assert(self.stopping); //Fail the test if the server has not called "stop".
+    // Workaround for
+    // https://github.com/busterjs/buster/issues/266
+    if (!self.stopping) {
+      buster.assertions.throwOnFailure = true;
+    }
 
-      if (!self.quiet) console.log("server: spawn: server exited code=%s: signal=%s", code, signal);
-    });
+    // If could not exec: code=127, signal=null
+    // If regular exit: code=0, signal=null
+    // Fail the test if the server has not called "stop".
+    buster.assert(self.stopping, 'Server died with signal '+signal);
+
+    if (!self.quiet) console.log("server: spawn: server exited code=%s: signal=%s", code, signal);
+  });
 };
 
 // Prepare server's working directory.
