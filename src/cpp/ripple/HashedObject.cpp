@@ -86,7 +86,8 @@ void HashedObjectStore::bulkWrite()
 
 		static boost::format fExists("SELECT ObjType FROM CommittedObjects WHERE Hash = '%s';");
 		static boost::format
-			fAdd("INSERT INTO CommittedObjects (Hash,ObjType,LedgerIndex,Object) VALUES ('%s','%c','%u',%s);");
+			fAdd("INSERT OR IGNORE INTO CommittedObjects "
+				"(Hash,ObjType,LedgerIndex,Object) VALUES ('%s','%c','%u',%s);");
 
 		Database* db = theApp->getHashNodeDB()->getDB();
 		{ // FIXME: We're holding the lock too long!
