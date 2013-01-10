@@ -54,7 +54,7 @@ const char* Job::toString(JobType t)
 	}
 }
 
-bool Job::operator<(const Job& j) const
+bool Job::operator>(const Job& j) const
 { // These comparison operators make the jobs sort in priority order in the job set
 	if (mType < j.mType)
 		return true;
@@ -63,7 +63,7 @@ bool Job::operator<(const Job& j) const
 	return mJobIndex < j.mJobIndex;
 }
 
-bool Job::operator<=(const Job& j) const
+bool Job::operator>=(const Job& j) const
 {
 	if (mType < j.mType)
 		return true;
@@ -72,7 +72,7 @@ bool Job::operator<=(const Job& j) const
 	return mJobIndex <= j.mJobIndex;
 }
 
-bool Job::operator>(const Job& j) const
+bool Job::operator<(const Job& j) const
 {
 	if (mType < j.mType)
 		return false;
@@ -81,7 +81,7 @@ bool Job::operator>(const Job& j) const
 	return mJobIndex > j.mJobIndex;
 }
 
-bool Job::operator>=(const Job& j) const
+bool Job::operator<=(const Job& j) const
 {
 	if (mType < j.mType)
 		return false;
@@ -251,3 +251,5 @@ void JobQueue::threadEntry()
 	--mThreadCount;
 	mJobCond.notify_all();
 }
+
+// vim:ts=4
