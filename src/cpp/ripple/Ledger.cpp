@@ -529,6 +529,53 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 	return ret;
 }
 
+uint256 Ledger::getHashByIndex(uint32 ledgerIndex)
+{
+	uint256 ret;
+
+	std::string sql="SELECT LedgerHash FROM Ledgers WHERE LedgerSeq='";
+	sql.append(boost::lexical_cast<std::string>(ledgerIndex));
+	sql.append("';");
+
+	std::string hash;
+	{
+		Database *db = theApp->getLedgerDB()->getDB();
+		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+		if (!db->executeSQL(sql) || !db->startIterRows())
+			return ret;
+		db->getStr("LedgerHash", hash);
+		db->endIterRows();
+	}
+
+	ret.SetHex(hash);
+	return ret;
+}
+
+bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& parentHash)
+{
+	std::string sql="SELECT LedgerHash,PrevHash FROM Ledgers WHERE LedgerSeq='";
+	sql.append(boost::lexical_cast<std::string>(ledgerIndex));
+	sql.append("';");
+
+	std::string hash, prevHash;
+	{
+		Database *db = theApp->getLedgerDB()->getDB();
+		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+		if (!db->executeSQL(sql) || !db->startIterRows())
+			return false;
+		db->getStr("LedgerHash", hash);
+		db->getStr("PrevHash", prevHash);
+		db->endIterRows();
+	}
+
+	ledgerHash.SetHex(hash);
+	parentHash.SetHex(prevHash);
+
+	assert(ledgerHash.isNonZero() && ((ledgerIndex == 0) || parentHash.isNonZero()));
+
+	return true;
+}
+
 Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
 { // This is a low-level function with no caching
 	std::string sql="SELECT * from Ledgers WHERE LedgerSeq='";

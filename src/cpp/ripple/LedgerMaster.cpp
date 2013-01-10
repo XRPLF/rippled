@@ -134,19 +134,25 @@ bool LedgerMaster::haveLedgerRange(uint32 from, uint32 to)
 
 void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 {
-	do
+	uint32 seq = ledger->getLedgerSeq();
+	uint256 prevHash = ledger->getParentHash();
+
+	while (seq > 0)
 	{
 		{
 			boost::recursive_mutex::scoped_lock ml(mLock);
-			mCompleteLedgers.setValue(ledger->getLedgerSeq());
-			if ((ledger->getLedgerSeq() == 0) || mCompleteLedgers.hasValue(ledger->getLedgerSeq() - 1))
+			mCompleteLedgers.setValue(seq);
+			--seq;
+			if (mCompleteLedgers.hasValue(seq))
 				break;
 		}
-		Ledger::pointer prevLedger = mLedgerHistory.getLedgerBySeq(ledger->getLedgerSeq() - 1); // FIXME
-		if (!prevLedger || (prevLedger->getHash() != ledger->getParentHash()))
+
+		uint256 tHash, pHash;
+		if (!Ledger::getHashesByIndex(seq, tHash, pHash) || (tHash != prevHash))
 			break;
-		ledger = prevLedger;
-	} while(1);
+		prevHash = pHash;
+	}
+
 	resumeAcquiring();
 }
 
@@ -156,7 +162,7 @@ bool LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledger
 		return true;
 
 	Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq(ledgerSeq);
-	if (ledger && (ledger->getHash() == ledgerHash))
+	if (Ledger::getHashByIndex(ledgerSeq) == ledgerHash)
 	{
 		cLog(lsDEBUG) << "Ledger hash found in database";
 		mTooFast = true;

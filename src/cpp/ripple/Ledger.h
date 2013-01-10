@@ -178,9 +178,11 @@ public:
 	SLE::pointer getAccountRoot(const RippleAddress& naAccountID);
 	void updateSkipList();
 
-	// database functions
+	// database functions (low-level)
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
+	static uint256 getHashByIndex(uint32 index);
+	static bool getHashesByIndex(uint32 index, uint256& ledgerHash, uint256& parentHash);
 	void pendSave(bool fromConsensus);
 
 	// next/prev function
