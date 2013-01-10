@@ -142,7 +142,7 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 			if ((ledger->getLedgerSeq() == 0) || mCompleteLedgers.hasValue(ledger->getLedgerSeq() - 1))
 				break;
 		}
-		Ledger::pointer prevLedger = mLedgerHistory.getLedgerBySeq(ledger->getLedgerSeq() - 1);
+		Ledger::pointer prevLedger = mLedgerHistory.getLedgerBySeq(ledger->getLedgerSeq() - 1); // FIXME
 		if (!prevLedger || (prevLedger->getHash() != ledger->getParentHash()))
 			break;
 		ledger = prevLedger;
@@ -152,6 +152,9 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 
 bool LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledgerSeq)
 { // return: false = already gave up recently
+	if (mTooFast)
+		return true;
+
 	Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq(ledgerSeq);
 	if (ledger && (ledger->getHash() == ledgerHash))
 	{
