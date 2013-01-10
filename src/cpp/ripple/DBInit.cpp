@@ -4,6 +4,9 @@
 
 // Transaction database holds transactions and public keys
 const char *TxnDBInit[] = {
+	"PRAGMA synchronous=NORMAL",
+	"PRAGMA journal_mode=WAL",
+
 	"BEGIN TRANSACTION;",
 
 	"CREATE TABLE Transactions (				\
@@ -254,6 +257,9 @@ int WalletDBCount = NUMBER(WalletDBInit);
 
 // Hash node database holds nodes indexed by hash
 const char *HashNodeDBInit[] = {
+	"PRAGMA synchronous=NORMAL",
+	"PRAGMA journal_mode=WAL",
+
 	"BEGIN TRANSACTION;",
 
 	"CREATE TABLE CommittedObjects (				\
