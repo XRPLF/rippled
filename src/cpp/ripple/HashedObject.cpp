@@ -4,6 +4,8 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 
+#include "../database/SqliteDatabase.h"
+
 #include "Serializer.h"
 #include "Application.h"
 #include "Log.h"
@@ -186,6 +188,72 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 	}
 	cLog(lsTRACE) << "HOS: " << hash << " fetch: in db";
 	return obj;
+}
+
+int HashedObjectStore::import(const std::string& file)
+{
+	cLog(lsWARNING) << "Hash import from \"" << file << "\".";
+	std::auto_ptr<Database> importDB(new SqliteDatabase(file.c_str()));
+	importDB->connect();
+
+	int countYes = 0, countNo = 0;
+
+	SQL_FOREACH(importDB, "SELECT * FROM CommittedObjects;")
+	{
+		uint256 hash;
+		std::string hashStr;
+		importDB->getStr("Hash", hashStr);
+		hash.SetHex(hashStr);
+		if (hash.isZero())
+		{
+			cLog(lsWARNING) << "zero hash found in import table";
+		}
+		else
+		{
+			if (retrieve(hash) != HashedObject::pointer())
+				++countNo;
+			else
+			{ // we don't have this object
+				std::vector<unsigned char> data;
+				std::string type;
+				importDB->getStr("ObjType", type);
+				uint32 index = importDB->getBigInt("LedgerIndex");
+
+				int size = importDB->getBinary("Object", NULL, 0);
+				data.resize(size);
+				importDB->getBinary("Object", &(data.front()), size);
+
+				assert(Serializer::getSHA512Half(data) == hash);
+
+				HashedObjectType htype = hotUNKNOWN;
+				switch (type[0])
+				{
+					case 'L': htype = hotLEDGER; break;
+					case 'T': htype = hotTRANSACTION; break;
+					case 'A': htype = hotACCOUNT_NODE; break;
+					case 'N': htype = hotTRANSACTION_NODE; break;
+					default:
+						assert(false);
+						cLog(lsERROR) << "Invalid hashed object";
+				}
+
+				if (Serializer::getSHA512Half(data) != hash)
+				{
+					cLog(lsWARNING) << "Hash mismatch in import table " << hash
+						<< " " << Serializer::getSHA512Half(data);
+				}
+				else
+				{
+					store(htype, index, data, hash);
+					++countYes;
+				}
+			}
+		}
+	}
+
+	cLog(lsWARNING) << "Imported " << countYes << " nodes, had " << countNo << " nodes";
+	waitWrite();
+	return countYes;
 }
 
 // vim:ts=4
