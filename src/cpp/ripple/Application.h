@@ -114,6 +114,7 @@ public:
 	LoadManager& getLoadManager()					{ return mLoadMgr; }
 	LoadFeeTrack& getFeeTrack()						{ return mFeeTrack; }
 	TXQueue& getTxnQueue()							{ return mTxnQueue; }
+	PeerDoor& getPeerDoor()							{ return *mPeerDoor; }
 
 
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }

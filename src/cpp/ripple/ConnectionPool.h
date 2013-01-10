@@ -38,8 +38,6 @@ private:
     // Connections with have a 64-bit identifier
     boost::unordered_map<uint64, Peer::pointer>			mPeerIdMap;
 
-    boost::asio::ssl::context							mCtx;
-
 	Peer::pointer										mScanning;
 	boost::asio::deadline_timer							mScanTimer;
 	std::string											mScanIp;
@@ -60,7 +58,9 @@ private:
 	Peer::pointer	peerConnect(const std::string& strIp, int iPort);
 
 public:
-	ConnectionPool(boost::asio::io_service& io_service);
+	ConnectionPool(boost::asio::io_service& io_service) :
+		mLastPeer(0), mScanTimer(io_service), mPolicyTimer(io_service)
+	{ ; }
 
 	// Begin enforcing connection policy.
 	void start();

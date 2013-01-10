@@ -25,6 +25,7 @@ private:
 
 public:
 	PeerDoor(boost::asio::io_service& io_service);
+	boost::asio::ssl::context&	getSSLContext()	{ return mCtx; }
 };
 
 #endif
