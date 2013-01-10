@@ -58,7 +58,7 @@
 #define DEFAULT_FEE_OPERATION			1
 
 Config theConfig;
-const char* ALPHABET;
+const char* ALPHABET = NULL;
 
 void Config::setup(const std::string& strConf, bool bTestNet, bool bQuiet)
 {

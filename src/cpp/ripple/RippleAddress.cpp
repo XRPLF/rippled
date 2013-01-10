@@ -750,11 +750,15 @@ bool RippleAddress::setSeed(const std::string& strSeed)
     return SetString(strSeed.c_str(), VER_FAMILY_SEED);
 }
 
+extern const char *ALPHABET;
+
 bool RippleAddress::setSeedGeneric(const std::string& strText)
 {
 	RippleAddress	naTemp;
 	bool			bResult	= true;
 	uint128			uSeed;
+
+	ALPHABET = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
 	if (strText.empty()
 		|| naTemp.setAccountID(strText)
