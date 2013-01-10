@@ -54,7 +54,16 @@ public:
 		mPingTimer(theApp->getAuxService()), mPinged(false)
 	{ setPingTimer(); }
 
+	void preDestroy()
+	{ // sever connection
+		mConnection.reset();
+	}
+
 	virtual ~WSConnection() { ; }
+
+	static void destroy(boost::shared_ptr< WSConnection<endpoint_type> >)
+	{ // Just discards the reference
+	}
 
 	// Implement overridden functions from base class:
 	void send(const Json::Value& jvObj)

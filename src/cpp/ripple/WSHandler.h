@@ -153,6 +153,10 @@ public:
 			ptr = it->second;		// prevent the WSConnection from being destroyed until we release the lock
 			mMap.erase(it);
 		}
+		ptr->preDestroy(); // Must be done before we return
+
+		// Must be done without holding the websocket send lock
+		theApp->getAuxService().post(boost::bind(&WSConnection<endpoint_type>::destroy, ptr));
 	}
 
 	void on_message(connection_ptr cpClient, message_ptr mpMessage)
