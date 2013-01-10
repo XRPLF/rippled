@@ -1381,6 +1381,15 @@ Transaction.prototype.build_path = function (build) {
   return this;
 }
 
+// tag should be undefined or a 32 bit integer.   
+// YYY Add range checking for tag.
+Transaction.prototype.destination_tag = function (tag) {
+  if (undefined !== tag)
+   this.tx_json.DestinationTag = tag;
+
+  return this;
+}
+
 Transaction._path_rewrite = function (path) {
   var path_new  = [];
 
@@ -1428,6 +1437,15 @@ Transaction.prototype.secret = function (secret) {
 Transaction.prototype.send_max = function (send_max) {
   if (send_max)
       this.tx_json.SendMax = Amount.json_rewrite(send_max);
+
+  return this;
+}
+
+// tag should be undefined or a 32 bit integer.   
+// YYY Add range checking for tag.
+Transaction.prototype.source_tag = function (tag) {
+  if (undefined !== tag)
+   this.tx_json.SourceTag = tag;
 
   return this;
 }
@@ -1561,10 +1579,12 @@ Transaction.prototype.password_set = function (src, authorized_key, generator, p
 // Options:
 //  .paths()
 //  .build_path()
+//  .destination_tag()
 //  .path_add()
 //  .secret()
 //  .send_max()
 //  .set_flags()
+//  .source_tag()
 Transaction.prototype.payment = function (src, dst, deliver_amount) {
   this._secret                  = this._account_secret(src);
   this.tx_json.TransactionType  = 'Payment';
