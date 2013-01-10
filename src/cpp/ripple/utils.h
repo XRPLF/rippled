@@ -165,8 +165,27 @@ inline static std::string sqlEscape(const std::string& strSrc)
 
 inline static std::string sqlEscape(const std::vector<unsigned char>& vecSrc)
 {
-	static boost::format f("X'%s'");
-	return str(f % strHex(vecSrc));
+	size_t size = vecSrc.size();
+	if (size == 0)
+		return "X''";
+
+	std::string j(size * 2 + 3, 0);
+
+	unsigned char *oPtr = reinterpret_cast<unsigned char *>(&*j.begin());
+	const unsigned char *iPtr = &vecSrc[0];
+
+	*oPtr++ = 'X';
+	*oPtr++ = '\'';
+
+	for (int i = size; i != 0; --i)
+	{
+		unsigned char c = *iPtr++;
+		*oPtr++ = charHex(c >> 4);
+		*oPtr++ = charHex(c & 15);
+	}
+
+	*oPtr++ = '\'';
+	return j;
 }
 
 template<class Iterator>
