@@ -90,26 +90,23 @@ void HashedObjectStore::bulkWrite()
 
 		Database* db = theApp->getHashNodeDB()->getDB();
 		{ // FIXME: We're holding the lock too long!
-			ScopedLock sl( theApp->getHashNodeDB()->getDBLock());
+			ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
 
 			db->executeSQL("BEGIN TRANSACTION;");
 
 			BOOST_FOREACH(const boost::shared_ptr<HashedObject>& it, set)
 			{
-				if (!SQL_EXISTS(db, boost::str(fExists % it->getHash().GetHex())))
-				{
-					char type;
+				char type;
 
-					switch(it->getType())
-					{
-						case hotLEDGER:				type = 'L'; break;
-						case hotTRANSACTION:		type = 'T'; break;
-						case hotACCOUNT_NODE:		type = 'A'; break;
-						case hotTRANSACTION_NODE:	type = 'N'; break;
-						default:					type = 'U';
-					}
-					db->executeSQL(boost::str(fAdd % it->getHash().GetHex() % type % it->getIndex() % sqlEscape(it->getData())));
+				switch (it->getType())
+				{
+					case hotLEDGER:				type = 'L'; break;
+					case hotTRANSACTION:		type = 'T'; break;
+					case hotACCOUNT_NODE:		type = 'A'; break;
+					case hotTRANSACTION_NODE:	type = 'N'; break;
+					default:					type = 'U';
 				}
+				db->executeSQL(boost::str(fAdd % it->getHash().GetHex() % type % it->getIndex() % sqlEscape(it->getData())));
 			}
 
 			db->executeSQL("END TRANSACTION;");
@@ -140,6 +137,10 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 	sql.append("';");
 
 	std::vector<unsigned char> data;
+	std::string type;
+	uint32 index;
+	int size;
+
 	{
 		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
 		Database* db = theApp->getHashNodeDB()->getDB();
@@ -147,45 +148,39 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		if (!db->executeSQL(sql) || !db->startIterRows())
 		{
 //			cLog(lsTRACE) << "HOS: " << hash << " fetch: not in db";
+			sl.unlock();
 			mNegativeCache.add(hash);
 			return HashedObject::pointer();
 		}
 
-		std::string type;
 		db->getStr("ObjType", type);
-		if (type.size() == 0)
-		{
-			assert(false);
-			mNegativeCache.add(hash);
-			return HashedObject::pointer();
-		}
-
-		uint32 index = db->getBigInt("LedgerIndex");
+		index = db->getBigInt("LedgerIndex");
 
 		int size = db->getBinary("Object", NULL, 0);
 		data.resize(size);
 		db->getBinary("Object", &(data.front()), size);
 		db->endIterRows();
-
-		assert(Serializer::getSHA512Half(data) == hash);
-
-		HashedObjectType htype = hotUNKNOWN;
-		switch (type[0])
-		{
-			case 'L': htype = hotLEDGER; break;
-			case 'T': htype = hotTRANSACTION; break;
-			case 'A': htype = hotACCOUNT_NODE; break;
-			case 'N': htype = hotTRANSACTION_NODE; break;
-			default:
-				assert(false);
-				cLog(lsERROR) << "Invalid hashed object";
-				mNegativeCache.add(hash);
-				return HashedObject::pointer();
-		}
-
-		obj = boost::make_shared<HashedObject>(htype, index, data, hash);
-		mCache.canonicalize(hash, obj);
 	}
+
+	assert(Serializer::getSHA512Half(data) == hash);
+
+	HashedObjectType htype = hotUNKNOWN;
+	switch (type[0])
+	{
+		case 'L': htype = hotLEDGER; break;
+		case 'T': htype = hotTRANSACTION; break;
+		case 'A': htype = hotACCOUNT_NODE; break;
+		case 'N': htype = hotTRANSACTION_NODE; break;
+		default:
+		assert(false);
+			cLog(lsERROR) << "Invalid hashed object";
+			mNegativeCache.add(hash);
+			return HashedObject::pointer();
+	}
+
+	obj = boost::make_shared<HashedObject>(htype, index, data, hash);
+	mCache.canonicalize(hash, obj);
+
 	cLog(lsTRACE) << "HOS: " << hash << " fetch: in db";
 	return obj;
 }
