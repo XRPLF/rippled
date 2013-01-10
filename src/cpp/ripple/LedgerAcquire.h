@@ -20,7 +20,7 @@
 
 // How long before we try again to acquire the same ledger
 #ifndef LEDGER_REACQUIRE_INTERVAL
-#define LEDGER_REACQUIRE_INTERVAL 180
+#define LEDGER_REACQUIRE_INTERVAL 600
 #endif
 
 DEFINE_INSTANCE(LedgerAcquire);
