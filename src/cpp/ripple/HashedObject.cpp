@@ -89,7 +89,7 @@ void HashedObjectStore::bulkWrite()
 			fAdd("INSERT INTO CommittedObjects (Hash,ObjType,LedgerIndex,Object) VALUES ('%s','%c','%u',%s);");
 
 		Database* db = theApp->getHashNodeDB()->getDB();
-		{
+		{ // FIXME: We're holding the lock too long!
 			ScopedLock sl( theApp->getHashNodeDB()->getDBLock());
 
 			db->executeSQL("BEGIN TRANSACTION;");
@@ -247,6 +247,10 @@ int HashedObjectStore::import(const std::string& file)
 					store(htype, index, data, hash);
 					++countYes;
 				}
+			}
+			if (((countYes + countNo) % 100) == 99)
+			{
+				cLog(lsINFO) << "Import in progress: yes=" << countYes << ", no=" << countNo;
 			}
 		}
 	}
