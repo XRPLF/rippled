@@ -139,7 +139,6 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 	std::vector<unsigned char> data;
 	std::string type;
 	uint32 index;
-	int size;
 
 	{
 		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
