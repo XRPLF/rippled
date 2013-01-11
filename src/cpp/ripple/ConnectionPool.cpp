@@ -164,7 +164,7 @@ void ConnectionPool::policyLowWater()
 	int			iPort;
 
 	// Find an entry to connect to.
-	if (mConnectedMap.size() > theConfig.PEER_CONNECT_LOW_WATER)
+	if (getPeerCount() > theConfig.PEER_CONNECT_LOW_WATER)
 	{
 		// Above low water mark, don't need more connections.
 		cLog(lsTRACE) << "Pool: Low water: sufficient connections: " << mConnectedMap.size() << "/" << theConfig.PEER_CONNECT_LOW_WATER;
