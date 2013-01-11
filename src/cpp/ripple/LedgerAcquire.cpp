@@ -798,7 +798,7 @@ void LedgerAcquireMaster::sweep()
 	}
 }
 
-int LedgerAcquire::getFetchCount()
+int LedgerAcquireMaster::getFetchCount()
 {
 	boost::mutex::scoped_lock sl(mLock);
 	return mLedgers.size();
