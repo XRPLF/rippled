@@ -798,4 +798,10 @@ void LedgerAcquireMaster::sweep()
 	}
 }
 
+int LedgerAcquire::getFetchCount()
+{
+	boost::mutex::scoped_lock sl(mLock);
+	return mLedgers.size();
+}
+
 // vim:ts=4

@@ -1053,6 +1053,22 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 	return uint256();
 }
 
+std::vector< std::pair<uint32, uint256> > Ledger::getLedgerHashes()
+{
+	std::vector< std::pair<uint32, uint256> > ret;
+	SLE::pointer hashIndex = getSLE(getLedgerHashIndex());
+	if (hashIndex)
+	{
+		STVector256 vec = hashIndex->getFieldV256(sfHashes);
+		int size = vec.size();
+		ret.reserve(size);
+		uint32 seq = hashIndex->getFieldU32(sfLastLedgerSequence) - size;
+		for (int i = 0; i < size; ++i)
+			ret.push_back(std::make_pair(++seq, vec.at(i)));
+	}
+	return ret;
+}
+
 uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuerID,
 	const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuerID)
 {

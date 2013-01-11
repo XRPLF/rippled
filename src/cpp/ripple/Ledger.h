@@ -200,6 +200,7 @@ public:
 	static int getLedgerHashOffset(uint32 desiredLedgerIndex);
 	static int getLedgerHashOffset(uint32 desiredLedgerIndex, uint32 currentLedgerIndex);
 	uint256 getLedgerHash(uint32 ledgerIndex);
+	std::vector< std::pair<uint32, uint256> > getLedgerHashes();
 
 	static uint256 getLedgerFeatureIndex();
 	static uint256 getLedgerFeeIndex();
