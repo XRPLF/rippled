@@ -363,28 +363,28 @@ void Peer::handleReadHeader(const boost::system::error_code& error)
 
 void Peer::handleReadBody(const boost::system::error_code& error)
 {
-	boost::recursive_mutex::scoped_lock sl(ioMutex);
+	{
+		boost::recursive_mutex::scoped_lock sl(ioMutex);
 
-	if (mDetaching)
-	{
-		// Drop data or error if detaching.
-		nothing();
+		if (mDetaching)
+		{
+			return;
+		}
+		else if (error)
+		{
+			cLog(lsINFO) << "Peer: Body: Error: " << ADDRESS(this) << ": " << error.category().name() << ": " << error.message() << ": " << error;
+			boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+			detach("hrb");
+			return;
+		}
 	}
-	else if (!error)
-	{
-		processReadBuffer();
-		startReadHeader();
-	}
-	else
-	{
-		cLog(lsINFO) << "Peer: Body: Error: " << ADDRESS(this) << ": " << error.category().name() << ": " << error.message() << ": " << error;
-		boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
-		detach("hrb");
-	}
+
+	processReadBuffer();
+	startReadHeader();
 }
 
 void Peer::processReadBuffer()
-{
+{ // must not hold peer lock
 	int type = PackedMessage::getType(mReadbuf);
 #ifdef DEBUG
 //	std::cerr << "PRB(" << type << "), len=" << (mReadbuf.size()-HEADER_SIZE) << std::endl;
