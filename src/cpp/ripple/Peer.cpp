@@ -1112,14 +1112,14 @@ void Peer::recvGetObjectByHash(ripple::TMGetObjectByHash& packet)
 					newObj.set_data(&hObj->getData().front(), hObj->getData().size());
 					if (obj.has_nodeid())
 						newObj.set_index(obj.nodeid());
-					if (!packet.has_seq() && (hObj->getIndex() != 0))
-						packet.set_seq(hObj->getIndex());
+					if (!reply.has_seq() && (hObj->getIndex() != 0))
+						reply.set_seq(hObj->getIndex());
 				}
 			}
 		}
 		cLog(lsTRACE) << "GetObjByHash had " << reply.objects_size() << " of " << packet.objects_size()
 			<< " for " << getIP();
-		sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtGET_OBJECTS));
+		sendPacket(boost::make_shared<PackedMessage>(reply, ripple::mtGET_OBJECTS));
 	}
 	else
 	{ // this is a reply
