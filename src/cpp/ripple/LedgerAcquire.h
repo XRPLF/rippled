@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 #include <list>
 
 #include <boost/enable_shared_from_this.hpp>
@@ -85,6 +86,9 @@ protected:
 	Ledger::pointer mLedger;
 	bool mHaveBase, mHaveState, mHaveTransactions, mAborted, mSignaled, mAccept, mByHash;
 
+	std::set<SHAMapNode>	mRecentTXNodes;
+	std::set<SHAMapNode>	mRecentASNodes;
+
 	std::vector< boost::function<void (LedgerAcquire::pointer)> > mOnComplete;
 
 	void done();
@@ -121,6 +125,9 @@ public:
 
 	typedef std::pair<ripple::TMGetObjectByHash::ObjectType, uint256> neededHash_t;
 	std::vector<neededHash_t> getNeededHashes();
+
+	static void filterNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& nodeHashes,
+		std::set<SHAMapNode>& recentNodes, int max);
 };
 
 class LedgerAcquireMaster

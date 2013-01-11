@@ -138,6 +138,9 @@ void LedgerAcquire::onTimer(bool progress)
 		return;
 	}
 
+	mRecentTXNodes.clear();
+	mRecentASNodes.clear();
+
 	if (!progress)
 	{
 		cLog(lsDEBUG) << "No progress for ledger " << mHash;
@@ -326,8 +329,10 @@ void LedgerAcquire::trigger(Peer::ref peer)
 		{
 			std::vector<SHAMapNode> nodeIDs;
 			std::vector<uint256> nodeHashes;
+			nodeIDs.reserve(256);
+			nodeHashes.reserve(256);
 			TransactionStateSF tFilter(mLedger->getHash(), mLedger->getLedgerSeq());
-			mLedger->peekTransactionMap()->getMissingNodes(nodeIDs, nodeHashes, 128, &tFilter);
+			mLedger->peekTransactionMap()->getMissingNodes(nodeIDs, nodeHashes, 256, &tFilter);
 			if (nodeIDs.empty())
 			{
 				if (!mLedger->peekTransactionMap()->isValid())
@@ -341,6 +346,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 			}
 			else
 			{
+				filterNodes(nodeIDs, nodeHashes, mRecentTXNodes, 128);
 				tmGL.set_itype(ripple::liTX_NODE);
 				BOOST_FOREACH(SHAMapNode& it, nodeIDs)
 				{
@@ -367,8 +373,10 @@ void LedgerAcquire::trigger(Peer::ref peer)
 		{
 			std::vector<SHAMapNode> nodeIDs;
 			std::vector<uint256> nodeHashes;
+			nodeIDs.reserve(256);
+			nodeHashes.reserve(256);
 			AccountStateSF aFilter(mLedger->getHash(), mLedger->getLedgerSeq());
-			mLedger->peekAccountStateMap()->getMissingNodes(nodeIDs, nodeHashes, 128, &aFilter);
+			mLedger->peekAccountStateMap()->getMissingNodes(nodeIDs, nodeHashes, 256, &aFilter);
 			if (nodeIDs.empty())
 			{
 				if (!mLedger->peekAccountStateMap()->isValid())
@@ -382,6 +390,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 			}
 			else
 			{
+				filterNodes(nodeIDs, nodeHashes, mRecentASNodes, 128);
 				tmGL.set_itype(ripple::liAS_NODE);
 				BOOST_FOREACH(SHAMapNode& it, nodeIDs)
 					*(tmGL.add_nodeids()) = it.getRawString();
@@ -443,6 +452,51 @@ int PeerSet::getPeerCount() const
 		if (theApp->getConnectionPool().hasPeer(it->first))
 			++ret;
 	return ret;
+}
+
+void LedgerAcquire::filterNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& nodeHashes,
+	std::set<SHAMapNode>& recentNodes, int max)
+{ // ask for new nodes in preference to ones we've already asked for
+	std::vector<bool> duplicates;
+	duplicates.reserve(nodeIDs.size());
+
+	if (nodeIDs.size() > 4)
+	{
+		std::vector<bool> duplicates;
+		duplicates.reserve(nodeIDs.size());
+
+		for (int i = 0; i < nodeIDs.size(); ++i)
+			duplicates.push_back(recentNodes.count(nodeIDs[i]) != 0);
+
+		if (!duplicates.empty() && (duplicates.size() != nodeIDs.size()))
+		{ // some, but not all, duplicates
+			int insertPoint = 0;
+			for (int i = 0; i < nodeIDs.size(); ++i)
+				if (!duplicates[i])
+				{ // Keep this node
+					if (insertPoint != i)
+					{
+						nodeIDs[insertPoint] = nodeIDs[i];
+						nodeHashes[insertPoint] = nodeHashes[i];
+					}
+					++insertPoint;
+				}
+
+			cLog(lsDEBUG) << "filterNodes " << nodeIDs.size() << " to " << insertPoint;
+
+			nodeIDs.resize(insertPoint);
+			nodeHashes.resize(insertPoint);
+		}
+	}
+
+	if (nodeIDs.size() > max)
+	{
+		nodeIDs.resize(max);
+		nodeHashes.resize(max);
+	}
+
+	BOOST_FOREACH(const SHAMapNode& n, nodeIDs)
+		recentNodes.insert(n);
 }
 
 bool LedgerAcquire::takeBase(const std::string& data) // data must not have hash prefix
