@@ -80,6 +80,8 @@ void Peer::setIpPort(const std::string& strIP, int iPort)
 
 void Peer::detach(const char *rsn)
 {
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 	if (!mDetaching)
 	{
 		mDetaching	= true;			// Race is ok.
@@ -226,6 +228,8 @@ void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip
 	{
 		cLog(lsINFO) << "Connect peer: success.";
 
+		boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 		mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
 
 		mSocketSsl.async_handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::client,
@@ -247,11 +251,14 @@ void Peer::connected(const boost::system::error_code& error)
 	if (iPort == SYSTEM_PEER_PORT)		//TODO: Why are you doing this?
 		iPort	= -1;
 
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 	if (!error)
 	{
 		// Not redundant ip and port, handshake, and start.
 
 		cLog(lsINFO) << "Peer: Inbound: Accepted: " << ADDRESS(this) << ": " << strIp << " " << iPort;
+
 
 		mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
 
@@ -267,7 +274,7 @@ void Peer::connected(const boost::system::error_code& error)
 }
 
 void Peer::sendPacketForce(const PackedMessage::pointer& packet)
-{
+{ // must hold I/O mutex
 	if (!mDetaching)
 	{
 		mSendingPacket = packet;
@@ -281,6 +288,8 @@ void Peer::sendPacketForce(const PackedMessage::pointer& packet)
 
 void Peer::sendPacket(const PackedMessage::pointer& packet)
 {
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 	if (packet)
 	{
 		if (mSendingPacket)
@@ -296,6 +305,8 @@ void Peer::sendPacket(const PackedMessage::pointer& packet)
 
 void Peer::startReadHeader()
 {
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 	if (!mDetaching)
 	{
 		mReadbuf.clear();
@@ -312,6 +323,8 @@ void Peer::startReadBody(unsigned msg_len)
 	// bytes. Expand it to fit in the body as well, and start async
 	// read into the body.
 
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 	if (!mDetaching)
 	{
 		mReadbuf.resize(HEADER_SIZE + msg_len);
@@ -323,6 +336,8 @@ void Peer::startReadBody(unsigned msg_len)
 
 void Peer::handleReadHeader(const boost::system::error_code& error)
 {
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 	if (mDetaching)
 	{
 		// Drop data or error if detaching.
@@ -348,6 +363,8 @@ void Peer::handleReadHeader(const boost::system::error_code& error)
 
 void Peer::handleReadBody(const boost::system::error_code& error)
 {
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 	if (mDetaching)
 	{
 		// Drop data or error if detaching.
@@ -1633,6 +1650,8 @@ void Peer::addTxSet(const uint256& hash)
 // (both sides get the same information, neither side controls it)
 void Peer::getSessionCookie(std::string& strDst)
 {
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 	SSL* ssl = mSocketSsl.native_handle();
 	if (!ssl) throw std::runtime_error("No underlying connection");
 

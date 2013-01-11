@@ -58,6 +58,7 @@ private:
 
 protected:
 
+	boost::recursive_mutex ioMutex;
 	std::vector<uint8_t> mReadbuf;
 	std::list<PackedMessage::pointer> mSendQ;
 	PackedMessage::pointer mSendingPacket;
