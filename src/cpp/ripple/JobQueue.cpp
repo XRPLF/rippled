@@ -60,7 +60,7 @@ bool Job::operator>(const Job& j) const
 		return true;
 	if (mType > j.mType)
 		return false;
-	return mJobIndex < j.mJobIndex;
+	return mJobIndex > j.mJobIndex;
 }
 
 bool Job::operator>=(const Job& j) const
@@ -69,7 +69,7 @@ bool Job::operator>=(const Job& j) const
 		return true;
 	if (mType > j.mType)
 		return false;
-	return mJobIndex <= j.mJobIndex;
+	return mJobIndex >= j.mJobIndex;
 }
 
 bool Job::operator<(const Job& j) const
@@ -78,7 +78,7 @@ bool Job::operator<(const Job& j) const
 		return false;
 	if (mType > j.mType)
 		return true;
-	return mJobIndex > j.mJobIndex;
+	return mJobIndex < j.mJobIndex;
 }
 
 bool Job::operator<=(const Job& j) const
@@ -87,7 +87,7 @@ bool Job::operator<=(const Job& j) const
 		return false;
 	if (mType > j.mType)
 		return true;
-	return mJobIndex >= j.mJobIndex;
+	return mJobIndex <= j.mJobIndex;
 }
 
 void JobQueue::addJob(JobType type, const boost::function<void(Job&)>& jobFunc)
