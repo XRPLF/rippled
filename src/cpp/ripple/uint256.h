@@ -423,10 +423,8 @@ public:
 
 	uint256& operator=(const basetype& b)
 	{
-		for (int i = 0; i < WIDTH; i++)
-			pn[i] = b.pn[i];
-
-		return *this;
+		if (pn != b.pn)
+			memcpy(pn, b.pn, sizeof(pn));
 	}
 
 	uint256(uint64 b)

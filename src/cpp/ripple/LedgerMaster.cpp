@@ -194,7 +194,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 			theApp->getIOService().post(boost::bind(&LedgerMaster::missingAcquireComplete, this, mMissingLedger));
 	}
 
-	if (theApp->getMasterLedgerAcquire().getFetchCount() < 5)
+	if (theApp->getMasterLedgerAcquire().getFetchCount() < 3)
 	{
 		int count = 0;
 		typedef std::pair<uint32, uint256> u_pair;
