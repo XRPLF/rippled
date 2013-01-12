@@ -271,7 +271,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 	{
 		tmGL.set_querytype(ripple::qtINDIRECT);
 
-		if (!isProgress() && !mFailed && mByHash)
+		if (!isProgress() && !mFailed && mByHash && (getTimeouts() > 2))
 		{
 			std::vector<neededHash_t> need = getNeededHashes();
 			if (!need.empty())
@@ -310,6 +310,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 						}
 					}
 				}
+				cLog(lsINFO) << "Attempting by hash fetch for ledegr " << mHash;
 			}
 			else
 			{
