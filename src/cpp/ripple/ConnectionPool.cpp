@@ -284,7 +284,7 @@ void ConnectionPool::relayMessageTo(const std::set<uint64>& fromPeers, const Pac
 // Requires sane IP and port.
 void ConnectionPool::connectTo(const std::string& strIp, int iPort)
 {
-	if (theConfig.RUN_STANDALONE)
+	if (theConfig.RUN_STANDALONE || (iPort < 0))
 		return;
 
 	{
