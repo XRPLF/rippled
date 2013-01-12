@@ -310,7 +310,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 						}
 					}
 				}
-				cLog(lsINFO) << "Attempting by hash fetch for ledegr " << mHash;
+				cLog(lsINFO) << "Attempting by hash fetch for ledger " << mHash;
 			}
 			else
 			{
