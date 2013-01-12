@@ -995,16 +995,10 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 	}
 
 	if (ledgerIndex == mLedgerSeq)
-	{
-		cLog(lsWARNING) << ledgerIndex << " found in header";
 		return getHash();
-	}
 
 	if (ledgerIndex == (mLedgerSeq - 1))
-	{
-		cLog(lsWARNING) << ledgerIndex << " found in parenthash";
 		return mParentHash;
-	}
 
 	// within 256
 	int diff = mLedgerSeq - ledgerIndex;
@@ -1016,10 +1010,7 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 			assert(hashIndex->getFieldU32(sfLastLedgerSequence) == (mLedgerSeq - 1));
 			STVector256 vec = hashIndex->getFieldV256(sfHashes);
 			if (vec.size() >= diff)
-			{
-				cLog(lsWARNING) << ledgerIndex << " found in normal list";
 				return vec.at(vec.size() - diff);
-			}
 			cLog(lsWARNING) << "Ledger " << mLedgerSeq << " missing hash for " << ledgerIndex
 				<< " (" << vec.size() << "," << diff << ")";
 		}
@@ -1043,10 +1034,7 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 
 		STVector256 vec = hashIndex->getFieldV256(sfHashes);
 		if (vec.size() > sDiff)
-		{
-			cLog(lsWARNING) << ledgerIndex << " found in skip list";
 			return vec.at(vec.size() - sDiff - 1);
-		}
 	}
 
 	cLog(lsWARNING) << "Can't get seq " << ledgerIndex << " from " << mLedgerSeq << " error";
