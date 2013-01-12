@@ -425,6 +425,7 @@ public:
 	{
 		if (pn != b.pn)
 			memcpy(pn, b.pn, sizeof(pn));
+		return *this;
 	}
 
 	uint256(uint64 b)
