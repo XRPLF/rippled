@@ -284,6 +284,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 				bool typeSet = false;
 				BOOST_FOREACH(neededHash_t& p, need)
 				{
+					cLog(lsWARNING) << "Want: " << p.second;
 					theApp->getOPs().addWantedHash(p.second);
 					if (!typeSet)
 					{
@@ -365,15 +366,18 @@ void LedgerAcquire::trigger(Peer::ref peer)
 			}
 			else
 			{
-				filterNodes(nodeIDs, nodeHashes, mRecentTXNodes, 128);
-				tmGL.set_itype(ripple::liTX_NODE);
-				BOOST_FOREACH(SHAMapNode& it, nodeIDs)
+				filterNodes(nodeIDs, nodeHashes, mRecentTXNodes, 128, !isProgress());
+				if (!nodeIDs.empty())
 				{
-					*(tmGL.add_nodeids()) = it.getRawString();
+					tmGL.set_itype(ripple::liTX_NODE);
+					BOOST_FOREACH(SHAMapNode& it, nodeIDs)
+					{
+						*(tmGL.add_nodeids()) = it.getRawString();
+					}
+					cLog(lsTRACE) << "Sending TX node " << nodeIDs.size()
+						<< " request to " << (peer ? "selected peer" : "all peers");
+					sendRequest(tmGL, peer);
 				}
-				cLog(lsTRACE) << "Sending TX node " << nodeIDs.size()
-					<< " request to " << (peer ? "selected peer" : "all peers");
-				sendRequest(tmGL, peer);
 			}
 		}
 	}
@@ -409,14 +413,17 @@ void LedgerAcquire::trigger(Peer::ref peer)
 			}
 			else
 			{
-				filterNodes(nodeIDs, nodeHashes, mRecentASNodes, 128);
-				tmGL.set_itype(ripple::liAS_NODE);
-				BOOST_FOREACH(SHAMapNode& it, nodeIDs)
-					*(tmGL.add_nodeids()) = it.getRawString();
-				cLog(lsTRACE) << "Sending AS node " << nodeIDs.size()
-					<< " request to " << (peer ? "selected peer" : "all peers");
-				tLog(nodeIDs.size() == 1, lsTRACE) << "AS node: " << nodeIDs[0];
-				sendRequest(tmGL, peer);
+				filterNodes(nodeIDs, nodeHashes, mRecentASNodes, 128, !isProgress());
+				if (!nodeIDs.empty())
+				{
+					tmGL.set_itype(ripple::liAS_NODE);
+					BOOST_FOREACH(SHAMapNode& it, nodeIDs)
+						*(tmGL.add_nodeids()) = it.getRawString();
+					cLog(lsTRACE) << "Sending AS node " << nodeIDs.size()
+						<< " request to " << (peer ? "selected peer" : "all peers");
+					tLog(nodeIDs.size() == 1, lsTRACE) << "AS node: " << nodeIDs[0];
+					sendRequest(tmGL, peer);
+				}
 			}
 		}
 	}
@@ -475,38 +482,46 @@ int PeerSet::getPeerCount() const
 }
 
 void LedgerAcquire::filterNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& nodeHashes,
-	std::set<SHAMapNode>& recentNodes, int max)
+	std::set<SHAMapNode>& recentNodes, int max, bool aggressive)
 { // ask for new nodes in preference to ones we've already asked for
 	std::vector<bool> duplicates;
 	duplicates.reserve(nodeIDs.size());
 
-	if (nodeIDs.size() > 4)
+	int dupCount;
+
+	for (int i = 0; i < nodeIDs.size(); ++i)
 	{
-		std::vector<bool> duplicates;
-		duplicates.reserve(nodeIDs.size());
+		bool isDup = recentNodes.count(nodeIDs[i]) != 0;
+		duplicates.push_back(isDup);
+		if (isDup)
+			++dupCount;
+	}
 
-		for (int i = 0; i < nodeIDs.size(); ++i)
-			duplicates.push_back(recentNodes.count(nodeIDs[i]) != 0);
-
-		if (!duplicates.empty() && (duplicates.size() != nodeIDs.size()))
-		{ // some, but not all, duplicates
-			int insertPoint = 0;
-			for (int i = 0; i < nodeIDs.size(); ++i)
-				if (!duplicates[i])
-				{ // Keep this node
-					if (insertPoint != i)
-					{
-						nodeIDs[insertPoint] = nodeIDs[i];
-						nodeHashes[insertPoint] = nodeHashes[i];
-					}
-					++insertPoint;
-				}
-
-			cLog(lsDEBUG) << "filterNodes " << nodeIDs.size() << " to " << insertPoint;
-
-			nodeIDs.resize(insertPoint);
-			nodeHashes.resize(insertPoint);
+	if (dupCount == nodeIDs.size())
+	{ // all duplicates
+		if (!aggressive)
+		{
+			nodeIDs.clear();
+			nodeHashes.clear();
+			return;
 		}
+	}
+	else if (dupCount > 0)
+	{ // some, but not all, duplicates
+		int insertPoint = 0;
+		for (int i = 0; i < nodeIDs.size(); ++i)
+			if (!duplicates[i])
+			{ // Keep this node
+				if (insertPoint != i)
+				{
+					nodeIDs[insertPoint] = nodeIDs[i];
+					nodeHashes[insertPoint] = nodeHashes[i];
+				}
+				++insertPoint;
+			}
+		cLog(lsDEBUG) << "filterNodes " << nodeIDs.size() << " to " << insertPoint;
+		nodeIDs.resize(insertPoint);
+		nodeHashes.resize(insertPoint);
 	}
 
 	if (nodeIDs.size() > max)

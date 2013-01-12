@@ -128,7 +128,7 @@ public:
 	std::vector<neededHash_t> getNeededHashes();
 
 	static void filterNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& nodeHashes,
-		std::set<SHAMapNode>& recentNodes, int max);
+		std::set<SHAMapNode>& recentNodes, int max, bool aggressive);
 };
 
 class LedgerAcquireMaster
