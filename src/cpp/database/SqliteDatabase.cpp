@@ -19,6 +19,7 @@ void SqliteDatabase::connect()
 	{
 		cout << "Can't open database: " << mHost << " " << rc << endl;
 		sqlite3_close(mConnection);
+		assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
 	}
 }
 
@@ -58,6 +59,7 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 	}
 	else
 	{
+		assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
 		mMoreRows = false;
 
 		if (!fail_ok)
@@ -122,6 +124,7 @@ bool SqliteDatabase::getNextRow()
 	}
 	else
 	{
+		assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
 		cout << "SQL Rerror:" << rc << endl;
 		return(false);
 	}
