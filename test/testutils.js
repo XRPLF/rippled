@@ -90,10 +90,22 @@ var build_setup = function (opts, host) {
       function runServerStep(callback) {
         if (opts.no_server) return callback();
 
-        data.server = Server.from_config(host, !!opts.verbose_server).on('started', callback).start();
+        data.server = Server
+                        .from_config(host, !!opts.verbose_server)
+                        .on('started', callback)
+                        .on('exited', function () {
+                            // If know the remote, tell it server is gone.
+                            if (self.remote)
+                              self.remote.server_fatal();
+                          })
+                        .start();
       },
       function connectWebsocketStep(callback) {
-        self.remote = data.remote = Remote.from_config(host, !!opts.verbose_ws).once('ledger_closed', callback).connect();
+        self.remote = data.remote =
+          Remote
+            .from_config(host, !!opts.verbose_ws)
+            .once('ledger_closed', callback)
+            .connect();
       }
     ], done);
   };

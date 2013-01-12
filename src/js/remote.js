@@ -196,6 +196,7 @@ var Remote = function (opts, trace) {
   this.local_fee              = opts.local_fee;      // Locally set fees
   this.id                     = 0;
   this.trace                  = opts.trace || trace;
+  this._server_fatal          = false;              // True, if we know server exited.
   this._ledger_current_index  = undefined;
   this._ledger_hash           = undefined;
   this._ledger_time           = undefined;
@@ -289,6 +290,11 @@ Remote.fees = {
   'offer'           : Amount.from_json("10"),
 };
 
+// Inform remote that the remote server is not comming back.
+Remote.prototype.server_fatal = function () {
+  this._server_fatal = true;
+};
+
 // Set the emitted state: 'online' or 'offline'
 Remote.prototype._set_state = function (state) {
   if (this.trace) console.log("remote: set_state: %s", state);
@@ -378,7 +384,12 @@ Remote.prototype._connect_retry = function () {
     this.retry_timer  =  setTimeout(function () {
         if (self.trace) console.log("remote: retry");
 
-        if (self.online_target) {
+        if (self._server_fatal) {
+          // Stop trying to connect.
+          // nothing();
+          console.log("FATAL");
+        }
+        else if (self.online_target) {
           self._connect_start();
         }
         else {
