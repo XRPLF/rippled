@@ -1,12 +1,17 @@
 #include "SqliteDatabase.h"
 #include "sqlite3.h"
+
 #include <string.h>
 #include <stdio.h>
 #include <iostream>
 
+#include <boost/thread.hpp>
+#include <boost/foreach.hpp>
+#include <boost/bind.hpp>
+
 using namespace std;
 
-SqliteDatabase::SqliteDatabase(const char* host) : Database(host,"","")
+SqliteDatabase::SqliteDatabase(const char* host) : Database(host,"",""), walRunning(false)
 {
 	mConnection		= NULL;
 	mCurrentStmt	= NULL;
@@ -180,6 +185,58 @@ std::vector<unsigned char> SqliteDatabase::getBinary(int colIndex)
 uint64 SqliteDatabase::getBigInt(int colIndex)
 {
 	return(sqlite3_column_int64(mCurrentStmt, colIndex));
+}
+
+
+static int SqliteWALHook(void *s, sqlite3* dbCon, const char *dbName, int walSize)
+{
+	(reinterpret_cast<SqliteDatabase*>(s))->doHook(dbName, walSize);
+	return SQLITE_OK;
+}
+
+bool SqliteDatabase::setupCheckpointing()
+{
+	sqlite3_wal_hook(mConnection, SqliteWALHook, this);
+	return true;
+}
+
+void SqliteDatabase::doHook(const char *db, int pages)
+{
+	if (pages < 256)
+		return;
+	boost::mutex::scoped_lock sl(walMutex);
+	if (walDBs.insert(db).second && !walRunning)
+	{
+		walRunning = true;
+		boost::thread(boost::bind(&SqliteDatabase::runWal, this)).detach();
+	}
+}
+
+void SqliteDatabase::runWal()
+{
+	std::set<std::string> walSet;
+
+	while (1)
+	{
+		{
+			boost::mutex::scoped_lock sl(walMutex);
+			walDBs.swap(walSet);
+			if (walSet.empty())
+			{
+				walRunning = false;
+				return;
+			}
+		}
+
+		BOOST_FOREACH(const std::string& db, walSet)
+		{
+			int log, ckpt;
+			sqlite3_wal_checkpoint_v2(mConnection, db.c_str(), SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
+			std::cerr << "Checkpoint " << db << ": " << log << " of " << ckpt << std::endl;
+		}
+		walSet.clear();
+
+	}
 }
 
 // vim:ts=4

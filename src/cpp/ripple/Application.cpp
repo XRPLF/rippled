@@ -118,6 +118,9 @@ void Application::setup()
 	boost::thread t5(boost::bind(&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
 	boost::thread t6(boost::bind(&InitDB, &mNetNodeDB, "netnode.db", NetNodeDBInit, NetNodeDBCount));
 	t1.join(); t2.join(); t3.join(); t4.join(); t5.join(); t6.join();
+	mTxnDB->getDB()->setupCheckpointing();
+	mLedgerDB->getDB()->setupCheckpointing();
+	mHashNodeDB->getDB()->setupCheckpointing();
 
 	if (theConfig.START_UP == Config::FRESH)
 	{

@@ -82,6 +82,8 @@ public:
 	// int getSingleDBValueInt(const char* sql);
 	// float getSingleDBValueFloat(const char* sql);
 	// char* getSingleDBValueStr(const char* sql, std::string& retStr);
+
+	virtual bool setupCheckpointing() { return false; }
 };
 
 #endif
