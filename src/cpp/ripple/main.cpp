@@ -173,6 +173,7 @@ int main(int argc, char* argv[])
 		if (vm.count("standalone"))
 		{
 			theConfig.RUN_STANDALONE = true;
+			theConfig.LEDGER_HISTORY = 0;
 		}
 	}
 
