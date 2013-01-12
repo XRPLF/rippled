@@ -13,6 +13,7 @@
 #include <algorithm>
 
 #define SECTION_ACCOUNT_PROBE_MAX		"account_probe_max"
+#define SECTION_CLUSTER_NODES			"cluster_nodes"
 #define SECTION_DATABASE_PATH			"database_path"
 #define SECTION_DEBUG_LOGFILE			"debug_logfile"
 #define SECTION_FEE_DEFAULT				"fee_default"
@@ -24,6 +25,7 @@
 #define SECTION_LEDGER_HISTORY			"ledger_history"
 #define SECTION_IPS						"ips"
 #define SECTION_NETWORK_QUORUM			"network_quorum"
+#define SECTION_NODE_SEED				"node_seed"
 #define SECTION_PEER_CONNECT_LOW_WATER	"peer_connect_low_water"
 #define SECTION_PEER_IP					"peer_ip"
 #define SECTION_PEER_PORT				"peer_port"
@@ -247,6 +249,13 @@ void Config::load()
 				// sectionEntriesPrint(&VALIDATORS, SECTION_VALIDATORS);
 			}
 
+			smtTmp = sectionEntries(secConfig, SECTION_CLUSTER_NODES);
+			if (smtTmp)
+			{
+				CLUSTER_NODES = *smtTmp;
+				// sectionEntriesPrint(&CLUSTER_NODES, SECTION_CLUSTER_NODES);
+			}
+
 			smtTmp	= sectionEntries(secConfig, SECTION_IPS);
 			if (smtTmp)
 			{
@@ -308,6 +317,15 @@ void Config::load()
 				{
 					VALIDATION_PUB = RippleAddress::createNodePublic(VALIDATION_SEED);
 					VALIDATION_PRIV = RippleAddress::createNodePrivate(VALIDATION_SEED);
+				}
+			}
+			if (sectionSingleB(secConfig, SECTION_NODE_SEED, strTemp))
+			{
+				NODE_SEED.setSeedGeneric(strTemp);
+				if (NODE_SEED.isValid())
+				{
+					NODE_PUB = RippleAddress::createNodePublic(NODE_SEED);
+					NODE_PRIV = RippleAddress::createNodePrivate(NODE_SEED);
 				}
 			}
 

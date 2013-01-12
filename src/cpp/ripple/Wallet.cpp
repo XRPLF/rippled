@@ -38,6 +38,7 @@ void Wallet::start()
 // Retrieve network identity.
 bool Wallet::nodeIdentityLoad()
 {
+
 	Database*	db=theApp->getWalletDB()->getDB();
 	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
 	bool		bSuccess	= false;
@@ -57,6 +58,12 @@ bool Wallet::nodeIdentityLoad()
 
 		db->endIterRows();
 		bSuccess	= true;
+	}
+
+	if (theConfig.NODE_PUB.isValid() && theConfig.NODE_PRIV.isValid())
+	{
+		mNodePublicKey = theConfig.NODE_PUB;
+		mNodePrivateKey = theConfig.NODE_PRIV;
 	}
 
 	return bSuccess;

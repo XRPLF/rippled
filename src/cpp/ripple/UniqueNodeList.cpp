@@ -64,7 +64,16 @@ void UniqueNodeList::start()
 // Load information about when we last updated.
 bool UniqueNodeList::miscLoad()
 {
-	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+	BOOST_FOREACH(const std::string& node, theConfig.CLUSTER_NODES)
+	{
+		RippleAddress a = RippleAddress::createNodePublic(node);
+		if (a.isValid())
+			sClusterNodes.insert(a);
+		else
+			cLog(lsWARNING) << "Entry in cluster list invalid: '" << node << "'";
+	}
+
+	boost::recursive_mutex::scoped_lock sl(theApp->getWalletDB()->getDBLock());
 	Database *db=theApp->getWalletDB()->getDB();
 
 	if (!db->executeSQL("SELECT * FROM Misc WHERE Magic=1;")) return false;
@@ -85,7 +94,7 @@ bool UniqueNodeList::miscLoad()
 bool UniqueNodeList::miscSave()
 {
 	Database*	db=theApp->getWalletDB()->getDB();
-	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+	boost::recursive_mutex::scoped_lock	sl(theApp->getWalletDB()->getDBLock());
 
 	db->executeSQL(str(boost::format("REPLACE INTO Misc (Magic,FetchUpdated,ScoreUpdated) VALUES (1,%d,%d);")
 		% iToSeconds(mtpFetchUpdated)
@@ -96,9 +105,18 @@ bool UniqueNodeList::miscSave()
 
 void UniqueNodeList::trustedLoad()
 {
+	BOOST_FOREACH(const std::string& node, theConfig.CLUSTER_NODES)
+	{
+		RippleAddress a = RippleAddress::createNodePublic(node);
+		if (a.isValid())
+			sClusterNodes.insert(a);
+		else
+			cLog(lsWARNING) << "Entry in cluster list invalid: '" << node << "'";
+	}
+
 	Database*	db=theApp->getWalletDB()->getDB();
-	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
-	ScopedLock	slUNL(mUNLLock);
+	boost::recursive_mutex::scoped_lock	sl(theApp->getWalletDB()->getDBLock());
+	boost::recursive_mutex::scoped_lock	slUNL(mUNLLock);
 
 	mUNL.clear();
 
@@ -187,7 +205,7 @@ void UniqueNodeList::scoreCompute()
 	// For each entry in SeedDomains with a PublicKey:
 	// - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
 	{
-		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+		boost::recursive_mutex::scoped_lock	sl(theApp->getWalletDB()->getDBLock());
 
 		SQL_FOREACH(db, "SELECT Domain,PublicKey,Source FROM SeedDomains;")
 		{
@@ -240,7 +258,7 @@ void UniqueNodeList::scoreCompute()
 	// For each entry in SeedNodes:
 	// - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
 	{
-		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+		boost::recursive_mutex::scoped_lock	sl(theApp->getWalletDB()->getDBLock());
 
 		SQL_FOREACH(db, "SELECT PublicKey,Source FROM SeedNodes;")
 		{
@@ -304,7 +322,7 @@ void UniqueNodeList::scoreCompute()
 		std::string&		strValidator	= sn.strValidator;
 		std::vector<int>&	viReferrals		= sn.viReferrals;
 
-		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+		boost::recursive_mutex::scoped_lock	sl(theApp->getWalletDB()->getDBLock());
 
 		SQL_FOREACH(db, boost::str(boost::format("SELECT Referral FROM ValidatorReferrals WHERE Validator=%s ORDER BY Entry;")
 					% sqlEscape(strValidator)))
@@ -385,7 +403,7 @@ void UniqueNodeList::scoreCompute()
 	}
 
 	// Persist validator scores.
-	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+	boost::recursive_mutex::scoped_lock sl(theApp->getWalletDB()->getDBLock());
 
 	db->executeSQL("BEGIN;");
 	db->executeSQL("UPDATE TrustedNodes SET Score = 0 WHERE Score != 0;");
@@ -436,7 +454,7 @@ void UniqueNodeList::scoreCompute()
 	}
 
 	{
-		ScopedLock	sl(mUNLLock);
+		boost::recursive_mutex::scoped_lock	sl(mUNLLock);
 
 		// XXX Should limit to scores above a certain minimum and limit to a certain number.
 		mUNL.swap(usUNL);
@@ -622,7 +640,7 @@ void UniqueNodeList::processIps(const std::string& strSite, const RippleAddress&
 
 	// Remove all current Validator's entries in IpReferrals
 	{
-		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+		boost::recursive_mutex::scoped_lock	sl(theApp->getWalletDB()->getDBLock());
 		db->executeSQL(str(boost::format("DELETE FROM IpReferrals WHERE Validator=%s;") % strEscNodePublic));
 		// XXX Check result.
 	}
@@ -664,7 +682,7 @@ void UniqueNodeList::processIps(const std::string& strSite, const RippleAddress&
 		{
 			vstrValues.resize(iValues);
 
-			ScopedLock sl(theApp->getWalletDB()->getDBLock());
+			boost::recursive_mutex::scoped_lock sl(theApp->getWalletDB()->getDBLock());
 			db->executeSQL(str(boost::format("INSERT INTO IpReferrals (Validator,Entry,IP,Port) VALUES %s;")
 				% strJoin(vstrValues.begin(), vstrValues.end(), ",")));
 			// XXX Check result.
@@ -693,7 +711,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 
 	// Remove all current Validator's entries in ValidatorReferrals
 	{
-		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+		boost::recursive_mutex::scoped_lock	sl(theApp->getWalletDB()->getDBLock());
 
 		db->executeSQL(str(boost::format("DELETE FROM ValidatorReferrals WHERE Validator='%s';") % strNodePublic));
 		// XXX Check result.
@@ -764,7 +782,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 			std::string strSql	= str(boost::format("INSERT INTO ValidatorReferrals (Validator,Entry,Referral) VALUES %s;")
 				% strJoin(vstrValues.begin(), vstrValues.end(), ","));
 
-			ScopedLock sl(theApp->getWalletDB()->getDBLock());
+			boost::recursive_mutex::scoped_lock sl(theApp->getWalletDB()->getDBLock());
 
 			db->executeSQL(strSql);
 			// XXX Check result.
@@ -1056,7 +1074,7 @@ void UniqueNodeList::fetchNext()
 		boost::posix_time::ptime	tpNext;
 		boost::posix_time::ptime	tpNow;
 
-		ScopedLock sl(theApp->getWalletDB()->getDBLock());
+		boost::recursive_mutex::scoped_lock sl(theApp->getWalletDB()->getDBLock());
 		Database *db=theApp->getWalletDB()->getDB();
 
 		if (db->executeSQL("SELECT Domain,Next FROM SeedDomains INDEXED BY SeedDomainNext ORDER BY Next LIMIT 1;")
@@ -1156,7 +1174,7 @@ bool UniqueNodeList::getSeedDomains(const std::string& strDomain, seedDomain& ds
 	std::string strSql	= boost::str(boost::format("SELECT * FROM SeedDomains WHERE Domain=%s;")
 		% sqlEscape(strDomain));
 
-	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+	boost::recursive_mutex::scoped_lock	sl(theApp->getWalletDB()->getDBLock());
 
 	bResult	= db->executeSQL(strSql) && db->startIterRows();
 	if (bResult)
@@ -1226,7 +1244,7 @@ void UniqueNodeList::setSeedDomains(const seedDomain& sdSource, bool bNext)
 		% sqlEscape(sdSource.strComment)
 		);
 
-	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+	boost::recursive_mutex::scoped_lock	sl(theApp->getWalletDB()->getDBLock());
 
 	if (!db->executeSQL(strSql))
 	{
@@ -1294,7 +1312,7 @@ bool UniqueNodeList::getSeedNodes(const RippleAddress& naNodePublic, seedNode& d
 	std::string strSql	= str(boost::format("SELECT * FROM SeedNodes WHERE PublicKey='%s';")
 		% naNodePublic.humanNodePublic());
 
-	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+	boost::recursive_mutex::scoped_lock	sl(theApp->getWalletDB()->getDBLock());
 
 	bResult	= db->executeSQL(strSql) && db->startIterRows();
 	if (bResult)
@@ -1366,7 +1384,7 @@ void UniqueNodeList::setSeedNodes(const seedNode& snSource, bool bNext)
 		);
 
 	{
-		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+		boost::recursive_mutex::scoped_lock	sl(theApp->getWalletDB()->getDBLock());
 
 		if (!db->executeSQL(strSql))
 		{
@@ -1424,7 +1442,7 @@ void UniqueNodeList::nodeRemovePublic(const RippleAddress& naNodePublic)
 {
 	{
 		Database* db=theApp->getWalletDB()->getDB();
-		ScopedLock sl(theApp->getWalletDB()->getDBLock());
+		boost::recursive_mutex::scoped_lock sl(theApp->getWalletDB()->getDBLock());
 
 		db->executeSQL(str(boost::format("DELETE FROM SeedNodes WHERE PublicKey=%s") % sqlEscape(naNodePublic.humanNodePublic())));
 	}
@@ -1440,7 +1458,7 @@ void UniqueNodeList::nodeRemoveDomain(std::string strDomain)
 
 	{
 		Database* db=theApp->getWalletDB()->getDB();
-		ScopedLock sl(theApp->getWalletDB()->getDBLock());
+		boost::recursive_mutex::scoped_lock sl(theApp->getWalletDB()->getDBLock());
 
 		db->executeSQL(str(boost::format("DELETE FROM SeedDomains WHERE Domain=%s") % sqlEscape(strDomain)));
 	}
@@ -1454,7 +1472,7 @@ void UniqueNodeList::nodeReset()
 	{
 		Database* db=theApp->getWalletDB()->getDB();
 
-		ScopedLock sl(theApp->getWalletDB()->getDBLock());
+		boost::recursive_mutex::scoped_lock sl(theApp->getWalletDB()->getDBLock());
 
 		// XXX Check results.
 		db->executeSQL("DELETE FROM SeedDomains");
@@ -1470,7 +1488,7 @@ Json::Value UniqueNodeList::getUnlJson()
 
     Json::Value ret(Json::arrayValue);
 
-	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+	boost::recursive_mutex::scoped_lock sl(theApp->getWalletDB()->getDBLock());
 	SQL_FOREACH(db, "SELECT * FROM TrustedNodes;")
 	{
 		Json::Value node(Json::objectValue);
@@ -1571,7 +1589,7 @@ void UniqueNodeList::nodeBootstrap()
 	Database*	db			= theApp->getWalletDB()->getDB();
 
 	{
-		ScopedLock sl(theApp->getWalletDB()->getDBLock());
+		boost::recursive_mutex::scoped_lock sl(theApp->getWalletDB()->getDBLock());
 
 		if (db->executeSQL(str(boost::format("SELECT COUNT(*) AS Count FROM SeedDomains WHERE Source='%s' OR Source='%c';") % vsManual % vsValidator)) && db->startIterRows())
 			iDomains	= db->getInt("Count");
@@ -1640,7 +1658,7 @@ void UniqueNodeList::nodeBootstrap()
 
 		if (!vstrValues.empty())
 		{
-			ScopedLock sl(theApp->getWalletDB()->getDBLock());
+			boost::recursive_mutex::scoped_lock sl(theApp->getWalletDB()->getDBLock());
 
 			db->executeSQL(str(boost::format("REPLACE INTO PeerIps (IpPort,Source) VALUES %s;")
 					% strJoin(vstrValues.begin(), vstrValues.end(), ",")));
@@ -1673,8 +1691,15 @@ void UniqueNodeList::nodeProcess(const std::string& strSite, const std::string& 
 
 bool UniqueNodeList::nodeInUNL(const RippleAddress& naNodePublic)
 {
-	ScopedLock	sl(mUNLLock);
+	boost::recursive_mutex::scoped_lock	sl(mUNLLock);
 
 	return mUNL.end() != mUNL.find(naNodePublic.humanNodePublic());
 }
+
+bool UniqueNodeList::nodeInCluster(const RippleAddress& naNodePublic)
+{
+	boost::recursive_mutex::scoped_lock	sl(mUNLLock);
+	return sClusterNodes.count(naNodePublic) != 0;
+}
+
 // vim:ts=4

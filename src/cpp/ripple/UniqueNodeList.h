@@ -2,6 +2,11 @@
 #define __UNIQUE_NODE_LIST__
 
 #include <deque>
+#include <set>
+
+#include <boost/thread/recursive_mutex.hpp>
+#include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 
 #include "../json/value.h"
 
@@ -10,11 +15,7 @@
 #include "HttpsClient.h"
 #include "ParseSection.h"
 
-#include <boost/thread/recursive_mutex.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
-
-// Guarantees minimum thoughput of 1 node per second.
+// Guarantees minimum throughput of 1 node per second.
 #define NODE_FETCH_JOBS			10
 #define NODE_FETCH_SECONDS		10
 #define NODE_FILE_BYTES_MAX		(50<<10)	// 50k
@@ -87,6 +88,8 @@ private:
 		std::vector<int>	viReferrals;
 	} scoreNode;
 
+	std::set<RippleAddress>	sClusterNodes;
+
 	typedef boost::unordered_map<std::string,int> strIndex;
 	typedef std::pair<std::string,int> ipPort;
 	typedef boost::unordered_map<std::pair< std::string, int>, score>	epScore;
@@ -151,6 +154,7 @@ public:
 	void nodeScore();
 
 	bool nodeInUNL(const RippleAddress& naNodePublic);
+	bool nodeInCluster(const RippleAddress& naNodePublic);
 
 	void nodeBootstrap();
 	bool nodeLoad(boost::filesystem::path pConfig);

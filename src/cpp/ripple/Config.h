@@ -114,6 +114,10 @@ public:
 	// Validation
 	RippleAddress				VALIDATION_SEED, VALIDATION_PUB, VALIDATION_PRIV;
 
+	// Node/Cluster
+	std::vector<std::string>	CLUSTER_NODES;
+	RippleAddress				NODE_SEED, NODE_PUB, NODE_PRIV;
+
 	// Fee schedule (All below values are in fee units)
 	uint64						FEE_DEFAULT;			// Default fee.
 	uint64						FEE_ACCOUNT_RESERVE;	// Amount of units not allowed to send.
