@@ -1335,7 +1335,8 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		if (!map)
 		{
 			if (packet.has_querytype() && !packet.has_requestcookie())
-			{
+			{ 	// FIXME: Don't relay requests for older ledgers we would acquire
+				// (if we don't have them, we can't get them)
 				cLog(lsINFO) << "Trying to route TX set request";
 				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 				std::vector<Peer::pointer> usablePeers;
