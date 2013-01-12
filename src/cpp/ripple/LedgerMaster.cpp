@@ -502,6 +502,7 @@ void LedgerMaster::tryPublish()
 	{
 		theApp->getOPs().clearNeedNetworkLedger();
 		mPubThread = true;
+		mTooFast = false;
 		theApp->getJobQueue().addJob(jtPUBLEDGER, boost::bind(&LedgerMaster::pubThread, this));
 	}
 }
