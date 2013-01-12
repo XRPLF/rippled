@@ -124,6 +124,8 @@ public:
 	void checkAccept(const uint256& hash);
 	void checkAccept(const uint256& hash, uint32 seq);
 	void tryPublish();
+
+	static bool shouldAcquire(uint32 currentLedgerID, uint32 ledgerHistory, uint32 targetLedger);
 };
 
 #endif

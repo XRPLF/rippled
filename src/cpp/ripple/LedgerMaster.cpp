@@ -233,7 +233,7 @@ void LedgerMaster::missingAcquireComplete(LedgerAcquire::pointer acq)
 	}
 }
 
-static bool shouldAcquire(uint32 currentLedger, uint32 ledgerHistory, uint32 candidateLedger)
+bool LedgerMaster::shouldAcquire(uint32 currentLedger, uint32 ledgerHistory, uint32 candidateLedger)
 {
 	bool ret;
 	if (candidateLedger >= currentLedger)
