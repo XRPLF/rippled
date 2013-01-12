@@ -754,9 +754,9 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 	}
 	else if (
 		// Checks on source_currencies.
-		!jvRequest.isMember("source_currencies")
-		|| !jvRequest["source_currencies"].isArray()
-		|| !jvRequest["source_currencies"].size()
+		jvRequest.isMember("source_currencies")
+		&& (!jvRequest["source_currencies"].isArray()
+			|| !jvRequest["source_currencies"].size())	// Don't allow empty currencies.
 		)
 	{
 		cLog(lsINFO) << "Bad source_currencies.";
@@ -764,36 +764,63 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 	}
 	else
 	{
-		Json::Value	jvSrcCurrencies	= jvRequest["source_currencies"];
-		Json::Value	jvArray(Json::arrayValue);
-
 		Ledger::pointer	lpCurrent	= mNetOps->getCurrentLedger();
+		Json::Value		jvSrcCurrencies;
+
+		if (jvRequest.isMember("source_currencies"))
+		{
+			jvSrcCurrencies	= jvRequest["source_currencies"];
+		}
+		else
+		{
+			boost::unordered_set<uint160>	usCurrencies	= usAccountSourceCurrencies(raSrc, lpCurrent);
+
+			// Add XRP as a source currency.
+			// YYY Only bother if they are above reserve.
+			usCurrencies.insert(uint160(CURRENCY_XRP));
+
+			jvSrcCurrencies				= Json::Value(Json::arrayValue);
+
+			BOOST_FOREACH(const uint160& uCurrency, usCurrencies)
+			{
+				Json::Value	jvCurrency(Json::objectValue);
+
+				jvCurrency["currency"]	= STAmount::createHumanCurrency(uCurrency);
+
+				jvSrcCurrencies.append(jvCurrency);
+			}
+		}
+
+		LedgerEntrySet	lesSnapshot(lpCurrent);
 
 		ScopedUnlock	su(theApp->getMasterLock()); // As long as we have a locked copy of the ledger, we can unlock.
 
-		LedgerEntrySet	lesSnapshot(lpCurrent);
+		Json::Value	jvArray(Json::arrayValue);
 
 		for (unsigned int i=0; i != jvSrcCurrencies.size(); ++i) {
 			Json::Value	jvSource		= jvSrcCurrencies[i];
 			uint160		uSrcCurrencyID;
 			uint160		uSrcIssuerID	= raSrc.getAccountID();
 
-			if (
-				// Parse currency.
-				!jvSource.isMember("currency")
-				|| !STAmount::currencyFromString(uSrcCurrencyID, jvSource["currency"].asString())
+			// Parse mandatory currency.
+			if (!jvSource.isMember("currency")
+				|| !STAmount::currencyFromString(uSrcCurrencyID, jvSource["currency"].asString()))
+			{
+				cLog(lsINFO) << "Bad currency.";
 
-				// Parse issuer.
-				|| ((jvSource.isMember("issuer"))
+				return rpcError(rpcSRC_CUR_MALFORMED);
+			}
+			// Parse optional issuer.
+			else if (((jvSource.isMember("issuer"))
 					&& (!jvSource["issuer"].isString()
 						|| !STAmount::issuerFromString(uSrcIssuerID, jvSource["issuer"].asString())))
-
 				// Don't allow illegal issuers.
 				|| !uSrcIssuerID
 				|| ACCOUNT_ONE == uSrcIssuerID)
 			{
-				cLog(lsINFO) << "Bad currency/issuer.";
-				return rpcError(rpcINVALID_PARAMS);
+				cLog(lsINFO) << "Bad issuer.";
+
+				return rpcError(rpcSRC_ISR_MALFORMED);
 			}
 
 			STPathSet	spsComputed;
@@ -2495,7 +2522,9 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 	{
 		return rpcError(rpcNO_PERMISSION);
 	}
-	else if (commandsA[i].iOptions & optNetwork
+
+	// XXX Need the master lock for getOperatingMode
+	if (commandsA[i].iOptions & optNetwork
 		&& mNetOps->getOperatingMode() != NetworkOPs::omTRACKING
 		&& mNetOps->getOperatingMode() != NetworkOPs::omFULL)
 	{
