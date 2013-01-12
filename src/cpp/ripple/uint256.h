@@ -298,22 +298,22 @@ public:
 
 	unsigned char* begin()
 	{
-		return (unsigned char*) &pn[0];
+		return reinterpret_cast<unsigned char*>(pn);
 	}
 
 	unsigned char* end()
 	{
-		return (unsigned char*) &pn[WIDTH];
+		return reinterpret_cast<unsigned char*>(pn + WIDTH);
 	}
 
 	const unsigned char* begin() const
 	{
-		return (const unsigned char*) &pn[0];
+		return reinterpret_cast<const unsigned char*>(pn);
 	}
 
 	const unsigned char* end() const
 	{
-		return (unsigned char*) &pn[WIDTH];
+		return reinterpret_cast<const unsigned char*>(pn + WIDTH);
 	}
 
 	unsigned int size() const

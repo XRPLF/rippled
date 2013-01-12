@@ -204,9 +204,9 @@ public:
 	bool isAccountState() const	{ return mType == tnACCOUNT_STATE; }
 
 	// inner node functions
-	bool isInnerNode() const { return !mItem; }
+	bool isInnerNode() const	{ return !mItem; }
 	bool setChildHash(int m, const uint256& hash);
-	bool isEmptyBranch(int m) const { return !mHashes[m]; }
+	bool isEmptyBranch(int m) const { return mHashes[m].isZero(); }
 	bool isEmpty() const;
 	int getBranchCount() const;
 	void makeInner();
