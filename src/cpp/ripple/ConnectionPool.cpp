@@ -284,9 +284,6 @@ void ConnectionPool::relayMessageTo(const std::set<uint64>& fromPeers, const Pac
 // Requires sane IP and port.
 void ConnectionPool::connectTo(const std::string& strIp, int iPort)
 {
-	if (theConfig.RUN_STANDALONE || (iPort < 0))
-		return;
-
 	{
 		Database*	db	= theApp->getWalletDB()->getDB();
 		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
@@ -649,7 +646,11 @@ void ConnectionPool::scanHandler(const boost::system::error_code& ecResult)
 // Scan ips as per db entries.
 void ConnectionPool::scanRefresh()
 {
-	if (mScanning)
+	if (theConfig.RUN_STANDALONE)
+	{
+		nothing();
+	}
+	else if (mScanning)
 	{
 		// Currently scanning, will scan again after completion.
 		cLog(lsTRACE) << "Pool: Scan: already scanning";
