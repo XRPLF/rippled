@@ -21,13 +21,15 @@ DECLARE_INSTANCE(SHAMap);
 DECLARE_INSTANCE(SHAMapItem);
 DECLARE_INSTANCE(SHAMapTreeNode);
 
+void SHAMapNode::setHash() const
+{
+	std::size_t h = theApp->getNonceST() + mDepth;
+	mHash = mNodeID.hash_combine(h);
+}
+
 std::size_t hash_value(const SHAMapNode& mn)
 {
-	std::size_t seed = theApp->getNonceST();
-
-	boost::hash_combine(seed, mn.getDepth());
-
-	return mn.getNodeID().hash_combine(seed);
+	return mn.getHash();
 }
 
 std::size_t hash_value(const uint256& u)

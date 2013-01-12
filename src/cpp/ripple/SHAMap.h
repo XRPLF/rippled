@@ -27,23 +27,28 @@ class SHAMap;
 
 
 class SHAMapNode
-{ // Identifies a node in a SHA256 hash
+{ // Identifies a node in a SHA256 hash map
 private:
 	static uint256 smMasks[65]; // AND with hash to get node id
 
 	uint256	mNodeID;
-	int	mDepth;
+	int		mDepth;
+	mutable size_t	mHash;
+
+	void setHash() const;
 
 public:
 
 	static const int rootDepth = 0;
 
-	SHAMapNode() : mDepth(0)			{ ; }
+	SHAMapNode() : mDepth(0), mHash(0)	{ ; }
 	SHAMapNode(int depth, const uint256& hash);
 	virtual ~SHAMapNode()				{ ; }
+
 	int getDepth() const				{ return mDepth; }
 	const uint256& getNodeID()	const	{ return mNodeID; }
 	bool isValid() const { return (mDepth >= 0) && (mDepth < 64); }
+	size_t getHash() const				{ if (mHash == 0) setHash(); return mHash; }
 
 	virtual bool isPopulated() const { return false; }
 

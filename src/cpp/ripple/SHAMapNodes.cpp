@@ -102,15 +102,16 @@ uint256 SHAMapNode::getNodeID(int depth, const uint256& hash)
 	return hash & smMasks[depth];
 }
 
-SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mDepth(depth)
+SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mDepth(depth), mHash(0)
 { // canonicalize the hash to a node ID for this depth
 	assert((depth >= 0) && (depth < 65));
 	mNodeID = getNodeID(depth, hash);
 }
 
-SHAMapNode::SHAMapNode(const void *ptr, int len)
+SHAMapNode::SHAMapNode(const void *ptr, int len) : mHash(0)
 {
-	if (len < 33) mDepth = -1;
+	if (len < 33)
+		mDepth = -1;
 	else
 	{
 		memcpy(mNodeID.begin(), ptr, 32);
