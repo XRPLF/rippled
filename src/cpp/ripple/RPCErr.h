@@ -62,6 +62,8 @@ enum {
 	rpcSRC_ACT_MISSING,
 	rpcSRC_ACT_NOT_FOUND,
 	rpcSRC_AMT_MALFORMED,
+	rpcSRC_CUR_MALFORMED,
+	rpcSRC_ISR_MALFORMED,
 
 	// Internal error (should never happen)
 	rpcINTERNAL,		// Generic internal error.

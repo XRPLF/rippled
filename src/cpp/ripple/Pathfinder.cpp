@@ -317,7 +317,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 								% RippleAddress::createHumanAccountID(rspEntry->getAccountIDPeer().getAccountID())
 								% STAmount::createHumanCurrency(speEnd.mCurrencyID));
 					}
-					else if (!rspEntry->getBalance().isPositive()	// Have IOUs to send.
+					else if (!rspEntry->getBalance().isPositive()	// No IOUs to send.
 						&& (!rspEntry->getLimitPeer()				// Peer does not extend credit.
 							|| *rspEntry->getBalance().negate() >= rspEntry->getLimitPeer()))	// No credit left.
 					{
@@ -565,4 +565,28 @@ void Pathfinder::addPathOption(PathOption::pointer pathOption)
 }
 #endif
 
+boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raAccountID, Ledger::ref lrLedger)
+{
+	boost::unordered_set<uint160>	usCurrencies;
+
+	// List of ripple lines.
+	AccountItems rippleLines(raAccountID.getAccountID(), lrLedger, AccountItem::pointer(new RippleState()));
+
+	BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
+	{
+		RippleState*	rspEntry	= (RippleState*) item.get();
+		STAmount		saBalance	= rspEntry->getBalance();
+
+		// Filter out non
+		if (saBalance.isPositive()					// Have IOUs to send.
+			|| (rspEntry->getLimitPeer()			// Peer extends credit.
+				&& *saBalance.negate() < rspEntry->getLimitPeer()))	// Credit left.
+		{
+			// Path has no credit left. Ignore it.
+			usCurrencies.insert(saBalance.getCurrency());
+		}
+	}
+
+	return usCurrencies;
+}
 // vim:ts=4

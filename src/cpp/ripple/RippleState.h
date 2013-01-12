@@ -34,6 +34,7 @@ private:
 	bool							mViewLowest;
 
 	RippleState(SerializedLedgerEntry::ref ledgerEntry);	// For accounts in a ledger
+
 public:
 	RippleState(){ }
 	AccountItem::pointer makeItem(const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry);

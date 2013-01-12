@@ -63,6 +63,8 @@ public:
 
 	bool bDefaultPath(const STPath& spPath);
 };
+
+boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raAccountID, Ledger::ref lrLedger);
 #endif
 
 // vim:ts=4

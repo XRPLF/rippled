@@ -58,6 +58,8 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 		{ rpcSRC_ACT_MISSING,		"srcActMissing",	"Source account not provided."							},
 		{ rpcSRC_ACT_NOT_FOUND,		"srcActNotFound",	"Source amount not found."								},
 		{ rpcSRC_AMT_MALFORMED,		"srcAmtMalformed",	"Source amount/currency/issuer is malformed."			},
+		{ rpcSRC_CUR_MALFORMED,		"srcCurMalformed",	"Source currency is malformed."							},
+		{ rpcSRC_ISR_MALFORMED,		"srcIsrMalformed",	"Source issuer is malformed."							},
 		{ rpcSRC_UNCLAIMED,			"srcUnclaimed",		"Source account is not claimed."						},
 		{ rpcTXN_NOT_FOUND,			"txnNotFound",		"Transaction not found."								},
 		{ rpcUNKNOWN_COMMAND,		"unknownCmd",		"Unknown command."										},
