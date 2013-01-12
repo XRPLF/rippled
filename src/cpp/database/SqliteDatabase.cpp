@@ -232,7 +232,6 @@ void SqliteDatabase::runWal()
 		{
 			int log, ckpt;
 			sqlite3_wal_checkpoint_v2(mConnection, db.c_str(), SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
-			std::cerr << "Checkpoint " << db << ": " << log << " of " << ckpt << std::endl;
 		}
 		walSet.clear();
 
