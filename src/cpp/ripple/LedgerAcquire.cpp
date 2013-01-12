@@ -74,6 +74,12 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 		ptr->invokeOnTimer();
 }
 
+bool PeerSet::isActive()
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	return !isDone();
+}
+
 LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT),
 	mHaveBase(false), mHaveState(false), mHaveTransactions(false), mAborted(false), mSignaled(false), mAccept(false),
 	mByHash(true)
@@ -106,6 +112,9 @@ bool LedgerAcquire::tryLocal()
 		try
 		{
 			mLedger->peekTransactionMap()->fetchRoot(mLedger->getTransHash());
+			std::vector<uint256> h = mLedger->peekTransactionMap()->getNeededHashes(1);
+			if (h.empty())
+				mHaveTransactions = true;
 		}
 		catch (SHAMapMissingNode&)
 		{
@@ -119,13 +128,19 @@ bool LedgerAcquire::tryLocal()
 		try
 		{
 			mLedger->peekAccountStateMap()->fetchRoot(mLedger->getAccountHash());
+			std::vector<uint256> h = mLedger->peekAccountStateMap()->getNeededHashes(1);
+			if (h.empty())
+				mHaveState = true;
 		}
 		catch (SHAMapMissingNode&)
 		{
 		}
 	}
 
-	return mHaveTransactions && mHaveState;
+	if (mHaveTransactions && mHaveState)
+		mComplete = true;
+
+	return mComplete;
 }
 
 void LedgerAcquire::onTimer(bool progress)
@@ -192,10 +207,11 @@ void LedgerAcquire::done()
 
 	assert(isComplete() || isFailed());
 
-	mLock.lock();
-	triggers = mOnComplete;
+	{
+		boost::recursive_mutex::scoped_lock sl(mLock);
+		triggers = mOnComplete;
+	}
 	mOnComplete.clear();
-	mLock.unlock();
 
 	if (isComplete() && !isFailed() && mLedger)
 	{
@@ -210,11 +226,13 @@ void LedgerAcquire::done()
 		triggers[i](shared_from_this());
 }
 
-void LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)> trigger)
+bool LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)> trigger)
 {
-	mLock.lock();
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	if (isDone())
+		return false;
 	mOnComplete.push_back(trigger);
-	mLock.unlock();
+	return true;
 }
 
 void LedgerAcquire::trigger(Peer::ref peer)
@@ -404,7 +422,8 @@ void LedgerAcquire::trigger(Peer::ref peer)
 
 	if (mComplete || mFailed)
 	{
-		cLog(lsDEBUG) << "Done:" << (mComplete ? " complete" : "") << (mFailed ? " failed" : "");
+		cLog(lsDEBUG) << "Done:" << (mComplete ? " complete" : "") << (mFailed ? " failed " : " ")
+			<< mLedger->getLedgerSeq();
 		done();
 	}
 }
@@ -645,8 +664,11 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 		return ptr;
 	}
 	ptr = boost::make_shared<LedgerAcquire>(hash);
-	ptr->addPeers();
-	ptr->setTimer(); // Cannot call in constructor
+	if (!ptr->isDone())
+	{
+		ptr->addPeers();
+		ptr->setTimer(); // Cannot call in constructor
+	}
 	return ptr;
 }
 
@@ -800,8 +822,15 @@ void LedgerAcquireMaster::sweep()
 
 int LedgerAcquireMaster::getFetchCount()
 {
-	boost::mutex::scoped_lock sl(mLock);
-	return mLedgers.size();
+	int ret = 0;
+	{
+		typedef std::pair<uint256, LedgerAcquire::pointer> u256_acq_pair;
+		boost::mutex::scoped_lock sl(mLock);
+		BOOST_FOREACH(const u256_acq_pair& it, mLedgers)
+			if (it.second->isActive())
+				++ret;
+	}
+	return ret;
 }
 
 // vim:ts=4

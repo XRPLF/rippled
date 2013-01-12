@@ -50,6 +50,7 @@ public:
 	bool isFailed() const				{ return mFailed; }
 	int getTimeouts() const				{ return mTimeouts; }
 
+	bool isActive();
 	void progress()						{ mProgress = true; }
 	bool isProgress()					{ return mProgress; }
 	void touch()						{ mLastAction = time(NULL); }
@@ -110,7 +111,7 @@ public:
 	void abort()						{ mAborted = true; }
 	bool setAccept()					{ if (mAccept) return false; mAccept = true; return true; }
 
-	void addOnComplete(boost::function<void (LedgerAcquire::pointer)>);
+	bool addOnComplete(boost::function<void (LedgerAcquire::pointer)>);
 
 	bool takeBase(const std::string& data);
 	bool takeTxNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data,

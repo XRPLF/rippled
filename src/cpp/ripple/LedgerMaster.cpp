@@ -156,7 +156,7 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 	resumeAcquiring();
 }
 
-bool LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledgerSeq)
+bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& ledgerHash, uint32 ledgerSeq)
 { // return: false = already gave up recently
 	if (mTooFast)
 		return true;
@@ -189,7 +189,28 @@ bool LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledger
 	}
 	mMissingSeq = ledgerSeq;
 	if (mMissingLedger->setAccept())
-		mMissingLedger->addOnComplete(boost::bind(&LedgerMaster::missingAcquireComplete, this, _1));
+	{
+		if (!mMissingLedger->addOnComplete(boost::bind(&LedgerMaster::missingAcquireComplete, this, _1)))
+			theApp->getIOService().post(boost::bind(&LedgerMaster::missingAcquireComplete, this, mMissingLedger));
+	}
+
+	if (theApp->getMasterLedgerAcquire().getFetchCount() < 5)
+	{
+		int count = 0;
+		typedef std::pair<uint32, uint256> u_pair;
+
+		std::vector<u_pair> vec = origLedger->getLedgerHashes();
+		BOOST_REVERSE_FOREACH(const u_pair& it, vec)
+		{
+			if ((count < 2) && (it.first < ledgerSeq) &&
+				!mCompleteLedgers.hasValue(it.first) && !theApp->getMasterLedgerAcquire().find(it.second))
+			{
+				++count;
+				theApp->getMasterLedgerAcquire().findCreate(it.second);
+			}
+		}
+	}
+
 	return true;
 }
 
@@ -250,7 +271,7 @@ void LedgerMaster::resumeAcquiring()
 		assert(!mCompleteLedgers.hasValue(prevMissing));
 		Ledger::pointer nextLedger = getLedgerBySeq(prevMissing + 1);
 		if (nextLedger)
-			acquireMissingLedger(nextLedger->getParentHash(), nextLedger->getLedgerSeq() - 1);
+			acquireMissingLedger(nextLedger, nextLedger->getParentHash(), nextLedger->getLedgerSeq() - 1);
 		else
 		{
 			mCompleteLedgers.clearValue(prevMissing);
@@ -333,7 +354,7 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 		if (!shouldAcquire(mCurrentLedger->getLedgerSeq(), theConfig.LEDGER_HISTORY, ledger->getLedgerSeq() - 1))
 			return;
 		cLog(lsDEBUG) << "We need the ledger before the ledger we just accepted: " << ledger->getLedgerSeq() - 1;
-		acquireMissingLedger(ledger->getParentHash(), ledger->getLedgerSeq() - 1);
+		acquireMissingLedger(ledger, ledger->getParentHash(), ledger->getLedgerSeq() - 1);
 	}
 	else
 	{
@@ -349,7 +370,7 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 			assert(!mCompleteLedgers.hasValue(prevMissing));
 			Ledger::pointer nextLedger = getLedgerBySeq(prevMissing + 1);
 			if (nextLedger)
-				acquireMissingLedger(nextLedger->getParentHash(), nextLedger->getLedgerSeq() - 1);
+				acquireMissingLedger(ledger, nextLedger->getParentHash(), nextLedger->getLedgerSeq() - 1);
 			else
 			{
 				mCompleteLedgers.clearValue(prevMissing);
