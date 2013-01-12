@@ -40,6 +40,9 @@ int TxnDBCount = NUMBER(TxnDBInit);
 
 // Ledger database holds ledgers and ledger confirmations
 const char *LedgerDBInit[] = {
+	"PRAGMA synchronous=NORMAL;",
+	"PRAGMA journal_mode=WAL;",
+
 	"BEGIN TRANSACTION;",
 
 	"CREATE TABLE Ledgers (							\
