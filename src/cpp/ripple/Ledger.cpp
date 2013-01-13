@@ -378,6 +378,12 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 	assert (getAccountHash() == mAccountStateMap->getHash());
 	assert (getTransHash() == mTransactionMap->getHash());
 
+	// Save the ledger header in the hashed object store
+	Serializer s(128);
+	s.add32(sHP_Ledger);
+	addRaw(s);
+	theApp->getHashedObjectStore().store(hotLEDGER, mLedgerSeq, s.peekData(), mHash);
+
 	{
 		{
 			ScopedLock sl(theApp->getLedgerDB()->getDBLock());
