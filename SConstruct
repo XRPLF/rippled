@@ -75,10 +75,21 @@ else:
 	    ]
     )
 
+# Apparently, only linux uses -ldl
+if not FreeBSD:
+    env.Append(
+	    LIBS = [
+		    'dl', # dynamic linking for linux
+	    ]
+    )
+
+# Apparently, pkg-config --libs protobuf on bsd fails to provide this necessary include dir.
+if FreeBSD:
+    env.Append(LINKFLAGS = ['-I/usr/local/include'])
+
 env.Append(
 	LIBS = [
 		'protobuf',
-		'dl', # dynamic linking
 		'z'
 	]
 )
