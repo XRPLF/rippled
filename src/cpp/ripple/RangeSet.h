@@ -43,8 +43,6 @@ public:
 	void clearRange(uint32, uint32);
 
 
-	void clear()							{ mRanges.clear(); }
-
 	// iterator stuff
 	iterator begin()						{ return mRanges.begin(); }
 	iterator end()							{ return mRanges.end(); }
