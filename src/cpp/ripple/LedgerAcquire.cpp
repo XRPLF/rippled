@@ -216,7 +216,10 @@ void LedgerAcquire::done()
 	if (isComplete() && !isFailed() && mLedger)
 	{
 		if (mAccept)
+		{
+			mLedger->setClosed();
 			mLedger->setAccepted();
+		}
 		theApp->getLedgerMaster().storeLedger(mLedger);
 	}
 	else
