@@ -115,12 +115,10 @@ BOOST_AUTO_TEST_CASE(RangeSet_test)
 
 	RangeSet r1, r2;
 
-	r1.clear();
 	r1.setRange(1,10);
 	r1.clearValue(5);
 	r1.setRange(11, 20);
 
-	r2.clear();
 	r2.setRange(1, 4);
 	r2.setRange(6, 10);
 	r2.setRange(10, 20);
