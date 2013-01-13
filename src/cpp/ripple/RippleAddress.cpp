@@ -758,8 +758,6 @@ bool RippleAddress::setSeedGeneric(const std::string& strText)
 	bool			bResult	= true;
 	uint128			uSeed;
 
-	ALPHABET = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
-
 	if (strText.empty()
 		|| naTemp.setAccountID(strText)
 		|| naTemp.setAccountPublic(strText)
