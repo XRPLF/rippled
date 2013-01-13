@@ -32,4 +32,4 @@ void Contract::executeAccept()
 	//interpreter.interpret(this,code);
 }
 
-
+// vim:ts=4
