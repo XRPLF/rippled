@@ -8,3 +8,5 @@ public:
 	TER checkFee();
 	TER doApply();
 };
+
+// vim:ts=4

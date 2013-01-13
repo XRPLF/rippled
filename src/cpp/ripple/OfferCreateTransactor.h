@@ -19,4 +19,4 @@ public:
 	TER doApply();
 };
 
-
+// vim:ts=4
