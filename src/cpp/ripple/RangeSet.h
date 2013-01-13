@@ -61,9 +61,6 @@ public:
 	static uint32 upper(const_reverse_iterator& it)		{ return it->upper() - 1; }
 
 
-	bool operator!=(const RangeSet& r) const	{ return mRanges != r.mRanges; }
-	bool operator==(const RangeSet& r) const	{ return mRanges == r.mRanges; }
-
 	std::string toString() const;
 };
 

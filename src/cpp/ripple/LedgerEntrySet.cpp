@@ -92,9 +92,7 @@ SLE::pointer LedgerEntrySet::entryCache(LedgerEntryType letType, const uint256& 
 				entryCache(sleEntry);
 		}
 		else if (action == taaDELETE)
-		{
-			assert(false);
-		}
+			sleEntry.reset();
 	}
 	return sleEntry;
 }

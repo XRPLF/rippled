@@ -331,7 +331,6 @@ void LedgerAcquire::trigger(Peer::ref peer)
 		return;
 	}
 
-	assert(mLedger);
 	if (mLedger)
 		tmGL.set_ledgerseq(mLedger->getLedgerSeq());
 
