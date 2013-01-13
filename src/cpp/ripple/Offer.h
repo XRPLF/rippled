@@ -1,6 +1,5 @@
 #include "AccountItems.h"
 
-
 class Offer : public AccountItem
 {
 	RippleAddress mAccount;
@@ -21,3 +20,5 @@ public:
 	int getSeq(){ return(mSeq); }
 
 };
+
+// vim:ts=4

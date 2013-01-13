@@ -4,7 +4,7 @@
 #include <boost/shared_ptr.hpp>
 
 namespace Script {
-class Data  
+class Data
 {
 public:
 	typedef boost::shared_ptr<Data> pointer;
@@ -89,5 +89,6 @@ public:
 
 }
 
-
 #endif
+
+// vim:ts=4

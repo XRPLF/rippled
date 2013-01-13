@@ -50,7 +50,7 @@ public:
 
 	Interpreter();
 
-	// returns a TransactionEngineResult  
+	// returns a TransactionEngineResult
 	TER interpret(Contract* contract,const SerializedTransaction& txn,std::vector<unsigned char>& code);
 
 	void stop();
@@ -67,14 +67,11 @@ public:
 	bool startBlock(int offset);
 	bool endBlock();
 
-	
 	Data::pointer getIntData();
 	Data::pointer getFloatData();
 	Data::pointer getUint160Data();
 	Data::pointer getAcceptData(int index);
 	Data::pointer getContractData(int index);
-
-
 };
 
 }  // end namespace

@@ -305,7 +305,7 @@ public:
 	bool work(Interpreter* interpreter)
 	{
 		Data::pointer index=interpreter->popStack();
-		if(index->isInt32()) 
+		if(index->isInt32())
 		{
 			interpreter->pushStack( interpreter->getContractData(index->getInt()));
 			return(true);
@@ -316,3 +316,5 @@ public:
 };
 
 }
+
+// vim:ts=4
