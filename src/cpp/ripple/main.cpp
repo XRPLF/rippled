@@ -1,6 +1,7 @@
-#include <boost/asio.hpp>
+
 #include <iostream>
 
+#include <boost/asio.hpp>
 #include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
 #include <boost/test/included/unit_test.hpp>
