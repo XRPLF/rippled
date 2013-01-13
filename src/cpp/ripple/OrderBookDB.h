@@ -28,3 +28,5 @@ public:
 	float getPrice(uint160& currencyIn,uint160& currencyOut);
 
 };
+
+// vim:ts=4
