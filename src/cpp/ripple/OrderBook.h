@@ -30,6 +30,6 @@ public:
 
 	// looks through the best offers to see how much it would cost to take the given amount
 	STAmount& getTakePrice(STAmount& takeAmount);
-	
-
 };
+
+// vim:ts=4

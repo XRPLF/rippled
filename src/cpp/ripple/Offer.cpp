@@ -14,3 +14,5 @@ Offer::Offer(SerializedLedgerEntry::pointer ledgerEntry) : AccountItem(ledgerEnt
 	mTakerPays		= mLedgerEntry->getFieldAmount(sfTakerPays);
 	mSeq = mLedgerEntry->getFieldU32(sfSequence);
 }
+
+// vim:ts=4
