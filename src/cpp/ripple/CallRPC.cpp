@@ -270,6 +270,20 @@ Json::Value RPCParser::parseAccountItems(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+// ripple_path_find json
+Json::Value RPCParser::parseRipplePathFind(const Json::Value& jvParams)
+{
+	Json::Value		txJSON;
+	Json::Reader	reader;
+
+	cLog(lsTRACE) << "RPC json:" << jvParams[0u];
+	if (reader.parse(jvParams[0u].asString(), txJSON))
+	{
+		return txJSON;
+	}
+
+	return rpcError(rpcINVALID_PARAMS);
+}
 
 // submit any transaction to the network
 // submit private_key json
@@ -444,7 +458,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"peers",				&RPCParser::parseAsIs,					0,  0	},
 //		{	"profile",				&RPCParser::parseProfile,				1,  9	},
 		{	"random",				&RPCParser::parseAsIs,					0,  0	},
-//		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	   -1, -1	},
+		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	    1,  1	},
 		{	"submit",				&RPCParser::parseSubmit,				2,  2	},
 		{	"server_info",			&RPCParser::parseAsIs,					0,  0	},
 		{	"stop",					&RPCParser::parseAsIs,					0,  0	},

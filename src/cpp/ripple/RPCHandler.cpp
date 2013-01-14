@@ -725,23 +725,23 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 	RippleAddress	raDst;
 	STAmount		saDstAmount;
 
-	if (
-		// Parse raSrc.
-		!jvRequest.isMember("source_account")
-		|| !jvRequest["source_account"].isString()
-		|| !raSrc.setAccountID(jvRequest["source_account"].asString()))
+	if (!jvRequest.isMember("source_account"))
 	{
-		cLog(lsINFO) << "Bad source_account.";
-		jvResult	= rpcError(rpcINVALID_PARAMS);
+		jvResult	= rpcError(rpcSRC_ACT_MISSING);
 	}
-	else if (
-		// Parse raDst.
-		!jvRequest.isMember("destination_account")
-		|| !jvRequest["destination_account"].isString()
-		|| !raDst.setAccountID(jvRequest["destination_account"].asString()))
+	else if (!jvRequest["source_account"].isString()
+				|| !raSrc.setAccountID(jvRequest["source_account"].asString()))
 	{
-		cLog(lsINFO) << "Bad destination_account.";
-		jvResult	= rpcError(rpcINVALID_PARAMS);
+		jvResult	= rpcError(rpcSRC_ACT_MALFORMED);
+	}
+	else if (!jvRequest.isMember("destination_account"))
+	{
+		jvResult	= rpcError(rpcDST_ACT_MISSING);
+	}
+	else if (!jvRequest["destination_account"].isString()
+				|| !raDst.setAccountID(jvRequest["destination_account"].asString()))
+	{
+		jvResult	= rpcError(rpcDST_ACT_MALFORMED);
 	}
 	else if (
 		// Parse saDstAmount.
