@@ -76,14 +76,14 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>BOOST_TEST_ALTERNATIVE_INIT_API;BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\OpenSSL\include;..\boost_1_47_0;..\protobuf-2.4.1\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\OpenSSL\include;..\boost_1_52_0;..\protobuf\src</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>..\OpenSSL\lib\VC;..\boost_1_47_0\stage\lib;..\protobuf-2.4.1\vsprojects\Release</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\OpenSSL\lib\VC;..\boost_1_52_0\stage\lib;..\protobuf\vsprojects\Release</AdditionalLibraryDirectories>
       <AdditionalDependencies>libprotobuf.lib;ssleay32MD.lib;libeay32MD.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -91,7 +91,6 @@
     <ClCompile Include="src\cpp\database\database.cpp" />
     <ClCompile Include="src\cpp\database\sqlite3.c" />
     <ClCompile Include="src\cpp\database\SqliteDatabase.cpp" />
-    <ClCompile Include="src\cpp\database\win\windatabase.cpp" />
     <ClCompile Include="src\cpp\json\json_reader.cpp" />
     <ClCompile Include="src\cpp\json\json_value.cpp" />
     <ClCompile Include="src\cpp\json\json_writer.cpp" />
@@ -158,6 +157,7 @@
     <ClCompile Include="src\cpp\ripple\RPCErr.cpp" />
     <ClCompile Include="src\cpp\ripple\RPCHandler.cpp" />
     <ClCompile Include="src\cpp\ripple\RPCServer.cpp" />
+    <ClCompile Include="src\cpp\ripple\RPCSub.cpp" />
     <ClCompile Include="src\cpp\ripple\ScriptData.cpp" />
     <ClCompile Include="src\cpp\ripple\SerializedLedger.cpp" />
     <ClCompile Include="src\cpp\ripple\SerializedObject.cpp" />
@@ -322,8 +322,10 @@
     <None Include="SConstruct" />
     <CustomBuild Include="src\cpp\ripple\ripple.proto">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">/code/protobuf/protoc -I=..\newcoin --cpp_out=\code\newcoin\  ..\newcoin/src/cpp/ripple/ripple.proto</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"../protobuf/protoc" -I=..\newcoin --cpp_out=..\newcoin\  ..\newcoin/src/cpp/ripple/ripple.proto</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">\code\newcoin\src\ripple.pb.h</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">/code/protobuf/protoc -I=..\newcoin --cpp_out=\code\newcoin\  ..\newcoin/src/cpp/ripple/ripple.proto</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">\code\newcoin\src\ripple.pb.h</Outputs>
     </CustomBuild>
     <None Include="test\buster.js" />
     <None Include="test\server.js" />

@@ -522,9 +522,9 @@ void LedgerAcquire::filterNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<ui
 	std::vector<bool> duplicates;
 	duplicates.reserve(nodeIDs.size());
 
-	int dupCount;
+	int dupCount=0;
 
-	for (int i = 0; i < nodeIDs.size(); ++i)
+	for (unsigned int i = 0; i < nodeIDs.size(); ++i)
 	{
 		bool isDup = recentNodes.count(nodeIDs[i]) != 0;
 		duplicates.push_back(isDup);
@@ -544,7 +544,7 @@ void LedgerAcquire::filterNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<ui
 	else if (dupCount > 0)
 	{ // some, but not all, duplicates
 		int insertPoint = 0;
-		for (int i = 0; i < nodeIDs.size(); ++i)
+		for (unsigned int i = 0; i < nodeIDs.size(); ++i)
 			if (!duplicates[i])
 			{ // Keep this node
 				if (insertPoint != i)
