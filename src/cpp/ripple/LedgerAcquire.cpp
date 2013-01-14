@@ -172,9 +172,17 @@ void LedgerAcquire::addPeers()
 {
 	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 
+	int vSize = peerList.size();
+	if (vSize == 0)
+		return;
+
+	// We traverse the peer list in random order so as not to favor any particular peer
+	int firstPeer = rand() & vSize;
+
 	bool found = false;
-	BOOST_FOREACH(Peer::ref peer, peerList)
+	for (int i = 0; i < vSize; ++i)
 	{
+		Peer::ref peer = peerList[(i + firstPeer) % vSize];
 		if (peer->hasLedger(getHash()))
 		{
 			found = true;
@@ -183,10 +191,8 @@ void LedgerAcquire::addPeers()
 	}
 
 	if (!found)
-	{
-		BOOST_FOREACH(Peer::ref peer, peerList)
-			peerHas(peer);
-	}
+		for (int i = 0; i < vSize; ++i)
+			peerHas(peerList[(i + firstPeer) % vSize]);
 }
 
 boost::weak_ptr<PeerSet> LedgerAcquire::pmDowncast()
