@@ -135,16 +135,17 @@ void LedgerEntrySet::entryCreate(SLE::ref sle)
 		return;
 	}
 
-	assert(it->second.mSeq == mSeq);
-
 	switch (it->second.mAction)
 	{
-		case taaMODIFY:
-			throw std::runtime_error("Create after modify");
 
 		case taaDELETE:
-			throw std::runtime_error("Create after delete"); // We could make this a modify
+			it->second.mEntry = sle;
+			it->second.mAction = taaMODIFY;
+			it->second.mSeq = mSeq;
+			break;
 
+		case taaMODIFY:
+			throw std::runtime_error("Create after modify");
 		case taaCREATE:
 			throw std::runtime_error("Create after create"); // We could make this work
 
@@ -154,6 +155,8 @@ void LedgerEntrySet::entryCreate(SLE::ref sle)
 		default:
 			throw std::runtime_error("Unknown taa");
 	}
+
+	assert(it->second.mSeq == mSeq);
 }
 
 void LedgerEntrySet::entryModify(SLE::ref sle)
@@ -173,6 +176,8 @@ void LedgerEntrySet::entryModify(SLE::ref sle)
 		case taaCACHED:
 			it->second.mAction  = taaMODIFY;
 			fallthru();
+
+		case taaCREATE:
 		case taaMODIFY:
 			it->second.mSeq	    = mSeq;
 			it->second.mEntry   = sle;
@@ -180,11 +185,6 @@ void LedgerEntrySet::entryModify(SLE::ref sle)
 
 		case taaDELETE:
 			throw std::runtime_error("Modify after delete");
-
-		case taaCREATE:
-			it->second.mSeq	    = mSeq;
-			it->second.mEntry   = sle;
-			break;
 
 		default:
 			throw std::runtime_error("Unknown taa");
