@@ -23,6 +23,7 @@ protected:
 	Json::Value parseEvented(const Json::Value& jvParams);
 	Json::Value parseGetCounts(const Json::Value& jvParams);
 	Json::Value parseLedger(const Json::Value& jvParams);
+	Json::Value parseInternal(const Json::Value& jvParams);
 #if ENABLE_INSECURE
 	Json::Value parseLogin(const Json::Value& jvParams);
 #endif

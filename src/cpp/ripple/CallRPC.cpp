@@ -53,7 +53,23 @@ std::string EncodeBase64(const std::string& s)
 
 Json::Value RPCParser::parseAsIs(const Json::Value& jvParams)
 {
-	return Json::Value(Json::objectValue);
+	Json::Value v(Json::objectValue);
+	if (jvParams.isArray() && (jvParams.size() > 0))
+		v["params"] = jvParams;
+	return v;
+}
+
+Json::Value RPCParser::parseInternal(const Json::Value& jvParams)
+{
+	Json::Value v(Json::objectValue);
+	v["internal_command"] = jvParams[0u];
+
+	Json::Value params(Json::arrayValue);
+	for (unsigned i = 1; i < jvParams.size(); ++i)
+		params.append(jvParams[i]);
+	v["params"] = params;
+
+	return v;
 }
 
 // account_info <account>|<nickname>|<account_public_key>
@@ -480,6 +496,8 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"wallet_accounts",		&RPCParser::parseWalletAccounts,	    1,  1	},
 		{	"wallet_propose",		&RPCParser::parseWalletPropose,			0,  1	},
 		{	"wallet_seed",			&RPCParser::parseWalletSeed,			0,  1	},
+
+		{	"internal",				&RPCParser::parseInternal,				1,	-1	},
 
 #if ENABLE_INSECURE
 		// XXX Unnecessary commands which should be removed.
