@@ -31,7 +31,7 @@ class PeerSet
 protected:
 	uint256 mHash;
 	int mTimerInterval, mTimeouts;
-	bool mComplete, mFailed, mProgress;
+	bool mComplete, mFailed, mProgress, mAggressive;
 	time_t mLastAction;
 
 	boost::recursive_mutex					mLock;
@@ -51,7 +51,7 @@ public:
 	int getTimeouts() const				{ return mTimeouts; }
 
 	bool isActive();
-	void progress()						{ mProgress = true; }
+	void progress()						{ mProgress = true; mAggressive = false; }
 	bool isProgress()					{ return mProgress; }
 	void touch()						{ mLastAction = time(NULL); }
 	time_t getLastAction()				{ return mLastAction; }
@@ -129,6 +129,8 @@ public:
 
 	static void filterNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& nodeHashes,
 		std::set<SHAMapNode>& recentNodes, int max, bool aggressive);
+
+	Json::Value getJson(int);
 };
 
 class LedgerAcquireMaster
