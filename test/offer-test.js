@@ -68,7 +68,7 @@ buster.testCase("Offer tests", {
           // console.log("result: error=%s", error);
           buster.refute(error);
 
-          if (error) done();
+          done();
         });
     },
 
@@ -78,6 +78,8 @@ buster.testCase("Offer tests", {
 
       async.waterfall([
         function (callback) {
+          self.what = "Create first offer.";
+
           self.remote.transaction()
             .offer_create("root", "500/BTC/root", "100/USD/root")
               .on('proposed', function (m) {
@@ -85,16 +87,11 @@ buster.testCase("Offer tests", {
 
                   callback(m.result !== 'tesSUCCESS');
                 })
-              .on('final', function (m) {
-                  // console.log("FINAL: offer_create: %s", JSON.stringify(m));
-
-                  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
-
-                  callback();
-                })
               .submit();
         },
         function (callback) {
+          self.what = "Create crossing offer.";
+
           self.remote.transaction()
             .offer_create("root", "100/USD/root", "500/BTC/root")
               .on('proposed', function (m) {
@@ -102,20 +99,12 @@ buster.testCase("Offer tests", {
 
                   callback(m.result !== 'tesSUCCESS');
                 })
-              .on('final', function (m) {
-                  // console.log("FINAL: offer_create: %s", JSON.stringify(m));
-
-                  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
-
-                  callback();
-                })
               .submit();
         }
       ], function (error) {
         // console.log("result: error=%s", error);
-        buster.refute(error);
-
-        if (error) done();
+        buster.refute(error, self.what);
+        done();
       });
     },
 
