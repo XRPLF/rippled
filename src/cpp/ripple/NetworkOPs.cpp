@@ -165,7 +165,7 @@ void NetworkOPs::submitTransaction(Job&, SerializedTransaction::pointer iTrans, 
 
 // Sterilize transaction through serialization.
 // This is fully synchronous and deprecated
-Transaction::pointer NetworkOPs::submitTransactionSync(const Transaction::pointer& tpTrans)
+Transaction::pointer NetworkOPs::submitTransactionSync(const Transaction::pointer& tpTrans, bool bSubmit)
 {
 	Serializer s;
 	tpTrans->getSTransaction()->add(s);
@@ -179,7 +179,8 @@ Transaction::pointer NetworkOPs::submitTransactionSync(const Transaction::pointe
 	}
 	else if (tpTransNew->getSTransaction()->isEquivalent(*tpTrans->getSTransaction()))
 	{
-		(void) NetworkOPs::processTransaction(tpTransNew);
+		if (bSubmit)
+			(void) NetworkOPs::processTransaction(tpTransNew);
 	}
 	else
 	{
