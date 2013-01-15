@@ -355,7 +355,7 @@ bool SHAMapTreeNode::updateHash()
 		if(!empty)
 		{
 			nh = Serializer::getPrefixHash(sHP_InnerNode, reinterpret_cast<unsigned char *>(mHashes), sizeof(mHashes));
-#ifdef DEBUG
+#ifdef PARANOID
 			Serializer s;
 			s.add32(sHP_InnerNode);
 			for(int i = 0; i < 16; ++i)
