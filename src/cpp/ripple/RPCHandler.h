@@ -1,8 +1,17 @@
 #ifndef __RPCHANDLER__
 #define __RPCHANDLER__
 
+#include <boost/unordered_set.hpp>
+
+#include "../json/value.h"
+
+#include "RippleAddress.h"
+#include "SerializedTypes.h"
+#include "Ledger.h"
+
 // used by the RPCServer or WSDoor to carry out these RPC commands
 class NetworkOPs;
+class InfoSub;
 
 class RPCHandler
 {
@@ -47,6 +56,7 @@ class RPCHandler
 	Json::Value doDataStore(Json::Value params);
 #endif
 	Json::Value doGetCounts(Json::Value params);
+	Json::Value doInternal(Json::Value params);
 	Json::Value doLedger(Json::Value params);
 	Json::Value doLogLevel(Json::Value params);
 	Json::Value doLogRotate(Json::Value params);
@@ -106,6 +116,23 @@ public:
 
 	Json::Value doCommand(Json::Value& jvRequest, int role);
 	Json::Value doRpcCommand(const std::string& strCommand, Json::Value& jvParams, int iRole);
+};
+
+class RPCInternalHandler
+{
+public:
+	typedef Json::Value (*handler_t)(const Json::Value&);
+
+protected:
+	static RPCInternalHandler*	sHeadHandler;
+
+	RPCInternalHandler*			mNextHandler;
+	std::string					mName;
+	handler_t					mHandler;
+
+public:
+	RPCInternalHandler(const std::string& name, handler_t handler);
+	static Json::Value runHandler(const std::string& name, const Json::Value& params);
 };
 
 #endif

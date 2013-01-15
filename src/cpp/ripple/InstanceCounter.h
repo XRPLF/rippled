@@ -86,11 +86,13 @@ public:
 class Instance
 {
 protected:
+	static bool running;
 	InstanceType&	mType;
 
 public:
 	Instance(InstanceType& t) : mType(t)	{ mType.addInstance(); }
-	~Instance()								{ mType.decInstance(); }
+	~Instance()								{ if (running) mType.decInstance(); }
+	static void shutdown()					{ running = false; }
 };
 
 #endif

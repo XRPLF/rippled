@@ -42,9 +42,6 @@
     <ClCompile Include="src\cpp\database\SqliteDatabase.cpp">
       <Filter>Source Files\database</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\database\win\windatabase.cpp">
-      <Filter>Source Files\database</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\json\json_reader.cpp">
       <Filter>Source Files\json</Filter>
     </ClCompile>
@@ -361,6 +358,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\RPCSub.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

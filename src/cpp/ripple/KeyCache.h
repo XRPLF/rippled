@@ -17,7 +17,7 @@ protected:
 	const std::string	mName;
 	boost::mutex		mNCLock;
 	map_type			mCache;
-	int					mTargetSize, mTargetAge;
+	unsigned int		mTargetSize, mTargetAge;
 
 public:
 

@@ -1625,7 +1625,7 @@ void UniqueNodeList::nodeBootstrap()
 		cLog(lsINFO) << boost::str(boost::format("Bootstrapping UNL: loading from '%s'.")
 			% theConfig.CONFIG_FILE);
 
-		if (processValidators("local", theConfig.CONFIG_FILE.native(), naInvalid, vsConfig, &theConfig.VALIDATORS))
+		if (processValidators("local", theConfig.CONFIG_FILE.string(), naInvalid, vsConfig, &theConfig.VALIDATORS))
 			bLoaded	= true;
 	}
 

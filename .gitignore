@@ -30,6 +30,10 @@ tmp
 db/*.db
 db/*.db-journal
 
+# Ignore obj files
+Debug/*.*
+Release/*.*
+
 # Ignore customized configs
 rippled.cfg
 validators.txt

@@ -1,10 +1,10 @@
-Name "CoinToss"
+Name "Rippled"
 
 ; The file to write
-OutFile "toss install.exe"
+OutFile "ripple install.exe"
 
 ; The default installation directory
-InstallDir "$PROGRAMFILES\CoinToss"
+InstallDir "$PROGRAMFILES\Rippled"
 
 ; Request application privileges for Windows Vista
 RequestExecutionLevel user
@@ -25,12 +25,12 @@ Section "" ;No components page, name is not important
 	SetOutPath $INSTDIR
   
   	; Put file there
-  	File ..\Release\newcoin.exe
+  	File ..\Release\rippled.exe
 	File ..\*.dll
-	File "start CoinToss.bat"
-	File newcoind.cfg
+	;File "start rippled.bat"
+	File rippled.cfg
 	File validators.txt
-	File /r /x .git ..\..\nc-client\*.*
+	;File /r /x .git ..\..\nc-client\*.*
 	
 	CreateDirectory $INSTDIR\db
 	

@@ -54,6 +54,7 @@ Application::Application() :
 
 extern const char *RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[], *NetNodeDBInit[];
 extern int RpcDBCount, TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount, NetNodeDBCount;
+bool Instance::running = true;
 
 void Application::stop()
 {
@@ -65,6 +66,7 @@ void Application::stop()
 	mAuxService.stop();
 
 	cLog(lsINFO) << "Stopped: " << mIOService.stopped();
+	Instance::shutdown();
 }
 
 static void InitDB(DatabaseCon** dbCon, const char *fileName, const char *dbInit[], int dbCount)

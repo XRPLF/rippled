@@ -2534,6 +2534,13 @@ Json::Value RPCHandler::doRpcCommand(const std::string& strMethod, Json::Value& 
 	return jvResult;
 }
 
+Json::Value RPCHandler::doInternal(Json::Value jvRequest)
+{ // Used for debug or special-purpose RPC commands
+	if (!jvRequest.isMember("internal_command"))
+		return rpcError(rpcINVALID_PARAMS);
+	return RPCInternalHandler::runHandler(jvRequest["internal_command"].asString(), jvRequest["params"]);
+}
+
 Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 {
 	if (!jvRequest.isMember("command"))
@@ -2562,6 +2569,7 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 		{	"account_tx",			&RPCHandler::doAccountTransactions, false,	optNetwork	},
 		{	"connect",				&RPCHandler::doConnect,			    true,	optNone		},
 		{	"get_counts",			&RPCHandler::doGetCounts,		    true,	optNone		},
+		{	"internal",				&RPCHandler::doInternal,			true,	optNone		},
 		{	"ledger",				&RPCHandler::doLedger,			    false,	optNetwork	},
 		{	"ledger_accept",		&RPCHandler::doLedgerAccept,	    true,	optCurrent	},
 		{	"ledger_closed",		&RPCHandler::doLedgerClosed,	    false,	optClosed	},
@@ -2672,6 +2680,31 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 			return rpcError(rpcINTERNAL);
 		}
 	}
+}
+
+RPCInternalHandler* RPCInternalHandler::sHeadHandler = NULL;
+
+RPCInternalHandler::RPCInternalHandler(const std::string& name, handler_t Handler) : mName(name), mHandler(Handler)
+{
+	mNextHandler = sHeadHandler;
+	sHeadHandler = this;
+}
+
+Json::Value RPCInternalHandler::runHandler(const std::string& name, const Json::Value& params)
+{
+	RPCInternalHandler* h = sHeadHandler;
+	while (h != NULL)
+	{
+		if (name == h->mName)
+		{
+			cLog(lsWARNING) << "Internal command " << name << ": " << params;
+			Json::Value ret = h->mHandler(params);
+			cLog(lsWARNING) << "Internal command returns: " << ret;
+			return ret;
+		}
+		h = h->mNextHandler;
+	}
+	return rpcError(rpcBAD_SYNTAX);
 }
 
 // vim:ts=4
