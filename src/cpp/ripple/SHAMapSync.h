@@ -7,6 +7,7 @@
 // Sync filters allow low-level SHAMapSync code to interact correctly with
 // higher-level structures such as caches and transaction stores
 
+// This class is needed on both add and check functions
 class ConsensusTransSetSF : public SHAMapSyncFilter
 { // sync filter for transaction sets during consensus building
 public:
@@ -24,14 +25,14 @@ public:
 	}
 };
 
+// This class is only needed on add functions
 class AccountStateSF : public SHAMapSyncFilter
 { // sync filter for account state nodes during ledger sync
 protected:
-	uint256 mLedgerHash;
 	uint32 mLedgerSeq;
 
 public:
-	AccountStateSF(const uint256& ledgerHash, uint32 ledgerSeq) : mLedgerHash(ledgerHash), mLedgerSeq(ledgerSeq)
+	AccountStateSF(uint32 ledgerSeq) : mLedgerSeq(ledgerSeq)
 	{ ; }
 
 	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
@@ -45,14 +46,14 @@ public:
 	}
 };
 
+// This class is only needed on add functions
 class TransactionStateSF : public SHAMapSyncFilter
 { // sync filter for transactions tree during ledger sync
 protected:
-	uint256 mLedgerHash;
 	uint32 mLedgerSeq;
 
 public:
-	TransactionStateSF(const uint256& ledgerHash, uint32 ledgerSeq) : mLedgerHash(ledgerHash), mLedgerSeq(ledgerSeq)
+	TransactionStateSF(uint32 ledgerSeq) : mLedgerSeq(ledgerSeq)
 	{ ; }
 
 	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
