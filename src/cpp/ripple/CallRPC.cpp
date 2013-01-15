@@ -285,14 +285,28 @@ Json::Value RPCParser::parseRipplePathFind(const Json::Value& jvParams)
 	return rpcError(rpcINVALID_PARAMS);
 }
 
-// submit any transaction to the network
+// sign/submit any transaction to the network
+//
+// sign private_key json
 // submit private_key json
-Json::Value RPCParser::parseSubmit(const Json::Value& jvParams)
+// submit tx_blob
+Json::Value RPCParser::parseSignSubmit(const Json::Value& jvParams)
 {
 	Json::Value		txJSON;
 	Json::Reader	reader;
 
-	if (reader.parse(jvParams[1u].asString(), txJSON))
+	if (1 == jvParams.size())
+	{
+		// Submitting tx_blob
+
+		Json::Value	jvRequest;
+
+		jvRequest["tx_blob"]	= jvParams[0u].asString();
+
+		return jvRequest;
+	}
+	// Submitting tx_json.
+	else if (reader.parse(jvParams[1u].asString(), txJSON))
 	{
 		Json::Value	jvRequest;
 
@@ -459,7 +473,8 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 //		{	"profile",				&RPCParser::parseProfile,				1,  9	},
 		{	"random",				&RPCParser::parseAsIs,					0,  0	},
 		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	    1,  1	},
-		{	"submit",				&RPCParser::parseSubmit,				2,  2	},
+		{	"sign",					&RPCParser::parseSignSubmit,			2,  2	},
+		{	"submit",				&RPCParser::parseSignSubmit,			1,  2	},
 		{	"server_info",			&RPCParser::parseAsIs,					0,  0	},
 		{	"stop",					&RPCParser::parseAsIs,					0,  0	},
 //		{	"transaction_entry",	&RPCParser::parseTransactionEntry,	   -1,  -1	},
