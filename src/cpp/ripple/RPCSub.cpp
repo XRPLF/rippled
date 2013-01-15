@@ -21,6 +21,9 @@ RPCSub::RPCSub(const std::string& strUrl, const std::string& strUsername, const 
     }
 
     mSeq	= 1;
+
+    if (mPort < 0)
+	mPort	= 80;
 }
 
 void RPCSub::sendThread()
@@ -55,9 +58,11 @@ void RPCSub::sendThread()
 	// Send outside of the lock.
 	if (bSend)
 	{
-	    // Drop result.
 	    try
 	    {
+		cLog(lsDEBUG) << boost::str(boost::format("callRPC calling: %s") % mIp);
+
+		// Drop result.
 		(void) callRPC(mIp, mPort, mUsername, mPassword, mPath, "event", jvEvent);
 	    }
 	    catch (const std::exception& e)
@@ -76,8 +81,11 @@ void RPCSub::send(const Json::Value& jvObj)
     {
 	// Drop the previous event.
 
+	cLog(lsDEBUG) << boost::str(boost::format("callRPC drop"));
 	mDeque.pop_back();
     }
+
+    cLog(lsDEBUG) << boost::str(boost::format("callRPC push: %s") % jvObj);
 
     mDeque.push_back(std::make_pair(mSeq++, jvObj));
 
@@ -86,6 +94,7 @@ void RPCSub::send(const Json::Value& jvObj)
 	// Start a sending thread.
 	mSending    = true;
 
+    cLog(lsDEBUG) << boost::str(boost::format("callRPC start"));
 	boost::thread(boost::bind(&RPCSub::sendThread, this)).detach();
     }
 }

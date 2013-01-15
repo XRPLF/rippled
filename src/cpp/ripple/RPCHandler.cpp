@@ -2305,8 +2305,11 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 
 	if (jvRequest.isMember("url"))
 	{
+// Temporarily off.
+#if 0
 		if (mRole != ADMIN)
 			return rpcError(rpcNO_PERMISSION);
+#endif
 
 		std::string	strUrl		= jvRequest["url"].asString();
 		std::string	strUsername	= jvRequest.isMember("username") ? jvRequest["username"].asString() : "";
