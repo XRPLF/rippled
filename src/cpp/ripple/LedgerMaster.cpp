@@ -194,7 +194,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 			theApp->getIOService().post(boost::bind(&LedgerMaster::missingAcquireComplete, this, mMissingLedger));
 	}
 
-	if (theApp->getMasterLedgerAcquire().getFetchCount() < 3)
+	if (theApp->getMasterLedgerAcquire().getFetchCount() < 4)
 	{
 		int count = 0;
 		typedef std::pair<uint32, uint256> u_pair;
@@ -202,7 +202,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 		std::vector<u_pair> vec = origLedger->getLedgerHashes();
 		BOOST_REVERSE_FOREACH(const u_pair& it, vec)
 		{
-			if ((count < 2) && (it.first < ledgerSeq) &&
+			if ((count < 3) && (it.first < ledgerSeq) &&
 				!mCompleteLedgers.hasValue(it.first) && !theApp->getMasterLedgerAcquire().find(it.second))
 			{
 				++count;
