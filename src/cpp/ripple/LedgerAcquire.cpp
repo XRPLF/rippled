@@ -97,24 +97,21 @@ bool LedgerAcquire::tryLocal()
 	{
 		mLedger = theApp->getLedgerMaster().getLedgerByHash(mHash);
 		if (!mLedger)
-		{
-			cLog(lsDEBUG) << "root ledger node not local";
 			return false;
-		}
 	}
 	else
-	{
 		mLedger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
-	}
+
 	if (mLedger->getHash() != mHash)
 	{ // We know for a fact the ledger can never be acquired
 		cLog(lsWARNING) << mHash << " cannot be a ledger";
 		mFailed = true;
 		return true;
 	}
+
 	mHaveBase = true;
 
-	if (!mLedger->getTransHash())
+	if (mLedger->getTransHash().isZero())
 	{
 		cLog(lsDEBUG) << "No TXNs to fetch";
 		mHaveTransactions = true;
@@ -137,7 +134,7 @@ bool LedgerAcquire::tryLocal()
 		}
 	}
 
-	if (!mLedger->getAccountHash())
+	if (mLedger->getAccountHash().isZero())
 		mHaveState = true;
 	else
 	{
@@ -230,18 +227,18 @@ void LedgerAcquire::done()
 		return;
 	mSignaled = true;
 	touch();
+
 #ifdef LA_DEBUG
 	cLog(lsTRACE) << "Done acquiring ledger " << mHash;
 #endif
-	std::vector< boost::function<void (LedgerAcquire::pointer)> > triggers;
 
 	assert(isComplete() || isFailed());
 
+	std::vector< boost::function<void (LedgerAcquire::pointer)> > triggers;
 	{
 		boost::recursive_mutex::scoped_lock sl(mLock);
-		triggers = mOnComplete;
+		triggers.swap(mOnComplete);
 	}
-	mOnComplete.clear();
 
 	if (isComplete() && !isFailed() && mLedger)
 	{
@@ -384,8 +381,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 			std::vector<uint256> nodeHashes;
 			nodeIDs.reserve(256);
 			nodeHashes.reserve(256);
-			TransactionStateSF tFilter(mLedger->getHash(), mLedger->getLedgerSeq());
-			mLedger->peekTransactionMap()->getMissingNodes(nodeIDs, nodeHashes, 256, &tFilter);
+			mLedger->peekTransactionMap()->getMissingNodes(nodeIDs, nodeHashes, 256, NULL);
 			if (nodeIDs.empty())
 			{
 				if (!mLedger->peekTransactionMap()->isValid())
@@ -432,8 +428,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 			std::vector<uint256> nodeHashes;
 			nodeIDs.reserve(256);
 			nodeHashes.reserve(256);
-			AccountStateSF aFilter(mLedger->getHash(), mLedger->getLedgerSeq());
-			mLedger->peekAccountStateMap()->getMissingNodes(nodeIDs, nodeHashes, 256, &aFilter);
+			mLedger->peekAccountStateMap()->getMissingNodes(nodeIDs, nodeHashes, 256, NULL);
 			if (nodeIDs.empty())
 			{
 				if (!mLedger->peekAccountStateMap()->isValid())
@@ -606,10 +601,12 @@ bool LedgerAcquire::takeBase(const std::string& data) // data must not have hash
 bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 	const std::list< std::vector<unsigned char> >& data, SMAddNode& san)
 {
-	if (!mHaveBase) return false;
+	if (!mHaveBase)
+		return false;
+
 	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
 	std::list< std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
-	TransactionStateSF tFilter(mLedger->getHash(), mLedger->getLedgerSeq());
+	TransactionStateSF tFilter(mLedger->getLedgerSeq());
 	while (nodeIDit != nodeIDs.end())
 	{
 		if (nodeIDit->isRoot())
@@ -653,7 +650,7 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 
 	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
 	std::list< std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
-	AccountStateSF tFilter(mLedger->getHash(), mLedger->getLedgerSeq());
+	AccountStateSF tFilter(mLedger->getLedgerSeq());
 	while (nodeIDit != nodeIDs.end())
 	{
 		if (nodeIDit->isRoot())
@@ -690,7 +687,7 @@ bool LedgerAcquire::takeAsRootNode(const std::vector<unsigned char>& data, SMAdd
 {
 	if (!mHaveBase)
 		return false;
-	AccountStateSF tFilter(mLedger->getHash(), mLedger->getLedgerSeq());
+	AccountStateSF tFilter(mLedger->getLedgerSeq());
 	return san.combine(
 		mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), data, snfWIRE, &tFilter));
 }
@@ -699,7 +696,7 @@ bool LedgerAcquire::takeTxRootNode(const std::vector<unsigned char>& data, SMAdd
 {
 	if (!mHaveBase)
 		return false;
-	TransactionStateSF tFilter(mLedger->getHash(), mLedger->getLedgerSeq());
+	TransactionStateSF tFilter(mLedger->getLedgerSeq());
 	return san.combine(
 		mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), data, snfWIRE, &tFilter));
 }
@@ -847,7 +844,8 @@ SMAddNode LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer:
 		{
 			cLog(lsWARNING) << "Included TXbase invalid";
 		}
-		ledger->trigger(peer);
+		if (!san.isInvalid())
+			ledger->trigger(peer);
 		return san;
 	}
 
