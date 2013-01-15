@@ -33,10 +33,12 @@ public:
 	void			handleConnect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it);
 
 private:
+	bool			mInbound;			// Connection is inbound
 	bool			mClientConnect;		// In process of connecting as client.
 	bool			mHelloed;			// True, if hello accepted.
 	bool			mDetaching;			// True, if detaching.
 	bool 			mActive;
+	bool			mCluster;			// Node in our cluster
 	RippleAddress	mNodePublic;		// Node public key of peer.
 	ipPort			mIpPort;
 	ipPort			mIpPortConnect;
@@ -65,7 +67,7 @@ protected:
 	ripple::TMStatusChange mLastStatus;
 	ripple::TMHello mHello;
 
-	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 peerId);
+	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 peerId, bool inbound);
 
 	void handleShutdown(const boost::system::error_code& error) { ; }
 	void handleWrite(const boost::system::error_code& error, size_t bytes_transferred);
@@ -117,9 +119,9 @@ public:
 
 	void setIpPort(const std::string& strIP, int iPort);
 
-	static pointer create(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 id)
+	static pointer create(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 id, bool inbound)
 	{
-		return pointer(new Peer(io_service, ctx, id));
+		return pointer(new Peer(io_service, ctx, id, inbound));
 	}
 
 	boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::lowest_layer_type& getSocket()
@@ -144,6 +146,8 @@ public:
 
 	Json::Value getJson();
 	bool isConnected() const				{ return mHelloed && !mDetaching; }
+	bool isInbound() const					{ return mInbound; }
+	bool isOutbound() const					{ return !mInbound; }
 
 	uint256 getClosedLedgerHash() const		{ return mClosedLedgerHash; }
 	bool hasLedger(const uint256& hash) const;

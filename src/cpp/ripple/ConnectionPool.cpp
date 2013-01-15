@@ -312,8 +312,8 @@ Peer::pointer ConnectionPool::peerConnect(const std::string& strIp, int iPort)
 
 		if ((it = mIpMap.find(pipPeer)) == mIpMap.end())
 		{
-			Peer::pointer	ppNew(Peer::create(theApp->getIOService(),
-				theApp->getPeerDoor().getSSLContext(), ++mLastPeer));
+			Peer::pointer	ppNew(Peer::create(theApp->getIOService(), theApp->getPeerDoor().getSSLContext(),
+				++mLastPeer, false));
 
 			// Did not find it.  Not already connecting or connected.
 			ppNew->connect(strIp, iPort);

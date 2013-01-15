@@ -24,10 +24,12 @@ DECLARE_INSTANCE(Peer);
 // Node has this long to verify its identity from connection accepted or connection attempt.
 #define NODE_VERIFY_SECONDS		15
 
-Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 peerID) :
+Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 peerID, bool inbound) :
+	mInbound(inbound),
 	mHelloed(false),
 	mDetaching(false),
 	mActive(true),
+	mCluster(false),
 	mPeerId(peerID),
 	mSocketSsl(io_service, ctx),
 	mActivityTimer(io_service)
@@ -684,6 +686,13 @@ void Peer::recvHello(ripple::TMHello& packet)
 			<< "Peer speaks version " <<
 				(packet.protoversion() >> 16) << "." << (packet.protoversion() & 0xFF);
 		mHello = packet;
+		if (theApp->getUNL().nodeInCluster(mNodePublic))
+		{
+			mCluster = true;
+			mLoad.setPrivileged();
+		}
+		if (isOutbound())
+			mLoad.setOutbound();
 
 		if (mClientConnect)
 		{
