@@ -21,6 +21,7 @@ class RPCHandler
 	// Utilities
 	void addSubmitPath(Json::Value& txJSON);
 	boost::unordered_set<RippleAddress> parseAccountIds(const Json::Value& jvArray);
+	Json::Value transactionSign(Json::Value jvRequest, bool bSubmit);
 
 	Json::Value lookupLedger(Json::Value jvRequest, Ledger::pointer& lpLedger);
 
@@ -59,6 +60,7 @@ class RPCHandler
 	Json::Value doSessionClose(Json::Value params);
 	Json::Value doSessionOpen(Json::Value params);
 	Json::Value doStop(Json::Value params);
+	Json::Value doSign(Json::Value params);
 	Json::Value doSubmit(Json::Value params);
 	Json::Value doTx(Json::Value params);
 	Json::Value doTxHistory(Json::Value params);

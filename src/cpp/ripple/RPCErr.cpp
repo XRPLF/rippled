@@ -18,6 +18,7 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 		{ rpcACT_EXISTS,			"actExists",		"Account already exists."								},
 		{ rpcACT_MALFORMED,			"actMalformed",		"Account malformed."									},
 		{ rpcACT_NOT_FOUND,			"actNotFound",		"Account not found."									},
+		{ rpcBAD_BLOB,				"badBlob",			"Blob must be a non-empty hex string."					},
 		{ rpcBAD_SEED,				"badSeed",			"Disallowed seed."										},
 		{ rpcBAD_SYNTAX,			"badSyntax",		"Syntax error."											},
 		{ rpcDST_ACT_MALFORMED,		"dstActMalformed",	"Destination account is malformed."						},
