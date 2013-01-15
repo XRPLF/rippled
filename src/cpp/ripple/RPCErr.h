@@ -43,6 +43,7 @@ enum {
 	// Bad parameter
 	rpcACT_MALFORMED,
 	rpcQUALITY_MALFORMED,
+	rpcBAD_BLOB,
 	rpcBAD_SEED,
 	rpcDST_ACT_MALFORMED,
 	rpcDST_ACT_MISSING,

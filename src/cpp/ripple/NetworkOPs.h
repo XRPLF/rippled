@@ -160,7 +160,7 @@ public:
 	//
 	typedef boost::function<void (Transaction::pointer, TER)> stCallback; // must complete immediately
 	void submitTransaction(Job&, SerializedTransaction::pointer, stCallback callback = stCallback());
-	Transaction::pointer submitTransactionSync(const Transaction::pointer& tpTrans);
+	Transaction::pointer submitTransactionSync(const Transaction::pointer& tpTrans, bool bSubmit=true);
 
 	void runTransactionQueue();
 	Transaction::pointer processTransaction(Transaction::pointer, stCallback);

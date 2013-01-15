@@ -165,7 +165,7 @@ void NetworkOPs::submitTransaction(Job&, SerializedTransaction::pointer iTrans, 
 
 // Sterilize transaction through serialization.
 // This is fully synchronous and deprecated
-Transaction::pointer NetworkOPs::submitTransactionSync(const Transaction::pointer& tpTrans)
+Transaction::pointer NetworkOPs::submitTransactionSync(const Transaction::pointer& tpTrans, bool bSubmit)
 {
 	Serializer s;
 	tpTrans->getSTransaction()->add(s);
@@ -179,7 +179,8 @@ Transaction::pointer NetworkOPs::submitTransactionSync(const Transaction::pointe
 	}
 	else if (tpTransNew->getSTransaction()->isEquivalent(*tpTrans->getSTransaction()))
 	{
-		(void) NetworkOPs::processTransaction(tpTransNew);
+		if (bSubmit)
+			(void) NetworkOPs::processTransaction(tpTransNew);
 	}
 	else
 	{
@@ -1127,7 +1128,17 @@ Json::Value NetworkOPs::getServerInfo()
 	if (mConsensus)
 		info["consensus"] = mConsensus->getJson();
 
-	info["load"] = theApp->getJobQueue().getJson();
+	info["load"]			= theApp->getJobQueue().getJson();
+	info["load_base"]		= theApp->getFeeTrack().getLoadBase();
+	info["load_fee"]		= theApp->getFeeTrack().getLoadFactor();
+
+	Ledger::pointer lpClosed	= getClosedLedger();
+
+	if (lpClosed)
+	{
+		info["reserve_base"]	= Json::UInt(lpClosed->getReserve(0));
+		info["reserve_inc"]		= Json::UInt(lpClosed->getReserveInc());
+	}
 
 	return info;
 }
@@ -1468,15 +1479,16 @@ void NetworkOPs::unsubAccountChanges(InfoSub* ispListener)
 // <-- bool: true=added, false=already there
 bool NetworkOPs::subLedger(InfoSub* ispListener, Json::Value& jvResult)
 {
-	Ledger::pointer closedLgr	= getClosedLedger();
-	jvResult["ledger_index"]	= closedLgr->getLedgerSeq();
-	jvResult["ledger_hash"]		= closedLgr->getHash().ToString();
-	jvResult["ledger_time"]		= Json::Value::UInt(utFromSeconds(closedLgr->getCloseTimeNC()));
+	Ledger::pointer lpClosed	= getClosedLedger();
 
-	jvResult["fee_ref"]			= Json::UInt(closedLgr->getReferenceFeeUnits());
-	jvResult["fee_base"]		= Json::UInt(closedLgr->getBaseFee());
-	jvResult["reserve_base"]	= Json::UInt(closedLgr->getReserve(0));
-	jvResult["reserve_inc"]		= Json::UInt(closedLgr->getReserveInc());
+	jvResult["ledger_index"]	= lpClosed->getLedgerSeq();
+	jvResult["ledger_hash"]		= lpClosed->getHash().ToString();
+	jvResult["ledger_time"]		= Json::Value::UInt(utFromSeconds(lpClosed->getCloseTimeNC()));
+
+	jvResult["fee_ref"]			= Json::UInt(lpClosed->getReferenceFeeUnits());
+	jvResult["fee_base"]		= Json::UInt(lpClosed->getBaseFee());
+	jvResult["reserve_base"]	= Json::UInt(lpClosed->getReserve(0));
+	jvResult["reserve_inc"]		= Json::UInt(lpClosed->getReserveInc());
 
 	return mSubLedger.insert(ispListener).second;
 }
