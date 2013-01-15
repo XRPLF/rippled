@@ -198,7 +198,7 @@ bool isZero(Iterator first, int iSize)
 }
 
 int charUnHex(char cDigit);
-void strUnHex(std::string& strDst, const std::string& strSrc);
+int strUnHex(std::string& strDst, const std::string& strSrc);
 
 uint64_t uintFromHex(const std::string& strSrc);
 

@@ -75,14 +75,48 @@ int charUnHex(char cDigit)
 				: -1;
 }
 
-void strUnHex(std::string& strDst, const std::string& strSrc)
+int strUnHex(std::string& strDst, const std::string& strSrc)
 {
-	int	iBytes	= strSrc.size()/2;
+	int	iBytes	= (strSrc.size()+1)/2;
 
 	strDst.resize(iBytes);
 
-	for (int i=0; i != iBytes; i++)
-		strDst[i]	= (charUnHex(strSrc[i*2]) << 4) | charUnHex(strSrc[i*2+1]);
+	const char*	pSrc	= &strSrc[0];
+	char*		pDst	= &strDst[0];
+
+	if (strSrc.size() & 1)
+	{
+		int		c	= charUnHex(*pSrc++);
+
+		if (c < 0)
+		{
+			iBytes	= -1;
+		}
+		else
+		{
+			*pDst++	= c;
+		}
+	}
+
+	for (int i=0; iBytes >= 0 && i != iBytes; i++)
+	{
+		int		cHigh	= charUnHex(*pSrc++);
+		int		cLow	= charUnHex(*pSrc++);
+
+		if (cHigh < 0 || cLow < 0)
+		{
+			iBytes	= -1;
+		}
+		else
+		{
+			strDst[i]	= (cHigh << 4) | cLow;
+		}
+	}
+
+	if (iBytes < 0)
+		strDst.clear();
+
+	return iBytes;
 }
 
 std::vector<unsigned char> strUnHex(const std::string& strSrc)
