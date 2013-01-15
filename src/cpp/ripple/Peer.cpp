@@ -1779,6 +1779,10 @@ Json::Value Peer::getJson()
 	//ret["port"]			= mIpPortConnect.second;
 	ret["port"]			= mIpPort.second;
 
+	if (mInbound)
+		ret["inbound"]		= true;
+	if (mCluster)
+		ret["cluster"]		= true;
 	if (mHello.has_fullversion())
 		ret["version"] = mHello.fullversion();
 
