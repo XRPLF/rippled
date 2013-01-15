@@ -21,6 +21,9 @@ RPCSub::RPCSub(const std::string& strUrl, const std::string& strUsername, const 
     }
 
     mSeq	= 1;
+
+    if (mPort < 0)
+	mPort	= 80;
 }
 
 void RPCSub::sendThread()
