@@ -193,15 +193,13 @@ SMAddNode SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, SHANod
 		return SMAddNode::okay();
 	}
 
-	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, format, uint256());
+	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, mSeq, format, uint256());
 	if (!node)
 		return SMAddNode::invalid();
 
 #ifdef DEBUG
 	node->dump();
 #endif
-
-	returnNode(root, true);
 
 	root = node;
 	mTNByID[*root] = root;
@@ -233,11 +231,10 @@ SMAddNode SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned ch
 		return SMAddNode::okay();
 	}
 
-	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, format, uint256());
+	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, mSeq, format, uint256());
 	if (!node || node->getNodeHash() != hash)
 		return SMAddNode::invalid();
 
-	returnNode(root, true);
 	root = node;
 	mTNByID[*root] = root;
 	if (root->getNodeHash().isZero())
@@ -305,7 +302,7 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigne
 		return SMAddNode::invalid();
 	}
 	uint256 hash = iNode->getChildHash(branch);
-	if (!hash)
+	if (hash.isZero())
 	{
 		cLog(lsWARNING) << "AddKnownNode for empty branch";
 		return SMAddNode::invalid();
@@ -351,6 +348,7 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigne
 
 	if (root->isFullBelow())
 		clearSynching();
+
 	return SMAddNode::useful();
 }
 
