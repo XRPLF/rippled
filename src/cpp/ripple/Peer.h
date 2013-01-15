@@ -154,7 +154,7 @@ public:
 	bool hasTxSet(const uint256& hash) const;
 	uint64 getPeerId() const				{ return mPeerId; }
 
-	RippleAddress getNodePublic() const	{ return mNodePublic; }
+	const RippleAddress& getNodePublic() const	{ return mNodePublic; }
 	void cycleStatus() { mPreviousLedgerHash = mClosedLedgerHash; mClosedLedgerHash.zero(); }
 };
 
