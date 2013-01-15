@@ -1102,42 +1102,49 @@ Json::Value NetworkOPs::getServerInfo()
 
 	switch (mMode)
 	{
-		case omDISCONNECTED: info["serverState"] = "disconnected"; break;
-		case omCONNECTED: info["serverState"] = "connected"; break;
-		case omTRACKING: info["serverState"] = "tracking"; break;
-		case omFULL: info["serverState"] = "validating"; break;
-		default: info["serverState"] = "unknown";
+		case omDISCONNECTED: info["server_state"] = "disconnected"; break;
+		case omCONNECTED: info["server_state"] = "connected"; break;
+		case omTRACKING: info["server_state"] = "tracking"; break;
+		case omFULL: info["server_state"] = "validating"; break;
+		default: info["server_state"] = "unknown";
 	}
-
-	if (!theConfig.VALIDATION_PUB.isValid())
-		info["serverState"] = "none";
-	else
-		info["validationPKey"] = theConfig.VALIDATION_PUB.humanNodePublic();
-
 	if (mNeedNetworkLedger)
-		info["networkLedger"] = "waiting";
+		info["network_ledger"] = "waiting";
 
-	info["completeLedgers"] = theApp->getLedgerMaster().getCompleteLedgers();
+	if (theConfig.VALIDATION_PUB.isValid())
+		info["pubkey_validator"] = theConfig.VALIDATION_PUB.humanNodePublic();
+	info["pubkey_node"] = theApp->getWallet().getNodePublic().humanNodePublic();
+
+
+	info["complete_ledgers"] = theApp->getLedgerMaster().getCompleteLedgers();
 	info["peers"] = theApp->getConnectionPool().getPeerCount();
 
 	Json::Value lastClose = Json::objectValue;
 	lastClose["proposers"] = theApp->getOPs().getPreviousProposers();
-	lastClose["convergeTime"] = theApp->getOPs().getPreviousConvergeTime();
-	info["lastClose"] = lastClose;
+	lastClose["converge_time"] = static_cast<double>(theApp->getOPs().getPreviousConvergeTime()) / 1000.0;
+	info["last_close"] = lastClose;
 
-	if (mConsensus)
-		info["consensus"] = mConsensus->getJson();
+//	if (mConsensus)
+//		info["consensus"] = mConsensus->getJson();
 
-	info["load"]			= theApp->getJobQueue().getJson();
-	info["load_base"]		= theApp->getFeeTrack().getLoadBase();
-	info["load_fee"]		= theApp->getFeeTrack().getLoadFactor();
+	info["load"] = theApp->getJobQueue().getJson();
+	info["load_factor"] =
+		static_cast<double>(theApp->getFeeTrack().getLoadBase()) / theApp->getFeeTrack().getLoadFactor();
 
 	Ledger::pointer lpClosed	= getClosedLedger();
-
 	if (lpClosed)
 	{
-		info["reserve_base"]	= Json::UInt(lpClosed->getReserve(0));
-		info["reserve_inc"]		= Json::UInt(lpClosed->getReserveInc());
+		uint64 baseFee = lpClosed->getBaseFee();
+		uint64 baseRef = lpClosed->getReferenceFeeUnits();
+		Json::Value l(Json::objectValue);
+		l["seq"]			= Json::UInt(lpClosed->getLedgerSeq());
+		l["hash"]			= lpClosed->getHash().GetHex();
+		l["base_fee"]		= static_cast<double>(Json::UInt(baseFee)) / SYSTEM_CURRENCY_PARTS;
+		l["reserve_base"]	=
+			static_cast<double>(Json::UInt(lpClosed->getReserve(0) * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
+		l["reserve_inc"]	=
+			static_cast<double>(Json::UInt(lpClosed->getReserveInc() * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
+		info["closed_ledger"] = l;
 	}
 
 	return info;
