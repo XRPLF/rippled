@@ -91,7 +91,7 @@ void RPCSub::send(const Json::Value& jvObj)
 	// Start a sending thread.
 	mSending    = true;
 
-    cLog(lsDEBUG) << boost::str(boost::format("callRPC start");
+    cLog(lsDEBUG) << boost::str(boost::format("callRPC start"));
 	boost::thread(boost::bind(&RPCSub::sendThread, this)).detach();
     }
 }
