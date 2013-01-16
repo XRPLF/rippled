@@ -128,6 +128,7 @@ TER LedgerMaster::doTransaction(const SerializedTransaction& txn, TransactionEng
 
 bool LedgerMaster::haveLedgerRange(uint32 from, uint32 to)
 {
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	uint32 prevMissing = mCompleteLedgers.prevMissing(to + 1);
 	return (prevMissing == RangeSet::RangeSetAbsent) || (prevMissing < from);
 }
