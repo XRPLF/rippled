@@ -28,7 +28,7 @@ tmp
 
 # Ignore database directory.
 db/*.db
-db/*.db-journal
+db/*.db-*
 
 # Ignore obj files
 Debug/*.*
