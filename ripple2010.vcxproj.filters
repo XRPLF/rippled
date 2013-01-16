@@ -39,9 +39,6 @@
     <ClCompile Include="src\cpp\database\SqliteDatabase.cpp">
       <Filter>Source Files\database</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\database\win\windatabase.cpp">
-      <Filter>Source Files\database</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\json\json_reader.cpp">
       <Filter>Source Files\json</Filter>
     </ClCompile>
@@ -189,9 +186,6 @@
     <ClCompile Include="src\cpp\ripple\RippleCalc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\RippleLines.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\RippleState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -279,9 +273,6 @@
     <ClCompile Include="src\cpp\ripple\Wallet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\WSConnection.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\WSDoor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -352,6 +343,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCErr.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\AccountItems.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\Offer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\RPCSub.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
