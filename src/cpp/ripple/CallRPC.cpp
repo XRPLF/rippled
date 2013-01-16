@@ -492,6 +492,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"sign",					&RPCParser::parseSignSubmit,			2,  2	},
 		{	"submit",				&RPCParser::parseSignSubmit,			1,  2	},
 		{	"server_info",			&RPCParser::parseAsIs,					0,  0	},
+		{	"server_state",			&RPCParser::parseAsIs,					0,	0	},
 		{	"stop",					&RPCParser::parseAsIs,					0,  0	},
 //		{	"transaction_entry",	&RPCParser::parseTransactionEntry,	   -1,  -1	},
 		{	"tx",					&RPCParser::parseTx,					1,  1	},

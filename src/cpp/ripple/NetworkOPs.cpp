@@ -1093,7 +1093,7 @@ bool NetworkOPs::recvValidation(const SerializedValidation::pointer& val)
 	return theApp->getValidations().addValidation(val);
 }
 
-Json::Value NetworkOPs::getServerInfo(bool admin)
+Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 {
 	Json::Value info = Json::objectValue;
 
@@ -1126,29 +1126,58 @@ Json::Value NetworkOPs::getServerInfo(bool admin)
 
 	Json::Value lastClose = Json::objectValue;
 	lastClose["proposers"] = theApp->getOPs().getPreviousProposers();
-	lastClose["converge_time"] = static_cast<double>(theApp->getOPs().getPreviousConvergeTime()) / 1000.0;
+	if (human)
+		lastClose["converge_time_s"] = static_cast<double>(theApp->getOPs().getPreviousConvergeTime()) / 1000.0;
+	else
+		lastClose["converge_time"] = Json::Int(theApp->getOPs().getPreviousConvergeTime());
 	info["last_close"] = lastClose;
 
 //	if (mConsensus)
 //		info["consensus"] = mConsensus->getJson();
 
-	info["load"] = theApp->getJobQueue().getJson();
-	info["load_factor"] =
-		static_cast<double>(theApp->getFeeTrack().getLoadBase()) / theApp->getFeeTrack().getLoadFactor();
+	if (admin)
+		info["load"] = theApp->getJobQueue().getJson();
 
-	Ledger::pointer lpClosed	= getClosedLedger();
+	if (!human)
+	{
+		info["load_base"] = theApp->getFeeTrack().getLoadBase();
+		info["load_factor"] = theApp->getFeeTrack().getLoadFactor();
+	}
+	else
+		info["load_factor"] =
+			static_cast<double>(theApp->getFeeTrack().getLoadBase()) / theApp->getFeeTrack().getLoadFactor();
+
+	bool valid = false;
+	Ledger::pointer lpClosed	= getValidatedLedger();
+	if (lpClosed)
+		valid = true;
+	else
+		lpClosed				= getClosedLedger();
+
 	if (lpClosed)
 	{
 		uint64 baseFee = lpClosed->getBaseFee();
 		uint64 baseRef = lpClosed->getReferenceFeeUnits();
 		Json::Value l(Json::objectValue);
-		l["seq"]			= Json::UInt(lpClosed->getLedgerSeq());
-		l["hash"]			= lpClosed->getHash().GetHex();
-		l["base_fee"]		= static_cast<double>(Json::UInt(baseFee)) / SYSTEM_CURRENCY_PARTS;
-		l["reserve_base"]	=
-			static_cast<double>(Json::UInt(lpClosed->getReserve(0) * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
-		l["reserve_inc"]	=
-			static_cast<double>(Json::UInt(lpClosed->getReserveInc() * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
+		l["seq"]				= Json::UInt(lpClosed->getLedgerSeq());
+		l["hash"]				= lpClosed->getHash().GetHex();
+		l["validated"]			= valid;
+		if (!human)
+		{
+			l["base_fee"]		= Json::Value::UInt(baseFee);
+			l["reserve_base"]	= Json::Value::UInt(lpClosed->getReserve(0));
+			l["reserve_inc"]	= Json::Value::UInt(lpClosed->getReserveInc());
+			l["close_time"]		= Json::Value::UInt(lpClosed->getCloseTimeNC());
+		}
+		else
+		{
+			l["base_fee_xrp"]		= static_cast<double>(Json::UInt(baseFee)) / SYSTEM_CURRENCY_PARTS;
+			l["reserve_base_xrp"]	=
+				static_cast<double>(Json::UInt(lpClosed->getReserve(0) * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
+			l["reserve_inc_xrp"]	=
+				static_cast<double>(Json::UInt(lpClosed->getReserveInc() * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
+			l["age"]			= static_cast<int>(lpClosed->getCloseTimeNC()) - getCloseTimeNC();
+		}
 		info["closed_ledger"] = l;
 	}
 
