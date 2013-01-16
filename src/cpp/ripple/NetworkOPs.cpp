@@ -1176,7 +1176,7 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 				static_cast<double>(Json::UInt(lpClosed->getReserve(0) * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
 			l["reserve_inc_xrp"]	=
 				static_cast<double>(Json::UInt(lpClosed->getReserveInc() * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
-			l["age"]			= static_cast<int>(lpClosed->getCloseTimeNC()) - getCloseTimeNC();
+			l["age"]			= Json::UInt(getCloseTimeNC() - lpClosed->getCloseTimeNC());
 		}
 		info["closed_ledger"] = l;
 	}
