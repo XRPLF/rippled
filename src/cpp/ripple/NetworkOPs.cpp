@@ -1008,7 +1008,7 @@ void NetworkOPs::pubServer()
 		jvObj["type"]			= "serverStatus";
 		jvObj["server_status"]	= strOperatingMode();
 		jvObj["load_base"]		= theApp->getFeeTrack().getLoadBase();
-		jvObj["load_fee"]		= theApp->getFeeTrack().getLoadFactor();
+		jvObj["load_factor"]	= theApp->getFeeTrack().getLoadFactor();
 
 		BOOST_FOREACH(InfoSub* ispListener, mSubServer)
 		{
@@ -1093,7 +1093,7 @@ bool NetworkOPs::recvValidation(const SerializedValidation::pointer& val)
 	return theApp->getValidations().addValidation(val);
 }
 
-Json::Value NetworkOPs::getServerInfo()
+Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 {
 	Json::Value info = Json::objectValue;
 
@@ -1111,8 +1111,13 @@ Json::Value NetworkOPs::getServerInfo()
 	if (mNeedNetworkLedger)
 		info["network_ledger"] = "waiting";
 
-	if (theConfig.VALIDATION_PUB.isValid())
-		info["pubkey_validator"] = theConfig.VALIDATION_PUB.humanNodePublic();
+	if (admin)
+	{
+		if (theConfig.VALIDATION_PUB.isValid())
+			info["pubkey_validator"] = theConfig.VALIDATION_PUB.humanNodePublic();
+		else
+			info["pubkey_validator"] = "none";
+	}
 	info["pubkey_node"] = theApp->getWallet().getNodePublic().humanNodePublic();
 
 
@@ -1121,29 +1126,58 @@ Json::Value NetworkOPs::getServerInfo()
 
 	Json::Value lastClose = Json::objectValue;
 	lastClose["proposers"] = theApp->getOPs().getPreviousProposers();
-	lastClose["converge_time"] = static_cast<double>(theApp->getOPs().getPreviousConvergeTime()) / 1000.0;
+	if (human)
+		lastClose["converge_time_s"] = static_cast<double>(theApp->getOPs().getPreviousConvergeTime()) / 1000.0;
+	else
+		lastClose["converge_time"] = Json::Int(theApp->getOPs().getPreviousConvergeTime());
 	info["last_close"] = lastClose;
 
 //	if (mConsensus)
 //		info["consensus"] = mConsensus->getJson();
 
-	info["load"] = theApp->getJobQueue().getJson();
-	info["load_factor"] =
-		static_cast<double>(theApp->getFeeTrack().getLoadBase()) / theApp->getFeeTrack().getLoadFactor();
+	if (admin)
+		info["load"] = theApp->getJobQueue().getJson();
 
-	Ledger::pointer lpClosed	= getClosedLedger();
+	if (!human)
+	{
+		info["load_base"] = theApp->getFeeTrack().getLoadBase();
+		info["load_factor"] = theApp->getFeeTrack().getLoadFactor();
+	}
+	else
+		info["load_factor"] =
+			static_cast<double>(theApp->getFeeTrack().getLoadBase()) / theApp->getFeeTrack().getLoadFactor();
+
+	bool valid = false;
+	Ledger::pointer lpClosed	= getValidatedLedger();
+	if (lpClosed)
+		valid = true;
+	else
+		lpClosed				= getClosedLedger();
+
 	if (lpClosed)
 	{
 		uint64 baseFee = lpClosed->getBaseFee();
 		uint64 baseRef = lpClosed->getReferenceFeeUnits();
 		Json::Value l(Json::objectValue);
-		l["seq"]			= Json::UInt(lpClosed->getLedgerSeq());
-		l["hash"]			= lpClosed->getHash().GetHex();
-		l["base_fee"]		= static_cast<double>(Json::UInt(baseFee)) / SYSTEM_CURRENCY_PARTS;
-		l["reserve_base"]	=
-			static_cast<double>(Json::UInt(lpClosed->getReserve(0) * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
-		l["reserve_inc"]	=
-			static_cast<double>(Json::UInt(lpClosed->getReserveInc() * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
+		l["seq"]				= Json::UInt(lpClosed->getLedgerSeq());
+		l["hash"]				= lpClosed->getHash().GetHex();
+		l["validated"]			= valid;
+		if (!human)
+		{
+			l["base_fee"]		= Json::Value::UInt(baseFee);
+			l["reserve_base"]	= Json::Value::UInt(lpClosed->getReserve(0));
+			l["reserve_inc"]	= Json::Value::UInt(lpClosed->getReserveInc());
+			l["close_time"]		= Json::Value::UInt(lpClosed->getCloseTimeNC());
+		}
+		else
+		{
+			l["base_fee_xrp"]		= static_cast<double>(Json::UInt(baseFee)) / SYSTEM_CURRENCY_PARTS;
+			l["reserve_base_xrp"]	=
+				static_cast<double>(Json::UInt(lpClosed->getReserve(0) * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
+			l["reserve_inc_xrp"]	=
+				static_cast<double>(Json::UInt(lpClosed->getReserveInc() * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
+			l["age"]			= Json::UInt(getCloseTimeNC() - lpClosed->getCloseTimeNC());
+		}
 		info["closed_ledger"] = l;
 	}
 
@@ -1521,7 +1555,7 @@ bool NetworkOPs::subServer(InfoSub* ispListener, Json::Value& jvResult)
 	jvResult["random"]			= uRandom.ToString();
 	jvResult["server_status"]	= strOperatingMode();
 	jvResult["load_base"]		= theApp->getFeeTrack().getLoadBase();
-	jvResult["load_fee"]		= theApp->getFeeTrack().getLoadFactor();
+	jvResult["load_factor"]		= theApp->getFeeTrack().getLoadFactor();
 
 	return mSubServer.insert(ispListener).second;
 }

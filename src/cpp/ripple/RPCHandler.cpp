@@ -1305,7 +1305,16 @@ Json::Value RPCHandler::doServerInfo(Json::Value)
 {
 	Json::Value ret(Json::objectValue);
 
-	ret["info"]	= theApp->getOPs().getServerInfo();
+	ret["info"]	= theApp->getOPs().getServerInfo(true, mRole == ADMIN);
+
+	return ret;
+}
+
+Json::Value RPCHandler::doServerState(Json::Value)
+{
+	Json::Value ret(Json::objectValue);
+
+	ret["state"]	= theApp->getOPs().getServerInfo(false, mRole == ADMIN);
 
 	return ret;
 }
@@ -2589,7 +2598,8 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	    false,	optCurrent	},
 		{	"sign",					&RPCHandler::doSign,			    false,	optCurrent	},
 		{	"submit",				&RPCHandler::doSubmit,			    false,	optCurrent	},
-		{	"server_info",			&RPCHandler::doServerInfo,		    true,	optNone		},
+		{	"server_info",			&RPCHandler::doServerInfo,		    false,	optNone		},
+		{	"server_state",			&RPCHandler::doServerState,		    false,	optNone		},
 		{	"stop",					&RPCHandler::doStop,			    true,	optNone		},
 		{	"transaction_entry",	&RPCHandler::doTransactionEntry,    false,	optCurrent	},
 		{	"tx",					&RPCHandler::doTx,				    false,	optNetwork	},

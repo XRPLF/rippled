@@ -67,10 +67,13 @@ public:
 	ScopedLock getLock()				{ return ScopedLock(mLock); }
 
 	// The current ledger is the ledger we believe new transactions should go in
-	Ledger::ref getCurrentLedger()	{ return mCurrentLedger; }
+	Ledger::ref getCurrentLedger()		{ return mCurrentLedger; }
 
 	// The finalized ledger is the last closed/accepted ledger
-	Ledger::ref getClosedLedger()	{ return mFinalizedLedger; }
+	Ledger::ref getClosedLedger()		{ return mFinalizedLedger; }
+
+	// The published ledger is the last fully validated ledger
+	Ledger::ref getValidatedLedger()	{ return mPubLedger; }
 
 	TER doTransaction(const SerializedTransaction& txn, TransactionEngineParams params);
 
@@ -82,7 +85,11 @@ public:
 
 	void switchLedgers(Ledger::ref lastClosed, Ledger::ref newCurrent);
 
-	std::string getCompleteLedgers()	{ return mCompleteLedgers.toString(); }
+	std::string getCompleteLedgers()
+	{
+		boost::recursive_mutex::scoped_lock sl(mLock);
+		return mCompleteLedgers.toString();
+	}
 
 	Ledger::pointer closeLedger(bool recoverHeldTransactions);
 
@@ -108,7 +115,11 @@ public:
 		return mLedgerHistory.getLedgerByHash(hash);
 	}
 
-	void setLedgerRangePresent(uint32 minV, uint32 maxV) { mCompleteLedgers.setRange(minV, maxV); }
+	void setLedgerRangePresent(uint32 minV, uint32 maxV)
+	{
+		boost::recursive_mutex::scoped_lock sl(mLock);
+		mCompleteLedgers.setRange(minV, maxV);
+	}
 
 	void addHeldTransaction(const Transaction::pointer& trans);
 	void fixMismatch(Ledger::ref ledger);

@@ -1392,7 +1392,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			logMe += "LedgerHash:"; logMe += ledgerhash.GetHex();
 			ledger = theApp->getLedgerMaster().getLedgerByHash(ledgerhash);
 
-			tLog(!ledger, lsINFO) << "Don't have ledger " << ledgerhash;
+			tLog(!ledger, lsDEBUG) << "Don't have ledger " << ledgerhash;
 			if (!ledger && (packet.has_querytype() && !packet.has_requestcookie()))
 			{
 				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
@@ -1417,7 +1417,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		else if (packet.has_ledgerseq())
 		{
 			ledger = theApp->getLedgerMaster().getLedgerBySeq(packet.ledgerseq());
-			tLog(!ledger, lsINFO) << "Don't have ledger " << packet.ledgerseq();
+			tLog(!ledger, lsDEBUG) << "Don't have ledger " << packet.ledgerseq();
 		}
 		else if (packet.has_ltype() && (packet.ltype() == ripple::ltCURRENT))
 			ledger = theApp->getLedgerMaster().getCurrentLedger();
