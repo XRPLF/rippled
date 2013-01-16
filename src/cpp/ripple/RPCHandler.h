@@ -66,7 +66,8 @@ class RPCHandler
 	Json::Value doProfile(Json::Value params);
 	Json::Value doRandom(Json::Value jvRequest);
 	Json::Value doRipplePathFind(Json::Value jvRequest);
-	Json::Value doServerInfo(Json::Value params);
+	Json::Value doServerInfo(Json::Value params);	// for humans
+	Json::Value doServerState(Json::Value params);	// for machines
 	Json::Value doSessionClose(Json::Value params);
 	Json::Value doSessionOpen(Json::Value params);
 	Json::Value doStop(Json::Value params);
