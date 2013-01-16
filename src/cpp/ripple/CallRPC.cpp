@@ -661,9 +661,9 @@ Json::Value callRPC(const std::string& strIp, const int iPort, const std::string
 	if (!theConfig.QUIET)
 	{
 		std::cerr << "Connecting to: " << strIp << ":" << iPort << std::endl;
-		std::cerr << "Username: " << strUsername << ":" << strPassword << std::endl;
-		std::cerr << "Path: " << strPassword << std::endl;
-		std::cerr << "Method: " << strMethod << std::endl;
+//		std::cerr << "Username: " << strUsername << ":" << strPassword << std::endl;
+//		std::cerr << "Path: " << strPath << std::endl;
+//		std::cerr << "Method: " << strMethod << std::endl;
 	}
 
 	boost::asio::ip::tcp::endpoint
@@ -673,21 +673,23 @@ Json::Value callRPC(const std::string& strIp, const int iPort, const std::string
 	if (stream.fail())
 		throw std::runtime_error("couldn't connect to server");
 
-cLog(lsDEBUG) << "connected" << std::endl;
+	// cLog(lsDEBUG) << "connected" << std::endl;
+
 	// HTTP basic authentication
 	std::string strUserPass64 = EncodeBase64(strUsername + ":" + strPassword);
 	std::map<std::string, std::string> mapRequestHeaders;
 	mapRequestHeaders["Authorization"] = std::string("Basic ") + strUserPass64;
 
-cLog(lsDEBUG) << "requesting" << std::endl;
+	// Log(lsDEBUG) << "requesting" << std::endl;
+
 	// Send request
 	std::string strRequest = JSONRPCRequest(strMethod, params, Json::Value(1));
-cLog(lsDEBUG) << "send request " << strMethod << " : " << strRequest << std::endl;
+	// cLog(lsDEBUG) << "send request " << strMethod << " : " << strRequest << std::endl;
 
 	std::string strPost = createHTTPPost(strPath, strRequest, mapRequestHeaders);
 	stream << strPost << std::flush;
 
-std::cerr << "post  " << strPost << std::endl;
+	// std::cerr << "post  " << strPost << std::endl;
 
 	// Receive reply
 	std::map<std::string, std::string> mapHeaders;
