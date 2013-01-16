@@ -535,7 +535,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 
 	if (i < 0)
 	{
-		return rpcError(rpcBAD_SYNTAX);
+		return rpcError(rpcUNKNOWN_COMMAND);
 	}
 	else if ((commandsA[i].iMinParams >= 0 && jvParams.size() < commandsA[i].iMinParams)
 		|| (commandsA[i].iMaxParams >= 0 && jvParams.size() > commandsA[i].iMaxParams))
