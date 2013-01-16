@@ -158,20 +158,17 @@ public:
 		return static_cast<uint64>(getulong());
 #else
 		int len = BN_num_bytes(this);
-		if (len > 9)
+		if (len > 8)
 			throw std::runtime_error("BN getuint64 overflow");
 
-		unsigned char buf[9];
+		unsigned char buf[8];
 		memset(buf, 0, sizeof(buf));
-		BN_bn2bin(this, buf + 9 - len);
-		if (buf[0] != 0)
-			throw std::runtime_error("BN getuint64 overflow");
-
+		BN_bn2bin(this, buf + 8 - len);
 		return
-			static_cast<uint64>(buf[1]) << 56 | static_cast<uint64>(buf[2]) << 48 |
-			static_cast<uint64>(buf[3]) << 40 | static_cast<uint64>(buf[4]) << 32 |
-			static_cast<uint64>(buf[5]) << 24 | static_cast<uint64>(buf[6]) << 16 |
-			static_cast<uint64>(buf[7]) << 8 | static_cast<uint64>(buf[8]);
+			static_cast<uint64>(buf[0]) << 56 | static_cast<uint64>(buf[1]) << 48 |
+			static_cast<uint64>(buf[2]) << 40 | static_cast<uint64>(buf[3]) << 32 |
+			static_cast<uint64>(buf[4]) << 24 | static_cast<uint64>(buf[5]) << 16 |
+			static_cast<uint64>(buf[6]) << 8 | static_cast<uint64>(buf[7]);
 #endif
 	}
 
@@ -180,17 +177,16 @@ public:
 #if (ULONG_MAX > UINT_MAX)
 		setulong(static_cast<unsigned long>(n));
 #else
-		unsigned char buf[9];
-		buf[0] = 0;
-		buf[1] = static_cast<unsigned char>((n >> 56) & 0xff);
-		buf[2] = static_cast<unsigned char>((n >> 48) & 0xff);
-		buf[3] = static_cast<unsigned char>((n >> 40) & 0xff);
-		buf[4] = static_cast<unsigned char>((n >> 32) & 0xff);
-		buf[5] = static_cast<unsigned char>((n >> 24) & 0xff);
-		buf[6] = static_cast<unsigned char>((n >> 16) & 0xff);
-		buf[7] = static_cast<unsigned char>((n >> 8) & 0xff);
-		buf[8] = static_cast<unsigned char>((n) & 0xff);
-		BN_bin2bn(buf, 9, this);
+		unsigned char buf[8];
+		buf[0] = static_cast<unsigned char>((n >> 56) & 0xff);
+		buf[1] = static_cast<unsigned char>((n >> 48) & 0xff);
+		buf[2] = static_cast<unsigned char>((n >> 40) & 0xff);
+		buf[3] = static_cast<unsigned char>((n >> 32) & 0xff);
+		buf[4] = static_cast<unsigned char>((n >> 24) & 0xff);
+		buf[5] = static_cast<unsigned char>((n >> 16) & 0xff);
+		buf[6] = static_cast<unsigned char>((n >> 8) & 0xff);
+		buf[7] = static_cast<unsigned char>((n) & 0xff);
+		BN_bin2bn(buf, 8, this);
 #endif
 	}
 
