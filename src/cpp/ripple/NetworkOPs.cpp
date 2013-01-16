@@ -1008,7 +1008,7 @@ void NetworkOPs::pubServer()
 		jvObj["type"]			= "serverStatus";
 		jvObj["server_status"]	= strOperatingMode();
 		jvObj["load_base"]		= theApp->getFeeTrack().getLoadBase();
-		jvObj["load_fee"]		= theApp->getFeeTrack().getLoadFactor();
+		jvObj["load_factor"]	= theApp->getFeeTrack().getLoadFactor();
 
 		BOOST_FOREACH(InfoSub* ispListener, mSubServer)
 		{
@@ -1555,7 +1555,7 @@ bool NetworkOPs::subServer(InfoSub* ispListener, Json::Value& jvResult)
 	jvResult["random"]			= uRandom.ToString();
 	jvResult["server_status"]	= strOperatingMode();
 	jvResult["load_base"]		= theApp->getFeeTrack().getLoadBase();
-	jvResult["load_fee"]		= theApp->getFeeTrack().getLoadFactor();
+	jvResult["load_factor"]		= theApp->getFeeTrack().getLoadFactor();
 
 	return mSubServer.insert(ispListener).second;
 }
