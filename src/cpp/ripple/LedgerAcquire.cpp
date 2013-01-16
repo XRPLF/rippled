@@ -718,7 +718,7 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 		ptr->setTimer(); // Cannot call in constructor
 	}
 	else
-		cLog(lsINFO) << "LedgerAcquireMaster acquiring ledger we already have";
+		cLog(lsDEBUG) << "LedgerAcquireMaster acquiring ledger we already have";
 	return ptr;
 }
 
