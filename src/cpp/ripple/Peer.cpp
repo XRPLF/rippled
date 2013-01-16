@@ -44,7 +44,7 @@ void Peer::handleWrite(const boost::system::error_code& error, size_t bytes_tran
 //		std::cerr << "Peer::handleWrite bytes: "<< bytes_transferred << std::endl;
 #endif
 
-	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
 
 	mSendingPacket.reset();
 
