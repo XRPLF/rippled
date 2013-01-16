@@ -45,7 +45,7 @@ void Transactor::calculateFee()
 	mFeeDue	= STAmount(mEngine->getLedger()->scaleFeeLoad(calculateBaseFee()));
 }
 
-uint64_t Transactor::calculateBaseFee()
+uint64 Transactor::calculateBaseFee()
 {
 	return theConfig.FEE_DEFAULT;
 }

@@ -73,7 +73,7 @@ public:
 		zero();
 
 		// Put in least significant bits.
-		((uint64_t *) end())[-1] = htobe64(uHost);
+		((uint64*) end())[-1] = htobe64(uHost);
 
 		return *this;
 	}
@@ -438,7 +438,7 @@ public:
 		zero();
 
 		// Put in least significant bits.
-		((uint64_t *) end())[-1]	= htobe64(uHost);
+		((uint64*) end())[-1]	= htobe64(uHost);
 
 		return *this;
 	}
@@ -656,7 +656,7 @@ public:
 		zero();
 
 		// Put in least significant bits.
-		((uint64_t *) end())[-1]	= htobe64(uHost);
+		((uint64*) end())[-1]	= htobe64(uHost);
 
 		return *this;
 	}
