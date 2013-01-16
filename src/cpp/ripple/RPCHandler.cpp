@@ -2347,39 +2347,46 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 
 	if (jvRequest.isMember("streams"))
 	{
-		for (Json::Value::iterator it = jvRequest["streams"].begin(); it != jvRequest["streams"].end(); it++)
+		if (jvRequest["streams"].empty())
 		{
-			if ((*it).isString())
+			jvResult["error"]	= "noStreams";
+		}
+		else
+		{
+			for (Json::Value::iterator it = jvRequest["streams"].begin(); it != jvRequest["streams"].end(); it++)
 			{
-				std::string streamName=(*it).asString();
-
-				if (streamName=="server")
+				if ((*it).isString())
 				{
-					mNetOps->subServer(ispSub, jvResult);
+					std::string streamName=(*it).asString();
 
-				}
-				else if (streamName=="ledger")
-				{
-					mNetOps->subLedger(ispSub, jvResult);
+					if (streamName=="server")
+					{
+						mNetOps->subServer(ispSub, jvResult);
 
-				}
-				else if (streamName=="transactions")
-				{
-					mNetOps->subTransactions(ispSub);
+					}
+					else if (streamName=="ledger")
+					{
+						mNetOps->subLedger(ispSub, jvResult);
 
-				}
-				else if (streamName=="rt_transactions")
-				{
-					mNetOps->subRTTransactions(ispSub);
+					}
+					else if (streamName=="transactions")
+					{
+						mNetOps->subTransactions(ispSub);
+
+					}
+					else if (streamName=="rt_transactions")
+					{
+						mNetOps->subRTTransactions(ispSub);
+					}
+					else
+					{
+						jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
+					}
 				}
 				else
 				{
-					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
+					jvResult["error"]	= "malformedStream";
 				}
-			}
-			else
-			{
-				jvResult["error"]	= "malformedSteam";
 			}
 		}
 	}
