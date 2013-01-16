@@ -1314,7 +1314,7 @@ Json::Value RPCHandler::doServerState(Json::Value)
 {
 	Json::Value ret(Json::objectValue);
 
-	ret["info"]	= theApp->getOPs().getServerInfo(false, mRole == ADMIN);
+	ret["state"]	= theApp->getOPs().getServerInfo(false, mRole == ADMIN);
 
 	return ret;
 }
