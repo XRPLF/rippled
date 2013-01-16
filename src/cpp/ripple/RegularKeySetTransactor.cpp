@@ -3,7 +3,7 @@
 
 SETUP_LOG();
 
-uint64_t RegularKeySetTransactor::calculateBaseFee()
+uint64 RegularKeySetTransactor::calculateBaseFee()
 {
 	if ( !(mTxnAccount->getFlags() & lsfPasswordSpent)
 		&& (mSigningPubKey.getAccountID() == mTxnAccountID))

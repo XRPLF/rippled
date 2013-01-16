@@ -89,7 +89,6 @@ public:
 	CBigNum(unsigned char n)	{ BN_init(this); setulong(n); }
 	CBigNum(unsigned short n)   { BN_init(this); setulong(n); }
 	CBigNum(unsigned int n)	 { BN_init(this); setulong(n); }
-	CBigNum(unsigned long n)	{ BN_init(this); setulong(n); }
 	CBigNum(uint64 n)		   { BN_init(this); setuint64(n); }
 	explicit CBigNum(uint256 n) { BN_init(this); setuint256(n); }
 
@@ -99,15 +98,9 @@ public:
 		setvch(vch);
 	}
 
-	void setulong(unsigned long n)
+	void setuint(unsigned int n)
 	{
-		if (!BN_set_word(this, n))
-			throw bignum_error("CBigNum conversion from unsigned long : BN_set_word failed");
-	}
-
-	unsigned long getulong() const
-	{
-		return BN_get_word(this);
+		setulong(static_cast<unsigned long>(n));
 	}
 
 	unsigned int getuint() const
@@ -159,31 +152,42 @@ public:
 		BN_mpi2bn(pch, p - pch, this);
 	}
 
+	uint64 getuint64() const
+	{
+#if (ULONG_MAX > UINT_MAX)
+		return static_cast<uint64>(getulong());
+#else
+		int len = BN_num_bytes(this);
+		if (len > 8)
+			throw std::runtime_error("BN getuint64 overflow");
+
+		unsigned char buf[8];
+		memset(buf, 0, sizeof(buf));
+		BN_bn2bin(this, buf + 8 - len);
+		return
+			static_cast<uint64>(buf[0]) << 56 | static_cast<uint64>(buf[1]) << 48 |
+			static_cast<uint64>(buf[2]) << 40 | static_cast<uint64>(buf[3]) << 32 |
+			static_cast<uint64>(buf[4]) << 24 | static_cast<uint64>(buf[5]) << 16 |
+			static_cast<uint64>(buf[6]) << 8 | static_cast<uint64>(buf[7]);
+#endif
+	}
+
 	void setuint64(uint64 n)
 	{
-		unsigned char pch[sizeof(n) + 6];
-		unsigned char* p = pch + 4;
-		bool fLeadingZeroes = true;
-		for (int i = 0; i < 8; i++)
-		{
-			unsigned char c = (n >> 56) & 0xff;
-			n <<= 8;
-			if (fLeadingZeroes)
-			{
-				if (c == 0)
-					continue;
-				if (c & 0x80)
-					*p++ = 0;
-				fLeadingZeroes = false;
-			}
-			*p++ = c;
-		}
-		unsigned int nSize = p - (pch + 4);
-		pch[0] = (nSize >> 24) & 0xff;
-		pch[1] = (nSize >> 16) & 0xff;
-		pch[2] = (nSize >> 8) & 0xff;
-		pch[3] = (nSize) & 0xff;
-		BN_mpi2bn(pch, p - pch, this);
+#if (ULONG_MAX > UINT_MAX)
+		setulong(static_cast<unsigned long>(n));
+#else
+		unsigned char buf[8];
+		buf[0] = static_cast<unsigned char>((n >> 56) & 0xff);
+		buf[1] = static_cast<unsigned char>((n >> 48) & 0xff);
+		buf[2] = static_cast<unsigned char>((n >> 40) & 0xff);
+		buf[3] = static_cast<unsigned char>((n >> 32) & 0xff);
+		buf[4] = static_cast<unsigned char>((n >> 24) & 0xff);
+		buf[5] = static_cast<unsigned char>((n >> 16) & 0xff);
+		buf[6] = static_cast<unsigned char>((n >> 8) & 0xff);
+		buf[7] = static_cast<unsigned char>((n) & 0xff);
+		BN_bin2bn(buf, 8, this);
+#endif
 	}
 
 	void setuint256(const uint256& n)
@@ -300,7 +304,7 @@ public:
 			if (!BN_div(&dv, &rem, &bn, &bnBase, pctx))
 				throw bignum_error("CBigNum::ToString() : BN_div failed");
 			bn = dv;
-			unsigned int c = rem.getulong();
+			unsigned int c = rem.getuint();
 			str += "0123456789abcdef"[c];
 		}
 		if (BN_is_negative(this))
@@ -435,6 +439,22 @@ public:
 	friend inline const CBigNum operator-(const CBigNum& a, const CBigNum& b);
 	friend inline const CBigNum operator/(const CBigNum& a, const CBigNum& b);
 	friend inline const CBigNum operator%(const CBigNum& a, const CBigNum& b);
+
+	private:
+
+	// private because the size of an unsigned long varies by platform
+
+	void setulong(unsigned long n)
+	{
+		if (!BN_set_word(this, n))
+			throw bignum_error("CBigNum conversion from unsigned long : BN_set_word failed");
+	}
+
+	unsigned long getulong() const
+	{
+		return BN_get_word(this);
+	}
+
 };
 
 

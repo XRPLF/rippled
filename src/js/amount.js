@@ -778,6 +778,7 @@ Amount.prototype.ratio_human = function (denominator) {
   if (denominator._is_native) {
     numerator = numerator.clone();
     numerator._value = numerator._value.multiply(consts.bi_xns_unit);
+    numerator.canonicalize();
   }
 
   return numerator.divide(denominator);
@@ -812,6 +813,7 @@ Amount.prototype.product_human = function (factor) {
   // See also Amount#ratio_human.
   if (factor._is_native) {
     product._value = product._value.divide(consts.bi_xns_unit);
+    product.canonicalize();
   }
 
   return product;

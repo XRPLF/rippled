@@ -1039,7 +1039,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				if (value.isString())
 					data.push_back(new STUInt32(field, lexical_cast_st<uint32>(value.asString())));
 				else if (value.isInt())
-					data.push_back(new STUInt32(field, range_check_cast<uint32>(value.asInt(), 0, 4294967295)));
+					data.push_back(new STUInt32(field, range_check_cast<uint32>(value.asInt(), 0, 4294967295u)));
 				else if (value.isUInt())
 					data.push_back(new STUInt32(field, static_cast<uint32>(value.asUInt())));
 				else
