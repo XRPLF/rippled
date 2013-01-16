@@ -18,6 +18,7 @@
 #include <boost/thread.hpp>
 
 SETUP_LOG();
+
 LogPartition TaggedCachePartition("TaggedCache");
 Application* theApp = NULL;
 

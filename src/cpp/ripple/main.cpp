@@ -9,8 +9,9 @@
 #include "Application.h"
 #include "CallRPC.h"
 #include "Config.h"
-#include "utils.h"
 #include "Log.h"
+#include "RPCHandler.h"
+#include "utils.h"
 
 namespace po = boost::program_options;
 
@@ -26,6 +27,21 @@ void setupServer()
 
 void startServer()
 {
+	//
+	// Execute start up rpc commands.
+	//
+	BOOST_FOREACH(const Json::Value& jvCommand, theConfig.RPC_STARTUP)
+	{
+		if (!theConfig.QUIET)
+			cerr << "Startup RPC: " << jvCommand << endl;
+
+		RPCHandler	rhHandler(&theApp->getOPs());
+
+		std::cerr << "Result: "
+			<< rhHandler.doCommand(jvCommand, RPCHandler::ADMIN)
+			<< std::endl;
+	}
+
 	theApp->run();					// Blocks till we get a stop RPC.
 }
 

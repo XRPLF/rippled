@@ -6,6 +6,7 @@
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/foreach.hpp>
 
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
@@ -13,6 +14,7 @@
 #include "../json/value.h"
 #include "../json/reader.h"
 
+#include "Application.h"
 #include "RPC.h"
 #include "Log.h"
 #include "RPCErr.h"
@@ -54,8 +56,10 @@ std::string EncodeBase64(const std::string& s)
 Json::Value RPCParser::parseAsIs(const Json::Value& jvParams)
 {
 	Json::Value v(Json::objectValue);
+
 	if (jvParams.isArray() && (jvParams.size() > 0))
 		v["params"] = jvParams;
+
 	return v;
 }
 
@@ -656,7 +660,7 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 	return nRet;
 }
 
-Json::Value callRPC(const std::string& strIp, const int iPort, const std::string& strUsername, const std::string& strPassword, const std::string& strPath, const std::string& strMethod, const Json::Value& params)
+Json::Value callRPC(const std::string& strIp, const int iPort, const std::string& strUsername, const std::string& strPassword, const std::string& strPath, const std::string& strMethod, const Json::Value& jvParams)
 {
 	// Connect to localhost
 	if (!theConfig.QUIET)
@@ -684,7 +688,7 @@ Json::Value callRPC(const std::string& strIp, const int iPort, const std::string
 	// Log(lsDEBUG) << "requesting" << std::endl;
 
 	// Send request
-	std::string strRequest = JSONRPCRequest(strMethod, params, Json::Value(1));
+	std::string strRequest = JSONRPCRequest(strMethod, jvParams, Json::Value(1));
 	// cLog(lsDEBUG) << "send request " << strMethod << " : " << strRequest << std::endl;
 
 	std::string strPost = createHTTPPost(strPath, strRequest, mapRequestHeaders);
