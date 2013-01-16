@@ -2553,10 +2553,10 @@ Json::Value RPCHandler::doInternal(Json::Value jvRequest)
 	return RPCInternalHandler::runHandler(jvRequest["internal_command"].asString(), jvRequest["params"]);
 }
 
-Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
+Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 {
 	if (!jvRequest.isMember("command"))
-		return rpcError(rpcINVALID_PARAMS);
+		return rpcError(rpcCOMMAND_MISSING);
 
 	std::string		strCommand	= jvRequest["command"].asString();
 

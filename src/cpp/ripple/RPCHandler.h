@@ -115,7 +115,7 @@ public:
 	RPCHandler(NetworkOPs* netOps);
 	RPCHandler(NetworkOPs* netOps, InfoSub* infoSub);
 
-	Json::Value doCommand(Json::Value& jvRequest, int role);
+	Json::Value doCommand(const Json::Value& jvRequest, int role);
 	Json::Value doRpcCommand(const std::string& strCommand, Json::Value& jvParams, int iRole);
 };
 
