@@ -1093,7 +1093,7 @@ bool NetworkOPs::recvValidation(const SerializedValidation::pointer& val)
 	return theApp->getValidations().addValidation(val);
 }
 
-Json::Value NetworkOPs::getServerInfo()
+Json::Value NetworkOPs::getServerInfo(bool admin)
 {
 	Json::Value info = Json::objectValue;
 
@@ -1111,8 +1111,13 @@ Json::Value NetworkOPs::getServerInfo()
 	if (mNeedNetworkLedger)
 		info["network_ledger"] = "waiting";
 
-	if (theConfig.VALIDATION_PUB.isValid())
-		info["pubkey_validator"] = theConfig.VALIDATION_PUB.humanNodePublic();
+	if (admin)
+	{
+		if (theConfig.VALIDATION_PUB.isValid())
+			info["pubkey_validator"] = theConfig.VALIDATION_PUB.humanNodePublic();
+		else
+			info["pubkey_validator"] = "none";
+	}
 	info["pubkey_node"] = theApp->getWallet().getNodePublic().humanNodePublic();
 
 

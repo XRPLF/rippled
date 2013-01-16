@@ -243,7 +243,7 @@ public:
 	int getPreviousConvergeTime()		{ return mLastCloseConvergeTime; }
 	uint32 getLastCloseTime()			{ return mLastCloseTime; }
 	void setLastCloseTime(uint32 t)		{ mLastCloseTime = t; }
-	Json::Value getServerInfo();
+	Json::Value getServerInfo(bool admin);
 	uint32 acceptLedger();
 	boost::unordered_map<uint160,
 		std::list<LedgerProposal::pointer> >& peekStoredProposals() { return mStoredProposals; }

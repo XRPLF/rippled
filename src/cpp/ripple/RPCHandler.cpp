@@ -1305,7 +1305,7 @@ Json::Value RPCHandler::doServerInfo(Json::Value)
 {
 	Json::Value ret(Json::objectValue);
 
-	ret["info"]	= theApp->getOPs().getServerInfo();
+	ret["info"]	= theApp->getOPs().getServerInfo(mRole == ADMIN);
 
 	return ret;
 }
