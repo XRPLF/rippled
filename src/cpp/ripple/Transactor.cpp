@@ -157,7 +157,7 @@ TER Transactor::preCheck()
 	{
 		cLog(lsWARNING) << "applyTransaction: bad source id";
 
-		return temINVALID;
+		return temBAD_SRC_ACCOUNT;
 	}
 
 	// Extract signing key

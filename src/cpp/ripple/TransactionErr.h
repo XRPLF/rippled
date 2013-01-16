@@ -36,6 +36,9 @@ enum TER	// aka TransactionEngineResult
 	temBAD_PATH_LOOP,
 	temBAD_PUBLISH,
 	temBAD_TRANSFER_RATE,
+	temBAD_SEND_MAX_XRP,
+	temBAD_SIGNATURE,
+	temBAD_SRC_ACCOUNT,
 	temBAD_SEQUENCE,
 	temDST_IS_SRC,
 	temDST_NEEDED,
@@ -43,6 +46,7 @@ enum TER	// aka TransactionEngineResult
 	temINVALID,
 	temINVALID_FLAG,
 	temREDUNDANT,
+	temREDUNDANT_SEND_MAX,
 	temRIPPLE_EMPTY,
 	temUNCERTAIN,		// An intermediate result used internally, should never be returned.
 	temUNKNOWN,

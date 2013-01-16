@@ -64,13 +64,17 @@ TER PaymentTransactor::doApply()
 
 		return temREDUNDANT;
 	}
-	else if (bMax
-		&& ((saMaxAmount == saDstAmount && saMaxAmount.getCurrency() == saDstAmount.getCurrency())
-		|| (saDstAmount.isNative() && saMaxAmount.isNative())))
+	else if (bMax && saMaxAmount == saDstAmount && saMaxAmount.getCurrency() == saDstAmount.getCurrency())
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: bad SendMax.";
+		cLog(lsINFO) << "Payment: Malformed transaction: Redundant SendMax.";
 
-		return temINVALID;
+		return temREDUNDANT_SEND_MAX;
+	}
+	else if (bMax && (saDstAmount.isNative() && saMaxAmount.isNative()))
+	{
+		cLog(lsINFO) << "Payment: Malformed transaction: SendMax not allowed for XRP.";
+
+		return temBAD_SEND_MAX_XRP;
 	}
 
 	SLE::pointer	sleDst	= mEngine->entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
@@ -103,7 +107,7 @@ TER PaymentTransactor::doApply()
 	{
 		cLog(lsINFO) << "Payment: Malformed transaction: DestinationTag required.";
 
-		return temINVALID;
+		return temDST_TAG_NEEDED;
 	}
 	else
 	{
