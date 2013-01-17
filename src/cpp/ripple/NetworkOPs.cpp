@@ -1329,11 +1329,10 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 
 		if (!mSubAccount.empty() || (!mSubRTAccount.empty()) )
 		{
-			typedef std::map<RippleAddress, bool>::value_type AccountPair;
-
-			BOOST_FOREACH(const AccountPair& affectedAccount, getAffectedAccounts(stTxn))
+			std::vector<RippleAddress> accounts = meta ? meta->getAffectedAccounts() : stTxn.getMentionedAccounts();
+			BOOST_FOREACH(const RippleAddress& affectedAccount, accounts)
 			{
-				subInfoMapIterator	simiIt	= mSubRTAccount.find(affectedAccount.first.getAccountID());
+				subInfoMapIterator	simiIt	= mSubRTAccount.find(affectedAccount.getAccountID());
 
 				if (simiIt != mSubRTAccount.end())
 				{
@@ -1345,7 +1344,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 
 				if (bAccepted)
 				{
-					simiIt	= mSubAccount.find(affectedAccount.first.getAccountID());
+					simiIt	= mSubAccount.find(affectedAccount.getAccountID());
 
 					if (simiIt != mSubAccount.end())
 					{
@@ -1370,35 +1369,6 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 			ispListener->send(jvObj);
 		}
 	}
-}
-
-// JED: I know this is sort of ugly. I'm going to rework this to get the affected accounts in a different way when we want finer granularity than just "account"
-std::map<RippleAddress,bool> NetworkOPs::getAffectedAccounts(const SerializedTransaction& stTxn)
-{
-	std::map<RippleAddress,bool> accounts;
-
-	BOOST_FOREACH(const SerializedType& it, stTxn.peekData())
-	{
-		const STAccount* sa = dynamic_cast<const STAccount*>(&it);
-		if (sa)
-		{
-			RippleAddress na = sa->getValueNCA();
-			accounts[na]=true;
-		}else
-		{
-			if( it.getFName() == sfLimitAmount )
-			{
-				const STAmount* amount = dynamic_cast<const STAmount*>(&it);
-				if(amount)
-				{
-					RippleAddress na;
-					na.setAccountID(amount->getIssuer());
-					accounts[na]=true;
-				}
-			}
-		}
-	}
-	return accounts;
 }
 
 //

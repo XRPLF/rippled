@@ -122,7 +122,6 @@ protected:
 
 	void pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta);
 	void pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,bool accepted,TransactionMetaSet::pointer& meta);
-	std::map<RippleAddress,bool> getAffectedAccounts(const SerializedTransaction& stTxn);
 
 	void pubServer();
 
