@@ -213,6 +213,10 @@ var credit_limits = function (remote, balances, callback) {
     });
 };
 
+var ledger_close = function (remote, callback) {
+  remote.once('ledger_closed', function (m) { callback(); }).ledger_accept();
+}
+
 var payment = function (remote, src, dst, amount, callback) {
   assert(5 === arguments.length);
 
@@ -407,14 +411,14 @@ var verify_owner_counts = function (remote, counts, callback) {
 };
 
 exports.account_dump            = account_dump;
-
 exports.build_setup             = build_setup;
+exports.build_teardown          = build_teardown;
 exports.create_accounts         = create_accounts;
 exports.credit_limit            = credit_limit;
 exports.credit_limits           = credit_limits;
+exports.ledger_close            = ledger_close;
 exports.payment                 = payment;
 exports.payments                = payments;
-exports.build_teardown          = build_teardown;
 exports.transfer_rate           = transfer_rate;
 exports.verify_balance          = verify_balance;
 exports.verify_balances         = verify_balances;
