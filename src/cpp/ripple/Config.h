@@ -1,13 +1,15 @@
 #ifndef __CONFIG__
 #define __CONFIG__
 
+#include <string>
+#include <boost/filesystem.hpp>
+
 #include "types.h"
 #include "RippleAddress.h"
 #include "ParseSection.h"
 #include "SerializedTypes.h"
 
-#include <string>
-#include <boost/filesystem.hpp>
+#include "../json/value.h"
 
 #define ENABLE_INSECURE				0				// 1, to enable unnecessary features.
 
@@ -25,6 +27,9 @@
 
 #define DEFAULT_VALIDATORS_SITE		""
 #define VALIDATORS_FILE_NAME		"validators.txt"
+
+const int DOMAIN_BYTES_MAX				= 256;
+const int PUBLIC_BYTES_MAX				= 2048;		// Maximum bytes for an account public key.
 
 const int SYSTEM_PEER_PORT				= 6561;
 const int SYSTEM_WEBSOCKET_PORT			= 6562;
@@ -110,6 +115,7 @@ public:
 	std::string					RPC_USER;
 	std::string					RPC_PASSWORD;
 	bool						RPC_ALLOW_REMOTE;
+	std::vector<Json::Value>	RPC_STARTUP;
 
 	// Validation
 	RippleAddress				VALIDATION_SEED, VALIDATION_PUB, VALIDATION_PRIV;

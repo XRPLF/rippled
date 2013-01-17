@@ -1,16 +1,17 @@
 //
 // TODO: Check permissions on config file before using it.
 //
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <boost/algorithm/string.hpp>
+#include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
+
 #include "Config.h"
 
 #include "utils.h"
 #include "HashPrefixes.h"
-
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string.hpp>
-#include <fstream>
-#include <iostream>
-#include <algorithm>
 
 #define SECTION_ACCOUNT_PROBE_MAX		"account_probe_max"
 #define SECTION_CLUSTER_NODES			"cluster_nodes"
@@ -36,6 +37,7 @@
 #define SECTION_RPC_ALLOW_REMOTE		"rpc_allow_remote"
 #define SECTION_RPC_IP					"rpc_ip"
 #define SECTION_RPC_PORT				"rpc_port"
+#define SECTION_RPC_STARTUP				"rpc_startup"
 #define SECTION_SNTP					"sntp_servers"
 #define SECTION_VALIDATORS_FILE			"validators_file"
 #define SECTION_VALIDATION_QUORUM		"validation_quorum"
@@ -266,6 +268,21 @@ void Config::load()
 			if (smtTmp)
 			{
 				SNTP_SERVERS = *smtTmp;
+			}
+
+			smtTmp	= sectionEntries(secConfig, SECTION_RPC_STARTUP);
+			if (smtTmp)
+			{
+				BOOST_FOREACH(const std::string& strJson, *smtTmp)
+				{
+					Json::Reader	jrReader;
+					Json::Value		jvCommand;
+
+					if (!jrReader.parse(strJson, jvCommand))
+						throw std::runtime_error(boost::str(boost::format("Couldn't parse ["SECTION_RPC_STARTUP"] command: %s") % strJson));
+
+					RPC_STARTUP.push_back(jvCommand);
+				}
 			}
 
 			if (sectionSingleB(secConfig, SECTION_DATABASE_PATH, DATABASE_PATH))

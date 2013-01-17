@@ -13,7 +13,9 @@ enum TER	// aka TransactionEngineResult
 	// - Not forwarded
 	// - No fee check
 	telLOCAL_ERROR	= -399,
+	telBAD_DOMAIN,
 	telBAD_PATH_COUNT,
+	telBAD_PUBLIC_KEY,
 	telINSUF_FEE_P,
 
 	// -299 .. -200: M Malformed (bad signature)

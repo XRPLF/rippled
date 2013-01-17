@@ -21,6 +21,7 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 		{ rpcBAD_BLOB,				"badBlob",			"Blob must be a non-empty hex string."					},
 		{ rpcBAD_SEED,				"badSeed",			"Disallowed seed."										},
 		{ rpcBAD_SYNTAX,			"badSyntax",		"Syntax error."											},
+		{ rpcCOMMAND_MISSING,		"commandMissing",	"Missing command entry."								},
 		{ rpcDST_ACT_MALFORMED,		"dstActMalformed",	"Destination account is malformed."						},
 		{ rpcDST_ACT_MISSING,		"dstActMissing",	"Destination account does not exists."					},
 		{ rpcDST_AMT_MALFORMED,		"dstAmtMalformed",	"Destination amount/currency/issuer is malformed."		},
