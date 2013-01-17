@@ -605,6 +605,149 @@ buster.testCase("Nexus", {
           done();
         });
     },
+
+  "subscribe test: customer to customer with and without transfer fee" :
+    function (done) {
+      var self = this;
+
+      // self.remote.set_trace();
+
+      async.waterfall([
+          function (callback) {
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox"], callback);
+          },
+          function (callback) { testutils.ledger_close(self.remote, callback); },
+          function (callback) {
+            self.what = "Set credit limits.";
+
+            testutils.credit_limits(self.remote,
+              {
+                "alice" : "100/AUD/mtgox",
+                "bob"   : "100/AUD/mtgox",
+              },
+              callback);
+          },
+          function (callback) { testutils.ledger_close(self.remote, callback); },
+          function (callback) {
+            self.what = "Distribute funds.";
+
+            testutils.payments(self.remote,
+              {
+                "mtgox" : [ "1/AUD/alice" ],
+              },
+              callback);
+          },
+          function (callback) { testutils.ledger_close(self.remote, callback); },
+          function (callback) {
+            self.what = "Verify balances.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "alice"   : "1/AUD/mtgox",
+                "mtgox"   : "-1/AUD/alice",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Alice sends Bob 1 AUD";
+
+            self.remote.transaction()
+              .payment("alice", "bob", "1/AUD/mtgox")
+              .on('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+          },
+          function (callback) { testutils.ledger_close(self.remote, callback); },
+          function (callback) {
+            self.what = "Verify balances 2.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "alice"   : "0/AUD/mtgox",
+                "bob"     : "1/AUD/mtgox",
+                "mtgox"   : "-1/AUD/bob",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Set transfer rate.";
+
+            self.remote.transaction()
+              .account_set("mtgox")
+              .transfer_rate(1e9*1.1)
+              .once('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+          },
+          function (callback) { testutils.ledger_close(self.remote, callback); },
+          function (callback) {
+            self.what = "Bob sends Alice 0.5 AUD";
+
+            self.remote.transaction()
+              .payment("bob", "alice", "0.5/AUD/mtgox")
+              .send_max("0.55/AUD/mtgox") // !!! Very important.
+              .on('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Verify balances 3.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "alice"   : "0.5/AUD/mtgox",
+                "bob"     : "0.45/AUD/mtgox",
+                "mtgox"   : [ "-0.5/AUD/alice","-0.45/AUD/bob" ],
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Subscribe and accept.";
+
+            self.count  = 0;
+            self.found  = 0;
+
+            self.remote.on('ledger_closed', function (m) {
+                // console.log("#### LEDGER_CLOSE: %s", JSON.stringify(m));
+              });
+
+            self.remote
+              .on('account', function (m) {
+                  // console.log("ACCOUNT: %s", JSON.stringify(m));
+                  self.found  = 1;
+                })
+              .on('ledger_closed', function (m) {
+                  // console.log("LEDGER_CLOSE: %d: %s", self.count, JSON.stringify(m));
+              
+                  if (self.count) {
+                    callback(!self.found);
+                  }
+                  else {
+                    self.count  = 1;
+
+                    self.remote.ledger_accept();
+                  }
+                })
+              .request_subscribe().accounts("mtgox")
+              .request();
+
+            self.remote.ledger_accept();
+          },
+        ], function (error) {
+          buster.refute(error, self.what);
+          done();
+        });
+    },
 });
 
 buster.testCase("Indirect ripple", {
