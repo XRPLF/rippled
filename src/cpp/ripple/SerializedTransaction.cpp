@@ -78,8 +78,8 @@ std::string SerializedTransaction::getText() const
 	return STObject::getText();
 }
 
-std::vector<RippleAddress> SerializedTransaction::getAffectedAccounts() const
-{ // FIXME: This needs to be thought out better
+std::vector<RippleAddress> SerializedTransaction::getMentionedAccounts() const
+{
 	std::vector<RippleAddress> accounts;
 
 	BOOST_FOREACH(const SerializedType& it, peekData())

@@ -403,17 +403,19 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 				assert(type == SHAMapTreeNode::tnTRANSACTION_MD);
 				SerializerIterator sit(item->peekSerializer());
 				Serializer rawTxn(sit.getVL());
-				std::string escMeta(sqlEscape(sit.getVL()));
+				Serializer rawMeta(sit.getVL());
+				std::string escMeta(sqlEscape(rawMeta.peekData()));
 
 				SerializerIterator txnIt(rawTxn);
 				SerializedTransaction txn(txnIt);
 				assert(txn.getTransactionID() == item->getTag());
+				TransactionMetaSet meta(item->getTag(), mLedgerSeq, rawMeta.peekData());
 
 				// Make sure transaction is in AccountTransactions.
 				if (!SQL_EXISTS(db, boost::str(AcctTransExists % item->getTag().GetHex())))
 				{
 					// Transaction not in AccountTransactions
-					std::vector<RippleAddress> accts = txn.getAffectedAccounts();
+					std::vector<RippleAddress> accts = meta.getAffectedAccounts();
 
 					std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
 					bool first = true;
@@ -620,10 +622,13 @@ Json::Value Ledger::getJson(int options)
 {
 	Json::Value ledger(Json::objectValue);
 
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	ledger["parentHash"] = mParentHash.GetHex();
-
 	bool full = (options & LEDGER_JSON_FULL) != 0;
+
+	boost::recursive_mutex::scoped_lock sl(mLock);
+
+	ledger["parentHash"] = mParentHash.GetHex();
+	ledger["seqNum"] = boost::lexical_cast<std::string>(mLedgerSeq);
+
 	if(mClosed || full)
 	{
 		if (mClosed)
@@ -646,6 +651,7 @@ Json::Value Ledger::getJson(int options)
 	}
 	else
 		ledger["closed"] = false;
+
 	if (mTransactionMap && (full || ((options & LEDGER_JSON_DUMP_TXRP) != 0)))
 	{
 		Json::Value txns(Json::arrayValue);
@@ -685,6 +691,7 @@ Json::Value Ledger::getJson(int options)
 		}
 		ledger["transactions"] = txns;
 	}
+
 	if (mAccountStateMap && (full || ((options & LEDGER_JSON_DUMP_STATE) != 0)))
 	{
 		Json::Value state(Json::arrayValue);
@@ -702,7 +709,6 @@ Json::Value Ledger::getJson(int options)
 		}
 		ledger["accountState"] = state;
 	}
-	ledger["seqNum"] = boost::lexical_cast<std::string>(mLedgerSeq);
 	return ledger;
 }
 
