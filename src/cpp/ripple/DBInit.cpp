@@ -19,10 +19,6 @@ const char *TxnDBInit[] = {
 		RawTxn		BLOB,						\
 		TxnMeta		BLOB						\
 	);",
-	"CREATE TABLE PubKeys (						\
-		ID			CHARACTER(35) PRIMARY KEY,	\
-		PubKey		BLOB						\
-	);",
 	"CREATE TABLE AccountTransactions (			\
 		TransID		CHARACTER(64),				\
 		Account		CHARACTER(64),				\

@@ -171,9 +171,6 @@
     <ClCompile Include="src\cpp\ripple\PlatRand.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\PubKeyCache.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\RangeSet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -501,9 +498,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ProofOfWork.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\PubKeyCache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RangeSet.h">
