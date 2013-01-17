@@ -1,4 +1,5 @@
 #include "AccountSetTransactor.h"
+#include "Config.h"
 
 SETUP_LOG();
 
@@ -94,15 +95,22 @@ TER AccountSetTransactor::doApply()
 	// MessageKey
 	//
 
-	if (!mTxn.isFieldPresent(sfMessageKey))
+	if (mTxn.isFieldPresent(sfMessageKey))
 	{
-		nothing();
-	}
-	else
-	{
-		cLog(lsINFO) << "AccountSet: set message key";
+		std::vector<unsigned char>	vucPublic	= mTxn.getFieldVL(sfMessageKey);
 
-		mTxnAccount->setFieldVL(sfMessageKey, mTxn.getFieldVL(sfMessageKey));
+		if (vucPublic.size() > PUBLIC_BYTES_MAX)
+		{
+			cLog(lsINFO) << "AccountSet: message key too long";
+
+			return telBAD_PUBLIC_KEY;
+		}
+		else
+		{
+			cLog(lsINFO) << "AccountSet: set message key";
+
+			mTxnAccount->setFieldVL(sfMessageKey, vucPublic);
+		}
 	}
 
 	//
@@ -118,6 +126,12 @@ TER AccountSetTransactor::doApply()
 			cLog(lsINFO) << "AccountSet: unset domain";
 
 			mTxnAccount->makeFieldAbsent(sfDomain);
+		}
+		else if (vucDomain.size() > DOMAIN_BYTES_MAX)
+		{
+			cLog(lsINFO) << "AccountSet: domain too long";
+
+			return telBAD_DOMAIN;
 		}
 		else
 		{

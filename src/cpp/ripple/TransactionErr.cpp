@@ -35,7 +35,9 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	tefPAST_SEQ,			"tefPAST_SEQ",				"This sequence number has already past."				},
 
 		{	telLOCAL_ERROR,			"telLOCAL_ERROR",			"Local failure."										},
+		{	telBAD_DOMAIN,			"telBAD_DOMAIN",			"Domain too long."										},
 		{	telBAD_PATH_COUNT,		"telBAD_PATH_COUNT",		"Malformed: Too many paths."							},
+		{	telBAD_PUBLIC_KEY,		"telBAD_PUBLIC_KEY",		"Public key too long."									},
 		{	telINSUF_FEE_P,			"telINSUF_FEE_P",			"Fee insufficient."										},
 
 		{	temMALFORMED,			"temMALFORMED",				"Malformed transaction."								},
