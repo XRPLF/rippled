@@ -518,6 +518,18 @@ Remote.prototype._connect_message = function (ws, json) {
         this.emit('ledger_closed', message);
         break;
 
+      case 'account':
+        // XXX If not trusted, need proof.
+
+        this.emit('account', message);
+        break;
+
+      case 'transaction':
+        // XXX If not trusted, need proof.
+
+        this.emit('transaction', message);
+        break;
+
       case 'serverStatus':
         // This message is only received when online. As we are connected, it is the definative final state.
         this._set_state(
