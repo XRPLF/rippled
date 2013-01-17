@@ -2614,7 +2614,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 		{	"unl_score",			&RPCHandler::doUnlScore,		    true,	optNone		},
 
 		{	"validation_create",	&RPCHandler::doValidationCreate,    true,	optNone		},
-		{	"validation_seed",		&RPCHandler::doValidationSeed,	    false,	optNone		},
+		{	"validation_seed",		&RPCHandler::doValidationSeed,	    true,	optNone		},
 
 		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,	    false,	optCurrent	},
 		{	"wallet_propose",		&RPCHandler::doWalletPropose,	    false,	optNone		},
