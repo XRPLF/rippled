@@ -415,29 +415,34 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 				if (!SQL_EXISTS(db, boost::str(AcctTransExists % item->getTag().GetHex())))
 				{
 					// Transaction not in AccountTransactions
-					std::vector<RippleAddress> accts = meta.getAffectedAccounts();
-
-					std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
-					bool first = true;
-					for (std::vector<RippleAddress>::iterator it = accts.begin(), end = accts.end(); it != end; ++it)
+					const std::vector<RippleAddress> accts = meta.getAffectedAccounts();
+					if (!accts.empty())
 					{
-						if (!first)
-							sql += ", ('";
-						else
+
+						std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
+						bool first = true;
+							for (std::vector<RippleAddress>::const_iterator it = accts.begin(), end = accts.end(); it != end; ++it)
 						{
-							sql += "('";
-							first = false;
+							if (!first)
+								sql += ", ('";
+							else
+							{
+								sql += "('";
+								first = false;
+							}
+							sql += txn.getTransactionID().GetHex();
+							sql += "','";
+							sql += it->humanAccountID();
+							sql += "',";
+							sql += boost::lexical_cast<std::string>(getLedgerSeq());
+							sql += ")";
 						}
-						sql += txn.getTransactionID().GetHex();
-						sql += "','";
-						sql += it->humanAccountID();
-						sql += "',";
-						sql += boost::lexical_cast<std::string>(getLedgerSeq());
-						sql += ")";
+						sql += ";";
+						Log(lsTRACE) << "ActTx: " << sql;
+						db->executeSQL(sql); // may already be in there
 					}
-					sql += ";";
-					Log(lsTRACE) << "ActTx: " << sql;
-					db->executeSQL(sql); // may already be in there
+					else
+					 cLog(lsWARNING) << "Transaaction in ledger " << mLedgerSeq << " affects not accounts";
 				}
 
 				if (SQL_EXISTS(db, boost::str(transExists %	txn.getTransactionID().GetHex())))
