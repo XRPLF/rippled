@@ -204,21 +204,31 @@ std::string DecodeBase64(std::string s)
 	return result;
 }
 
-/*
-bool HTTPAuthorized(map<std::string, std::string>& mapHeaders)
-{
+void HTTPAuthorized(std::map<std::string, std::string>& mapHeaders, bool& user, bool& admin)
+{ // This is currently not used
 	std::string strAuth = mapHeaders["authorization"];
 	if (strAuth.substr(0,6) != "Basic ")
-		return false;
-	std::string strUserPass64 = strAuth.substr(6); boost::trim(strUserPass64);
+	{
+		admin = theConfig.RPC_ADMIN_USER.empty() && theConfig.RPC_ADMIN_PASSWORD.empty();
+		user = theConfig.RPC_USER.empty() && theConfig.RPC_PASSWORD.empty();
+	}
+	std::string strUserPass64 = strAuth.substr(6);
+	boost::trim(strUserPass64);
 	std::string strUserPass = DecodeBase64(strUserPass64);
 	std::string::size_type nColon = strUserPass.find(":");
 	if (nColon == std::string::npos)
-		return false;
-	std::string strUser = strUserPass.substr(0, nColon);
-	std::string strPassword = strUserPass.substr(nColon+1);
-	return (strUser == mapArgs["-rpcuser"] && strPassword == mapArgs["-rpcpassword"]);
-}*/
+	{
+		admin = false;
+		user = false;
+	}
+	else
+	{
+		std::string strUser = strUserPass.substr(0, nColon);
+		std::string strPassword = strUserPass.substr(nColon+1);
+		admin = (strUser == theConfig.RPC_ADMIN_USER) && (strPassword == theConfig.RPC_ADMIN_PASSWORD);
+		user = (strUser == theConfig.RPC_USER) && (strPassword == theConfig.RPC_PASSWORD);
+	}
+}
 
 //
 // JSON-RPC protocol.  Bitcoin speaks version 1.0 for maximum compatibility,
