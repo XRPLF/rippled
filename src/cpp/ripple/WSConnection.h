@@ -41,6 +41,7 @@ protected:
 	WSServerHandler<endpoint_type>*		mHandler;
 	weak_connection_ptr					mConnection;
 	NetworkOPs&							mNetwork;
+	std::string							mRemoteIP;
 
 	boost::asio::deadline_timer			mPingTimer;
 	bool								mPinged;
@@ -53,7 +54,11 @@ public:
 	WSConnection(WSServerHandler<endpoint_type>* wshpHandler, const connection_ptr& cpConnection)
 		: mHandler(wshpHandler), mConnection(cpConnection), mNetwork(theApp->getOPs()),
 		mPingTimer(theApp->getAuxService()), mPinged(false)
-	{ setPingTimer(); }
+	{
+		mRemoteIP = cpConnection->get_socket().lowest_layer().remote_endpoint().address().to_string();
+		cLog(lsDEBUG) << "Websocket connection from " << mRemoteIP;
+		setPingTimer();
+	}
 
 	void preDestroy()
 	{ // sever connection
@@ -94,7 +99,7 @@ public:
 
 		int iRole	= mHandler->getPublic()
 						? RPCHandler::GUEST		// Don't check on the public interface.
-						: iAdminGet(jvRequest, "127.0.0.1");	// XXX Fix this to return the remote IP.
+						: iAdminGet(jvRequest, mRemoteIP);	// XXX Fix this to return the remote IP.
 
 		if (RPCHandler::FORBID == iRole)
 		{
