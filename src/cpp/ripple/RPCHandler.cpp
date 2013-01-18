@@ -28,19 +28,21 @@ SETUP_LOG();
 int iAdminGet(const Json::Value& jvRequest, const std::string& strRemoteIp)
 {
 	int		iRole;
-	bool	bPasswordSupplied	= jvRequest.isMember("user") || jvRequest.isMember("password");
+	bool	bPasswordSupplied	= jvRequest.isMember("admin_user") || jvRequest.isMember("admin_password");
 	bool	bPasswordRequired	= !theConfig.RPC_ADMIN_USER.empty() || !theConfig.RPC_ADMIN_PASSWORD.empty();
 
 	bool	bPasswordWrong		= bPasswordSupplied
 									? bPasswordRequired
 										// Supplied, required, and incorrect.
-										? theConfig.RPC_ADMIN_USER != (jvRequest.isMember("user") ? jvRequest["user"].asString() : "")
-											|| theConfig.RPC_ADMIN_PASSWORD != (jvRequest.isMember("user") ? jvRequest["password"].asString() : "")
+										? theConfig.RPC_ADMIN_USER != (jvRequest.isMember("admin_user") ? jvRequest["admin_user"].asString() : "")
+											|| theConfig.RPC_ADMIN_PASSWORD != (jvRequest.isMember("admin_user") ? jvRequest["admin_password"].asString() : "")
 										// Supplied and not required.
 										: true
 									: false;
 	// Meets IP restriction for admin.
-	bool	bAdminIP			= strRemoteIp == "127.0.0.1";
+	bool	bAdminIP			= theConfig.RPC_ADMIN_ALLOW.empty()
+									? strRemoteIp == "127.0.0.1"
+									: strRemoteIp == theConfig.RPC_ADMIN_ALLOW;
 
 	if (bPasswordWrong							// Wrong
 		|| (bPasswordSupplied && !bAdminIP))	// Supplied and doesn't meet IP filter.

@@ -590,11 +590,17 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 
 			jvParams.append(jvRequest);
 
+			if (!theConfig.RPC_ADMIN_USER.empty())
+				jvRequest["admin_user"]		= theConfig.RPC_ADMIN_USER;
+
+			if (!theConfig.RPC_ADMIN_PASSWORD.empty())
+				jvRequest["admin_password"]	= theConfig.RPC_ADMIN_PASSWORD;
+
 			jvOutput	= callRPC(
 				theConfig.RPC_IP,
 				theConfig.RPC_PORT,
-				theConfig.RPC_ADMIN_USER,
-				theConfig.RPC_ADMIN_PASSWORD,
+				theConfig.RPC_USER,
+				theConfig.RPC_PASSWORD,
 				"",
 				jvRequest.isMember("method")			// Allow parser to rewrite method.
 					? jvRequest["method"].asString()

@@ -35,10 +35,13 @@
 #define SECTION_PEER_SSL_CIPHER_LIST	"peer_ssl_cipher_list"
 #define SECTION_PEER_START_MAX			"peer_start_max"
 #define SECTION_RPC_ALLOW_REMOTE		"rpc_allow_remote"
+#define SECTION_RPC_ADMIN_ALLOW			"rpc_admin_allow"
 #define SECTION_RPC_ADMIN_USER			"rpc_admin_user"
 #define SECTION_RPC_ADMIN_PASSWORD		"rpc_admin_password"
 #define SECTION_RPC_IP					"rpc_ip"
 #define SECTION_RPC_PORT				"rpc_port"
+#define SECTION_RPC_USER				"rpc_user"
+#define SECTION_RPC_PASSWORD			"rpc_password"
 #define SECTION_RPC_STARTUP				"rpc_startup"
 #define SECTION_SNTP					"sntp_servers"
 #define SECTION_VALIDATORS_FILE			"validators_file"
@@ -298,9 +301,12 @@ void Config::load()
 			if (sectionSingleB(secConfig, SECTION_PEER_PRIVATE, strTemp))
 				PEER_PRIVATE		= boost::lexical_cast<bool>(strTemp);
 
-			(void) sectionSingleB(secConfig, SECTION_RPC_ADMIN_USER, RPC_ADMIN_USER);
+			(void) sectionSingleB(secConfig, SECTION_RPC_ADMIN_ALLOW, RPC_ADMIN_ALLOW);
 			(void) sectionSingleB(secConfig, SECTION_RPC_ADMIN_PASSWORD, RPC_ADMIN_PASSWORD);
+			(void) sectionSingleB(secConfig, SECTION_RPC_ADMIN_USER, RPC_ADMIN_USER);
 			(void) sectionSingleB(secConfig, SECTION_RPC_IP, RPC_IP);
+			(void) sectionSingleB(secConfig, SECTION_RPC_PASSWORD, RPC_PASSWORD);
+			(void) sectionSingleB(secConfig, SECTION_RPC_USER, RPC_USER);
 
 			if (sectionSingleB(secConfig, SECTION_RPC_PORT, strTemp))
 				RPC_PORT = boost::lexical_cast<int>(strTemp);

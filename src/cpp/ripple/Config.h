@@ -112,8 +112,11 @@ public:
 	// RPC parameters
 	std::string					RPC_IP;
 	int							RPC_PORT;
-	std::string					RPC_ADMIN_USER;
+	std::string					RPC_ADMIN_ALLOW;
 	std::string					RPC_ADMIN_PASSWORD;
+	std::string					RPC_ADMIN_USER;
+	std::string					RPC_PASSWORD;
+	std::string					RPC_USER;
 	bool						RPC_ALLOW_REMOTE;
 	std::vector<Json::Value>	RPC_STARTUP;
 
