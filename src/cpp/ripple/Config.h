@@ -118,7 +118,7 @@ public:
 	std::string					RPC_PASSWORD;
 	std::string					RPC_USER;
 	bool						RPC_ALLOW_REMOTE;
-	std::vector<Json::Value>	RPC_STARTUP;
+	Json::Value					RPC_STARTUP;
 
 	// Validation
 	RippleAddress				VALIDATION_SEED, VALIDATION_PUB, VALIDATION_PRIV;

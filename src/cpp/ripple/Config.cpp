@@ -276,6 +276,8 @@ void Config::load()
 			smtTmp	= sectionEntries(secConfig, SECTION_RPC_STARTUP);
 			if (smtTmp)
 			{
+				Json::Value	jvArray(Json::arrayValue);
+
 				BOOST_FOREACH(const std::string& strJson, *smtTmp)
 				{
 					Json::Reader	jrReader;
@@ -284,8 +286,10 @@ void Config::load()
 					if (!jrReader.parse(strJson, jvCommand))
 						throw std::runtime_error(boost::str(boost::format("Couldn't parse ["SECTION_RPC_STARTUP"] command: %s") % strJson));
 
-					RPC_STARTUP.push_back(jvCommand);
+					RPC_STARTUP.append(jvCommand);
 				}
+
+				RPC_STARTUP	= jvArray;
 			}
 
 			if (sectionSingleB(secConfig, SECTION_DATABASE_PATH, DATABASE_PATH))

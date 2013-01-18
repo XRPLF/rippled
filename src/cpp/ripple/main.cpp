@@ -30,16 +30,21 @@ void startServer()
 	//
 	// Execute start up rpc commands.
 	//
-	BOOST_FOREACH(const Json::Value& jvCommand, theConfig.RPC_STARTUP)
+	if (theConfig.RPC_STARTUP.isArray())
 	{
-		if (!theConfig.QUIET)
-			cerr << "Startup RPC: " << jvCommand << endl;
+		for (int i = 0; i != theConfig.RPC_STARTUP.size(); ++i)
+		{
+			const Json::Value& jvCommand	= theConfig.RPC_STARTUP[i];
 
-		RPCHandler	rhHandler(&theApp->getOPs());
+			if (!theConfig.QUIET)
+				cerr << "Startup RPC: " << jvCommand << endl;
 
-		std::cerr << "Result: "
-			<< rhHandler.doCommand(jvCommand, RPCHandler::ADMIN)
-			<< std::endl;
+			RPCHandler	rhHandler(&theApp->getOPs());
+
+			std::cerr << "Result: "
+				<< rhHandler.doCommand(jvCommand, RPCHandler::ADMIN)
+				<< std::endl;
+		}
 	}
 
 	theApp->run();					// Blocks till we get a stop RPC.
