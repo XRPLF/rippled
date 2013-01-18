@@ -41,4 +41,6 @@ extern std::string JSONRPCReply(const Json::Value& result, const Json::Value& er
 
 extern Json::Value JSONRPCError(int code, const std::string& message);
 
+extern bool HTTPAuthorized(const std::map<std::string, std::string>& mapHeaders);
+
 #endif

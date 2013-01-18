@@ -11,7 +11,7 @@ SETUP_LOG();
 
 void HTTPRequest::reset()
 {
-	vHeaders.clear();
+	mHeaders.clear();
 	sRequestBody.clear();
 	sAuthorization.clear();
 	iDataSize = 0;
@@ -67,8 +67,6 @@ HTTPRequestAction HTTPRequest::consume(boost::asio::streambuf& buf)
 			eState = getting_body;
 			return haREAD_RAW;
 		}
-		vHeaders.push_back(line);
-
 		size_t colon = line.find(':');
 		if (colon != std::string::npos)
 		{
@@ -78,6 +76,8 @@ HTTPRequestAction HTTPRequest::consume(boost::asio::streambuf& buf)
 
 			std::string headerValue = line.substr(colon+1);
 			boost::trim(headerValue);
+
+			mHeaders[headerName] += headerValue;
 
 			if (headerName == "connection")
 			{

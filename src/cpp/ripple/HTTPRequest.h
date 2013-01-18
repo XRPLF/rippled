@@ -2,7 +2,7 @@
 #define HTTPREQUEST__HPP
 
 #include <string>
-#include <vector>
+#include <map>
 
 #include <boost/asio/streambuf.hpp>
 
@@ -32,7 +32,7 @@ protected:
 	std::string sRequestBody;
 	std::string sAuthorization;
 
-	std::vector<std::string> vHeaders;
+	std::map<std::string, std::string> mHeaders;
 
 	int iDataSize;
 	bool bShouldClose;
@@ -49,7 +49,7 @@ public:
 	std::string& peekAuth()		{ return sAuthorization; }
 	std::string getAuth()		{ return sAuthorization; }
 
-	std::vector<std::string>& peekHeaders() { return vHeaders; }
+	std::map<std::string, std::string>& peekHeaders() { return mHeaders; }
 	std::string getReplyHeaders(bool forceClose);
 
 	HTTPRequestAction consume(boost::asio::streambuf&);

@@ -47,7 +47,12 @@ void RPCServer::handle_read_req(const boost::system::error_code& e)
 	}
 
 	req += strCopy(mQueryVec);
-	mReplyStr = handleRequest(req);
+
+	if (!HTTPAuthorized(mHTTPRequest.peekHeaders()))
+		mReplyStr = HTTPReply(403, "Forbidden");
+	else
+		mReplyStr = handleRequest(req);
+
 	boost::asio::async_write(mSocket, boost::asio::buffer(mReplyStr),
 		boost::bind(&RPCServer::handle_write, shared_from_this(), boost::asio::placeholders::error));
 }
@@ -108,6 +113,7 @@ void RPCServer::handle_read_line(const boost::system::error_code& e)
 std::string RPCServer::handleRequest(const std::string& requestStr)
 {
 	cLog(lsTRACE) << "handleRequest " << requestStr;
+
 	Json::Value id;
 
 	// Parse request
