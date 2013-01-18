@@ -99,7 +99,7 @@ public:
 
 		int iRole	= mHandler->getPublic()
 						? RPCHandler::GUEST		// Don't check on the public interface.
-						: iAdminGet(jvRequest, mRemoteIP);	// XXX Fix this to return the remote IP.
+						: iAdminGet(jvRequest, mRemoteIP);
 
 		if (RPCHandler::FORBID == iRole)
 		{
