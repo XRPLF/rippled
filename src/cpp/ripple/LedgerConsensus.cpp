@@ -792,8 +792,7 @@ void LedgerConsensus::updateOurPositions()
 }
 
 bool LedgerConsensus::haveConsensus(bool forReal)
-{ // FIXME: Should check for a supermajority on each disputed transaction
-  // counting unacquired TX sets as disagreeing
+{ // CHECKME: should possibly count unacquired TX sets as disagreeing
 	int agree = 0, disagree = 0;
 	uint256 ourPosition = mOurPosition->getCurrentHash();
 	BOOST_FOREACH(u160_prop_pair& it, mPeerPositions)
@@ -1086,32 +1085,42 @@ void LedgerConsensus::playbackProposals()
 	}
 }
 
-void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTransaction::ref txn,
-	Ledger::ref ledger, CanonicalTXSet& failedTransactions, bool openLedger)
-{ // FIXME: Needs to handle partial success
+bool LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTransaction::ref txn, Ledger::ref ledger,
+	bool openLedger, bool retryAssured)
+{ // Returns false if the transaction has need not be retried.
 	TransactionEngineParams parms = openLedger ? tapOPEN_LEDGER : tapNONE;
+	if (retryAssured)
+		parms = static_cast<TransactionEngineParams>(parms | tapRETRY);
+
 #ifndef TRUST_NETWORK
 	try
 	{
 #endif
+
 		bool didApply;
 		TER result = engine.applyTransaction(*txn, parms, didApply);
-		if (!didApply && !isTefFailure(result) && !isTemMalformed(result))
+		if (didApply)
 		{
-			cLog(lsINFO) << "   retry";
-			assert(!ledger->hasTransaction(txn->getTransactionID()));
-			failedTransactions.push_back(txn);
+			cLog(lsDEBUG) << "Transaction success";
+			return false;
 		}
-		else if (didApply) // FIXME: Need to do partial success
-		{
-			cLog(lsTRACE) << "   success";
-			assert(ledger->hasTransaction(txn->getTransactionID()));
+
+		if (isTefFailure(result) || isTemMalformed(result))
+		{ // failure
+			cLog(lsDEBUG) << "Transaction failure";
+			return false;
 		}
+
+		cLog(lsDEBUG) << "Retry needed";
+		assert(!ledger->hasTransaction(txn->getTransactionID()));
+		return true;
+
 #ifndef TRUST_NETWORK
 	}
 	catch (...)
 	{
-		cLog(lsWARNING) << "  Throws";
+		cLog(lsWARNING) << "Throws";
+		return false;
 	}
 #endif
 }
@@ -1119,7 +1128,6 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTran
 void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger,
 	Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, bool openLgr)
 {
-	TransactionEngineParams parms = openLgr ? tapOPEN_LEDGER : tapNONE;
 	TransactionEngine engine(applyLedger);
 
 	for (SHAMapItem::pointer item = set->peekFirstItem(); !!item; item = set->peekNextItem(item->getTag()))
@@ -1133,7 +1141,8 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 #endif
 				SerializerIterator sit(item->peekSerializer());
 				SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
-				applyTransaction(engine, txn, applyLedger, failedTransactions, openLgr);
+				if (applyTransaction(engine, txn, applyLedger, openLgr, true))
+					failedTransactions.push_back(txn);
 #ifndef TRUST_NETWORK
 			}
 			catch (...)
@@ -1144,35 +1153,25 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 		}
 	}
 
-	int successes;
-	do
+	int changes;
+	bool certainRetry = true;
+
+	for (int pass = 0; pass < 8; ++pass)
 	{
-		successes = 0;
+		changes = 0;
+
 		CanonicalTXSet::iterator it = failedTransactions.begin();
 		while (it != failedTransactions.end())
 		{
 			try
 			{
-				bool didApply;
-				TER result = engine.applyTransaction(*it->second, parms, didApply);
-				if (isTelLocal(result))
-				{ // should never happen
-					assert(false);
-					it = failedTransactions.erase(it);
-				}
-				else if (didApply)
-				{ // transaction was applied, remove from set
-					++successes;
-					it = failedTransactions.erase(it);
-				}
-				else if (isTefFailure(result) || isTemMalformed(result))
-				{ // transaction cannot apply. tef is expected, tem should never happen
+				if (!applyTransaction(engine, it->second, applyLedger, openLgr, certainRetry))
+				{
+					++changes;
 					it = failedTransactions.erase(it);
 				}
 				else
-				{ // try again
 					++it;
-				}
 			}
 			catch (...)
 			{
@@ -1180,7 +1179,16 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 				it = failedTransactions.erase(it);
 			}
 		}
-	} while (successes > 0);
+
+		// A non-retry pass made no changes
+		if (!changes && !certainRetry)
+			return;
+
+		// Stop retriable passes
+		if ((!changes) || (pass >= 4))
+			certainRetry = false;
+
+	}
 }
 
 uint32 LedgerConsensus::roundCloseTime(uint32 closeTime)
@@ -1278,7 +1286,8 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 				cLog(lsINFO) << "Test applying disputed transaction that did not get in";
 				SerializerIterator sit(it.second->peekTransaction());
 				SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
-				applyTransaction(engine, txn, newOL, failedTransactions, true);
+				if (applyTransaction(engine, txn, newOL, true, false))
+					failedTransactions.push_back(txn);
 			}
 			catch (...)
 			{
