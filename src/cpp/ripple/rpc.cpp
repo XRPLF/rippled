@@ -204,30 +204,20 @@ std::string DecodeBase64(std::string s)
 	return result;
 }
 
-void HTTPAuthorized(std::map<std::string, std::string>& mapHeaders, bool& user, bool& admin)
+bool HTTPAuthorized(std::map<std::string, std::string>& mapHeaders)
 { // This is currently not used
 	std::string strAuth = mapHeaders["authorization"];
 	if (strAuth.substr(0,6) != "Basic ")
-	{
-		admin = theConfig.RPC_ADMIN_USER.empty() && theConfig.RPC_ADMIN_PASSWORD.empty();
-		user = theConfig.RPC_USER.empty() && theConfig.RPC_PASSWORD.empty();
-	}
+		return theConfig.RPC_ADMIN_USER.empty() && theConfig.RPC_ADMIN_PASSWORD.empty();
 	std::string strUserPass64 = strAuth.substr(6);
 	boost::trim(strUserPass64);
 	std::string strUserPass = DecodeBase64(strUserPass64);
 	std::string::size_type nColon = strUserPass.find(":");
 	if (nColon == std::string::npos)
-	{
-		admin = false;
-		user = false;
-	}
-	else
-	{
-		std::string strUser = strUserPass.substr(0, nColon);
-		std::string strPassword = strUserPass.substr(nColon+1);
-		admin = (strUser == theConfig.RPC_ADMIN_USER) && (strPassword == theConfig.RPC_ADMIN_PASSWORD);
-		user = (strUser == theConfig.RPC_USER) && (strPassword == theConfig.RPC_PASSWORD);
-	}
+		return false;
+	std::string strUser = strUserPass.substr(0, nColon);
+	std::string strPassword = strUserPass.substr(nColon+1);
+	return (strUser == theConfig.RPC_USER) && (strPassword == theConfig.RPC_PASSWORD);
 }
 
 //
