@@ -110,7 +110,7 @@ class RPCHandler
 
 public:
 
-	enum { GUEST, USER, ADMIN };
+	enum { GUEST, USER, ADMIN, FORBID };
 
 	RPCHandler(NetworkOPs* netOps);
 	RPCHandler(NetworkOPs* netOps, InfoSub* infoSub);
@@ -135,6 +135,8 @@ public:
 	RPCInternalHandler(const std::string& name, handler_t handler);
 	static Json::Value runHandler(const std::string& name, const Json::Value& params);
 };
+
+int iAdminGet(const Json::Value& jvRequest, const std::string& strRemoteIp);
 
 #endif
 // vim:ts=4

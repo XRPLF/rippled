@@ -25,6 +25,38 @@
 
 SETUP_LOG();
 
+int iAdminGet(const Json::Value& jvRequest, const std::string& strRemoteIp)
+{
+	int		iRole;
+	bool	bPasswordSupplied	= jvRequest.isMember("user") || jvRequest.isMember("password");
+	bool	bPasswordRequired	= !theConfig.RPC_ADMIN_USER.empty() || !theConfig.RPC_ADMIN_PASSWORD.empty();
+
+	bool	bPasswordWrong		= bPasswordSupplied
+									? bPasswordRequired
+										// Supplied, required, and incorrect.
+										? theConfig.RPC_ADMIN_USER != (jvRequest.isMember("user") ? jvRequest["user"].asString() : "")
+											|| theConfig.RPC_ADMIN_PASSWORD != (jvRequest.isMember("user") ? jvRequest["password"].asString() : "")
+										// Supplied and not required.
+										: true
+									: false;
+	// Meets IP restriction for admin.
+	bool	bAdminIP			= strRemoteIp == "127.0.0.1";
+
+	if (bPasswordWrong							// Wrong
+		|| (bPasswordSupplied && !bAdminIP))	// Supplied and doesn't meet IP filter.
+	{
+		iRole	= RPCHandler::FORBID;
+	}
+	// If supplied, password is correct.
+	else
+	{
+		// Allow admin, if from admin IP and no password is required or it was supplied and correct.
+		iRole = bAdminIP && (!bPasswordRequired || bPasswordSupplied) ? RPCHandler::ADMIN : RPCHandler::GUEST;
+	}
+
+	return iRole;
+}
+
 RPCHandler::RPCHandler(NetworkOPs* netOps)
 {
 	mNetOps		= netOps;
@@ -2314,11 +2346,8 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 
 	if (jvRequest.isMember("url"))
 	{
-// Temporarily off.
-#if 0
 		if (mRole != ADMIN)
 			return rpcError(rpcNO_PERMISSION);
-#endif
 
 		std::string	strUrl		= jvRequest["url"].asString();
 		std::string	strUsername	= jvRequest.isMember("username") ? jvRequest["username"].asString() : "";

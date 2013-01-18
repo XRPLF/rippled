@@ -7,6 +7,7 @@ enum {
 	rpcSUCCESS = 0,
 	rpcBAD_SYNTAX,	// Must be 1 to print usage to command line.
 	rpcJSON_RPC,
+	rpcFORBIDDEN,
 
 	// Error numbers beyond this line are not stable between versions.
 	// Programs should use error tokens.

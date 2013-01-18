@@ -12,6 +12,7 @@
 #include "CallRPC.h"
 #include "InstanceCounter.h"
 #include "Log.h"
+#include "RPCErr.h"
 
 DEFINE_INSTANCE(WebSocketConnection);
 
@@ -91,9 +92,18 @@ public:
 		RPCHandler	mRPCHandler(&mNetwork, this);
 		Json::Value	jvResult(Json::objectValue);
 
-		jvResult["result"] = mRPCHandler.doCommand(
-			jvRequest,
-			mHandler->getPublic() ? RPCHandler::GUEST : RPCHandler::ADMIN);
+		int iRole	= mHandler->getPublic()
+						? RPCHandler::GUEST		// Don't check on the public interface.
+						: iAdminGet(jvRequest, "127.0.0.1");	// XXX Fix this to return the remote IP.
+
+		if (RPCHandler::FORBID == iRole)
+		{
+			jvResult["result"]	= rpcError(rpcFORBIDDEN);
+		}
+		else
+		{
+			jvResult["result"] = mRPCHandler.doCommand(jvRequest, iRole);
+		}
 
 		// Currently we will simply unwrap errors returned by the RPC
 		// API, in the future maybe we can make the responses

@@ -565,10 +565,6 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 		RPCParser	rpParser;
 		Json::Value jvRpcParams(Json::arrayValue);
 
-		if (theConfig.RPC_USER.empty() && theConfig.RPC_PASSWORD.empty())
-			throw std::runtime_error("You must set rpcpassword=<password> in the configuration file. "
-			"If the file does not exist, create it with owner-readable-only file permissions.");
-
 		if (vCmd.empty()) return 1;												// 1 = print usage.
 
 		for (int i = 1; i != vCmd.size(); i++)
@@ -597,8 +593,8 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 			jvOutput	= callRPC(
 				theConfig.RPC_IP,
 				theConfig.RPC_PORT,
-				theConfig.RPC_USER,
-				theConfig.RPC_PASSWORD,
+				theConfig.RPC_ADMIN_USER,
+				theConfig.RPC_ADMIN_PASSWORD,
 				"",
 				jvRequest.isMember("method")			// Allow parser to rewrite method.
 					? jvRequest["method"].asString()

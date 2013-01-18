@@ -37,6 +37,7 @@ bool RPCDoor::isClientAllowed(const std::string& ip)
 {
 	if (theConfig.RPC_ALLOW_REMOTE)
 		return true;
+
 	if (ip == "127.0.0.1")
 		return true;
 

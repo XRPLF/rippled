@@ -35,6 +35,8 @@
 #define SECTION_PEER_SSL_CIPHER_LIST	"peer_ssl_cipher_list"
 #define SECTION_PEER_START_MAX			"peer_start_max"
 #define SECTION_RPC_ALLOW_REMOTE		"rpc_allow_remote"
+#define SECTION_RPC_ADMIN_USER			"rpc_admin_user"
+#define SECTION_RPC_ADMIN_PASSWORD		"rpc_admin_password"
 #define SECTION_RPC_IP					"rpc_ip"
 #define SECTION_RPC_PORT				"rpc_port"
 #define SECTION_RPC_STARTUP				"rpc_startup"
@@ -179,8 +181,6 @@ Config::Config()
 	LEDGER_SECONDS			= 60;
 	LEDGER_CREATOR			= false;
 
-	RPC_USER				= "admin";
-	RPC_PASSWORD			= "pass";
 	RPC_ALLOW_REMOTE		= false;
 
 	PEER_SSL_CIPHER_LIST	= DEFAULT_PEER_SSL_CIPHER_LIST;
@@ -298,6 +298,8 @@ void Config::load()
 			if (sectionSingleB(secConfig, SECTION_PEER_PRIVATE, strTemp))
 				PEER_PRIVATE		= boost::lexical_cast<bool>(strTemp);
 
+			(void) sectionSingleB(secConfig, SECTION_RPC_ADMIN_USER, RPC_ADMIN_USER);
+			(void) sectionSingleB(secConfig, SECTION_RPC_ADMIN_PASSWORD, RPC_ADMIN_PASSWORD);
 			(void) sectionSingleB(secConfig, SECTION_RPC_IP, RPC_IP);
 
 			if (sectionSingleB(secConfig, SECTION_RPC_PORT, strTemp))
