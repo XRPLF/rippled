@@ -531,10 +531,6 @@ void LedgerMaster::pubThread()
 			cLog(lsDEBUG) << "Publishing ledger " << l->getLedgerSeq();
 			setFullLedger(l); // OPTIMIZEME: This is actually more work than we need to do
 			theApp->getOPs().pubLedger(l);
-			BOOST_FOREACH(callback& c, mOnValidate)
-			{
-				c(l);
-			}
 		}
 	}
 }
