@@ -1088,12 +1088,21 @@ void LedgerConsensus::playbackProposals()
 	}
 }
 
-bool LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTransaction::ref txn, Ledger::ref ledger,
+#define LCAT_SUCCESS	0
+#define LCAT_FAIL		1
+#define LCAT_RETRY		2
+
+int LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTransaction::ref txn, Ledger::ref ledger,
 	bool openLedger, bool retryAssured)
 { // Returns false if the transaction has need not be retried.
 	TransactionEngineParams parms = openLedger ? tapOPEN_LEDGER : tapNONE;
 	if (retryAssured)
 		parms = static_cast<TransactionEngineParams>(parms | tapRETRY);
+
+	cLog(lsDEBUG) << "TXN " << txn->getTransactionID()
+		<< (openLedger ? " open" : " closed")
+		<< (retryAssured ? "/retry" : "/final");
+	cLog(lsTRACE) << txn->getJson(0);
 
 #ifndef TRUST_NETWORK
 	try
@@ -1104,19 +1113,19 @@ bool LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTran
 		TER result = engine.applyTransaction(*txn, parms, didApply);
 		if (didApply)
 		{
-			cLog(lsDEBUG) << "Transaction success";
-			return false;
+			cLog(lsDEBUG) << "Transaction success: " << transHuman(result);
+			return LCAT_SUCCESS;
 		}
 
 		if (isTefFailure(result) || isTemMalformed(result))
 		{ // failure
-			cLog(lsDEBUG) << "Transaction failure";
-			return false;
+			cLog(lsDEBUG) << "Transaction failure: " << transHuman(result);
+			return LCAT_FAIL;
 		}
 
-		cLog(lsDEBUG) << "Retry needed";
+		cLog(lsDEBUG) << "Transaction retry: " << transHuman(result);
 		assert(!ledger->hasTransaction(txn->getTransactionID()));
-		return true;
+		return LCAT_RETRY;
 
 #ifndef TRUST_NETWORK
 	}
@@ -1134,7 +1143,6 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 	TransactionEngine engine(applyLedger);
 
 	for (SHAMapItem::pointer item = set->peekFirstItem(); !!item; item = set->peekNextItem(item->getTag()))
-	{
 		if (!checkLedger->hasTransaction(item->getTag()))
 		{
 			cLog(lsINFO) << "Processing candidate transaction: " << item->getTag();
@@ -1144,7 +1152,7 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 #endif
 				SerializerIterator sit(item->peekSerializer());
 				SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
-				if (applyTransaction(engine, txn, applyLedger, openLgr, true))
+				if (applyTransaction(engine, txn, applyLedger, openLgr, true) != LCAT_FAIL)
 					failedTransactions.push_back(txn);
 #ifndef TRUST_NETWORK
 			}
@@ -1154,13 +1162,14 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 			}
 #endif
 		}
-	}
 
 	int changes;
 	bool certainRetry = true;
 
 	for (int pass = 0; pass < 8; ++pass)
 	{
+		cLog(lsDEBUG) << "Pass: " << pass << " Txns: " << failedTransactions.size()
+			<< (certainRetry ? " retriable" : " final");
 		changes = 0;
 
 		CanonicalTXSet::iterator it = failedTransactions.begin();
@@ -1168,20 +1177,28 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 		{
 			try
 			{
-				if (!applyTransaction(engine, it->second, applyLedger, openLgr, certainRetry))
+				switch (applyTransaction(engine, it->second, applyLedger, openLgr, certainRetry))
 				{
-					++changes;
-					it = failedTransactions.erase(it);
+					case LCAT_SUCCESS:
+						it = failedTransactions.erase(it);
+						++changes;
+						break;
+
+					case LCAT_FAIL:
+						it = failedTransactions.erase(it);
+						break;
+
+					case LCAT_RETRY:
+						++it;
 				}
-				else
-					++it;
 			}
 			catch (...)
 			{
-				cLog(lsWARNING) << "   Throws";
+				cLog(lsWARNING) << "Transaction throws";
 				it = failedTransactions.erase(it);
 			}
 		}
+		cLog(lsDEBUG) << "Pass: " << pass << " finished " << changes << " changes";
 
 		// A non-retry pass made no changes
 		if (!changes && !certainRetry)
@@ -1190,7 +1207,6 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 		// Stop retriable passes
 		if ((!changes) || (pass >= 4))
 			certainRetry = false;
-
 	}
 }
 
@@ -1226,6 +1242,7 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 
 	newLCL->peekTransactionMap()->armDirty();
 	newLCL->peekAccountStateMap()->armDirty();
+	cLog(lsDEBUG) << "Applying consensus set transactions to the last closed ledger";
 	applyTransactions(set, newLCL, newLCL, failedTransactions, false);
 	newLCL->updateSkipList();
 	newLCL->setClosed();
@@ -1286,7 +1303,7 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 		{ // we voted NO
 			try
 			{
-				cLog(lsINFO) << "Test applying disputed transaction that did not get in";
+				cLog(lsDEBUG) << "Test applying disputed transaction that did not get in";
 				SerializerIterator sit(it.second->peekTransaction());
 				SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
 				if (applyTransaction(engine, txn, newOL, true, false))
@@ -1294,12 +1311,12 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 			}
 			catch (...)
 			{
-				cLog(lsINFO) << "Failed to apply transaction we voted NO on";
+				cLog(lsDEBUG) << "Failed to apply transaction we voted NO on";
 			}
 		}
 	}
 
-	cLog(lsINFO) << "Applying transactions from current ledger";
+	cLog(lsDEBUG) << "Applying transactions from current open ledger";
 	applyTransactions(theApp->getLedgerMaster().getCurrentLedger()->peekTransactionMap(), newOL, newLCL,
 		failedTransactions, true);
 	theApp->getLedgerMaster().pushLedger(newLCL, newOL, !mConsensusFail);
