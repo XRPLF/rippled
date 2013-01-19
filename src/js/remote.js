@@ -747,6 +747,14 @@ Remote.prototype.request_transaction_entry = function (hash, current) {
     .tx_hash(hash);
 };
 
+Remote.prototype.request_account_info = function (accountID) {
+  var request = new Request(this, 'account_info');
+
+  request.message.ident = UInt160.json_rewrite(accountID);
+
+  return request;
+};
+
 // --> account_index: sub_account index (optional)
 // --> current: true, for the current ledger.
 Remote.prototype.request_account_lines = function (accountID, account_index, current) {
