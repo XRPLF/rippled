@@ -140,7 +140,7 @@ protected:
 	void sendHaveTxSet(const uint256& set, bool direct);
 	void applyTransactions(SHAMap::ref transactionSet, Ledger::ref targetLedger,
 		Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, bool openLgr);
-	bool applyTransaction(TransactionEngine& engine, SerializedTransaction::ref txn, Ledger::ref targetLedger,
+	int applyTransaction(TransactionEngine& engine, SerializedTransaction::ref txn, Ledger::ref targetLedger,
 		bool openLgr, bool retryAssured);
 
 	uint32 roundCloseTime(uint32 closeTime);
