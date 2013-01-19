@@ -340,7 +340,7 @@ TER OfferCreateTransactor::doApply()
 	{
 		cLog(lsWARNING) << "OfferCreate: delay: Offers must be at least partially funded.";
 
-		terResult	= tecUNFUNDED;
+		terResult	= tecUNFUNDED_OFFER;
 	}
 
 	if (tesSUCCESS == terResult && !saTakerPays.isNative())

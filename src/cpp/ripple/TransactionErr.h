@@ -111,6 +111,9 @@ enum TER	// aka TransactionEngineResult
 	// DO NOT CHANGE THESE NUMBERS: They appear in ledger meta data.
 	tecCLAIM					= 100,
 	tecPATH_PARTIAL				= 101,
+	tecUNFUNDED_ADD				= 102,
+	tecUNFUNDED_OFFER			= 103,
+	tecUNFUNDED_PAYMENT			= 104,
 	tecDIR_FULL					= 121,
 	tecINSUF_RESERVE_LINE		= 122,
 	tecINSUF_RESERVE_OFFER		= 123,
@@ -119,7 +122,7 @@ enum TER	// aka TransactionEngineResult
 	tecNO_LINE_INSUF_RESERVE	= 126,
 	tecNO_LINE_REDUNDANT		= 127,
 	tecPATH_DRY					= 128,
-	tecUNFUNDED					= 129,
+	tecUNFUNDED					= 129,	// Old ambigous unfunded.
 };
 
 #define isTelLocal(x)		((x) >= telLOCAL_ERROR && (x) < temMALFORMED)

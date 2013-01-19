@@ -19,7 +19,10 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	tecPATH_DRY,			"tecPATH_DRY",				"Path could not send partial amount."					},
 		{	tecPATH_PARTIAL,		"tecPATH_PARTIAL",			"Path could not send full amount."						},
 
-		{	tecUNFUNDED,			"tecUNFUNDED",				"Source account had insufficient balance for transaction."	},
+		{	tecUNFUNDED,			"tecUNFUNDED",				"One of _ADD, _OFFER, or _SEND. Deprecated."			},
+		{	tecUNFUNDED_ADD,		"tecUNFUNDED_ADD",			"Insufficient XRP balance for WalletAdd."				},
+		{	tecUNFUNDED_OFFER,		"tecUNFUNDED_OFFER",		"Insufficient balance to fund created offer."			},
+		{	tecUNFUNDED_PAYMENT,	"tecUNFUNDED_PAYMENT",		"Insufficient XRP balance to send."						},
 
 		{	tefFAILURE,				"tefFAILURE",				"Failed to apply."										},
 		{	tefALREADY,				"tefALREADY",				"The exact transaction was already in this ledger."		},
