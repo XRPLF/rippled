@@ -1166,7 +1166,7 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 	int changes;
 	bool certainRetry = true;
 
-	for (int pass = 0; pass < 8; ++pass)
+	for (int pass = 0; pass < 12; ++pass)
 	{
 		cLog(lsDEBUG) << "Pass: " << pass << " Txns: " << failedTransactions.size()
 			<< (certainRetry ? " retriable" : " final");
@@ -1205,7 +1205,7 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 			return;
 
 		// Stop retriable passes
-		if ((!changes) || (pass >= 4))
+		if ((!changes) || (pass >= 8))
 			certainRetry = false;
 	}
 }
