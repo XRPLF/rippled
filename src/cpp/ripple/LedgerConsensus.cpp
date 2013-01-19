@@ -294,6 +294,7 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previou
 	mHaveCorrectLCL = (mPreviousLedger->getHash() == mPrevLedgerHash);
 	if (!mHaveCorrectLCL)
 	{
+		theApp->getOPs().setProposing(false, false);
 		handleLCL(mPrevLedgerHash);
 		if (!mHaveCorrectLCL)
 		{
@@ -302,6 +303,8 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previou
 			cLog(lsINFO) << "Correct LCL is: " << prevLCLHash;
 		}
 	}
+	else
+		theApp->getOPs().setProposing(mProposing, mValidating);
 }
 
 void LedgerConsensus::checkOurValidation()
@@ -1343,18 +1346,18 @@ void LedgerConsensus::simulate()
 Json::Value LedgerConsensus::getJson()
 {
 	Json::Value ret(Json::objectValue);
-	ret["proposing"] = mProposing ? "yes" : "no";
-	ret["validating"] = mValidating ? "yes" : "no";
+	ret["proposing"] = mProposing;
+	ret["validating"] = mValidating;
 	ret["proposers"] = static_cast<int>(mPeerPositions.size());
 
 	if (mHaveCorrectLCL)
 	{
-		ret["synched"] = "yes";
+		ret["synched"] = true;
 		ret["ledger_seq"] = mPreviousLedger->getLedgerSeq() + 1;
 		ret["close_granularity"] = mCloseResolution;
 	}
 	else
-		ret["synched"] = "no";
+		ret["synched"] = false;
 
 	switch (mState)
 	{

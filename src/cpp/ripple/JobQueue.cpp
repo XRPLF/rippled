@@ -159,7 +159,7 @@ Json::Value JobQueue::getJson(int)
 		{
 			Json::Value pri(Json::objectValue);
 			if (isOver)
-				pri["over_target"] = "true";
+				pri["over_target"] = true;
 			pri["job_type"] = Job::toString(static_cast<JobType>(i));
 			if (jobCount != 0)
 				pri["waiting"] = static_cast<int>(jobCount);

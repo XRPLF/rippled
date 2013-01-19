@@ -33,9 +33,9 @@ void InfoSub::onSendEmpty()
 }
 
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
-	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mNetTimer(io_service), mLedgerMaster(pLedgerMaster),
-	mCloseTimeOffset(0), mLastCloseProposers(0), mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL),
-	mLastValidationTime(0)
+	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mProposing(false), mValidating(false),
+	mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0), mLastCloseProposers(0),
+	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0)
 {
 }
 
@@ -47,6 +47,14 @@ std::string NetworkOPs::strOperatingMode()
 		"tracking",
 		"full"
 	};
+
+	if (mMode == omFULL)
+	{
+		if (mProposing)
+			return "proposing";
+		if (mValidating)
+			return "validating";
+	}
 
 	return paStatusToken[mMode];
 }
@@ -1100,14 +1108,8 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 	if (theConfig.TESTNET)
 		info["testnet"]		= theConfig.TESTNET;
 
-	switch (mMode)
-	{
-		case omDISCONNECTED: info["server_state"] = "disconnected"; break;
-		case omCONNECTED: info["server_state"] = "connected"; break;
-		case omTRACKING: info["server_state"] = "tracking"; break;
-		case omFULL: info["server_state"] = "validating"; break;
-		default: info["server_state"] = "unknown";
-	}
+	info["server_state"] = strOperatingMode();
+
 	if (mNeedNetworkLedger)
 		info["network_ledger"] = "waiting";
 
