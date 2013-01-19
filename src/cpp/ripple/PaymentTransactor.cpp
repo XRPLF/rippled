@@ -161,7 +161,7 @@ TER PaymentTransactor::doApply()
 			cLog(lsINFO) << boost::str(boost::format("Payment: Delay transaction: Insufficient funds: %s / %s (%d)")
 				% saSrcXRPBalance.getText() % (saDstAmount + uReserve).getText() % uReserve);
 
-			terResult	= tecUNFUNDED;
+			terResult	= tecUNFUNDED_PAYMENT;
 		}
 		else
 		{

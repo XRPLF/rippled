@@ -229,11 +229,16 @@ TER OfferCreateTransactor::takeOffers(
 		}
 	}
 
+	cLog(lsINFO) << "takeOffers: " << transToken(terResult);
+
 	// On storing meta data, delete offers that were found unfunded to prevent encountering them in future.
 	if (tesSUCCESS == terResult)
 	{
 		BOOST_FOREACH(const uint256& uOfferIndex, usOfferUnfundedFound)
 		{
+
+			cLog(lsINFO) << "takeOffers: found unfunded: " << uOfferIndex.ToString();
+
 			terResult	= mEngine->getNodes().offerDelete(uOfferIndex);
 			if (tesSUCCESS != terResult)
 				break;
@@ -245,11 +250,15 @@ TER OfferCreateTransactor::takeOffers(
 		// On success, delete offers that became unfunded.
 		BOOST_FOREACH(const uint256& uOfferIndex, usOfferUnfundedBecame)
 		{
+			cLog(lsINFO) << "takeOffers: became unfunded: " << uOfferIndex.ToString();
+
 			terResult	= mEngine->getNodes().offerDelete(uOfferIndex);
 			if (tesSUCCESS != terResult)
 				break;
 		}
 	}
+
+	cLog(lsINFO) << "takeOffers< " << transToken(terResult);
 
 	return terResult;
 }
@@ -331,7 +340,7 @@ TER OfferCreateTransactor::doApply()
 	{
 		cLog(lsWARNING) << "OfferCreate: delay: Offers must be at least partially funded.";
 
-		terResult	= tecUNFUNDED;
+		terResult	= tecUNFUNDED_OFFER;
 	}
 
 	if (tesSUCCESS == terResult && !saTakerPays.isNative())

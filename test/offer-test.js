@@ -517,7 +517,7 @@ buster.testCase("Offer tests", {
               .offer_create("bob", "50/USD/alice", "200/EUR/carol")
               .on('proposed', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-                  callback(m.result !== 'tecUNFUNDED');
+                  callback(m.result !== 'tecUNFUNDED_OFFER');
 
                   seq = m.tx_json.Sequence;
                 })

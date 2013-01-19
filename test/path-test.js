@@ -661,13 +661,13 @@ buster.testCase("More Path finding", {
     // Test alternative paths with qualities.
 });
 
-buster.testCase("Path negatives", {
+buster.testCase("Issues", {
   // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
   // 'setUp' : testutils.build_setup({ verbose: true }),
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
-  "Issue #5" :
+  "Path negative: Issue #5" :
     function (done) {
       var self = this;
 
@@ -691,14 +691,17 @@ buster.testCase("Path negatives", {
               callback);
           },
           function (callback) {
-            self.what = "Distribute funds.";
+            self.what = "Alice sends via a path";
 
-            testutils.payments(self.remote,
-              {
-                // 4. acct 2 sent acct 3 a 75 iou
-                "bob" : "75/USD/carol",
-              },
-              callback);
+            self.remote.transaction()
+              .payment("alice", "bob", "55/USD/mtgox")
+              .path_add( [ { account: "carol" } ])
+              .on('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
           },
           function (callback) {
             self.what = "Verify balances.";
@@ -760,6 +763,70 @@ buster.testCase("Path negatives", {
               },
               callback);
           },
+        ], function (error) {
+          buster.refute(error, self.what);
+          done();
+        });
+    },
+
+  "//Path negative: Issue #23: smaller" :
+    // alice -120 USD-> michael -25 USD-> amy
+    // alice -25 USD-> Bill -75 USD -> Sam -100 USD-> Amy
+    //
+    // alice -- limit 40 --> bob
+    // alice --> carol --> dan --> bob
+    // Balance of 100 USD Bob - Balance of 37 USD -> Rod
+    //
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+          function (callback) {
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "carol", "dan"], callback);
+          },
+          function (callback) {
+            self.what = "Set credit limits.";
+
+            testutils.credit_limits(self.remote,
+              {
+                "bob"   : [ "40/USD/alice", "20/USD/dan" ],
+                "dan"   : [ "20/USD/carol" ],
+                "carol" : [ "20/USD/alice" ],
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Distribute funds.";
+
+            testutils.payments(self.remote,
+              {
+                // 4. acct 2 sent acct 3 a 75 iou
+                "alice" : "55/USD/bob",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Verify balances.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "bob"   : [ "40/USD/alice", "15/USD/dan" ],
+              },
+              callback);
+          },
+//          function (callback) {
+//            self.what = "Display ledger";
+//
+//            self.remote.request_ledger('current', true)
+//              .on('success', function (m) {
+//                  console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+//
+//                  callback();
+//                })
+//              .request();
+//          },
         ], function (error) {
           buster.refute(error, self.what);
           done();

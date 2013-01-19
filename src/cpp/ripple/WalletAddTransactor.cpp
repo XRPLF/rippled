@@ -38,29 +38,33 @@ TER WalletAddTransactor::doApply()
 		return tefCREATED;
 	}
 
-	STAmount			saAmount		= mTxn.getFieldAmount(sfAmount);
-	STAmount			saSrcBalance	= mTxnAccount->getFieldAmount(sfBalance);
+	// Direct XRP payment.
 
-	if (saSrcBalance < saAmount)
+	STAmount		saDstAmount		= mTxn.getFieldAmount(sfAmount);
+	const STAmount	saSrcBalance	= mTxnAccount->getFieldAmount(sfBalance);
+	const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
+	const uint64	uReserve		= mEngine->getLedger()->getReserve(uOwnerCount);
+	STAmount		saPaid			= mTxn.getTransactionFee();
+
+	// Make sure have enough reserve to send. Allow final spend to use reserve for fee.
+	if (saSrcBalance + saPaid < saDstAmount + uReserve)		// Reserve is not scaled by fee.
 	{
-		std::cerr
-			<< boost::str(boost::format("WalletAdd: Delay transaction: insufficient balance: balance=%s amount=%s")
-			% saSrcBalance.getText()
-			% saAmount.getText())
-			<< std::endl;
+		// Vote no. However, transaction might succeed, if applied in a different order.
+		cLog(lsINFO) << boost::str(boost::format("WalletAdd: Delay transaction: Insufficient funds: %s / %s (%d)")
+			% saSrcBalance.getText() % (saDstAmount + uReserve).getText() % uReserve);
 
-		return tecUNFUNDED;
+		return tecUNFUNDED_ADD;
 	}
 
 	// Deduct initial balance from source account.
-	mTxnAccount->setFieldAmount(sfBalance, saSrcBalance-saAmount);
+	mTxnAccount->setFieldAmount(sfBalance, saSrcBalance-saDstAmount);
 
 	// Create the account.
 	sleDst	= mEngine->entryCreate(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 
 	sleDst->setFieldAccount(sfAccount, uDstAccountID);
 	sleDst->setFieldU32(sfSequence, 1);
-	sleDst->setFieldAmount(sfBalance, saAmount);
+	sleDst->setFieldAmount(sfBalance, saDstAmount);
 	sleDst->setFieldAccount(sfRegularKey, uAuthKeyID);
 
 	std::cerr << "WalletAdd<" << std::endl;

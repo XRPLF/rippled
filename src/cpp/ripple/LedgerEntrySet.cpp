@@ -525,6 +525,11 @@ TER LedgerEntrySet::dirAdd(
 	const uint256&						uLedgerIndex,
 	boost::function<void (SLE::ref)>	fDescriber)
 {
+cLog(lsDEBUG)
+	<< boost::str(boost::format("dirAdd: uRootIndex=%s uLedgerIndex=%s")
+		% uRootIndex.ToString()
+		% uLedgerIndex.ToString());
+
 	SLE::pointer		sleNode;
 	STVector256			svIndexes;
 	SLE::pointer		sleRoot		= entryCache(ltDIR_NODE, uRootIndex);
