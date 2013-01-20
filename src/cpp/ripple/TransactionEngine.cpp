@@ -112,11 +112,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 
 		cLog(lsINFO) << "applyTransaction: terResult=" << strToken << " : " << terResult << " : " << strHuman;
 
-		if (terResult == tesSUCCESS)
-			didApply = true;
-		else if (isTepSuccess(terResult) && isSetBit(params, tapRETRY))
-			didApply = true;
-		else if (isTecClaim(terResult) && !isSetBit(params, tapRETRY))
+		if (isTecClaim(terResult) && !isSetBit(params, tapRETRY))
 		{ // only claim the transaction fee
 			cLog(lsINFO) << "Reprocessing to only claim fee";
 			mNodes.clear();
@@ -155,6 +151,8 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				}
 			}
 		}
+		else if ((terResult == tesSUCCESS) || (isTesSuccess(terResult) && !isSetBit(params, tapRETRY)))
+			didApply = true;
 		else
 			cLog(lsINFO) << "Not applying transaction";
 
