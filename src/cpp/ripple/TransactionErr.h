@@ -122,7 +122,7 @@ enum TER	// aka TransactionEngineResult
 	tecNO_LINE_INSUF_RESERVE	= 126,
 	tecNO_LINE_REDUNDANT		= 127,
 	tecPATH_DRY					= 128,
-	tecUNFUNDED					= 129,	// Depericated, old ambiguous unfunded.
+	tecUNFUNDED					= 129,	// Deprecated, old ambiguous unfunded.
 };
 
 #define isTelLocal(x)		((x) >= telLOCAL_ERROR && (x) < temMALFORMED)
