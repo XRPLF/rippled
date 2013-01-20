@@ -495,7 +495,7 @@ buster.testCase("Sending future", {
     // Ripple with one-way credit path.
 });
 
-buster.testCase("Nexus", {
+buster.testCase("Gateway", {
   // 'setUp'     : testutils.build_setup({ verbose: true }),
   'setUp'     : testutils.build_setup(),
   'tearDown'  : testutils.build_teardown(),

@@ -769,9 +769,7 @@ buster.testCase("Issues", {
         });
     },
 
-  "//Path negative: Issue #23: smaller" :
-    // alice -120 USD-> michael -25 USD-> amy
-    // alice -25 USD-> Bill -75 USD -> Sam -100 USD-> Amy
+  "Path negative: ripple-client issue #23: smaller" :
     //
     // alice -- limit 40 --> bob
     // alice --> carol --> dan --> bob
@@ -792,20 +790,22 @@ buster.testCase("Issues", {
             testutils.credit_limits(self.remote,
               {
                 "bob"   : [ "40/USD/alice", "20/USD/dan" ],
-                "dan"   : [ "20/USD/carol" ],
                 "carol" : [ "20/USD/alice" ],
+                "dan"   : [ "20/USD/carol" ],
               },
               callback);
           },
           function (callback) {
-            self.what = "Distribute funds.";
+            self.what = "Payment.";
 
-            testutils.payments(self.remote,
-              {
-                // 4. acct 2 sent acct 3 a 75 iou
-                "alice" : "55/USD/bob",
-              },
-              callback);
+            self.remote.transaction()
+              .payment('alice', 'bob', "55/USD/bob")
+              .build_path(true)
+              .once('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
           },
           function (callback) {
             self.what = "Verify balances.";
@@ -813,6 +813,73 @@ buster.testCase("Issues", {
             testutils.verify_balances(self.remote,
               {
                 "bob"   : [ "40/USD/alice", "15/USD/dan" ],
+              },
+              callback);
+          },
+//          function (callback) {
+//            self.what = "Display ledger";
+//
+//            self.remote.request_ledger('current', true)
+//              .on('success', function (m) {
+//                  console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+//
+//                  callback();
+//                })
+//              .request();
+//          },
+        ], function (error) {
+          buster.refute(error, self.what);
+          done();
+        });
+    },
+
+  "Path negative: ripple-client issue #23: larger" :
+    //
+    // alice -120 USD-> amazon -25 USD-> bob
+    // alice -25 USD-> carol -75 USD -> dan -100 USD-> bob
+    //
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+          function (callback) {
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "carol", "dan", "amazon"], callback);
+          },
+          function (callback) {
+            self.what = "Set credit limits.";
+
+            testutils.credit_limits(self.remote,
+              {
+                "amazon"  : [ "120/USD/alice" ],
+                "bob"     : [ "25/USD/amazon", "100/USD/dan" ],
+                "carol"   : [ "25/USD/alice" ],
+                "dan"     : [ "75/USD/carol" ],
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Payment.";
+
+            self.remote.transaction()
+              .payment('alice', 'bob', "50/USD/bob")
+              .build_path(true)
+              .once('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Verify balances.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "alice"   : [ "-25/USD/amazon", "-25/USD/carol" ],
+                "bob"     : [ "25/USD/amazon", "25/USD/dan" ],
+                "carol"   : [ "25/USD/alice", "-25/USD/dan" ],
+                "dan"     : [ "25/USD/carol", "-25/USD/bob" ],
               },
               callback);
           },

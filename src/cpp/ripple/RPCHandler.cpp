@@ -77,9 +77,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 	RippleAddress	naSeed;
 	RippleAddress	raSrcAddressID;
 
-	cLog(lsDEBUG)
-		<< boost::str(boost::format("transactionSign: %s")
-			% jvRequest);
+	cLog(lsDEBUG) << boost::str(boost::format("transactionSign: %s") % jvRequest);
 
 	if (!jvRequest.isMember("secret") || !jvRequest.isMember("tx_json"))
 	{
@@ -177,15 +175,15 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 
 			Pathfinder pf(raSrcAddressID, dstAccountID, saSendMax.getCurrency(), saSendMax.getIssuer(), saSend);
 
-			if (!pf.findPaths(5, 3, spsPaths))
+			if (!pf.findPaths(7, 3, spsPaths))
 			{
-				cLog(lsDEBUG) << "payment: build_path: No paths found.";
+				cLog(lsDEBUG) << "transactionSign: build_path: No paths found.";
 
 				return rpcError(rpcNO_PATH);
 			}
 			else
 			{
-				cLog(lsDEBUG) << "payment: build_path: " << spsPaths.getJson(0);
+				cLog(lsDEBUG) << "transactionSign: build_path: " << spsPaths.getJson(0);
 			}
 
 			if (!spsPaths.isEmpty())
@@ -1146,7 +1144,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 			STPathSet	spsComputed;
 			Pathfinder	pf(raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount);
 
-			if (!pf.findPaths(5, 3, spsComputed))
+			if (!pf.findPaths(7, 3, spsComputed))
 			{
 				cLog(lsDEBUG) << "ripple_path_find: No paths found.";
 			}
