@@ -691,11 +691,11 @@ buster.testCase("Issues", {
               callback);
           },
           function (callback) {
-            self.what = "Alice sends via a path";
+            // 4. acct 2 sent acct 3 a 75 iou
+            self.what = "Bob sends Carol 75.";
 
             self.remote.transaction()
-              .payment("alice", "bob", "55/USD/mtgox")
-              .path_add( [ { account: "carol" } ])
+              .payment("bob", "carol", "75/USD/bob")
               .on('proposed', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
 
