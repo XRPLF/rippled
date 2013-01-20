@@ -749,7 +749,7 @@ buster.testCase("Gateway", {
         });
     },
 
-  "=>subscribe test: customer to customer with and without transfer fee: transaction retry logic" :
+  "subscribe test: customer to customer with and without transfer fee: transaction retry logic" :
     function (done) {
       var self = this;
 
