@@ -59,7 +59,7 @@ void WSDoor::startListening()
 
 	SSL_CTX_set_tmp_dh_callback(mCtx->native_handle(), handleTmpDh);
 
-	if (theConfig.WEBSOCKET_SECURE)
+	if (mPublic ? theConfig.WEBSOCKET_PUBLIC_SECURE : theConfig.WEBSOCKET_SECURE)
 	{
 		// Construct a single handler for all requests.
 		websocketpp::server_tls::handler::ptr	handler(new WSServerHandler<websocketpp::server_tls>(mCtx, mPublic));

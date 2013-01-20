@@ -101,6 +101,7 @@ public:
 	// Websocket networking parameters
 	std::string					WEBSOCKET_PUBLIC_IP;		// XXX Going away. Merge with the inbound peer connction.
 	int							WEBSOCKET_PUBLIC_PORT;
+	bool						WEBSOCKET_PUBLIC_SECURE;
 
 	std::string					WEBSOCKET_IP;
 	int							WEBSOCKET_PORT;

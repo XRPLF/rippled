@@ -49,6 +49,7 @@
 #define SECTION_VALIDATION_SEED			"validation_seed"
 #define SECTION_WEBSOCKET_PUBLIC_IP		"websocket_public_ip"
 #define SECTION_WEBSOCKET_PUBLIC_PORT	"websocket_public_port"
+#define SECTION_WEBSOCKET_PUBLIC_SECURE	"websocket_public_secure"
 #define SECTION_WEBSOCKET_IP			"websocket_ip"
 #define SECTION_WEBSOCKET_PORT			"websocket_port"
 #define SECTION_WEBSOCKET_SECURE		"websocket_secure"
@@ -177,6 +178,7 @@ Config::Config()
 	RPC_PORT				= 5001;
 	WEBSOCKET_PORT			= SYSTEM_WEBSOCKET_PORT;
 	WEBSOCKET_PUBLIC_PORT	= SYSTEM_WEBSOCKET_PUBLIC_PORT;
+	WEBSOCKET_PUBLIC_SECURE	= true;
 	WEBSOCKET_SECURE		= false;
 	NUMBER_CONNECTIONS		= 30;
 
@@ -333,6 +335,9 @@ void Config::load()
 
 			if (sectionSingleB(secConfig, SECTION_WEBSOCKET_SECURE, strTemp))
 				WEBSOCKET_SECURE	= boost::lexical_cast<bool>(strTemp);
+
+			if (sectionSingleB(secConfig, SECTION_WEBSOCKET_PUBLIC_SECURE, strTemp))
+				WEBSOCKET_PUBLIC_SECURE	= boost::lexical_cast<bool>(strTemp);
 
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_CERT, WEBSOCKET_SSL_CERT);
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_CHAIN, WEBSOCKET_SSL_CHAIN);
