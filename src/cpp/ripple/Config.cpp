@@ -104,7 +104,7 @@ void Config::setup(const std::string& strConf, bool bTestNet, bool bQuiet)
 	{
 		// --conf=<path> : everything is relative that file.
 		CONFIG_FILE				= strConfFile;
-		CONFIG_DIR				= CONFIG_FILE;
+		CONFIG_DIR				= boost::filesystem::absolute(CONFIG_FILE);
 			CONFIG_DIR.remove_filename();
 		DATA_DIR				= CONFIG_DIR / strDbPath;
 	}
