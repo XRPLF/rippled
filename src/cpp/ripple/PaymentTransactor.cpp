@@ -73,31 +73,31 @@ TER PaymentTransactor::doApply()
 	}
 	else if (bXRPDirect && bMax)
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: SendMax not allowed for XRP.";
+		cLog(lsINFO) << "Payment: Malformed transaction: SendMax specified for XRP to XRP.";
 
 		return temBAD_SEND_XRP_MAX;
 	}
 	else if (bXRPDirect && bPaths)
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: Paths specfied for XRP to XRP.";
+		cLog(lsINFO) << "Payment: Malformed transaction: Paths specified for XRP to XRP.";
 
 		return temBAD_SEND_XRP_PATHS;
 	}
 	else if (bXRPDirect && bPartialPayment)
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: Partial payment specfied for XRP to XRP.";
+		cLog(lsINFO) << "Payment: Malformed transaction: Partial payment specified for XRP to XRP.";
 
 		return temBAD_SEND_XRP_PARTIAL;
 	}
 	else if (bXRPDirect && bLimitQuality)
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: Limit quality specfied for XRP to XRP.";
+		cLog(lsINFO) << "Payment: Malformed transaction: Limit quality specified for XRP to XRP.";
 
 		return temBAD_SEND_XRP_LIMIT;
 	}
 	else if (bXRPDirect && bNoRippleDirect)
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: No ripple direct specfied for XRP to XRP.";
+		cLog(lsINFO) << "Payment: Malformed transaction: No ripple direct specified for XRP to XRP.";
 
 		return temBAD_SEND_XRP_NO_DIRECT;
 	}

@@ -60,7 +60,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	temBAD_TRANSFER_RATE,	"temBAD_TRANSFER_RATE",		"Malformed: Transfer rate must be >= 1.0"				},
 		{	temBAD_SEQUENCE,		"temBAD_SEQUENCE",			"Malformed: Sequence is not in the past."				},
 		{	temBAD_SEND_XRP_LIMIT,		"temBAD_SEND_XRP_LIMIT",		"Malformed: Limit quality is not allowed for XRP to XRP."		},
-		{	temBAD_SEND_XRP_MAX,		"temBAD_SEND_XRP_MAX",			"Malformed: Send max is not allowed for XRP."					},
+		{	temBAD_SEND_XRP_MAX,		"temBAD_SEND_XRP_MAX",			"Malformed: Send max is not allowed for XRP to XRP."			},
 		{	temBAD_SEND_XRP_NO_DIRECT,	"temBAD_SEND_XRP_NO_DIRECT",	"Malformed: No Ripple direct is not allowed for XRP to XRP."	},
 		{	temBAD_SEND_XRP_PARTIAL,	"temBAD_SEND_XRP_PARTIAL",		"Malformed: Partial payment is not allowed for XRP to XRP."		},
 		{	temBAD_SEND_XRP_PATHS,		"temBAD_SEND_XRP_PATHS",		"Malformed: Paths are not allowed for XRP to XRP."				},
