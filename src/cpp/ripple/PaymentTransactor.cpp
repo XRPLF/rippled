@@ -25,6 +25,7 @@ TER PaymentTransactor::doApply()
 		: STAmount(saDstAmount.getCurrency(), mTxnAccountID, saDstAmount.getMantissa(), saDstAmount.getExponent(), saDstAmount.isNegative());
 	const uint160	uSrcCurrency	= saMaxAmount.getCurrency();
 	const uint160	uDstCurrency	= saDstAmount.getCurrency();
+	const bool		bXRPDirect		= uSrcCurrency.isZero() && uDstCurrency.isZero();
 
 	cLog(lsINFO) << boost::str(boost::format("Payment> saMaxAmount=%s saDstAmount=%s")
 		% saMaxAmount.getFullText()
@@ -70,11 +71,35 @@ TER PaymentTransactor::doApply()
 
 		return temREDUNDANT_SEND_MAX;
 	}
-	else if (bMax && (saDstAmount.isNative() && saMaxAmount.isNative()))
+	else if (bXRPDirect && bMax)
 	{
 		cLog(lsINFO) << "Payment: Malformed transaction: SendMax not allowed for XRP.";
 
-		return temBAD_SEND_MAX_XRP;
+		return temBAD_SEND_XRP_MAX;
+	}
+	else if (bXRPDirect && bPaths)
+	{
+		cLog(lsINFO) << "Payment: Malformed transaction: Paths specfied for XRP to XRP.";
+
+		return temBAD_SEND_XRP_PATHS;
+	}
+	else if (bXRPDirect && bPartialPayment)
+	{
+		cLog(lsINFO) << "Payment: Malformed transaction: Partial payment specfied for XRP to XRP.";
+
+		return temBAD_SEND_XRP_PARTIAL;
+	}
+	else if (bXRPDirect && bLimitQuality)
+	{
+		cLog(lsINFO) << "Payment: Malformed transaction: Limit quality specfied for XRP to XRP.";
+
+		return temBAD_SEND_XRP_LIMIT;
+	}
+	else if (bXRPDirect && bNoRippleDirect)
+	{
+		cLog(lsINFO) << "Payment: Malformed transaction: No ripple direct specfied for XRP to XRP.";
+
+		return temBAD_SEND_XRP_NO_DIRECT;
 	}
 
 	SLE::pointer	sleDst	= mEngine->entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
