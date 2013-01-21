@@ -1,5 +1,18 @@
-var net = require("net"),
-    domains = ["*:*"]; // Domain:Port
+#!/usr/bin/node
+//
+// This program allows IE 9 ripple-clients to make websocket connections to
+// rippled using flash.  As IE 9 does not have websocket support, this required
+// if you wish to support IE 9 ripple-clients.
+//
+// http://www.lightsphere.com/dev/articles/flash_socket_policy.html
+//
+// For better security, be sure to set the Port below to the port of your
+// [websocket_public_port].
+//
+
+var net	    = require("net"),
+    port    = "*",
+    domains = ["*:"+port]; // Domain:Port
 
 net.createServer(
   function(socket) {
