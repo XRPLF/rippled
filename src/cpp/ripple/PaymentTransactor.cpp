@@ -89,6 +89,14 @@ TER PaymentTransactor::doApply()
 			// Another transaction could create the account and then this transaction would succeed.
 			return tecNO_DST;
 		}
+		else if (isSetBit(mParams, tapOPEN_LEDGER) && bPartialPayment)
+		{
+			cLog(lsINFO) << "Payment: Delay transaction: Partial payment not allowed to create account.";
+			// Make retry work smaller, by rejecting this.
+
+			// Another transaction could create the account and then this transaction would succeed.
+			return telNO_DST_PARTIAL;
+		}
 		else if (saDstAmount.getNValue() < mEngine->getLedger()->getReserve(0))	// Reserve is not scaled by load.
 		{
 			cLog(lsINFO) << "Payment: Delay transaction: Destination account does not exist. Insufficent payment to create account.";

@@ -42,6 +42,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	telBAD_PATH_COUNT,		"telBAD_PATH_COUNT",		"Malformed: Too many paths."							},
 		{	telBAD_PUBLIC_KEY,		"telBAD_PUBLIC_KEY",		"Public key too long."									},
 		{	telINSUF_FEE_P,			"telINSUF_FEE_P",			"Fee insufficient."										},
+		{	telNO_DST_PARTIAL,		"telNO_DST_PARTIAL",		"Partial payment to create account not allowed."		},
 
 		{	temMALFORMED,			"temMALFORMED",				"Malformed transaction."								},
 		{	temBAD_AMOUNT,			"temBAD_AMOUNT",			"Can only send positive amounts."						},

@@ -17,6 +17,7 @@ enum TER	// aka TransactionEngineResult
 	telBAD_PATH_COUNT,
 	telBAD_PUBLIC_KEY,
 	telINSUF_FEE_P,
+	telNO_DST_PARTIAL,
 
 	// -299 .. -200: M Malformed (bad signature)
 	// Causes:
