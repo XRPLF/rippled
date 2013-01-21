@@ -4,7 +4,7 @@
 //
 
 if (3 != process.argv.length) {
-  process.stderr.write("Usage: " + process.argv[1] + " email_address\n\nReturns gravitar style hash.\n");
+  process.stderr.write("Usage: " + process.argv[1] + " email_address\n\nReturns gravatar style hash.\n");
   process.exit(1);
 
 } else {
