@@ -271,6 +271,18 @@ var isTefFailure = function (engine_result_code) {
   return (engine_result_code >= -299 && engine_result_code <  199);
 };
 
+/**
+ * Server states that we will treat as the server being online.
+ *
+ * Our requirements are that the server can process transactions and notify
+ * us of changes.
+ */
+Remote.online_states = [
+  'proposing',
+  'validating',
+  'full'
+];
+
 Remote.flags = {
   'OfferCreate' : {
     'Passive'                 : 0x00010000,
@@ -533,7 +545,7 @@ Remote.prototype._connect_message = function (ws, json) {
       case 'serverStatus':
         // This message is only received when online. As we are connected, it is the definative final state.
         this._set_state(
-          message.server_status === 'tracking' ||  message.server_status === 'full'
+          Remote.online_states.indexOf(message.server_status) !== -1
             ? 'online'
             : 'offline');
         break;
@@ -916,7 +928,7 @@ Remote.prototype._server_subscribe = function () {
         self._reserve_inc   = message.reserve_inc;
         self._server_status = message.server_status;
 
-        if (message.server_status === 'tracking' ||  message.server_status === 'full') {
+        if (Remote.online_states.indexOf(message.server_status) !== -1) {
           self._set_state('online');
         }
 
