@@ -112,9 +112,11 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 
 		cLog(lsINFO) << "applyTransaction: terResult=" << strToken << " : " << terResult << " : " << strHuman;
 
-		if (isTecClaim(terResult) && !isSetBit(params, tapRETRY))
+		if (isTesSuccess(terResult))
+			didApply = true;
+		else if (isTecClaim(terResult) && !isSetBit(params, tapRETRY))
 		{ // only claim the transaction fee
-			cLog(lsINFO) << "Reprocessing to only claim fee";
+			cLog(lsDEBUG) << "Reprocessing to only claim fee";
 			mNodes.clear();
 
 			SLE::pointer txnAcct = entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(txn.getSourceAccount()));
@@ -151,14 +153,12 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				}
 			}
 		}
-		else if ((terResult == tesSUCCESS) || (isTesSuccess(terResult) && !isSetBit(params, tapRETRY)))
-			didApply = true;
 		else
-			cLog(lsINFO) << "Not applying transaction";
+			cLog(lsDEBUG) << "Not applying transaction";
 
 		if (didApply)
 		{
-			// Transaction succeeded fully or (retries are not allowed and the transaction succeeded partially).
+			// Transaction succeeded fully or (retries are not allowed and the transaction could claim a fee)
 			Serializer m;
 			mNodes.calcRawMeta(m, terResult, mTxnSeq++);
 
@@ -177,8 +177,8 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				if (!mLedger->addTransaction(txID, s, m))
 					assert(false);
 
-				STAmount saPaid = txn.getTransactionFee();
 				// Charge whatever fee they specified.
+				STAmount saPaid = txn.getTransactionFee();
 				mLedger->destroyCoins(saPaid.getNValue());
 			}
 		}

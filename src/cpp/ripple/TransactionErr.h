@@ -134,7 +134,7 @@ enum TER	// aka TransactionEngineResult
 #define isTemMalformed(x)	((x) >= temMALFORMED && (x) < tefFAILURE)
 #define isTefFailure(x)		((x) >= tefFAILURE && (x) < terRETRY)
 #define isTerRetry(x)		((x) >= terRETRY && (x) < tesSUCCESS)
-#define isTesSuccess(x)		((x) >= tesSUCCESS)
+#define isTesSuccess(x)		((x) == tesSUCCESS)
 #define isTecClaim(x)		((x) >= tecCLAIM)
 
 bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman);
