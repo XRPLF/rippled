@@ -41,9 +41,10 @@ void startServer()
 
 			RPCHandler	rhHandler(&theApp->getOPs());
 
-			std::cerr << "Result: "
-				<< rhHandler.doCommand(jvCommand, RPCHandler::ADMIN)
-				<< std::endl;
+			Json::Value	jvResult	= rhHandler.doCommand(jvCommand, RPCHandler::ADMIN);
+
+			if (!theConfig.QUIET)
+				std::cerr << "Result: " << jvResult << std::endl;
 		}
 	}
 
