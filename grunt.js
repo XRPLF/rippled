@@ -21,6 +21,7 @@ module.exports = function(grunt) {
           "src/js/sjcl/core/codecBase64.js",
           "src/js/sjcl/core/codecBytes.js",
           "src/js/sjcl/core/sha256.js",
+          "src/js/sjcl/core/sha512.js",
           "src/js/sjcl/core/sha1.js",
           "src/js/sjcl/core/ccm.js",
 //          "src/js/sjcl/core/cbc.js",
