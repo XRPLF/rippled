@@ -16,6 +16,9 @@
 
 #define TX_ACQUIRE_TIMEOUT	250
 
+#define LEDGER_TOTAL_PASSES 8
+#define LEDGER_RETRY_PASSES 5
+
 #define TRUST_NETWORK
 
 #define LC_DEBUG
@@ -1166,7 +1169,7 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 	int changes;
 	bool certainRetry = true;
 
-	for (int pass = 0; pass < 12; ++pass)
+	for (int pass = 0; pass < LEDGER_TOTAL_PASSES; ++pass)
 	{
 		cLog(lsDEBUG) << "Pass: " << pass << " Txns: " << failedTransactions.size()
 			<< (certainRetry ? " retriable" : " final");
@@ -1205,7 +1208,7 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 			return;
 
 		// Stop retriable passes
-		if ((!changes) || (pass >= 8))
+		if ((!changes) || (pass >= LEDGER_RETRY_PASSES))
 			certainRetry = false;
 	}
 }
