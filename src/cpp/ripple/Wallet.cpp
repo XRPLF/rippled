@@ -30,7 +30,8 @@ void Wallet::start()
 			throw std::runtime_error("unable to retrieve new node identity.");
 	}
 
-	std::cerr << "NodeIdentity: " << mNodePublicKey.humanNodePublic() << std::endl;
+	if (!theConfig.QUIET)
+		std::cerr << "NodeIdentity: " << mNodePublicKey.humanNodePublic() << std::endl;
 
 	theApp->getUNL().start();
 }
@@ -71,7 +72,8 @@ bool Wallet::nodeIdentityLoad()
 
 // Create and store a network identity.
 bool Wallet::nodeIdentityCreate() {
-	std::cerr << "NodeIdentity: Creating." << std::endl;
+	if (!theConfig.QUIET)
+		std::cerr << "NodeIdentity: Creating." << std::endl;
 
 	//
 	// Generate the public and private key
@@ -116,7 +118,8 @@ bool Wallet::nodeIdentityCreate() {
 		% sqlEscape(strDh1024)));
 	// XXX Check error result.
 
-	std::cerr << "NodeIdentity: Created." << std::endl;
+	if (!theConfig.QUIET)
+		std::cerr << "NodeIdentity: Created." << std::endl;
 
 	return true;
 }

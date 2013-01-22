@@ -37,13 +37,14 @@ void startServer()
 			const Json::Value& jvCommand	= theConfig.RPC_STARTUP[i];
 
 			if (!theConfig.QUIET)
-				cerr << "Startup RPC: " << jvCommand << endl;
+				std::cerr << "Startup RPC: " << jvCommand << std::endl;
 
 			RPCHandler	rhHandler(&theApp->getOPs());
 
-			std::cerr << "Result: "
-				<< rhHandler.doCommand(jvCommand, RPCHandler::ADMIN)
-				<< std::endl;
+			Json::Value	jvResult	= rhHandler.doCommand(jvCommand, RPCHandler::ADMIN);
+
+			if (!theConfig.QUIET)
+				std::cerr << "Result: " << jvResult << std::endl;
 		}
 	}
 
