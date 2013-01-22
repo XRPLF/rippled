@@ -15,8 +15,6 @@
 //
 
 // npm
-var WebSocket     = require('ws');
-
 var EventEmitter  = require('events').EventEmitter;
 var Amount        = require('./amount.js').Amount;
 var Currency      = require('./amount.js').Currency;
@@ -427,6 +425,7 @@ Remote.prototype._connect_start = function () {
 
   if (this.trace) console.log("remote: connect: %s", url);
 
+  var WebSocket     = require('ws');
   var ws = this.ws = new WebSocket(url);
 
   ws.response = {};
