@@ -78,7 +78,7 @@ std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts()
 			{
 				BOOST_FOREACH(const SerializedType& field, inner->peekData())
 				{
-					const STAccount* sa = dynamic_cast<const STAccount*>(&it);
+					const STAccount* sa = dynamic_cast<const STAccount*>(&field);
 					if (sa)
 						addIfUnique(accounts, sa->getValueNCA());
 					else if ((field.getFName() == sfLowLimit) || (field.getFName() == sfHighLimit))
