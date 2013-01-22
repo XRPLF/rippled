@@ -442,7 +442,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 						db->executeSQL(sql); // may already be in there
 					}
 					else
-					 cLog(lsWARNING) << "Transaaction in ledger " << mLedgerSeq << " affects not accounts";
+						cLog(lsWARNING) << "Transaction in ledger " << mLedgerSeq << " affects no accounts";
 				}
 
 				if (SQL_EXISTS(db, boost::str(transExists %	txn.getTransactionID().GetHex())))
