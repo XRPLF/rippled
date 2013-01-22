@@ -14,7 +14,7 @@ module.exports = function(grunt) {
       sjcl: {
         src: [
           "src/js/sjcl/core/sjcl.js",
-//          "src/js/sjcl/core/aes.js",
+          "src/js/sjcl/core/aes.js",
           "src/js/sjcl/core/bitArray.js",
           "src/js/sjcl/core/codecString.js",
           "src/js/sjcl/core/codecHex.js",
@@ -22,11 +22,11 @@ module.exports = function(grunt) {
           "src/js/sjcl/core/codecBytes.js",
           "src/js/sjcl/core/sha256.js",
           "src/js/sjcl/core/sha1.js",
-//          "src/js/sjcl/core/ccm.js",
+          "src/js/sjcl/core/ccm.js",
 //          "src/js/sjcl/core/cbc.js",
 //          "src/js/sjcl/core/ocb2.js",
-//          "src/js/sjcl/core/hmac.js",
-//          "src/js/sjcl/core/pbkdf2.js",
+          "src/js/sjcl/core/hmac.js",
+          "src/js/sjcl/core/pbkdf2.js",
           "src/js/sjcl/core/random.js",
           "src/js/sjcl/core/convenience.js",
           "src/js/sjcl/core/bn.js",
