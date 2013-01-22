@@ -1152,7 +1152,7 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 #endif
 				SerializerIterator sit(item->peekSerializer());
 				SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
-				if (applyTransaction(engine, txn, applyLedger, openLgr, true) != LCAT_RETRY)
+				if (applyTransaction(engine, txn, applyLedger, openLgr, true) == LCAT_RETRY)
 					failedTransactions.push_back(txn);
 #ifndef TRUST_NETWORK
 			}
