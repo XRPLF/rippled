@@ -1360,6 +1360,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 		}
 	}
 
+	// FIXME: This can crash. An InfoSub can go away while we hold a regular pointer to it.
 	if (!notify.empty())
 	{
 		Json::Value	jvObj	= transJson(stTxn, terResult, bAccepted, lpCurrent, "account");
