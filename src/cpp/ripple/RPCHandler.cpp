@@ -40,9 +40,13 @@ int iAdminGet(const Json::Value& jvRequest, const std::string& strRemoteIp)
 										: true
 									: false;
 	// Meets IP restriction for admin.
-	bool	bAdminIP			= theConfig.RPC_ADMIN_ALLOW.empty()
-									? strRemoteIp == "127.0.0.1"
-									: strRemoteIp == theConfig.RPC_ADMIN_ALLOW;
+	bool	bAdminIP			= false;
+
+	BOOST_FOREACH(const std::string& strAllowIp, theConfig.RPC_ADMIN_ALLOW)
+	{
+		if (strAllowIp == strRemoteIp)
+			bAdminIP	= true;
+	}
 
 	if (bPasswordWrong							// Wrong
 		|| (bPasswordSupplied && !bAdminIP))	// Supplied and doesn't meet IP filter.

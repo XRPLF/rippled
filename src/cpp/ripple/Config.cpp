@@ -187,6 +187,7 @@ Config::Config()
 	LEDGER_CREATOR			= false;
 
 	RPC_ALLOW_REMOTE		= false;
+	RPC_ADMIN_ALLOW.push_back("127.0.0.1");
 
 	PEER_SSL_CIPHER_LIST	= DEFAULT_PEER_SSL_CIPHER_LIST;
 	PEER_SCAN_INTERVAL_MIN	= DEFAULT_PEER_SCAN_INTERVAL_MIN;
@@ -307,7 +308,12 @@ void Config::load()
 			if (sectionSingleB(secConfig, SECTION_PEER_PRIVATE, strTemp))
 				PEER_PRIVATE		= boost::lexical_cast<bool>(strTemp);
 
-			(void) sectionSingleB(secConfig, SECTION_RPC_ADMIN_ALLOW, RPC_ADMIN_ALLOW);
+			smtTmp = sectionEntries(secConfig, SECTION_RPC_ADMIN_ALLOW);
+			if (smtTmp)
+			{
+				RPC_ADMIN_ALLOW = *smtTmp;
+			}
+
 			(void) sectionSingleB(secConfig, SECTION_RPC_ADMIN_PASSWORD, RPC_ADMIN_PASSWORD);
 			(void) sectionSingleB(secConfig, SECTION_RPC_ADMIN_USER, RPC_ADMIN_USER);
 			(void) sectionSingleB(secConfig, SECTION_RPC_IP, RPC_IP);

@@ -113,7 +113,7 @@ public:
 	// RPC parameters
 	std::string					RPC_IP;
 	int							RPC_PORT;
-	std::string					RPC_ADMIN_ALLOW;
+	std::vector<std::string>	RPC_ADMIN_ALLOW;
 	std::string					RPC_ADMIN_PASSWORD;
 	std::string					RPC_ADMIN_USER;
 	std::string					RPC_PASSWORD;
