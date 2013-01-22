@@ -200,8 +200,8 @@ TER OfferCreateTransactor::takeOffers(
 						cLog(lsINFO) << "takeOffers: offer partial claim.";
 					}
 
-					assert(!!saSubTakerGot.getIssuer());
-					assert(!!saSubTakerPaid.getIssuer());
+					assert(uTakerGetsAccountID == saSubTakerGot.getIssuer());
+					assert(uTakerPaysAccountID == saSubTakerPaid.getIssuer());
 
 					// Offer owner pays taker.
 					// saSubTakerGot.setIssuer(uTakerGetsAccountID);	// XXX Move this earlier?
