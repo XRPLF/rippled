@@ -24,6 +24,7 @@ LedgerHistory::LedgerHistory() : mLedgersByHash("LedgerCache", CACHED_LEDGER_NUM
 
 void LedgerHistory::addLedger(Ledger::pointer ledger)
 {
+	assert(ledger->isImmutable());
 	mLedgersByHash.canonicalize(ledger->getHash(), ledger, true);
 }
 
@@ -78,13 +79,17 @@ Ledger::pointer LedgerHistory::getLedgerByHash(const uint256& hash)
 {
 	Ledger::pointer ret = mLedgersByHash.fetch(hash);
 	if (ret)
+	{
+		assert(ret->getHash() == hash);
 		return ret;
+	}
 
 	ret = Ledger::loadByHash(hash);
 	if (!ret)
 		return ret;
 	assert(ret->getHash() == hash);
 	mLedgersByHash.canonicalize(ret->getHash(), ret);
+	assert(ret->getHash() == hash);
 
 	return ret;
 }

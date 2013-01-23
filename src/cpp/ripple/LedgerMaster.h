@@ -105,10 +105,11 @@ public:
 	Ledger::pointer getLedgerByHash(const uint256& hash)
 	{
 		if (hash.isZero())
-			return mCurrentLedger;
+			return boost::make_shared<Ledger>(boost::ref(*mCurrentLedger), false);
 
 		if (mCurrentLedger && (mCurrentLedger->getHash() == hash))
-			return mCurrentLedger;
+			return boost::make_shared<Ledger>(boost::ref(*mCurrentLedger), false);
+
 		if (mFinalizedLedger && (mFinalizedLedger->getHash() == hash))
 			return mFinalizedLedger;
 
