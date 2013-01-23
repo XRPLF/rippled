@@ -10,7 +10,8 @@
 
 // Socket wrapper that supports both SSL and non-SSL connections.
 // Generally, handle it as you would an SSL connection.
-// For outbound non-SSL connections, just don't call async_handshake.
+// To force a non-SSL connection, just don't call async_handshake.
+// To force SSL only inbound, call setSSLOnly.
 
 namespace basio = boost::asio;
 namespace bassl = basio::ssl;
@@ -37,10 +38,12 @@ public:
 	ssl_socket&		SSLSocket()		{ return mSocket; }
 	plain_socket&	PlainSocket()	{ return mSocket.next_layer(); }
 
+	void setSSLOnly()				{ mBuffer.clear(); }
+
 	void async_handshake(ssl_socket::handshake_type type, callback cbFunc)
 	{
 		mSecure = true;
-		if (type == ssl_socket::client)
+		if ((type == ssl_socket::client) || (mBuffer.empty()))
 			SSLSocket().async_handshake(type, cbFunc);
 		else
 		{
@@ -92,3 +95,5 @@ protected:
 };
 
 #endif
+
+// vim:ts=4

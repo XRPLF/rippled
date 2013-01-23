@@ -25,6 +25,7 @@ void AutoSocket::handle_autodetect(const error_code& ec)
 	{ // ssl
 		mSecure = true;
 		SSLSocket().async_handshake(ssl_socket::server, mCallback);
+		mCallback = callback();
 	}
 }
 
