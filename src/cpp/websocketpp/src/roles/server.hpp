@@ -53,6 +53,32 @@
 
 namespace websocketpp {
 
+typedef boost::asio::buffers_iterator<boost::asio::streambuf::const_buffers_type> bufIterator;
+
+static std::pair<bufIterator, bool> match_header(bufIterator begin, bufIterator end)
+{
+	// Do we have a complete HTTP request
+	const std::string header_match = "\r\n\r\n";
+	bufIterator it = std::search(begin, end, header_match.begin(), header_match.end());
+	if (it != end)
+		return std::make_pair(it, true);
+
+	// If we don't have a flash policy request, we're done
+	const std::string flash_match = "<policy-file-request/>";
+	it = std::search(begin, end, flash_match.begin(), flash_match.end());
+	if (it == end)
+		return std::make_pair(end, false);
+
+	// If we have a line ending before the flash policy request, treat as http
+	const std::string eol_match = "\r\n";
+	bufIterator it2 = std::search(begin, end, eol_match.begin(), eol_match.end());
+	if ((it2 != end) || (it < it2))
+		return std::make_pair(end, false);
+
+	// Treat as flash policy request
+	return std::make_pair(it, true);
+}
+
 // Forward declarations
 template <typename T> struct endpoint_traits;
     
@@ -517,7 +543,7 @@ void server<endpoint>::connection<connection_type>::async_init() {
     boost::asio::async_read_until(
         m_connection.get_socket(),
         m_connection.buffer(),
-        "\r\n\r\n",
+        match_header,
         m_connection.get_strand().wrap(boost::bind(
             &type::handle_read_request,
             m_connection.shared_from_this(),
