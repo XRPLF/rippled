@@ -17,6 +17,7 @@ void AutoSocket::handle_autodetect(const error_code& ec)
 		(mBuffer[2] < 127) && (mBuffer[2] > 31) &&
 		(mBuffer[3] < 127) && (mBuffer[3] > 31))
 	{ // non-SSL
+		mSecure = false;
 		if (mCallback)
 			mCallback(ec);
 	}
@@ -26,3 +27,5 @@ void AutoSocket::handle_autodetect(const error_code& ec)
 		SSLSocket().async_handshake(ssl_socket::server, mCallback);
 	}
 }
+
+// vim:ts=4
