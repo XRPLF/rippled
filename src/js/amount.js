@@ -554,10 +554,9 @@ Amount.prototype.add = function (v) {
     result._offset      = o1;
     result._value       = v1.add(v2);
     result._is_negative = result._value.compareTo(BigInteger.ZERO) < 0;
-    
+
     if (result._is_negative) {
       result._value       = result._value.negate();
-      result._is_negative = false;
     }
 
     result._currency    = this._currency.clone();
