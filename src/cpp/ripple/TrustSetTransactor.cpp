@@ -287,13 +287,13 @@ TER TrustSetTransactor::doApply()
 
 		// Create a new ripple line.
 		terResult	= mEngine->getNodes().trustCreate(
-			bHigh,					// Who to charge with reserve.
+			bHigh,
 			mTxnAccountID,
-			mTxnAccount,
 			uDstAccountID,
 			Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID),
+			mTxnAccount,
 			saBalance,
-			saLimitAllow,
+			saLimitAllow,		// Limit for who is being charged.
 			uQualityIn,
 			uQualityOut);
 	}

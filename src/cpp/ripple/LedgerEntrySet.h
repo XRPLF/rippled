@@ -132,9 +132,9 @@ public:
 	TER					trustCreate(
 							const bool		bSrcHigh,
 							const uint160&	uSrcAccountID,
-							SLE::ref		sleSrcAccount,
 							const uint160&	uDstAccountID,
 							const uint256&	uIndex,
+							SLE::ref		sleAccount,
 							const STAmount& saSrcBalance,
 							const STAmount& saSrcLimit,
 							const uint32	uSrcQualityIn = 0,
