@@ -539,18 +539,36 @@ void server<endpoint>::connection<connection_type>::async_init() {
     // TODO: make this value configurable
     m_connection.register_timeout(5000,fail::status::TIMEOUT_WS,
                                        "Timeout on WebSocket handshake");
-    
-    boost::asio::async_read_until(
-        m_connection.get_socket(),
-        m_connection.buffer(),
-        match_header,
-        m_connection.get_strand().wrap(boost::bind(
-            &type::handle_read_request,
-            m_connection.shared_from_this(),
-            boost::asio::placeholders::error,
-            boost::asio::placeholders::bytes_transferred
-        ))
-    );
+
+	if (m_connection.isSecure())
+	{
+		boost::asio::async_read_until(
+			m_connection.SSLSocket(),
+			m_connection.buffer(),
+//			match_header,
+			"\r\n\r\n",
+			m_connection.get_strand().wrap(boost::bind(
+				&type::handle_read_request,
+				m_connection.shared_from_this(),
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::bytes_transferred
+			))
+		);
+	}
+	else
+	{
+		boost::asio::async_read_until(
+			m_connection.PlainSocket(),
+			m_connection.buffer(),
+			match_header,
+			m_connection.get_strand().wrap(boost::bind(
+				&type::handle_read_request,
+				m_connection.shared_from_this(),
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::bytes_transferred
+			))
+		);
+	}
 }
 
 /// processes the response from an async read for an HTTP header
@@ -822,7 +840,7 @@ void server<endpoint>::connection<connection_type>::write_response() {
     
     m_endpoint.m_alog->at(log::alevel::DEBUG_HANDSHAKE) << raw << log::endl;
     
-    boost::asio::async_write(
+    boost::asio::async_write( // FIXME
         m_connection.get_socket(),
         //boost::asio::buffer(raw),
         buffer,
