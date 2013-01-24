@@ -1098,7 +1098,7 @@ bool STAmount::applyOffer(
 	else
 	{
 		// Compute fees in a rounding safe way.
-		STAmount	saTotal	= STAmount::multiply(saTakerPaid, STAmount(CURRENCY_ONE, uTakerPaysRate, -9));
+		STAmount	saTotal	= STAmount::multiply(saTakerGot, STAmount(CURRENCY_ONE, uOfferPaysRate, -9));
 
 		saOfferIssuerFee	= (saTotal > saOfferFunds) ? saOfferFunds-saTakerGot : saTotal - saTakerGot;
 	}
