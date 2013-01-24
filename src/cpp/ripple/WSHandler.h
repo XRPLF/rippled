@@ -37,7 +37,7 @@ protected:
 public:
 	WSServerHandler(boost::shared_ptr<boost::asio::ssl::context> spCtx, bool bPublic) : mCtx(spCtx), mPublic(bPublic)
 	{
-		if (theConfig.WEBSOCKET_SECURE)
+		if (theConfig.WEBSOCKET_SECURE != 0)
 		{
 			initSSLContext(*mCtx, theConfig.WEBSOCKET_SSL_KEY,
 				theConfig.WEBSOCKET_SSL_CERT, theConfig.WEBSOCKET_SSL_CHAIN);
