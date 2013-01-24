@@ -1,15 +1,16 @@
 
-var async     = require("async");
-var buster    = require("buster");
+var async       = require("async");
+var buster      = require("buster");
 
-var Amount    = require("../src/js/amount.js").Amount;
-var Remote    = require("../src/js/remote.js").Remote;
-var Server    = require("./server.js").Server;
+var Amount      = require("../src/js/amount").Amount;
+var Remote      = require("../src/js/remote").Remote;
+var Transaction = require("../src/js/transaction").Transaction;
+var Server      = require("./server").Server;
 
-var testutils = require("./testutils.js");
+var testutils = require("./testutils");
 
-require("../src/js/amount.js").config = require("./config.js");
-require("../src/js/remote.js").config = require("./config.js");
+require("../src/js/amount").config = require("./config");
+require("../src/js/remote").config = require("./config");
 
 buster.testRunner.timeout = 5000;
 
@@ -461,7 +462,7 @@ buster.testCase("Offer tests", {
 
             testutils.verify_balances(self.remote,
               {
-                "alice"   : [ "0/USD/mtgox", String(10000000000+500-2*(Remote.fees['default'].to_number())) ],
+                "alice"   : [ "0/USD/mtgox", String(10000000000+500-2*(Transaction.fees['default'].to_number())) ],
                 "bob"     : "100/USD/mtgox",
               },
               callback);
@@ -624,7 +625,7 @@ buster.testCase("Offer tests", {
 
             testutils.verify_balances(self.remote,
               {
-                "alice"   : [ "160/USD/mtgox", String(10000000000+200-2*(Remote.fees['default'].to_number())) ],
+                "alice"   : [ "160/USD/mtgox", String(10000000000+200-2*(Transaction.fees['default'].to_number())) ],
                 "bob"     : "40/USD/mtgox",
               },
               callback);
@@ -666,7 +667,7 @@ buster.testCase("Offer tests", {
 
             testutils.verify_balances(self.remote,
               {
-                "alice"   : [ "100/USD/mtgox", String(10000000000+200+300-4*(Remote.fees['default'].to_number())) ],
+                "alice"   : [ "100/USD/mtgox", String(10000000000+200+300-4*(Transaction.fees['default'].to_number())) ],
                 "bob"     : "100/USD/mtgox",
               },
               callback);
