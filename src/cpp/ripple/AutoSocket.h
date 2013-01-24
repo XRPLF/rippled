@@ -75,7 +75,7 @@ public:
 		else if (mBuffer.empty())
 		{ // must be plain
 			mSecure = false;
-			cbFunc(error_code());
+			mSocket->get_io_service().post(boost::bind(cbFunc, error_code()));
 		}
 		else
 		{ // autodetect
