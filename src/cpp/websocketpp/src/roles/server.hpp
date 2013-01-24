@@ -53,6 +53,42 @@
 
 namespace websocketpp {
 
+typedef boost::asio::buffers_iterator<boost::asio::streambuf::const_buffers_type> bufIterator;
+
+static std::pair<bufIterator, bool> match_header(bufIterator begin, bufIterator end)
+{
+	static const std::string eol_match = "\n";
+	static const std::string header_match = "\n\r\n";
+	static const std::string alt_header_match = "\n\n";
+	static const std::string flash_match = "<policy-file-request/>";
+
+	// Do we have a complete HTTP request
+	bufIterator it = std::search(begin, end, header_match.begin(), header_match.end());
+	if (it != end)
+		it += header_match.size() - 1;
+	else
+	{
+		it = std::search(begin, end, alt_header_match.begin(), alt_header_match.end());
+		if (it != end)
+			it += alt_header_match.size() - 1;
+	}
+	if (it != end) // Yes, this is HTTP
+		return std::make_pair(it, true);
+
+	// If we don't have a flash policy request, we're done
+	it = std::search(begin, end, flash_match.begin(), flash_match.end());
+	if (it == end) // No match
+		return std::make_pair(end, false);
+
+	// If we have a line ending before the flash policy request, treat as http
+	bufIterator it2 = std::search(begin, end, eol_match.begin(), eol_match.end());
+	if ((it2 != end) || (it < it2))
+		return std::make_pair(end, false);
+
+	// Treat as flash policy request
+	return std::make_pair(it + flash_match.size() - 1, true);
+}
+
 // Forward declarations
 template <typename T> struct endpoint_traits;
     
@@ -513,18 +549,37 @@ void server<endpoint>::connection<connection_type>::async_init() {
     // TODO: make this value configurable
     m_connection.register_timeout(5000,fail::status::TIMEOUT_WS,
                                        "Timeout on WebSocket handshake");
-    
-    boost::asio::async_read_until(
-        m_connection.get_socket(),
-        m_connection.buffer(),
-        "\r\n\r\n",
-        m_connection.get_strand().wrap(boost::bind(
-            &type::handle_read_request,
-            m_connection.shared_from_this(),
-            boost::asio::placeholders::error,
-            boost::asio::placeholders::bytes_transferred
-        ))
-    );
+
+	if (m_connection.get_socket().isSecure())
+	{
+		boost::asio::async_read_until(
+			m_connection.get_socket().SSLSocket(),
+			m_connection.buffer(),
+//			match_header,
+			"\r\n\r\n",
+			m_connection.get_strand().wrap(boost::bind(
+				&type::handle_read_request,
+				m_connection.shared_from_this(),
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::bytes_transferred
+			))
+		);
+	}
+	else
+	{
+		boost::asio::async_read_until(
+			m_connection.get_socket().PlainSocket(),
+			m_connection.buffer(),
+//			match_header,
+			"\r\n\r\n",
+			m_connection.get_strand().wrap(boost::bind(
+				&type::handle_read_request,
+				m_connection.shared_from_this(),
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::bytes_transferred
+			))
+		);
+	}
 }
 
 /// processes the response from an async read for an HTTP header
@@ -673,9 +728,9 @@ void server<endpoint>::connection<connection_type>::handle_read_request(
             {
                 // TODO: this makes the assumption that WS and HTTP
                 // default ports are the same.
-                m_uri.reset(new uri(m_endpoint.is_secure(),h,m_request.uri()));
+                m_uri.reset(new uri(m_connection.is_secure(),h,m_request.uri()));
             } else {
-                m_uri.reset(new uri(m_endpoint.is_secure(),
+                m_uri.reset(new uri(m_connection.is_secure(),
                                     h.substr(0,last_colon),
                                     h.substr(last_colon+1),
                                     m_request.uri()));
@@ -795,17 +850,33 @@ void server<endpoint>::connection<connection_type>::write_response() {
     shared_const_buffer buffer(raw);
     
     m_endpoint.m_alog->at(log::alevel::DEBUG_HANDSHAKE) << raw << log::endl;
-    
-    boost::asio::async_write(
-        m_connection.get_socket(),
-        //boost::asio::buffer(raw),
-        buffer,
-        boost::bind(
-            &type::handle_write_response,
-            m_connection.shared_from_this(),
-            boost::asio::placeholders::error
-        )
-    );
+
+    if (m_connection.get_socket().isSecure())
+    {
+		boost::asio::async_write(
+			m_connection.get_socket().SSLSocket(),
+			//boost::asio::buffer(raw),
+			buffer,
+			boost::bind(
+				&type::handle_write_response,
+				m_connection.shared_from_this(),
+				boost::asio::placeholders::error
+			)
+		);
+	}
+	else
+	{
+		boost::asio::async_write(
+			m_connection.get_socket().PlainSocket(),
+			//boost::asio::buffer(raw),
+			buffer,
+			boost::bind(
+				&type::handle_write_response,
+				m_connection.shared_from_this(),
+				boost::asio::placeholders::error
+			)
+		);
+	}
 }
 
 template <class endpoint>
