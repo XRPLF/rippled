@@ -159,6 +159,7 @@ public:
             ss >> val;
             set_version(val);
         } else {
+            set_method(request);
             return false;
         }
         
