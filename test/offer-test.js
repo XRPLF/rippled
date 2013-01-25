@@ -15,8 +15,8 @@ require("../src/js/remote").config = require("./config");
 buster.testRunner.timeout = 5000;
 
 buster.testCase("Offer tests", {
-  // 'setUp'     : testutils.build_setup(),
-  'setUp'     : testutils.build_setup({ verbose: true, standalone: false }),
+  'setUp'     : testutils.build_setup(),
+  // 'setUp'     : testutils.build_setup({ verbose: true, standalone: false }),
   'tearDown'  : testutils.build_teardown(),
 
   "offer create then cancel in one ledger" :
@@ -109,7 +109,6 @@ buster.testCase("Offer tests", {
       });
     },
 
-  // rippled broken: Balances are wrong.
   "Offer create then crossing offer with XRP. Reverse order." :
     function (done) {
       var self = this;
@@ -143,7 +142,7 @@ buster.testCase("Offer tests", {
           self.what = "Create first offer.";
 
           self.remote.transaction()
-            .offer_create("bob", "1/USD/mtgox", "4000.0")
+            .offer_create("bob", "1/USD/mtgox", "4000.0")         // get 1/USD pay 4000/XRP : offer pays 4000 XRP for 1 USD
               .on('proposed', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
@@ -154,8 +153,12 @@ buster.testCase("Offer tests", {
         function (callback) {
           self.what = "Create crossing offer.";
 
+          // Existing offer pays better than this wants.
+          // Fully consume existing offer.
+          // Pay 1 USD, get 4000 XRP.
+
           self.remote.transaction()
-            .offer_create("alice", "150000.0", "50/USD/mtgox")
+            .offer_create("alice", "150000.0", "50/USD/mtgox")  // get 150,000/XRP pay 50/USD : offer pays 1 USD for 3000 XRP
               .on('proposed', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
@@ -224,7 +227,7 @@ buster.testCase("Offer tests", {
           self.what = "Create first offer.";
 
           self.remote.transaction()
-            .offer_create("alice", "150000.0", "50/USD/mtgox")  // 3000 XRP = 1 USD
+            .offer_create("alice", "150000.0", "50/USD/mtgox")  // pays 1 USD for 3000 XRP
               .on('proposed', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
@@ -236,7 +239,7 @@ buster.testCase("Offer tests", {
           self.what = "Create crossing offer.";
 
           self.remote.transaction()
-            .offer_create("bob", "1/USD/mtgox", "3000.0")
+            .offer_create("bob", "1/USD/mtgox", "4000.0") // pays 4000 XRP for 1 USD
               .on('proposed', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
@@ -246,6 +249,10 @@ buster.testCase("Offer tests", {
         },
         function (callback) {
           self.what = "Verify balances.";
+
+          // New offer pays better than old wants.
+          // Fully consume new offer.
+          // Pay 1 USD, get 3000 XRP.
 
           testutils.verify_balances(self.remote,
             {
