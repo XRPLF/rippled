@@ -100,9 +100,10 @@ std::vector<RippleAddress> SerializedTransaction::getMentionedAccounts() const
 			if (!found)
 				accounts.push_back(na);
 		}
-		if (it.getFName() == sfLimitAmount)
+		const STAmount* sam = dynamic_cast<const STAmount*>(&it);
+		if (sam)
 		{
-			uint160 issuer = dynamic_cast<const STAmount*>(&it)->getIssuer();
+			uint160 issuer = sam->getIssuer();
 			if (issuer.isNonZero())
 			{
 				RippleAddress na;

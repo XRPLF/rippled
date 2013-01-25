@@ -178,8 +178,8 @@ Config::Config()
 	RPC_PORT				= 5001;
 	WEBSOCKET_PORT			= SYSTEM_WEBSOCKET_PORT;
 	WEBSOCKET_PUBLIC_PORT	= SYSTEM_WEBSOCKET_PUBLIC_PORT;
-	WEBSOCKET_PUBLIC_SECURE	= true;
-	WEBSOCKET_SECURE		= false;
+	WEBSOCKET_PUBLIC_SECURE	= 1;
+	WEBSOCKET_SECURE		= 0;
 	NUMBER_CONNECTIONS		= 30;
 
 	// a new ledger every minute
@@ -340,10 +340,10 @@ void Config::load()
 				WEBSOCKET_PUBLIC_PORT	= boost::lexical_cast<int>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_WEBSOCKET_SECURE, strTemp))
-				WEBSOCKET_SECURE	= boost::lexical_cast<bool>(strTemp);
+				WEBSOCKET_SECURE	= boost::lexical_cast<int>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_WEBSOCKET_PUBLIC_SECURE, strTemp))
-				WEBSOCKET_PUBLIC_SECURE	= boost::lexical_cast<bool>(strTemp);
+				WEBSOCKET_PUBLIC_SECURE	= boost::lexical_cast<int>(strTemp);
 
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_CERT, WEBSOCKET_SSL_CERT);
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_CHAIN, WEBSOCKET_SSL_CHAIN);

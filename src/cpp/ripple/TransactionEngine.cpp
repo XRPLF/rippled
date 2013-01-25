@@ -127,28 +127,23 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				uint32 t_seq = txn.getSequence();
 				uint32 a_seq = txnAcct->getFieldU32(sfSequence);
 
-				if (t_seq != a_seq)
-				{
-					if (a_seq < t_seq)
-						terResult = terPRE_SEQ;
-					else
-						terResult = tefPAST_SEQ;
-				}
+				if (a_seq < t_seq)
+					terResult = terPRE_SEQ;
+				else if (a_seq > t_seq)
+					terResult = tefPAST_SEQ;
 				else
 				{
 					STAmount fee		= txn.getTransactionFee();
 					STAmount balance	= txnAcct->getFieldAmount(sfBalance);
 
 					if (balance < fee)
-					{
 						terResult = terINSUF_FEE_B;
-					}
 					else
 					{
 						txnAcct->setFieldAmount(sfBalance, balance - fee);
 						txnAcct->setFieldU32(sfSequence, t_seq + 1);
-						didApply = true;
 						entryModify(txnAcct);
+						didApply = true;
 					}
 				}
 			}

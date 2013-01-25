@@ -81,7 +81,8 @@ std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts()
 					const STAccount* sa = dynamic_cast<const STAccount*>(&field);
 					if (sa)
 						addIfUnique(accounts, sa->getValueNCA());
-					else if ((field.getFName() == sfLowLimit) || (field.getFName() == sfHighLimit))
+					else if ((field.getFName() == sfLowLimit) || (field.getFName() == sfHighLimit) ||
+						(field.getFName() == sfTakerPays) || (field.getFName() == sfTakerGets))
 					{
 						const STAmount* lim = dynamic_cast<const STAmount*>(&field);
 						if (lim != NULL)

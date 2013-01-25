@@ -20,6 +20,7 @@
 SETUP_LOG();
 
 LogPartition TaggedCachePartition("TaggedCache");
+LogPartition AutoSocketPartition("AutoSocket");
 Application* theApp = NULL;
 
 DatabaseCon::DatabaseCon(const std::string& strName, const char *initStrings[], int initCount)
