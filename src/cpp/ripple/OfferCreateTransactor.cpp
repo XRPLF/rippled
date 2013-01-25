@@ -147,6 +147,7 @@ TER OfferCreateTransactor::takeOffers(
 					STAmount	saSubTakerGot;
 					STAmount	saTakerIssuerFee;
 					STAmount	saOfferIssuerFee;
+					STAmount	saOfferRate	= STAmount::setRate(uTipQuality);
 
 					cLog(lsINFO) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
 					cLog(lsINFO) << "takeOffers: applyOffer:    saTakerPaid: " << saTakerPaid.getFullText();
@@ -155,17 +156,18 @@ TER OfferCreateTransactor::takeOffers(
 					cLog(lsINFO) << "takeOffers: applyOffer:          saPay: " << saPay.getFullText();
 					cLog(lsINFO) << "takeOffers: applyOffer:    saOfferPays: " << saOfferPays.getFullText();
 					cLog(lsINFO) << "takeOffers: applyOffer:    saOfferGets: " << saOfferGets.getFullText();
+					cLog(lsINFO) << "takeOffers: applyOffer:    saOfferRate: " << saOfferRate.getFullText();
 					cLog(lsINFO) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
 					cLog(lsINFO) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText();
 
 					bool	bOfferDelete	= STAmount::applyOffer(
 						mEngine->getNodes().rippleTransferRate(uTakerAccountID, uOfferOwnerID, uTakerPaysAccountID),
 						mEngine->getNodes().rippleTransferRate(uOfferOwnerID, uTakerAccountID, uTakerGetsAccountID),
+						saOfferRate,
 						saOfferFunds,
-						saPay,				// Driver XXX need to account for fees.
+						saPay,
 						saOfferPays,
 						saOfferGets,
-						saTakerPays,
 						saTakerGets,
 						saSubTakerPaid,
 						saSubTakerGot,

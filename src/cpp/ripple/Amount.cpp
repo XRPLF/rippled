@@ -1007,15 +1007,26 @@ STAmount STAmount::setRate(uint64 rate)
 	return STAmount(CURRENCY_ONE, ACCOUNT_ONE, mantissa, exponent);
 }
 
-// Taker gets all taker can pay for with saTakerFunds, limited by saOfferPays and saOfferFunds.
-// -->   uTakerPaysRate: >= QUALITY_ONE
-// -->   uOfferPaysRate: >= QUALITY_ONE
-// -->     saOfferFunds: Limit for saOfferPays
+// Taker gets all taker can pay for with saTakerFunds/uTakerPaysRate, limited by saOfferPays and saOfferFunds/uOfferPaysRate.
+//
+// Existing offer is on the books. Offer owner get's their rate.
+//
+// Taker pays what they can. If taker is an offer, doesn't matter what rate taker is. Taker is spending at same or better rate
+// than they wanted. Taker should consider themselves as wanting to buy X amount. Taker is willing to pay at most the rate of Y/X
+// each. Therefore, after having some part of their offer fulfilled at a better rate their offer should be reduced accordingly.
+//
+// YYY Could have a flag for spend up to behaviour vs current limit spend rate.
+//
+// There are no quality costs for offer vs offer taking.
+//
+// -->   uTakerPaysRate: >= QUALITY_ONE | TransferRate for third party IOUs paid by taker.
+// -->   uOfferPaysRate: >= QUALITY_ONE | TransferRate for third party IOUs paid by offer owner.
+// -->      saOfferRate: Original saOfferGets/saOfferPays, when offer was made.
+// -->     saOfferFunds: Limit for saOfferPays : How much can pay including fees.
 // -->     saTakerFunds: Limit for saOfferGets : How much taker really wants. : Driver
 // -->      saOfferPays: Request : this should be reduced as the offer is fullfilled.
 // -->      saOfferGets: Request : this should be reduced as the offer is fullfilled.
-// -->      saTakerPays: Total : Used to know the approximate ratio of the exchange.
-// -->      saTakerGets: Total : Used to know the approximate ratio of the exchange.
+// -->      saTakerGets: Limit for taker to get.
 // <--      saTakerPaid: Actual
 // <--       saTakerGot: Actual
 // <-- saTakerIssuerFee: Actual
@@ -1023,61 +1034,62 @@ STAmount STAmount::setRate(uint64 rate)
 // <--          bRemove: remove offer it is either fullfilled or unfunded
 bool STAmount::applyOffer(
 	const uint32 uTakerPaysRate, const uint32 uOfferPaysRate,
+	const STAmount& saOfferRate,
 	const STAmount& saOfferFunds, const STAmount& saTakerFunds,
 	const STAmount& saOfferPays, const STAmount& saOfferGets,
-	const STAmount& saTakerPays, const STAmount& saTakerGets,
+	const STAmount& saTakerGets,
 	STAmount& saTakerPaid, STAmount& saTakerGot,
 	STAmount& saTakerIssuerFee, STAmount& saOfferIssuerFee)
 {
-	saOfferGets.throwComparable(saTakerPays);
+	saOfferGets.throwComparable(saTakerFunds);
 
 	assert(!saOfferFunds.isZero() && !saTakerFunds.isZero());	// Must have funds.
 	assert(!saOfferGets.isZero() && !saOfferPays.isZero());		// Must not be a null offer.
 
-	// Amount offer can pay out, limited by funds and fees.
+	// Limit offerer funds available, by transfer fees.
 	STAmount	saOfferFundsAvailable	= QUALITY_ONE == uOfferPaysRate
 											? saOfferFunds
 											: STAmount::divide(saOfferFunds, STAmount(CURRENCY_ONE, uOfferPaysRate, -9));
 
-	// Amount offer can pay out, limited by offer and funds.
-	STAmount	saOfferPaysAvailable	= std::min(saOfferFundsAvailable, saOfferPays);
+	cLog(lsINFO) << "applyOffer: uOfferPaysRate=" << uOfferPaysRate;
+	cLog(lsINFO) << "applyOffer: saOfferFundsAvailable=" << saOfferFundsAvailable.getFullText();
 
-	// Amount offer can get in proportion, limited by offer funds.
-	STAmount	saOfferGetsAvailable =
-		saOfferFundsAvailable == saOfferPays
-			? saOfferGets	// Offer was fully funded, avoid shenanigans.
-			: divide(multiply(saTakerPays, saOfferPaysAvailable, CURRENCY_ONE, ACCOUNT_ONE), saTakerGets, saOfferGets.getCurrency(), saOfferGets.getIssuer());
+	// Limit taker funds available, by transfer fees.
+	STAmount	saTakerFundsAvailable	= QUALITY_ONE == uTakerPaysRate
+											? saTakerFunds
+											: STAmount::divide(saTakerFunds, STAmount(CURRENCY_ONE, uTakerPaysRate, -9));
 
-	// Amount taker can spend, limited by funds and fees.
-	STAmount saTakerFundsAvailable	= QUALITY_ONE == uTakerPaysRate
-										? saTakerFunds
-										: STAmount::divide(saTakerFunds, STAmount(CURRENCY_ONE, uTakerPaysRate, -9));
+	cLog(lsINFO) << "applyOffer: uTakerPaysRate=" << uTakerPaysRate;
+	cLog(lsINFO) << "applyOffer: saTakerFundsAvailable=" << saTakerFundsAvailable.getFullText();
 
-	if (saOfferGets == saOfferGetsAvailable && saTakerFundsAvailable >= saOfferGets)
+	STAmount	saOfferPaysAvailable;	// Amount offer can pay out, limited by offer and offerer funds.
+	STAmount	saOfferGetsAvailable;	// Amount offer would get, limited by offer funds.
+
+	if (saOfferFundsAvailable >= saOfferPays)
 	{
-		// Taker gets all of offer available.
-		saTakerPaid			= saOfferGets;		// Taker paid what offer could get.
-		saTakerGot			= saOfferPays;		// Taker got what offer could pay.
+		// Offer was fully funded, avoid math shenanigans.
 
-		cLog(lsINFO) << "applyOffer: took all outright";
-	}
-	else if (saTakerFunds >= saOfferGetsAvailable)
-	{
-		// Taker gets all of offer available.
-		saTakerPaid	= saOfferGetsAvailable;		// Taker paid what offer could get.
-		saTakerGot	= saOfferPaysAvailable;		// Taker got what offer could pay.
-
-		cLog(lsINFO) << "applyOffer: took all available";
+		saOfferPaysAvailable	= saOfferPays;
+		saOfferGetsAvailable	= saOfferGets;
 	}
 	else
 	{
-		// Taker only get's a portion of offer.
-		saTakerPaid	= saTakerFunds;					// Taker paid all he had.
-		saTakerGot	= divide(multiply(saTakerFunds, saOfferPaysAvailable, CURRENCY_ONE, ACCOUNT_ONE), saOfferGetsAvailable, saOfferPays.getCurrency(), saOfferPays.getIssuer());
-
-		cLog(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
-		cLog(lsINFO) << "applyOffer: saOfferPaysAvailable=" << saOfferPaysAvailable.getFullText();
+		// Offer has limited funding, limit offer gets and pays by funds available.
+		saOfferPaysAvailable	= saOfferFundsAvailable;
+		saOfferGetsAvailable	= multiply(saOfferFundsAvailable, saOfferRate, saOfferGets);
 	}
+
+	cLog(lsINFO) << "applyOffer: saOfferPaysAvailable=" << saOfferFundsAvailable.getFullText();
+	cLog(lsINFO) << "applyOffer: saOfferGetsAvailable=" << saOfferGetsAvailable.getFullText();
+
+	STAmount	saTakerGetsAvailable = saTakerFunds >= saOfferGetsAvailable
+										? saTakerGets
+										: multiply(saTakerFunds, saOfferRate, saTakerGets);	// Amount can afford.
+
+	saTakerGot	= std::min(saTakerGets, saOfferPaysAvailable);	// Limit by wanted and available.
+	saTakerPaid	= saTakerGot == saOfferPaysAvailable
+					? saOfferGetsAvailable
+					: multiply(saTakerGot, saOfferRate, saTakerFunds);
 
 	if (uTakerPaysRate == QUALITY_ONE)
 	{
@@ -1088,7 +1100,7 @@ bool STAmount::applyOffer(
 		// Compute fees in a rounding safe way.
 		STAmount	saTotal	= STAmount::multiply(saTakerPaid, STAmount(CURRENCY_ONE, uTakerPaysRate, -9));
 
-		saTakerIssuerFee	= (saTotal > saTakerFunds) ? saTakerFunds-saTakerPaid : saTotal - saTakerPaid;
+		saTakerIssuerFee	= (saTotal > saTakerFunds) ? saTakerFunds-saTakerPaid : saTotal-saTakerPaid;
 	}
 
 	if (uOfferPaysRate == QUALITY_ONE)
@@ -1100,8 +1112,10 @@ bool STAmount::applyOffer(
 		// Compute fees in a rounding safe way.
 		STAmount	saTotal	= STAmount::multiply(saTakerGot, STAmount(CURRENCY_ONE, uOfferPaysRate, -9));
 
-		saOfferIssuerFee	= (saTotal > saOfferFunds) ? saOfferFunds-saTakerGot : saTotal - saTakerGot;
+		saOfferIssuerFee	= (saTotal > saOfferFunds) ? saOfferFunds-saTakerGot : saTotal-saTakerGot;
 	}
+
+	cLog(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
 
 	return saTakerGot >= saOfferPays;
 }

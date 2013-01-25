@@ -373,9 +373,10 @@ public:
 	// And what's left of the offer? And how much do I actually pay?
 	static bool applyOffer(
 		const uint32 uTakerPaysRate, const uint32 uOfferPaysRate,
+		const STAmount& saOfferRate,
 		const STAmount& saOfferFunds, const STAmount& saTakerFunds,
 		const STAmount& saOfferPays, const STAmount& saOfferGets,
-		const STAmount& saTakerPays, const STAmount& saTakerGets,
+		const STAmount& saTakerGets,
 		STAmount& saTakerPaid, STAmount& saTakerGot,
 		STAmount& saTakerIssuerFee, STAmount& saOfferIssuerFee);
 
