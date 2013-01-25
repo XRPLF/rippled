@@ -103,6 +103,32 @@ public:
 			PlainSocket().async_read_some(buffers, handler);
 	}
 
+	template <typename Buf, typename Handler> void async_write(const Buf& buffers, Handler handler)
+	{
+		if (isSecure())
+			boost::asio::async_write(*mSocket, buffers, handler);
+		else
+			boost::asio::async_write(PlainSocket(), buffers, handler);
+	}
+
+
+	template <typename Buf, typename Condition, typename Handler>
+		void async_read(const Buf& buffers, Condition cond, Handler handler)
+	{
+		if (isSecure())
+			boost::asio::async_read(*mSocket, buffers, cond, handler);
+		else
+			boost::asio::async_read(PlainSocket(), buffers, cond, handler);
+	}
+
+	template <typename Buf, typename Handler> void async_read(const Buf& buffers, Handler handler)
+	{
+		if (isSecure())
+			boost::asio::async_read(*mSocket, buffers, handler);
+		else
+			boost::asio::async_read(PlainSocket(), buffers, handler);
+	}
+
 	template <typename Seq, typename Handler> void async_write_some(const Seq& buffers, Handler handler)
 	{
 		if (isSecure())

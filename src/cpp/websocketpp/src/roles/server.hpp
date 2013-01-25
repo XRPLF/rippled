@@ -845,32 +845,15 @@ void server<endpoint>::connection<connection_type>::write_response() {
     
     m_endpoint.m_alog->at(log::alevel::DEBUG_HANDSHAKE) << raw << log::endl;
 
-    if (m_connection.get_socket().isSecure())
-    {
-		boost::asio::async_write(
-			m_connection.get_socket().SSLSocket(),
-			//boost::asio::buffer(raw),
-			buffer,
-			boost::bind(
-				&type::handle_write_response,
-				m_connection.shared_from_this(),
-				boost::asio::placeholders::error
-			)
-		);
-	}
-	else
-	{
-		boost::asio::async_write(
-			m_connection.get_socket().PlainSocket(),
-			//boost::asio::buffer(raw),
-			buffer,
-			boost::bind(
-				&type::handle_write_response,
-				m_connection.shared_from_this(),
-				boost::asio::placeholders::error
-			)
-		);
-	}
+	m_connection.get_socket().async_write(
+		//boost::asio::buffer(raw),
+		buffer,
+		boost::bind(
+			&type::handle_write_response,
+			m_connection.shared_from_this(),
+			boost::asio::placeholders::error
+		)
+	);
 }
 
 template <class endpoint>
