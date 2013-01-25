@@ -123,6 +123,15 @@ public:
 			basio::async_read_until(PlainSocket(), buffers, delim, handler);
 	}
 
+	template <typename Allocator, typename MatchCondition, typename Handler>
+		void async_read_until(basio::basic_streambuf<Allocator>& buffers, MatchCondition cond, Handler handler)
+	{
+		if (isSecure())
+			basio::async_read_until(*mSocket, buffers, cond, handler);
+		else
+			basio::async_read_until(PlainSocket(), buffers, cond, handler);
+	}
+
 	template <typename Buf, typename Handler> void async_write(const Buf& buffers, Handler handler)
 	{
 		if (isSecure())
