@@ -67,6 +67,7 @@ static std::pair<bufIterator, bool> match_header(bufIterator begin, bufIterator 
 	if (it != end)
 		return std::make_pair(it + header_match.size(), true);
 	it = std::search(begin, end, alt_header_match.begin(), alt_header_match.end());
+	if (it != end)
 		return std::make_pair(it + alt_header_match.size(), true);
 
 	// If we don't have a flash policy request, we're done
@@ -76,7 +77,7 @@ static std::pair<bufIterator, bool> match_header(bufIterator begin, bufIterator 
 
 	// If we have a line ending before the flash policy request, treat as http
 	bufIterator it2 = std::search(begin, end, eol_match.begin(), eol_match.end());
-	if ((it2 != end) || (it < it2))
+	if ((it2 != end) && (it2 < it))
 		return std::make_pair(end, false);
 
 	// Treat as flash policy request
@@ -546,8 +547,7 @@ void server<endpoint>::connection<connection_type>::async_init() {
 
 	m_connection.get_socket().async_read_until(
 		m_connection.buffer(),
-//		match_header,
-		std::string("\r\n\r\n"),
+		match_header,
 		m_connection.get_strand().wrap(boost::bind(
 			&type::handle_read_request,
 			m_connection.shared_from_this(),
@@ -579,6 +579,27 @@ void server<endpoint>::connection<connection_type>::handle_read_request(
         
         if (!m_request.parse_complete(request)) {
             // not a valid HTTP request/response
+            if (m_request.method().find("<policy-file-request/>") != std::string::npos)
+            { // set m_version to -1, call async_write->handle_write_response
+                std::string reply =
+                    "<?xml version=\"1.0\"?><cross-domain-policy>"
+                    "<allow-access-from domain=\"*\" to-ports=\"";
+				reply += boost::lexical_cast<std::string>(m_connection.get_raw_socket().local_endpoint().port());
+				reply += "\"/></cross-domain-policy>";
+				reply.append("\0", 1);
+
+                m_version = -1;
+                shared_const_buffer buffer(reply);
+                m_connection.get_socket().async_write(
+                    buffer,
+                    boost::bind(
+                        &type::handle_write_response,
+                        m_connection.shared_from_this(),
+                        boost::asio::placeholders::error
+                    )
+                );
+                return;
+            }
             throw http::exception("Received invalid HTTP Request",http::status_code::BAD_REQUEST);
         }
         
@@ -826,9 +847,9 @@ void server<endpoint>::connection<connection_type>::write_response() {
     
     m_endpoint.m_alog->at(log::alevel::DEBUG_HANDSHAKE) << raw << log::endl;
 
-	m_connection.get_socket().async_write(
-		//boost::asio::buffer(raw),
-		buffer,
+    m_connection.get_socket().async_write(
+        //boost::asio::buffer(raw),
+        buffer,
 		boost::bind(
 			&type::handle_write_response,
 			m_connection.shared_from_this(),
