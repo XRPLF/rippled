@@ -2,6 +2,7 @@
 #define __AUTOSOCKET_H_
 
 #include <vector>
+#include <string>
 
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
@@ -9,6 +10,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
+#include <boost/asio/read_until.hpp>
 
 #include "Log.h"
 extern LogPartition AutoSocketPartition;
@@ -103,6 +105,24 @@ public:
 			PlainSocket().async_read_some(buffers, handler);
 	}
 
+	template <typename Seq, typename Condition, typename Handler>
+		void async_read_until(const Seq& buffers, Condition condition, Handler handler)
+	{
+		if (isSecure())
+			basio::async_read_until(*mSocket, buffers, condition, handler);
+		else
+			basio::async_read_until(PlainSocket(), buffers, condition, handler);
+	}
+
+	template <typename Allocator, typename Handler>
+		void async_read_until(basio::basic_streambuf<Allocator>& buffers, const std::string& delim, Handler handler)
+	{
+		if (isSecure())
+			basio::async_read_until(*mSocket, buffers, delim, handler);
+		else
+			basio::async_read_until(PlainSocket(), buffers, delim, handler);
+	}
+
 	template <typename Buf, typename Handler> void async_write(const Buf& buffers, Handler handler)
 	{
 		if (isSecure())
@@ -114,6 +134,15 @@ public:
 
 	template <typename Buf, typename Condition, typename Handler>
 		void async_read(const Buf& buffers, Condition cond, Handler handler)
+	{
+		if (isSecure())
+			boost::asio::async_read(*mSocket, buffers, cond, handler);
+		else
+			boost::asio::async_read(PlainSocket(), buffers, cond, handler);
+	}
+
+	template <typename Allocator, typename Condition, typename Handler>
+		void async_read(basio::basic_streambuf<Allocator>& buffers, Condition cond, Handler handler)
 	{
 		if (isSecure())
 			boost::asio::async_read(*mSocket, buffers, cond, handler);

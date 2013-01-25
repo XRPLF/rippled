@@ -544,36 +544,17 @@ void server<endpoint>::connection<connection_type>::async_init() {
     m_connection.register_timeout(5000,fail::status::TIMEOUT_WS,
                                        "Timeout on WebSocket handshake");
 
-	if (m_connection.get_socket().isSecure())
-	{
-		boost::asio::async_read_until(
-			m_connection.get_socket().SSLSocket(),
-			m_connection.buffer(),
-//			match_header,
-			"\r\n\r\n",
-			m_connection.get_strand().wrap(boost::bind(
-				&type::handle_read_request,
-				m_connection.shared_from_this(),
-				boost::asio::placeholders::error,
-				boost::asio::placeholders::bytes_transferred
-			))
-		);
-	}
-	else
-	{
-		boost::asio::async_read_until(
-			m_connection.get_socket().PlainSocket(),
-			m_connection.buffer(),
-//			match_header,
-			"\r\n\r\n",
-			m_connection.get_strand().wrap(boost::bind(
-				&type::handle_read_request,
-				m_connection.shared_from_this(),
-				boost::asio::placeholders::error,
-				boost::asio::placeholders::bytes_transferred
-			))
-		);
-	}
+	m_connection.get_socket().async_read_until(
+		m_connection.buffer(),
+//		match_header,
+		std::string("\r\n\r\n"),
+		m_connection.get_strand().wrap(boost::bind(
+			&type::handle_read_request,
+			m_connection.shared_from_this(),
+			boost::asio::placeholders::error,
+			boost::asio::placeholders::bytes_transferred
+		))
+	);
 }
 
 /// processes the response from an async read for an HTTP header

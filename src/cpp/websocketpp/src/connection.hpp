@@ -899,38 +899,18 @@ public:
         {
             // TODO: read timeout timer?
 
-            if (socket_type::get_socket().isSecure())
-            {
-	            boost::asio::async_read(
-                    socket_type::get_socket().SSLSocket(),
-	                m_buf,
-	                boost::asio::transfer_at_least(std::min(
-	                    m_read_threshold,
-	                    static_cast<size_t>(m_processor->get_bytes_needed())
-	                )),
-	                m_strand.wrap(boost::bind(
-	                    &type::handle_read_frame,
-	                    type::shared_from_this(),
-	                    boost::asio::placeholders::error
-	                ))
-	            );
-			}
-			else
-			{
-	            boost::asio::async_read(
-                    socket_type::get_socket().PlainSocket(),
-                    m_buf,
-	                boost::asio::transfer_at_least(std::min(
-	                    m_read_threshold,
-	                    static_cast<size_t>(m_processor->get_bytes_needed())
-	                )),
-	                m_strand.wrap(boost::bind(
-	                    &type::handle_read_frame,
-	                    type::shared_from_this(),
-	                    boost::asio::placeholders::error
-	                ))
-	            );
-			}
+            socket_type::get_socket().async_read(
+                m_buf,
+                boost::asio::transfer_at_least(std::min(
+                    m_read_threshold,
+                    static_cast<size_t>(m_processor->get_bytes_needed())
+                )),
+                m_strand.wrap(boost::bind(
+                    &type::handle_read_frame,
+                    type::shared_from_this(),
+                    boost::asio::placeholders::error
+                ))
+            );
         }
     }
 public:
@@ -1228,31 +1208,14 @@ public:
             
             //m_endpoint.alog().at(log::alevel::DEVEL) << "write header: " << zsutil::to_hex(m_write_queue.front()->get_header()) << log::endl;
             
-            if (socket_type::get_socket().isSecure())
-            {
-                boost::asio::async_write(
-                    socket_type::get_socket().SSLSocket(),
-	                m_write_buf,
-	                m_strand.wrap(boost::bind(
-	                    &type::handle_write,
-	                    type::shared_from_this(),
-	                    boost::asio::placeholders::error
-	                ))
-	            );
-			}
-			else
-			{
-	            boost::asio::async_write(
-                    socket_type::get_socket().PlainSocket(),
-	                m_write_buf,
-	                m_strand.wrap(boost::bind(
-	                    &type::handle_write,
-	                    type::shared_from_this(),
-	                    boost::asio::placeholders::error
-	                ))
-	            );
-			}
-
+            socket_type::get_socket().async_write(
+                m_write_buf,
+                m_strand.wrap(boost::bind(
+                    &type::handle_write,
+                    type::shared_from_this(),
+                    boost::asio::placeholders::error
+                ))
+            );
         } else {
             // if we are in an inturrupted state and had nothing else to write
             // it is safe to terminate the connection.
