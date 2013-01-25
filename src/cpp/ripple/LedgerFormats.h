@@ -41,6 +41,7 @@ enum LedgerSpecificFlags
 	// ltACCOUNT_ROOT
 	lsfPasswordSpent	= 0x00010000,	// True, if password set fee is spent.
 	lsfRequireDestTag	= 0x00020000,	// True, to require a DestinationTag for payments.
+	lsfRequireAuth		= 0x00040000,	// True, to require a authorization to hold IOUs.
 
 	// ltOFFER
 	lsfPassive			= 0x00010000,
@@ -48,6 +49,8 @@ enum LedgerSpecificFlags
 	// ltRIPPLE_STATE
 	lsfLowReserve		= 0x00010000,	// True, if entry counts toward reserve.
 	lsfHighReserve		= 0x00020000,
+	lsfLowAuth			= 0x00040000,
+	lsfHighAuth			= 0x00080000,
 };
 
 class LedgerEntryFormat

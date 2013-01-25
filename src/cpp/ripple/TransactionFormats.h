@@ -62,7 +62,9 @@ const int TransactionMaxLen			= 1048576;
 // AccountSet flags:
 const uint32 tfRequireDestTag		= 0x00010000;
 const uint32 tfOptionalDestTag		= 0x00020000;
-const uint32 tfAccountSetMask		= ~(tfRequireDestTag|tfOptionalDestTag);
+const uint32 tfRequireAuth			= 0x00040000;
+const uint32 tfOptionalAuth			= 0x00080000;
+const uint32 tfAccountSetMask		= ~(tfRequireDestTag|tfOptionalDestTag|tfRequireAuth|tfOptionalAuth);
 
 // OfferCreate flags:
 const uint32 tfPassive				= 0x00010000;
@@ -72,8 +74,11 @@ const uint32 tfOfferCreateMask		= ~(tfPassive);
 const uint32 tfNoRippleDirect		= 0x00010000;
 const uint32 tfPartialPayment		= 0x00020000;
 const uint32 tfLimitQuality			= 0x00040000;
-
 const uint32 tfPaymentMask			= ~(tfPartialPayment|tfLimitQuality|tfNoRippleDirect);
+
+// TrustSet flags:
+const uint32 tfSetfAuth				= 0x00010000;
+const uint32 tfTrustSetMask			= ~(tfSetfAuth);
 
 #endif
 // vim:ts=4

@@ -27,14 +27,21 @@ TER TrustSetTransactor::doApply()
 
 	const uint32		uTxFlags		= mTxn.getFlags();
 
-	if (uTxFlags)
+	if (uTxFlags & tfTrustSetMask)
 	{
 		cLog(lsINFO) << "doTrustSet: Malformed transaction: Invalid flags set.";
 
 		return temINVALID_FLAG;
 	}
 
-	// Check if destination makes sense.
+	const bool			bSetAuth		= isSetBit(uTxFlags, tfSetfAuth);
+
+	if (bSetAuth && !isSetBit(mTxnAccount->getFieldU32(sfFlags), lsfRequireAuth))
+	{
+		cLog(lsINFO) << "doTrustSet: Retry: Auth not required.";
+
+		return tefNO_AUTH_REQUIRED;
+	}
 
 	if (saLimitAmount.isNegative())
 	{
@@ -42,13 +49,16 @@ TER TrustSetTransactor::doApply()
 
 		return temBAD_LIMIT;
 	}
-	else if (!uDstAccountID || uDstAccountID == ACCOUNT_ONE)
+
+	// Check if destination makes sense.
+	if (!uDstAccountID || uDstAccountID == ACCOUNT_ONE)
 	{
 		cLog(lsINFO) << "doTrustSet: Malformed transaction: Destination account not specified.";
 
 		return temDST_NEEDED;
 	}
-	else if (mTxnAccountID == uDstAccountID)
+
+	if (mTxnAccountID == uDstAccountID)
 	{
 		cLog(lsINFO) << "doTrustSet: Malformed transaction: Can not extend credit to self.";
 
@@ -185,6 +195,11 @@ TER TrustSetTransactor::doApply()
 
 		bool		bReserveIncrease	= false;
 
+		if (bSetAuth)
+		{
+			uFlagsOut			|= (bHigh ? lsfHighAuth : lsfLowAuth);
+		}
+
 		if (bLowReserveSet && !bLowReserved)
 		{
 			// Set reserve for low account.
@@ -287,13 +302,14 @@ TER TrustSetTransactor::doApply()
 
 		// Create a new ripple line.
 		terResult	= mEngine->getNodes().trustCreate(
-			bHigh,					// Who to charge with reserve.
+			bHigh,
 			mTxnAccountID,
-			mTxnAccount,
 			uDstAccountID,
 			Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID),
+			mTxnAccount,
+			bSetAuth,
 			saBalance,
-			saLimitAllow,
+			saLimitAllow,		// Limit for who is being charged.
 			uQualityIn,
 			uQualityOut);
 	}

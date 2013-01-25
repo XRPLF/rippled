@@ -73,7 +73,7 @@ buster.testCase("Offer tests", {
         });
     },
 
-  "offer create then crossing offer, no trust lines" :
+  "offer create then crossing offer, no trust lines with self" :
     function (done) {
       var self = this;
 
@@ -102,6 +102,261 @@ buster.testCase("Offer tests", {
                 })
               .submit();
         }
+      ], function (error) {
+        // console.log("result: error=%s", error);
+        buster.refute(error, self.what);
+        done();
+      });
+    },
+
+  // rippled broken: Balances are wrong.
+  "Offer create then crossing offer with XRP. Reverse order." :
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+        function (callback) {
+          self.what = "Create accounts.";
+
+          testutils.create_accounts(self.remote, "root", "100000.0", ["alice", "bob", "mtgox"], callback);
+        },
+        function (callback) {
+          self.what = "Set limits.";
+
+          testutils.credit_limits(self.remote,
+            {
+              "alice" : "1000/USD/mtgox",
+              "bob" : "1000/USD/mtgox"
+            },
+            callback);
+        },
+        function (callback) {
+          self.what = "Distribute funds.";
+
+          testutils.payments(self.remote,
+            {
+              "mtgox" : "500/USD/alice"
+            },
+            callback);
+        },
+        function (callback) {
+          self.what = "Create first offer.";
+
+          self.remote.transaction()
+            .offer_create("bob", "1/USD/mtgox", "4000.0")
+              .on('proposed', function (m) {
+                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+        },
+        function (callback) {
+          self.what = "Create crossing offer.";
+
+          self.remote.transaction()
+            .offer_create("alice", "150000.0", "50/USD/mtgox")
+              .on('proposed', function (m) {
+                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+        },
+        function (callback) {
+          self.what = "Verify balances.";
+
+          testutils.verify_balances(self.remote,
+            {
+              "alice"   : [ "499/USD/mtgox", String(100000000000+4000000000-2*(Remote.fees['default'].to_number())) ],
+              "bob"     : [   "1/USD/mtgox", String(100000000000-4000000000-2*(Remote.fees['default'].to_number())) ],
+            },
+            callback);
+        },
+//        function (callback) {
+//          self.what = "Display ledger";
+//
+//          self.remote.request_ledger('current', true)
+//            .on('success', function (m) {
+//                console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+//
+//                callback();
+//              })
+//            .request();
+//        },
+      ], function (error) {
+        // console.log("result: error=%s", error);
+        buster.refute(error, self.what);
+        done();
+      });
+    },
+
+  "Offer create then crossing offer with XRP." :
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+        function (callback) {
+          self.what = "Create accounts.";
+
+          testutils.create_accounts(self.remote, "root", "100000.0", ["alice", "bob", "mtgox"], callback);
+        },
+        function (callback) {
+          self.what = "Set limits.";
+
+          testutils.credit_limits(self.remote,
+            {
+              "alice" : "1000/USD/mtgox",
+              "bob" : "1000/USD/mtgox"
+            },
+            callback);
+        },
+        function (callback) {
+          self.what = "Distribute funds.";
+
+          testutils.payments(self.remote,
+            {
+              "mtgox" : "500/USD/alice"
+            },
+            callback);
+        },
+        function (callback) {
+          self.what = "Create first offer.";
+
+          self.remote.transaction()
+            .offer_create("alice", "150000.0", "50/USD/mtgox")
+              .on('proposed', function (m) {
+                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+        },
+        function (callback) {
+          self.what = "Create crossing offer.";
+
+          self.remote.transaction()
+            .offer_create("bob", "1/USD/mtgox", "4000.0")
+              .on('proposed', function (m) {
+                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+        },
+        function (callback) {
+          self.what = "Verify balances.";
+
+          testutils.verify_balances(self.remote,
+            {
+              "alice"   : [ "499/USD/mtgox", String(100000000000+4000000000-2*(Remote.fees['default'].to_number())) ],
+              "bob"     : [   "1/USD/mtgox", String(100000000000-4000000000-2*(Remote.fees['default'].to_number())) ],
+            },
+            callback);
+        },
+//        function (callback) {
+//          self.what = "Display ledger";
+//
+//          self.remote.request_ledger('current', true)
+//            .on('success', function (m) {
+//                console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+//
+//                callback();
+//              })
+//            .request();
+//        },
+      ], function (error) {
+        // console.log("result: error=%s", error);
+        buster.refute(error, self.what);
+        done();
+      });
+    },
+
+  "Offer create then crossing offer with XRP with limit override." :
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+        function (callback) {
+          self.what = "Create accounts.";
+
+          testutils.create_accounts(self.remote, "root", "100000.0", ["alice", "bob", "mtgox"], callback);
+        },
+        function (callback) {
+          self.what = "Set limits.";
+
+          testutils.credit_limits(self.remote,
+            {
+              "alice" : "1000/USD/mtgox",
+//              "bob" : "1000/USD/mtgox"
+            },
+            callback);
+        },
+        function (callback) {
+          self.what = "Distribute funds.";
+
+          testutils.payments(self.remote,
+            {
+              "mtgox" : "500/USD/alice"
+            },
+            callback);
+        },
+        function (callback) {
+          self.what = "Create first offer.";
+
+          self.remote.transaction()
+            .offer_create("alice", "150000.0", "50/USD/mtgox")
+              .on('proposed', function (m) {
+                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+        },
+        function (callback) {
+          self.what = "Display ledger";
+
+          self.remote.request_ledger('current', true)
+            .on('success', function (m) {
+                console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+
+                callback();
+              })
+            .request();
+        },
+        function (callback) {
+          self.what = "Create crossing offer.";
+
+          self.remote.transaction()
+            .offer_create("bob", "1/USD/mtgox", "4000.0")
+              .on('proposed', function (m) {
+                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+        },
+        function (callback) {
+          self.what = "Verify balances.";
+
+          testutils.verify_balances(self.remote,
+            {
+              "alice"   : [ "499/USD/mtgox", String(100000000000+4000000000-2*(Remote.fees['default'].to_number())) ],
+              "bob"     : [   "1/USD/mtgox", String(100000000000-4000000000-1*(Remote.fees['default'].to_number())) ],
+            },
+            callback);
+        },
+//        function (callback) {
+//          self.what = "Display ledger";
+//
+//          self.remote.request_ledger('current', true)
+//            .on('success', function (m) {
+//                console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+//
+//                callback();
+//              })
+//            .request();
+//        },
       ], function (error) {
         // console.log("result: error=%s", error);
         buster.refute(error, self.what);

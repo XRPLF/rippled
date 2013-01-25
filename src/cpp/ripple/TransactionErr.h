@@ -78,6 +78,7 @@ enum TER	// aka TransactionEngineResult
 	tefCREATED,
 	tefEXCEPTION,
 	tefGEN_IN_USE,
+	tefNO_AUTH_REQUIRED,	// Can't set auth if auth is not required.
 	tefPAST_SEQ,
 
 	// -99 .. -1: R Retry (sequence too high, no funds for txn fee, originating account non-existent)
@@ -94,6 +95,7 @@ enum TER	// aka TransactionEngineResult
 	terINSUF_FEE_B,			// Can't pay fee, therefore don't burden network.
 	terNO_ACCOUNT,			// Can't pay fee, therefore don't burden network.
 	terNO_LINE,				// Internal flag.
+	terOWNERS,				// Can't succeed with non-zero owner count.
 	terPRE_SEQ,				// Can't pay fee, no point in forwarding, therefore don't burden network.
 
 	// 0: S Success (success)

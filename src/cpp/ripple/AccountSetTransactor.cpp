@@ -20,6 +20,38 @@ TER AccountSetTransactor::doApply()
 	}
 
 	//
+	// RequireAuth
+	//
+
+	if ((tfRequireAuth|tfOptionalAuth) == (uTxFlags & (tfRequireAuth|tfOptionalAuth)))
+	{
+		cLog(lsINFO) << "AccountSet: Malformed transaction: Contradictory flags set.";
+
+		return temINVALID_FLAG;
+	}
+
+	if ((uTxFlags & tfRequireAuth) && !isSetBit(uFlagsIn, lsfRequireAuth))
+	{
+		if (mTxn.getFieldU32(sfOwnerCount))
+		{
+			cLog(lsINFO) << "AccountSet: Retry: OwnerCount not zero.";
+
+			return terOWNERS;
+		}
+
+		cLog(lsINFO) << "AccountSet: Set RequireAuth.";
+
+		uFlagsOut	|= lsfRequireAuth;
+	}
+
+	if (uTxFlags & tfOptionalAuth)
+	{
+		cLog(lsINFO) << "AccountSet: Clear RequireAuth.";
+
+		uFlagsOut	&= ~lsfRequireAuth;
+	}
+
+	//
 	// RequireDestTag
 	//
 
