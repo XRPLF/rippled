@@ -35,6 +35,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	tefEXCEPTION,			"tefEXCEPTION",				"Unexpected program state."								},
 		{	tefCREATED,				"tefCREATED",				"Can't add an already created account."					},
 		{	tefGEN_IN_USE,			"tefGEN_IN_USE",			"Generator already in use."								},
+		{	tefNO_AUTH_REQUIRED,	"tefNO_AUTH_REQUIRED",		"Auth is not required."									},
 		{	tefPAST_SEQ,			"tefPAST_SEQ",				"This sequence number has already past."				},
 
 		{	telLOCAL_ERROR,			"telLOCAL_ERROR",			"Local failure."										},
@@ -81,6 +82,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	terNO_ACCOUNT,			"terNO_ACCOUNT",			"The source account does not exist."					},
 		{	terNO_LINE,				"terNO_LINE",				"No such line."											},
 		{	terPRE_SEQ,				"terPRE_SEQ",				"Missing/inapplicable prior transaction."				},
+		{	terOWNERS,				"terOWNERS",				"Non-zero owner count."									},
 
 		{	tesSUCCESS,				"tesSUCCESS",				"The transaction was applied."							},
 	};

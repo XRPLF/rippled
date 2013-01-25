@@ -135,6 +135,7 @@ public:
 							const uint160&	uDstAccountID,
 							const uint256&	uIndex,
 							SLE::ref		sleAccount,
+							const bool		bAuth,
 							const STAmount& saSrcBalance,
 							const STAmount& saSrcLimit,
 							const uint32	uSrcQualityIn = 0,

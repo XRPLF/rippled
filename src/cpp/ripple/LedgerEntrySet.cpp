@@ -1152,6 +1152,7 @@ TER LedgerEntrySet::trustCreate(
 	const uint160&	uDstAccountID,
 	const uint256&	uIndex,				// --> ripple state entry
 	SLE::ref		sleAccount,			// --> the account being set.
+	const bool		bAuth,				// --> authorize account.
 	const STAmount& saBalance,			// --> balance of account being set. Issuer should be ACCOUNT_ONE
 	const STAmount& saLimit,			// --> limit for account being set. Issuer should be the account being set.
 	const uint32	uQualityIn,
@@ -1197,7 +1198,14 @@ TER LedgerEntrySet::trustCreate(
 		if (uQualityOut)
 			sleRippleState->setFieldU32(!bSetHigh ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
 
-		sleRippleState->setFieldU32(sfFlags, !bSetHigh ? lsfLowReserve : lsfHighReserve);
+		uint32	uFlags	= !bSetHigh ? lsfLowReserve : lsfHighReserve;
+
+		if (bAuth)
+		{
+			uFlags		|= (!bSetHigh ? lsfLowAuth : lsfHighAuth);
+		}
+
+		sleRippleState->setFieldU32(sfFlags, uFlags);
 
 		ownerCountAdjust(!bSetDst ? uSrcAccountID : uDstAccountID, 1, sleAccount);
 
@@ -1242,6 +1250,7 @@ TER LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRecei
 			uReceiverID,
 			uIndex,
 			entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uReceiverID)),
+			false,
 			saBalance,
 			saReceiverLimit);
 	}
