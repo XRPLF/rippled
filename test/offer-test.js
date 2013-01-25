@@ -15,8 +15,8 @@ require("../src/js/remote").config = require("./config");
 buster.testRunner.timeout = 5000;
 
 buster.testCase("Offer tests", {
-  'setUp'     : testutils.build_setup(),
-  // 'setUp'     : testutils.build_setup({ verbose: true, standalone: false }),
+  // 'setUp'     : testutils.build_setup(),
+  'setUp'     : testutils.build_setup({ verbose: true, standalone: false }),
   'tearDown'  : testutils.build_teardown(),
 
   "offer create then cancel in one ledger" :
@@ -168,8 +168,8 @@ buster.testCase("Offer tests", {
 
           testutils.verify_balances(self.remote,
             {
-              "alice"   : [ "499/USD/mtgox", String(100000000000+4000000000-2*(Remote.fees['default'].to_number())) ],
-              "bob"     : [   "1/USD/mtgox", String(100000000000-4000000000-2*(Remote.fees['default'].to_number())) ],
+              "alice"   : [ "499/USD/mtgox", String(100000000000+4000000000-2*(Transaction.fees['default'].to_number())) ],
+              "bob"     : [   "1/USD/mtgox", String(100000000000-4000000000-2*(Transaction.fees['default'].to_number())) ],
             },
             callback);
         },
@@ -224,7 +224,7 @@ buster.testCase("Offer tests", {
           self.what = "Create first offer.";
 
           self.remote.transaction()
-            .offer_create("alice", "150000.0", "50/USD/mtgox")
+            .offer_create("alice", "150000.0", "50/USD/mtgox")  // 3000 XRP = 1 USD
               .on('proposed', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
@@ -236,7 +236,7 @@ buster.testCase("Offer tests", {
           self.what = "Create crossing offer.";
 
           self.remote.transaction()
-            .offer_create("bob", "1/USD/mtgox", "4000.0")
+            .offer_create("bob", "1/USD/mtgox", "3000.0")
               .on('proposed', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
@@ -249,8 +249,8 @@ buster.testCase("Offer tests", {
 
           testutils.verify_balances(self.remote,
             {
-              "alice"   : [ "499/USD/mtgox", String(100000000000+4000000000-2*(Remote.fees['default'].to_number())) ],
-              "bob"     : [   "1/USD/mtgox", String(100000000000-4000000000-2*(Remote.fees['default'].to_number())) ],
+              "alice"   : [ "499/USD/mtgox", String(100000000000+3000000000-2*(Transaction.fees['default'].to_number())) ],
+              "bob"     : [   "1/USD/mtgox", String(100000000000-3000000000-2*(Transaction.fees['default'].to_number())) ],
             },
             callback);
         },
@@ -305,7 +305,7 @@ buster.testCase("Offer tests", {
           self.what = "Create first offer.";
 
           self.remote.transaction()
-            .offer_create("alice", "150000.0", "50/USD/mtgox")
+            .offer_create("alice", "150000.0", "50/USD/mtgox")  // 300 XRP = 1 USD
               .on('proposed', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
@@ -328,7 +328,7 @@ buster.testCase("Offer tests", {
           self.what = "Create crossing offer.";
 
           self.remote.transaction()
-            .offer_create("bob", "1/USD/mtgox", "4000.0")
+            .offer_create("bob", "1/USD/mtgox", "3000.0") // 
               .on('proposed', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
@@ -341,8 +341,8 @@ buster.testCase("Offer tests", {
 
           testutils.verify_balances(self.remote,
             {
-              "alice"   : [ "499/USD/mtgox", String(100000000000+4000000000-2*(Remote.fees['default'].to_number())) ],
-              "bob"     : [   "1/USD/mtgox", String(100000000000-4000000000-1*(Remote.fees['default'].to_number())) ],
+              "alice"   : [ "499/USD/mtgox", String(100000000000+3000000000-2*(Transaction.fees['default'].to_number())) ],
+              "bob"     : [   "1/USD/mtgox", String(100000000000-3000000000-1*(Transaction.fees['default'].to_number())) ],
             },
             callback);
         },

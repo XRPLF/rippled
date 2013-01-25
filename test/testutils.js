@@ -309,7 +309,7 @@ var verify_balance = function (remote, src, amount_json, callback) {
           var account_balance = Amount.from_json(m.account_balance);
 
           if (!account_balance.equals(amount_req)) {
-            console.log("verify_balance: failed: %s vs %s is %s: %s", src, account_balance.to_text_full(), amount_req.to_text_full(), account_balance.not_equals_why(amount_req));
+            console.log("verify_balance: failed: %s vs %s / %s: %s", src, account_balance.to_text_full(), amount_req.to_text_full(), account_balance.not_equals_why(amount_req));
           }
 
           callback(!account_balance.equals(amount_req));
