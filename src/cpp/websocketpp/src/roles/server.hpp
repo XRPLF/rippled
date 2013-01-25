@@ -65,15 +65,9 @@ static std::pair<bufIterator, bool> match_header(bufIterator begin, bufIterator 
 	// Do we have a complete HTTP request
 	bufIterator it = std::search(begin, end, header_match.begin(), header_match.end());
 	if (it != end)
-		it += header_match.size() - 1;
-	else
-	{
-		it = std::search(begin, end, alt_header_match.begin(), alt_header_match.end());
-		if (it != end)
-			it += alt_header_match.size() - 1;
-	}
-	if (it != end) // Yes, this is HTTP
-		return std::make_pair(it, true);
+		return std::make_pair(it + header_match.size());
+	it = std::search(begin, end, alt_header_match.begin(), alt_header_match.end());
+		return std::make_pair(it + alt_header_match_size(), true);
 
 	// If we don't have a flash policy request, we're done
 	it = std::search(begin, end, flash_match.begin(), flash_match.end());
@@ -86,7 +80,7 @@ static std::pair<bufIterator, bool> match_header(bufIterator begin, bufIterator 
 		return std::make_pair(end, false);
 
 	// Treat as flash policy request
-	return std::make_pair(it + flash_match.size() - 1, true);
+	return std::make_pair(it + flash_match.size(), true);
 }
 
 // Forward declarations
