@@ -894,7 +894,8 @@ public:
         
         // try and read more
         if (m_state != session::state::CLOSED && 
-            m_processor->get_bytes_needed() > 0 && 
+        	m_processor &&
+            m_processor->get_bytes_needed() > 0 &&  // FIXME: m_processor had been reset here
             !m_protocol_error)
         {
             // TODO: read timeout timer?
