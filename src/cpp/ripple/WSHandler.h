@@ -11,14 +11,17 @@ extern void initSSLContext(boost::asio::ssl::context& context,
 template <typename endpoint_type>
 class WSConnection;
 
+// CAUTION: on_* functions are called by the websocket code while holding a lock
+
 // A single instance of this object is made.
 // This instance dispatches all events.  There is no per connection persistence.
 template <typename endpoint_type>
 class WSServerHandler : public endpoint_type::handler
 {
 public:
-	typedef typename endpoint_type::handler::connection_ptr connection_ptr;
-	typedef typename endpoint_type::handler::message_ptr message_ptr;
+	typedef typename endpoint_type::handler::connection_ptr		connection_ptr;
+	typedef typename endpoint_type::handler::message_ptr		message_ptr;
+	typedef boost::shared_ptr< WSConnection<endpoint_type> >	wsc_ptr;
 
 	// Private reasons to close.
 	enum {
@@ -83,7 +86,6 @@ public:
 
 	void pingTimer(connection_ptr cpClient)
 	{
-		typedef boost::shared_ptr< WSConnection<endpoint_type> > wsc_ptr;
 		wsc_ptr ptr;
 		{
 			boost::mutex::scoped_lock	sl(mMapLock);
@@ -105,8 +107,6 @@ public:
 
 	void on_send_empty(connection_ptr cpClient)
 	{
-		typedef boost::shared_ptr< WSConnection<endpoint_type> > wsc_ptr;
-
 		wsc_ptr ptr;
 		{
 			boost::mutex::scoped_lock	sl(mMapLock);
@@ -128,8 +128,6 @@ public:
 
 	void on_pong(connection_ptr cpClient, std::string)
 	{
-		cLog(lsTRACE) << "Pong received";
-		typedef boost::shared_ptr< WSConnection<endpoint_type> > wsc_ptr;
 		wsc_ptr ptr;
 		{
 			boost::mutex::scoped_lock	sl(mMapLock);
@@ -143,7 +141,6 @@ public:
 
 	void on_close(connection_ptr cpClient)
 	{ // we cannot destroy the connection while holding the map lock or we deadlock with pubLedger
-		typedef boost::shared_ptr< WSConnection<endpoint_type> > wsc_ptr;
 		wsc_ptr ptr;
 		{
 			boost::mutex::scoped_lock	sl(mMapLock);
@@ -156,7 +153,8 @@ public:
 		ptr->preDestroy(); // Must be done before we return
 
 		// Must be done without holding the websocket send lock
-		theApp->getAuxService().post(boost::bind(&WSConnection<endpoint_type>::destroy, ptr));
+		theApp->getJobQueue().addJob(jtCLIENT,
+			boost::bind(&WSConnection<endpoint_type>::destroy, ptr));
 	}
 
 	void on_message(connection_ptr cpClient, message_ptr mpMessage)
