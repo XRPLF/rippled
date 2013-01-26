@@ -17,6 +17,8 @@ public:
 	typedef boost::shared_ptr<RippleState> pointer;
 
 private:
+	uint32							mFlags;
+
 	RippleAddress					mLowID;
 	RippleAddress					mHighID;
 
@@ -42,16 +44,19 @@ public:
 
 	void					setViewAccount(const uint160& accountID);
 
-	const RippleAddress	getAccountID() const		{ return mViewLowest ? mLowID : mHighID; }
-	const RippleAddress	getAccountIDPeer() const	{ return mViewLowest ? mHighID : mLowID; }
+	const RippleAddress	getAccountID() const		{ return  mViewLowest ? mLowID : mHighID; }
+	const RippleAddress	getAccountIDPeer() const	{ return !mViewLowest ? mLowID : mHighID; }
 
-	STAmount				getBalance() const			{ return mBalance; }
+	bool				getAuth() const				{ return isSetBit(mFlags,  mViewLowest ? lsfLowAuth : lsfHighAuth); }
+	bool				getAuthPeer() const			{ return isSetBit(mFlags, !mViewLowest ? lsfLowAuth : lsfHighAuth); }
 
-	STAmount				getLimit() const			{ return mViewLowest ? mLowLimit : mHighLimit; }
-	STAmount				getLimitPeer() const		{ return mViewLowest ? mHighLimit : mLowLimit; }
+	STAmount			getBalance() const			{ return mBalance; }
 
-	uint32					getQualityIn() const		{ return((uint32) (mViewLowest ? mLowQualityIn : mHighQualityIn)); }
-	uint32					getQualityOut() const		{ return((uint32) (mViewLowest ? mLowQualityOut : mHighQualityOut)); }
+	STAmount			getLimit() const			{ return  mViewLowest ? mLowLimit : mHighLimit; }
+	STAmount			getLimitPeer() const		{ return !mViewLowest ? mLowLimit : mHighLimit; }
+
+	uint32				getQualityIn() const		{ return((uint32) (mViewLowest ? mLowQualityIn : mHighQualityIn)); }
+	uint32				getQualityOut() const		{ return((uint32) (mViewLowest ? mLowQualityOut : mHighQualityOut)); }
 
 	SerializedLedgerEntry::pointer getSLE() { return mLedgerEntry; }
 	const SerializedLedgerEntry& peekSLE() const { return *mLedgerEntry; }

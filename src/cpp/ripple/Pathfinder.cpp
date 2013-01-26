@@ -244,8 +244,8 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				}
 				else
 				{
-
 					// Remove implied first and last nodes.
+
 					spPath.mPath.erase(spPath.mPath.begin());
 					spPath.mPath.erase(spPath.mPath.begin() + spPath.mPath.size()-1);
 
@@ -301,7 +301,9 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				// Last element is for non-XRP, continue by adding ripple lines and order books.
 
 				// Create new paths for each outbound account not already in the path.
-				AccountItems rippleLines(speEnd.mAccountID, mLedger, AccountItem::pointer(new RippleState()));
+				AccountItems	rippleLines(speEnd.mAccountID, mLedger, AccountItem::pointer(new RippleState()));
+				SLE::pointer	sleSrc			= lesActive.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(speEnd.mAccountID));
+				bool			bRequireAuth	= isSetBit(sleSrc->getFieldU32(sfFlags), lsfRequireAuth);
 
 				BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 				{
@@ -317,9 +319,10 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 								% RippleAddress::createHumanAccountID(rspEntry->getAccountIDPeer().getAccountID())
 								% STAmount::createHumanCurrency(speEnd.mCurrencyID));
 					}
-					else if (!rspEntry->getBalance().isPositive()	// No IOUs to send.
-						&& (!rspEntry->getLimitPeer()				// Peer does not extend credit.
-							|| *rspEntry->getBalance().negate() >= rspEntry->getLimitPeer()))	// No credit left.
+					else if (!rspEntry->getBalance().isPositive()							// No IOUs to send.
+						&& (!rspEntry->getLimitPeer()										// Peer does not extend credit.
+							|| *rspEntry->getBalance().negate() >= rspEntry->getLimitPeer()	// No credit left.
+							|| (bRequireAuth && !rspEntry->getAuth())))						// Not authorized to hold credit.
 					{
 						// Path has no credit left. Ignore it.
 						cLog(lsDEBUG) <<
