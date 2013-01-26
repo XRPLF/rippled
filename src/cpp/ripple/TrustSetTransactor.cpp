@@ -1,39 +1,66 @@
+#include "Application.h"
+
 #include "TrustSetTransactor.h"
 
-#include <boost/bind.hpp>
+SETUP_LOG();
 
 TER TrustSetTransactor::doApply()
 {
 	TER			terResult		= tesSUCCESS;
-	Log(lsINFO) << "doTrustSet>";
+	cLog(lsINFO) << "doTrustSet>";
 
 	const STAmount		saLimitAmount	= mTxn.getFieldAmount(sfLimitAmount);
 	const bool			bQualityIn		= mTxn.isFieldPresent(sfQualityIn);
-	const uint32		uQualityIn		= bQualityIn ? mTxn.getFieldU32(sfQualityIn) : 0;
 	const bool			bQualityOut		= mTxn.isFieldPresent(sfQualityOut);
-	const uint32		uQualityOut		= bQualityIn ? mTxn.getFieldU32(sfQualityOut) : 0;
 	const uint160		uCurrencyID		= saLimitAmount.getCurrency();
 	uint160				uDstAccountID	= saLimitAmount.getIssuer();
-	const bool			bFlipped		= mTxnAccountID > uDstAccountID;		// true, iff current is not lowest.
-	bool				bDelIndex		= false;
+	const bool			bHigh			= mTxnAccountID > uDstAccountID;		// true, iff current is high account.
 
-	// Check if destination makes sense.
+	uint32				uQualityIn		= bQualityIn ? mTxn.getFieldU32(sfQualityIn) : 0;
+	uint32				uQualityOut		= bQualityIn ? mTxn.getFieldU32(sfQualityOut) : 0;
+
+	if (bQualityIn && QUALITY_ONE == uQualityIn)
+		uQualityIn	= 0;
+
+	if (bQualityOut && QUALITY_ONE == uQualityOut)
+		uQualityOut	= 0;
+
+	const uint32		uTxFlags		= mTxn.getFlags();
+
+	if (uTxFlags & tfTrustSetMask)
+	{
+		cLog(lsINFO) << "doTrustSet: Malformed transaction: Invalid flags set.";
+
+		return temINVALID_FLAG;
+	}
+
+	const bool			bSetAuth		= isSetBit(uTxFlags, tfSetfAuth);
+
+	if (bSetAuth && !isSetBit(mTxnAccount->getFieldU32(sfFlags), lsfRequireAuth))
+	{
+		cLog(lsINFO) << "doTrustSet: Retry: Auth not required.";
+
+		return tefNO_AUTH_REQUIRED;
+	}
 
 	if (saLimitAmount.isNegative())
 	{
-		Log(lsINFO) << "doTrustSet: Malformed transaction: Negatived credit limit.";
+		cLog(lsINFO) << "doTrustSet: Malformed transaction: Negatived credit limit.";
 
-		return temBAD_AMOUNT;
+		return temBAD_LIMIT;
 	}
-	else if (!uDstAccountID || uDstAccountID == ACCOUNT_ONE)
+
+	// Check if destination makes sense.
+	if (!uDstAccountID || uDstAccountID == ACCOUNT_ONE)
 	{
-		Log(lsINFO) << "doTrustSet: Malformed transaction: Destination account not specified.";
+		cLog(lsINFO) << "doTrustSet: Malformed transaction: Destination account not specified.";
 
 		return temDST_NEEDED;
 	}
-	else if (mTxnAccountID == uDstAccountID)
+
+	if (mTxnAccountID == uDstAccountID)
 	{
-		Log(lsINFO) << "doTrustSet: Malformed transaction: Can not extend credit to self.";
+		cLog(lsINFO) << "doTrustSet: Malformed transaction: Can not extend credit to self.";
 
 		return temDST_IS_SRC;
 	}
@@ -41,10 +68,15 @@ TER TrustSetTransactor::doApply()
 	SLE::pointer		sleDst			= mEngine->entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 	if (!sleDst)
 	{
-		Log(lsINFO) << "doTrustSet: Delay transaction: Destination account does not exist.";
+		cLog(lsINFO) << "doTrustSet: Delay transaction: Destination account does not exist.";
 
-		return terNO_DST;
+		return tecNO_DST;
 	}
+
+	const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
+	const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
+	// The reserve required to create the line.
+	const uint64	uReserveCreate	= mEngine->getLedger()->getReserve(uOwnerCount + 1);
 
 	STAmount			saLimitAllow	= saLimitAmount;
 	saLimitAllow.setIssuer(mTxnAccountID);
@@ -52,117 +84,237 @@ TER TrustSetTransactor::doApply()
 	SLE::pointer		sleRippleState	= mEngine->entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID));
 	if (sleRippleState)
 	{
-		// A line exists in one or more directions.
+		STAmount		saLowBalance;
+		STAmount		saLowLimit;
+		STAmount		saHighBalance;
+		STAmount		saHighLimit;
+		uint32			uLowQualityIn;
+		uint32			uLowQualityOut;
+		uint32			uHighQualityIn;
+		uint32			uHighQualityOut;
+		const uint160&	uLowAccountID	= !bHigh ? mTxnAccountID : uDstAccountID;
+		const uint160&	uHighAccountID	=  bHigh ? mTxnAccountID : uDstAccountID;
+		SLE::ref		sleLowAccount	= !bHigh ? mTxnAccount : sleDst;
+		SLE::ref		sleHighAccount	=  bHigh ? mTxnAccount : sleDst;
 
-#if 0
-		// We might delete a ripple state node if everything is set to defaults.
-		// However, this is problematic as it may make predicting reserve amounts harder for users.
-		// The code here is incomplete.
+		//
+		// Balances
+		//
 
-		if (!saLimitAmount)
+		saLowBalance	= sleRippleState->getFieldAmount(sfBalance);
+		saHighBalance	= -saLowBalance;
+
+		//
+		// Limits
+		//
+
+		sleRippleState->setFieldAmount(!bHigh ? sfLowLimit : sfHighLimit, saLimitAllow);
+
+		saLowLimit	= !bHigh ? saLimitAllow : sleRippleState->getFieldAmount(sfLowLimit);
+		saHighLimit	=  bHigh ? saLimitAllow : sleRippleState->getFieldAmount(sfHighLimit);
+
+		//
+		// Quality in
+		//
+
+		if (!bQualityIn)
 		{
-			// Zeroing line.
-			uint160		uLowID			= sleRippleState->getFieldAmount(sfLowLimit).getIssuer();
-			uint160		uHighID			= sleRippleState->getFieldAmount(sfHighLimit).getIssuer();
-			bool		bLow			= uLowID == uSrcAccountID;
-			bool		bHigh			= uLowID == uDstAccountID;
-			bool		bBalanceZero	= !sleRippleState->getFieldAmount(sfBalance);
-			STAmount	saDstLimit		= sleRippleState->getFieldAmount(bSendLow ? sfLowLimit : sfHighLimit);
-			bool		bDstLimitZero	= !saDstLimit;
+			// Not setting. Just get it.
 
-			assert(bLow || bHigh);
-
-			if (bBalanceZero && bDstLimitZero)
-			{
-				// Zero balance and eliminating last limit.
-
-				bDelIndex	= true;
-				terResult	= dirDelete(false, uSrcRef, Ledger::getOwnerDirIndex(mTxnAccountID), sleRippleState->getIndex(), false);
-			}
+			uLowQualityIn	= sleRippleState->getFieldU32(sfLowQualityIn);
+			uHighQualityIn	= sleRippleState->getFieldU32(sfHighQualityIn);
 		}
-#endif
-
-		if (!bDelIndex)
+		else if (uQualityIn)
 		{
-			sleRippleState->setFieldAmount(bFlipped ? sfHighLimit: sfLowLimit, saLimitAllow);
+			// Setting.
 
-			if (!bQualityIn)
+			sleRippleState->setFieldU32(!bHigh ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
+
+			uLowQualityIn	= !bHigh ? uQualityIn : sleRippleState->getFieldU32(sfLowQualityIn);
+			uHighQualityIn	=  bHigh ? uQualityIn : sleRippleState->getFieldU32(sfHighQualityIn);
+		}
+		else
+		{
+			// Clearing.
+
+			sleRippleState->makeFieldAbsent(!bHigh ? sfLowQualityIn : sfHighQualityIn);
+
+			uLowQualityIn	= !bHigh ? 0 : sleRippleState->getFieldU32(sfLowQualityIn);
+			uHighQualityIn	=  bHigh ? 0 : sleRippleState->getFieldU32(sfHighQualityIn);
+		}
+
+		if (QUALITY_ONE == uLowQualityIn)	uLowQualityIn	= 0;
+		if (QUALITY_ONE == uHighQualityIn)	uHighQualityIn	= 0;
+
+		//
+		// Quality out
+		//
+
+		if (!bQualityOut)
+		{
+			// Not setting. Just get it.
+
+			uLowQualityOut	= sleRippleState->getFieldU32(sfLowQualityOut);
+			uHighQualityOut	= sleRippleState->getFieldU32(sfHighQualityOut);
+		}
+		else if (uQualityOut)
+		{
+			// Setting.
+
+			sleRippleState->setFieldU32(!bHigh ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
+
+			uLowQualityOut	= !bHigh ? uQualityOut : sleRippleState->getFieldU32(sfLowQualityOut);
+			uHighQualityOut	=  bHigh ? uQualityOut : sleRippleState->getFieldU32(sfHighQualityOut);
+		}
+		else
+		{
+			// Clearing.
+
+			sleRippleState->makeFieldAbsent(!bHigh ? sfLowQualityOut : sfHighQualityOut);
+
+			uLowQualityOut	= !bHigh ? 0 : sleRippleState->getFieldU32(sfLowQualityOut);
+			uHighQualityOut	=  bHigh ? 0 : sleRippleState->getFieldU32(sfHighQualityOut);
+		}
+
+		if (QUALITY_ONE == uLowQualityOut)	uLowQualityOut	= 0;
+		if (QUALITY_ONE == uHighQualityOut)	uHighQualityOut	= 0;
+
+		const bool	bLowReserveSet		= uLowQualityIn || uLowQualityOut || !!saLowLimit || saLowBalance.isPositive();
+		const bool	bLowReserveClear	= !bLowReserveSet;
+
+		const bool	bHighReserveSet		= uHighQualityIn || uHighQualityOut || !!saHighLimit || saHighBalance.isPositive();
+		const bool	bHighReserveClear	= !bHighReserveSet;
+
+		const bool	bDefault			= bLowReserveClear && bHighReserveClear;
+
+		const uint32	uFlagsIn		= sleRippleState->getFieldU32(sfFlags);
+		uint32			uFlagsOut		= uFlagsIn;
+
+		const bool	bLowReserved		= isSetBit(uFlagsIn, lsfLowReserve);
+		const bool	bHighReserved		= isSetBit(uFlagsIn, lsfHighReserve);
+
+		bool		bReserveIncrease	= false;
+
+		if (bSetAuth)
+		{
+			uFlagsOut			|= (bHigh ? lsfHighAuth : lsfLowAuth);
+		}
+
+		if (bLowReserveSet && !bLowReserved)
+		{
+			// Set reserve for low account.
+
+			mEngine->getNodes().ownerCountAdjust(uLowAccountID, 1, sleLowAccount);
+			uFlagsOut			|= lsfLowReserve;
+
+			if (!bHigh)
+				bReserveIncrease	= true;
+		}
+
+		if (bLowReserveClear && bLowReserved)
+		{
+			// Clear reserve for low account.
+
+			mEngine->getNodes().ownerCountAdjust(uLowAccountID, -1, sleLowAccount);
+			uFlagsOut	&= ~lsfLowReserve;
+		}
+
+		if (bHighReserveSet && !bHighReserved)
+		{
+			// Set reserve for high account.
+
+			mEngine->getNodes().ownerCountAdjust(uHighAccountID, 1, sleHighAccount);
+			uFlagsOut	|= lsfHighReserve;
+
+			if (bHigh)
+				bReserveIncrease	= true;
+		}
+
+		if (bHighReserveClear && bHighReserved)
+		{
+			// Clear reserve for high account.
+
+			mEngine->getNodes().ownerCountAdjust(uHighAccountID, -1, sleHighAccount);
+			uFlagsOut	&= ~lsfHighReserve;
+		}
+
+		if (uFlagsIn != uFlagsOut)
+			sleRippleState->setFieldU32(sfFlags, uFlagsOut);
+
+		if (bDefault)
+		{
+			// Can delete.
+
+			bool		bLowNode	= sleRippleState->isFieldPresent(sfLowNode);	// Detect legacy dirs.
+			bool		bHighNode	= sleRippleState->isFieldPresent(sfHighNode);
+			uint64		uLowNode	= sleRippleState->getFieldU64(sfLowNode);
+			uint64		uHighNode	= sleRippleState->getFieldU64(sfHighNode);
+
+			cLog(lsTRACE) << "doTrustSet: Deleting ripple line: low";
+			terResult	= mEngine->getNodes().dirDelete(false, uLowNode, Ledger::getOwnerDirIndex(uLowAccountID), sleRippleState->getIndex(), false, !bLowNode);
+
+			if (tesSUCCESS == terResult)
 			{
-				nothing();
-			}
-			else if (uQualityIn)
-			{
-				sleRippleState->setFieldU32(bFlipped ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
-			}
-			else
-			{
-				sleRippleState->makeFieldAbsent(bFlipped ? sfLowQualityIn : sfHighQualityIn);
+				cLog(lsTRACE) << "doTrustSet: Deleting ripple line: high";
+				terResult	= mEngine->getNodes().dirDelete(false, uHighNode, Ledger::getOwnerDirIndex(uHighAccountID), sleRippleState->getIndex(), false, !bHighNode);
 			}
 
-			if (!bQualityOut)
-			{
-				nothing();
-			}
-			else if (uQualityOut)
-			{
-				sleRippleState->setFieldU32(bFlipped ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
-			}
-			else
-			{
-				sleRippleState->makeFieldAbsent(bFlipped ? sfLowQualityOut : sfHighQualityOut);
-			}
+			cLog(lsINFO) << "doTrustSet: Deleting ripple line: state";
+			mEngine->entryDelete(sleRippleState);
+		}
+		else if (bReserveIncrease
+			&& saSrcXRPBalance.getNValue() < uReserveCreate)	// Reserve is not scaled by load.
+		{
+			cLog(lsINFO) << "doTrustSet: Delay transaction: Insufficent reserve to add trust line.";
 
+			// Another transaction could provide XRP to the account and then this transaction would succeed.
+			terResult	= tecINSUF_RESERVE_LINE;
+		}
+		else
+		{
 			mEngine->entryModify(sleRippleState);
-		}
 
-		Log(lsINFO) << "doTrustSet: Modifying ripple line: bDelIndex=" << bDelIndex;
+			cLog(lsINFO) << "doTrustSet: Modify ripple line";
+		}
 	}
 	// Line does not exist.
-	else if (!saLimitAmount)
+	else if (!saLimitAmount										// Setting default limit.
+		&& (!bQualityIn || !uQualityIn)							// Not setting quality in or setting default quality in.
+		&& (!bQualityOut || !uQualityOut))						// Not setting quality out or setting default quality out.
 	{
-		Log(lsINFO) << "doTrustSet: Redundant: Setting non-existent ripple line to 0.";
+		cLog(lsINFO) << "doTrustSet: Redundant: Setting non-existent ripple line to defaults.";
 
-		return terNO_LINE_NO_ZERO;
+		return tecNO_LINE_REDUNDANT;
+	}
+	else if (saSrcXRPBalance.getNValue() < uReserveCreate)		// Reserve is not scaled by load.
+	{
+		cLog(lsINFO) << "doTrustSet: Delay transaction: Line does not exist. Insufficent reserve to create line.";
+
+		// Another transaction could create the account and then this transaction would succeed.
+		terResult	= tecNO_LINE_INSUF_RESERVE;
 	}
 	else
 	{
+		STAmount	saBalance	= STAmount(uCurrencyID, ACCOUNT_ONE);	// Zero balance in currency.
+
+		cLog(lsINFO) << "doTrustSet: Creating ripple line: "
+			<< Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID).ToString();
+
 		// Create a new ripple line.
-		sleRippleState	= mEngine->entryCreate(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID));
-
-		Log(lsINFO) << "doTrustSet: Creating ripple line: " << sleRippleState->getIndex().ToString();
-
-		sleRippleState->setFieldAmount(sfBalance, STAmount(uCurrencyID, ACCOUNT_ONE));	// Zero balance in currency.
-		sleRippleState->setFieldAmount(bFlipped ? sfHighLimit : sfLowLimit, saLimitAllow);
-		sleRippleState->setFieldAmount(bFlipped ? sfLowLimit : sfHighLimit, STAmount(uCurrencyID, uDstAccountID));
-
-		if (uQualityIn)
-			sleRippleState->setFieldU32(bFlipped ? sfHighQualityIn : sfLowQualityIn, uQualityIn);
-		if (uQualityOut)
-			sleRippleState->setFieldU32(bFlipped ? sfHighQualityOut : sfLowQualityOut, uQualityOut);
-
-		uint64			uSrcRef;							// <-- Ignored, dirs never delete.
-
-		terResult	= mEngine->getNodes().dirAdd(
-			uSrcRef,
-			Ledger::getOwnerDirIndex(mTxnAccountID),
-			sleRippleState->getIndex(),
-			boost::bind(&Ledger::ownerDirDescriber, _1, mTxnAccountID));
-
-		if (tesSUCCESS == terResult)
-			terResult	= mEngine->getNodes().ownerCountAdjust(mTxnAccountID, 1, mTxnAccount);
-
-		if (tesSUCCESS == terResult)
-			terResult	= mEngine->getNodes().dirAdd(
-				uSrcRef,
-				Ledger::getOwnerDirIndex(uDstAccountID),
-				sleRippleState->getIndex(),
-				boost::bind(&Ledger::ownerDirDescriber, _1, uDstAccountID));
-
-		if (tesSUCCESS == terResult)
-			terResult	= mEngine->getNodes().ownerCountAdjust(uDstAccountID, 1, sleDst);
+		terResult	= mEngine->getNodes().trustCreate(
+			bHigh,
+			mTxnAccountID,
+			uDstAccountID,
+			Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID),
+			mTxnAccount,
+			bSetAuth,
+			saBalance,
+			saLimitAllow,		// Limit for who is being charged.
+			uQualityIn,
+			uQualityOut);
 	}
 
-	Log(lsINFO) << "doTrustSet<";
+	cLog(lsINFO) << "doTrustSet<";
 
 	return terResult;
 }

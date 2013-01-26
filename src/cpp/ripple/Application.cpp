@@ -18,7 +18,9 @@
 #include <boost/thread.hpp>
 
 SETUP_LOG();
+
 LogPartition TaggedCachePartition("TaggedCache");
+LogPartition AutoSocketPartition("AutoSocket");
 Application* theApp = NULL;
 
 DatabaseCon::DatabaseCon(const std::string& strName, const char *initStrings[], int initCount)
@@ -40,7 +42,7 @@ DatabaseCon::~DatabaseCon()
 Application::Application() :
 	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService), mNetOps(mIOService, &mLedgerMaster),
 	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300),
-	mSNTPClient(mAuxService), mRPCHandler(&mNetOps), 
+	mSNTPClient(mAuxService), mRPCHandler(&mNetOps), mFeeTrack(),
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
 	mSweepTimer(mAuxService)
@@ -54,9 +56,11 @@ Application::Application() :
 
 extern const char *RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[], *NetNodeDBInit[];
 extern int RpcDBCount, TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount, NetNodeDBCount;
+bool Instance::running = true;
 
 void Application::stop()
 {
+	cLog(lsINFO) << "Received shutdown request";
 	mIOService.stop();
 	mJobQueue.shutdown();
 	mHashedObjectStore.bulkWrite();
@@ -64,6 +68,7 @@ void Application::stop()
 	mAuxService.stop();
 
 	cLog(lsINFO) << "Stopped: " << mIOService.stopped();
+	Instance::shutdown();
 }
 
 static void InitDB(DatabaseCon** dbCon, const char *fileName, const char *dbInit[], int dbCount)
@@ -80,7 +85,7 @@ void sigIntHandler(int)
 }
 #endif
 
-void Application::run()
+void Application::setup()
 {
 #ifndef WIN32
 #ifdef SIGINT
@@ -102,9 +107,7 @@ void Application::run()
 			LogPartition::setSeverity(lsDEBUG);
 	}
 
-	boost::thread auxThread(boost::bind(&boost::asio::io_service::run, &mAuxService));
-	auxThread.detach();
-
+	boost::thread(boost::bind(&boost::asio::io_service::run, &mAuxService)).detach();
 
 	if (!theConfig.RUN_STANDALONE)
 		mSNTPClient.init(theConfig.SNTP_SERVERS);
@@ -119,16 +122,21 @@ void Application::run()
 	boost::thread t5(boost::bind(&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
 	boost::thread t6(boost::bind(&InitDB, &mNetNodeDB, "netnode.db", NetNodeDBInit, NetNodeDBCount));
 	t1.join(); t2.join(); t3.join(); t4.join(); t5.join(); t6.join();
+	mTxnDB->getDB()->setupCheckpointing();
+	mLedgerDB->getDB()->setupCheckpointing();
+	mHashNodeDB->getDB()->setupCheckpointing();
 
 	if (theConfig.START_UP == Config::FRESH)
 	{
 		cLog(lsINFO) << "Starting new Ledger";
+
 		startNewLedger();
 	}
 	else if (theConfig.START_UP == Config::LOAD)
 	{
-		cLog(lsINFO) << "Loading Old Ledger";
-		loadOldLedger();
+		cLog(lsINFO) << "Loading specified Ledger";
+
+		loadOldLedger(theConfig.START_LEDGER);
 	}
 	else if (theConfig.START_UP == Config::NETWORK)
 	{ // This should probably become the default once we have a stable network
@@ -157,7 +165,17 @@ void Application::run()
 	//
 	if (!theConfig.RUN_STANDALONE && !theConfig.PEER_IP.empty() && theConfig.PEER_PORT)
 	{
-		mPeerDoor = new PeerDoor(mIOService);
+		try
+		{
+			mPeerDoor = new PeerDoor(mIOService);
+		}
+		catch (const std::exception& e)
+		{
+			// Must run as directed or exit.
+			cLog(lsFATAL) << boost::str(boost::format("Can not open peer service: %s") % e.what());
+
+			exit(3);
+		}
 	}
 	else
 	{
@@ -169,7 +187,17 @@ void Application::run()
 	//
 	if (!theConfig.RPC_IP.empty() && theConfig.RPC_PORT)
 	{
-		mRPCDoor = new RPCDoor(mIOService);
+		try
+		{
+			mRPCDoor = new RPCDoor(mIOService);
+		}
+		catch (const std::exception& e)
+		{
+			// Must run as directed or exit.
+			cLog(lsFATAL) << boost::str(boost::format("Can not open RPC service: %s") % e.what());
+
+			exit(3);
+		}
 	}
 	else
 	{
@@ -181,7 +209,17 @@ void Application::run()
 	//
 	if (!theConfig.WEBSOCKET_IP.empty() && theConfig.WEBSOCKET_PORT)
 	{
-		mWSPrivateDoor	= WSDoor::createWSDoor(theConfig.WEBSOCKET_IP, theConfig.WEBSOCKET_PORT, false);
+		try
+		{
+			mWSPrivateDoor	= WSDoor::createWSDoor(theConfig.WEBSOCKET_IP, theConfig.WEBSOCKET_PORT, false);
+		}
+		catch (const std::exception& e)
+		{
+			// Must run as directed or exit.
+			cLog(lsFATAL) << boost::str(boost::format("Can not open private websocket service: %s") % e.what());
+
+			exit(3);
+		}
 	}
 	else
 	{
@@ -193,7 +231,17 @@ void Application::run()
 	//
 	if (!theConfig.WEBSOCKET_PUBLIC_IP.empty() && theConfig.WEBSOCKET_PUBLIC_PORT)
 	{
-		mWSPublicDoor	= WSDoor::createWSDoor(theConfig.WEBSOCKET_PUBLIC_IP, theConfig.WEBSOCKET_PUBLIC_PORT, true);
+		try
+		{
+			mWSPublicDoor	= WSDoor::createWSDoor(theConfig.WEBSOCKET_PUBLIC_IP, theConfig.WEBSOCKET_PUBLIC_PORT, true);
+		}
+		catch (const std::exception& e)
+		{
+			// Must run as directed or exit.
+			cLog(lsFATAL) << boost::str(boost::format("Can not open public websocket service: %s") % e.what());
+
+			exit(3);
+		}
 	}
 	else
 	{
@@ -210,11 +258,15 @@ void Application::run()
 	if (theConfig.RUN_STANDALONE)
 	{
 		cLog(lsWARNING) << "Running in standalone mode";
+
 		mNetOps.setStandAlone();
 	}
 	else
 		mNetOps.setStateTimer();
+}
 
+void Application::run()
+{
 	mIOService.run(); // This blocks
 
 	if (mWSPublicDoor)
@@ -228,11 +280,20 @@ void Application::run()
 
 void Application::sweep()
 {
+
+	boost::filesystem::space_info space = boost::filesystem::space(theConfig.DATA_DIR);
+	if (space.available < (128 * 1024 * 1024))
+	{
+		cLog(lsFATAL) << "Remaining free disk space is less than 128MB";
+		theApp->stop();
+	}
+
 	mMasterTransaction.sweep();
 	mHashedObjectStore.sweep();
 	mLedgerMaster.sweep();
 	mTempNodeCache.sweep();
 	mValidations.sweep();
+	getMasterLedgerAcquire().sweep();
 	mSweepTimer.expires_from_now(boost::posix_time::seconds(60));
 	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
 }
@@ -274,49 +335,65 @@ void Application::startNewLedger()
 	}
 }
 
-void Application::loadOldLedger()
+void Application::loadOldLedger(const std::string& l)
 {
 	try
 	{
-		Ledger::pointer lastLedger = Ledger::getLastFullLedger();
+		Ledger::pointer loadLedger;
+		if (l.empty() || (l == "latest"))
+			loadLedger = Ledger::getLastFullLedger();
+		else if (l.length() == 64)
+		{ // by hash
+			uint256 hash;
+			hash.SetHex(l);
+			loadLedger = Ledger::loadByHash(hash);
+		}
+		else // assume by sequence
+			loadLedger = Ledger::loadByIndex(boost::lexical_cast<uint32>(l));
 
-		if (!lastLedger)
+		if (!loadLedger)
 		{
 			cLog(lsFATAL) << "No Ledger found?" << std::endl;
 			exit(-1);
 		}
-		lastLedger->setClosed();
+		loadLedger->setClosed();
 
-		cLog(lsINFO) << "Loading ledger " << lastLedger->getHash() << " seq:" << lastLedger->getLedgerSeq();
+		cLog(lsINFO) << "Loading ledger " << loadLedger->getHash() << " seq:" << loadLedger->getLedgerSeq();
 
-		if (lastLedger->getAccountHash().isZero())
+		if (loadLedger->getAccountHash().isZero())
 		{
 			cLog(lsFATAL) << "Ledger is empty.";
 			assert(false);
 			exit(-1);
 		}
 
-		if (!lastLedger->walkLedger())
+		if (!loadLedger->walkLedger())
 		{
 			cLog(lsFATAL) << "Ledger is missing nodes.";
 			exit(-1);
 		}
 
-		if (!lastLedger->assertSane())
+		if (!loadLedger->assertSane())
 		{
 			cLog(lsFATAL) << "Ledger is not sane.";
 			exit(-1);
 		}
-		mLedgerMaster.setLedgerRangePresent(0, lastLedger->getLedgerSeq());
+		mLedgerMaster.setLedgerRangePresent(loadLedger->getLedgerSeq(), loadLedger->getLedgerSeq());
 
-		Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*lastLedger));
-		mLedgerMaster.switchLedgers(lastLedger, openLedger);
-		mNetOps.setLastCloseTime(lastLedger->getCloseTimeNC());
+		Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*loadLedger));
+		mLedgerMaster.switchLedgers(loadLedger, openLedger);
+		mNetOps.setLastCloseTime(loadLedger->getCloseTimeNC());
 	}
 	catch (SHAMapMissingNode& mn)
 	{
-		cLog(lsFATAL) << "Cannot load ledger. " << mn;
+		cLog(lsFATAL) << "Data is missing for selected ledger";
+		exit(-1);
+	}
+	catch (boost::bad_lexical_cast& blc)
+	{
+		cLog(lsFATAL) << "Ledger specified '" << l << "' is not valid";
 		exit(-1);
 	}
 }
+
 // vim:ts=4

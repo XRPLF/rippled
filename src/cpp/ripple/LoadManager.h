@@ -1,9 +1,11 @@
-#ifndef LOADSOURCE__H
-#define LOADSOURCE__H
+#ifndef LOADMANAGER__H
+#define LOADMANAGER__H
 
 #include <vector>
 
 #include <boost/thread/mutex.hpp>
+
+#include "../json/value.h"
 
 #include "types.h"
 
@@ -16,6 +18,7 @@ enum LoadType
 	LT_InvalidSignature,		// An object whose signature we had to check and it failed
 	LT_UnwantedData,			// Data we have no use for
 	LT_BadPoW,					// Proof of work not valid
+	LT_BadData,					// Data we have to verify before rejecting
 
 	// Good things
 	LT_NewTrusted,				// A new transaction/validation/proposal we trust
@@ -124,11 +127,28 @@ protected:
 	uint32 mLocalTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
 	uint32 mRemoteTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
 
+	boost::mutex mLock;
+
+	static uint64 mulDiv(uint64 value, uint32 mul, uint64 div);
+
 public:
 
-	LoadFeeTrack()	: mLocalTxnLoadFee(lftNormalFee), mRemoteTxnLoadFee(lftNormalFee) { ; }
+	LoadFeeTrack() : mLocalTxnLoadFee(lftNormalFee), mRemoteTxnLoadFee(lftNormalFee)
+	{ ; }
 
-	uint64 scaleFee(uint64 fee);
+	// Scale from fee units to millionths of a ripple
+	uint64 scaleFeeBase(uint64 fee, uint64 baseFee, uint32 referenceFeeUnits);
+
+	// Scale using load as well as base rate
+	uint64 scaleFeeLoad(uint64 fee, uint64 baseFee, uint32 referenceFeeUnits);
+
+	uint32 getRemoteFee();
+	uint32 getLocalFee();
+
+	uint32 getLoadBase()		{ return lftNormalFee; }
+	uint32 getLoadFactor();
+
+	Json::Value getJson(uint64 baseFee, uint32 referenceFeeUnits);
 
 	void setRemoteFee(uint32);
 	void raiseLocalFee();

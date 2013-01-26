@@ -10,11 +10,11 @@
 #include "Application.h"
 
 #ifndef CACHED_LEDGER_NUM
-#define CACHED_LEDGER_NUM 128
+#define CACHED_LEDGER_NUM 96
 #endif
 
 #ifndef CACHED_LEDGER_AGE
-#define CACHED_LEDGER_AGE 900
+#define CACHED_LEDGER_AGE 120
 #endif
 
 // FIXME: Need to clean up ledgers by index at some point
@@ -24,6 +24,7 @@ LedgerHistory::LedgerHistory() : mLedgersByHash("LedgerCache", CACHED_LEDGER_NUM
 
 void LedgerHistory::addLedger(Ledger::pointer ledger)
 {
+	assert(ledger->isImmutable());
 	mLedgersByHash.canonicalize(ledger->getHash(), ledger, true);
 }
 
@@ -39,6 +40,16 @@ void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger, bool fromConsensus
 	mLedgersByIndex[ledger->getLedgerSeq()] = ledger->getHash();
 
 	ledger->pendSave(fromConsensus);
+}
+
+uint256 LedgerHistory::getLedgerHash(uint32 index)
+{
+	boost::recursive_mutex::scoped_lock sl(mLedgersByHash.peekMutex());
+	std::map<uint32, uint256>::iterator it(mLedgersByIndex.find(index));
+	if (it != mLedgersByIndex.end())
+		return it->second;
+	sl.unlock();
+	return uint256();
 }
 
 Ledger::pointer LedgerHistory::getLedgerBySeq(uint32 index)
@@ -68,11 +79,16 @@ Ledger::pointer LedgerHistory::getLedgerByHash(const uint256& hash)
 {
 	Ledger::pointer ret = mLedgersByHash.fetch(hash);
 	if (ret)
+	{
+		assert(ret->getHash() == hash);
 		return ret;
+	}
 
 	ret = Ledger::loadByHash(hash);
 	if (!ret)
 		return ret;
+	assert(ret->getHash() == hash);
+	mLedgersByHash.canonicalize(ret->getHash(), ret);
 	assert(ret->getHash() == hash);
 
 	return ret;

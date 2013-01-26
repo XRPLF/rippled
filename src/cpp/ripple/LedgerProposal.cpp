@@ -42,7 +42,7 @@ uint256 LedgerProposal::getSigningHash() const
 {
 	Serializer s((32 + 32 + 32 + 256 + 256) / 8);
 
-	s.add32(sHP_Proposal);
+	s.add32(theConfig.SIGN_PROPOSAL);
 	s.add32(mProposeSeq);
 	s.add32(mCloseTime);
 	s.add256(mPreviousLedger);

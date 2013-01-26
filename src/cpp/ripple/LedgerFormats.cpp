@@ -19,6 +19,7 @@ static bool LEFInit()
 		<< SOElement(sfAccount,				SOE_REQUIRED)
 		<< SOElement(sfSequence,			SOE_REQUIRED)
 		<< SOElement(sfBalance,				SOE_REQUIRED)
+		<< SOElement(sfOwnerCount,			SOE_REQUIRED)
 		<< SOElement(sfPreviousTxnID,		SOE_REQUIRED)
 		<< SOElement(sfPreviousTxnLgrSeq,	SOE_REQUIRED)
 		<< SOElement(sfRegularKey,			SOE_OPTIONAL)
@@ -28,7 +29,6 @@ static bool LEFInit()
 		<< SOElement(sfMessageKey,			SOE_OPTIONAL)
 		<< SOElement(sfTransferRate,		SOE_OPTIONAL)
 		<< SOElement(sfDomain,				SOE_OPTIONAL)
-		<< SOElement(sfOwnerCount,			SOE_OPTIONAL)
 		;
 
 	DECLARE_LEF(Contract, ltCONTRACT)
@@ -87,20 +87,29 @@ static bool LEFInit()
 		<< SOElement(sfHighLimit,			SOE_REQUIRED)
 		<< SOElement(sfPreviousTxnID,		SOE_REQUIRED)
 		<< SOElement(sfPreviousTxnLgrSeq,	SOE_REQUIRED)
+		<< SOElement(sfLowNode,				SOE_OPTIONAL)
 		<< SOElement(sfLowQualityIn,		SOE_OPTIONAL)
 		<< SOElement(sfLowQualityOut,		SOE_OPTIONAL)
+		<< SOElement(sfHighNode,			SOE_OPTIONAL)
 		<< SOElement(sfHighQualityIn,		SOE_OPTIONAL)
 		<< SOElement(sfHighQualityOut,		SOE_OPTIONAL)
 		;
 
 	DECLARE_LEF(LedgerHashes, ltLEDGER_HASHES)
-		<< SOElement(sfFirstLedgerSequence,	SOE_OPTIONAL)
+		<< SOElement(sfFirstLedgerSequence,	SOE_OPTIONAL) // Remove if we do a ledger restart
 		<< SOElement(sfLastLedgerSequence,	SOE_OPTIONAL)
 		<< SOElement(sfHashes,				SOE_REQUIRED)
 		;
 
 	DECLARE_LEF(EnabledFeatures, ltFEATURES)
 		<< SOElement(sfFeatures, SOE_REQUIRED)
+		;
+
+	DECLARE_LEF(FeeSettings, ltFEE_SETTINGS)
+		<< SOElement(sfBaseFee,				SOE_REQUIRED)
+		<< SOElement(sfReferenceFeeUnits,	SOE_REQUIRED)
+		<< SOElement(sfReserveBase,			SOE_REQUIRED)
+		<< SOElement(sfReserveIncrement,	SOE_REQUIRED)
 		;
 
 		return true;

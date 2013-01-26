@@ -49,7 +49,7 @@ public:
 	STObject& getAffectedNode(SLE::ref node, SField::ref type); // create if needed
 	STObject& getAffectedNode(const uint256&);
 	const STObject& peekAffectedNode(const uint256&) const;
-	//std::vector<RippleAddress> getAffectedAccounts();
+	std::vector<RippleAddress> getAffectedAccounts();
 
 
 	Json::Value getJson(int p) const { return getAsObject().getJson(p); }

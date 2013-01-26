@@ -1,17 +1,21 @@
 //
 // TODO: Check permissions on config file before using it.
 //
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <boost/algorithm/string.hpp>
+#include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
+
 #include "Config.h"
 
 #include "utils.h"
-
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string.hpp>
-#include <fstream>
-#include <iostream>
-#include <algorithm>
+#include "HashPrefixes.h"
 
 #define SECTION_ACCOUNT_PROBE_MAX		"account_probe_max"
+#define SECTION_CLUSTER_NODES			"cluster_nodes"
+#define SECTION_DATABASE_PATH			"database_path"
 #define SECTION_DEBUG_LOGFILE			"debug_logfile"
 #define SECTION_FEE_DEFAULT				"fee_default"
 #define SECTION_FEE_NICKNAME_CREATE		"fee_nickname_create"
@@ -22,6 +26,7 @@
 #define SECTION_LEDGER_HISTORY			"ledger_history"
 #define SECTION_IPS						"ips"
 #define SECTION_NETWORK_QUORUM			"network_quorum"
+#define SECTION_NODE_SEED				"node_seed"
 #define SECTION_PEER_CONNECT_LOW_WATER	"peer_connect_low_water"
 #define SECTION_PEER_IP					"peer_ip"
 #define SECTION_PEER_PORT				"peer_port"
@@ -30,14 +35,21 @@
 #define SECTION_PEER_SSL_CIPHER_LIST	"peer_ssl_cipher_list"
 #define SECTION_PEER_START_MAX			"peer_start_max"
 #define SECTION_RPC_ALLOW_REMOTE		"rpc_allow_remote"
+#define SECTION_RPC_ADMIN_ALLOW			"rpc_admin_allow"
+#define SECTION_RPC_ADMIN_USER			"rpc_admin_user"
+#define SECTION_RPC_ADMIN_PASSWORD		"rpc_admin_password"
 #define SECTION_RPC_IP					"rpc_ip"
 #define SECTION_RPC_PORT				"rpc_port"
+#define SECTION_RPC_USER				"rpc_user"
+#define SECTION_RPC_PASSWORD			"rpc_password"
+#define SECTION_RPC_STARTUP				"rpc_startup"
 #define SECTION_SNTP					"sntp_servers"
 #define SECTION_VALIDATORS_FILE			"validators_file"
 #define SECTION_VALIDATION_QUORUM		"validation_quorum"
 #define SECTION_VALIDATION_SEED			"validation_seed"
 #define SECTION_WEBSOCKET_PUBLIC_IP		"websocket_public_ip"
 #define SECTION_WEBSOCKET_PUBLIC_PORT	"websocket_public_port"
+#define SECTION_WEBSOCKET_PUBLIC_SECURE	"websocket_public_secure"
 #define SECTION_WEBSOCKET_IP			"websocket_ip"
 #define SECTION_WEBSOCKET_PORT			"websocket_port"
 #define SECTION_WEBSOCKET_SECURE		"websocket_secure"
@@ -56,10 +68,12 @@
 #define DEFAULT_FEE_OPERATION			1
 
 Config theConfig;
+const char* ALPHABET = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
-void Config::setup(const std::string& strConf, bool bQuiet)
+void Config::setup(const std::string& strConf, bool bTestNet, bool bQuiet)
 {
 	boost::system::error_code	ec;
+	std::string					strDbPath, strConfFile;
 
 	//
 	// Determine the config and data directories.
@@ -67,21 +81,38 @@ void Config::setup(const std::string& strConf, bool bQuiet)
 	// that with "db" as the data directory.
 	//
 
+	TESTNET	= bTestNet;
 	QUIET	= bQuiet;
+
+	// TESTNET forces a "testnet-" prefix on the conf file and db directory.
+	strDbPath			= TESTNET ? "testnet-db" : "db";
+	strConfFile			= boost::str(boost::format(TESTNET ? "testnet-%s" : "%s")
+							% (strConf.empty() ? CONFIG_FILE_NAME : strConf));
+
+	VALIDATORS_BASE		= boost::str(boost::format(TESTNET ? "testnet-%s" : "%s")
+							% VALIDATORS_FILE_NAME);
+	VALIDATORS_URI		= boost::str(boost::format("/%s") % VALIDATORS_BASE);
+
+	SIGN_TRANSACTION	= TESTNET ? sHP_TestNetTransactionSign	: sHP_TransactionSign;
+	SIGN_VALIDATION		= TESTNET ? sHP_TestNetValidation		: sHP_Validation;
+	SIGN_PROPOSAL		= TESTNET ? sHP_TestNetProposal			: sHP_Proposal;
+
+	if (TESTNET)
+		ALPHABET = "RPShNAF39wBUDnEGHJKLM4pQrsT7VWXYZ2bcdeCg65jkm8ofqi1tuvaxyz";
 
 	if (!strConf.empty())
 	{
 		// --conf=<path> : everything is relative that file.
-		CONFIG_FILE				= strConf;
-		CONFIG_DIR				= CONFIG_FILE;
+		CONFIG_FILE				= strConfFile;
+		CONFIG_DIR				= boost::filesystem::absolute(CONFIG_FILE);
 			CONFIG_DIR.remove_filename();
-		DATA_DIR				= CONFIG_DIR / "db";
+		DATA_DIR				= CONFIG_DIR / strDbPath;
 	}
 	else
 	{
 		CONFIG_DIR				= boost::filesystem::current_path();
-		CONFIG_FILE				= CONFIG_DIR / CONFIG_FILE_NAME;
-		DATA_DIR				= CONFIG_DIR / "db";
+		CONFIG_FILE				= CONFIG_DIR / strConfFile;
+		DATA_DIR				= CONFIG_DIR / strDbPath;
 
 		if (exists(CONFIG_FILE)
 			// Can we figure out XDG dirs?
@@ -111,7 +142,7 @@ void Config::setup(const std::string& strConf, bool bQuiet)
 			}
 
 			CONFIG_DIR			= str(boost::format("%s/" SYSTEM_NAME) % strXdgConfigHome);
-			CONFIG_FILE			= CONFIG_DIR / CONFIG_FILE_NAME;
+			CONFIG_FILE			= CONFIG_DIR / strConfFile;
 			DATA_DIR			= str(boost::format("%s/" SYSTEM_NAME) % strXdgDataHome);
 
 			boost::filesystem::create_directories(CONFIG_DIR, ec);
@@ -121,35 +152,42 @@ void Config::setup(const std::string& strConf, bool bQuiet)
 		}
 	}
 
-	boost::filesystem::create_directories(DATA_DIR, ec);
-
-	if (ec)
-		throw std::runtime_error(str(boost::format("Can not create %s") % DATA_DIR));
+	// Update default values
+	load();
 
 	// std::cerr << "CONFIG FILE: " << CONFIG_FILE << std::endl;
 	// std::cerr << "CONFIG DIR: " << CONFIG_DIR << std::endl;
 	// std::cerr << "DATA DIR: " << DATA_DIR << std::endl;
 
+	boost::filesystem::create_directories(DATA_DIR, ec);
+
+	if (ec)
+		throw std::runtime_error(str(boost::format("Can not create %s") % DATA_DIR));
+}
+
+Config::Config()
+{
 	//
 	// Defaults
 	//
 
+	TESTNET					= false;
 	NETWORK_START_TIME		= 1319844908;
 
 	PEER_PORT				= SYSTEM_PEER_PORT;
 	RPC_PORT				= 5001;
 	WEBSOCKET_PORT			= SYSTEM_WEBSOCKET_PORT;
 	WEBSOCKET_PUBLIC_PORT	= SYSTEM_WEBSOCKET_PUBLIC_PORT;
-	WEBSOCKET_SECURE		= false;
+	WEBSOCKET_PUBLIC_SECURE	= 1;
+	WEBSOCKET_SECURE		= 0;
 	NUMBER_CONNECTIONS		= 30;
 
 	// a new ledger every minute
 	LEDGER_SECONDS			= 60;
 	LEDGER_CREATOR			= false;
 
-	RPC_USER				= "admin";
-	RPC_PASSWORD			= "pass";
 	RPC_ALLOW_REMOTE		= false;
+	RPC_ADMIN_ALLOW.push_back("127.0.0.1");
 
 	PEER_SSL_CIPHER_LIST	= DEFAULT_PEER_SSL_CIPHER_LIST;
 	PEER_SCAN_INTERVAL_MIN	= DEFAULT_PEER_SCAN_INTERVAL_MIN;
@@ -159,7 +197,7 @@ void Config::setup(const std::string& strConf, bool bQuiet)
 
 	PEER_PRIVATE			= false;
 
-	TRANSACTION_FEE_BASE	= 1000;
+	TRANSACTION_FEE_BASE	= DEFAULT_FEE_DEFAULT;
 
 	NETWORK_QUORUM			= 0;	// Don't need to see other nodes
 	VALIDATION_QUORUM		= 1;	// Only need one node to vouch
@@ -179,8 +217,6 @@ void Config::setup(const std::string& strConf, bool bQuiet)
 
 	RUN_STANDALONE			= false;
 	START_UP				= NORMAL;
-
-	load();
 }
 
 void Config::load()
@@ -220,6 +256,13 @@ void Config::load()
 				// sectionEntriesPrint(&VALIDATORS, SECTION_VALIDATORS);
 			}
 
+			smtTmp = sectionEntries(secConfig, SECTION_CLUSTER_NODES);
+			if (smtTmp)
+			{
+				CLUSTER_NODES = *smtTmp;
+				// sectionEntriesPrint(&CLUSTER_NODES, SECTION_CLUSTER_NODES);
+			}
+
 			smtTmp	= sectionEntries(secConfig, SECTION_IPS);
 			if (smtTmp)
 			{
@@ -233,6 +276,28 @@ void Config::load()
 				SNTP_SERVERS = *smtTmp;
 			}
 
+			smtTmp	= sectionEntries(secConfig, SECTION_RPC_STARTUP);
+			if (smtTmp)
+			{
+				Json::Value	jvArray(Json::arrayValue);
+
+				BOOST_FOREACH(const std::string& strJson, *smtTmp)
+				{
+					Json::Reader	jrReader;
+					Json::Value		jvCommand;
+
+					if (!jrReader.parse(strJson, jvCommand))
+						throw std::runtime_error(boost::str(boost::format("Couldn't parse ["SECTION_RPC_STARTUP"] command: %s") % strJson));
+
+					jvArray.append(jvCommand);
+				}
+
+				RPC_STARTUP	= jvArray;
+			}
+
+			if (sectionSingleB(secConfig, SECTION_DATABASE_PATH, DATABASE_PATH))
+				DATA_DIR	= DATABASE_PATH;
+
 			(void) sectionSingleB(secConfig, SECTION_VALIDATORS_SITE, VALIDATORS_SITE);
 
 			(void) sectionSingleB(secConfig, SECTION_PEER_IP, PEER_IP);
@@ -243,7 +308,17 @@ void Config::load()
 			if (sectionSingleB(secConfig, SECTION_PEER_PRIVATE, strTemp))
 				PEER_PRIVATE		= boost::lexical_cast<bool>(strTemp);
 
+			smtTmp = sectionEntries(secConfig, SECTION_RPC_ADMIN_ALLOW);
+			if (smtTmp)
+			{
+				RPC_ADMIN_ALLOW = *smtTmp;
+			}
+
+			(void) sectionSingleB(secConfig, SECTION_RPC_ADMIN_PASSWORD, RPC_ADMIN_PASSWORD);
+			(void) sectionSingleB(secConfig, SECTION_RPC_ADMIN_USER, RPC_ADMIN_USER);
 			(void) sectionSingleB(secConfig, SECTION_RPC_IP, RPC_IP);
+			(void) sectionSingleB(secConfig, SECTION_RPC_PASSWORD, RPC_PASSWORD);
+			(void) sectionSingleB(secConfig, SECTION_RPC_USER, RPC_USER);
 
 			if (sectionSingleB(secConfig, SECTION_RPC_PORT, strTemp))
 				RPC_PORT = boost::lexical_cast<int>(strTemp);
@@ -265,12 +340,14 @@ void Config::load()
 				WEBSOCKET_PUBLIC_PORT	= boost::lexical_cast<int>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_WEBSOCKET_SECURE, strTemp))
-				WEBSOCKET_SECURE	= boost::lexical_cast<bool>(strTemp);
+				WEBSOCKET_SECURE	= boost::lexical_cast<int>(strTemp);
+
+			if (sectionSingleB(secConfig, SECTION_WEBSOCKET_PUBLIC_SECURE, strTemp))
+				WEBSOCKET_PUBLIC_SECURE	= boost::lexical_cast<int>(strTemp);
 
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_CERT, WEBSOCKET_SSL_CERT);
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_CHAIN, WEBSOCKET_SSL_CHAIN);
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_KEY, WEBSOCKET_SSL_KEY);
-			
 
 			if (sectionSingleB(secConfig, SECTION_VALIDATION_SEED, strTemp))
 			{
@@ -279,6 +356,15 @@ void Config::load()
 				{
 					VALIDATION_PUB = RippleAddress::createNodePublic(VALIDATION_SEED);
 					VALIDATION_PRIV = RippleAddress::createNodePrivate(VALIDATION_SEED);
+				}
+			}
+			if (sectionSingleB(secConfig, SECTION_NODE_SEED, strTemp))
+			{
+				NODE_SEED.setSeedGeneric(strTemp);
+				if (NODE_SEED.isValid())
+				{
+					NODE_PUB = RippleAddress::createNodePublic(NODE_SEED);
+					NODE_PRIV = RippleAddress::createNodePrivate(NODE_SEED);
 				}
 			}
 

@@ -97,13 +97,14 @@ public:
 		const uint64&					uNodeDir,		// Node item is mentioned in.
 		const uint256&					uRootIndex,
 		const uint256&					uLedgerIndex,	// Item being deleted
-		const bool						bStable);
+		const bool						bStable,
+		const bool						bSoft);
 
 	bool				dirFirst(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
 	bool				dirNext(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
 	TER					dirCount(const uint256& uDirIndex, uint32& uCount);
 
-	TER					ownerCountAdjust(const uint160& uOwnerID, int iAmount, SLE::ref sleAccountRoot=SLE::pointer());
+	void				ownerCountAdjust(const uint160& uOwnerID, int iAmount, SLE::ref sleAccountRoot=SLE::pointer());
 
 	// Offer functions.
 	TER					offerDelete(const uint256& uOfferIndex);
@@ -119,14 +120,26 @@ public:
 	uint32				rippleQualityOut(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
 	{ return rippleQualityIn(uToAccountID, uFromAccountID, uCurrencyID, sfLowQualityOut, sfHighQualityOut); }
 
-	STAmount			rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID, bool bAvail=false);
+	STAmount			rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
 	STAmount			rippleTransferFee(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
-	void				rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer=true);
-	STAmount			rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	TER					rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer=true);
+	TER					rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, STAmount& saActual);
 
-	STAmount			accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID, bool bAvail=false);
-	STAmount			accountFunds(const uint160& uAccountID, const STAmount& saDefault, bool bAvail=false);
-	void				accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	STAmount			accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
+	STAmount			accountFunds(const uint160& uAccountID, const STAmount& saDefault);
+	TER					accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+
+	TER					trustCreate(
+							const bool		bSrcHigh,
+							const uint160&	uSrcAccountID,
+							const uint160&	uDstAccountID,
+							const uint256&	uIndex,
+							SLE::ref		sleAccount,
+							const bool		bAuth,
+							const STAmount& saSrcBalance,
+							const STAmount& saSrcLimit,
+							const uint32	uSrcQualityIn = 0,
+							const uint32	uSrcQualityOut = 0);
 
 	Json::Value getJson(int) const;
 	void calcRawMeta(Serializer&, TER result, uint32 index);

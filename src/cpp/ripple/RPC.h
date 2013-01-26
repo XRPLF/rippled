@@ -29,7 +29,7 @@ enum http_status_type
 extern std::string JSONRPCRequest(const std::string& strMethod, const Json::Value& params,
 	const Json::Value& id);
 
-extern std::string createHTTPPost(const std::string& strMsg,
+extern std::string createHTTPPost(const std::string& strPath, const std::string& strMsg,
 	const std::map<std::string, std::string>& mapRequestHeaders);
 
 extern int ReadHTTP(std::basic_istream<char>& stream,
@@ -40,5 +40,7 @@ extern std::string HTTPReply(int nStatus, const std::string& strMsg);
 extern std::string JSONRPCReply(const Json::Value& result, const Json::Value& error, const Json::Value& id);
 
 extern Json::Value JSONRPCError(int code, const std::string& message);
+
+extern bool HTTPAuthorized(const std::map<std::string, std::string>& mapHeaders);
 
 #endif

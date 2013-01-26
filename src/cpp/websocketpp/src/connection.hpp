@@ -894,13 +894,13 @@ public:
         
         // try and read more
         if (m_state != session::state::CLOSED && 
-            m_processor->get_bytes_needed() > 0 && 
+        	m_processor &&
+            m_processor->get_bytes_needed() > 0 &&  // FIXME: m_processor had been reset here
             !m_protocol_error)
         {
             // TODO: read timeout timer?
-            
-            boost::asio::async_read(
-                socket_type::get_socket(),
+
+            socket_type::get_socket().async_read(
                 m_buf,
                 boost::asio::transfer_at_least(std::min(
                     m_read_threshold,
@@ -1209,8 +1209,7 @@ public:
             
             //m_endpoint.alog().at(log::alevel::DEVEL) << "write header: " << zsutil::to_hex(m_write_queue.front()->get_header()) << log::endl;
             
-            boost::asio::async_write(
-                socket_type::get_socket(),
+            socket_type::get_socket().async_write(
                 m_write_buf,
                 m_strand.wrap(boost::bind(
                     &type::handle_write,
@@ -1225,7 +1224,9 @@ public:
                 alog()->at(log::alevel::DEBUG_CLOSE) 
                     << "Exit after inturrupt" << log::endl;
                 terminate(false);
-            }
+            } else {
+		m_handler->on_send_empty(type::shared_from_this());
+	    }
         }
     }
     
@@ -1267,7 +1268,7 @@ public:
         if (m_write_queue.size() == 0) {
             alog()->at(log::alevel::DEBUG_CLOSE) 
                 << "handle_write called with empty queue" << log::endl;
-            return;
+	    return;
         }
         
         m_write_buffer -= m_write_queue.front()->get_payload().size();

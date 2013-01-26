@@ -23,7 +23,7 @@ DECLARE_INSTANCE(TransactionEngine);
 void TransactionEngine::txnWrite()
 {
 	// Write back the account states
-	typedef std::pair<const uint256, LedgerEntrySetEntry> u256_LES_pair;
+	typedef std::map<uint256, LedgerEntrySetEntry>::value_type u256_LES_pair;
 	BOOST_FOREACH(u256_LES_pair& it, mNodes)
 	{
 		const SLE::pointer&	sleEntry	= it.second.mEntry;
@@ -67,9 +67,11 @@ void TransactionEngine::txnWrite()
 	}
 }
 
-TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, TransactionEngineParams params)
+TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, TransactionEngineParams params,
+	bool& didApply)
 {
 	cLog(lsTRACE) << "applyTransaction>";
+	didApply = false;
 	assert(mLedger);
 	mNodes.init(mLedger, txn.getTransactionID(), mLedger->getLedgerSeq());
 
@@ -91,8 +93,8 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	}
 #endif
 
-	Transactor::pointer transactor=Transactor::makeTransactor(txn,params,this);
-	if(transactor)
+	std::auto_ptr<Transactor> transactor = Transactor::makeTransactor(txn,params,this);
+	if (transactor.get() != NULL)
 	{
 		uint256 txID		= txn.getTransactionID();
 		if (!txID)
@@ -110,15 +112,48 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 
 		cLog(lsINFO) << "applyTransaction: terResult=" << strToken << " : " << terResult << " : " << strHuman;
 
-		if (isTepPartial(terResult) && isSetBit(params, tapRETRY))
-		{
-			// Partial result and allowed to retry, reclassify as a retry.
-			terResult	= terRETRY;
-		}
+		if (isTesSuccess(terResult))
+			didApply = true;
+		else if (isTecClaim(terResult) && !isSetBit(params, tapRETRY))
+		{ // only claim the transaction fee
+			cLog(lsDEBUG) << "Reprocessing to only claim fee";
+			mNodes.clear();
 
-		if ((tesSUCCESS == terResult) || isTepPartial(terResult))
+			SLE::pointer txnAcct = entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(txn.getSourceAccount()));
+			if (!txnAcct)
+				terResult = terNO_ACCOUNT;
+			else
+			{
+				uint32 t_seq = txn.getSequence();
+				uint32 a_seq = txnAcct->getFieldU32(sfSequence);
+
+				if (a_seq < t_seq)
+					terResult = terPRE_SEQ;
+				else if (a_seq > t_seq)
+					terResult = tefPAST_SEQ;
+				else
+				{
+					STAmount fee		= txn.getTransactionFee();
+					STAmount balance	= txnAcct->getFieldAmount(sfBalance);
+
+					if (balance < fee)
+						terResult = terINSUF_FEE_B;
+					else
+					{
+						txnAcct->setFieldAmount(sfBalance, balance - fee);
+						txnAcct->setFieldU32(sfSequence, t_seq + 1);
+						entryModify(txnAcct);
+						didApply = true;
+					}
+				}
+			}
+		}
+		else
+			cLog(lsDEBUG) << "Not applying transaction";
+
+		if (didApply)
 		{
-			// Transaction succeeded fully or (retries are not allowed and the transaction succeeded partially).
+			// Transaction succeeded fully or (retries are not allowed and the transaction could claim a fee)
 			Serializer m;
 			mNodes.calcRawMeta(m, terResult, mTxnSeq++);
 
@@ -137,8 +172,8 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				if (!mLedger->addTransaction(txID, s, m))
 					assert(false);
 
-				STAmount saPaid = txn.getTransactionFee();
 				// Charge whatever fee they specified.
+				STAmount saPaid = txn.getTransactionFee();
 				mLedger->destroyCoins(saPaid.getNValue());
 			}
 		}
@@ -146,8 +181,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 		mTxnAccount.reset();
 		mNodes.clear();
 
-		if (!isSetBit(params, tapOPEN_LEDGER)
-			&& (isTemMalformed(terResult) || isTefFailure(terResult)))
+		if (!isSetBit(params, tapOPEN_LEDGER) && isTemMalformed(terResult))
 		{
 			// XXX Malformed or failed transaction in closed ledger must bow out.
 		}

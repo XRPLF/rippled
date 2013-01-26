@@ -53,6 +53,37 @@
 
 namespace websocketpp {
 
+typedef boost::asio::buffers_iterator<boost::asio::streambuf::const_buffers_type> bufIterator;
+
+static std::pair<bufIterator, bool> match_header(bufIterator begin, bufIterator end)
+{
+	static const std::string eol_match = "\n";
+	static const std::string header_match = "\n\r\n";
+	static const std::string alt_header_match = "\n\n";
+	static const std::string flash_match = "<policy-file-request/>";
+
+	// Do we have a complete HTTP request
+	bufIterator it = std::search(begin, end, header_match.begin(), header_match.end());
+	if (it != end)
+		return std::make_pair(it + header_match.size(), true);
+	it = std::search(begin, end, alt_header_match.begin(), alt_header_match.end());
+	if (it != end)
+		return std::make_pair(it + alt_header_match.size(), true);
+
+	// If we don't have a flash policy request, we're done
+	it = std::search(begin, end, flash_match.begin(), flash_match.end());
+	if (it == end) // No match
+		return std::make_pair(end, false);
+
+	// If we have a line ending before the flash policy request, treat as http
+	bufIterator it2 = std::search(begin, end, eol_match.begin(), eol_match.end());
+	if ((it2 != end) && (it2 < it))
+		return std::make_pair(end, false);
+
+	// Treat as flash policy request
+	return std::make_pair(it + flash_match.size(), true);
+}
+
 // Forward declarations
 template <typename T> struct endpoint_traits;
     
@@ -189,6 +220,8 @@ public:
         virtual void on_pong(connection_ptr con,std::string) {}
         virtual void on_pong_timeout(connection_ptr con,std::string) {}
         virtual void http(connection_ptr con) {}
+
+        virtual void on_send_empty(connection_ptr con) {}
     };
     
     server(boost::asio::io_service& m) 
@@ -388,6 +421,8 @@ template <class endpoint>
 void server<endpoint>::handle_accept(connection_ptr con, 
                                      const boost::system::error_code& error)
 {
+	bool delay = false;
+
     boost::lock_guard<boost::recursive_mutex> lock(m_endpoint.m_lock);
 
     try
@@ -398,10 +433,8 @@ void server<endpoint>::handle_accept(connection_ptr con,
 
 	        if (error == boost::system::errc::too_many_files_open) {
 	            con->m_fail_reason = "too many files open";
+	            delay = true;
 
-	            // TODO: make this configurable
-	            //m_timer.expires_from_now(boost::posix_time::milliseconds(1000));
-	            //m_timer.async_wait(boost::bind(&type::start_accept,this));
 	        } else if (error == boost::asio::error::operation_aborted) {
 	            con->m_fail_reason = "io_service operation canceled";
 
@@ -426,7 +459,13 @@ void server<endpoint>::handle_accept(connection_ptr con,
 			<< "handle_accept caught exception: " << e.what() << log::endl;
 	}
 
-    this->start_accept();
+	if (delay)
+	{ // Don't spin if too many files are open DJS
+		m_timer.expires_from_now(boost::posix_time::milliseconds(500));
+		m_timer.async_wait(boost::bind(&type::start_accept,this));
+	}
+	else
+	    this->start_accept();
 }
     
 // server<endpoint>::connection<connnection_type> Implimentation
@@ -505,18 +544,17 @@ void server<endpoint>::connection<connection_type>::async_init() {
     // TODO: make this value configurable
     m_connection.register_timeout(5000,fail::status::TIMEOUT_WS,
                                        "Timeout on WebSocket handshake");
-    
-    boost::asio::async_read_until(
-        m_connection.get_socket(),
-        m_connection.buffer(),
-        "\r\n\r\n",
-        m_connection.get_strand().wrap(boost::bind(
-            &type::handle_read_request,
-            m_connection.shared_from_this(),
-            boost::asio::placeholders::error,
-            boost::asio::placeholders::bytes_transferred
-        ))
-    );
+
+	m_connection.get_socket().async_read_until(
+		m_connection.buffer(),
+		match_header,
+		m_connection.get_strand().wrap(boost::bind(
+			&type::handle_read_request,
+			m_connection.shared_from_this(),
+			boost::asio::placeholders::error,
+			boost::asio::placeholders::bytes_transferred
+		))
+	);
 }
 
 /// processes the response from an async read for an HTTP header
@@ -541,6 +579,27 @@ void server<endpoint>::connection<connection_type>::handle_read_request(
         
         if (!m_request.parse_complete(request)) {
             // not a valid HTTP request/response
+            if (m_request.method().find("<policy-file-request/>") != std::string::npos)
+            { // set m_version to -1, call async_write->handle_write_response
+                std::string reply =
+                    "<?xml version=\"1.0\"?><cross-domain-policy>"
+                    "<allow-access-from domain=\"*\" to-ports=\"";
+				reply += boost::lexical_cast<std::string>(m_connection.get_raw_socket().local_endpoint().port());
+				reply += "\"/></cross-domain-policy>";
+				reply.append("\0", 1);
+
+                m_version = -1;
+                shared_const_buffer buffer(reply);
+                m_connection.get_socket().async_write(
+                    shared_const_buffer(reply),
+                    boost::bind(
+                        &type::handle_write_response,
+                        m_connection.shared_from_this(),
+                        boost::asio::placeholders::error
+                    )
+                );
+                return;
+            }
             throw http::exception("Received invalid HTTP Request",http::status_code::BAD_REQUEST);
         }
         
@@ -665,9 +724,9 @@ void server<endpoint>::connection<connection_type>::handle_read_request(
             {
                 // TODO: this makes the assumption that WS and HTTP
                 // default ports are the same.
-                m_uri.reset(new uri(m_endpoint.is_secure(),h,m_request.uri()));
+                m_uri.reset(new uri(m_connection.is_secure(),h,m_request.uri()));
             } else {
-                m_uri.reset(new uri(m_endpoint.is_secure(),
+                m_uri.reset(new uri(m_connection.is_secure(),
                                     h.substr(0,last_colon),
                                     h.substr(last_colon+1),
                                     m_request.uri()));
@@ -787,17 +846,16 @@ void server<endpoint>::connection<connection_type>::write_response() {
     shared_const_buffer buffer(raw);
     
     m_endpoint.m_alog->at(log::alevel::DEBUG_HANDSHAKE) << raw << log::endl;
-    
-    boost::asio::async_write(
-        m_connection.get_socket(),
+
+    m_connection.get_socket().async_write(
         //boost::asio::buffer(raw),
         buffer,
-        boost::bind(
-            &type::handle_write_response,
-            m_connection.shared_from_this(),
-            boost::asio::placeholders::error
-        )
-    );
+		boost::bind(
+			&type::handle_write_response,
+			m_connection.shared_from_this(),
+			boost::asio::placeholders::error
+		)
+	);
 }
 
 template <class endpoint>

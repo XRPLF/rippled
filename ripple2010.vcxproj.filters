@@ -39,9 +39,6 @@
     <ClCompile Include="src\cpp\database\SqliteDatabase.cpp">
       <Filter>Source Files\database</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\database\win\windatabase.cpp">
-      <Filter>Source Files\database</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\json\json_reader.cpp">
       <Filter>Source Files\json</Filter>
     </ClCompile>
@@ -174,9 +171,6 @@
     <ClCompile Include="src\cpp\ripple\PlatRand.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\PubKeyCache.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\RangeSet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -259,6 +253,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionMeta.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\TransactionQueue.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\UniqueNodeList.cpp">
@@ -345,16 +342,16 @@
     <ClCompile Include="src\cpp\ripple\RPCErr.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\AccountItems.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Offer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\FeatureTable.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
+    <ClCompile Include="src\cpp\ripple\RPCSub.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -503,9 +500,6 @@
     <ClInclude Include="src\cpp\ripple\ProofOfWork.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\PubKeyCache.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\RangeSet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -605,6 +599,9 @@
     <ClInclude Include="src\cpp\ripple\TransactionMeta.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\cpp\ripple\TransactionQueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\cpp\ripple\types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -642,14 +639,13 @@
       <Filter>html</Filter>
     </None>
     <None Include="SConstruct" />
+    <None Include="newcoind.cfg" />
+    <None Include="validators.txt" />
     <None Include="README" />
     <None Include="test\buster.js" />
     <None Include="test\server.js" />
     <None Include="test\standalone-test.js" />
     <None Include="test\utils.js" />
-    <None Include="rippled-example.cfg" />
-    <None Include="ripple-example.txt" />
-    <None Include="validators-example.txt" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="src\cpp\ripple\ripple.proto" />

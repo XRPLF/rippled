@@ -17,13 +17,13 @@ var config  = require('./config.js');
 buster.testCase("Amount", {
   "UInt160" : {
     "Parse 0" : function () {
-      buster.assert.equals(nbi(), UInt160.from_json("0")._value);
+      buster.assert.equals(nbi(), UInt160.from_generic("0")._value);
     },
     "Parse 0 export" : function () {
-      buster.assert.equals(amount.consts.address_xns, UInt160.from_json("0").to_json());
+      buster.assert.equals(amount.consts.address_xns, UInt160.from_generic("0").to_json());
     },
     "Parse 1" : function () {
-      buster.assert.equals(new BigInteger([1]), UInt160.from_json("1")._value);
+      buster.assert.equals(new BigInteger([1]), UInt160.from_generic("1")._value);
     },
     "Parse rrrrrrrrrrrrrrrrrrrrrhoLvTp export" : function () {
       buster.assert.equals(amount.consts.address_xns, UInt160.from_json("rrrrrrrrrrrrrrrrrrrrrhoLvTp").to_json());

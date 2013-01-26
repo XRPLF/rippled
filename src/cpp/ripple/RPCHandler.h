@@ -1,8 +1,17 @@
 #ifndef __RPCHANDLER__
 #define __RPCHANDLER__
 
+#include <boost/unordered_set.hpp>
+
+#include "../json/value.h"
+
+#include "RippleAddress.h"
+#include "SerializedTypes.h"
+#include "Ledger.h"
+
 // used by the RPCServer or WSDoor to carry out these RPC commands
 class NetworkOPs;
+class InfoSub;
 
 class RPCHandler
 {
@@ -21,6 +30,7 @@ class RPCHandler
 	// Utilities
 	void addSubmitPath(Json::Value& txJSON);
 	boost::unordered_set<RippleAddress> parseAccountIds(const Json::Value& jvArray);
+	Json::Value transactionSign(Json::Value jvRequest, bool bSubmit);
 
 	Json::Value lookupLedger(Json::Value jvRequest, Ledger::pointer& lpLedger);
 
@@ -40,10 +50,13 @@ class RPCHandler
 	Json::Value doAccountOffers(Json::Value params);
 	Json::Value doAccountTransactions(Json::Value params);
 	Json::Value doConnect(Json::Value params);
+#if ENABLE_INSECURE
 	Json::Value doDataDelete(Json::Value params);
 	Json::Value doDataFetch(Json::Value params);
 	Json::Value doDataStore(Json::Value params);
+#endif
 	Json::Value doGetCounts(Json::Value params);
+	Json::Value doInternal(Json::Value params);
 	Json::Value doLedger(Json::Value params);
 	Json::Value doLogLevel(Json::Value params);
 	Json::Value doLogRotate(Json::Value params);
@@ -53,10 +66,12 @@ class RPCHandler
 	Json::Value doProfile(Json::Value params);
 	Json::Value doRandom(Json::Value jvRequest);
 	Json::Value doRipplePathFind(Json::Value jvRequest);
-	Json::Value doServerInfo(Json::Value params);
+	Json::Value doServerInfo(Json::Value params);	// for humans
+	Json::Value doServerState(Json::Value params);	// for machines
 	Json::Value doSessionClose(Json::Value params);
 	Json::Value doSessionOpen(Json::Value params);
 	Json::Value doStop(Json::Value params);
+	Json::Value doSign(Json::Value params);
 	Json::Value doSubmit(Json::Value params);
 	Json::Value doTx(Json::Value params);
 	Json::Value doTxHistory(Json::Value params);
@@ -79,7 +94,9 @@ class RPCHandler
 	Json::Value doWalletUnlock(Json::Value params);
 	Json::Value doWalletVerify(Json::Value params);
 
+#if ENABLE_INSECURE
 	Json::Value doLogin(Json::Value params);
+#endif
 
 	Json::Value doLedgerAccept(Json::Value params);
 	Json::Value doLedgerClosed(Json::Value params);
@@ -91,18 +108,35 @@ class RPCHandler
 	Json::Value doSubscribe(Json::Value params);
 	Json::Value doUnsubscribe(Json::Value params);
 
-
 public:
 
-
-	enum { GUEST, USER, ADMIN };
+	enum { GUEST, USER, ADMIN, FORBID };
 
 	RPCHandler(NetworkOPs* netOps);
 	RPCHandler(NetworkOPs* netOps, InfoSub* infoSub);
 
-	Json::Value doCommand(Json::Value& jvRequest, int role);
+	Json::Value doCommand(const Json::Value& jvRequest, int role);
 	Json::Value doRpcCommand(const std::string& strCommand, Json::Value& jvParams, int iRole);
 };
+
+class RPCInternalHandler
+{
+public:
+	typedef Json::Value (*handler_t)(const Json::Value&);
+
+protected:
+	static RPCInternalHandler*	sHeadHandler;
+
+	RPCInternalHandler*			mNextHandler;
+	std::string					mName;
+	handler_t					mHandler;
+
+public:
+	RPCInternalHandler(const std::string& name, handler_t handler);
+	static Json::Value runHandler(const std::string& name, const Json::Value& params);
+};
+
+int iAdminGet(const Json::Value& jvRequest, const std::string& strRemoteIp);
 
 #endif
 // vim:ts=4

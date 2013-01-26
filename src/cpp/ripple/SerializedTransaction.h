@@ -60,7 +60,7 @@ public:
 	uint32 getSequence() const		{ return getFieldU32(sfSequence); }
 	void setSequence(uint32 seq)	{ return setFieldU32(sfSequence, seq); }
 
-	std::vector<RippleAddress> getAffectedAccounts() const;
+	std::vector<RippleAddress> getMentionedAccounts() const;
 
 	uint256 getTransactionID() const;
 

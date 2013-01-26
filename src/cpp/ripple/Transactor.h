@@ -24,7 +24,11 @@ protected:
 	TER checkSeq();
 	TER payFee();
 
-	virtual void calculateFee();
+	void calculateFee();
+
+	// Returns the fee, not scaled for load (Should be in fee units. FIXME)
+	virtual uint64 calculateBaseFee();
+
 	virtual TER checkSig();
 	virtual TER doApply()=0;
 
@@ -33,7 +37,7 @@ protected:
 public:
 	typedef boost::shared_ptr<Transactor> pointer;
 
-	static Transactor::pointer makeTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine);
+	static std::auto_ptr<Transactor> makeTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine);
 
 	TER apply();
 };

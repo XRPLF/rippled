@@ -1,13 +1,24 @@
 #include "database.h"
 
+#include <string>
+#include <set>
+
+#include <boost/thread/mutex.hpp>
+
 struct sqlite3;
 struct sqlite3_stmt;
+
 
 class SqliteDatabase : public Database
 {
 	sqlite3* mConnection;
 	sqlite3_stmt* mCurrentStmt;
 	bool mMoreRows;
+
+	boost::mutex			walMutex;
+	std::set<std::string>	walDBs;
+	bool					walRunning;
+
 public:
 	SqliteDatabase(const char* host);
 
@@ -39,7 +50,11 @@ public:
 	std::vector<unsigned char> getBinary(int colIndex);
 	uint64 getBigInt(int colIndex);
 
-	void escape(const unsigned char* start,int size,std::string& retStr);
+	sqlite3* peekConnection() { return mConnection; }
+	virtual bool setupCheckpointing();
+
+	void runWal();
+	void doHook(const char *db, int walSize);
 };
 
 // vim:ts=4

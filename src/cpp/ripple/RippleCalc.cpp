@@ -114,7 +114,7 @@ TER PathState::pushImply(
 
 // Append a node and insert before it any implied nodes.
 // Offers may go back to back.
-// <-- terResult: tesSUCCESS, temBAD_PATH, terNO_LINE, tepPATH_DRY
+// <-- terResult: tesSUCCESS, temBAD_PATH, terNO_LINE, tecPATH_DRY
 TER PathState::pushNode(
 	const int iType,
 	const uint160& uAccountID,
@@ -235,7 +235,7 @@ TER PathState::pushNode(
 
 					if (!saOwed.isPositive() && *saOwed.negate() >= lesEntries.rippleLimit(pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID))
 					{
-						terResult	= tepPATH_DRY;
+						terResult	= tecPATH_DRY;
 					}
 				}
 			}
@@ -1127,7 +1127,10 @@ TER RippleCalc::calcNodeDeliverRev(
 		// Sending could be complicated: could fund a previous offer not yet visited.
 		// However, these deductions and adjustments are tenative.
 		// Must reset balances when going forward to perform actual transfers.
-		lesActive.accountSend(uOfrOwnerID, uCurIssuerID, saOutPass);
+		terResult	= lesActive.accountSend(uOfrOwnerID, uCurIssuerID, saOutPass);
+
+		if (tesSUCCESS != terResult)
+			break;
 
 		// Adjust offer
 		sleOffer->setFieldAmount(sfTakerGets, saTakerGets - saOutPass);
@@ -1147,8 +1150,8 @@ TER RippleCalc::calcNodeDeliverRev(
 		saPrvDlvReq	+= saInPassAct;
 	}
 
-	if (!saOutAct)
-		terResult	= tepPATH_DRY;
+	if (tesSUCCESS == terResult && !saOutAct)
+		terResult	= tecPATH_DRY;
 
 	return terResult;
 }
@@ -1253,7 +1256,10 @@ TER RippleCalc::calcNodeDeliverFwd(
 					% saOutPassAct.getFullText());
 
 				// Output: Debit offer owner, send XRP or non-XPR to next account.
-				lesActive.accountSend(uOfrOwnerID, uNxtAccountID, saOutPassAct);
+				terResult	= lesActive.accountSend(uOfrOwnerID, uNxtAccountID, saOutPassAct);
+
+				if (tesSUCCESS != terResult)
+					break;
 			}
 			else
 			{
@@ -1314,7 +1320,10 @@ TER RippleCalc::calcNodeDeliverFwd(
 
 			// Do inbound crediting.
 			// Credit offer owner from in issuer/limbo (input transfer fees left with owner).
-			lesActive.accountSend(!!uPrvCurrencyID ? uInAccountID : ACCOUNT_XRP, uOfrOwnerID, saInPassAct);
+			terResult		= lesActive.accountSend(!!uPrvCurrencyID ? uInAccountID : ACCOUNT_XRP, uOfrOwnerID, saInPassAct);
+
+			if (tesSUCCESS != terResult)
+				break;
 
 			// Adjust offer
 			// Fees are considered paid from a seperate budget and are not named in the offer.
@@ -1540,7 +1549,7 @@ void RippleCalc::calcNodeRipple(
 // Reedems are limited based on IOUs previous has on hand.
 // Issues are limited based on credit limits and amount owed.
 // No account balance adjustments as we don't know how much is going to actually be pushed through yet.
-// <-- tesSUCCESS or tepPATH_DRY
+// <-- tesSUCCESS or tecPATH_DRY
 TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, const bool bMultiQuality)
 {
 	TER					terResult		= tesSUCCESS;
@@ -1688,7 +1697,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 			if (!saCurWantedAct)
 			{
 				// Must have processed something.
-				terResult	= tepPATH_DRY;
+				terResult	= tecPATH_DRY;
 			}
 		}
 		else
@@ -1751,7 +1760,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 			if (!saCurRedeemAct && !saCurIssueAct)
 			{
 				// Did not make progress.
-				terResult	= tepPATH_DRY;
+				terResult	= tecPATH_DRY;
 			}
 
 			cLog(lsINFO) << boost::str(boost::format("calcNodeAccountRev: ^|account --> ACCOUNT --> account : saCurRedeemReq=%s saCurIssueReq=%s saPrvOwed=%s saCurRedeemAct=%s saCurIssueAct=%s")
@@ -1790,7 +1799,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 		if (!saCurDeliverAct)
 		{
 			// Must want something.
-			terResult	= tepPATH_DRY;
+			terResult	= tecPATH_DRY;
 		}
 
 		cLog(lsINFO) << boost::str(boost::format("calcNodeAccountRev: saCurDeliverReq=%s saCurDeliverAct=%s saPrvOwed=%s")
@@ -1819,7 +1828,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 			if (!saCurWantedAct)
 			{
 				// Must have processed something.
-				terResult	= tepPATH_DRY;
+				terResult	= tecPATH_DRY;
 			}
 		}
 		else
@@ -1852,7 +1861,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 			if (!saPrvDeliverAct)
 			{
 				// Must want something.
-				terResult	= tepPATH_DRY;
+				terResult	= tecPATH_DRY;
 			}
 		}
 	}
@@ -1870,7 +1879,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 		if (!saCurDeliverAct)
 		{
 			// Must want something.
-			terResult	= tepPATH_DRY;
+			terResult	= tecPATH_DRY;
 		}
 	}
 
@@ -2017,7 +2026,7 @@ TER RippleCalc::calcNodeAccountFwd(
 			saCurReceive	= saPrvRedeemReq+saIssueCrd;
 
 			// Actually receive.
-			lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq+saPrvIssueReq, false);
+			terResult	= lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq+saPrvIssueReq, false);
 		}
 		else
 		{
@@ -2060,7 +2069,7 @@ TER RippleCalc::calcNodeAccountFwd(
 			}
 
 			// Adjust prv --> cur balance : take all inbound
-			lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false);
+			terResult	= lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false);
 		}
 	}
 	else if (bPrvAccount && !bNxtAccount)
@@ -2096,7 +2105,7 @@ TER RippleCalc::calcNodeAccountFwd(
 			}
 
 			// Adjust prv --> cur balance : take all inbound
-			lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false);
+			terResult	= lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false);
 		}
 		else
 		{
@@ -2133,7 +2142,7 @@ TER RippleCalc::calcNodeAccountFwd(
 				cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountFwd: ^ --> ACCOUNT -- XRP --> offer"));
 
 				// Deliver XRP to limbo.
-				lesActive.accountSend(uCurAccountID, ACCOUNT_XRP, saCurDeliverAct);
+				terResult	= lesActive.accountSend(uCurAccountID, ACCOUNT_XRP, saCurDeliverAct);
 			}
 		}
 	}
@@ -2224,7 +2233,7 @@ TER RippleCalc::calcNodeFwd(const unsigned int uNode, PathState& psCur, const bo
 // Calculate a node and its previous nodes.
 // From the destination work in reverse towards the source calculating how much must be asked for.
 // Then work forward, figuring out how much can actually be delivered.
-// <-- terResult: tesSUCCESS or tepPATH_DRY
+// <-- terResult: tesSUCCESS or tecPATH_DRY
 // <-> pnNodes:
 //     --> [end]saWanted.mAmount
 //     --> [all]saWanted.mCurrency
@@ -2558,8 +2567,7 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: %d rate: %s qual
 			{
 				// Have sent maximum allowed. Partial payment not allowed.
 
-				terResult	= tepPATH_PARTIAL;
-				lesActive	= lesBase;				// Revert to just fees charged.
+				terResult	= tecPATH_PARTIAL;
 			}
 			else
 			{
@@ -2572,15 +2580,13 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: %d rate: %s qual
 	    else if (!bPartialPayment)
 	    {
 		    // Partial payment not allowed.
-		    terResult	= tepPATH_PARTIAL;
-		    lesActive	= lesBase;				// Revert to just fees charged.
+		    terResult	= tecPATH_PARTIAL;
 	    }
 	    // Partial payment ok.
 	    else if (!saDstAmountAct)
 	    {
 		    // No payment at all.
-		    terResult	= tepPATH_DRY;
-		    lesActive	= lesBase;				// Revert to just fees charged.
+		    terResult	= tecPATH_DRY;
 	    }
 	    else
 	    {

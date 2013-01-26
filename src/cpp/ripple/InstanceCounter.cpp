@@ -1,6 +1,7 @@
 #include "InstanceCounter.h"
 
 InstanceType* InstanceType::sHeadInstance = NULL;
+bool InstanceType::sMultiThreaded = false;
 
 std::vector<InstanceType::InstanceCount> InstanceType::getInstanceCounts(int min)
 {

@@ -71,6 +71,7 @@ message TMHello {
 	optional bytes			ledgerPrevious	= 10; // the ledger before the last closed ledger
 	optional bool			nodePrivate		= 11; // Request to not forward IP.
 	optional TMProofWork	proofOfWork		= 12; // request/provide proof of work
+	optional bool			testNet			= 13; // Running as testnet.
 }
 
 
@@ -291,8 +292,8 @@ message TMLedgerData {
 
 message TMPing {
 	enum pingType {
-		PING = 0; // we want a reply
-		PONG = 1; // this is a reply
+		ptPING = 0; // we want a reply
+		ptPONG = 1; // this is a reply
 	}
 	required pingType type		= 1;
 	optional uint32 seq			= 2; // detect stale replies, ensure other side is reading

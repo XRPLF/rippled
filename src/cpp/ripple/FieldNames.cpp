@@ -111,7 +111,7 @@ std::string SField::getName() const
 SField::ref SField::getField(const std::string& fieldName)
 { // OPTIMIZEME me with a map. CHECKME this is case sensitive
 	boost::mutex::scoped_lock sl(mapMutex);
-	typedef std::pair<const int, SField::ptr> int_sfref_pair;
+	typedef std::map<int, SField::ptr>::value_type int_sfref_pair;
 	BOOST_FOREACH(const int_sfref_pair& fieldPair, codeToField)
 	{
 		if (fieldPair.second->fieldName == fieldName)

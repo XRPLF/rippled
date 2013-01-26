@@ -4,6 +4,8 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 
+#include "../database/SqliteDatabase.h"
+
 #include "Serializer.h"
 #include "Application.h"
 #include "Log.h"
@@ -12,7 +14,8 @@ SETUP_LOG();
 DECLARE_INSTANCE(HashedObject);
 
 HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
-	mCache("HashedObjectStore", cacheSize, cacheAge), mWriteGeneration(0), mWritePending(false)
+	mCache("HashedObjectStore", cacheSize, cacheAge), mNegativeCache("HashedObjectNegativeCache", 0, 120),
+	mWriteGeneration(0), mWritePending(false)
 {
 	mWriteSet.reserve(128);
 }
@@ -42,12 +45,12 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 		if (!mWritePending)
 		{
 			mWritePending = true;
-			boost::thread t(boost::bind(&HashedObjectStore::bulkWrite, this));
-			t.detach();
+			boost::thread(boost::bind(&HashedObjectStore::bulkWrite, this)).detach();
 		}
 	}
 //	else
 //		cLog(lsTRACE) << "HOS: already had " << hash;
+	mNegativeCache.del(hash);
 	return true;
 }
 
@@ -83,31 +86,28 @@ void HashedObjectStore::bulkWrite()
 
 		static boost::format fExists("SELECT ObjType FROM CommittedObjects WHERE Hash = '%s';");
 		static boost::format
-			fAdd("INSERT INTO CommittedObjects (Hash,ObjType,LedgerIndex,Object) VALUES ('%s','%c','%u',%s);");
+			fAdd("INSERT OR IGNORE INTO CommittedObjects "
+				"(Hash,ObjType,LedgerIndex,Object) VALUES ('%s','%c','%u',%s);");
 
 		Database* db = theApp->getHashNodeDB()->getDB();
 		{
-			ScopedLock sl( theApp->getHashNodeDB()->getDBLock());
+			ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
 
 			db->executeSQL("BEGIN TRANSACTION;");
 
 			BOOST_FOREACH(const boost::shared_ptr<HashedObject>& it, set)
 			{
-				if (!SQL_EXISTS(db, boost::str(fExists % it->getHash().GetHex())))
+				char type;
+
+				switch (it->getType())
 				{
-					char type;
-					switch(it->getType())
-					{
-						case hotLEDGER:				type = 'L'; break;
-						case hotTRANSACTION:		type = 'T'; break;
-						case hotACCOUNT_NODE:		type = 'A'; break;
-						case hotTRANSACTION_NODE:	type = 'N'; break;
-						default:					type = 'U';
-					}
-					std::string rawData;
-					db->escape(&(it->getData().front()), it->getData().size(), rawData);
-					db->executeSQL(boost::str(fAdd % it->getHash().GetHex() % type % it->getIndex() % rawData ));
+					case hotLEDGER:				type = 'L'; break;
+					case hotTRANSACTION:		type = 'T'; break;
+					case hotACCOUNT_NODE:		type = 'A'; break;
+					case hotTRANSACTION_NODE:	type = 'N'; break;
+					default:					type = 'U';
 				}
+				db->executeSQL(boost::str(fAdd % it->getHash().GetHex() % type % it->getIndex() % sqlEscape(it->getData())));
 			}
 
 			db->executeSQL("END TRANSACTION;");
@@ -117,15 +117,19 @@ void HashedObjectStore::bulkWrite()
 
 HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 {
+
 	HashedObject::pointer obj;
 	{
 		obj = mCache.fetch(hash);
 		if (obj)
 		{
-			cLog(lsTRACE) << "HOS: " << hash << " fetch: incache";
+//			cLog(lsTRACE) << "HOS: " << hash << " fetch: incache";
 			return obj;
 		}
 	}
+
+	if (mNegativeCache.isPresent(hash))
+		return HashedObject::pointer();
 
 	if (!theApp || !theApp->getHashNodeDB())
 		return HashedObject::pointer();
@@ -134,6 +138,9 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 	sql.append("';");
 
 	std::vector<unsigned char> data;
+	std::string type;
+	uint32 index;
+
 	{
 		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
 		Database* db = theApp->getHashNodeDB()->getDB();
@@ -141,39 +148,111 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		if (!db->executeSQL(sql) || !db->startIterRows())
 		{
 //			cLog(lsTRACE) << "HOS: " << hash << " fetch: not in db";
+			sl.unlock();
+			mNegativeCache.add(hash);
 			return HashedObject::pointer();
 		}
 
-		std::string type;
 		db->getStr("ObjType", type);
-		if (type.size() == 0) return HashedObject::pointer();
-
-		uint32 index = db->getBigInt("LedgerIndex");
+		index = db->getBigInt("LedgerIndex");
 
 		int size = db->getBinary("Object", NULL, 0);
 		data.resize(size);
 		db->getBinary("Object", &(data.front()), size);
 		db->endIterRows();
-
-		assert(Serializer::getSHA512Half(data) == hash);
-
-		HashedObjectType htype = hotUNKNOWN;
-		switch (type[0])
-		{
-			case 'L': htype = hotLEDGER; break;
-			case 'T': htype = hotTRANSACTION; break;
-			case 'A': htype = hotACCOUNT_NODE; break;
-			case 'N': htype = hotTRANSACTION_NODE; break;
-			default:
-				cLog(lsERROR) << "Invalid hashed object";
-				return HashedObject::pointer();
-		}
-
-		obj = boost::make_shared<HashedObject>(htype, index, data, hash);
-		mCache.canonicalize(hash, obj);
 	}
+
+	assert(Serializer::getSHA512Half(data) == hash);
+
+	HashedObjectType htype = hotUNKNOWN;
+	switch (type[0])
+	{
+		case 'L': htype = hotLEDGER; break;
+		case 'T': htype = hotTRANSACTION; break;
+		case 'A': htype = hotACCOUNT_NODE; break;
+		case 'N': htype = hotTRANSACTION_NODE; break;
+		default:
+		assert(false);
+			cLog(lsERROR) << "Invalid hashed object";
+			mNegativeCache.add(hash);
+			return HashedObject::pointer();
+	}
+
+	obj = boost::make_shared<HashedObject>(htype, index, data, hash);
+	mCache.canonicalize(hash, obj);
+
 	cLog(lsTRACE) << "HOS: " << hash << " fetch: in db";
 	return obj;
+}
+
+int HashedObjectStore::import(const std::string& file)
+{
+	cLog(lsWARNING) << "Hash import from \"" << file << "\".";
+	std::auto_ptr<Database> importDB(new SqliteDatabase(file.c_str()));
+	importDB->connect();
+
+	int countYes = 0, countNo = 0;
+
+	SQL_FOREACH(importDB, "SELECT * FROM CommittedObjects;")
+	{
+		uint256 hash;
+		std::string hashStr;
+		importDB->getStr("Hash", hashStr);
+		hash.SetHex(hashStr);
+		if (hash.isZero())
+		{
+			cLog(lsWARNING) << "zero hash found in import table";
+		}
+		else
+		{
+			if (retrieve(hash) != HashedObject::pointer())
+				++countNo;
+			else
+			{ // we don't have this object
+				std::vector<unsigned char> data;
+				std::string type;
+				importDB->getStr("ObjType", type);
+				uint32 index = importDB->getBigInt("LedgerIndex");
+
+				int size = importDB->getBinary("Object", NULL, 0);
+				data.resize(size);
+				importDB->getBinary("Object", &(data.front()), size);
+
+				assert(Serializer::getSHA512Half(data) == hash);
+
+				HashedObjectType htype = hotUNKNOWN;
+				switch (type[0])
+				{
+					case 'L': htype = hotLEDGER; break;
+					case 'T': htype = hotTRANSACTION; break;
+					case 'A': htype = hotACCOUNT_NODE; break;
+					case 'N': htype = hotTRANSACTION_NODE; break;
+					default:
+						assert(false);
+						cLog(lsERROR) << "Invalid hashed object";
+				}
+
+				if (Serializer::getSHA512Half(data) != hash)
+				{
+					cLog(lsWARNING) << "Hash mismatch in import table " << hash
+						<< " " << Serializer::getSHA512Half(data);
+				}
+				else
+				{
+					store(htype, index, data, hash);
+					++countYes;
+				}
+			}
+			if (((countYes + countNo) % 100) == 99)
+			{
+				cLog(lsINFO) << "Import in progress: yes=" << countYes << ", no=" << countNo;
+			}
+		}
+	}
+
+	cLog(lsWARNING) << "Imported " << countYes << " nodes, had " << countNo << " nodes";
+	waitWrite();
+	return countYes;
 }
 
 // vim:ts=4

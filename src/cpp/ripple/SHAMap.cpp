@@ -21,13 +21,15 @@ DECLARE_INSTANCE(SHAMap);
 DECLARE_INSTANCE(SHAMapItem);
 DECLARE_INSTANCE(SHAMapTreeNode);
 
+void SHAMapNode::setHash() const
+{
+	std::size_t h = theApp->getNonceST() + mDepth;
+	mHash = mNodeID.hash_combine(h);
+}
+
 std::size_t hash_value(const SHAMapNode& mn)
 {
-	std::size_t seed = theApp->getNonceST();
-
-	boost::hash_combine(seed, mn.getDepth());
-
-	return mn.getNodeID().hash_combine(seed);
+	return mn.getHash();
 }
 
 std::size_t hash_value(const uint256& u)
@@ -365,7 +367,7 @@ void SHAMap::eraseChildren(SHAMapTreeNode::pointer node)
 
 static const SHAMapItem::pointer no_item;
 
-SHAMapItem::ref SHAMap::peekFirstItem()
+SHAMapItem::pointer SHAMap::peekFirstItem()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapTreeNode *node = firstBelow(root.get());
@@ -374,7 +376,7 @@ SHAMapItem::ref SHAMap::peekFirstItem()
 	return node->peekItem();
 }
 
-SHAMapItem::ref SHAMap::peekFirstItem(SHAMapTreeNode::TNType& type)
+SHAMapItem::pointer SHAMap::peekFirstItem(SHAMapTreeNode::TNType& type)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapTreeNode *node = firstBelow(root.get());
@@ -384,7 +386,7 @@ SHAMapItem::ref SHAMap::peekFirstItem(SHAMapTreeNode::TNType& type)
 	return node->peekItem();
 }
 
-SHAMapItem::ref SHAMap::peekLastItem()
+SHAMapItem::pointer SHAMap::peekLastItem()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapTreeNode *node = lastBelow(root.get());
@@ -393,14 +395,14 @@ SHAMapItem::ref SHAMap::peekLastItem()
 	return node->peekItem();
 }
 
-SHAMapItem::ref SHAMap::peekNextItem(const uint256& id)
+SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
 {
 	SHAMapTreeNode::TNType type;
 	return peekNextItem(id, type);
 }
 
 
-SHAMapItem::ref SHAMap::peekNextItem(const uint256& id, SHAMapTreeNode::TNType& type)
+SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id, SHAMapTreeNode::TNType& type)
 { // Get a pointer to the next item in the tree after a given item - item must be in tree
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -435,7 +437,7 @@ SHAMapItem::ref SHAMap::peekNextItem(const uint256& id, SHAMapTreeNode::TNType& 
 	return no_item;
 }
 
-SHAMapItem::ref SHAMap::peekPrevItem(const uint256& id)
+SHAMapItem::pointer SHAMap::peekPrevItem(const uint256& id)
 { // Get a pointer to the previous item in the tree after a given item - item must be in tree
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -464,7 +466,7 @@ SHAMapItem::ref SHAMap::peekPrevItem(const uint256& id)
 	return no_item;
 }
 
-SHAMapItem::ref SHAMap::peekItem(const uint256& id)
+SHAMapItem::pointer SHAMap::peekItem(const uint256& id)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapTreeNode* leaf = walkToPointer(id);
@@ -473,7 +475,7 @@ SHAMapItem::ref SHAMap::peekItem(const uint256& id)
 	return leaf->peekItem();
 }
 
-SHAMapItem::ref SHAMap::peekItem(const uint256& id, SHAMapTreeNode::TNType& type)
+SHAMapItem::pointer SHAMap::peekItem(const uint256& id, SHAMapTreeNode::TNType& type)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapTreeNode* leaf = walkToPointer(id);
@@ -540,6 +542,7 @@ bool SHAMap::delItem(const uint256& id)
 				SHAMapItem::pointer item = onlyBelow(node.get());
 				if (item)
 				{
+					returnNode(node, true);
 					eraseChildren(node);
 #ifdef ST_DEBUG
 					std::cerr << "Making item node " << *node << std::endl;
@@ -707,22 +710,23 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 	HashedObject::pointer obj(theApp->getHashedObjectStore().retrieve(hash));
 	if (!obj)
 	{
-//		Log(lsTRACE) << "fetchNodeExternal: missing " << hash;
+//		cLog(lsTRACE) << "fetchNodeExternal: missing " << hash;
 		throw SHAMapMissingNode(mType, id, hash);
 	}
 
 	try
 	{
-		SHAMapTreeNode::pointer ret = boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq - 1, snfPREFIX);
+		SHAMapTreeNode::pointer ret =
+			boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq, snfPREFIX, hash);
 		if (id != *ret)
 		{
-			Log(lsFATAL) << "id:" << id << ", got:" << *ret;
+			cLog(lsFATAL) << "id:" << id << ", got:" << *ret;
 			assert(false);
 			return SHAMapTreeNode::pointer();
 		}
 		if (ret->getNodeHash() != hash)
 		{
-			Log(lsFATAL) << "Hashes don't match";
+			cLog(lsFATAL) << "Hashes don't match";
 			assert(false);
 			return SHAMapTreeNode::pointer();
 		}
@@ -745,11 +749,11 @@ void SHAMap::fetchRoot(const uint256& hash)
 	if (sLog(lsTRACE))
 	{
 		if (mType == smtTRANSACTION)
-			Log(lsTRACE) << "Fetch root TXN node " << hash;
+			cLog(lsTRACE) << "Fetch root TXN node " << hash;
 		else if (mType == smtSTATE)
-			Log(lsTRACE) << "Fetch root STATE node " << hash;
+			cLog(lsTRACE) << "Fetch root STATE node " << hash;
 		else
-			Log(lsTRACE) << "Fetch root SHAMap node " << hash;
+			cLog(lsTRACE) << "Fetch root SHAMap node " << hash;
 	}
 	root = fetchNodeExternal(SHAMapNode(), hash);
 	assert(root->getNodeHash() == hash);

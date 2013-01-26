@@ -21,8 +21,10 @@
 #include "LoadMonitor.h"
 
 DEFINE_INSTANCE(LedgerConsensus);
+DEFINE_INSTANCE(TransactionAcquire);
 
-class TransactionAcquire : public PeerSet, public boost::enable_shared_from_this<TransactionAcquire>
+class TransactionAcquire :
+	private IS_INSTANCE(TransactionAcquire), public PeerSet, public boost::enable_shared_from_this<TransactionAcquire>
 { // A transaction set we are trying to acquire
 public:
 	typedef boost::shared_ptr<TransactionAcquire> pointer;
@@ -32,10 +34,10 @@ protected:
 	bool				mHaveRoot;
 
 	void onTimer(bool progress);
-	void newPeer(Peer::ref peer)	{ trigger(peer, false); }
+	void newPeer(Peer::ref peer)	{ trigger(peer); }
 
 	void done();
-	void trigger(Peer::ref, bool timer);
+	void trigger(Peer::ref);
 	boost::weak_ptr<PeerSet> pmDowncast();
 
 public:
@@ -43,7 +45,7 @@ public:
 	TransactionAcquire(const uint256& hash);
 	virtual ~TransactionAcquire()		{ ; }
 
-	SHAMap::pointer getMap()			{ return mMap; }
+	SHAMap::ref getMap()				{ return mMap; }
 
 	SMAddNode takeNodes(const std::list<SHAMapNode>& IDs,
 		const std::list< std::vector<unsigned char> >& data, Peer::ref);
@@ -138,8 +140,8 @@ protected:
 	void sendHaveTxSet(const uint256& set, bool direct);
 	void applyTransactions(SHAMap::ref transactionSet, Ledger::ref targetLedger,
 		Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, bool openLgr);
-	void applyTransaction(TransactionEngine& engine, SerializedTransaction::ref txn,
-		Ledger::ref targetLedger, CanonicalTXSet& failedTransactions, bool openLgr);
+	int applyTransaction(TransactionEngine& engine, SerializedTransaction::ref txn, Ledger::ref targetLedger,
+		bool openLgr, bool retryAssured);
 
 	uint32 roundCloseTime(uint32 closeTime);
 
@@ -161,8 +163,8 @@ public:
 	int startup();
 	Json::Value getJson();
 
-	Ledger::pointer peekPreviousLedger()	{ return mPreviousLedger; }
-	uint256 getLCL()						{ return mPrevLedgerHash; }
+	Ledger::ref peekPreviousLedger()	{ return mPreviousLedger; }
+	uint256 getLCL()					{ return mPrevLedgerHash; }
 
 	SHAMap::pointer getTransactionTree(const uint256& hash, bool doAcquire);
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);

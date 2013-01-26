@@ -10,6 +10,7 @@
 
 #include "Config.h"
 #include "Peer.h"
+#include "PeerDoor.h"
 #include "Application.h"
 #include "utils.h"
 #include "Log.h"
@@ -26,21 +27,6 @@ void splitIpPort(const std::string& strIpPort, std::string& strIp, int& iPort)
 
 	strIp	= vIpPort[0];
 	iPort	= boost::lexical_cast<int>(vIpPort[1]);
-}
-
-ConnectionPool::ConnectionPool(boost::asio::io_service& io_service) :
-	mLastPeer(0),
-	mCtx(boost::asio::ssl::context::sslv23),
-	mScanTimer(io_service),
-	mPolicyTimer(io_service)
-{
-	mCtx.set_options(
-		boost::asio::ssl::context::default_workarounds
-		| boost::asio::ssl::context::no_sslv2
-		| boost::asio::ssl::context::single_dh_use);
-
-	if (1 != SSL_CTX_set_cipher_list(mCtx.native_handle(), theConfig.PEER_SSL_CIPHER_LIST.c_str()))
-		std::runtime_error("Error setting cipher list (no valid ciphers).");
 }
 
 void ConnectionPool::start()
@@ -140,7 +126,7 @@ bool ConnectionPool::peerAvailable(std::string& strIp, int& iPort)
 
 		vstrIpPort.reserve(mIpMap.size());
 
-		BOOST_FOREACH(pipPeer ipPeer, mIpMap)
+		BOOST_FOREACH(const vtPeer& ipPeer, mIpMap)
 		{
 			const std::string&	strIp	= ipPeer.first.first;
 			int					iPort	= ipPeer.first.second;
@@ -178,7 +164,7 @@ void ConnectionPool::policyLowWater()
 	int			iPort;
 
 	// Find an entry to connect to.
-	if (mConnectedMap.size() > theConfig.PEER_CONNECT_LOW_WATER)
+	if (getPeerCount() > theConfig.PEER_CONNECT_LOW_WATER)
 	{
 		// Above low water mark, don't need more connections.
 		cLog(lsTRACE) << "Pool: Low water: sufficient connections: " << mConnectedMap.size() << "/" << theConfig.PEER_CONNECT_LOW_WATER;
@@ -251,7 +237,7 @@ int ConnectionPool::relayMessage(Peer* fromPeer, const PackedMessage::pointer& m
 	int sentTo = 0;
 	boost::mutex::scoped_lock sl(mPeerLock);
 
-	BOOST_FOREACH(naPeer pair, mConnectedMap)
+	BOOST_FOREACH(const vtConMap& pair, mConnectedMap)
 	{
 		Peer::ref peer	= pair.second;
 		if (!peer)
@@ -270,7 +256,7 @@ void ConnectionPool::relayMessageBut(const std::set<uint64>& fromPeers, const Pa
 { // Relay message to all but the specified peers
 	boost::mutex::scoped_lock sl(mPeerLock);
 
-	BOOST_FOREACH(naPeer pair, mConnectedMap)
+	BOOST_FOREACH(const vtConMap& pair, mConnectedMap)
 	{
 		Peer::ref peer	= pair.second;
 		if (peer->isConnected() && (fromPeers.count(peer->getPeerId()) == 0))
@@ -298,9 +284,6 @@ void ConnectionPool::relayMessageTo(const std::set<uint64>& fromPeers, const Pac
 // Requires sane IP and port.
 void ConnectionPool::connectTo(const std::string& strIp, int iPort)
 {
-	if (theConfig.RUN_STANDALONE)
-		return;
-
 	{
 		Database*	db	= theApp->getWalletDB()->getDB();
 		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
@@ -329,7 +312,8 @@ Peer::pointer ConnectionPool::peerConnect(const std::string& strIp, int iPort)
 
 		if ((it = mIpMap.find(pipPeer)) == mIpMap.end())
 		{
-			Peer::pointer	ppNew(Peer::create(theApp->getIOService(), mCtx, ++mLastPeer));
+			Peer::pointer	ppNew(Peer::create(theApp->getIOService(), theApp->getPeerDoor().getSSLContext(),
+				++mLastPeer, false));
 
 			// Did not find it.  Not already connecting or connected.
 			ppNew->connect(strIp, iPort);
@@ -365,7 +349,7 @@ Json::Value ConnectionPool::getPeersJson()
     Json::Value					ret(Json::arrayValue);
 	std::vector<Peer::pointer>	vppPeers	= getPeerVector();
 
-	BOOST_FOREACH(Peer::pointer peer, vppPeers)
+	BOOST_FOREACH(Peer::ref peer, vppPeers)
 	{
 		ret.append(peer->getJson());
     }
@@ -388,7 +372,7 @@ std::vector<Peer::pointer> ConnectionPool::getPeerVector()
 
 	ret.reserve(mConnectedMap.size());
 
-	BOOST_FOREACH(naPeer pair, mConnectedMap)
+	BOOST_FOREACH(const vtConMap& pair, mConnectedMap)
 	{
 		assert(!!pair.second);
 		ret.push_back(pair.second);
@@ -532,7 +516,7 @@ bool ConnectionPool::peerScanSet(const std::string& strIp, int iPort)
 			db->executeSQL(str(boost::format("UPDATE PeerIps SET ScanNext=%d,ScanInterval=%d WHERE IpPort=%s;")
 				% iToSeconds(tpNext)
 				% iInterval
-				% db->escape(strIpPort)));
+				% sqlEscape(strIpPort)));
 
 			bScanDirty	= true;
 		}
@@ -632,8 +616,8 @@ void ConnectionPool::peerVerified(Peer::ref peer)
 			ScopedLock sl(theApp->getWalletDB()->getDBLock());
 			Database *db=theApp->getWalletDB()->getDB();
 
-			db->executeSQL(str(boost::format("UPDATE PeerIps SET ScanNext=NULL,ScanInterval=0 WHERE IpPort=%s;")
-				% db->escape(strIpPort)));
+			db->executeSQL(boost::str(boost::format("UPDATE PeerIps SET ScanNext=NULL,ScanInterval=0 WHERE IpPort=%s;")
+				% sqlEscape(strIpPort)));
 			// XXX Check error.
 		}
 
@@ -662,7 +646,11 @@ void ConnectionPool::scanHandler(const boost::system::error_code& ecResult)
 // Scan ips as per db entries.
 void ConnectionPool::scanRefresh()
 {
-	if (mScanning)
+	if (theConfig.RUN_STANDALONE)
+	{
+		nothing();
+	}
+	else if (mScanning)
 	{
 		// Currently scanning, will scan again after completion.
 		cLog(lsTRACE) << "Pool: Scan: already scanning";
@@ -726,10 +714,10 @@ void ConnectionPool::scanRefresh()
 				ScopedLock sl(theApp->getWalletDB()->getDBLock());
 				Database *db=theApp->getWalletDB()->getDB();
 
-				db->executeSQL(str(boost::format("UPDATE PeerIps SET ScanNext=%d,ScanInterval=%d WHERE IpPort=%s;")
+				db->executeSQL(boost::str(boost::format("UPDATE PeerIps SET ScanNext=%d,ScanInterval=%d WHERE IpPort=%s;")
 					% iToSeconds(tpNext)
 					% iInterval
-					% db->escape(strIpPort)));
+					% sqlEscape(strIpPort)));
 				// XXX Check error.
 			}
 

@@ -43,7 +43,8 @@
 	FIELD(Expiration,			UINT32, 10)
 	FIELD(TransferRate,			UINT32, 11)
 	FIELD(WalletSize,			UINT32, 12)
-	FIELD(OwnerCount,			UINT32, 13)	// Reorder on ledger reset.
+	FIELD(OwnerCount,			UINT32, 13)
+	FIELD(DestinationTag,		UINT32, 14)
 
 	// 32-bit integers (uncommon)
 	FIELD(HighQualityIn,		UINT32, 16)
@@ -56,10 +57,13 @@
 	FIELD(BondAmount,			UINT32, 23)
 	FIELD(LoadFee,				UINT32, 24)
 	FIELD(OfferSequence,		UINT32, 25)
-	FIELD(FirstLedgerSequence,	UINT32, 26)
+	FIELD(FirstLedgerSequence,	UINT32, 26) // Deprecated: do not use
 	FIELD(LastLedgerSequence,	UINT32, 27)
 	FIELD(TransactionIndex,		UINT32, 28)
 	FIELD(OperationLimit,		UINT32, 29)
+	FIELD(ReferenceFeeUnits,	UINT32, 30)
+	FIELD(ReserveBase,			UINT32, 31)
+	FIELD(ReserveIncrement,		UINT32, 32)
 
 	// 64-bit integers
 	FIELD(IndexNext,			UINT64, 1)
@@ -68,6 +72,9 @@
 	FIELD(OwnerNode,			UINT64, 4)
 	FIELD(BaseFee,				UINT64, 5)
 	FIELD(ExchangeRate,			UINT64, 6)
+	FIELD(LowNode,				UINT64, 7)
+	FIELD(HighNode,				UINT64, 8)
+
 
 	// 128-bit
 	FIELD(EmailHash,			HASH128, 1)

@@ -16,15 +16,19 @@
 
 #define TX_ACQUIRE_TIMEOUT	250
 
+#define LEDGER_TOTAL_PASSES 8
+#define LEDGER_RETRY_PASSES 5
+
 #define TRUST_NETWORK
 
 #define LC_DEBUG
 
-typedef std::pair<const uint160, LedgerProposal::pointer> u160_prop_pair;
-typedef std::pair<const uint256, LCTransaction::pointer> u256_lct_pair;
+typedef std::map<uint160, LedgerProposal::pointer>::value_type u160_prop_pair;
+typedef std::map<uint256, LCTransaction::pointer>::value_type u256_lct_pair;
 
 SETUP_LOG();
 DECLARE_INSTANCE(LedgerConsensus);
+DECLARE_INSTANCE(TransactionAcquire);
 
 TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, TX_ACQUIRE_TIMEOUT), mHaveRoot(false)
 {
@@ -44,6 +48,7 @@ void TransactionAcquire::done()
 		mMap->setImmutable();
 		theApp->getOPs().mapComplete(mHash, mMap);
 	}
+	theApp->getMasterLedgerAcquire().dropLedger(mHash);
 }
 
 void TransactionAcquire::onTimer(bool progress)
@@ -69,7 +74,7 @@ void TransactionAcquire::onTimer(bool progress)
 		}
 	}
 	else if (!progress)
-		trigger(Peer::pointer(), true);
+		trigger(Peer::pointer());
 }
 
 boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast()
@@ -77,7 +82,7 @@ boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast()
 	return boost::shared_polymorphic_downcast<PeerSet>(shared_from_this());
 }
 
-void TransactionAcquire::trigger(Peer::ref peer, bool timer)
+void TransactionAcquire::trigger(Peer::ref peer)
 {
 	if (mComplete || mFailed)
 	{
@@ -110,20 +115,15 @@ void TransactionAcquire::trigger(Peer::ref peer, bool timer)
 			done();
 			return;
 		}
-		else
-		{
-			ripple::TMGetLedger tmGL;
-			tmGL.set_ledgerhash(mHash.begin(), mHash.size());
-			tmGL.set_itype(ripple::liTS_CANDIDATE);
-			if (getTimeouts() != 0)
-				tmGL.set_querytype(ripple::qtINDIRECT);
-			BOOST_FOREACH(SHAMapNode& it, nodeIDs)
-				*(tmGL.add_nodeids()) = it.getRawString();
-			sendRequest(tmGL, peer);
-		}
+		ripple::TMGetLedger tmGL;
+		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
+		tmGL.set_itype(ripple::liTS_CANDIDATE);
+		if (getTimeouts() != 0)
+			tmGL.set_querytype(ripple::qtINDIRECT);
+		BOOST_FOREACH(SHAMapNode& it, nodeIDs)
+			*(tmGL.add_nodeids()) = it.getRawString();
+		sendRequest(tmGL, peer);
 	}
-	if (timer)
-		resetTimer();
 }
 
 SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
@@ -171,7 +171,7 @@ SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 			++nodeIDit;
 			++nodeDatait;
 		}
-		trigger(peer, false);
+		trigger(peer);
 		progress();
 		return SMAddNode::useful();
 	}
@@ -282,7 +282,7 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previou
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
 		mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(), previousLedger->getLedgerSeq() + 1);
 
-	if (mValPublic.isValid() && mValPrivate.isValid())
+	if (mValPublic.isValid() && mValPrivate.isValid() && !theApp->getOPs().isNeedNetworkLedger())
 	{
 		cLog(lsINFO) << "Entering consensus process, validating";
 		mValidating = true;
@@ -297,6 +297,7 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previou
 	mHaveCorrectLCL = (mPreviousLedger->getHash() == mPrevLedgerHash);
 	if (!mHaveCorrectLCL)
 	{
+		theApp->getOPs().setProposing(false, false);
 		handleLCL(mPrevLedgerHash);
 		if (!mHaveCorrectLCL)
 		{
@@ -305,11 +306,13 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previou
 			cLog(lsINFO) << "Correct LCL is: " << prevLCLHash;
 		}
 	}
+	else
+		theApp->getOPs().setProposing(mProposing, mValidating);
 }
 
 void LedgerConsensus::checkOurValidation()
 { // This only covers some cases - Fix for the case where we can't ever acquire the consensus ledger
-	if (!mHaveCorrectLCL || !mValPublic.isValid() || !mValPrivate.isValid())
+	if (!mHaveCorrectLCL || !mValPublic.isValid() || !mValPrivate.isValid() || theApp->getOPs().isNeedNetworkLedger())
 		return;
 
 	SerializedValidation::pointer lastVal = theApp->getOPs().getLastValidation();
@@ -348,7 +351,7 @@ void LedgerConsensus::checkLCL()
 	boost::unordered_map<uint256, currentValidationCount> vals =
 		theApp->getValidations().getCurrentValidations(favoredLedger);
 
-	typedef std::pair<const uint256, currentValidationCount> u256_cvc_pair;
+	typedef std::map<uint256, currentValidationCount>::value_type u256_cvc_pair;
 	BOOST_FOREACH(u256_cvc_pair& it, vals)
 		if (it.second.first > netLgrCount)
 		{
@@ -424,8 +427,10 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 
 	cLog(lsINFO) << "Have the consensus ledger " << mPrevLedgerHash;
 	mHaveCorrectLCL = true;
-	mAcquiringLedger.reset();
-	theApp->getOPs().clearNeedNetworkLedger();
+#if 0 // FIXME: can trigger early
+	if (mAcquiringLedger && mAcquiringLedger->isComplete())
+		theApp->getOPs().clearNeedNetworkLedger();
+#endif
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
 		mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(),
 		mPreviousLedger->getLedgerSeq() + 1);
@@ -471,7 +476,7 @@ void LedgerConsensus::createDisputes(SHAMap::ref m1, SHAMap::ref m2)
 	SHAMap::SHAMapDiff differences;
 	m1->compare(m2, differences, 16384);
 
-	typedef std::pair<const uint256, SHAMap::SHAMapDiffItem> u256_diff_pair;
+	typedef std::map<uint256, SHAMap::SHAMapDiffItem>::value_type u256_diff_pair;
 	BOOST_FOREACH (u256_diff_pair& pos, differences)
 	{ // create disputed transactions (from the ledger that has them)
 		if (pos.second.first)
@@ -570,7 +575,7 @@ void LedgerConsensus::statusChange(ripple::NodeEvent event, Ledger& ledger)
 	s.set_ledgerhash(hash.begin(), hash.size());
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, ripple::mtSTATUS_CHANGE);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
-	cLog(lsINFO) << "send status change to peer";
+	cLog(lsTRACE) << "send status change to peer";
 }
 
 int LedgerConsensus::startup()
@@ -757,10 +762,10 @@ void LedgerConsensus::updateOurPositions()
 
 		for (std::map<uint32, int>::iterator it = closeTimes.begin(), end = closeTimes.end(); it != end; ++it)
 		{
-			cLog(lsINFO) << "CCTime: " << it->first << " has " << it->second << ", " << thresh << " required";
+			cLog(lsTRACE) << "CCTime: " << it->first << " has " << it->second << ", " << thresh << " required";
 			if (it->second >= thresh)
 			{
-				cLog(lsINFO) << "Close time consensus reached: " << it->first;
+				cLog(lsDEBUG) << "Close time consensus reached: " << it->first;
 				mHaveCloseTimeConsensus = true;
 				closeTime = it->first;
 				thresh = it->second;
@@ -793,8 +798,7 @@ void LedgerConsensus::updateOurPositions()
 }
 
 bool LedgerConsensus::haveConsensus(bool forReal)
-{ // FIXME: Should check for a supermajority on each disputed transaction
-  // counting unacquired TX sets as disagreeing
+{ // CHECKME: should possibly count unacquired TX sets as disagreeing
 	int agree = 0, disagree = 0;
 	uint256 ourPosition = mOurPosition->getCurrentHash();
 	BOOST_FOREACH(u160_prop_pair& it, mPeerPositions)
@@ -826,7 +830,6 @@ SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool do
 			SHAMap::pointer currentMap = theApp->getLedgerMaster().getCurrentLedger()->peekTransactionMap();
 			if (currentMap->getHash() == hash)
 			{
-				cLog(lsINFO) << "node proposes our open transaction set";
 				currentMap = currentMap->snapShot(false);
 				mapComplete(hash, currentMap, false);
 				return currentMap;
@@ -882,7 +885,7 @@ void LedgerConsensus::startAcquiring(const TransactionAcquire::pointer& acquire)
 			acquire->peerHas(peer);
 	}
 
-	acquire->resetTimer();
+	acquire->setTimer();
 }
 
 void LedgerConsensus::propose()
@@ -976,7 +979,7 @@ bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
 	}
 
 
-	cLog(lsINFO) << "Processing peer proposal " << newPosition->getProposeSeq() << "/" << newPosition->getCurrentHash();
+	cLog(lsTRACE) << "Processing peer proposal " << newPosition->getProposeSeq() << "/" << newPosition->getCurrentHash();
 	currentPosition = newPosition;
 
 	SHAMap::pointer set = getTransactionTree(newPosition->getCurrentHash(), true);
@@ -1088,37 +1091,51 @@ void LedgerConsensus::playbackProposals()
 	}
 }
 
-void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTransaction::ref txn,
-	Ledger::ref ledger, CanonicalTXSet& failedTransactions, bool openLedger)
-{
+#define LCAT_SUCCESS	0
+#define LCAT_FAIL		1
+#define LCAT_RETRY		2
+
+int LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTransaction::ref txn, Ledger::ref ledger,
+	bool openLedger, bool retryAssured)
+{ // Returns false if the transaction has need not be retried.
 	TransactionEngineParams parms = openLedger ? tapOPEN_LEDGER : tapNONE;
+	if (retryAssured)
+		parms = static_cast<TransactionEngineParams>(parms | tapRETRY);
+
+	cLog(lsDEBUG) << "TXN " << txn->getTransactionID()
+		<< (openLedger ? " open" : " closed")
+		<< (retryAssured ? "/retry" : "/final");
+	cLog(lsTRACE) << txn->getJson(0);
+
 #ifndef TRUST_NETWORK
 	try
 	{
 #endif
-		TER result = engine.applyTransaction(*txn, parms);
-		if (isTerRetry(result))
+
+		bool didApply;
+		TER result = engine.applyTransaction(*txn, parms, didApply);
+		if (didApply)
 		{
-			cLog(lsINFO) << "   retry";
-			assert(!ledger->hasTransaction(txn->getTransactionID()));
-			failedTransactions.push_back(txn);
+			cLog(lsDEBUG) << "Transaction success: " << transHuman(result);
+			return LCAT_SUCCESS;
 		}
-		else if (isTepSuccess(result)) // FIXME: Need to do partial success
-		{
-			cLog(lsTRACE) << "   success";
-			assert(ledger->hasTransaction(txn->getTransactionID()));
+
+		if (isTefFailure(result) || isTemMalformed(result))
+		{ // failure
+			cLog(lsDEBUG) << "Transaction failure: " << transHuman(result);
+			return LCAT_FAIL;
 		}
-		else if (isTemMalformed(result) || isTefFailure(result))
-		{
-			cLog(lsINFO) << "   hard fail";
-		}
-		else
-			assert(false);
+
+		cLog(lsDEBUG) << "Transaction retry: " << transHuman(result);
+		assert(!ledger->hasTransaction(txn->getTransactionID()));
+		return LCAT_RETRY;
+
 #ifndef TRUST_NETWORK
 	}
 	catch (...)
 	{
-		cLog(lsWARNING) << "  Throws";
+		cLog(lsWARNING) << "Throws";
+		return false;
 	}
 #endif
 }
@@ -1126,11 +1143,9 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTran
 void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger,
 	Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, bool openLgr)
 {
-	TransactionEngineParams parms = openLgr ? tapOPEN_LEDGER : tapNONE;
 	TransactionEngine engine(applyLedger);
 
 	for (SHAMapItem::pointer item = set->peekFirstItem(); !!item; item = set->peekNextItem(item->getTag()))
-	{
 		if (!checkLedger->hasTransaction(item->getTag()))
 		{
 			cLog(lsINFO) << "Processing candidate transaction: " << item->getTag();
@@ -1140,7 +1155,8 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 #endif
 				SerializerIterator sit(item->peekSerializer());
 				SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
-				applyTransaction(engine, txn, applyLedger, failedTransactions, openLgr);
+				if (applyTransaction(engine, txn, applyLedger, openLgr, true) == LCAT_RETRY)
+					failedTransactions.push_back(txn);
 #ifndef TRUST_NETWORK
 			}
 			catch (...)
@@ -1149,35 +1165,52 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 			}
 #endif
 		}
-	}
 
-	int successes;
-	do
+	int changes;
+	bool certainRetry = true;
+
+	for (int pass = 0; pass < LEDGER_TOTAL_PASSES; ++pass)
 	{
-		successes = 0;
+		cLog(lsDEBUG) << "Pass: " << pass << " Txns: " << failedTransactions.size()
+			<< (certainRetry ? " retriable" : " final");
+		changes = 0;
+
 		CanonicalTXSet::iterator it = failedTransactions.begin();
 		while (it != failedTransactions.end())
 		{
 			try
 			{
-				TER result = engine.applyTransaction(*it->second, parms);
-				if (result <= 0)
+				switch (applyTransaction(engine, it->second, applyLedger, openLgr, certainRetry))
 				{
-					if (result == 0) ++successes;
-					it = failedTransactions.erase(it);
-				}
-				else
-				{
-					++it;
+					case LCAT_SUCCESS:
+						it = failedTransactions.erase(it);
+						++changes;
+						break;
+
+					case LCAT_FAIL:
+						it = failedTransactions.erase(it);
+						break;
+
+					case LCAT_RETRY:
+						++it;
 				}
 			}
 			catch (...)
 			{
-				cLog(lsWARNING) << "   Throws";
+				cLog(lsWARNING) << "Transaction throws";
 				it = failedTransactions.erase(it);
 			}
 		}
-	} while (successes > 0);
+		cLog(lsDEBUG) << "Pass: " << pass << " finished " << changes << " changes";
+
+		// A non-retry pass made no changes
+		if (!changes && !certainRetry)
+			return;
+
+		// Stop retriable passes
+		if ((!changes) || (pass >= LEDGER_RETRY_PASSES))
+			certainRetry = false;
+	}
 }
 
 uint32 LedgerConsensus::roundCloseTime(uint32 closeTime)
@@ -1187,17 +1220,24 @@ uint32 LedgerConsensus::roundCloseTime(uint32 closeTime)
 
 void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 {
+	if (set->getHash().isNonZero()) // put our set where others can get it later
+		theApp->getOPs().takePosition(mPreviousLedger->getLedgerSeq(), set);
+
 	boost::recursive_mutex::scoped_lock masterLock(theApp->getMasterLock());
 	assert(set->getHash() == mOurPosition->getCurrentHash());
 
 	uint32 closeTime = roundCloseTime(mOurPosition->getCloseTime());
-
-	cLog(lsINFO) << "Computing new LCL based on network consensus";
-	if (mHaveCorrectLCL)
-	{
-		cLog(lsINFO) << "CNF tx " << mOurPosition->getCurrentHash() << ", close " << closeTime;
-		cLog(lsINFO) << "CNF mode " << theApp->getOPs().getOperatingMode() << ", oldLCL " << mPrevLedgerHash;
+	bool closeTimeCorrect = true;
+	if (closeTime == 0)
+	{ // we agreed to disagree
+		closeTimeCorrect = false;
+		closeTime = mPreviousLedger->getCloseTimeNC() + 1;
 	}
+
+	cLog(lsDEBUG) << "Report: Prop=" << (mProposing ? "yes" : "no") << " val=" << (mValidating ? "yes" : "no") <<
+		" corLCL=" << (mHaveCorrectLCL ? "yes" : "no") << " fail="<< (mConsensusFail ? "yes" : "no");
+	cLog(lsDEBUG) << "Report: Prev = " << mPrevLedgerHash << ":" << mPreviousLedger->getLedgerSeq();
+	cLog(lsDEBUG) << "Report: TxSt = " << set->getHash() << ", close " << closeTime << (closeTimeCorrect ? "" : "X");
 
 	CanonicalTXSet failedTransactions(set->getHash());
 
@@ -1205,6 +1245,7 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 
 	newLCL->peekTransactionMap()->armDirty();
 	newLCL->peekAccountStateMap()->armDirty();
+	cLog(lsDEBUG) << "Applying consensus set transactions to the last closed ledger";
 	applyTransactions(set, newLCL, newLCL, failedTransactions, false);
 	newLCL->updateSkipList();
 	newLCL->setClosed();
@@ -1214,17 +1255,11 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 	// write out dirty nodes (temporarily done here) Most come before setAccepted
 	int fc;
 	while ((fc = SHAMap::flushDirty(*acctNodes, 256, hotACCOUNT_NODE, newLCL->getLedgerSeq())) > 0)
-	{ cLog(lsINFO) << "Flushed " << fc << " dirty state nodes"; }
+	{ cLog(lsTRACE) << "Flushed " << fc << " dirty state nodes"; }
 	while ((fc = SHAMap::flushDirty(*txnNodes, 256, hotTRANSACTION_NODE, newLCL->getLedgerSeq())) > 0)
-	{ cLog(lsINFO) << "Flushed " << fc << " dirty transaction nodes"; }
+	{ cLog(lsTRACE) << "Flushed " << fc << " dirty transaction nodes"; }
 
-	bool closeTimeCorrect = true;
-	if (closeTime == 0)
-	{ // we agreed to disagree
-		closeTimeCorrect = false;
-		closeTime = mPreviousLedger->getCloseTimeNC() + 1;
-		cLog(lsINFO) << "CNF badclose " << closeTime;
-	}
+	cLog(lsDEBUG) << "Report: NewL  = " << newLCL->getHash() << ":" << newLCL->getLedgerSeq();
 
 	newLCL->setAccepted(closeTime, mCloseResolution, closeTimeCorrect);
 	newLCL->updateHash();
@@ -1232,10 +1267,10 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 
 	if (sLog(lsTRACE))
 	{
-		Log(lsTRACE) << "newLCL";
+		cLog(lsTRACE) << "newLCL";
 		Json::Value p;
 		newLCL->addJson(p, LEDGER_JSON_DUMP_TXRP | LEDGER_JSON_DUMP_STATE);
-		Log(lsTRACE) << p;
+		cLog(lsTRACE) << p;
 	}
 
 	statusChange(ripple::neACCEPTED_LEDGER, *newLCL);
@@ -1271,19 +1306,20 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 		{ // we voted NO
 			try
 			{
-				cLog(lsINFO) << "Test applying disputed transaction that did not get in";
+				cLog(lsDEBUG) << "Test applying disputed transaction that did not get in";
 				SerializerIterator sit(it.second->peekTransaction());
 				SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
-				applyTransaction(engine, txn, newOL, failedTransactions, true);
+				if (applyTransaction(engine, txn, newOL, true, false))
+					failedTransactions.push_back(txn);
 			}
 			catch (...)
 			{
-				cLog(lsINFO) << "Failed to apply transaction we voted NO on";
+				cLog(lsDEBUG) << "Failed to apply transaction we voted NO on";
 			}
 		}
 	}
 
-	cLog(lsINFO) << "Applying transactions from current ledger";
+	cLog(lsDEBUG) << "Applying transactions from current open ledger";
 	applyTransactions(theApp->getLedgerMaster().getCurrentLedger()->peekTransactionMap(), newOL, newLCL,
 		failedTransactions, true);
 	theApp->getLedgerMaster().pushLedger(newLCL, newOL, !mConsensusFail);
@@ -1330,18 +1366,18 @@ void LedgerConsensus::simulate()
 Json::Value LedgerConsensus::getJson()
 {
 	Json::Value ret(Json::objectValue);
-	ret["proposing"] = mProposing ? "yes" : "no";
-	ret["validating"] = mValidating ? "yes" : "no";
+	ret["proposing"] = mProposing;
+	ret["validating"] = mValidating;
 	ret["proposers"] = static_cast<int>(mPeerPositions.size());
 
 	if (mHaveCorrectLCL)
 	{
-		ret["synched"] = "yes";
+		ret["synched"] = true;
 		ret["ledger_seq"] = mPreviousLedger->getLedgerSeq() + 1;
 		ret["close_granularity"] = mCloseResolution;
 	}
 	else
-		ret["synched"] = "no";
+		ret["synched"] = false;
 
 	switch (mState)
 	{

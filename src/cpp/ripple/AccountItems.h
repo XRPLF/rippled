@@ -4,9 +4,9 @@
 #include "Ledger.h"
 #include "SerializedLedger.h"
 
-/*
-Way to fetch ledger entries from an account's owner dir
-*/
+//
+// Fetch ledger entries from an account's owner dir.
+//
 class AccountItem
 {
 protected:
@@ -42,3 +42,5 @@ public:
 };
 
 #endif
+
+// vim:ts=4

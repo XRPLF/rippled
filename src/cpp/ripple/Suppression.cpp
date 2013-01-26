@@ -1,4 +1,3 @@
-
 #include "Suppression.h"
 
 #include <boost/foreach.hpp>

@@ -128,7 +128,7 @@ void FeatureTable::reportValidations(const FeatureSet& set)
 		return;
 	int threshold = (set.mTrustedValidations * mMajorityFraction) / 256;
 
-	typedef std::pair<const uint256, int> u256_int_pair;
+	typedef std::map<uint256, int>::value_type u256_int_pair;
 
 	boost::mutex::scoped_lock sl(mMutex);
 
@@ -195,17 +195,17 @@ Json::Value FeatureTable::getJson(int)
 		{
 			Json::Value v(Json::objectValue);
 
-			v["supported"] = it.second.mSupported ? "true" : "false";
+			v["supported"] = it.second.mSupported;
 
 			if (it.second.mEnabled)
-				v["enabled"] = "true";
+				v["enabled"] = true;
 			else
 			{
-				v["enabled"] = "false";
+				v["enabled"] = false;
 				if (mLastReport != 0)
 				{
 					if (it.second.mLastMajority == 0)
-						v["majority"] = "no";
+						v["majority"] = false;
 					else
 					{
 						if (it.second.mFirstMajority != 0)
@@ -227,7 +227,7 @@ Json::Value FeatureTable::getJson(int)
 			}
 
 			if (it.second.mVetoed)
-				v["veto"] = "true";
+				v["veto"] = true;
 
 			ret[it.first.GetHex()] = v;
 		}

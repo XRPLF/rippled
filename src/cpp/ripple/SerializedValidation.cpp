@@ -1,12 +1,12 @@
 
 #include "SerializedValidation.h"
 
-#include "HashPrefixes.h"
+#include "Config.h"
 #include "Log.h"
 
 DECLARE_INSTANCE(SerializedValidation);
 
-std::vector<SOElement::ptr> sValidationFormat;
+std::vector<SOElement::ref> sValidationFormat;
 
 static bool SVFInit()
 {
@@ -70,7 +70,7 @@ void SerializedValidation::sign(uint256& signingHash, const RippleAddress& raPri
 
 uint256 SerializedValidation::getSigningHash() const
 {
-	return STObject::getSigningHash(sHP_Validation);
+	return STObject::getSigningHash(theConfig.SIGN_VALIDATION);
 }
 
 uint256 SerializedValidation::getLedgerHash() const

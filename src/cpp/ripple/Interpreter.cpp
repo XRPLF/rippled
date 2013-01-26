@@ -129,7 +129,7 @@ TER Interpreter::interpret(Contract* contract,const SerializedTransaction& txn,s
 			return(temMALFORMED);  // TODO: is this actually what we want to do?
 		}
 
-		mTotalFee += mFunctionTable[ fun ]->getFee();
+		mTotalFee += mFunctionTable[ fun ]->getFee(); // FIXME: You can't use fees this way, there's no consensus
 		if(mTotalFee>txn.getTransactionFee().getNValue())
 		{
 			// TODO: log

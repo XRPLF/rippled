@@ -14,8 +14,6 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/asio/read_until.hpp>
 
-
-
 #include "../json/reader.h"
 #include "../json/writer.h"
 
@@ -28,18 +26,12 @@ SETUP_LOG();
 RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
 	: mNetOps(nopNetwork), mSocket(io_service)
 {
-
 	mRole = RPCHandler::GUEST;
 }
-
-
 
 void RPCServer::connected()
 {
 	//std::cerr << "RPC request" << std::endl;
-	if (mSocket.remote_endpoint().address().to_string()=="127.0.0.1") mRole = RPCHandler::ADMIN;
-	else mRole = RPCHandler::GUEST;
-
 	boost::asio::async_read_until(mSocket, mLineBuffer, "\r\n",
 		boost::bind(&RPCServer::handle_read_line, shared_from_this(), boost::asio::placeholders::error));
 }
@@ -55,7 +47,12 @@ void RPCServer::handle_read_req(const boost::system::error_code& e)
 	}
 
 	req += strCopy(mQueryVec);
-	mReplyStr = handleRequest(req);
+
+	if (!HTTPAuthorized(mHTTPRequest.peekHeaders()))
+		mReplyStr = HTTPReply(403, "Forbidden");
+	else
+		mReplyStr = handleRequest(req);
+
 	boost::asio::async_write(mSocket, boost::asio::buffer(mReplyStr),
 		boost::bind(&RPCServer::handle_write, shared_from_this(), boost::asio::placeholders::error));
 }
@@ -116,19 +113,21 @@ void RPCServer::handle_read_line(const boost::system::error_code& e)
 std::string RPCServer::handleRequest(const std::string& requestStr)
 {
 	cLog(lsTRACE) << "handleRequest " << requestStr;
+
 	Json::Value id;
 
 	// Parse request
-	Json::Value valRequest;
-	Json::Reader reader;
-	if (!reader.parse(requestStr, valRequest) || valRequest.isNull() || !valRequest.isObject())
+	Json::Value		jvRequest;
+	Json::Reader	reader;
+
+	if (!reader.parse(requestStr, jvRequest) || jvRequest.isNull() || !jvRequest.isObject())
 		return(HTTPReply(400, "unable to parse request"));
 
 	// Parse id now so errors from here on will have the id
-	id = valRequest["id"];
+	id = jvRequest["id"];
 
 	// Parse method
-	Json::Value valMethod = valRequest["method"];
+	Json::Value valMethod = jvRequest["method"];
 	if (valMethod.isNull())
 		return(HTTPReply(400, "null method"));
 	if (!valMethod.isString())
@@ -136,11 +135,24 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	std::string strMethod = valMethod.asString();
 
 	// Parse params
-	Json::Value valParams = valRequest["params"];
+	Json::Value valParams = jvRequest["params"];
+
 	if (valParams.isNull())
+	{
 		valParams = Json::Value(Json::arrayValue);
+	}
 	else if (!valParams.isArray())
-		return(HTTPReply(400, "params unparseable"));
+	{
+		return HTTPReply(400, "params unparseable");
+	}
+
+	mRole	= iAdminGet(jvRequest, mSocket.remote_endpoint().address().to_string());
+
+	if (RPCHandler::FORBID == mRole)
+	{
+		// XXX This needs rate limiting to prevent brute forcing password.
+		return HTTPReply(403, "Forbidden");
+	}
 
 	RPCHandler mRPCHandler(mNetOps);
 
@@ -151,7 +163,6 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	std::string strReply = JSONRPCReply(result, Json::Value(), id);
 	return HTTPReply(200, strReply);
 }
-
 
 #if 0
 // now, expire, n

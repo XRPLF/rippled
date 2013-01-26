@@ -3,6 +3,11 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/format.hpp>
+#include <boost/version.hpp>
+
+#if BOOST_VERSION < 104700
+#error Boost 1.47 or later is required
+#endif
 
 #include <openssl/dh.h>
 #include "types.h"
@@ -160,8 +165,27 @@ inline static std::string sqlEscape(const std::string& strSrc)
 
 inline static std::string sqlEscape(const std::vector<unsigned char>& vecSrc)
 {
-	static boost::format f("X'%s'");
-	return str(f % strHex(vecSrc));
+	size_t size = vecSrc.size();
+	if (size == 0)
+		return "X''";
+
+	std::string j(size * 2 + 3, 0);
+
+	unsigned char *oPtr = reinterpret_cast<unsigned char *>(&*j.begin());
+	const unsigned char *iPtr = &vecSrc[0];
+
+	*oPtr++ = 'X';
+	*oPtr++ = '\'';
+
+	for (int i = size; i != 0; --i)
+	{
+		unsigned char c = *iPtr++;
+		*oPtr++ = charHex(c >> 4);
+		*oPtr++ = charHex(c & 15);
+	}
+
+	*oPtr++ = '\'';
+	return j;
 }
 
 template<class Iterator>
@@ -174,7 +198,7 @@ bool isZero(Iterator first, int iSize)
 }
 
 int charUnHex(char cDigit);
-void strUnHex(std::string& strDst, const std::string& strSrc);
+int strUnHex(std::string& strDst, const std::string& strSrc);
 
 uint64_t uintFromHex(const std::string& strSrc);
 
@@ -259,6 +283,8 @@ template<typename T, typename U> T range_check_cast(const U& value, const T& min
 		throw std::runtime_error("Value out of range");
 	return static_cast<T>(value);
 }
+
+bool parseUrl(const std::string& strUrl, std::string& strScheme, std::string& strDomain, int& iPort, std::string& strPath);
 
 #endif
 

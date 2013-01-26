@@ -12,7 +12,11 @@ exports.rippled = path.resolve("build/rippled");
 
 exports.server_default  = "alpha";
 
+//
 // Configuration for servers.
+//
+// For testing, you might choose to target a persistent server at alternate ports.
+//
 exports.servers = {
   // A local test server.
   "alpha" : {
@@ -28,6 +32,14 @@ exports.servers = {
     'local_fee' : true,
     // 'validation_seed' : "shhDFVsmS2GSu5vUyZSPXYfj1r79h",
     // 'validators' : "n9L8LZZCwsdXzKUN9zoVxs4YznYXZ9hEhsQZY7aVpxtFaSceiyDZ beta"
+  }
+};
+
+exports.http_servers = {
+  // A local test server
+  "zed" : {
+    "ip" : "127.0.0.1",
+    "port" : 8088,
   }
 };
 

@@ -24,12 +24,15 @@ DECLARE_INSTANCE(Peer);
 // Node has this long to verify its identity from connection accepted or connection attempt.
 #define NODE_VERIFY_SECONDS		15
 
-Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 peerID) :
+Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 peerID, bool inbound) :
+	mInbound(inbound),
 	mHelloed(false),
 	mDetaching(false),
+	mActive(true),
+	mCluster(false),
 	mPeerId(peerID),
 	mSocketSsl(io_service, ctx),
-	mVerifyTimer(io_service)
+	mActivityTimer(io_service)
 {
 	cLog(lsDEBUG) << "CREATING PEER: " << ADDRESS(this);
 }
@@ -41,7 +44,7 @@ void Peer::handleWrite(const boost::system::error_code& error, size_t bytes_tran
 //		std::cerr << "Peer::handleWrite bytes: "<< bytes_transferred << std::endl;
 #endif
 
-	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
 
 	mSendingPacket.reset();
 
@@ -79,6 +82,8 @@ void Peer::setIpPort(const std::string& strIP, int iPort)
 
 void Peer::detach(const char *rsn)
 {
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 	if (!mDetaching)
 	{
 		mDetaching	= true;			// Race is ok.
@@ -91,7 +96,7 @@ void Peer::detach(const char *rsn)
 
 		mSendQ.clear();
 
-		(void) mVerifyTimer.cancel();
+		(void) mActivityTimer.cancel();
 		mSocketSsl.async_shutdown(boost::bind(&Peer::handleShutdown, shared_from_this(), boost::asio::placeholders::error));
 
 		if (mNodePublic.isValid())
@@ -168,8 +173,8 @@ void Peer::connect(const std::string& strIp, int iPort)
 	}
 	else
 	{
-		mVerifyTimer.expires_from_now(boost::posix_time::seconds(NODE_VERIFY_SECONDS), err);
-		mVerifyTimer.async_wait(boost::bind(&Peer::handleVerifyTimer, shared_from_this(),
+		mActivityTimer.expires_from_now(boost::posix_time::seconds(NODE_VERIFY_SECONDS), err);
+		mActivityTimer.async_wait(boost::bind(&Peer::handleVerifyTimer, shared_from_this(),
 			boost::asio::placeholders::error));
 
 		if (err)
@@ -225,6 +230,8 @@ void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip
 	{
 		cLog(lsINFO) << "Connect peer: success.";
 
+		boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 		mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
 
 		mSocketSsl.async_handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::client,
@@ -246,11 +253,14 @@ void Peer::connected(const boost::system::error_code& error)
 	if (iPort == SYSTEM_PEER_PORT)		//TODO: Why are you doing this?
 		iPort	= -1;
 
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 	if (!error)
 	{
 		// Not redundant ip and port, handshake, and start.
 
 		cLog(lsINFO) << "Peer: Inbound: Accepted: " << ADDRESS(this) << ": " << strIp << " " << iPort;
+
 
 		mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
 
@@ -266,7 +276,7 @@ void Peer::connected(const boost::system::error_code& error)
 }
 
 void Peer::sendPacketForce(const PackedMessage::pointer& packet)
-{
+{ // must hold I/O mutex
 	if (!mDetaching)
 	{
 		mSendingPacket = packet;
@@ -280,6 +290,8 @@ void Peer::sendPacketForce(const PackedMessage::pointer& packet)
 
 void Peer::sendPacket(const PackedMessage::pointer& packet)
 {
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 	if (packet)
 	{
 		if (mSendingPacket)
@@ -295,6 +307,8 @@ void Peer::sendPacket(const PackedMessage::pointer& packet)
 
 void Peer::startReadHeader()
 {
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 	if (!mDetaching)
 	{
 		mReadbuf.clear();
@@ -311,6 +325,8 @@ void Peer::startReadBody(unsigned msg_len)
 	// bytes. Expand it to fit in the body as well, and start async
 	// read into the body.
 
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 	if (!mDetaching)
 	{
 		mReadbuf.resize(HEADER_SIZE + msg_len);
@@ -322,6 +338,8 @@ void Peer::startReadBody(unsigned msg_len)
 
 void Peer::handleReadHeader(const boost::system::error_code& error)
 {
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 	if (mDetaching)
 	{
 		// Drop data or error if detaching.
@@ -347,26 +365,28 @@ void Peer::handleReadHeader(const boost::system::error_code& error)
 
 void Peer::handleReadBody(const boost::system::error_code& error)
 {
-	if (mDetaching)
 	{
-		// Drop data or error if detaching.
-		nothing();
+		boost::recursive_mutex::scoped_lock sl(ioMutex);
+
+		if (mDetaching)
+		{
+			return;
+		}
+		else if (error)
+		{
+			cLog(lsINFO) << "Peer: Body: Error: " << ADDRESS(this) << ": " << error.category().name() << ": " << error.message() << ": " << error;
+			boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+			detach("hrb");
+			return;
+		}
 	}
-	else if (!error)
-	{
-		processReadBuffer();
-		startReadHeader();
-	}
-	else
-	{
-		cLog(lsINFO) << "Peer: Body: Error: " << ADDRESS(this) << ": " << error.category().name() << ": " << error.message() << ": " << error;
-		boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
-		detach("hrb");
-	}
+
+	processReadBuffer();
+	startReadHeader();
 }
 
 void Peer::processReadBuffer()
-{
+{ // must not hold peer lock
 	int type = PackedMessage::getType(mReadbuf);
 #ifdef DEBUG
 //	std::cerr << "PRB(" << type << "), len=" << (mReadbuf.size()-HEADER_SIZE) << std::endl;
@@ -611,8 +631,8 @@ void Peer::recvHello(ripple::TMHello& packet)
 {
 	bool	bDetach	= true;
 
-	// Cancel verification timeout.
-	(void) mVerifyTimer.cancel();
+	// Cancel verification timeout. - FIXME Start ping/pong timer
+	(void) mActivityTimer.cancel();
 
 	uint32 ourTime = theApp->getOPs().getNetworkTimeNC();
 	uint32 minTime = ourTime - 20;
@@ -627,7 +647,14 @@ void Peer::recvHello(ripple::TMHello& packet)
 	}
 #endif
 
-	if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
+	if ((packet.has_testnet() && packet.testnet()) != theConfig.TESTNET)
+	{
+		// Format: actual/requested.
+		cLog(lsINFO) << boost::str(boost::format("Recv(Hello): Network mismatch: %d/%d")
+			% packet.testnet()
+			% theConfig.TESTNET);
+	}
+	else if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
 	{
 		if (packet.nettime() > maxTime)
 		{
@@ -659,6 +686,13 @@ void Peer::recvHello(ripple::TMHello& packet)
 			<< "Peer speaks version " <<
 				(packet.protoversion() >> 16) << "." << (packet.protoversion() & 0xFF);
 		mHello = packet;
+		if (theApp->getUNL().nodeInCluster(mNodePublic))
+		{
+			mCluster = true;
+			mLoad.setPrivileged();
+		}
+		if (isOutbound())
+			mLoad.setOutbound();
 
 		if (mClientConnect)
 		{
@@ -1081,7 +1115,7 @@ void Peer::recvGetObjectByHash(ripple::TMGetObjectByHash& packet)
 	{ // this is a query
 		ripple::TMGetObjectByHash reply;
 
-		reply.clear_query();
+		reply.set_query(false);
 		if (packet.has_seq())
 			reply.set_seq(packet.seq());
 		reply.set_type(packet.type());
@@ -1104,20 +1138,64 @@ void Peer::recvGetObjectByHash(ripple::TMGetObjectByHash& packet)
 					newObj.set_data(&hObj->getData().front(), hObj->getData().size());
 					if (obj.has_nodeid())
 						newObj.set_index(obj.nodeid());
+					if (!reply.has_seq() && (hObj->getIndex() != 0))
+						reply.set_seq(hObj->getIndex());
 				}
 			}
 		}
-		cLog(lsDEBUG) << "GetObjByHash query: had " << reply.objects_size() << " of " << packet.objects_size();
-		sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtGET_OBJECTS));
+		cLog(lsTRACE) << "GetObjByHash had " << reply.objects_size() << " of " << packet.objects_size()
+			<< " for " << getIP();
+		sendPacket(boost::make_shared<PackedMessage>(reply, ripple::mtGET_OBJECTS));
 	}
 	else
 	{ // this is a reply
-		// WRITEME
+		uint32 seq = packet.has_seq() ? packet.seq() : 0;
+		HashedObjectType type;
+		switch (packet.type())
+		{
+			case ripple::TMGetObjectByHash::otLEDGER: type = hotLEDGER; break;
+			case ripple::TMGetObjectByHash::otTRANSACTION: type = hotTRANSACTION; break;
+			case ripple::TMGetObjectByHash::otSTATE_NODE: type = hotACCOUNT_NODE; break;
+			case ripple::TMGetObjectByHash::otTRANSACTION_NODE: type = hotTRANSACTION_NODE; break;
+			default: type = hotUNKNOWN;
+		}
+		for (int i = 0; i < packet.objects_size(); ++i)
+		{
+			const ripple::TMIndexedObject& obj = packet.objects(i);
+			if (obj.has_hash() && (obj.hash().size() == (256/8)))
+			{
+				uint256 hash;
+				memcpy(hash.begin(), obj.hash().data(), 256 / 8);
+				if (theApp->getOPs().isWantedHash(hash, true))
+				{
+					std::vector<unsigned char> data(obj.data().begin(), obj.data().end());
+					if (Serializer::getSHA512Half(data) != hash)
+					{
+						cLog(lsWARNING) << "Bad hash in data from peer";
+						theApp->getOPs().addWantedHash(hash);
+						punishPeer(LT_BadData);
+					}
+					else
+						theApp->getHashedObjectStore().store(type, seq, data, hash);
+				}
+				else
+					cLog(lsWARNING) << "Received unwanted hash " << getIP() << " " << hash;
+			}
+		}
 	}
 }
 
 void Peer::recvPing(ripple::TMPing& packet)
 {
+	if (packet.type() == ripple::TMPing::ptPING)
+	{
+		packet.set_type(ripple::TMPing::ptPONG);
+		sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtPING));
+	}
+	else if (packet.type() == ripple::TMPing::ptPONG)
+	{
+		mActive = true;
+	}
 }
 
 void Peer::recvErrorMessage(ripple::TMErrorMsg& packet)
@@ -1249,6 +1327,8 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 	if (packet.has_requestcookie())
 		reply.set_requestcookie(packet.requestcookie());
 
+	std::string logMe;
+
 	if (packet.itype() == ripple::liTS_CANDIDATE)
 	{ // Request is for a transaction candidate set
 		cLog(lsINFO) << "Received request for TX candidate set data " << getIP();
@@ -1264,7 +1344,8 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		if (!map)
 		{
 			if (packet.has_querytype() && !packet.has_requestcookie())
-			{
+			{ 	// FIXME: Don't relay requests for older ledgers we would acquire
+				// (if we don't have them, we can't get them)
 				cLog(lsINFO) << "Trying to route TX set request";
 				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 				std::vector<Peer::pointer> usablePeers;
@@ -1296,7 +1377,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 	}
 	else
 	{ // Figure out what ledger they want
-		cLog(lsINFO) << "Received request for ledger data " << getIP();
+		cLog(lsTRACE) << "Received request for ledger data " << getIP();
 		Ledger::pointer ledger;
 		if (packet.has_ledgerhash())
 		{
@@ -1308,12 +1389,12 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 				return;
 			}
 			memcpy(ledgerhash.begin(), packet.ledgerhash().data(), 32);
+			logMe += "LedgerHash:"; logMe += ledgerhash.GetHex();
 			ledger = theApp->getLedgerMaster().getLedgerByHash(ledgerhash);
 
-			tLog(!ledger, lsINFO) << "Don't have ledger " << ledgerhash;
+			tLog(!ledger, lsDEBUG) << "Don't have ledger " << ledgerhash;
 			if (!ledger && (packet.has_querytype() && !packet.has_requestcookie()))
 			{
-				cLog(lsINFO) << "Trying to route ledger request";
 				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 				std::vector<Peer::pointer> usablePeers;
 				BOOST_FOREACH(Peer::ref peer, peerList)
@@ -1323,7 +1404,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 				}
 				if (usablePeers.empty())
 				{
-					cLog(lsINFO) << "Unable to route ledger request";
+					cLog(lsDEBUG) << "Unable to route ledger request";
 					return;
 				}
 				Peer::ref selectedPeer = usablePeers[rand() % usablePeers.size()];
@@ -1336,7 +1417,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		else if (packet.has_ledgerseq())
 		{
 			ledger = theApp->getLedgerMaster().getLedgerBySeq(packet.ledgerseq());
-			tLog(!ledger, lsINFO) << "Don't have ledger " << packet.ledgerseq();
+			tLog(!ledger, lsDEBUG) << "Don't have ledger " << packet.ledgerseq();
 		}
 		else if (packet.has_ltype() && (packet.ltype() == ripple::ltCURRENT))
 			ledger = theApp->getLedgerMaster().getCurrentLedger();
@@ -1360,8 +1441,6 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			{
 				if (ledger)
 					Log(lsWARNING) << "Ledger has wrong sequence";
-				else
-					Log(lsWARNING) << "Can't find the ledger they want";
 			}
 			return;
 		}
@@ -1405,9 +1484,15 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		}
 
 		if (packet.itype() == ripple::liTX_NODE)
+		{
 			map = ledger->peekTransactionMap();
+			logMe += " TX:"; logMe += map->getHash().GetHex();
+		}
 		else if (packet.itype() == ripple::liAS_NODE)
+		{
 			map = ledger->peekAccountStateMap();
+			logMe += " AS:"; logMe += map->getHash().GetHex();
+		}
 	}
 
 	if ((!map) || (packet.nodeids_size() == 0))
@@ -1417,6 +1502,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		return;
 	}
 
+	cLog(lsDEBUG) << "Request: " << logMe;
 	for(int i = 0; i < packet.nodeids().size(); ++i)
 	{
 		SHAMapNode mn(packet.nodeids(i).data(), packet.nodeids(i).size());
@@ -1428,24 +1514,44 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		}
 		std::vector<SHAMapNode> nodeIDs;
 		std::list< std::vector<unsigned char> > rawNodes;
-		if(map->getNodeFat(mn, nodeIDs, rawNodes, fatRoot, fatLeaves))
+		try
 		{
-			assert(nodeIDs.size() == rawNodes.size());
-			cLog(lsDEBUG) << "getNodeFat got " << rawNodes.size() << " nodes";
-			std::vector<SHAMapNode>::iterator nodeIDIterator;
-			std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
-			for(nodeIDIterator = nodeIDs.begin(), rawNodeIterator = rawNodes.begin();
-				nodeIDIterator != nodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
+			if(map->getNodeFat(mn, nodeIDs, rawNodes, fatRoot, fatLeaves))
 			{
-				Serializer nID(33);
-				nodeIDIterator->addIDRaw(nID);
-				ripple::TMLedgerNode* node = reply.add_nodes();
-				node->set_nodeid(nID.getDataPtr(), nID.getLength());
-				node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
+				assert(nodeIDs.size() == rawNodes.size());
+				cLog(lsTRACE) << "getNodeFat got " << rawNodes.size() << " nodes";
+				std::vector<SHAMapNode>::iterator nodeIDIterator;
+				std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
+				for(nodeIDIterator = nodeIDs.begin(), rawNodeIterator = rawNodes.begin();
+					nodeIDIterator != nodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
+				{
+					Serializer nID(33);
+					nodeIDIterator->addIDRaw(nID);
+					ripple::TMLedgerNode* node = reply.add_nodes();
+					node->set_nodeid(nID.getDataPtr(), nID.getLength());
+					node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
+				}
 			}
+			else
+				cLog(lsWARNING) << "getNodeFat returns false";
 		}
-		else
-			cLog(lsWARNING) << "getNodeFat returns false";
+		catch (std::exception& e)
+		{
+			std::string info;
+			if (packet.itype() == ripple::liTS_CANDIDATE)
+				info = "TS candidate";
+			else if (packet.itype() == ripple::liBASE)
+				info = "Ledger base";
+			else if (packet.itype() == ripple::liTX_NODE)
+				info = "TX node";
+			else if (packet.itype() == ripple::liAS_NODE)
+				info = "AS node";
+
+			if (!packet.has_ledgerhash())
+				info += ", no hash specified";
+
+			cLog(lsWARNING) << "getNodeFat( " << mn <<") throws exception: " << info;
+		}
 	}
 	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, ripple::mtLEDGER_DATA);
 	sendPacket(oPacket);
@@ -1554,6 +1660,8 @@ void Peer::addTxSet(const uint256& hash)
 // (both sides get the same information, neither side controls it)
 void Peer::getSessionCookie(std::string& strDst)
 {
+	boost::recursive_mutex::scoped_lock sl(ioMutex);
+
 	SSL* ssl = mSocketSsl.native_handle();
 	if (!ssl) throw std::runtime_error("No underlying connection");
 
@@ -1599,6 +1707,7 @@ void Peer::sendHello()
 	h.set_nodeproof(&vchSig[0], vchSig.size());
 	h.set_ipv4port(theConfig.PEER_PORT);
 	h.set_nodeprivate(theConfig.PEER_PRIVATE);
+	h.set_testnet(theConfig.TESTNET);
 
 	Ledger::pointer closedLedger = theApp->getLedgerMaster().getClosedLedger();
 	if (closedLedger && closedLedger->isClosed())
@@ -1670,6 +1779,10 @@ Json::Value Peer::getJson()
 	//ret["port"]			= mIpPortConnect.second;
 	ret["port"]			= mIpPort.second;
 
+	if (mInbound)
+		ret["inbound"]		= true;
+	if (mCluster)
+		ret["cluster"]		= true;
 	if (mHello.has_fullversion())
 		ret["version"] = mHello.fullversion();
 

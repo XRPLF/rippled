@@ -5,6 +5,7 @@
 #include <boost/thread.hpp>
 
 #include "Log.h"
+#include "Config.h"
 
 SETUP_LOG();
 
@@ -14,6 +15,7 @@ JobQueue::JobQueue() : mLastJob(0), mThreadCount(0), mShuttingDown(false)
 	mJobLoads[jtPROOFWORK].setTargetLatency(2000, 5000);
 	mJobLoads[jtTRANSACTION].setTargetLatency(250, 1000);
 	mJobLoads[jtPROPOSAL_ut].setTargetLatency(500, 1250);
+	mJobLoads[jtPUBLEDGER].setTargetLatency(1000, 2500);
 	mJobLoads[jtVALIDATION_t].setTargetLatency(500, 1500);
 	mJobLoads[jtTRANSACTION_l].setTargetLatency(100, 500);
 	mJobLoads[jtPROPOSAL_t].setTargetLatency(100, 500);
@@ -23,7 +25,6 @@ JobQueue::JobQueue() : mLastJob(0), mThreadCount(0), mShuttingDown(false)
 	mJobLoads[jtDISK].setTargetLatency(500, 1000);
 	mJobLoads[jtRPC].setTargetLatency(250, 750);
 	mJobLoads[jtACCEPTLEDGER].setTargetLatency(1000, 2500);
-	mJobLoads[jtPUBLEDGER].setTargetLatency(1000, 2500);
 }
 
 
@@ -33,56 +34,60 @@ const char* Job::toString(JobType t)
 	{
 		case jtINVALID:			return "invalid";
 		case jtVALIDATION_ut:	return "untrustedValidation";
-		case jtTRANSACTION:		return "transaction";
+		case jtPROOFWORK:		return "proofOfWork";
 		case jtPROPOSAL_ut:		return "untrustedProposal";
+		case jtCLIENT:			return "clientCommand";
+		case jtTRANSACTION:		return "transaction";
+		case jtPUBLEDGER:		return "publishLedger";
 		case jtVALIDATION_t:	return "trustedValidation";
+		case jtTRANSACTION_l:	return "localTransaction";
 		case jtPROPOSAL_t:		return "trustedProposal";
 		case jtADMIN:			return "administration";
 		case jtDEATH:			return "jobOfDeath";
-		case jtCLIENT:			return "clientCommand";
+
 		case jtPEER:			return "peerCommand";
 		case jtDISK:			return "diskAccess";
 		case jtRPC:				return "rpc";
 		case jtACCEPTLEDGER:	return "acceptLedger";
-		case jtPUBLEDGER:		return "pubLedger";
+		case jtTXN_PROC:		return "processTransaction";
 		default:				assert(false); return "unknown";
 	}
 }
 
-bool Job::operator<(const Job& j) const
+bool Job::operator>(const Job& j) const
 { // These comparison operators make the jobs sort in priority order in the job set
 	if (mType < j.mType)
 		return true;
 	if (mType > j.mType)
 		return false;
-	return mJobIndex < j.mJobIndex;
-}
-
-bool Job::operator<=(const Job& j) const
-{
-	if (mType < j.mType)
-		return true;
-	if (mType > j.mType)
-		return false;
-	return mJobIndex <= j.mJobIndex;
-}
-
-bool Job::operator>(const Job& j) const
-{
-	if (mType < j.mType)
-		return false;
-	if (mType > j.mType)
-		return true;
 	return mJobIndex > j.mJobIndex;
 }
 
 bool Job::operator>=(const Job& j) const
 {
 	if (mType < j.mType)
+		return true;
+	if (mType > j.mType)
+		return false;
+	return mJobIndex >= j.mJobIndex;
+}
+
+bool Job::operator<(const Job& j) const
+{
+	if (mType < j.mType)
 		return false;
 	if (mType > j.mType)
 		return true;
-	return mJobIndex >= j.mJobIndex;
+	return mJobIndex < j.mJobIndex;
+}
+
+bool Job::operator<=(const Job& j) const
+{
+	if (mType < j.mType)
+		return false;
+	if (mType > j.mType)
+		return true;
+	return mJobIndex <= j.mJobIndex;
 }
 
 void JobQueue::addJob(JobType type, const boost::function<void(Job&)>& jobFunc)
@@ -111,7 +116,7 @@ int JobQueue::getJobCountGE(JobType t)
 
 	boost::mutex::scoped_lock sl(mJobLock);
 
-	typedef std::pair<JobType, int> jt_int_pair;
+	typedef std::map<JobType, int>::value_type jt_int_pair;
 	BOOST_FOREACH(const jt_int_pair& it, mJobCounts)
 		if (it.first >= t)
 			ret += it.second;
@@ -125,7 +130,7 @@ std::vector< std::pair<JobType, int> > JobQueue::getJobCounts()
 	boost::mutex::scoped_lock sl(mJobLock);
 	ret.reserve(mJobCounts.size());
 
-	typedef std::pair<JobType, int> jt_int_pair;
+	typedef std::map<JobType, int>::value_type jt_int_pair;
 	BOOST_FOREACH(const jt_int_pair& it, mJobCounts)
 		ret.push_back(it);
 
@@ -154,7 +159,7 @@ Json::Value JobQueue::getJson(int)
 		{
 			Json::Value pri(Json::objectValue);
 			if (isOver)
-				pri["over_target"] = "true";
+				pri["over_target"] = true;
 			pri["job_type"] = Job::toString(static_cast<JobType>(i));
 			if (jobCount != 0)
 				pri["waiting"] = static_cast<int>(jobCount);
@@ -180,15 +185,19 @@ void JobQueue::shutdown()
 	mJobCond.notify_all();
 	while (mThreadCount != 0)
 		mJobCond.wait(sl);
+	cLog(lsDEBUG) << "Job queue has shut down";
 }
 
 void JobQueue::setThreadCount(int c)
 { // set the number of thread serving the job queue to precisely this number
-	if (c == 0)
+	if (theConfig.RUN_STANDALONE)
+		c = 1;
+	else if (c == 0)
 	{
 		c = boost::thread::hardware_concurrency();
-		if (c < 2)
-			c = 2;
+		if (c < 0)
+			c = 0;
+		c += 2;
 		cLog(lsINFO) << "Auto-tuning to " << c << " validation/transaction/proposal threads";
 	}
 
@@ -200,8 +209,7 @@ void JobQueue::setThreadCount(int c)
 	while (mThreadCount < c)
 	{
 		++mThreadCount;
-		boost::thread t(boost::bind(&JobQueue::threadEntry, this));
-		t.detach();
+		boost::thread(boost::bind(&JobQueue::threadEntry, this)).detach();
 	}
 	while (mThreadCount > c)
 	{
@@ -243,3 +251,5 @@ void JobQueue::threadEntry()
 	--mThreadCount;
 	mJobCond.notify_all();
 }
+
+// vim:ts=4

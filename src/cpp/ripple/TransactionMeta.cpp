@@ -7,6 +7,9 @@
 #include <boost/foreach.hpp>
 
 #include "Log.h"
+#include "SerializedObject.h"
+
+SETUP_LOG();
 
 TransactionMetaSet::TransactionMetaSet(const uint256& txid, uint32 ledger, const std::vector<unsigned char>& vec) :
 	mTransactionID(txid), mLedger(ledger), mNodes(sfAffectedNodes, 32)
@@ -52,33 +55,59 @@ void TransactionMetaSet::setAffectedNode(const uint256& node, SField::ref type, 
 	obj.setFieldU16(sfLedgerEntryType, nodeType);
 }
 
-/*
+static void addIfUnique(std::vector<RippleAddress>& vector, const RippleAddress& address)
+{
+	BOOST_FOREACH(const RippleAddress& a, vector)
+		if (a == address)
+			return;
+	vector.push_back(address);
+}
+
 std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts()
 {
 	std::vector<RippleAddress> accounts;
+	accounts.reserve(10);
 
-	BOOST_FOREACH(STObject& object, mNodes.getValue()	)
+	BOOST_FOREACH(const STObject& it, mNodes)
 	{
-		const STAccount* sa = dynamic_cast<const STAccount*>(&it);
-		if (sa != NULL)
+		int index = it.getFieldIndex((it.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
+		if (index != -1)
 		{
-			bool found = false;
-			RippleAddress na = sa->getValueNCA();
-			BOOST_FOREACH(const RippleAddress& it, accounts)
+			const STObject *inner = dynamic_cast<const STObject*>(&it.peekAtIndex(index));
+			if (inner)
 			{
-				if (it == na)
+				BOOST_FOREACH(const SerializedType& field, inner->peekData())
 				{
-					found = true;
-					break;
+					const STAccount* sa = dynamic_cast<const STAccount*>(&field);
+					if (sa)
+						addIfUnique(accounts, sa->getValueNCA());
+					else if ((field.getFName() == sfLowLimit) || (field.getFName() == sfHighLimit) ||
+						(field.getFName() == sfTakerPays) || (field.getFName() == sfTakerGets))
+					{
+						const STAmount* lim = dynamic_cast<const STAmount*>(&field);
+						if (lim != NULL)
+						{
+							uint160 issuer = lim->getIssuer();
+							if (issuer.isNonZero())
+							{
+								RippleAddress na;
+								na.setAccountID(issuer);
+								addIfUnique(accounts, na);
+							}
+						}
+						else
+						{
+							cLog(lsFATAL) << "limit is not amount " << field.getJson(0);
+						}
+					}
 				}
 			}
-			if (!found)
-				accounts.push_back(na);
+			else assert(false);
 		}
 	}
+
 	return accounts;
 }
-*/
 
 STObject& TransactionMetaSet::getAffectedNode(SLE::ref node, SField::ref type)
 {

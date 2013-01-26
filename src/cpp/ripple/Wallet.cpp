@@ -30,7 +30,8 @@ void Wallet::start()
 			throw std::runtime_error("unable to retrieve new node identity.");
 	}
 
-	std::cerr << "NodeIdentity: " << mNodePublicKey.humanNodePublic() << std::endl;
+	if (!theConfig.QUIET)
+		std::cerr << "NodeIdentity: " << mNodePublicKey.humanNodePublic() << std::endl;
 
 	theApp->getUNL().start();
 }
@@ -38,6 +39,7 @@ void Wallet::start()
 // Retrieve network identity.
 bool Wallet::nodeIdentityLoad()
 {
+
 	Database*	db=theApp->getWalletDB()->getDB();
 	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
 	bool		bSuccess	= false;
@@ -59,12 +61,19 @@ bool Wallet::nodeIdentityLoad()
 		bSuccess	= true;
 	}
 
+	if (theConfig.NODE_PUB.isValid() && theConfig.NODE_PRIV.isValid())
+	{
+		mNodePublicKey = theConfig.NODE_PUB;
+		mNodePrivateKey = theConfig.NODE_PRIV;
+	}
+
 	return bSuccess;
 }
 
 // Create and store a network identity.
 bool Wallet::nodeIdentityCreate() {
-	std::cerr << "NodeIdentity: Creating." << std::endl;
+	if (!theConfig.QUIET)
+		std::cerr << "NodeIdentity: Creating." << std::endl;
 
 	//
 	// Generate the public and private key
@@ -109,7 +118,8 @@ bool Wallet::nodeIdentityCreate() {
 		% sqlEscape(strDh1024)));
 	// XXX Check error result.
 
-	std::cerr << "NodeIdentity: Created." << std::endl;
+	if (!theConfig.QUIET)
+		std::cerr << "NodeIdentity: Created." << std::endl;
 
 	return true;
 }
@@ -121,7 +131,7 @@ bool Wallet::dataDelete(const std::string& strKey)
 	ScopedLock sl(theApp->getRpcDB()->getDBLock());
 
 	return db->executeSQL(str(boost::format("DELETE FROM RPCData WHERE Key=%s;")
-		% db->escape(strKey)));
+		% sqlEscape(strKey)));
 }
 
 bool Wallet::dataFetch(const std::string& strKey, std::string& strValue)
@@ -133,7 +143,7 @@ bool Wallet::dataFetch(const std::string& strKey, std::string& strValue)
 	bool		bSuccess	= false;
 
 	if (db->executeSQL(str(boost::format("SELECT Value FROM RPCData WHERE Key=%s;")
-		% db->escape(strKey))) && db->startIterRows())
+		% sqlEscape(strKey))) && db->startIterRows())
 	{
 		std::vector<unsigned char> vucData	= db->getBinary("Value");
 		strValue.assign(vucData.begin(), vucData.end());
@@ -155,8 +165,8 @@ bool Wallet::dataStore(const std::string& strKey, const std::string& strValue)
 	bool		bSuccess	= false;
 
 	return (db->executeSQL(str(boost::format("REPLACE INTO RPCData (Key, Value) VALUES (%s,%s);")
-		% db->escape(strKey)
-		% db->escape(strValue)
+		% sqlEscape(strKey)
+		% sqlEscape(strValue)
 		)));
 
 	return bSuccess;

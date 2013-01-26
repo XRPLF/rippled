@@ -7,6 +7,7 @@ enum {
 	rpcSUCCESS = 0,
 	rpcBAD_SYNTAX,	// Must be 1 to print usage to command line.
 	rpcJSON_RPC,
+	rpcFORBIDDEN,
 
 	// Error numbers beyond this line are not stable between versions.
 	// Programs should use error tokens.
@@ -43,7 +44,9 @@ enum {
 	// Bad parameter
 	rpcACT_MALFORMED,
 	rpcQUALITY_MALFORMED,
+	rpcBAD_BLOB,
 	rpcBAD_SEED,
+	rpcCOMMAND_MISSING,
 	rpcDST_ACT_MALFORMED,
 	rpcDST_ACT_MISSING,
 	rpcDST_AMT_MALFORMED,
@@ -60,7 +63,10 @@ enum {
 	rpcPUBLIC_MALFORMED,
 	rpcSRC_ACT_MALFORMED,
 	rpcSRC_ACT_MISSING,
+	rpcSRC_ACT_NOT_FOUND,
 	rpcSRC_AMT_MALFORMED,
+	rpcSRC_CUR_MALFORMED,
+	rpcSRC_ISR_MALFORMED,
 
 	// Internal error (should never happen)
 	rpcINTERNAL,		// Generic internal error.

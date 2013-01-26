@@ -32,6 +32,7 @@ protected:
 
 	InstanceType*			mNextInstance;
 	static InstanceType*	sHeadInstance;
+	static bool				sMultiThreaded;
 
 public:
 	typedef std::pair<std::string, int> InstanceCount;
@@ -42,17 +43,32 @@ public:
 		sHeadInstance = this;
 	}
 
+	static void multiThread()
+	{
+		// We can support global objects and multi-threaded code, but not both
+		// at the same time. Switch to multi-threaded.
+		sMultiThreaded = true;
+	}
+
 	void addInstance()
 	{
-		mLock.lock();
-		++mInstances;
-		mLock.unlock();
+		if (sMultiThreaded)
+		{
+			mLock.lock();
+			++mInstances;
+			mLock.unlock();
+		}
+		else ++mInstances;
 	}
 	void decInstance()
 	{
-		mLock.lock();
-		--mInstances;
-		mLock.unlock();
+		if (sMultiThreaded)
+		{
+			mLock.lock();
+			--mInstances;
+			mLock.unlock();
+		}
+		else --mInstances;
 	}
 	int getCount()
 	{
@@ -70,11 +86,13 @@ public:
 class Instance
 {
 protected:
+	static bool running;
 	InstanceType&	mType;
 
 public:
 	Instance(InstanceType& t) : mType(t)	{ mType.addInstance(); }
-	~Instance()								{ mType.decInstance(); }
+	~Instance()								{ if (running) mType.decInstance(); }
+	static void shutdown()					{ running = false; }
 };
 
 #endif

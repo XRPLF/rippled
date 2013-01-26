@@ -25,11 +25,12 @@ using namespace boost::asio;
 Json::Value JSONRPCError(int code, const std::string& message)
 {
 	Json::Value error(Json::objectValue);
-	error["code"]=Json::Value(code);
-	error["message"]=Json::Value(message);
+
+	error["code"]		= Json::Value(code);
+	error["message"]	= Json::Value(message);
+
 	return error;
 }
-
 
 //
 // HTTP protocol
@@ -38,19 +39,24 @@ Json::Value JSONRPCError(int code, const std::string& message)
 // and to be compatible with other JSON-RPC implementations.
 //
 
-std::string createHTTPPost(const std::string& strMsg, const std::map<std::string, std::string>& mapRequestHeaders)
+std::string createHTTPPost(const std::string& strPath, const std::string& strMsg, const std::map<std::string, std::string>& mapRequestHeaders)
 {
 	std::ostringstream s;
-	s << "POST / HTTP/1.1\r\n"
-	  << "User-Agent: coin-json-rpc/" << FormatFullVersion() << "\r\n"
+
+	s << "POST "
+	  << (strPath.empty() ? "/" : strPath)
+	  << " HTTP/1.1\r\n"
+	  << "User-Agent: " SYSTEM_NAME "-json-rpc/" << FormatFullVersion() << "\r\n"
 	  << "Host: 127.0.0.1\r\n"
 	  << "Content-Type: application/json\r\n"
 	  << "Content-Length: " << strMsg.size() << "\r\n"
 	  << "Accept: application/json\r\n";
 
-	typedef const std::pair<std::string, std::string> HeaderType;
-	BOOST_FOREACH(HeaderType& item, mapRequestHeaders)
+	typedef std::map<std::string, std::string>::value_type HeaderType;
+
+	BOOST_FOREACH(const HeaderType& item, mapRequestHeaders)
 		s << item.first << ": " << item.second << "\r\n";
+
 	s << "\r\n" << strMsg;
 
 	return s.str();
@@ -76,7 +82,7 @@ std::string HTTPReply(int nStatus, const std::string& strMsg)
 	if (nStatus == 401)
 		return strprintf("HTTP/1.0 401 Authorization Required\r\n"
 			"Date: %s\r\n"
-			"Server: coin-json-rpc/%s\r\n"
+			"Server: " SYSTEM_NAME "-json-rpc/%s\r\n"
 			"WWW-Authenticate: Basic realm=\"jsonrpc\"\r\n"
 			"Content-Type: text/html\r\n"
 			"Content-Length: 296\r\n"
@@ -107,7 +113,7 @@ std::string HTTPReply(int nStatus, const std::string& strMsg)
 			"%s"
 			"Content-Length: %d\r\n"
 			"Content-Type: application/json; charset=UTF-8\r\n"
-			"Server: coin-json-rpc/%s\r\n"
+			"Server: " SYSTEM_NAME "-json-rpc/%s\r\n"
 			"\r\n"
 			"%s\r\n",
 		nStatus,
@@ -116,7 +122,7 @@ std::string HTTPReply(int nStatus, const std::string& strMsg)
 		access.c_str(),
 		strMsg.size() + 2,
 		SERVER_VERSION,
-		strMsg.c_str());	
+		strMsg.c_str());
 }
 
 int ReadHTTPStatus(std::basic_istream<char>& stream)
@@ -180,7 +186,6 @@ int ReadHTTP(std::basic_istream<char>& stream, std::map<std::string, std::string
 	return nStatus;
 }
 
-
 std::string DecodeBase64(std::string s)
 { // FIXME: This performs badly
 	BIO *b64, *bmem;
@@ -198,21 +203,24 @@ std::string DecodeBase64(std::string s)
 	free(buffer);
 	return result;
 }
-/*
-bool HTTPAuthorized(map<std::string, std::string>& mapHeaders)
+
+bool HTTPAuthorized(const std::map<std::string, std::string>& mapHeaders)
 {
-	std::string strAuth = mapHeaders["authorization"];
-	if (strAuth.substr(0,6) != "Basic ")
-		return false;
-	std::string strUserPass64 = strAuth.substr(6); boost::trim(strUserPass64);
+	std::map<std::string, std::string>::const_iterator it = mapHeaders.find("authorization");
+	if ((it == mapHeaders.end()) || (it->second.substr(0,6) != "Basic "))
+		return theConfig.RPC_USER.empty() && theConfig.RPC_PASSWORD.empty();
+
+	std::string strUserPass64 = it->second.substr(6);
+	boost::trim(strUserPass64);
 	std::string strUserPass = DecodeBase64(strUserPass64);
 	std::string::size_type nColon = strUserPass.find(":");
 	if (nColon == std::string::npos)
 		return false;
+
 	std::string strUser = strUserPass.substr(0, nColon);
 	std::string strPassword = strUserPass.substr(nColon+1);
-	return (strUser == mapArgs["-rpcuser"] && strPassword == mapArgs["-rpcpassword"]);
-}*/
+	return (strUser == theConfig.RPC_USER) && (strPassword == theConfig.RPC_PASSWORD);
+}
 
 //
 // JSON-RPC protocol.  Bitcoin speaks version 1.0 for maximum compatibility,
@@ -253,3 +261,5 @@ void ErrorReply(std::ostream& stream, const Json::Value& objError, const Json::V
 	std::string strReply = JSONRPCReply(Json::Value(), objError, id);
 	stream << HTTPReply(nStatus, strReply) << std::flush;
 }
+
+// vim:ts=4

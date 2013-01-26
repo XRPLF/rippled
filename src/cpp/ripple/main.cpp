@@ -1,6 +1,7 @@
-#include <boost/asio.hpp>
+
 #include <iostream>
 
+#include <boost/asio.hpp>
 #include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
 #include <boost/test/included/unit_test.hpp>
@@ -8,8 +9,9 @@
 #include "Application.h"
 #include "CallRPC.h"
 #include "Config.h"
-#include "utils.h"
 #include "Log.h"
+#include "RPCHandler.h"
+#include "utils.h"
 
 namespace po = boost::program_options;
 
@@ -17,9 +19,35 @@ extern bool AddSystemEntropy();
 using namespace std;
 using namespace boost::unit_test;
 
-void startServer()
+void setupServer()
 {
 	theApp = new Application();
+	theApp->setup();
+}
+
+void startServer()
+{
+	//
+	// Execute start up rpc commands.
+	//
+	if (theConfig.RPC_STARTUP.isArray())
+	{
+		for (int i = 0; i != theConfig.RPC_STARTUP.size(); ++i)
+		{
+			const Json::Value& jvCommand	= theConfig.RPC_STARTUP[i];
+
+			if (!theConfig.QUIET)
+				std::cerr << "Startup RPC: " << jvCommand << std::endl;
+
+			RPCHandler	rhHandler(&theApp->getOPs());
+
+			Json::Value	jvResult	= rhHandler.doCommand(jvCommand, RPCHandler::ADMIN);
+
+			if (!theConfig.QUIET)
+				std::cerr << "Result: " << jvResult << std::endl;
+		}
+	}
+
 	theApp->run();					// Blocks till we get a stop RPC.
 }
 
@@ -90,17 +118,19 @@ int main(int argc, char* argv[])
 	//
 	// Set up option parsing.
 	//
-	po::options_description desc("Options");
+	po::options_description desc("General Options");
 	desc.add_options()
 		("help,h", "Display this message.")
 		("conf", po::value<std::string>(), "Specify the configuration file.")
 		("rpc", "Perform rpc command (default).")
 		("standalone,a", "Run with no peers.")
-		("test,t", "Perform unit tests.")
+		("testnet,t", "Run in test net mode.")
+		("unittest,u", "Perform unit tests.")
 		("parameters", po::value< vector<string> >(), "Specify comma separated parameters.")
 		("quiet,q", "Reduce diagnotics.")
-		("verbose,v", "Increase log level.")
+		("verbose,v", "Verbose logging.")
 		("load", "Load the current ledger from the local DB.")
+		("ledger", po::value<std::string>(), "Load the specified ledger and start from .")
 		("start", "Start from a fresh Ledger.")
 		("net", "Get the initial ledger from the network.")
 	;
@@ -118,7 +148,6 @@ int main(int argc, char* argv[])
 		std::cerr << "Unable to add system entropy" << std::endl;
 		iResult	= 2;
 	}
-
 
 	if (iResult)
 	{
@@ -141,14 +170,19 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	if (vm.count("verbose"))
+	if (vm.count("quiet"))
+		Log::setMinSeverity(lsFATAL, true);
+	else if (vm.count("verbose"))
 		Log::setMinSeverity(lsTRACE, true);
 	else
-		Log::setMinSeverity(lsWARNING, true);
+		Log::setMinSeverity(lsINFO, true);
 
-	if (vm.count("test"))
+	InstanceType::multiThread();
+
+	if (vm.count("unittest"))
 	{
 		unit_test_main(init_unit_test, argc, argv);
+
 		return 0;
 	}
 
@@ -156,16 +190,26 @@ int main(int argc, char* argv[])
 	{
 		theConfig.setup(
 			vm.count("conf") ? vm["conf"].as<std::string>() : "",	// Config file.
+			!!vm.count("testnet"),									// Testnet flag.
 			!!vm.count("quiet"));									// Quiet flag.
 
 		if (vm.count("standalone"))
 		{
 			theConfig.RUN_STANDALONE = true;
+			theConfig.LEDGER_HISTORY = 0;
 		}
 	}
 
 	if (vm.count("start")) theConfig.START_UP = Config::FRESH;
-	else if (vm.count("load")) theConfig.START_UP = Config::LOAD;
+	if (vm.count("ledger"))
+	{
+		theConfig.START_LEDGER = vm["ledger"].as<std::string>();
+		theConfig.START_UP = Config::LOAD;
+	}
+	else if (vm.count("load"))
+	{
+		theConfig.START_UP = Config::LOAD;
+	}
 	else if (vm.count("net")) theConfig.START_UP = Config::NETWORK;
 
 	if (iResult)
@@ -179,6 +223,7 @@ int main(int argc, char* argv[])
 	else if (!vm.count("parameters"))
 	{
 		// No arguments. Run server.
+		setupServer();
 		startServer();
 	}
 	else

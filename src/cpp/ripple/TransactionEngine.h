@@ -70,7 +70,7 @@ public:
 	TransactionEngine(Ledger::ref ledger) : mLedger(ledger), mTxnSeq(0) { assert(mLedger); }
 
 	LedgerEntrySet& getNodes()			{ return mNodes; }
-	Ledger::pointer getLedger()			{ return mLedger; }
+	Ledger::ref getLedger()				{ return mLedger; }
 	void setLedger(Ledger::ref ledger)	{ assert(ledger); mLedger = ledger; }
 
 	SLE::pointer		entryCreate(LedgerEntryType type, const uint256& index)		{ return mNodes.entryCreate(type, index); }
@@ -78,7 +78,7 @@ public:
 	void				entryDelete(SLE::ref sleEntry)								{ mNodes.entryDelete(sleEntry); }
 	void				entryModify(SLE::ref sleEntry)								{ mNodes.entryModify(sleEntry); }
 
-	TER applyTransaction(const SerializedTransaction&, TransactionEngineParams);
+	TER applyTransaction(const SerializedTransaction&, TransactionEngineParams, bool& didApply);
 };
 
 inline TransactionEngineParams operator|(const TransactionEngineParams& l1, const TransactionEngineParams& l2)

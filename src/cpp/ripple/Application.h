@@ -23,6 +23,7 @@
 #include "RPCHandler.h"
 #include "ProofOfWork.h"
 #include "LoadManager.h"
+#include "TransactionQueue.h"
 
 class RPCDoor;
 class PeerDoor;
@@ -63,6 +64,8 @@ class Application
 	RPCHandler				mRPCHandler;
 	ProofOfWorkGenerator	mPOWGen;
 	LoadManager				mLoadMgr;
+	LoadFeeTrack			mFeeTrack;
+	TXQueue					mTxnQueue;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 
@@ -81,7 +84,7 @@ class Application
 	boost::recursive_mutex	mPeerMapLock;
 
 	void startNewLedger();
-	void loadOldLedger();
+	void loadOldLedger(const std::string&);
 
 public:
 	Application();
@@ -109,6 +112,9 @@ public:
 	boost::recursive_mutex& getMasterLock()			{ return mMasterLock; }
 	ProofOfWorkGenerator& getPowGen()				{ return mPOWGen; }
 	LoadManager& getLoadManager()					{ return mLoadMgr; }
+	LoadFeeTrack& getFeeTrack()						{ return mFeeTrack; }
+	TXQueue& getTxnQueue()							{ return mTxnQueue; }
+	PeerDoor& getPeerDoor()							{ return *mPeerDoor; }
 
 
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }
@@ -128,6 +134,7 @@ public:
 	uint256 getNonce256()			{ return mNonce256; }
 	std::size_t getNonceST()		{ return mNonceST; }
 
+	void setup();
 	void run();
 	void stop();
 	void sweep();

@@ -37,6 +37,7 @@ Ledger::Ledger(const RippleAddress& masterID, uint64 startAmount) : mTotCoins(st
 	mAccountStateMap->armDirty();
 	writeBack(lepCREATE, startAccount->getSLE());
 	SHAMap::flushDirty(*mAccountStateMap->disarmDirty(), 256, hotACCOUNT_NODE, mLedgerSeq);
+	zeroFees();
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
@@ -55,6 +56,7 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 		mAccountStateMap->fetchRoot(mAccountHash);
 	mTransactionMap->setImmutable();
 	mAccountStateMap->setImmutable();
+	zeroFees();
 }
 
 Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins), mLedgerSeq(ledger.mLedgerSeq),
@@ -65,6 +67,7 @@ Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins), mL
 	mAccountStateMap(ledger.mAccountStateMap->snapShot(isMutable))
 { // Create a new ledger that's a snapshot of this one
 	updateHash();
+	zeroFees();
 }
 
 
@@ -88,20 +91,23 @@ Ledger::Ledger(bool /* dummy */, Ledger& prevLedger) :
 	}
 	else
 		mCloseTime = prevLedger.mCloseTime + mCloseResolution;
+	zeroFees();
 }
 
-Ledger::Ledger(const std::vector<unsigned char>& rawLedger) :
+Ledger::Ledger(const std::vector<unsigned char>& rawLedger, bool hasPrefix) :
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
 	Serializer s(rawLedger);
-	setRaw(s);
+	setRaw(s, hasPrefix);
+	zeroFees();
 }
 
-Ledger::Ledger(const std::string& rawLedger) :
+Ledger::Ledger(const std::string& rawLedger, bool hasPrefix) :
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
 	Serializer s(rawLedger);
-	setRaw(s);
+	setRaw(s, hasPrefix);
+	zeroFees();
 }
 
 void Ledger::updateHash()
@@ -121,9 +127,10 @@ void Ledger::updateHash()
 	mValidHash = true;
 }
 
-void Ledger::setRaw(Serializer &s)
+void Ledger::setRaw(Serializer &s, bool hasPrefix)
 {
 	SerializerIterator sit(s);
+	if (hasPrefix) sit.get32();
 	mLedgerSeq =		sit.get32();
 	mTotCoins =			sit.get64();
 	mParentHash =		sit.get256();
@@ -157,7 +164,7 @@ void Ledger::addRaw(Serializer &s) const
 void Ledger::setAccepted(uint32 closeTime, int closeResolution, bool correctCloseTime)
 { // used when we witnessed the consensus
 	assert(mClosed && !mAccepted);
-	mCloseTime = closeTime - (closeTime % closeResolution);
+	mCloseTime = correctCloseTime ? (closeTime - (closeTime % closeResolution)) : closeTime;
 	mCloseResolution = closeResolution;
 	mCloseFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
 	updateHash();
@@ -179,18 +186,22 @@ AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
 #ifdef DEBUG
 //	std::cerr << "Ledger:getAccountState(" << accountID.humanAccountID() << ")" << std::endl;
 #endif
+
 	SHAMapItem::pointer item = mAccountStateMap->peekItem(Ledger::getAccountRootIndex(accountID));
 	if (!item)
 	{
-#ifdef DEBUG
-//		std::cerr << " notfound" << std::endl;
-#endif
+		cLog(lsDEBUG) << boost::str(boost::format("Ledger:getAccountState: not found: %s: %s")
+			% accountID.humanAccountID()
+			% Ledger::getAccountRootIndex(accountID).GetHex());
+
 		return AccountState::pointer();
 	}
+
 	SerializedLedgerEntry::pointer sle =
 		boost::make_shared<SerializedLedgerEntry>(item->peekSerializer(), item->getTag());
 	if (sle->getType() != ltACCOUNT_ROOT)
 		return AccountState::pointer();
+
 	return boost::make_shared<AccountState>(sle,accountID);
 }
 
@@ -367,6 +378,12 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 	assert (getAccountHash() == mAccountStateMap->getHash());
 	assert (getTransHash() == mTransactionMap->getHash());
 
+	// Save the ledger header in the hashed object store
+	Serializer s(128);
+	s.add32(sHP_Ledger);
+	addRaw(s);
+	theApp->getHashedObjectStore().store(hotLEDGER, mLedgerSeq, s.peekData(), mHash);
+
 	{
 		{
 			ScopedLock sl(theApp->getLedgerDB()->getDBLock());
@@ -386,39 +403,46 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 				assert(type == SHAMapTreeNode::tnTRANSACTION_MD);
 				SerializerIterator sit(item->peekSerializer());
 				Serializer rawTxn(sit.getVL());
-				std::string escMeta(sqlEscape(sit.getVL()));
+				Serializer rawMeta(sit.getVL());
+				std::string escMeta(sqlEscape(rawMeta.peekData()));
 
 				SerializerIterator txnIt(rawTxn);
 				SerializedTransaction txn(txnIt);
 				assert(txn.getTransactionID() == item->getTag());
+				TransactionMetaSet meta(item->getTag(), mLedgerSeq, rawMeta.peekData());
 
 				// Make sure transaction is in AccountTransactions.
 				if (!SQL_EXISTS(db, boost::str(AcctTransExists % item->getTag().GetHex())))
 				{
 					// Transaction not in AccountTransactions
-					std::vector<RippleAddress> accts = txn.getAffectedAccounts();
-
-					std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
-					bool first = true;
-					for (std::vector<RippleAddress>::iterator it = accts.begin(), end = accts.end(); it != end; ++it)
+					const std::vector<RippleAddress> accts = meta.getAffectedAccounts();
+					if (!accts.empty())
 					{
-						if (!first)
-							sql += ", ('";
-						else
+
+						std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
+						bool first = true;
+							for (std::vector<RippleAddress>::const_iterator it = accts.begin(), end = accts.end(); it != end; ++it)
 						{
-							sql += "('";
-							first = false;
+							if (!first)
+								sql += ", ('";
+							else
+							{
+								sql += "('";
+								first = false;
+							}
+							sql += txn.getTransactionID().GetHex();
+							sql += "','";
+							sql += it->humanAccountID();
+							sql += "',";
+							sql += boost::lexical_cast<std::string>(getLedgerSeq());
+							sql += ")";
 						}
-						sql += txn.getTransactionID().GetHex();
-						sql += "','";
-						sql += it->humanAccountID();
-						sql += "',";
-						sql += boost::lexical_cast<std::string>(getLedgerSeq());
-						sql += ")";
+						sql += ";";
+						Log(lsTRACE) << "ActTx: " << sql;
+						db->executeSQL(sql); // may already be in there
 					}
-					sql += ";";
-					Log(lsTRACE) << "ActTx: " << sql;
-					db->executeSQL(sql); // may already be in there
+					else
+						cLog(lsWARNING) << "Transaction in ledger " << mLedgerSeq << " affects no accounts";
 				}
 
 				if (SQL_EXISTS(db, boost::str(transExists %	txn.getTransactionID().GetHex())))
@@ -458,10 +482,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 		return;
 	}
 
-	theApp->getLedgerMaster().setFullLedger(shared_from_this());
 	event->stop();
-
-	theApp->getOPs().pubLedger(shared_from_this());
 
 	decPendingSaves();
 }
@@ -502,7 +523,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		db->endIterRows();
 	}
 
-	Log(lsTRACE) << "Constructing ledger " << ledgerSeq << " from SQL";
+//	Log(lsTRACE) << "Constructing ledger " << ledgerSeq << " from SQL";
 	Ledger::pointer ret = boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
 		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq);
 	if (ret->getHash() != ledgerHash)
@@ -517,12 +538,59 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		assert(false);
 		return Ledger::pointer();
 	}
-	Log(lsDEBUG) << "Loaded ledger: " << ledgerHash;
+	cLog(lsTRACE) << "Loaded ledger: " << ledgerHash;
 	return ret;
 }
 
-Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
+uint256 Ledger::getHashByIndex(uint32 ledgerIndex)
 {
+	uint256 ret;
+
+	std::string sql="SELECT LedgerHash FROM Ledgers WHERE LedgerSeq='";
+	sql.append(boost::lexical_cast<std::string>(ledgerIndex));
+	sql.append("';");
+
+	std::string hash;
+	{
+		Database *db = theApp->getLedgerDB()->getDB();
+		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+		if (!db->executeSQL(sql) || !db->startIterRows())
+			return ret;
+		db->getStr("LedgerHash", hash);
+		db->endIterRows();
+	}
+
+	ret.SetHex(hash);
+	return ret;
+}
+
+bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& parentHash)
+{
+	std::string sql="SELECT LedgerHash,PrevHash FROM Ledgers WHERE LedgerSeq='";
+	sql.append(boost::lexical_cast<std::string>(ledgerIndex));
+	sql.append("';");
+
+	std::string hash, prevHash;
+	{
+		Database *db = theApp->getLedgerDB()->getDB();
+		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+		if (!db->executeSQL(sql) || !db->startIterRows())
+			return false;
+		db->getStr("LedgerHash", hash);
+		db->getStr("PrevHash", prevHash);
+		db->endIterRows();
+	}
+
+	ledgerHash.SetHex(hash);
+	parentHash.SetHex(prevHash);
+
+	assert(ledgerHash.isNonZero() && ((ledgerIndex == 0) || parentHash.isNonZero()));
+
+	return true;
+}
+
+Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
+{ // This is a low-level function with no caching
 	std::string sql="SELECT * from Ledgers WHERE LedgerSeq='";
 	sql.append(boost::lexical_cast<std::string>(ledgerIndex));
 	sql.append("';");
@@ -530,7 +598,7 @@ Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
 }
 
 Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
-{
+{ // This is a low-level function with no caching and only gets accepted ledgers
 	std::string sql="SELECT * from Ledgers WHERE LedgerHash='";
 	sql.append(ledgerHash.GetHex());
 	sql.append("';");
@@ -559,10 +627,13 @@ Json::Value Ledger::getJson(int options)
 {
 	Json::Value ledger(Json::objectValue);
 
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	ledger["parentHash"] = mParentHash.GetHex();
-
 	bool full = (options & LEDGER_JSON_FULL) != 0;
+
+	boost::recursive_mutex::scoped_lock sl(mLock);
+
+	ledger["parentHash"] = mParentHash.GetHex();
+	ledger["seqNum"] = boost::lexical_cast<std::string>(mLedgerSeq);
+
 	if(mClosed || full)
 	{
 		if (mClosed)
@@ -585,6 +656,7 @@ Json::Value Ledger::getJson(int options)
 	}
 	else
 		ledger["closed"] = false;
+
 	if (mTransactionMap && (full || ((options & LEDGER_JSON_DUMP_TXRP) != 0)))
 	{
 		Json::Value txns(Json::arrayValue);
@@ -624,6 +696,7 @@ Json::Value Ledger::getJson(int options)
 		}
 		ledger["transactions"] = txns;
 	}
+
 	if (mAccountStateMap && (full || ((options & LEDGER_JSON_DUMP_STATE) != 0)))
 	{
 		Json::Value state(Json::arrayValue);
@@ -641,7 +714,6 @@ Json::Value Ledger::getJson(int options)
 		}
 		ledger["accountState"] = state;
 	}
-	ledger["seqNum"] = boost::lexical_cast<std::string>(mLedgerSeq);
 	return ledger;
 }
 
@@ -899,6 +971,13 @@ uint256 Ledger::getAccountRootIndex(const uint160& uAccountID)
 	return s.getSHA512Half();
 }
 
+uint256 Ledger::getLedgerFeeIndex()
+{ // get the index of the node that holds the fee schedul
+	Serializer s(2);
+	s.add16(spaceFee);
+	return s.getSHA512Half();
+}
+
 uint256 Ledger::getLedgerFeatureIndex()
 { // get the index of the node that holds the last 256 ledgers
 	Serializer s(2);
@@ -922,23 +1001,77 @@ uint256 Ledger::getLedgerHashIndex(uint32 desiredLedgerIndex)
 	return s.getSHA512Half();
 }
 
-int Ledger::getLedgerHashOffset(uint32 ledgerIndex)
-{ // get the offset for this ledger's hash (or the first one after it) in the every-256-ledger table
-	return (ledgerIndex >> 8) % 256;
+uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
+{ // return the hash of the specified ledger, 0 if not available
+
+	// easy cases
+	if (ledgerIndex > mLedgerSeq)
+	{
+		cLog(lsWARNING) << "Can't get seq " << ledgerIndex << " from " << mLedgerSeq << " future";
+		return uint256();
+	}
+
+	if (ledgerIndex == mLedgerSeq)
+		return getHash();
+
+	if (ledgerIndex == (mLedgerSeq - 1))
+		return mParentHash;
+
+	// within 256
+	int diff = mLedgerSeq - ledgerIndex;
+	if (diff <= 256)
+	{
+		SLE::pointer hashIndex = getSLE(getLedgerHashIndex());
+		if (hashIndex)
+		{
+			assert(hashIndex->getFieldU32(sfLastLedgerSequence) == (mLedgerSeq - 1));
+			STVector256 vec = hashIndex->getFieldV256(sfHashes);
+			if (vec.size() >= diff)
+				return vec.at(vec.size() - diff);
+			cLog(lsWARNING) << "Ledger " << mLedgerSeq << " missing hash for " << ledgerIndex
+				<< " (" << vec.size() << "," << diff << ")";
+		}
+		else cLog(lsWARNING) << "Ledger " << mLedgerSeq << ":" << getHash() << " missing normal list";
+	}
+
+	if ((ledgerIndex & 0xff) != 0)
+	{
+		cLog(lsWARNING) << "Can't get seq " << ledgerIndex << " from " << mLedgerSeq << " past";
+		return uint256();
+	}
+
+	// in skiplist
+	SLE::pointer hashIndex = getSLE(getLedgerHashIndex(ledgerIndex));
+	if (hashIndex)
+	{
+		int lastSeq = hashIndex->getFieldU32(sfLastLedgerSequence);
+		assert(lastSeq >= ledgerIndex);
+		assert((lastSeq & 0xff) == 0);
+		int sDiff = (lastSeq - ledgerIndex) >> 8;
+
+		STVector256 vec = hashIndex->getFieldV256(sfHashes);
+		if (vec.size() > sDiff)
+			return vec.at(vec.size() - sDiff - 1);
+	}
+
+	cLog(lsWARNING) << "Can't get seq " << ledgerIndex << " from " << mLedgerSeq << " error";
+	return uint256();
 }
 
-int Ledger::getLedgerHashOffset(uint32 desiredLedgerIndex, uint32 currentLedgerIndex)
-{ // get the offset for this ledger's hash in the every-ledger table, -1 if not in it
-	if (desiredLedgerIndex >= currentLedgerIndex)
-		return -1;
-
-	if (currentLedgerIndex < 256)
-		return desiredLedgerIndex;
-
-	if (desiredLedgerIndex < (currentLedgerIndex - 256))
-		return -1;
-
-	return currentLedgerIndex - desiredLedgerIndex - 1;
+std::vector< std::pair<uint32, uint256> > Ledger::getLedgerHashes()
+{
+	std::vector< std::pair<uint32, uint256> > ret;
+	SLE::pointer hashIndex = getSLE(getLedgerHashIndex());
+	if (hashIndex)
+	{
+		STVector256 vec = hashIndex->getFieldV256(sfHashes);
+		int size = vec.size();
+		ret.reserve(size);
+		uint32 seq = hashIndex->getFieldU32(sfLastLedgerSequence) - size;
+		for (int i = 0; i < size; ++i)
+			ret.push_back(std::make_pair(++seq, vec.at(i)));
+	}
+	return ret;
 }
 
 uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuerID,
@@ -1097,10 +1230,7 @@ void Ledger::updateSkipList()
 		std::vector<uint256> hashes;
 
 		if (!skipList)
-		{
 			skipList = boost::make_shared<SLE>(ltLEDGER_HASHES, hash);
-			skipList->setFieldU32(sfFirstLedgerSequence, prevIndex);
-		}
 		else
 			hashes = skipList->getFieldV256(sfHashes).peekValue();
 
@@ -1122,7 +1252,6 @@ void Ledger::updateSkipList()
 	if (!skipList)
 	{
 		skipList = boost::make_shared<SLE>(ltLEDGER_HASHES, hash);
-		skipList->setFieldU32(sfFirstLedgerSequence, prevIndex);
 	}
 	else
 		hashes = skipList->getFieldV256(sfHashes).peekValue();
@@ -1154,18 +1283,25 @@ void Ledger::pendSave(bool fromConsensus)
 	if (!fromConsensus && !theApp->isNewFlag(getHash(), SF_SAVED))
 		return;
 
-	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(),
-		fromConsensus, theApp->getJobQueue().getLoadEvent(jtDISK)));
-	thread.detach();
+	{
+		boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
+		++sPendingSaves;
+	}
 
-	boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
-	++sPendingSaves;
+	boost::thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(),
+		fromConsensus, theApp->getJobQueue().getLoadEvent(jtDISK))).detach();
+
 }
 
 void Ledger::decPendingSaves()
 {
-	boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
-	--sPendingSaves;
+	{
+		boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
+		--sPendingSaves;
+		if (sPendingSaves != 0)
+			return;
+	}
+	theApp->getLedgerMaster().resumeAcquiring();
 }
 
 void Ledger::ownerDirDescriber(SLE::ref sle, const uint160& owner)
@@ -1185,5 +1321,51 @@ void Ledger::qualityDirDescriber(SLE::ref sle,
 	sle->setFieldU64(sfExchangeRate, uRate);
 }
 
+void Ledger::zeroFees()
+{
+	mBaseFee = 0;
+	mReferenceFeeUnits = 0;
+	mReserveBase = 0;
+	mReserveIncrement = 0;
+}
+
+void Ledger::updateFees()
+{
+	mBaseFee = theConfig.FEE_DEFAULT;
+	mReferenceFeeUnits = 10;
+	mReserveBase = theConfig.FEE_ACCOUNT_RESERVE;
+	mReserveIncrement = theConfig.FEE_OWNER_RESERVE;
+
+	LedgerStateParms p = lepNONE;
+	SLE::pointer sle = getASNode(p, Ledger::getLedgerFeeIndex(), ltFEE_SETTINGS);
+	if (!sle)
+		return;
+
+	if (sle->getFieldIndex(sfBaseFee) != -1)
+		mBaseFee = sle->getFieldU64(sfBaseFee);
+
+	if (sle->getFieldIndex(sfReferenceFeeUnits) != -1)
+		mReferenceFeeUnits = sle->getFieldU32(sfReferenceFeeUnits);
+
+	if (sle->getFieldIndex(sfReserveBase) != -1)
+		mReserveBase = sle->getFieldU32(sfReserveBase);
+
+	if (sle->getFieldIndex(sfReserveIncrement) != -1)
+		mReserveIncrement = sle->getFieldU32(sfReserveIncrement);
+}
+
+uint64 Ledger::scaleFeeBase(uint64 fee)
+{
+	if (!mBaseFee)
+		updateFees();
+	return theApp->getFeeTrack().scaleFeeBase(fee, mBaseFee, mReferenceFeeUnits);
+}
+
+uint64 Ledger::scaleFeeLoad(uint64 fee)
+{
+	if (!mBaseFee)
+		updateFees();
+	return theApp->getFeeTrack().scaleFeeLoad(fee, mBaseFee, mReferenceFeeUnits);
+}
 
 // vim:ts=4

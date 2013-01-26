@@ -1,24 +1,30 @@
 #include "SqliteDatabase.h"
 #include "sqlite3.h"
+
 #include <string.h>
 #include <stdio.h>
 #include <iostream>
 
+#include <boost/thread.hpp>
+#include <boost/foreach.hpp>
+#include <boost/bind.hpp>
+
 using namespace std;
 
-SqliteDatabase::SqliteDatabase(const char* host) : Database(host,"","")
+SqliteDatabase::SqliteDatabase(const char* host) : Database(host,"",""), walRunning(false)
 {
-	mConnection=NULL;
-	mCurrentStmt=NULL;
+	mConnection		= NULL;
+	mCurrentStmt	= NULL;
 }
 
 void SqliteDatabase::connect()
 {
 	int rc = sqlite3_open(mHost.c_str(), &mConnection);
-	if( rc )
+	if (rc)
 	{
 		cout << "Can't open database: " << mHost << " " << rc << endl;
 		sqlite3_close(mConnection);
+		assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
 	}
 }
 
@@ -32,8 +38,10 @@ void SqliteDatabase::disconnect()
 bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 {
 	sqlite3_finalize(mCurrentStmt);
+
 	int rc = sqlite3_prepare_v2(mConnection, sql, -1, &mCurrentStmt, NULL);
-	if (rc != SQLITE_OK )
+
+	if (SQLITE_OK != rc)
 	{
 		if (!fail_ok)
 		{
@@ -56,7 +64,9 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 	}
 	else
 	{
+		assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
 		mMoreRows = false;
+
 		if (!fail_ok)
 		{
 #ifdef DEBUG
@@ -106,17 +116,20 @@ void SqliteDatabase::endIterRows()
 // will return false if there are no more rows
 bool SqliteDatabase::getNextRow()
 {
-	if(!mMoreRows) return(false);
+	if (!mMoreRows) return(false);
 
 	int rc=sqlite3_step(mCurrentStmt);
-	if(rc==SQLITE_ROW)
+	if (rc==SQLITE_ROW)
 	{
 		return(true);
-	}else if(rc==SQLITE_DONE)
+	}
+	else if (rc==SQLITE_DONE)
 	{
 		return(false);
-	}else
+	}
+	else
 	{
+		assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
 		cout << "SQL Rerror:" << rc << endl;
 		return(false);
 	}
@@ -175,27 +188,54 @@ uint64 SqliteDatabase::getBigInt(int colIndex)
 }
 
 
-/* http://www.sqlite.org/lang_expr.html
-BLOB literals are string literals containing hexadecimal data and preceded by a single "x" or "X" character. For example:
-X'53514C697465'
-*/
-void SqliteDatabase::escape(const unsigned char* start, int size, std::string& retStr)
+static int SqliteWALHook(void *s, sqlite3* dbCon, const char *dbName, int walSize)
 {
-	static const char toHex[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-		'A', 'B', 'C', 'D', 'E', 'F' };
+	(reinterpret_cast<SqliteDatabase*>(s))->doHook(dbName, walSize);
+	return SQLITE_OK;
+}
 
-	retStr.resize(3 + (size * 2));
+bool SqliteDatabase::setupCheckpointing()
+{
+	sqlite3_wal_hook(mConnection, SqliteWALHook, this);
+	return true;
+}
 
-	int pos = 0;
-	retStr[pos++] = 'X';
-	retStr[pos++] = '\'';
-
-	for (int n = 0; n < size; ++n)
+void SqliteDatabase::doHook(const char *db, int pages)
+{
+	if (pages < 256)
+		return;
+	boost::mutex::scoped_lock sl(walMutex);
+	if (walDBs.insert(db).second && !walRunning)
 	{
-		retStr[pos++] = toHex[start[n] >> 4];
-		retStr[pos++] = toHex[start[n] & 0x0f];
+		walRunning = true;
+		boost::thread(boost::bind(&SqliteDatabase::runWal, this)).detach();
 	}
-	retStr[pos] = '\'';
+}
+
+void SqliteDatabase::runWal()
+{
+	std::set<std::string> walSet;
+
+	while (1)
+	{
+		{
+			boost::mutex::scoped_lock sl(walMutex);
+			walDBs.swap(walSet);
+			if (walSet.empty())
+			{
+				walRunning = false;
+				return;
+			}
+		}
+
+		BOOST_FOREACH(const std::string& db, walSet)
+		{
+			int log, ckpt;
+			sqlite3_wal_checkpoint_v2(mConnection, db.c_str(), SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
+		}
+		walSet.clear();
+
+	}
 }
 
 // vim:ts=4

@@ -1,8 +1,83 @@
 #include "AccountSetTransactor.h"
+#include "Config.h"
+
+SETUP_LOG();
 
 TER AccountSetTransactor::doApply()
 {
-	Log(lsINFO) << "doAccountSet>";
+	cLog(lsINFO) << "AccountSet>";
+
+	const uint32	uTxFlags	= mTxn.getFlags();
+
+	const uint32	uFlagsIn	= mTxnAccount->getFieldU32(sfFlags);
+	uint32			uFlagsOut	= uFlagsIn;
+
+	if (uTxFlags & tfAccountSetMask)
+	{
+		cLog(lsINFO) << "AccountSet: Malformed transaction: Invalid flags set.";
+
+		return temINVALID_FLAG;
+	}
+
+	//
+	// RequireAuth
+	//
+
+	if ((tfRequireAuth|tfOptionalAuth) == (uTxFlags & (tfRequireAuth|tfOptionalAuth)))
+	{
+		cLog(lsINFO) << "AccountSet: Malformed transaction: Contradictory flags set.";
+
+		return temINVALID_FLAG;
+	}
+
+	if ((uTxFlags & tfRequireAuth) && !isSetBit(uFlagsIn, lsfRequireAuth))
+	{
+		if (mTxn.getFieldU32(sfOwnerCount))
+		{
+			cLog(lsINFO) << "AccountSet: Retry: OwnerCount not zero.";
+
+			return terOWNERS;
+		}
+
+		cLog(lsINFO) << "AccountSet: Set RequireAuth.";
+
+		uFlagsOut	|= lsfRequireAuth;
+	}
+
+	if (uTxFlags & tfOptionalAuth)
+	{
+		cLog(lsINFO) << "AccountSet: Clear RequireAuth.";
+
+		uFlagsOut	&= ~lsfRequireAuth;
+	}
+
+	//
+	// RequireDestTag
+	//
+
+	if ((tfRequireDestTag|tfOptionalDestTag) == (uTxFlags & (tfRequireDestTag|tfOptionalDestTag)))
+	{
+		cLog(lsINFO) << "AccountSet: Malformed transaction: Contradictory flags set.";
+
+		return temINVALID_FLAG;
+	}
+
+	if (uTxFlags & tfRequireDestTag)
+	{
+		cLog(lsINFO) << "AccountSet: Set RequireDestTag.";
+
+		uFlagsOut	|= lsfRequireDestTag;
+	}
+
+	if (uTxFlags & tfOptionalDestTag)
+	{
+		cLog(lsINFO) << "AccountSet: Clear RequireDestTag.";
+
+		uFlagsOut	&= ~lsfRequireDestTag;
+	}
+
+	if (uFlagsIn != uFlagsOut)
+		mTxnAccount->setFieldU32(sfFlags, uFlagsOut);
 
 	//
 	// EmailHash
@@ -14,13 +89,13 @@ TER AccountSetTransactor::doApply()
 
 		if (!uHash)
 		{
-			Log(lsINFO) << "doAccountSet: unset email hash";
+			cLog(lsINFO) << "AccountSet: unset email hash";
 
 			mTxnAccount->makeFieldAbsent(sfEmailHash);
 		}
 		else
 		{
-			Log(lsINFO) << "doAccountSet: set email hash";
+			cLog(lsINFO) << "AccountSet: set email hash";
 
 			mTxnAccount->setFieldH128(sfEmailHash, uHash);
 		}
@@ -36,13 +111,13 @@ TER AccountSetTransactor::doApply()
 
 		if (!uHash)
 		{
-			Log(lsINFO) << "doAccountSet: unset wallet locator";
+			cLog(lsINFO) << "AccountSet: unset wallet locator";
 
 			mTxnAccount->makeFieldAbsent(sfEmailHash);
 		}
 		else
 		{
-			Log(lsINFO) << "doAccountSet: set wallet locator";
+			cLog(lsINFO) << "AccountSet: set wallet locator";
 
 			mTxnAccount->setFieldH256(sfWalletLocator, uHash);
 		}
@@ -52,15 +127,22 @@ TER AccountSetTransactor::doApply()
 	// MessageKey
 	//
 
-	if (!mTxn.isFieldPresent(sfMessageKey))
+	if (mTxn.isFieldPresent(sfMessageKey))
 	{
-		nothing();
-	}
-	else
-	{
-		Log(lsINFO) << "doAccountSet: set message key";
+		std::vector<unsigned char>	vucPublic	= mTxn.getFieldVL(sfMessageKey);
 
-		mTxnAccount->setFieldVL(sfMessageKey, mTxn.getFieldVL(sfMessageKey));
+		if (vucPublic.size() > PUBLIC_BYTES_MAX)
+		{
+			cLog(lsINFO) << "AccountSet: message key too long";
+
+			return telBAD_PUBLIC_KEY;
+		}
+		else
+		{
+			cLog(lsINFO) << "AccountSet: set message key";
+
+			mTxnAccount->setFieldVL(sfMessageKey, vucPublic);
+		}
 	}
 
 	//
@@ -73,13 +155,19 @@ TER AccountSetTransactor::doApply()
 
 		if (vucDomain.empty())
 		{
-			Log(lsINFO) << "doAccountSet: unset domain";
+			cLog(lsINFO) << "AccountSet: unset domain";
 
 			mTxnAccount->makeFieldAbsent(sfDomain);
 		}
+		else if (vucDomain.size() > DOMAIN_BYTES_MAX)
+		{
+			cLog(lsINFO) << "AccountSet: domain too long";
+
+			return telBAD_DOMAIN;
+		}
 		else
 		{
-			Log(lsINFO) << "doAccountSet: set domain";
+			cLog(lsINFO) << "AccountSet: set domain";
 
 			mTxnAccount->setFieldVL(sfDomain, vucDomain);
 		}
@@ -95,25 +183,27 @@ TER AccountSetTransactor::doApply()
 
 		if (!uRate || uRate == QUALITY_ONE)
 		{
-			Log(lsINFO) << "doAccountSet: unset transfer rate";
+			cLog(lsINFO) << "AccountSet: unset transfer rate";
 
 			mTxnAccount->makeFieldAbsent(sfTransferRate);
 		}
 		else if (uRate > QUALITY_ONE)
 		{
-			Log(lsINFO) << "doAccountSet: set transfer rate";
+			cLog(lsINFO) << "AccountSet: set transfer rate";
 
 			mTxnAccount->setFieldU32(sfTransferRate, uRate);
 		}
 		else
 		{
-			Log(lsINFO) << "doAccountSet: bad transfer rate";
+			cLog(lsINFO) << "AccountSet: bad transfer rate";
 
 			return temBAD_TRANSFER_RATE;
 		}
 	}
 
-	Log(lsINFO) << "doAccountSet<";
+	cLog(lsINFO) << "AccountSet<";
 
 	return tesSUCCESS;
 }
+
+// vim:ts=4

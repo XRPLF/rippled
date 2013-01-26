@@ -1,29 +1,33 @@
 #include "RegularKeySetTransactor.h"
 #include "Log.h"
 
-
 SETUP_LOG();
 
-
-void RegularKeySetTransactor::calculateFee()
+uint64 RegularKeySetTransactor::calculateBaseFee()
 {
-	Transactor::calculateFee();
-
-	if ( !(mTxnAccount->getFlags() & lsfPasswordSpent) && 
-		 (mSigningPubKey.getAccountID() == mTxnAccountID))
+	if ( !(mTxnAccount->getFlags() & lsfPasswordSpent)
+		&& (mSigningPubKey.getAccountID() == mTxnAccountID))
 	{  // flag is armed and they signed with the right account
-		
-		mSourceBalance	= mTxnAccount->getFieldAmount(sfBalance);
-		if(mSourceBalance < mFeeDue) mFeeDue	= 0;
+		return 0;
 	}
+	return Transactor::calculateBaseFee();
 }
 
 
 TER RegularKeySetTransactor::doApply()
 {
-	std::cerr << "doRegularKeySet>" << std::endl;
+	std::cerr << "RegularKeySet>" << std::endl;
 
-	if(mFeeDue.isZero())
+	const uint32		uTxFlags		= mTxn.getFlags();
+
+	if (uTxFlags)
+	{
+		cLog(lsINFO) << "RegularKeySet: Malformed transaction: Invalid flags set.";
+
+		return temINVALID_FLAG;
+	}
+
+	if (mFeeDue.isZero())
 	{
 		mTxnAccount->setFlag(lsfPasswordSpent);
 	}
@@ -31,8 +35,9 @@ TER RegularKeySetTransactor::doApply()
 	uint160	uAuthKeyID=mTxn.getFieldAccount160(sfRegularKey);
 	mTxnAccount->setFieldAccount(sfRegularKey, uAuthKeyID);
 
-
-	std::cerr << "doRegularKeySet<" << std::endl;
+	std::cerr << "RegularKeySet<" << std::endl;
 
 	return tesSUCCESS;
 }
+
+// vim:ts=4

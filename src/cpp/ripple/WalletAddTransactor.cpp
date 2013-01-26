@@ -1,5 +1,7 @@
 #include "WalletAddTransactor.h"
 
+SETUP_LOG();
+
 TER WalletAddTransactor::doApply()
 {
 	std::cerr << "WalletAdd>" << std::endl;
@@ -7,8 +9,17 @@ TER WalletAddTransactor::doApply()
 	const std::vector<unsigned char>	vucPubKey		= mTxn.getFieldVL(sfPublicKey);
 	const std::vector<unsigned char>	vucSignature	= mTxn.getFieldVL(sfSignature);
 	const uint160						uAuthKeyID		= mTxn.getFieldAccount160(sfRegularKey);
-	const RippleAddress				naMasterPubKey	= RippleAddress::createAccountPublic(vucPubKey);
+	const RippleAddress					naMasterPubKey	= RippleAddress::createAccountPublic(vucPubKey);
 	const uint160						uDstAccountID	= naMasterPubKey.getAccountID();
+
+	const uint32						uTxFlags		= mTxn.getFlags();
+
+	if (uTxFlags)
+	{
+		cLog(lsINFO) << "WalletAdd: Malformed transaction: Invalid flags set.";
+
+		return temINVALID_FLAG;
+	}
 
 	// FIXME: This should be moved to the transaction's signature check logic and cached
 	if (!naMasterPubKey.accountPublicVerify(Serializer::getSHA512Half(uAuthKeyID.begin(), uAuthKeyID.size()), vucSignature))
@@ -27,32 +38,38 @@ TER WalletAddTransactor::doApply()
 		return tefCREATED;
 	}
 
-	STAmount			saAmount		= mTxn.getFieldAmount(sfAmount);
-	STAmount			saSrcBalance	= mTxnAccount->getFieldAmount(sfBalance);
+	// Direct XRP payment.
 
-	if (saSrcBalance < saAmount)
+	STAmount		saDstAmount		= mTxn.getFieldAmount(sfAmount);
+	const STAmount	saSrcBalance	= mTxnAccount->getFieldAmount(sfBalance);
+	const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
+	const uint64	uReserve		= mEngine->getLedger()->getReserve(uOwnerCount);
+	STAmount		saPaid			= mTxn.getTransactionFee();
+
+	// Make sure have enough reserve to send. Allow final spend to use reserve for fee.
+	if (saSrcBalance + saPaid < saDstAmount + uReserve)		// Reserve is not scaled by fee.
 	{
-		std::cerr
-			<< boost::str(boost::format("WalletAdd: Delay transaction: insufficient balance: balance=%s amount=%s")
-			% saSrcBalance.getText()
-			% saAmount.getText())
-			<< std::endl;
+		// Vote no. However, transaction might succeed, if applied in a different order.
+		cLog(lsINFO) << boost::str(boost::format("WalletAdd: Delay transaction: Insufficient funds: %s / %s (%d)")
+			% saSrcBalance.getText() % (saDstAmount + uReserve).getText() % uReserve);
 
-		return terUNFUNDED;
+		return tecUNFUNDED_ADD;
 	}
 
 	// Deduct initial balance from source account.
-	mTxnAccount->setFieldAmount(sfBalance, saSrcBalance-saAmount);
+	mTxnAccount->setFieldAmount(sfBalance, saSrcBalance-saDstAmount);
 
 	// Create the account.
 	sleDst	= mEngine->entryCreate(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 
 	sleDst->setFieldAccount(sfAccount, uDstAccountID);
 	sleDst->setFieldU32(sfSequence, 1);
-	sleDst->setFieldAmount(sfBalance, saAmount);
+	sleDst->setFieldAmount(sfBalance, saDstAmount);
 	sleDst->setFieldAccount(sfRegularKey, uAuthKeyID);
 
 	std::cerr << "WalletAdd<" << std::endl;
 
 	return tesSUCCESS;
 }
+
+// vim:ts=4

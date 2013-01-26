@@ -5,7 +5,7 @@ std::map<std::string, TransactionFormat*> TransactionFormat::byName;
 
 #define TF_BASE												\
 		<< SOElement(sfTransactionType,		SOE_REQUIRED)	\
-		<< SOElement(sfFlags,				SOE_REQUIRED)	\
+		<< SOElement(sfFlags,				SOE_OPTIONAL)	\
 		<< SOElement(sfSourceTag,			SOE_OPTIONAL)	\
 		<< SOElement(sfAccount,				SOE_REQUIRED)	\
 		<< SOElement(sfSequence,			SOE_REQUIRED)	\
@@ -55,6 +55,7 @@ static bool TFInit()
 		<< SOElement(sfSendMax,			SOE_OPTIONAL)
 		<< SOElement(sfPaths,			SOE_DEFAULT)
 		<< SOElement(sfInvoiceID,		SOE_OPTIONAL)
+		<< SOElement(sfDestinationTag,	SOE_OPTIONAL)
 		;
 
 	DECLARE_TF(Contract, ttCONTRACT)
@@ -75,6 +76,14 @@ static bool TFInit()
 	DECLARE_TF(EnableFeature, ttFEATURE)
 		<< SOElement(sfFeature,			SOE_REQUIRED)
 		;
+
+	DECLARE_TF(SetFee, ttFEE)
+		<< SOElement(sfFeatures,			SOE_REQUIRED)
+		<< SOElement(sfBaseFee,				SOE_REQUIRED)
+		<< SOElement(sfReferenceFeeUnits,	SOE_REQUIRED)
+		<< SOElement(sfReserveBase,			SOE_REQUIRED)
+		<< SOElement(sfReserveIncrement,	SOE_REQUIRED)
+     ;
 
 	return true;
 }

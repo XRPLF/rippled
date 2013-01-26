@@ -11,14 +11,17 @@ extern void initSSLContext(boost::asio::ssl::context& context,
 template <typename endpoint_type>
 class WSConnection;
 
+// CAUTION: on_* functions are called by the websocket code while holding a lock
+
 // A single instance of this object is made.
 // This instance dispatches all events.  There is no per connection persistence.
 template <typename endpoint_type>
 class WSServerHandler : public endpoint_type::handler
 {
 public:
-	typedef typename endpoint_type::handler::connection_ptr connection_ptr;
-	typedef typename endpoint_type::handler::message_ptr message_ptr;
+	typedef typename endpoint_type::handler::connection_ptr		connection_ptr;
+	typedef typename endpoint_type::handler::message_ptr		message_ptr;
+	typedef boost::shared_ptr< WSConnection<endpoint_type> >	wsc_ptr;
 
 	// Private reasons to close.
 	enum {
@@ -37,7 +40,7 @@ protected:
 public:
 	WSServerHandler(boost::shared_ptr<boost::asio::ssl::context> spCtx, bool bPublic) : mCtx(spCtx), mPublic(bPublic)
 	{
-		if (theConfig.WEBSOCKET_SECURE)
+		if (theConfig.WEBSOCKET_SECURE != 0)
 		{
 			initSSLContext(*mCtx, theConfig.WEBSOCKET_SSL_KEY,
 				theConfig.WEBSOCKET_SSL_CERT, theConfig.WEBSOCKET_SSL_CHAIN);
@@ -45,8 +48,6 @@ public:
 	}
 
 	bool		getPublic() { return mPublic; };
-
-	
 
 	void send(connection_ptr cpClient, message_ptr mpMessage)
 	{
@@ -83,6 +84,41 @@ public:
 		send(cpClient, jfwWriter.write(jvObj));
 	}
 
+	void pingTimer(connection_ptr cpClient)
+	{
+		wsc_ptr ptr;
+		{
+			boost::mutex::scoped_lock	sl(mMapLock);
+			typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find(cpClient);
+			if (it == mMap.end())
+				return;
+			ptr = it->second;
+		}
+		if (ptr->onPingTimer())
+		{
+			cLog(lsWARNING) << "Connection pings out";
+			cpClient->close(websocketpp::close::status::PROTOCOL_ERROR, "ping timeout");
+		}
+		else
+		{
+			cpClient->ping("ping");
+		}
+	}
+
+	void on_send_empty(connection_ptr cpClient)
+	{
+		wsc_ptr ptr;
+		{
+			boost::mutex::scoped_lock	sl(mMapLock);
+			typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find(cpClient);
+			if (it == mMap.end())
+				return;
+			ptr = it->second;
+		}
+
+		ptr->onSendEmpty();
+	}
+
 	void on_open(connection_ptr cpClient)
 	{
 		boost::mutex::scoped_lock	sl(mMapLock);
@@ -90,9 +126,21 @@ public:
 		mMap[cpClient]	= boost::make_shared< WSConnection<endpoint_type> >(this, cpClient);
 	}
 
+	void on_pong(connection_ptr cpClient, std::string)
+	{
+		wsc_ptr ptr;
+		{
+			boost::mutex::scoped_lock	sl(mMapLock);
+			typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find(cpClient);
+			if (it == mMap.end())
+				return;
+			ptr = it->second;
+		}
+		ptr->onPong();
+	}
+
 	void on_close(connection_ptr cpClient)
 	{ // we cannot destroy the connection while holding the map lock or we deadlock with pubLedger
-		typedef boost::shared_ptr< WSConnection<endpoint_type> > wsc_ptr;
 		wsc_ptr ptr;
 		{
 			boost::mutex::scoped_lock	sl(mMapLock);
@@ -102,6 +150,11 @@ public:
 			ptr = it->second;		// prevent the WSConnection from being destroyed until we release the lock
 			mMap.erase(it);
 		}
+		ptr->preDestroy(); // Must be done before we return
+
+		// Must be done without holding the websocket send lock
+		theApp->getJobQueue().addJob(jtCLIENT,
+			boost::bind(&WSConnection<endpoint_type>::destroy, ptr));
 	}
 
 	void on_message(connection_ptr cpClient, message_ptr mpMessage)

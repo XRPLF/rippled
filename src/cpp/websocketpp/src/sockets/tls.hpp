@@ -25,6 +25,8 @@
  * 
  */
 
+#error Use auto TLS only
+
 #ifndef WEBSOCKETPP_SOCKET_TLS_HPP
 #define WEBSOCKETPP_SOCKET_TLS_HPP
 

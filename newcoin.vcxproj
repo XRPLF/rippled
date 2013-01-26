@@ -41,9 +41,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>rippled</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <TargetName>rippled</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -76,14 +78,14 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>BOOST_TEST_ALTERNATIVE_INIT_API;BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\OpenSSL\include;..\boost_1_47_0;..\protobuf-2.4.1\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\OpenSSL\include;..\boost_1_52_0;..\protobuf\src</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>..\OpenSSL\lib\VC;..\boost_1_47_0\stage\lib;..\protobuf-2.4.1\vsprojects\Release</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\OpenSSL\lib\VC;..\boost_1_52_0\stage\lib;..\protobuf\vsprojects\Release</AdditionalLibraryDirectories>
       <AdditionalDependencies>libprotobuf.lib;ssleay32MD.lib;libeay32MD.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -91,7 +93,6 @@
     <ClCompile Include="src\cpp\database\database.cpp" />
     <ClCompile Include="src\cpp\database\sqlite3.c" />
     <ClCompile Include="src\cpp\database\SqliteDatabase.cpp" />
-    <ClCompile Include="src\cpp\database\win\windatabase.cpp" />
     <ClCompile Include="src\cpp\json\json_reader.cpp" />
     <ClCompile Include="src\cpp\json\json_value.cpp" />
     <ClCompile Include="src\cpp\json\json_writer.cpp" />
@@ -145,7 +146,6 @@
     <ClCompile Include="src\cpp\ripple\PeerDoor.cpp" />
     <ClCompile Include="src\cpp\ripple\PlatRand.cpp" />
     <ClCompile Include="src\cpp\ripple\ProofOfWork.cpp" />
-    <ClCompile Include="src\cpp\ripple\PubKeyCache.cpp" />
     <ClCompile Include="src\cpp\ripple\RangeSet.cpp" />
     <ClCompile Include="src\cpp\ripple\RegularKeySetTransactor.cpp" />
     <ClCompile Include="src\cpp\ripple\rfc1751.cpp" />
@@ -158,6 +158,7 @@
     <ClCompile Include="src\cpp\ripple\RPCErr.cpp" />
     <ClCompile Include="src\cpp\ripple\RPCHandler.cpp" />
     <ClCompile Include="src\cpp\ripple\RPCServer.cpp" />
+    <ClCompile Include="src\cpp\ripple\RPCSub.cpp" />
     <ClCompile Include="src\cpp\ripple\ScriptData.cpp" />
     <ClCompile Include="src\cpp\ripple\SerializedLedger.cpp" />
     <ClCompile Include="src\cpp\ripple\SerializedObject.cpp" />
@@ -177,6 +178,7 @@
     <ClCompile Include="src\cpp\ripple\TransactionFormats.cpp" />
     <ClCompile Include="src\cpp\ripple\TransactionMaster.cpp" />
     <ClCompile Include="src\cpp\ripple\TransactionMeta.cpp" />
+    <ClCompile Include="src\cpp\ripple\TransactionQueue.cpp" />
     <ClCompile Include="src\cpp\ripple\Transactor.cpp" />
     <ClCompile Include="src\cpp\ripple\TrustSetTransactor.cpp" />
     <ClCompile Include="src\cpp\ripple\UniqueNodeList.cpp" />
@@ -250,7 +252,6 @@
     <ClInclude Include="src\cpp\ripple\Peer.h" />
     <ClInclude Include="src\cpp\ripple\PeerDoor.h" />
     <ClInclude Include="src\cpp\ripple\ProofOfWork.h" />
-    <ClInclude Include="src\cpp\ripple\PubKeyCache.h" />
     <ClInclude Include="src\cpp\ripple\RangeSet.h" />
     <ClInclude Include="src\cpp\ripple\RegularKeySetTransactor.h" />
     <ClInclude Include="src\cpp\ripple\rfc1751.h" />
@@ -284,6 +285,7 @@
     <ClInclude Include="src\cpp\ripple\TransactionFormats.h" />
     <ClInclude Include="src\cpp\ripple\TransactionMaster.h" />
     <ClInclude Include="src\cpp\ripple\TransactionMeta.h" />
+    <ClInclude Include="src\cpp\ripple\TransactionQueue.h" />
     <ClInclude Include="src\cpp\ripple\Transactor.h" />
     <ClInclude Include="src\cpp\ripple\TrustSetTransactor.h" />
     <ClInclude Include="src\cpp\ripple\types.h" />
@@ -320,8 +322,10 @@
     <None Include="SConstruct" />
     <CustomBuild Include="src\cpp\ripple\ripple.proto">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">/code/protobuf/protoc -I=..\newcoin --cpp_out=\code\newcoin\  ..\newcoin/src/cpp/ripple/ripple.proto</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"../protobuf/protoc" -I=..\newcoin --cpp_out=..\newcoin\  ..\newcoin/src/cpp/ripple/ripple.proto</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">\code\newcoin\src\ripple.pb.h</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">/code/protobuf/protoc -I=..\newcoin --cpp_out=\code\newcoin\  ..\newcoin/src/cpp/ripple/ripple.proto</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">\code\newcoin\src\ripple.pb.h</Outputs>
     </CustomBuild>
     <None Include="test\buster.js" />
     <None Include="test\server.js" />

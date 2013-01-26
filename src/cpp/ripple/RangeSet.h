@@ -43,8 +43,6 @@ public:
 	void clearRange(uint32, uint32);
 
 
-	void clear()							{ mRanges.clear(); }
-
 	// iterator stuff
 	iterator begin()						{ return mRanges.begin(); }
 	iterator end()							{ return mRanges.end(); }
@@ -60,9 +58,6 @@ public:
 	static uint32 lower(const_reverse_iterator& it)		{ return it->lower(); }
 	static uint32 upper(const_reverse_iterator& it)		{ return it->upper() - 1; }
 
-
-	bool operator!=(const RangeSet& r) const	{ return mRanges != r.mRanges; }
-	bool operator==(const RangeSet& r) const	{ return mRanges == r.mRanges; }
 
 	std::string toString() const;
 };

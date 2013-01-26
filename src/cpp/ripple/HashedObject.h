@@ -10,6 +10,7 @@
 #include "uint256.h"
 #include "ScopedLock.h"
 #include "TaggedCache.h"
+#include "KeyCache.h"
 #include "InstanceCounter.h"
 
 DEFINE_INSTANCE(HashedObject);
@@ -28,7 +29,7 @@ class HashedObject : private IS_INSTANCE(HashedObject)
 public:
 	typedef boost::shared_ptr<HashedObject> pointer;
 
-	HashedObjectType 			mType;
+	HashedObjectType			mType;
 	uint256						mHash;
 	uint32						mLedgerIndex;
 	std::vector<unsigned char>	mData;
@@ -45,7 +46,8 @@ public:
 class HashedObjectStore
 {
 protected:
-	TaggedCache<uint256, HashedObject> mCache;
+	TaggedCache<uint256, HashedObject>	mCache;
+	KeyCache<uint256>					mNegativeCache;
 
 	boost::mutex				mWriteMutex;
 	boost::condition_variable	mWriteCondition;
@@ -65,7 +67,10 @@ public:
 
 	void bulkWrite();
 	void waitWrite();
-	void sweep() { mCache.sweep(); }
+	void sweep() { mCache.sweep(); mNegativeCache.sweep(); }
+
+	int import(const std::string&);
 };
 
 #endif
+// vim:ts=4

@@ -6,6 +6,7 @@
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/foreach.hpp>
 
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
@@ -13,6 +14,7 @@
 #include "../json/value.h"
 #include "../json/reader.h"
 
+#include "Application.h"
 #include "RPC.h"
 #include "Log.h"
 #include "RPCErr.h"
@@ -53,7 +55,25 @@ std::string EncodeBase64(const std::string& s)
 
 Json::Value RPCParser::parseAsIs(const Json::Value& jvParams)
 {
-	return Json::Value(Json::objectValue);
+	Json::Value v(Json::objectValue);
+
+	if (jvParams.isArray() && (jvParams.size() > 0))
+		v["params"] = jvParams;
+
+	return v;
+}
+
+Json::Value RPCParser::parseInternal(const Json::Value& jvParams)
+{
+	Json::Value v(Json::objectValue);
+	v["internal_command"] = jvParams[0u];
+
+	Json::Value params(Json::arrayValue);
+	for (unsigned i = 1; i < jvParams.size(); ++i)
+		params.append(jvParams[i]);
+	v["params"] = params;
+
+	return v;
 }
 
 // account_info <account>|<nickname>|<account_public_key>
@@ -126,6 +146,7 @@ Json::Value RPCParser::parseConnect(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+#if ENABLE_INSECURE
 // data_delete <key>
 Json::Value RPCParser::parseDataDelete(const Json::Value& jvParams)
 {
@@ -135,7 +156,9 @@ Json::Value RPCParser::parseDataDelete(const Json::Value& jvParams)
 
 	return jvRequest;
 }
+#endif
 
+#if ENABLE_INSECURE
 // data_fetch <key>
 Json::Value RPCParser::parseDataFetch(const Json::Value& jvParams)
 {
@@ -145,7 +168,9 @@ Json::Value RPCParser::parseDataFetch(const Json::Value& jvParams)
 
 	return jvRequest;
 }
+#endif
 
+#if ENABLE_INSECURE
 // data_store <key> <value>
 Json::Value RPCParser::parseDataStore(const Json::Value& jvParams)
 {
@@ -156,6 +181,7 @@ Json::Value RPCParser::parseDataStore(const Json::Value& jvParams)
 
 	return jvRequest;
 }
+#endif
 
 // Return an error for attemping to subscribe/unsubscribe via RPC.
 Json::Value RPCParser::parseEvented(const Json::Value& jvParams)
@@ -203,6 +229,7 @@ Json::Value RPCParser::parseLedger(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+#if ENABLE_INSECURE
 // login <username> <password>
 Json::Value RPCParser::parseLogin(const Json::Value& jvParams)
 {
@@ -213,6 +240,7 @@ Json::Value RPCParser::parseLogin(const Json::Value& jvParams)
 
 	return jvRequest;
 }
+#endif
 
 // log_level:							Get log levels
 // log_level <severity>:				Set master log level to the specified severity
@@ -262,15 +290,43 @@ Json::Value RPCParser::parseAccountItems(const Json::Value& jvParams)
 	return jvRequest;
 }
 
-
-// submit any transaction to the network
-// submit private_key json
-Json::Value RPCParser::parseSubmit(const Json::Value& jvParams)
+// ripple_path_find json
+Json::Value RPCParser::parseRipplePathFind(const Json::Value& jvParams)
 {
 	Json::Value		txJSON;
 	Json::Reader	reader;
 
-	if (reader.parse(jvParams[1u].asString(), txJSON))
+	cLog(lsTRACE) << "RPC json:" << jvParams[0u];
+	if (reader.parse(jvParams[0u].asString(), txJSON))
+	{
+		return txJSON;
+	}
+
+	return rpcError(rpcINVALID_PARAMS);
+}
+
+// sign/submit any transaction to the network
+//
+// sign private_key json
+// submit private_key json
+// submit tx_blob
+Json::Value RPCParser::parseSignSubmit(const Json::Value& jvParams)
+{
+	Json::Value		txJSON;
+	Json::Reader	reader;
+
+	if (1 == jvParams.size())
+	{
+		// Submitting tx_blob
+
+		Json::Value	jvRequest;
+
+		jvRequest["tx_blob"]	= jvParams[0u].asString();
+
+		return jvRequest;
+	}
+	// Submitting tx_json.
+	else if (reader.parse(jvParams[1u].asString(), txJSON))
 	{
 		Json::Value	jvRequest;
 
@@ -436,9 +492,11 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"peers",				&RPCParser::parseAsIs,					0,  0	},
 //		{	"profile",				&RPCParser::parseProfile,				1,  9	},
 		{	"random",				&RPCParser::parseAsIs,					0,  0	},
-//		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	   -1, -1	},
-		{	"submit",				&RPCParser::parseSubmit,				2,  2	},
+		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	    1,  1	},
+		{	"sign",					&RPCParser::parseSignSubmit,			2,  2	},
+		{	"submit",				&RPCParser::parseSignSubmit,			1,  2	},
 		{	"server_info",			&RPCParser::parseAsIs,					0,  0	},
+		{	"server_state",			&RPCParser::parseAsIs,					0,	0	},
 		{	"stop",					&RPCParser::parseAsIs,					0,  0	},
 //		{	"transaction_entry",	&RPCParser::parseTransactionEntry,	   -1,  -1	},
 		{	"tx",					&RPCParser::parseTx,					1,  1	},
@@ -459,11 +517,15 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"wallet_propose",		&RPCParser::parseWalletPropose,			0,  1	},
 		{	"wallet_seed",			&RPCParser::parseWalletSeed,			0,  1	},
 
+		{	"internal",				&RPCParser::parseInternal,				1,	-1	},
+
+#if ENABLE_INSECURE
 		// XXX Unnecessary commands which should be removed.
 		{	"login",				&RPCParser::parseLogin,					2,  2	},
 		{	"data_delete",			&RPCParser::parseDataDelete,			1,  1	},
 		{	"data_fetch",			&RPCParser::parseDataFetch,				1,  1	},
 		{	"data_store",			&RPCParser::parseDataStore,				2,  2	},
+#endif
 
 		// Evented methods
 		{	"subscribe",			&RPCParser::parseEvented,				-1,	-1	},
@@ -477,7 +539,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 
 	if (i < 0)
 	{
-		return rpcError(rpcBAD_SYNTAX);
+		return rpcError(rpcUNKNOWN_COMMAND);
 	}
 	else if ((commandsA[i].iMinParams >= 0 && jvParams.size() < commandsA[i].iMinParams)
 		|| (commandsA[i].iMaxParams >= 0 && jvParams.size() > commandsA[i].iMaxParams))
@@ -528,7 +590,18 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 
 			jvParams.append(jvRequest);
 
+			if (!theConfig.RPC_ADMIN_USER.empty())
+				jvRequest["admin_user"]		= theConfig.RPC_ADMIN_USER;
+
+			if (!theConfig.RPC_ADMIN_PASSWORD.empty())
+				jvRequest["admin_password"]	= theConfig.RPC_ADMIN_PASSWORD;
+
 			jvOutput	= callRPC(
+				theConfig.RPC_IP,
+				theConfig.RPC_PORT,
+				theConfig.RPC_USER,
+				theConfig.RPC_PASSWORD,
+				"",
 				jvRequest.isMember("method")			// Allow parser to rewrite method.
 					? jvRequest["method"].asString()
 					: vCmd[0],
@@ -589,32 +662,38 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 	return nRet;
 }
 
-Json::Value callRPC(const std::string& strMethod, const Json::Value& params)
+Json::Value callRPC(const std::string& strIp, const int iPort, const std::string& strUsername, const std::string& strPassword, const std::string& strPath, const std::string& strMethod, const Json::Value& jvParams)
 {
-	if (theConfig.RPC_USER.empty() && theConfig.RPC_PASSWORD.empty())
-		throw std::runtime_error("You must set rpcpassword=<password> in the configuration file. "
-		"If the file does not exist, create it with owner-readable-only file permissions.");
-
 	// Connect to localhost
 	if (!theConfig.QUIET)
-		std::cerr << "Connecting to: " << theConfig.RPC_IP << ":" << theConfig.RPC_PORT << std::endl;
+	{
+		std::cerr << "Connecting to: " << strIp << ":" << iPort << std::endl;
+//		std::cerr << "Username: " << strUsername << ":" << strPassword << std::endl;
+//		std::cerr << "Path: " << strPath << std::endl;
+//		std::cerr << "Method: " << strMethod << std::endl;
+	}
 
 	boost::asio::ip::tcp::endpoint
-		endpoint(boost::asio::ip::address::from_string(theConfig.RPC_IP), theConfig.RPC_PORT);
+		endpoint(boost::asio::ip::address::from_string(strIp), iPort);
 	boost::asio::ip::tcp::iostream stream;
 	stream.connect(endpoint);
 	if (stream.fail())
 		throw std::runtime_error("couldn't connect to server");
 
+	// cLog(lsDEBUG) << "connected" << std::endl;
+
 	// HTTP basic authentication
-	std::string strUserPass64 = EncodeBase64(theConfig.RPC_USER + ":" + theConfig.RPC_PASSWORD);
+	std::string strUserPass64 = EncodeBase64(strUsername + ":" + strPassword);
 	std::map<std::string, std::string> mapRequestHeaders;
 	mapRequestHeaders["Authorization"] = std::string("Basic ") + strUserPass64;
 
+	// Log(lsDEBUG) << "requesting" << std::endl;
+
 	// Send request
-	std::string strRequest = JSONRPCRequest(strMethod, params, Json::Value(1));
-	cLog(lsDEBUG) << "send request " << strMethod << " : " << strRequest << std::endl;
-	std::string strPost = createHTTPPost(strRequest, mapRequestHeaders);
+	std::string strRequest = JSONRPCRequest(strMethod, jvParams, Json::Value(1));
+	// cLog(lsDEBUG) << "send request " << strMethod << " : " << strRequest << std::endl;
+
+	std::string strPost = createHTTPPost(strPath, strRequest, mapRequestHeaders);
 	stream << strPost << std::flush;
 
 	// std::cerr << "post  " << strPost << std::endl;

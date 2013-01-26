@@ -22,24 +22,28 @@ class LedgerConsensus;
 
 DEFINE_INSTANCE(InfoSub);
 
+class RPCSub;
+
 class InfoSub : public IS_INSTANCE(InfoSub)
 {
-public:
-
-	virtual ~InfoSub() { ; }
-
-	virtual	void send(const Json::Value& jvObj) = 0;
-
 protected:
 	boost::unordered_set<RippleAddress>			mSubAccountInfo;
 	boost::unordered_set<RippleAddress>			mSubAccountTransaction;
 
-	boost::mutex								mLock;
+	boost::mutex								mLockInfo;
 
 public:
-	void insertSubAccountInfo(RippleAddress addr)
+
+	virtual ~InfoSub();
+
+	virtual	void send(const Json::Value& jvObj) = 0;
+
+	void onSendEmpty();
+
+	void insertSubAccountInfo(RippleAddress addr, uint32 uLedgerIndex)
 	{
-		boost::mutex::scoped_lock sl(mLock);
+		boost::mutex::scoped_lock sl(mLockInfo);
+
 		mSubAccountInfo.insert(addr);
 	}
 };
@@ -68,8 +72,11 @@ protected:
 
 	typedef boost::unordered_map<uint160,std::pair<InfoSub*,uint32> >					subSubmitMapType;
 
+	typedef boost::unordered_map<std::string, RPCSub* >									subRpcMapType;
+
 	OperatingMode						mMode;
 	bool								mNeedNetworkLedger;
+	bool								mProposing, mValidating;
 	boost::posix_time::ptime			mConnectTime;
 	boost::asio::deadline_timer			mNetTimer;
 	boost::shared_ptr<LedgerConsensus>	mConsensus;
@@ -88,6 +95,8 @@ protected:
 	uint32								mLastValidationTime;
 	SerializedValidation::pointer		mLastValidation;
 
+	// Recent positions taken
+	std::map<uint256, std::pair<int, SHAMap::pointer> >	mRecentPositions;
 
 	// XXX Split into more locks.
     boost::recursive_mutex								mMonitorLock;
@@ -95,11 +104,15 @@ protected:
 	subInfoMapType										mSubRTAccount;
 	subSubmitMapType									mSubmitMap;   // TODO: probably dump this
 
+	subRpcMapType										mRpcSubMap;
+
 	boost::unordered_set<InfoSub*>						mSubLedger;				// accepted ledgers
 	boost::unordered_set<InfoSub*>						mSubServer;				// when server changes connectivity state
 	boost::unordered_set<InfoSub*>						mSubTransactions;		// all accepted transactions
 	boost::unordered_set<InfoSub*>						mSubRTTransactions;		// all proposed and accepted transactions
 
+	boost::recursive_mutex								mWantedHashLock;
+	boost::unordered_set<uint256>						mWantedHashes;
 
 	void setMode(OperatingMode);
 
@@ -110,7 +123,8 @@ protected:
 
 	void pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta);
 	void pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,bool accepted,TransactionMetaSet::pointer& meta);
-	std::map<RippleAddress,bool> getAffectedAccounts(const SerializedTransaction& stTxn);
+
+	void pubServer();
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
@@ -126,8 +140,9 @@ public:
 	OperatingMode getOperatingMode() { return mMode; }
 	std::string strOperatingMode();
 
-	Ledger::pointer	getClosedLedger()						{ return mLedgerMaster->getClosedLedger(); }
-	Ledger::pointer	getCurrentLedger()						{ return mLedgerMaster->getCurrentLedger(); }
+	Ledger::ref		getClosedLedger()						{ return mLedgerMaster->getClosedLedger(); }
+	Ledger::ref		getValidatedLedger()					{ return mLedgerMaster->getValidatedLedger(); }
+	Ledger::ref		getCurrentLedger()						{ return mLedgerMaster->getCurrentLedger(); }
 	Ledger::pointer	getLedgerByHash(const uint256& hash)	{ return mLedgerMaster->getLedgerByHash(hash); }
 	Ledger::pointer	getLedgerBySeq(const uint32 seq)		{ return mLedgerMaster->getLedgerBySeq(seq); }
 
@@ -146,8 +161,9 @@ public:
 	//
 	typedef boost::function<void (Transaction::pointer, TER)> stCallback; // must complete immediately
 	void submitTransaction(Job&, SerializedTransaction::pointer, stCallback callback = stCallback());
-	Transaction::pointer submitTransactionSync(const Transaction::pointer& tpTrans);
+	Transaction::pointer submitTransactionSync(const Transaction::pointer& tpTrans, bool bSubmit=true);
 
+	void runTransactionQueue();
 	Transaction::pointer processTransaction(Transaction::pointer, stCallback);
 	Transaction::pointer processTransaction(Transaction::pointer transaction)
 	{ return processTransaction(transaction, stCallback()); }
@@ -206,6 +222,7 @@ public:
 	SMAddNode gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
 	bool recvValidation(const SerializedValidation::pointer& val);
+	void takePosition(int seq, SHAMap::ref position);
 	SHAMap::pointer getTXMap(const uint256& hash);
 	bool hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, ripple::TxSetStatus status);
 	void mapComplete(const uint256& hash, SHAMap::ref map);
@@ -222,17 +239,23 @@ public:
 	void needNetworkLedger()			{ mNeedNetworkLedger = true; }
 	void clearNeedNetworkLedger()		{ mNeedNetworkLedger = false; }
 	bool isNeedNetworkLedger()			{ return mNeedNetworkLedger; }
+	void setProposing(bool p, bool v)	{ mProposing = p; mValidating = v; }
+	bool isProposing()					{ return mProposing; }
+	bool isValidating()					{ return mValidating; }
 	void consensusViewChange();
 	int getPreviousProposers()			{ return mLastCloseProposers; }
 	int getPreviousConvergeTime()		{ return mLastCloseConvergeTime; }
 	uint32 getLastCloseTime()			{ return mLastCloseTime; }
 	void setLastCloseTime(uint32 t)		{ mLastCloseTime = t; }
-	Json::Value getServerInfo();
+	Json::Value getServerInfo(bool human, bool admin);
 	uint32 acceptLedger();
 	boost::unordered_map<uint160,
 		std::list<LedgerProposal::pointer> >& peekStoredProposals() { return mStoredProposals; }
 	void storeProposal(const LedgerProposal::pointer& proposal,	const RippleAddress& peerPublic);
 	uint256 getConsensusLCL();
+
+	bool addWantedHash(const uint256& h);
+	bool isWantedHash(const uint256& h, bool remove);
 
 	// client information retrieval functions
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
@@ -250,8 +273,8 @@ public:
 	//
 	// Monitoring: subscriber side
 	//
-	void subAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs,bool rt);
-	void unsubAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs,bool rt);
+	void subAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs, uint32 uLedgerIndex, bool rt);
+	void unsubAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs, bool rt);
 
 	bool subLedger(InfoSub* ispListener, Json::Value& jvResult);
 	bool unsubLedger(InfoSub* ispListener);
@@ -264,6 +287,9 @@ public:
 
 	bool subRTTransactions(InfoSub* ispListener);
 	bool unsubRTTransactions(InfoSub* ispListener);
+
+	RPCSub*	findRpcSub(const std::string& strUrl);
+	RPCSub*	addRpcSub(const std::string& strUrl, RPCSub* rspEntry);
 };
 
 #endif

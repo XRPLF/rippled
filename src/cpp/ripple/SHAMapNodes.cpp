@@ -16,6 +16,8 @@
 #include "Log.h"
 #include "HashPrefixes.h"
 
+SETUP_LOG();
+
 std::string SHAMapNode::getString() const
 {
 	static boost::format NodeID("NodeID(%s,%s)");
@@ -100,15 +102,16 @@ uint256 SHAMapNode::getNodeID(int depth, const uint256& hash)
 	return hash & smMasks[depth];
 }
 
-SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mDepth(depth)
+SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mDepth(depth), mHash(0)
 { // canonicalize the hash to a node ID for this depth
 	assert((depth >= 0) && (depth < 65));
 	mNodeID = getNodeID(depth, hash);
 }
 
-SHAMapNode::SHAMapNode(const void *ptr, int len)
+SHAMapNode::SHAMapNode(const void *ptr, int len) : mHash(0)
 {
-	if (len < 33) mDepth = -1;
+	if (len < 33)
+		mDepth = -1;
 	else
 	{
 		memcpy(mNodeID.begin(), ptr, 32);
@@ -170,7 +173,7 @@ int SHAMapNode::selectBranch(const uint256& hash) const
 
 void SHAMapNode::dump() const
 {
-	Log(lsDEBUG) << getString();
+	cLog(lsDEBUG) << getString();
 }
 
 SHAMapTreeNode::SHAMapTreeNode(uint32 seq, const SHAMapNode& nodeID) : SHAMapNode(nodeID), mHash(0),
@@ -195,7 +198,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::ref item, TNT
 }
 
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& rawNode, uint32 seq,
-	SHANodeFormat format) : SHAMapNode(id), mSeq(seq), mType(tnERROR), mFullBelow(false)
+	SHANodeFormat format, const uint256& hash) : SHAMapNode(id), mSeq(seq), mType(tnERROR), mFullBelow(false)
 {
 	if (format == snfWIRE)
 	{
@@ -265,7 +268,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 	{
 		if (rawNode.size() < 4)
 		{
-			Log(lsINFO) << "size < 4";
+			cLog(lsINFO) << "size < 4";
 			throw std::runtime_error("invalid P node");
 		}
 
@@ -287,7 +290,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 			s.chop(32);
 			if (u.isZero())
 			{
-				Log(lsINFO) << "invalid PLN node";
+				cLog(lsINFO) << "invalid PLN node";
 				throw std::runtime_error("invalid PLN node");
 			}
 			mItem = boost::make_shared<SHAMapItem>(u, s.peekData()); 
@@ -313,7 +316,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 		else
 		{
-			Log(lsINFO) << "Unknown node prefix " << std::hex << prefix << std::dec;
+			cLog(lsINFO) << "Unknown node prefix " << std::hex << prefix << std::dec;
 			throw std::runtime_error("invalid node prefix");
 		}
 	}
@@ -324,7 +327,16 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		throw std::runtime_error("Unknown format");
 	}
 
-	updateHash();
+	if (hash.isZero())
+		updateHash();
+	else
+	{
+		mHash = hash;
+#ifdef PARANOID
+		updateHash();
+		assert(mHash == hash);
+#endif
+	}
 }
 
 bool SHAMapTreeNode::updateHash()
@@ -343,7 +355,7 @@ bool SHAMapTreeNode::updateHash()
 		if(!empty)
 		{
 			nh = Serializer::getPrefixHash(sHP_InnerNode, reinterpret_cast<unsigned char *>(mHashes), sizeof(mHashes));
-#ifdef DEBUG
+#ifdef PARANOID
 			Serializer s;
 			s.add32(sHP_InnerNode);
 			for(int i = 0; i < 16; ++i)
@@ -510,7 +522,7 @@ void SHAMapTreeNode::makeInner()
 
 void SHAMapTreeNode::dump()
 {
-	Log(lsDEBUG) << "SHAMapTreeNode(" << getNodeID() << ")";
+	cLog(lsDEBUG) << "SHAMapTreeNode(" << getNodeID() << ")";
 }
 
 std::string SHAMapTreeNode::getString() const

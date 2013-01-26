@@ -8,11 +8,12 @@
   "dependencies": {
     "async": "~0.1.22",
     "ws": "~0.4.22",
-    "extend": "~1.1.1"
+    "extend": "~1.1.1",
+    "simple-jsonrpc": "~0.0.1"
   },
   "devDependencies": {
     "buster": "~0.6.2",
-    "webpack": "~0.7.17"
+    "grunt-webpack": "~0.4.0"
   },
   "scripts": {
     "test": "buster test"

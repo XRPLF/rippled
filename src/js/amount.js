@@ -1,8 +1,8 @@
 // Represent Ripple amounts and currencies.
 // - Numbers in hex are big-endian.
 
-var sjcl    = require('./sjcl/core.js');
-var bn	    = require('./sjcl/core.js').bn;
+var sjcl    = require('../../build/sjcl');
+var bn	    = sjcl.bn;
 var utils   = require('./utils.js');
 var jsbn    = require('./jsbn.js');
 
@@ -10,7 +10,8 @@ var BigInteger	= jsbn.BigInteger;
 var nbi		= jsbn.nbi;
 
 var alphabets	= {
-  'ripple' : "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz",
+   'ripple' : "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz",
+   'tipple' : "RPShNAF39wBUDnEGHJKLM4pQrsT7VWXYZ2bcdeCg65jkm8ofqi1tuvaxyz",
   'bitcoin' : "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 };
 
@@ -254,10 +255,21 @@ UInt160.json_rewrite = function (j) {
 };
 
 // Return a new UInt160 from j.
-UInt160.from_json = function (j) {
+UInt160.from_generic = function (j) {
   return 'string' === typeof j
-      ? (new UInt160()).parse_json(j)
+      ? (new UInt160()).parse_generic(j)
       : j.clone();
+};
+
+// Return a new UInt160 from j.
+UInt160.from_json = function (j) {
+  if ('string' === typeof j) {
+    return (new UInt160()).parse_json(j);
+  } else if (j instanceof UInt160) {
+    return j.clone();
+  } else {
+    return new UInt160();
+  }
 };
 
 UInt160.is_valid = function (j) {
@@ -284,7 +296,7 @@ UInt160.prototype.is_valid = function () {
 };
 
 // value = NaN on error.
-UInt160.prototype.parse_json = function (j) {
+UInt160.prototype.parse_generic = function (j) {
   // Canonicalize and validate
   if (exports.config.accounts && j in exports.config.accounts)
     j = exports.config.accounts[j].account;
@@ -323,6 +335,25 @@ UInt160.prototype.parse_json = function (j) {
       else {
 	this._value  = NaN;
       }
+  }
+
+  return this;
+};
+
+// value = NaN on error.
+UInt160.prototype.parse_json = function (j) {
+  // Canonicalize and validate
+  if (exports.config.accounts && j in exports.config.accounts)
+    j = exports.config.accounts[j].account;
+
+  if ('string' !== typeof j) {
+    this._value  = NaN;
+  }
+  else if (j[0] === "r") {
+    this._value  = decode_base_check(consts.VER_ACCOUNT_ID, j);
+  }
+  else {
+    this._value  = NaN;
   }
 
   return this;
@@ -523,10 +554,9 @@ Amount.prototype.add = function (v) {
     result._offset      = o1;
     result._value       = v1.add(v2);
     result._is_negative = result._value.compareTo(BigInteger.ZERO) < 0;
-    
+
     if (result._is_negative) {
       result._value       = result._value.negate();
-      result._is_negative = false;
     }
 
     result._currency    = this._currency.clone();
@@ -747,6 +777,7 @@ Amount.prototype.ratio_human = function (denominator) {
   if (denominator._is_native) {
     numerator = numerator.clone();
     numerator._value = numerator._value.multiply(consts.bi_xns_unit);
+    numerator.canonicalize();
   }
 
   return numerator.divide(denominator);
@@ -781,6 +812,7 @@ Amount.prototype.product_human = function (factor) {
   // See also Amount#ratio_human.
   if (factor._is_native) {
     product._value = product._value.divide(consts.bi_xns_unit);
+    product.canonicalize();
   }
 
   return product;
@@ -1025,7 +1057,7 @@ Amount.prototype.parse_value = function (j) {
   else if ('string' === typeof j) {
     var	i = j.match(/^(-?)(\d+)$/);
     var	d = !i && j.match(/^(-?)(\d+)\.(\d*)$/);
-    var	e = !e && j.match(/^(-?)(\d+)e(\d+)$/);
+    var	e = !e && j.match(/^(-?)(\d+)e(-?\d+)$/);
 
     if (e) {
       // e notation
@@ -1156,6 +1188,9 @@ Amount.prototype.to_text = function (allow_nan) {
  *
  * @param opts Options for formatter.
  * @param opts.precision {Number} Max. number of digits after decimal point.
+ * @param opts.min_precision {Number} Min. number of digits after dec. point.
+ * @param opts.skip_empty_fraction {Boolean} Don't show fraction if it is zero,
+ *   even if min_precision is set.
  * @param opts.group_sep {Boolean|String} Whether to show a separator every n
  *   digits, if a string, that value will be used as the separator. Default: ","
  * @param opts.group_width {Number} How many numbers will be grouped together,
@@ -1187,8 +1222,16 @@ Amount.prototype.to_human = function (opts)
   int_part = int_part.replace(/^0*/, '');
   fraction_part = fraction_part.replace(/0*$/, '');
 
-  if ("number" === typeof opts.precision) {
-    fraction_part = fraction_part.slice(0, opts.precision);
+  if (fraction_part.length || !opts.skip_empty_fraction) {
+    if ("number" === typeof opts.precision) {
+      fraction_part = fraction_part.slice(0, opts.precision);
+    }
+
+    if ("number" === typeof opts.min_precision) {
+      while (fraction_part.length < opts.min_precision) {
+        fraction_part += "0";
+      }
+    }
   }
 
   if (opts.group_sep) {

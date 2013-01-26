@@ -750,10 +750,13 @@ bool RippleAddress::setSeed(const std::string& strSeed)
     return SetString(strSeed.c_str(), VER_FAMILY_SEED);
 }
 
+extern const char *ALPHABET;
+
 bool RippleAddress::setSeedGeneric(const std::string& strText)
 {
 	RippleAddress	naTemp;
 	bool			bResult	= true;
+	uint128			uSeed;
 
 	if (strText.empty()
 		|| naTemp.setAccountID(strText)
@@ -763,6 +766,10 @@ bool RippleAddress::setSeedGeneric(const std::string& strText)
 		|| naTemp.setNodePrivate(strText))
 	{
 		bResult	= false;
+	}
+	else if (strText.length() == 32 && uSeed.SetHex(strText, true))
+	{
+		setSeed(uSeed);
 	}
 	else if (setSeed(strText))
 	{

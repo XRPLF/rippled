@@ -4,6 +4,9 @@
 
 // Transaction database holds transactions and public keys
 const char *TxnDBInit[] = {
+	"PRAGMA synchronous=NORMAL;",
+	"PRAGMA journal_mode=WAL;",
+
 	"BEGIN TRANSACTION;",
 
 	"CREATE TABLE Transactions (				\
@@ -15,10 +18,6 @@ const char *TxnDBInit[] = {
 		Status		CHARACTER(1),				\
 		RawTxn		BLOB,						\
 		TxnMeta		BLOB						\
-	);",
-	"CREATE TABLE PubKeys (						\
-		ID			CHARACTER(35) PRIMARY KEY,	\
-		PubKey		BLOB						\
 	);",
 	"CREATE TABLE AccountTransactions (			\
 		TransID		CHARACTER(64),				\
@@ -37,6 +36,9 @@ int TxnDBCount = NUMBER(TxnDBInit);
 
 // Ledger database holds ledgers and ledger confirmations
 const char *LedgerDBInit[] = {
+	"PRAGMA synchronous=NORMAL;",
+	"PRAGMA journal_mode=WAL;",
+
 	"BEGIN TRANSACTION;",
 
 	"CREATE TABLE Ledgers (							\
@@ -254,6 +256,9 @@ int WalletDBCount = NUMBER(WalletDBInit);
 
 // Hash node database holds nodes indexed by hash
 const char *HashNodeDBInit[] = {
+	"PRAGMA synchronous=NORMAL;",
+	"PRAGMA journal_mode=WAL;",
+
 	"BEGIN TRANSACTION;",
 
 	"CREATE TABLE CommittedObjects (				\

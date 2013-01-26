@@ -75,10 +75,21 @@ else:
 	    ]
     )
 
+# Apparently, only linux uses -ldl
+if not FreeBSD:
+    env.Append(
+	    LIBS = [
+		    'dl', # dynamic linking for linux
+	    ]
+    )
+
+# Apparently, pkg-config --libs protobuf on bsd fails to provide this necessary include dir.
+if FreeBSD:
+    env.Append(LINKFLAGS = ['-I/usr/local/include'])
+
 env.Append(
 	LIBS = [
 		'protobuf',
-		'dl', # dynamic linking
 		'z'
 	]
 )
@@ -87,12 +98,12 @@ DEBUGFLAGS	= ['-g', '-DDEBUG']
 BOOSTFLAGS	= ['-DBOOST_TEST_DYN_LINK', '-DBOOST_FILESYSTEM_NO_DEPRECATED']
 
 env.Append(LINKFLAGS = ['-rdynamic', '-pthread'])
-env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts', '-DSQLITE_THREADSAFE'])
+env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts', '-DSQLITE_THREADSAFE=1'])
 env.Append(CXXFLAGS = ['-O0', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+BOOSTFLAGS+DEBUGFLAGS)
 
 if OSX:
-	env.Append(LINKFLAGS = ['-L/usr/local/Cellar/openssl/1.0.1c/lib'])
-	env.Append(CXXFLAGS = ['-I/usr/local/Cellar/openssl/1.0.1c/include'])
+	env.Append(LINKFLAGS = ['-L/usr/local/opt/openssl/lib'])
+	env.Append(CXXFLAGS = ['-I/usr/local/opt/openssl/include'])
 
 DB_SRCS   = glob.glob('src/cpp/database/*.c') + glob.glob('src/cpp/database/*.cpp')
 JSON_SRCS = glob.glob('src/cpp/json/*.cpp')

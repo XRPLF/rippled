@@ -31,6 +31,7 @@ var Server = function (name, config, verbose) {
   this.config   = config;
   this.started  = false;
   this.quiet    = !verbose;
+  this.stopping = false;
 };
 
 Server.prototype  = new EventEmitter;
@@ -97,10 +98,21 @@ Server.prototype._serverSpawnSync = function() {
 
   // By default, just log exits.
   this.child.on('exit', function(code, signal) {
-      // If could not exec: code=127, signal=null
-      // If regular exit: code=0, signal=null
-      if (!self.quiet) console.log("server: spawn: server exited code=%s: signal=%s", code, signal);
-    });
+    if (!self.quiet) console.log("server: spawn: server exited code=%s: signal=%s", code, signal);
+
+    self.emit('exited');
+
+    // Workaround for
+    // https://github.com/busterjs/buster/issues/266
+    if (!self.stopping) {
+      buster.assertions.throwOnFailure = true;
+    }
+
+    // If could not exec: code=127, signal=null
+    // If regular exit: code=0, signal=null
+    // Fail the test if the server has not called "stop".
+    buster.assert(self.stopping, 'Server died with signal '+signal);
+  });
 };
 
 // Prepare server's working directory.
@@ -148,6 +160,8 @@ Server.prototype.start = function () {
 // Stop a standalone server.
 Server.prototype.stop = function () {
   var self  = this;
+
+  self.stopping = true;
 
   if (this.child) {
     // Update the on exit to invoke done.

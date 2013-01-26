@@ -90,10 +90,22 @@ var build_setup = function (opts, host) {
       function runServerStep(callback) {
         if (opts.no_server) return callback();
 
-        data.server = Server.from_config(host, !!opts.verbose_server).on('started', callback).start();
+        data.server = Server
+                        .from_config(host, !!opts.verbose_server)
+                        .on('started', callback)
+                        .on('exited', function () {
+                            // If know the remote, tell it server is gone.
+                            if (self.remote)
+                              self.remote.server_fatal();
+                          })
+                        .start();
       },
       function connectWebsocketStep(callback) {
-        self.remote = data.remote = Remote.from_config(host, !!opts.verbose_ws).once('ledger_closed', callback).connect();
+        self.remote = data.remote =
+          Remote
+            .from_config(host, !!opts.verbose_ws)
+            .once('ledger_closed', callback)
+            .connect();
       }
     ], done);
   };
@@ -107,8 +119,6 @@ var build_setup = function (opts, host) {
 var build_teardown = function (host) {
 
   return function (done) {
-
-
     host = host || config.server_default;
 
     var data = this.store[host];
@@ -203,6 +213,10 @@ var credit_limits = function (remote, balances, callback) {
     });
 };
 
+var ledger_close = function (remote, callback) {
+  remote.once('ledger_closed', function (m) { callback(); }).ledger_accept();
+}
+
 var payment = function (remote, src, dst, amount, callback) {
   assert(5 === arguments.length);
 
@@ -295,7 +309,7 @@ var verify_balance = function (remote, src, amount_json, callback) {
           var account_balance = Amount.from_json(m.account_balance);
 
           if (!account_balance.equals(amount_req)) {
-            console.log("verify_balance: failed: %s vs %s is %s: %s", src, account_balance.to_text_full(), amount_req.to_text_full(), account_balance.not_equals_why(amount_req));
+            console.log("verify_balance: failed: %s vs %s / %s: %s", src, account_balance.to_text_full(), amount_req.to_text_full(), account_balance.not_equals_why(amount_req));
           }
 
           callback(!account_balance.equals(amount_req));
@@ -397,14 +411,14 @@ var verify_owner_counts = function (remote, counts, callback) {
 };
 
 exports.account_dump            = account_dump;
-
 exports.build_setup             = build_setup;
+exports.build_teardown          = build_teardown;
 exports.create_accounts         = create_accounts;
 exports.credit_limit            = credit_limit;
 exports.credit_limits           = credit_limits;
+exports.ledger_close            = ledger_close;
 exports.payment                 = payment;
 exports.payments                = payments;
-exports.build_teardown          = build_teardown;
 exports.transfer_rate           = transfer_rate;
 exports.verify_balance          = verify_balance;
 exports.verify_balances         = verify_balances;

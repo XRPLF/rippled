@@ -21,6 +21,7 @@ private:
 
 	typedef std::pair<RippleAddress, Peer::pointer>		naPeer;
 	typedef std::pair<ipPort, Peer::pointer>			pipPeer;
+	typedef std::map<ipPort, Peer::pointer>::value_type	vtPeer;
 
 	// Peers we are connecting with and non-thin peers we are connected to.
 	// Only peers we know the connection ip for are listed.
@@ -31,12 +32,11 @@ private:
 
 	// Non-thin peers which we are connected to.
 	// Peers we have the public key for.
+	typedef boost::unordered_map<RippleAddress, Peer::pointer>::value_type vtConMap;
     boost::unordered_map<RippleAddress, Peer::pointer>	mConnectedMap;
 
     // Connections with have a 64-bit identifier
     boost::unordered_map<uint64, Peer::pointer>			mPeerIdMap;
-
-    boost::asio::ssl::context							mCtx;
 
 	Peer::pointer										mScanning;
 	boost::asio::deadline_timer							mScanTimer;
@@ -58,7 +58,9 @@ private:
 	Peer::pointer	peerConnect(const std::string& strIp, int iPort);
 
 public:
-	ConnectionPool(boost::asio::io_service& io_service);
+	ConnectionPool(boost::asio::io_service& io_service) :
+		mLastPeer(0), mScanTimer(io_service), mPolicyTimer(io_service)
+	{ ; }
 
 	// Begin enforcing connection policy.
 	void start();

@@ -130,12 +130,12 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 	}
 }
 
-void STObject::set(const std::vector<SOElement::ptr>& type)
+void STObject::set(const std::vector<SOElement::ref>& type)
 {
 	mData.clear();
 	mType.clear();
 
-	BOOST_FOREACH(const SOElement::ptr& elem, type)
+	BOOST_FOREACH(SOElement::ref elem, type)
 	{
 		mType.push_back(elem);
 		if (elem->flags != SOE_REQUIRED)
@@ -145,13 +145,13 @@ void STObject::set(const std::vector<SOElement::ptr>& type)
 	}
 }
 
-bool STObject::setType(const std::vector<SOElement::ptr> &type)
+bool STObject::setType(const std::vector<SOElement::ref> &type)
 {
 	boost::ptr_vector<SerializedType> newData;
 	bool valid = true;
 
 	mType.clear();
-	BOOST_FOREACH(const SOElement::ptr& elem, type)
+	BOOST_FOREACH(SOElement::ref elem, type)
 	{
 		bool match = false;
 		for (boost::ptr_vector<SerializedType>::iterator it = mData.begin(); it != mData.end(); ++it)
@@ -200,7 +200,7 @@ bool STObject::setType(const std::vector<SOElement::ptr> &type)
 bool STObject::isValidForType()
 {
 	boost::ptr_vector<SerializedType>::iterator it = mData.begin();
-	BOOST_FOREACH(SOElement::ptr elem, mType)
+	BOOST_FOREACH(SOElement::ref elem, mType)
 	{
 		if (it == mData.end())
 			return false;
@@ -216,7 +216,7 @@ bool STObject::isFieldAllowed(SField::ref field)
 {
 	if (isFree())
 		return true;
-	BOOST_FOREACH(SOElement::ptr elem, mType)
+	BOOST_FOREACH(SOElement::ref elem, mType)
 	{ // are any required elemnents missing
 		if (elem->e_field == field)
 			return true;
@@ -294,7 +294,7 @@ void STObject::add(Serializer& s, bool withSigningFields) const
 	}
 
 
-	typedef std::pair<const int, const SerializedType*> field_iterator;
+	typedef std::map<int, const SerializedType*>::value_type field_iterator;
 	BOOST_FOREACH(field_iterator& it, fields)
 	{ // insert them in sorted order
 		const SerializedType* field = it.second;
@@ -1039,7 +1039,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				if (value.isString())
 					data.push_back(new STUInt32(field, lexical_cast_st<uint32>(value.asString())));
 				else if (value.isInt())
-					data.push_back(new STUInt32(field, range_check_cast<uint32>(value.asInt(), 0, 4294967295)));
+					data.push_back(new STUInt32(field, range_check_cast<uint32>(value.asInt(), 0, 4294967295u)));
 				else if (value.isUInt())
 					data.push_back(new STUInt32(field, static_cast<uint32>(value.asUInt())));
 				else
@@ -1242,7 +1242,7 @@ BOOST_AUTO_TEST_CASE( FieldManipulation_test )
 	SField sfTestU32(STI_UINT32, 255, "TestU32");
 	SField sfTestObject(STI_OBJECT, 255, "TestObject");
 
-	std::vector<SOElement::ptr> elements;
+	std::vector<SOElement::ref> elements;
 	elements.push_back(new SOElement(sfFlags, SOE_REQUIRED));
 	elements.push_back(new SOElement(sfTestVL, SOE_REQUIRED));
 	elements.push_back(new SOElement(sfTestH256, SOE_OPTIONAL));

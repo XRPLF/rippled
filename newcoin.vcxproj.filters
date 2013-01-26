@@ -42,9 +42,6 @@
     <ClCompile Include="src\cpp\database\SqliteDatabase.cpp">
       <Filter>Source Files\database</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\database\win\windatabase.cpp">
-      <Filter>Source Files\database</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\json\json_reader.cpp">
       <Filter>Source Files\json</Filter>
     </ClCompile>
@@ -177,9 +174,6 @@
     <ClCompile Include="src\cpp\ripple\PlatRand.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\PubKeyCache.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\RangeSet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -262,6 +256,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionMeta.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\TransactionQueue.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\UniqueNodeList.cpp">
@@ -358,6 +355,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\RPCSub.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -506,9 +506,6 @@
     <ClInclude Include="src\cpp\ripple\ProofOfWork.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\PubKeyCache.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\RangeSet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -603,6 +600,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\TransactionMeta.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\TransactionQueue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\types.h">

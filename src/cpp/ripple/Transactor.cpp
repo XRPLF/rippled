@@ -11,26 +11,26 @@
 
 SETUP_LOG();
 
-Transactor::pointer Transactor::makeTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine)
+std::auto_ptr<Transactor> Transactor::makeTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine)
 {
 	switch(txn.getTxnType())
 	{
 	case ttPAYMENT:
-		return( Transactor::pointer(new PaymentTransactor(txn,params,engine)) );
+		return std::auto_ptr<Transactor>(new PaymentTransactor(txn, params, engine));
 	case ttACCOUNT_SET:
-		return( Transactor::pointer(new AccountSetTransactor(txn,params,engine)) );
+		return std::auto_ptr<Transactor>(new AccountSetTransactor(txn, params, engine));
 	case ttREGULAR_KEY_SET:
-		return( Transactor::pointer(new RegularKeySetTransactor(txn,params,engine)) );
+		return std::auto_ptr<Transactor>(new RegularKeySetTransactor(txn, params, engine));
 	case ttTRUST_SET:
-		return( Transactor::pointer(new TrustSetTransactor(txn,params,engine)) );
+		return std::auto_ptr<Transactor>(new TrustSetTransactor(txn, params, engine));
 	case ttOFFER_CREATE:
-		return( Transactor::pointer(new OfferCreateTransactor(txn,params,engine)) );
+		return std::auto_ptr<Transactor>(new OfferCreateTransactor(txn, params, engine));
 	case ttOFFER_CANCEL:
-		return( Transactor::pointer(new OfferCancelTransactor(txn,params,engine)) );
+		return std::auto_ptr<Transactor>(new OfferCancelTransactor(txn, params, engine));
 	case ttWALLET_ADD:
-		return( Transactor::pointer(new WalletAddTransactor(txn,params,engine)) );
+		return std::auto_ptr<Transactor>(new WalletAddTransactor(txn, params, engine));
 	default:
-		return(Transactor::pointer());
+		return std::auto_ptr<Transactor>();
 	}
 }
 
@@ -42,7 +42,12 @@ Transactor::Transactor(const SerializedTransaction& txn,TransactionEngineParams 
 
 void Transactor::calculateFee()
 {
-	mFeeDue	= theConfig.FEE_DEFAULT;
+	mFeeDue	= STAmount(mEngine->getLedger()->scaleFeeLoad(calculateBaseFee()));
+}
+
+uint64 Transactor::calculateBaseFee()
+{
+	return theConfig.FEE_DEFAULT;
 }
 
 TER Transactor::payFee()
@@ -57,7 +62,10 @@ TER Transactor::payFee()
 		return telINSUF_FEE_P;
 	}
 
-	if( !saPaid ) return tesSUCCESS;
+	if (saPaid.isNegative() || !saPaid.isNative())
+		return temBAD_FEE;
+
+	if (!saPaid) return tesSUCCESS;
 
 	// Deduct the fee, so it's not available during the transaction.
 	// Will only write the account back, if the transaction succeeds.
@@ -76,7 +84,6 @@ TER Transactor::payFee()
 
 	return tesSUCCESS;
 }
-
 
 TER Transactor::checkSig()
 {
@@ -150,7 +157,7 @@ TER Transactor::preCheck()
 	{
 		cLog(lsWARNING) << "applyTransaction: bad source id";
 
-		return temINVALID;
+		return temBAD_SRC_ACCOUNT;
 	}
 
 	// Extract signing key
@@ -199,14 +206,14 @@ TER Transactor::apply()
 		mHasAuthKey	= mTxnAccount->isFieldPresent(sfRegularKey);
 	}
 
-	terResult=payFee();
-	if(terResult != tesSUCCESS) return(terResult);
+	terResult = payFee();
+	if (terResult != tesSUCCESS) return(terResult);
 
-	terResult=checkSig();
-	if(terResult != tesSUCCESS) return(terResult);
+	terResult = checkSig();
+	if (terResult != tesSUCCESS) return(terResult);
 
-	terResult=checkSeq();
-	if(terResult != tesSUCCESS) return(terResult);
+	terResult = checkSeq();
+	if (terResult != tesSUCCESS) return(terResult);
 
 	mEngine->entryModify(mTxnAccount);
 

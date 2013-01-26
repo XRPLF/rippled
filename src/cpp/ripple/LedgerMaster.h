@@ -17,12 +17,18 @@
 
 class LedgerMaster
 {
+public:
+	typedef boost::function<void(Ledger::ref)> callback;
+
+protected:
 	boost::recursive_mutex mLock;
 
 	TransactionEngine mEngine;
 
 	Ledger::pointer mCurrentLedger;		// The ledger we are currently processiong
 	Ledger::pointer mFinalizedLedger;	// The ledger that most recently closed
+	Ledger::pointer mValidLedger;		// The highest-sequence ledger we have fully accepted
+	Ledger::pointer mPubLedger;			// The last ledger we have published
 
 	LedgerHistory mLedgerHistory;
 
@@ -31,27 +37,43 @@ class LedgerMaster
 	RangeSet mCompleteLedgers;
 	LedgerAcquire::pointer mMissingLedger;
 	uint32 mMissingSeq;
+	bool mTooFast;	// We are acquiring faster than we're writing
+
+	int							mMinValidations;	// The minimum validations to publish a ledger
+	uint256						mLastValidateHash;
+	uint32						mLastValidateSeq;
+	std::list<callback>			mOnValidate;		// Called when a ledger has enough validations
+
+	std::list<Ledger::pointer>	mPubLedgers;		// List of ledgers to publish
+	bool						mPubThread;			// Publish thread is running
 
 	void applyFutureTransactions(uint32 ledgerIndex);
 	bool isValidTransaction(const Transaction::pointer& trans);
 	bool isTransactionOnFutureList(const Transaction::pointer& trans);
 
-	void acquireMissingLedger(const uint256& ledgerHash, uint32 ledgerSeq);
+	bool acquireMissingLedger(Ledger::ref from, const uint256& ledgerHash, uint32 ledgerSeq);
+	void asyncAccept(Ledger::pointer);
 	void missingAcquireComplete(LedgerAcquire::pointer);
+	void pubThread();
 
 public:
 
-	LedgerMaster() : mHeldTransactions(uint256()), mMissingSeq(0)	{ ; }
+	LedgerMaster() : mHeldTransactions(uint256()), mMissingSeq(0), mTooFast(false),
+		mMinValidations(0), mLastValidateSeq(0), mPubThread(false)
+	{ ; }
 
 	uint32 getCurrentLedgerIndex();
 
 	ScopedLock getLock()				{ return ScopedLock(mLock); }
 
 	// The current ledger is the ledger we believe new transactions should go in
-	Ledger::pointer getCurrentLedger()	{ return mCurrentLedger; }
+	Ledger::ref getCurrentLedger()		{ return mCurrentLedger; }
 
 	// The finalized ledger is the last closed/accepted ledger
-	Ledger::pointer getClosedLedger()	{ return mFinalizedLedger; }
+	Ledger::ref getClosedLedger()		{ return mFinalizedLedger; }
+
+	// The published ledger is the last fully validated ledger
+	Ledger::ref getValidatedLedger()	{ return mPubLedger; }
 
 	TER doTransaction(const SerializedTransaction& txn, TransactionEngineParams params);
 
@@ -63,7 +85,11 @@ public:
 
 	void switchLedgers(Ledger::ref lastClosed, Ledger::ref newCurrent);
 
-	std::string getCompleteLedgers()	{ return mCompleteLedgers.toString(); }
+	std::string getCompleteLedgers()
+	{
+		boost::recursive_mutex::scoped_lock sl(mLock);
+		return mCompleteLedgers.toString();
+	}
 
 	Ledger::pointer closeLedger(bool recoverHeldTransactions);
 
@@ -79,23 +105,39 @@ public:
 	Ledger::pointer getLedgerByHash(const uint256& hash)
 	{
 		if (hash.isZero())
-			return mCurrentLedger;
+			return boost::make_shared<Ledger>(boost::ref(*mCurrentLedger), false);
 
 		if (mCurrentLedger && (mCurrentLedger->getHash() == hash))
-			return mCurrentLedger;
+			return boost::make_shared<Ledger>(boost::ref(*mCurrentLedger), false);
+
 		if (mFinalizedLedger && (mFinalizedLedger->getHash() == hash))
 			return mFinalizedLedger;
 
 		return mLedgerHistory.getLedgerByHash(hash);
 	}
 
-	void setLedgerRangePresent(uint32 minV, uint32 maxV) { mCompleteLedgers.setRange(minV, maxV); }
+	void setLedgerRangePresent(uint32 minV, uint32 maxV)
+	{
+		boost::recursive_mutex::scoped_lock sl(mLock);
+		mCompleteLedgers.setRange(minV, maxV);
+	}
 
 	void addHeldTransaction(const Transaction::pointer& trans);
+	void fixMismatch(Ledger::ref ledger);
 
 	bool haveLedgerRange(uint32 from, uint32 to);
 
+	void resumeAcquiring();
+
 	void sweep(void) { mLedgerHistory.sweep(); }
+
+	void addValidateCallback(callback& c) { mOnValidate.push_back(c); }
+
+	void checkAccept(const uint256& hash);
+	void checkAccept(const uint256& hash, uint32 seq);
+	void tryPublish();
+
+	static bool shouldAcquire(uint32 currentLedgerID, uint32 ledgerHistory, uint32 targetLedger);
 };
 
 #endif

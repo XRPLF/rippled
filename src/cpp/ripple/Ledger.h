@@ -78,6 +78,10 @@ private:
 	uint32		mCloseFlags;		// flags indicating how this ledger close took place
 	bool		mClosed, mValidHash, mAccepted, mImmutable;
 
+	uint32		mReferenceFeeUnits;					// Fee units for the reference transaction
+	uint32		mReserveBase, mReserveIncrement;	// Reserve basse and increment in fee units
+	uint64		mBaseFee;							// Ripple cost of the reference transaction
+
 	SHAMap::pointer mTransactionMap, mAccountStateMap;
 
 	mutable boost::recursive_mutex mLock;
@@ -95,6 +99,9 @@ protected:
 	static void decPendingSaves();
 	void saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer);
 
+	void updateFees();
+	void zeroFees();
+
 public:
 	Ledger(const RippleAddress& masterID, uint64 startAmount); // used for the starting bootstrap ledger
 
@@ -102,9 +109,8 @@ public:
 		uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution,
 		uint32 ledgerSeq); // used for database ledgers
 
-	Ledger(const std::vector<unsigned char>& rawLedger);
-
-	Ledger(const std::string& rawLedger);
+	Ledger(const std::vector<unsigned char>& rawLedger, bool hasPrefix);
+	Ledger(const std::string& rawLedger, bool hasPrefix);
 
 	Ledger(bool dummy, Ledger& previous);	// ledger after this one
 
@@ -125,7 +131,7 @@ public:
 
 	// ledger signature operations
 	void addRaw(Serializer &s) const;
-	void setRaw(Serializer& s);
+	void setRaw(Serializer& s, bool hasPrefix);
 
 	uint256 getHash();
 	const uint256& getParentHash() const	{ return mParentHash; }
@@ -172,9 +178,11 @@ public:
 	SLE::pointer getAccountRoot(const RippleAddress& naAccountID);
 	void updateSkipList();
 
-	// database functions
+	// database functions (low-level)
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
+	static uint256 getHashByIndex(uint32 index);
+	static bool getHashesByIndex(uint32 index, uint256& ledgerHash, uint256& parentHash);
 	void pendSave(bool fromConsensus);
 
 	// next/prev function
@@ -191,8 +199,11 @@ public:
 	static uint256 getLedgerHashIndex(uint32 desiredLedgerIndex);
 	static int getLedgerHashOffset(uint32 desiredLedgerIndex);
 	static int getLedgerHashOffset(uint32 desiredLedgerIndex, uint32 currentLedgerIndex);
+	uint256 getLedgerHash(uint32 ledgerIndex);
+	std::vector< std::pair<uint32, uint256> > getLedgerHashes();
 
 	static uint256 getLedgerFeatureIndex();
+	static uint256 getLedgerFeeIndex();
 
 	// index calculation functions
 	static uint256 getAccountRootIndex(const uint160& uAccountID);
@@ -293,16 +304,44 @@ public:
 	SLE::pointer getRippleState(LedgerStateParms& parms, const uint256& uNode);
 
 	SLE::pointer getRippleState(const uint256& uNode)
-		{
-			LedgerStateParms	qry				= lepNONE;
-			return getRippleState(qry, uNode);
-		}
+	{
+		LedgerStateParms	qry				= lepNONE;
+		return getRippleState(qry, uNode);
+	}
 
 	SLE::pointer getRippleState(const RippleAddress& naA, const RippleAddress& naB, const uint160& uCurrency)
 		{ return getRippleState(getRippleStateIndex(naA, naB, uCurrency)); }
 
 	SLE::pointer getRippleState(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
 		{ return getRippleState(getRippleStateIndex(RippleAddress::createAccountID(uiA), RippleAddress::createAccountID(uiB), uCurrency)); }
+
+	uint32 getReferenceFeeUnits()
+	{
+		if (!mBaseFee) updateFees();
+		return mReferenceFeeUnits;
+	}
+
+	uint64 getBaseFee()
+	{
+		if (!mBaseFee) updateFees();
+		return mBaseFee;
+	}
+
+	uint64 getReserve(int increments)
+	{
+		if (!mBaseFee) updateFees();
+		return scaleFeeBase(static_cast<uint64>(increments) * mReserveIncrement + mReserveBase);
+	}
+
+	uint64 getReserveInc()
+	{
+		if (!mBaseFee) updateFees();
+		return mReserveIncrement;
+	}
+
+	uint64 scaleFeeBase(uint64 fee);
+	uint64 scaleFeeLoad(uint64 fee);
+
 
 	Json::Value getJson(int options);
 	void addJson(Json::Value&, int options);

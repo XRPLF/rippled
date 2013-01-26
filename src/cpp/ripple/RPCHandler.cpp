@@ -1,5 +1,5 @@
 //
-// carries out the RPC
+// Carries out the RPC.
 //
 
 #include <openssl/md5.h>
@@ -11,6 +11,7 @@
 #include "Log.h"
 #include "NetworkOPs.h"
 #include "RPCHandler.h"
+#include "RPCSub.h"
 #include "Application.h"
 #include "AccountItems.h"
 #include "Wallet.h"
@@ -22,19 +23,340 @@
 #include "InstanceCounter.h"
 #include "Offer.h"
 
-
 SETUP_LOG();
+
+int iAdminGet(const Json::Value& jvRequest, const std::string& strRemoteIp)
+{
+	int		iRole;
+	bool	bPasswordSupplied	= jvRequest.isMember("admin_user") || jvRequest.isMember("admin_password");
+	bool	bPasswordRequired	= !theConfig.RPC_ADMIN_USER.empty() || !theConfig.RPC_ADMIN_PASSWORD.empty();
+
+	bool	bPasswordWrong		= bPasswordSupplied
+									? bPasswordRequired
+										// Supplied, required, and incorrect.
+										? theConfig.RPC_ADMIN_USER != (jvRequest.isMember("admin_user") ? jvRequest["admin_user"].asString() : "")
+											|| theConfig.RPC_ADMIN_PASSWORD != (jvRequest.isMember("admin_user") ? jvRequest["admin_password"].asString() : "")
+										// Supplied and not required.
+										: true
+									: false;
+	// Meets IP restriction for admin.
+	bool	bAdminIP			= false;
+
+	BOOST_FOREACH(const std::string& strAllowIp, theConfig.RPC_ADMIN_ALLOW)
+	{
+		if (strAllowIp == strRemoteIp)
+			bAdminIP	= true;
+	}
+
+	if (bPasswordWrong							// Wrong
+		|| (bPasswordSupplied && !bAdminIP))	// Supplied and doesn't meet IP filter.
+	{
+		iRole	= RPCHandler::FORBID;
+	}
+	// If supplied, password is correct.
+	else
+	{
+		// Allow admin, if from admin IP and no password is required or it was supplied and correct.
+		iRole = bAdminIP && (!bPasswordRequired || bPasswordSupplied) ? RPCHandler::ADMIN : RPCHandler::GUEST;
+	}
+
+	return iRole;
+}
 
 RPCHandler::RPCHandler(NetworkOPs* netOps)
 {
-	mNetOps=netOps;
-	mInfoSub=NULL;
+	mNetOps		= netOps;
+	mInfoSub	= NULL;
 }
 
 RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub* infoSub)
 {
-	mNetOps=netOps;
-	mInfoSub=infoSub;
+	mNetOps		= netOps;
+	mInfoSub	= infoSub;
+}
+
+Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
+{
+	Json::Value		jvResult;
+	RippleAddress	naSeed;
+	RippleAddress	raSrcAddressID;
+
+	cLog(lsDEBUG) << boost::str(boost::format("transactionSign: %s") % jvRequest);
+
+	if (!jvRequest.isMember("secret") || !jvRequest.isMember("tx_json"))
+	{
+		return rpcError(rpcINVALID_PARAMS);
+	}
+
+	Json::Value		txJSON		= jvRequest["tx_json"];
+
+	if (!txJSON.isObject())
+	{
+		return rpcError(rpcINVALID_PARAMS);
+	}
+	if (!naSeed.setSeedGeneric(jvRequest["secret"].asString()))
+	{
+		return rpcError(rpcBAD_SEED);
+	}
+	if (!txJSON.isMember("Account"))
+	{
+		return rpcError(rpcSRC_ACT_MISSING);
+	}
+	if (!raSrcAddressID.setAccountID(txJSON["Account"].asString()))
+	{
+		return rpcError(rpcSRC_ACT_MALFORMED);
+	}
+	if (!txJSON.isMember("TransactionType"))
+	{
+		return rpcError(rpcINVALID_PARAMS);
+	}
+
+	AccountState::pointer asSrc	= mNetOps->getAccountState(mNetOps->getCurrentLedger(), raSrcAddressID);
+	if (!asSrc)
+	{
+		cLog(lsDEBUG) << boost::str(boost::format("transactionSign: Failed to find source account in current ledger: %s")
+			% raSrcAddressID.humanAccountID());
+
+		return rpcError(rpcSRC_ACT_NOT_FOUND);
+	}
+
+	if ("Payment" == txJSON["TransactionType"].asString())
+	{
+
+		RippleAddress dstAccountID;
+
+		if (!txJSON.isMember("Destination"))
+		{
+			return rpcError(rpcDST_ACT_MISSING);
+		}
+		if (!dstAccountID.setAccountID(txJSON["Destination"].asString()))
+		{
+			return rpcError(rpcDST_ACT_MALFORMED);
+		}
+
+		if (!txJSON.isMember("Fee"))
+		{
+			txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
+		}
+
+		if (txJSON.isMember("Paths") && jvRequest.isMember("build_path"))
+		{
+			// Asking to build a path when providing one is an error.
+			return rpcError(rpcINVALID_PARAMS);
+		}
+
+		if (!txJSON.isMember("Paths") && txJSON.isMember("Amount") && jvRequest.isMember("build_path"))
+		{
+			// Need a ripple path.
+			STPathSet	spsPaths;
+			uint160		uSrcCurrencyID;
+			uint160		uSrcIssuerID;
+
+			STAmount	saSendMax;
+			STAmount	saSend;
+
+			if (!txJSON.isMember("Amount")					// Amount required.
+				|| !saSend.bSetJson(txJSON["Amount"]))		// Must be valid.
+				return rpcError(rpcDST_AMT_MALFORMED);
+
+			if (txJSON.isMember("SendMax"))
+			{
+				if (!saSendMax.bSetJson(txJSON["SendMax"]))
+					return rpcError(rpcINVALID_PARAMS);
+			}
+			else
+			{
+				// If no SendMax, default to Amount with sender as issuer.
+				saSendMax		= saSend;
+				saSendMax.setIssuer(raSrcAddressID.getAccountID());
+			}
+
+			if (saSendMax.isNative() && saSend.isNative())
+			{
+				// Asking to build a path for XRP to XRP is an error.
+				return rpcError(rpcINVALID_PARAMS);
+			}
+
+			Pathfinder pf(raSrcAddressID, dstAccountID, saSendMax.getCurrency(), saSendMax.getIssuer(), saSend);
+
+			if (!pf.findPaths(7, 3, spsPaths))
+			{
+				cLog(lsDEBUG) << "transactionSign: build_path: No paths found.";
+
+				return rpcError(rpcNO_PATH);
+			}
+			else
+			{
+				cLog(lsDEBUG) << "transactionSign: build_path: " << spsPaths.getJson(0);
+			}
+
+			if (!spsPaths.isEmpty())
+			{
+				txJSON["Paths"]=spsPaths.getJson(0);
+			}
+		}
+	}
+
+	if (!txJSON.isMember("Fee")
+		&& (
+			"AccountSet" == txJSON["TransactionType"].asString()
+			|| "OfferCreate" == txJSON["TransactionType"].asString()
+			|| "OfferCancel" == txJSON["TransactionType"].asString()
+			|| "TrustSet" == txJSON["TransactionType"].asString()))
+	{
+		txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
+	}
+
+	if (!txJSON.isMember("Sequence")) txJSON["Sequence"] = asSrc->getSeq();
+	if (!txJSON.isMember("Flags")) txJSON["Flags"] = 0;
+
+	Ledger::pointer	lpCurrent		= mNetOps->getCurrentLedger();
+	SLE::pointer	sleAccountRoot	= mNetOps->getSLE(lpCurrent, Ledger::getAccountRootIndex(raSrcAddressID.getAccountID()));
+
+	if (!sleAccountRoot)
+	{
+		// XXX Ignore transactions for accounts not created.
+		return rpcError(rpcSRC_ACT_NOT_FOUND);
+	}
+
+	bool			bHaveAuthKey	= false;
+	RippleAddress	naAuthorizedPublic;
+
+	RippleAddress	naSecret			= RippleAddress::createSeedGeneric(jvRequest["secret"].asString());
+	RippleAddress	naMasterGenerator	= RippleAddress::createGeneratorPublic(naSecret);
+
+	// Find the index of Account from the master generator, so we can generate the public and private keys.
+	RippleAddress		naMasterAccountPublic;
+	unsigned int		iIndex	= 0;
+	bool				bFound	= false;
+
+	// Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
+	// related.
+	while (!bFound && iIndex != theConfig.ACCOUNT_PROBE_MAX)
+	{
+		naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
+
+		cLog(lsWARNING) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << raSrcAddressID.humanAccountID();
+
+		bFound	= raSrcAddressID.getAccountID() == naMasterAccountPublic.getAccountID();
+		if (!bFound)
+			++iIndex;
+	}
+
+	if (!bFound)
+	{
+		return rpcError(rpcSRC_ACT_NOT_FOUND);
+	}
+
+	// Use the generator to determine the associated public and private keys.
+	RippleAddress	naGenerator			= RippleAddress::createGeneratorPublic(naSecret);
+	RippleAddress	naAccountPublic		= RippleAddress::createAccountPublic(naGenerator, iIndex);
+	RippleAddress	naAccountPrivate	= RippleAddress::createAccountPrivate(naGenerator, naSecret, iIndex);
+
+	if (bHaveAuthKey
+		// The generated pair must match authorized...
+		&& naAuthorizedPublic.getAccountID() != naAccountPublic.getAccountID()
+		// ... or the master key must have been used.
+		&& raSrcAddressID.getAccountID() != naAccountPublic.getAccountID())
+	{
+		// std::cerr << "iIndex: " << iIndex << std::endl;
+		// std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID()) << std::endl;
+		// std::cerr << "naAccountPublic: " << strHex(naAccountPublic.getAccountID()) << std::endl;
+
+		return rpcError(rpcSRC_ACT_NOT_FOUND);
+	}
+
+	std::auto_ptr<STObject>	sopTrans;
+
+	try
+	{
+		sopTrans = STObject::parseJson(txJSON);
+	}
+	catch (std::exception& e)
+	{
+		jvResult["error"]			= "malformedTransaction";
+		jvResult["error_exception"]	= e.what();
+
+		return jvResult;
+	}
+
+	sopTrans->setFieldVL(sfSigningPubKey, naAccountPublic.getAccountPublic());
+
+	SerializedTransaction::pointer stpTrans;
+
+	try
+	{
+		stpTrans = boost::make_shared<SerializedTransaction>(*sopTrans);
+	}
+	catch (std::exception& e)
+	{
+		jvResult["error"]			= "invalidTransaction";
+		jvResult["error_exception"]	= e.what();
+
+		return jvResult;
+	}
+
+	// FIXME: For performance, transactions should not be signed in this code path.
+	stpTrans->sign(naAccountPrivate);
+
+	Transaction::pointer			tpTrans;
+
+	try
+	{
+		tpTrans		= boost::make_shared<Transaction>(stpTrans, false);
+	}
+	catch (std::exception& e)
+	{
+		jvResult["error"]			= "internalTransaction";
+		jvResult["error_exception"]	= e.what();
+
+		return jvResult;
+	}
+
+	try
+	{
+		tpTrans	= mNetOps->submitTransactionSync(tpTrans, bSubmit); // FIXME: For performance, should use asynch interface
+
+		if (!tpTrans) {
+			jvResult["error"]			= "invalidTransaction";
+			jvResult["error_exception"]	= "Unable to sterilize transaction.";
+
+			return jvResult;
+		}
+	}
+	catch (std::exception& e)
+	{
+		jvResult["error"]			= "internalSubmit";
+		jvResult["error_exception"]	= e.what();
+
+		return jvResult;
+	}
+
+	try
+	{
+		jvResult["tx_json"]		= tpTrans->getJson(0);
+		jvResult["tx_blob"]		= strHex(tpTrans->getSTransaction()->getSerializer().peekData());
+
+		if (temUNCERTAIN != tpTrans->getResult())
+		{
+			std::string	sToken;
+			std::string	sHuman;
+
+			transResultInfo(tpTrans->getResult(), sToken, sHuman);
+
+			jvResult["engine_result"]			= sToken;
+			jvResult["engine_result_code"]		= tpTrans->getResult();
+			jvResult["engine_result_message"]	= sHuman;
+		}
+		return jvResult;
+	}
+	catch (std::exception& e)
+	{
+		jvResult["error"]			= "internalJson";
+		jvResult["error_exception"]	= e.what();
+
+		return jvResult;
+	}
 }
 
 // Look up the master public generator for a regular seed so we may index source accounts ids.
@@ -88,7 +410,7 @@ Json::Value RPCHandler::authorize(Ledger::ref lrLedger,
 	asSrc	= mNetOps->getAccountState(lrLedger, naSrcAccountID);
 	if (!asSrc)
 	{
-		return rpcError(rpcSRC_ACT_MISSING);
+		return rpcError(rpcSRC_ACT_NOT_FOUND);
 	}
 
 	RippleAddress	naMasterGenerator;
@@ -292,6 +614,9 @@ Json::Value RPCHandler::doConnect(Json::Value jvRequest)
 	if (theConfig.RUN_STANDALONE)
 		return "cannot connect in standalone mode";
 
+	if (!jvRequest.isMember("ip"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	std::string strIp	= jvRequest["ip"].asString();
 	int			iPort	= jvRequest.isMember("port") ? jvRequest["port"].asInt() : -1;
 
@@ -301,11 +626,15 @@ Json::Value RPCHandler::doConnect(Json::Value jvRequest)
 	return "connecting";
 }
 
+#if ENABLE_INSECURE
 // {
 //   key: <string>
 // }
 Json::Value RPCHandler::doDataDelete(Json::Value jvRequest)
 {
+	if (!jvRequest.isMember("key"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	std::string	strKey = jvRequest["key"].asString();
 
 	Json::Value	ret = Json::Value(Json::objectValue);
@@ -321,12 +650,17 @@ Json::Value RPCHandler::doDataDelete(Json::Value jvRequest)
 
 	return ret;
 }
+#endif
 
+#if ENABLE_INSECURE
 // {
 //   key: <string>
 // }
 Json::Value RPCHandler::doDataFetch(Json::Value jvRequest)
 {
+	if (!jvRequest.isMember("key"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	std::string	strKey = jvRequest["key"].asString();
 	std::string	strValue;
 
@@ -338,13 +672,19 @@ Json::Value RPCHandler::doDataFetch(Json::Value jvRequest)
 
 	return ret;
 }
+#endif
 
+#if ENABLE_INSECURE
 // {
 //   key: <string>
 //   value: <string>
 // }
 Json::Value RPCHandler::doDataStore(Json::Value jvRequest)
 {
+	if (!jvRequest.isMember("key")
+		|| !jvRequest.isMember("value"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	std::string	strKey		= jvRequest["key"].asString();
 	std::string	strValue	= jvRequest["value"].asString();
 
@@ -362,6 +702,7 @@ Json::Value RPCHandler::doDataStore(Json::Value jvRequest)
 
 	return ret;
 }
+#endif
 
 #if 0
 // XXX Needs to be revised for new paradigm
@@ -400,6 +741,9 @@ Json::Value RPCHandler::doNicknameInfo(Json::Value params)
 // XXX This would be better if it too the ledger.
 Json::Value RPCHandler::doOwnerInfo(Json::Value jvRequest)
 {
+	if (!jvRequest.isMember("ident"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	std::string		strIdent	= jvRequest["ident"].asString();
 	bool			bIndex;
 	int				iIndex		= jvRequest.isMember("account_index") ? jvRequest["account_index"].asUInt() : 0;
@@ -498,8 +842,8 @@ Json::Value RPCHandler::doProfile(Json::Value jvRequest)
 			STAmount(uCurrencyOfferB, naAccountB.getAccountID(), 1+n),	// saTakerGets
 			0);															// uExpiration
 
-		if(bSubmit)
-			tpOfferA	= mNetOps->submitTransactionSync(tpOfferA);
+		if (bSubmit)
+			tpOfferA	= mNetOps->submitTransactionSync(tpOfferA); // FIXME: Don't use synch interface
 	}
 
 	boost::posix_time::ptime			ptEnd(boost::posix_time::microsec_clock::local_time());
@@ -535,6 +879,9 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 	if (!lpLedger)
 		return jvResult;
 
+	if (!jvRequest.isMember("account"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	std::string		strIdent	= jvRequest["account"].asString();
 	bool			bIndex		= jvRequest.isMember("account_index");
 	int				iIndex		= bIndex ? jvRequest["account_index"].asUInt() : 0;
@@ -564,7 +911,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 
 		AccountItems rippleLines(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new RippleState()));
 
-		BOOST_FOREACH(AccountItem::pointer item, rippleLines.getItems())
+		BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 		{
 			RippleState* line=(RippleState*)item.get();
 
@@ -610,6 +957,9 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 	if (!lpLedger)
 		return jvResult;
 
+	if (!jvRequest.isMember("account"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	std::string		strIdent	= jvRequest["account"].asString();
 	bool			bIndex		= jvRequest.isMember("account_index");
 	int				iIndex		= bIndex ? jvRequest["account_index"].asUInt() : 0;
@@ -633,7 +983,7 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 		Json::Value	jsonLines(Json::arrayValue);
 
 		AccountItems offers(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new Offer()));
-		BOOST_FOREACH(AccountItem::pointer item, offers.getItems())
+		BOOST_FOREACH(AccountItem::ref item, offers.getItems())
 		{
 			Offer* offer=(Offer*)item.get();
 
@@ -671,8 +1021,11 @@ Json::Value RPCHandler::doRandom(Json::Value jvRequest)
 	try
 	{
 		getRand(uRandom.begin(), uRandom.size());
+
 		Json::Value jvResult;
+
 		jvResult["random"]	= uRandom.ToString();
+
 		return jvResult;
 	}
 	catch (...)
@@ -694,23 +1047,23 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 	RippleAddress	raDst;
 	STAmount		saDstAmount;
 
-	if (
-		// Parse raSrc.
-		!jvRequest.isMember("source_account")
-		|| !jvRequest["source_account"].isString()
-		|| !raSrc.setAccountID(jvRequest["source_account"].asString()))
+	if (!jvRequest.isMember("source_account"))
 	{
-		cLog(lsINFO) << "Bad source_account.";
-		jvResult	= rpcError(rpcINVALID_PARAMS);
+		jvResult	= rpcError(rpcSRC_ACT_MISSING);
 	}
-	else if (
-		// Parse raDst.
-		!jvRequest.isMember("destination_account")
-		|| !jvRequest["destination_account"].isString()
-		|| !raDst.setAccountID(jvRequest["destination_account"].asString()))
+	else if (!jvRequest["source_account"].isString()
+				|| !raSrc.setAccountID(jvRequest["source_account"].asString()))
 	{
-		cLog(lsINFO) << "Bad destination_account.";
-		jvResult	= rpcError(rpcINVALID_PARAMS);
+		jvResult	= rpcError(rpcSRC_ACT_MALFORMED);
+	}
+	else if (!jvRequest.isMember("destination_account"))
+	{
+		jvResult	= rpcError(rpcDST_ACT_MISSING);
+	}
+	else if (!jvRequest["destination_account"].isString()
+				|| !raDst.setAccountID(jvRequest["destination_account"].asString()))
+	{
+		jvResult	= rpcError(rpcDST_ACT_MALFORMED);
 	}
 	else if (
 		// Parse saDstAmount.
@@ -723,9 +1076,9 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 	}
 	else if (
 		// Checks on source_currencies.
-		!jvRequest.isMember("source_currencies")
-		|| !jvRequest["source_currencies"].isArray()
-		|| !jvRequest["source_currencies"].size()
+		jvRequest.isMember("source_currencies")
+		&& (!jvRequest["source_currencies"].isArray()
+			|| !jvRequest["source_currencies"].size())	// Don't allow empty currencies.
 		)
 	{
 		cLog(lsINFO) << "Bad source_currencies.";
@@ -733,42 +1086,69 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 	}
 	else
 	{
-		Json::Value	jvSrcCurrencies	= jvRequest["source_currencies"];
-		Json::Value	jvArray(Json::arrayValue);
-
 		Ledger::pointer	lpCurrent	= mNetOps->getCurrentLedger();
+		Json::Value		jvSrcCurrencies;
+
+		if (jvRequest.isMember("source_currencies"))
+		{
+			jvSrcCurrencies	= jvRequest["source_currencies"];
+		}
+		else
+		{
+			boost::unordered_set<uint160>	usCurrencies	= usAccountSourceCurrencies(raSrc, lpCurrent);
+
+			// Add XRP as a source currency.
+			// YYY Only bother if they are above reserve.
+			usCurrencies.insert(uint160(CURRENCY_XRP));
+
+			jvSrcCurrencies				= Json::Value(Json::arrayValue);
+
+			BOOST_FOREACH(const uint160& uCurrency, usCurrencies)
+			{
+				Json::Value	jvCurrency(Json::objectValue);
+
+				jvCurrency["currency"]	= STAmount::createHumanCurrency(uCurrency);
+
+				jvSrcCurrencies.append(jvCurrency);
+			}
+		}
+
+		LedgerEntrySet	lesSnapshot(lpCurrent);
 
 		ScopedUnlock	su(theApp->getMasterLock()); // As long as we have a locked copy of the ledger, we can unlock.
 
-		LedgerEntrySet	lesSnapshot(lpCurrent);
+		Json::Value	jvArray(Json::arrayValue);
 
 		for (unsigned int i=0; i != jvSrcCurrencies.size(); ++i) {
 			Json::Value	jvSource		= jvSrcCurrencies[i];
 			uint160		uSrcCurrencyID;
 			uint160		uSrcIssuerID	= raSrc.getAccountID();
 
-			if (
-				// Parse currency.
-				!jvSource.isMember("currency")
-				|| !STAmount::currencyFromString(uSrcCurrencyID, jvSource["currency"].asString())
+			// Parse mandatory currency.
+			if (!jvSource.isMember("currency")
+				|| !STAmount::currencyFromString(uSrcCurrencyID, jvSource["currency"].asString()))
+			{
+				cLog(lsINFO) << "Bad currency.";
 
-				// Parse issuer.
-				|| ((jvSource.isMember("issuer"))
+				return rpcError(rpcSRC_CUR_MALFORMED);
+			}
+			// Parse optional issuer.
+			else if (((jvSource.isMember("issuer"))
 					&& (!jvSource["issuer"].isString()
 						|| !STAmount::issuerFromString(uSrcIssuerID, jvSource["issuer"].asString())))
-
 				// Don't allow illegal issuers.
 				|| !uSrcIssuerID
 				|| ACCOUNT_ONE == uSrcIssuerID)
 			{
-				cLog(lsINFO) << "Bad currency/issuer.";
-				return rpcError(rpcINVALID_PARAMS);
+				cLog(lsINFO) << "Bad issuer.";
+
+				return rpcError(rpcSRC_ISR_MALFORMED);
 			}
 
 			STPathSet	spsComputed;
 			Pathfinder	pf(raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount);
 
-			if (!pf.findPaths(5, 3, spsComputed))
+			if (!pf.findPaths(7, 3, spsComputed))
 			{
 				cLog(lsDEBUG) << "ripple_path_find: No paths found.";
 			}
@@ -862,210 +1242,47 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 //   tx_json: <object>,
 //   secret: <secret>
 // }
+Json::Value RPCHandler::doSign(Json::Value jvRequest)
+{
+	return transactionSign(jvRequest, false);
+}
+
+// {
+//   tx_json: <object>,
+//   secret: <secret>
+// }
 Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 {
-	Json::Value		jvResult;
-	RippleAddress	naSeed;
-	RippleAddress	raSrcAddressID;
+	if (!jvRequest.isMember("tx_blob"))
+	{
+		return transactionSign(jvRequest, true);
+	}
 
-	if (!jvRequest.isMember("secret") || !jvRequest.isMember("tx_json"))
+	Json::Value					jvResult;
+
+	std::vector<unsigned char>	vucBlob(strUnHex(jvRequest["tx_blob"].asString()));
+
+	if (!vucBlob.size())
 	{
 		return rpcError(rpcINVALID_PARAMS);
 	}
 
-	Json::Value		txJSON		= jvRequest["tx_json"];
-
-	if (!naSeed.setSeedGeneric(jvRequest["secret"].asString()))
-	{
-		return rpcError(rpcBAD_SEED);
-	}
-	if (!txJSON.isMember("Account"))
-	{
-		return rpcError(rpcSRC_ACT_MISSING);
-	}
-	if (!raSrcAddressID.setAccountID(txJSON["Account"].asString()))
-	{
-		return rpcError(rpcSRC_ACT_MALFORMED);
-	}
-
-	AccountState::pointer asSrc	= mNetOps->getAccountState(mNetOps->getCurrentLedger(), raSrcAddressID);
-	if (!asSrc) return rpcError(rpcSRC_ACT_MALFORMED);
-
-	if (!txJSON.isMember("Fee")
-		&& ("OfferCreate" == txJSON["TransactionType"].asString()
-			|| "OfferCancel" == txJSON["TransactionType"].asString()
-			|| "TrustSet" == txJSON["TransactionType"].asString()))
-	{
-		txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
-	}
-
-	if ("Payment" == txJSON["TransactionType"].asString())
-	{
-
-		RippleAddress dstAccountID;
-
-		if (!txJSON.isMember("Destination"))
-		{
-			return rpcError(rpcDST_ACT_MISSING);
-		}
-		if (!dstAccountID.setAccountID(txJSON["Destination"].asString()))
-		{
-			return rpcError(rpcDST_ACT_MALFORMED);
-		}
-
-		if (!txJSON.isMember("Fee"))
-		{
-			txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
-		}
-
-		if (txJSON.isMember("Paths") && jvRequest.isMember("build_path"))
-		{
-			// Asking to build a path when providing one is an error.
-			return rpcError(rpcINVALID_PARAMS);
-		}
-
-		if (!txJSON.isMember("Paths") && txJSON.isMember("Amount") && jvRequest.isMember("build_path"))
-		{
-			// Need a ripple path.
-			STPathSet	spsPaths;
-			uint160		uSrcCurrencyID;
-			uint160		uSrcIssuerID;
-
-			STAmount	saSendMax;
-			STAmount	saSend;
-
-			if (!txJSON.isMember("Amount")					// Amount required.
-				|| !saSend.bSetJson(txJSON["Amount"]))		// Must be valid.
-				return rpcError(rpcDST_AMT_MALFORMED);
-
-			if (txJSON.isMember("SendMax"))
-			{
-				if (!saSendMax.bSetJson(txJSON["SendMax"]))
-					return rpcError(rpcINVALID_PARAMS);
-			}
-			else
-			{
-				// If no SendMax, default to Amount with sender as issuer.
-				saSendMax		= saSend;
-				saSendMax.setIssuer(raSrcAddressID.getAccountID());
-			}
-
-			if (saSendMax.isNative() && saSend.isNative())
-			{
-				// Asking to build a path for XRP to XRP is an error.
-				return rpcError(rpcINVALID_PARAMS);
-			}
-
-			Pathfinder pf(raSrcAddressID, dstAccountID, saSendMax.getCurrency(), saSendMax.getIssuer(), saSend);
-
-			if (!pf.findPaths(5, 3, spsPaths))
-			{
-				cLog(lsDEBUG) << "payment: build_path: No paths found.";
-
-				return rpcError(rpcNO_PATH);
-			}
-			else
-			{
-				cLog(lsDEBUG) << "payment: build_path: " << spsPaths.getJson(0);
-			}
-
-			if (!spsPaths.isEmpty())
-			{
-				txJSON["Paths"]=spsPaths.getJson(0);
-			}
-		}
-	}
-
-	if (!txJSON.isMember("Sequence")) txJSON["Sequence"]=asSrc->getSeq();
-	if (!txJSON.isMember("Flags")) txJSON["Flags"]=0;
-
-	Ledger::pointer	lpCurrent		= mNetOps->getCurrentLedger();
-	SLE::pointer	sleAccountRoot	= mNetOps->getSLE(lpCurrent, Ledger::getAccountRootIndex(raSrcAddressID.getAccountID()));
-
-	if (!sleAccountRoot)
-	{
-		// XXX Ignore transactions for accounts not created.
-		return rpcError(rpcSRC_ACT_MISSING);
-	}
-
-	bool			bHaveAuthKey	= false;
-	RippleAddress	naAuthorizedPublic;
-
-
-	RippleAddress	naSecret			= RippleAddress::createSeedGeneric(jvRequest["secret"].asString());
-	RippleAddress	naMasterGenerator	= RippleAddress::createGeneratorPublic(naSecret);
-
-	// Find the index of Account from the master generator, so we can generate the public and private keys.
-	RippleAddress		naMasterAccountPublic;
-	unsigned int		iIndex	= 0;
-	bool				bFound	= false;
-
-	// Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
-	// related.
-	while (!bFound && iIndex != theConfig.ACCOUNT_PROBE_MAX)
-	{
-		naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
-
-		Log(lsWARNING) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << raSrcAddressID.humanAccountID();
-
-		bFound	= raSrcAddressID.getAccountID() == naMasterAccountPublic.getAccountID();
-		if (!bFound)
-			++iIndex;
-	}
-
-	if (!bFound)
-	{
-		return rpcError(rpcSRC_ACT_MISSING);
-	}
-
-	// Use the generator to determine the associated public and private keys.
-	RippleAddress	naGenerator			= RippleAddress::createGeneratorPublic(naSecret);
-	RippleAddress	naAccountPublic		= RippleAddress::createAccountPublic(naGenerator, iIndex);
-	RippleAddress	naAccountPrivate	= RippleAddress::createAccountPrivate(naGenerator, naSecret, iIndex);
-
-	if (bHaveAuthKey
-		// The generated pair must match authorized...
-		&& naAuthorizedPublic.getAccountID() != naAccountPublic.getAccountID()
-		// ... or the master key must have been used.
-		&& raSrcAddressID.getAccountID() != naAccountPublic.getAccountID())
-	{
-		// std::cerr << "iIndex: " << iIndex << std::endl;
-		// std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID()) << std::endl;
-		// std::cerr << "naAccountPublic: " << strHex(naAccountPublic.getAccountID()) << std::endl;
-
-		return rpcError(rpcSRC_ACT_MISSING);
-	}
-
-	std::auto_ptr<STObject>	sopTrans;
-
-	try
-	{
-		sopTrans = STObject::parseJson(txJSON);
-	}
-	catch (std::exception& e)
-	{
-		jvResult["error"]			= "malformedTransaction";
-		jvResult["error_exception"]	= e.what();
-		return jvResult;
-	}
-
-	sopTrans->setFieldVL(sfSigningPubKey, naAccountPublic.getAccountPublic());
+	Serializer					sTrans(vucBlob);
+	SerializerIterator			sitTrans(sTrans);
 
 	SerializedTransaction::pointer stpTrans;
 
 	try
 	{
-		stpTrans = boost::make_shared<SerializedTransaction>(*sopTrans);
+		stpTrans = boost::make_shared<SerializedTransaction>(boost::ref(sitTrans));
 	}
 	catch (std::exception& e)
 	{
 		jvResult["error"]			= "invalidTransaction";
 		jvResult["error_exception"]	= e.what();
+
 		return jvResult;
 	}
-
-	// FIXME: Transactions should not be signed in this code path
-	stpTrans->sign(naAccountPrivate);
 
 	Transaction::pointer			tpTrans;
 
@@ -1077,29 +1294,26 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 	{
 		jvResult["error"]			= "internalTransaction";
 		jvResult["error_exception"]	= e.what();
+
 		return jvResult;
 	}
 
 	try
 	{
-		tpTrans	= mNetOps->submitTransactionSync(tpTrans); // FIXME: Should use asynch interface
-
-		if (!tpTrans) {
-			jvResult["error"]			= "invalidTransaction";
-			jvResult["error_exception"]	= "Unable to sterilize transaction.";
-			return jvResult;
-		}
+		(void) mNetOps->processTransaction(tpTrans);
 	}
 	catch (std::exception& e)
 	{
 		jvResult["error"]			= "internalSubmit";
 		jvResult["error_exception"]	= e.what();
+
 		return jvResult;
 	}
 
 	try
 	{
 		jvResult["tx_json"]		= tpTrans->getJson(0);
+		jvResult["tx_blob"]		= strHex(tpTrans->getSTransaction()->getSerializer().peekData());
 
 		if (temUNCERTAIN != tpTrans->getResult())
 		{
@@ -1118,6 +1332,7 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 	{
 		jvResult["error"]			= "internalJson";
 		jvResult["error_exception"]	= e.what();
+
 		return jvResult;
 	}
 }
@@ -1126,7 +1341,16 @@ Json::Value RPCHandler::doServerInfo(Json::Value)
 {
 	Json::Value ret(Json::objectValue);
 
-	ret["info"]	= theApp->getOPs().getServerInfo();
+	ret["info"]	= theApp->getOPs().getServerInfo(true, mRole == ADMIN);
+
+	return ret;
+}
+
+Json::Value RPCHandler::doServerState(Json::Value)
+{
+	Json::Value ret(Json::objectValue);
+
+	ret["state"]	= theApp->getOPs().getServerInfo(false, mRole == ADMIN);
 
 	return ret;
 }
@@ -1136,6 +1360,9 @@ Json::Value RPCHandler::doServerInfo(Json::Value)
 // }
 Json::Value RPCHandler::doTxHistory(Json::Value jvRequest)
 {
+	if (!jvRequest.isMember("start"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	unsigned int startIndex = jvRequest["start"].asUInt();
 	Json::Value	obj;
 	Json::Value	txs;
@@ -1153,7 +1380,7 @@ Json::Value RPCHandler::doTxHistory(Json::Value jvRequest)
 		SQL_FOREACH(db, sql)
 		{
 			Transaction::pointer trans=Transaction::transactionFromSQL(db, false);
-			if(trans) txs.append(trans->getJson(0));
+			if (trans) txs.append(trans->getJson(0));
 		}
 	}
 
@@ -1167,6 +1394,9 @@ Json::Value RPCHandler::doTxHistory(Json::Value jvRequest)
 // }
 Json::Value RPCHandler::doTx(Json::Value jvRequest)
 {
+	if (!jvRequest.isMember("transaction"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	std::string strTransaction	= jvRequest["transaction"].asString();
 
 	if (Transaction::isHexTxID(strTransaction))
@@ -1187,6 +1417,7 @@ Json::Value RPCHandler::doTx(Json::Value jvRequest)
 Json::Value RPCHandler::doLedgerClosed(Json::Value)
 {
 	Json::Value jvResult;
+
 	uint256	uLedger	= mNetOps->getClosedLedgerHash();
 
 	jvResult["ledger_index"]		= mNetOps->getLedgerID(uLedger);
@@ -1251,6 +1482,10 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest)
 
 // { account: <account>, ledger: <integer> }
 // { account: <account>, ledger_min: <integer>, ledger_max: <integer> }
+// THIS ROUTINE DOESN'T SCALE.
+// FIXME: Require admin.
+// FIXME: Doesn't report database holes.
+// FIXME: For consistency change inputs to: ledger_index, ledger_index_min, ledger_index_max.
 Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 {
 	RippleAddress	raAccount;
@@ -1295,8 +1530,10 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 		for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
 		{
 			Json::Value	obj(Json::objectValue);
-			if(it->first) obj["tx"]=it->first->getJson(1);
-			if(it->second) obj["meta"]=it->second->getJson(0);
+
+			if (it->first) obj["tx"] = it->first->getJson(1);
+			if (it->second) obj["meta"] = it->second->getJson(0);
+
 			ret["transactions"].append(obj);
 		}
 		return ret;
@@ -1310,8 +1547,10 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 }
 
 // {
-//   secret: <string>
+//   secret: <string>	// optional
 // }
+//
+// This command requires admin access because it makes no sense to ask an untrusted server for this.
 Json::Value RPCHandler::doValidationCreate(Json::Value jvRequest) {
 	RippleAddress	raSeed;
 	Json::Value		obj(Json::objectValue);
@@ -1475,6 +1714,7 @@ Json::Value RPCHandler::doWalletPropose(Json::Value jvRequest)
 	Json::Value obj(Json::objectValue);
 
 	obj["master_seed"]		= naSeed.humanSeed();
+	obj["master_seed_hex"]	= naSeed.getSeed().ToString();
 	//obj["master_key"]		= naSeed.humanSeed1751();
 	obj["account_id"]		= naAccount.humanAccountID();
 
@@ -1515,6 +1755,7 @@ Json::Value RPCHandler::doWalletSeed(Json::Value jvRequest)
 	}
 }
 
+#if ENABLE_INSECURE
 // TODO: for now this simply checks if this is the admin account
 // TODO: need to prevent them hammering this over and over
 // TODO: maybe a better way is only allow admin from local host
@@ -1524,6 +1765,10 @@ Json::Value RPCHandler::doWalletSeed(Json::Value jvRequest)
 // }
 Json::Value RPCHandler::doLogin(Json::Value jvRequest)
 {
+	if (!jvRequest.isMember("username")
+		|| !jvRequest.isMember("password"))
+		return rpcError(rpcINVALID_PARAMS);
+
 	if (jvRequest["username"].asString() == theConfig.RPC_USER && jvRequest["password"].asString() == theConfig.RPC_PASSWORD)
 	{
 		//mRole=ADMIN;
@@ -1534,6 +1779,7 @@ Json::Value RPCHandler::doLogin(Json::Value jvRequest)
 		return "nope";
 	}
 }
+#endif
 
 // {
 //   min_count: <number>  // optional, defaults to 10
@@ -1565,7 +1811,7 @@ Json::Value RPCHandler::doLogLevel(Json::Value jvRequest)
 
 		lev["base"] = Log::severityToString(Log::getMinSeverity());
 		std::vector< std::pair<std::string, std::string> > logTable = LogPartition::getSeverities();
-		typedef std::pair<std::string, std::string> stringPair;
+		typedef std::map<std::string, std::string>::value_type stringPair;
 		BOOST_FOREACH(const stringPair& it, logTable)
 			lev[it.first] = it.second;
 
@@ -1629,7 +1875,10 @@ Json::Value RPCHandler::doUnlAdd(Json::Value jvRequest)
 // }
 Json::Value RPCHandler::doUnlDelete(Json::Value jvRequest)
 {
-	std::string	strNode		= jvRequest[0u].asString();
+	if (!jvRequest.isMember("node"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	std::string	strNode		= jvRequest["node"].asString();
 
 	RippleAddress	raNodePublic;
 
@@ -1772,7 +2021,6 @@ Json::Value RPCHandler::doTransactionEntry(Json::Value jvRequest)
 	return jvResult;
 }
 
-// XXX ledger_index needs to be allowed as a string (32-bits is to small).
 Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpLedger)
 {
 	Json::Value jvResult;
@@ -2088,7 +2336,47 @@ rt_accounts
 */
 Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 {
+	InfoSub*	ispSub;
 	Json::Value jvResult(Json::objectValue);
+	uint32		uLedgerIndex = jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric()
+									? jvRequest["ledger_index"].asUInt()
+									: 0;
+
+	if (!mInfoSub && !jvRequest.isMember("url"))
+	{
+		// Must be a JSON-RPC call.
+		return rpcError(rpcINVALID_PARAMS);
+	}
+
+	if (jvRequest.isMember("url"))
+	{
+		if (mRole != ADMIN)
+			return rpcError(rpcNO_PERMISSION);
+
+		std::string	strUrl		= jvRequest["url"].asString();
+		std::string	strUsername	= jvRequest.isMember("username") ? jvRequest["username"].asString() : "";
+		std::string	strPassword	= jvRequest.isMember("password") ? jvRequest["password"].asString() : "";
+
+		RPCSub	*rspSub	= mNetOps->findRpcSub(strUrl);
+		if (!rspSub)
+		{
+			rspSub	= mNetOps->addRpcSub(strUrl, new RPCSub(strUrl, strUsername, strPassword));
+		}
+		else
+		{
+			if (jvRequest.isMember("username"))
+				rspSub->setUsername(strUsername);
+
+			if (jvRequest.isMember("password"))
+				rspSub->setPassword(strPassword);
+		}
+
+		ispSub	= rspSub;
+	}
+	else
+	{
+		ispSub	= mInfoSub;
+	}
 
 	if (jvRequest.isMember("streams"))
 	{
@@ -2098,29 +2386,33 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 			{
 				std::string streamName=(*it).asString();
 
-				if(streamName=="server")
+				if (streamName=="server")
 				{
-					mNetOps->subServer(mInfoSub, jvResult);
-					jvResult["server_status"] = mNetOps->strOperatingMode();
+					mNetOps->subServer(ispSub, jvResult);
 
-				} else if(streamName=="ledger")
-				{
-					mNetOps->subLedger(mInfoSub, jvResult);
-
-				} else if(streamName=="transactions")
-				{
-					mNetOps->subTransactions(mInfoSub);
-
-				} else if(streamName=="rt_transactions")
-				{
-					mNetOps->subRTTransactions(mInfoSub);
 				}
-				else {
-					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
+				else if (streamName=="ledger")
+				{
+					mNetOps->subLedger(ispSub, jvResult);
+
 				}
-			} else
+				else if (streamName=="transactions")
+				{
+					mNetOps->subTransactions(ispSub);
+
+				}
+				else if (streamName=="rt_transactions")
+				{
+					mNetOps->subRTTransactions(ispSub);
+				}
+				else
+				{
+					jvResult["error"]	= "unknownStream";
+				}
+			}
+			else
 			{
-				jvResult["error"]	= "malformedSteam";
+				jvResult["error"]	= "malformedStream";
 			}
 		}
 	}
@@ -2132,14 +2424,10 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 		if (usnaAccoundIds.empty())
 		{
 			jvResult["error"]	= "malformedAccount";
-		}else
+		}
+		else
 		{
-			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
-			{
-				mInfoSub->insertSubAccountInfo(naAccountID);
-			}
-
-			mNetOps->subAccount(mInfoSub, usnaAccoundIds, true);
+			mNetOps->subAccount(ispSub, usnaAccoundIds, uLedgerIndex, true);
 		}
 	}
 
@@ -2150,23 +2438,45 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 		if (usnaAccoundIds.empty())
 		{
 			jvResult["error"]	= "malformedAccount";
-		}else
+		}
+		else
 		{
-			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
-			{
-				mInfoSub->insertSubAccountInfo(naAccountID);
-			}
-
-			mNetOps->subAccount(mInfoSub, usnaAccoundIds, false);
+			mNetOps->subAccount(ispSub, usnaAccoundIds, uLedgerIndex, false);
 		}
 	}
 
 	return jvResult;
 }
 
+// FIXME: This leaks RPCSub objects for JSON-RPC.  Shouldn't matter for anyone sane.
 Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 {
+	InfoSub*	ispSub;
 	Json::Value jvResult(Json::objectValue);
+
+	if (!mInfoSub && !jvRequest.isMember("url"))
+	{
+		// Must be a JSON-RPC call.
+		return rpcError(rpcINVALID_PARAMS);
+	}
+
+	if (jvRequest.isMember("url"))
+	{
+		if (mRole != ADMIN)
+			return rpcError(rpcNO_PERMISSION);
+
+		std::string	strUrl	= jvRequest["url"].asString();
+
+		RPCSub	*rspSub	= mNetOps->findRpcSub(strUrl);
+		if (!rspSub)
+			return jvResult;
+
+		ispSub		= rspSub;
+	}
+	else
+	{
+		ispSub	= mInfoSub;
+	}
 
 	if (jvRequest.isMember("streams"))
 	{
@@ -2176,23 +2486,28 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 			{
 				std::string streamName=(*it).asString();
 
-				if(streamName=="server")
+				if (streamName == "server")
 				{
-					mNetOps->unsubServer(mInfoSub);
-				}else if(streamName=="ledger")
+					mNetOps->unsubServer(ispSub);
+				}
+				else if (streamName == "ledger")
 				{
-					mNetOps->unsubLedger(mInfoSub);
-				}else if(streamName=="transactions")
+					mNetOps->unsubLedger(ispSub);
+				}
+				else if (streamName == "transactions")
 				{
-					mNetOps->unsubTransactions(mInfoSub);
-				}else if(streamName=="rt_transactions")
+					mNetOps->unsubTransactions(ispSub);
+				}
+				else if (streamName == "rt_transactions")
 				{
-					mNetOps->unsubRTTransactions(mInfoSub);
-				}else
+					mNetOps->unsubRTTransactions(ispSub);
+				}
+				else
 				{
 					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
 				}
-			}else
+			}
+			else
 			{
 				jvResult["error"]	= "malformedSteam";
 			}
@@ -2206,14 +2521,10 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 		if (usnaAccoundIds.empty())
 		{
 			jvResult["error"]	= "malformedAccount";
-		}else
+		}
+		else
 		{
-			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
-			{
-				mInfoSub->insertSubAccountInfo(naAccountID);
-			}
-
-			mNetOps->unsubAccount(mInfoSub, usnaAccoundIds,true);
+			mNetOps->unsubAccount(ispSub, usnaAccoundIds, true);
 		}
 	}
 
@@ -2224,14 +2535,10 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 		if (usnaAccoundIds.empty())
 		{
 			jvResult["error"]	= "malformedAccount";
-		}else
+		}
+		else
 		{
-			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
-			{
-				mInfoSub->insertSubAccountInfo(naAccountID);
-			}
-
-			mNetOps->unsubAccount(mInfoSub, usnaAccoundIds,false);
+			mNetOps->unsubAccount(ispSub, usnaAccoundIds, false);
 		}
 	}
 
@@ -2244,12 +2551,12 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 // command is the method. The request object is supplied as the first element of the params.
 Json::Value RPCHandler::doRpcCommand(const std::string& strMethod, Json::Value& jvParams, int iRole)
 {
-	// cLog(lsTRACE) << "doRpcCommand:" << strMethod << ":" << jvParams;
+	cLog(lsTRACE) << "doRpcCommand:" << strMethod << ":" << jvParams;
 
-	if (!jvParams.isArray() || jvParams.size() != 1)
+	if (!jvParams.isArray() || jvParams.size() > 1)
 		return rpcError(rpcINVALID_PARAMS);
 
-	Json::Value	jvRequest	= jvParams[0u];
+	Json::Value	jvRequest	= jvParams.size() ? jvParams[0u] : Json::Value(Json::objectValue);
 
 	if (!jvRequest.isObject())
 		return rpcError(rpcINVALID_PARAMS);
@@ -2272,10 +2579,17 @@ Json::Value RPCHandler::doRpcCommand(const std::string& strMethod, Json::Value& 
 	return jvResult;
 }
 
-Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
+Json::Value RPCHandler::doInternal(Json::Value jvRequest)
+{ // Used for debug or special-purpose RPC commands
+	if (!jvRequest.isMember("internal_command"))
+		return rpcError(rpcINVALID_PARAMS);
+	return RPCInternalHandler::runHandler(jvRequest["internal_command"].asString(), jvRequest["params"]);
+}
+
+Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 {
 	if (!jvRequest.isMember("command"))
-		return rpcError(rpcINVALID_PARAMS);
+		return rpcError(rpcCOMMAND_MISSING);
 
 	std::string		strCommand	= jvRequest["command"].asString();
 
@@ -2290,62 +2604,66 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 		const char*		pCommand;
 		doFuncPtr		dfpFunc;
 		bool			bAdminRequired;
-		bool			bEvented;
 		unsigned int	iOptions;
 	} commandsA[] = {
 		// Request-response methods
-		{	"accept_ledger",		&RPCHandler::doAcceptLedger,	    true,	false,  optCurrent	},
-		{	"account_info",			&RPCHandler::doAccountInfo,		    false,	false,	optCurrent	},
-		{	"account_lines",		&RPCHandler::doAccountLines,	    false,	false,	optCurrent	},
-		{	"account_offers",		&RPCHandler::doAccountOffers,	    false,	false,	optCurrent	},
-		{	"account_tx",			&RPCHandler::doAccountTransactions, false,	false,	optNetwork	},
-		{	"connect",				&RPCHandler::doConnect,			    true,	false,	optNone		},
-		{	"get_counts",			&RPCHandler::doGetCounts,		    true,	false,	optNone		},
-		{	"ledger",				&RPCHandler::doLedger,			    false,	false,	optNetwork	},
-		{	"ledger_accept",		&RPCHandler::doLedgerAccept,	    true,	false,	optCurrent	},
-		{	"ledger_closed",		&RPCHandler::doLedgerClosed,	    false,	false,	optClosed	},
-		{	"ledger_current",		&RPCHandler::doLedgerCurrent,	    false,	false,	optCurrent	},
-		{	"ledger_entry",			&RPCHandler::doLedgerEntry,		    false,	false,	optCurrent	},
-		{	"ledger_header",		&RPCHandler::doLedgerHeader,	    false,	false,	optCurrent	},
-		{	"log_level",			&RPCHandler::doLogLevel,		    true,	false,	optNone		},
-		{	"logrotate",			&RPCHandler::doLogRotate,		    true,	false,	optNone		},
-//		{	"nickname_info",		&RPCHandler::doNicknameInfo,	    false,	false,	optCurrent	},
-		{	"owner_info",			&RPCHandler::doOwnerInfo,		    false,	false,	optCurrent	},
-		{	"peers",				&RPCHandler::doPeers,			    true,	false,	optNone		},
-//		{	"profile",				&RPCHandler::doProfile,			    false,	false,	optCurrent	},
-		{	"random",				&RPCHandler::doRandom,				false,	false,	optNone		},
-		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	    false,	false,	optCurrent	},
-		{	"submit",				&RPCHandler::doSubmit,			    false,	false,	optCurrent	},
-		{	"server_info",			&RPCHandler::doServerInfo,		    true,	false,	optNone		},
-		{	"stop",					&RPCHandler::doStop,			    true,	false,	optNone		},
-		{	"transaction_entry",	&RPCHandler::doTransactionEntry,    false,	false,	optCurrent	},
-		{	"tx",					&RPCHandler::doTx,				    true,	false,	optNone		},
-		{	"tx_history",			&RPCHandler::doTxHistory,		    false,	false,	optNone		},
+		{	"accept_ledger",		&RPCHandler::doAcceptLedger,	    true,	optCurrent	},
+		{	"account_info",			&RPCHandler::doAccountInfo,		    false,	optCurrent	},
+		{	"account_lines",		&RPCHandler::doAccountLines,	    false,	optCurrent	},
+		{	"account_offers",		&RPCHandler::doAccountOffers,	    false,	optCurrent	},
+		{	"account_tx",			&RPCHandler::doAccountTransactions, false,	optNetwork	},
+		{	"connect",				&RPCHandler::doConnect,			    true,	optNone		},
+		{	"get_counts",			&RPCHandler::doGetCounts,		    true,	optNone		},
+		{	"internal",				&RPCHandler::doInternal,			true,	optNone		},
+		{	"ledger",				&RPCHandler::doLedger,			    false,	optNetwork	},
+		{	"ledger_accept",		&RPCHandler::doLedgerAccept,	    true,	optCurrent	},
+		{	"ledger_closed",		&RPCHandler::doLedgerClosed,	    false,	optClosed	},
+		{	"ledger_current",		&RPCHandler::doLedgerCurrent,	    false,	optCurrent	},
+		{	"ledger_entry",			&RPCHandler::doLedgerEntry,		    false,	optCurrent	},
+		{	"ledger_header",		&RPCHandler::doLedgerHeader,	    false,	optCurrent	},
+		{	"log_level",			&RPCHandler::doLogLevel,		    true,	optNone		},
+		{	"logrotate",			&RPCHandler::doLogRotate,		    true,	optNone		},
+//		{	"nickname_info",		&RPCHandler::doNicknameInfo,	    false,	optCurrent	},
+		{	"owner_info",			&RPCHandler::doOwnerInfo,		    false,	optCurrent	},
+		{	"peers",				&RPCHandler::doPeers,			    true,	optNone		},
+//		{	"profile",				&RPCHandler::doProfile,			    false,	optCurrent	},
+		{	"random",				&RPCHandler::doRandom,				false,	optNone		},
+		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	    false,	optCurrent	},
+		{	"sign",					&RPCHandler::doSign,			    false,	optCurrent	},
+		{	"submit",				&RPCHandler::doSubmit,			    false,	optCurrent	},
+		{	"server_info",			&RPCHandler::doServerInfo,		    false,	optNone		},
+		{	"server_state",			&RPCHandler::doServerState,		    false,	optNone		},
+		{	"stop",					&RPCHandler::doStop,			    true,	optNone		},
+		{	"transaction_entry",	&RPCHandler::doTransactionEntry,    false,	optCurrent	},
+		{	"tx",					&RPCHandler::doTx,				    false,	optNetwork	},
+		{	"tx_history",			&RPCHandler::doTxHistory,		    false,	optNone		},
 
-		{	"unl_add",				&RPCHandler::doUnlAdd,			    true,	false,	optNone		},
-		{	"unl_delete",			&RPCHandler::doUnlDelete,		    true,	false,	optNone		},
-		{	"unl_list",				&RPCHandler::doUnlList,			    true,	false,	optNone		},
-		{	"unl_load",				&RPCHandler::doUnlLoad,			    true,	false,	optNone		},
-		{	"unl_network",			&RPCHandler::doUnlNetwork,		    true,	false,	optNone		},
-		{	"unl_reset",			&RPCHandler::doUnlReset,		    true,	false,	optNone		},
-		{	"unl_score",			&RPCHandler::doUnlScore,		    true,	false,	optNone		},
+		{	"unl_add",				&RPCHandler::doUnlAdd,			    true,	optNone		},
+		{	"unl_delete",			&RPCHandler::doUnlDelete,		    true,	optNone		},
+		{	"unl_list",				&RPCHandler::doUnlList,			    true,	optNone		},
+		{	"unl_load",				&RPCHandler::doUnlLoad,			    true,	optNone		},
+		{	"unl_network",			&RPCHandler::doUnlNetwork,		    true,	optNone		},
+		{	"unl_reset",			&RPCHandler::doUnlReset,		    true,	optNone		},
+		{	"unl_score",			&RPCHandler::doUnlScore,		    true,	optNone		},
 
-		{	"validation_create",	&RPCHandler::doValidationCreate,    false,	false,	optNone		},
-		{	"validation_seed",		&RPCHandler::doValidationSeed,	    false,	false,	optNone		},
+		{	"validation_create",	&RPCHandler::doValidationCreate,    true,	optNone		},
+		{	"validation_seed",		&RPCHandler::doValidationSeed,	    true,	optNone		},
 
-		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,	    false,	false,	optCurrent	},
-		{	"wallet_propose",		&RPCHandler::doWalletPropose,	    false,	false,	optNone		},
-		{	"wallet_seed",			&RPCHandler::doWalletSeed,		    false,	false,	optNone		},
+		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,	    false,	optCurrent	},
+		{	"wallet_propose",		&RPCHandler::doWalletPropose,	    false,	optNone		},
+		{	"wallet_seed",			&RPCHandler::doWalletSeed,		    false,	optNone		},
 
+#if ENABLE_INSECURE
 		// XXX Unnecessary commands which should be removed.
-		{	"login",				&RPCHandler::doLogin,			    true,	false,	optNone		},
-		{	"data_delete",			&RPCHandler::doDataDelete,		    true,	false,	optNone		},
-		{	"data_fetch",			&RPCHandler::doDataFetch,		    true,	false,	optNone		},
-		{	"data_store",			&RPCHandler::doDataStore,		    true,	false,	optNone		},
+		{	"login",				&RPCHandler::doLogin,			    true,	optNone		},
+		{	"data_delete",			&RPCHandler::doDataDelete,		    true,	optNone		},
+		{	"data_fetch",			&RPCHandler::doDataFetch,		    true,	optNone		},
+		{	"data_store",			&RPCHandler::doDataStore,		    true,	optNone		},
+#endif
 
 		// Evented methods
-		{	"subscribe",			&RPCHandler::doSubscribe,			false,	true,	optNone		},
-		{	"unsubscribe",			&RPCHandler::doUnsubscribe,			false,	true,	optNone		},
+		{	"subscribe",			&RPCHandler::doSubscribe,			false,	optNone		},
+		{	"unsubscribe",			&RPCHandler::doUnsubscribe,			false,	optNone		},
 	};
 
 	int		i = NUMBER(commandsA);
@@ -2361,11 +2679,9 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 	{
 		return rpcError(rpcNO_PERMISSION);
 	}
-	else if (commandsA[i].bEvented && mInfoSub == NULL)
-	{
-		return rpcError(rpcNO_EVENTS);
-	}
-	else if (commandsA[i].iOptions & optNetwork
+
+	// XXX Need the master lock for getOperatingMode
+	if (commandsA[i].iOptions & optNetwork
 		&& mNetOps->getOperatingMode() != NetworkOPs::omTRACKING
 		&& mNetOps->getOperatingMode() != NetworkOPs::omFULL)
 	{
@@ -2410,6 +2726,31 @@ Json::Value RPCHandler::doCommand(Json::Value& jvRequest, int iRole)
 			return rpcError(rpcINTERNAL);
 		}
 	}
+}
+
+RPCInternalHandler* RPCInternalHandler::sHeadHandler = NULL;
+
+RPCInternalHandler::RPCInternalHandler(const std::string& name, handler_t Handler) : mName(name), mHandler(Handler)
+{
+	mNextHandler = sHeadHandler;
+	sHeadHandler = this;
+}
+
+Json::Value RPCInternalHandler::runHandler(const std::string& name, const Json::Value& params)
+{
+	RPCInternalHandler* h = sHeadHandler;
+	while (h != NULL)
+	{
+		if (name == h->mName)
+		{
+			cLog(lsWARNING) << "Internal command " << name << ": " << params;
+			Json::Value ret = h->mHandler(params);
+			cLog(lsWARNING) << "Internal command returns: " << ret;
+			return ret;
+		}
+		h = h->mNextHandler;
+	}
+	return rpcError(rpcBAD_SYNTAX);
 }
 
 // vim:ts=4

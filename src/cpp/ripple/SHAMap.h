@@ -27,23 +27,28 @@ class SHAMap;
 
 
 class SHAMapNode
-{ // Identifies a node in a SHA256 hash
+{ // Identifies a node in a SHA256 hash map
 private:
 	static uint256 smMasks[65]; // AND with hash to get node id
 
 	uint256	mNodeID;
-	int	mDepth;
+	int		mDepth;
+	mutable size_t	mHash;
+
+	void setHash() const;
 
 public:
 
 	static const int rootDepth = 0;
 
-	SHAMapNode() : mDepth(0)			{ ; }
+	SHAMapNode() : mDepth(0), mHash(0)	{ ; }
 	SHAMapNode(int depth, const uint256& hash);
 	virtual ~SHAMapNode()				{ ; }
+
 	int getDepth() const				{ return mDepth; }
 	const uint256& getNodeID()	const	{ return mNodeID; }
 	bool isValid() const { return (mDepth >= 0) && (mDepth < 64); }
+	size_t getHash() const				{ if (mHash == 0) setHash(); return mHash; }
 
 	virtual bool isPopulated() const { return false; }
 
@@ -176,7 +181,8 @@ public:
 	SHAMapTreeNode(const SHAMapNode& nodeID, SHAMapItem::ref item, TNType type, uint32 seq);
 
 	// raw node functions
-	SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& data, uint32 seq, SHANodeFormat format);
+	SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& data, uint32 seq,
+		SHANodeFormat format, const uint256& hash);
 	void addRaw(Serializer &, SHANodeFormat format);
 
 	virtual bool isPopulated() const { return true; }
@@ -198,9 +204,9 @@ public:
 	bool isAccountState() const	{ return mType == tnACCOUNT_STATE; }
 
 	// inner node functions
-	bool isInnerNode() const { return !mItem; }
+	bool isInnerNode() const	{ return !mItem; }
 	bool setChildHash(int m, const uint256& hash);
-	bool isEmptyBranch(int m) const { return !mHashes[m]; }
+	bool isEmptyBranch(int m) const { return mHashes[m].isZero(); }
 	bool isEmpty() const;
 	int getBranchCount() const;
 	void makeInner();
@@ -396,16 +402,16 @@ public:
 	bool addGiveItem(SHAMapItem::ref, bool isTransaction, bool hasMeta);
 
 	// save a copy if you only need a temporary
-	SHAMapItem::ref peekItem(const uint256& id);
-	SHAMapItem::ref peekItem(const uint256& id, SHAMapTreeNode::TNType& type);
+	SHAMapItem::pointer peekItem(const uint256& id);
+	SHAMapItem::pointer peekItem(const uint256& id, SHAMapTreeNode::TNType& type);
 
 	// traverse functions
-	SHAMapItem::ref peekFirstItem();
-	SHAMapItem::ref peekFirstItem(SHAMapTreeNode::TNType& type);
-	SHAMapItem::ref peekLastItem();
-	SHAMapItem::ref peekNextItem(const uint256&);
-	SHAMapItem::ref peekNextItem(const uint256&, SHAMapTreeNode::TNType& type);
-	SHAMapItem::ref peekPrevItem(const uint256&);
+	SHAMapItem::pointer peekFirstItem();
+	SHAMapItem::pointer peekFirstItem(SHAMapTreeNode::TNType& type);
+	SHAMapItem::pointer peekLastItem();
+	SHAMapItem::pointer peekNextItem(const uint256&);
+	SHAMapItem::pointer peekNextItem(const uint256&, SHAMapTreeNode::TNType& type);
+	SHAMapItem::pointer peekPrevItem(const uint256&);
 
 	// comparison/sync functions
 	void getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max,
@@ -413,6 +419,7 @@ public:
 	bool getNodeFat(const SHAMapNode& node, std::vector<SHAMapNode>& nodeIDs,
 	 std::list<std::vector<unsigned char> >& rawNode, bool fatRoot, bool fatLeaves);
 	bool getRootNode(Serializer& s, SHANodeFormat format);
+	std::vector<uint256> getNeededHashes(int max);
 	SMAddNode addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format,
 		SHAMapSyncFilter* filter);
 	SMAddNode addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format,

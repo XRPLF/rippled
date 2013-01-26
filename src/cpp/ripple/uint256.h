@@ -73,7 +73,7 @@ public:
 		zero();
 
 		// Put in least significant bits.
-		((uint64_t *) end())[-1] = htobe64(uHost);
+		((uint64*) end())[-1] = htobe64(uHost);
 
 		return *this;
 	}
@@ -206,12 +206,12 @@ public:
 
 	friend inline bool operator==(const base_uint& a, const base_uint& b)
 	{
-		return !compare(a, b);
+		return memcmp(a.pn, b.pn, sizeof(a.pn)) == 0;
 	}
 
 	friend inline bool operator!=(const base_uint& a, const base_uint& b)
 	{
-		return !!compare(a, b);
+		return memcmp(a.pn, b.pn, sizeof(a.pn)) != 0;
 	}
 
 	std::string GetHex() const
@@ -219,14 +219,18 @@ public:
 		return strHex(begin(), size());
 	}
 
-	void SetHex(const char* psz)
+	// Allow leading whitespace.
+	// Allow leading "0x".
+	// To be valid must be '\0' terminated.
+	bool SetHex(const char* psz, bool bStrict=false)
 	{
 		// skip leading spaces
-		while (isspace(*psz))
-			psz++;
+		if (!bStrict)
+			while (isspace(*psz))
+				psz++;
 
 		// skip 0x
-		if (psz[0] == '0' && tolower(psz[1]) == 'x')
+		if (!bStrict && psz[0] == '0' && tolower(psz[1]) == 'x')
 			psz += 2;
 
 		// hex char to int
@@ -278,11 +282,13 @@ public:
 										: phexdigit[*pBegin++];
 			*pOut++	= cHigh | cLow;
 		}
+
+		return !*pEnd;
 	}
 
-	void SetHex(const std::string& str)
+	bool SetHex(const std::string& str, bool bStrict=false)
 	{
-		SetHex(str.c_str());
+		return SetHex(str.c_str(), bStrict);
 	}
 
 	std::string ToString() const
@@ -292,22 +298,22 @@ public:
 
 	unsigned char* begin()
 	{
-		return (unsigned char*) &pn[0];
+		return reinterpret_cast<unsigned char*>(pn);
 	}
 
 	unsigned char* end()
 	{
-		return (unsigned char*) &pn[WIDTH];
+		return reinterpret_cast<unsigned char*>(pn + WIDTH);
 	}
 
 	const unsigned char* begin() const
 	{
-		return (const unsigned char*) &pn[0];
+		return reinterpret_cast<const unsigned char*>(pn);
 	}
 
 	const unsigned char* end() const
 	{
-		return (unsigned char*) &pn[WIDTH];
+		return reinterpret_cast<const unsigned char*>(pn + WIDTH);
 	}
 
 	unsigned int size() const
@@ -417,9 +423,8 @@ public:
 
 	uint256& operator=(const basetype& b)
 	{
-		for (int i = 0; i < WIDTH; i++)
-			pn[i] = b.pn[i];
-
+		if (pn != b.pn)
+			memcpy(pn, b.pn, sizeof(pn));
 		return *this;
 	}
 
@@ -433,7 +438,7 @@ public:
 		zero();
 
 		// Put in least significant bits.
-		((uint64_t *) end())[-1]	= htobe64(uHost);
+		((uint64*) end())[-1]	= htobe64(uHost);
 
 		return *this;
 	}
@@ -469,7 +474,7 @@ inline const uint256 operator|(const base_uint256& a, const uint256& b) { return
 inline bool operator==(const uint256& a, const base_uint256& b)		 { return (base_uint256)a == (base_uint256)b; }
 inline bool operator!=(const uint256& a, const base_uint256& b)		 { return (base_uint256)a != (base_uint256)b; }
 inline const uint256 operator^(const uint256& a, const base_uint256& b) { return (base_uint256)a ^  (base_uint256)b; }
-inline const uint256 operator&(const uint256& a, const base_uint256& b) { return (base_uint256)a &  (base_uint256)b; }
+inline const uint256 operator&(const uint256& a, const base_uint256& b) { return uint256(a) &= b; }
 inline const uint256 operator|(const uint256& a, const base_uint256& b) { return (base_uint256)a |  (base_uint256)b; }
 inline bool operator==(const uint256& a, const uint256& b)			  { return (base_uint256)a == (base_uint256)b; }
 inline bool operator!=(const uint256& a, const uint256& b)			  { return (base_uint256)a != (base_uint256)b; }
@@ -651,7 +656,7 @@ public:
 		zero();
 
 		// Put in least significant bits.
-		((uint64_t *) end())[-1]	= htobe64(uHost);
+		((uint64*) end())[-1]	= htobe64(uHost);
 
 		return *this;
 	}

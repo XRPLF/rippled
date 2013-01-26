@@ -78,8 +78,8 @@ std::string SerializedTransaction::getText() const
 	return STObject::getText();
 }
 
-std::vector<RippleAddress> SerializedTransaction::getAffectedAccounts() const
-{ // FIXME: This needs to be thought out better
+std::vector<RippleAddress> SerializedTransaction::getMentionedAccounts() const
+{
 	std::vector<RippleAddress> accounts;
 
 	BOOST_FOREACH(const SerializedType& it, peekData())
@@ -100,9 +100,10 @@ std::vector<RippleAddress> SerializedTransaction::getAffectedAccounts() const
 			if (!found)
 				accounts.push_back(na);
 		}
-		if (it.getFName() == sfLimitAmount)
+		const STAmount* sam = dynamic_cast<const STAmount*>(&it);
+		if (sam)
 		{
-			uint160 issuer = dynamic_cast<const STAmount*>(&it)->getIssuer();
+			uint160 issuer = sam->getIssuer();
 			if (issuer.isNonZero())
 			{
 				RippleAddress na;
@@ -126,7 +127,7 @@ std::vector<RippleAddress> SerializedTransaction::getAffectedAccounts() const
 
 uint256 SerializedTransaction::getSigningHash() const
 {
-	return STObject::getSigningHash(sHP_TransactionSign);
+	return STObject::getSigningHash(theConfig.SIGN_TRANSACTION);
 }
 
 uint256 SerializedTransaction::getTransactionID() const
@@ -235,9 +236,8 @@ std::string SerializedTransaction::getMetaSQL(uint32 inLedger, const std::string
 std::string SerializedTransaction::getSQL(Serializer rawTxn, uint32 inLedger, char status) const
 {
 	static boost::format bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s)");
-	std::string rTxn;
-	theApp->getTxnDB()->getDB()->escape(
-		reinterpret_cast<const unsigned char *>(rawTxn.getDataPtr()), rawTxn.getLength(), rTxn);
+	std::string rTxn	= sqlEscape(rawTxn.peekData());
+
 	return str(bfTrans
 		% getTransactionID().GetHex() % getTransactionType() % getSourceAccount().humanAccountID()
 		% getSequence() % inLedger % status % rTxn);
@@ -247,9 +247,8 @@ std::string SerializedTransaction::getMetaSQL(Serializer rawTxn, uint32 inLedger
 	const std::string& escapedMetaData) const
 {
 	static boost::format bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
-	std::string rTxn;
-	theApp->getTxnDB()->getDB()->escape(
-		reinterpret_cast<const unsigned char *>(rawTxn.getDataPtr()), rawTxn.getLength(), rTxn);
+	std::string rTxn	= sqlEscape(rawTxn.peekData());
+
 	return str(bfTrans
 		% getTransactionID().GetHex() % getTransactionType() % getSourceAccount().humanAccountID()
 		% getSequence() % inLedger % status % rTxn % escapedMetaData);

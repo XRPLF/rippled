@@ -7,9 +7,11 @@
 #include "Log.h"
 SETUP_LOG();
 
+// Logic to handle incoming HTTP reqests
+
 void HTTPRequest::reset()
 {
-	vHeaders.clear();
+	mHeaders.clear();
 	sRequestBody.clear();
 	sAuthorization.clear();
 	iDataSize = 0;
@@ -22,7 +24,7 @@ HTTPRequestAction HTTPRequest::requestDone(bool forceClose)
 	if (forceClose || bShouldClose)
 		return haCLOSE_CONN;
 	reset();
-	return haREAD_LINE;	
+	return haREAD_LINE;
 }
 
 std::string HTTPRequest::getReplyHeaders(bool forceClose)
@@ -65,8 +67,6 @@ HTTPRequestAction HTTPRequest::consume(boost::asio::streambuf& buf)
 			eState = getting_body;
 			return haREAD_RAW;
 		}
-		vHeaders.push_back(line);
-
 		size_t colon = line.find(':');
 		if (colon != std::string::npos)
 		{
@@ -76,6 +76,8 @@ HTTPRequestAction HTTPRequest::consume(boost::asio::streambuf& buf)
 
 			std::string headerValue = line.substr(colon+1);
 			boost::trim(headerValue);
+
+			mHeaders[headerName] += headerValue;
 
 			if (headerName == "connection")
 			{
@@ -91,7 +93,6 @@ HTTPRequestAction HTTPRequest::consume(boost::asio::streambuf& buf)
 
 			if (headerName == "authorization")
 				sAuthorization = headerValue;
-				
 		}
 
 		return haREAD_LINE;
@@ -100,3 +101,5 @@ HTTPRequestAction HTTPRequest::consume(boost::asio::streambuf& buf)
 	assert(false);
 	return haERROR;
 }
+
+// vim:ts=4

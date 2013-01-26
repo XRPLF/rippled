@@ -373,9 +373,10 @@ public:
 	// And what's left of the offer? And how much do I actually pay?
 	static bool applyOffer(
 		const uint32 uTakerPaysRate, const uint32 uOfferPaysRate,
+		const STAmount& saOfferRate,
 		const STAmount& saOfferFunds, const STAmount& saTakerFunds,
 		const STAmount& saOfferPays, const STAmount& saOfferGets,
-		const STAmount& saTakerPays, const STAmount& saTakerGets,
+		const STAmount& saTakerGets,
 		STAmount& saTakerPaid, STAmount& saTakerGot,
 		STAmount& saTakerIssuerFee, STAmount& saOfferIssuerFee);
 
@@ -779,10 +780,16 @@ public:
 	virtual bool isDefault() const	{ return mValue.empty(); }
 
 	std::vector<uint256> getValue() const			{ return mValue; }
+	int size() const								{ return mValue.size(); }
 	bool isEmpty() const							{ return mValue.empty(); }
+
+	const uint256& at(int i) const					{ assert((i >= 0) && (i < size())); return mValue.at(i); }
+	uint256& at(int i)								{ assert((i >= 0) && (i < size())); return mValue.at(i); }
+
 	void setValue(const STVector256& v)				{ mValue = v.mValue; }
 	void setValue(const std::vector<uint256>& v)	{ mValue = v; }
 	void addValue(const uint256& v)					{ mValue.push_back(v); }
+
 
 	Json::Value getJson(int) const;
 };

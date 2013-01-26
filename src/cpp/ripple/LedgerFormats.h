@@ -16,6 +16,7 @@ enum LedgerEntryType
 	ltCONTRACT			= 'c',
 	ltLEDGER_HASHES		= 'h',
 	ltFEATURES			= 'f',
+	ltFEE_SETTINGS		= 's',
 };
 
 // Used as a prefix for computing ledger indexes (keys).
@@ -32,15 +33,24 @@ enum LedgerNameSpace
 	spaceContract		= 'c',
 	spaceSkipList		= 's',
 	spaceFeature		= 'f',
+	spaceFee			= 's',
 };
 
 enum LedgerSpecificFlags
 {
 	// ltACCOUNT_ROOT
-	lsfPasswordSpent	= 0x00010000,	// True if password set fee is spent.
+	lsfPasswordSpent	= 0x00010000,	// True, if password set fee is spent.
+	lsfRequireDestTag	= 0x00020000,	// True, to require a DestinationTag for payments.
+	lsfRequireAuth		= 0x00040000,	// True, to require a authorization to hold IOUs.
 
 	// ltOFFER
 	lsfPassive			= 0x00010000,
+
+	// ltRIPPLE_STATE
+	lsfLowReserve		= 0x00010000,	// True, if entry counts toward reserve.
+	lsfHighReserve		= 0x00020000,
+	lsfLowAuth			= 0x00040000,
+	lsfHighAuth			= 0x00080000,
 };
 
 class LedgerEntryFormat
@@ -48,7 +58,7 @@ class LedgerEntryFormat
 public:
 	std::string					t_name;
 	LedgerEntryType				t_type;
-	std::vector<SOElement::ptr>	elements;
+	std::vector<SOElement::ref>	elements;
 
 	static std::map<int, LedgerEntryFormat*>			byType;
 	static std::map<std::string, LedgerEntryFormat*>	byName;
