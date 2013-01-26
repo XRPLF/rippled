@@ -320,17 +320,17 @@ buster.testCase("Offer tests", {
                 })
               .submit();
         },
-        function (callback) {
-          self.what = "Display ledger";
-
-          self.remote.request_ledger('current', true)
-            .on('success', function (m) {
-                console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
-
-                callback();
-              })
-            .request();
-        },
+//        function (callback) {
+//          self.what = "Display ledger";
+//
+//          self.remote.request_ledger('current', true)
+//            .on('success', function (m) {
+//                console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+//
+//                callback();
+//              })
+//            .request();
+//        },
         function (callback) {
           self.what = "Create crossing offer.";
 

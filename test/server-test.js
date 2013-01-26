@@ -8,10 +8,8 @@ var Server  = require("./server.js").Server;
 var alpha;
 
 buster.testCase("Standalone server startup", {
-
-
   "server start and stop" : function (done) {
-      alpha = Server.from_config("alpha",true); //ADD ,true for verbosity
+      alpha = Server.from_config("alpha", false); //ADD ,true for verbosity
 
       alpha
         .on('started', function () {
