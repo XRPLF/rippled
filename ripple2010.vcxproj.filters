@@ -189,9 +189,6 @@
     <ClCompile Include="src\cpp\ripple\RippleCalc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\RippleLines.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\RippleState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -276,9 +273,6 @@
     <ClCompile Include="src\cpp\ripple\Wallet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\WSConnection.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\WSDoor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -349,6 +343,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCErr.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\AccountItems.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\Offer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\FeatureTable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -636,13 +642,14 @@
       <Filter>html</Filter>
     </None>
     <None Include="SConstruct" />
-    <None Include="newcoind.cfg" />
-    <None Include="validators.txt" />
     <None Include="README" />
     <None Include="test\buster.js" />
     <None Include="test\server.js" />
     <None Include="test\standalone-test.js" />
     <None Include="test\utils.js" />
+    <None Include="rippled-example.cfg" />
+    <None Include="ripple-example.txt" />
+    <None Include="validators-example.txt" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="src\cpp\ripple\ripple.proto" />
