@@ -591,7 +591,7 @@ void server<endpoint>::connection<connection_type>::handle_read_request(
                 m_version = -1;
                 shared_const_buffer buffer(reply);
                 m_connection.get_socket().async_write(
-                    buffer,
+                    shared_const_buffer(reply),
                     boost::bind(
                         &type::handle_write_response,
                         m_connection.shared_from_this(),
