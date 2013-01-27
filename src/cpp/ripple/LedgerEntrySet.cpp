@@ -1261,13 +1261,16 @@ TER LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRecei
 		if (!bSenderHigh)
 			saBalance.negate();		// Put balance in low terms.
 
-		cLog(lsDEBUG) << boost::str(boost::format("rippleCredit> %s (%s) -> %s : %s")
+		STAmount	saBefore	= saBalance;
+
+		saBalance	+= saAmount;
+
+		cLog(lsDEBUG) << boost::str(boost::format("rippleCredit: %s -- (%s > %s) -> %s : %s")
 			% RippleAddress::createHumanAccountID(uSenderID)
+			% saBefore.getFullText()
 			% saBalance.getFullText()
 			% RippleAddress::createHumanAccountID(uReceiverID)
 			% saAmount.getFullText());
-
-		saBalance	+= saAmount;
 
 		if (!bSenderHigh)
 			saBalance.negate();
@@ -1311,6 +1314,13 @@ TER LedgerEntrySet::rippleSend(const uint160& uSenderID, const uint160& uReceive
 
 		saActual.setIssuer(uIssuerID);	// XXX Make sure this done in + above.
 
+		cLog(lsINFO) << boost::str(boost::format("rippleSend> %s -- %s--> %s (%s) : %s")
+			% RippleAddress::createHumanAccountID(uSenderID)
+			% saTransitFee.getFullText()
+			% RippleAddress::createHumanAccountID(uReceiverID)
+			% saActual.getFullText()
+			% saAmount.getFullText());
+
 		terResult	= rippleCredit(uIssuerID, uReceiverID, saAmount);
 
 		if (tesSUCCESS == terResult)
@@ -1322,7 +1332,6 @@ TER LedgerEntrySet::rippleSend(const uint160& uSenderID, const uint160& uReceive
 
 TER LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount)
 {
-	assert(!saAmount.isNegative());
 	TER	terResult	= tesSUCCESS;
 
 	if (!saAmount)
@@ -1344,6 +1353,8 @@ TER LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uReceiv
 			% RippleAddress::createHumanAccountID(uReceiverID)
 			% (sleReceiver ? (sleReceiver->getFieldAmount(sfBalance)).getFullText() : "-")
 			% saAmount.getFullText());
+
+		assert(!saAmount.isNegative());
 
 		if (sleSender)
 		{
@@ -1367,6 +1378,13 @@ TER LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uReceiv
 	else
 	{
 		STAmount	saActual;
+
+		cLog(lsINFO) << boost::str(boost::format("accountSend: %s -> %s : %s")
+			% RippleAddress::createHumanAccountID(uSenderID)
+			% RippleAddress::createHumanAccountID(uReceiverID)
+			% saAmount.getFullText());
+
+		assert(!saAmount.isNegative());
 
 		terResult	= rippleSend(uSenderID, uReceiverID, saAmount, saActual);
 	}
