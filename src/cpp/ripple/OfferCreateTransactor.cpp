@@ -168,6 +168,7 @@ TER OfferCreateTransactor::takeOffers(
 						saPay,
 						saOfferPays,
 						saOfferGets,
+						saTakerPays,
 						saTakerGets,
 						saSubTakerPaid,
 						saSubTakerGot,
