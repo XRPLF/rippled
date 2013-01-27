@@ -73,7 +73,7 @@ public:
         }
     }
     
-    // TLS policy adds the on_autotls_init method to the handler to allow the user
+    // TLS policy adds the on_tls_init method to the handler to allow the user
     // to set up their asio TLS context.
     class handler_interface {
     public:
