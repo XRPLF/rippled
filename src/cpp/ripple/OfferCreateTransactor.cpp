@@ -8,13 +8,13 @@
 SETUP_LOG();
 
 // Take as much as possible. Adjusts account balances. Charges fees on top to taker.
-// -->   uBookBase: The order book to take against.
-// --> saTakerPays: What the taker offers (w/ issuer)
-// --> saTakerGets: What the taker wanted (w/ issuer)
-// <-- saTakerPaid: What taker paid not including fees. To reduce an offer.
-// <--  saTakerGot: What taker got not including fees. To reduce an offer.
-// <--   terResult: tesSUCCESS or terNO_ACCOUNT
-// <--   bUnfunded: if tesSUCCESS, consider offer unfunded after taking.
+// -->    uBookBase: The order book to take against.
+// -->  saTakerPays: What the taker offers (w/ issuer)
+// -->  saTakerGets: What the taker wanted (w/ issuer)
+// <--  saTakerPaid: What taker paid including saved not including fees. To reduce an offer.
+// <--   saTakerGot: What taker got not including fees. To reduce an offer.
+// <--    terResult: tesSUCCESS or terNO_ACCOUNT
+// <--    bUnfunded: if tesSUCCESS, consider offer unfunded after taking.
 TER OfferCreateTransactor::takeOffers(
 	bool				bPassive,
 	const uint256&		uBookBase,
@@ -33,6 +33,7 @@ TER OfferCreateTransactor::takeOffers(
 	uint256					uTipIndex			= uBookBase;
 	const uint256			uBookEnd			= Ledger::getQualityNext(uBookBase);
 	const uint64			uTakeQuality		= STAmount::getRate(saTakerGets, saTakerPays);
+	STAmount				saTakerRate			= STAmount::setRate(uTakeQuality);
 	const uint160			uTakerPaysAccountID	= saTakerPays.getIssuer();
 	const uint160			uTakerGetsAccountID	= saTakerGets.getIssuer();
 	TER						terResult			= temUNCERTAIN;
@@ -41,9 +42,9 @@ TER OfferCreateTransactor::takeOffers(
 	boost::unordered_set<uint256>	usOfferUnfundedBecame;	// Offers that became unfunded.
 	boost::unordered_set<uint160>	usAccountTouched;		// Accounts touched.
 
-	saTakerPaid	= STAmount(saTakerPays.getCurrency(), saTakerPays.getIssuer());
-	saTakerGot	= STAmount(saTakerGets.getCurrency(), saTakerGets.getIssuer());
-	bUnfunded	= false;
+	saTakerPaid		= STAmount(saTakerPays.getCurrency(), saTakerPays.getIssuer());
+	saTakerGot		= STAmount(saTakerGets.getCurrency(), saTakerGets.getIssuer());
+	bUnfunded		= false;
 
 	while (temUNCERTAIN == terResult)
 	{
@@ -51,10 +52,9 @@ TER OfferCreateTransactor::takeOffers(
 		uint64			uTipQuality;
 
 		// Figure out next offer to take, if needed.
-		if (saTakerGets != saTakerGot && saTakerPays != saTakerPaid)
+		if (saTakerGot < saTakerGets			// Have less than wanted.
+			&& saTakerPaid < saTakerPays)		// Didn't spend all funds.
 		{
-			// Taker, still, needs to get and pay.
-
 			sleOfferDir		= mEngine->entryCache(ltDIR_NODE, mEngine->getLedger()->getNextLedgerIndex(uTipIndex, uBookEnd));
 			if (sleOfferDir)
 			{
@@ -219,24 +219,20 @@ TER OfferCreateTransactor::takeOffers(
 
 					if (!bUnfunded)
 					{
-						// Offer owner pays taker.
-						// saSubTakerGot.setIssuer(uTakerGetsAccountID);	// XXX Move this earlier?
-
-						terResult	= mEngine->getNodes().accountSend(uOfferOwnerID, uTakerAccountID, saSubTakerGot);
+						terResult	= mEngine->getNodes().accountSend(uOfferOwnerID, uTakerAccountID, saSubTakerGot);				// Offer owner pays taker.
 
 						if (tesSUCCESS == terResult)
-							terResult	= mEngine->getNodes().accountSend(uOfferOwnerID, uTakerGetsAccountID, saOfferIssuerFee);
-						// Taker pays offer owner.
-						//	saSubTakerPaid.setIssuer(uTakerPaysAccountID);
+							terResult	= mEngine->getNodes().accountSend(uOfferOwnerID, uTakerGetsAccountID, saOfferIssuerFee);	// Offer owner pays issuer transfer fee.
 
 						if (tesSUCCESS == terResult)
-							terResult	= mEngine->getNodes().accountSend(uTakerAccountID, uOfferOwnerID, saSubTakerPaid);
+							terResult	= mEngine->getNodes().accountSend(uTakerAccountID, uOfferOwnerID, saSubTakerPaid);			// Taker pays offer owner.
 
 						if (tesSUCCESS == terResult)
-							terResult	= mEngine->getNodes().accountSend(uTakerAccountID, uTakerPaysAccountID, saTakerIssuerFee);
+							terResult	= mEngine->getNodes().accountSend(uTakerAccountID, uTakerPaysAccountID, saTakerIssuerFee);	// Taker pays issuer transfer fee.
 
-						saTakerGot	+= saSubTakerGot;
-						saTakerPaid	+= saSubTakerPaid;
+						// Reduce amount considered paid by taker's rate (not actual cost).
+						saTakerPaid		+= std::min(saPay, STAmount::multiply(saSubTakerGot, saTakerRate, saPay));
+						saTakerGot		+= saSubTakerGot;
 
 						if (tesSUCCESS == terResult)
 							terResult	= temUNCERTAIN;
@@ -394,7 +390,7 @@ TER OfferCreateTransactor::doApply()
 			mTxnAccount,
 			saTakerGets,
 			saTakerPays,
-			saOfferPaid,	// How much was spent.
+			saOfferPaid,	// How much would have spent at full price.
 			saOfferGot,		// How much was got.
 			bUnfunded);
 

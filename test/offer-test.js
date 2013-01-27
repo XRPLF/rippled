@@ -74,7 +74,7 @@ buster.testCase("Offer tests", {
         });
     },
 
-  "offer create then crossing offer, no trust lines with self" :
+  "Offer create then self crossing offer, no trust lines with self" :
     function (done) {
       var self = this;
 
