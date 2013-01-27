@@ -1078,7 +1078,7 @@ bool STAmount::applyOffer(
 		// Offer has limited funding, limit offer gets and pays by funds available.
 
 		saOfferPaysAvailable	= saOfferFundsAvailable;
-		saOfferGetsAvailable	= multiply(saOfferPaysAvailable, saOfferRate, saOfferGets);
+		saOfferGetsAvailable	= std::min(saOfferGets, multiply(saOfferPaysAvailable, saOfferRate, saOfferGets));
 	}
 
 	cLog(lsINFO) << "applyOffer: saOfferPaysAvailable=" << saOfferFundsAvailable.getFullText();
