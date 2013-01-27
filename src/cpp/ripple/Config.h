@@ -48,6 +48,24 @@ const int SYSTEM_WEBSOCKET_PUBLIC_PORT	= 6563;	// XXX Going away.
 // Might connect with fewer for testing.
 #define	DEFAULT_PEER_CONNECT_LOW_WATER	4
 
+enum SizedItemName
+{
+	siSweepInterval,
+	siValidationsSize,
+	siValidationsAge,
+	siNodeCacheSize,
+	siNodeCacheAge,
+	siLedgerSize,
+	siLedgerAge,
+	siLedgerFetch,
+};
+
+struct SizedItem
+{
+	SizedItemName	item;
+	int				sizes[5];
+};
+
 class Config
 {
 public:
@@ -139,6 +157,7 @@ public:
 
 	// Node storage configuration
 	uint32						LEDGER_HISTORY;
+	int							NODE_SIZE;
 
 	// Client behavior
 	int							ACCOUNT_PROBE_MAX;		// How far to scan for accounts.
@@ -150,6 +169,7 @@ public:
 
 	Config();
 
+	int getSize(SizedItemName);
 	void setup(const std::string& strConf, bool bTestNet, bool bQuiet);
 	void load();
 };

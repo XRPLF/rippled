@@ -50,7 +50,7 @@ Application::Application() :
 	getRand(mNonce256.begin(), mNonce256.size());
 	getRand(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
 	mJobQueue.setThreadCount();
-	mSweepTimer.expires_from_now(boost::posix_time::seconds(60));
+	mSweepTimer.expires_from_now(boost::posix_time::seconds(20));
 	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
 }
 
@@ -159,6 +159,9 @@ void Application::setup()
 	if (!theConfig.RUN_STANDALONE)
 		getUNL().nodeBootstrap();
 
+	mValidations.tune(theConfig.getSize(siValidationsSize), theConfig.getSize(siValidationsAge));
+	mHashedObjectStore.tune(theConfig.getSize(siNodeCacheSize), theConfig.getSize(siNodeCacheAge));
+	mLedgerMaster.tune(theConfig.getSize(siLedgerSize), theConfig.getSize(siLedgerAge));
 
 	//
 	// Allow peer connections.
@@ -294,7 +297,7 @@ void Application::sweep()
 	mTempNodeCache.sweep();
 	mValidations.sweep();
 	getMasterLedgerAcquire().sweep();
-	mSweepTimer.expires_from_now(boost::posix_time::seconds(60));
+	mSweepTimer.expires_from_now(boost::posix_time::seconds(theConfig.getSize(siSweepInterval)));
 	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
 }
 

@@ -20,6 +20,12 @@ HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
 	mWriteSet.reserve(128);
 }
 
+void HashedObjectStore::tune(int size, int age)
+{
+	mCache.setTargetSize(size);
+	mCache.setTargetAge(age);
+}
+
 
 bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	const std::vector<unsigned char>& data, const uint256& hash)

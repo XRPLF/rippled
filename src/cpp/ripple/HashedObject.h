@@ -67,6 +67,7 @@ public:
 
 	void bulkWrite();
 	void waitWrite();
+	void tune(int size, int age);
 	void sweep() { mCache.sweep(); mNegativeCache.sweep(); }
 
 	int import(const std::string&);
