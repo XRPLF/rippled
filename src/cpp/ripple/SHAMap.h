@@ -382,6 +382,9 @@ public:
 	// Returns a new map that's a snapshot of this one. Force CoW
 	SHAMap::pointer snapShot(bool isMutable);
 
+	// Remove nodes from memory
+	void dropCache();
+
 	// hold the map stable across operations
 	ScopedLock Lock() const { return ScopedLock(mLock); }
 

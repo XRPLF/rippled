@@ -851,6 +851,15 @@ bool SHAMap::getPath(const uint256& index, std::vector< std::vector<unsigned cha
 	return true;
 }
 
+void SHAMap::dropCache()
+{ // CAUTION: Changes can be lost
+	boost::recursive_mutex::scoped_lock sl(mLock);
+
+	mTNByID.clear();
+	if (root)
+		mTNByID[*root] = root;
+}
+
 void SHAMap::dump(bool hash)
 {
 #if 0

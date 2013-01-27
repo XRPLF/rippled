@@ -153,6 +153,13 @@ public:
 	// low level functions
 	SHAMap::ref peekTransactionMap() { return mTransactionMap; }
 	SHAMap::ref peekAccountStateMap() { return mAccountStateMap; }
+	void dropCache()
+	{
+		if (mTransactionMap)
+			mTransactionMap->dropCache();
+		if (mAccountStateMap)
+			mAccountStateMap->dropCache();
+	}
 
 	// ledger sync functions
 	void setAcquiring(void);
