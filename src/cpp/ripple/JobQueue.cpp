@@ -16,6 +16,7 @@ JobQueue::JobQueue() : mLastJob(0), mThreadCount(0), mShuttingDown(false)
 	mJobLoads[jtTRANSACTION].setTargetLatency(250, 1000);
 	mJobLoads[jtPROPOSAL_ut].setTargetLatency(500, 1250);
 	mJobLoads[jtPUBLEDGER].setTargetLatency(1000, 2500);
+	mJobLoads[jtWAL].setTargetLatency(1000, 2500);
 	mJobLoads[jtVALIDATION_t].setTargetLatency(500, 1500);
 	mJobLoads[jtWRITE].setTargetLatency(750, 1500);
 	mJobLoads[jtTRANSACTION_l].setTargetLatency(100, 500);
@@ -41,6 +42,7 @@ const char* Job::toString(JobType t)
 		case jtTRANSACTION:		return "transaction";
 		case jtPUBLEDGER:		return "publishLedger";
 		case jtVALIDATION_t:	return "trustedValidation";
+		case jtWAL:				return "writeAhead";
 		case jtWRITE:			return "writeObjects";
 		case jtTRANSACTION_l:	return "localTransaction";
 		case jtPROPOSAL_t:		return "trustedProposal";

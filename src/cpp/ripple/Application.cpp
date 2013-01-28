@@ -62,10 +62,10 @@ void Application::stop()
 {
 	cLog(lsINFO) << "Received shutdown request";
 	mIOService.stop();
-	mJobQueue.shutdown();
 	mHashedObjectStore.bulkWrite();
 	mValidations.flush();
 	mAuxService.stop();
+	mJobQueue.shutdown();
 
 	cLog(lsINFO) << "Stopped: " << mIOService.stopped();
 	Instance::shutdown();
@@ -122,9 +122,9 @@ void Application::setup()
 	boost::thread t5(boost::bind(&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
 	boost::thread t6(boost::bind(&InitDB, &mNetNodeDB, "netnode.db", NetNodeDBInit, NetNodeDBCount));
 	t1.join(); t2.join(); t3.join(); t4.join(); t5.join(); t6.join();
-	mTxnDB->getDB()->setupCheckpointing();
-	mLedgerDB->getDB()->setupCheckpointing();
-	mHashNodeDB->getDB()->setupCheckpointing();
+	mTxnDB->getDB()->setupCheckpointing(&mJobQueue);
+	mLedgerDB->getDB()->setupCheckpointing(&mJobQueue);
+	mHashNodeDB->getDB()->setupCheckpointing(&mJobQueue);
 
 	if (theConfig.START_UP == Config::FRESH)
 	{

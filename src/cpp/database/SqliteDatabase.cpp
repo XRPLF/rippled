@@ -9,9 +9,14 @@
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
+#include "../ripple/JobQueue.h"
+#include "../ripple/Log.h"
+
+SETUP_NLOG("DataBase");
+
 using namespace std;
 
-SqliteDatabase::SqliteDatabase(const char* host) : Database(host,"",""), walRunning(false)
+SqliteDatabase::SqliteDatabase(const char* host) : Database(host,"",""), mWalQ(NULL), walRunning(false)
 {
 	mConnection		= NULL;
 	mCurrentStmt	= NULL;
@@ -22,7 +27,7 @@ void SqliteDatabase::connect()
 	int rc = sqlite3_open(mHost.c_str(), &mConnection);
 	if (rc)
 	{
-		cout << "Can't open database: " << mHost << " " << rc << endl;
+		cLog(lsFATAL) << "Can't open database: " << mHost << " " << rc;
 		sqlite3_close(mConnection);
 		assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
 	}
@@ -46,9 +51,9 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 		if (!fail_ok)
 		{
 #ifdef DEBUG
-			cout << "SQL Perror:" << rc << endl;
-			cout << "Statement: " << sql << endl;
-			cout << "Error: " << sqlite3_errmsg(mConnection) << endl;
+			cLog(lsWARNING) << "SQL Perror:" << rc;
+			cLog(lsWARNING) << "Statement: " << sql;
+			cLog(lsWARNING) << "Error: " << sqlite3_errmsg(mConnection);
 #endif
 		}
 		return false;
@@ -70,9 +75,9 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 		if (!fail_ok)
 		{
 #ifdef DEBUG
-			cout << "SQL Serror:" << rc << endl;
-			cout << "Statement: " << sql << endl;
-			cout << "Error: " << sqlite3_errmsg(mConnection) << endl;
+			cLog(lsWARNING) << "SQL Serror:" << rc;
+			cLog(lsWARNING) << "Statement: " << sql;
+			cLog(lsWARNING) << "Error: " << sqlite3_errmsg(mConnection);
 #endif
 		}
 		return false;
@@ -130,7 +135,7 @@ bool SqliteDatabase::getNextRow()
 	else
 	{
 		assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
-		cout << "SQL Rerror:" << rc << endl;
+		cLog(lsWARNING) << "SQL Rerror:" << rc;
 		return(false);
 	}
 }
@@ -194,27 +199,32 @@ static int SqliteWALHook(void *s, sqlite3* dbCon, const char *dbName, int walSiz
 	return SQLITE_OK;
 }
 
-bool SqliteDatabase::setupCheckpointing()
+bool SqliteDatabase::setupCheckpointing(JobQueue *q)
 {
+	mWalQ = q;
 	sqlite3_wal_hook(mConnection, SqliteWALHook, this);
 	return true;
 }
 
 void SqliteDatabase::doHook(const char *db, int pages)
 {
-	if (pages < 256)
+	if (pages < 512)
 		return;
 	boost::mutex::scoped_lock sl(walMutex);
 	if (walDBs.insert(db).second && !walRunning)
 	{
 		walRunning = true;
-		boost::thread(boost::bind(&SqliteDatabase::runWal, this)).detach();
+		if (mWalQ)
+			mWalQ->addJob(jtWAL, boost::bind(&SqliteDatabase::runWal, this));
+		else
+			boost::thread(boost::bind(&SqliteDatabase::runWal, this)).detach();
 	}
 }
 
 void SqliteDatabase::runWal()
 {
 	std::set<std::string> walSet;
+	std::string name = sqlite3_db_filename(mConnection, "main");
 
 	while (1)
 	{
@@ -231,10 +241,14 @@ void SqliteDatabase::runWal()
 		BOOST_FOREACH(const std::string& db, walSet)
 		{
 			int log, ckpt;
-			sqlite3_wal_checkpoint_v2(mConnection, db.c_str(), SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
+			int ret = sqlite3_wal_checkpoint_v2(mConnection, db.c_str(), SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
+			if (ret != SQLITE_OK)
+			{
+				cLog((ret == SQLITE_LOCKED) ? lsDEBUG : lsWARNING) << "WAL "
+					<< sqlite3_db_filename(mConnection, "main") << " / " << db << " errror " << ret;
+			}
 		}
 		walSet.clear();
-
 	}
 }
 

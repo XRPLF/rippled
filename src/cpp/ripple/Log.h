@@ -15,6 +15,7 @@
 
 // Put at the beginning of a C++ file that needs its own log partition
 #define SETUP_LOG()	static LogPartition logPartition(__FILE__)
+#define SETUP_NLOG(x) static LogPartition logPartition(x)
 
 // Standard conditional log
 #define cLog(x)		if (!logPartition.doLog(x)) do {} while (0); else Log(x, logPartition)

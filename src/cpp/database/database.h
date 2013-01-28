@@ -18,6 +18,7 @@
 */
 
 class SqliteDatabase;
+class JobQueue;
 
 class Database
 {
@@ -86,8 +87,8 @@ public:
 	// float getSingleDBValueFloat(const char* sql);
 	// char* getSingleDBValueStr(const char* sql, std::string& retStr);
 
-	virtual bool setupCheckpointing()		{ return false; }
-	virtual SqliteDatabase* getSqliteDB()	{ return NULL; }
+	virtual bool setupCheckpointing(JobQueue*)	{ return false; }
+	virtual SqliteDatabase* getSqliteDB()		{ return NULL; }
 };
 
 #endif
