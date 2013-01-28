@@ -455,7 +455,7 @@ int Config::getSize(SizedItemName item)
 {
 	SizedItem sizeTable[] = {
 		{ siSweepInterval,		{	10,		30,		60,		90,			90		} },
-		{ siLedgerFetch,		{	2,		4,		10,		10,			10		} },
+		{ siLedgerFetch,		{	2,		4,		5,		6,			6		} },
 		{ siValidationsSize,	{	256,	256,	512,	1024,		1024	} },
 		{ siValidationsAge,		{	500,	500,	500,	500,		500		} },
 		{ siNodeCacheSize,		{	8192,	32768,	131072,	1048576,	0		} },
