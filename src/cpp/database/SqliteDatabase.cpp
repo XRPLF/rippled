@@ -291,9 +291,17 @@ int SqliteStatement::size(int column)
 	return sqlite3_column_bytes(statement, column);
 }
 
-const void* SqliteStatement::getBlob(int column)
+const void* SqliteStatement::peekBlob(int column)
 {
 	return sqlite3_column_blob(statement, column);
+}
+
+std::vector<unsigned char> SqliteStatement::getBlob(int column)
+{
+	int size = sqlite3_column_bytes(statement, column);
+	std::vector<unsigned char> ret(size);
+	memcpy(&(ret.front()), sqlite3_column_blob(statement, column), size);
+	return ret;
 }
 
 std::string SqliteStatement::getString(int column)

@@ -86,7 +86,9 @@ public:
 
 	int size(int column);
 
-	const void* getBlob(int column);
+	const void* peekBlob(int column);
+	std::vector<unsigned char> getBlob(int column);
+
 	std::string getString(int column);
 	const char* peekString(int column);
 	uint32 getUInt32(int column);
