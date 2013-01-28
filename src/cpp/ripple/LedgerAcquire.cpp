@@ -14,7 +14,9 @@ SETUP_LOG();
 DECLARE_INSTANCE(LedgerAcquire);
 
 #define LA_DEBUG
-#define LEDGER_ACQUIRE_TIMEOUT 750
+#define LEDGER_ACQUIRE_TIMEOUT		750	// millisecond for each ledger timeout
+#define LEDGER_TIMEOUT_COUNT		10  // how many timeouts before we giveup
+#define LEDGER_TIMEOUT_AGGRESSIVE	4	// how many timeouts before we get aggressive
 #define TRUST_NETWORK
 
 PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterval(interval), mTimeouts(0),
@@ -165,7 +167,7 @@ bool LedgerAcquire::tryLocal()
 
 void LedgerAcquire::onTimer(bool progress)
 {
-	if (getTimeouts() > 6)
+	if (getTimeouts() > LEDGER_TIMEOUT_COUNT)
 	{
 		cLog(lsWARNING) << "Six timeouts for ledger " << mHash;
 		setFailed();
@@ -301,7 +303,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 	{
 		tmGL.set_querytype(ripple::qtINDIRECT);
 
-		if (!isProgress() && !mFailed && mByHash && (getTimeouts() > 2))
+		if (!isProgress() && !mFailed && mByHash && (getTimeouts() > LEDGER_TIMEOUT_AGGRESSIVE))
 		{
 			std::vector<neededHash_t> need = getNeededHashes();
 			if (!need.empty())
