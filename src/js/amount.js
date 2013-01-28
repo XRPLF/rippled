@@ -1009,7 +1009,7 @@ Amount.prototype.parse_native = function (j) {
   var m;
 
   if ('string' === typeof j)
-    m = j.match(/^(-?)(\d+)(\.\d{0,6})?$/);
+    m = j.match(/^(-?)(\d*)(\.\d{0,6})?$/);
 
   if (m) {
     if (undefined === m[3]) {
@@ -1056,8 +1056,8 @@ Amount.prototype.parse_value = function (j) {
   }
   else if ('string' === typeof j) {
     var	i = j.match(/^(-?)(\d+)$/);
-    var	d = !i && j.match(/^(-?)(\d+)\.(\d*)$/);
-    var	e = !e && j.match(/^(-?)(\d+)e(-?\d+)$/);
+    var	d = !i && j.match(/^(-?)(\d*)\.(\d*)$/);
+    var	e = !e && j.match(/^(-?)(\d*)e(-?\d+)$/);
 
     if (e) {
       // e notation
