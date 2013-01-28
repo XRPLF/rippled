@@ -51,7 +51,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 		if (!mWritePending)
 		{
 			mWritePending = true;
-			boost::thread(boost::bind(&HashedObjectStore::bulkWrite, this)).detach();
+			theApp->getJobQueue().addJob(jtWRITE, boost::bind(&HashedObjectStore::bulkWrite, this));
 		}
 	}
 //	else
@@ -70,7 +70,6 @@ void HashedObjectStore::waitWrite()
 
 void HashedObjectStore::bulkWrite()
 {
-	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtDISK));
 	while (1)
 	{
 		std::vector< boost::shared_ptr<HashedObject> > set;
