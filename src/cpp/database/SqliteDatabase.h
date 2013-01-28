@@ -75,13 +75,12 @@ public:
 
 	int bind(int position, const void *data, int length);
 	int bindStatic(int position, const void *data, int length);
-
-	int bind(int position, uint32 value);
+	int bindStatic(int position, const std::vector<unsigned char>& value);
 
 	int bind(int position, const std::string& value);
-
 	int bindStatic(int position, const std::string& value);
 
+	int bind(int position, uint32 value);
 	int bind(int position);
 
 	int size(int column);

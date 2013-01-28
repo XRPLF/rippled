@@ -266,6 +266,11 @@ int SqliteStatement::bindStatic(int position, const void *data, int length)
 	return sqlite3_bind_blob(statement, position, data, length, SQLITE_STATIC);
 }
 
+int SqliteStatement::bindStatic(int position, const std::vector<unsigned char>& value)
+{
+	return sqlite3_bind_blob(statement, position, &value.front(), value.size(), SQLITE_STATIC);
+}
+
 int SqliteStatement::bind(int position, uint32 value)
 {
 	return sqlite3_bind_int64(statement, position, static_cast<sqlite3_int64>(value));
@@ -278,7 +283,7 @@ int SqliteStatement::bind(int position, const std::string& value)
 
 int SqliteStatement::bindStatic(int position, const std::string& value)
 {
-	return sqlite3_bind_text(statement, position, value.data(), value.size(), SQLITE_TRANSIENT);
+	return sqlite3_bind_text(statement, position, value.data(), value.size(), SQLITE_STATIC);
 }
 
 int SqliteStatement::bind(int position)
