@@ -244,7 +244,7 @@ void JobQueue::threadEntry()
 			break;
 
 		sl.unlock();
-		cLog(lsDEBUG) << "Doing " << Job::toString(job.getType()) << " job";
+		cLog(lsTRACE) << "Doing " << Job::toString(job.getType()) << " job";
 		job.doJob();
 		sl.lock();
 	}
