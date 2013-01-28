@@ -509,13 +509,13 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		}
 
 		db->getStr("LedgerHash", hash);
-		ledgerHash.SetHex(hash);
+		ledgerHash.SetHex(hash, true);
 		db->getStr("PrevHash", hash);
-		prevHash.SetHex(hash);
+		prevHash.SetHex(hash, true);
 		db->getStr("AccountSetHash", hash);
-		accountHash.SetHex(hash);
+		accountHash.SetHex(hash, true);
 		db->getStr("TransSetHash", hash);
-		transHash.SetHex(hash);
+		transHash.SetHex(hash, true);
 		totCoins = db->getBigInt("TotalCoins");
 		closingTime = db->getBigInt("ClosingTime");
 		prevClosingTime = db->getBigInt("PrevClosingTime");
@@ -562,7 +562,7 @@ uint256 Ledger::getHashByIndex(uint32 ledgerIndex)
 		db->endIterRows();
 	}
 
-	ret.SetHex(hash);
+	ret.SetHex(hash, true);
 	return ret;
 }
 
@@ -592,8 +592,8 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 		return false;
 	}
 
-	ledgerHash.SetHex(pSt.peekString(0));
-	parentHash.SetHex(pSt.peekString(1));
+	ledgerHash.SetHex(pSt.peekString(0), true);
+	parentHash.SetHex(pSt.peekString(1), true);
 
 	return true;
 
@@ -614,8 +614,8 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 		db->endIterRows();
 	}
 
-	ledgerHash.SetHex(hash);
-	parentHash.SetHex(prevHash);
+	ledgerHash.SetHex(hash, true);
+	parentHash.SetHex(prevHash, true);
 
 	assert(ledgerHash.isNonZero() && ((ledgerIndex == 0) || parentHash.isNonZero()));
 
