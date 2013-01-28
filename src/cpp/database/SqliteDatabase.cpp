@@ -238,4 +238,107 @@ void SqliteDatabase::runWal()
 	}
 }
 
+SqliteStatement::SqliteStatement(SqliteDatabase* db, const char *sql)
+{
+	assert(db);
+	int j = sqlite3_prepare_v2(db->peekConnection(), sql, strlen(sql) + 1, &statement, NULL);
+	if (j != SQLITE_OK)
+		throw j;
+}
+
+SqliteStatement::~SqliteStatement()
+{
+	sqlite3_finalize(statement);
+}
+
+sqlite3_stmt* SqliteStatement::peekStatement()
+{
+	return statement;
+}
+
+int SqliteStatement::bind(int position, const void *data, int length)
+{
+	return sqlite3_bind_blob(statement, position, data, length, SQLITE_TRANSIENT);
+}
+
+int SqliteStatement::bindStatic(int position, const void *data, int length)
+{
+	return sqlite3_bind_blob(statement, position, data, length, SQLITE_STATIC);
+}
+
+int SqliteStatement::bind(int position, uint32 value)
+{
+	return sqlite3_bind_int64(statement, position, static_cast<sqlite3_int64>(value));
+}
+
+int SqliteStatement::bind(int position, const std::string& value)
+{
+	return sqlite3_bind_text(statement, position, value.data(), value.size(), SQLITE_TRANSIENT);
+}
+
+int SqliteStatement::bindStatic(int position, const std::string& value)
+{
+	return sqlite3_bind_text(statement, position, value.data(), value.size(), SQLITE_TRANSIENT);
+}
+
+int SqliteStatement::bind(int position)
+{
+	return sqlite3_bind_null(statement, position);
+}
+
+int SqliteStatement::size(int column)
+{
+	return sqlite3_column_bytes(statement, column);
+}
+
+const void* SqliteStatement::getBlob(int column)
+{
+	return sqlite3_column_blob(statement, column);
+}
+
+std::string SqliteStatement::getString(int column)
+{
+	return reinterpret_cast<const char *>(sqlite3_column_text(statement, column));
+}
+
+const char* SqliteStatement::peekString(int column)
+{
+	return reinterpret_cast<const char *>(sqlite3_column_text(statement, column));
+}
+
+uint32 SqliteStatement::getUInt32(int column)
+{
+	return static_cast<uint32>(sqlite3_column_int64(statement, column));
+}
+
+int64 SqliteStatement::getInt64(int column)
+{
+	return sqlite3_column_int64(statement, column);
+}
+
+int SqliteStatement::step()
+{
+	return sqlite3_step(statement);
+}
+
+int SqliteStatement::reset()
+{
+	return sqlite3_reset(statement);
+}
+
+bool SqliteStatement::isOk(int j)
+{
+	return j == SQLITE_OK;
+}
+
+bool SqliteStatement::isDone(int j)
+{
+	return j == SQLITE_DONE;
+}
+
+bool SqliteStatement::isRow(int j)
+{
+	return j == SQLITE_ROW;
+}
+
 // vim:ts=4
