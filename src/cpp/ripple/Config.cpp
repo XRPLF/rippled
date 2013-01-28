@@ -27,6 +27,7 @@
 #define SECTION_IPS						"ips"
 #define SECTION_NETWORK_QUORUM			"network_quorum"
 #define SECTION_NODE_SEED				"node_seed"
+#define SECTION_NODE_SIZE				"node_size"
 #define SECTION_PEER_CONNECT_LOW_WATER	"peer_connect_low_water"
 #define SECTION_PEER_IP					"peer_ip"
 #define SECTION_PEER_PORT				"peer_port"
@@ -81,8 +82,9 @@ void Config::setup(const std::string& strConf, bool bTestNet, bool bQuiet)
 	// that with "db" as the data directory.
 	//
 
-	TESTNET	= bTestNet;
-	QUIET	= bQuiet;
+	TESTNET		= bTestNet;
+	QUIET		= bQuiet;
+	NODE_SIZE	= 0;
 
 	// TESTNET forces a "testnet-" prefix on the conf file and db directory.
 	strDbPath			= TESTNET ? "testnet-db" : "db";
@@ -329,6 +331,28 @@ void Config::load()
 			if (sectionSingleB(secConfig, SECTION_RPC_ALLOW_REMOTE, strTemp))
 				RPC_ALLOW_REMOTE	= boost::lexical_cast<bool>(strTemp);
 
+			if (sectionSingleB(secConfig, SECTION_NODE_SIZE, strTemp))
+			{
+				if (strTemp == "tiny")
+					NODE_SIZE = 0;
+				else if (strTemp == "small")
+					NODE_SIZE = 1;
+				else if (strTemp == "medium")
+					NODE_SIZE = 2;
+				else if (strTemp == "large")
+					NODE_SIZE = 3;
+				else if (strTemp == "huge")
+					NODE_SIZE = 4;
+				else
+				{
+					NODE_SIZE = boost::lexical_cast<int>(strTemp);
+					if (NODE_SIZE < 0)
+						NODE_SIZE = 0;
+					else if (NODE_SIZE > 4)
+						NODE_SIZE = 4;
+				}
+			}
+
 			(void) sectionSingleB(secConfig, SECTION_WEBSOCKET_IP, WEBSOCKET_IP);
 
 			if (sectionSingleB(secConfig, SECTION_WEBSOCKET_PORT, strTemp))
@@ -426,5 +450,28 @@ void Config::load()
 		}
 	}
 }
+
+int Config::getSize(SizedItemName item)
+{
+	SizedItem sizeTable[] = {
+		{ siSweepInterval,		{	10,		30,		60,		90,			90		} },
+		{ siLedgerFetch,		{	2,		4,		5,		6,			6		} },
+		{ siValidationsSize,	{	256,	256,	512,	1024,		1024	} },
+		{ siValidationsAge,		{	500,	500,	500,	500,		500		} },
+		{ siNodeCacheSize,		{	8192,	32768,	131072,	1048576,	0		} },
+		{ siNodeCacheAge,		{	30,		60,		90,		300,		600		} },
+		{ siLedgerSize,			{	32,		64,		128,	1024,		0		} },
+		{ siLedgerAge,			{	30,		60,		120,	300,		600		} },
+			};
+
+	for (int i = 0; i < (sizeof(sizeTable) / sizeof(SizedItem)); ++i)
+	{
+		if (sizeTable[i].item == item)
+			return sizeTable[i].sizes[NODE_SIZE];
+	}
+	assert(false);
+	return -1;
+}
+
 
 // vim:ts=4

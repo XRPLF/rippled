@@ -7,6 +7,8 @@
 
 #include "../json/writer.h"
 
+#include "../database/SqliteDatabase.h"
+
 #include "Application.h"
 #include "Ledger.h"
 #include "utils.h"
@@ -507,13 +509,13 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		}
 
 		db->getStr("LedgerHash", hash);
-		ledgerHash.SetHex(hash);
+		ledgerHash.SetHex(hash, true);
 		db->getStr("PrevHash", hash);
-		prevHash.SetHex(hash);
+		prevHash.SetHex(hash, true);
 		db->getStr("AccountSetHash", hash);
-		accountHash.SetHex(hash);
+		accountHash.SetHex(hash, true);
 		db->getStr("TransSetHash", hash);
-		transHash.SetHex(hash);
+		transHash.SetHex(hash, true);
 		totCoins = db->getBigInt("TotalCoins");
 		closingTime = db->getBigInt("ClosingTime");
 		prevClosingTime = db->getBigInt("PrevClosingTime");
@@ -560,12 +562,43 @@ uint256 Ledger::getHashByIndex(uint32 ledgerIndex)
 		db->endIterRows();
 	}
 
-	ret.SetHex(hash);
+	ret.SetHex(hash, true);
 	return ret;
 }
 
 bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& parentHash)
 {
+#ifndef NO_SQLITE3_PREPARE
+
+	DatabaseCon *con = theApp->getLedgerDB();
+	ScopedLock sl(con->getDBLock());
+
+	static SqliteStatement pSt(con->getDB()->getSqliteDB(),
+		"SELECT LedgerHash,PrevHash FROM Ledgers Where LedgerSeq = ?;");
+
+	pSt.reset();
+	pSt.bind(1, ledgerIndex);
+
+	int ret = pSt.step();
+	if (pSt.isDone(ret))
+	{
+		cLog(lsTRACE) << "Don't have ledger " << ledgerIndex;
+		return false;
+	}
+	if (!pSt.isRow(ret))
+	{
+		assert(false);
+		cLog(lsFATAL) << "Unexpected statement result " << ret;
+		return false;
+	}
+
+	ledgerHash.SetHex(pSt.peekString(0), true);
+	parentHash.SetHex(pSt.peekString(1), true);
+
+	return true;
+
+#else
+
 	std::string sql="SELECT LedgerHash,PrevHash FROM Ledgers WHERE LedgerSeq='";
 	sql.append(boost::lexical_cast<std::string>(ledgerIndex));
 	sql.append("';");
@@ -581,12 +614,14 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 		db->endIterRows();
 	}
 
-	ledgerHash.SetHex(hash);
-	parentHash.SetHex(prevHash);
+	ledgerHash.SetHex(hash, true);
+	parentHash.SetHex(prevHash, true);
 
 	assert(ledgerHash.isNonZero() && ((ledgerIndex == 0) || parentHash.isNonZero()));
 
 	return true;
+
+#endif
 }
 
 Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)

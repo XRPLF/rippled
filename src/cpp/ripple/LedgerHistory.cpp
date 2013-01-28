@@ -115,4 +115,10 @@ Ledger::pointer LedgerHistory::canonicalizeLedger(Ledger::pointer ledger, bool s
 	return ledger;
 }
 
+void LedgerHistory::tune(int size, int age)
+{
+	mLedgersByHash.setTargetSize(size);
+	mLedgersByHash.setTargetAge(age);
+}
+
 // vim:ts=4

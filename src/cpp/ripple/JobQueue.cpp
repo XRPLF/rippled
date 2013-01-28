@@ -17,6 +17,7 @@ JobQueue::JobQueue() : mLastJob(0), mThreadCount(0), mShuttingDown(false)
 	mJobLoads[jtPROPOSAL_ut].setTargetLatency(500, 1250);
 	mJobLoads[jtPUBLEDGER].setTargetLatency(1000, 2500);
 	mJobLoads[jtVALIDATION_t].setTargetLatency(500, 1500);
+	mJobLoads[jtWRITE].setTargetLatency(750, 1500);
 	mJobLoads[jtTRANSACTION_l].setTargetLatency(100, 500);
 	mJobLoads[jtPROPOSAL_t].setTargetLatency(100, 500);
 
@@ -40,6 +41,7 @@ const char* Job::toString(JobType t)
 		case jtTRANSACTION:		return "transaction";
 		case jtPUBLEDGER:		return "publishLedger";
 		case jtVALIDATION_t:	return "trustedValidation";
+		case jtWRITE:			return "writeObjects";
 		case jtTRANSACTION_l:	return "localTransaction";
 		case jtPROPOSAL_t:		return "trustedProposal";
 		case jtADMIN:			return "administration";
@@ -196,7 +198,7 @@ void JobQueue::setThreadCount(int c)
 	{
 		c = boost::thread::hardware_concurrency();
 		if (c < 0)
-			c = 0;
+			c = 2;
 		c += 2;
 		cLog(lsINFO) << "Auto-tuning to " << c << " validation/transaction/proposal threads";
 	}
@@ -244,7 +246,7 @@ void JobQueue::threadEntry()
 			break;
 
 		sl.unlock();
-		cLog(lsDEBUG) << "Doing " << Job::toString(job.getType()) << " job";
+		cLog(lsTRACE) << "Doing " << Job::toString(job.getType()) << " job";
 		job.doJob();
 		sl.lock();
 	}

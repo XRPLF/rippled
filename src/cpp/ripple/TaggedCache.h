@@ -85,10 +85,24 @@ template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getTar
 	return mTargetSize;
 }
 
+template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::setTargetSize(int s)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	mTargetSize = s;
+	Log(lsDEBUG, TaggedCachePartition) << mName << " target size set to " << s;
+}
+
 template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getTargetAge() const
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	return mTargetAge;
+}
+
+template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::setTargetAge(int s)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	mTargetAge = s;
+	Log(lsDEBUG, TaggedCachePartition) << mName << " target age set to " << s;
 }
 
 template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getCacheSize()

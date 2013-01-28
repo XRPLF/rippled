@@ -48,6 +48,7 @@ public:
 	boost::unordered_map<uint256, currentValidationCount> getCurrentValidations(uint256 currentLedger);
 	std::list<SerializedValidation::pointer> getCurrentTrustedValidations();
 
+	void tune(int size, int age);
 	void flush();
 	void sweep() { mValidations.sweep(); }
 };

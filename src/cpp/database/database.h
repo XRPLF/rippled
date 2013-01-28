@@ -16,6 +16,9 @@
 /*
 	this maintains the connection to the database
 */
+
+class SqliteDatabase;
+
 class Database
 {
 protected:
@@ -83,7 +86,8 @@ public:
 	// float getSingleDBValueFloat(const char* sql);
 	// char* getSingleDBValueStr(const char* sql, std::string& retStr);
 
-	virtual bool setupCheckpointing() { return false; }
+	virtual bool setupCheckpointing()		{ return false; }
+	virtual SqliteDatabase* getSqliteDB()	{ return NULL; }
 };
 
 #endif

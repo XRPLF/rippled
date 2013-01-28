@@ -129,6 +129,7 @@ public:
 
 	void resumeAcquiring();
 
+	void tune(int size, int age) { mLedgerHistory.tune(size, age); } 
 	void sweep(void) { mLedgerHistory.sweep(); }
 
 	void addValidateCallback(callback& c) { mOnValidate.push_back(c); }

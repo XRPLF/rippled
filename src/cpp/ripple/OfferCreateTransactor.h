@@ -1,5 +1,7 @@
-#include "Transactor.h"
+#ifndef __OFFERCREATETRANSACTOR__
+#define __OFFERCREATETRANSACTOR__
 
+#include "Transactor.h"
 
 class OfferCreateTransactor : public Transactor
 {
@@ -11,12 +13,13 @@ class OfferCreateTransactor : public Transactor
 		const STAmount&		saTakerPays,
 		const STAmount&		saTakerGets,
 		STAmount&			saTakerPaid,
-		STAmount&			saTakerGot);
+		STAmount&			saTakerGot,
+		bool&				bUnfunded);
 
 public:
 	OfferCreateTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine) : Transactor(txn,params,engine) {}
-	
 	TER doApply();
 };
+#endif
 
 // vim:ts=4

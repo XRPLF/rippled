@@ -28,10 +28,11 @@ enum JobType
 	jtTRANSACTION	= 5,	// A transaction received from the network
 	jtPUBLEDGER		= 6,	// Publish a fully-accepted ledger
 	jtVALIDATION_t	= 7,	// A validation from a trusted source
-	jtTRANSACTION_l	= 8,	// A local transaction
-	jtPROPOSAL_t	= 9,	// A proposal from a trusted source
-	jtADMIN			= 10,	// An administrative operation
-	jtDEATH			= 11,	// job of death, used internally
+	jtWRITE			= 8,	// Write out hashed objects
+	jtTRANSACTION_l	= 9,	// A local transaction
+	jtPROPOSAL_t	= 10,	// A proposal from a trusted source
+	jtADMIN			= 11,	// An administrative operation
+	jtDEATH			= 12,	// job of death, used internally
 
 // special types not dispatched by the job pool
 	jtPEER			= 17,

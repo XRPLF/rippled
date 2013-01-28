@@ -1176,7 +1176,10 @@ void Peer::recvGetObjectByHash(ripple::TMGetObjectByHash& packet)
 						punishPeer(LT_BadData);
 					}
 					else
+					{
+						cLog(lsDEBUG) << "Got wanted hash " << hash;
 						theApp->getHashedObjectStore().store(type, seq, data, hash);
+					}
 				}
 				else
 					cLog(lsWARNING) << "Received unwanted hash " << getIP() << " " << hash;

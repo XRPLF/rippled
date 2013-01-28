@@ -52,9 +52,53 @@ public:
 
 	sqlite3* peekConnection() { return mConnection; }
 	virtual bool setupCheckpointing();
+	virtual SqliteDatabase* getSqliteDB() { return this; }
 
 	void runWal();
 	void doHook(const char *db, int walSize);
+};
+
+class SqliteStatement
+{
+private:
+	SqliteStatement(const SqliteStatement&);				// no implementation
+	SqliteStatement& operator=(const SqliteStatement&);		// no implementation
+
+protected:
+	sqlite3_stmt* statement;
+
+public:
+	SqliteStatement(SqliteDatabase* db, const char *statement);
+	~SqliteStatement();
+
+	sqlite3_stmt* peekStatement();
+
+	int bind(int position, const void *data, int length);
+	int bindStatic(int position, const void *data, int length);
+	int bindStatic(int position, const std::vector<unsigned char>& value);
+
+	int bind(int position, const std::string& value);
+	int bindStatic(int position, const std::string& value);
+
+	int bind(int position, uint32 value);
+	int bind(int position);
+
+	int size(int column);
+
+	const void* peekBlob(int column);
+	std::vector<unsigned char> getBlob(int column);
+
+	std::string getString(int column);
+	const char* peekString(int column);
+	uint32 getUInt32(int column);
+	int64 getInt64(int column);
+
+	int step();
+	int reset();
+
+	bool isOk(int);
+	bool isDone(int);
+	bool isRow(int);
 };
 
 // vim:ts=4

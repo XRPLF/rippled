@@ -195,7 +195,8 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 			theApp->getIOService().post(boost::bind(&LedgerMaster::missingAcquireComplete, this, mMissingLedger));
 	}
 
-	if (theApp->getMasterLedgerAcquire().getFetchCount() < 4)
+	int fetch = theConfig.getSize(siLedgerFetch);
+	if (theApp->getMasterLedgerAcquire().getFetchCount() < fetch)
 	{
 		int count = 0;
 		typedef std::pair<uint32, uint256> u_pair;
@@ -203,7 +204,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 		std::vector<u_pair> vec = origLedger->getLedgerHashes();
 		BOOST_REVERSE_FOREACH(const u_pair& it, vec)
 		{
-			if ((count < 3) && (it.first < ledgerSeq) &&
+			if ((count < fetch) && (it.first < ledgerSeq) &&
 				!mCompleteLedgers.hasValue(it.first) && !theApp->getMasterLedgerAcquire().find(it.second))
 			{
 				++count;
@@ -499,11 +500,11 @@ void LedgerMaster::tryPublish()
 		}
 	}
 
+	mTooFast = false;
 	if (!mPubLedgers.empty() && !mPubThread)
 	{
 		theApp->getOPs().clearNeedNetworkLedger();
 		mPubThread = true;
-		mTooFast = false;
 		theApp->getJobQueue().addJob(jtPUBLEDGER, boost::bind(&LedgerMaster::pubThread, this));
 	}
 }

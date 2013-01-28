@@ -12,6 +12,12 @@ SETUP_LOG();
 typedef std::map<uint160, SerializedValidation::pointer>::value_type u160_val_pair;
 typedef boost::shared_ptr<ValidationSet> VSpointer;
 
+void ValidationCollection::tune(int size, int age)
+{
+	mValidations.setTargetSize(size);
+	mValidations.setTargetAge(age);
+}
+
 VSpointer ValidationCollection::findCreateSet(const uint256& ledgerHash)
 {
 	VSpointer j = mValidations.fetch(ledgerHash);

@@ -14,6 +14,8 @@ RippleState::RippleState(SerializedLedgerEntry::ref ledgerEntry) : AccountItem(l
 	mValid(false),
 	mViewLowest(true)
 {
+	mFlags			= mLedgerEntry->getFieldU32(sfFlags);
+
 	mLowLimit		= mLedgerEntry->getFieldAmount(sfLowLimit);
 	mHighLimit		= mLedgerEntry->getFieldAmount(sfHighLimit);
 
