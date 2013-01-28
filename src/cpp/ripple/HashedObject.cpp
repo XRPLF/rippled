@@ -90,7 +90,6 @@ void HashedObjectStore::bulkWrite()
 		}
 //		cLog(lsTRACE) << "HOS: writing " << set.size();
 
-		static boost::format fExists("SELECT ObjType FROM CommittedObjects WHERE Hash = '%s';");
 		static boost::format
 			fAdd("INSERT OR IGNORE INTO CommittedObjects "
 				"(Hash,ObjType,LedgerIndex,Object) VALUES ('%s','%c','%u',%s);");
@@ -135,17 +134,43 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 	}
 
 	if (mNegativeCache.isPresent(hash))
-		return HashedObject::pointer();
+		return obj;
 
 	if (!theApp || !theApp->getHashNodeDB())
-		return HashedObject::pointer();
-	std::string sql = "SELECT * FROM CommittedObjects WHERE Hash='";
-	sql.append(hash.GetHex());
-	sql.append("';");
+		return obj;
 
 	std::vector<unsigned char> data;
 	std::string type;
 	uint32 index;
+
+#ifndef NO_SQLITE3_PREPARE
+	{
+		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
+		static SqliteStatement pSt(theApp->getHashNodeDB()->getDB()->getSqliteDB(),
+			"SELECT ObjType,LedgerIndex,Object FROM CommittedObjects WHERE Hash = ?;");
+
+		pSt.reset();
+		pSt.bind(1, hash.GetHex());
+
+		int ret = pSt.step();
+		if (pSt.isDone(ret))
+		{
+			mNegativeCache.add(hash);
+			cLog(lsTRACE) << "HOS: " << hash <<" fetch: not in db";
+			return obj;
+		}
+
+		type = pSt.peekString(0);
+		index = pSt.getUInt32(1);
+		pSt.getBlob(2).swap(data);
+	}
+
+#else
+
+	std::string sql = "SELECT * FROM CommittedObjects WHERE Hash='";
+	sql.append(hash.GetHex());
+	sql.append("';");
+
 
 	{
 		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
@@ -153,10 +178,9 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 
 		if (!db->executeSQL(sql) || !db->startIterRows())
 		{
-//			cLog(lsTRACE) << "HOS: " << hash << " fetch: not in db";
 			sl.unlock();
 			mNegativeCache.add(hash);
-			return HashedObject::pointer();
+			return obj;
 		}
 
 		db->getStr("ObjType", type);
@@ -167,6 +191,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		db->getBinary("Object", &(data.front()), size);
 		db->endIterRows();
 	}
+#endif
 
 	assert(Serializer::getSHA512Half(data) == hash);
 
@@ -181,7 +206,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		assert(false);
 			cLog(lsERROR) << "Invalid hashed object";
 			mNegativeCache.add(hash);
-			return HashedObject::pointer();
+			return obj;
 	}
 
 	obj = boost::make_shared<HashedObject>(htype, index, data, hash);
