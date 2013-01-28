@@ -90,6 +90,48 @@ void HashedObjectStore::bulkWrite()
 		}
 //		cLog(lsTRACE) << "HOS: writing " << set.size();
 
+#ifndef NO_SQLITE3_PREPARE
+
+	{
+		Database* db = theApp->getHashNodeDB()->getDB();
+		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
+		static SqliteStatement pSt(db->getSqliteDB(),
+			"INSERT OR IGNORE INTO CommittedObjects "
+				"(Hash,ObjType,LedgerIndex,Object) VALUES (?, ?, ?, ?);");
+
+		db->executeSQL("BEGIN TRANSACTION;");
+
+		BOOST_FOREACH(const boost::shared_ptr<HashedObject>& it, set)
+		{
+			const char* type;
+
+			switch (it->getType())
+			{
+				case hotLEDGER:				type = "L"; break;
+				case hotTRANSACTION:		type = "T"; break;
+				case hotACCOUNT_NODE:		type = "A"; break;
+				case hotTRANSACTION_NODE:	type = "N"; break;
+				default:					type = "U";
+			}
+
+			pSt.reset();
+			pSt.bind(1, it->getHash().GetHex());
+			pSt.bind(2, type);
+			pSt.bind(3, it->getIndex());
+			pSt.bindStatic(4, it->getData());
+			int ret = pSt.step();
+			if (!pSt.isDone(ret))
+			{
+				cLog(lsFATAL) << "Error saving hashed object " << ret;
+				assert(false);
+			}
+		}
+
+		db->executeSQL("END TRANSACTION;");
+	}
+
+#else
+
 		static boost::format
 			fAdd("INSERT OR IGNORE INTO CommittedObjects "
 				"(Hash,ObjType,LedgerIndex,Object) VALUES ('%s','%c','%u',%s);");
@@ -117,6 +159,8 @@ void HashedObjectStore::bulkWrite()
 
 			db->executeSQL("END TRANSACTION;");
 		}
+#endif
+
 	}
 }
 
