@@ -578,14 +578,13 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 
 	pSt.reset();
 	pSt.bind(1, ledgerIndex);
-	int ret = pSt.step();
 
+	int ret = pSt.step();
 	if (pSt.isDone(ret))
 	{
 		cLog(lsTRACE) << "Don't have ledger " << ledgerIndex;
 		return false;
 	}
-
 	if (!pSt.isRow(ret))
 	{
 		assert(false);
@@ -595,7 +594,6 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 
 	ledgerHash.SetHex(pSt.peekString(0));
 	parentHash.SetHex(pSt.peekString(1));
-	assert(ledgerHash.isNonZero() && parentHash.isNonZero());
 
 	return true;
 
