@@ -66,12 +66,6 @@ SerializedTransaction::pointer TransactionMaster::fetch(SHAMapItem::ref item, SH
 	return txn;
 }
 
-static void saveHelper(Transaction::pointer txn, LoadEvent::pointer l)
-{
-	txn->save();
-	l.reset();
-}
-
 bool TransactionMaster::canonicalize(Transaction::pointer& txn, bool may_be_new)
 {
 	uint256 tid = txn->getID();
@@ -82,8 +76,8 @@ bool TransactionMaster::canonicalize(Transaction::pointer& txn, bool may_be_new)
 		return true;
 
 	if (may_be_new)
-		theApp->getAuxService().post(boost::bind(saveHelper, txn,
-			theApp->getJobQueue().getLoadEvent(jtDISK)));
+		txn->save();
+
 	return false;
 }
 // vim:ts=4
