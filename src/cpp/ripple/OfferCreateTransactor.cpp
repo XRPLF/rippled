@@ -56,7 +56,7 @@ TER OfferCreateTransactor::takeOffers(
 	while (temUNCERTAIN == terResult)
 	{
 		SLE::pointer	sleOfferDir;
-		uint64			uTipQuality;
+		uint64			uTipQuality	= 0;
 
 		// Figure out next offer to take, if needed.
 		if (saTakerGot < saTakerGets			// Have less than wanted.
