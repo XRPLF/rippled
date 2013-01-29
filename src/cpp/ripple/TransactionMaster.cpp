@@ -66,18 +66,23 @@ SerializedTransaction::pointer TransactionMaster::fetch(SHAMapItem::ref item, SH
 	return txn;
 }
 
-static void saveTransactionHelper(Transaction::pointer txn, LoadEvent::pointer)
+static void saveHelper(Transaction::pointer txn, LoadEvent::pointer l)
 {
-	Transaction::saveTransaction(txn);
+	txn->save();
+	l.reset();
 }
 
 bool TransactionMaster::canonicalize(Transaction::pointer& txn, bool may_be_new)
 {
 	uint256 tid = txn->getID();
-	if (!tid) return false;
-	if (mCache.canonicalize(tid, txn)) return true;
+	if (!tid)
+		return false;
+
+	if (mCache.canonicalize(tid, txn))
+		return true;
+
 	if (may_be_new)
-		theApp->getAuxService().post(boost::bind(&saveTransactionHelper, txn,
+		theApp->getAuxService().post(boost::bind(saveHelper, txn,
 			theApp->getJobQueue().getLoadEvent(jtDISK)));
 	return false;
 }
