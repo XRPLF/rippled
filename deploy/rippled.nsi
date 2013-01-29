@@ -1,7 +1,7 @@
 Name "Rippled"
 
 ; The file to write
-OutFile "ripple install.exe"
+OutFile "ripple_install.exe"
 
 ; The default installation directory
 InstallDir "$PROGRAMFILES\Rippled"
@@ -26,7 +26,7 @@ Section "" ;No components page, name is not important
   
   	; Put file there
   	File ..\Release\rippled.exe
-	File ..\*.dll
+	;File ..\*.dll
 	;File "start rippled.bat"
 	File rippled.cfg
 	File validators.txt
