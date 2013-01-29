@@ -1111,11 +1111,12 @@ bool STAmount::applyOffer(
 	{
 		// Compute fees in a rounding safe way.
 
-		// TakerCost includes transfer fees.
-		STAmount	saTakerCost		= STAmount::multiply(saTakerPaid, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9));
-
 		STAmount	saTransferRate	= STAmount(CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9);
 	cLog(lsINFO) << "applyOffer: saTransferRate=" << saTransferRate.getFullText();
+
+		// TakerCost includes transfer fees.
+		STAmount	saTakerCost		= STAmount::multiply(saTakerPaid, saTransferRate);
+
 	cLog(lsINFO) << "applyOffer: saTakerCost=" << saTakerCost.getFullText();
 	cLog(lsINFO) << "applyOffer: saTakerFunds=" << saTakerFunds.getFullText();
 		saTakerIssuerFee	= saTakerCost > saTakerFunds
