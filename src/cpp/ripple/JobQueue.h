@@ -27,12 +27,13 @@ enum JobType
 	jtCLIENT		= 4,	// A websocket command from the client
 	jtTRANSACTION	= 5,	// A transaction received from the network
 	jtPUBLEDGER		= 6,	// Publish a fully-accepted ledger
-	jtVALIDATION_t	= 7,	// A validation from a trusted source
-	jtWRITE			= 8,	// Write out hashed objects
-	jtTRANSACTION_l	= 9,	// A local transaction
-	jtPROPOSAL_t	= 10,	// A proposal from a trusted source
-	jtADMIN			= 11,	// An administrative operation
-	jtDEATH			= 12,	// job of death, used internally
+	jtWAL			= 7,	// Write-ahead logging
+	jtVALIDATION_t	= 8,	// A validation from a trusted source
+	jtWRITE			= 9,	// Write out hashed objects
+	jtTRANSACTION_l	= 10,	// A local transaction
+	jtPROPOSAL_t	= 11,	// A proposal from a trusted source
+	jtADMIN			= 12,	// An administrative operation
+	jtDEATH			= 13,	// job of death, used internally
 
 // special types not dispatched by the job pool
 	jtPEER			= 17,
