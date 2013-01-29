@@ -16,6 +16,7 @@ class SqliteDatabase : public Database
 	bool mMoreRows;
 
 	boost::mutex			walMutex;
+	JobQueue*				mWalQ;
 	std::set<std::string>	walDBs;
 	bool					walRunning;
 
@@ -51,7 +52,7 @@ public:
 	uint64 getBigInt(int colIndex);
 
 	sqlite3* peekConnection() { return mConnection; }
-	virtual bool setupCheckpointing();
+	virtual bool setupCheckpointing(JobQueue*);
 	virtual SqliteDatabase* getSqliteDB() { return this; }
 
 	void runWal();

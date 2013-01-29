@@ -1129,21 +1129,25 @@ STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount&
 // Calculate transit fee.
 STAmount LedgerEntrySet::rippleTransferFee(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount)
 {
-	STAmount	saTransitFee;
-
 	if (uSenderID != uIssuerID && uReceiverID != uIssuerID)
 	{
 		uint32		uTransitRate	= rippleTransferRate(uIssuerID);
 
 		if (QUALITY_ONE != uTransitRate)
 		{
-			STAmount		saTransitRate(CURRENCY_ONE, uTransitRate, -9);
+			STAmount	saTransitRate(CURRENCY_ONE, ACCOUNT_ONE, uTransitRate, -9);
 
-			saTransitFee	= STAmount::multiply(saAmount, saTransitRate, saAmount.getCurrency(), saAmount.getIssuer());
+			STAmount	saTransferTotal	= STAmount::multiply(saAmount, saTransitRate, saAmount.getCurrency(), saAmount.getIssuer());
+			STAmount	saTransferFee	= saTransferTotal-saAmount;
+
+			cLog(lsINFO) << boost::str(boost::format("rippleTransferFee: saTransferFee=%s")
+				% saTransferFee.getFullText());
+
+			return saTransferFee;
 		}
 	}
 
-	return saTransitFee;
+	return STAmount(saAmount.getCurrency(), saAmount.getIssuer());
 }
 
 TER LedgerEntrySet::trustCreate(
@@ -1239,7 +1243,7 @@ TER LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRecei
 
 		saBalance.setIssuer(ACCOUNT_ONE);
 
-		cLog(lsDEBUG) << boost::str(boost::format("rippleCredit: create line: %s (0) -> %s : %s")
+		cLog(lsDEBUG) << boost::str(boost::format("rippleCredit: create line: %s --> %s : %s")
 			% RippleAddress::createHumanAccountID(uSenderID)
 			% RippleAddress::createHumanAccountID(uReceiverID)
 			% saAmount.getFullText());
@@ -1258,21 +1262,21 @@ TER LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRecei
 	{
 		STAmount	saBalance	= sleRippleState->getFieldAmount(sfBalance);
 
-		if (!bSenderHigh)
-			saBalance.negate();		// Put balance in low terms.
+		if (bSenderHigh)
+			saBalance.negate();		// Put balance in sender terms.
 
 		STAmount	saBefore	= saBalance;
 
-		saBalance	+= saAmount;
+		saBalance	-= saAmount;
 
-		cLog(lsDEBUG) << boost::str(boost::format("rippleCredit: %s -- (%s > %s) -> %s : %s")
+		cLog(lsDEBUG) << boost::str(boost::format("rippleCredit: %s --> %s : before=%s amount=%s after=%s")
 			% RippleAddress::createHumanAccountID(uSenderID)
-			% saBefore.getFullText()
-			% saBalance.getFullText()
 			% RippleAddress::createHumanAccountID(uReceiverID)
-			% saAmount.getFullText());
+			% saBefore.getFullText()
+			% saAmount.getFullText()
+			% saBalance.getFullText());
 
-		if (!bSenderHigh)
+		if (bSenderHigh)
 			saBalance.negate();
 
 		sleRippleState->setFieldAmount(sfBalance, saBalance);
@@ -1286,8 +1290,8 @@ TER LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRecei
 }
 
 // Send regardless of limits.
-// --> saAmount: Amount/currency/issuer for receiver to get.
-// <-- saActual: Amount actually sent.  Sender pay's fees.
+// --> saAmount: Amount/currency/issuer to deliver to reciever.
+// <-- saActual: Amount actually cost.  Sender pay's fees.
 TER LedgerEntrySet::rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, STAmount& saActual)
 {
 	const uint160	uIssuerID	= saAmount.getIssuer();
@@ -1314,12 +1318,12 @@ TER LedgerEntrySet::rippleSend(const uint160& uSenderID, const uint160& uReceive
 
 		saActual.setIssuer(uIssuerID);	// XXX Make sure this done in + above.
 
-		cLog(lsINFO) << boost::str(boost::format("rippleSend> %s -- %s--> %s (%s) : %s")
+		cLog(lsINFO) << boost::str(boost::format("rippleSend> %s -- > %s : deliver=%s fee=%s cost=%s")
 			% RippleAddress::createHumanAccountID(uSenderID)
-			% saTransitFee.getFullText()
 			% RippleAddress::createHumanAccountID(uReceiverID)
-			% saActual.getFullText()
-			% saAmount.getFullText());
+			% saAmount.getFullText()
+			% saTransitFee.getFullText()
+			% saActual.getFullText());
 
 		terResult	= rippleCredit(uIssuerID, uReceiverID, saAmount);
 

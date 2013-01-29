@@ -1349,4 +1349,118 @@ buster.testCase("Offer cross currency", {
     },
 });
 
+buster.testCase("Offer tests 3", {
+  'setUp'     : testutils.build_setup(),
+  // 'setUp'     : testutils.build_setup({ verbose: true }),
+  // 'setUp'     : testutils.build_setup({ verbose: true, standalone: true }),
+  'tearDown'  : testutils.build_teardown(),
+
+  "offer create then cross offer" :
+    function (done) {
+      var self = this;
+      var final_create;
+
+      async.waterfall([
+          function (callback) {
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox"], callback);
+          },
+          function (callback) {
+            self.what = "Set transfer rate.";
+
+            self.remote.transaction()
+              .account_set("mtgox")
+              .transfer_rate(1005000000)
+              .once('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Set limits.";
+
+            testutils.credit_limits(self.remote,
+              {
+                "alice" : "1000/USD/mtgox",
+                "bob" : "1000/USD/mtgox",
+                "mtgox" : "50/USD/alice",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Distribute funds.";
+
+            testutils.payments(self.remote,
+              {
+                "mtgox" : [ "1/USD/bob" ],
+                "alice" : [ "50/USD/mtgox" ]
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Set limits 2.";
+
+            testutils.credit_limits(self.remote,
+              {
+                "mtgox" : "0/USD/alice",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Create offer alice.";
+
+            self.remote.transaction()
+              .offer_create("alice", "50/USD/mtgox", "150000.0")
+              .on('proposed', function (m) {
+                  // console.log("proposed: offer_create: %s", json.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+
+                  seq_carol = m.tx_json.sequence;
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Create offer bob.";
+
+            self.remote.transaction()
+              .offer_create("bob", "100.0", ".1/USD/mtgox")
+              .on('proposed', function (m) {
+                  // console.log("proposed: offer_create: %s", json.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+
+                  seq_carol = m.tx_json.sequence;
+                })
+              .submit();
+          },
+//          function (callback) {
+//            self.what = "Display ledger";
+//
+//            self.remote.request_ledger('current', true)
+//              .on('success', function (m) {
+//                  console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+//
+//                  callback();
+//                })
+//              .request();
+//          },
+          function (callback) {
+            self.what = "Verify balances.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "alice"   : "-49.96666666666667/USD/mtgox",
+                "bob"     : "0.9665/USD/mtgox",
+              },
+              callback);
+          },
+        ], function (error) {
+          // console.log("result: error=%s", error);
+          buster.refute(error);
+
+          done();
+        });
+    },
+});
 // vim:sw=2:sts=2:ts=8:et
