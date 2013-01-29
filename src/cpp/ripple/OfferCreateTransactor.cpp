@@ -68,7 +68,7 @@ TER OfferCreateTransactor::takeOffers(
 				uTipIndex		= sleOfferDir->getIndex();
 				uTipQuality		= Ledger::getQuality(uTipIndex);
 
-				cLog(lsINFO) << boost::str(boost::format("takeOffers: possible counter offer found: uTipQuality=%d uTipQuality=%s")
+				cLog(lsINFO) << boost::str(boost::format("takeOffers: possible counter offer found: uTipQuality=%d uTipIndex=%s")
 					% uTipQuality
 					% uTipIndex.ToString());
 
