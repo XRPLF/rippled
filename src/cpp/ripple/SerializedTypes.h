@@ -229,12 +229,6 @@ protected:
 	STAmount* duplicate() const { return new STAmount(*this); }
 	static STAmount* construct(SerializerIterator&, SField::ref name);
 
-	static const int cMinOffset = -96, cMaxOffset = 80;
-	static const uint64 cMinValue = 1000000000000000ull, cMaxValue = 9999999999999999ull;
-	static const uint64 cMaxNative = 9000000000000000000ull;
-	static const uint64 cNotNative = 0x8000000000000000ull;
-	static const uint64 cPosNative = 0x4000000000000000ull;
-
 	STAmount(SField::ref name, const uint160& cur, const uint160& iss, uint64 val, int off, bool isNat, bool isNeg)
 		: SerializedType(name), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
 			mIsNative(isNat), mIsNegative(isNeg) { ; }
@@ -242,6 +236,12 @@ protected:
 	static uint64 muldiv(uint64, uint64, uint64);
 
 public:
+	static const int cMinOffset = -96, cMaxOffset = 80;
+	static const uint64 cMinValue = 1000000000000000ull, cMaxValue = 9999999999999999ull;
+	static const uint64 cMaxNative = 9000000000000000000ull;
+	static const uint64 cNotNative = 0x8000000000000000ull;
+	static const uint64 cPosNative = 0x4000000000000000ull;
+
 	static uint64	uRateOne;
 
 	STAmount(uint64 v = 0, bool isNeg = false) : mValue(v), mOffset(0), mIsNative(true), mIsNegative(isNeg)
