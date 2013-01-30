@@ -2076,6 +2076,7 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 // {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
+//   ...
 // }
 Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest)
 {
@@ -2299,9 +2300,13 @@ Json::Value RPCHandler::doLedgerHeader(Json::Value jvRequest)
 	jvResult["ledger_data"]	= strHex(s.peekData());
 
 	if (mRole == ADMIN)
+	{
+		// As admin, they can trust us, so we provide this information.
+		lpLedger->setClosed();	// XXX Hack to get info.
 		lpLedger->addJson(jvResult, 0);
+	}
 
-	return jvRequest;
+	return jvResult;
 }
 
 boost::unordered_set<RippleAddress> RPCHandler::parseAccountIds(const Json::Value& jvArray)

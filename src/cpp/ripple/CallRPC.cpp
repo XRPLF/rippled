@@ -229,6 +229,25 @@ Json::Value RPCParser::parseLedger(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+// ledger_header <id>|<index>
+Json::Value RPCParser::parseLedgerId(const Json::Value& jvParams)
+{
+	Json::Value		jvRequest(Json::objectValue);
+
+	std::string		strLedger	= jvParams[0u].asString();
+
+	if (strLedger.length() > 32)
+	{
+		jvRequest["ledger_hash"]	= strLedger;
+	}
+	else
+	{
+		jvRequest["ledger_index"]	= lexical_cast_s<uint32>(strLedger);
+	}
+
+	return jvRequest;
+}
+
 #if ENABLE_INSECURE
 // login <username> <password>
 Json::Value RPCParser::parseLogin(const Json::Value& jvParams)
@@ -484,7 +503,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"ledger_closed",		&RPCParser::parseAsIs,					0,  0	},
 		{	"ledger_current",		&RPCParser::parseAsIs,					0,  0	},
 //		{	"ledger_entry",			&RPCParser::parseLedgerEntry,		   -1, -1	},
-//		{	"ledger_header",		&RPCParser::parseLedgerHeader,		   -1, -1	},
+		{	"ledger_header",		&RPCParser::parseLedgerId,				1,  1	},
 		{	"log_level",			&RPCParser::parseLogLevel,				0,  2	},
 		{	"logrotate",			&RPCParser::parseAsIs,					0,  0	},
 //		{	"nickname_info",		&RPCParser::parseNicknameInfo,			1,  1	},

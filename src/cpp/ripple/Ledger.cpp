@@ -663,14 +663,14 @@ Json::Value Ledger::getJson(int options)
 {
 	Json::Value ledger(Json::objectValue);
 
-	bool full = (options & LEDGER_JSON_FULL) != 0;
+	bool bFull = isSetBit(options, LEDGER_JSON_FULL);
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	ledger["parentHash"] = mParentHash.GetHex();
 	ledger["seqNum"] = boost::lexical_cast<std::string>(mLedgerSeq);
 
-	if(mClosed || full)
+	if (mClosed || bFull)
 	{
 		if (mClosed)
 			ledger["closed"] = true;
@@ -693,14 +693,14 @@ Json::Value Ledger::getJson(int options)
 	else
 		ledger["closed"] = false;
 
-	if (mTransactionMap && (full || ((options & LEDGER_JSON_DUMP_TXRP) != 0)))
+	if (mTransactionMap && (bFull || ((options & LEDGER_JSON_DUMP_TXRP) != 0)))
 	{
 		Json::Value txns(Json::arrayValue);
 		SHAMapTreeNode::TNType type;
 		for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem(type); !!item;
 				item = mTransactionMap->peekNextItem(item->getTag(), type))
 		{
-			if (full)
+			if (bFull)
 			{
 				if (type == SHAMapTreeNode::tnTRANSACTION_NM)
 				{
@@ -733,13 +733,13 @@ Json::Value Ledger::getJson(int options)
 		ledger["transactions"] = txns;
 	}
 
-	if (mAccountStateMap && (full || ((options & LEDGER_JSON_DUMP_STATE) != 0)))
+	if (mAccountStateMap && (bFull || ((options & LEDGER_JSON_DUMP_STATE) != 0)))
 	{
 		Json::Value state(Json::arrayValue);
 		for (SHAMapItem::pointer item = mAccountStateMap->peekFirstItem(); !!item;
 				item = mAccountStateMap->peekNextItem(item->getTag()))
 		{
-			if (full)
+			if (bFull)
 			{
 				SerializerIterator sit(item->peekSerializer());
 				SerializedLedgerEntry sle(sit, item->getTag());
