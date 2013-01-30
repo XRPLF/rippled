@@ -2,6 +2,8 @@
 #define __CONFIG__
 
 #include <string>
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 #include <boost/filesystem.hpp>
 
 #include "types.h"
@@ -166,6 +168,8 @@ public:
 	uint32						SIGN_TRANSACTION;
 	uint32						SIGN_VALIDATION;
 	uint32						SIGN_PROPOSAL;
+
+	boost::asio::ssl::context	SSL_CONTEXT;			// Generic SSL context.
 
 	Config();
 

@@ -3,6 +3,8 @@
 #include <cstdlib>
 
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+#include <boost/bind.hpp>
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/algorithm/string.hpp>
@@ -573,6 +575,29 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 	return (this->*(commandsA[i].pfpFunc))(jvParams);
 }
 
+void callRPCAsync(
+	boost::asio::io_service& isService,
+#if 0
+	const std::string& strIp, const int iPort, const std::string& strUsername, const std::string& strPassword, const std::string& strPath, const std::string& strMethod, const Json::Value& jvParams,
+#endif
+	boost::function<void(const Json::Value& jvInput)> callbackFuncP)
+{
+	Json::Value		jvResult(Json::objectValue);
+	Json::Value		jvSub(Json::objectValue);
+
+	jvSub["foo"]	= "bar";
+
+	jvResult["result"] = jvSub;
+
+	(callbackFuncP)(jvResult);
+}
+
+// Place the async result somewhere useful.
+void callRPCHandler(Json::Value* jvOutput, const Json::Value& jvInput)
+{
+	(*jvOutput)	= jvInput;
+}
+
 int commandLineRPC(const std::vector<std::string>& vCmd)
 {
 	Json::Value jvOutput;
@@ -615,7 +640,11 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 			if (!theConfig.RPC_ADMIN_PASSWORD.empty())
 				jvRequest["admin_password"]	= theConfig.RPC_ADMIN_PASSWORD;
 
-			jvOutput	= callRPC(
+			boost::asio::io_service			isService;
+
+			callRPCAsync(
+				isService,
+#if 0
 				theConfig.RPC_IP,
 				theConfig.RPC_PORT,
 				theConfig.RPC_USER,
@@ -624,7 +653,12 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 				jvRequest.isMember("method")			// Allow parser to rewrite method.
 					? jvRequest["method"].asString()
 					: vCmd[0],
-				jvParams);								// Parsed, execute.
+				jvParams,								// Parsed, execute.
+				boost::bind(callRPCHandler, jvOutput, _1));
+#endif
+				boost::bind(callRPCHandler, &jvOutput, _1));
+
+			isService.run(); // This blocks until there is no more outstanding async calls.
 
 			if (jvOutput.isMember("result"))
 			{
@@ -681,7 +715,7 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 	return nRet;
 }
 
-Json::Value callRPC(const std::string& strIp, const int iPort, const std::string& strUsername, const std::string& strPassword, const std::string& strPath, const std::string& strMethod, const Json::Value& jvParams)
+Json::Value callRPC(const std::string& strIp, const int iPort, const std::string& strUsername, const std::string& strPassword, const std::string& strPath, const std::string& strMethod, const Json::Value& jvParams, const bool bSSL)
 {
 	// Connect to localhost
 	if (!theConfig.QUIET)
@@ -694,10 +728,23 @@ Json::Value callRPC(const std::string& strIp, const int iPort, const std::string
 
 	boost::asio::ip::tcp::endpoint
 		endpoint(boost::asio::ip::address::from_string(strIp), iPort);
-	boost::asio::ip::tcp::iostream stream;
-	stream.connect(endpoint);
-	if (stream.fail())
-		throw std::runtime_error("couldn't connect to server");
+	boost::asio::ip::tcp::iostream								stream;
+	boost::asio::io_service										isService;
+    boost::asio::ssl::context									cContext(boost::asio::ssl::context::sslv23);
+    boost::asio::ssl::stream<boost::asio::ip::tcp::socket>		stream_ssl(isService, cContext);
+
+	if (bSSL)
+	{
+//		stream_ssl.connect(endpoint);
+//		if (stream_ssl.fail())
+//			throw std::runtime_error("couldn't connect to server");
+	}
+	else
+	{
+		stream.connect(endpoint);
+		if (stream.fail())
+			throw std::runtime_error("couldn't connect to server");
+	}
 
 	// cLog(lsDEBUG) << "connected" << std::endl;
 
@@ -713,14 +760,32 @@ Json::Value callRPC(const std::string& strIp, const int iPort, const std::string
 	// cLog(lsDEBUG) << "send request " << strMethod << " : " << strRequest << std::endl;
 
 	std::string strPost = createHTTPPost(strPath, strRequest, mapRequestHeaders);
-	stream << strPost << std::flush;
+	if (bSSL)
+	{
+//		stream_ssl << strPost << std::flush;
+	}
+	else
+	{
+		stream << strPost << std::flush;
+	}
 
 	// std::cerr << "post  " << strPost << std::endl;
 
 	// Receive reply
 	std::map<std::string, std::string> mapHeaders;
 	std::string strReply;
-	int nStatus = ReadHTTP(stream, mapHeaders, strReply);
+
+	int nStatus;
+
+	if (bSSL)
+	{
+//		nStatus = ReadHTTP(stream_ssl, mapHeaders, strReply);
+	}
+	else
+	{
+		nStatus = ReadHTTP(stream, mapHeaders, strReply);
+	}
+
 	if (nStatus == 401)
 		throw std::runtime_error("incorrect rpcuser or rpcpassword (authorization failed)");
 	else if ((nStatus >= 400) && (nStatus != 400) && (nStatus != 404) && (nStatus != 500)) // ?

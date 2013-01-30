@@ -152,7 +152,7 @@ TER OfferCreateTransactor::takeOffers(
 				STAmount		saTakerFunds	= mEngine->getNodes().accountFunds(uTakerAccountID, saTakerPays);
 				SLE::pointer	sleOfferAccount;	// Owner of offer.
 
-				if (!saOfferFunds.isPositive())
+				if (!saOfferFunds.isPositive())		// Includes zero.
 				{
 					// Offer is unfunded, possibly due to previous balance action.
 					cLog(lsINFO) << "takeOffers: offer unfunded: delete";

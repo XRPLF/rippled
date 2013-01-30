@@ -1056,7 +1056,6 @@ STAmount STAmount::setRate(uint64 rate)
 // <--       saTakerGot: Actual
 // <-- saTakerIssuerFee: Actual
 // <-- saOfferIssuerFee: Actual
-// <--          bRemove: remove offer it is either fullfilled or unfunded
 bool STAmount::applyOffer(
 	const uint32 uTakerPaysRate, const uint32 uOfferPaysRate,
 	const STAmount& saOfferRate,

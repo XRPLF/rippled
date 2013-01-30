@@ -1,5 +1,6 @@
 #include <boost/thread.hpp>
 
+#include "Application.h"
 #include "RPCSub.h"
 
 #include "CallRPC.h"
@@ -63,7 +64,7 @@ void RPCSub::sendThread()
 		cLog(lsDEBUG) << boost::str(boost::format("callRPC calling: %s") % mIp);
 
 		// Drop result.
-		(void) callRPC(mIp, mPort, mUsername, mPassword, mPath, "event", jvEvent);
+//		(void) callRPC(theApp->getIOService(), mIp, mPort, mUsername, mPassword, mPath, "event", jvEvent);
 	    }
 	    catch (const std::exception& e)
 	    {

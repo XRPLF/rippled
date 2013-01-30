@@ -11,6 +11,7 @@
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "AutoSocket.h"
 
 //
 // Async https client.
@@ -21,10 +22,10 @@ class HttpsClient : public boost::enable_shared_from_this<HttpsClient>
 private:
 	typedef boost::shared_ptr<HttpsClient> pointer;
 
-    boost::asio::ssl::context									mCtx;
+	bool														mSSL;
+    AutoSocket													mSocket;
     boost::asio::ip::tcp::resolver								mResolver;
 	boost::shared_ptr<boost::asio::ip::tcp::resolver::query>	mQuery;
-    boost::asio::ssl::stream<boost::asio::ip::tcp::socket>		mSocketSsl;
 	boost::asio::streambuf										mRequest;
     boost::asio::streambuf										mResponse;
 	const std::string											mStrPath;
@@ -63,6 +64,8 @@ private:
     static void ShandleData(pointer This, const boost::system::error_code& ecResult)
 	{ This->handleData(ecResult); }
 
+	void handleShutdown(const boost::system::error_code& ecResult);
+
 	void parseData();
 	void httpsNext();
 
@@ -78,11 +81,13 @@ public:
 		);
 
 	void httpsGet(
+		bool bSSL,
 		std::deque<std::string> deqSites,
 		boost::posix_time::time_duration timeout,
 		boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete);
 
 	static void httpsGet(
+		bool bSSL,
 		boost::asio::io_service& io_service,
 		std::deque<std::string> deqSites,
 		const unsigned short port,
@@ -92,6 +97,7 @@ public:
 		boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete);
 
 	static void httpsGet(
+		bool bSSL,
 		boost::asio::io_service& io_service,
 		std::string strSite,
 		const unsigned short port,

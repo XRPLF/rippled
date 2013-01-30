@@ -824,6 +824,7 @@ void UniqueNodeList::getIpsUrl(const RippleAddress& naNodePublic, section secSit
 		&& strScheme == "https")
 	{
 		HttpsClient::httpsGet(
+			true,
 			theApp->getIOService(),
 			strDomain,
 			443,
@@ -867,6 +868,7 @@ void UniqueNodeList::getValidatorsUrl(const RippleAddress& naNodePublic, section
 		&& strScheme == "https")
 	{
 		HttpsClient::httpsGet(
+			true,
 			theApp->getIOService(),
 			strDomain,
 			443,
@@ -1037,6 +1039,7 @@ void UniqueNodeList::fetchProcess(std::string strDomain)
 	deqSites.push_back(strDomain);
 
 	HttpsClient::httpsGet(
+		true,
 		theApp->getIOService(),
 		deqSites,
 		443,
@@ -1572,6 +1575,7 @@ void UniqueNodeList::nodeNetwork()
 	if (!theConfig.VALIDATORS_SITE.empty())
 	{
 		HttpsClient::httpsGet(
+			true,
 			theApp->getIOService(),
 			theConfig.VALIDATORS_SITE,
 			443,
