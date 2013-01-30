@@ -643,7 +643,7 @@ std::string STAmount::getText() const
 			return std::string("-") +  lexical_cast_i(mValue);
 		else return lexical_cast_i(mValue);
 	}
-	if ((mOffset < -25) || (mOffset > -5))
+	if ((mOffset != 0) && ((mOffset < -25) || (mOffset > -5)))
 	{
 		if (mIsNegative)
 			return std::string("-") + lexical_cast_i(mValue) +

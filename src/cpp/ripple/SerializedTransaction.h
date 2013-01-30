@@ -73,6 +73,8 @@ public:
 	// SQL Functions
 	static std::string getSQLValueHeader();
 	static std::string getSQLInsertHeader();
+	static std::string getSQLInsertIgnoreHeader();
+	static std::string getSQLInsertReplaceHeader();
 	std::string getSQL(std::string& sql, uint32 inLedger, char status) const;
 	std::string getSQL(uint32 inLedger, char status) const;
 	std::string getSQL(Serializer rawTxn, uint32 inLedger, char status) const;

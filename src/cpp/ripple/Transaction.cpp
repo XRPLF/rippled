@@ -126,35 +126,25 @@ void Transaction::setStatus(TransStatus ts, uint32 lseq)
 	mInLedger	= lseq;
 }
 
-void Transaction::saveTransaction(const Transaction::pointer& txn)
+void Transaction::save()
 {
-	txn->save();
-}
-
-bool Transaction::save()
-{
-	if ((mStatus == INVALID) || (mStatus == REMOVED)) return false;
+	if ((mStatus == INVALID) || (mStatus == REMOVED))
+		return;
 
 	char status;
 	switch (mStatus)
 	{
-	 case NEW:			status = TXN_SQL_NEW;		break;
-	 case INCLUDED:		status = TXN_SQL_INCLUDED;	break;
-	 case CONFLICTED:	status = TXN_SQL_CONFLICT;	break;
-	 case COMMITTED:	status = TXN_SQL_VALIDATED;	break;
-	 case HELD:			status = TXN_SQL_HELD;		break;
-	 default:			status = TXN_SQL_UNKNOWN;
+		case NEW:			status = TXN_SQL_NEW;		break;
+		case INCLUDED:		status = TXN_SQL_INCLUDED;	break;
+		case CONFLICTED:	status = TXN_SQL_CONFLICT;	break;
+		case COMMITTED:		status = TXN_SQL_VALIDATED;	break;
+		case HELD:			status = TXN_SQL_HELD;		break;
+		default:			status = TXN_SQL_UNKNOWN;
 	}
-
-	static boost::format selStat("SELECT Status FROM Transactions WHERE	TransID = '%s';");
-	std::string exists = boost::str(selStat % mTransaction->getTransactionID().GetHex());
 
 	Database *db = theApp->getTxnDB()->getDB();
 	ScopedLock dbLock(theApp->getTxnDB()->getDBLock());
-	if (SQL_EXISTS(db, exists))
-		return false;
-	return
-		db->executeSQL(mTransaction->getSQLInsertHeader() + mTransaction->getSQL(getLedger(), status) + ";");
+	db->executeSQL(mTransaction->getSQLInsertReplaceHeader() + mTransaction->getSQL(getLedger(), status) + ";");
 }
 
 Transaction::pointer Transaction::transactionFromSQL(Database* db, bool bValidate)
