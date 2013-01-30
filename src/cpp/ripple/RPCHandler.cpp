@@ -2302,7 +2302,6 @@ Json::Value RPCHandler::doLedgerHeader(Json::Value jvRequest)
 	if (mRole == ADMIN)
 	{
 		// As admin, they can trust us, so we provide this information.
-		lpLedger->setClosed();	// XXX Hack to get info.
 		lpLedger->addJson(jvResult, 0);
 	}
 
