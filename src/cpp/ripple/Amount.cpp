@@ -479,23 +479,30 @@ void STAmount::canonicalize()
 		return;
 	}
 
-	while (mValue < cMinValue)
+	while ((mValue < cMinValue) && (mOffset > cMinOffset))
 	{
-		if (mOffset <= cMinOffset)
-			throw std::runtime_error("value overflow");
 		mValue *= 10;
-		if (mValue >= cMaxValue)
-			throw std::runtime_error("value overflow");
 		--mOffset;
 	}
 
 	while (mValue > cMaxValue)
 	{
 		if (mOffset >= cMaxOffset)
-			throw std::runtime_error("value underflow");
+			throw std::runtime_error("value overflow");
 		mValue /= 10;
 		++mOffset;
 	}
+
+	if (mOffset < cMinOffset)
+	{
+		mValue = 0;
+		mOffset = 0;
+		mIsNegative = false;
+	}
+
+	if (mOffset > cMaxOffset)
+		throw std::runtime_error("value overflow");
+
 	assert((mValue == 0) || ((mValue >= cMinValue) && (mValue <= cMaxValue)));
 	assert((mValue == 0) || ((mOffset >= cMinOffset) && (mOffset <= cMaxOffset)));
 	assert((mValue != 0) || (mOffset != -100));
@@ -1554,6 +1561,37 @@ BOOST_AUTO_TEST_CASE( CurrencyMulDivTests )
 
 	for (int i = 0; i <= 100000; ++i)
 			mulTest(rand() % 10000000, rand() % 10000000);
+}
+
+BOOST_AUTO_TEST_CASE( UnderFlowTests )
+{
+	STAmount bigNative(STAmount::cMaxNative / 2);
+	STAmount bigValue(CURRENCY_ONE, ACCOUNT_ONE,
+		(STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMaxOffset - 1);
+	STAmount smallValue(CURRENCY_ONE, ACCOUNT_ONE,
+		(STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMinOffset + 1);
+	STAmount zero(CURRENCY_ONE, ACCOUNT_ONE, 0);
+
+	STAmount smallXsmall = STAmount::multiply(smallValue, smallValue, CURRENCY_ONE, ACCOUNT_ONE);
+	if (!smallXsmall.isZero())
+		BOOST_FAIL("STAmount: smallXsmall != 0");
+
+	STAmount bigDsmall = STAmount::divide(smallValue, bigValue, CURRENCY_ONE, ACCOUNT_ONE);
+	if (!bigDsmall.isZero())
+		BOOST_FAIL("STAmount: small/big != 0: " << bigDsmall);
+
+	bigDsmall = STAmount::divide(smallValue, bigNative, CURRENCY_ONE, uint160());
+	if (!bigDsmall.isZero())
+		BOOST_FAIL("STAmount: small/bigNative != 0: " << bigDsmall);
+
+	bigDsmall = STAmount::divide(smallValue, bigValue, uint160(), uint160());
+	if (!bigDsmall.isZero())
+		BOOST_FAIL("STAmount: (small/big)->N != 0: " << bigDsmall);
+
+	bigDsmall = STAmount::divide(smallValue, bigNative, uint160(), uint160());
+	if (!bigDsmall.isZero())
+		BOOST_FAIL("STAmount: (small/bigNative)->N != 0: " << bigDsmall);
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()
