@@ -233,8 +233,6 @@ protected:
 		: SerializedType(name), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
 			mIsNative(isNat), mIsNegative(isNeg) { ; }
 
-	static uint64 muldiv(uint64, uint64, uint64);
-
 public:
 	static const int cMinOffset = -96, cMaxOffset = 80;
 	static const uint64 cMinValue = 1000000000000000ull, cMaxValue = 9999999999999999ull;
@@ -382,11 +380,6 @@ public:
 
 	// Someone is offering X for Y, I need Z, how much do I pay
 	static STAmount getPay(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
-
-	// Native currency conversions, to/from display format
-	static uint64 convertToDisplayAmount(const STAmount& internalAmount, uint64 totalNow, uint64 totalInit);
-	static STAmount convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 totalInit,
-		SField::ref name = sfGeneric);
 
 	static std::string createHumanCurrency(const uint160& uCurrency);
 	static STAmount deserialize(SerializerIterator&);

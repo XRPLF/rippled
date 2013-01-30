@@ -1001,15 +1001,23 @@ uint64 STAmount::getRate(const STAmount& offerOut, const STAmount& offerIn)
 	if (offerOut.isZero())
 		return 0;
 
-	STAmount r = divide(offerIn, offerOut, CURRENCY_ONE, ACCOUNT_ONE);
-	if (r.isZero())
+	try
+	{
+		STAmount r = divide(offerIn, offerOut, CURRENCY_ONE, ACCOUNT_ONE);
+
+		if (r.isZero()) // offer is too good
+			return 0;
+
+		assert((r.getExponent() >= -100) && (r.getExponent() <= 155));
+
+		uint64 ret = r.getExponent() + 100;
+
+		return (ret << (64 - 8)) | r.getMantissa();
+	}
+	catch (...)
+	{ // overflow -- very bad offer
 		return 0;
-
-	assert((r.getExponent() >= -100) && (r.getExponent() <= 155));
-
-	uint64 ret = r.getExponent() + 100;
-
-	return (ret << (64 - 8)) | r.getMantissa();
+	}
 }
 
 STAmount STAmount::setRate(uint64 rate)
@@ -1025,7 +1033,7 @@ STAmount STAmount::setRate(uint64 rate)
 
 // Taker gets all taker can pay for with saTakerFunds/uTakerPaysRate, limited by saOfferPays and saOfferFunds/uOfferPaysRate.
 //
-// Existing offer is on the books. Offer owner get's their rate.
+// Existing offer is on the books. Offer owner gets their rate.
 //
 // Taker pays what they can. If taker is an offer, doesn't matter what rate taker is. Taker is spending at same or better rate
 // than they wanted. Taker should consider themselves as wanting to buy X amount. Taker is willing to pay at most the rate of Y/X
@@ -1175,31 +1183,6 @@ STAmount STAmount::getPay(const STAmount& offerOut, const STAmount& offerIn, con
 	STAmount ret = divide(multiply(needed, offerIn, CURRENCY_ONE, ACCOUNT_ONE), offerOut, offerIn.getCurrency(), offerIn.getIssuer());
 
 	return (ret > offerIn) ? offerIn : ret;
-}
-
-uint64 STAmount::muldiv(uint64 a, uint64 b, uint64 c)
-{ // computes (a*b)/c rounding up - supports values up to 10^18
-	if (c == 0) throw std::runtime_error("underflow");
-	if ((a == 0) || (b == 0)) return 0;
-
-	CBigNum v;
-	if ((BN_add_word64(&v, a * 10 + 5) != 1) ||
-		(BN_mul_word64(&v, b * 10 + 5) != 1) ||
-		(BN_div_word64(&v, c) == ((uint64) -1)) ||
-		(BN_div_word64(&v, 100) == ((uint64) -1)))
-		throw std::runtime_error("muldiv error");
-
-	return v.getuint64();
-}
-
-uint64 STAmount::convertToDisplayAmount(const STAmount& internalAmount, uint64 totalNow, uint64 totalInit)
-{ // Convert an internal ledger/account quantity of native currency to a display amount
-	return muldiv(internalAmount.getNValue(), totalInit, totalNow);
-}
-
-STAmount STAmount::convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 totalInit, SField::ref name)
-{ // Convert a display/request currency amount to an internal amount
-	return STAmount(name, muldiv(displayAmount, totalNow, totalInit));
 }
 
 STAmount STAmount::deserialize(SerializerIterator& it)
@@ -1599,6 +1582,15 @@ BOOST_AUTO_TEST_CASE( UnderFlowTests )
 	if (!bigDsmall.isZero())
 		BOOST_FAIL("STAmount: (small/bigNative)->N != 0: " << bigDsmall);
 
+	// very bad offer
+	uint64 r = STAmount::getRate(smallValue, bigValue);
+	if (r != 0)
+		BOOST_FAIL("STAmount: getRate(smallOut/bigIn) != 0" << r);
+
+	// very good offer
+	r = STAmount::getRate(bigValue, smallValue);
+	if (r != 0)
+		BOOST_FAIL("STAmount:: getRate(smallIn/bigOUt) != 0" << r);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
