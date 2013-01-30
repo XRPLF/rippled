@@ -570,12 +570,14 @@ STAmount* STAmount::construct(SerializerIterator& sit, SField::ref name)
 	{ // native
 		if ((value & cPosNative) != 0)
 			return new STAmount(name, value & ~cPosNative, false); // positive
+		else if (value == 0)
+			throw std::runtime_error("negative zero is not canonical");
 		return new STAmount(name, value, true); // negative
 	}
 
 	uint160 uCurrencyID = sit.get160();
 	if (!uCurrencyID)
-		throw std::runtime_error("invalid native currency");
+		throw std::runtime_error("invalid non-native currency");
 
 	uint160	uIssuerID = sit.get160();
 
