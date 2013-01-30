@@ -187,6 +187,8 @@ Request.prototype.rt_accounts = function (accounts) {
 
 // --> trusted: truthy, if remote is trusted
 var Remote = function (opts, trace) {
+  var self  = this;
+
   this.trusted                = opts.trusted;
   this.websocket_ip           = opts.websocket_ip;
   this.websocket_port         = opts.websocket_port;
@@ -201,6 +203,7 @@ var Remote = function (opts, trace) {
   this._ledger_time           = undefined;
   this._stand_alone           = undefined;
   this._testnet               = undefined;
+  this._transaction_subs      = 0;
   this.online_target          = false;
   this.online_state           = 'closed';         // 'open', 'closed', 'connecting', 'closing'
   this.state                  = 'offline';        // 'online', 'offline'
@@ -238,6 +241,32 @@ var Remote = function (opts, trace) {
       'account_root' : {}
     }
   };
+
+  this.on('newListener', function (type, listener) {
+      if ('transaction' === type)
+      {
+        if (!self._transaction_subs)
+        {
+          self.request_subscribe([ 'transactions' ])
+            .request();
+        
+        }
+        self._transaction_subs  += 1;
+      }
+    });
+
+  this.on('removeListener', function (type, listener) {
+      if ('transaction' === type)
+      {
+        self._transaction_subs  -= 1;
+
+        if (!self._transaction_subs)
+        {
+          self.request_unsubscribe([ 'transactions' ])
+            .request();
+        }
+      }
+    });
 };
 
 Remote.prototype      = new EventEmitter;
@@ -518,6 +547,8 @@ Remote.prototype._connect_message = function (ws, json) {
         break;
 
       case 'transaction':
+        // To get these events, just subscribe to them. A subscribes and
+        // unsubscribes will be added as needed.
         // XXX If not trusted, need proof.
 
         this.emit('transaction', message);
