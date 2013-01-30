@@ -23,7 +23,7 @@ var output = [];
 
 // Stage 1: Get the field types and codes from SerializeProto.h
 var types = {},
-    fields = [];
+    fields = {};
 String(fs.readFileSync(filenameProto)).split('\n').forEach(function (line) {
   line = line.replace(/^\s+|\s+$/g, '').replace(/\s+/g, '');
   if (!line.length || line.slice(0, 2) === '//' || line.slice(-1) !== ')') return;
@@ -33,22 +33,23 @@ String(fs.readFileSync(filenameProto)).split('\n').forEach(function (line) {
       opts = tmp[1].split(',');
 
   if (type === 'TYPE') types[opts[1]] = [opts[0], +opts[2]];
-  else if (type === 'FIELD') fields.push([opts[0], types[opts[1]][0], +opts[2]]);
+  else if (type === 'FIELD') fields[opts[0]] = [types[opts[1]][0], +opts[2]];
 });
 
 output.push('var ST = require("./serializedtypes");');
 output.push('');
-output.push('var REQUIRED = 0,');
-output.push('    OPTIONAL = 1,');
-output.push('    DEFAULT  = 2,');
+output.push('var REQUIRED = exports.REQUIRED = 0,');
+output.push('    OPTIONAL = exports.OPTIONAL = 1,');
+output.push('    DEFAULT  = exports.DEFAULT  = 2;');
 output.push('');
 
 function pad(s, n) { while (s.length < n) s += ' '; return s; }
-fields.forEach(function (field) {
-  output.push('    '+pad(field[0], 19) + ' = [' +
-              pad("'"+field[0]+"'", 22) + ', ST.'+field[1] +
-              ', '+field[2] + '],');
+function padl(s, n) { while (s.length < n) s = ' '+s; return s; }
+
+Object.keys(types).forEach(function (type) {
+  output.push(pad('ST.'+types[type][0]+'.id', 25) + ' = '+types[type][1]+';');
 });
+output.push('');
 
 // Stage 2: Get the transaction type IDs from TransactionFormats.h
 var ttConsts = {};
@@ -79,13 +80,18 @@ function removeFinalComma(arr) {
   arr[arr.length-1] = arr[arr.length-1].slice(0, -1);
 }
 
-output.push('');
-output.push('    base = [');
+output.push('var base = [');
 base.forEach(function (field) {
-  output.push('      [ '+pad(field[0], 19)+', '+pad(field[1], 8)+' ],');
+  var spec = fields[field[0]];
+  output.push('  [ '+
+              pad("'"+field[0]+"'", 21)+', '+
+              pad(field[1], 8)+', '+
+              padl(""+spec[1], 2)+', '+
+              'ST.'+pad(spec[0], 3)+
+              ' ],');
 });
 removeFinalComma(output);
-output.push('    ];');
+output.push('];');
 output.push('');
 
 
@@ -96,13 +102,20 @@ sections.forEach(function (section) {
 
   output.push('  '+name+': ['+ttid+'].concat(base, [');
   section.forEach(function (field) {
-    output.push('    [ '+pad(field[0], 19)+', '+pad(field[1], 8)+' ],');
+    var spec = fields[field[0]];
+    output.push('    [ '+
+                pad("'"+field[0]+"'", 21)+', '+
+                pad(field[1], 8)+', '+
+                padl(""+spec[1], 2)+', '+
+                'ST.'+pad(spec[0], 3)+
+                ' ],');
   });
   removeFinalComma(output);
-  output.push('  ],');
+  output.push('  ]),');
 });
 removeFinalComma(output);
 output.push('};');
 output.push('');
 
 fs.writeFileSync(filenameOut, output.join('\n'));
+

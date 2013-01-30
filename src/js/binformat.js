@@ -1,182 +1,90 @@
 var ST = require("./serializedtypes");
 
-var REQUIRED = 0,
-    OPTIONAL = 1,
-    DEFAULT  = 2,
+var REQUIRED = exports.REQUIRED = 0,
+    OPTIONAL = exports.OPTIONAL = 1,
+    DEFAULT  = exports.DEFAULT  = 2;
 
-    CloseResolution     = ['CloseResolution'     , ST.Int8, 1],
-    TemplateEntryType   = ['TemplateEntryType'   , ST.Int8, 2],
-    TransactionResult   = ['TransactionResult'   , ST.Int8, 3],
-    LedgerEntryType     = ['LedgerEntryType'     , ST.Int16, 1],
-    TransactionType     = ['TransactionType'     , ST.Int16, 2],
-    Flags               = ['Flags'               , ST.Int32, 2],
-    SourceTag           = ['SourceTag'           , ST.Int32, 3],
-    Sequence            = ['Sequence'            , ST.Int32, 4],
-    PreviousTxnLgrSeq   = ['PreviousTxnLgrSeq'   , ST.Int32, 5],
-    LedgerSequence      = ['LedgerSequence'      , ST.Int32, 6],
-    CloseTime           = ['CloseTime'           , ST.Int32, 7],
-    ParentCloseTime     = ['ParentCloseTime'     , ST.Int32, 8],
-    SigningTime         = ['SigningTime'         , ST.Int32, 9],
-    Expiration          = ['Expiration'          , ST.Int32, 10],
-    TransferRate        = ['TransferRate'        , ST.Int32, 11],
-    WalletSize          = ['WalletSize'          , ST.Int32, 12],
-    OwnerCount          = ['OwnerCount'          , ST.Int32, 13],
-    DestinationTag      = ['DestinationTag'      , ST.Int32, 14],
-    HighQualityIn       = ['HighQualityIn'       , ST.Int32, 16],
-    HighQualityOut      = ['HighQualityOut'      , ST.Int32, 17],
-    LowQualityIn        = ['LowQualityIn'        , ST.Int32, 18],
-    LowQualityOut       = ['LowQualityOut'       , ST.Int32, 19],
-    QualityIn           = ['QualityIn'           , ST.Int32, 20],
-    QualityOut          = ['QualityOut'          , ST.Int32, 21],
-    StampEscrow         = ['StampEscrow'         , ST.Int32, 22],
-    BondAmount          = ['BondAmount'          , ST.Int32, 23],
-    LoadFee             = ['LoadFee'             , ST.Int32, 24],
-    OfferSequence       = ['OfferSequence'       , ST.Int32, 25],
-    LastLedgerSequence  = ['LastLedgerSequence'  , ST.Int32, 27],
-    TransactionIndex    = ['TransactionIndex'    , ST.Int32, 28],
-    OperationLimit      = ['OperationLimit'      , ST.Int32, 29],
-    ReferenceFeeUnits   = ['ReferenceFeeUnits'   , ST.Int32, 30],
-    ReserveBase         = ['ReserveBase'         , ST.Int32, 31],
-    ReserveIncrement    = ['ReserveIncrement'    , ST.Int32, 32],
-    IndexNext           = ['IndexNext'           , ST.Int64, 1],
-    IndexPrevious       = ['IndexPrevious'       , ST.Int64, 2],
-    BookNode            = ['BookNode'            , ST.Int64, 3],
-    OwnerNode           = ['OwnerNode'           , ST.Int64, 4],
-    BaseFee             = ['BaseFee'             , ST.Int64, 5],
-    ExchangeRate        = ['ExchangeRate'        , ST.Int64, 6],
-    LowNode             = ['LowNode'             , ST.Int64, 7],
-    HighNode            = ['HighNode'            , ST.Int64, 8],
-    EmailHash           = ['EmailHash'           , ST.Hash128, 1],
-    LedgerHash          = ['LedgerHash'          , ST.Hash256, 1],
-    ParentHash          = ['ParentHash'          , ST.Hash256, 2],
-    TransactionHash     = ['TransactionHash'     , ST.Hash256, 3],
-    AccountHash         = ['AccountHash'         , ST.Hash256, 4],
-    PreviousTxnID       = ['PreviousTxnID'       , ST.Hash256, 5],
-    LedgerIndex         = ['LedgerIndex'         , ST.Hash256, 6],
-    WalletLocator       = ['WalletLocator'       , ST.Hash256, 7],
-    RootIndex           = ['RootIndex'           , ST.Hash256, 8],
-    BookDirectory       = ['BookDirectory'       , ST.Hash256, 16],
-    InvoiceID           = ['InvoiceID'           , ST.Hash256, 17],
-    Nickname            = ['Nickname'            , ST.Hash256, 18],
-    Feature             = ['Feature'             , ST.Hash256, 19],
-    TakerPaysCurrency   = ['TakerPaysCurrency'   , ST.Hash160, 1],
-    TakerPaysIssuer     = ['TakerPaysIssuer'     , ST.Hash160, 2],
-    TakerGetsCurrency   = ['TakerGetsCurrency'   , ST.Hash160, 3],
-    TakerGetsIssuer     = ['TakerGetsIssuer'     , ST.Hash160, 4],
-    Amount              = ['Amount'              , ST.Amount, 1],
-    Balance             = ['Balance'             , ST.Amount, 2],
-    LimitAmount         = ['LimitAmount'         , ST.Amount, 3],
-    TakerPays           = ['TakerPays'           , ST.Amount, 4],
-    TakerGets           = ['TakerGets'           , ST.Amount, 5],
-    LowLimit            = ['LowLimit'            , ST.Amount, 6],
-    HighLimit           = ['HighLimit'           , ST.Amount, 7],
-    Fee                 = ['Fee'                 , ST.Amount, 8],
-    SendMax             = ['SendMax'             , ST.Amount, 9],
-    MinimumOffer        = ['MinimumOffer'        , ST.Amount, 16],
-    RippleEscrow        = ['RippleEscrow'        , ST.Amount, 17],
-    PublicKey           = ['PublicKey'           , ST.VariableLength, 1],
-    MessageKey          = ['MessageKey'          , ST.VariableLength, 2],
-    SigningPubKey       = ['SigningPubKey'       , ST.VariableLength, 3],
-    TxnSignature        = ['TxnSignature'        , ST.VariableLength, 4],
-    Generator           = ['Generator'           , ST.VariableLength, 5],
-    Signature           = ['Signature'           , ST.VariableLength, 6],
-    Domain              = ['Domain'              , ST.VariableLength, 7],
-    FundCode            = ['FundCode'            , ST.VariableLength, 8],
-    RemoveCode          = ['RemoveCode'          , ST.VariableLength, 9],
-    ExpireCode          = ['ExpireCode'          , ST.VariableLength, 10],
-    CreateCode          = ['CreateCode'          , ST.VariableLength, 11],
-    Account             = ['Account'             , ST.Account, 1],
-    Owner               = ['Owner'               , ST.Account, 2],
-    Destination         = ['Destination'         , ST.Account, 3],
-    Issuer              = ['Issuer'              , ST.Account, 4],
-    Target              = ['Target'              , ST.Account, 7],
-    RegularKey          = ['RegularKey'          , ST.Account, 8],
-    Paths               = ['Paths'               , ST.PathSet, 1],
-    Indexes             = ['Indexes'             , ST.Vector256, 1],
-    Hashes              = ['Hashes'              , ST.Vector256, 2],
-    TransactionMetaData = ['TransactionMetaData' , ST.Object, 2],
-    CreatedNode         = ['CreatedNode'         , ST.Object, 3],
-    DeletedNode         = ['DeletedNode'         , ST.Object, 4],
-    ModifiedNode        = ['ModifiedNode'        , ST.Object, 5],
-    PreviousFields      = ['PreviousFields'      , ST.Object, 6],
-    FinalFields         = ['FinalFields'         , ST.Object, 7],
-    NewFields           = ['NewFields'           , ST.Object, 8],
-    TemplateEntry       = ['TemplateEntry'       , ST.Object, 9],
-    SigningAccounts     = ['SigningAccounts'     , ST.Array, 2],
-    TxnSignatures       = ['TxnSignatures'       , ST.Array, 3],
-    Signatures          = ['Signatures'          , ST.Array, 4],
-    Template            = ['Template'            , ST.Array, 5],
-    Necessary           = ['Necessary'           , ST.Array, 6],
-    Sufficient          = ['Sufficient'          , ST.Array, 7],
-    AffectedNodes       = ['AffectedNodes'       , ST.Array, 8],
-    Features            = ['Features'            , ST.Array, 9],
+ST.Int16.id               = 1;
+ST.Int32.id               = 2;
+ST.Int64.id               = 3;
+ST.Hash128.id             = 4;
+ST.Hash256.id             = 5;
+ST.Amount.id              = 6;
+ST.VariableLength.id      = 7;
+ST.Account.id             = 8;
+ST.Object.id              = 14;
+ST.Array.id               = 15;
+ST.Int8.id                = 16;
+ST.Hash160.id             = 17;
+ST.PathSet.id             = 18;
+ST.Vector256.id           = 19;
 
-    base = [
-      [ TransactionType    , REQUIRED ],
-      [ Flags              , OPTIONAL ],
-      [ SourceTag          , OPTIONAL ],
-      [ Account            , REQUIRED ],
-      [ Sequence           , REQUIRED ],
-      [ Fee                , REQUIRED ],
-      [ OperationLimit     , OPTIONAL ],
-      [ SigningPubKey      , REQUIRED ],
-      [ TxnSignature       , OPTIONAL ]
-    ];
+var base = [
+  [ 'TransactionType'    , REQUIRED,  2, ST.Int16 ],
+  [ 'Flags'              , OPTIONAL,  2, ST.Int32 ],
+  [ 'SourceTag'          , OPTIONAL,  3, ST.Int32 ],
+  [ 'Account'            , REQUIRED,  1, ST.Account ],
+  [ 'Sequence'           , REQUIRED,  4, ST.Int32 ],
+  [ 'Fee'                , REQUIRED,  8, ST.Amount ],
+  [ 'OperationLimit'     , OPTIONAL, 29, ST.Int32 ],
+  [ 'SigningPubKey'      , REQUIRED,  3, ST.VariableLength ],
+  [ 'TxnSignature'       , OPTIONAL,  4, ST.VariableLength ]
+];
 
 exports.tx = {
   AccountSet: [3].concat(base, [
-    [ EmailHash          , OPTIONAL ],
-    [ WalletLocator      , OPTIONAL ],
-    [ WalletSize         , OPTIONAL ],
-    [ MessageKey         , OPTIONAL ],
-    [ Domain             , OPTIONAL ],
-    [ TransferRate       , OPTIONAL ]
-  ],
+    [ 'EmailHash'          , OPTIONAL,  1, ST.Hash128 ],
+    [ 'WalletLocator'      , OPTIONAL,  7, ST.Hash256 ],
+    [ 'WalletSize'         , OPTIONAL, 12, ST.Int32 ],
+    [ 'MessageKey'         , OPTIONAL,  2, ST.VariableLength ],
+    [ 'Domain'             , OPTIONAL,  7, ST.VariableLength ],
+    [ 'TransferRate'       , OPTIONAL, 11, ST.Int32 ]
+  ]),
   TrustSet: [20].concat(base, [
-    [ LimitAmount        , OPTIONAL ],
-    [ QualityIn          , OPTIONAL ],
-    [ QualityOut         , OPTIONAL ]
-  ],
+    [ 'LimitAmount'        , OPTIONAL,  3, ST.Amount ],
+    [ 'QualityIn'          , OPTIONAL, 20, ST.Int32 ],
+    [ 'QualityOut'         , OPTIONAL, 21, ST.Int32 ]
+  ]),
   OfferCreate: [7].concat(base, [
-    [ TakerPays          , REQUIRED ],
-    [ TakerGets          , REQUIRED ],
-    [ Expiration         , OPTIONAL ]
-  ],
+    [ 'TakerPays'          , REQUIRED,  4, ST.Amount ],
+    [ 'TakerGets'          , REQUIRED,  5, ST.Amount ],
+    [ 'Expiration'         , OPTIONAL, 10, ST.Int32 ]
+  ]),
   OfferCancel: [8].concat(base, [
-    [ OfferSequence      , REQUIRED ]
-  ],
+    [ 'OfferSequence'      , REQUIRED, 25, ST.Int32 ]
+  ]),
   SetRegularKey: [5].concat(base, [
-    [ RegularKey         , REQUIRED ]
-  ],
+    [ 'RegularKey'         , REQUIRED,  8, ST.Account ]
+  ]),
   Payment: [0].concat(base, [
-    [ Destination        , REQUIRED ],
-    [ Amount             , REQUIRED ],
-    [ SendMax            , OPTIONAL ],
-    [ Paths              , DEFAULT  ],
-    [ InvoiceID          , OPTIONAL ],
-    [ DestinationTag     , OPTIONAL ]
-  ],
+    [ 'Destination'        , REQUIRED,  3, ST.Account ],
+    [ 'Amount'             , REQUIRED,  1, ST.Amount ],
+    [ 'SendMax'            , OPTIONAL,  9, ST.Amount ],
+    [ 'Paths'              , DEFAULT ,  1, ST.PathSet ],
+    [ 'InvoiceID'          , OPTIONAL, 17, ST.Hash256 ],
+    [ 'DestinationTag'     , OPTIONAL, 14, ST.Int32 ]
+  ]),
   Contract: [9].concat(base, [
-    [ Expiration         , REQUIRED ],
-    [ BondAmount         , REQUIRED ],
-    [ StampEscrow        , REQUIRED ],
-    [ RippleEscrow       , REQUIRED ],
-    [ CreateCode         , OPTIONAL ],
-    [ FundCode           , OPTIONAL ],
-    [ RemoveCode         , OPTIONAL ],
-    [ ExpireCode         , OPTIONAL ]
-  ],
+    [ 'Expiration'         , REQUIRED, 10, ST.Int32 ],
+    [ 'BondAmount'         , REQUIRED, 23, ST.Int32 ],
+    [ 'StampEscrow'        , REQUIRED, 22, ST.Int32 ],
+    [ 'RippleEscrow'       , REQUIRED, 17, ST.Amount ],
+    [ 'CreateCode'         , OPTIONAL, 11, ST.VariableLength ],
+    [ 'FundCode'           , OPTIONAL,  8, ST.VariableLength ],
+    [ 'RemoveCode'         , OPTIONAL,  9, ST.VariableLength ],
+    [ 'ExpireCode'         , OPTIONAL, 10, ST.VariableLength ]
+  ]),
   RemoveContract: [10].concat(base, [
-    [ Target             , REQUIRED ]
-  ],
+    [ 'Target'             , REQUIRED,  7, ST.Account ]
+  ]),
   EnableFeature: [100].concat(base, [
-    [ Feature            , REQUIRED ]
-  ],
+    [ 'Feature'            , REQUIRED, 19, ST.Hash256 ]
+  ]),
   SetFee: [101].concat(base, [
-    [ Features           , REQUIRED ],
-    [ BaseFee            , REQUIRED ],
-    [ ReferenceFeeUnits  , REQUIRED ],
-    [ ReserveBase        , REQUIRED ],
-    [ ReserveIncrement   , REQUIRED ]
-  ]
+    [ 'Features'           , REQUIRED,  9, ST.Array ],
+    [ 'BaseFee'            , REQUIRED,  5, ST.Int64 ],
+    [ 'ReferenceFeeUnits'  , REQUIRED, 30, ST.Int32 ],
+    [ 'ReserveBase'        , REQUIRED, 31, ST.Int32 ],
+    [ 'ReserveIncrement'   , REQUIRED, 32, ST.Int32 ]
+  ])
 };
