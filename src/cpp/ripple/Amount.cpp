@@ -995,11 +995,15 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 // <--    uRate: normalize(offerIn/offerOut)
 //             A lower rate is better for the person taking the order.
 //             The taker gets more for less with a lower rate.
+// Zero is returned if the offer is worthless.
 uint64 STAmount::getRate(const STAmount& offerOut, const STAmount& offerIn)
 {
-	if (offerOut.isZero()) throw std::runtime_error("Worthless offer");
+	if (offerOut.isZero())
+		return 0;
 
 	STAmount r = divide(offerIn, offerOut, CURRENCY_ONE, ACCOUNT_ONE);
+	if (r.isZero())
+		return 0;
 
 	assert((r.getExponent() >= -100) && (r.getExponent() <= 155));
 
@@ -1010,6 +1014,9 @@ uint64 STAmount::getRate(const STAmount& offerOut, const STAmount& offerIn)
 
 STAmount STAmount::setRate(uint64 rate)
 {
+	if (rate == 0)
+		return STAmount(CURRENCY_ONE, ACCOUNT_ONE);
+
 	uint64 mantissa = rate & ~(255ull << (64 - 8));
 	int exponent = static_cast<int>(rate >> (64 - 8)) - 100;
 
