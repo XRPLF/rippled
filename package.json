@@ -1,10 +1,17 @@
 {
-  "name": "ripple",
+  "name": "ripple-lib",
   "version": "0.7.0",
-  "description": "Open-source peer-to-peer payment network",
+  "description": "Ripple JavaScript client library",
+
+  "files": [
+    "src/js/*.js",
+    "build/sjcl.js"
+  ],
+  "main": "src/js",
   "directories": {
     "test": "test"
   },
+
   "dependencies": {
     "async": "~0.1.22",
     "ws": "~0.4.22",
@@ -15,13 +22,15 @@
     "buster": "~0.6.2",
     "grunt-webpack": "~0.4.0"
   },
+
   "scripts": {
     "test": "buster test"
   },
+
   "repository": {
     "type": "git",
     "url": "git://github.com/jedmccaleb/NewCoin.git"
   },
-  "readmeFilename": "README"
 
+  "readmeFilename": "README.md"
 }
