@@ -547,7 +547,7 @@ uint256 Ledger::getHashByIndex(uint32 ledgerIndex)
 {
 	uint256 ret;
 
-	std::string sql="SELECT LedgerHash FROM Ledgers WHERE LedgerSeq='";
+	std::string sql="SELECT LedgerHash FROM Ledgers INDEXED BY SeqLedger WHERE LedgerSeq='";
 	sql.append(boost::lexical_cast<std::string>(ledgerIndex));
 	sql.append("';");
 

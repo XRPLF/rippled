@@ -300,8 +300,8 @@ void ValidationCollection::condWrite()
 void ValidationCollection::doWrite()
 {
 	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtDISK));
-	static boost::format insVal("INSERT INTO LedgerValidations "
-		"(LedgerHash,NodePubKey,Flags,SignTime,Signature) VALUES ('%s','%s','%u','%u',%s);");
+	static boost::format insVal("INSERT INTO Validations "
+		"(LedgerHash,NodePubKey,SignTime,RawData) VALUES ('%s','%s','%u',%s);");
 
 	boost::mutex::scoped_lock sl(mValidationLock);
 	assert(mWriting);
@@ -314,11 +314,16 @@ void ValidationCollection::doWrite()
 			Database *db = theApp->getLedgerDB()->getDB();
 			ScopedLock dbl(theApp->getLedgerDB()->getDBLock());
 
+			Serializer s(1024);
 			db->executeSQL("BEGIN TRANSACTION;");
 			BOOST_FOREACH(const SerializedValidation::pointer& it, vector)
+			{
+				s.erase();
+				it->add(s);
 				db->executeSQL(boost::str(insVal % it->getLedgerHash().GetHex()
-					% it->getSignerPublic().humanNodePublic() % it->getFlags() % it->getSignTime()
-					% sqlEscape(it->getSignature())));
+					% it->getSignerPublic().humanNodePublic() % it->getSignTime()
+					% sqlEscape(s.peekData())));
+			}
 			db->executeSQL("END TRANSACTION;");
 		}
 		sl.lock();
