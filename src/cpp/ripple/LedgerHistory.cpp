@@ -30,7 +30,7 @@ void LedgerHistory::addLedger(Ledger::pointer ledger)
 
 void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger, bool fromConsensus)
 {
-	assert(ledger && ledger->isAccepted());
+	assert(ledger && ledger->isAccepted() && ledger->isImmutable());
 	uint256 h(ledger->getHash());
 	boost::recursive_mutex::scoped_lock sl(mLedgersByHash.peekMutex());
 	mLedgersByHash.canonicalize(h, ledger, true);
@@ -70,6 +70,7 @@ Ledger::pointer LedgerHistory::getLedgerBySeq(uint32 index)
 	assert(ret->getLedgerSeq() == index);
 
 	sl.lock();
+	assert(ret->isImmutable());
 	mLedgersByHash.canonicalize(ret->getHash(), ret);
 	mLedgersByIndex[ret->getLedgerSeq()] = ret->getHash();
 	return (ret->getLedgerSeq() == index) ? ret : Ledger::pointer();
@@ -80,6 +81,7 @@ Ledger::pointer LedgerHistory::getLedgerByHash(const uint256& hash)
 	Ledger::pointer ret = mLedgersByHash.fetch(hash);
 	if (ret)
 	{
+		assert(ret->isImmutable());
 		assert(ret->getHash() == hash);
 		return ret;
 	}
@@ -87,6 +89,7 @@ Ledger::pointer LedgerHistory::getLedgerByHash(const uint256& hash)
 	ret = Ledger::loadByHash(hash);
 	if (!ret)
 		return ret;
+	assert(ret->isImmutable());
 	assert(ret->getHash() == hash);
 	mLedgersByHash.canonicalize(ret->getHash(), ret);
 	assert(ret->getHash() == hash);
