@@ -24,6 +24,7 @@
 #include "ProofOfWork.h"
 #include "LoadManager.h"
 #include "TransactionQueue.h"
+#include "OrderBookDB.h"
 
 class RPCDoor;
 class PeerDoor;
@@ -66,6 +67,7 @@ class Application
 	LoadManager				mLoadMgr;
 	LoadFeeTrack			mFeeTrack;
 	TXQueue					mTxnQueue;
+	OrderBookDB				mOrderBookDB;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 
@@ -115,6 +117,7 @@ public:
 	LoadFeeTrack& getFeeTrack()						{ return mFeeTrack; }
 	TXQueue& getTxnQueue()							{ return mTxnQueue; }
 	PeerDoor& getPeerDoor()							{ return *mPeerDoor; }
+	OrderBookDB& getOrderBookDB()					{ return mOrderBookDB; }
 
 
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }

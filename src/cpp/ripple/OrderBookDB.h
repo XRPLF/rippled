@@ -11,11 +11,13 @@ class OrderBookDB
 	std::vector<OrderBook::pointer> mEmptyVector;
 	std::vector<OrderBook::pointer> mXRPOrders;
 	std::map<uint160, std::vector<OrderBook::pointer> > mIssuerMap;
+	//std::vector<OrderBook::pointer> mAllOrderBooks;
 
 	std::map<uint256, bool >  mKnownMap;
 
 public:
-	OrderBookDB(Ledger::pointer ledger);
+	OrderBookDB();
+	void setup(Ledger::pointer ledger);
 
 	// return list of all orderbooks that want XRP
 	std::vector<OrderBook::pointer>& getXRPInBooks(){ return mXRPOrders; }
@@ -26,6 +28,11 @@ public:
 
 	// returns the best rate we can find
 	float getPrice(uint160& currencyIn,uint160& currencyOut);
+
+
+	OrderBook::pointer getBook(uint160 mCurrencyIn, uint160 mCurrencyOut, uint160 mIssuerIn, uint160 mIssuerOut);
+	// see if this txn effects any orderbook
+	void processTxn(const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta,Json::Value& jvObj);
 
 };
 

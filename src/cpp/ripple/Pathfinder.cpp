@@ -269,7 +269,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			else if (!speEnd.mCurrencyID)
 			{
 				// Last element is for XRP, continue with qualifying books.
-				BOOST_FOREACH(OrderBook::ref book, mOrderBook.getXRPInBooks())
+				BOOST_FOREACH(OrderBook::ref book, theApp->getOrderBookDB().getXRPInBooks())
 				{
 					// XXX Don't allow looping through same order books.
 
@@ -357,7 +357,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				// Every book that wants the source currency.
 				std::vector<OrderBook::pointer> books;
 
-				mOrderBook.getBooks(spPath.mCurrentAccount, spPath.mCurrencyID, books);
+				theApp->getOrderBookDB().getBooks(spPath.mCurrentAccount, spPath.mCurrencyID, books);
 
 				BOOST_FOREACH(OrderBook::ref book,books)
 				{
@@ -499,7 +499,7 @@ void Pathfinder::addOptions(PathOption::pointer tail)
 {
 	if (!tail->mCurrencyID)
 	{ // source XRP
-		BOOST_FOREACH(OrderBook::ref book, mOrderBook.getXRPInBooks())
+		BOOST_FOREACH(OrderBook::ref book, theApp->getOrderBookDB().getXRPInBooks())
 		{
 			PathOption::pointer pathOption(new PathOption(tail));
 
@@ -533,7 +533,7 @@ void Pathfinder::addOptions(PathOption::pointer tail)
 
 		// every offer that wants the source currency
 		std::vector<OrderBook::pointer> books;
-		mOrderBook.getBooks(tail->mCurrentAccount, tail->mCurrencyID, books);
+		theApp->getOrderBookDB().getBooks(tail->mCurrentAccount, tail->mCurrencyID, books);
 
 		BOOST_FOREACH(OrderBook::ref book,books)
 		{

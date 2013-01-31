@@ -1,5 +1,7 @@
 #include "SerializedLedger.h"
+#include "NetworkOPs.h"
 #include <boost/shared_ptr.hpp>
+
 /*
 	Encapsulates the SLE for an orderbook
 */
@@ -11,6 +13,8 @@ class OrderBook
 	uint160 mCurrencyOut;
 	uint160 mIssuerIn;
 	uint160 mIssuerOut;
+
+	boost::unordered_set<InfoSub*> mListeners;
 
 	//SerializedLedgerEntry::pointer	mLedgerEntry;
 	OrderBook(SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
@@ -30,6 +34,9 @@ public:
 
 	// looks through the best offers to see how much it would cost to take the given amount
 	STAmount& getTakePrice(STAmount& takeAmount);
+
+	void addSubscriber(InfoSub* sub);
+	void removeSubscriber(InfoSub* sub);
 };
 
 // vim:ts=4

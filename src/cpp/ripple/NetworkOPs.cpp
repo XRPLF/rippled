@@ -1316,6 +1316,7 @@ void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedT
 			ispListener->send(jvObj);
 		}
 	}
+	theApp->getOrderBookDB().processTxn(stTxn, terResult, meta, jvObj);
 
 	pubAccountTransaction(lpCurrent, stTxn, terResult, true, meta);
 }
