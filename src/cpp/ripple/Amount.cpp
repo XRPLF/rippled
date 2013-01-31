@@ -142,7 +142,7 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 		std::vector<std::string> elements;
 		boost::split(elements, val, boost::is_any_of("\t\n\r ,/"));
 
-		if ((elements.size() < 0) || (elements.size() > 3))
+		if (elements.size() > 3)
 			throw std::runtime_error("invalid amount string");
 
 		value = elements[0];
