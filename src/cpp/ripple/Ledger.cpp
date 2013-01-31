@@ -504,10 +504,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 
 		if (!db->executeSQL(sql) || !db->startIterRows())
-		{
-			cLog(lsDEBUG) << "No ledger for query: " << sql;
 			return Ledger::pointer();
-		}
 
 		db->getStr("LedgerHash", hash);
 		ledgerHash.SetHex(hash, true);
