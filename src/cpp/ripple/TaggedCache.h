@@ -41,6 +41,10 @@ protected:
 		weak_data_ptr	weak_ptr;
 
 		cache_entry(time_t l, const data_ptr& d) : last_use(l), ptr(d), weak_ptr(d) { ; }
+		bool isCached()		{ return !!ptr; }
+		bool isExpired()	{ return weak_ptr.expired(); }
+		data_ptr lock()		{ return weak_ptr.lock(); }
+		void touch()		{ last_use = time(NULL); }
 	};
 
 	typedef std::pair<key_type, cache_entry>				cache_pair;
@@ -187,18 +191,19 @@ template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::touch
 	cache_iterator cit = mCache.find(key);
 	if (cit == mCache.end()) // Don't have the object
 		return false;
+	cache_entry& entry = cit->second;
 
-	if (cit->second.ptr)
-	{ // Have the object in cache
-		cit->second.last_use = time(NULL);
+	if (entry.isCached())
+	{
+		entry.touch();
 		return true;
 	}
 
-	cit->second.ptr = cit->second.weak_ptr.lock();
-	if (cit->second.ptr)
+	entry.ptr = entry.lock();
+	if (entry.isCached())
 	{ // We just put the object back in cache
 		++mCacheCount;
-		cit->second.last_use = time(NULL);
+		entry.touch();
 		return true;
 	}
 
@@ -214,16 +219,17 @@ template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::del(c
 	cache_iterator cit = mCache.find(key);
 	if (cit == mCache.end())
 		return false;
+	cache_entry& entry = cit->second;
 
 	bool ret = false;
-	if (cit->second.ptr)
+	if (entry.isCached())
 	{
 		--mCacheCount;
-		cit->second.reset();
+		entry.ptr.reset();
 		ret = true;
 	}
 
-	if (!valid || cit->second.weak_ptr.expired())
+	if (!valid || entry.isExpired())
 		mCache.erase(cit);
 	return true;
 }
@@ -241,40 +247,40 @@ bool TaggedCache<c_Key, c_Data>::canonicalize(const key_type& key, boost::shared
 		++mCacheCount;
 		return false;
 	}
+	cache_entry& entry = cit->second;
+	entry.touch();
 
-	cit->second.last_use = time(NULL);
-
-	if (cit->second.ptr)
+	if (entry.isCached())
 	{
 		if (replace)
 		{
-			cit->second.ptr = data;
-			cit->second.weak_ptr = data;
+			entry.ptr = data;
+			entry.weak_ptr = data;
 		}
 		else
-			data = cit->second.ptr;
+			data = entry.ptr;
 		return true;
 	}
 
-	data_ptr cachedData = cit->second.weak_ptr.lock();
+	data_ptr cachedData = entry.lock();
 	if (cachedData)
 	{
 		if (replace)
 		{
-			cit->second.ptr = data;
-			cit->second.weak_ptr = data;
+			entry.ptr = data;
+			entry.weak_ptr = data;
 		}
 		else
 		{
-			cit->second.ptr = cachedData;
+			entry.ptr = cachedData;
 			data = cachedData;
 		}
 		++mCacheCount;
 		return true;
 	}
 
-	cit->second.ptr = data;
-	cit->second.weak_ptr = data;
+	entry.ptr = data;
+	entry.weak_ptr = data;
 	++mCacheCount;
 
 	return false;
@@ -288,16 +294,17 @@ boost::shared_ptr<c_Data> TaggedCache<c_Key, c_Data>::fetch(const key_type& key)
 	cache_iterator cit = mCache.find(key);
 	if (cit == mCache.end())
 		return data_ptr();
-	cit->second.last_use = time(NULL);
+	cache_entry& entry = cit->second;
+	entry.touch();
 
-	if (cit->second.ptr)
-		return cit->second.ptr;
+	if (entry.isCached())
+		return entry.ptr;
 
-	cit->second.ptr = cit->second.weak_ptr.lock();
-	if (cit->second.ptr)
+	entry.ptr = entry.lock();
+	if (entry.isCached())
 	{
 		++mCacheCount;
-		return cit->second.ptr;
+		return entry.ptr;
 	}
 	mCache.erase(cit);
 	return data_ptr();
