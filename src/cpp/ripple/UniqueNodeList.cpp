@@ -795,16 +795,23 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 }
 
 // Given a section with IPs, parse and persist it for a validator.
-void UniqueNodeList::responseIps(const std::string& strSite, const RippleAddress& naNodePublic, const boost::system::error_code& err, const std::string& strIpsFile)
+bool UniqueNodeList::responseIps(const std::string& strSite, const RippleAddress& naNodePublic, const boost::system::error_code& err, int iStatus, const std::string& strIpsFile)
 {
-	if (!err)
-	{
-		section			secFile		= ParseSection(strIpsFile, true);
+	bool	bReject	= !err && iStatus != 200;
 
-		processIps(strSite, naNodePublic, sectionEntries(secFile, SECTION_IPS));
+	if (!bReject)
+	{
+		if (!err)
+		{
+			section			secFile		= ParseSection(strIpsFile, true);
+
+			processIps(strSite, naNodePublic, sectionEntries(secFile, SECTION_IPS));
+		}
+
+		fetchFinish();
 	}
 
-	fetchFinish();
+	return bReject;
 }
 
 // Process section [ips_url].
@@ -831,7 +838,7 @@ void UniqueNodeList::getIpsUrl(const RippleAddress& naNodePublic, section secSit
 			strPath,
 			NODE_FILE_BYTES_MAX,
 			boost::posix_time::seconds(NODE_FETCH_SECONDS),
-			boost::bind(&UniqueNodeList::responseIps, this, strDomain, naNodePublic, _1, _2));
+			boost::bind(&UniqueNodeList::responseIps, this, strDomain, naNodePublic, _1, _2, _3));
 	}
 	else
 	{
@@ -840,16 +847,23 @@ void UniqueNodeList::getIpsUrl(const RippleAddress& naNodePublic, section secSit
 }
 
 // After fetching a ripple.txt from a web site, given a section with validators, parse and persist it.
-void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, const RippleAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string& strValidatorsFile)
+bool UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, const RippleAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, int iStatus, const std::string& strValidatorsFile)
 {
-	if (!err)
-	{
-		section		secFile		= ParseSection(strValidatorsFile, true);
+	bool	bReject	= !err && iStatus != 200;
 
-		processValidators(strSite, strValidatorsUrl, naNodePublic, vsValidator, sectionEntries(secFile, SECTION_VALIDATORS));
+	if (!bReject)
+	{
+		if (!err)
+		{
+			section		secFile		= ParseSection(strValidatorsFile, true);
+
+			processValidators(strSite, strValidatorsUrl, naNodePublic, vsValidator, sectionEntries(secFile, SECTION_VALIDATORS));
+		}
+
+		getIpsUrl(naNodePublic, secSite);
 	}
 
-	getIpsUrl(naNodePublic, secSite);
+	return bReject;
 }
 
 // Process section [validators_url].
@@ -875,7 +889,7 @@ void UniqueNodeList::getValidatorsUrl(const RippleAddress& naNodePublic, section
 			strPath,
 			NODE_FILE_BYTES_MAX,
 			boost::posix_time::seconds(NODE_FETCH_SECONDS),
-			boost::bind(&UniqueNodeList::responseValidators, this, strValidatorsUrl, naNodePublic, secSite, strDomain, _1, _2));
+			boost::bind(&UniqueNodeList::responseValidators, this, strValidatorsUrl, naNodePublic, secSite, strDomain, _1, _2, _3));
 	}
 	else
 	{
@@ -911,118 +925,125 @@ void UniqueNodeList::processFile(const std::string& strDomain, const RippleAddre
 }
 
 // Given a ripple.txt, process it.
-void UniqueNodeList::responseFetch(const std::string& strDomain, const boost::system::error_code& err, const std::string& strSiteFile)
+bool UniqueNodeList::responseFetch(const std::string& strDomain, const boost::system::error_code& err, int iStatus, const std::string& strSiteFile)
 {
-	section				secSite	= ParseSection(strSiteFile, true);
-	bool				bGood	= !err;
+	bool	bReject	= !err && iStatus != 200;
 
-	if (bGood)
+	if (!bReject)
 	{
-		cLog(lsTRACE) << boost::format("Validator: '%s' received " NODE_FILE_NAME ".") % strDomain;
-	}
-	else
-	{
-		cLog(lsTRACE)
-			<< boost::format("Validator: '%s' unable to retrieve " NODE_FILE_NAME ": %s")
-				% strDomain
-				% err.message();
-	}
+		section				secSite	= ParseSection(strSiteFile, true);
+		bool				bGood	= !err;
 
-	//
-	// Verify file domain
-	//
-	std::string	strSite;
-
-	if (bGood && !sectionSingleB(secSite, SECTION_DOMAIN, strSite))
-	{
-		bGood	= false;
-
-		cLog(lsTRACE)
-			<< boost::format("Validator: '%s' bad " NODE_FILE_NAME " missing single entry for " SECTION_DOMAIN ".")
-				% strDomain;
-	}
-
-	if (bGood && strSite != strDomain)
-	{
-		bGood	= false;
-
-		cLog(lsTRACE)
-			<< boost::format("Validator: '%s' bad " NODE_FILE_NAME " " SECTION_DOMAIN " does not match: %s")
-				% strDomain
-				% strSite;
-	}
-
-	//
-	// Process public key
-	//
-	std::string		strNodePublicKey;
-
-	if (bGood && !sectionSingleB(secSite, SECTION_PUBLIC_KEY, strNodePublicKey))
-	{
-		// Bad [validation_public_key] section.
-		bGood	= false;
-
-		cLog(lsTRACE)
-			<< boost::format("Validator: '%s' bad " NODE_FILE_NAME " " SECTION_PUBLIC_KEY " does not have single entry.")
-				% strDomain;
-	}
-
-	RippleAddress	naNodePublic;
-
-	if (bGood && !naNodePublic.setNodePublic(strNodePublicKey))
-	{
-		// Bad public key.
-		bGood	= false;
-
-		cLog(lsTRACE)
-			<< boost::format("Validator: '%s' bad " NODE_FILE_NAME " " SECTION_PUBLIC_KEY " is bad: ")
-				% strDomain
-				% strNodePublicKey;
-	}
-
-	if (bGood)
-	{
-// cLog(lsTRACE) << boost::format("naNodePublic: '%s'") % naNodePublic.humanNodePublic();
-
-		seedDomain	sdCurrent;
-
-		bool		bFound		= getSeedDomains(strDomain, sdCurrent);
-
-		assert(bFound);
-
-		uint256		iSha256		= Serializer::getSHA512Half(strSiteFile);
-		bool		bChangedB	= sdCurrent.iSha256	!= iSha256;
-
-		sdCurrent.strDomain		= strDomain;
-		// XXX If the node public key is changing, delete old public key information?
-		// XXX Only if no other refs to keep it arround, other wise we have an attack vector.
-		sdCurrent.naPublicKey	= naNodePublic;
-
-// cLog(lsTRACE) << boost::format("sdCurrent.naPublicKey: '%s'") % sdCurrent.naPublicKey.humanNodePublic();
-
-		sdCurrent.tpFetch		= boost::posix_time::second_clock::universal_time();
-		sdCurrent.iSha256		= iSha256;
-
-		setSeedDomains(sdCurrent, true);
-
-		if (bChangedB)
+		if (bGood)
 		{
-			cLog(lsTRACE) << boost::format("Validator: '%s' processing new " NODE_FILE_NAME ".") % strDomain;
-			processFile(strDomain, naNodePublic, secSite);
+			cLog(lsTRACE) << boost::format("Validator: '%s' received " NODE_FILE_NAME ".") % strDomain;
 		}
 		else
 		{
-			cLog(lsTRACE) << boost::format("Validator: '%s' no change for " NODE_FILE_NAME ".") % strDomain;
+			cLog(lsTRACE)
+				<< boost::format("Validator: '%s' unable to retrieve " NODE_FILE_NAME ": %s")
+					% strDomain
+					% err.message();
+		}
+
+		//
+		// Verify file domain
+		//
+		std::string	strSite;
+
+		if (bGood && !sectionSingleB(secSite, SECTION_DOMAIN, strSite))
+		{
+			bGood	= false;
+
+			cLog(lsTRACE)
+				<< boost::format("Validator: '%s' bad " NODE_FILE_NAME " missing single entry for " SECTION_DOMAIN ".")
+					% strDomain;
+		}
+
+		if (bGood && strSite != strDomain)
+		{
+			bGood	= false;
+
+			cLog(lsTRACE)
+				<< boost::format("Validator: '%s' bad " NODE_FILE_NAME " " SECTION_DOMAIN " does not match: %s")
+					% strDomain
+					% strSite;
+		}
+
+		//
+		// Process public key
+		//
+		std::string		strNodePublicKey;
+
+		if (bGood && !sectionSingleB(secSite, SECTION_PUBLIC_KEY, strNodePublicKey))
+		{
+			// Bad [validation_public_key] section.
+			bGood	= false;
+
+			cLog(lsTRACE)
+				<< boost::format("Validator: '%s' bad " NODE_FILE_NAME " " SECTION_PUBLIC_KEY " does not have single entry.")
+					% strDomain;
+		}
+
+		RippleAddress	naNodePublic;
+
+		if (bGood && !naNodePublic.setNodePublic(strNodePublicKey))
+		{
+			// Bad public key.
+			bGood	= false;
+
+			cLog(lsTRACE)
+				<< boost::format("Validator: '%s' bad " NODE_FILE_NAME " " SECTION_PUBLIC_KEY " is bad: ")
+					% strDomain
+					% strNodePublicKey;
+		}
+
+		if (bGood)
+		{
+	// cLog(lsTRACE) << boost::format("naNodePublic: '%s'") % naNodePublic.humanNodePublic();
+
+			seedDomain	sdCurrent;
+
+			bool		bFound		= getSeedDomains(strDomain, sdCurrent);
+
+			assert(bFound);
+
+			uint256		iSha256		= Serializer::getSHA512Half(strSiteFile);
+			bool		bChangedB	= sdCurrent.iSha256	!= iSha256;
+
+			sdCurrent.strDomain		= strDomain;
+			// XXX If the node public key is changing, delete old public key information?
+			// XXX Only if no other refs to keep it arround, other wise we have an attack vector.
+			sdCurrent.naPublicKey	= naNodePublic;
+
+	// cLog(lsTRACE) << boost::format("sdCurrent.naPublicKey: '%s'") % sdCurrent.naPublicKey.humanNodePublic();
+
+			sdCurrent.tpFetch		= boost::posix_time::second_clock::universal_time();
+			sdCurrent.iSha256		= iSha256;
+
+			setSeedDomains(sdCurrent, true);
+
+			if (bChangedB)
+			{
+				cLog(lsTRACE) << boost::format("Validator: '%s' processing new " NODE_FILE_NAME ".") % strDomain;
+				processFile(strDomain, naNodePublic, secSite);
+			}
+			else
+			{
+				cLog(lsTRACE) << boost::format("Validator: '%s' no change for " NODE_FILE_NAME ".") % strDomain;
+				fetchFinish();
+			}
+		}
+		else
+		{
+			// Failed: Update
+
+			// XXX If we have public key, perhaps try look up in CAS?
 			fetchFinish();
 		}
 	}
-	else
-	{
-		// Failed: Update
 
-		// XXX If we have public key, perhaps try look up in CAS?
-		fetchFinish();
-	}
+	return bReject;
 }
 
 // Get the ripple.txt and process it.
@@ -1046,7 +1067,7 @@ void UniqueNodeList::fetchProcess(std::string strDomain)
 		NODE_FILE_PATH,
 		NODE_FILE_BYTES_MAX,
 		boost::posix_time::seconds(NODE_FETCH_SECONDS),
-		boost::bind(&UniqueNodeList::responseFetch, this, strDomain, _1, _2));
+		boost::bind(&UniqueNodeList::responseFetch, this, strDomain, _1, _2, _3));
 }
 
 void UniqueNodeList::fetchTimerHandler(const boost::system::error_code& err)
@@ -1556,18 +1577,25 @@ bool UniqueNodeList::nodeLoad(boost::filesystem::path pConfig)
 	return true;
 }
 
-void UniqueNodeList::validatorsResponse(const boost::system::error_code& err, std::string strResponse)
+bool UniqueNodeList::validatorsResponse(const boost::system::error_code& err, int iStatus, std::string strResponse)
 {
-	cLog(lsTRACE) << "Fetch '" VALIDATORS_FILE_NAME "' complete.";
+	bool	bReject	= !err && iStatus != 200;
 
-	if (!err)
+	if (!bReject)
 	{
-		nodeProcess("network", strResponse, theConfig.VALIDATORS_SITE);
+		cLog(lsTRACE) << "Fetch '" VALIDATORS_FILE_NAME "' complete.";
+
+		if (!err)
+		{
+			nodeProcess("network", strResponse, theConfig.VALIDATORS_SITE);
+		}
+		else
+		{
+			cLog(lsWARNING) << "Error: " << err.message();
+		}
 	}
-	else
-	{
-		cLog(lsWARNING) << "Error: " << err.message();
-	}
+
+	return bReject;
 }
 
 void UniqueNodeList::nodeNetwork()
@@ -1582,7 +1610,7 @@ void UniqueNodeList::nodeNetwork()
 			theConfig.VALIDATORS_URI,
 			VALIDATORS_FILE_BYTES_MAX,
 			boost::posix_time::seconds(VALIDATORS_FETCH_SECONDS),
-			boost::bind(&UniqueNodeList::validatorsResponse, this, _1, _2));
+			boost::bind(&UniqueNodeList::validatorsResponse, this, _1, _2, _3));
 	}
 }
 

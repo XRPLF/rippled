@@ -28,9 +28,9 @@ private:
 	boost::shared_ptr<boost::asio::ip::tcp::resolver::query>	mQuery;
 	boost::asio::streambuf										mRequest;
     boost::asio::streambuf										mResponse;
-	const std::string											mStrPath;
 	const unsigned short										mPort;
-    boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> mComplete;
+	boost::function<void(boost::asio::streambuf& sb, const std::string& strHost)>			mBuild;
+    boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)>	mComplete;
 
 	boost::asio::deadline_timer									mDeadline;
 
@@ -69,22 +69,30 @@ private:
 	void parseData();
 	void httpsNext();
 
-	void invokeComplete(const boost::system::error_code& ecResult, std::string strData = "");
+	void invokeComplete(const boost::system::error_code& ecResult, int iStatus = 0, const std::string& strData = "");
 
+	void makeGet(const std::string& strPath, boost::asio::streambuf& sb, const std::string& strHost);
 public:
 
     HttpsClient(
 		boost::asio::io_service& io_service,
 		const unsigned short port,
-		const std::string& strPath,
 		std::size_t responseMax
 		);
+
+	void httpsRequest(
+		bool bSSL,
+		std::deque<std::string> deqSites,
+		boost::function<void(boost::asio::streambuf& sb, const std::string& strHost)> build,
+		boost::posix_time::time_duration timeout,
+		boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
 
 	void httpsGet(
 		bool bSSL,
 		std::deque<std::string> deqSites,
+		const std::string& strPath,
 		boost::posix_time::time_duration timeout,
-		boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete);
+		boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
 
 	static void httpsGet(
 		bool bSSL,
@@ -94,7 +102,7 @@ public:
 		const std::string& strPath,
 		std::size_t responseMax,
 		boost::posix_time::time_duration timeout,
-		boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete);
+		boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
 
 	static void httpsGet(
 		bool bSSL,
@@ -104,7 +112,17 @@ public:
 		const std::string& strPath,
 		std::size_t responseMax,
 		boost::posix_time::time_duration timeout,
-		boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete);
+		boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
+
+	static void httpsRequest(
+		bool bSSL,
+		boost::asio::io_service& io_service,
+		std::string strSite,
+		const unsigned short port,
+		boost::function<void(boost::asio::streambuf& sb, const std::string& strHost)> build,
+		std::size_t responseMax,
+		boost::posix_time::time_duration timeout,
+		boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
 };
 #endif
 // vim:ts=4

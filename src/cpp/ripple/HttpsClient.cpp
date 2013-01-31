@@ -20,30 +20,59 @@ using namespace boost::asio;
 HttpsClient::HttpsClient(
     boost::asio::io_service& io_service,
 	const unsigned short port,
-    const std::string& strPath,
     std::size_t responseMax
     ) :
 		mSocket(io_service, theConfig.SSL_CONTEXT),
 		mResolver(io_service),
 		mResponse(responseMax),
-		mStrPath(strPath),
 		mPort(port),
 		mDeadline(io_service)
 {
 }
 
-void HttpsClient::httpsGet(
+void HttpsClient::makeGet(const std::string& strPath, boost::asio::streambuf& sb, const std::string& strHost)
+{
+	std::ostream	osRequest(&sb);
+
+	osRequest <<
+		"GET " << strPath << " HTTP/1.0\r\n"
+		"Host: " << strHost << "\r\n"
+		"Accept: */*\r\n"						// YYY Do we need this line?
+		"Connection: close\r\n\r\n";
+}
+
+void HttpsClient::httpsRequest(
 	bool bSSL,
 	std::deque<std::string> deqSites,
+	boost::function<void(boost::asio::streambuf& sb, const std::string& strHost)> build,
 	boost::posix_time::time_duration timeout,
-	boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete) {
-
+	boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete)
+{
 	mSSL		= bSSL;
 	mDeqSites	= deqSites;
+	mBuild		= build;
 	mComplete	= complete;
 	mTimeout	= timeout;
 
 	httpsNext();
+}
+
+void HttpsClient::httpsGet(
+	bool bSSL,
+	std::deque<std::string> deqSites,
+	const std::string& strPath,
+	boost::posix_time::time_duration timeout,
+	boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete) {
+
+	mComplete	= complete;
+	mTimeout	= timeout;
+
+	httpsRequest(
+		bSSL,
+		deqSites,
+		boost::bind(&HttpsClient::makeGet, shared_from_this(), strPath, _1, _2),
+		timeout,
+		complete);
 }
 
 void HttpsClient::httpsNext()
@@ -150,7 +179,7 @@ void HttpsClient::handleResolve(
 			mSocket.lowest_layer(),
 			itrEndpoint,
 			boost::bind(
-				&HttpsClient::ShandleConnect,
+				&HttpsClient::handleConnect,
 				shared_from_this(),
 				boost::asio::placeholders::error));
     }
@@ -210,14 +239,7 @@ void HttpsClient::handleRequest(const boost::system::error_code& ecResult)
 	else
 	{
 		// std::cerr << "SSL session started." << std::endl;
-
-		std::ostream			osRequest(&mRequest);
-
-		osRequest <<
-			"GET " << mStrPath << " HTTP/1.0\r\n"
-			"Host: " << mDeqSites[0] << "\r\n"
-			"Accept: */*\r\n"						// YYY Do we need this line?
-			"Connection: close\r\n\r\n";
+		mBuild(mRequest, mDeqSites[0]);
 
 		boost::asio::async_write(
 			mSocket,
@@ -282,7 +304,7 @@ void HttpsClient::handleData(const boost::system::error_code& ecResult)
 }
 
 // Call cancel the deadline timer and invoke the completion routine.
-void HttpsClient::invokeComplete(const boost::system::error_code& ecResult, std::string strData)
+void HttpsClient::invokeComplete(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)
 {
 	boost::system::error_code ecCancel;
 
@@ -295,11 +317,17 @@ void HttpsClient::invokeComplete(const boost::system::error_code& ecResult, std:
 
 	mDeqSites.pop_front();
 
-	if (mDeqSites.empty())
+	bool	bAgain	= true;
+
+	if (mDeqSites.empty() || !ecResult)
 	{
-		mComplete(ecResult ? ecResult : ecCancel, strData);
+		// ecResult: !0 = had an error, last entry
+		//    iStatus: result, if no error
+		//  strData: data, if no error
+		bAgain	= mComplete(ecResult ? ecResult : ecCancel, iStatus, strData);
 	}
-	else
+
+	if (!mDeqSites.empty() && bAgain)
 	{
 		httpsNext();
 	}
@@ -315,7 +343,6 @@ void HttpsClient::parseData()
 	boost::smatch	smMatch;
 
 	bool	bMatch	= boost::regex_match(strData, smMatch, reStatus)		// Match status code.
-						&& !smMatch[1].compare("200")
 						&& boost::regex_match(strData, smMatch, reBody);	// Match body.
 
 	// std::cerr << "Data:" << strData << std::endl;
@@ -326,7 +353,7 @@ void HttpsClient::parseData()
 	{
 		boost::system::error_code	noErr;
 
-		invokeComplete(noErr, smMatch[1]);
+		invokeComplete(noErr, lexical_cast_st<int>(smMatch[1]), smMatch[1]);
 	}
 	else
 	{
@@ -343,11 +370,11 @@ void HttpsClient::httpsGet(
 	const std::string& strPath,
 	std::size_t responseMax,
 	boost::posix_time::time_duration timeout,
-	boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete) {
+	boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete) {
 
-    boost::shared_ptr<HttpsClient> client(new HttpsClient(io_service, port, strPath, responseMax));
+    boost::shared_ptr<HttpsClient> client(new HttpsClient(io_service, port, responseMax));
 
-	client->httpsGet(bSSL, deqSites, timeout, complete);
+	client->httpsGet(bSSL, deqSites, strPath, timeout, complete);
 }
 
 void HttpsClient::httpsGet(
@@ -358,13 +385,30 @@ void HttpsClient::httpsGet(
 	const std::string& strPath,
 	std::size_t responseMax,
 	boost::posix_time::time_duration timeout,
-	boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete) {
+	boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete) {
 
 	std::deque<std::string> deqSites(1, strSite);
 
-    boost::shared_ptr<HttpsClient> client(new HttpsClient(io_service, port, strPath, responseMax));
+    boost::shared_ptr<HttpsClient> client(new HttpsClient(io_service, port, responseMax));
 
-	client->httpsGet(bSSL, deqSites, timeout, complete);
+	client->httpsGet(bSSL, deqSites, strPath, timeout, complete);
+}
+
+void HttpsClient::httpsRequest(
+	bool bSSL,
+	boost::asio::io_service& io_service,
+	std::string strSite,
+	const unsigned short port,
+	boost::function<void(boost::asio::streambuf& sb, const std::string& strHost)> setRequest,
+	std::size_t responseMax,
+	boost::posix_time::time_duration timeout,
+	boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete) {
+
+	std::deque<std::string> deqSites(1, strSite);
+
+    boost::shared_ptr<HttpsClient> client(new HttpsClient(io_service, port, responseMax));
+
+	client->httpsRequest(bSSL, deqSites, setRequest, timeout, complete);
 }
 
 // vim:ts=4
