@@ -205,7 +205,7 @@ var Remote = function (opts, trace) {
   this._testnet               = undefined;
   this._transaction_subs      = 0;
   this.online_target          = false;
-  this.online_state           = 'closed';         // 'open', 'closed', 'connecting', 'closing'
+  this._online_state          = 'closed';         // 'open', 'closed', 'connecting', 'closing'
   this.state                  = 'offline';        // 'online', 'offline'
   this.retry_timer            = undefined;
   this.retry                  = undefined;
@@ -245,7 +245,7 @@ var Remote = function (opts, trace) {
   this.on('newListener', function (type, listener) {
       if ('transaction' === type)
       {
-        if (!self._transaction_subs)
+        if (!self._transaction_subs && 'open' === self._online_state)
         {
           self.request_subscribe([ 'transactions' ])
             .request();
@@ -260,7 +260,7 @@ var Remote = function (opts, trace) {
       {
         self._transaction_subs  -= 1;
 
-        if (!self._transaction_subs)
+        if (!self._transaction_subs && 'open' === self._online_state)
         {
           self.request_unsubscribe([ 'transactions' ])
             .request();
@@ -327,12 +327,12 @@ Remote.prototype._set_state = function (state) {
 
     switch (state) {
       case 'online':
-        this.online_state       = 'open';
+        this._online_state       = 'open';
         this.emit('connected');
         break;
 
       case 'offline':
-        this.online_state       = 'closed';
+        this._online_state       = 'closed';
         this.emit('disconnected');
         break;
     }
@@ -353,7 +353,7 @@ Remote.prototype.connect = function (online) {
     this.online_target  = target;
 
     // If we were in a stable state, go dynamic.
-    switch (this.online_state) {
+    switch (this._online_state) {
       case 'open':
         if (!target) this._connect_stop();
         break;
@@ -390,9 +390,9 @@ Remote.prototype._connect_retry = function () {
     // Do not continue trying to connect.
     this._set_state('offline');
   }
-  else if ('connecting' !== this.online_state) {
+  else if ('connecting' !== this._online_state) {
     // New to connecting state.
-    this.online_state = 'connecting';
+    this._online_state = 'connecting';
     this.retry        = 0;
 
     this._set_state('offline'); // Report newly offline.
@@ -915,7 +915,12 @@ Remote.prototype.submit = function (transaction) {
 Remote.prototype._server_subscribe = function () {
   var self  = this;
 
-  this.request_subscribe([ 'ledger', 'server' ])
+  var feeds = [ 'ledger', 'server' ];
+  
+  if (this._transaction_subs)
+    feeds.push('transactions');
+
+  this.request_subscribe(feeds)
     .on('success', function (message) {
         self._stand_alone       = !!message.stand_alone;
         self._testnet           = !!message.testnet;
