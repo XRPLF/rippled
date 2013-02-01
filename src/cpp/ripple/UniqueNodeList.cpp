@@ -104,7 +104,7 @@ void UniqueNodeList::trustedLoad()
 		{
 			RippleAddress a = RippleAddress::createNodePublic(match[1]);
 			if (a.isValid())
-				sClusterNodes.insert(std::make_pair(a, (match.size() > 1) ? match[2] : std::string("")));
+				sClusterNodes.insert(std::make_pair(a, match[2]));
 		}
 		else
 			cLog(lsWARNING) << "Entry in cluster list invalid: '" << c << "'";
