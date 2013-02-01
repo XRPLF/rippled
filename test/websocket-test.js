@@ -4,7 +4,8 @@ var Server  = require("./server.js").Server;
 var Remote  = require("../src/js/remote.js").Remote;
 var config  = require("./config.js");
 
-require("../src/js/remote.js").config = require("./config.js");
+var extend  = require('extend');
+extend(require('../src/js/config'), require('./config'));
 
 buster.testRunner.timeout = 5000;
 
