@@ -96,22 +96,18 @@ bool UniqueNodeList::miscSave()
 
 void UniqueNodeList::trustedLoad()
 {
+	boost::regex rNode("\\`\\s*(\\S+)[\\s]*(.*)\\'");
 	BOOST_FOREACH(const std::string& c, theConfig.CLUSTER_NODES)
 	{
-		std::string node, name;
-		size_t s = c.find(' ');
-		if (s != std::string::npos)
+		boost::smatch match;
+		if (boost::regex_match(c, match, rNode))
 		{
-			name = c.substr(s+1);
-			node = c.substr(0, s);
+			RippleAddress a = RippleAddress::createNodePublic(match[1]);
+			if (a.isValid())
+				sClusterNodes.insert(std::make_pair(a, (match.size() > 1) ? match[2] : std::string("")));
 		}
 		else
-			node = c;
-		RippleAddress a = RippleAddress::createNodePublic(node);
-		if (a.isValid())
-			sClusterNodes.insert(std::make_pair(a, name));
-		else
-			cLog(lsWARNING) << "Entry in cluster list invalid: '" << node << "'";
+			cLog(lsWARNING) << "Entry in cluster list invalid: '" << c << "'";
 	}
 
 	Database*	db=theApp->getWalletDB()->getDB();
