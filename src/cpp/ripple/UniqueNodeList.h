@@ -88,7 +88,7 @@ private:
 		std::vector<int>	viReferrals;
 	} scoreNode;
 
-	std::set<RippleAddress>	sClusterNodes;
+	std::map<RippleAddress, std::string> sClusterNodes;
 
 	typedef boost::unordered_map<std::string,int> strIndex;
 	typedef std::pair<std::string,int> ipPort;
@@ -155,6 +155,7 @@ public:
 
 	bool nodeInUNL(const RippleAddress& naNodePublic);
 	bool nodeInCluster(const RippleAddress& naNodePublic);
+	bool nodeInCluster(const RippleAddress& naNodePublic, std::string& name);
 
 	void nodeBootstrap();
 	bool nodeLoad(boost::filesystem::path pConfig);

@@ -64,15 +64,6 @@ void UniqueNodeList::start()
 // Load information about when we last updated.
 bool UniqueNodeList::miscLoad()
 {
-	BOOST_FOREACH(const std::string& node, theConfig.CLUSTER_NODES)
-	{
-		RippleAddress a = RippleAddress::createNodePublic(node);
-		if (a.isValid())
-			sClusterNodes.insert(a);
-		else
-			cLog(lsWARNING) << "Entry in cluster list invalid: '" << node << "'";
-	}
-
 	boost::recursive_mutex::scoped_lock sl(theApp->getWalletDB()->getDBLock());
 	Database *db=theApp->getWalletDB()->getDB();
 
@@ -105,13 +96,18 @@ bool UniqueNodeList::miscSave()
 
 void UniqueNodeList::trustedLoad()
 {
-	BOOST_FOREACH(const std::string& node, theConfig.CLUSTER_NODES)
+	boost::regex rNode("\\`\\s*(\\S+)[\\s]*(.*)\\'");
+	BOOST_FOREACH(const std::string& c, theConfig.CLUSTER_NODES)
 	{
-		RippleAddress a = RippleAddress::createNodePublic(node);
-		if (a.isValid())
-			sClusterNodes.insert(a);
+		boost::smatch match;
+		if (boost::regex_match(c, match, rNode))
+		{
+			RippleAddress a = RippleAddress::createNodePublic(match[1]);
+			if (a.isValid())
+				sClusterNodes.insert(std::make_pair(a, (match.size() > 1) ? match[2] : std::string("")));
+		}
 		else
-			cLog(lsWARNING) << "Entry in cluster list invalid: '" << node << "'";
+			cLog(lsWARNING) << "Entry in cluster list invalid: '" << c << "'";
 	}
 
 	Database*	db=theApp->getWalletDB()->getDB();
@@ -1699,7 +1695,17 @@ bool UniqueNodeList::nodeInUNL(const RippleAddress& naNodePublic)
 bool UniqueNodeList::nodeInCluster(const RippleAddress& naNodePublic)
 {
 	boost::recursive_mutex::scoped_lock	sl(mUNLLock);
-	return sClusterNodes.count(naNodePublic) != 0;
+	return sClusterNodes.end() != sClusterNodes.find(naNodePublic);
+}
+
+bool UniqueNodeList::nodeInCluster(const RippleAddress& naNodePublic, std::string& name)
+{
+	boost::recursive_mutex::scoped_lock	sl(mUNLLock);
+	std::map<RippleAddress, std::string>::iterator it = sClusterNodes.find(naNodePublic);
+	if (it == sClusterNodes.end())
+		return false;
+	name = it->second;
+	return true;
 }
 
 // vim:ts=4
