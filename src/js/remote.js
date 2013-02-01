@@ -22,6 +22,7 @@ var UInt160       = require('./amount').UInt160;
 var Transaction   = require('./transaction').Transaction;
 
 var utils         = require('./utils');
+var config        = require('./config');
 
 // Request events emitted:
 // 'success' : Request successful.
@@ -272,12 +273,12 @@ var Remote = function (opts, trace) {
 Remote.prototype      = new EventEmitter;
 
 Remote.from_config = function (obj, trace) {
-  var serverConfig = 'string' === typeof obj ? exports.config.servers[obj] : obj;
+  var serverConfig = 'string' === typeof obj ? config.servers[obj] : obj;
 
   var remote = new Remote(serverConfig, trace);
 
-  for (var account in exports.config.accounts) {
-    var accountInfo = exports.config.accounts[account];
+  for (var account in config.accounts) {
+    var accountInfo = config.accounts[account];
     if ("object" === typeof accountInfo) {
       if (accountInfo.secret) {
         // Index by nickname ...
@@ -1191,7 +1192,6 @@ Remote.prototype.transaction = function () {
   return new Transaction(this);
 };
 
-exports.config          = {};
 exports.Remote          = Remote;
 
 // vim:sw=2:sts=2:ts=8:et

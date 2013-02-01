@@ -4,8 +4,8 @@ var Amount  = require("../src/js/amount.js").Amount;
 var Remote  = require("../src/js/remote.js").Remote;
 var Server  = require("./server.js").Server;
 
-require("../src/js/amount.js").config = require("./config.js");
-require("../src/js/remote.js").config = require("./config.js");
+var extend  = require('extend');
+extend(require('../src/js/config'), require('./config'));
 
 var config  = require("./config.js");
 
