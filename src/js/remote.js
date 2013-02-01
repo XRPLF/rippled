@@ -851,6 +851,17 @@ Remote.prototype.request_wallet_accounts = function (seed) {
   return request;
 };
 
+Remote.prototype.request_sign = function (secret, tx_json) {
+  utils.assert(this.trusted);     // Don't send secrets.
+
+  var request = new Request(this, 'sign');
+
+  request.message.secret = secret;
+  request.message.tx_json = tx_json;
+
+  return request;
+};
+
 // Submit a transaction.
 Remote.prototype.submit = function (transaction) {
   var self  = this;
@@ -1134,7 +1145,9 @@ Remote.prototype.request_ripple_path_find = function (src_account, dst_account, 
   request.message.source_account      = UInt160.json_rewrite(src_account);
   request.message.destination_account = UInt160.json_rewrite(dst_account);
   request.message.destination_amount  = Amount.json_rewrite(dst_amount);
-  request.message.source_currencies   = source_currencies.map(function (ci) {
+
+  if (source_currencies) {
+    request.message.source_currencies   = source_currencies.map(function (ci) {
       var ci_new  = {};
 
       if ('issuer' in ci)
@@ -1145,6 +1158,7 @@ Remote.prototype.request_ripple_path_find = function (src_account, dst_account, 
 
       return ci_new;
     });
+  }
 
   return request;
 };

@@ -2,12 +2,14 @@
 // Seed support
 //
 
+var sjcl    = require('../../build/sjcl');
 var utils   = require('./utils');
 var jsbn    = require('./jsbn');
 
 var BigInteger = jsbn.BigInteger;
 
-var Base = require('./base').Base;
+var Base = require('./base').Base,
+    UInt256 = require('./uint256').UInt256;
 
 var Seed = function () {
   // Internal form: NaN or BigInteger
@@ -20,9 +22,9 @@ Seed.json_rewrite = function (j) {
 
 // Return a new Seed from j.
 Seed.from_json = function (j) {
-  return 'string' === typeof j
-      ? (new Seed()).parse_json(j)
-      : j.clone();
+  return (j instanceof Seed)
+    ? j.clone()
+    : (new Seed()).parse_json(j);
 };
 
 Seed.is_valid = function (j) {
@@ -84,6 +86,44 @@ Seed.prototype.to_json = function () {
   var output = Base.encode_check(Base.VER_FAMILY_SEED, array);
 
   return output;
+};
+
+function append_int(a, i) {
+  return [].concat(a, i >> 24, (i >> 16) & 0xff, (i >> 8) & 0xff, i & 0xff);
+}
+
+function firstHalfOfSHA512(bytes) {
+  return sjcl.bitArray.bitSlice(
+    sjcl.hash.sha512.hash(sjcl.codec.bytes.toBits(bytes)),
+    0, 256
+  );
+}
+
+function SHA256_RIPEMD160(bits) {
+  return sjcl.hash.ripemd160.hash(sjcl.hash.sha256.hash(bits));
+}
+
+Seed.prototype.generate_private = function (account_id) {
+  // XXX If account_id is given, should loop over keys until we find the right one
+
+  var seq = 0;
+
+  var private_gen, public_gen, i = 0;
+  do {
+    private_gen = sjcl.bn.fromBits(firstHalfOfSHA512(append_int(this.seed, i)));
+    i++;
+  } while (!sjcl.ecc.curves.c256.r.greaterEquals(private_gen));
+
+  public_gen = sjcl.ecc.curves.c256.G.mult(private_gen);
+
+  var sec;
+  i = 0;
+  do {
+    sec = sjcl.bn.fromBits(firstHalfOfSHA512(append_int(append_int(public_gen.toBytesCompressed(), seq), i)));
+    i++;
+  } while (!sjcl.ecc.curves.c256.r.greaterEquals(sec));
+
+  return UInt256.from_bn(sec);
 };
 
 exports.Seed = Seed;
