@@ -331,7 +331,7 @@ void HttpsClient::invokeComplete(const boost::system::error_code& ecResult, int 
 		// ecResult: !0 = had an error, last entry
 		//    iStatus: result, if no error
 		//  strData: data, if no error
-		bAgain	= mComplete(ecResult ? ecResult : ecCancel, iStatus, strData);
+		bAgain	= mComplete && mComplete(ecResult ? ecResult : ecCancel, iStatus, strData);
 	}
 
 	if (!mDeqSites.empty() && bAgain)

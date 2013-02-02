@@ -701,31 +701,36 @@ bool responseRPC(
 	boost::function<void(const Json::Value& jvInput)> callbackFuncP,
 	const boost::system::error_code& ecResult, int iStatus, const std::string& strData)
 {
-	// Receive reply
-	if (iStatus == 401)
-		throw std::runtime_error("incorrect rpcuser or rpcpassword (authorization failed)");
-	else if ((iStatus >= 400) && (iStatus != 400) && (iStatus != 404) && (iStatus != 500)) // ?
-		throw std::runtime_error(strprintf("server returned HTTP error %d", iStatus));
-	else if (strData.empty())
-		throw std::runtime_error("no response from server");
+	if (callbackFuncP)
+	{
+		// Only care about the result, if we care to deliver it callbackFuncP.
 
-	// Parse reply
-	cLog(lsDEBUG) << "RPC reply: " << strData << std::endl;
+		// Receive reply
+		if (iStatus == 401)
+			throw std::runtime_error("incorrect rpcuser or rpcpassword (authorization failed)");
+		else if ((iStatus >= 400) && (iStatus != 400) && (iStatus != 404) && (iStatus != 500)) // ?
+			throw std::runtime_error(strprintf("server returned HTTP error %d", iStatus));
+		else if (strData.empty())
+			throw std::runtime_error("no response from server");
 
-	Json::Reader	reader;
-	Json::Value		jvReply;
+		// Parse reply
+		cLog(lsDEBUG) << "RPC reply: " << strData << std::endl;
 
-	if (!reader.parse(strData, jvReply))
-		throw std::runtime_error("couldn't parse reply from server");
+		Json::Reader	reader;
+		Json::Value		jvReply;
 
-	if (jvReply.isNull())
-		throw std::runtime_error("expected reply to have result, error and id properties");
+		if (!reader.parse(strData, jvReply))
+			throw std::runtime_error("couldn't parse reply from server");
 
-	Json::Value		jvResult(Json::objectValue);
+		if (jvReply.isNull())
+			throw std::runtime_error("expected reply to have result, error and id properties");
 
-	jvResult["result"] = jvReply;
+		Json::Value		jvResult(Json::objectValue);
 
-	(callbackFuncP)(jvResult);
+		jvResult["result"] = jvReply;
+
+		(callbackFuncP)(jvResult);
+	}
 
 	return false;
 }

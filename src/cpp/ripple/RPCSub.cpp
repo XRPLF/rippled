@@ -8,7 +8,7 @@
 SETUP_LOG();
 
 RPCSub::RPCSub(const std::string& strUrl, const std::string& strUsername, const std::string& strPassword)
-    : mUrl(strUrl), mUsername(strUsername), mPassword(strPassword)
+    : mUrl(strUrl), mSSL(false), mUsername(strUsername), mPassword(strPassword)
 {
     std::string	strScheme;
 
@@ -16,17 +16,22 @@ RPCSub::RPCSub(const std::string& strUrl, const std::string& strUsername, const 
     {
 	throw std::runtime_error("Failed to parse url.");
     }
+    else if (strScheme == "https")
+    {
+	mSSL	= true;
+    }
     else if (strScheme != "http")
     {
-	throw std::runtime_error("Only http is supported.");
+	throw std::runtime_error("Only http and https is supported.");
     }
 
     mSeq	= 1;
 
     if (mPort < 0)
-	mPort	= 80;
+	mPort	= mSSL ? 443 : 80;
 }
 
+// XXX Could probably create a bunch of send jobs in a single get of the lock.
 void RPCSub::sendThread()
 {
     Json::Value	jvEvent;
@@ -59,12 +64,18 @@ void RPCSub::sendThread()
 	// Send outside of the lock.
 	if (bSend)
 	{
+	    // XXX Might not need this in a try.
 	    try
 	    {
 		cLog(lsDEBUG) << boost::str(boost::format("callRPC calling: %s") % mIp);
 
-		// Drop result.
-//		(void) callRPC(theApp->getIOService(), mIp, mPort, mUsername, mPassword, mPath, "event", jvEvent);
+		callRPC(
+		    theApp->getIOService(),
+		    mIp, mPort,
+		    mUsername, mPassword,
+		    mPath, "event",
+		    jvEvent,
+		    mSSL);
 	    }
 	    catch (const std::exception& e)
 	    {
