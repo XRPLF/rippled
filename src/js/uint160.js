@@ -59,8 +59,8 @@ UInt160.prototype.to_json = function (opts) {
 
   var output = Base.encode_check(Base.VER_ACCOUNT_ID, this.to_bytes());
 
-  if (opts.gateways && output in opts.gateways)
-    output = opts.gateways[output];
+  if (config.gateways && output in config.gateways && !opts.no_gateway)
+    output = config.gateways[output];
    
   return output;
 };
