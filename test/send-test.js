@@ -7,8 +7,8 @@ var Server    = require("./server.js").Server;
 
 var testutils = require("./testutils.js");
 
-require("../src/js/amount.js").config = require("./config.js");
-require("../src/js/remote.js").config = require("./config.js");
+var extend      = require('extend');
+extend(require('../src/js/config'), require('./config'));
 
 // How long to wait for server to start.
 var serverDelay = 1500;

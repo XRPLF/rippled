@@ -142,7 +142,7 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 		std::vector<std::string> elements;
 		boost::split(elements, val, boost::is_any_of("\t\n\r ,/"));
 
-		if ((elements.size() < 0) || (elements.size() > 3))
+		if (elements.size() > 3)
 			throw std::runtime_error("invalid amount string");
 
 		value = elements[0];
@@ -1214,6 +1214,40 @@ std::string STAmount::getFullText() const
 	}
 }
 
+STAmount STAmount::getRound() const
+{
+	if (mIsNative)
+		return *this;
+
+	uint64 valueDigits = mValue % 1000000000ull;
+	if (valueDigits == 1)
+		return STAmount(mCurrency, mIssuer, mValue - 1, mOffset, mIsNegative);
+	else if (valueDigits == 999999999ull)
+		return STAmount(mCurrency, mIssuer, mValue + 1, mOffset, mIsNegative);
+
+	return *this;
+}
+
+void STAmount::roundSelf()
+{
+	if (mIsNative)
+		return;
+
+	uint64 valueDigits = mValue % 1000000000ull;
+	if (valueDigits == 1)
+	{
+		mValue -= 1;
+		if (mValue < cMinValue)
+			canonicalize();
+	}
+	else if (valueDigits == 999999999ull)
+	{
+		mValue += 1;
+		if (mValue > cMaxValue)
+			canonicalize();
+	}
+}
+
 #if 0
 std::string STAmount::getExtendedText() const
 {
@@ -1460,7 +1494,7 @@ BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 	BOOST_TEST_MESSAGE("Amount CC Complete");
 }
 
-static void roundTest(int n, int d, int m)
+static bool roundTest(int n, int d, int m)
 { // check STAmount rounding
 	STAmount num(CURRENCY_ONE, ACCOUNT_ONE, n);
 	STAmount den(CURRENCY_ONE, ACCOUNT_ONE, d);
@@ -1469,18 +1503,19 @@ static void roundTest(int n, int d, int m)
 	STAmount res = STAmount::multiply(quot, mul, CURRENCY_ONE, ACCOUNT_ONE);
 	if (res.isNative())
 		BOOST_FAIL("Product is native");
-
-	cLog(lsDEBUG) << n << " / " << d << " = " << quot.getText();
+	res.roundSelf();
 
 	STAmount cmp(CURRENCY_ONE, ACCOUNT_ONE, (n * m) / d);
 	if (cmp.isNative())
 		BOOST_FAIL("Comparison amount is native");
 
 	if (res == cmp)
-		return;
+		return true;
 	cmp.throwComparable(res);
-	cLog(lsINFO) << "(" << num.getText() << "/" << den.getText() << ") X " << mul.getText() << " = "
+	cLog(lsWARNING) << "(" << num.getText() << "/" << den.getText() << ") X " << mul.getText() << " = "
 		<< res.getText() << " not " << cmp.getText();
+	BOOST_FAIL("Round fail");
+	return false;
 }
 
 static void mulTest(int a, int b)

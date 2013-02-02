@@ -296,6 +296,11 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 		return jvResult;
 	}
 
+	if (jvRequest.isMember("debug_signing")) {
+		jvResult["tx_unsigned"]		= strHex(stpTrans->getSerializer().peekData());
+		jvResult["tx_signing_hash"]	= stpTrans->getSigningHash().ToString();
+	}
+
 	// FIXME: For performance, transactions should not be signed in this code path.
 	stpTrans->sign(naAccountPrivate);
 

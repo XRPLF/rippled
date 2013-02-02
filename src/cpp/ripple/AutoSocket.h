@@ -152,6 +152,15 @@ public:
 			boost::asio::async_write(PlainSocket(), buffers, handler);
 	}
 
+	template <typename Allocator, typename Handler>
+		void async_write(boost::asio::basic_streambuf<Allocator>& buffers, Handler handler)
+	{
+		if (isSecure())
+			boost::asio::async_write(*mSocket, buffers, handler);
+		else
+			boost::asio::async_write(PlainSocket(), buffers, handler);
+	}
+
 	template <typename Buf, typename Condition, typename Handler>
 		void async_read(const Buf& buffers, Condition cond, Handler handler)
 	{

@@ -23,7 +23,7 @@ public:
 
 	KeyCache(const std::string& name, int size = 0, int age = 120) : mName(name), mTargetSize(size), mTargetAge(age)
 	{
-		assert((mTargetSize >= 0) && (mTargetAge > 2));
+		assert((size >= 0) && (age > 2));
 	}
 
 	void getSize()

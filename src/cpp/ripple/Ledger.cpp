@@ -113,14 +113,31 @@ Ledger::Ledger(const std::string& rawLedger, bool hasPrefix) :
 	zeroFees();
 }
 
+void Ledger::setImmutable()
+{
+	if (!mImmutable)
+	{
+		updateHash();
+		mImmutable = true;
+		if (mTransactionMap)
+			mTransactionMap->setImmutable();
+		if (mAccountStateMap)
+			mAccountStateMap->setImmutable();
+	}
+}
+
 void Ledger::updateHash()
 {
 	if (!mImmutable)
 	{
-		if (mTransactionMap) mTransHash = mTransactionMap->getHash();
-		else mTransHash.zero();
-		if (mAccountStateMap) mAccountHash = mAccountStateMap->getHash();
-		else mAccountHash.zero();
+		if (mTransactionMap)
+			mTransHash = mTransactionMap->getHash();
+		else
+			mTransHash.zero();
+		if (mAccountStateMap)
+			mAccountHash = mAccountStateMap->getHash();
+		else
+			mAccountHash.zero();
 	}
 
 	Serializer s(118);
@@ -170,18 +187,17 @@ void Ledger::setAccepted(uint32 closeTime, int closeResolution, bool correctClos
 	mCloseTime = correctCloseTime ? (closeTime - (closeTime % closeResolution)) : closeTime;
 	mCloseResolution = closeResolution;
 	mCloseFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
-	updateHash();
 	mAccepted = true;
-	mImmutable = true;
+	setImmutable();
 }
 
 void Ledger::setAccepted()
 { // used when we acquired the ledger
 	// FIXME assert(mClosed && (mCloseTime != 0) && (mCloseResolution != 0));
-	mCloseTime -= mCloseTime % mCloseResolution;
-	updateHash();
+	if ((mCloseFlags & sLCF_NoConsensusTime) == 0)
+		mCloseTime -= mCloseTime % mCloseResolution;
 	mAccepted = true;
-	mImmutable = true;
+	setImmutable();
 }
 
 AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
@@ -504,10 +520,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 
 		if (!db->executeSQL(sql) || !db->startIterRows())
-		{
-			cLog(lsDEBUG) << "No ledger for query: " << sql;
 			return Ledger::pointer();
-		}
 
 		db->getStr("LedgerHash", hash);
 		ledgerHash.SetHex(hash, true);
@@ -530,6 +543,8 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 	Ledger::pointer ret = boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
 		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq);
 	ret->setClosed();
+	if (theApp->getOPs().haveLedger(ledgerSeq))
+		ret->setAccepted();
 	if (ret->getHash() != ledgerHash)
 	{
 		if (sLog(lsERROR))
@@ -550,7 +565,7 @@ uint256 Ledger::getHashByIndex(uint32 ledgerIndex)
 {
 	uint256 ret;
 
-	std::string sql="SELECT LedgerHash FROM Ledgers WHERE LedgerSeq='";
+	std::string sql="SELECT LedgerHash FROM Ledgers INDEXED BY SeqLedger WHERE LedgerSeq='";
 	sql.append(boost::lexical_cast<std::string>(ledgerIndex));
 	sql.append("';");
 

@@ -126,6 +126,7 @@ public:
 	void fixMismatch(Ledger::ref ledger);
 
 	bool haveLedgerRange(uint32 from, uint32 to);
+	bool haveLedger(uint32 seq);
 
 	void resumeAcquiring();
 

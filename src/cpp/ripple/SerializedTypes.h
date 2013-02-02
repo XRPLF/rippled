@@ -387,6 +387,9 @@ public:
 	static bool issuerFromString(uint160& uDstIssuer, const std::string& sIssuer);
 
 	Json::Value getJson(int) const;
+
+	STAmount getRound() const;
+	void roundSelf();
 };
 
 extern STAmount saZero;
