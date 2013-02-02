@@ -179,15 +179,6 @@ public:
 			boost::asio::async_read(PlainSocket(), buffers, cond, handler);
 	}
 
-	template <typename Allocator, typename Handler>
-		void async_read(basio::basic_streambuf<Allocator>& buffers, Condition cond, Handler handler)
-	{
-		if (isSecure())
-			boost::asio::async_read(*mSocket, buffers, handler);
-		else
-			boost::asio::async_read(PlainSocket(), buffers, handler);
-	}
-
 	template <typename Buf, typename Handler> void async_read(const Buf& buffers, Handler handler)
 	{
 		if (isSecure())
