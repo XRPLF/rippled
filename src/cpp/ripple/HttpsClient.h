@@ -41,28 +41,16 @@ private:
 	boost::posix_time::time_duration							mTimeout;
 
 	void handleDeadline(const boost::system::error_code& ecResult);
-	static void ShandleDeadline(pointer This, const boost::system::error_code& ecResult)
-	{ This->handleDeadline(ecResult); }
 
     void handleResolve(const boost::system::error_code& ecResult, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
-    static void ShandleResolve(pointer This, const boost::system::error_code& ecResult, boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
-    { This->handleResolve(ecResult, endpoint_iterator); }
 
     void handleConnect(const boost::system::error_code& ecResult);
-    static void ShandleConnect(pointer This, const boost::system::error_code& ecResult)
-	{ This->handleConnect(ecResult); }
 
 	void handleRequest(const boost::system::error_code& ecResult);
-	static void ShandleRequest(pointer This, const boost::system::error_code& ecResult)
-	{ This->handleRequest(ecResult); }
 
-    void handleWrite(const boost::system::error_code& ecResult);
-    static void ShandleWrite(pointer This, const boost::system::error_code& ecResult)
-	{ This->handleWrite(ecResult); }
+    void handleWrite(const boost::system::error_code& ecResult, std::size_t bytes_transferred);
 
     void handleData(const boost::system::error_code& ecResult);
-    static void ShandleData(pointer This, const boost::system::error_code& ecResult)
-	{ This->handleData(ecResult); }
 
 	void handleShutdown(const boost::system::error_code& ecResult);
 

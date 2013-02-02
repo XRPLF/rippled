@@ -77,31 +77,31 @@ void HttpsClient::httpsGet(
 
 void HttpsClient::httpsNext()
 {
-	// std::cerr << "Fetch: " << mDeqSites[0] << std::endl;
+std::cerr << "Fetch: " << mDeqSites[0] << std::endl;
     boost::shared_ptr<boost::asio::ip::tcp::resolver::query>	query(new boost::asio::ip::tcp::resolver::query(mDeqSites[0], boost::lexical_cast<std::string>(mPort),
 			ip::resolver_query_base::numeric_service));
 	mQuery	= query;
 
 	mDeadline.expires_from_now(mTimeout, mShutdown);
 
-	// std::cerr << "expires_from_now: " << mShutdown.message() << std::endl;
+std::cerr << "expires_from_now: " << mShutdown.message() << std::endl;
 
 	if (!mShutdown)
 	{
 		mDeadline.async_wait(
 			boost::bind(
-				&HttpsClient::ShandleDeadline,
+				&HttpsClient::handleDeadline,
 				shared_from_this(),
 				boost::asio::placeholders::error));
 	}
 
     if (!mShutdown)
     {
-		// std::cerr << "Resolving: " << mDeqSites[0] << std::endl;
+std::cerr << "Resolving: " << mDeqSites[0] << std::endl;
 
 		mResolver.async_resolve(*mQuery,
 			boost::bind(
-				&HttpsClient::ShandleResolve,
+				&HttpsClient::handleResolve,
 				shared_from_this(),
 				boost::asio::placeholders::error,
 				boost::asio::placeholders::iterator));
@@ -116,7 +116,7 @@ void HttpsClient::handleDeadline(const boost::system::error_code& ecResult)
 	if (ecResult == boost::asio::error::operation_aborted)
 	{
 		// Timer canceled because deadline no longer needed.
-		// std::cerr << "Deadline cancelled." << std::endl;
+std::cerr << "Deadline cancelled." << std::endl;
 
 		nothing();  // Aborter is done.
 	}
@@ -167,13 +167,13 @@ void HttpsClient::handleResolve(
 
     if (mShutdown)
     {
-		// std::cerr << "Resolve error: " << mDeqSites[0] << ": " << mShutdown.message() << std::endl;
+std::cerr << "Resolve error: " << mDeqSites[0] << ": " << mShutdown.message() << std::endl;
 
 		invokeComplete(mShutdown);
     }
 	else
 	{
-		// std::cerr << "Resolve complete." << std::endl;
+std::cerr << "Resolve complete." << std::endl;
 
 		boost::asio::async_connect(
 			mSocket.lowest_layer(),
@@ -197,7 +197,7 @@ void HttpsClient::handleConnect(const boost::system::error_code& ecResult)
 
     if (!mShutdown)
 	{
-		// std::cerr << "Connected." << std::endl;
+std::cerr << "Connected." << std::endl;
 		mShutdown	= mSocket.verify(mDeqSites[0]);
 
 	    if (mShutdown)
@@ -206,7 +206,7 @@ void HttpsClient::handleConnect(const boost::system::error_code& ecResult)
 		}
 	}
 
-	if (!mShutdown)
+	if (mShutdown)
     {
 		invokeComplete(mShutdown);
     }
@@ -215,7 +215,7 @@ void HttpsClient::handleConnect(const boost::system::error_code& ecResult)
 		mSocket.async_handshake(
 			AutoSocket::ssl_socket::client,
 			boost::bind(
-				&HttpsClient::ShandleRequest,
+				&HttpsClient::handleRequest,
 				shared_from_this(),
 				boost::asio::placeholders::error));
 	}
@@ -238,19 +238,19 @@ void HttpsClient::handleRequest(const boost::system::error_code& ecResult)
     }
 	else
 	{
-		// std::cerr << "SSL session started." << std::endl;
+std::cerr << "Session started." << std::endl;
 		mBuild(mRequest, mDeqSites[0]);
 
-		boost::asio::async_write(
-			mSocket,
+		mSocket.async_write(
 			mRequest,
-			boost::bind(&HttpsClient::ShandleWrite,
+			boost::bind(&HttpsClient::handleWrite,
 				shared_from_this(),
-				boost::asio::placeholders::error));
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::bytes_transferred));
     }
 }
 
-void HttpsClient::handleWrite(const boost::system::error_code& ecResult)
+void HttpsClient::handleWrite(const boost::system::error_code& ecResult, std::size_t bytes_transferred)
 {
 	if (!mShutdown)
 		mShutdown	= ecResult;
@@ -263,13 +263,13 @@ void HttpsClient::handleWrite(const boost::system::error_code& ecResult)
     }
     else
     {
-		// std::cerr << "Wrote." << std::endl;
+std::cerr << "Wrote." << std::endl;
 
 		boost::asio::async_read(
 			mSocket,
 			mResponse,
 			boost::asio::transfer_all(),
-			boost::bind(&HttpsClient::ShandleData,
+			boost::bind(&HttpsClient::handleData,
 				shared_from_this(),
 				boost::asio::placeholders::error));
     }
@@ -290,7 +290,7 @@ void HttpsClient::handleData(const boost::system::error_code& ecResult)
     {
 		if (mShutdown)
 		{
-			// std::cerr << "Complete." << std::endl;
+std::cerr << "Complete." << std::endl;
 			nothing();
 		}
 		else

@@ -625,22 +625,16 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 
 			boost::asio::io_service			isService;
 
-// void callRPC(const std::string& strIp, const int iPort, const std::string& strUsername, const std::string& strPassword, const std::string& strPath, const std::string& strMethod, const Json::Value& jvParams, const bool bSSL,
-	boost::function<void(const Json::Value& jvInput)> callbackFuncP)
-			callRPCAsync(
+			callRPC(
 				isService,
-#if 0
-				theConfig.RPC_IP,
-				theConfig.RPC_PORT,
-				theConfig.RPC_USER,
-				theConfig.RPC_PASSWORD,
+				theConfig.RPC_IP, theConfig.RPC_PORT,
+				theConfig.RPC_USER, theConfig.RPC_PASSWORD,
 				"",
 				jvRequest.isMember("method")			// Allow parser to rewrite method.
 					? jvRequest["method"].asString()
 					: vCmd[0],
 				jvParams,								// Parsed, execute.
-				boost::bind(callRPCHandler, jvOutput, _1));
-#endif
+				false,
 				boost::bind(callRPCHandler, &jvOutput, _1));
 
 			isService.run(); // This blocks until there is no more outstanding async calls.
@@ -749,7 +743,12 @@ void requestRPC(const std::string& strMethod, const Json::Value& jvParams, const
 			mHeaders);
 }
 
-void callRPC(const std::string& strIp, const int iPort, const std::string& strUsername, const std::string& strPassword, const std::string& strPath, const std::string& strMethod, const Json::Value& jvParams, const bool bSSL,
+void callRPC(
+	boost::asio::io_service& io_service,
+	const std::string& strIp, const int iPort,
+	const std::string& strUsername, const std::string& strPassword,
+	const std::string& strPath, const std::string& strMethod,
+	const Json::Value& jvParams, const bool bSSL,
 	boost::function<void(const Json::Value& jvInput)> callbackFuncP)
 {
 	// Connect to localhost
@@ -774,7 +773,7 @@ void callRPC(const std::string& strIp, const int iPort, const std::string& strUs
 
 	HttpsClient::httpsRequest(
 		bSSL,
-		theApp->getIOService(),
+		io_service,
 		strIp,
 		iPort,
 		boost::bind(
@@ -787,6 +786,5 @@ void callRPC(const std::string& strIp, const int iPort, const std::string& strUs
 		boost::posix_time::seconds(RPC_NOTIFY_SECONDS),
 		boost::bind(&responseRPC, callbackFuncP, _1, _2, _3));
 }
-
 
 // vim:ts=4
