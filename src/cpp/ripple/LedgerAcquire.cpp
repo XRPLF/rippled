@@ -160,6 +160,7 @@ bool LedgerAcquire::tryLocal()
 	{
 		cLog(lsDEBUG) << "Had everything locally";
 		mComplete = true;
+		mLedger->setClosed();
 	}
 
 	return mComplete;
@@ -244,11 +245,9 @@ void LedgerAcquire::done()
 
 	if (isComplete() && !isFailed() && mLedger)
 	{
+		mLedger->setClosed();
 		if (mAccept)
-		{
-			mLedger->setClosed();
 			mLedger->setAccepted();
-		}
 		theApp->getLedgerMaster().storeLedger(mLedger);
 	}
 	else

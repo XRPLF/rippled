@@ -82,7 +82,7 @@ Ledger::pointer LedgerHistory::getLedgerByHash(const uint256& hash)
 	if (ret)
 	{
 		assert(ret->isImmutable());
-		assert(ret->getHash() == hash);
+		assert(ret->getHash() == hash); // FIXME: We seem to be getting these
 		return ret;
 	}
 
