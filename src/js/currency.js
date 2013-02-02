@@ -79,3 +79,5 @@ Currency.prototype.to_human = function () {
 };
 
 exports.Currency = Currency;
+
+// vim:sw=2:sts=2:ts=8:et

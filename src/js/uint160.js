@@ -51,13 +51,20 @@ UInt160.prototype.parse_json = function (j) {
 };
 
 // XXX Json form should allow 0 and 1, C++ doesn't currently allow it.
-UInt160.prototype.to_json = function () {
+UInt160.prototype.to_json = function (opts) {
+  opts  = opts || {};
+
   if (!(this._value instanceof BigInteger))
     return NaN;
 
   var output = Base.encode_check(Base.VER_ACCOUNT_ID, this.to_bytes());
 
+  if (opts.gateways && output in opts.gateways)
+    output = opts.gateways[output];
+   
   return output;
 };
 
 exports.UInt160 = UInt160;
+
+// vim:sw=2:sts=2:ts=8:et

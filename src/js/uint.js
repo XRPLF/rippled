@@ -219,3 +219,5 @@ UInt.prototype.to_bn = function () {
 };
 
 exports.UInt = UInt;
+
+// vim:sw=2:sts=2:ts=8:et

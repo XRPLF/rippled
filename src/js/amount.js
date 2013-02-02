@@ -737,7 +737,7 @@ Amount.prototype.to_text = function (allow_nan) {
   {
     return "0";
   }
-  else if (this._offset < -25 || this._offset > -4)
+  else if (this._offset && (this._offset < -25 || this._offset > -4))
   {
     // Use e notation.
     // XXX Clamp output.
@@ -832,6 +832,27 @@ Amount.prototype.to_human = function (opts)
   return formatted;
 };
 
+Amount.prototype.to_human_full = function (opts) {
+  opts = opts || {};
+
+  var a = this.to_human(opts);
+  var c = this._currency.to_human(opts);
+  var i = this._issuer.to_json();
+
+  var o;
+
+  if (this._is_native)
+  {
+    o = a + "/" + c;
+  }
+  else
+  {
+    o = a + "/" + c + "/" + i;
+  }
+
+  return o;
+};
+
 Amount.prototype.to_json = function () {
   if (this._is_native) {
     return this.to_text();
@@ -849,11 +870,11 @@ Amount.prototype.to_json = function () {
   }
 };
 
-Amount.prototype.to_text_full = function () {
+Amount.prototype.to_text_full = function (opts) {
   return this._value instanceof BigInteger
     ? this._is_native
       ? this.to_text() + "/XRP"
-      : this.to_text() + "/" + this._currency.to_json() + "/" + this._issuer.to_json()
+      : this.to_text() + "/" + this._currency.to_json() + "/" + this._issuer.to_json(opts)
     : NaN;
 };
 
