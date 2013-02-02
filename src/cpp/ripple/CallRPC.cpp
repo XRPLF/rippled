@@ -3,6 +3,8 @@
 #include <cstdlib>
 
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+#include <boost/bind.hpp>
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/algorithm/string.hpp>
@@ -573,6 +575,12 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 	return (this->*(commandsA[i].pfpFunc))(jvParams);
 }
 
+// Place the async result somewhere useful.
+void callRPCHandler(Json::Value* jvOutput, const Json::Value& jvInput)
+{
+	(*jvOutput)	= jvInput;
+}
+
 int commandLineRPC(const std::vector<std::string>& vCmd)
 {
 	Json::Value jvOutput;
@@ -615,16 +623,21 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 			if (!theConfig.RPC_ADMIN_PASSWORD.empty())
 				jvRequest["admin_password"]	= theConfig.RPC_ADMIN_PASSWORD;
 
-			jvOutput	= callRPC(
-				theConfig.RPC_IP,
-				theConfig.RPC_PORT,
-				theConfig.RPC_USER,
-				theConfig.RPC_PASSWORD,
+			boost::asio::io_service			isService;
+
+			callRPC(
+				isService,
+				theConfig.RPC_IP, theConfig.RPC_PORT,
+				theConfig.RPC_USER, theConfig.RPC_PASSWORD,
 				"",
 				jvRequest.isMember("method")			// Allow parser to rewrite method.
 					? jvRequest["method"].asString()
 					: vCmd[0],
-				jvParams);								// Parsed, execute.
+				jvParams,								// Parsed, execute.
+				false,
+				boost::bind(callRPCHandler, &jvOutput, _1));
+
+			isService.run(); // This blocks until there is no more outstanding async calls.
 
 			if (jvOutput.isMember("result"))
 			{
@@ -681,7 +694,67 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 	return nRet;
 }
 
-Json::Value callRPC(const std::string& strIp, const int iPort, const std::string& strUsername, const std::string& strPassword, const std::string& strPath, const std::string& strMethod, const Json::Value& jvParams)
+#define RPC_NOTIFY_MAX_BYTES	8192
+#define RPC_NOTIFY_SECONDS		10
+
+bool responseRPC(
+	boost::function<void(const Json::Value& jvInput)> callbackFuncP,
+	const boost::system::error_code& ecResult, int iStatus, const std::string& strData)
+{
+	if (callbackFuncP)
+	{
+		// Only care about the result, if we care to deliver it callbackFuncP.
+
+		// Receive reply
+		if (iStatus == 401)
+			throw std::runtime_error("incorrect rpcuser or rpcpassword (authorization failed)");
+		else if ((iStatus >= 400) && (iStatus != 400) && (iStatus != 404) && (iStatus != 500)) // ?
+			throw std::runtime_error(strprintf("server returned HTTP error %d", iStatus));
+		else if (strData.empty())
+			throw std::runtime_error("no response from server");
+
+		// Parse reply
+		cLog(lsDEBUG) << "RPC reply: " << strData << std::endl;
+
+		Json::Reader	reader;
+		Json::Value		jvReply;
+
+		if (!reader.parse(strData, jvReply))
+			throw std::runtime_error("couldn't parse reply from server");
+
+		if (jvReply.isNull())
+			throw std::runtime_error("expected reply to have result, error and id properties");
+
+		Json::Value		jvResult(Json::objectValue);
+
+		jvResult["result"] = jvReply;
+
+		(callbackFuncP)(jvResult);
+	}
+
+	return false;
+}
+
+// Build the request.
+void requestRPC(const std::string& strMethod, const Json::Value& jvParams, const std::map<std::string, std::string>& mHeaders, const std::string& strPath, boost::asio::streambuf& sb, const std::string& strHost)
+{
+	std::ostream	osRequest(&sb);
+
+	osRequest <<
+		createHTTPPost(
+			strHost,
+			strPath,
+			JSONRPCRequest(strMethod, jvParams, Json::Value(1)),
+			mHeaders);
+}
+
+void callRPC(
+	boost::asio::io_service& io_service,
+	const std::string& strIp, const int iPort,
+	const std::string& strUsername, const std::string& strPassword,
+	const std::string& strPath, const std::string& strMethod,
+	const Json::Value& jvParams, const bool bSSL,
+	boost::function<void(const Json::Value& jvInput)> callbackFuncP)
 {
 	// Connect to localhost
 	if (!theConfig.QUIET)
@@ -692,55 +765,31 @@ Json::Value callRPC(const std::string& strIp, const int iPort, const std::string
 //		std::cerr << "Method: " << strMethod << std::endl;
 	}
 
-	boost::asio::ip::tcp::endpoint
-		endpoint(boost::asio::ip::address::from_string(strIp), iPort);
-	boost::asio::ip::tcp::iostream stream;
-	stream.connect(endpoint);
-	if (stream.fail())
-		throw std::runtime_error("couldn't connect to server");
-
-	// cLog(lsDEBUG) << "connected" << std::endl;
-
 	// HTTP basic authentication
 	std::string strUserPass64 = EncodeBase64(strUsername + ":" + strPassword);
+
 	std::map<std::string, std::string> mapRequestHeaders;
+
 	mapRequestHeaders["Authorization"] = std::string("Basic ") + strUserPass64;
 
-	// Log(lsDEBUG) << "requesting" << std::endl;
-
 	// Send request
-	std::string strRequest = JSONRPCRequest(strMethod, jvParams, Json::Value(1));
+	// Log(lsDEBUG) << "requesting" << std::endl;
 	// cLog(lsDEBUG) << "send request " << strMethod << " : " << strRequest << std::endl;
 
-	std::string strPost = createHTTPPost(strPath, strRequest, mapRequestHeaders);
-	stream << strPost << std::flush;
-
-	// std::cerr << "post  " << strPost << std::endl;
-
-	// Receive reply
-	std::map<std::string, std::string> mapHeaders;
-	std::string strReply;
-	int nStatus = ReadHTTP(stream, mapHeaders, strReply);
-	if (nStatus == 401)
-		throw std::runtime_error("incorrect rpcuser or rpcpassword (authorization failed)");
-	else if ((nStatus >= 400) && (nStatus != 400) && (nStatus != 404) && (nStatus != 500)) // ?
-		throw std::runtime_error(strprintf("server returned HTTP error %d", nStatus));
-	else if (strReply.empty())
-		throw std::runtime_error("no response from server");
-
-	// Parse reply
-	cLog(lsDEBUG) << "RPC reply: " << strReply << std::endl;
-
-	Json::Reader reader;
-	Json::Value valReply;
-
-	if (!reader.parse(strReply, valReply))
-		throw std::runtime_error("couldn't parse reply from server");
-
-	if (valReply.isNull())
-		throw std::runtime_error("expected reply to have result, error and id properties");
-
-	return valReply;
+	HttpsClient::httpsRequest(
+		bSSL,
+		io_service,
+		strIp,
+		iPort,
+		boost::bind(
+			&requestRPC,
+			strMethod,
+			jvParams,
+			mapRequestHeaders,
+			"/", _1, _2),
+		RPC_NOTIFY_MAX_BYTES,
+		boost::posix_time::seconds(RPC_NOTIFY_SECONDS),
+		boost::bind(&responseRPC, callbackFuncP, _1, _2, _3));
 }
 
 // vim:ts=4

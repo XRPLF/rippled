@@ -2304,11 +2304,8 @@ Json::Value RPCHandler::doLedgerHeader(Json::Value jvRequest)
 
 	jvResult["ledger_data"]	= strHex(s.peekData());
 
-	if (mRole == ADMIN)
-	{
-		// As admin, they can trust us, so we provide this information.
-		lpLedger->addJson(jvResult, 0);
-	}
+	// This information isn't verified, they should only use it if they trust us.
+	lpLedger->addJson(jvResult, 0);
 
 	return jvResult;
 }

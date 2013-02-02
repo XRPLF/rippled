@@ -12,73 +12,100 @@
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/system/error_code.hpp>
 
+#include "Config.h"
+#include "Log.h"
+
+SETUP_LOG();
+
 using namespace boost::system;
 using namespace boost::asio;
 
 HttpsClient::HttpsClient(
     boost::asio::io_service& io_service,
 	const unsigned short port,
-    const std::string& strPath,
     std::size_t responseMax
     ) :
-		mCtx(boost::asio::ssl::context::sslv23),
+		mSocket(io_service, theConfig.SSL_CONTEXT),
 		mResolver(io_service),
-		mSocketSsl(io_service, mCtx),
 		mResponse(responseMax),
-		mStrPath(strPath),
 		mPort(port),
 		mDeadline(io_service)
 {
 }
 
-void HttpsClient::httpsGet(
-	std::deque<std::string> deqSites,
-	boost::posix_time::time_duration timeout,
-	boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete) {
+void HttpsClient::makeGet(const std::string& strPath, boost::asio::streambuf& sb, const std::string& strHost)
+{
+	std::ostream	osRequest(&sb);
 
+	osRequest <<
+		"GET " << strPath << " HTTP/1.0\r\n"
+		"Host: " << strHost << "\r\n"
+		"Accept: */*\r\n"						// YYY Do we need this line?
+		"Connection: close\r\n\r\n";
+}
+
+void HttpsClient::httpsRequest(
+	bool bSSL,
+	std::deque<std::string> deqSites,
+	boost::function<void(boost::asio::streambuf& sb, const std::string& strHost)> build,
+	boost::posix_time::time_duration timeout,
+	boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete)
+{
+	mSSL		= bSSL;
 	mDeqSites	= deqSites;
+	mBuild		= build;
 	mComplete	= complete;
 	mTimeout	= timeout;
 
 	httpsNext();
 }
 
+void HttpsClient::httpsGet(
+	bool bSSL,
+	std::deque<std::string> deqSites,
+	const std::string& strPath,
+	boost::posix_time::time_duration timeout,
+	boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete) {
+
+	mComplete	= complete;
+	mTimeout	= timeout;
+
+	httpsRequest(
+		bSSL,
+		deqSites,
+		boost::bind(&HttpsClient::makeGet, shared_from_this(), strPath, _1, _2),
+		timeout,
+		complete);
+}
+
 void HttpsClient::httpsNext()
 {
-	// std::cerr << "Fetch: " << mDeqSites[0] << std::endl;
+	cLog(lsTRACE) << "Fetch: " << mDeqSites[0];
+
     boost::shared_ptr<boost::asio::ip::tcp::resolver::query>	query(new boost::asio::ip::tcp::resolver::query(mDeqSites[0], boost::lexical_cast<std::string>(mPort),
-			ip::resolver_query_base::numeric_service|ip::resolver_query_base::numeric_service));
+			ip::resolver_query_base::numeric_service));
 	mQuery	= query;
 
-	mCtx.set_default_verify_paths(mShutdown);
-	if (mShutdown)
-	{
-		std::cerr << "set_default_verify_paths: " << mShutdown.message() << std::endl;
-	}
+	mDeadline.expires_from_now(mTimeout, mShutdown);
 
-	if (!mShutdown)
-	{
-		mDeadline.expires_from_now(mTimeout, mShutdown);
-
-		// std::cerr << "expires_from_now: " << mShutdown.message() << std::endl;
-	}
+	cLog(lsTRACE) << "expires_from_now: " << mShutdown.message();
 
 	if (!mShutdown)
 	{
 		mDeadline.async_wait(
 			boost::bind(
-				&HttpsClient::ShandleDeadline,
+				&HttpsClient::handleDeadline,
 				shared_from_this(),
 				boost::asio::placeholders::error));
 	}
 
     if (!mShutdown)
     {
-		// std::cerr << "Resolving: " << mDeqSites[0] << std::endl;
+		cLog(lsTRACE) << "Resolving: " << mDeqSites[0];
 
 		mResolver.async_resolve(*mQuery,
 			boost::bind(
-				&HttpsClient::ShandleResolve,
+				&HttpsClient::handleResolve,
 				shared_from_this(),
 				boost::asio::placeholders::error,
 				boost::asio::placeholders::iterator));
@@ -93,22 +120,20 @@ void HttpsClient::handleDeadline(const boost::system::error_code& ecResult)
 	if (ecResult == boost::asio::error::operation_aborted)
 	{
 		// Timer canceled because deadline no longer needed.
-		// std::cerr << "Deadline cancelled." << std::endl;
+		cLog(lsTRACE) << "Deadline cancelled.";
 
 		nothing();  // Aborter is done.
 	}
 	else if (ecResult)
     {
-		std::cerr << "Deadline error: " << mDeqSites[0] << ": " << ecResult.message() << std::endl;
+		cLog(lsTRACE) << "Deadline error: " << mDeqSites[0] << ": " << ecResult.message();
 
 		// Can't do anything sound.
 		abort();
     }
     else
     {
-		boost::system::error_code ec_shutdown;
-
-		std::cerr << "Deadline arrived." << std::endl;
+		cLog(lsTRACE) << "Deadline arrived.";
 
 		// Mark us as shutting down.
 		// XXX Use our own error code.
@@ -118,13 +143,22 @@ void HttpsClient::handleDeadline(const boost::system::error_code& ecResult)
 		mResolver.cancel();
 
 		// Stop the transaction.
-		mSocketSsl.shutdown(ec_shutdown);
+		mSocket.async_shutdown(boost::bind(
+			&HttpsClient::handleShutdown,
+			shared_from_this(),
+			boost::asio::placeholders::error));
 
-		if (ec_shutdown)
-		{
-			std::cerr << "Shutdown error: " << mDeqSites[0] << ": " << ec_shutdown.message() << std::endl;
-		}
     }
+}
+
+void HttpsClient::handleShutdown(
+	const boost::system::error_code& ecResult
+	)
+{
+	if (ecResult)
+	{
+		cLog(lsTRACE) << "Shutdown error: " << mDeqSites[0] << ": " << ecResult.message();
+	}
 }
 
 void HttpsClient::handleResolve(
@@ -137,19 +171,19 @@ void HttpsClient::handleResolve(
 
     if (mShutdown)
     {
-		// std::cerr << "Resolve error: " << mDeqSites[0] << ": " << mShutdown.message() << std::endl;
+		cLog(lsTRACE) << "Resolve error: " << mDeqSites[0] << ": " << mShutdown.message();
 
 		invokeComplete(mShutdown);
     }
-    else
+	else
 	{
-		// std::cerr << "Resolve complete." << std::endl;
+		cLog(lsTRACE) << "Resolve complete.";
 
 		boost::asio::async_connect(
-			mSocketSsl.lowest_layer(),
+			mSocket.lowest_layer(),
 			itrEndpoint,
 			boost::bind(
-				&HttpsClient::ShandleConnect,
+				&HttpsClient::handleConnect,
 				shared_from_this(),
 				boost::asio::placeholders::error));
     }
@@ -162,34 +196,37 @@ void HttpsClient::handleConnect(const boost::system::error_code& ecResult)
 
     if (mShutdown)
     {
-		std::cerr << "Connect error: " << mShutdown.message() << std::endl;
+		cLog(lsTRACE) << "Connect error: " << mShutdown.message();
     }
 
     if (!mShutdown)
 	{
-		// std::cerr << "Connected." << std::endl;
+		cLog(lsTRACE) << "Connected.";
 
-	    mSocketSsl.set_verify_mode(boost::asio::ssl::verify_peer);
-
-		// XXX Verify semantics of RFC 2818 are what we want.
-	    mSocketSsl.set_verify_callback(boost::asio::ssl::rfc2818_verification(mDeqSites[0]), mShutdown);
+		mShutdown	= mSocket.verify(mDeqSites[0]);
 
 	    if (mShutdown)
 		{
-			std::cerr << "set_verify_callback: " << mDeqSites[0] << ": " << mShutdown.message() << std::endl;
+			cLog(lsTRACE) << "set_verify_callback: " << mDeqSites[0] << ": " << mShutdown.message();
 		}
 	}
 
-	if (!mShutdown)
-	{
-	    mSocketSsl.async_handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::client,
-			boost::bind(&HttpsClient::ShandleRequest,
-				shared_from_this(),
-				boost::asio::placeholders::error));
-    }
-	else
+	if (mShutdown)
     {
 		invokeComplete(mShutdown);
+    }
+    else if (mSSL)
+	{
+		mSocket.async_handshake(
+			AutoSocket::ssl_socket::client,
+			boost::bind(
+				&HttpsClient::handleRequest,
+				shared_from_this(),
+				boost::asio::placeholders::error));
+	}
+	else
+	{
+		handleRequest(ecResult);
     }
 }
 
@@ -200,64 +237,58 @@ void HttpsClient::handleRequest(const boost::system::error_code& ecResult)
 
     if (mShutdown)
     {
-		std::cerr << "Handshake error:" << mShutdown.message() << std::endl;
+		cLog(lsTRACE) << "Handshake error:" << mShutdown.message();
 
 		invokeComplete(mShutdown);
     }
 	else
 	{
-		// std::cerr << "SSL session started." << std::endl;
+		cLog(lsTRACE) << "Session started.";
 
-		std::ostream			osRequest(&mRequest);
+		mBuild(mRequest, mDeqSites[0]);
 
-		osRequest <<
-			"GET " << mStrPath << " HTTP/1.0\r\n"
-			"Host: " << mDeqSites[0] << "\r\n"
-			"Accept: */*\r\n"						// YYY Do we need this line?
-			"Connection: close\r\n\r\n";
-
-		boost::asio::async_write(
-			mSocketSsl,
+		mSocket.async_write(
 			mRequest,
-			boost::bind(&HttpsClient::ShandleWrite,
+			boost::bind(&HttpsClient::handleWrite,
 				shared_from_this(),
-				boost::asio::placeholders::error));
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::bytes_transferred));
     }
 }
 
-void HttpsClient::handleWrite(const boost::system::error_code& ecResult)
+void HttpsClient::handleWrite(const boost::system::error_code& ecResult, std::size_t bytes_transferred)
 {
 	if (!mShutdown)
 		mShutdown	= ecResult;
 
     if (mShutdown)
     {
-		std::cerr << "Write error: " << mShutdown.message() << std::endl;
+		cLog(lsTRACE) << "Write error: " << mShutdown.message();
 
 		invokeComplete(mShutdown);
     }
     else
     {
-		// std::cerr << "Wrote." << std::endl;
+		cLog(lsTRACE) << "Wrote.";
 
-		boost::asio::async_read(
-			mSocketSsl,
+		mSocket.async_read(
 			mResponse,
 			boost::asio::transfer_all(),
-			boost::bind(&HttpsClient::ShandleData,
+			boost::bind(&HttpsClient::handleData,
 				shared_from_this(),
-				boost::asio::placeholders::error));
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::bytes_transferred));
     }
 }
 
-void HttpsClient::handleData(const boost::system::error_code& ecResult)
+void HttpsClient::handleData(const boost::system::error_code& ecResult, std::size_t bytes_transferred)
 {
 	if (!mShutdown)
 		mShutdown	= ecResult;
 
     if (mShutdown && mShutdown != boost::asio::error::eof)
     {
-		std::cerr << "Read error: " << mShutdown.message() << std::endl;
+		cLog(lsTRACE) << "Read error: " << mShutdown.message();
 
 		invokeComplete(mShutdown);
     }
@@ -265,13 +296,14 @@ void HttpsClient::handleData(const boost::system::error_code& ecResult)
     {
 		if (mShutdown)
 		{
-			// std::cerr << "Complete." << std::endl;
+			cLog(lsTRACE) << "Complete.";
+
 			nothing();
 		}
 		else
 		{
 			// XXX According to boost example code, this is what we should expect for success.
-			std::cerr << "Complete, no eof." << std::endl;
+			cLog(lsTRACE) << "Complete, no eof.";
 		}
 
 		parseData();
@@ -279,7 +311,7 @@ void HttpsClient::handleData(const boost::system::error_code& ecResult)
 }
 
 // Call cancel the deadline timer and invoke the completion routine.
-void HttpsClient::invokeComplete(const boost::system::error_code& ecResult, std::string strData)
+void HttpsClient::invokeComplete(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)
 {
 	boost::system::error_code ecCancel;
 
@@ -287,16 +319,22 @@ void HttpsClient::invokeComplete(const boost::system::error_code& ecResult, std:
 
 	if (ecCancel)
 	{
-		std::cerr << "Deadline cancel error: " << ecCancel.message() << std::endl;
+		cLog(lsTRACE) << "Deadline cancel error: " << ecCancel.message();
 	}
 
 	mDeqSites.pop_front();
 
-	if (mDeqSites.empty())
+	bool	bAgain	= true;
+
+	if (mDeqSites.empty() || !ecResult)
 	{
-		mComplete(ecResult ? ecResult : ecCancel, strData);
+		// ecResult: !0 = had an error, last entry
+		//    iStatus: result, if no error
+		//  strData: data, if no error
+		bAgain	= mComplete && mComplete(ecResult ? ecResult : ecCancel, iStatus, strData);
 	}
-	else
+
+	if (!mDeqSites.empty() && bAgain)
 	{
 		httpsNext();
 	}
@@ -309,21 +347,21 @@ void HttpsClient::parseData()
 	static boost::regex	reStatus("\\`HTTP/1\\S+ (\\d{3}) .*\\'");			// HTTP/1.1 200 OK
 	static boost::regex	reBody("\\`(?:.*?\\r\\n\\r\\n){1}(.*)\\'");
 
-	boost::smatch	smMatch;
+	boost::smatch	smStatus;
+	boost::smatch	smBody;
 
-	bool	bMatch	= boost::regex_match(strData, smMatch, reStatus)		// Match status code.
-						&& !smMatch[1].compare("200")
-						&& boost::regex_match(strData, smMatch, reBody);	// Match body.
+	bool	bMatch	= boost::regex_match(strData, smStatus, reStatus)		// Match status code.
+						&& boost::regex_match(strData, smBody, reBody);	// Match body.
 
 	// std::cerr << "Data:" << strData << std::endl;
 	// std::cerr << "Match: " << bMatch << std::endl;
-	// std::cerr << "Body:" << smMatch[1] << std::endl;
+	// std::cerr << "Body:" << smBody[1] << std::endl;
 
 	if (bMatch)
 	{
 		boost::system::error_code	noErr;
 
-		invokeComplete(noErr, smMatch[1]);
+		invokeComplete(noErr, lexical_cast_st<int>(smStatus[1]), smBody[1]);
 	}
 	else
 	{
@@ -333,33 +371,52 @@ void HttpsClient::parseData()
 }
 
 void HttpsClient::httpsGet(
+	bool bSSL,
 	boost::asio::io_service& io_service,
 	std::deque<std::string> deqSites,
 	const unsigned short port,
 	const std::string& strPath,
 	std::size_t responseMax,
 	boost::posix_time::time_duration timeout,
-	boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete) {
+	boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete) {
 
-    boost::shared_ptr<HttpsClient> client(new HttpsClient(io_service, port, strPath, responseMax));
+    boost::shared_ptr<HttpsClient> client(new HttpsClient(io_service, port, responseMax));
 
-	client->httpsGet(deqSites, timeout, complete);
+	client->httpsGet(bSSL, deqSites, strPath, timeout, complete);
 }
 
 void HttpsClient::httpsGet(
+	bool bSSL,
 	boost::asio::io_service& io_service,
 	std::string strSite,
 	const unsigned short port,
 	const std::string& strPath,
 	std::size_t responseMax,
 	boost::posix_time::time_duration timeout,
-	boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete) {
+	boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete) {
 
 	std::deque<std::string> deqSites(1, strSite);
 
-    boost::shared_ptr<HttpsClient> client(new HttpsClient(io_service, port, strPath, responseMax));
+    boost::shared_ptr<HttpsClient> client(new HttpsClient(io_service, port, responseMax));
 
-	client->httpsGet(deqSites, timeout, complete);
+	client->httpsGet(bSSL, deqSites, strPath, timeout, complete);
+}
+
+void HttpsClient::httpsRequest(
+	bool bSSL,
+	boost::asio::io_service& io_service,
+	std::string strSite,
+	const unsigned short port,
+	boost::function<void(boost::asio::streambuf& sb, const std::string& strHost)> setRequest,
+	std::size_t responseMax,
+	boost::posix_time::time_duration timeout,
+	boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete) {
+
+	std::deque<std::string> deqSites(1, strSite);
+
+    boost::shared_ptr<HttpsClient> client(new HttpsClient(io_service, port, responseMax));
+
+	client->httpsRequest(bSSL, deqSites, setRequest, timeout, complete);
 }
 
 // vim:ts=4
