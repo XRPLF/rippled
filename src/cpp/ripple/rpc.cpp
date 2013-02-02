@@ -45,7 +45,7 @@ std::string createHTTPPost(const std::string& strHost, const std::string& strPat
 
 	s << "POST "
 	  << (strPath.empty() ? "/" : strPath)
-	  << " HTTP/1.1\r\n"
+	  << " HTTP/1.0\r\n"
 	  << "User-Agent: " SYSTEM_NAME "-json-rpc/" << FormatFullVersion() << "\r\n"
 	  << "Host: " << strHost << "\r\n"
 	  << "Content-Type: application/json\r\n"

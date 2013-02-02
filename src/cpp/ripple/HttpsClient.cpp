@@ -13,6 +13,9 @@
 #include <boost/system/error_code.hpp>
 
 #include "Config.h"
+#include "Log.h"
+
+SETUP_LOG();
 
 using namespace boost::system;
 using namespace boost::asio;
@@ -77,14 +80,15 @@ void HttpsClient::httpsGet(
 
 void HttpsClient::httpsNext()
 {
-std::cerr << "Fetch: " << mDeqSites[0] << std::endl;
+	cLog(lsTRACE) << "Fetch: " << mDeqSites[0];
+
     boost::shared_ptr<boost::asio::ip::tcp::resolver::query>	query(new boost::asio::ip::tcp::resolver::query(mDeqSites[0], boost::lexical_cast<std::string>(mPort),
 			ip::resolver_query_base::numeric_service));
 	mQuery	= query;
 
 	mDeadline.expires_from_now(mTimeout, mShutdown);
 
-std::cerr << "expires_from_now: " << mShutdown.message() << std::endl;
+	cLog(lsTRACE) << "expires_from_now: " << mShutdown.message();
 
 	if (!mShutdown)
 	{
@@ -97,7 +101,7 @@ std::cerr << "expires_from_now: " << mShutdown.message() << std::endl;
 
     if (!mShutdown)
     {
-std::cerr << "Resolving: " << mDeqSites[0] << std::endl;
+		cLog(lsTRACE) << "Resolving: " << mDeqSites[0];
 
 		mResolver.async_resolve(*mQuery,
 			boost::bind(
@@ -116,20 +120,20 @@ void HttpsClient::handleDeadline(const boost::system::error_code& ecResult)
 	if (ecResult == boost::asio::error::operation_aborted)
 	{
 		// Timer canceled because deadline no longer needed.
-std::cerr << "Deadline cancelled." << std::endl;
+		cLog(lsTRACE) << "Deadline cancelled.";
 
 		nothing();  // Aborter is done.
 	}
 	else if (ecResult)
     {
-		std::cerr << "Deadline error: " << mDeqSites[0] << ": " << ecResult.message() << std::endl;
+		cLog(lsTRACE) << "Deadline error: " << mDeqSites[0] << ": " << ecResult.message();
 
 		// Can't do anything sound.
 		abort();
     }
     else
     {
-		std::cerr << "Deadline arrived." << std::endl;
+		cLog(lsTRACE) << "Deadline arrived.";
 
 		// Mark us as shutting down.
 		// XXX Use our own error code.
@@ -153,7 +157,7 @@ void HttpsClient::handleShutdown(
 {
 	if (ecResult)
 	{
-		std::cerr << "Shutdown error: " << mDeqSites[0] << ": " << ecResult.message() << std::endl;
+		cLog(lsTRACE) << "Shutdown error: " << mDeqSites[0] << ": " << ecResult.message();
 	}
 }
 
@@ -167,13 +171,13 @@ void HttpsClient::handleResolve(
 
     if (mShutdown)
     {
-std::cerr << "Resolve error: " << mDeqSites[0] << ": " << mShutdown.message() << std::endl;
+		cLog(lsTRACE) << "Resolve error: " << mDeqSites[0] << ": " << mShutdown.message();
 
 		invokeComplete(mShutdown);
     }
 	else
 	{
-std::cerr << "Resolve complete." << std::endl;
+		cLog(lsTRACE) << "Resolve complete.";
 
 		boost::asio::async_connect(
 			mSocket.lowest_layer(),
@@ -192,17 +196,18 @@ void HttpsClient::handleConnect(const boost::system::error_code& ecResult)
 
     if (mShutdown)
     {
-		std::cerr << "Connect error: " << mShutdown.message() << std::endl;
+		cLog(lsTRACE) << "Connect error: " << mShutdown.message();
     }
 
     if (!mShutdown)
 	{
-std::cerr << "Connected." << std::endl;
+		cLog(lsTRACE) << "Connected.";
+
 		mShutdown	= mSocket.verify(mDeqSites[0]);
 
 	    if (mShutdown)
 		{
-			std::cerr << "set_verify_callback: " << mDeqSites[0] << ": " << mShutdown.message() << std::endl;
+			cLog(lsTRACE) << "set_verify_callback: " << mDeqSites[0] << ": " << mShutdown.message();
 		}
 	}
 
@@ -232,13 +237,14 @@ void HttpsClient::handleRequest(const boost::system::error_code& ecResult)
 
     if (mShutdown)
     {
-		std::cerr << "Handshake error:" << mShutdown.message() << std::endl;
+		cLog(lsTRACE) << "Handshake error:" << mShutdown.message();
 
 		invokeComplete(mShutdown);
     }
 	else
 	{
-std::cerr << "Session started." << std::endl;
+		cLog(lsTRACE) << "Session started.";
+
 		mBuild(mRequest, mDeqSites[0]);
 
 		mSocket.async_write(
@@ -257,32 +263,32 @@ void HttpsClient::handleWrite(const boost::system::error_code& ecResult, std::si
 
     if (mShutdown)
     {
-		std::cerr << "Write error: " << mShutdown.message() << std::endl;
+		cLog(lsTRACE) << "Write error: " << mShutdown.message();
 
 		invokeComplete(mShutdown);
     }
     else
     {
-std::cerr << "Wrote." << std::endl;
+		cLog(lsTRACE) << "Wrote.";
 
-		boost::asio::async_read(
-			mSocket,
+		mSocket.async_read(
 			mResponse,
 			boost::asio::transfer_all(),
 			boost::bind(&HttpsClient::handleData,
 				shared_from_this(),
-				boost::asio::placeholders::error));
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::bytes_transferred));
     }
 }
 
-void HttpsClient::handleData(const boost::system::error_code& ecResult)
+void HttpsClient::handleData(const boost::system::error_code& ecResult, std::size_t bytes_transferred)
 {
 	if (!mShutdown)
 		mShutdown	= ecResult;
 
     if (mShutdown && mShutdown != boost::asio::error::eof)
     {
-		std::cerr << "Read error: " << mShutdown.message() << std::endl;
+		cLog(lsTRACE) << "Read error: " << mShutdown.message();
 
 		invokeComplete(mShutdown);
     }
@@ -290,13 +296,14 @@ void HttpsClient::handleData(const boost::system::error_code& ecResult)
     {
 		if (mShutdown)
 		{
-std::cerr << "Complete." << std::endl;
+			cLog(lsTRACE) << "Complete.";
+
 			nothing();
 		}
 		else
 		{
 			// XXX According to boost example code, this is what we should expect for success.
-			std::cerr << "Complete, no eof." << std::endl;
+			cLog(lsTRACE) << "Complete, no eof.";
 		}
 
 		parseData();
@@ -312,7 +319,7 @@ void HttpsClient::invokeComplete(const boost::system::error_code& ecResult, int 
 
 	if (ecCancel)
 	{
-		std::cerr << "Deadline cancel error: " << ecCancel.message() << std::endl;
+		cLog(lsTRACE) << "Deadline cancel error: " << ecCancel.message();
 	}
 
 	mDeqSites.pop_front();
@@ -340,20 +347,21 @@ void HttpsClient::parseData()
 	static boost::regex	reStatus("\\`HTTP/1\\S+ (\\d{3}) .*\\'");			// HTTP/1.1 200 OK
 	static boost::regex	reBody("\\`(?:.*?\\r\\n\\r\\n){1}(.*)\\'");
 
-	boost::smatch	smMatch;
+	boost::smatch	smStatus;
+	boost::smatch	smBody;
 
-	bool	bMatch	= boost::regex_match(strData, smMatch, reStatus)		// Match status code.
-						&& boost::regex_match(strData, smMatch, reBody);	// Match body.
+	bool	bMatch	= boost::regex_match(strData, smStatus, reStatus)		// Match status code.
+						&& boost::regex_match(strData, smBody, reBody);	// Match body.
 
 	// std::cerr << "Data:" << strData << std::endl;
 	// std::cerr << "Match: " << bMatch << std::endl;
-	// std::cerr << "Body:" << smMatch[1] << std::endl;
+	// std::cerr << "Body:" << smBody[1] << std::endl;
 
 	if (bMatch)
 	{
 		boost::system::error_code	noErr;
 
-		invokeComplete(noErr, lexical_cast_st<int>(smMatch[1]), smMatch[1]);
+		invokeComplete(noErr, lexical_cast_st<int>(smStatus[1]), smBody[1]);
 	}
 	else
 	{

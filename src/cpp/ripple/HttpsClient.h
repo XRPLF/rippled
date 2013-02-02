@@ -50,7 +50,7 @@ private:
 
     void handleWrite(const boost::system::error_code& ecResult, std::size_t bytes_transferred);
 
-    void handleData(const boost::system::error_code& ecResult);
+    void handleData(const boost::system::error_code& ecResult, std::size_t bytes_transferred);
 
 	void handleShutdown(const boost::system::error_code& ecResult);
 
