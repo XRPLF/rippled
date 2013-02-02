@@ -836,8 +836,8 @@ Amount.prototype.to_human_full = function (opts) {
   opts = opts || {};
 
   var a = this.to_human(opts);
-  var c = this._currency.to_human(opts);
-  var i = this._issuer.to_json();
+  var c = this._currency.to_human();
+  var i = this._issuer.to_json(opts);
 
   var o;
 
