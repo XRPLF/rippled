@@ -6,8 +6,7 @@ var Server    = require("./server.js").Server;
 
 var testutils = require("./testutils.js");
 
-var extend      = require('extend');
-extend(require('../src/js/config'), require('./config'));
+var config  = require('../src/js/config').load(require('./config'));
 
 // How long to wait for server to start.
 var serverDelay = 1500;   // XXX Not implemented.

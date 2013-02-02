@@ -1,11 +1,9 @@
 var buster  = require("buster");
 
-var Server  = require("./server.js").Server;
-var Remote  = require("../src/js/remote.js").Remote;
-var config  = require("./config.js");
+var Server  = require("./server").Server;
+var Remote  = require("../src/js/remote").Remote;
 
-var extend  = require('extend');
-extend(require('../src/js/config'), require('./config'));
+var config  = require('../src/js/config').load(require('./config'));
 
 buster.testRunner.timeout = 5000;
 

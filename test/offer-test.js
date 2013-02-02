@@ -9,8 +9,7 @@ var Server      = require("./server").Server;
 
 var testutils = require("./testutils");
 
-var extend      = require('extend');
-extend(require('../src/js/config'), require('./config'));
+require('../src/js/config').load(require('./config'));
 
 buster.testRunner.timeout = 5000;
 

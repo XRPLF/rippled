@@ -4,16 +4,13 @@ var http      = require("http");
 var jsonrpc   = require("simple-jsonrpc");
 var EventEmitter  = require('events').EventEmitter;
 
-var Amount    = require("../src/js/amount.js").Amount;
-var Remote    = require("../src/js/remote.js").Remote;
-var Server    = require("./server.js").Server;
+var Amount    = require("../src/js/amount").Amount;
+var Remote    = require("../src/js/remote").Remote;
+var Server    = require("./server").Server;
 
-var testutils = require("./testutils.js");
+var testutils = require("./testutils");
 
-var config = require("./config.js");
-
-var extend    = require('extend');
-extend(require('../src/js/config'), require('./config'));
+var config    = require('../src/js/config').load(require('./config'));
 
 // How long to wait for server to start.
 var serverDelay = 1500;

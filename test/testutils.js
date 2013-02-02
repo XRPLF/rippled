@@ -1,13 +1,10 @@
 var async   = require("async");
 
-var Amount  = require("../src/js/amount.js").Amount;
-var Remote  = require("../src/js/remote.js").Remote;
-var Server  = require("./server.js").Server;
+var Amount  = require("../src/js/amount").Amount;
+var Remote  = require("../src/js/remote").Remote;
+var Server  = require("./server").Server;
 
-var extend  = require('extend');
-extend(require('../src/js/config'), require('./config'));
-
-var config  = require("./config.js");
+var config  = require('../src/js/config').load(require('./config'));
 
 var account_dump = function (remote, account, callback) {
   var self = this;
