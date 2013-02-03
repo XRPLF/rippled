@@ -967,7 +967,6 @@ TER RippleCalc::calcNodeDeliverRev(
 	STAmount&		saPrvDlvReq		= pnPrv.saRevDeliver;	// To be set.
 	STAmount&		saCurDlvFwd		= pnCur.saFwdDeliver;
 
-
 	uint256&		uDirectTip		= pnCur.uDirectTip;
 
 	uDirectTip		= 0;									// Restart book searching.
@@ -1065,6 +1064,7 @@ TER RippleCalc::calcNodeDeliverRev(
 
 		// Compute portion of input needed to cover actual output.
 
+		// XXX This needs to round up!
 		STAmount	saInPassReq	= STAmount::multiply(saOutPass, saOfrRate, saTakerPays);
 		STAmount	saInPassAct;
 
@@ -2281,11 +2281,10 @@ TER RippleCalc::calcNodeRev(const unsigned int uNode, PathState& psCur, const bo
 // Calculate the next increment of a path.
 // The increment is what can satisfy a portion or all of the requested output at the best quality.
 // <-- psCur.uQuality
-void RippleCalc::pathNext(PathState::ref psrCur, const int iPaths, const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent)
+void RippleCalc::pathNext(PathState::ref psrCur, const bool bMultiQuality, const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent)
 {
 	// The next state is what is available in preference order.
 	// This is calculated when referenced accounts changed.
-	const bool			bMultiQuality	= iPaths == 1;
 	const unsigned int	uLast			= psrCur->vpnNodes.size() - 1;
 
 	psrCur->bConsumed	= false;
@@ -2320,11 +2319,12 @@ void RippleCalc::pathNext(PathState::ref psrCur, const int iPaths, const LedgerE
 	if (tesSUCCESS == psrCur->terStatus)
 	{
 		tLog(!psrCur->saInPass || !psrCur->saOutPass, lsDEBUG)
-			<< boost::str(boost::format("pathNext: saOutPass=%s saInPass=%s")
+			<< boost::str(boost::format("pathNext: Error calcNodeFwd reported success for nothing: saOutPass=%s saInPass=%s")
 				% psrCur->saOutPass.getFullText()
 				% psrCur->saInPass.getFullText());
 
-		assert(!!psrCur->saOutPass && !!psrCur->saInPass);
+		if (!psrCur->saOutPass || !psrCur->saInPass)
+			throw std::runtime_error("Made no progress.");
 
 		psrCur->uQuality	= STAmount::getRate(psrCur->saOutPass, psrCur->saInPass);	// Calculate relative quality.
 
@@ -2467,16 +2467,18 @@ int iPass	= 0;
 	    int						iBest			= -1;
 	    const LedgerEntrySet	lesCheckpoint	= lesActive;
 		int						iDry			= 0;
+		bool					bMultiQuality	= false;					// True, if ever computed multi-quality.
 
 	    // Find the best path.
 	    BOOST_FOREACH(PathState::ref pspCur, vpsExpanded)
 	    {
 		    if (pspCur->uQuality)
 			{
-				pspCur->saInAct		= saMaxAmountAct;									// Update to current amount processed.
+				bMultiQuality	= 1 == vpsExpanded.size()-iDry,				// Computing the only non-dry path, compute multi-quality.
+				pspCur->saInAct		= saMaxAmountAct;						// Update to current amount processed.
 				pspCur->saOutAct	= saDstAmountAct;
 
-				rc.pathNext(pspCur, vpsExpanded.size(), lesCheckpoint, lesActive);		// Compute increment.
+				rc.pathNext(pspCur, bMultiQuality, lesCheckpoint, lesActive);	// Compute increment.
 	cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: AFTER: mIndex=%d uQuality=%d rate=%s")
 		% pspCur->mIndex
 		% pspCur->uQuality
@@ -2543,7 +2545,7 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: %d rate: %s qual
 			saMaxAmountAct	+= pspBest->saInPass;
 			saDstAmountAct	+= pspBest->saOutPass;
 
-			if (pspBest->bConsumed)
+			if (pspBest->bConsumed || bMultiQuality)
 			{
 				++iDry;
 				pspBest->uQuality	= 0;
