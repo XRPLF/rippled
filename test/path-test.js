@@ -899,4 +899,243 @@ buster.testCase("Issues", {
         });
     }
 });
+
+buster.testCase("Via offers", {
+  'setUp' : testutils.build_setup(),
+  // 'setUp' : testutils.build_setup({ verbose: true }),
+  // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
+  'tearDown' : testutils.build_teardown(),
+
+  // XXX Triggers bad path expansion.
+  "Via gateway" :
+    // carol holds mtgoxAUD, sells mtgoxAUD for XRP
+    // bob will hold mtgoxAUD
+    // alice pays bob mtgoxAUD using XRP
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+          function (callback) {
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "carol", "mtgox"], callback);
+          },
+          function (callback) {
+            self.what = "Set transfer rate.";
+
+            self.remote.transaction()
+              .account_set("mtgox")
+              .transfer_rate(1005000000)
+              .once('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Set credit limits.";
+
+            testutils.credit_limits(self.remote,
+              {
+                "bob" : [ "100/AUD/mtgox" ],
+                "carol" : [ "100/AUD/mtgox" ],
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Distribute funds.";
+
+            testutils.payments(self.remote,
+              {
+                "mtgox" : "50/AUD/carol",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Carol create offer.";
+
+            self.remote.transaction()
+              .offer_create("carol", "50.0", "50/AUD/mtgox")
+              .on('proposed', function (m) {
+                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+
+                  seq_carol = m.tx_json.Sequence;
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Alice sends bob 10/AUD/mtgox using XRP.";
+
+            // XXX Also try sending 10/AUX/bob
+            self.remote.transaction()
+              .payment("alice", "bob", "10/AUD/mtgox")
+              .build_path(true)
+              .send_max("100.0")
+              .on('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Verify balances.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "bob"   : "10/AUD/mtgox",
+                "carol"   : "39.95/AUD/mtgox",
+              },
+              callback);
+          },
+//          function (callback) {
+//            self.what = "Display ledger";
+//
+//            self.remote.request_ledger('current', true)
+//              .on('success', function (m) {
+//                  console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+//
+//                  callback();
+//                })
+//              .request();
+//          },
+//          function (callback) {
+//            self.what = "Find path from alice to bob";
+//
+//            // 5. acct 1 sent a 25 usd iou to acct 2
+//            self.remote.request_ripple_path_find("alice", "bob", "25/USD/bob",
+//              [ { 'currency' : "USD" } ])
+//              .on('success', function (m) {
+//                  // console.log("proposed: %s", JSON.stringify(m));
+//
+//                  // 0 alternatives.
+//                  buster.assert.equals(0, m.alternatives.length)
+//
+//                  callback();
+//                })
+//              .request();
+//          },
+        ], function (error) {
+          buster.refute(error, self.what);
+          done();
+        });
+    },
+
+  "// Via gateway : FIX ME fails due to XRP rounding and not properly handling dry." :
+    // carol holds mtgoxAUD, sells mtgoxAUD for XRP
+    // bob will hold mtgoxAUD
+    // alice pays bob mtgoxAUD using XRP
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+          function (callback) {
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "carol", "mtgox"], callback);
+          },
+          function (callback) {
+            self.what = "Set transfer rate.";
+
+            self.remote.transaction()
+              .account_set("mtgox")
+              .transfer_rate(1005000000)
+              .once('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Set credit limits.";
+
+            testutils.credit_limits(self.remote,
+              {
+                "bob" : [ "100/AUD/mtgox" ],
+                "carol" : [ "100/AUD/mtgox" ],
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Distribute funds.";
+
+            testutils.payments(self.remote,
+              {
+                "mtgox" : "50/AUD/carol",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Carol create offer.";
+
+            self.remote.transaction()
+              .offer_create("carol", "50", "50/AUD/mtgox")
+              .on('proposed', function (m) {
+                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+
+                  seq_carol = m.tx_json.Sequence;
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Alice sends bob 10/AUD/mtgox using XRP.";
+
+            // XXX Also try sending 10/AUX/bob
+            self.remote.transaction()
+              .payment("alice", "bob", "10/AUD/mtgox")
+              .build_path(true)
+              .send_max("100")
+              .on('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Verify balances.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "bob"   : "10/AUD/mtgox",
+                "carol"   : "39.95/AUD/mtgox",
+              },
+              callback);
+          },
+//          function (callback) {
+//            self.what = "Display ledger";
+//
+//            self.remote.request_ledger('current', true)
+//              .on('success', function (m) {
+//                  console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+//
+//                  callback();
+//                })
+//              .request();
+//          },
+//          function (callback) {
+//            self.what = "Find path from alice to bob";
+//
+//            // 5. acct 1 sent a 25 usd iou to acct 2
+//            self.remote.request_ripple_path_find("alice", "bob", "25/USD/bob",
+//              [ { 'currency' : "USD" } ])
+//              .on('success', function (m) {
+//                  // console.log("proposed: %s", JSON.stringify(m));
+//
+//                  // 0 alternatives.
+//                  buster.assert.equals(0, m.alternatives.length)
+//
+//                  callback();
+//                })
+//              .request();
+//          },
+        ], function (error) {
+          buster.refute(error, self.what);
+          done();
+        });
+    },
+});
+
 // vim:sw=2:sts=2:ts=8:et
