@@ -69,7 +69,11 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 	}
 	else
 	{
-		assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
+		if ((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED))
+		{
+			cLog(lsFATAL) << "SQLite returns error " << rc << ": " << sqlite3_errmsg(mConnection);
+			assert(false);
+		}
 		mMoreRows = false;
 
 		if (!fail_ok)
