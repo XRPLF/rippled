@@ -27,7 +27,7 @@ void SqliteDatabase::connect()
 	int rc = sqlite3_open(mHost.c_str(), &mConnection);
 	if (rc)
 	{
-		cLog(lsFATAL) << "Can't open database: " << mHost << " " << rc;
+		cLog(lsFATAL) << "Can't open " << mHost << " " << rc;
 		sqlite3_close(mConnection);
 		assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
 	}
@@ -51,7 +51,7 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 		if (!fail_ok)
 		{
 #ifdef DEBUG
-			cLog(lsWARNING) << "SQL Perror:" << rc;
+			cLog(lsWARNING) << "Perror:" << mHost << ": " << rc;
 			cLog(lsWARNING) << "Statement: " << sql;
 			cLog(lsWARNING) << "Error: " << sqlite3_errmsg(mConnection);
 #endif
@@ -71,7 +71,8 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 	{
 		if ((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED))
 		{
-			cLog(lsFATAL) << "SQLite returns error " << rc << ": " << sqlite3_errmsg(mConnection);
+			cLog(lsFATAL) << << mHost  << " returns error " << rc
+				<< ": " << sqlite3_errmsg(mConnection);
 			assert(false);
 		}
 		mMoreRows = false;
@@ -79,7 +80,7 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 		if (!fail_ok)
 		{
 #ifdef DEBUG
-			cLog(lsWARNING) << "SQL Serror:" << rc;
+			cLog(lsWARNING) << "SQL Serror:" << mHost << ": " << rc;
 			cLog(lsWARNING) << "Statement: " << sql;
 			cLog(lsWARNING) << "Error: " << sqlite3_errmsg(mConnection);
 #endif
@@ -139,7 +140,7 @@ bool SqliteDatabase::getNextRow()
 	else
 	{
 		assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
-		cLog(lsWARNING) << "SQL Rerror:" << rc;
+		cLog(lsWARNING) << "Rerror: " << mHost << ": " << rc;
 		return(false);
 	}
 }
@@ -248,7 +249,7 @@ void SqliteDatabase::runWal()
 			int ret = sqlite3_wal_checkpoint_v2(mConnection, db.c_str(), SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
 			if (ret != SQLITE_OK)
 			{
-				cLog((ret == SQLITE_LOCKED) ? lsDEBUG : lsWARNING) << "WAL "
+				cLog((ret == SQLITE_LOCKED) ? lsDEBUG : lsWARNING) << "WAL " << mHost << ": " <<
 					<< sqlite3_db_filename(mConnection, "main") << " / " << db << " errror " << ret;
 			}
 		}
