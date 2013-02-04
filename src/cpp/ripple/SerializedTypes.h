@@ -623,7 +623,7 @@ public:
 	const STPathElement& getElement(int offset)			{ return mPath[offset]; }
 	void addElement(const STPathElement &e)				{ mPath.push_back(e); }
 	void clear()										{ mPath.clear(); }
-	bool hasSeen(const uint160 &acct);
+	bool hasSeen(const uint160 &uAccountId, const uint160& uCurrencyID, const uint160& uIssuerID);
 	int getSerializeSize() const;
 //	std::string getText() const;
 	Json::Value getJson(int) const;
