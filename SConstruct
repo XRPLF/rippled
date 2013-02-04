@@ -7,9 +7,10 @@ import platform
 
 OSX	= bool(platform.mac_ver()[0])
 FreeBSD	= bool('FreeBSD' == platform.system())
-Ubuntu	= bool('Ubuntu' == platform.dist())
+Linux	= bool('Linux' == platform.system())
+Ubuntu	= bool(Linux and 'Ubuntu' == platform.linux_distribution()[0])
 
-if OSX:
+if OSX or Ubuntu:
 	CTAGS = '/usr/bin/ctags'
 else:
 	CTAGS = '/usr/bin/exuberant-ctags'
