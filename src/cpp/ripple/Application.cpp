@@ -166,7 +166,7 @@ void Application::setup()
 	//
 	// Allow peer connections.
 	//
-	if (!theConfig.RUN_STANDALONE && !theConfig.PEER_IP.empty() && theConfig.PEER_PORT)
+	if (!theConfig.RUN_STANDALONE)
 	{
 		try
 		{

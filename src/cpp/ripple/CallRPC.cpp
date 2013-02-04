@@ -694,7 +694,7 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 	return nRet;
 }
 
-#define RPC_NOTIFY_MAX_BYTES	8192
+#define RPC_REPLY_MAX_BYTES		(128*1024*1024)
 #define RPC_NOTIFY_SECONDS		10
 
 bool responseRPC(
@@ -787,7 +787,7 @@ void callRPC(
 			jvParams,
 			mapRequestHeaders,
 			"/", _1, _2),
-		RPC_NOTIFY_MAX_BYTES,
+		RPC_REPLY_MAX_BYTES,
 		boost::posix_time::seconds(RPC_NOTIFY_SECONDS),
 		boost::bind(&responseRPC, callbackFuncP, _1, _2, _3));
 }
