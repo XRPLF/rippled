@@ -12,9 +12,9 @@ require('../src/js/config').load(require('./config'));
 buster.testRunner.timeout = 5000;
 
 buster.testCase("Basic Path finding", {
-  // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
-  // 'setUp' : testutils.build_setup({ verbose: true }),
   'setUp' : testutils.build_setup(),
+  // 'setUp' : testutils.build_setup({ verbose: true }),
+  // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
   'tearDown' : testutils.build_teardown(),
 
   "no direct path, no intermediary -> no alternatives" :
