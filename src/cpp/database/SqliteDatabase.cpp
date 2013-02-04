@@ -71,8 +71,7 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 	{
 		if ((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED))
 		{
-			cLog(lsFATAL) << << mHost  << " returns error " << rc
-				<< ": " << sqlite3_errmsg(mConnection);
+			cLog(lsFATAL) << mHost  << " returns error " << rc << ": " << sqlite3_errmsg(mConnection);
 			assert(false);
 		}
 		mMoreRows = false;
@@ -249,8 +248,8 @@ void SqliteDatabase::runWal()
 			int ret = sqlite3_wal_checkpoint_v2(mConnection, db.c_str(), SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
 			if (ret != SQLITE_OK)
 			{
-				cLog((ret == SQLITE_LOCKED) ? lsDEBUG : lsWARNING) << "WAL " << mHost << ": " <<
-					<< sqlite3_db_filename(mConnection, "main") << " / " << db << " errror " << ret;
+				cLog((ret == SQLITE_LOCKED) ? lsDEBUG : lsWARNING) << "WAL " << mHost << ":"
+					<< db << " errror " << ret;
 			}
 		}
 		walSet.clear();
