@@ -35,9 +35,12 @@ PeerDoor::PeerDoor(boost::asio::io_service& io_service) :
 	if (1 != SSL_CTX_set_cipher_list(mCtx.native_handle(), theConfig.PEER_SSL_CIPHER_LIST.c_str()))
 		std::runtime_error("Error setting cipher list (no valid ciphers).");
 
-	Log(lsINFO) << "Peer port: " << theConfig.PEER_IP << " " << theConfig.PEER_PORT;
 
-	startListening();
+	if (!theConfig.PEER_IP.empty() && theConfig.PEER_PORT)
+	{
+		Log(lsINFO) << "Peer port: " << theConfig.PEER_IP << " " << theConfig.PEER_PORT;
+		startListening();
+	}
 }
 
 void PeerDoor::startListening()
