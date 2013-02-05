@@ -160,22 +160,31 @@ TER PaymentTransactor::doApply()
 		STAmount	saMaxAmountAct;
 		STAmount	saDstAmountAct;
 
-		terResult	= isSetBit(mParams, tapOPEN_LEDGER) && spsPaths.size() > RIPPLE_PATHS_MAX
-			? telBAD_PATH_COUNT			// Too many paths for proposed ledger.
-			: RippleCalc::rippleCalc(
-				mEngine->getNodes(),
-				saMaxAmountAct,
-				saDstAmountAct,
-				vpsExpanded,
-				saMaxAmount,
-				saDstAmount,
-				uDstAccountID,
-				mTxnAccountID,
-				spsPaths,
-				bPartialPayment,
-				bLimitQuality,
-				bNoRippleDirect,		// Always compute for finalizing ledger.
-				false);					// Not standalone, delete unfundeds.
+		try
+		{
+			terResult	= isSetBit(mParams, tapOPEN_LEDGER) && spsPaths.size() > RIPPLE_PATHS_MAX
+				? telBAD_PATH_COUNT			// Too many paths for proposed ledger.
+				: RippleCalc::rippleCalc(
+					mEngine->getNodes(),
+					saMaxAmountAct,
+					saDstAmountAct,
+					vpsExpanded,
+					saMaxAmount,
+					saDstAmount,
+					uDstAccountID,
+					mTxnAccountID,
+					spsPaths,
+					bPartialPayment,
+					bLimitQuality,
+					bNoRippleDirect,		// Always compute for finalizing ledger.
+					false);					// Not standalone, delete unfundeds.
+		}
+		catch (const std::exception& e)
+		{
+			cLog(lsINFO) << "Payment: Caught throw: " << e.what();
+
+			terResult	= tefEXCEPTION;
+		}
 	}
 	else
 	{

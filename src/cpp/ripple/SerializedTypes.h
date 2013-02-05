@@ -623,13 +623,13 @@ public:
 	const STPathElement& getElement(int offset)			{ return mPath[offset]; }
 	void addElement(const STPathElement &e)				{ mPath.push_back(e); }
 	void clear()										{ mPath.clear(); }
-	bool hasSeen(const uint160 &acct);
+	bool hasSeen(const uint160 &uAccountId, const uint160& uCurrencyID, const uint160& uIssuerID);
 	int getSerializeSize() const;
 //	std::string getText() const;
 	Json::Value getJson(int) const;
 
-	uint160 mCurrencyID;
-	uint160 mCurrentAccount; // what account is at the end of the path
+//	uint160 mCurrencyID;
+//	uint160 mCurrentAccount; // what account is at the end of the path
 
 	std::vector<STPathElement>::iterator begin()				{ return mPath.begin(); }
 	std::vector<STPathElement>::iterator end()					{ return mPath.end(); }
