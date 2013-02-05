@@ -147,6 +147,8 @@ void Application::setup()
 	else
 		startNewLedger();
 
+	mOrderBookDB.setup(theApp->getLedgerMaster().getCurrentLedger()); // TODO: We need to update this if the ledger jumps
+
 	//
 	// Begin validation and ip maintenance.
 	// - Wallet maintains local information: including identity and network connection persistence information.

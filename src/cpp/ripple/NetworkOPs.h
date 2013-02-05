@@ -71,6 +71,7 @@ protected:
 	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator		subInfoMapIterator;
 
 	typedef boost::unordered_map<uint160,std::pair<InfoSub*,uint32> >					subSubmitMapType;
+	//typedef boost::unordered_map<OrderBook::pointer,boost::unordered_set<InfoSub*> >	subOrderMap;
 
 	typedef boost::unordered_map<std::string, RPCSub* >									subRpcMapType;
 
@@ -103,6 +104,7 @@ protected:
 	subInfoMapType										mSubAccount;
 	subInfoMapType										mSubRTAccount;
 	subSubmitMapType									mSubmitMap;   // TODO: probably dump this
+	
 
 	subRpcMapType										mRpcSubMap;
 
@@ -282,6 +284,9 @@ public:
 
 	bool subServer(InfoSub* ispListener, Json::Value& jvResult);
 	bool unsubServer(InfoSub* ispListener);
+
+	bool subBook(InfoSub* ispListener, uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut);
+	bool unsubBook(InfoSub* ispListener, uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut);
 
 	bool subTransactions(InfoSub* ispListener);
 	bool unsubTransactions(InfoSub* ispListener);

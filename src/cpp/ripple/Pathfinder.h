@@ -3,7 +3,6 @@
 
 #include "SerializedTypes.h"
 #include "RippleAddress.h"
-#include "OrderBookDB.h"
 #include "RippleCalc.h"
 #include <boost/shared_ptr.hpp>
 
@@ -42,7 +41,7 @@ class Pathfinder
 	uint160				mSrcIssuerID;
 	STAmount			mSrcAmount;
 
-	OrderBookDB			mOrderBook;
+	//OrderBookDB			mOrderBook;
 	Ledger::pointer		mLedger;
 	PathState::pointer	mPsDefault;
 

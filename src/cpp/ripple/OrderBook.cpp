@@ -20,4 +20,6 @@ OrderBook::OrderBook(SerializedLedgerEntry::pointer ledgerEntry)
 
 	mBookBase=Ledger::getBookBase(mCurrencyIn, mIssuerIn, mCurrencyOut, mIssuerOut);
 }
+
+
 // vim:ts=4

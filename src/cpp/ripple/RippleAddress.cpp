@@ -11,11 +11,11 @@
 #include <openssl/rand.h>
 
 #include "key.h"
-#include "Config.h"
 #include "BitcoinUtil.h"
 #include "rfc1751.h"
 #include "utils.h"
 #include "Log.h"
+#include "Serializer.h"
 
 SETUP_LOG();
 
