@@ -196,6 +196,10 @@ uint64 SqliteDatabase::getBigInt(int colIndex)
 	return(sqlite3_column_int64(mCurrentStmt, colIndex));
 }
 
+int SqliteDatabase::getKBUsed()
+{
+	return static_cast<int>(sqlite3_memory_used() / 1024);
+}
 
 static int SqliteWALHook(void *s, sqlite3* dbCon, const char *dbName, int walSize)
 {

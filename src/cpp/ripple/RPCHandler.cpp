@@ -1803,6 +1803,10 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest)
 	BOOST_FOREACH(InstanceType::InstanceCount& it, count)
 		ret[it.first] = it.second;
 
+	int dbKB = theApp->getLedgerDB()->getDB()->getKBUsed();
+	if (dbKB > 0)
+		ret["dbKB"] = dbKB;
+
 	return ret;
 }
 
