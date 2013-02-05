@@ -27,8 +27,12 @@ private:
     boost::asio::ip::tcp::resolver								mResolver;
 	boost::shared_ptr<boost::asio::ip::tcp::resolver::query>	mQuery;
 	boost::asio::streambuf										mRequest;
+	boost::asio::streambuf										mHeader;
     boost::asio::streambuf										mResponse;
+    std::string													mBody;
 	const unsigned short										mPort;
+	int															mResponseMax;
+	int															mStatus;
 	boost::function<void(boost::asio::streambuf& sb, const std::string& strHost)>			mBuild;
     boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)>	mComplete;
 
@@ -50,11 +54,12 @@ private:
 
     void handleWrite(const boost::system::error_code& ecResult, std::size_t bytes_transferred);
 
+    void handleHeader(const boost::system::error_code& ecResult, std::size_t bytes_transferred);
+
     void handleData(const boost::system::error_code& ecResult, std::size_t bytes_transferred);
 
 	void handleShutdown(const boost::system::error_code& ecResult);
 
-	void parseData();
 	void httpsNext();
 
 	void invokeComplete(const boost::system::error_code& ecResult, int iStatus = 0, const std::string& strData = "");

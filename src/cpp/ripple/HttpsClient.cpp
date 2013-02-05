@@ -17,6 +17,8 @@
 
 SETUP_LOG();
 
+#define CLIENT_MAX_HEADER (32*1024)
+
 using namespace boost::system;
 using namespace boost::asio;
 
@@ -27,8 +29,9 @@ HttpsClient::HttpsClient(
     ) :
 		mSocket(io_service, theConfig.SSL_CONTEXT),
 		mResolver(io_service),
-		mResponse(responseMax),
+		mHeader(CLIENT_MAX_HEADER),
 		mPort(port),
+		mResponseMax(responseMax),
 		mDeadline(io_service)
 {
 }
@@ -271,14 +274,59 @@ void HttpsClient::handleWrite(const boost::system::error_code& ecResult, std::si
     {
 		cLog(lsTRACE) << "Wrote.";
 
+		mSocket.async_read_until(
+			mHeader,
+			"\r\n\r\n",
+			boost::bind(&HttpsClient::handleHeader,
+				shared_from_this(),
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::bytes_transferred));
+    }
+}
+
+void HttpsClient::handleHeader(const boost::system::error_code& ecResult, std::size_t bytes_transferred)
+{
+	std::string		strHeader((std::istreambuf_iterator<char>(&mHeader)), std::istreambuf_iterator<char>());
+	cLog(lsTRACE) << "Header: \"" << strHeader << "\"";
+
+	static boost::regex	reStatus("\\`HTTP/1\\S+ (\\d{3}) .*\\'");			// HTTP/1.1 200 OK
+	static boost::regex reSize("\\`.*\\r\\nContent-Length:\\s+([0-9]+).*\\'");
+	static boost::regex reBody("\\`.*\\r\\n\\r\\n(.*)\\'");
+
+	boost::smatch	smMatch;
+
+	bool	bMatch	= boost::regex_match(strHeader, smMatch, reStatus);		// Match status code.
+	if (!bMatch)
+	{
+		// XXX Use our own error code.
+		cLog(lsTRACE) << "No status code";
+		invokeComplete(boost::system::error_code(errc::bad_address, system_category()));
+		return;
+	}
+	mStatus = lexical_cast_st<int>(smMatch[1]);
+
+	if (boost::regex_match(strHeader, smMatch, reBody)) // we got some body
+		mBody = smMatch[1];
+
+	if (boost::regex_match(strHeader, smMatch, reSize))
+	{
+		int size = lexical_cast_st<int>(smMatch[1]);
+		if (size < mResponseMax)
+			mResponseMax = size;
+	}
+
+	if (mResponseMax == 0) // no body wanted or available
+		invokeComplete(ecResult, mStatus);
+	else if (mBody.size() >= mResponseMax) // we got the whole thing
+		invokeComplete(ecResult, mStatus, mBody);
+	else
 		mSocket.async_read(
-			mResponse,
+			mResponse.prepare(mResponseMax - mBody.size()),
 			boost::asio::transfer_all(),
 			boost::bind(&HttpsClient::handleData,
 				shared_from_this(),
 				boost::asio::placeholders::error,
 				boost::asio::placeholders::bytes_transferred));
-    }
 }
 
 void HttpsClient::handleData(const boost::system::error_code& ecResult, std::size_t bytes_transferred)
@@ -302,11 +350,10 @@ void HttpsClient::handleData(const boost::system::error_code& ecResult, std::siz
 		}
 		else
 		{
-			// XXX According to boost example code, this is what we should expect for success.
-			cLog(lsTRACE) << "Complete, no eof.";
+			mResponse.commit(bytes_transferred);
+			std::string strBody((std::istreambuf_iterator<char>(&mResponse)), std::istreambuf_iterator<char>());
+			invokeComplete(ecResult, mStatus, mBody + strBody);
 		}
-
-		parseData();
     }
 }
 
@@ -337,36 +384,6 @@ void HttpsClient::invokeComplete(const boost::system::error_code& ecResult, int 
 	if (!mDeqSites.empty() && bAgain)
 	{
 		httpsNext();
-	}
-}
-
-void HttpsClient::parseData()
-{
-	std::string		strData((std::istreambuf_iterator<char>(&mResponse)), std::istreambuf_iterator<char>());
-
-	static boost::regex	reStatus("\\`HTTP/1\\S+ (\\d{3}) .*\\'");			// HTTP/1.1 200 OK
-	static boost::regex	reBody("\\`(?:.*?\\r\\n\\r\\n){1}(.*)\\'");
-
-	boost::smatch	smStatus;
-	boost::smatch	smBody;
-
-	bool	bMatch	= boost::regex_match(strData, smStatus, reStatus)		// Match status code.
-						&& boost::regex_match(strData, smBody, reBody);	// Match body.
-
-	// std::cerr << "Data:" << strData << std::endl;
-	// std::cerr << "Match: " << bMatch << std::endl;
-	// std::cerr << "Body:" << smBody[1] << std::endl;
-
-	if (bMatch)
-	{
-		boost::system::error_code	noErr;
-
-		invokeComplete(noErr, lexical_cast_st<int>(smStatus[1]), smBody[1]);
-	}
-	else
-	{
-		// XXX Use our own error code.
-		invokeComplete(boost::system::error_code(errc::bad_address, system_category()));
 	}
 }
 
