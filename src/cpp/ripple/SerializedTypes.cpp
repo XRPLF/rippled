@@ -415,16 +415,20 @@ bool STPathSet::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
-bool STPath::hasSeen(const uint160 &acct) {
-
-  for (int i = 0; i < mPath.size();i++) {
+bool STPath::hasSeen(const uint160 &uAccountId, const uint160& uCurrencyID, const uint160& uIssuerID)
+{
+  for (int i = 0; i < mPath.size(); ++i) {
     STPathElement ele = getElement(i);
-    if (ele.getAccountID() == acct)
+
+    if (ele.getAccountID() == uAccountId
+		&& ele.getCurrency() == uCurrencyID
+		&& ele.getIssuerID() == uIssuerID)
       return true;
   }
 
   return false;
 }
+
 int STPath::getSerializeSize() const
 {
 	int iBytes = 0;

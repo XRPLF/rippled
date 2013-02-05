@@ -229,19 +229,17 @@ protected:
 	STAmount* duplicate() const { return new STAmount(*this); }
 	static STAmount* construct(SerializerIterator&, SField::ref name);
 
+	STAmount(SField::ref name, const uint160& cur, const uint160& iss, uint64 val, int off, bool isNat, bool isNeg)
+		: SerializedType(name), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
+			mIsNative(isNat), mIsNegative(isNeg) { ; }
+
+public:
 	static const int cMinOffset = -96, cMaxOffset = 80;
 	static const uint64 cMinValue = 1000000000000000ull, cMaxValue = 9999999999999999ull;
 	static const uint64 cMaxNative = 9000000000000000000ull;
 	static const uint64 cNotNative = 0x8000000000000000ull;
 	static const uint64 cPosNative = 0x4000000000000000ull;
 
-	STAmount(SField::ref name, const uint160& cur, const uint160& iss, uint64 val, int off, bool isNat, bool isNeg)
-		: SerializedType(name), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
-			mIsNative(isNat), mIsNegative(isNeg) { ; }
-
-	static uint64 muldiv(uint64, uint64, uint64);
-
-public:
 	static uint64	uRateOne;
 
 	STAmount(uint64 v = 0, bool isNeg = false) : mValue(v), mOffset(0), mIsNative(true), mIsNegative(isNeg)
@@ -383,17 +381,15 @@ public:
 	// Someone is offering X for Y, I need Z, how much do I pay
 	static STAmount getPay(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
 
-	// Native currency conversions, to/from display format
-	static uint64 convertToDisplayAmount(const STAmount& internalAmount, uint64 totalNow, uint64 totalInit);
-	static STAmount convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 totalInit,
-		SField::ref name = sfGeneric);
-
 	static std::string createHumanCurrency(const uint160& uCurrency);
 	static STAmount deserialize(SerializerIterator&);
 	static bool currencyFromString(uint160& uDstCurrency, const std::string& sCurrency);
 	static bool issuerFromString(uint160& uDstIssuer, const std::string& sIssuer);
 
 	Json::Value getJson(int) const;
+
+	STAmount getRound() const;
+	void roundSelf();
 };
 
 extern STAmount saZero;
@@ -627,13 +623,13 @@ public:
 	const STPathElement& getElement(int offset)			{ return mPath[offset]; }
 	void addElement(const STPathElement &e)				{ mPath.push_back(e); }
 	void clear()										{ mPath.clear(); }
-	bool hasSeen(const uint160 &acct);
+	bool hasSeen(const uint160 &uAccountId, const uint160& uCurrencyID, const uint160& uIssuerID);
 	int getSerializeSize() const;
 //	std::string getText() const;
 	Json::Value getJson(int) const;
 
-	uint160 mCurrencyID;
-	uint160 mCurrentAccount; // what account is at the end of the path
+//	uint160 mCurrencyID;
+//	uint160 mCurrentAccount; // what account is at the end of the path
 
 	std::vector<STPathElement>::iterator begin()				{ return mPath.begin(); }
 	std::vector<STPathElement>::iterator end()					{ return mPath.end(); }

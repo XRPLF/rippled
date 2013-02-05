@@ -50,7 +50,7 @@ Application::Application() :
 	getRand(mNonce256.begin(), mNonce256.size());
 	getRand(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
 	mJobQueue.setThreadCount();
-	mSweepTimer.expires_from_now(boost::posix_time::seconds(20));
+	mSweepTimer.expires_from_now(boost::posix_time::seconds(10));
 	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
 }
 
@@ -166,7 +166,7 @@ void Application::setup()
 	//
 	// Allow peer connections.
 	//
-	if (!theConfig.RUN_STANDALONE && !theConfig.PEER_IP.empty() && theConfig.PEER_PORT)
+	if (!theConfig.RUN_STANDALONE)
 	{
 		try
 		{

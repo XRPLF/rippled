@@ -134,25 +134,30 @@ void Config::setup(const std::string& strConf, bool bTestNet, bool bQuiet)
 			if (strXdgConfigHome.empty())
 			{
 				// $XDG_CONFIG_HOME was not set, use default based on $HOME.
-				strXdgConfigHome	= str(boost::format("%s/.config") % strHome);
+				strXdgConfigHome	= boost::str(boost::format("%s/.config") % strHome);
 			}
 
 			if (strXdgDataHome.empty())
 			{
 				// $XDG_DATA_HOME was not set, use default based on $HOME.
-				strXdgDataHome	= str(boost::format("%s/.local/share") % strHome);
+				strXdgDataHome	= boost::str(boost::format("%s/.local/share") % strHome);
 			}
 
-			CONFIG_DIR			= str(boost::format("%s/" SYSTEM_NAME) % strXdgConfigHome);
+			CONFIG_DIR			= boost::str(boost::format("%s/" SYSTEM_NAME) % strXdgConfigHome);
 			CONFIG_FILE			= CONFIG_DIR / strConfFile;
-			DATA_DIR			= str(boost::format("%s/" SYSTEM_NAME) % strXdgDataHome);
+			DATA_DIR			= boost::str(boost::format("%s/" SYSTEM_NAME) % strXdgDataHome);
 
 			boost::filesystem::create_directories(CONFIG_DIR, ec);
 
 			if (ec)
-				throw std::runtime_error(str(boost::format("Can not create %s") % CONFIG_DIR));
+				throw std::runtime_error(boost::str(boost::format("Can not create %s") % CONFIG_DIR));
 		}
 	}
+
+	SSL_CONTEXT.set_default_verify_paths(ec);
+
+	if (ec)
+		throw std::runtime_error(boost::str(boost::format("Failed to set_default_verify_paths: %s") % ec.message()));
 
 	// Update default values
 	load();
@@ -164,10 +169,11 @@ void Config::setup(const std::string& strConf, bool bTestNet, bool bQuiet)
 	boost::filesystem::create_directories(DATA_DIR, ec);
 
 	if (ec)
-		throw std::runtime_error(str(boost::format("Can not create %s") % DATA_DIR));
+		throw std::runtime_error(boost::str(boost::format("Can not create %s") % DATA_DIR));
 }
 
 Config::Config()
+	: SSL_CONTEXT(boost::asio::ssl::context::sslv23)
 {
 	//
 	// Defaults

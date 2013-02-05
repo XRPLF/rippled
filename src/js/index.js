@@ -11,3 +11,5 @@ exports.Seed = require('./amount').Seed;
 // the official client, it makes sense to expose the SJCL instance so we don't
 // have to include it twice.
 exports.sjcl = require('../../build/sjcl');
+
+exports.config = require('./config');

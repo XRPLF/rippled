@@ -1,6 +1,6 @@
 var buster  = require("buster");
-var testutils = require("./testutils.js");
-var Server  = require("./server.js").Server;
+var testutils = require("./testutils");
+var Server  = require("./server").Server;
 
 // How long to wait for server to start.
 // var serverDelay = 1500;

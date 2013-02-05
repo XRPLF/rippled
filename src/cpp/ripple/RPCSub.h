@@ -15,6 +15,7 @@ class RPCSub : public InfoSub
 	std::string				mUrl;
 	std::string				mIp;
 	int						mPort;
+	bool					mSSL;
 	std::string				mUsername;
 	std::string				mPassword;
 	std::string				mPath;

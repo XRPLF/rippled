@@ -89,6 +89,7 @@ public:
 
 	virtual bool setupCheckpointing(JobQueue*)	{ return false; }
 	virtual SqliteDatabase* getSqliteDB()		{ return NULL; }
+	virtual int getKBUsed()						{ return -1; }
 };
 
 #endif

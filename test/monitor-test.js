@@ -1,14 +1,13 @@
 var async     = require("async");
 var buster    = require("buster");
 
-var Amount    = require("../src/js/amount.js").Amount;
-var Remote    = require("../src/js/remote.js").Remote;
-var Server    = require("./server.js").Server;
+var Amount    = require("../src/js/amount").Amount;
+var Remote    = require("../src/js/remote").Remote;
+var Server    = require("./server").Server;
 
-var testutils = require("./testutils.js");
+var testutils = require("./testutils");
 
-require("../src/js/amount.js").config = require("./config.js");
-require("../src/js/remote.js").config = require("./config.js");
+require('../src/js/config').load(require('./config'));
 
 buster.testRunner.timeout = 5000;
 

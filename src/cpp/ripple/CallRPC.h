@@ -23,6 +23,7 @@ protected:
 	Json::Value parseEvented(const Json::Value& jvParams);
 	Json::Value parseGetCounts(const Json::Value& jvParams);
 	Json::Value parseLedger(const Json::Value& jvParams);
+	Json::Value parseLedgerId(const Json::Value& jvParams);
 	Json::Value parseInternal(const Json::Value& jvParams);
 #if ENABLE_INSECURE
 	Json::Value parseLogin(const Json::Value& jvParams);
@@ -47,8 +48,14 @@ public:
 };
 
 extern int commandLineRPC(const std::vector<std::string>& vCmd);
-extern Json::Value callRPC(const std::string& strIp, const int iPort, const std::string& strUsername, const std::string& strPassword, const std::string& strPath, const std::string& strMethod, const Json::Value& params);
 
+extern void callRPC(
+	boost::asio::io_service& io_service,
+	const std::string& strIp, const int iPort,
+	const std::string& strUsername, const std::string& strPassword,
+	const std::string& strPath, const std::string& strMethod,
+	const Json::Value& jvParams, const bool bSSL,
+	boost::function<void(const Json::Value& jvInput)> callbackFuncP = 0);
 #endif
 
 // vim:ts=4

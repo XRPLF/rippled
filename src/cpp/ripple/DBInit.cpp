@@ -55,15 +55,16 @@ const char *LedgerDBInit[] = {
 	);",
 	"CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);",
 
-	"CREATE TABLE LedgerValidations	(				\
+	"CREATE TABLE Validations	(					\
 		LedgerHash	CHARACTER(64),					\
 		NodePubKey	CHARACTER(56),					\
-		Flags		BIGINT UNSIGNED,				\
 		SignTime	BIGINT UNSIGNED,				\
-		Signature	BLOB							\
+		RawData		BLOB							\
 	);",
-	"CREATE INDEX ValidationByHash ON				\
-		LedgerValidations(LedgerHash);",
+	"CREATE INDEX ValidationsByHash ON				\
+		Validations(LedgerHash);",
+	"CREATE INDEX ValidationsByTime ON				\
+		Validations(SignTime);",
 
 	"END TRANSACTION;"
 };

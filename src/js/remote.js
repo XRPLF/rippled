@@ -22,6 +22,7 @@ var UInt160       = require('./amount').UInt160;
 var Transaction   = require('./transaction').Transaction;
 
 var utils         = require('./utils');
+var config        = require('./config');
 
 // Request events emitted:
 // 'success' : Request successful.
@@ -187,6 +188,8 @@ Request.prototype.rt_accounts = function (accounts) {
 
 // --> trusted: truthy, if remote is trusted
 var Remote = function (opts, trace) {
+  var self  = this;
+
   this.trusted                = opts.trusted;
   this.websocket_ip           = opts.websocket_ip;
   this.websocket_port         = opts.websocket_port;
@@ -201,8 +204,9 @@ var Remote = function (opts, trace) {
   this._ledger_time           = undefined;
   this._stand_alone           = undefined;
   this._testnet               = undefined;
+  this._transaction_subs      = 0;
   this.online_target          = false;
-  this.online_state           = 'closed';         // 'open', 'closed', 'connecting', 'closing'
+  this._online_state          = 'closed';         // 'open', 'closed', 'connecting', 'closing'
   this.state                  = 'offline';        // 'online', 'offline'
   this.retry_timer            = undefined;
   this.retry                  = undefined;
@@ -238,17 +242,43 @@ var Remote = function (opts, trace) {
       'account_root' : {}
     }
   };
+
+  this.on('newListener', function (type, listener) {
+      if ('transaction' === type)
+      {
+        if (!self._transaction_subs && 'open' === self._online_state)
+        {
+          self.request_subscribe([ 'transactions' ])
+            .request();
+        
+        }
+        self._transaction_subs  += 1;
+      }
+    });
+
+  this.on('removeListener', function (type, listener) {
+      if ('transaction' === type)
+      {
+        self._transaction_subs  -= 1;
+
+        if (!self._transaction_subs && 'open' === self._online_state)
+        {
+          self.request_unsubscribe([ 'transactions' ])
+            .request();
+        }
+      }
+    });
 };
 
 Remote.prototype      = new EventEmitter;
 
 Remote.from_config = function (obj, trace) {
-  var serverConfig = 'string' === typeof obj ? exports.config.servers[obj] : obj;
+  var serverConfig = 'string' === typeof obj ? config.servers[obj] : obj;
 
   var remote = new Remote(serverConfig, trace);
 
-  for (var account in exports.config.accounts) {
-    var accountInfo = exports.config.accounts[account];
+  for (var account in config.accounts) {
+    var accountInfo = config.accounts[account];
     if ("object" === typeof accountInfo) {
       if (accountInfo.secret) {
         // Index by nickname ...
@@ -298,12 +328,12 @@ Remote.prototype._set_state = function (state) {
 
     switch (state) {
       case 'online':
-        this.online_state       = 'open';
+        this._online_state       = 'open';
         this.emit('connected');
         break;
 
       case 'offline':
-        this.online_state       = 'closed';
+        this._online_state       = 'closed';
         this.emit('disconnected');
         break;
     }
@@ -324,7 +354,7 @@ Remote.prototype.connect = function (online) {
     this.online_target  = target;
 
     // If we were in a stable state, go dynamic.
-    switch (this.online_state) {
+    switch (this._online_state) {
       case 'open':
         if (!target) this._connect_stop();
         break;
@@ -361,9 +391,9 @@ Remote.prototype._connect_retry = function () {
     // Do not continue trying to connect.
     this._set_state('offline');
   }
-  else if ('connecting' !== this.online_state) {
+  else if ('connecting' !== this._online_state) {
     // New to connecting state.
-    this.online_state = 'connecting';
+    this._online_state = 'connecting';
     this.retry        = 0;
 
     this._set_state('offline'); // Report newly offline.
@@ -518,6 +548,8 @@ Remote.prototype._connect_message = function (ws, json) {
         break;
 
       case 'transaction':
+        // To get these events, just subscribe to them. A subscribes and
+        // unsubscribes will be added as needed.
         // XXX If not trusted, need proof.
 
         this.emit('transaction', message);
@@ -819,6 +851,17 @@ Remote.prototype.request_wallet_accounts = function (seed) {
   return request;
 };
 
+Remote.prototype.request_sign = function (secret, tx_json) {
+  utils.assert(this.trusted);     // Don't send secrets.
+
+  var request = new Request(this, 'sign');
+
+  request.message.secret = secret;
+  request.message.tx_json = tx_json;
+
+  return request;
+};
+
 // Submit a transaction.
 Remote.prototype.submit = function (transaction) {
   var self  = this;
@@ -884,7 +927,12 @@ Remote.prototype.submit = function (transaction) {
 Remote.prototype._server_subscribe = function () {
   var self  = this;
 
-  this.request_subscribe([ 'ledger', 'server' ])
+  var feeds = [ 'ledger', 'server' ];
+  
+  if (this._transaction_subs)
+    feeds.push('transactions');
+
+  this.request_subscribe(feeds)
     .on('success', function (message) {
         self._stand_alone       = !!message.stand_alone;
         self._testnet           = !!message.testnet;
@@ -1097,7 +1145,9 @@ Remote.prototype.request_ripple_path_find = function (src_account, dst_account, 
   request.message.source_account      = UInt160.json_rewrite(src_account);
   request.message.destination_account = UInt160.json_rewrite(dst_account);
   request.message.destination_amount  = Amount.json_rewrite(dst_amount);
-  request.message.source_currencies   = source_currencies.map(function (ci) {
+
+  if (source_currencies) {
+    request.message.source_currencies   = source_currencies.map(function (ci) {
       var ci_new  = {};
 
       if ('issuer' in ci)
@@ -1108,6 +1158,7 @@ Remote.prototype.request_ripple_path_find = function (src_account, dst_account, 
 
       return ci_new;
     });
+  }
 
   return request;
 };
@@ -1155,7 +1206,6 @@ Remote.prototype.transaction = function () {
   return new Transaction(this);
 };
 
-exports.config          = {};
 exports.Remote          = Remote;
 
 // vim:sw=2:sts=2:ts=8:et

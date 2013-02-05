@@ -686,7 +686,7 @@ void Peer::recvHello(ripple::TMHello& packet)
 			<< "Peer speaks version " <<
 				(packet.protoversion() >> 16) << "." << (packet.protoversion() & 0xFF);
 		mHello = packet;
-		if (theApp->getUNL().nodeInCluster(mNodePublic))
+		if (theApp->getUNL().nodeInCluster(mNodePublic, mNodeName))
 		{
 			mCluster = true;
 			mLoad.setPrivileged();
@@ -1785,7 +1785,11 @@ Json::Value Peer::getJson()
 	if (mInbound)
 		ret["inbound"]		= true;
 	if (mCluster)
+	{
 		ret["cluster"]		= true;
+		if (!mNodeName.empty())
+			ret["name"]		= mNodeName;
+	}
 	if (mHello.has_fullversion())
 		ret["version"] = mHello.fullversion();
 

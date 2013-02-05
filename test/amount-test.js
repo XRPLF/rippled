@@ -1,16 +1,13 @@
 var buster      = require("buster");
 
-var jsbn        = require('../src/js/jsbn.js');
+var jsbn        = require('../src/js/jsbn');
 var BigInteger  = jsbn.BigInteger;
 var nbi         = jsbn.nbi;
 
-var amount      = require("../src/js/amount.js");
-var Amount      = require("../src/js/amount.js").Amount;
-var UInt160     = require("../src/js/amount.js").UInt160;
+var Amount      = require("../src/js/amount").Amount;
+var UInt160     = require("../src/js/uint160").UInt160;
 
-require("../src/js/amount.js").config = require("./config.js");
-
-var config  = require('./config.js');
+var config      = require('../src/js/config').load(require('./config'));
 
 // XXX Add test cases that push XRP vs non-XRP behavior.
 
@@ -20,16 +17,16 @@ buster.testCase("Amount", {
       buster.assert.equals(nbi(), UInt160.from_generic("0")._value);
     },
     "Parse 0 export" : function () {
-      buster.assert.equals(amount.consts.address_xns, UInt160.from_generic("0").to_json());
+      buster.assert.equals(UInt160.ADDRESS_ZERO, UInt160.from_generic("0").to_json());
     },
     "Parse 1" : function () {
       buster.assert.equals(new BigInteger([1]), UInt160.from_generic("1")._value);
     },
     "Parse rrrrrrrrrrrrrrrrrrrrrhoLvTp export" : function () {
-      buster.assert.equals(amount.consts.address_xns, UInt160.from_json("rrrrrrrrrrrrrrrrrrrrrhoLvTp").to_json());
+      buster.assert.equals(UInt160.ADDRESS_ZERO, UInt160.from_json("rrrrrrrrrrrrrrrrrrrrrhoLvTp").to_json());
     },
     "Parse rrrrrrrrrrrrrrrrrrrrBZbvji export" : function () {
-      buster.assert.equals(amount.consts.address_one, UInt160.from_json("rrrrrrrrrrrrrrrrrrrrBZbvji").to_json());
+      buster.assert.equals(UInt160.ADDRESS_ONE, UInt160.from_json("rrrrrrrrrrrrrrrrrrrrBZbvji").to_json());
     },
     "Parse mtgox export" : function () {
       buster.assert.equals(config.accounts["mtgox"].account, UInt160.from_json("mtgox").to_json());

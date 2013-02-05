@@ -43,10 +43,16 @@
 //   - may or may not forward.
 //
 
-var Amount        = require('./amount').Amount;
-var Currency      = require('./amount').Currency;
-var UInt160       = require('./amount').UInt160;
-var EventEmitter  = require('events').EventEmitter;
+var sjcl             = require('../../build/sjcl');
+
+var Amount           = require('./amount').Amount;
+var Currency         = require('./amount').Currency;
+var UInt160          = require('./amount').UInt160;
+var Seed             = require('./seed').Seed;
+var EventEmitter     = require('events').EventEmitter;
+var SerializedObject = require('./serializedobject').SerializedObject;
+
+var config           = require('./config');
 
 var SUBMIT_MISSING  = 4;    // Report missing.
 var SUBMIT_LOST     = 8;    // Give up tracking.
@@ -112,6 +118,11 @@ Transaction.flags = {
   },
 };
 
+Transaction.formats = require('./binformat').tx;
+
+Transaction.HASH_SIGN         = 0x53545800;
+Transaction.HASH_SIGN_TESTNET = 0x73747800;
+
 Transaction.prototype.consts = {
   'telLOCAL_ERROR'  : -399,
   'temMALFORMED'    : -299,
@@ -154,6 +165,30 @@ Transaction.prototype.set_state = function (state) {
     this.state  = state;
     this.emit('state', state);
   }
+};
+
+Transaction.prototype.serialize = function () {
+  return SerializedObject.from_json(this.tx_json);
+};
+
+Transaction.prototype.signing_hash = function () {
+  var prefix = config.testnet
+        ? Transaction.HASH_SIGN_TESTNET
+        : Transaction.HASH_SIGN;
+
+  return SerializedObject.from_json(this.tx_json).signing_hash(prefix);
+};
+
+Transaction.prototype.sign = function () {
+  var seed = Seed.from_json(this._secret),
+      priv = seed.generate_private(this.tx_json.Account),
+      hash = this.signing_hash();
+
+  var key = new sjcl.ecc.ecdsa.secretKey(sjcl.ecc.curves['c256'], priv.to_bn()),
+      sig = key.signDER(hash.to_bits(), 0),
+      hex = sjcl.codec.hex.fromBits(sig).toUpperCase();
+
+  this.tx_json.TxnSignature = hex;
 };
 
 // Submit a transaction to the network.
@@ -355,21 +390,21 @@ Transaction.prototype.transfer_rate = function (rate) {
 // --> flags: undefined, _flag_, or [ _flags_ ]
 Transaction.prototype.set_flags = function (flags) {
   if (flags) {
-      var   transaction_flags = Transaction.flags[this.tx_json.TransactionType];
+      var transaction_flags = Transaction.flags[this.tx_json.TransactionType];
 
       if (undefined == this.tx_json.Flags)      // We plan to not define this field on new Transaction.
         this.tx_json.Flags        = 0;
 
-      var flag_set  = 'object' === typeof flags ? flags : [ flags ];
+      var flag_set = 'object' === typeof flags ? flags : [ flags ];
 
-      for (index in flag_set) {
-        var flag  = flag_set[index];
+      for (var index in flag_set) {
+        if (!flag_set.hasOwnProperty(index)) continue;
 
-        if (flag in transaction_flags)
-        {
-          this.tx_json.Flags      += transaction_flags[flag];
-        }
-        else {
+        var flag = flag_set[index];
+
+        if (flag in transaction_flags) {
+          this.tx_json.Flags += transaction_flags[flag];
+        } else {
           // XXX Immediately report an error or mark it.
         }
       }

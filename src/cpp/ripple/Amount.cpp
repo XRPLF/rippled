@@ -142,7 +142,7 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 		std::vector<std::string> elements;
 		boost::split(elements, val, boost::is_any_of("\t\n\r ,/"));
 
-		if ((elements.size() < 0) || (elements.size() > 3))
+		if (elements.size() > 3)
 			throw std::runtime_error("invalid amount string");
 
 		value = elements[0];
@@ -479,23 +479,30 @@ void STAmount::canonicalize()
 		return;
 	}
 
-	while (mValue < cMinValue)
+	while ((mValue < cMinValue) && (mOffset > cMinOffset))
 	{
-		if (mOffset <= cMinOffset)
-			throw std::runtime_error("value overflow");
 		mValue *= 10;
-		if (mValue >= cMaxValue)
-			throw std::runtime_error("value overflow");
 		--mOffset;
 	}
 
 	while (mValue > cMaxValue)
 	{
 		if (mOffset >= cMaxOffset)
-			throw std::runtime_error("value underflow");
+			throw std::runtime_error("value overflow");
 		mValue /= 10;
 		++mOffset;
 	}
+
+	if (mOffset < cMinOffset)
+	{
+		mValue = 0;
+		mOffset = 0;
+		mIsNegative = false;
+	}
+
+	if (mOffset > cMaxOffset)
+		throw std::runtime_error("value overflow");
+
 	assert((mValue == 0) || ((mValue >= cMinValue) && (mValue <= cMaxValue)));
 	assert((mValue == 0) || ((mOffset >= cMinOffset) && (mOffset <= cMaxOffset)));
 	assert((mValue != 0) || (mOffset != -100));
@@ -570,12 +577,14 @@ STAmount* STAmount::construct(SerializerIterator& sit, SField::ref name)
 	{ // native
 		if ((value & cPosNative) != 0)
 			return new STAmount(name, value & ~cPosNative, false); // positive
+		else if (value == 0)
+			throw std::runtime_error("negative zero is not canonical");
 		return new STAmount(name, value, true); // negative
 	}
 
 	uint160 uCurrencyID = sit.get160();
 	if (!uCurrencyID)
-		throw std::runtime_error("invalid native currency");
+		throw std::runtime_error("invalid non-native currency");
 
 	uint160	uIssuerID = sit.get160();
 
@@ -643,7 +652,7 @@ std::string STAmount::getText() const
 			return std::string("-") +  lexical_cast_i(mValue);
 		else return lexical_cast_i(mValue);
 	}
-	if ((mOffset < -25) || (mOffset > -5))
+	if ((mOffset != 0) && ((mOffset < -25) || (mOffset > -5)))
 	{
 		if (mIsNegative)
 			return std::string("-") + lexical_cast_i(mValue) +
@@ -986,21 +995,36 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 // <--    uRate: normalize(offerIn/offerOut)
 //             A lower rate is better for the person taking the order.
 //             The taker gets more for less with a lower rate.
+// Zero is returned if the offer is worthless.
 uint64 STAmount::getRate(const STAmount& offerOut, const STAmount& offerIn)
 {
-	if (offerOut.isZero()) throw std::runtime_error("Worthless offer");
+	if (offerOut.isZero())
+		return 0;
 
-	STAmount r = divide(offerIn, offerOut, CURRENCY_ONE, ACCOUNT_ONE);
+	try
+	{
+		STAmount r = divide(offerIn, offerOut, CURRENCY_ONE, ACCOUNT_ONE);
 
-	assert((r.getExponent() >= -100) && (r.getExponent() <= 155));
+		if (r.isZero()) // offer is too good
+			return 0;
 
-	uint64 ret = r.getExponent() + 100;
+		assert((r.getExponent() >= -100) && (r.getExponent() <= 155));
 
-	return (ret << (64 - 8)) | r.getMantissa();
+		uint64 ret = r.getExponent() + 100;
+
+		return (ret << (64 - 8)) | r.getMantissa();
+	}
+	catch (...)
+	{ // overflow -- very bad offer
+		return 0;
+	}
 }
 
 STAmount STAmount::setRate(uint64 rate)
 {
+	if (rate == 0)
+		return STAmount(CURRENCY_ONE, ACCOUNT_ONE);
+
 	uint64 mantissa = rate & ~(255ull << (64 - 8));
 	int exponent = static_cast<int>(rate >> (64 - 8)) - 100;
 
@@ -1009,7 +1033,7 @@ STAmount STAmount::setRate(uint64 rate)
 
 // Taker gets all taker can pay for with saTakerFunds/uTakerPaysRate, limited by saOfferPays and saOfferFunds/uOfferPaysRate.
 //
-// Existing offer is on the books. Offer owner get's their rate.
+// Existing offer is on the books. Offer owner gets their rate.
 //
 // Taker pays what they can. If taker is an offer, doesn't matter what rate taker is. Taker is spending at same or better rate
 // than they wanted. Taker should consider themselves as wanting to buy X amount. Taker is willing to pay at most the rate of Y/X
@@ -1032,7 +1056,6 @@ STAmount STAmount::setRate(uint64 rate)
 // <--       saTakerGot: Actual
 // <-- saTakerIssuerFee: Actual
 // <-- saOfferIssuerFee: Actual
-// <--          bRemove: remove offer it is either fullfilled or unfunded
 bool STAmount::applyOffer(
 	const uint32 uTakerPaysRate, const uint32 uOfferPaysRate,
 	const STAmount& saOfferRate,
@@ -1161,31 +1184,6 @@ STAmount STAmount::getPay(const STAmount& offerOut, const STAmount& offerIn, con
 	return (ret > offerIn) ? offerIn : ret;
 }
 
-uint64 STAmount::muldiv(uint64 a, uint64 b, uint64 c)
-{ // computes (a*b)/c rounding up - supports values up to 10^18
-	if (c == 0) throw std::runtime_error("underflow");
-	if ((a == 0) || (b == 0)) return 0;
-
-	CBigNum v;
-	if ((BN_add_word64(&v, a * 10 + 5) != 1) ||
-		(BN_mul_word64(&v, b * 10 + 5) != 1) ||
-		(BN_div_word64(&v, c) == ((uint64) -1)) ||
-		(BN_div_word64(&v, 100) == ((uint64) -1)))
-		throw std::runtime_error("muldiv error");
-
-	return v.getuint64();
-}
-
-uint64 STAmount::convertToDisplayAmount(const STAmount& internalAmount, uint64 totalNow, uint64 totalInit)
-{ // Convert an internal ledger/account quantity of native currency to a display amount
-	return muldiv(internalAmount.getNValue(), totalInit, totalNow);
-}
-
-STAmount STAmount::convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 totalInit, SField::ref name)
-{ // Convert a display/request currency amount to an internal amount
-	return STAmount(name, muldiv(displayAmount, totalNow, totalInit));
-}
-
 STAmount STAmount::deserialize(SerializerIterator& it)
 {
 	std::auto_ptr<STAmount> s(dynamic_cast<STAmount*>(construct(it, sfGeneric)));
@@ -1213,6 +1211,40 @@ std::string STAmount::getFullText() const
 			% getText()
 			% getHumanCurrency()
 			% RippleAddress::createHumanAccountID(mIssuer));
+	}
+}
+
+STAmount STAmount::getRound() const
+{
+	if (mIsNative)
+		return *this;
+
+	uint64 valueDigits = mValue % 1000000000ull;
+	if (valueDigits == 1)
+		return STAmount(mCurrency, mIssuer, mValue - 1, mOffset, mIsNegative);
+	else if (valueDigits == 999999999ull)
+		return STAmount(mCurrency, mIssuer, mValue + 1, mOffset, mIsNegative);
+
+	return *this;
+}
+
+void STAmount::roundSelf()
+{
+	if (mIsNative)
+		return;
+
+	uint64 valueDigits = mValue % 1000000000ull;
+	if (valueDigits == 1)
+	{
+		mValue -= 1;
+		if (mValue < cMinValue)
+			canonicalize();
+	}
+	else if (valueDigits == 999999999ull)
+	{
+		mValue += 1;
+		if (mValue > cMaxValue)
+			canonicalize();
 	}
 }
 
@@ -1462,7 +1494,7 @@ BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 	BOOST_TEST_MESSAGE("Amount CC Complete");
 }
 
-static void roundTest(int n, int d, int m)
+static bool roundTest(int n, int d, int m)
 { // check STAmount rounding
 	STAmount num(CURRENCY_ONE, ACCOUNT_ONE, n);
 	STAmount den(CURRENCY_ONE, ACCOUNT_ONE, d);
@@ -1471,18 +1503,19 @@ static void roundTest(int n, int d, int m)
 	STAmount res = STAmount::multiply(quot, mul, CURRENCY_ONE, ACCOUNT_ONE);
 	if (res.isNative())
 		BOOST_FAIL("Product is native");
-
-	cLog(lsDEBUG) << n << " / " << d << " = " << quot.getText();
+	res.roundSelf();
 
 	STAmount cmp(CURRENCY_ONE, ACCOUNT_ONE, (n * m) / d);
 	if (cmp.isNative())
 		BOOST_FAIL("Comparison amount is native");
 
 	if (res == cmp)
-		return;
+		return true;
 	cmp.throwComparable(res);
-	cLog(lsINFO) << "(" << num.getText() << "/" << den.getText() << ") X " << mul.getText() << " = "
+	cLog(lsWARNING) << "(" << num.getText() << "/" << den.getText() << ") X " << mul.getText() << " = "
 		<< res.getText() << " not " << cmp.getText();
+	BOOST_FAIL("Round fail");
+	return false;
 }
 
 static void mulTest(int a, int b)
@@ -1552,6 +1585,46 @@ BOOST_AUTO_TEST_CASE( CurrencyMulDivTests )
 
 	for (int i = 0; i <= 100000; ++i)
 			mulTest(rand() % 10000000, rand() % 10000000);
+}
+
+BOOST_AUTO_TEST_CASE( UnderFlowTests )
+{
+	STAmount bigNative(STAmount::cMaxNative / 2);
+	STAmount bigValue(CURRENCY_ONE, ACCOUNT_ONE,
+		(STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMaxOffset - 1);
+	STAmount smallValue(CURRENCY_ONE, ACCOUNT_ONE,
+		(STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMinOffset + 1);
+	STAmount zero(CURRENCY_ONE, ACCOUNT_ONE, 0);
+
+	STAmount smallXsmall = STAmount::multiply(smallValue, smallValue, CURRENCY_ONE, ACCOUNT_ONE);
+	if (!smallXsmall.isZero())
+		BOOST_FAIL("STAmount: smallXsmall != 0");
+
+	STAmount bigDsmall = STAmount::divide(smallValue, bigValue, CURRENCY_ONE, ACCOUNT_ONE);
+	if (!bigDsmall.isZero())
+		BOOST_FAIL("STAmount: small/big != 0: " << bigDsmall);
+
+	bigDsmall = STAmount::divide(smallValue, bigNative, CURRENCY_ONE, uint160());
+	if (!bigDsmall.isZero())
+		BOOST_FAIL("STAmount: small/bigNative != 0: " << bigDsmall);
+
+	bigDsmall = STAmount::divide(smallValue, bigValue, uint160(), uint160());
+	if (!bigDsmall.isZero())
+		BOOST_FAIL("STAmount: (small/big)->N != 0: " << bigDsmall);
+
+	bigDsmall = STAmount::divide(smallValue, bigNative, uint160(), uint160());
+	if (!bigDsmall.isZero())
+		BOOST_FAIL("STAmount: (small/bigNative)->N != 0: " << bigDsmall);
+
+	// very bad offer
+	uint64 r = STAmount::getRate(smallValue, bigValue);
+	if (r != 0)
+		BOOST_FAIL("STAmount: getRate(smallOut/bigIn) != 0" << r);
+
+	// very good offer
+	r = STAmount::getRate(bigValue, smallValue);
+	if (r != 0)
+		BOOST_FAIL("STAmount:: getRate(smallIn/bigOUt) != 0" << r);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

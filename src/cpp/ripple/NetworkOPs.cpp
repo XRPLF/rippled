@@ -113,6 +113,11 @@ bool NetworkOPs::haveLedgerRange(uint32 from, uint32 to)
 	return mLedgerMaster->haveLedgerRange(from, to);
 }
 
+bool NetworkOPs::haveLedger(uint32 seq)
+{
+	return mLedgerMaster->haveLedger(seq);
+}
+
 bool NetworkOPs::addWantedHash(const uint256& h)
 {
 	boost::recursive_mutex::scoped_lock sl(mWantedHashLock);

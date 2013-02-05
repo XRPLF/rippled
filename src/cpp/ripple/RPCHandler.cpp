@@ -296,6 +296,11 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 		return jvResult;
 	}
 
+	if (jvRequest.isMember("debug_signing")) {
+		jvResult["tx_unsigned"]		= strHex(stpTrans->getSerializer().peekData());
+		jvResult["tx_signing_hash"]	= stpTrans->getSigningHash().ToString();
+	}
+
 	// FIXME: For performance, transactions should not be signed in this code path.
 	stpTrans->sign(naAccountPrivate);
 
@@ -1798,6 +1803,10 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest)
 	BOOST_FOREACH(InstanceType::InstanceCount& it, count)
 		ret[it.first] = it.second;
 
+	int dbKB = theApp->getLedgerDB()->getDB()->getKBUsed();
+	if (dbKB > 0)
+		ret["dbKB"] = dbKB;
+
 	return ret;
 }
 
@@ -2076,6 +2085,7 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 // {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
+//   ...
 // }
 Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest)
 {
@@ -2298,10 +2308,10 @@ Json::Value RPCHandler::doLedgerHeader(Json::Value jvRequest)
 
 	jvResult["ledger_data"]	= strHex(s.peekData());
 
-	if (mRole == ADMIN)
-		lpLedger->addJson(jvResult, 0);
+	// This information isn't verified, they should only use it if they trust us.
+	lpLedger->addJson(jvResult, 0);
 
-	return jvRequest;
+	return jvResult;
 }
 
 boost::unordered_set<RippleAddress> RPCHandler::parseAccountIds(const Json::Value& jvArray)

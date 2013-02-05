@@ -57,6 +57,8 @@ public:
 
 	void runWal();
 	void doHook(const char *db, int walSize);
+
+	int getKBUsed();
 };
 
 class SqliteStatement

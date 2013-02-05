@@ -124,7 +124,7 @@ public:
 	void setClosed()	{ mClosed = true; }
 	void setAccepted(uint32 closeTime, int closeResolution, bool correctCloseTime);
 	void setAccepted();
-	void setImmutable()	{ updateHash(); mImmutable = true; }
+	void setImmutable();
 	bool isClosed()		{ return mClosed; }
 	bool isAccepted()	{ return mAccepted; }
 	bool isImmutable()	{ return mImmutable; }

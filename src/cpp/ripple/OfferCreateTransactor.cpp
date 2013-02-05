@@ -68,7 +68,7 @@ TER OfferCreateTransactor::takeOffers(
 				uTipIndex		= sleOfferDir->getIndex();
 				uTipQuality		= Ledger::getQuality(uTipIndex);
 
-				cLog(lsINFO) << boost::str(boost::format("takeOffers: possible counter offer found: uTipQuality=%d uTipQuality=%s")
+				cLog(lsINFO) << boost::str(boost::format("takeOffers: possible counter offer found: uTipQuality=%d uTipIndex=%s")
 					% uTipQuality
 					% uTipIndex.ToString());
 
@@ -152,7 +152,7 @@ TER OfferCreateTransactor::takeOffers(
 				STAmount		saTakerFunds	= mEngine->getNodes().accountFunds(uTakerAccountID, saTakerPays);
 				SLE::pointer	sleOfferAccount;	// Owner of offer.
 
-				if (!saOfferFunds.isPositive())
+				if (!saOfferFunds.isPositive())		// Includes zero.
 				{
 					// Offer is unfunded, possibly due to previous balance action.
 					cLog(lsINFO) << "takeOffers: offer unfunded: delete";

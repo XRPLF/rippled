@@ -27,11 +27,11 @@ var trace = function(comment, func) {
 };
 
 var arraySet = function (count, value) {
-  var a = new Array(count);
-  var i;
+  var i, a = new Array(count);
 
-  for (i = 0; i != count; i += 1)
+  for (i = 0; i < count; i++) {
     a[i] = value;
+  }
 
   return a;
 };

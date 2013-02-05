@@ -97,8 +97,7 @@ public:
 	void setLedger(uint32 ledger) { mInLedger = ledger; }
 
 	// database functions
-	static void saveTransaction(Transaction::ref);
-	bool save();
+	void save();
 	static Transaction::pointer load(const uint256& id);
 	static Transaction::pointer findFrom(const RippleAddress& fromID, uint32 seq);
 

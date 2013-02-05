@@ -2,6 +2,8 @@
 #define __CONFIG__
 
 #include <string>
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 #include <boost/filesystem.hpp>
 
 #include "types.h"
@@ -29,7 +31,7 @@
 #define VALIDATORS_FILE_NAME		"validators.txt"
 
 const int DOMAIN_BYTES_MAX				= 256;
-const int PUBLIC_BYTES_MAX				= 2048;		// Maximum bytes for an account public key.
+const int PUBLIC_BYTES_MAX				= 33;		// Maximum bytes for an account public key.
 
 const int SYSTEM_PEER_PORT				= 6561;
 const int SYSTEM_WEBSOCKET_PORT			= 6562;
@@ -166,6 +168,8 @@ public:
 	uint32						SIGN_TRANSACTION;
 	uint32						SIGN_VALIDATION;
 	uint32						SIGN_PROPOSAL;
+
+	boost::asio::ssl::context	SSL_CONTEXT;			// Generic SSL context.
 
 	Config();
 

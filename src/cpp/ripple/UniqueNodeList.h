@@ -88,7 +88,7 @@ private:
 		std::vector<int>	viReferrals;
 	} scoreNode;
 
-	std::set<RippleAddress>	sClusterNodes;
+	std::map<RippleAddress, std::string> sClusterNodes;
 
 	typedef boost::unordered_map<std::string,int> strIndex;
 	typedef std::pair<std::string,int> ipPort;
@@ -98,7 +98,7 @@ private:
 
 	bool scoreRound(std::vector<scoreNode>& vsnNodes);
 
-	void responseFetch(const std::string& strDomain, const boost::system::error_code& err, const std::string& strSiteFile);
+	bool responseFetch(const std::string& strDomain, const boost::system::error_code& err, int iStatus, const std::string& strSiteFile);
 
 	boost::posix_time::ptime		mtpScoreNext;		// When to start scoring.
 	boost::posix_time::ptime		mtpScoreStart;		// Time currently started scoring.
@@ -122,8 +122,8 @@ private:
 
 	void getValidatorsUrl(const RippleAddress& naNodePublic, section secSite);
 	void getIpsUrl(const RippleAddress& naNodePublic, section secSite);
-	void responseIps(const std::string& strSite, const RippleAddress& naNodePublic, const boost::system::error_code& err, const std::string& strIpsFile);
-	void responseValidators(const std::string& strValidatorsUrl, const RippleAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string& strValidatorsFile);
+	bool responseIps(const std::string& strSite, const RippleAddress& naNodePublic, const boost::system::error_code& err, int iStatus, const std::string& strIpsFile);
+	bool responseValidators(const std::string& strValidatorsUrl, const RippleAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, int iStatus, const std::string& strValidatorsFile);
 
 	void processIps(const std::string& strSite, const RippleAddress& naNodePublic, section::mapped_type* pmtVecStrIps);
 	int processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const RippleAddress& naNodePublic, validatorSource vsWhy, section::mapped_type* pmtVecStrValidators);
@@ -136,7 +136,7 @@ private:
 	bool getSeedNodes(const RippleAddress& naNodePublic, seedNode& dstSeedNode);
 	void setSeedNodes(const seedNode& snSource, bool bNext);
 
-	void validatorsResponse(const boost::system::error_code& err, std::string strResponse);
+	bool validatorsResponse(const boost::system::error_code& err, int iStatus, const std::string strResponse);
 	void nodeProcess(const std::string& strSite, const std::string& strValidators, const std::string& strSource);
 
 public:
@@ -155,6 +155,7 @@ public:
 
 	bool nodeInUNL(const RippleAddress& naNodePublic);
 	bool nodeInCluster(const RippleAddress& naNodePublic);
+	bool nodeInCluster(const RippleAddress& naNodePublic, std::string& name);
 
 	void nodeBootstrap();
 	bool nodeLoad(boost::filesystem::path pConfig);

@@ -40,6 +40,7 @@ private:
 	bool 			mActive;
 	bool			mCluster;			// Node in our cluster
 	RippleAddress	mNodePublic;		// Node public key of peer.
+	std::string		mNodeName;
 	ipPort			mIpPort;
 	ipPort			mIpPortConnect;
 	uint256			mCookieHash;

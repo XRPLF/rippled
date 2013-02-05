@@ -133,6 +133,12 @@ bool LedgerMaster::haveLedgerRange(uint32 from, uint32 to)
 	return (prevMissing == RangeSet::RangeSetAbsent) || (prevMissing < from);
 }
 
+bool LedgerMaster::haveLedger(uint32 seq)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	return mCompleteLedgers.hasValue(seq);
+}
+
 void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 {
 	uint32 seq = ledger->getLedgerSeq();

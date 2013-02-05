@@ -4,6 +4,7 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/test/unit_test.hpp>
 
 #include "../json/writer.h"
 
@@ -112,14 +113,31 @@ Ledger::Ledger(const std::string& rawLedger, bool hasPrefix) :
 	zeroFees();
 }
 
+void Ledger::setImmutable()
+{
+	if (!mImmutable)
+	{
+		updateHash();
+		mImmutable = true;
+		if (mTransactionMap)
+			mTransactionMap->setImmutable();
+		if (mAccountStateMap)
+			mAccountStateMap->setImmutable();
+	}
+}
+
 void Ledger::updateHash()
 {
 	if (!mImmutable)
 	{
-		if (mTransactionMap) mTransHash = mTransactionMap->getHash();
-		else mTransHash.zero();
-		if (mAccountStateMap) mAccountHash = mAccountStateMap->getHash();
-		else mAccountHash.zero();
+		if (mTransactionMap)
+			mTransHash = mTransactionMap->getHash();
+		else
+			mTransHash.zero();
+		if (mAccountStateMap)
+			mAccountHash = mAccountStateMap->getHash();
+		else
+			mAccountHash.zero();
 	}
 
 	Serializer s(118);
@@ -169,18 +187,17 @@ void Ledger::setAccepted(uint32 closeTime, int closeResolution, bool correctClos
 	mCloseTime = correctCloseTime ? (closeTime - (closeTime % closeResolution)) : closeTime;
 	mCloseResolution = closeResolution;
 	mCloseFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
-	updateHash();
 	mAccepted = true;
-	mImmutable = true;
+	setImmutable();
 }
 
 void Ledger::setAccepted()
 { // used when we acquired the ledger
 	// FIXME assert(mClosed && (mCloseTime != 0) && (mCloseResolution != 0));
-	mCloseTime -= mCloseTime % mCloseResolution;
-	updateHash();
+	if ((mCloseFlags & sLCF_NoConsensusTime) == 0)
+		mCloseTime -= mCloseTime % mCloseResolution;
 	mAccepted = true;
-	mImmutable = true;
+	setImmutable();
 }
 
 AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
@@ -503,10 +520,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 
 		if (!db->executeSQL(sql) || !db->startIterRows())
-		{
-			cLog(lsDEBUG) << "No ledger for query: " << sql;
 			return Ledger::pointer();
-		}
 
 		db->getStr("LedgerHash", hash);
 		ledgerHash.SetHex(hash, true);
@@ -528,6 +542,9 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 //	Log(lsTRACE) << "Constructing ledger " << ledgerSeq << " from SQL";
 	Ledger::pointer ret = boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
 		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq);
+	ret->setClosed();
+	if (theApp->getOPs().haveLedger(ledgerSeq))
+		ret->setAccepted();
 	if (ret->getHash() != ledgerHash)
 	{
 		if (sLog(lsERROR))
@@ -548,7 +565,7 @@ uint256 Ledger::getHashByIndex(uint32 ledgerIndex)
 {
 	uint256 ret;
 
-	std::string sql="SELECT LedgerHash FROM Ledgers WHERE LedgerSeq='";
+	std::string sql="SELECT LedgerHash FROM Ledgers INDEXED BY SeqLedger WHERE LedgerSeq='";
 	sql.append(boost::lexical_cast<std::string>(ledgerIndex));
 	sql.append("';");
 
@@ -662,14 +679,14 @@ Json::Value Ledger::getJson(int options)
 {
 	Json::Value ledger(Json::objectValue);
 
-	bool full = (options & LEDGER_JSON_FULL) != 0;
+	bool bFull = isSetBit(options, LEDGER_JSON_FULL);
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	ledger["parentHash"] = mParentHash.GetHex();
 	ledger["seqNum"] = boost::lexical_cast<std::string>(mLedgerSeq);
 
-	if(mClosed || full)
+	if (mClosed || bFull)
 	{
 		if (mClosed)
 			ledger["closed"] = true;
@@ -692,14 +709,14 @@ Json::Value Ledger::getJson(int options)
 	else
 		ledger["closed"] = false;
 
-	if (mTransactionMap && (full || ((options & LEDGER_JSON_DUMP_TXRP) != 0)))
+	if (mTransactionMap && (bFull || ((options & LEDGER_JSON_DUMP_TXRP) != 0)))
 	{
 		Json::Value txns(Json::arrayValue);
 		SHAMapTreeNode::TNType type;
 		for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem(type); !!item;
 				item = mTransactionMap->peekNextItem(item->getTag(), type))
 		{
-			if (full)
+			if (bFull)
 			{
 				if (type == SHAMapTreeNode::tnTRANSACTION_NM)
 				{
@@ -732,13 +749,13 @@ Json::Value Ledger::getJson(int options)
 		ledger["transactions"] = txns;
 	}
 
-	if (mAccountStateMap && (full || ((options & LEDGER_JSON_DUMP_STATE) != 0)))
+	if (mAccountStateMap && (bFull || ((options & LEDGER_JSON_DUMP_STATE) != 0)))
 	{
 		Json::Value state(Json::arrayValue);
 		for (SHAMapItem::pointer item = mAccountStateMap->peekFirstItem(); !!item;
 				item = mAccountStateMap->peekNextItem(item->getTag()))
 		{
-			if (full)
+			if (bFull)
 			{
 				SerializerIterator sit(item->peekSerializer());
 				SerializedLedgerEntry sle(sit, item->getTag());
@@ -1403,4 +1420,15 @@ uint64 Ledger::scaleFeeLoad(uint64 fee)
 	return theApp->getFeeTrack().scaleFeeLoad(fee, mBaseFee, mReferenceFeeUnits);
 }
 
+BOOST_AUTO_TEST_SUITE(quality)
+
+BOOST_AUTO_TEST_CASE( getquality )
+{
+	uint256	uBig("D2DC44E5DC189318DB36EF87D2104CDF0A0FE3A4B698BEEE55038D7EA4C68000");
+
+	if (6125895493223874560 != Ledger::getQuality(uBig))
+		BOOST_FAIL("Ledger::getQuality fails.");
+}
+
+BOOST_AUTO_TEST_SUITE_END()
 // vim:ts=4

@@ -166,15 +166,9 @@ void HashedObjectStore::bulkWrite()
 HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 {
 
-	HashedObject::pointer obj;
-	{
-		obj = mCache.fetch(hash);
-		if (obj)
-		{
-//			cLog(lsTRACE) << "HOS: " << hash << " fetch: incache";
-			return obj;
-		}
-	}
+	HashedObject::pointer obj = mCache.fetch(hash);
+	if (obj)
+		return obj;
 
 	if (mNegativeCache.isPresent(hash))
 		return obj;
@@ -236,7 +230,9 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 	}
 #endif
 
+#ifdef PARANOID
 	assert(Serializer::getSHA512Half(data) == hash);
+#endif
 
 	HashedObjectType htype = hotUNKNOWN;
 	switch (type[0])

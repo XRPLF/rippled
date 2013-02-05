@@ -67,6 +67,18 @@ public:
 		std::swap(mSecure, s.mSecure);
 	}
 
+	boost::system::error_code verify(const std::string& strDomain)
+	{
+		boost::system::error_code ec;
+
+	    mSocket->set_verify_mode(boost::asio::ssl::verify_peer);
+
+		// XXX Verify semantics of RFC 2818 are what we want.
+	    mSocket->set_verify_callback(boost::asio::ssl::rfc2818_verification(strDomain), ec);
+
+		return ec;
+	}
+
 	void async_handshake(handshake_type type, callback cbFunc)
 	{
 		if ((type == ssl_socket::client) || (mSecure))
@@ -140,6 +152,14 @@ public:
 			boost::asio::async_write(PlainSocket(), buffers, handler);
 	}
 
+	template <typename Allocator, typename Handler>
+		void async_write(boost::asio::basic_streambuf<Allocator>& buffers, Handler handler)
+	{
+		if (isSecure())
+			boost::asio::async_write(*mSocket, buffers, handler);
+		else
+			boost::asio::async_write(PlainSocket(), buffers, handler);
+	}
 
 	template <typename Buf, typename Condition, typename Handler>
 		void async_read(const Buf& buffers, Condition cond, Handler handler)
