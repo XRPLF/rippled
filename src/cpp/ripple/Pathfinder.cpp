@@ -12,8 +12,6 @@
 SETUP_LOG();
 
 /*
-JED: V IIII
-
 we just need to find a succession of the highest quality paths there until we find enough width
 
 Don't do branching within each path
@@ -133,10 +131,12 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 // functionality is left to the future.
 //
 Pathfinder::Pathfinder(const RippleAddress& uSrcAccountID, const RippleAddress& uDstAccountID, const uint160& uSrcCurrencyID, const uint160& uSrcIssuerID, const STAmount& saDstAmount)
-	: mSrcAccountID(uSrcAccountID.getAccountID()), mDstAccountID(uDstAccountID.getAccountID()), mDstAmount(saDstAmount), mSrcCurrencyID(uSrcCurrencyID), mSrcIssuerID(uSrcIssuerID), mOrderBook(theApp->getLedgerMaster().getCurrentLedger())
+	: mSrcAccountID(uSrcAccountID.getAccountID()), mDstAccountID(uDstAccountID.getAccountID()), mDstAmount(saDstAmount), mSrcCurrencyID(uSrcCurrencyID), mSrcIssuerID(uSrcIssuerID)
 {
 	mLedger		= theApp->getLedgerMaster().getCurrentLedger();
 	mSrcAmount	= STAmount(uSrcCurrencyID, uSrcIssuerID, 1, 0, true);	// -1/uSrcIssuerID/uSrcIssuerID
+
+	theApp->getOrderBookDB().setup( theApp->getLedgerMaster().getCurrentLedger()); // TODO: have the orderbook update itself rather than rebuild it from scratch each time
 
 	// Construct the default path for later comparison.
 

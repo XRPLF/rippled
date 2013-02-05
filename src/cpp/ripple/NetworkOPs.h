@@ -284,6 +284,9 @@ public:
 	bool subServer(InfoSub* ispListener, Json::Value& jvResult);
 	bool unsubServer(InfoSub* ispListener);
 
+	bool subBook(InfoSub* ispListener, uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut);
+	bool unsubBook(InfoSub* ispListener, uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut);
+
 	bool subTransactions(InfoSub* ispListener);
 	bool unsubTransactions(InfoSub* ispListener);
 

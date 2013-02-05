@@ -14,8 +14,6 @@ class OrderBook
 	uint160 mIssuerIn;
 	uint160 mIssuerOut;
 
-	boost::unordered_set<InfoSub*> mListeners;
-
 	//SerializedLedgerEntry::pointer	mLedgerEntry;
 	OrderBook(SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
 public:
@@ -34,9 +32,6 @@ public:
 
 	// looks through the best offers to see how much it would cost to take the given amount
 	STAmount& getTakePrice(STAmount& takeAmount);
-
-	void addSubscriber(InfoSub* sub);
-	void removeSubscriber(InfoSub* sub);
 };
 
 // vim:ts=4
