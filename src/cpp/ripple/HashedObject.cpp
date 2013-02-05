@@ -230,7 +230,9 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 	}
 #endif
 
+#ifdef PARANOID
 	assert(Serializer::getSHA512Half(data) == hash);
+#endif
 
 	HashedObjectType htype = hotUNKNOWN;
 	switch (type[0])
