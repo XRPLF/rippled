@@ -39,8 +39,8 @@ buster.testCase("Fee Changes", {
   */
 
 buster.testCase("Sending", {
-  //'setUp'     : testutils.build_setup(),
-  'setUp'     : testutils.build_setup({verbose: true , no_server: true}),
+  'setUp'     : testutils.build_setup(),
+  //'setUp'     : testutils.build_setup({verbose: true , no_server: true}),
   'tearDown'  : testutils.build_teardown(),
 
   "send XRP to non-existent account with insufficent fee" :
@@ -974,7 +974,7 @@ buster.testCase("Indirect ripple", {
         });
     },
 
-  "=> indirect ripple with path" :
+  "indirect ripple with path" :
     function (done) {
       var self = this;
 
