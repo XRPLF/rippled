@@ -118,7 +118,7 @@ public:
 		const Ledger::ref		lrLedger = Ledger::pointer()
 	) : mLedger(lrLedger), saInReq(saSendMax), saOutReq(saSend) { ; }
 
-	PathState(const PathState& psSrc, bool bUnsed)
+	PathState(const PathState& psSrc, bool bUnused)
 	 : mLedger(psSrc.mLedger), saInReq(psSrc.saInReq), saOutReq(psSrc.saOutReq) { ; }
 
 	void setExpanded(

@@ -308,10 +308,14 @@ void PathState::setExpanded(
 
 	terStatus	= tesSUCCESS;
 
+	// XRP with issuer is malformed.
 	if ((!uMaxCurrencyID && !!uMaxIssuerID) || (!uOutCurrencyID && !!uOutIssuerID))
 		terStatus	= temBAD_PATH;
 
 	// Push sending node.
+	// For non-XRP, issuer is always sending account.
+	// - Trying to expand, not-compact.
+	// - Every issuer will be traversed through.
 	if (tesSUCCESS == terStatus)
 		terStatus	= pushNode(
 			!!uMaxCurrencyID
@@ -327,19 +331,20 @@ cLog(lsDEBUG) << boost::str(boost::format("PathState: pushed: account=%s currenc
 	% RippleAddress::createHumanAccountID(uSenderIssuerID));
 
 	if (tesSUCCESS == terStatus
-		&& uMaxIssuerID != uSenderIssuerID) {				// Issuer was not same as sender
-		// May have an implied node.
+		&& uMaxIssuerID != uSenderIssuerID) {				// Issuer was not same as sender.
+		// May have an implied account node.
+		// - If it was XRP, then issuers would have matched.
 
 		// Figure out next node properties for implied node.
 		const uint160	uNxtCurrencyID	= spSourcePath.size()
-											? spSourcePath.getElement(0).getCurrency()
-											: uOutCurrencyID;
+											? spSourcePath.getElement(0).getCurrency()	// Use next node.
+											: uOutCurrencyID;							// Use send.
 		const uint160	uNxtAccountID	= spSourcePath.size()
 											? spSourcePath.getElement(0).getAccountID()
 											: !!uOutCurrencyID
 												? uOutIssuerID == uReceiverID
 													? uReceiverID
-													: uOutIssuerID
+													: uOutIssuerID						// Use implied node.
 												: ACCOUNT_XRP;
 
 cLog(lsDEBUG) << boost::str(boost::format("PathState: implied check: uNxtCurrencyID=%s uNxtAccountID=%s")
@@ -347,8 +352,8 @@ cLog(lsDEBUG) << boost::str(boost::format("PathState: implied check: uNxtCurrenc
 	% RippleAddress::createHumanAccountID(uNxtAccountID));
 
 		// Can't just use push implied, because it can't compensate for next account.
-		if (!uNxtCurrencyID							// Next is XRP - will have offer next
-				|| uMaxCurrencyID != uNxtCurrencyID	// Next is different current - will have offer next
+		if (!uNxtCurrencyID							// Next is XRP, offer next. Must go through issuer.
+				|| uMaxCurrencyID != uNxtCurrencyID	// Next is different currency, offer next...
 				|| uMaxIssuerID != uNxtAccountID)	// Next is not implied issuer
 		{
 cLog(lsDEBUG) << boost::str(boost::format("PathState: sender implied: account=%s currency=%s issuer=%s")
@@ -447,6 +452,27 @@ cLog(lsDEBUG) << boost::str(boost::format("PathState: receiver implied: account=
 }
 
 // Set to a canonical path.
+// - Remove extra elements
+// - Assumes path is expanded.
+//
+// We do canonicalization to:
+// - Prevent waste in the ledger.
+// - Allow longer paths to be specified than would otherwise be allowed.
+//
+// Optimization theory:
+// - Can omit elements that the expansion routine derives.
+// - Can pack some elements into other elements.
+//
+// Rules:
+// - SendMax if not specified, defaults currency to send and if not sending XRP defaults issuer to sender.
+// - All paths start with the sender account.
+//   - Currency and issuer is from SendMax.
+// - All paths end with the destination account.
+//
+// Optimization:
+// - An XRP output implies an offer node or destination node is next.
+// - A change in currency implies an offer node.
+// - A change in issuer... 
 void PathState::setCanonical(
 	const PathState&	psExpanded
 	)
@@ -478,6 +504,7 @@ void PathState::setCanonical(
 
 	// saInAct
 	// - currency is always the same as vpnNodes[0].
+#if 1
 	if (uNode != uEnd && uMaxIssuerID != uAccountID)
 	{
 		// saInAct issuer is not the sender. This forces an implied node.
@@ -489,6 +516,45 @@ void PathState::setCanonical(
 
 		++uNode;
 	}
+#else
+	if (uNode != uEnd)
+	{							// Have another node
+		bool	bKeep	= false;
+
+		if (uMaxIssuerID != uAccountID)
+		{
+		}
+		if (uMaxCurrencyID)							// Not sending XRP.
+		{
+			// Node 1 must be an account.
+
+			if (uMaxIssuerID != uAccountID)
+			{
+				// Node 1 is required to specify issuer.
+
+				bKeep	= true;
+			}
+			else
+			{
+				// Node 1 must be an account
+
+			}
+		}
+		else
+		{
+			// Node 1 must be an order book.
+
+			bKeep			= true;
+		}
+
+		if (bKeep)
+		{
+			uCurrencyID	= psExpanded.vpnNodes[uNode].uCurrencyID;
+			uIssuerID	= psExpanded.vpnNodes[uNode].uIssuerID;
+			++uNode;		// Keep it.
+		}
+	}
+#endif
 
 	if (uNode != uEnd && !!uOutCurrencyID && uOutIssuerID != uDstAccountID)
 	{
@@ -518,7 +584,6 @@ void PathState::setCanonical(
 		const PaymentNode&	pnCur	= psExpanded.vpnNodes[uNode];
 		const PaymentNode&	pnNxt	= psExpanded.vpnNodes[uNode+1];
 
-		const bool		bPrvAccount		= isSetBit(pnPrv.uFlags, STPathElement::typeAccount);
 		const bool		bCurAccount		= isSetBit(pnCur.uFlags, STPathElement::typeAccount);
 
 		bool			bSkip	= false;
@@ -527,9 +592,11 @@ void PathState::setCanonical(
 		{
 			// Currently at an account.
 
+			// Output is non-XRP and issuer is account.
 			if (!!pnCur.uCurrencyID && pnCur.uIssuerID == pnCur.uAccountID)
 			{
 				// Account issues itself.
+// XXX Not good enough. Previous account must mention it.
 
 				bSkip	= true;
 			}
@@ -537,12 +604,14 @@ void PathState::setCanonical(
 		else
 		{
 			// Currently at an offer.
+			const bool		bPrvAccount		= isSetBit(pnPrv.uFlags, STPathElement::typeAccount);
 			const bool		bNxtAccount		= isSetBit(pnNxt.uFlags, STPathElement::typeAccount);
 
-			if (bPrvAccount && bNxtAccount	// Offer surrounded by accounts.
+			if (bPrvAccount && bNxtAccount					// Offer surrounded by accounts.
 				&& pnPrv.uCurrencyID != pnNxt.uCurrencyID)
 			{
-				// Offer can be implied by currenct change.
+				// Offer can be implied by currency change.
+// XXX What abount issuer?
 
 				bSkip	= true;
 			}
@@ -555,6 +624,7 @@ void PathState::setCanonical(
 
 			bool			bSetAccount		= bCurAccount;
 			bool			bSetCurrency	= uCurrencyID != pnCur.uCurrencyID;
+// XXX What if we need the next account because we want to skip it?
 			bool			bSetIssuer		= !uCurrencyID && uIssuerID != pnCur.uIssuerID;
 
 			pnNew.uFlags	= (bSetAccount ? STPathElement::typeAccount : 0)
@@ -572,6 +642,7 @@ void PathState::setCanonical(
 
 			if (bSetIssuer)
 				pnNew.uIssuerID		= pnCur.uIssuerID;
+// XXX ^^^ What about setting uIssuerID?
 
 			if (bSetCurrency && !uCurrencyID)
 				uIssuerID.zero();
@@ -588,6 +659,7 @@ void PathState::setCanonical(
 		% getJson());
 }
 
+// Build a canonicalized STPathSet from a vector of PathStates.
 void RippleCalc::setCanonical(STPathSet& spsDst, const std::vector<PathState::pointer>& vpsExpanded, bool bKeepDefault)
 {
 	// cLog(lsDEBUG) << boost::str(boost::format("SET: setCanonical> %d") % vpsExpanded.size());
@@ -597,11 +669,11 @@ void RippleCalc::setCanonical(STPathSet& spsDst, const std::vector<PathState::po
 		// Obvious defaults have 2 nodes when expanded.
 		if (bKeepDefault || 2 != pspExpanded->vpnNodes.size())
 		{
-			PathState	psCanonical(*pspExpanded, false);
+			PathState	psCanonical(*pspExpanded, false);	// Doesn't copy.
 
 			// cLog(lsDEBUG) << boost::str(boost::format("SET: setCanonical: %d %d %s") % bKeepDirect % pspExpanded->vpnNodes.size() % pspExpanded->getJson());
 
-			psCanonical.setCanonical(*pspExpanded);
+			psCanonical.setCanonical(*pspExpanded);			// Convert.
 
 			// Non-obvious defaults have 0 nodes when canonicalized.
 			if (bKeepDefault || psCanonical.vpnNodes.size())

@@ -1165,8 +1165,8 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 				STAmount						saMaxAmount(
 													uSrcCurrencyID,
 													!!uSrcIssuerID
-														? uSrcIssuerID
-														: !!uSrcCurrencyID
+														? uSrcIssuerID		// Use specifed issuer.
+														: !!uSrcCurrencyID	// Default to source account.
 															? raSrc.getAccountID()
 															: ACCOUNT_XRP,
 													1);
@@ -1213,6 +1213,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 					jvEntry["source_amount"]	= saMaxAmountAct.getJson(0);
 //					jvEntry["paths_expanded"]	= vpsExpanded.getJson(0);
 					jvEntry["paths_canonical"]	= spsCanonical.getJson(0);
+					jvEntry["paths_computed"]	= spsComputed.getJson(0);
 
 					jvArray.append(jvEntry);
 				}
