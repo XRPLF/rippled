@@ -17,7 +17,6 @@ int upTime()
 	static time_t firstCall = time(NULL);
 	if (uptimePtr != NULL)
 		return *uptimePtr;
-	cLog(lsTRACE) << "Slow uptime in use";
 	return static_cast<int>(time(NULL) - firstCall);
 }
 
