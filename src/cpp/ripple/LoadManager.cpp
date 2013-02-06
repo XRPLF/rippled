@@ -10,6 +10,17 @@
 
 SETUP_LOG();
 
+static volatile int* uptimePtr = NULL;
+
+int upTime()
+{
+	static time_t firstCall = time(NULL);
+	if (uptimePtr != NULL)
+		return *uptimePtr;
+	cLog(lsWARNING) << "slow uptime";
+	return static_cast<int>(time(NULL) - firstCall);
+}
+
 LoadManager::LoadManager(int creditRate, int creditLimit, int debitWarn, int debitLimit) :
 		mCreditRate(creditRate), mCreditLimit(creditLimit), mDebitWarn(debitWarn), mDebitLimit(debitLimit),
 		mShutdown(false), mUptime(0), mCosts(LT_MAX)
@@ -26,15 +37,20 @@ LoadManager::LoadManager(int creditRate, int creditLimit, int debitWarn, int deb
 
 	addLoadCost(LoadCost(LT_RequestData,		5,		LC_Disk | LC_Network));
 	addLoadCost(LoadCost(LT_CheapQuery,			1,		LC_CPU));
+
 }
 
 void LoadManager::init()
 {
+	if (uptimePtr == NULL)
+		uptimePtr = static_cast<volatile int *>(&mUptime);
 	boost::thread(boost::bind(&LoadManager::threadEntry, this)).detach();
 }
 
 LoadManager::~LoadManager()
 {
+	if (uptimePtr == &mUptime)
+		uptimePtr = NULL;
 	{
 		boost::mutex::scoped_lock sl(mLock);
 		mShutdown = true;

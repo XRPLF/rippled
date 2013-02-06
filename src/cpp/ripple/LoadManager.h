@@ -9,6 +9,8 @@
 
 #include "types.h"
 
+extern int upTime();
+
 enum LoadType
 { // types of load that can be placed on the server
 

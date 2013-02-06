@@ -1823,7 +1823,7 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest)
 		ret["dbKB"] = dbKB;
 
 	std::string uptime;
-	int s = theApp->getLoadManager().getUptime();
+	int s = upTime();
 	textTime(uptime, s, "year", 365*24*60*60);
 	textTime(uptime, s, "day", 24*60*60);
 	textTime(uptime, s, "hour", 24*60);
