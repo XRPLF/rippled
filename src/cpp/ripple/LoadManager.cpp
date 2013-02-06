@@ -295,9 +295,9 @@ void LoadManager::threadEntry()
 		t += boost::posix_time::seconds(1);
 		boost::posix_time::time_duration when = t - boost::posix_time::microsec_clock::universal_time();
 
-		if (when.is_negative())
+		if ((when.is_negative()) || (when.total_seconds() > 1))
 		{
-			cLog(lsWARNING) << "Backwards time jump";
+			cLog(lsWARNING) << "time jump";
 			t = boost::posix_time::microsec_clock::universal_time();
 		}
 		else
