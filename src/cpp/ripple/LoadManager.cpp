@@ -1,15 +1,18 @@
 #include "LoadManager.h"
 
 #include <boost/test/unit_test.hpp>
+#include <boost/thread.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "Log.h"
 #include "Config.h"
+#include "Application.h"
 
 SETUP_LOG();
 
 LoadManager::LoadManager(int creditRate, int creditLimit, int debitWarn, int debitLimit) :
 		mCreditRate(creditRate), mCreditLimit(creditLimit), mDebitWarn(debitWarn), mDebitLimit(debitLimit),
-		mCosts(LT_MAX)
+		mShutdown(false), mUptime(0), mCosts(LT_MAX)
 {
 	addLoadCost(LoadCost(LT_InvalidRequest,		10,		LC_CPU | LC_Network));
 	addLoadCost(LoadCost(LT_RequestNoReply,		1,		LC_CPU | LC_Disk));
@@ -23,6 +26,30 @@ LoadManager::LoadManager(int creditRate, int creditLimit, int debitWarn, int deb
 
 	addLoadCost(LoadCost(LT_RequestData,		5,		LC_Disk | LC_Network));
 	addLoadCost(LoadCost(LT_CheapQuery,			1,		LC_CPU));
+}
+
+void LoadManager::init()
+{
+	boost::thread(boost::bind(&LoadManager::threadEntry, this)).detach();
+}
+
+LoadManager::~LoadManager()
+{
+	{
+		boost::mutex::scoped_lock sl(mLock);
+		mShutdown = true;
+	}
+
+	do
+	{
+		boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+		{
+			boost::mutex::scoped_lock sl(mLock);
+			if (!mShutdown)
+				return;
+		}
+	}
+	while (1);
 }
 
 
@@ -237,6 +264,45 @@ Json::Value LoadFeeTrack::getJson(uint64 baseFee, uint32 referenceFeeUnits)
 	}
 
 	return j;
+}
+
+int LoadManager::getUptime()
+{
+	boost::mutex::scoped_lock sl(mLock);
+	return mUptime;
+}
+
+void LoadManager::threadEntry()
+{
+	boost::posix_time::ptime t = boost::posix_time::microsec_clock::universal_time();
+	while (1)
+	{
+		{
+			boost::mutex::scoped_lock sl(mLock);
+			if (mShutdown)
+			{
+				mShutdown = false;
+				return;
+			}
+			++mUptime;
+		}
+
+		if (theApp->getJobQueue().isOverloaded())
+			theApp->getFeeTrack().raiseLocalFee();
+		else
+			theApp->getFeeTrack().lowerLocalFee();
+
+		t += boost::posix_time::seconds(1);
+		boost::posix_time::time_duration when = t - boost::posix_time::microsec_clock::universal_time();
+
+		if (when.is_negative())
+		{
+			cLog(lsWARNING) << "Backwards time jump";
+			t = boost::posix_time::microsec_clock::universal_time();
+		}
+		else
+			boost::this_thread::sleep(when);
+	}
 }
 
 BOOST_AUTO_TEST_SUITE(LoadManager_test)

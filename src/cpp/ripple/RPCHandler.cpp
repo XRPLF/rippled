@@ -1786,6 +1786,21 @@ Json::Value RPCHandler::doLogin(Json::Value jvRequest)
 }
 #endif
 
+static void textTime(std::string& text, int& seconds, const char *unitName, int unitVal)
+{
+	int i = seconds / unitVal;
+	if (i == 0)
+		return;
+	seconds -= unitVal * i;
+	if (!text.empty())
+		text += ", ";
+	text += boost::lexical_cast<std::string>(i);
+	text += " ";
+	text += unitName;
+	if (i > 1)
+		text += "s";
+}
+
 // {
 //   min_count: <number>  // optional, defaults to 10
 // }
@@ -1806,6 +1821,15 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest)
 	int dbKB = theApp->getLedgerDB()->getDB()->getKBUsed();
 	if (dbKB > 0)
 		ret["dbKB"] = dbKB;
+
+	std::string uptime;
+	int s = theApp->getLoadManager().getUptime();
+	textTime(uptime, s, "year", 365*24*60*60);
+	textTime(uptime, s, "day", 24*60*60);
+	textTime(uptime, s, "hour", 24*60);
+	textTime(uptime, s, "minute", 60);
+	textTime(uptime, s, "second", 1);
+	ret["uptime"] = uptime;
 
 	return ret;
 }

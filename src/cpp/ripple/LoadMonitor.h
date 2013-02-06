@@ -35,8 +35,8 @@ public:
 
 	void setTargetLatency(uint64 avg, uint64 pk)
 	{
-		mTargetLatencyAvg = avg * 4;
-		mTargetLatencyPk = pk * 4;
+		mTargetLatencyAvg  = avg;
+		mTargetLatencyPk = pk;
 	}
 
 	bool isOverTarget(uint64 avg, uint64 peak)
@@ -46,6 +46,7 @@ public:
 	}
 
 	void getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& latencyPeak, bool& isOver);
+	bool isOver();
 };
 
 class LoadEvent

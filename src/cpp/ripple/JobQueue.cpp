@@ -181,6 +181,16 @@ Json::Value JobQueue::getJson(int)
 	return ret;
 }
 
+int JobQueue::isOverloaded()
+{
+	int count = 0;
+	boost::mutex::scoped_lock sl(mJobLock);
+	for (int i = 0; i < NUM_JOB_TYPES; ++i)
+		if (mJobLoads[i].isOver())
+			++count;
+	return count;
+}
+
 void JobQueue::shutdown()
 { // shut down the job queue without completing pending jobs
 	cLog(lsINFO) << "Job queue shutting down";
