@@ -2,7 +2,7 @@
 
 void LoadMonitor::update()
 { // call with the mutex
-	time_t now = time(NULL);
+	int now = upTime();
 
 	if (now == mLastUpdate) // current
 		return;

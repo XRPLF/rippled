@@ -17,7 +17,7 @@ int upTime()
 	static time_t firstCall = time(NULL);
 	if (uptimePtr != NULL)
 		return *uptimePtr;
-	cLog(lsWARNING) << "slow uptime";
+	cLog(lsTRACE) << "Slow uptime in use";
 	return static_cast<int>(time(NULL) - firstCall);
 }
 
@@ -117,7 +117,7 @@ void LoadManager::setDebitLimit(int r)
 	mDebitLimit = r;
 }
 
-void LoadManager::canonicalize(LoadSource& source, const time_t now) const
+void LoadManager::canonicalize(LoadSource& source, int now) const
 {
 	if (source.mLastUpdate != now)
 	{
@@ -133,9 +133,9 @@ void LoadManager::canonicalize(LoadSource& source, const time_t now) const
 
 bool LoadManager::shouldWarn(LoadSource& source) const
 {
-	time_t now = time(NULL);
 	boost::mutex::scoped_lock sl(mLock);
 
+	int now = upTime();
 	canonicalize(source, now);
 	if (source.isPrivileged() || (source.mBalance < mDebitWarn) || (source.mLastWarning == now))
 		return false;
@@ -146,9 +146,9 @@ bool LoadManager::shouldWarn(LoadSource& source) const
 
 bool LoadManager::shouldCutoff(LoadSource& source) const
 {
-	time_t now = time(NULL);
 	boost::mutex::scoped_lock sl(mLock);
 
+	int now = upTime();
 	canonicalize(source, now);
 	return !source.isPrivileged() && (source.mBalance < mDebitLimit);
 }
@@ -161,10 +161,10 @@ bool LoadManager::adjust(LoadSource& source, LoadType t) const
 
 bool LoadManager::adjust(LoadSource& source, int credits) const
 { // return: true = need to warn/cutoff
-	time_t now = time(NULL);
 	boost::mutex::scoped_lock sl(mLock);
 
 	// We do it this way in case we want to add exponential decay later
+	int now = upTime();
 	canonicalize(source, now);
 	source.mBalance += credits;
 	if (source.mBalance > mCreditLimit)

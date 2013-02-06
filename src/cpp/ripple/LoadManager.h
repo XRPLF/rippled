@@ -63,12 +63,12 @@ public:
 protected:
 	int		mBalance;
 	int		mFlags;
-	time_t	mLastUpdate;
-	time_t	mLastWarning;
+	int		mLastUpdate;
+	int		mLastWarning;
 
 public:
 	LoadSource() : mBalance(0), mFlags(0), mLastWarning(0)
-									{ mLastUpdate = time(NULL); }
+									{ mLastUpdate = upTime(); }
 
 	bool	isPrivileged() const	{ return (mFlags & lsfPrivileged) != 0; }
 	void	setPrivileged()			{ mFlags |= lsfPrivileged; }
@@ -89,11 +89,14 @@ protected:
 	int mDebitLimit;			// when a source drops below this, we cut it off (should be negative)
 
 	bool mShutdown;
+
+	int mSpace1[4];				// We want mUptime to have its own cache line
 	int mUptime;
+	int mSpace2[4];
 
 	mutable boost::mutex mLock;
 
-	void canonicalize(LoadSource&, const time_t now) const;
+	void canonicalize(LoadSource&, int upTime) const;
 
 	std::vector<LoadCost>	mCosts;
 
