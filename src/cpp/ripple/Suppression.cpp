@@ -4,6 +4,8 @@
 
 DECLARE_INSTANCE(Suppression);
 
+extern int upTime();
+
 Suppression& SuppressionTable::findCreateEntry(const uint256& index, bool& created)
 {
 	boost::unordered_map<uint256, Suppression>::iterator fit = mSuppressionMap.find(index);
@@ -15,11 +17,11 @@ Suppression& SuppressionTable::findCreateEntry(const uint256& index, bool& creat
 	}
 	created = true;
 
-	time_t now = time(NULL);
-	time_t expireTime = now - mHoldTime;
+	int now = upTime();
+	int expireTime = now - mHoldTime;
 
 	// See if any supressions need to be expired
-	std::map< time_t, std::list<uint256> >::iterator it = mSuppressionTimes.begin();
+	std::map< int, std::list<uint256> >::iterator it = mSuppressionTimes.begin();
 	if ((it != mSuppressionTimes.end()) && (it->first <= expireTime))
 	{
 		BOOST_FOREACH(const uint256& lit, it->second)

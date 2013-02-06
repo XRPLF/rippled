@@ -22,7 +22,7 @@ DECLARE_INSTANCE(LedgerAcquire);
 PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterval(interval), mTimeouts(0),
 	mComplete(false), mFailed(false), mProgress(true), mAggressive(true), mTimer(theApp->getIOService())
 {
-	mLastAction = time(NULL);
+	mLastAction = upTime();
 	assert((mTimerInterval > 10) && (mTimerInterval < 30000));
 }
 
@@ -890,7 +890,7 @@ void LedgerAcquireMaster::sweep()
 {
 	mRecentFailures.sweep();
 
-	time_t now = time(NULL);
+	int now = upTime();
 	boost::mutex::scoped_lock sl(mLock);
 
 	std::map<uint256, LedgerAcquire::pointer>::iterator it = mLedgers.begin();

@@ -7,6 +7,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "types.h"
+extern int upTime();
 
 // Monitors load levels and response times
 
@@ -19,7 +20,7 @@ protected:
 	uint64				mLatencyMSPeak;
 	uint64				mTargetLatencyAvg;
 	uint64				mTargetLatencyPk;
-	time_t				mLastUpdate;
+	int					mLastUpdate;
 	boost::mutex		mLock;
 
 	void update();
@@ -27,7 +28,7 @@ protected:
 public:
 	LoadMonitor() : mCounts(0), mLatencyEvents(0), mLatencyMSAvg(0), mLatencyMSPeak(0),
 		mTargetLatencyAvg(0), mTargetLatencyPk(0)
-	{ mLastUpdate = time(NULL); }
+	{ mLastUpdate = upTime(); }
 
 	void addCount(int counts);
 	void addLatency(int latency);
@@ -35,8 +36,8 @@ public:
 
 	void setTargetLatency(uint64 avg, uint64 pk)
 	{
-		mTargetLatencyAvg = avg * 4;
-		mTargetLatencyPk = pk * 4;
+		mTargetLatencyAvg  = avg;
+		mTargetLatencyPk = pk;
 	}
 
 	bool isOverTarget(uint64 avg, uint64 peak)
@@ -46,6 +47,7 @@ public:
 	}
 
 	void getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& latencyPeak, bool& isOver);
+	bool isOver();
 };
 
 class LoadEvent

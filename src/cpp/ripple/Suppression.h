@@ -50,7 +50,7 @@ protected:
 	boost::unordered_map<uint256, Suppression> mSuppressionMap;
 
 	// Stores all expiration times and the hashes indexed for them
-	std::map< time_t, std::list<uint256> > mSuppressionTimes;
+	std::map< int, std::list<uint256> > mSuppressionTimes;
 
 	int mHoldTime;
 

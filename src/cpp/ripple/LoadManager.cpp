@@ -1,15 +1,29 @@
 #include "LoadManager.h"
 
 #include <boost/test/unit_test.hpp>
+#include <boost/thread.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "Log.h"
 #include "Config.h"
+#include "Application.h"
 
 SETUP_LOG();
 
+static volatile int* uptimePtr = NULL;
+
+int upTime()
+{
+	static time_t firstCall = time(NULL);
+	if (uptimePtr != NULL)
+		return *uptimePtr;
+	cLog(lsTRACE) << "Slow uptime in use";
+	return static_cast<int>(time(NULL) - firstCall);
+}
+
 LoadManager::LoadManager(int creditRate, int creditLimit, int debitWarn, int debitLimit) :
 		mCreditRate(creditRate), mCreditLimit(creditLimit), mDebitWarn(debitWarn), mDebitLimit(debitLimit),
-		mCosts(LT_MAX)
+		mShutdown(false), mUptime(0), mCosts(LT_MAX)
 {
 	addLoadCost(LoadCost(LT_InvalidRequest,		10,		LC_CPU | LC_Network));
 	addLoadCost(LoadCost(LT_RequestNoReply,		1,		LC_CPU | LC_Disk));
@@ -23,6 +37,35 @@ LoadManager::LoadManager(int creditRate, int creditLimit, int debitWarn, int deb
 
 	addLoadCost(LoadCost(LT_RequestData,		5,		LC_Disk | LC_Network));
 	addLoadCost(LoadCost(LT_CheapQuery,			1,		LC_CPU));
+
+}
+
+void LoadManager::init()
+{
+	if (uptimePtr == NULL)
+		uptimePtr = static_cast<volatile int *>(&mUptime);
+	boost::thread(boost::bind(&LoadManager::threadEntry, this)).detach();
+}
+
+LoadManager::~LoadManager()
+{
+	if (uptimePtr == &mUptime)
+		uptimePtr = NULL;
+	{
+		boost::mutex::scoped_lock sl(mLock);
+		mShutdown = true;
+	}
+
+	do
+	{
+		boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+		{
+			boost::mutex::scoped_lock sl(mLock);
+			if (!mShutdown)
+				return;
+		}
+	}
+	while (1);
 }
 
 
@@ -74,7 +117,7 @@ void LoadManager::setDebitLimit(int r)
 	mDebitLimit = r;
 }
 
-void LoadManager::canonicalize(LoadSource& source, const time_t now) const
+void LoadManager::canonicalize(LoadSource& source, int now) const
 {
 	if (source.mLastUpdate != now)
 	{
@@ -90,9 +133,9 @@ void LoadManager::canonicalize(LoadSource& source, const time_t now) const
 
 bool LoadManager::shouldWarn(LoadSource& source) const
 {
-	time_t now = time(NULL);
 	boost::mutex::scoped_lock sl(mLock);
 
+	int now = upTime();
 	canonicalize(source, now);
 	if (source.isPrivileged() || (source.mBalance < mDebitWarn) || (source.mLastWarning == now))
 		return false;
@@ -103,9 +146,9 @@ bool LoadManager::shouldWarn(LoadSource& source) const
 
 bool LoadManager::shouldCutoff(LoadSource& source) const
 {
-	time_t now = time(NULL);
 	boost::mutex::scoped_lock sl(mLock);
 
+	int now = upTime();
 	canonicalize(source, now);
 	return !source.isPrivileged() && (source.mBalance < mDebitLimit);
 }
@@ -118,10 +161,10 @@ bool LoadManager::adjust(LoadSource& source, LoadType t) const
 
 bool LoadManager::adjust(LoadSource& source, int credits) const
 { // return: true = need to warn/cutoff
-	time_t now = time(NULL);
 	boost::mutex::scoped_lock sl(mLock);
 
 	// We do it this way in case we want to add exponential decay later
+	int now = upTime();
 	canonicalize(source, now);
 	source.mBalance += credits;
 	if (source.mBalance > mCreditLimit)
@@ -237,6 +280,45 @@ Json::Value LoadFeeTrack::getJson(uint64 baseFee, uint32 referenceFeeUnits)
 	}
 
 	return j;
+}
+
+int LoadManager::getUptime()
+{
+	boost::mutex::scoped_lock sl(mLock);
+	return mUptime;
+}
+
+void LoadManager::threadEntry()
+{
+	boost::posix_time::ptime t = boost::posix_time::microsec_clock::universal_time();
+	while (1)
+	{
+		{
+			boost::mutex::scoped_lock sl(mLock);
+			if (mShutdown)
+			{
+				mShutdown = false;
+				return;
+			}
+			++mUptime;
+		}
+
+		if (theApp->getJobQueue().isOverloaded())
+			theApp->getFeeTrack().raiseLocalFee();
+		else
+			theApp->getFeeTrack().lowerLocalFee();
+
+		t += boost::posix_time::seconds(1);
+		boost::posix_time::time_duration when = t - boost::posix_time::microsec_clock::universal_time();
+
+		if ((when.is_negative()) || (when.total_seconds() > 1))
+		{
+			cLog(lsWARNING) << "time jump";
+			t = boost::posix_time::microsec_clock::universal_time();
+		}
+		else
+			boost::this_thread::sleep(when);
+	}
 }
 
 BOOST_AUTO_TEST_SUITE(LoadManager_test)
