@@ -9,7 +9,7 @@ sjcl.bn.prototype.divRem = function (that) {
     this.initWith(0);
     return this;
   } else if (thisa.equals(thata)) {
-    this.initWith(sign);
+    this.initWith(1);
     return this;
   }
 

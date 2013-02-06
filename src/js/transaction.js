@@ -167,6 +167,26 @@ Transaction.prototype.set_state = function (state) {
   }
 };
 
+/**
+ * Attempts to complete the transaction for submission.
+ *
+ * This function seeks to fill out certain fields, such as Fee and
+ * SigningPubKey, which can be determined by the library based on network
+ * information and other fields.
+ */
+Transaction.prototype.complete = function () {
+  var tx_json = this.tx_json;
+
+  if (this.remote.local_fee && undefined === tx_json.Fee) {
+    tx_json.Fee    = Transaction.fees['default'].to_json();
+  }
+  if (this.remote.local_signing && undefined === tx_json.SigningPubKey) {
+    var seed = Seed.from_json(this._secret);
+    var key = seed.get_key(this.tx_json.Account);
+    tx_json.SigningPubKey = key.to_hex_pub();
+  }
+};
+
 Transaction.prototype.serialize = function () {
   return SerializedObject.from_json(this.tx_json);
 };
@@ -181,11 +201,10 @@ Transaction.prototype.signing_hash = function () {
 
 Transaction.prototype.sign = function () {
   var seed = Seed.from_json(this._secret),
-      priv = seed.generate_private(this.tx_json.Account),
       hash = this.signing_hash();
 
-  var key = new sjcl.ecc.ecdsa.secretKey(sjcl.ecc.curves['c256'], priv.to_bn()),
-      sig = key.signDER(hash.to_bits(), 0),
+  var key = seed.get_key(this.tx_json.Account),
+      sig = key.sign(hash, 0),
       hex = sjcl.codec.hex.fromBits(sig).toUpperCase();
 
   this.tx_json.TxnSignature = hex;
@@ -221,9 +240,7 @@ Transaction.prototype.submit = function (callback) {
 
   // YYY Might check paths for invalid accounts.
 
-  if (this.remote.local_fee && undefined === tx_json.Fee) {
-    tx_json.Fee    = Transaction.fees['default'].to_json();
-  }
+  this.complete();
 
   if (this.callback || this.listeners('final').length || this.listeners('lost').length || this.listeners('pending').length) {
     // There are listeners for callback, 'final', 'lost', or 'pending' arrange to emit them.
