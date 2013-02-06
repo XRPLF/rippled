@@ -1178,7 +1178,7 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 		}
 		else
 		{
-			l["base_fee_xrp"]		= static_cast<double>(Json::UInt(baseFee)) / SYSTEM_CURRENCY_PARTS;
+			l["base_fee_xrp"]		= static_cast<double>(baseFee) / SYSTEM_CURRENCY_PARTS;
 			l["reserve_base_xrp"]	=
 				static_cast<double>(Json::UInt(lpClosed->getReserve(0) * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
 			l["reserve_inc_xrp"]	=
@@ -1321,6 +1321,7 @@ void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedT
 			ispListener->send(jvObj);
 		}
 	}
+	theApp->getOrderBookDB().processTxn(stTxn, terResult, meta, jvObj);
 
 	pubAccountTransaction(lpCurrent, stTxn, terResult, true, meta);
 }
@@ -1449,6 +1450,20 @@ void NetworkOPs::unsubAccount(InfoSub* ispListener, const boost::unordered_set<R
 			}
 		}
 	}
+}
+
+bool NetworkOPs::subBook(InfoSub* ispListener, uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut)
+{
+	BookListeners::pointer listeners=theApp->getOrderBookDB().makeBookListeners(currencyIn, currencyOut, issuerIn, issuerOut);
+	if(listeners) listeners->addSubscriber(ispListener);
+	return(true);
+}
+
+bool NetworkOPs::unsubBook(InfoSub* ispListener, uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut)
+{
+	BookListeners::pointer listeners=theApp->getOrderBookDB().getBookListeners(currencyIn, currencyOut, issuerIn, issuerOut);
+	if(listeners) listeners->removeSubscriber(ispListener);
+	return(true);
 }
 
 void NetworkOPs::newLCL(int proposers, int convergeTime, const uint256& ledgerHash)

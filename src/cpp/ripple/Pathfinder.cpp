@@ -12,8 +12,6 @@
 SETUP_LOG();
 
 /*
-JED: V IIII
-
 we just need to find a succession of the highest quality paths there until we find enough width
 
 Don't do branching within each path
@@ -134,11 +132,12 @@ Pathfinder::Pathfinder(const RippleAddress& uSrcAccountID, const RippleAddress& 
 		mDstAccountID(uDstAccountID.getAccountID()),
 		mDstAmount(saDstAmount),
 		mSrcCurrencyID(uSrcCurrencyID),
-		mSrcIssuerID(uSrcIssuerID),
-		mOrderBook(theApp->getLedgerMaster().getCurrentLedger())
+		mSrcIssuerID(uSrcIssuerID)
 {
 	mLedger		= theApp->getLedgerMaster().getCurrentLedger();
 	mSrcAmount	= STAmount(uSrcCurrencyID, uSrcIssuerID, 1, 0, true);	// -1/uSrcIssuerID/uSrcIssuerID
+
+	theApp->getOrderBookDB().setup( theApp->getLedgerMaster().getCurrentLedger()); // TODO: have the orderbook update itself rather than rebuild it from scratch each time
 
 	// Construct the default path for later comparison.
 
@@ -326,8 +325,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			else if (!speEnd.mCurrencyID)
 			{
 				// Cursor is for XRP, continue with qualifying books: XRP -> non-XRP
-
-				BOOST_FOREACH(OrderBook::ref book, mOrderBook.getXRPInBooks())
+				BOOST_FOREACH(OrderBook::ref book, theApp->getOrderBookDB().getXRPInBooks())
 				{
 					// New end is an order book with the currency and issuer.
 
@@ -420,7 +418,8 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				// Every book that wants the source currency.
 				std::vector<OrderBook::pointer> books;
 
-				mOrderBook.getBooks(speEnd.mIssuerID, speEnd.mCurrencyID, books);
+
+				theApp->getOrderBookDB().getBooks(speEnd.mIssuerID, speEnd.mCurrencyID, books);
 
 				BOOST_FOREACH(OrderBook::ref book, books)
 				{
@@ -573,7 +572,7 @@ void Pathfinder::addOptions(PathOption::pointer tail)
 {
 	if (!tail->mCurrencyID)
 	{ // source XRP
-		BOOST_FOREACH(OrderBook::ref book, mOrderBook.getXRPInBooks())
+		BOOST_FOREACH(OrderBook::ref book, theApp->getOrderBookDB().getXRPInBooks())
 		{
 			PathOption::pointer pathOption(new PathOption(tail));
 
@@ -607,7 +606,7 @@ void Pathfinder::addOptions(PathOption::pointer tail)
 
 		// every offer that wants the source currency
 		std::vector<OrderBook::pointer> books;
-		mOrderBook.getBooks(tail->mCurrentAccount, tail->mCurrencyID, books);
+		theApp->getOrderBookDB().getBooks(tail->mCurrentAccount, tail->mCurrencyID, books);
 
 		BOOST_FOREACH(OrderBook::ref book,books)
 		{

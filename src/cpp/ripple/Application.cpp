@@ -52,6 +52,7 @@ Application::Application() :
 	mJobQueue.setThreadCount();
 	mSweepTimer.expires_from_now(boost::posix_time::seconds(10));
 	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
+	mLoadMgr.init();
 }
 
 extern const char *RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[], *NetNodeDBInit[];
@@ -146,6 +147,8 @@ void Application::setup()
 	}
 	else
 		startNewLedger();
+
+	mOrderBookDB.setup(theApp->getLedgerMaster().getCurrentLedger()); // TODO: We need to update this if the ledger jumps
 
 	//
 	// Begin validation and ip maintenance.

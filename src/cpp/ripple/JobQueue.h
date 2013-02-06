@@ -108,6 +108,7 @@ public:
 	LoadEvent::autoptr getLoadEventAP(JobType t)
 	{ return LoadEvent::autoptr(new LoadEvent(mJobLoads[t], true, 1)); }
 
+	int isOverloaded();
 	Json::Value getJson(int c = 0);
 };
 

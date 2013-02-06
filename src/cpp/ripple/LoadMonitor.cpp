@@ -2,7 +2,7 @@
 
 void LoadMonitor::update()
 { // call with the mutex
-	time_t now = time(NULL);
+	int now = upTime();
 
 	if (now == mLastUpdate) // current
 		return;
@@ -69,6 +69,18 @@ void LoadMonitor::addCountAndLatency(int counts, int latency)
 		mLatencyMSPeak = lp;
 }
 
+bool LoadMonitor::isOver()
+{
+	boost::mutex::scoped_lock sl(mLock);
+
+	update();
+
+	if (mLatencyEvents == 0)
+		return 0;
+
+	return isOverTarget(mLatencyMSAvg / (mLatencyEvents * 4), mLatencyMSPeak / (mLatencyEvents * 4));
+}
+
 void LoadMonitor::getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& latencyPeak, bool& isOver)
 {
 	boost::mutex::scoped_lock sl(mLock);
@@ -89,3 +101,5 @@ void LoadMonitor::getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& 
 	}
 	isOver = isOverTarget(latencyAvg, latencyPeak);
 }
+
+// vim:ts=4

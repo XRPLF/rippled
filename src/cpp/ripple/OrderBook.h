@@ -1,5 +1,7 @@
 #include "SerializedLedger.h"
+#include "NetworkOPs.h"
 #include <boost/shared_ptr.hpp>
+
 /*
 	Encapsulates the SLE for an orderbook
 */

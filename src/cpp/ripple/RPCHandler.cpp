@@ -1787,6 +1787,21 @@ Json::Value RPCHandler::doLogin(Json::Value jvRequest)
 }
 #endif
 
+static void textTime(std::string& text, int& seconds, const char *unitName, int unitVal)
+{
+	int i = seconds / unitVal;
+	if (i == 0)
+		return;
+	seconds -= unitVal * i;
+	if (!text.empty())
+		text += ", ";
+	text += boost::lexical_cast<std::string>(i);
+	text += " ";
+	text += unitName;
+	if (i > 1)
+		text += "s";
+}
+
 // {
 //   min_count: <number>  // optional, defaults to 10
 // }
@@ -1807,6 +1822,15 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest)
 	int dbKB = theApp->getLedgerDB()->getDB()->getKBUsed();
 	if (dbKB > 0)
 		ret["dbKB"] = dbKB;
+
+	std::string uptime;
+	int s = upTime();
+	textTime(uptime, s, "year", 365*24*60*60);
+	textTime(uptime, s, "day", 24*60*60);
+	textTime(uptime, s, "hour", 24*60);
+	textTime(uptime, s, "minute", 60);
+	textTime(uptime, s, "second", 1);
+	ret["uptime"] = uptime;
 
 	return ret;
 }
@@ -2456,6 +2480,25 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 		}
 	}
 
+	if (jvRequest.isMember("books"))
+	{
+		for (Json::Value::iterator it = jvRequest["books"].begin(); it != jvRequest["books"].end(); it++)
+		{
+			uint160 currencyOut;
+			STAmount::issuerFromString(currencyOut,(*it)["CurrencyOut"].asString());
+			uint160 issuerOut=RippleAddress::createNodePublic( (*it)["IssuerOut"].asString() ).getAccountID();
+			uint160 currencyIn;
+			STAmount::issuerFromString(currencyOut,(*it)["CurrencyIn"].asString());
+			uint160 issuerIn=RippleAddress::createNodePublic( (*it)["IssuerIn"].asString() ).getAccountID();
+
+			mNetOps->subBook(ispSub,currencyIn,currencyOut,issuerIn,issuerOut);
+			if((*it)["StateNow"].asBool())
+			{
+
+			}
+		}
+	}
+
 	return jvResult;
 }
 
@@ -2550,6 +2593,21 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 		else
 		{
 			mNetOps->unsubAccount(ispSub, usnaAccoundIds, false);
+		}
+	}
+
+	if (jvRequest.isMember("books"))
+	{
+		for (Json::Value::iterator it = jvRequest["books"].begin(); it != jvRequest["books"].end(); it++)
+		{
+			uint160 currencyOut;
+			STAmount::issuerFromString(currencyOut,(*it)["CurrencyOut"].asString());
+			uint160 issuerOut=RippleAddress::createNodePublic( (*it)["IssuerOut"].asString() ).getAccountID();
+			uint160 currencyIn;
+			STAmount::issuerFromString(currencyOut,(*it)["CurrencyIn"].asString());
+			uint160 issuerIn=RippleAddress::createNodePublic( (*it)["IssuerIn"].asString() ).getAccountID();
+
+			mNetOps->unsubBook(ispSub,currencyIn,currencyOut,issuerIn,issuerOut);
 		}
 	}
 

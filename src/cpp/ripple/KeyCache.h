@@ -6,11 +6,13 @@
 #include <boost/unordered_map.hpp>
 #include <boost/thread/mutex.hpp>
 
+extern int upTime();
+
 template <typename c_Key> class KeyCache
 { // Maintains a cache of keys with no associated data
 public:
 	typedef c_Key									key_type;
-	typedef boost::unordered_map<key_type, time_t>	map_type;
+	typedef boost::unordered_map<key_type, int>		map_type;
 	typedef typename map_type::iterator				map_iterator;
 
 protected:
@@ -65,7 +67,7 @@ public:
 		if (it == mCache.end())
 			return false;
 		if (refresh)
-			it->second = time(NULL);
+			it->second = upTime();
 		return true;
 	}
 
@@ -88,19 +90,19 @@ public:
 		map_iterator it = mCache.find(key);
 		if (it != mCache.end())
 		{
-			it->second = time(NULL);
+			it->second = upTime();
 			return false;
 		}
-		mCache.insert(std::make_pair(key, time(NULL)));
+		mCache.insert(std::make_pair(key, upTime()));
 		return true;
 	}
 
 	void sweep()
 	{ // Remove stale entries from the cache 
-		time_t now = time(NULL);
+		int now = upTime();
 		boost::mutex::scoped_lock sl(mNCLock);
 
-		time_t target;
+		int target;
 		if ((mTargetSize == 0) || (mCache.size() <= mTargetSize))
 			target = now - mTargetAge;
 		else

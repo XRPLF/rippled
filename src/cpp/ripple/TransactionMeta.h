@@ -56,6 +56,7 @@ public:
 	void addRaw(Serializer&, TER, uint32 index);
 
 	STObject getAsObject() const;
+	STArray& getNodes(){ return(mNodes); }
 
 	static bool thread(STObject& node, const uint256& prevTxID, uint32 prevLgrID);
 };
