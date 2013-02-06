@@ -185,11 +185,11 @@ void OrderBookDB::processTxn(const SerializedTransaction& stTxn, TER terResult,T
 					const STObject* previous = dynamic_cast<const STObject*>(node.peekAtPField(*field));
 					if(previous)
 					{
-						STAmount& takerGets = previous->getFieldAmount(sfTakerGets);
+						STAmount takerGets = previous->getFieldAmount(sfTakerGets);
 						uint160 currencyOut=takerGets.getCurrency();
 						uint160 issuerOut=takerGets.getIssuer();
 
-						STAmount& takerPays = previous->getFieldAmount(sfTakerPays);
+						STAmount takerPays = previous->getFieldAmount(sfTakerPays);
 						uint160 currencyIn=takerPays.getCurrency();
 						uint160 issuerIn=takerPays.getIssuer();
 
