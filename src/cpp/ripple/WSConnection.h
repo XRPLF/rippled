@@ -87,9 +87,14 @@ public:
 			Json::Value	jvResult(Json::objectValue);
 
 			jvResult["type"]	= "response";
-			jvResult["result"]	= "error";
+			jvResult["status"]	= "error";
 			jvResult["error"]	= "missingCommand";
-			jvResult["command"]	= jvRequest;
+			jvResult["request"] = jvRequest;
+
+			if (jvRequest.isMember("id"))
+			{
+				jvResult["id"]	= jvRequest["id"];
+			}
 
 			return jvResult;
 		}
