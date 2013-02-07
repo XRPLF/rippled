@@ -74,6 +74,7 @@ var Transaction = function (remote) {
   this.hash         = undefined;
   this.submit_index = undefined;        // ledger_current_index was this when transaction was submited.
   this.state        = undefined;        // Under construction.
+  this.finalized    = false;
 
   this.on('success', function (message) {
       if (message.engine_result) {
@@ -257,15 +258,19 @@ Transaction.prototype.submit = function (callback) {
         self.remote.request_transaction_entry(self.hash)
           .ledger_hash(ledger_hash)
           .on('success', function (message) {
+              if (self.finalized) return;
+
               self.set_state(message.metadata.TransactionResult);
+              self.remote.removeListener('ledger_closed', on_ledger_closed);
               self.emit('final', message);
+              self.finalized = true;
 
               if (self.callback)
                 self.callback(message.metadata.TransactionResult, message);
-
-              stop  = true;
             })
           .on('error', function (message) {
+              if (self.finalized) return;
+
               if ('remoteError' === message.error
                 && 'transactionNotFound' === message.remote.error) {
                 if (self.submit_index + SUBMIT_LOST < ledger_index) {
@@ -275,7 +280,9 @@ Transaction.prototype.submit = function (callback) {
                   if (self.callback)
                     self.callback('tejLost', message);
 
-                  stop  = true;
+                  self.remote.removeListener('ledger_closed', on_ledger_closed);
+                  self.emit('final', message);
+                  self.finalized = true;
                 }
                 else if (self.submit_index + SUBMIT_MISSING < ledger_index) {
                   self.set_state('client_missing');    // We don't know what happened to transaction, still might find.
@@ -288,11 +295,6 @@ Transaction.prototype.submit = function (callback) {
               // XXX Could log other unexpectedness.
             })
           .request();
-
-        if (stop) {
-          self.remote.removeListener('ledger_closed', on_ledger_closed);
-          self.emit('final', message);
-        }
       };
 
     this.remote.on('ledger_closed', on_ledger_closed);
