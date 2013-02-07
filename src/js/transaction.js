@@ -219,6 +219,7 @@ Transaction.prototype.sign = function () {
 //   // status is final status.  Only works under a ledger_accepting conditions.
 //   switch status:
 //    case 'tesSUCCESS': all is well.
+//    case 'tejSecretUnknown': unable to sign transaction - secret unknown
 //    case 'tejServerUntrusted': sending secret to untrusted server.
 //    case 'tejInvalidAccount': locally detected error.
 //    case 'tejLost': locally gave up looking
@@ -236,7 +237,7 @@ Transaction.prototype.submit = function (callback) {
         'error' : 'tejInvalidAccount',
         'error_message' : 'Bad account.'
       });
-    return;
+    return this;
   }
 
   // YYY Might check paths for invalid accounts.
@@ -308,7 +309,68 @@ Transaction.prototype.submit = function (callback) {
 
   this.set_state('client_submitted');
 
-  this.remote.submit(this);
+  if (self.remote.local_sequence && !self.tx_json.Sequence) {
+    self.tx_json.Sequence      = this.remote.account_seq(self.tx_json.Account, 'ADVANCE');
+    // console.log("Sequence: %s", self.tx_json.Sequence);
+  }
+
+  if (self.remote.local_sequence && !self.tx_json.Sequence) {
+    // Look in the last closed ledger.
+    this.remote.account_seq_cache(self.tx_json.Account, false)
+      .on('success_account_seq_cache', function () {
+        // Try again.
+        self.submit();
+      })
+      .on('error_account_seq_cache', function (message) {
+        // XXX Maybe be smarter about this. Don't want to trust an untrusted server for this seq number.
+
+        // Look in the current ledger.
+        self.remote.account_seq_cache(self.tx_json.Account, 'CURRENT')
+          .on('success_account_seq_cache', function () {
+            // Try again.
+            self.submit();
+          })
+          .on('error_account_seq_cache', function (message) {
+            // Forward errors.
+            self.emit('error', message);
+          })
+          .request();
+      })
+      .request();
+    return this;
+  }
+
+  // Prepare request
+
+  var request = this.remote.request_submit();
+
+  // Forward successes and errors.
+  request.on('success', function (message) { self.emit('success', message); });
+  request.on('error', function (message) { self.emit('error', message); });
+
+  if (!this._secret && !this.tx_json.Signature) {
+    this.emit('error', {
+      'result'          : 'tejSecretUnknown',
+      'result_message'  : "Could not sign transactions because we."
+    });
+    return this;
+  } else if (this.remote.local_signing) {
+    this.sign();
+  } else {
+    if (!this.remote.trusted) {
+      this.emit('error', {
+        'result'          : 'tejServerUntrusted',
+        'result_message'  : "Attempt to give a secret to an untrusted server."
+      });
+      return this;
+    } else {
+      request.secret(this._secret);
+    }
+  }
+
+  request.build_path(this._build_path);
+  request.tx_json(this.tx_json);
+  request.request();
 
   return this;
 }

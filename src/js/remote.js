@@ -220,6 +220,12 @@ var Remote = function (opts, trace) {
   this._reserve_inc           = undefined;
   this._server_status         = undefined;
 
+  // Local signing implies local fees and sequences
+  if (this.local_signing) {
+    this.local_sequence = true;
+    this.local_fee = true;
+  }
+
   // Cache information for accounts.
   this.accounts = {
     // Consider sequence numbers stable if you know you're not generating bad transactions.
@@ -864,58 +870,12 @@ Remote.prototype.request_sign = function (secret, tx_json) {
 };
 
 // Submit a transaction.
-Remote.prototype.submit = function (transaction) {
+Remote.prototype.request_submit = function () {
   var self  = this;
 
-  if (transaction._secret && !this.trusted)
-  {
-    transaction.emit('error', {
-        'result'          : 'tejServerUntrusted',
-        'result_message'  : "Attempt to give a secret to an untrusted server."
-      });
-  }
-  else {
-    if (self.local_sequence && !transaction.tx_json.Sequence) {
-      transaction.tx_json.Sequence      = this.account_seq(transaction.tx_json.Account, 'ADVANCE');
-      // console.log("Sequence: %s", transaction.tx_json.Sequence);
-    }
+  var request = new Request(this, 'submit');
 
-    if (self.local_sequence && !transaction.tx_json.Sequence) {
-      // Look in the last closed ledger.
-      this.account_seq_cache(transaction.tx_json.Account, false)
-        .on('success_account_seq_cache', function () {
-            // Try again.
-            self.submit(transaction);
-          })
-        .on('error_account_seq_cache', function (message) {
-            // XXX Maybe be smarter about this. Don't want to trust an untrusted server for this seq number.
-
-            // Look in the current ledger.
-            self.account_seq_cache(transaction.tx_json.Account, 'CURRENT')
-              .on('success_account_seq_cache', function () {
-                  // Try again.
-                  self.submit(transaction);
-                })
-              .on('error_account_seq_cache', function (message) {
-                  // Forward errors.
-                  transaction.emit('error', message);
-                })
-              .request();
-          })
-        .request();
-    }
-    else {
-      // Convert the transaction into a request and submit it.
-
-      (new Request(this, 'submit'))
-        .build_path(transaction._build_path)
-        .tx_json(transaction.tx_json)
-        .secret(transaction._secret)
-        .on('success', function (message) { transaction.emit('success', message); }) // Forward successes and errors.
-        .on('error', function (message) { transaction.emit('error', message); })
-        .request();
-    }
-  }
+  return request;
 };
 
 //
@@ -929,7 +889,7 @@ Remote.prototype._server_subscribe = function () {
   var self  = this;
 
   var feeds = [ 'ledger', 'server' ];
-  
+
   if (this._transaction_subs)
     feeds.push('transactions');
 
