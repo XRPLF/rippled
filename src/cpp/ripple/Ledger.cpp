@@ -498,6 +498,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 	if (!fromConsensus)
 	{
 		decPendingSaves();
+		dropCache();
 		return;
 	}
 
