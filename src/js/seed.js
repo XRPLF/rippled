@@ -39,8 +39,6 @@ Seed.prototype.parse_json = function (j) {
     } else {
       this.parse_passphrase(j);
     }
-  } else if (Array.isArray(j) && 16 === j.length) {
-    this._value = new BigInteger(utils.stringToArray(j), 128);
   } else {
     this._value = NaN;
   }
