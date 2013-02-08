@@ -356,6 +356,7 @@ Transaction.prototype.submit = function (callback) {
     return this;
   } else if (this.remote.local_signing) {
     this.sign();
+    request.tx_blob(this.serialize().to_hex());
   } else {
     if (!this.remote.trusted) {
       this.emit('error', {
@@ -363,13 +364,13 @@ Transaction.prototype.submit = function (callback) {
         'result_message'  : "Attempt to give a secret to an untrusted server."
       });
       return this;
-    } else {
-      request.secret(this._secret);
     }
+
+    request.secret(this._secret);
+    request.build_path(this._build_path);
+    request.tx_json(this.tx_json);
   }
 
-  request.build_path(this._build_path);
-  request.tx_json(this.tx_json);
   request.request();
 
   return this;

@@ -138,6 +138,12 @@ Request.prototype.tx_json = function (j) {
   return this;
 };
 
+Request.prototype.tx_blob = function (j) {
+  this.message.tx_blob  = j;
+
+  return this;
+};
+
 Request.prototype.ripple_state = function (account, issuer, currency) {
   this.message.ripple_state  = {
       'accounts' : [
