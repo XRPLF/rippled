@@ -253,7 +253,7 @@ void SqliteDatabase::runWal()
 			if (ret != SQLITE_OK)
 			{
 				cLog((ret == SQLITE_LOCKED) ? lsDEBUG : lsWARNING) << "WAL " << mHost << ":"
-					<< db << " errror " << ret;
+					<< db << " error " << ret;
 			}
 		}
 		walSet.clear();
