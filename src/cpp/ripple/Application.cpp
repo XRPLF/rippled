@@ -288,9 +288,9 @@ void Application::sweep()
 {
 
 	boost::filesystem::space_info space = boost::filesystem::space(theConfig.DATA_DIR);
-	if (space.available < (128 * 1024 * 1024))
+	if (space.available < (512 * 1024 * 1024))
 	{
-		cLog(lsFATAL) << "Remaining free disk space is less than 128MB";
+		cLog(lsFATAL) << "Remaining free disk space is less than 512MB";
 		theApp->stop();
 	}
 
