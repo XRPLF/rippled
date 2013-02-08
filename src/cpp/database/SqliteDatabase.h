@@ -76,6 +76,7 @@ public:
 
 	sqlite3_stmt* peekStatement();
 
+	// positions start at 1
 	int bind(int position, const void *data, int length);
 	int bindStatic(int position, const void *data, int length);
 	int bindStatic(int position, const std::vector<unsigned char>& value);
@@ -86,6 +87,7 @@ public:
 	int bind(int position, uint32 value);
 	int bind(int position);
 
+	// columns start at 0
 	int size(int column);
 
 	const void* peekBlob(int column);
@@ -99,9 +101,12 @@ public:
 	int step();
 	int reset();
 
+	// translate return values of step and reset
 	bool isOk(int);
 	bool isDone(int);
 	bool isRow(int);
+	bool isError(int);
+	std::string getError(int);
 };
 
 // vim:ts=4

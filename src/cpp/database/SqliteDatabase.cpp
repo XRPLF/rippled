@@ -376,4 +376,23 @@ bool SqliteStatement::isRow(int j)
 	return j == SQLITE_ROW;
 }
 
+bool SqliteStatement::isError(int j)
+{
+	switch (j)
+	{
+		case SQLITE_OK:
+		case SQLITE_ROW:
+		case SQLITE_DONE:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+std::string SqliteStatement::getError(int j)
+{
+	return sqlite3_errstr(j);
+}
+
 // vim:ts=4
