@@ -41,6 +41,8 @@ enum LedgerStateParms
 
 DEFINE_INSTANCE(Ledger);
 
+class SqliteStatement;
+
 class Ledger : public boost::enable_shared_from_this<Ledger>, public IS_INSTANCE(Ledger)
 { // The basic Ledger structure, can be opened, closed, or synching
 	friend class TransactionEngine;
@@ -117,6 +119,7 @@ public:
 	Ledger(Ledger& target, bool isMutable); // snapshot
 
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
+	static Ledger::pointer getSQL(SqliteStatement*);
 	static Ledger::pointer getLastFullLedger();
 	static int getPendingSaves();
 

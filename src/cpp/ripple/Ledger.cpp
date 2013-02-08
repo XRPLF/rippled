@@ -506,8 +506,62 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 	decPendingSaves();
 }
 
-Ledger::pointer Ledger::getSQL(const std::string& sql)
+#ifndef NO_SQLITE3_PREPARE
+
+Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
 {
+	Database* db = theApp->getLedgerDB()->getDB();
+	ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+
+	static SqliteStatement pSt(db->getSqliteDB(), "SELECT "
+		"LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
+		"ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
+		" from Ledgers WHERE LedgerSeq = ?;");
+
+	pSt.reset();
+	pSt.bind(1, ledgerIndex);
+	return getSQL(&pSt);
+}
+
+Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
+{
+	Database* db = theApp->getLedgerDB()->getDB();
+	ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+
+	static SqliteStatement pSt(db->getSqliteDB(), "SELECT "
+		"LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
+		"ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
+		" from Ledgers WHERE LedgerHash = ?;");
+
+	pSt.reset();
+	pSt.bind(1, ledgerHash.GetHex());
+	Ledger::pointer ret = getSQL(&pSt);
+	assert(!ret || (ret->getHash() == ledgerHash));
+	return ret;
+}
+
+#else
+
+Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
+{ // This is a low-level function with no caching
+	std::string sql="SELECT * from Ledgers WHERE LedgerSeq='";
+	sql.append(boost::lexical_cast<std::string>(ledgerIndex));
+	sql.append("';");
+	return getSQL(sql);
+}
+
+Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
+{ // This is a low-level function with no caching and only gets accepted ledgers
+	std::string sql="SELECT * from Ledgers WHERE LedgerHash='";
+	sql.append(ledgerHash.GetHex());
+	sql.append("';");
+	return getSQL(sql);
+}
+
+#endif
+
+Ledger::pointer Ledger::getSQL(const std::string& sql)
+{ // only used with sqlite3 prepared statements not used
 	uint256 ledgerHash, prevHash, accountHash, transHash;
 	uint64 totCoins;
 	uint32 closingTime, prevClosingTime, ledgerSeq;
@@ -539,7 +593,59 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		db->endIterRows();
 	}
 
-//	Log(lsTRACE) << "Constructing ledger " << ledgerSeq << " from SQL";
+	// CAUTION: code below appears in two places
+	Ledger::pointer ret = boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
+		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq);
+	ret->setClosed();
+	if (theApp->getOPs().haveLedger(ledgerSeq))
+		ret->setAccepted();
+	if (ret->getHash() != ledgerHash)
+	{
+		if (sLog(lsERROR))
+		{
+			Log(lsERROR) << "Failed on ledger";
+			Json::Value p;
+			ret->addJson(p, LEDGER_JSON_FULL);
+			Log(lsERROR) << p;
+		}
+		assert(false);
+		return Ledger::pointer();
+	}
+	cLog(lsTRACE) << "Loaded ledger: " << ledgerHash;
+	return ret;
+}
+
+Ledger::pointer Ledger::getSQL(SqliteStatement *stmt)
+{
+	int iRet = stmt->step();
+	if (stmt->isDone(iRet))
+		return Ledger::pointer();
+
+	if (!stmt->isRow(iRet))
+	{
+		cLog(lsINFO) << "Ledger not found: " << iRet << " = " << stmt->getError(iRet);
+		return Ledger::pointer();
+	}
+
+	uint256 ledgerHash, prevHash, accountHash, transHash;
+	uint64 totCoins;
+	uint32 closingTime, prevClosingTime, ledgerSeq;
+	int closeResolution;
+	unsigned closeFlags;
+	std::string hash;
+
+	ledgerHash.SetHex(stmt->peekString(0), true);
+	prevHash.SetHex(stmt->peekString(1), true);
+	accountHash.SetHex(stmt->peekString(2), true);
+	transHash.SetHex(stmt->peekString(3), true);
+	totCoins = stmt->getInt64(4);
+	closingTime = stmt->getUInt32(5);
+	prevClosingTime = stmt->getUInt32(6);
+	closeResolution = stmt->getUInt32(7);
+	closeFlags = stmt->getUInt32(8);
+	ledgerSeq = stmt->getUInt32(9);
+
+	// CAUTION: code below appears in two places
 	Ledger::pointer ret = boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
 		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq);
 	ret->setClosed();
@@ -639,22 +745,6 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 	return true;
 
 #endif
-}
-
-Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
-{ // This is a low-level function with no caching
-	std::string sql="SELECT * from Ledgers WHERE LedgerSeq='";
-	sql.append(boost::lexical_cast<std::string>(ledgerIndex));
-	sql.append("';");
-	return getSQL(sql);
-}
-
-Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
-{ // This is a low-level function with no caching and only gets accepted ledgers
-	std::string sql="SELECT * from Ledgers WHERE LedgerHash='";
-	sql.append(ledgerHash.GetHex());
-	sql.append("';");
-	return getSQL(sql);
 }
 
 Ledger::pointer Ledger::getLastFullLedger()
