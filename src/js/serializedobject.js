@@ -92,7 +92,7 @@ SerializedObject.prototype.serialize_field = function (spec, obj)
       Type = spec.shift();
 
   if ("undefined" !== typeof obj[name]) {
-    console.log(name, Type.id, field_id);
+    //console.log(name, Type.id, field_id);
     this.append(SerializedObject.get_field_header(Type.id, field_id));
 
     try {

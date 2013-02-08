@@ -27,18 +27,36 @@ Seed.prototype.constructor = Seed;
 // value = NaN on error.
 // One day this will support rfc1751 too.
 Seed.prototype.parse_json = function (j) {
-  if ('string' !== typeof j) {
-    this._value  = NaN;
+  if ('string' === typeof j) {
+    if (!j.length) {
+      this._value = NaN;
+    // XXX Should actually always try and continue if it failed.
+    } else if (j[0] === "s") {
+      this._value = Base.decode_check(Base.VER_FAMILY_SEED, j);
+    } else if (j.length === 32) {
+      this._value = this.parse_hex(j);
+    // XXX Should also try 1751
+    } else {
+      this.parse_passphrase(j);
+    }
+  } else if (Array.isArray(j) && 16 === j.length) {
+    this._value = new BigInteger(utils.stringToArray(j), 128);
+  } else {
+    this._value = NaN;
   }
-  else if (j[0] === "s") {
-    this._value  = Base.decode_check(Base.VER_FAMILY_SEED, j);
+
+  return this;
+};
+
+Seed.prototype.parse_passphrase = function (j) {
+  if ("string" !== typeof j) {
+    throw new Error("Passphrase must be a string");
   }
-  else if (16 === j.length) {
-    this._value  = new BigInteger(utils.stringToArray(j), 128);
-  }
-  else {
-    this._value  = NaN;
-  }
+
+  var hash = sjcl.hash.sha512.hash(sjcl.codec.utf8String.toBits(j));
+  var bits = sjcl.bitArray.bitSlice(hash, 0, 128);
+
+  this.parse_bits(bits);
 
   return this;
 };
@@ -68,6 +86,9 @@ function SHA256_RIPEMD160(bits) {
 }
 
 Seed.prototype.get_key = function (account_id) {
+  if (!this.is_valid()) {
+    throw new Error("Cannot generate keys from invalid seed!");
+  }
   // XXX Should loop over keys until we find the right one
 
   var curve = this._curve;
