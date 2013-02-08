@@ -32,6 +32,28 @@ var Server = function (name, config, verbose) {
   this.started  = false;
   this.quiet    = !verbose;
   this.stopping = false;
+
+  var nodejs_version = process.version.match(/^v(\d+)+\.(\d+)\.(\d+)$/).slice(1,4);
+  var wanted_version = [ 0, 8, 18 ];
+
+  while (wanted_version.length && nodejs_version.length && nodejs_version[0] == wanted_version[0])
+  {
+    nodejs_version.shift();
+    wanted_version.shift();
+  }
+
+  var sgn = !nodejs_version.length && !wanted_version.length
+            ? 0
+            : nodejs_version.length
+              ? nodejs_version[0] - wanted_version[0]
+              : -1;
+
+  if (sgn < 0)
+  {
+    console.log("\n*** Node.js version is too low.");
+
+    throw "Nodejs version is too low.";
+  }
 };
 
 Server.prototype  = new EventEmitter;
