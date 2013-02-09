@@ -50,6 +50,7 @@ class RPCHandler
 	Json::Value doAccountOffers(Json::Value params);
 	Json::Value doAccountTransactions(Json::Value params);
 	Json::Value doConnect(Json::Value params);
+	Json::Value doConsensusInfo(Json::Value params);
 #if ENABLE_INSECURE
 	Json::Value doDataDelete(Json::Value params);
 	Json::Value doDataFetch(Json::Value params);

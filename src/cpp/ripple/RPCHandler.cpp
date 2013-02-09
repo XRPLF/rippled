@@ -1343,6 +1343,15 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 	}
 }
 
+Json::Value RPCHandler::doConsensusInfo(Json::Value)
+{
+	Json::Value ret(Json::objectValue);
+
+	ret["info"] = theApp->getOPs().getConsensusInfo();
+
+	return ret;
+}
+
 Json::Value RPCHandler::doServerInfo(Json::Value)
 {
 	Json::Value ret(Json::objectValue);
@@ -2682,6 +2691,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 		{	"account_offers",		&RPCHandler::doAccountOffers,	    false,	optCurrent	},
 		{	"account_tx",			&RPCHandler::doAccountTransactions, false,	optNetwork	},
 		{	"connect",				&RPCHandler::doConnect,			    true,	optNone		},
+		{	"consensus_info",		&RPCHandler::doConsensusInfo,	    true,	optNone		},
 		{	"get_counts",			&RPCHandler::doGetCounts,		    true,	optNone		},
 		{	"internal",				&RPCHandler::doInternal,			true,	optNone		},
 		{	"ledger",				&RPCHandler::doLedger,			    false,	optNetwork	},

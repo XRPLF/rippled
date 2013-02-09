@@ -267,6 +267,26 @@ bool LCTransaction::updateVote(int percentTime, bool proposing)
 	return true;
 }
 
+Json::Value LCTransaction::getJson()
+{
+	Json::Value ret(Json::objectValue);
+
+	ret["yays"] = mYays;
+	ret["nays"] = mNays;
+	ret["our_vote"] = mOurVote;
+	if (!mVotes.empty())
+	{
+		Json::Value votesj(Json::objectValue);
+		typedef boost::unordered_map<uint160, bool>::value_type vt;
+		BOOST_FOREACH(vt& vote, mVotes)
+		{
+			votesj[vote.first.GetHex()] = vote.second;
+		}
+		ret["votes"] = votesj;
+	}
+	return ret;
+}
+
 LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime)
 		:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger),
 		mValPublic(theConfig.VALIDATION_PUB), mValPrivate(theConfig.VALIDATION_PRIV), mConsensusFail(false),
@@ -1363,7 +1383,7 @@ void LedgerConsensus::simulate()
 	cLog(lsINFO) << "Simulation complete";
 }
 
-Json::Value LedgerConsensus::getJson()
+Json::Value LedgerConsensus::getJson(bool full)
 {
 	Json::Value ret(Json::objectValue);
 	ret["proposing"] = mProposing;
@@ -1388,11 +1408,87 @@ Json::Value LedgerConsensus::getJson()
 	}
 
 	int v = mDisputes.size();
-	if (v != 0)
+	if ((v != 0) && !full)
 		ret["disputes"] = v;
 
 	if (mOurPosition)
 		ret["our_position"] = mOurPosition->getJson();
+
+	if (full)
+	{
+
+		ret["current_ms"] = mCurrentMSeconds;
+		ret["close_percent"] = mClosePercent;
+		ret["close_resolution"] = mCloseResolution;
+		ret["have_time_consensus"] = mHaveCloseTimeConsensus;
+		ret["previous_proposers"] = mPreviousProposers;
+		ret["previous_mseconds"] = mPreviousMSeconds;
+
+		if (!mPeerPositions.empty())
+		{
+			typedef boost::unordered_map<uint160, LedgerProposal::pointer>::value_type pp_t;
+			Json::Value ppj(Json::objectValue);
+			BOOST_FOREACH(pp_t& pp, mPeerPositions)
+			{
+				ppj[pp.first.GetHex()] = pp.second->getJson();
+			}
+			ret["peer_positions"] = ppj;
+		}
+
+		if (!mAcquired.empty())
+		{ // acquired
+			typedef boost::unordered_map<uint256, SHAMap::pointer>::value_type ac_t;
+			Json::Value acq(Json::arrayValue);
+			BOOST_FOREACH(ac_t& at, mAcquired)
+			{
+				acq.append(at.first.GetHex());
+			}
+			ret["acquired"] = acq;
+		}
+
+		if (!mAcquiring.empty())
+		{
+			typedef boost::unordered_map<uint256, TransactionAcquire::pointer>::value_type ac_t;
+			Json::Value acq(Json::arrayValue);
+			BOOST_FOREACH(ac_t& at, mAcquiring)
+			{
+				acq.append(at.first.GetHex());
+			}
+			ret["acquiring"] = acq;
+		}
+
+		if (!mDisputes.empty())
+		{
+			typedef boost::unordered_map<uint256, LCTransaction::pointer>::value_type d_t;
+			Json::Value dsj(Json::objectValue);
+			BOOST_FOREACH(d_t& dt, mDisputes)
+			{
+				dsj[dt.first.GetHex()] = dt.second->getJson();
+			}
+			ret["disputes"] = dsj;
+		}
+
+		if (!mCloseTimes.empty())
+		{
+			typedef std::map<uint32, int>::value_type ct_t;
+			Json::Value ctj(Json::objectValue);
+			BOOST_FOREACH(ct_t& ct, mCloseTimes)
+			{
+				ctj[boost::lexical_cast<std::string>(ct.first)] = ct.second;
+			}
+			ret["close_times"] = ctj;
+		}
+
+		if (!mDeadNodes.empty())
+		{
+			Json::Value dnj(Json::arrayValue);
+			BOOST_FOREACH(const uint160& dn, mDeadNodes)
+			{
+				dnj.append(dn.GetHex());
+			}
+			ret["dead_nodes"] = dnj;
+		}
+	}
 
 	return ret;
 }

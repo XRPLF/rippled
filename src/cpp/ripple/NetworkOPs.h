@@ -250,6 +250,7 @@ public:
 	int getPreviousConvergeTime()		{ return mLastCloseConvergeTime; }
 	uint32 getLastCloseTime()			{ return mLastCloseTime; }
 	void setLastCloseTime(uint32 t)		{ mLastCloseTime = t; }
+	Json::Value getConsensusInfo();
 	Json::Value getServerInfo(bool human, bool admin);
 	uint32 acceptLedger();
 	boost::unordered_map<uint160,

@@ -499,6 +499,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"account_offers",		&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_tx",			&RPCParser::parseAccountTransactions,	2,  3	},
 		{	"connect",				&RPCParser::parseConnect,				1,  2	},
+		{	"consensus_info",		&RPCParser::parseAsIs,					0,	0	},
 		{	"get_counts",			&RPCParser::parseGetCounts,				0,	1	},
 		{	"ledger",				&RPCParser::parseLedger,				0,  2	},
 		{	"ledger_accept",		&RPCParser::parseAsIs,					0,  0	},

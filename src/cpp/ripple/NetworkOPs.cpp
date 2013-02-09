@@ -1106,6 +1106,16 @@ bool NetworkOPs::recvValidation(const SerializedValidation::pointer& val)
 	return theApp->getValidations().addValidation(val);
 }
 
+Json::Value NetworkOPs::getConsensusInfo()
+{
+	if (mConsensus)
+		return mConsensus->getJson(true);
+
+	Json::Value info = Json::objectValue;
+	info["consensus"] = "none";
+	return info;
+}
+
 Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 {
 	Json::Value info = Json::objectValue;
