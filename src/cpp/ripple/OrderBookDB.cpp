@@ -182,20 +182,23 @@ void OrderBookDB::processTxn(const SerializedTransaction& stTxn, TER terResult,T
 						field=&sfNewFields;
 					}
 
-					const STObject* previous = dynamic_cast<const STObject*>(node.peekAtPField(*field));
-					if(previous)
+					if (field)
 					{
-						STAmount takerGets = previous->getFieldAmount(sfTakerGets);
-						uint160 currencyOut=takerGets.getCurrency();
-						uint160 issuerOut=takerGets.getIssuer();
+						const STObject* previous = dynamic_cast<const STObject*>(node.peekAtPField(*field));
+						if(previous)
+						{
+							STAmount takerGets = previous->getFieldAmount(sfTakerGets);
+							uint160 currencyOut=takerGets.getCurrency();
+							uint160 issuerOut=takerGets.getIssuer();
 
-						STAmount takerPays = previous->getFieldAmount(sfTakerPays);
-						uint160 currencyIn=takerPays.getCurrency();
-						uint160 issuerIn=takerPays.getIssuer();
+							STAmount takerPays = previous->getFieldAmount(sfTakerPays);
+							uint160 currencyIn=takerPays.getCurrency();
+							uint160 issuerIn=takerPays.getIssuer();
 
-						// determine the OrderBook
-						BookListeners::pointer book=getBookListeners(currencyIn,currencyOut,issuerIn,issuerOut);
-						if(book) book->publish(jvObj);
+							// determine the OrderBook
+							BookListeners::pointer book=getBookListeners(currencyIn,currencyOut,issuerIn,issuerOut);
+							if(book) book->publish(jvObj);
+						}
 					}
 				}
 			}catch(...)
