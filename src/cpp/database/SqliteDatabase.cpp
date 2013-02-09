@@ -252,7 +252,7 @@ void SqliteDatabase::runWal()
 			int ret = sqlite3_wal_checkpoint_v2(mConnection, db.c_str(), SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
 			if (ret != SQLITE_OK)
 			{
-				cLog((ret == SQLITE_LOCKED) ? lsDEBUG : lsWARNING) << "WAL " << mHost << ":"
+				cLog((ret == SQLITE_LOCKED) ? lsTRACE : lsWARNING) << "WAL " << mHost << ":"
 					<< db << " error " << ret;
 			}
 		}
