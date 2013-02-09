@@ -244,9 +244,12 @@ bool LCTransaction::updateVote(int percentTime, bool proposing)
 		weight = (mYays * 100 + (mOurVote ? 100 : 0)) / (mNays + mYays + 1);
 
 		// To prevent avalanche stalls, we increase the needed weight slightly over time
-		if (percentTime < AV_MID_CONSENSUS_TIME) newPosition = weight >  AV_INIT_CONSENSUS_PCT;
-		else if (percentTime < AV_LATE_CONSENSUS_TIME) newPosition = weight > AV_MID_CONSENSUS_PCT;
-		else newPosition = weight > AV_LATE_CONSENSUS_PCT;
+		if (percentTime < AV_MID_CONSENSUS_TIME)
+			newPosition = weight >  AV_INIT_CONSENSUS_PCT;
+		else if (percentTime < AV_LATE_CONSENSUS_TIME)
+			newPosition = weight > AV_MID_CONSENSUS_PCT;
+		else
+			newPosition = weight > AV_LATE_CONSENSUS_PCT;
 	}
 	else // don't let us outweigh a proposing node, just recognize consensus
 	{
@@ -256,14 +259,15 @@ bool LCTransaction::updateVote(int percentTime, bool proposing)
 
 	if (newPosition == mOurVote)
 	{
-#ifdef LC_DEBUG
-		cLog(lsTRACE) << "No change (" << (mOurVote ? "YES" : "NO") << ") : weight "
-			<< weight << ", percent " << percentTime;
-#endif
+		cLog(lsINFO) <<
+			"No change (" << (mOurVote ? "YES" : "NO") << ") : weight "	<< weight << ", percent " << percentTime;
+		cLog(lsDEBUG) << getJson();
 		return false;
 	}
+
 	mOurVote = newPosition;
 	cLog(lsDEBUG) << "We now vote " << (mOurVote ? "YES" : "NO") << " on " << mTransactionID;
+	cLog(lsDEBUG) << getJson();
 	return true;
 }
 
