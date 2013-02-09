@@ -158,6 +158,7 @@ public:
 	SHAMap::ref peekAccountStateMap() { return mAccountStateMap; }
 	void dropCache()
 	{
+		assert(isImmutable());
 		if (mTransactionMap)
 			mTransactionMap->dropCache();
 		if (mAccountStateMap)

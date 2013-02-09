@@ -115,15 +115,12 @@ Ledger::Ledger(const std::string& rawLedger, bool hasPrefix) :
 
 void Ledger::setImmutable()
 {
-	if (!mImmutable)
-	{
-		updateHash();
-		mImmutable = true;
-		if (mTransactionMap)
-			mTransactionMap->setImmutable();
-		if (mAccountStateMap)
-			mAccountStateMap->setImmutable();
-	}
+	updateHash();
+	mImmutable = true;
+	if (mTransactionMap)
+		mTransactionMap->setImmutable();
+	if (mAccountStateMap)
+		mAccountStateMap->setImmutable();
 }
 
 void Ledger::updateHash()
@@ -1425,6 +1422,7 @@ void Ledger::pendSave(bool fromConsensus)
 {
 	if (!fromConsensus && !theApp->isNewFlag(getHash(), SF_SAVED))
 		return;
+	assert(isImmutable());
 
 	{
 		boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);

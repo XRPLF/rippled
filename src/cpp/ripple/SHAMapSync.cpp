@@ -83,6 +83,8 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 		if (have_all)
 			node->setFullBelow();
 	}
+	if (nodeIDs.empty())
+		clearSynching();
 }
 
 std::vector<uint256> SHAMap::getNeededHashes(int max)
@@ -134,6 +136,8 @@ std::vector<uint256> SHAMap::getNeededHashes(int max)
 		if (have_all)
 			node->setFullBelow();
 	}
+	if (ret.empty())
+		clearSynching();
 	return ret;
 }
 
@@ -171,7 +175,7 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 		 	}
 		}
 
-		return true;
+	return true;
 }
 
 bool SHAMap::getRootNode(Serializer& s, SHANodeFormat format)

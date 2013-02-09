@@ -852,8 +852,9 @@ bool SHAMap::getPath(const uint256& index, std::vector< std::vector<unsigned cha
 }
 
 void SHAMap::dropCache()
-{ // CAUTION: Changes can be lost
+{
 	boost::recursive_mutex::scoped_lock sl(mLock);
+	assert(mState == smsImmutable);
 
 	mTNByID.clear();
 	if (root)
