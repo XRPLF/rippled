@@ -1349,7 +1349,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			if (packet.has_querytype() && !packet.has_requestcookie())
 			{ 	// FIXME: Don't relay requests for older ledgers we would acquire
 				// (if we don't have them, we can't get them)
-				cLog(lsINFO) << "Trying to route TX set request";
+				cLog(lsDEBUG) << "Trying to route TX set request";
 				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 				std::vector<Peer::pointer> usablePeers;
 				BOOST_FOREACH(Peer::ref peer, peerList)
@@ -1365,7 +1365,6 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 				Peer::ref selectedPeer = usablePeers[rand() % usablePeers.size()];
 				packet.set_requestcookie(getPeerId());
 				selectedPeer->sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtGET_LEDGER));
-				cLog(lsDEBUG) << "TX set request routed";
 				return;
 			}
 			cLog(lsERROR) << "We do not have the map our peer wants";
@@ -1407,7 +1406,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 				}
 				if (usablePeers.empty())
 				{
-					cLog(lsDEBUG) << "Unable to route ledger request";
+					cLog(lsTRACE) << "Unable to route ledger request";
 					return;
 				}
 				Peer::ref selectedPeer = usablePeers[rand() % usablePeers.size()];

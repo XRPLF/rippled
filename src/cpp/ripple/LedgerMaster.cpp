@@ -352,7 +352,7 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 	if (Ledger::getPendingSaves() > 2)
 	{
 		mTooFast = true;
-		cLog(lsINFO) << "Too many pending ledger saves";
+		cLog(lsDEBUG) << "Too many pending ledger saves";
 		return;
 	}
 
