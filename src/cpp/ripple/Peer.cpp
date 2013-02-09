@@ -1334,11 +1334,11 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 
 	if (packet.itype() == ripple::liTS_CANDIDATE)
 	{ // Request is for a transaction candidate set
-		cLog(lsINFO) << "Received request for TX candidate set data " << getIP();
+		cLog(lsDEBUG) << "Received request for TX candidate set data " << getIP();
 		if ((!packet.has_ledgerhash() || packet.ledgerhash().size() != 32))
 		{
 			punishPeer(LT_InvalidRequest);
-			cLog(lsWARNING) << "invalid request";
+			cLog(lsWARNING) << "invalid request for TX candidate set data";
 			return;
 		}
 		uint256 txHash;
@@ -1504,7 +1504,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		return;
 	}
 
-	cLog(lsDEBUG) << "Request: " << logMe;
+	cLog(lsTRACE) << "Request: " << logMe;
 	for(int i = 0; i < packet.nodeids().size(); ++i)
 	{
 		SHAMapNode mn(packet.nodeids(i).data(), packet.nodeids(i).size());

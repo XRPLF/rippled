@@ -1009,7 +1009,11 @@ bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
 			it.second->setVote(peerID, set->hasItem(it.first));
 	}
 	else
-		cLog(lsDEBUG) << "Don't have that tx set";
+	{
+		cLog(lsDEBUG) << "Don't have tx set for peer";
+//		BOOST_FOREACH(u256_lct_pair& it, mDisputes)
+//			it.second->unVote(peerID);
+	}
 
 	return true;
 }
