@@ -181,6 +181,7 @@ void OrderBookDB::processTxn(const SerializedTransaction& stTxn, TER terResult,T
 					{
 						field=&sfNewFields;
 					}
+					// FIXME: What if an order is deleted?
 
 					if (field)
 					{
