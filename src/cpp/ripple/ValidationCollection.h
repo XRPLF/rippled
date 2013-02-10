@@ -50,7 +50,7 @@ public:
 
 	void tune(int size, int age);
 	void flush();
-	void sweep() { mValidations.sweep(); }
+	void sweep();
 };
 
 #endif

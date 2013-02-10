@@ -330,3 +330,11 @@ void ValidationCollection::doWrite()
 	}
 	mWriting = false;
 }
+
+void ValidationCollection::sweep()
+{
+	boost::mutex::scoped_lock sl(mValidationLock);
+	mValidations.sweep();
+}
+
+// vim:ts=4
