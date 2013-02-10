@@ -1469,6 +1469,9 @@ void UniqueNodeList::nodeRemovePublic(const RippleAddress& naNodePublic)
 
 	// YYY Only dirty on successful delete.
 	fetchDirty();
+
+	boost::recursive_mutex::scoped_lock sl(mUNLLock);
+    mUNL.erase(naNodePublic);
 }
 
 void UniqueNodeList::nodeRemoveDomain(std::string strDomain)
