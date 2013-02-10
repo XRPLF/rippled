@@ -717,9 +717,8 @@ void LedgerConsensus::updateOurPositions()
 
 	// Verify freshness of peer positions and compute close times
 	std::map<uint32, int> closeTimes;
-	boost::unordered_map<uint160, LedgerProposal::pointer>::iterator
-		it = mPeerPositions.begin(), end = mPeerPositions.end();
-	while (it != end)
+	boost::unordered_map<uint160, LedgerProposal::pointer>::iterator it = mPeerPositions.begin();
+	while (it != mPeerPositions.end())
 	{
 		if (it->second->isStale(peerCutoff))
 		{ // proposal is stale
@@ -765,7 +764,8 @@ void LedgerConsensus::updateOurPositions()
 		neededWeight = AV_INIT_CONSENSUS_PCT;
 	else if (mClosePercent < AV_LATE_CONSENSUS_TIME)
 		neededWeight = AV_MID_CONSENSUS_PCT;
-	else neededWeight = AV_LATE_CONSENSUS_PCT;
+	else
+		neededWeight = AV_LATE_CONSENSUS_PCT;
 
 	uint32 closeTime = 0;
 	mHaveCloseTimeConsensus = false;
@@ -802,9 +802,9 @@ void LedgerConsensus::updateOurPositions()
 			<< " Proposing:" <<	(mProposing ? "yes" : "no") << " Thresh:" << thresh << " Pos:" << closeTime;
 	}
 
-	if ((!changes) &&
-			((closeTime != (roundCloseTime(mOurPosition->getCloseTime()))) ||
-			(mOurPosition->isStale(ourCutoff))))
+	if (!changes &&
+			((closeTime != roundCloseTime(mOurPosition->getCloseTime())) ||
+			mOurPosition->isStale(ourCutoff)))
 	{ // close time changed or our position is stale
 		ourPosition = mAcquired[mOurPosition->getCurrentHash()]->snapShot(true);
 		assert(ourPosition);
@@ -835,7 +835,10 @@ bool LedgerConsensus::haveConsensus(bool forReal)
 			if (it.second->getCurrentHash() == ourPosition)
 				++agree;
 			else
+			{
+				cLog(lsDEBUG) << it.first.GetHex() << " has " << it.second->getCurrentHash().GetHex();
 				++disagree;
+			}
 		}
 	}
 	int currentValidations = theApp->getValidations().getNodesAfter(mPrevLedgerHash);
@@ -849,38 +852,36 @@ bool LedgerConsensus::haveConsensus(bool forReal)
 SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool doAcquire)
 {
 	boost::unordered_map<uint256, SHAMap::pointer>::iterator it = mAcquired.find(hash);
-	if (it == mAcquired.end())
-	{ // we have not completed acquiring this ledger
+	if (it != mAcquired.end())
+		return it->second;
 
-		if (mState == lcsPRE_CLOSE)
+	if (mState == lcsPRE_CLOSE)
+	{
+		SHAMap::pointer currentMap = theApp->getLedgerMaster().getCurrentLedger()->peekTransactionMap();
+		if (currentMap->getHash() == hash)
 		{
-			SHAMap::pointer currentMap = theApp->getLedgerMaster().getCurrentLedger()->peekTransactionMap();
-			if (currentMap->getHash() == hash)
-			{
-				currentMap = currentMap->snapShot(false);
-				mapComplete(hash, currentMap, false);
-				return currentMap;
-			}
+			currentMap = currentMap->snapShot(false);
+			mapComplete(hash, currentMap, false);
+			return currentMap;
 		}
-
-		if (doAcquire)
-		{
-			TransactionAcquire::pointer& acquiring = mAcquiring[hash];
-			if (!acquiring)
-			{
-				if (!hash)
-				{
-					SHAMap::pointer empty = boost::make_shared<SHAMap>(smtTRANSACTION);
-					mapComplete(hash, empty, false);
-					return empty;
-				}
-				acquiring = boost::make_shared<TransactionAcquire>(hash);
-				startAcquiring(acquiring);
-			}
-		}
-		return SHAMap::pointer();
 	}
-	return it->second;
+
+	if (doAcquire)
+	{
+		TransactionAcquire::pointer& acquiring = mAcquiring[hash];
+		if (!acquiring)
+		{
+			if (!hash)
+			{
+				SHAMap::pointer empty = boost::make_shared<SHAMap>(smtTRANSACTION);
+				mapComplete(hash, empty, false);
+				return empty;
+			}
+			acquiring = boost::make_shared<TransactionAcquire>(hash);
+			startAcquiring(acquiring);
+		}
+	}
+	return SHAMap::pointer();
 }
 
 void LedgerConsensus::startAcquiring(const TransactionAcquire::pointer& acquire)
@@ -936,9 +937,8 @@ void LedgerConsensus::propose()
 
 void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vector<unsigned char>& tx)
 {
-	if (mDisputes.find(txID) != mDisputes.end()) // Do we already have this entry?
+	if (mDisputes.find(txID) != mDisputes.end())
 		return;
-
 	cLog(lsDEBUG) << "Transaction " << txID << " is disputed";
 
 	bool ourVote = false;
@@ -950,7 +950,6 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 		else
 			assert(false); // We don't have our own position?
 	}
-	cLog(lsDEBUG) << "Transaction " << txID << " is disputed";
 
 	LCTransaction::pointer txn = boost::make_shared<LCTransaction>(txID, tx, ourVote);
 	mDisputes[txID] = txn;
@@ -1120,7 +1119,6 @@ void LedgerConsensus::playbackProposals()
 				theApp->getConnectionPool().relayMessageBut(peers, message);
 			}
 #endif
-
 		}
 	}
 }
@@ -1249,7 +1247,7 @@ void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger
 
 uint32 LedgerConsensus::roundCloseTime(uint32 closeTime)
 {
-	return closeTime - (closeTime % mCloseResolution);
+	return Ledger::roundCloseTime(closeTime, mCloseResolution);
 }
 
 void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
