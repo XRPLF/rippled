@@ -508,33 +508,46 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 
 Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
 {
-	Database* db = theApp->getLedgerDB()->getDB();
-	ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+	Ledger::pointer ledger;
+	{
+		Database* db = theApp->getLedgerDB()->getDB();
+		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 
-	static SqliteStatement pSt(db->getSqliteDB(), "SELECT "
-		"LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
-		"ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
-		" from Ledgers WHERE LedgerSeq = ?;");
+		static SqliteStatement pSt(db->getSqliteDB(), "SELECT "
+			"LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
+			"ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
+			" from Ledgers WHERE LedgerSeq = ?;");
 
-	pSt.reset();
-	pSt.bind(1, ledgerIndex);
-	return getSQL(&pSt);
+			pSt.reset();
+		pSt.bind(1, ledgerIndex);
+		ledger = getSQL1(&pSt);
+	}
+	if (ledger)
+		Ledger::getSQL2(ledger);
+	return ledger;
 }
 
 Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 {
-	Database* db = theApp->getLedgerDB()->getDB();
-	ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+	Ledger::pointer ledger;
+	{
+		Database* db = theApp->getLedgerDB()->getDB();
+		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 
-	static SqliteStatement pSt(db->getSqliteDB(), "SELECT "
-		"LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
-		"ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
-		" from Ledgers WHERE LedgerHash = ?;");
+		static SqliteStatement pSt(db->getSqliteDB(), "SELECT "
+			"LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
+			"ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
+			" from Ledgers WHERE LedgerHash = ?;");
 
-	pSt.reset();
-	pSt.bind(1, ledgerHash.GetHex());
-	Ledger::pointer ret = getSQL(&pSt);
-	assert(!ret || (ret->getHash() == ledgerHash));
+		pSt.reset();
+		pSt.bind(1, ledgerHash.GetHex());
+		ledger = getSQL1(&pSt);
+	}
+	if (ledger)
+	{
+		assert(ledger->getHash() == ledgerHash);
+		Ledger::getSQL2(ledger);
+	}
 	return ret;
 }
 
@@ -613,7 +626,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 	return ret;
 }
 
-Ledger::pointer Ledger::getSQL(SqliteStatement *stmt)
+Ledger::pointer Ledger::getSQL1(SqliteStatement *stmt)
 {
 	int iRet = stmt->step();
 	if (stmt->isDone(iRet))
@@ -644,8 +657,12 @@ Ledger::pointer Ledger::getSQL(SqliteStatement *stmt)
 	ledgerSeq = stmt->getUInt32(9);
 
 	// CAUTION: code below appears in two places
-	Ledger::pointer ret = boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
+	return boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
 		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq);
+}
+
+void Ledger::getSQL2(Ledger::pointer ret)
+{
 	ret->setClosed();
 	if (theApp->getOPs().haveLedger(ledgerSeq))
 		ret->setAccepted();
@@ -659,7 +676,6 @@ Ledger::pointer Ledger::getSQL(SqliteStatement *stmt)
 			Log(lsERROR) << p;
 		}
 		assert(false);
-		return Ledger::pointer();
 	}
 	cLog(lsTRACE) << "Loaded ledger: " << ledgerHash;
 	return ret;
