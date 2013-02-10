@@ -248,8 +248,10 @@ bool LCTransaction::updateVote(int percentTime, bool proposing)
 			newPosition = weight >  AV_INIT_CONSENSUS_PCT;
 		else if (percentTime < AV_LATE_CONSENSUS_TIME)
 			newPosition = weight > AV_MID_CONSENSUS_PCT;
-		else
+		else if (percentTime < AV_STUCK_CONSENSUS_TIME)
 			newPosition = weight > AV_LATE_CONSENSUS_PCT;
+		else
+			newPosition = weight > AV_STUCK_CONSENSUS_PCT;
 	}
 	else // don't let us outweigh a proposing node, just recognize consensus
 	{
@@ -764,8 +766,10 @@ void LedgerConsensus::updateOurPositions()
 		neededWeight = AV_INIT_CONSENSUS_PCT;
 	else if (mClosePercent < AV_LATE_CONSENSUS_TIME)
 		neededWeight = AV_MID_CONSENSUS_PCT;
-	else
+	else if (mClosePercent < AV_STUCK_CONSENSUS_TIME)
 		neededWeight = AV_LATE_CONSENSUS_PCT;
+	else
+		neededWeight = AV_STUCK_CONSENSUS_TIME;
 
 	uint32 closeTime = 0;
 	mHaveCloseTimeConsensus = false;

@@ -47,6 +47,9 @@
 #define AV_LATE_CONSENSUS_TIME		85	// percentage of previous close time before we advance
 #define AV_LATE_CONSENSUS_PCT		70	// percentage of nodes that most vote yes after advancing
 
+#define AV_STUCK_CONSENSUS_TIME		200
+#define AC_STUCK_CONSENSUS_PCT		95
+
 
 class ContinuousLedgerTiming
 {
