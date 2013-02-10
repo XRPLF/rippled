@@ -169,7 +169,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 		return true;
 
 	Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq(ledgerSeq);
-	if (Ledger::getHashByIndex(ledgerSeq) == ledgerHash)
+	if (ledger && (Ledger::getHashByIndex(ledgerSeq) == ledgerHash))
 	{
 		cLog(lsDEBUG) << "Ledger hash found in database";
 		mTooFast = true;
