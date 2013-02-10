@@ -585,27 +585,24 @@ Json::Value RPCHandler::doAccountInfo(Json::Value jvRequest)
 
 	// Get info on account.
 
-	Json::Value		jAccepted		= accountFromString(lpLedger, naAccount, bIndex, strIdent, iIndex);
+	Json::Value		jvAccepted		= accountFromString(lpLedger, naAccount, bIndex, strIdent, iIndex);
 
-	if (jAccepted.empty())
+	if (!jvAccepted.empty())
+		return jvAccepted;
+
+	AccountState::pointer asAccepted	= mNetOps->getAccountState(lpLedger, naAccount);
+
+	if (asAccepted)
 	{
-		AccountState::pointer asAccepted	= mNetOps->getAccountState(lpLedger, naAccount);
+		asAccepted->addJson(jvAccepted);
 
-		if (asAccepted)
-			asAccepted->addJson(jAccepted);
+		jvResult["account_data"]	= jvAccepted;
+	}
+	else
+	{
+		jvResult	= rpcError(rpcACT_NOT_FOUND);
 	}
 
-	jvResult["account_data"]	= jAccepted;
-
-#if 0
-	if (!jAccepted && !asCurrent)
-	{
-		jvResult["account"]	= naAccount.humanAccountID();
-		jvResult["status"]	= "NotFound";
-		if (bIndex)
-			jvResult["account_index"]	= iIndex;
-	}
-#endif
 	return jvResult;
 }
 
