@@ -171,7 +171,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 	Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq(ledgerSeq);
 	if (ledger && (Ledger::getHashByIndex(ledgerSeq) == ledgerHash))
 	{
-		cLog(lsDEBUG) << "Ledger hash found in database";
+		cLog(lsTRACE) << "Ledger hash found in database";
 		mTooFast = true;
 		theApp->getJobQueue().addJob(jtPUBLEDGER, boost::bind(&LedgerMaster::asyncAccept, this, ledger));
 		return true;
@@ -247,7 +247,7 @@ bool LedgerMaster::shouldAcquire(uint32 currentLedger, uint32 ledgerHistory, uin
 	if (candidateLedger >= currentLedger)
 		ret = true;
 	else ret = (currentLedger - candidateLedger) <= ledgerHistory;
-	cLog(lsDEBUG) << "Missing ledger " << candidateLedger << (ret ? " will" : " will NOT") << " be acquired";
+	cLog(lsTRACE) << "Missing ledger " << candidateLedger << (ret ? " will" : " will NOT") << " be acquired";
 	return ret;
 }
 
