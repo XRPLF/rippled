@@ -88,10 +88,7 @@ Ledger::Ledger(bool /* dummy */, Ledger& prevLedger) :
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(prevLedger.mCloseResolution,
 		prevLedger.getCloseAgree(), mLedgerSeq);
 	if (prevLedger.mCloseTime == 0)
-	{
-		mCloseTime = theApp->getOPs().getCloseTimeNC() - mCloseResolution;
-		mCloseTime -= (mCloseTime % mCloseResolution);
-	}
+		mCloseTime = roundCloseTime(theApp->getOPs().getCloseTimeNC(), mCloseResolution);
 	else
 		mCloseTime = prevLedger.mCloseTime + mCloseResolution;
 	zeroFees();
@@ -181,7 +178,7 @@ void Ledger::addRaw(Serializer &s) const
 void Ledger::setAccepted(uint32 closeTime, int closeResolution, bool correctCloseTime)
 { // used when we witnessed the consensus
 	assert(mClosed && !mAccepted);
-	mCloseTime = correctCloseTime ? (closeTime - (closeTime % closeResolution)) : closeTime;
+	mCloseTime = correctCloseTime ? roundCloseTime(closeTime, closeResolution) : closeTime;
 	mCloseResolution = closeResolution;
 	mCloseFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
 	mAccepted = true;
@@ -192,7 +189,7 @@ void Ledger::setAccepted()
 { // used when we acquired the ledger
 	// FIXME assert(mClosed && (mCloseTime != 0) && (mCloseResolution != 0));
 	if ((mCloseFlags & sLCF_NoConsensusTime) == 0)
-		mCloseTime -= mCloseTime % mCloseResolution;
+		mCloseTime = roundCloseTime(mCloseTime, mCloseResolution);
 	mAccepted = true;
 	setImmutable();
 }
@@ -1420,6 +1417,13 @@ int Ledger::getPendingSaves()
 {
 	boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
 	return sPendingSaves;
+}
+
+uint32 Ledger::roundCloseTime(uint32 closeTime, uint32 closeResolution)
+{
+	if (closeTime == 0)
+		return 0;
+	return closeTime - (closeTime % closeResolution);
 }
 
 void Ledger::pendSave(bool fromConsensus)

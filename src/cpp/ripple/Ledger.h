@@ -123,6 +123,7 @@ public:
 	static void getSQL2(Ledger::ref);
 	static Ledger::pointer getLastFullLedger();
 	static int getPendingSaves();
+	static uint32 roundCloseTime(uint32 closeTime, uint32 closeResolution);
 
 	void updateHash();
 	void setClosed()	{ mClosed = true; }
