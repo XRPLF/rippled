@@ -548,7 +548,7 @@ Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 		assert(ledger->getHash() == ledgerHash);
 		Ledger::getSQL2(ledger);
 	}
-	return ret;
+	return ledger;
 }
 
 #else
@@ -661,24 +661,12 @@ Ledger::pointer Ledger::getSQL1(SqliteStatement *stmt)
 		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq);
 }
 
-void Ledger::getSQL2(Ledger::pointer ret)
+void Ledger::getSQL2(Ledger::ref ret)
 {
 	ret->setClosed();
-	if (theApp->getOPs().haveLedger(ledgerSeq))
+	if (theApp->getOPs().haveLedger(ret->getLedgerSeq()))
 		ret->setAccepted();
-	if (ret->getHash() != ledgerHash)
-	{
-		if (sLog(lsERROR))
-		{
-			Log(lsERROR) << "Failed on ledger";
-			Json::Value p;
-			ret->addJson(p, LEDGER_JSON_FULL);
-			Log(lsERROR) << p;
-		}
-		assert(false);
-	}
-	cLog(lsTRACE) << "Loaded ledger: " << ledgerHash;
-	return ret;
+	cLog(lsTRACE) << "Loaded ledger: " << ret->getHash().GetHex();
 }
 
 uint256 Ledger::getHashByIndex(uint32 ledgerIndex)

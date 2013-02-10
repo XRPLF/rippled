@@ -120,7 +120,7 @@ public:
 
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
 	static Ledger::pointer getSQL1(SqliteStatement*);
-	static Ledger::pointer getSQL2(Ledger::ref);
+	static void getSQL2(Ledger::ref);
 	static Ledger::pointer getLastFullLedger();
 	static int getPendingSaves();
 
