@@ -534,7 +534,6 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::ref map, bool acq
 	if (mAcquired.find(hash) != mAcquired.end())
 	{
 		mAcquiring.erase(hash);
-		cLog(lsINFO) << "Already had the TXS";
 		return; // we already have this map
 	}
 
