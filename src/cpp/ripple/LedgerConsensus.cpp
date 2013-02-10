@@ -191,12 +191,12 @@ void LCTransaction::setVote(const uint160& peer, bool votesYes)
 	{ // new vote
 		if (votesYes)
 		{
-			cLog(lsTRACE) << "Peer " << peer << " votes YES on " << mTransactionID;
+			cLog(lsDEBUG) << "Peer " << peer << " votes YES on " << mTransactionID;
 			++mYays;
 		}
 		else
 		{
-			cLog(lsTRACE) << "Peer " << peer << " votes NO on " << mTransactionID;
+			cLog(lsDEBUG) << "Peer " << peer << " votes NO on " << mTransactionID;
 			++mNays;
 		}
 	}
@@ -534,6 +534,7 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::ref map, bool acq
 	if (mAcquired.find(hash) != mAcquired.end())
 	{
 		mAcquiring.erase(hash);
+		cLog(lsINFO) << "Already had the TXS";
 		return; // we already have this map
 	}
 
@@ -560,7 +561,10 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::ref map, bool acq
 	}
 	if (!peers.empty())
 		adjustCount(map, peers);
-	else tLog(acquired, lsWARNING) << "By the time we got the map " << hash << " no peers were proposing it";
+	else
+	{
+		tLog(acquired, lsWARNING) << "By the time we got the map " << hash << " no peers were proposing it";
+	}
 
 	sendHaveTxSet(hash, true);
 }
@@ -933,10 +937,10 @@ void LedgerConsensus::propose()
 
 void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vector<unsigned char>& tx)
 {
-	cLog(lsDEBUG) << "Transaction " << txID << " is disputed";
-	boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.find(txID);
-	if (it != mDisputes.end())
+	if (mDisputes.find(txID) != mDisputes.end()) // Do we already have this entry?
 		return;
+
+	cLog(lsDEBUG) << "Transaction " << txID << " is disputed";
 
 	bool ourVote = false;
 	if (mOurPosition)
@@ -947,6 +951,7 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 		else
 			assert(false); // We don't have our own position?
 	}
+	cLog(lsDEBUG) << "Transaction " << txID << " is disputed";
 
 	LCTransaction::pointer txn = boost::make_shared<LCTransaction>(txID, tx, ourVote);
 	mDisputes[txID] = txn;
@@ -960,7 +965,7 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 	}
 
 	if (!ourVote && theApp->isNewFlag(txID, SF_RELAYED))
-	{
+	{ // We voted no and a trusted peer voted yes, so relay
 		ripple::TMTransaction msg;
 		msg.set_rawtransaction(&(tx.front()), tx.size());
 		msg.set_status(ripple::tsNEW);
@@ -970,12 +975,12 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 	}
 }
 
-bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
+bool LedgerConsensus::peerPosition(LedgerProposal::ref newPosition)
 {
 	uint160 peerID = newPosition->getPeerID();
 	if (mDeadNodes.find(peerID) != mDeadNodes.end())
 	{
-		cLog(lsINFO) << "Position from dead node";
+		cLog(lsINFO) << "Position from dead node: " << peerID.GetHex();
 		return false;
 	}
 
@@ -994,7 +999,8 @@ bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
 		++mCloseTimes[newPosition->getCloseTime()];
 	}
 	else if (newPosition->getProposeSeq() == LedgerProposal::seqLeave)
-	{
+	{ // peer bows out
+		cLog(lsINFO) << "Peer bows out: " << peerID.GetHex();
 		BOOST_FOREACH(u256_lct_pair& it, mDisputes)
 			it.second->unVote(peerID);
 		mPeerPositions.erase(peerID);
@@ -1003,7 +1009,8 @@ bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
 	}
 
 
-	cLog(lsTRACE) << "Processing peer proposal " << newPosition->getProposeSeq() << "/" << newPosition->getCurrentHash();
+	cLog(lsTRACE) << "Processing peer proposal "
+		<< newPosition->getProposeSeq() << "/" << newPosition->getCurrentHash();
 	currentPosition = newPosition;
 
 	SHAMap::pointer set = getTransactionTree(newPosition->getCurrentHash(), true);
@@ -1045,7 +1052,7 @@ SMAddNode LedgerConsensus::peerGaveNodes(Peer::ref peer, const uint256& setHash,
 	boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(setHash);
 	if (acq == mAcquiring.end())
 	{
-		cLog(lsINFO) << "Got TX data for set not acquiring: " << setHash;
+		cLog(lsDEBUG) << "Got TX data for set no longer acquiring: " << setHash;
 		return SMAddNode();
 	}
 	TransactionAcquire::pointer set = acq->second; // We must keep the set around during the function
@@ -1080,7 +1087,7 @@ void LedgerConsensus::playbackProposals()
 			it = storedProposals.begin(), end = storedProposals.end(); it != end; ++it)
 	{
 		bool relay = false;
-		BOOST_FOREACH(const LedgerProposal::pointer& proposal, it->second)
+		BOOST_FOREACH(LedgerProposal::ref proposal, it->second)
 		{
 			if (proposal->hasSignature())
 			{ // we have the signature but don't know the ledger so couldn't verify
