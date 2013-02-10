@@ -42,6 +42,7 @@ protected:
 		weak_data_ptr	weak_ptr;
 
 		cache_entry(int l, const data_ptr& d) : last_use(l), ptr(d), weak_ptr(d) { ; }
+		bool isWeak()		{ return !ptr; }
 		bool isCached()		{ return !!ptr; }
 		bool isExpired()	{ return weak_ptr.expired(); }
 		data_ptr lock()		{ return weak_ptr.lock(); }
@@ -146,9 +147,9 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 	cache_iterator cit = mCache.begin();
 	while (cit != mCache.end())
 	{
-		if (!cit->second.ptr)
+		if (cit->second.isWeak())
 		{ // weak
-			if (cit->second.weak_ptr.expired())
+			if (cit->second.isExpired())
 			{
 				++mapRemovals;
 				mCache.erase(cit++);
@@ -156,26 +157,23 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 			else
 				++cit;
 		}
-		else
-		{ // strong
-			if (cit->second.last_use < target)
-			{ // expired
-				--mCacheCount;
-				++cacheRemovals;
-				cit->second.ptr.reset();
-				if (cit->second.weak_ptr.expired())
-				{
-					++mapRemovals;
-					mCache.erase(cit++);
-				}
-				else
-					++cit;
-			}
-			else
+		else if (cit->second.last_use < target)
+		{ // strong, expired
+			--mCacheCount;
+			++cacheRemovals;
+			cit->second.ptr.reset();
+			if (cit->second.isExpired())
 			{
-				++cc;
-				++cit;
+				++mapRemovals;
+				mCache.erase(cit++);
 			}
+			else // remains weakly cached
+				++cit;
+		}
+		else
+		{ // strong, not expired
+			++cc;
+			++cit;
 		}
 	}
 
