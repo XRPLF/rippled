@@ -845,7 +845,7 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 
 static void checkPropose(Job& job, boost::shared_ptr<ripple::TMProposeSet> packet,
 	LedgerProposal::pointer proposal, uint256 consensusLCL,	RippleAddress nodePublic, boost::weak_ptr<Peer> peer)
-{
+{ // Called from our JobQueue
 	bool sigGood = false;
 	bool isTrusted = (job.getType() == jtPROPOSAL_t);
 
@@ -877,7 +877,7 @@ static void checkPropose(Job& job, boost::shared_ptr<ripple::TMProposeSet> packe
 		}
 		else
 		{
-			cLog(lsWARNING) << "Ledger proposal fails signature check";
+			cLog(lsWARNING) << "Ledger proposal fails signature check"; // Could be mismatched prev ledger
 			proposal->setSignature(set.signature());
 		}
 	}
