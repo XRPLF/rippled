@@ -184,7 +184,7 @@ public:
 
 	bool haveConsensus(bool forReal);
 
-	bool peerPosition(const LedgerProposal::pointer&);
+	bool peerPosition(LedgerProposal::ref);
 
 	bool peerHasSet(Peer::ref peer, const uint256& set, ripple::TxSetStatus status);
 

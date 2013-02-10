@@ -164,7 +164,7 @@ public:
 	//
 	typedef boost::function<void (Transaction::pointer, TER)> stCallback; // must complete immediately
 	void submitTransaction(Job&, SerializedTransaction::pointer, stCallback callback = stCallback());
-	Transaction::pointer submitTransactionSync(const Transaction::pointer& tpTrans, bool bSubmit=true);
+	Transaction::pointer submitTransactionSync(Transaction::ref tpTrans, bool bSubmit=true);
 
 	void runTransactionQueue();
 	Transaction::pointer processTransaction(Transaction::pointer, stCallback);
@@ -224,7 +224,7 @@ public:
 		RippleAddress nodePublic, uint256 checkLedger, bool sigGood);
 	SMAddNode gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
-	bool recvValidation(const SerializedValidation::pointer& val);
+	bool recvValidation(SerializedValidation::ref val);
 	void takePosition(int seq, SHAMap::ref position);
 	SHAMap::pointer getTXMap(const uint256& hash);
 	bool hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, ripple::TxSetStatus status);
@@ -255,7 +255,7 @@ public:
 	uint32 acceptLedger();
 	boost::unordered_map<uint160,
 		std::list<LedgerProposal::pointer> >& peekStoredProposals() { return mStoredProposals; }
-	void storeProposal(const LedgerProposal::pointer& proposal,	const RippleAddress& peerPublic);
+	void storeProposal(LedgerProposal::ref proposal,	const RippleAddress& peerPublic);
 	uint256 getConsensusLCL();
 
 	bool addWantedHash(const uint256& h);

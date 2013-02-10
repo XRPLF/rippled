@@ -32,6 +32,7 @@ public:
 	static const uint32 seqLeave = 0xffffffff; // leaving the consensus process
 
 	typedef boost::shared_ptr<LedgerProposal> pointer;
+	typedef const pointer& ref;
 
 	// proposal from peer
 	LedgerProposal(const uint256& prevLgr, uint32 proposeSeq, const uint256& propose,

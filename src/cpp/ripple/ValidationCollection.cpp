@@ -34,7 +34,7 @@ VSpointer ValidationCollection::findSet(const uint256& ledgerHash)
 	return mValidations.fetch(ledgerHash);
 }
 
-bool ValidationCollection::addValidation(const SerializedValidation::pointer& val)
+bool ValidationCollection::addValidation(SerializedValidation::ref val)
 {
 	RippleAddress signer = val->getSignerPublic();
 	bool isCurrent = false;
@@ -316,7 +316,7 @@ void ValidationCollection::doWrite()
 
 			Serializer s(1024);
 			db->executeSQL("BEGIN TRANSACTION;");
-			BOOST_FOREACH(const SerializedValidation::pointer& it, vector)
+			BOOST_FOREACH(SerializedValidation::ref it, vector)
 			{
 				s.erase();
 				it->add(s);

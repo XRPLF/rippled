@@ -893,7 +893,7 @@ void LedgerEntrySet::ownerCountAdjust(const uint160& uOwnerID, int iAmount, SLE:
 		sleRoot->setFieldU32(sfOwnerCount, uOwnerCount+iAmount);
 }
 
-TER LedgerEntrySet::offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID)
+TER LedgerEntrySet::offerDelete(SLE::ref sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID)
 {
 	bool	bOwnerNode	= sleOffer->isFieldPresent(sfOwnerNode);	// Detect legacy dirs.
 	uint64	uOwnerNode	= sleOffer->getFieldU64(sfOwnerNode);

@@ -17,7 +17,7 @@ uint32 LedgerMaster::getCurrentLedgerIndex()
 	return mCurrentLedger->getLedgerSeq();
 }
 
-void LedgerMaster::addHeldTransaction(const Transaction::pointer& transaction)
+void LedgerMaster::addHeldTransaction(Transaction::ref transaction)
 { // returns true if transaction was added
 	boost::recursive_mutex::scoped_lock ml(mLock);
 	mHeldTransactions.push_back(transaction->getSTransaction());

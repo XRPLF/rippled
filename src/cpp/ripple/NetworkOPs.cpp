@@ -178,7 +178,7 @@ void NetworkOPs::submitTransaction(Job&, SerializedTransaction::pointer iTrans, 
 
 // Sterilize transaction through serialization.
 // This is fully synchronous and deprecated
-Transaction::pointer NetworkOPs::submitTransactionSync(const Transaction::pointer& tpTrans, bool bSubmit)
+Transaction::pointer NetworkOPs::submitTransactionSync(Transaction::ref tpTrans, bool bSubmit)
 {
 	Serializer s;
 	tpTrans->getSTransaction()->add(s);
@@ -1100,7 +1100,7 @@ std::vector<RippleAddress>
 	return accounts;
 }
 
-bool NetworkOPs::recvValidation(const SerializedValidation::pointer& val)
+bool NetworkOPs::recvValidation(SerializedValidation::ref val)
 {
 	cLog(lsDEBUG) << "recvValidation " << val->getLedgerHash();
 	return theApp->getValidations().addValidation(val);
@@ -1491,7 +1491,7 @@ uint32 NetworkOPs::acceptLedger()
 	return mLedgerMaster->getCurrentLedger()->getLedgerSeq();
 }
 
-void NetworkOPs::storeProposal(const LedgerProposal::pointer& proposal, const RippleAddress& peerPublic)
+void NetworkOPs::storeProposal(LedgerProposal::ref proposal, const RippleAddress& peerPublic)
 {
 	std::list<LedgerProposal::pointer>& props = mStoredProposals[peerPublic.getNodeID()];
 	if (props.size() >= (unsigned)(mLastCloseProposers + 10))

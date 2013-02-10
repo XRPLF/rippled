@@ -26,7 +26,7 @@ void TransactionEngine::txnWrite()
 	typedef std::map<uint256, LedgerEntrySetEntry>::value_type u256_LES_pair;
 	BOOST_FOREACH(u256_LES_pair& it, mNodes)
 	{
-		const SLE::pointer&	sleEntry	= it.second.mEntry;
+		SLE::ref	sleEntry	= it.second.mEntry;
 
 		switch (it.second.mAction)
 		{

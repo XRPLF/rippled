@@ -48,8 +48,8 @@ protected:
 	bool						mPubThread;			// Publish thread is running
 
 	void applyFutureTransactions(uint32 ledgerIndex);
-	bool isValidTransaction(const Transaction::pointer& trans);
-	bool isTransactionOnFutureList(const Transaction::pointer& trans);
+	bool isValidTransaction(Transaction::ref trans);
+	bool isTransactionOnFutureList(Transaction::ref trans);
 
 	bool acquireMissingLedger(Ledger::ref from, const uint256& ledgerHash, uint32 ledgerSeq);
 	void asyncAccept(Ledger::pointer);
@@ -122,7 +122,7 @@ public:
 		mCompleteLedgers.setRange(minV, maxV);
 	}
 
-	void addHeldTransaction(const Transaction::pointer& trans);
+	void addHeldTransaction(Transaction::ref trans);
 	void fixMismatch(Ledger::ref ledger);
 
 	bool haveLedgerRange(uint32 from, uint32 to);
