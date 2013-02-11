@@ -173,7 +173,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 	{
 		cLog(lsTRACE) << "Ledger hash found in database";
 		mTooFast = true;
-		theApp->getJobQueue().addJob(jtPUBLEDGER, boost::bind(&LedgerMaster::asyncAccept, this, ledger));
+		theApp->getJobQueue().addJob(jtPUBOLDLEDGER, boost::bind(&LedgerMaster::asyncAccept, this, ledger));
 		return true;
 	}
 

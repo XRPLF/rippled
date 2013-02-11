@@ -245,6 +245,8 @@ void LoadFeeTrack::setRemoteFee(uint32 f)
 void LoadFeeTrack::raiseLocalFee()
 {
 	boost::mutex::scoped_lock sl(mLock);
+	uint32 origFee = mLocalTxnLoadFee;
+
 	if (mLocalTxnLoadFee < mLocalTxnLoadFee) // make sure this fee takes effect
 		mLocalTxnLoadFee = mLocalTxnLoadFee;
 
@@ -252,15 +254,23 @@ void LoadFeeTrack::raiseLocalFee()
 
 	if (mLocalTxnLoadFee > lftFeeMax)
 		mLocalTxnLoadFee = lftFeeMax;
+
+	tLog(origFee != mLocalTxnLoadFee, lsDEBUG) <<
+		"Local load fee raised from " << origFee << " to " << mLocalTxnLoadFee;
 }
 
 void LoadFeeTrack::lowerLocalFee()
 {
 	boost::mutex::scoped_lock sl(mLock);
+	uint32 origFee = mLocalTxnLoadFee;
+
 	mLocalTxnLoadFee -= (mLocalTxnLoadFee / lftFeeDecFraction ); // reduce by 1/16th
 
 	if (mLocalTxnLoadFee < lftNormalFee)
 		mLocalTxnLoadFee = lftNormalFee;
+
+	tLog(origFee != mLocalTxnLoadFee, lsDEBUG) <<
+		"Local load fee lowered from " << origFee << " to " << mLocalTxnLoadFee;
 }
 
 Json::Value LoadFeeTrack::getJson(uint64 baseFee, uint32 referenceFeeUnits)

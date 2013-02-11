@@ -11,11 +11,12 @@ SETUP_LOG();
 
 JobQueue::JobQueue() : mLastJob(0), mThreadCount(0), mShuttingDown(false)
 {
+	mJobLoads[jtPUBOLDLEDGER].setTargetLatency(10000, 15000);
 	mJobLoads[jtVALIDATION_ut].setTargetLatency(2000, 5000);
 	mJobLoads[jtPROOFWORK].setTargetLatency(2000, 5000);
 	mJobLoads[jtTRANSACTION].setTargetLatency(250, 1000);
 	mJobLoads[jtPROPOSAL_ut].setTargetLatency(500, 1250);
-	mJobLoads[jtPUBLEDGER].setTargetLatency(1000, 2500);
+	mJobLoads[jtPUBLEDGER].setTargetLatency(3000, 4500);
 	mJobLoads[jtWAL].setTargetLatency(1000, 2500);
 	mJobLoads[jtVALIDATION_t].setTargetLatency(500, 1500);
 	mJobLoads[jtWRITE].setTargetLatency(750, 1500);
@@ -35,12 +36,13 @@ const char* Job::toString(JobType t)
 	switch(t)
 	{
 		case jtINVALID:			return "invalid";
+		case jtPUBOLDLEDGER:	return "publishAcqLedger";
 		case jtVALIDATION_ut:	return "untrustedValidation";
 		case jtPROOFWORK:		return "proofOfWork";
 		case jtPROPOSAL_ut:		return "untrustedProposal";
 		case jtCLIENT:			return "clientCommand";
 		case jtTRANSACTION:		return "transaction";
-		case jtPUBLEDGER:		return "publishLedger";
+		case jtPUBLEDGER:		return "publishNewLedger";
 		case jtVALIDATION_t:	return "trustedValidation";
 		case jtWAL:				return "writeAhead";
 		case jtWRITE:			return "writeObjects";
