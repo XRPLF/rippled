@@ -219,7 +219,7 @@ var Remote = function (opts, trace) {
   this.retry                  = undefined;
 
   this._load_base             = 256;
-  this._load_fee              = 256;
+  this._load_factor           = 1.0;
   this._fee_ref               = undefined;
   this._fee_base              = undefined;
   this._reserve_base          = undefined;
@@ -574,6 +574,16 @@ Remote.prototype._connect_message = function (ws, json) {
           Remote.online_states.indexOf(message.server_status) !== -1
             ? 'online'
             : 'offline');
+
+        if ('load_base' in message
+          && 'load_factor' in message
+          && (message.load_base !== self._load_base || message.load_factor != self._load_factor))
+        {
+          self._load_base     = message.load_base;
+          self._load_factor   = message.load_factor;
+
+          this.emit('load', { 'load_base' : self._load_base, 'load_factor' : self.load_factor });
+        }
         break;
 
       // All other messages
@@ -917,7 +927,7 @@ Remote.prototype._server_subscribe = function () {
 
         // FIXME Use this to estimate fee.
         self._load_base     = message.load_base || 256;
-        self._load_fee      = message.load_fee || 256;
+        self._load_factor   = message.load_factor || 1.0;
         self._fee_ref       = message.fee_ref;
         self._fee_base      = message.fee_base;
         self._reserve_base  = message.reverse_base;
