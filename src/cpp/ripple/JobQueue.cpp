@@ -11,7 +11,7 @@ SETUP_LOG();
 
 JobQueue::JobQueue() : mLastJob(0), mThreadCount(0), mShuttingDown(false)
 {
-	mJobLoads[jtPUBOLDLEDGER].setTargeLatency(10000, 15000);
+	mJobLoads[jtPUBOLDLEDGER].setTargetLatency(10000, 15000);
 	mJobLoads[jtVALIDATION_ut].setTargetLatency(2000, 5000);
 	mJobLoads[jtPROOFWORK].setTargetLatency(2000, 5000);
 	mJobLoads[jtTRANSACTION].setTargetLatency(250, 1000);
