@@ -577,12 +577,12 @@ Remote.prototype._connect_message = function (ws, json) {
 
         if ('load_base' in message
           && 'load_factor' in message
-          && (message.load_base !== self._load_base || message.load_factor != self._load_factor))
+          && (message.load_base !== this._load_base || message.load_factor != this._load_factor))
         {
-          self._load_base     = message.load_base;
-          self._load_factor   = message.load_factor;
+          this._load_base     = message.load_base;
+          this._load_factor   = message.load_factor;
 
-          this.emit('load', { 'load_base' : self._load_base, 'load_factor' : self.load_factor });
+          this.emit('load', { 'load_base' : this._load_base, 'load_factor' : this.load_factor });
         }
         break;
 
