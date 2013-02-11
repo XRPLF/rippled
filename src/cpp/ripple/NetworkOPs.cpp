@@ -1339,6 +1339,8 @@ void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedT
 void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted, TransactionMetaSet::pointer& meta)
 {
 	boost::unordered_set<InfoSub*>	notify;
+	int								iProposed	= 0;
+	int								iAccepted	= 0;
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
@@ -1356,6 +1358,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 				{
 					BOOST_FOREACH(InfoSub* ispListener, simiIt->second)
 					{
+						++iProposed;
 						notify.insert(ispListener);
 					}
 				}
@@ -1368,6 +1371,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 					{
 						BOOST_FOREACH(InfoSub* ispListener, simiIt->second)
 						{
+							++iAccepted;
 							notify.insert(ispListener);
 						}
 					}
@@ -1375,6 +1379,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 			}
 		}
 	}
+	cLog(lsINFO) << boost::str(boost::format("pubAccountTransaction: iProposed=%d iAccepted=%d") % iProposed % iAccepted);
 
 	// FIXME: This can crash. An InfoSub can go away while we hold a regular pointer to it.
 	if (!notify.empty())
@@ -1401,6 +1406,8 @@ void NetworkOPs::subAccount(InfoSub* ispListener, const boost::unordered_set<Rip
 	// For the connection, monitor each account.
 	BOOST_FOREACH(const RippleAddress& naAccountID, vnaAccountIDs)
 	{
+		cLog(lsINFO) << boost::str(boost::format("subAccount: account: %d") % naAccountID.humanAccountID());
+
 		ispListener->insertSubAccountInfo(naAccountID, uLedgerIndex);
 	}
 
