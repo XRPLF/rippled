@@ -67,7 +67,7 @@ void RPCSub::sendThread()
 	    // XXX Might not need this in a try.
 	    try
 	    {
-		cLog(lsDEBUG) << boost::str(boost::format("callRPC calling: %s") % mIp);
+		cLog(lsINFO) << boost::str(boost::format("callRPC calling: %s") % mIp);
 
 		callRPC(
 		    theApp->getIOService(),
@@ -79,7 +79,7 @@ void RPCSub::sendThread()
 	    }
 	    catch (const std::exception& e)
 	    {
-		cLog(lsDEBUG) << boost::str(boost::format("callRPC exception: %s") % e.what());
+		cLog(lsINFO) << boost::str(boost::format("callRPC exception: %s") % e.what());
 	    }
 	}
     } while (bSend);
@@ -93,11 +93,11 @@ void RPCSub::send(const Json::Value& jvObj)
     {
 	// Drop the previous event.
 
-	cLog(lsDEBUG) << boost::str(boost::format("callRPC drop"));
+	cLog(lsWARNING) << boost::str(boost::format("callRPC drop"));
 	mDeque.pop_back();
     }
 
-    cLog(lsDEBUG) << boost::str(boost::format("callRPC push: %s") % jvObj);
+    cLog(lsINFO) << boost::str(boost::format("callRPC push: %s") % jvObj);
 
     mDeque.push_back(std::make_pair(mSeq++, jvObj));
 
@@ -106,7 +106,7 @@ void RPCSub::send(const Json::Value& jvObj)
 	// Start a sending thread.
 	mSending    = true;
 
-    cLog(lsDEBUG) << boost::str(boost::format("callRPC start"));
+    cLog(lsINFO) << boost::str(boost::format("callRPC start"));
 	boost::thread(boost::bind(&RPCSub::sendThread, this)).detach();
     }
 }
