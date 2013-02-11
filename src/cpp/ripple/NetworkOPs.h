@@ -116,6 +116,9 @@ protected:
 	boost::recursive_mutex								mWantedHashLock;
 	boost::unordered_set<uint256>						mWantedHashes;
 
+	uint32												mLastLoadBase;
+	uint32												mLastLoadFactor;
+
 	void setMode(OperatingMode);
 
 	Json::Value transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent, const std::string& strType);
@@ -257,6 +260,7 @@ public:
 		std::list<LedgerProposal::pointer> >& peekStoredProposals() { return mStoredProposals; }
 	void storeProposal(LedgerProposal::ref proposal,	const RippleAddress& peerPublic);
 	uint256 getConsensusLCL();
+	void reportFeeChange();
 
 	bool addWantedHash(const uint256& h);
 	bool isWantedHash(const uint256& h, bool remove);

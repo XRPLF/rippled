@@ -35,7 +35,8 @@ void InfoSub::onSendEmpty()
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
 	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mProposing(false), mValidating(false),
 	mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0), mLastCloseProposers(0),
-	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0)
+	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0),
+	mLastLoadBase(256), mLastLoadFactor(256)
 {
 }
 
@@ -1020,8 +1021,8 @@ void NetworkOPs::pubServer()
 
 		jvObj["type"]			= "serverStatus";
 		jvObj["server_status"]	= strOperatingMode();
-		jvObj["load_base"]		= theApp->getFeeTrack().getLoadBase();
-		jvObj["load_factor"]	= theApp->getFeeTrack().getLoadFactor();
+		jvObj["load_base"]		= (mLastLoadBase = theApp->getFeeTrack().getLoadBase());
+		jvObj["load_factor"]	= (mLastLoadFactor = theApp->getFeeTrack().getLoadFactor());
 
 		BOOST_FOREACH(InfoSub* ispListener, mSubServer)
 		{
@@ -1283,6 +1284,15 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 			pubAcceptedTransaction(lpAccepted, stTxn, meta->getResultTER(), meta);
 		}
 	}
+}
+
+void NetworkOPs::reportFeeChange()
+{
+	if ((theApp->getFeeTrack().getLoadBase() == mLastLoadBase) &&
+			(theApp->getFeeTrack().getLoadFactor() == mLastLoadFactor))
+		return;
+
+	theApp->getJobQueue().addJob(jtCLIENT, boost::bind(&NetworkOPs::pubServer, this));
 }
 
 Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent, const std::string& strType)
