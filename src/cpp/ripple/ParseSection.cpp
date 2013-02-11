@@ -1,4 +1,5 @@
 #include "ParseSection.h"
+#include "Log.h"
 #include "utils.h"
 
 #include <iostream>
@@ -6,6 +7,8 @@
 #include <boost/foreach.hpp>
 
 #define SECTION_DEFAULT_NAME	""
+
+SETUP_LOG();
 
 section ParseSection(const std::string& strInput, const bool bTrim)
 {
@@ -113,6 +116,12 @@ bool sectionSingleB(section& secSource, const std::string& strSection, std::stri
 	{
 		strValue	= (*pmtEntries)[0];
     }
+	else if (pmtEntries)
+	{
+		cLog(lsWARNING) << boost::str(boost::format("Section [%s]: requires 1 line not %d lines.")
+			% strSection
+			% pmtEntries->size());
+	}
 
 	return bSingle;
 }
