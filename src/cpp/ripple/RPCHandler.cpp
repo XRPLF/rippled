@@ -2401,10 +2401,14 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 		RPCSub	*rspSub	= mNetOps->findRpcSub(strUrl);
 		if (!rspSub)
 		{
+			cLog(lsINFO) << boost::str(boost::format("doSubscribe: building: %s") % strUrl);
+
 			rspSub	= mNetOps->addRpcSub(strUrl, new RPCSub(strUrl, strUsername, strPassword));
 		}
 		else
 		{
+			cLog(lsINFO) << boost::str(boost::format("doSubscribe: reusing: %s") % strUrl);
+
 			if (jvRequest.isMember("username"))
 				rspSub->setUsername(strUsername);
 
@@ -2430,7 +2434,6 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 				if (streamName=="server")
 				{
 					mNetOps->subServer(ispSub, jvResult);
-
 				}
 				else if (streamName=="ledger")
 				{
@@ -2483,6 +2486,8 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 		else
 		{
 			mNetOps->subAccount(ispSub, usnaAccoundIds, uLedgerIndex, false);
+
+			cLog(lsINFO) << boost::str(boost::format("doSubscribe: accounts: %d") % usnaAccoundIds.size());
 		}
 	}
 
