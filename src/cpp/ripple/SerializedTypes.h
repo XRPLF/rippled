@@ -249,6 +249,18 @@ public:
 		: SerializedType(n), mValue(v), mOffset(0), mIsNative(true), mIsNegative(isNeg)
 	{ ; }
 
+	STAmount(SField::ref n, int64 v)
+		: SerializedType(n), mOffset(0), mIsNative(true), mIsNegative(false)
+	{
+		if (v < 0)
+		{
+			mIsNegative = true;
+			mValue = static_cast<uint64_t>(-v);
+		}
+		else
+			mValue = static_cast<uint64_t>(v);
+	}
+
 	STAmount(const uint160& uCurrencyID, const uint160& uIssuerID, uint64 uV = 0, int iOff = 0, bool bNegative = false)
 		: mCurrency(uCurrencyID), mIssuer(uIssuerID), mValue(uV), mOffset(iOff), mIsNegative(bNegative)
 	{ canonicalize(); }
