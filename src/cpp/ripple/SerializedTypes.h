@@ -233,6 +233,20 @@ protected:
 		: SerializedType(name), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
 			mIsNative(isNat), mIsNegative(isNeg) { ; }
 
+	void set(int64_t v)
+	{
+		if (v < 0)
+		{
+			mIsNegative = true;
+			mValue = static_cast<uint64>(-v);
+		}
+		else
+		{
+			mIsNegative = false;
+			mValue = static_cast<uint64>(v);
+		}
+	}
+
 public:
 	static const int cMinOffset = -96, cMaxOffset = 80;
 	static const uint64 cMinValue = 1000000000000000ull, cMaxValue = 9999999999999999ull;
@@ -249,27 +263,32 @@ public:
 		: SerializedType(n), mValue(v), mOffset(0), mIsNative(true), mIsNegative(isNeg)
 	{ ; }
 
-	STAmount(SField::ref n, int64 v)
-		: SerializedType(n), mOffset(0), mIsNative(true), mIsNegative(false)
-	{
-		if (v < 0)
-		{
-			mIsNegative = true;
-			mValue = static_cast<uint64_t>(-v);
-		}
-		else
-			mValue = static_cast<uint64_t>(v);
-	}
+	STAmount(SField::ref n, int64 v) : SerializedType(n), mOffset(0), mIsNative(true)
+	{ set(v); }
 
-	STAmount(const uint160& uCurrencyID, const uint160& uIssuerID, uint64 uV = 0, int iOff = 0, bool bNegative = false)
+	STAmount(const uint160& uCurrencyID, const uint160& uIssuerID,
+			uint64 uV = 0, int iOff = 0, bool bNegative = false)
 		: mCurrency(uCurrencyID), mIssuer(uIssuerID), mValue(uV), mOffset(iOff), mIsNegative(bNegative)
 	{ canonicalize(); }
 
-	// YYY This should probably require issuer too.
 	STAmount(SField::ref n, const uint160& currency, const uint160& issuer,
 			uint64 v = 0, int off = 0, bool isNeg = false) :
 		SerializedType(n), mCurrency(currency), mIssuer(issuer), mValue(v), mOffset(off), mIsNegative(isNeg)
 	{ canonicalize(); }
+
+	STAmount(const uint160& uCurrencyID, const uint160& uIssuerID, int64 v, int iOff = 0)
+		: mCurrency(uCurrencyID), mIssuer(uIssuerID), mOffset(iOff)
+	{
+		set(v);
+		canonicalize();
+	}
+
+	STAmount(SField::ref n, const uint160& currency, const uint160& issuer, int64 v, int off = 0)
+		: SerializedType(n), mCurrency(currency), mIssuer(issuer), mOffset(off)
+	{
+		set(v);
+		canonicalize();
+	}
 
 	STAmount(SField::ref, const Json::Value&);
 
