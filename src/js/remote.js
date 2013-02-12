@@ -348,11 +348,13 @@ Remote.prototype._set_state = function (state) {
     switch (state) {
       case 'online':
         this._online_state       = 'open';
+        this.emit('connect');
         this.emit('connected');
         break;
 
       case 'offline':
         this._online_state       = 'closed';
+        this.emit('disconnect');
         this.emit('disconnected');
         break;
     }
