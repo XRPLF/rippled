@@ -1156,7 +1156,7 @@ int LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTrans
 			return LCAT_SUCCESS;
 		}
 
-		if (isTefFailure(result) || isTemMalformed(result))
+		if (isTefFailure(result) || isTemMalformed(result) || isTelLocal(result))
 		{ // failure
 			cLog(lsDEBUG) << "Transaction failure: " << transHuman(result);
 			return LCAT_FAIL;
