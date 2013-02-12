@@ -56,11 +56,13 @@ TER OfferCreateTransactor::takeOffers(
 	while (temUNCERTAIN == terResult)
 	{
 		SLE::pointer	sleOfferDir;
-		uint64			uTipQuality	= 0;
+		uint64			uTipQuality		= 0;
+		STAmount		saTakerFunds	= mEngine->getNodes().accountFunds(uTakerAccountID, saTakerPays);
 
 		// Figure out next offer to take, if needed.
-		if (saTakerGot < saTakerGets			// Have less than wanted.
-			&& saTakerPaid < saTakerPays)		// Didn't spend all funds.
+		if (saTakerFunds						// Taker has funds available.
+			&& saTakerGot < saTakerGets			// Have less than wanted.
+			&& saTakerPaid < saTakerPays)		// Didn't spend all funds allocated.
 		{
 			sleOfferDir		= mEngine->entryCache(ltDIR_NODE, mEngine->getLedger()->getNextLedgerIndex(uTipIndex, uBookEnd));
 			if (sleOfferDir)
@@ -82,7 +84,15 @@ TER OfferCreateTransactor::takeOffers(
 			}
 		}
 
-		if (!sleOfferDir									// No offer directory to take.
+		if (!saTakerFunds)									// Taker has no funds.
+		{
+			// Done. Ran out of funds on previous round. As fees aren't calculated directly in this routine, funds are checked here.
+			cLog(lsINFO) << "takeOffers: done: taker unfunded.";
+
+			bUnfunded	= true;								// Don't create an order.
+			terResult	= tesSUCCESS;
+		}
+		else if (!sleOfferDir								// No offer directory to take.
 			|| uTakeQuality < uTipQuality					// No offers of sufficient quality available.
 			|| (bPassive && uTakeQuality == uTipQuality))
 		{
@@ -149,7 +159,6 @@ TER OfferCreateTransactor::takeOffers(
 				cLog(lsINFO) << "takeOffers: saOfferPays=" << saOfferPays.getFullText();
 
 				STAmount		saOfferFunds	= mEngine->getNodes().accountFunds(uOfferOwnerID, saOfferPays);
-				STAmount		saTakerFunds	= mEngine->getNodes().accountFunds(uTakerAccountID, saTakerPays);
 				SLE::pointer	sleOfferAccount;	// Owner of offer.
 
 				if (!saOfferFunds.isPositive())		// Includes zero.
@@ -243,16 +252,12 @@ TER OfferCreateTransactor::takeOffers(
 
 					if (!bUnfunded)
 					{
-						terResult	= mEngine->getNodes().accountSend(uOfferOwnerID, uTakerAccountID, saSubTakerGot);				// Offer owner pays taker.
+						// Distribute funds. The sends charge appropriate fees which are implied by offer.
 
-//						if (tesSUCCESS == terResult)
-//							terResult	= mEngine->getNodes().accountSend(uOfferOwnerID, uTakerGetsAccountID, saOfferIssuerFee);	// Offer owner pays issuer transfer fee.
+						terResult	= mEngine->getNodes().accountSend(uOfferOwnerID, uTakerAccountID, saSubTakerGot);				// Offer owner pays taker.
 
 						if (tesSUCCESS == terResult)
 							terResult	= mEngine->getNodes().accountSend(uTakerAccountID, uOfferOwnerID, saSubTakerPaid);			// Taker pays offer owner.
-
-//						if (tesSUCCESS == terResult)
-//							terResult	= mEngine->getNodes().accountSend(uTakerAccountID, uTakerPaysAccountID, saTakerIssuerFee);	// Taker pays issuer transfer fee.
 
 						// Reduce amount considered paid by taker's rate (not actual cost).
 						STAmount	saPay		= saTakerPays - saTakerPaid;
