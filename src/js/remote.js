@@ -20,6 +20,8 @@ var Amount        = require('./amount').Amount;
 var Currency      = require('./amount').Currency;
 var UInt160       = require('./amount').UInt160;
 var Transaction   = require('./transaction').Transaction;
+var Account       = require('./account').Account;
+var Meta          = require('./meta').Meta;
 
 var utils         = require('./utils');
 var config        = require('./config');
@@ -233,6 +235,7 @@ var Remote = function (opts, trace) {
   }
 
   // Cache information for accounts.
+  // DEPRECATED, will be removed
   this.accounts = {
     // Consider sequence numbers stable if you know you're not generating bad transactions.
     // Otherwise, clear it to have it automatically refreshed from the network.
@@ -240,6 +243,9 @@ var Remote = function (opts, trace) {
     // account : { seq : __ }
 
     };
+
+  // Hash map of Account objects by AccountId.
+  this._accounts = {};
 
   // List of secrets that we know about.
   this.secrets = {
@@ -507,6 +513,7 @@ Remote.prototype._connect_start = function () {
 
 // It is possible for messages to be dispatched after the connection is closed.
 Remote.prototype._connect_message = function (ws, json) {
+  var self        = this;
   var message     = JSON.parse(json);
   var unexpected  = false;
   var request;
@@ -556,6 +563,23 @@ Remote.prototype._connect_message = function (ws, json) {
 
       case 'account':
         // XXX If not trusted, need proof.
+
+        // Process metadata
+        message.mmeta = new Meta(message.meta);
+
+        // Pass the event on to any related Account objects
+        message.mmeta.each(function (an) {
+          if (an.entryType === 'AccountRoot') {
+            var account = self._accounts[an.fields.Account];
+
+            // Only trigger the event if the account object is actually
+            // subscribed - this prevents some weird phantom events from
+            // occurring.
+            if (account && account._subs) {
+              account.emit('transaction', message);
+            }
+          }
+        });
 
         this.emit('account', message);
         break;
@@ -992,6 +1016,14 @@ Remote.prototype.request_owner_count = function (account, current) {
         // If the caller also waits for 'success', they might run before this.
         request.emit('owner_count', message.node.OwnerCount);
       });
+};
+
+Remote.prototype.account = function (accountId) {
+  var account = new Account(this, accountId);
+
+  if (!account.is_valid()) return account;
+
+  return this._accounts[account.to_json()] = account;
 };
 
 // Return the next account sequence if possible.
