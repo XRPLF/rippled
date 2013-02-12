@@ -206,13 +206,13 @@ TER Transactor::apply()
 		mHasAuthKey	= mTxnAccount->isFieldPresent(sfRegularKey);
 	}
 
+	terResult = checkSeq();
+	if (terResult != tesSUCCESS) return(terResult);
+
 	terResult = payFee();
 	if (terResult != tesSUCCESS) return(terResult);
 
 	terResult = checkSig();
-	if (terResult != tesSUCCESS) return(terResult);
-
-	terResult = checkSeq();
 	if (terResult != tesSUCCESS) return(terResult);
 
 	mEngine->entryModify(mTxnAccount);
