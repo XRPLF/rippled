@@ -91,7 +91,7 @@ void RPCSub::send(const Json::Value& jvObj)
 
     if (RPC_EVENT_QUEUE_MAX == mDeque.size())
     {
-	// Drop the previous event.
+		// Drop the previous event.
 		cLog(lsWARNING) << boost::str(boost::format("callRPC drop"));
 		mDeque.pop_back();
     }
@@ -109,3 +109,5 @@ void RPCSub::send(const Json::Value& jvObj)
 		boost::thread(boost::bind(&RPCSub::sendThread, this)).detach();
     }
 }
+
+// vim:ts=4
