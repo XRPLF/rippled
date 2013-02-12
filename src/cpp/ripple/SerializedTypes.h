@@ -233,7 +233,21 @@ protected:
 		: SerializedType(name), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
 			mIsNative(isNat), mIsNegative(isNeg) { ; }
 
-	void set(int64_t v)
+	void set(int64 v)
+	{
+		if (v < 0)
+		{
+			mIsNegative = true;
+			mValue = static_cast<uint64>(-v);
+		}
+		else
+		{
+			mIsNegative = false;
+			mValue = static_cast<uint64>(v);
+		}
+	}
+
+	void set(int v)
 	{
 		if (v < 0)
 		{
@@ -271,6 +285,11 @@ public:
 		: mCurrency(uCurrencyID), mIssuer(uIssuerID), mValue(uV), mOffset(iOff), mIsNegative(bNegative)
 	{ canonicalize(); }
 
+	STAmount(const uint160& uCurrencyID, const uint160& uIssuerID,
+			uint32 uV, int iOff = 0, bool bNegative = false)
+		: mCurrency(uCurrencyID), mIssuer(uIssuerID), mValue(uV), mOffset(iOff), mIsNegative(bNegative)
+	{ canonicalize(); }
+
 	STAmount(SField::ref n, const uint160& currency, const uint160& issuer,
 			uint64 v = 0, int off = 0, bool isNeg = false) :
 		SerializedType(n), mCurrency(currency), mIssuer(issuer), mValue(v), mOffset(off), mIsNegative(isNeg)
@@ -290,6 +309,20 @@ public:
 		canonicalize();
 	}
 
+	STAmount(const uint160& uCurrencyID, const uint160& uIssuerID, int v, int iOff = 0)
+		: mCurrency(uCurrencyID), mIssuer(uIssuerID), mOffset(iOff)
+	{
+		set(v);
+		canonicalize();
+	}
+
+	STAmount(SField::ref n, const uint160& currency, const uint160& issuer, int v, int off = 0)
+		: SerializedType(n), mCurrency(currency), mIssuer(issuer), mOffset(off)
+	{
+		set(v);
+		canonicalize();
+	}
+
 	STAmount(SField::ref, const Json::Value&);
 
 	static STAmount createFromInt64(SField::ref n, int64 v);
@@ -301,9 +334,6 @@ public:
 
 	static STAmount saFromRate(uint64 uRate = 0)
 	{ return STAmount(CURRENCY_ONE, ACCOUNT_ONE, uRate, -9, false); }
-
-	static STAmount saFromSigned(const uint160& uCurrencyID, const uint160& uIssuerID, int64 iV = 0, int iOff = 0)
-	{ return STAmount(uCurrencyID, uIssuerID, iV < 0 ? -iV : iV, iOff, iV < 0);	}
 
 	SerializedTypeID getSType() const	{ return STI_AMOUNT; }
 	std::string getText() const;
