@@ -135,7 +135,7 @@ Pathfinder::Pathfinder(const RippleAddress& uSrcAccountID, const RippleAddress& 
 		mSrcIssuerID(uSrcIssuerID)
 {
 	mLedger		= theApp->getLedgerMaster().getCurrentLedger();
-	mSrcAmount	= STAmount(uSrcCurrencyID, uSrcIssuerID, 1, 0, true);	// -1/uSrcIssuerID/uSrcIssuerID
+	mSrcAmount	= STAmount(uSrcCurrencyID, uSrcIssuerID, 1, 0);	// -1/uSrcIssuerID/uSrcIssuerID
 
 	theApp->getOrderBookDB().setup( theApp->getLedgerMaster().getCurrentLedger()); // TODO: have the orderbook update itself rather than rebuild it from scratch each time
 

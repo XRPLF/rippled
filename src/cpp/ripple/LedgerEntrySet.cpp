@@ -1135,7 +1135,7 @@ STAmount LedgerEntrySet::rippleTransferFee(const uint160& uSenderID, const uint1
 
 		if (QUALITY_ONE != uTransitRate)
 		{
-			STAmount	saTransitRate(CURRENCY_ONE, ACCOUNT_ONE, uTransitRate, -9);
+			STAmount	saTransitRate(CURRENCY_ONE, ACCOUNT_ONE, static_cast<uint64>(uTransitRate), -9);
 
 			STAmount	saTransferTotal	= STAmount::multiply(saAmount, saTransitRate, saAmount.getCurrency(), saAmount.getIssuer());
 			STAmount	saTransferFee	= saTransferTotal-saAmount;
