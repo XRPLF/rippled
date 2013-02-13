@@ -395,11 +395,13 @@ Remote.prototype.ledger_hash = function () {
 
 // Stop from open state.
 Remote.prototype._connect_stop = function () {
-  delete this.ws.onerror;
-  delete this.ws.onclose;
+  if (this.ws) {
+    delete this.ws.onerror;
+    delete this.ws.onclose;
 
-  this.ws.terminate();
-  delete this.ws;
+    this.ws.close();
+    delete this.ws;
+  }
 
   this._set_state('offline');
 };
@@ -457,6 +459,12 @@ Remote.prototype._connect_start = function () {
         this.websocket_ip + ":" + this.websocket_port;
 
   if (this.trace) console.log("remote: connect: %s", url);
+
+  // There should not be an active connection at this point, but if there is
+  // we will shut it down so we don't end up with a duplicate.
+  if (this.ws) {
+    this._connect_stop();
+  }
 
   var WebSocket     = require('ws');
   var ws = this.ws = new WebSocket(url);
