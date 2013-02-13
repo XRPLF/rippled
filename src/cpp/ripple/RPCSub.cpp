@@ -85,7 +85,7 @@ void RPCSub::sendThread()
     } while (bSend);
 }
 
-void RPCSub::send(const Json::Value& jvObj)
+void RPCSub::send(const Json::Value& jvObj, bool broadcast)
 {
     boost::mutex::scoped_lock sl(mLockInfo);
 
@@ -96,7 +96,7 @@ void RPCSub::send(const Json::Value& jvObj)
 		mDeque.pop_back();
     }
 
-    cLog(lsINFO) << boost::str(boost::format("callRPC push: %s") % jvObj);
+    cLog(broadcast ? lsDEBUG : lsINFO) << boost::str(boost::format("callRPC push: %s") % jvObj);
 
     mDeque.push_back(std::make_pair(mSeq++, jvObj));
 

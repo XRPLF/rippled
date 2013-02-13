@@ -229,7 +229,7 @@ void BookListeners::publish(Json::Value& jvObj)
 
 	BOOST_FOREACH(InfoSub* sub,mListeners)
 	{
-		sub->send(jvObj);
+		sub->send(jvObj, true);
 	}
 }
 

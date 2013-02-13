@@ -35,7 +35,7 @@ public:
 	virtual ~RPCSub() { ; }
 
 	// Implement overridden functions from base class:
-	void send(const Json::Value& jvObj);
+	void send(const Json::Value& jvObj, bool broadcast);
 
 	void setUsername(const std::string& strUsername)
 	{

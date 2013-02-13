@@ -36,7 +36,7 @@ public:
 
 	virtual ~InfoSub();
 
-	virtual	void send(const Json::Value& jvObj) = 0;
+	virtual	void send(const Json::Value& jvObj, bool broadcast) = 0;
 
 	void onSendEmpty();
 

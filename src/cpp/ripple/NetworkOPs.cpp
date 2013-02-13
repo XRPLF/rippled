@@ -1026,7 +1026,7 @@ void NetworkOPs::pubServer()
 
 		BOOST_FOREACH(InfoSub* ispListener, mSubServer)
 		{
-			ispListener->send(jvObj);
+			ispListener->send(jvObj, true);
 		}
 	}
 }
@@ -1228,7 +1228,7 @@ void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, const SerializedT
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 		BOOST_FOREACH(InfoSub* ispListener, mSubRTTransactions)
 		{
-			ispListener->send(jvObj);
+			ispListener->send(jvObj, true);
 		}
 	}
 	TransactionMetaSet::pointer ret;
@@ -1259,7 +1259,7 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 
 			BOOST_FOREACH(InfoSub* ispListener, mSubLedger)
 			{
-				ispListener->send(jvObj);
+				ispListener->send(jvObj, true);
 			}
 		}
 	}
@@ -1333,12 +1333,12 @@ void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedT
 
 		BOOST_FOREACH(InfoSub* ispListener, mSubTransactions)
 		{
-			ispListener->send(jvObj);
+			ispListener->send(jvObj, true);
 		}
 
 		BOOST_FOREACH(InfoSub* ispListener, mSubRTTransactions)
 		{
-			ispListener->send(jvObj);
+			ispListener->send(jvObj, true);
 		}
 	}
 	theApp->getOrderBookDB().processTxn(stTxn, terResult, meta, jvObj);
@@ -1400,7 +1400,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 
 		BOOST_FOREACH(InfoSub* ispListener, notify)
 		{
-			ispListener->send(jvObj);
+			ispListener->send(jvObj, true);
 		}
 	}
 }
