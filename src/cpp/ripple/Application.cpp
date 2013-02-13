@@ -49,10 +49,6 @@ Application::Application() :
 {
 	getRand(mNonce256.begin(), mNonce256.size());
 	getRand(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
-	mJobQueue.setThreadCount();
-	mSweepTimer.expires_from_now(boost::posix_time::seconds(10));
-	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
-	mLoadMgr.init();
 }
 
 extern const char *RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[], *NetNodeDBInit[];
@@ -88,6 +84,11 @@ void sigIntHandler(int)
 
 void Application::setup()
 {
+	mJobQueue.setThreadCount();
+	mSweepTimer.expires_from_now(boost::posix_time::seconds(10));
+	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
+	mLoadMgr.init();
+
 #ifndef WIN32
 #ifdef SIGINT
 	if (!theConfig.RUN_STANDALONE)
