@@ -139,7 +139,7 @@ Pathfinder::Pathfinder(Ledger::ref ledger,
 		mLedger(ledger)
 {
 
-	theApp->getOrderBookDB().setup(mLedger); // TODO: have the orderbook update itself rather than rebuild it from scratch each time
+	mOrderBook.setup(mLedger); // TODO: have the orderbook update itself rather than rebuild it from scratch each time
 
 	mLoadMonitor = theApp->getJobQueue().getLoadEvent(jtPATH_FIND);
 
@@ -351,7 +351,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 		else if (!speEnd.mCurrencyID)
 		{
 			// Cursor is for XRP, continue with qualifying books: XRP -> non-XRP
-			BOOST_FOREACH(OrderBook::ref book, theApp->getOrderBookDB().getXRPInBooks())
+			BOOST_FOREACH(OrderBook::ref book, mOrderBook.getXRPInBooks())
 			{
 				// New end is an order book with the currency and issuer.
 
@@ -445,7 +445,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			std::vector<OrderBook::pointer> books;
 
 
-			theApp->getOrderBookDB().getBooks(speEnd.mIssuerID, speEnd.mCurrencyID, books);
+			mOrderBook.getBooks(speEnd.mIssuerID, speEnd.mCurrencyID, books);
 
 			BOOST_FOREACH(OrderBook::ref book, books)
 			{
@@ -593,7 +593,7 @@ void Pathfinder::addOptions(PathOption::pointer tail)
 {
 	if (!tail->mCurrencyID)
 	{ // source XRP
-		BOOST_FOREACH(OrderBook::ref book, theApp->getOrderBookDB().getXRPInBooks())
+		BOOST_FOREACH(OrderBook::ref book, mOrderBook.getXRPInBooks())
 		{
 			PathOption::pointer pathOption(new PathOption(tail));
 
@@ -627,7 +627,7 @@ void Pathfinder::addOptions(PathOption::pointer tail)
 
 		// every offer that wants the source currency
 		std::vector<OrderBook::pointer> books;
-		theApp->getOrderBookDB().getBooks(tail->mCurrentAccount, tail->mCurrencyID, books);
+		mOrderBook.getBooks(tail->mCurrentAccount, tail->mCurrencyID, books);
 
 		BOOST_FOREACH(OrderBook::ref book,books)
 		{

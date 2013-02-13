@@ -64,17 +64,19 @@ void OrderBookDB::setup(Ledger::ref ledger)
 // return list of all orderbooks that want IssuerID
 std::vector<OrderBook::pointer>& OrderBookDB::getBooks(const uint160& issuerID)
 {
-	return mIssuerMap.find(issuerID) == mIssuerMap.end()
+	std::map< uint160, std::vector<OrderBook::pointer> >::iterator it = mIssuerMap.find(issuerID);
+	return (it == mIssuerMap.end())
 		? mEmptyVector
-		: mIssuerMap[issuerID];
+		: it->second;
 }
 
 // return list of all orderbooks that want this issuerID and currencyID
 void OrderBookDB::getBooks(const uint160& issuerID, const uint160& currencyID, std::vector<OrderBook::pointer>& bookRet)
 {
-	if (mIssuerMap.find(issuerID) == mIssuerMap.end())
+	std::map< uint160, std::vector<OrderBook::pointer> >::iterator it = mIssuerMap.find(issuerID);
+	if (it != mIssuerMap.end())
 	{
-		BOOST_FOREACH(OrderBook::ref book, mIssuerMap[issuerID])
+		BOOST_FOREACH(OrderBook::ref book, it->second)
 		{
 			if (book->getCurrencyIn() == currencyID)
 				bookRet.push_back(book);

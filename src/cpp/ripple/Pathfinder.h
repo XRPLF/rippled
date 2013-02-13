@@ -1,10 +1,12 @@
 #ifndef __PATHFINDER__
 #define __PATHFINDER__
 
+#include <boost/shared_ptr.hpp>
+
 #include "SerializedTypes.h"
 #include "RippleAddress.h"
 #include "RippleCalc.h"
-#include <boost/shared_ptr.hpp>
+#include "OrderBookDB.h"
 
 #if 0
 //
@@ -41,7 +43,7 @@ class Pathfinder
 	uint160				mSrcIssuerID;
 	STAmount			mSrcAmount;
 
-	//OrderBookDB			mOrderBook;
+	OrderBookDB			mOrderBook;
 	Ledger::pointer		mLedger;
 	PathState::pointer	mPsDefault;
 	LoadEvent::pointer	mLoadMonitor;
