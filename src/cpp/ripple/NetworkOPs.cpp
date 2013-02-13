@@ -1163,7 +1163,7 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 	}
 	else
 		info["load_factor"] =
-			static_cast<double>(theApp->getFeeTrack().getLoadBase()) / theApp->getFeeTrack().getLoadFactor();
+			static_cast<double>(theApp->getFeeTrack().getLoadFactor()) / theApp->getFeeTrack().getLoadBase();
 
 	bool valid = false;
 	Ledger::pointer lpClosed	= getValidatedLedger();
