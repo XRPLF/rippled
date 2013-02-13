@@ -555,6 +555,9 @@ TER OfferCreateTransactor::doApply()
 
 	tLog(tesSUCCESS != terResult, lsINFO) << boost::str(boost::format("OfferCreate: final terResult=%s") % transToken(terResult));
 
+	if (isTesSuccess(terResult))
+		theApp->getOrderBookDB().invalidate();
+
 	return terResult;
 }
 

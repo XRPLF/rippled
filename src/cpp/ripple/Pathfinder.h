@@ -43,7 +43,6 @@ class Pathfinder
 	uint160				mSrcIssuerID;
 	STAmount			mSrcAmount;
 
-	OrderBookDB			mOrderBook;
 	Ledger::pointer		mLedger;
 	PathState::pointer	mPsDefault;
 	LoadEvent::pointer	mLoadMonitor;

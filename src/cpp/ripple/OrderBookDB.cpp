@@ -6,14 +6,26 @@
 
 SETUP_LOG();
 
-OrderBookDB::OrderBookDB()
+OrderBookDB::OrderBookDB() : mSeq(0)
 {
 
+}
+
+void OrderBookDB::invalidate()
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	mSeq = 0;
 }
 
 // TODO: this would be way faster if we could just look under the order dirs
 void OrderBookDB::setup(Ledger::ref ledger)
 {
+	boost::recursive_mutex::scoped_lock sl(mLock);
+
+	if (ledger->getLedgerSeq() == mSeq)
+		return;
+	mSeq = ledger->getLedgerSeq();
+
 	LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtOB_SETUP);
 
 	mXRPOrders.clear();
@@ -64,6 +76,7 @@ void OrderBookDB::setup(Ledger::ref ledger)
 // return list of all orderbooks that want IssuerID
 std::vector<OrderBook::pointer>& OrderBookDB::getBooks(const uint160& issuerID)
 {
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	std::map< uint160, std::vector<OrderBook::pointer> >::iterator it = mIssuerMap.find(issuerID);
 	return (it == mIssuerMap.end())
 		? mEmptyVector
@@ -73,6 +86,7 @@ std::vector<OrderBook::pointer>& OrderBookDB::getBooks(const uint160& issuerID)
 // return list of all orderbooks that want this issuerID and currencyID
 void OrderBookDB::getBooks(const uint160& issuerID, const uint160& currencyID, std::vector<OrderBook::pointer>& bookRet)
 {
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	std::map< uint160, std::vector<OrderBook::pointer> >::iterator it = mIssuerMap.find(issuerID);
 	if (it != mIssuerMap.end())
 	{
@@ -86,6 +100,7 @@ void OrderBookDB::getBooks(const uint160& issuerID, const uint160& currencyID, s
 
 BookListeners::pointer OrderBookDB::makeBookListeners(uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut)
 {
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	BookListeners::pointer ret=getBookListeners(currencyIn, currencyOut, issuerIn, issuerOut);
 	if(!ret)
 	{
@@ -97,6 +112,7 @@ BookListeners::pointer OrderBookDB::makeBookListeners(uint160 currencyIn, uint16
 
 BookListeners::pointer OrderBookDB::getBookListeners(uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut)
 {
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	std::map<uint160, std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > > >::iterator it0=mListeners.find(issuerIn);
 	if(it0 != mListeners.end())
 	{
@@ -168,6 +184,7 @@ BookListeners::pointer OrderBookDB::getBookListeners(uint160 currencyIn, uint160
 // We need to determine which streams a given meta effects
 void OrderBookDB::processTxn(const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta,Json::Value& jvObj)
 {
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	if(terResult==tesSUCCESS)
 	{
 		// check if this is an offer or an offer cancel or a payment that consumes an offer

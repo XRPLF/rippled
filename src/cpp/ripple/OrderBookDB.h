@@ -35,9 +35,13 @@ class OrderBookDB
 
 	std::map<uint256, bool >  mKnownMap;
 
+	uint32 mSeq;
+	boost::recursive_mutex mLock;
+
 public:
 	OrderBookDB();
 	void setup(Ledger::ref ledger);
+	void invalidate();
 
 	// return list of all orderbooks that want XRP
 	std::vector<OrderBook::pointer>& getXRPInBooks(){ return mXRPOrders; }
