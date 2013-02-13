@@ -401,8 +401,8 @@ Transaction.prototype.destination_tag = function (tag) {
 Transaction._path_rewrite = function (path) {
   var path_new  = [];
 
-  for (var index in path) {
-    var node      = path[index];
+  for (var i = 0, l = path.length; i < l; i++) {
+    var node      = path[i];
     var node_new  = {};
 
     if ('account' in node)
@@ -421,7 +421,7 @@ Transaction._path_rewrite = function (path) {
 }
 
 Transaction.prototype.path_add = function (path) {
-  this.tx_json.Paths  = this.tx_json.Paths || []
+  this.tx_json.Paths  = this.tx_json.Paths || [];
   this.tx_json.Paths.push(Transaction._path_rewrite(path));
 
   return this;
@@ -430,8 +430,8 @@ Transaction.prototype.path_add = function (path) {
 // --> paths: undefined or array of path
 // A path is an array of objects containing some combination of: account, currency, issuer
 Transaction.prototype.paths = function (paths) {
-  for (var index in paths) {
-    this.path_add(paths[index]);
+  for (var i = 0, l = paths.length; i < l; i++) {
+    this.path_add(paths[i]);
   }
 
   return this;
