@@ -964,7 +964,7 @@ Remote.prototype._server_subscribe = function () {
         self._load_factor   = message.load_factor || 1.0;
         self._fee_ref       = message.fee_ref;
         self._fee_base      = message.fee_base;
-        self._reserve_base  = message.reverse_base;
+        self._reserve_base  = message.reserve_base;
         self._reserve_inc   = message.reserve_inc;
         self._server_status = message.server_status;
 
