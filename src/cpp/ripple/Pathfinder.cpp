@@ -130,14 +130,14 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 Pathfinder::Pathfinder(Ledger::ref ledger,
 		const RippleAddress& uSrcAccountID, const RippleAddress& uDstAccountID,
 		const uint160& uSrcCurrencyID, const uint160& uSrcIssuerID, const STAmount& saDstAmount)
-	:	mLedger(ledger),
-		mSrcAccountID(uSrcAccountID.getAccountID()),
+	:	mSrcAccountID(uSrcAccountID.getAccountID()),
 		mDstAccountID(uDstAccountID.getAccountID()),
 		mDstAmount(saDstAmount),
 		mSrcCurrencyID(uSrcCurrencyID),
-		mSrcIssuerID(uSrcIssuerID)
+		mSrcIssuerID(uSrcIssuerID),
+		mSrcAmount(uSrcCurrencyID, uSrcIssuerID, 1, 0),
+		mLedger(ledger)
 {
-	mSrcAmount	= STAmount(uSrcCurrencyID, uSrcIssuerID, 1, 0);	// -1/uSrcIssuerID/uSrcIssuerID
 
 	theApp->getOrderBookDB().setup(mLedger); // TODO: have the orderbook update itself rather than rebuild it from scratch each time
 
