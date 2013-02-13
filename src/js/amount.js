@@ -380,7 +380,12 @@ Amount.prototype.ratio_human = function (denominator) {
  * @return {Amount} The product. Unit will be the same as the first factor.
  */
 Amount.prototype.product_human = function (factor) {
-  factor = Amount.from_json(factor);
+  if ("number" === typeof factor && parseInt(factor) === factor) {
+    // Special handling of integer arguments
+    factor = Amount.from_json("" + factor + ".0");
+  } else {
+    factor = Amount.from_json(factor);
+  }
 
   var product = this.multiply(factor);
 
@@ -436,7 +441,7 @@ Amount.prototype.issuer = function () {
 Amount.prototype.multiply = function (v) {
   var result;
 
- if (this.is_zero()) {
+  if (this.is_zero()) {
     result = this.clone();
   }
   else if (v.is_zero()) {
