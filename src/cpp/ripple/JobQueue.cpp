@@ -56,6 +56,8 @@ const char* Job::toString(JobType t)
 		case jtRPC:				return "rpc";
 		case jtACCEPTLEDGER:	return "acceptLedger";
 		case jtTXN_PROC:		return "processTransaction";
+		case jtOB_SETUP:		return "orderBookSetup";
+		case jtPATH_FIND:		return "pathFind";
 		default:				assert(false); return "unknown";
 	}
 }

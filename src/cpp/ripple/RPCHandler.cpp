@@ -177,22 +177,28 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 				return rpcError(rpcINVALID_PARAMS);
 			}
 
-			Pathfinder pf(raSrcAddressID, dstAccountID, saSendMax.getCurrency(), saSendMax.getIssuer(), saSend);
-
-			if (!pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsPaths))
+			Ledger::pointer lSnapshot = boost::make_shared<Ledger>(
+				boost::ref(*theApp->getOPs().getCurrentLedger()), false);
 			{
-				cLog(lsDEBUG) << "transactionSign: build_path: No paths found.";
+				ScopedUnlock su(theApp->getMasterLock());
+				Pathfinder pf(lSnapshot, raSrcAddressID, dstAccountID,
+					saSendMax.getCurrency(), saSendMax.getIssuer(), saSend);
 
-				return rpcError(rpcNO_PATH);
-			}
-			else
-			{
-				cLog(lsDEBUG) << "transactionSign: build_path: " << spsPaths.getJson(0);
-			}
+				if (!pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsPaths))
+				{
+					cLog(lsDEBUG) << "transactionSign: build_path: No paths found.";
 
-			if (!spsPaths.isEmpty())
-			{
-				txJSON["Paths"]=spsPaths.getJson(0);
+					return rpcError(rpcNO_PATH);
+				}
+				else
+				{
+					cLog(lsDEBUG) << "transactionSign: build_path: " << spsPaths.getJson(0);
+				}
+
+				if (!spsPaths.isEmpty())
+				{
+					txJSON["Paths"]=spsPaths.getJson(0);
+				}
 			}
 		}
 	}
@@ -1115,7 +1121,8 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 			}
 		}
 
-		LedgerEntrySet	lesSnapshot(lpCurrent);
+		Ledger::pointer lSnapShot = boost::make_shared<Ledger>(boost::ref(*lpCurrent), false);
+		LedgerEntrySet lesSnapshot(lSnapShot);
 
 		ScopedUnlock	su(theApp->getMasterLock()); // As long as we have a locked copy of the ledger, we can unlock.
 
@@ -1148,7 +1155,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 			}
 
 			STPathSet	spsComputed;
-			Pathfinder	pf(raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount);
+			Pathfinder	pf(lSnapShot, raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount);
 
 			if (!pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsComputed))
 			{

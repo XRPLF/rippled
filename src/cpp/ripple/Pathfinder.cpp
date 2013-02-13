@@ -127,17 +127,21 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 	return false;
 }
 
-Pathfinder::Pathfinder(const RippleAddress& uSrcAccountID, const RippleAddress& uDstAccountID, const uint160& uSrcCurrencyID, const uint160& uSrcIssuerID, const STAmount& saDstAmount)
-	: mSrcAccountID(uSrcAccountID.getAccountID()),
+Pathfinder::Pathfinder(Ledger::ref ledger,
+		const RippleAddress& uSrcAccountID, const RippleAddress& uDstAccountID,
+		const uint160& uSrcCurrencyID, const uint160& uSrcIssuerID, const STAmount& saDstAmount)
+	:	mLedger(ledger),
+		mSrcAccountID(uSrcAccountID.getAccountID()),
 		mDstAccountID(uDstAccountID.getAccountID()),
 		mDstAmount(saDstAmount),
 		mSrcCurrencyID(uSrcCurrencyID),
 		mSrcIssuerID(uSrcIssuerID)
 {
-	mLedger		= theApp->getLedgerMaster().getCurrentLedger();
 	mSrcAmount	= STAmount(uSrcCurrencyID, uSrcIssuerID, 1, 0);	// -1/uSrcIssuerID/uSrcIssuerID
 
-	theApp->getOrderBookDB().setup( theApp->getLedgerMaster().getCurrentLedger()); // TODO: have the orderbook update itself rather than rebuild it from scratch each time
+	theApp->getOrderBookDB().setup(mLedger); // TODO: have the orderbook update itself rather than rebuild it from scratch each time
+
+	mLoadMonitor = theApp->getJobQueue().getLoadEvent(jtPATH_FIND);
 
 	// Construct the default path for later comparison.
 

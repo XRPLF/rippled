@@ -37,13 +37,15 @@ enum JobType
 	jtDEATH			= 14,	// job of death, used internally
 
 // special types not dispatched by the job pool
-	jtPEER			= 17,
-	jtDISK			= 18,
-	jtRPC			= 19,
-	jtACCEPTLEDGER	= 20,
-	jtTXN_PROC		= 21,
+	jtPEER			= 24,
+	jtDISK			= 25,
+	jtRPC			= 26,
+	jtACCEPTLEDGER	= 27,
+	jtTXN_PROC		= 28,
+	jtOB_SETUP		= 29,
+	jtPATH_FIND		= 30
 }; // CAUTION: If you add new types, add them to JobType.cpp too
-#define NUM_JOB_TYPES 24
+#define NUM_JOB_TYPES 32
 
 class Job
 {

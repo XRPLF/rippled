@@ -1,5 +1,6 @@
 #include <boost/foreach.hpp>
 
+#include "Application.h"
 #include "OrderBookDB.h"
 #include "Log.h"
 
@@ -11,8 +12,10 @@ OrderBookDB::OrderBookDB()
 }
 
 // TODO: this would be way faster if we could just look under the order dirs
-void OrderBookDB::setup(Ledger::pointer ledger)
+void OrderBookDB::setup(Ledger::ref ledger)
 {
+	LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtOB_SETUP);
+
 	mXRPOrders.clear();
 	mIssuerMap.clear();
 	mKnownMap.clear();

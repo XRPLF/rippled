@@ -1,3 +1,8 @@
+
+#ifndef ORDERBOOK_H
+#define ORDERBOOK_H
+
+
 #include "SerializedLedger.h"
 #include "NetworkOPs.h"
 #include <boost/shared_ptr.hpp>
@@ -33,5 +38,7 @@ public:
 	// looks through the best offers to see how much it would cost to take the given amount
 	STAmount& getTakePrice(STAmount& takeAmount);
 };
+
+#endif
 
 // vim:ts=4

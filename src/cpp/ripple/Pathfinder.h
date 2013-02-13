@@ -44,6 +44,7 @@ class Pathfinder
 	//OrderBookDB			mOrderBook;
 	Ledger::pointer		mLedger;
 	PathState::pointer	mPsDefault;
+	LoadEvent::pointer	mLoadMonitor;
 
 //	std::list<PathOption::pointer> mBuildingPaths;
 //	std::list<PathOption::pointer> mCompletePaths;
@@ -56,7 +57,9 @@ class Pathfinder
 //	void addPathOption(PathOption::pointer pathOption);
 
 public:
-	Pathfinder(const RippleAddress& srcAccountID, const RippleAddress& dstAccountID, const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount);
+	Pathfinder(Ledger::ref ledger,
+		const RippleAddress& srcAccountID, const RippleAddress& dstAccountID,
+		const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount);
 
 	bool findPaths(const unsigned int iMaxSteps, const unsigned int iMaxPaths, STPathSet& spsDst);
 
