@@ -1,14 +1,14 @@
 #include "OrderBook.h"
 #include "Ledger.h"
 
-OrderBook::pointer OrderBook::newOrderBook(SerializedLedgerEntry::pointer ledgerEntry)
+OrderBook::pointer OrderBook::newOrderBook(SerializedLedgerEntry::ref ledgerEntry)
 {
 	if(ledgerEntry->getType() != ltOFFER) return( OrderBook::pointer());
 
 	return( OrderBook::pointer(new OrderBook(ledgerEntry)));
 }
 
-OrderBook::OrderBook(SerializedLedgerEntry::pointer ledgerEntry)
+OrderBook::OrderBook(SerializedLedgerEntry::ref ledgerEntry)
 {
 	const STAmount	saTakerGets	= ledgerEntry->getFieldAmount(sfTakerGets);
 	const STAmount	saTakerPays	= ledgerEntry->getFieldAmount(sfTakerPays);
