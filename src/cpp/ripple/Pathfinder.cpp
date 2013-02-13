@@ -193,49 +193,123 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 		% RippleAddress::createHumanAccountID(mSrcIssuerID)
 		);
 
-	if (mLedger)
+	if (!mLedger)
 	{
-		LedgerEntrySet		lesActive(mLedger);
-		std::vector<STPath>	vspResults;
-		std::queue<STPath>	qspExplore;			// Path stubs to explore.
+		cLog(lsDEBUG) << boost::str(boost::format("findPaths< no ledger"));
 
-		STPath				spSeed;
-		bool				bForcedIssuer	= !!mSrcCurrencyID && mSrcIssuerID != mSrcAccountID;	// Source forced an issuer.
+		return false;
+	}
 
-		// The end is the cursor, start at the source account.
-		STPathElement		speEnd(mSrcAccountID,
-									mSrcCurrencyID,
-									!!mSrcCurrencyID
-										? mSrcAccountID	// Non-XRP, start with self as issuer.
-										: ACCOUNT_XRP);
+	LedgerEntrySet		lesActive(mLedger);
 
-		// Build a path of one element: the source.
+	SLE::pointer	sleSrc		= lesActive.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(mSrcAccountID));
+	if (!sleSrc)
+	{
+		cLog(lsDEBUG) << boost::str(boost::format("findPaths< no source"));
+
+		return false;
+	}
+
+	SLE::pointer	sleDst		= lesActive.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(mDstAccountID));
+	if (!sleDst)
+	{
+		cLog(lsDEBUG) << boost::str(boost::format("findPaths< no dest"));
+
+		return false;
+	}
+
+	std::vector<STPath>	vspResults;
+	std::queue<STPath>	qspExplore;			// Path stubs to explore.
+
+	STPath				spSeed;
+	bool				bForcedIssuer	= !!mSrcCurrencyID && mSrcIssuerID != mSrcAccountID;	// Source forced an issuer.
+
+	// The end is the cursor, start at the source account.
+	STPathElement		speEnd(mSrcAccountID,
+								mSrcCurrencyID,
+								!!mSrcCurrencyID
+									? mSrcAccountID	// Non-XRP, start with self as issuer.
+									: ACCOUNT_XRP);
+
+	// Build a path of one element: the source.
+	spSeed.addElement(speEnd);
+
+	if (bForcedIssuer)
+	{
+		// Add forced source issuer to seed, via issuer's account.
+		STPathElement	speIssuer(mSrcIssuerID, mSrcCurrencyID, mSrcIssuerID);
+
 		spSeed.addElement(speEnd);
+	}
 
-		if (bForcedIssuer)
+	// Push the seed path to explore.
+	qspExplore.push(spSeed);
+
+	while (qspExplore.size()) {										// Have paths to explore?
+		STPath spPath = qspExplore.front();
+
+		qspExplore.pop();											// Pop the first path from the queue.
+
+		speEnd = spPath.mPath.back();								// Get the last node from the path.
+
+		if (!speEnd.mCurrencyID										// Tail output is XRP.
+			&& !mDstAmount.getCurrency())							// Which is dst currency.
 		{
-			// Add forced source issuer to seed, via issuer's account.
-			STPathElement	speIssuer(mSrcIssuerID, mSrcCurrencyID, mSrcIssuerID);
+			// Done, cursor produces XRP and dest wants XRP.
 
-			spSeed.addElement(speEnd);
+			// Remove implied source.
+			spPath.mPath.erase(spPath.mPath.begin());
+
+			if (bForcedIssuer)
+			{
+				// Remove implied source issuer.
+				spPath.mPath.erase(spPath.mPath.begin());
+			}
+
+			if (spPath.size())
+			{
+				// There is an actual path element.
+				cLog(lsDEBUG) << "findPaths: adding path: " << spPath.getJson(0);
+
+				vspResults.push_back(spPath);						// Potential result.
+			}
+			else
+			{
+				cLog(lsDEBUG) << "findPaths: empty path: XRP->XRP";
+			}
+
+			continue;
 		}
 
-		// Push the seed path to explore.
-		qspExplore.push(spSeed);
+		cLog(lsDEBUG) << "findPaths: finish? account: " << (speEnd.mAccountID == mDstAccountID);
+		cLog(lsDEBUG) << "findPaths: finish? currency: " << (speEnd.mCurrencyID == mDstAmount.getCurrency());
+		cLog(lsDEBUG) << "findPaths: finish? issuer: "
+			<< RippleAddress::createHumanAccountID(speEnd.mIssuerID)
+			<< " / "
+			<< RippleAddress::createHumanAccountID(mDstAmount.getIssuer())
+			<< " / "
+			<< RippleAddress::createHumanAccountID(mDstAccountID);
+		cLog(lsDEBUG) << "findPaths: finish? issuer is desired: " << (speEnd.mIssuerID == mDstAmount.getIssuer());
 
-		while (qspExplore.size()) {										// Have paths to explore?
-			STPath spPath = qspExplore.front();
+		// YYY Allows going through self.  Is this wanted?
+		if (speEnd.mAccountID == mDstAccountID						// Tail is destination account.
+			&& speEnd.mCurrencyID == mDstAmount.getCurrency()		// With correct output currency.
+			&& (   speEnd.mIssuerID == mDstAccountID				// Dest always accepts own issuer.
+				|| mDstAmount.getIssuer() == mDstAccountID			// Any issuer is good.
+				|| mDstAmount.getIssuer() == speEnd.mIssuerID))		// The desired issuer.
+		{
+			// Done, found a path to the destination.
+			// Cursor on the dest account with correct currency and issuer.
 
-			qspExplore.pop();											// Pop the first path from the queue.
+			if (bDefaultPath(spPath)) {
+				cLog(lsDEBUG) << "findPaths: dropping: default path: " << spPath.getJson(0);
 
-			speEnd = spPath.mPath.back();								// Get the last node from the path.
-
-			if (!speEnd.mCurrencyID										// Tail output is XRP.
-				&& !mDstAmount.getCurrency())							// Which is dst currency.
+				bFound	= true;
+			}
+			else
 			{
-				// Done, cursor produces XRP and dest wants XRP.
+				// Remove implied nodes.
 
-				// Remove implied source.
 				spPath.mPath.erase(spPath.mPath.begin());
 
 				if (bForcedIssuer)
@@ -243,299 +317,242 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					// Remove implied source issuer.
 					spPath.mPath.erase(spPath.mPath.begin());
 				}
+				spPath.mPath.erase(spPath.mPath.begin() + spPath.mPath.size()-1);
 
-				if (spPath.size())
-				{
-					// There is an actual path element.
-					cLog(lsDEBUG) << "findPaths: adding path: " << spPath.getJson(0);
+				vspResults.push_back(spPath);						// Potential result.
 
-					vspResults.push_back(spPath);						// Potential result.
-				}
-				else
-				{
-					cLog(lsDEBUG) << "findPaths: empty path: XRP->XRP";
-				}
-
-				continue;
+				cLog(lsDEBUG) << "findPaths: adding path: " << spPath.getJson(0);
 			}
 
-			cLog(lsDEBUG) << "findPaths: finish? account: " << (speEnd.mAccountID == mDstAccountID);
-			cLog(lsDEBUG) << "findPaths: finish? currency: " << (speEnd.mCurrencyID == mDstAmount.getCurrency());
-			cLog(lsDEBUG) << "findPaths: finish? issuer: "
-				<< RippleAddress::createHumanAccountID(speEnd.mIssuerID)
-				<< " / "
-				<< RippleAddress::createHumanAccountID(mDstAmount.getIssuer())
-				<< " / "
-				<< RippleAddress::createHumanAccountID(mDstAccountID);
-			cLog(lsDEBUG) << "findPaths: finish? issuer is desired: " << (speEnd.mIssuerID == mDstAmount.getIssuer());
-
-			// YYY Allows going through self.  Is this wanted?
-			if (speEnd.mAccountID == mDstAccountID						// Tail is destination account.
-				&& speEnd.mCurrencyID == mDstAmount.getCurrency()		// With correct output currency.
-				&& (   speEnd.mIssuerID == mDstAccountID				// Dest always accepts own issuer.
-					|| mDstAmount.getIssuer() == mDstAccountID			// Any issuer is good.
-					|| mDstAmount.getIssuer() == speEnd.mIssuerID))		// The desired issuer.
-			{
-				// Done, found a path to the destination.
-				// Cursor on the dest account with correct currency and issuer.
-
-				if (bDefaultPath(spPath)) {
-					cLog(lsDEBUG) << "findPaths: dropping: default path: " << spPath.getJson(0);
-
-					bFound	= true;
-				}
-				else
-				{
-					// Remove implied nodes.
-
-					spPath.mPath.erase(spPath.mPath.begin());
-
-					if (bForcedIssuer)
-					{
-						// Remove implied source issuer.
-						spPath.mPath.erase(spPath.mPath.begin());
-					}
-					spPath.mPath.erase(spPath.mPath.begin() + spPath.mPath.size()-1);
-
-					vspResults.push_back(spPath);						// Potential result.
-
-					cLog(lsDEBUG) << "findPaths: adding path: " << spPath.getJson(0);
-				}
-
-				continue;
-			}
-
-			bool	bContinued	= false;								// True, if wasn't a dead end.
-
-			cLog(lsDEBUG) <<
-				boost::str(boost::format("findPaths: cursor: %s - %s/%s")
-					% RippleAddress::createHumanAccountID(speEnd.mAccountID)
-					% STAmount::createHumanCurrency(speEnd.mCurrencyID)
-					% RippleAddress::createHumanAccountID(speEnd.mIssuerID));
-
-			if (spPath.mPath.size() == iMaxSteps)
-			{
-				// Path is at maximum size. Don't want to add more.
-
-				cLog(lsDEBUG)
-					<< boost::str(boost::format("findPaths: dropping: path would exceed max steps"));
-
-				continue;
-			}
-			else if (!speEnd.mCurrencyID)
-			{
-				// Cursor is for XRP, continue with qualifying books: XRP -> non-XRP
-				BOOST_FOREACH(OrderBook::ref book, theApp->getOrderBookDB().getXRPInBooks())
-				{
-					// New end is an order book with the currency and issuer.
-
-					// Don't allow looping through same order books.
-					if (!spPath.hasSeen(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()))
-					{
-						STPath			spNew(spPath);
-						STPathElement	speBook(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut());
-						STPathElement	speAccount(book->getIssuerOut(), book->getCurrencyOut(), book->getIssuerOut());
-
-						spNew.mPath.push_back(speBook);		// Add the order book.
-						spNew.mPath.push_back(speAccount);	// Add the account and currency
-
-						cLog(lsDEBUG) <<
-							boost::str(boost::format("findPaths: XRP -> %s/%s")
-								% STAmount::createHumanCurrency(speBook.mCurrencyID)
-								% RippleAddress::createHumanAccountID(speBook.mIssuerID));
-
-						qspExplore.push(spNew);
-
-						bContinued	= true;
-					}
-				}
-
-				tLog(!bContinued, lsDEBUG)
-					<< boost::str(boost::format("findPaths: XRP -> dead end"));
-			}
-			else
-			{
-				// Last element is for non-XRP, continue by adding ripple lines and order books.
-
-				// Create new paths for each outbound account not already in the path.
-				AccountItems	rippleLines(speEnd.mAccountID, mLedger, AccountItem::pointer(new RippleState()));
-				SLE::pointer	sleSrc			= lesActive.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(speEnd.mAccountID));
-
-				tLog(sleSrc, lsDEBUG)
-					<< boost::str(boost::format("findPaths: account without root: %s")
-						% RippleAddress::createHumanAccountID(speEnd.mAccountID));
-
-				bool			bRequireAuth	= isSetBit(sleSrc->getFieldU32(sfFlags), lsfRequireAuth);
-
-				BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
-				{
-					RippleState*	rspEntry	= (RippleState*) item.get();
-					const uint160	uPeerID		= rspEntry->getAccountIDPeer().getAccountID();
-
-					if (spPath.hasSeen(uPeerID, speEnd.mCurrencyID, uPeerID))
-					{
-						// Peer is in path already. Ignore it to avoid a loop.
-						cLog(lsDEBUG) <<
-							boost::str(boost::format("findPaths: SEEN: %s/%s -> %s/%s")
-								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
-								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
-								% RippleAddress::createHumanAccountID(uPeerID)
-								% STAmount::createHumanCurrency(speEnd.mCurrencyID));
-					}
-					else if (!rspEntry->getBalance().isPositive()							// No IOUs to send.
-						&& (!rspEntry->getLimitPeer()										// Peer does not extend credit.
-							|| *rspEntry->getBalance().negate() >= rspEntry->getLimitPeer()	// No credit left.
-							|| (bRequireAuth && !rspEntry->getAuth())))						// Not authorized to hold credit.
-					{
-						// Path has no credit left. Ignore it.
-						cLog(lsDEBUG) <<
-							boost::str(boost::format("findPaths: No credit: %s/%s -> %s/%s")
-								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
-								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
-								% RippleAddress::createHumanAccountID(uPeerID)
-								% STAmount::createHumanCurrency(speEnd.mCurrencyID));
-					}
-					else
-					{
-						// Can transmit IOUs and account to the path.
-						STPath			spNew(spPath);
-						STPathElement	speNew(uPeerID, speEnd.mCurrencyID, uPeerID);
-
-						spNew.mPath.push_back(speNew);
-						qspExplore.push(spNew);
-
-						bContinued	= true;
-
-						cLog(lsDEBUG) <<
-							boost::str(boost::format("findPaths: push explore: %s/%s -> %s/%s")
-								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
-								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
-								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
-								% RippleAddress::createHumanAccountID(uPeerID));
-					}
-				}
-
-				// Every book that wants the source currency.
-				std::vector<OrderBook::pointer> books;
-
-
-				theApp->getOrderBookDB().getBooks(speEnd.mIssuerID, speEnd.mCurrencyID, books);
-
-				BOOST_FOREACH(OrderBook::ref book, books)
-				{
-					if (!spPath.hasSeen(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()))
-					{
-						// A book we haven't seen before. Add it.
-						STPath			spNew(spPath);
-						STPathElement	speBook(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut());
-
-						spNew.mPath.push_back(speBook);
-						qspExplore.push(spNew);
-
-						bContinued	= true;
-
-						cLog(lsDEBUG) <<
-							boost::str(boost::format("findPaths: push book: %s/%s -> %s/%s")
-								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
-								% RippleAddress::createHumanAccountID(speEnd.mIssuerID)
-								% STAmount::createHumanCurrency(book->getCurrencyOut())
-								% RippleAddress::createHumanAccountID(book->getIssuerOut()));
-					}
-				}
-
-				tLog(!bContinued, lsDEBUG)
-					<< boost::str(boost::format("findPaths: dropping: non-XRP -> dead end"));
-			}
+			continue;
 		}
 
-		unsigned int iLimit  = std::min(iMaxPaths, (unsigned int) vspResults.size());
+		bool	bContinued	= false;								// True, if wasn't a dead end.
 
-		// Only filter, sort, and limit if have non-default paths.
-		if (iLimit)
+		cLog(lsDEBUG) <<
+			boost::str(boost::format("findPaths: cursor: %s - %s/%s")
+				% RippleAddress::createHumanAccountID(speEnd.mAccountID)
+				% STAmount::createHumanCurrency(speEnd.mCurrencyID)
+				% RippleAddress::createHumanAccountID(speEnd.mIssuerID));
+
+		if (spPath.mPath.size() == iMaxSteps)
 		{
-			std::vector< std::pair<uint64, unsigned int> > vMap;
+			// Path is at maximum size. Don't want to add more.
 
-			// Build map of quality to entry.
-			for (int i = vspResults.size(); i--;)
+			cLog(lsDEBUG)
+				<< boost::str(boost::format("findPaths: dropping: path would exceed max steps"));
+
+			continue;
+		}
+		else if (!speEnd.mCurrencyID)
+		{
+			// Cursor is for XRP, continue with qualifying books: XRP -> non-XRP
+			BOOST_FOREACH(OrderBook::ref book, theApp->getOrderBookDB().getXRPInBooks())
 			{
-				STAmount	saMaxAmountAct;
-				STAmount	saDstAmountAct;
-				std::vector<PathState::pointer>	vpsExpanded;
-				STPathSet	spsPaths;
-				STPath&		spCurrent	= vspResults[i];
+				// New end is an order book with the currency and issuer.
 
-				spsPaths.addPath(spCurrent);				// Just checking the current path.
-
-				TER			terResult;
-
-				try {
-					terResult	= RippleCalc::rippleCalc(
-						lesActive,
-						saMaxAmountAct,
-						saDstAmountAct,
-						vpsExpanded,
-						mSrcAmount,			// --> amount to send max.
-						mDstAmount,			// --> amount to deliver.
-						mDstAccountID,
-						mSrcAccountID,
-						spsPaths,
-						true,				// --> bPartialPayment: Allow, it might contribute.
-						false,				// --> bLimitQuality: Assume normal transaction.
-						true,				// --> bNoRippleDirect: Providing the only path.
-						true);				// --> bStandAlone: Don't need to delete unfundeds.
-				}
-				catch (const std::exception& e)
+				// Don't allow looping through same order books.
+				if (!spPath.hasSeen(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()))
 				{
-					cLog(lsINFO) << "findPaths: Caught throw: " << e.what();
+					STPath			spNew(spPath);
+					STPathElement	speBook(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut());
+					STPathElement	speAccount(book->getIssuerOut(), book->getCurrencyOut(), book->getIssuerOut());
 
-					terResult	= tefEXCEPTION;
+					spNew.mPath.push_back(speBook);		// Add the order book.
+					spNew.mPath.push_back(speAccount);	// Add the account and currency
+
+					cLog(lsDEBUG) <<
+						boost::str(boost::format("findPaths: XRP -> %s/%s")
+							% STAmount::createHumanCurrency(speBook.mCurrencyID)
+							% RippleAddress::createHumanAccountID(speBook.mIssuerID));
+
+					qspExplore.push(spNew);
+
+					bContinued	= true;
 				}
+			}
 
-				if (tesSUCCESS == terResult)
+			tLog(!bContinued, lsDEBUG)
+				<< boost::str(boost::format("findPaths: XRP -> dead end"));
+		}
+		else
+		{
+			// Last element is for non-XRP, continue by adding ripple lines and order books.
+
+			// Create new paths for each outbound account not already in the path.
+			AccountItems	rippleLines(speEnd.mAccountID, mLedger, AccountItem::pointer(new RippleState()));
+			SLE::pointer	sleEnd			= lesActive.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(speEnd.mAccountID));
+
+			tLog(sleEnd, lsDEBUG)
+				<< boost::str(boost::format("findPaths: account without root: %s")
+					% RippleAddress::createHumanAccountID(speEnd.mAccountID));
+
+			bool			bRequireAuth	= isSetBit(sleEnd->getFieldU32(sfFlags), lsfRequireAuth);
+
+			BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
+			{
+				RippleState*	rspEntry	= (RippleState*) item.get();
+				const uint160	uPeerID		= rspEntry->getAccountIDPeer().getAccountID();
+
+				if (spPath.hasSeen(uPeerID, speEnd.mCurrencyID, uPeerID))
 				{
-					uint64	uQuality	= STAmount::getRate(saDstAmountAct, saMaxAmountAct);
-
-					cLog(lsDEBUG)
-						<< boost::str(boost::format("findPaths: quality: %d: %s")
-							% uQuality
-							% spCurrent.getJson(0));
-
-					vMap.push_back(std::make_pair(uQuality, i));
+					// Peer is in path already. Ignore it to avoid a loop.
+					cLog(lsDEBUG) <<
+						boost::str(boost::format("findPaths: SEEN: %s/%s -> %s/%s")
+							% RippleAddress::createHumanAccountID(speEnd.mAccountID)
+							% STAmount::createHumanCurrency(speEnd.mCurrencyID)
+							% RippleAddress::createHumanAccountID(uPeerID)
+							% STAmount::createHumanCurrency(speEnd.mCurrencyID));
+				}
+				else if (!rspEntry->getBalance().isPositive()							// No IOUs to send.
+					&& (!rspEntry->getLimitPeer()										// Peer does not extend credit.
+						|| *rspEntry->getBalance().negate() >= rspEntry->getLimitPeer()	// No credit left.
+						|| (bRequireAuth && !rspEntry->getAuth())))						// Not authorized to hold credit.
+				{
+					// Path has no credit left. Ignore it.
+					cLog(lsDEBUG) <<
+						boost::str(boost::format("findPaths: No credit: %s/%s -> %s/%s")
+							% RippleAddress::createHumanAccountID(speEnd.mAccountID)
+							% STAmount::createHumanCurrency(speEnd.mCurrencyID)
+							% RippleAddress::createHumanAccountID(uPeerID)
+							% STAmount::createHumanCurrency(speEnd.mCurrencyID));
 				}
 				else
 				{
-					cLog(lsDEBUG)
-						<< boost::str(boost::format("findPaths: dropping: %s: %s")
-							% transToken(terResult)
-							% spCurrent.getJson(0));
+					// Can transmit IOUs and account to the path.
+					STPath			spNew(spPath);
+					STPathElement	speNew(uPeerID, speEnd.mCurrencyID, uPeerID);
+
+					spNew.mPath.push_back(speNew);
+					qspExplore.push(spNew);
+
+					bContinued	= true;
+
+					cLog(lsDEBUG) <<
+						boost::str(boost::format("findPaths: push explore: %s/%s -> %s/%s")
+							% STAmount::createHumanCurrency(speEnd.mCurrencyID)
+							% RippleAddress::createHumanAccountID(speEnd.mAccountID)
+							% STAmount::createHumanCurrency(speEnd.mCurrencyID)
+							% RippleAddress::createHumanAccountID(uPeerID));
 				}
 			}
 
-			if (vMap.size())
+			// Every book that wants the source currency.
+			std::vector<OrderBook::pointer> books;
+
+
+			theApp->getOrderBookDB().getBooks(speEnd.mIssuerID, speEnd.mCurrencyID, books);
+
+			BOOST_FOREACH(OrderBook::ref book, books)
 			{
-				iLimit	= std::min(iMaxPaths, (unsigned int) vMap.size());
-
-				bFound	= true;
-
-				std::sort(vMap.begin(), vMap.end(), bQualityCmp);	// Lower is better and should be first.
-
-				// Output best quality entries.
-				for (int i = 0; i != vMap.size(); ++i)
+				if (!spPath.hasSeen(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()))
 				{
-					spsDst.addPath(vspResults[vMap[i].second]);
-				}
+					// A book we haven't seen before. Add it.
+					STPath			spNew(spPath);
+					STPathElement	speBook(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut());
 
-				cLog(lsDEBUG) << boost::str(boost::format("findPaths: RESULTS: %s") % spsDst.getJson(0));
+					spNew.mPath.push_back(speBook);
+					qspExplore.push(spNew);
+
+					bContinued	= true;
+
+					cLog(lsDEBUG) <<
+						boost::str(boost::format("findPaths: push book: %s/%s -> %s/%s")
+							% STAmount::createHumanCurrency(speEnd.mCurrencyID)
+							% RippleAddress::createHumanAccountID(speEnd.mIssuerID)
+							% STAmount::createHumanCurrency(book->getCurrencyOut())
+							% RippleAddress::createHumanAccountID(book->getIssuerOut()));
+				}
 			}
-			else
-			{
-				cLog(lsDEBUG) << boost::str(boost::format("findPaths: RESULTS: non-defaults filtered away"));
-			}
+
+			tLog(!bContinued, lsDEBUG)
+				<< boost::str(boost::format("findPaths: dropping: non-XRP -> dead end"));
 		}
 	}
-	else
+
+	unsigned int iLimit  = std::min(iMaxPaths, (unsigned int) vspResults.size());
+
+	// Only filter, sort, and limit if have non-default paths.
+	if (iLimit)
 	{
-		cLog(lsDEBUG) << boost::str(boost::format("findPaths: no ledger"));
+		std::vector< std::pair<uint64, unsigned int> > vMap;
+
+		// Build map of quality to entry.
+		for (int i = vspResults.size(); i--;)
+		{
+			STAmount	saMaxAmountAct;
+			STAmount	saDstAmountAct;
+			std::vector<PathState::pointer>	vpsExpanded;
+			STPathSet	spsPaths;
+			STPath&		spCurrent	= vspResults[i];
+
+			spsPaths.addPath(spCurrent);				// Just checking the current path.
+
+			TER			terResult;
+
+			try {
+				terResult	= RippleCalc::rippleCalc(
+					lesActive,
+					saMaxAmountAct,
+					saDstAmountAct,
+					vpsExpanded,
+					mSrcAmount,			// --> amount to send max.
+					mDstAmount,			// --> amount to deliver.
+					mDstAccountID,
+					mSrcAccountID,
+					spsPaths,
+					true,				// --> bPartialPayment: Allow, it might contribute.
+					false,				// --> bLimitQuality: Assume normal transaction.
+					true,				// --> bNoRippleDirect: Providing the only path.
+					true);				// --> bStandAlone: Don't need to delete unfundeds.
+			}
+			catch (const std::exception& e)
+			{
+				cLog(lsINFO) << "findPaths: Caught throw: " << e.what();
+
+				terResult	= tefEXCEPTION;
+			}
+
+			if (tesSUCCESS == terResult)
+			{
+				uint64	uQuality	= STAmount::getRate(saDstAmountAct, saMaxAmountAct);
+
+				cLog(lsDEBUG)
+					<< boost::str(boost::format("findPaths: quality: %d: %s")
+						% uQuality
+						% spCurrent.getJson(0));
+
+				vMap.push_back(std::make_pair(uQuality, i));
+			}
+			else
+			{
+				cLog(lsDEBUG)
+					<< boost::str(boost::format("findPaths: dropping: %s: %s")
+						% transToken(terResult)
+						% spCurrent.getJson(0));
+			}
+		}
+
+		if (vMap.size())
+		{
+			iLimit	= std::min(iMaxPaths, (unsigned int) vMap.size());
+
+			bFound	= true;
+
+			std::sort(vMap.begin(), vMap.end(), bQualityCmp);	// Lower is better and should be first.
+
+			// Output best quality entries.
+			for (int i = 0; i != vMap.size(); ++i)
+			{
+				spsDst.addPath(vspResults[vMap[i].second]);
+			}
+
+			cLog(lsDEBUG) << boost::str(boost::format("findPaths: RESULTS: %s") % spsDst.getJson(0));
+		}
+		else
+		{
+			cLog(lsDEBUG) << boost::str(boost::format("findPaths: RESULTS: non-defaults filtered away"));
+		}
 	}
 
 	cLog(lsDEBUG) << boost::str(boost::format("findPaths< bFound=%d") % bFound);
