@@ -135,7 +135,7 @@ Pathfinder::Pathfinder(Ledger::ref ledger,
 		mDstAmount(saDstAmount),
 		mSrcCurrencyID(uSrcCurrencyID),
 		mSrcIssuerID(uSrcIssuerID),
-		mSrcAmount(uSrcCurrencyID, uSrcIssuerID, 1, 0),
+		mSrcAmount(uSrcCurrencyID, uSrcIssuerID, 1u, 0, true),
 		mLedger(ledger)
 {
 
