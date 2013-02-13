@@ -179,7 +179,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 
 			Pathfinder pf(raSrcAddressID, dstAccountID, saSendMax.getCurrency(), saSendMax.getIssuer(), saSend);
 
-			if (!pf.findPaths(7, 3, spsPaths))
+			if (!pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsPaths))
 			{
 				cLog(lsDEBUG) << "transactionSign: build_path: No paths found.";
 
@@ -1150,7 +1150,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 			STPathSet	spsComputed;
 			Pathfinder	pf(raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount);
 
-			if (!pf.findPaths(7, 3, spsComputed))
+			if (!pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsComputed))
 			{
 				cLog(lsDEBUG) << "ripple_path_find: No paths found.";
 			}
