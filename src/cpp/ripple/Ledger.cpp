@@ -1231,7 +1231,7 @@ uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uT
 
 	uint256	uBaseIndex	= getQualityIndex(s.getSHA512Half());	// Return with quality 0.
 
-	cLog(lsDEBUG) << boost::str(boost::format("getBookBase(%s,%s,%s,%s) = %s")
+	cLog(lsTRACE) << boost::str(boost::format("getBookBase(%s,%s,%s,%s) = %s")
 		% STAmount::createHumanCurrency(uTakerPaysCurrency)
 		% RippleAddress::createHumanAccountID(uTakerPaysIssuerID)
 		% STAmount::createHumanCurrency(uTakerGetsCurrency)

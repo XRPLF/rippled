@@ -118,8 +118,8 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 		// When path is a default (implied). Don't need to add it to return set.
 		bDefault	= pspCurrent->vpnNodes == mPsDefault->vpnNodes;
 
-		cLog(lsDEBUG) << "findPaths: expanded path: " << pspCurrent->getJson();
-		cLog(lsDEBUG) << "findPaths: default path: indirect: " << spPath.getJson(0);
+		cLog(lsTRACE) << "findPaths: expanded path: " << pspCurrent->getJson();
+		cLog(lsTRACE) << "findPaths: default path: indirect: " << spPath.getJson(0);
 
 		return bDefault;
 	}
@@ -159,14 +159,14 @@ Pathfinder::Pathfinder(Ledger::ref ledger,
 		if (tesSUCCESS == psDefault->terStatus)
 		{
 			// The default path works, remember it.
-			cLog(lsDEBUG) << "Pathfinder: default path: " << psDefault->getJson();
+			cLog(lsTRACE) << "Pathfinder: default path: " << psDefault->getJson();
 
 			mPsDefault	= psDefault;
 		}
 		else
 		{
 			// The default path doesn't work.
-			cLog(lsDEBUG) << "Pathfinder: default path: NONE: " << transToken(psDefault->terStatus);
+			cLog(lsTRACE) << "Pathfinder: default path: NONE: " << transToken(psDefault->terStatus);
 		}
 	}
 }
@@ -189,7 +189,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 {
 	bool	bFound		= false;	// True, iff found a path.
 
-	cLog(lsDEBUG) << boost::str(boost::format("findPaths> mSrcAccountID=%s mDstAccountID=%s mDstAmount=%s mSrcCurrencyID=%s mSrcIssuerID=%s")
+	cLog(lsTRACE) << boost::str(boost::format("findPaths> mSrcAccountID=%s mDstAccountID=%s mDstAmount=%s mSrcCurrencyID=%s mSrcIssuerID=%s")
 		% RippleAddress::createHumanAccountID(mSrcAccountID)
 		% RippleAddress::createHumanAccountID(mDstAccountID)
 		% mDstAmount.getFullText()
@@ -199,7 +199,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 	if (!mLedger)
 	{
-		cLog(lsDEBUG) << boost::str(boost::format("findPaths< no ledger"));
+		cLog(lsDEBUG) << "findPaths< no ledger";
 
 		return false;
 	}
@@ -273,13 +273,13 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			if (spPath.size())
 			{
 				// There is an actual path element.
-				cLog(lsDEBUG) << "findPaths: adding path: " << spPath.getJson(0);
+				cLog(lsTRACE) << "findPaths: adding path: " << spPath.getJson(0);
 
 				vspResults.push_back(spPath);						// Potential result.
 			}
 			else
 			{
-				cLog(lsDEBUG) << "findPaths: empty path: XRP->XRP";
+				cLog(lsTRACE) << "findPaths: empty path: XRP->XRP";
 			}
 
 			continue;
@@ -287,7 +287,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 		cLog(lsDEBUG) << "findPaths: finish? account: " << (speEnd.mAccountID == mDstAccountID);
 		cLog(lsDEBUG) << "findPaths: finish? currency: " << (speEnd.mCurrencyID == mDstAmount.getCurrency());
-		cLog(lsDEBUG) << "findPaths: finish? issuer: "
+		cLog(lsTRACE) << "findPaths: finish? issuer: "
 			<< RippleAddress::createHumanAccountID(speEnd.mIssuerID)
 			<< " / "
 			<< RippleAddress::createHumanAccountID(mDstAmount.getIssuer())
@@ -333,7 +333,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 		bool	bContinued	= false;								// True, if wasn't a dead end.
 
-		cLog(lsDEBUG) <<
+		cLog(lsTRACE) <<
 			boost::str(boost::format("findPaths: cursor: %s - %s/%s")
 				% RippleAddress::createHumanAccountID(speEnd.mAccountID)
 				% STAmount::createHumanCurrency(speEnd.mCurrencyID)
@@ -414,7 +414,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 						|| (bRequireAuth && !rspEntry->getAuth())))						// Not authorized to hold credit.
 				{
 					// Path has no credit left. Ignore it.
-					cLog(lsDEBUG) <<
+					cLog(lsTRACE) <<
 						boost::str(boost::format("findPaths: No credit: %s/%s -> %s/%s")
 							% RippleAddress::createHumanAccountID(speEnd.mAccountID)
 							% STAmount::createHumanCurrency(speEnd.mCurrencyID)
@@ -432,7 +432,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 					bContinued	= true;
 
-					cLog(lsDEBUG) <<
+					cLog(lsTRACE) <<
 						boost::str(boost::format("findPaths: push explore: %s/%s -> %s/%s")
 							% STAmount::createHumanCurrency(speEnd.mCurrencyID)
 							% RippleAddress::createHumanAccountID(speEnd.mAccountID)
@@ -460,7 +460,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 					bContinued	= true;
 
-					cLog(lsDEBUG) <<
+					cLog(lsTRACE) <<
 						boost::str(boost::format("findPaths: push book: %s/%s -> %s/%s")
 							% STAmount::createHumanCurrency(speEnd.mCurrencyID)
 							% RippleAddress::createHumanAccountID(speEnd.mIssuerID)
