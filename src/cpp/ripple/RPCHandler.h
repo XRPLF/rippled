@@ -64,6 +64,7 @@ class RPCHandler
 	Json::Value doNicknameInfo(Json::Value params);
 	Json::Value doOwnerInfo(Json::Value params);
 	Json::Value doPeers(Json::Value params);
+	Json::Value doPing(Json::Value params);
 	Json::Value doProfile(Json::Value params);
 	Json::Value doRandom(Json::Value jvRequest);
 	Json::Value doRipplePathFind(Json::Value jvRequest);

@@ -512,6 +512,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 //		{	"nickname_info",		&RPCParser::parseNicknameInfo,			1,  1	},
 		{	"owner_info",			&RPCParser::parseOwnerInfo,				1,  2	},
 		{	"peers",				&RPCParser::parseAsIs,					0,  0	},
+		{	"ping",					&RPCParser::parseAsIs,					0,  0	},
 //		{	"profile",				&RPCParser::parseProfile,				1,  9	},
 		{	"random",				&RPCParser::parseAsIs,					0,  0	},
 		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	    1,  1	},

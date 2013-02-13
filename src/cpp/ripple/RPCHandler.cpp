@@ -774,11 +774,16 @@ Json::Value RPCHandler::doOwnerInfo(Json::Value jvRequest)
 
 Json::Value RPCHandler::doPeers(Json::Value)
 {
-	Json::Value obj(Json::objectValue);
+	Json::Value jvResult(Json::objectValue);
 
-	obj["peers"]=theApp->getConnectionPool().getPeersJson();
+	jvResult["peers"]	= theApp->getConnectionPool().getPeersJson();
 
-	return obj;
+	return jvResult;
+}
+
+Json::Value RPCHandler::doPing(Json::Value)
+{
+	return Json::Value(Json::objectValue);
 }
 
 // profile offers <pass_a> <account_a> <currency_offer_a> <account_b> <currency_offer_b> <count> [submit]
@@ -874,8 +879,8 @@ Json::Value RPCHandler::doProfile(Json::Value jvRequest)
 }
 
 // {
-//   account: <account>|<nickname>|<account_public_key> [<index>]
-//   index: <number>		// optional, defaults to 0.
+//   account: <account>|<nickname>|<account_public_key>
+//   account_index: <number>		// optional, defaults to 0.
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
@@ -952,8 +957,8 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 }
 
 // {
-//   account: <account>|<nickname>|<account_public_key> [<index>]
-//   index: <number>		// optional, defaults to 0.
+//   account: <account>|<nickname>|<account_public_key>
+//   account_index: <number>		// optional, defaults to 0.
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
@@ -2714,6 +2719,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 //		{	"nickname_info",		&RPCHandler::doNicknameInfo,	    false,	optCurrent	},
 		{	"owner_info",			&RPCHandler::doOwnerInfo,		    false,	optCurrent	},
 		{	"peers",				&RPCHandler::doPeers,			    true,	optNone		},
+		{	"ping",					&RPCHandler::doPing,			    false,	optNone		},
 //		{	"profile",				&RPCHandler::doProfile,			    false,	optCurrent	},
 		{	"random",				&RPCHandler::doRandom,				false,	optNone		},
 		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	    false,	optCurrent	},
