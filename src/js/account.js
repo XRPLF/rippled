@@ -21,6 +21,7 @@ var Account = function (remote, account) {
   this._remote = remote;
   this._account = UInt160.from_json(account);
   this._account_id = this._account.to_json();
+  this._subs = 0;
 
   // Ledger entry object
   // Important: This must never be overwritten, only extend()-ed
@@ -61,8 +62,8 @@ var Account = function (remote, account) {
     var changed = false;
     msg.mmeta.each(function (an) {
       if (an.entryType === 'AccountRoot' &&
-          an.fields.Account === this._account_id) {
-        extend(this._entry, an.fieldsNew, an.fieldsFinal);
+          an.fields.Account === self._account_id) {
+        extend(self._entry, an.fieldsNew, an.fieldsFinal);
         changed = true;
       }
     });
