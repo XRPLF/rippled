@@ -573,23 +573,23 @@ Remote.prototype._connect_message = function (ws, json) {
 
       case 'account':
         // XXX If not trusted, need proof.
+        if (this.trace) utils.logObject("remote: account: %s", message);
 
         // Process metadata
         message.mmeta = new Meta(message.meta);
 
         // Pass the event on to any related Account objects
-        message.mmeta.each(function (an) {
-          if (an.entryType === 'AccountRoot') {
-            var account = self._accounts[an.fields.Account];
+        var affected = message.mmeta.getAffectedAccounts();
+        for (var i = 0, l = affected.length; i < l; i++) {
+          var account = self._accounts[affected[i]];
 
-            // Only trigger the event if the account object is actually
-            // subscribed - this prevents some weird phantom events from
-            // occurring.
-            if (account && account._subs) {
-              account.emit('transaction', message);
-            }
+          // Only trigger the event if the account object is actually
+          // subscribed - this prevents some weird phantom events from
+          // occurring.
+          if (account && account._subs) {
+            account.emit('transaction', message);
           }
-        });
+        }
 
         this.emit('account', message);
         break;

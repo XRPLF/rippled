@@ -68,6 +68,8 @@ std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts()
 	std::vector<RippleAddress> accounts;
 	accounts.reserve(10);
 
+	// This code should match the behavior of the JS method:
+	// Meta#getAffectedAccounts
 	BOOST_FOREACH(const STObject& it, mNodes)
 	{
 		int index = it.getFieldIndex((it.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
