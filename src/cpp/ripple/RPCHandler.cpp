@@ -1450,7 +1450,7 @@ Json::Value RPCHandler::doTx(Json::Value jvRequest)
 					ret["meta"] = set->getJson(0);
 					ret["validated"] =
 						theApp->getOPs().haveLedger(lgr->getLedgerSeq()) &&
-						(lgr->getLedgerSeq() >= theApp->getLedgerMaster().getValidatedLedger()->getLedgerSeq());
+						(lgr->getLedgerSeq() <= theApp->getLedgerMaster().getValidatedLedger()->getLedgerSeq());
 			}
 		}
 
