@@ -1,4 +1,6 @@
 var extend = require('extend');
+var UInt160 = require('./uint160').UInt160;
+var Amount = require('./amount').Amount;
 
 /**
  * Meta data processing facility.
@@ -71,6 +73,38 @@ Meta.prototype.each = function (fn)
   for (var i = 0, l = this.nodes.length; i < l; i++) {
     fn(this.nodes[i], i);
   }
-}
+};
+
+var amountFieldsAffectingIssuer = [
+  "LowLimit", "HighLimit", "TakerPays", "TakerGets"
+];
+Meta.prototype.getAffectedAccounts = function ()
+{
+  var accounts = [];
+
+  // This code should match the behavior of the C++ method:
+  // TransactionMetaSet::getAffectedAccounts
+  this.each(function (an) {
+    var fields = (an.diffType === "CreatedNode") ? an.fieldsNew : an.fieldsFinal;
+
+    for (var i in fields) {
+      var field = fields[i];
+
+      if ("string" === typeof field && UInt160.is_valid(field)) {
+        accounts.push(field);
+      } else if (amountFieldsAffectingIssuer.indexOf(i) !== -1) {
+        var amount = Amount.from_json(field);
+        var issuer = amount.issuer();
+        if (issuer.is_valid() && !issuer.is_zero()) {
+          accounts.push(issuer.to_json());
+        }
+      }
+    }
+  });
+
+  console.log("AFFECTS", accounts);
+
+  return accounts;
+};
 
 exports.Meta = Meta;

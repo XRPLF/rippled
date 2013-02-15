@@ -41,7 +41,7 @@ class RPCHandler
 		const RippleAddress& naVerifyGenerator);
 	Json::Value accounts(Ledger::ref lrLedger, const RippleAddress& naMasterGenerator);
 
-	Json::Value accountFromString(Ledger::ref lrLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
+	Json::Value accountFromString(Ledger::ref lrLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex, const bool bStrict);
 
 	Json::Value doAcceptLedger(Json::Value jvRequest);
 

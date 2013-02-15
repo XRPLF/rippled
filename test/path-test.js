@@ -906,7 +906,6 @@ buster.testCase("Via offers", {
   // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
   'tearDown' : testutils.build_teardown(),
 
-  // XXX Triggers bad path expansion.
   "Via gateway" :
     // carol holds mtgoxAUD, sells mtgoxAUD for XRP
     // bob will hold mtgoxAUD
@@ -1138,4 +1137,53 @@ buster.testCase("Via offers", {
     },
 });
 
+buster.testCase("Indirect paths", {
+  // 'setUp' : testutils.build_setup(),
+  'setUp' : testutils.build_setup({ verbose: true }),
+  // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
+  'tearDown' : testutils.build_teardown(),
+
+  "//path find" :
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+          function (callback) {
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "carol"], callback);
+          },
+          function (callback) {
+            self.what = "Set credit limits.";
+
+            testutils.credit_limits(self.remote,
+              {
+                "bob"   : "1000/USD/alice",
+                "carol" : "2000/USD/bob",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Find path from alice to carol";
+
+            self.remote.request_ripple_path_find("alice", "carol", "5/USD/carol",
+              [ { 'currency' : "USD" } ])
+              .on('success', function (m) {
+                  console.log("proposed: %s", JSON.stringify(m));
+
+                  // 1 alternative.
+                  buster.assert.equals(1, m.alternatives.length)
+                  // Path is empty.
+                  buster.assert.equals(0, m.alternatives[0].paths_canonical.length)
+
+                  callback();
+                })
+              .request();
+          },
+        ], function (error) {
+          buster.refute(error, self.what);
+          done();
+        });
+    },
+});
 // vim:sw=2:sts=2:ts=8:et
