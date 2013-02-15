@@ -500,8 +500,9 @@ Json::Value RPCHandler::authorize(Ledger::ref lrLedger,
 }
 
 // --> strIdent: public key, account ID, or regular seed.
+// --> bStrict: Only allow account id or public key.
 // <-- bIndex: true if iIndex > 0 and used the index.
-Json::Value RPCHandler::accountFromString(Ledger::ref lrLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex)
+Json::Value RPCHandler::accountFromString(Ledger::ref lrLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex, const bool bStrict)
 {
 	RippleAddress	naSeed;
 
@@ -509,6 +510,10 @@ Json::Value RPCHandler::accountFromString(Ledger::ref lrLedger, RippleAddress& n
 	{
 		// Got the account.
 		bIndex	= false;
+	}
+	else if (bStrict)
+	{
+		return rpcError(rpcACT_MALFORMED);
 	}
 	// Must be a seed.
 	else if (!naSeed.setSeedGeneric(strIdent))
@@ -570,6 +575,7 @@ Json::Value RPCHandler::doAcceptLedger(Json::Value jvRequest)
 // {
 //   ident : <indent>,
 //   account_index : <index> // optional
+//   strict: <bool>					// true, only allow public keys and addresses. false, default.
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
@@ -587,11 +593,12 @@ Json::Value RPCHandler::doAccountInfo(Json::Value jvRequest)
 	std::string		strIdent	= jvRequest["ident"].asString();
 	bool			bIndex;
 	int				iIndex		= jvRequest.isMember("account_index") ? jvRequest["account_index"].asUInt() : 0;
+	bool			bStrict		= jvRequest.isMember("strict") && jvRequest["strict"].asBool();
 	RippleAddress	naAccount;
 
 	// Get info on account.
 
-	Json::Value		jvAccepted		= accountFromString(lpLedger, naAccount, bIndex, strIdent, iIndex);
+	Json::Value		jvAccepted		= accountFromString(lpLedger, naAccount, bIndex, strIdent, iIndex, bStrict);
 
 	if (!jvAccepted.empty())
 		return jvAccepted;
@@ -746,7 +753,7 @@ Json::Value RPCHandler::doNicknameInfo(Json::Value params)
 //   'ident' : <indent>,
 //   'account_index' : <index> // optional
 // }
-// XXX This would be better if it too the ledger.
+// XXX This would be better if it took the ledger.
 Json::Value RPCHandler::doOwnerInfo(Json::Value jvRequest)
 {
 	if (!jvRequest.isMember("ident"))
@@ -761,11 +768,11 @@ Json::Value RPCHandler::doOwnerInfo(Json::Value jvRequest)
 
 	// Get info on account.
 
-	Json::Value		jAccepted	= accountFromString(mNetOps->getClosedLedger(), raAccount, bIndex, strIdent, iIndex);
+	Json::Value		jAccepted	= accountFromString(mNetOps->getClosedLedger(), raAccount, bIndex, strIdent, iIndex, false);
 
 	ret["accepted"]	= jAccepted.empty() ? mNetOps->getOwnerInfo(mNetOps->getClosedLedger(), raAccount) : jAccepted;
 
-	Json::Value		jCurrent	= accountFromString(mNetOps->getCurrentLedger(), raAccount, bIndex, strIdent, iIndex);
+	Json::Value		jCurrent	= accountFromString(mNetOps->getCurrentLedger(), raAccount, bIndex, strIdent, iIndex, false);
 
 	ret["current"]	= jCurrent.empty() ? mNetOps->getOwnerInfo(mNetOps->getCurrentLedger(), raAccount) : jCurrent;
 
@@ -901,7 +908,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 
 	RippleAddress	raAccount;
 
-	jvResult	= accountFromString(lpLedger, raAccount, bIndex, strIdent, iIndex);
+	jvResult	= accountFromString(lpLedger, raAccount, bIndex, strIdent, iIndex, false);
 
 	if (!jvResult.empty())
 		return jvResult;
@@ -979,7 +986,7 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 
 	RippleAddress	raAccount;
 
-	jvResult	= accountFromString(lpLedger, raAccount, bIndex, strIdent, iIndex);
+	jvResult	= accountFromString(lpLedger, raAccount, bIndex, strIdent, iIndex, false);
 
 	if (!jvResult.empty())
 		return jvResult;
@@ -2078,7 +2085,7 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 	Json::Value jvResult;
 
 	uint256	uLedger			= jvRequest.isMember("ledger_hash") ? uint256(jvRequest["ledger_hash"].asString()) : 0;
-	uint32	uLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asUInt() : 0;
+	int32	iLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asInt() : -2;
 
 	if (!!uLedger)
 	{
@@ -2088,26 +2095,39 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 		if (!lpLedger)
 		{
 			jvResult["error"]	= "ledgerNotFound";
+
 			return jvResult;
 		}
 
-		uLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index, override if needed.
+		iLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index, override if needed.
 	}
-	else if (!!uLedgerIndex)
+	if (-1 == iLedgerIndex)
 	{
-		lpLedger		= mNetOps->getLedgerBySeq(uLedgerIndex);
+		lpLedger		= theApp->getLedgerMaster().getClosedLedger();
+		iLedgerIndex	= lpLedger->getLedgerSeq();
+	}
+	if (-2 == iLedgerIndex)
+	{
+		// Default to current ledger.
+		lpLedger		= mNetOps->getCurrentLedger();
+		iLedgerIndex	= lpLedger->getLedgerSeq();
+	}
+	else if (iLedgerIndex <= 0)
+	{
+		jvResult["error"]	= "ledgerNotFound";
+
+		return jvResult;
+	}
+	else if (iLedgerIndex)
+	{
+		lpLedger		= mNetOps->getLedgerBySeq(iLedgerIndex);
 
 		if (!lpLedger)
 		{
 			jvResult["error"]	= "ledgerNotFound";	// ledger_index from future?
+
 			return jvResult;
 		}
-	}
-	else
-	{
-		// Default to current ledger.
-		lpLedger		= mNetOps->getCurrentLedger();
-		uLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index.
 	}
 
 	if (lpLedger->isClosed())
@@ -2115,11 +2135,11 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 		if (!!uLedger)
 			jvResult["ledger_hash"]			= uLedger.ToString();
 
-		jvResult["ledger_index"]		= uLedgerIndex;
+		jvResult["ledger_index"]		= iLedgerIndex;
 	}
 	else
 	{
-		jvResult["ledger_current_index"]	= uLedgerIndex;
+		jvResult["ledger_current_index"]	= iLedgerIndex;
 	}
 
 	return jvResult;
