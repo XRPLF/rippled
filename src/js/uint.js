@@ -92,6 +92,10 @@ UInt.prototype.is_valid = function () {
   return this._value instanceof BigInteger;
 };
 
+UInt.prototype.is_zero = function () {
+  return this._value.equals(BigInteger.ZERO);
+};
+
 // value = NaN on error.
 UInt.prototype.parse_generic = function (j) {
   // Canonicalize and validate
