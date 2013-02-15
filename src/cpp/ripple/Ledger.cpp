@@ -362,6 +362,23 @@ bool Ledger::getTransaction(const uint256& txID, Transaction::pointer& txn, Tran
 	return true;
 }
 
+bool Ledger::getTransactionMeta(const uint256& txID, TransactionMetaSet::pointer& meta)
+{
+	SHAMapTreeNode::TNType type;
+	SHAMapItem::pointer item = mTransactionMap->peekItem(txID, type);
+	if (!item)
+		return false;
+
+	if (type != SHAMapTreeNode::tnTRANSACTION_MD)
+		return false;
+
+	SerializerIterator it(item->peekSerializer());
+	it.getVL(); // skip transaction
+	meta = boost::make_shared<TransactionMetaSet>(txID, mLedgerSeq, it.getVL());
+
+	return true;
+}
+
 uint256 Ledger::getHash()
 {
 	if (!mValidHash)
