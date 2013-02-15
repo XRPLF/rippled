@@ -1448,6 +1448,9 @@ Json::Value RPCHandler::doTx(Json::Value jvRequest)
 				TransactionMetaSet::pointer set;
 				if (lgr->getTransactionMeta(txid, set))
 					ret["meta"] = set->getJson(0);
+					ret["validated"] =
+						theApp->getOPs().haveLedger(lgr->getLedgerSeq()) &&
+						(lgr->getLedgerSeq() >= theApp->getLedgerMaster().getValidatedLedger()->getLedgerSeq());
 			}
 		}
 
