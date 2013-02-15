@@ -1425,14 +1425,26 @@ Json::Value RPCHandler::doTx(Json::Value jvRequest)
 
 	if (Transaction::isHexTxID(strTransaction))
 	{ // transaction by ID
-		Json::Value ret;
 		uint256 txid(strTransaction);
 
 		Transaction::pointer txn = theApp->getMasterTransaction().fetch(txid, true);
 
 		if (!txn) return rpcError(rpcTXN_NOT_FOUND);
 
-		return txn->getJson(0);
+		Json::Value ret = txn->getJson(0);
+
+		if (txn->getLedger() != 0)
+		{
+			Ledger::pointer lgr = theApp->getLedgerMaster().getLedgerBySeq(txn->getLedger());
+			if (lgr)
+			{
+				TransactionMetaSet::pointer set;
+				if (lgr->getTransactionMeta(txid, set))
+					ret["meta"] = set->getJson(0);
+			}
+		}
+
+		return ret;
 	}
 
 	return rpcError(rpcNOT_IMPL);
@@ -1522,18 +1534,18 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 	if (!raAccount.setAccountID(jvRequest["account"].asString()))
 		return rpcError(rpcACT_MALFORMED);
 
-	if (jvRequest.isMember("ledger"))
-	{
-		minLedger	= maxLedger	= jvRequest["ledger"].asUInt();
-	}
-	else if (jvRequest.isMember("ledger_min") && jvRequest.isMember("ledger_max"))
+	if (jvRequest.isMember("ledger_min") && jvRequest.isMember("ledger_max"))
 	{
 		minLedger	= jvRequest["ledger_min"].asUInt();
 		maxLedger	= jvRequest["ledger_max"].asUInt();
 	}
 	else
 	{
-		return rpcError(rpcLGR_IDX_MALFORMED);
+		Ledger::pointer l;
+		Json::Value ret = lookupLedger(jvRequest, l);
+		if (!l)
+			return ret;
+		minLedger = maxLedger = l->getLedgerSeq();
 	}
 
 	if ((maxLedger < minLedger) || (maxLedger == 0))
