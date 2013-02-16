@@ -119,6 +119,19 @@ bool NetworkOPs::haveLedger(uint32 seq)
 	return mLedgerMaster->haveLedger(seq);
 }
 
+bool NetworkOPs::isValidated(uint32 seq, const uint256& hash)
+{
+	if (!isValidated(seq))
+		return false;
+
+	return mLedgerMaster->getHashBySeq(seq) == hash;
+}
+
+bool NetworkOPs::isValidated(uint32 seq)
+{ // use when ledger was retrieved by seq
+	return haveLedger(seq) && (seq <= mLedgerMaster->getValidatedLedger()->getLedgerSeq());
+}
+
 bool NetworkOPs::addWantedHash(const uint256& h)
 {
 	boost::recursive_mutex::scoped_lock sl(mWantedHashLock);
