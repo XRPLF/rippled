@@ -115,8 +115,8 @@ Amount.prototype.add = function (v) {
     result              = this; 
   }
   else if (this.is_zero()) {
-    result              = new Amount();
-    result._is_native   = false;
+    result              = v.clone();
+    // YYY Why are these cloned? We never modify them.
     result._currency    = this._currency.clone();
     result._issuer      = this._issuer.clone();
   }
