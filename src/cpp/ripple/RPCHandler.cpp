@@ -1584,8 +1584,12 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 			if (it->second)
 			{
 				obj["meta"] = it->second->getJson(0);
+
 				uint32 s = it->second->getLgrSeq();
-				obj["validated"] = (s <= vl) && theApp->getOPs().haveLedger(s);
+				if (s > vl)
+					obj["validated"] = false;
+				else if (theApp->getOPs().haveLedger(s))
+					obj["validated"] = true;
 			}
 
 			ret["transactions"].append(obj);
