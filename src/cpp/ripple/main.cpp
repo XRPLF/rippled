@@ -68,6 +68,7 @@ void printHelp(const po::options_description& desc)
 	cerr << "Commands: " << endl;
 	cerr << "     account_domain_set <seed> <paying_account> [<domain>]" << endl;
 	cerr << "     account_email_set <seed> <paying_account> [<email_address>]" << endl;
+	cerr << "     account_tx <account>|<nickname>|<account_public_key> <ledger>|(<minledger> <maxledger>)" << endl;
 	cerr << "     account_lines <account>|<nickname>|<account_public_key> [<index>]" << endl;
 	cerr << "     account_offers <account>|<nickname>|<account_public_key> [<index>]" << endl;
 	cerr << "     account_info <account>|<nickname>" << endl;
