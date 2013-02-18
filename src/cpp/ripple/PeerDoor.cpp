@@ -23,7 +23,9 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 }
 
 PeerDoor::PeerDoor(boost::asio::io_service& io_service) :
-	mAcceptor(io_service, tcp::endpoint(address().from_string(theConfig.PEER_IP), theConfig.PEER_PORT)),
+	mAcceptor(io_service,
+		tcp::endpoint(address().from_string(theConfig.PEER_IP.empty() ? "0.0.0.0" : theConfig.PEER_IP),
+	theConfig.PEER_PORT)),
 	mCtx(boost::asio::ssl::context::sslv23), mDelayTimer(io_service)
 {
 	mCtx.set_options(
