@@ -111,7 +111,17 @@ Amount.prototype.add = function (v) {
     result._is_negative = s.compareTo(BigInteger.ZERO) < 0;
     result._value       = result._is_negative ? s.negate() : s;
   }
-  else {
+  else if (v.is_zero()) {
+    result              = this; 
+  }
+  else if (this.is_zero()) {
+    result              = v.clone();
+    // YYY Why are these cloned? We never modify them.
+    result._currency    = this._currency.clone();
+    result._issuer      = this._issuer.clone();
+  }
+  else
+  {
     var v1  = this._is_negative ? this._value.negate() : this._value;
     var o1  = this._offset;
     var v2  = v._is_negative ? v._value.negate() : v._value;
@@ -418,6 +428,10 @@ Amount.prototype.is_negative = function () {
           : false;                          // NaN is not negative
 };
 
+Amount.prototype.is_positive = function () {
+  return !this.is_zero() && !this.is_negative();
+};
+
 // Only checks the value. Not the currency and issuer.
 Amount.prototype.is_valid = function () {
   return this._value instanceof BigInteger;
@@ -695,6 +709,7 @@ Amount.prototype.set_currency = function (c) {
   {
     c.copyTo(this._currency);
   }
+  this._is_native = this._currency.is_native();
 
   return this;
 };
