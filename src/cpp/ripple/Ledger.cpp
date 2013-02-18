@@ -362,6 +362,23 @@ bool Ledger::getTransaction(const uint256& txID, Transaction::pointer& txn, Tran
 	return true;
 }
 
+bool Ledger::getTransactionMeta(const uint256& txID, TransactionMetaSet::pointer& meta)
+{
+	SHAMapTreeNode::TNType type;
+	SHAMapItem::pointer item = mTransactionMap->peekItem(txID, type);
+	if (!item)
+		return false;
+
+	if (type != SHAMapTreeNode::tnTRANSACTION_MD)
+		return false;
+
+	SerializerIterator it(item->peekSerializer());
+	it.getVL(); // skip transaction
+	meta = boost::make_shared<TransactionMetaSet>(txID, mLedgerSeq, it.getVL());
+
+	return true;
+}
+
 uint256 Ledger::getHash()
 {
 	if (!mValidHash)
@@ -1231,7 +1248,7 @@ uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uT
 
 	uint256	uBaseIndex	= getQualityIndex(s.getSHA512Half());	// Return with quality 0.
 
-	cLog(lsDEBUG) << boost::str(boost::format("getBookBase(%s,%s,%s,%s) = %s")
+	cLog(lsTRACE) << boost::str(boost::format("getBookBase(%s,%s,%s,%s) = %s")
 		% STAmount::createHumanCurrency(uTakerPaysCurrency)
 		% RippleAddress::createHumanAccountID(uTakerPaysIssuerID)
 		% STAmount::createHumanCurrency(uTakerGetsCurrency)

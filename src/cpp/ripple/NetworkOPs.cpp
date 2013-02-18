@@ -35,7 +35,8 @@ void InfoSub::onSendEmpty()
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
 	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mProposing(false), mValidating(false),
 	mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0), mLastCloseProposers(0),
-	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0)
+	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0),
+	mLastLoadBase(256), mLastLoadFactor(256)
 {
 }
 
@@ -116,6 +117,24 @@ bool NetworkOPs::haveLedgerRange(uint32 from, uint32 to)
 bool NetworkOPs::haveLedger(uint32 seq)
 {
 	return mLedgerMaster->haveLedger(seq);
+}
+
+uint32 NetworkOPs::getValidatedSeq()
+{
+	return mLedgerMaster->getValidatedLedger()->getLedgerSeq();
+}
+
+bool NetworkOPs::isValidated(uint32 seq, const uint256& hash)
+{
+	if (!isValidated(seq))
+		return false;
+
+	return mLedgerMaster->getHashBySeq(seq) == hash;
+}
+
+bool NetworkOPs::isValidated(uint32 seq)
+{ // use when ledger was retrieved by seq
+	return haveLedger(seq) && (seq <= mLedgerMaster->getValidatedLedger()->getLedgerSeq());
 }
 
 bool NetworkOPs::addWantedHash(const uint256& h)
@@ -1020,12 +1039,12 @@ void NetworkOPs::pubServer()
 
 		jvObj["type"]			= "serverStatus";
 		jvObj["server_status"]	= strOperatingMode();
-		jvObj["load_base"]		= theApp->getFeeTrack().getLoadBase();
-		jvObj["load_factor"]	= theApp->getFeeTrack().getLoadFactor();
+		jvObj["load_base"]		= (mLastLoadBase = theApp->getFeeTrack().getLoadBase());
+		jvObj["load_factor"]	= (mLastLoadFactor = theApp->getFeeTrack().getLoadFactor());
 
 		BOOST_FOREACH(InfoSub* ispListener, mSubServer)
 		{
-			ispListener->send(jvObj);
+			ispListener->send(jvObj, true);
 		}
 	}
 }
@@ -1046,7 +1065,7 @@ void NetworkOPs::setMode(OperatingMode om)
 
 std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 	NetworkOPs::getAccountTxs(const RippleAddress& account, uint32 minLedger, uint32 maxLedger)
-{
+{ // can be called with no locks
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
 
 	std::string sql =
@@ -1073,7 +1092,7 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 			}else rawMeta.resize(metaSize);
 
 			TransactionMetaSet::pointer meta= boost::make_shared<TransactionMetaSet>(txn->getID(), txn->getLedger(), rawMeta.getData());
-			ret.push_back(std::pair<Transaction::pointer, TransactionMetaSet::pointer>(txn,meta));
+			ret.push_back(std::pair<Transaction::ref, TransactionMetaSet::ref>(txn,meta));
 		}
 	}
 
@@ -1162,7 +1181,7 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 	}
 	else
 		info["load_factor"] =
-			static_cast<double>(theApp->getFeeTrack().getLoadBase()) / theApp->getFeeTrack().getLoadFactor();
+			static_cast<double>(theApp->getFeeTrack().getLoadFactor()) / theApp->getFeeTrack().getLoadBase();
 
 	bool valid = false;
 	Ledger::pointer lpClosed	= getValidatedLedger();
@@ -1227,7 +1246,7 @@ void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, const SerializedT
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 		BOOST_FOREACH(InfoSub* ispListener, mSubRTTransactions)
 		{
-			ispListener->send(jvObj);
+			ispListener->send(jvObj, true);
 		}
 	}
 	TransactionMetaSet::pointer ret;
@@ -1258,7 +1277,7 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 
 			BOOST_FOREACH(InfoSub* ispListener, mSubLedger)
 			{
-				ispListener->send(jvObj);
+				ispListener->send(jvObj, true);
 			}
 		}
 	}
@@ -1283,6 +1302,15 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 			pubAcceptedTransaction(lpAccepted, stTxn, meta->getResultTER(), meta);
 		}
 	}
+}
+
+void NetworkOPs::reportFeeChange()
+{
+	if ((theApp->getFeeTrack().getLoadBase() == mLastLoadBase) &&
+			(theApp->getFeeTrack().getLoadFactor() == mLastLoadFactor))
+		return;
+
+	theApp->getJobQueue().addJob(jtCLIENT, boost::bind(&NetworkOPs::pubServer, this));
 }
 
 Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent, const std::string& strType)
@@ -1323,12 +1351,12 @@ void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedT
 
 		BOOST_FOREACH(InfoSub* ispListener, mSubTransactions)
 		{
-			ispListener->send(jvObj);
+			ispListener->send(jvObj, true);
 		}
 
 		BOOST_FOREACH(InfoSub* ispListener, mSubRTTransactions)
 		{
-			ispListener->send(jvObj);
+			ispListener->send(jvObj, true);
 		}
 	}
 	theApp->getOrderBookDB().processTxn(stTxn, terResult, meta, jvObj);
@@ -1339,6 +1367,8 @@ void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedT
 void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted, TransactionMetaSet::pointer& meta)
 {
 	boost::unordered_set<InfoSub*>	notify;
+	int								iProposed	= 0;
+	int								iAccepted	= 0;
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
@@ -1356,6 +1386,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 				{
 					BOOST_FOREACH(InfoSub* ispListener, simiIt->second)
 					{
+						++iProposed;
 						notify.insert(ispListener);
 					}
 				}
@@ -1368,6 +1399,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 					{
 						BOOST_FOREACH(InfoSub* ispListener, simiIt->second)
 						{
+							++iAccepted;
 							notify.insert(ispListener);
 						}
 					}
@@ -1375,6 +1407,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 			}
 		}
 	}
+	cLog(lsINFO) << boost::str(boost::format("pubAccountTransaction: iProposed=%d iAccepted=%d") % iProposed % iAccepted);
 
 	// FIXME: This can crash. An InfoSub can go away while we hold a regular pointer to it.
 	if (!notify.empty())
@@ -1385,7 +1418,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 
 		BOOST_FOREACH(InfoSub* ispListener, notify)
 		{
-			ispListener->send(jvObj);
+			ispListener->send(jvObj, true);
 		}
 	}
 }
@@ -1401,6 +1434,8 @@ void NetworkOPs::subAccount(InfoSub* ispListener, const boost::unordered_set<Rip
 	// For the connection, monitor each account.
 	BOOST_FOREACH(const RippleAddress& naAccountID, vnaAccountIDs)
 	{
+		cLog(lsINFO) << boost::str(boost::format("subAccount: account: %d") % naAccountID.humanAccountID());
+
 		ispListener->insertSubAccountInfo(naAccountID, uLedgerIndex);
 	}
 

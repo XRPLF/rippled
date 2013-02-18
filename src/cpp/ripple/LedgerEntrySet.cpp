@@ -1072,25 +1072,31 @@ STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& 
 		SLE::pointer	sleAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uAccountID));
 		uint64			uReserve	= mLedger->getReserve(sleAccount->getFieldU32(sfOwnerCount));
 
-		saAmount	= sleAccount->getFieldAmount(sfBalance)-uReserve;
+		STAmount		saBalance	= sleAccount->getFieldAmount(sfBalance);
 
-		if (saAmount < uReserve)
+		if (saBalance < uReserve)
 		{
 			saAmount.zero();
 		}
 		else
 		{
-			saAmount	-= uReserve;
+			saAmount	= saBalance-uReserve;
 		}
+
+		cLog(lsINFO) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s saBalance=%s uReserve=%d")
+			% RippleAddress::createHumanAccountID(uAccountID)
+			% saAmount.getFullText()
+			% saBalance.getFullText()
+			% uReserve);
 	}
 	else
 	{
 		saAmount	= rippleHolds(uAccountID, uCurrencyID, uIssuerID);
-	}
 
-	cLog(lsINFO) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s")
-		% RippleAddress::createHumanAccountID(uAccountID)
-		% saAmount.getFullText());
+		cLog(lsINFO) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s")
+			% RippleAddress::createHumanAccountID(uAccountID)
+			% saAmount.getFullText());
+	}
 
 	return saAmount;
 }
@@ -1135,7 +1141,7 @@ STAmount LedgerEntrySet::rippleTransferFee(const uint160& uSenderID, const uint1
 
 		if (QUALITY_ONE != uTransitRate)
 		{
-			STAmount	saTransitRate(CURRENCY_ONE, ACCOUNT_ONE, uTransitRate, -9);
+			STAmount	saTransitRate(CURRENCY_ONE, ACCOUNT_ONE, static_cast<uint64>(uTransitRate), -9);
 
 			STAmount	saTransferTotal	= STAmount::multiply(saAmount, saTransitRate, saAmount.getCurrency(), saAmount.getIssuer());
 			STAmount	saTransferFee	= saTransferTotal-saAmount;

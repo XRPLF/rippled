@@ -41,7 +41,7 @@ class RPCHandler
 		const RippleAddress& naVerifyGenerator);
 	Json::Value accounts(Ledger::ref lrLedger, const RippleAddress& naMasterGenerator);
 
-	Json::Value accountFromString(Ledger::ref lrLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
+	Json::Value accountFromString(Ledger::ref lrLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex, const bool bStrict);
 
 	Json::Value doAcceptLedger(Json::Value jvRequest);
 
@@ -64,6 +64,7 @@ class RPCHandler
 	Json::Value doNicknameInfo(Json::Value params);
 	Json::Value doOwnerInfo(Json::Value params);
 	Json::Value doPeers(Json::Value params);
+	Json::Value doPing(Json::Value params);
 	Json::Value doProfile(Json::Value params);
 	Json::Value doRandom(Json::Value jvRequest);
 	Json::Value doRipplePathFind(Json::Value jvRequest);

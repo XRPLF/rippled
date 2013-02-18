@@ -380,7 +380,12 @@ Amount.prototype.ratio_human = function (denominator) {
  * @return {Amount} The product. Unit will be the same as the first factor.
  */
 Amount.prototype.product_human = function (factor) {
-  factor = Amount.from_json(factor);
+  if ("number" === typeof factor && parseInt(factor) === factor) {
+    // Special handling of integer arguments
+    factor = Amount.from_json("" + factor + ".0");
+  } else {
+    factor = Amount.from_json(factor);
+  }
 
   var product = this.multiply(factor);
 
@@ -413,6 +418,10 @@ Amount.prototype.is_negative = function () {
           : false;                          // NaN is not negative
 };
 
+Amount.prototype.is_positive = function () {
+  return !this.is_zero() && !this.is_negative();
+};
+
 // Only checks the value. Not the currency and issuer.
 Amount.prototype.is_valid = function () {
   return this._value instanceof BigInteger;
@@ -436,7 +445,7 @@ Amount.prototype.issuer = function () {
 Amount.prototype.multiply = function (v) {
   var result;
 
- if (this.is_zero()) {
+  if (this.is_zero()) {
     result = this.clone();
   }
   else if (v.is_zero()) {
@@ -690,6 +699,7 @@ Amount.prototype.set_currency = function (c) {
   {
     c.copyTo(this._currency);
   }
+  this._is_native = this._currency.is_native();
 
   return this;
 };

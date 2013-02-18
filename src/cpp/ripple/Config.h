@@ -50,6 +50,9 @@ const int SYSTEM_WEBSOCKET_PUBLIC_PORT	= 6563;	// XXX Going away.
 // Might connect with fewer for testing.
 #define	DEFAULT_PEER_CONNECT_LOW_WATER	4
 
+// Grows exponentially worse.
+#define	DEFAULT_PATH_SEARCH_SIZE		5
+
 enum SizedItemName
 {
 	siSweepInterval,
@@ -141,6 +144,9 @@ public:
 	std::string					RPC_USER;
 	bool						RPC_ALLOW_REMOTE;
 	Json::Value					RPC_STARTUP;
+
+	// Path searching
+	int							PATH_SEARCH_SIZE;
 
 	// Validation
 	RippleAddress				VALIDATION_SEED, VALIDATION_PUB, VALIDATION_PRIV;

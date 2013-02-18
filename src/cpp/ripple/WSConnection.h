@@ -72,11 +72,11 @@ public:
 	}
 
 	// Implement overridden functions from base class:
-	void send(const Json::Value& jvObj)
+	void send(const Json::Value& jvObj, bool broadcast)
 	{
 		connection_ptr ptr = mConnection.lock();
 		if (ptr)
-			mHandler->send(ptr, jvObj);
+			mHandler->send(ptr, jvObj, broadcast);
 	}
 
 	// Utilities

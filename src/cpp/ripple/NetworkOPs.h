@@ -36,7 +36,7 @@ public:
 
 	virtual ~InfoSub();
 
-	virtual	void send(const Json::Value& jvObj) = 0;
+	virtual	void send(const Json::Value& jvObj, bool broadcast) = 0;
 
 	void onSendEmpty();
 
@@ -116,6 +116,9 @@ protected:
 	boost::recursive_mutex								mWantedHashLock;
 	boost::unordered_set<uint256>						mWantedHashes;
 
+	uint32												mLastLoadBase;
+	uint32												mLastLoadFactor;
+
 	void setMode(OperatingMode);
 
 	Json::Value transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent, const std::string& strType);
@@ -153,6 +156,10 @@ public:
 	// Do we have this inclusive range of ledgers in our database
 	bool haveLedgerRange(uint32 from, uint32 to);
 	bool haveLedger(uint32 seq);
+	uint32 getValidatedSeq();
+	bool isValidated(uint32 seq);
+	bool isValidated(uint32 seq, const uint256& hash);
+	bool isValidated(Ledger::ref l) { return isValidated(l->getLedgerSeq(), l->getHash()); }
 
 	SerializedValidation::ref getLastValidation()			{ return mLastValidation; }
 	void setLastValidation(SerializedValidation::ref v)		{ mLastValidation = v; }
@@ -257,6 +264,7 @@ public:
 		std::list<LedgerProposal::pointer> >& peekStoredProposals() { return mStoredProposals; }
 	void storeProposal(LedgerProposal::ref proposal,	const RippleAddress& peerPublic);
 	uint256 getConsensusLCL();
+	void reportFeeChange();
 
 	bool addWantedHash(const uint256& h);
 	bool isWantedHash(const uint256& h, bool remove);

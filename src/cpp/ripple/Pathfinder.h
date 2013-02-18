@@ -1,10 +1,12 @@
 #ifndef __PATHFINDER__
 #define __PATHFINDER__
 
+#include <boost/shared_ptr.hpp>
+
 #include "SerializedTypes.h"
 #include "RippleAddress.h"
 #include "RippleCalc.h"
-#include <boost/shared_ptr.hpp>
+#include "OrderBookDB.h"
 
 #if 0
 //
@@ -41,9 +43,9 @@ class Pathfinder
 	uint160				mSrcIssuerID;
 	STAmount			mSrcAmount;
 
-	//OrderBookDB			mOrderBook;
 	Ledger::pointer		mLedger;
 	PathState::pointer	mPsDefault;
+	LoadEvent::pointer	mLoadMonitor;
 
 //	std::list<PathOption::pointer> mBuildingPaths;
 //	std::list<PathOption::pointer> mCompletePaths;
@@ -56,7 +58,9 @@ class Pathfinder
 //	void addPathOption(PathOption::pointer pathOption);
 
 public:
-	Pathfinder(const RippleAddress& srcAccountID, const RippleAddress& dstAccountID, const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount);
+	Pathfinder(Ledger::ref ledger,
+		const RippleAddress& srcAccountID, const RippleAddress& dstAccountID,
+		const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount);
 
 	bool findPaths(const unsigned int iMaxSteps, const unsigned int iMaxPaths, STPathSet& spsDst);
 

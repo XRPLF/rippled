@@ -1,3 +1,7 @@
+
+#ifndef ORDERBOOK_DB_H
+#define ORDERBOOK_DB_H
+
 #include "Ledger.h"
 #include "OrderBook.h"
 #include <boost/shared_ptr.hpp>
@@ -31,9 +35,13 @@ class OrderBookDB
 
 	std::map<uint256, bool >  mKnownMap;
 
+	uint32 mSeq;
+	boost::recursive_mutex mLock;
+
 public:
 	OrderBookDB();
-	void setup(Ledger::pointer ledger);
+	void setup(Ledger::ref ledger);
+	void invalidate();
 
 	// return list of all orderbooks that want XRP
 	std::vector<OrderBook::pointer>& getXRPInBooks(){ return mXRPOrders; }
@@ -55,5 +63,7 @@ public:
 	void processTxn(const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta,Json::Value& jvObj);
 
 };
+
+#endif
 
 // vim:ts=4

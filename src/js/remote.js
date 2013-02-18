@@ -20,6 +20,8 @@ var Amount        = require('./amount').Amount;
 var Currency      = require('./amount').Currency;
 var UInt160       = require('./amount').UInt160;
 var Transaction   = require('./transaction').Transaction;
+var Account       = require('./account').Account;
+var Meta          = require('./meta').Meta;
 
 var utils         = require('./utils');
 var config        = require('./config');
@@ -233,6 +235,7 @@ var Remote = function (opts, trace) {
   }
 
   // Cache information for accounts.
+  // DEPRECATED, will be removed
   this.accounts = {
     // Consider sequence numbers stable if you know you're not generating bad transactions.
     // Otherwise, clear it to have it automatically refreshed from the network.
@@ -240,6 +243,9 @@ var Remote = function (opts, trace) {
     // account : { seq : __ }
 
     };
+
+  // Hash map of Account objects by AccountId.
+  this._accounts = {};
 
   // List of secrets that we know about.
   this.secrets = {
@@ -342,11 +348,13 @@ Remote.prototype._set_state = function (state) {
     switch (state) {
       case 'online':
         this._online_state       = 'open';
+        this.emit('connect');
         this.emit('connected');
         break;
 
       case 'offline':
         this._online_state       = 'closed';
+        this.emit('disconnect');
         this.emit('disconnected');
         break;
     }
@@ -387,11 +395,13 @@ Remote.prototype.ledger_hash = function () {
 
 // Stop from open state.
 Remote.prototype._connect_stop = function () {
-  delete this.ws.onerror;
-  delete this.ws.onclose;
+  if (this.ws) {
+    delete this.ws.onerror;
+    delete this.ws.onclose;
 
-  this.ws.terminate();
-  delete this.ws;
+    this.ws.close();
+    delete this.ws;
+  }
 
   this._set_state('offline');
 };
@@ -450,6 +460,12 @@ Remote.prototype._connect_start = function () {
 
   if (this.trace) console.log("remote: connect: %s", url);
 
+  // There should not be an active connection at this point, but if there is
+  // we will shut it down so we don't end up with a duplicate.
+  if (this.ws) {
+    this._connect_stop();
+  }
+
   var WebSocket     = require('ws');
   var ws = this.ws = new WebSocket(url);
 
@@ -507,6 +523,7 @@ Remote.prototype._connect_start = function () {
 
 // It is possible for messages to be dispatched after the connection is closed.
 Remote.prototype._connect_message = function (ws, json) {
+  var self        = this;
   var message     = JSON.parse(json);
   var unexpected  = false;
   var request;
@@ -556,6 +573,23 @@ Remote.prototype._connect_message = function (ws, json) {
 
       case 'account':
         // XXX If not trusted, need proof.
+        if (this.trace) utils.logObject("remote: account: %s", message);
+
+        // Process metadata
+        message.mmeta = new Meta(message.meta);
+
+        // Pass the event on to any related Account objects
+        var affected = message.mmeta.getAffectedAccounts();
+        for (var i = 0, l = affected.length; i < l; i++) {
+          var account = self._accounts[affected[i]];
+
+          // Only trigger the event if the account object is actually
+          // subscribed - this prevents some weird phantom events from
+          // occurring.
+          if (account && account._subs) {
+            account.emit('transaction', message);
+          }
+        }
 
         this.emit('account', message);
         break;
@@ -930,7 +964,7 @@ Remote.prototype._server_subscribe = function () {
         self._load_factor   = message.load_factor || 1.0;
         self._fee_ref       = message.fee_ref;
         self._fee_base      = message.fee_base;
-        self._reserve_base  = message.reverse_base;
+        self._reserve_base  = message.reserve_base;
         self._reserve_inc   = message.reserve_inc;
         self._server_status = message.server_status;
 
@@ -992,6 +1026,14 @@ Remote.prototype.request_owner_count = function (account, current) {
         // If the caller also waits for 'success', they might run before this.
         request.emit('owner_count', message.node.OwnerCount);
       });
+};
+
+Remote.prototype.account = function (accountId) {
+  var account = new Account(this, accountId);
+
+  if (!account.is_valid()) return account;
+
+  return this._accounts[account.to_json()] = account;
 };
 
 // Return the next account sequence if possible.

@@ -1,3 +1,8 @@
+
+#ifndef ORDERBOOK_H
+#define ORDERBOOK_H
+
+
 #include "SerializedLedger.h"
 #include "NetworkOPs.h"
 #include <boost/shared_ptr.hpp>
@@ -15,14 +20,14 @@ class OrderBook
 	uint160 mIssuerOut;
 
 	//SerializedLedgerEntry::pointer	mLedgerEntry;
-	OrderBook(SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
+	OrderBook(SerializedLedgerEntry::ref ledgerEntry);	// For accounts in a ledger
 public:
 	typedef boost::shared_ptr<OrderBook> pointer;
 	typedef const boost::shared_ptr<OrderBook>& ref;
 
 	// returns NULL if ledgerEntry doesn't point to an order
 	// if ledgerEntry is an Order it creates the OrderBook this order would live in
-	static OrderBook::pointer newOrderBook(SerializedLedgerEntry::pointer ledgerEntry);
+	static OrderBook::pointer newOrderBook(SerializedLedgerEntry::ref ledgerEntry);
 
 	uint256& getBookBase(){ return(mBookBase); }
 	uint160& getCurrencyIn(){ return(mCurrencyIn); }
@@ -33,5 +38,7 @@ public:
 	// looks through the best offers to see how much it would cost to take the given amount
 	STAmount& getTakePrice(STAmount& takeAmount);
 };
+
+#endif
 
 // vim:ts=4

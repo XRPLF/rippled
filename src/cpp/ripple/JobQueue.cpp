@@ -56,6 +56,8 @@ const char* Job::toString(JobType t)
 		case jtRPC:				return "rpc";
 		case jtACCEPTLEDGER:	return "acceptLedger";
 		case jtTXN_PROC:		return "processTransaction";
+		case jtOB_SETUP:		return "orderBookSetup";
+		case jtPATH_FIND:		return "pathFind";
 		default:				assert(false); return "unknown";
 	}
 }
@@ -101,7 +103,9 @@ void JobQueue::addJob(JobType type, const boost::function<void(Job&)>& jobFunc)
 	assert(type != jtINVALID);
 
 	boost::mutex::scoped_lock sl(mJobLock);
-	assert(mThreadCount != 0); // do not add jobs to a queue with no threads
+
+	if (type != jtCLIENT) // FIXME: Workaround incorrect client shutdown ordering
+		assert(mThreadCount != 0); // do not add jobs to a queue with no threads
 
 	mJobSet.insert(Job(type, ++mLastJob, mJobLoads[type], jobFunc));
 	++mJobCounts[type];

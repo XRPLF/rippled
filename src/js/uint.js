@@ -20,8 +20,8 @@ var UInt = function () {
   this._value  = NaN;
 };
 
-UInt.json_rewrite = function (j) {
-  return this.from_json(j).to_json();
+UInt.json_rewrite = function (j, opts) {
+  return this.from_json(j).to_json(opts);
 };
 
 // Return a new UInt from j.
@@ -90,6 +90,10 @@ UInt.prototype.equals = function (d) {
 
 UInt.prototype.is_valid = function () {
   return this._value instanceof BigInteger;
+};
+
+UInt.prototype.is_zero = function () {
+  return this._value.equals(BigInteger.ZERO);
 };
 
 // value = NaN on error.

@@ -1354,6 +1354,93 @@ buster.testCase("Offer tests 3", {
   // 'setUp'     : testutils.build_setup({ verbose: true, standalone: true }),
   'tearDown'  : testutils.build_teardown(),
 
+  "offer fee consumes funds" :
+    function (done) {
+      var self = this;
+      var final_create;
+
+      async.waterfall([
+          function (callback) {
+            // Provide micro amounts to compensate for fees to make results round nice.
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "350.000020", ["alice", "bob", "mtgox"], callback);
+          },
+          function (callback) {
+            self.what = "Set limits.";
+
+            testutils.credit_limits(self.remote,
+              {
+                "alice" : "1000/USD/mtgox",
+                "bob" : "1000/USD/mtgox",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Distribute funds.";
+
+            testutils.payments(self.remote,
+              {
+                "mtgox" : [ "500/USD/bob" ],
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Create offer bob.";
+
+            self.remote.transaction()
+              .offer_create("bob", "200.0", "200/USD/mtgox")
+              .on('proposed', function (m) {
+                  // console.log("proposed: offer_create: %s", json.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+
+                  seq_carol = m.tx_json.sequence;
+                })
+              .submit();
+          },
+          function (callback) {
+            // Alice has 350 fees - a reserve of 50 = 250 reserve = 100 available.
+            // Ask for more than available to prove reserve works.
+            self.what = "Create offer alice.";
+
+            self.remote.transaction()
+              .offer_create("alice", "200/USD/mtgox", "200.0")
+              .on('proposed', function (m) {
+                  // console.log("proposed: offer_create: %s", json.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+
+                  seq_carol = m.tx_json.sequence;
+                })
+              .submit();
+          },
+//          function (callback) {
+//            self.what = "Display ledger";
+//
+//            self.remote.request_ledger('current', true)
+//              .on('success', function (m) {
+//                  console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+//
+//                  callback();
+//                })
+//              .request();
+//          },
+          function (callback) {
+            self.what = "Verify balances.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "alice"   : [ "100/USD/mtgox", "250.0" ],
+                "bob"     : "400/USD/mtgox",
+              },
+              callback);
+          },
+        ], function (error) {
+          // console.log("result: error=%s", error);
+          buster.refute(error);
+
+          done();
+        });
+    },
   "offer create then cross offer" :
     function (done) {
       var self = this;

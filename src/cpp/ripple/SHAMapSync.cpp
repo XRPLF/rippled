@@ -63,7 +63,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 						{
 							SHAMapTreeNode::pointer ptr =
 								boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq - 1, snfPREFIX, childHash);
-							cLog(lsTRACE) << "Got sync node from cache: " << *d;
+							cLog(lsTRACE) << "Got sync node from cache: " << *ptr;
 							mTNByID[*ptr] = ptr;
 							d = ptr.get();
 						}

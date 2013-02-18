@@ -164,8 +164,8 @@ public:
 	Json::Value getJson(uint64 baseFee, uint32 referenceFeeUnits);
 
 	void setRemoteFee(uint32);
-	void raiseLocalFee();
-	void lowerLocalFee();
+	bool raiseLocalFee();
+	bool lowerLocalFee();
 };
 
 

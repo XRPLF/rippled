@@ -242,24 +242,26 @@ void LoadFeeTrack::setRemoteFee(uint32 f)
 	mRemoteTxnLoadFee = f;
 }
 
-void LoadFeeTrack::raiseLocalFee()
+bool LoadFeeTrack::raiseLocalFee()
 {
 	boost::mutex::scoped_lock sl(mLock);
 	uint32 origFee = mLocalTxnLoadFee;
 
-	if (mLocalTxnLoadFee < mLocalTxnLoadFee) // make sure this fee takes effect
-		mLocalTxnLoadFee = mLocalTxnLoadFee;
+	if (mLocalTxnLoadFee < mRemoteTxnLoadFee) // make sure this fee takes effect
+		mLocalTxnLoadFee = mRemoteTxnLoadFee;
 
 	mLocalTxnLoadFee += (mLocalTxnLoadFee / lftFeeIncFraction); // increment by 1/16th
 
 	if (mLocalTxnLoadFee > lftFeeMax)
 		mLocalTxnLoadFee = lftFeeMax;
 
-	tLog(origFee != mLocalTxnLoadFee, lsDEBUG) <<
-		"Local load fee raised from " << origFee << " to " << mLocalTxnLoadFee;
+	if (origFee == mLocalTxnLoadFee)
+		return false;
+	cLog(lsDEBUG) << "Local load fee raised from " << origFee << " to " << mLocalTxnLoadFee;
+	return true;
 }
 
-void LoadFeeTrack::lowerLocalFee()
+bool LoadFeeTrack::lowerLocalFee()
 {
 	boost::mutex::scoped_lock sl(mLock);
 	uint32 origFee = mLocalTxnLoadFee;
@@ -269,8 +271,10 @@ void LoadFeeTrack::lowerLocalFee()
 	if (mLocalTxnLoadFee < lftNormalFee)
 		mLocalTxnLoadFee = lftNormalFee;
 
-	tLog(origFee != mLocalTxnLoadFee, lsDEBUG) <<
-		"Local load fee lowered from " << origFee << " to " << mLocalTxnLoadFee;
+	if (origFee == mLocalTxnLoadFee)
+		return false;
+	cLog(lsDEBUG) << "Local load fee lowered from " << origFee << " to " << mLocalTxnLoadFee;
+	return true;
 }
 
 Json::Value LoadFeeTrack::getJson(uint64 baseFee, uint32 referenceFeeUnits)
@@ -312,10 +316,13 @@ void LoadManager::threadEntry()
 			++mUptime;
 		}
 
+		bool change;
 		if (theApp->getJobQueue().isOverloaded())
-			theApp->getFeeTrack().raiseLocalFee();
+			change = theApp->getFeeTrack().raiseLocalFee();
 		else
-			theApp->getFeeTrack().lowerLocalFee();
+			change = theApp->getFeeTrack().lowerLocalFee();
+		if (change)
+			theApp->getOPs().reportFeeChange();
 
 		t += boost::posix_time::seconds(1);
 		boost::posix_time::time_duration when = t - boost::posix_time::microsec_clock::universal_time();

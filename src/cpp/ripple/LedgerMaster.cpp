@@ -29,6 +29,8 @@ void LedgerMaster::pushLedger(Ledger::ref newLedger)
 	// all candidate transactions must already be applied
 	cLog(lsINFO) << "PushLedger: " << newLedger->getHash();
 	boost::recursive_mutex::scoped_lock ml(mLock);
+	if (!mPubLedger)
+		mPubLedger = newLedger;
 	if (!!mFinalizedLedger)
 	{
 		mFinalizedLedger->setClosed();

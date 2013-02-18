@@ -93,6 +93,14 @@ public:
 
 	Ledger::pointer closeLedger(bool recoverHeldTransactions);
 
+	uint256 getHashBySeq(uint32 index)
+	{
+		uint256 hash = mLedgerHistory.getLedgerHash(index);
+		if (hash.isNonZero())
+			return hash;
+		return Ledger::getHashByIndex(index);
+	}
+
 	Ledger::pointer getLedgerBySeq(uint32 index)
 	{
 		if (mCurrentLedger && (mCurrentLedger->getLedgerSeq() == index))

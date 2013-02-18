@@ -28,6 +28,7 @@
 #define SECTION_NETWORK_QUORUM			"network_quorum"
 #define SECTION_NODE_SEED				"node_seed"
 #define SECTION_NODE_SIZE				"node_size"
+#define SECTION_PATH_SEARCH_SIZE		"path_search_size"
 #define SECTION_PEER_CONNECT_LOW_WATER	"peer_connect_low_water"
 #define SECTION_PEER_IP					"peer_ip"
 #define SECTION_PEER_PORT				"peer_port"
@@ -219,6 +220,7 @@ Config::Config()
 
 	LEDGER_HISTORY			= 256;
 
+	PATH_SEARCH_SIZE		= DEFAULT_PATH_SEARCH_SIZE;
 	ACCOUNT_PROBE_MAX		= 10;
 
 	VALIDATORS_SITE			= DEFAULT_VALIDATORS_SITE;
@@ -444,6 +446,9 @@ void Config::load()
 				else
 					LEDGER_HISTORY = boost::lexical_cast<uint32>(strTemp);
 			}
+
+			if (sectionSingleB(secConfig, SECTION_PATH_SEARCH_SIZE, strTemp))
+				PATH_SEARCH_SIZE	= boost::lexical_cast<int>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
 				ACCOUNT_PROBE_MAX	= boost::lexical_cast<int>(strTemp);
