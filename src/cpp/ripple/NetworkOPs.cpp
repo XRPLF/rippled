@@ -119,6 +119,11 @@ bool NetworkOPs::haveLedger(uint32 seq)
 	return mLedgerMaster->haveLedger(seq);
 }
 
+uint32 NetworkOPs::getValidatedSeq()
+{
+	return mLedgerMaster->getValidatedLedger()->getLedgerSeq();
+}
+
 bool NetworkOPs::isValidated(uint32 seq, const uint256& hash)
 {
 	if (!isValidated(seq))
@@ -1060,7 +1065,7 @@ void NetworkOPs::setMode(OperatingMode om)
 
 std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 	NetworkOPs::getAccountTxs(const RippleAddress& account, uint32 minLedger, uint32 maxLedger)
-{
+{ // can be called with no locks
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
 
 	std::string sql =
@@ -1087,7 +1092,7 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 			}else rawMeta.resize(metaSize);
 
 			TransactionMetaSet::pointer meta= boost::make_shared<TransactionMetaSet>(txn->getID(), txn->getLedger(), rawMeta.getData());
-			ret.push_back(std::pair<Transaction::pointer, TransactionMetaSet::pointer>(txn,meta));
+			ret.push_back(std::pair<Transaction::ref, TransactionMetaSet::ref>(txn,meta));
 		}
 	}
 

@@ -156,6 +156,7 @@ public:
 	// Do we have this inclusive range of ledgers in our database
 	bool haveLedgerRange(uint32 from, uint32 to);
 	bool haveLedger(uint32 seq);
+	uint32 getValidatedSeq();
 	bool isValidated(uint32 seq);
 	bool isValidated(uint32 seq, const uint256& hash);
 	bool isValidated(Ledger::ref l) { return isValidated(l->getLedgerSeq(), l->getHash()); }
