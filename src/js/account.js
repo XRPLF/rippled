@@ -29,22 +29,22 @@ var Account = function (remote, account) {
 
   this.on('newListener', function (type, listener) {
     if (Account.subscribe_events.indexOf(type) !== -1) {
-      if (!this._subs && 'open' === this._remote._online_state) {
-        this._remote.request_subscribe()
-          .accounts(this._account_id)
+      if (!self._subs && 'open' === self._remote._online_state) {
+        self._remote.request_subscribe()
+          .accounts(self._account_id)
           .request();
       }
-      this._subs  += 1;
+      self._subs  += 1;
     }
   });
 
   this.on('removeListener', function (type, listener) {
     if (Account.subscribe_events.indexOf(type) !== -1) {
-      this._subs  -= 1;
+      self._subs  -= 1;
 
-      if (!this._subs && 'open' === this._remote._online_state) {
-        this._remote.request_unsubscribe()
-          .accounts(this._account_id)
+      if (!self._subs && 'open' === self._remote._online_state) {
+        self._remote.request_unsubscribe()
+          .accounts(self._account_id)
           .request();
       }
     }
@@ -52,8 +52,8 @@ var Account = function (remote, account) {
 
   this._remote.on('connect', function () {
     if (self._subs) {
-      this._remote.request_subscribe()
-        .accounts(this._account_id)
+      self._remote.request_subscribe()
+        .accounts(self._account_id)
         .request();
     }
   });
