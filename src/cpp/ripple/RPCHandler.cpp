@@ -1567,18 +1567,26 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 	try
 	{
 #endif
+		int vl = theApp->getOPs().getValidatedSeq();
+		ScopedUnlock su(theApp->getMasterLock());
+
 		std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(raAccount, minLedger, maxLedger);
 		Json::Value ret(Json::objectValue);
 		ret["account"] = raAccount.humanAccountID();
 		Json::Value ledgers(Json::arrayValue);
 
-		//		uint32 currentLedger = 0;
 		for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
 		{
 			Json::Value	obj(Json::objectValue);
 
-			if (it->first) obj["tx"] = it->first->getJson(1);
-			if (it->second) obj["meta"] = it->second->getJson(0);
+			if (it->first)
+				obj["tx"] = it->first->getJson(1);
+			if (it->second)
+			{
+				obj["meta"] = it->second->getJson(0);
+				uint32 s = it->second->getLgrSeq();
+				obj["validated"] = (s <= vl) && theApp->getOPs().haveLedger(s);
+			}
 
 			ret["transactions"].append(obj);
 		}
