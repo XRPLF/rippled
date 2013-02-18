@@ -77,7 +77,7 @@ void OrderBookDB::setup(Ledger::ref ledger)
 std::vector<OrderBook::pointer>& OrderBookDB::getBooks(const uint160& issuerID)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map< uint160, std::vector<OrderBook::pointer> >::iterator it = mIssuerMap.find(issuerID);
+	boost::unordered_map< uint160, std::vector<OrderBook::pointer> >::iterator it = mIssuerMap.find(issuerID);
 	return (it == mIssuerMap.end())
 		? mEmptyVector
 		: it->second;
@@ -87,7 +87,7 @@ std::vector<OrderBook::pointer>& OrderBookDB::getBooks(const uint160& issuerID)
 void OrderBookDB::getBooks(const uint160& issuerID, const uint160& currencyID, std::vector<OrderBook::pointer>& bookRet)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map< uint160, std::vector<OrderBook::pointer> >::iterator it = mIssuerMap.find(issuerID);
+	boost::unordered_map< uint160, std::vector<OrderBook::pointer> >::iterator it = mIssuerMap.find(issuerID);
 	if (it != mIssuerMap.end())
 	{
 		BOOST_FOREACH(OrderBook::ref book, it->second)

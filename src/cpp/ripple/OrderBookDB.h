@@ -2,9 +2,11 @@
 #ifndef ORDERBOOK_DB_H
 #define ORDERBOOK_DB_H
 
+#include <boost/shared_ptr.hpp>
+#include <boost/unordered_map.hpp>
+
 #include "Ledger.h"
 #include "OrderBook.h"
-#include <boost/shared_ptr.hpp>
 
 
 //
@@ -27,7 +29,7 @@ class OrderBookDB
 {
 	std::vector<OrderBook::pointer> mEmptyVector;
 	std::vector<OrderBook::pointer> mXRPOrders;
-	std::map<uint160, std::vector<OrderBook::pointer> > mIssuerMap;
+	boost::unordered_map<uint160, std::vector<OrderBook::pointer> > mIssuerMap;
 	//std::vector<OrderBook::pointer> mAllOrderBooks;
 
 	// issuerIn, issuerOut, currencyIn, currencyOut
