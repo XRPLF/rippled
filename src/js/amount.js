@@ -699,6 +699,7 @@ Amount.prototype.set_currency = function (c) {
   {
     c.copyTo(this._currency);
   }
+  this._is_native = this._currency.is_native();
 
   return this;
 };
