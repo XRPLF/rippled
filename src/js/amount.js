@@ -418,6 +418,10 @@ Amount.prototype.is_negative = function () {
           : false;                          // NaN is not negative
 };
 
+Amount.prototype.is_positive = function () {
+  return !this.is_zero() && !this.is_negative();
+};
+
 // Only checks the value. Not the currency and issuer.
 Amount.prototype.is_valid = function () {
   return this._value instanceof BigInteger;
