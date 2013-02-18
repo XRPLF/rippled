@@ -111,7 +111,17 @@ Amount.prototype.add = function (v) {
     result._is_negative = s.compareTo(BigInteger.ZERO) < 0;
     result._value       = result._is_negative ? s.negate() : s;
   }
-  else {
+  else if (v.is_zero()) {
+    result              = this; 
+  }
+  else if (this.is_zero()) {
+    result              = new Amount();
+    result._is_native   = false;
+    result._currency    = this._currency.clone();
+    result._issuer      = this._issuer.clone();
+  }
+  else
+  {
     var v1  = this._is_negative ? this._value.negate() : this._value;
     var o1  = this._offset;
     var v2  = v._is_negative ? v._value.negate() : v._value;
