@@ -23,7 +23,7 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 		{ rpcBAD_SYNTAX,			"badSyntax",		"Syntax error."											},
 		{ rpcCOMMAND_MISSING,		"commandMissing",	"Missing command entry."								},
 		{ rpcDST_ACT_MALFORMED,		"dstActMalformed",	"Destination account is malformed."						},
-		{ rpcDST_ACT_MISSING,		"dstActMissing",	"Destination account does not exists."					},
+		{ rpcDST_ACT_MISSING,		"dstActMissing",	"Destination account does not exist."					},
 		{ rpcDST_AMT_MALFORMED,		"dstAmtMalformed",	"Destination amount/currency/issuer is malformed."		},
 		{ rpcFORBIDDEN,				"forbidden",		"Bad credentials."										},
 		{ rpcFAIL_GEN_DECRPYT,		"failGenDecrypt",	"Failed to decrypt generator."							},
