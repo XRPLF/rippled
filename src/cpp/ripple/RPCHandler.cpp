@@ -251,7 +251,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 
 	if (!bFound)
 	{
-		return rpcError(rpcSRC_ACT_NOT_FOUND);
+		return rpcError(rpcBAD_SECRET);
 	}
 
 	// Use the generator to determine the associated public and private keys.
