@@ -59,7 +59,7 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 		{ rpcQUALITY_MALFORMED,		"qualityMalformed",	"Quality malformed."									},
 		{ rpcSRC_ACT_MALFORMED,		"srcActMalformed",	"Source account is malformed."							},
 		{ rpcSRC_ACT_MISSING,		"srcActMissing",	"Source account not provided."							},
-		{ rpcSRC_ACT_NOT_FOUND,		"srcActNotFound",	"Source amount not found."								},
+		{ rpcSRC_ACT_NOT_FOUND,		"srcActNotFound",	"Source account not found."								},
 		{ rpcSRC_AMT_MALFORMED,		"srcAmtMalformed",	"Source amount/currency/issuer is malformed."			},
 		{ rpcSRC_CUR_MALFORMED,		"srcCurMalformed",	"Source currency is malformed."							},
 		{ rpcSRC_ISR_MALFORMED,		"srcIsrMalformed",	"Source issuer is malformed."							},
