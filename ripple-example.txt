@@ -41,6 +41,12 @@
 #
 #   Example: rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn
 #
+# [hotwallets]
+#   Only valid in "ripple.txt". A list of accounts that are declared to be
+#   controlled by this domain and used as hotwallets.
+#
+#   Example: rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn
+#
 # [validation_public_key]:
 #   Only valid in "ripple.txt". A validation public key that is declared
 #   to be used by this domain for validating ledgers and that it is the
