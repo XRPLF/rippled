@@ -1394,7 +1394,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			logMe += "LedgerHash:"; logMe += ledgerhash.GetHex();
 			ledger = theApp->getLedgerMaster().getLedgerByHash(ledgerhash);
 
-			tLog(!ledger, lsDEBUG) << "Don't have ledger " << ledgerhash;
+			tLog(!ledger, lsTRACE) << "Don't have ledger " << ledgerhash;
 			if (!ledger && (packet.has_querytype() && !packet.has_requestcookie()))
 			{
 				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
