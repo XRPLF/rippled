@@ -63,6 +63,8 @@ enum SizedItemName
 	siLedgerSize,
 	siLedgerAge,
 	siLedgerFetch,
+	siLineCacheSize,
+	siLineCacheAge
 };
 
 struct SizedItem
@@ -176,6 +178,8 @@ public:
 	uint32						SIGN_PROPOSAL;
 
 	boost::asio::ssl::context	SSL_CONTEXT;			// Generic SSL context.
+	std::string					SSL_VERIFY_FILE;
+	std::string					SSL_VERIFY_DIR;
 
 	Config();
 
