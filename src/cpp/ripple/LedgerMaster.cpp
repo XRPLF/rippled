@@ -455,7 +455,7 @@ void LedgerMaster::tryPublish()
 	{
 		for (uint32 seq = mPubLedger->getLedgerSeq() + 1; seq <= mValidLedger->getLedgerSeq(); ++seq)
 		{
-			cLog(lsDEBUG) << "Trying to publish ledger " << seq;
+			cLog(lsTRACE) << "Trying to publish ledger " << seq;
 
 			Ledger::pointer ledger;
 			uint256 hash;

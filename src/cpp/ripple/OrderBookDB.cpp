@@ -44,13 +44,13 @@ void OrderBookDB::setup(Ledger::ref ledger)
 		OrderBook::pointer book = OrderBook::newOrderBook(entry);
 		if (book)
 		{
-			cLog(lsDEBUG) << "OrderBookDB: found book";
+			cLog(lsTRACE) << "OrderBookDB: found book";
 
 			if (mKnownMap.find(book->getBookBase()) == mKnownMap.end())
 			{
 				mKnownMap[book->getBookBase()] = true;
 
-				cLog(lsDEBUG) << "OrderBookDB: unknown book in: "
+				cLog(lsTRACE) << "OrderBookDB: unknown book in: "
 					<< STAmount::createHumanCurrency(book->getCurrencyIn())
 					<< " -> "
 					<< STAmount::createHumanCurrency(book->getCurrencyOut());
