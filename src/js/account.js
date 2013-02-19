@@ -52,12 +52,8 @@ var Account = function (remote, account) {
     }
   });
 
-  this._remote.on('connect', function () {
-    if (self._subs) {
-      self._remote.request_subscribe()
-        .accounts(self._account_id)
-        .request();
-    }
+  this._remote.on('prepare_subscribe', function (request) {
+    if (self._subs) request.accounts(self._account_id);
   });
 
   this.on('transaction', function (msg) {
