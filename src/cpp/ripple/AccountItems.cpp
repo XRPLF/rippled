@@ -35,9 +35,9 @@ void AccountItems::fillItems(const uint160& accountID, Ledger::ref ledger)
 
 		BOOST_FOREACH(uint256& uNode, svOwnerNodes.peekValue())
 		{
-			SLE::pointer sleCur	= ledger->getSLE(uNode);
+			SLE::pointer sleCur	= ledger->getSLEi(uNode);
 
-			AccountItem::pointer item=mOfType->makeItem(accountID, sleCur);
+			AccountItem::pointer item = mOfType->makeItem(accountID, sleCur);
 			if(item)
 			{
 				mItems.push_back(item);

@@ -165,6 +165,7 @@ public:
 	void setLastValidation(SerializedValidation::ref v)		{ mLastValidation = v; }
 
 	SLE::pointer getSLE(Ledger::pointer lpLedger, const uint256& uHash) { return lpLedger->getSLE(uHash); }
+	SLE::pointer getSLEi(Ledger::pointer lpLedger, const uint256& uHash) { return lpLedger->getSLEi(uHash); }
 
 	//
 	// Transaction operations

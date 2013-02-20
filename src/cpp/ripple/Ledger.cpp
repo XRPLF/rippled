@@ -954,6 +954,22 @@ SLE::pointer Ledger::getSLE(const uint256& uHash)
 	return boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
 }
 
+SLE::pointer Ledger::getSLEi(const uint256& uId)
+{
+	uint256 hash;
+	SHAMapItem::pointer node = mAccountStateMap->peekItem(uId, hash);
+	if (!node)
+		return SLE::pointer();
+
+	SLE::pointer ret = theApp->getSLECache().fetch(hash);
+	if (!ret)
+	{
+		ret = boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
+		theApp->getSLECache().canonicalize(hash, ret);
+	}
+	return ret;
+}
+
 uint256 Ledger::getFirstLedgerIndex()
 {
 	SHAMapItem::pointer node = mAccountStateMap->peekFirstItem();
@@ -1179,7 +1195,7 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 	int diff = mLedgerSeq - ledgerIndex;
 	if (diff <= 256)
 	{
-		SLE::pointer hashIndex = getSLE(getLedgerHashIndex());
+		SLE::pointer hashIndex = getSLEi(getLedgerHashIndex());
 		if (hashIndex)
 		{
 			assert(hashIndex->getFieldU32(sfLastLedgerSequence) == (mLedgerSeq - 1));
@@ -1199,7 +1215,7 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 	}
 
 	// in skiplist
-	SLE::pointer hashIndex = getSLE(getLedgerHashIndex(ledgerIndex));
+	SLE::pointer hashIndex = getSLEi(getLedgerHashIndex(ledgerIndex));
 	if (hashIndex)
 	{
 		int lastSeq = hashIndex->getFieldU32(sfLastLedgerSequence);
@@ -1219,7 +1235,7 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 std::vector< std::pair<uint32, uint256> > Ledger::getLedgerHashes()
 {
 	std::vector< std::pair<uint32, uint256> > ret;
-	SLE::pointer hashIndex = getSLE(getLedgerHashIndex());
+	SLE::pointer hashIndex = getSLEi(getLedgerHashIndex());
 	if (hashIndex)
 	{
 		STVector256 vec = hashIndex->getFieldV256(sfHashes);

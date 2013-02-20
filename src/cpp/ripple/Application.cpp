@@ -41,7 +41,7 @@ DatabaseCon::~DatabaseCon()
 
 Application::Application() :
 	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService), mNetOps(mIOService, &mLedgerMaster),
-	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300),
+	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300), mSLECache("LedgerEntryCache", 4096, 120),
 	mSNTPClient(mAuxService), mRPCHandler(&mNetOps), mFeeTrack(),
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
@@ -301,6 +301,7 @@ void Application::sweep()
 	mTempNodeCache.sweep();
 	mValidations.sweep();
 	getMasterLedgerAcquire().sweep();
+	mSLECache.sweep();
 	mSweepTimer.expires_from_now(boost::posix_time::seconds(theConfig.getSize(siSweepInterval)));
 	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
 }

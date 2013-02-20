@@ -201,7 +201,8 @@ public:
 	void pendSave(bool fromConsensus);
 
 	// next/prev function
-	SLE::pointer getSLE(const uint256& uHash);
+	SLE::pointer getSLE(const uint256& uHash);	// SLE is mutable
+	SLE::pointer getSLEi(const uint256& uHash); // SLE is immutable
 	uint256 getFirstLedgerIndex();
 	uint256 getLastLedgerIndex();
 	uint256 getNextLedgerIndex(const uint256& uHash);							// first node >hash

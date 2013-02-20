@@ -217,7 +217,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 	if (!txJSON.isMember("Flags")) txJSON["Flags"] = 0;
 
 	Ledger::pointer	lpCurrent		= mNetOps->getCurrentLedger();
-	SLE::pointer	sleAccountRoot	= mNetOps->getSLE(lpCurrent, Ledger::getAccountRootIndex(raSrcAddressID.getAccountID()));
+	SLE::pointer	sleAccountRoot	= mNetOps->getSLEi(lpCurrent, Ledger::getAccountRootIndex(raSrcAddressID.getAccountID()));
 
 	if (!sleAccountRoot)
 	{
@@ -2147,7 +2147,7 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 	if (-3 == iLedgerIndex)
 	{ // Last fully-validated ledger
 		lpLedger		= mNetOps->getValidatedLedger();
-		iLedgerIndex	= lpLedger->getLedgerSeq();
+		iLedgerIndex 	= lpLedger->getLedgerSeq();
 	}
 
 	if (iLedgerIndex <= 0)
@@ -2364,7 +2364,7 @@ Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest)
 
 	if (!!uNodeIndex)
 	{
-		SLE::pointer	sleNode	= mNetOps->getSLE(lpLedger, uNodeIndex);
+		SLE::pointer	sleNode	= mNetOps->getSLEi(lpLedger, uNodeIndex);
 
 		if (!sleNode)
 		{

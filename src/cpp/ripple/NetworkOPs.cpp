@@ -538,7 +538,7 @@ Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const RippleAddre
 
 			BOOST_FOREACH(const uint256& uDirEntry, vuiIndexes)
 			{
-				SLE::pointer		sleCur		= lpLedger->getSLE(uDirEntry);
+				SLE::pointer		sleCur		= lpLedger->getSLEi(uDirEntry);
 
 				switch (sleCur->getType())
 				{
