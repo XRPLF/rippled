@@ -251,7 +251,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 
 	if (!bFound)
 	{
-		return rpcError(rpcSRC_ACT_NOT_FOUND);
+		return rpcError(rpcBAD_SECRET);
 	}
 
 	// Use the generator to determine the associated public and private keys.
@@ -899,6 +899,8 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 	if (!lpLedger)
 		return jvResult;
 
+	ScopedUnlock su(theApp->getMasterLock(), lpLedger->isFixed());
+
 	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
 
@@ -925,6 +927,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 		Json::Value	jsonLines(Json::arrayValue);
 
 		jvResult["account"]	= raAccount.humanAccountID();
+
 
 		// XXX This is wrong, we do access the current ledger and do need to worry about changes.
 		// We access a committed ledger and need not worry about changes.
@@ -976,6 +979,8 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 
 	if (!lpLedger)
 		return jvResult;
+
+	ScopedUnlock su(theApp->getMasterLock(), lpLedger->isClosed() || lpLedger->isImmutable());
 
 	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -2139,13 +2144,20 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 		lpLedger		= mNetOps->getCurrentLedger();
 		iLedgerIndex	= lpLedger->getLedgerSeq();
 	}
-	else if (iLedgerIndex <= 0)
+	if (-3 == iLedgerIndex)
+	{ // Last fully-validated ledger
+		lpLedger		= mNetOps->getValidatedLedger();
+		iLedgerIndex	= lpLedger->getLedgerSeq();
+	}
+
+	if (iLedgerIndex <= 0)
 	{
 		jvResult["error"]	= "ledgerNotFound";
 
 		return jvResult;
 	}
-	else if (iLedgerIndex)
+
+	if (!lpLedger)
 	{
 		lpLedger		= mNetOps->getLedgerBySeq(iLedgerIndex);
 

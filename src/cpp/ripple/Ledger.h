@@ -133,6 +133,7 @@ public:
 	bool isClosed()		{ return mClosed; }
 	bool isAccepted()	{ return mAccepted; }
 	bool isImmutable()	{ return mImmutable; }
+	bool isFixed()		{ return mClosed || mImmutable; }
 
 	// ledger signature operations
 	void addRaw(Serializer &s) const;

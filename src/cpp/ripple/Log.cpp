@@ -199,7 +199,12 @@ namespace websocketpp
 
 		void websocketLog(websocketpp::log::alevel::value v, const std::string& entry)
 		{
-			if (websocketPartition.doLog(lsDEBUG))
+			if (v == websocketpp::log::alevel::DEVEL)
+			{
+				if (websocketPartition.doLog(lsTRACE))
+					Log(lsDEBUG, websocketPartition) << entry;
+			}
+			else if (websocketPartition.doLog(lsDEBUG))
 				Log(lsDEBUG, websocketPartition) << entry;
 		}
 

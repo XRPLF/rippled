@@ -90,7 +90,7 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 {
 	if (2 == spPath.mPath.size()) {
 		// Empty path is a default. Don't need to add it to return set.
-		cLog(lsDEBUG) << "findPaths: empty path: direct";
+		cLog(lsTRACE) << "findPaths: empty path: direct";
 
 		return true;
 	}
@@ -285,8 +285,8 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			continue;
 		}
 
-		cLog(lsDEBUG) << "findPaths: finish? account: " << (speEnd.mAccountID == mDstAccountID);
-		cLog(lsDEBUG) << "findPaths: finish? currency: " << (speEnd.mCurrencyID == mDstAmount.getCurrency());
+		cLog(lsTRACE) << "findPaths: finish? account: " << (speEnd.mAccountID == mDstAccountID);
+		cLog(lsTRACE) << "findPaths: finish? currency: " << (speEnd.mCurrencyID == mDstAmount.getCurrency());
 		cLog(lsTRACE) << "findPaths: finish? issuer: "
 			<< RippleAddress::createHumanAccountID(speEnd.mIssuerID)
 			<< " / "

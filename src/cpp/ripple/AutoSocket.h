@@ -67,6 +67,15 @@ public:
 		std::swap(mSecure, s.mSecure);
 	}
 
+	static bool rfc2818_verify(const std::string& domain, bool preverified, boost::asio::ssl::verify_context& ctx)
+	{
+		if (boost::asio::ssl::rfc2818_verification(domain)(preverified, ctx))
+			return true;
+		Log(lsWARNING, AutoSocketPartition) << "Outbound SSL connection to " <<
+			domain << " fails certificate verification";
+		return false;
+	}
+
 	boost::system::error_code verify(const std::string& strDomain)
 	{
 		boost::system::error_code ec;
@@ -74,7 +83,7 @@ public:
 	    mSocket->set_verify_mode(boost::asio::ssl::verify_peer);
 
 		// XXX Verify semantics of RFC 2818 are what we want.
-	    mSocket->set_verify_callback(boost::asio::ssl::rfc2818_verification(strDomain), ec);
+	    mSocket->set_verify_callback(boost::bind(&rfc2818_verify, strDomain, _1, _2), ec);
 
 		return ec;
 	}

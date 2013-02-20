@@ -79,7 +79,7 @@ bool ValidationCollection::addValidation(SerializedValidation::ref val)
 		}
 	}
 
-	cLog(lsINFO) << "Val for " << hash << " from " << signer.humanNodePublic()
+	cLog(lsDEBUG) << "Val for " << hash << " from " << signer.humanNodePublic()
 		<< " added " << (val->isTrusted() ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
 	if (val->isTrusted())
 		theApp->getLedgerMaster().checkAccept(hash);

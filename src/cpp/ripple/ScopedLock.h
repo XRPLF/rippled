@@ -29,11 +29,39 @@ public:
 class ScopedUnlock
 {
 protected:
+	bool mUnlocked;
 	boost::recursive_mutex& mMutex;
 
 public:
-	ScopedUnlock(boost::recursive_mutex& mutex) : mMutex(mutex)	{ mMutex.unlock(); }
-	~ScopedUnlock()												{ mMutex.lock(); }
+	ScopedUnlock(boost::recursive_mutex& mutex, bool unlock = true) : mUnlocked(unlock), mMutex(mutex)
+	{
+		if (unlock)
+			mMutex.unlock();
+	}
+
+	~ScopedUnlock()
+	{
+		if (mUnlocked)
+			mMutex.lock();
+	}
+
+	void lock()
+	{
+		if (mUnlocked)
+		{
+			mMutex.lock();
+			mUnlocked = false;
+		}
+	}
+
+	void unlock()
+	{
+		if (!mUnlocked)
+		{
+			mUnlocked = true;
+			mMutex.unlock();
+		}
+	}
 
 private:
 	ScopedUnlock(const ScopedUnlock&); // no implementation

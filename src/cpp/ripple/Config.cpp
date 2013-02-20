@@ -46,6 +46,8 @@
 #define SECTION_RPC_PASSWORD			"rpc_password"
 #define SECTION_RPC_STARTUP				"rpc_startup"
 #define SECTION_SNTP					"sntp_servers"
+#define SECTION_SSL_VERIFY_FILE			"ssl_verify_file"
+#define SECTION_SSL_VERIFY_DIR			"ssl_verify_dir"
 #define SECTION_VALIDATORS_FILE			"validators_file"
 #define SECTION_VALIDATION_QUORUM		"validation_quorum"
 #define SECTION_VALIDATION_SEED			"validation_seed"
@@ -155,10 +157,22 @@ void Config::setup(const std::string& strConf, bool bTestNet, bool bQuiet)
 		}
 	}
 
-	SSL_CONTEXT.set_default_verify_paths(ec);
 
-	if (ec)
-		throw std::runtime_error(boost::str(boost::format("Failed to set_default_verify_paths: %s") % ec.message()));
+	if (SSL_VERIFY_FILE.empty())
+	{
+		SSL_CONTEXT.set_default_verify_paths(ec);
+		if (ec && SSL_VERIFY_DIR.empty())
+			throw std::runtime_error(boost::str(boost::format("Failed to set_default_verify_paths: %s") % ec.message()));
+	}
+	else
+		SSL_CONTEXT.load_verify_file(SSL_VERIFY_FILE);
+
+	if (!SSL_VERIFY_DIR.empty())
+	{
+		SSL_CONTEXT.add_verify_path(SSL_VERIFY_DIR, ec);
+		if (ec)
+			throw std::runtime_error(boost::str(boost::format("Failed to add verify path: %s") % ec.message()));
+	}
 
 	// Update default values
 	load();
@@ -381,6 +395,9 @@ void Config::load()
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_CHAIN, WEBSOCKET_SSL_CHAIN);
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_KEY, WEBSOCKET_SSL_KEY);
 
+			sectionSingleB(secConfig, SECTION_SSL_VERIFY_FILE, SSL_VERIFY_FILE);
+			sectionSingleB(secConfig, SECTION_SSL_VERIFY_DIR, SSL_VERIFY_DIR);
+
 			if (sectionSingleB(secConfig, SECTION_VALIDATION_SEED, strTemp))
 			{
 				VALIDATION_SEED.setSeedGeneric(strTemp);
@@ -473,6 +490,8 @@ int Config::getSize(SizedItemName item)
 		{ siNodeCacheAge,		{	30,		60,		90,		300,		600		} },
 		{ siLedgerSize,			{	32,		64,		128,	1024,		0		} },
 		{ siLedgerAge,			{	30,		60,		120,	300,		600		} },
+		{ siLineCacheSize,		{	8192,	32768,	131072,	1048576,	0		} },
+		{ siLineCacheAge,		{	500,	600,	1800,	3600,		7200	} }
 			};
 
 	for (int i = 0; i < (sizeof(sizeTable) / sizeof(SizedItem)); ++i)
