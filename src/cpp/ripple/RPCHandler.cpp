@@ -2144,13 +2144,20 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 		lpLedger		= mNetOps->getCurrentLedger();
 		iLedgerIndex	= lpLedger->getLedgerSeq();
 	}
-	else if (iLedgerIndex <= 0)
+	if (-3 == iLedgerIndex)
+	{ // Last fully-validated ledger
+		lpLedger		= mNetOps->getValidatedLedger();
+		iLedgerIndex	= lpLedger->getLedgerSeq();
+	}
+
+	if (iLedgerIndex <= 0)
 	{
 		jvResult["error"]	= "ledgerNotFound";
 
 		return jvResult;
 	}
-	else if (iLedgerIndex)
+
+	if (!lpLedger)
 	{
 		lpLedger		= mNetOps->getLedgerBySeq(iLedgerIndex);
 
