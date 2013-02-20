@@ -406,6 +406,7 @@ public:
 
 	// save a copy if you only need a temporary
 	SHAMapItem::pointer peekItem(const uint256& id);
+	SHAMapItem::pointer peekItem(const uint256& id, uint256& hash);
 	SHAMapItem::pointer peekItem(const uint256& id, SHAMapTreeNode::TNType& type);
 
 	// traverse functions
