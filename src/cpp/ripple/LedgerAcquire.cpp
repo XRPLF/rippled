@@ -920,15 +920,21 @@ void LedgerAcquireMaster::sweep()
 	}
 }
 
-int LedgerAcquireMaster::getFetchCount()
+int LedgerAcquireMaster::getFetchCount(int& timeoutCount)
 {
+	timeoutCount = 0;
 	int ret = 0;
 	{
 		typedef std::pair<uint256, LedgerAcquire::pointer> u256_acq_pair;
 		boost::mutex::scoped_lock sl(mLock);
 		BOOST_FOREACH(const u256_acq_pair& it, mLedgers)
+		{
 			if (it.second->isActive())
+			{
 				++ret;
+				timeoutCount += it.second->getTimeouts();
+			}
+		}
 	}
 	return ret;
 }

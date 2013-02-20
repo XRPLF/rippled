@@ -149,7 +149,7 @@ public:
 	void dropLedger(const uint256& ledgerHash);
 	SMAddNode gotLedgerData(ripple::TMLedgerData& packet, Peer::ref);
 
-	int getFetchCount();
+	int getFetchCount(int& timeoutCount);
 	void logFailure(const uint256& h)	{ mRecentFailures.add(h); }
 	bool isFailure(const uint256& h)	{ return mRecentFailures.isPresent(h, false); }
 

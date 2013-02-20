@@ -203,20 +203,28 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 			theApp->getIOService().post(boost::bind(&LedgerMaster::missingAcquireComplete, this, mMissingLedger));
 	}
 
-	int fetch = theConfig.getSize(siLedgerFetch);
-	if (theApp->getMasterLedgerAcquire().getFetchCount() < fetch)
-	{
-		int count = 0;
-		typedef std::pair<uint32, uint256> u_pair;
+	int fetchMax = theConfig.getSize(siLedgerFetch);
+	int timeoutCount;
+	int fetchCount = theApp->getMasterLedgerAcquire().getFetchCount(timeoutCount);
 
-		std::vector<u_pair> vec = origLedger->getLedgerHashes();
-		BOOST_REVERSE_FOREACH(const u_pair& it, vec)
+	if (fetchCount < fetchMax)
+	{
+		if (timeoutCount > 4)
 		{
-			if ((count < fetch) && (it.first < ledgerSeq) &&
-				!mCompleteLedgers.hasValue(it.first) && !theApp->getMasterLedgerAcquire().find(it.second))
+			cLog(lsDEBUG) << "Not acquiring due to timeouts";
+		}
+		else
+		{
+			typedef std::pair<uint32, uint256> u_pair;
+			std::vector<u_pair> vec = origLedger->getLedgerHashes();
+			BOOST_REVERSE_FOREACH(const u_pair& it, vec)
 			{
-				++count;
-				theApp->getMasterLedgerAcquire().findCreate(it.second);
+				if ((fetchCount < fetchMax) && (it.first < ledgerSeq) &&
+					!mCompleteLedgers.hasValue(it.first) && !theApp->getMasterLedgerAcquire().find(it.second))
+				{
+					++fetchCount;
+					theApp->getMasterLedgerAcquire().findCreate(it.second);
+				}
 			}
 		}
 	}
