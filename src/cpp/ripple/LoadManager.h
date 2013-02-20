@@ -134,7 +134,7 @@ protected:
 
 	static const int lftNormalFee = 256;		// 256 is the minimum/normal load factor
 	static const int lftFeeIncFraction = 16;	// increase fee by 1/16
-	static const int lftFeeDecFraction = 16;	// decrease fee by 1/16	
+	static const int lftFeeDecFraction = 4;		// decrease fee by 1/4
 	static const int lftFeeMax = lftNormalFee * 1000000;
 
 	uint32 mLocalTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
