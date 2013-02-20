@@ -558,7 +558,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			std::sort(vMap.begin(), vMap.end(), bQualityCmp);	// Lower is better and should be first.
 
 			// Output best quality entries.
-			for (int i = 0; i != vMap.size(); ++i)
+			for (int i = 0; i != iLimit; ++i)
 			{
 				spsDst.addPath(vspResults[vMap[i].second]);
 			}
