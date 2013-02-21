@@ -200,8 +200,8 @@ AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
 //	std::cerr << "Ledger:getAccountState(" << accountID.humanAccountID() << ")" << std::endl;
 #endif
 
-	SHAMapItem::pointer item = mAccountStateMap->peekItem(Ledger::getAccountRootIndex(accountID));
-	if (!item)
+	SLE::pointer sle = getSLEi(Ledger::getAccountRootIndex(accountID));
+	if (!sle)
 	{
 		cLog(lsDEBUG) << boost::str(boost::format("Ledger:getAccountState: not found: %s: %s")
 			% accountID.humanAccountID()
@@ -210,8 +210,6 @@ AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
 		return AccountState::pointer();
 	}
 
-	SerializedLedgerEntry::pointer sle =
-		boost::make_shared<SerializedLedgerEntry>(item->peekSerializer(), item->getTag());
 	if (sle->getType() != ltACCOUNT_ROOT)
 		return AccountState::pointer();
 
@@ -957,6 +955,9 @@ SLE::pointer Ledger::getSLE(const uint256& uHash)
 SLE::pointer Ledger::getSLEi(const uint256& uId)
 {
 	uint256 hash;
+
+	ScopedLock sl(mAccountStateMap->Lock());
+
 	SHAMapItem::pointer node = mAccountStateMap->peekItem(uId, hash);
 	if (!node)
 		return SLE::pointer();
