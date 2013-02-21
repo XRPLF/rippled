@@ -22,6 +22,7 @@ var UInt160       = require('./amount').UInt160;
 var Transaction   = require('./transaction').Transaction;
 var Account       = require('./account').Account;
 var Meta          = require('./meta').Meta;
+var OrderBook     = require('./orderbook').OrderBook;
 
 var utils         = require('./utils');
 var config        = require('./config');
@@ -179,6 +180,31 @@ Request.prototype.accounts = function (accounts, realtime) {
 
 Request.prototype.rt_accounts = function (accounts) {
   return this.accounts(accounts, true);
+};
+
+Request.prototype.books = function (books) {
+  var procBooks = [];
+
+  for (var i = 0, l = books.length; i < l; i++) {
+    var book = books[i];
+
+    var json = {
+      "CurrencyOut": Currency.json_rewrite(book["CurrencyOut"]),
+      "CurrencyIn": Currency.json_rewrite(book["CurrencyIn"])
+    };
+
+    if (json["CurrencyOut"] !== "XRP") {
+      json["IssuerOut"] = UInt160.json_rewrite(book["IssuerOut"]);
+    }
+    if (json["CurrencyIn"] !== "XRP") {
+      json["IssuerIn"]  = UInt160.json_rewrite(book["IssuerIn"]);
+    }
+
+    procBooks.push(json);
+  }
+  this.message.books = procBooks;
+
+  return this;
 };
 
 //
@@ -1035,6 +1061,15 @@ Remote.prototype.account = function (accountId) {
 
   return this._accounts[account.to_json()] = account;
 };
+
+Remote.prototype.book = function (currency_out, issuer_out,
+                                  currency_in,  issuer_in) {
+  var book = new OrderBook(this,
+                           currency_out, issuer_out,
+                           currency_in,  issuer_in);
+
+  return book;
+}
 
 // Return the next account sequence if possible.
 // <-- undefined or Sequence
