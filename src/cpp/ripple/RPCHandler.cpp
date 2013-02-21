@@ -2833,7 +2833,8 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 		return rpcError(rpcNO_PERMISSION);
 	}
 
-	// XXX Need the master lock for getOperatingMode
+	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+
 	if (commandsA[i].iOptions & optNetwork
 		&& mNetOps->getOperatingMode() != NetworkOPs::omTRACKING
 		&& mNetOps->getOperatingMode() != NetworkOPs::omFULL)
@@ -2842,7 +2843,6 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 	}
 	// XXX Should verify we have a current ledger.
 
-	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 	if ((commandsA[i].iOptions & optCurrent) && false)
 	{
 		return rpcError(rpcNO_CURRENT);
