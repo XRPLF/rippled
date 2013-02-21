@@ -282,22 +282,23 @@ STAccount* STAccount::construct(SerializerIterator& u, SField::ref name)
 STVector256* STVector256::construct(SerializerIterator& u, SField::ref name)
 {
 	std::vector<unsigned char> data = u.getVL();
-	std::vector<uint256> value;
+
+	std::auto_ptr<STVector256> vec(new STVector256(name));
 
 	int count = data.size() / (256 / 8);
-	value.reserve(count);
+	vec->mValue.reserve(count);
 
 	unsigned int	uStart	= 0;
 	for (unsigned int i = 0; i != count; i++)
 	{
 		unsigned int	uEnd	= uStart+(256/8);
 
-		value.push_back(uint256(std::vector<unsigned char>(data.begin()+uStart, data.begin()+(uStart+32))));
-
+		// This next line could be optimized to construct a default uint256 in the vector and then copy into it
+		vec->mValue.push_back(uint256(std::vector<unsigned char>(data.begin()+uStart, data.begin()+uEnd)));
 		uStart	= uEnd;
 	}
 
-	return new STVector256(name, value);
+	return vec.release();
 }
 
 void STVector256::add(Serializer& s) const
