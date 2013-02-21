@@ -393,7 +393,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 	static boost::format transExists("SELECT Status FROM Transactions WHERE TransID = '%s';");
 	static boost::format
 		updateTx("UPDATE Transactions SET LedgerSeq = %d, Status = '%c', TxnMeta = %s WHERE TransID = '%s';");
-	static boost::format addLedger("INSERT INTO Ledgers "
+	static boost::format addLedger("INSERT OR REPLACE INTO Ledgers "
 		"(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,"
 		"AccountSetHash,TransSetHash) VALUES ('%s','%u','%s','%s','%u','%u','%d','%u','%s','%s');");
 
