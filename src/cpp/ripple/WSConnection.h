@@ -18,7 +18,7 @@
 DEFINE_INSTANCE(WebSocketConnection);
 
 #ifndef WEBSOCKET_PING_FREQUENCY
-#define WEBSOCKET_PING_FREQUENCY 120
+#define WEBSOCKET_PING_FREQUENCY (5*60)
 #endif
 
 template <typename endpoint_type>
