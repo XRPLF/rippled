@@ -218,6 +218,11 @@ buster.testCase("Amount", {
     "Divide EUR by XRP, neg, <1" : function () {
       buster.assert.equals("-0.05/EUR/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", Amount.from_json("-100/EUR/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh").divide(Amount.from_json("2000")).to_text_full());
     }
+  },
+  "Amount comparisons" : {
+    "10 USD != 100 USD" : function () {
+      buster.refute(Amount.from_json("10/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL").equals(Amount.from_json("100/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL")));
+    }
   }
 });
 
