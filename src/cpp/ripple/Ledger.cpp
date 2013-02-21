@@ -966,6 +966,7 @@ SLE::pointer Ledger::getSLEi(const uint256& uId)
 	if (!ret)
 	{
 		ret = boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
+		ret->setImmutable();
 		theApp->getSLECache().canonicalize(hash, ret);
 	}
 	return ret;
@@ -1011,6 +1012,14 @@ uint256 Ledger::getPrevLedgerIndex(const uint256& uHash, const uint256& uBegin)
 	return node->getTag();
 }
 
+SLE::pointer Ledger::getASNodeI(const uint256& nodeID, LedgerEntryType let)
+{
+	SLE::pointer node = getSLEi(nodeID);
+	if (node && (node->getType() != let))
+		node.reset();
+	return node;
+}
+
 SLE::pointer Ledger::getASNode(LedgerStateParms& parms, const uint256& nodeID,
 	LedgerEntryType let )
 {
@@ -1047,16 +1056,12 @@ SLE::pointer Ledger::getASNode(LedgerStateParms& parms, const uint256& nodeID,
 
 SLE::pointer Ledger::getAccountRoot(const uint160& accountID)
 {
-	LedgerStateParms	qry			= lepNONE;
-
-	return getASNode(qry, getAccountRootIndex(accountID), ltACCOUNT_ROOT);
+	return getASNodeI(getAccountRootIndex(accountID), ltACCOUNT_ROOT);
 }
 
 SLE::pointer Ledger::getAccountRoot(const RippleAddress& naAccountID)
 {
-	LedgerStateParms	qry			= lepNONE;
-
-	return getASNode(qry, getAccountRootIndex(naAccountID.getAccountID()), ltACCOUNT_ROOT);
+	return getASNodeI(getAccountRootIndex(naAccountID.getAccountID()), ltACCOUNT_ROOT);
 }
 
 //

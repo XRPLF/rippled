@@ -18,6 +18,7 @@ protected:
 	uint256						mIndex;
 	LedgerEntryType				mType;
 	const LedgerEntryFormat*	mFormat;
+	bool						mMutable;
 
 	SerializedLedgerEntry* duplicate() const { return new SerializedLedgerEntry(*this); }
 
@@ -33,6 +34,10 @@ public:
 
 	const uint256& getIndex() const		{ return mIndex; }
 	void setIndex(const uint256& i)		{ mIndex = i; }
+
+	void setImmutable()					{ mMutable = false; }
+	bool isMutable()					{ return mMutable; }
+	SerializedLedgerEntry::pointer getMutable() const;
 
 	LedgerEntryType getType() const { return mType; }
 	uint16 getVersion() const { return getFieldU16(sfLedgerEntryType); }

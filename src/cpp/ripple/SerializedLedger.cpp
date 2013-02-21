@@ -9,7 +9,7 @@ DECLARE_INSTANCE(SerializedLedgerEntry)
 SETUP_LOG();
 
 SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint256& index)
-	: STObject(sfLedgerEntry), mIndex(index)
+	: STObject(sfLedgerEntry), mIndex(index), mMutable(true)
 {
 	set(sit);
 	uint16 type = getFieldU16(sfLedgerEntryType);
@@ -22,7 +22,7 @@ SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint
 }
 
 SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256& index)
-	: STObject(sfLedgerEntry), mIndex(index)
+	: STObject(sfLedgerEntry), mIndex(index), mMutable(true)
 {
 	SerializerIterator sit(const_cast<Serializer&>(s)); // we know 's' isn't going away
 	set(sit);
@@ -41,12 +41,19 @@ SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256&
 }
 
 SerializedLedgerEntry::SerializedLedgerEntry(LedgerEntryType type, const uint256& index) :
-	STObject(sfLedgerEntry), mIndex(index), mType(type)
+	STObject(sfLedgerEntry), mIndex(index), mType(type), mMutable(true)
 {
 	mFormat = LedgerEntryFormat::getLgrFormat(type);
 	if (mFormat == NULL) throw std::runtime_error("invalid ledger entry type");
 	set(mFormat->elements);
 	setFieldU16(sfLedgerEntryType, static_cast<uint16>(mFormat->t_type));
+}
+
+SerializedLedgerEntry::pointer SerializedLedgerEntry::getMutable() const
+{
+	SerializedLedgerEntry::pointer ret = boost::make_shared<SerializedLedgerEntry>(boost::ref(*this));
+	ret->mMutable = true;
+	return ret;
 }
 
 std::string SerializedLedgerEntry::getFullText() const

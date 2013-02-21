@@ -97,6 +97,9 @@ private:
 protected:
 	SLE::pointer getASNode(LedgerStateParms& parms, const uint256& nodeID, LedgerEntryType let);
 
+	// returned SLE is immutable
+	SLE::pointer getASNodeI(const uint256& nodeID, LedgerEntryType let);
+
 	static void incPendingSaves();
 	static void decPendingSaves();
 	void saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer);
