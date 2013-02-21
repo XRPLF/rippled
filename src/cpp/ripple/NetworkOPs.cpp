@@ -1092,7 +1092,7 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 			}else rawMeta.resize(metaSize);
 
 			TransactionMetaSet::pointer meta= boost::make_shared<TransactionMetaSet>(txn->getID(), txn->getLedger(), rawMeta.getData());
-			ret.push_back(std::pair<Transaction::ref, TransactionMetaSet::ref>(txn,meta));
+			ret.push_back(std::pair<Transaction::pointer, TransactionMetaSet::pointer>(txn,meta));
 		}
 	}
 
