@@ -817,6 +817,7 @@ Json::Value Ledger::getJson(int options)
 	{
 		Json::Value txns(Json::arrayValue);
 		SHAMapTreeNode::TNType type;
+		ScopedLock l(mTransactionMap->Lock());
 		for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem(type); !!item;
 				item = mTransactionMap->peekNextItem(item->getTag(), type))
 		{
@@ -856,6 +857,7 @@ Json::Value Ledger::getJson(int options)
 	if (mAccountStateMap && (bFull || ((options & LEDGER_JSON_DUMP_STATE) != 0)))
 	{
 		Json::Value state(Json::arrayValue);
+		ScopedLock l(mAccountStateMap->Lock());
 		for (SHAMapItem::pointer item = mAccountStateMap->peekFirstItem(); !!item;
 				item = mAccountStateMap->peekNextItem(item->getTag()))
 		{

@@ -1526,6 +1526,7 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest)
 
 	Json::Value ret(Json::objectValue);
 
+	ScopedUnlock(theApp->getMasterLock());
 	ledger->addJson(ret, full ? LEDGER_JSON_FULL : 0);
 
 	return ret;
