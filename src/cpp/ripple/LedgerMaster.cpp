@@ -180,7 +180,10 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 	}
 
 	if (theApp->getMasterLedgerAcquire().isFailure(ledgerHash))
+	{
+		cLog(lsTRACE) << "Already failed to acquire " << ledgerSeq;
 		return false;
+	}
 
 	mMissingLedger = theApp->getMasterLedgerAcquire().findCreate(ledgerHash);
 	if (mMissingLedger->isComplete())
@@ -209,7 +212,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 
 	if (fetchCount < fetchMax)
 	{
-		if (timeoutCount > 4)
+		if (timeoutCount > 2)
 		{
 			cLog(lsDEBUG) << "Not acquiring due to timeouts";
 		}
@@ -257,7 +260,7 @@ bool LedgerMaster::shouldAcquire(uint32 currentLedger, uint32 ledgerHistory, uin
 	if (candidateLedger >= currentLedger)
 		ret = true;
 	else ret = (currentLedger - candidateLedger) <= ledgerHistory;
-	cLog(lsTRACE) << "Missing ledger " << candidateLedger << (ret ? " will" : " will NOT") << " be acquired";
+	cLog(lsTRACE) << "Missing ledger " << candidateLedger << (ret ? " should" : " should NOT") << " be acquired";
 	return ret;
 }
 
@@ -370,7 +373,10 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 	if (!mCompleteLedgers.hasValue(ledger->getLedgerSeq() - 1))
 	{
 		if (!shouldAcquire(mCurrentLedger->getLedgerSeq(), theConfig.LEDGER_HISTORY, ledger->getLedgerSeq() - 1))
+		{
+			cLog(lsTRACE) << "Don't need any ledgers";
 			return;
+		}
 		cLog(lsDEBUG) << "We need the ledger before the ledger we just accepted: " << ledger->getLedgerSeq() - 1;
 		acquireMissingLedger(ledger, ledger->getParentHash(), ledger->getLedgerSeq() - 1);
 	}
@@ -395,6 +401,8 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 				cLog(lsWARNING) << "We have a gap we can't fix: " << prevMissing + 1;
 			}
 		}
+		else
+			cLog(lsTRACE) << "Shouldn't acquire";
 	}
 }
 
