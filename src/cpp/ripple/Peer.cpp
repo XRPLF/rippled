@@ -24,11 +24,14 @@ DECLARE_INSTANCE(Peer);
 // Node has this long to verify its identity from connection accepted or connection attempt.
 #define NODE_VERIFY_SECONDS		15
 
+// Idle nodes are probed this often
+#define NODE_IDLE_SECONDS		120
+
 Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 peerID, bool inbound) :
 	mInbound(inbound),
 	mHelloed(false),
 	mDetaching(false),
-	mActive(true),
+	mActive(2),
 	mCluster(false),
 	mPeerId(peerID),
 	mSocketSsl(io_service, ctx),
@@ -122,6 +125,33 @@ void Peer::detach(const char *rsn)
 			*/
 	}
 }
+
+void Peer::handlePingTimer(const boost::system::error_code& ecResult)
+{
+	if (ecResult || mDetaching)
+		return;
+
+	if (mActive == 1)
+	{ // ping out
+		detach("pto");
+		return;
+	}
+
+	if (mActive == 0)
+	{ // idle->pingsent
+		mActive = 1;
+		ripple::TMPing packet;
+		packet.set_type(ripple::TMPing::ptPING);
+		sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtPING));
+	}
+	else // active->idle
+		mActive = 0;
+
+	mActivityTimer.expires_from_now(boost::posix_time::seconds(NODE_IDLE_SECONDS));
+	mActivityTimer.async_wait(boost::bind(&Peer::handlePingTimer, shared_from_this(),
+		boost::asio::placeholders::error));
+}
+
 
 void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
 {
@@ -631,8 +661,10 @@ void Peer::recvHello(ripple::TMHello& packet)
 {
 	bool	bDetach	= true;
 
-	// Cancel verification timeout. - FIXME Start ping/pong timer
 	(void) mActivityTimer.cancel();
+	mActivityTimer.expires_from_now(boost::posix_time::seconds(NODE_IDLE_SECONDS));
+	mActivityTimer.async_wait(boost::bind(&Peer::handlePingTimer, shared_from_this(),
+		boost::asio::placeholders::error));
 
 	uint32 ourTime = theApp->getOPs().getNetworkTimeNC();
 	uint32 minTime = ourTime - 20;
@@ -1197,7 +1229,7 @@ void Peer::recvPing(ripple::TMPing& packet)
 	}
 	else if (packet.type() == ripple::TMPing::ptPONG)
 	{
-		mActive = true;
+		mActive = 2;
 	}
 }
 
