@@ -1063,7 +1063,7 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 
 	std::string sql =
 		str(boost::format("SELECT LedgerSeq,Status,RawTxn,TxnMeta FROM Transactions where TransID in (SELECT TransID from AccountTransactions  "
-			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' LIMIT 1000) ORDER BY LedgerSeq;")
+			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' LIMIT 200) ORDER BY LedgerSeq;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{
