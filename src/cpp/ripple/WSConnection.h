@@ -5,6 +5,7 @@
 #include "../json/value.h"
 
 #include <boost/weak_ptr.hpp>
+#include <boost/asio.hpp>
 
 #include "WSDoor.h"
 #include "Application.h"
@@ -53,7 +54,7 @@ public:
 
 	WSConnection(WSServerHandler<endpoint_type>* wshpHandler, const connection_ptr& cpConnection)
 		: mHandler(wshpHandler), mConnection(cpConnection), mNetwork(theApp->getOPs()),
-		mPingTimer(theApp->getAuxService()), mPinged(false)
+		mPingTimer(cpConnection->get_io_service()), mPinged(false)
 	{
 		mRemoteIP = cpConnection->get_socket().lowest_layer().remote_endpoint().address().to_string();
 		cLog(lsDEBUG) << "Websocket connection from " << mRemoteIP;
@@ -62,6 +63,7 @@ public:
 
 	void preDestroy()
 	{ // sever connection
+		mPingTimer.cancel();
 		mConnection.reset();
 	}
 
@@ -143,10 +145,10 @@ public:
 	bool onPingTimer()
 	{
 		if (mPinged)
-			return true;
+			return true; // causes connection to close
 		mPinged = true;
 		setPingTimer();
-		return false;
+		return false; // causes ping to be sent
 	}
 
 	void onPong()
@@ -154,8 +156,11 @@ public:
 		mPinged = false;
 	}
 
-	static void pingTimer(weak_connection_ptr c, WSServerHandler<endpoint_type>* h)
+	static void pingTimer(weak_connection_ptr c, WSServerHandler<endpoint_type>* h, const boost::system::error_code& e)
 	{
+		if (e)
+			return;
+
 		connection_ptr ptr = c.lock();
 		if (ptr)
 			h->pingTimer(ptr);
@@ -164,10 +169,10 @@ public:
 	void setPingTimer()
 	{
 		mPingTimer.expires_from_now(boost::posix_time::seconds(WEBSOCKET_PING_FREQUENCY));
-		mPingTimer.async_wait(boost::bind(&WSConnection<endpoint_type>::pingTimer, mConnection, mHandler));
+		mPingTimer.async_wait(boost::bind(
+			&WSConnection<endpoint_type>::pingTimer, mConnection, mHandler, boost::asio::placeholders::error));
 	}
 
 };
-
 
 // vim:ts=4
