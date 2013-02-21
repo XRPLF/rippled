@@ -1068,27 +1068,27 @@ SLE::pointer Ledger::getAccountRoot(const RippleAddress& naAccountID)
 // Directory
 //
 
-SLE::pointer Ledger::getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex)
+SLE::pointer Ledger::getDirNode(const uint256& uNodeIndex)
 {
-	return getASNode(parms, uNodeIndex, ltDIR_NODE);
+	return getASNodeI(uNodeIndex, ltDIR_NODE);
 }
 
 //
 // Generator Map
 //
 
-SLE::pointer Ledger::getGenerator(LedgerStateParms& parms, const uint160& uGeneratorID)
+SLE::pointer Ledger::getGenerator(const uint160& uGeneratorID)
 {
-	return getASNode(parms, getGeneratorIndex(uGeneratorID), ltGENERATOR_MAP);
+	return getASNodeI(getGeneratorIndex(uGeneratorID), ltGENERATOR_MAP);
 }
 
 //
 // Nickname
 //
 
-SLE::pointer Ledger::getNickname(LedgerStateParms& parms, const uint256& uNickname)
+SLE::pointer Ledger::getNickname(const uint256& uNickname)
 {
-	return getASNode(parms, uNickname, ltNICKNAME);
+	return getASNodeI(uNickname, ltNICKNAME);
 }
 
 //
@@ -1096,18 +1096,18 @@ SLE::pointer Ledger::getNickname(LedgerStateParms& parms, const uint256& uNickna
 //
 
 
-SLE::pointer Ledger::getOffer(LedgerStateParms& parms, const uint256& uIndex)
+SLE::pointer Ledger::getOffer(const uint256& uIndex)
 {
-	return getASNode(parms, uIndex, ltOFFER);
+	return getASNodeI(uIndex, ltOFFER);
 }
 
 //
 // Ripple State
 //
 
-SLE::pointer Ledger::getRippleState(LedgerStateParms& parms, const uint256& uNode)
+SLE::pointer Ledger::getRippleState(const uint256& uNode)
 {
-	return getASNode(parms, uNode, ltRIPPLE_STATE);
+	return getASNodeI(uNode, ltRIPPLE_STATE);
 }
 
 // For an entry put in the 64 bit index or quality.

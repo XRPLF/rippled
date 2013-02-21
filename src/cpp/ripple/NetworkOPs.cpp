@@ -455,12 +455,9 @@ AccountState::pointer NetworkOPs::getAccountState(Ledger::ref lrLedger, const Ri
 
 SLE::pointer NetworkOPs::getGenerator(Ledger::ref lrLedger, const uint160& uGeneratorID)
 {
-	LedgerStateParms	qry				= lepNONE;
-
 	if (!lrLedger)
 		return SLE::pointer();
-	else
-		return lrLedger->getGenerator(qry, uGeneratorID);
+	return lrLedger->getGenerator(uGeneratorID);
 }
 
 //
@@ -475,8 +472,7 @@ STVector256 NetworkOPs::getDirNodeInfo(
 	uint64&				uNodeNext)
 {
 	STVector256			svIndexes;
-	LedgerStateParms	lspNode		= lepNONE;
-	SLE::pointer		sleNode		= lrLedger->getDirNode(lspNode, uNodeIndex);
+	SLE::pointer		sleNode		= lrLedger->getDirNode(uNodeIndex);
 
 	if (sleNode)
 	{
@@ -524,8 +520,7 @@ Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const RippleAddre
 
 	uint256				uRootIndex	= lpLedger->getOwnerDirIndex(naAccount.getAccountID());
 
-	LedgerStateParms	lspNode		= lepNONE;
-	SLE::pointer		sleNode		= lpLedger->getDirNode(lspNode, uRootIndex);
+	SLE::pointer		sleNode		= lpLedger->getDirNode(uRootIndex);
 
 	if (sleNode)
 	{
@@ -569,9 +564,7 @@ Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const RippleAddre
 			uNodeDir		= sleNode->getFieldU64(sfIndexNext);
 			if (uNodeDir)
 			{
-				lspNode	= lepNONE;
-				sleNode	= lpLedger->getDirNode(lspNode, Ledger::getDirNodeIndex(uRootIndex, uNodeDir));
-
+				sleNode	= lpLedger->getDirNode(Ledger::getDirNodeIndex(uRootIndex, uNodeDir));
 				assert(sleNode);
 			}
 		} while (uNodeDir);
