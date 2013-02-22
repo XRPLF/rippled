@@ -220,8 +220,98 @@ buster.testCase("Amount", {
     }
   },
   "Amount comparisons" : {
+    "10 USD == 10 USD" : function () {
+      var a = Amount.from_json("10/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      var b = Amount.from_json("10/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      buster.assert(a.equals(b));
+      buster.refute(a.not_equals_why(b));
+    },
+    "123.4567 USD == 123.4567 USD" : function () {
+      var a = Amount.from_json("123.4567/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      var b = Amount.from_json("123.4567/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      buster.assert(a.equals(b));
+      buster.refute(a.not_equals_why(b));
+    },
+    "10 XRP == 10 XRP" : function () {
+      var a = Amount.from_json("10");
+      var b = Amount.from_json("10");
+      buster.assert(a.equals(b));
+      buster.refute(a.not_equals_why(b));
+    },
+    "1.1 XRP == 1.1 XRP" : function () {
+      var a = Amount.from_json("1.1");
+      var b = Amount.from_json("11.0").ratio_human(10);
+      buster.assert(a.equals(b));
+      buster.refute(a.not_equals_why(b));
+    },
+    // Exponent mismatch
     "10 USD != 100 USD" : function () {
-      buster.refute(Amount.from_json("10/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL").equals(Amount.from_json("100/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL")));
+      var a = Amount.from_json("10/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      var b = Amount.from_json("100/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      buster.refute(a.equals(b));
+      buster.assert.equals(a.not_equals_why(b), "Non-XRP value differs.");
+    },
+    "10 XRP != 100 XRP" : function () {
+      var a = Amount.from_json("10");
+      var b = Amount.from_json("100");
+      buster.refute(a.equals(b));
+      buster.assert.equals(a.not_equals_why(b), "XRP value differs.");
+    },
+    // Mantissa mismatch
+    "1 USD != 2 USD" : function () {
+      var a = Amount.from_json("1/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      var b = Amount.from_json("2/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      buster.refute(a.equals(b));
+      buster.assert.equals(a.not_equals_why(b), "Non-XRP value differs.");
+    },
+    "1 XRP != 2 XRP" : function () {
+      var a = Amount.from_json("1");
+      var b = Amount.from_json("2");
+      buster.refute(a.equals(b));
+      buster.assert.equals(a.not_equals_why(b), "XRP value differs.");
+    },
+    "0.1 USD != 0.2 USD" : function () {
+      var a = Amount.from_json("0.1/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      var b = Amount.from_json("0.2/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      buster.refute(a.equals(b));
+      buster.assert.equals(a.not_equals_why(b), "Non-XRP value differs.");
+    },
+    // Sign mismatch
+    "1 USD != -1 USD" : function () {
+      var a = Amount.from_json("1/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      var b = Amount.from_json("-1/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      buster.refute(a.equals(b));
+      buster.assert.equals(a.not_equals_why(b), "Non-XRP sign differs.");
+    },
+    "1 XRP != -1 XRP" : function () {
+      var a = Amount.from_json("1");
+      var b = Amount.from_json("-1");
+      buster.refute(a.equals(b));
+      buster.assert.equals(a.not_equals_why(b), "XRP sign differs.");
+    },
+    "1 USD != 1 USD (issuer mismatch)" : function () {
+      var a = Amount.from_json("1/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      var b = Amount.from_json("1/USD/rH5aWQJ4R7v4Mpyf4kDBUvDFT5cbpFq3XP");
+      buster.refute(a.equals(b));
+      buster.assert.equals(a.not_equals_why(b), "Non-XRP issuer differs.");
+    },
+    "1 USD != 1 EUR" : function () {
+      var a = Amount.from_json("1/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      var b = Amount.from_json("1/EUR/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      buster.refute(a.equals(b));
+      buster.assert.equals(a.not_equals_why(b), "Non-XRP currency differs.");
+    },
+    "1 USD != 1 XRP" : function () {
+      var a = Amount.from_json("1/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      var b = Amount.from_json("1");
+      buster.refute(a.equals(b));
+      buster.assert.equals(a.not_equals_why(b), "Native mismatch.");
+    },
+    "1 XRP != 1 USD" : function () {
+      var a = Amount.from_json("1");
+      var b = Amount.from_json("1/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      buster.refute(a.equals(b));
+      buster.assert.equals(a.not_equals_why(b), "Native mismatch.");
     }
   }
 });
