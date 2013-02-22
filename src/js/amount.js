@@ -349,6 +349,13 @@ Amount.prototype.divide = function (d) {
  * @return {Amount} The resulting ratio. Unit will be the same as numerator.
  */
 Amount.prototype.ratio_human = function (denominator) {
+  if ("number" === typeof denominator && parseInt(denominator) === denominator) {
+    // Special handling of integer arguments
+    denominator = Amount.from_json("" + denominator + ".0");
+  } else {
+    denominator = Amount.from_json(denominator);
+  }
+
   var numerator = this;
   denominator = Amount.from_json(denominator);
 
@@ -580,6 +587,9 @@ Amount.prototype.parse_json = function (j) {
       this._currency  = new Currency();
       this._issuer    = new UInt160();
     }
+  }
+  else if ('number' === typeof j) {
+    this.parse_json(""+j);
   }
   else if ('object' === typeof j && j instanceof Amount) {
     j.copyTo(this);
