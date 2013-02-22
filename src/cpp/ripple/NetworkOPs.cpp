@@ -1436,7 +1436,7 @@ void NetworkOPs::subAccount(InfoSub* ispListener, const boost::unordered_set<Rip
 	// For the connection, monitor each account.
 	BOOST_FOREACH(const RippleAddress& naAccountID, vnaAccountIDs)
 	{
-		cLog(lsINFO) << boost::str(boost::format("subAccount: account: %d") % naAccountID.humanAccountID());
+		cLog(lsTRACE) << boost::str(boost::format("subAccount: account: %d") % naAccountID.humanAccountID());
 
 		ispListener->insertSubAccountInfo(naAccountID, uLedgerIndex);
 	}
