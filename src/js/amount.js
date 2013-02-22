@@ -283,21 +283,29 @@ Amount.prototype.currency = function () {
   return this._currency;
 };
 
-// Check BigInteger NaN
-// Checks currency, does not check issuer.
 Amount.prototype.equals = function (d) {
-  return 'string' === typeof (d)
-    ? this.equals(Amount.from_json(d))
-    : this === d
-      || (d instanceof Amount
-	&& this._is_native === d._is_native
-	&& (this._is_native
-	    ? this._value.equals(d._value)
-	    : this._currency.equals(d._currency)
-	      ? this._is_negative === d._is_negative
-		? this._value.equals(d._value)
-		: this._value.equals(BigInteger.ZERO) && d._value.equals(BigInteger.ZERO)
-	      : false));
+  if ("string" === typeof d) {
+    return this.equals(Amount.from_json(d));
+  }
+
+  if (this === d) return true;
+
+  if (d instanceof Amount) {
+    if (!this.is_valid() || !d.is_valid()) return false;
+    if (this._is_native !== d._is_native) return false;
+
+    if (!this._value.equals(d._value) || this._offset !== d._offset) {
+      return false;
+    }
+
+    if (this._is_negative !== d._is_negative) return false;
+
+    if (!this._is_native) {
+      if (!this._currency.equals(d._currency)) return false;
+      if (!this._issuer.equals(d._issuer)) return false;
+    }
+    return true;
+  } else return false;
 };
 
 // Result in terms of this' currency and issuer.
@@ -910,27 +918,30 @@ Amount.prototype.to_text_full = function (opts) {
 
 // For debugging.
 Amount.prototype.not_equals_why = function (d) {
-  return 'string' === typeof (d)
-    ? this.not_equals_why(Amount.from_json(d))
-    : this === d
-      ? false
-      : d instanceof Amount
-	  ? this._is_native === d._is_native
-	    ? this._is_native
-		? this._value.equals(d._value)
-		  ? false
-		  : "XRP value differs."
-		: this._currency.equals(d._currency)
-		  ? this._is_negative === d._is_negative
-		    ? this._value.equals(d._value)
-		      ? false
-		      : this._value.equals(BigInteger.ZERO) && d._value.equals(BigInteger.ZERO)
-			? false
-			: "Non-XRP value differs."
-		    : "Non-XRP sign differs."
-		  : "Non-XRP currency differs (" + JSON.stringify(this._currency) + "/" + JSON.stringify(d._currency) + ")"
-	    : "Native mismatch"
-	  : "Wrong constructor."
+  if ("string" === typeof d) {
+    return this.not_equals_why(Amount.from_json(d));
+  }
+
+  if (this === d) return false;
+
+  if (d instanceof Amount) {
+    if (!this.is_valid() || !d.is_valid()) return "Invalid amount.";
+    if (this._is_native !== d._is_native) return "Native mismatch.";
+
+    var type = this._is_native ? "XRP" : "Non-XRP";
+
+    if (!this._value.equals(d._value) || this._offset !== d._offset) {
+      return type+" value differs.";
+    }
+
+    if (this._is_negative !== d._is_negative) return type+" sign differs.";
+
+    if (!this._is_native) {
+      if (!this._currency.equals(d._currency)) return "Non-XRP currency differs.";
+      if (!this._issuer.equals(d._issuer)) return "Non-XRP issuer differs.";
+    }
+    return false;
+  } else return "Wrong constructor.";
 };
 
 exports.Amount	      = Amount;
