@@ -92,7 +92,7 @@ void printHelp(const po::options_description& desc)
 	cerr << "     peers" << endl;
 	cerr << "     random" << endl;
 	cerr << "     ripple ..." << endl;
-	cerr << "     ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<quality_in>] [<quality_out>]" << endl;
+//	cerr << "     ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<quality_in>] [<quality_out>]" << endl;
 	cerr << "     send <seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;
 	cerr << "     stop" << endl;
 	cerr << "     tx <id>" << endl;
