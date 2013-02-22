@@ -94,15 +94,14 @@ public:
 				return;
 			ptr = it->second;
 		}
-		if (ptr->onPingTimer())
+		std::string data("ping");
+		if (ptr->onPingTimer(data))
 		{
 			cLog(lsWARNING) << "Connection pings out";
 			cpClient->close(websocketpp::close::status::PROTOCOL_ERROR, "ping timeout");
 		}
 		else
-		{
-			cpClient->ping("ping");
-		}
+			cpClient->ping(data);
 	}
 
 	void on_send_empty(connection_ptr cpClient)
@@ -126,7 +125,7 @@ public:
 		mMap[cpClient]	= boost::make_shared< WSConnection<endpoint_type> >(this, cpClient);
 	}
 
-	void on_pong(connection_ptr cpClient, std::string)
+	void on_pong(connection_ptr cpClient, std::string data)
 	{
 		wsc_ptr ptr;
 		{
@@ -136,7 +135,7 @@ public:
 				return;
 			ptr = it->second;
 		}
-		ptr->onPong();
+		ptr->onPong(data);
 	}
 
 	void on_close(connection_ptr cpClient)

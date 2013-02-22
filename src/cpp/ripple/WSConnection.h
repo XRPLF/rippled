@@ -142,16 +142,18 @@ public:
 		return jvResult;
 	}
 
-	bool onPingTimer()
+	bool onPingTimer(std::string&)
 	{
+#ifdef DISCONNECT_ON_WEBSOCKET_PING_TIMEOUTS
 		if (mPinged)
 			return true; // causes connection to close
+#endif
 		mPinged = true;
 		setPingTimer();
 		return false; // causes ping to be sent
 	}
 
-	void onPong()
+	void onPong(const std::string&)
 	{
 		mPinged = false;
 	}
