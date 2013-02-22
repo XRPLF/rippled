@@ -220,6 +220,30 @@ buster.testCase("Amount", {
     }
   },
   "Amount comparisons" : {
+    "0 USD == 0 USD" : function () {
+      var a = Amount.from_json("0/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      var b = Amount.from_json("0/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      buster.assert(a.equals(b));
+      buster.refute(a.not_equals_why(b));
+    },
+    "0 USD == -0 USD" : function () {
+      var a = Amount.from_json("0/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      var b = Amount.from_json("-0/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      buster.assert(a.equals(b));
+      buster.refute(a.not_equals_why(b));
+    },
+    "0 XRP == 0 XRP" : function () {
+      var a = Amount.from_json("0");
+      var b = Amount.from_json("0.0");
+      buster.assert(a.equals(b));
+      buster.refute(a.not_equals_why(b));
+    },
+    "0 XRP == -0 XRP" : function () {
+      var a = Amount.from_json("0");
+      var b = Amount.from_json("-0");
+      buster.assert(a.equals(b));
+      buster.refute(a.not_equals_why(b));
+    },
     "10 USD == 10 USD" : function () {
       var a = Amount.from_json("10/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
       var b = Amount.from_json("10/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
@@ -243,6 +267,18 @@ buster.testCase("Amount", {
       var b = Amount.from_json("11.0").ratio_human(10);
       buster.assert(a.equals(b));
       buster.refute(a.not_equals_why(b));
+    },
+    "0 USD == 0 USD (ignore issuer)" : function () {
+      var a = Amount.from_json("0/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      var b = Amount.from_json("0/USD/rH5aWQJ4R7v4Mpyf4kDBUvDFT5cbpFq3XP");
+      buster.assert(a.equals(b, true));
+      buster.refute(a.not_equals_why(b, true));
+    },
+    "1.1 USD == 1.10 USD (ignore issuer)" : function () {
+      var a = Amount.from_json("1.1/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
+      var b = Amount.from_json("1.10/USD/rH5aWQJ4R7v4Mpyf4kDBUvDFT5cbpFq3XP");
+      buster.assert(a.equals(b, true));
+      buster.refute(a.not_equals_why(b, true));
     },
     // Exponent mismatch
     "10 USD != 100 USD" : function () {
