@@ -1205,7 +1205,16 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 				static_cast<double>(Json::UInt(lpClosed->getReserve(0) * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
 			l["reserve_inc_xrp"]	=
 				static_cast<double>(Json::UInt(lpClosed->getReserveInc() * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
-			l["age"]			= Json::UInt(getCloseTimeNC() - lpClosed->getCloseTimeNC());
+
+			uint32 closeTime = getCloseTimeNC();
+			uint32 lCloseTime = lpClosed->getCloseTimeNC();
+
+			if (lCloseTime <= closeTime)
+			{
+				uint32 age = closeTime - lCloseTime;
+				if (age < 1000000)
+					l["age"]			= Json::UInt(age);
+			}
 		}
 		info["closed_ledger"] = l;
 	}
