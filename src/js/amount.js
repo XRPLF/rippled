@@ -276,6 +276,9 @@ Amount.prototype.copyTo = function (d, negate) {
   this._currency.copyTo(d._currency);
   this._issuer.copyTo(d._issuer);
 
+  // Prevent negative zero
+  if (d.is_zero()) d._is_negative = false;
+
   return d;
 };
 
