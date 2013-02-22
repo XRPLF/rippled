@@ -16,6 +16,10 @@ std::ofstream* Log::outStream = NULL;
 boost::filesystem::path *Log::pathToLog = NULL;
 uint32 Log::logRotateCounter = 0;
 
+#ifndef LOG_MAX_MESSAGE
+#define LOG_MAX_MESSAGE (12 * 1024)
+#endif
+
 LogPartition* LogPartition::headLog = NULL;
 
 LogPartition::LogPartition(const char *name) : mNextLog(headLog), mMinSeverity(lsWARNING)
@@ -60,6 +64,11 @@ Log::~Log()
 	}
 
 	logMsg += oss.str();
+	if (logMsg.size() > LOG_MAX_MESSAGE)
+	{
+		logMsg.resize(LOG_MAX_MESSAGE);
+		logMsg += "...";
+	}
 
 	boost::recursive_mutex::scoped_lock sl(sLock);
 
