@@ -283,7 +283,7 @@ Amount.prototype.currency = function () {
   return this._currency;
 };
 
-Amount.prototype.equals = function (d) {
+Amount.prototype.equals = function (d, ignore_issuer) {
   if ("string" === typeof d) {
     return this.equals(Amount.from_json(d));
   }
@@ -302,7 +302,7 @@ Amount.prototype.equals = function (d) {
 
     if (!this._is_native) {
       if (!this._currency.equals(d._currency)) return false;
-      if (!this._issuer.equals(d._issuer)) return false;
+      if (!ignore_issuer && !this._issuer.equals(d._issuer)) return false;
     }
     return true;
   } else return false;
@@ -917,7 +917,7 @@ Amount.prototype.to_text_full = function (opts) {
 };
 
 // For debugging.
-Amount.prototype.not_equals_why = function (d) {
+Amount.prototype.not_equals_why = function (d, ignore_issuer) {
   if ("string" === typeof d) {
     return this.not_equals_why(Amount.from_json(d));
   }
@@ -938,7 +938,9 @@ Amount.prototype.not_equals_why = function (d) {
 
     if (!this._is_native) {
       if (!this._currency.equals(d._currency)) return "Non-XRP currency differs.";
-      if (!this._issuer.equals(d._issuer)) return "Non-XRP issuer differs.";
+      if (!ignore_issuer && !this._issuer.equals(d._issuer)) {
+        return "Non-XRP issuer differs.";
+      }
     }
     return false;
   } else return "Wrong constructor.";
