@@ -200,8 +200,8 @@ AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
 //	std::cerr << "Ledger:getAccountState(" << accountID.humanAccountID() << ")" << std::endl;
 #endif
 
-	SHAMapItem::pointer item = mAccountStateMap->peekItem(Ledger::getAccountRootIndex(accountID));
-	if (!item)
+	SLE::pointer sle = getSLEi(Ledger::getAccountRootIndex(accountID));
+	if (!sle)
 	{
 		cLog(lsDEBUG) << boost::str(boost::format("Ledger:getAccountState: not found: %s: %s")
 			% accountID.humanAccountID()
@@ -210,8 +210,6 @@ AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
 		return AccountState::pointer();
 	}
 
-	SerializedLedgerEntry::pointer sle =
-		boost::make_shared<SerializedLedgerEntry>(item->peekSerializer(), item->getTag());
 	if (sle->getType() != ltACCOUNT_ROOT)
 		return AccountState::pointer();
 
@@ -395,7 +393,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 	static boost::format transExists("SELECT Status FROM Transactions WHERE TransID = '%s';");
 	static boost::format
 		updateTx("UPDATE Transactions SET LedgerSeq = %d, Status = '%c', TxnMeta = %s WHERE TransID = '%s';");
-	static boost::format addLedger("INSERT INTO Ledgers "
+	static boost::format addLedger("INSERT OR REPLACE INTO Ledgers "
 		"(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,"
 		"AccountSetHash,TransSetHash) VALUES ('%s','%u','%s','%s','%u','%u','%d','%u','%s','%s');");
 
@@ -819,6 +817,7 @@ Json::Value Ledger::getJson(int options)
 	{
 		Json::Value txns(Json::arrayValue);
 		SHAMapTreeNode::TNType type;
+		ScopedLock l(mTransactionMap->Lock());
 		for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem(type); !!item;
 				item = mTransactionMap->peekNextItem(item->getTag(), type))
 		{
@@ -858,6 +857,7 @@ Json::Value Ledger::getJson(int options)
 	if (mAccountStateMap && (bFull || ((options & LEDGER_JSON_DUMP_STATE) != 0)))
 	{
 		Json::Value state(Json::arrayValue);
+		ScopedLock l(mAccountStateMap->Lock());
 		for (SHAMapItem::pointer item = mAccountStateMap->peekFirstItem(); !!item;
 				item = mAccountStateMap->peekNextItem(item->getTag()))
 		{
@@ -954,6 +954,26 @@ SLE::pointer Ledger::getSLE(const uint256& uHash)
 	return boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
 }
 
+SLE::pointer Ledger::getSLEi(const uint256& uId)
+{
+	uint256 hash;
+
+	ScopedLock sl(mAccountStateMap->Lock());
+
+	SHAMapItem::pointer node = mAccountStateMap->peekItem(uId, hash);
+	if (!node)
+		return SLE::pointer();
+
+	SLE::pointer ret = theApp->getSLECache().fetch(hash);
+	if (!ret)
+	{
+		ret = boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
+		ret->setImmutable();
+		theApp->getSLECache().canonicalize(hash, ret);
+	}
+	return ret;
+}
+
 uint256 Ledger::getFirstLedgerIndex()
 {
 	SHAMapItem::pointer node = mAccountStateMap->peekFirstItem();
@@ -994,6 +1014,14 @@ uint256 Ledger::getPrevLedgerIndex(const uint256& uHash, const uint256& uBegin)
 	return node->getTag();
 }
 
+SLE::pointer Ledger::getASNodeI(const uint256& nodeID, LedgerEntryType let)
+{
+	SLE::pointer node = getSLEi(nodeID);
+	if (node && (node->getType() != let))
+		node.reset();
+	return node;
+}
+
 SLE::pointer Ledger::getASNode(LedgerStateParms& parms, const uint256& nodeID,
 	LedgerEntryType let )
 {
@@ -1030,43 +1058,39 @@ SLE::pointer Ledger::getASNode(LedgerStateParms& parms, const uint256& nodeID,
 
 SLE::pointer Ledger::getAccountRoot(const uint160& accountID)
 {
-	LedgerStateParms	qry			= lepNONE;
-
-	return getASNode(qry, getAccountRootIndex(accountID), ltACCOUNT_ROOT);
+	return getASNodeI(getAccountRootIndex(accountID), ltACCOUNT_ROOT);
 }
 
 SLE::pointer Ledger::getAccountRoot(const RippleAddress& naAccountID)
 {
-	LedgerStateParms	qry			= lepNONE;
-
-	return getASNode(qry, getAccountRootIndex(naAccountID.getAccountID()), ltACCOUNT_ROOT);
+	return getASNodeI(getAccountRootIndex(naAccountID.getAccountID()), ltACCOUNT_ROOT);
 }
 
 //
 // Directory
 //
 
-SLE::pointer Ledger::getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex)
+SLE::pointer Ledger::getDirNode(const uint256& uNodeIndex)
 {
-	return getASNode(parms, uNodeIndex, ltDIR_NODE);
+	return getASNodeI(uNodeIndex, ltDIR_NODE);
 }
 
 //
 // Generator Map
 //
 
-SLE::pointer Ledger::getGenerator(LedgerStateParms& parms, const uint160& uGeneratorID)
+SLE::pointer Ledger::getGenerator(const uint160& uGeneratorID)
 {
-	return getASNode(parms, getGeneratorIndex(uGeneratorID), ltGENERATOR_MAP);
+	return getASNodeI(getGeneratorIndex(uGeneratorID), ltGENERATOR_MAP);
 }
 
 //
 // Nickname
 //
 
-SLE::pointer Ledger::getNickname(LedgerStateParms& parms, const uint256& uNickname)
+SLE::pointer Ledger::getNickname(const uint256& uNickname)
 {
-	return getASNode(parms, uNickname, ltNICKNAME);
+	return getASNodeI(uNickname, ltNICKNAME);
 }
 
 //
@@ -1074,18 +1098,18 @@ SLE::pointer Ledger::getNickname(LedgerStateParms& parms, const uint256& uNickna
 //
 
 
-SLE::pointer Ledger::getOffer(LedgerStateParms& parms, const uint256& uIndex)
+SLE::pointer Ledger::getOffer(const uint256& uIndex)
 {
-	return getASNode(parms, uIndex, ltOFFER);
+	return getASNodeI(uIndex, ltOFFER);
 }
 
 //
 // Ripple State
 //
 
-SLE::pointer Ledger::getRippleState(LedgerStateParms& parms, const uint256& uNode)
+SLE::pointer Ledger::getRippleState(const uint256& uNode)
 {
-	return getASNode(parms, uNode, ltRIPPLE_STATE);
+	return getASNodeI(uNode, ltRIPPLE_STATE);
 }
 
 // For an entry put in the 64 bit index or quality.
@@ -1179,7 +1203,7 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 	int diff = mLedgerSeq - ledgerIndex;
 	if (diff <= 256)
 	{
-		SLE::pointer hashIndex = getSLE(getLedgerHashIndex());
+		SLE::pointer hashIndex = getSLEi(getLedgerHashIndex());
 		if (hashIndex)
 		{
 			assert(hashIndex->getFieldU32(sfLastLedgerSequence) == (mLedgerSeq - 1));
@@ -1199,7 +1223,7 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 	}
 
 	// in skiplist
-	SLE::pointer hashIndex = getSLE(getLedgerHashIndex(ledgerIndex));
+	SLE::pointer hashIndex = getSLEi(getLedgerHashIndex(ledgerIndex));
 	if (hashIndex)
 	{
 		int lastSeq = hashIndex->getFieldU32(sfLastLedgerSequence);
@@ -1219,7 +1243,7 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 std::vector< std::pair<uint32, uint256> > Ledger::getLedgerHashes()
 {
 	std::vector< std::pair<uint32, uint256> > ret;
-	SLE::pointer hashIndex = getSLE(getLedgerHashIndex());
+	SLE::pointer hashIndex = getSLEi(getLedgerHashIndex());
 	if (hashIndex)
 	{
 		STVector256 vec = hashIndex->getFieldV256(sfHashes);

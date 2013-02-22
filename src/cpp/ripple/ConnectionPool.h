@@ -16,8 +16,8 @@
 class ConnectionPool
 {
 private:
-    boost::mutex	mPeerLock;
-    uint64			mLastPeer;
+    boost::recursive_mutex	mPeerLock;
+    uint64					mLastPeer;
 
 	typedef std::pair<RippleAddress, Peer::pointer>		naPeer;
 	typedef std::pair<ipPort, Peer::pointer>			pipPeer;

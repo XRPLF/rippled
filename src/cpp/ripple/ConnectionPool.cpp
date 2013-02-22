@@ -98,7 +98,7 @@ bool ConnectionPool::savePeer(const std::string& strIp, int iPort, char code)
 
 Peer::pointer ConnectionPool::getPeerById(const uint64& id)
 {
-	boost::mutex::scoped_lock sl(mPeerLock);
+	boost::recursive_mutex::scoped_lock sl(mPeerLock);
 	const boost::unordered_map<uint64, Peer::pointer>::iterator& it = mPeerIdMap.find(id);
 	if (it == mPeerIdMap.end())
 		return Peer::pointer();
@@ -107,7 +107,7 @@ Peer::pointer ConnectionPool::getPeerById(const uint64& id)
 
 bool ConnectionPool::hasPeer(const uint64& id)
 {
-	boost::mutex::scoped_lock sl(mPeerLock);
+	boost::recursive_mutex::scoped_lock sl(mPeerLock);
 	return mPeerIdMap.find(id) != mPeerIdMap.end();
 }
 
@@ -122,7 +122,7 @@ bool ConnectionPool::peerAvailable(std::string& strIp, int& iPort)
 
 	// Convert mIpMap (list of open connections) to a vector of "<ip> <port>".
 	{
-		boost::mutex::scoped_lock	sl(mPeerLock);
+		boost::recursive_mutex::scoped_lock	sl(mPeerLock);
 
 		vstrIpPort.reserve(mIpMap.size());
 
@@ -235,7 +235,7 @@ void ConnectionPool::policyHandler(const boost::system::error_code& ecResult)
 int ConnectionPool::relayMessage(Peer* fromPeer, const PackedMessage::pointer& msg)
 {
 	int sentTo = 0;
-	boost::mutex::scoped_lock sl(mPeerLock);
+	boost::recursive_mutex::scoped_lock sl(mPeerLock);
 
 	BOOST_FOREACH(const vtConMap& pair, mConnectedMap)
 	{
@@ -254,7 +254,7 @@ int ConnectionPool::relayMessage(Peer* fromPeer, const PackedMessage::pointer& m
 
 void ConnectionPool::relayMessageBut(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg)
 { // Relay message to all but the specified peers
-	boost::mutex::scoped_lock sl(mPeerLock);
+	boost::recursive_mutex::scoped_lock sl(mPeerLock);
 
 	BOOST_FOREACH(const vtConMap& pair, mConnectedMap)
 	{
@@ -267,7 +267,7 @@ void ConnectionPool::relayMessageBut(const std::set<uint64>& fromPeers, const Pa
 
 void ConnectionPool::relayMessageTo(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg)
 { // Relay message to the specified peers
-	boost::mutex::scoped_lock sl(mPeerLock);
+	boost::recursive_mutex::scoped_lock sl(mPeerLock);
 
 	BOOST_FOREACH(const uint64& peerID, fromPeers)
 	{
@@ -305,34 +305,22 @@ Peer::pointer ConnectionPool::peerConnect(const std::string& strIp, int iPort)
 	ipPort			pipPeer		= make_pair(strIp, iPort);
 	Peer::pointer	ppResult;
 
-    boost::unordered_map<ipPort, Peer::pointer>::iterator	it;
 
 	{
-		boost::mutex::scoped_lock sl(mPeerLock);
-
-		if ((it = mIpMap.find(pipPeer)) == mIpMap.end())
+		boost::recursive_mutex::scoped_lock sl(mPeerLock);
+		if (mIpMap.find(pipPeer) == mIpMap.end())
 		{
-			Peer::pointer	ppNew(Peer::create(theApp->getIOService(), theApp->getPeerDoor().getSSLContext(),
-				++mLastPeer, false));
+			ppResult = Peer::create(theApp->getIOService(), theApp->getPeerDoor().getSSLContext(),
+				++mLastPeer, false);
 
-			// Did not find it.  Not already connecting or connected.
-			ppNew->connect(strIp, iPort);
-
-			mIpMap[pipPeer]	= ppNew;
-
-			ppResult		= ppNew;
+			mIpMap[pipPeer]	= ppResult;
 			// ++miConnectStarting;
-		}
-		else
-		{
-			// Found it.  Already connected.
-
-			nothing();
 		}
 	}
 
 	if (ppResult)
 	{
+		ppResult->connect(strIp, iPort);
 		//cLog(lsINFO) << "Pool: Connecting: " << ADDRESS_SHARED(ppResult) << ": " << strIp << " " << iPort;
 	}
 	else
@@ -359,7 +347,7 @@ Json::Value ConnectionPool::getPeersJson()
 
 int ConnectionPool::getPeerCount()
 {
-	boost::mutex::scoped_lock sl(mPeerLock);
+	boost::recursive_mutex::scoped_lock sl(mPeerLock);
 
 	return mConnectedMap.size();
 }
@@ -368,7 +356,7 @@ std::vector<Peer::pointer> ConnectionPool::getPeerVector()
 {
 	std::vector<Peer::pointer> ret;
 
-	boost::mutex::scoped_lock sl(mPeerLock);
+	boost::recursive_mutex::scoped_lock sl(mPeerLock);
 
 	ret.reserve(mConnectedMap.size());
 
@@ -383,7 +371,7 @@ std::vector<Peer::pointer> ConnectionPool::getPeerVector()
 
 uint64 ConnectionPool::assignPeerId()
 {
-	boost::mutex::scoped_lock sl(mPeerLock);
+	boost::recursive_mutex::scoped_lock sl(mPeerLock);
 	return ++mLastPeer;
 }
 
@@ -402,7 +390,7 @@ bool ConnectionPool::peerConnected(Peer::ref peer, const RippleAddress& naPeer,
 	}
 	else
 	{
-		boost::mutex::scoped_lock sl(mPeerLock);
+		boost::recursive_mutex::scoped_lock sl(mPeerLock);
 		const boost::unordered_map<RippleAddress, Peer::pointer>::iterator& itCm	= mConnectedMap.find(naPeer);
 
 		if (itCm == mConnectedMap.end())
@@ -453,7 +441,7 @@ bool ConnectionPool::peerConnected(Peer::ref peer, const RippleAddress& naPeer,
 // We maintain a map of public key to peer for connected and verified peers.  Maintain it.
 void ConnectionPool::peerDisconnected(Peer::ref peer, const RippleAddress& naPeer)
 {
-	boost::mutex::scoped_lock sl(mPeerLock);
+	boost::recursive_mutex::scoped_lock sl(mPeerLock);
 
 	if (naPeer.isValid())
 	{
@@ -556,7 +544,7 @@ void ConnectionPool::peerClosed(Peer::ref peer, const std::string& strIp, int iP
 	// Determine if closed peer was redundant.
 	bool	bRedundant	= true;
 	{
-		boost::mutex::scoped_lock sl(mPeerLock);
+		boost::recursive_mutex::scoped_lock sl(mPeerLock);
 		const boost::unordered_map<ipPort, Peer::pointer>::iterator&	itIp = mIpMap.find(ipPeer);
 
 		if (itIp == mIpMap.end())

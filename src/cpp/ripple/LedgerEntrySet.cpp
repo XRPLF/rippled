@@ -107,6 +107,7 @@ LedgerEntryAction LedgerEntrySet::hasEntry(const uint256& index) const
 
 void LedgerEntrySet::entryCache(SLE::ref sle)
 {
+	assert(sle->isMutable());
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
@@ -128,6 +129,7 @@ void LedgerEntrySet::entryCache(SLE::ref sle)
 
 void LedgerEntrySet::entryCreate(SLE::ref sle)
 {
+	assert(sle->isMutable());
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
@@ -161,6 +163,7 @@ void LedgerEntrySet::entryCreate(SLE::ref sle)
 
 void LedgerEntrySet::entryModify(SLE::ref sle)
 {
+	assert(sle->isMutable());
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
@@ -193,6 +196,7 @@ void LedgerEntrySet::entryModify(SLE::ref sle)
 
 void LedgerEntrySet::entryDelete(SLE::ref sle)
 {
+	assert(sle->isMutable());
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
@@ -399,7 +403,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result, uint32 index)
 		if (type == &sfGeneric)
 			continue;
 
-		SLE::pointer origNode = mLedger->getSLE(it.first);
+		SLE::pointer origNode = mLedger->getSLEi(it.first);
 		SLE::pointer curNode = it.second.mEntry;
 
 		if ((type == &sfModifiedNode) && (*curNode == *origNode))

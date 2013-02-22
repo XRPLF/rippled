@@ -29,6 +29,7 @@
 class RPCDoor;
 class PeerDoor;
 typedef TaggedCache< uint256, std::vector<unsigned char> > NodeCache;
+typedef TaggedCache< uint256, SLE > SLECache;
 
 class DatabaseCon
 {
@@ -60,6 +61,7 @@ class Application
 	ValidationCollection	mValidations;
 	SuppressionTable		mSuppressions;
 	HashedObjectStore		mHashedObjectStore;
+	SLECache				mSLECache;
 	SNTPClient				mSNTPClient;
 	JobQueue				mJobQueue;
 	RPCHandler				mRPCHandler;
@@ -118,6 +120,7 @@ public:
 	TXQueue& getTxnQueue()							{ return mTxnQueue; }
 	PeerDoor& getPeerDoor()							{ return *mPeerDoor; }
 	OrderBookDB& getOrderBookDB()					{ return mOrderBookDB; }
+	SLECache& getSLECache()							{ return mSLECache; }
 
 
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }

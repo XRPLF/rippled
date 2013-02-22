@@ -39,7 +39,7 @@ void OrderBookDB::setup(Ledger::ref ledger)
 
 	while (currentIndex.isNonZero())
 	{
-		SLE::pointer entry=ledger->getSLE(currentIndex);
+		SLE::pointer entry=ledger->getSLEi(currentIndex);
 
 		OrderBook::pointer book = OrderBook::newOrderBook(entry);
 		if (book)

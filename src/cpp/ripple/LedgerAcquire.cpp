@@ -71,6 +71,8 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 {
 	if (result == boost::asio::error::operation_aborted)
 		return;
+
+	ScopedLock sl(theApp->getMasterLock());
 	boost::shared_ptr<PeerSet> ptr = wptr.lock();
 	if (ptr)
 		ptr->invokeOnTimer();
@@ -920,15 +922,21 @@ void LedgerAcquireMaster::sweep()
 	}
 }
 
-int LedgerAcquireMaster::getFetchCount()
+int LedgerAcquireMaster::getFetchCount(int& timeoutCount)
 {
+	timeoutCount = 0;
 	int ret = 0;
 	{
 		typedef std::pair<uint256, LedgerAcquire::pointer> u256_acq_pair;
 		boost::mutex::scoped_lock sl(mLock);
 		BOOST_FOREACH(const u256_acq_pair& it, mLedgers)
+		{
 			if (it.second->isActive())
+			{
 				++ret;
+				timeoutCount += it.second->getTimeouts();
+			}
+		}
 	}
 	return ret;
 }

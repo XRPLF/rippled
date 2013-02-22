@@ -485,6 +485,17 @@ SHAMapItem::pointer SHAMap::peekItem(const uint256& id, SHAMapTreeNode::TNType& 
 	return leaf->peekItem();
 }
 
+SHAMapItem::pointer SHAMap::peekItem(const uint256& id, uint256& hash)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	SHAMapTreeNode* leaf = walkToPointer(id);
+	if (!leaf)
+		return no_item;
+	hash = leaf->getNodeHash();
+	return leaf->peekItem();
+}
+
+
 bool SHAMap::hasItem(const uint256& id)
 { // does the tree have an item with this ID
 	boost::recursive_mutex::scoped_lock sl(mLock); 

@@ -266,7 +266,7 @@ bool LoadFeeTrack::lowerLocalFee()
 	boost::mutex::scoped_lock sl(mLock);
 	uint32 origFee = mLocalTxnLoadFee;
 
-	mLocalTxnLoadFee -= (mLocalTxnLoadFee / lftFeeDecFraction ); // reduce by 1/16th
+	mLocalTxnLoadFee -= (mLocalTxnLoadFee / lftFeeDecFraction ); // reduce by 1/4
 
 	if (mLocalTxnLoadFee < lftNormalFee)
 		mLocalTxnLoadFee = lftNormalFee;

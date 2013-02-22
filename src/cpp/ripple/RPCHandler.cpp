@@ -217,7 +217,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 	if (!txJSON.isMember("Flags")) txJSON["Flags"] = 0;
 
 	Ledger::pointer	lpCurrent		= mNetOps->getCurrentLedger();
-	SLE::pointer	sleAccountRoot	= mNetOps->getSLE(lpCurrent, Ledger::getAccountRootIndex(raSrcAddressID.getAccountID()));
+	SLE::pointer	sleAccountRoot	= mNetOps->getSLEi(lpCurrent, Ledger::getAccountRootIndex(raSrcAddressID.getAccountID()));
 
 	if (!sleAccountRoot)
 	{
@@ -899,7 +899,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 	if (!lpLedger)
 		return jvResult;
 
-	ScopedUnlock su(theApp->getMasterLock(), lpLedger->isFixed());
+	ScopedUnlock su(theApp->getMasterLock());
 
 	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -980,7 +980,7 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 	if (!lpLedger)
 		return jvResult;
 
-	ScopedUnlock su(theApp->getMasterLock(), lpLedger->isClosed() || lpLedger->isImmutable());
+	ScopedUnlock su(theApp->getMasterLock());
 
 	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -1526,6 +1526,7 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest)
 
 	Json::Value ret(Json::objectValue);
 
+	ScopedUnlock(theApp->getMasterLock());
 	ledger->addJson(ret, full ? LEDGER_JSON_FULL : 0);
 
 	return ret;
@@ -2147,7 +2148,7 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 	if (-3 == iLedgerIndex)
 	{ // Last fully-validated ledger
 		lpLedger		= mNetOps->getValidatedLedger();
-		iLedgerIndex	= lpLedger->getLedgerSeq();
+		iLedgerIndex 	= lpLedger->getLedgerSeq();
 	}
 
 	if (iLedgerIndex <= 0)
@@ -2364,7 +2365,7 @@ Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest)
 
 	if (!!uNodeIndex)
 	{
-		SLE::pointer	sleNode	= mNetOps->getSLE(lpLedger, uNodeIndex);
+		SLE::pointer	sleNode	= mNetOps->getSLEi(lpLedger, uNodeIndex);
 
 		if (!sleNode)
 		{
@@ -2833,7 +2834,8 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 		return rpcError(rpcNO_PERMISSION);
 	}
 
-	// XXX Need the master lock for getOperatingMode
+	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+
 	if (commandsA[i].iOptions & optNetwork
 		&& mNetOps->getOperatingMode() != NetworkOPs::omTRACKING
 		&& mNetOps->getOperatingMode() != NetworkOPs::omFULL)
@@ -2842,7 +2844,6 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 	}
 	// XXX Should verify we have a current ledger.
 
-	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 	if ((commandsA[i].iOptions & optCurrent) && false)
 	{
 		return rpcError(rpcNO_CURRENT);

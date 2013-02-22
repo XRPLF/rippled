@@ -23,7 +23,7 @@ JobQueue::JobQueue() : mLastJob(0), mThreadCount(0), mShuttingDown(false)
 	mJobLoads[jtTRANSACTION_l].setTargetLatency(100, 500);
 	mJobLoads[jtPROPOSAL_t].setTargetLatency(100, 500);
 
-	mJobLoads[jtCLIENT].setTargetLatency(250, 1000);
+	mJobLoads[jtCLIENT].setTargetLatency(2000, 5000);
 	mJobLoads[jtPEER].setTargetLatency(200, 1250);
 	mJobLoads[jtDISK].setTargetLatency(500, 1000);
 	mJobLoads[jtRPC].setTargetLatency(250, 750);

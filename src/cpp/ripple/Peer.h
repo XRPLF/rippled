@@ -37,7 +37,7 @@ private:
 	bool			mClientConnect;		// In process of connecting as client.
 	bool			mHelloed;			// True, if hello accepted.
 	bool			mDetaching;			// True, if detaching.
-	bool 			mActive;
+	int				mActive;			// 0=idle, 1=pingsent, 2=active
 	bool			mCluster;			// Node in our cluster
 	RippleAddress	mNodePublic;		// Node public key of peer.
 	std::string		mNodeName;
@@ -58,6 +58,7 @@ private:
 
 	void			handleStart(const boost::system::error_code& ecResult);
 	void			handleVerifyTimer(const boost::system::error_code& ecResult);
+	void			handlePingTimer(const boost::system::error_code& ecResult);
 
 protected:
 

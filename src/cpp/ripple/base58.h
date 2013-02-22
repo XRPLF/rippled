@@ -176,7 +176,7 @@ protected:
             memset(&vchData[0], 0, vchData.size());
     }
 
-    void SetData(int nVersionIn, std::vector<unsigned char> vchDataIn)
+    void SetData(int nVersionIn, const std::vector<unsigned char>& vchDataIn)
     {
 		nVersion    = nVersionIn;
 		vchData	    = vchDataIn;
@@ -186,7 +186,7 @@ protected:
     {
         nVersion = nVersionIn;
         vchData.resize(nSize);
-        if (!vchData.empty())
+        if (nSize)
             memcpy(&vchData[0], pdata, nSize);
     }
 
