@@ -1082,7 +1082,8 @@ Remote.prototype.account_seq = function (account, advance) {
   {
     seq = account_info.seq;
 
-    if (advance) account_info.seq += 1;
+    if (advance === "ADVANCE") account_info.seq += 1;
+    if (advance === "REWIND") account_info.seq -= 1;
 
     // console.log("cached: %s current=%d next=%d", account, seq, account_info.seq);
   }
