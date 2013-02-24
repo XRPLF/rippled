@@ -373,7 +373,7 @@ void LedgerConsensus::checkLCL()
 	uint256 netLgr = mPrevLedgerHash;
 	int netLgrCount = 0;
 
-	uint256 favoredLedger = (mState == lcsPRE_CLOSE) ? uint256() : mPrevLedgerHash; // Don't get stuck one ledger back
+	uint256 favoredLedger = mPrevLedgerHash; // Don't get stuck one ledger back or jump one forward
 	boost::unordered_map<uint256, currentValidationCount> vals =
 		theApp->getValidations().getCurrentValidations(favoredLedger);
 
@@ -397,7 +397,7 @@ void LedgerConsensus::checkLCL()
 			default:			status = "unknown";
 		}
 
-		cLog(lsWARNING) << "View of consensus changed during consensus (" << netLgrCount << ") status="
+		cLog(lsWARNING) << "View of consensus changed during " << status << " (" << netLgrCount << ") status="
 			<< status << ", " << (mHaveCorrectLCL ? "CorrectLCL" : "IncorrectLCL");
 		cLog(lsWARNING) << mPrevLedgerHash << " to " << netLgr;
 
