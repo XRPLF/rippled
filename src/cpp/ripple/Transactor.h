@@ -10,15 +10,16 @@ class Transactor
 {
 protected:
 	const SerializedTransaction&	mTxn;
-	TransactionEngine*		mEngine;
-	TransactionEngineParams		mParams;
+	TransactionEngine*				mEngine;
+	TransactionEngineParams			mParams;
 
-	uint160				mTxnAccountID;
-	STAmount			mFeeDue;
-	STAmount			mSourceBalance;
-	SLE::pointer			mTxnAccount;
-	bool				mHasAuthKey;
-	RippleAddress			mSigningPubKey;
+	uint160							mTxnAccountID;
+	STAmount						mFeeDue;
+	STAmount						mPriorBalance;	// Balance before fees.
+	STAmount						mSourceBalance;	// Balance after fees.
+	SLE::pointer					mTxnAccount;
+	bool							mHasAuthKey;
+	RippleAddress					mSigningPubKey;
 
 	TER preCheck();
 	TER checkSeq();
