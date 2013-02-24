@@ -1464,6 +1464,7 @@ uint32 Ledger::roundCloseTime(uint32 closeTime, uint32 closeResolution)
 {
 	if (closeTime == 0)
 		return 0;
+	closeTime += (closeResolution / 2);
 	return closeTime - (closeTime % closeResolution);
 }
 
