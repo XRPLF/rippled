@@ -202,8 +202,9 @@ TER Transactor::apply()
 	}
 	else
 	{
-		mSourceBalance	= mTxnAccount->getFieldAmount(sfBalance);
-		mHasAuthKey	= mTxnAccount->isFieldPresent(sfRegularKey);
+		mPriorBalance	= mTxnAccount->getFieldAmount(sfBalance);
+		mSourceBalance	= mPriorBalance;
+		mHasAuthKey		= mTxnAccount->isFieldPresent(sfRegularKey);
 	}
 
 	terResult = checkSeq();

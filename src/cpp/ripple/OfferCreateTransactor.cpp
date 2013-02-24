@@ -466,7 +466,7 @@ TER OfferCreateTransactor::doApply()
 		// Complete as is.
 		nothing();
 	}
-	else if (mTxnAccount->getFieldAmount(sfBalance).getNValue() < mEngine->getLedger()->getReserve(mTxnAccount->getFieldU32(sfOwnerCount)+1))
+	else if (mPriorBalance.getNValue() < mEngine->getLedger()->getReserve(mTxnAccount->getFieldU32(sfOwnerCount)+1))
 	{
 		if (isSetBit(mParams, tapOPEN_LEDGER)) // Ledger is not final, can vote no.
 		{
