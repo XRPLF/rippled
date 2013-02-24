@@ -312,32 +312,59 @@ Transaction.prototype.submit = function (callback) {
   if (self.remote.local_sequence && !self.tx_json.Sequence) {
     self.tx_json.Sequence      = this.remote.account_seq(self.tx_json.Account, 'ADVANCE');
     // console.log("Sequence: %s", self.tx_json.Sequence);
-  }
 
-  if (self.remote.local_sequence && !self.tx_json.Sequence) {
-    // Look in the last closed ledger.
-    this.remote.account_seq_cache(self.tx_json.Account, false)
-      .on('success_account_seq_cache', function () {
-        // Try again.
-        self.submit();
-      })
-      .on('error_account_seq_cache', function (message) {
-        // XXX Maybe be smarter about this. Don't want to trust an untrusted server for this seq number.
+    if (!self.tx_json.Sequence) {
+      // Look in the last closed ledger.
+      this.remote.account_seq_cache(self.tx_json.Account, false)
+        .on('success_account_seq_cache', function () {
+          // Try again.
+          self.submit();
+        })
+        .on('error_account_seq_cache', function (message) {
+          // XXX Maybe be smarter about this. Don't want to trust an untrusted server for this seq number.
 
-        // Look in the current ledger.
-        self.remote.account_seq_cache(self.tx_json.Account, 'CURRENT')
-          .on('success_account_seq_cache', function () {
-            // Try again.
-            self.submit();
-          })
-          .on('error_account_seq_cache', function (message) {
-            // Forward errors.
-            self.emit('error', message);
-          })
-          .request();
-      })
-      .request();
-    return this;
+          // Look in the current ledger.
+          self.remote.account_seq_cache(self.tx_json.Account, 'CURRENT')
+            .on('success_account_seq_cache', function () {
+              // Try again.
+              self.submit();
+            })
+            .on('error_account_seq_cache', function (message) {
+              // Forward errors.
+              self.emit('error', message);
+            })
+            .request();
+        })
+        .request();
+      return this;
+    }
+
+    // If the transaction fails we want to either undo incrementing the sequence
+    // or submit a noop transaction to consume the sequence remotely.
+    this.on('success', function (res) {
+      if (!res || "string" !== typeof res.engine_result) return;
+
+      switch (res.engine_result.slice(0, 3)) {
+        // Synchronous local error
+        case 'tej':
+          self.remote.account_seq(self.tx_json.Account, 'REWIND');
+          break;
+        // XXX: What do we do in case of ter?
+        case 'tel':
+        case 'tem':
+        case 'tef':
+          // XXX Once we have a transaction submission manager class, we can
+          //     check if there are any other transactions pending. If there are,
+          //     we should submit a dummy transaction to ensure those
+          //     transactions are still valid.
+          //var noop = self.remote.transaction().account_set(self.tx_json.Account);
+          //noop.submit();
+
+          // XXX Hotfix. This only works if no other transactions are pending.
+          self.remote.account_seq(self.tx_json.Account, 'REWIND');
+          break;
+      }
+    });
   }
 
   // Prepare request
@@ -345,8 +372,12 @@ Transaction.prototype.submit = function (callback) {
   var request = this.remote.request_submit();
 
   // Forward successes and errors.
-  request.on('success', function (message) { self.emit('success', message); });
-  request.on('error', function (message) { self.emit('error', message); });
+  request.on('success', function (message) {
+    self.emit('success', message);
+  });
+  request.on('error', function (message) {
+    self.emit('error', message);
+  });
 
   if (!this._secret && !this.tx_json.Signature) {
     this.emit('error', {
