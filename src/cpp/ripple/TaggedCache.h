@@ -56,7 +56,7 @@ protected:
 	mutable boost::recursive_mutex mLock;
 
 	std::string	mName;			// Used for logging
-	int mTargetSize;			// Desired number of cache entries (0 = ignore)
+	int			mTargetSize;	// Desired number of cache entries (0 = ignore)
 	int			mTargetAge;		// Desired maximum cache age
 	int			mCacheCount;	// Number of items cached
 
