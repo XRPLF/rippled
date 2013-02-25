@@ -246,7 +246,9 @@ void NetworkOPs::runTransactionQueue()
 			Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(txn->getID(), true);
 			assert(dbtx);
 
-			TER r = mLedgerMaster->doTransaction(*dbtx->getSTransaction(), tapOPEN_LEDGER | tapNO_CHECK_SIGN);
+			bool didApply;
+			TER r = mLedgerMaster->doTransaction(*dbtx->getSTransaction(),
+				tapOPEN_LEDGER | tapNO_CHECK_SIGN, didApply);
 			dbtx->setResult(r);
 
 			if (isTemMalformed(r)) // malformed, cache bad
@@ -255,21 +257,17 @@ void NetworkOPs::runTransactionQueue()
 				theApp->isNewFlag(txn->getID(), SF_RETRY);
 
 
-			bool relay = true;
-
 			if (isTerRetry(r))
 			{ // transaction should be held
 				cLog(lsDEBUG) << "Transaction should be held: " << r;
 				dbtx->setStatus(HELD);
 				theApp->getMasterTransaction().canonicalize(dbtx, true);
 				mLedgerMaster->addHeldTransaction(dbtx);
-				relay = false;
 			}
 			else if (r == tefPAST_SEQ)
 			{ // duplicate or conflict
 				cLog(lsINFO) << "Transaction is obsolete";
 				dbtx->setStatus(OBSOLETE);
-				relay = false;
 			}
 			else if (r == tesSUCCESS)
 			{
@@ -280,12 +278,10 @@ void NetworkOPs::runTransactionQueue()
 			else
 			{
 				cLog(lsDEBUG) << "Status other than success " << r;
-				if (mMode == omFULL)
-					relay = false;
 				dbtx->setStatus(INVALID);
 			}
 
-			if (relay)
+			if (didApply || (mMode != omFULL))
 			{
 				std::set<uint64> peers;
 				if (theApp->getSuppression().swapSet(txn->getID(), peers, SF_RELAYED))
@@ -335,7 +331,8 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 
 	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 	Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(trans->getID(), true);
-	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tapOPEN_LEDGER | tapNO_CHECK_SIGN);
+	bool didApply;
+	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tapOPEN_LEDGER | tapNO_CHECK_SIGN, didApply);
 	trans->setResult(r);
 
 	if (isTemMalformed(r)) // malformed, cache bad
@@ -372,8 +369,6 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		return trans;
 	}
 
-	bool relay = true;
-
 	if (r == tesSUCCESS)
 	{
 		cLog(lsINFO) << "Transaction is now included in open ledger";
@@ -383,12 +378,10 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	else
 	{
 		cLog(lsDEBUG) << "Status other than success " << r;
-		if (mMode == omFULL)
-			relay = false;
 		trans->setStatus(INVALID);
 	}
 
-	if (relay)
+	if (didApply || (mMode != omFULL))
 	{
 		std::set<uint64> peers;
 		if (theApp->getSuppression().swapSet(trans->getID(), peers, SF_RELAYED))
