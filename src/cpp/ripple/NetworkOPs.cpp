@@ -1085,6 +1085,52 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 	return ret;
 }
 
+std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
+	const RippleAddress& account, uint32 minLedger, uint32 maxLedger)
+{ // can be called with no locks
+	std::vector< txnMetaLedgerType> ret;
+
+	std::string sql =
+		str(boost::format("SELECT LedgerSeq, RawTxn,TxnMeta FROM Transactions where TransID in (SELECT TransID from AccountTransactions  "
+			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' LIMIT 500) ORDER BY LedgerSeq DESC;")
+			% account.humanAccountID() % maxLedger	% minLedger);
+
+	{
+		Database* db = theApp->getTxnDB()->getDB();
+		ScopedLock sl(theApp->getTxnDB()->getDBLock());
+
+		SQL_FOREACH(db, sql)
+		{
+			int txnSize = 2048;
+			std::vector<unsigned char> rawTxn(txnSize);
+			txnSize = db->getBinary("RawTxn", &rawTxn[0], rawTxn.size());
+			if (txnSize > rawTxn.size())
+			{
+				rawTxn.resize(txnSize);
+				db->getBinary("RawTxn", &*rawTxn.begin(), rawTxn.size());
+			}
+			else
+				rawTxn.resize(txnSize);
+
+			int metaSize = 2048;
+			std::vector<unsigned char> rawMeta(2048);
+			metaSize = db->getBinary("TxnMeta", &rawMeta[0], rawMeta.size());
+			if (metaSize > rawMeta.size())
+			{
+				rawMeta.resize(metaSize);
+				db->getBinary("TxnMeta", &*rawMeta.begin(), rawMeta.size());
+			}
+			else
+				rawMeta.resize(metaSize);
+
+			ret.push_back(boost::make_tuple(strHex(rawTxn), strHex(rawMeta), db->getInt("LedgerSeq")));
+		}
+	}
+
+	return ret;
+}
+
+
 std::vector<RippleAddress>
 	NetworkOPs::getLedgerAffectedAccounts(uint32 ledgerSeq)
 {

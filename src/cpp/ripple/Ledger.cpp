@@ -377,6 +377,22 @@ bool Ledger::getTransactionMeta(const uint256& txID, TransactionMetaSet::pointer
 	return true;
 }
 
+bool Ledger::getMetaHex(const uint256& transID, std::string& hex)
+{
+	SHAMapTreeNode::TNType type;
+	SHAMapItem::pointer item = mTransactionMap->peekItem(transID, type);
+	if (!item)
+		return false;
+
+	if (type != SHAMapTreeNode::tnTRANSACTION_MD)
+		return false;
+
+	SerializerIterator it(item->peekSerializer());
+	it.getVL(); // skip transaction
+	hex = strHex(it.getVL());
+	return true;
+}
+
 uint256 Ledger::getHash()
 {
 	if (!mValidHash)
