@@ -152,7 +152,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 			if (cit->second.isExpired())
 			{
 				++mapRemovals;
-				mCache.erase(cit++);
+				cit = mCache.erase(cit);
 			}
 			else
 				++cit;
@@ -165,7 +165,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 			if (cit->second.isExpired())
 			{
 				++mapRemovals;
-				mCache.erase(cit++);
+				cit = mCache.erase(cit);
 			}
 			else // remains weakly cached
 				++cit;
