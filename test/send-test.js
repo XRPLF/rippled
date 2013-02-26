@@ -187,8 +187,6 @@ buster.testCase("Sending", {
               .on('proposed', function (m) {
                   buster.assert.equals('temBAD_LIMIT', m.result);
 
-                  // After a malformed transaction, need to recover correct sequence.
-                  self.remote.set_account_seq("alice", self.remote.account_seq("alice")-1);
                   callback('temBAD_LIMIT' !== m.result);
                 })
               .submit();

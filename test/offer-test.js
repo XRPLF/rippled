@@ -725,9 +725,6 @@ buster.testCase("Offer tests", {
           },
           // Future sequence
           function (m, callback) {
-            // After a malformed transaction, need to recover correct sequence.
-            self.remote.set_account_seq("root", self.remote.account_seq("root")-1);
-
             self.remote.transaction()
               .offer_cancel("root", m.tx_json.Sequence+2)
               .on('proposed', function (m) {
