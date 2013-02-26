@@ -1446,9 +1446,12 @@ Json::Value RPCHandler::doTx(Json::Value jvRequest)
 		if (!txn)
 			return rpcError(rpcTXN_NOT_FOUND);
 
+#ifdef READY_FOR_NEW_TX_FORMAT
 		Json::Value ret;
-
 		ret["transaction"] = txn->getJson(0, binary);
+#else
+		Json::Value ret = txn->getJson(0, binary);
+#endif
 
 		if (txn->getLedger() != 0)
 		{
