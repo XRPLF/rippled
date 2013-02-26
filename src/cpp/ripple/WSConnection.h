@@ -103,7 +103,7 @@ public:
 			return jvResult;
 		}
 
-		RPCHandler	mRPCHandler(&mNetwork, this->shared_from_this());
+		RPCHandler	mRPCHandler(&mNetwork, boost::shared_polymorphic_downcast<InfoSub>(this->shared_from_this()));
 		Json::Value	jvResult(Json::objectValue);
 
 		int iRole	= mHandler->getPublic()
