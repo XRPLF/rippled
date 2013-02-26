@@ -130,7 +130,11 @@ Base.decode_check = function (version, input, alphabet) {
     if (computed[i] !== checksum[i])
       return NaN;
 
-  return new BigInteger(buffer.slice(1, -4));
+  // We'll use the version byte to add a leading zero, this ensures JSBN doesn't
+  // intrepret the value as a negative number
+  buffer[0] = 0;
+
+  return new BigInteger(buffer.slice(0, -4), 256);
 }
 
 exports.Base = Base;
