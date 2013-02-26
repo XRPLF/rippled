@@ -64,7 +64,7 @@ public:
 
 	uint256 getTransactionID() const;
 
-	virtual Json::Value getJson(int options) const;
+	virtual Json::Value getJson(int options, bool binary = false) const;
 
 	void sign(const RippleAddress& naAccountPrivate);
 	bool checkSign(const RippleAddress& naAccountPublic) const;

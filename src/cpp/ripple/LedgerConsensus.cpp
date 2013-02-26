@@ -728,7 +728,7 @@ void LedgerConsensus::updateOurPositions()
 			cLog(lsWARNING) << "Removing stale proposal from " << peerID;
 			BOOST_FOREACH(u256_lct_pair& it, mDisputes)
 				it.second->unVote(peerID);
-			mPeerPositions.erase(it++);
+			it = mPeerPositions.erase(it);
 		}
 		else
 		{ // proposal is still fresh

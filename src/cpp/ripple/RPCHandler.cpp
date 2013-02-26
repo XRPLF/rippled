@@ -1433,6 +1433,8 @@ Json::Value RPCHandler::doTx(Json::Value jvRequest)
 	if (!jvRequest.isMember("transaction"))
 		return rpcError(rpcINVALID_PARAMS);
 
+	bool binary = jvRequest.isMember("binary") && jvRequest["binary"].asBool();
+
 	std::string strTransaction	= jvRequest["transaction"].asString();
 
 	if (Transaction::isHexTxID(strTransaction))
@@ -1441,21 +1443,42 @@ Json::Value RPCHandler::doTx(Json::Value jvRequest)
 
 		Transaction::pointer txn = theApp->getMasterTransaction().fetch(txid, true);
 
-		if (!txn) return rpcError(rpcTXN_NOT_FOUND);
+		if (!txn)
+			return rpcError(rpcTXN_NOT_FOUND);
 
-		Json::Value ret = txn->getJson(0);
+#ifdef READY_FOR_NEW_TX_FORMAT
+		Json::Value ret;
+		ret["transaction"] = txn->getJson(0, binary);
+#else
+		Json::Value ret = txn->getJson(0, binary);
+#endif
 
 		if (txn->getLedger() != 0)
 		{
 			Ledger::pointer lgr = theApp->getLedgerMaster().getLedgerBySeq(txn->getLedger());
 			if (lgr)
 			{
-				TransactionMetaSet::pointer set;
-				if (lgr->getTransactionMeta(txid, set))
+				bool okay = false;
+				if (binary)
 				{
-					ret["meta"] = set->getJson(0);
-					ret["validated"] = theApp->getOPs().isValidated(lgr);
+					std::string meta;
+					if (lgr->getMetaHex(txid, meta))
+					{
+						ret["meta"] = meta;
+						okay = true;
+					}
 				}
+				else
+				{
+					TransactionMetaSet::pointer set;
+					if (lgr->getTransactionMeta(txid, set))
+					{
+						okay = true;
+						ret["meta"] = set->getJson(0);
+					}
+				}
+				if (okay)
+					ret["validated"] = theApp->getOPs().isValidated(lgr);
 			}
 		}
 
@@ -1576,29 +1599,49 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 		int vl = theApp->getOPs().getValidatedSeq();
 		ScopedUnlock su(theApp->getMasterLock());
 
-		std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(raAccount, minLedger, maxLedger);
 		Json::Value ret(Json::objectValue);
 		ret["account"] = raAccount.humanAccountID();
-		Json::Value ledgers(Json::arrayValue);
 
-		for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
+		if (jvRequest.isMember("binary") && jvRequest["binary"].asBool())
 		{
-			Json::Value	obj(Json::objectValue);
-
-			if (it->first)
-				obj["tx"] = it->first->getJson(1);
-			if (it->second)
+			std::vector<NetworkOPs::txnMetaLedgerType> txns =
+				mNetOps->getAccountTxsB(raAccount, minLedger, maxLedger);
+			for (std::vector<NetworkOPs::txnMetaLedgerType>::const_iterator it = txns.begin(), end = txns.end();
+				it != end; ++it)
 			{
-				obj["meta"] = it->second->getJson(0);
-
-				uint32 s = it->second->getLgrSeq();
-				if (s > vl)
+				Json::Value obj(Json::objectValue);
+				obj["transaction"] = it->get<0>();
+				obj["meta"] = it->get<1>();
+				obj["inLedger"] = it->get<2>();
+				if (it->get<2>() > vl)
 					obj["validated"] = false;
-				else if (theApp->getOPs().haveLedger(s))
+				else if (theApp->getOPs().haveLedger(it->get<2>()))
 					obj["validated"] = true;
+				ret["transactions"].append(obj);
 			}
+		}
+		else
+		{
+			std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(raAccount, minLedger, maxLedger);
+			for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
+			{
+				Json::Value	obj(Json::objectValue);
 
-			ret["transactions"].append(obj);
+				if (it->first)
+					obj["tx"] = it->first->getJson(1);
+				if (it->second)
+				{
+					obj["meta"] = it->second->getJson(0);
+
+					uint32 s = it->second->getLgrSeq();
+					if (s > vl)
+						obj["validated"] = false;
+					else if (theApp->getOPs().haveLedger(s))
+						obj["validated"] = true;
+				}
+
+				ret["transactions"].append(obj);
+			}
 		}
 		return ret;
 #ifndef DEBUG

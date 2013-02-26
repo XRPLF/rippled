@@ -4,6 +4,7 @@
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include "AccountState.h"
 #include "LedgerMaster.h"
@@ -273,6 +274,11 @@ public:
 	// client information retrieval functions
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 		getAccountTxs(const RippleAddress& account, uint32 minLedger, uint32 maxLedger);
+
+	typedef boost::tuple<std::string, std::string, uint32> txnMetaLedgerType;
+	std::vector<txnMetaLedgerType>
+		getAccountTxsB(const RippleAddress& account, uint32 minL, uint32 maxL);
+
 	std::vector<RippleAddress> getLedgerAffectedAccounts(uint32 ledgerSeq);
 	std::vector<SerializedTransaction> getLedgerTransactions(uint32 ledgerSeq);
 

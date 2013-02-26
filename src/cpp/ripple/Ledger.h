@@ -184,6 +184,7 @@ public:
 	Transaction::pointer getTransaction(const uint256& transID) const;
 	bool getTransaction(const uint256& transID, Transaction::pointer& txn, TransactionMetaSet::pointer& txMeta);
 	bool getTransactionMeta(const uint256& transID, TransactionMetaSet::pointer& txMeta);
+	bool getMetaHex(const uint256& transID, std::string& hex);
 
 	static SerializedTransaction::pointer getSTransaction(SHAMapItem::ref, SHAMapTreeNode::TNType);
 	SerializedTransaction::pointer getSMTransaction(SHAMapItem::ref, SHAMapTreeNode::TNType,
