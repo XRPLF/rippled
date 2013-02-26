@@ -2516,7 +2516,8 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 		{
 			cLog(lsDEBUG) << boost::str(boost::format("doSubscribe: building: %s") % strUrl);
 
-			ispSub	= mNetOps->addRpcSub(strUrl, boost::make_shared<RPCSub>(strUrl, strUsername, strPassword));
+			RPCSub::pointer rspSub = boost::make_shared<RPCSub>(strUrl, strUsername, strPassword);
+			ispSub	= mNetOps->addRpcSub(strUrl, boost::shared_polymorphic_downcast<InfoSub>(rspSub));
 		}
 		else
 		{
