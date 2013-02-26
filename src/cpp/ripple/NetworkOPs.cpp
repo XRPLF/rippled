@@ -630,11 +630,15 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		mConsensus->timerEntry();
 		return;
 	}
+	tryStartConsensus();
+	if (mConsensus)
+		mConsensus->timerEntry();
+}
 
-	// FIXME: Don't check unless last closed ledger is at least some seconds old
-	// If full or tracking, check only at wobble time!
+void NetworkOPs::tryStartConsensus()
+{
 	uint256 networkClosed;
-	bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
+	bool ledgerChange = checkLastClosedLedger(theApp->getConnectionPool().getPeerVector(), networkClosed);
 	if(networkClosed.isZero())
 		return;
 
@@ -668,8 +672,6 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 
 	if ((!mConsensus) && (mMode != omDISCONNECTED))
 		beginConsensus(networkClosed, mLedgerMaster->getCurrentLedger());
-	if (mConsensus)
-		mConsensus->timerEntry();
 }
 
 bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerList, uint256& networkClosed)
@@ -877,16 +879,21 @@ bool NetworkOPs::haveConsensusObject()
 {
 	if (mConsensus)
 		return true;
-	if (mMode != omFULL)
-		return false;
 
-	uint256 networkClosed;
-	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
-	bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
-	if (!ledgerChange)
+	if ((mMode == omFULL) || (mMode == omTRACKING))
 	{
-		cLog(lsINFO) << "Beginning consensus due to peer action";
-		beginConsensus(networkClosed, mLedgerMaster->getCurrentLedger());
+		tryStartConsensus();
+	}
+	else
+	{ // we need to get into the consensus process
+		uint256 networkClosed;
+		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+		bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
+		if (!ledgerChange)
+		{
+			cLog(lsINFO) << "Beginning consensus due to peer action";
+			beginConsensus(networkClosed, mLedgerMaster->getCurrentLedger());
+		}
 	}
 	return mConsensus;
 }
