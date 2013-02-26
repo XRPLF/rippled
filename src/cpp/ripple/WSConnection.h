@@ -6,6 +6,7 @@
 
 #include <boost/weak_ptr.hpp>
 #include <boost/asio.hpp>
+#include <boost/enable_shared_from_this.hpp>
 
 #include "WSDoor.h"
 #include "Application.h"
@@ -28,7 +29,8 @@ class WSServerHandler;
 // - Subscriptions
 //
 template <typename endpoint_type>
-class WSConnection : public InfoSub, public IS_INSTANCE(WebSocketConnection)
+class WSConnection : public InfoSub, public IS_INSTANCE(WebSocketConnection),
+	public boost::enable_shared_from_this< WSConnection<endpoint_type> >
 {
 public:
 	typedef typename endpoint_type::connection_type connection;
@@ -101,7 +103,7 @@ public:
 			return jvResult;
 		}
 
-		RPCHandler	mRPCHandler(&mNetwork, this);
+		RPCHandler	mRPCHandler(&mNetwork, this->shared_from_this());
 		Json::Value	jvResult(Json::objectValue);
 
 		int iRole	= mHandler->getPublic()

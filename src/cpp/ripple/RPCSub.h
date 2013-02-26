@@ -30,6 +30,9 @@ protected:
 	void	sendThread();
 
 public:
+	typedef boost::shared_ptr<RPCSub>	pointer;
+	typedef const pointer&				ref;
+
 	RPCSub(const std::string& strUrl, const std::string& strUsername, const std::string& strPassword);
 
 	virtual ~RPCSub() { ; }

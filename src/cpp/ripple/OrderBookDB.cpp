@@ -232,23 +232,31 @@ void OrderBookDB::processTxn(const SerializedTransaction& stTxn, TER terResult,T
 	}
 }
 
-void BookListeners::addSubscriber(InfoSub* sub)
+void BookListeners::addSubscriber(InfoSub::ref sub)
 {
-	mListeners.insert(sub);
+	mListeners[sub->getSeq()] = sub;
 }
 
-void BookListeners::removeSubscriber(InfoSub* sub)
+void BookListeners::removeSubscriber(uint64 seq)
 {
-	mListeners.erase(sub);
+	mListeners.erase(seq);
 }
 
 void BookListeners::publish(Json::Value& jvObj)
 {
 	//Json::Value jvObj=node.getJson(0);
 
-	BOOST_FOREACH(InfoSub* sub,mListeners)
+	NetworkOPs::subMapType::const_iterator it = mListeners.begin();
+	while (it != mListeners.end())
 	{
-		sub->send(jvObj, true);
+		InfoSub::pointer p = it->second.lock();
+		if (p)
+		{
+			p->send(jvObj, true);
+			++it;
+		}
+		else
+			it = mListeners.erase(it);
 	}
 }
 

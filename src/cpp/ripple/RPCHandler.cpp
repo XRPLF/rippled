@@ -66,13 +66,11 @@ int iAdminGet(const Json::Value& jvRequest, const std::string& strRemoteIp)
 RPCHandler::RPCHandler(NetworkOPs* netOps)
 {
 	mNetOps		= netOps;
-	mInfoSub	= NULL;
 }
 
-RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub* infoSub)
+RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub::pointer infoSub) : mInfoSub(infoSub)
 {
 	mNetOps		= netOps;
-	mInfoSub	= infoSub;
 }
 
 Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
@@ -2492,7 +2490,7 @@ rt_accounts
 */
 Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 {
-	InfoSub*	ispSub;
+	InfoSub::pointer ispSub;
 	Json::Value jvResult(Json::objectValue);
 	uint32		uLedgerIndex = jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric()
 									? jvRequest["ledger_index"].asUInt()
@@ -2513,25 +2511,23 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 		std::string	strUsername	= jvRequest.isMember("username") ? jvRequest["username"].asString() : "";
 		std::string	strPassword	= jvRequest.isMember("password") ? jvRequest["password"].asString() : "";
 
-		RPCSub	*rspSub	= mNetOps->findRpcSub(strUrl);
-		if (!rspSub)
+		ispSub	= mNetOps->findRpcSub(strUrl);
+		if (!ispSub)
 		{
 			cLog(lsDEBUG) << boost::str(boost::format("doSubscribe: building: %s") % strUrl);
 
-			rspSub	= mNetOps->addRpcSub(strUrl, new RPCSub(strUrl, strUsername, strPassword));
+			ispSub	= mNetOps->addRpcSub(strUrl, boost::make_shared<RPCSub>(strUrl, strUsername, strPassword));
 		}
 		else
 		{
 			cLog(lsTRACE) << boost::str(boost::format("doSubscribe: reusing: %s") % strUrl);
 
 			if (jvRequest.isMember("username"))
-				rspSub->setUsername(strUsername);
+				dynamic_cast<RPCSub*>(&*ispSub)->setUsername(strUsername);
 
 			if (jvRequest.isMember("password"))
-				rspSub->setPassword(strPassword);
+				dynamic_cast<RPCSub*>(&*ispSub)->setPassword(strPassword);
 		}
-
-		ispSub	= rspSub;
 	}
 	else
 	{
@@ -2631,7 +2627,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 // FIXME: This leaks RPCSub objects for JSON-RPC.  Shouldn't matter for anyone sane.
 Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 {
-	InfoSub*	ispSub;
+	InfoSub::pointer ispSub;
 	Json::Value jvResult(Json::objectValue);
 
 	if (!mInfoSub && !jvRequest.isMember("url"))
@@ -2647,11 +2643,9 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 
 		std::string	strUrl	= jvRequest["url"].asString();
 
-		RPCSub	*rspSub	= mNetOps->findRpcSub(strUrl);
-		if (!rspSub)
+		ispSub	= mNetOps->findRpcSub(strUrl);
+		if (!ispSub)
 			return jvResult;
-
-		ispSub		= rspSub;
 	}
 	else
 	{
@@ -2668,19 +2662,19 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 
 				if (streamName == "server")
 				{
-					mNetOps->unsubServer(ispSub);
+					mNetOps->unsubServer(ispSub->getSeq());
 				}
 				else if (streamName == "ledger")
 				{
-					mNetOps->unsubLedger(ispSub);
+					mNetOps->unsubLedger(ispSub->getSeq());
 				}
 				else if (streamName == "transactions")
 				{
-					mNetOps->unsubTransactions(ispSub);
+					mNetOps->unsubTransactions(ispSub->getSeq());
 				}
 				else if (streamName == "rt_transactions")
 				{
-					mNetOps->unsubRTTransactions(ispSub);
+					mNetOps->unsubRTTransactions(ispSub->getSeq());
 				}
 				else
 				{
@@ -2704,7 +2698,7 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 		}
 		else
 		{
-			mNetOps->unsubAccount(ispSub, usnaAccoundIds, true);
+			mNetOps->unsubAccount(ispSub->getSeq(), usnaAccoundIds, true);
 		}
 	}
 
@@ -2718,7 +2712,7 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 		}
 		else
 		{
-			mNetOps->unsubAccount(ispSub, usnaAccoundIds, false);
+			mNetOps->unsubAccount(ispSub->getSeq(), usnaAccoundIds, false);
 		}
 	}
 
@@ -2733,7 +2727,7 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 			STAmount::issuerFromString(currencyOut,(*it)["CurrencyIn"].asString());
 			uint160 issuerIn=RippleAddress::createNodePublic( (*it)["IssuerIn"].asString() ).getAccountID();
 
-			mNetOps->unsubBook(ispSub,currencyIn,currencyOut,issuerIn,issuerOut);
+			mNetOps->unsubBook(ispSub->getSeq(), currencyIn, currencyOut, issuerIn, issuerOut);
 		}
 	}
 

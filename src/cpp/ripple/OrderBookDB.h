@@ -16,12 +16,12 @@
 
 class BookListeners
 {
-	boost::unordered_set<InfoSub*> mListeners;
+	boost::unordered_map<uint64, InfoSub::wptr> mListeners;
 public:
 	typedef boost::shared_ptr<BookListeners> pointer;
 
-	void addSubscriber(InfoSub* sub);
-	void removeSubscriber(InfoSub* sub);
+	void addSubscriber(InfoSub::ref sub);
+	void removeSubscriber(uint64 sub);
 	void publish(Json::Value& jvObj);
 };
 
