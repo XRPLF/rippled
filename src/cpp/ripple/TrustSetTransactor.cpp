@@ -43,6 +43,14 @@ TER TrustSetTransactor::doApply()
 		return tefNO_AUTH_REQUIRED;
 	}
 
+	if (saLimitAmount.isNative())
+	{
+		cLog(lsINFO) << boost::str(boost::format("doTrustSet: Malformed transaction: Native credit limit: %s")
+			% saLimitAmount.getFullText());
+
+		return temBAD_LIMIT;
+	}
+
 	if (saLimitAmount.isNegative())
 	{
 		cLog(lsINFO) << "doTrustSet: Malformed transaction: Negatived credit limit.";
