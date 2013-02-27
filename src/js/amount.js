@@ -117,8 +117,8 @@ Amount.prototype.add = function (v) {
   else if (this.is_zero()) {
     result              = v.clone();
     // YYY Why are these cloned? We never modify them.
-    result._currency    = this._currency.clone();
-    result._issuer      = this._issuer.clone();
+    result._currency    = this._currency;
+    result._issuer      = this._issuer;
   }
   else
   {
@@ -147,8 +147,8 @@ Amount.prototype.add = function (v) {
       result._value       = result._value.negate();
     }
 
-    result._currency    = this._currency.clone();
-    result._issuer      = this._issuer.clone();
+    result._currency    = this._currency;
+    result._issuer      = this._issuer;
 
     result.canonicalize();
   }
@@ -319,7 +319,7 @@ Amount.prototype.divide = function (d) {
     throw "divide by zero";
   }
   else if (this.is_zero()) {
-    result = this.clone();
+    result = this;
   }
   else if (!this.is_valid()) {
     throw new Error("Invalid dividend");
@@ -328,13 +328,35 @@ Amount.prototype.divide = function (d) {
     throw new Error("Invalid divisor");
   }
   else {
+    var _n = this;
+
+    if (_n.is_native()) {
+      _n  = _n.clone();
+
+      while (_n._value.compareTo(consts.bi_man_min_value) < 0) {
+        _n._value  = _n._value.multiply(consts.bi_10);
+        _n._offset -= 1;
+      }
+    }
+
+    var _d = d;
+
+    if (_d.is_native()) {
+      _d = _d.clone();
+
+      while (_d._value.compareTo(consts.bi_man_min_value) < 0) {
+        _d._value  = _d._value.multiply(consts.bi_10);
+        _d._offset -= 1;
+      }
+    }
+
     result              = new Amount();
-    result._offset      = this._offset - d._offset - 17;
-    result._value       = this._value.multiply(consts.bi_1e17).divide(d._value).add(consts.bi_5);
-    result._is_native   = this._is_native;
-    result._is_negative = this._is_negative !== d._is_negative;
-    result._currency    = this._currency.clone();
-    result._issuer      = this._issuer.clone();
+    result._offset      = _n._offset - _d._offset - 17;
+    result._value       = _n._value.multiply(consts.bi_1e17).divide(_d._value).add(consts.bi_5);
+    result._is_native   = _n._is_native;
+    result._is_negative = _n._is_negative !== _d._is_negative;
+    result._currency    = _n._currency;
+    result._issuer      = _n._issuer;
 
     result.canonicalize();
   }
@@ -470,15 +492,16 @@ Amount.prototype.issuer = function () {
 };
 
 // Result in terms of this' currency and issuer.
+// XXX Diverges from cpp.
 Amount.prototype.multiply = function (v) {
   var result;
 
   if (this.is_zero()) {
-    result = this.clone();
+    result = this;
   }
   else if (v.is_zero()) {
     result = this.clone();
-    result._value = BigInteger.ZERO.clone();
+    result._value = BigInteger.ZERO;
   }
   else {
     var v1 = this._value;
@@ -486,14 +509,18 @@ Amount.prototype.multiply = function (v) {
     var v2 = v._value;
     var o2 = v._offset;
 
-    while (v1.compareTo(consts.bi_man_min_value) < 0 ) {
-      v1 = v1.multiply(consts.bi_10);
-      o1 -= 1;
+    if (this.is_native()) {
+      while (v1.compareTo(consts.bi_man_min_value) < 0) {
+        v1 = v1.multiply(consts.bi_10);
+        o1 -= 1;
+      }
     }
 
-    while (v2.compareTo(consts.bi_man_min_value) < 0 ) {
-      v2 = v2.multiply(consts.bi_10);
-      o2 -= 1;
+    if (v.is_native()) {
+      while (v2.compareTo(consts.bi_man_min_value) < 0) {
+        v2 = v2.multiply(consts.bi_10);
+        o2 -= 1;
+      }
     }
 
     result              = new Amount();
@@ -501,8 +528,8 @@ Amount.prototype.multiply = function (v) {
     result._value       = v1.multiply(v2).divide(consts.bi_1e14).add(consts.bi_7);
     result._is_native   = this._is_native;
     result._is_negative = this._is_negative !== v._is_negative;
-    result._currency    = this._currency.clone();
-    result._issuer      = this._issuer.clone();
+    result._currency    = this._currency;
+    result._issuer      = this._issuer;
 
     result.canonicalize();
   }
@@ -713,7 +740,7 @@ Amount.prototype.parse_value = function (j) {
     }
   }
   else if (j instanceof BigInteger) {
-    this._value	      = j.clone();
+    this._value	      = j;
   }
   else {
     this._value	      = NaN;
