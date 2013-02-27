@@ -1025,7 +1025,7 @@ uint32 LedgerEntrySet::rippleQualityIn(const uint160& uToAccountID, const uint16
 		}
 	}
 
-	cLog(lsINFO) << boost::str(boost::format("rippleQuality: %s uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQuality=%f")
+	cLog(lsTRACE) << boost::str(boost::format("rippleQuality: %s uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQuality=%f")
 		% (sfLow == sfLowQualityIn ? "in" : "out")
 		% RippleAddress::createHumanAccountID(uToAccountID)
 		% RippleAddress::createHumanAccountID(uFromAccountID)

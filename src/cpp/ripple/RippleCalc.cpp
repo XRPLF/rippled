@@ -72,7 +72,7 @@ TER PathState::pushImply(
 	const PaymentNode&	pnPrv		= vpnNodes.back();
 	TER					terResult	= tesSUCCESS;
 
-	cLog(lsINFO) << "pushImply> "
+	cLog(lsTRACE) << "pushImply> "
 		<< RippleAddress::createHumanAccountID(uAccountID)
 		<< " " << STAmount::createHumanCurrency(uCurrencyID)
 		<< " " << RippleAddress::createHumanAccountID(uIssuerID);
@@ -107,7 +107,7 @@ TER PathState::pushImply(
 						uIssuerID);
 	}
 
-	cLog(lsINFO) << boost::str(boost::format("pushImply< : %s") % transToken(terResult));
+	cLog(lsTRACE) << boost::str(boost::format("pushImply< : %s") % transToken(terResult));
 
 	return terResult;
 }
@@ -133,7 +133,7 @@ TER PathState::pushNode(
 	const bool			bIssuer		= isSetBit(iType, STPathElement::typeIssuer);
 	TER					terResult	= tesSUCCESS;
 
-	cLog(lsDEBUG) << "pushNode> "
+	cLog(lsTRACE) << "pushNode> "
 		<< iType
 		<< ": " << (bAccount ? RippleAddress::createHumanAccountID(uAccountID) : "-")
 		<< " " << (bCurrency ? STAmount::createHumanCurrency(uCurrencyID) : "-")
@@ -209,7 +209,7 @@ TER PathState::pushNode(
 
 				if (!sleRippleState)
 				{
-					cLog(lsINFO) << "pushNode: No credit line between "
+					cLog(lsTRACE) << "pushNode: No credit line between "
 						<< RippleAddress::createHumanAccountID(pnBck.uAccountID)
 						<< " and "
 						<< RippleAddress::createHumanAccountID(pnCur.uAccountID)
@@ -217,13 +217,13 @@ TER PathState::pushNode(
 						<< STAmount::createHumanCurrency(pnCur.uCurrencyID)
 						<< "." ;
 
-					cLog(lsINFO) << getJson();
+					cLog(lsTRACE) << getJson();
 
 					terResult	= terNO_LINE;
 				}
 				else
 				{
-					cLog(lsINFO) << "pushNode: Credit line found between "
+					cLog(lsDEBUG) << "pushNode: Credit line found between "
 						<< RippleAddress::createHumanAccountID(pnBck.uAccountID)
 						<< " and "
 						<< RippleAddress::createHumanAccountID(pnCur.uAccountID)
@@ -280,7 +280,7 @@ TER PathState::pushNode(
 			vpnNodes.push_back(pnCur);
 		}
 	}
-	cLog(lsINFO) << boost::str(boost::format("pushNode< : %s") % transToken(terResult));
+	cLog(lsDEBUG) << boost::str(boost::format("pushNode< : %s") % transToken(terResult));
 
 	return terResult;
 }
@@ -1660,7 +1660,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 											? lesActive.rippleOwed(uCurAccountID, uNxtAccountID, uCurrencyID)
 											: STAmount(uCurrencyID, uCurAccountID);
 
-	cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev> uNode=%d/%d uPrvAccountID=%s uCurAccountID=%s uNxtAccountID=%s uCurrencyID=%s uQualityIn=%d uQualityOut=%d saPrvOwed=%s saPrvLimit=%s")
+	cLog(lsTRACE) << boost::str(boost::format("calcNodeAccountRev> uNode=%d/%d uPrvAccountID=%s uCurAccountID=%s uNxtAccountID=%s uCurrencyID=%s uQualityIn=%d uQualityOut=%d saPrvOwed=%s saPrvLimit=%s")
 		% uNode
 		% uLast
 		% RippleAddress::createHumanAccountID(uPrvAccountID)
@@ -1695,14 +1695,14 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 	const STAmount&	saCurDeliverReq	= pnCur.saRevDeliver;
 	STAmount		saCurDeliverAct(saCurDeliverReq.getCurrency(), saCurDeliverReq.getIssuer());
 
-	cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: saPrvRedeemReq=%s saPrvIssueReq=%s saCurRedeemReq=%s saCurIssueReq=%s saNxtOwed=%s")
+	cLog(lsTRACE) << boost::str(boost::format("calcNodeAccountRev: saPrvRedeemReq=%s saPrvIssueReq=%s saCurRedeemReq=%s saCurIssueReq=%s saNxtOwed=%s")
 		% saPrvRedeemReq.getFullText()
 		% saPrvIssueReq.getFullText()
 		% saCurRedeemReq.getFullText()
 		% saCurIssueReq.getFullText()
 		% saNxtOwed.getFullText());
 
-	cLog(lsDEBUG) << psCur.getJson();
+	cLog(lsTRACE) << psCur.getJson();
 
 	assert(!saCurRedeemReq || (-saNxtOwed) >= saCurRedeemReq);	// Current redeem req can't be more than IOUs on hand.
 	assert(!saCurIssueReq					// If not issuing, fine.
