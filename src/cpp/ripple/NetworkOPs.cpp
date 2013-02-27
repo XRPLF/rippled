@@ -107,6 +107,23 @@ uint32 NetworkOPs::getLedgerID(const uint256& hash)
 	return lrLedger ? lrLedger->getLedgerSeq() : 0;
 }
 
+Ledger::pointer NetworkOPs::getLedgerBySeq(const uint32 seq)
+{
+	Ledger::pointer ret;
+
+	ret = mLedgerMaster->getLedgerBySeq(seq);
+	if (ret)
+		return ret;
+
+	if (!haveLedger(seq))
+		return ret;
+
+	// We should have this ledger but we don't
+	cLog(lsWARNING) << "We should have ledger " << seq;
+
+	return ret;
+}
+
 uint32 NetworkOPs::getCurrentLedgerID()
 {
 	return mLedgerMaster->getCurrentLedger()->getLedgerSeq();
@@ -683,7 +700,8 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	cLog(lsTRACE) << "NetworkOPs::checkLastClosedLedger";
 
 	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
-	if(!ourClosed) return(false);
+	if(!ourClosed)
+		return false;
 
 	uint256 closedLedger = ourClosed->getHash();
 	uint256 prevClosedLedger = ourClosed->getParentHash();
@@ -714,11 +732,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	BOOST_FOREACH(Peer::ref it, peerList)
 	{
-		if (!it)
-		{
-			cLog(lsDEBUG) << "NOP::CS Dead pointer in peer list";
-		}
-		else if (it->isConnected())
+		if (it && it->isConnected())
 		{
 			uint256 peerLedger = it->getClosedLedgerHash();
 			if (peerLedger.isNonZero())
@@ -738,13 +752,14 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	for (boost::unordered_map<uint256, ValidationCount>::iterator it = ledgers.begin(), end = ledgers.end();
 		it != end; ++it)
 	{
-		cLog(lsTRACE) << "L: " << it->first << " t=" << it->second.trustedValidations <<
+		cLog(lsDEBUG) << "L: " << it->first << " t=" << it->second.trustedValidations <<
 			", n=" << it->second.nodesUsing;
 
 		// Temporary logging to make sure tiebreaking isn't broken
 		if (it->second.trustedValidations > 0)
 			cLog(lsTRACE) << "  TieBreakTV: " << it->second.highValidation;
-		else tLog(it->second.nodesUsing > 0, lsTRACE) << "  TieBreakNU: " << it->second.highNodeUsing;
+		else
+			tLog(it->second.nodesUsing > 0, lsTRACE) << "  TieBreakNU: " << it->second.highNodeUsing;
 
 		if (it->second > bestVC)
 		{
@@ -775,7 +790,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	}
 
 	cLog(lsWARNING) << "We are not running on the consensus ledger";
-	cLog(lsINFO) << "Our LCL " << ourClosed->getHash();
+	cLog(lsINFO) << "Our LCL: " << ourClosed->getJson(0);
 	cLog(lsINFO) << "Net LCL " << closedLedger;
 	if ((mMode == omTRACKING) || (mMode == omFULL))
 		setMode(omCONNECTED);

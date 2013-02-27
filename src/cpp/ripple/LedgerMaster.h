@@ -107,7 +107,13 @@ public:
 			return mCurrentLedger;
 		if (mFinalizedLedger && (mFinalizedLedger->getLedgerSeq() == index))
 			return mFinalizedLedger;
-		return mLedgerHistory.getLedgerBySeq(index);
+		Ledger::pointer ret = mLedgerHistory.getLedgerBySeq(index);
+		if (ret)
+			return ret;
+
+		boost::recursive_mutex::scoped_lock ml(mLock);
+		mCompleteLedgers.clearValue(index);
+		return ret;
 	}
 
 	Ledger::pointer getLedgerByHash(const uint256& hash)

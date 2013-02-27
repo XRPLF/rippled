@@ -1453,7 +1453,7 @@ Json::Value RPCHandler::doTx(Json::Value jvRequest)
 
 		if (txn->getLedger() != 0)
 		{
-			Ledger::pointer lgr = theApp->getLedgerMaster().getLedgerBySeq(txn->getLedger());
+			Ledger::pointer lgr = theApp->getOPs().getLedgerBySeq(txn->getLedger());
 			if (lgr)
 			{
 				bool okay = false;
@@ -1538,7 +1538,7 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest)
 	else if (strLedger.size() > 12)
 		ledger = theApp->getLedgerMaster().getLedgerByHash(uint256(strLedger));
 	else
-		ledger = theApp->getLedgerMaster().getLedgerBySeq(jvRequest["ledger"].asUInt());
+		ledger = theApp->getOPs().getLedgerBySeq(jvRequest["ledger"].asUInt());
 
 	if (!ledger)
 		return rpcError(rpcLGR_NOT_FOUND);

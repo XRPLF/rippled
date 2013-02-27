@@ -164,7 +164,7 @@ public:
 	Ledger::ref		getValidatedLedger()					{ return mLedgerMaster->getValidatedLedger(); }
 	Ledger::ref		getCurrentLedger()						{ return mLedgerMaster->getCurrentLedger(); }
 	Ledger::pointer	getLedgerByHash(const uint256& hash)	{ return mLedgerMaster->getLedgerByHash(hash); }
-	Ledger::pointer	getLedgerBySeq(const uint32 seq)		{ return mLedgerMaster->getLedgerBySeq(seq); }
+	Ledger::pointer	getLedgerBySeq(const uint32 seq);
 
 	uint256			getClosedLedgerHash()					{ return mLedgerMaster->getClosedLedger()->getHash(); }
 
