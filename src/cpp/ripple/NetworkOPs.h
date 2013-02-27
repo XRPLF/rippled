@@ -258,6 +258,7 @@ public:
 	void switchLastClosedLedger(Ledger::pointer newLedger, bool duringConsensus); // Used for the "jump" case
 	bool checkLastClosedLedger(const std::vector<Peer::pointer>&, uint256& networkClosed);
 	int beginConsensus(const uint256& networkClosed, Ledger::ref closingLedger);
+	void tryStartConsensus();
 	void endConsensus(bool correctLCL);
 	void setStandAlone()				{ setMode(omFULL); }
 	void setStateTimer();
