@@ -48,7 +48,7 @@ void AccountState::addJson(Json::Value& val)
 	if (mValid)
 	{
 		if (mLedgerEntry->isFieldPresent(sfEmailHash))
-			val["UrlGravatar"]	= createGravatarUrl(mLedgerEntry->getFieldH128(sfEmailHash));
+			val["urlgravatar"]	= createGravatarUrl(mLedgerEntry->getFieldH128(sfEmailHash));
 	}
 	else
 	{
