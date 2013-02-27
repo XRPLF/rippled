@@ -10,6 +10,7 @@
 #include "types.h"
 #include "SerializedValidation.h"
 #include "TaggedCache.h"
+#include "JobQueue.h"
 
 typedef boost::unordered_map<uint160, SerializedValidation::pointer> ValidationSet;
 
@@ -26,7 +27,7 @@ protected:
 
 	bool mWriting;
 
-	void doWrite();
+	void doWrite(Job&);
 	void condWrite();
 
 	boost::shared_ptr<ValidationSet> findCreateSet(const uint256& ledgerHash);
