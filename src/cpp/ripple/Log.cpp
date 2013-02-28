@@ -168,6 +168,7 @@ void Log::setLogFile(boost::filesystem::path path)
 	std::ofstream* newStream = new std::ofstream(path.c_str(), std::fstream::app);
 	if (!newStream->good())
 	{
+		Log(lsFATAL) << "Unable to open logfile " << path;
 		delete newStream;
 		newStream = NULL;
 	}
