@@ -17,6 +17,8 @@
 class BookListeners
 {
 	boost::unordered_map<uint64, InfoSub::wptr> mListeners;
+	boost::recursive_mutex mLock;
+
 public:
 	typedef boost::shared_ptr<BookListeners> pointer;
 
@@ -58,8 +60,10 @@ public:
 	float getPrice(uint160& currencyIn,uint160& currencyOut);
 
 
-	BookListeners::pointer getBookListeners(uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut);
-	BookListeners::pointer makeBookListeners(uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut);
+	BookListeners::pointer getBookListeners(const uint160& currencyIn, const uint160& currencyOut,
+		const uint160& issuerIn, const uint160& issuerOut);
+	BookListeners::pointer makeBookListeners(const uint160& currencyIn, const uint160& currencyOut,
+		const uint160& issuerIn, const uint160& issuerOut);
 
 	// see if this txn effects any orderbook
 	void processTxn(const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta,Json::Value& jvObj);

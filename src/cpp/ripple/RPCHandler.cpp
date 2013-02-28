@@ -2609,12 +2609,12 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 		{
 			uint160 currencyOut;
 			STAmount::issuerFromString(currencyOut,(*it)["CurrencyOut"].asString());
-			uint160 issuerOut=RippleAddress::createNodePublic( (*it)["IssuerOut"].asString() ).getAccountID();
+			uint160 issuerOut = RippleAddress::createNodePublic( (*it)["IssuerOut"].asString() ).getAccountID();
 			uint160 currencyIn;
 			STAmount::issuerFromString(currencyOut,(*it)["CurrencyIn"].asString());
-			uint160 issuerIn=RippleAddress::createNodePublic( (*it)["IssuerIn"].asString() ).getAccountID();
+			uint160 issuerIn = RippleAddress::createNodePublic( (*it)["IssuerIn"].asString() ).getAccountID();
 
-			mNetOps->subBook(ispSub,currencyIn,currencyOut,issuerIn,issuerOut);
+			mNetOps->subBook(ispSub, currencyIn, currencyOut, issuerIn, issuerOut);
 			if((*it)["StateNow"].asBool())
 			{
 
@@ -2723,10 +2723,10 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 		{
 			uint160 currencyOut;
 			STAmount::issuerFromString(currencyOut,(*it)["CurrencyOut"].asString());
-			uint160 issuerOut=RippleAddress::createNodePublic( (*it)["IssuerOut"].asString() ).getAccountID();
+			uint160 issuerOut = RippleAddress::createNodePublic( (*it)["IssuerOut"].asString() ).getAccountID();
 			uint160 currencyIn;
 			STAmount::issuerFromString(currencyOut,(*it)["CurrencyIn"].asString());
-			uint160 issuerIn=RippleAddress::createNodePublic( (*it)["IssuerIn"].asString() ).getAccountID();
+			uint160 issuerIn = RippleAddress::createNodePublic( (*it)["IssuerIn"].asString() ).getAccountID();
 
 			mNetOps->unsubBook(ispSub->getSeq(), currencyIn, currencyOut, issuerIn, issuerOut);
 		}

@@ -316,8 +316,10 @@ public:
 	bool subServer(InfoSub::ref ispListener, Json::Value& jvResult);
 	bool unsubServer(uint64 uListener);
 
-	bool subBook(InfoSub::ref ispListener, uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut);
-	bool unsubBook(uint64 uListener, uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut);
+	bool subBook(InfoSub::ref ispListener, const uint160& currencyIn, const uint160& currencyOut,
+		const uint160& issuerIn, const uint160& issuerOut);
+	bool unsubBook(uint64 uListener, const uint160& currencyIn, const uint160& currencyOut,
+		const uint160& issuerIn, const uint160& issuerOut);
 
 	bool subTransactions(InfoSub::ref ispListener);
 	bool unsubTransactions(uint64 uListener);

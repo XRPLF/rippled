@@ -98,39 +98,44 @@ void OrderBookDB::getBooks(const uint160& issuerID, const uint160& currencyID, s
 	}
 }
 
-BookListeners::pointer OrderBookDB::makeBookListeners(uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut)
+BookListeners::pointer OrderBookDB::makeBookListeners(const uint160& currencyIn, const uint160& currencyOut,
+	const uint160& issuerIn, const uint160& issuerOut)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	BookListeners::pointer ret=getBookListeners(currencyIn, currencyOut, issuerIn, issuerOut);
-	if(!ret)
+	BookListeners::pointer ret = getBookListeners(currencyIn, currencyOut, issuerIn, issuerOut);
+	if (!ret)
 	{
-		ret=BookListeners::pointer(new BookListeners);
-		mListeners[issuerIn][issuerOut][currencyIn][currencyOut]=ret;
+		ret = boost::make_shared<BookListeners>();
+		mListeners[issuerIn][issuerOut][currencyIn][currencyOut] = ret;
 	}
-	return(ret);
+	return ret;
 }
 
-BookListeners::pointer OrderBookDB::getBookListeners(uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut)
+BookListeners::pointer OrderBookDB::getBookListeners(const uint160& currencyIn, const uint160& currencyOut,
+	const uint160& issuerIn, const uint160& issuerOut)
 {
+	BookListeners::pointer ret;
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<uint160, std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > > >::iterator it0=mListeners.find(issuerIn);
-	if(it0 != mListeners.end())
-	{
-		std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > >::iterator it1=(*it0).second.find(issuerOut);
-		if(it1 != (*it0).second.end())
-		{
-			std::map<uint160, std::map<uint160, BookListeners::pointer> >::iterator it2=(*it1).second.find(currencyIn);
-			if(it2 != (*it1).second.end())
-			{
-				std::map<uint160, BookListeners::pointer>::iterator it3=(*it2).second.find(currencyOut);
-				if(it3 != (*it2).second.end())
-				{
-					return( (*it3).second );
-				}
-			}
-		}
-	}
-	return(BookListeners::pointer());
+
+	std::map<uint160, std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > > >::iterator
+		it0 = mListeners.find(issuerIn);
+	if(it0 == mListeners.end())
+		return ret;
+
+	std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > >::iterator
+		it1 = (*it0).second.find(issuerOut);
+	if(it1 == (*it0).second.end())
+		return ret;
+
+	std::map<uint160, std::map<uint160, BookListeners::pointer> >::iterator it2 = (*it1).second.find(currencyIn);
+	if(it2 == (*it1).second.end())
+		return ret;
+
+	std::map<uint160, BookListeners::pointer>::iterator it3 = (*it2).second.find(currencyOut);
+	if(it3 == (*it2).second.end())
+		return ret;
+
+	return (*it3).second;
 }
 
 /*
@@ -182,49 +187,58 @@ BookListeners::pointer OrderBookDB::getBookListeners(uint160 currencyIn, uint160
 */
 // Based on the meta, send the meta to the streams that are listening 
 // We need to determine which streams a given meta effects
-void OrderBookDB::processTxn(const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta,Json::Value& jvObj)
+void OrderBookDB::processTxn(const SerializedTransaction& stTxn, TER terResult,
+	TransactionMetaSet::pointer& meta, Json::Value& jvObj)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	if(terResult==tesSUCCESS)
+	if (terResult == tesSUCCESS)
 	{
 		// check if this is an offer or an offer cancel or a payment that consumes an offer
 		//check to see what the meta looks like
-		BOOST_FOREACH(STObject& node,meta->getNodes())
+		BOOST_FOREACH(STObject& node, meta->getNodes())
 		{
-			try{
-				if(node.getFieldU16(sfLedgerEntryType)==ltOFFER)
+			try
+			{
+				if (node.getFieldU16(sfLedgerEntryType) == ltOFFER)
 				{
 					SField* field=NULL;
 
-					if(node.getFName() == sfModifiedNode)
+					if (node.getFName() == sfModifiedNode)
 					{
-						field=&sfPreviousFields;
-					}else if(node.getFName() == sfCreatedNode)
-					{
-						field=&sfNewFields;
+						field = &sfPreviousFields;
 					}
-					// FIXME: What if an order is deleted?
+					else if (node.getFName() == sfCreatedNode)
+					{
+						field = &sfNewFields;
+					}
+					else if (node.getFName() == sfDeletedNode)
+					{
+						field = &sfFinalFields;
+					}
 
 					if (field)
 					{
-						const STObject* previous = dynamic_cast<const STObject*>(node.peekAtPField(*field));
-						if(previous)
+						const STObject* data = dynamic_cast<const STObject*>(node.peekAtPField(*field));
+						if (data)
 						{
-							STAmount takerGets = previous->getFieldAmount(sfTakerGets);
-							uint160 currencyOut=takerGets.getCurrency();
-							uint160 issuerOut=takerGets.getIssuer();
+							STAmount takerGets = data->getFieldAmount(sfTakerGets);
+							uint160 currencyOut = takerGets.getCurrency();
+							uint160 issuerOut = takerGets.getIssuer();
 
-							STAmount takerPays = previous->getFieldAmount(sfTakerPays);
-							uint160 currencyIn=takerPays.getCurrency();
-							uint160 issuerIn=takerPays.getIssuer();
+							STAmount takerPays = data->getFieldAmount(sfTakerPays);
+							uint160 currencyIn = takerPays.getCurrency();
+							uint160 issuerIn = takerPays.getIssuer();
 
 							// determine the OrderBook
-							BookListeners::pointer book=getBookListeners(currencyIn,currencyOut,issuerIn,issuerOut);
-							if(book) book->publish(jvObj);
+							BookListeners::pointer book =
+								getBookListeners(currencyIn, currencyOut, issuerIn, issuerOut);
+							if (book)
+								book->publish(jvObj);
 						}
 					}
 				}
-			}catch(...)
+			}
+			catch (...)
 			{
 				cLog(lsINFO) << "Fields not found in OrderBookDB::processTxn";
 			}
@@ -234,18 +248,19 @@ void OrderBookDB::processTxn(const SerializedTransaction& stTxn, TER terResult,T
 
 void BookListeners::addSubscriber(InfoSub::ref sub)
 {
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	mListeners[sub->getSeq()] = sub;
 }
 
 void BookListeners::removeSubscriber(uint64 seq)
 {
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	mListeners.erase(seq);
 }
 
 void BookListeners::publish(Json::Value& jvObj)
 {
-	//Json::Value jvObj=node.getJson(0);
-
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	NetworkOPs::subMapType::const_iterator it = mListeners.begin();
 	while (it != mListeners.end())
 	{

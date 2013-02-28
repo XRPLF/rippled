@@ -1618,18 +1618,24 @@ void NetworkOPs::unsubAccount(uint64 uSeq, const boost::unordered_set<RippleAddr
 	}
 }
 
-bool NetworkOPs::subBook(InfoSub::ref isrListener, uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut)
+bool NetworkOPs::subBook(InfoSub::ref isrListener, const uint160& currencyIn, const uint160& currencyOut,
+	const uint160& issuerIn, const uint160& issuerOut)
 {
-	BookListeners::pointer listeners=theApp->getOrderBookDB().makeBookListeners(currencyIn, currencyOut, issuerIn, issuerOut);
-	if(listeners) listeners->addSubscriber(isrListener);
-	return(true);
+	BookListeners::pointer listeners =
+		theApp->getOrderBookDB().makeBookListeners(currencyIn, currencyOut, issuerIn, issuerOut);
+	if (listeners)
+		listeners->addSubscriber(isrListener);
+	return true;
 }
 
-bool NetworkOPs::unsubBook(uint64 uSeq, uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut)
+bool NetworkOPs::unsubBook(uint64 uSeq,
+	const uint160& currencyIn, const uint160& currencyOut, const uint160& issuerIn, const uint160& issuerOut)
 {
-	BookListeners::pointer listeners=theApp->getOrderBookDB().getBookListeners(currencyIn, currencyOut, issuerIn, issuerOut);
-	if(listeners) listeners->removeSubscriber(uSeq);
-	return(true);
+	BookListeners::pointer listeners =
+		theApp->getOrderBookDB().getBookListeners(currencyIn, currencyOut, issuerIn, issuerOut);
+	if (listeners)
+		listeners->removeSubscriber(uSeq);
+	return true;
 }
 
 void NetworkOPs::newLCL(int proposers, int convergeTime, const uint256& ledgerHash)
