@@ -178,6 +178,7 @@ public:
 	uint32						SIGN_PROPOSAL;
 
 	boost::asio::ssl::context	SSL_CONTEXT;			// Generic SSL context.
+	bool						SSL_VERIFY;
 	std::string					SSL_VERIFY_FILE;
 	std::string					SSL_VERIFY_DIR;
 

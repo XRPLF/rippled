@@ -46,6 +46,7 @@
 #define SECTION_RPC_PASSWORD			"rpc_password"
 #define SECTION_RPC_STARTUP				"rpc_startup"
 #define SECTION_SNTP					"sntp_servers"
+#define SECTION_SSL_VERIFY				"ssl_verify"
 #define SECTION_SSL_VERIFY_FILE			"ssl_verify_file"
 #define SECTION_SSL_VERIFY_DIR			"ssl_verify_dir"
 #define SECTION_VALIDATORS_FILE			"validators_file"
@@ -239,6 +240,8 @@ Config::Config()
 
 	VALIDATORS_SITE			= DEFAULT_VALIDATORS_SITE;
 
+	SSL_VERIFY				= true;
+
 	RUN_STANDALONE			= false;
 	START_UP				= NORMAL;
 }
@@ -397,6 +400,8 @@ void Config::load()
 
 			sectionSingleB(secConfig, SECTION_SSL_VERIFY_FILE, SSL_VERIFY_FILE);
 			sectionSingleB(secConfig, SECTION_SSL_VERIFY_DIR, SSL_VERIFY_DIR);
+			if (sectionSingleB(secConfig, SECTION_SSL_VERIFY, strTemp))
+				SSL_VERIFY			= boost::lexical_cast<bool>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_VALIDATION_SEED, strTemp))
 			{
