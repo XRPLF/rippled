@@ -20,6 +20,7 @@ public:
 		bool checkDisk, uint32 uCommitLedger);
 
 	// return value: true = we had the transaction already
+	bool inLedger(const uint256& hash, uint32 ledger);
 	bool canonicalize(Transaction::pointer& txn, bool maybeNew);
 	void sweep(void) { mCache.sweep(); }
 };

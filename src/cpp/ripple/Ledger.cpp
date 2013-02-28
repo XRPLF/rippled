@@ -451,9 +451,11 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 				std::string escMeta(sqlEscape(rawMeta.peekData()));
 
 				SerializerIterator txnIt(rawTxn);
+
 				SerializedTransaction txn(txnIt);
 				assert(txn.getTransactionID() == item->getTag());
 				TransactionMetaSet meta(item->getTag(), mLedgerSeq, rawMeta.peekData());
+				theApp->getMasterTransaction().inLedger(item->getTag(), mLedgerSeq);
 
 				// Make sure transaction is in AccountTransactions.
 				if (!SQL_EXISTS(db, boost::str(AcctTransExists % item->getTag().GetHex())))
