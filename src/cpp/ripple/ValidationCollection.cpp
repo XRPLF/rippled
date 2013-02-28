@@ -293,11 +293,10 @@ void ValidationCollection::condWrite()
 	if (mWriting)
 		return;
 	mWriting = true;
-	boost::thread thread(boost::bind(&ValidationCollection::doWrite, this));
-	thread.detach();
+	theApp->getJobQueue().addJob(jtWRITE, boost::bind(&ValidationCollection::doWrite, this, _1));
 }
 
-void ValidationCollection::doWrite()
+void ValidationCollection::doWrite(Job&)
 {
 	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtDISK));
 	static boost::format insVal("INSERT INTO Validations "
