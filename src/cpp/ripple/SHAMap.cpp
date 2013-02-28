@@ -141,13 +141,11 @@ void SHAMap::dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& 
 	}
 }
 
-static const SHAMapTreeNode::pointer no_node;
-
-SHAMapTreeNode::ref SHAMap::checkCacheNode(const SHAMapNode& iNode)
+SHAMapTreeNode::pointer SHAMap::checkCacheNode(const SHAMapNode& iNode)
 {
 	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.find(iNode);
 	if (it == mTNByID.end())
-		return no_node;
+		return SHAMapTreeNode::pointer();
 	it->second->touch(mSeq);
 	return it->second;
 }
@@ -175,7 +173,7 @@ SHAMapTreeNode::pointer SHAMap::walkTo(const uint256& id, bool modify)
 		}
 	}
 	if (inNode->getTag() != id)
-		return no_node;
+		return SHAMapTreeNode::pointer();
 	if (modify)
 		returnNode(inNode, true);
 	return inNode;

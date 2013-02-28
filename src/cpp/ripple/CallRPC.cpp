@@ -100,19 +100,29 @@ Json::Value RPCParser::parseAccountInfo(const Json::Value& jvParams)
 
 // account_tx <account> <minledger> <maxledger>
 // account_tx <account> <ledger>
+// account_tx <account> binary
+// account_tx <account> <minledger> <maxledger> binary
 Json::Value RPCParser::parseAccountTransactions(const Json::Value& jvParams)
 {
 	Json::Value		jvRequest(Json::objectValue);
 	RippleAddress	raAccount;
 
-	if (jvParams.size() < 2 || jvParams.size() > 3)
+	unsigned size = jvParams.size();
+
+	if ((size > 1) && (jvParams[size - 1].asString() == "binary"))
+	{
+		jvRequest["binary"] = true;
+		--size;
+	}
+
+	if (size < 2 || size > 3)
 		return rpcError(rpcINVALID_PARAMS);
 
 	if (!raAccount.setAccountID(jvParams[0u].asString()))
 		return rpcError(rpcACT_MALFORMED);
 
 	// YYY This could be more strict and report casting errors.
-	if (jvParams.size() == 2)
+	if (size == 2)
 	{
 		jvRequest["ledger"]		= jvParams[1u].asUInt();
 	}
@@ -365,8 +375,14 @@ Json::Value RPCParser::parseTx(const Json::Value& jvParams)
 {
 	Json::Value	jvRequest;
 
+	if (jvParams.size() > 1)
+	{
+		if (jvParams[1u].asString() == "binary")
+			jvRequest["binary"] = true;
+	}
+
 	jvRequest["transaction"]	= jvParams[0u].asString();
-		return jvRequest;
+	return jvRequest;
 }
 
 // tx_history <index>
@@ -497,7 +513,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"account_info",			&RPCParser::parseAccountInfo,			1,  2	},
 		{	"account_lines",		&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_offers",		&RPCParser::parseAccountItems,			1,  2	},
-		{	"account_tx",			&RPCParser::parseAccountTransactions,	2,  3	},
+		{	"account_tx",			&RPCParser::parseAccountTransactions,	2,  4	},
 		{	"connect",				&RPCParser::parseConnect,				1,  2	},
 		{	"consensus_info",		&RPCParser::parseAsIs,					0,	0	},
 		{	"get_counts",			&RPCParser::parseGetCounts,				0,	1	},
@@ -522,7 +538,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"server_state",			&RPCParser::parseAsIs,					0,	0	},
 		{	"stop",					&RPCParser::parseAsIs,					0,  0	},
 //		{	"transaction_entry",	&RPCParser::parseTransactionEntry,	   -1,  -1	},
-		{	"tx",					&RPCParser::parseTx,					1,  1	},
+		{	"tx",					&RPCParser::parseTx,					1,  2	},
 		{	"tx_history",			&RPCParser::parseTxHistory,				1,  1	},
 
 		{	"unl_add",				&RPCParser::parseUnlAdd,				1,  2	},

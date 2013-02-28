@@ -355,7 +355,7 @@ protected:
 	std::stack<SHAMapTreeNode::pointer> getStack(const uint256& id, bool include_nonmatching_leaf, bool partialOk);
 	SHAMapTreeNode::pointer walkTo(const uint256& id, bool modify);
 	SHAMapTreeNode* walkToPointer(const uint256& id);
-	SHAMapTreeNode::ref checkCacheNode(const SHAMapNode&);
+	SHAMapTreeNode::pointer checkCacheNode(const SHAMapNode&);
 	void returnNode(SHAMapTreeNode::pointer&, bool modify);
 	void trackNewNode(SHAMapTreeNode::pointer&);
 

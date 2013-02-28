@@ -57,7 +57,9 @@ TER Transactor::payFee()
 	// Only check fee is sufficient when the ledger is open.
 	if (isSetBit(mParams, tapOPEN_LEDGER) && saPaid < mFeeDue)
 	{
-		cLog(lsINFO) << "applyTransaction: insufficient fee";
+		cLog(lsINFO) << boost::str(boost::format("applyTransaction: Insufficient fee paid: %s/%s")
+			% saPaid.getText()
+			% mFeeDue.getText());
 
 		return telINSUF_FEE_P;
 	}
@@ -202,8 +204,9 @@ TER Transactor::apply()
 	}
 	else
 	{
-		mSourceBalance	= mTxnAccount->getFieldAmount(sfBalance);
-		mHasAuthKey	= mTxnAccount->isFieldPresent(sfRegularKey);
+		mPriorBalance	= mTxnAccount->getFieldAmount(sfBalance);
+		mSourceBalance	= mPriorBalance;
+		mHasAuthKey		= mTxnAccount->isFieldPresent(sfRegularKey);
 	}
 
 	terResult = checkSeq();

@@ -4,6 +4,7 @@
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include "AccountState.h"
 #include "LedgerMaster.h"
@@ -22,8 +23,6 @@ class LedgerConsensus;
 
 DEFINE_INSTANCE(InfoSub);
 
-class RPCSub;
-
 class InfoSub : public IS_INSTANCE(InfoSub)
 {
 protected:
@@ -32,11 +31,29 @@ protected:
 
 	boost::mutex								mLockInfo;
 
+	uint64										mSeq;
+	static uint64								sSeq;
+	static boost::mutex							sSeqLock;
+
 public:
+	typedef boost::shared_ptr<InfoSub>			pointer;
+	typedef boost::weak_ptr<InfoSub>			wptr;
+	typedef const boost::shared_ptr<InfoSub>&	ref;
+
+	InfoSub()
+	{
+		boost::mutex::scoped_lock sl(sSeqLock);
+		mSeq = ++sSeq;
+	}
 
 	virtual ~InfoSub();
 
 	virtual	void send(const Json::Value& jvObj, bool broadcast) = 0;
+
+	uint64 getSeq()
+	{
+		return mSeq;
+	}
 
 	void onSendEmpty();
 
@@ -65,15 +82,14 @@ public:
 		omFULL			= 3		// we have the ledger and can even validate
 	};
 
+	typedef boost::unordered_map<uint64, InfoSub::wptr>				subMapType;
+
 protected:
-	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >				subInfoMapType;
-	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::value_type	subInfoMapValue;
-	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator		subInfoMapIterator;
+	typedef boost::unordered_map<uint160, subMapType>				subInfoMapType;
+	typedef boost::unordered_map<uint160, subMapType>::value_type	subInfoMapValue;
+	typedef boost::unordered_map<uint160, subMapType>::iterator		subInfoMapIterator;
 
-	typedef boost::unordered_map<uint160,std::pair<InfoSub*,uint32> >					subSubmitMapType;
-	//typedef boost::unordered_map<OrderBook::pointer,boost::unordered_set<InfoSub*> >	subOrderMap;
-
-	typedef boost::unordered_map<std::string, RPCSub* >									subRpcMapType;
+	typedef boost::unordered_map<std::string, InfoSub::pointer>		subRpcMapType;
 
 	OperatingMode						mMode;
 	bool								mNeedNetworkLedger;
@@ -103,15 +119,14 @@ protected:
     boost::recursive_mutex								mMonitorLock;
 	subInfoMapType										mSubAccount;
 	subInfoMapType										mSubRTAccount;
-	subSubmitMapType									mSubmitMap;   // TODO: probably dump this
 	
 
 	subRpcMapType										mRpcSubMap;
 
-	boost::unordered_set<InfoSub*>						mSubLedger;				// accepted ledgers
-	boost::unordered_set<InfoSub*>						mSubServer;				// when server changes connectivity state
-	boost::unordered_set<InfoSub*>						mSubTransactions;		// all accepted transactions
-	boost::unordered_set<InfoSub*>						mSubRTTransactions;		// all proposed and accepted transactions
+	subMapType											mSubLedger;				// accepted ledgers
+	subMapType											mSubServer;				// when server changes connectivity state
+	subMapType											mSubTransactions;		// all accepted transactions
+	subMapType											mSubRTTransactions;		// all proposed and accepted transactions
 
 	boost::recursive_mutex								mWantedHashLock;
 	boost::unordered_set<uint256>						mWantedHashes;
@@ -149,7 +164,7 @@ public:
 	Ledger::ref		getValidatedLedger()					{ return mLedgerMaster->getValidatedLedger(); }
 	Ledger::ref		getCurrentLedger()						{ return mLedgerMaster->getCurrentLedger(); }
 	Ledger::pointer	getLedgerByHash(const uint256& hash)	{ return mLedgerMaster->getLedgerByHash(hash); }
-	Ledger::pointer	getLedgerBySeq(const uint32 seq)		{ return mLedgerMaster->getLedgerBySeq(seq); }
+	Ledger::pointer	getLedgerBySeq(const uint32 seq);
 
 	uint256			getClosedLedgerHash()					{ return mLedgerMaster->getClosedLedger()->getHash(); }
 
@@ -243,6 +258,7 @@ public:
 	void switchLastClosedLedger(Ledger::pointer newLedger, bool duringConsensus); // Used for the "jump" case
 	bool checkLastClosedLedger(const std::vector<Peer::pointer>&, uint256& networkClosed);
 	int beginConsensus(const uint256& networkClosed, Ledger::ref closingLedger);
+	void tryStartConsensus();
 	void endConsensus(bool correctLCL);
 	void setStandAlone()				{ setMode(omFULL); }
 	void setStateTimer();
@@ -273,6 +289,11 @@ public:
 	// client information retrieval functions
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 		getAccountTxs(const RippleAddress& account, uint32 minLedger, uint32 maxLedger);
+
+	typedef boost::tuple<std::string, std::string, uint32> txnMetaLedgerType;
+	std::vector<txnMetaLedgerType>
+		getAccountTxsB(const RippleAddress& account, uint32 minL, uint32 maxL);
+
 	std::vector<RippleAddress> getLedgerAffectedAccounts(uint32 ledgerSeq);
 	std::vector<SerializedTransaction> getLedgerTransactions(uint32 ledgerSeq);
 
@@ -286,26 +307,28 @@ public:
 	//
 	// Monitoring: subscriber side
 	//
-	void subAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs, uint32 uLedgerIndex, bool rt);
-	void unsubAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs, bool rt);
+	void subAccount(InfoSub::ref ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs, uint32 uLedgerIndex, bool rt);
+	void unsubAccount(uint64 uListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs, bool rt);
 
-	bool subLedger(InfoSub* ispListener, Json::Value& jvResult);
-	bool unsubLedger(InfoSub* ispListener);
+	bool subLedger(InfoSub::ref ispListener, Json::Value& jvResult);
+	bool unsubLedger(uint64 uListener);
 
-	bool subServer(InfoSub* ispListener, Json::Value& jvResult);
-	bool unsubServer(InfoSub* ispListener);
+	bool subServer(InfoSub::ref ispListener, Json::Value& jvResult);
+	bool unsubServer(uint64 uListener);
 
-	bool subBook(InfoSub* ispListener, uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut);
-	bool unsubBook(InfoSub* ispListener, uint160 currencyIn, uint160 currencyOut, uint160 issuerIn, uint160 issuerOut);
+	bool subBook(InfoSub::ref ispListener, const uint160& currencyIn, const uint160& currencyOut,
+		const uint160& issuerIn, const uint160& issuerOut);
+	bool unsubBook(uint64 uListener, const uint160& currencyIn, const uint160& currencyOut,
+		const uint160& issuerIn, const uint160& issuerOut);
 
-	bool subTransactions(InfoSub* ispListener);
-	bool unsubTransactions(InfoSub* ispListener);
+	bool subTransactions(InfoSub::ref ispListener);
+	bool unsubTransactions(uint64 uListener);
 
-	bool subRTTransactions(InfoSub* ispListener);
-	bool unsubRTTransactions(InfoSub* ispListener);
+	bool subRTTransactions(InfoSub::ref ispListener);
+	bool unsubRTTransactions(uint64 uListener);
 
-	RPCSub*	findRpcSub(const std::string& strUrl);
-	RPCSub*	addRpcSub(const std::string& strUrl, RPCSub* rspEntry);
+	InfoSub::pointer	findRpcSub(const std::string& strUrl);
+	InfoSub::pointer	addRpcSub(const std::string& strUrl, InfoSub::ref rspEntry);
 };
 
 #endif

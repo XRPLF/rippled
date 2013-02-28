@@ -97,6 +97,9 @@ private:
 protected:
 	SLE::pointer getASNode(LedgerStateParms& parms, const uint256& nodeID, LedgerEntryType let);
 
+	// returned SLE is immutable
+	SLE::pointer getASNodeI(const uint256& nodeID, LedgerEntryType let);
+
 	static void incPendingSaves();
 	static void decPendingSaves();
 	void saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer);
@@ -181,6 +184,7 @@ public:
 	Transaction::pointer getTransaction(const uint256& transID) const;
 	bool getTransaction(const uint256& transID, Transaction::pointer& txn, TransactionMetaSet::pointer& txMeta);
 	bool getTransactionMeta(const uint256& transID, TransactionMetaSet::pointer& txMeta);
+	bool getMetaHex(const uint256& transID, std::string& hex);
 
 	static SerializedTransaction::pointer getSTransaction(SHAMapItem::ref, SHAMapTreeNode::TNType);
 	SerializedTransaction::pointer getSMTransaction(SHAMapItem::ref, SHAMapTreeNode::TNType,
@@ -231,7 +235,7 @@ public:
 	// Generator Map functions
 	//
 
-	SLE::pointer getGenerator(LedgerStateParms& parms, const uint160& uGeneratorID);
+	SLE::pointer getGenerator(const uint160& uGeneratorID);
 
 	static uint256 getGeneratorIndex(const uint160& uGeneratorID);
 
@@ -246,9 +250,8 @@ public:
 	NicknameState::pointer getNicknameState(const std::string& strNickname)
 	{ return getNicknameState(getNicknameHash(strNickname)); }
 
-	SLE::pointer getNickname(LedgerStateParms& parms, const uint256& uNickname);
-	SLE::pointer getNickname(LedgerStateParms& parms, const std::string& strNickname)
-	{ return getNickname(parms, getNicknameHash(strNickname)); }
+	SLE::pointer getNickname(const uint256& uNickname);
+	SLE::pointer getNickname(const std::string& strNickname)	{ return getNickname(getNicknameHash(strNickname)); }
 
 	static uint256 getNicknameIndex(const uint256& uNickname);
 
@@ -264,16 +267,10 @@ public:
 	// Offer functions
 	//
 
-	SLE::pointer getOffer(LedgerStateParms& parms, const uint256& uIndex);
+	SLE::pointer getOffer(const uint256& uIndex);
 
-	SLE::pointer getOffer(const uint256& uIndex)
-	{
-		LedgerStateParms	qry				= lepNONE;
-		return getOffer(qry, uIndex);
-	}
-
-	SLE::pointer getOffer(LedgerStateParms& parms, const uint160& uAccountID, uint32 uSequence)
-	{ return getOffer(parms, getOfferIndex(uAccountID, uSequence)); }
+	SLE::pointer getOffer(const uint160& uAccountID, uint32 uSequence)
+	{ return getOffer(getOfferIndex(uAccountID, uSequence)); }
 
 	// The index of an offer.
 	static uint256 getOfferIndex(const uint160& uAccountID, uint32 uSequence);
@@ -294,7 +291,7 @@ public:
 	static void ownerDirDescriber(SLE::ref, const uint160& owner);
 
 	// Return a node: root or normal
-	SLE::pointer getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex);
+	SLE::pointer getDirNode(const uint256& uNodeIndex);
 
 	//
 	// Quality
@@ -317,13 +314,7 @@ public:
 	static uint256 getRippleStateIndex(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
 		{ return getRippleStateIndex(RippleAddress::createAccountID(uiA), RippleAddress::createAccountID(uiB), uCurrency); }
 
-	SLE::pointer getRippleState(LedgerStateParms& parms, const uint256& uNode);
-
-	SLE::pointer getRippleState(const uint256& uNode)
-	{
-		LedgerStateParms	qry				= lepNONE;
-		return getRippleState(qry, uNode);
-	}
+	SLE::pointer getRippleState(const uint256& uNode);
 
 	SLE::pointer getRippleState(const RippleAddress& naA, const RippleAddress& naB, const uint160& uCurrency)
 		{ return getRippleState(getRippleStateIndex(naA, naB, uCurrency)); }

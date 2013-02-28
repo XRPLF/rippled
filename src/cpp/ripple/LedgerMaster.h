@@ -75,7 +75,7 @@ public:
 	// The published ledger is the last fully validated ledger
 	Ledger::ref getValidatedLedger()	{ return mPubLedger; }
 
-	TER doTransaction(const SerializedTransaction& txn, TransactionEngineParams params);
+	TER doTransaction(const SerializedTransaction& txn, TransactionEngineParams params, bool& didApply);
 
 	void pushLedger(Ledger::ref newLedger);
 	void pushLedger(Ledger::ref newLCL, Ledger::ref newOL, bool fromConsensus);
@@ -107,7 +107,13 @@ public:
 			return mCurrentLedger;
 		if (mFinalizedLedger && (mFinalizedLedger->getLedgerSeq() == index))
 			return mFinalizedLedger;
-		return mLedgerHistory.getLedgerBySeq(index);
+		Ledger::pointer ret = mLedgerHistory.getLedgerBySeq(index);
+		if (ret)
+			return ret;
+
+		boost::recursive_mutex::scoped_lock ml(mLock);
+		mCompleteLedgers.clearValue(index);
+		return ret;
 	}
 
 	Ledger::pointer getLedgerByHash(const uint256& hash)

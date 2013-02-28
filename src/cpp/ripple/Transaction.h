@@ -113,7 +113,7 @@ public:
 	bool operator<=(const Transaction&) const;
 	bool operator>=(const Transaction&) const;
 
-	Json::Value getJson(int options) const;
+	Json::Value getJson(int options, bool binary = false) const;
 
 	static bool isHexTxID(const std::string&);
 

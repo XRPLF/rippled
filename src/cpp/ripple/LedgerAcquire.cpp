@@ -71,6 +71,8 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 {
 	if (result == boost::asio::error::operation_aborted)
 		return;
+
+	ScopedLock sl(theApp->getMasterLock());
 	boost::shared_ptr<PeerSet> ptr = wptr.lock();
 	if (ptr)
 		ptr->invokeOnTimer();

@@ -34,6 +34,8 @@ HttpsClient::HttpsClient(
 		mResponseMax(responseMax),
 		mDeadline(io_service)
 {
+	if (!theConfig.SSL_VERIFY)
+		mSocket.SSLSocket().set_verify_mode(boost::asio::ssl::verify_none);
 }
 
 void HttpsClient::makeGet(const std::string& strPath, boost::asio::streambuf& sb, const std::string& strHost)
@@ -206,11 +208,13 @@ void HttpsClient::handleConnect(const boost::system::error_code& ecResult)
 	{
 		cLog(lsTRACE) << "Connected.";
 
-		mShutdown	= mSocket.verify(mDeqSites[0]);
-
-	    if (mShutdown)
+		if (theConfig.SSL_VERIFY)
 		{
-			cLog(lsTRACE) << "set_verify_callback: " << mDeqSites[0] << ": " << mShutdown.message();
+			mShutdown	= mSocket.verify(mDeqSites[0]);
+		    if (mShutdown)
+			{
+				cLog(lsTRACE) << "set_verify_callback: " << mDeqSites[0] << ": " << mShutdown.message();
+			}
 		}
 	}
 

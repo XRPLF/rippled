@@ -56,7 +56,7 @@ protected:
 	mutable boost::recursive_mutex mLock;
 
 	std::string	mName;			// Used for logging
-	int mTargetSize;			// Desired number of cache entries (0 = ignore)
+	int			mTargetSize;	// Desired number of cache entries (0 = ignore)
 	int			mTargetAge;		// Desired maximum cache age
 	int			mCacheCount;	// Number of items cached
 
@@ -152,7 +152,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 			if (cit->second.isExpired())
 			{
 				++mapRemovals;
-				mCache.erase(cit++);
+				cit = mCache.erase(cit);
 			}
 			else
 				++cit;
@@ -165,7 +165,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 			if (cit->second.isExpired())
 			{
 				++mapRemovals;
-				mCache.erase(cit++);
+				cit = mCache.erase(cit);
 			}
 			else // remains weakly cached
 				++cit;

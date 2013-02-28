@@ -117,8 +117,8 @@ Amount.prototype.add = function (v) {
   else if (this.is_zero()) {
     result              = v.clone();
     // YYY Why are these cloned? We never modify them.
-    result._currency    = this._currency.clone();
-    result._issuer      = this._issuer.clone();
+    result._currency    = this._currency;
+    result._issuer      = this._issuer;
   }
   else
   {
@@ -147,8 +147,8 @@ Amount.prototype.add = function (v) {
       result._value       = result._value.negate();
     }
 
-    result._currency    = this._currency.clone();
-    result._issuer      = this._issuer.clone();
+    result._currency    = this._currency;
+    result._issuer      = this._issuer;
 
     result.canonicalize();
   }
@@ -276,6 +276,9 @@ Amount.prototype.copyTo = function (d, negate) {
   this._currency.copyTo(d._currency);
   this._issuer.copyTo(d._issuer);
 
+  // Prevent negative zero
+  if (d.is_zero()) d._is_negative = false;
+
   return d;
 };
 
@@ -283,21 +286,29 @@ Amount.prototype.currency = function () {
   return this._currency;
 };
 
-// Check BigInteger NaN
-// Checks currency, does not check issuer.
-Amount.prototype.equals = function (d) {
-  return 'string' === typeof (d)
-    ? this.equals(Amount.from_json(d))
-    : this === d
-      || (d instanceof Amount
-	&& this._is_native === d._is_native
-	&& (this._is_native
-	    ? this._value.equals(d._value)
-	    : this._currency.equals(d._currency)
-	      ? this._is_negative === d._is_negative
-		? this._value.equals(d._value)
-		: this._value.equals(BigInteger.ZERO) && d._value.equals(BigInteger.ZERO)
-	      : false));
+Amount.prototype.equals = function (d, ignore_issuer) {
+  if ("string" === typeof d) {
+    return this.equals(Amount.from_json(d));
+  }
+
+  if (this === d) return true;
+
+  if (d instanceof Amount) {
+    if (!this.is_valid() || !d.is_valid()) return false;
+    if (this._is_native !== d._is_native) return false;
+
+    if (!this._value.equals(d._value) || this._offset !== d._offset) {
+      return false;
+    }
+
+    if (this._is_negative !== d._is_negative) return false;
+
+    if (!this._is_native) {
+      if (!this._currency.equals(d._currency)) return false;
+      if (!ignore_issuer && !this._issuer.equals(d._issuer)) return false;
+    }
+    return true;
+  } else return false;
 };
 
 // Result in terms of this' currency and issuer.
@@ -308,7 +319,7 @@ Amount.prototype.divide = function (d) {
     throw "divide by zero";
   }
   else if (this.is_zero()) {
-    result = this.clone();
+    result = this;
   }
   else if (!this.is_valid()) {
     throw new Error("Invalid dividend");
@@ -317,13 +328,35 @@ Amount.prototype.divide = function (d) {
     throw new Error("Invalid divisor");
   }
   else {
+    var _n = this;
+
+    if (_n.is_native()) {
+      _n  = _n.clone();
+
+      while (_n._value.compareTo(consts.bi_man_min_value) < 0) {
+        _n._value  = _n._value.multiply(consts.bi_10);
+        _n._offset -= 1;
+      }
+    }
+
+    var _d = d;
+
+    if (_d.is_native()) {
+      _d = _d.clone();
+
+      while (_d._value.compareTo(consts.bi_man_min_value) < 0) {
+        _d._value  = _d._value.multiply(consts.bi_10);
+        _d._offset -= 1;
+      }
+    }
+
     result              = new Amount();
-    result._offset      = this._offset - d._offset - 17;
-    result._value       = this._value.multiply(consts.bi_1e17).divide(d._value).add(consts.bi_5);
-    result._is_native   = this._is_native;
-    result._is_negative = this._is_negative !== d._is_negative;
-    result._currency    = this._currency.clone();
-    result._issuer      = this._issuer.clone();
+    result._offset      = _n._offset - _d._offset - 17;
+    result._value       = _n._value.multiply(consts.bi_1e17).divide(_d._value).add(consts.bi_5);
+    result._is_native   = _n._is_native;
+    result._is_negative = _n._is_negative !== _d._is_negative;
+    result._currency    = _n._currency;
+    result._issuer      = _n._issuer;
 
     result.canonicalize();
   }
@@ -349,6 +382,13 @@ Amount.prototype.divide = function (d) {
  * @return {Amount} The resulting ratio. Unit will be the same as numerator.
  */
 Amount.prototype.ratio_human = function (denominator) {
+  if ("number" === typeof denominator && parseInt(denominator) === denominator) {
+    // Special handling of integer arguments
+    denominator = Amount.from_json("" + denominator + ".0");
+  } else {
+    denominator = Amount.from_json(denominator);
+  }
+
   var numerator = this;
   denominator = Amount.from_json(denominator);
 
@@ -452,15 +492,16 @@ Amount.prototype.issuer = function () {
 };
 
 // Result in terms of this' currency and issuer.
+// XXX Diverges from cpp.
 Amount.prototype.multiply = function (v) {
   var result;
 
   if (this.is_zero()) {
-    result = this.clone();
+    result = this;
   }
   else if (v.is_zero()) {
     result = this.clone();
-    result._value = BigInteger.ZERO.clone();
+    result._value = BigInteger.ZERO;
   }
   else {
     var v1 = this._value;
@@ -468,14 +509,18 @@ Amount.prototype.multiply = function (v) {
     var v2 = v._value;
     var o2 = v._offset;
 
-    while (v1.compareTo(consts.bi_man_min_value) < 0 ) {
-      v1 = v1.multiply(consts.bi_10);
-      o1 -= 1;
+    if (this.is_native()) {
+      while (v1.compareTo(consts.bi_man_min_value) < 0) {
+        v1 = v1.multiply(consts.bi_10);
+        o1 -= 1;
+      }
     }
 
-    while (v2.compareTo(consts.bi_man_min_value) < 0 ) {
-      v2 = v2.multiply(consts.bi_10);
-      o2 -= 1;
+    if (v.is_native()) {
+      while (v2.compareTo(consts.bi_man_min_value) < 0) {
+        v2 = v2.multiply(consts.bi_10);
+        o2 -= 1;
+      }
     }
 
     result              = new Amount();
@@ -483,8 +528,8 @@ Amount.prototype.multiply = function (v) {
     result._value       = v1.multiply(v2).divide(consts.bi_1e14).add(consts.bi_7);
     result._is_native   = this._is_native;
     result._is_negative = this._is_negative !== v._is_negative;
-    result._currency    = this._currency.clone();
-    result._issuer      = this._issuer.clone();
+    result._currency    = this._currency;
+    result._issuer      = this._issuer;
 
     result.canonicalize();
   }
@@ -580,6 +625,9 @@ Amount.prototype.parse_json = function (j) {
       this._currency  = new Currency();
       this._issuer    = new UInt160();
     }
+  }
+  else if ('number' === typeof j) {
+    this.parse_json(""+j);
   }
   else if ('object' === typeof j && j instanceof Amount) {
     j.copyTo(this);
@@ -692,7 +740,7 @@ Amount.prototype.parse_value = function (j) {
     }
   }
   else if (j instanceof BigInteger) {
-    this._value	      = j.clone();
+    this._value	      = j;
   }
   else {
     this._value	      = NaN;
@@ -899,28 +947,33 @@ Amount.prototype.to_text_full = function (opts) {
 };
 
 // For debugging.
-Amount.prototype.not_equals_why = function (d) {
-  return 'string' === typeof (d)
-    ? this.not_equals_why(Amount.from_json(d))
-    : this === d
-      ? false
-      : d instanceof Amount
-	  ? this._is_native === d._is_native
-	    ? this._is_native
-		? this._value.equals(d._value)
-		  ? false
-		  : "XRP value differs."
-		: this._currency.equals(d._currency)
-		  ? this._is_negative === d._is_negative
-		    ? this._value.equals(d._value)
-		      ? false
-		      : this._value.equals(BigInteger.ZERO) && d._value.equals(BigInteger.ZERO)
-			? false
-			: "Non-XRP value differs."
-		    : "Non-XRP sign differs."
-		  : "Non-XRP currency differs (" + JSON.stringify(this._currency) + "/" + JSON.stringify(d._currency) + ")"
-	    : "Native mismatch"
-	  : "Wrong constructor."
+Amount.prototype.not_equals_why = function (d, ignore_issuer) {
+  if ("string" === typeof d) {
+    return this.not_equals_why(Amount.from_json(d));
+  }
+
+  if (this === d) return false;
+
+  if (d instanceof Amount) {
+    if (!this.is_valid() || !d.is_valid()) return "Invalid amount.";
+    if (this._is_native !== d._is_native) return "Native mismatch.";
+
+    var type = this._is_native ? "XRP" : "Non-XRP";
+
+    if (!this._value.equals(d._value) || this._offset !== d._offset) {
+      return type+" value differs.";
+    }
+
+    if (this._is_negative !== d._is_negative) return type+" sign differs.";
+
+    if (!this._is_native) {
+      if (!this._currency.equals(d._currency)) return "Non-XRP currency differs.";
+      if (!ignore_issuer && !this._issuer.equals(d._issuer)) {
+        return "Non-XRP issuer differs.";
+      }
+    }
+    return false;
+  } else return "Wrong constructor.";
 };
 
 exports.Amount	      = Amount;

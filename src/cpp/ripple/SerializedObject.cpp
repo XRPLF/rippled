@@ -147,16 +147,18 @@ void STObject::set(const std::vector<SOElement::ref>& type)
 
 bool STObject::setType(const std::vector<SOElement::ref> &type)
 {
-	boost::ptr_vector<SerializedType> newData;
+	boost::ptr_vector<SerializedType> newData(type.size());
 	bool valid = true;
 
 	mType.clear();
+	mType.reserve(type.size());
+
 	BOOST_FOREACH(SOElement::ref elem, type)
 	{
 		bool match = false;
 		for (boost::ptr_vector<SerializedType>::iterator it = mData.begin(); it != mData.end(); ++it)
 			if (it->getFName() == elem->e_field)
-			{
+			{ // matching entry, move to new vector
 				match = true;
 				newData.push_back(mData.release(it).release());
 				if ((elem->flags == SOE_DEFAULT) && it->isDefault())
@@ -169,7 +171,7 @@ bool STObject::setType(const std::vector<SOElement::ref> &type)
 			}
 
 		if (!match)
-		{
+		{ // no match found
 			if (elem->flags == SOE_REQUIRED)
 			{
 				cLog(lsWARNING) << "setType( " << getFName().getName() << ") invalid missing "
@@ -181,18 +183,17 @@ bool STObject::setType(const std::vector<SOElement::ref> &type)
 
 		mType.push_back(elem);
 	}
-	if (mData.size() != 0)
-	{
-		BOOST_FOREACH(const SerializedType& t, mData)
+
+	BOOST_FOREACH(const SerializedType& t, mData)
+	{ // Anything left over must be discardable
+		if (!t.getFName().isDiscardable())
 		{
-			if (!t.getFName().isDiscardable())
-			{
-				cLog(lsWARNING) << "setType( " << getFName().getName() << ") invalid leftover "
-					<< t.getFName().getName();
-				valid = false;
-			}
+			cLog(lsWARNING) << "setType( " << getFName().getName() << ") invalid leftover "
+				<< t.getFName().getName();
+			valid = false;
 		}
 	}
+
 	mData.swap(newData);
 	return valid;
 }

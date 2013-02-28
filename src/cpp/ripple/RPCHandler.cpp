@@ -66,13 +66,11 @@ int iAdminGet(const Json::Value& jvRequest, const std::string& strRemoteIp)
 RPCHandler::RPCHandler(NetworkOPs* netOps)
 {
 	mNetOps		= netOps;
-	mInfoSub	= NULL;
 }
 
-RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub* infoSub)
+RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub::pointer infoSub) : mInfoSub(infoSub)
 {
 	mNetOps		= netOps;
-	mInfoSub	= infoSub;
 }
 
 Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
@@ -899,7 +897,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 	if (!lpLedger)
 		return jvResult;
 
-	ScopedUnlock su(theApp->getMasterLock(), lpLedger->isFixed());
+	ScopedUnlock su(theApp->getMasterLock());
 
 	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -980,7 +978,7 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 	if (!lpLedger)
 		return jvResult;
 
-	ScopedUnlock su(theApp->getMasterLock(), lpLedger->isClosed() || lpLedger->isImmutable());
+	ScopedUnlock su(theApp->getMasterLock());
 
 	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -1433,6 +1431,8 @@ Json::Value RPCHandler::doTx(Json::Value jvRequest)
 	if (!jvRequest.isMember("transaction"))
 		return rpcError(rpcINVALID_PARAMS);
 
+	bool binary = jvRequest.isMember("binary") && jvRequest["binary"].asBool();
+
 	std::string strTransaction	= jvRequest["transaction"].asString();
 
 	if (Transaction::isHexTxID(strTransaction))
@@ -1441,21 +1441,42 @@ Json::Value RPCHandler::doTx(Json::Value jvRequest)
 
 		Transaction::pointer txn = theApp->getMasterTransaction().fetch(txid, true);
 
-		if (!txn) return rpcError(rpcTXN_NOT_FOUND);
+		if (!txn)
+			return rpcError(rpcTXN_NOT_FOUND);
 
-		Json::Value ret = txn->getJson(0);
+#ifdef READY_FOR_NEW_TX_FORMAT
+		Json::Value ret;
+		ret["transaction"] = txn->getJson(0, binary);
+#else
+		Json::Value ret = txn->getJson(0, binary);
+#endif
 
 		if (txn->getLedger() != 0)
 		{
-			Ledger::pointer lgr = theApp->getLedgerMaster().getLedgerBySeq(txn->getLedger());
+			Ledger::pointer lgr = theApp->getOPs().getLedgerBySeq(txn->getLedger());
 			if (lgr)
 			{
-				TransactionMetaSet::pointer set;
-				if (lgr->getTransactionMeta(txid, set))
+				bool okay = false;
+				if (binary)
 				{
-					ret["meta"] = set->getJson(0);
-					ret["validated"] = theApp->getOPs().isValidated(lgr);
+					std::string meta;
+					if (lgr->getMetaHex(txid, meta))
+					{
+						ret["meta"] = meta;
+						okay = true;
+					}
 				}
+				else
+				{
+					TransactionMetaSet::pointer set;
+					if (lgr->getTransactionMeta(txid, set))
+					{
+						okay = true;
+						ret["meta"] = set->getJson(0);
+					}
+				}
+				if (okay)
+					ret["validated"] = theApp->getOPs().isValidated(lgr);
 			}
 		}
 
@@ -1517,7 +1538,7 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest)
 	else if (strLedger.size() > 12)
 		ledger = theApp->getLedgerMaster().getLedgerByHash(uint256(strLedger));
 	else
-		ledger = theApp->getLedgerMaster().getLedgerBySeq(jvRequest["ledger"].asUInt());
+		ledger = theApp->getOPs().getLedgerBySeq(jvRequest["ledger"].asUInt());
 
 	if (!ledger)
 		return rpcError(rpcLGR_NOT_FOUND);
@@ -1526,6 +1547,7 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest)
 
 	Json::Value ret(Json::objectValue);
 
+	ScopedUnlock(theApp->getMasterLock());
 	ledger->addJson(ret, full ? LEDGER_JSON_FULL : 0);
 
 	return ret;
@@ -1575,29 +1597,49 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 		int vl = theApp->getOPs().getValidatedSeq();
 		ScopedUnlock su(theApp->getMasterLock());
 
-		std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(raAccount, minLedger, maxLedger);
 		Json::Value ret(Json::objectValue);
 		ret["account"] = raAccount.humanAccountID();
-		Json::Value ledgers(Json::arrayValue);
 
-		for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
+		if (jvRequest.isMember("binary") && jvRequest["binary"].asBool())
 		{
-			Json::Value	obj(Json::objectValue);
-
-			if (it->first)
-				obj["tx"] = it->first->getJson(1);
-			if (it->second)
+			std::vector<NetworkOPs::txnMetaLedgerType> txns =
+				mNetOps->getAccountTxsB(raAccount, minLedger, maxLedger);
+			for (std::vector<NetworkOPs::txnMetaLedgerType>::const_iterator it = txns.begin(), end = txns.end();
+				it != end; ++it)
 			{
-				obj["meta"] = it->second->getJson(0);
-
-				uint32 s = it->second->getLgrSeq();
-				if (s > vl)
+				Json::Value obj(Json::objectValue);
+				obj["transaction"] = it->get<0>();
+				obj["meta"] = it->get<1>();
+				obj["inLedger"] = it->get<2>();
+				if (it->get<2>() > vl)
 					obj["validated"] = false;
-				else if (theApp->getOPs().haveLedger(s))
+				else if (theApp->getOPs().haveLedger(it->get<2>()))
 					obj["validated"] = true;
+				ret["transactions"].append(obj);
 			}
+		}
+		else
+		{
+			std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(raAccount, minLedger, maxLedger);
+			for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
+			{
+				Json::Value	obj(Json::objectValue);
 
-			ret["transactions"].append(obj);
+				if (it->first)
+					obj["tx"] = it->first->getJson(1);
+				if (it->second)
+				{
+					obj["meta"] = it->second->getJson(0);
+
+					uint32 s = it->second->getLgrSeq();
+					if (s > vl)
+						obj["validated"] = false;
+					else if (theApp->getOPs().haveLedger(s))
+						obj["validated"] = true;
+				}
+
+				ret["transactions"].append(obj);
+			}
 		}
 		return ret;
 #ifndef DEBUG
@@ -2448,7 +2490,7 @@ rt_accounts
 */
 Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 {
-	InfoSub*	ispSub;
+	InfoSub::pointer ispSub;
 	Json::Value jvResult(Json::objectValue);
 	uint32		uLedgerIndex = jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric()
 									? jvRequest["ledger_index"].asUInt()
@@ -2457,6 +2499,8 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 	if (!mInfoSub && !jvRequest.isMember("url"))
 	{
 		// Must be a JSON-RPC call.
+		cLog(lsINFO) << boost::str(boost::format("doSubscribe: RPC subscribe requires a url"));
+
 		return rpcError(rpcINVALID_PARAMS);
 	}
 
@@ -2469,32 +2513,41 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 		std::string	strUsername	= jvRequest.isMember("username") ? jvRequest["username"].asString() : "";
 		std::string	strPassword	= jvRequest.isMember("password") ? jvRequest["password"].asString() : "";
 
-		RPCSub	*rspSub	= mNetOps->findRpcSub(strUrl);
-		if (!rspSub)
+		ispSub	= mNetOps->findRpcSub(strUrl);
+		if (!ispSub)
 		{
-			cLog(lsINFO) << boost::str(boost::format("doSubscribe: building: %s") % strUrl);
+			cLog(lsDEBUG) << boost::str(boost::format("doSubscribe: building: %s") % strUrl);
 
-			rspSub	= mNetOps->addRpcSub(strUrl, new RPCSub(strUrl, strUsername, strPassword));
+			RPCSub::pointer rspSub = boost::make_shared<RPCSub>(strUrl, strUsername, strPassword);
+			ispSub	= mNetOps->addRpcSub(strUrl, boost::shared_polymorphic_downcast<InfoSub>(rspSub));
 		}
 		else
 		{
-			cLog(lsINFO) << boost::str(boost::format("doSubscribe: reusing: %s") % strUrl);
+			cLog(lsTRACE) << boost::str(boost::format("doSubscribe: reusing: %s") % strUrl);
 
 			if (jvRequest.isMember("username"))
-				rspSub->setUsername(strUsername);
+				dynamic_cast<RPCSub*>(&*ispSub)->setUsername(strUsername);
 
 			if (jvRequest.isMember("password"))
-				rspSub->setPassword(strPassword);
+				dynamic_cast<RPCSub*>(&*ispSub)->setPassword(strPassword);
 		}
-
-		ispSub	= rspSub;
 	}
 	else
 	{
 		ispSub	= mInfoSub;
 	}
 
-	if (jvRequest.isMember("streams"))
+	if (!jvRequest.isMember("streams"))
+	{
+		nothing();
+	}
+	else if (!jvRequest["streams"].isArray())
+	{
+		cLog(lsINFO) << boost::str(boost::format("doSubscribe: streams requires an array."));
+
+		return rpcError(rpcINVALID_PARAMS);
+	}
+	else
 	{
 		for (Json::Value::iterator it = jvRequest["streams"].begin(); it != jvRequest["streams"].end(); it++)
 		{
@@ -2509,12 +2562,10 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 				else if (streamName=="ledger")
 				{
 					mNetOps->subLedger(ispSub, jvResult);
-
 				}
 				else if (streamName=="transactions")
 				{
 					mNetOps->subTransactions(ispSub);
-
 				}
 				else if (streamName=="rt_transactions")
 				{
@@ -2558,7 +2609,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 		{
 			mNetOps->subAccount(ispSub, usnaAccoundIds, uLedgerIndex, false);
 
-			cLog(lsINFO) << boost::str(boost::format("doSubscribe: accounts: %d") % usnaAccoundIds.size());
+			cLog(lsDEBUG) << boost::str(boost::format("doSubscribe: accounts: %d") % usnaAccoundIds.size());
 		}
 	}
 
@@ -2568,12 +2619,12 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 		{
 			uint160 currencyOut;
 			STAmount::issuerFromString(currencyOut,(*it)["CurrencyOut"].asString());
-			uint160 issuerOut=RippleAddress::createNodePublic( (*it)["IssuerOut"].asString() ).getAccountID();
+			uint160 issuerOut = RippleAddress::createNodePublic( (*it)["IssuerOut"].asString() ).getAccountID();
 			uint160 currencyIn;
 			STAmount::issuerFromString(currencyOut,(*it)["CurrencyIn"].asString());
-			uint160 issuerIn=RippleAddress::createNodePublic( (*it)["IssuerIn"].asString() ).getAccountID();
+			uint160 issuerIn = RippleAddress::createNodePublic( (*it)["IssuerIn"].asString() ).getAccountID();
 
-			mNetOps->subBook(ispSub,currencyIn,currencyOut,issuerIn,issuerOut);
+			mNetOps->subBook(ispSub, currencyIn, currencyOut, issuerIn, issuerOut);
 			if((*it)["StateNow"].asBool())
 			{
 
@@ -2587,7 +2638,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 // FIXME: This leaks RPCSub objects for JSON-RPC.  Shouldn't matter for anyone sane.
 Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 {
-	InfoSub*	ispSub;
+	InfoSub::pointer ispSub;
 	Json::Value jvResult(Json::objectValue);
 
 	if (!mInfoSub && !jvRequest.isMember("url"))
@@ -2603,11 +2654,9 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 
 		std::string	strUrl	= jvRequest["url"].asString();
 
-		RPCSub	*rspSub	= mNetOps->findRpcSub(strUrl);
-		if (!rspSub)
+		ispSub	= mNetOps->findRpcSub(strUrl);
+		if (!ispSub)
 			return jvResult;
-
-		ispSub		= rspSub;
 	}
 	else
 	{
@@ -2624,19 +2673,19 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 
 				if (streamName == "server")
 				{
-					mNetOps->unsubServer(ispSub);
+					mNetOps->unsubServer(ispSub->getSeq());
 				}
 				else if (streamName == "ledger")
 				{
-					mNetOps->unsubLedger(ispSub);
+					mNetOps->unsubLedger(ispSub->getSeq());
 				}
 				else if (streamName == "transactions")
 				{
-					mNetOps->unsubTransactions(ispSub);
+					mNetOps->unsubTransactions(ispSub->getSeq());
 				}
 				else if (streamName == "rt_transactions")
 				{
-					mNetOps->unsubRTTransactions(ispSub);
+					mNetOps->unsubRTTransactions(ispSub->getSeq());
 				}
 				else
 				{
@@ -2660,7 +2709,7 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 		}
 		else
 		{
-			mNetOps->unsubAccount(ispSub, usnaAccoundIds, true);
+			mNetOps->unsubAccount(ispSub->getSeq(), usnaAccoundIds, true);
 		}
 	}
 
@@ -2674,7 +2723,7 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 		}
 		else
 		{
-			mNetOps->unsubAccount(ispSub, usnaAccoundIds, false);
+			mNetOps->unsubAccount(ispSub->getSeq(), usnaAccoundIds, false);
 		}
 	}
 
@@ -2684,12 +2733,12 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 		{
 			uint160 currencyOut;
 			STAmount::issuerFromString(currencyOut,(*it)["CurrencyOut"].asString());
-			uint160 issuerOut=RippleAddress::createNodePublic( (*it)["IssuerOut"].asString() ).getAccountID();
+			uint160 issuerOut = RippleAddress::createNodePublic( (*it)["IssuerOut"].asString() ).getAccountID();
 			uint160 currencyIn;
 			STAmount::issuerFromString(currencyOut,(*it)["CurrencyIn"].asString());
-			uint160 issuerIn=RippleAddress::createNodePublic( (*it)["IssuerIn"].asString() ).getAccountID();
+			uint160 issuerIn = RippleAddress::createNodePublic( (*it)["IssuerIn"].asString() ).getAccountID();
 
-			mNetOps->unsubBook(ispSub,currencyIn,currencyOut,issuerIn,issuerOut);
+			mNetOps->unsubBook(ispSub->getSeq(), currencyIn, currencyOut, issuerIn, issuerOut);
 		}
 	}
 
@@ -2833,7 +2882,8 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 		return rpcError(rpcNO_PERMISSION);
 	}
 
-	// XXX Need the master lock for getOperatingMode
+	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+
 	if (commandsA[i].iOptions & optNetwork
 		&& mNetOps->getOperatingMode() != NetworkOPs::omTRACKING
 		&& mNetOps->getOperatingMode() != NetworkOPs::omFULL)
@@ -2842,7 +2892,6 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 	}
 	// XXX Should verify we have a current ledger.
 
-	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 	if ((commandsA[i].iOptions & optCurrent) && false)
 	{
 		return rpcError(rpcNO_CURRENT);

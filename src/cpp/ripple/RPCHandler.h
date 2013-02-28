@@ -15,9 +15,9 @@ class InfoSub;
 
 class RPCHandler
 {
-	NetworkOPs*		mNetOps;
-	InfoSub*		mInfoSub;
-	int				mRole;
+	NetworkOPs*			mNetOps;
+	InfoSub::pointer	mInfoSub;
+	int					mRole;
 
 	typedef Json::Value (RPCHandler::*doFuncPtr)(Json::Value params);
 	enum {
@@ -115,7 +115,7 @@ public:
 	enum { GUEST, USER, ADMIN, FORBID };
 
 	RPCHandler(NetworkOPs* netOps);
-	RPCHandler(NetworkOPs* netOps, InfoSub* infoSub);
+	RPCHandler(NetworkOPs* netOps, InfoSub::pointer infoSub);
 
 	Json::Value doCommand(const Json::Value& jvRequest, int role);
 	Json::Value doRpcCommand(const std::string& strCommand, Json::Value& jvParams, int iRole);

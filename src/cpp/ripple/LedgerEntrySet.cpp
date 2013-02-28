@@ -107,6 +107,7 @@ LedgerEntryAction LedgerEntrySet::hasEntry(const uint256& index) const
 
 void LedgerEntrySet::entryCache(SLE::ref sle)
 {
+	assert(sle->isMutable());
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
@@ -128,6 +129,7 @@ void LedgerEntrySet::entryCache(SLE::ref sle)
 
 void LedgerEntrySet::entryCreate(SLE::ref sle)
 {
+	assert(sle->isMutable());
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
@@ -161,6 +163,7 @@ void LedgerEntrySet::entryCreate(SLE::ref sle)
 
 void LedgerEntrySet::entryModify(SLE::ref sle)
 {
+	assert(sle->isMutable());
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
@@ -193,6 +196,7 @@ void LedgerEntrySet::entryModify(SLE::ref sle)
 
 void LedgerEntrySet::entryDelete(SLE::ref sle)
 {
+	assert(sle->isMutable());
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
@@ -1021,7 +1025,7 @@ uint32 LedgerEntrySet::rippleQualityIn(const uint160& uToAccountID, const uint16
 		}
 	}
 
-	cLog(lsINFO) << boost::str(boost::format("rippleQuality: %s uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQuality=%f")
+	cLog(lsTRACE) << boost::str(boost::format("rippleQuality: %s uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQuality=%f")
 		% (sfLow == sfLowQualityIn ? "in" : "out")
 		% RippleAddress::createHumanAccountID(uToAccountID)
 		% RippleAddress::createHumanAccountID(uFromAccountID)
