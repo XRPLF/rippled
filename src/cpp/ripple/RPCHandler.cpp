@@ -2499,6 +2499,8 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 	if (!mInfoSub && !jvRequest.isMember("url"))
 	{
 		// Must be a JSON-RPC call.
+		cLog(lsINFO) << boost::str(boost::format("doSubscribe: RPC subscribe requires a url"));
+
 		return rpcError(rpcINVALID_PARAMS);
 	}
 
@@ -2535,7 +2537,17 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 		ispSub	= mInfoSub;
 	}
 
-	if (jvRequest.isMember("streams"))
+	if (!jvRequest.isMember("streams"))
+	{
+		nothing();
+	}
+	else if (!jvRequest["streams"].isArray())
+	{
+		cLog(lsINFO) << boost::str(boost::format("doSubscribe: streams requires an array."));
+
+		return rpcError(rpcINVALID_PARAMS);
+	}
+	else
 	{
 		for (Json::Value::iterator it = jvRequest["streams"].begin(); it != jvRequest["streams"].end(); it++)
 		{
@@ -2550,12 +2562,10 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 				else if (streamName=="ledger")
 				{
 					mNetOps->subLedger(ispSub, jvResult);
-
 				}
 				else if (streamName=="transactions")
 				{
 					mNetOps->subTransactions(ispSub);
-
 				}
 				else if (streamName=="rt_transactions")
 				{
