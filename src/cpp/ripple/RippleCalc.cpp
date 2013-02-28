@@ -536,8 +536,7 @@ void PathState::setCanonical(
 			}
 			else
 			{
-				// Node 1 must be an account
-
+				// Node 1 must be an account
 			}
 		}
 		else
