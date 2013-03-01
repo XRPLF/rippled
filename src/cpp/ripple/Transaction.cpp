@@ -116,7 +116,11 @@ bool Transaction::sign(const RippleAddress& naAccountPrivate)
 
 bool Transaction::checkSign() const
 {
-	assert(mFromPubKey.isValid());
+	if (!mFromPubKey.isValid())
+	{
+		cLog(lsWARNING) << "Transaction has bad source public key";
+		return false;
+	}
 	return mTransaction->checkSign(mFromPubKey);
 }
 
