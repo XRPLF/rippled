@@ -118,7 +118,7 @@ bool Transaction::checkSign() const
 {
 	if (!mFromPubKey.isValid())
 	{
-		cLog(lsWARNING) << "Transaction has bad source public key";
+		Log(lsWARNING) << "Transaction has bad source public key";
 		return false;
 	}
 	return mTransaction->checkSign(mFromPubKey);
