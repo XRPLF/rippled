@@ -865,6 +865,8 @@ bool responseRPC(
 // Build the request.
 void requestRPC(const std::string& strMethod, const Json::Value& jvParams, const std::map<std::string, std::string>& mHeaders, const std::string& strPath, boost::asio::streambuf& sb, const std::string& strHost)
 {
+	cLog(lsDEBUG) << "requestRPC: strPath='" << strPath << "'";
+
 	std::ostream	osRequest(&sb);
 
 	osRequest <<
@@ -913,7 +915,7 @@ void callRPC(
 			strMethod,
 			jvParams,
 			mapRequestHeaders,
-			"/", _1, _2),
+			strPath, _1, _2),
 		RPC_REPLY_MAX_BYTES,
 		boost::posix_time::seconds(RPC_NOTIFY_SECONDS),
 		boost::bind(&responseRPC, callbackFuncP, _1, _2, _3));

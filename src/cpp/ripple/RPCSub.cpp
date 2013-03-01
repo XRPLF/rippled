@@ -29,6 +29,12 @@ RPCSub::RPCSub(const std::string& strUrl, const std::string& strUsername, const 
 
     if (mPort < 0)
 		mPort	= mSSL ? 443 : 80;
+
+	cLog(lsINFO) << boost::str(boost::format("callRPC sub: ip='%s' port=%d ssl=%d path='%s'")
+		% mIp
+		% mPort
+		% mSSL
+		% mPath);
 }
 
 // XXX Could probably create a bunch of send jobs in a single get of the lock.
