@@ -558,18 +558,6 @@ Json::Value RPCHandler::accountFromString(Ledger::ref lrLedger, RippleAddress& n
 	return Json::Value(Json::objectValue);
 }
 
-Json::Value RPCHandler::doAcceptLedger(Json::Value jvRequest)
-{
-	if (!theConfig.RUN_STANDALONE)
-		return rpcError(rpcNOT_STANDALONE);
-
-	Json::Value jvResult(Json::objectValue);
-
-	jvResult["newLedger"] = theApp->getOPs().acceptLedger();
-
-	return jvResult;
-}
-
 // {
 //   ident : <indent>,
 //   account_index : <index> // optional
@@ -2807,7 +2795,6 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 		unsigned int	iOptions;
 	} commandsA[] = {
 		// Request-response methods
-		{	"accept_ledger",		&RPCHandler::doAcceptLedger,	    true,	optCurrent	},
 		{	"account_info",			&RPCHandler::doAccountInfo,		    false,	optCurrent	},
 		{	"account_lines",		&RPCHandler::doAccountLines,	    false,	optCurrent	},
 		{	"account_offers",		&RPCHandler::doAccountOffers,	    false,	optCurrent	},
