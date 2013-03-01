@@ -11,7 +11,7 @@ std::map<std::string, LedgerEntryFormat*> LedgerEntryFormat::byName;
 
 #define DECLARE_LEF(name, type) lef = new LedgerEntryFormat(#name, type); (*lef) LEF_BASE
 
-static bool LEFInit()
+void LEFInit()
 {
 	LedgerEntryFormat* lef;
 
@@ -111,11 +111,7 @@ static bool LEFInit()
 		<< SOElement(sfReserveBase,			SOE_REQUIRED)
 		<< SOElement(sfReserveIncrement,	SOE_REQUIRED)
 		;
-
-		return true;
 }
-
-bool LEFInitComplete = LEFInit();
 
 LedgerEntryFormat* LedgerEntryFormat::getLgrFormat(LedgerEntryType t)
 {
