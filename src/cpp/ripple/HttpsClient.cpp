@@ -373,7 +373,7 @@ void HttpsClient::invokeComplete(const boost::system::error_code& ecResult, int 
 		cLog(lsTRACE) << "HttpsClient::invokeComplete: Deadline cancel error: " << ecCancel.message();
 	}
 
-	cLog(lsINFO) << "HttpsClient::invokeComplete: Deadline popping: " << mDeqSites.size();
+	cLog(lsDEBUG) << "HttpsClient::invokeComplete: Deadline popping: " << mDeqSites.size();
 	if (!mDeqSites.empty())
 	{
 		mDeqSites.pop_front();
