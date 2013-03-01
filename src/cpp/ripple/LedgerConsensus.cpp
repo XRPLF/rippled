@@ -766,10 +766,8 @@ void LedgerConsensus::updateOurPositions()
 		neededWeight = AV_INIT_CONSENSUS_PCT;
 	else if (mClosePercent < AV_LATE_CONSENSUS_TIME)
 		neededWeight = AV_MID_CONSENSUS_PCT;
-	else if (mClosePercent < AV_STUCK_CONSENSUS_TIME)
-		neededWeight = AV_LATE_CONSENSUS_PCT;
 	else
-		neededWeight = AV_STUCK_CONSENSUS_TIME;
+		neededWeight = AV_LATE_CONSENSUS_PCT;
 
 	uint32 closeTime = 0;
 	mHaveCloseTimeConsensus = false;
@@ -790,10 +788,11 @@ void LedgerConsensus::updateOurPositions()
 		thresh = ((thresh * neededWeight) + (neededWeight / 2)) / 100;
 		if (thresh == 0)
 			thresh = 1;
+		cLog(lsINFO) << "Proposers:" << mPeerPositions.size() << " nw:" << neededWeight << " thr:" << thresh;
 
 		for (std::map<uint32, int>::iterator it = closeTimes.begin(), end = closeTimes.end(); it != end; ++it)
 		{
-			cLog(lsTRACE) << "CCTime: " << it->first << " has " << it->second << ", " << thresh << " required";
+			cLog(lsDEBUG) << "CCTime: " << it->first << " has " << it->second << ", " << thresh << " required";
 			if (it->second >= thresh)
 			{
 				cLog(lsDEBUG) << "Close time consensus reached: " << it->first;
