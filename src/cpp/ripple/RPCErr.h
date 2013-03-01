@@ -77,6 +77,8 @@ enum {
 	rpcNO_GEN_DECRPYT,
 };
 
+bool isRpcError(Json::Value jvResult);
 Json::Value rpcError(int iError, Json::Value jvResult=Json::Value(Json::objectValue));
+
 #endif
 // vim:ts=4
