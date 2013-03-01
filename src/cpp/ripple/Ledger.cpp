@@ -403,9 +403,9 @@ uint256 Ledger::getHash()
 void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 { // can be called in a different thread
 	cLog(lsTRACE) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq();
-	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
+	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers INDEXED BY SeqLedger where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
-	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransId = '%s';");
+	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransID = '%s';");
 	static boost::format transExists("SELECT Status FROM Transactions WHERE TransID = '%s';");
 	static boost::format
 		updateTx("UPDATE Transactions SET LedgerSeq = %d, Status = '%c', TxnMeta = %s WHERE TransID = '%s';");
@@ -729,7 +729,7 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 	ScopedLock sl(con->getDBLock());
 
 	static SqliteStatement pSt(con->getDB()->getSqliteDB(),
-		"SELECT LedgerHash,PrevHash FROM Ledgers Where LedgerSeq = ?;");
+		"SELECT LedgerHash,PrevHash FROM Ledgers INDEXED BY SeqLedger Where LedgerSeq = ?;");
 
 	pSt.reset();
 	pSt.bind(1, ledgerIndex);
