@@ -25,6 +25,7 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 		{ rpcDST_ACT_MALFORMED,		"dstActMalformed",	"Destination account is malformed."						},
 		{ rpcDST_ACT_MISSING,		"dstActMissing",	"Destination account does not exist."					},
 		{ rpcDST_AMT_MALFORMED,		"dstAmtMalformed",	"Destination amount/currency/issuer is malformed."		},
+		{ rpcDST_ISR_MALFORMED,		"dstIsrMalformed",	"Destination issuer is malformed."						},
 		{ rpcFORBIDDEN,				"forbidden",		"Bad credentials."										},
 		{ rpcFAIL_GEN_DECRPYT,		"failGenDecrypt",	"Failed to decrypt generator."							},
 		{ rpcGETS_ACT_MALFORMED,	"getsActMalformed",	"Gets account malformed."								},

@@ -1021,6 +1021,85 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 	return jvResult;
 }
 
+// {
+//   "ledger_hash" : ledger,             // Optional
+//   "ledger_index" : ledger_index,      // Optional
+//   "taker_gets" : { "currency": currency, "issuer" : address },
+//   "taker_pays" : { "currency": currency, "issuer" : address },
+//   "marker" : element,                 // Optional.
+//   "limit" : integer,                  // Optional.
+//   "proof" : boolean                   // Defaults to false.
+// }
+Json::Value RPCHandler::doBookOffers(Json::Value jvRequest)
+{
+	Ledger::pointer		lpLedger;
+	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
+
+	if (!lpLedger)
+		return jvResult;
+
+	ScopedUnlock su(theApp->getMasterLock());
+
+	if (!jvRequest.isMember("taker_pays") || !jvRequest.isMember("taker_gets"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	uint160		uTakerPaysCurrencyID;
+	uint160		uTakerPaysIssuerID;
+	Json::Value	jvTakerPays	= jvRequest["taker_pays"];
+
+	// Parse mandatory currency.
+	if (!jvTakerPays.isMember("currency")
+		|| !STAmount::currencyFromString(uTakerPaysCurrencyID, jvTakerPays["currency"].asString()))
+	{
+		cLog(lsINFO) << "Bad taker_pays currency.";
+
+		return rpcError(rpcSRC_CUR_MALFORMED);
+	}
+	// Parse optional issuer.
+	else if (((jvTakerPays.isMember("issuer"))
+			&& (!jvTakerPays["issuer"].isString()
+				|| !STAmount::issuerFromString(uTakerPaysIssuerID, jvTakerPays["issuer"].asString())))
+		// Don't allow illegal issuers.
+		|| !uTakerPaysCurrencyID
+		|| !uTakerPaysIssuerID
+		|| ACCOUNT_ONE == uTakerPaysIssuerID)
+	{
+		cLog(lsINFO) << "Bad taker_pays issuer.";
+
+		return rpcError(rpcSRC_ISR_MALFORMED);
+	}
+
+	uint160		uTakerGetsCurrencyID;
+	uint160		uTakerGetsIssuerID;
+	Json::Value	jvTakerGets	= jvRequest["taker_pays"];
+
+	// Parse mandatory currency.
+	if (!jvTakerGets.isMember("currency")
+		|| !STAmount::currencyFromString(uTakerGetsCurrencyID, jvTakerGets["currency"].asString()))
+	{
+		cLog(lsINFO) << "Bad taker_pays currency.";
+
+		return rpcError(rpcSRC_CUR_MALFORMED);
+	}
+	// Parse optional issuer.
+	else if (((jvTakerGets.isMember("issuer"))
+			&& (!jvTakerGets["issuer"].isString()
+				|| !STAmount::issuerFromString(uTakerGetsIssuerID, jvTakerGets["issuer"].asString())))
+		// Don't allow illegal issuers.
+		|| !uTakerGetsCurrencyID
+		|| !uTakerGetsIssuerID
+		|| ACCOUNT_ONE == uTakerGetsIssuerID)
+	{
+		cLog(lsINFO) << "Bad taker_gets issuer.";
+
+		return rpcError(rpcDST_ISR_MALFORMED);
+	}
+
+	jvResult["hello"]	= "world";
+
+	return jvResult;
+}
+
 // Result:
 // {
 //   random: <uint256>
@@ -2799,6 +2878,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 		{	"account_lines",		&RPCHandler::doAccountLines,	    false,	optCurrent	},
 		{	"account_offers",		&RPCHandler::doAccountOffers,	    false,	optCurrent	},
 		{	"account_tx",			&RPCHandler::doAccountTransactions, false,	optNetwork	},
+		{	"book_offers",			&RPCHandler::doBookOffers,			false,	optCurrent	},
 		{	"connect",				&RPCHandler::doConnect,			    true,	optNone		},
 		{	"consensus_info",		&RPCHandler::doConsensusInfo,	    true,	optNone		},
 		{	"get_counts",			&RPCHandler::doGetCounts,		    true,	optNone		},
