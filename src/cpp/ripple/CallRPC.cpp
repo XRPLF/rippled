@@ -97,13 +97,11 @@ static Json::Value jvParseCurrencyIssuer(const std::string& strCurrencyIssuer)
 
 	boost::smatch	smMatch;
 
-	bool	bMatch	= boost::regex_match(strCurrencyIssuer, smMatch, reCurIss);		// Match status code.
-
-	if (bMatch)
+	if (boost::regex_match(strCurrencyIssuer, smMatch, reCurIss))
 	{
 		Json::Value	jvResult(Json::objectValue);
-		std::string		strCurrency	= smMatch[1];
-		std::string		strIssuer	= smMatch[2];
+		std::string	strCurrency	= smMatch[1];
+		std::string	strIssuer	= smMatch[2];
 
 		jvResult["currency"]	= strCurrency;
 
@@ -733,7 +731,7 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 
 		jvRequest	= rpParser.parseCommand(vCmd[0], jvRpcParams);
 
-		std::cerr << "Request: " << jvRequest << std::endl;
+		cLog(lsTRACE) << "RPC Request: " << jvRequest << std::endl;
 
 		if (jvRequest.isMember("error"))
 		{
