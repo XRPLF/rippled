@@ -113,7 +113,6 @@ void HashedObjectStore::bulkWrite()
 				default:					type = "U";
 			}
 
-			pSt.reset();
 			pSt.bind(1, it->getHash().GetHex());
 			pSt.bind(2, type);
 			pSt.bind(3, it->getIndex());
@@ -124,6 +123,7 @@ void HashedObjectStore::bulkWrite()
 				cLog(lsFATAL) << "Error saving hashed object " << ret;
 				assert(false);
 			}
+			pSt.reset();
 		}
 
 		db->executeSQL("END TRANSACTION;");
@@ -186,12 +186,12 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		static SqliteStatement pSt(theApp->getHashNodeDB()->getDB()->getSqliteDB(),
 			"SELECT ObjType,LedgerIndex,Object FROM CommittedObjects WHERE Hash = ?;");
 
-		pSt.reset();
 		pSt.bind(1, hash.GetHex());
 
 		int ret = pSt.step();
 		if (pSt.isDone(ret))
 		{
+			pSt.reset();
 			mNegativeCache.add(hash);
 			cLog(lsTRACE) << "HOS: " << hash <<" fetch: not in db";
 			return obj;
@@ -200,6 +200,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		type = pSt.peekString(0);
 		index = pSt.getUInt32(1);
 		pSt.getBlob(2).swap(data);
+		pSt.reset();
 	}
 
 #else

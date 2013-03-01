@@ -548,9 +548,9 @@ Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
 			"ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
 			" from Ledgers WHERE LedgerSeq = ?;");
 
-			pSt.reset();
 		pSt.bind(1, ledgerIndex);
 		ledger = getSQL1(&pSt);
+		pSt.reset();
 	}
 	if (ledger)
 		Ledger::getSQL2(ledger);
@@ -569,9 +569,9 @@ Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 			"ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
 			" from Ledgers WHERE LedgerHash = ?;");
 
-		pSt.reset();
 		pSt.bind(1, ledgerHash.GetHex());
 		ledger = getSQL1(&pSt);
+		pSt.reset();
 	}
 	if (ledger)
 	{
@@ -731,17 +731,18 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 	static SqliteStatement pSt(con->getDB()->getSqliteDB(),
 		"SELECT LedgerHash,PrevHash FROM Ledgers INDEXED BY SeqLedger Where LedgerSeq = ?;");
 
-	pSt.reset();
 	pSt.bind(1, ledgerIndex);
 
 	int ret = pSt.step();
 	if (pSt.isDone(ret))
 	{
+		pSt.reset();
 		cLog(lsTRACE) << "Don't have ledger " << ledgerIndex;
 		return false;
 	}
 	if (!pSt.isRow(ret))
 	{
+		pSt.reset();
 		assert(false);
 		cLog(lsFATAL) << "Unexpected statement result " << ret;
 		return false;
@@ -749,6 +750,7 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 
 	ledgerHash.SetHex(pSt.peekString(0), true);
 	parentHash.SetHex(pSt.peekString(1), true);
+	pSt.reset();
 
 	return true;
 
