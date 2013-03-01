@@ -16,7 +16,7 @@ std::map<std::string, TransactionFormat*> TransactionFormat::byName;
 
 #define DECLARE_TF(name, type) tf = new TransactionFormat(#name, type); (*tf) TF_BASE
 
-static bool TFInit()
+void TFInit()
 {
 	TransactionFormat* tf;
 
@@ -84,11 +84,7 @@ static bool TFInit()
 		<< SOElement(sfReserveBase,			SOE_REQUIRED)
 		<< SOElement(sfReserveIncrement,	SOE_REQUIRED)
      ;
-
-	return true;
 }
-
-bool TFInitComplete = TFInit();
 
 TransactionFormat* TransactionFormat::getTxnFormat(TransactionType t)
 {

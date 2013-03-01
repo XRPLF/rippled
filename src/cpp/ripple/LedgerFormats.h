@@ -58,7 +58,7 @@ class LedgerEntryFormat
 public:
 	std::string					t_name;
 	LedgerEntryType				t_type;
-	std::vector<SOElement::ref>	elements;
+	SOTemplate					elements;
 
 	static std::map<int, LedgerEntryFormat*>			byType;
 	static std::map<std::string, LedgerEntryFormat*>	byName;
@@ -70,7 +70,7 @@ public:
 	}
 	LedgerEntryFormat& operator<<(const SOElement& el)
 	{
-		elements.push_back(new SOElement(el));
+		elements.push_back(el);
 		return *this;
 	}
 

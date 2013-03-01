@@ -130,14 +130,26 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 	}
 }
 
-void STObject::set(const std::vector<SOElement::ref>& type)
+void SOTemplate::push_back(const SOElement &r)
+{
+	assert(mMap.find(r.e_field.getCode()) == mMap.end());
+	mMap[r.e_field.getCode()] = mTypes.size();
+	mTypes.push_back(new SOElement(r));
+}
+
+int SOTemplate::getIndex(SField::ref f) const
+{
+	std::map<int, int>::const_iterator it = mMap.find(f.getCode());
+	return (it == mMap.end()) ? -1 : it->second;
+}
+
+void STObject::set(const SOTemplate& type)
 {
 	mData.clear();
-	mType.clear();
+	mType = &type;
 
-	BOOST_FOREACH(SOElement::ref elem, type)
+	BOOST_FOREACH(const SOElement* elem, type.peek())
 	{
-		mType.push_back(elem);
 		if (elem->flags != SOE_REQUIRED)
 			giveObject(makeNonPresentObject(elem->e_field));
 		else
@@ -145,15 +157,14 @@ void STObject::set(const std::vector<SOElement::ref>& type)
 	}
 }
 
-bool STObject::setType(const std::vector<SOElement::ref> &type)
+bool STObject::setType(const SOTemplate &type)
 {
-	boost::ptr_vector<SerializedType> newData(type.size());
+	boost::ptr_vector<SerializedType> newData(type.peek().size());
 	bool valid = true;
 
-	mType.clear();
-	mType.reserve(type.size());
+	mType = &type;
 
-	BOOST_FOREACH(SOElement::ref elem, type)
+	BOOST_FOREACH(const SOElement* elem, type.peek())
 	{
 		bool match = false;
 		for (boost::ptr_vector<SerializedType>::iterator it = mData.begin(); it != mData.end(); ++it)
@@ -180,8 +191,6 @@ bool STObject::setType(const std::vector<SOElement::ref> &type)
 			}
 			newData.push_back(makeNonPresentObject(elem->e_field));
 		}
-
-		mType.push_back(elem);
 	}
 
 	BOOST_FOREACH(const SerializedType& t, mData)
@@ -201,7 +210,7 @@ bool STObject::setType(const std::vector<SOElement::ref> &type)
 bool STObject::isValidForType()
 {
 	boost::ptr_vector<SerializedType>::iterator it = mData.begin();
-	BOOST_FOREACH(SOElement::ref elem, mType)
+	BOOST_FOREACH(const SOElement* elem, mType->peek())
 	{
 		if (it == mData.end())
 			return false;
@@ -215,14 +224,9 @@ bool STObject::isValidForType()
 
 bool STObject::isFieldAllowed(SField::ref field)
 {
-	if (isFree())
+	if (mType == NULL)
 		return true;
-	BOOST_FOREACH(SOElement::ref elem, mType)
-	{ // are any required elemnents missing
-		if (elem->e_field == field)
-			return true;
-	}
-	return false;
+	return mType->getIndex(field) != -1;
 }
 
 bool STObject::set(SerializerIterator& sit, int depth)
@@ -361,6 +365,9 @@ uint256 STObject::getSigningHash(uint32 prefix) const
 
 int STObject::getFieldIndex(SField::ref field) const
 {
+	if (mType != NULL)
+		return mType->getIndex(field);
+
 	int i = 0;
 	BOOST_FOREACH(const SerializedType& elem, mData)
 	{
@@ -1243,11 +1250,11 @@ BOOST_AUTO_TEST_CASE( FieldManipulation_test )
 	SField sfTestU32(STI_UINT32, 255, "TestU32");
 	SField sfTestObject(STI_OBJECT, 255, "TestObject");
 
-	std::vector<SOElement::ref> elements;
-	elements.push_back(new SOElement(sfFlags, SOE_REQUIRED));
-	elements.push_back(new SOElement(sfTestVL, SOE_REQUIRED));
-	elements.push_back(new SOElement(sfTestH256, SOE_OPTIONAL));
-	elements.push_back(new SOElement(sfTestU32, SOE_REQUIRED));
+	SOTemplate elements;
+	elements.push_back(SOElement(sfFlags, SOE_REQUIRED));
+	elements.push_back(SOElement(sfTestVL, SOE_REQUIRED));
+	elements.push_back(SOElement(sfTestH256, SOE_OPTIONAL));
+	elements.push_back(SOElement(sfTestU32, SOE_REQUIRED));
 
 	STObject object1(elements, sfTestObject);
 	STObject object2(object1);

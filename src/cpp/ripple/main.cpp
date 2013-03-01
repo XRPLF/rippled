@@ -16,6 +16,10 @@
 namespace po = boost::program_options;
 
 extern bool AddSystemEntropy();
+extern void TFInit();
+extern void LEFInit();
+extern void SVFInit();
+
 using namespace std;
 using namespace boost::unit_test;
 
@@ -187,6 +191,10 @@ int main(int argc, char* argv[])
 		Log::setMinSeverity(lsINFO, true);
 
 	InstanceType::multiThread();
+
+	TFInit();
+	LEFInit();
+	SVFInit();
 
 	if (vm.count("unittest"))
 	{

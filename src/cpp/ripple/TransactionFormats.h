@@ -31,7 +31,7 @@ class TransactionFormat
 public:
 	std::string					t_name;
 	TransactionType				t_type;
-	std::vector<SOElement::ref>	elements;
+	SOTemplate					elements;
 
 	static std::map<int, TransactionFormat*>			byType;
     static std::map<std::string, TransactionFormat*>	byName;
@@ -43,7 +43,7 @@ public:
     }
     TransactionFormat& operator<<(const SOElement& el)
     {
-	    elements.push_back(new SOElement(el));
+	    elements.push_back(el);
 	    return *this;
     }
 

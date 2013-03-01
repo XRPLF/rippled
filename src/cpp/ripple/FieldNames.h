@@ -96,6 +96,7 @@ public:
 	bool isKnown() const		{ return fieldType != STI_UNKNOWN; }
 	bool isBinary() const		{ return fieldValue < 256; }
 	bool isDiscardable() const	{ return fieldValue > 256; }
+	int getCode() const			{ return fieldCode; }
 
 	bool isSigningField() const		{ return signingField; }
 	void notSigningField()			{ signingField = false; }
