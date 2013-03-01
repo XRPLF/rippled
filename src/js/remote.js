@@ -91,6 +91,26 @@ Request.prototype.ledger_index = function (ledger_index) {
   return this;
 };
 
+Request.prototype.ledger_select = function (ledger_spec) {
+  if (ledger_spec === 'closed') {
+    this.message.ledger_index  = -1;
+
+  } else if (ledger_spec === 'current') {
+    this.message.ledger_index  = -2;
+
+  } else if (ledger_spec === 'verified') {
+    this.message.ledger_index  = -3;
+
+  } else if (String(ledger_spec).length > 12) { // XXX Better test needed
+    this.message.ledger_hash  = ledger_spec;
+
+  } else {
+    this.message.ledger_index  = ledger_spec;
+  }
+
+  return this;
+};
+
 Request.prototype.account_root = function (account) {
   this.message.account_root  = UInt160.json_rewrite(account);
 
@@ -846,12 +866,13 @@ Remote.prototype.request_unsubscribe = function (streams) {
   return request;
 };
 
-// --> current: true, for the current ledger.
-Remote.prototype.request_transaction_entry = function (hash, current) {
+// .ledger_choose()
+// .ledger_hash()
+// .ledger_index()
+Remote.prototype.request_transaction_entry = function (hash) {
   //utils.assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
 
   return (new Request(this, 'transaction_entry'))
-    .ledger_choose(current)
     .tx_hash(hash);
 };
 
