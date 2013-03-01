@@ -1774,5 +1774,11 @@ InfoSub::pointer NetworkOPs::addRpcSub(const std::string& strUrl, InfoSub::ref r
 	return rspEntry;
 }
 
+void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult)
+{
+	jvResult["offers"]	= Json::Value(Json::arrayValue);
+//	jvResult["marker"]	= Json::Value(Json::arrayValue);
+//	jvResult["nodes"]	= Json::Value(Json::arrayValue);
+}
 
 // vim:ts=4

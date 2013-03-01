@@ -119,7 +119,6 @@ protected:
     boost::recursive_mutex								mMonitorLock;
 	subInfoMapType										mSubAccount;
 	subInfoMapType										mSubRTAccount;
-	
 
 	subRpcMapType										mRpcSubMap;
 
@@ -229,6 +228,12 @@ public:
 	//
 
 	Json::Value getOwnerInfo(Ledger::pointer lpLedger, const RippleAddress& naAccount);
+
+	//
+	// Book functions
+	//
+
+	void getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult);
 
 	// raw object operations
 	bool findRawLedger(const uint256& ledgerHash, std::vector<unsigned char>& rawLedger);

@@ -209,23 +209,25 @@ Json::Value RPCParser::parseAccountTransactions(const Json::Value& jvParams)
 	return jvRequest;
 }
 
-// book_offers <taker_puts> <taker_gets> [<ledger> <limit> <marker>]
+// book_offers <taker_puts> <taker_gets> [<ledger> [<limit> [<proof> [<marker>]]]]
+// limit: 0 = no limit
+// proof: 0 or 1
 //
 // Mnemonic: taker puts --> offer --> taker gets
 Json::Value RPCParser::parseBookOffers(const Json::Value& jvParams)
 {
 	Json::Value		jvRequest(Json::objectValue);
 
-	Json::Value		jvTakerPuts	= jvParseCurrencyIssuer(jvParams[0u].asString());
+	Json::Value		jvTakerPays	= jvParseCurrencyIssuer(jvParams[0u].asString());
 	Json::Value		jvTakerGets	= jvParseCurrencyIssuer(jvParams[1u].asString());
 
-	if (isRpcError(jvTakerPuts))
+	if (isRpcError(jvTakerPays))
 	{
-		return jvTakerPuts;
+		return jvTakerPays;
 	}
 	else
 	{
-		jvRequest["taker_puts"]	= jvTakerPuts;
+		jvRequest["taker_pays"]	= jvTakerPays;
 	}
 
 	if (isRpcError(jvTakerGets))
@@ -237,7 +239,7 @@ Json::Value RPCParser::parseBookOffers(const Json::Value& jvParams)
 		jvRequest["taker_gets"]	= jvTakerGets;
 	}
 
-	if (!jvParseLedger(jvRequest, jvParams[2u].asString()))
+	if (jvParams.size() >= 3 && !jvParseLedger(jvRequest, jvParams[2u].asString()))
 		return jvRequest;
 
 	if (jvParams.size() >= 4)
@@ -248,8 +250,13 @@ Json::Value RPCParser::parseBookOffers(const Json::Value& jvParams)
 			jvRequest["limit"]	= iLimit;
 	}
 
-	if (jvParams.size() == 5)
-		jvRequest["marker"]	= jvParams[4u];
+	if (jvParams.size() >= 5 && jvParams[4u].asInt())
+	{
+		jvRequest["proof"]	= true;
+	}
+
+	if (jvParams.size() == 6)
+		jvRequest["marker"]	= jvParams[5u];
 
 	return jvRequest;
 }
@@ -622,7 +629,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"account_lines",		&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_offers",		&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_tx",			&RPCParser::parseAccountTransactions,	2,  4	},
-		{	"book_offers",			&RPCParser::parseBookOffers,			3,  5	},
+		{	"book_offers",			&RPCParser::parseBookOffers,			2,  6	},
 		{	"connect",				&RPCParser::parseConnect,				1,  2	},
 		{	"consensus_info",		&RPCParser::parseAsIs,					0,	0	},
 		{	"get_counts",			&RPCParser::parseGetCounts,				0,	1	},
