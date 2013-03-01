@@ -762,47 +762,58 @@ void LedgerConsensus::updateOurPositions()
 
 
 	int neededWeight;
+
 	if (mClosePercent < AV_MID_CONSENSUS_TIME)
 		neededWeight = AV_INIT_CONSENSUS_PCT;
 	else if (mClosePercent < AV_LATE_CONSENSUS_TIME)
 		neededWeight = AV_MID_CONSENSUS_PCT;
-	else
+	else if (mClosePercent < AV_STUCK_CONSENSUS_TIME)
 		neededWeight = AV_LATE_CONSENSUS_PCT;
+	else
+		neededWeight = AV_STUCK_CONSENSUS_PCT;
 
 	uint32 closeTime = 0;
 	mHaveCloseTimeConsensus = false;
 
-	int thresh = mPeerPositions.size();
-	if (thresh == 0)
+	if (mPeerPositions.empty())
 	{ // no other times
 		mHaveCloseTimeConsensus = true;
 		closeTime = roundCloseTime(mOurPosition->getCloseTime());
 	}
 	else
 	{
+		int threshVote = mPeerPositions.size();			// Threshold for non-zero vote
+		int threshConsensus = mPeerPositions.size();	// Threshold to declare consensus
 		if (mProposing)
 		{
 			++closeTimes[roundCloseTime(mOurPosition->getCloseTime())];
-			++thresh;
+			++threshVote;
+			++threshConsensus;
 		}
-		thresh = ((thresh * neededWeight) + (neededWeight / 2)) / 100;
-		if (thresh == 0)
-			thresh = 1;
-		cLog(lsINFO) << "Proposers:" << mPeerPositions.size() << " nw:" << neededWeight << " thr:" << thresh;
+		threshVote = ((threshVote * neededWeight) + (neededWeight / 2)) / 100;
+		threshConsensus = ((threshConsensus * AV_CT_CONSENSUS_PCT) + (AV_CT_CONSENSUS_PCT / 2)) / 100;
+
+		if (threshVote == 0)
+			threshVote = 1;
+		if (threshConsensus == 0)
+			threshConsensus = 1;
+		cLog(lsINFO) << "Proposers:" << mPeerPositions.size() << " nw:" << neededWeight
+			<< " thrV:" << threshVote << " thrC:" << threshConsensus;
 
 		for (std::map<uint32, int>::iterator it = closeTimes.begin(), end = closeTimes.end(); it != end; ++it)
 		{
-			cLog(lsDEBUG) << "CCTime: " << it->first << " has " << it->second << ", " << thresh << " required";
-			if (it->second >= thresh)
+			cLog(lsDEBUG) << "CCTime: " << it->first << " has " << it->second << ", " << threshVote << " required";
+			if (it->second >= threshVote)
 			{
 				cLog(lsDEBUG) << "Close time consensus reached: " << it->first;
-				mHaveCloseTimeConsensus = true;
 				closeTime = it->first;
-				thresh = it->second;
+				threshVote = it->second;
+				if (threshVote >= threshConsensus)
+					mHaveCloseTimeConsensus = true;
 			}
 		}
 		tLog(!mHaveCloseTimeConsensus, lsDEBUG) << "No CT consensus: Proposers:" << mPeerPositions.size()
-			<< " Proposing:" <<	(mProposing ? "yes" : "no") << " Thresh:" << thresh << " Pos:" << closeTime;
+			<< " Proposing:" <<	(mProposing ? "yes" : "no") << " Thresh:" << threshConsensus << " Pos:" << closeTime;
 	}
 
 	if (!changes &&
