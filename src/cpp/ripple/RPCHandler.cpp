@@ -176,7 +176,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 			}
 
 			Ledger::pointer lSnapshot = boost::make_shared<Ledger>(
-				boost::ref(*theApp->getOPs().getCurrentLedger()), false);
+				boost::ref(*mNetOps->getCurrentLedger()), false);
 			{
 				ScopedUnlock su(theApp->getMasterLock());
 				Pathfinder pf(lSnapshot, raSrcAddressID, dstAccountID,
@@ -1060,8 +1060,7 @@ Json::Value RPCHandler::doBookOffers(Json::Value jvRequest)
 			&& (!jvTakerPays["issuer"].isString()
 				|| !STAmount::issuerFromString(uTakerPaysIssuerID, jvTakerPays["issuer"].asString())))
 		// Don't allow illegal issuers.
-		|| !uTakerPaysCurrencyID
-		|| !uTakerPaysIssuerID
+		|| (!uTakerPaysCurrencyID != !uTakerPaysIssuerID)
 		|| ACCOUNT_ONE == uTakerPaysIssuerID)
 	{
 		cLog(lsINFO) << "Bad taker_pays issuer.";
@@ -1071,7 +1070,7 @@ Json::Value RPCHandler::doBookOffers(Json::Value jvRequest)
 
 	uint160		uTakerGetsCurrencyID;
 	uint160		uTakerGetsIssuerID;
-	Json::Value	jvTakerGets	= jvRequest["taker_pays"];
+	Json::Value	jvTakerGets	= jvRequest["taker_gets"];
 
 	// Parse mandatory currency.
 	if (!jvTakerGets.isMember("currency")
@@ -1086,8 +1085,7 @@ Json::Value RPCHandler::doBookOffers(Json::Value jvRequest)
 			&& (!jvTakerGets["issuer"].isString()
 				|| !STAmount::issuerFromString(uTakerGetsIssuerID, jvTakerGets["issuer"].asString())))
 		// Don't allow illegal issuers.
-		|| !uTakerGetsCurrencyID
-		|| !uTakerGetsIssuerID
+		|| (!uTakerGetsCurrencyID != !uTakerGetsIssuerID)
 		|| ACCOUNT_ONE == uTakerGetsIssuerID)
 	{
 		cLog(lsINFO) << "Bad taker_gets issuer.";
@@ -1095,7 +1093,18 @@ Json::Value RPCHandler::doBookOffers(Json::Value jvRequest)
 		return rpcError(rpcDST_ISR_MALFORMED);
 	}
 
-	jvResult["hello"]	= "world";
+	if (uTakerPaysCurrencyID == uTakerGetsCurrencyID
+		&& uTakerPaysIssuerID == uTakerGetsIssuerID) {
+		cLog(lsINFO) << "taker_gets same as taker_pays.";
+
+		return rpcError(rpcBAD_MARKET);
+	}
+
+	const bool			bProof		= jvRequest.isMember("proof");
+	const unsigned int	iLimit		= jvRequest.isMember("limit") ? jvRequest["limit"].asUInt() : 0;
+	const Json::Value	jvMarker	= jvRequest.isMember("marker") ? jvRequest["marker"] : Json::Value(Json::nullValue);
+
+	mNetOps->getBookPage(lpLedger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, bProof, iLimit, jvMarker, jvResult);
 
 	return jvResult;
 }
@@ -1433,7 +1442,7 @@ Json::Value RPCHandler::doConsensusInfo(Json::Value)
 {
 	Json::Value ret(Json::objectValue);
 
-	ret["info"] = theApp->getOPs().getConsensusInfo();
+	ret["info"] = mNetOps->getConsensusInfo();
 
 	return ret;
 }
@@ -1442,7 +1451,7 @@ Json::Value RPCHandler::doServerInfo(Json::Value)
 {
 	Json::Value ret(Json::objectValue);
 
-	ret["info"]	= theApp->getOPs().getServerInfo(true, mRole == ADMIN);
+	ret["info"]	= mNetOps->getServerInfo(true, mRole == ADMIN);
 
 	return ret;
 }
@@ -1451,7 +1460,7 @@ Json::Value RPCHandler::doServerState(Json::Value)
 {
 	Json::Value ret(Json::objectValue);
 
-	ret["state"]	= theApp->getOPs().getServerInfo(false, mRole == ADMIN);
+	ret["state"]	= mNetOps->getServerInfo(false, mRole == ADMIN);
 
 	return ret;
 }
@@ -1520,7 +1529,7 @@ Json::Value RPCHandler::doTx(Json::Value jvRequest)
 
 		if (txn->getLedger() != 0)
 		{
-			Ledger::pointer lgr = theApp->getOPs().getLedgerBySeq(txn->getLedger());
+			Ledger::pointer lgr = mNetOps->getLedgerBySeq(txn->getLedger());
 			if (lgr)
 			{
 				bool okay = false;
@@ -1543,7 +1552,7 @@ Json::Value RPCHandler::doTx(Json::Value jvRequest)
 					}
 				}
 				if (okay)
-					ret["validated"] = theApp->getOPs().isValidated(lgr);
+					ret["validated"] = mNetOps->isValidated(lgr);
 			}
 		}
 
@@ -1661,7 +1670,7 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 	try
 	{
 #endif
-		int vl = theApp->getOPs().getValidatedSeq();
+		int vl = mNetOps->getValidatedSeq();
 		ScopedUnlock su(theApp->getMasterLock());
 
 		Json::Value ret(Json::objectValue);
@@ -1680,7 +1689,7 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 				obj["inLedger"] = it->get<2>();
 				if (it->get<2>() > vl)
 					obj["validated"] = false;
-				else if (theApp->getOPs().haveLedger(it->get<2>()))
+				else if (mNetOps->haveLedger(it->get<2>()))
 					obj["validated"] = true;
 				ret["transactions"].append(obj);
 			}
@@ -1701,7 +1710,7 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 					uint32 s = it->second->getLgrSeq();
 					if (s > vl)
 						obj["validated"] = false;
-					else if (theApp->getOPs().haveLedger(s))
+					else if (mNetOps->haveLedger(s))
 						obj["validated"] = true;
 				}
 
@@ -2955,6 +2964,8 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 		&& mNetOps->getOperatingMode() != NetworkOPs::omTRACKING
 		&& mNetOps->getOperatingMode() != NetworkOPs::omFULL)
 	{
+		cLog(lsINFO) << "Insufficient network mode for RPC: " << mNetOps->strOperatingMode();
+
 		return rpcError(rpcNO_NETWORK);
 	}
 	// XXX Should verify we have a current ledger.

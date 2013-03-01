@@ -19,6 +19,7 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 		{ rpcACT_MALFORMED,			"actMalformed",		"Account malformed."									},
 		{ rpcACT_NOT_FOUND,			"actNotFound",		"Account not found."									},
 		{ rpcBAD_BLOB,				"badBlob",			"Blob must be a non-empty hex string."					},
+		{ rpcBAD_MARKET,			"badMarket",		"No such market."										},
 		{ rpcBAD_SEED,				"badSeed",			"Disallowed seed."										},
 		{ rpcBAD_SYNTAX,			"badSyntax",		"Syntax error."											},
 		{ rpcCOMMAND_MISSING,		"commandMissing",	"Missing command entry."								},
