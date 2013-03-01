@@ -1044,7 +1044,10 @@ bool LedgerConsensus::peerHasSet(Peer::ref peer, const uint256& hashSet, ripple:
 	set.push_back(peer);
 	boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(hashSet);
 	if (acq != mAcquiring.end())
-		acq->second->peerHas(peer);
+	{
+		TransactionAcquire::pointer ta = acq->second; // make sure it doesn't go away
+		ta->peerHas(peer);
+	}
 	return true;
 }
 
