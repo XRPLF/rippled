@@ -88,4 +88,9 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 	return jvResult;
 }
 
+bool isRpcError(Json::Value jvResult)
+{
+	return jvResult.isObject() && jvResult.isMember("error");
+}
+
 // vim:ts=4

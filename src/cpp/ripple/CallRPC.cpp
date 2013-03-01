@@ -1,3 +1,9 @@
+//
+// This a trusted interface, the user is expected to provide valid input to perform valid requests.
+// Error catching and reporting is not a requirement of this command line interface.
+//
+// Improvements to be more strict and to provide better diagnostics are welcome.
+//
 
 #include <iostream>
 #include <cstdlib>
@@ -9,6 +15,7 @@
 #include <boost/iostreams/stream.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
+#include <boost/regex.hpp>
 
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
@@ -53,6 +60,63 @@ std::string EncodeBase64(const std::string& s)
 	BIO_free_all(b64);
 
 	return result;
+}
+
+// TODO New routine for parsing ledger parameters, other routines should standardize on this.
+static bool jvParseLedger(Json::Value& jvRequest, const std::string& strLedger)
+{
+	if (strLedger == "closed")
+	{
+		jvRequest["ledger_index"]	= -1;
+	}
+	else if (strLedger == "current")
+	{
+		jvRequest["ledger_index"]	= -2;
+	}
+	else if (strLedger == "validated")
+	{
+		jvRequest["ledger_index"]	= -3;
+	}
+	else if (strLedger.length() > 12)
+	{
+		// YYY Could confirm this is a uint256.
+		jvRequest["ledger_hash"]	= strLedger;
+	}
+	else
+	{
+		jvRequest["ledger_index"]	= lexical_cast_s<uint32>(strLedger);
+	}
+
+	return true;
+}
+
+// Build a object { "currency" : "XYZ", "issuer" : "rXYX" }
+static Json::Value jvParseCurrencyIssuer(const std::string& strCurrencyIssuer)
+{
+	static boost::regex	reCurIss("\\`([[:alpha:]]{3})(?:/(.+))?\\'");
+
+	boost::smatch	smMatch;
+
+	if (boost::regex_match(strCurrencyIssuer, smMatch, reCurIss))
+	{
+		Json::Value	jvResult(Json::objectValue);
+		std::string	strCurrency	= smMatch[1];
+		std::string	strIssuer	= smMatch[2];
+
+		jvResult["currency"]	= strCurrency;
+
+		if (strIssuer.length())
+		{
+			// Could confirm issuer is a valid Ripple address.
+			jvResult["issuer"]		= strIssuer;
+		}
+
+		return jvResult;
+	}
+	else
+	{
+		return rpcError(rpcINVALID_PARAMS);
+	}
 }
 
 Json::Value RPCParser::parseAsIs(const Json::Value& jvParams)
@@ -141,6 +205,51 @@ Json::Value RPCParser::parseAccountTransactions(const Json::Value& jvParams)
 	}
 
 	jvRequest["account"]	= raAccount.humanAccountID();
+
+	return jvRequest;
+}
+
+// book_offers <taker_puts> <taker_gets> [<ledger> <limit> <marker>]
+//
+// Mnemonic: taker puts --> offer --> taker gets
+Json::Value RPCParser::parseBookOffers(const Json::Value& jvParams)
+{
+	Json::Value		jvRequest(Json::objectValue);
+
+	Json::Value		jvTakerPuts	= jvParseCurrencyIssuer(jvParams[0u].asString());
+	Json::Value		jvTakerGets	= jvParseCurrencyIssuer(jvParams[1u].asString());
+
+	if (isRpcError(jvTakerPuts))
+	{
+		return jvTakerPuts;
+	}
+	else
+	{
+		jvRequest["taker_puts"]	= jvTakerPuts;
+	}
+
+	if (isRpcError(jvTakerGets))
+	{
+		return jvTakerGets;
+	}
+	else
+	{
+		jvRequest["taker_gets"]	= jvTakerGets;
+	}
+
+	if (!jvParseLedger(jvRequest, jvParams[2u].asString()))
+		return jvRequest;
+
+	if (jvParams.size() >= 4)
+	{
+		int		iLimit	= jvParams[3u].asInt();
+
+		if (iLimit > 0)
+			jvRequest["limit"]	= iLimit;
+	}
+
+	if (jvParams.size() == 5)
+		jvRequest["marker"]	= jvParams[4u];
 
 	return jvRequest;
 }
@@ -509,11 +618,11 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		// Request-response methods
 		// - Returns an error, or the request.
 		// - To modify the method, provide a new method in the request.
-		{	"accept_ledger",		&RPCParser::parseAsIs,					0,	0	},
 		{	"account_info",			&RPCParser::parseAccountInfo,			1,  2	},
 		{	"account_lines",		&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_offers",		&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_tx",			&RPCParser::parseAccountTransactions,	2,  4	},
+		{	"book_offers",			&RPCParser::parseBookOffers,			3,  5	},
 		{	"connect",				&RPCParser::parseConnect,				1,  2	},
 		{	"consensus_info",		&RPCParser::parseAsIs,					0,	0	},
 		{	"get_counts",			&RPCParser::parseGetCounts,				0,	1	},
@@ -622,7 +731,7 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 
 		jvRequest	= rpParser.parseCommand(vCmd[0], jvRpcParams);
 
-		// std::cerr << "Request: " << jvRequest << std::endl;
+		cLog(lsTRACE) << "RPC Request: " << jvRequest << std::endl;
 
 		if (jvRequest.isMember("error"))
 		{
@@ -756,6 +865,8 @@ bool responseRPC(
 // Build the request.
 void requestRPC(const std::string& strMethod, const Json::Value& jvParams, const std::map<std::string, std::string>& mHeaders, const std::string& strPath, boost::asio::streambuf& sb, const std::string& strHost)
 {
+	cLog(lsDEBUG) << "requestRPC: strPath='" << strPath << "'";
+
 	std::ostream	osRequest(&sb);
 
 	osRequest <<
@@ -804,7 +915,7 @@ void callRPC(
 			strMethod,
 			jvParams,
 			mapRequestHeaders,
-			"/", _1, _2),
+			strPath, _1, _2),
 		RPC_REPLY_MAX_BYTES,
 		boost::posix_time::seconds(RPC_NOTIFY_SECONDS),
 		boost::bind(&responseRPC, callbackFuncP, _1, _2, _3));
