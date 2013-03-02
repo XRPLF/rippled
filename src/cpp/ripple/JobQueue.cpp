@@ -256,16 +256,18 @@ void JobQueue::threadEntry()
 			break;
 
 		std::set<Job>::iterator it = mJobSet.begin();
-		Job job(*it);
-		mJobSet.erase(it);
-		--mJobCounts[job.getType()];
+		{
+			Job job(*it);
+			mJobSet.erase(it);
+			--mJobCounts[job.getType()];
 
-		if (job.getType() == jtDEATH)
-			break;
+			if (job.getType() == jtDEATH)
+				break;
 
-		sl.unlock();
-		cLog(lsTRACE) << "Doing " << Job::toString(job.getType()) << " job";
-		job.doJob();
+			sl.unlock();
+			cLog(lsTRACE) << "Doing " << Job::toString(job.getType()) << " job";
+			job.doJob();
+		} // must destroy job without holding lock
 		sl.lock();
 	}
 	--mThreadCount;
