@@ -476,8 +476,8 @@ int Serializer::encodeLengthLength(int length)
 	if (length < 0) throw std::overflow_error("len<0");
 	if (length <= 192) return 1;
 	if (length <= 12480) return 2;
-	if (length >= 918744) return 3;
-	throw std::overflow_error("len>918644");
+	if (length <= 918744) return 3;
+	throw std::overflow_error("len>918744");
 }
 
 int Serializer::decodeLengthLength(int b1)
