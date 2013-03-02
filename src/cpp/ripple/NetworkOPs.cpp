@@ -1696,12 +1696,14 @@ bool NetworkOPs::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
 	jvResult["reserve_base"]	= Json::UInt(lpClosed->getReserve(0));
 	jvResult["reserve_inc"]		= Json::UInt(lpClosed->getReserveInc());
 
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return mSubLedger.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
 }
 
 // <-- bool: true=erased, false=was not there
 bool NetworkOPs::unsubLedger(uint64 uSeq)
 {
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return !!mSubLedger.erase(uSeq);
 }
 
@@ -1722,36 +1724,42 @@ bool NetworkOPs::subServer(InfoSub::ref isrListener, Json::Value& jvResult)
 	jvResult["load_base"]		= theApp->getFeeTrack().getLoadBase();
 	jvResult["load_factor"]		= theApp->getFeeTrack().getLoadFactor();
 
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return mSubServer.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
 }
 
 // <-- bool: true=erased, false=was not there
 bool NetworkOPs::unsubServer(uint64 uSeq)
 {
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return !!mSubServer.erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there
 bool NetworkOPs::subTransactions(InfoSub::ref isrListener)
 {
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return mSubTransactions.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
 }
 
 // <-- bool: true=erased, false=was not there
 bool NetworkOPs::unsubTransactions(uint64 uSeq)
 {
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return !!mSubTransactions.erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there
 bool NetworkOPs::subRTTransactions(InfoSub::ref isrListener)
 {
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return mSubTransactions.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
 }
 
 // <-- bool: true=erased, false=was not there
 bool NetworkOPs::unsubRTTransactions(uint64 uSeq)
 {
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return !!mSubTransactions.erase(uSeq);
 }
 
