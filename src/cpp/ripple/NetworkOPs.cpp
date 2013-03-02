@@ -1784,7 +1784,71 @@ InfoSub::pointer NetworkOPs::addRpcSub(const std::string& strUrl, InfoSub::ref r
 
 void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult)
 {
-	jvResult["offers"]	= Json::Value(Json::arrayValue);
+	Json::Value		jvOffers	= Json::Value(Json::arrayValue);
+	const uint256	uBookBase	= Ledger::getBookBase(uTakerGetsCurrencyID, uTakerGetsIssuerID, uTakerPaysCurrencyID, uTakerPaysIssuerID);
+	const uint256	uBookEnd	= Ledger::getQualityNext(uBookBase);
+	uint256			uTipIndex	= uBookBase;
+
+	cLog(lsTRACE) << boost::str(boost::format("getBookPage: uBookBase=%s") % uBookBase);
+	cLog(lsTRACE) << boost::str(boost::format("getBookPage:  uBookEnd=%s") % uBookEnd);
+	cLog(lsTRACE) << boost::str(boost::format("getBookPage: uTipIndex=%s") % uTipIndex);
+
+	LedgerEntrySet	lesActive(lpLedger);
+
+	bool			bDone			= false;
+	bool			bDirectAdvance	= true;
+
+	SLE::pointer	sleOfferDir;
+	uint256			uOfferIndex;
+	unsigned int	uBookEntry;
+
+	while (!bDone) {
+		if (bDirectAdvance) {
+			bDirectAdvance	= false;
+
+			cLog(lsTRACE) << boost::str(boost::format("getBookPage: bDirectAdvance"));
+
+			sleOfferDir		= lesActive.entryCache(ltDIR_NODE, lpLedger->getNextLedgerIndex(uTipIndex, uBookEnd));
+			if (!sleOfferDir)
+			{
+				cLog(lsTRACE) << boost::str(boost::format("getBookPage: bDone"));
+				bDone			= true;
+			}
+			else
+			{
+				uTipIndex		= sleOfferDir->getIndex();
+
+				SLE::pointer	sleBookNode;
+
+				lesActive.dirFirst(uTipIndex, sleBookNode, uBookEntry, uOfferIndex);
+
+				cLog(lsTRACE) << boost::str(boost::format("getBookPage:   uTipIndex=%s") % uTipIndex);
+				cLog(lsTRACE) << boost::str(boost::format("getBookPage: uOfferIndex=%s") % uOfferIndex);
+			}
+		}
+
+		if (!bDone)
+		{
+			SLE::pointer	sleOffer		= lesActive.entryCache(ltOFFER, uOfferIndex);
+			const uint160	uOfferOwnerID	= sleOffer->getFieldAccount(sfAccount).getAccountID();
+			STAmount		saOfferPays		= sleOffer->getFieldAmount(sfTakerGets);
+			STAmount		saOfferGets		= sleOffer->getFieldAmount(sfTakerPays);
+			STAmount		saOfferFunds	= lesActive.accountFunds(uOfferOwnerID, saOfferPays);
+
+			if (!lesActive.dirNext(uTipIndex, sleOfferDir, uBookEntry, uOfferIndex))
+			{
+				bDirectAdvance	= true;
+			}
+			else
+			{
+				cLog(lsTRACE) << boost::str(boost::format("getBookPage: uOfferIndex=%s") % uOfferIndex);
+
+				jvOffers.append(sleOffer->getJson(0));
+			}
+		}
+	}
+
+	jvResult["offers"]	= jvOffers;
 //	jvResult["marker"]	= Json::Value(Json::arrayValue);
 //	jvResult["nodes"]	= Json::Value(Json::arrayValue);
 }
