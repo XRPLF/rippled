@@ -27,7 +27,7 @@ void SHAMapNode::setHash() const
 	mHash = mNodeID.hash_combine(h);
 #if 0
 	const unsigned int *ptr = reinterpret_cast<const unsigned int *>(mNodeID.begin());
-	for (int i = (mDepth + 3) / 4; i >= 0; --i)
+	for (int i = (mDepth + 3) / 4; i != 0; --i)
 		boost::hash_combine(h, *ptr++);
 	mHash = h;
 #endif
