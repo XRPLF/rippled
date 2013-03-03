@@ -87,6 +87,8 @@ class Application
 	std::map<std::string, Peer::pointer> mPeerMap;
 	boost::recursive_mutex	mPeerMapLock;
 
+	volatile bool			mShutdown;
+
 	void startNewLedger();
 	void loadOldLedger(const std::string&);
 
@@ -140,6 +142,7 @@ public:
 	uint256 getNonce256()			{ return mNonce256; }
 	std::size_t getNonceST()		{ return mNonceST; }
 
+	bool isShutdown()				{ return mShutdown; }
 	void setup();
 	void run();
 	void stop();
