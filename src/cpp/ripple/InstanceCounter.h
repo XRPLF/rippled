@@ -50,6 +50,11 @@ public:
 		sMultiThreaded = true;
 	}
 
+	static bool isMultiThread()
+	{
+		return sMultiThreaded;
+	}
+
 	void addInstance()
 	{
 		if (sMultiThreaded)
