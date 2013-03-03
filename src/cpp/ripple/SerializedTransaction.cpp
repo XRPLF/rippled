@@ -233,7 +233,7 @@ std::string SerializedTransaction::getSQLInsertReplaceHeader()
 
 std::string SerializedTransaction::getMetaSQLInsertHeader()
 {
-	return "INSERT INTO Transactions " + getMetaSQLValueHeader() + " VALUES ";
+	return "INSERT OR REPLACE INTO Transactions " + getMetaSQLValueHeader() + " VALUES ";
 }
 
 std::string SerializedTransaction::getSQL(uint32 inLedger, char status) const
