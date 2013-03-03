@@ -233,7 +233,7 @@ public:
 	// Book functions
 	//
 
-	void getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult);
+	void getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const uint160& uTakerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult);
 
 	// raw object operations
 	bool findRawLedger(const uint256& ledgerHash, std::vector<unsigned char>& rawLedger);

@@ -209,11 +209,11 @@ Json::Value RPCParser::parseAccountTransactions(const Json::Value& jvParams)
 	return jvRequest;
 }
 
-// book_offers <taker_puts> <taker_gets> [<ledger> [<limit> [<proof> [<marker>]]]]
+// book_offers <taker_pays> <taker_gets> [<taker> [<ledger> [<limit> [<proof> [<marker>]]]]]
 // limit: 0 = no limit
 // proof: 0 or 1
 //
-// Mnemonic: taker puts --> offer --> taker gets
+// Mnemonic: taker pays --> offer --> taker gets
 Json::Value RPCParser::parseBookOffers(const Json::Value& jvParams)
 {
 	Json::Value		jvRequest(Json::objectValue);
@@ -239,24 +239,29 @@ Json::Value RPCParser::parseBookOffers(const Json::Value& jvParams)
 		jvRequest["taker_gets"]	= jvTakerGets;
 	}
 
-	if (jvParams.size() >= 3 && !jvParseLedger(jvRequest, jvParams[2u].asString()))
+	if (jvParams.size() >= 3)
+	{
+		jvRequest["issuer"]	= jvParams[2u].asString();
+	}
+
+	if (jvParams.size() >= 4 && !jvParseLedger(jvRequest, jvParams[3u].asString()))
 		return jvRequest;
 
-	if (jvParams.size() >= 4)
+	if (jvParams.size() >= 5)
 	{
-		int		iLimit	= jvParams[3u].asInt();
+		int		iLimit	= jvParams[5u].asInt();
 
 		if (iLimit > 0)
 			jvRequest["limit"]	= iLimit;
 	}
 
-	if (jvParams.size() >= 5 && jvParams[4u].asInt())
+	if (jvParams.size() >= 6 && jvParams[5u].asInt())
 	{
 		jvRequest["proof"]	= true;
 	}
 
-	if (jvParams.size() == 6)
-		jvRequest["marker"]	= jvParams[5u];
+	if (jvParams.size() == 7)
+		jvRequest["marker"]	= jvParams[6u];
 
 	return jvRequest;
 }
@@ -629,7 +634,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"account_lines",		&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_offers",		&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_tx",			&RPCParser::parseAccountTransactions,	2,  4	},
-		{	"book_offers",			&RPCParser::parseBookOffers,			2,  6	},
+		{	"book_offers",			&RPCParser::parseBookOffers,			2,  7	},
 		{	"connect",				&RPCParser::parseConnect,				1,  2	},
 		{	"consensus_info",		&RPCParser::parseAsIs,					0,	0	},
 		{	"get_counts",			&RPCParser::parseGetCounts,				0,	1	},
