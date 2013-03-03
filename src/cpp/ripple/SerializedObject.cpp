@@ -132,15 +132,18 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 
 void SOTemplate::push_back(const SOElement &r)
 {
-	assert(mMap.find(r.e_field.getCode()) == mMap.end());
-	mMap[r.e_field.getCode()] = mTypes.size();
+	if (mIndex.empty())
+		mIndex.resize(SField::getNumFields() + 1, -1);
+	assert(r.e_field.getNum() < mIndex.size());
+	assert(getIndex(r.e_field) == -1);
+	mIndex[r.e_field.getNum()] = mTypes.size();
 	mTypes.push_back(new SOElement(r));
 }
 
 int SOTemplate::getIndex(SField::ref f) const
 {
-	std::map<int, int>::const_iterator it = mMap.find(f.getCode());
-	return (it == mMap.end()) ? -1 : it->second;
+	assert(f.getNum() < mIndex.size());
+	return mIndex[f.getNum()];
 }
 
 void STObject::set(const SOTemplate& type)

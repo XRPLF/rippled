@@ -28,7 +28,7 @@ class SOTemplate
 {
 protected:
 	std::vector<const SOElement*>	mTypes;
-	std::map<int, int>				mMap;		// field code -> index
+	std::vector<int>				mIndex;		// field num -> index
 
 public:
 	SOTemplate()											{ ; }
