@@ -12,6 +12,7 @@
 // These must stay at the top of this file
 std::map<int, SField::ptr> SField::codeToField;
 boost::mutex SField::mapMutex;
+int SField::num = 0;
 
 SField sfInvalid(-1), sfGeneric(0);
 SField sfLedgerEntry(STI_LEDGERENTRY, 1, "LedgerEntry");
