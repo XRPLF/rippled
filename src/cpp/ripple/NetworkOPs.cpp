@@ -1782,13 +1782,17 @@ InfoSub::pointer NetworkOPs::addRpcSub(const std::string& strUrl, InfoSub::ref r
 	return rspEntry;
 }
 
-void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult)
+// FIXME : support iLimit.
+void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const uint160& uTakerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult)
 {
+	boost::unordered_map<uint160, STAmount>	umBalance;
 	Json::Value		jvOffers	= Json::Value(Json::arrayValue);
-	const uint256	uBookBase	= Ledger::getBookBase(uTakerGetsCurrencyID, uTakerGetsIssuerID, uTakerPaysCurrencyID, uTakerPaysIssuerID);
+	const uint256	uBookBase	= Ledger::getBookBase(uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
 	const uint256	uBookEnd	= Ledger::getQualityNext(uBookBase);
 	uint256			uTipIndex	= uBookBase;
 
+	cLog(lsTRACE) << boost::str(boost::format("getBookPage: uTakerPaysCurrencyID=%s uTakerPaysIssuerID=%s") % STAmount::createHumanCurrency(uTakerPaysCurrencyID) % RippleAddress::createHumanAccountID(uTakerPaysIssuerID));
+	cLog(lsTRACE) << boost::str(boost::format("getBookPage: uTakerGetsCurrencyID=%s uTakerGetsIssuerID=%s") % STAmount::createHumanCurrency(uTakerGetsCurrencyID) % RippleAddress::createHumanAccountID(uTakerGetsIssuerID));
 	cLog(lsTRACE) << boost::str(boost::format("getBookPage: uBookBase=%s") % uBookBase);
 	cLog(lsTRACE) << boost::str(boost::format("getBookPage:  uBookEnd=%s") % uBookEnd);
 	cLog(lsTRACE) << boost::str(boost::format("getBookPage: uTipIndex=%s") % uTipIndex);
@@ -1801,6 +1805,9 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 	SLE::pointer	sleOfferDir;
 	uint256			uOfferIndex;
 	unsigned int	uBookEntry;
+	STAmount		saDirRate;
+
+//	unsigned int	iLeft			= iLimit;
 
 	while (!bDone) {
 		if (bDirectAdvance) {
@@ -1817,7 +1824,7 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 			else
 			{
 				uTipIndex		= sleOfferDir->getIndex();
-
+				saDirRate		= STAmount::setRate(Ledger::getQuality(uTipIndex));
 				SLE::pointer	sleBookNode;
 
 				lesActive.dirFirst(uTipIndex, sleBookNode, uBookEntry, uOfferIndex);
@@ -1831,9 +1838,64 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 		{
 			SLE::pointer	sleOffer		= lesActive.entryCache(ltOFFER, uOfferIndex);
 			const uint160	uOfferOwnerID	= sleOffer->getFieldAccount(sfAccount).getAccountID();
-			STAmount		saOfferPays		= sleOffer->getFieldAmount(sfTakerGets);
-			STAmount		saOfferGets		= sleOffer->getFieldAmount(sfTakerPays);
-			STAmount		saOfferFunds	= lesActive.accountFunds(uOfferOwnerID, saOfferPays);
+			STAmount		saOwnerFunds;
+
+			boost::unordered_map<uint160, STAmount>::const_iterator	umBalanceEntry	= umBalance.find(uOfferOwnerID);
+
+			if (umBalanceEntry == umBalance.end())
+			{
+				// Did not find balance in table.
+				STAmount	saDefault(uTakerGetsCurrencyID, uTakerGetsIssuerID);
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage: saDefault=%s") % saDefault.getFullText());
+
+				saOwnerFunds	= lesActive.accountFunds(uOfferOwnerID, saDefault);
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage: saOwnerFunds=%s (new)") % saOwnerFunds.getFullText());
+			}
+			else
+			{
+				saOwnerFunds	= umBalanceEntry->second;
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage: saOwnerFunds=%s (cached)") % saOwnerFunds.getFullText());
+			}
+
+			STAmount	saTakerGets			= sleOffer->getFieldAmount(sfTakerGets);
+			STAmount	saTakerPays			= sleOffer->getFieldAmount(sfTakerPays);
+
+			Json::Value	jvOffer	= sleOffer->getJson(0);
+
+			STAmount	saTakerGetsFunded;
+
+			if (saOwnerFunds >= saTakerGets)
+			{
+				// Sufficient funds no shenanigans.
+				saTakerGetsFunded	= saTakerGets;
+			}
+			else
+			{
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage:  saTakerGets=%s") % saTakerGets.getFullText());
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage:  saTakerPays=%s") % saTakerPays.getFullText());
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage: saOwnerFunds=%s") % saOwnerFunds.getFullText());
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage:    saDirRate=%s") % saDirRate.getText());
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate).getFullText());
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays).getFullText());
+				STAmount	saTakerPaysFunded;
+
+				saTakerGetsFunded	= saOwnerFunds;
+				saTakerPaysFunded	= std::min(saTakerPays, STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays));
+
+				// Only provide, if not fully funded.
+				jvOffer["taker_gets_funded"]	= saTakerGetsFunded.getJson(0);
+				jvOffer["taker_pays_funded"]	= saTakerPaysFunded.getJson(0);
+			}
+
+			STAmount	saOwnerBalance		= saOwnerFunds-saTakerGetsFunded;
+
+			umBalance[uOfferOwnerID]		= saOwnerBalance;
+
+			if (!saOwnerFunds.isZero() || uOfferOwnerID == uTakerID)
+			{
+				// Only provide funded offers and offers of the taker.
+				jvOffers.append(jvOffer);
+			}
 
 			if (!lesActive.dirNext(uTipIndex, sleOfferDir, uBookEntry, uOfferIndex))
 			{
@@ -1842,8 +1904,6 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 			else
 			{
 				cLog(lsTRACE) << boost::str(boost::format("getBookPage: uOfferIndex=%s") % uOfferIndex);
-
-				jvOffers.append(sleOffer->getJson(0));
 			}
 		}
 	}

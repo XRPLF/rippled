@@ -74,7 +74,7 @@ void printHelp(const po::options_description& desc)
 	cerr << "     account_lines <account>|<nickname>|<account_public_key> [<index>]" << endl;
 	cerr << "     account_offers <account>|<nickname>|<account_public_key> [<index>]" << endl;
 	cerr << "     account_tx <account>|<nickname>|<account_public_key> <ledger>|(<minledger> <maxledger>)" << endl;
-	cerr << "     book_offers <taker_puts> <taker_gets> [<ledger> [<limit> [<proof> [<marker>]]]]" << endl;
+	cerr << "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> [<limit> [<proof> [<marker>]]]]]" << endl;
 	cerr << "     connect <ip> [<port>]" << endl;
 	cerr << "     consensus_info" << endl;
 #if ENABLE_INSECURE

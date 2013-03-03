@@ -1022,10 +1022,11 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 }
 
 // {
-//   "ledger_hash" : ledger,             // Optional
-//   "ledger_index" : ledger_index,      // Optional
+//   "ledger_hash" : ledger,             // Optional.
+//   "ledger_index" : ledger_index,      // Optional.
 //   "taker_gets" : { "currency": currency, "issuer" : address },
 //   "taker_pays" : { "currency": currency, "issuer" : address },
+//   "taker" : address,					 // Optional.
 //   "marker" : element,                 // Optional.
 //   "limit" : integer,                  // Optional.
 //   "proof" : boolean                   // Defaults to false.
@@ -1100,11 +1101,22 @@ Json::Value RPCHandler::doBookOffers(Json::Value jvRequest)
 		return rpcError(rpcBAD_MARKET);
 	}
 
+	RippleAddress	raTakerID;
+
+	if (!jvRequest.isMember("taker"))
+	{
+		raTakerID.setAccountID(ACCOUNT_ONE);
+	}
+	else if (!raTakerID.setAccountID(jvRequest["taker"].asString()))
+	{
+		return rpcError(rpcBAD_ISSUER);
+	}
+
 	const bool			bProof		= jvRequest.isMember("proof");
 	const unsigned int	iLimit		= jvRequest.isMember("limit") ? jvRequest["limit"].asUInt() : 0;
 	const Json::Value	jvMarker	= jvRequest.isMember("marker") ? jvRequest["marker"] : Json::Value(Json::nullValue);
 
-	mNetOps->getBookPage(lpLedger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, bProof, iLimit, jvMarker, jvResult);
+	mNetOps->getBookPage(lpLedger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, raTakerID.getAccountID(), bProof, iLimit, jvMarker, jvResult);
 
 	return jvResult;
 }
