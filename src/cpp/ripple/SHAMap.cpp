@@ -68,6 +68,7 @@ SHAMap::SHAMap(SHAMapType t, const uint256& hash) : mSeq(1), mState(smsSynching)
 SHAMap::pointer SHAMap::snapShot(bool isMutable)
 { // Return a new SHAMap that is an immutable snapshot of this one
   // Initially nodes are shared, but CoW is forced on both ledgers
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMap::pointer ret = boost::make_shared<SHAMap>(mType);
 	SHAMap& newMap = *ret;
 	newMap.mSeq = ++mSeq;
@@ -209,7 +210,6 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& id, const uint256& has
 			std::cerr << "ID: " << id << std::endl;
 			std::cerr << "TgtHash " << hash << std::endl;
 			std::cerr << "NodHash " << node->getNodeHash() << std::endl;
-			dump();
 			throw std::runtime_error("invalid node");
 		}
 #endif
