@@ -392,7 +392,7 @@ void LedgerConsensus::checkLCL()
 		{
 			case lcsPRE_CLOSE:	status = "PreClose"; break;
 			case lcsESTABLISH:	status = "Establish"; break;
-			case lcsFINISHED:	status = "Finised"; break;
+			case lcsFINISHED:	status = "Finished"; break;
 			case lcsACCEPTED:	status = "Accepted"; break;
 			default:			status = "unknown";
 		}
@@ -400,6 +400,7 @@ void LedgerConsensus::checkLCL()
 		cLog(lsWARNING) << "View of consensus changed during " << status << " (" << netLgrCount << ") status="
 			<< status << ", " << (mHaveCorrectLCL ? "CorrectLCL" : "IncorrectLCL");
 		cLog(lsWARNING) << mPrevLedgerHash << " to " << netLgr;
+		cLog(lsWARNING) << mPreviousLedger->getJson(0);
 
 		if (sLog(lsDEBUG))
 		{
