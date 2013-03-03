@@ -249,16 +249,6 @@ Transaction::pointer Transaction::load(const uint256& id)
 	return transactionFromSQL(sql);
 }
 
-Transaction::pointer Transaction::findFrom(const RippleAddress& fromID, uint32 seq)
-{
-	std::string sql = "SELECT LedgerSeq,Status,RawTxn FROM Transactions WHERE FromID='";
-	sql.append(fromID.humanAccountID());
-	sql.append("' AND FromSeq='");
-	sql.append(boost::lexical_cast<std::string>(seq));
-	sql.append("';");
-	return transactionFromSQL(sql);
-}
-
 bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedgerSeq,
 	bool checkFirstTransactions, bool checkSecondTransactions, const SHAMap::SHAMapDiff& inMap,
 	std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >& outMap)
