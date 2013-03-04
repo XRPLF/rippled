@@ -176,9 +176,9 @@ Json::Value JobQueue::getJson(int)
 			if (count != 0)
 				pri["per_second"] = static_cast<int>(count);
 			if (latencyPeak != 0)
-				pri["peak_latency"] = static_cast<int>(latencyPeak);
+				pri["peak_time"] = static_cast<int>(latencyPeak);
 			if (latencyAvg != 0)
-				pri["avg_latency"] = static_cast<int>(latencyAvg);
+				pri["avg_time"] = static_cast<int>(latencyAvg);
 			priorities.append(pri);
 		}
 	}

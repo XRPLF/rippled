@@ -58,7 +58,9 @@ void LoadMonitor::addLatency(int latency)
 void LoadMonitor::addCountAndLatency(const std::string& name, int counts, int latency)
 {
 	if (latency > 1000)
-		cLog(lsWARNING) << "Job: " << name << " Latency: " << latency;
+	{
+		cLog(lsWARNING) << "Job: " << name << " ExecutionTime: " << latency;
+	}
 	if (latency == 1)
 		latency = 0;
 	boost::mutex::scoped_lock sl(mLock);
