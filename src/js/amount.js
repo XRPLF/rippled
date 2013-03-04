@@ -613,11 +613,15 @@ Amount.prototype.parse_issuer = function (issuer) {
 Amount.prototype.parse_json = function (j) {
   if ('string' === typeof j) {
     // .../.../... notation is not a wire format.  But allowed for easier testing.
-    var	m = j.match(/^(.+)\/(...)\/(.+)$/);
+    var	m = j.match(/^(.+)\/(...)(?:\/(.+))?$/);
 
     if (m) {
       this._currency  = Currency.from_json(m[2]);
-      this._issuer    = UInt160.from_json(m[3]);
+      if (m[3]) {
+        this._issuer  = UInt160.from_json(m[3]);
+      } else {
+        this._issuer  = UInt160.from_json('1');
+      }
       this.parse_value(m[1]);
     }
     else {
