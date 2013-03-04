@@ -321,6 +321,7 @@ TER OfferCreateTransactor::doApply()
 	cLog(lsWARNING) << "OfferCreate> " << mTxn.getJson(0);
 	const uint32			uTxFlags		= mTxn.getFlags();
 	const bool				bPassive		= isSetBit(uTxFlags, tfPassive);
+	const bool				bMarket			= isSetBit(uTxFlags, tfMarket);
 	STAmount				saTakerPays		= mTxn.getFieldAmount(sfTakerPays);
 	STAmount				saTakerGets		= mTxn.getFieldAmount(sfTakerGets);
 
@@ -460,6 +461,7 @@ TER OfferCreateTransactor::doApply()
 	if (tesSUCCESS != terResult
 		|| !saTakerPays														// Wants nothing more.
 		|| !saTakerGets														// Offering nothing more.
+		|| bMarket															// Do not persist.
 		|| !mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets).isPositive()	// Not funded.
 		|| bUnfunded)														// Consider unfunded.
 	{
