@@ -14,6 +14,7 @@
 #include "LedgerAcquire.h"
 #include "LedgerProposal.h"
 #include "JobQueue.h"
+#include "AcceptedLedger.h"
 
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
@@ -119,7 +120,6 @@ protected:
     boost::recursive_mutex								mMonitorLock;
 	subInfoMapType										mSubAccount;
 	subInfoMapType										mSubRTAccount;
-	
 
 	subRpcMapType										mRpcSubMap;
 
@@ -141,8 +141,8 @@ protected:
 
 	Json::Value pubBootstrapAccountInfo(Ledger::ref lpAccepted, const RippleAddress& naAccountID);
 
-	void pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta);
-	void pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,bool accepted,TransactionMetaSet::pointer& meta);
+	void pubAcceptedTransaction(Ledger::ref alAccepted, const ALTransaction& alTransaction);
+	void pubAccountTransaction(Ledger::ref lpCurrent, const ALTransaction& alTransaction);
 
 	void pubServer();
 
@@ -230,6 +230,12 @@ public:
 
 	Json::Value getOwnerInfo(Ledger::pointer lpLedger, const RippleAddress& naAccount);
 
+	//
+	// Book functions
+	//
+
+	void getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const uint160& uTakerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult);
+
 	// raw object operations
 	bool findRawLedger(const uint256& ledgerHash, std::vector<unsigned char>& rawLedger);
 	bool findRawTransaction(const uint256& transactionHash, std::vector<unsigned char>& rawTransaction);
@@ -301,7 +307,7 @@ public:
 	// Monitoring: publisher side
 	//
 	void pubLedger(Ledger::ref lpAccepted);
-	void pubProposedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult);
+	void pubProposedTransaction(Ledger::ref lpCurrent, SerializedTransaction::ref stTxn, TER terResult);
 
 
 	//

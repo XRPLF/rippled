@@ -325,10 +325,10 @@ void PathState::setExpanded(
 			uMaxCurrencyID,									// Max specifes the currency.
 			uSenderIssuerID);
 
-cLog(lsDEBUG) << boost::str(boost::format("PathState: pushed: account=%s currency=%s issuer=%s")
-	% RippleAddress::createHumanAccountID(uSenderID)
-	% STAmount::createHumanCurrency(uMaxCurrencyID)
-	% RippleAddress::createHumanAccountID(uSenderIssuerID));
+	cLog(lsDEBUG) << boost::str(boost::format("PathState: pushed: account=%s currency=%s issuer=%s")
+		% RippleAddress::createHumanAccountID(uSenderID)
+		% STAmount::createHumanCurrency(uMaxCurrencyID)
+		% RippleAddress::createHumanAccountID(uSenderIssuerID));
 
 	if (tesSUCCESS == terStatus
 		&& uMaxIssuerID != uSenderIssuerID) {				// Issuer was not same as sender.
@@ -347,19 +347,19 @@ cLog(lsDEBUG) << boost::str(boost::format("PathState: pushed: account=%s currenc
 													: uOutIssuerID						// Use implied node.
 												: ACCOUNT_XRP;
 
-cLog(lsDEBUG) << boost::str(boost::format("PathState: implied check: uNxtCurrencyID=%s uNxtAccountID=%s")
-	% RippleAddress::createHumanAccountID(uNxtCurrencyID)
-	% RippleAddress::createHumanAccountID(uNxtAccountID));
+		cLog(lsDEBUG) << boost::str(boost::format("PathState: implied check: uNxtCurrencyID=%s uNxtAccountID=%s")
+			% RippleAddress::createHumanAccountID(uNxtCurrencyID)
+			% RippleAddress::createHumanAccountID(uNxtAccountID));
 
 		// Can't just use push implied, because it can't compensate for next account.
 		if (!uNxtCurrencyID							// Next is XRP, offer next. Must go through issuer.
 				|| uMaxCurrencyID != uNxtCurrencyID	// Next is different currency, offer next...
 				|| uMaxIssuerID != uNxtAccountID)	// Next is not implied issuer
 		{
-cLog(lsDEBUG) << boost::str(boost::format("PathState: sender implied: account=%s currency=%s issuer=%s")
-	% RippleAddress::createHumanAccountID(uMaxIssuerID)
-	% RippleAddress::createHumanAccountID(uMaxCurrencyID)
-	% RippleAddress::createHumanAccountID(uMaxIssuerID));
+			cLog(lsDEBUG) << boost::str(boost::format("PathState: sender implied: account=%s currency=%s issuer=%s")
+				% RippleAddress::createHumanAccountID(uMaxIssuerID)
+				% RippleAddress::createHumanAccountID(uMaxCurrencyID)
+				% RippleAddress::createHumanAccountID(uMaxIssuerID));
 			// Add account implied by SendMax.
 			terStatus	= pushNode(
 				!!uMaxCurrencyID
@@ -375,7 +375,7 @@ cLog(lsDEBUG) << boost::str(boost::format("PathState: sender implied: account=%s
 	{
 		if (tesSUCCESS == terStatus)
 		{
-cLog(lsDEBUG) << boost::str(boost::format("PathState: element in path:"));
+			cLog(lsDEBUG) << boost::str(boost::format("PathState: element in path:"));
 			terStatus	= pushNode(speElement.getNodeType(), speElement.getAccountID(), speElement.getCurrency(), speElement.getIssuerID());
 		}
 	}
@@ -389,10 +389,10 @@ cLog(lsDEBUG) << boost::str(boost::format("PathState: element in path:"));
 			|| pnPrv.uAccountID != uOutIssuerID))	// Need the implied issuer.
 	{
 		// Add implied account.
-cLog(lsDEBUG) << boost::str(boost::format("PathState: receiver implied: account=%s currency=%s issuer=%s")
-	% RippleAddress::createHumanAccountID(uOutIssuerID)
-	% RippleAddress::createHumanAccountID(uOutCurrencyID)
-	% RippleAddress::createHumanAccountID(uOutIssuerID));
+		cLog(lsDEBUG) << boost::str(boost::format("PathState: receiver implied: account=%s currency=%s issuer=%s")
+			% RippleAddress::createHumanAccountID(uOutIssuerID)
+			% RippleAddress::createHumanAccountID(uOutCurrencyID)
+			% RippleAddress::createHumanAccountID(uOutIssuerID));
 		terStatus	= pushNode(
 			!!uOutCurrencyID
 				? STPathElement::typeAccount | STPathElement::typeCurrency | STPathElement::typeIssuer
@@ -2494,9 +2494,9 @@ int	iIndex	= 0;
 
 		pspExpanded->setExpanded(lesActive, spPath, uDstAccountID, uSrcAccountID);
 
-cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Build path: %d: status: %s")
-	% ++iIndex
-	% transToken(pspExpanded->terStatus));
+		cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Build path: %d: status: %s")
+			% ++iIndex
+			% transToken(pspExpanded->terStatus));
 
 		// Return, if the path specification was malformed.
 		if (isTemMalformed(pspExpanded->terStatus))
@@ -2550,17 +2550,18 @@ int iPass	= 0;
 				pspCur->saOutAct	= saDstAmountAct;
 
 				rc.pathNext(pspCur, bMultiQuality, lesCheckpoint, lesActive);	// Compute increment.
-	cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: AFTER: mIndex=%d uQuality=%d rate=%s")
-		% pspCur->mIndex
-		% pspCur->uQuality
-		% STAmount::saFromRate(pspCur->uQuality));
+				cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: AFTER: mIndex=%d uQuality=%d rate=%s")
+					% pspCur->mIndex
+					% pspCur->uQuality
+					% STAmount::saFromRate(pspCur->uQuality));
 
 				if (!pspCur->uQuality) {
 					// Path was dry.
 
 					++iDry;
 				}
-				else {
+				else
+				{
 					tLog(!pspCur->saInPass || !pspCur->saOutPass, lsDEBUG)
 						<< boost::str(boost::format("rippleCalc: better: uQuality=%s saInPass=%s saOutPass=%s")
 							% STAmount::saFromRate(pspCur->uQuality)
@@ -2586,15 +2587,18 @@ int iPass	= 0;
 				}
 			}
 	    }
-cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: Pass: %d Dry: %d Paths: %d") % ++iPass % iDry % vpsExpanded.size());
-	    BOOST_FOREACH(PathState::ref pspCur, vpsExpanded)
+	    if (sLog(lsDEBUG))
 	    {
-cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: %d rate: %s quality:%d best: %d consumed: %d")
-				% pspCur->mIndex
-				% STAmount::saFromRate(pspCur->uQuality)
-				% pspCur->uQuality
-				% (iBest == pspCur->getIndex())
-				% pspCur->bConsumed);
+		    cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: Pass: %d Dry: %d Paths: %d") % ++iPass % iDry % vpsExpanded.size());
+		    BOOST_FOREACH(PathState::ref pspCur, vpsExpanded)
+		    {
+				cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: %d rate: %s quality:%d best: %d consumed: %d")
+					% pspCur->mIndex
+					% STAmount::saFromRate(pspCur->uQuality)
+					% pspCur->uQuality
+					% (iBest == pspCur->getIndex())
+					% pspCur->bConsumed);
+			}
 		}
 
 	    if (iBest >= 0)

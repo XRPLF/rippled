@@ -235,14 +235,10 @@ void ConnectionPool::policyHandler(const boost::system::error_code& ecResult)
 int ConnectionPool::relayMessage(Peer* fromPeer, const PackedMessage::pointer& msg)
 {
 	int sentTo = 0;
-	boost::recursive_mutex::scoped_lock sl(mPeerLock);
-
-	BOOST_FOREACH(const vtConMap& pair, mConnectedMap)
+	std::vector<Peer::pointer> peerVector = getPeerVector();
+	BOOST_FOREACH(Peer::ref peer, peerVector)
 	{
-		Peer::ref peer	= pair.second;
-		if (!peer)
-			std::cerr << "CP::RM null peer in list" << std::endl;
-		else if ((!fromPeer || !(peer.get() == fromPeer)) && peer->isConnected())
+		if ((!fromPeer || !(peer.get() == fromPeer)) && peer->isConnected())
 		{
 			++sentTo;
 			peer->sendPacket(msg);
@@ -254,11 +250,9 @@ int ConnectionPool::relayMessage(Peer* fromPeer, const PackedMessage::pointer& m
 
 void ConnectionPool::relayMessageBut(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg)
 { // Relay message to all but the specified peers
-	boost::recursive_mutex::scoped_lock sl(mPeerLock);
-
-	BOOST_FOREACH(const vtConMap& pair, mConnectedMap)
+	std::vector<Peer::pointer> peerVector = getPeerVector();
+	BOOST_FOREACH(Peer::ref peer, peerVector)
 	{
-		Peer::ref peer	= pair.second;
 		if (peer->isConnected() && (fromPeers.count(peer->getPeerId()) == 0))
 			peer->sendPacket(msg);
 	}
@@ -267,13 +261,11 @@ void ConnectionPool::relayMessageBut(const std::set<uint64>& fromPeers, const Pa
 
 void ConnectionPool::relayMessageTo(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg)
 { // Relay message to the specified peers
-	boost::recursive_mutex::scoped_lock sl(mPeerLock);
-
-	BOOST_FOREACH(const uint64& peerID, fromPeers)
+	std::vector<Peer::pointer> peerVector = getPeerVector();
+	BOOST_FOREACH(Peer::ref peer, peerVector)
 	{
-		const boost::unordered_map<uint64, Peer::pointer>::iterator& it = mPeerIdMap.find(peerID);
-	    if ((it != mPeerIdMap.end()) && it->second->isConnected())
-			it->second->sendPacket(msg);
+		if (peer->isConnected() && (fromPeers.count(peer->getPeerId()) != 0))
+			peer->sendPacket(msg);
 	}
 
 }

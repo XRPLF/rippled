@@ -106,14 +106,14 @@ UInt.prototype.parse_generic = function (j) {
   case undefined:
   case "0":
   case this.constructor.STR_ZERO:
-  case this.constructor.ADDRESS_ZERO:
+  case this.constructor.ACCOUNT_ZERO:
   case this.constructor.HEX_ZERO:
     this._value  = nbi();
     break;
 
   case "1":
   case this.constructor.STR_ONE:
-  case this.constructor.ADDRESS_ONE:
+  case this.constructor.ACCOUNT_ONE:
   case this.constructor.HEX_ONE:
     this._value  = new BigInteger([1]);
 

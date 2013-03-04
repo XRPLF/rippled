@@ -10,6 +10,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 	} transResultInfoA[] = {
 		{	tecCLAIM,				"tecCLAIM",					"Fee claimed. Sequence used. No action."				},
 		{	tecDIR_FULL,			"tecDIR_FULL",				"Can not add entry to full directory."					},
+		{	tecFAILED_PROCESSING,	"tecFAILED_PROCESSING",		"Failed to correctly process transaction."				},
 		{	tecINSUF_RESERVE_LINE,	"tecINSUF_RESERVE_LINE",	"Insufficent reserve to add trust line."				},
 		{	tecINSUF_RESERVE_OFFER,	"tecINSUF_RESERVE_OFFER",	"Insufficent reserve to create offer."					},
 		{	tecNO_DST,				"tecNO_DST",				"Destination does not exist. Send XRP to create it."	},
@@ -42,6 +43,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	telBAD_DOMAIN,			"telBAD_DOMAIN",			"Domain too long."										},
 		{	telBAD_PATH_COUNT,		"telBAD_PATH_COUNT",		"Malformed: Too many paths."							},
 		{	telBAD_PUBLIC_KEY,		"telBAD_PUBLIC_KEY",		"Public key too long."									},
+		{	telFAILED_PROCESSING,	"telFAILED_PROCESSING",		"Failed to correctly process transaction."				},
 		{	telINSUF_FEE_P,			"telINSUF_FEE_P",			"Fee insufficient."										},
 		{	telNO_DST_PARTIAL,		"telNO_DST_PARTIAL",		"Partial payment to create account not allowed."		},
 

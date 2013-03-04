@@ -321,6 +321,7 @@ TER OfferCreateTransactor::doApply()
 	cLog(lsWARNING) << "OfferCreate> " << mTxn.getJson(0);
 	const uint32			uTxFlags		= mTxn.getFlags();
 	const bool				bPassive		= isSetBit(uTxFlags, tfPassive);
+	const bool				bMarket			= isSetBit(uTxFlags, tfMarket);
 	STAmount				saTakerPays		= mTxn.getFieldAmount(sfTakerPays);
 	STAmount				saTakerGets		= mTxn.getFieldAmount(sfTakerGets);
 
@@ -457,9 +458,21 @@ TER OfferCreateTransactor::doApply()
 	// cLog(lsWARNING) << "OfferCreate: takeOffers: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
 	// cLog(lsWARNING) << "OfferCreate: takeOffers: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
 
-	if (tesSUCCESS != terResult
-		|| !saTakerPays														// Wants nothing more.
+	if (tesSUCCESS != terResult)
+	{
+		// Fail as is.
+		nothing();
+	}
+	else if (saTakerPays.isNegative() || saTakerGets.isNegative())
+	{
+		terResult	= isSetBit(mParams, tapOPEN_LEDGER)
+						? telFAILED_PROCESSING								// Ledger is not final, can vote no.
+						: tecFAILED_PROCESSING;
+	}
+	else if (
+		!saTakerPays														// Wants nothing more.
 		|| !saTakerGets														// Offering nothing more.
+		|| bMarket															// Do not persist.
 		|| !mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets).isPositive()	// Not funded.
 		|| bUnfunded)														// Consider unfunded.
 	{

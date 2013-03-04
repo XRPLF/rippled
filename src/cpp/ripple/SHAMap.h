@@ -43,20 +43,21 @@ public:
 
 	SHAMapNode() : mDepth(0), mHash(0)	{ ; }
 	SHAMapNode(int depth, const uint256& hash);
-	virtual ~SHAMapNode()				{ ; }
 
 	int getDepth() const				{ return mDepth; }
 	const uint256& getNodeID()	const	{ return mNodeID; }
-	bool isValid() const { return (mDepth >= 0) && (mDepth < 64); }
+	bool isValid() const 				{ return (mDepth >= 0) && (mDepth < 64); }
+	bool isRoot() const					{ return mDepth == 0; }
 	size_t getHash() const				{ if (mHash == 0) setHash(); return mHash; }
 
-	virtual bool isPopulated() const { return false; }
+	virtual bool isPopulated() const	{ return false; }
 
 	SHAMapNode getParentNodeID() const
 	{
 		assert(mDepth);
 		return SHAMapNode(mDepth - 1, mNodeID);
 	}
+
 	SHAMapNode getChildNodeID(int m) const;
 	int selectBranch(const uint256& hash) const;
 
@@ -68,7 +69,6 @@ public:
 	bool operator!=(const uint256&) const;
 	bool operator<=(const SHAMapNode&) const;
 	bool operator>=(const SHAMapNode&) const;
-	bool isRoot() const { return mDepth == 0; }
 
 	virtual std::string getString() const;
 	void dump() const;

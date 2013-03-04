@@ -39,17 +39,18 @@
 #	define PROPOSE_INTERVAL			12
 
 // Avalanche tuning
-#define AV_INIT_CONSENSUS_PCT		50	// percentage of nodes on our UNL that must vote yes
+#	define AV_INIT_CONSENSUS_PCT	50	// percentage of nodes on our UNL that must vote yes
 
-#define AV_MID_CONSENSUS_TIME		50	// percentage of previous close time before we advance
-#define AV_MID_CONSENSUS_PCT		65	// percentage of nodes that most vote yes after advancing
+#	define AV_MID_CONSENSUS_TIME	50	// percentage of previous close time before we advance
+#	define AV_MID_CONSENSUS_PCT		65	// percentage of nodes that most vote yes after advancing
 
-#define AV_LATE_CONSENSUS_TIME		85	// percentage of previous close time before we advance
-#define AV_LATE_CONSENSUS_PCT		70	// percentage of nodes that most vote yes after advancing
+#	define AV_LATE_CONSENSUS_TIME	85	// percentage of previous close time before we advance
+#	define AV_LATE_CONSENSUS_PCT	70	// percentage of nodes that most vote yes after advancing
 
-#define AV_STUCK_CONSENSUS_TIME		200
-#define AV_STUCK_CONSENSUS_PCT		95
+#	define AV_STUCK_CONSENSUS_TIME	200
+#	define AV_STUCK_CONSENSUS_PCT	95
 
+#	define AV_CT_CONSENSUS_PCT		75
 
 class ContinuousLedgerTiming
 {

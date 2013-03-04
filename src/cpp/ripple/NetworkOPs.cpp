@@ -267,7 +267,7 @@ void NetworkOPs::runTransactionQueue()
 			assert(dbtx);
 
 			bool didApply;
-			TER r = mLedgerMaster->doTransaction(*dbtx->getSTransaction(),
+			TER r = mLedgerMaster->doTransaction(dbtx->getSTransaction(),
 				tapOPEN_LEDGER | tapNO_CHECK_SIGN, didApply);
 			dbtx->setResult(r);
 
@@ -352,7 +352,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 	Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(trans->getID(), true);
 	bool didApply;
-	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tapOPEN_LEDGER | tapNO_CHECK_SIGN, didApply);
+	TER r = mLedgerMaster->doTransaction(trans->getSTransaction(), tapOPEN_LEDGER | tapNO_CHECK_SIGN, didApply);
 	trans->setResult(r);
 
 	if (isTemMalformed(r)) // malformed, cache bad
@@ -425,30 +425,6 @@ Transaction::pointer NetworkOPs::findTransactionByID(const uint256& transactionI
 {
 	return Transaction::load(transactionID);
 }
-
-#if 0
-int NetworkOPs::findTransactionsBySource(const uint256& uLedger, std::list<Transaction::pointer>& txns,
-	const RippleAddress& sourceAccount, uint32 minSeq, uint32 maxSeq)
-{
-	AccountState::pointer state = getAccountState(uLedger, sourceAccount);
-	if (!state) return 0;
-	if (minSeq > state->getSeq()) return 0;
-	if (maxSeq > state->getSeq()) maxSeq = state->getSeq();
-	if (maxSeq > minSeq) return 0;
-
-	int count = 0;
-	for(unsigned int i = minSeq; i <= maxSeq; ++i)
-	{
-		Transaction::pointer txn = Transaction::findFrom(sourceAccount, i);
-		if(txn)
-		{
-			txns.push_back(txn);
-			++count;
-		}
-	}
-	return count;
-}
-#endif
 
 int NetworkOPs::findTransactionsByDestination(std::list<Transaction::pointer>& txns,
 	const RippleAddress& destinationAccount, uint32 startLedgerSeq, uint32 endLedgerSeq, int maxTransactions)
@@ -1313,9 +1289,9 @@ Json::Value NetworkOPs::pubBootstrapAccountInfo(Ledger::ref lpAccepted, const Ri
 	return jvObj;
 }
 
-void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult)
+void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, SerializedTransaction::ref stTxn, TER terResult)
 {
-	Json::Value	jvObj	= transJson(stTxn, terResult, false, lpCurrent, "transaction");
+	Json::Value	jvObj	= transJson(*stTxn, terResult, false, lpCurrent, "transaction");
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
@@ -1332,14 +1308,18 @@ void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, const SerializedT
 				it = mSubRTTransactions.erase(it);
 		}
 	}
-	TransactionMetaSet::pointer ret;
-	pubAccountTransaction(lpCurrent,stTxn,terResult,false,ret);
+	ALTransaction alt(stTxn, terResult);
+	cLog(lsTRACE) << "pubProposed: " << alt.getJson(0);
+	pubAccountTransaction(lpCurrent, ALTransaction(stTxn, terResult));
 }
 
-void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
+void NetworkOPs::pubLedger(Ledger::ref accepted)
 {
 	// Ledgers are published only when they acquire sufficient validations
 	// Holes are filled across connection loss or other catastrophe
+
+	AcceptedLedger::pointer alpAccepted = AcceptedLedger::makeAcceptedLedger(accepted);
+	Ledger::ref lpAccepted = alpAccepted->getLedger();
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
@@ -1357,6 +1337,8 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 			jvObj["fee_base"]		= Json::UInt(lpAccepted->getBaseFee());
 			jvObj["reserve_base"]	= Json::UInt(lpAccepted->getReserve(0));
 			jvObj["reserve_inc"]	= Json::UInt(lpAccepted->getReserveInc());
+
+			jvObj["txn_count"]		= Json::UInt(alpAccepted->getTxnCount());
 
 			NetworkOPs::subMapType::const_iterator it = mSubLedger.begin();
 			while (it != mSubLedger.end())
@@ -1376,21 +1358,10 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 	// Don't lock since pubAcceptedTransaction is locking.
 	if (!mSubTransactions.empty() || !mSubRTTransactions.empty() || !mSubAccount.empty() || !mSubRTAccount.empty())
 	{
-		SHAMap&		txSet	= *lpAccepted->peekTransactionMap();
-
-		for (SHAMapItem::pointer item = txSet.peekFirstItem(); !!item; item = txSet.peekNextItem(item->getTag()))
+		BOOST_FOREACH(const AcceptedLedger::value_type& vt, alpAccepted->getMap())
 		{
-			SerializerIterator it(item->peekSerializer());
-
-			// OPTIMIZEME: Could get transaction from txn master, but still must call getVL
-			Serializer				txnSer(it.getVL());
-			SerializerIterator		txnIt(txnSer);
-			SerializedTransaction	stTxn(txnIt);
-
-			TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet>(
-				stTxn.getTransactionID(), lpAccepted->getLedgerSeq(), it.getVL());
-
-			pubAcceptedTransaction(lpAccepted, stTxn, meta->getResultTER(), meta);
+			cLog(lsTRACE) << "pubAccepted: " << vt.second.getJson(0);
+			pubAcceptedTransaction(lpAccepted, vt.second);
 		}
 	}
 }
@@ -1401,7 +1372,7 @@ void NetworkOPs::reportFeeChange()
 			(theApp->getFeeTrack().getLoadFactor() == mLastLoadFactor))
 		return;
 
-	theApp->getJobQueue().addJob(jtCLIENT, boost::bind(&NetworkOPs::pubServer, this));
+	theApp->getJobQueue().addJob(jtCLIENT, "reportFeeChange->pubServer", boost::bind(&NetworkOPs::pubServer, this));
 }
 
 Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent, const std::string& strType)
@@ -1431,11 +1402,10 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 	return jvObj;
 }
 
-void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta)
+void NetworkOPs::pubAcceptedTransaction(Ledger::ref alAccepted, const ALTransaction& alTx)
 {
-	Json::Value	jvObj	= transJson(stTxn, terResult, true, lpCurrent, "transaction");
-
-	if (meta) jvObj["meta"] = meta->getJson(0);
+	Json::Value	jvObj	= transJson(*alTx.getTxn(), alTx.getResult(), true, alAccepted, "transaction");
+	jvObj["meta"] = alTx.getMeta()->getJson(0);
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
@@ -1466,14 +1436,14 @@ void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedT
 				it = mSubRTTransactions.erase(it);
 		}
 	}
-	theApp->getOrderBookDB().processTxn(stTxn, terResult, meta, jvObj);
-
-	pubAccountTransaction(lpCurrent, stTxn, terResult, true, meta);
+	theApp->getOrderBookDB().processTxn(alAccepted, alTx, jvObj);
+	pubAccountTransaction(alAccepted, alTx);
 }
 
-void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted, TransactionMetaSet::pointer& meta)
+void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const ALTransaction& alTx)
 {
 	boost::unordered_set<InfoSub::pointer>	notify;
+	bool							bAccepted	= alTx.isApplied();
 	int								iProposed	= 0;
 	int								iAccepted	= 0;
 
@@ -1484,8 +1454,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 
 		if (!mSubAccount.empty() || (!mSubRTAccount.empty()) )
 		{
-			std::vector<RippleAddress> accounts = meta ? meta->getAffectedAccounts() : stTxn.getMentionedAccounts();
-			BOOST_FOREACH(const RippleAddress& affectedAccount, accounts)
+			BOOST_FOREACH(const RippleAddress& affectedAccount, alTx.getAffected())
 			{
 				subInfoMapIterator	simiIt	= mSubRTAccount.find(affectedAccount.getAccountID());
 
@@ -1534,9 +1503,10 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 
 	if (!notify.empty())
 	{
-		Json::Value	jvObj	= transJson(stTxn, terResult, bAccepted, lpCurrent, "account");
+		Json::Value	jvObj	= transJson(*alTx.getTxn(), alTx.getResult(), bAccepted, lpCurrent, "account");
 
-		if (meta) jvObj["meta"] = meta->getJson(0);
+		if (alTx.isApplied())
+			jvObj["meta"] = alTx.getMeta()->getJson(0);
 
 		BOOST_FOREACH(InfoSub::ref isrListener, notify)
 		{
@@ -1696,12 +1666,14 @@ bool NetworkOPs::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
 	jvResult["reserve_base"]	= Json::UInt(lpClosed->getReserve(0));
 	jvResult["reserve_inc"]		= Json::UInt(lpClosed->getReserveInc());
 
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return mSubLedger.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
 }
 
 // <-- bool: true=erased, false=was not there
 bool NetworkOPs::unsubLedger(uint64 uSeq)
 {
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return !!mSubLedger.erase(uSeq);
 }
 
@@ -1722,36 +1694,42 @@ bool NetworkOPs::subServer(InfoSub::ref isrListener, Json::Value& jvResult)
 	jvResult["load_base"]		= theApp->getFeeTrack().getLoadBase();
 	jvResult["load_factor"]		= theApp->getFeeTrack().getLoadFactor();
 
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return mSubServer.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
 }
 
 // <-- bool: true=erased, false=was not there
 bool NetworkOPs::unsubServer(uint64 uSeq)
 {
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return !!mSubServer.erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there
 bool NetworkOPs::subTransactions(InfoSub::ref isrListener)
 {
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return mSubTransactions.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
 }
 
 // <-- bool: true=erased, false=was not there
 bool NetworkOPs::unsubTransactions(uint64 uSeq)
 {
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return !!mSubTransactions.erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there
 bool NetworkOPs::subRTTransactions(InfoSub::ref isrListener)
 {
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return mSubTransactions.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
 }
 
 // <-- bool: true=erased, false=was not there
 bool NetworkOPs::unsubRTTransactions(uint64 uSeq)
 {
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return !!mSubTransactions.erase(uSeq);
 }
 
@@ -1774,5 +1752,170 @@ InfoSub::pointer NetworkOPs::addRpcSub(const std::string& strUrl, InfoSub::ref r
 	return rspEntry;
 }
 
+// FIXME : support iLimit.
+void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const uint160& uTakerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult)
+{
+	boost::unordered_map<uint160, STAmount>	umBalance;
+	Json::Value		jvOffers	= Json::Value(Json::arrayValue);
+	const uint256	uBookBase	= Ledger::getBookBase(uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
+	const uint256	uBookEnd	= Ledger::getQualityNext(uBookBase);
+	uint256			uTipIndex	= uBookBase;
+
+	cLog(lsTRACE) << boost::str(boost::format("getBookPage: uTakerPaysCurrencyID=%s uTakerPaysIssuerID=%s") % STAmount::createHumanCurrency(uTakerPaysCurrencyID) % RippleAddress::createHumanAccountID(uTakerPaysIssuerID));
+	cLog(lsTRACE) << boost::str(boost::format("getBookPage: uTakerGetsCurrencyID=%s uTakerGetsIssuerID=%s") % STAmount::createHumanCurrency(uTakerGetsCurrencyID) % RippleAddress::createHumanAccountID(uTakerGetsIssuerID));
+	cLog(lsTRACE) << boost::str(boost::format("getBookPage: uBookBase=%s") % uBookBase);
+	cLog(lsTRACE) << boost::str(boost::format("getBookPage:  uBookEnd=%s") % uBookEnd);
+	cLog(lsTRACE) << boost::str(boost::format("getBookPage: uTipIndex=%s") % uTipIndex);
+
+	LedgerEntrySet	lesActive(lpLedger);
+
+	bool			bDone			= false;
+	bool			bDirectAdvance	= true;
+
+	SLE::pointer	sleOfferDir;
+	uint256			uOfferIndex;
+	unsigned int	uBookEntry;
+	STAmount		saDirRate;
+
+//	unsigned int	iLeft			= iLimit;
+
+	uint32	uTransferRate	= lesActive.rippleTransferRate(uTakerGetsIssuerID);
+
+	while (!bDone) {
+		if (bDirectAdvance) {
+			bDirectAdvance	= false;
+
+			cLog(lsTRACE) << boost::str(boost::format("getBookPage: bDirectAdvance"));
+
+			sleOfferDir		= lesActive.entryCache(ltDIR_NODE, lpLedger->getNextLedgerIndex(uTipIndex, uBookEnd));
+			if (!sleOfferDir)
+			{
+				cLog(lsTRACE) << boost::str(boost::format("getBookPage: bDone"));
+				bDone			= true;
+			}
+			else
+			{
+				uTipIndex		= sleOfferDir->getIndex();
+				saDirRate		= STAmount::setRate(Ledger::getQuality(uTipIndex));
+				SLE::pointer	sleBookNode;
+
+				lesActive.dirFirst(uTipIndex, sleBookNode, uBookEntry, uOfferIndex);
+
+				cLog(lsTRACE) << boost::str(boost::format("getBookPage:   uTipIndex=%s") % uTipIndex);
+				cLog(lsTRACE) << boost::str(boost::format("getBookPage: uOfferIndex=%s") % uOfferIndex);
+			}
+		}
+
+		if (!bDone)
+		{
+			SLE::pointer	sleOffer		= lesActive.entryCache(ltOFFER, uOfferIndex);
+			const uint160	uOfferOwnerID	= sleOffer->getFieldAccount(sfAccount).getAccountID();
+			STAmount		saTakerGets		= sleOffer->getFieldAmount(sfTakerGets);
+			STAmount		saTakerPays		= sleOffer->getFieldAmount(sfTakerPays);
+			STAmount		saOwnerFunds;
+
+			if (uTakerGetsIssuerID == uOfferOwnerID)
+			{
+				// If offer is selling issuer's own IOUs, it is fully funded.
+				saOwnerFunds	= saTakerGets;
+			}
+			else
+			{
+				boost::unordered_map<uint160, STAmount>::const_iterator	umBalanceEntry	= umBalance.find(uOfferOwnerID);
+
+				if (umBalanceEntry != umBalance.end())
+				{
+					// Found in running balance table.
+
+					saOwnerFunds	= umBalanceEntry->second;
+					// cLog(lsINFO) << boost::str(boost::format("getBookPage: saOwnerFunds=%s (cached)") % saOwnerFunds.getFullText());
+				}
+				else
+				{
+					// Did not find balance in table.
+
+					saOwnerFunds	= lesActive.accountHolds(uOfferOwnerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
+					// cLog(lsINFO) << boost::str(boost::format("getBookPage: saOwnerFunds=%s (new)") % saOwnerFunds.getFullText());
+					if (saOwnerFunds.isNegative())
+					{
+						// Treat negative funds as zero.
+
+						saOwnerFunds.zero();
+					}
+				}
+			}
+
+			Json::Value	jvOffer	= sleOffer->getJson(0);
+
+			STAmount	saTakerGetsFunded;
+			STAmount	saOwnerFundsLimit;
+			uint32		uOfferRate;
+
+
+			if (uTransferRate != QUALITY_ONE				// Have a tranfer fee.
+				&& uTakerID != uTakerGetsIssuerID			// Not taking offers of own IOUs.
+				&& uTakerGetsIssuerID != uOfferOwnerID) {	// Offer owner not issuing ownfunds
+				// Need to charge a transfer fee to offer owner.
+				uOfferRate			= uTransferRate;
+				saOwnerFundsLimit	= STAmount::divide(saOwnerFunds, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9));
+			}
+			else
+			{
+				uOfferRate			= QUALITY_ONE;
+				saOwnerFundsLimit	= saOwnerFunds;
+			}
+
+			if (saOwnerFundsLimit >= saTakerGets)
+			{
+				// Sufficient funds no shenanigans.
+				saTakerGetsFunded	= saTakerGets;
+			}
+			else
+			{
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage:  saTakerGets=%s") % saTakerGets.getFullText());
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage:  saTakerPays=%s") % saTakerPays.getFullText());
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage: saOwnerFunds=%s") % saOwnerFunds.getFullText());
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage:    saDirRate=%s") % saDirRate.getText());
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate).getFullText());
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays).getFullText());
+				STAmount	saTakerPaysFunded;
+
+				saTakerGetsFunded	= saOwnerFundsLimit;
+				saTakerPaysFunded	= std::min(saTakerPays, STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays));
+
+				// Only provide, if not fully funded.
+				jvOffer["taker_gets_funded"]	= saTakerGetsFunded.getJson(0);
+				jvOffer["taker_pays_funded"]	= saTakerPaysFunded.getJson(0);
+
+			}
+			STAmount	saOwnerPays		= QUALITY_ONE == uOfferRate
+											? saTakerGetsFunded
+											: std::min(saOwnerFunds, STAmount::multiply(saTakerGetsFunded, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9)));
+
+			STAmount	saOwnerBalance	= saOwnerFunds-saOwnerPays;
+
+			umBalance[uOfferOwnerID]	= saOwnerBalance;
+
+			if (!saOwnerFunds.isZero() || uOfferOwnerID == uTakerID)
+			{
+				// Only provide funded offers and offers of the taker.
+				jvOffers.append(jvOffer);
+			}
+
+			if (!lesActive.dirNext(uTipIndex, sleOfferDir, uBookEntry, uOfferIndex))
+			{
+				bDirectAdvance	= true;
+			}
+			else
+			{
+				cLog(lsTRACE) << boost::str(boost::format("getBookPage: uOfferIndex=%s") % uOfferIndex);
+			}
+		}
+	}
+
+	jvResult["offers"]	= jvOffers;
+//	jvResult["marker"]	= Json::Value(Json::arrayValue);
+//	jvResult["nodes"]	= Json::Value(Json::arrayValue);
+}
 
 // vim:ts=4

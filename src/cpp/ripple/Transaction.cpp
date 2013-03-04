@@ -116,7 +116,11 @@ bool Transaction::sign(const RippleAddress& naAccountPrivate)
 
 bool Transaction::checkSign() const
 {
-	assert(mFromPubKey.isValid());
+	if (!mFromPubKey.isValid())
+	{
+		Log(lsWARNING) << "Transaction has bad source public key";
+		return false;
+	}
 	return mTransaction->checkSign(mFromPubKey);
 }
 
@@ -241,16 +245,6 @@ Transaction::pointer Transaction::load(const uint256& id)
 {
 	std::string sql = "SELECT LedgerSeq,Status,RawTxn FROM Transactions WHERE TransID='";
 	sql.append(id.GetHex());
-	sql.append("';");
-	return transactionFromSQL(sql);
-}
-
-Transaction::pointer Transaction::findFrom(const RippleAddress& fromID, uint32 seq)
-{
-	std::string sql = "SELECT LedgerSeq,Status,RawTxn FROM Transactions WHERE FromID='";
-	sql.append(fromID.humanAccountID());
-	sql.append("' AND FromSeq='");
-	sql.append(boost::lexical_cast<std::string>(seq));
 	sql.append("';");
 	return transactionFromSQL(sql);
 }

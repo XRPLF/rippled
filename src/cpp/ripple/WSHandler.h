@@ -152,17 +152,17 @@ public:
 		ptr->preDestroy(); // Must be done before we return
 
 		// Must be done without holding the websocket send lock
-		theApp->getJobQueue().addJob(jtCLIENT,
+		theApp->getJobQueue().addJob(jtCLIENT, "WSClient::destroy",
 			boost::bind(&WSConnection<endpoint_type>::destroy, ptr));
 	}
 
 	void on_message(connection_ptr cpClient, message_ptr mpMessage)
 	{
-		theApp->getJobQueue().addJob(jtCLIENT,
+		theApp->getJobQueue().addJob(jtCLIENT, "WSClient::command",
 			boost::bind(&WSServerHandler<endpoint_type>::do_message, this, _1, cpClient, mpMessage));
 	}
 
-	void do_message(Job&, connection_ptr cpClient, message_ptr mpMessage)
+	void do_message(Job& job, connection_ptr cpClient, message_ptr mpMessage)
 	{
 		Json::Value		jvRequest;
 		Json::Reader	jrReader;
@@ -190,6 +190,8 @@ public:
 		}
 		else
 		{
+			if (jvRequest.isMember("command"))
+				job.rename(std::string("WSClient::") + jvRequest["command"].asString());
 			boost::shared_ptr< WSConnection<endpoint_type> > conn;
 			{
 				boost::mutex::scoped_lock	sl(mMapLock);

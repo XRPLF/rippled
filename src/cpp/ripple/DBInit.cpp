@@ -20,7 +20,7 @@ const char *TxnDBInit[] = {
 		TxnMeta		BLOB						\
 	);",
 	"CREATE TABLE AccountTransactions (			\
-		TransID		CHARACTER(64),				\
+		TransID		CHARACTER(64) PRIMARY KEY,	\
 		Account		CHARACTER(64),				\
 		LedgerSeq	BIGINT UNSIGNED				\
 	);",

@@ -345,6 +345,9 @@
     <ClCompile Include="src\cpp\ripple\Offer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\AcceptedLedger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\AccountItems.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -660,6 +663,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Offer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\AcceptedLedger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\AccountItems.h">

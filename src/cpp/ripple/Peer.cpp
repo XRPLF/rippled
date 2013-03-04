@@ -857,7 +857,7 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 				return;
 		}
 
-		theApp->getJobQueue().addJob(jtTRANSACTION,
+		theApp->getJobQueue().addJob(jtTRANSACTION, "recvTransction->checkTransaction",
 			boost::bind(&checkTransaction, _1, flags, stx, boost::weak_ptr<Peer>(shared_from_this())));
 
 #ifndef TRUST_NETWORK
@@ -986,7 +986,7 @@ void Peer::recvPropose(const boost::shared_ptr<ripple::TMProposeSet>& packet)
 		prevLedger.isNonZero() ? prevLedger : consensusLCL,
 		set.proposeseq(), proposeHash, set.closetime(), signerPublic, suppression);
 
-	theApp->getJobQueue().addJob(isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
+	theApp->getJobQueue().addJob(isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut, "recvPropose->checkPropose",
 		boost::bind(&checkPropose, _1, packet, proposal, consensusLCL,
 			mNodePublic, boost::weak_ptr<Peer>(shared_from_this())));
 }
@@ -1062,7 +1062,7 @@ void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet)
 		}
 
 		bool isTrusted = theApp->getUNL().nodeInUNL(val->getSignerPublic());
-		theApp->getJobQueue().addJob(isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
+		theApp->getJobQueue().addJob(isTrusted ? jtVALIDATION_t : jtVALIDATION_ut, "recvValidation->checkValidation",
 			boost::bind(&checkValidation, _1, val, signingHash, isTrusted, packet,
 			boost::weak_ptr<Peer>(shared_from_this())));
 	}
@@ -1299,7 +1299,7 @@ void Peer::recvProofWork(ripple::TMProofWork& packet)
 			return;
 		}
 
-		theApp->getJobQueue().addJob(jtPROOFWORK,
+		theApp->getJobQueue().addJob(jtPROOFWORK, "recvProof->doProof",
 			boost::bind(&Peer::doProofOfWork, _1, boost::weak_ptr<Peer>(shared_from_this()), pow));
 
 		return;

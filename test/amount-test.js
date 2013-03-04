@@ -17,16 +17,16 @@ buster.testCase("Amount", {
       buster.assert.equals(nbi(), UInt160.from_generic("0")._value);
     },
     "Parse 0 export" : function () {
-      buster.assert.equals(UInt160.ADDRESS_ZERO, UInt160.from_generic("0").to_json());
+      buster.assert.equals(UInt160.ACCOUNT_ZERO, UInt160.from_generic("0").to_json());
     },
     "Parse 1" : function () {
       buster.assert.equals(new BigInteger([1]), UInt160.from_generic("1")._value);
     },
     "Parse rrrrrrrrrrrrrrrrrrrrrhoLvTp export" : function () {
-      buster.assert.equals(UInt160.ADDRESS_ZERO, UInt160.from_json("rrrrrrrrrrrrrrrrrrrrrhoLvTp").to_json());
+      buster.assert.equals(UInt160.ACCOUNT_ZERO, UInt160.from_json("rrrrrrrrrrrrrrrrrrrrrhoLvTp").to_json());
     },
     "Parse rrrrrrrrrrrrrrrrrrrrBZbvji export" : function () {
-      buster.assert.equals(UInt160.ADDRESS_ONE, UInt160.from_json("rrrrrrrrrrrrrrrrrrrrBZbvji").to_json());
+      buster.assert.equals(UInt160.ACCOUNT_ONE, UInt160.from_json("rrrrrrrrrrrrrrrrrrrrBZbvji").to_json());
     },
     "Parse mtgox export" : function () {
       buster.assert.equals(config.accounts["mtgox"].account, UInt160.from_json("mtgox").to_json());

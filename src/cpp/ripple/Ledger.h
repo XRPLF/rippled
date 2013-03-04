@@ -202,6 +202,7 @@ public:
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
 	static uint256 getHashByIndex(uint32 index);
 	static bool getHashesByIndex(uint32 index, uint256& ledgerHash, uint256& parentHash);
+	static std::map< uint32, std::pair<uint256, uint256> > getHashesByIndex(uint32 minSeq, uint32 maxSeq);
 	void pendSave(bool fromConsensus);
 
 	// next/prev function

@@ -403,9 +403,9 @@ uint256 Ledger::getHash()
 void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 { // can be called in a different thread
 	cLog(lsTRACE) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq();
-	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
+	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers INDEXED BY SeqLedger where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
-	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransId = '%s';");
+	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransID = '%s';");
 	static boost::format transExists("SELECT Status FROM Transactions WHERE TransID = '%s';");
 	static boost::format
 		updateTx("UPDATE Transactions SET LedgerSeq = %d, Status = '%c', TxnMeta = %s WHERE TransID = '%s';");
@@ -428,6 +428,8 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 	addRaw(s);
 	theApp->getHashedObjectStore().store(hotLEDGER, mLedgerSeq, s.peekData(), mHash);
 
+	AcceptedLedger::pointer aLedger = AcceptedLedger::makeAcceptedLedger(shared_from_this());
+
 	{
 		{
 			ScopedLock sl(theApp->getLedgerDB()->getDBLock());
@@ -435,37 +437,26 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 				theApp->getLedgerDB()->getDB()->executeSQL(boost::str(deleteLedger % mLedgerSeq));
 		}
 
-		SHAMap& txSet = *peekTransactionMap();
 		Database *db = theApp->getTxnDB()->getDB();
 		{
 			ScopedLock dbLock(theApp->getTxnDB()->getDBLock());
 			db->executeSQL("BEGIN TRANSACTION;");
-			SHAMapTreeNode::TNType type;
-			for (SHAMapItem::pointer item = txSet.peekFirstItem(type); !!item;
-				item = txSet.peekNextItem(item->getTag(), type))
+
+			BOOST_FOREACH(const AcceptedLedger::value_type& vt, aLedger->getMap())
 			{
-				assert(type == SHAMapTreeNode::tnTRANSACTION_MD);
-				SerializerIterator sit(item->peekSerializer());
-				Serializer rawTxn(sit.getVL());
-				Serializer rawMeta(sit.getVL());
-				std::string escMeta(sqlEscape(rawMeta.peekData()));
-
-				SerializerIterator txnIt(rawTxn);
-
-				SerializedTransaction txn(txnIt);
-				assert(txn.getTransactionID() == item->getTag());
-				TransactionMetaSet meta(item->getTag(), mLedgerSeq, rawMeta.peekData());
-				theApp->getMasterTransaction().inLedger(item->getTag(), mLedgerSeq);
+				cLog(lsTRACE) << "Saving: " << vt.second.getJson(0);
+				uint256 txID = vt.second.getTransactionID();
+				theApp->getMasterTransaction().inLedger(txID, mLedgerSeq);
 
 				// Make sure transaction is in AccountTransactions.
-				if (!SQL_EXISTS(db, boost::str(AcctTransExists % item->getTag().GetHex())))
+				if (!SQL_EXISTS(db, boost::str(AcctTransExists % txID.GetHex())))
 				{
 					// Transaction not in AccountTransactions
-					const std::vector<RippleAddress> accts = meta.getAffectedAccounts();
+					const std::vector<RippleAddress>& accts = vt.second.getAffected();
 					if (!accts.empty())
 					{
 
-						std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
+						std::string sql = "INSERT OR REPLACE INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
 						bool first = true;
 							for (std::vector<RippleAddress>::const_iterator it = accts.begin(), end = accts.end(); it != end; ++it)
 						{
@@ -476,7 +467,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 								sql += "('";
 								first = false;
 							}
-							sql += txn.getTransactionID().GetHex();
+							sql += txID.GetHex();
 							sql += "','";
 							sql += it->humanAccountID();
 							sql += "',";
@@ -491,20 +482,21 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 						cLog(lsWARNING) << "Transaction in ledger " << mLedgerSeq << " affects no accounts";
 				}
 
-				if (SQL_EXISTS(db, boost::str(transExists %	txn.getTransactionID().GetHex())))
+				if (SQL_EXISTS(db, boost::str(transExists %	txID.GetHex())))
 				{
 					// In Transactions, update LedgerSeq, metadata and Status.
 					db->executeSQL(boost::str(updateTx
 						% getLedgerSeq()
 						% TXN_SQL_VALIDATED
-						% escMeta
-						% txn.getTransactionID().GetHex()));
+						% vt.second.getEscMeta()
+						% txID.GetHex()));
 				}
 				else
 				{
 					// Not in Transactions, insert the whole thing..
 					db->executeSQL(
-						txn.getMetaSQLInsertHeader() + txn.getMetaSQL(getLedgerSeq(), escMeta) + ";");
+						SerializedTransaction::getMetaSQLInsertHeader() +
+						vt.second.getTxn()->getMetaSQL(getLedgerSeq(), vt.second.getEscMeta()) + ";");
 				}
 			}
 			db->executeSQL("COMMIT TRANSACTION;");
@@ -548,9 +540,9 @@ Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
 			"ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
 			" from Ledgers WHERE LedgerSeq = ?;");
 
-			pSt.reset();
 		pSt.bind(1, ledgerIndex);
 		ledger = getSQL1(&pSt);
+		pSt.reset();
 	}
 	if (ledger)
 		Ledger::getSQL2(ledger);
@@ -569,9 +561,9 @@ Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 			"ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
 			" from Ledgers WHERE LedgerHash = ?;");
 
-		pSt.reset();
 		pSt.bind(1, ledgerHash.GetHex());
 		ledger = getSQL1(&pSt);
+		pSt.reset();
 	}
 	if (ledger)
 	{
@@ -729,19 +721,20 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 	ScopedLock sl(con->getDBLock());
 
 	static SqliteStatement pSt(con->getDB()->getSqliteDB(),
-		"SELECT LedgerHash,PrevHash FROM Ledgers Where LedgerSeq = ?;");
+		"SELECT LedgerHash,PrevHash FROM Ledgers INDEXED BY SeqLedger Where LedgerSeq = ?;");
 
-	pSt.reset();
 	pSt.bind(1, ledgerIndex);
 
 	int ret = pSt.step();
 	if (pSt.isDone(ret))
 	{
+		pSt.reset();
 		cLog(lsTRACE) << "Don't have ledger " << ledgerIndex;
 		return false;
 	}
 	if (!pSt.isRow(ret))
 	{
+		pSt.reset();
 		assert(false);
 		cLog(lsFATAL) << "Unexpected statement result " << ret;
 		return false;
@@ -749,6 +742,7 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 
 	ledgerHash.SetHex(pSt.peekString(0), true);
 	parentHash.SetHex(pSt.peekString(1), true);
+	pSt.reset();
 
 	return true;
 
@@ -776,6 +770,45 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 
 	return true;
 
+#endif
+}
+
+std::map< uint32, std::pair<uint256, uint256> > Ledger::getHashesByIndex(uint32 minSeq, uint32 maxSeq)
+{
+#ifndef NO_SQLITE_PREPARE
+	std::map< uint32, std::pair<uint256, uint256> > ret;
+	DatabaseCon *con = theApp->getLedgerDB();
+	ScopedLock sl(con->getDBLock());
+
+	static SqliteStatement pSt(con->getDB()->getSqliteDB(),
+		"SELECT LedgerSeq,LedgerHash,PrevHash FROM Ledgers INDEXED BY SeqLedger "
+		"WHERE LedgerSeq >= ? AND LedgerSeq <= ?;");
+
+	std::pair<uint256, uint256> hashes;
+
+	pSt.bind(1, minSeq);
+	pSt.bind(2, maxSeq);
+
+	do
+	{
+		int r = pSt.step();
+		if (pSt.isDone(r))
+		{
+			pSt.reset();
+			return ret;
+		}
+		if (!pSt.isRow(r))
+		{
+			pSt.reset();
+			return ret;
+		}
+		hashes.first.SetHex(pSt.peekString(1), true);
+		hashes.second.SetHex(pSt.peekString(2), true);
+		ret[pSt.getUInt32(0)] = hashes;
+	} while(1);
+
+#else
+#error SQLite prepare is required
 #endif
 }
 

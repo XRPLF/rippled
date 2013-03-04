@@ -1,5 +1,6 @@
 
 #include "Application.h"
+#include "AcceptedLedger.h"
 #include "Config.h"
 #include "PeerDoor.h"
 #include "RPCDoor.h"
@@ -45,7 +46,7 @@ Application::Application() :
 	mSNTPClient(mAuxService), mRPCHandler(&mNetOps), mFeeTrack(),
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
-	mSweepTimer(mAuxService)
+	mSweepTimer(mAuxService), mShutdown(false)
 {
 	getRand(mNonce256.begin(), mNonce256.size());
 	getRand(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
@@ -58,6 +59,7 @@ bool Instance::running = true;
 void Application::stop()
 {
 	cLog(lsINFO) << "Received shutdown request";
+	mShutdown = true;
 	mIOService.stop();
 	mHashedObjectStore.bulkWrite();
 	mValidations.flush();
@@ -302,6 +304,7 @@ void Application::sweep()
 	mValidations.sweep();
 	getMasterLedgerAcquire().sweep();
 	mSLECache.sweep();
+	AcceptedLedger::sweep();
 	mSweepTimer.expires_from_now(boost::posix_time::seconds(theConfig.getSize(siSweepInterval)));
 	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
 }

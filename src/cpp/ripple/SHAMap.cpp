@@ -23,8 +23,14 @@ DECLARE_INSTANCE(SHAMapTreeNode);
 
 void SHAMapNode::setHash() const
 {
-	std::size_t h = theApp->getNonceST() + mDepth;
+	std::size_t h = theApp->getNonceST() + (mDepth * 0x9e3779b9);
 	mHash = mNodeID.hash_combine(h);
+#if 0
+	const unsigned int *ptr = reinterpret_cast<const unsigned int *>(mNodeID.begin());
+	for (int i = (mDepth + 3) / 4; i != 0; --i)
+		boost::hash_combine(h, *ptr++);
+	mHash = h;
+#endif
 }
 
 std::size_t hash_value(const SHAMapNode& mn)
@@ -64,6 +70,7 @@ SHAMap::SHAMap(SHAMapType t, const uint256& hash) : mSeq(1), mState(smsSynching)
 SHAMap::pointer SHAMap::snapShot(bool isMutable)
 { // Return a new SHAMap that is an immutable snapshot of this one
   // Initially nodes are shared, but CoW is forced on both ledgers
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMap::pointer ret = boost::make_shared<SHAMap>(mType);
 	SHAMap& newMap = *ret;
 	newMap.mSeq = ++mSeq;
@@ -158,9 +165,10 @@ SHAMapTreeNode::pointer SHAMap::walkTo(const uint256& id, bool modify)
 	while (!inNode->isLeaf())
 	{
 		int branch = inNode->selectBranch(id);
-		if (inNode->isEmptyBranch(branch))
-			return inNode;
 		uint256 childHash = inNode->getChildHash(branch);
+
+		if (childHash.isZero())
+			return inNode;
 
 		try
 		{
@@ -205,7 +213,6 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& id, const uint256& has
 			std::cerr << "ID: " << id << std::endl;
 			std::cerr << "TgtHash " << hash << std::endl;
 			std::cerr << "NodHash " << node->getNodeHash() << std::endl;
-			dump();
 			throw std::runtime_error("invalid node");
 		}
 #endif

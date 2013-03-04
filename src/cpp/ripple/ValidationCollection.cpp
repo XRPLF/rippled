@@ -293,7 +293,8 @@ void ValidationCollection::condWrite()
 	if (mWriting)
 		return;
 	mWriting = true;
-	theApp->getJobQueue().addJob(jtWRITE, boost::bind(&ValidationCollection::doWrite, this, _1));
+	theApp->getJobQueue().addJob(jtWRITE, "ValidationCollection::doWrite",
+		boost::bind(&ValidationCollection::doWrite, this, _1));
 }
 
 void ValidationCollection::doWrite(Job&)

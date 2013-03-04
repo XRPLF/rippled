@@ -45,11 +45,15 @@ enum {
 	rpcACT_MALFORMED,
 	rpcQUALITY_MALFORMED,
 	rpcBAD_BLOB,
+	rpcBAD_ISSUER,
+	rpcBAD_MARKET,
+	rpcBAD_SECRET,
 	rpcBAD_SEED,
 	rpcCOMMAND_MISSING,
 	rpcDST_ACT_MALFORMED,
 	rpcDST_ACT_MISSING,
 	rpcDST_AMT_MALFORMED,
+	rpcDST_ISR_MALFORMED,
 	rpcGETS_ACT_MALFORMED,
 	rpcGETS_AMT_MALFORMED,
 	rpcHOST_IP_MALFORMED,
@@ -67,7 +71,6 @@ enum {
 	rpcSRC_AMT_MALFORMED,
 	rpcSRC_CUR_MALFORMED,
 	rpcSRC_ISR_MALFORMED,
-	rpcBAD_SECRET,
 
 	// Internal error (should never happen)
 	rpcINTERNAL,		// Generic internal error.
@@ -77,6 +80,8 @@ enum {
 	rpcNO_GEN_DECRPYT,
 };
 
+bool isRpcError(Json::Value jvResult);
 Json::Value rpcError(int iError, Json::Value jvResult=Json::Value(Json::objectValue));
+
 #endif
 // vim:ts=4

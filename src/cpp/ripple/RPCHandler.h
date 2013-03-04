@@ -43,12 +43,11 @@ class RPCHandler
 
 	Json::Value accountFromString(Ledger::ref lrLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex, const bool bStrict);
 
-	Json::Value doAcceptLedger(Json::Value jvRequest);
-
 	Json::Value doAccountInfo(Json::Value params);
 	Json::Value doAccountLines(Json::Value params);
 	Json::Value doAccountOffers(Json::Value params);
 	Json::Value doAccountTransactions(Json::Value params);
+	Json::Value doBookOffers(Json::Value params);
 	Json::Value doConnect(Json::Value params);
 	Json::Value doConsensusInfo(Json::Value params);
 #if ENABLE_INSECURE

@@ -98,7 +98,7 @@ bool Job::operator<=(const Job& j) const
 	return mJobIndex <= j.mJobIndex;
 }
 
-void JobQueue::addJob(JobType type, const boost::function<void(Job&)>& jobFunc)
+void JobQueue::addJob(JobType type, const std::string& name, const boost::function<void(Job&)>& jobFunc)
 {
 	assert(type != jtINVALID);
 
@@ -107,7 +107,7 @@ void JobQueue::addJob(JobType type, const boost::function<void(Job&)>& jobFunc)
 	if (type != jtCLIENT) // FIXME: Workaround incorrect client shutdown ordering
 		assert(mThreadCount != 0); // do not add jobs to a queue with no threads
 
-	mJobSet.insert(Job(type, ++mLastJob, mJobLoads[type], jobFunc));
+	mJobSet.insert(Job(type, name, ++mLastJob, mJobLoads[type], jobFunc));
 	++mJobCounts[type];
 	mJobCond.notify_one();
 }
@@ -176,9 +176,9 @@ Json::Value JobQueue::getJson(int)
 			if (count != 0)
 				pri["per_second"] = static_cast<int>(count);
 			if (latencyPeak != 0)
-				pri["peak_latency"] = static_cast<int>(latencyPeak);
+				pri["peak_time"] = static_cast<int>(latencyPeak);
 			if (latencyAvg != 0)
-				pri["avg_latency"] = static_cast<int>(latencyAvg);
+				pri["avg_time"] = static_cast<int>(latencyAvg);
 			priorities.append(pri);
 		}
 	}
@@ -256,16 +256,18 @@ void JobQueue::threadEntry()
 			break;
 
 		std::set<Job>::iterator it = mJobSet.begin();
-		Job job(*it);
-		mJobSet.erase(it);
-		--mJobCounts[job.getType()];
+		{
+			Job job(*it);
+			mJobSet.erase(it);
+			--mJobCounts[job.getType()];
 
-		if (job.getType() == jtDEATH)
-			break;
+			if (job.getType() == jtDEATH)
+				break;
 
-		sl.unlock();
-		cLog(lsTRACE) << "Doing " << Job::toString(job.getType()) << " job";
-		job.doJob();
+			sl.unlock();
+			cLog(lsTRACE) << "Doing " << Job::toString(job.getType()) << " job";
+			job.doJob();
+		} // must destroy job without holding lock
 		sl.lock();
 	}
 	--mThreadCount;

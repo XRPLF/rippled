@@ -318,7 +318,10 @@ void LoadManager::threadEntry()
 
 		bool change;
 		if (theApp->getJobQueue().isOverloaded())
+		{
+			cLog(lsINFO) << theApp->getJobQueue().getJson(0);
 			change = theApp->getFeeTrack().raiseLocalFee();
+		}
 		else
 			change = theApp->getFeeTrack().lowerLocalFee();
 		if (change)

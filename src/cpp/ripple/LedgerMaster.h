@@ -75,7 +75,7 @@ public:
 	// The published ledger is the last fully validated ledger
 	Ledger::ref getValidatedLedger()	{ return mPubLedger; }
 
-	TER doTransaction(const SerializedTransaction& txn, TransactionEngineParams params, bool& didApply);
+	TER doTransaction(SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply);
 
 	void pushLedger(Ledger::ref newLedger);
 	void pushLedger(Ledger::ref newLCL, Ledger::ref newOL, bool fromConsensus);
