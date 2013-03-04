@@ -1784,102 +1784,121 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 	STAmount		saDirRate;
 
 //	unsigned int	iLeft			= iLimit;
+	SLE::pointer    sleGetsIssuer   = lesActive.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uTakerGetsIssuerID));
 
-	while (!bDone) {
-		if (bDirectAdvance) {
-			bDirectAdvance	= false;
+	if (!sleGetsIssuer)
+	{
+		// Order book can not exist if TakerGetsIssuer account does not exist.
 
-			cLog(lsTRACE) << boost::str(boost::format("getBookPage: bDirectAdvance"));
+		nothing();
+	}
+	else
+	{
+		while (!bDone) {
+			if (bDirectAdvance) {
+				bDirectAdvance	= false;
 
-			sleOfferDir		= lesActive.entryCache(ltDIR_NODE, lpLedger->getNextLedgerIndex(uTipIndex, uBookEnd));
-			if (!sleOfferDir)
-			{
-				cLog(lsTRACE) << boost::str(boost::format("getBookPage: bDone"));
-				bDone			= true;
-			}
-			else
-			{
-				uTipIndex		= sleOfferDir->getIndex();
-				saDirRate		= STAmount::setRate(Ledger::getQuality(uTipIndex));
-				SLE::pointer	sleBookNode;
+				cLog(lsTRACE) << boost::str(boost::format("getBookPage: bDirectAdvance"));
 
-				lesActive.dirFirst(uTipIndex, sleBookNode, uBookEntry, uOfferIndex);
+				sleOfferDir		= lesActive.entryCache(ltDIR_NODE, lpLedger->getNextLedgerIndex(uTipIndex, uBookEnd));
+				if (!sleOfferDir)
+				{
+					cLog(lsTRACE) << boost::str(boost::format("getBookPage: bDone"));
+					bDone			= true;
+				}
+				else
+				{
+					uTipIndex		= sleOfferDir->getIndex();
+					saDirRate		= STAmount::setRate(Ledger::getQuality(uTipIndex));
+					SLE::pointer	sleBookNode;
 
-				cLog(lsTRACE) << boost::str(boost::format("getBookPage:   uTipIndex=%s") % uTipIndex);
-				cLog(lsTRACE) << boost::str(boost::format("getBookPage: uOfferIndex=%s") % uOfferIndex);
-			}
-		}
+					lesActive.dirFirst(uTipIndex, sleBookNode, uBookEntry, uOfferIndex);
 
-		if (!bDone)
-		{
-			SLE::pointer	sleOffer		= lesActive.entryCache(ltOFFER, uOfferIndex);
-			const uint160	uOfferOwnerID	= sleOffer->getFieldAccount(sfAccount).getAccountID();
-			STAmount		saOwnerFunds;
-
-			boost::unordered_map<uint160, STAmount>::const_iterator	umBalanceEntry	= umBalance.find(uOfferOwnerID);
-
-			if (umBalanceEntry == umBalance.end())
-			{
-				// Did not find balance in table.
-				STAmount	saDefault(uTakerGetsCurrencyID, uTakerGetsIssuerID);
-				// cLog(lsINFO) << boost::str(boost::format("getBookPage: saDefault=%s") % saDefault.getFullText());
-
-				saOwnerFunds	= lesActive.accountFunds(uOfferOwnerID, saDefault);
-				// cLog(lsINFO) << boost::str(boost::format("getBookPage: saOwnerFunds=%s (new)") % saOwnerFunds.getFullText());
-			}
-			else
-			{
-				saOwnerFunds	= umBalanceEntry->second;
-				// cLog(lsINFO) << boost::str(boost::format("getBookPage: saOwnerFunds=%s (cached)") % saOwnerFunds.getFullText());
+					cLog(lsTRACE) << boost::str(boost::format("getBookPage:   uTipIndex=%s") % uTipIndex);
+					cLog(lsTRACE) << boost::str(boost::format("getBookPage: uOfferIndex=%s") % uOfferIndex);
+				}
 			}
 
-			STAmount	saTakerGets			= sleOffer->getFieldAmount(sfTakerGets);
-			STAmount	saTakerPays			= sleOffer->getFieldAmount(sfTakerPays);
-
-			Json::Value	jvOffer	= sleOffer->getJson(0);
-
-			STAmount	saTakerGetsFunded;
-
-			if (saOwnerFunds >= saTakerGets)
+			if (!bDone)
 			{
-				// Sufficient funds no shenanigans.
-				saTakerGetsFunded	= saTakerGets;
-			}
-			else
-			{
-				// cLog(lsINFO) << boost::str(boost::format("getBookPage:  saTakerGets=%s") % saTakerGets.getFullText());
-				// cLog(lsINFO) << boost::str(boost::format("getBookPage:  saTakerPays=%s") % saTakerPays.getFullText());
-				// cLog(lsINFO) << boost::str(boost::format("getBookPage: saOwnerFunds=%s") % saOwnerFunds.getFullText());
-				// cLog(lsINFO) << boost::str(boost::format("getBookPage:    saDirRate=%s") % saDirRate.getText());
-				// cLog(lsINFO) << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate).getFullText());
-				// cLog(lsINFO) << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays).getFullText());
-				STAmount	saTakerPaysFunded;
+				SLE::pointer	sleOffer		= lesActive.entryCache(ltOFFER, uOfferIndex);
+				const uint160	uOfferOwnerID	= sleOffer->getFieldAccount(sfAccount).getAccountID();
+				STAmount		saTakerGets		= sleOffer->getFieldAmount(sfTakerGets);
+				STAmount		saTakerPays		= sleOffer->getFieldAmount(sfTakerPays);
+				STAmount		saOwnerFunds;
 
-				saTakerGetsFunded	= saOwnerFunds;
-				saTakerPaysFunded	= std::min(saTakerPays, STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays));
+				if (uTakerGetsIssuerID == uOfferOwnerID)
+				{
+					// If offer is selling issuer's own IOUs, it is fully funded.
+					saOwnerFunds	= saTakerGets;
+				}
+				else
+				{
+					boost::unordered_map<uint160, STAmount>::const_iterator	umBalanceEntry	= umBalance.find(uOfferOwnerID);
 
-				// Only provide, if not fully funded.
-				jvOffer["taker_gets_funded"]	= saTakerGetsFunded.getJson(0);
-				jvOffer["taker_pays_funded"]	= saTakerPaysFunded.getJson(0);
-			}
+					if (umBalanceEntry != umBalance.end())
+					{
+						// Found in running balance table.
 
-			STAmount	saOwnerBalance		= saOwnerFunds-saTakerGetsFunded;
+						saOwnerFunds	= umBalanceEntry->second;
+						// cLog(lsINFO) << boost::str(boost::format("getBookPage: saOwnerFunds=%s (cached)") % saOwnerFunds.getFullText());
+					}
+					else
+					{
+						// Did not find balance in table.
 
-			umBalance[uOfferOwnerID]		= saOwnerBalance;
+						saOwnerFunds	= lesActive.accountHolds(uOfferOwnerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
+						// cLog(lsINFO) << boost::str(boost::format("getBookPage: saOwnerFunds=%s (new)") % saOwnerFunds.getFullText());
+						if (saOwnerFunds.isNegative())
+							saOwnerFunds.zero();
+					}
+				}
 
-			if (!saOwnerFunds.isZero() || uOfferOwnerID == uTakerID)
-			{
-				// Only provide funded offers and offers of the taker.
-				jvOffers.append(jvOffer);
-			}
+				Json::Value	jvOffer	= sleOffer->getJson(0);
 
-			if (!lesActive.dirNext(uTipIndex, sleOfferDir, uBookEntry, uOfferIndex))
-			{
-				bDirectAdvance	= true;
-			}
-			else
-			{
-				cLog(lsTRACE) << boost::str(boost::format("getBookPage: uOfferIndex=%s") % uOfferIndex);
+				STAmount	saTakerGetsFunded;
+
+				if (saOwnerFunds >= saTakerGets)
+				{
+					// Sufficient funds no shenanigans.
+					saTakerGetsFunded	= saTakerGets;
+				}
+				else
+				{
+					// cLog(lsINFO) << boost::str(boost::format("getBookPage:  saTakerGets=%s") % saTakerGets.getFullText());
+					// cLog(lsINFO) << boost::str(boost::format("getBookPage:  saTakerPays=%s") % saTakerPays.getFullText());
+					// cLog(lsINFO) << boost::str(boost::format("getBookPage: saOwnerFunds=%s") % saOwnerFunds.getFullText());
+					// cLog(lsINFO) << boost::str(boost::format("getBookPage:    saDirRate=%s") % saDirRate.getText());
+					// cLog(lsINFO) << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate).getFullText());
+					// cLog(lsINFO) << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays).getFullText());
+					STAmount	saTakerPaysFunded;
+
+					saTakerGetsFunded	= saOwnerFunds;
+					saTakerPaysFunded	= std::min(saTakerPays, STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays));
+
+					// Only provide, if not fully funded.
+					jvOffer["taker_gets_funded"]	= saTakerGetsFunded.getJson(0);
+					jvOffer["taker_pays_funded"]	= saTakerPaysFunded.getJson(0);
+				}
+
+				STAmount	saOwnerBalance		= saOwnerFunds-saTakerGetsFunded;
+
+				umBalance[uOfferOwnerID]		= saOwnerBalance;
+
+				if (!saOwnerFunds.isZero() || uOfferOwnerID == uTakerID)
+				{
+					// Only provide funded offers and offers of the taker.
+					jvOffers.append(jvOffer);
+				}
+
+				if (!lesActive.dirNext(uTipIndex, sleOfferDir, uBookEntry, uOfferIndex))
+				{
+					bDirectAdvance	= true;
+				}
+				else
+				{
+					cLog(lsTRACE) << boost::str(boost::format("getBookPage: uOfferIndex=%s") % uOfferIndex);
+				}
 			}
 		}
 	}
