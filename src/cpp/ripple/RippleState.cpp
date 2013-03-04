@@ -11,32 +11,24 @@ AccountItem::pointer RippleState::makeItem(const uint160& accountID, SerializedL
 }
 
 RippleState::RippleState(SerializedLedgerEntry::ref ledgerEntry) : AccountItem(ledgerEntry),
-	mValid(false), mViewLowest(true)
+	mValid(false),
+	mViewLowest(true)
 {
-	for (int i = 0, iMax = mLedgerEntry->getCount(); i < iMax; ++i)
-	{
-		const SerializedType* entry = mLedgerEntry->peekAtPIndex(i);
-		assert(entry);
+	mFlags			= mLedgerEntry->getFieldU32(sfFlags);
 
-		if (entry->getFName() == sfFlags)
-			mFlags = static_cast<const STUInt32*>(entry)->getValue();
-		else if (entry->getFName() == sfLowLimit)
-		{
-			mLowLimit = *static_cast<const STAmount*>(entry);
-			mLowID = RippleAddress::createAccountID(mLowLimit.getIssuer());
-		}
-		else if (entry->getFName() == sfHighLimit)
-		{
-			mHighLimit = *static_cast<const STAmount*>(entry);
-			mHighID = RippleAddress::createAccountID(mHighLimit.getIssuer());
-		}
-		else if (entry->getFName() == sfLowQualityIn)
-			mLowQualityIn = static_cast<const STUInt32*>(entry)->getValue();
-		else if (entry->getFName() == sfHighQualityIn)
-			mHighQualityIn = static_cast<const STUInt32*>(entry)->getValue();
-		else if (entry->getFName() == sfBalance)
-			mBalance = *static_cast<const STAmount*>(entry);
-	}
+	mLowLimit		= mLedgerEntry->getFieldAmount(sfLowLimit);
+	mHighLimit		= mLedgerEntry->getFieldAmount(sfHighLimit);
+
+	mLowID			= RippleAddress::createAccountID(mLowLimit.getIssuer());
+	mHighID			= RippleAddress::createAccountID(mHighLimit.getIssuer());
+
+	mLowQualityIn	= mLedgerEntry->getFieldU32(sfLowQualityIn);
+	mLowQualityOut	= mLedgerEntry->getFieldU32(sfLowQualityOut);
+
+	mHighQualityIn	= mLedgerEntry->getFieldU32(sfHighQualityIn);
+	mHighQualityOut	= mLedgerEntry->getFieldU32(sfHighQualityOut);
+
+	mBalance	= mLedgerEntry->getFieldAmount(sfBalance);
 
 	mValid		= true;
 }
