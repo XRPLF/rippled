@@ -1377,7 +1377,7 @@ void NetworkOPs::reportFeeChange()
 			(theApp->getFeeTrack().getLoadFactor() == mLastLoadFactor))
 		return;
 
-	theApp->getJobQueue().addJob(jtCLIENT, boost::bind(&NetworkOPs::pubServer, this));
+	theApp->getJobQueue().addJob(jtCLIENT, "reportFeeChange->pubServer", boost::bind(&NetworkOPs::pubServer, this));
 }
 
 Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent, const std::string& strType)

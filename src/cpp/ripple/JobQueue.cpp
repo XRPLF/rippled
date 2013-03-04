@@ -98,7 +98,7 @@ bool Job::operator<=(const Job& j) const
 	return mJobIndex <= j.mJobIndex;
 }
 
-void JobQueue::addJob(JobType type, const boost::function<void(Job&)>& jobFunc)
+void JobQueue::addJob(JobType type, const std::string& name, const boost::function<void(Job&)>& jobFunc)
 {
 	assert(type != jtINVALID);
 
@@ -107,7 +107,7 @@ void JobQueue::addJob(JobType type, const boost::function<void(Job&)>& jobFunc)
 	if (type != jtCLIENT) // FIXME: Workaround incorrect client shutdown ordering
 		assert(mThreadCount != 0); // do not add jobs to a queue with no threads
 
-	mJobSet.insert(Job(type, ++mLastJob, mJobLoads[type], jobFunc));
+	mJobSet.insert(Job(type, name, ++mLastJob, mJobLoads[type], jobFunc));
 	++mJobCounts[type];
 	mJobCond.notify_one();
 }

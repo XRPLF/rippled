@@ -32,7 +32,7 @@ public:
 
 	void addCount(int counts);
 	void addLatency(int latency);
-	void addCountAndLatency(int counts, int latency);
+	void addCountAndLatency(const std::string& name, int counts, int latency);
 
 	void setTargetLatency(uint64 avg, uint64 pk)
 	{
@@ -60,6 +60,7 @@ protected:
 	LoadMonitor&				mMonitor;
 	bool						mRunning;
 	int							mCount;
+	std::string					mName;
 	boost::posix_time::ptime	mStartTime;
 
 public:
@@ -76,6 +77,11 @@ public:
 			stop();
 	}
 
+	void setName(const std::string& name)
+	{
+		mName = name;
+	}
+
 	void start()
 	{ // okay to call if already started
 		mRunning = true;
@@ -86,7 +92,7 @@ public:
 	{
 		assert(mRunning);
 		mRunning = false;
-		mMonitor.addCountAndLatency(mCount,
+		mMonitor.addCountAndLatency(mName, mCount,
 			static_cast<int>((boost::posix_time::microsec_clock::universal_time() - mStartTime).total_milliseconds()));
 	}
 };
