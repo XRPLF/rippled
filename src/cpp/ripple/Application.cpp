@@ -1,5 +1,6 @@
 
 #include "Application.h"
+#include "AcceptedLedger.h"
 #include "Config.h"
 #include "PeerDoor.h"
 #include "RPCDoor.h"
@@ -303,6 +304,7 @@ void Application::sweep()
 	mValidations.sweep();
 	getMasterLedgerAcquire().sweep();
 	mSLECache.sweep();
+	AcceptedLedger::sweep();
 	mSweepTimer.expires_from_now(boost::posix_time::seconds(theConfig.getSize(siSweepInterval)));
 	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
 }

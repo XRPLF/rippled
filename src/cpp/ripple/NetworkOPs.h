@@ -14,6 +14,7 @@
 #include "LedgerAcquire.h"
 #include "LedgerProposal.h"
 #include "JobQueue.h"
+#include "AcceptedLedger.h"
 
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
@@ -140,8 +141,8 @@ protected:
 
 	Json::Value pubBootstrapAccountInfo(Ledger::ref lpAccepted, const RippleAddress& naAccountID);
 
-	void pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta);
-	void pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,bool accepted,TransactionMetaSet::pointer& meta);
+	void pubAcceptedTransaction(Ledger::ref alAccepted, const ALTransaction& alTransaction);
+	void pubAccountTransaction(Ledger::ref lpCurrent, const ALTransaction& alTransaction);
 
 	void pubServer();
 
@@ -306,7 +307,7 @@ public:
 	// Monitoring: publisher side
 	//
 	void pubLedger(Ledger::ref lpAccepted);
-	void pubProposedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult);
+	void pubProposedTransaction(Ledger::ref lpCurrent, SerializedTransaction::ref stTxn, TER terResult);
 
 
 	//
