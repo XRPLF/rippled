@@ -885,7 +885,6 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 	if (!lpLedger)
 		return jvResult;
 
-	ScopedUnlock su(theApp->getMasterLock());
 
 	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -966,8 +965,6 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 	if (!lpLedger)
 		return jvResult;
 
-	ScopedUnlock su(theApp->getMasterLock());
-
 	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
 
@@ -1038,8 +1035,6 @@ Json::Value RPCHandler::doBookOffers(Json::Value jvRequest)
 
 	if (!lpLedger)
 		return jvResult;
-
-	ScopedUnlock su(theApp->getMasterLock());
 
 	if (!jvRequest.isMember("taker_pays") || !jvRequest.isMember("taker_gets"))
 		return rpcError(rpcINVALID_PARAMS);
