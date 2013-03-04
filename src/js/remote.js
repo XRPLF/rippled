@@ -876,6 +876,15 @@ Remote.prototype.request_transaction_entry = function (hash) {
     .tx_hash(hash);
 };
 
+// DEPRECATED: use request_transaction_entry
+Remote.prototype.request_tx = function (hash) {
+  var request = new Request(this, 'tx');
+
+  request.message.transaction  = hash;
+
+  return request;
+};
+
 Remote.prototype.request_account_info = function (accountID) {
   var request = new Request(this, 'account_info');
 
