@@ -1066,6 +1066,8 @@ STAmount LedgerEntrySet::rippleHolds(const uint160& uAccountID, const uint160& u
 	return saBalance;
 }
 
+// Returns the amount an account can spend without going into debt.
+//
 // <-- saAmount: amount of uCurrencyID held by uAccountID. May be negative.
 STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID)
 {
