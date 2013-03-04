@@ -1,4 +1,7 @@
 #include "LoadMonitor.h"
+#include "Log.h"
+
+SETUP_LOG();
 
 void LoadMonitor::update()
 { // call with the mutex
@@ -52,8 +55,12 @@ void LoadMonitor::addLatency(int latency)
 		mLatencyMSPeak = lp;
 }
 
-void LoadMonitor::addCountAndLatency(int counts, int latency)
+void LoadMonitor::addCountAndLatency(const std::string& name, int counts, int latency)
 {
+	if (latency > 1000)
+	{
+		cLog(lsWARNING) << "Job: " << name << " ExecutionTime: " << latency;
+	}
 	if (latency == 1)
 		latency = 0;
 	boost::mutex::scoped_lock sl(mLock);

@@ -145,6 +145,8 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 	uint32 seq = ledger->getLedgerSeq();
 	uint256 prevHash = ledger->getParentHash();
 
+	std::map< uint32, std::pair<uint256, uint256> > ledgerHashes;
+
 	while (seq > 0)
 	{
 		{
@@ -155,10 +157,20 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 				break;
 		}
 
-		uint256 tHash, pHash;
-		if (!Ledger::getHashesByIndex(seq, tHash, pHash) || (tHash != prevHash))
+		std::map< uint32, std::pair<uint256, uint256> >::iterator it = ledgerHashes.find(seq);
+		if (it == ledgerHashes.end())
+		{
+			if (theApp->isShutdown())
+				return;
+			ledgerHashes = Ledger::getHashesByIndex((seq < 500) ? 0 : (seq - 499), seq);
+			it = ledgerHashes.find(seq);
+			if (it == ledgerHashes.end())
+				break;
+		}
+
+		if (it->second.first != prevHash)
 			break;
-		prevHash = pHash;
+		prevHash = it->second.second;
 	}
 
 	resumeAcquiring();
@@ -174,7 +186,8 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 	{
 		cLog(lsTRACE) << "Ledger hash found in database";
 		mTooFast = true;
-		theApp->getJobQueue().addJob(jtPUBOLDLEDGER, boost::bind(&LedgerMaster::asyncAccept, this, ledger));
+		theApp->getJobQueue().addJob(jtPUBOLDLEDGER, "LedgerMaster::asyncAccept",
+			boost::bind(&LedgerMaster::asyncAccept, this, ledger));
 		return true;
 	}
 
@@ -528,7 +541,8 @@ void LedgerMaster::tryPublish()
 	{
 		theApp->getOPs().clearNeedNetworkLedger();
 		mPubThread = true;
-		theApp->getJobQueue().addJob(jtPUBLEDGER, boost::bind(&LedgerMaster::pubThread, this));
+		theApp->getJobQueue().addJob(jtPUBLEDGER, "Ledger::pubThread",
+			boost::bind(&LedgerMaster::pubThread, this));
 	}
 }
 

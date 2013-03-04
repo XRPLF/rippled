@@ -465,7 +465,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 					if (!accts.empty())
 					{
 
-						std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
+						std::string sql = "INSERT OR REPLACE INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
 						bool first = true;
 							for (std::vector<RippleAddress>::const_iterator it = accts.begin(), end = accts.end(); it != end; ++it)
 						{
@@ -778,6 +778,45 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 
 	return true;
 
+#endif
+}
+
+std::map< uint32, std::pair<uint256, uint256> > Ledger::getHashesByIndex(uint32 minSeq, uint32 maxSeq)
+{
+#ifndef NO_SQLITE_PREPARE
+	std::map< uint32, std::pair<uint256, uint256> > ret;
+	DatabaseCon *con = theApp->getLedgerDB();
+	ScopedLock sl(con->getDBLock());
+
+	static SqliteStatement pSt(con->getDB()->getSqliteDB(),
+		"SELECT LedgerSeq,LedgerHash,PrevHash FROM Ledgers INDEXED BY SeqLedger "
+		"WHERE LedgerSeq >= ? AND LedgerSeq <= ?;");
+
+	std::pair<uint256, uint256> hashes;
+
+	pSt.bind(1, minSeq);
+	pSt.bind(2, maxSeq);
+
+	do
+	{
+		int r = pSt.step();
+		if (pSt.isDone(r))
+		{
+			pSt.reset();
+			return ret;
+		}
+		if (!pSt.isRow(r))
+		{
+			pSt.reset();
+			return ret;
+		}
+		hashes.first.SetHex(pSt.peekString(1), true);
+		hashes.second.SetHex(pSt.peekString(2), true);
+		ret[pSt.getUInt32(0)] = hashes;
+	} while(1);
+
+#else
+#error SQLite prepare is required
 #endif
 }
 

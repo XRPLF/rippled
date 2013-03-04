@@ -426,30 +426,6 @@ Transaction::pointer NetworkOPs::findTransactionByID(const uint256& transactionI
 	return Transaction::load(transactionID);
 }
 
-#if 0
-int NetworkOPs::findTransactionsBySource(const uint256& uLedger, std::list<Transaction::pointer>& txns,
-	const RippleAddress& sourceAccount, uint32 minSeq, uint32 maxSeq)
-{
-	AccountState::pointer state = getAccountState(uLedger, sourceAccount);
-	if (!state) return 0;
-	if (minSeq > state->getSeq()) return 0;
-	if (maxSeq > state->getSeq()) maxSeq = state->getSeq();
-	if (maxSeq > minSeq) return 0;
-
-	int count = 0;
-	for(unsigned int i = minSeq; i <= maxSeq; ++i)
-	{
-		Transaction::pointer txn = Transaction::findFrom(sourceAccount, i);
-		if(txn)
-		{
-			txns.push_back(txn);
-			++count;
-		}
-	}
-	return count;
-}
-#endif
-
 int NetworkOPs::findTransactionsByDestination(std::list<Transaction::pointer>& txns,
 	const RippleAddress& destinationAccount, uint32 startLedgerSeq, uint32 endLedgerSeq, int maxTransactions)
 {
@@ -1401,7 +1377,7 @@ void NetworkOPs::reportFeeChange()
 			(theApp->getFeeTrack().getLoadFactor() == mLastLoadFactor))
 		return;
 
-	theApp->getJobQueue().addJob(jtCLIENT, boost::bind(&NetworkOPs::pubServer, this));
+	theApp->getJobQueue().addJob(jtCLIENT, "reportFeeChange->pubServer", boost::bind(&NetworkOPs::pubServer, this));
 }
 
 Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent, const std::string& strType)

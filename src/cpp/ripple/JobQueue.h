@@ -54,6 +54,7 @@ protected:
 	uint64						mJobIndex;
 	boost::function<void(Job&)>	mJob;
 	LoadEvent::pointer			mLoadMonitor;
+	std::string					mName;
 
 public:
 
@@ -62,12 +63,15 @@ public:
 	Job(JobType type, uint64 index)	: mType(type), mJobIndex(index)
 	{ ; }
 
-	Job(JobType type, uint64 index, LoadMonitor& lm, const boost::function<void(Job&)>& job)
-		: mType(type), mJobIndex(index), mJob(job)
-	{ mLoadMonitor = boost::make_shared<LoadEvent>(boost::ref(lm), true, 1); }
+	Job(JobType type, const std::string& name, uint64 index, LoadMonitor& lm, const boost::function<void(Job&)>& job)
+		: mType(type), mJobIndex(index), mJob(job), mName(name)
+	{
+		mLoadMonitor = boost::make_shared<LoadEvent>(boost::ref(lm), false, 1);
+	}
 
 	JobType getType() const				{ return mType; }
-	void doJob(void)					{ mJob(*this); }
+	void doJob(void)					{ mLoadMonitor->start(); mJob(*this); mLoadMonitor->setName(mName); }
+	void rename(const std::string& n)	{ mName = n; }
 
 	bool operator<(const Job& j) const;
 	bool operator>(const Job& j) const;
@@ -97,7 +101,7 @@ public:
 
 	JobQueue();
 
-	void addJob(JobType type, const boost::function<void(Job&)>& job);
+	void addJob(JobType type, const std::string& name, const boost::function<void(Job&)>& job);
 
 	int getJobCount(JobType t);		// Jobs at this priority
 	int getJobCountGE(JobType t);	// All jobs at or greater than this priority

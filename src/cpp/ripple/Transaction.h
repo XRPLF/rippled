@@ -99,7 +99,6 @@ public:
 	// database functions
 	void save();
 	static Transaction::pointer load(const uint256& id);
-	static Transaction::pointer findFrom(const RippleAddress& fromID, uint32 seq);
 
 	// conversion function
 	static bool convertToTransactions(uint32 ourLedgerSeq, uint32 otherLedgerSeq,

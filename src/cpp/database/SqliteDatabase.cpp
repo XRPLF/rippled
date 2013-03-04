@@ -223,7 +223,7 @@ void SqliteDatabase::doHook(const char *db, int pages)
 	{
 		walRunning = true;
 		if (mWalQ)
-			mWalQ->addJob(jtWAL, boost::bind(&SqliteDatabase::runWal, this));
+			mWalQ->addJob(jtWAL, std::string("WAL:") + db, boost::bind(&SqliteDatabase::runWal, this));
 		else
 			boost::thread(boost::bind(&SqliteDatabase::runWal, this)).detach();
 	}

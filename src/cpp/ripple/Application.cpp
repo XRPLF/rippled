@@ -45,7 +45,7 @@ Application::Application() :
 	mSNTPClient(mAuxService), mRPCHandler(&mNetOps), mFeeTrack(),
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
-	mSweepTimer(mAuxService)
+	mSweepTimer(mAuxService), mShutdown(false)
 {
 	getRand(mNonce256.begin(), mNonce256.size());
 	getRand(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
@@ -58,6 +58,7 @@ bool Instance::running = true;
 void Application::stop()
 {
 	cLog(lsINFO) << "Received shutdown request";
+	mShutdown = true;
 	mIOService.stop();
 	mHashedObjectStore.bulkWrite();
 	mValidations.flush();
