@@ -152,6 +152,14 @@ TER OfferCreateTransactor::takeOffers(
 
 				usOfferUnfundedFound.insert(uOfferIndex);
 			}
+			else if (!saOfferGets.isPositive() || !saOfferPays.isPositive())
+			{
+				// Offer has bad amounts. Consider offer expired. Delete it.
+				cLog(lsWARNING) << boost::str(boost::format("takeOffers: BAD OFFER: saOfferPays=%s saOfferGets=%s")
+					% saOfferPays % saOfferGets);
+
+				usOfferUnfundedFound.insert(uOfferIndex);
+			}
 			else
 			{
 				// Get offer funds available.

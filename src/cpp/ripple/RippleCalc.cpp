@@ -909,6 +909,8 @@ TER RippleCalc::calcNodeAdvance(
 			// Got a new offer.
 			sleOffer	= lesActive.entryCache(ltOFFER, uOfferIndex);
 			uOfrOwnerID = sleOffer->getFieldAccount(sfAccount).getAccountID();
+			saTakerPays	= sleOffer->getFieldAmount(sfTakerPays);
+			saTakerGets	= sleOffer->getFieldAmount(sfTakerGets);
 
 			const aciSource			asLine				= boost::make_tuple(uOfrOwnerID, uCurCurrencyID, uCurIssuerID);
 
@@ -918,6 +920,16 @@ TER RippleCalc::calcNodeAdvance(
 			{
 				// Offer is expired.
 				cLog(lsINFO) << "calcNodeAdvance: expired offer";
+
+				assert(musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end());	// Verify reverse found it too.
+				bEntryAdvance	= true;
+				continue;
+			}
+			else if (!saTakerPays.isPositive() || !saTakerGets.isPositive())
+			{
+				// Offer is has bad amounts.
+				cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
+					% saTakerPays % saTakerGets);
 
 				assert(musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end());	// Verify reverse found it too.
 				bEntryAdvance	= true;
@@ -963,9 +975,6 @@ TER RippleCalc::calcNodeAdvance(
 				bEntryAdvance	= true;
 				continue;
 			}
-
-			saTakerPays		= sleOffer->getFieldAmount(sfTakerPays);
-			saTakerGets		= sleOffer->getFieldAmount(sfTakerGets);
 
 			saOfferFunds	= lesActive.accountFunds(uOfrOwnerID, saTakerGets);	// Funds left.
 
@@ -1205,8 +1214,22 @@ TER RippleCalc::calcNodeDeliverRev(
 			break;
 
 		// Adjust offer
-		sleOffer->setFieldAmount(sfTakerGets, saTakerGets - saOutPass);
-		sleOffer->setFieldAmount(sfTakerPays, saTakerPays - saInPassAct);
+		STAmount	saTakerGetsNew	= saTakerGets - saOutPass;
+		STAmount	saTakerPaysNew	= saTakerPays - saInPassAct;
+
+		if (saTakerPaysNew.isNegative() || saTakerGetsNew.isNegative())
+		{
+			cLog(lsWARNING) << boost::str(boost::format("calcNodeDeliverRev: NEGATIVE: saTakerPaysNew=%s saTakerGetsNew=%s")
+				% saTakerPaysNew % saTakerGetsNew);
+
+			terResult	= mOpenLedger
+							? telFAILED_PROCESSING								// Ledger is not final, can vote no.
+							: tecFAILED_PROCESSING;
+			break;
+		}
+
+		sleOffer->setFieldAmount(sfTakerGets, saTakerGetsNew);
+		sleOffer->setFieldAmount(sfTakerPays, saTakerPaysNew);
 
 		lesActive.entryModify(sleOffer);
 
@@ -1399,8 +1422,22 @@ TER RippleCalc::calcNodeDeliverFwd(
 
 			// Adjust offer
 			// Fees are considered paid from a seperate budget and are not named in the offer.
-			sleOffer->setFieldAmount(sfTakerGets, saTakerGets - saOutPassAct);
-			sleOffer->setFieldAmount(sfTakerPays, saTakerPays - saInPassAct);
+			STAmount	saTakerGetsNew	= saTakerGets - saOutPassAct;
+			STAmount	saTakerPaysNew	= saTakerPays - saInPassAct;
+
+			if (saTakerPaysNew.isNegative() || saTakerGetsNew.isNegative())
+			{
+				cLog(lsWARNING) << boost::str(boost::format("calcNodeDeliverFwd: NEGATIVE: saTakerPaysNew=%s saTakerGetsNew=%s")
+					% saTakerPaysNew % saTakerGetsNew);
+
+				terResult	= mOpenLedger
+								? telFAILED_PROCESSING								// Ledger is not final, can vote no.
+								: tecFAILED_PROCESSING;
+				break;
+			}
+
+			sleOffer->setFieldAmount(sfTakerGets, saTakerGetsNew);
+			sleOffer->setFieldAmount(sfTakerPays, saTakerPaysNew);
 
 			lesActive.entryModify(sleOffer);
 
@@ -2418,7 +2455,7 @@ TER RippleCalc::rippleCalc(
 	// Issuer:
 	//      XRP: ACCOUNT_XRP
 	//  non-XRP: uSrcAccountID (for any issuer) or another account with trust node.
-	const STAmount&		saMaxAmountReq,			// --> -1 = no limit.
+	const STAmount&		saMaxAmountReq,				// --> -1 = no limit.
 
 	// Issuer:
 	//      XRP: ACCOUNT_XRP
@@ -2431,12 +2468,13 @@ TER RippleCalc::rippleCalc(
     const bool			bPartialPayment,
     const bool			bLimitQuality,
     const bool			bNoRippleDirect,
-	const bool			bStandAlone				// True, not to delete unfundeds.
+	const bool			bStandAlone,				// True, not to delete unfundeds.
+	const bool			bOpenLedger
     )
 {
-	RippleCalc		rc(lesActive);
+	RippleCalc	rc(lesActive, bOpenLedger);
 
-    TER	    terResult	= temUNCERTAIN;
+    TER			terResult	= temUNCERTAIN;
 
 	// YYY Might do basic checks on src and dst validity as per doPayment.
 

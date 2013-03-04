@@ -153,6 +153,7 @@ class RippleCalc
 {
 protected:
 	LedgerEntrySet&					lesActive;
+	bool							mOpenLedger;
 
 public:
 	// First time working in reverse a funding source was mentioned.  Source may only be used there.
@@ -192,7 +193,8 @@ public:
 							STAmount& saPrvAct, STAmount& saCurAct,
 							uint64& uRateMax);
 
-	RippleCalc(LedgerEntrySet& lesNodes) : lesActive(lesNodes) { ; }
+	RippleCalc(LedgerEntrySet& lesNodes, const bool bOpenLedger)
+		: lesActive(lesNodes), mOpenLedger(bOpenLedger) { ; }
 
 	static TER rippleCalc(
 		LedgerEntrySet&					lesActive,
@@ -207,7 +209,8 @@ public:
 		const bool						bPartialPayment,
 		const bool						bLimitQuality,
 		const bool						bNoRippleDirect,
-		const bool						bStandAlone
+		const bool						bStandAlone,
+		const bool						bOpenLedger = true
 		);
 
 	static void setCanonical(STPathSet& spsDst, const std::vector<PathState::pointer>& vpsExpanded, bool bKeepDefault);
