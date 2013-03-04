@@ -6,6 +6,7 @@
 #include <boost/unordered_map.hpp>
 
 #include "Ledger.h"
+#include "AcceptedLedger.h"
 #include "OrderBook.h"
 
 
@@ -66,7 +67,7 @@ public:
 		const uint160& issuerIn, const uint160& issuerOut);
 
 	// see if this txn effects any orderbook
-	void processTxn(const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta,Json::Value& jvObj);
+	void processTxn(Ledger::ref ledger, const ALTransaction& alTx, Json::Value& jvObj);
 
 };
 

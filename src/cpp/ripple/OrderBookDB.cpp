@@ -187,15 +187,14 @@ BookListeners::pointer OrderBookDB::getBookListeners(const uint160& currencyIn, 
 */
 // Based on the meta, send the meta to the streams that are listening 
 // We need to determine which streams a given meta effects
-void OrderBookDB::processTxn(const SerializedTransaction& stTxn, TER terResult,
-	TransactionMetaSet::pointer& meta, Json::Value& jvObj)
+void OrderBookDB::processTxn(Ledger::ref ledger, const ALTransaction& alTx, Json::Value& jvObj)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	if (terResult == tesSUCCESS)
+	if (alTx.getResult() == tesSUCCESS)
 	{
 		// check if this is an offer or an offer cancel or a payment that consumes an offer
 		//check to see what the meta looks like
-		BOOST_FOREACH(STObject& node, meta->getNodes())
+		BOOST_FOREACH(STObject& node, alTx.getMeta()->getNodes())
 		{
 			try
 			{

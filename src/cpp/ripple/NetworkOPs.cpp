@@ -267,7 +267,7 @@ void NetworkOPs::runTransactionQueue()
 			assert(dbtx);
 
 			bool didApply;
-			TER r = mLedgerMaster->doTransaction(*dbtx->getSTransaction(),
+			TER r = mLedgerMaster->doTransaction(dbtx->getSTransaction(),
 				tapOPEN_LEDGER | tapNO_CHECK_SIGN, didApply);
 			dbtx->setResult(r);
 
@@ -352,7 +352,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 	Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(trans->getID(), true);
 	bool didApply;
-	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tapOPEN_LEDGER | tapNO_CHECK_SIGN, didApply);
+	TER r = mLedgerMaster->doTransaction(trans->getSTransaction(), tapOPEN_LEDGER | tapNO_CHECK_SIGN, didApply);
 	trans->setResult(r);
 
 	if (isTemMalformed(r)) // malformed, cache bad
@@ -1289,9 +1289,9 @@ Json::Value NetworkOPs::pubBootstrapAccountInfo(Ledger::ref lpAccepted, const Ri
 	return jvObj;
 }
 
-void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult)
+void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, SerializedTransaction::ref stTxn, TER terResult)
 {
-	Json::Value	jvObj	= transJson(stTxn, terResult, false, lpCurrent, "transaction");
+	Json::Value	jvObj	= transJson(*stTxn, terResult, false, lpCurrent, "transaction");
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
@@ -1308,14 +1308,18 @@ void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, const SerializedT
 				it = mSubRTTransactions.erase(it);
 		}
 	}
-	TransactionMetaSet::pointer ret;
-	pubAccountTransaction(lpCurrent,stTxn,terResult,false,ret);
+	ALTransaction alt(stTxn, terResult);
+	cLog(lsTRACE) << "pubProposed: " << alt.getJson(0);
+	pubAccountTransaction(lpCurrent, ALTransaction(stTxn, terResult));
 }
 
-void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
+void NetworkOPs::pubLedger(Ledger::ref accepted)
 {
 	// Ledgers are published only when they acquire sufficient validations
 	// Holes are filled across connection loss or other catastrophe
+
+	AcceptedLedger::pointer alpAccepted = AcceptedLedger::makeAcceptedLedger(accepted);
+	Ledger::ref lpAccepted = alpAccepted->getLedger();
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
@@ -1333,6 +1337,8 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 			jvObj["fee_base"]		= Json::UInt(lpAccepted->getBaseFee());
 			jvObj["reserve_base"]	= Json::UInt(lpAccepted->getReserve(0));
 			jvObj["reserve_inc"]	= Json::UInt(lpAccepted->getReserveInc());
+
+			jvObj["txn_count"]		= Json::UInt(alpAccepted->getTxnCount());
 
 			NetworkOPs::subMapType::const_iterator it = mSubLedger.begin();
 			while (it != mSubLedger.end())
@@ -1352,21 +1358,10 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 	// Don't lock since pubAcceptedTransaction is locking.
 	if (!mSubTransactions.empty() || !mSubRTTransactions.empty() || !mSubAccount.empty() || !mSubRTAccount.empty())
 	{
-		SHAMap&		txSet	= *lpAccepted->peekTransactionMap();
-
-		for (SHAMapItem::pointer item = txSet.peekFirstItem(); !!item; item = txSet.peekNextItem(item->getTag()))
+		BOOST_FOREACH(const AcceptedLedger::value_type& vt, alpAccepted->getMap())
 		{
-			SerializerIterator it(item->peekSerializer());
-
-			// OPTIMIZEME: Could get transaction from txn master, but still must call getVL
-			Serializer				txnSer(it.getVL());
-			SerializerIterator		txnIt(txnSer);
-			SerializedTransaction	stTxn(txnIt);
-
-			TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet>(
-				stTxn.getTransactionID(), lpAccepted->getLedgerSeq(), it.getVL());
-
-			pubAcceptedTransaction(lpAccepted, stTxn, meta->getResultTER(), meta);
+			cLog(lsTRACE) << "pubAccepted: " << vt.second.getJson(0);
+			pubAcceptedTransaction(lpAccepted, vt.second);
 		}
 	}
 }
@@ -1407,11 +1402,10 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 	return jvObj;
 }
 
-void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta)
+void NetworkOPs::pubAcceptedTransaction(Ledger::ref alAccepted, const ALTransaction& alTx)
 {
-	Json::Value	jvObj	= transJson(stTxn, terResult, true, lpCurrent, "transaction");
-
-	if (meta) jvObj["meta"] = meta->getJson(0);
+	Json::Value	jvObj	= transJson(*alTx.getTxn(), alTx.getResult(), true, alAccepted, "transaction");
+	jvObj["meta"] = alTx.getMeta()->getJson(0);
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
@@ -1442,14 +1436,14 @@ void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedT
 				it = mSubRTTransactions.erase(it);
 		}
 	}
-	theApp->getOrderBookDB().processTxn(stTxn, terResult, meta, jvObj);
-
-	pubAccountTransaction(lpCurrent, stTxn, terResult, true, meta);
+	theApp->getOrderBookDB().processTxn(alAccepted, alTx, jvObj);
+	pubAccountTransaction(alAccepted, alTx);
 }
 
-void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted, TransactionMetaSet::pointer& meta)
+void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const ALTransaction& alTx)
 {
 	boost::unordered_set<InfoSub::pointer>	notify;
+	bool							bAccepted	= alTx.isApplied();
 	int								iProposed	= 0;
 	int								iAccepted	= 0;
 
@@ -1460,8 +1454,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 
 		if (!mSubAccount.empty() || (!mSubRTAccount.empty()) )
 		{
-			std::vector<RippleAddress> accounts = meta ? meta->getAffectedAccounts() : stTxn.getMentionedAccounts();
-			BOOST_FOREACH(const RippleAddress& affectedAccount, accounts)
+			BOOST_FOREACH(const RippleAddress& affectedAccount, alTx.getAffected())
 			{
 				subInfoMapIterator	simiIt	= mSubRTAccount.find(affectedAccount.getAccountID());
 
@@ -1510,9 +1503,10 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 
 	if (!notify.empty())
 	{
-		Json::Value	jvObj	= transJson(stTxn, terResult, bAccepted, lpCurrent, "account");
+		Json::Value	jvObj	= transJson(*alTx.getTxn(), alTx.getResult(), bAccepted, lpCurrent, "account");
 
-		if (meta) jvObj["meta"] = meta->getJson(0);
+		if (alTx.isApplied())
+			jvObj["meta"] = alTx.getMeta()->getJson(0);
 
 		BOOST_FOREACH(InfoSub::ref isrListener, notify)
 		{

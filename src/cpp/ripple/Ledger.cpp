@@ -428,6 +428,8 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 	addRaw(s);
 	theApp->getHashedObjectStore().store(hotLEDGER, mLedgerSeq, s.peekData(), mHash);
 
+	AcceptedLedger::pointer aLedger = AcceptedLedger::makeAcceptedLedger(shared_from_this());
+
 	{
 		{
 			ScopedLock sl(theApp->getLedgerDB()->getDBLock());
@@ -435,33 +437,22 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 				theApp->getLedgerDB()->getDB()->executeSQL(boost::str(deleteLedger % mLedgerSeq));
 		}
 
-		SHAMap& txSet = *peekTransactionMap();
 		Database *db = theApp->getTxnDB()->getDB();
 		{
 			ScopedLock dbLock(theApp->getTxnDB()->getDBLock());
 			db->executeSQL("BEGIN TRANSACTION;");
-			SHAMapTreeNode::TNType type;
-			for (SHAMapItem::pointer item = txSet.peekFirstItem(type); !!item;
-				item = txSet.peekNextItem(item->getTag(), type))
+
+			BOOST_FOREACH(const AcceptedLedger::value_type& vt, aLedger->getMap())
 			{
-				assert(type == SHAMapTreeNode::tnTRANSACTION_MD);
-				SerializerIterator sit(item->peekSerializer());
-				Serializer rawTxn(sit.getVL());
-				Serializer rawMeta(sit.getVL());
-				std::string escMeta(sqlEscape(rawMeta.peekData()));
-
-				SerializerIterator txnIt(rawTxn);
-
-				SerializedTransaction txn(txnIt);
-				assert(txn.getTransactionID() == item->getTag());
-				TransactionMetaSet meta(item->getTag(), mLedgerSeq, rawMeta.peekData());
-				theApp->getMasterTransaction().inLedger(item->getTag(), mLedgerSeq);
+				cLog(lsTRACE) << "Saving: " << vt.second.getJson(0);
+				uint256 txID = vt.second.getTransactionID();
+				theApp->getMasterTransaction().inLedger(txID, mLedgerSeq);
 
 				// Make sure transaction is in AccountTransactions.
-				if (!SQL_EXISTS(db, boost::str(AcctTransExists % item->getTag().GetHex())))
+				if (!SQL_EXISTS(db, boost::str(AcctTransExists % txID.GetHex())))
 				{
 					// Transaction not in AccountTransactions
-					const std::vector<RippleAddress> accts = meta.getAffectedAccounts();
+					const std::vector<RippleAddress>& accts = vt.second.getAffected();
 					if (!accts.empty())
 					{
 
@@ -476,7 +467,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 								sql += "('";
 								first = false;
 							}
-							sql += txn.getTransactionID().GetHex();
+							sql += txID.GetHex();
 							sql += "','";
 							sql += it->humanAccountID();
 							sql += "',";
@@ -491,20 +482,21 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 						cLog(lsWARNING) << "Transaction in ledger " << mLedgerSeq << " affects no accounts";
 				}
 
-				if (SQL_EXISTS(db, boost::str(transExists %	txn.getTransactionID().GetHex())))
+				if (SQL_EXISTS(db, boost::str(transExists %	txID.GetHex())))
 				{
 					// In Transactions, update LedgerSeq, metadata and Status.
 					db->executeSQL(boost::str(updateTx
 						% getLedgerSeq()
 						% TXN_SQL_VALIDATED
-						% escMeta
-						% txn.getTransactionID().GetHex()));
+						% vt.second.getEscMeta()
+						% txID.GetHex()));
 				}
 				else
 				{
 					// Not in Transactions, insert the whole thing..
 					db->executeSQL(
-						txn.getMetaSQLInsertHeader() + txn.getMetaSQL(getLedgerSeq(), escMeta) + ";");
+						SerializedTransaction::getMetaSQLInsertHeader() +
+						vt.second.getTxn()->getMetaSQL(getLedgerSeq(), vt.second.getEscMeta()) + ";");
 				}
 			}
 			db->executeSQL("COMMIT TRANSACTION;");

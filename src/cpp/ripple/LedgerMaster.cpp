@@ -119,11 +119,11 @@ Ledger::pointer LedgerMaster::closeLedger(bool recover)
 	return closingLedger;
 }
 
-TER LedgerMaster::doTransaction(const SerializedTransaction& txn, TransactionEngineParams params, bool& didApply)
+TER LedgerMaster::doTransaction(SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply)
 {
-	TER result = mEngine.applyTransaction(txn, params, didApply);
-	// CHECKME: Should we call this even on gross failures?
-	theApp->getOPs().pubProposedTransaction(mEngine.getLedger(), txn, result);
+	TER result = mEngine.applyTransaction(*txn, params, didApply);
+//	if (didApply)
+		theApp->getOPs().pubProposedTransaction(mEngine.getLedger(), txn, result);
 	return result;
 }
 
