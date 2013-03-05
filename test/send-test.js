@@ -719,7 +719,7 @@ buster.testCase("Gateway", {
               });
 
             self.remote
-              .on('account', function (m) {
+              .on('transaction', function (m) {
                   // console.log("ACCOUNT: %s", JSON.stringify(m));
                   self.found  = 1;
                 })
@@ -857,7 +857,7 @@ buster.testCase("Gateway", {
               });
 
             self.remote
-              .on('account', function (m) {
+              .on('transaction', function (m) {
                   // console.log("ACCOUNT: %s", JSON.stringify(m));
                   self.found  = 1;
                 })
