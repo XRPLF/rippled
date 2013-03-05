@@ -285,15 +285,18 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			continue;
 		}
 
-		cLog(lsTRACE) << "findPaths: finish? account: " << (speEnd.mAccountID == mDstAccountID);
-		cLog(lsTRACE) << "findPaths: finish? currency: " << (speEnd.mCurrencyID == mDstAmount.getCurrency());
-		cLog(lsTRACE) << "findPaths: finish? issuer: "
-			<< RippleAddress::createHumanAccountID(speEnd.mIssuerID)
-			<< " / "
-			<< RippleAddress::createHumanAccountID(mDstAmount.getIssuer())
-			<< " / "
-			<< RippleAddress::createHumanAccountID(mDstAccountID);
-		cLog(lsDEBUG) << "findPaths: finish? issuer is desired: " << (speEnd.mIssuerID == mDstAmount.getIssuer());
+		if (tLog(lsTRACE)
+		{
+			cLog(lsTRACE) << "findPaths: finish? account: " << (speEnd.mAccountID == mDstAccountID);
+			cLog(lsTRACE) << "findPaths: finish? currency: " << (speEnd.mCurrencyID == mDstAmount.getCurrency());
+			cLog(lsTRACE) << "findPaths: finish? issuer: "
+				<< RippleAddress::createHumanAccountID(speEnd.mIssuerID)
+				<< " / "
+				<< RippleAddress::createHumanAccountID(mDstAmount.getIssuer())
+				<< " / "
+				<< RippleAddress::createHumanAccountID(mDstAccountID);
+			cLog(lsTRACE) << "findPaths: finish? issuer is desired: " << (speEnd.mIssuerID == mDstAmount.getIssuer());
+		}
 
 		// YYY Allows going through self.  Is this wanted?
 		if (speEnd.mAccountID == mDstAccountID						// Tail is destination account.
@@ -343,7 +346,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 		{
 			// Path is at maximum size. Don't want to add more.
 
-			cLog(lsDEBUG)
+			cLog(lsTRACE)
 				<< boost::str(boost::format("findPaths: dropping: path would exceed max steps"));
 
 			continue;
