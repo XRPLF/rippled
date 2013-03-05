@@ -274,8 +274,9 @@ void LedgerMaster::missingAcquireComplete(LedgerAcquire::pointer acq)
 
 	if (acq->isComplete())
 	{
+		acq->getLedger()->setAccepted();
 		setFullLedger(acq->getLedger());
-		acq->getLedger()->pendSave(false);
+		mLedgerHistory.addAcceptedLedger(acq->getLedger(), false);
 	}
 }
 
