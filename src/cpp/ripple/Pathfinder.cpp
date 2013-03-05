@@ -410,7 +410,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 				{
 					RippleState*	rspEntry	= (RippleState*) item.get();
-					const uint160	uPeerID		= rspEntry->getAccountIDPeer();
+					const uint160&	uPeerID		= rspEntry->getAccountIDPeer();
 
 					if (spPath.hasSeen(uPeerID, speEnd.mCurrencyID, uPeerID))
 					{
@@ -467,7 +467,8 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				{
 					// A book we haven't seen before. Add it.
 					STPath			spNew(spPath);
-					STPathElement	speBook(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut());
+					STPathElement	speBook(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut(),
+						book->getCurrencyIn() != book->getCurrencyOut());
 
 					spNew.mPath.push_back(speBook);		// Add the order book.
 
