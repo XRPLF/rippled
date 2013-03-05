@@ -34,10 +34,14 @@ enum PathFlags
 	PF_ISSUE			= 0x80,
 };
 
-#define CURRENCY_XRP		uint160(0)
-#define CURRENCY_ONE		uint160(1)	// Used as a place holder
-#define ACCOUNT_XRP			uint160(0)
-#define ACCOUNT_ONE			uint160(1)	// Used as a place holder
+static const uint160 u160_zero(0), u160_one(1);
+static inline const uint160& get_u160_zero() { return u160_zero; }
+static inline const uint160& get_u160_one() { return u160_one; }
+
+#define CURRENCY_XRP		get_u160_zero()
+#define CURRENCY_ONE		get_u160_one()	// Used as a place holder
+#define ACCOUNT_XRP			get_u160_zero()
+#define ACCOUNT_ONE			get_u160_one()	// Used as a place holder
 
 DEFINE_INSTANCE(SerializedValue);
 
@@ -685,7 +689,6 @@ public:
 	void addElement(const STPathElement &e)				{ mPath.push_back(e); }
 	void clear()										{ mPath.clear(); }
 	bool hasSeen(const uint160 &uAccountId, const uint160& uCurrencyID, const uint160& uIssuerID);
-	int getSerializeSize() const;
 //	std::string getText() const;
 	Json::Value getJson(int) const;
 
