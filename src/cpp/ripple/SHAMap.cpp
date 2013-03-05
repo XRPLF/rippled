@@ -194,7 +194,8 @@ SHAMapTreeNode* SHAMap::walkToPointer(const uint256& id)
 	{
 		int branch = inNode->selectBranch(id);
 		const uint256& nextHash = inNode->getChildHash(branch);
-		if (nextHash.isZero()) return NULL;
+		if (nextHash.isZero())
+			return NULL;
 		inNode = getNodePointer(inNode->getChildNodeID(branch), nextHash);
 		assert(inNode);
 	}

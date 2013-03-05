@@ -19,8 +19,8 @@ public:
 private:
 	uint32							mFlags;
 
-	RippleAddress					mLowID;
-	RippleAddress					mHighID;
+	uint160							mLowID;
+	uint160							mHighID;
 
 	STAmount						mLowLimit;
 	STAmount						mHighLimit;
@@ -44,8 +44,8 @@ public:
 
 	void					setViewAccount(const uint160& accountID);
 
-	const RippleAddress	getAccountID() const		{ return  mViewLowest ? mLowID : mHighID; }
-	const RippleAddress	getAccountIDPeer() const	{ return !mViewLowest ? mLowID : mHighID; }
+	const uint160&		getAccountID() const		{ return  mViewLowest ? mLowID : mHighID; }
+	const uint160&		getAccountIDPeer() const	{ return !mViewLowest ? mLowID : mHighID; }
 
 	bool				getAuth() const				{ return isSetBit(mFlags,  mViewLowest ? lsfLowAuth : lsfHighAuth); }
 	bool				getAuthPeer() const			{ return isSetBit(mFlags, !mViewLowest ? lsfLowAuth : lsfHighAuth); }

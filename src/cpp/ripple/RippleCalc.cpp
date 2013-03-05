@@ -2521,7 +2521,7 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Build direct: status: %s"
 		}
     }
 
-    cLog(lsINFO) << "rippleCalc: Paths in set: " << spsPaths.size();
+    cLog(lsTRACE) << "rippleCalc: Paths in set: " << spsPaths.size();
 
 int	iIndex	= 0;
     BOOST_FOREACH(const STPath& spPath, spsPaths)

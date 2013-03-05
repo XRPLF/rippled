@@ -205,6 +205,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 	}
 
 	LedgerEntrySet		lesActive(mLedger);
+	boost::unordered_map<uint160, AccountItems::pointer> aiMap;
 
 	SLE::pointer	sleSrc		= lesActive.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(mSrcAccountID));
 	if (!sleSrc)
@@ -285,7 +286,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			continue;
 		}
 
-		if (tLog(lsTRACE)
+		if (sLog(lsTRACE))
 		{
 			cLog(lsTRACE) << "findPaths: finish? account: " << (speEnd.mAccountID == mDstAccountID);
 			cLog(lsTRACE) << "findPaths: finish? currency: " << (speEnd.mCurrencyID == mDstAmount.getCurrency());
@@ -387,7 +388,13 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			// Last element is for non-XRP, continue by adding ripple lines and order books.
 
 			// Create new paths for each outbound account not already in the path.
-			AccountItems	rippleLines(speEnd.mAccountID, mLedger, AccountItem::pointer(new RippleState()));
+			boost::unordered_map<uint160, AccountItems::pointer>::iterator it = aiMap.find(speEnd.mAccountID);
+			if (it == aiMap.end())
+				it = aiMap.insert(std::make_pair(speEnd.mAccountID,
+					boost::make_shared<AccountItems>(
+						boost::cref(speEnd.mAccountID), boost::cref(mLedger), AccountItem::pointer(new RippleState())))).first;
+			AccountItems& rippleLines = *it->second;
+
 			SLE::pointer	sleEnd			= lesActive.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(speEnd.mAccountID));
 
 			tLog(!sleEnd, lsDEBUG)
@@ -403,7 +410,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 				{
 					RippleState*	rspEntry	= (RippleState*) item.get();
-					const uint160	uPeerID		= rspEntry->getAccountIDPeer().getAccountID();
+					const uint160	uPeerID		= rspEntry->getAccountIDPeer();
 
 					if (spPath.hasSeen(uPeerID, speEnd.mCurrencyID, uPeerID))
 					{

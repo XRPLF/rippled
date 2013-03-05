@@ -35,6 +35,7 @@ class AccountItems
 	void fillItems(const uint160& accountID, Ledger::ref ledger);
 
 public:
+	typedef boost::shared_ptr<AccountItems> pointer;
 
 	AccountItems(const uint160& accountID, Ledger::ref ledger, AccountItem::pointer ofType);
 
