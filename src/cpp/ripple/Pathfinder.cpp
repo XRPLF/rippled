@@ -310,7 +310,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			// Cursor on the dest account with correct currency and issuer.
 
 			if (bDefaultPath(spPath)) {
-				cLog(lsDEBUG) << "findPaths: dropping: default path: " << spPath.getJson(0);
+				cLog(lsTRACE) << "findPaths: dropping: default path: " << spPath.getJson(0);
 
 				bFound	= true;
 			}
@@ -415,7 +415,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					if (spPath.hasSeen(uPeerID, speEnd.mCurrencyID, uPeerID))
 					{
 						// Peer is in path already. Ignore it to avoid a loop.
-						cLog(lsDEBUG) <<
+						cLog(lsTRACE) <<
 							boost::str(boost::format("findPaths: SEEN: %s/%s -> %s/%s")
 								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
 								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
@@ -491,7 +491,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				}
 			}
 
-			tLog(!bContinued, lsDEBUG)
+			tLog(!bContinued, lsTRACE)
 				<< boost::str(boost::format("findPaths: dropping: non-XRP -> dead end"));
 		}
 	}
