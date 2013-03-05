@@ -141,7 +141,7 @@ Pathfinder::Pathfinder(Ledger::ref ledger,
 
 	theApp->getOrderBookDB().setup(mLedger);
 
-	mLoadMonitor = theApp->getJobQueue().getLoadEvent(jtPATH_FIND);
+	mLoadMonitor = theApp->getJobQueue().getLoadEvent(jtPATH_FIND, "FindPath");
 
 	// Construct the default path for later comparison.
 
@@ -205,6 +205,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 	}
 
 	LedgerEntrySet		lesActive(mLedger);
+	boost::unordered_map<uint160, AccountItems::pointer> aiMap;
 
 	SLE::pointer	sleSrc		= lesActive.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(mSrcAccountID));
 	if (!sleSrc)
@@ -285,15 +286,18 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			continue;
 		}
 
-		cLog(lsTRACE) << "findPaths: finish? account: " << (speEnd.mAccountID == mDstAccountID);
-		cLog(lsTRACE) << "findPaths: finish? currency: " << (speEnd.mCurrencyID == mDstAmount.getCurrency());
-		cLog(lsTRACE) << "findPaths: finish? issuer: "
-			<< RippleAddress::createHumanAccountID(speEnd.mIssuerID)
-			<< " / "
-			<< RippleAddress::createHumanAccountID(mDstAmount.getIssuer())
-			<< " / "
-			<< RippleAddress::createHumanAccountID(mDstAccountID);
-		cLog(lsDEBUG) << "findPaths: finish? issuer is desired: " << (speEnd.mIssuerID == mDstAmount.getIssuer());
+		if (sLog(lsTRACE))
+		{
+			cLog(lsTRACE) << "findPaths: finish? account: " << (speEnd.mAccountID == mDstAccountID);
+			cLog(lsTRACE) << "findPaths: finish? currency: " << (speEnd.mCurrencyID == mDstAmount.getCurrency());
+			cLog(lsTRACE) << "findPaths: finish? issuer: "
+				<< RippleAddress::createHumanAccountID(speEnd.mIssuerID)
+				<< " / "
+				<< RippleAddress::createHumanAccountID(mDstAmount.getIssuer())
+				<< " / "
+				<< RippleAddress::createHumanAccountID(mDstAccountID);
+			cLog(lsTRACE) << "findPaths: finish? issuer is desired: " << (speEnd.mIssuerID == mDstAmount.getIssuer());
+		}
 
 		// YYY Allows going through self.  Is this wanted?
 		if (speEnd.mAccountID == mDstAccountID						// Tail is destination account.
@@ -343,7 +347,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 		{
 			// Path is at maximum size. Don't want to add more.
 
-			cLog(lsDEBUG)
+			cLog(lsTRACE)
 				<< boost::str(boost::format("findPaths: dropping: path would exceed max steps"));
 
 			continue;
@@ -384,7 +388,13 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			// Last element is for non-XRP, continue by adding ripple lines and order books.
 
 			// Create new paths for each outbound account not already in the path.
-			AccountItems	rippleLines(speEnd.mAccountID, mLedger, AccountItem::pointer(new RippleState()));
+			boost::unordered_map<uint160, AccountItems::pointer>::iterator it = aiMap.find(speEnd.mAccountID);
+			if (it == aiMap.end())
+				it = aiMap.insert(std::make_pair(speEnd.mAccountID,
+					boost::make_shared<AccountItems>(
+						boost::cref(speEnd.mAccountID), boost::cref(mLedger), AccountItem::pointer(new RippleState())))).first;
+			AccountItems& rippleLines = *it->second;
+
 			SLE::pointer	sleEnd			= lesActive.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(speEnd.mAccountID));
 
 			tLog(!sleEnd, lsDEBUG)
@@ -400,7 +410,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 				{
 					RippleState*	rspEntry	= (RippleState*) item.get();
-					const uint160	uPeerID		= rspEntry->getAccountIDPeer().getAccountID();
+					const uint160	uPeerID		= rspEntry->getAccountIDPeer();
 
 					if (spPath.hasSeen(uPeerID, speEnd.mCurrencyID, uPeerID))
 					{

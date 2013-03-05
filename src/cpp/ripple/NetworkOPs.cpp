@@ -259,7 +259,7 @@ void NetworkOPs::runTransactionQueue()
 			return;
 
 		{
-			LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC);
+			LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC, "runTxnQ");
 
 			boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 
@@ -328,7 +328,7 @@ void NetworkOPs::runTransactionQueue()
 
 Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, stCallback callback)
 {
-	LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC);
+	LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC, "ProcessTXN");
 
 	int newFlags = theApp->getSuppression().getFlags(trans->getID());
 	if ((newFlags & SF_BAD) != 0)

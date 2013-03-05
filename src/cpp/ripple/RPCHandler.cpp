@@ -929,7 +929,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 
 			Json::Value			jPeer	= Json::Value(Json::objectValue);
 
-			jPeer["account"]		= line->getAccountIDPeer().humanAccountID();
+			jPeer["account"]		= RippleAddress::createHumanAccountID(line->getAccountIDPeer());
 			// Amount reported is positive if current account holds other account's IOUs.
 			// Amount reported is negative if other account holds current account's IOUs.
 			jPeer["balance"]		= saBalance.getText();
@@ -2879,7 +2879,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 	cLog(lsTRACE) << "COMMAND:" << strCommand;
 	cLog(lsTRACE) << "REQUEST:" << jvRequest;
 
-	LoadEvent::autoptr le(theApp->getJobQueue().getLoadEventAP(jtRPC));
+	LoadEvent::autoptr le(theApp->getJobQueue().getLoadEventAP(jtRPC, "RPC"));
 
 	mRole	= iRole;
 

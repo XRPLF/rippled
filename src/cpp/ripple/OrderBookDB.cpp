@@ -26,7 +26,7 @@ void OrderBookDB::setup(Ledger::ref ledger)
 		return;
 	mSeq = ledger->getLedgerSeq();
 
-	LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtOB_SETUP);
+	LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtOB_SETUP, "OrderBookDB::setup");
 
 	mXRPOrders.clear();
 	mIssuerMap.clear();

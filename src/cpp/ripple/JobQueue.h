@@ -66,11 +66,11 @@ public:
 	Job(JobType type, const std::string& name, uint64 index, LoadMonitor& lm, const boost::function<void(Job&)>& job)
 		: mType(type), mJobIndex(index), mJob(job), mName(name)
 	{
-		mLoadMonitor = boost::make_shared<LoadEvent>(boost::ref(lm), false, 1);
+		mLoadMonitor = boost::make_shared<LoadEvent>(boost::ref(lm), name, false, 1);
 	}
 
 	JobType getType() const				{ return mType; }
-	void doJob(void)					{ mLoadMonitor->start(); mJob(*this); mLoadMonitor->setName(mName); }
+	void doJob(void)					{ mLoadMonitor->start(); mJob(*this); mLoadMonitor->reName(mName); }
 	void rename(const std::string& n)	{ mName = n; }
 
 	bool operator<(const Job& j) const;
@@ -110,10 +110,10 @@ public:
 	void shutdown();
 	void setThreadCount(int c = 0);
 
-	LoadEvent::pointer getLoadEvent(JobType t)
-	{ return boost::make_shared<LoadEvent>(boost::ref(mJobLoads[t]), true, 1); }
-	LoadEvent::autoptr getLoadEventAP(JobType t)
-	{ return LoadEvent::autoptr(new LoadEvent(mJobLoads[t], true, 1)); }
+	LoadEvent::pointer getLoadEvent(JobType t, const std::string& name)
+	{ return boost::make_shared<LoadEvent>(boost::ref(mJobLoads[t]), name, true, 1); }
+	LoadEvent::autoptr getLoadEventAP(JobType t, const std::string& name)
+	{ return LoadEvent::autoptr(new LoadEvent(mJobLoads[t], name, true, 1)); }
 
 	int isOverloaded();
 	Json::Value getJson(int c = 0);
