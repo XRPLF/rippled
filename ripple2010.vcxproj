@@ -94,6 +94,7 @@
     <ClCompile Include="src\cpp\json\json_reader.cpp" />
     <ClCompile Include="src\cpp\json\json_value.cpp" />
     <ClCompile Include="src\cpp\json\json_writer.cpp" />
+    <ClCompile Include="src\cpp\ripple\AcceptedLedger.cpp" />
     <ClCompile Include="src\cpp\ripple\AccountItems.cpp" />
     <ClCompile Include="src\cpp\ripple\AccountSetTransactor.cpp" />
     <ClCompile Include="src\cpp\ripple\AccountState.cpp" />

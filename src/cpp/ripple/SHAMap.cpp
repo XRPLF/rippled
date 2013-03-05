@@ -23,8 +23,14 @@ DECLARE_INSTANCE(SHAMapTreeNode);
 
 void SHAMapNode::setHash() const
 {
-	std::size_t h = theApp->getNonceST() + mDepth;
+	std::size_t h = theApp->getNonceST() + (mDepth * 0x9e3779b9);
 	mHash = mNodeID.hash_combine(h);
+#if 0
+	const unsigned int *ptr = reinterpret_cast<const unsigned int *>(mNodeID.begin());
+	for (int i = (mDepth + 3) / 4; i != 0; --i)
+		boost::hash_combine(h, *ptr++);
+	mHash = h;
+#endif
 }
 
 std::size_t hash_value(const SHAMapNode& mn)
@@ -64,6 +70,7 @@ SHAMap::SHAMap(SHAMapType t, const uint256& hash) : mSeq(1), mState(smsSynching)
 SHAMap::pointer SHAMap::snapShot(bool isMutable)
 { // Return a new SHAMap that is an immutable snapshot of this one
   // Initially nodes are shared, but CoW is forced on both ledgers
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMap::pointer ret = boost::make_shared<SHAMap>(mType);
 	SHAMap& newMap = *ret;
 	newMap.mSeq = ++mSeq;
@@ -87,13 +94,12 @@ std::stack<SHAMapTreeNode::pointer> SHAMap::getStack(const uint256& id, bool inc
 		int branch = node->selectBranch(id);
 		assert(branch >= 0);
 
-		uint256 hash = node->getChildHash(branch);
-		if (hash.isZero())
+		if (node->isEmptyBranch(branch))
 			return stack;
 
 		try
 		{
-			node = getNode(node->getChildNodeID(branch), hash, false);
+			node = getNode(node->getChildNodeID(branch), node->getChildHash(branch), false);
 		}
 		catch (SHAMapMissingNode& mn)
 		{
@@ -141,13 +147,11 @@ void SHAMap::dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& 
 	}
 }
 
-static const SHAMapTreeNode::pointer no_node;
-
-SHAMapTreeNode::ref SHAMap::checkCacheNode(const SHAMapNode& iNode)
+SHAMapTreeNode::pointer SHAMap::checkCacheNode(const SHAMapNode& iNode)
 {
 	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.find(iNode);
 	if (it == mTNByID.end())
-		return no_node;
+		return SHAMapTreeNode::pointer();
 	it->second->touch(mSeq);
 	return it->second;
 }
@@ -160,13 +164,13 @@ SHAMapTreeNode::pointer SHAMap::walkTo(const uint256& id, bool modify)
 	while (!inNode->isLeaf())
 	{
 		int branch = inNode->selectBranch(id);
+
 		if (inNode->isEmptyBranch(branch))
 			return inNode;
-		uint256 childHash = inNode->getChildHash(branch);
 
 		try
 		{
-			inNode = getNode(inNode->getChildNodeID(branch), childHash, false);
+			inNode = getNode(inNode->getChildNodeID(branch), inNode->getChildHash(branch), false);
 		}
 		catch (SHAMapMissingNode& mn)
 		{
@@ -175,7 +179,7 @@ SHAMapTreeNode::pointer SHAMap::walkTo(const uint256& id, bool modify)
 		}
 	}
 	if (inNode->getTag() != id)
-		return no_node;
+		return SHAMapTreeNode::pointer();
 	if (modify)
 		returnNode(inNode, true);
 	return inNode;
@@ -187,9 +191,10 @@ SHAMapTreeNode* SHAMap::walkToPointer(const uint256& id)
 	while (!inNode->isLeaf())
 	{
 		int branch = inNode->selectBranch(id);
-		const uint256& nextHash = inNode->getChildHash(branch);
-		if (nextHash.isZero()) return NULL;
-		inNode = getNodePointer(inNode->getChildNodeID(branch), nextHash);
+		if (inNode->isEmptyBranch(branch))
+			return NULL;
+
+		inNode = getNodePointer(inNode->getChildNodeID(branch), inNode->getChildHash(branch));
 		assert(inNode);
 	}
 	return (inNode->getTag() == id) ? inNode : NULL;
@@ -207,7 +212,6 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& id, const uint256& has
 			std::cerr << "ID: " << id << std::endl;
 			std::cerr << "TgtHash " << hash << std::endl;
 			std::cerr << "NodHash " << node->getNodeHash() << std::endl;
-			dump();
 			throw std::runtime_error("invalid node");
 		}
 #endif
@@ -484,6 +488,17 @@ SHAMapItem::pointer SHAMap::peekItem(const uint256& id, SHAMapTreeNode::TNType& 
 	type = leaf->getType();
 	return leaf->peekItem();
 }
+
+SHAMapItem::pointer SHAMap::peekItem(const uint256& id, uint256& hash)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	SHAMapTreeNode* leaf = walkToPointer(id);
+	if (!leaf)
+		return no_item;
+	hash = leaf->getNodeHash();
+	return leaf->peekItem();
+}
+
 
 bool SHAMap::hasItem(const uint256& id)
 { // does the tree have an item with this ID
@@ -852,8 +867,9 @@ bool SHAMap::getPath(const uint256& index, std::vector< std::vector<unsigned cha
 }
 
 void SHAMap::dropCache()
-{ // CAUTION: Changes can be lost
+{
 	boost::recursive_mutex::scoped_lock sl(mLock);
+	assert(mState == smsImmutable);
 
 	mTNByID.clear();
 	if (root)

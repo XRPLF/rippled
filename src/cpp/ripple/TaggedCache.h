@@ -11,6 +11,7 @@
 
 #include "Log.h"
 extern LogPartition TaggedCachePartition;
+extern int upTime();
 
 // This class implements a cache and a map. The cache keeps objects alive
 // in the map. The map allows multiple code paths that reference objects
@@ -36,15 +37,16 @@ protected:
 	class cache_entry
 	{
 	public:
-		time_t			last_use;
+		int				last_use;
 		data_ptr		ptr;
 		weak_data_ptr	weak_ptr;
 
-		cache_entry(time_t l, const data_ptr& d) : last_use(l), ptr(d), weak_ptr(d) { ; }
+		cache_entry(int l, const data_ptr& d) : last_use(l), ptr(d), weak_ptr(d) { ; }
+		bool isWeak()		{ return !ptr; }
 		bool isCached()		{ return !!ptr; }
 		bool isExpired()	{ return weak_ptr.expired(); }
 		data_ptr lock()		{ return weak_ptr.lock(); }
-		void touch()		{ last_use = time(NULL); }
+		void touch()		{ last_use = upTime(); }
 	};
 
 	typedef std::pair<key_type, cache_entry>				cache_pair;
@@ -54,16 +56,16 @@ protected:
 	mutable boost::recursive_mutex mLock;
 
 	std::string	mName;			// Used for logging
-	unsigned int mTargetSize;	// Desired number of cache entries (0 = ignore)
+	int			mTargetSize;	// Desired number of cache entries (0 = ignore)
 	int			mTargetAge;		// Desired maximum cache age
 	int			mCacheCount;	// Number of items cached
 
 	cache_type	mCache;			// Hold strong reference to recent objects
-	time_t		mLastSweep;
+	int			mLastSweep;
 
 public:
 	TaggedCache(const char *name, int size, int age)
-		: mName(name), mTargetSize(size), mTargetAge(age), mCacheCount(0), mLastSweep(time(NULL)) { ; }
+		: mName(name), mTargetSize(size), mTargetAge(age), mCacheCount(0), mLastSweep(upTime()) { ; }
 
 	int getTargetSize() const;
 	int getTargetAge() const;
@@ -96,6 +98,8 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::setTa
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	mTargetSize = s;
+	if (s > 0)
+		mCache.rehash((s + (s >> 2)) / mCache.max_load_factor() + 1);
 	Log(lsDEBUG, TaggedCachePartition) << mName << " target size set to " << s;
 }
 
@@ -128,8 +132,8 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	time_t mLastSweep = time(NULL);
-	time_t target = mLastSweep - mTargetAge;
+	int mLastSweep = upTime();
+	int target = mLastSweep - mTargetAge;
 	int cacheRemovals = 0, mapRemovals = 0, cc = 0;
 
 	if ((mTargetSize != 0) && (mCache.size() > mTargetSize))
@@ -145,36 +149,33 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 	cache_iterator cit = mCache.begin();
 	while (cit != mCache.end())
 	{
-		if (!cit->second.ptr)
+		if (cit->second.isWeak())
 		{ // weak
-			if (cit->second.weak_ptr.expired())
+			if (cit->second.isExpired())
 			{
 				++mapRemovals;
-				mCache.erase(cit++);
+				cit = mCache.erase(cit);
 			}
 			else
 				++cit;
 		}
-		else
-		{ // strong
-			if (cit->second.last_use < target)
-			{ // expired
-				--mCacheCount;
-				++cacheRemovals;
-				cit->second.ptr.reset();
-				if (cit->second.weak_ptr.expired())
-				{
-					++mapRemovals;
-					mCache.erase(cit++);
-				}
-				else
-					++cit;
-			}
-			else
+		else if (cit->second.last_use < target)
+		{ // strong, expired
+			--mCacheCount;
+			++cacheRemovals;
+			cit->second.ptr.reset();
+			if (cit->second.isExpired())
 			{
-				++cc;
-				++cit;
+				++mapRemovals;
+				cit = mCache.erase(cit);
 			}
+			else // remains weakly cached
+				++cit;
+		}
+		else
+		{ // strong, not expired
+			++cc;
+			++cit;
 		}
 	}
 
@@ -243,7 +244,7 @@ bool TaggedCache<c_Key, c_Data>::canonicalize(const key_type& key, boost::shared
 	cache_iterator cit = mCache.find(key);
 	if (cit == mCache.end())
 	{
-		mCache.insert(cache_pair(key, cache_entry(time(NULL), data)));
+		mCache.insert(cache_pair(key, cache_entry(upTime(), data)));
 		++mCacheCount;
 		return false;
 	}

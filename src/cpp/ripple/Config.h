@@ -50,6 +50,9 @@ const int SYSTEM_WEBSOCKET_PUBLIC_PORT	= 6563;	// XXX Going away.
 // Might connect with fewer for testing.
 #define	DEFAULT_PEER_CONNECT_LOW_WATER	4
 
+// Grows exponentially worse.
+#define	DEFAULT_PATH_SEARCH_SIZE		5
+
 enum SizedItemName
 {
 	siSweepInterval,
@@ -60,6 +63,8 @@ enum SizedItemName
 	siLedgerSize,
 	siLedgerAge,
 	siLedgerFetch,
+	siLineCacheSize,
+	siLineCacheAge
 };
 
 struct SizedItem
@@ -142,6 +147,9 @@ public:
 	bool						RPC_ALLOW_REMOTE;
 	Json::Value					RPC_STARTUP;
 
+	// Path searching
+	int							PATH_SEARCH_SIZE;
+
 	// Validation
 	RippleAddress				VALIDATION_SEED, VALIDATION_PUB, VALIDATION_PRIV;
 
@@ -170,6 +178,9 @@ public:
 	uint32						SIGN_PROPOSAL;
 
 	boost::asio::ssl::context	SSL_CONTEXT;			// Generic SSL context.
+	bool						SSL_VERIFY;
+	std::string					SSL_VERIFY_FILE;
+	std::string					SSL_VERIFY_DIR;
 
 	Config();
 

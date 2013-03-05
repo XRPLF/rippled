@@ -31,7 +31,7 @@ class TransactionFormat
 public:
 	std::string					t_name;
 	TransactionType				t_type;
-	std::vector<SOElement::ref>	elements;
+	SOTemplate					elements;
 
 	static std::map<int, TransactionFormat*>			byType;
     static std::map<std::string, TransactionFormat*>	byName;
@@ -43,7 +43,7 @@ public:
     }
     TransactionFormat& operator<<(const SOElement& el)
     {
-	    elements.push_back(new SOElement(el));
+	    elements.push_back(el);
 	    return *this;
     }
 
@@ -68,7 +68,8 @@ const uint32 tfAccountSetMask		= ~(tfRequireDestTag|tfOptionalDestTag|tfRequireA
 
 // OfferCreate flags:
 const uint32 tfPassive				= 0x00010000;
-const uint32 tfOfferCreateMask		= ~(tfPassive);
+const uint32 tfMarket				= 0x00020000;
+const uint32 tfOfferCreateMask		= ~(tfPassive|tfMarket);
 
 // Payment flags:
 const uint32 tfNoRippleDirect		= 0x00010000;

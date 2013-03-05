@@ -188,6 +188,10 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq) : SHAMapN
 		mItem = boost::make_shared<SHAMapItem>(*node.mItem);
 	else
 		memcpy(mHashes, node.mHashes, sizeof(mHashes));
+
+	for (int i = 0; i < 16; ++i)
+		if (mHashes[i].isNonZero())
+			mIsBranch.set(i);
 }
 
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::ref item, TNType type, uint32 seq) :
@@ -236,7 +240,11 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 			if (len != 512)
 				throw std::runtime_error("invalid FI node");
 			for (int i = 0; i < 16; ++i)
+			{
 				s.get256(mHashes[i], i * 32);
+				if (mHashes[i].isNonZero())
+					mIsBranch.set(i);
+			}
 			mType = tnINNER;
 		}
 		else if (type == 3)
@@ -248,6 +256,9 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 				if ((pos < 0) || (pos >= 16)) throw std::runtime_error("invalid CI node");
 				s.get256(mHashes[pos], i * 33);
 			}
+			for (int i = 0; i < 16; ++i)
+				if (mHashes[i].isNonZero())
+					mIsBranch.set(i);
 			mType = tnINNER;
 		}
 		else if (type == 4)
@@ -301,7 +312,11 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 			if (s.getLength() != 512)
 				throw std::runtime_error("invalid PIN node");
 			for (int i = 0; i < 16; ++i)
+			{
 				s.get256(mHashes[i] , i * 32);
+				if (mHashes[i].isNonZero())
+					mIsBranch.set(i);
+			}
 			mType = tnINNER;
 		}
 		else if (prefix == sHP_TransactionNode)
@@ -345,14 +360,7 @@ bool SHAMapTreeNode::updateHash()
 
 	if (mType == tnINNER)
 	{
-		bool empty = true;
-		for (int i = 0; i < 16; ++i)
-			if (mHashes[i].isNonZero())
-			{
-				empty = false;
-				break;
-			}
-		if(!empty)
+		if(mIsBranch.any())
 		{
 			nh = Serializer::getPrefixHash(sHP_InnerNode, reinterpret_cast<unsigned char *>(mHashes), sizeof(mHashes));
 #ifdef PARANOID
@@ -414,10 +422,10 @@ void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 		}
 		else
 		{
-			if (getBranchCount() < 12)
+			if (mIsBranch.count() < 12)
 			{ // compressed node
 				for (int i = 0; i < 16; ++i)
-					if (mHashes[i].isNonZero())
+					if (mIsBranch.test(i))
 					{
 						s.add256(mHashes[i]);
 						s.add8(i);
@@ -497,24 +505,19 @@ SHAMapItem::pointer SHAMapTreeNode::getItem() const
 
 bool SHAMapTreeNode::isEmpty() const
 {
-	assert(isInner());
-	for (int i = 0; i < 16; ++i)
-		if (mHashes[i].isNonZero()) return false;
-	return true;
+	return mIsBranch.none();
 }
 
 int SHAMapTreeNode::getBranchCount() const
 {
 	assert(isInner());
-	int ret = 0;
-	for (int i = 0; i < 16; ++i)
-		if (mHashes[i].isNonZero()) ++ret;
-	return ret;
+	return mIsBranch.count();
 }
 
 void SHAMapTreeNode::makeInner()
 {
 	mItem.reset();
+	mIsBranch.reset();
 	memset(mHashes, 0, sizeof(mHashes));
 	mType = tnINNER;
 	mHash.zero();
@@ -571,6 +574,7 @@ bool SHAMapTreeNode::setChildHash(int m, const uint256 &hash)
 	if(mHashes[m] == hash)
 		return false;
 	mHashes[m] = hash;
+	mIsBranch.set(m, hash.isNonZero());
 	return updateHash();
 }
 

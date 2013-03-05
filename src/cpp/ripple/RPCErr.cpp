@@ -19,12 +19,16 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 		{ rpcACT_MALFORMED,			"actMalformed",		"Account malformed."									},
 		{ rpcACT_NOT_FOUND,			"actNotFound",		"Account not found."									},
 		{ rpcBAD_BLOB,				"badBlob",			"Blob must be a non-empty hex string."					},
+		{ rpcBAD_ISSUER,			"badIssuer",		"Issuer account malformed."								},
+		{ rpcBAD_MARKET,			"badMarket",		"No such market."										},
+		{ rpcBAD_SECRET,			"badSecret",		"Secret does not match account."						},
 		{ rpcBAD_SEED,				"badSeed",			"Disallowed seed."										},
 		{ rpcBAD_SYNTAX,			"badSyntax",		"Syntax error."											},
 		{ rpcCOMMAND_MISSING,		"commandMissing",	"Missing command entry."								},
 		{ rpcDST_ACT_MALFORMED,		"dstActMalformed",	"Destination account is malformed."						},
-		{ rpcDST_ACT_MISSING,		"dstActMissing",	"Destination account does not exists."					},
+		{ rpcDST_ACT_MISSING,		"dstActMissing",	"Destination account does not exist."					},
 		{ rpcDST_AMT_MALFORMED,		"dstAmtMalformed",	"Destination amount/currency/issuer is malformed."		},
+		{ rpcDST_ISR_MALFORMED,		"dstIsrMalformed",	"Destination issuer is malformed."						},
 		{ rpcFORBIDDEN,				"forbidden",		"Bad credentials."										},
 		{ rpcFAIL_GEN_DECRPYT,		"failGenDecrypt",	"Failed to decrypt generator."							},
 		{ rpcGETS_ACT_MALFORMED,	"getsActMalformed",	"Gets account malformed."								},
@@ -59,7 +63,7 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 		{ rpcQUALITY_MALFORMED,		"qualityMalformed",	"Quality malformed."									},
 		{ rpcSRC_ACT_MALFORMED,		"srcActMalformed",	"Source account is malformed."							},
 		{ rpcSRC_ACT_MISSING,		"srcActMissing",	"Source account not provided."							},
-		{ rpcSRC_ACT_NOT_FOUND,		"srcActNotFound",	"Source amount not found."								},
+		{ rpcSRC_ACT_NOT_FOUND,		"srcActNotFound",	"Source account not found."								},
 		{ rpcSRC_AMT_MALFORMED,		"srcAmtMalformed",	"Source amount/currency/issuer is malformed."			},
 		{ rpcSRC_CUR_MALFORMED,		"srcCurMalformed",	"Source currency is malformed."							},
 		{ rpcSRC_ISR_MALFORMED,		"srcIsrMalformed",	"Source issuer is malformed."							},
@@ -85,6 +89,11 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 	}
 
 	return jvResult;
+}
+
+bool isRpcError(Json::Value jvResult)
+{
+	return jvResult.isObject() && jvResult.isMember("error");
 }
 
 // vim:ts=4

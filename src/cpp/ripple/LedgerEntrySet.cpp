@@ -107,6 +107,7 @@ LedgerEntryAction LedgerEntrySet::hasEntry(const uint256& index) const
 
 void LedgerEntrySet::entryCache(SLE::ref sle)
 {
+	assert(sle->isMutable());
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
@@ -128,6 +129,7 @@ void LedgerEntrySet::entryCache(SLE::ref sle)
 
 void LedgerEntrySet::entryCreate(SLE::ref sle)
 {
+	assert(sle->isMutable());
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
@@ -161,6 +163,7 @@ void LedgerEntrySet::entryCreate(SLE::ref sle)
 
 void LedgerEntrySet::entryModify(SLE::ref sle)
 {
+	assert(sle->isMutable());
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
@@ -193,6 +196,7 @@ void LedgerEntrySet::entryModify(SLE::ref sle)
 
 void LedgerEntrySet::entryDelete(SLE::ref sle)
 {
+	assert(sle->isMutable());
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
@@ -399,7 +403,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result, uint32 index)
 		if (type == &sfGeneric)
 			continue;
 
-		SLE::pointer origNode = mLedger->getSLE(it.first);
+		SLE::pointer origNode = mLedger->getSLEi(it.first);
 		SLE::pointer curNode = it.second.mEntry;
 
 		if ((type == &sfModifiedNode) && (*curNode == *origNode))
@@ -893,7 +897,7 @@ void LedgerEntrySet::ownerCountAdjust(const uint160& uOwnerID, int iAmount, SLE:
 		sleRoot->setFieldU32(sfOwnerCount, uOwnerCount+iAmount);
 }
 
-TER LedgerEntrySet::offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID)
+TER LedgerEntrySet::offerDelete(SLE::ref sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID)
 {
 	bool	bOwnerNode	= sleOffer->isFieldPresent(sfOwnerNode);	// Detect legacy dirs.
 	uint64	uOwnerNode	= sleOffer->getFieldU64(sfOwnerNode);
@@ -1021,7 +1025,7 @@ uint32 LedgerEntrySet::rippleQualityIn(const uint160& uToAccountID, const uint16
 		}
 	}
 
-	cLog(lsINFO) << boost::str(boost::format("rippleQuality: %s uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQuality=%f")
+	cLog(lsTRACE) << boost::str(boost::format("rippleQuality: %s uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQuality=%f")
 		% (sfLow == sfLowQualityIn ? "in" : "out")
 		% RippleAddress::createHumanAccountID(uToAccountID)
 		% RippleAddress::createHumanAccountID(uFromAccountID)
@@ -1062,6 +1066,8 @@ STAmount LedgerEntrySet::rippleHolds(const uint160& uAccountID, const uint160& u
 	return saBalance;
 }
 
+// Returns the amount an account can spend without going into debt.
+//
 // <-- saAmount: amount of uCurrencyID held by uAccountID. May be negative.
 STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID)
 {
@@ -1072,25 +1078,31 @@ STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& 
 		SLE::pointer	sleAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uAccountID));
 		uint64			uReserve	= mLedger->getReserve(sleAccount->getFieldU32(sfOwnerCount));
 
-		saAmount	= sleAccount->getFieldAmount(sfBalance)-uReserve;
+		STAmount		saBalance	= sleAccount->getFieldAmount(sfBalance);
 
-		if (saAmount < uReserve)
+		if (saBalance < uReserve)
 		{
 			saAmount.zero();
 		}
 		else
 		{
-			saAmount	-= uReserve;
+			saAmount	= saBalance-uReserve;
 		}
+
+		cLog(lsINFO) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s saBalance=%s uReserve=%d")
+			% RippleAddress::createHumanAccountID(uAccountID)
+			% saAmount.getFullText()
+			% saBalance.getFullText()
+			% uReserve);
 	}
 	else
 	{
 		saAmount	= rippleHolds(uAccountID, uCurrencyID, uIssuerID);
-	}
 
-	cLog(lsINFO) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s")
-		% RippleAddress::createHumanAccountID(uAccountID)
-		% saAmount.getFullText());
+		cLog(lsINFO) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s")
+			% RippleAddress::createHumanAccountID(uAccountID)
+			% saAmount.getFullText());
+	}
 
 	return saAmount;
 }
@@ -1135,7 +1147,7 @@ STAmount LedgerEntrySet::rippleTransferFee(const uint160& uSenderID, const uint1
 
 		if (QUALITY_ONE != uTransitRate)
 		{
-			STAmount	saTransitRate(CURRENCY_ONE, ACCOUNT_ONE, uTransitRate, -9);
+			STAmount	saTransitRate(CURRENCY_ONE, ACCOUNT_ONE, static_cast<uint64>(uTransitRate), -9);
 
 			STAmount	saTransferTotal	= STAmount::multiply(saAmount, saTransitRate, saAmount.getCurrency(), saAmount.getIssuer());
 			STAmount	saTransferFee	= saTransferTotal-saAmount;

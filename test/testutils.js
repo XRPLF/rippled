@@ -285,12 +285,13 @@ var verify_balance = function (remote, src, amount_json, callback) {
   if (amount_req.is_native()) {
     remote.request_account_balance(src, 'CURRENT')
       .once('account_balance', function (amount_act) {
-          if (!amount_act.equals(amount_req))
+          if (!amount_act.equals(amount_req, true)) {
             console.log("verify_balance: failed: %s / %s",
               amount_act.to_text_full(),
               amount_req.to_text_full());
+          }
 
-          callback(!amount_act.equals(amount_req));
+          callback(!amount_act.equals(amount_req, true));
         })
       .request();
   }
@@ -305,11 +306,15 @@ var verify_balance = function (remote, src, amount_json, callback) {
 
           var account_balance = Amount.from_json(m.account_balance);
 
-          if (!account_balance.equals(amount_req)) {
-            console.log("verify_balance: failed: %s vs %s / %s: %s", src, account_balance.to_text_full(), amount_req.to_text_full(), account_balance.not_equals_why(amount_req));
+          if (!account_balance.equals(amount_req, true)) {
+            console.log("verify_balance: failed: %s vs %s / %s: %s",
+                        src,
+                        account_balance.to_text_full(),
+                        amount_req.to_text_full(),
+                        account_balance.not_equals_why(amount_req, true));
           }
 
-          callback(!account_balance.equals(amount_req));
+          callback(!account_balance.equals(amount_req, true));
         })
       .request();
   }
@@ -347,8 +352,8 @@ var verify_offer = function (remote, owner, seq, taker_pays, taker_gets, callbac
   remote.request_ledger_entry('offer')
     .offer_id(owner, seq)
     .on('success', function (m) {
-        var wrong   = (!Amount.from_json(m.node.TakerGets).equals(Amount.from_json(taker_gets))
-          || !Amount.from_json(m.node.TakerPays).equals(Amount.from_json(taker_pays)));
+        var wrong = !Amount.from_json(m.node.TakerGets).equals(Amount.from_json(taker_gets), true)
+          || !Amount.from_json(m.node.TakerPays).equals(Amount.from_json(taker_pays), true);
 
         if (wrong)
           console.log("verify_offer: failed: %s", JSON.stringify(m));

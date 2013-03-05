@@ -32,7 +32,7 @@ protected:
 	uint256 mHash;
 	int mTimerInterval, mTimeouts;
 	bool mComplete, mFailed, mProgress, mAggressive;
-	time_t mLastAction;
+	int mLastAction;
 
 	boost::recursive_mutex					mLock;
 	boost::asio::deadline_timer				mTimer;
@@ -53,8 +53,8 @@ public:
 	bool isActive();
 	void progress()						{ mProgress = true; mAggressive = false; }
 	bool isProgress()					{ return mProgress; }
-	void touch()						{ mLastAction = time(NULL); }
-	time_t getLastAction()				{ return mLastAction; }
+	void touch()						{ mLastAction = upTime(); }
+	int getLastAction()					{ return mLastAction; }
 
 	void peerHas(Peer::ref);
 	void badPeer(Peer::ref);
@@ -149,7 +149,7 @@ public:
 	void dropLedger(const uint256& ledgerHash);
 	SMAddNode gotLedgerData(ripple::TMLedgerData& packet, Peer::ref);
 
-	int getFetchCount();
+	int getFetchCount(int& timeoutCount);
 	void logFailure(const uint256& h)	{ mRecentFailures.add(h); }
 	bool isFailure(const uint256& h)	{ return mRecentFailures.isPresent(h, false); }
 

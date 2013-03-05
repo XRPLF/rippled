@@ -16,6 +16,10 @@
 namespace po = boost::program_options;
 
 extern bool AddSystemEntropy();
+extern void TFInit();
+extern void LEFInit();
+extern void SVFInit();
+
 using namespace std;
 using namespace boost::unit_test;
 
@@ -51,7 +55,6 @@ void startServer()
 	theApp->run();					// Blocks till we get a stop RPC.
 }
 
-
 bool init_unit_test()
 {
 	theApp = new Application();
@@ -66,33 +69,30 @@ void printHelp(const po::options_description& desc)
 	cerr << desc << endl;
 
 	cerr << "Commands: " << endl;
-	cerr << "     account_domain_set <seed> <paying_account> [<domain>]" << endl;
-	cerr << "     account_email_set <seed> <paying_account> [<email_address>]" << endl;
-	cerr << "     account_lines <account>|<nickname>|<account_public_key> [<index>]" << endl;
-	cerr << "     account_offers <account>|<nickname>|<account_public_key> [<index>]" << endl;
 	cerr << "     account_info <account>|<nickname>" << endl;
 	cerr << "     account_info <seed>|<pass_phrase>|<key> [<index>]" << endl;
-	cerr << "     account_message_set <seed> <paying_account> <pub_key>" << endl;
-	cerr << "     account_publish_set <seed> <paying_account> <hash> <size>" << endl;
-	cerr << "     account_rate_set <seed> <paying_account> <rate>" << endl;
-	cerr << "     account_wallet_set <seed> <paying_account> [<wallet_hash>]" << endl;
+	cerr << "     account_lines <account>|<nickname>|<account_public_key> [<index>]" << endl;
+	cerr << "     account_offers <account>|<nickname>|<account_public_key> [<index>]" << endl;
+	cerr << "     account_tx <account>|<nickname>|<account_public_key> <ledger>|(<minledger> <maxledger>)" << endl;
+	cerr << "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> [<limit> [<proof> [<marker>]]]]]" << endl;
 	cerr << "     connect <ip> [<port>]" << endl;
+	cerr << "     consensus_info" << endl;
+#if ENABLE_INSECURE
 	cerr << "     data_delete <key>" << endl;
 	cerr << "     data_fetch <key>" << endl;
 	cerr << "     data_store <key> <value>" << endl;
+#endif
+	cerr << "     get_counts" << endl;
 	cerr << "     ledger [<id>|current|lastclosed] [full]" << endl;
+	cerr << "     ledger_accept" << endl;
+	cerr << "     ledger_closed" << endl;
+	cerr << "     ledger_current" << endl;
+	cerr << "     ledger_header <ledger>" << endl;
 	cerr << "     logrotate " << endl;
-	cerr << "     nickname_info <nickname>" << endl;
-	cerr << "     nickname_set <seed> <paying_account> <nickname> [<offer_minimum>] [<authorization>]" << endl;
-	cerr << "     offer_create <seed> <paying_account> <taker_pays_amount> <taker_pays_currency> <taker_pays_issuer> <takers_gets_amount> <takers_gets_currency> <takers_gets_issuer> <expires> [passive]" << endl;
-	cerr << "     offer_cancel <seed> <paying_account> <sequence>" << endl;
-	cerr << "     password_fund <seed> <paying_account> [<account>]" << endl;
-	cerr << "     password_set <master_seed> <regular_seed> [<account>]" << endl;
 	cerr << "     peers" << endl;
 	cerr << "     random" << endl;
 	cerr << "     ripple ..." << endl;
-	cerr << "     ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<quality_in>] [<quality_out>]" << endl;
-	cerr << "     send <seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;
+//	cerr << "     send <seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;
 	cerr << "     stop" << endl;
 	cerr << "     tx <id>" << endl;
 	cerr << "     unl_add <domain>|<public> [<comment>]" << endl;
@@ -108,6 +108,19 @@ void printHelp(const po::options_description& desc)
 	cerr << "     wallet_claim <master_seed> <regular_seed> [<source_tag>] [<account_annotation>]" << endl;
 	cerr << "     wallet_seed [<seed>|<passphrase>|<passkey>]" << endl;
 	cerr << "     wallet_propose [<passphrase>]" << endl;
+
+// Transaction helpers (that were removed):
+//	cerr << "     account_domain_set <seed> <paying_account> [<domain>]" << endl;
+//	cerr << "     account_email_set <seed> <paying_account> [<email_address>]" << endl;
+//	cerr << "     account_rate_set <seed> <paying_account> <rate>" << endl;
+//	cerr << "     account_wallet_set <seed> <paying_account> [<wallet_hash>]" << endl;
+//	cerr << "     nickname_info <nickname>" << endl;
+//	cerr << "     nickname_set <seed> <paying_account> <nickname> [<offer_minimum>] [<authorization>]" << endl;
+//	cerr << "     offer_create <seed> <paying_account> <taker_pays_amount> <taker_pays_currency> <taker_pays_issuer> <takers_gets_amount> <takers_gets_currency> <takers_gets_issuer> <expires> [passive]" << endl;
+//	cerr << "     offer_cancel <seed> <paying_account> <sequence>" << endl;
+//	cerr << "     password_fund <seed> <paying_account> [<account>]" << endl;
+//	cerr << "     password_set <master_seed> <regular_seed> [<account>]" << endl;
+//	cerr << "     trust_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<quality_in>] [<quality_out>]" << endl;
 }
 
 int main(int argc, char* argv[])
@@ -179,6 +192,10 @@ int main(int argc, char* argv[])
 
 	InstanceType::multiThread();
 
+	TFInit();
+	LEFInit();
+	SVFInit();
+
 	if (vm.count("unittest"))
 	{
 		unit_test_main(init_unit_test, argc, argv);
@@ -210,7 +227,12 @@ int main(int argc, char* argv[])
 	{
 		theConfig.START_UP = Config::LOAD;
 	}
-	else if (vm.count("net")) theConfig.START_UP = Config::NETWORK;
+	else if (vm.count("net"))
+	{
+		theConfig.START_UP = Config::NETWORK;
+		if (theConfig.VALIDATION_QUORUM < 2)
+			theConfig.VALIDATION_QUORUM = 2;
+	}
 
 	if (iResult)
 	{

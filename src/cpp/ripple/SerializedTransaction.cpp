@@ -190,12 +190,19 @@ void SerializedTransaction::setSourceAccount(const RippleAddress& naSource)
 	setFieldAccount(sfAccount, naSource);
 }
 
-Json::Value SerializedTransaction::getJson(int options) const
+Json::Value SerializedTransaction::getJson(int options, bool binary) const
 {
+	if (binary)
+	{
+		Json::Value ret;
+		Serializer s = STObject::getSerializer();
+		ret["tx"] = strHex(s.peekData());
+		ret["hash"] = getTransactionID().GetHex();
+		return ret;
+	}
+
 	Json::Value ret = STObject::getJson(0);
-
 	ret["hash"] = getTransactionID().GetHex();
-
 	return ret;
 }
 
@@ -226,7 +233,7 @@ std::string SerializedTransaction::getSQLInsertReplaceHeader()
 
 std::string SerializedTransaction::getMetaSQLInsertHeader()
 {
-	return "INSERT INTO Transactions " + getMetaSQLValueHeader() + " VALUES ";
+	return "INSERT OR REPLACE INTO Transactions " + getMetaSQLValueHeader() + " VALUES ";
 }
 
 std::string SerializedTransaction::getSQL(uint32 inLedger, char status) const

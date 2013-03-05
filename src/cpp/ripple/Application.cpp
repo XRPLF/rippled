@@ -1,5 +1,6 @@
 
 #include "Application.h"
+#include "AcceptedLedger.h"
 #include "Config.h"
 #include "PeerDoor.h"
 #include "RPCDoor.h"
@@ -25,7 +26,7 @@ Application* theApp = NULL;
 
 DatabaseCon::DatabaseCon(const std::string& strName, const char *initStrings[], int initCount)
 {
-	boost::filesystem::path	pPath	= theConfig.DATA_DIR / strName;
+	boost::filesystem::path	pPath	= theConfig.RUN_STANDALONE ? "" : theConfig.DATA_DIR / strName;
 
 	mDatabase = new SqliteDatabase(pPath.string().c_str());
 	mDatabase->connect();
@@ -41,17 +42,14 @@ DatabaseCon::~DatabaseCon()
 
 Application::Application() :
 	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService), mNetOps(mIOService, &mLedgerMaster),
-	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300),
+	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300), mSLECache("LedgerEntryCache", 4096, 120),
 	mSNTPClient(mAuxService), mRPCHandler(&mNetOps), mFeeTrack(),
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
-	mSweepTimer(mAuxService)
+	mSweepTimer(mAuxService), mShutdown(false)
 {
 	getRand(mNonce256.begin(), mNonce256.size());
 	getRand(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
-	mJobQueue.setThreadCount();
-	mSweepTimer.expires_from_now(boost::posix_time::seconds(10));
-	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
 }
 
 extern const char *RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[], *NetNodeDBInit[];
@@ -61,6 +59,7 @@ bool Instance::running = true;
 void Application::stop()
 {
 	cLog(lsINFO) << "Received shutdown request";
+	mShutdown = true;
 	mIOService.stop();
 	mHashedObjectStore.bulkWrite();
 	mValidations.flush();
@@ -87,6 +86,11 @@ void sigIntHandler(int)
 
 void Application::setup()
 {
+	mJobQueue.setThreadCount();
+	mSweepTimer.expires_from_now(boost::posix_time::seconds(10));
+	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
+	mLoadMgr.init();
+
 #ifndef WIN32
 #ifdef SIGINT
 	if (!theConfig.RUN_STANDALONE)
@@ -147,6 +151,8 @@ void Application::setup()
 	else
 		startNewLedger();
 
+	mOrderBookDB.setup(theApp->getLedgerMaster().getCurrentLedger());
+
 	//
 	// Begin validation and ip maintenance.
 	// - Wallet maintains local information: including identity and network connection persistence information.
@@ -162,6 +168,7 @@ void Application::setup()
 	mValidations.tune(theConfig.getSize(siValidationsSize), theConfig.getSize(siValidationsAge));
 	mHashedObjectStore.tune(theConfig.getSize(siNodeCacheSize), theConfig.getSize(siNodeCacheAge));
 	mLedgerMaster.tune(theConfig.getSize(siLedgerSize), theConfig.getSize(siLedgerAge));
+	mLedgerMaster.setMinValidations(theConfig.VALIDATION_QUORUM);
 
 	//
 	// Allow peer connections.
@@ -285,9 +292,9 @@ void Application::sweep()
 {
 
 	boost::filesystem::space_info space = boost::filesystem::space(theConfig.DATA_DIR);
-	if (space.available < (128 * 1024 * 1024))
+	if (space.available < (512 * 1024 * 1024))
 	{
-		cLog(lsFATAL) << "Remaining free disk space is less than 128MB";
+		cLog(lsFATAL) << "Remaining free disk space is less than 512MB";
 		theApp->stop();
 	}
 
@@ -297,6 +304,8 @@ void Application::sweep()
 	mTempNodeCache.sweep();
 	mValidations.sweep();
 	getMasterLedgerAcquire().sweep();
+	mSLECache.sweep();
+	AcceptedLedger::sweep();
 	mSweepTimer.expires_from_now(boost::posix_time::seconds(theConfig.getSize(siSweepInterval)));
 	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
 }

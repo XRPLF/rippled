@@ -61,11 +61,11 @@ public:
 		}
 	}
 
-	void send(connection_ptr cpClient, const std::string& strMessage)
+	void send(connection_ptr cpClient, const std::string& strMessage, bool broadcast)
 	{
 		try
 		{
-			cLog(lsDEBUG) << "Ws:: Sending '" << strMessage << "'";
+			cLog(broadcast ? lsTRACE : lsDEBUG) << "Ws:: Sending '" << strMessage << "'";
 
 			cpClient->send(strMessage);
 		}
@@ -75,13 +75,13 @@ public:
 		}
 	}
 
-	void send(connection_ptr cpClient, const Json::Value& jvObj)
+	void send(connection_ptr cpClient, const Json::Value& jvObj, bool broadcast)
 	{
 		Json::FastWriter	jfwWriter;
 
 		// cLog(lsDEBUG) << "Ws:: Object '" << jfwWriter.write(jvObj) << "'";
 
-		send(cpClient, jfwWriter.write(jvObj));
+		send(cpClient, jfwWriter.write(jvObj), broadcast);
 	}
 
 	void pingTimer(connection_ptr cpClient)
@@ -94,15 +94,14 @@ public:
 				return;
 			ptr = it->second;
 		}
-		if (ptr->onPingTimer())
+		std::string data("ping");
+		if (ptr->onPingTimer(data))
 		{
 			cLog(lsWARNING) << "Connection pings out";
 			cpClient->close(websocketpp::close::status::PROTOCOL_ERROR, "ping timeout");
 		}
 		else
-		{
-			cpClient->ping("ping");
-		}
+			cpClient->ping(data);
 	}
 
 	void on_send_empty(connection_ptr cpClient)
@@ -126,7 +125,7 @@ public:
 		mMap[cpClient]	= boost::make_shared< WSConnection<endpoint_type> >(this, cpClient);
 	}
 
-	void on_pong(connection_ptr cpClient, std::string)
+	void on_pong(connection_ptr cpClient, std::string data)
 	{
 		wsc_ptr ptr;
 		{
@@ -136,7 +135,7 @@ public:
 				return;
 			ptr = it->second;
 		}
-		ptr->onPong();
+		ptr->onPong(data);
 	}
 
 	void on_close(connection_ptr cpClient)
@@ -153,17 +152,17 @@ public:
 		ptr->preDestroy(); // Must be done before we return
 
 		// Must be done without holding the websocket send lock
-		theApp->getJobQueue().addJob(jtCLIENT,
+		theApp->getJobQueue().addJob(jtCLIENT, "WSClient::destroy",
 			boost::bind(&WSConnection<endpoint_type>::destroy, ptr));
 	}
 
 	void on_message(connection_ptr cpClient, message_ptr mpMessage)
 	{
-		theApp->getJobQueue().addJob(jtCLIENT,
+		theApp->getJobQueue().addJob(jtCLIENT, "WSClient::command",
 			boost::bind(&WSServerHandler<endpoint_type>::do_message, this, _1, cpClient, mpMessage));
 	}
 
-	void do_message(Job&, connection_ptr cpClient, message_ptr mpMessage)
+	void do_message(Job& job, connection_ptr cpClient, message_ptr mpMessage)
 	{
 		Json::Value		jvRequest;
 		Json::Reader	jrReader;
@@ -177,7 +176,7 @@ public:
 			jvResult["type"]	= "error";
 			jvResult["error"]	= "wsTextRequired";	// We only accept text messages.
 
-			send(cpClient, jvResult);
+			send(cpClient, jvResult, false);
 		}
 		else if (!jrReader.parse(mpMessage->get_payload(), jvRequest) || jvRequest.isNull() || !jvRequest.isObject())
 		{
@@ -187,10 +186,12 @@ public:
 			jvResult["error"]	= "jsonInvalid";	// Received invalid json.
 			jvResult["value"]	= mpMessage->get_payload();
 
-			send(cpClient, jvResult);
+			send(cpClient, jvResult, false);
 		}
 		else
 		{
+			if (jvRequest.isMember("command"))
+				job.rename(std::string("WSClient::") + jvRequest["command"].asString());
 			boost::shared_ptr< WSConnection<endpoint_type> > conn;
 			{
 				boost::mutex::scoped_lock	sl(mMapLock);
@@ -200,7 +201,7 @@ public:
 					return;
 				conn = it->second;
 			}
-			send(cpClient, conn->invokeCommand(jvRequest));
+			send(cpClient, conn->invokeCommand(jvRequest), false);
 		}
 	}
 

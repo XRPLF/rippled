@@ -177,7 +177,8 @@ TER PaymentTransactor::doApply()
 					bPartialPayment,
 					bLimitQuality,
 					bNoRippleDirect,		// Always compute for finalizing ledger.
-					false);					// Not standalone, delete unfundeds.
+					false,					// Not standalone, delete unfundeds.
+					isSetBit(mParams, tapOPEN_LEDGER));
 		}
 		catch (const std::exception& e)
 		{
@@ -190,24 +191,22 @@ TER PaymentTransactor::doApply()
 	{
 		// Direct XRP payment.
 
-		const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
 		const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
 		const uint64	uReserve		= mEngine->getLedger()->getReserve(uOwnerCount);
-		STAmount		saPaid			= mTxn.getTransactionFee();
 
 		// Make sure have enough reserve to send. Allow final spend to use reserve for fee.
-		if (saSrcXRPBalance + saPaid < saDstAmount + uReserve)		// Reserve is not scaled by fee.
+		if (mPriorBalance < saDstAmount + uReserve)		// Reserve is not scaled by fee.
 		{
 			// Vote no. However, transaction might succeed, if applied in a different order.
 			cLog(lsINFO) << "";
 			cLog(lsINFO) << boost::str(boost::format("Payment: Delay transaction: Insufficient funds: %s / %s (%d)")
-				% saSrcXRPBalance.getText() % (saDstAmount + uReserve).getText() % uReserve);
+				% mPriorBalance.getText() % (saDstAmount + uReserve).getText() % uReserve);
 
 			terResult	= tecUNFUNDED_PAYMENT;
 		}
 		else
 		{
-			mTxnAccount->setFieldAmount(sfBalance, saSrcXRPBalance - saDstAmount);
+			mTxnAccount->setFieldAmount(sfBalance, mSourceBalance - saDstAmount);
 			sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount);
 
 			// re-arm the password change fee if we can and need to

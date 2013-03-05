@@ -1,8 +1,11 @@
 #include "LoadMonitor.h"
+#include "Log.h"
+
+SETUP_LOG();
 
 void LoadMonitor::update()
 { // call with the mutex
-	time_t now = time(NULL);
+	int now = upTime();
 
 	if (now == mLastUpdate) // current
 		return;
@@ -52,8 +55,12 @@ void LoadMonitor::addLatency(int latency)
 		mLatencyMSPeak = lp;
 }
 
-void LoadMonitor::addCountAndLatency(int counts, int latency)
+void LoadMonitor::addCountAndLatency(const std::string& name, int counts, int latency)
 {
+	if (latency > 1000)
+	{
+		cLog(lsWARNING) << "Job: " << name << " ExecutionTime: " << latency;
+	}
 	if (latency == 1)
 		latency = 0;
 	boost::mutex::scoped_lock sl(mLock);
@@ -67,6 +74,18 @@ void LoadMonitor::addCountAndLatency(int counts, int latency)
 	int lp = mLatencyEvents * latency * 4;
 	if (mLatencyMSPeak < lp)
 		mLatencyMSPeak = lp;
+}
+
+bool LoadMonitor::isOver()
+{
+	boost::mutex::scoped_lock sl(mLock);
+
+	update();
+
+	if (mLatencyEvents == 0)
+		return 0;
+
+	return isOverTarget(mLatencyMSAvg / (mLatencyEvents * 4), mLatencyMSPeak / (mLatencyEvents * 4));
 }
 
 void LoadMonitor::getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& latencyPeak, bool& isOver)
@@ -89,3 +108,5 @@ void LoadMonitor::getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& 
 	}
 	isOver = isOverTarget(latencyAvg, latencyPeak);
 }
+
+// vim:ts=4

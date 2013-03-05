@@ -9,6 +9,8 @@
 
 #include "types.h"
 
+extern int upTime();
+
 enum LoadType
 { // types of load that can be placed on the server
 
@@ -61,12 +63,12 @@ public:
 protected:
 	int		mBalance;
 	int		mFlags;
-	time_t	mLastUpdate;
-	time_t	mLastWarning;
+	int		mLastUpdate;
+	int		mLastWarning;
 
 public:
 	LoadSource() : mBalance(0), mFlags(0), mLastWarning(0)
-									{ mLastUpdate = time(NULL); }
+									{ mLastUpdate = upTime(); }
 
 	bool	isPrivileged() const	{ return (mFlags & lsfPrivileged) != 0; }
 	void	setPrivileged()			{ mFlags |= lsfPrivileged; }
@@ -86,17 +88,27 @@ protected:
 	int mDebitWarn;				// when a source drops below this, we warn
 	int mDebitLimit;			// when a source drops below this, we cut it off (should be negative)
 
+	bool mShutdown;
+
+	int mSpace1[4];				// We want mUptime to have its own cache line
+	int mUptime;
+	int mSpace2[4];
+
 	mutable boost::mutex mLock;
 
-	void canonicalize(LoadSource&, const time_t now) const;
+	void canonicalize(LoadSource&, int upTime) const;
 
 	std::vector<LoadCost>	mCosts;
 
 	void addLoadCost(const LoadCost& c) { mCosts[static_cast<int>(c.mType)] = c; }
 
+	void threadEntry();
+
 public:
 
 	LoadManager(int creditRate = 10, int creditLimit = 50, int debitWarn = -50, int debitLimit = -100);
+	~LoadManager();
+	void init();
 
 	int getCreditRate() const;
 	int getCreditLimit() const;
@@ -113,6 +125,7 @@ public:
 	bool adjust(LoadSource&, LoadType l) const;
 
 	int getCost(LoadType t)		{ return mCosts[static_cast<int>(t)].mCost; }
+	int getUptime();
 };
 
 class LoadFeeTrack
@@ -121,11 +134,12 @@ protected:
 
 	static const int lftNormalFee = 256;		// 256 is the minimum/normal load factor
 	static const int lftFeeIncFraction = 16;	// increase fee by 1/16
-	static const int lftFeeDecFraction = 16;	// decrease fee by 1/16	
+	static const int lftFeeDecFraction = 4;		// decrease fee by 1/4
 	static const int lftFeeMax = lftNormalFee * 1000000;
 
 	uint32 mLocalTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
 	uint32 mRemoteTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
+	int raiseCount;
 
 	boost::mutex mLock;
 
@@ -133,7 +147,7 @@ protected:
 
 public:
 
-	LoadFeeTrack() : mLocalTxnLoadFee(lftNormalFee), mRemoteTxnLoadFee(lftNormalFee)
+	LoadFeeTrack() : mLocalTxnLoadFee(lftNormalFee), mRemoteTxnLoadFee(lftNormalFee), raiseCount(0)
 	{ ; }
 
 	// Scale from fee units to millionths of a ripple
@@ -151,8 +165,8 @@ public:
 	Json::Value getJson(uint64 baseFee, uint32 referenceFeeUnits);
 
 	void setRemoteFee(uint32);
-	void raiseLocalFee();
-	void lowerLocalFee();
+	bool raiseLocalFee();
+	bool lowerLocalFee();
 };
 
 

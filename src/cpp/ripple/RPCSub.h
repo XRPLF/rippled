@@ -30,12 +30,15 @@ protected:
 	void	sendThread();
 
 public:
+	typedef boost::shared_ptr<RPCSub>	pointer;
+	typedef const pointer&				ref;
+
 	RPCSub(const std::string& strUrl, const std::string& strUsername, const std::string& strPassword);
 
 	virtual ~RPCSub() { ; }
 
 	// Implement overridden functions from base class:
-	void send(const Json::Value& jvObj);
+	void send(const Json::Value& jvObj, bool broadcast);
 
 	void setUsername(const std::string& strUsername)
 	{

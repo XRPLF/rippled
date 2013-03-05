@@ -24,11 +24,14 @@ DECLARE_INSTANCE(Peer);
 // Node has this long to verify its identity from connection accepted or connection attempt.
 #define NODE_VERIFY_SECONDS		15
 
+// Idle nodes are probed this often
+#define NODE_IDLE_SECONDS		120
+
 Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 peerID, bool inbound) :
 	mInbound(inbound),
 	mHelloed(false),
 	mDetaching(false),
-	mActive(true),
+	mActive(2),
 	mCluster(false),
 	mPeerId(peerID),
 	mSocketSsl(io_service, ctx),
@@ -122,6 +125,33 @@ void Peer::detach(const char *rsn)
 			*/
 	}
 }
+
+void Peer::handlePingTimer(const boost::system::error_code& ecResult)
+{
+	if (ecResult || mDetaching)
+		return;
+
+	if (mActive == 1)
+	{ // ping out
+		detach("pto");
+		return;
+	}
+
+	if (mActive == 0)
+	{ // idle->pingsent
+		mActive = 1;
+		ripple::TMPing packet;
+		packet.set_type(ripple::TMPing::ptPING);
+		sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtPING));
+	}
+	else // active->idle
+		mActive = 0;
+
+	mActivityTimer.expires_from_now(boost::posix_time::seconds(NODE_IDLE_SECONDS));
+	mActivityTimer.async_wait(boost::bind(&Peer::handlePingTimer, shared_from_this(),
+		boost::asio::placeholders::error));
+}
+
 
 void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
 {
@@ -394,7 +424,7 @@ void Peer::processReadBuffer()
 
 //	std::cerr << "Peer::processReadBuffer: " << mIpPort.first << " " << mIpPort.second << std::endl;
 
-	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtPEER));
+	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtPEER, "Peer::read"));
 
 	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 
@@ -631,8 +661,10 @@ void Peer::recvHello(ripple::TMHello& packet)
 {
 	bool	bDetach	= true;
 
-	// Cancel verification timeout. - FIXME Start ping/pong timer
 	(void) mActivityTimer.cancel();
+	mActivityTimer.expires_from_now(boost::posix_time::seconds(NODE_IDLE_SECONDS));
+	mActivityTimer.async_wait(boost::bind(&Peer::handlePingTimer, shared_from_this(),
+		boost::asio::placeholders::error));
 
 	uint32 ourTime = theApp->getOPs().getNetworkTimeNC();
 	uint32 minTime = ourTime - 20;
@@ -825,7 +857,7 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 				return;
 		}
 
-		theApp->getJobQueue().addJob(jtTRANSACTION,
+		theApp->getJobQueue().addJob(jtTRANSACTION, "recvTransction->checkTransaction",
 			boost::bind(&checkTransaction, _1, flags, stx, boost::weak_ptr<Peer>(shared_from_this())));
 
 #ifndef TRUST_NETWORK
@@ -845,7 +877,7 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 
 static void checkPropose(Job& job, boost::shared_ptr<ripple::TMProposeSet> packet,
 	LedgerProposal::pointer proposal, uint256 consensusLCL,	RippleAddress nodePublic, boost::weak_ptr<Peer> peer)
-{
+{ // Called from our JobQueue
 	bool sigGood = false;
 	bool isTrusted = (job.getType() == jtPROPOSAL_t);
 
@@ -877,7 +909,7 @@ static void checkPropose(Job& job, boost::shared_ptr<ripple::TMProposeSet> packe
 		}
 		else
 		{
-			cLog(lsWARNING) << "Ledger proposal fails signature check";
+			cLog(lsWARNING) << "Ledger proposal fails signature check"; // Could be mismatched prev ledger
 			proposal->setSignature(set.signature());
 		}
 	}
@@ -954,7 +986,7 @@ void Peer::recvPropose(const boost::shared_ptr<ripple::TMProposeSet>& packet)
 		prevLedger.isNonZero() ? prevLedger : consensusLCL,
 		set.proposeseq(), proposeHash, set.closetime(), signerPublic, suppression);
 
-	theApp->getJobQueue().addJob(isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
+	theApp->getJobQueue().addJob(isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut, "recvPropose->checkPropose",
 		boost::bind(&checkPropose, _1, packet, proposal, consensusLCL,
 			mNodePublic, boost::weak_ptr<Peer>(shared_from_this())));
 }
@@ -1030,7 +1062,7 @@ void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet)
 		}
 
 		bool isTrusted = theApp->getUNL().nodeInUNL(val->getSignerPublic());
-		theApp->getJobQueue().addJob(isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
+		theApp->getJobQueue().addJob(isTrusted ? jtVALIDATION_t : jtVALIDATION_ut, "recvValidation->checkValidation",
 			boost::bind(&checkValidation, _1, val, signingHash, isTrusted, packet,
 			boost::weak_ptr<Peer>(shared_from_this())));
 	}
@@ -1197,7 +1229,7 @@ void Peer::recvPing(ripple::TMPing& packet)
 	}
 	else if (packet.type() == ripple::TMPing::ptPONG)
 	{
-		mActive = true;
+		mActive = 2;
 	}
 }
 
@@ -1267,7 +1299,7 @@ void Peer::recvProofWork(ripple::TMProofWork& packet)
 			return;
 		}
 
-		theApp->getJobQueue().addJob(jtPROOFWORK,
+		theApp->getJobQueue().addJob(jtPROOFWORK, "recvProof->doProof",
 			boost::bind(&Peer::doProofOfWork, _1, boost::weak_ptr<Peer>(shared_from_this()), pow));
 
 		return;
@@ -1334,11 +1366,11 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 
 	if (packet.itype() == ripple::liTS_CANDIDATE)
 	{ // Request is for a transaction candidate set
-		cLog(lsINFO) << "Received request for TX candidate set data " << getIP();
+		cLog(lsDEBUG) << "Received request for TX candidate set data " << getIP();
 		if ((!packet.has_ledgerhash() || packet.ledgerhash().size() != 32))
 		{
 			punishPeer(LT_InvalidRequest);
-			cLog(lsWARNING) << "invalid request";
+			cLog(lsWARNING) << "invalid request for TX candidate set data";
 			return;
 		}
 		uint256 txHash;
@@ -1349,7 +1381,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			if (packet.has_querytype() && !packet.has_requestcookie())
 			{ 	// FIXME: Don't relay requests for older ledgers we would acquire
 				// (if we don't have them, we can't get them)
-				cLog(lsINFO) << "Trying to route TX set request";
+				cLog(lsDEBUG) << "Trying to route TX set request";
 				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 				std::vector<Peer::pointer> usablePeers;
 				BOOST_FOREACH(Peer::ref peer, peerList)
@@ -1365,7 +1397,6 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 				Peer::ref selectedPeer = usablePeers[rand() % usablePeers.size()];
 				packet.set_requestcookie(getPeerId());
 				selectedPeer->sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtGET_LEDGER));
-				cLog(lsDEBUG) << "TX set request routed";
 				return;
 			}
 			cLog(lsERROR) << "We do not have the map our peer wants";
@@ -1395,7 +1426,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			logMe += "LedgerHash:"; logMe += ledgerhash.GetHex();
 			ledger = theApp->getLedgerMaster().getLedgerByHash(ledgerhash);
 
-			tLog(!ledger, lsDEBUG) << "Don't have ledger " << ledgerhash;
+			tLog(!ledger, lsTRACE) << "Don't have ledger " << ledgerhash;
 			if (!ledger && (packet.has_querytype() && !packet.has_requestcookie()))
 			{
 				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
@@ -1407,7 +1438,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 				}
 				if (usablePeers.empty())
 				{
-					cLog(lsDEBUG) << "Unable to route ledger request";
+					cLog(lsTRACE) << "Unable to route ledger request";
 					return;
 				}
 				Peer::ref selectedPeer = usablePeers[rand() % usablePeers.size()];
@@ -1505,7 +1536,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		return;
 	}
 
-	cLog(lsDEBUG) << "Request: " << logMe;
+	cLog(lsTRACE) << "Request: " << logMe;
 	for(int i = 0; i < packet.nodeids().size(); ++i)
 	{
 		SHAMapNode mn(packet.nodeids(i).data(), packet.nodeids(i).size());

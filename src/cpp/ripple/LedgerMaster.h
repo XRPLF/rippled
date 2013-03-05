@@ -48,8 +48,8 @@ protected:
 	bool						mPubThread;			// Publish thread is running
 
 	void applyFutureTransactions(uint32 ledgerIndex);
-	bool isValidTransaction(const Transaction::pointer& trans);
-	bool isTransactionOnFutureList(const Transaction::pointer& trans);
+	bool isValidTransaction(Transaction::ref trans);
+	bool isTransactionOnFutureList(Transaction::ref trans);
 
 	bool acquireMissingLedger(Ledger::ref from, const uint256& ledgerHash, uint32 ledgerSeq);
 	void asyncAccept(Ledger::pointer);
@@ -75,7 +75,10 @@ public:
 	// The published ledger is the last fully validated ledger
 	Ledger::ref getValidatedLedger()	{ return mPubLedger; }
 
-	TER doTransaction(const SerializedTransaction& txn, TransactionEngineParams params);
+	TER doTransaction(SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply);
+
+	int getMinValidations()				{ return mMinValidations; }
+	void setMinValidations(int v)		{ mMinValidations = v; }
 
 	void pushLedger(Ledger::ref newLedger);
 	void pushLedger(Ledger::ref newLCL, Ledger::ref newOL, bool fromConsensus);
@@ -93,13 +96,27 @@ public:
 
 	Ledger::pointer closeLedger(bool recoverHeldTransactions);
 
+	uint256 getHashBySeq(uint32 index)
+	{
+		uint256 hash = mLedgerHistory.getLedgerHash(index);
+		if (hash.isNonZero())
+			return hash;
+		return Ledger::getHashByIndex(index);
+	}
+
 	Ledger::pointer getLedgerBySeq(uint32 index)
 	{
 		if (mCurrentLedger && (mCurrentLedger->getLedgerSeq() == index))
 			return mCurrentLedger;
 		if (mFinalizedLedger && (mFinalizedLedger->getLedgerSeq() == index))
 			return mFinalizedLedger;
-		return mLedgerHistory.getLedgerBySeq(index);
+		Ledger::pointer ret = mLedgerHistory.getLedgerBySeq(index);
+		if (ret)
+			return ret;
+
+		boost::recursive_mutex::scoped_lock ml(mLock);
+		mCompleteLedgers.clearValue(index);
+		return ret;
 	}
 
 	Ledger::pointer getLedgerByHash(const uint256& hash)
@@ -122,7 +139,7 @@ public:
 		mCompleteLedgers.setRange(minV, maxV);
 	}
 
-	void addHeldTransaction(const Transaction::pointer& trans);
+	void addHeldTransaction(Transaction::ref trans);
 	void fixMismatch(Ledger::ref ledger);
 
 	bool haveLedgerRange(uint32 from, uint32 to);

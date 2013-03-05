@@ -24,10 +24,12 @@
 #include "ProofOfWork.h"
 #include "LoadManager.h"
 #include "TransactionQueue.h"
+#include "OrderBookDB.h"
 
 class RPCDoor;
 class PeerDoor;
 typedef TaggedCache< uint256, std::vector<unsigned char> > NodeCache;
+typedef TaggedCache< uint256, SLE > SLECache;
 
 class DatabaseCon
 {
@@ -59,6 +61,7 @@ class Application
 	ValidationCollection	mValidations;
 	SuppressionTable		mSuppressions;
 	HashedObjectStore		mHashedObjectStore;
+	SLECache				mSLECache;
 	SNTPClient				mSNTPClient;
 	JobQueue				mJobQueue;
 	RPCHandler				mRPCHandler;
@@ -66,6 +69,7 @@ class Application
 	LoadManager				mLoadMgr;
 	LoadFeeTrack			mFeeTrack;
 	TXQueue					mTxnQueue;
+	OrderBookDB				mOrderBookDB;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 
@@ -82,6 +86,8 @@ class Application
 
 	std::map<std::string, Peer::pointer> mPeerMap;
 	boost::recursive_mutex	mPeerMapLock;
+
+	volatile bool			mShutdown;
 
 	void startNewLedger();
 	void loadOldLedger(const std::string&);
@@ -115,6 +121,8 @@ public:
 	LoadFeeTrack& getFeeTrack()						{ return mFeeTrack; }
 	TXQueue& getTxnQueue()							{ return mTxnQueue; }
 	PeerDoor& getPeerDoor()							{ return *mPeerDoor; }
+	OrderBookDB& getOrderBookDB()					{ return mOrderBookDB; }
+	SLECache& getSLECache()							{ return mSLECache; }
 
 
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }
@@ -134,6 +142,7 @@ public:
 	uint256 getNonce256()			{ return mNonce256; }
 	std::size_t getNonceST()		{ return mNonceST; }
 
+	bool isShutdown()				{ return mShutdown; }
 	void setup();
 	void run();
 	void stop();

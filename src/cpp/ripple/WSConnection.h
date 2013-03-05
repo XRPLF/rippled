@@ -5,6 +5,8 @@
 #include "../json/value.h"
 
 #include <boost/weak_ptr.hpp>
+#include <boost/asio.hpp>
+#include <boost/enable_shared_from_this.hpp>
 
 #include "WSDoor.h"
 #include "Application.h"
@@ -17,7 +19,7 @@
 DEFINE_INSTANCE(WebSocketConnection);
 
 #ifndef WEBSOCKET_PING_FREQUENCY
-#define WEBSOCKET_PING_FREQUENCY 120
+#define WEBSOCKET_PING_FREQUENCY (5*60)
 #endif
 
 template <typename endpoint_type>
@@ -27,7 +29,8 @@ class WSServerHandler;
 // - Subscriptions
 //
 template <typename endpoint_type>
-class WSConnection : public InfoSub, public IS_INSTANCE(WebSocketConnection)
+class WSConnection : public InfoSub, public IS_INSTANCE(WebSocketConnection),
+	public boost::enable_shared_from_this< WSConnection<endpoint_type> >
 {
 public:
 	typedef typename endpoint_type::connection_type connection;
@@ -53,7 +56,7 @@ public:
 
 	WSConnection(WSServerHandler<endpoint_type>* wshpHandler, const connection_ptr& cpConnection)
 		: mHandler(wshpHandler), mConnection(cpConnection), mNetwork(theApp->getOPs()),
-		mPingTimer(theApp->getAuxService()), mPinged(false)
+		mPingTimer(cpConnection->get_io_service()), mPinged(false)
 	{
 		mRemoteIP = cpConnection->get_socket().lowest_layer().remote_endpoint().address().to_string();
 		cLog(lsDEBUG) << "Websocket connection from " << mRemoteIP;
@@ -62,6 +65,7 @@ public:
 
 	void preDestroy()
 	{ // sever connection
+		mPingTimer.cancel();
 		mConnection.reset();
 	}
 
@@ -72,11 +76,11 @@ public:
 	}
 
 	// Implement overridden functions from base class:
-	void send(const Json::Value& jvObj)
+	void send(const Json::Value& jvObj, bool broadcast)
 	{
 		connection_ptr ptr = mConnection.lock();
 		if (ptr)
-			mHandler->send(ptr, jvObj);
+			mHandler->send(ptr, jvObj, broadcast);
 	}
 
 	// Utilities
@@ -87,14 +91,19 @@ public:
 			Json::Value	jvResult(Json::objectValue);
 
 			jvResult["type"]	= "response";
-			jvResult["result"]	= "error";
+			jvResult["status"]	= "error";
 			jvResult["error"]	= "missingCommand";
-			jvResult["command"]	= jvRequest;
+			jvResult["request"] = jvRequest;
+
+			if (jvRequest.isMember("id"))
+			{
+				jvResult["id"]	= jvRequest["id"];
+			}
 
 			return jvResult;
 		}
 
-		RPCHandler	mRPCHandler(&mNetwork, this);
+		RPCHandler	mRPCHandler(&mNetwork, boost::shared_polymorphic_downcast<InfoSub>(this->shared_from_this()));
 		Json::Value	jvResult(Json::objectValue);
 
 		int iRole	= mHandler->getPublic()
@@ -135,22 +144,27 @@ public:
 		return jvResult;
 	}
 
-	bool onPingTimer()
+	bool onPingTimer(std::string&)
 	{
+#ifdef DISCONNECT_ON_WEBSOCKET_PING_TIMEOUTS
 		if (mPinged)
-			return true;
+			return true; // causes connection to close
+#endif
 		mPinged = true;
 		setPingTimer();
-		return false;
+		return false; // causes ping to be sent
 	}
 
-	void onPong()
+	void onPong(const std::string&)
 	{
 		mPinged = false;
 	}
 
-	static void pingTimer(weak_connection_ptr c, WSServerHandler<endpoint_type>* h)
+	static void pingTimer(weak_connection_ptr c, WSServerHandler<endpoint_type>* h, const boost::system::error_code& e)
 	{
+		if (e)
+			return;
+
 		connection_ptr ptr = c.lock();
 		if (ptr)
 			h->pingTimer(ptr);
@@ -159,10 +173,10 @@ public:
 	void setPingTimer()
 	{
 		mPingTimer.expires_from_now(boost::posix_time::seconds(WEBSOCKET_PING_FREQUENCY));
-		mPingTimer.async_wait(boost::bind(&WSConnection<endpoint_type>::pingTimer, mConnection, mHandler));
+		mPingTimer.async_wait(boost::bind(
+			&WSConnection<endpoint_type>::pingTimer, mConnection, mHandler, boost::asio::placeholders::error));
 	}
 
 };
-
 
 // vim:ts=4

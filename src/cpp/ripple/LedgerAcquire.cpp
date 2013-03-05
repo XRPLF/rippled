@@ -22,7 +22,7 @@ DECLARE_INSTANCE(LedgerAcquire);
 PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterval(interval), mTimeouts(0),
 	mComplete(false), mFailed(false), mProgress(true), mAggressive(true), mTimer(theApp->getIOService())
 {
-	mLastAction = time(NULL);
+	mLastAction = upTime();
 	assert((mTimerInterval > 10) && (mTimerInterval < 30000));
 }
 
@@ -71,6 +71,8 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 {
 	if (result == boost::asio::error::operation_aborted)
 		return;
+
+	ScopedLock sl(theApp->getMasterLock());
 	boost::shared_ptr<PeerSet> ptr = wptr.lock();
 	if (ptr)
 		ptr->invokeOnTimer();
@@ -94,65 +96,75 @@ LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE
 
 bool LedgerAcquire::tryLocal()
 { // return value: true = no more work to do
-	HashedObject::pointer node = theApp->getHashedObjectStore().retrieve(mHash);
-	if (!node)
-	{
-		mLedger = theApp->getLedgerMaster().getLedgerByHash(mHash);
-		if (!mLedger)
-			return false;
-	}
-	else
-		mLedger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
 
-	if (mLedger->getHash() != mHash)
-	{ // We know for a fact the ledger can never be acquired
-		cLog(lsWARNING) << mHash << " cannot be a ledger";
-		mFailed = true;
-		return true;
-	}
-
-	mHaveBase = true;
-
-	if (mLedger->getTransHash().isZero())
+	if (!mHaveBase)
 	{
-		cLog(lsDEBUG) << "No TXNs to fetch";
-		mHaveTransactions = true;
-	}
-	else
-	{
-		try
+		HashedObject::pointer node = theApp->getHashedObjectStore().retrieve(mHash);
+		if (!node)
 		{
-			mLedger->peekTransactionMap()->fetchRoot(mLedger->getTransHash());
-			cLog(lsDEBUG) << "Got root txn map locally";
-			std::vector<uint256> h = mLedger->peekTransactionMap()->getNeededHashes(1);
-			if (h.empty())
+			mLedger = theApp->getLedgerMaster().getLedgerByHash(mHash);
+			if (!mLedger)
+				return false;
+		}
+		else
+			mLedger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
+
+		if (mLedger->getHash() != mHash)
+		{ // We know for a fact the ledger can never be acquired
+			cLog(lsWARNING) << mHash << " cannot be a ledger";
+			mFailed = true;
+			return true;
+		}
+
+		mHaveBase = true;
+	}
+
+	if (!mHaveTransactions)
+	{
+		if (mLedger->getTransHash().isZero())
+		{
+			cLog(lsDEBUG) << "No TXNs to fetch";
+			mHaveTransactions = true;
+		}
+		else
+		{
+			try
 			{
-				cLog(lsDEBUG) << "Had full txn map locally";
-				mHaveTransactions = true;
+				mLedger->peekTransactionMap()->fetchRoot(mLedger->getTransHash());
+				cLog(lsDEBUG) << "Got root txn map locally";
+				std::vector<uint256> h = mLedger->peekTransactionMap()->getNeededHashes(1);
+				if (h.empty())
+				{
+					cLog(lsDEBUG) << "Had full txn map locally";
+					mHaveTransactions = true;
+				}
+			}
+			catch (SHAMapMissingNode&)
+			{
 			}
 		}
-		catch (SHAMapMissingNode&)
-		{
-		}
 	}
 
-	if (mLedger->getAccountHash().isZero())
-		mHaveState = true;
-	else
+	if (!mHaveState)
 	{
-		try
+		if (mLedger->getAccountHash().isZero())
+			mHaveState = true;
+		else
 		{
-			mLedger->peekAccountStateMap()->fetchRoot(mLedger->getAccountHash());
-			cLog(lsDEBUG) << "Got root AS map locally";
-			std::vector<uint256> h = mLedger->peekAccountStateMap()->getNeededHashes(1);
-			if (h.empty())
+			try
 			{
-				cLog(lsDEBUG) << "Had full AS map locally";
-				mHaveState = true;
+				mLedger->peekAccountStateMap()->fetchRoot(mLedger->getAccountHash());
+				cLog(lsDEBUG) << "Got root AS map locally";
+				std::vector<uint256> h = mLedger->peekAccountStateMap()->getNeededHashes(1);
+				if (h.empty())
+				{
+					cLog(lsDEBUG) << "Had full AS map locally";
+					mHaveState = true;
+				}
 			}
-		}
-		catch (SHAMapMissingNode&)
-		{
+			catch (SHAMapMissingNode&)
+			{
+			}
 		}
 	}
 
@@ -161,6 +173,7 @@ bool LedgerAcquire::tryLocal()
 		cLog(lsDEBUG) << "Had everything locally";
 		mComplete = true;
 		mLedger->setClosed();
+		mLedger->setImmutable();
 	}
 
 	return mComplete;
@@ -246,6 +259,7 @@ void LedgerAcquire::done()
 	if (isComplete() && !isFailed() && mLedger)
 	{
 		mLedger->setClosed();
+		mLedger->setImmutable();
 		if (mAccept)
 			mLedger->setAccepted();
 		theApp->getLedgerMaster().storeLedger(mLedger);
@@ -890,7 +904,7 @@ void LedgerAcquireMaster::sweep()
 {
 	mRecentFailures.sweep();
 
-	time_t now = time(NULL);
+	int now = upTime();
 	boost::mutex::scoped_lock sl(mLock);
 
 	std::map<uint256, LedgerAcquire::pointer>::iterator it = mLedgers.begin();
@@ -908,15 +922,21 @@ void LedgerAcquireMaster::sweep()
 	}
 }
 
-int LedgerAcquireMaster::getFetchCount()
+int LedgerAcquireMaster::getFetchCount(int& timeoutCount)
 {
+	timeoutCount = 0;
 	int ret = 0;
 	{
 		typedef std::pair<uint256, LedgerAcquire::pointer> u256_acq_pair;
 		boost::mutex::scoped_lock sl(mLock);
 		BOOST_FOREACH(const u256_acq_pair& it, mLedgers)
+		{
 			if (it.second->isActive())
+			{
 				++ret;
+				timeoutCount += it.second->getTimeouts();
+			}
+		}
 	}
 	return ret;
 }

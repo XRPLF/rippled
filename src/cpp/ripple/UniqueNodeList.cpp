@@ -1465,10 +1465,14 @@ void UniqueNodeList::nodeRemovePublic(const RippleAddress& naNodePublic)
 		boost::recursive_mutex::scoped_lock sl(theApp->getWalletDB()->getDBLock());
 
 		db->executeSQL(str(boost::format("DELETE FROM SeedNodes WHERE PublicKey=%s") % sqlEscape(naNodePublic.humanNodePublic())));
+		db->executeSQL(str(boost::format("DELETE FROM TrustedNodes WHERE PublicKey=%s") % sqlEscape(naNodePublic.humanNodePublic())));
 	}
 
 	// YYY Only dirty on successful delete.
 	fetchDirty();
+
+	boost::recursive_mutex::scoped_lock sl(mUNLLock);
+    mUNL.erase(naNodePublic.humanNodePublic());
 }
 
 void UniqueNodeList::nodeRemoveDomain(std::string strDomain)

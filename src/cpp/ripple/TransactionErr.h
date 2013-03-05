@@ -16,6 +16,7 @@ enum TER	// aka TransactionEngineResult
 	telBAD_DOMAIN,
 	telBAD_PATH_COUNT,
 	telBAD_PUBLIC_KEY,
+	telFAILED_PROCESSING,
 	telINSUF_FEE_P,
 	telNO_DST_PARTIAL,
 
@@ -121,6 +122,7 @@ enum TER	// aka TransactionEngineResult
 	tecUNFUNDED_ADD				= 102,
 	tecUNFUNDED_OFFER			= 103,
 	tecUNFUNDED_PAYMENT			= 104,
+	tecFAILED_PROCESSING		= 105,
 	tecDIR_FULL					= 121,
 	tecINSUF_RESERVE_LINE		= 122,
 	tecINSUF_RESERVE_OFFER		= 123,

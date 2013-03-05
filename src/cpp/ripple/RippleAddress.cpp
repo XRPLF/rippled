@@ -7,15 +7,17 @@
 #include <boost/format.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/test/unit_test.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/unordered_map.hpp>
 
 #include <openssl/rand.h>
 
 #include "key.h"
-#include "Config.h"
 #include "BitcoinUtil.h"
 #include "rfc1751.h"
 #include "utils.h"
 #include "Log.h"
+#include "Serializer.h"
 
 SETUP_LOG();
 
@@ -293,6 +295,9 @@ uint160 RippleAddress::getAccountID() const
     }
 }
 
+static boost::mutex rncLock;
+static boost::unordered_map< std::vector<unsigned char>, std::string > rncMap;
+
 std::string RippleAddress::humanAccountID() const
 {
     switch (nVersion) {
@@ -300,7 +305,13 @@ std::string RippleAddress::humanAccountID() const
 		throw std::runtime_error("unset source - humanAccountID");
 
     case VER_ACCOUNT_ID:
-		return ToString();
+    {
+	    boost::mutex::scoped_lock sl(rncLock);
+	    boost::unordered_map< std::vector<unsigned char>, std::string >::iterator it = rncMap.find(vchData);
+	    if (it != rncMap.end())
+	        return it->second;
+	    return rncMap[vchData] = ToString();
+	}
 
     case VER_ACCOUNT_PUBLIC:
 	{

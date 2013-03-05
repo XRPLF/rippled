@@ -345,6 +345,9 @@
     <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\AcceptedLedger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\AccountItems.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

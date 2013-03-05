@@ -108,7 +108,7 @@ public:
 
 	// Offer functions.
 	TER					offerDelete(const uint256& uOfferIndex);
-	TER					offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID);
+	TER					offerDelete(SLE::ref sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID);
 
 	// Balance functions.
 	uint32				rippleTransferRate(const uint160& uIssuerID);

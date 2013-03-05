@@ -1,6 +1,6 @@
 {
   "name": "ripple-lib",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Ripple JavaScript client library",
 
   "files": [
@@ -19,6 +19,7 @@
     "simple-jsonrpc": "~0.0.1"
   },
   "devDependencies": {
+    "grunt": "~0.3.17",
     "buster": "~0.6.2",
     "grunt-webpack": "~0.4.0"
   },

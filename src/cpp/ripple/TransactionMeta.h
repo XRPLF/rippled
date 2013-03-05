@@ -19,6 +19,7 @@ class TransactionMetaSet
 {
 public:
 	typedef boost::shared_ptr<TransactionMetaSet> pointer;
+	typedef const pointer& ref;
 
 protected:
 	uint256	mTransactionID;
@@ -56,6 +57,7 @@ public:
 	void addRaw(Serializer&, TER, uint32 index);
 
 	STObject getAsObject() const;
+	STArray& getNodes(){ return(mNodes); }
 
 	static bool thread(STObject& node, const uint256& prevTxID, uint32 prevLgrID);
 };

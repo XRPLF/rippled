@@ -19,8 +19,8 @@ RippleState::RippleState(SerializedLedgerEntry::ref ledgerEntry) : AccountItem(l
 	mLowLimit		= mLedgerEntry->getFieldAmount(sfLowLimit);
 	mHighLimit		= mLedgerEntry->getFieldAmount(sfHighLimit);
 
-	mLowID			= RippleAddress::createAccountID(mLowLimit.getIssuer());
-	mHighID			= RippleAddress::createAccountID(mHighLimit.getIssuer());
+	mLowID			= mLowLimit.getIssuer();
+	mHighID			= mHighLimit.getIssuer();
 
 	mLowQualityIn	= mLedgerEntry->getFieldU32(sfLowQualityIn);
 	mLowQualityOut	= mLedgerEntry->getFieldU32(sfLowQualityOut);
@@ -35,7 +35,7 @@ RippleState::RippleState(SerializedLedgerEntry::ref ledgerEntry) : AccountItem(l
 
 void RippleState::setViewAccount(const uint160& accountID)
 {
-	bool	bViewLowestNew	= mLowID.getAccountID() == accountID;
+	bool	bViewLowestNew	= mLowID == accountID;
 
 	if (bViewLowestNew != mViewLowest)
 	{

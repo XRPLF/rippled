@@ -28,6 +28,7 @@
 #define SECTION_NETWORK_QUORUM			"network_quorum"
 #define SECTION_NODE_SEED				"node_seed"
 #define SECTION_NODE_SIZE				"node_size"
+#define SECTION_PATH_SEARCH_SIZE		"path_search_size"
 #define SECTION_PEER_CONNECT_LOW_WATER	"peer_connect_low_water"
 #define SECTION_PEER_IP					"peer_ip"
 #define SECTION_PEER_PORT				"peer_port"
@@ -45,6 +46,9 @@
 #define SECTION_RPC_PASSWORD			"rpc_password"
 #define SECTION_RPC_STARTUP				"rpc_startup"
 #define SECTION_SNTP					"sntp_servers"
+#define SECTION_SSL_VERIFY				"ssl_verify"
+#define SECTION_SSL_VERIFY_FILE			"ssl_verify_file"
+#define SECTION_SSL_VERIFY_DIR			"ssl_verify_dir"
 #define SECTION_VALIDATORS_FILE			"validators_file"
 #define SECTION_VALIDATION_QUORUM		"validation_quorum"
 #define SECTION_VALIDATION_SEED			"validation_seed"
@@ -154,10 +158,22 @@ void Config::setup(const std::string& strConf, bool bTestNet, bool bQuiet)
 		}
 	}
 
-	SSL_CONTEXT.set_default_verify_paths(ec);
 
-	if (ec)
-		throw std::runtime_error(boost::str(boost::format("Failed to set_default_verify_paths: %s") % ec.message()));
+	if (SSL_VERIFY_FILE.empty())
+	{
+		SSL_CONTEXT.set_default_verify_paths(ec);
+		if (ec && SSL_VERIFY_DIR.empty())
+			throw std::runtime_error(boost::str(boost::format("Failed to set_default_verify_paths: %s") % ec.message()));
+	}
+	else
+		SSL_CONTEXT.load_verify_file(SSL_VERIFY_FILE);
+
+	if (!SSL_VERIFY_DIR.empty())
+	{
+		SSL_CONTEXT.add_verify_path(SSL_VERIFY_DIR, ec);
+		if (ec)
+			throw std::runtime_error(boost::str(boost::format("Failed to add verify path: %s") % ec.message()));
+	}
 
 	// Update default values
 	load();
@@ -219,9 +235,12 @@ Config::Config()
 
 	LEDGER_HISTORY			= 256;
 
+	PATH_SEARCH_SIZE		= DEFAULT_PATH_SEARCH_SIZE;
 	ACCOUNT_PROBE_MAX		= 10;
 
 	VALIDATORS_SITE			= DEFAULT_VALIDATORS_SITE;
+
+	SSL_VERIFY				= true;
 
 	RUN_STANDALONE			= false;
 	START_UP				= NORMAL;
@@ -379,6 +398,11 @@ void Config::load()
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_CHAIN, WEBSOCKET_SSL_CHAIN);
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_KEY, WEBSOCKET_SSL_KEY);
 
+			sectionSingleB(secConfig, SECTION_SSL_VERIFY_FILE, SSL_VERIFY_FILE);
+			sectionSingleB(secConfig, SECTION_SSL_VERIFY_DIR, SSL_VERIFY_DIR);
+			if (sectionSingleB(secConfig, SECTION_SSL_VERIFY, strTemp))
+				SSL_VERIFY			= boost::lexical_cast<bool>(strTemp);
+
 			if (sectionSingleB(secConfig, SECTION_VALIDATION_SEED, strTemp))
 			{
 				VALIDATION_SEED.setSeedGeneric(strTemp);
@@ -445,6 +469,9 @@ void Config::load()
 					LEDGER_HISTORY = boost::lexical_cast<uint32>(strTemp);
 			}
 
+			if (sectionSingleB(secConfig, SECTION_PATH_SEARCH_SIZE, strTemp))
+				PATH_SEARCH_SIZE	= boost::lexical_cast<int>(strTemp);
+
 			if (sectionSingleB(secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
 				ACCOUNT_PROBE_MAX	= boost::lexical_cast<int>(strTemp);
 
@@ -461,13 +488,15 @@ int Config::getSize(SizedItemName item)
 {
 	SizedItem sizeTable[] = {
 		{ siSweepInterval,		{	10,		30,		60,		90,			90		} },
-		{ siLedgerFetch,		{	2,		4,		5,		6,			6		} },
+		{ siLedgerFetch,		{	2,		2,		3,		4,			5		} },
 		{ siValidationsSize,	{	256,	256,	512,	1024,		1024	} },
 		{ siValidationsAge,		{	500,	500,	500,	500,		500		} },
 		{ siNodeCacheSize,		{	8192,	32768,	131072,	1048576,	0		} },
 		{ siNodeCacheAge,		{	30,		60,		90,		300,		600		} },
 		{ siLedgerSize,			{	32,		64,		128,	1024,		0		} },
 		{ siLedgerAge,			{	30,		60,		120,	300,		600		} },
+		{ siLineCacheSize,		{	8192,	32768,	131072,	1048576,	0		} },
+		{ siLineCacheAge,		{	500,	600,	1800,	3600,		7200	} }
 			};
 
 	for (int i = 0; i < (sizeof(sizeTable) / sizeof(SizedItem)); ++i)

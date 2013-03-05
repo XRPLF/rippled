@@ -34,7 +34,7 @@ VSpointer ValidationCollection::findSet(const uint256& ledgerHash)
 	return mValidations.fetch(ledgerHash);
 }
 
-bool ValidationCollection::addValidation(const SerializedValidation::pointer& val)
+bool ValidationCollection::addValidation(SerializedValidation::ref val)
 {
 	RippleAddress signer = val->getSignerPublic();
 	bool isCurrent = false;
@@ -79,7 +79,7 @@ bool ValidationCollection::addValidation(const SerializedValidation::pointer& va
 		}
 	}
 
-	cLog(lsINFO) << "Val for " << hash << " from " << signer.humanNodePublic()
+	cLog(lsDEBUG) << "Val for " << hash << " from " << signer.humanNodePublic()
 		<< " added " << (val->isTrusted() ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
 	if (val->isTrusted())
 		theApp->getLedgerMaster().checkAccept(hash);
@@ -293,13 +293,13 @@ void ValidationCollection::condWrite()
 	if (mWriting)
 		return;
 	mWriting = true;
-	boost::thread thread(boost::bind(&ValidationCollection::doWrite, this));
-	thread.detach();
+	theApp->getJobQueue().addJob(jtWRITE, "ValidationCollection::doWrite",
+		boost::bind(&ValidationCollection::doWrite, this, _1));
 }
 
-void ValidationCollection::doWrite()
+void ValidationCollection::doWrite(Job&)
 {
-	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtDISK));
+	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtDISK, "ValidationWrite"));
 	static boost::format insVal("INSERT INTO Validations "
 		"(LedgerHash,NodePubKey,SignTime,RawData) VALUES ('%s','%s','%u',%s);");
 
@@ -316,7 +316,7 @@ void ValidationCollection::doWrite()
 
 			Serializer s(1024);
 			db->executeSQL("BEGIN TRANSACTION;");
-			BOOST_FOREACH(const SerializedValidation::pointer& it, vector)
+			BOOST_FOREACH(SerializedValidation::ref it, vector)
 			{
 				s.erase();
 				it->add(s);
@@ -330,3 +330,11 @@ void ValidationCollection::doWrite()
 	}
 	mWriting = false;
 }
+
+void ValidationCollection::sweep()
+{
+	boost::mutex::scoped_lock sl(mValidationLock);
+	mValidations.sweep();
+}
+
+// vim:ts=4

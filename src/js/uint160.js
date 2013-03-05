@@ -24,8 +24,8 @@ UInt160.width = 20;
 UInt160.prototype = extend({}, UInt.prototype);
 UInt160.prototype.constructor = UInt160;
 
-var ADDRESS_ZERO = UInt160.ADDRESS_ZERO = "rrrrrrrrrrrrrrrrrrrrrhoLvTp";
-var ADDRESS_ONE  = UInt160.ADDRESS_ONE = "rrrrrrrrrrrrrrrrrrrrBZbvji";
+var ACCOUNT_ZERO = UInt160.ACCOUNT_ZERO = "rrrrrrrrrrrrrrrrrrrrrhoLvTp";
+var ACCOUNT_ONE  = UInt160.ACCOUNT_ONE = "rrrrrrrrrrrrrrrrrrrrBZbvji";
 var HEX_ZERO     = UInt160.HEX_ZERO = "0000000000000000000000000000000000000000";
 var HEX_ONE      = UInt160.HEX_ONE = "0000000000000000000000000000000000000001";
 var STR_ZERO     = UInt160.STR_ZERO = utils.hexToString(HEX_ZERO);
@@ -59,8 +59,8 @@ UInt160.prototype.to_json = function (opts) {
 
   var output = Base.encode_check(Base.VER_ACCOUNT_ID, this.to_bytes());
 
-  if (config.gateways && output in config.gateways && !opts.no_gateway)
-    output = config.gateways[output];
+  if (opts.gateways && output in opts.gateways)
+    output = opts.gateways[output];
    
   return output;
 };

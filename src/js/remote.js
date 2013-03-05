@@ -20,6 +20,9 @@ var Amount        = require('./amount').Amount;
 var Currency      = require('./amount').Currency;
 var UInt160       = require('./amount').UInt160;
 var Transaction   = require('./transaction').Transaction;
+var Account       = require('./account').Account;
+var Meta          = require('./meta').Meta;
+var OrderBook     = require('./orderbook').OrderBook;
 
 var utils         = require('./utils');
 var config        = require('./config');
@@ -88,6 +91,26 @@ Request.prototype.ledger_index = function (ledger_index) {
   return this;
 };
 
+Request.prototype.ledger_select = function (ledger_spec) {
+  if (ledger_spec === 'closed') {
+    this.message.ledger_index  = -1;
+
+  } else if (ledger_spec === 'current') {
+    this.message.ledger_index  = -2;
+
+  } else if (ledger_spec === 'verified') {
+    this.message.ledger_index  = -3;
+
+  } else if (String(ledger_spec).length > 12) { // XXX Better test needed
+    this.message.ledger_hash  = ledger_spec;
+
+  } else {
+    this.message.ledger_index  = ledger_spec;
+  }
+
+  return this;
+};
+
 Request.prototype.account_root = function (account) {
   this.message.account_root  = UInt160.json_rewrite(account);
 
@@ -138,6 +161,12 @@ Request.prototype.tx_json = function (j) {
   return this;
 };
 
+Request.prototype.tx_blob = function (j) {
+  this.message.tx_blob  = j;
+
+  return this;
+};
+
 Request.prototype.ripple_state = function (account, issuer, currency) {
   this.message.ripple_state  = {
       'accounts' : [
@@ -173,6 +202,31 @@ Request.prototype.rt_accounts = function (accounts) {
   return this.accounts(accounts, true);
 };
 
+Request.prototype.books = function (books) {
+  var procBooks = [];
+
+  for (var i = 0, l = books.length; i < l; i++) {
+    var book = books[i];
+
+    var json = {
+      "CurrencyOut": Currency.json_rewrite(book["CurrencyOut"]),
+      "CurrencyIn": Currency.json_rewrite(book["CurrencyIn"])
+    };
+
+    if (json["CurrencyOut"] !== "XRP") {
+      json["IssuerOut"] = UInt160.json_rewrite(book["IssuerOut"]);
+    }
+    if (json["CurrencyIn"] !== "XRP") {
+      json["IssuerIn"]  = UInt160.json_rewrite(book["IssuerIn"]);
+    }
+
+    procBooks.push(json);
+  }
+  this.message.books = procBooks;
+
+  return this;
+};
+
 //
 // Remote - access to a remote Ripple server via websocket.
 //
@@ -196,6 +250,7 @@ var Remote = function (opts, trace) {
   this.websocket_ssl          = opts.websocket_ssl;
   this.local_sequence         = opts.local_sequence; // Locally track sequence numbers
   this.local_fee              = opts.local_fee;      // Locally set fees
+  this.local_signing          = opts.local_signing;
   this.id                     = 0;
   this.trace                  = opts.trace || trace;
   this._server_fatal          = false;              // True, if we know server exited.
@@ -212,14 +267,21 @@ var Remote = function (opts, trace) {
   this.retry                  = undefined;
 
   this._load_base             = 256;
-  this._load_fee              = 256;
+  this._load_factor           = 1.0;
   this._fee_ref               = undefined;
   this._fee_base              = undefined;
   this._reserve_base          = undefined;
   this._reserve_inc           = undefined;
   this._server_status         = undefined;
 
+  // Local signing implies local fees and sequences
+  if (this.local_signing) {
+    this.local_sequence = true;
+    this.local_fee = true;
+  }
+
   // Cache information for accounts.
+  // DEPRECATED, will be removed
   this.accounts = {
     // Consider sequence numbers stable if you know you're not generating bad transactions.
     // Otherwise, clear it to have it automatically refreshed from the network.
@@ -227,6 +289,9 @@ var Remote = function (opts, trace) {
     // account : { seq : __ }
 
     };
+
+  // Hash map of Account objects by AccountId.
+  this._accounts = {};
 
   // List of secrets that we know about.
   this.secrets = {
@@ -329,11 +394,13 @@ Remote.prototype._set_state = function (state) {
     switch (state) {
       case 'online':
         this._online_state       = 'open';
+        this.emit('connect');
         this.emit('connected');
         break;
 
       case 'offline':
         this._online_state       = 'closed';
+        this.emit('disconnect');
         this.emit('disconnected');
         break;
     }
@@ -374,11 +441,13 @@ Remote.prototype.ledger_hash = function () {
 
 // Stop from open state.
 Remote.prototype._connect_stop = function () {
-  delete this.ws.onerror;
-  delete this.ws.onclose;
+  if (this.ws) {
+    delete this.ws.onerror;
+    delete this.ws.onclose;
 
-  this.ws.terminate();
-  delete this.ws;
+    this.ws.close();
+    delete this.ws;
+  }
 
   this._set_state('offline');
 };
@@ -437,6 +506,12 @@ Remote.prototype._connect_start = function () {
 
   if (this.trace) console.log("remote: connect: %s", url);
 
+  // There should not be an active connection at this point, but if there is
+  // we will shut it down so we don't end up with a duplicate.
+  if (this.ws) {
+    this._connect_stop();
+  }
+
   var WebSocket     = require('ws');
   var ws = this.ws = new WebSocket(url);
 
@@ -494,6 +569,7 @@ Remote.prototype._connect_start = function () {
 
 // It is possible for messages to be dispatched after the connection is closed.
 Remote.prototype._connect_message = function (ws, json) {
+  var self        = this;
   var message     = JSON.parse(json);
   var unexpected  = false;
   var request;
@@ -543,6 +619,23 @@ Remote.prototype._connect_message = function (ws, json) {
 
       case 'account':
         // XXX If not trusted, need proof.
+        if (this.trace) utils.logObject("remote: account: %s", message);
+
+        // Process metadata
+        message.mmeta = new Meta(message.meta);
+
+        // Pass the event on to any related Account objects
+        var affected = message.mmeta.getAffectedAccounts();
+        for (var i = 0, l = affected.length; i < l; i++) {
+          var account = self._accounts[affected[i]];
+
+          // Only trigger the event if the account object is actually
+          // subscribed - this prevents some weird phantom events from
+          // occurring.
+          if (account && account._subs) {
+            account.emit('transaction', message);
+          }
+        }
 
         this.emit('account', message);
         break;
@@ -561,6 +654,16 @@ Remote.prototype._connect_message = function (ws, json) {
           Remote.online_states.indexOf(message.server_status) !== -1
             ? 'online'
             : 'offline');
+
+        if ('load_base' in message
+          && 'load_factor' in message
+          && (message.load_base !== this._load_base || message.load_factor != this._load_factor))
+        {
+          this._load_base     = message.load_base;
+          this._load_factor   = message.load_factor;
+
+          this.emit('load', { 'load_base' : this._load_base, 'load_factor' : this.load_factor });
+        }
         break;
 
       // All other messages
@@ -763,13 +866,23 @@ Remote.prototype.request_unsubscribe = function (streams) {
   return request;
 };
 
-// --> current: true, for the current ledger.
-Remote.prototype.request_transaction_entry = function (hash, current) {
+// .ledger_choose()
+// .ledger_hash()
+// .ledger_index()
+Remote.prototype.request_transaction_entry = function (hash) {
   //utils.assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
 
   return (new Request(this, 'transaction_entry'))
-    .ledger_choose(current)
     .tx_hash(hash);
+};
+
+// DEPRECATED: use request_transaction_entry
+Remote.prototype.request_tx = function (hash) {
+  var request = new Request(this, 'tx');
+
+  request.message.transaction  = hash;
+
+  return request;
 };
 
 Remote.prototype.request_account_info = function (accountID) {
@@ -863,58 +976,12 @@ Remote.prototype.request_sign = function (secret, tx_json) {
 };
 
 // Submit a transaction.
-Remote.prototype.submit = function (transaction) {
+Remote.prototype.request_submit = function () {
   var self  = this;
 
-  if (transaction._secret && !this.trusted)
-  {
-    transaction.emit('error', {
-        'result'          : 'tejServerUntrusted',
-        'result_message'  : "Attempt to give a secret to an untrusted server."
-      });
-  }
-  else {
-    if (self.local_sequence && !transaction.tx_json.Sequence) {
-      transaction.tx_json.Sequence      = this.account_seq(transaction.tx_json.Account, 'ADVANCE');
-      // console.log("Sequence: %s", transaction.tx_json.Sequence);
-    }
+  var request = new Request(this, 'submit');
 
-    if (self.local_sequence && !transaction.tx_json.Sequence) {
-      // Look in the last closed ledger.
-      this.account_seq_cache(transaction.tx_json.Account, false)
-        .on('success_account_seq_cache', function () {
-            // Try again.
-            self.submit(transaction);
-          })
-        .on('error_account_seq_cache', function (message) {
-            // XXX Maybe be smarter about this. Don't want to trust an untrusted server for this seq number.
-
-            // Look in the current ledger.
-            self.account_seq_cache(transaction.tx_json.Account, 'CURRENT')
-              .on('success_account_seq_cache', function () {
-                  // Try again.
-                  self.submit(transaction);
-                })
-              .on('error_account_seq_cache', function (message) {
-                  // Forward errors.
-                  transaction.emit('error', message);
-                })
-              .request();
-          })
-        .request();
-    }
-    else {
-      // Convert the transaction into a request and submit it.
-
-      (new Request(this, 'submit'))
-        .build_path(transaction._build_path)
-        .tx_json(transaction.tx_json)
-        .secret(transaction._secret)
-        .on('success', function (message) { transaction.emit('success', message); }) // Forward successes and errors.
-        .on('error', function (message) { transaction.emit('error', message); })
-        .request();
-    }
-  }
+  return request;
 };
 
 //
@@ -928,7 +995,7 @@ Remote.prototype._server_subscribe = function () {
   var self  = this;
 
   var feeds = [ 'ledger', 'server' ];
-  
+
   if (this._transaction_subs)
     feeds.push('transactions');
 
@@ -950,10 +1017,10 @@ Remote.prototype._server_subscribe = function () {
 
         // FIXME Use this to estimate fee.
         self._load_base     = message.load_base || 256;
-        self._load_fee      = message.load_fee || 256;
+        self._load_factor   = message.load_factor || 1.0;
         self._fee_ref       = message.fee_ref;
         self._fee_base      = message.fee_base;
-        self._reserve_base  = message.reverse_base;
+        self._reserve_base  = message.reserve_base;
         self._reserve_inc   = message.reserve_inc;
         self._server_status = message.server_status;
 
@@ -1017,6 +1084,23 @@ Remote.prototype.request_owner_count = function (account, current) {
       });
 };
 
+Remote.prototype.account = function (accountId) {
+  var account = new Account(this, accountId);
+
+  if (!account.is_valid()) return account;
+
+  return this._accounts[account.to_json()] = account;
+};
+
+Remote.prototype.book = function (currency_out, issuer_out,
+                                  currency_in,  issuer_in) {
+  var book = new OrderBook(this,
+                           currency_out, issuer_out,
+                           currency_in,  issuer_in);
+
+  return book;
+}
+
 // Return the next account sequence if possible.
 // <-- undefined or Sequence
 Remote.prototype.account_seq = function (account, advance) {
@@ -1028,7 +1112,8 @@ Remote.prototype.account_seq = function (account, advance) {
   {
     seq = account_info.seq;
 
-    if (advance) account_info.seq += 1;
+    if (advance === "ADVANCE") account_info.seq += 1;
+    if (advance === "REWIND") account_info.seq -= 1;
 
     // console.log("cached: %s current=%d next=%d", account, seq, account_info.seq);
   }

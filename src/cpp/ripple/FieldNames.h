@@ -51,6 +51,7 @@ public:
 protected:
 	static std::map<int, ptr>	codeToField;
 	static boost::mutex			mapMutex;
+	static int 					num;
 
 	SField(SerializedTypeID id, int val);
 
@@ -61,6 +62,7 @@ public:
 	const int				fieldValue;		// Code number for protocol
 	std::string				fieldName;
 	int						fieldMeta;
+	int						fieldNum;
 	bool					signingField;
 
 	SField(int fc, SerializedTypeID tid, int fv, const char* fn) : 
@@ -68,6 +70,7 @@ public:
 	{
 		boost::mutex::scoped_lock sl(mapMutex);
 		codeToField[fieldCode] = this;
+		fieldNum = ++num;
 	}
 
 	SField(SerializedTypeID tid, int fv, const char *fn) :
@@ -76,9 +79,14 @@ public:
 	{
 		boost::mutex::scoped_lock sl(mapMutex);
 		codeToField[fieldCode] = this;
+		fieldNum = ++num;
 	}
 
-	SField(int fc) : fieldCode(fc), fieldType(STI_UNKNOWN), fieldValue(0), fieldMeta(sMD_Never) { ; }
+	SField(int fc) : fieldCode(fc), fieldType(STI_UNKNOWN), fieldValue(0), fieldMeta(sMD_Never)
+	{
+		boost::mutex::scoped_lock sl(mapMutex);
+		fieldNum = ++num;
+	}
 
 	~SField();
 
@@ -96,6 +104,9 @@ public:
 	bool isKnown() const		{ return fieldType != STI_UNKNOWN; }
 	bool isBinary() const		{ return fieldValue < 256; }
 	bool isDiscardable() const	{ return fieldValue > 256; }
+	int getCode() const			{ return fieldCode; }
+	int getNum() const			{ return fieldNum; }
+	static int getNumFields()	{ return num; }
 
 	bool isSigningField() const		{ return signingField; }
 	void notSigningField()			{ signingField = false; }

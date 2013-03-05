@@ -63,7 +63,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 						{
 							SHAMapTreeNode::pointer ptr =
 								boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq - 1, snfPREFIX, childHash);
-							cLog(lsTRACE) << "Got sync node from cache: " << *d;
+							cLog(lsTRACE) << "Got sync node from cache: " << *ptr;
 							mTNByID[*ptr] = ptr;
 							d = ptr.get();
 						}
@@ -83,6 +83,8 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 		if (have_all)
 			node->setFullBelow();
 	}
+	if (nodeIDs.empty())
+		clearSynching();
 }
 
 std::vector<uint256> SHAMap::getNeededHashes(int max)
@@ -134,6 +136,8 @@ std::vector<uint256> SHAMap::getNeededHashes(int max)
 		if (have_all)
 			node->setFullBelow();
 	}
+	if (ret.empty())
+		clearSynching();
 	return ret;
 }
 
@@ -171,7 +175,7 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 		 	}
 		}
 
-		return true;
+	return true;
 }
 
 bool SHAMap::getRootNode(Serializer& s, SHANodeFormat format)
@@ -258,7 +262,7 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigne
 	assert(!node.isRoot());
 	if (!isSynching())
 	{
-		cLog(lsDEBUG) << "AddKnownNode while not synching";
+		cLog(lsTRACE) << "AddKnownNode while not synching";
 		return SMAddNode::okay();
 	}
 

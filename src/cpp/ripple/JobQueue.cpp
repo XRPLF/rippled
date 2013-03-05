@@ -11,18 +11,19 @@ SETUP_LOG();
 
 JobQueue::JobQueue() : mLastJob(0), mThreadCount(0), mShuttingDown(false)
 {
+	mJobLoads[jtPUBOLDLEDGER].setTargetLatency(10000, 15000);
 	mJobLoads[jtVALIDATION_ut].setTargetLatency(2000, 5000);
 	mJobLoads[jtPROOFWORK].setTargetLatency(2000, 5000);
 	mJobLoads[jtTRANSACTION].setTargetLatency(250, 1000);
 	mJobLoads[jtPROPOSAL_ut].setTargetLatency(500, 1250);
-	mJobLoads[jtPUBLEDGER].setTargetLatency(1000, 2500);
+	mJobLoads[jtPUBLEDGER].setTargetLatency(3000, 4500);
 	mJobLoads[jtWAL].setTargetLatency(1000, 2500);
 	mJobLoads[jtVALIDATION_t].setTargetLatency(500, 1500);
 	mJobLoads[jtWRITE].setTargetLatency(750, 1500);
 	mJobLoads[jtTRANSACTION_l].setTargetLatency(100, 500);
 	mJobLoads[jtPROPOSAL_t].setTargetLatency(100, 500);
 
-	mJobLoads[jtCLIENT].setTargetLatency(250, 1000);
+	mJobLoads[jtCLIENT].setTargetLatency(2000, 5000);
 	mJobLoads[jtPEER].setTargetLatency(200, 1250);
 	mJobLoads[jtDISK].setTargetLatency(500, 1000);
 	mJobLoads[jtRPC].setTargetLatency(250, 750);
@@ -35,12 +36,13 @@ const char* Job::toString(JobType t)
 	switch(t)
 	{
 		case jtINVALID:			return "invalid";
+		case jtPUBOLDLEDGER:	return "publishAcqLedger";
 		case jtVALIDATION_ut:	return "untrustedValidation";
 		case jtPROOFWORK:		return "proofOfWork";
 		case jtPROPOSAL_ut:		return "untrustedProposal";
 		case jtCLIENT:			return "clientCommand";
 		case jtTRANSACTION:		return "transaction";
-		case jtPUBLEDGER:		return "publishLedger";
+		case jtPUBLEDGER:		return "publishNewLedger";
 		case jtVALIDATION_t:	return "trustedValidation";
 		case jtWAL:				return "writeAhead";
 		case jtWRITE:			return "writeObjects";
@@ -54,6 +56,8 @@ const char* Job::toString(JobType t)
 		case jtRPC:				return "rpc";
 		case jtACCEPTLEDGER:	return "acceptLedger";
 		case jtTXN_PROC:		return "processTransaction";
+		case jtOB_SETUP:		return "orderBookSetup";
+		case jtPATH_FIND:		return "pathFind";
 		default:				assert(false); return "unknown";
 	}
 }
@@ -94,14 +98,16 @@ bool Job::operator<=(const Job& j) const
 	return mJobIndex <= j.mJobIndex;
 }
 
-void JobQueue::addJob(JobType type, const boost::function<void(Job&)>& jobFunc)
+void JobQueue::addJob(JobType type, const std::string& name, const boost::function<void(Job&)>& jobFunc)
 {
 	assert(type != jtINVALID);
 
 	boost::mutex::scoped_lock sl(mJobLock);
-	assert(mThreadCount != 0); // do not add jobs to a queue with no threads
 
-	mJobSet.insert(Job(type, ++mLastJob, mJobLoads[type], jobFunc));
+	if (type != jtCLIENT) // FIXME: Workaround incorrect client shutdown ordering
+		assert(mThreadCount != 0); // do not add jobs to a queue with no threads
+
+	mJobSet.insert(Job(type, name, ++mLastJob, mJobLoads[type], jobFunc));
 	++mJobCounts[type];
 	mJobCond.notify_one();
 }
@@ -170,15 +176,25 @@ Json::Value JobQueue::getJson(int)
 			if (count != 0)
 				pri["per_second"] = static_cast<int>(count);
 			if (latencyPeak != 0)
-				pri["peak_latency"] = static_cast<int>(latencyPeak);
+				pri["peak_time"] = static_cast<int>(latencyPeak);
 			if (latencyAvg != 0)
-				pri["avg_latency"] = static_cast<int>(latencyAvg);
+				pri["avg_time"] = static_cast<int>(latencyAvg);
 			priorities.append(pri);
 		}
 	}
 	ret["job_types"] = priorities;
 
 	return ret;
+}
+
+int JobQueue::isOverloaded()
+{
+	int count = 0;
+	boost::mutex::scoped_lock sl(mJobLock);
+	for (int i = 0; i < NUM_JOB_TYPES; ++i)
+		if (mJobLoads[i].isOver())
+			++count;
+	return count;
 }
 
 void JobQueue::shutdown()
@@ -240,16 +256,18 @@ void JobQueue::threadEntry()
 			break;
 
 		std::set<Job>::iterator it = mJobSet.begin();
-		Job job(*it);
-		mJobSet.erase(it);
-		--mJobCounts[job.getType()];
+		{
+			Job job(*it);
+			mJobSet.erase(it);
+			--mJobCounts[job.getType()];
 
-		if (job.getType() == jtDEATH)
-			break;
+			if (job.getType() == jtDEATH)
+				break;
 
-		sl.unlock();
-		cLog(lsTRACE) << "Doing " << Job::toString(job.getType()) << " job";
-		job.doJob();
+			sl.unlock();
+			cLog(lsTRACE) << "Doing " << Job::toString(job.getType()) << " job";
+			job.doJob();
+		} // must destroy job without holding lock
 		sl.lock();
 	}
 	--mThreadCount;

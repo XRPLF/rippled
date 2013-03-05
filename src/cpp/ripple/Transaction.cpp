@@ -116,7 +116,11 @@ bool Transaction::sign(const RippleAddress& naAccountPrivate)
 
 bool Transaction::checkSign() const
 {
-	assert(mFromPubKey.isValid());
+	if (!mFromPubKey.isValid())
+	{
+		Log(lsWARNING) << "Transaction has bad source public key";
+		return false;
+	}
 	return mTransaction->checkSign(mFromPubKey);
 }
 
@@ -245,16 +249,6 @@ Transaction::pointer Transaction::load(const uint256& id)
 	return transactionFromSQL(sql);
 }
 
-Transaction::pointer Transaction::findFrom(const RippleAddress& fromID, uint32 seq)
-{
-	std::string sql = "SELECT LedgerSeq,Status,RawTxn FROM Transactions WHERE FromID='";
-	sql.append(fromID.humanAccountID());
-	sql.append("' AND FromSeq='");
-	sql.append(boost::lexical_cast<std::string>(seq));
-	sql.append("';");
-	return transactionFromSQL(sql);
-}
-
 bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedgerSeq,
 	bool checkFirstTransactions, bool checkSecondTransactions, const SHAMap::SHAMapDiff& inMap,
 	std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >& outMap)
@@ -299,22 +293,20 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 }
 
 // options 1 to include the date of the transaction
-Json::Value Transaction::getJson(int options) const
+Json::Value Transaction::getJson(int options, bool binary) const
 {
 	
-	Json::Value ret(mTransaction->getJson(0));
+	Json::Value ret(mTransaction->getJson(0, binary));
 
 	if (mInLedger) 
 	{
-		ret["inLedger"]=mInLedger;
+		ret["inLedger"] = mInLedger;
 
-		if(options==1)
+		if(options == 1)
 		{
 			Ledger::pointer ledger=theApp->getLedgerMaster().getLedgerBySeq(mInLedger);
 			if(ledger)
-			{
-				ret["date"]=ledger->getCloseTimeNC();
-			}
+				ret["date"] = ledger->getCloseTimeNC();
 		}
 	}
 

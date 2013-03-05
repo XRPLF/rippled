@@ -35,9 +35,13 @@ void InfoSub::onSendEmpty()
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
 	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mProposing(false), mValidating(false),
 	mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0), mLastCloseProposers(0),
-	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0)
+	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0),
+	mLastLoadBase(256), mLastLoadFactor(256)
 {
 }
+
+uint64 InfoSub::sSeq = 0;
+boost::mutex InfoSub::sSeqLock;
 
 std::string NetworkOPs::strOperatingMode()
 {
@@ -103,6 +107,23 @@ uint32 NetworkOPs::getLedgerID(const uint256& hash)
 	return lrLedger ? lrLedger->getLedgerSeq() : 0;
 }
 
+Ledger::pointer NetworkOPs::getLedgerBySeq(const uint32 seq)
+{
+	Ledger::pointer ret;
+
+	ret = mLedgerMaster->getLedgerBySeq(seq);
+	if (ret)
+		return ret;
+
+	if (!haveLedger(seq))
+		return ret;
+
+	// We should have this ledger but we don't
+	cLog(lsWARNING) << "We should have ledger " << seq;
+
+	return ret;
+}
+
 uint32 NetworkOPs::getCurrentLedgerID()
 {
 	return mLedgerMaster->getCurrentLedger()->getLedgerSeq();
@@ -116,6 +137,24 @@ bool NetworkOPs::haveLedgerRange(uint32 from, uint32 to)
 bool NetworkOPs::haveLedger(uint32 seq)
 {
 	return mLedgerMaster->haveLedger(seq);
+}
+
+uint32 NetworkOPs::getValidatedSeq()
+{
+	return mLedgerMaster->getValidatedLedger()->getLedgerSeq();
+}
+
+bool NetworkOPs::isValidated(uint32 seq, const uint256& hash)
+{
+	if (!isValidated(seq))
+		return false;
+
+	return mLedgerMaster->getHashBySeq(seq) == hash;
+}
+
+bool NetworkOPs::isValidated(uint32 seq)
+{ // use when ledger was retrieved by seq
+	return haveLedger(seq) && (seq <= mLedgerMaster->getValidatedLedger()->getLedgerSeq());
 }
 
 bool NetworkOPs::addWantedHash(const uint256& h)
@@ -178,7 +217,7 @@ void NetworkOPs::submitTransaction(Job&, SerializedTransaction::pointer iTrans, 
 
 // Sterilize transaction through serialization.
 // This is fully synchronous and deprecated
-Transaction::pointer NetworkOPs::submitTransactionSync(const Transaction::pointer& tpTrans, bool bSubmit)
+Transaction::pointer NetworkOPs::submitTransactionSync(Transaction::ref tpTrans, bool bSubmit)
 {
 	Serializer s;
 	tpTrans->getSTransaction()->add(s);
@@ -220,14 +259,16 @@ void NetworkOPs::runTransactionQueue()
 			return;
 
 		{
-			LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC);
+			LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC, "runTxnQ");
 
 			boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 
 			Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(txn->getID(), true);
 			assert(dbtx);
 
-			TER r = mLedgerMaster->doTransaction(*dbtx->getSTransaction(), tapOPEN_LEDGER | tapNO_CHECK_SIGN);
+			bool didApply;
+			TER r = mLedgerMaster->doTransaction(dbtx->getSTransaction(),
+				tapOPEN_LEDGER | tapNO_CHECK_SIGN, didApply);
 			dbtx->setResult(r);
 
 			if (isTemMalformed(r)) // malformed, cache bad
@@ -236,21 +277,17 @@ void NetworkOPs::runTransactionQueue()
 				theApp->isNewFlag(txn->getID(), SF_RETRY);
 
 
-			bool relay = true;
-
 			if (isTerRetry(r))
 			{ // transaction should be held
 				cLog(lsDEBUG) << "Transaction should be held: " << r;
 				dbtx->setStatus(HELD);
 				theApp->getMasterTransaction().canonicalize(dbtx, true);
 				mLedgerMaster->addHeldTransaction(dbtx);
-				relay = false;
 			}
 			else if (r == tefPAST_SEQ)
 			{ // duplicate or conflict
 				cLog(lsINFO) << "Transaction is obsolete";
 				dbtx->setStatus(OBSOLETE);
-				relay = false;
 			}
 			else if (r == tesSUCCESS)
 			{
@@ -261,12 +298,10 @@ void NetworkOPs::runTransactionQueue()
 			else
 			{
 				cLog(lsDEBUG) << "Status other than success " << r;
-				if (mMode == omFULL)
-					relay = false;
 				dbtx->setStatus(INVALID);
 			}
 
-			if (relay)
+			if (didApply || (mMode != omFULL))
 			{
 				std::set<uint64> peers;
 				if (theApp->getSuppression().swapSet(txn->getID(), peers, SF_RELAYED))
@@ -293,7 +328,7 @@ void NetworkOPs::runTransactionQueue()
 
 Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, stCallback callback)
 {
-	LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC);
+	LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC, "ProcessTXN");
 
 	int newFlags = theApp->getSuppression().getFlags(trans->getID());
 	if ((newFlags & SF_BAD) != 0)
@@ -316,7 +351,8 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 
 	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 	Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(trans->getID(), true);
-	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tapOPEN_LEDGER | tapNO_CHECK_SIGN);
+	bool didApply;
+	TER r = mLedgerMaster->doTransaction(trans->getSTransaction(), tapOPEN_LEDGER | tapNO_CHECK_SIGN, didApply);
 	trans->setResult(r);
 
 	if (isTemMalformed(r)) // malformed, cache bad
@@ -353,8 +389,6 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		return trans;
 	}
 
-	bool relay = true;
-
 	if (r == tesSUCCESS)
 	{
 		cLog(lsINFO) << "Transaction is now included in open ledger";
@@ -364,12 +398,10 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	else
 	{
 		cLog(lsDEBUG) << "Status other than success " << r;
-		if (mMode == omFULL)
-			relay = false;
 		trans->setStatus(INVALID);
 	}
 
-	if (relay)
+	if (didApply || (mMode != omFULL))
 	{
 		std::set<uint64> peers;
 		if (theApp->getSuppression().swapSet(trans->getID(), peers, SF_RELAYED))
@@ -394,30 +426,6 @@ Transaction::pointer NetworkOPs::findTransactionByID(const uint256& transactionI
 	return Transaction::load(transactionID);
 }
 
-#if 0
-int NetworkOPs::findTransactionsBySource(const uint256& uLedger, std::list<Transaction::pointer>& txns,
-	const RippleAddress& sourceAccount, uint32 minSeq, uint32 maxSeq)
-{
-	AccountState::pointer state = getAccountState(uLedger, sourceAccount);
-	if (!state) return 0;
-	if (minSeq > state->getSeq()) return 0;
-	if (maxSeq > state->getSeq()) maxSeq = state->getSeq();
-	if (maxSeq > minSeq) return 0;
-
-	int count = 0;
-	for(unsigned int i = minSeq; i <= maxSeq; ++i)
-	{
-		Transaction::pointer txn = Transaction::findFrom(sourceAccount, i);
-		if(txn)
-		{
-			txns.push_back(txn);
-			++count;
-		}
-	}
-	return count;
-}
-#endif
-
 int NetworkOPs::findTransactionsByDestination(std::list<Transaction::pointer>& txns,
 	const RippleAddress& destinationAccount, uint32 startLedgerSeq, uint32 endLedgerSeq, int maxTransactions)
 {
@@ -436,12 +444,9 @@ AccountState::pointer NetworkOPs::getAccountState(Ledger::ref lrLedger, const Ri
 
 SLE::pointer NetworkOPs::getGenerator(Ledger::ref lrLedger, const uint160& uGeneratorID)
 {
-	LedgerStateParms	qry				= lepNONE;
-
 	if (!lrLedger)
 		return SLE::pointer();
-	else
-		return lrLedger->getGenerator(qry, uGeneratorID);
+	return lrLedger->getGenerator(uGeneratorID);
 }
 
 //
@@ -456,8 +461,7 @@ STVector256 NetworkOPs::getDirNodeInfo(
 	uint64&				uNodeNext)
 {
 	STVector256			svIndexes;
-	LedgerStateParms	lspNode		= lepNONE;
-	SLE::pointer		sleNode		= lrLedger->getDirNode(lspNode, uNodeIndex);
+	SLE::pointer		sleNode		= lrLedger->getDirNode(uNodeIndex);
 
 	if (sleNode)
 	{
@@ -505,8 +509,7 @@ Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const RippleAddre
 
 	uint256				uRootIndex	= lpLedger->getOwnerDirIndex(naAccount.getAccountID());
 
-	LedgerStateParms	lspNode		= lepNONE;
-	SLE::pointer		sleNode		= lpLedger->getDirNode(lspNode, uRootIndex);
+	SLE::pointer		sleNode		= lpLedger->getDirNode(uRootIndex);
 
 	if (sleNode)
 	{
@@ -519,7 +522,7 @@ Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const RippleAddre
 
 			BOOST_FOREACH(const uint256& uDirEntry, vuiIndexes)
 			{
-				SLE::pointer		sleCur		= lpLedger->getSLE(uDirEntry);
+				SLE::pointer		sleCur		= lpLedger->getSLEi(uDirEntry);
 
 				switch (sleCur->getType())
 				{
@@ -550,9 +553,7 @@ Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const RippleAddre
 			uNodeDir		= sleNode->getFieldU64(sfIndexNext);
 			if (uNodeDir)
 			{
-				lspNode	= lepNONE;
-				sleNode	= lpLedger->getDirNode(lspNode, Ledger::getDirNodeIndex(uRootIndex, uNodeDir));
-
+				sleNode	= lpLedger->getDirNode(Ledger::getDirNodeIndex(uRootIndex, uNodeDir));
 				assert(sleNode);
 			}
 		} while (uNodeDir);
@@ -622,11 +623,15 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		mConsensus->timerEntry();
 		return;
 	}
+	tryStartConsensus();
+	if (mConsensus)
+		mConsensus->timerEntry();
+}
 
-	// FIXME: Don't check unless last closed ledger is at least some seconds old
-	// If full or tracking, check only at wobble time!
+void NetworkOPs::tryStartConsensus()
+{
 	uint256 networkClosed;
-	bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
+	bool ledgerChange = checkLastClosedLedger(theApp->getConnectionPool().getPeerVector(), networkClosed);
 	if(networkClosed.isZero())
 		return;
 
@@ -660,8 +665,6 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 
 	if ((!mConsensus) && (mMode != omDISCONNECTED))
 		beginConsensus(networkClosed, mLedgerMaster->getCurrentLedger());
-	if (mConsensus)
-		mConsensus->timerEntry();
 }
 
 bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerList, uint256& networkClosed)
@@ -673,7 +676,8 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	cLog(lsTRACE) << "NetworkOPs::checkLastClosedLedger";
 
 	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
-	if(!ourClosed) return(false);
+	if(!ourClosed)
+		return false;
 
 	uint256 closedLedger = ourClosed->getHash();
 	uint256 prevClosedLedger = ourClosed->getParentHash();
@@ -704,11 +708,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	BOOST_FOREACH(Peer::ref it, peerList)
 	{
-		if (!it)
-		{
-			cLog(lsDEBUG) << "NOP::CS Dead pointer in peer list";
-		}
-		else if (it->isConnected())
+		if (it && it->isConnected())
 		{
 			uint256 peerLedger = it->getClosedLedgerHash();
 			if (peerLedger.isNonZero())
@@ -728,13 +728,14 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	for (boost::unordered_map<uint256, ValidationCount>::iterator it = ledgers.begin(), end = ledgers.end();
 		it != end; ++it)
 	{
-		cLog(lsTRACE) << "L: " << it->first << " t=" << it->second.trustedValidations <<
+		cLog(lsDEBUG) << "L: " << it->first << " t=" << it->second.trustedValidations <<
 			", n=" << it->second.nodesUsing;
 
 		// Temporary logging to make sure tiebreaking isn't broken
 		if (it->second.trustedValidations > 0)
 			cLog(lsTRACE) << "  TieBreakTV: " << it->second.highValidation;
-		else tLog(it->second.nodesUsing > 0, lsTRACE) << "  TieBreakNU: " << it->second.highNodeUsing;
+		else
+			tLog(it->second.nodesUsing > 0, lsTRACE) << "  TieBreakNU: " << it->second.highNodeUsing;
 
 		if (it->second > bestVC)
 		{
@@ -765,7 +766,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	}
 
 	cLog(lsWARNING) << "We are not running on the consensus ledger";
-	cLog(lsINFO) << "Our LCL " << ourClosed->getHash();
+	cLog(lsINFO) << "Our LCL: " << ourClosed->getJson(0);
 	cLog(lsINFO) << "Net LCL " << closedLedger;
 	if ((mMode == omTRACKING) || (mMode == omFULL))
 		setMode(omCONNECTED);
@@ -869,16 +870,21 @@ bool NetworkOPs::haveConsensusObject()
 {
 	if (mConsensus)
 		return true;
-	if (mMode != omFULL)
-		return false;
 
-	uint256 networkClosed;
-	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
-	bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
-	if (!ledgerChange)
+	if ((mMode == omFULL) || (mMode == omTRACKING))
 	{
-		cLog(lsINFO) << "Beginning consensus due to peer action";
-		beginConsensus(networkClosed, mLedgerMaster->getCurrentLedger());
+		tryStartConsensus();
+	}
+	else
+	{ // we need to get into the consensus process
+		uint256 networkClosed;
+		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+		bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
+		if (!ledgerChange)
+		{
+			cLog(lsINFO) << "Beginning consensus due to peer action";
+			beginConsensus(networkClosed, mLedgerMaster->getCurrentLedger());
+		}
 	}
 	return mConsensus;
 }
@@ -1020,13 +1026,22 @@ void NetworkOPs::pubServer()
 
 		jvObj["type"]			= "serverStatus";
 		jvObj["server_status"]	= strOperatingMode();
-		jvObj["load_base"]		= theApp->getFeeTrack().getLoadBase();
-		jvObj["load_factor"]	= theApp->getFeeTrack().getLoadFactor();
+		jvObj["load_base"]		= (mLastLoadBase = theApp->getFeeTrack().getLoadBase());
+		jvObj["load_factor"]	= (mLastLoadFactor = theApp->getFeeTrack().getLoadFactor());
 
-		BOOST_FOREACH(InfoSub* ispListener, mSubServer)
+		NetworkOPs::subMapType::const_iterator it = mSubServer.begin();
+		while (it != mSubServer.end())
 		{
-			ispListener->send(jvObj);
+			InfoSub::pointer p = it->second.lock();
+			if (p)
+			{
+				p->send(jvObj, true);
+				++it;
+			}
+			else
+				it = mSubServer.erase(it);
 		}
+
 	}
 }
 
@@ -1046,12 +1061,12 @@ void NetworkOPs::setMode(OperatingMode om)
 
 std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 	NetworkOPs::getAccountTxs(const RippleAddress& account, uint32 minLedger, uint32 maxLedger)
-{
+{ // can be called with no locks
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
 
 	std::string sql =
 		str(boost::format("SELECT LedgerSeq,Status,RawTxn,TxnMeta FROM Transactions where TransID in (SELECT TransID from AccountTransactions  "
-			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' LIMIT 1000) ORDER BY LedgerSeq;")
+			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' LIMIT 200) ORDER BY LedgerSeq DESC;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{
@@ -1080,6 +1095,52 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 	return ret;
 }
 
+std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
+	const RippleAddress& account, uint32 minLedger, uint32 maxLedger)
+{ // can be called with no locks
+	std::vector< txnMetaLedgerType> ret;
+
+	std::string sql =
+		str(boost::format("SELECT LedgerSeq, RawTxn,TxnMeta FROM Transactions where TransID in (SELECT TransID from AccountTransactions  "
+			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' LIMIT 500) ORDER BY LedgerSeq DESC;")
+			% account.humanAccountID() % maxLedger	% minLedger);
+
+	{
+		Database* db = theApp->getTxnDB()->getDB();
+		ScopedLock sl(theApp->getTxnDB()->getDBLock());
+
+		SQL_FOREACH(db, sql)
+		{
+			int txnSize = 2048;
+			std::vector<unsigned char> rawTxn(txnSize);
+			txnSize = db->getBinary("RawTxn", &rawTxn[0], rawTxn.size());
+			if (txnSize > rawTxn.size())
+			{
+				rawTxn.resize(txnSize);
+				db->getBinary("RawTxn", &*rawTxn.begin(), rawTxn.size());
+			}
+			else
+				rawTxn.resize(txnSize);
+
+			int metaSize = 2048;
+			std::vector<unsigned char> rawMeta(2048);
+			metaSize = db->getBinary("TxnMeta", &rawMeta[0], rawMeta.size());
+			if (metaSize > rawMeta.size())
+			{
+				rawMeta.resize(metaSize);
+				db->getBinary("TxnMeta", &*rawMeta.begin(), rawMeta.size());
+			}
+			else
+				rawMeta.resize(metaSize);
+
+			ret.push_back(boost::make_tuple(strHex(rawTxn), strHex(rawMeta), db->getInt("LedgerSeq")));
+		}
+	}
+
+	return ret;
+}
+
+
 std::vector<RippleAddress>
 	NetworkOPs::getLedgerAffectedAccounts(uint32 ledgerSeq)
 {
@@ -1100,10 +1161,20 @@ std::vector<RippleAddress>
 	return accounts;
 }
 
-bool NetworkOPs::recvValidation(const SerializedValidation::pointer& val)
+bool NetworkOPs::recvValidation(SerializedValidation::ref val)
 {
 	cLog(lsDEBUG) << "recvValidation " << val->getLedgerHash();
 	return theApp->getValidations().addValidation(val);
+}
+
+Json::Value NetworkOPs::getConsensusInfo()
+{
+	if (mConsensus)
+		return mConsensus->getJson(true);
+
+	Json::Value info = Json::objectValue;
+	info["consensus"] = "none";
+	return info;
 }
 
 Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
@@ -1117,6 +1188,8 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 
 	if (mNeedNetworkLedger)
 		info["network_ledger"] = "waiting";
+
+	info["validation_quorum"] = mLedgerMaster->getMinValidations();
 
 	if (admin)
 	{
@@ -1152,7 +1225,7 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 	}
 	else
 		info["load_factor"] =
-			static_cast<double>(theApp->getFeeTrack().getLoadBase()) / theApp->getFeeTrack().getLoadFactor();
+			static_cast<double>(theApp->getFeeTrack().getLoadFactor()) / theApp->getFeeTrack().getLoadBase();
 
 	bool valid = false;
 	Ledger::pointer lpClosed	= getValidatedLedger();
@@ -1178,12 +1251,21 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 		}
 		else
 		{
-			l["base_fee_xrp"]		= static_cast<double>(Json::UInt(baseFee)) / SYSTEM_CURRENCY_PARTS;
+			l["base_fee_xrp"]		= static_cast<double>(baseFee) / SYSTEM_CURRENCY_PARTS;
 			l["reserve_base_xrp"]	=
 				static_cast<double>(Json::UInt(lpClosed->getReserve(0) * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
 			l["reserve_inc_xrp"]	=
 				static_cast<double>(Json::UInt(lpClosed->getReserveInc() * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
-			l["age"]			= Json::UInt(getCloseTimeNC() - lpClosed->getCloseTimeNC());
+
+			uint32 closeTime = getCloseTimeNC();
+			uint32 lCloseTime = lpClosed->getCloseTimeNC();
+
+			if (lCloseTime <= closeTime)
+			{
+				uint32 age = closeTime - lCloseTime;
+				if (age < 1000000)
+					l["age"]			= Json::UInt(age);
+			}
 		}
 		info["closed_ledger"] = l;
 	}
@@ -1209,25 +1291,37 @@ Json::Value NetworkOPs::pubBootstrapAccountInfo(Ledger::ref lpAccepted, const Ri
 	return jvObj;
 }
 
-void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult)
+void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, SerializedTransaction::ref stTxn, TER terResult)
 {
-	Json::Value	jvObj	= transJson(stTxn, terResult, false, lpCurrent, "transaction");
+	Json::Value	jvObj	= transJson(*stTxn, terResult, false, lpCurrent);
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
-		BOOST_FOREACH(InfoSub* ispListener, mSubRTTransactions)
+		NetworkOPs::subMapType::const_iterator it = mSubRTTransactions.begin();
+		while (it != mSubRTTransactions.end())
 		{
-			ispListener->send(jvObj);
+			InfoSub::pointer p = it->second.lock();
+			if (p)
+			{
+				p->send(jvObj, true);
+				++it;
+			}
+			else
+				it = mSubRTTransactions.erase(it);
 		}
 	}
-	TransactionMetaSet::pointer ret;
-	pubAccountTransaction(lpCurrent,stTxn,terResult,false,ret);
+	ALTransaction alt(stTxn, terResult);
+	cLog(lsTRACE) << "pubProposed: " << alt.getJson(0);
+	pubAccountTransaction(lpCurrent, ALTransaction(stTxn, terResult));
 }
 
-void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
+void NetworkOPs::pubLedger(Ledger::ref accepted)
 {
 	// Ledgers are published only when they acquire sufficient validations
 	// Holes are filled across connection loss or other catastrophe
+
+	AcceptedLedger::pointer alpAccepted = AcceptedLedger::makeAcceptedLedger(accepted);
+	Ledger::ref lpAccepted = alpAccepted->getLedger();
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
@@ -1246,36 +1340,44 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 			jvObj["reserve_base"]	= Json::UInt(lpAccepted->getReserve(0));
 			jvObj["reserve_inc"]	= Json::UInt(lpAccepted->getReserveInc());
 
-			BOOST_FOREACH(InfoSub* ispListener, mSubLedger)
+			jvObj["txn_count"]		= Json::UInt(alpAccepted->getTxnCount());
+
+			NetworkOPs::subMapType::const_iterator it = mSubLedger.begin();
+			while (it != mSubLedger.end())
 			{
-				ispListener->send(jvObj);
+				InfoSub::pointer p = it->second.lock();
+				if (p)
+				{
+					p->send(jvObj, true);
+					++it;
+				}
+				else
+					it = mSubLedger.erase(it);
 			}
 		}
 	}
 
 	// Don't lock since pubAcceptedTransaction is locking.
-	if (!mSubTransactions.empty() || !mSubRTTransactions.empty() || !mSubAccount.empty() || !mSubRTAccount.empty() || !mSubmitMap.empty() )
+	if (!mSubTransactions.empty() || !mSubRTTransactions.empty() || !mSubAccount.empty() || !mSubRTAccount.empty())
 	{
-		SHAMap&		txSet	= *lpAccepted->peekTransactionMap();
-
-		for (SHAMapItem::pointer item = txSet.peekFirstItem(); !!item; item = txSet.peekNextItem(item->getTag()))
+		BOOST_FOREACH(const AcceptedLedger::value_type& vt, alpAccepted->getMap())
 		{
-			SerializerIterator it(item->peekSerializer());
-
-			// OPTIMIZEME: Could get transaction from txn master, but still must call getVL
-			Serializer				txnSer(it.getVL());
-			SerializerIterator		txnIt(txnSer);
-			SerializedTransaction	stTxn(txnIt);
-
-			TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet>(
-				stTxn.getTransactionID(), lpAccepted->getLedgerSeq(), it.getVL());
-
-			pubAcceptedTransaction(lpAccepted, stTxn, meta->getResultTER(), meta);
+			cLog(lsTRACE) << "pubAccepted: " << vt.second.getJson(0);
+			pubAcceptedTransaction(lpAccepted, vt.second);
 		}
 	}
 }
 
-Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent, const std::string& strType)
+void NetworkOPs::reportFeeChange()
+{
+	if ((theApp->getFeeTrack().getLoadBase() == mLastLoadBase) &&
+			(theApp->getFeeTrack().getLoadFactor() == mLastLoadFactor))
+		return;
+
+	theApp->getJobQueue().addJob(jtCLIENT, "reportFeeChange->pubServer", boost::bind(&NetworkOPs::pubServer, this));
+}
+
+Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent)
 {
 	Json::Value	jvObj(Json::objectValue);
 	std::string	sToken;
@@ -1283,7 +1385,7 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 
 	transResultInfo(terResult, sToken, sHuman);
 
-	jvObj["type"]			= strType;
+	jvObj["type"]			= "transaction";
 	jvObj["transaction"]	= stTxn.getJson(0);
 	if (bAccepted) {
 		jvObj["ledger_index"]			= lpCurrent->getLedgerSeq();
@@ -1302,32 +1404,50 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 	return jvObj;
 }
 
-void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta)
+void NetworkOPs::pubAcceptedTransaction(Ledger::ref alAccepted, const ALTransaction& alTx)
 {
-	Json::Value	jvObj	= transJson(stTxn, terResult, true, lpCurrent, "transaction");
-
-	if (meta) jvObj["meta"] = meta->getJson(0);
+	Json::Value	jvObj	= transJson(*alTx.getTxn(), alTx.getResult(), true, alAccepted);
+	jvObj["meta"] = alTx.getMeta()->getJson(0);
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 
-		BOOST_FOREACH(InfoSub* ispListener, mSubTransactions)
+		NetworkOPs::subMapType::const_iterator it = mSubTransactions.begin();
+		while (it != mSubTransactions.end())
 		{
-			ispListener->send(jvObj);
+			InfoSub::pointer p = it->second.lock();
+			if (p)
+			{
+				p->send(jvObj, true);
+				++it;
+			}
+			else
+				it = mSubTransactions.erase(it);
 		}
 
-		BOOST_FOREACH(InfoSub* ispListener, mSubRTTransactions)
+		it = mSubRTTransactions.begin();
+		while (it != mSubRTTransactions.end())
 		{
-			ispListener->send(jvObj);
+			InfoSub::pointer p = it->second.lock();
+			if (p)
+			{
+				p->send(jvObj, true);
+				++it;
+			}
+			else
+				it = mSubRTTransactions.erase(it);
 		}
 	}
-
-	pubAccountTransaction(lpCurrent, stTxn, terResult, true, meta);
+	theApp->getOrderBookDB().processTxn(alAccepted, alTx, jvObj);
+	pubAccountTransaction(alAccepted, alTx);
 }
 
-void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted, TransactionMetaSet::pointer& meta)
+void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const ALTransaction& alTx)
 {
-	boost::unordered_set<InfoSub*>	notify;
+	boost::unordered_set<InfoSub::pointer>	notify;
+	bool							bAccepted	= alTx.isApplied();
+	int								iProposed	= 0;
+	int								iAccepted	= 0;
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
@@ -1336,16 +1456,24 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 
 		if (!mSubAccount.empty() || (!mSubRTAccount.empty()) )
 		{
-			std::vector<RippleAddress> accounts = meta ? meta->getAffectedAccounts() : stTxn.getMentionedAccounts();
-			BOOST_FOREACH(const RippleAddress& affectedAccount, accounts)
+			BOOST_FOREACH(const RippleAddress& affectedAccount, alTx.getAffected())
 			{
 				subInfoMapIterator	simiIt	= mSubRTAccount.find(affectedAccount.getAccountID());
 
 				if (simiIt != mSubRTAccount.end())
 				{
-					BOOST_FOREACH(InfoSub* ispListener, simiIt->second)
+					NetworkOPs::subMapType::const_iterator it = simiIt->second.begin();
+					while (it != simiIt->second.end())
 					{
-						notify.insert(ispListener);
+						InfoSub::pointer p = it->second.lock();
+						if (p)
+						{
+							notify.insert(p);
+							++it;
+							++iProposed;
+						}
+						else
+							it = simiIt->second.erase(it);
 					}
 				}
 
@@ -1355,26 +1483,36 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 
 					if (simiIt != mSubAccount.end())
 					{
-						BOOST_FOREACH(InfoSub* ispListener, simiIt->second)
+						NetworkOPs::subMapType::const_iterator it = simiIt->second.begin();
+						while (it != simiIt->second.end())
 						{
-							notify.insert(ispListener);
+							InfoSub::pointer p = it->second.lock();
+							if (p)
+							{
+								notify.insert(p);
+								++it;
+								++iAccepted;
+							}
+							else
+								it = simiIt->second.erase(it);
 						}
 					}
 				}
 			}
 		}
 	}
+	cLog(lsINFO) << boost::str(boost::format("pubAccountTransaction: iProposed=%d iAccepted=%d") % iProposed % iAccepted);
 
-	// FIXME: This can crash. An InfoSub can go away while we hold a regular pointer to it.
 	if (!notify.empty())
 	{
-		Json::Value	jvObj	= transJson(stTxn, terResult, bAccepted, lpCurrent, "account");
+		Json::Value	jvObj	= transJson(*alTx.getTxn(), alTx.getResult(), bAccepted, lpCurrent);
 
-		if (meta) jvObj["meta"] = meta->getJson(0);
+		if (alTx.isApplied())
+			jvObj["meta"] = alTx.getMeta()->getJson(0);
 
-		BOOST_FOREACH(InfoSub* ispListener, notify)
+		BOOST_FOREACH(InfoSub::ref isrListener, notify)
 		{
-			ispListener->send(jvObj);
+			isrListener->send(jvObj, true);
 		}
 	}
 }
@@ -1383,14 +1521,16 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 // Monitoring
 //
 
-void NetworkOPs::subAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs, uint32 uLedgerIndex, bool rt)
+void NetworkOPs::subAccount(InfoSub::ref isrListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs, uint32 uLedgerIndex, bool rt)
 {
 	subInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
 
 	// For the connection, monitor each account.
 	BOOST_FOREACH(const RippleAddress& naAccountID, vnaAccountIDs)
 	{
-		ispListener->insertSubAccountInfo(naAccountID, uLedgerIndex);
+		cLog(lsTRACE) << boost::str(boost::format("subAccount: account: %d") % naAccountID.humanAccountID());
+
+		isrListener->insertSubAccountInfo(naAccountID, uLedgerIndex);
 	}
 
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
@@ -1401,20 +1541,19 @@ void NetworkOPs::subAccount(InfoSub* ispListener, const boost::unordered_set<Rip
 		if (simIterator == subMap.end())
 		{
 			// Not found, note that account has a new single listner.
-			boost::unordered_set<InfoSub*>	usisElement;
-
-			usisElement.insert(ispListener);
+			subMapType	usisElement;
+			usisElement[isrListener->getSeq()] = isrListener;
 			subMap.insert(simIterator, make_pair(naAccountID.getAccountID(), usisElement));
 		}
 		else
 		{
 			// Found, note that the account has another listener.
-			simIterator->second.insert(ispListener);
+			simIterator->second[isrListener->getSeq()] = isrListener;
 		}
 	}
 }
 
-void NetworkOPs::unsubAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs, bool rt)
+void NetworkOPs::unsubAccount(uint64 uSeq, const boost::unordered_set<RippleAddress>& vnaAccountIDs, bool rt)
 {
 	subInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
 
@@ -1422,7 +1561,7 @@ void NetworkOPs::unsubAccount(InfoSub* ispListener, const boost::unordered_set<R
 	// FIXME: Don't we need to unsub?
 	// BOOST_FOREACH(const RippleAddress& naAccountID, vnaAccountIDs)
 	// {
-	//	ispListener->deleteSubAccountInfo(naAccountID);
+	//	isrListener->deleteSubAccountInfo(naAccountID);
 	// }
 
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
@@ -1440,7 +1579,7 @@ void NetworkOPs::unsubAccount(InfoSub* ispListener, const boost::unordered_set<R
 		else
 		{
 			// Found
-			simIterator->second.erase(ispListener);
+			simIterator->second.erase(uSeq);
 
 			if (simIterator->second.empty())
 			{
@@ -1449,6 +1588,26 @@ void NetworkOPs::unsubAccount(InfoSub* ispListener, const boost::unordered_set<R
 			}
 		}
 	}
+}
+
+bool NetworkOPs::subBook(InfoSub::ref isrListener, const uint160& currencyIn, const uint160& currencyOut,
+	const uint160& issuerIn, const uint160& issuerOut)
+{
+	BookListeners::pointer listeners =
+		theApp->getOrderBookDB().makeBookListeners(currencyIn, currencyOut, issuerIn, issuerOut);
+	if (listeners)
+		listeners->addSubscriber(isrListener);
+	return true;
+}
+
+bool NetworkOPs::unsubBook(uint64 uSeq,
+	const uint160& currencyIn, const uint160& currencyOut, const uint160& issuerIn, const uint160& issuerOut)
+{
+	BookListeners::pointer listeners =
+		theApp->getOrderBookDB().getBookListeners(currencyIn, currencyOut, issuerIn, issuerOut);
+	if (listeners)
+		listeners->removeSubscriber(uSeq);
+	return true;
 }
 
 void NetworkOPs::newLCL(int proposers, int convergeTime, const uint256& ledgerHash)
@@ -1466,7 +1625,7 @@ uint32 NetworkOPs::acceptLedger()
 	return mLedgerMaster->getCurrentLedger()->getLedgerSeq();
 }
 
-void NetworkOPs::storeProposal(const LedgerProposal::pointer& proposal, const RippleAddress& peerPublic)
+void NetworkOPs::storeProposal(LedgerProposal::ref proposal, const RippleAddress& peerPublic)
 {
 	std::list<LedgerProposal::pointer>& props = mStoredProposals[peerPublic.getNodeID()];
 	if (props.size() >= (unsigned)(mLastCloseProposers + 10))
@@ -1477,26 +1636,26 @@ void NetworkOPs::storeProposal(const LedgerProposal::pointer& proposal, const Ri
 InfoSub::~InfoSub()
 {
 	NetworkOPs& ops = theApp->getOPs();
-	ops.unsubTransactions(this);
-	ops.unsubRTTransactions(this);
-	ops.unsubLedger(this);
-	ops.unsubServer(this);
-	ops.unsubAccount(this, mSubAccountInfo, true);
-	ops.unsubAccount(this, mSubAccountInfo, false);
+	ops.unsubTransactions(mSeq);
+	ops.unsubRTTransactions(mSeq);
+	ops.unsubLedger(mSeq);
+	ops.unsubServer(mSeq);
+	ops.unsubAccount(mSeq, mSubAccountInfo, true);
+	ops.unsubAccount(mSeq, mSubAccountInfo, false);
 }
 
 #if 0
-void NetworkOPs::subAccountChanges(InfoSub* ispListener, const uint256 uLedgerHash)
+void NetworkOPs::subAccountChanges(InfoSub* isrListener, const uint256 uLedgerHash)
 {
 }
 
-void NetworkOPs::unsubAccountChanges(InfoSub* ispListener)
+void NetworkOPs::unsubAccountChanges(InfoSub* isrListener)
 {
 }
 #endif
 
 // <-- bool: true=added, false=already there
-bool NetworkOPs::subLedger(InfoSub* ispListener, Json::Value& jvResult)
+bool NetworkOPs::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
 {
 	Ledger::pointer lpClosed	= getClosedLedger();
 
@@ -1509,17 +1668,19 @@ bool NetworkOPs::subLedger(InfoSub* ispListener, Json::Value& jvResult)
 	jvResult["reserve_base"]	= Json::UInt(lpClosed->getReserve(0));
 	jvResult["reserve_inc"]		= Json::UInt(lpClosed->getReserveInc());
 
-	return mSubLedger.insert(ispListener).second;
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
+	return mSubLedger.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
 }
 
 // <-- bool: true=erased, false=was not there
-bool NetworkOPs::unsubLedger(InfoSub* ispListener)
+bool NetworkOPs::unsubLedger(uint64 uSeq)
 {
-	return !!mSubLedger.erase(ispListener);
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
+	return !!mSubLedger.erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there
-bool NetworkOPs::subServer(InfoSub* ispListener, Json::Value& jvResult)
+bool NetworkOPs::subServer(InfoSub::ref isrListener, Json::Value& jvResult)
 {
 	uint256			uRandom;
 
@@ -1535,60 +1696,56 @@ bool NetworkOPs::subServer(InfoSub* ispListener, Json::Value& jvResult)
 	jvResult["load_base"]		= theApp->getFeeTrack().getLoadBase();
 	jvResult["load_factor"]		= theApp->getFeeTrack().getLoadFactor();
 
-	return mSubServer.insert(ispListener).second;
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
+	return mSubServer.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
 }
 
 // <-- bool: true=erased, false=was not there
-bool NetworkOPs::unsubServer(InfoSub* ispListener)
+bool NetworkOPs::unsubServer(uint64 uSeq)
 {
-	return !!mSubServer.erase(ispListener);
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
+	return !!mSubServer.erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there
-bool NetworkOPs::subTransactions(InfoSub* ispListener)
+bool NetworkOPs::subTransactions(InfoSub::ref isrListener)
 {
-	return mSubTransactions.insert(ispListener).second;
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
+	return mSubTransactions.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
 }
 
 // <-- bool: true=erased, false=was not there
-bool NetworkOPs::unsubTransactions(InfoSub* ispListener)
+bool NetworkOPs::unsubTransactions(uint64 uSeq)
 {
-	return !!mSubTransactions.erase(ispListener);
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
+	return !!mSubTransactions.erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there
-bool NetworkOPs::subRTTransactions(InfoSub* ispListener)
+bool NetworkOPs::subRTTransactions(InfoSub::ref isrListener)
 {
-	return mSubTransactions.insert(ispListener).second;
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
+	return mSubTransactions.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
 }
 
 // <-- bool: true=erased, false=was not there
-bool NetworkOPs::unsubRTTransactions(InfoSub* ispListener)
+bool NetworkOPs::unsubRTTransactions(uint64 uSeq)
 {
-	return !!mSubTransactions.erase(ispListener);
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
+	return !!mSubTransactions.erase(uSeq);
 }
 
-RPCSub* NetworkOPs::findRpcSub(const std::string& strUrl)
+InfoSub::pointer NetworkOPs::findRpcSub(const std::string& strUrl)
 {
-	RPCSub*								rspResult;
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 
-	subRpcMapType::iterator	it;
-
-	it	= mRpcSubMap.find(strUrl);
-	if (it == mRpcSubMap.end())
-	{
-		rspResult = (RPCSub*)(0);
-	}
-	else
-	{
-		rspResult	= it->second;
-	}
-
-	return rspResult;
+	subRpcMapType::iterator	it = mRpcSubMap.find(strUrl);
+	if (it != mRpcSubMap.end())
+		return it->second;
+	return InfoSub::pointer();
 }
 
-RPCSub* NetworkOPs::addRpcSub(const std::string& strUrl, RPCSub* rspEntry)
+InfoSub::pointer NetworkOPs::addRpcSub(const std::string& strUrl, InfoSub::ref rspEntry)
 {
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 
@@ -1597,5 +1754,170 @@ RPCSub* NetworkOPs::addRpcSub(const std::string& strUrl, RPCSub* rspEntry)
 	return rspEntry;
 }
 
+// FIXME : support iLimit.
+void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const uint160& uTakerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult)
+{
+	boost::unordered_map<uint160, STAmount>	umBalance;
+	Json::Value		jvOffers	= Json::Value(Json::arrayValue);
+	const uint256	uBookBase	= Ledger::getBookBase(uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
+	const uint256	uBookEnd	= Ledger::getQualityNext(uBookBase);
+	uint256			uTipIndex	= uBookBase;
+
+	cLog(lsTRACE) << boost::str(boost::format("getBookPage: uTakerPaysCurrencyID=%s uTakerPaysIssuerID=%s") % STAmount::createHumanCurrency(uTakerPaysCurrencyID) % RippleAddress::createHumanAccountID(uTakerPaysIssuerID));
+	cLog(lsTRACE) << boost::str(boost::format("getBookPage: uTakerGetsCurrencyID=%s uTakerGetsIssuerID=%s") % STAmount::createHumanCurrency(uTakerGetsCurrencyID) % RippleAddress::createHumanAccountID(uTakerGetsIssuerID));
+	cLog(lsTRACE) << boost::str(boost::format("getBookPage: uBookBase=%s") % uBookBase);
+	cLog(lsTRACE) << boost::str(boost::format("getBookPage:  uBookEnd=%s") % uBookEnd);
+	cLog(lsTRACE) << boost::str(boost::format("getBookPage: uTipIndex=%s") % uTipIndex);
+
+	LedgerEntrySet	lesActive(lpLedger);
+
+	bool			bDone			= false;
+	bool			bDirectAdvance	= true;
+
+	SLE::pointer	sleOfferDir;
+	uint256			uOfferIndex;
+	unsigned int	uBookEntry;
+	STAmount		saDirRate;
+
+//	unsigned int	iLeft			= iLimit;
+
+	uint32	uTransferRate	= lesActive.rippleTransferRate(uTakerGetsIssuerID);
+
+	while (!bDone) {
+		if (bDirectAdvance) {
+			bDirectAdvance	= false;
+
+			cLog(lsTRACE) << boost::str(boost::format("getBookPage: bDirectAdvance"));
+
+			sleOfferDir		= lesActive.entryCache(ltDIR_NODE, lpLedger->getNextLedgerIndex(uTipIndex, uBookEnd));
+			if (!sleOfferDir)
+			{
+				cLog(lsTRACE) << boost::str(boost::format("getBookPage: bDone"));
+				bDone			= true;
+			}
+			else
+			{
+				uTipIndex		= sleOfferDir->getIndex();
+				saDirRate		= STAmount::setRate(Ledger::getQuality(uTipIndex));
+				SLE::pointer	sleBookNode;
+
+				lesActive.dirFirst(uTipIndex, sleBookNode, uBookEntry, uOfferIndex);
+
+				cLog(lsTRACE) << boost::str(boost::format("getBookPage:   uTipIndex=%s") % uTipIndex);
+				cLog(lsTRACE) << boost::str(boost::format("getBookPage: uOfferIndex=%s") % uOfferIndex);
+			}
+		}
+
+		if (!bDone)
+		{
+			SLE::pointer	sleOffer		= lesActive.entryCache(ltOFFER, uOfferIndex);
+			const uint160	uOfferOwnerID	= sleOffer->getFieldAccount(sfAccount).getAccountID();
+			STAmount		saTakerGets		= sleOffer->getFieldAmount(sfTakerGets);
+			STAmount		saTakerPays		= sleOffer->getFieldAmount(sfTakerPays);
+			STAmount		saOwnerFunds;
+
+			if (uTakerGetsIssuerID == uOfferOwnerID)
+			{
+				// If offer is selling issuer's own IOUs, it is fully funded.
+				saOwnerFunds	= saTakerGets;
+			}
+			else
+			{
+				boost::unordered_map<uint160, STAmount>::const_iterator	umBalanceEntry	= umBalance.find(uOfferOwnerID);
+
+				if (umBalanceEntry != umBalance.end())
+				{
+					// Found in running balance table.
+
+					saOwnerFunds	= umBalanceEntry->second;
+					// cLog(lsINFO) << boost::str(boost::format("getBookPage: saOwnerFunds=%s (cached)") % saOwnerFunds.getFullText());
+				}
+				else
+				{
+					// Did not find balance in table.
+
+					saOwnerFunds	= lesActive.accountHolds(uOfferOwnerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
+					// cLog(lsINFO) << boost::str(boost::format("getBookPage: saOwnerFunds=%s (new)") % saOwnerFunds.getFullText());
+					if (saOwnerFunds.isNegative())
+					{
+						// Treat negative funds as zero.
+
+						saOwnerFunds.zero();
+					}
+				}
+			}
+
+			Json::Value	jvOffer	= sleOffer->getJson(0);
+
+			STAmount	saTakerGetsFunded;
+			STAmount	saOwnerFundsLimit;
+			uint32		uOfferRate;
+
+
+			if (uTransferRate != QUALITY_ONE				// Have a tranfer fee.
+				&& uTakerID != uTakerGetsIssuerID			// Not taking offers of own IOUs.
+				&& uTakerGetsIssuerID != uOfferOwnerID) {	// Offer owner not issuing ownfunds
+				// Need to charge a transfer fee to offer owner.
+				uOfferRate			= uTransferRate;
+				saOwnerFundsLimit	= STAmount::divide(saOwnerFunds, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9));
+			}
+			else
+			{
+				uOfferRate			= QUALITY_ONE;
+				saOwnerFundsLimit	= saOwnerFunds;
+			}
+
+			if (saOwnerFundsLimit >= saTakerGets)
+			{
+				// Sufficient funds no shenanigans.
+				saTakerGetsFunded	= saTakerGets;
+			}
+			else
+			{
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage:  saTakerGets=%s") % saTakerGets.getFullText());
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage:  saTakerPays=%s") % saTakerPays.getFullText());
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage: saOwnerFunds=%s") % saOwnerFunds.getFullText());
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage:    saDirRate=%s") % saDirRate.getText());
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate).getFullText());
+				// cLog(lsINFO) << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays).getFullText());
+				STAmount	saTakerPaysFunded;
+
+				saTakerGetsFunded	= saOwnerFundsLimit;
+				saTakerPaysFunded	= std::min(saTakerPays, STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays));
+
+				// Only provide, if not fully funded.
+				jvOffer["taker_gets_funded"]	= saTakerGetsFunded.getJson(0);
+				jvOffer["taker_pays_funded"]	= saTakerPaysFunded.getJson(0);
+
+			}
+			STAmount	saOwnerPays		= QUALITY_ONE == uOfferRate
+											? saTakerGetsFunded
+											: std::min(saOwnerFunds, STAmount::multiply(saTakerGetsFunded, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9)));
+
+			STAmount	saOwnerBalance	= saOwnerFunds-saOwnerPays;
+
+			umBalance[uOfferOwnerID]	= saOwnerBalance;
+
+			if (!saOwnerFunds.isZero() || uOfferOwnerID == uTakerID)
+			{
+				// Only provide funded offers and offers of the taker.
+				jvOffers.append(jvOffer);
+			}
+
+			if (!lesActive.dirNext(uTipIndex, sleOfferDir, uBookEntry, uOfferIndex))
+			{
+				bDirectAdvance	= true;
+			}
+			else
+			{
+				cLog(lsTRACE) << boost::str(boost::format("getBookPage: uOfferIndex=%s") % uOfferIndex);
+			}
+		}
+	}
+
+	jvResult["offers"]	= jvOffers;
+//	jvResult["marker"]	= Json::Value(Json::arrayValue);
+//	jvResult["nodes"]	= Json::Value(Json::arrayValue);
+}
 
 // vim:ts=4

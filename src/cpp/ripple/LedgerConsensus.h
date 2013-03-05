@@ -75,6 +75,7 @@ public:
 	void unVote(const uint160& peer);
 
 	bool updateVote(int percentTime, bool proposing);
+	Json::Value getJson();
 };
 
 enum LCState
@@ -161,7 +162,7 @@ public:
 	LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime);
 
 	int startup();
-	Json::Value getJson();
+	Json::Value getJson(bool full);
 
 	Ledger::ref peekPreviousLedger()	{ return mPreviousLedger; }
 	uint256 getLCL()					{ return mPrevLedgerHash; }
@@ -183,7 +184,7 @@ public:
 
 	bool haveConsensus(bool forReal);
 
-	bool peerPosition(const LedgerProposal::pointer&);
+	bool peerPosition(LedgerProposal::ref);
 
 	bool peerHasSet(Peer::ref peer, const uint256& set, ripple::TxSetStatus status);
 

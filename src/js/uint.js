@@ -20,8 +20,8 @@ var UInt = function () {
   this._value  = NaN;
 };
 
-UInt.json_rewrite = function (j) {
-  return this.from_json(j).to_json();
+UInt.json_rewrite = function (j, opts) {
+  return this.from_json(j).to_json(opts);
 };
 
 // Return a new UInt from j.
@@ -92,6 +92,10 @@ UInt.prototype.is_valid = function () {
   return this._value instanceof BigInteger;
 };
 
+UInt.prototype.is_zero = function () {
+  return this._value.equals(BigInteger.ZERO);
+};
+
 // value = NaN on error.
 UInt.prototype.parse_generic = function (j) {
   // Canonicalize and validate
@@ -102,14 +106,14 @@ UInt.prototype.parse_generic = function (j) {
   case undefined:
   case "0":
   case this.constructor.STR_ZERO:
-  case this.constructor.ADDRESS_ZERO:
+  case this.constructor.ACCOUNT_ZERO:
   case this.constructor.HEX_ZERO:
     this._value  = nbi();
     break;
 
   case "1":
   case this.constructor.STR_ONE:
-  case this.constructor.ADDRESS_ONE:
+  case this.constructor.ACCOUNT_ONE:
   case this.constructor.HEX_ONE:
     this._value  = new BigInteger([1]);
 

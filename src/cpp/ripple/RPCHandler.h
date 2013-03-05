@@ -15,9 +15,9 @@ class InfoSub;
 
 class RPCHandler
 {
-	NetworkOPs*		mNetOps;
-	InfoSub*		mInfoSub;
-	int				mRole;
+	NetworkOPs*			mNetOps;
+	InfoSub::pointer	mInfoSub;
+	int					mRole;
 
 	typedef Json::Value (RPCHandler::*doFuncPtr)(Json::Value params);
 	enum {
@@ -41,15 +41,15 @@ class RPCHandler
 		const RippleAddress& naVerifyGenerator);
 	Json::Value accounts(Ledger::ref lrLedger, const RippleAddress& naMasterGenerator);
 
-	Json::Value accountFromString(Ledger::ref lrLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
-
-	Json::Value doAcceptLedger(Json::Value jvRequest);
+	Json::Value accountFromString(Ledger::ref lrLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex, const bool bStrict);
 
 	Json::Value doAccountInfo(Json::Value params);
 	Json::Value doAccountLines(Json::Value params);
 	Json::Value doAccountOffers(Json::Value params);
 	Json::Value doAccountTransactions(Json::Value params);
+	Json::Value doBookOffers(Json::Value params);
 	Json::Value doConnect(Json::Value params);
+	Json::Value doConsensusInfo(Json::Value params);
 #if ENABLE_INSECURE
 	Json::Value doDataDelete(Json::Value params);
 	Json::Value doDataFetch(Json::Value params);
@@ -63,6 +63,7 @@ class RPCHandler
 	Json::Value doNicknameInfo(Json::Value params);
 	Json::Value doOwnerInfo(Json::Value params);
 	Json::Value doPeers(Json::Value params);
+	Json::Value doPing(Json::Value params);
 	Json::Value doProfile(Json::Value params);
 	Json::Value doRandom(Json::Value jvRequest);
 	Json::Value doRipplePathFind(Json::Value jvRequest);
@@ -113,7 +114,7 @@ public:
 	enum { GUEST, USER, ADMIN, FORBID };
 
 	RPCHandler(NetworkOPs* netOps);
-	RPCHandler(NetworkOPs* netOps, InfoSub* infoSub);
+	RPCHandler(NetworkOPs* netOps, InfoSub::pointer infoSub);
 
 	Json::Value doCommand(const Json::Value& jvRequest, int role);
 	Json::Value doRpcCommand(const std::string& strCommand, Json::Value& jvParams, int iRole);

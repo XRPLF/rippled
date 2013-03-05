@@ -5,85 +5,65 @@
 var sjcl    = require('../../build/sjcl');
 var utils   = require('./utils');
 var jsbn    = require('./jsbn');
+var extend  = require('extend');
 
 var BigInteger = jsbn.BigInteger;
 
 var Base = require('./base').Base,
-    UInt256 = require('./uint256').UInt256;
+    UInt = require('./uint').UInt,
+    UInt256 = require('./uint256').UInt256,
+    KeyPair = require('./keypair').KeyPair;
 
-var Seed = function () {
+var Seed = extend(function () {
   // Internal form: NaN or BigInteger
-  this._value  = NaN;
-};
+  this._curve = sjcl.ecc.curves['c256'];
+  this._value = NaN;
+}, UInt);
 
-Seed.json_rewrite = function (j) {
-  return Seed.from_json(j).to_json();
-};
-
-// Return a new Seed from j.
-Seed.from_json = function (j) {
-  return (j instanceof Seed)
-    ? j.clone()
-    : (new Seed()).parse_json(j);
-};
-
-Seed.is_valid = function (j) {
-  return Seed.from_json(j).is_valid();
-};
-
-Seed.prototype.clone = function () {
-  return this.copyTo(new Seed());
-};
-
-// Returns copy.
-Seed.prototype.copyTo = function (d) {
-  d._value = this._value;
-
-  return d;
-};
-
-Seed.prototype.equals = function (d) {
-  return this._value instanceof BigInteger && d._value instanceof BigInteger && this._value.equals(d._value);
-};
-
-Seed.prototype.is_valid = function () {
-  return this._value instanceof BigInteger;
-};
+Seed.width = 16;
+Seed.prototype = extend({}, UInt.prototype);
+Seed.prototype.constructor = Seed;
 
 // value = NaN on error.
 // One day this will support rfc1751 too.
 Seed.prototype.parse_json = function (j) {
-  if ('string' !== typeof j) {
-    this._value  = NaN;
-  }
-  else if (j[0] === "s") {
-    this._value  = Base.decode_check(Base.VER_FAMILY_SEED, j);
-  }
-  else if (16 === j.length) {
-    this._value  = new BigInteger(utils.stringToArray(j), 128);
-  }
-  else {
-    this._value  = NaN;
+  if ('string' === typeof j) {
+    if (!j.length) {
+      this._value = NaN;
+    // XXX Should actually always try and continue if it failed.
+    } else if (j[0] === "s") {
+      this._value = Base.decode_check(Base.VER_FAMILY_SEED, j);
+    } else if (j.length === 32) {
+      this._value = this.parse_hex(j);
+    // XXX Should also try 1751
+    } else {
+      this.parse_passphrase(j);
+    }
+  } else {
+    this._value = NaN;
   }
 
   return this;
 };
 
-// Convert from internal form.
+Seed.prototype.parse_passphrase = function (j) {
+  if ("string" !== typeof j) {
+    throw new Error("Passphrase must be a string");
+  }
+
+  var hash = sjcl.hash.sha512.hash(sjcl.codec.utf8String.toBits(j));
+  var bits = sjcl.bitArray.bitSlice(hash, 0, 128);
+
+  this.parse_bits(bits);
+
+  return this;
+};
+
 Seed.prototype.to_json = function () {
   if (!(this._value instanceof BigInteger))
     return NaN;
 
-  var bytes   = this._value.toByteArray().map(function (b) { return b ? b < 0 ? 256+b : b : 0; });
-  var target  = 20;
-
-  // XXX Make sure only trim off leading zeros.
-  var array = bytes.length < target
-		? bytes.length
-		  ? [].concat(utils.arraySet(target - bytes.length, 0), bytes)
-		  : utils.arraySet(target, 0)
-		: bytes.slice(target - bytes.length);
-  var output = Base.encode_check(Base.VER_FAMILY_SEED, array);
+  var output = Base.encode_check(Base.VER_FAMILY_SEED, this.to_bytes());
 
   return output;
 };
@@ -103,27 +83,34 @@ function SHA256_RIPEMD160(bits) {
   return sjcl.hash.ripemd160.hash(sjcl.hash.sha256.hash(bits));
 }
 
-Seed.prototype.generate_private = function (account_id) {
-  // XXX If account_id is given, should loop over keys until we find the right one
+Seed.prototype.get_key = function (account_id) {
+  if (!this.is_valid()) {
+    throw new Error("Cannot generate keys from invalid seed!");
+  }
+  // XXX Should loop over keys until we find the right one
+
+  var curve = this._curve;
 
   var seq = 0;
 
   var private_gen, public_gen, i = 0;
   do {
-    private_gen = sjcl.bn.fromBits(firstHalfOfSHA512(append_int(this.seed, i)));
+    private_gen = sjcl.bn.fromBits(firstHalfOfSHA512(append_int(this.to_bytes(), i)));
     i++;
-  } while (!sjcl.ecc.curves.c256.r.greaterEquals(private_gen));
+  } while (!curve.r.greaterEquals(private_gen));
 
-  public_gen = sjcl.ecc.curves.c256.G.mult(private_gen);
+  public_gen = curve.G.mult(private_gen);
 
   var sec;
   i = 0;
   do {
     sec = sjcl.bn.fromBits(firstHalfOfSHA512(append_int(append_int(public_gen.toBytesCompressed(), seq), i)));
     i++;
-  } while (!sjcl.ecc.curves.c256.r.greaterEquals(sec));
+  } while (!curve.r.greaterEquals(sec));
 
-  return UInt256.from_bn(sec);
+  sec = sec.add(private_gen).mod(curve.r);
+
+  return KeyPair.from_bn_secret(sec);
 };
 
 exports.Seed = Seed;

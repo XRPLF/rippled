@@ -74,6 +74,7 @@ var Transaction = function (remote) {
   this.hash         = undefined;
   this.submit_index = undefined;        // ledger_current_index was this when transaction was submited.
   this.state        = undefined;        // Under construction.
+  this.finalized    = false;
 
   this.on('success', function (message) {
       if (message.engine_result) {
@@ -167,6 +168,26 @@ Transaction.prototype.set_state = function (state) {
   }
 };
 
+/**
+ * Attempts to complete the transaction for submission.
+ *
+ * This function seeks to fill out certain fields, such as Fee and
+ * SigningPubKey, which can be determined by the library based on network
+ * information and other fields.
+ */
+Transaction.prototype.complete = function () {
+  var tx_json = this.tx_json;
+
+  if (this.remote.local_fee && undefined === tx_json.Fee) {
+    tx_json.Fee    = Transaction.fees['default'].to_json();
+  }
+  if (this.remote.local_signing && undefined === tx_json.SigningPubKey) {
+    var seed = Seed.from_json(this._secret);
+    var key = seed.get_key(this.tx_json.Account);
+    tx_json.SigningPubKey = key.to_hex_pub();
+  }
+};
+
 Transaction.prototype.serialize = function () {
   return SerializedObject.from_json(this.tx_json);
 };
@@ -181,11 +202,10 @@ Transaction.prototype.signing_hash = function () {
 
 Transaction.prototype.sign = function () {
   var seed = Seed.from_json(this._secret),
-      priv = seed.generate_private(this.tx_json.Account),
       hash = this.signing_hash();
 
-  var key = new sjcl.ecc.ecdsa.secretKey(sjcl.ecc.curves['c256'], priv.to_bn()),
-      sig = key.signDER(hash.to_bits(), 0),
+  var key = seed.get_key(this.tx_json.Account),
+      sig = key.sign(hash, 0),
       hex = sjcl.codec.hex.fromBits(sig).toUpperCase();
 
   this.tx_json.TxnSignature = hex;
@@ -199,6 +219,7 @@ Transaction.prototype.sign = function () {
 //   // status is final status.  Only works under a ledger_accepting conditions.
 //   switch status:
 //    case 'tesSUCCESS': all is well.
+//    case 'tejSecretUnknown': unable to sign transaction - secret unknown
 //    case 'tejServerUntrusted': sending secret to untrusted server.
 //    case 'tejInvalidAccount': locally detected error.
 //    case 'tejLost': locally gave up looking
@@ -216,14 +237,12 @@ Transaction.prototype.submit = function (callback) {
         'error' : 'tejInvalidAccount',
         'error_message' : 'Bad account.'
       });
-    return;
+    return this;
   }
 
   // YYY Might check paths for invalid accounts.
 
-  if (this.remote.local_fee && undefined === tx_json.Fee) {
-    tx_json.Fee    = Transaction.fees['default'].to_json();
-  }
+  this.complete();
 
   if (this.callback || this.listeners('final').length || this.listeners('lost').length || this.listeners('pending').length) {
     // There are listeners for callback, 'final', 'lost', or 'pending' arrange to emit them.
@@ -240,15 +259,19 @@ Transaction.prototype.submit = function (callback) {
         self.remote.request_transaction_entry(self.hash)
           .ledger_hash(ledger_hash)
           .on('success', function (message) {
+              if (self.finalized) return;
+
               self.set_state(message.metadata.TransactionResult);
+              self.remote.removeListener('ledger_closed', on_ledger_closed);
               self.emit('final', message);
+              self.finalized = true;
 
               if (self.callback)
                 self.callback(message.metadata.TransactionResult, message);
-
-              stop  = true;
             })
           .on('error', function (message) {
+              if (self.finalized) return;
+
               if ('remoteError' === message.error
                 && 'transactionNotFound' === message.remote.error) {
                 if (self.submit_index + SUBMIT_LOST < ledger_index) {
@@ -258,7 +281,9 @@ Transaction.prototype.submit = function (callback) {
                   if (self.callback)
                     self.callback('tejLost', message);
 
-                  stop  = true;
+                  self.remote.removeListener('ledger_closed', on_ledger_closed);
+                  self.emit('final', message);
+                  self.finalized = true;
                 }
                 else if (self.submit_index + SUBMIT_MISSING < ledger_index) {
                   self.set_state('client_missing');    // We don't know what happened to transaction, still might find.
@@ -271,11 +296,6 @@ Transaction.prototype.submit = function (callback) {
               // XXX Could log other unexpectedness.
             })
           .request();
-
-        if (stop) {
-          self.remote.removeListener('ledger_closed', on_ledger_closed);
-          self.emit('final', message);
-        }
       };
 
     this.remote.on('ledger_closed', on_ledger_closed);
@@ -289,7 +309,100 @@ Transaction.prototype.submit = function (callback) {
 
   this.set_state('client_submitted');
 
-  this.remote.submit(this);
+  if (self.remote.local_sequence && !self.tx_json.Sequence) {
+    self.tx_json.Sequence      = this.remote.account_seq(self.tx_json.Account, 'ADVANCE');
+    // console.log("Sequence: %s", self.tx_json.Sequence);
+
+    if (!self.tx_json.Sequence) {
+      // Look in the last closed ledger.
+      this.remote.account_seq_cache(self.tx_json.Account, false)
+        .on('success_account_seq_cache', function () {
+          // Try again.
+          self.submit();
+        })
+        .on('error_account_seq_cache', function (message) {
+          // XXX Maybe be smarter about this. Don't want to trust an untrusted server for this seq number.
+
+          // Look in the current ledger.
+          self.remote.account_seq_cache(self.tx_json.Account, 'CURRENT')
+            .on('success_account_seq_cache', function () {
+              // Try again.
+              self.submit();
+            })
+            .on('error_account_seq_cache', function (message) {
+              // Forward errors.
+              self.emit('error', message);
+            })
+            .request();
+        })
+        .request();
+      return this;
+    }
+
+    // If the transaction fails we want to either undo incrementing the sequence
+    // or submit a noop transaction to consume the sequence remotely.
+    this.on('success', function (res) {
+      if (!res || "string" !== typeof res.engine_result) return;
+
+      switch (res.engine_result.slice(0, 3)) {
+        // Synchronous local error
+        case 'tej':
+          self.remote.account_seq(self.tx_json.Account, 'REWIND');
+          break;
+        // XXX: What do we do in case of ter?
+        case 'tel':
+        case 'tem':
+        case 'tef':
+          // XXX Once we have a transaction submission manager class, we can
+          //     check if there are any other transactions pending. If there are,
+          //     we should submit a dummy transaction to ensure those
+          //     transactions are still valid.
+          //var noop = self.remote.transaction().account_set(self.tx_json.Account);
+          //noop.submit();
+
+          // XXX Hotfix. This only works if no other transactions are pending.
+          self.remote.account_seq(self.tx_json.Account, 'REWIND');
+          break;
+      }
+    });
+  }
+
+  // Prepare request
+
+  var request = this.remote.request_submit();
+
+  // Forward successes and errors.
+  request.on('success', function (message) {
+    self.emit('success', message);
+  });
+  request.on('error', function (message) {
+    self.emit('error', message);
+  });
+
+  if (!this._secret && !this.tx_json.Signature) {
+    this.emit('error', {
+      'result'          : 'tejSecretUnknown',
+      'result_message'  : "Could not sign transactions because we."
+    });
+    return this;
+  } else if (this.remote.local_signing) {
+    this.sign();
+    request.tx_blob(this.serialize().to_hex());
+  } else {
+    if (!this.remote.trusted) {
+      this.emit('error', {
+        'result'          : 'tejServerUntrusted',
+        'result_message'  : "Attempt to give a secret to an untrusted server."
+      });
+      return this;
+    }
+
+    request.secret(this._secret);
+    request.build_path(this._build_path);
+    request.tx_json(this.tx_json);
+  }
+
+  request.request();
 
   return this;
 }
@@ -319,8 +432,8 @@ Transaction.prototype.destination_tag = function (tag) {
 Transaction._path_rewrite = function (path) {
   var path_new  = [];
 
-  for (var index in path) {
-    var node      = path[index];
+  for (var i = 0, l = path.length; i < l; i++) {
+    var node      = path[i];
     var node_new  = {};
 
     if ('account' in node)
@@ -339,7 +452,7 @@ Transaction._path_rewrite = function (path) {
 }
 
 Transaction.prototype.path_add = function (path) {
-  this.tx_json.Paths  = this.tx_json.Paths || []
+  this.tx_json.Paths  = this.tx_json.Paths || [];
   this.tx_json.Paths.push(Transaction._path_rewrite(path));
 
   return this;
@@ -348,8 +461,8 @@ Transaction.prototype.path_add = function (path) {
 // --> paths: undefined or array of path
 // A path is an array of objects containing some combination of: account, currency, issuer
 Transaction.prototype.paths = function (paths) {
-  for (var index in paths) {
-    this.path_add(paths[index]);
+  for (var i = 0, l = paths.length; i < l; i++) {
+    this.path_add(paths[i]);
   }
 
   return this;

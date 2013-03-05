@@ -43,20 +43,21 @@ public:
 
 	SHAMapNode() : mDepth(0), mHash(0)	{ ; }
 	SHAMapNode(int depth, const uint256& hash);
-	virtual ~SHAMapNode()				{ ; }
 
 	int getDepth() const				{ return mDepth; }
 	const uint256& getNodeID()	const	{ return mNodeID; }
-	bool isValid() const { return (mDepth >= 0) && (mDepth < 64); }
+	bool isValid() const 				{ return (mDepth >= 0) && (mDepth < 64); }
+	bool isRoot() const					{ return mDepth == 0; }
 	size_t getHash() const				{ if (mHash == 0) setHash(); return mHash; }
 
-	virtual bool isPopulated() const { return false; }
+	virtual bool isPopulated() const	{ return false; }
 
 	SHAMapNode getParentNodeID() const
 	{
 		assert(mDepth);
 		return SHAMapNode(mDepth - 1, mNodeID);
 	}
+
 	SHAMapNode getChildNodeID(int m) const;
 	int selectBranch(const uint256& hash) const;
 
@@ -68,7 +69,6 @@ public:
 	bool operator!=(const uint256&) const;
 	bool operator<=(const SHAMapNode&) const;
 	bool operator>=(const SHAMapNode&) const;
-	bool isRoot() const { return mDepth == 0; }
 
 	virtual std::string getString() const;
 	void dump() const;
@@ -163,12 +163,13 @@ public:
 	};
 
 private:
-	uint256	mHash;
-	uint256 mHashes[16];
-	SHAMapItem::pointer mItem;
-	uint32 mSeq, mAccessSeq;
-	TNType mType;
-	bool mFullBelow;
+	uint256				mHash;
+	uint256				mHashes[16];
+	std::bitset<16>		mIsBranch;
+	SHAMapItem::pointer	mItem;
+	uint32				mSeq, mAccessSeq;
+	TNType				mType;
+	bool				mFullBelow;
 
 	bool updateHash();
 
@@ -204,9 +205,9 @@ public:
 	bool isAccountState() const	{ return mType == tnACCOUNT_STATE; }
 
 	// inner node functions
-	bool isInnerNode() const	{ return !mItem; }
+	bool isInnerNode() const		{ return !mItem; }
 	bool setChildHash(int m, const uint256& hash);
-	bool isEmptyBranch(int m) const { return mHashes[m].isZero(); }
+	bool isEmptyBranch(int m) const	{ return !mIsBranch.test(m); }
 	bool isEmpty() const;
 	int getBranchCount() const;
 	void makeInner();
@@ -355,7 +356,7 @@ protected:
 	std::stack<SHAMapTreeNode::pointer> getStack(const uint256& id, bool include_nonmatching_leaf, bool partialOk);
 	SHAMapTreeNode::pointer walkTo(const uint256& id, bool modify);
 	SHAMapTreeNode* walkToPointer(const uint256& id);
-	SHAMapTreeNode::ref checkCacheNode(const SHAMapNode&);
+	SHAMapTreeNode::pointer checkCacheNode(const SHAMapNode&);
 	void returnNode(SHAMapTreeNode::pointer&, bool modify);
 	void trackNewNode(SHAMapTreeNode::pointer&);
 
@@ -406,6 +407,7 @@ public:
 
 	// save a copy if you only need a temporary
 	SHAMapItem::pointer peekItem(const uint256& id);
+	SHAMapItem::pointer peekItem(const uint256& id, uint256& hash);
 	SHAMapItem::pointer peekItem(const uint256& id, SHAMapTreeNode::TNType& type);
 
 	// traverse functions

@@ -5,7 +5,7 @@
 //
 
 #define SERVER_VERSION_MAJOR		0
-#define SERVER_VERSION_MINOR		7
+#define SERVER_VERSION_MINOR		8
 #define SERVER_VERSION_SUB			"-a"
 #define SERVER_NAME					"Ripple"
 

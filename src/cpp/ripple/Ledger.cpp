@@ -88,10 +88,7 @@ Ledger::Ledger(bool /* dummy */, Ledger& prevLedger) :
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(prevLedger.mCloseResolution,
 		prevLedger.getCloseAgree(), mLedgerSeq);
 	if (prevLedger.mCloseTime == 0)
-	{
-		mCloseTime = theApp->getOPs().getCloseTimeNC() - mCloseResolution;
-		mCloseTime -= (mCloseTime % mCloseResolution);
-	}
+		mCloseTime = roundCloseTime(theApp->getOPs().getCloseTimeNC(), mCloseResolution);
 	else
 		mCloseTime = prevLedger.mCloseTime + mCloseResolution;
 	zeroFees();
@@ -115,15 +112,12 @@ Ledger::Ledger(const std::string& rawLedger, bool hasPrefix) :
 
 void Ledger::setImmutable()
 {
-	if (!mImmutable)
-	{
-		updateHash();
-		mImmutable = true;
-		if (mTransactionMap)
-			mTransactionMap->setImmutable();
-		if (mAccountStateMap)
-			mAccountStateMap->setImmutable();
-	}
+	updateHash();
+	mImmutable = true;
+	if (mTransactionMap)
+		mTransactionMap->setImmutable();
+	if (mAccountStateMap)
+		mAccountStateMap->setImmutable();
 }
 
 void Ledger::updateHash()
@@ -184,7 +178,7 @@ void Ledger::addRaw(Serializer &s) const
 void Ledger::setAccepted(uint32 closeTime, int closeResolution, bool correctCloseTime)
 { // used when we witnessed the consensus
 	assert(mClosed && !mAccepted);
-	mCloseTime = correctCloseTime ? (closeTime - (closeTime % closeResolution)) : closeTime;
+	mCloseTime = correctCloseTime ? roundCloseTime(closeTime, closeResolution) : closeTime;
 	mCloseResolution = closeResolution;
 	mCloseFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
 	mAccepted = true;
@@ -195,7 +189,7 @@ void Ledger::setAccepted()
 { // used when we acquired the ledger
 	// FIXME assert(mClosed && (mCloseTime != 0) && (mCloseResolution != 0));
 	if ((mCloseFlags & sLCF_NoConsensusTime) == 0)
-		mCloseTime -= mCloseTime % mCloseResolution;
+		mCloseTime = roundCloseTime(mCloseTime, mCloseResolution);
 	mAccepted = true;
 	setImmutable();
 }
@@ -206,8 +200,8 @@ AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
 //	std::cerr << "Ledger:getAccountState(" << accountID.humanAccountID() << ")" << std::endl;
 #endif
 
-	SHAMapItem::pointer item = mAccountStateMap->peekItem(Ledger::getAccountRootIndex(accountID));
-	if (!item)
+	SLE::pointer sle = getSLEi(Ledger::getAccountRootIndex(accountID));
+	if (!sle)
 	{
 		cLog(lsDEBUG) << boost::str(boost::format("Ledger:getAccountState: not found: %s: %s")
 			% accountID.humanAccountID()
@@ -216,8 +210,6 @@ AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
 		return AccountState::pointer();
 	}
 
-	SerializedLedgerEntry::pointer sle =
-		boost::make_shared<SerializedLedgerEntry>(item->peekSerializer(), item->getTag());
 	if (sle->getType() != ltACCOUNT_ROOT)
 		return AccountState::pointer();
 
@@ -368,6 +360,39 @@ bool Ledger::getTransaction(const uint256& txID, Transaction::pointer& txn, Tran
 	return true;
 }
 
+bool Ledger::getTransactionMeta(const uint256& txID, TransactionMetaSet::pointer& meta)
+{
+	SHAMapTreeNode::TNType type;
+	SHAMapItem::pointer item = mTransactionMap->peekItem(txID, type);
+	if (!item)
+		return false;
+
+	if (type != SHAMapTreeNode::tnTRANSACTION_MD)
+		return false;
+
+	SerializerIterator it(item->peekSerializer());
+	it.getVL(); // skip transaction
+	meta = boost::make_shared<TransactionMetaSet>(txID, mLedgerSeq, it.getVL());
+
+	return true;
+}
+
+bool Ledger::getMetaHex(const uint256& transID, std::string& hex)
+{
+	SHAMapTreeNode::TNType type;
+	SHAMapItem::pointer item = mTransactionMap->peekItem(transID, type);
+	if (!item)
+		return false;
+
+	if (type != SHAMapTreeNode::tnTRANSACTION_MD)
+		return false;
+
+	SerializerIterator it(item->peekSerializer());
+	it.getVL(); // skip transaction
+	hex = strHex(it.getVL());
+	return true;
+}
+
 uint256 Ledger::getHash()
 {
 	if (!mValidHash)
@@ -378,13 +403,13 @@ uint256 Ledger::getHash()
 void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 { // can be called in a different thread
 	cLog(lsTRACE) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq();
-	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
+	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers INDEXED BY SeqLedger where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
-	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransId = '%s';");
+	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransID = '%s';");
 	static boost::format transExists("SELECT Status FROM Transactions WHERE TransID = '%s';");
 	static boost::format
 		updateTx("UPDATE Transactions SET LedgerSeq = %d, Status = '%c', TxnMeta = %s WHERE TransID = '%s';");
-	static boost::format addLedger("INSERT INTO Ledgers "
+	static boost::format addLedger("INSERT OR REPLACE INTO Ledgers "
 		"(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,"
 		"AccountSetHash,TransSetHash) VALUES ('%s','%u','%s','%s','%u','%u','%d','%u','%s','%s');");
 
@@ -403,6 +428,8 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 	addRaw(s);
 	theApp->getHashedObjectStore().store(hotLEDGER, mLedgerSeq, s.peekData(), mHash);
 
+	AcceptedLedger::pointer aLedger = AcceptedLedger::makeAcceptedLedger(shared_from_this());
+
 	{
 		{
 			ScopedLock sl(theApp->getLedgerDB()->getDBLock());
@@ -410,35 +437,26 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 				theApp->getLedgerDB()->getDB()->executeSQL(boost::str(deleteLedger % mLedgerSeq));
 		}
 
-		SHAMap& txSet = *peekTransactionMap();
 		Database *db = theApp->getTxnDB()->getDB();
 		{
 			ScopedLock dbLock(theApp->getTxnDB()->getDBLock());
 			db->executeSQL("BEGIN TRANSACTION;");
-			SHAMapTreeNode::TNType type;
-			for (SHAMapItem::pointer item = txSet.peekFirstItem(type); !!item;
-				item = txSet.peekNextItem(item->getTag(), type))
-			{
-				assert(type == SHAMapTreeNode::tnTRANSACTION_MD);
-				SerializerIterator sit(item->peekSerializer());
-				Serializer rawTxn(sit.getVL());
-				Serializer rawMeta(sit.getVL());
-				std::string escMeta(sqlEscape(rawMeta.peekData()));
 
-				SerializerIterator txnIt(rawTxn);
-				SerializedTransaction txn(txnIt);
-				assert(txn.getTransactionID() == item->getTag());
-				TransactionMetaSet meta(item->getTag(), mLedgerSeq, rawMeta.peekData());
+			BOOST_FOREACH(const AcceptedLedger::value_type& vt, aLedger->getMap())
+			{
+				cLog(lsTRACE) << "Saving: " << vt.second.getJson(0);
+				uint256 txID = vt.second.getTransactionID();
+				theApp->getMasterTransaction().inLedger(txID, mLedgerSeq);
 
 				// Make sure transaction is in AccountTransactions.
-				if (!SQL_EXISTS(db, boost::str(AcctTransExists % item->getTag().GetHex())))
+				if (!SQL_EXISTS(db, boost::str(AcctTransExists % txID.GetHex())))
 				{
 					// Transaction not in AccountTransactions
-					const std::vector<RippleAddress> accts = meta.getAffectedAccounts();
+					const std::vector<RippleAddress>& accts = vt.second.getAffected();
 					if (!accts.empty())
 					{
 
-						std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
+						std::string sql = "INSERT OR REPLACE INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
 						bool first = true;
 							for (std::vector<RippleAddress>::const_iterator it = accts.begin(), end = accts.end(); it != end; ++it)
 						{
@@ -449,7 +467,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 								sql += "('";
 								first = false;
 							}
-							sql += txn.getTransactionID().GetHex();
+							sql += txID.GetHex();
 							sql += "','";
 							sql += it->humanAccountID();
 							sql += "',";
@@ -464,20 +482,21 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 						cLog(lsWARNING) << "Transaction in ledger " << mLedgerSeq << " affects no accounts";
 				}
 
-				if (SQL_EXISTS(db, boost::str(transExists %	txn.getTransactionID().GetHex())))
+				if (SQL_EXISTS(db, boost::str(transExists %	txID.GetHex())))
 				{
 					// In Transactions, update LedgerSeq, metadata and Status.
 					db->executeSQL(boost::str(updateTx
 						% getLedgerSeq()
 						% TXN_SQL_VALIDATED
-						% escMeta
-						% txn.getTransactionID().GetHex()));
+						% vt.second.getEscMeta()
+						% txID.GetHex()));
 				}
 				else
 				{
 					// Not in Transactions, insert the whole thing..
 					db->executeSQL(
-						txn.getMetaSQLInsertHeader() + txn.getMetaSQL(getLedgerSeq(), escMeta) + ";");
+						SerializedTransaction::getMetaSQLInsertHeader() +
+						vt.second.getTxn()->getMetaSQL(getLedgerSeq(), vt.second.getEscMeta()) + ";");
 				}
 			}
 			db->executeSQL("COMMIT TRANSACTION;");
@@ -498,6 +517,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 	if (!fromConsensus)
 	{
 		decPendingSaves();
+		dropCache();
 		return;
 	}
 
@@ -506,8 +526,75 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 	decPendingSaves();
 }
 
-Ledger::pointer Ledger::getSQL(const std::string& sql)
+#ifndef NO_SQLITE3_PREPARE
+
+Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
 {
+	Ledger::pointer ledger;
+	{
+		Database* db = theApp->getLedgerDB()->getDB();
+		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+
+		static SqliteStatement pSt(db->getSqliteDB(), "SELECT "
+			"LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
+			"ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
+			" from Ledgers WHERE LedgerSeq = ?;");
+
+		pSt.bind(1, ledgerIndex);
+		ledger = getSQL1(&pSt);
+		pSt.reset();
+	}
+	if (ledger)
+		Ledger::getSQL2(ledger);
+	return ledger;
+}
+
+Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
+{
+	Ledger::pointer ledger;
+	{
+		Database* db = theApp->getLedgerDB()->getDB();
+		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+
+		static SqliteStatement pSt(db->getSqliteDB(), "SELECT "
+			"LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
+			"ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
+			" from Ledgers WHERE LedgerHash = ?;");
+
+		pSt.bind(1, ledgerHash.GetHex());
+		ledger = getSQL1(&pSt);
+		pSt.reset();
+	}
+	if (ledger)
+	{
+		assert(ledger->getHash() == ledgerHash);
+		Ledger::getSQL2(ledger);
+	}
+	return ledger;
+}
+
+#else
+
+Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
+{ // This is a low-level function with no caching
+	std::string sql="SELECT * from Ledgers WHERE LedgerSeq='";
+	sql.append(boost::lexical_cast<std::string>(ledgerIndex));
+	sql.append("';");
+	return getSQL(sql);
+}
+
+Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
+{ // This is a low-level function with no caching and only gets accepted ledgers
+	std::string sql="SELECT * from Ledgers WHERE LedgerHash='";
+	sql.append(ledgerHash.GetHex());
+	sql.append("';");
+	return getSQL(sql);
+}
+
+#endif
+
+Ledger::pointer Ledger::getSQL(const std::string& sql)
+{ // only used with sqlite3 prepared statements not used
 	uint256 ledgerHash, prevHash, accountHash, transHash;
 	uint64 totCoins;
 	uint32 closingTime, prevClosingTime, ledgerSeq;
@@ -539,7 +626,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		db->endIterRows();
 	}
 
-//	Log(lsTRACE) << "Constructing ledger " << ledgerSeq << " from SQL";
+	// CAUTION: code below appears in two places
 	Ledger::pointer ret = boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
 		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq);
 	ret->setClosed();
@@ -559,6 +646,49 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 	}
 	cLog(lsTRACE) << "Loaded ledger: " << ledgerHash;
 	return ret;
+}
+
+Ledger::pointer Ledger::getSQL1(SqliteStatement *stmt)
+{
+	int iRet = stmt->step();
+	if (stmt->isDone(iRet))
+		return Ledger::pointer();
+
+	if (!stmt->isRow(iRet))
+	{
+		cLog(lsINFO) << "Ledger not found: " << iRet << " = " << stmt->getError(iRet);
+		return Ledger::pointer();
+	}
+
+	uint256 ledgerHash, prevHash, accountHash, transHash;
+	uint64 totCoins;
+	uint32 closingTime, prevClosingTime, ledgerSeq;
+	int closeResolution;
+	unsigned closeFlags;
+	std::string hash;
+
+	ledgerHash.SetHex(stmt->peekString(0), true);
+	prevHash.SetHex(stmt->peekString(1), true);
+	accountHash.SetHex(stmt->peekString(2), true);
+	transHash.SetHex(stmt->peekString(3), true);
+	totCoins = stmt->getInt64(4);
+	closingTime = stmt->getUInt32(5);
+	prevClosingTime = stmt->getUInt32(6);
+	closeResolution = stmt->getUInt32(7);
+	closeFlags = stmt->getUInt32(8);
+	ledgerSeq = stmt->getUInt32(9);
+
+	// CAUTION: code below appears in two places
+	return boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
+		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq);
+}
+
+void Ledger::getSQL2(Ledger::ref ret)
+{
+	ret->setClosed();
+	if (theApp->getOPs().haveLedger(ret->getLedgerSeq()))
+		ret->setAccepted();
+	cLog(lsTRACE) << "Loaded ledger: " << ret->getHash().GetHex();
 }
 
 uint256 Ledger::getHashByIndex(uint32 ledgerIndex)
@@ -591,19 +721,20 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 	ScopedLock sl(con->getDBLock());
 
 	static SqliteStatement pSt(con->getDB()->getSqliteDB(),
-		"SELECT LedgerHash,PrevHash FROM Ledgers Where LedgerSeq = ?;");
+		"SELECT LedgerHash,PrevHash FROM Ledgers INDEXED BY SeqLedger Where LedgerSeq = ?;");
 
-	pSt.reset();
 	pSt.bind(1, ledgerIndex);
 
 	int ret = pSt.step();
 	if (pSt.isDone(ret))
 	{
+		pSt.reset();
 		cLog(lsTRACE) << "Don't have ledger " << ledgerIndex;
 		return false;
 	}
 	if (!pSt.isRow(ret))
 	{
+		pSt.reset();
 		assert(false);
 		cLog(lsFATAL) << "Unexpected statement result " << ret;
 		return false;
@@ -611,6 +742,7 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 
 	ledgerHash.SetHex(pSt.peekString(0), true);
 	parentHash.SetHex(pSt.peekString(1), true);
+	pSt.reset();
 
 	return true;
 
@@ -641,20 +773,43 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 #endif
 }
 
-Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
-{ // This is a low-level function with no caching
-	std::string sql="SELECT * from Ledgers WHERE LedgerSeq='";
-	sql.append(boost::lexical_cast<std::string>(ledgerIndex));
-	sql.append("';");
-	return getSQL(sql);
-}
+std::map< uint32, std::pair<uint256, uint256> > Ledger::getHashesByIndex(uint32 minSeq, uint32 maxSeq)
+{
+#ifndef NO_SQLITE_PREPARE
+	std::map< uint32, std::pair<uint256, uint256> > ret;
+	DatabaseCon *con = theApp->getLedgerDB();
+	ScopedLock sl(con->getDBLock());
 
-Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
-{ // This is a low-level function with no caching and only gets accepted ledgers
-	std::string sql="SELECT * from Ledgers WHERE LedgerHash='";
-	sql.append(ledgerHash.GetHex());
-	sql.append("';");
-	return getSQL(sql);
+	static SqliteStatement pSt(con->getDB()->getSqliteDB(),
+		"SELECT LedgerSeq,LedgerHash,PrevHash FROM Ledgers INDEXED BY SeqLedger "
+		"WHERE LedgerSeq >= ? AND LedgerSeq <= ?;");
+
+	std::pair<uint256, uint256> hashes;
+
+	pSt.bind(1, minSeq);
+	pSt.bind(2, maxSeq);
+
+	do
+	{
+		int r = pSt.step();
+		if (pSt.isDone(r))
+		{
+			pSt.reset();
+			return ret;
+		}
+		if (!pSt.isRow(r))
+		{
+			pSt.reset();
+			return ret;
+		}
+		hashes.first.SetHex(pSt.peekString(1), true);
+		hashes.second.SetHex(pSt.peekString(2), true);
+		ret[pSt.getUInt32(0)] = hashes;
+	} while(1);
+
+#else
+#error SQLite prepare is required
+#endif
 }
 
 Ledger::pointer Ledger::getLastFullLedger()
@@ -713,6 +868,7 @@ Json::Value Ledger::getJson(int options)
 	{
 		Json::Value txns(Json::arrayValue);
 		SHAMapTreeNode::TNType type;
+		ScopedLock l(mTransactionMap->Lock());
 		for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem(type); !!item;
 				item = mTransactionMap->peekNextItem(item->getTag(), type))
 		{
@@ -752,6 +908,7 @@ Json::Value Ledger::getJson(int options)
 	if (mAccountStateMap && (bFull || ((options & LEDGER_JSON_DUMP_STATE) != 0)))
 	{
 		Json::Value state(Json::arrayValue);
+		ScopedLock l(mAccountStateMap->Lock());
 		for (SHAMapItem::pointer item = mAccountStateMap->peekFirstItem(); !!item;
 				item = mAccountStateMap->peekNextItem(item->getTag()))
 		{
@@ -848,6 +1005,26 @@ SLE::pointer Ledger::getSLE(const uint256& uHash)
 	return boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
 }
 
+SLE::pointer Ledger::getSLEi(const uint256& uId)
+{
+	uint256 hash;
+
+	ScopedLock sl(mAccountStateMap->Lock());
+
+	SHAMapItem::pointer node = mAccountStateMap->peekItem(uId, hash);
+	if (!node)
+		return SLE::pointer();
+
+	SLE::pointer ret = theApp->getSLECache().fetch(hash);
+	if (!ret)
+	{
+		ret = boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
+		ret->setImmutable();
+		theApp->getSLECache().canonicalize(hash, ret);
+	}
+	return ret;
+}
+
 uint256 Ledger::getFirstLedgerIndex()
 {
 	SHAMapItem::pointer node = mAccountStateMap->peekFirstItem();
@@ -888,6 +1065,14 @@ uint256 Ledger::getPrevLedgerIndex(const uint256& uHash, const uint256& uBegin)
 	return node->getTag();
 }
 
+SLE::pointer Ledger::getASNodeI(const uint256& nodeID, LedgerEntryType let)
+{
+	SLE::pointer node = getSLEi(nodeID);
+	if (node && (node->getType() != let))
+		node.reset();
+	return node;
+}
+
 SLE::pointer Ledger::getASNode(LedgerStateParms& parms, const uint256& nodeID,
 	LedgerEntryType let )
 {
@@ -924,43 +1109,39 @@ SLE::pointer Ledger::getASNode(LedgerStateParms& parms, const uint256& nodeID,
 
 SLE::pointer Ledger::getAccountRoot(const uint160& accountID)
 {
-	LedgerStateParms	qry			= lepNONE;
-
-	return getASNode(qry, getAccountRootIndex(accountID), ltACCOUNT_ROOT);
+	return getASNodeI(getAccountRootIndex(accountID), ltACCOUNT_ROOT);
 }
 
 SLE::pointer Ledger::getAccountRoot(const RippleAddress& naAccountID)
 {
-	LedgerStateParms	qry			= lepNONE;
-
-	return getASNode(qry, getAccountRootIndex(naAccountID.getAccountID()), ltACCOUNT_ROOT);
+	return getASNodeI(getAccountRootIndex(naAccountID.getAccountID()), ltACCOUNT_ROOT);
 }
 
 //
 // Directory
 //
 
-SLE::pointer Ledger::getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex)
+SLE::pointer Ledger::getDirNode(const uint256& uNodeIndex)
 {
-	return getASNode(parms, uNodeIndex, ltDIR_NODE);
+	return getASNodeI(uNodeIndex, ltDIR_NODE);
 }
 
 //
 // Generator Map
 //
 
-SLE::pointer Ledger::getGenerator(LedgerStateParms& parms, const uint160& uGeneratorID)
+SLE::pointer Ledger::getGenerator(const uint160& uGeneratorID)
 {
-	return getASNode(parms, getGeneratorIndex(uGeneratorID), ltGENERATOR_MAP);
+	return getASNodeI(getGeneratorIndex(uGeneratorID), ltGENERATOR_MAP);
 }
 
 //
 // Nickname
 //
 
-SLE::pointer Ledger::getNickname(LedgerStateParms& parms, const uint256& uNickname)
+SLE::pointer Ledger::getNickname(const uint256& uNickname)
 {
-	return getASNode(parms, uNickname, ltNICKNAME);
+	return getASNodeI(uNickname, ltNICKNAME);
 }
 
 //
@@ -968,18 +1149,18 @@ SLE::pointer Ledger::getNickname(LedgerStateParms& parms, const uint256& uNickna
 //
 
 
-SLE::pointer Ledger::getOffer(LedgerStateParms& parms, const uint256& uIndex)
+SLE::pointer Ledger::getOffer(const uint256& uIndex)
 {
-	return getASNode(parms, uIndex, ltOFFER);
+	return getASNodeI(uIndex, ltOFFER);
 }
 
 //
 // Ripple State
 //
 
-SLE::pointer Ledger::getRippleState(LedgerStateParms& parms, const uint256& uNode)
+SLE::pointer Ledger::getRippleState(const uint256& uNode)
 {
-	return getASNode(parms, uNode, ltRIPPLE_STATE);
+	return getASNodeI(uNode, ltRIPPLE_STATE);
 }
 
 // For an entry put in the 64 bit index or quality.
@@ -1073,7 +1254,7 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 	int diff = mLedgerSeq - ledgerIndex;
 	if (diff <= 256)
 	{
-		SLE::pointer hashIndex = getSLE(getLedgerHashIndex());
+		SLE::pointer hashIndex = getSLEi(getLedgerHashIndex());
 		if (hashIndex)
 		{
 			assert(hashIndex->getFieldU32(sfLastLedgerSequence) == (mLedgerSeq - 1));
@@ -1093,7 +1274,7 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 	}
 
 	// in skiplist
-	SLE::pointer hashIndex = getSLE(getLedgerHashIndex(ledgerIndex));
+	SLE::pointer hashIndex = getSLEi(getLedgerHashIndex(ledgerIndex));
 	if (hashIndex)
 	{
 		int lastSeq = hashIndex->getFieldU32(sfLastLedgerSequence);
@@ -1113,7 +1294,7 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 std::vector< std::pair<uint32, uint256> > Ledger::getLedgerHashes()
 {
 	std::vector< std::pair<uint32, uint256> > ret;
-	SLE::pointer hashIndex = getSLE(getLedgerHashIndex());
+	SLE::pointer hashIndex = getSLEi(getLedgerHashIndex());
 	if (hashIndex)
 	{
 		STVector256 vec = hashIndex->getFieldV256(sfHashes);
@@ -1142,7 +1323,7 @@ uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uT
 
 	uint256	uBaseIndex	= getQualityIndex(s.getSHA512Half());	// Return with quality 0.
 
-	cLog(lsDEBUG) << boost::str(boost::format("getBookBase(%s,%s,%s,%s) = %s")
+	cLog(lsTRACE) << boost::str(boost::format("getBookBase(%s,%s,%s,%s) = %s")
 		% STAmount::createHumanCurrency(uTakerPaysCurrency)
 		% RippleAddress::createHumanAccountID(uTakerPaysIssuerID)
 		% STAmount::createHumanCurrency(uTakerGetsCurrency)
@@ -1330,18 +1511,27 @@ int Ledger::getPendingSaves()
 	return sPendingSaves;
 }
 
+uint32 Ledger::roundCloseTime(uint32 closeTime, uint32 closeResolution)
+{
+	if (closeTime == 0)
+		return 0;
+	closeTime += (closeResolution / 2);
+	return closeTime - (closeTime % closeResolution);
+}
+
 void Ledger::pendSave(bool fromConsensus)
 {
 	if (!fromConsensus && !theApp->isNewFlag(getHash(), SF_SAVED))
 		return;
+	assert(isImmutable());
 
 	{
 		boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
 		++sPendingSaves;
 	}
 
-	boost::thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(),
-		fromConsensus, theApp->getJobQueue().getLoadEvent(jtDISK))).detach();
+	boost::thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(), fromConsensus,
+		theApp->getJobQueue().getLoadEvent(jtDISK, fromConsensus ? "Ledger::cSave" : "Ledger::save"))).detach();
 
 }
 

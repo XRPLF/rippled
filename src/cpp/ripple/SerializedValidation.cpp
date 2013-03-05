@@ -6,24 +6,21 @@
 
 DECLARE_INSTANCE(SerializedValidation);
 
-std::vector<SOElement::ref> sValidationFormat;
+SOTemplate sValidationFormat;
 
-static bool SVFInit()
+void SVFInit()
 {
-	 sValidationFormat.push_back(new SOElement(sfFlags,				SOE_REQUIRED));
-	 sValidationFormat.push_back(new SOElement(sfLedgerHash,		SOE_REQUIRED));
-	 sValidationFormat.push_back(new SOElement(sfLedgerSequence,	SOE_OPTIONAL));
-	 sValidationFormat.push_back(new SOElement(sfCloseTime,			SOE_OPTIONAL));
-	 sValidationFormat.push_back(new SOElement(sfLoadFee,			SOE_OPTIONAL));
-	 sValidationFormat.push_back(new SOElement(sfBaseFee,			SOE_OPTIONAL));
-	 sValidationFormat.push_back(new SOElement(sfFeatures,			SOE_OPTIONAL));
-	 sValidationFormat.push_back(new SOElement(sfSigningTime,		SOE_REQUIRED));
-	 sValidationFormat.push_back(new SOElement(sfSigningPubKey,		SOE_REQUIRED));
-	 sValidationFormat.push_back(new SOElement(sfSignature,			SOE_OPTIONAL));
-	 return true;
+	 sValidationFormat.push_back(SOElement(sfFlags,				SOE_REQUIRED));
+	 sValidationFormat.push_back(SOElement(sfLedgerHash,		SOE_REQUIRED));
+	 sValidationFormat.push_back(SOElement(sfLedgerSequence,	SOE_OPTIONAL));
+	 sValidationFormat.push_back(SOElement(sfCloseTime,			SOE_OPTIONAL));
+	 sValidationFormat.push_back(SOElement(sfLoadFee,			SOE_OPTIONAL));
+	 sValidationFormat.push_back(SOElement(sfBaseFee,			SOE_OPTIONAL));
+	 sValidationFormat.push_back(SOElement(sfFeatures,			SOE_OPTIONAL));
+	 sValidationFormat.push_back(SOElement(sfSigningTime,		SOE_REQUIRED));
+	 sValidationFormat.push_back(SOElement(sfSigningPubKey,		SOE_REQUIRED));
+	 sValidationFormat.push_back(SOElement(sfSignature,			SOE_OPTIONAL));
 };
-
-bool SVFinitComplete = SVFInit();
 
 const uint32 SerializedValidation::sFullFlag		= 0x1;
 

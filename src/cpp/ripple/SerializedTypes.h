@@ -34,10 +34,14 @@ enum PathFlags
 	PF_ISSUE			= 0x80,
 };
 
-#define CURRENCY_XRP		uint160(0)
-#define CURRENCY_ONE		uint160(1)	// Used as a place holder
-#define ACCOUNT_XRP			uint160(0)
-#define ACCOUNT_ONE			uint160(1)	// Used as a place holder
+static const uint160 u160_zero(0), u160_one(1);
+static inline const uint160& get_u160_zero() { return u160_zero; }
+static inline const uint160& get_u160_one() { return u160_one; }
+
+#define CURRENCY_XRP		get_u160_zero()
+#define CURRENCY_ONE		get_u160_one()	// Used as a place holder
+#define ACCOUNT_XRP			get_u160_zero()
+#define ACCOUNT_ONE			get_u160_one()	// Used as a place holder
 
 DEFINE_INSTANCE(SerializedValue);
 
@@ -233,6 +237,34 @@ protected:
 		: SerializedType(name), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
 			mIsNative(isNat), mIsNegative(isNeg) { ; }
 
+	void set(int64 v)
+	{
+		if (v < 0)
+		{
+			mIsNegative = true;
+			mValue = static_cast<uint64>(-v);
+		}
+		else
+		{
+			mIsNegative = false;
+			mValue = static_cast<uint64>(v);
+		}
+	}
+
+	void set(int v)
+	{
+		if (v < 0)
+		{
+			mIsNegative = true;
+			mValue = static_cast<uint64>(-v);
+		}
+		else
+		{
+			mIsNegative = false;
+			mValue = static_cast<uint64>(v);
+		}
+	}
+
 public:
 	static const int cMinOffset = -96, cMaxOffset = 80;
 	static const uint64 cMinValue = 1000000000000000ull, cMaxValue = 9999999999999999ull;
@@ -249,15 +281,51 @@ public:
 		: SerializedType(n), mValue(v), mOffset(0), mIsNative(true), mIsNegative(isNeg)
 	{ ; }
 
-	STAmount(const uint160& uCurrencyID, const uint160& uIssuerID, uint64 uV = 0, int iOff = 0, bool bNegative = false)
+	STAmount(SField::ref n, int64 v) : SerializedType(n), mOffset(0), mIsNative(true)
+	{ set(v); }
+
+	STAmount(const uint160& uCurrencyID, const uint160& uIssuerID,
+			uint64 uV = 0, int iOff = 0, bool bNegative = false)
 		: mCurrency(uCurrencyID), mIssuer(uIssuerID), mValue(uV), mOffset(iOff), mIsNegative(bNegative)
 	{ canonicalize(); }
 
-	// YYY This should probably require issuer too.
+	STAmount(const uint160& uCurrencyID, const uint160& uIssuerID,
+			uint32 uV, int iOff = 0, bool bNegative = false)
+		: mCurrency(uCurrencyID), mIssuer(uIssuerID), mValue(uV), mOffset(iOff), mIsNegative(bNegative)
+	{ canonicalize(); }
+
 	STAmount(SField::ref n, const uint160& currency, const uint160& issuer,
 			uint64 v = 0, int off = 0, bool isNeg = false) :
 		SerializedType(n), mCurrency(currency), mIssuer(issuer), mValue(v), mOffset(off), mIsNegative(isNeg)
 	{ canonicalize(); }
+
+	STAmount(const uint160& uCurrencyID, const uint160& uIssuerID, int64 v, int iOff = 0)
+		: mCurrency(uCurrencyID), mIssuer(uIssuerID), mOffset(iOff)
+	{
+		set(v);
+		canonicalize();
+	}
+
+	STAmount(SField::ref n, const uint160& currency, const uint160& issuer, int64 v, int off = 0)
+		: SerializedType(n), mCurrency(currency), mIssuer(issuer), mOffset(off)
+	{
+		set(v);
+		canonicalize();
+	}
+
+	STAmount(const uint160& uCurrencyID, const uint160& uIssuerID, int v, int iOff = 0)
+		: mCurrency(uCurrencyID), mIssuer(uIssuerID), mOffset(iOff)
+	{
+		set(v);
+		canonicalize();
+	}
+
+	STAmount(SField::ref n, const uint160& currency, const uint160& issuer, int v, int off = 0)
+		: SerializedType(n), mCurrency(currency), mIssuer(issuer), mOffset(off)
+	{
+		set(v);
+		canonicalize();
+	}
 
 	STAmount(SField::ref, const Json::Value&);
 
@@ -270,9 +338,6 @@ public:
 
 	static STAmount saFromRate(uint64 uRate = 0)
 	{ return STAmount(CURRENCY_ONE, ACCOUNT_ONE, uRate, -9, false); }
-
-	static STAmount saFromSigned(const uint160& uCurrencyID, const uint160& uIssuerID, int64 iV = 0, int iOff = 0)
-	{ return STAmount(uCurrencyID, uIssuerID, iV < 0 ? -iV : iV, iOff, iV < 0);	}
 
 	SerializedTypeID getSType() const	{ return STI_AMOUNT; }
 	std::string getText() const;
@@ -624,7 +689,6 @@ public:
 	void addElement(const STPathElement &e)				{ mPath.push_back(e); }
 	void clear()										{ mPath.clear(); }
 	bool hasSeen(const uint160 &uAccountId, const uint160& uCurrencyID, const uint160& uIssuerID);
-	int getSerializeSize() const;
 //	std::string getText() const;
 	Json::Value getJson(int) const;
 

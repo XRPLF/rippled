@@ -24,9 +24,6 @@ UInt256.width = 32;
 UInt256.prototype = extend({}, UInt.prototype);
 UInt256.prototype.constructor = UInt256;
 
-// XXX Generate these constants (or remove them)
-var ADDRESS_ZERO = UInt256.ADDRESS_ZERO = "XXX";
-var ADDRESS_ONE  = UInt256.ADDRESS_ONE = "XXX";
 var HEX_ZERO     = UInt256.HEX_ZERO = "00000000000000000000000000000000" +
                                       "00000000000000000000000000000000";
 var HEX_ONE      = UInt256.HEX_ONE  = "00000000000000000000000000000000" +

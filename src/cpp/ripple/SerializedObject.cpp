@@ -130,14 +130,29 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 	}
 }
 
-void STObject::set(const std::vector<SOElement::ref>& type)
+void SOTemplate::push_back(const SOElement &r)
+{
+	if (mIndex.empty())
+		mIndex.resize(SField::getNumFields() + 1, -1);
+	assert(r.e_field.getNum() < mIndex.size());
+	assert(getIndex(r.e_field) == -1);
+	mIndex[r.e_field.getNum()] = mTypes.size();
+	mTypes.push_back(new SOElement(r));
+}
+
+int SOTemplate::getIndex(SField::ref f) const
+{
+	assert(f.getNum() < mIndex.size());
+	return mIndex[f.getNum()];
+}
+
+void STObject::set(const SOTemplate& type)
 {
 	mData.clear();
-	mType.clear();
+	mType = &type;
 
-	BOOST_FOREACH(SOElement::ref elem, type)
+	BOOST_FOREACH(const SOElement* elem, type.peek())
 	{
-		mType.push_back(elem);
 		if (elem->flags != SOE_REQUIRED)
 			giveObject(makeNonPresentObject(elem->e_field));
 		else
@@ -145,18 +160,19 @@ void STObject::set(const std::vector<SOElement::ref>& type)
 	}
 }
 
-bool STObject::setType(const std::vector<SOElement::ref> &type)
+bool STObject::setType(const SOTemplate &type)
 {
-	boost::ptr_vector<SerializedType> newData;
+	boost::ptr_vector<SerializedType> newData(type.peek().size());
 	bool valid = true;
 
-	mType.clear();
-	BOOST_FOREACH(SOElement::ref elem, type)
+	mType = &type;
+
+	BOOST_FOREACH(const SOElement* elem, type.peek())
 	{
 		bool match = false;
 		for (boost::ptr_vector<SerializedType>::iterator it = mData.begin(); it != mData.end(); ++it)
 			if (it->getFName() == elem->e_field)
-			{
+			{ // matching entry, move to new vector
 				match = true;
 				newData.push_back(mData.release(it).release());
 				if ((elem->flags == SOE_DEFAULT) && it->isDefault())
@@ -169,7 +185,7 @@ bool STObject::setType(const std::vector<SOElement::ref> &type)
 			}
 
 		if (!match)
-		{
+		{ // no match found
 			if (elem->flags == SOE_REQUIRED)
 			{
 				cLog(lsWARNING) << "setType( " << getFName().getName() << ") invalid missing "
@@ -178,21 +194,18 @@ bool STObject::setType(const std::vector<SOElement::ref> &type)
 			}
 			newData.push_back(makeNonPresentObject(elem->e_field));
 		}
-
-		mType.push_back(elem);
 	}
-	if (mData.size() != 0)
-	{
-		BOOST_FOREACH(const SerializedType& t, mData)
+
+	BOOST_FOREACH(const SerializedType& t, mData)
+	{ // Anything left over must be discardable
+		if (!t.getFName().isDiscardable())
 		{
-			if (!t.getFName().isDiscardable())
-			{
-				cLog(lsWARNING) << "setType( " << getFName().getName() << ") invalid leftover "
-					<< t.getFName().getName();
-				valid = false;
-			}
+			cLog(lsWARNING) << "setType( " << getFName().getName() << ") invalid leftover "
+				<< t.getFName().getName();
+			valid = false;
 		}
 	}
+
 	mData.swap(newData);
 	return valid;
 }
@@ -200,7 +213,7 @@ bool STObject::setType(const std::vector<SOElement::ref> &type)
 bool STObject::isValidForType()
 {
 	boost::ptr_vector<SerializedType>::iterator it = mData.begin();
-	BOOST_FOREACH(SOElement::ref elem, mType)
+	BOOST_FOREACH(const SOElement* elem, mType->peek())
 	{
 		if (it == mData.end())
 			return false;
@@ -214,14 +227,9 @@ bool STObject::isValidForType()
 
 bool STObject::isFieldAllowed(SField::ref field)
 {
-	if (isFree())
+	if (mType == NULL)
 		return true;
-	BOOST_FOREACH(SOElement::ref elem, mType)
-	{ // are any required elemnents missing
-		if (elem->e_field == field)
-			return true;
-	}
-	return false;
+	return mType->getIndex(field) != -1;
 }
 
 bool STObject::set(SerializerIterator& sit, int depth)
@@ -360,6 +368,9 @@ uint256 STObject::getSigningHash(uint32 prefix) const
 
 int STObject::getFieldIndex(SField::ref field) const
 {
+	if (mType != NULL)
+		return mType->getIndex(field);
+
 	int i = 0;
 	BOOST_FOREACH(const SerializedType& elem, mData)
 	{
@@ -1242,11 +1253,11 @@ BOOST_AUTO_TEST_CASE( FieldManipulation_test )
 	SField sfTestU32(STI_UINT32, 255, "TestU32");
 	SField sfTestObject(STI_OBJECT, 255, "TestObject");
 
-	std::vector<SOElement::ref> elements;
-	elements.push_back(new SOElement(sfFlags, SOE_REQUIRED));
-	elements.push_back(new SOElement(sfTestVL, SOE_REQUIRED));
-	elements.push_back(new SOElement(sfTestH256, SOE_OPTIONAL));
-	elements.push_back(new SOElement(sfTestU32, SOE_REQUIRED));
+	SOTemplate elements;
+	elements.push_back(SOElement(sfFlags, SOE_REQUIRED));
+	elements.push_back(SOElement(sfTestVL, SOE_REQUIRED));
+	elements.push_back(SOElement(sfTestH256, SOE_OPTIONAL));
+	elements.push_back(SOElement(sfTestU32, SOE_REQUIRED));
 
 	STObject object1(elements, sfTestObject);
 	STObject object2(object1);

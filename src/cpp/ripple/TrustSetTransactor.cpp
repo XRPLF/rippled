@@ -43,6 +43,14 @@ TER TrustSetTransactor::doApply()
 		return tefNO_AUTH_REQUIRED;
 	}
 
+	if (saLimitAmount.isNative())
+	{
+		cLog(lsINFO) << boost::str(boost::format("doTrustSet: Malformed transaction: Native credit limit: %s")
+			% saLimitAmount.getFullText());
+
+		return temBAD_LIMIT;
+	}
+
 	if (saLimitAmount.isNegative())
 	{
 		cLog(lsINFO) << "doTrustSet: Malformed transaction: Negatived credit limit.";
@@ -73,7 +81,6 @@ TER TrustSetTransactor::doApply()
 		return tecNO_DST;
 	}
 
-	const STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
 	const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
 	// The reserve required to create the line.
 	const uint64	uReserveCreate	= mEngine->getLedger()->getReserve(uOwnerCount + 1);
@@ -263,7 +270,7 @@ TER TrustSetTransactor::doApply()
 			mEngine->entryDelete(sleRippleState);
 		}
 		else if (bReserveIncrease
-			&& saSrcXRPBalance.getNValue() < uReserveCreate)	// Reserve is not scaled by load.
+			&& mPriorBalance.getNValue() < uReserveCreate)	// Reserve is not scaled by load.
 		{
 			cLog(lsINFO) << "doTrustSet: Delay transaction: Insufficent reserve to add trust line.";
 
@@ -286,7 +293,7 @@ TER TrustSetTransactor::doApply()
 
 		return tecNO_LINE_REDUNDANT;
 	}
-	else if (saSrcXRPBalance.getNValue() < uReserveCreate)		// Reserve is not scaled by load.
+	else if (mPriorBalance.getNValue() < uReserveCreate)		// Reserve is not scaled by load.
 	{
 		cLog(lsINFO) << "doTrustSet: Delay transaction: Line does not exist. Insufficent reserve to create line.";
 

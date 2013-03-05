@@ -14,6 +14,7 @@ protected:
 	Json::Value parseAccountItems(const Json::Value& jvParams);
 	Json::Value parseAccountTransactions(const Json::Value& jvParams);
 	Json::Value parseAsIs(const Json::Value& jvParams);
+	Json::Value parseBookOffers(const Json::Value& jvParams);
 	Json::Value parseConnect(const Json::Value& jvParams);
 #if ENABLE_INSECURE
 	Json::Value parseDataDelete(const Json::Value& jvParams);

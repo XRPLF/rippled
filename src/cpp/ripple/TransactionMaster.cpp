@@ -18,13 +18,24 @@ TransactionMaster::TransactionMaster() : mCache("TransactionCache", CACHED_TRANS
 	;
 }
 
+bool TransactionMaster::inLedger(const uint256& hash, uint32 ledger)
+{
+	Transaction::pointer txn = mCache.fetch(hash);
+	if (!txn)
+		return false;
+	txn->setStatus(COMMITTED, ledger);
+	return true;
+}
+
 Transaction::pointer TransactionMaster::fetch(const uint256& txnID, bool checkDisk)
 {
 	Transaction::pointer txn = mCache.fetch(txnID);
-	if (!checkDisk || txn) return txn;
+	if (!checkDisk || txn)
+		return txn;
 
 	txn = Transaction::load(txnID);
-	if (!txn) return txn;
+	if (!txn)
+		return txn;
 
 	mCache.canonicalize(txnID, txn);
 

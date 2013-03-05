@@ -40,7 +40,7 @@ buster.testCase("Fee Changes", {
 
 buster.testCase("Sending", {
   'setUp'     : testutils.build_setup(),
-  // 'setUp'     : testutils.build_setup({verbose: true , no_server: true}),
+  //'setUp'     : testutils.build_setup({verbose: true , no_server: true}),
   'tearDown'  : testutils.build_teardown(),
 
   "send XRP to non-existent account with insufficent fee" :
@@ -187,8 +187,6 @@ buster.testCase("Sending", {
               .on('proposed', function (m) {
                   buster.assert.equals('temBAD_LIMIT', m.result);
 
-                  // After a malformed transaction, need to recover correct sequence.
-                  self.remote.set_account_seq("alice", self.remote.account_seq("alice")-1);
                   callback('temBAD_LIMIT' !== m.result);
                 })
               .submit();
@@ -721,7 +719,7 @@ buster.testCase("Gateway", {
               });
 
             self.remote
-              .on('account', function (m) {
+              .on('transaction', function (m) {
                   // console.log("ACCOUNT: %s", JSON.stringify(m));
                   self.found  = 1;
                 })
@@ -859,7 +857,7 @@ buster.testCase("Gateway", {
               });
 
             self.remote
-              .on('account', function (m) {
+              .on('transaction', function (m) {
                   // console.log("ACCOUNT: %s", JSON.stringify(m));
                   self.found  = 1;
                 })

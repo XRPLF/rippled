@@ -223,7 +223,7 @@ void SqliteDatabase::doHook(const char *db, int pages)
 	{
 		walRunning = true;
 		if (mWalQ)
-			mWalQ->addJob(jtWAL, boost::bind(&SqliteDatabase::runWal, this));
+			mWalQ->addJob(jtWAL, std::string("WAL:") + mHost, boost::bind(&SqliteDatabase::runWal, this));
 		else
 			boost::thread(boost::bind(&SqliteDatabase::runWal, this)).detach();
 	}
@@ -252,8 +252,8 @@ void SqliteDatabase::runWal()
 			int ret = sqlite3_wal_checkpoint_v2(mConnection, db.c_str(), SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
 			if (ret != SQLITE_OK)
 			{
-				cLog((ret == SQLITE_LOCKED) ? lsDEBUG : lsWARNING) << "WAL " << mHost << ":"
-					<< db << " errror " << ret;
+				cLog((ret == SQLITE_LOCKED) ? lsTRACE : lsWARNING) << "WAL " << mHost << ":"
+					<< db << " error " << ret;
 			}
 		}
 		walSet.clear();
@@ -374,6 +374,25 @@ bool SqliteStatement::isDone(int j)
 bool SqliteStatement::isRow(int j)
 {
 	return j == SQLITE_ROW;
+}
+
+bool SqliteStatement::isError(int j)
+{
+	switch (j)
+	{
+		case SQLITE_OK:
+		case SQLITE_ROW:
+		case SQLITE_DONE:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+std::string SqliteStatement::getError(int j)
+{
+	return sqlite3_errstr(j);
 }
 
 // vim:ts=4

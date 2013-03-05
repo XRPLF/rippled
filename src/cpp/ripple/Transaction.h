@@ -99,7 +99,6 @@ public:
 	// database functions
 	void save();
 	static Transaction::pointer load(const uint256& id);
-	static Transaction::pointer findFrom(const RippleAddress& fromID, uint32 seq);
 
 	// conversion function
 	static bool convertToTransactions(uint32 ourLedgerSeq, uint32 otherLedgerSeq,
@@ -113,7 +112,7 @@ public:
 	bool operator<=(const Transaction&) const;
 	bool operator>=(const Transaction&) const;
 
-	Json::Value getJson(int options) const;
+	Json::Value getJson(int options, bool binary = false) const;
 
 	static bool isHexTxID(const std::string&);
 
