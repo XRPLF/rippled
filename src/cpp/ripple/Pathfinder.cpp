@@ -424,7 +424,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					}
 					else if (!rspEntry->getBalance().isPositive()							// No IOUs to send.
 						&& (!rspEntry->getLimitPeer()										// Peer does not extend credit.
-							|| *rspEntry->getBalance().negate() >= rspEntry->getLimitPeer()	// No credit left.
+							|| -rspEntry->getBalance() >= rspEntry->getLimitPeer()			// No credit left.
 							|| (bRequireAuth && !rspEntry->getAuth())))						// Not authorized to hold credit.
 					{
 						// Path has no credit left. Ignore it.
@@ -700,7 +700,7 @@ boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raA
 		// Filter out non
 		if (saBalance.isPositive()					// Have IOUs to send.
 			|| (rspEntry->getLimitPeer()			// Peer extends credit.
-				&& *saBalance.negate() < rspEntry->getLimitPeer()))	// Credit left.
+				&& -saBalance < rspEntry->getLimitPeer()))	// Credit left.
 		{
 			// Path has no credit left. Ignore it.
 			usCurrencies.insert(saBalance.getCurrency());
