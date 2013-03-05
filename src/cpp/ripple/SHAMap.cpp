@@ -94,13 +94,12 @@ std::stack<SHAMapTreeNode::pointer> SHAMap::getStack(const uint256& id, bool inc
 		int branch = node->selectBranch(id);
 		assert(branch >= 0);
 
-		uint256 hash = node->getChildHash(branch);
-		if (hash.isZero())
+		if (node->isEmptyBranch(branch))
 			return stack;
 
 		try
 		{
-			node = getNode(node->getChildNodeID(branch), hash, false);
+			node = getNode(node->getChildNodeID(branch), node->getChildHash(branch), false);
 		}
 		catch (SHAMapMissingNode& mn)
 		{
@@ -165,14 +164,13 @@ SHAMapTreeNode::pointer SHAMap::walkTo(const uint256& id, bool modify)
 	while (!inNode->isLeaf())
 	{
 		int branch = inNode->selectBranch(id);
-		uint256 childHash = inNode->getChildHash(branch);
 
-		if (childHash.isZero())
+		if (inNode->isEmptyBranch(branch))
 			return inNode;
 
 		try
 		{
-			inNode = getNode(inNode->getChildNodeID(branch), childHash, false);
+			inNode = getNode(inNode->getChildNodeID(branch), inNode->getChildHash(branch), false);
 		}
 		catch (SHAMapMissingNode& mn)
 		{
@@ -193,10 +191,10 @@ SHAMapTreeNode* SHAMap::walkToPointer(const uint256& id)
 	while (!inNode->isLeaf())
 	{
 		int branch = inNode->selectBranch(id);
-		const uint256& nextHash = inNode->getChildHash(branch);
-		if (nextHash.isZero())
+		if (inNode->isEmptyBranch(branch))
 			return NULL;
-		inNode = getNodePointer(inNode->getChildNodeID(branch), nextHash);
+
+		inNode = getNodePointer(inNode->getChildNodeID(branch), inNode->getChildHash(branch));
 		assert(inNode);
 	}
 	return (inNode->getTag() == id) ? inNode : NULL;

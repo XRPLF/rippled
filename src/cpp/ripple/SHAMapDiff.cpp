@@ -162,13 +162,13 @@ bool SHAMap::compare(SHAMap::ref otherMap, SHAMapDiff& differences, int maxCount
 			for (int i = 0; i < 16; ++i)
 				if (ourNode->getChildHash(i) != otherNode->getChildHash(i) )
 				{
-					if (!otherNode->getChildHash(i))
+					if (otherNode->isEmptyBranch(i))
 					{ // We have a branch, the other tree does not
 						SHAMapTreeNode* iNode = getNodePointer(ourNode->getChildNodeID(i), ourNode->getChildHash(i));
 						if (!walkBranch(iNode, SHAMapItem::pointer(), true, differences, maxCount))
 							return false;
 					}
-					else if (!ourNode->getChildHash(i))
+					else if (ourNode->isEmptyBranch(i))
 					{ // The other tree has a branch, we do not
 						SHAMapTreeNode* iNode =
 							otherMap->getNodePointer(otherNode->getChildNodeID(i), otherNode->getChildHash(i));
