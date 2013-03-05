@@ -147,11 +147,14 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 
 	std::map< uint32, std::pair<uint256, uint256> > ledgerHashes;
 
+	uint32 minHas = ledger->getLedgerSeq();
+	uint32 maxHas = ledger->getLedgerSeq();
+
 	while (seq > 0)
 	{
 		{
 			boost::recursive_mutex::scoped_lock ml(mLock);
-			mCompleteLedgers.setValue(seq);
+			minHas = seq;
 			--seq;
 			if (mCompleteLedgers.hasValue(seq))
 				break;
@@ -162,6 +165,8 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 		{
 			if (theApp->isShutdown())
 				return;
+			mCompleteLedgers.setRange(minHas, maxHas);
+			maxHas = minHas;
 			ledgerHashes = Ledger::getHashesByIndex((seq < 500) ? 0 : (seq - 499), seq);
 			it = ledgerHashes.find(seq);
 			if (it == ledgerHashes.end())
@@ -172,6 +177,7 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 			break;
 		prevHash = it->second.second;
 	}
+	mCompleteLedgers.setRange(minHas, maxHas);
 
 	resumeAcquiring();
 }
