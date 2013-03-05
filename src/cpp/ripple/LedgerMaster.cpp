@@ -165,7 +165,10 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 		{
 			if (theApp->isShutdown())
 				return;
-			mCompleteLedgers.setRange(minHas, maxHas);
+			{
+				boost::recursive_mutex::scoped_lock ml(mLock);
+				mCompleteLedgers.setRange(minHas, maxHas);
+			}
 			maxHas = minHas;
 			ledgerHashes = Ledger::getHashesByIndex((seq < 500) ? 0 : (seq - 499), seq);
 			it = ledgerHashes.find(seq);
@@ -177,7 +180,11 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 			break;
 		prevHash = it->second.second;
 	}
-	mCompleteLedgers.setRange(minHas, maxHas);
+
+	{
+		boost::recursive_mutex::scoped_lock ml(mLock);
+		mCompleteLedgers.setRange(minHas, maxHas);
+	}
 
 	resumeAcquiring();
 }
