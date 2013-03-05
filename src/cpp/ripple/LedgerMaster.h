@@ -77,6 +77,9 @@ public:
 
 	TER doTransaction(SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply);
 
+	int getMinValidations()				{ return mMinValidations; }
+	void setMinValidations(int v)		{ mMinValidations = v; }
+
 	void pushLedger(Ledger::ref newLedger);
 	void pushLedger(Ledger::ref newLCL, Ledger::ref newOL, bool fromConsensus);
 	void storeLedger(Ledger::ref);

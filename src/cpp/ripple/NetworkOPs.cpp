@@ -1189,6 +1189,8 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 	if (mNeedNetworkLedger)
 		info["network_ledger"] = "waiting";
 
+	info["validation_quorum"] = mLedgerMaster->getMinValidations();
+
 	if (admin)
 	{
 		if (theConfig.VALIDATION_PUB.isValid())

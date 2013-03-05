@@ -227,7 +227,12 @@ int main(int argc, char* argv[])
 	{
 		theConfig.START_UP = Config::LOAD;
 	}
-	else if (vm.count("net")) theConfig.START_UP = Config::NETWORK;
+	else if (vm.count("net"))
+	{
+		theConfig.START_UP = Config::NETWORK;
+		if (theConfig.VALIDATION_QUORUM < 2)
+			theConfig.VALIDATION_QUORUM = 2;
+	}
 
 	if (iResult)
 	{
