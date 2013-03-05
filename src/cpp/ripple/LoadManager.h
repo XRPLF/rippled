@@ -139,6 +139,7 @@ protected:
 
 	uint32 mLocalTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
 	uint32 mRemoteTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
+	int raiseCount;
 
 	boost::mutex mLock;
 
@@ -146,7 +147,7 @@ protected:
 
 public:
 
-	LoadFeeTrack() : mLocalTxnLoadFee(lftNormalFee), mRemoteTxnLoadFee(lftNormalFee)
+	LoadFeeTrack() : mLocalTxnLoadFee(lftNormalFee), mRemoteTxnLoadFee(lftNormalFee), raiseCount(0)
 	{ ; }
 
 	// Scale from fee units to millionths of a ripple
