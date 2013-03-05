@@ -141,7 +141,7 @@ Pathfinder::Pathfinder(Ledger::ref ledger,
 
 	theApp->getOrderBookDB().setup(mLedger);
 
-	mLoadMonitor = theApp->getJobQueue().getLoadEvent(jtPATH_FIND);
+	mLoadMonitor = theApp->getJobQueue().getLoadEvent(jtPATH_FIND, "FindPath");
 
 	// Construct the default path for later comparison.
 

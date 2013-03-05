@@ -64,7 +64,8 @@ protected:
 	boost::posix_time::ptime	mStartTime;
 
 public:
-	LoadEvent(LoadMonitor& monitor, bool shouldStart, int count) : mMonitor(monitor), mRunning(false), mCount(count)
+	LoadEvent(LoadMonitor& monitor, const std::string& name, bool shouldStart, int count) :
+		mMonitor(monitor), mRunning(false), mCount(count), mName(name)
 	{
 		mStartTime = boost::posix_time::microsec_clock::universal_time();
 		if (shouldStart)
@@ -77,7 +78,7 @@ public:
 			stop();
 	}
 
-	void setName(const std::string& name)
+	void reName(const std::string& name)
 	{
 		mName = name;
 	}

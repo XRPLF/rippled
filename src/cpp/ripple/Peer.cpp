@@ -424,7 +424,7 @@ void Peer::processReadBuffer()
 
 //	std::cerr << "Peer::processReadBuffer: " << mIpPort.first << " " << mIpPort.second << std::endl;
 
-	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtPEER));
+	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtPEER, "Peer::read"));
 
 	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 

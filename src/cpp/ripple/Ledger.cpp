@@ -1530,8 +1530,8 @@ void Ledger::pendSave(bool fromConsensus)
 		++sPendingSaves;
 	}
 
-	boost::thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(),
-		fromConsensus, theApp->getJobQueue().getLoadEvent(jtDISK))).detach();
+	boost::thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(), fromConsensus,
+		theApp->getJobQueue().getLoadEvent(jtDISK, fromConsensus ? "Ledger::cSave" : "Ledger::save"))).detach();
 
 }
 

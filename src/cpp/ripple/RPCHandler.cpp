@@ -2879,7 +2879,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 	cLog(lsTRACE) << "COMMAND:" << strCommand;
 	cLog(lsTRACE) << "REQUEST:" << jvRequest;
 
-	LoadEvent::autoptr le(theApp->getJobQueue().getLoadEventAP(jtRPC));
+	LoadEvent::autoptr le(theApp->getJobQueue().getLoadEventAP(jtRPC, "RPC"));
 
 	mRole	= iRole;
 
