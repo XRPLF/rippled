@@ -188,7 +188,7 @@ TER PathState::pushNode(
 		else
 		{
 			// Add required intermediate nodes to deliver to current account.
-			cLog(lsDEBUG) << "pushNode: imply for account.";
+			cLog(TRACE) << "pushNode: imply for account.";
 
 			terResult	= pushImply(
 				pnCur.uAccountID,									// Current account.
@@ -223,7 +223,7 @@ TER PathState::pushNode(
 				}
 				else
 				{
-					cLog(lsDEBUG) << "pushNode: Credit line found between "
+					cLog(lsTRACE) << "pushNode: Credit line found between "
 						<< RippleAddress::createHumanAccountID(pnBck.uAccountID)
 						<< " and "
 						<< RippleAddress::createHumanAccountID(pnCur.uAccountID)
@@ -266,7 +266,7 @@ TER PathState::pushNode(
 		else if (!!pnPrv.uAccountID)
 		{
 			// Previous is an account.
-			cLog(lsDEBUG) << "pushNode: imply for offer.";
+			cLog(lsTRACE) << "pushNode: imply for offer.";
 
 			// Insert intermediary issuer account if needed.
 			terResult	= pushImply(
@@ -280,7 +280,7 @@ TER PathState::pushNode(
 			vpnNodes.push_back(pnCur);
 		}
 	}
-	cLog(lsDEBUG) << boost::str(boost::format("pushNode< : %s") % transToken(terResult));
+	cLog(lsTRACE) << boost::str(boost::format("pushNode< : %s") % transToken(terResult));
 
 	return terResult;
 }
@@ -1563,7 +1563,7 @@ void RippleCalc::calcNodeRipple(
 	STAmount& saCurAct,			// <-> out limit including achieved : <-- <= -->
 	uint64& uRateMax)
 {
-	cLog(lsINFO) << boost::str(boost::format("calcNodeRipple> uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
+	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple> uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
 		% uQualityIn
 		% uQualityOut
 		% saPrvReq.getFullText()
@@ -1587,7 +1587,7 @@ void RippleCalc::calcNodeRipple(
 	if (uQualityIn >= uQualityOut)
 	{
 		// No fee.
-		cLog(lsINFO) << boost::str(boost::format("calcNodeRipple: No fees"));
+		cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple: No fees"));
 
 		// Only process if we are not worsing previously processed.
 		if (!uRateMax || STAmount::uRateOne <= uRateMax)
@@ -1608,7 +1608,7 @@ void RippleCalc::calcNodeRipple(
 	else
 	{
 		// Fee.
-		cLog(lsINFO) << boost::str(boost::format("calcNodeRipple: Fee"));
+		cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple: Fee"));
 
 		uint64	uRate	= STAmount::getRate(STAmount(uQualityIn), STAmount(uQualityOut));
 
@@ -1620,19 +1620,19 @@ void RippleCalc::calcNodeRipple(
 
 			STAmount	saCurIn		= STAmount::divide(STAmount::multiply(saCur, uQualityOut, uCurrencyID, uCurIssuerID), uQualityIn, uCurrencyID, uCurIssuerID);
 
-	cLog(lsINFO) << boost::str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCurIn=%s") % bPrvUnlimited % saPrv.getFullText() % saCurIn.getFullText());
+	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCurIn=%s") % bPrvUnlimited % saPrv.getFullText() % saCurIn.getFullText());
 			if (bPrvUnlimited || saCurIn <= saPrv)
 			{
 				// All of cur. Some amount of prv.
 				saCurAct	+= saCur;
 				saPrvAct	+= saCurIn;
-	cLog(lsINFO) << boost::str(boost::format("calcNodeRipple:3c: saCurReq=%s saPrvAct=%s") % saCurReq.getFullText() % saPrvAct.getFullText());
+	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple:3c: saCurReq=%s saPrvAct=%s") % saCurReq.getFullText() % saPrvAct.getFullText());
 			}
 			else
 			{
 				// A part of cur. All of prv. (cur as driver)
 				STAmount	saCurOut	= STAmount::divide(STAmount::multiply(saPrv, uQualityIn, uCurrencyID, uCurIssuerID), uQualityOut, uCurrencyID, uCurIssuerID);
-	cLog(lsINFO) << boost::str(boost::format("calcNodeRipple:4: saCurReq=%s") % saCurReq.getFullText());
+	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple:4: saCurReq=%s") % saCurReq.getFullText());
 
 				saCurAct	+= saCurOut;
 				saPrvAct	= saPrvReq;
@@ -1643,7 +1643,7 @@ void RippleCalc::calcNodeRipple(
 		}
 	}
 
-	cLog(lsINFO) << boost::str(boost::format("calcNodeRipple< uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
+	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple< uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
 		% uQualityIn
 		% uQualityOut
 		% saPrvReq.getFullText()
