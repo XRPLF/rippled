@@ -364,14 +364,14 @@ public:
 	bool isGEZero() const		{ return !mIsNegative; }
 	operator bool() const		{ return !isZero(); }
 
-	STAmount* negate()			{ if (!isZero()) mIsNegative = !mIsNegative; return this; }
-	STAmount* zero()			{ mOffset = mIsNative ? 0 : -100; mValue = 0; mIsNegative = false; return this; }
+	void negate()				{ if (!isZero()) mIsNegative = !mIsNegative; }
+	void zero()					{ mOffset = mIsNative ? 0 : -100; mValue = 0; mIsNegative = false; }
 
 	// Zero while copying currency and issuer.
-	STAmount* zero(const STAmount& saTmpl)
-	{ mCurrency = saTmpl.mCurrency; mIssuer = saTmpl.mIssuer; mIsNative = saTmpl.mIsNative; return zero(); }
-	STAmount* zero(const uint160& uCurrencyID, const uint160& uIssuerID)
-	{ mCurrency = uCurrencyID; mIssuer = uIssuerID; mIsNative = !uCurrencyID; return zero(); }
+	void zero(const STAmount& saTmpl)
+	{ mCurrency = saTmpl.mCurrency; mIssuer = saTmpl.mIssuer; mIsNative = saTmpl.mIsNative; zero(); }
+	void zero(const uint160& uCurrencyID, const uint160& uIssuerID)
+	{ mCurrency = uCurrencyID; mIssuer = uIssuerID; mIsNative = !uCurrencyID; zero(); }
 
 	int compare(const STAmount&) const;
 

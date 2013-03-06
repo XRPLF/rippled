@@ -411,7 +411,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 				{
 					RippleState*	rspEntry	= (RippleState*) item.get();
-					const uint160	uPeerID		= rspEntry->getAccountIDPeer();
+					const uint160&	uPeerID		= rspEntry->getAccountIDPeer();
 
 					if (spPath.hasSeen(uPeerID, speEnd.mCurrencyID, uPeerID))
 					{
@@ -425,7 +425,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					}
 					else if (!rspEntry->getBalance().isPositive()							// No IOUs to send.
 						&& (!rspEntry->getLimitPeer()										// Peer does not extend credit.
-							|| *rspEntry->getBalance().negate() >= rspEntry->getLimitPeer()	// No credit left.
+							|| -rspEntry->getBalance() >= rspEntry->getLimitPeer()			// No credit left.
 							|| (bRequireAuth && !rspEntry->getAuth())))						// Not authorized to hold credit.
 					{
 						// Path has no credit left. Ignore it.
@@ -469,7 +469,8 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				{
 					// A book we haven't seen before. Add it.
 					STPath			spNew(spPath);
-					STPathElement	speBook(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut());
+					STPathElement	speBook(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut(),
+						book->getCurrencyIn() != book->getCurrencyOut());
 
 					spNew.mPath.push_back(speBook);		// Add the order book.
 
@@ -701,7 +702,7 @@ boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raA
 		// Filter out non
 		if (saBalance.isPositive()					// Have IOUs to send.
 			|| (rspEntry->getLimitPeer()			// Peer extends credit.
-				&& *saBalance.negate() < rspEntry->getLimitPeer()))	// Credit left.
+				&& -saBalance < rspEntry->getLimitPeer()))	// Credit left.
 		{
 			usCurrencies.insert(saBalance.getCurrency());
 		}
