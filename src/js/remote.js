@@ -234,11 +234,15 @@ Request.prototype.books = function (books) {
 // 'connected'
 // 'disconnected'
 // 'state':
-// - 'online' : connected and subscribed
-// - 'offline' : not subscribed or not connected.
-// 'ledger_closed': A good indicate of ready to serve.
-// 'subscribed' : This indicates stand-alone is available.
+// - 'online'        : Connected and subscribed.
+// - 'offline'       : Not subscribed or not connected.
+// 'subscribed'      : This indicates stand-alone is available.
 //
+// Server events:
+// 'ledger_closed'   : A good indicate of ready to serve.
+// 'transaction'     : Transactions we receive based on current subscriptions.
+// 'transaction_all' : Listening triggers a subscribe to all transactions
+//                     globally in the network.
 
 // --> trusted: truthy, if remote is trusted
 var Remote = function (opts, trace) {
@@ -309,7 +313,7 @@ var Remote = function (opts, trace) {
   };
 
   this.on('newListener', function (type, listener) {
-      if ('transaction' === type)
+      if ('transaction_all' === type)
       {
         if (!self._transaction_subs && 'open' === self._online_state)
         {
@@ -322,7 +326,7 @@ var Remote = function (opts, trace) {
     });
 
   this.on('removeListener', function (type, listener) {
-      if ('transaction' === type)
+      if ('transaction_all' === type)
       {
         self._transaction_subs  -= 1;
 
@@ -643,6 +647,7 @@ Remote.prototype._connect_message = function (ws, json) {
         }
 
         this.emit('transaction', message);
+        this.emit('transaction_all', message);
         break;
 
       case 'serverStatus':
