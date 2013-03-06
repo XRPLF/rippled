@@ -38,8 +38,6 @@ class OrderBookDB
 	// issuerIn, issuerOut, currencyIn, currencyOut
 	std::map<uint160, std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > > > mListeners; 
 
-	std::map<uint256, bool >  mKnownMap;
-
 	uint32 mSeq;
 	boost::recursive_mutex mLock;
 
