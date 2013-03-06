@@ -342,6 +342,7 @@ TER OfferCreateTransactor::doApply()
 	const uint32			uTxFlags			= mTxn.getFlags();
 	const bool				bPassive			= isSetBit(uTxFlags, tfPassive);
 	const bool				bImmediateOrCancel	= isSetBit(uTxFlags, tfImmediateOrCancel);
+	const bool				bFillOrKill			= isSetBit(uTxFlags, tfFillOrKill);
 	STAmount				saTakerPays			= mTxn.getFieldAmount(sfTakerPays);
 	STAmount				saTakerGets			= mTxn.getFieldAmount(sfTakerGets);
 
@@ -371,6 +372,12 @@ TER OfferCreateTransactor::doApply()
 	if (uTxFlags & tfOfferCreateMask)
 	{
 		cLog(lsINFO) << "OfferCreate: Malformed transaction: Invalid flags set.";
+
+		return temINVALID_FLAG;
+	}
+	else if (bImmediateOrCancel && bFillOrKill)
+	{
+		cLog(lsINFO) << "OfferCreate: Malformed transaction: both IoC and FoK set.";
 
 		return temINVALID_FLAG;
 	}
@@ -489,6 +496,11 @@ TER OfferCreateTransactor::doApply()
 	{
 		// If ledger is not final, can vote no.
 		terResult	= bOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+	}
+	else if (bFillOrKill && (saTakerPays || saTakerGets))
+	{
+		// Fill or kill and have leftovers.
+		terResult	= tecKILL;
 	}
 	else if (
 		!saTakerPays														// Wants nothing more.
