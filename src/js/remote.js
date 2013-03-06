@@ -617,9 +617,14 @@ Remote.prototype._connect_message = function (ws, json) {
         this.emit('ledger_closed', message);
         break;
 
-      case 'account':
+      case 'transaction':
+        // To get these events, just subscribe to them. A subscribes and
+        // unsubscribes will be added as needed.
         // XXX If not trusted, need proof.
-        if (this.trace) utils.logObject("remote: account: %s", message);
+
+        // XXX Should de-duplicate transaction events
+
+        if (this.trace) utils.logObject("remote: tx: %s", message);
 
         // Process metadata
         message.mmeta = new Meta(message.meta);
@@ -636,14 +641,6 @@ Remote.prototype._connect_message = function (ws, json) {
             account.emit('transaction', message);
           }
         }
-
-        this.emit('account', message);
-        break;
-
-      case 'transaction':
-        // To get these events, just subscribe to them. A subscribes and
-        // unsubscribes will be added as needed.
-        // XXX If not trusted, need proof.
 
         this.emit('transaction', message);
         break;
