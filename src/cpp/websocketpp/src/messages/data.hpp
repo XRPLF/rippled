@@ -37,6 +37,7 @@
 #include <boost/function.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 #include <boost/utility.hpp>
 
 #include <algorithm>
@@ -81,7 +82,7 @@ public:
      * pointer.
      */
     element_ptr get() {
-        boost::lock_guard<boost::mutex> lock(m_lock);
+        boost::lock_guard<boost::recursive_mutex> lock(m_lock);
         
         element_ptr p;
         
@@ -114,7 +115,7 @@ public:
         return p;
     }
     void recycle(element_ptr p) {
-        boost::lock_guard<boost::mutex> lock(m_lock);
+        boost::lock_guard<boost::recursive_mutex> lock(m_lock);
         
         if (p->get_index()+1 > m_used.size() || m_used[p->get_index()] != p) {
             //std::cout << "error tried to recycle a pointer we don't control" << std::endl;
@@ -139,7 +140,7 @@ public:
     
     // set a function that will be called when new elements are avaliable.
     void set_callback(callback_type fn) {
-        boost::lock_guard<boost::mutex> lock(m_lock);
+        boost::lock_guard<boost::recursive_mutex> lock(m_lock);
         m_callback = fn;
     }
     
@@ -152,7 +153,7 @@ private:
     
     callback_type   m_callback;
     
-    boost::mutex      m_lock;
+    boost::recursive_mutex      m_lock;
 };
 
 class data {
