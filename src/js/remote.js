@@ -617,9 +617,14 @@ Remote.prototype._connect_message = function (ws, json) {
         this.emit('ledger_closed', message);
         break;
 
-      case 'account':
+      case 'transaction':
+        // To get these events, just subscribe to them. A subscribes and
+        // unsubscribes will be added as needed.
         // XXX If not trusted, need proof.
-        if (this.trace) utils.logObject("remote: account: %s", message);
+
+        // XXX Should de-duplicate transaction events
+
+        if (this.trace) utils.logObject("remote: tx: %s", message);
 
         // Process metadata
         message.mmeta = new Meta(message.meta);
@@ -636,14 +641,6 @@ Remote.prototype._connect_message = function (ws, json) {
             account.emit('transaction', message);
           }
         }
-
-        this.emit('account', message);
-        break;
-
-      case 'transaction':
-        // To get these events, just subscribe to them. A subscribes and
-        // unsubscribes will be added as needed.
-        // XXX If not trusted, need proof.
 
         this.emit('transaction', message);
         break;
@@ -939,6 +936,30 @@ Remote.prototype.request_account_tx = function (accountID, ledger_min, ledger_ma
     request.message.ledger_min  = ledger_min;
     request.message.ledger_max  = ledger_max;
   }
+
+  return request;
+};
+
+Remote.prototype.request_book_offers = function (gets, pays, taker) {
+  var request = new Request(this, 'book_offers');
+
+  request.message.taker_gets = {
+    currency: Currency.json_rewrite(gets.currency)
+  };
+
+  if (request.message.taker_gets.currency !== 'XRP') {
+    request.message.taker_gets.issuer = UInt160.json_rewrite(gets.issuer);
+  }
+
+  request.message.taker_pays = {
+    currency: Currency.json_rewrite(pays.currency)
+  };
+
+  if (request.message.taker_pays.currency !== 'XRP') {
+    request.message.taker_pays.issuer = UInt160.json_rewrite(pays.issuer);
+  }
+
+  request.message.taker = taker ? taker : UInt160.ACCOUNT_ONE;
 
   return request;
 };
