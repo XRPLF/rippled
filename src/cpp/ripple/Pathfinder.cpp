@@ -413,7 +413,12 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					RippleState*	rspEntry	= (RippleState*) item.get();
 					const uint160&	uPeerID		= rspEntry->getAccountIDPeer();
 
-					if (spPath.hasSeen(uPeerID, speEnd.mCurrencyID, uPeerID))
+					if (speEnd.mCurrencyID != rspEntry->getLimit().getCurrency())
+					{
+						// wrong currency
+						nothing();
+					}
+					else if (spPath.hasSeen(uPeerID, speEnd.mCurrencyID, uPeerID))
 					{
 						// Peer is in path already. Ignore it to avoid a loop.
 						cLog(lsTRACE) <<
