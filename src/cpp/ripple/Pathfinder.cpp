@@ -79,9 +79,17 @@ PathOption::PathOption(PathOption::pointer other)
 #endif
 
 // Lower numbers have better quality. Sort higher quality first.
-static bool bQualityCmp(std::pair<uint32, unsigned int> a, std::pair<uint32, unsigned int> b)
+static bool bQualityCmp(
+	std::pair< std::pair<uint64, int>, unsigned int> a,
+	std::pair< std::pair<uint64, int>, unsigned int> b)
 {
-	return a.first < b.first;
+	if (a.first.first != b.first.first)
+		return a.first.first < b.first.first;
+
+	if (a.first.second != b.first.second)
+		return a.first.second < b.first.second;
+
+	return a.second < b.second; // FIXME: this biases accounts
 }
 
 // Return true, if path is a default path with an element.
@@ -509,7 +517,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 	// Only filter, sort, and limit if have non-default paths.
 	if (iLimit)
 	{
-		std::vector< std::pair<uint64, unsigned int> > vMap;
+		std::vector< std::pair< std::pair<uint64, int>, unsigned int> > vMap;
 
 		// Build map of quality to entry.
 		for (int i = vspResults.size(); i--;)
@@ -556,7 +564,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 						% uQuality
 						% spCurrent.getJson(0));
 
-				vMap.push_back(std::make_pair(uQuality, i));
+				vMap.push_back(std::make_pair(std::make_pair(uQuality, spCurrent.mPath.size()), i));
 			}
 			else
 			{
