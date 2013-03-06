@@ -1229,7 +1229,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 		for (unsigned int i=0; i != jvSrcCurrencies.size(); ++i) {
 			Json::Value	jvSource		= jvSrcCurrencies[i];
 			uint160		uSrcCurrencyID;
-			uint160		uSrcIssuerID	= raSrc.getAccountID();
+			uint160		uSrcIssuerID;
 
 			// Parse mandatory currency.
 			if (!jvSource.isMember("currency")
@@ -1239,13 +1239,15 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 
 				return rpcError(rpcSRC_CUR_MALFORMED);
 			}
+			if (uSrcCurrencyID.isNonZero())
+				uSrcIssuerID = raSrc.getAccountID();
+
 			// Parse optional issuer.
-			else if (((jvSource.isMember("issuer"))
-					&& (!jvSource["issuer"].isString()
-						|| !STAmount::issuerFromString(uSrcIssuerID, jvSource["issuer"].asString())))
-				// Don't allow illegal issuers.
-				|| !uSrcIssuerID
-				|| ACCOUNT_ONE == uSrcIssuerID)
+			if (jvSource.isMember("issuer") &&
+					((!jvSource["issuer"].isString() ||
+					!STAmount::issuerFromString(uSrcIssuerID, jvSource["issuer"].asString())) ||
+					(uSrcIssuerID.isZero() != uSrcCurrencyID.isZero()) ||
+					(ACCOUNT_ONE == uSrcIssuerID)))
 			{
 				cLog(lsINFO) << "Bad issuer.";
 
