@@ -188,7 +188,7 @@ TER PathState::pushNode(
 		else
 		{
 			// Add required intermediate nodes to deliver to current account.
-			cLog(TRACE) << "pushNode: imply for account.";
+			cLog(lsTRACE) << "pushNode: imply for account.";
 
 			terResult	= pushImply(
 				pnCur.uAccountID,									// Current account.
