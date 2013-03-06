@@ -339,31 +339,32 @@ TER OfferCreateTransactor::takeOffers(
 TER OfferCreateTransactor::doApply()
 {
 	cLog(lsWARNING) << "OfferCreate> " << mTxn.getJson(0);
-	const uint32			uTxFlags		= mTxn.getFlags();
-	const bool				bPassive		= isSetBit(uTxFlags, tfPassive);
-	const bool				bMarket			= isSetBit(uTxFlags, tfMarket);
-	STAmount				saTakerPays		= mTxn.getFieldAmount(sfTakerPays);
-	STAmount				saTakerGets		= mTxn.getFieldAmount(sfTakerGets);
+	const uint32			uTxFlags			= mTxn.getFlags();
+	const bool				bPassive			= isSetBit(uTxFlags, tfPassive);
+	const bool				bImmediateOrCancel	= isSetBit(uTxFlags, tfImmediateOrCancel);
+	const bool				bFillOrKill			= isSetBit(uTxFlags, tfFillOrKill);
+	STAmount				saTakerPays			= mTxn.getFieldAmount(sfTakerPays);
+	STAmount				saTakerGets			= mTxn.getFieldAmount(sfTakerGets);
 
 	cLog(lsINFO) << boost::str(boost::format("OfferCreate: saTakerPays=%s saTakerGets=%s")
 		% saTakerPays.getFullText()
 		% saTakerGets.getFullText());
 
-	const uint160			uPaysIssuerID	= saTakerPays.getIssuer();
-	const uint160			uGetsIssuerID	= saTakerGets.getIssuer();
-	const uint32			uExpiration		= mTxn.getFieldU32(sfExpiration);
-	const bool				bHaveExpiration	= mTxn.isFieldPresent(sfExpiration);
-	const uint32			uSequence		= mTxn.getSequence();
+	const uint160			uPaysIssuerID		= saTakerPays.getIssuer();
+	const uint160			uGetsIssuerID		= saTakerGets.getIssuer();
+	const uint32			uExpiration			= mTxn.getFieldU32(sfExpiration);
+	const bool				bHaveExpiration		= mTxn.isFieldPresent(sfExpiration);
+	const uint32			uSequence			= mTxn.getSequence();
 
-	const uint256			uLedgerIndex	= Ledger::getOfferIndex(mTxnAccountID, uSequence);
+	const uint256			uLedgerIndex		= Ledger::getOfferIndex(mTxnAccountID, uSequence);
 
 	cLog(lsINFO) << "OfferCreate: Creating offer node: " << uLedgerIndex.ToString() << " uSequence=" << uSequence;
 
-	const uint160			uPaysCurrency	= saTakerPays.getCurrency();
-	const uint160			uGetsCurrency	= saTakerGets.getCurrency();
-	const uint64			uRate			= STAmount::getRate(saTakerGets, saTakerPays);
+	const uint160			uPaysCurrency		= saTakerPays.getCurrency();
+	const uint160			uGetsCurrency		= saTakerGets.getCurrency();
+	const uint64			uRate				= STAmount::getRate(saTakerGets, saTakerPays);
 
-	TER						terResult		= tesSUCCESS;
+	TER						terResult			= tesSUCCESS;
 	uint256					uDirectory;		// Delete hints.
 	uint64					uOwnerNode;
 	uint64					uBookNode;
@@ -371,6 +372,12 @@ TER OfferCreateTransactor::doApply()
 	if (uTxFlags & tfOfferCreateMask)
 	{
 		cLog(lsINFO) << "OfferCreate: Malformed transaction: Invalid flags set.";
+
+		return temINVALID_FLAG;
+	}
+	else if (bImmediateOrCancel && bFillOrKill)
+	{
+		cLog(lsINFO) << "OfferCreate: Malformed transaction: both IoC and FoK set.";
 
 		return temINVALID_FLAG;
 	}
@@ -490,10 +497,15 @@ TER OfferCreateTransactor::doApply()
 		// If ledger is not final, can vote no.
 		terResult	= bOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
 	}
+	else if (bFillOrKill && (saTakerPays || saTakerGets))
+	{
+		// Fill or kill and have leftovers.
+		terResult	= tecKILL;
+	}
 	else if (
 		!saTakerPays														// Wants nothing more.
 		|| !saTakerGets														// Offering nothing more.
-		|| bMarket															// Do not persist.
+		|| bImmediateOrCancel															// Do not persist.
 		|| !mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets).isPositive()	// Not funded.
 		|| bUnfunded)														// Consider unfunded.
 	{
