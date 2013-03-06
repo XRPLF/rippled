@@ -23,9 +23,11 @@ DECLARE_INSTANCE(SHAMapTreeNode);
 
 void SHAMapNode::setHash() const
 {
+#if 0
 	std::size_t h = theApp->getNonceST() + (mDepth * 0x9e3779b9);
 	mHash = mNodeID.hash_combine(h);
-#if 0
+#else
+	std::size_t h = theApp->getNonceST() + (mDepth * 0x9e3779b9);
 	const unsigned int *ptr = reinterpret_cast<const unsigned int *>(mNodeID.begin());
 	for (int i = (mDepth + 3) / 4; i != 0; --i)
 		boost::hash_combine(h, *ptr++);
