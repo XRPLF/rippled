@@ -903,6 +903,8 @@ TER RippleCalc::calcNodeAdvance(
 				assert(false);		// Can't run out of offers in forward direction.
 				terResult	= tefEXCEPTION;
 			}
+			else
+				bEntryAdvance = false;
 		}
 		else
 		{
