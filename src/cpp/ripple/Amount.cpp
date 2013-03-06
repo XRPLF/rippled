@@ -1050,7 +1050,7 @@ STAmount STAmount::setRate(uint64 rate)
 // -->     saTakerFunds: Limit for saOfferGets : How much can pay including fees.
 // -->      saOfferPays: Request : this should be reduced as the offer is fullfilled.
 // -->      saOfferGets: Request : this should be reduced as the offer is fullfilled.
-// -->      saTakerPays: Limit for taker to Pays.
+// -->      saTakerPays: Limit for taker to pay.
 // -->      saTakerGets: Limit for taker to get.
 // <--      saTakerPaid: Actual
 // <--       saTakerGot: Actual

@@ -47,6 +47,7 @@ public:
 	const uint160&		getAccountID() const		{ return  mViewLowest ? mLowID : mHighID; }
 	const uint160&		getAccountIDPeer() const	{ return !mViewLowest ? mLowID : mHighID; }
 
+	// True, Provided auth to peer.
 	bool				getAuth() const				{ return isSetBit(mFlags,  mViewLowest ? lsfLowAuth : lsfHighAuth); }
 	bool				getAuthPeer() const			{ return isSetBit(mFlags, !mViewLowest ? lsfLowAuth : lsfHighAuth); }
 

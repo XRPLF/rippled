@@ -280,7 +280,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			}
 			else
 			{
-				cLog(lsTRACE) << "findPaths: empty path: XRP->XRP";
+				cLog(lsWARNING) << "findPaths: empty path: XRP->XRP";
 			}
 
 			continue;
@@ -405,6 +405,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			if (sleEnd)
 			{
 				// On a non-XRP account:
+				// True, the cursor requires the next node to be authorized.
 				bool			bRequireAuth	= isSetBit(sleEnd->getFieldU32(sfFlags), lsfRequireAuth);
 
 				BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
@@ -459,6 +460,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			// Every book that wants the source currency.
 			std::vector<OrderBook::pointer> books;
 
+			// XXX Flip argument order to norm.
 			theApp->getOrderBookDB().getBooks(speEnd.mIssuerID, speEnd.mCurrencyID, books);
 
 			BOOST_FOREACH(OrderBook::ref book, books)
@@ -701,7 +703,6 @@ boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raA
 			|| (rspEntry->getLimitPeer()			// Peer extends credit.
 				&& *saBalance.negate() < rspEntry->getLimitPeer()))	// Credit left.
 		{
-			// Path has no credit left. Ignore it.
 			usCurrencies.insert(saBalance.getCurrency());
 		}
 	}
