@@ -1066,8 +1066,9 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
 
 	std::string sql =
-		str(boost::format("SELECT LedgerSeq,Status,RawTxn,TxnMeta FROM Transactions where TransID in (SELECT TransID from AccountTransactions  "
-			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' LIMIT 200) ORDER BY LedgerSeq DESC;")
+		str(boost::format("SELECT LedgerSeq,Status,RawTxn,TxnMeta FROM Transactions where TransID in "
+			"(SELECT TransID from AccountTransactions  "
+			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' ) ORDER BY LedgerSeq DESC LIMIT 200;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{
@@ -1103,7 +1104,7 @@ std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
 
 	std::string sql =
 		str(boost::format("SELECT LedgerSeq, RawTxn,TxnMeta FROM Transactions where TransID in (SELECT TransID from AccountTransactions  "
-			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' LIMIT 500) ORDER BY LedgerSeq DESC;")
+			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' ) ORDER BY LedgerSeq DESC LIMIT 500;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{
