@@ -63,6 +63,7 @@ public:
 	SerializedLedgerEntry::pointer getSLE() { return mLedgerEntry; }
 	const SerializedLedgerEntry& peekSLE() const { return *mLedgerEntry; }
 	SerializedLedgerEntry& peekSLE() { return *mLedgerEntry; }
+	Json::Value getJson(int);
 
 	std::vector<unsigned char> getRaw() const;
 };

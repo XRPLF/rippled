@@ -19,6 +19,7 @@ public:
 	STAmount getTakerGets(){ return(mTakerGets); }
 	RippleAddress getAccount(){ return(mAccount); }
 	int getSeq(){ return(mSeq); }
+	Json::Value getJson(int);
 
 };
 

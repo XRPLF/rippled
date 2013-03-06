@@ -49,4 +49,12 @@ void AccountItems::fillItems(const uint160& accountID, Ledger::ref ledger)
 	}
 }
 
+Json::Value AccountItems::getJson(int v)
+{
+	Json::Value ret(Json::arrayValue);
+	BOOST_FOREACH(AccountItem::ref ai, mItems)
+		ret.append(ai->getJson(v));
+	return ret;
+}
+
 // vim:ts=4
