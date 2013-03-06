@@ -39,8 +39,7 @@ void OrderBookDB::setup(Ledger::ref ledger)
 
 	while (currentIndex.isNonZero())
 	{
-		SLE::pointer entry=ledger->getSLEi(currentIndex);
-
+		SLE::pointer entry = ledger->getSLEi(currentIndex);
 		OrderBook::pointer book = OrderBook::newOrderBook(entry);
 		if (book)
 		{
@@ -55,19 +54,14 @@ void OrderBookDB::setup(Ledger::ref ledger)
 					<< " -> "
 					<< STAmount::createHumanCurrency(book->getCurrencyOut());
 
-				if (!book->getCurrencyIn())
-				{
-					// XRP
+				if (!book->getCurrencyIn())			// XRP
 					mXRPOrders.push_back(book);
-				}
 				else
-				{
 					mIssuerMap[book->getIssuerIn()].push_back(book);
-				}
 			}
 		}
 
-		currentIndex=ledger->getNextLedgerIndex(currentIndex);
+		currentIndex = ledger->getNextLedgerIndex(currentIndex);
 	}
 
 	cLog(lsDEBUG) << "OrderBookDB<";

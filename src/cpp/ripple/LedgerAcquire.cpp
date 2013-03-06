@@ -14,13 +14,13 @@ SETUP_LOG();
 DECLARE_INSTANCE(LedgerAcquire);
 
 #define LA_DEBUG
-#define LEDGER_ACQUIRE_TIMEOUT		750	// millisecond for each ledger timeout
-#define LEDGER_TIMEOUT_COUNT		10  // how many timeouts before we giveup
-#define LEDGER_TIMEOUT_AGGRESSIVE	4	// how many timeouts before we get aggressive
+#define LEDGER_ACQUIRE_TIMEOUT		1000	// millisecond for each ledger timeout
+#define LEDGER_TIMEOUT_COUNT		10 		// how many timeouts before we giveup
+#define LEDGER_TIMEOUT_AGGRESSIVE	4		// how many timeouts before we get aggressive
 #define TRUST_NETWORK
 
 PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterval(interval), mTimeouts(0),
-	mComplete(false), mFailed(false), mProgress(true), mAggressive(true), mTimer(theApp->getIOService())
+	mComplete(false), mFailed(false), mProgress(true), mAggressive(false), mTimer(theApp->getIOService())
 {
 	mLastAction = upTime();
 	assert((mTimerInterval > 10) && (mTimerInterval < 30000));
@@ -195,14 +195,13 @@ void LedgerAcquire::onTimer(bool progress)
 	if (!progress)
 	{
 		mAggressive = true;
+		mByHash = true;
 		cLog(lsDEBUG) << "No progress for ledger " << mHash;
 		if (!getPeerCount())
 			addPeers();
 		else
 			trigger(Peer::pointer());
 	}
-	else
-		mByHash = true;
 }
 
 void LedgerAcquire::addPeers()
@@ -532,8 +531,7 @@ void LedgerAcquire::filterNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<ui
 	std::vector<bool> duplicates;
 	duplicates.reserve(nodeIDs.size());
 
-	int dupCount=0;
-
+	int dupCount = 0;
 	for (unsigned int i = 0; i < nodeIDs.size(); ++i)
 	{
 		bool isDup = recentNodes.count(nodeIDs[i]) != 0;
@@ -733,7 +731,7 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 		ptr->setTimer(); // Cannot call in constructor
 	}
 	else
-		cLog(lsDEBUG) << "LedgerAcquireMaster acquiring ledger we already have";
+		cLog(lsDEBUG) << "Acquiring ledger we already have: " << hash;
 	return ptr;
 }
 
