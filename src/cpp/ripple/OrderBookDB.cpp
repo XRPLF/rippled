@@ -39,35 +39,32 @@ void OrderBookDB::setup(Ledger::ref ledger)
 
 	while (currentIndex.isNonZero())
 	{
-		SLE::pointer entry=ledger->getSLEi(currentIndex);
-
-		OrderBook::pointer book = OrderBook::newOrderBook(entry);
-		if (book)
+		SLE::pointer entry = ledger->getSLEi(currentIndex);
+		if (entry)
 		{
-			cLog(lsTRACE) << "OrderBookDB: found book";
-
-			if (mKnownMap.find(book->getBookBase()) == mKnownMap.end())
+			OrderBook::pointer book = OrderBook::newOrderBook(entry);
+			if (book)
 			{
-				mKnownMap[book->getBookBase()] = true;
+				cLog(lsTRACE) << "OrderBookDB: found book";
 
-				cLog(lsTRACE) << "OrderBookDB: unknown book in: "
-					<< STAmount::createHumanCurrency(book->getCurrencyIn())
-					<< " -> "
-					<< STAmount::createHumanCurrency(book->getCurrencyOut());
+				if (mKnownMap.find(book->getBookBase()) == mKnownMap.end())
+				{
+					mKnownMap[book->getBookBase()] = true;
 
-				if (!book->getCurrencyIn())
-				{
-					// XRP
-					mXRPOrders.push_back(book);
-				}
-				else
-				{
-					mIssuerMap[book->getIssuerIn()].push_back(book);
+					cLog(lsTRACE) << "OrderBookDB: unknown book in: "
+						<< STAmount::createHumanCurrency(book->getCurrencyIn())
+						<< " -> "
+						<< STAmount::createHumanCurrency(book->getCurrencyOut());
+
+					if (!book->getCurrencyIn())			// XRP
+						mXRPOrders.push_back(book);
+					else
+						mIssuerMap[book->getIssuerIn()].push_back(book);
 				}
 			}
 		}
 
-		currentIndex=ledger->getNextLedgerIndex(currentIndex);
+		currentIndex = ledger->getNextLedgerIndex(currentIndex);
 	}
 
 	cLog(lsDEBUG) << "OrderBookDB<";
