@@ -57,9 +57,9 @@ void LoadMonitor::addLatency(int latency)
 
 void LoadMonitor::addCountAndLatency(const std::string& name, int counts, int latency)
 {
-	if (latency > 1000)
+	if (latency > 500)
 	{
-		cLog(lsWARNING) << "Job: " << name << " ExecutionTime: " << latency;
+		cLog((latency > 1000) ? lsWARNING : lsINFO) << "Job: " << name << " ExecutionTime: " << latency;
 	}
 	if (latency == 1)
 		latency = 0;
