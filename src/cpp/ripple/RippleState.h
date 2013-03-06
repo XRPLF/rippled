@@ -39,6 +39,7 @@ private:
 
 public:
 	RippleState(){ }
+	virtual ~RippleState(){}
 	AccountItem::pointer makeItem(const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry);
 	LedgerEntryType getType(){ return(ltRIPPLE_STATE); }
 

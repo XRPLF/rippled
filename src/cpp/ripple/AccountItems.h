@@ -17,6 +17,7 @@ public:
 
 	AccountItem(){ }
 	AccountItem(SerializedLedgerEntry::ref ledger);
+	virtual ~AccountItem() { ; }
 	virtual AccountItem::pointer makeItem(const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry)=0;
 	virtual LedgerEntryType getType()=0;
 
