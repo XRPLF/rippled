@@ -940,6 +940,30 @@ Remote.prototype.request_account_tx = function (accountID, ledger_min, ledger_ma
   return request;
 };
 
+Remote.prototype.request_book_offers = function (gets, pays, taker) {
+  var request = new Request(this, 'book_offers');
+
+  request.message.taker_gets = {
+    currency: Currency.json_rewrite(gets.currency)
+  };
+
+  if (request.message.taker_gets.currency !== 'XRP') {
+    request.message.taker_gets.issuer = UInt160.json_rewrite(gets.issuer);
+  }
+
+  request.message.taker_pays = {
+    currency: Currency.json_rewrite(pays.currency)
+  };
+
+  if (request.message.taker_pays.currency !== 'XRP') {
+    request.message.taker_pays.issuer = UInt160.json_rewrite(pays.issuer);
+  }
+
+  request.message.taker = taker ? taker : UInt160.ACCOUNT_ONE;
+
+  return request;
+};
+
 Remote.prototype.request_ledger = function (ledger, full) {
   var request = new Request(this, 'ledger');
 
