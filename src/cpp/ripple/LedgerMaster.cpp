@@ -116,7 +116,7 @@ Ledger::pointer LedgerMaster::closeLedger(bool recover)
 	mCurrentLedger = boost::make_shared<Ledger>(boost::ref(*closingLedger), true);
 	mEngine.setLedger(mCurrentLedger);
 
-	return closingLedger;
+	return Ledger::pointer(new Ledger(*closingLedger, true));
 }
 
 TER LedgerMaster::doTransaction(SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply)
