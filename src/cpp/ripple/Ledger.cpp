@@ -517,12 +517,12 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 
 	if (!fromConsensus)
 	{
-		decPendingSaves();
 		dropCache();
 		return;
 	}
 
-	decPendingSaves();
+	if (theApp->getJobQueue().getJobCount(jtPUBOLDLEDGER) == 0)
+		theApp->getLedgerMaster().resumeAcquiring();
 }
 
 #ifndef NO_SQLITE3_PREPARE
@@ -1501,15 +1501,6 @@ void Ledger::updateSkipList()
 	}
 }
 
-int Ledger::sPendingSaves = 0;
-boost::recursive_mutex Ledger::sPendingSaveLock;
-
-int Ledger::getPendingSaves()
-{
-	boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
-	return sPendingSaves;
-}
-
 uint32 Ledger::roundCloseTime(uint32 closeTime, uint32 closeResolution)
 {
 	if (closeTime == 0)
@@ -1524,25 +1515,10 @@ void Ledger::pendSave(bool fromConsensus)
 		return;
 	assert(isImmutable());
 
-	{
-		boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
-		++sPendingSaves;
-	}
-
-	theApp->getJobQueue().addJob(jtPUBOLDLEDGER, "Ledger::pendSave", // FIXME not old if fromConsensus
+	theApp->getJobQueue().addJob(fromconsensus ? jtPUBLEDGER : jtPUBOLDLEDGER,
+		fromConsensus ? "Ledger::pendSave" : "Ledger::pendOldSave",
 		boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(), _1, fromConsensus));
 
-}
-
-void Ledger::decPendingSaves()
-{
-	{
-		boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
-		--sPendingSaves;
-		if (sPendingSaves != 0)
-			return;
-	}
-	theApp->getLedgerMaster().resumeAcquiring();
 }
 
 void Ledger::ownerDirDescriber(SLE::ref sle, const uint160& owner)
