@@ -84,7 +84,7 @@ public:
     element_ptr get() {
         boost::lock_guard<boost::recursive_mutex> lock(m_lock);
         
-        element_ptr p;
+        element_ptr p, q;
         
         /*std::cout << "message requested (" 
                   << m_cur_elements-m_avaliable.size()
@@ -95,7 +95,8 @@ public:
         
         if (!m_avaliable.empty()) {
             p = m_avaliable.front();
-            m_avaliable.pop();
+            q = p;
+            m_avaliable.pop(); // FIXME can call intrusive_ptr_release(line 217) which can deadlock
             m_used[p->get_index()] = p;
         } else {
             if (m_cur_elements == m_max_elements) {
@@ -210,6 +211,7 @@ private:
     typedef websocketpp::processor::hybi_util::masking_key_type masking_key_type;
     
     friend void intrusive_ptr_add_ref(const data * s) {
+        boost::unique_lock<boost::mutex> lock(s->m_lock);
         ++s->m_ref_count;
     }
     
