@@ -26,6 +26,7 @@ var OrderBook     = require('./orderbook').OrderBook;
 
 var utils         = require('./utils');
 var config        = require('./config');
+var sjcl          = require('../../build/sjcl');
 
 // Request events emitted:
 // 'success' : Request successful.
@@ -890,7 +891,8 @@ Remote.prototype.request_tx = function (hash) {
 Remote.prototype.request_account_info = function (accountID) {
   var request = new Request(this, 'account_info');
 
-  request.message.ident = UInt160.json_rewrite(accountID);
+  request.message.ident   = UInt160.json_rewrite(accountID);  // DEPRECATED
+  request.message.account = UInt160.json_rewrite(accountID);
 
   return request;
 };
@@ -1030,8 +1032,13 @@ Remote.prototype._server_subscribe = function () {
         self._stand_alone       = !!message.stand_alone;
         self._testnet           = !!message.testnet;
 
-        if (message.random)
+        if ("string" === typeof message.random) {
+          var rand = message.random.match(/[0-9A-F]{8}/ig);
+          while (rand && rand.length)
+            sjcl.random.addEntropy(parseInt(rand.pop(), 16));
+
           self.emit('random', utils.hexToArray(message.random));
+        }
 
         if (message.ledger_hash && message.ledger_index) {
           self._ledger_time           = message.ledger_time;
@@ -1111,11 +1118,17 @@ Remote.prototype.request_owner_count = function (account, current) {
 };
 
 Remote.prototype.account = function (accountId) {
-  var account = new Account(this, accountId);
+  accountId = UInt160.json_rewrite(accountId);
 
-  if (!account.is_valid()) return account;
+  if (!this._accounts[accountId]) {
+    var account = new Account(this, accountId);
 
-  return this._accounts[account.to_json()] = account;
+    if (!account.is_valid()) return account;
+
+    this._accounts[accountId] = account;
+  }
+
+  return this._accounts[accountId];
 };
 
 Remote.prototype.book = function (currency_out, issuer_out,
@@ -1130,7 +1143,7 @@ Remote.prototype.book = function (currency_out, issuer_out,
 // Return the next account sequence if possible.
 // <-- undefined or Sequence
 Remote.prototype.account_seq = function (account, advance) {
-  var account       = UInt160.json_rewrite(account);
+  account           = UInt160.json_rewrite(account);
   var account_info  = this.accounts[account];
   var seq;
 
