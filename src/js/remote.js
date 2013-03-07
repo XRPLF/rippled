@@ -26,6 +26,7 @@ var OrderBook     = require('./orderbook').OrderBook;
 
 var utils         = require('./utils');
 var config        = require('./config');
+var sjcl          = require('../../build/sjcl');
 
 // Request events emitted:
 // 'success' : Request successful.
@@ -1031,8 +1032,13 @@ Remote.prototype._server_subscribe = function () {
         self._stand_alone       = !!message.stand_alone;
         self._testnet           = !!message.testnet;
 
-        if (message.random)
+        if ("string" === typeof message.random) {
+          var rand = message.random.match(/[0-9A-F]{8}/ig);
+          while (rand && rand.length)
+            sjcl.random.addEntropy(parseInt(rand.pop(), 16));
+
           self.emit('random', utils.hexToArray(message.random));
+        }
 
         if (message.ledger_hash && message.ledger_index) {
           self._ledger_time           = message.ledger_time;
