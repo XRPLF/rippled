@@ -1068,8 +1068,15 @@ TER RippleCalc::calcNodeDeliverRev(
 	saPrvDlvReq.zero(pnPrv.uCurrencyID, pnPrv.uIssuerID);
 	saOutAct.zero(saOutReq);
 
+	int loopCount = 0;
 	while (saOutAct != saOutReq)							// Did not deliver limit.
 	{
+		if (++loopCount > 40)
+		{
+			cLog(lsFATAL) << "loop count exceeded";
+			return mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+		}
+
 		bool&			bEntryAdvance	= pnCur.bEntryAdvance;
 		STAmount&		saOfrRate		= pnCur.saOfrRate;
 		uint256&		uOfferIndex		= pnCur.uOfferIndex;
