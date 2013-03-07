@@ -153,7 +153,7 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 		throw std::runtime_error("Peer requested node not in map");
 	}
 
-	if (node->isEmpty())
+	if (node->isInner() && node->isEmpty())
 	{
 		cLog(lsWARNING) << "peer requests empty node";
 		return false;
