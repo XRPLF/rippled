@@ -812,8 +812,11 @@ TER RippleCalc::calcNodeAdvance(
 	int loopCount = 0;
 	do
 	{
-		if (++loopCount > 100)
+		if (++loopCount > 40)
+		{
+			cLog(lsWARNING) << "Loop count exceeded";
 			return tefEXCEPTION;
+		}
 
 		bool	bDirectDirDirty	= false;
 
@@ -881,7 +884,7 @@ TER RippleCalc::calcNodeAdvance(
 				saOfferFunds	= lesActive.accountFunds(uOfrOwnerID, saTakerGets);	// Funds left.
 				bFundsDirty		= false;
 
-				cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: directory dirty: saOfrRate=%s") % saOfrRate);
+				cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: funds dirty: saOfrRate=%s") % saOfrRate);
 			}
 			else
 			{
