@@ -942,7 +942,7 @@ TER RippleCalc::calcNodeAdvance(
 				cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
 					% saTakerPays % saTakerGets);
 
-				assert(musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end());	// Verify reverse found it too.
+				// assert(musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end());	// Verify reverse found it too.
 				bEntryAdvance	= true;
 				continue;
 			}
