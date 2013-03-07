@@ -102,7 +102,7 @@ uint256 SHAMapNode::getNodeID(int depth, const uint256& hash)
 	return hash & smMasks[depth];
 }
 
-SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mNodeID(getNodeID(depth,hash), mDepth(depth), mHash(0)
+SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mNodeID(getNodeID(depth,hash)), mDepth(depth), mHash(0)
 { // canonicalize the hash to a node ID for this depth
 	assert((depth >= 0) && (depth < 65));
 }
