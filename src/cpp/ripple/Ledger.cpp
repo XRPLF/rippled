@@ -521,8 +521,6 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 		return;
 	}
 
-	event->stop();
-
 	decPendingSaves();
 }
 
