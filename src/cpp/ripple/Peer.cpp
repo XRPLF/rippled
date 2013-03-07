@@ -915,7 +915,7 @@ static void checkPropose(Job& job, boost::shared_ptr<ripple::TMProposeSet> packe
 		{
 			Peer::pointer p = peer.lock();
 			cLog(lsWARNING) << "proposal with previous ledger fails signature check: " <<
-				p ? p->getIP() : "???";
+				(p ? p->getIP() : std::string("???"));
 			Peer::punishPeer(peer, LT_InvalidSignature);
 			return;
 		}
