@@ -176,12 +176,12 @@ void SHAMapNode::dump() const
 }
 
 SHAMapTreeNode::SHAMapTreeNode(uint32 seq, const SHAMapNode& nodeID) : SHAMapNode(nodeID), mHash(0),
-	mSeq(seq), mAccessSeq(seq),	mIsBranch(0), mType(tnERROR), mFullBelow(false)
+	mSeq(seq), mAccessSeq(seq),	mType(tnERROR), mIsBranch(0), mFullBelow(false)
 {
 }
 
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq) : SHAMapNode(node),
-		mHash(node.mHash), mSeq(seq), mIsBranch(0), mType(node.mType), mFullBelow(false)
+		mHash(node.mHash), mSeq(seq), mType(node.mType), mIsBranch(0), mFullBelow(false)
 {
 	if (node.mItem)
 		mItem = boost::make_shared<SHAMapItem>(*node.mItem);
@@ -194,7 +194,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq) : SHAMapN
 }
 
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::ref item, TNType type, uint32 seq) :
-	SHAMapNode(node), mItem(item), mSeq(seq), mIsBranch(0), mType(type), mFullBelow(true)
+	SHAMapNode(node), mItem(item), mSeq(seq), mType(type), mIsBranch(0), mFullBelow(true)
 {
 	assert(item->peekData().size() >= 12);
 	updateHash();
@@ -202,7 +202,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::ref item, TNT
 
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& rawNode, uint32 seq,
 	SHANodeFormat format, const uint256& hash) :
-		SHAMapNode(id), mSeq(seq), mIsBranch(0), mType(tnERROR), mFullBelow(false)
+		SHAMapNode(id), mSeq(seq), mType(tnERROR), mIsBranch(0), mFullBelow(false)
 {
 	if (format == snfWIRE)
 	{
