@@ -885,7 +885,6 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 	if (!lpLedger)
 		return jvResult;
 
-
 	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
 
@@ -1153,10 +1152,14 @@ Json::Value RPCHandler::doRandom(Json::Value jvRequest)
 //   - From a trusted server, allows clients to use path without manipulation.
 Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 {
-	Json::Value		jvResult(Json::objectValue);
 	RippleAddress	raSrc;
 	RippleAddress	raDst;
 	STAmount		saDstAmount;
+	Ledger::pointer	lpLedger;
+	Json::Value		jvResult	= lookupLedger(jvRequest, lpLedger);
+
+	if (!lpLedger)
+		return jvResult;
 
 	if (theApp->getJobQueue().getJobCountGE(jtCLIENT) > 200)
 	{
@@ -1201,7 +1204,6 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 	}
 	else
 	{
-		Ledger::pointer	lpCurrent	= mNetOps->getCurrentLedger();
 		Json::Value		jvSrcCurrencies;
 
 		if (jvRequest.isMember("source_currencies"))
@@ -1210,7 +1212,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 		}
 		else
 		{
-			boost::unordered_set<uint160>	usCurrencies	= usAccountSourceCurrencies(raSrc, lpCurrent);
+			boost::unordered_set<uint160>	usCurrencies	= usAccountSourceCurrencies(raSrc, lpLedger);
 
 			// Add XRP as a source currency.
 			// YYY Only bother if they are above reserve.
@@ -1228,7 +1230,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 			}
 		}
 
-		Ledger::pointer lSnapShot = boost::make_shared<Ledger>(boost::ref(*lpCurrent), false);
+		Ledger::pointer lSnapShot = boost::make_shared<Ledger>(boost::ref(*lpLedger), false);
 		LedgerEntrySet lesSnapshot(lSnapShot);
 
 		ScopedUnlock	su(theApp->getMasterLock()); // As long as we have a locked copy of the ledger, we can unlock.
