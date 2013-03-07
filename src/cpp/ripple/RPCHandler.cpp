@@ -1030,6 +1030,11 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 // }
 Json::Value RPCHandler::doBookOffers(Json::Value jvRequest)
 {
+	if (theApp->getJobQueue().getJobCountGE(jtCLIENT) > 200)
+	{
+		return rpcError(rpcTOO_BUSY);
+	}
+
 	Ledger::pointer		lpLedger;
 	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
 
@@ -1153,7 +1158,11 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 	RippleAddress	raDst;
 	STAmount		saDstAmount;
 
-	if (!jvRequest.isMember("source_account"))
+	if (theApp->getJobQueue().getJobCountGE(jtCLIENT) > 200)
+	{
+		jvResult	= rpcError(rpcTOO_BUSY);
+	}
+	else if (!jvRequest.isMember("source_account"))
 	{
 		jvResult	= rpcError(rpcSRC_ACT_MISSING);
 	}
@@ -2873,6 +2882,9 @@ Json::Value RPCHandler::doInternal(Json::Value jvRequest)
 
 Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 {
+	if ((iRole != ADMIN) && (theApp->getJobQueue().getJobCountGE(jtCLIENT) > 500))
+		return rpcError(rpcTOO_BUSY);
+
 	if (!jvRequest.isMember("command"))
 		return rpcError(rpcCOMMAND_MISSING);
 
