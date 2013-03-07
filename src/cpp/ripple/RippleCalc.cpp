@@ -427,12 +427,7 @@ void PathState::setExpanded(
 		{
 			const PaymentNode&	pnCur	= vpnNodes[uNode];
 
-			if (!!pnCur.uAccountID)
-			{
-				// Source is a ripple line
-				nothing();
-			}
-			else if (!umForward.insert(std::make_pair(boost::make_tuple(pnCur.uAccountID, pnCur.uCurrencyID, pnCur.uIssuerID), uNode)).second)
+			if (!umForward.insert(std::make_pair(boost::make_tuple(pnCur.uAccountID, pnCur.uCurrencyID, pnCur.uIssuerID), uNode)).second)
 			{
 				// Failed to insert. Have a loop.
 				cLog(lsDEBUG) << boost::str(boost::format("PathState: loop detected: %s")
@@ -472,7 +467,7 @@ void PathState::setExpanded(
 // Optimization:
 // - An XRP output implies an offer node or destination node is next.
 // - A change in currency implies an offer node.
-// - A change in issuer... 
+// - A change in issuer...
 void PathState::setCanonical(
 	const PathState&	psExpanded
 	)
@@ -830,8 +825,8 @@ TER RippleCalc::calcNodeAdvance(
 			uDirectEnd		= Ledger::getQualityNext(uDirectTip);
 
 			sleDirectDir	= lesActive.entryCache(ltDIR_NODE, uDirectTip);
-			bDirectAdvance	= !sleDirectDir;
-			bDirectDirDirty	= true;
+			bDirectDirDirty	= !!sleDirectDir;	// Associated vars are dirty, if found it.
+			bDirectAdvance	= !sleDirectDir;	// Advance, if didn't find it. Normal not to be unable to lookup firstdirectory. Maybe even skip this lookup.
 
 			cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: Initialize node: uDirectTip=%s uDirectEnd=%s bDirectAdvance=%d") % uDirectTip % uDirectEnd % bDirectAdvance);
 		}
@@ -880,6 +875,7 @@ TER RippleCalc::calcNodeAdvance(
 		{
 			if (bFundsDirty)
 			{
+				// We were called again probably merely to update structure variables.
 				saTakerPays		= sleOffer->getFieldAmount(sfTakerPays);
 				saTakerGets		= sleOffer->getFieldAmount(sfTakerGets);
 
@@ -898,22 +894,27 @@ TER RippleCalc::calcNodeAdvance(
 		{
 			// Failed to find an entry in directory.
 
-			uOfferIndex	= 0;
-
 			// Do another cur directory iff bMultiQuality
 			if (bMultiQuality)
 			{
+				// We are allowed to process multiple qualities if this is the only path.
 				cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: next quality"));
-				bDirectAdvance	= true;
+
+				bDirectAdvance	= true;			// Process next quality.
 			}
 			else if (!bReverse)
 			{
 				cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: unreachable: ran out of offers"));
 				assert(false);		// Can't run out of offers in forward direction.
-				terResult	= tefEXCEPTION;
+				terResult		= tefEXCEPTION;
 			}
 			else
-				bEntryAdvance = false;
+			{
+				// Ran off end of offers.
+
+				bEntryAdvance	= false;		// Done.
+				uOfferIndex		= 0;			// Report nore more entries.
+			}
 		}
 		else
 		{
@@ -933,17 +934,33 @@ TER RippleCalc::calcNodeAdvance(
 				cLog(lsTRACE) << "calcNodeAdvance: expired offer";
 
 				assert(musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end());	// Verify reverse found it too.
-				bEntryAdvance	= true;
+				// Just skip it. It will be deleted.
+				// bEntryAdvance	= true;		// Already set
 				continue;
 			}
 			else if (!saTakerPays.isPositive() || !saTakerGets.isPositive())
 			{
-				// Offer is has bad amounts.
-				cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
-					% saTakerPays % saTakerGets);
+				// Offer has bad amounts. Offers should never have a bad amounts.
 
-				// assert(musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end());	// Verify reverse found it too.
-				bEntryAdvance	= true;
+				if (musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end())
+				{
+					// Reverse should have previously put bad offer in list.
+					// An internal error previously left a bad offer.
+					cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: REVERSE INTERNAL ERROR: NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
+						% saTakerPays % saTakerGets);
+
+					// Just skip it. It will be deleted.
+					// bEntryAdvance	= true;		// Already set
+				}
+				else
+				{
+					// An internal error failed to place this in musUnfundedFound.
+					cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: OFFER INTERNAL ERROR: NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
+						% saTakerPays % saTakerGets);
+
+					// Don't process at all, things are in an unexpected state for this transactions.
+					terResult		= tefEXCEPTION;
+				}
 				continue;
 			}
 
@@ -954,6 +971,8 @@ TER RippleCalc::calcNodeAdvance(
 			curIssuerNodeConstIterator	itForward		= psCur.umForward.find(asLine);
 			const bool					bFoundForward	= itForward != psCur.umForward.end();
 
+			// Only a allow a source to be used once, in the first node encountered from initial path scan.
+			// This prevents conflicting uses of the same balance when going reverse vs forward.
 			if (bFoundForward && itForward->second != uNode)
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
@@ -966,6 +985,8 @@ TER RippleCalc::calcNodeAdvance(
 			curIssuerNodeConstIterator	itPast			= mumSource.find(asLine);
 			bool						bFoundPast		= itPast != mumSource.end();
 
+			// Don't allow a source of funding used in previous increments to be reused.
+			// XXX This seems overly strict. Why???
 			if (bFoundPast && itPast->second != uNode)
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
@@ -978,6 +999,8 @@ TER RippleCalc::calcNodeAdvance(
 			curIssuerNodeConstIterator	itReverse		= psCur.umReverse.find(asLine);
 			bool						bFoundReverse	= itReverse != psCur.umReverse.end();
 
+			// For this increment, only allow a source to be used once, in the first node encountered from applying offers in
+			// reverse.
 			if (bFoundReverse && itReverse->second != uNode)
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
