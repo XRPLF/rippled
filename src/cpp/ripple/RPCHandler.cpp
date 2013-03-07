@@ -2020,7 +2020,7 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest)
 	int s = upTime();
 	textTime(uptime, s, "year", 365*24*60*60);
 	textTime(uptime, s, "day", 24*60*60);
-	textTime(uptime, s, "hour", 24*60);
+	textTime(uptime, s, "hour", 60*60);
 	textTime(uptime, s, "minute", 60);
 	textTime(uptime, s, "second", 1);
 	ret["uptime"] = uptime;
