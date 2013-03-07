@@ -17,6 +17,7 @@ enum {
 	rpcNO_PERMISSION,
 	rpcNO_EVENTS,
 	rpcNOT_STANDALONE,
+	rpcTOO_BUSY,
 
 	// Networking
 	rpcNO_CLOSED,
