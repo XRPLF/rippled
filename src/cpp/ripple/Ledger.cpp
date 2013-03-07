@@ -62,8 +62,8 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 	zeroFees();
 }
 
-Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins), mLedgerSeq(ledger.mLedgerSeq),
-	mCloseTime(ledger.mCloseTime), mParentCloseTime(ledger.mParentCloseTime),
+Ledger::Ledger(Ledger& ledger, bool isMutable) : mParentHash(ledger.mParentHash), mTotCoins(ledger.mTotCoins),
+	mLedgerSeq(ledger.mLedgerSeq), mCloseTime(ledger.mCloseTime), mParentCloseTime(ledger.mParentCloseTime),
 	mCloseResolution(ledger.mCloseResolution), mCloseFlags(ledger.mCloseFlags),
 	mClosed(ledger.mClosed), mValidHash(false), mAccepted(ledger.mAccepted), mImmutable(!isMutable),
 	mTransactionMap(ledger.mTransactionMap->snapShot(isMutable)),
