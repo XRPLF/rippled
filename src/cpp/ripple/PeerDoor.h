@@ -1,9 +1,6 @@
 #ifndef __PEERDOOR__
 #define __PEERDOOR__
 
-#include <map>
-#include <set>
-
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 
