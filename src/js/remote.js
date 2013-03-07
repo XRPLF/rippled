@@ -890,7 +890,8 @@ Remote.prototype.request_tx = function (hash) {
 Remote.prototype.request_account_info = function (accountID) {
   var request = new Request(this, 'account_info');
 
-  request.message.ident = UInt160.json_rewrite(accountID);
+  request.message.ident   = UInt160.json_rewrite(accountID);  // DEPRECATED
+  request.message.account = UInt160.json_rewrite(accountID);
 
   return request;
 };

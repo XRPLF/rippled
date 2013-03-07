@@ -559,7 +559,7 @@ Json::Value RPCHandler::accountFromString(Ledger::ref lrLedger, RippleAddress& n
 }
 
 // {
-//   ident : <indent>,
+//   account: <indent>,
 //   account_index : <index> // optional
 //   strict: <bool>					// true, only allow public keys and addresses. false, default.
 //   ledger_hash : <ledger>
@@ -573,10 +573,10 @@ Json::Value RPCHandler::doAccountInfo(Json::Value jvRequest)
 	if (!lpLedger)
 		return jvResult;
 
-	if (!jvRequest.isMember("ident"))
+	if (!jvRequest.isMember("account") && !jvRequest.isMember("ident"))
 		return rpcError(rpcINVALID_PARAMS);
 
-	std::string		strIdent	= jvRequest["ident"].asString();
+	std::string		strIdent	= jvRequest.isMember("account") ? jvRequest["account"].asString() : jvRequest["ident"].asString();
 	bool			bIndex;
 	int				iIndex		= jvRequest.isMember("account_index") ? jvRequest["account_index"].asUInt() : 0;
 	bool			bStrict		= jvRequest.isMember("strict") && jvRequest["strict"].asBool();
@@ -742,10 +742,10 @@ Json::Value RPCHandler::doNicknameInfo(Json::Value params)
 // XXX This would be better if it took the ledger.
 Json::Value RPCHandler::doOwnerInfo(Json::Value jvRequest)
 {
-	if (!jvRequest.isMember("ident"))
+	if (!jvRequest.isMember("account") && !jvRequest.isMember("ident"))
 		return rpcError(rpcINVALID_PARAMS);
 
-	std::string		strIdent	= jvRequest["ident"].asString();
+	std::string		strIdent	= jvRequest.isMember("account") ? jvRequest["account"].asString() : jvRequest["ident"].asString();
 	bool			bIndex;
 	int				iIndex		= jvRequest.isMember("account_index") ? jvRequest["account_index"].asUInt() : 0;
 	RippleAddress	raAccount;
