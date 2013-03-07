@@ -82,9 +82,9 @@ public:
      * pointer.
      */
     element_ptr get() {
-        boost::lock_guard<boost::recursive_mutex> lock(m_lock);
-        
-        element_ptr p, q;
+    	element_ptr p, q;
+    	{
+	        boost::lock_guard<boost::recursive_mutex> lock(m_lock);
         
         /*std::cout << "message requested (" 
                   << m_cur_elements-m_avaliable.size()
@@ -93,26 +93,27 @@ public:
                   << ")"
                   << std::endl;*/
         
-        if (!m_avaliable.empty()) {
-            p = m_avaliable.front();
-            q = p;
-            m_avaliable.pop(); // FIXME can call intrusive_ptr_release(line 217) which can deadlock
-            m_used[p->get_index()] = p;
-        } else {
-            if (m_cur_elements == m_max_elements) {
-                return element_ptr();
-            }
+    	    if (!m_avaliable.empty()) {
+	            p = m_avaliable.front();
+	            q = p;
+	            m_avaliable.pop(); // FIXME can call intrusive_ptr_release(line 217) which can deadlock
+	            m_used[p->get_index()] = p;
+	        } else {
+	            if (m_cur_elements == m_max_elements) {
+	                return element_ptr();
+	            }
             
-            p = element_ptr(new element_type(type::shared_from_this(),m_cur_elements));
-            m_cur_elements++;
-            m_used.push_back(p);
+	            p = element_ptr(new element_type(type::shared_from_this(),m_cur_elements));
+	            m_cur_elements++;
+	            m_used.push_back(p);
             
             /*std::cout << "Allocated new data message. Count is now " 
                       << m_cur_elements
                       << std::endl;*/
-        }
+			}
         
-        p->set_live();
+	        p->set_live();
+		}
         return p;
     }
     void recycle(element_ptr p) {
