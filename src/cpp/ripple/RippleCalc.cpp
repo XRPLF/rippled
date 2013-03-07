@@ -812,7 +812,7 @@ TER RippleCalc::calcNodeAdvance(
 	int loopCount = 0;
 	do
 	{
-		if (++loopCount > 40)
+		if (++loopCount > 20)
 		{
 			cLog(lsWARNING) << "Loop count exceeded";
 			return tefEXCEPTION;
