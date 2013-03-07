@@ -167,7 +167,9 @@ public:
 		Json::Value		jvRequest;
 		Json::Reader	jrReader;
 
-	    cLog(lsDEBUG) << "Ws:: Receiving '" << mpMessage->get_payload() << "'";
+	    cLog(lsDEBUG) << "Ws:: Receiving("
+	    	<< cpClient->get_socket().lowest_layer().remote_endpoint().address().to_string()
+			<< ") '" << mpMessage->get_payload() << "'";
 
 		if (mpMessage->get_opcode() != websocketpp::frame::opcode::TEXT)
 		{
