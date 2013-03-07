@@ -211,7 +211,7 @@ void JobQueue::shutdown()
 void JobQueue::setThreadCount(int c)
 { // set the number of thread serving the job queue to precisely this number
 	if (theConfig.RUN_STANDALONE)
-		c = 1;
+		c = 2;
 	else if (c == 0)
 	{
 		c = boost::thread::hardware_concurrency();
