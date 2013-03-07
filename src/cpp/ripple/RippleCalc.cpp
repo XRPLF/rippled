@@ -1302,9 +1302,16 @@ TER RippleCalc::calcNodeDeliverFwd(
 	saInAct.zero(saInReq);
 	saInFees.zero(saInReq);
 
+	int loopCount = 0;
 	while (tesSUCCESS == terResult
 		&& saInAct + saInFees != saInReq)		// Did not deliver all funds.
 	{
+		if (++loopCount > 40)
+		{
+			cLog(lsWARNING) << "max loops cndf";
+			return mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+		}
+
 		// Determine values for pass to adjust saInAct, saInFees, and saCurDeliverAct
 		terResult	= calcNodeAdvance(uNode, psCur, bMultiQuality, false);				// If needed, advance to next funded offer.
 
