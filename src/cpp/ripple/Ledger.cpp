@@ -1528,7 +1528,7 @@ void Ledger::pendSave(bool fromConsensus)
 		++sPendingSaves;
 	}
 
-	theApp->getJobQueue().addJob(jtPUBOLDLEDGER, // FIXME not old if fromConsensus
+	theApp->getJobQueue().addJob(jtPUBOLDLEDGER, "Ledger::pendSave" // FIXME not old if fromConsensus
 		boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(), _1, fromConsensus));
 
 }
