@@ -809,6 +809,8 @@ TER RippleCalc::calcNodeAdvance(
 
 	TER				terResult		= tesSUCCESS;
 
+	cLog(lsDEBUG) << "calcNodeAdvance";
+
 	int loopCount = 0;
 	do
 	{
@@ -831,7 +833,7 @@ TER RippleCalc::calcNodeAdvance(
 			bDirectAdvance	= !sleDirectDir;
 			bDirectDirDirty	= true;
 
-			cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: Initialize node: uDirectTip=%s uDirectEnd=%s bDirectAdvance=%d") % uDirectTip % uDirectEnd % bDirectAdvance);
+			cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: Initialize node: uDirectTip=%s uDirectEnd=%s bDirectAdvance=%d") % uDirectTip % uDirectEnd % bDirectAdvance);
 		}
 
 		if (bDirectAdvance)
@@ -844,13 +846,13 @@ TER RippleCalc::calcNodeAdvance(
 			if (!!uDirectTip)
 			{
 				// Have another quality directory.
-				cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: Quality advance: uDirectTip=%s") % uDirectTip);
+				cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: Quality advance: uDirectTip=%s") % uDirectTip);
 
 				sleDirectDir	= lesActive.entryCache(ltDIR_NODE, uDirectTip);
 			}
 			else if (bReverse)
 			{
-				cLog(lsINFO) << "calcNodeAdvance: No more offers.";
+				cLog(lsTRACE) << "calcNodeAdvance: No more offers.";
 
 				uOfferIndex	= 0;
 				break;
@@ -871,7 +873,7 @@ TER RippleCalc::calcNodeAdvance(
 			uEntry			= 0;
 			bEntryAdvance	= true;
 
-			cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: directory dirty: saOfrRate=%s") % saOfrRate);
+			cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: directory dirty: saOfrRate=%s") % saOfrRate);
 		}
 
 		if (!bEntryAdvance)
@@ -884,11 +886,11 @@ TER RippleCalc::calcNodeAdvance(
 				saOfferFunds	= lesActive.accountFunds(uOfrOwnerID, saTakerGets);	// Funds left.
 				bFundsDirty		= false;
 
-				cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: funds dirty: saOfrRate=%s") % saOfrRate);
+				cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: funds dirty: saOfrRate=%s") % saOfrRate);
 			}
 			else
 			{
-				cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: as is"));
+				cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: as is"));
 				nothing();
 			}
 		}
@@ -901,7 +903,7 @@ TER RippleCalc::calcNodeAdvance(
 			// Do another cur directory iff bMultiQuality
 			if (bMultiQuality)
 			{
-				cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: next quality"));
+				cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: next quality"));
 				bDirectAdvance	= true;
 			}
 			else if (!bReverse)
@@ -923,12 +925,12 @@ TER RippleCalc::calcNodeAdvance(
 
 			const aciSource			asLine				= boost::make_tuple(uOfrOwnerID, uCurCurrencyID, uCurIssuerID);
 
-			cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: uOfrOwnerID=%s") % RippleAddress::createHumanAccountID(uOfrOwnerID));
+			cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: uOfrOwnerID=%s") % RippleAddress::createHumanAccountID(uOfrOwnerID));
 
 			if (sleOffer->isFieldPresent(sfExpiration) && sleOffer->getFieldU32(sfExpiration) <= lesActive.getLedger()->getParentCloseTimeNC())
 			{
 				// Offer is expired.
-				cLog(lsINFO) << "calcNodeAdvance: expired offer";
+				cLog(lsTRACE) << "calcNodeAdvance: expired offer";
 
 				assert(musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end());	// Verify reverse found it too.
 				bEntryAdvance	= true;
@@ -955,7 +957,7 @@ TER RippleCalc::calcNodeAdvance(
 			if (bFoundForward && itForward->second != uNode)
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
-				cLog(lsINFO) << "calcNodeAdvance: temporarily unfunded offer (forward)";
+				cLog(lsTRACE) << "calcNodeAdvance: temporarily unfunded offer (forward)";
 
 				bEntryAdvance	= true;
 				continue;
@@ -967,7 +969,7 @@ TER RippleCalc::calcNodeAdvance(
 			if (bFoundPast && itPast->second != uNode)
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
-				cLog(lsINFO) << "calcNodeAdvance: temporarily unfunded offer (past)";
+				cLog(lsTRACE) << "calcNodeAdvance: temporarily unfunded offer (past)";
 
 				bEntryAdvance	= true;
 				continue;
@@ -979,7 +981,7 @@ TER RippleCalc::calcNodeAdvance(
 			if (bFoundReverse && itReverse->second != uNode)
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
-				cLog(lsINFO) << "calcNodeAdvance: temporarily unfunded offer (reverse)";
+				cLog(lsTRACE) << "calcNodeAdvance: temporarily unfunded offer (reverse)";
 
 				bEntryAdvance	= true;
 				continue;
@@ -990,7 +992,7 @@ TER RippleCalc::calcNodeAdvance(
 			if (!saOfferFunds.isPositive())
 			{
 				// Offer is unfunded.
-				cLog(lsINFO) << "calcNodeAdvance: unfunded offer";
+				cLog(lsTRACE) << "calcNodeAdvance: unfunded offer";
 
 				if (bReverse && !bFoundReverse && !bFoundPast)
 				{
@@ -1008,7 +1010,7 @@ TER RippleCalc::calcNodeAdvance(
 				&& !bFoundReverse)	// Not mentioned for pass.
 			{
 				// Consider source mentioned by current path state.
-				cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: remember=%s/%s/%s")
+				cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: remember=%s/%s/%s")
 					% RippleAddress::createHumanAccountID(uOfrOwnerID)
 					% STAmount::createHumanCurrency(uCurCurrencyID)
 					% RippleAddress::createHumanAccountID(uCurIssuerID));
@@ -1024,11 +1026,11 @@ TER RippleCalc::calcNodeAdvance(
 
 	if (tesSUCCESS == terResult)
 	{
-		cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: uOfferIndex=%s") % uOfferIndex);
+		cLog(lsDEBUG) << boost::str(boost::format("calcNodeAdvance: uOfferIndex=%s") % uOfferIndex);
 	}
 	else
 	{
-		cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: terResult=%s") % transToken(terResult));
+		cLog(lsDEBUG) << boost::str(boost::format("calcNodeAdvance: terResult=%s") % transToken(terResult));
 	}
 
 	return terResult;
