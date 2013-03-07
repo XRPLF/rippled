@@ -89,10 +89,11 @@ protected:
 
 	uint64							mLastJob;
 	std::set<Job>					mJobSet;
-	std::map<JobType, int>			mJobCounts;
 	LoadMonitor						mJobLoads[NUM_JOB_TYPES];
 	int								mThreadCount;
 	bool							mShuttingDown;
+
+	std::map<JobType, std::pair<int, int > >	mJobCounts;
 
 
 	void threadEntry(void);
@@ -105,7 +106,7 @@ public:
 
 	int getJobCount(JobType t);		// Jobs at this priority
 	int getJobCountGE(JobType t);	// All jobs at or greater than this priority
-	std::vector< std::pair<JobType, int> > getJobCounts();
+	std::vector< std::pair<JobType, std::pair<int, int> > > getJobCounts(); // jobs waiting, threads doing
 
 	void shutdown();
 	void setThreadCount(int c = 0);
