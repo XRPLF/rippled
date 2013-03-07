@@ -809,8 +809,12 @@ TER RippleCalc::calcNodeAdvance(
 
 	TER				terResult		= tesSUCCESS;
 
+	int loopCount = 0;
 	do
 	{
+		if (++loopCount > 100)
+			return tefEXCEPTION;
+
 		bool	bDirectDirDirty	= false;
 
 		if (!uDirectTip)
