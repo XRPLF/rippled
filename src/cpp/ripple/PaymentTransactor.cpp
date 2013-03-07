@@ -177,7 +177,8 @@ TER PaymentTransactor::doApply()
 					bPartialPayment,
 					bLimitQuality,
 					bNoRippleDirect,		// Always compute for finalizing ledger.
-					false);					// Not standalone, delete unfundeds.
+					false,					// Not standalone, delete unfundeds.
+					isSetBit(mParams, tapOPEN_LEDGER));
 		}
 		catch (const std::exception& e)
 		{

@@ -26,6 +26,7 @@ var OrderBook     = require('./orderbook').OrderBook;
 
 var utils         = require('./utils');
 var config        = require('./config');
+var sjcl          = require('../../build/sjcl');
 
 // Request events emitted:
 // 'success' : Request successful.
@@ -234,11 +235,15 @@ Request.prototype.books = function (books) {
 // 'connected'
 // 'disconnected'
 // 'state':
-// - 'online' : connected and subscribed
-// - 'offline' : not subscribed or not connected.
-// 'ledger_closed': A good indicate of ready to serve.
-// 'subscribed' : This indicates stand-alone is available.
+// - 'online'        : Connected and subscribed.
+// - 'offline'       : Not subscribed or not connected.
+// 'subscribed'      : This indicates stand-alone is available.
 //
+// Server events:
+// 'ledger_closed'   : A good indicate of ready to serve.
+// 'transaction'     : Transactions we receive based on current subscriptions.
+// 'transaction_all' : Listening triggers a subscribe to all transactions
+//                     globally in the network.
 
 // --> trusted: truthy, if remote is trusted
 var Remote = function (opts, trace) {
@@ -309,7 +314,7 @@ var Remote = function (opts, trace) {
   };
 
   this.on('newListener', function (type, listener) {
-      if ('transaction' === type)
+      if ('transaction_all' === type)
       {
         if (!self._transaction_subs && 'open' === self._online_state)
         {
@@ -322,7 +327,7 @@ var Remote = function (opts, trace) {
     });
 
   this.on('removeListener', function (type, listener) {
-      if ('transaction' === type)
+      if ('transaction_all' === type)
       {
         self._transaction_subs  -= 1;
 
@@ -617,9 +622,14 @@ Remote.prototype._connect_message = function (ws, json) {
         this.emit('ledger_closed', message);
         break;
 
-      case 'account':
+      case 'transaction':
+        // To get these events, just subscribe to them. A subscribes and
+        // unsubscribes will be added as needed.
         // XXX If not trusted, need proof.
-        if (this.trace) utils.logObject("remote: account: %s", message);
+
+        // XXX Should de-duplicate transaction events
+
+        if (this.trace) utils.logObject("remote: tx: %s", message);
 
         // Process metadata
         message.mmeta = new Meta(message.meta);
@@ -637,15 +647,8 @@ Remote.prototype._connect_message = function (ws, json) {
           }
         }
 
-        this.emit('account', message);
-        break;
-
-      case 'transaction':
-        // To get these events, just subscribe to them. A subscribes and
-        // unsubscribes will be added as needed.
-        // XXX If not trusted, need proof.
-
         this.emit('transaction', message);
+        this.emit('transaction_all', message);
         break;
 
       case 'serverStatus':
@@ -888,7 +891,8 @@ Remote.prototype.request_tx = function (hash) {
 Remote.prototype.request_account_info = function (accountID) {
   var request = new Request(this, 'account_info');
 
-  request.message.ident = UInt160.json_rewrite(accountID);
+  request.message.ident   = UInt160.json_rewrite(accountID);  // DEPRECATED
+  request.message.account = UInt160.json_rewrite(accountID);
 
   return request;
 };
@@ -939,6 +943,30 @@ Remote.prototype.request_account_tx = function (accountID, ledger_min, ledger_ma
     request.message.ledger_min  = ledger_min;
     request.message.ledger_max  = ledger_max;
   }
+
+  return request;
+};
+
+Remote.prototype.request_book_offers = function (gets, pays, taker) {
+  var request = new Request(this, 'book_offers');
+
+  request.message.taker_gets = {
+    currency: Currency.json_rewrite(gets.currency)
+  };
+
+  if (request.message.taker_gets.currency !== 'XRP') {
+    request.message.taker_gets.issuer = UInt160.json_rewrite(gets.issuer);
+  }
+
+  request.message.taker_pays = {
+    currency: Currency.json_rewrite(pays.currency)
+  };
+
+  if (request.message.taker_pays.currency !== 'XRP') {
+    request.message.taker_pays.issuer = UInt160.json_rewrite(pays.issuer);
+  }
+
+  request.message.taker = taker ? taker : UInt160.ACCOUNT_ONE;
 
   return request;
 };
@@ -1004,8 +1032,13 @@ Remote.prototype._server_subscribe = function () {
         self._stand_alone       = !!message.stand_alone;
         self._testnet           = !!message.testnet;
 
-        if (message.random)
+        if ("string" === typeof message.random) {
+          var rand = message.random.match(/[0-9A-F]{8}/ig);
+          while (rand && rand.length)
+            sjcl.random.addEntropy(parseInt(rand.pop(), 16));
+
           self.emit('random', utils.hexToArray(message.random));
+        }
 
         if (message.ledger_hash && message.ledger_index) {
           self._ledger_time           = message.ledger_time;
@@ -1085,11 +1118,17 @@ Remote.prototype.request_owner_count = function (account, current) {
 };
 
 Remote.prototype.account = function (accountId) {
-  var account = new Account(this, accountId);
+  accountId = UInt160.json_rewrite(accountId);
 
-  if (!account.is_valid()) return account;
+  if (!this._accounts[accountId]) {
+    var account = new Account(this, accountId);
 
-  return this._accounts[account.to_json()] = account;
+    if (!account.is_valid()) return account;
+
+    this._accounts[accountId] = account;
+  }
+
+  return this._accounts[accountId];
 };
 
 Remote.prototype.book = function (currency_out, issuer_out,
@@ -1104,7 +1143,7 @@ Remote.prototype.book = function (currency_out, issuer_out,
 // Return the next account sequence if possible.
 // <-- undefined or Sequence
 Remote.prototype.account_seq = function (account, advance) {
-  var account       = UInt160.json_rewrite(account);
+  account           = UInt160.json_rewrite(account);
   var account_info  = this.accounts[account];
   var seq;
 

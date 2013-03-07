@@ -6,7 +6,8 @@
 class OfferCreateTransactor : public Transactor
 {
 	TER takeOffers(
-		bool				bPassive,
+		const bool			bOpenLedger,
+		const bool			bPassive,
 		const uint256&		uBookBase,
 		const uint160&		uTakerAccountID,
 		SLE::ref			sleTakerAccount,

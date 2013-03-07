@@ -259,7 +259,7 @@ void NetworkOPs::runTransactionQueue()
 			return;
 
 		{
-			LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC);
+			LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC, "runTxnQ");
 
 			boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 
@@ -328,7 +328,7 @@ void NetworkOPs::runTransactionQueue()
 
 Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, stCallback callback)
 {
-	LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC);
+	LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC, "ProcessTXN");
 
 	int newFlags = theApp->getSuppression().getFlags(trans->getID());
 	if ((newFlags & SF_BAD) != 0)
@@ -595,9 +595,13 @@ public:
 
 void NetworkOPs::checkState(const boost::system::error_code& result)
 { // Network state machine
+
 	if ((result == boost::asio::error::operation_aborted) || theConfig.RUN_STANDALONE)
 		return;
+
 	setStateTimer();
+
+	ScopedLock(theApp->getMasterLock());
 
 	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 
@@ -618,12 +622,9 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		cLog(lsINFO) << "Node count (" << peerList.size() << ") is sufficient.";
 	}
 
-	if (mConsensus)
-	{
-		mConsensus->timerEntry();
-		return;
-	}
-	tryStartConsensus();
+	if (!mConsensus)
+		tryStartConsensus();
+
 	if (mConsensus)
 		mConsensus->timerEntry();
 }
@@ -632,7 +633,7 @@ void NetworkOPs::tryStartConsensus()
 {
 	uint256 networkClosed;
 	bool ledgerChange = checkLastClosedLedger(theApp->getConnectionPool().getPeerVector(), networkClosed);
-	if(networkClosed.isZero())
+	if (networkClosed.isZero())
 		return;
 
 	// WRITEME: Unless we are in omFULL and in the process of doing a consensus,
@@ -1065,8 +1066,9 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
 
 	std::string sql =
-		str(boost::format("SELECT LedgerSeq,Status,RawTxn,TxnMeta FROM Transactions where TransID in (SELECT TransID from AccountTransactions  "
-			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' LIMIT 200) ORDER BY LedgerSeq DESC;")
+		str(boost::format("SELECT LedgerSeq,Status,RawTxn,TxnMeta FROM Transactions where TransID in "
+			"(SELECT TransID from AccountTransactions  "
+			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' ) ORDER BY LedgerSeq DESC LIMIT 200;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{
@@ -1102,7 +1104,7 @@ std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
 
 	std::string sql =
 		str(boost::format("SELECT LedgerSeq, RawTxn,TxnMeta FROM Transactions where TransID in (SELECT TransID from AccountTransactions  "
-			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' LIMIT 500) ORDER BY LedgerSeq DESC;")
+			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' ) ORDER BY LedgerSeq DESC LIMIT 500;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{
@@ -1188,6 +1190,8 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 
 	if (mNeedNetworkLedger)
 		info["network_ledger"] = "waiting";
+
+	info["validation_quorum"] = mLedgerMaster->getMinValidations();
 
 	if (admin)
 	{
@@ -1291,7 +1295,7 @@ Json::Value NetworkOPs::pubBootstrapAccountInfo(Ledger::ref lpAccepted, const Ri
 
 void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, SerializedTransaction::ref stTxn, TER terResult)
 {
-	Json::Value	jvObj	= transJson(*stTxn, terResult, false, lpCurrent, "transaction");
+	Json::Value	jvObj	= transJson(*stTxn, terResult, false, lpCurrent);
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
@@ -1375,7 +1379,7 @@ void NetworkOPs::reportFeeChange()
 	theApp->getJobQueue().addJob(jtCLIENT, "reportFeeChange->pubServer", boost::bind(&NetworkOPs::pubServer, this));
 }
 
-Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent, const std::string& strType)
+Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent)
 {
 	Json::Value	jvObj(Json::objectValue);
 	std::string	sToken;
@@ -1383,7 +1387,7 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 
 	transResultInfo(terResult, sToken, sHuman);
 
-	jvObj["type"]			= strType;
+	jvObj["type"]			= "transaction";
 	jvObj["transaction"]	= stTxn.getJson(0);
 	if (bAccepted) {
 		jvObj["ledger_index"]			= lpCurrent->getLedgerSeq();
@@ -1404,7 +1408,7 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 
 void NetworkOPs::pubAcceptedTransaction(Ledger::ref alAccepted, const ALTransaction& alTx)
 {
-	Json::Value	jvObj	= transJson(*alTx.getTxn(), alTx.getResult(), true, alAccepted, "transaction");
+	Json::Value	jvObj	= transJson(*alTx.getTxn(), alTx.getResult(), true, alAccepted);
 	jvObj["meta"] = alTx.getMeta()->getJson(0);
 
 	{
@@ -1503,7 +1507,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const ALTransactio
 
 	if (!notify.empty())
 	{
-		Json::Value	jvObj	= transJson(*alTx.getTxn(), alTx.getResult(), bAccepted, lpCurrent, "account");
+		Json::Value	jvObj	= transJson(*alTx.getTxn(), alTx.getResult(), bAccepted, lpCurrent);
 
 		if (alTx.isApplied())
 			jvObj["meta"] = alTx.getMeta()->getJson(0);

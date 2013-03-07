@@ -30,9 +30,9 @@ public:
 		mTargetLatencyAvg(0), mTargetLatencyPk(0)
 	{ mLastUpdate = upTime(); }
 
-	void addCount(int counts);
+	void addCount();
 	void addLatency(int latency);
-	void addCountAndLatency(const std::string& name, int counts, int latency);
+	void addCountAndLatency(const std::string& name, int latency);
 
 	void setTargetLatency(uint64 avg, uint64 pk)
 	{
@@ -59,12 +59,12 @@ public:
 protected:
 	LoadMonitor&				mMonitor;
 	bool						mRunning;
-	int							mCount;
 	std::string					mName;
 	boost::posix_time::ptime	mStartTime;
 
 public:
-	LoadEvent(LoadMonitor& monitor, bool shouldStart, int count) : mMonitor(monitor), mRunning(false), mCount(count)
+	LoadEvent(LoadMonitor& monitor, const std::string& name, bool shouldStart) :
+		mMonitor(monitor), mRunning(false), mName(name)
 	{
 		mStartTime = boost::posix_time::microsec_clock::universal_time();
 		if (shouldStart)
@@ -77,7 +77,7 @@ public:
 			stop();
 	}
 
-	void setName(const std::string& name)
+	void reName(const std::string& name)
 	{
 		mName = name;
 	}
@@ -92,7 +92,7 @@ public:
 	{
 		assert(mRunning);
 		mRunning = false;
-		mMonitor.addCountAndLatency(mName, mCount,
+		mMonitor.addCountAndLatency(mName,
 			static_cast<int>((boost::posix_time::microsec_clock::universal_time() - mStartTime).total_milliseconds()));
 	}
 };

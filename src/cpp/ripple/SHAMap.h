@@ -163,12 +163,13 @@ public:
 	};
 
 private:
-	uint256	mHash;
-	uint256 mHashes[16];
-	SHAMapItem::pointer mItem;
-	uint32 mSeq, mAccessSeq;
-	TNType mType;
-	bool mFullBelow;
+	uint256				mHash;
+	uint256				mHashes[16];
+	SHAMapItem::pointer	mItem;
+	uint32				mSeq, mAccessSeq;
+	TNType				mType;
+	int					mIsBranch;
+	bool				mFullBelow;
 
 	bool updateHash();
 
@@ -204,9 +205,9 @@ public:
 	bool isAccountState() const	{ return mType == tnACCOUNT_STATE; }
 
 	// inner node functions
-	bool isInnerNode() const	{ return !mItem; }
+	bool isInnerNode() const		{ return !mItem; }
 	bool setChildHash(int m, const uint256& hash);
-	bool isEmptyBranch(int m) const { return mHashes[m].isZero(); }
+	bool isEmptyBranch(int m) const	{ return (mIsBranch & (1 << m)) == 0; }
 	bool isEmpty() const;
 	int getBranchCount() const;
 	void makeInner();

@@ -123,6 +123,7 @@ enum TER	// aka TransactionEngineResult
 	tecUNFUNDED_OFFER			= 103,
 	tecUNFUNDED_PAYMENT			= 104,
 	tecFAILED_PROCESSING		= 105,
+	tecKILL						= 106,	// tesSUCCESS is not retryable.
 	tecDIR_FULL					= 121,
 	tecINSUF_RESERVE_LINE		= 122,
 	tecINSUF_RESERVE_OFFER		= 123,

@@ -98,6 +98,8 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::setTa
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	mTargetSize = s;
+	if (s > 0)
+		mCache.rehash((s + (s >> 2)) / mCache.max_load_factor() + 1);
 	Log(lsDEBUG, TaggedCachePartition) << mName << " target size set to " << s;
 }
 

@@ -1,5 +1,7 @@
 // Routines for working with an account.
 //
+// You should not instantiate this class yourself, instead use Remote#account.
+//
 // Events:
 //   wallet_clean	: True, iff the wallet has been updated.
 //   wallet_dirty	: True, iff the wallet needs to be updated.

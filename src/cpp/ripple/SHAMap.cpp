@@ -24,13 +24,10 @@ DECLARE_INSTANCE(SHAMapTreeNode);
 void SHAMapNode::setHash() const
 {
 	std::size_t h = theApp->getNonceST() + (mDepth * 0x9e3779b9);
-	mHash = mNodeID.hash_combine(h);
-#if 0
 	const unsigned int *ptr = reinterpret_cast<const unsigned int *>(mNodeID.begin());
-	for (int i = (mDepth + 3) / 4; i != 0; --i)
-		boost::hash_combine(h, *ptr++);
+	for (int i = (mDepth + 7) / 8; i != 0; --i)
+		h = (h * 0x9e3779b9) ^ *ptr++;
 	mHash = h;
-#endif
 }
 
 std::size_t hash_value(const SHAMapNode& mn)
@@ -94,13 +91,12 @@ std::stack<SHAMapTreeNode::pointer> SHAMap::getStack(const uint256& id, bool inc
 		int branch = node->selectBranch(id);
 		assert(branch >= 0);
 
-		uint256 hash = node->getChildHash(branch);
-		if (hash.isZero())
+		if (node->isEmptyBranch(branch))
 			return stack;
 
 		try
 		{
-			node = getNode(node->getChildNodeID(branch), hash, false);
+			node = getNode(node->getChildNodeID(branch), node->getChildHash(branch), false);
 		}
 		catch (SHAMapMissingNode& mn)
 		{
@@ -165,14 +161,13 @@ SHAMapTreeNode::pointer SHAMap::walkTo(const uint256& id, bool modify)
 	while (!inNode->isLeaf())
 	{
 		int branch = inNode->selectBranch(id);
-		uint256 childHash = inNode->getChildHash(branch);
 
-		if (childHash.isZero())
+		if (inNode->isEmptyBranch(branch))
 			return inNode;
 
 		try
 		{
-			inNode = getNode(inNode->getChildNodeID(branch), childHash, false);
+			inNode = getNode(inNode->getChildNodeID(branch), inNode->getChildHash(branch), false);
 		}
 		catch (SHAMapMissingNode& mn)
 		{
@@ -193,9 +188,10 @@ SHAMapTreeNode* SHAMap::walkToPointer(const uint256& id)
 	while (!inNode->isLeaf())
 	{
 		int branch = inNode->selectBranch(id);
-		const uint256& nextHash = inNode->getChildHash(branch);
-		if (nextHash.isZero()) return NULL;
-		inNode = getNodePointer(inNode->getChildNodeID(branch), nextHash);
+		if (inNode->isEmptyBranch(branch))
+			return NULL;
+
+		inNode = getNodePointer(inNode->getChildNodeID(branch), inNode->getChildHash(branch));
 		assert(inNode);
 	}
 	return (inNode->getTag() == id) ? inNode : NULL;

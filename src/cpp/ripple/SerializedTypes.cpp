@@ -421,41 +421,15 @@ bool STPathSet::isEquivalent(const SerializedType& t) const
 
 bool STPath::hasSeen(const uint160 &uAccountId, const uint160& uCurrencyID, const uint160& uIssuerID)
 {
-  for (int i = 0; i < mPath.size(); ++i) {
-    STPathElement ele = getElement(i);
-
-    if (ele.getAccountID() == uAccountId
-		&& ele.getCurrency() == uCurrencyID
-		&& ele.getIssuerID() == uIssuerID)
-      return true;
-  }
-
-  return false;
-}
-
-int STPath::getSerializeSize() const
-{
-	int iBytes = 0;
-
-	BOOST_FOREACH(const STPathElement& speElement, mPath)
+	for (int i = 0; i < mPath.size(); ++i)
 	{
-		int	iType	= speElement.getNodeType();
-
-		iBytes	+= 1;	// mType
-
-		if (iType & STPathElement::typeAccount)
-			iBytes	+= 160/8;
-
-		if (iType & STPathElement::typeCurrency)
-			iBytes	+= 160/8;
-
-		if (iType & STPathElement::typeIssuer)
-			iBytes	+= 160/8;
+		const STPathElement& ele = getElement(i);
+		if (ele.getAccountID() == uAccountId
+			&& ele.getCurrency() == uCurrencyID
+			&& ele.getIssuerID() == uIssuerID)
+		return true;
 	}
-
-	iBytes	+= 1;	// typeBoundary | typeEnd
-
-	return iBytes;
+	return false;
 }
 
 Json::Value STPath::getJson(int) const

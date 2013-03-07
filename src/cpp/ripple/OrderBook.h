@@ -27,11 +27,12 @@ public:
 	typedef const boost::shared_ptr<OrderBook>& ref;
 
 	OrderBook(const uint256& index, const uint160& ci, const uint160& co, const uint160& ii, const uint160& io) :
-		mBookBase(index), mCurrencyIn(ci), mCurrencyOut(co), mIssuerIn(ii), mIssuerOut(io) { ; }
-
-	// returns NULL if ledgerEntry doesn't point to an order
-	// if ledgerEntry is an Order it creates the OrderBook this order would live in
-	static OrderBook::pointer newOrderBook(SerializedLedgerEntry::ref ledgerEntry);
+		mBookBase(index),
+		mCurrencyIn(ci),
+		mCurrencyOut(co),
+		mIssuerIn(ii),
+		mIssuerOut(io)
+	{ ; }
 
 	uint256& getBookBase(){ return(mBookBase); }
 	uint160& getCurrencyIn(){ return(mCurrencyIn); }

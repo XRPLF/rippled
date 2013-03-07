@@ -34,10 +34,14 @@ enum PathFlags
 	PF_ISSUE			= 0x80,
 };
 
-#define CURRENCY_XRP		uint160(0)
-#define CURRENCY_ONE		uint160(1)	// Used as a place holder
-#define ACCOUNT_XRP			uint160(0)
-#define ACCOUNT_ONE			uint160(1)	// Used as a place holder
+static const uint160 u160_zero(0), u160_one(1);
+static inline const uint160& get_u160_zero() { return u160_zero; }
+static inline const uint160& get_u160_one() { return u160_one; }
+
+#define CURRENCY_XRP		get_u160_zero()
+#define CURRENCY_ONE		get_u160_one()	// Used as a place holder
+#define ACCOUNT_XRP			get_u160_zero()
+#define ACCOUNT_ONE			get_u160_one()	// Used as a place holder
 
 DEFINE_INSTANCE(SerializedValue);
 
@@ -360,14 +364,14 @@ public:
 	bool isGEZero() const		{ return !mIsNegative; }
 	operator bool() const		{ return !isZero(); }
 
-	STAmount* negate()			{ if (!isZero()) mIsNegative = !mIsNegative; return this; }
-	STAmount* zero()			{ mOffset = mIsNative ? 0 : -100; mValue = 0; mIsNegative = false; return this; }
+	void negate()				{ if (!isZero()) mIsNegative = !mIsNegative; }
+	void zero()					{ mOffset = mIsNative ? 0 : -100; mValue = 0; mIsNegative = false; }
 
 	// Zero while copying currency and issuer.
-	STAmount* zero(const STAmount& saTmpl)
-	{ mCurrency = saTmpl.mCurrency; mIssuer = saTmpl.mIssuer; mIsNative = saTmpl.mIsNative; return zero(); }
-	STAmount* zero(const uint160& uCurrencyID, const uint160& uIssuerID)
-	{ mCurrency = uCurrencyID; mIssuer = uIssuerID; mIsNative = !uCurrencyID; return zero(); }
+	void zero(const STAmount& saTmpl)
+	{ mCurrency = saTmpl.mCurrency; mIssuer = saTmpl.mIssuer; mIsNative = saTmpl.mIsNative; zero(); }
+	void zero(const uint160& uCurrencyID, const uint160& uIssuerID)
+	{ mCurrency = uCurrencyID; mIssuer = uIssuerID; mIsNative = !uCurrencyID; zero(); }
 
 	int compare(const STAmount&) const;
 
@@ -685,7 +689,6 @@ public:
 	void addElement(const STPathElement &e)				{ mPath.push_back(e); }
 	void clear()										{ mPath.clear(); }
 	bool hasSeen(const uint160 &uAccountId, const uint160& uCurrencyID, const uint160& uIssuerID);
-	int getSerializeSize() const;
 //	std::string getText() const;
 	Json::Value getJson(int) const;
 

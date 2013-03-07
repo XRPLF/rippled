@@ -151,7 +151,7 @@ void Application::setup()
 	else
 		startNewLedger();
 
-	mOrderBookDB.setup(theApp->getLedgerMaster().getCurrentLedger()); // TODO: We need to update this if the ledger jumps
+	mOrderBookDB.setup(theApp->getLedgerMaster().getCurrentLedger());
 
 	//
 	// Begin validation and ip maintenance.
@@ -168,6 +168,7 @@ void Application::setup()
 	mValidations.tune(theConfig.getSize(siValidationsSize), theConfig.getSize(siValidationsAge));
 	mHashedObjectStore.tune(theConfig.getSize(siNodeCacheSize), theConfig.getSize(siNodeCacheAge));
 	mLedgerMaster.tune(theConfig.getSize(siLedgerSize), theConfig.getSize(siLedgerAge));
+	mLedgerMaster.setMinValidations(theConfig.VALIDATION_QUORUM);
 
 	//
 	// Allow peer connections.

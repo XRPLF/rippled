@@ -188,7 +188,7 @@ TER PathState::pushNode(
 		else
 		{
 			// Add required intermediate nodes to deliver to current account.
-			cLog(lsDEBUG) << "pushNode: imply for account.";
+			cLog(lsTRACE) << "pushNode: imply for account.";
 
 			terResult	= pushImply(
 				pnCur.uAccountID,									// Current account.
@@ -223,7 +223,7 @@ TER PathState::pushNode(
 				}
 				else
 				{
-					cLog(lsDEBUG) << "pushNode: Credit line found between "
+					cLog(lsTRACE) << "pushNode: Credit line found between "
 						<< RippleAddress::createHumanAccountID(pnBck.uAccountID)
 						<< " and "
 						<< RippleAddress::createHumanAccountID(pnCur.uAccountID)
@@ -233,7 +233,7 @@ TER PathState::pushNode(
 
 					STAmount	saOwed	= lesEntries.rippleOwed(pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID);
 
-					if (!saOwed.isPositive() && *saOwed.negate() >= lesEntries.rippleLimit(pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID))
+					if (!saOwed.isPositive() && -saOwed >= lesEntries.rippleLimit(pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID))
 					{
 						terResult	= tecPATH_DRY;
 					}
@@ -266,7 +266,7 @@ TER PathState::pushNode(
 		else if (!!pnPrv.uAccountID)
 		{
 			// Previous is an account.
-			cLog(lsDEBUG) << "pushNode: imply for offer.";
+			cLog(lsTRACE) << "pushNode: imply for offer.";
 
 			// Insert intermediary issuer account if needed.
 			terResult	= pushImply(
@@ -280,7 +280,7 @@ TER PathState::pushNode(
 			vpnNodes.push_back(pnCur);
 		}
 	}
-	cLog(lsDEBUG) << boost::str(boost::format("pushNode< : %s") % transToken(terResult));
+	cLog(lsTRACE) << boost::str(boost::format("pushNode< : %s") % transToken(terResult));
 
 	return terResult;
 }
@@ -808,8 +808,17 @@ TER RippleCalc::calcNodeAdvance(
 
 	TER				terResult		= tesSUCCESS;
 
+	cLog(lsDEBUG) << "calcNodeAdvance";
+
+	int loopCount = 0;
 	do
 	{
+		if (++loopCount > 20)
+		{
+			cLog(lsWARNING) << "Loop count exceeded";
+			return tefEXCEPTION;
+		}
+
 		bool	bDirectDirDirty	= false;
 
 		if (!uDirectTip)
@@ -823,7 +832,7 @@ TER RippleCalc::calcNodeAdvance(
 			bDirectAdvance	= !sleDirectDir;
 			bDirectDirDirty	= true;
 
-			cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: Initialize node: uDirectTip=%s uDirectEnd=%s bDirectAdvance=%d") % uDirectTip % uDirectEnd % bDirectAdvance);
+			cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: Initialize node: uDirectTip=%s uDirectEnd=%s bDirectAdvance=%d") % uDirectTip % uDirectEnd % bDirectAdvance);
 		}
 
 		if (bDirectAdvance)
@@ -836,13 +845,13 @@ TER RippleCalc::calcNodeAdvance(
 			if (!!uDirectTip)
 			{
 				// Have another quality directory.
-				cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: Quality advance: uDirectTip=%s") % uDirectTip);
+				cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: Quality advance: uDirectTip=%s") % uDirectTip);
 
 				sleDirectDir	= lesActive.entryCache(ltDIR_NODE, uDirectTip);
 			}
 			else if (bReverse)
 			{
-				cLog(lsINFO) << "calcNodeAdvance: No more offers.";
+				cLog(lsTRACE) << "calcNodeAdvance: No more offers.";
 
 				uOfferIndex	= 0;
 				break;
@@ -863,7 +872,7 @@ TER RippleCalc::calcNodeAdvance(
 			uEntry			= 0;
 			bEntryAdvance	= true;
 
-			cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: directory dirty: saOfrRate=%s") % saOfrRate);
+			cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: directory dirty: saOfrRate=%s") % saOfrRate);
 		}
 
 		if (!bEntryAdvance)
@@ -876,11 +885,11 @@ TER RippleCalc::calcNodeAdvance(
 				saOfferFunds	= lesActive.accountFunds(uOfrOwnerID, saTakerGets);	// Funds left.
 				bFundsDirty		= false;
 
-				cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: directory dirty: saOfrRate=%s") % saOfrRate);
+				cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: funds dirty: saOfrRate=%s") % saOfrRate);
 			}
 			else
 			{
-				cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: as is"));
+				cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: as is"));
 				nothing();
 			}
 		}
@@ -893,7 +902,7 @@ TER RippleCalc::calcNodeAdvance(
 			// Do another cur directory iff bMultiQuality
 			if (bMultiQuality)
 			{
-				cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: next quality"));
+				cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: next quality"));
 				bDirectAdvance	= true;
 			}
 			else if (!bReverse)
@@ -902,23 +911,37 @@ TER RippleCalc::calcNodeAdvance(
 				assert(false);		// Can't run out of offers in forward direction.
 				terResult	= tefEXCEPTION;
 			}
+			else
+				bEntryAdvance = false;
 		}
 		else
 		{
 			// Got a new offer.
 			sleOffer	= lesActive.entryCache(ltOFFER, uOfferIndex);
 			uOfrOwnerID = sleOffer->getFieldAccount(sfAccount).getAccountID();
+			saTakerPays	= sleOffer->getFieldAmount(sfTakerPays);
+			saTakerGets	= sleOffer->getFieldAmount(sfTakerGets);
 
 			const aciSource			asLine				= boost::make_tuple(uOfrOwnerID, uCurCurrencyID, uCurIssuerID);
 
-			cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: uOfrOwnerID=%s") % RippleAddress::createHumanAccountID(uOfrOwnerID));
+			cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: uOfrOwnerID=%s") % RippleAddress::createHumanAccountID(uOfrOwnerID));
 
 			if (sleOffer->isFieldPresent(sfExpiration) && sleOffer->getFieldU32(sfExpiration) <= lesActive.getLedger()->getParentCloseTimeNC())
 			{
 				// Offer is expired.
-				cLog(lsINFO) << "calcNodeAdvance: expired offer";
+				cLog(lsTRACE) << "calcNodeAdvance: expired offer";
 
 				assert(musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end());	// Verify reverse found it too.
+				bEntryAdvance	= true;
+				continue;
+			}
+			else if (!saTakerPays.isPositive() || !saTakerGets.isPositive())
+			{
+				// Offer is has bad amounts.
+				cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
+					% saTakerPays % saTakerGets);
+
+				// assert(musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end());	// Verify reverse found it too.
 				bEntryAdvance	= true;
 				continue;
 			}
@@ -933,7 +956,7 @@ TER RippleCalc::calcNodeAdvance(
 			if (bFoundForward && itForward->second != uNode)
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
-				cLog(lsINFO) << "calcNodeAdvance: temporarily unfunded offer (forward)";
+				cLog(lsTRACE) << "calcNodeAdvance: temporarily unfunded offer (forward)";
 
 				bEntryAdvance	= true;
 				continue;
@@ -945,7 +968,7 @@ TER RippleCalc::calcNodeAdvance(
 			if (bFoundPast && itPast->second != uNode)
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
-				cLog(lsINFO) << "calcNodeAdvance: temporarily unfunded offer (past)";
+				cLog(lsTRACE) << "calcNodeAdvance: temporarily unfunded offer (past)";
 
 				bEntryAdvance	= true;
 				continue;
@@ -957,21 +980,18 @@ TER RippleCalc::calcNodeAdvance(
 			if (bFoundReverse && itReverse->second != uNode)
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
-				cLog(lsINFO) << "calcNodeAdvance: temporarily unfunded offer (reverse)";
+				cLog(lsTRACE) << "calcNodeAdvance: temporarily unfunded offer (reverse)";
 
 				bEntryAdvance	= true;
 				continue;
 			}
-
-			saTakerPays		= sleOffer->getFieldAmount(sfTakerPays);
-			saTakerGets		= sleOffer->getFieldAmount(sfTakerGets);
 
 			saOfferFunds	= lesActive.accountFunds(uOfrOwnerID, saTakerGets);	// Funds left.
 
 			if (!saOfferFunds.isPositive())
 			{
 				// Offer is unfunded.
-				cLog(lsINFO) << "calcNodeAdvance: unfunded offer";
+				cLog(lsTRACE) << "calcNodeAdvance: unfunded offer";
 
 				if (bReverse && !bFoundReverse && !bFoundPast)
 				{
@@ -989,7 +1009,7 @@ TER RippleCalc::calcNodeAdvance(
 				&& !bFoundReverse)	// Not mentioned for pass.
 			{
 				// Consider source mentioned by current path state.
-				cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: remember=%s/%s/%s")
+				cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: remember=%s/%s/%s")
 					% RippleAddress::createHumanAccountID(uOfrOwnerID)
 					% STAmount::createHumanCurrency(uCurCurrencyID)
 					% RippleAddress::createHumanAccountID(uCurIssuerID));
@@ -1005,11 +1025,11 @@ TER RippleCalc::calcNodeAdvance(
 
 	if (tesSUCCESS == terResult)
 	{
-		cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: uOfferIndex=%s") % uOfferIndex);
+		cLog(lsDEBUG) << boost::str(boost::format("calcNodeAdvance: uOfferIndex=%s") % uOfferIndex);
 	}
 	else
 	{
-		cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: terResult=%s") % transToken(terResult));
+		cLog(lsDEBUG) << boost::str(boost::format("calcNodeAdvance: terResult=%s") % transToken(terResult));
 	}
 
 	return terResult;
@@ -1047,8 +1067,15 @@ TER RippleCalc::calcNodeDeliverRev(
 	saPrvDlvReq.zero(pnPrv.uCurrencyID, pnPrv.uIssuerID);
 	saOutAct.zero(saOutReq);
 
+	int loopCount = 0;
 	while (saOutAct != saOutReq)							// Did not deliver limit.
 	{
+		if (++loopCount > 40)
+		{
+			cLog(lsFATAL) << "loop count exceeded";
+			return mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+		}
+
 		bool&			bEntryAdvance	= pnCur.bEntryAdvance;
 		STAmount&		saOfrRate		= pnCur.saOfrRate;
 		uint256&		uOfferIndex		= pnCur.uOfferIndex;
@@ -1204,8 +1231,22 @@ TER RippleCalc::calcNodeDeliverRev(
 			break;
 
 		// Adjust offer
-		sleOffer->setFieldAmount(sfTakerGets, saTakerGets - saOutPass);
-		sleOffer->setFieldAmount(sfTakerPays, saTakerPays - saInPassAct);
+		STAmount	saTakerGetsNew	= saTakerGets - saOutPass;
+		STAmount	saTakerPaysNew	= saTakerPays - saInPassAct;
+
+		if (saTakerPaysNew.isNegative() || saTakerGetsNew.isNegative())
+		{
+			cLog(lsWARNING) << boost::str(boost::format("calcNodeDeliverRev: NEGATIVE: saTakerPaysNew=%s saTakerGetsNew=%s")
+				% saTakerPaysNew % saTakerGetsNew);
+
+			terResult	= mOpenLedger
+							? telFAILED_PROCESSING								// Ledger is not final, can vote no.
+							: tecFAILED_PROCESSING;
+			break;
+		}
+
+		sleOffer->setFieldAmount(sfTakerGets, saTakerGetsNew);
+		sleOffer->setFieldAmount(sfTakerPays, saTakerPaysNew);
 
 		lesActive.entryModify(sleOffer);
 
@@ -1398,8 +1439,22 @@ TER RippleCalc::calcNodeDeliverFwd(
 
 			// Adjust offer
 			// Fees are considered paid from a seperate budget and are not named in the offer.
-			sleOffer->setFieldAmount(sfTakerGets, saTakerGets - saOutPassAct);
-			sleOffer->setFieldAmount(sfTakerPays, saTakerPays - saInPassAct);
+			STAmount	saTakerGetsNew	= saTakerGets - saOutPassAct;
+			STAmount	saTakerPaysNew	= saTakerPays - saInPassAct;
+
+			if (saTakerPaysNew.isNegative() || saTakerGetsNew.isNegative())
+			{
+				cLog(lsWARNING) << boost::str(boost::format("calcNodeDeliverFwd: NEGATIVE: saTakerPaysNew=%s saTakerGetsNew=%s")
+					% saTakerPaysNew % saTakerGetsNew);
+
+				terResult	= mOpenLedger
+								? telFAILED_PROCESSING								// Ledger is not final, can vote no.
+								: tecFAILED_PROCESSING;
+				break;
+			}
+
+			sleOffer->setFieldAmount(sfTakerGets, saTakerGetsNew);
+			sleOffer->setFieldAmount(sfTakerPays, saTakerPaysNew);
 
 			lesActive.entryModify(sleOffer);
 
@@ -1525,7 +1580,7 @@ void RippleCalc::calcNodeRipple(
 	STAmount& saCurAct,			// <-> out limit including achieved : <-- <= -->
 	uint64& uRateMax)
 {
-	cLog(lsINFO) << boost::str(boost::format("calcNodeRipple> uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
+	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple> uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
 		% uQualityIn
 		% uQualityOut
 		% saPrvReq.getFullText()
@@ -1549,7 +1604,7 @@ void RippleCalc::calcNodeRipple(
 	if (uQualityIn >= uQualityOut)
 	{
 		// No fee.
-		cLog(lsINFO) << boost::str(boost::format("calcNodeRipple: No fees"));
+		cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple: No fees"));
 
 		// Only process if we are not worsing previously processed.
 		if (!uRateMax || STAmount::uRateOne <= uRateMax)
@@ -1570,7 +1625,7 @@ void RippleCalc::calcNodeRipple(
 	else
 	{
 		// Fee.
-		cLog(lsINFO) << boost::str(boost::format("calcNodeRipple: Fee"));
+		cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple: Fee"));
 
 		uint64	uRate	= STAmount::getRate(STAmount(uQualityIn), STAmount(uQualityOut));
 
@@ -1582,19 +1637,19 @@ void RippleCalc::calcNodeRipple(
 
 			STAmount	saCurIn		= STAmount::divide(STAmount::multiply(saCur, uQualityOut, uCurrencyID, uCurIssuerID), uQualityIn, uCurrencyID, uCurIssuerID);
 
-	cLog(lsINFO) << boost::str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCurIn=%s") % bPrvUnlimited % saPrv.getFullText() % saCurIn.getFullText());
+	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCurIn=%s") % bPrvUnlimited % saPrv.getFullText() % saCurIn.getFullText());
 			if (bPrvUnlimited || saCurIn <= saPrv)
 			{
 				// All of cur. Some amount of prv.
 				saCurAct	+= saCur;
 				saPrvAct	+= saCurIn;
-	cLog(lsINFO) << boost::str(boost::format("calcNodeRipple:3c: saCurReq=%s saPrvAct=%s") % saCurReq.getFullText() % saPrvAct.getFullText());
+	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple:3c: saCurReq=%s saPrvAct=%s") % saCurReq.getFullText() % saPrvAct.getFullText());
 			}
 			else
 			{
 				// A part of cur. All of prv. (cur as driver)
 				STAmount	saCurOut	= STAmount::divide(STAmount::multiply(saPrv, uQualityIn, uCurrencyID, uCurIssuerID), uQualityOut, uCurrencyID, uCurIssuerID);
-	cLog(lsINFO) << boost::str(boost::format("calcNodeRipple:4: saCurReq=%s") % saCurReq.getFullText());
+	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple:4: saCurReq=%s") % saCurReq.getFullText());
 
 				saCurAct	+= saCurOut;
 				saPrvAct	= saPrvReq;
@@ -1605,7 +1660,7 @@ void RippleCalc::calcNodeRipple(
 		}
 	}
 
-	cLog(lsINFO) << boost::str(boost::format("calcNodeRipple< uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
+	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple< uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
 		% uQualityIn
 		% uQualityOut
 		% saPrvReq.getFullText()
@@ -2417,7 +2472,7 @@ TER RippleCalc::rippleCalc(
 	// Issuer:
 	//      XRP: ACCOUNT_XRP
 	//  non-XRP: uSrcAccountID (for any issuer) or another account with trust node.
-	const STAmount&		saMaxAmountReq,			// --> -1 = no limit.
+	const STAmount&		saMaxAmountReq,				// --> -1 = no limit.
 
 	// Issuer:
 	//      XRP: ACCOUNT_XRP
@@ -2430,12 +2485,13 @@ TER RippleCalc::rippleCalc(
     const bool			bPartialPayment,
     const bool			bLimitQuality,
     const bool			bNoRippleDirect,
-	const bool			bStandAlone				// True, not to delete unfundeds.
+	const bool			bStandAlone,				// True, not to delete unfundeds.
+	const bool			bOpenLedger
     )
 {
-	RippleCalc		rc(lesActive);
+	RippleCalc	rc(lesActive, bOpenLedger);
 
-    TER	    terResult	= temUNCERTAIN;
+    TER			terResult	= temUNCERTAIN;
 
 	// YYY Might do basic checks on src and dst validity as per doPayment.
 
@@ -2482,7 +2538,7 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Build direct: status: %s"
 		}
     }
 
-    cLog(lsINFO) << "rippleCalc: Paths in set: " << spsPaths.size();
+    cLog(lsTRACE) << "rippleCalc: Paths in set: " << spsPaths.size();
 
 int	iIndex	= 0;
     BOOST_FOREACH(const STPath& spPath, spsPaths)

@@ -299,7 +299,7 @@ void ValidationCollection::condWrite()
 
 void ValidationCollection::doWrite(Job&)
 {
-	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtDISK));
+	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtDISK, "ValidationWrite"));
 	static boost::format insVal("INSERT INTO Validations "
 		"(LedgerHash,NodePubKey,SignTime,RawData) VALUES ('%s','%s','%u',%s);");
 

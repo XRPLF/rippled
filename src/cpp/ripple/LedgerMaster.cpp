@@ -116,7 +116,7 @@ Ledger::pointer LedgerMaster::closeLedger(bool recover)
 	mCurrentLedger = boost::make_shared<Ledger>(boost::ref(*closingLedger), true);
 	mEngine.setLedger(mCurrentLedger);
 
-	return closingLedger;
+	return Ledger::pointer(new Ledger(*closingLedger, true));
 }
 
 TER LedgerMaster::doTransaction(SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply)
@@ -147,11 +147,14 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 
 	std::map< uint32, std::pair<uint256, uint256> > ledgerHashes;
 
+	uint32 minHas = ledger->getLedgerSeq();
+	uint32 maxHas = ledger->getLedgerSeq();
+
 	while (seq > 0)
 	{
 		{
 			boost::recursive_mutex::scoped_lock ml(mLock);
-			mCompleteLedgers.setValue(seq);
+			minHas = seq;
 			--seq;
 			if (mCompleteLedgers.hasValue(seq))
 				break;
@@ -162,6 +165,11 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 		{
 			if (theApp->isShutdown())
 				return;
+			{
+				boost::recursive_mutex::scoped_lock ml(mLock);
+				mCompleteLedgers.setRange(minHas, maxHas);
+			}
+			maxHas = minHas;
 			ledgerHashes = Ledger::getHashesByIndex((seq < 500) ? 0 : (seq - 499), seq);
 			it = ledgerHashes.find(seq);
 			if (it == ledgerHashes.end())
@@ -171,6 +179,11 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 		if (it->second.first != prevHash)
 			break;
 		prevHash = it->second.second;
+	}
+
+	{
+		boost::recursive_mutex::scoped_lock ml(mLock);
+		mCompleteLedgers.setRange(minHas, maxHas);
 	}
 
 	resumeAcquiring();
@@ -261,8 +274,9 @@ void LedgerMaster::missingAcquireComplete(LedgerAcquire::pointer acq)
 
 	if (acq->isComplete())
 	{
+		acq->getLedger()->setAccepted();
 		setFullLedger(acq->getLedger());
-		acq->getLedger()->pendSave(false);
+		mLedgerHistory.addAcceptedLedger(acq->getLedger(), false);
 	}
 }
 
@@ -374,7 +388,7 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 		return;
 	}
 
-	if (Ledger::getPendingSaves() > 2)
+	if (theApp->getJobQueue().getJobCount(jtPUBOLDLEDGER) > 2)
 	{
 		mTooFast = true;
 		cLog(lsDEBUG) << "Too many pending ledger saves";

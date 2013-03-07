@@ -11,6 +11,7 @@ class Offer : public AccountItem
 	Offer(SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
 public:
 	Offer(){}
+	virtual ~Offer(){}
 	AccountItem::pointer makeItem(const uint160&, SerializedLedgerEntry::ref ledgerEntry);
 	LedgerEntryType getType(){ return(ltOFFER); }
 
@@ -18,6 +19,7 @@ public:
 	STAmount getTakerGets(){ return(mTakerGets); }
 	RippleAddress getAccount(){ return(mAccount); }
 	int getSeq(){ return(mSeq); }
+	Json::Value getJson(int);
 
 };
 

@@ -11,12 +11,13 @@ SETUP_LOG();
 // -->    uBookBase: The order book to take against.
 // -->  saTakerPays: What the taker offers (w/ issuer)
 // -->  saTakerGets: What the taker wanted (w/ issuer)
-// <--  saTakerPaid: What taker paid including saved not including fees. To reduce an offer.
+// <--  saTakerPaid: What taker could have paid including saved not including fees. To reduce an offer.
 // <--   saTakerGot: What taker got not including fees. To reduce an offer.
-// <--    terResult: tesSUCCESS or terNO_ACCOUNT
+// <--    terResult: tesSUCCESS, terNO_ACCOUNT, telFAILED_PROCESSING, or tecFAILED_PROCESSING
 // <--    bUnfunded: if tesSUCCESS, consider offer unfunded after taking.
 TER OfferCreateTransactor::takeOffers(
-	bool				bPassive,
+	const bool			bOpenLedger,
+	const bool			bPassive,
 	const uint256&		uBookBase,
 	const uint160&		uTakerAccountID,
 	SLE::ref			sleTakerAccount,
@@ -58,11 +59,13 @@ TER OfferCreateTransactor::takeOffers(
 		SLE::pointer	sleOfferDir;
 		uint64			uTipQuality		= 0;
 		STAmount		saTakerFunds	= mEngine->getNodes().accountFunds(uTakerAccountID, saTakerPays);
+		STAmount		saSubTakerPays	= saTakerPays-saTakerPaid;	// How much more to spend.
+		STAmount		saSubTakerGets	= saTakerGets-saTakerGot;	// How much more is wanted.
 
 		// Figure out next offer to take, if needed.
 		if (saTakerFunds						// Taker has funds available.
-			&& saTakerGot < saTakerGets			// Have less than wanted.
-			&& saTakerPaid < saTakerPays)		// Didn't spend all funds allocated.
+			&& saSubTakerPays.isPositive()
+			&& saSubTakerGets.isPositive())
 		{
 			sleOfferDir		= mEngine->entryCache(ltDIR_NODE, mEngine->getLedger()->getNextLedgerIndex(uTipIndex, uBookEnd));
 			if (sleOfferDir)
@@ -152,6 +155,14 @@ TER OfferCreateTransactor::takeOffers(
 
 				usOfferUnfundedFound.insert(uOfferIndex);
 			}
+			else if (!saOfferGets.isPositive() || !saOfferPays.isPositive())
+			{
+				// Offer has bad amounts. Consider offer expired. Delete it.
+				cLog(lsWARNING) << boost::str(boost::format("takeOffers: BAD OFFER: saOfferPays=%s saOfferGets=%s")
+					% saOfferPays % saOfferGets);
+
+				usOfferUnfundedFound.insert(uOfferIndex);
+			}
 			else
 			{
 				// Get offer funds available.
@@ -193,6 +204,8 @@ TER OfferCreateTransactor::takeOffers(
 					cLog(lsINFO) << "takeOffers: applyOffer:    saOfferPays: " << saOfferPays.getFullText();
 					cLog(lsINFO) << "takeOffers: applyOffer:    saOfferGets: " << saOfferGets.getFullText();
 					cLog(lsINFO) << "takeOffers: applyOffer:    saOfferRate: " << saOfferRate.getFullText();
+					cLog(lsINFO) << "takeOffers: applyOffer: saSubTakerPays: " << saSubTakerPays.getFullText();
+					cLog(lsINFO) << "takeOffers: applyOffer: saSubTakerGets: " << saSubTakerGets.getFullText();
 					cLog(lsINFO) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
 					cLog(lsINFO) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText();
 
@@ -204,8 +217,8 @@ TER OfferCreateTransactor::takeOffers(
 						saTakerFunds,
 						saOfferPays,
 						saOfferGets,
-						saTakerPays,
-						saTakerGets,
+						saSubTakerPays,
+						saSubTakerGets,
 						saSubTakerPaid,
 						saSubTakerGot,
 						saTakerIssuerFee,
@@ -237,6 +250,13 @@ TER OfferCreateTransactor::takeOffers(
 					else if (saSubTakerGot)
 					{
 						cLog(lsINFO) << "takeOffers: Offer partial claim.";
+
+						if (!saOfferPays.isPositive() || !saOfferGets.isPositive())
+						{
+							cLog(lsWARNING) << "takeOffers: ILLEGAL OFFER RESULT.";
+							bUnfunded	= true;
+							terResult	= bOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+						}
 					}
 					else
 					{
@@ -260,18 +280,18 @@ TER OfferCreateTransactor::takeOffers(
 							terResult	= mEngine->getNodes().accountSend(uTakerAccountID, uOfferOwnerID, saSubTakerPaid);			// Taker pays offer owner.
 
 						// Reduce amount considered paid by taker's rate (not actual cost).
-						STAmount	saPay		= saTakerPays - saTakerPaid;
-						if (saTakerFunds < saPay)
-							saPay	= saTakerFunds;
+						STAmount	saTakerCould	= saTakerPays - saTakerPaid;	// Taker could pay.
+						if (saTakerFunds < saTakerCould)
+							saTakerCould	= saTakerFunds;
 
 						STAmount	saTakerUsed	= STAmount::multiply(saSubTakerGot, saTakerRate, saTakerPays);
 
-						cLog(lsINFO) << "takeOffers: applyOffer:          saPay: " << saPay.getFullText();
+						cLog(lsINFO) << "takeOffers: applyOffer:   saTakerCould: " << saTakerCould.getFullText();
 						cLog(lsINFO) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText();
 						cLog(lsINFO) << "takeOffers: applyOffer:    saTakerRate: " << saTakerRate.getFullText();
 						cLog(lsINFO) << "takeOffers: applyOffer:    saTakerUsed: " << saTakerUsed.getFullText();
 
-						saTakerPaid		+= std::min(saPay, saTakerUsed);
+						saTakerPaid		+= std::min(saTakerCould, saTakerUsed);
 						saTakerGot		+= saSubTakerGot;
 
 						if (tesSUCCESS == terResult)
@@ -319,31 +339,32 @@ TER OfferCreateTransactor::takeOffers(
 TER OfferCreateTransactor::doApply()
 {
 	cLog(lsWARNING) << "OfferCreate> " << mTxn.getJson(0);
-	const uint32			uTxFlags		= mTxn.getFlags();
-	const bool				bPassive		= isSetBit(uTxFlags, tfPassive);
-	const bool				bMarket			= isSetBit(uTxFlags, tfMarket);
-	STAmount				saTakerPays		= mTxn.getFieldAmount(sfTakerPays);
-	STAmount				saTakerGets		= mTxn.getFieldAmount(sfTakerGets);
+	const uint32			uTxFlags			= mTxn.getFlags();
+	const bool				bPassive			= isSetBit(uTxFlags, tfPassive);
+	const bool				bImmediateOrCancel	= isSetBit(uTxFlags, tfImmediateOrCancel);
+	const bool				bFillOrKill			= isSetBit(uTxFlags, tfFillOrKill);
+	STAmount				saTakerPays			= mTxn.getFieldAmount(sfTakerPays);
+	STAmount				saTakerGets			= mTxn.getFieldAmount(sfTakerGets);
 
 	cLog(lsINFO) << boost::str(boost::format("OfferCreate: saTakerPays=%s saTakerGets=%s")
 		% saTakerPays.getFullText()
 		% saTakerGets.getFullText());
 
-	const uint160			uPaysIssuerID	= saTakerPays.getIssuer();
-	const uint160			uGetsIssuerID	= saTakerGets.getIssuer();
-	const uint32			uExpiration		= mTxn.getFieldU32(sfExpiration);
-	const bool				bHaveExpiration	= mTxn.isFieldPresent(sfExpiration);
-	const uint32			uSequence		= mTxn.getSequence();
+	const uint160			uPaysIssuerID		= saTakerPays.getIssuer();
+	const uint160			uGetsIssuerID		= saTakerGets.getIssuer();
+	const uint32			uExpiration			= mTxn.getFieldU32(sfExpiration);
+	const bool				bHaveExpiration		= mTxn.isFieldPresent(sfExpiration);
+	const uint32			uSequence			= mTxn.getSequence();
 
-	const uint256			uLedgerIndex	= Ledger::getOfferIndex(mTxnAccountID, uSequence);
+	const uint256			uLedgerIndex		= Ledger::getOfferIndex(mTxnAccountID, uSequence);
 
 	cLog(lsINFO) << "OfferCreate: Creating offer node: " << uLedgerIndex.ToString() << " uSequence=" << uSequence;
 
-	const uint160			uPaysCurrency	= saTakerPays.getCurrency();
-	const uint160			uGetsCurrency	= saTakerGets.getCurrency();
-	const uint64			uRate			= STAmount::getRate(saTakerGets, saTakerPays);
+	const uint160			uPaysCurrency		= saTakerPays.getCurrency();
+	const uint160			uGetsCurrency		= saTakerGets.getCurrency();
+	const uint64			uRate				= STAmount::getRate(saTakerGets, saTakerPays);
 
-	TER						terResult		= tesSUCCESS;
+	TER						terResult			= tesSUCCESS;
 	uint256					uDirectory;		// Delete hints.
 	uint64					uOwnerNode;
 	uint64					uBookNode;
@@ -351,6 +372,12 @@ TER OfferCreateTransactor::doApply()
 	if (uTxFlags & tfOfferCreateMask)
 	{
 		cLog(lsINFO) << "OfferCreate: Malformed transaction: Invalid flags set.";
+
+		return temINVALID_FLAG;
+	}
+	else if (bImmediateOrCancel && bFillOrKill)
+	{
+		cLog(lsINFO) << "OfferCreate: Malformed transaction: both IoC and FoK set.";
 
 		return temINVALID_FLAG;
 	}
@@ -412,6 +439,7 @@ TER OfferCreateTransactor::doApply()
 	STAmount		saPaid;
 	STAmount		saGot;
 	bool			bUnfunded	= false;
+	const bool		bOpenLedger	= isSetBit(mParams, tapOPEN_LEDGER);
 
 	if (tesSUCCESS == terResult)
 	{
@@ -426,6 +454,7 @@ TER OfferCreateTransactor::doApply()
 		cLog(lsWARNING) << "OfferCreate: takeOffers: BEFORE saTakerGets=" << saTakerGets.getFullText();
 
 		terResult	= takeOffers(
+			bOpenLedger,
 			bPassive,
 			uTakeBookBase,
 			mTxnAccountID,
@@ -465,14 +494,18 @@ TER OfferCreateTransactor::doApply()
 	}
 	else if (saTakerPays.isNegative() || saTakerGets.isNegative())
 	{
-		terResult	= isSetBit(mParams, tapOPEN_LEDGER)
-						? telFAILED_PROCESSING								// Ledger is not final, can vote no.
-						: tecFAILED_PROCESSING;
+		// If ledger is not final, can vote no.
+		terResult	= bOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+	}
+	else if (bFillOrKill && (saTakerPays || saTakerGets))
+	{
+		// Fill or kill and have leftovers.
+		terResult	= tecKILL;
 	}
 	else if (
 		!saTakerPays														// Wants nothing more.
 		|| !saTakerGets														// Offering nothing more.
-		|| bMarket															// Do not persist.
+		|| bImmediateOrCancel															// Do not persist.
 		|| !mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets).isPositive()	// Not funded.
 		|| bUnfunded)														// Consider unfunded.
 	{
@@ -481,7 +514,7 @@ TER OfferCreateTransactor::doApply()
 	}
 	else if (mPriorBalance.getNValue() < mEngine->getLedger()->getReserve(mTxnAccount->getFieldU32(sfOwnerCount)+1))
 	{
-		if (isSetBit(mParams, tapOPEN_LEDGER)) // Ledger is not final, can vote no.
+		if (bOpenLedger) // Ledger is not final, can vote no.
 		{
 			// Hope for more reserve to come in or more offers to consume.
 			terResult	= tecINSUF_RESERVE_OFFER;

@@ -71,6 +71,7 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 		{ rpcTXN_NOT_FOUND,			"txnNotFound",		"Transaction not found."								},
 		{ rpcUNKNOWN_COMMAND,		"unknownCmd",		"Unknown method."										},
 		{ rpcWRONG_SEED,			"wrongSeed",		"The regular key does not point as the master key."		},
+		{ rpcTOO_BUSY,				"tooBusy",			"The server is too busy to help you now."               },
 	};
 
 	int		i;

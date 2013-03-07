@@ -245,6 +245,10 @@ void LoadFeeTrack::setRemoteFee(uint32 f)
 bool LoadFeeTrack::raiseLocalFee()
 {
 	boost::mutex::scoped_lock sl(mLock);
+
+	if (++raiseCount < 2)
+		return false;
+
 	uint32 origFee = mLocalTxnLoadFee;
 
 	if (mLocalTxnLoadFee < mRemoteTxnLoadFee) // make sure this fee takes effect
@@ -265,6 +269,7 @@ bool LoadFeeTrack::lowerLocalFee()
 {
 	boost::mutex::scoped_lock sl(mLock);
 	uint32 origFee = mLocalTxnLoadFee;
+	raiseCount = 0;
 
 	mLocalTxnLoadFee -= (mLocalTxnLoadFee / lftFeeDecFraction ); // reduce by 1/4
 
