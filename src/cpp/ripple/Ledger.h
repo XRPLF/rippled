@@ -19,6 +19,7 @@
 #include "SHAMap.h"
 #include "InstanceCounter.h"
 #include "LoadMonitor.h"
+#include "JobQueue.h"
 
 enum LedgerStateParms
 {
@@ -102,7 +103,7 @@ protected:
 
 	static void incPendingSaves();
 	static void decPendingSaves();
-	void saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer);
+	void saveAcceptedLedger(Job&, bool fromConsensus);
 
 	void updateFees();
 	void zeroFees();

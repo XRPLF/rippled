@@ -400,8 +400,8 @@ uint256 Ledger::getHash()
 	return mHash;
 }
 
-void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
-{ // can be called in a different thread
+void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
+{
 	cLog(lsTRACE) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq();
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers INDEXED BY SeqLedger where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
@@ -1530,8 +1530,8 @@ void Ledger::pendSave(bool fromConsensus)
 		++sPendingSaves;
 	}
 
-	boost::thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(), fromConsensus,
-		theApp->getJobQueue().getLoadEvent(jtDISK, fromConsensus ? "Ledger::cSave" : "Ledger::save"))).detach();
+	theApp->getJobQueue().addJob(jtPUBOLDLEDGER, // FIXME not old if fromConsensus
+		boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(), _1, fromConsensus));
 
 }
 
