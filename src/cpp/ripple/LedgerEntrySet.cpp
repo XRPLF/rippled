@@ -1121,7 +1121,7 @@ STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount&
 	{
 		saFunds	= saDefault;
 
-		cLog(lsINFO) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s SELF-FUNDED")
+		cLog(lsTRACE) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s SELF-FUNDED")
 			% RippleAddress::createHumanAccountID(uAccountID)
 			% saDefault.getFullText());
 	}
@@ -1129,7 +1129,7 @@ STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount&
 	{
 		saFunds	= accountHolds(uAccountID, saDefault.getCurrency(), saDefault.getIssuer());
 
-		cLog(lsINFO) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s saFunds=%s")
+		cLog(lsTRACE) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s saFunds=%s")
 			% RippleAddress::createHumanAccountID(uAccountID)
 			% saDefault.getFullText()
 			% saFunds.getFullText());
