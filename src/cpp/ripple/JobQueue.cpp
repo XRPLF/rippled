@@ -26,7 +26,6 @@ JobQueue::JobQueue() : mLastJob(0), mThreadCount(0), mShuttingDown(false)
 	mJobLoads[jtCLIENT].setTargetLatency(2000, 5000);
 	mJobLoads[jtPEER].setTargetLatency(200, 1250);
 	mJobLoads[jtDISK].setTargetLatency(500, 1000);
-	mJobLoads[jtRPC].setTargetLatency(1250, 1750);
 	mJobLoads[jtACCEPTLEDGER].setTargetLatency(1000, 2500);
 }
 
@@ -53,7 +52,6 @@ const char* Job::toString(JobType t)
 
 		case jtPEER:			return "peerCommand";
 		case jtDISK:			return "diskAccess";
-		case jtRPC:				return "rpc";
 		case jtACCEPTLEDGER:	return "acceptLedger";
 		case jtTXN_PROC:		return "processTransaction";
 		case jtOB_SETUP:		return "orderBookSetup";

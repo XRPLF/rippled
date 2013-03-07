@@ -39,11 +39,10 @@ enum JobType
 // special types not dispatched by the job pool
 	jtPEER			= 24,
 	jtDISK			= 25,
-	jtRPC			= 26,
-	jtACCEPTLEDGER	= 27,
-	jtTXN_PROC		= 28,
-	jtOB_SETUP		= 29,
-	jtPATH_FIND		= 30
+	jtACCEPTLEDGER	= 26,
+	jtTXN_PROC		= 27,
+	jtOB_SETUP		= 28,
+	jtPATH_FIND		= 29
 }; // CAUTION: If you add new types, add them to JobType.cpp too
 #define NUM_JOB_TYPES 32
 
@@ -66,7 +65,7 @@ public:
 	Job(JobType type, const std::string& name, uint64 index, LoadMonitor& lm, const boost::function<void(Job&)>& job)
 		: mType(type), mJobIndex(index), mJob(job), mName(name)
 	{
-		mLoadMonitor = boost::make_shared<LoadEvent>(boost::ref(lm), name, false, 1);
+		mLoadMonitor = boost::make_shared<LoadEvent>(boost::ref(lm), name, false);
 	}
 
 	JobType getType() const				{ return mType; }
@@ -112,9 +111,9 @@ public:
 	void setThreadCount(int c = 0);
 
 	LoadEvent::pointer getLoadEvent(JobType t, const std::string& name)
-	{ return boost::make_shared<LoadEvent>(boost::ref(mJobLoads[t]), name, true, 1); }
+	{ return boost::make_shared<LoadEvent>(boost::ref(mJobLoads[t]), name, true); }
 	LoadEvent::autoptr getLoadEventAP(JobType t, const std::string& name)
-	{ return LoadEvent::autoptr(new LoadEvent(mJobLoads[t], name, true, 1)); }
+	{ return LoadEvent::autoptr(new LoadEvent(mJobLoads[t], name, true)); }
 
 	int isOverloaded();
 	Json::Value getJson(int c = 0);
