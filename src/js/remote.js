@@ -1111,11 +1111,17 @@ Remote.prototype.request_owner_count = function (account, current) {
 };
 
 Remote.prototype.account = function (accountId) {
-  var account = new Account(this, accountId);
+  accountId = UInt160.json_rewrite(accountId);
 
-  if (!account.is_valid()) return account;
+  if (!this._accounts[accountId]) {
+    var account = new Account(this, accountId);
 
-  return this._accounts[account.to_json()] = account;
+    if (!account.is_valid()) return account;
+
+    this._accounts[accountId] = account;
+  }
+
+  return this._accounts[accountId];
 };
 
 Remote.prototype.book = function (currency_out, issuer_out,
@@ -1130,7 +1136,7 @@ Remote.prototype.book = function (currency_out, issuer_out,
 // Return the next account sequence if possible.
 // <-- undefined or Sequence
 Remote.prototype.account_seq = function (account, advance) {
-  var account       = UInt160.json_rewrite(account);
+  account           = UInt160.json_rewrite(account);
   var account_info  = this.accounts[account];
   var seq;
 
