@@ -1006,14 +1006,6 @@ TER RippleCalc::calcNodeAdvance(
 			curIssuerNodeConstIterator	itPast			= mumSource.find(asLine);
 			bool						bFoundPast		= itPast != mumSource.end();
 
-			// XXX Restricting by node seems like a misunderstanding.
-			// if (bFoundPast && itPast->second != uNode)
-			// {
-			//	// Temporarily unfunded. Another node uses this source, ignore in this offer.
-			//	cLog(lsTRACE) << "calcNodeAdvance: temporarily unfunded offer (past)";
-			//	continue;
-			// }
-
 			// Only the current node is allowed to use the source.
 
 			saOfferFunds	= lesActive.accountFunds(uOfrOwnerID, saTakerGets);	// Funds held.
@@ -1643,7 +1635,6 @@ TER RippleCalc::calcNodeOfferFwd(
 // - prv is the driver: it calculates current deliver based on previous delivery limits and current wants.
 // This routine is called one or two times for a node in a pass. If called once, it will work and set a rate.  If called again,
 // the new work must not worsen the previous rate.
-// XXX Deal with uQualityIn or uQualityOut = 0
 void RippleCalc::calcNodeRipple(
 	const uint32 uQualityIn,
 	const uint32 uQualityOut,
