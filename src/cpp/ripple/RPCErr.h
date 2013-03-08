@@ -18,6 +18,7 @@ enum {
 	rpcNO_EVENTS,
 	rpcNOT_STANDALONE,
 	rpcTOO_BUSY,
+	rpcSLOW_DOWN,
 
 	// Networking
 	rpcNO_CLOSED,
