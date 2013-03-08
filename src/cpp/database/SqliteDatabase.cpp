@@ -234,6 +234,7 @@ void SqliteDatabase::runWal()
 	std::set<std::string> walSet;
 	std::string name = sqlite3_db_filename(mConnection, "main");
 
+	int pass = 1;
 	while (1)
 	{
 		{
@@ -255,8 +256,11 @@ void SqliteDatabase::runWal()
 				cLog((ret == SQLITE_LOCKED) ? lsTRACE : lsWARNING) << "WAL " << mHost << ":"
 					<< db << " error " << ret;
 			}
+			else
+				cLog(lsTRACE) << "WAL(" << mHost << "): pass=" << pass << ", frames=" << log << ", written=" << ckpt;
 		}
 		walSet.clear();
+		++pass;
 	}
 }
 

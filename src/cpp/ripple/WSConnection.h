@@ -88,6 +88,14 @@ public:
 	// Utilities
 	Json::Value invokeCommand(Json::Value& jvRequest)
 	{
+		if (theApp->getLoadManager().shouldCutoff(mLoadSource))
+		{
+			connection_ptr ptr = mConnection.lock();
+			if (ptr)
+				ptr->close(websocketpp::close::status::PROTOCOL_ERROR, "overload");
+			return rpcError(rpcTOO_BUSY);
+		}
+
 		if (!jvRequest.isMember("command"))
 		{
 			Json::Value	jvResult(Json::objectValue);
@@ -102,11 +110,12 @@ public:
 				jvResult["id"]	= jvRequest["id"];
 			}
 
+			theApp->getLoadManager().adjust(mLoadSource, 5);
 			return jvResult;
 		}
 
-		RPCHandler	mRPCHandler(&mNetwork,
-			boost::shared_polymorphic_downcast<InfoSub>(this->shared_from_this()), mLoadSource);
+		int cost = 10;
+		RPCHandler	mRPCHandler(&mNetwork, boost::shared_polymorphic_downcast<InfoSub>(this->shared_from_this()));
 		Json::Value	jvResult(Json::objectValue);
 
 		int iRole	= mHandler->getPublic()
@@ -119,8 +128,11 @@ public:
 		}
 		else
 		{
-			jvResult["result"] = mRPCHandler.doCommand(jvRequest, iRole);
+			jvResult["result"] = mRPCHandler.doCommand(jvRequest, iRole, cost);
 		}
+
+		if (theApp->getLoadManager().adjust(mLoadSource, cost) && theApp->getLoadManager().shouldWarn(mLoadSource))
+			jvResult["warning"] = "load";
 
 		// Currently we will simply unwrap errors returned by the RPC
 		// API, in the future maybe we can make the responses

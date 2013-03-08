@@ -43,10 +43,10 @@ void startServer()
 			if (!theConfig.QUIET)
 				std::cerr << "Startup RPC: " << jvCommand << std::endl;
 
-			LoadSource ls(true);
-			RPCHandler	rhHandler(&theApp->getOPs(), ls);
+			RPCHandler	rhHandler(&theApp->getOPs());
 
-			Json::Value	jvResult	= rhHandler.doCommand(jvCommand, RPCHandler::ADMIN);
+			int cost = 10;
+			Json::Value	jvResult	= rhHandler.doCommand(jvCommand, RPCHandler::ADMIN, cost);
 
 			if (!theConfig.QUIET)
 				std::cerr << "Result: " << jvResult << std::endl;

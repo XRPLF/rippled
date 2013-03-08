@@ -73,8 +73,8 @@ public:
 	LoadSource(const std::string& name) : mName(name), mBalance(0), mFlags(0), mLastUpdate(upTime()), mLastWarning(0)
 	{ ; }
 
-	void rename(const std::string& name)
-	{ mName = name; }
+	void rename(const std::string& name)	{ mName = name; }
+	const std::string& getName()			{ return mName; }
 
 	bool	isPrivileged() const	{ return (mFlags & lsfPrivileged) != 0; }
 	void	setPrivileged()			{ mFlags |= lsfPrivileged; }
@@ -112,7 +112,7 @@ protected:
 
 public:
 
-	LoadManager(int creditRate = 10, int creditLimit = 50, int debitWarn = -50, int debitLimit = -100);
+	LoadManager(int creditRate = 100, int creditLimit = 500, int debitWarn = -500, int debitLimit = -1000);
 	~LoadManager();
 	void init();
 
@@ -129,6 +129,9 @@ public:
 	bool shouldCutoff(LoadSource&) const;
 	bool adjust(LoadSource&, int credits) const; // return value: false=balance okay, true=warn/cutoff
 	bool adjust(LoadSource&, LoadType l) const;
+
+	void logWarning(const std::string&) const;
+	void logDisconnect(const std::string&) const;
 
 	int getCost(LoadType t)		{ return mCosts[static_cast<int>(t)].mCost; }
 	int getUptime();

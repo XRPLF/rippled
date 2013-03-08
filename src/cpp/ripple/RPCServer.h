@@ -24,7 +24,6 @@ public:
 private:
 	
 	NetworkOPs*	mNetOps;
-	LoadSource	mLoadSource;
 
 	boost::asio::ip::tcp::socket mSocket;
 
@@ -46,7 +45,7 @@ private:
 	void handle_read_line(const boost::system::error_code& ec);
 	void handle_read_req(const boost::system::error_code& ec);
 
-	std::string handleRequest(const std::string& requestStr, LoadSource& ls);
+	std::string handleRequest(const std::string& requestStr);
 
 public:
 	static pointer create(boost::asio::io_service& io_service, NetworkOPs* mNetOps)
