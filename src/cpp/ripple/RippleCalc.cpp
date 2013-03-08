@@ -606,7 +606,7 @@ void PathState::setCanonical(
 				&& pnPrv.uCurrencyID != pnNxt.uCurrencyID)
 			{
 				// Offer can be implied by currency change.
-// XXX What abount issuer?
+// XXX What about issuer?
 
 				bSkip	= true;
 			}
@@ -935,7 +935,6 @@ TER RippleCalc::calcNodeAdvance(
 
 				assert(musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end());	// Verify reverse found it too.
 				// Just skip it. It will be deleted.
-				// bEntryAdvance	= true;		// Already set
 				continue;
 			}
 			else if (!saTakerPays.isPositive() || !saTakerGets.isPositive())
@@ -949,7 +948,6 @@ TER RippleCalc::calcNodeAdvance(
 						% saTakerPays % saTakerGets);
 
 					musUnfundedFound.insert(uOfferIndex);				// Mark offer for always deletion.
-					// bEntryAdvance	= true;		// Already set
 					continue;
 				}
 				else if (musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end())
@@ -957,9 +955,8 @@ TER RippleCalc::calcNodeAdvance(
 					// Past internal error, offer was found failed to place this in musUnfundedFound.
 					cLog(lsDEBUG) << boost::str(boost::format("calcNodeAdvance: PAST INTERNAL ERROR: OFFER NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
 						% saTakerPays % saTakerGets);
-assert(false);
+
 					// Just skip it. It will be deleted.
-					// bEntryAdvance	= true;		// Already set
 					continue;
 				}
 				else
@@ -968,7 +965,7 @@ assert(false);
 					// An internal error previously left a bad offer.
 					cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: INTERNAL ERROR: OFFER NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
 						% saTakerPays % saTakerGets);
-assert(false);
+
 					// Don't process at all, things are in an unexpected state for this transactions.
 					terResult		= tefEXCEPTION;
 				}
@@ -1326,6 +1323,7 @@ TER RippleCalc::calcNodeDeliverFwd(
 	const uint160&	uNxtAccountID	= pnNxt.uAccountID;
 	const uint160&	uCurCurrencyID	= pnCur.uCurrencyID;
 	const uint160&	uCurIssuerID	= pnCur.uIssuerID;
+	const uint256&	uOfferIndex		= pnCur.uOfferIndex;
 	const uint160&	uPrvCurrencyID	= pnPrv.uCurrencyID;
 	const uint160&	uPrvIssuerID	= pnPrv.uIssuerID;
 	const STAmount&	saInTransRate	= pnPrv.saTransferRate;
@@ -1345,14 +1343,23 @@ TER RippleCalc::calcNodeDeliverFwd(
 	{
 		if (++loopCount > 40)
 		{
-			cLog(lsWARNING) << "max loops cndf";
+			cLog(lsWARNING) << "calcNodeDeliverFwd: max loops cndf";
 			return mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
 		}
 
 		// Determine values for pass to adjust saInAct, saInFees, and saCurDeliverAct
 		terResult	= calcNodeAdvance(uNode, psCur, bMultiQuality, false);				// If needed, advance to next funded offer.
 
-		if (tesSUCCESS == terResult)
+		if (tesSUCCESS != terResult)
+		{
+			nothing();
+		}
+		else if (!uOfferIndex)
+		{
+			cLog(lsWARNING) << "calcNodeDeliverFwd: INTERNAL ERROR: Ran out of offers.";
+			return mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+		}
+		else if (tesSUCCESS == terResult)
 		{
 			// Doesn't charge input. Input funds are in limbo.
 			bool&			bEntryAdvance	= pnCur.bEntryAdvance;
@@ -1386,9 +1393,11 @@ TER RippleCalc::calcNodeDeliverFwd(
 			STAmount	saInPassFees;	// Will be determined by adjusted saInPassAct.
 
 
-			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverFwd: uNode=%d saOutFunded=%s saInReq=%s saInAct=%s saInFees=%s saInFunded=%s saInTotal=%s saInSum=%s saInPassAct=%s saOutPassMax=%s")
+			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverFwd: uNode=%d saOutFunded=%s saOfferFunds=%s saTakerGets=%s saInReq=%s saInAct=%s saInFees=%s saInFunded=%s saInTotal=%s saInSum=%s saInPassAct=%s saOutPassMax=%s")
 				% uNode
 				% saOutFunded
+				% saOfferFunds
+				% saTakerGets
 				% saInReq
 				% saInAct
 				% saInFees
@@ -1398,7 +1407,26 @@ TER RippleCalc::calcNodeDeliverFwd(
 				% saInPassAct
 				% saOutPassMax);
 
-			if (!!uNxtAccountID)
+			if (!saInSum)
+			{
+				cLog(lsINFO) << "calcNodeDeliverFwd: Microscopic offer unfunded.";
+
+				// After math offer is effectively unfunded.
+				psCur.vUnfundedBecame.push_back(uOfferIndex);
+				bEntryAdvance	= true;
+				continue;
+			}
+			else if (!saInFunded)
+			{
+				// Previous check should catch this.
+				cLog(lsWARNING) << "calcNodeDeliverFwd: UNREACHABLE REACHED";
+
+				// After math offer is effectively unfunded.
+				psCur.vUnfundedBecame.push_back(uOfferIndex);
+				bEntryAdvance	= true;
+				continue;
+			}
+			else if (!!uNxtAccountID)
 			{
 				// ? --> OFFER --> account
 				// Input fees: vary based upon the consumed offer's owner.
@@ -2191,13 +2219,21 @@ TER RippleCalc::calcNodeAccountFwd(
 
 			STAmount	saIssueCrd		= uQualityIn >= QUALITY_ONE
 											? saPrvIssueReq													// No fee.
-											: STAmount::multiply(saPrvIssueReq, uQualityIn, uCurrencyID, saPrvIssueReq.getIssuer());	// Fee.
+											: STAmount::multiply(saPrvIssueReq, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uQualityIn, -9));	// Amount to credit.
 
-			// Amount to credit.
+			// Amount to credit. Credit for less than received as a surcharge.
 			saCurReceive	= saPrvRedeemReq+saIssueCrd;
 
-			// Actually receive.
-			terResult	= lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq+saPrvIssueReq, false);
+			if (saCurReceive)
+			{
+				// Actually receive.
+				terResult	= lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq+saPrvIssueReq, false);
+			}
+			else
+			{
+				// After applying quality, total payment was microscopic.
+				terResult	= tecPATH_DRY;
+			}
 		}
 		else
 		{
@@ -2239,8 +2275,12 @@ TER RippleCalc::calcNodeAccountFwd(
 				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq, saPrvIssueAct, saCurIssueAct, uRateMax);
 			}
 
+			STAmount	saProvide	= saCurRedeemAct + saCurIssueAct;
+
 			// Adjust prv --> cur balance : take all inbound
-			terResult	= lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false);
+			terResult	= saProvide
+							? lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false)
+							: tecPATH_DRY;
 		}
 	}
 	else if (bPrvAccount && !bNxtAccount)
@@ -2276,7 +2316,9 @@ TER RippleCalc::calcNodeAccountFwd(
 			}
 
 			// Adjust prv --> cur balance : take all inbound
-			terResult	= lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false);
+			terResult	= saCurDeliverAct
+							? lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false)
+							: tecPATH_DRY;	// Didn't actually deliver anything.
 		}
 		else
 		{
@@ -2296,7 +2338,11 @@ TER RippleCalc::calcNodeAccountFwd(
 			}
 			saCurSendMaxPass	= saCurDeliverAct;						// Record amount sent for pass.
 
-			if (!!uCurrencyID)
+			if (!saCurDeliverAct)
+			{
+				terResult	= tecPATH_DRY;
+			}
+			else if (!!uCurrencyID)
 			{
 				// Non-XRP, current node is the issuer.
 				// We could be delivering to multiple accounts, so we don't know which ripple balance will be adjusted.  Assume
@@ -2357,6 +2403,10 @@ TER RippleCalc::calcNodeAccountFwd(
 			}
 
 			// No income balance adjustments necessary.  The paying side inside the offer paid and the next link will receive.
+			STAmount	saProvide	= saCurRedeemAct + saCurIssueAct;
+
+			if (!saProvide)
+				terResult	= tecPATH_DRY;
 		}
 	}
 	else
@@ -2375,6 +2425,8 @@ TER RippleCalc::calcNodeAccountFwd(
 		}
 
 		// No income balance adjustments necessary.  The paying side inside the offer paid and the next link will receive.
+		if (!saCurDeliverAct)
+			terResult	= tecPATH_DRY;
 	}
 
 	return terResult;
