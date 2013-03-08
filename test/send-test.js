@@ -493,8 +493,8 @@ buster.testCase("Sending future", {
 });
 
 buster.testCase("Gateway", {
-  // 'setUp'     : testutils.build_setup(),
-  'setUp'     : testutils.build_setup({ verbose: true }),
+  'setUp'     : testutils.build_setup(),
+  // 'setUp'     : testutils.build_setup({ verbose: true }),
   'tearDown'  : testutils.build_teardown(),
 
   "customer to customer with and without transfer fee" :
@@ -725,6 +725,7 @@ buster.testCase("Gateway", {
               callback);
           },
           function (callback) {
+            // Must fail, doesn't know to use the mtgox
             self.what = "Alice sends 1.1/AUD/alice Bob 1/AUD/bob";
 
             self.remote.transaction()
@@ -733,7 +734,7 @@ buster.testCase("Gateway", {
               .on('proposed', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.result !== 'terNO_LINE');
                 })
               .submit();
           },
@@ -742,8 +743,8 @@ buster.testCase("Gateway", {
 
             testutils.verify_balances(self.remote,
               {
-                "alice"   : "0/AUD/mtgox",
-                "bob"     : "4/AUD/mtgox",
+                "alice"   : "1.1/AUD/mtgox",
+                "bob"     : "3/AUD/mtgox",
               },
               callback);
           },
