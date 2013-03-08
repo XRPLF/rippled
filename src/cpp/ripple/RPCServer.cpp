@@ -24,7 +24,7 @@ SETUP_LOG();
 #endif
 
 RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
-	: mNetOps(nopNetwork), mLoadSource("rpc"), mSocket(io_service)
+	: mNetOps(nopNetwork), mSocket(io_service)
 {
 	mRole = RPCHandler::GUEST;
 }
@@ -51,7 +51,7 @@ void RPCServer::handle_read_req(const boost::system::error_code& e)
 	if (!HTTPAuthorized(mHTTPRequest.peekHeaders()))
 		mReplyStr = HTTPReply(403, "Forbidden");
 	else
-		mReplyStr = handleRequest(req, mLoadSource);
+		mReplyStr = handleRequest(req);
 
 	boost::asio::async_write(mSocket, boost::asio::buffer(mReplyStr),
 		boost::bind(&RPCServer::handle_write, shared_from_this(), boost::asio::placeholders::error));
@@ -110,7 +110,7 @@ void RPCServer::handle_read_line(const boost::system::error_code& e)
 	}
 }
 
-std::string RPCServer::handleRequest(const std::string& requestStr, LoadSource& ls)
+std::string RPCServer::handleRequest(const std::string& requestStr)
 {
 	cLog(lsTRACE) << "handleRequest " << requestStr;
 
@@ -154,10 +154,11 @@ std::string RPCServer::handleRequest(const std::string& requestStr, LoadSource& 
 		return HTTPReply(403, "Forbidden");
 	}
 
-	RPCHandler mRPCHandler(mNetOps, mLoadSource);
+	RPCHandler mRPCHandler(mNetOps);
 
 	cLog(lsTRACE) << valParams;
-	Json::Value result = mRPCHandler.doRpcCommand(strMethod, valParams, mRole);
+	int cost = 10;
+	Json::Value result = mRPCHandler.doRpcCommand(strMethod, valParams, mRole, cost);
 	cLog(lsTRACE) << result;
 
 	std::string strReply = JSONRPCReply(result, Json::Value(), id);

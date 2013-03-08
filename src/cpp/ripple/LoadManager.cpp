@@ -132,24 +132,31 @@ void LoadManager::canonicalize(LoadSource& source, int now) const
 
 bool LoadManager::shouldWarn(LoadSource& source) const
 {
-	boost::mutex::scoped_lock sl(mLock);
+	{
+		boost::mutex::scoped_lock sl(mLock);
 
-	int now = upTime();
-	canonicalize(source, now);
-	if (source.isPrivileged() || (source.mBalance < mDebitWarn) || (source.mLastWarning == now))
-		return false;
+		int now = upTime();
+		canonicalize(source, now);
+		if (source.isPrivileged() || (source.mBalance < mDebitWarn) || (source.mLastWarning == now))
+			return false;
 
-	source.mLastWarning = now;
+		source.mLastWarning = now;
+	}
+	logWarning(source.getName());
 	return true;
 }
 
 bool LoadManager::shouldCutoff(LoadSource& source) const
 {
-	boost::mutex::scoped_lock sl(mLock);
-
-	int now = upTime();
-	canonicalize(source, now);
-	return !source.isPrivileged() && (source.mBalance < mDebitLimit);
+	{
+		boost::mutex::scoped_lock sl(mLock);
+		int now = upTime();
+		canonicalize(source, now);
+		if (!source.isPrivileged() || (source.mBalance > mDebitLimit))
+			return false;
+	}
+	logDisconnect(source.getName());
+	return true;
 }
 
 bool LoadManager::adjust(LoadSource& source, LoadType t) const
@@ -160,7 +167,6 @@ bool LoadManager::adjust(LoadSource& source, LoadType t) const
 
 bool LoadManager::adjust(LoadSource& source, int credits) const
 { // return: true = need to warn/cutoff
-	boost::mutex::scoped_lock sl(mLock);
 
 	// We do it this way in case we want to add exponential decay later
 	int now = upTime();
@@ -172,13 +178,10 @@ bool LoadManager::adjust(LoadSource& source, int credits) const
 	if (source.isPrivileged()) // privileged sources never warn/cutoff
 		return false;
 
-	if (source.mBalance < mDebitLimit) // over-limit
-		return true;
+	if ((source.mBalance >= mDebitLimit) && (source.mLastWarning == now)) // no need to warn
+		return false;
 
-	if ((source.mBalance < mDebitWarn) && (source.mLastWarning != now)) // need to warn
-		return true;
-
-	return false;
+	return true;
 }
 
 uint64 LoadFeeTrack::mulDiv(uint64 value, uint32 mul, uint64 div)
@@ -343,6 +346,22 @@ void LoadManager::threadEntry()
 		else
 			boost::this_thread::sleep(when);
 	}
+}
+
+void LoadManager::logWarning(const std::string& source) const
+{
+	if (source.empty())
+		cLog(lsDEBUG) << "Load warning from empty source";
+	else
+		cLog(lsINFO) << "Load warning: " << source;
+}
+
+void LoadManager::logDisconnect(const std::string& source) const
+{
+	if (source.empty())
+		cLog(lsINFO) << "Disconnect for empty source";
+	else
+		cLog(lsWARNING) << "Disconnect for: " << source;
 }
 
 BOOST_AUTO_TEST_SUITE(LoadManager_test)
