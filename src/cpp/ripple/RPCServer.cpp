@@ -157,7 +157,8 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	RPCHandler mRPCHandler(mNetOps);
 
 	cLog(lsTRACE) << valParams;
-	Json::Value result = mRPCHandler.doRpcCommand(strMethod, valParams, mRole);
+	int cost = 10;
+	Json::Value result = mRPCHandler.doRpcCommand(strMethod, valParams, mRole, cost);
 	cLog(lsTRACE) << result;
 
 	std::string strReply = JSONRPCReply(result, Json::Value(), id);

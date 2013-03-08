@@ -109,6 +109,7 @@
     <ClCompile Include="src\cpp\ripple\DBInit.cpp" />
     <ClCompile Include="src\cpp\ripple\DeterministicKeys.cpp" />
     <ClCompile Include="src\cpp\ripple\ECIES.cpp" />
+    <ClCompile Include="src\cpp\ripple\FeatureTable.cpp" />
     <ClCompile Include="src\cpp\ripple\FieldNames.cpp" />
     <ClCompile Include="src\cpp\ripple\HashedObject.cpp" />
     <ClCompile Include="src\cpp\ripple\HTTPRequest.cpp" />
@@ -295,8 +296,9 @@
     <None Include="html\newcoin.html">
       <SubType>Designer</SubType>
     </None>
-    <None Include="newcoind.cfg" />
     <None Include="README" />
+    <None Include="ripple-example.txt" />
+    <None Include="rippled-example.cfg" />
     <None Include="SConstruct" />
     <CustomBuild Include="src\cpp\ripple\ripple.proto">
       <FileType>Document</FileType>
@@ -307,7 +309,7 @@
     <None Include="test\server.js" />
     <None Include="test\standalone-test.js" />
     <None Include="test\utils.js" />
-    <None Include="validators.txt" />
+    <None Include="validators-example.txt" />
     <None Include="wallet.xml" />
   </ItemGroup>
   <ItemGroup>

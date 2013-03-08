@@ -1,7 +1,7 @@
 // TODO:
 // - Do automatic bridging via XRP.
 //
-// OPTIMIZE: When calculating path increment, note if increment consumes all liquidity. No need to revesit path in the future if
+// OPTIMIZE: When calculating path increment, note if increment consumes all liquidity. No need to revisit path in the future if
 // all liquidity is used.
 //
 
@@ -270,7 +270,7 @@ TER PathState::pushNode(
 
 			// Insert intermediary issuer account if needed.
 			terResult	= pushImply(
-				ACCOUNT_XRP,				// Rippling, but offer's don't have an account.
+				ACCOUNT_XRP,				// Rippling, but offers don't have an account.
 				pnPrv.uCurrencyID,
 				pnPrv.uIssuerID);
 		}
@@ -384,7 +384,7 @@ void PathState::setExpanded(
 
 	if (tesSUCCESS == terStatus
 		&& !!uOutCurrencyID							// Next is not XRP
-		&& uOutIssuerID != uReceiverID				// Out issuer is not reciever
+		&& uOutIssuerID != uReceiverID				// Out issuer is not receiver
 		&& (pnPrv.uCurrencyID != uOutCurrencyID		// Previous will be an offer.
 			|| pnPrv.uAccountID != uOutIssuerID))	// Need the implied issuer.
 	{
@@ -491,7 +491,7 @@ void PathState::setCanonical(
 	uint160			uCurrencyID		= uMaxCurrencyID;
 	uint160			uIssuerID		= uMaxIssuerID;
 
-	// Node 0 is a composit of the sending account and saInAct.
+	// Node 0 is a composite of the sending account and saInAct.
 	++uNode;	// skip node 0
 
 	// Last node is implied: Always skip last node
@@ -531,8 +531,7 @@ void PathState::setCanonical(
 			}
 			else
 			{
-				// Node 1 must be an account
-
+				// Node 1 must be an account
 			}
 		}
 		else
@@ -2983,7 +2982,7 @@ void TransactionEngine::calcOfferBridgeNext(
 			{
 				// Offer fully funded.
 
-				// Account transfering funds in to offer always pays inbound fees.
+				// Account transferring funds in to offer always pays inbound fees.
 
 				saOfferIn	= saOfferGets;	// XXX Add in fees?
 
@@ -3022,26 +3021,26 @@ void TransactionEngine::calcOfferBridgeNext(
 // - reverse: prv is maximum to pay in (including fee) - cur is what is wanted: generally, minimizing prv
 // - forward: prv is actual amount to pay in (including fee) - cur is what is wanted: generally, minimizing cur
 // Value in is may be rippled or credited from limbo. Value out is put in limbo.
-// If next is an offer, the amount needed is in cur reedem.
+// If next is an offer, the amount needed is in cur redeem.
 // XXX What about account mentioned multiple times via offers?
 void TransactionEngine::calcNodeOffer(
 	bool			bForward,
 	bool			bMultiQuality,	// True, if this is the only active path: we can do multiple qualities in this pass.
-	const uint160&	uPrvAccountID,	// If 0, then funds from previous offer's limbo
+	const uint160&	uPrvAccountID,	// If 0, then funds from previous offers limbo
 	const uint160&	uPrvCurrencyID,
 	const uint160&	uPrvIssuerID,
 	const uint160&	uCurCurrencyID,
 	const uint160&	uCurIssuerID,
 
 	const STAmount& uPrvRedeemReq,	// --> In limit.
-	STAmount&		uPrvRedeemAct,	// <-> In limit achived.
+	STAmount&		uPrvRedeemAct,	// <-> In limit achieved.
 	const STAmount& uCurRedeemReq,	// --> Out limit. Driver when uCurIssuerID == uNxtIssuerID (offer would redeem to next)
-	STAmount&		uCurRedeemAct,	// <-> Out limit achived.
+	STAmount&		uCurRedeemAct,	// <-> Out limit achieved.
 
 	const STAmount& uCurIssueReq,	// --> In limit.
-	STAmount&		uCurIssueAct,	// <-> In limit achived.
+	STAmount&		uCurIssueAct,	// <-> In limit achieved.
 	const STAmount& uCurIssueReq,	// --> Out limit. Driver when uCurIssueReq != uNxtIssuerID (offer would effectively issue or transfer to next)
-	STAmount&		uCurIssueAct,	// <-> Out limit achived.
+	STAmount&		uCurIssueAct,	// <-> Out limit achieved.
 
 	STAmount& saPay,
 	STAmount& saGot
@@ -3095,13 +3094,13 @@ void TransactionEngine::calcNodeOffer(
 	bool		bRedeeming		= false;
 	bool		bIssuing		= false;
 
-	// The price varies as we change between issuing and transfering, so unless bMultiQuality, we must stick with a mode once it
+	// The price varies as we change between issuing and transferring, so unless bMultiQuality, we must stick with a mode once it
 	// is determined.
 
 	if (bBridge && (bInNext || bOutNext))
 	{
 		// Bridging and need to calculate next bridge rate.
-		// A bridge can consist of multiple offers. As offer's are consumed, the effective rate changes.
+		// A bridge can consist of multiple offers. As offers are consumed, the effective rate changes.
 
 		if (bInNext)
 		{

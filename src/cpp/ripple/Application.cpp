@@ -26,9 +26,9 @@ Application* theApp = NULL;
 
 DatabaseCon::DatabaseCon(const std::string& strName, const char *initStrings[], int initCount)
 {
-	boost::filesystem::path	pPath	= theConfig.RUN_STANDALONE && !Config::LOAD
+	boost::filesystem::path	pPath	= (theConfig.RUN_STANDALONE && (!theConfig.START_UP != Config::LOAD))
 										? ""								// Use temporary files.
-										: theConfig.DATA_DIR / strName;		// Use regular db files.
+										: (theConfig.DATA_DIR / strName);		// Use regular db files.
 
 	mDatabase = new SqliteDatabase(pPath.string().c_str());
 	mDatabase->connect();
@@ -45,7 +45,7 @@ DatabaseCon::~DatabaseCon()
 Application::Application() :
 	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService), mNetOps(mIOService, &mLedgerMaster),
 	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300), mSLECache("LedgerEntryCache", 4096, 120),
-	mSNTPClient(mAuxService), mRPCHandler(&mNetOps), mFeeTrack(),
+	mSNTPClient(mAuxService), mFeeTrack(),
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
 	mSweepTimer(mAuxService), mShutdown(false)

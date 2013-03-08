@@ -25,6 +25,10 @@
 
 SETUP_LOG();
 
+static const int rpcCOST_DEFAULT 	= 10;
+static const int rpcCOST_EXCEPTION	= 20;
+static const int rpcCOST_EXPENSIVE	= 50;
+
 int iAdminGet(const Json::Value& jvRequest, const std::string& strRemoteIp)
 {
 	int		iRole;
@@ -63,15 +67,11 @@ int iAdminGet(const Json::Value& jvRequest, const std::string& strRemoteIp)
 	return iRole;
 }
 
-RPCHandler::RPCHandler(NetworkOPs* netOps)
-{
-	mNetOps		= netOps;
-}
+RPCHandler::RPCHandler(NetworkOPs* netOps) : mNetOps(netOps)
+{ ; }
 
-RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub::pointer infoSub) : mInfoSub(infoSub)
-{
-	mNetOps		= netOps;
-}
+RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub::pointer infoSub) : mNetOps(netOps), mInfoSub(infoSub)
+{ ; }
 
 Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 {
@@ -565,7 +565,7 @@ Json::Value RPCHandler::accountFromString(Ledger::ref lrLedger, RippleAddress& n
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value RPCHandler::doAccountInfo(Json::Value jvRequest)
+Json::Value RPCHandler::doAccountInfo(Json::Value jvRequest, int& cost)
 {
 	Ledger::pointer		lpLedger;
 	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
@@ -610,7 +610,7 @@ Json::Value RPCHandler::doAccountInfo(Json::Value jvRequest)
 //   port: <number>
 // }
 // XXX Might allow domain for manual connections.
-Json::Value RPCHandler::doConnect(Json::Value jvRequest)
+Json::Value RPCHandler::doConnect(Json::Value jvRequest, int& cost)
 {
 	if (theConfig.RUN_STANDALONE)
 		return "cannot connect in standalone mode";
@@ -631,7 +631,7 @@ Json::Value RPCHandler::doConnect(Json::Value jvRequest)
 // {
 //   key: <string>
 // }
-Json::Value RPCHandler::doDataDelete(Json::Value jvRequest)
+Json::Value RPCHandler::doDataDelete(Json::Value jvRequest, int& cost)
 {
 	if (!jvRequest.isMember("key"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -657,7 +657,7 @@ Json::Value RPCHandler::doDataDelete(Json::Value jvRequest)
 // {
 //   key: <string>
 // }
-Json::Value RPCHandler::doDataFetch(Json::Value jvRequest)
+Json::Value RPCHandler::doDataFetch(Json::Value jvRequest, int& cost)
 {
 	if (!jvRequest.isMember("key"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -680,7 +680,7 @@ Json::Value RPCHandler::doDataFetch(Json::Value jvRequest)
 //   key: <string>
 //   value: <string>
 // }
-Json::Value RPCHandler::doDataStore(Json::Value jvRequest)
+Json::Value RPCHandler::doDataStore(Json::Value jvRequest, int& cost)
 {
 	if (!jvRequest.isMember("key")
 		|| !jvRequest.isMember("value"))
@@ -740,7 +740,7 @@ Json::Value RPCHandler::doNicknameInfo(Json::Value params)
 //   'account_index' : <index> // optional
 // }
 // XXX This would be better if it took the ledger.
-Json::Value RPCHandler::doOwnerInfo(Json::Value jvRequest)
+Json::Value RPCHandler::doOwnerInfo(Json::Value jvRequest, int& cost)
 {
 	if (!jvRequest.isMember("account") && !jvRequest.isMember("ident"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -765,7 +765,7 @@ Json::Value RPCHandler::doOwnerInfo(Json::Value jvRequest)
 	return ret;
 }
 
-Json::Value RPCHandler::doPeers(Json::Value)
+Json::Value RPCHandler::doPeers(Json::Value, int& cost)
 {
 	Json::Value jvResult(Json::objectValue);
 
@@ -774,7 +774,7 @@ Json::Value RPCHandler::doPeers(Json::Value)
 	return jvResult;
 }
 
-Json::Value RPCHandler::doPing(Json::Value)
+Json::Value RPCHandler::doPing(Json::Value, int& cost)
 {
 	return Json::Value(Json::objectValue);
 }
@@ -784,7 +784,7 @@ Json::Value RPCHandler::doPing(Json::Value)
 // issuer is the offering account
 // --> submit: 'submit|true|false': defaults to false
 // Prior to running allow each to have a credit line of what they will be getting from the other account.
-Json::Value RPCHandler::doProfile(Json::Value jvRequest)
+Json::Value RPCHandler::doProfile(Json::Value jvRequest, int& cost)
 {
 	/* need to fix now that sharedOfferCreate is gone
 	int				iArgs	= jvRequest.size();
@@ -877,7 +877,7 @@ Json::Value RPCHandler::doProfile(Json::Value jvRequest)
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
+Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost)
 {
 	Ledger::pointer		lpLedger;
 	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
@@ -956,7 +956,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
+Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost)
 {
 	Ledger::pointer		lpLedger;
 	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
@@ -1027,7 +1027,7 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 //   "limit" : integer,                  // Optional.
 //   "proof" : boolean                   // Defaults to false.
 // }
-Json::Value RPCHandler::doBookOffers(Json::Value jvRequest)
+Json::Value RPCHandler::doBookOffers(Json::Value jvRequest, int& cost)
 {
 	if (theApp->getJobQueue().getJobCountGE(jtCLIENT) > 200)
 	{
@@ -1124,7 +1124,7 @@ Json::Value RPCHandler::doBookOffers(Json::Value jvRequest)
 // {
 //   random: <uint256>
 // }
-Json::Value RPCHandler::doRandom(Json::Value jvRequest)
+Json::Value RPCHandler::doRandom(Json::Value jvRequest, int& cost)
 {
 	uint256			uRandom;
 
@@ -1150,7 +1150,7 @@ Json::Value RPCHandler::doRandom(Json::Value jvRequest)
 //   - Allows clients to verify path exists.
 // - Return canonicalized path.
 //   - From a trusted server, allows clients to use path without manipulation.
-Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
+Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 {
 	RippleAddress	raSrc;
 	RippleAddress	raDst;
@@ -1230,6 +1230,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 			}
 		}
 
+		cost = rpcCOST_EXPENSIVE;
 		Ledger::pointer lSnapShot = boost::make_shared<Ledger>(boost::ref(*lpLedger), false);
 		LedgerEntrySet lesSnapshot(lSnapShot);
 
@@ -1363,8 +1364,9 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 //   tx_json: <object>,
 //   secret: <secret>
 // }
-Json::Value RPCHandler::doSign(Json::Value jvRequest)
+Json::Value RPCHandler::doSign(Json::Value jvRequest, int& cost)
 {
+	cost = rpcCOST_EXPENSIVE;
 	return transactionSign(jvRequest, false);
 }
 
@@ -1372,7 +1374,7 @@ Json::Value RPCHandler::doSign(Json::Value jvRequest)
 //   tx_json: <object>,
 //   secret: <secret>
 // }
-Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
+Json::Value RPCHandler::doSubmit(Json::Value jvRequest, int& cost)
 {
 	if (!jvRequest.isMember("tx_blob"))
 	{
@@ -1387,6 +1389,7 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 	{
 		return rpcError(rpcINVALID_PARAMS);
 	}
+	cost = rpcCOST_EXPENSIVE;
 
 	Serializer					sTrans(vucBlob);
 	SerializerIterator			sitTrans(sTrans);
@@ -1458,7 +1461,7 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest)
 	}
 }
 
-Json::Value RPCHandler::doConsensusInfo(Json::Value)
+Json::Value RPCHandler::doConsensusInfo(Json::Value, int& cost)
 {
 	Json::Value ret(Json::objectValue);
 
@@ -1467,7 +1470,7 @@ Json::Value RPCHandler::doConsensusInfo(Json::Value)
 	return ret;
 }
 
-Json::Value RPCHandler::doServerInfo(Json::Value)
+Json::Value RPCHandler::doServerInfo(Json::Value, int& cost)
 {
 	Json::Value ret(Json::objectValue);
 
@@ -1476,7 +1479,7 @@ Json::Value RPCHandler::doServerInfo(Json::Value)
 	return ret;
 }
 
-Json::Value RPCHandler::doServerState(Json::Value)
+Json::Value RPCHandler::doServerState(Json::Value, int& cost)
 {
 	Json::Value ret(Json::objectValue);
 
@@ -1488,7 +1491,7 @@ Json::Value RPCHandler::doServerState(Json::Value)
 // {
 //   start: <index>
 // }
-Json::Value RPCHandler::doTxHistory(Json::Value jvRequest)
+Json::Value RPCHandler::doTxHistory(Json::Value jvRequest, int& cost)
 {
 	if (!jvRequest.isMember("start"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -1522,7 +1525,7 @@ Json::Value RPCHandler::doTxHistory(Json::Value jvRequest)
 // {
 //   transaction: <hex>
 // }
-Json::Value RPCHandler::doTx(Json::Value jvRequest)
+Json::Value RPCHandler::doTx(Json::Value jvRequest, int& cost)
 {
 	if (!jvRequest.isMember("transaction"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -1582,7 +1585,7 @@ Json::Value RPCHandler::doTx(Json::Value jvRequest)
 	return rpcError(rpcNOT_IMPL);
 }
 
-Json::Value RPCHandler::doLedgerClosed(Json::Value)
+Json::Value RPCHandler::doLedgerClosed(Json::Value, int& cost)
 {
 	Json::Value jvResult;
 
@@ -1595,7 +1598,7 @@ Json::Value RPCHandler::doLedgerClosed(Json::Value)
 	return jvResult;
 }
 
-Json::Value RPCHandler::doLedgerCurrent(Json::Value)
+Json::Value RPCHandler::doLedgerCurrent(Json::Value, int& cost)
 {
 	Json::Value jvResult;
 
@@ -1609,7 +1612,7 @@ Json::Value RPCHandler::doLedgerCurrent(Json::Value)
 //    ledger: 'current' | 'closed' | <uint256> | <number>,	// optional
 //    full: true | false	// optional, defaults to false.
 // }
-Json::Value RPCHandler::doLedger(Json::Value jvRequest)
+Json::Value RPCHandler::doLedger(Json::Value jvRequest, int& cost)
 {
 	if (!jvRequest.isMember("ledger"))
 	{
@@ -1655,7 +1658,7 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest)
 // FIXME: Require admin.
 // FIXME: Doesn't report database holes.
 // FIXME: For consistency change inputs to: ledger_index, ledger_index_min, ledger_index_max.
-Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
+Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 {
 	RippleAddress	raAccount;
 	uint32			minLedger;
@@ -1752,7 +1755,7 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 // }
 //
 // This command requires admin access because it makes no sense to ask an untrusted server for this.
-Json::Value RPCHandler::doValidationCreate(Json::Value jvRequest) {
+Json::Value RPCHandler::doValidationCreate(Json::Value jvRequest, int& cost) {
 	RippleAddress	raSeed;
 	Json::Value		obj(Json::objectValue);
 
@@ -1777,7 +1780,7 @@ Json::Value RPCHandler::doValidationCreate(Json::Value jvRequest) {
 // {
 //   secret: <string>
 // }
-Json::Value RPCHandler::doValidationSeed(Json::Value jvRequest) {
+Json::Value RPCHandler::doValidationSeed(Json::Value jvRequest, int& cost) {
 	Json::Value obj(Json::objectValue);
 
 	if (!jvRequest.isMember("secret"))
@@ -1844,7 +1847,7 @@ Json::Value RPCHandler::accounts(Ledger::ref lrLedger, const RippleAddress& naMa
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value RPCHandler::doWalletAccounts(Json::Value jvRequest)
+Json::Value RPCHandler::doWalletAccounts(Json::Value jvRequest, int& cost)
 {
 	Ledger::pointer		lpLedger;
 	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
@@ -1887,7 +1890,7 @@ Json::Value RPCHandler::doWalletAccounts(Json::Value jvRequest)
 	}
 }
 
-Json::Value RPCHandler::doLogRotate(Json::Value)
+Json::Value RPCHandler::doLogRotate(Json::Value, int& cost)
 {
 	return Log::rotateLog();
 }
@@ -1895,7 +1898,7 @@ Json::Value RPCHandler::doLogRotate(Json::Value)
 // {
 //  passphrase: <string>
 // }
-Json::Value RPCHandler::doWalletPropose(Json::Value jvRequest)
+Json::Value RPCHandler::doWalletPropose(Json::Value jvRequest, int& cost)
 {
 	RippleAddress	naSeed;
 	RippleAddress	naAccount;
@@ -1925,7 +1928,7 @@ Json::Value RPCHandler::doWalletPropose(Json::Value jvRequest)
 // {
 //   secret: <string>
 // }
-Json::Value RPCHandler::doWalletSeed(Json::Value jvRequest)
+Json::Value RPCHandler::doWalletSeed(Json::Value jvRequest, int& cost)
 {
 	RippleAddress	raSeed;
 	bool			bSecret	= jvRequest.isMember("secret");
@@ -1964,7 +1967,7 @@ Json::Value RPCHandler::doWalletSeed(Json::Value jvRequest)
 //   username: <string>,
 //   password: <string>
 // }
-Json::Value RPCHandler::doLogin(Json::Value jvRequest)
+Json::Value RPCHandler::doLogin(Json::Value jvRequest, int& cost)
 {
 	if (!jvRequest.isMember("username")
 		|| !jvRequest.isMember("password"))
@@ -2000,7 +2003,7 @@ static void textTime(std::string& text, int& seconds, const char *unitName, int 
 // {
 //   min_count: <number>  // optional, defaults to 10
 // }
-Json::Value RPCHandler::doGetCounts(Json::Value jvRequest)
+Json::Value RPCHandler::doGetCounts(Json::Value jvRequest, int& cost)
 {
 	int minCount = 10;
 
@@ -2022,7 +2025,7 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest)
 	int s = upTime();
 	textTime(uptime, s, "year", 365*24*60*60);
 	textTime(uptime, s, "day", 24*60*60);
-	textTime(uptime, s, "hour", 24*60);
+	textTime(uptime, s, "hour", 60*60);
 	textTime(uptime, s, "minute", 60);
 	textTime(uptime, s, "second", 1);
 	ret["uptime"] = uptime;
@@ -2030,7 +2033,7 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest)
 	return ret;
 }
 
-Json::Value RPCHandler::doLogLevel(Json::Value jvRequest)
+Json::Value RPCHandler::doLogLevel(Json::Value jvRequest, int& cost)
 {
 	// log_level
 	if (!jvRequest.isMember("severity"))
@@ -2078,7 +2081,7 @@ Json::Value RPCHandler::doLogLevel(Json::Value jvRequest)
 //   node: <domain>|<node_public>,
 //   comment: <comment>				// optional
 // }
-Json::Value RPCHandler::doUnlAdd(Json::Value jvRequest)
+Json::Value RPCHandler::doUnlAdd(Json::Value jvRequest, int& cost)
 {
 	std::string	strNode		= jvRequest.isMember("node") ? jvRequest["node"].asString() : "";
 	std::string	strComment	= jvRequest.isMember("comment") ? jvRequest["comment"].asString() : "";
@@ -2102,7 +2105,7 @@ Json::Value RPCHandler::doUnlAdd(Json::Value jvRequest)
 // {
 //   node: <domain>|<public_key>
 // }
-Json::Value RPCHandler::doUnlDelete(Json::Value jvRequest)
+Json::Value RPCHandler::doUnlDelete(Json::Value jvRequest, int& cost)
 {
 	if (!jvRequest.isMember("node"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -2125,7 +2128,7 @@ Json::Value RPCHandler::doUnlDelete(Json::Value jvRequest)
 	}
 }
 
-Json::Value RPCHandler::doUnlList(Json::Value)
+Json::Value RPCHandler::doUnlList(Json::Value, int& cost)
 {
 	Json::Value obj(Json::objectValue);
 
@@ -2135,7 +2138,7 @@ Json::Value RPCHandler::doUnlList(Json::Value)
 }
 
 // Populate the UNL from a local validators.txt file.
-Json::Value RPCHandler::doUnlLoad(Json::Value)
+Json::Value RPCHandler::doUnlLoad(Json::Value, int& cost)
 {
 	if (theConfig.VALIDATORS_FILE.empty() || !theApp->getUNL().nodeLoad(theConfig.VALIDATORS_FILE))
 	{
@@ -2147,7 +2150,7 @@ Json::Value RPCHandler::doUnlLoad(Json::Value)
 
 
 // Populate the UNL from ripple.com's validators.txt file.
-Json::Value RPCHandler::doUnlNetwork(Json::Value jvRequest)
+Json::Value RPCHandler::doUnlNetwork(Json::Value jvRequest, int& cost)
 {
 	theApp->getUNL().nodeNetwork();
 
@@ -2155,7 +2158,7 @@ Json::Value RPCHandler::doUnlNetwork(Json::Value jvRequest)
 }
 
 // unl_reset
-Json::Value RPCHandler::doUnlReset(Json::Value jvRequest)
+Json::Value RPCHandler::doUnlReset(Json::Value jvRequest, int& cost)
 {
 	theApp->getUNL().nodeReset();
 
@@ -2163,21 +2166,21 @@ Json::Value RPCHandler::doUnlReset(Json::Value jvRequest)
 }
 
 // unl_score
-Json::Value RPCHandler::doUnlScore(Json::Value)
+Json::Value RPCHandler::doUnlScore(Json::Value, int& cost)
 {
 	theApp->getUNL().nodeScore();
 
 	return "scoring requested";
 }
 
-Json::Value RPCHandler::doStop(Json::Value)
+Json::Value RPCHandler::doStop(Json::Value, int& cost)
 {
 	theApp->stop();
 
 	return SYSTEM_NAME " server stopping";
 }
 
-Json::Value RPCHandler::doLedgerAccept(Json::Value)
+Json::Value RPCHandler::doLedgerAccept(Json::Value, int& cost)
 {
 	Json::Value jvResult;
 
@@ -2200,7 +2203,7 @@ Json::Value RPCHandler::doLedgerAccept(Json::Value)
 //   ledger_index : <ledger_index>
 // }
 // XXX In this case, not specify either ledger does not mean ledger current. It means any ledger.
-Json::Value RPCHandler::doTransactionEntry(Json::Value jvRequest)
+Json::Value RPCHandler::doTransactionEntry(Json::Value jvRequest, int& cost)
 {
 	Ledger::pointer		lpLedger;
 	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
@@ -2327,7 +2330,7 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 //   ledger_index : <ledger_index>
 //   ...
 // }
-Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest)
+Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest, int& cost)
 {
 	Ledger::pointer		lpLedger;
 	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
@@ -2534,7 +2537,7 @@ Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest)
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value RPCHandler::doLedgerHeader(Json::Value jvRequest)
+Json::Value RPCHandler::doLedgerHeader(Json::Value jvRequest, int& cost)
 {
 	Ledger::pointer		lpLedger;
 	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
@@ -2584,7 +2587,7 @@ rt_transactions
 accounts
 rt_accounts
 */
-Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
+Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 {
 	InfoSub::pointer ispSub;
 	Json::Value jvResult(Json::objectValue);
@@ -2732,7 +2735,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest)
 }
 
 // FIXME: This leaks RPCSub objects for JSON-RPC.  Shouldn't matter for anyone sane.
-Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
+Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest, int& cost)
 {
 	InfoSub::pointer ispSub;
 	Json::Value jvResult(Json::objectValue);
@@ -2845,8 +2848,10 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 //
 // JSON-RPC provides a method and an array of params. JSON-RPC is used as a transport for a command and a request object. The
 // command is the method. The request object is supplied as the first element of the params.
-Json::Value RPCHandler::doRpcCommand(const std::string& strMethod, Json::Value& jvParams, int iRole)
+Json::Value RPCHandler::doRpcCommand(const std::string& strMethod, Json::Value& jvParams, int iRole, int& cost)
 {
+	if (cost == 0)
+		cost = rpcCOST_DEFAULT;
 	cLog(lsTRACE) << "doRpcCommand:" << strMethod << ":" << jvParams;
 
 	if (!jvParams.isArray() || jvParams.size() > 1)
@@ -2860,7 +2865,7 @@ Json::Value RPCHandler::doRpcCommand(const std::string& strMethod, Json::Value& 
 	// Provide the JSON-RPC method as the field "command" in the request.
 	jvRequest["command"]	= strMethod;
 
-	Json::Value	jvResult	= doCommand(jvRequest, iRole);
+	Json::Value	jvResult	= doCommand(jvRequest, iRole, cost);
 
 	// Always report "status".  On an error report the request as received.
 	if (jvResult.isMember("error"))
@@ -2875,15 +2880,17 @@ Json::Value RPCHandler::doRpcCommand(const std::string& strMethod, Json::Value& 
 	return jvResult;
 }
 
-Json::Value RPCHandler::doInternal(Json::Value jvRequest)
+Json::Value RPCHandler::doInternal(Json::Value jvRequest, int& cost)
 { // Used for debug or special-purpose RPC commands
 	if (!jvRequest.isMember("internal_command"))
 		return rpcError(rpcINVALID_PARAMS);
 	return RPCInternalHandler::runHandler(jvRequest["internal_command"].asString(), jvRequest["params"]);
 }
 
-Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
+Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &cost)
 {
+	if (cost == 0)
+		cost = rpcCOST_DEFAULT;
 	if ((iRole != ADMIN) && (theApp->getJobQueue().getJobCountGE(jtCLIENT) > 500))
 		return rpcError(rpcTOO_BUSY);
 
@@ -3002,7 +3009,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 	else
 	{
 		try {
-			Json::Value	jvRaw		= (this->*(commandsA[i].dfpFunc))(jvRequest);
+			Json::Value	jvRaw		= (this->*(commandsA[i].dfpFunc))(jvRequest, cost);
 
 			// Regularize result.
 			if (jvRaw.isObject())
@@ -3023,6 +3030,8 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 		catch (std::exception& e)
 		{
 			cLog(lsINFO) << "Caught throw: " << e.what();
+			if (cost == rpcCOST_DEFAULT)
+				cost = rpcCOST_EXCEPTION;
 
 			return rpcError(rpcINTERNAL);
 		}

@@ -14,6 +14,7 @@
 #include "CallRPC.h"
 #include "InstanceCounter.h"
 #include "Log.h"
+#include "LoadManager.h"
 #include "RPCErr.h"
 
 DEFINE_INSTANCE(WebSocketConnection);
@@ -45,6 +46,7 @@ protected:
 	weak_connection_ptr					mConnection;
 	NetworkOPs&							mNetwork;
 	std::string							mRemoteIP;
+	LoadSource							mLoadSource;
 
 	boost::asio::deadline_timer			mPingTimer;
 	bool								mPinged;
@@ -56,9 +58,9 @@ public:
 
 	WSConnection(WSServerHandler<endpoint_type>* wshpHandler, const connection_ptr& cpConnection)
 		: mHandler(wshpHandler), mConnection(cpConnection), mNetwork(theApp->getOPs()),
-		mPingTimer(cpConnection->get_io_service()), mPinged(false)
+		mRemoteIP(cpConnection->get_socket().lowest_layer().remote_endpoint().address().to_string()),
+		mLoadSource(mRemoteIP), mPingTimer(cpConnection->get_io_service()), mPinged(false)
 	{
-		mRemoteIP = cpConnection->get_socket().lowest_layer().remote_endpoint().address().to_string();
 		cLog(lsDEBUG) << "Websocket connection from " << mRemoteIP;
 		setPingTimer();
 	}
@@ -86,6 +88,14 @@ public:
 	// Utilities
 	Json::Value invokeCommand(Json::Value& jvRequest)
 	{
+		if (theApp->getLoadManager().shouldCutoff(mLoadSource))
+		{
+			connection_ptr ptr = mConnection.lock();
+			if (ptr)
+				ptr->close(websocketpp::close::status::PROTOCOL_ERROR, "overload");
+			return rpcError(rpcTOO_BUSY);
+		}
+
 		if (!jvRequest.isMember("command"))
 		{
 			Json::Value	jvResult(Json::objectValue);
@@ -100,9 +110,11 @@ public:
 				jvResult["id"]	= jvRequest["id"];
 			}
 
+			theApp->getLoadManager().adjust(mLoadSource, 5);
 			return jvResult;
 		}
 
+		int cost = 10;
 		RPCHandler	mRPCHandler(&mNetwork, boost::shared_polymorphic_downcast<InfoSub>(this->shared_from_this()));
 		Json::Value	jvResult(Json::objectValue);
 
@@ -116,8 +128,11 @@ public:
 		}
 		else
 		{
-			jvResult["result"] = mRPCHandler.doCommand(jvRequest, iRole);
+			jvResult["result"] = mRPCHandler.doCommand(jvRequest, iRole, cost);
 		}
+
+		if (theApp->getLoadManager().adjust(mLoadSource, cost) && theApp->getLoadManager().shouldWarn(mLoadSource))
+			jvResult["warning"] = "load";
 
 		// Currently we will simply unwrap errors returned by the RPC
 		// API, in the future maybe we can make the responses

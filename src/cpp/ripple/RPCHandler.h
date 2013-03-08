@@ -19,7 +19,7 @@ class RPCHandler
 	InfoSub::pointer	mInfoSub;
 	int					mRole;
 
-	typedef Json::Value (RPCHandler::*doFuncPtr)(Json::Value params);
+	typedef Json::Value (RPCHandler::*doFuncPtr)(Json::Value params, int& cost);
 	enum {
 		optNone		= 0,
 		optNetwork	= 1,				// Need network
@@ -43,71 +43,71 @@ class RPCHandler
 
 	Json::Value accountFromString(Ledger::ref lrLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex, const bool bStrict);
 
-	Json::Value doAccountInfo(Json::Value params);
-	Json::Value doAccountLines(Json::Value params);
-	Json::Value doAccountOffers(Json::Value params);
-	Json::Value doAccountTransactions(Json::Value params);
-	Json::Value doBookOffers(Json::Value params);
-	Json::Value doConnect(Json::Value params);
-	Json::Value doConsensusInfo(Json::Value params);
+	Json::Value doAccountInfo(Json::Value params, int& cost);
+	Json::Value doAccountLines(Json::Value params, int& cost);
+	Json::Value doAccountOffers(Json::Value params, int& cost);
+	Json::Value doAccountTransactions(Json::Value params, int& cost);
+	Json::Value doBookOffers(Json::Value params, int& cost);
+	Json::Value doConnect(Json::Value params, int& cost);
+	Json::Value doConsensusInfo(Json::Value params, int& cost);
 #if ENABLE_INSECURE
-	Json::Value doDataDelete(Json::Value params);
-	Json::Value doDataFetch(Json::Value params);
-	Json::Value doDataStore(Json::Value params);
+	Json::Value doDataDelete(Json::Value params, int& cost);
+	Json::Value doDataFetch(Json::Value params, int& cost);
+	Json::Value doDataStore(Json::Value params, int& cost);
 #endif
-	Json::Value doGetCounts(Json::Value params);
-	Json::Value doInternal(Json::Value params);
-	Json::Value doLedger(Json::Value params);
-	Json::Value doLogLevel(Json::Value params);
-	Json::Value doLogRotate(Json::Value params);
-	Json::Value doNicknameInfo(Json::Value params);
-	Json::Value doOwnerInfo(Json::Value params);
-	Json::Value doPeers(Json::Value params);
-	Json::Value doPing(Json::Value params);
-	Json::Value doProfile(Json::Value params);
-	Json::Value doRandom(Json::Value jvRequest);
-	Json::Value doRipplePathFind(Json::Value jvRequest);
-	Json::Value doServerInfo(Json::Value params);	// for humans
-	Json::Value doServerState(Json::Value params);	// for machines
-	Json::Value doSessionClose(Json::Value params);
-	Json::Value doSessionOpen(Json::Value params);
-	Json::Value doStop(Json::Value params);
-	Json::Value doSign(Json::Value params);
-	Json::Value doSubmit(Json::Value params);
-	Json::Value doTx(Json::Value params);
-	Json::Value doTxHistory(Json::Value params);
-	Json::Value doUnlAdd(Json::Value params);
-	Json::Value doUnlDelete(Json::Value params);
-	Json::Value doUnlFetch(Json::Value params);
-	Json::Value doUnlList(Json::Value params);
-	Json::Value doUnlLoad(Json::Value params);
-	Json::Value doUnlNetwork(Json::Value params);
-	Json::Value doUnlReset(Json::Value params);
-	Json::Value doUnlScore(Json::Value params);
+	Json::Value doGetCounts(Json::Value params, int& cost);
+	Json::Value doInternal(Json::Value params, int& cost);
+	Json::Value doLedger(Json::Value params, int& cost);
+	Json::Value doLogLevel(Json::Value params, int& cost);
+	Json::Value doLogRotate(Json::Value params, int& cost);
+	Json::Value doNicknameInfo(Json::Value params, int& cost);
+	Json::Value doOwnerInfo(Json::Value params, int& cost);
+	Json::Value doPeers(Json::Value params, int& cost);
+	Json::Value doPing(Json::Value params, int& cost);
+	Json::Value doProfile(Json::Value params, int& cost);
+	Json::Value doRandom(Json::Value jvRequest, int& cost);
+	Json::Value doRipplePathFind(Json::Value jvRequest, int& cost);
+	Json::Value doServerInfo(Json::Value params, int& cost);	// for humans
+	Json::Value doServerState(Json::Value params, int& cost);	// for machines
+	Json::Value doSessionClose(Json::Value params, int& cost);
+	Json::Value doSessionOpen(Json::Value params, int& cost);
+	Json::Value doStop(Json::Value params, int& cost);
+	Json::Value doSign(Json::Value params, int& cost);
+	Json::Value doSubmit(Json::Value params, int& cost);
+	Json::Value doTx(Json::Value params, int& cost);
+	Json::Value doTxHistory(Json::Value params, int& cost);
+	Json::Value doUnlAdd(Json::Value params, int& cost);
+	Json::Value doUnlDelete(Json::Value params, int& cost);
+	Json::Value doUnlFetch(Json::Value params, int& cost);
+	Json::Value doUnlList(Json::Value params, int& cost);
+	Json::Value doUnlLoad(Json::Value params, int& cost);
+	Json::Value doUnlNetwork(Json::Value params, int& cost);
+	Json::Value doUnlReset(Json::Value params, int& cost);
+	Json::Value doUnlScore(Json::Value params, int& cost);
 
-	Json::Value doValidationCreate(Json::Value params);
-	Json::Value doValidationSeed(Json::Value params);
+	Json::Value doValidationCreate(Json::Value params, int& cost);
+	Json::Value doValidationSeed(Json::Value params, int& cost);
 
-	Json::Value doWalletAccounts(Json::Value params);
-	Json::Value doWalletLock(Json::Value params);
-	Json::Value doWalletPropose(Json::Value params);
-	Json::Value doWalletSeed(Json::Value params);
-	Json::Value doWalletUnlock(Json::Value params);
-	Json::Value doWalletVerify(Json::Value params);
+	Json::Value doWalletAccounts(Json::Value params, int& cost);
+	Json::Value doWalletLock(Json::Value params, int& cost);
+	Json::Value doWalletPropose(Json::Value params, int& cost);
+	Json::Value doWalletSeed(Json::Value params, int& cost);
+	Json::Value doWalletUnlock(Json::Value params, int& cost);
+	Json::Value doWalletVerify(Json::Value params, int& cost);
 
 #if ENABLE_INSECURE
-	Json::Value doLogin(Json::Value params);
+	Json::Value doLogin(Json::Value params, int& cost);
 #endif
 
-	Json::Value doLedgerAccept(Json::Value params);
-	Json::Value doLedgerClosed(Json::Value params);
-	Json::Value doLedgerCurrent(Json::Value params);
-	Json::Value doLedgerEntry(Json::Value params);
-	Json::Value doLedgerHeader(Json::Value params);
-	Json::Value doTransactionEntry(Json::Value params);
+	Json::Value doLedgerAccept(Json::Value params, int& cost);
+	Json::Value doLedgerClosed(Json::Value params, int& cost);
+	Json::Value doLedgerCurrent(Json::Value params, int& cost);
+	Json::Value doLedgerEntry(Json::Value params, int& cost);
+	Json::Value doLedgerHeader(Json::Value params, int& cost);
+	Json::Value doTransactionEntry(Json::Value params, int& cost);
 
-	Json::Value doSubscribe(Json::Value params);
-	Json::Value doUnsubscribe(Json::Value params);
+	Json::Value doSubscribe(Json::Value params, int& cost);
+	Json::Value doUnsubscribe(Json::Value params, int& cost);
 
 public:
 
@@ -116,8 +116,8 @@ public:
 	RPCHandler(NetworkOPs* netOps);
 	RPCHandler(NetworkOPs* netOps, InfoSub::pointer infoSub);
 
-	Json::Value doCommand(const Json::Value& jvRequest, int role);
-	Json::Value doRpcCommand(const std::string& strCommand, Json::Value& jvParams, int iRole);
+	Json::Value doCommand(const Json::Value& jvRequest, int role, int& cost);
+	Json::Value doRpcCommand(const std::string& strCommand, Json::Value& jvParams, int iRole, int& cost);
 };
 
 class RPCInternalHandler
