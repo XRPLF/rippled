@@ -43,7 +43,8 @@ void startServer()
 			if (!theConfig.QUIET)
 				std::cerr << "Startup RPC: " << jvCommand << std::endl;
 
-			RPCHandler	rhHandler(&theApp->getOPs());
+			LoadSource ls(true);
+			RPCHandler	rhHandler(&theApp->getOPs(), ls);
 
 			Json::Value	jvResult	= rhHandler.doCommand(jvCommand, RPCHandler::ADMIN);
 

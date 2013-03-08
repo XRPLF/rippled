@@ -14,6 +14,7 @@
 #include "CallRPC.h"
 #include "InstanceCounter.h"
 #include "Log.h"
+#include "LoadManager.h"
 #include "RPCErr.h"
 
 DEFINE_INSTANCE(WebSocketConnection);
@@ -45,6 +46,7 @@ protected:
 	weak_connection_ptr					mConnection;
 	NetworkOPs&							mNetwork;
 	std::string							mRemoteIP;
+	LoadSource							mLoadSource;
 
 	boost::asio::deadline_timer			mPingTimer;
 	bool								mPinged;
@@ -56,9 +58,9 @@ public:
 
 	WSConnection(WSServerHandler<endpoint_type>* wshpHandler, const connection_ptr& cpConnection)
 		: mHandler(wshpHandler), mConnection(cpConnection), mNetwork(theApp->getOPs()),
-		mPingTimer(cpConnection->get_io_service()), mPinged(false)
+		mRemoteIP(cpConnection->get_socket().lowest_layer().remote_endpoint().address().to_string()),
+		mLoadSource(mRemoteIP), mPingTimer(cpConnection->get_io_service()), mPinged(false)
 	{
-		mRemoteIP = cpConnection->get_socket().lowest_layer().remote_endpoint().address().to_string();
 		cLog(lsDEBUG) << "Websocket connection from " << mRemoteIP;
 		setPingTimer();
 	}
@@ -103,7 +105,8 @@ public:
 			return jvResult;
 		}
 
-		RPCHandler	mRPCHandler(&mNetwork, boost::shared_polymorphic_downcast<InfoSub>(this->shared_from_this()));
+		RPCHandler	mRPCHandler(&mNetwork,
+			boost::shared_polymorphic_downcast<InfoSub>(this->shared_from_this()), mLoadSource);
 		Json::Value	jvResult(Json::objectValue);
 
 		int iRole	= mHandler->getPublic()

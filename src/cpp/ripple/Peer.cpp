@@ -34,6 +34,8 @@ Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, 
 	mActive(2),
 	mCluster(false),
 	mPeerId(peerID),
+	mPrivate(false),
+	mLoad(""),
 	mSocketSsl(io_service, ctx),
 	mActivityTimer(io_service)
 {
@@ -77,6 +79,7 @@ void Peer::handleWrite(const boost::system::error_code& error, size_t bytes_tran
 void Peer::setIpPort(const std::string& strIP, int iPort)
 {
 	mIpPort = make_pair(strIP, iPort);
+	mLoad.rename(strIP);
 
 	cLog(lsDEBUG) << "Peer: Set: "
 		<< ADDRESS(this) << "> "

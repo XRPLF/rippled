@@ -63,12 +63,13 @@ int iAdminGet(const Json::Value& jvRequest, const std::string& strRemoteIp)
 	return iRole;
 }
 
-RPCHandler::RPCHandler(NetworkOPs* netOps)
+RPCHandler::RPCHandler(NetworkOPs* netOps, LoadSource &ls) : mLoadSource(ls)
 {
 	mNetOps		= netOps;
 }
 
-RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub::pointer infoSub) : mInfoSub(infoSub)
+RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub::pointer infoSub, LoadSource& ls)
+	: mInfoSub(infoSub), mLoadSource(ls)
 {
 	mNetOps		= netOps;
 }

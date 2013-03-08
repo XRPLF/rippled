@@ -13,6 +13,7 @@
 #include "NetworkOPs.h"
 #include "SerializedLedger.h"
 #include "RPCHandler.h"
+#include "LoadManager.h"
 
 class RPCServer : public boost::enable_shared_from_this<RPCServer>
 {
@@ -23,6 +24,7 @@ public:
 private:
 	
 	NetworkOPs*	mNetOps;
+	LoadSource	mLoadSource;
 
 	boost::asio::ip::tcp::socket mSocket;
 
@@ -44,7 +46,7 @@ private:
 	void handle_read_line(const boost::system::error_code& ec);
 	void handle_read_req(const boost::system::error_code& ec);
 
-	std::string handleRequest(const std::string& requestStr);
+	std::string handleRequest(const std::string& requestStr, LoadSource& ls);
 
 public:
 	static pointer create(boost::asio::io_service& io_service, NetworkOPs* mNetOps)
