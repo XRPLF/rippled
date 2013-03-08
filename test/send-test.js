@@ -493,8 +493,8 @@ buster.testCase("Sending future", {
 });
 
 buster.testCase("Gateway", {
-  // 'setUp'     : testutils.build_setup({ verbose: true }),
-  'setUp'     : testutils.build_setup(),
+  // 'setUp'     : testutils.build_setup(),
+  'setUp'     : testutils.build_setup({ verbose: true }),
   'tearDown'  : testutils.build_teardown(),
 
   "customer to customer with and without transfer fee" :
@@ -594,6 +594,156 @@ buster.testCase("Gateway", {
                 "alice"   : "0.5/AUD/mtgox",
                 "bob"     : "0.45/AUD/mtgox",
                 "mtgox"   : [ "-0.5/AUD/alice","-0.45/AUD/bob" ],
+              },
+              callback);
+          },
+        ], function (error) {
+          buster.refute(error, self.what);
+          done();
+        });
+    },
+
+  "customer to customer, transfer fee, default path with and without specific issuer for Amount and SendMax" :
+    function (done) {
+      var self = this;
+
+      // self.remote.set_trace();
+
+      async.waterfall([
+          function (callback) {
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob", "mtgox"], callback);
+          },
+          function (callback) {
+            self.what = "Set transfer rate.";
+
+            self.remote.transaction()
+              .account_set("mtgox")
+              .transfer_rate(1e9*1.1)
+              .once('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Set credit limits.";
+
+            testutils.credit_limits(self.remote,
+              {
+                "alice" : "100/AUD/mtgox",
+                "bob"   : "100/AUD/mtgox",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Distribute funds.";
+
+            testutils.payments(self.remote,
+              {
+                "mtgox" : [ "4.4/AUD/alice" ],
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Verify balances.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "alice"   : "4.4/AUD/mtgox",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Alice sends 1.1/AUD/mtgox Bob 1/AUD/mtgox";
+
+            self.remote.transaction()
+              .payment("alice", "bob", "1/AUD/mtgox")
+              .send_max("1.1/AUD/mtgox")
+              .on('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Verify balances 2.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "alice"   : "3.3/AUD/mtgox",
+                "bob"     : "1/AUD/mtgox",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Alice sends 1.1/AUD/mtgox Bob 1/AUD/bob";
+
+            self.remote.transaction()
+              .payment("alice", "bob", "1/AUD/bob")
+              .send_max("1.1/AUD/mtgox")
+              .on('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Verify balances 3.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "alice"   : "2.2/AUD/mtgox",
+                "bob"     : "2/AUD/mtgox",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Alice sends 1.1/AUD/alice Bob 1/AUD/mtgox";
+
+            self.remote.transaction()
+              .payment("alice", "bob", "1/AUD/mtgox")
+              .send_max("1.1/AUD/alice")
+              .on('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Verify balances 4.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "alice"   : "1.1/AUD/mtgox",
+                "bob"     : "3/AUD/mtgox",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Alice sends 1.1/AUD/alice Bob 1/AUD/bob";
+
+            self.remote.transaction()
+              .payment("alice", "bob", "1/AUD/bob")
+              .send_max("1.1/AUD/alice")
+              .on('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Verify balances 5.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "alice"   : "0/AUD/mtgox",
+                "bob"     : "4/AUD/mtgox",
               },
               callback);
           },
