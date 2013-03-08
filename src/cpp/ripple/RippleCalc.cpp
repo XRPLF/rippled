@@ -1,7 +1,7 @@
 // TODO:
 // - Do automatic bridging via XRP.
 //
-// OPTIMIZE: When calculating path increment, note if increment consumes all liquidity. No need to revesit path in the future if
+// OPTIMIZE: When calculating path increment, note if increment consumes all liquidity. No need to revisit path in the future if
 // all liquidity is used.
 //
 
@@ -270,7 +270,7 @@ TER PathState::pushNode(
 
 			// Insert intermediary issuer account if needed.
 			terResult	= pushImply(
-				ACCOUNT_XRP,				// Rippling, but offer's don't have an account.
+				ACCOUNT_XRP,				// Rippling, but offers don't have an account.
 				pnPrv.uCurrencyID,
 				pnPrv.uIssuerID);
 		}
@@ -384,7 +384,7 @@ void PathState::setExpanded(
 
 	if (tesSUCCESS == terStatus
 		&& !!uOutCurrencyID							// Next is not XRP
-		&& uOutIssuerID != uReceiverID				// Out issuer is not reciever
+		&& uOutIssuerID != uReceiverID				// Out issuer is not receiver
 		&& (pnPrv.uCurrencyID != uOutCurrencyID		// Previous will be an offer.
 			|| pnPrv.uAccountID != uOutIssuerID))	// Need the implied issuer.
 	{
@@ -427,12 +427,7 @@ void PathState::setExpanded(
 		{
 			const PaymentNode&	pnCur	= vpnNodes[uNode];
 
-			if (!!pnCur.uAccountID)
-			{
-				// Source is a ripple line
-				nothing();
-			}
-			else if (!umForward.insert(std::make_pair(boost::make_tuple(pnCur.uAccountID, pnCur.uCurrencyID, pnCur.uIssuerID), uNode)).second)
+			if (!umForward.insert(std::make_pair(boost::make_tuple(pnCur.uAccountID, pnCur.uCurrencyID, pnCur.uIssuerID), uNode)).second)
 			{
 				// Failed to insert. Have a loop.
 				cLog(lsDEBUG) << boost::str(boost::format("PathState: loop detected: %s")
@@ -472,7 +467,7 @@ void PathState::setExpanded(
 // Optimization:
 // - An XRP output implies an offer node or destination node is next.
 // - A change in currency implies an offer node.
-// - A change in issuer... 
+// - A change in issuer...
 void PathState::setCanonical(
 	const PathState&	psExpanded
 	)
@@ -496,7 +491,7 @@ void PathState::setCanonical(
 	uint160			uCurrencyID		= uMaxCurrencyID;
 	uint160			uIssuerID		= uMaxIssuerID;
 
-	// Node 0 is a composit of the sending account and saInAct.
+	// Node 0 is a composite of the sending account and saInAct.
 	++uNode;	// skip node 0
 
 	// Last node is implied: Always skip last node
@@ -829,8 +824,8 @@ TER RippleCalc::calcNodeAdvance(
 			uDirectEnd		= Ledger::getQualityNext(uDirectTip);
 
 			sleDirectDir	= lesActive.entryCache(ltDIR_NODE, uDirectTip);
-			bDirectAdvance	= !sleDirectDir;
-			bDirectDirDirty	= true;
+			bDirectDirDirty	= !!sleDirectDir;	// Associated vars are dirty, if found it.
+			bDirectAdvance	= !sleDirectDir;	// Advance, if didn't find it. Normal not to be unable to lookup firstdirectory. Maybe even skip this lookup.
 
 			cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: Initialize node: uDirectTip=%s uDirectEnd=%s bDirectAdvance=%d") % uDirectTip % uDirectEnd % bDirectAdvance);
 		}
@@ -879,6 +874,7 @@ TER RippleCalc::calcNodeAdvance(
 		{
 			if (bFundsDirty)
 			{
+				// We were called again probably merely to update structure variables.
 				saTakerPays		= sleOffer->getFieldAmount(sfTakerPays);
 				saTakerGets		= sleOffer->getFieldAmount(sfTakerGets);
 
@@ -897,22 +893,27 @@ TER RippleCalc::calcNodeAdvance(
 		{
 			// Failed to find an entry in directory.
 
-			uOfferIndex	= 0;
-
 			// Do another cur directory iff bMultiQuality
 			if (bMultiQuality)
 			{
+				// We are allowed to process multiple qualities if this is the only path.
 				cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: next quality"));
-				bDirectAdvance	= true;
+
+				bDirectAdvance	= true;			// Process next quality.
 			}
 			else if (!bReverse)
 			{
 				cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: unreachable: ran out of offers"));
 				assert(false);		// Can't run out of offers in forward direction.
-				terResult	= tefEXCEPTION;
+				terResult		= tefEXCEPTION;
 			}
 			else
-				bEntryAdvance = false;
+			{
+				// Ran off end of offers.
+
+				bEntryAdvance	= false;		// Done.
+				uOfferIndex		= 0;			// Report nore more entries.
+			}
 		}
 		else
 		{
@@ -932,19 +933,37 @@ TER RippleCalc::calcNodeAdvance(
 				cLog(lsTRACE) << "calcNodeAdvance: expired offer";
 
 				assert(musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end());	// Verify reverse found it too.
-				bEntryAdvance	= true;
+				// Just skip it. It will be deleted.
+				// bEntryAdvance	= true;		// Already set
 				continue;
 			}
 			else if (!saTakerPays.isPositive() || !saTakerGets.isPositive())
 			{
-				// Offer is has bad amounts.
-				cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
-					% saTakerPays % saTakerGets);
+				// Offer has bad amounts. Offers should never have a bad amounts.
 
-				// assert(musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end());	// Verify reverse found it too.
-				bEntryAdvance	= true;
+				if (musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end())
+				{
+					// An internal error, offer was found failed to place this in musUnfundedFound.
+					cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: PAST INTERNAL ERROR: OFFER NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
+						% saTakerPays % saTakerGets);
+
+					// Just skip it. It will be deleted.
+					// bEntryAdvance	= true;		// Already set
+				}
+				else
+				{
+					// Reverse should have previously put bad offer in list.
+					// An internal error previously left a bad offer.
+					cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: INTERNAL ERROR: OFFER NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
+						% saTakerPays % saTakerGets);
+//assert(false);
+					// Don't process at all, things are in an unexpected state for this transactions.
+					terResult		= tefEXCEPTION;
+				}
 				continue;
 			}
+
+			bEntryAdvance	= false;
 
 			// Allowed to access source from this node?
 			// XXX This can get called multiple times for same source in a row, caching result would be nice.
@@ -953,6 +972,8 @@ TER RippleCalc::calcNodeAdvance(
 			curIssuerNodeConstIterator	itForward		= psCur.umForward.find(asLine);
 			const bool					bFoundForward	= itForward != psCur.umForward.end();
 
+			// Only a allow a source to be used once, in the first node encountered from initial path scan.
+			// This prevents conflicting uses of the same balance when going reverse vs forward.
 			if (bFoundForward && itForward->second != uNode)
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
@@ -962,21 +983,12 @@ TER RippleCalc::calcNodeAdvance(
 				continue;
 			}
 
-			curIssuerNodeConstIterator	itPast			= mumSource.find(asLine);
-			bool						bFoundPast		= itPast != mumSource.end();
-
-			if (bFoundPast && itPast->second != uNode)
-			{
-				// Temporarily unfunded. Another node uses this source, ignore in this offer.
-				cLog(lsTRACE) << "calcNodeAdvance: temporarily unfunded offer (past)";
-
-				bEntryAdvance	= true;
-				continue;
-			}
-
+			// This is overly strict. For contributions to past. We should only count source if actually used.
 			curIssuerNodeConstIterator	itReverse		= psCur.umReverse.find(asLine);
 			bool						bFoundReverse	= itReverse != psCur.umReverse.end();
 
+			// For this quality increment, only allow a source to be used from a single node, in the first node encountered from applying offers
+			// in reverse.
 			if (bFoundReverse && itReverse->second != uNode)
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
@@ -986,7 +998,23 @@ TER RippleCalc::calcNodeAdvance(
 				continue;
 			}
 
-			saOfferFunds	= lesActive.accountFunds(uOfrOwnerID, saTakerGets);	// Funds left.
+			curIssuerNodeConstIterator	itPast			= mumSource.find(asLine);
+			bool						bFoundPast		= itPast != mumSource.end();
+
+			// Determine if used in past.
+			// XXX Restriction seems like a misunderstanding.
+			if (bFoundPast && itPast->second != uNode)
+			{
+				// Temporarily unfunded. Another node uses this source, ignore in this offer.
+				cLog(lsTRACE) << "calcNodeAdvance: temporarily unfunded offer (past)";
+
+				bEntryAdvance	= true;
+				continue;
+			}
+
+			// Only the current node is allowed to use the source.
+
+			saOfferFunds	= lesActive.accountFunds(uOfrOwnerID, saTakerGets);	// Funds held.
 
 			if (!saOfferFunds.isPositive())
 			{
@@ -995,8 +1023,16 @@ TER RippleCalc::calcNodeAdvance(
 
 				if (bReverse && !bFoundReverse && !bFoundPast)
 				{
-					// Never mentioned before: found unfunded.
+					// Never mentioned before, clearly just: found unfunded.
+					// That is, even if this offer fails due to fill or kill still do deletions.
 					musUnfundedFound.insert(uOfferIndex);				// Mark offer for always deletion.
+				}
+				else
+				{
+					// Moving forward, don't need to check again.
+					// Or source was used this reverse
+					// Or source was previously used
+					// XXX
 				}
 
 				// YYY Could verify offer is correct place for unfundeds.
@@ -1301,9 +1337,16 @@ TER RippleCalc::calcNodeDeliverFwd(
 	saInAct.zero(saInReq);
 	saInFees.zero(saInReq);
 
+	int loopCount = 0;
 	while (tesSUCCESS == terResult
 		&& saInAct + saInFees != saInReq)		// Did not deliver all funds.
 	{
+		if (++loopCount > 40)
+		{
+			cLog(lsWARNING) << "max loops cndf";
+			return mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+		}
+
 		// Determine values for pass to adjust saInAct, saInFees, and saCurDeliverAct
 		terResult	= calcNodeAdvance(uNode, psCur, bMultiQuality, false);				// If needed, advance to next funded offer.
 
@@ -2427,7 +2470,7 @@ void RippleCalc::pathNext(PathState::ref psrCur, const bool bMultiQuality, const
 	assert(psrCur->vpnNodes.size() >= 2);
 
 	lesCurrent	= lesCheckpoint;					// Restore from checkpoint.
-	lesCurrent.bumpSeq();							// Begin ledger varance.
+	lesCurrent.bumpSeq();							// Begin ledger variance.
 
 	psrCur->terStatus	= calcNodeRev(uLast, *psrCur, bMultiQuality);
 
@@ -2437,7 +2480,7 @@ void RippleCalc::pathNext(PathState::ref psrCur, const bool bMultiQuality, const
 	{
 		// Do forward.
 		lesCurrent	= lesCheckpoint;				// Restore from checkpoint.
-		lesCurrent.bumpSeq();						// Begin ledger varance.
+		lesCurrent.bumpSeq();						// Begin ledger variance.
 
 		psrCur->terStatus	= calcNodeFwd(0, *psrCur, bMultiQuality);
 	}
@@ -2895,7 +2938,7 @@ void TransactionEngine::calcOfferBridgeNext(
 			{
 				// Offer fully funded.
 
-				// Account transfering funds in to offer always pays inbound fees.
+				// Account transferring funds in to offer always pays inbound fees.
 
 				saOfferIn	= saOfferGets;	// XXX Add in fees?
 
@@ -2934,26 +2977,26 @@ void TransactionEngine::calcOfferBridgeNext(
 // - reverse: prv is maximum to pay in (including fee) - cur is what is wanted: generally, minimizing prv
 // - forward: prv is actual amount to pay in (including fee) - cur is what is wanted: generally, minimizing cur
 // Value in is may be rippled or credited from limbo. Value out is put in limbo.
-// If next is an offer, the amount needed is in cur reedem.
+// If next is an offer, the amount needed is in cur redeem.
 // XXX What about account mentioned multiple times via offers?
 void TransactionEngine::calcNodeOffer(
 	bool			bForward,
 	bool			bMultiQuality,	// True, if this is the only active path: we can do multiple qualities in this pass.
-	const uint160&	uPrvAccountID,	// If 0, then funds from previous offer's limbo
+	const uint160&	uPrvAccountID,	// If 0, then funds from previous offers limbo
 	const uint160&	uPrvCurrencyID,
 	const uint160&	uPrvIssuerID,
 	const uint160&	uCurCurrencyID,
 	const uint160&	uCurIssuerID,
 
 	const STAmount& uPrvRedeemReq,	// --> In limit.
-	STAmount&		uPrvRedeemAct,	// <-> In limit achived.
+	STAmount&		uPrvRedeemAct,	// <-> In limit achieved.
 	const STAmount& uCurRedeemReq,	// --> Out limit. Driver when uCurIssuerID == uNxtIssuerID (offer would redeem to next)
-	STAmount&		uCurRedeemAct,	// <-> Out limit achived.
+	STAmount&		uCurRedeemAct,	// <-> Out limit achieved.
 
 	const STAmount& uCurIssueReq,	// --> In limit.
-	STAmount&		uCurIssueAct,	// <-> In limit achived.
+	STAmount&		uCurIssueAct,	// <-> In limit achieved.
 	const STAmount& uCurIssueReq,	// --> Out limit. Driver when uCurIssueReq != uNxtIssuerID (offer would effectively issue or transfer to next)
-	STAmount&		uCurIssueAct,	// <-> Out limit achived.
+	STAmount&		uCurIssueAct,	// <-> Out limit achieved.
 
 	STAmount& saPay,
 	STAmount& saGot
@@ -3007,13 +3050,13 @@ void TransactionEngine::calcNodeOffer(
 	bool		bRedeeming		= false;
 	bool		bIssuing		= false;
 
-	// The price varies as we change between issuing and transfering, so unless bMultiQuality, we must stick with a mode once it
+	// The price varies as we change between issuing and transferring, so unless bMultiQuality, we must stick with a mode once it
 	// is determined.
 
 	if (bBridge && (bInNext || bOutNext))
 	{
 		// Bridging and need to calculate next bridge rate.
-		// A bridge can consist of multiple offers. As offer's are consumed, the effective rate changes.
+		// A bridge can consist of multiple offers. As offers are consumed, the effective rate changes.
 
 		if (bInNext)
 		{

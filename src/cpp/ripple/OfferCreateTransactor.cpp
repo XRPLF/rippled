@@ -38,6 +38,7 @@ TER OfferCreateTransactor::takeOffers(
 
 	cLog(lsINFO) << "takeOffers: against book: " << uBookBase.ToString();
 
+	LedgerEntrySet&			lesActive			= mEngine->getNodes();
 	uint256					uTipIndex			= uBookBase;
 	const uint256			uBookEnd			= Ledger::getQualityNext(uBookBase);
 	const uint64			uTakeQuality		= STAmount::getRate(saTakerGets, saTakerPays);
@@ -46,7 +47,6 @@ TER OfferCreateTransactor::takeOffers(
 	const uint160			uTakerGetsAccountID	= saTakerGets.getIssuer();
 	TER						terResult			= temUNCERTAIN;
 
-	boost::unordered_set<uint256>	usOfferUnfundedFound;	// Offers found unfunded.
 	boost::unordered_set<uint256>	usOfferUnfundedBecame;	// Offers that became unfunded.
 	boost::unordered_set<uint160>	usAccountTouched;		// Accounts touched.
 
@@ -58,7 +58,7 @@ TER OfferCreateTransactor::takeOffers(
 	{
 		SLE::pointer	sleOfferDir;
 		uint64			uTipQuality		= 0;
-		STAmount		saTakerFunds	= mEngine->getNodes().accountFunds(uTakerAccountID, saTakerPays);
+		STAmount		saTakerFunds	= lesActive.accountFunds(uTakerAccountID, saTakerPays);
 		STAmount		saSubTakerPays	= saTakerPays-saTakerPaid;	// How much more to spend.
 		STAmount		saSubTakerGets	= saTakerGets-saTakerGot;	// How much more is wanted.
 
@@ -131,7 +131,7 @@ TER OfferCreateTransactor::takeOffers(
 			unsigned int	uBookEntry;
 			uint256			uOfferIndex;
 
-			mEngine->getNodes().dirFirst(uTipIndex, sleBookNode, uBookEntry, uOfferIndex);
+			lesActive.dirFirst(uTipIndex, sleBookNode, uBookEntry, uOfferIndex);
 
 			SLE::pointer	sleOffer		= mEngine->entryCache(ltOFFER, uOfferIndex);
 
@@ -153,7 +153,7 @@ TER OfferCreateTransactor::takeOffers(
 				// Would take own offer. Consider old offer expired. Delete it.
 				cLog(lsINFO) << "takeOffers: encountered taker's own old offer";
 
-				usOfferUnfundedFound.insert(uOfferIndex);
+				usOfferUnfundedBecame.insert(uOfferIndex);
 			}
 			else if (!saOfferGets.isPositive() || !saOfferPays.isPositive())
 			{
@@ -169,7 +169,7 @@ TER OfferCreateTransactor::takeOffers(
 
 				cLog(lsINFO) << "takeOffers: saOfferPays=" << saOfferPays.getFullText();
 
-				STAmount		saOfferFunds	= mEngine->getNodes().accountFunds(uOfferOwnerID, saOfferPays);
+				STAmount		saOfferFunds	= lesActive.accountFunds(uOfferOwnerID, saOfferPays);
 				SLE::pointer	sleOfferAccount;	// Owner of offer.
 
 				if (!saOfferFunds.isPositive())		// Includes zero.
@@ -210,8 +210,8 @@ TER OfferCreateTransactor::takeOffers(
 					cLog(lsINFO) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText();
 
 					bool	bOfferDelete	= STAmount::applyOffer(
-						mEngine->getNodes().rippleTransferRate(uTakerAccountID, uOfferOwnerID, uTakerPaysAccountID),
-						mEngine->getNodes().rippleTransferRate(uOfferOwnerID, uTakerAccountID, uTakerGetsAccountID),
+						lesActive.rippleTransferRate(uTakerAccountID, uOfferOwnerID, uTakerPaysAccountID),
+						lesActive.rippleTransferRate(uOfferOwnerID, uTakerAccountID, uTakerGetsAccountID),
 						saOfferRate,
 						saOfferFunds,
 						saTakerFunds,
@@ -274,10 +274,10 @@ TER OfferCreateTransactor::takeOffers(
 					{
 						// Distribute funds. The sends charge appropriate fees which are implied by offer.
 
-						terResult	= mEngine->getNodes().accountSend(uOfferOwnerID, uTakerAccountID, saSubTakerGot);				// Offer owner pays taker.
+						terResult	= lesActive.accountSend(uOfferOwnerID, uTakerAccountID, saSubTakerGot);				// Offer owner pays taker.
 
 						if (tesSUCCESS == terResult)
-							terResult	= mEngine->getNodes().accountSend(uTakerAccountID, uOfferOwnerID, saSubTakerPaid);			// Taker pays offer owner.
+							terResult	= lesActive.accountSend(uTakerAccountID, uOfferOwnerID, saSubTakerPaid);			// Taker pays offer owner.
 
 						// Reduce amount considered paid by taker's rate (not actual cost).
 						STAmount	saTakerCould	= saTakerPays - saTakerPaid;	// Taker could pay.
@@ -304,20 +304,6 @@ TER OfferCreateTransactor::takeOffers(
 
 	cLog(lsINFO) << "takeOffers: " << transToken(terResult);
 
-	// On storing meta data, delete offers that were found unfunded to prevent encountering them in future.
-	if (tesSUCCESS == terResult)
-	{
-		BOOST_FOREACH(const uint256& uOfferIndex, usOfferUnfundedFound)
-		{
-
-			cLog(lsINFO) << "takeOffers: found unfunded: " << uOfferIndex.ToString();
-
-			terResult	= mEngine->getNodes().offerDelete(uOfferIndex);
-			if (tesSUCCESS != terResult)
-				break;
-		}
-	}
-
 	if (tesSUCCESS == terResult)
 	{
 		// On success, delete offers that became unfunded.
@@ -325,7 +311,7 @@ TER OfferCreateTransactor::takeOffers(
 		{
 			cLog(lsINFO) << "takeOffers: became unfunded: " << uOfferIndex.ToString();
 
-			terResult	= mEngine->getNodes().offerDelete(uOfferIndex);
+			terResult	= lesActive.offerDelete(uOfferIndex);
 			if (tesSUCCESS != terResult)
 				break;
 		}
@@ -368,6 +354,12 @@ TER OfferCreateTransactor::doApply()
 	uint256					uDirectory;		// Delete hints.
 	uint64					uOwnerNode;
 	uint64					uBookNode;
+
+	LedgerEntrySet&			lesActive			= mEngine->getNodes();
+    LedgerEntrySet			lesCheckpoint		= lesActive;							// Checkpoint with just fees paid.
+	lesActive.bumpSeq();																// Begin ledger variance.
+
+	SLE::pointer			sleCreator			= mEngine->entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(mTxnAccountID));
 
 	if (uTxFlags & tfOfferCreateMask)
 	{
@@ -417,7 +409,7 @@ TER OfferCreateTransactor::doApply()
 
 		terResult	= temBAD_ISSUER;
 	}
-	else if (!mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets).isPositive())
+	else if (!lesActive.accountFunds(mTxnAccountID, saTakerGets).isPositive())
 	{
 		cLog(lsWARNING) << "OfferCreate: delay: Offers must be at least partially funded.";
 
@@ -458,7 +450,7 @@ TER OfferCreateTransactor::doApply()
 			bPassive,
 			uTakeBookBase,
 			mTxnAccountID,
-			mTxnAccount,
+			sleCreator,
 			saTakerGets,	// Reverse as we are the taker for taking.
 			saTakerPays,
 			saPaid,			// How much would have spent at full price.
@@ -482,7 +474,7 @@ TER OfferCreateTransactor::doApply()
 	cLog(lsWARNING) << "OfferCreate: takeOffers: saTakerPays=" << saTakerPays.getFullText();
 	cLog(lsWARNING) << "OfferCreate: takeOffers: saTakerGets=" << saTakerGets.getFullText();
 	cLog(lsWARNING) << "OfferCreate: takeOffers: mTxnAccountID=" << RippleAddress::createHumanAccountID(mTxnAccountID);
-	cLog(lsWARNING) << "OfferCreate: takeOffers:         FUNDS=" << mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets).getFullText();
+	cLog(lsWARNING) << "OfferCreate: takeOffers:         FUNDS=" << lesActive.accountFunds(mTxnAccountID, saTakerGets).getFullText();
 
 	// cLog(lsWARNING) << "OfferCreate: takeOffers: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
 	// cLog(lsWARNING) << "OfferCreate: takeOffers: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
@@ -500,19 +492,19 @@ TER OfferCreateTransactor::doApply()
 	else if (bFillOrKill && (saTakerPays || saTakerGets))
 	{
 		// Fill or kill and have leftovers.
-		terResult	= tecKILL;
+		lesActive.swapWith(lesCheckpoint);									// Restore with just fees paid.
 	}
 	else if (
 		!saTakerPays														// Wants nothing more.
 		|| !saTakerGets														// Offering nothing more.
-		|| bImmediateOrCancel															// Do not persist.
-		|| !mEngine->getNodes().accountFunds(mTxnAccountID, saTakerGets).isPositive()	// Not funded.
+		|| bImmediateOrCancel												// Do not persist.
+		|| !lesActive.accountFunds(mTxnAccountID, saTakerGets).isPositive()	// Not funded.
 		|| bUnfunded)														// Consider unfunded.
 	{
 		// Complete as is.
 		nothing();
 	}
-	else if (mPriorBalance.getNValue() < mEngine->getLedger()->getReserve(mTxnAccount->getFieldU32(sfOwnerCount)+1))
+	else if (mPriorBalance.getNValue() < mEngine->getLedger()->getReserve(sleCreator->getFieldU32(sfOwnerCount)+1))
 	{
 		if (bOpenLedger) // Ledger is not final, can vote no.
 		{
@@ -541,14 +533,14 @@ TER OfferCreateTransactor::doApply()
 			% saTakerGets.getFullText());
 
 		// Add offer to owner's directory.
-		terResult	= mEngine->getNodes().dirAdd(uOwnerNode, Ledger::getOwnerDirIndex(mTxnAccountID), uLedgerIndex,
+		terResult	= lesActive.dirAdd(uOwnerNode, Ledger::getOwnerDirIndex(mTxnAccountID), uLedgerIndex,
 			boost::bind(&Ledger::qualityDirDescriber, _1, saTakerPays.getCurrency(), uPaysIssuerID,
 				saTakerGets.getCurrency(), uGetsIssuerID, uRate));
 
 
 		if (tesSUCCESS == terResult)
 		{
-			mEngine->getNodes().ownerCountAdjust(mTxnAccountID, 1, mTxnAccount); // Update owner count.
+			lesActive.ownerCountAdjust(mTxnAccountID, 1, sleCreator); // Update owner count.
 
 			uint256	uBookBase	= Ledger::getBookBase(uPaysCurrency, uPaysIssuerID, uGetsCurrency, uGetsIssuerID);
 
@@ -562,7 +554,7 @@ TER OfferCreateTransactor::doApply()
 			uDirectory	= Ledger::getQualityIndex(uBookBase, uRate);	// Use original rate.
 
 			// Add offer to order book.
-			terResult	= mEngine->getNodes().dirAdd(uBookNode, uDirectory, uLedgerIndex,
+			terResult	= lesActive.dirAdd(uBookNode, uDirectory, uLedgerIndex,
 				boost::bind(&Ledger::qualityDirDescriber, _1, saTakerPays.getCurrency(), uPaysIssuerID,
 					saTakerGets.getCurrency(), uGetsIssuerID, uRate));
 		}
@@ -596,6 +588,20 @@ TER OfferCreateTransactor::doApply()
 			cLog(lsINFO) << boost::str(boost::format("OfferCreate: final terResult=%s sleOffer=%s")
 				% transToken(terResult)
 				% sleOffer->getJson(0));
+		}
+	}
+
+	// On storing meta data, delete offers that were found unfunded to prevent encountering them in future.
+	if (tesSUCCESS == terResult)
+	{
+		BOOST_FOREACH(const uint256& uOfferIndex, usOfferUnfundedFound)
+		{
+
+			cLog(lsINFO) << "takeOffers: found unfunded: " << uOfferIndex.ToString();
+
+			terResult	= lesActive.offerDelete(uOfferIndex);
+			if (tesSUCCESS != terResult)
+				break;
 		}
 	}
 

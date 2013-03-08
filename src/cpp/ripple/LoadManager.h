@@ -61,14 +61,20 @@ public:
 	static const int lsfOutbound	= 2; // outbound connection
 
 protected:
-	int		mBalance;
-	int		mFlags;
-	int		mLastUpdate;
-	int		mLastWarning;
+	std::string	mName;
+	int			mBalance;
+	int			mFlags;
+	int			mLastUpdate;
+	int			mLastWarning;
 
 public:
-	LoadSource() : mBalance(0), mFlags(0), mLastWarning(0)
-									{ mLastUpdate = upTime(); }
+	LoadSource(bool admin) : mBalance(0), mFlags(admin ? lsfPrivileged : 0), mLastUpdate(upTime()), mLastWarning(0)
+	{ ; }
+	LoadSource(const std::string& name) : mName(name), mBalance(0), mFlags(0), mLastUpdate(upTime()), mLastWarning(0)
+	{ ; }
+
+	void rename(const std::string& name)
+	{ mName = name; }
 
 	bool	isPrivileged() const	{ return (mFlags & lsfPrivileged) != 0; }
 	void	setPrivileged()			{ mFlags |= lsfPrivileged; }

@@ -442,16 +442,23 @@ Json::Value RPCParser::parseAccountItems(const Json::Value& jvParams)
 	return jvRequest;
 }
 
-// ripple_path_find json
+// ripple_path_find <json> [<ledger>]
 Json::Value RPCParser::parseRipplePathFind(const Json::Value& jvParams)
 {
-	Json::Value		txJSON;
 	Json::Reader	reader;
+	Json::Value		jvRequest;
+	bool			bLedger		= 2 == jvParams.size();
 
-	cLog(lsTRACE) << "RPC json:" << jvParams[0u];
-	if (reader.parse(jvParams[0u].asString(), txJSON))
+	cLog(lsTRACE) << "RPC json: " << jvParams[0u];
+
+	if (bLedger)
 	{
-		return txJSON;
+		jvParseLedger(jvRequest, jvParams[1u].asString());
+	}
+
+	if (reader.parse(jvParams[0u].asString(), jvRequest))
+	{
+		return jvRequest;
 	}
 
 	return rpcError(rpcINVALID_PARAMS);
@@ -652,7 +659,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"ping",					&RPCParser::parseAsIs,					0,  0	},
 //		{	"profile",				&RPCParser::parseProfile,				1,  9	},
 		{	"random",				&RPCParser::parseAsIs,					0,  0	},
-		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	    1,  1	},
+		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	    1,  2	},
 		{	"sign",					&RPCParser::parseSignSubmit,			2,  2	},
 		{	"submit",				&RPCParser::parseSignSubmit,			1,  2	},
 		{	"server_info",			&RPCParser::parseAsIs,					0,  0	},
