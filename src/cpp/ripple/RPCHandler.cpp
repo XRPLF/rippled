@@ -1163,6 +1163,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 
 	if (theApp->getJobQueue().getJobCountGE(jtCLIENT) > 200)
 	{
+		cLog(lsDEBUG) << "Too busy for RPF";
 		jvResult	= rpcError(rpcTOO_BUSY);
 	}
 	else if (!jvRequest.isMember("source_account"))
@@ -2892,7 +2893,10 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 	if (cost == 0)
 		cost = rpcCOST_DEFAULT;
 	if ((iRole != ADMIN) && (theApp->getJobQueue().getJobCountGE(jtCLIENT) > 500))
+	{
+		cLog(lsDEBUG) << "Too busy for command";
 		return rpcError(rpcTOO_BUSY);
+	}
 
 	if (!jvRequest.isMember("command"))
 		return rpcError(rpcCOMMAND_MISSING);
