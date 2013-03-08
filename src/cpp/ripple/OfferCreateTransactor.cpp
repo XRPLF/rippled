@@ -359,7 +359,7 @@ TER OfferCreateTransactor::doApply()
     LedgerEntrySet			lesCheckpoint		= lesActive;							// Checkpoint with just fees paid.
 	lesActive.bumpSeq();																// Begin ledger variance.
 
-	SLE::pointer			slePayment			= mEngine->entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(mTxnAccountID));
+	SLE::pointer			sleCreator			= mEngine->entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(mTxnAccountID));
 
 	if (uTxFlags & tfOfferCreateMask)
 	{
@@ -450,7 +450,7 @@ TER OfferCreateTransactor::doApply()
 			bPassive,
 			uTakeBookBase,
 			mTxnAccountID,
-			slePayment,
+			sleCreator,
 			saTakerGets,	// Reverse as we are the taker for taking.
 			saTakerPays,
 			saPaid,			// How much would have spent at full price.
@@ -504,7 +504,7 @@ TER OfferCreateTransactor::doApply()
 		// Complete as is.
 		nothing();
 	}
-	else if (mPriorBalance.getNValue() < mEngine->getLedger()->getReserve(mTxnAccount->getFieldU32(sfOwnerCount)+1))
+	else if (mPriorBalance.getNValue() < mEngine->getLedger()->getReserve(sleCreator->getFieldU32(sfOwnerCount)+1))
 	{
 		if (bOpenLedger) // Ledger is not final, can vote no.
 		{
@@ -540,7 +540,7 @@ TER OfferCreateTransactor::doApply()
 
 		if (tesSUCCESS == terResult)
 		{
-			lesActive.ownerCountAdjust(mTxnAccountID, 1, slePayment); // Update owner count.
+			lesActive.ownerCountAdjust(mTxnAccountID, 1, sleCreator); // Update owner count.
 
 			uint256	uBookBase	= Ledger::getBookBase(uPaysCurrency, uPaysIssuerID, uGetsCurrency, uGetsIssuerID);
 
