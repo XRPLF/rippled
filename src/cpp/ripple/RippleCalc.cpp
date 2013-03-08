@@ -957,7 +957,7 @@ TER RippleCalc::calcNodeAdvance(
 					// An internal error previously left a bad offer.
 					cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: INTERNAL ERROR: OFFER NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
 						% saTakerPays % saTakerGets);
-assert(false);
+//assert(false);
 					// Don't process at all, things are in an unexpected state for this transactions.
 					terResult		= tefEXCEPTION;
 				}
@@ -2471,7 +2471,7 @@ void RippleCalc::pathNext(PathState::ref psrCur, const bool bMultiQuality, const
 	assert(psrCur->vpnNodes.size() >= 2);
 
 	lesCurrent	= lesCheckpoint;					// Restore from checkpoint.
-	lesCurrent.bumpSeq();							// Begin ledger varance.
+	lesCurrent.bumpSeq();							// Begin ledger variance.
 
 	psrCur->terStatus	= calcNodeRev(uLast, *psrCur, bMultiQuality);
 
@@ -2481,7 +2481,7 @@ void RippleCalc::pathNext(PathState::ref psrCur, const bool bMultiQuality, const
 	{
 		// Do forward.
 		lesCurrent	= lesCheckpoint;				// Restore from checkpoint.
-		lesCurrent.bumpSeq();						// Begin ledger varance.
+		lesCurrent.bumpSeq();						// Begin ledger variance.
 
 		psrCur->terStatus	= calcNodeFwd(0, *psrCur, bMultiQuality);
 	}
