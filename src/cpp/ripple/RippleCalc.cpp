@@ -942,14 +942,25 @@ TER RippleCalc::calcNodeAdvance(
 			{
 				// Offer has bad amounts. Offers should never have a bad amounts.
 
-				if (musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end())
+				if (bReverse)
 				{
-					// An internal error, offer was found failed to place this in musUnfundedFound.
+					// Past internal error, offer had bad amounts.
 					cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: PAST INTERNAL ERROR: OFFER NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
 						% saTakerPays % saTakerGets);
 
+					musUnfundedFound.insert(uOfferIndex);				// Mark offer for always deletion.
+					// bEntryAdvance	= true;		// Already set
+					continue;
+				}
+				else if (musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end())
+				{
+					// Past internal error, offer was found failed to place this in musUnfundedFound.
+					cLog(lsDEBUG) << boost::str(boost::format("calcNodeAdvance: PAST INTERNAL ERROR: OFFER NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
+						% saTakerPays % saTakerGets);
+assert(false);
 					// Just skip it. It will be deleted.
 					// bEntryAdvance	= true;		// Already set
+					continue;
 				}
 				else
 				{
@@ -957,14 +968,12 @@ TER RippleCalc::calcNodeAdvance(
 					// An internal error previously left a bad offer.
 					cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: INTERNAL ERROR: OFFER NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
 						% saTakerPays % saTakerGets);
-//assert(false);
+assert(false);
 					// Don't process at all, things are in an unexpected state for this transactions.
 					terResult		= tefEXCEPTION;
 				}
 				continue;
 			}
-
-			bEntryAdvance	= false;
 
 			// Allowed to access source from this node?
 			// XXX This can get called multiple times for same source in a row, caching result would be nice.
@@ -979,8 +988,6 @@ TER RippleCalc::calcNodeAdvance(
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
 				cLog(lsTRACE) << "calcNodeAdvance: temporarily unfunded offer (forward)";
-
-				bEntryAdvance	= true;
 				continue;
 			}
 
@@ -994,24 +1001,21 @@ TER RippleCalc::calcNodeAdvance(
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
 				cLog(lsTRACE) << "calcNodeAdvance: temporarily unfunded offer (reverse)";
-
-				bEntryAdvance	= true;
 				continue;
 			}
 
+			// Determine if used in past.
+			// We only need to know if it might need to be marked unfunded.
 			curIssuerNodeConstIterator	itPast			= mumSource.find(asLine);
 			bool						bFoundPast		= itPast != mumSource.end();
 
-			// Determine if used in past.
-			// XXX Restriction seems like a misunderstanding.
-			if (bFoundPast && itPast->second != uNode)
-			{
-				// Temporarily unfunded. Another node uses this source, ignore in this offer.
-				cLog(lsTRACE) << "calcNodeAdvance: temporarily unfunded offer (past)";
-
-				bEntryAdvance	= true;
-				continue;
-			}
+			// XXX Restricting by node seems like a misunderstanding.
+			// if (bFoundPast && itPast->second != uNode)
+			// {
+			//	// Temporarily unfunded. Another node uses this source, ignore in this offer.
+			//	cLog(lsTRACE) << "calcNodeAdvance: temporarily unfunded offer (past)";
+			//	continue;
+			// }
 
 			// Only the current node is allowed to use the source.
 
@@ -1030,20 +1034,17 @@ TER RippleCalc::calcNodeAdvance(
 				}
 				else
 				{
-					// Moving forward, don't need to check again.
-					// Or source was used this reverse
-					// Or source was previously used
-					// XXX
+					// Moving forward, don't need to insert again
+					// Or, already found it.
 				}
 
 				// YYY Could verify offer is correct place for unfundeds.
-				bEntryAdvance	= true;
 				continue;
 			}
 
 			if (bReverse			// Need to remember reverse mention.
 				&& !bFoundPast		// Not mentioned in previous passes.
-				&& !bFoundReverse)	// Not mentioned for pass.
+				&& !bFoundReverse)	// New to pass.
 			{
 				// Consider source mentioned by current path state.
 				cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: remember=%s/%s/%s")
