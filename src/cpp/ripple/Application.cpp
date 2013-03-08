@@ -26,7 +26,7 @@ Application* theApp = NULL;
 
 DatabaseCon::DatabaseCon(const std::string& strName, const char *initStrings[], int initCount)
 {
-	boost::filesystem::path	pPath	= (theConfig.RUN_STANDALONE && (!theConfig.START_UP != Config::LOAD))
+	boost::filesystem::path	pPath	= (theConfig.RUN_STANDALONE && (theConfig.START_UP != Config::LOAD))
 										? ""								// Use temporary files.
 										: (theConfig.DATA_DIR / strName);		// Use regular db files.
 
