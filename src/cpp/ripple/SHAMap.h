@@ -37,6 +37,9 @@ private:
 
 	void setHash() const;
 
+protected:
+	SHAMapNode(int depth, const uint256& id, bool) : mNodeID(id), mDepth(depth), mHash(0) { ; }
+
 public:
 
 	static const int rootDepth = 0;
@@ -63,12 +66,13 @@ public:
 
 	bool operator<(const SHAMapNode&) const;
 	bool operator>(const SHAMapNode&) const;
-	bool operator==(const SHAMapNode&) const;
-	bool operator==(const uint256&) const;
-	bool operator!=(const SHAMapNode&) const;
-	bool operator!=(const uint256&) const;
 	bool operator<=(const SHAMapNode&) const;
 	bool operator>=(const SHAMapNode&) const;
+
+	bool operator==(const SHAMapNode& n) const	{ return (mDepth == n.mDepth) && (mNodeID == n.mNodeID); }
+	bool operator==(const uint256& n) const		{ return n == mNodeID; }
+	bool operator!=(const SHAMapNode& n) const	{ return (mDepth != n.mDepth) || (mNodeID != n.mNodeID); }
+	bool operator!=(const uint256& n) const		{ return n != mNodeID; }
 
 	virtual std::string getString() const;
 	void dump() const;
