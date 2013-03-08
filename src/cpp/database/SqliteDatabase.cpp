@@ -239,25 +239,25 @@ void SqliteDatabase::runWal()
 	{
 		{
 			boost::mutex::scoped_lock sl(walMutex);
-			walDBs.swap(walSet);
-			if (walSet.empty())
+			if (walDBs.empty())
 			{
 				walRunning = false;
 				return;
 			}
+			walDBs.swap(walSet);
 		}
 
 		BOOST_FOREACH(const std::string& db, walSet)
 		{
-			int log, ckpt;
+			int log = 0, ckpt = 0;
 			int ret = sqlite3_wal_checkpoint_v2(mConnection, db.c_str(), SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
 			if (ret != SQLITE_OK)
 			{
-				cLog((ret == SQLITE_LOCKED) ? lsTRACE : lsWARNING) << "WAL " << mHost << ":"
+				cLog((ret == SQLITE_LOCKED) ? lsTRACE : lsWARNING) << "WAL " << name << ":"
 					<< db << " error " << ret;
 			}
 			else
-				cLog(lsTRACE) << "WAL(" << mHost << "): pass=" << pass << ", frames=" << log << ", written=" << ckpt;
+				cLog(lsTRACE) << "WAL(" << name << "): pass=" << pass << ", frames=" << log << ", written=" << ckpt;
 		}
 		walSet.clear();
 		++pass;
