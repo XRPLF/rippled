@@ -188,7 +188,6 @@
     <ClCompile Include="src\cpp\ripple\Wallet.cpp" />
     <ClCompile Include="src\cpp\ripple\WalletAddTransactor.cpp" />
     <ClCompile Include="src\cpp\ripple\WSDoor.cpp" />
-    <ClCompile Include="src\cpp\ripple\WSHandler.cpp" />
     <ClCompile Include="src\cpp\websocketpp\src\base64\base64.cpp" />
     <ClCompile Include="src\cpp\websocketpp\src\md5\md5.c" />
     <ClCompile Include="src\cpp\websocketpp\src\messages\data.cpp" />

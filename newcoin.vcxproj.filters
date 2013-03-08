@@ -354,9 +354,6 @@
     <ClCompile Include="src\cpp\ripple\ProofOfWork.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\WSHandler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
