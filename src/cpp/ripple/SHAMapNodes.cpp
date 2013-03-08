@@ -60,26 +60,6 @@ bool SHAMapNode::operator>=(const SHAMapNode &s) const
 	return mNodeID >= s.mNodeID;
 }
 
-bool SHAMapNode::operator==(const SHAMapNode &s) const
-{
-	return (s.mDepth == mDepth) && (s.mNodeID == mNodeID);
-}
-
-bool SHAMapNode::operator!=(const SHAMapNode &s) const
-{
-	return (s.mDepth != mDepth) || (s.mNodeID != mNodeID);
-}
-
-bool SHAMapNode::operator==(const uint256 &s) const
-{
-	return s == mNodeID;
-}
-
-bool SHAMapNode::operator!=(const uint256 &s) const
-{
-	return s != mNodeID;
-}
-
 bool SMN_j = SHAMapNode::ClassInit();
 
 bool SHAMapNode::ClassInit()
@@ -102,9 +82,10 @@ uint256 SHAMapNode::getNodeID(int depth, const uint256& hash)
 	return hash & smMasks[depth];
 }
 
-SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mNodeID(getNodeID(depth,hash)), mDepth(depth), mHash(0)
+SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mNodeID(hash), mDepth(depth), mHash(0)
 { // canonicalize the hash to a node ID for this depth
 	assert((depth >= 0) && (depth < 65));
+	mNodeID &= smMasks[depth];
 }
 
 SHAMapNode::SHAMapNode(const void *ptr, int len) : mHash(0)
@@ -136,10 +117,9 @@ SHAMapNode SHAMapNode::getChildNodeID(int m) const
 	assert((m >= 0) && (m < 16));
 
 	uint256 child(mNodeID);
+	child.begin()[mDepth/2] |= (mDepth & 1) ? m : (m << 4);
 
-	child.begin()[mDepth/2] |= (mDepth & 1) ? m : m << 4;
-
-	return SHAMapNode(mDepth + 1, child);
+	return SHAMapNode(mDepth + 1, child, true);
 }
 
 int SHAMapNode::selectBranch(const uint256& hash) const
