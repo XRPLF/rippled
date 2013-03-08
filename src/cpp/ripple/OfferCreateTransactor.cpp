@@ -46,7 +46,6 @@ TER OfferCreateTransactor::takeOffers(
 	const uint160			uTakerGetsAccountID	= saTakerGets.getIssuer();
 	TER						terResult			= temUNCERTAIN;
 
-	boost::unordered_set<uint256>	usOfferUnfundedFound;	// Offers found unfunded.
 	boost::unordered_set<uint256>	usOfferUnfundedBecame;	// Offers that became unfunded.
 	boost::unordered_set<uint160>	usAccountTouched;		// Accounts touched.
 
@@ -153,7 +152,7 @@ TER OfferCreateTransactor::takeOffers(
 				// Would take own offer. Consider old offer expired. Delete it.
 				cLog(lsINFO) << "takeOffers: encountered taker's own old offer";
 
-				usOfferUnfundedFound.insert(uOfferIndex);
+				usOfferUnfundedBecame.insert(uOfferIndex);
 			}
 			else if (!saOfferGets.isPositive() || !saOfferPays.isPositive())
 			{
@@ -304,20 +303,6 @@ TER OfferCreateTransactor::takeOffers(
 
 	cLog(lsINFO) << "takeOffers: " << transToken(terResult);
 
-	// On storing meta data, delete offers that were found unfunded to prevent encountering them in future.
-	if (tesSUCCESS == terResult)
-	{
-		BOOST_FOREACH(const uint256& uOfferIndex, usOfferUnfundedFound)
-		{
-
-			cLog(lsINFO) << "takeOffers: found unfunded: " << uOfferIndex.ToString();
-
-			terResult	= mEngine->getNodes().offerDelete(uOfferIndex);
-			if (tesSUCCESS != terResult)
-				break;
-		}
-	}
-
 	if (tesSUCCESS == terResult)
 	{
 		// On success, delete offers that became unfunded.
@@ -368,6 +353,9 @@ TER OfferCreateTransactor::doApply()
 	uint256					uDirectory;		// Delete hints.
 	uint64					uOwnerNode;
 	uint64					uBookNode;
+
+	LedgerEntrySet&			lesActive			= mEngine->getNodes();
+    LedgerEntrySet			lesCheckpoint		= lesActive;							// Checkpoint with just fees paid.
 
 	if (uTxFlags & tfOfferCreateMask)
 	{
@@ -500,7 +488,7 @@ TER OfferCreateTransactor::doApply()
 	else if (bFillOrKill && (saTakerPays || saTakerGets))
 	{
 		// Fill or kill and have leftovers.
-		terResult	= tecKILL;
+		lesActive.swapWith(lesCheckpoint);									// Restore with just fees paid.
 	}
 	else if (
 		!saTakerPays														// Wants nothing more.
@@ -596,6 +584,20 @@ TER OfferCreateTransactor::doApply()
 			cLog(lsINFO) << boost::str(boost::format("OfferCreate: final terResult=%s sleOffer=%s")
 				% transToken(terResult)
 				% sleOffer->getJson(0));
+		}
+	}
+
+	// On storing meta data, delete offers that were found unfunded to prevent encountering them in future.
+	if (tesSUCCESS == terResult)
+	{
+		BOOST_FOREACH(const uint256& uOfferIndex, usOfferUnfundedFound)
+		{
+
+			cLog(lsINFO) << "takeOffers: found unfunded: " << uOfferIndex.ToString();
+
+			terResult	= mEngine->getNodes().offerDelete(uOfferIndex);
+			if (tesSUCCESS != terResult)
+				break;
 		}
 	}
 

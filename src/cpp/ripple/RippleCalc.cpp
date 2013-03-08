@@ -944,9 +944,8 @@ TER RippleCalc::calcNodeAdvance(
 
 				if (musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end())
 				{
-					// Reverse should have previously put bad offer in list.
-					// An internal error previously left a bad offer.
-					cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: REVERSE INTERNAL ERROR: NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
+					// An internal error, offer was found failed to place this in musUnfundedFound.
+					cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: PAST INTERNAL ERROR: OFFER NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
 						% saTakerPays % saTakerGets);
 
 					// Just skip it. It will be deleted.
@@ -954,15 +953,18 @@ TER RippleCalc::calcNodeAdvance(
 				}
 				else
 				{
-					// An internal error failed to place this in musUnfundedFound.
-					cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: OFFER INTERNAL ERROR: NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
+					// Reverse should have previously put bad offer in list.
+					// An internal error previously left a bad offer.
+					cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: INTERNAL ERROR: OFFER NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
 						% saTakerPays % saTakerGets);
-
+assert(false);
 					// Don't process at all, things are in an unexpected state for this transactions.
 					terResult		= tefEXCEPTION;
 				}
 				continue;
 			}
+
+			bEntryAdvance	= false;
 
 			// Allowed to access source from this node?
 			// XXX This can get called multiple times for same source in a row, caching result would be nice.
@@ -982,25 +984,12 @@ TER RippleCalc::calcNodeAdvance(
 				continue;
 			}
 
-			curIssuerNodeConstIterator	itPast			= mumSource.find(asLine);
-			bool						bFoundPast		= itPast != mumSource.end();
-
-			// Don't allow a source of funding used in previous increments to be reused.
-			// XXX This seems overly strict. Why???
-			if (bFoundPast && itPast->second != uNode)
-			{
-				// Temporarily unfunded. Another node uses this source, ignore in this offer.
-				cLog(lsTRACE) << "calcNodeAdvance: temporarily unfunded offer (past)";
-
-				bEntryAdvance	= true;
-				continue;
-			}
-
+			// This is overly strict. For contributions to past. We should only count source if actually used.
 			curIssuerNodeConstIterator	itReverse		= psCur.umReverse.find(asLine);
 			bool						bFoundReverse	= itReverse != psCur.umReverse.end();
 
-			// For this increment, only allow a source to be used once, in the first node encountered from applying offers in
-			// reverse.
+			// For this quality increment, only allow a source to be used from a single node, in the first node encountered from applying offers
+			// in reverse.
 			if (bFoundReverse && itReverse->second != uNode)
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
@@ -1010,7 +999,23 @@ TER RippleCalc::calcNodeAdvance(
 				continue;
 			}
 
-			saOfferFunds	= lesActive.accountFunds(uOfrOwnerID, saTakerGets);	// Funds left.
+			curIssuerNodeConstIterator	itPast			= mumSource.find(asLine);
+			bool						bFoundPast		= itPast != mumSource.end();
+
+			// Determine if used in past.
+			// XXX Restriction seems like a misunderstanding.
+			if (bFoundPast && itPast->second != uNode)
+			{
+				// Temporarily unfunded. Another node uses this source, ignore in this offer.
+				cLog(lsTRACE) << "calcNodeAdvance: temporarily unfunded offer (past)";
+
+				bEntryAdvance	= true;
+				continue;
+			}
+
+			// Only the current node is allowed to use the source.
+
+			saOfferFunds	= lesActive.accountFunds(uOfrOwnerID, saTakerGets);	// Funds held.
 
 			if (!saOfferFunds.isPositive())
 			{
@@ -1019,8 +1024,16 @@ TER RippleCalc::calcNodeAdvance(
 
 				if (bReverse && !bFoundReverse && !bFoundPast)
 				{
-					// Never mentioned before: found unfunded.
+					// Never mentioned before, clearly just: found unfunded.
+					// That is, even if this offer fails due to fill or kill still do deletions.
 					musUnfundedFound.insert(uOfferIndex);				// Mark offer for always deletion.
+				}
+				else
+				{
+					// Moving forward, don't need to check again.
+					// Or source was used this reverse
+					// Or source was previously used
+					// XXX
 				}
 
 				// YYY Could verify offer is correct place for unfundeds.
