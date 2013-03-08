@@ -39,6 +39,7 @@ private:
 
 public:
 	RippleState(){ }
+	virtual ~RippleState(){}
 	AccountItem::pointer makeItem(const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry);
 	LedgerEntryType getType(){ return(ltRIPPLE_STATE); }
 
@@ -47,6 +48,7 @@ public:
 	const uint160&		getAccountID() const		{ return  mViewLowest ? mLowID : mHighID; }
 	const uint160&		getAccountIDPeer() const	{ return !mViewLowest ? mLowID : mHighID; }
 
+	// True, Provided auth to peer.
 	bool				getAuth() const				{ return isSetBit(mFlags,  mViewLowest ? lsfLowAuth : lsfHighAuth); }
 	bool				getAuthPeer() const			{ return isSetBit(mFlags, !mViewLowest ? lsfLowAuth : lsfHighAuth); }
 
@@ -61,6 +63,7 @@ public:
 	SerializedLedgerEntry::pointer getSLE() { return mLedgerEntry; }
 	const SerializedLedgerEntry& peekSLE() const { return *mLedgerEntry; }
 	SerializedLedgerEntry& peekSLE() { return *mLedgerEntry; }
+	Json::Value getJson(int);
 
 	std::vector<unsigned char> getRaw() const;
 };

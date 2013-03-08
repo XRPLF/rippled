@@ -34,6 +34,8 @@ Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, 
 	mActive(2),
 	mCluster(false),
 	mPeerId(peerID),
+	mPrivate(false),
+	mLoad(""),
 	mSocketSsl(io_service, ctx),
 	mActivityTimer(io_service)
 {
@@ -77,6 +79,7 @@ void Peer::handleWrite(const boost::system::error_code& error, size_t bytes_tran
 void Peer::setIpPort(const std::string& strIP, int iPort)
 {
 	mIpPort = make_pair(strIP, iPort);
+	mLoad.rename(strIP);
 
 	cLog(lsDEBUG) << "Peer: Set: "
 		<< ADDRESS(this) << "> "
@@ -440,6 +443,7 @@ void Peer::processReadBuffer()
 		{
 		case ripple::mtHELLO:
 			{
+				event->reName("Peer::hello");
 				ripple::TMHello msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvHello(msg);
@@ -450,6 +454,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtERROR_MSG:
 			{
+				event->reName("Peer::errormessage");
 				ripple::TMErrorMsg msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvErrorMessage(msg);
@@ -460,6 +465,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtPING:
 			{
+				event->reName("Peer::ping");
 				ripple::TMPing msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvPing(msg);
@@ -470,6 +476,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtGET_CONTACTS:
 			{
+				event->reName("Peer::getcontacts");
 				ripple::TMGetContacts msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetContacts(msg);
@@ -480,6 +487,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtCONTACT:
 			{
+				event->reName("Peer::contact");
 				ripple::TMContact msg;
 
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -491,6 +499,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtGET_PEERS:
 			{
+				event->reName("Peer::getpeers");
 				ripple::TMGetPeers msg;
 
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -502,6 +511,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtPEERS:
 			{
+				event->reName("Peer::peers");
 				ripple::TMPeers msg;
 
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -513,6 +523,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtSEARCH_TRANSACTION:
 			{
+				event->reName("Peer::searchtransaction");
 				ripple::TMSearchTransaction msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvSearchTransaction(msg);
@@ -523,6 +534,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtGET_ACCOUNT:
 			{
+				event->reName("Peer::getaccount");
 				ripple::TMGetAccount msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetAccount(msg);
@@ -533,6 +545,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtACCOUNT:
 			{
+				event->reName("Peer::account");
 				ripple::TMAccount msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvAccount(msg);
@@ -543,6 +556,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtTRANSACTION:
 			{
+				event->reName("Peer::transaction");
 				ripple::TMTransaction msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvTransaction(msg);
@@ -553,6 +567,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtSTATUS_CHANGE:
 			{
+				event->reName("Peer::statuschange");
 				ripple::TMStatusChange msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvStatus(msg);
@@ -563,6 +578,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtPROPOSE_LEDGER:
 			{
+				event->reName("Peer::propose");
 				boost::shared_ptr<ripple::TMProposeSet> msg = boost::make_shared<ripple::TMProposeSet>();
 				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvPropose(msg);
@@ -573,6 +589,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtGET_LEDGER:
 			{
+				event->reName("Peer::getledger");
 				ripple::TMGetLedger msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetLedger(msg);
@@ -583,6 +600,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtLEDGER_DATA:
 			{
+				event->reName("Peer::ledgerdata");
 				ripple::TMLedgerData msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvLedger(msg);
@@ -593,6 +611,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtHAVE_SET:
 			{
+				event->reName("Peer::haveset");
 				ripple::TMHaveTransactionSet msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvHaveTxSet(msg);
@@ -603,6 +622,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtVALIDATION:
 			{
+				event->reName("Peer::validation");
 				boost::shared_ptr<ripple::TMValidation> msg = boost::make_shared<ripple::TMValidation>();
 				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvValidation(msg);
@@ -624,6 +644,7 @@ void Peer::processReadBuffer()
 #endif
 		case ripple::mtGET_OBJECTS:
 			{
+				event->reName("Peer::getobjects");
 				ripple::TMGetObjectByHash msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetObjectByHash(msg);
@@ -634,6 +655,7 @@ void Peer::processReadBuffer()
 
 		case ripple::mtPROOFOFWORK:
 			{
+				event->reName("Peer::proofofwork");
 				ripple::TMProofWork msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvProofWork(msg);
@@ -644,6 +666,7 @@ void Peer::processReadBuffer()
 
 
 		default:
+			event->reName("Peer::unknown");
 			cLog(lsWARNING) << "Unknown Msg: " << type;
 			cLog(lsWARNING) << strHex(&mReadbuf[0], mReadbuf.size());
 		}
@@ -893,7 +916,9 @@ static void checkPropose(Job& job, boost::shared_ptr<ripple::TMProposeSet> packe
 		memcpy(prevLedger.begin(), set.previousledger().data(), 256 / 8);
 		if (!proposal->checkSign(set.signature()))
 		{
-			cLog(lsWARNING) << "proposal with previous ledger fails signature check";
+			Peer::pointer p = peer.lock();
+			cLog(lsWARNING) << "proposal with previous ledger fails signature check: " <<
+				(p ? p->getIP() : std::string("???"));
 			Peer::punishPeer(peer, LT_InvalidSignature);
 			return;
 		}

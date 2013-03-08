@@ -595,9 +595,13 @@ public:
 
 void NetworkOPs::checkState(const boost::system::error_code& result)
 { // Network state machine
+
 	if ((result == boost::asio::error::operation_aborted) || theConfig.RUN_STANDALONE)
 		return;
+
 	setStateTimer();
+
+	ScopedLock(theApp->getMasterLock());
 
 	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 
@@ -618,12 +622,9 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		cLog(lsINFO) << "Node count (" << peerList.size() << ") is sufficient.";
 	}
 
-	if (mConsensus)
-	{
-		mConsensus->timerEntry();
-		return;
-	}
-	tryStartConsensus();
+	if (!mConsensus)
+		tryStartConsensus();
+
 	if (mConsensus)
 		mConsensus->timerEntry();
 }
@@ -632,7 +633,7 @@ void NetworkOPs::tryStartConsensus()
 {
 	uint256 networkClosed;
 	bool ledgerChange = checkLastClosedLedger(theApp->getConnectionPool().getPeerVector(), networkClosed);
-	if(networkClosed.isZero())
+	if (networkClosed.isZero())
 		return;
 
 	// WRITEME: Unless we are in omFULL and in the process of doing a consensus,
@@ -1065,8 +1066,9 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
 
 	std::string sql =
-		str(boost::format("SELECT LedgerSeq,Status,RawTxn,TxnMeta FROM Transactions where TransID in (SELECT TransID from AccountTransactions  "
-			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' LIMIT 200) ORDER BY LedgerSeq DESC;")
+		str(boost::format("SELECT LedgerSeq,Status,RawTxn,TxnMeta FROM Transactions where TransID in "
+			"(SELECT TransID from AccountTransactions  "
+			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' ) ORDER BY LedgerSeq DESC LIMIT 200;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{
@@ -1102,7 +1104,7 @@ std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
 
 	std::string sql =
 		str(boost::format("SELECT LedgerSeq, RawTxn,TxnMeta FROM Transactions where TransID in (SELECT TransID from AccountTransactions  "
-			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' LIMIT 500) ORDER BY LedgerSeq DESC;")
+			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' ) ORDER BY LedgerSeq DESC LIMIT 500;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{

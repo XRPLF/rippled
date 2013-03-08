@@ -15,4 +15,13 @@ Offer::Offer(SerializedLedgerEntry::pointer ledgerEntry) : AccountItem(ledgerEnt
 	mSeq = mLedgerEntry->getFieldU32(sfSequence);
 }
 
+Json::Value Offer::getJson(int)
+{
+	Json::Value ret(Json::objectValue);
+	ret["account"] = mAccount.humanAccountID();
+	ret["taker_gets"] = getTakerGets().getFullText();
+	ret["taker_pays"] = getTakerPays().getFullText();
+	return ret;
+}
+
 // vim:ts=4

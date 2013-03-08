@@ -19,6 +19,7 @@
 #include "SHAMap.h"
 #include "InstanceCounter.h"
 #include "LoadMonitor.h"
+#include "JobQueue.h"
 
 enum LedgerStateParms
 {
@@ -88,9 +89,6 @@ private:
 
 	mutable boost::recursive_mutex mLock;
 
-	static int sPendingSaves;
-	static boost::recursive_mutex sPendingSaveLock;
-
 	Ledger(const Ledger&);				// no implementation
 	Ledger& operator=(const Ledger&);	// no implementation
 
@@ -100,9 +98,7 @@ protected:
 	// returned SLE is immutable
 	SLE::pointer getASNodeI(const uint256& nodeID, LedgerEntryType let);
 
-	static void incPendingSaves();
-	static void decPendingSaves();
-	void saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer);
+	void saveAcceptedLedger(Job&, bool fromConsensus);
 
 	void updateFees();
 	void zeroFees();
@@ -125,7 +121,6 @@ public:
 	static Ledger::pointer getSQL1(SqliteStatement*);
 	static void getSQL2(Ledger::ref);
 	static Ledger::pointer getLastFullLedger();
-	static int getPendingSaves();
 	static uint32 roundCloseTime(uint32 closeTime, uint32 closeResolution);
 
 	void updateHash();

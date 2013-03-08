@@ -102,10 +102,9 @@ uint256 SHAMapNode::getNodeID(int depth, const uint256& hash)
 	return hash & smMasks[depth];
 }
 
-SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mDepth(depth), mHash(0)
+SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mNodeID(getNodeID(depth,hash)), mDepth(depth), mHash(0)
 { // canonicalize the hash to a node ID for this depth
 	assert((depth >= 0) && (depth < 65));
-	mNodeID = getNodeID(depth, hash);
 }
 
 SHAMapNode::SHAMapNode(const void *ptr, int len) : mHash(0)
@@ -177,12 +176,12 @@ void SHAMapNode::dump() const
 }
 
 SHAMapTreeNode::SHAMapTreeNode(uint32 seq, const SHAMapNode& nodeID) : SHAMapNode(nodeID), mHash(0),
-	mSeq(seq), mAccessSeq(seq),	mType(tnERROR), mFullBelow(false)
+	mSeq(seq), mAccessSeq(seq),	mType(tnERROR), mIsBranch(0), mFullBelow(false)
 {
 }
 
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq) : SHAMapNode(node),
-		mHash(node.mHash), mSeq(seq), mType(node.mType), mFullBelow(false)
+		mHash(node.mHash), mSeq(seq), mType(node.mType), mIsBranch(0), mFullBelow(false)
 {
 	if (node.mItem)
 		mItem = boost::make_shared<SHAMapItem>(*node.mItem);
@@ -191,18 +190,19 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq) : SHAMapN
 
 	for (int i = 0; i < 16; ++i)
 		if (mHashes[i].isNonZero())
-			mIsBranch.set(i);
+			mIsBranch |= (1 << i);
 }
 
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::ref item, TNType type, uint32 seq) :
-	SHAMapNode(node), mItem(item), mSeq(seq), mType(type), mFullBelow(true)
+	SHAMapNode(node), mItem(item), mSeq(seq), mType(type), mIsBranch(0), mFullBelow(true)
 {
 	assert(item->peekData().size() >= 12);
 	updateHash();
 }
 
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& rawNode, uint32 seq,
-	SHANodeFormat format, const uint256& hash) : SHAMapNode(id), mSeq(seq), mType(tnERROR), mFullBelow(false)
+	SHANodeFormat format, const uint256& hash) :
+		SHAMapNode(id), mSeq(seq), mType(tnERROR), mIsBranch(0), mFullBelow(false)
 {
 	if (format == snfWIRE)
 	{
@@ -243,7 +243,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 			{
 				s.get256(mHashes[i], i * 32);
 				if (mHashes[i].isNonZero())
-					mIsBranch.set(i);
+					mIsBranch |= (1 << i);
 			}
 			mType = tnINNER;
 		}
@@ -255,10 +255,9 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 				s.get8(pos, 32 + (i * 33));
 				if ((pos < 0) || (pos >= 16)) throw std::runtime_error("invalid CI node");
 				s.get256(mHashes[pos], i * 33);
+				if (mHashes[pos].isNonZero())
+					mIsBranch |= (1 << pos);
 			}
-			for (int i = 0; i < 16; ++i)
-				if (mHashes[i].isNonZero())
-					mIsBranch.set(i);
 			mType = tnINNER;
 		}
 		else if (type == 4)
@@ -315,7 +314,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 			{
 				s.get256(mHashes[i] , i * 32);
 				if (mHashes[i].isNonZero())
-					mIsBranch.set(i);
+					mIsBranch |= (1 << i);
 			}
 			mType = tnINNER;
 		}
@@ -360,7 +359,7 @@ bool SHAMapTreeNode::updateHash()
 
 	if (mType == tnINNER)
 	{
-		if(mIsBranch.any())
+		if (mIsBranch != 0)
 		{
 			nh = Serializer::getPrefixHash(sHP_InnerNode, reinterpret_cast<unsigned char *>(mHashes), sizeof(mHashes));
 #ifdef PARANOID
@@ -422,10 +421,10 @@ void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 		}
 		else
 		{
-			if (mIsBranch.count() < 12)
+			if (getBranchCount() < 12)
 			{ // compressed node
 				for (int i = 0; i < 16; ++i)
-					if (mIsBranch.test(i))
+					if (!isEmptyBranch(i))
 					{
 						s.add256(mHashes[i]);
 						s.add8(i);
@@ -505,19 +504,23 @@ SHAMapItem::pointer SHAMapTreeNode::getItem() const
 
 bool SHAMapTreeNode::isEmpty() const
 {
-	return mIsBranch.none();
+	return mIsBranch == 0;
 }
 
 int SHAMapTreeNode::getBranchCount() const
 {
 	assert(isInner());
-	return mIsBranch.count();
+	int count = 0;
+	for (int i = 0; i < 16; ++i)
+		if (!isEmptyBranch(i))
+			++count;
+	return count;
 }
 
 void SHAMapTreeNode::makeInner()
 {
 	mItem.reset();
-	mIsBranch.reset();
+	mIsBranch = 0;
 	memset(mHashes, 0, sizeof(mHashes));
 	mType = tnINNER;
 	mHash.zero();
@@ -574,7 +577,10 @@ bool SHAMapTreeNode::setChildHash(int m, const uint256 &hash)
 	if(mHashes[m] == hash)
 		return false;
 	mHashes[m] = hash;
-	mIsBranch.set(m, hash.isNonZero());
+	if (hash.isNonZero())
+		mIsBranch |= (1 << m);
+	else
+		mIsBranch &= ~(1 << m);
 	return updateHash();
 }
 

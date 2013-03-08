@@ -5,8 +5,10 @@
 
 class OfferCreateTransactor : public Transactor
 {
+protected:
 	TER takeOffers(
-		bool				bPassive,
+		const bool			bOpenLedger,
+		const bool			bPassive,
 		const uint256&		uBookBase,
 		const uint160&		uTakerAccountID,
 		SLE::ref			sleTakerAccount,
@@ -15,6 +17,8 @@ class OfferCreateTransactor : public Transactor
 		STAmount&			saTakerPaid,
 		STAmount&			saTakerGot,
 		bool&				bUnfunded);
+
+	boost::unordered_set<uint256>	usOfferUnfundedFound;	// Offers found unfunded.
 
 public:
 	OfferCreateTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine) : Transactor(txn,params,engine) {}

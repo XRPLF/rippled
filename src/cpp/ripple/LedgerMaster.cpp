@@ -116,7 +116,7 @@ Ledger::pointer LedgerMaster::closeLedger(bool recover)
 	mCurrentLedger = boost::make_shared<Ledger>(boost::ref(*closingLedger), true);
 	mEngine.setLedger(mCurrentLedger);
 
-	return closingLedger;
+	return Ledger::pointer(new Ledger(*closingLedger, true));
 }
 
 TER LedgerMaster::doTransaction(SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply)
@@ -388,7 +388,7 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 		return;
 	}
 
-	if (Ledger::getPendingSaves() > 2)
+	if (theApp->getJobQueue().getJobCount(jtPUBOLDLEDGER) > 2)
 	{
 		mTooFast = true;
 		cLog(lsDEBUG) << "Too many pending ledger saves";

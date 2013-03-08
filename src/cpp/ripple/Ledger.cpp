@@ -62,8 +62,8 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 	zeroFees();
 }
 
-Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins), mLedgerSeq(ledger.mLedgerSeq),
-	mCloseTime(ledger.mCloseTime), mParentCloseTime(ledger.mParentCloseTime),
+Ledger::Ledger(Ledger& ledger, bool isMutable) : mParentHash(ledger.mParentHash), mTotCoins(ledger.mTotCoins),
+	mLedgerSeq(ledger.mLedgerSeq), mCloseTime(ledger.mCloseTime), mParentCloseTime(ledger.mParentCloseTime),
 	mCloseResolution(ledger.mCloseResolution), mCloseFlags(ledger.mCloseFlags),
 	mClosed(ledger.mClosed), mValidHash(false), mAccepted(ledger.mAccepted), mImmutable(!isMutable),
 	mTransactionMap(ledger.mTransactionMap->snapShot(isMutable)),
@@ -400,8 +400,8 @@ uint256 Ledger::getHash()
 	return mHash;
 }
 
-void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
-{ // can be called in a different thread
+void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
+{
 	cLog(lsTRACE) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq();
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers INDEXED BY SeqLedger where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
@@ -502,7 +502,8 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 			db->executeSQL("COMMIT TRANSACTION;");
 		}
 
-		theApp->getHashedObjectStore().waitWrite(); // wait until all nodes are written
+		if (!theConfig.RUN_STANDALONE)
+			theApp->getHashedObjectStore().waitWrite(); // wait until all nodes are written
 
 		{
 			ScopedLock sl(theApp->getLedgerDB()->getDBLock());
@@ -516,14 +517,12 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 
 	if (!fromConsensus)
 	{
-		decPendingSaves();
 		dropCache();
 		return;
 	}
 
-	event->stop();
-
-	decPendingSaves();
+	if (theApp->getJobQueue().getJobCount(jtPUBOLDLEDGER) == 0)
+		theApp->getLedgerMaster().resumeAcquiring();
 }
 
 #ifndef NO_SQLITE3_PREPARE
@@ -1502,15 +1501,6 @@ void Ledger::updateSkipList()
 	}
 }
 
-int Ledger::sPendingSaves = 0;
-boost::recursive_mutex Ledger::sPendingSaveLock;
-
-int Ledger::getPendingSaves()
-{
-	boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
-	return sPendingSaves;
-}
-
 uint32 Ledger::roundCloseTime(uint32 closeTime, uint32 closeResolution)
 {
 	if (closeTime == 0)
@@ -1525,25 +1515,10 @@ void Ledger::pendSave(bool fromConsensus)
 		return;
 	assert(isImmutable());
 
-	{
-		boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
-		++sPendingSaves;
-	}
+	theApp->getJobQueue().addJob(fromConsensus ? jtPUBLEDGER : jtPUBOLDLEDGER,
+		fromConsensus ? "Ledger::pendSave" : "Ledger::pendOldSave",
+		boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(), _1, fromConsensus));
 
-	boost::thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(), fromConsensus,
-		theApp->getJobQueue().getLoadEvent(jtDISK, fromConsensus ? "Ledger::cSave" : "Ledger::save"))).detach();
-
-}
-
-void Ledger::decPendingSaves()
-{
-	{
-		boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
-		--sPendingSaves;
-		if (sPendingSaves != 0)
-			return;
-	}
-	theApp->getLedgerMaster().resumeAcquiring();
 }
 
 void Ledger::ownerDirDescriber(SLE::ref sle, const uint160& owner)

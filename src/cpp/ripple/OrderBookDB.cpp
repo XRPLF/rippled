@@ -20,6 +20,8 @@ void OrderBookDB::invalidate()
 // TODO: this would be way faster if we could just look under the order dirs
 void OrderBookDB::setup(Ledger::ref ledger)
 {
+	boost::unordered_set<uint256> mSeen;
+
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	if (ledger->getLedgerSeq() == mSeq)
@@ -30,7 +32,6 @@ void OrderBookDB::setup(Ledger::ref ledger)
 
 	mXRPOrders.clear();
 	mIssuerMap.clear();
-	mKnownMap.clear();
 
 	// walk through the entire ledger looking for orderbook entries
 	uint256 currentIndex = ledger->getFirstLedgerIndex();
@@ -39,35 +40,29 @@ void OrderBookDB::setup(Ledger::ref ledger)
 
 	while (currentIndex.isNonZero())
 	{
-		SLE::pointer entry=ledger->getSLEi(currentIndex);
-
-		OrderBook::pointer book = OrderBook::newOrderBook(entry);
-		if (book)
+		SLE::pointer entry = ledger->getSLEi(currentIndex);
+		if ((entry->getType() == ltDIR_NODE) && (entry->isFieldPresent(sfExchangeRate)) &&
+			(entry->getFieldH256(sfRootIndex) == currentIndex))
 		{
-			cLog(lsTRACE) << "OrderBookDB: found book";
+			const uint160& ci = entry->getFieldH160(sfTakerPaysCurrency);
+			const uint160& co = entry->getFieldH160(sfTakerGetsCurrency);
+			const uint160& ii = entry->getFieldH160(sfTakerPaysIssuer);
+			const uint160& io = entry->getFieldH160(sfTakerGetsIssuer);
 
-			if (mKnownMap.find(book->getBookBase()) == mKnownMap.end())
+			uint256 index = Ledger::getBookBase(ci, ii, co, io);
+			if (mSeen.insert(index).second)
 			{
-				mKnownMap[book->getBookBase()] = true;
+				OrderBook::pointer book = boost::make_shared<OrderBook>(boost::cref(index),
+					boost::cref(ci), boost::cref(co), boost::cref(ii), boost::cref(io));
 
-				cLog(lsTRACE) << "OrderBookDB: unknown book in: "
-					<< STAmount::createHumanCurrency(book->getCurrencyIn())
-					<< " -> "
-					<< STAmount::createHumanCurrency(book->getCurrencyOut());
-
-				if (!book->getCurrencyIn())
-				{
-					// XRP
+				if (!book->getCurrencyIn())			// XRP
 					mXRPOrders.push_back(book);
-				}
 				else
-				{
 					mIssuerMap[book->getIssuerIn()].push_back(book);
-				}
 			}
 		}
 
-		currentIndex=ledger->getNextLedgerIndex(currentIndex);
+		currentIndex = ledger->getNextLedgerIndex(currentIndex);
 	}
 
 	cLog(lsDEBUG) << "OrderBookDB<";

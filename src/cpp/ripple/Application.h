@@ -64,7 +64,6 @@ class Application
 	SLECache				mSLECache;
 	SNTPClient				mSNTPClient;
 	JobQueue				mJobQueue;
-	RPCHandler				mRPCHandler;
 	ProofOfWorkGenerator	mPOWGen;
 	LoadManager				mLoadMgr;
 	LoadFeeTrack			mFeeTrack;
@@ -114,7 +113,6 @@ public:
 	ValidationCollection& getValidations()			{ return mValidations; }
 	JobQueue& getJobQueue()							{ return mJobQueue; }
 	SuppressionTable& getSuppression()				{ return mSuppressions; }
-	RPCHandler& getRPCHandler()						{ return mRPCHandler; }
 	boost::recursive_mutex& getMasterLock()			{ return mMasterLock; }
 	ProofOfWorkGenerator& getPowGen()				{ return mPOWGen; }
 	LoadManager& getLoadManager()					{ return mLoadMgr; }

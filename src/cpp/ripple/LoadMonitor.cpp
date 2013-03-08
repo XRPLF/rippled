@@ -30,12 +30,12 @@ void LoadMonitor::update()
 	} while (mLastUpdate < now);
 }
 
-void LoadMonitor::addCount(int counts)
+void LoadMonitor::addCount()
 {
 	boost::mutex::scoped_lock sl(mLock);
 
 	update();
-	mCounts += counts;
+	++mCounts;
 }
 
 void LoadMonitor::addLatency(int latency)
@@ -55,18 +55,19 @@ void LoadMonitor::addLatency(int latency)
 		mLatencyMSPeak = lp;
 }
 
-void LoadMonitor::addCountAndLatency(const std::string& name, int counts, int latency)
+void LoadMonitor::addCountAndLatency(const std::string& name, int latency)
 {
-	if (latency > 1000)
+	if (latency > 500)
 	{
-		cLog(lsWARNING) << "Job: " << name << " ExecutionTime: " << latency;
+		cLog((latency > 1000) ? lsWARNING : lsINFO) << "Job: " << name << " ExecutionTime: " << latency;
 	}
 	if (latency == 1)
 		latency = 0;
+
 	boost::mutex::scoped_lock sl(mLock);
 
 	update();
-	mCounts += counts;
+	++mCounts;
 	++mLatencyEvents;
 	mLatencyMSAvg += latency;
 	mLatencyMSPeak += latency;

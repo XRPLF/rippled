@@ -4,7 +4,6 @@
 #include <list>
 #include <map>
 #include <stack>
-#include <bitset>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -166,10 +165,10 @@ public:
 private:
 	uint256				mHash;
 	uint256				mHashes[16];
-	std::bitset<16>		mIsBranch;
 	SHAMapItem::pointer	mItem;
 	uint32				mSeq, mAccessSeq;
 	TNType				mType;
+	int					mIsBranch;
 	bool				mFullBelow;
 
 	bool updateHash();
@@ -208,7 +207,7 @@ public:
 	// inner node functions
 	bool isInnerNode() const		{ return !mItem; }
 	bool setChildHash(int m, const uint256& hash);
-	bool isEmptyBranch(int m) const	{ return !mIsBranch.test(m); }
+	bool isEmptyBranch(int m) const	{ return (mIsBranch & (1 << m)) == 0; }
 	bool isEmpty() const;
 	int getBranchCount() const;
 	void makeInner();

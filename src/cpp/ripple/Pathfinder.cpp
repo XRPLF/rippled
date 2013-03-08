@@ -79,9 +79,17 @@ PathOption::PathOption(PathOption::pointer other)
 #endif
 
 // Lower numbers have better quality. Sort higher quality first.
-static bool bQualityCmp(std::pair<uint32, unsigned int> a, std::pair<uint32, unsigned int> b)
+static bool bQualityCmp(
+	std::pair< std::pair<uint64, int>, unsigned int> a,
+	std::pair< std::pair<uint64, int>, unsigned int> b)
 {
-	return a.first < b.first;
+	if (a.first.first != b.first.first)
+		return a.first.first < b.first.first;
+
+	if (a.first.second != b.first.second)
+		return a.first.second < b.first.second;
+
+	return a.second < b.second; // FIXME: this biases accounts
 }
 
 // Return true, if path is a default path with an element.
@@ -280,7 +288,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			}
 			else
 			{
-				cLog(lsTRACE) << "findPaths: empty path: XRP->XRP";
+				cLog(lsWARNING) << "findPaths: empty path: XRP->XRP";
 			}
 
 			continue;
@@ -405,14 +413,20 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			if (sleEnd)
 			{
 				// On a non-XRP account:
+				// True, the cursor requires the next node to be authorized.
 				bool			bRequireAuth	= isSetBit(sleEnd->getFieldU32(sfFlags), lsfRequireAuth);
 
 				BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 				{
 					RippleState*	rspEntry	= (RippleState*) item.get();
-					const uint160	uPeerID		= rspEntry->getAccountIDPeer();
+					const uint160&	uPeerID		= rspEntry->getAccountIDPeer();
 
-					if (spPath.hasSeen(uPeerID, speEnd.mCurrencyID, uPeerID))
+					if (speEnd.mCurrencyID != rspEntry->getLimit().getCurrency())
+					{
+						// wrong currency
+						nothing();
+					}
+					else if (spPath.hasSeen(uPeerID, speEnd.mCurrencyID, uPeerID))
 					{
 						// Peer is in path already. Ignore it to avoid a loop.
 						cLog(lsTRACE) <<
@@ -424,7 +438,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					}
 					else if (!rspEntry->getBalance().isPositive()							// No IOUs to send.
 						&& (!rspEntry->getLimitPeer()										// Peer does not extend credit.
-							|| *rspEntry->getBalance().negate() >= rspEntry->getLimitPeer()	// No credit left.
+							|| -rspEntry->getBalance() >= rspEntry->getLimitPeer()			// No credit left.
 							|| (bRequireAuth && !rspEntry->getAuth())))						// Not authorized to hold credit.
 					{
 						// Path has no credit left. Ignore it.
@@ -459,6 +473,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			// Every book that wants the source currency.
 			std::vector<OrderBook::pointer> books;
 
+			// XXX Flip argument order to norm.
 			theApp->getOrderBookDB().getBooks(speEnd.mIssuerID, speEnd.mCurrencyID, books);
 
 			BOOST_FOREACH(OrderBook::ref book, books)
@@ -467,7 +482,8 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				{
 					// A book we haven't seen before. Add it.
 					STPath			spNew(spPath);
-					STPathElement	speBook(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut());
+					STPathElement	speBook(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut(),
+						book->getCurrencyIn() != book->getCurrencyOut());
 
 					spNew.mPath.push_back(speBook);		// Add the order book.
 
@@ -501,7 +517,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 	// Only filter, sort, and limit if have non-default paths.
 	if (iLimit)
 	{
-		std::vector< std::pair<uint64, unsigned int> > vMap;
+		std::vector< std::pair< std::pair<uint64, int>, unsigned int> > vMap;
 
 		// Build map of quality to entry.
 		for (int i = vspResults.size(); i--;)
@@ -548,7 +564,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 						% uQuality
 						% spCurrent.getJson(0));
 
-				vMap.push_back(std::make_pair(uQuality, i));
+				vMap.push_back(std::make_pair(std::make_pair(uQuality, spCurrent.mPath.size()), i));
 			}
 			else
 			{
@@ -699,9 +715,8 @@ boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raA
 		// Filter out non
 		if (saBalance.isPositive()					// Have IOUs to send.
 			|| (rspEntry->getLimitPeer()			// Peer extends credit.
-				&& *saBalance.negate() < rspEntry->getLimitPeer()))	// Credit left.
+				&& -saBalance < rspEntry->getLimitPeer()))	// Credit left.
 		{
-			// Path has no credit left. Ignore it.
 			usCurrencies.insert(saBalance.getCurrency());
 		}
 	}

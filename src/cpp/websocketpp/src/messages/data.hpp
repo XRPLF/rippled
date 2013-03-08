@@ -37,6 +37,7 @@
 #include <boost/function.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 #include <boost/utility.hpp>
 
 #include <algorithm>
@@ -81,9 +82,9 @@ public:
      * pointer.
      */
     element_ptr get() {
-        boost::lock_guard<boost::mutex> lock(m_lock);
-        
-        element_ptr p;
+    	element_ptr p, q;
+    	{
+	        boost::lock_guard<boost::recursive_mutex> lock(m_lock);
         
         /*std::cout << "message requested (" 
                   << m_cur_elements-m_avaliable.size()
@@ -92,29 +93,31 @@ public:
                   << ")"
                   << std::endl;*/
         
-        if (!m_avaliable.empty()) {
-            p = m_avaliable.front();
-            m_avaliable.pop();
-            m_used[p->get_index()] = p;
-        } else {
-            if (m_cur_elements == m_max_elements) {
-                return element_ptr();
-            }
+    	    if (!m_avaliable.empty()) {
+	            p = m_avaliable.front();
+	            q = p;
+	            m_avaliable.pop(); // FIXME can call intrusive_ptr_release(line 217) which can deadlock
+	            m_used[p->get_index()] = p;
+	        } else {
+	            if (m_cur_elements == m_max_elements) {
+	                return element_ptr();
+	            }
             
-            p = element_ptr(new element_type(type::shared_from_this(),m_cur_elements));
-            m_cur_elements++;
-            m_used.push_back(p);
+	            p = element_ptr(new element_type(type::shared_from_this(),m_cur_elements));
+	            m_cur_elements++;
+	            m_used.push_back(p);
             
             /*std::cout << "Allocated new data message. Count is now " 
                       << m_cur_elements
                       << std::endl;*/
-        }
+			}
         
-        p->set_live();
+	        p->set_live();
+		}
         return p;
     }
     void recycle(element_ptr p) {
-        boost::lock_guard<boost::mutex> lock(m_lock);
+        boost::lock_guard<boost::recursive_mutex> lock(m_lock);
         
         if (p->get_index()+1 > m_used.size() || m_used[p->get_index()] != p) {
             //std::cout << "error tried to recycle a pointer we don't control" << std::endl;
@@ -139,7 +142,7 @@ public:
     
     // set a function that will be called when new elements are avaliable.
     void set_callback(callback_type fn) {
-        boost::lock_guard<boost::mutex> lock(m_lock);
+        boost::lock_guard<boost::recursive_mutex> lock(m_lock);
         m_callback = fn;
     }
     
@@ -152,7 +155,7 @@ private:
     
     callback_type   m_callback;
     
-    boost::mutex      m_lock;
+    boost::recursive_mutex      m_lock;
 };
 
 class data {
@@ -209,6 +212,7 @@ private:
     typedef websocketpp::processor::hybi_util::masking_key_type masking_key_type;
     
     friend void intrusive_ptr_add_ref(const data * s) {
+        boost::unique_lock<boost::mutex> lock(s->m_lock);
         ++s->m_ref_count;
     }
     

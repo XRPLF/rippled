@@ -63,12 +63,13 @@ int iAdminGet(const Json::Value& jvRequest, const std::string& strRemoteIp)
 	return iRole;
 }
 
-RPCHandler::RPCHandler(NetworkOPs* netOps)
+RPCHandler::RPCHandler(NetworkOPs* netOps, LoadSource &ls) : mLoadSource(ls)
 {
 	mNetOps		= netOps;
 }
 
-RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub::pointer infoSub) : mInfoSub(infoSub)
+RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub::pointer infoSub, LoadSource& ls)
+	: mInfoSub(infoSub), mLoadSource(ls)
 {
 	mNetOps		= netOps;
 }
@@ -559,7 +560,7 @@ Json::Value RPCHandler::accountFromString(Ledger::ref lrLedger, RippleAddress& n
 }
 
 // {
-//   ident : <indent>,
+//   account: <indent>,
 //   account_index : <index> // optional
 //   strict: <bool>					// true, only allow public keys and addresses. false, default.
 //   ledger_hash : <ledger>
@@ -573,10 +574,10 @@ Json::Value RPCHandler::doAccountInfo(Json::Value jvRequest)
 	if (!lpLedger)
 		return jvResult;
 
-	if (!jvRequest.isMember("ident"))
+	if (!jvRequest.isMember("account") && !jvRequest.isMember("ident"))
 		return rpcError(rpcINVALID_PARAMS);
 
-	std::string		strIdent	= jvRequest["ident"].asString();
+	std::string		strIdent	= jvRequest.isMember("account") ? jvRequest["account"].asString() : jvRequest["ident"].asString();
 	bool			bIndex;
 	int				iIndex		= jvRequest.isMember("account_index") ? jvRequest["account_index"].asUInt() : 0;
 	bool			bStrict		= jvRequest.isMember("strict") && jvRequest["strict"].asBool();
@@ -742,10 +743,10 @@ Json::Value RPCHandler::doNicknameInfo(Json::Value params)
 // XXX This would be better if it took the ledger.
 Json::Value RPCHandler::doOwnerInfo(Json::Value jvRequest)
 {
-	if (!jvRequest.isMember("ident"))
+	if (!jvRequest.isMember("account") && !jvRequest.isMember("ident"))
 		return rpcError(rpcINVALID_PARAMS);
 
-	std::string		strIdent	= jvRequest["ident"].asString();
+	std::string		strIdent	= jvRequest.isMember("account") ? jvRequest["account"].asString() : jvRequest["ident"].asString();
 	bool			bIndex;
 	int				iIndex		= jvRequest.isMember("account_index") ? jvRequest["account_index"].asUInt() : 0;
 	RippleAddress	raAccount;
@@ -884,7 +885,6 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest)
 
 	if (!lpLedger)
 		return jvResult;
-
 
 	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -1030,6 +1030,11 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest)
 // }
 Json::Value RPCHandler::doBookOffers(Json::Value jvRequest)
 {
+	if (theApp->getJobQueue().getJobCountGE(jtCLIENT) > 200)
+	{
+		return rpcError(rpcTOO_BUSY);
+	}
+
 	Ledger::pointer		lpLedger;
 	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
 
@@ -1148,12 +1153,20 @@ Json::Value RPCHandler::doRandom(Json::Value jvRequest)
 //   - From a trusted server, allows clients to use path without manipulation.
 Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 {
-	Json::Value		jvResult(Json::objectValue);
 	RippleAddress	raSrc;
 	RippleAddress	raDst;
 	STAmount		saDstAmount;
+	Ledger::pointer	lpLedger;
+	Json::Value		jvResult	= lookupLedger(jvRequest, lpLedger);
 
-	if (!jvRequest.isMember("source_account"))
+	if (!lpLedger)
+		return jvResult;
+
+	if (theApp->getJobQueue().getJobCountGE(jtCLIENT) > 200)
+	{
+		jvResult	= rpcError(rpcTOO_BUSY);
+	}
+	else if (!jvRequest.isMember("source_account"))
 	{
 		jvResult	= rpcError(rpcSRC_ACT_MISSING);
 	}
@@ -1192,7 +1205,6 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 	}
 	else
 	{
-		Ledger::pointer	lpCurrent	= mNetOps->getCurrentLedger();
 		Json::Value		jvSrcCurrencies;
 
 		if (jvRequest.isMember("source_currencies"))
@@ -1201,7 +1213,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 		}
 		else
 		{
-			boost::unordered_set<uint160>	usCurrencies	= usAccountSourceCurrencies(raSrc, lpCurrent);
+			boost::unordered_set<uint160>	usCurrencies	= usAccountSourceCurrencies(raSrc, lpLedger);
 
 			// Add XRP as a source currency.
 			// YYY Only bother if they are above reserve.
@@ -1219,7 +1231,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 			}
 		}
 
-		Ledger::pointer lSnapShot = boost::make_shared<Ledger>(boost::ref(*lpCurrent), false);
+		Ledger::pointer lSnapShot = boost::make_shared<Ledger>(boost::ref(*lpLedger), false);
 		LedgerEntrySet lesSnapshot(lSnapShot);
 
 		ScopedUnlock	su(theApp->getMasterLock()); // As long as we have a locked copy of the ledger, we can unlock.
@@ -1229,7 +1241,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 		for (unsigned int i=0; i != jvSrcCurrencies.size(); ++i) {
 			Json::Value	jvSource		= jvSrcCurrencies[i];
 			uint160		uSrcCurrencyID;
-			uint160		uSrcIssuerID	= raSrc.getAccountID();
+			uint160		uSrcIssuerID;
 
 			// Parse mandatory currency.
 			if (!jvSource.isMember("currency")
@@ -1239,13 +1251,15 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest)
 
 				return rpcError(rpcSRC_CUR_MALFORMED);
 			}
+			if (uSrcCurrencyID.isNonZero())
+				uSrcIssuerID = raSrc.getAccountID();
+
 			// Parse optional issuer.
-			else if (((jvSource.isMember("issuer"))
-					&& (!jvSource["issuer"].isString()
-						|| !STAmount::issuerFromString(uSrcIssuerID, jvSource["issuer"].asString())))
-				// Don't allow illegal issuers.
-				|| !uSrcIssuerID
-				|| ACCOUNT_ONE == uSrcIssuerID)
+			if (jvSource.isMember("issuer") &&
+					((!jvSource["issuer"].isString() ||
+					!STAmount::issuerFromString(uSrcIssuerID, jvSource["issuer"].asString())) ||
+					(uSrcIssuerID.isZero() != uSrcCurrencyID.isZero()) ||
+					(ACCOUNT_ONE == uSrcIssuerID)))
 			{
 				cLog(lsINFO) << "Bad issuer.";
 
@@ -2009,7 +2023,7 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest)
 	int s = upTime();
 	textTime(uptime, s, "year", 365*24*60*60);
 	textTime(uptime, s, "day", 24*60*60);
-	textTime(uptime, s, "hour", 24*60);
+	textTime(uptime, s, "hour", 60*60);
 	textTime(uptime, s, "minute", 60);
 	textTime(uptime, s, "second", 1);
 	ret["uptime"] = uptime;
@@ -2871,6 +2885,9 @@ Json::Value RPCHandler::doInternal(Json::Value jvRequest)
 
 Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 {
+	if ((iRole != ADMIN) && (theApp->getJobQueue().getJobCountGE(jtCLIENT) > 500))
+		return rpcError(rpcTOO_BUSY);
+
 	if (!jvRequest.isMember("command"))
 		return rpcError(rpcCOMMAND_MISSING);
 
@@ -2878,8 +2895,6 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole)
 
 	cLog(lsTRACE) << "COMMAND:" << strCommand;
 	cLog(lsTRACE) << "REQUEST:" << jvRequest;
-
-	LoadEvent::autoptr le(theApp->getJobQueue().getLoadEventAP(jtRPC, "RPC"));
 
 	mRole	= iRole;
 
