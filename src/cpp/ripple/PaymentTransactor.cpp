@@ -21,8 +21,8 @@ TER PaymentTransactor::doApply()
 	const STAmount	saMaxAmount		= bMax
 		? mTxn.getFieldAmount(sfSendMax)
 		: saDstAmount.isNative()
-		? saDstAmount
-		: STAmount(saDstAmount.getCurrency(), mTxnAccountID, saDstAmount.getMantissa(), saDstAmount.getExponent(), saDstAmount.isNegative());
+			? saDstAmount
+			: STAmount(saDstAmount.getCurrency(), mTxnAccountID, saDstAmount.getMantissa(), saDstAmount.getExponent(), saDstAmount.isNegative());
 	const uint160	uSrcCurrency	= saMaxAmount.getCurrency();
 	const uint160	uDstCurrency	= saDstAmount.getCurrency();
 	const bool		bXRPDirect		= uSrcCurrency.isZero() && uDstCurrency.isZero();

@@ -19,6 +19,9 @@
 *.o
 build
 tags
+bin/rippled
+Debug/*.*
+Release/*.*
 
 # Ignore locally installed node_modules
 node_modules
@@ -29,11 +32,6 @@ tmp
 # Ignore database directory.
 db/*.db
 db/*.db-*
-
-# Ignore obj files
-bin/rippled
-Debug/*.*
-Release/*.*
 
 # Ignore customized configs
 rippled.cfg

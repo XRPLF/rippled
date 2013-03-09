@@ -1152,6 +1152,13 @@ Json::Value RPCHandler::doRandom(Json::Value jvRequest, int& cost)
 //   - From a trusted server, allows clients to use path without manipulation.
 Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 {
+	int jc = theApp->getJobQueue().getJobCountGE(jtCLIENT);
+	if (jc > 200)
+	{
+		cLog(lsDEBUG) << "Too busy for RPF: " << jc;
+		return rpcError(rpcTOO_BUSY);
+	}
+
 	RippleAddress	raSrc;
 	RippleAddress	raDst;
 	STAmount		saDstAmount;
@@ -1161,11 +1168,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 	if (!lpLedger)
 		return jvResult;
 
-	if (theApp->getJobQueue().getJobCountGE(jtCLIENT) > 200)
-	{
-		jvResult	= rpcError(rpcTOO_BUSY);
-	}
-	else if (!jvRequest.isMember("source_account"))
+	if (!jvRequest.isMember("source_account"))
 	{
 		jvResult	= rpcError(rpcSRC_ACT_MISSING);
 	}
@@ -2895,8 +2898,15 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 {
 	if (cost == 0)
 		cost = rpcCOST_DEFAULT;
-	if ((iRole != ADMIN) && (theApp->getJobQueue().getJobCountGE(jtCLIENT) > 500))
-		return rpcError(rpcTOO_BUSY);
+	if (iRole != ADMIN)
+	{
+		int jc = theApp->getJobQueue().getJobCountGE(jtCLIENT);
+		if (jc > 500)
+		{
+			cLog(lsDEBUG) << "Too busy for command: " << jc;
+			return rpcError(rpcTOO_BUSY);
+		}
+	}
 
 	if (!jvRequest.isMember("command"))
 		return rpcError(rpcCOMMAND_MISSING);

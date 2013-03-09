@@ -93,7 +93,7 @@ public:
 			connection_ptr ptr = mConnection.lock();
 			if (ptr)
 				ptr->close(websocketpp::close::status::PROTOCOL_ERROR, "overload");
-			return rpcError(rpcTOO_BUSY);
+			return rpcError(rpcSLOW_DOWN);
 		}
 
 		if (!jvRequest.isMember("command"))
