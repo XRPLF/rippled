@@ -1344,6 +1344,9 @@ void NetworkOPs::pubLedger(Ledger::ref accepted)
 
 			jvObj["txn_count"]		= Json::UInt(alpAccepted->getTxnCount());
 
+			if ((mMode == omFULL) || (mMode == omTRACKING))
+				jvObj["valid_ledgers"]	= theApp->getLedgerMaster().getCompleteLedgers();
+
 			NetworkOPs::subMapType::const_iterator it = mSubLedger.begin();
 			while (it != mSubLedger.end())
 			{
@@ -1669,6 +1672,9 @@ bool NetworkOPs::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
 	jvResult["fee_base"]		= Json::UInt(lpClosed->getBaseFee());
 	jvResult["reserve_base"]	= Json::UInt(lpClosed->getReserve(0));
 	jvResult["reserve_inc"]		= Json::UInt(lpClosed->getReserveInc());
+
+	if ((mMode == omFULL) || (mMode == omTRACKING))
+		jvResult["valid_ledgers"]	= theApp->getLedgerMaster().getCompleteLedgers();
 
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return mSubLedger.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
