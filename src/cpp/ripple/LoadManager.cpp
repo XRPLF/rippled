@@ -137,7 +137,7 @@ bool LoadManager::shouldWarn(LoadSource& source) const
 
 		int now = upTime();
 		canonicalize(source, now);
-		if (source.isPrivileged() || (source.mBalance < mDebitWarn) || (source.mLastWarning == now))
+		if (source.isPrivileged() || (source.mBalance > mDebitWarn) || (source.mLastWarning == now))
 			return false;
 
 		source.mLastWarning = now;
