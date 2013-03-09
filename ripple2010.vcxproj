@@ -39,6 +39,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>rippled</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -293,6 +294,7 @@
     <ClInclude Include="util\pugixml.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="debug.cfg" />
     <None Include="html\newcoin.html">
       <SubType>Designer</SubType>
     </None>

@@ -1696,7 +1696,7 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 	try
 	{
 #endif
-		int vl = mNetOps->getValidatedSeq();
+		unsigned int vl = mNetOps->getValidatedSeq();
 		ScopedUnlock su(theApp->getMasterLock());
 
 		Json::Value ret(Json::objectValue);
@@ -2729,11 +2729,19 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 			if(currencyIn.isNonZero())
 				STAmount::issuerFromString(issuerIn,(*it)["IssuerIn"].asString());
 
+			bool bothSides=false;
+			if((*it).isMember("BothSides") && (*it)["BothSides"].asBool()) bothSides=true;
+
 			mNetOps->subBook(ispSub, currencyIn, currencyOut, issuerIn, issuerOut);
+			if(bothSides) mNetOps->subBook(ispSub, currencyOut, currencyIn, issuerOut, issuerIn);
 			if((*it)["StateNow"].asBool())
 			{
-				//lpLedger		= theApp->getLedgerMaster().getClosedLedger();
-				//mNetOps->getBookPage(lpLedger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, raTakerID.getAccountID(), false, iLimit, jvMarker, jvResult);
+				Ledger::pointer ledger= theApp->getLedgerMaster().getClosedLedger();
+				RippleAddress	raTakerID;
+				raTakerID.setAccountID(ACCOUNT_ONE);
+				const Json::Value	jvMarker = Json::Value(Json::nullValue);
+				mNetOps->getBookPage(ledger, currencyOut, issuerOut, currencyIn, issuerIn, raTakerID.getAccountID(), false, 0, jvMarker, jvResult);
+				if(bothSides) mNetOps->getBookPage(ledger, currencyIn, issuerIn, currencyOut, issuerOut, raTakerID.getAccountID(), false, 0, jvMarker, jvResult);
 			}
 		}
 	}

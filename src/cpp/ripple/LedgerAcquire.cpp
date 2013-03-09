@@ -528,6 +528,7 @@ int PeerSet::getPeerCount() const
 void LedgerAcquire::filterNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& nodeHashes,
 	std::set<SHAMapNode>& recentNodes, int max, bool aggressive)
 { // ask for new nodes in preference to ones we've already asked for
+	assert(nodeHashes.size() == nodeIDs.size() );
 	std::vector<bool> duplicates;
 	duplicates.reserve(nodeIDs.size());
 
