@@ -1335,7 +1335,7 @@ void NetworkOPs::pubLedger(Ledger::ref accepted)
 			jvObj["type"]			= "ledgerClosed";
 			jvObj["ledger_index"]	= lpAccepted->getLedgerSeq();
 			jvObj["ledger_hash"]	= lpAccepted->getHash().ToString();
-			jvObj["ledger_time"]	= Json::Value::UInt(utFromSeconds(lpAccepted->getCloseTimeNC()));
+			jvObj["ledger_time"]	= Json::Value::UInt(lpAccepted->getCloseTimeNC());
 
 			jvObj["fee_ref"]		= Json::UInt(lpAccepted->getReferenceFeeUnits());
 			jvObj["fee_base"]		= Json::UInt(lpAccepted->getBaseFee());
@@ -1345,7 +1345,7 @@ void NetworkOPs::pubLedger(Ledger::ref accepted)
 			jvObj["txn_count"]		= Json::UInt(alpAccepted->getTxnCount());
 
 			if ((mMode == omFULL) || (mMode == omTRACKING))
-				jvObj["valid_ledgers"]	= theApp->getLedgerMaster().getCompleteLedgers();
+				jvObj["validated_ledgers"]	= theApp->getLedgerMaster().getCompleteLedgers();
 
 			NetworkOPs::subMapType::const_iterator it = mSubLedger.begin();
 			while (it != mSubLedger.end())
@@ -1666,7 +1666,7 @@ bool NetworkOPs::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
 
 	jvResult["ledger_index"]	= lpClosed->getLedgerSeq();
 	jvResult["ledger_hash"]		= lpClosed->getHash().ToString();
-	jvResult["ledger_time"]		= Json::Value::UInt(utFromSeconds(lpClosed->getCloseTimeNC()));
+	jvResult["ledger_time"]		= Json::Value::UInt(lpClosed->getCloseTimeNC());
 
 	jvResult["fee_ref"]			= Json::UInt(lpClosed->getReferenceFeeUnits());
 	jvResult["fee_base"]		= Json::UInt(lpClosed->getBaseFee());
