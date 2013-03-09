@@ -2720,16 +2720,20 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 		for (Json::Value::iterator it = jvRequest["books"].begin(); it != jvRequest["books"].end(); it++)
 		{
 			uint160 currencyOut;
-			STAmount::issuerFromString(currencyOut,(*it)["CurrencyOut"].asString());
-			uint160 issuerOut = RippleAddress::createNodePublic( (*it)["IssuerOut"].asString() ).getAccountID();
+			STAmount::currencyFromString(currencyOut,(*it)["CurrencyOut"].asString());
+			uint160 issuerOut,issuerIn;
+			if(currencyOut.isNonZero())
+				STAmount::issuerFromString(issuerOut,(*it)["IssuerOut"].asString());
 			uint160 currencyIn;
-			STAmount::issuerFromString(currencyOut,(*it)["CurrencyIn"].asString());
-			uint160 issuerIn = RippleAddress::createNodePublic( (*it)["IssuerIn"].asString() ).getAccountID();
+			STAmount::currencyFromString(currencyIn,(*it)["CurrencyIn"].asString());
+			if(currencyIn.isNonZero())
+				STAmount::issuerFromString(issuerIn,(*it)["IssuerIn"].asString());
 
 			mNetOps->subBook(ispSub, currencyIn, currencyOut, issuerIn, issuerOut);
 			if((*it)["StateNow"].asBool())
 			{
-
+				//lpLedger		= theApp->getLedgerMaster().getClosedLedger();
+				//mNetOps->getBookPage(lpLedger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, raTakerID.getAccountID(), false, iLimit, jvMarker, jvResult);
 			}
 		}
 	}
