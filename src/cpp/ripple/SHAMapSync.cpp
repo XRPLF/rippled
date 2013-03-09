@@ -73,6 +73,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 				{ // we need this node
 					have_all = false;
 					nodeIDs.push_back(childID);
+					hashes.push_back(childHash);
 					if (--max <= 0)
 						return;
 				}
