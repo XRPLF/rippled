@@ -2741,7 +2741,13 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 				raTakerID.setAccountID(ACCOUNT_ONE);
 				const Json::Value	jvMarker = Json::Value(Json::nullValue);
 				mNetOps->getBookPage(ledger, currencyOut, issuerOut, currencyIn, issuerIn, raTakerID.getAccountID(), false, 0, jvMarker, jvResult);
-				if(bothSides) mNetOps->getBookPage(ledger, currencyIn, issuerIn, currencyOut, issuerOut, raTakerID.getAccountID(), false, 0, jvMarker, jvResult);
+				if(bothSides) 
+				{
+					Json::Value tempJson(Json::objectValue);
+					if(jvResult.isMember("offers")) jvResult["bids"]=jvResult["offers"];
+					mNetOps->getBookPage(ledger, currencyIn, issuerIn, currencyOut, issuerOut, raTakerID.getAccountID(), false, 0, jvMarker, tempJson);
+					if(tempJson.isMember("offers")) jvResult["asks"]=tempJson["offers"];
+				}
 			}
 		}
 	}
