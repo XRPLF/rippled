@@ -40,7 +40,7 @@ class AcceptedLedger
 public:
 	typedef boost::shared_ptr<AcceptedLedger>	pointer;
 	typedef const pointer&						ret;
-	typedef std::map<int, ALTransaction>		map_t;
+	typedef std::map<int, ALTransaction>		map_t;				// Must be an ordered map!
 	typedef map_t::value_type					value_type;
 	typedef map_t::const_iterator				const_iterator;
 
