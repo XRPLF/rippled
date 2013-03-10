@@ -136,13 +136,13 @@ protected:
 
 	void setMode(OperatingMode);
 
-	Json::Value transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent);
+	Json::Value transJson(const SerializedTransaction& stTxn, TER terResult, bool bValidated, Ledger::ref lpCurrent);
 	bool haveConsensusObject();
 
 	Json::Value pubBootstrapAccountInfo(Ledger::ref lpAccepted, const RippleAddress& naAccountID);
 
-	void pubAcceptedTransaction(Ledger::ref alAccepted, const ALTransaction& alTransaction);
-	void pubAccountTransaction(Ledger::ref lpCurrent, const ALTransaction& alTransaction);
+	void pubValidatedTransaction(Ledger::ref alAccepted, const ALTransaction& alTransaction);
+	void pubAccountTransaction(Ledger::ref lpCurrent, const ALTransaction& alTransaction, bool isAccepted);
 
 	void pubServer();
 

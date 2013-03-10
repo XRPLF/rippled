@@ -1314,7 +1314,7 @@ void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, SerializedTransac
 	}
 	ALTransaction alt(stTxn, terResult);
 	cLog(lsTRACE) << "pubProposed: " << alt.getJson(0);
-	pubAccountTransaction(lpCurrent, ALTransaction(stTxn, terResult));
+	pubAccountTransaction(lpCurrent, ALTransaction(stTxn, terResult), false);
 }
 
 void NetworkOPs::pubLedger(Ledger::ref accepted)
@@ -1368,7 +1368,7 @@ void NetworkOPs::pubLedger(Ledger::ref accepted)
 		BOOST_FOREACH(const AcceptedLedger::value_type& vt, alpAccepted->getMap())
 		{
 			cLog(lsTRACE) << "pubAccepted: " << vt.second.getJson(0);
-			pubAcceptedTransaction(lpAccepted, vt.second);
+			pubValidatedTransaction(lpAccepted, vt.second);
 		}
 	}
 }
@@ -1382,8 +1382,9 @@ void NetworkOPs::reportFeeChange()
 	theApp->getJobQueue().addJob(jtCLIENT, "reportFeeChange->pubServer", boost::bind(&NetworkOPs::pubServer, this));
 }
 
-Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent)
-{
+Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, bool bValidated,
+	Ledger::ref lpCurrent)
+{ // This routine should only be used to publish accepted or validated transactions
 	Json::Value	jvObj(Json::objectValue);
 	std::string	sToken;
 	std::string	sHuman;
@@ -1392,16 +1393,18 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 
 	jvObj["type"]			= "transaction";
 	jvObj["transaction"]	= stTxn.getJson(0);
-	if (bAccepted) {
+	if (bValidated) {
 		jvObj["ledger_index"]			= lpCurrent->getLedgerSeq();
 		jvObj["ledger_hash"]			= lpCurrent->getHash().ToString();
 		jvObj["transaction"]["date"]	= lpCurrent->getCloseTimeNC();
+		jvObj["validated"]				= true;
 	}
 	else
 	{
+		jvObj["validated"]				= false;
 		jvObj["ledger_current_index"]	= lpCurrent->getLedgerSeq();
 	}
-	jvObj["status"]					= bAccepted ? "closed" : "proposed";
+	jvObj["status"]					= bValidated ? "closed" : "proposed";
 	jvObj["engine_result"]			= sToken;
 	jvObj["engine_result_code"]		= terResult;
 	jvObj["engine_result_message"]	= sHuman;
@@ -1409,7 +1412,7 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 	return jvObj;
 }
 
-void NetworkOPs::pubAcceptedTransaction(Ledger::ref alAccepted, const ALTransaction& alTx)
+void NetworkOPs::pubValidatedTransaction(Ledger::ref alAccepted, const ALTransaction& alTx)
 {
 	Json::Value	jvObj	= transJson(*alTx.getTxn(), alTx.getResult(), true, alAccepted);
 	jvObj["meta"] = alTx.getMeta()->getJson(0);
@@ -1444,13 +1447,12 @@ void NetworkOPs::pubAcceptedTransaction(Ledger::ref alAccepted, const ALTransact
 		}
 	}
 	theApp->getOrderBookDB().processTxn(alAccepted, alTx, jvObj);
-	pubAccountTransaction(alAccepted, alTx);
+	pubAccountTransaction(alAccepted, alTx, true);
 }
 
-void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const ALTransaction& alTx)
+void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const ALTransaction& alTx, bool bAccepted)
 {
 	boost::unordered_set<InfoSub::pointer>	notify;
-	bool							bAccepted	= alTx.isApplied();
 	int								iProposed	= 0;
 	int								iAccepted	= 0;
 
