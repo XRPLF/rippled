@@ -1674,7 +1674,7 @@ bool NetworkOPs::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
 	jvResult["reserve_inc"]		= Json::UInt(lpClosed->getReserveInc());
 
 	if ((mMode == omFULL) || (mMode == omTRACKING))
-		jvResult["valid_ledgers"]	= theApp->getLedgerMaster().getCompleteLedgers();
+		jvResult["validated_ledgers"]	= theApp->getLedgerMaster().getCompleteLedgers();
 
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 	return mSubLedger.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;

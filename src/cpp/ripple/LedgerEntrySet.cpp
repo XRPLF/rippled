@@ -893,8 +893,15 @@ void LedgerEntrySet::ownerCountAdjust(const uint160& uOwnerID, int iAmount, SLE:
 
 	const uint32	uOwnerCount		= sleRoot->getFieldU32(sfOwnerCount);
 
-	if (iAmount + int(uOwnerCount) >= 0)
+	const uint32	uNew			= iAmount + int(uOwnerCount) > 0
+										? uOwnerCount+iAmount
+										: 0;
+
+	if (uOwnerCount != uNew)
+	{
 		sleRoot->setFieldU32(sfOwnerCount, uOwnerCount+iAmount);
+		entryModify(sleRoot);
+	}
 }
 
 TER LedgerEntrySet::offerDelete(SLE::ref sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID)
