@@ -788,6 +788,8 @@ int SHAMap::flushDirty(SHADirtyMap& map, int maxNodes, HashedObjectType t, uint3
 //		tLog(t == hotACCOUNT_NODE, lsDEBUG) << "STATE node write " << it->first;
 		s.erase();
 		it->second->addRaw(s, snfPREFIX);
+
+#ifdef DEBUG
 		if (s.getSHA512Half() != it->second->getNodeHash())
 		{
 			cLog(lsFATAL) << *(it->second);
@@ -795,6 +797,8 @@ int SHAMap::flushDirty(SHADirtyMap& map, int maxNodes, HashedObjectType t, uint3
 			cLog(lsFATAL) << s.getSHA512Half() << " != " << it->second->getNodeHash();
 			assert(false);
 		}
+#endif
+
 		theApp->getHashedObjectStore().store(t, seq, s.peekData(), it->second->getNodeHash());
 		if (flushed++ >= maxNodes)
 			return flushed;
@@ -805,6 +809,8 @@ int SHAMap::flushDirty(SHADirtyMap& map, int maxNodes, HashedObjectType t, uint3
 
 boost::shared_ptr<SHAMap::SHADirtyMap> SHAMap::disarmDirty()
 { // stop saving dirty nodes
+	boost::recursive_mutex::scoped_lock sl(mLock);
+
 	boost::shared_ptr<SHADirtyMap> ret;
 	ret.swap(mDirtyNodes);
 	return ret;
@@ -812,7 +818,6 @@ boost::shared_ptr<SHAMap::SHADirtyMap> SHAMap::disarmDirty()
 
 SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& nodeID)
 {
-	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	SHAMapTreeNode::pointer node = checkCacheNode(nodeID);
 	if (node)

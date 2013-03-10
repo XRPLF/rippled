@@ -161,16 +161,12 @@ SHAMapTreeNode::SHAMapTreeNode(uint32 seq, const SHAMapNode& nodeID) : SHAMapNod
 }
 
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq) : SHAMapNode(node),
-		mHash(node.mHash), mSeq(seq), mType(node.mType), mIsBranch(0), mFullBelow(false)
+		mHash(node.mHash), mSeq(seq), mType(node.mType), mIsBranch(node.mIsBranch), mFullBelow(false)
 {
 	if (node.mItem)
 		mItem = boost::make_shared<SHAMapItem>(*node.mItem);
 	else
 		memcpy(mHashes, node.mHashes, sizeof(mHashes));
-
-	for (int i = 0; i < 16; ++i)
-		if (mHashes[i].isNonZero())
-			mIsBranch |= (1 << i);
 }
 
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::ref item, TNType type, uint32 seq) :

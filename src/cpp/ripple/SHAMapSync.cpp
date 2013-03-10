@@ -61,6 +61,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 						std::vector<unsigned char> nodeData;
 						if (filter->haveNode(childID, childHash, nodeData))
 						{
+							assert(mSeq >= 1);
 							SHAMapTreeNode::pointer ptr =
 								boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq - 1, snfPREFIX, childHash);
 							cLog(lsTRACE) << "Got sync node from cache: " << *ptr;
@@ -204,7 +205,9 @@ SMAddNode SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, SHANod
 		return SMAddNode::okay();
 	}
 
-	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, mSeq - 1, format, uint256());
+	assert(mSeq >= 1);
+	SHAMapTreeNode::pointer node =
+		boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, mSeq - 1, format, uint256());
 	if (!node)
 		return SMAddNode::invalid();
 
@@ -242,7 +245,9 @@ SMAddNode SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned ch
 		return SMAddNode::okay();
 	}
 
-	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, mSeq - 1, format, uint256());
+	assert(mSeq >= 1);
+	SHAMapTreeNode::pointer node =
+		boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, mSeq - 1, format, uint256());
 	if (!node || node->getNodeHash() != hash)
 		return SMAddNode::invalid();
 
@@ -319,7 +324,9 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigne
 		return SMAddNode::invalid();
 	}
 
-	SHAMapTreeNode::pointer newNode = boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq - 1, snfWIRE, uint256());
+	assert(mSeq >= 1);
+	SHAMapTreeNode::pointer newNode =
+		boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq - 1, snfWIRE, uint256());
 	if (hash != newNode->getNodeHash()) // these aren't the droids we're looking for
 		return SMAddNode::invalid();
 
