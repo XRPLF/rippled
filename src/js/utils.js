@@ -97,6 +97,15 @@ var assert = function (assertion, msg) {
   }
 };
 
+/**
+ * Convert a ripple epoch to a JavaScript timestamp.
+ *
+ * JavaScript timestamps are unix epoch in milliseconds.
+ */
+var toTimestamp = function (rpepoch) {
+  return (rpepoch + 0x386D4380) * 1000;
+};
+
 exports.trace         = trace;
 exports.arraySet      = arraySet;
 exports.hexToString   = hexToString;
@@ -106,5 +115,6 @@ exports.stringToHex   = stringToHex;
 exports.chunkString   = chunkString;
 exports.logObject     = logObject;
 exports.assert        = assert;
+exports.toTimestamp   = toTimestamp;
 
 // vim:sw=2:sts=2:ts=8:et
