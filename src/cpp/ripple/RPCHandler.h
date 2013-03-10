@@ -9,6 +9,10 @@
 #include "SerializedTypes.h"
 #include "Ledger.h"
 
+#define LEDGER_CURRENT		-1
+#define LEDGER_CLOSED		-2
+#define LEDGER_VALIDATED	-3
+
 // used by the RPCServer or WSDoor to carry out these RPC commands
 class NetworkOPs;
 class InfoSub;

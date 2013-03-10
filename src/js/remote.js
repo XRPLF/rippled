@@ -93,14 +93,14 @@ Request.prototype.ledger_index = function (ledger_index) {
 };
 
 Request.prototype.ledger_select = function (ledger_spec) {
-  if (ledger_spec === 'closed') {
-    this.message.ledger_index  = -1;
+  if (ledger_spec === 'current') {
+    this.message.ledger_index  = ledger_spec;
 
-  } else if (ledger_spec === 'current') {
-    this.message.ledger_index  = -2;
+  } else if (ledger_spec === 'closed') {
+    this.message.ledger_index  = ledger_spec;
 
   } else if (ledger_spec === 'verified') {
-    this.message.ledger_index  = -3;
+    this.message.ledger_index  = ledger_spec;
 
   } else if (String(ledger_spec).length > 12) { // XXX Better test needed
     this.message.ledger_hash  = ledger_spec;
