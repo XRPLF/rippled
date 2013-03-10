@@ -25,7 +25,7 @@
 
 SETUP_LOG();
 
-static const int rpcCOST_DEFAULT 	= 10;
+static const int rpcCOST_DEFAULT	= 10;
 static const int rpcCOST_EXCEPTION	= 20;
 static const int rpcCOST_EXPENSIVE	= 50;
 
@@ -1617,7 +1617,7 @@ Json::Value RPCHandler::doLedgerCurrent(Json::Value, int& cost)
 // }
 Json::Value RPCHandler::doLedger(Json::Value jvRequest, int& cost)
 {
-	if (!jvRequest.isMember("ledger"))
+	if (!jvRequest.isMember("ledger") && !jvRequest.isMember("ledger_hash") && !jvRequest.isMember("ledger_index"))
 	{
 		Json::Value ret(Json::objectValue), current(Json::objectValue), closed(Json::objectValue);
 
@@ -1630,27 +1630,25 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest, int& cost)
 		return ret;
 	}
 
-	std::string		strLedger	= jvRequest["ledger"].asString();
-	Ledger::pointer ledger;
+	Ledger::pointer		lpLedger;
+	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
 
-	if (strLedger == "current")
-		ledger = theApp->getLedgerMaster().getCurrentLedger();
-	else if (strLedger == "closed")
-		ledger = theApp->getLedgerMaster().getClosedLedger();
-	else if (strLedger.size() > 12)
-		ledger = theApp->getLedgerMaster().getLedgerByHash(uint256(strLedger));
-	else
-		ledger = theApp->getOPs().getLedgerBySeq(jvRequest["ledger"].asUInt());
+	if (!lpLedger)
+		return jvResult;
 
-	if (!ledger)
-		return rpcError(rpcLGR_NOT_FOUND);
-
-	bool full = jvRequest.isMember("full") && jvRequest["full"].asBool();
+	bool	bFull			= jvRequest.isMember("full") && jvRequest["full"].asBool();
+	bool	bTransactions	= jvRequest.isMember("transactions") && jvRequest["transactions"].asBool();
+	bool	bAccounts		= jvRequest.isMember("accounts") && jvRequest["accounts"].asBool();
+	bool	bExpand			= jvRequest.isMember("expand") && jvRequest["expand"].asBool();
+	int		iOptions		= (bFull ? LEDGER_JSON_FULL : 0)
+								| (bExpand ? LEDGER_JSON_EXPAND : 0)
+								| (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
+								| (bAccounts ? LEDGER_JSON_DUMP_STATE : 0);
 
 	Json::Value ret(Json::objectValue);
 
 	ScopedUnlock(theApp->getMasterLock());
-	ledger->addJson(ret, full ? LEDGER_JSON_FULL : 0);
+	lpLedger->addJson(ret, iOptions);
 
 	return ret;
 }
@@ -2260,8 +2258,44 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 {
 	Json::Value jvResult;
 
-	uint256	uLedger			= jvRequest.isMember("ledger_hash") ? uint256(jvRequest["ledger_hash"].asString()) : 0;
-	int32	iLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asInt() : -2;
+	uint256			uLedger			= jvRequest.isMember("ledger_hash") ? uint256(jvRequest["ledger_hash"].asString()) : 0;
+	int32			iLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asInt() : LEDGER_CURRENT;
+
+	std::string		strLedger;
+
+	if (jvRequest.isMember("ledger_index") && !jvRequest["ledger_index"].isNumeric())
+		strLedger	= jvRequest["ledger_index"].asString();
+
+	// Support for DEPRECATED "ledger".
+	if (!jvRequest.isMember("ledger"))
+	{
+		nothing();
+	}
+	else if (jvRequest["ledger"].size() > 12)
+	{
+		uLedger			= uint256(jvRequest["ledger"].asString());
+	}
+	else if (jvRequest["ledger"].isNumeric())
+	{
+		iLedgerIndex	= jvRequest["ledger"].asInt();
+	}
+	else
+	{
+		strLedger		= jvRequest["ledger"].asString();
+	}
+
+	if (strLedger == "current")
+	{
+		iLedgerIndex = LEDGER_CURRENT;
+	}
+	else if (strLedger == "closed")
+	{
+		iLedgerIndex = LEDGER_CLOSED;
+	}
+	else if (strLedger == "validated")
+	{
+		iLedgerIndex = LEDGER_VALIDATED;
+	}
 
 	if (!!uLedger)
 	{
@@ -2277,21 +2311,22 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 
 		iLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index, override if needed.
 	}
-	if (-1 == iLedgerIndex)
-	{
-		lpLedger		= theApp->getLedgerMaster().getClosedLedger();
-		iLedgerIndex	= lpLedger->getLedgerSeq();
-	}
-	if (-2 == iLedgerIndex)
-	{
-		// Default to current ledger.
+
+	switch (iLedgerIndex) {
+	case LEDGER_CURRENT:
 		lpLedger		= mNetOps->getCurrentLedger();
 		iLedgerIndex	= lpLedger->getLedgerSeq();
-	}
-	if (-3 == iLedgerIndex)
-	{ // Last fully-validated ledger
+		break;
+
+	case LEDGER_CLOSED:
+		lpLedger		= theApp->getLedgerMaster().getClosedLedger();
+		iLedgerIndex	= lpLedger->getLedgerSeq();
+		break;
+
+	case LEDGER_VALIDATED:
 		lpLedger		= mNetOps->getValidatedLedger();
-		iLedgerIndex 	= lpLedger->getLedgerSeq();
+		iLedgerIndex	= lpLedger->getLedgerSeq();
+		break;
 	}
 
 	if (iLedgerIndex <= 0)

@@ -861,9 +861,11 @@ Json::Value Ledger::getJson(int options)
 		}
 	}
 	else
+	{
 		ledger["closed"] = false;
+	}
 
-	if (mTransactionMap && (bFull || ((options & LEDGER_JSON_DUMP_TXRP) != 0)))
+	if (mTransactionMap && (bFull || isSetBit(options, LEDGER_JSON_DUMP_TXRP)))
 	{
 		Json::Value txns(Json::arrayValue);
 		SHAMapTreeNode::TNType type;
@@ -871,7 +873,7 @@ Json::Value Ledger::getJson(int options)
 		for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem(type); !!item;
 				item = mTransactionMap->peekNextItem(item->getTag(), type))
 		{
-			if (bFull)
+			if (bFull || isSetBit(options, LEDGER_JSON_EXPAND))
 			{
 				if (type == SHAMapTreeNode::tnTRANSACTION_NM)
 				{
@@ -904,14 +906,14 @@ Json::Value Ledger::getJson(int options)
 		ledger["transactions"] = txns;
 	}
 
-	if (mAccountStateMap && (bFull || ((options & LEDGER_JSON_DUMP_STATE) != 0)))
+	if (mAccountStateMap && (bFull || isSetBit(options, LEDGER_JSON_DUMP_STATE)))
 	{
 		Json::Value state(Json::arrayValue);
 		ScopedLock l(mAccountStateMap->Lock());
 		for (SHAMapItem::pointer item = mAccountStateMap->peekFirstItem(); !!item;
 				item = mAccountStateMap->peekNextItem(item->getTag()))
 		{
-			if (bFull)
+			if (bFull || isSetBit(options, LEDGER_JSON_EXPAND))
 			{
 				SerializerIterator sit(item->peekSerializer());
 				SerializedLedgerEntry sle(sit, item->getTag());

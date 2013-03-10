@@ -93,14 +93,14 @@ Request.prototype.ledger_index = function (ledger_index) {
 };
 
 Request.prototype.ledger_select = function (ledger_spec) {
-  if (ledger_spec === 'closed') {
-    this.message.ledger_index  = -1;
+  if (ledger_spec === 'current') {
+    this.message.ledger_index  = ledger_spec;
 
-  } else if (ledger_spec === 'current') {
-    this.message.ledger_index  = -2;
+  } else if (ledger_spec === 'closed') {
+    this.message.ledger_index  = ledger_spec;
 
   } else if (ledger_spec === 'verified') {
-    this.message.ledger_index  = -3;
+    this.message.ledger_index  = ledger_spec;
 
   } else if (String(ledger_spec).length > 12) { // XXX Better test needed
     this.message.ledger_hash  = ledger_spec;
@@ -727,16 +727,37 @@ Remote.prototype.request_server_info = function () {
 
 // XXX This is a bad command. Some varients don't scale.
 // XXX Require the server to be trusted.
-Remote.prototype.request_ledger = function (ledger, full) {
+Remote.prototype.request_ledger = function (ledger, opts) {
   //utils.assert(this.trusted);
 
   var request = new Request(this, 'ledger');
 
   if (ledger)
+  {
+    // DEPRECATED: use .ledger_hash() or .ledger_index()
+    console.log("request_ledger: ledger parameter is deprecated");
     request.message.ledger  = ledger;
+  }
 
-  if (full)
+  if ('object' == typeof opts) {
+    if (opts.full)
+      request.message.full          = true;
+  
+    if (opts.expand)
+      request.message.expand        = true;
+  
+    if (opts.transactions)
+      request.message.transactions  = true;
+
+    if (opts.accounts)
+      request.message.accounts      = true;
+  }
+  // DEPRECATED:
+  else if (opts)
+  {
+    console.log("request_ledger: full parameter is deprecated");
     request.message.full    = true;
+  }
 
   return request;
 };
@@ -967,17 +988,6 @@ Remote.prototype.request_book_offers = function (gets, pays, taker) {
   }
 
   request.message.taker = taker ? taker : UInt160.ACCOUNT_ONE;
-
-  return request;
-};
-
-Remote.prototype.request_ledger = function (ledger, full) {
-  var request = new Request(this, 'ledger');
-
-  request.message.ledger = ledger;
-
-  if (full)
-    request.message.full = true;
 
   return request;
 };
