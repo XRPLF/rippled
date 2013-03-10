@@ -69,7 +69,7 @@ extern std::size_t hash_value(const aciSource& asValue);
 class PathState
 {
 protected:
-	Ledger::ref					mLedger;
+	Ledger::pointer				mLedger;
 
 	TER		pushNode(const int iType, const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
 	TER		pushImply(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
@@ -115,7 +115,7 @@ public:
 	PathState(
 		const STAmount&			saSend,
 		const STAmount&			saSendMax,
-		const Ledger::ref		lrLedger = Ledger::pointer()
+		Ledger::pointer			lrLedger = Ledger::pointer()
 	) : mLedger(lrLedger), saInReq(saSendMax), saOutReq(saSend) { ; }
 
 	PathState(const PathState& psSrc, bool bUnused)

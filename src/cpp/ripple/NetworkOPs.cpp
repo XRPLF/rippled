@@ -102,7 +102,7 @@ void NetworkOPs::closeTimeOffset(int offset)
 
 uint32 NetworkOPs::getLedgerID(const uint256& hash)
 {
-	Ledger::ref  lrLedger	= mLedgerMaster->getLedgerByHash(hash);
+	Ledger::pointer  lrLedger	= mLedgerMaster->getLedgerByHash(hash);
 
 	return lrLedger ? lrLedger->getLedgerSeq() : 0;
 }
@@ -839,7 +839,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringCo
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
 
-int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::ref closingLedger)
+int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger)
 {
 	cLog(lsINFO) << "Consensus time for ledger " << closingLedger->getLedgerSeq();
 	cLog(lsINFO) << " LCL is " << closingLedger->getParentHash();

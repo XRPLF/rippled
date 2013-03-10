@@ -23,7 +23,7 @@ void LedgerMaster::addHeldTransaction(Transaction::ref transaction)
 	mHeldTransactions.push_back(transaction->getSTransaction());
 }
 
-void LedgerMaster::pushLedger(Ledger::ref newLedger)
+void LedgerMaster::pushLedger(Ledger::pointer newLedger)
 {
 	// Caller should already have properly assembled this ledger into "ready-to-close" form --
 	// all candidate transactions must already be applied
@@ -41,7 +41,7 @@ void LedgerMaster::pushLedger(Ledger::ref newLedger)
 	mEngine.setLedger(newLedger);
 }
 
-void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL, bool fromConsensus)
+void LedgerMaster::pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL, bool fromConsensus)
 {
 	assert(newLCL->isClosed() && newLCL->isAccepted());
 	assert(!newOL->isClosed() && !newOL->isAccepted());
@@ -63,7 +63,7 @@ void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL, bool fromCo
 	checkAccept(newLCL->getHash(), newLCL->getLedgerSeq());
 }
 
-void LedgerMaster::switchLedgers(Ledger::ref lastClosed, Ledger::ref current)
+void LedgerMaster::switchLedgers(Ledger::pointer lastClosed, Ledger::pointer current)
 {
 	assert(lastClosed && current);
 
@@ -80,7 +80,7 @@ void LedgerMaster::switchLedgers(Ledger::ref lastClosed, Ledger::ref current)
 	checkAccept(lastClosed->getHash(), lastClosed->getLedgerSeq());
 }
 
-void LedgerMaster::storeLedger(Ledger::ref ledger)
+void LedgerMaster::storeLedger(Ledger::pointer ledger)
 {
 	mLedgerHistory.addLedger(ledger);
 	if (ledger->isAccepted())

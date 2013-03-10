@@ -80,13 +80,13 @@ public:
 	int getMinValidations()				{ return mMinValidations; }
 	void setMinValidations(int v)		{ mMinValidations = v; }
 
-	void pushLedger(Ledger::ref newLedger);
-	void pushLedger(Ledger::ref newLCL, Ledger::ref newOL, bool fromConsensus);
-	void storeLedger(Ledger::ref);
+	void pushLedger(Ledger::pointer newLedger);
+	void pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL, bool fromConsensus);
+	void storeLedger(Ledger::pointer);
 
 	void setFullLedger(Ledger::ref ledger);
 
-	void switchLedgers(Ledger::ref lastClosed, Ledger::ref newCurrent);
+	void switchLedgers(Ledger::pointer lastClosed, Ledger::pointer newCurrent);
 
 	std::string getCompleteLedgers()
 	{
