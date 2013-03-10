@@ -1636,12 +1636,19 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest, int& cost)
 	if (!lpLedger)
 		return jvResult;
 
-	bool full = jvRequest.isMember("full") && jvRequest["full"].asBool();
+	bool	bFull			= jvRequest.isMember("full") && jvRequest["full"].asBool();
+	bool	bTransactions	= jvRequest.isMember("transactions") && jvRequest["transactions"].asBool();
+	bool	bAccounts		= jvRequest.isMember("accounts") && jvRequest["accounts"].asBool();
+	bool	bExpand			= jvRequest.isMember("expand") && jvRequest["expand"].asBool();
+	int		iOptions		= (bFull ? LEDGER_JSON_FULL : 0)
+								| (bExpand ? LEDGER_JSON_EXPAND : 0)
+								| (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
+								| (bAccounts ? LEDGER_JSON_DUMP_STATE : 0);
 
 	Json::Value ret(Json::objectValue);
 
 	ScopedUnlock(theApp->getMasterLock());
-	lpLedger->addJson(ret, full ? LEDGER_JSON_FULL : 0);
+	lpLedger->addJson(ret, iOptions);
 
 	return ret;
 }
