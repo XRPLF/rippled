@@ -67,7 +67,7 @@ Currency.prototype.is_native = function () {
 };
 
 Currency.prototype.is_valid = function () {
-  return !isNaN(this._value);
+  return 'string' === typeof this._value || !isNaN(this._value);
 };
 
 Currency.prototype.to_json = function () {
