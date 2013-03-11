@@ -81,12 +81,12 @@ STAmount STAmount::addRound(const STAmount& v1, const STAmount& v2, bool roundUp
 	if (ov2 < ov1)
 	{
 		if (roundUp)
-			vv1 += 9;
+			vv2 += 9;
 		else
-			vv1 -= 9;
+			vv2 -= 9;
 		while (ov2 < ov1)
 		{
-			vv1 /= 10;
+			vv2 /= 10;
 			++ov2;
 		}
 	}
@@ -140,12 +140,12 @@ STAmount STAmount::subRound(const STAmount& v1, const STAmount& v2, bool roundUp
 	if (ov2 < ov1)
 	{
 		if (roundUp)
-			vv1 -= 9;
+			vv2 -= 9;
 		else
-			vv1 += 9;
+			vv2 += 9;
 		while (ov2 < ov1)
 		{
-			vv1 /= 10;
+			vv2 /= 10;
 			++ov2;
 		}
 	}
@@ -199,9 +199,15 @@ STAmount STAmount::mulRound(const STAmount& v1, const STAmount& v2,
 	// Compute (numerator * denominator) / 10^14 with rounding
 	// 10^16 <= result <= 10^18
 	CBigNum v;
-	if ((BN_add_word64(&v, value1) != 1) || (BN_mul_word64(&v, value2) != 1) ||
-		(BN_add_word64(&v, (resultNegative == roundUp) ? (-tenTo14m1) : tenTo14m1) != 1) ||
-		(BN_div_word64(&v, tenTo14) == ((uint64) -1)))
+	if ((BN_add_word64(&v, value1) != 1) || (BN_mul_word64(&v, value2) != 1))
+		throw std::runtime_error("internal bn error");
+
+	if (resultNegative != roundUp)
+		BN_add_word64(&v, tenTo14m1);
+	else
+		BN_sub_word64(&v, tenTo14m1);
+
+	if	(BN_div_word64(&v, tenTo14) == ((uint64) -1))
 		throw std::runtime_error("internal bn error");
 
 	// 10^16 <= product <= 10^18
