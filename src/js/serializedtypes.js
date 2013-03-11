@@ -243,17 +243,25 @@ var STAccount = exports.Account = new SerializedType({
 });
 
 var STPathSet = exports.PathSet = new SerializedType({
+  typeBoundary: 0xff,
+  typeEnd: 0x00,
+  typeAccount: 0x01,
+  typeCurrency: 0x10,
+  typeIssuer: 0x20,
   serialize: function (so, val) {
     // XXX
     for (var i = 0, l = val.length; i < l; i++) {
+      // Boundary
+      if (i) STInt8.serialize(so, this.typeBoundary);
+
       for (var j = 0, l2 = val[i].length; j < l2; j++) {
         var entry = val[i][j];
 
         var type = 0;
 
-        if (entry.account) type |= 0x01;
-        if (entry.currency) type |= 0x10;
-        if (entry.issuer) type |= 0x20;
+        if (entry.account) type |= this.typeAccount;
+        if (entry.currency) type |= this.typeCurrency;
+        if (entry.issuer) type |= this.typeIssuer;
 
         STInt8.serialize(so, type);
 
@@ -268,10 +276,8 @@ var STPathSet = exports.PathSet = new SerializedType({
           so.append(UInt160.from_json(entry.issuer).to_bytes());
         }
       }
-
-      if (j < l2) STInt8.serialize(so, 0xff);
     }
-    STInt8.serialize(so, 0x00);
+    STInt8.serialize(so, this.typeEnd);
   },
   parse: function (so) {
     // XXX
