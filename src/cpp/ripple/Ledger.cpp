@@ -403,12 +403,12 @@ uint256 Ledger::getHash()
 void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 {
 	cLog(lsTRACE) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq();
-	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers INDEXED BY SeqLedger where LedgerSeq = %d;");
-	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
+	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers INDEXED BY SeqLedger where LedgerSeq = %u;");
+	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %u;");
 	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransID = '%s';");
 	static boost::format transExists("SELECT Status FROM Transactions WHERE TransID = '%s';");
 	static boost::format
-		updateTx("UPDATE Transactions SET LedgerSeq = %d, Status = '%c', TxnMeta = %s WHERE TransID = '%s';");
+		updateTx("UPDATE Transactions SET LedgerSeq = %u, Status = '%c', TxnMeta = %s WHERE TransID = '%s';");
 	static boost::format addLedger("INSERT OR REPLACE INTO Ledgers "
 		"(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,"
 		"AccountSetHash,TransSetHash) VALUES ('%s','%u','%s','%s','%u','%u','%d','%u','%s','%s');");

@@ -1065,7 +1065,7 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 	std::string sql =
 		str(boost::format("SELECT LedgerSeq,Status,RawTxn,TxnMeta FROM Transactions where TransID in "
 			"(SELECT TransID from AccountTransactions  "
-			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' ) ORDER BY LedgerSeq DESC LIMIT 200;")
+			" WHERE Account = '%s' AND LedgerSeq <= '%u' AND LedgerSeq >= '%u' ) ORDER BY LedgerSeq DESC LIMIT 200;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{
@@ -1101,7 +1101,7 @@ std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
 
 	std::string sql =
 		str(boost::format("SELECT LedgerSeq, RawTxn,TxnMeta FROM Transactions where TransID in (SELECT TransID from AccountTransactions  "
-			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' ) ORDER BY LedgerSeq DESC LIMIT 500;")
+			" WHERE Account = '%s' AND LedgerSeq <= '%u' AND LedgerSeq >= '%u' ) ORDER BY LedgerSeq DESC LIMIT 500;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{
@@ -1145,7 +1145,7 @@ std::vector<RippleAddress>
 {
 	std::vector<RippleAddress> accounts;
 	std::string sql = str(boost::format
-		("SELECT DISTINCT Account FROM AccountTransactions INDEXED BY AcctLgrIndex WHERE LedgerSeq = '%d';")
+		("SELECT DISTINCT Account FROM AccountTransactions INDEXED BY AcctLgrIndex WHERE LedgerSeq = '%u';")
 			 % ledgerSeq);
 	RippleAddress acct;
 	{
