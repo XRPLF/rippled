@@ -374,26 +374,23 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	if (r == tefFAILURE)
 		throw Fault(IO_ERROR);
 
-	if (isTerRetry(r))
-	{ // transaction should be held
-		cLog(lsDEBUG) << "Transaction should be held: " << r;
-		trans->setStatus(HELD);
-		theApp->getMasterTransaction().canonicalize(trans, true);
-		mLedgerMaster->addHeldTransaction(trans);
-		return trans;
-	}
-	if (r == tefPAST_SEQ)
-	{ // duplicate or conflict
-		cLog(lsINFO) << "Transaction is obsolete";
-		trans->setStatus(OBSOLETE);
-		return trans;
-	}
-
 	if (r == tesSUCCESS)
 	{
 		cLog(lsINFO) << "Transaction is now included in open ledger";
 		trans->setStatus(INCLUDED);
 		theApp->getMasterTransaction().canonicalize(trans, true);
+	}
+	else if (r == tefPAST_SEQ)
+	{ // duplicate or conflict
+		cLog(lsINFO) << "Transaction is obsolete";
+		trans->setStatus(OBSOLETE);
+	}
+	else if (isTerRetry(r))
+	{ // transaction should be held
+		cLog(lsDEBUG) << "Transaction should be held: " << r;
+		trans->setStatus(HELD);
+		theApp->getMasterTransaction().canonicalize(trans, true);
+		mLedgerMaster->addHeldTransaction(trans);
 	}
 	else
 	{
