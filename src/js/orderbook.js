@@ -32,7 +32,7 @@ var OrderBook = function (remote,
     if (OrderBook.subscribe_events.indexOf(type) !== -1) {
       if (!self._subs && 'open' === self._remote._online_state) {
         self._remote.request_subscribe()
-          .books([self.to_json()])
+          .books([self.to_json()], true)
           .request();
       }
       self._subs  += 1;
@@ -54,7 +54,7 @@ var OrderBook = function (remote,
   this._remote.on('connect', function () {
     if (self._subs) {
       self._remote.request_subscribe()
-        .books([self.to_json()])
+        .books([self.to_json()], true)
         .request();
     }
   });

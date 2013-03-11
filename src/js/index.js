@@ -3,6 +3,8 @@ exports.Amount = require('./amount').Amount;
 exports.UInt160 = require('./amount').UInt160;
 exports.Seed = require('./amount').Seed;
 
+exports.utils = require('./utils');
+
 // Important: We do not guarantee any specific version of SJCL or for any
 // specific features to be included. The version and configuration may change at
 // any time without warning.

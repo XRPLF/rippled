@@ -374,26 +374,23 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	if (r == tefFAILURE)
 		throw Fault(IO_ERROR);
 
-	if (isTerRetry(r))
-	{ // transaction should be held
-		cLog(lsDEBUG) << "Transaction should be held: " << r;
-		trans->setStatus(HELD);
-		theApp->getMasterTransaction().canonicalize(trans, true);
-		mLedgerMaster->addHeldTransaction(trans);
-		return trans;
-	}
-	if (r == tefPAST_SEQ)
-	{ // duplicate or conflict
-		cLog(lsINFO) << "Transaction is obsolete";
-		trans->setStatus(OBSOLETE);
-		return trans;
-	}
-
 	if (r == tesSUCCESS)
 	{
 		cLog(lsINFO) << "Transaction is now included in open ledger";
 		trans->setStatus(INCLUDED);
 		theApp->getMasterTransaction().canonicalize(trans, true);
+	}
+	else if (r == tefPAST_SEQ)
+	{ // duplicate or conflict
+		cLog(lsINFO) << "Transaction is obsolete";
+		trans->setStatus(OBSOLETE);
+	}
+	else if (isTerRetry(r))
+	{ // transaction should be held
+		cLog(lsDEBUG) << "Transaction should be held: " << r;
+		trans->setStatus(HELD);
+		theApp->getMasterTransaction().canonicalize(trans, true);
+		mLedgerMaster->addHeldTransaction(trans);
 	}
 	else
 	{
@@ -1068,7 +1065,7 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 	std::string sql =
 		str(boost::format("SELECT LedgerSeq,Status,RawTxn,TxnMeta FROM Transactions where TransID in "
 			"(SELECT TransID from AccountTransactions  "
-			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' ) ORDER BY LedgerSeq DESC LIMIT 200;")
+			" WHERE Account = '%s' AND LedgerSeq <= '%u' AND LedgerSeq >= '%u' ) ORDER BY LedgerSeq DESC LIMIT 200;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{
@@ -1104,7 +1101,7 @@ std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
 
 	std::string sql =
 		str(boost::format("SELECT LedgerSeq, RawTxn,TxnMeta FROM Transactions where TransID in (SELECT TransID from AccountTransactions  "
-			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' ) ORDER BY LedgerSeq DESC LIMIT 500;")
+			" WHERE Account = '%s' AND LedgerSeq <= '%u' AND LedgerSeq >= '%u' ) ORDER BY LedgerSeq DESC LIMIT 500;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{
@@ -1148,7 +1145,7 @@ std::vector<RippleAddress>
 {
 	std::vector<RippleAddress> accounts;
 	std::string sql = str(boost::format
-		("SELECT DISTINCT Account FROM AccountTransactions INDEXED BY AcctLgrIndex WHERE LedgerSeq = '%d';")
+		("SELECT DISTINCT Account FROM AccountTransactions INDEXED BY AcctLgrIndex WHERE LedgerSeq = '%u';")
 			 % ledgerSeq);
 	RippleAddress acct;
 	{

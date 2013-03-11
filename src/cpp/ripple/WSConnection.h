@@ -90,10 +90,12 @@ public:
 	{
 		if (theApp->getLoadManager().shouldCutoff(mLoadSource))
 		{
+#if SHOULD_DISCONNECT
 			connection_ptr ptr = mConnection.lock();
 			if (ptr)
 				ptr->close(websocketpp::close::status::PROTOCOL_ERROR, "overload");
 			return rpcError(rpcSLOW_DOWN);
+#endif
 		}
 
 		if (!jvRequest.isMember("command"))
@@ -110,7 +112,7 @@ public:
 				jvResult["id"]	= jvRequest["id"];
 			}
 
-			theApp->getLoadManager().adjust(mLoadSource, 5);
+			theApp->getLoadManager().adjust(mLoadSource, -5);
 			return jvResult;
 		}
 
@@ -131,7 +133,7 @@ public:
 			jvResult["result"] = mRPCHandler.doCommand(jvRequest, iRole, cost);
 		}
 
-		if (theApp->getLoadManager().adjust(mLoadSource, cost) && theApp->getLoadManager().shouldWarn(mLoadSource))
+		if (theApp->getLoadManager().adjust(mLoadSource, -cost) && theApp->getLoadManager().shouldWarn(mLoadSource))
 			jvResult["warning"] = "load";
 
 		// Currently we will simply unwrap errors returned by the RPC

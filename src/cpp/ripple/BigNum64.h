@@ -7,6 +7,12 @@ static int BN_add_word64(BIGNUM *a, uint64 w)
 	return BN_add(a, &bn, a);
 }
 
+static int BN_sub_word64(BIGNUM *a, uint64 w)
+{
+	CBigNum bn(w);
+	return BN_sub(a, &bn, a);
+}
+
 static int BN_mul_word64(BIGNUM *a, uint64 w)
 {
 	CBigNum bn(w);
