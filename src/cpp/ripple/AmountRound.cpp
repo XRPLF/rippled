@@ -20,15 +20,14 @@ static const uint64 tenTo14m1 = tenTo14 - 1;
 static const uint64 tenTo17 = tenTo14 * 1000;
 static const uint64 tenTo17m1 = tenTo17 - 1;
 
-// CAUTION: This is still very early code and is *NOT* ready for real use yet.
-// Only divRound is tested, and that's only slightly tested.
+// CAUTION: This is early code and is *NOT* ready for real use yet.
 
 static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool roundUp)
 {
 	if (!roundUp) // canonicalize already rounds down
 		return;
 
-	cLog(lsINFO) << "canonicalize< " << value << ":" << offset << (roundUp ? " up" : " down");
+	cLog(lsDEBUG) << "canonicalize< " << value << ":" << offset << (roundUp ? " up" : " down");
 	if (isNative)
 	{
 		if (offset < 0)
@@ -54,7 +53,7 @@ static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool ro
 		value /= 10;
 		++offset;
 	}
-	cLog(lsINFO) << "canonicalize> " << value << ":" << offset << (roundUp ? " up" : " down");
+	cLog(lsDEBUG) << "canonicalize> " << value << ":" << offset << (roundUp ? " up" : " down");
 }
 
 STAmount STAmount::addRound(const STAmount& v1, const STAmount& v2, bool roundUp)
@@ -79,7 +78,7 @@ STAmount STAmount::addRound(const STAmount& v1, const STAmount& v2, bool roundUp
 
 	if (ov1 < ov2)
 	{
-		while (ov1 < (ov2 - 1)
+		while (ov1 < (ov2 - 1))
 		{
 			vv1 /= 10;
 			++ov1;
@@ -142,7 +141,7 @@ STAmount STAmount::subRound(const STAmount& v1, const STAmount& v2, bool roundUp
 
 	if (ov1 < ov2)
 	{
-		while (ov1 < (ov2 - 1)
+		while (ov1 < (ov2 - 1))
 		{
 			vv1 /= 10;
 			++ov1;
@@ -319,6 +318,13 @@ BOOST_AUTO_TEST_CASE( amountRound_test )
 	cLog(lsINFO) << oneA;
 	cLog(lsINFO) << oneB;
 	cLog(lsINFO) << oneC;
+
+	STAmount fourThirdsA = STAmount::addRound(twoThird2, twoThird2, false);
+	STAmount fourThirdsB = twoThird2 + twoThird2;
+	STAmount fourThirdsC = STAmount::addRound(twoThird2, twoThird2, true);
+	cLog(lsINFO) << fourThirdsA;
+	cLog(lsINFO) << fourThirdsB;
+	cLog(lsINFO) << fourThirdsC;
 }
 
 BOOST_AUTO_TEST_SUITE_END()
