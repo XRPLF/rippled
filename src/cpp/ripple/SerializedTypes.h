@@ -435,6 +435,15 @@ public:
 	static STAmount divRound(const STAmount& v1, const STAmount& v2,
 		const uint160& currency, const uint160& issuer, bool roundUp);
 
+	static STAmount mulRound(const STAmount& v1, const STAmount& v2, const STAmount& saUnit, bool roundUp)
+		{ return mulRound(v1, v2, saUnit.getCurrency(), saUnit.getIssuer(), roundUp); }
+	static STAmount mulRound(const STAmount& v1, const STAmount& v2, bool roundUp)
+		{ return mulRound(v1, v2, v1.getCurrency(), v1.getIssuer(), roundUp); }
+	static STAmount divRound(const STAmount& v1, const STAmount& v2, const STAmount& saUnit, bool roundUp)
+		{ return divRound(v1, v2, saUnit.getCurrency(), saUnit.getIssuer(), roundUp); }
+	static STAmount divRound(const STAmount& v1, const STAmount& v2, bool roundUp)
+		{ return divRound(v1, v2, v2.getCurrency(), v2.getIssuer(), roundUp); }
+
 	// Someone is offering X for Y, what is the rate?
 	// Rate: smaller is better, the taker wants the most out: in/out
 	static uint64 getRate(const STAmount& offerOut, const STAmount& offerIn);
