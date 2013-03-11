@@ -1249,25 +1249,6 @@ void STAmount::roundSelf()
 	}
 }
 
-#if 0
-std::string STAmount::getExtendedText() const
-{
-	if (mIsNative)
-	{
-		return str(boost::format("%s " SYSTEM_CURRENCY_CODE) % getText());
-	}
-	else
-	{
-		return str(boost::format("%s/%s/%s %dE%d" )
-			% getText()
-			% getHumanCurrency()
-			% RippleAddress::createHumanAccountID(mIssuer)
-			% getMantissa()
-			% getExponent());
-	}
-}
-#endif
-
 Json::Value STAmount::getJson(int) const
 {
 	Json::Value elem(Json::objectValue);
