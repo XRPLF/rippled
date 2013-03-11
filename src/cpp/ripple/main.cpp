@@ -84,7 +84,7 @@ void printHelp(const po::options_description& desc)
 	cerr << "     data_store <key> <value>" << endl;
 #endif
 	cerr << "     get_counts" << endl;
-	cerr << "     ledger [<id>|current|lastclosed] [full]" << endl;
+	cerr << "     ledger [<id>|current|closed|validated] [full]" << endl;
 	cerr << "     ledger_accept" << endl;
 	cerr << "     ledger_closed" << endl;
 	cerr << "     ledger_current" << endl;

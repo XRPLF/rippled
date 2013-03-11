@@ -333,7 +333,7 @@ Json::Value RPCParser::parseGetCounts(const Json::Value& jvParams)
 	return jvRequest;
 }
 
-// ledger [id|index|current|closed] [full]
+// ledger [id|index|current|closed|validated] [full]
 Json::Value RPCParser::parseLedger(const Json::Value& jvParams)
 {
 	Json::Value		jvRequest(Json::objectValue);
@@ -345,13 +345,17 @@ Json::Value RPCParser::parseLedger(const Json::Value& jvParams)
 
 	std::string		strLedger	= jvParams[0u].asString();
 
-	if (strLedger == "current" || strLedger == "closed" || (strLedger.length() > 12))
+	if (strLedger == "current" || strLedger == "closed" || strLedger == "validated")
 	{
-		jvRequest["ledger"]	= strLedger;
+		jvRequest["ledger_index"]	= strLedger;
+	}
+	else if (strLedger.length() > 12)
+	{
+		jvRequest["ledger_hash"]	= strLedger;
 	}
 	else
 	{
-		jvRequest["ledger"]	= lexical_cast_s<uint32>(strLedger);
+		jvRequest["ledger_index"]	= lexical_cast_s<uint32>(strLedger);
 	}
 
 	if (2 == jvParams.size() && jvParams[1u].asString() == "full")
