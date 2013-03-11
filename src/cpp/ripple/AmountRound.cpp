@@ -25,22 +25,32 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool roundUp)
 { // Have to round on first divide, if a divide is needed
+	if (!roundUp) // canonicalize already rounds down
+		return;
+
 	cLog(lsINFO) << "canonicalize< " << value << ":" << offset << (roundUp ? " up" : " down");
-	if (isNative && (offset < 0))
+	if (isNative)
 	{
-		if (roundUp)
+		if (offset < 0)
+		{
+			while (offset < -1)
+			{
+				value /= 10;
+				++offset;
+			}
 			value += 9;
-//		else
-//			value -= 9;
-		value /= 10;
-		++offset;
+			value /= 10;
+			++offset;
+		}
 	}
-	else if (!isNative && (value > STAmount::cMinValue))
+	else if (value > STAmount::cMaxValue)
 	{
-		if (roundUp)
-			value += 9;
-//		else
-//			value -= 9;
+		while (value > (10 * STAmount::cMaxValue))
+		{
+			value /= 10;
+			++offset;
+		}
+		value += 9;
 		value /= 10;
 		++offset;
 	}
@@ -286,6 +296,13 @@ BOOST_AUTO_TEST_CASE( amountRound_test )
 	cLog(lsINFO) << twoThird1;
 	cLog(lsINFO) << twoThird2;
 	cLog(lsINFO) << twoThird3;
+
+	STAmount oneA = STAmount::mulRound(oneThird1, three, CURRENCY_ONE, ACCOUNT_ONE, false);
+	STAmount oneB = STAmount::multiply(oneThird2, three, CURRENCY_ONE, ACCOUNT_ONE);
+	STAmount oneC = STAmount::mulRound(oneThird3, three, CURRENCY_ONE, ACCOUNT_ONE, true);
+	cLog(lsINFO) << oneA;
+	cLog(lsINFO) << oneB;
+	cLog(lsINFO) << oneC;
 }
 
 BOOST_AUTO_TEST_SUITE_END()
