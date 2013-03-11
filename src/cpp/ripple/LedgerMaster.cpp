@@ -356,13 +356,19 @@ void LedgerMaster::fixMismatch(Ledger::ref ledger)
 	tLog(invalidate != 0, lsWARNING) << "All " << invalidate << " prior ledgers invalidated";
 }
 
-void LedgerMaster::setFullLedger(Ledger::ref ledger)
+void LedgerMaster::setFullLedger(Ledger::pointer ledger)
 { // A new ledger has been accepted as part of the trusted chain
 	cLog(lsDEBUG) << "Ledger " << ledger->getLedgerSeq() << " accepted :" << ledger->getHash();
 
 	boost::recursive_mutex::scoped_lock ml(mLock);
 
 	mCompleteLedgers.setValue(ledger->getLedgerSeq());
+
+	if (Ledger::getHashByIndex(ledger->getLedgerSeq()) != ledger->getHash())
+	{
+		ledger->pendSave(false);
+		return;
+	}
 
 	if ((ledger->getLedgerSeq() != 0) && mCompleteLedgers.hasValue(ledger->getLedgerSeq() - 1))
 	{ // we think we have the previous ledger, double check

@@ -84,7 +84,7 @@ public:
 	void pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL, bool fromConsensus);
 	void storeLedger(Ledger::pointer);
 
-	void setFullLedger(Ledger::ref ledger);
+	void setFullLedger(Ledger::pointer ledger);
 
 	void switchLedgers(Ledger::pointer lastClosed, Ledger::pointer newCurrent);
 
