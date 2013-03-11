@@ -24,7 +24,7 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 // Only divRound is tested, and that's only slightly tested.
 
 static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool roundUp)
-{ // Have to round on first divide, if a divide is needed
+{
 	if (!roundUp) // canonicalize already rounds down
 		return;
 
@@ -38,7 +38,7 @@ static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool ro
 				value /= 10;
 				++offset;
 			}
-			value += 9;
+			value += 9;		// add before last divide
 			value /= 10;
 			++offset;
 		}
@@ -50,7 +50,7 @@ static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool ro
 			value /= 10;
 			++offset;
 		}
-		value += 9;
+		value += 9;			// add before last divide
 		value /= 10;
 		++offset;
 	}
@@ -71,34 +71,36 @@ STAmount STAmount::addRound(const STAmount& v1, const STAmount& v2, bool roundUp
 		return STAmount(v1.getFName(), v1.getSNValue() + v2.getSNValue());
 
 	int ov1 = v1.mOffset, ov2 = v2.mOffset;
-	int64 vv1 = static_cast<int64>(v1.mValue), vv2=static_cast<uint64>(v2.mValue);
-	if (v1.mIsNegative) vv1 = -vv1;
-	if (v2.mIsNegative) vv2 = -vv2;
+	int64 vv1 = static_cast<int64>(v1.mValue), vv2 = static_cast<uint64>(v2.mValue);
+	if (v1.mIsNegative)
+		vv1 = -vv1;
+	if (v2.mIsNegative)
+		vv2 = -vv2;
 
 	if (ov1 < ov2)
 	{
-		if (roundUp)
-			vv1 += 9;
-		else
-			vv1 -= 9;
-		while (ov1 < ov2)
+		while (ov1 < (ov2 - 1)
 		{
 			vv1 /= 10;
 			++ov1;
 		}
+		if (roundUp)
+			vv1 += 9;
+		vv1 /= 10;
+		++ov1;
 	}
 
 	if (ov2 < ov1)
 	{
-		if (roundUp)
-			vv2 += 9;
-		else
-			vv2 -= 9;
-		while (ov2 < ov1)
+		while (ov2 < (ov1 - 1))
 		{
 			vv2 /= 10;
 			++ov2;
 		}
+		if (roundUp)
+			vv2 += 9;
+		vv2 /= 10;
+		++ov2;
 	}
 
 	int64 fv = vv1 + vv2;
@@ -130,41 +132,53 @@ STAmount STAmount::subRound(const STAmount& v1, const STAmount& v2, bool roundUp
 		return STAmount(v1.getFName(), v1.getSNValue() - v2.getSNValue());
 
 	int ov1 = v1.mOffset, ov2 = v2.mOffset;
-	int64 vv1 = static_cast<int64>(v1.mValue), vv2=static_cast<uint64>(v2.mValue);
-	if (v1.mIsNegative) vv1 = -vv1;
-	if (v2.mIsNegative) vv2 = -vv2;
+	int64 vv1 = static_cast<int64>(v1.mValue), vv2 = static_cast<uint64>(v2.mValue);
+
+	if (v1.mIsNegative)
+		vv1 = -vv1;
+
+	if (!v2.mIsNegative)
+		vv2 = -vv2;
 
 	if (ov1 < ov2)
 	{
-		if (roundUp)
-			vv1 += 9;
-		else
-			vv1 -= 9;
-		while (ov1 < ov2)
+		while (ov1 < (ov2 - 1)
 		{
 			vv1 /= 10;
 			++ov1;
 		}
+		if (roundUp)
+			vv1 += 9;
+		vv1 /= 10;
+		++ov1;
 	}
 
 	if (ov2 < ov1)
 	{
-		if (roundUp)
-			vv2 -= 9;
-		else
-			vv2 += 9;
-		while (ov2 < ov1)
+		while (ov2 < (ov1 - 1))
 		{
 			vv2 /= 10;
 			++ov2;
 		}
+		if (roundUp)
+			vv2 += 9;
+		vv2 /= 10;
+		++ov2;
 	}
 
 	int64 fv = vv1 + vv2;
 	if (fv >= 0)
-		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, fv, ov1, false);
+	{
+		uint64 v = static_cast<uint64>(fv);
+		canonicalizeRound(false, v, ov1, roundUp);
+		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, v, ov1, false);
+	}
 	else
-		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, -fv, ov1, true);
+	{
+		uint64 v = static_cast<uint64>(-fv);
+		canonicalizeRound(false, v, ov1, !roundUp);
+		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, v, ov1, true);
+	}
 }
 
 STAmount STAmount::mulRound(const STAmount& v1, const STAmount& v2,
@@ -232,8 +246,10 @@ STAmount STAmount::mulRound(const STAmount& v1, const STAmount& v2,
 STAmount STAmount::divRound(const STAmount& num, const STAmount& den,
 	const uint160& uCurrencyID, const uint160& uIssuerID, bool roundUp)
 {
-	if (den.isZero()) throw std::runtime_error("division by zero");
-	if (num.isZero()) return STAmount(uCurrencyID, uIssuerID);
+	if (den.isZero())
+		throw std::runtime_error("division by zero");
+	if (num.isZero())
+		return STAmount(uCurrencyID, uIssuerID);
 
 	uint64 numVal = num.mValue, denVal = den.mValue;
 	int numOffset = num.mOffset, denOffset = den.mOffset;
