@@ -427,6 +427,14 @@ public:
 	static STAmount multiply(const STAmount& v1, const STAmount& v2)
 		{ return multiply(v1, v2, v1); }
 
+	// Add, subtract, multiply, or divide rounding result in specified direction
+	static STAmount addRound(const STAmount& v1, const STAmount& v2, bool roundUp);
+	static STAmount subRound(const STAmount& v1, const STAmount& v2, bool roundUp);
+	static STAmount mulRound(const STAmount& v1, const STAmount& v2,
+		const uint160& currency, const uint160& issuer,	bool roundUp);
+	static STAmount divRound(const STAmount& v1, const STAmount& v2,
+		const uint160& currency, const uint160& issuer, bool roundUp);
+
 	// Someone is offering X for Y, what is the rate?
 	// Rate: smaller is better, the taker wants the most out: in/out
 	static uint64 getRate(const STAmount& offerOut, const STAmount& offerIn);
