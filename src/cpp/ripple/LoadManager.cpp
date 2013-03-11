@@ -152,7 +152,7 @@ bool LoadManager::shouldCutoff(LoadSource& source) const
 		boost::mutex::scoped_lock sl(mLock);
 		int now = upTime();
 		canonicalize(source, now);
-		if (!source.isPrivileged() || (source.mBalance > mDebitLimit))
+		if (source.isPrivileged() || (source.mBalance > mDebitLimit))
 			return false;
 	}
 	logDisconnect(source.getName());

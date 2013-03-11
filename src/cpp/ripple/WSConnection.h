@@ -110,7 +110,7 @@ public:
 				jvResult["id"]	= jvRequest["id"];
 			}
 
-			theApp->getLoadManager().adjust(mLoadSource, 5);
+			theApp->getLoadManager().adjust(mLoadSource, -5);
 			return jvResult;
 		}
 
@@ -131,7 +131,7 @@ public:
 			jvResult["result"] = mRPCHandler.doCommand(jvRequest, iRole, cost);
 		}
 
-		if (theApp->getLoadManager().adjust(mLoadSource, cost) && theApp->getLoadManager().shouldWarn(mLoadSource))
+		if (theApp->getLoadManager().adjust(mLoadSource, -cost) && theApp->getLoadManager().shouldWarn(mLoadSource))
 			jvResult["warning"] = "load";
 
 		// Currently we will simply unwrap errors returned by the RPC
