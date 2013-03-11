@@ -1,11 +1,12 @@
 {
   "name": "ripple-lib",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "Ripple JavaScript client library",
 
   "files": [
     "src/js/*.js",
-    "build/sjcl.js"
+    "build/sjcl.js",
+    "bin/rsign.js"
   ],
   "main": "src/js",
   "directories": {
