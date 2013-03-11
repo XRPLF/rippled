@@ -345,7 +345,7 @@ Json::Value RPCParser::parseLedger(const Json::Value& jvParams)
 
 	std::string		strLedger	= jvParams[0u].asString();
 
-	if (strLedger == "current" || strLedger == "closed" || strLedger.length() > 12)
+	if (strLedger == "current" || strLedger == "closed" || (strLedger.length() > 12))
 	{
 		jvRequest["ledger"]	= strLedger;
 	}
