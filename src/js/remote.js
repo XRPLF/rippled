@@ -203,7 +203,7 @@ Request.prototype.rt_accounts = function (accounts) {
   return this.accounts(accounts, true);
 };
 
-Request.prototype.books = function (books) {
+Request.prototype.books = function (books, state) {
   var procBooks = [];
 
   for (var i = 0, l = books.length; i < l; i++) {
@@ -220,6 +220,8 @@ Request.prototype.books = function (books) {
     if (json["CurrencyIn"] !== "XRP") {
       json["IssuerIn"]  = UInt160.json_rewrite(book["IssuerIn"]);
     }
+
+    if (state || book["StateNow"]) json["StateNow"] = true;
 
     procBooks.push(json);
   }
