@@ -251,9 +251,10 @@ ValidationCollection::getCurrentValidations(uint256 currentLedger)
 		else
 		{ // contains a live record
 			bool countPreferred = valCurrentLedger && it->second->isPreviousHash(currentLedger);
+			tLog(countPreferred, lsDEBUG) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash();
 			currentValidationCount& p = countPreferred ? ret[currentLedger] : ret[it->second->getLedgerHash()];
 
-			++(p.first); // count for the favored ledger
+			++(p.first);
 			uint160 ni = it->second->getNodeID();
 			if (ni > p.second)
 				p.second = ni;
