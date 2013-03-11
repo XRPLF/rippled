@@ -2271,7 +2271,7 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 	{
 		nothing();
 	}
-	else if (jvRequest["ledger"].size() > 12)
+	else if (jvRequest["ledger"].asString().size() > 12)
 	{
 		uLedger			= uint256(jvRequest["ledger"].asString());
 	}
