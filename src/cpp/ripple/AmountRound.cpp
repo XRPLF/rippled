@@ -37,7 +37,7 @@ static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool ro
 				value /= 10;
 				++offset;
 			}
-			value += 9;		// add before last divide
+			value += 10;	// add before last divide
 			value /= 10;
 			++offset;
 		}
@@ -49,7 +49,7 @@ static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool ro
 			value /= 10;
 			++offset;
 		}
-		value += 9;			// add before last divide
+		value += 9;		// add before last divide
 		value /= 10;
 		++offset;
 	}
@@ -325,6 +325,13 @@ BOOST_AUTO_TEST_CASE( amountRound_test )
 	cLog(lsINFO) << fourThirdsA;
 	cLog(lsINFO) << fourThirdsB;
 	cLog(lsINFO) << fourThirdsC;
+
+	STAmount dripTest1 = STAmount::mulRound(twoThird2, two, uint160(), uint160(), false);
+	STAmount dripTest2 = STAmount::multiply(twoThird2, two, uint160(), uint160());
+	STAmount dripTest3 = STAmount::mulRound(twoThird2, two, uint160(), uint160(), true);
+	cLog(lsINFO) << dripTest1;
+	cLog(lsINFO) << dripTest2;
+	cLog(lsINFO) << dripTest3;
 }
 
 BOOST_AUTO_TEST_SUITE_END()
