@@ -24,7 +24,7 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 // Only divRound is tested, and that's only slightly tested.
 
 static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool roundUp)
-{
+{ // Have to round on first divide, if a divide is needed
 	cLog(lsINFO) << "canonicalize< " << value << ":" << offset << (roundUp ? " up" : " down");
 	if (isNative && (offset < 0))
 	{
@@ -65,23 +65,30 @@ STAmount STAmount::addRound(const STAmount& v1, const STAmount& v2, bool roundUp
 	if (v1.mIsNegative) vv1 = -vv1;
 	if (v2.mIsNegative) vv2 = -vv2;
 
-	while (ov1 < ov2)
+	if (ov1 < ov2)
 	{
 		if (roundUp)
 			vv1 += 9;
 		else
 			vv1 -= 9;
-		vv1 /= 10;
-		++ov1;
+		while (ov1 < ov2)
+		{
+			vv1 /= 10;
+			++ov1;
+		}
 	}
-	while (ov2 < ov1)
+
+	if (ov2 < ov1)
 	{
 		if (roundUp)
 			vv1 += 9;
 		else
 			vv1 -= 9;
-		vv1 /= 10;
-		++ov2;
+		while (ov2 < ov1)
+		{
+			vv1 /= 10;
+			++ov2;
+		}
 	}
 
 	int64 fv = vv1 + vv2;
@@ -117,23 +124,30 @@ STAmount STAmount::subRound(const STAmount& v1, const STAmount& v2, bool roundUp
 	if (v1.mIsNegative) vv1 = -vv1;
 	if (v2.mIsNegative) vv2 = -vv2;
 
-	while (ov1 < ov2)
+	if (ov1 < ov2)
 	{
 		if (roundUp)
 			vv1 += 9;
 		else
 			vv1 -= 9;
-		vv1 /= 10;
-		++ov1;
+		while (ov1 < ov2)
+		{
+			vv1 /= 10;
+			++ov1;
+		}
 	}
-	while (ov2 < ov1)
+
+	if (ov2 < ov1)
 	{
 		if (roundUp)
 			vv1 -= 9;
 		else
 			vv1 += 9;
-		vv1 /= 10;
-		++ov2;
+		while (ov2 < ov1)
+		{
+			vv1 /= 10;
+			++ov2;
+		}
 	}
 
 	int64 fv = vv1 + vv2;
@@ -259,6 +273,13 @@ BOOST_AUTO_TEST_CASE( amountRound_test )
 	cLog(lsINFO) << oneThird1;
 	cLog(lsINFO) << oneThird2;
 	cLog(lsINFO) << oneThird3;
+
+	STAmount twoThird1 = STAmount::divRound(two, three, CURRENCY_ONE, ACCOUNT_ONE, false);
+	STAmount twoThird2 = STAmount::divide(two, three, CURRENCY_ONE, ACCOUNT_ONE);
+	STAmount twoThird3 = STAmount::divRound(two, three, CURRENCY_ONE, ACCOUNT_ONE, true);
+	cLog(lsINFO) << twoThird1;
+	cLog(lsINFO) << twoThird2;
+	cLog(lsINFO) << twoThird3;
 }
 
 BOOST_AUTO_TEST_SUITE_END()
