@@ -90,10 +90,12 @@ public:
 	{
 		if (theApp->getLoadManager().shouldCutoff(mLoadSource))
 		{
+#if SHOULD_DISCONNECT
 			connection_ptr ptr = mConnection.lock();
 			if (ptr)
 				ptr->close(websocketpp::close::status::PROTOCOL_ERROR, "overload");
 			return rpcError(rpcSLOW_DOWN);
+#endif
 		}
 
 		if (!jvRequest.isMember("command"))

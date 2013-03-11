@@ -66,11 +66,14 @@ protected:
 	int			mFlags;
 	int			mLastUpdate;
 	int			mLastWarning;
+	bool		mLogged;
 
 public:
-	LoadSource(bool admin) : mBalance(0), mFlags(admin ? lsfPrivileged : 0), mLastUpdate(upTime()), mLastWarning(0)
+	LoadSource(bool admin) :
+		mBalance(0), mFlags(admin ? lsfPrivileged : 0), mLastUpdate(upTime()), mLastWarning(0), mLogged(false)
 	{ ; }
-	LoadSource(const std::string& name) : mName(name), mBalance(0), mFlags(0), mLastUpdate(upTime()), mLastWarning(0)
+	LoadSource(const std::string& name) :
+		mName(name), mBalance(0), mFlags(0), mLastUpdate(upTime()), mLastWarning(0), mLogged(false)
 	{ ; }
 
 	void rename(const std::string& name)	{ mName = name; }
@@ -79,6 +82,9 @@ public:
 	bool	isPrivileged() const	{ return (mFlags & lsfPrivileged) != 0; }
 	void	setPrivileged()			{ mFlags |= lsfPrivileged; }
 	int		getBalance() const		{ return mBalance; }
+
+	bool isLogged() const			{ return mLogged; }
+	void clearLogged()				{ mLogged = false; }
 
 	void	setOutbound()			{ mFlags |= lsfOutbound; }
 	bool	isOutbound() const		{ return (mFlags & lsfOutbound) != 0; }

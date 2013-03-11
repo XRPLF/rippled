@@ -124,7 +124,10 @@ void LoadManager::canonicalize(LoadSource& source, int now) const
 		{
 			source.mBalance += mCreditRate * (now - source.mLastUpdate);
 			if (source.mBalance > mCreditLimit)
+			{
 				source.mBalance = mCreditLimit;
+				source.mLogged = false;
+			}
 		}
 		source.mLastUpdate = now;
 	}
@@ -154,6 +157,9 @@ bool LoadManager::shouldCutoff(LoadSource& source) const
 		canonicalize(source, now);
 		if (source.isPrivileged() || (source.mBalance > mDebitLimit))
 			return false;
+		if (source.mLogged)
+			return true;
+		source.mLogged = true;
 	}
 	logDisconnect(source.getName());
 	return true;
