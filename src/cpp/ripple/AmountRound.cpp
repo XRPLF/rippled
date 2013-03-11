@@ -30,8 +30,8 @@ static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool ro
 	{
 		if (roundUp)
 			value += 9;
-		else
-			value -= 9;
+//		else
+//			value -= 9;
 		value /= 10;
 		++offset;
 	}
@@ -39,8 +39,8 @@ static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool ro
 	{
 		if (roundUp)
 			value += 9;
-		else
-			value -= 9;
+//		else
+//			value -= 9;
 		value /= 10;
 		++offset;
 	}
