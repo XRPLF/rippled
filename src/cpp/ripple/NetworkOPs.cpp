@@ -674,11 +674,13 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	cLog(lsTRACE) << "NetworkOPs::checkLastClosedLedger";
 
 	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
-	if(!ourClosed)
+	if (!ourClosed)
 		return false;
 
 	uint256 closedLedger = ourClosed->getHash();
 	uint256 prevClosedLedger = ourClosed->getParentHash();
+	cLog(lsTRACE) << "OurClosed:  " << closedLedger;
+	cLog(lsTRACE) << "PrevClosed: " << prevClosedLedger;
 
 	boost::unordered_map<uint256, ValidationCount> ledgers;
 	{
