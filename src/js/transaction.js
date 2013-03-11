@@ -178,10 +178,11 @@ Transaction.prototype.set_state = function (state) {
 Transaction.prototype.complete = function () {
   var tx_json = this.tx_json;
 
-  if (this.remote.local_fee && undefined === tx_json.Fee) {
+  if (undefined === tx_json.Fee && this.remote.local_fee) {
     tx_json.Fee    = Transaction.fees['default'].to_json();
   }
-  if (this.remote.local_signing && undefined === tx_json.SigningPubKey) {
+
+  if (undefined === tx_json.SigningPubKey && (!this.remote || this.remote.local_signing)) {
     var seed = Seed.from_json(this._secret);
     var key = seed.get_key(this.tx_json.Account);
     tx_json.SigningPubKey = key.to_hex_pub();
