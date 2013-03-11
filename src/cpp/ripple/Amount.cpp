@@ -21,6 +21,7 @@ static const uint64 tenTo17 = tenTo14 * 1000;
 
 #if (ULONG_MAX > UINT_MAX)
 #define BN_add_word64(bn, word) BN_add_word(bn, word)
+#define BN_sub_word64(bn, word) BN_sub_word(bn, word)
 #define BN_mul_word64(bn, word) BN_mul_word(bn, word)
 #define BN_div_word64(bn, word) BN_div_word(bn, word)
 #else
