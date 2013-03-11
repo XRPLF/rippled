@@ -30,7 +30,7 @@ Suppression& SuppressionTable::findCreateEntry(const uint256& index, bool& creat
 	}
 
 	mSuppressionTimes[now].push_back(index);
-	return mSuppressionMap.insert(std::make_pair(index, Suppression())).first->second;
+	return mSuppressionMap.emplace(index, Suppression()).first->second;
 }
 
 bool SuppressionTable::addSuppression(const uint256& index)

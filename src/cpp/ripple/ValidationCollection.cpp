@@ -66,7 +66,7 @@ bool ValidationCollection::addValidation(SerializedValidation::ref val)
 		{
 			boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.find(node);
 			if (it == mCurrentValidations.end())
-				mCurrentValidations.insert(std::make_pair(node, val));
+				mCurrentValidations.emplace(node, val);
 			else if (!it->second)
 				it->second = val;
 			else if (val->getSignTime() > it->second->getSignTime())

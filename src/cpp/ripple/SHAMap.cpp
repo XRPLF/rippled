@@ -610,7 +610,7 @@ bool SHAMap::addGiveItem(SHAMapItem::ref item, bool isTransaction, bool hasMeta)
 		assert(node->isEmptyBranch(branch));
 		SHAMapTreeNode::pointer newNode =
 			boost::make_shared<SHAMapTreeNode>(node->getChildNodeID(branch), item, type, mSeq);
-		if (!mTNByID.insert(std::make_pair(SHAMapNode(*newNode), newNode)).second)
+		if (!mTNByID.emplace(SHAMapNode(*newNode), newNode).second)
 		{
 			std::cerr << "Node: " << *node << std::endl;
 			std::cerr << "NewNode: " << *newNode << std::endl;
@@ -643,7 +643,7 @@ bool SHAMap::addGiveItem(SHAMapItem::ref item, bool isTransaction, bool hasMeta)
 			SHAMapTreeNode::pointer newNode =
 				boost::make_shared<SHAMapTreeNode>(mSeq, node->getChildNodeID(b1));
 			newNode->makeInner();
-			if (!mTNByID.insert(std::make_pair(SHAMapNode(*newNode), newNode)).second)
+			if (!mTNByID.emplace(SHAMapNode(*newNode), newNode).second)
 				assert(false);
 			stack.push(node);
 			node = newNode;
@@ -655,14 +655,14 @@ bool SHAMap::addGiveItem(SHAMapItem::ref item, bool isTransaction, bool hasMeta)
 		SHAMapTreeNode::pointer newNode =
 			boost::make_shared<SHAMapTreeNode>(node->getChildNodeID(b1), item, type, mSeq);
 		assert(newNode->isValid() && newNode->isLeaf());
-		if (!mTNByID.insert(std::make_pair(SHAMapNode(*newNode), newNode)).second)
+		if (!mTNByID.emplace(SHAMapNode(*newNode), newNode).second)
 			assert(false);
 		node->setChildHash(b1, newNode->getNodeHash()); // OPTIMIZEME hash op not needed
 		trackNewNode(newNode);
 
 		newNode = boost::make_shared<SHAMapTreeNode>(node->getChildNodeID(b2), otherItem, type, mSeq);
 		assert(newNode->isValid() && newNode->isLeaf());
-		if (!mTNByID.insert(std::make_pair(SHAMapNode(*newNode), newNode)).second)
+		if (!mTNByID.emplace(SHAMapNode(*newNode), newNode).second)
 			assert(false);
 		node->setChildHash(b2, newNode->getNodeHash());
 		trackNewNode(newNode);
@@ -744,7 +744,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 		}
 		if (id.isRoot())
 			mTNByID[id] = ret;
-		else if (!mTNByID.insert(std::make_pair(id, ret)).second)
+		else if (!mTNByID.emplace(id, ret).second)
 			assert(false);
 		trackNewNode(ret);
 		return ret;

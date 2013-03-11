@@ -1676,7 +1676,7 @@ bool NetworkOPs::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
 		jvResult["validated_ledgers"]	= theApp->getLedgerMaster().getCompleteLedgers();
 
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
-	return mSubLedger.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
+	return mSubLedger.emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -1704,7 +1704,7 @@ bool NetworkOPs::subServer(InfoSub::ref isrListener, Json::Value& jvResult)
 	jvResult["load_factor"]		= theApp->getFeeTrack().getLoadFactor();
 
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
-	return mSubServer.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
+	return mSubServer.emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -1718,7 +1718,7 @@ bool NetworkOPs::unsubServer(uint64 uSeq)
 bool NetworkOPs::subTransactions(InfoSub::ref isrListener)
 {
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
-	return mSubTransactions.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
+	return mSubTransactions.emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -1732,7 +1732,7 @@ bool NetworkOPs::unsubTransactions(uint64 uSeq)
 bool NetworkOPs::subRTTransactions(InfoSub::ref isrListener)
 {
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
-	return mSubTransactions.insert(std::make_pair(isrListener->getSeq(), isrListener)).second;
+	return mSubTransactions.emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -1756,7 +1756,7 @@ InfoSub::pointer NetworkOPs::addRpcSub(const std::string& strUrl, InfoSub::ref r
 {
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 
-	mRpcSubMap.insert(std::make_pair(strUrl, rspEntry));
+	mRpcSubMap.emplace(strUrl, rspEntry);
 
 	return rspEntry;
 }
