@@ -1647,7 +1647,7 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest, int& cost)
 
 	Json::Value ret(Json::objectValue);
 
-	ScopedUnlock(theApp->getMasterLock());
+	ScopedUnlock(theApp->getMasterLock(), lpLedger->isClosed());
 	lpLedger->addJson(ret, iOptions);
 
 	return ret;
