@@ -512,7 +512,7 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 	if (!fromConsensus)
 		dropCache();
 
-	if (theApp->getJobQueue().getJobCount(jtPUBOLDLEDGER) == 0)
+	if (theApp->getJobQueue().getJobCountTotal(jtPUBOLDLEDGER) == 0)
 		theApp->getLedgerMaster().resumeAcquiring();
 }
 

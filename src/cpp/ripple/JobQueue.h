@@ -103,8 +103,9 @@ public:
 
 	void addJob(JobType type, const std::string& name, const boost::function<void(Job&)>& job);
 
-	int getJobCount(JobType t);		// Jobs at this priority
-	int getJobCountGE(JobType t);	// All jobs at or greater than this priority
+	int getJobCount(JobType t);			// Jobs waiting at this priority
+	int getJobCountTotal(JobType t);	// Jobs waiting plus running at this priority
+	int getJobCountGE(JobType t);		// All waiting jobs at or greater than this priority
 	std::vector< std::pair<JobType, std::pair<int, int> > > getJobCounts(); // jobs waiting, threads doing
 
 	void shutdown();
