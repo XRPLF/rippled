@@ -1339,7 +1339,7 @@ bool Ledger::isValidBook(const uint160& uTakerPaysCurrency, const uint160& uTake
 	}
 	else										// non-XRP to non-XRP
 	{
-		if ((uTakerPaysCurrency == uTakerGetsCurrency) && (uTakerGetsIssuerID == uTakerGetsIssuerID))
+		if ((uTakerPaysCurrency == uTakerGetsCurrency) && (uTakerGetsIssuerID == uTakerPaysIssuerID))
 			return false;						// Input and output cannot be identical
 	}
 
