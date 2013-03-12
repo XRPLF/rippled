@@ -2753,37 +2753,101 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 	}
 
 	if (jvRequest.isMember("books"))
-	{
+	{ // FIXME: This can crash the server if the parameters to things like getBookPage are invalid
 		for (Json::Value::iterator it = jvRequest["books"].begin(); it != jvRequest["books"].end(); it++)
 		{
-			uint160 currencyOut;
-			STAmount::currencyFromString(currencyOut,(*it)["CurrencyOut"].asString());
-			uint160 issuerOut,issuerIn;
-			if(currencyOut.isNonZero())
-				STAmount::issuerFromString(issuerOut,(*it)["IssuerOut"].asString());
-			uint160 currencyIn;
-			STAmount::currencyFromString(currencyIn,(*it)["CurrencyIn"].asString());
-			if(currencyIn.isNonZero())
-				STAmount::issuerFromString(issuerIn,(*it)["IssuerIn"].asString());
+			uint160		uTakerPaysCurrencyID;
+			uint160		uTakerPaysIssuerID;
+			Json::Value	jvTakerPays	= (*it)["taker_pays"];
 
-			bool bothSides=false;
-			if((*it).isMember("BothSides") && (*it)["BothSides"].asBool()) bothSides=true;
+			// Parse mandatory currency.
+			if (!jvTakerPays.isMember("currency")
+				|| !STAmount::currencyFromString(uTakerPaysCurrencyID, jvTakerPays["currency"].asString()))
+			{
+				cLog(lsINFO) << "Bad taker_pays currency.";
 
-			mNetOps->subBook(ispSub, currencyIn, currencyOut, issuerIn, issuerOut);
-			if(bothSides) mNetOps->subBook(ispSub, currencyOut, currencyIn, issuerOut, issuerIn);
-			if((*it)["StateNow"].asBool())
+				return rpcError(rpcSRC_CUR_MALFORMED);
+			}
+			// Parse optional issuer.
+			else if (((jvTakerPays.isMember("issuer"))
+					  && (!jvTakerPays["issuer"].isString()
+						  || !STAmount::issuerFromString(uTakerPaysIssuerID, jvTakerPays["issuer"].asString())))
+					 // Don't allow illegal issuers.
+					 || (!uTakerPaysCurrencyID != !uTakerPaysIssuerID)
+					 || ACCOUNT_ONE == uTakerPaysIssuerID)
+			{
+				cLog(lsINFO) << "Bad taker_pays issuer.";
+
+				return rpcError(rpcSRC_ISR_MALFORMED);
+			}
+
+			uint160		uTakerGetsCurrencyID;
+			uint160		uTakerGetsIssuerID;
+			Json::Value	jvTakerGets	= (*it)["taker_gets"];
+
+			// Parse mandatory currency.
+			if (!jvTakerGets.isMember("currency")
+				|| !STAmount::currencyFromString(uTakerGetsCurrencyID, jvTakerGets["currency"].asString()))
+			{
+				cLog(lsINFO) << "Bad taker_pays currency.";
+
+				return rpcError(rpcSRC_CUR_MALFORMED);
+			}
+			// Parse optional issuer.
+			else if (((jvTakerGets.isMember("issuer"))
+					  && (!jvTakerGets["issuer"].isString()
+						  || !STAmount::issuerFromString(uTakerGetsIssuerID, jvTakerGets["issuer"].asString())))
+					 // Don't allow illegal issuers.
+					 || (!uTakerGetsCurrencyID != !uTakerGetsIssuerID)
+					 || ACCOUNT_ONE == uTakerGetsIssuerID)
+			{
+				cLog(lsINFO) << "Bad taker_gets issuer.";
+
+				return rpcError(rpcDST_ISR_MALFORMED);
+			}
+
+			if (uTakerPaysCurrencyID == uTakerGetsCurrencyID
+				&& uTakerPaysIssuerID == uTakerGetsIssuerID)
+			{
+				cLog(lsINFO) << "taker_gets same as taker_pays.";
+
+				return rpcError(rpcBAD_MARKET);
+			}
+
+			RippleAddress	raTakerID;
+
+			if (!(*it).isMember("taker"))
+			{
+				raTakerID.setAccountID(ACCOUNT_ONE);
+			}
+			else if (!raTakerID.setAccountID((*it)["taker"].asString()))
+			{
+				return rpcError(rpcBAD_ISSUER);
+			}
+
+			bool bothSides = (*it)["both_sides"].asBool();
+
+			if (!Ledger::isValidBook(uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID))
+			{
+				cLog(lsWARNING) << "Bad market: " <<
+					uTakerPaysCurrencyID << ":" << uTakerPaysIssuerID << " -> " << 
+					uTakerGetsCurrencyID << ":" << uTakerGetsIssuerID;
+				return rpcError(rpcBAD_MARKET);
+			}
+
+			mNetOps->subBook(ispSub, uTakerPaysCurrencyID, uTakerGetsCurrencyID, uTakerPaysIssuerID, uTakerGetsIssuerID);
+			if (bothSides) mNetOps->subBook(ispSub, uTakerGetsCurrencyID, uTakerPaysCurrencyID, uTakerGetsIssuerID, uTakerPaysIssuerID);
+			if ((*it)["state_now"].asBool())
 			{
 				Ledger::pointer ledger= theApp->getLedgerMaster().getClosedLedger();
-				RippleAddress	raTakerID;
-				raTakerID.setAccountID(ACCOUNT_ONE);
 				const Json::Value	jvMarker = Json::Value(Json::nullValue);
-				mNetOps->getBookPage(ledger, currencyOut, issuerOut, currencyIn, issuerIn, raTakerID.getAccountID(), false, 0, jvMarker, jvResult);
-				if(bothSides) 
+				mNetOps->getBookPage(ledger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, raTakerID.getAccountID(), false, 0, jvMarker, jvResult);
+				if (bothSides)
 				{
 					Json::Value tempJson(Json::objectValue);
-					if(jvResult.isMember("offers")) jvResult["bids"]=jvResult["offers"];
-					mNetOps->getBookPage(ledger, currencyIn, issuerIn, currencyOut, issuerOut, raTakerID.getAccountID(), false, 0, jvMarker, tempJson);
-					if(tempJson.isMember("offers")) jvResult["asks"]=tempJson["offers"];
+					if (jvResult.isMember("offers")) jvResult["bids"]=jvResult["offers"];
+					mNetOps->getBookPage(ledger, uTakerGetsCurrencyID, uTakerGetsIssuerID, uTakerPaysCurrencyID, uTakerPaysIssuerID, raTakerID.getAccountID(), false, 0, jvMarker, tempJson);
+					if (tempJson.isMember("offers")) jvResult["asks"]=tempJson["offers"];
 				}
 			}
 		}
@@ -2888,14 +2952,68 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest, int& cost)
 	{
 		for (Json::Value::iterator it = jvRequest["books"].begin(); it != jvRequest["books"].end(); it++)
 		{
-			uint160 currencyOut;
-			STAmount::issuerFromString(currencyOut,(*it)["CurrencyOut"].asString());
-			uint160 issuerOut = RippleAddress::createNodePublic( (*it)["IssuerOut"].asString() ).getAccountID();
-			uint160 currencyIn;
-			STAmount::issuerFromString(currencyOut,(*it)["CurrencyIn"].asString());
-			uint160 issuerIn = RippleAddress::createNodePublic( (*it)["IssuerIn"].asString() ).getAccountID();
+			uint160		uTakerPaysCurrencyID;
+			uint160		uTakerPaysIssuerID;
+			Json::Value	jvTakerPays	= (*it)["taker_pays"];
 
-			mNetOps->unsubBook(ispSub->getSeq(), currencyIn, currencyOut, issuerIn, issuerOut);
+			// Parse mandatory currency.
+			if (!jvTakerPays.isMember("currency")
+				|| !STAmount::currencyFromString(uTakerPaysCurrencyID, jvTakerPays["currency"].asString()))
+			{
+				cLog(lsINFO) << "Bad taker_pays currency.";
+
+				return rpcError(rpcSRC_CUR_MALFORMED);
+			}
+			// Parse optional issuer.
+			else if (((jvTakerPays.isMember("issuer"))
+					  && (!jvTakerPays["issuer"].isString()
+						  || !STAmount::issuerFromString(uTakerPaysIssuerID, jvTakerPays["issuer"].asString())))
+					 // Don't allow illegal issuers.
+					 || (!uTakerPaysCurrencyID != !uTakerPaysIssuerID)
+					 || ACCOUNT_ONE == uTakerPaysIssuerID)
+			{
+				cLog(lsINFO) << "Bad taker_pays issuer.";
+
+				return rpcError(rpcSRC_ISR_MALFORMED);
+			}
+
+			uint160		uTakerGetsCurrencyID;
+			uint160		uTakerGetsIssuerID;
+			Json::Value	jvTakerGets	= (*it)["taker_gets"];
+
+			// Parse mandatory currency.
+			if (!jvTakerGets.isMember("currency")
+				|| !STAmount::currencyFromString(uTakerGetsCurrencyID, jvTakerGets["currency"].asString()))
+			{
+				cLog(lsINFO) << "Bad taker_pays currency.";
+
+				return rpcError(rpcSRC_CUR_MALFORMED);
+			}
+			// Parse optional issuer.
+			else if (((jvTakerGets.isMember("issuer"))
+					  && (!jvTakerGets["issuer"].isString()
+						  || !STAmount::issuerFromString(uTakerGetsIssuerID, jvTakerGets["issuer"].asString())))
+					 // Don't allow illegal issuers.
+					 || (!uTakerGetsCurrencyID != !uTakerGetsIssuerID)
+					 || ACCOUNT_ONE == uTakerGetsIssuerID)
+			{
+				cLog(lsINFO) << "Bad taker_gets issuer.";
+
+				return rpcError(rpcDST_ISR_MALFORMED);
+			}
+
+			if (uTakerPaysCurrencyID == uTakerGetsCurrencyID
+				&& uTakerPaysIssuerID == uTakerGetsIssuerID)
+			{
+				cLog(lsINFO) << "taker_gets same as taker_pays.";
+
+				return rpcError(rpcBAD_MARKET);
+			}
+
+			bool bothSides = (*it)["both_sides"].asBool();
+
+			mNetOps->unsubBook(ispSub->getSeq(), uTakerPaysCurrencyID, uTakerGetsCurrencyID, uTakerPaysIssuerID, uTakerGetsIssuerID);
+			if (bothSides) mNetOps->unsubBook(ispSub->getSeq(), uTakerGetsCurrencyID, uTakerPaysCurrencyID, uTakerGetsIssuerID, uTakerPaysIssuerID);
 		}
 	}
 

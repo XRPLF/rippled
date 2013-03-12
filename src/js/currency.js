@@ -22,9 +22,9 @@ Currency.json_rewrite = function (j) {
 };
 
 Currency.from_json = function (j) {
-  return 'string' === typeof j
-      ? (new Currency()).parse_json(j)
-      : j.clone();
+  if (j instanceof Currency) return j.clone();
+  else if ('string' === typeof j) return (new Currency()).parse_json(j);
+  else return new Currency(); // NaN
 };
 
 Currency.is_valid = function (j) {
@@ -67,7 +67,7 @@ Currency.prototype.is_native = function () {
 };
 
 Currency.prototype.is_valid = function () {
-  return !isNaN(this._value);
+  return 'string' === typeof this._value || !isNaN(this._value);
 };
 
 Currency.prototype.to_json = function () {

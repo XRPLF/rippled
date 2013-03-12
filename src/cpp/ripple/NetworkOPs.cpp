@@ -1598,21 +1598,21 @@ void NetworkOPs::unsubAccount(uint64 uSeq, const boost::unordered_set<RippleAddr
 	}
 }
 
-bool NetworkOPs::subBook(InfoSub::ref isrListener, const uint160& currencyIn, const uint160& currencyOut,
-	const uint160& issuerIn, const uint160& issuerOut)
+bool NetworkOPs::subBook(InfoSub::ref isrListener, const uint160& currencyPays, const uint160& currencyGets,
+	const uint160& issuerPays, const uint160& issuerGets)
 {
 	BookListeners::pointer listeners =
-		theApp->getOrderBookDB().makeBookListeners(currencyIn, currencyOut, issuerIn, issuerOut);
+		theApp->getOrderBookDB().makeBookListeners(currencyPays, currencyGets, issuerPays, issuerGets);
 	if (listeners)
 		listeners->addSubscriber(isrListener);
 	return true;
 }
 
 bool NetworkOPs::unsubBook(uint64 uSeq,
-	const uint160& currencyIn, const uint160& currencyOut, const uint160& issuerIn, const uint160& issuerOut)
+	const uint160& currencyPays, const uint160& currencyGets, const uint160& issuerPays, const uint160& issuerGets)
 {
 	BookListeners::pointer listeners =
-		theApp->getOrderBookDB().getBookListeners(currencyIn, currencyOut, issuerIn, issuerOut);
+		theApp->getOrderBookDB().getBookListeners(currencyPays, currencyGets, issuerPays, issuerGets);
 	if (listeners)
 		listeners->removeSubscriber(uSeq);
 	return true;

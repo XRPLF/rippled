@@ -168,9 +168,6 @@ void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
 	else if (ecResult)
 	{
 		cLog(lsINFO) << "Peer verify timer error";
-
-		// Can't do anything sound.
-		abort();
 	}
 	else
 	{
@@ -222,6 +219,7 @@ void Peer::connect(const std::string& strIp, int iPort)
 	{
 		cLog(lsINFO) << "Peer: Connect: Outbound: " << ADDRESS(this) << ": " << mIpPort.first << " " << mIpPort.second;
 
+		boost::recursive_mutex::scoped_lock sl(ioMutex);
 		boost::asio::async_connect(
 			getSocket(),
 			itrEndpoint,

@@ -405,7 +405,9 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 	cLog(lsTRACE) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq();
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers INDEXED BY SeqLedger where LedgerSeq = %u;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %u;");
-	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransID = '%s';");
+	static boost::format deleteTrans1("DELETE FROM Transactions WHERE LedgerSeq = %u;");
+	static boost::format deleteTrans2("DELETE FROM AccountTransactions WHERE LedgerSeq = %u;");
+	static boost::format deleteAcctTrans("DELETE FROM AccountTransactions WHERE TransID = '%s';");
 	static boost::format transExists("SELECT Status FROM Transactions WHERE TransID = '%s';");
 	static boost::format
 		updateTx("UPDATE Transactions SET LedgerSeq = %u, Status = '%c', TxnMeta = %s WHERE TransID = '%s';");
@@ -431,88 +433,80 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 	AcceptedLedger::pointer aLedger = AcceptedLedger::makeAcceptedLedger(shared_from_this());
 
 	{
-		{
-			ScopedLock sl(theApp->getLedgerDB()->getDBLock());
-			if (SQL_EXISTS(theApp->getLedgerDB()->getDB(), boost::str(ledgerExists % mLedgerSeq)))
-				theApp->getLedgerDB()->getDB()->executeSQL(boost::str(deleteLedger % mLedgerSeq));
-		}
+		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(deleteLedger % mLedgerSeq));
+	}
 
+	{
 		Database *db = theApp->getTxnDB()->getDB();
-		{
-			ScopedLock dbLock(theApp->getTxnDB()->getDBLock());
-			db->executeSQL("BEGIN TRANSACTION;");
+		ScopedLock dbLock(theApp->getTxnDB()->getDBLock());
+		db->executeSQL("BEGIN TRANSACTION;");
 
-			BOOST_FOREACH(const AcceptedLedger::value_type& vt, aLedger->getMap())
+		db->executeSQL(boost::str(deleteTrans1 % mLedgerSeq));
+		db->executeSQL(boost::str(deleteTrans2 % mLedgerSeq));
+
+		BOOST_FOREACH(const AcceptedLedger::value_type& vt, aLedger->getMap())
+		{
+			uint256 txID = vt.second.getTransactionID();
+			theApp->getMasterTransaction().inLedger(txID, mLedgerSeq);
+
+			db->executeSQL(boost::str(deleteAcctTrans % txID.GetHex()));
+
+			const std::vector<RippleAddress>& accts = vt.second.getAffected();
+			if (!accts.empty())
 			{
-				cLog(lsTRACE) << "Saving: " << vt.second.getJson(0);
-				uint256 txID = vt.second.getTransactionID();
-				theApp->getMasterTransaction().inLedger(txID, mLedgerSeq);
-
-				// Make sure transaction is in AccountTransactions.
-				if (!SQL_EXISTS(db, boost::str(AcctTransExists % txID.GetHex())))
+				std::string sql = "INSERT OR REPLACE INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
+				bool first = true;
+					for (std::vector<RippleAddress>::const_iterator it = accts.begin(), end = accts.end(); it != end; ++it)
 				{
-					// Transaction not in AccountTransactions
-					const std::vector<RippleAddress>& accts = vt.second.getAffected();
-					if (!accts.empty())
-					{
-
-						std::string sql = "INSERT OR REPLACE INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
-						bool first = true;
-							for (std::vector<RippleAddress>::const_iterator it = accts.begin(), end = accts.end(); it != end; ++it)
-						{
-							if (!first)
-								sql += ", ('";
-							else
-							{
-								sql += "('";
-								first = false;
-							}
-							sql += txID.GetHex();
-							sql += "','";
-							sql += it->humanAccountID();
-							sql += "',";
-							sql += boost::lexical_cast<std::string>(getLedgerSeq());
-							sql += ")";
-						}
-						sql += ";";
-						Log(lsTRACE) << "ActTx: " << sql;
-						db->executeSQL(sql); // may already be in there
-					}
+					if (!first)
+						sql += ", ('";
 					else
-						cLog(lsWARNING) << "Transaction in ledger " << mLedgerSeq << " affects no accounts";
+					{
+						sql += "('";
+						first = false;
+					}
+					sql += txID.GetHex();
+					sql += "','";
+					sql += it->humanAccountID();
+					sql += "',";
+					sql += boost::lexical_cast<std::string>(getLedgerSeq());
+					sql += ")";
 				}
-
-				if (SQL_EXISTS(db, boost::str(transExists %	txID.GetHex())))
-				{
-					// In Transactions, update LedgerSeq, metadata and Status.
-					db->executeSQL(boost::str(updateTx
-						% getLedgerSeq()
-						% TXN_SQL_VALIDATED
-						% vt.second.getEscMeta()
-						% txID.GetHex()));
-				}
-				else
-				{
-					// Not in Transactions, insert the whole thing..
-					db->executeSQL(
-						SerializedTransaction::getMetaSQLInsertHeader() +
-						vt.second.getTxn()->getMetaSQL(getLedgerSeq(), vt.second.getEscMeta()) + ";");
-				}
+				sql += ";";
+				Log(lsTRACE) << "ActTx: " << sql;
+				db->executeSQL(sql); // may already be in there
 			}
-			db->executeSQL("COMMIT TRANSACTION;");
-		}
+			else
+				cLog(lsWARNING) << "Transaction in ledger " << mLedgerSeq << " affects no accounts";
 
-		if (!theConfig.RUN_STANDALONE)
-			theApp->getHashedObjectStore().waitWrite(); // wait until all nodes are written
-
-		{
-			ScopedLock sl(theApp->getLedgerDB()->getDBLock());
-			theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
-				getHash().GetHex() % mLedgerSeq % mParentHash.GetHex() %
-				boost::lexical_cast<std::string>(mTotCoins) % mCloseTime % mParentCloseTime %
-				mCloseResolution % mCloseFlags %
-				mAccountHash.GetHex() % mTransHash.GetHex()));
+			if (SQL_EXISTS(db, boost::str(transExists %	txID.GetHex())))
+			{
+				// In Transactions, update LedgerSeq, metadata and Status.
+				db->executeSQL(boost::str(updateTx
+					% getLedgerSeq()
+					% TXN_SQL_VALIDATED
+					% vt.second.getEscMeta()
+					% txID.GetHex()));
+			}
+			else
+			{
+				// Not in Transactions, insert the whole thing..
+				db->executeSQL(
+					SerializedTransaction::getMetaSQLInsertHeader() +
+					vt.second.getTxn()->getMetaSQL(getLedgerSeq(), vt.second.getEscMeta()) + ";");
+			}
 		}
+		db->executeSQL("COMMIT TRANSACTION;");
+	}
+
+	{
+		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
+			getHash().GetHex() % mLedgerSeq % mParentHash.GetHex() %
+			boost::lexical_cast<std::string>(mTotCoins) % mCloseTime % mParentCloseTime %
+			mCloseResolution % mCloseFlags %
+			mAccountHash.GetHex() % mTransHash.GetHex()));
 	}
 
 	if (!fromConsensus)
@@ -1311,6 +1305,42 @@ std::vector< std::pair<uint32, uint256> > Ledger::getLedgerHashes()
 			ret.push_back(std::make_pair(++seq, vec.at(i)));
 	}
 	return ret;
+}
+
+bool Ledger::isValidBook(const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuerID,
+	const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuerID)
+{
+	if (uTakerPaysCurrency.isZero())
+	{ // XRP in
+
+		if (uTakerPaysIssuerID.isNonZero())		// XRP cannot have an issuer
+			return false;
+
+		if (uTakerGetsCurrency.isZero())		// XRP to XRP not allowed
+			return false;
+
+		if (uTakerGetsIssuerID.isZero())		// non-XRP must have issuer
+			return false;
+
+		return true;
+	}
+
+	// non-XRP in
+	if (uTakerPaysIssuerID.isZero())			// non-XRP must have issuer
+		return false;
+
+	if (uTakerGetsCurrency.isZero())			// non-XRP to XRP
+	{
+		if (uTakerGetsIssuerID.isNonZero())		// XRP cannot have issuer
+			return false;
+	}
+	else										// non-XRP to non-XRP
+	{
+		if ((uTakerPaysCurrency == uTakerGetsCurrency) && (uTakerGetsIssuerID == uTakerGetsIssuerID))
+			return false;						// Input and output cannot be identical
+	}
+
+	return true;
 }
 
 uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuerID,
