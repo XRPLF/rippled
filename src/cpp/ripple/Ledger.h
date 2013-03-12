@@ -257,6 +257,9 @@ public:
 	//
 
 	// Order book dirs have a base so we can use next to step through them in quality order.
+	static bool isValidBook(const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuerID,
+		const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuerID);
+
 	static uint256 getBookBase(const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuerID,
 		const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuerID);
 

@@ -1302,6 +1302,28 @@ std::vector< std::pair<uint32, uint256> > Ledger::getLedgerHashes()
 	return ret;
 }
 
+bool Ledger::isValidBook(const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuerID,
+	const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuerID)
+{
+	if (uTakerPaysCurrency.isZero())
+	{ // XRP in
+		if (uTakerPaysIssuerID.isNonZero())		// XRP cannot have an issuer
+			return false;
+		if (uTakerGetsCurrency.isZero())		// XRP to XRP not allowed
+			return false;
+		if (uTakerGetsIssuerID.isZero())		// non-XRP must have issuer
+			return false;
+		return true;
+	}
+
+	// non-XRP in
+	if (uTakerPaysIssuerID.isZero())			// non-XRP must have issuer
+		return false;
+	if (uTakerGetsCurrency.isZero() != uTakerGetsIssuerID.isZero())
+		return false;							// XRP must have issuer, non-XRP must not
+	return true;
+}
+
 uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuerID,
 	const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuerID)
 {
