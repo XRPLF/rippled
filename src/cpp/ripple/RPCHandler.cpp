@@ -2825,6 +2825,14 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 
 			bool bothSides = (*it)["both_sides"].asBool();
 
+			if (!Ledger::isValidBook(uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID))
+			{
+				cLog(lsWARNING) << "Bad market: " <<
+					uTakerPaysCurrencyID << ":" << uTakerPaysIssuerID << " -> " << 
+					uTakerGetsCurrencyID << ":" << uTakerGetsIssuerID;
+				return rpcError(rpcBAD_MARKET);
+			}
+
 			mNetOps->subBook(ispSub, uTakerPaysCurrencyID, uTakerGetsCurrencyID, uTakerPaysIssuerID, uTakerGetsIssuerID);
 			if (bothSides) mNetOps->subBook(ispSub, uTakerGetsCurrencyID, uTakerPaysCurrencyID, uTakerGetsIssuerID, uTakerPaysIssuerID);
 			if ((*it)["state_now"].asBool())
