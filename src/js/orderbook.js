@@ -155,11 +155,9 @@ OrderBook.prototype.notifyTx = function (message)
         an.diffType === 'ModifiedNode') {
       for (i = 0, l = self._offers.length; i < l; i++) {
         offer = self._offers[i];
-        console.log(offer.index, an.ledgerIndex);
         if (offer.index === an.ledgerIndex) {
           if (an.diffType === 'DeletedNode') {
             self._offers.splice(i, 1);
-            console.log('node removed');
           }
           else extend(offer, an.fieldsFinal);
           changed = true;
@@ -171,7 +169,7 @@ OrderBook.prototype.notifyTx = function (message)
       for (i = 0, l = self._offers.length; i < l; i++) {
         offer = self._offers[i];
         var priceItem = Amount.from_json(offer.TakerPays).ratio_human(offer.TakerGets);
-        console.log(price.to_text_full(), priceItem.to_text_full());
+
         if (price.compareTo(priceItem) <= 0) {
           var obj = an.fields;
           obj.index = an.ledgerIndex;
