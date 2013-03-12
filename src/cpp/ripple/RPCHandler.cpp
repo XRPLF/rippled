@@ -2757,6 +2757,14 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 		for (Json::Value::iterator it = jvRequest["books"].begin(); it != jvRequest["books"].end(); it++)
 		{
 			Json::Value&	jvSubRequest	= *it;
+
+			if (!jvSubRequest.isObject()
+				|| !jvSubRequest.isMember("taker_pays")
+				|| !jvSubRequest.isMember("taker_gets")
+				|| !jvSubRequest["taker_pays"].isObject()
+				|| !jvSubRequest["taker_gets"].isObject())
+				return rpcError(rpcINVALID_PARAMS);
+
 			uint160			uTakerPaysCurrencyID;
 			uint160			uTakerPaysIssuerID;
 			uint160			uTakerGetsCurrencyID;
@@ -2766,12 +2774,8 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 			bool			bSnapshot		= (jvSubRequest.isMember("snapshot") && jvSubRequest["snapshot"].asBool())
 												|| (jvSubRequest.isMember("start_now") && jvSubRequest["start_now"].asBool());		// DEPRECATED
 
-
-			if (!jvSubRequest.isMember("taker_pays") || !jvSubRequest.isMember("taker_gets"))
-				return rpcError(rpcINVALID_PARAMS);
-
-			Json::Value	jvTakerPays	= jvSubRequest["taker_pays"];
-			Json::Value	jvTakerGets	= jvSubRequest["taker_gets"];
+			Json::Value		jvTakerPays		= jvSubRequest["taker_pays"];
+			Json::Value		jvTakerGets		= jvSubRequest["taker_gets"];
 
 			// Parse mandatory currency.
 			if (!jvTakerPays.isMember("currency")
