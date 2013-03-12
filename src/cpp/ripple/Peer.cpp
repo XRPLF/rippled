@@ -168,9 +168,6 @@ void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
 	else if (ecResult)
 	{
 		cLog(lsINFO) << "Peer verify timer error";
-
-		// Can't do anything sound.
-		abort();
 	}
 	else
 	{
