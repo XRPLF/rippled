@@ -500,9 +500,6 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 		db->executeSQL("COMMIT TRANSACTION;");
 	}
 
-	if (!theConfig.RUN_STANDALONE)
-		theApp->getHashedObjectStore().waitWrite(); // wait until all nodes are written
-
 	{
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
