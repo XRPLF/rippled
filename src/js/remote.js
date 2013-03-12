@@ -208,20 +208,25 @@ Request.prototype.books = function (books, state) {
 
   for (var i = 0, l = books.length; i < l; i++) {
     var book = books[i];
+    var json = {};
 
-    var json = {
-      "CurrencyOut": Currency.json_rewrite(book["CurrencyOut"]),
-      "CurrencyIn": Currency.json_rewrite(book["CurrencyIn"])
-    };
+    function process(side) {
+      if (!book[side]) throw new Error("Missing "+side);
 
-    if (json["CurrencyOut"] !== "XRP") {
-      json["IssuerOut"] = UInt160.json_rewrite(book["IssuerOut"]);
+      var obj = {};
+      obj["currency"] = Currency.json_rewrite(book[side]["currency"]);
+      if (obj["currency"] !== "XRP") {
+        obj.issuer = UInt160.json_rewrite(book[side]["issuer"]);
+      }
+
+      json[side] = obj;
     }
-    if (json["CurrencyIn"] !== "XRP") {
-      json["IssuerIn"]  = UInt160.json_rewrite(book["IssuerIn"]);
-    }
 
-    if (state || book["StateNow"]) json["StateNow"] = true;
+    process("taker_gets");
+    process("taker_pays");
+
+    if (state || book["state_now"]) json["state_now"] = true;
+    if (book["both_sides"]) json["both_sides"] = true;
 
     procBooks.push(json);
   }
@@ -280,6 +285,7 @@ var Remote = function (opts, trace) {
   this._reserve_base          = undefined;
   this._reserve_inc           = undefined;
   this._server_status         = undefined;
+  this._last_tx               = null;
 
   // Local signing implies local fees and sequences
   if (this.local_signing) {
@@ -299,6 +305,9 @@ var Remote = function (opts, trace) {
 
   // Hash map of Account objects by AccountId.
   this._accounts = {};
+
+  // Hash map of OrderBook objects
+  this._books = {};
 
   // List of secrets that we know about.
   this.secrets = {
@@ -629,7 +638,10 @@ Remote.prototype._connect_message = function (ws, json) {
         // unsubscribes will be added as needed.
         // XXX If not trusted, need proof.
 
-        // XXX Should de-duplicate transaction events
+        // De-duplicate transactions that are immediately following each other
+        // XXX Should have a cache of n txs so we can dedup out of order txs
+        if (this._last_tx === message.transaction.hash) break;
+        this._last_tx = message.transaction.hash;
 
         if (this.trace) utils.logObject("remote: tx: %s", message);
 
@@ -641,12 +653,15 @@ Remote.prototype._connect_message = function (ws, json) {
         for (var i = 0, l = affected.length; i < l; i++) {
           var account = self._accounts[affected[i]];
 
-          // Only trigger the event if the account object is actually
-          // subscribed - this prevents some weird phantom events from
-          // occurring.
-          if (account && account._subs) {
-            account.emit('transaction', message);
-          }
+          if (account) account.notifyTx(message);
+        }
+
+        // Pass the event on to any related OrderBooks
+        affected = message.mmeta.getAffectedBooks();
+        for (i = 0, l = affected.length; i < l; i++) {
+          var book = self._books[affected[i]];
+
+          if (book) book.notifyTx(message);
         }
 
         this.emit('transaction', message);
@@ -1143,13 +1158,26 @@ Remote.prototype.account = function (accountId) {
   return this._accounts[accountId];
 };
 
-Remote.prototype.book = function (currency_out, issuer_out,
-                                  currency_in,  issuer_in) {
-  var book = new OrderBook(this,
-                           currency_out, issuer_out,
-                           currency_in,  issuer_in);
+Remote.prototype.book = function (currency_gets, issuer_gets,
+                                  currency_pays, issuer_pays) {
+  var gets = currency_gets;
+  if (gets !== 'XRP') gets += '/' + issuer_gets;
+  var pays = currency_pays;
+  if (pays !== 'XRP') pays += '/' + issuer_pays;
 
-  return book;
+  var key = gets + ":" + pays;
+
+  if (!this._books[key]) {
+    var book = new OrderBook(this,
+                             currency_gets, issuer_gets,
+                             currency_pays, issuer_pays);
+
+    if (!book.is_valid()) return book;
+
+    this._books[key] = book;
+  }
+
+  return this._books[key];
 }
 
 // Return the next account sequence if possible.

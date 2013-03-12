@@ -128,6 +128,22 @@ Account.prototype.entry = function (callback)
   return this;
 };
 
+/**
+ * Notify object of a relevant transaction.
+ *
+ * This is only meant to be called by the Remote class. You should never have to
+ * call this yourself.
+ */
+Account.prototype.notifyTx = function (message)
+{
+  // Only trigger the event if the account object is actually
+  // subscribed - this prevents some weird phantom events from
+  // occurring.
+  if (this._subs) {
+    this.emit('transaction', message);
+  }
+};
+
 exports.Account	    = Account;
 
 // vim:sw=2:sts=2:ts=8:et

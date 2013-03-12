@@ -1,6 +1,10 @@
 // Routines for working with an orderbook.
 //
+// One OrderBook object represents one half of an order book. (i.e. bids OR
+// asks) Which one depends on the ordering of the parameters.
+//
 // Events:
+//  - transaction   A transaction that affects the order book.
 
 // var network = require("./network.js");
 
@@ -12,28 +16,29 @@ var Currency = require('./currency').Currency;
 var extend = require('extend');
 
 var OrderBook = function (remote,
-                          currency_out, issuer_out,
-                          currency_in,  issuer_in) {
+                          currency_gets, issuer_gets,
+                          currency_pays, issuer_pays) {
   var self = this;
 
   this._remote = remote;
-  this._currency_out = currency_out;
-  this._issuer_out = issuer_out;
-  this._currency_in = currency_in;
-  this._issuer_in = issuer_in;
+  this._currency_gets = currency_gets;
+  this._issuer_gets = issuer_gets;
+  this._currency_pays = currency_pays;
+  this._issuer_pays = issuer_pays;
 
   this._subs = 0;
 
-  // Ledger entry object
-  // Important: This must never be overwritten, only extend()-ed
-  this._entry = {};
+  // We consider ourselves synchronized if we have a current copy of the offers,
+  // we are online and subscribed to updates.
+  this._sync = false;
+
+  // Offers
+  this._offers = [];
 
   this.on('newListener', function (type, listener) {
     if (OrderBook.subscribe_events.indexOf(type) !== -1) {
       if (!self._subs && 'open' === self._remote._online_state) {
-        self._remote.request_subscribe()
-          .books([self.to_json()], true)
-          .request();
+        self._subscribe();
       }
       self._subs  += 1;
     }
@@ -44,6 +49,7 @@ var OrderBook = function (remote,
       self._subs  -= 1;
 
       if (!self._subs && 'open' === self._remote._online_state) {
+        self._sync = false;
         self._remote.request_unsubscribe()
           .books([self.to_json()])
           .request();
@@ -59,6 +65,10 @@ var OrderBook = function (remote,
     }
   });
 
+  this._remote.on('disconnect', function () {
+    self._sync = false;
+  });
+
   return this;
 };
 
@@ -67,17 +77,42 @@ OrderBook.prototype = new EventEmitter;
 /**
  * List of events that require a remote subscription to the orderbook.
  */
-OrderBook.subscribe_events = ['transaction'];
+OrderBook.subscribe_events = ['transaction', 'model'];
+
+/**
+ * Subscribes to orderbook.
+ *
+ * @private
+ */
+OrderBook.prototype._subscribe = function ()
+{
+  var self = this;
+  self._remote.request_subscribe()
+    .books([self.to_json()], true)
+    .on('error', function () {
+      // XXX What now?
+    })
+    .on('success', function (res) {
+      self._sync = true;
+      self._offers = res.offers;
+      self.emit('model', self._offers);
+    })
+    .request();
+};
 
 OrderBook.prototype.to_json = function ()
 {
   var json = {
-    "CurrencyOut": this._currency_out,
-    "CurrencyIn": this._currency_in
+    "taker_gets": {
+      "currency": this._currency_gets
+    },
+    "taker_pays": {
+      "currency": this._currency_pays
+    }
   };
 
-  if (json["CurrencyOut"] !== "XRP") json["IssuerOut"] = this._issuer_out;
-  if (json["CurrencyIn"] !== "XRP")  json["IssuerIn"]  = this._issuer_in;
+  if (this._currency_gets !== "XRP") json["taker_gets"]["issuer"] = this._issuer_gets;
+  if (this._currency_pays !== "XRP") json["taker_pays"]["issuer"] = this._issuer_pays;
 
   return json;
 };
@@ -90,13 +125,106 @@ OrderBook.prototype.to_json = function ()
  */
 OrderBook.prototype.is_valid = function ()
 {
+  // XXX Should check for same currency (non-native) && same issuer
   return (
-    Currency.is_valid(this._currency_in) &&
-    (this._currency_in !== "XRP" && UInt160.is_valid(this._issuer_in)) &&
-    Currency.is_valid(this._currency_out) &&
-    (this._currency_out !== "XRP" && UInt160.is_valid(this._issuer_out)) &&
-    !(this._currency_in === "XRP" && this._currency_out === "XRP")
+    Currency.is_valid(this._currency_pays) &&
+    (this._currency_pays === "XRP" || UInt160.is_valid(this._issuer_pays)) &&
+    Currency.is_valid(this._currency_gets) &&
+    (this._currency_gets === "XRP" || UInt160.is_valid(this._issuer_gets)) &&
+    !(this._currency_pays === "XRP" && this._currency_gets === "XRP")
   );
+};
+
+/**
+ * Notify object of a relevant transaction.
+ *
+ * This is only meant to be called by the Remote class. You should never have to
+ * call this yourself.
+ */
+OrderBook.prototype.notifyTx = function (message)
+{
+  var self = this;
+
+  var changed = false;
+
+  message.mmeta.each(function (an) {
+    if (an.entryType !== 'Offer') return;
+
+    var i, l, offer;
+    if (an.diffType === 'DeletedNode' ||
+        an.diffType === 'ModifiedNode') {
+      for (i = 0, l = self._offers.length; i < l; i++) {
+        offer = self._offers[i];
+        console.log(offer.index, an.ledgerIndex);
+        if (offer.index === an.ledgerIndex) {
+          if (an.diffType === 'DeletedNode') {
+            self._offers.splice(i, 1);
+            console.log('node removed');
+          }
+          else extend(offer, an.fieldsFinal);
+          changed = true;
+          break;
+        }
+      }
+    } else if (an.diffType === 'CreatedNode') {
+      var price = Amount.from_json(an.fields.TakerPays).ratio_human(an.fields.TakerGets);
+      for (i = 0, l = self._offers.length; i < l; i++) {
+        offer = self._offers[i];
+        var priceItem = Amount.from_json(offer.TakerPays).ratio_human(offer.TakerGets);
+        console.log(price.to_text_full(), priceItem.to_text_full());
+        if (price.compareTo(priceItem) <= 0) {
+          var obj = an.fields;
+          obj.index = an.ledgerIndex;
+          self._offers.splice(i, 0, an.fields);
+          changed = true;
+          break;
+        }
+      }
+    }
+  });
+
+  // Only trigger the event if the account object is actually
+  // subscribed - this prevents some weird phantom events from
+  // occurring.
+  if (this._subs) {
+    this.emit('transaction', message);
+    if (changed) this.emit('model', this._offers);
+  }
+};
+
+/**
+ * Get offers model asynchronously.
+ *
+ * This function takes a callback and calls it with an array containing the
+ * current set of offers in this order book.
+ *
+ * If the data is available immediately, the callback may be called synchronously.
+ */
+OrderBook.prototype.offers = function (callback)
+{
+  var self = this;
+
+  if ("function" === typeof callback) {
+    if (this._sync) {
+      callback(this._offers);
+    } else {
+      this.once('model', function (offers) {
+        callback(offers);
+      });
+    }
+  }
+  return this;
+};
+
+/**
+ * Return latest known offers.
+ *
+ * Usually, this will just be an empty array if the order book hasn't been
+ * loaded yet. But this accessor may be convenient in some circumstances.
+ */
+OrderBook.prototype.offersSync = function ()
+{
+  return this._offers;
 };
 
 exports.OrderBook	    = OrderBook;

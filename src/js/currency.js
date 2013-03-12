@@ -22,9 +22,9 @@ Currency.json_rewrite = function (j) {
 };
 
 Currency.from_json = function (j) {
-  return 'string' === typeof j
-      ? (new Currency()).parse_json(j)
-      : j.clone();
+  if (j instanceof Currency) return j.clone();
+  else if ('string' === typeof j) return (new Currency()).parse_json(j);
+  else return new Currency(); // NaN
 };
 
 Currency.is_valid = function (j) {

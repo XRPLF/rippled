@@ -1,4 +1,5 @@
 var extend = require('extend');
+var utils = require('./utils');
 var UInt160 = require('./uint160').UInt160;
 var Amount = require('./amount').Amount;
 
@@ -102,7 +103,35 @@ Meta.prototype.getAffectedAccounts = function ()
     }
   });
 
+  accounts = utils.arrayUnique(accounts);
+
   return accounts;
+};
+
+Meta.prototype.getAffectedBooks = function ()
+{
+  var books = [];
+
+  this.each(function (an) {
+    if (an.entryType !== 'Offer') return;
+
+    var gets = Amount.from_json(an.fields.TakerGets);
+    var pays = Amount.from_json(an.fields.TakerPays);
+
+    var getsKey = gets.currency().to_json();
+    if (getsKey !== 'XRP') getsKey += '/' + gets.issuer().to_json();
+
+    var paysKey = pays.currency().to_json();
+    if (paysKey !== 'XRP') paysKey += '/' + pays.issuer().to_json();
+
+    var key = getsKey + ":" + paysKey;
+
+    books.push(key);
+  });
+
+  books = utils.arrayUnique(books);
+
+  return books;
 };
 
 exports.Meta = Meta;
