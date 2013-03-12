@@ -388,7 +388,7 @@ void LedgerMaster::setFullLedger(Ledger::pointer ledger)
 		return;
 	}
 
-	if (theApp->getJobQueue().getJobCount(jtPUBOLDLEDGER) > 2)
+	if (theApp->getJobQueue().getJobCountTotal(jtPUBOLDLEDGER) > 1)
 	{
 		cLog(lsDEBUG) << "Too many pending ledger saves";
 		return;

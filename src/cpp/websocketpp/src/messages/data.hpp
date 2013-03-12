@@ -212,12 +212,12 @@ private:
     typedef websocketpp::processor::hybi_util::masking_key_type masking_key_type;
     
     friend void intrusive_ptr_add_ref(const data * s) {
-        boost::unique_lock<boost::mutex> lock(s->m_lock);
+        boost::unique_lock<boost::recursive_mutex> lock(s->m_lock);
         ++s->m_ref_count;
     }
     
     friend void intrusive_ptr_release(const data * s) {
-        boost::unique_lock<boost::mutex> lock(s->m_lock);
+        boost::unique_lock<boost::recursive_mutex> lock(s->m_lock);
         
         // TODO: thread safety
         long count = --s->m_ref_count;
@@ -259,7 +259,7 @@ private:
     mutable boost::detail::atomic_count m_ref_count;
     mutable pool_weak_ptr               m_pool;
     mutable bool                        m_live;
-    mutable boost::mutex                m_lock;
+    mutable boost::recursive_mutex      m_lock;
 };
 
 typedef boost::intrusive_ptr<data> data_ptr;

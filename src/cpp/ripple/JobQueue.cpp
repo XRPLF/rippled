@@ -118,6 +118,14 @@ int JobQueue::getJobCount(JobType t)
 	return (c == mJobCounts.end()) ? 0 : c->second.first;
 }
 
+int JobQueue::getJobCountTotal(JobType t)
+{
+	boost::mutex::scoped_lock sl(mJobLock);
+
+	std::map< JobType, std::pair<int, int> >::iterator c = mJobCounts.find(t);
+	return (c == mJobCounts.end()) ? 0 : (c->second.first + c->second.second);
+}
+
 int JobQueue::getJobCountGE(JobType t)
 { // return the number of jobs at this priority level or greater
 	int ret = 0;
