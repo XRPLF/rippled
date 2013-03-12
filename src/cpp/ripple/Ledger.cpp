@@ -1307,6 +1307,9 @@ std::vector< std::pair<uint32, uint256> > Ledger::getLedgerHashes()
 	return ret;
 }
 
+// XRP to XRP not allowed.
+// Currencies must have appropriate issuer.
+// Currencies or accounts must differ.
 bool Ledger::isValidBook(const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuerID,
 	const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuerID)
 {
@@ -1346,9 +1349,6 @@ bool Ledger::isValidBook(const uint160& uTakerPaysCurrency, const uint160& uTake
 uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuerID,
 	const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuerID)
 {
-	bool		bInNative	= uTakerPaysCurrency.isZero();
-	bool		bOutNative	= uTakerGetsCurrency.isZero();
-
 	Serializer	s(82);
 
 	s.add16(spaceBookDir);			//  2
@@ -1366,10 +1366,7 @@ uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uT
 		% RippleAddress::createHumanAccountID(uTakerGetsIssuerID)
 		% uBaseIndex.ToString());
 
-	assert(!bInNative || !bOutNative);						// XRP to XRP not allowed.
-	assert(bInNative == uTakerPaysIssuerID.isZero());		// Make sure issuer is specified as needed.
-	assert(bOutNative == uTakerGetsIssuerID.isZero());		// Make sure issuer is specified as needed.
-	assert(uTakerPaysCurrency != uTakerGetsCurrency || uTakerPaysIssuerID != uTakerGetsIssuerID);	// Currencies or accounts must differ.
+	assert(isValidBook(uTakerPaysCurrency, uTakerPaysIssuerID, uTakerGetsCurrency, uTakerGetsIssuerID));
 
 	return uBaseIndex;
 }
