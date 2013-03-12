@@ -123,7 +123,7 @@ bool LedgerAcquire::tryLocal()
 	{
 		if (mLedger->getTransHash().isZero())
 		{
-			cLog(lsINFO) << "No TXNs to fetch";
+			cLog(lsDEBUG) << "No TXNs to fetch";
 			mHaveTransactions = true;
 		}
 		else
