@@ -35,8 +35,8 @@ class OrderBookDB
 	boost::unordered_map<uint160, std::vector<OrderBook::pointer> > mIssuerMap;
 	//std::vector<OrderBook::pointer> mAllOrderBooks;
 
-	// issuerIn, issuerOut, currencyIn, currencyOut
-	std::map<uint160, std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > > > mListeners; 
+	// issuerPays, issuerGets, currencyPays, currencyGets
+	std::map<uint160, std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > > > mListeners;
 
 	uint32 mSeq;
 	boost::recursive_mutex mLock;
@@ -56,13 +56,13 @@ public:
 	void getBooks(const uint160& issuerID, const uint160& currencyID, std::vector<OrderBook::pointer>& bookRet);
 
 	// returns the best rate we can find
-	float getPrice(uint160& currencyIn,uint160& currencyOut);
+	float getPrice(uint160& currencyPays,uint160& currencyGets);
 
 
-	BookListeners::pointer getBookListeners(const uint160& currencyIn, const uint160& currencyOut,
-		const uint160& issuerIn, const uint160& issuerOut);
-	BookListeners::pointer makeBookListeners(const uint160& currencyIn, const uint160& currencyOut,
-		const uint160& issuerIn, const uint160& issuerOut);
+	BookListeners::pointer getBookListeners(const uint160& currencyPays, const uint160& currencyGets,
+		const uint160& issuerPays, const uint160& issuerGets);
+	BookListeners::pointer makeBookListeners(const uint160& currencyPays, const uint160& currencyGets,
+		const uint160& issuerPays, const uint160& issuerGets);
 
 	// see if this txn effects any orderbook
 	void processTxn(Ledger::ref ledger, const ALTransaction& alTx, Json::Value& jvObj);
