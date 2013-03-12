@@ -407,7 +407,7 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %u;");
 	static boost::format deleteTrans1("DELETE FROM Transactions WHERE LedgerSeq = %u;");
 	static boost::format deleteTrans2("DELETE FROM AccountTransactions WHERE LedgerSeq = %u;");
-	static boost::format deleteAcctTrans("DELTEE FROM AccountTransactions WHERE TransID = '%s';");
+	static boost::format deleteAcctTrans("DELETE FROM AccountTransactions WHERE TransID = '%s';");
 	static boost::format transExists("SELECT Status FROM Transactions WHERE TransID = '%s';");
 	static boost::format
 		updateTx("UPDATE Transactions SET LedgerSeq = %u, Status = '%c', TxnMeta = %s WHERE TransID = '%s';");
