@@ -2639,8 +2639,16 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 			return rpcError(rpcNO_PERMISSION);
 
 		std::string	strUrl		= jvRequest["url"].asString();
-		std::string	strUsername	= jvRequest.isMember("username") ? jvRequest["username"].asString() : "";
-		std::string	strPassword	= jvRequest.isMember("password") ? jvRequest["password"].asString() : "";
+		std::string	strUsername	= jvRequest.isMember("url_username") ? jvRequest["url_username"].asString() : "";
+		std::string	strPassword	= jvRequest.isMember("url_password") ? jvRequest["url_password"].asString() : "";
+
+		// DEPRICATED
+		if (jvRequest.isMember("username"))
+			strUsername	= jvRequest["username"].asString();
+
+		// DEPRICATED
+		if (jvRequest.isMember("password"))
+			strPassword	= jvRequest["password"].asString();
 
 		ispSub	= mNetOps->findRpcSub(strUrl);
 		if (!ispSub)
