@@ -837,26 +837,34 @@ Json::Value Ledger::getJson(int options)
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	ledger["parentHash"] = mParentHash.GetHex();
-	ledger["seqNum"] = boost::lexical_cast<std::string>(mLedgerSeq);
+	ledger["seqNum"]				= boost::lexical_cast<std::string>(mLedgerSeq);	// DEPRECATED
+
+	ledger["parent_hash"]			= mParentHash.GetHex();
+	ledger["ledger_index"]			= boost::lexical_cast<std::string>(mLedgerSeq);
 
 	if (mClosed || bFull)
 	{
 		if (mClosed)
 			ledger["closed"] = true;
-		ledger["hash"] = mHash.GetHex();
-		ledger["transactionHash"] = mTransHash.GetHex();
-		ledger["accountHash"] = mAccountHash.GetHex();
-		ledger["accepted"] = mAccepted;
-		ledger["totalCoins"] = boost::lexical_cast<std::string>(mTotCoins);
+
+		ledger["hash"]				= mHash.GetHex();								// DEPRECATED
+		ledger["totalCoins"]		= boost::lexical_cast<std::string>(mTotCoins);	// DEPRECATED
+
+		ledger["ledger_hash"]		= mHash.GetHex();
+		ledger["transaction_hash"]	= mTransHash.GetHex();
+		ledger["account_hash"]		= mAccountHash.GetHex();
+		ledger["accepted"]			= mAccepted;
+		ledger["total_coins"]		= boost::lexical_cast<std::string>(mTotCoins);
+
 		if (mCloseTime != 0)
 		{
 			if ((mCloseFlags & sLCF_NoConsensusTime) != 0)
-				ledger["closeTimeEstimate"] = boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
+				ledger["close_time_estimate"] = boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
 			else
 			{
-				ledger["closeTime"] = boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
-				ledger["closeTimeResolution"] = mCloseResolution;
+				ledger["close_time"]			= mCloseTime;
+				ledger["close_time_human"]		= boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
+				ledger["close_time_resolution"] = mCloseResolution;
 			}
 		}
 	}

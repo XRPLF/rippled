@@ -1,0 +1,12 @@
+Critical protocol changes
+-------------------------
+
+* date
+* The JSON field "metaData" changing to "meta".
+* RPC ledger will no longer take "ledger", use "ledger_hash" or "ledger_index".
+* "closedLedger" events:
+** "hash" DEPRECATED: use "ledger_hash"
+** "seqNum" DEPRECATED: use "ledger_index"
+** "closeTime" DEPRECATED: use "close" or "close_human"
+* stream "rt_accounts" --> "accounts_proposed"
+* stream "rt_transactions" --> "transactions_proposed"

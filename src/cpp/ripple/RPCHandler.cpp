@@ -2617,14 +2617,6 @@ boost::unordered_set<RippleAddress> RPCHandler::parseAccountIds(const Json::Valu
 	return usnaResult;
 }
 
-/*
-server : Sends a message anytime the server status changes such as network connectivity.
-ledger : Sends a message at every ledger close.
-transactions : Sends a message for every transaction that makes it into a ledger.
-rt_transactions
-accounts
-rt_accounts
-*/
 Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 {
 	InfoSub::pointer ispSub;
@@ -2704,7 +2696,8 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 				{
 					mNetOps->subTransactions(ispSub);
 				}
-				else if (streamName=="rt_transactions")
+				else if (streamName=="transactions_proposed"
+					|| streamName=="rt_transactions")	// DEPRECATED
 				{
 					mNetOps->subRTTransactions(ispSub);
 				}
@@ -2720,7 +2713,8 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 		}
 	}
 
-	if (jvRequest.isMember("rt_accounts"))
+	if (jvRequest.isMember("accounts_proposed")
+		|| jvRequest.isMember("rt_accounts"))			// DEPRECATED
 	{
 		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["rt_accounts"]);
 
