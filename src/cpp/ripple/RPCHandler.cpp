@@ -2617,14 +2617,6 @@ boost::unordered_set<RippleAddress> RPCHandler::parseAccountIds(const Json::Valu
 	return usnaResult;
 }
 
-/*
-server : Sends a message anytime the server status changes such as network connectivity.
-ledger : Sends a message at every ledger close.
-transactions : Sends a message for every transaction that makes it into a ledger.
-rt_transactions
-accounts
-rt_accounts
-*/
 Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 {
 	InfoSub::pointer ispSub;
@@ -2647,8 +2639,16 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 			return rpcError(rpcNO_PERMISSION);
 
 		std::string	strUrl		= jvRequest["url"].asString();
-		std::string	strUsername	= jvRequest.isMember("username") ? jvRequest["username"].asString() : "";
-		std::string	strPassword	= jvRequest.isMember("password") ? jvRequest["password"].asString() : "";
+		std::string	strUsername	= jvRequest.isMember("url_username") ? jvRequest["url_username"].asString() : "";
+		std::string	strPassword	= jvRequest.isMember("url_password") ? jvRequest["url_password"].asString() : "";
+
+		// DEPRECATED
+		if (jvRequest.isMember("username"))
+			strUsername	= jvRequest["username"].asString();
+
+		// DEPRECATED
+		if (jvRequest.isMember("password"))
+			strPassword	= jvRequest["password"].asString();
 
 		ispSub	= mNetOps->findRpcSub(strUrl);
 		if (!ispSub)
@@ -2704,7 +2704,8 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 				{
 					mNetOps->subTransactions(ispSub);
 				}
-				else if (streamName=="rt_transactions")
+				else if (streamName=="transactions_proposed"
+					|| streamName=="rt_transactions")	// DEPRECATED
 				{
 					mNetOps->subRTTransactions(ispSub);
 				}
@@ -2720,7 +2721,8 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 		}
 	}
 
-	if (jvRequest.isMember("rt_accounts"))
+	if (jvRequest.isMember("accounts_proposed")
+		|| jvRequest.isMember("rt_accounts"))			// DEPRECATED
 	{
 		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["rt_accounts"]);
 
@@ -2751,12 +2753,25 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 	}
 
 	if (jvRequest.isMember("books"))
-	{ // FIXME: This can crash the server if the parameters to things like getBookPage are invalid
+	{
 		for (Json::Value::iterator it = jvRequest["books"].begin(); it != jvRequest["books"].end(); it++)
 		{
-			uint160		uTakerPaysCurrencyID;
-			uint160		uTakerPaysIssuerID;
-			Json::Value	jvTakerPays	= (*it)["taker_pays"];
+			Json::Value&	jvSubRequest	= *it;
+			uint160			uTakerPaysCurrencyID;
+			uint160			uTakerPaysIssuerID;
+			uint160			uTakerGetsCurrencyID;
+			uint160			uTakerGetsIssuerID;
+			bool			bBoth			= (jvSubRequest.isMember("both") && jvSubRequest["both"].asBool())
+												|| (jvSubRequest.isMember("both_sides") && jvSubRequest["both_sides"].asBool());	// DEPRECATED
+			bool			bSnapshot		= (jvSubRequest.isMember("snapshot") && jvSubRequest["snapshot"].asBool())
+												|| (jvSubRequest.isMember("start_now") && jvSubRequest["start_now"].asBool());		// DEPRECATED
+
+
+			if (!jvSubRequest.isMember("taker_pays") || !jvSubRequest.isMember("taker_gets"))
+				return rpcError(rpcINVALID_PARAMS);
+
+			Json::Value	jvTakerPays	= jvSubRequest["taker_pays"];
+			Json::Value	jvTakerGets	= jvSubRequest["taker_gets"];
 
 			// Parse mandatory currency.
 			if (!jvTakerPays.isMember("currency")
@@ -2778,10 +2793,6 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 
 				return rpcError(rpcSRC_ISR_MALFORMED);
 			}
-
-			uint160		uTakerGetsCurrencyID;
-			uint160		uTakerGetsIssuerID;
-			Json::Value	jvTakerGets	= (*it)["taker_gets"];
 
 			// Parse mandatory currency.
 			if (!jvTakerGets.isMember("currency")
@@ -2814,38 +2825,45 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 
 			RippleAddress	raTakerID;
 
-			if (!(*it).isMember("taker"))
+			if (!jvSubRequest.isMember("taker"))
 			{
 				raTakerID.setAccountID(ACCOUNT_ONE);
 			}
-			else if (!raTakerID.setAccountID((*it)["taker"].asString()))
+			else if (!raTakerID.setAccountID(jvSubRequest["taker"].asString()))
 			{
 				return rpcError(rpcBAD_ISSUER);
 			}
 
-			bool bothSides = (*it)["both_sides"].asBool();
-
 			if (!Ledger::isValidBook(uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID))
 			{
 				cLog(lsWARNING) << "Bad market: " <<
-					uTakerPaysCurrencyID << ":" << uTakerPaysIssuerID << " -> " << 
+					uTakerPaysCurrencyID << ":" << uTakerPaysIssuerID << " -> " <<
 					uTakerGetsCurrencyID << ":" << uTakerGetsIssuerID;
 				return rpcError(rpcBAD_MARKET);
 			}
 
 			mNetOps->subBook(ispSub, uTakerPaysCurrencyID, uTakerGetsCurrencyID, uTakerPaysIssuerID, uTakerGetsIssuerID);
-			if (bothSides) mNetOps->subBook(ispSub, uTakerGetsCurrencyID, uTakerPaysCurrencyID, uTakerGetsIssuerID, uTakerPaysIssuerID);
-			if ((*it)["state_now"].asBool())
+			if (bBoth) mNetOps->subBook(ispSub, uTakerGetsCurrencyID, uTakerPaysCurrencyID, uTakerGetsIssuerID, uTakerPaysIssuerID);
+
+			if (bSnapshot)
 			{
-				Ledger::pointer ledger= theApp->getLedgerMaster().getClosedLedger();
+				Ledger::pointer		lpLedger= theApp->getLedgerMaster().getClosedLedger();
 				const Json::Value	jvMarker = Json::Value(Json::nullValue);
-				mNetOps->getBookPage(ledger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, raTakerID.getAccountID(), false, 0, jvMarker, jvResult);
-				if (bothSides)
+
+				if (bBoth)
 				{
-					Json::Value tempJson(Json::objectValue);
-					if (jvResult.isMember("offers")) jvResult["bids"]=jvResult["offers"];
-					mNetOps->getBookPage(ledger, uTakerGetsCurrencyID, uTakerGetsIssuerID, uTakerPaysCurrencyID, uTakerPaysIssuerID, raTakerID.getAccountID(), false, 0, jvMarker, tempJson);
-					if (tempJson.isMember("offers")) jvResult["asks"]=tempJson["offers"];
+					Json::Value jvBids(Json::objectValue);
+					Json::Value jvAsks(Json::objectValue);
+
+					mNetOps->getBookPage(lpLedger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, raTakerID.getAccountID(), false, 0, jvMarker, jvBids);
+					if (jvBids.isMember("offers")) jvResult["bids"]=jvBids["offers"];
+
+					mNetOps->getBookPage(lpLedger, uTakerGetsCurrencyID, uTakerGetsIssuerID, uTakerPaysCurrencyID, uTakerPaysIssuerID, raTakerID.getAccountID(), false, 0, jvMarker, jvAsks);
+					if (jvAsks.isMember("offers")) jvResult["asks"]=jvAsks["offers"];
+				}
+				else
+				{
+					mNetOps->getBookPage(lpLedger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, raTakerID.getAccountID(), false, 0, jvMarker, jvResult);
 				}
 			}
 		}
