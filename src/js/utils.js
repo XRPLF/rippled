@@ -98,6 +98,21 @@ var assert = function (assertion, msg) {
 };
 
 /**
+ * Return unique values in array.
+ */
+var arrayUnique = function (arr) {
+  var u = {}, a = [];
+  for (var i = 0, l = arr.length; i < l; ++i){
+    if (u.hasOwnProperty(arr[i])) {
+      continue;
+    }
+    a.push(arr[i]);
+    u[arr[i]] = 1;
+  }
+  return a;
+};
+
+/**
  * Convert a ripple epoch to a JavaScript timestamp.
  *
  * JavaScript timestamps are unix epoch in milliseconds.
@@ -115,6 +130,7 @@ exports.stringToHex   = stringToHex;
 exports.chunkString   = chunkString;
 exports.logObject     = logObject;
 exports.assert        = assert;
+exports.arrayUnique   = arrayUnique;
 exports.toTimestamp   = toTimestamp;
 
 // vim:sw=2:sts=2:ts=8:et

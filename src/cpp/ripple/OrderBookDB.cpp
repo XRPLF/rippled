@@ -93,40 +93,40 @@ void OrderBookDB::getBooks(const uint160& issuerID, const uint160& currencyID, s
 	}
 }
 
-BookListeners::pointer OrderBookDB::makeBookListeners(const uint160& currencyIn, const uint160& currencyOut,
-	const uint160& issuerIn, const uint160& issuerOut)
+BookListeners::pointer OrderBookDB::makeBookListeners(const uint160& currencyPays, const uint160& currencyGets,
+	const uint160& issuerPays, const uint160& issuerGets)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	BookListeners::pointer ret = getBookListeners(currencyIn, currencyOut, issuerIn, issuerOut);
+	BookListeners::pointer ret = getBookListeners(currencyPays, currencyGets, issuerPays, issuerGets);
 	if (!ret)
 	{
 		ret = boost::make_shared<BookListeners>();
-		mListeners[issuerIn][issuerOut][currencyIn][currencyOut] = ret;
+		mListeners[issuerPays][issuerGets][currencyPays][currencyGets] = ret;
 	}
 	return ret;
 }
 
-BookListeners::pointer OrderBookDB::getBookListeners(const uint160& currencyIn, const uint160& currencyOut,
-	const uint160& issuerIn, const uint160& issuerOut)
+BookListeners::pointer OrderBookDB::getBookListeners(const uint160& currencyPays, const uint160& currencyGets,
+	const uint160& issuerPays, const uint160& issuerGets)
 {
 	BookListeners::pointer ret;
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	std::map<uint160, std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > > >::iterator
-		it0 = mListeners.find(issuerIn);
+		it0 = mListeners.find(issuerPays);
 	if(it0 == mListeners.end())
 		return ret;
 
 	std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > >::iterator
-		it1 = (*it0).second.find(issuerOut);
+		it1 = (*it0).second.find(issuerGets);
 	if(it1 == (*it0).second.end())
 		return ret;
 
-	std::map<uint160, std::map<uint160, BookListeners::pointer> >::iterator it2 = (*it1).second.find(currencyIn);
+	std::map<uint160, std::map<uint160, BookListeners::pointer> >::iterator it2 = (*it1).second.find(currencyPays);
 	if(it2 == (*it1).second.end())
 		return ret;
 
-	std::map<uint160, BookListeners::pointer>::iterator it3 = (*it2).second.find(currencyOut);
+	std::map<uint160, BookListeners::pointer>::iterator it3 = (*it2).second.find(currencyGets);
 	if(it3 == (*it2).second.end())
 		return ret;
 
@@ -216,16 +216,16 @@ void OrderBookDB::processTxn(Ledger::ref ledger, const ALTransaction& alTx, Json
 						if (data)
 						{
 							STAmount takerGets = data->getFieldAmount(sfTakerGets);
-							uint160 currencyOut = takerGets.getCurrency();
-							uint160 issuerOut = takerGets.getIssuer();
+							uint160 currencyGets = takerGets.getCurrency();
+							uint160 issuerGets = takerGets.getIssuer();
 
 							STAmount takerPays = data->getFieldAmount(sfTakerPays);
-							uint160 currencyIn = takerPays.getCurrency();
-							uint160 issuerIn = takerPays.getIssuer();
+							uint160 currencyPays = takerPays.getCurrency();
+							uint160 issuerPays = takerPays.getIssuer();
 
 							// determine the OrderBook
 							BookListeners::pointer book =
-								getBookListeners(currencyIn, currencyOut, issuerIn, issuerOut);
+								getBookListeners(currencyPays, currencyGets, issuerPays, issuerGets);
 							if (book)
 								book->publish(jvObj);
 						}
