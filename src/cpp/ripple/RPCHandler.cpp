@@ -1040,7 +1040,7 @@ Json::Value RPCHandler::doBookOffers(Json::Value jvRequest, int& cost)
 	if (!lpLedger)
 		return jvResult;
 
-	if (!jvRequest.isMember("taker_pays") || !jvRequest.isMember("taker_gets"))
+	if (!jvRequest.isMember("taker_pays") || !jvRequest.isMember("taker_gets") || !jvRequest["taker_pays"].isObject() || !jvRequest["taker_gets"].isObject())
 		return rpcError(rpcINVALID_PARAMS);
 
 	uint160		uTakerPaysCurrencyID;
@@ -1245,6 +1245,9 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 			Json::Value	jvSource		= jvSrcCurrencies[i];
 			uint160		uSrcCurrencyID;
 			uint160		uSrcIssuerID;
+
+			if (!jvSource.isObject())
+				return rpcError(rpcINVALID_PARAMS);
 
 			// Parse mandatory currency.
 			if (!jvSource.isMember("currency")
@@ -2401,8 +2404,7 @@ Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest, int& cost)
 	}
 	else if (jvRequest.isMember("directory"))
 	{
-
-		if (!jvRequest.isObject())
+		if (!jvRequest["directory"].isObject())
 		{
 			uNodeIndex.SetHex(jvRequest["directory"].asString());
 		}
@@ -2450,7 +2452,7 @@ Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest, int& cost)
 	{
 		RippleAddress	naGeneratorID;
 
-		if (!jvRequest.isObject())
+		if (!jvRequest["generator"].isObject())
 		{
 			uNodeIndex.SetHex(jvRequest["generator"].asString());
 		}
@@ -2476,7 +2478,7 @@ Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest, int& cost)
 	{
 		RippleAddress	naAccountID;
 
-		if (!jvRequest.isObject())
+		if (!jvRequest["offer"].isObject())
 		{
 			uNodeIndex.SetHex(jvRequest["offer"].asString());
 		}
@@ -2504,7 +2506,8 @@ Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest, int& cost)
 		uint160			uCurrency;
 		Json::Value		jvRippleState	= jvRequest["ripple_state"];
 
-		if (!jvRippleState.isMember("currency")
+		if (!jvRippleState.isObject()
+			|| !jvRippleState.isMember("currency")
 			|| !jvRippleState.isMember("accounts")
 			|| !jvRippleState["accounts"].isArray()
 			|| 2 != jvRippleState["accounts"].size()
@@ -2721,10 +2724,21 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 		}
 	}
 
-	if (jvRequest.isMember("accounts_proposed")
-		|| jvRequest.isMember("rt_accounts"))			// DEPRECATED
+	std::string	strAccountsProposed	= jvRequest.isMember("accounts_proposed")
+		? "accounts_proposed"
+		: "rt_accounts";									// DEPRECATED
+
+	if (!jvRequest.isMember(strAccountsProposed))
 	{
-		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["rt_accounts"]);
+		nothing();
+	}
+	else if (!jvRequest[strAccountsProposed].isArray())
+	{
+		return rpcError(rpcINVALID_PARAMS);
+	}
+	else
+	{
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest[strAccountsProposed]);
 
 		if (usnaAccoundIds.empty())
 		{
@@ -2736,7 +2750,14 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 		}
 	}
 
-	if (jvRequest.isMember("accounts"))
+	if (!jvRequest.isMember("accounts"))
+	{
+		nothing();
+
+	} else if (!jvRequest["accounts"].isArray()) {
+		return rpcError(rpcINVALID_PARAMS);
+	}
+	else
 	{
 		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
 
@@ -2752,7 +2773,15 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 		}
 	}
 
-	if (jvRequest.isMember("books"))
+	if (!jvRequest.isMember("books"))
+	{
+		nothing();
+	}
+	else if (!jvRequest["books"].isArray())
+	{
+		return rpcError(rpcINVALID_PARAMS);
+	}
+	else
 	{
 		for (Json::Value::iterator it = jvRequest["books"].begin(); it != jvRequest["books"].end(); it++)
 		{
@@ -2908,7 +2937,7 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest, int& cost)
 	{
 		for (Json::Value::iterator it = jvRequest["streams"].begin(); it != jvRequest["streams"].end(); it++)
 		{
-			if ((*it).isString() )
+			if ((*it).isString())
 			{
 				std::string streamName=(*it).asString();
 
@@ -2924,7 +2953,8 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest, int& cost)
 				{
 					mNetOps->unsubTransactions(ispSub->getSeq());
 				}
-				else if (streamName == "rt_transactions")
+				else if (streamName == "transactions_proposed"
+					|| streamName == "rt_transactions")			// DEPRECATED
 				{
 					mNetOps->unsubRTTransactions(ispSub->getSeq());
 				}
@@ -2940,9 +2970,12 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest, int& cost)
 		}
 	}
 
-	if (jvRequest.isMember("rt_accounts"))
+	if (jvRequest.isMember("accounts_proposed") || jvRequest.isMember("rt_accounts"))
 	{
-		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["rt_accounts"]);
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(
+			jvRequest.isMember("accounts_proposed")
+				? jvRequest["accounts_proposed"]
+				: jvRequest["rt_accounts"]);					// DEPRECATED
 
 		if (usnaAccoundIds.empty())
 		{
@@ -2968,13 +3001,36 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest, int& cost)
 		}
 	}
 
-	if (jvRequest.isMember("books"))
+	if (!jvRequest.isMember("books"))
+	{
+		nothing();
+	}
+	else if (!jvRequest["books"].isArray())
+	{
+		return rpcError(rpcINVALID_PARAMS);
+	}
+	else
 	{
 		for (Json::Value::iterator it = jvRequest["books"].begin(); it != jvRequest["books"].end(); it++)
 		{
-			uint160		uTakerPaysCurrencyID;
-			uint160		uTakerPaysIssuerID;
-			Json::Value	jvTakerPays	= (*it)["taker_pays"];
+			Json::Value&	jvSubRequest	= *it;
+
+			if (!jvSubRequest.isObject()
+				|| !jvSubRequest.isMember("taker_pays")
+				|| !jvSubRequest.isMember("taker_gets")
+				|| !jvSubRequest["taker_pays"].isObject()
+				|| !jvSubRequest["taker_gets"].isObject())
+				return rpcError(rpcINVALID_PARAMS);
+
+			uint160			uTakerPaysCurrencyID;
+			uint160			uTakerPaysIssuerID;
+			uint160			uTakerGetsCurrencyID;
+			uint160			uTakerGetsIssuerID;
+			bool			bBoth			= (jvSubRequest.isMember("both") && jvSubRequest["both"].asBool())
+												|| (jvSubRequest.isMember("both_sides") && jvSubRequest["both_sides"].asBool());	// DEPRECATED
+
+			Json::Value		jvTakerPays		= jvSubRequest["taker_pays"];
+			Json::Value		jvTakerGets		= jvSubRequest["taker_gets"];
 
 			// Parse mandatory currency.
 			if (!jvTakerPays.isMember("currency")
@@ -2996,10 +3052,6 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest, int& cost)
 
 				return rpcError(rpcSRC_ISR_MALFORMED);
 			}
-
-			uint160		uTakerGetsCurrencyID;
-			uint160		uTakerGetsIssuerID;
-			Json::Value	jvTakerGets	= (*it)["taker_gets"];
 
 			// Parse mandatory currency.
 			if (!jvTakerGets.isMember("currency")
@@ -3030,10 +3082,8 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest, int& cost)
 				return rpcError(rpcBAD_MARKET);
 			}
 
-			bool bothSides = (*it)["both_sides"].asBool();
-
 			mNetOps->unsubBook(ispSub->getSeq(), uTakerPaysCurrencyID, uTakerGetsCurrencyID, uTakerPaysIssuerID, uTakerGetsIssuerID);
-			if (bothSides) mNetOps->unsubBook(ispSub->getSeq(), uTakerGetsCurrencyID, uTakerPaysCurrencyID, uTakerGetsIssuerID, uTakerPaysIssuerID);
+			if (bBoth) mNetOps->unsubBook(ispSub->getSeq(), uTakerGetsCurrencyID, uTakerPaysCurrencyID, uTakerGetsIssuerID, uTakerPaysIssuerID);
 		}
 	}
 
