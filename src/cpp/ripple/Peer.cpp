@@ -222,6 +222,7 @@ void Peer::connect(const std::string& strIp, int iPort)
 	{
 		cLog(lsINFO) << "Peer: Connect: Outbound: " << ADDRESS(this) << ": " << mIpPort.first << " " << mIpPort.second;
 
+		boost::recursive_mutex::scoped_lock sl(ioMutex);
 		boost::asio::async_connect(
 			getSocket(),
 			itrEndpoint,
