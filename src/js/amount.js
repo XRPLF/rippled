@@ -98,6 +98,8 @@ Amount.prototype.abs = function () {
 Amount.prototype.add = function (v) {
   var result;
 
+  v = Amount.from_json(v);
+
   if (!this.is_comparable(v)) {
     result              = Amount.NaN();
   }
@@ -779,7 +781,7 @@ Amount.prototype.set_issuer = function (issuer) {
 // Result in terms of this' currency and issuer.
 Amount.prototype.subtract = function (v) {
   // Correctness over speed, less code has less bugs, reuse add code.
-  return this.add(v.negate());
+  return this.add(Amount.from_json(v).negate());
 };
 
 Amount.prototype.to_number = function (allow_nan) {

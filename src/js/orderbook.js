@@ -77,7 +77,7 @@ OrderBook.prototype = new EventEmitter;
 /**
  * List of events that require a remote subscription to the orderbook.
  */
-OrderBook.subscribe_events = ['transaction', 'model'];
+OrderBook.subscribe_events = ['transaction', 'model', 'trade'];
 
 /**
  * Subscribes to orderbook.
@@ -147,6 +147,13 @@ OrderBook.prototype.notifyTx = function (message)
 
   var changed = false;
 
+  var trade_gets = Amount.from_json("0" + ((this._currency_gets === 'XRP') ? "" :
+                                    "/" + this._currency_gets +
+                                    "/" + this._issuer_gets));
+  var trade_pays = Amount.from_json("0" + ((this._currency_pays === 'XRP') ? "" :
+                                    "/" + this._currency_pays +
+                                    "/" + this._issuer_pays));
+
   message.mmeta.each(function (an) {
     if (an.entryType !== 'Offer') return;
 
@@ -163,6 +170,13 @@ OrderBook.prototype.notifyTx = function (message)
           changed = true;
           break;
         }
+      }
+
+      trade_gets = trade_gets.add(an.fieldsPrev.TakerGets);
+      trade_pays = trade_pays.add(an.fieldsPrev.TakerPays);
+      if (an.diffType === 'ModifiedNode') {
+        trade_gets = trade_gets.subtract(an.fieldsFinal.TakerGets);
+        trade_pays = trade_pays.subtract(an.fieldsFinal.TakerPays);
       }
     } else if (an.diffType === 'CreatedNode') {
       var price = Amount.from_json(an.fields.TakerPays).ratio_human(an.fields.TakerGets);
@@ -187,6 +201,7 @@ OrderBook.prototype.notifyTx = function (message)
   if (this._subs) {
     this.emit('transaction', message);
     if (changed) this.emit('model', this._offers);
+    if (!trade_gets.is_zero()) this.emit('trade', trade_pays, trade_gets);
   }
 };
 
