@@ -379,7 +379,8 @@ void LedgerConsensus::checkLCL()
 
 	typedef std::map<uint256, currentValidationCount>::value_type u256_cvc_pair;
 	BOOST_FOREACH(u256_cvc_pair& it, vals)
-		if (it.second.first > netLgrCount)
+		if ((it.second.first > netLgrCount) ||
+			((it.second.first == netLgrCount) && (it.first == mPrevLedgerHash)))
 		{
 			netLgr = it.first;
 			netLgrCount = it.second.first;

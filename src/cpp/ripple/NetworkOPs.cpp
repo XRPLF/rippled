@@ -674,11 +674,13 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	cLog(lsTRACE) << "NetworkOPs::checkLastClosedLedger";
 
 	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
-	if(!ourClosed)
+	if (!ourClosed)
 		return false;
 
 	uint256 closedLedger = ourClosed->getHash();
 	uint256 prevClosedLedger = ourClosed->getParentHash();
+	cLog(lsTRACE) << "OurClosed:  " << closedLedger;
+	cLog(lsTRACE) << "PrevClosed: " << prevClosedLedger;
 
 	boost::unordered_map<uint256, ValidationCount> ledgers;
 	{
@@ -1063,9 +1065,10 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
 
 	std::string sql =
-		str(boost::format("SELECT LedgerSeq,Status,RawTxn,TxnMeta FROM Transactions where TransID in "
-			"(SELECT TransID from AccountTransactions  "
-			" WHERE Account = '%s' AND LedgerSeq <= '%u' AND LedgerSeq >= '%u' ) ORDER BY LedgerSeq DESC LIMIT 200;")
+		str(boost::format("SELECT AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta FROM "
+			"AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
+			"WHERE Account = '%s' AND AccountTransactions.LedgerSeq <= '%u' AND AccountTransactions.LedgerSeq >= '%u' "
+			"ORDER BY AccountTransactions.LedgerSeq DESC LIMIT 200;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{
@@ -1099,9 +1102,10 @@ std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
 { // can be called with no locks
 	std::vector< txnMetaLedgerType> ret;
 
-	std::string sql =
-		str(boost::format("SELECT LedgerSeq, RawTxn,TxnMeta FROM Transactions where TransID in (SELECT TransID from AccountTransactions  "
-			" WHERE Account = '%s' AND LedgerSeq <= '%u' AND LedgerSeq >= '%u' ) ORDER BY LedgerSeq DESC LIMIT 500;")
+	std::string sql = str(boost::format("SELECT AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta FROM "
+			"AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
+			"WHERE Account = '%s' AND AccountTransactions.LedgerSeq <= '%u' AND AccountTransactions.LedgerSeq >= '%u' "
+			"ORDER BY AccountTransactions.LedgerSeq DESC LIMIT 500;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{

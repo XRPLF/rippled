@@ -37,7 +37,6 @@ protected:
 	RangeSet mCompleteLedgers;
 	LedgerAcquire::pointer mMissingLedger;
 	uint32 mMissingSeq;
-	bool mTooFast;	// We are acquiring faster than we're writing
 
 	int							mMinValidations;	// The minimum validations to publish a ledger
 	uint256						mLastValidateHash;
@@ -58,7 +57,7 @@ protected:
 
 public:
 
-	LedgerMaster() : mHeldTransactions(uint256()), mMissingSeq(0), mTooFast(false),
+	LedgerMaster() : mHeldTransactions(uint256()), mMissingSeq(0),
 		mMinValidations(0), mLastValidateSeq(0), mPubThread(false)
 	{ ; }
 

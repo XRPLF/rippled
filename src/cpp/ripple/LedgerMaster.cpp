@@ -46,6 +46,7 @@ void LedgerMaster::pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL, boo
 	assert(newLCL->isClosed() && newLCL->isAccepted());
 	assert(!newOL->isClosed() && !newOL->isAccepted());
 
+	boost::recursive_mutex::scoped_lock ml(mLock);
 	if (newLCL->isAccepted())
 	{
 		assert(newLCL->isClosed());
@@ -191,14 +192,10 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 
 bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& ledgerHash, uint32 ledgerSeq)
 { // return: false = already gave up recently
-	if (mTooFast)
-		return true;
-
 	Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq(ledgerSeq);
 	if (ledger && (Ledger::getHashByIndex(ledgerSeq) == ledgerHash))
 	{
 		cLog(lsTRACE) << "Ledger hash found in database";
-		mTooFast = true;
 		theApp->getJobQueue().addJob(jtPUBOLDLEDGER, "LedgerMaster::asyncAccept",
 			boost::bind(&LedgerMaster::asyncAccept, this, ledger));
 		return true;
@@ -293,9 +290,6 @@ bool LedgerMaster::shouldAcquire(uint32 currentLedger, uint32 ledgerHistory, uin
 void LedgerMaster::resumeAcquiring()
 {
 	boost::recursive_mutex::scoped_lock ml(mLock);
-	if (!mTooFast)
-		return;
-	mTooFast = false;
 
 	if (mMissingLedger && mMissingLedger->isDone())
 		mMissingLedger.reset();
@@ -396,7 +390,6 @@ void LedgerMaster::setFullLedger(Ledger::pointer ledger)
 
 	if (theApp->getJobQueue().getJobCount(jtPUBOLDLEDGER) > 2)
 	{
-		mTooFast = true;
 		cLog(lsDEBUG) << "Too many pending ledger saves";
 		return;
 	}
@@ -556,7 +549,6 @@ void LedgerMaster::tryPublish()
 		}
 	}
 
-	mTooFast = false;
 	if (!mPubLedgers.empty() && !mPubThread)
 	{
 		theApp->getOPs().clearNeedNetworkLedger();
