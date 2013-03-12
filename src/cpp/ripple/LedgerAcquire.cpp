@@ -183,7 +183,7 @@ void LedgerAcquire::onTimer(bool progress)
 {
 	if (getTimeouts() > LEDGER_TIMEOUT_COUNT)
 	{
-		cLog(lsWARNING) << "Six timeouts for ledger " << mHash;
+		cLog(lsWARNING) << "Too many timeouts for ledger " << mHash;
 		setFailed();
 		done();
 		return;
@@ -351,7 +351,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 						if (iPeer)
 						{
 							mByHash = false;
-							iPeer->sendPacket(packet);
+							iPeer->sendPacket(packet, false);
 						}
 					}
 				}
@@ -485,7 +485,7 @@ void PeerSet::sendRequest(const ripple::TMGetLedger& tmGL, Peer::ref peer)
 	if (!peer)
 		sendRequest(tmGL);
 	else
-		peer->sendPacket(boost::make_shared<PackedMessage>(tmGL, ripple::mtGET_LEDGER));
+		peer->sendPacket(boost::make_shared<PackedMessage>(tmGL, ripple::mtGET_LEDGER), false);
 }
 
 void PeerSet::sendRequest(const ripple::TMGetLedger& tmGL)
@@ -499,7 +499,7 @@ void PeerSet::sendRequest(const ripple::TMGetLedger& tmGL)
 	{
 		Peer::pointer peer = theApp->getConnectionPool().getPeerById(it->first);
 		if (peer)
-			peer->sendPacket(packet);
+			peer->sendPacket(packet, false);
 	}
 }
 

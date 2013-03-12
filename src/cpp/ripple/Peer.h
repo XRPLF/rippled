@@ -62,12 +62,12 @@ private:
 
 protected:
 
-	boost::recursive_mutex ioMutex;
-	std::vector<uint8_t> mReadbuf;
-	std::list<PackedMessage::pointer> mSendQ;
-	PackedMessage::pointer mSendingPacket;
-	ripple::TMStatusChange mLastStatus;
-	ripple::TMHello mHello;
+	boost::asio::io_service::strand		mIOStrand;
+	std::vector<uint8_t>				mReadbuf;
+	std::list<PackedMessage::pointer>	mSendQ;
+	PackedMessage::pointer				mSendingPacket;
+	ripple::TMStatusChange				mLastStatus;
+	ripple::TMHello						mHello;
 
 	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 peerId, bool inbound);
 
@@ -133,11 +133,11 @@ public:
 
 	void connect(const std::string& strIp, int iPort);
 	void connected(const boost::system::error_code& error);
-	void detach(const char *);
+	void detach(const char *, bool onIOStrand);
 	bool samePeer(Peer::ref p)			{ return samePeer(*p); }
 	bool samePeer(const Peer& p)		{ return this == &p; }
 
-	void sendPacket(const PackedMessage::pointer& packet);
+	void sendPacket(const PackedMessage::pointer& packet, bool onStrand);
 	void sendLedgerProposal(Ledger::ref ledger);
 	void sendFullLedger(Ledger::ref ledger);
 	void sendGetFullLedger(uint256& hash);

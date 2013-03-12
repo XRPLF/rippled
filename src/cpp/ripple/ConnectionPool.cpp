@@ -241,7 +241,7 @@ int ConnectionPool::relayMessage(Peer* fromPeer, const PackedMessage::pointer& m
 		if ((!fromPeer || !(peer.get() == fromPeer)) && peer->isConnected())
 		{
 			++sentTo;
-			peer->sendPacket(msg);
+			peer->sendPacket(msg, false);
 		}
 	}
 
@@ -254,7 +254,7 @@ void ConnectionPool::relayMessageBut(const std::set<uint64>& fromPeers, const Pa
 	BOOST_FOREACH(Peer::ref peer, peerVector)
 	{
 		if (peer->isConnected() && (fromPeers.count(peer->getPeerId()) == 0))
-			peer->sendPacket(msg);
+			peer->sendPacket(msg, false);
 	}
 
 }
@@ -265,7 +265,7 @@ void ConnectionPool::relayMessageTo(const std::set<uint64>& fromPeers, const Pac
 	BOOST_FOREACH(Peer::ref peer, peerVector)
 	{
 		if (peer->isConnected() && (fromPeers.count(peer->getPeerId()) != 0))
-			peer->sendPacket(msg);
+			peer->sendPacket(msg, false);
 	}
 
 }
