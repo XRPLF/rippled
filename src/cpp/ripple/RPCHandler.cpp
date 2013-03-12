@@ -2751,7 +2751,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 	}
 
 	if (jvRequest.isMember("books"))
-	{
+	{ // FIXME: This can crash the server if the parameters to things like getBookPage are invalid
 		for (Json::Value::iterator it = jvRequest["books"].begin(); it != jvRequest["books"].end(); it++)
 		{
 			uint160 currencyOut;
