@@ -1307,20 +1307,34 @@ bool Ledger::isValidBook(const uint160& uTakerPaysCurrency, const uint160& uTake
 {
 	if (uTakerPaysCurrency.isZero())
 	{ // XRP in
+
 		if (uTakerPaysIssuerID.isNonZero())		// XRP cannot have an issuer
 			return false;
+
 		if (uTakerGetsCurrency.isZero())		// XRP to XRP not allowed
 			return false;
+
 		if (uTakerGetsIssuerID.isZero())		// non-XRP must have issuer
 			return false;
+
 		return true;
 	}
 
 	// non-XRP in
 	if (uTakerPaysIssuerID.isZero())			// non-XRP must have issuer
 		return false;
-	if (uTakerGetsCurrency.isZero() != uTakerGetsIssuerID.isZero())
-		return false;							// XRP must have issuer, non-XRP must not
+
+	if (uTakerGetsCurrency.isZero())			// non-XRP to XRP
+	{
+		if (uTakerGetsIssuerID.isNonZero())		// XRP cannot have issuer
+			return false;
+	}
+	else										// non-XRP to non-XRP
+	{
+		if ((uTakerPaysCurrency == uTakerGetsCurrency) && (uTakerGetsIssuerID == uTakerGetsIssuerID))
+			return false;						// Input and output cannot be identical
+	}
+
 	return true;
 }
 
