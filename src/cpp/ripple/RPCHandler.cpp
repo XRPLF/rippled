@@ -2801,7 +2801,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost)
 			bool			bBoth			= (jvSubRequest.isMember("both") && jvSubRequest["both"].asBool())
 												|| (jvSubRequest.isMember("both_sides") && jvSubRequest["both_sides"].asBool());	// DEPRECATED
 			bool			bSnapshot		= (jvSubRequest.isMember("snapshot") && jvSubRequest["snapshot"].asBool())
-												|| (jvSubRequest.isMember("start_now") && jvSubRequest["start_now"].asBool());		// DEPRECATED
+												|| (jvSubRequest.isMember("state_now") && jvSubRequest["state_now"].asBool());		// DEPRECATED
 
 			Json::Value		jvTakerPays		= jvSubRequest["taker_pays"];
 			Json::Value		jvTakerGets		= jvSubRequest["taker_gets"];
