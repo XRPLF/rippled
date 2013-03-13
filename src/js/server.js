@@ -161,11 +161,19 @@ Server.prototype.request = function (request)
     // Advance message ID
     this._id++;
 
-    if (this._remote.trace) {
-      utils.logObject("server: request: %s", request.message);
-    }
+    if (this._state === "online" ||
+        (request.message.command === "subscribe" && this._ws.readyState === 1)) {
+      if (this._remote.trace) {
+        utils.logObject("server: request: %s", request.message);
+      }
 
-    this._ws.send(JSON.stringify(request.message));
+      this._ws.send(JSON.stringify(request.message));
+    } else {
+      // XXX There are many ways to make this smarter.
+      this.once('connect', function () {
+        this._ws.send(JSON.stringify(request.message));
+      });
+    }
   } else {
     if (this._remote.trace) {
       utils.logObject("server: request: DROPPING: %s", request.message);
