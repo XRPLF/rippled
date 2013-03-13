@@ -59,9 +59,7 @@ var OrderBook = function (remote,
 
   this._remote.on('connect', function () {
     if (self._subs) {
-      self._remote.request_subscribe()
-        .books([self.to_json()], true)
-        .request();
+      self._subscribe();
     }
   });
 
