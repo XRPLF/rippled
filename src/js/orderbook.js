@@ -172,6 +172,9 @@ OrderBook.prototype.notifyTx = function (message)
         }
       }
 
+      // We don't want to count a OfferCancel as a trade
+      if (message.transaction.TransactionType === "OfferCancel") return;
+
       trade_gets = trade_gets.add(an.fieldsPrev.TakerGets);
       trade_pays = trade_pays.add(an.fieldsPrev.TakerPays);
       if (an.diffType === 'ModifiedNode') {
