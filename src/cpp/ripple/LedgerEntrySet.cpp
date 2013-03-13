@@ -875,7 +875,7 @@ bool LedgerEntrySet::dirNext(
 	}
 
 	uEntryIndex	= vuiIndexes[uDirEntry++];
-	cLog(lsDEBUG) << boost::str(boost::format("dirNext: uDirEntry=%d uEntryIndex=%s") % uDirEntry % uEntryIndex);
+	cLog(lsTRACE) << boost::str(boost::format("dirNext: uDirEntry=%d uEntryIndex=%s") % uDirEntry % uEntryIndex);
 
 	return true;
 }
