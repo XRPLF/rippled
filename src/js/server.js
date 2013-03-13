@@ -110,6 +110,9 @@ Server.prototype.connect = function ()
     self.emit('socket_close');
     self._set_state('offline');
 
+    // Prevent additional events from this socket
+    ws.onopen = ws.onerror = ws.onclose = ws.onmessage = function () {};
+
     // Should we be connected?
     if (!self._should_connect) return;
 
