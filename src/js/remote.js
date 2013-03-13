@@ -203,7 +203,7 @@ Request.prototype.rt_accounts = function (accounts) {
   return this.accounts(accounts, true);
 };
 
-Request.prototype.books = function (books, state) {
+Request.prototype.books = function (books, snapshot) {
   var procBooks = [];
 
   for (var i = 0, l = books.length; i < l; i++) {
@@ -225,8 +225,8 @@ Request.prototype.books = function (books, state) {
     process("taker_gets");
     process("taker_pays");
 
-    if (state || book["state_now"]) json["state_now"] = true;
-    if (book["both_sides"]) json["both_sides"] = true;
+    if (snapshot || book["snapshot"]) json["snapshot"] = true;
+    if (book["both"]) json["both"] = true;
 
     procBooks.push(json);
   }
