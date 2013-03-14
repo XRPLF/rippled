@@ -1138,12 +1138,12 @@ buster.testCase("Via offers", {
 });
 
 buster.testCase("Indirect paths", {
-  // 'setUp' : testutils.build_setup(),
-  'setUp' : testutils.build_setup({ verbose: true }),
+  'setUp' : testutils.build_setup(),
+  // 'setUp' : testutils.build_setup({ verbose: true }),
   // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
   'tearDown' : testutils.build_teardown(),
 
-  "//path find" :
+  "path find" :
     function (done) {
       var self = this;
 
