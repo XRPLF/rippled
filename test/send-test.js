@@ -155,9 +155,9 @@ buster.testCase("Sending", {
 //                console.log("peer_balance: %s", m.peer_balance.to_text_full());
 //                console.log("peer_limit: %s", m.peer_limit.to_text_full());
                   buster.assert(m.account_balance.equals("0/USD/alice"));
-                  buster.assert(m.account_limit.equals("800/USD/alice"));
+                  buster.assert(m.account_limit.equals("800/USD/mtgox"));
                   buster.assert(m.peer_balance.equals("0/USD/mtgox"));
-                  buster.assert(m.peer_limit.equals("0/USD/mtgox"));
+                  buster.assert(m.peer_limit.equals("0/USD/alice"));
 
                   callback();
                 })
@@ -172,9 +172,9 @@ buster.testCase("Sending", {
             self.remote.request_ripple_balance("alice", "mtgox", "USD", 'CURRENT')
               .on('ripple_state', function (m) {
                   buster.assert(m.account_balance.equals("0/USD/alice"));
-                  buster.assert(m.account_limit.equals("700/USD/alice"));
+                  buster.assert(m.account_limit.equals("700/USD/mtgox"));
                   buster.assert(m.peer_balance.equals("0/USD/mtgox"));
-                  buster.assert(m.peer_limit.equals("0/USD/mtgox"));
+                  buster.assert(m.peer_limit.equals("0/USD/alice"));
 
                   callback();
                 })
@@ -248,9 +248,9 @@ buster.testCase("Sending", {
                   // console.log("proposed: %s", JSON.stringify(m));
 
                   buster.assert(m.account_balance.equals("0/USD/alice"));
-                  buster.assert(m.account_limit.equals("600/USD/alice"));
+                  buster.assert(m.account_limit.equals("600/USD/bob"));
                   buster.assert(m.peer_balance.equals("0/USD/bob"));
-                  buster.assert(m.peer_limit.equals("500/USD/bob"));
+                  buster.assert(m.peer_limit.equals("500/USD/alice"));
 
                   callback();
                 })
@@ -262,9 +262,9 @@ buster.testCase("Sending", {
             self.remote.request_ripple_balance("bob", "alice", "USD", 'CURRENT')
               .on('ripple_state', function (m) {
                   buster.assert(m.account_balance.equals("0/USD/bob"));
-                  buster.assert(m.account_limit.equals("500/USD/bob"));
+                  buster.assert(m.account_limit.equals("500/USD/alice"));
                   buster.assert(m.peer_balance.equals("0/USD/alice"));
-                  buster.assert(m.peer_limit.equals("600/USD/alice"));
+                  buster.assert(m.peer_limit.equals("600/USD/bob"));
 
                   callback();
                 })
