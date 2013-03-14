@@ -495,7 +495,7 @@ buster.testCase("More Path finding", {
             self.remote.request_ripple_path_find("alice", "bob", "5/USD/bob",
               [ { 'currency' : "USD" } ])
               .on('success', function (m) {
-                  console.log("proposed: %s", JSON.stringify(m));
+                  // console.log("proposed: %s", JSON.stringify(m));
 
                   // 1 alternative.
 //                  buster.assert.equals(1, m.alternatives.length)
@@ -1169,7 +1169,7 @@ buster.testCase("Indirect paths", {
             self.remote.request_ripple_path_find("alice", "carol", "5/USD/carol",
               [ { 'currency' : "USD" } ])
               .on('success', function (m) {
-                  console.log("proposed: %s", JSON.stringify(m));
+                  // console.log("proposed: %s", JSON.stringify(m));
 
                   // 1 alternative.
                   buster.assert.equals(1, m.alternatives.length)
@@ -1179,6 +1179,43 @@ buster.testCase("Indirect paths", {
                   callback();
                 })
               .request();
+          },
+        ], function (error) {
+          buster.refute(error, self.what);
+          done();
+        });
+    },
+});
+
+buster.testCase("Quality paths", {
+  // 'setUp' : testutils.build_setup(),
+  'setUp' : testutils.build_setup({ verbose: true }),
+  // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
+  'tearDown' : testutils.build_teardown(),
+
+  "quality set and test" :
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+          function (callback) {
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob"], callback);
+          },
+          function (callback) {
+            self.what = "Set credit limits extended.";
+
+            testutils.credit_limits(self.remote,
+              {
+                "bob"   : "1000/USD/alice:2000,1400000000",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Verify credit limits extended.";
+
+            testutils.verify_limit(self.remote, "bob", "1000/USD/alice:2000,1400000000", callback);
           },
         ], function (error) {
           buster.refute(error, self.what);
