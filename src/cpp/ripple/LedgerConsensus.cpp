@@ -900,7 +900,7 @@ SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool do
 	return SHAMap::pointer();
 }
 
-void LedgerConsensus::startAcquiring(const TransactionAcquire::pointer& acquire)
+void LedgerConsensus::startAcquiring(TransactionAcquire::pointer acquire)
 {
 	boost::unordered_map< uint256, std::vector< boost::weak_ptr<Peer> > >::iterator it =
 		mPeerData.find(acquire->getHash());

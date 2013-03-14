@@ -128,7 +128,7 @@ protected:
 	void accept(SHAMap::ref txSet, LoadEvent::pointer);
 
 	void weHave(const uint256& id, Peer::ref avoidPeer);
-	void startAcquiring(const TransactionAcquire::pointer&);
+	void startAcquiring(TransactionAcquire::pointer);
 	SHAMap::pointer find(const uint256& hash);
 
 	void createDisputes(SHAMap::ref, SHAMap::ref);
