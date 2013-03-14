@@ -1383,8 +1383,15 @@ TER LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uReceiv
 
 		if (sleSender)
 		{
-			sleSender->setFieldAmount(sfBalance, sleSender->getFieldAmount(sfBalance) - saAmount);
-			entryModify(sleSender);
+			if (sleSender->getFieldAmount(sfBalance) < saAmount)
+			{
+				terResult	= isSetBit(mParams, tapOPEN_LEDGER) ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+			}
+			else
+			{
+				sleSender->setFieldAmount(sfBalance, sleSender->getFieldAmount(sfBalance) - saAmount);
+				entryModify(sleSender);
+			}
 		}
 
 		if (sleReceiver)
