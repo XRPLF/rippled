@@ -1146,18 +1146,19 @@ Remote.prototype.request_ripple_balance = function (account, issuer, currency, c
         var balance         = Amount.from_json(node.Balance);
         // accountHigh implies: for account: balance is negated, highLimit is the limit set by account.
         var accountHigh     = UInt160.from_json(account).equals(highLimit.issuer());
-        // The limit set by account.
-        var accountLimit    = (accountHigh ? highLimit : lowLimit).parse_issuer(account);
-        // The limit set by issuer.
-        var issuerLimit     = (accountHigh ? lowLimit : highLimit).parse_issuer(issuer);
-        var accountBalance  = (accountHigh ? balance.negate() : balance).parse_issuer(account);
-        var issuerBalance   = (accountHigh ? balance : balance.negate()).parse_issuer(issuer);
 
         request.emit('ripple_state', {
-          'issuer_balance'  : issuerBalance,  // Balance with dst as issuer.
-          'account_balance' : accountBalance, // Balance with account as issuer.
-          'issuer_limit'    : issuerLimit,    // Limit set by issuer with src as issuer.
-          'account_limit'   : accountLimit    // Limit set by account with dst as issuer.
+          'account_balance'     : ( accountHigh ? balance.negate() : balance).parse_issuer(account),
+          'peer_balance'        : (!accountHigh ? balance.negate() : balance).parse_issuer(issuer),
+
+          'account_limit'       : ( accountHigh ? highLimit : lowLimit).parse_issuer(account),       // As set by account
+          'peer_limit'          : (!accountHigh ? highLimit : lowLimit).parse_issuer(issuer),
+
+          'account_quality_in'  : ( accountHigh ? node.HighQualityIn : node.LowQualityIn),
+          'peer_quality_in'     : (!accountHigh ? node.HighQualityIn : node.LowQualityIn),
+
+          'account_quality_out' : ( accountHigh ? node.HighQualityOut : node.LowQualityOut),
+          'peer_quality_out'    : (!accountHigh ? node.HighQualityOut : node.LowQualityOut),
         });
       });
 };
