@@ -309,6 +309,7 @@ void ValidationCollection::doWrite(Job&)
 	while (!mStaleValidations.empty())
 	{
 		std::vector<SerializedValidation::pointer> vector;
+		vector.reserve(512);
 		mStaleValidations.swap(vector);
 		sl.unlock();
 		{
