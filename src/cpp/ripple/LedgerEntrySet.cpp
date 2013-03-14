@@ -1394,7 +1394,7 @@ TER LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uReceiv
 			}
 		}
 
-		if (sleReceiver)
+		if (tesSUCCESS == terResult && sleReceiver)
 		{
 			sleReceiver->setFieldAmount(sfBalance, sleReceiver->getFieldAmount(sfBalance) + saAmount);
 			entryModify(sleReceiver);

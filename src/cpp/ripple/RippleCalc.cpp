@@ -2322,7 +2322,7 @@ TER RippleCalc::calcNodeAccountFwd(
 				saCurDeliverAct		= std::min(saCurDeliverAct, psCur.saInReq-psCur.saInAct);
 
 				// Limit XRP by available. No limit for non-XRP as issuer.
-				if (!uCurrencyID)
+				if (uCurrencyID.isZero())
 					saCurDeliverAct	= std::min(saCurDeliverAct, lesActive.accountHolds(uCurAccountID, CURRENCY_XRP, ACCOUNT_XRP));
 
 			}
