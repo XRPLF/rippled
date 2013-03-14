@@ -7,11 +7,11 @@
 // The number of seconds a validation remains current after its ledger's close time
 // This is a safety to protect against very old validations and the time it takes to adjust
 // the close time accuracy window
-#	define LEDGER_VAL_INTERVAL		600
+#	define LEDGER_VAL_INTERVAL		300
 
 // The number of seconds before a close time that we consider a validation acceptable
 // This protects against extreme clock errors
-#	define LEDGER_EARLY_INTERVAL	240
+#	define LEDGER_EARLY_INTERVAL	180
 
 // The number of milliseconds we wait minimum to ensure participation
 #	define LEDGER_MIN_CONSENSUS		2000

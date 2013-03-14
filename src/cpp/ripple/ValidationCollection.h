@@ -20,7 +20,7 @@ class ValidationCollection
 {
 protected:
 
-	boost::mutex mValidationLock;
+	boost::mutex													mValidationLock;
 	TaggedCache<uint256, ValidationSet>								mValidations;
 	boost::unordered_map<uint160, SerializedValidation::pointer> 	mCurrentValidations;
 	std::vector<SerializedValidation::pointer> 						mStaleValidations;
@@ -34,7 +34,8 @@ protected:
 	boost::shared_ptr<ValidationSet> findSet(const uint256& ledgerHash);
 
 public:
-	ValidationCollection() : mValidations("Validations", 128, 600), mWriting(false) { ; }
+	ValidationCollection() : mValidations("Validations", 128, 600), mWriting(false)
+	{ mStaleValidations.reserve(512); }
 
 	bool addValidation(SerializedValidation::ref);
 	ValidationSet getValidations(const uint256& ledger);
@@ -46,7 +47,9 @@ public:
 	int getNodesAfter(const uint256& ledger);
 	int getLoadRatio(bool overLoaded);
 
-	boost::unordered_map<uint256, currentValidationCount> getCurrentValidations(uint256 currentLedger);
+	boost::unordered_map<uint256, currentValidationCount> getCurrentValidations(
+		uint256 currentLedger, uint256 previousLedger);
+
 	std::list<SerializedValidation::pointer> getCurrentTrustedValidations();
 
 	void tune(int size, int age);
