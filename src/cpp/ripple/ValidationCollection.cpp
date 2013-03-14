@@ -228,10 +228,11 @@ std::list<SerializedValidation::pointer> ValidationCollection::getCurrentTrusted
 }
 
 boost::unordered_map<uint256, currentValidationCount>
-ValidationCollection::getCurrentValidations(uint256 currentLedger)
+ValidationCollection::getCurrentValidations(uint256 currentLedger, uint256 priorLedger)
 {
     uint32 cutoff = theApp->getOPs().getNetworkTimeNC() - LEDGER_VAL_INTERVAL;
     bool valCurrentLedger = currentLedger.isNonZero();
+    bool valPriorLedger = priorLedger.isNonZero();
 
 	boost::unordered_map<uint256, currentValidationCount> ret;
 
@@ -250,7 +251,8 @@ ValidationCollection::getCurrentValidations(uint256 currentLedger)
 		}
 		else
 		{ // contains a live record
-			bool countPreferred = valCurrentLedger && it->second->isPreviousHash(currentLedger);
+			bool countPreferred = (valCurrentLedger && it->second->isPreviousHash(currentLedger)) ||
+				(valPriorLedger && (it->second->getLedgerHash() == priorLedger));
 			tLog(countPreferred, lsDEBUG) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash();
 			currentValidationCount& p = countPreferred ? ret[currentLedger] : ret[it->second->getLedgerHash()];
 

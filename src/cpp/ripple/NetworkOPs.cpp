@@ -685,7 +685,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	boost::unordered_map<uint256, ValidationCount> ledgers;
 	{
 		boost::unordered_map<uint256, currentValidationCount> current =
-			theApp->getValidations().getCurrentValidations(closedLedger);
+			theApp->getValidations().getCurrentValidations(closedLedger, prevClosedLedger);
 		typedef std::map<uint256, currentValidationCount>::value_type u256_cvc_pair;
 		BOOST_FOREACH(const u256_cvc_pair& it, current)
 		{

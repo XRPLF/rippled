@@ -373,9 +373,12 @@ void LedgerConsensus::checkLCL()
 	uint256 netLgr = mPrevLedgerHash;
 	int netLgrCount = 0;
 
-	uint256 favoredLedger = mPrevLedgerHash; // Don't get stuck one ledger back or jump one forward
+	uint256 favoredLedger = mPrevLedgerHash;			// Don't jump forward
+	uint256 priorLedger;
+	if (mHaveCorrectLCL)
+		priorLedger = mPreviousLedger->getParentHash();	// don't jump back
 	boost::unordered_map<uint256, currentValidationCount> vals =
-		theApp->getValidations().getCurrentValidations(favoredLedger);
+		theApp->getValidations().getCurrentValidations(favoredLedger, priorLedger);
 
 	typedef std::map<uint256, currentValidationCount>::value_type u256_cvc_pair;
 	BOOST_FOREACH(u256_cvc_pair& it, vals)

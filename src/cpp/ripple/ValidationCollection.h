@@ -47,7 +47,9 @@ public:
 	int getNodesAfter(const uint256& ledger);
 	int getLoadRatio(bool overLoaded);
 
-	boost::unordered_map<uint256, currentValidationCount> getCurrentValidations(uint256 currentLedger);
+	boost::unordered_map<uint256, currentValidationCount> getCurrentValidations(
+		uint256 currentLedger, uint256 previousLedger);
+
 	std::list<SerializedValidation::pointer> getCurrentTrustedValidations();
 
 	void tune(int size, int age);
