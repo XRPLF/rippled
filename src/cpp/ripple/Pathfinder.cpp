@@ -117,7 +117,7 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 	if (pspCurrent)
 	{
 		bool			bDefault;
-		LedgerEntrySet	lesActive(mLedger);
+		LedgerEntrySet	lesActive(mLedger, tapNONE);
 
 		// Expand the current path.
 		pspCurrent->setExpanded(lesActive, spPath, mDstAccountID, mSrcAccountID);
@@ -160,7 +160,7 @@ Pathfinder::Pathfinder(Ledger::ref ledger,
 		// Build the default path.
 		// Later, reject anything that expands to the default path as the default is sufficient.
 
-		LedgerEntrySet	lesActive(mLedger);
+		LedgerEntrySet	lesActive(mLedger, tapNONE);
 
 		psDefault->setExpanded(lesActive, STPath(), mDstAccountID, mSrcAccountID);
 
@@ -212,7 +212,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 		return false;
 	}
 
-	LedgerEntrySet		lesActive(mLedger);
+	LedgerEntrySet		lesActive(mLedger, tapNONE);
 	boost::unordered_map<uint160, AccountItems::pointer> aiMap;
 
 	SLE::pointer	sleSrc		= lesActive.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(mSrcAccountID));

@@ -1235,7 +1235,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 
 		cost = rpcCOST_EXPENSIVE;
 		Ledger::pointer lSnapShot = boost::make_shared<Ledger>(boost::ref(*lpLedger), false);
-		LedgerEntrySet lesSnapshot(lSnapShot);
+		LedgerEntrySet lesSnapshot(lSnapShot, tapNONE);
 
 		ScopedUnlock	su(theApp->getMasterLock()); // As long as we have a locked copy of the ledger, we can unlock.
 

@@ -3,6 +3,9 @@
 
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "Ledger.h"
 #include "SerializedTransaction.h"
@@ -11,28 +14,11 @@
 #include "TransactionErr.h"
 #include "InstanceCounter.h"
 
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/shared_ptr.hpp>
 
 DEFINE_INSTANCE(TransactionEngine);
 
 // A TransactionEngine applies serialized transactions to a ledger
 // It can also, verify signatures, verify fees, and give rejection reasons
-
-enum TransactionEngineParams
-{
-	tapNONE				= 0x00,
-
-	tapNO_CHECK_SIGN	= 0x01,	// Signature already checked
-
-	tapOPEN_LEDGER		= 0x10,	// Transaction is running against an open ledger
-		// true = failures are not forwarded, check transaction fee
-		// false = debit ledger for consumed funds
-
-	tapRETRY			= 0x20,	// This is not the transaction's last pass
-		// Transaction can be retried, soft failures allowed
-};
 
 // One instance per ledger.
 // Only one transaction applied at a time.

@@ -73,7 +73,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	cLog(lsTRACE) << "applyTransaction>";
 	didApply = false;
 	assert(mLedger);
-	mNodes.init(mLedger, txn.getTransactionID(), mLedger->getLedgerSeq());
+	mNodes.init(mLedger, txn.getTransactionID(), mLedger->getLedgerSeq(), params);
 
 #ifdef DEBUG
 	if (1)

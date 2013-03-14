@@ -1780,7 +1780,7 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 	cLog(lsTRACE) << boost::str(boost::format("getBookPage:  uBookEnd=%s") % uBookEnd);
 	cLog(lsTRACE) << boost::str(boost::format("getBookPage: uTipIndex=%s") % uTipIndex);
 
-	LedgerEntrySet	lesActive(lpLedger);
+	LedgerEntrySet	lesActive(lpLedger, tapNONE);
 
 	bool			bDone			= false;
 	bool			bDirectAdvance	= true;

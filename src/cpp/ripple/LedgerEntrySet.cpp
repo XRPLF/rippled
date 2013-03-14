@@ -16,11 +16,13 @@ DECLARE_INSTANCE(LedgerEntrySet)
 
 #define DIR_NODE_MAX		32
 
-void LedgerEntrySet::init(Ledger::ref ledger, const uint256& transactionID, uint32 ledgerID)
+void LedgerEntrySet::init(Ledger::ref ledger, const uint256& transactionID,
+	uint32 ledgerID, TransactionEngineParams params)
 {
 	mEntries.clear();
 	mLedger	= ledger;
 	mSet.init(transactionID, ledgerID);
+	mParams = params;
 	mSeq	= 0;
 }
 

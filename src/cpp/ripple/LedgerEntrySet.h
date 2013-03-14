@@ -13,6 +13,20 @@
 DEFINE_INSTANCE(LedgerEntrySetEntry);
 DEFINE_INSTANCE(LedgerEntrySet);
 
+enum TransactionEngineParams
+{
+	tapNONE				= 0x00,
+
+	tapNO_CHECK_SIGN	= 0x01,	// Signature already checked
+
+	tapOPEN_LEDGER		= 0x10,	// Transaction is running against an open ledger
+		// true = failures are not forwarded, check transaction fee
+		// false = debit ledger for consumed funds
+
+	tapRETRY			= 0x20,	// This is not the transaction's last pass
+		// Transaction can be retried, soft failures allowed
+};
+
 enum LedgerEntryAction
 {
 	taaNONE,
@@ -39,6 +53,7 @@ protected:
 	Ledger::pointer mLedger;
 	std::map<uint256, LedgerEntrySetEntry>	mEntries; // cannot be unordered!
 	TransactionMetaSet mSet;
+	TransactionEngineParams mParams;
 	int mSeq;
 
 	LedgerEntrySet(Ledger::ref ledger, const std::map<uint256, LedgerEntrySetEntry> &e,
@@ -56,18 +71,19 @@ protected:
 
 public:
 
-	LedgerEntrySet(Ledger::ref ledger) : mLedger(ledger), mSeq(0) { ; }
+	LedgerEntrySet(Ledger::ref ledger, TransactionEngineParams tep) : mLedger(ledger), mParams(tep), mSeq(0) { ; }
 
-	LedgerEntrySet() : mSeq(0) { ; }
+	LedgerEntrySet() : mParams(tapNONE), mSeq(0) { ; }
 
 	// set functions
 	LedgerEntrySet duplicate() const;	// Make a duplicate of this set
 	void setTo(const LedgerEntrySet&);	// Set this set to have the same contents as another
 	void swapWith(LedgerEntrySet&);		// Swap the contents of two sets
 
-	int getSeq() const			{ return mSeq; }
-	void bumpSeq()				{ ++mSeq; }
-	void init(Ledger::ref ledger, const uint256& transactionID, uint32 ledgerID);
+	int getSeq() const							{ return mSeq; }
+	TransactionEngineParams getParams() const	{ return mParams; }
+	void bumpSeq()								{ ++mSeq; }
+	void init(Ledger::ref ledger, const uint256& transactionID, uint32 ledgerID, TransactionEngineParams params);
 	void clear();
 
 	Ledger::pointer& getLedger()		{ return mLedger; }
