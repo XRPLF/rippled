@@ -152,12 +152,12 @@ buster.testCase("Sending", {
 //                console.log("BALANCE: %s", JSON.stringify(m));
 //                console.log("account_balance: %s", m.account_balance.to_text_full());
 //                console.log("account_limit: %s", m.account_limit.to_text_full());
-//                console.log("issuer_balance: %s", m.issuer_balance.to_text_full());
-//                console.log("issuer_limit: %s", m.issuer_limit.to_text_full());
+//                console.log("peer_balance: %s", m.peer_balance.to_text_full());
+//                console.log("peer_limit: %s", m.peer_limit.to_text_full());
                   buster.assert(m.account_balance.equals("0/USD/alice"));
                   buster.assert(m.account_limit.equals("800/USD/alice"));
-                  buster.assert(m.issuer_balance.equals("0/USD/mtgox"));
-                  buster.assert(m.issuer_limit.equals("0/USD/mtgox"));
+                  buster.assert(m.peer_balance.equals("0/USD/mtgox"));
+                  buster.assert(m.peer_limit.equals("0/USD/mtgox"));
 
                   callback();
                 })
@@ -173,8 +173,8 @@ buster.testCase("Sending", {
               .on('ripple_state', function (m) {
                   buster.assert(m.account_balance.equals("0/USD/alice"));
                   buster.assert(m.account_limit.equals("700/USD/alice"));
-                  buster.assert(m.issuer_balance.equals("0/USD/mtgox"));
-                  buster.assert(m.issuer_limit.equals("0/USD/mtgox"));
+                  buster.assert(m.peer_balance.equals("0/USD/mtgox"));
+                  buster.assert(m.peer_limit.equals("0/USD/mtgox"));
 
                   callback();
                 })
@@ -215,8 +215,8 @@ buster.testCase("Sending", {
                   // Used to keep lines.
                   // buster.assert(m.account_balance.equals("0/USD/alice"));
                   // buster.assert(m.account_limit.equals("0/USD/alice"));
-                  // buster.assert(m.issuer_balance.equals("0/USD/mtgox"));
-                  // buster.assert(m.issuer_limit.equals("0/USD/mtgox"));
+                  // buster.assert(m.peer_balance.equals("0/USD/mtgox"));
+                  // buster.assert(m.peer_limit.equals("0/USD/mtgox"));
 
                   buster.assert(false);
                 })
@@ -249,8 +249,8 @@ buster.testCase("Sending", {
 
                   buster.assert(m.account_balance.equals("0/USD/alice"));
                   buster.assert(m.account_limit.equals("600/USD/alice"));
-                  buster.assert(m.issuer_balance.equals("0/USD/bob"));
-                  buster.assert(m.issuer_limit.equals("500/USD/bob"));
+                  buster.assert(m.peer_balance.equals("0/USD/bob"));
+                  buster.assert(m.peer_limit.equals("500/USD/bob"));
 
                   callback();
                 })
@@ -263,8 +263,8 @@ buster.testCase("Sending", {
               .on('ripple_state', function (m) {
                   buster.assert(m.account_balance.equals("0/USD/bob"));
                   buster.assert(m.account_limit.equals("500/USD/bob"));
-                  buster.assert(m.issuer_balance.equals("0/USD/alice"));
-                  buster.assert(m.issuer_limit.equals("600/USD/alice"));
+                  buster.assert(m.peer_balance.equals("0/USD/alice"));
+                  buster.assert(m.peer_limit.equals("600/USD/alice"));
 
                   callback();
                 })
@@ -325,7 +325,7 @@ buster.testCase("Sending future", {
             self.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
               .once('ripple_state', function (m) {
                   buster.assert(m.account_balance.equals("-24/USD/alice"));
-                  buster.assert(m.issuer_balance.equals("24/USD/bob"));
+                  buster.assert(m.peer_balance.equals("24/USD/bob"));
 
                   callback();
                 })
@@ -351,7 +351,7 @@ buster.testCase("Sending future", {
             self.remote.request_ripple_balance("bob", "alice", "USD", 'CURRENT')
               .once('ripple_state', function (m) {
                   buster.assert(m.account_balance.equals("57/USD/bob"));
-                  buster.assert(m.issuer_balance.equals("-57/USD/alice"));
+                  buster.assert(m.peer_balance.equals("-57/USD/alice"));
 
                   callback();
                 })
@@ -473,8 +473,8 @@ buster.testCase("Sending future", {
 //            .once('ripple_state', function (m) {
 //                console.log("account_balance: %s", m.account_balance.to_text_full());
 //                console.log("account_limit: %s", m.account_limit.to_text_full());
-//                console.log("issuer_balance: %s", m.issuer_balance.to_text_full());
-//                console.log("issuer_limit: %s", m.issuer_limit.to_text_full());
+//                console.log("peer_balance: %s", m.peer_balance.to_text_full());
+//                console.log("peer_limit: %s", m.peer_limit.to_text_full());
 //
 //                buster.assert(m.account_balance.equals("600/USD/alice"));
 //
