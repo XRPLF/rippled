@@ -103,7 +103,8 @@ public:
 		else
 		{ // autodetect
 			mSocket->next_layer().async_receive(basio::buffer(mBuffer), basio::socket_base::message_peek,
-				boost::bind(&AutoSocket::handle_autodetect, this, cbFunc, basio::placeholders::error));
+				boost::bind(&AutoSocket::handle_autodetect, this, cbFunc,
+				basio::placeholders::error, basio::placeholders::bytes_transferred));
 		}
 	}
 
@@ -205,7 +206,7 @@ public:
 	}
 
 protected:
-	void handle_autodetect(callback cbFunc, const error_code& ec)
+	void handle_autodetect(callback cbFunc, const error_code& ec, size_t bytesTransferred)
 	{
 		if (ec)
 		{
@@ -213,15 +214,17 @@ protected:
 			cbFunc(ec);
 		}
 		else if ((mBuffer[0] < 127) && (mBuffer[0] > 31) &&
-			(mBuffer[1] < 127) && (mBuffer[1] > 31) &&
-			(mBuffer[2] < 127) && (mBuffer[2] > 31) &&
-			(mBuffer[3] < 127) && (mBuffer[3] > 31))
+			((bytesTransferred < 2) || ((mBuffer[1] < 127) && (mBuffer[1] > 31))) &&
+			((bytesTransferred < 3) || ((mBuffer[2] < 127) && (mBuffer[2] > 31))) &&
+			((bytesTransferred < 4) || ((mBuffer[3] < 127) && (mBuffer[3] > 31))))
 		{ // not ssl
+			Log(lsTRACE, AutoSocketPartition) << "non-SSL";
 			mSecure = false;
 			cbFunc(ec);
 		}
 		else
 		{ // ssl
+			Log(lsTRACE, AutoSocketPartition) << "SSL";
 			mSecure = true;
 			mSocket->async_handshake(ssl_socket::server, cbFunc);
 		}
