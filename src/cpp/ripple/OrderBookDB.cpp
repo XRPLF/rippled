@@ -75,8 +75,6 @@ void OrderBookDB::getBooksByTakerPays(const uint160& issuerID, const uint160& cu
 		bookRet = it->second;
 	else
 		bookRet.clear();
-
-	cLog(lsINFO) << "gbTP: " << currencyID << " : " << issuerID << " : " << bookRet.size();
 }
 
 // return list of all orderbooks that give this issuerID and currencyID
@@ -88,7 +86,8 @@ void OrderBookDB::getBooksByTakerGets(const uint160& issuerID, const uint160& cu
 		it = mDestMap.find(currencyIssuer_t(currencyID, issuerID));
 	if (it != mDestMap.end())
 		bookRet = it->second;
-	else bookRet.clear();
+	else
+		bookRet.clear();
 }
 
 BookListeners::pointer OrderBookDB::makeBookListeners(const uint160& currencyPays, const uint160& currencyGets,
