@@ -171,19 +171,68 @@ var create_accounts = function (remote, src, amount, accounts, callback) {
 var credit_limit = function (remote, src, amount, callback) {
   assert(4 === arguments.length);
 
-  remote.transaction()
-    .ripple_line_set(src, amount)
-    .on('proposed', function (m) {
-        // console.log("proposed: %s", JSON.stringify(m));
+  var _m      = amount.match(/^(\d+\/...\/[^\:]+)(?::(\d+)(?:,(\d+))?)?$/);
+  if (!_m) {
+    console.log("credit_limit: parse error: %s", amount);
 
-        callback(m.result != 'tesSUCCESS');
-      })
-    .on('error', function (m) {
-        // console.log("error: %s", JSON.stringify(m));
+    callback('parse_error');
+  }
+  else
+  {
+    // console.log("credit_limit: parsed: %s", JSON.stringify(_m, undefined, 2));
+    var _account_limit  = _m[1];
+    var _quality_in     = _m[2];
+    var _quality_out    = _m[3];
 
-        callback(m);
-      })
-    .submit();
+    remote.transaction()
+      .ripple_line_set(src, _account_limit, _quality_in, _quality_out)
+      .on('proposed', function (m) {
+          // console.log("proposed: %s", JSON.stringify(m));
+
+          callback(m.result != 'tesSUCCESS');
+        })
+      .on('error', function (m) {
+          // console.log("error: %s", JSON.stringify(m));
+
+          callback(m);
+        })
+      .submit();
+  }
+};
+
+var verify_limit = function (remote, src, amount, callback) {
+  assert(4 === arguments.length);
+
+  var _m      = amount.match(/^(\d+\/...\/[^\:]+)(?::(\d+)(?:,(\d+))?)?$/);
+  if (!_m) {
+    // console.log("credit_limit: parse error: %s", amount);
+
+    callback('parse_error');
+  }
+  else
+  {
+    // console.log("verify_limit: parsed: %s", JSON.stringify(_m, undefined, 2));
+    var _account_limit  = _m[1];
+    var _quality_in     = _m[2];
+    var _quality_out    = _m[3];
+
+    var _limit          = Amount.from_json(_account_limit);
+
+    remote.request_ripple_balance(src, _limit.issuer().to_json(), _limit.currency().to_json(), 'CURRENT')
+      .once('ripple_state', function (m) {
+          buster.assert(m.account_limit.equals(_limit));
+          buster.assert('undefined' === _quality_in || m.account_quality_in == _quality_in);
+          buster.assert('undefined' === _quality_out || m.account_quality_out == _quality_out);
+
+          callback();
+        })
+      .on('error', function (m) {
+          // console.log("error: %s", JSON.stringify(m));
+
+          callback(m);
+        })
+      .request();
+  }
 };
 
 var credit_limits = function (remote, balances, callback) {
@@ -424,6 +473,7 @@ exports.payments                = payments;
 exports.transfer_rate           = transfer_rate;
 exports.verify_balance          = verify_balance;
 exports.verify_balances         = verify_balances;
+exports.verify_limit            = verify_limit;
 exports.verify_offer            = verify_offer;
 exports.verify_offer_not_found  = verify_offer_not_found;
 exports.verify_owner_count      = verify_owner_count;

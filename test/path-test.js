@@ -1,9 +1,10 @@
-var async     = require("async");
-var buster    = require("buster");
+var async       = require("async");
+var buster      = require("buster");
 
-var Amount    = require("../src/js/amount.js").Amount;
-var Remote    = require("../src/js/remote.js").Remote;
-var Server    = require("./server.js").Server;
+var Amount      = require("../src/js/amount.js").Amount;
+var Remote      = require("../src/js/remote.js").Remote;
+var Transaction = require("../src/js/transaction.js").Transaction;
+var Server      = require("./server.js").Server;
 
 var testutils = require("./testutils.js");
 
@@ -495,7 +496,7 @@ buster.testCase("More Path finding", {
             self.remote.request_ripple_path_find("alice", "bob", "5/USD/bob",
               [ { 'currency' : "USD" } ])
               .on('success', function (m) {
-                  console.log("proposed: %s", JSON.stringify(m));
+                  // console.log("proposed: %s", JSON.stringify(m));
 
                   // 1 alternative.
 //                  buster.assert.equals(1, m.alternatives.length)
@@ -1138,12 +1139,12 @@ buster.testCase("Via offers", {
 });
 
 buster.testCase("Indirect paths", {
-  // 'setUp' : testutils.build_setup(),
-  'setUp' : testutils.build_setup({ verbose: true }),
+  'setUp' : testutils.build_setup(),
+  // 'setUp' : testutils.build_setup({ verbose: true }),
   // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
   'tearDown' : testutils.build_teardown(),
 
-  "//path find" :
+  "path find" :
     function (done) {
       var self = this;
 
@@ -1169,12 +1170,99 @@ buster.testCase("Indirect paths", {
             self.remote.request_ripple_path_find("alice", "carol", "5/USD/carol",
               [ { 'currency' : "USD" } ])
               .on('success', function (m) {
-                  console.log("proposed: %s", JSON.stringify(m));
+                  // console.log("proposed: %s", JSON.stringify(m));
 
                   // 1 alternative.
                   buster.assert.equals(1, m.alternatives.length)
                   // Path is empty.
                   buster.assert.equals(0, m.alternatives[0].paths_canonical.length)
+
+                  callback();
+                })
+              .request();
+          },
+        ], function (error) {
+          buster.refute(error, self.what);
+          done();
+        });
+    },
+});
+
+buster.testCase("Quality paths", {
+  // 'setUp' : testutils.build_setup(),
+  'setUp' : testutils.build_setup({ verbose: true }),
+  // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
+  'tearDown' : testutils.build_teardown(),
+
+  "quality set and test" :
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+          function (callback) {
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob"], callback);
+          },
+          function (callback) {
+            self.what = "Set credit limits extended.";
+
+            testutils.credit_limits(self.remote,
+              {
+                "bob"   : "1000/USD/alice:2000,1400000000",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Verify credit limits extended.";
+
+            testutils.verify_limit(self.remote, "bob", "1000/USD/alice:2000,1400000000", callback);
+          },
+        ], function (error) {
+          buster.refute(error, self.what);
+          done();
+        });
+    },
+
+  "// quality payment (BROKEN DUE TO ROUNDING)" :
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+          function (callback) {
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob"], callback);
+          },
+          function (callback) {
+            self.what = "Set credit limits extended.";
+
+            testutils.credit_limits(self.remote,
+              {
+                "bob"   : "1000/USD/alice:" + .9*1e9 + "," + 1e9,
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Payment with auto path";
+
+            self.remote.transaction()
+              .payment('alice', 'bob', "100/USD/bob")
+              .send_max("120/USD/alice")
+//              .set_flags('PartialPayment')
+//              .build_path(true)
+              .once('proposed', function (m) {
+                  // console.log("proposed: %s", JSON.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Display ledger";
+
+            self.remote.request_ledger('current', { accounts: true, expand: true })
+              .on('success', function (m) {
+                  console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
 
                   callback();
                 })
