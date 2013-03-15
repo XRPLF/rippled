@@ -281,6 +281,7 @@ bool LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)>
 
 void LedgerAcquire::trigger(Peer::ref peer)
 {
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (mAborted || mComplete || mFailed)
 	{
 		cLog(lsTRACE) << "Trigger on ledger:" <<
@@ -585,7 +586,8 @@ bool LedgerAcquire::takeBase(const std::string& data) // data must not have hash
 	cLog(lsTRACE) << "got base acquiring ledger " << mHash;
 #endif
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	if (mHaveBase) return true;
+	if (mHaveBase)
+		return true;
 	mLedger = boost::make_shared<Ledger>(data, false);
 	if (mLedger->getHash() != mHash)
 	{
@@ -616,8 +618,11 @@ bool LedgerAcquire::takeBase(const std::string& data) // data must not have hash
 bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 	const std::list< std::vector<unsigned char> >& data, SMAddNode& san)
 {
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (!mHaveBase)
 		return false;
+	if (mHaveTransactions)
+		return true;
 
 	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
 	std::list< std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
@@ -657,11 +662,14 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 	cLog(lsTRACE) << "got ASdata (" << nodeIDs.size() <<") acquiring ledger " << mHash;
 	tLog(nodeIDs.size() == 1, lsTRACE) << "got AS node: " << nodeIDs.front();
 
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (!mHaveBase)
 	{
 		cLog(lsWARNING) << "Don't have ledger base";
 		return false;
 	}
+	if (mHaveState)
+		return true;
 
 	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
 	std::list< std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
@@ -700,6 +708,7 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 
 bool LedgerAcquire::takeAsRootNode(const std::vector<unsigned char>& data, SMAddNode& san)
 {
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (!mHaveBase)
 		return false;
 	AccountStateSF tFilter(mLedger->getLedgerSeq());
@@ -709,6 +718,7 @@ bool LedgerAcquire::takeAsRootNode(const std::vector<unsigned char>& data, SMAdd
 
 bool LedgerAcquire::takeTxRootNode(const std::vector<unsigned char>& data, SMAddNode& san)
 {
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (!mHaveBase)
 		return false;
 	TransactionStateSF tFilter(mLedger->getLedgerSeq());
