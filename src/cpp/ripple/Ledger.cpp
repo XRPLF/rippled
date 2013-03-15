@@ -474,7 +474,7 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 					sql += ")";
 				}
 				sql += ";";
-				Log(lsTRACE) << "ActTx: " << sql;
+				cLog(lsTRACE) << "ActTx: " << sql;
 				db->executeSQL(sql); // may already be in there
 			}
 			else
