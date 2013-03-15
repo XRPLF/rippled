@@ -509,8 +509,10 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 			mAccountHash.GetHex() % mTransHash.GetHex()));
 	}
 
+#if 0
 	if (!fromConsensus)
 		dropCache();
+#endif
 
 	if (theApp->getJobQueue().getJobCountTotal(jtPUBOLDLEDGER) < 2)
 		theApp->getLedgerMaster().resumeAcquiring();
