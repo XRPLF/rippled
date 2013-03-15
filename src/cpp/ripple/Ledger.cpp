@@ -455,9 +455,9 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 			const std::vector<RippleAddress>& accts = vt.second.getAffected();
 			if (!accts.empty())
 			{
-				std::string sql = "INSERT OR REPLACE INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
+				std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
 				bool first = true;
-					for (std::vector<RippleAddress>::const_iterator it = accts.begin(), end = accts.end(); it != end; ++it)
+				for (std::vector<RippleAddress>::const_iterator it = accts.begin(), end = accts.end(); it != end; ++it)
 				{
 					if (!first)
 						sql += ", ('";
@@ -475,27 +475,13 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 				}
 				sql += ";";
 				cLog(lsTRACE) << "ActTx: " << sql;
-				db->executeSQL(sql); // may already be in there
+				db->executeSQL(sql);
 			}
 			else
 				cLog(lsWARNING) << "Transaction in ledger " << mLedgerSeq << " affects no accounts";
 
-			if (SQL_EXISTS(db, boost::str(transExists %	txID.GetHex())))
-			{
-				// In Transactions, update LedgerSeq, metadata and Status.
-				db->executeSQL(boost::str(updateTx
-					% getLedgerSeq()
-					% TXN_SQL_VALIDATED
-					% vt.second.getEscMeta()
-					% txID.GetHex()));
-			}
-			else
-			{
-				// Not in Transactions, insert the whole thing..
-				db->executeSQL(
-					SerializedTransaction::getMetaSQLInsertHeader() +
-					vt.second.getTxn()->getMetaSQL(getLedgerSeq(), vt.second.getEscMeta()) + ";");
-			}
+			db->executeSQL(SerializedTransaction::getMetaSQLInsertReplaceHeader() +
+				vt.second.getTxn()->getMetaSQL(getLedgerSeq(), vt.second.getEscMeta()) + ";");
 		}
 		db->executeSQL("COMMIT TRANSACTION;");
 	}
@@ -505,8 +491,7 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
 			getHash().GetHex() % mLedgerSeq % mParentHash.GetHex() %
 			boost::lexical_cast<std::string>(mTotCoins) % mCloseTime % mParentCloseTime %
-			mCloseResolution % mCloseFlags %
-			mAccountHash.GetHex() % mTransHash.GetHex()));
+			mCloseResolution % mCloseFlags % mAccountHash.GetHex() % mTransHash.GetHex()));
 	}
 
 #if 0
