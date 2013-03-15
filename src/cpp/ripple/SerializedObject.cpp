@@ -174,13 +174,13 @@ bool STObject::setType(const SOTemplate &type)
 			if (it->getFName() == elem->e_field)
 			{ // matching entry, move to new vector
 				match = true;
-				newData.push_back(mData.release(it).release());
 				if ((elem->flags == SOE_DEFAULT) && it->isDefault())
 				{
 					cLog(lsWARNING) << "setType( " << getFName().getName() << ") invalid default "
 						<< elem->e_field.fieldName;
 					valid = false;
 				}
+				newData.push_back(mData.release(it).release()); // CAUTION: This renders 'it' invalid
 				break;
 			}
 
