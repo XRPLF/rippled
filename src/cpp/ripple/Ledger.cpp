@@ -421,7 +421,13 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 		assert(false);
 	}
 
-	assert (getAccountHash() == mAccountStateMap->getHash());
+	if (getAccountHash() != mAccountStateMap->getHash())
+	{
+		cLog(lsFATAL) << "sAL: " << getAccountHash() << " != " << mAccountStateMap->getHash();
+		cLog(lsFATAL) << "saveAcceptedLedger: seq=" << mLedgerSeq << ", fromcons=" << fromConsensus;
+		assert(false);
+	}
+
 	assert (getTransHash() == mTransactionMap->getHash());
 
 	// Save the ledger header in the hashed object store
