@@ -50,6 +50,14 @@ namespace parser {
 
 typedef std::map<std::string,std::string> header_list;
 
+static std::string tolower(const std::string& in)
+{
+	std::string out = in;
+	for (int i = 0; i < out.size(); ++i)
+		if (isupper(out[i]))
+			out[i] = ::tolower(out[i]);
+	return out;
+}
 
 class parser {
 public:
@@ -69,7 +77,7 @@ public:
     }
     
     std::string header(const std::string& key) const {
-        header_list::const_iterator h = m_headers.find(key);
+        header_list::const_iterator h = m_headers.find(tolower(key));
         
         if (h == m_headers.end()) {
             return "";
@@ -80,21 +88,21 @@ public:
     
     // multiple calls to add header will result in values aggregating.
     // use replace_header if you do not want this behavior.
-    void add_header(const std::string &key,const std::string &val) {
+    void add_header(const std::string &key, const std::string &val) {
         // TODO: prevent use of reserved headers?
         if (this->header(key) == "") {
-            m_headers[key] = val;
+            m_headers[tolower(key)] = val;
         } else {
-            m_headers[key] += ", " + val;
+            m_headers[tolower(key)] += ", " + val;
         }
     }
     
-    void replace_header(const std::string &key,const std::string &val) {
-        m_headers[key] = val;
+    void replace_header(const std::string &key, const std::string &val) {
+        m_headers[tolower(key)] = val;
     }
     
     void remove_header(const std::string &key) {
-        m_headers.erase(key);
+        m_headers.erase(tolower(key));
     }
 protected:
     bool parse_headers(std::istream& s) {

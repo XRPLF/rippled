@@ -620,8 +620,6 @@ void server<endpoint>::connection<connection_type>::handle_read_request(
         //m_endpoint.m_alog.at(log::alevel::DEBUG_HANDSHAKE) << m_request.raw() << log::endl;
         
         std::string h = m_request.header("Upgrade");
-        if (h.empty())
-		    h = m_request.header("upgrade");
         if (boost::ifind_first(h,"websocket")) {
             // Version is stored in the Sec-WebSocket-Version header for all 
             // versions after draft Hybi 00/Hixie 76. The absense of a version 
