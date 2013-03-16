@@ -590,8 +590,8 @@ void Peer::processReadBuffer()
 		case ripple::mtLEDGER_DATA:
 			{
 				event->reName("Peer::ledgerdata");
-				ripple::TMLedgerData msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				boost::shared_ptr<ripple::TMLedgerData> msg = boost::make_shared<ripple::TMLedgerData>();
+				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvLedger(msg);
 				else
 					cLog(lsWARNING) << "parse error: " << type;
@@ -1606,8 +1606,9 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 	sendPacket(oPacket, true);
 }
 
-void Peer::recvLedger(ripple::TMLedgerData& packet)
+void Peer::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_ptr)
 {
+	ripple::TMLedgerData& packet = *packet_ptr;
 	if (packet.nodes().size() <= 0)
 	{
 		cLog(lsWARNING) << "Ledger/TXset data with no nodes";
@@ -1664,9 +1665,9 @@ void Peer::recvLedger(ripple::TMLedgerData& packet)
 		return;
 	}
 
-	SMAddNode san =  theApp->getMasterLedgerAcquire().gotLedgerData(packet, shared_from_this());
-	if (san.isInvalid())
-		punishPeer(LT_UnwantedData);
+	theApp->getJobQueue().addJob(jtLEDGER_DATA, "gotLedgerData",
+		boost::bind(&LedgerAcquireMaster::gotLedgerData, &theApp->getMasterLedgerAcquire(),
+			_1, packet_ptr, boost::weak_ptr<Peer>(shared_from_this())));
 }
 
 bool Peer::hasLedger(const uint256& hash) const

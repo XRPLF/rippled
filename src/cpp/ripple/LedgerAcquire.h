@@ -147,7 +147,7 @@ public:
 	LedgerAcquire::pointer find(const uint256& hash);
 	bool hasLedger(const uint256& ledgerHash);
 	void dropLedger(const uint256& ledgerHash);
-	SMAddNode gotLedgerData(ripple::TMLedgerData& packet, Peer::ref);
+	void gotLedgerData(Job&, boost::shared_ptr<ripple::TMLedgerData> packet, boost::weak_ptr<Peer> peer);
 
 	int getFetchCount(int& timeoutCount);
 	void logFailure(const uint256& h)	{ mRecentFailures.add(h); }
