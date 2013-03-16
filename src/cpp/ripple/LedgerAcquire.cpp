@@ -48,6 +48,7 @@ void PeerSet::setTimer()
 
 void PeerSet::invokeOnTimer()
 {
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (isDone())
 		return;
 
@@ -71,8 +72,12 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 {
 	if (result == boost::asio::error::operation_aborted)
 		return;
+	theApp->getJobQueue().addJob(jtLEDGER_DATA, "timerEntry",
+		boost::bind(&PeerSet::TimerJobEntry, _1, wptr));
+}
 
-	ScopedLock sl(theApp->getMasterLock());
+void PeerSet::TimerJobEntry(Job&, boost::weak_ptr<PeerSet> wptr)
+{
 	boost::shared_ptr<PeerSet> ptr = wptr.lock();
 	if (ptr)
 		ptr->invokeOnTimer();

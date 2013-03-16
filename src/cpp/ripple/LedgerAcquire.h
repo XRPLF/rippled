@@ -75,6 +75,7 @@ protected:
 
 private:
 	static void TimerEntry(boost::weak_ptr<PeerSet>, const boost::system::error_code& result);
+	static void TimerJobEntry(Job&, boost::weak_ptr<PeerSet>);
 };
 
 class LedgerAcquire :
