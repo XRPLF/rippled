@@ -16,6 +16,7 @@
 //
 
 typedef std::pair<uint160, uint160> currencyIssuer_t;
+typedef std::pair<const uint160&, const uint160&> currencyIssuer_ct;
 
 class BookListeners
 {

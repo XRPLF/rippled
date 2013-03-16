@@ -53,8 +53,8 @@ void OrderBookDB::setup(Ledger::ref ledger)
 				OrderBook::pointer book = boost::make_shared<OrderBook>(boost::cref(index),
 					boost::cref(ci), boost::cref(co), boost::cref(ii), boost::cref(io));
 
-				mSourceMap[currencyIssuer_t(ci, ii)].push_back(book);
-				mDestMap[currencyIssuer_t(co, io)].push_back(book);
+				mSourceMap[currencyIssuer_ct(ci, ii)].push_back(book);
+				mDestMap[currencyIssuer_ct(co, io)].push_back(book);
 			}
 		}
 
@@ -70,7 +70,7 @@ void OrderBookDB::getBooksByTakerPays(const uint160& issuerID, const uint160& cu
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> >::const_iterator
-		it = mSourceMap.find(currencyIssuer_t(currencyID, issuerID));
+		it = mSourceMap.find(currencyIssuer_ct(currencyID, issuerID));
 	if (it != mSourceMap.end())
 		bookRet = it->second;
 	else
@@ -83,7 +83,7 @@ void OrderBookDB::getBooksByTakerGets(const uint160& issuerID, const uint160& cu
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> >::const_iterator
-		it = mDestMap.find(currencyIssuer_t(currencyID, issuerID));
+		it = mDestMap.find(currencyIssuer_ct(currencyID, issuerID));
 	if (it != mDestMap.end())
 		bookRet = it->second;
 	else
