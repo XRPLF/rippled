@@ -52,7 +52,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 		{
 			mWritePending = true;
 			theApp->getJobQueue().addJob(jtWRITE, "HashedObject::store",
-				boost::bind(&HashedObjectStore::bulkWrite, this));
+				BIND_TYPE(&HashedObjectStore::bulkWrite, this));
 		}
 	}
 //	else

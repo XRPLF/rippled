@@ -870,7 +870,7 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 		}
 
 		theApp->getJobQueue().addJob(jtTRANSACTION, "recvTransction->checkTransaction",
-			boost::bind(&checkTransaction, _1, flags, stx, boost::weak_ptr<Peer>(shared_from_this())));
+			BIND_TYPE(&checkTransaction, P_1, flags, stx, boost::weak_ptr<Peer>(shared_from_this())));
 
 #ifndef TRUST_NETWORK
 	}
@@ -931,7 +931,7 @@ static void checkPropose(Job& job, boost::shared_ptr<ripple::TMProposeSet> packe
 	if (isTrusted)
 	{
 		theApp->getJobQueue().addJob(jtPROPOSAL_t, "trustedProposal",
-			boost::bind(&NetworkOPs::processTrustedProposal, &theApp->getOPs(),
+			BIND_TYPE(&NetworkOPs::processTrustedProposal, &theApp->getOPs(),
 				proposal, packet, nodePublic, prevLedger, sigGood));
 	}
 	else if (sigGood && (prevLedger == consensusLCL))
@@ -1002,7 +1002,7 @@ void Peer::recvPropose(const boost::shared_ptr<ripple::TMProposeSet>& packet)
 		set.proposeseq(), proposeHash, set.closetime(), signerPublic, suppression);
 
 	theApp->getJobQueue().addJob(isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut, "recvPropose->checkPropose",
-		boost::bind(&checkPropose, _1, packet, proposal, consensusLCL,
+		BIND_TYPE(&checkPropose, P_1, packet, proposal, consensusLCL,
 			mNodePublic, boost::weak_ptr<Peer>(shared_from_this())));
 }
 
@@ -1078,7 +1078,7 @@ void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet)
 
 		bool isTrusted = theApp->getUNL().nodeInUNL(val->getSignerPublic());
 		theApp->getJobQueue().addJob(isTrusted ? jtVALIDATION_t : jtVALIDATION_ut, "recvValidation->checkValidation",
-			boost::bind(&checkValidation, _1, val, signingHash, isTrusted, packet,
+			BIND_TYPE(&checkValidation, P_1, val, signingHash, isTrusted, packet,
 			boost::weak_ptr<Peer>(shared_from_this())));
 	}
 #ifndef TRUST_NETWORK
@@ -1315,7 +1315,7 @@ void Peer::recvProofWork(ripple::TMProofWork& packet)
 		}
 
 		theApp->getJobQueue().addJob(jtPROOFWORK, "recvProof->doProof",
-			boost::bind(&Peer::doProofOfWork, _1, boost::weak_ptr<Peer>(shared_from_this()), pow));
+			BIND_TYPE(&Peer::doProofOfWork, P_1, boost::weak_ptr<Peer>(shared_from_this()), pow));
 
 		return;
 	}
@@ -1666,8 +1666,8 @@ void Peer::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_ptr)
 	}
 
 	theApp->getJobQueue().addJob(jtLEDGER_DATA, "gotLedgerData",
-		boost::bind(&LedgerAcquireMaster::gotLedgerData, &theApp->getMasterLedgerAcquire(),
-			_1, packet_ptr, boost::weak_ptr<Peer>(shared_from_this())));
+		BIND_TYPE(&LedgerAcquireMaster::gotLedgerData, &theApp->getMasterLedgerAcquire(),
+			P_1, packet_ptr, boost::weak_ptr<Peer>(shared_from_this())));
 }
 
 bool Peer::hasLedger(const uint256& hash) const

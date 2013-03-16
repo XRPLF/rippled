@@ -197,7 +197,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 	{
 		cLog(lsTRACE) << "Ledger hash found in database";
 		theApp->getJobQueue().addJob(jtPUBOLDLEDGER, "LedgerMaster::asyncAccept",
-			boost::bind(&LedgerMaster::asyncAccept, this, ledger));
+			BIND_TYPE(&LedgerMaster::asyncAccept, this, ledger));
 		return true;
 	}
 
@@ -224,7 +224,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 	mMissingSeq = ledgerSeq;
 	if (mMissingLedger->setAccept())
 	{
-		if (!mMissingLedger->addOnComplete(boost::bind(&LedgerMaster::missingAcquireComplete, this, _1)))
+		if (!mMissingLedger->addOnComplete(BIND_TYPE(&LedgerMaster::missingAcquireComplete, this, P_1)))
 			theApp->getIOService().post(boost::bind(&LedgerMaster::missingAcquireComplete, this, mMissingLedger));
 	}
 
@@ -554,7 +554,7 @@ void LedgerMaster::tryPublish()
 		theApp->getOPs().clearNeedNetworkLedger();
 		mPubThread = true;
 		theApp->getJobQueue().addJob(jtPUBLEDGER, "Ledger::pubThread",
-			boost::bind(&LedgerMaster::pubThread, this));
+			BIND_TYPE(&LedgerMaster::pubThread, this));
 	}
 }
 

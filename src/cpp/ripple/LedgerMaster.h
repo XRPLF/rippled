@@ -18,7 +18,7 @@
 class LedgerMaster
 {
 public:
-	typedef boost::function<void(Ledger::ref)> callback;
+	typedef FUNCTION_TYPE<void(Ledger::ref)> callback;
 
 protected:
 	boost::recursive_mutex mLock;

@@ -21,7 +21,7 @@ class TXQEntry
 public:
 	typedef boost::shared_ptr<TXQEntry> pointer;
 	typedef const boost::shared_ptr<TXQEntry>& ref;
-    typedef boost::function<void (Transaction::pointer, TER)> stCallback; // must complete immediately
+    typedef FUNCTION_TYPE<void (Transaction::pointer, TER)> stCallback; // must complete immediately
 
 protected:
 	Transaction::pointer	mTxn;

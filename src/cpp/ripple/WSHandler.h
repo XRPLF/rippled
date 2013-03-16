@@ -153,13 +153,13 @@ public:
 
 		// Must be done without holding the websocket send lock
 		theApp->getJobQueue().addJob(jtCLIENT, "WSClient::destroy",
-			boost::bind(&WSConnection<endpoint_type>::destroy, ptr));
+			BIND_TYPE(&WSConnection<endpoint_type>::destroy, ptr));
 	}
 
 	void on_message(connection_ptr cpClient, message_ptr mpMessage)
 	{
 		theApp->getJobQueue().addJob(jtCLIENT, "WSClient::command",
-			boost::bind(&WSServerHandler<endpoint_type>::do_message, this, _1, cpClient, mpMessage));
+			BIND_TYPE(&WSServerHandler<endpoint_type>::do_message, this, P_1, cpClient, mpMessage));
 	}
 
 	void do_message(Job& job, connection_ptr cpClient, message_ptr mpMessage)

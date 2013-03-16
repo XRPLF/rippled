@@ -97,7 +97,7 @@ bool Job::operator<=(const Job& j) const
 	return mJobIndex <= j.mJobIndex;
 }
 
-void JobQueue::addJob(JobType type, const std::string& name, const boost::function<void(Job&)>& jobFunc)
+void JobQueue::addJob(JobType type, const std::string& name, const FUNCTION_TYPE<void(Job&)>& jobFunc)
 {
 	assert(type != jtINVALID);
 
@@ -246,7 +246,7 @@ void JobQueue::setThreadCount(int c)
 	while (mThreadCount < c)
 	{
 		++mThreadCount;
-		boost::thread(boost::bind(&JobQueue::threadEntry, this)).detach();
+		boost::thread(BIND_TYPE(&JobQueue::threadEntry, this)).detach();
 	}
 	while (mThreadCount > c)
 	{

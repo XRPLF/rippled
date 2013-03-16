@@ -1540,7 +1540,7 @@ void Ledger::pendSave(bool fromConsensus)
 
 	theApp->getJobQueue().addJob(fromConsensus ? jtPUBLEDGER : jtPUBOLDLEDGER,
 		fromConsensus ? "Ledger::pendSave" : "Ledger::pendOldSave",
-		boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(), _1, fromConsensus));
+		BIND_TYPE(&Ledger::saveAcceptedLedger, shared_from_this(), P_1, fromConsensus));
 
 }
 

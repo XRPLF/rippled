@@ -7,8 +7,8 @@
 
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
-#include <boost/function.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/ref.hpp>
 
 #include "../json/value.h"
 
@@ -52,7 +52,7 @@ class Job
 protected:
 	JobType						mType;
 	uint64						mJobIndex;
-	boost::function<void(Job&)>	mJob;
+	FUNCTION_TYPE<void(Job&)>	mJob;
 	LoadEvent::pointer			mLoadMonitor;
 	std::string					mName;
 
@@ -63,7 +63,7 @@ public:
 	Job(JobType type, uint64 index)	: mType(type), mJobIndex(index)
 	{ ; }
 
-	Job(JobType type, const std::string& name, uint64 index, LoadMonitor& lm, const boost::function<void(Job&)>& job)
+	Job(JobType type, const std::string& name, uint64 index, LoadMonitor& lm, const FUNCTION_TYPE<void(Job&)>& job)
 		: mType(type), mJobIndex(index), mJob(job), mName(name)
 	{
 		mLoadMonitor = boost::make_shared<LoadEvent>(boost::ref(lm), name, false);
@@ -102,7 +102,7 @@ public:
 
 	JobQueue();
 
-	void addJob(JobType type, const std::string& name, const boost::function<void(Job&)>& job);
+	void addJob(JobType type, const std::string& name, const FUNCTION_TYPE<void(Job&)>& job);
 
 	int getJobCount(JobType t);			// Jobs waiting at this priority
 	int getJobCountTotal(JobType t);	// Jobs waiting plus running at this priority

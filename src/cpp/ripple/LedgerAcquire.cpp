@@ -3,7 +3,6 @@
 
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/bind.hpp>
 
 #include "Application.h"
 #include "Log.h"
@@ -72,14 +71,14 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 {
 	if (result == boost::asio::error::operation_aborted)
 		return;
-	theApp->getJobQueue().addJob(jtLEDGER_DATA, "timerEntry",
-		boost::bind(&PeerSet::TimerJobEntry, _1, wptr));
-}
-
-void PeerSet::TimerJobEntry(Job&, boost::weak_ptr<PeerSet> wptr)
-{
 	boost::shared_ptr<PeerSet> ptr = wptr.lock();
 	if (ptr)
+		theApp->getJobQueue().addJob(jtLEDGER_DATA, "timerEntry",
+			BIND_TYPE(&PeerSet::TimerJobEntry, P_1, ptr));
+}
+
+void PeerSet::TimerJobEntry(Job&, boost::shared_ptr<PeerSet> ptr)
+{
 		ptr->invokeOnTimer();
 }
 
@@ -254,7 +253,7 @@ void LedgerAcquire::done()
 
 	assert(isComplete() || isFailed());
 
-	std::vector< boost::function<void (LedgerAcquire::pointer)> > triggers;
+	std::vector< FUNCTION_TYPE<void (LedgerAcquire::pointer)> > triggers;
 	{
 		boost::recursive_mutex::scoped_lock sl(mLock);
 		triggers.swap(mOnComplete);
@@ -275,7 +274,7 @@ void LedgerAcquire::done()
 		triggers[i](shared_from_this());
 }
 
-bool LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)> trigger)
+bool LedgerAcquire::addOnComplete(FUNCTION_TYPE<void (LedgerAcquire::pointer)> trigger)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (isDone())

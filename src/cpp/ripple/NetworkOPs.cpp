@@ -1,7 +1,6 @@
 
 #include "NetworkOPs.h"
 
-#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
 #include "utils.h"
@@ -1380,7 +1379,7 @@ void NetworkOPs::reportFeeChange()
 			(theApp->getFeeTrack().getLoadFactor() == mLastLoadFactor))
 		return;
 
-	theApp->getJobQueue().addJob(jtCLIENT, "reportFeeChange->pubServer", boost::bind(&NetworkOPs::pubServer, this));
+	theApp->getJobQueue().addJob(jtCLIENT, "reportFeeChange->pubServer", BIND_TYPE(&NetworkOPs::pubServer, this));
 }
 
 Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, bool bValidated,

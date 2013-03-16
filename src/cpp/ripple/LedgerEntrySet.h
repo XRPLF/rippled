@@ -2,7 +2,6 @@
 #define __LEDGERENTRYSET__
 
 #include <boost/unordered_map.hpp>
-#include <boost/function.hpp>
 
 #include "SerializedLedger.h"
 #include "TransactionMeta.h"
@@ -106,7 +105,7 @@ public:
 		uint64&								uNodeDir,		// Node of entry.
 		const uint256&						uRootIndex,
 		const uint256&						uLedgerIndex,
-		boost::function<void (SLE::ref)>	fDescriber);
+		FUNCTION_TYPE<void (SLE::ref)>		fDescriber);
 
 	TER dirDelete(
 		const bool						bKeepRoot,
