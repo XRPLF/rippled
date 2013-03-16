@@ -286,7 +286,7 @@ STVector256* STVector256::construct(SerializerIterator& u, SField::ref name)
 {
 	std::vector<unsigned char> data = u.getVL();
 
-	std::auto_ptr<STVector256> vec(new STVector256(name));
+	UPTR_T<STVector256> vec(new STVector256(name));
 
 	int count = data.size() / (256 / 8);
 	vec->mValue.reserve(count);

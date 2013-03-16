@@ -58,13 +58,13 @@ public:
 	STObject(const SOTemplate& type, SerializerIterator& sit, SField::ref name) : SerializedType(name)
 	{ set(sit); setType(type); }
 
-	std::auto_ptr<STObject> oClone() const { return std::auto_ptr<STObject>(new STObject(*this)); }
+	UPTR_T<STObject> oClone() const { return UPTR_T<STObject>(new STObject(*this)); }
 
-	static std::auto_ptr<STObject> parseJson(const Json::Value& value, SField::ref name = sfGeneric, int depth = 0);
+	static UPTR_T<STObject> parseJson(const Json::Value& value, SField::ref name = sfGeneric, int depth = 0);
 
 	virtual ~STObject() { ; }
 
-	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name);
+	static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name);
 
 	bool setType(const SOTemplate& type);
 	bool isValidForType();
@@ -85,8 +85,8 @@ public:
 	std::string getText() const;
 	virtual Json::Value getJson(int options) const;
 
-	int addObject(const SerializedType& t)			{ mData.push_back(t.clone()); return mData.size() - 1; }
-	int giveObject(std::auto_ptr<SerializedType> t)	{ mData.push_back(t); return mData.size() - 1; }
+	int addObject(const SerializedType& t)			{ mData.push_back(t.clone().release()); return mData.size() - 1; }
+	int giveObject(UPTR_T<SerializedType> t)		{ mData.push_back(t.release()); return mData.size() - 1; }
 	int giveObject(SerializedType* t)				{ mData.push_back(t); return mData.size() - 1; }
 	const boost::ptr_vector<SerializedType>& peekData() const { return mData; }
 	boost::ptr_vector<SerializedType>& peekData()	{ return mData; }
@@ -157,13 +157,13 @@ public:
 	bool delField(SField::ref field);
 	void delField(int index);
 
-	static std::auto_ptr<SerializedType> makeDefaultObject(SerializedTypeID id, SField::ref name);
-	static std::auto_ptr<SerializedType> makeDeserializedObject(SerializedTypeID id, SField::ref name,
+	static UPTR_T<SerializedType> makeDefaultObject(SerializedTypeID id, SField::ref name);
+	static UPTR_T<SerializedType> makeDeserializedObject(SerializedTypeID id, SField::ref name,
 		SerializerIterator&, int depth);
 
-	static std::auto_ptr<SerializedType> makeNonPresentObject(SField::ref name)
+	static UPTR_T<SerializedType> makeNonPresentObject(SField::ref name)
 	{ return makeDefaultObject(STI_NOTPRESENT, name); }
-	static std::auto_ptr<SerializedType> makeDefaultObject(SField::ref name)
+	static UPTR_T<SerializedType> makeDefaultObject(SField::ref name)
 	{ return makeDefaultObject(name.fieldType, name); }
 
 	// field iterator stuff
@@ -221,14 +221,14 @@ public:
 	STArray(SField::ref f, const vector& v) : SerializedType(f), value(v)	{ ; }
 	STArray(vector& v) : value(v)											{ ; }
 
-	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
-		{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
+	static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
+		{ return UPTR_T<SerializedType>(construct(sit, name)); }
 
 	const vector& getValue() const					{ return value; }
 	vector& getValue()								{ return value; }
 
 	// vector-like functions
-	void push_back(const STObject& object)			{ value.push_back(object.oClone()); }
+	void push_back(const STObject& object)			{ value.push_back(object.oClone().release()); }
 	STObject& operator[](int j)						{ return value[j]; }
 	const STObject& operator[](int j) const			{ return value[j]; }
 	iterator begin()								{ return value.begin(); }

@@ -1,10 +1,11 @@
 #ifndef __TRANSACTOR__
 #define __TRANSACTOR__
 
+#include <boost/shared_ptr.hpp>
+
 #include "SerializedTransaction.h"
 #include "TransactionErr.h"
 #include "TransactionEngine.h"
-#include <boost/shared_ptr.hpp>
 
 class Transactor
 {
@@ -38,7 +39,7 @@ protected:
 public:
 	typedef boost::shared_ptr<Transactor> pointer;
 
-	static std::auto_ptr<Transactor> makeTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine);
+	static UPTR_T<Transactor> makeTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine);
 
 	TER apply();
 };

@@ -6,7 +6,9 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "utils.h"
 #include "types.h"
+
 extern int upTime();
 
 // Monitors load levels and response times
@@ -54,7 +56,7 @@ class LoadEvent
 {
 public:
 	typedef boost::shared_ptr<LoadEvent>	pointer;
-	typedef std::auto_ptr<LoadEvent>		autoptr;
+	typedef UPTR_T<LoadEvent>				autoptr;
 
 protected:
 	LoadMonitor&				mMonitor;

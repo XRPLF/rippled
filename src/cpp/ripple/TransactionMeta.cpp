@@ -17,7 +17,7 @@ TransactionMetaSet::TransactionMetaSet(const uint256& txid, uint32 ledger, const
 	Serializer s(vec);
 	SerializerIterator sit(s);
 
-	std::auto_ptr<SerializedType> pobj = STObject::deserialize(sit, sfAffectedNodes);
+	UPTR_T<SerializedType> pobj = STObject::deserialize(sit, sfAffectedNodes);
 	STObject *obj = static_cast<STObject*>(pobj.get());
 	if (!obj)
 		throw std::runtime_error("bad metadata");

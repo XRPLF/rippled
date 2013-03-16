@@ -93,7 +93,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	}
 #endif
 
-	std::auto_ptr<Transactor> transactor = Transactor::makeTransactor(txn,params,this);
+	UPTR_T<Transactor> transactor = Transactor::makeTransactor(txn,params,this);
 	if (transactor.get() != NULL)
 	{
 		uint256 txID		= txn.getTransactionID();

@@ -58,15 +58,15 @@ public:
 	SerializedType(SField::ref n) : fName(&n) { assert(fName); }
 	virtual ~SerializedType() { ; }
 
-	static std::auto_ptr<SerializedType> deserialize(SField::ref name)
-	{ return std::auto_ptr<SerializedType>(new SerializedType(name)); }
+	static UPTR_T<SerializedType> deserialize(SField::ref name)
+	{ return UPTR_T<SerializedType>(new SerializedType(name)); }
 
 	void setFName(SField::ref n) { fName = &n; assert(fName); }
 	SField::ref getFName() const { return *fName; }
 	std::string getName() const { return fName->fieldName; }
 
 	virtual SerializedTypeID getSType() const { return STI_NOTPRESENT; }
-	std::auto_ptr<SerializedType> clone() const { return std::auto_ptr<SerializedType>(duplicate()); }
+	UPTR_T<SerializedType> clone() const { return UPTR_T<SerializedType>(duplicate()); }
 
 	virtual std::string getFullText() const;
 	virtual std::string getText() const // just the value
@@ -107,8 +107,8 @@ public:
 
 	STUInt8(unsigned char v = 0) : value(v) { ; }
 	STUInt8(SField::ref n, unsigned char v = 0) : SerializedType(n), value(v) { ; }
-	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
-	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
+	static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
+	{ return UPTR_T<SerializedType>(construct(sit, name)); }
 
 	SerializedTypeID getSType() const { return STI_UINT8; }
 	std::string getText() const;
@@ -135,8 +135,8 @@ public:
 
 	STUInt16(uint16 v = 0) : value(v) { ; }
 	STUInt16(SField::ref n, uint16 v = 0) : SerializedType(n), value(v) { ; }
-	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
-	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
+	static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
+	{ return UPTR_T<SerializedType>(construct(sit, name)); }
 
 	SerializedTypeID getSType() const { return STI_UINT16; }
 	std::string getText() const;
@@ -163,8 +163,8 @@ public:
 
 	STUInt32(uint32 v = 0) : value(v) { ; }
 	STUInt32(SField::ref n, uint32 v = 0) : SerializedType(n), value(v) { ; }
-	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
-	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
+	static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
+	{ return UPTR_T<SerializedType>(construct(sit, name)); }
 
 	SerializedTypeID getSType() const { return STI_UINT32; }
 	std::string getText() const;
@@ -191,8 +191,8 @@ public:
 
 	STUInt64(uint64 v = 0) : value(v) { ; }
 	STUInt64(SField::ref n, uint64 v = 0) : SerializedType(n), value(v) { ; }
-	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
-	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
+	static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
+	{ return UPTR_T<SerializedType>(construct(sit, name)); }
 
 	SerializedTypeID getSType() const { return STI_UINT64; }
 	std::string getText() const;
@@ -331,8 +331,8 @@ public:
 
 	static STAmount createFromInt64(SField::ref n, int64 v);
 
-	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
-	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
+	static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
+	{ return UPTR_T<SerializedType>(construct(sit, name)); }
 
 	bool bSetJson(const Json::Value& jvSource);
 
@@ -493,8 +493,8 @@ public:
 	STHash128(SField::ref n, const std::string &v) : SerializedType(n) { value.SetHex(v); }
 	STHash128(SField::ref n) : SerializedType(n) { ; }
 	STHash128() { ; }
-	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
-	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
+	static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
+	{ return UPTR_T<SerializedType>(construct(sit, name)); }
 
 	SerializedTypeID getSType() const { return STI_HASH128; }
 	virtual std::string getText() const;
@@ -524,8 +524,8 @@ public:
 	STHash160(SField::ref n, const std::string &v) : SerializedType(n) { value.SetHex(v); }
 	STHash160(SField::ref n) : SerializedType(n) { ; }
 	STHash160() { ; }
-	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
-	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
+	static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
+	{ return UPTR_T<SerializedType>(construct(sit, name)); }
 
 	SerializedTypeID getSType() const { return STI_HASH160; }
 	virtual std::string getText() const;
@@ -555,8 +555,8 @@ public:
 	STHash256(SField::ref n, const std::string &v) : SerializedType(n) { value.SetHex(v); }
 	STHash256(SField::ref n) : SerializedType(n) { ; }
 	STHash256() { ; }
-	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
-	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
+	static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
+	{ return UPTR_T<SerializedType>(construct(sit, name)); }
 
 	SerializedTypeID getSType() const { return STI_HASH256; }
 	std::string getText() const;
@@ -585,8 +585,8 @@ public:
 	STVariableLength(SField::ref n) : SerializedType(n) { ; }
 	STVariableLength(SerializerIterator&, SField::ref name = sfGeneric);
 	STVariableLength() { ; }
-	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
-	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
+	static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
+	{ return UPTR_T<SerializedType>(construct(sit, name)); }
 
 	virtual SerializedTypeID getSType() const { return STI_VL; }
 	virtual std::string getText() const;
@@ -615,8 +615,8 @@ public:
 	STAccount(SField::ref n, const uint160& v);
 	STAccount(SField::ref n) : STVariableLength(n) { ; }
 	STAccount() { ; }
-	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
-	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
+	static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
+	{ return UPTR_T<SerializedType>(construct(sit, name)); }
 
 	SerializedTypeID getSType() const { return STI_ACCOUNT; }
 	std::string getText() const;
@@ -770,8 +770,8 @@ public:
 	STPathSet(SField::ref n) : SerializedType(n) { ; }
 	STPathSet(const std::vector<STPath>& v) : value(v) { ; }
 	STPathSet(SField::ref n, const std::vector<STPath>& v) : SerializedType(n), value(v) { ; }
-	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
-	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
+	static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
+	{ return UPTR_T<SerializedType>(construct(sit, name)); }
 
 //	std::string getText() const;
 	void add(Serializer& s) const;
@@ -848,8 +848,8 @@ public:
 	SerializedTypeID getSType() const { return STI_VECTOR256; }
 	void add(Serializer& s) const;
 
-	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
-		{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
+	static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
+		{ return UPTR_T<SerializedType>(construct(sit, name)); }
 
 	const std::vector<uint256>& peekValue() const { return mValue; }
 	std::vector<uint256>& peekValue() { return mValue; }

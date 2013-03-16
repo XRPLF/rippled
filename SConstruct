@@ -100,7 +100,7 @@ BOOSTFLAGS	= ['-DBOOST_TEST_DYN_LINK', '-DBOOST_FILESYSTEM_NO_DEPRECATED']
 
 env.Append(LINKFLAGS = ['-rdynamic', '-pthread'])
 env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts', '-DSQLITE_THREADSAFE=1'])
-env.Append(CXXFLAGS = ['-O0', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+BOOSTFLAGS+DEBUGFLAGS)
+env.Append(CXXFLAGS = ['-O0', '-std=c++11', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+BOOSTFLAGS+DEBUGFLAGS)
 
 if OSX:
 	env.Append(LINKFLAGS = ['-L/usr/local/opt/openssl/lib'])
