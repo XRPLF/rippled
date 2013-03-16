@@ -288,7 +288,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 				throw std::runtime_error("invalid PIN node");
 			for (int i = 0; i < 16; ++i)
 			{
-				s.get256(mHashes[i] , i * 32);
+				s.get256(mHashes[i], i * 32);
 				if (mHashes[i].isNonZero())
 					mIsBranch |= (1 << i);
 			}
