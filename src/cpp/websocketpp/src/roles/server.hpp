@@ -55,33 +55,41 @@ namespace websocketpp {
 
 typedef boost::asio::buffers_iterator<boost::asio::streambuf::const_buffers_type> bufIterator;
 
-static std::pair<bufIterator, bool> match_header(bufIterator begin, bufIterator end)
+static std::pair<bufIterator, bool> match_header(boost::shared_ptr<std::string> string,
+	bufIterator nBegin, bufIterator nEnd)
 {
+	if (nBegin == nEnd)
+		return std::make_pair(nEnd, false);
+
+	(*string) += std::string(nBegin, nEnd);
+	std::string::const_iterator begin = string->begin();
+	std::string::const_iterator end = string->end();
+
 	static const std::string eol_match = "\n";
-	static const std::string header_match = "\n\r\n";
-	static const std::string alt_header_match = "\n\n";
+	static const std::string header_match = "\r\n\r\n";
 	static const std::string flash_match = "<policy-file-request/>";
 
 	// Do we have a complete HTTP request
-	bufIterator it = std::search(begin, end, header_match.begin(), header_match.end());
+	std::string::const_iterator it = std::search(begin, end, header_match.begin(), header_match.end());
 	if (it != end)
-		return std::make_pair(it + header_match.size(), true);
-	it = std::search(begin, end, alt_header_match.begin(), alt_header_match.end());
-	if (it != end)
-		return std::make_pair(it + alt_header_match.size(), true);
+	{
+		int leftOver = (end - (it + header_match.size()));
+		return std::make_pair(nEnd - leftOver, true);
+	}
 
 	// If we don't have a flash policy request, we're done
 	it = std::search(begin, end, flash_match.begin(), flash_match.end());
 	if (it == end) // No match
-		return std::make_pair(end, false);
+		return std::make_pair(nEnd, false);
 
 	// If we have a line ending before the flash policy request, treat as http
-	bufIterator it2 = std::search(begin, end, eol_match.begin(), eol_match.end());
+	std::string::const_iterator it2 = std::search(begin, end, eol_match.begin(), eol_match.end());
 	if ((it2 != end) && (it2 < it))
-		return std::make_pair(end, false);
+		return std::make_pair(nEnd, false);
 
 	// Treat as flash policy request
-	return std::make_pair(it + flash_match.size(), true);
+	int leftOver = (end - (it + flash_match.size()));
+	return std::make_pair(nEnd - leftOver, true);
 }
 
 // Forward declarations
@@ -170,7 +178,7 @@ public:
         
         // initializes the websocket connection
         void async_init();
-        void handle_read_request(const boost::system::error_code& error,
+        void handle_read_request(boost::shared_ptr<std::string>, const boost::system::error_code& error,
                                  std::size_t bytes_transferred);
         void handle_short_key3(const boost::system::error_code& error,
                                  std::size_t bytes_transferred);
@@ -543,12 +551,14 @@ void server<endpoint>::connection<connection_type>::async_init() {
     m_connection.register_timeout(5000,fail::status::TIMEOUT_WS,
                                        "Timeout on WebSocket handshake");
 
+	boost::shared_ptr<std::string> stringPtr = boost::make_shared<std::string>();
 	m_connection.get_socket().async_read_until(
 		m_connection.buffer(),
-		match_header,
+		boost::bind(&match_header, stringPtr, _1, _2),
 		m_connection.get_strand().wrap(boost::bind(
 			&type::handle_read_request,
 			m_connection.shared_from_this(),
+			stringPtr,
 			boost::asio::placeholders::error,
 			boost::asio::placeholders::bytes_transferred
 		))
@@ -562,6 +572,7 @@ void server<endpoint>::connection<connection_type>::async_init() {
 template <class endpoint>
 template <class connection_type>
 void server<endpoint>::connection<connection_type>::handle_read_request(
+	boost::shared_ptr<std::string> header,
     const boost::system::error_code& error, std::size_t /*bytes_transferred*/)
 {
     if (error) {
@@ -571,9 +582,11 @@ void server<endpoint>::connection<connection_type>::handle_read_request(
         m_connection.terminate(false);
         return;
     }
+
+    m_connection.buffer().consume(header->size());
     
     try {
-        std::istream request(&m_connection.buffer());
+        std::istringstream request(*header);
         
         if (!m_request.parse_complete(request)) {
             // not a valid HTTP request/response
@@ -607,6 +620,8 @@ void server<endpoint>::connection<connection_type>::handle_read_request(
         //m_endpoint.m_alog.at(log::alevel::DEBUG_HANDSHAKE) << m_request.raw() << log::endl;
         
         std::string h = m_request.header("Upgrade");
+        if (h.empty())
+		    h = m_request.header("upgrade");
         if (boost::ifind_first(h,"websocket")) {
             // Version is stored in the Sec-WebSocket-Version header for all 
             // versions after draft Hybi 00/Hixie 76. The absense of a version 
