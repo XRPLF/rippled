@@ -669,7 +669,7 @@ void UniqueNodeList::processIps(const std::string& strSite, const RippleAddress&
 			else
 			{
 				cLog(lsTRACE)
-					<< str(boost::format("Validator: '%s' ["SECTION_IPS"]: rejecting '%s'")
+					<< str(boost::format("Validator: '%s' [" SECTION_IPS "]: rejecting '%s'")
 						% strSite % strReferral);
 			}
 		}

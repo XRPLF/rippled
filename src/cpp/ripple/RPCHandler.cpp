@@ -270,7 +270,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 		return rpcError(rpcSRC_ACT_NOT_FOUND);
 	}
 
-	std::auto_ptr<STObject>	sopTrans;
+	UPTR_T<STObject>	sopTrans;
 
 	try
 	{

@@ -52,7 +52,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 		{
 			mWritePending = true;
 			theApp->getJobQueue().addJob(jtWRITE, "HashedObject::store",
-				boost::bind(&HashedObjectStore::bulkWrite, this));
+				BIND_TYPE(&HashedObjectStore::bulkWrite, this));
 		}
 	}
 //	else
@@ -261,7 +261,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 int HashedObjectStore::import(const std::string& file)
 {
 	cLog(lsWARNING) << "Hash import from \"" << file << "\".";
-	std::auto_ptr<Database> importDB(new SqliteDatabase(file.c_str()));
+	UPTR_T<Database> importDB(new SqliteDatabase(file.c_str()));
 	importDB->connect();
 
 	int countYes = 0, countNo = 0;

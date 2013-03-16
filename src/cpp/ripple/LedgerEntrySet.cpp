@@ -529,7 +529,7 @@ TER LedgerEntrySet::dirAdd(
 	uint64&								uNodeDir,
 	const uint256&						uRootIndex,
 	const uint256&						uLedgerIndex,
-	boost::function<void (SLE::ref)>	fDescriber)
+	FUNCTION_TYPE<void (SLE::ref)>		fDescriber)
 {
 cLog(lsDEBUG)
 	<< boost::str(boost::format("dirAdd: uRootIndex=%s uLedgerIndex=%s")
@@ -1195,7 +1195,7 @@ TER LedgerEntrySet::trustCreate(
 		uLowNode,
 		Ledger::getOwnerDirIndex(uLowAccountID),
 		sleRippleState->getIndex(),
-		boost::bind(&Ledger::ownerDirDescriber, _1, uLowAccountID));
+		BIND_TYPE(&Ledger::ownerDirDescriber, P_1, uLowAccountID));
 
 	if (tesSUCCESS == terResult)
 	{
@@ -1203,7 +1203,7 @@ TER LedgerEntrySet::trustCreate(
 			uHighNode,
 			Ledger::getOwnerDirIndex(uHighAccountID),
 			sleRippleState->getIndex(),
-			boost::bind(&Ledger::ownerDirDescriber, _1, uHighAccountID));
+			BIND_TYPE(&Ledger::ownerDirDescriber, P_1, uHighAccountID));
 	}
 
 	if (tesSUCCESS == terResult)

@@ -1187,7 +1187,7 @@ STAmount STAmount::getPay(const STAmount& offerOut, const STAmount& offerIn, con
 
 STAmount STAmount::deserialize(SerializerIterator& it)
 {
-	std::auto_ptr<STAmount> s(dynamic_cast<STAmount*>(construct(it, sfGeneric)));
+	UPTR_T<STAmount> s(dynamic_cast<STAmount*>(construct(it, sfGeneric)));
 	STAmount ret(*s);
 	return ret;
 }

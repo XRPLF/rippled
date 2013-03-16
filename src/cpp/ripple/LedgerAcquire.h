@@ -75,6 +75,7 @@ protected:
 
 private:
 	static void TimerEntry(boost::weak_ptr<PeerSet>, const boost::system::error_code& result);
+	static void TimerJobEntry(Job&, boost::shared_ptr<PeerSet>);
 };
 
 class LedgerAcquire :
@@ -90,7 +91,7 @@ protected:
 	std::set<SHAMapNode>	mRecentTXNodes;
 	std::set<SHAMapNode>	mRecentASNodes;
 
-	std::vector< boost::function<void (LedgerAcquire::pointer)> > mOnComplete;
+	std::vector< FUNCTION_TYPE<void (LedgerAcquire::pointer)> > mOnComplete;
 
 	void done();
 	void onTimer(bool progress);
@@ -111,7 +112,7 @@ public:
 	void abort()						{ mAborted = true; }
 	bool setAccept()					{ if (mAccept) return false; mAccept = true; return true; }
 
-	bool addOnComplete(boost::function<void (LedgerAcquire::pointer)>);
+	bool addOnComplete(FUNCTION_TYPE<void (LedgerAcquire::pointer)>);
 
 	bool takeBase(const std::string& data);
 	bool takeTxNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data,
@@ -147,7 +148,7 @@ public:
 	LedgerAcquire::pointer find(const uint256& hash);
 	bool hasLedger(const uint256& ledgerHash);
 	void dropLedger(const uint256& ledgerHash);
-	SMAddNode gotLedgerData(ripple::TMLedgerData& packet, Peer::ref);
+	void gotLedgerData(Job&, boost::shared_ptr<ripple::TMLedgerData> packet, boost::weak_ptr<Peer> peer);
 
 	int getFetchCount(int& timeoutCount);
 	void logFailure(const uint256& h)	{ mRecentFailures.add(h); }

@@ -110,6 +110,8 @@ Transaction.fees = {
 Transaction.flags = {
   'OfferCreate' : {
     'Passive'                 : 0x00010000,
+    'ImmediateOrCancel'       : 0x00020000,
+    'FillOrKill'              : 0x00040000,
   },
 
   'Payment' : {

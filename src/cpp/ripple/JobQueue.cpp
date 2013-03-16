@@ -39,6 +39,7 @@ const char* Job::toString(JobType t)
 		case jtVALIDATION_ut:	return "untrustedValidation";
 		case jtPROOFWORK:		return "proofOfWork";
 		case jtPROPOSAL_ut:		return "untrustedProposal";
+		case jtLEDGER_DATA:		return "ledgerData";
 		case jtCLIENT:			return "clientCommand";
 		case jtTRANSACTION:		return "transaction";
 		case jtPUBLEDGER:		return "publishNewLedger";
@@ -96,7 +97,7 @@ bool Job::operator<=(const Job& j) const
 	return mJobIndex <= j.mJobIndex;
 }
 
-void JobQueue::addJob(JobType type, const std::string& name, const boost::function<void(Job&)>& jobFunc)
+void JobQueue::addJob(JobType type, const std::string& name, const FUNCTION_TYPE<void(Job&)>& jobFunc)
 {
 	assert(type != jtINVALID);
 
@@ -245,7 +246,7 @@ void JobQueue::setThreadCount(int c)
 	while (mThreadCount < c)
 	{
 		++mThreadCount;
-		boost::thread(boost::bind(&JobQueue::threadEntry, this)).detach();
+		boost::thread(BIND_TYPE(&JobQueue::threadEntry, this)).detach();
 	}
 	while (mThreadCount > c)
 	{

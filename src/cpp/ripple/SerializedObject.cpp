@@ -17,56 +17,56 @@ SETUP_LOG();
 DECLARE_INSTANCE(SerializedObject);
 DECLARE_INSTANCE(SerializedArray);
 
-std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, SField::ref name)
+UPTR_T<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, SField::ref name)
 {
 	assert((id == STI_NOTPRESENT) || (id == name.fieldType));
 
 	switch(id)
 	{
 		case STI_NOTPRESENT:
-			return std::auto_ptr<SerializedType>(new SerializedType(name));
+			return UPTR_T<SerializedType>(new SerializedType(name));
 
 		case STI_UINT8:
-			return std::auto_ptr<SerializedType>(new STUInt8(name));
+			return UPTR_T<SerializedType>(new STUInt8(name));
 
 		case STI_UINT16:
-			return std::auto_ptr<SerializedType>(new STUInt16(name));
+			return UPTR_T<SerializedType>(new STUInt16(name));
 
 		case STI_UINT32:
-			return std::auto_ptr<SerializedType>(new STUInt32(name));
+			return UPTR_T<SerializedType>(new STUInt32(name));
 
 		case STI_UINT64:
-			return std::auto_ptr<SerializedType>(new STUInt64(name));
+			return UPTR_T<SerializedType>(new STUInt64(name));
 
 		case STI_AMOUNT:
-			return std::auto_ptr<SerializedType>(new STAmount(name));
+			return UPTR_T<SerializedType>(new STAmount(name));
 
 		case STI_HASH128:
-			return std::auto_ptr<SerializedType>(new STHash128(name));
+			return UPTR_T<SerializedType>(new STHash128(name));
 
 		case STI_HASH160:
-			return std::auto_ptr<SerializedType>(new STHash160(name));
+			return UPTR_T<SerializedType>(new STHash160(name));
 
 		case STI_HASH256:
-			return std::auto_ptr<SerializedType>(new STHash256(name));
+			return UPTR_T<SerializedType>(new STHash256(name));
 
 		case STI_VECTOR256:
-			return std::auto_ptr<SerializedType>(new STVector256(name));
+			return UPTR_T<SerializedType>(new STVector256(name));
 
 		case STI_VL:
-			return std::auto_ptr<SerializedType>(new STVariableLength(name));
+			return UPTR_T<SerializedType>(new STVariableLength(name));
 
 		case STI_ACCOUNT:
-			return std::auto_ptr<SerializedType>(new STAccount(name));
+			return UPTR_T<SerializedType>(new STAccount(name));
 
 		case STI_PATHSET:
-			return std::auto_ptr<SerializedType>(new STPathSet(name));
+			return UPTR_T<SerializedType>(new STPathSet(name));
 
 		case STI_OBJECT:
-			return std::auto_ptr<SerializedType>(new STObject(name));
+			return UPTR_T<SerializedType>(new STObject(name));
 
 		case STI_ARRAY:
-			return std::auto_ptr<SerializedType>(new STArray(name));
+			return UPTR_T<SerializedType>(new STArray(name));
 
 		default:
 			cLog(lsFATAL) << "Object type: " << lexical_cast_i(id);
@@ -75,7 +75,7 @@ std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, S
 	}
 }
 
-std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID id, SField::ref name,
+UPTR_T<SerializedType> STObject::makeDeserializedObject(SerializedTypeID id, SField::ref name,
 	SerializerIterator& sit, int depth)
 {
 	switch(id)
@@ -192,7 +192,7 @@ bool STObject::setType(const SOTemplate &type)
 					<< elem->e_field.fieldName;
 				valid = false;
 			}
-			newData.push_back(makeNonPresentObject(elem->e_field));
+			newData.push_back(makeNonPresentObject(elem->e_field).release());
 		}
 	}
 
@@ -252,10 +252,10 @@ bool STObject::set(SerializerIterator& sit, int depth)
 	return false;
 }
 
-std::auto_ptr<SerializedType> STObject::deserialize(SerializerIterator& sit, SField::ref name)
+UPTR_T<SerializedType> STObject::deserialize(SerializerIterator& sit, SField::ref name)
 {
 	STObject *o;
-	std::auto_ptr<SerializedType> object(o = new STObject(name));
+	UPTR_T<SerializedType> object(o = new STObject(name));
 	o->set(sit, 1);
 	return object;
 }
@@ -482,7 +482,7 @@ SerializedType* STObject::makeFieldPresent(SField::ref field)
 	SerializedType* f = getPIndex(index);
 	if (f->getSType() != STI_NOTPRESENT)
 		return f;
-	mData.replace(index, makeDefaultObject(f->getFName()));
+	mData.replace(index, makeDefaultObject(f->getFName()).release());
 	return getPIndex(index);
 }
 
@@ -496,7 +496,7 @@ void STObject::makeFieldAbsent(SField::ref field)
 	if (f.getSType() == STI_NOTPRESENT)
 		return;
 
-	mData.replace(index, makeNonPresentObject(f.getFName()));
+	mData.replace(index, makeNonPresentObject(f.getFName()).release());
 }
 
 bool STObject::delField(SField::ref field)
@@ -957,7 +957,7 @@ void STArray::sort(bool (*compare)(const STObject&, const STObject&))
 	value.sort(compare);
 }
 
-std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::ref inName, int depth)
+UPTR_T<STObject> STObject::parseJson(const Json::Value& object, SField::ref inName, int depth)
 {
 	if (!object.isObject())
 		throw std::runtime_error("Value is not an object");
@@ -1219,7 +1219,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 					throw std::runtime_error("Inner value is not an object");
 				if (depth > 64)	
 					throw std::runtime_error("Json nest depth exceeded");
-				data.push_back(parseJson(value, field, depth + 1));
+				data.push_back(parseJson(value, field, depth + 1).release());
 				break;
 
 			case STI_ARRAY:
@@ -1238,7 +1238,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 		}
 	}
 
-	return std::auto_ptr<STObject>(new STObject(*name, data));
+	return UPTR_T<STObject>(new STObject(*name, data));
 }
 
 BOOST_AUTO_TEST_SUITE(SerializedObject)
