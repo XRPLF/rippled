@@ -270,6 +270,7 @@ void LedgerAcquire::done()
 	else
 		theApp->getMasterLedgerAcquire().logFailure(mHash);
 
+	// FIXME: We hold the PeerSet lock
 	for (unsigned int i = 0; i < triggers.size(); ++i)
 		triggers[i](shared_from_this());
 }
@@ -591,7 +592,7 @@ bool LedgerAcquire::takeBase(const std::string& data) // data must not have hash
 	cLog(lsTRACE) << "got base acquiring ledger " << mHash;
 #endif
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	if (mHaveBase)
+	if (mComplete || mFailed || mHaveBase)
 		return true;
 	mLedger = boost::make_shared<Ledger>(data, false);
 	if (mLedger->getHash() != mHash)
@@ -626,7 +627,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (!mHaveBase)
 		return false;
-	if (mHaveTransactions)
+	if (mHaveTransactions || mFailed)
 		return true;
 
 	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
@@ -673,7 +674,7 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 		cLog(lsWARNING) << "Don't have ledger base";
 		return false;
 	}
-	if (mHaveState)
+	if (mHaveState || mFailed)
 		return true;
 
 	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
@@ -714,6 +715,8 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 bool LedgerAcquire::takeAsRootNode(const std::vector<unsigned char>& data, SMAddNode& san)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
+	if (mFailed || mHaveState)
+		return true;
 	if (!mHaveBase)
 		return false;
 	AccountStateSF tFilter(mLedger->getLedgerSeq());
@@ -724,6 +727,8 @@ bool LedgerAcquire::takeAsRootNode(const std::vector<unsigned char>& data, SMAdd
 bool LedgerAcquire::takeTxRootNode(const std::vector<unsigned char>& data, SMAddNode& san)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
+	if (mFailed || mHaveState)
+		return true;
 	if (!mHaveBase)
 		return false;
 	TransactionStateSF tFilter(mLedger->getLedgerSeq());
