@@ -73,13 +73,21 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 		return;
 	boost::shared_ptr<PeerSet> ptr = wptr.lock();
 	if (ptr)
-		theApp->getJobQueue().addJob(jtLEDGER_DATA, "timerEntry",
+	{
+		int jc = theApp->getJobQueue().getJobCountTotal(jtLEDGER_DATA);
+		if (jc > 4)
+		{
+			cLog(lsDEBUG) << "Deferring PeerSet timer due to load";
+			ptr->setTimer();
+		}
+		else theApp->getJobQueue().addJob(jtLEDGER_DATA, "timerEntry",
 			BIND_TYPE(&PeerSet::TimerJobEntry, P_1, ptr));
+	}
 }
 
 void PeerSet::TimerJobEntry(Job&, boost::shared_ptr<PeerSet> ptr)
 {
-		ptr->invokeOnTimer();
+	ptr->invokeOnTimer();
 }
 
 bool PeerSet::isActive()
