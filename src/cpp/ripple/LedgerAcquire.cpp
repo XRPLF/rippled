@@ -863,7 +863,7 @@ void LedgerAcquireMaster::gotLedgerData(Job&, boost::shared_ptr<ripple::TMLedger
 	LedgerAcquire::pointer ledger = find(hash);
 	if (!ledger)
 	{
-		cLog(lsINFO) << "Got data for ledger we're not acquiring";
+		cLog(lsTRACE) << "Got data for ledger we're not acquiring";
 		peer->punishPeer(LT_InvalidRequest);
 		return;
 	}

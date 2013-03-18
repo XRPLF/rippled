@@ -316,7 +316,7 @@ void LedgerMaster::resumeAcquiring()
 		else
 		{
 			mCompleteLedgers.clearValue(prevMissing);
-			cLog(lsWARNING) << "We have a gap at: " << prevMissing + 1;
+			cLog(lsINFO) << "We have a gap at: " << prevMissing + 1;
 		}
 	}
 }
