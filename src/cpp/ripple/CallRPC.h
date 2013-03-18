@@ -56,7 +56,7 @@ extern void callRPC(
 	const std::string& strUsername, const std::string& strPassword,
 	const std::string& strPath, const std::string& strMethod,
 	const Json::Value& jvParams, const bool bSSL,
-	boost::function<void(const Json::Value& jvInput)> callbackFuncP = 0);
+	FUNCTION_TYPE<void(const Json::Value& jvInput)> callbackFuncP = 0);
 #endif
 
 // vim:ts=4
