@@ -1614,6 +1614,32 @@ uint64 Ledger::scaleFeeLoad(uint64 fee)
 	return theApp->getFeeTrack().scaleFeeLoad(fee, mBaseFee, mReferenceFeeUnits);
 }
 
+std::vector<uint256> Ledger::getNeededTransactionHashes(int max)
+{
+	std::vector<uint256> ret;
+	if (mTransHash.isNonZero())
+	{
+		if (mTransactionMap->getHash().isZero())
+			ret.push_back(mTransHash);
+		else
+			ret = mTransactionMap->getNeededHashes(max);
+	}
+	return ret;
+}
+
+std::vector<uint256> Ledger::getNeededAccountStateHashes(int max)
+{
+	std::vector<uint256> ret;
+	if (mAccountHash.isNonZero())
+	{
+		if (mAccountStateMap->getHash().isZero())
+			ret.push_back(mAccountHash);
+		else
+			ret = mAccountStateMap->getNeededHashes(max);
+	}
+	return ret;
+}
+
 BOOST_AUTO_TEST_SUITE(quality)
 
 BOOST_AUTO_TEST_CASE( getquality )

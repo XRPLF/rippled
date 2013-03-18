@@ -139,7 +139,7 @@ bool LedgerAcquire::tryLocal()
 			{
 				mLedger->peekTransactionMap()->fetchRoot(mLedger->getTransHash());
 				cLog(lsDEBUG) << "Got root txn map locally";
-				std::vector<uint256> h = mLedger->peekTransactionMap()->getNeededHashes(1);
+				std::vector<uint256> h = mLedger->getNeededTransactionHashes(1);
 				if (h.empty())
 				{
 					cLog(lsDEBUG) << "Had full txn map locally";
@@ -155,14 +155,17 @@ bool LedgerAcquire::tryLocal()
 	if (!mHaveState)
 	{
 		if (mLedger->getAccountHash().isZero())
+		{
+			cLog(lsFATAL) << "We are acquiring a ledger with a zero account hash";
 			mHaveState = true;
+		}
 		else
 		{
 			try
 			{
 				mLedger->peekAccountStateMap()->fetchRoot(mLedger->getAccountHash());
 				cLog(lsDEBUG) << "Got root AS map locally";
-				std::vector<uint256> h = mLedger->peekAccountStateMap()->getNeededHashes(1);
+				std::vector<uint256> h = mLedger->getNeededAccountStateHashes(1);
 				if (h.empty())
 				{
 					cLog(lsDEBUG) << "Had full AS map locally";
@@ -783,13 +786,13 @@ std::vector<LedgerAcquire::neededHash_t> LedgerAcquire::getNeededHashes()
 	}
 	if (!mHaveState)
 	{
-		std::vector<uint256> v = mLedger->peekAccountStateMap()->getNeededHashes(16);
+		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(16);
 		BOOST_FOREACH(const uint256& h, v)
 			ret.push_back(std::make_pair(ripple::TMGetObjectByHash::otSTATE_NODE, h));
 	}
 	if (!mHaveTransactions)
 	{
-		std::vector<uint256> v = mLedger->peekTransactionMap()->getNeededHashes(16);
+		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(16);
 		BOOST_FOREACH(const uint256& h, v)
 			ret.push_back(std::make_pair(ripple::TMGetObjectByHash::otTRANSACTION_NODE, h));
 	}
