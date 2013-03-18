@@ -113,14 +113,9 @@ bool LedgerAcquire::tryLocal()
 	{
 		HashedObject::pointer node = theApp->getHashedObjectStore().retrieve(mHash);
 		if (!node)
-		{
-			mLedger = theApp->getLedgerMaster().getLedgerByHash(mHash);
-			if (!mLedger)
-				return false;
-		}
-		else
-			mLedger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
+			return false;
 
+		mLedger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
 		if (mLedger->getHash() != mHash)
 		{ // We know for a fact the ledger can never be acquired
 			cLog(lsWARNING) << mHash << " cannot be a ledger";
