@@ -316,7 +316,7 @@ void LedgerMaster::resumeAcquiring()
 		else
 		{
 			mCompleteLedgers.clearValue(prevMissing);
-			cLog(lsWARNING) << "We have a gap at: " << prevMissing + 1;
+			cLog(lsINFO) << "We have a gap at: " << prevMissing + 1;
 		}
 	}
 }
@@ -353,6 +353,7 @@ void LedgerMaster::fixMismatch(Ledger::ref ledger)
 void LedgerMaster::setFullLedger(Ledger::pointer ledger)
 { // A new ledger has been accepted as part of the trusted chain
 	cLog(lsDEBUG) << "Ledger " << ledger->getLedgerSeq() << " accepted :" << ledger->getHash();
+	assert(ledger->peekAccountStateMap()->getHash().isNonZero());
 
 	boost::recursive_mutex::scoped_lock ml(mLock);
 

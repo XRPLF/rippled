@@ -830,7 +830,7 @@ static void checkTransaction(Job&, int flags, SerializedTransaction::pointer stx
 		else
 			tx = boost::make_shared<Transaction>(stx, false);
 
-		theApp->getIOService().post(boost::bind(&NetworkOPs::processTransaction, &theApp->getOPs(), tx));
+		theApp->getOPs().processTransaction(tx);
 
 #ifndef TRUST_NETWORK
 	}

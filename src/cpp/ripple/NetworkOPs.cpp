@@ -210,6 +210,7 @@ void NetworkOPs::submitTransaction(Job&, SerializedTransaction::pointer iTrans, 
 		}
 	}
 
+	// FIXME: Should submit to job queue
 	theApp->getIOService().post(boost::bind(&NetworkOPs::processTransaction, this,
 		boost::make_shared<Transaction>(trans, false), callback));
 }

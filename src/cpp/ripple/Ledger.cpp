@@ -421,7 +421,13 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 		assert(false);
 	}
 
-	assert (getAccountHash() == mAccountStateMap->getHash());
+	if (getAccountHash() != mAccountStateMap->getHash())
+	{
+		cLog(lsFATAL) << "sAL: " << getAccountHash() << " != " << mAccountStateMap->getHash();
+		cLog(lsFATAL) << "saveAcceptedLedger: seq=" << mLedgerSeq << ", fromcons=" << fromConsensus;
+		assert(false);
+	}
+
 	assert (getTransHash() == mTransactionMap->getHash());
 
 	// Save the ledger header in the hashed object store
@@ -1606,6 +1612,32 @@ uint64 Ledger::scaleFeeLoad(uint64 fee)
 	if (!mBaseFee)
 		updateFees();
 	return theApp->getFeeTrack().scaleFeeLoad(fee, mBaseFee, mReferenceFeeUnits);
+}
+
+std::vector<uint256> Ledger::getNeededTransactionHashes(int max)
+{
+	std::vector<uint256> ret;
+	if (mTransHash.isNonZero())
+	{
+		if (mTransactionMap->getHash().isZero())
+			ret.push_back(mTransHash);
+		else
+			ret = mTransactionMap->getNeededHashes(max);
+	}
+	return ret;
+}
+
+std::vector<uint256> Ledger::getNeededAccountStateHashes(int max)
+{
+	std::vector<uint256> ret;
+	if (mAccountHash.isNonZero())
+	{
+		if (mAccountStateMap->getHash().isZero())
+			ret.push_back(mAccountHash);
+		else
+			ret = mAccountStateMap->getNeededHashes(max);
+	}
+	return ret;
 }
 
 BOOST_AUTO_TEST_SUITE(quality)

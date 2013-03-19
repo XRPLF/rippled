@@ -185,7 +185,7 @@ public:
 	//
 	// Transaction operations
 	//
-	typedef boost::function<void (Transaction::pointer, TER)> stCallback; // must complete immediately
+	typedef FUNCTION_TYPE<void (Transaction::pointer, TER)> stCallback; // must complete immediately
 	void submitTransaction(Job&, SerializedTransaction::pointer, stCallback callback = stCallback());
 	Transaction::pointer submitTransactionSync(Transaction::ref tpTrans, bool bSubmit=true);
 

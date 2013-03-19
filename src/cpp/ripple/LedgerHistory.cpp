@@ -31,6 +31,7 @@ void LedgerHistory::addLedger(Ledger::pointer ledger)
 void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger, bool fromConsensus)
 {
 	assert(ledger && ledger->isAccepted() && ledger->isImmutable());
+	assert(ledger->peekAccountStateMap()->getHash().isNonZero());
 	uint256 h(ledger->getHash());
 	boost::recursive_mutex::scoped_lock sl(mLedgersByHash.peekMutex());
 	mLedgersByHash.canonicalize(h, ledger, true);

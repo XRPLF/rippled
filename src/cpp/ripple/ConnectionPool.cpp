@@ -209,6 +209,12 @@ void ConnectionPool::policyEnforce()
 	// Enforce policies.
 	policyLowWater();
 
+	if (((++mPhase) % 12) == 0)
+	{
+		cLog(lsTRACE) << "Making configured connections";
+		makeConfigured();
+	}
+
 	// Schedule next enforcement.
 	mPolicyTimer.expires_at(boost::posix_time::second_clock::universal_time()+boost::posix_time::seconds(POLICY_INTERVAL_SECONDS));
 	mPolicyTimer.async_wait(boost::bind(&ConnectionPool::policyHandler, this, _1));
@@ -313,11 +319,11 @@ Peer::pointer ConnectionPool::peerConnect(const std::string& strIp, int iPort)
 	if (ppResult)
 	{
 		ppResult->connect(strIp, iPort);
-		//cLog(lsINFO) << "Pool: Connecting: " << ADDRESS_SHARED(ppResult) << ": " << strIp << " " << iPort;
+		cLog(lsTRACE) << "Pool: Connecting: " << ADDRESS_SHARED(ppResult) << ": " << strIp << " " << iPort;
 	}
 	else
 	{
-		//cLog(lsINFO) << "Pool: Already connected: " << strIp << " " << iPort;
+		cLog(lsTRACE) << "Pool: Already connected: " << strIp << " " << iPort;
 	}
 
 	return ppResult;
@@ -620,6 +626,20 @@ void ConnectionPool::scanHandler(const boost::system::error_code& ecResult)
 	else
 	{
 		throw std::runtime_error("Internal error: unexpected deadline error.");
+	}
+}
+
+void ConnectionPool::makeConfigured()
+{
+	if (theConfig.RUN_STANDALONE)
+		return;
+
+	BOOST_FOREACH(const std::string& strPeer, theConfig.IPS)
+	{
+		std::string	strIP;
+		int	iPort;
+		if (parseIpPort(strPeer, strIP, iPort))
+			peerConnect(strIP, iPort);
 	}
 }
 

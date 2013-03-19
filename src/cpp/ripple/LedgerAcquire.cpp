@@ -73,13 +73,21 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 		return;
 	boost::shared_ptr<PeerSet> ptr = wptr.lock();
 	if (ptr)
-		theApp->getJobQueue().addJob(jtLEDGER_DATA, "timerEntry",
+	{
+		int jc = theApp->getJobQueue().getJobCountTotal(jtLEDGER_DATA);
+		if (jc > 4)
+		{
+			cLog(lsDEBUG) << "Deferring PeerSet timer due to load";
+			ptr->setTimer();
+		}
+		else theApp->getJobQueue().addJob(jtLEDGER_DATA, "timerEntry",
 			BIND_TYPE(&PeerSet::TimerJobEntry, P_1, ptr));
+	}
 }
 
 void PeerSet::TimerJobEntry(Job&, boost::shared_ptr<PeerSet> ptr)
 {
-		ptr->invokeOnTimer();
+	ptr->invokeOnTimer();
 }
 
 bool PeerSet::isActive()
@@ -105,14 +113,9 @@ bool LedgerAcquire::tryLocal()
 	{
 		HashedObject::pointer node = theApp->getHashedObjectStore().retrieve(mHash);
 		if (!node)
-		{
-			mLedger = theApp->getLedgerMaster().getLedgerByHash(mHash);
-			if (!mLedger)
-				return false;
-		}
-		else
-			mLedger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
+			return false;
 
+		mLedger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
 		if (mLedger->getHash() != mHash)
 		{ // We know for a fact the ledger can never be acquired
 			cLog(lsWARNING) << mHash << " cannot be a ledger";
@@ -136,7 +139,7 @@ bool LedgerAcquire::tryLocal()
 			{
 				mLedger->peekTransactionMap()->fetchRoot(mLedger->getTransHash());
 				cLog(lsDEBUG) << "Got root txn map locally";
-				std::vector<uint256> h = mLedger->peekTransactionMap()->getNeededHashes(1);
+				std::vector<uint256> h = mLedger->getNeededTransactionHashes(1);
 				if (h.empty())
 				{
 					cLog(lsDEBUG) << "Had full txn map locally";
@@ -152,14 +155,17 @@ bool LedgerAcquire::tryLocal()
 	if (!mHaveState)
 	{
 		if (mLedger->getAccountHash().isZero())
+		{
+			cLog(lsFATAL) << "We are acquiring a ledger with a zero account hash";
 			mHaveState = true;
+		}
 		else
 		{
 			try
 			{
 				mLedger->peekAccountStateMap()->fetchRoot(mLedger->getAccountHash());
 				cLog(lsDEBUG) << "Got root AS map locally";
-				std::vector<uint256> h = mLedger->peekAccountStateMap()->getNeededHashes(1);
+				std::vector<uint256> h = mLedger->getNeededAccountStateHashes(1);
 				if (h.empty())
 				{
 					cLog(lsDEBUG) << "Had full AS map locally";
@@ -270,6 +276,7 @@ void LedgerAcquire::done()
 	else
 		theApp->getMasterLedgerAcquire().logFailure(mHash);
 
+	// FIXME: We hold the PeerSet lock
 	for (unsigned int i = 0; i < triggers.size(); ++i)
 		triggers[i](shared_from_this());
 }
@@ -591,7 +598,7 @@ bool LedgerAcquire::takeBase(const std::string& data) // data must not have hash
 	cLog(lsTRACE) << "got base acquiring ledger " << mHash;
 #endif
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	if (mHaveBase)
+	if (mComplete || mFailed || mHaveBase)
 		return true;
 	mLedger = boost::make_shared<Ledger>(data, false);
 	if (mLedger->getHash() != mHash)
@@ -626,7 +633,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (!mHaveBase)
 		return false;
-	if (mHaveTransactions)
+	if (mHaveTransactions || mFailed)
 		return true;
 
 	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
@@ -673,7 +680,7 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 		cLog(lsWARNING) << "Don't have ledger base";
 		return false;
 	}
-	if (mHaveState)
+	if (mHaveState || mFailed)
 		return true;
 
 	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
@@ -714,6 +721,8 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 bool LedgerAcquire::takeAsRootNode(const std::vector<unsigned char>& data, SMAddNode& san)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
+	if (mFailed || mHaveState)
+		return true;
 	if (!mHaveBase)
 		return false;
 	AccountStateSF tFilter(mLedger->getLedgerSeq());
@@ -724,6 +733,8 @@ bool LedgerAcquire::takeAsRootNode(const std::vector<unsigned char>& data, SMAdd
 bool LedgerAcquire::takeTxRootNode(const std::vector<unsigned char>& data, SMAddNode& san)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
+	if (mFailed || mHaveState)
+		return true;
 	if (!mHaveBase)
 		return false;
 	TransactionStateSF tFilter(mLedger->getLedgerSeq());
@@ -775,13 +786,13 @@ std::vector<LedgerAcquire::neededHash_t> LedgerAcquire::getNeededHashes()
 	}
 	if (!mHaveState)
 	{
-		std::vector<uint256> v = mLedger->peekAccountStateMap()->getNeededHashes(16);
+		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(16);
 		BOOST_FOREACH(const uint256& h, v)
 			ret.push_back(std::make_pair(ripple::TMGetObjectByHash::otSTATE_NODE, h));
 	}
 	if (!mHaveTransactions)
 	{
-		std::vector<uint256> v = mLedger->peekTransactionMap()->getNeededHashes(16);
+		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(16);
 		BOOST_FOREACH(const uint256& h, v)
 			ret.push_back(std::make_pair(ripple::TMGetObjectByHash::otTRANSACTION_NODE, h));
 	}
@@ -855,7 +866,7 @@ void LedgerAcquireMaster::gotLedgerData(Job&, boost::shared_ptr<ripple::TMLedger
 	LedgerAcquire::pointer ledger = find(hash);
 	if (!ledger)
 	{
-		cLog(lsINFO) << "Got data for ledger we're not acquiring";
+		cLog(lsTRACE) << "Got data for ledger we're not acquiring";
 		peer->punishPeer(LT_InvalidRequest);
 		return;
 	}

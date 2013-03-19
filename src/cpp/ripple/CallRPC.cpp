@@ -785,7 +785,7 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 					: vCmd[0],
 				jvParams,								// Parsed, execute.
 				false,
-				boost::bind(callRPCHandler, &jvOutput, _1));
+				BIND_TYPE(callRPCHandler, &jvOutput, P_1));
 
 			isService.run(); // This blocks until there is no more outstanding async calls.
 
@@ -848,7 +848,7 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 #define RPC_NOTIFY_SECONDS		10
 
 bool responseRPC(
-	boost::function<void(const Json::Value& jvInput)> callbackFuncP,
+	FUNCTION_TYPE<void(const Json::Value& jvInput)> callbackFuncP,
 	const boost::system::error_code& ecResult, int iStatus, const std::string& strData)
 {
 	if (callbackFuncP)
@@ -886,7 +886,9 @@ bool responseRPC(
 }
 
 // Build the request.
-void requestRPC(const std::string& strMethod, const Json::Value& jvParams, const std::map<std::string, std::string>& mHeaders, const std::string& strPath, boost::asio::streambuf& sb, const std::string& strHost)
+void requestRPC(const std::string& strMethod, const Json::Value& jvParams,
+	const std::map<std::string, std::string>& mHeaders, const std::string& strPath,
+	boost::asio::streambuf& sb, const std::string& strHost)
 {
 	cLog(lsDEBUG) << "requestRPC: strPath='" << strPath << "'";
 
@@ -906,7 +908,7 @@ void callRPC(
 	const std::string& strUsername, const std::string& strPassword,
 	const std::string& strPath, const std::string& strMethod,
 	const Json::Value& jvParams, const bool bSSL,
-	boost::function<void(const Json::Value& jvInput)> callbackFuncP)
+	FUNCTION_TYPE<void(const Json::Value& jvInput)> callbackFuncP)
 {
 	// Connect to localhost
 	if (!theConfig.QUIET)
@@ -933,15 +935,15 @@ void callRPC(
 		io_service,
 		strIp,
 		iPort,
-		boost::bind(
+		BIND_TYPE(
 			&requestRPC,
 			strMethod,
 			jvParams,
 			mapRequestHeaders,
-			strPath, _1, _2),
+			strPath, P_1, P_2),
 		RPC_REPLY_MAX_BYTES,
 		boost::posix_time::seconds(RPC_NOTIFY_SECONDS),
-		boost::bind(&responseRPC, callbackFuncP, _1, _2, _3));
+		BIND_TYPE(&responseRPC, callbackFuncP, P_1, P_2, P_3));
 }
 
 // vim:ts=4

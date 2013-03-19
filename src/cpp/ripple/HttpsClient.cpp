@@ -6,7 +6,6 @@
 #include "utils.h"
 
 #include <iostream>
-#include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/regex.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
@@ -52,9 +51,9 @@ void HttpsClient::makeGet(const std::string& strPath, boost::asio::streambuf& sb
 void HttpsClient::httpsRequest(
 	bool bSSL,
 	std::deque<std::string> deqSites,
-	boost::function<void(boost::asio::streambuf& sb, const std::string& strHost)> build,
+	FUNCTION_TYPE<void(boost::asio::streambuf& sb, const std::string& strHost)> build,
 	boost::posix_time::time_duration timeout,
-	boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete)
+	FUNCTION_TYPE<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete)
 {
 	mSSL		= bSSL;
 	mDeqSites	= deqSites;
@@ -70,7 +69,7 @@ void HttpsClient::httpsGet(
 	std::deque<std::string> deqSites,
 	const std::string& strPath,
 	boost::posix_time::time_duration timeout,
-	boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete) {
+	FUNCTION_TYPE<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete) {
 
 	mComplete	= complete;
 	mTimeout	= timeout;
@@ -78,7 +77,7 @@ void HttpsClient::httpsGet(
 	httpsRequest(
 		bSSL,
 		deqSites,
-		boost::bind(&HttpsClient::makeGet, shared_from_this(), strPath, _1, _2),
+		BIND_TYPE(&HttpsClient::makeGet, shared_from_this(), strPath, P_1, P_2),
 		timeout,
 		complete);
 }
@@ -403,7 +402,7 @@ void HttpsClient::httpsGet(
 	const std::string& strPath,
 	std::size_t responseMax,
 	boost::posix_time::time_duration timeout,
-	boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete) {
+	FUNCTION_TYPE<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete) {
 
     boost::shared_ptr<HttpsClient> client(new HttpsClient(io_service, port, responseMax));
 
@@ -418,7 +417,7 @@ void HttpsClient::httpsGet(
 	const std::string& strPath,
 	std::size_t responseMax,
 	boost::posix_time::time_duration timeout,
-	boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete) {
+	FUNCTION_TYPE<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete) {
 
 	std::deque<std::string> deqSites(1, strSite);
 
@@ -432,10 +431,10 @@ void HttpsClient::httpsRequest(
 	boost::asio::io_service& io_service,
 	std::string strSite,
 	const unsigned short port,
-	boost::function<void(boost::asio::streambuf& sb, const std::string& strHost)> setRequest,
+	FUNCTION_TYPE<void(boost::asio::streambuf& sb, const std::string& strHost)> setRequest,
 	std::size_t responseMax,
 	boost::posix_time::time_duration timeout,
-	boost::function<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete) {
+	FUNCTION_TYPE<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete) {
 
 	std::deque<std::string> deqSites(1, strSite);
 

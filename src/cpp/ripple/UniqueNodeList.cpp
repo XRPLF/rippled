@@ -885,7 +885,7 @@ void UniqueNodeList::getValidatorsUrl(const RippleAddress& naNodePublic, section
 			strPath,
 			NODE_FILE_BYTES_MAX,
 			boost::posix_time::seconds(NODE_FETCH_SECONDS),
-			boost::bind(&UniqueNodeList::responseValidators, this, strValidatorsUrl, naNodePublic, secSite, strDomain, _1, _2, _3));
+			BIND_TYPE(&UniqueNodeList::responseValidators, this, strValidatorsUrl, naNodePublic, secSite, strDomain, P_1, P_2, P_3));
 	}
 	else
 	{
@@ -1063,7 +1063,7 @@ void UniqueNodeList::fetchProcess(std::string strDomain)
 		NODE_FILE_PATH,
 		NODE_FILE_BYTES_MAX,
 		boost::posix_time::seconds(NODE_FETCH_SECONDS),
-		boost::bind(&UniqueNodeList::responseFetch, this, strDomain, _1, _2, _3));
+		BIND_TYPE(&UniqueNodeList::responseFetch, this, strDomain, P_1, P_2, P_3));
 }
 
 void UniqueNodeList::fetchTimerHandler(const boost::system::error_code& err)
@@ -1610,7 +1610,7 @@ void UniqueNodeList::nodeNetwork()
 			theConfig.VALIDATORS_URI,
 			VALIDATORS_FILE_BYTES_MAX,
 			boost::posix_time::seconds(VALIDATORS_FETCH_SECONDS),
-			boost::bind(&UniqueNodeList::validatorsResponse, this, _1, _2, _3));
+			BIND_TYPE(&UniqueNodeList::validatorsResponse, this, P_1, P_2, P_3));
 	}
 }
 
