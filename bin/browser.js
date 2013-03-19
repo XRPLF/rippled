@@ -100,6 +100,12 @@ console.log(link);
   return "<A HREF=" + link + ">" + item + "</A>";
 };
 
+var rewrite_field = function (type, obj, field, opts) {
+  if (field in obj) {
+    obj[field]  = rewrite_type(type, obj[field], opts);
+  }
+};
+
 var rewrite_type = function (type, obj, opts) {
   if ('amount' === type) {
     if ('string' === typeof obj) {
@@ -107,7 +113,7 @@ var rewrite_type = function (type, obj, opts) {
       return '<B>' + obj + '</B>';
 
     } else {
-      obj.issuer = rewrite_type('address', obj.issuer, opts);
+      rewrite_field('address', obj, 'issuer', opts);
 
       return obj; 
     }
@@ -137,7 +143,27 @@ var rewrite_type = function (type, obj, opts) {
         }, opts)
       );
   }
+  else if ('node' === type) {
+    // A node
+    if ('PreviousTxnID' in obj)
+      obj.PreviousTxnID      = rewrite_type('transaction', obj.PreviousTxnID, opts);
+
+    if ('Offer' === obj.LedgerEntryType) {
+      if ('NewFields' in obj) {
+        if ('TakerGets' in obj.NewFields)
+          obj.NewFields.TakerGets = rewrite_type('amount', obj.NewFields.TakerGets, opts);
+
+        if ('TakerPays' in obj.NewFields)
+          obj.NewFields.TakerPays = rewrite_type('amount', obj.NewFields.TakerPays, opts);
+      }
+    }
+
+    obj.LedgerEntryType  = '<B>' + obj.LedgerEntryType + '</B>';
+
+    return obj;
+  }
   else if ('transaction' === type) {
+    // Reference to a transaction.
     return build_link(
       obj,
       build_uri({
@@ -153,33 +179,12 @@ var rewrite_type = function (type, obj, opts) {
 var rewrite_object = function (obj, opts) {
   var out = extend({}, obj);
 
-  if ('TransactionType' in obj) {
-    // It's a transaction.
-    out.TransactionType = '<B>' + obj.TransactionType + '</B>';
+  rewrite_field('address', out, 'Account', opts);
 
-    if ('TakerGets' in obj)
-      out.TakerGets = rewrite_type('amount', obj.TakerGets, opts);
-
-    if ('TakerPays' in obj)
-      out.TakerPays = rewrite_type('amount', obj.TakerPays, opts);
-  }
-
-  if ('Account' in obj) {
-    out.Account = rewrite_type('address', obj.Account, opts);
-  }
-
-  if ('parent_hash' in obj) {
-    out.parent_hash  = rewrite_type('ledger', out.parent_hash, opts);
-  }
-  if ('ledger_index' in obj) {
-    out.ledger_index  = rewrite_type('ledger', out.ledger_index, opts);
-  }
-  if ('ledger_current_index' in obj) {
-    out.ledger_current_index  = rewrite_type('ledger', out.ledger_current_index, opts);
-  }
-  if ('ledger_hash' in obj) {
-    out.ledger_hash  = rewrite_type('ledger', out.ledger_hash, opts);
-  }
+  rewrite_field('ledger', out, 'parent_hash', opts);
+  rewrite_field('ledger', out, 'ledger_index', opts);
+  rewrite_field('ledger', out, 'ledger_current_index', opts);
+  rewrite_field('ledger', out, 'ledger_hash', opts);
 
   if ('ledger' in obj) {
     // It's a ledger header.
@@ -192,13 +197,36 @@ var rewrite_object = function (obj, opts) {
     delete out.ledger.totalCoins;
   }
 
-  if ('node' in obj && 'LedgerEntryType' in obj.node) {
+  if ('TransactionType' in obj) {
+    // It's a transaction.
+    out.TransactionType = '<B>' + obj.TransactionType + '</B>';
+
+    rewrite_field('amount', out, 'TakerGets', opts);
+    rewrite_field('amount', out, 'TakerPays', opts);
+    rewrite_field('ledger', out, 'inLedger', opts);
+
+    out.meta.AffectedNodes = out.meta.AffectedNodes.map(function (node) {
+        var kind  = 'CreatedNode' in node
+          ? 'CreatedNode'
+          : 'ModifiedNode' in node
+            ? 'ModifiedNode'
+            : 'DeletedNode' in node
+              ? 'DeletedNode'
+              : undefined;
+        
+        if (kind) {
+          node[kind]  = rewrite_type('node', node[kind], opts);
+        }
+        return node;
+      });
+  }
+  else if ('node' in obj && 'LedgerEntryType' in obj.node) {
     // Its a ledger entry.
 
     if (obj.node.LedgerEntryType === 'AccountRoot') {
       out.node.Account            = rewrite_type('address', obj.node.Account, opts);
 //      out.node.hash = rewrite_type('transaction', obj.node.hash, opts);
-      out.node.PreviousTxnID      = out.node.PreviousTxnID = rewrite_type('transaction', obj.node.PreviousTxnID, opts);
+      out.node.PreviousTxnID      = rewrite_type('transaction', out.node.PreviousTxnID, opts);
       out.node.PreviousTxnLgrSeq  = rewrite_type('ledger', out.node.PreviousTxnLgrSeq, opts);
     }
 
@@ -217,7 +245,7 @@ else {
   var ip      = process.argv.length > 4 ? process.argv[4] : "127.0.0.1";
   var port    = process.argv.length > 5 ? process.argv[5] : "8080";
 
-console.log("START");
+// console.log("START");
   var self  = this;
   
   self.base = {
@@ -228,7 +256,7 @@ console.log("START");
   var remote  = (new Remote({
                     websocket_ip: ws_ip,
                     websocket_port: ws_port,
-                    trace: true
+//                    trace: true
                   }))
                   .on('state', function (m) {
                       console.log("STATE: %s", m);
@@ -239,7 +267,7 @@ console.log("START");
                   .connect()
                   ;
 
-console.log("SERVE");
+// console.log("SERVE");
   var server  = http.createServer(function (req, res) {
       var input = "";
 
@@ -251,20 +279,20 @@ console.log("SERVE");
         });
 
       req.on('end', function () {
-          console.log("URL: %s", req.url);
+          // console.log("URL: %s", req.url);
           // console.log("HEADERS: %s", JSON.stringify(req.headers, undefined, 2));
 
           var _parsed = url.parse(req.url, true);
           var _url    = JSON.stringify(_parsed, undefined, 2);
 
-          console.log("HEADERS: %s", JSON.stringify(_parsed, undefined, 2));
+          // console.log("HEADERS: %s", JSON.stringify(_parsed, undefined, 2));
           if (_parsed.pathname === "/account") {
               var request = remote
                 .request_ledger_entry('account_root')
                 .ledger_index(-1)
                 .account_root(_parsed.query.a)
                 .on('success', function (m) {
-                    console.log("account_root: %s", JSON.stringify(m, undefined, 2));
+                    // console.log("account_root: %s", JSON.stringify(m, undefined, 2));
 
                     httpd_response(res,
                         {
@@ -279,9 +307,9 @@ console.log("SERVE");
 
           } else if (_parsed.pathname === "/ledger") {
             var request = remote
-              .request_ledger_header()
+              .request_ledger(undefined, { expand: true, transactions: true })
               .on('success', function (m) {
-                  console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+                  // console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
 
                   httpd_response(res,
                       {
@@ -297,7 +325,7 @@ console.log("SERVE");
               request.ledger_hash(_parsed.query.l);
             }
             else if (_parsed.query.l) {
-              request.ledger_index(_parsed.query.l);
+              request.ledger_index(Number(_parsed.query.l));
             }
             else {
               request.ledger_index(-1);
@@ -311,7 +339,7 @@ console.log("SERVE");
 //                .request_transaction_entry(_parsed.query.h)
 //              .ledger_select(_parsed.query.l)
                 .on('success', function (m) {
-                    console.log("transaction: %s", JSON.stringify(m, undefined, 2));
+                    // console.log("transaction: %s", JSON.stringify(m, undefined, 2));
 
                     httpd_response(res,
                         {
