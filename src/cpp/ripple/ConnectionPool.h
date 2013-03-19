@@ -18,6 +18,7 @@ class ConnectionPool
 private:
     boost::recursive_mutex	mPeerLock;
     uint64					mLastPeer;
+    int						mPhase;
 
 	typedef std::pair<RippleAddress, Peer::pointer>		naPeer;
 	typedef std::pair<ipPort, Peer::pointer>			pipPeer;
@@ -59,7 +60,7 @@ private:
 
 public:
 	ConnectionPool(boost::asio::io_service& io_service) :
-		mLastPeer(0), mScanTimer(io_service), mPolicyTimer(io_service)
+		mLastPeer(0), mPhase(0), mScanTimer(io_service), mPolicyTimer(io_service)
 	{ ; }
 
 	// Begin enforcing connection policy.
@@ -114,6 +115,8 @@ public:
 	void policyLowWater();
 	void policyEnforce();
 
+	// configured connections
+	void makeConfigured();
 };
 
 extern void splitIpPort(const std::string& strIpPort, std::string& strIp, int& iPort);
