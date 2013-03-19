@@ -41,7 +41,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 		stack.pop();
 
 		int base = rand() % 256;
-		bool have_all = false;
+		bool have_all = true;
 		for (int ii = 0; ii < 16; ++ii)
 		{ // traverse in semi-random order
 			int branch = (base + ii) % 16;
@@ -111,7 +111,7 @@ std::vector<uint256> SHAMap::getNeededHashes(int max)
 		stack.pop();
 
 		int base = rand() % 256;
-		bool have_all = false;
+		bool have_all = true;
 		for (int ii = 0; ii < 16; ++ii)
 		{ // traverse in semi-random order
 			int branch = (base + ii) % 16;
