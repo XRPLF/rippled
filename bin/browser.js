@@ -1,9 +1,9 @@
 #!/usr/bin/node
 //
-// ledger_header?l=L
+// ledger?l=L
 // transaction?h=H
 // ledger_entry?l=L&h=H
-// account_root?l=L&a=A
+// account?l=L&a=A
 // directory?l=L&dir_root=H&i=I
 // directory?l=L&o=A&i=I     // owner directory
 // offer?l=L&offer=H
@@ -26,22 +26,50 @@ var Remote    = require("../src/js/remote.js").Remote;
 
 var program   = process.argv[1];
 
+var httpd_response = function (res, opts) {
+  var self=this;
+
+  res.statusCode = opts.statusCode;
+  res.end(
+    "<HTML>"
+      + "<HEAD><TITLE>Title</TITLE></HEAD>"
+      + "<BODY BACKGROUND=\"#FFFFFF\">"
+      + "State:" + self.state
+      + "<UL>"
+      + "<LI><A HREF=\"/\">home</A>"
+      + "<LI>" + html_link('r4EM4gBQfr1QgQLXSPF4r7h84qE9mb6iCC')
+//      + "<LI><A HREF=\""+test+"\">rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh</A>"
+      + "<LI><A HREF=\"/ledger\">ledger</A>"
+      + "</UL>"
+      + (opts.body || '')
+      + '<HR><PRE>'
+      + (opts.url || '')
+      + '</PRE>'
+      + "</BODY>"
+      + "</HTML>"
+    );
+};
+
+var html_link = function (generic) {
+  return '<A HREF="' + build_uri({ type: 'account', account: generic}) + '">' + generic + '</A>';
+};
+
 // Build a link to a type.
 var build_uri = function (params, opts) {
   var c;
 
-  if (params.type === 'account_root') {
+  if (params.type === 'account') {
     c = {
-        pathname: 'account_root',
+        pathname: 'account',
         query: {
           l: params.ledger,
           a: params.account,
         },
       };
 
-  } else if (params.type === 'ledger_header') {
+  } else if (params.type === 'ledger') {
     c = {
-        pathname: 'ledger_header',
+        pathname: 'ledger',
         query: {
           l: params.ledger,
         },
@@ -58,9 +86,11 @@ var build_uri = function (params, opts) {
     c = {};
   }
 
+  opts  = opts || {};
+
   c.protocol  = "http";
-  c.hostname  = opts.hostname;
-  c.port      = opts.port;
+  c.hostname  = opts.hostname || self.base.hostname;
+  c.port      = opts.port || self.base.port;
 
   return url.format(c);
 };
@@ -70,31 +100,109 @@ console.log(link);
   return "<A HREF=" + link + ">" + item + "</A>";
 };
 
-var rewrite_object = function (obj, opts) {
-  var out = extend({}, obj);
+var rewrite_type = function (type, obj, opts) {
+  if ('amount' === type) {
+    if ('string' === typeof obj) {
+      // XRP.
+      return '<B>' + obj + '</B>';
 
-  if ('ledger_index' in obj) {
-    out.ledger_index  =
-      build_link(
-        obj.ledger_index,
-        build_uri({
-            type: 'ledger_header',
-            ledger: obj.ledger_index,
-          }, opts)
+    } else {
+      obj.issuer = rewrite_type('address', obj.issuer, opts);
+
+      return obj; 
+    }
+    return build_link(
+      obj,
+      build_uri({
+          type: 'account',
+          account: obj
+        }, opts)
+    );
+  }
+  if ('address' === type) {
+    return build_link(
+      obj,
+      build_uri({
+          type: 'account',
+          account: obj
+        }, opts)
+    );
+  }
+  else if ('ledger' === type) {
+    return build_link(
+      obj,
+      build_uri({
+          type: 'ledger',
+          ledger: obj,
+        }, opts)
+      );
+  }
+  else if ('transaction' === type) {
+    return build_link(
+      obj,
+      build_uri({
+          type: 'transaction',
+          hash: obj
+        }, opts)
       );
   }
 
-  if ('node' in obj) {
+  return 'ERROR: ' + type;
+};
+
+var rewrite_object = function (obj, opts) {
+  var out = extend({}, obj);
+
+  if ('TransactionType' in obj) {
+    // It's a transaction.
+    out.TransactionType = '<B>' + obj.TransactionType + '</B>';
+
+    if ('TakerGets' in obj)
+      out.TakerGets = rewrite_type('amount', obj.TakerGets, opts);
+
+    if ('TakerPays' in obj)
+      out.TakerPays = rewrite_type('amount', obj.TakerPays, opts);
+  }
+
+  if ('Account' in obj) {
+    out.Account = rewrite_type('address', obj.Account, opts);
+  }
+
+  if ('parent_hash' in obj) {
+    out.parent_hash  = rewrite_type('ledger', out.parent_hash, opts);
+  }
+  if ('ledger_index' in obj) {
+    out.ledger_index  = rewrite_type('ledger', out.ledger_index, opts);
+  }
+  if ('ledger_current_index' in obj) {
+    out.ledger_current_index  = rewrite_type('ledger', out.ledger_current_index, opts);
+  }
+  if ('ledger_hash' in obj) {
+    out.ledger_hash  = rewrite_type('ledger', out.ledger_hash, opts);
+  }
+
+  if ('ledger' in obj) {
+    // It's a ledger header.
+    out.ledger  = rewrite_object(out.ledger, opts);
+
+    if ('ledger_hash' in out.ledger)
+      out.ledger.ledger_hash = '<B>' + out.ledger.ledger_hash + '</B>';
+
+    delete out.ledger.hash;
+    delete out.ledger.totalCoins;
+  }
+
+  if ('node' in obj && 'LedgerEntryType' in obj.node) {
+    // Its a ledger entry.
+
     if (obj.node.LedgerEntryType === 'AccountRoot') {
-      out.node.PreviousTxnID  =
-        build_link(
-          obj.node.PreviousTxnID,
-          build_uri({
-              type: 'transaction',
-              hash: obj.node.PreviousTxnID,
-            }, opts)
-        );
+      out.node.Account            = rewrite_type('address', obj.node.Account, opts);
+//      out.node.hash = rewrite_type('transaction', obj.node.hash, opts);
+      out.node.PreviousTxnID      = out.node.PreviousTxnID = rewrite_type('transaction', obj.node.PreviousTxnID, opts);
+      out.node.PreviousTxnLgrSeq  = rewrite_type('ledger', out.node.PreviousTxnLgrSeq, opts);
     }
+
+    out.node.LedgerEntryType = '<B>' + out.node.LedgerEntryType + '</B>';
   }
 
   return out;
@@ -149,7 +257,8 @@ console.log("SERVE");
           var _parsed = url.parse(req.url, true);
           var _url    = JSON.stringify(_parsed, undefined, 2);
 
-          if (_parsed.pathname === "/account_root") {
+          console.log("HEADERS: %s", JSON.stringify(_parsed, undefined, 2));
+          if (_parsed.pathname === "/account") {
               var request = remote
                 .request_ledger_entry('account_root')
                 .ledger_index(-1)
@@ -157,99 +266,86 @@ console.log("SERVE");
                 .on('success', function (m) {
                     console.log("account_root: %s", JSON.stringify(m, undefined, 2));
 
-                    res.statusCode = 200;
-                    res.end(
-                      "<HTML>"
-                        + "<HEAD><TITLE>Title</TITLE></HEAD>"
-                        + "<BODY BACKGROUND=\"#FFFFFF\">"
-                        + "State: " + self.state
-                        + "<UL>"
-                        + "<LI><A HREF=\"/\">home</A>"
-                        + "<LI><A HREF=\"/account_root\">account_root</A>"
-                        + "</UL>"
-                        + "<PRE>"
-                        + JSON.stringify(rewrite_object(m, self.base), undefined, 2)
-                        + "</PRE>"
-                        + "</BODY>"
-                        + "</HTML>"
-                      );
+                    httpd_response(res,
+                        {
+                          statusCode: 200,
+                          url: _url,
+                          body: "<PRE>"
+                            + JSON.stringify(rewrite_object(m, self.base), undefined, 2)
+                            + "</PRE>"
+                        });
                   })
                 .request();
 
-          } else if (_parsed.pathname === "/ledger_header") {
-              var request = remote
-                .request_ledger_header()
-                .ledger_index(-1)
-                .on('success', function (m) {
-                    console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+          } else if (_parsed.pathname === "/ledger") {
+            var request = remote
+              .request_ledger_header()
+              .on('success', function (m) {
+                  console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
 
-                    res.statusCode = 200;
-                    res.end(
-                      "<HTML>"
-                        + "<HEAD><TITLE>Title</TITLE></HEAD>"
-                        + "<BODY BACKGROUND=\"#FFFFFF\">"
-                        + "State: " + self.state
-                        + "<UL>"
-                        + "<LI><A HREF=\"/\">home</A>"
-                        + "<LI><A HREF=\"/ledger_header\">ledger_header</A>"
-                        + "</UL>"
-                        + "<PRE>"
-                        + JSON.stringify(m, undefined, 2)
-                        + "</PRE>"
-                        + "</BODY>"
-                        + "</HTML>"
-                      );
-                  })
-                .request();
+                  httpd_response(res,
+                      {
+                        statusCode: 200,
+                        url: _url,
+                        body: "<PRE>"
+                          + JSON.stringify(rewrite_object(m, self.base), undefined, 2)
+                          +"</PRE>"
+                      });
+                })
+
+            if (_parsed.query.l && _parsed.query.l.length === 64) {
+              request.ledger_hash(_parsed.query.l);
+            }
+            else if (_parsed.query.l) {
+              request.ledger_index(_parsed.query.l);
+            }
+            else {
+              request.ledger_index(-1);
+            }
+
+            request.request();
 
           } else if (_parsed.pathname === "/transaction") {
               var request = remote
-                .request_transaction_entry(_parsed.query.h)
+                .request_tx(_parsed.query.h)
+//                .request_transaction_entry(_parsed.query.h)
 //              .ledger_select(_parsed.query.l)
                 .on('success', function (m) {
                     console.log("transaction: %s", JSON.stringify(m, undefined, 2));
 
-                    res.statusCode = 200;
-                    res.end(
-                      "<HTML>"
-                        + "<HEAD><TITLE>Title</TITLE></HEAD>"
-                        + "<BODY BACKGROUND=\"#FFFFFF\">"
-                        + "State: " + self.state
-                        + "<UL>"
-                        + "<LI><A HREF=\"/\">home</A>"
-                        + "<LI><A HREF=\"/account_root\">account_root</A>"
-                        + "</UL>"
-                        + "<PRE>"
-                        + JSON.stringify(rewrite_object(m, self.base), undefined, 2)
-                        + "</PRE>"
-                        + "</BODY>"
-                        + "</HTML>"
-                      );
+                    httpd_response(res,
+                        {
+                          statusCode: 200,
+                          url: _url,
+                          body: "<PRE>"
+                            + JSON.stringify(rewrite_object(m, self.base), undefined, 2)
+                            +"</PRE>"
+                        });
+                  })
+                .on('error', function (m) {
+                    httpd_response(res,
+                        {
+                          statusCode: 200,
+                          url: _url,
+                          body: "<PRE>"
+                            + 'ERROR: ' + JSON.stringify(m, undefined, 2)
+                            +"</PRE>"
+                        });
                   })
                 .request();
 
           } else {
             var test  = build_uri({
-                type: 'account_root',
+                type: 'account',
                 ledger: 'closed',
                 account: 'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh',
               }, self.base);
 
-            res.statusCode = req.url === "/" ? 200 : 404;
-            res.end(
-              "<HTML>"
-                + "<HEAD><TITLE>Title</TITLE></HEAD>"
-                + "<BODY BACKGROUND=\"#FFFFFF\">"
-                + "State: " + self.state
-                + "<UL>"
-                + "<LI><A HREF=\"/\">home</A>"
-                + "<LI><A HREF=\""+test+"\">rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh</A>"
-                + "<LI><A HREF=\"/ledger_header\">ledger_header</A>"
-                + "</UL>"
-                + "<PRE>"+_url+"</PRE>"
-                + "</BODY>"
-                + "</HTML>"
-              );
+            httpd_response(res,
+                {
+                  statusCode: req.url === "/" ? 200 : 404,
+                  url: _url,
+                });
           }
         });
     });
