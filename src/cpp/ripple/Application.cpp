@@ -45,8 +45,8 @@ DatabaseCon::~DatabaseCon()
 Application::Application() :
 	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService), mNetOps(mIOService, &mLedgerMaster),
 	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300), mSLECache("LedgerEntryCache", 4096, 120),
-	mSNTPClient(mAuxService), mFeeTrack(),
-	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
+	mSNTPClient(mAuxService), mFeeTrack(), mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
+	mHashNodeDB(NULL), mNetNodeDB(NULL), mPathFindDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
 	mSweepTimer(mAuxService), mShutdown(false)
 {
@@ -54,8 +54,10 @@ Application::Application() :
 	getRand(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
 }
 
-extern const char *RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[], *NetNodeDBInit[];
-extern int RpcDBCount, TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount, NetNodeDBCount;
+extern const char *RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[],
+	*NetNodeDBInit[], *PathFindDBInit[];
+extern int RpcDBCount, TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount,
+	NetNodeDBCount, PathFindDBCount;
 bool Instance::running = true;
 
 void Application::stop()
@@ -124,10 +126,14 @@ void Application::setup()
 	boost::thread t1(boost::bind(&InitDB, &mRpcDB, "rpc.db", RpcDBInit, RpcDBCount));
 	boost::thread t2(boost::bind(&InitDB, &mTxnDB, "transaction.db", TxnDBInit, TxnDBCount));
 	boost::thread t3(boost::bind(&InitDB, &mLedgerDB, "ledger.db", LedgerDBInit, LedgerDBCount));
+	t1.join(); t2.join(); t3.join();
+
 	boost::thread t4(boost::bind(&InitDB, &mWalletDB, "wallet.db", WalletDBInit, WalletDBCount));
 	boost::thread t5(boost::bind(&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
 	boost::thread t6(boost::bind(&InitDB, &mNetNodeDB, "netnode.db", NetNodeDBInit, NetNodeDBCount));
-	t1.join(); t2.join(); t3.join(); t4.join(); t5.join(); t6.join();
+	boost::thread t7(boost::bind(&InitDB, &mPathFindDB, "pathfind.db", PathFindDBInit, PathFindDBCount));
+	t4.join(); t5.join(); t6.join(); t7.join();
+
 	mTxnDB->getDB()->setupCheckpointing(&mJobQueue);
 	mLedgerDB->getDB()->setupCheckpointing(&mJobQueue);
 	mHashNodeDB->getDB()->setupCheckpointing(&mJobQueue);
@@ -319,6 +325,7 @@ Application::~Application()
 	delete mWalletDB;
 	delete mHashNodeDB;
 	delete mNetNodeDB;
+	delete mPathFindDB;
 }
 
 void Application::startNewLedger()

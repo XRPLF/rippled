@@ -70,7 +70,7 @@ class Application
 	TXQueue					mTxnQueue;
 	OrderBookDB				mOrderBookDB;
 
-	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
+	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB, *mPathFindDB;
 
 	ConnectionPool			mConnectionPool;
 	PeerDoor*				mPeerDoor;
@@ -136,6 +136,7 @@ public:
 	DatabaseCon* getWalletDB()		{ return mWalletDB; }
 	DatabaseCon* getHashNodeDB()	{ return mHashNodeDB; }
 	DatabaseCon* getNetNodeDB()		{ return mNetNodeDB; }
+	DatabaseCon* getPathFindDB()	{ return mPathFindDB; }
 
 	uint256 getNonce256()			{ return mNonce256; }
 	std::size_t getNonceST()		{ return mNonceST; }
