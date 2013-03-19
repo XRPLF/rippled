@@ -72,14 +72,17 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 				}
 				if (!d)
 				{ // we need this node
-					have_all = false;
 					nodeIDs.push_back(childID);
 					hashes.push_back(childHash);
 					if (--max <= 0)
 						return;
+					have_all = false;
 				}
 				else if (d->isInner() && !d->isFullBelow()) // we might need children of this node
+				{
+					have_all = false;
 					stack.push(d);
+				}
 			}
 		}
 		if (have_all)
@@ -124,7 +127,10 @@ std::vector<uint256> SHAMap::getNeededHashes(int max)
 					SHAMapTreeNode* d = getNodePointer(childID, childHash);
 					assert(d);
 					if (d->isInner() && !d->isFullBelow())
+					{
+						have_all = false;
 						stack.push(d);
+					}
 				}
 				catch (SHAMapMissingNode&)
 				{ // node is not in the map
