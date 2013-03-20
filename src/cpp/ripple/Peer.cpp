@@ -1414,8 +1414,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		if (!map)
 		{
 			if (packet.has_querytype() && !packet.has_requestcookie())
-			{ 	// FIXME: Don't relay requests for older ledgers we would acquire
-				// (if we don't have them, we can't get them)
+			{
 				cLog(lsDEBUG) << "Trying to route TX set request";
 				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 				std::vector<Peer::pointer> usablePeers;
@@ -1642,7 +1641,7 @@ void Peer::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_ptr)
 		if (target)
 		{
 			packet.clear_requestcookie();
-			target->sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtLEDGER_DATA), true);
+			target->sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtLEDGER_DATA), false);
 		}
 		else
 		{
