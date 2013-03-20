@@ -356,7 +356,7 @@ extern void NameThread(const char* n)
 		{
 			size_t zero = pName.find_first_of('\0');
 			if ((zero != std::string::npos) && (zero != 0))
-				pName = pName.substr(0, zero - 1);
+				pName = pName.substr(0, zero);
 			size_t slash = pName.find_last_of('/');
 			if (slash != std::string::npos)
 				pName = pName.substr(slash + 1);
