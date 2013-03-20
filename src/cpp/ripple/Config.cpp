@@ -497,7 +497,7 @@ int Config::getSize(SizedItemName item)
 		{ siLedgerAge,			{	30,		60,		120,	300,		600		} },
 		{ siLineCacheSize,		{	8192,	32768,	131072,	1048576,	0		} },
 		{ siLineCacheAge,		{	500,	600,	1800,	3600,		7200	} },
-		{ siDBCache,			{	8,		12,		24,		64,			96		} },
+		{ siHashNodeDBCache,	{	24,		48,		64,		128,		256		} },
 			};
 
 	for (int i = 0; i < (sizeof(sizeTable) / sizeof(SizedItem)); ++i)

@@ -176,7 +176,7 @@ void Application::setup()
 	mLedgerMaster.setMinValidations(theConfig.VALIDATION_QUORUM);
 
 	theApp->getHashNodeDB()->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %
-		(theConfig.getSize(siDBCache) * 1024)));
+		(theConfig.getSize(siHashNodeDBCache) * 1024)));
 
 	//
 	// Allow peer connections.
