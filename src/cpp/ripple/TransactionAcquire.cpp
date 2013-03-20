@@ -285,3 +285,16 @@ Json::Value LCTransaction::getJson()
 	return ret;
 }
 
+void ConsensusTransSetSF::gotNode(const SHAMapNode& id, const uint256& nodeHash,
+	const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType)
+{
+	// WRITEME: If 'isLeaf' is true, this is a transaction
+	theApp->getTempNodeCache().store(nodeHash, nodeData);
+}
+
+bool ConsensusTransSetSF::haveNode(const SHAMapNode& id, const uint256& nodeHash,
+	std::vector<unsigned char>& nodeData)
+{
+	// WRITEME: We could check our own map, we could check transaction tables
+	return theApp->getTempNodeCache().retrieve(nodeHash, nodeData);
+}
