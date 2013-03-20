@@ -64,6 +64,7 @@ bool Instance::running = true;
 void Application::stop()
 {
 	cLog(lsINFO) << "Received shutdown request";
+	StopSustain();
 	mShutdown = true;
 	mIOService.stop();
 	mHashedObjectStore.bulkWrite();

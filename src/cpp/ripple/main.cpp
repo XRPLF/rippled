@@ -149,6 +149,7 @@ int main(int argc, char* argv[])
 		("ledger", po::value<std::string>(), "Load the specified ledger and start from .")
 		("start", "Start from a fresh Ledger.")
 		("net", "Get the initial ledger from the network.")
+		("fg", "Run in the foreground.")
 	;
 
 	// Interpret positional arguments as --parameters.
@@ -184,6 +185,13 @@ int main(int argc, char* argv[])
 		{
 			iResult	= 1;
 		}
+	}
+
+	if (HaveSustain() && !vm.count("parameters") && !vm.count("fg") && !vm.count("standalone"))
+	{
+		std::string logMe = DoSustain();
+		if (!logMe.empty())
+			Log(lsWARNING) << logMe;
 	}
 
 	if (vm.count("quiet"))
