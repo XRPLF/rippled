@@ -1189,8 +1189,8 @@ buster.testCase("Indirect paths", {
 });
 
 buster.testCase("Quality paths", {
-  // 'setUp' : testutils.build_setup(),
-  'setUp' : testutils.build_setup({ verbose: true }),
+  'setUp' : testutils.build_setup(),
+  // 'setUp' : testutils.build_setup({ verbose: true }),
   // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
   'tearDown' : testutils.build_teardown(),
 
