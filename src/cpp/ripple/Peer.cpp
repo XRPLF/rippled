@@ -95,6 +95,8 @@ void Peer::detach(const char *rsn, bool onIOStrand)
 	if (!mDetaching)
 	{
 		mDetaching	= true;			// Race is ok.
+
+		tLog(mCluster, lsWARNING) << "Cluster peer detach \"" << mNodeName << "\": " << rsn;
 		/*
 		cLog(lsDEBUG) << "Peer: Detach: "
 			<< ADDRESS(this) << "> "
@@ -384,7 +386,15 @@ void Peer::handleReadHeader(const boost::system::error_code& error)
 	}
 	else
 	{
-		cLog(lsINFO) << "Peer: Header: Error: " << getIP() << ": " << error.category().name() << ": " << error.message() << ": " << error;
+		if (mCluster)
+		{
+			cLog(lsINFO) << "Peer: Cluster connection lost to \"" << mNodeName << "\": " <<
+				error.category().name() << ": " << error.message() << ": " << error;
+		}
+		else
+		{
+			cLog(lsINFO) << "Peer: Header: Error: " << getIP() << ": " << error.category().name() << ": " << error.message() << ": " << error;
+		}
 		detach("hrh2", true);
 	}
 }
@@ -397,7 +407,15 @@ void Peer::handleReadBody(const boost::system::error_code& error)
 	}
 	else if (error)
 	{
-		cLog(lsINFO) << "Peer: Body: Error: " << ADDRESS(this) << ": " << error.category().name() << ": " << error.message() << ": " << error;
+		if (mCluster)
+		{
+			cLog(lsINFO) << "Peer: Cluster connection lost to \"" << mNodeName << "\": " <<
+				error.category().name() << ": " << error.message() << ": " << error;
+		}
+		else
+		{
+			cLog(lsINFO) << "Peer: Body: Error: " << getIP() << ": " << error.category().name() << ": " << error.message() << ": " << error;
+		}
 		boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 		detach("hrb", true);
 		return;
@@ -734,6 +752,8 @@ void Peer::recvHello(ripple::TMHello& packet)
 		{
 			mCluster = true;
 			mLoad.setPrivileged();
+			cLog(lsINFO) << "Cluster connection to \"" << (mNodeName.empty() ? getIP() : mNodeName)
+				<< "\" established";
 		}
 		if (isOutbound())
 			mLoad.setOutbound();
