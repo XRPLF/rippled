@@ -18,6 +18,7 @@
 // L=current | closed | validated | index | hash
 //
 
+var async     = require("async");
 var extend    = require("extend");
 var http      = require("http");
 var url       = require("url");
@@ -224,16 +225,95 @@ var rewrite_object = function (obj, opts) {
     // Its a ledger entry.
 
     if (obj.node.LedgerEntryType === 'AccountRoot') {
-      out.node.Account            = rewrite_type('address', obj.node.Account, opts);
-//      out.node.hash = rewrite_type('transaction', obj.node.hash, opts);
-      out.node.PreviousTxnID      = rewrite_type('transaction', out.node.PreviousTxnID, opts);
-      out.node.PreviousTxnLgrSeq  = rewrite_type('ledger', out.node.PreviousTxnLgrSeq, opts);
+      rewrite_field('address', out.node, 'Account', opts);
+      rewrite_field('transaction', out.node, 'PreviousTxnID', opts);
+      rewrite_field('ledger', out.node, 'PreviousTxnLgrSeq', opts);
     }
 
     out.node.LedgerEntryType = '<B>' + out.node.LedgerEntryType + '</B>';
   }
 
   return out;
+};
+
+var augment_object = function (obj, opts, done) {
+  if (obj.node.LedgerEntryType == 'AccountRoot') {
+    var   tx_hash   = obj.node.PreviousTxnID;
+    var   tx_ledger = obj.node.PreviousTxnLgrSeq;
+
+    obj.history                 = [];
+
+    async.whilst(
+      function () { return tx_hash; },
+      function (callback) {
+// console.log("augment_object: request: %s %s", tx_hash, tx_ledger);
+        opts.remote.request_tx(tx_hash)
+          .on('success', function (m) {
+              tx_hash   = undefined;
+              tx_ledger = undefined;
+
+//console.log("augment_object: ", JSON.stringify(m));
+              m.meta.AffectedNodes.filter(function(n) {
+// console.log("augment_object: ", JSON.stringify(n));
+// if (n.ModifiedNode)
+// console.log("augment_object: %s %s %s %s %s %s/%s", 'ModifiedNode' in n, n.ModifiedNode && (n.ModifiedNode.LedgerEntryType === 'AccountRoot'), n.ModifiedNode && n.ModifiedNode.FinalFields && (n.ModifiedNode.FinalFields.Account === obj.node.Account), Object.keys(n)[0], n.ModifiedNode && (n.ModifiedNode.LedgerEntryType), obj.node.Account, n.ModifiedNode && n.ModifiedNode.FinalFields && n.ModifiedNode.FinalFields.Account);
+// if ('ModifiedNode' in n && n.ModifiedNode.LedgerEntryType === 'AccountRoot')
+// {
+//   console.log("***: ", JSON.stringify(m));
+//   console.log("***: ", JSON.stringify(n));
+// }
+                  return 'ModifiedNode' in n
+                    && n.ModifiedNode.LedgerEntryType === 'AccountRoot'
+                    && n.ModifiedNode.FinalFields
+                    && n.ModifiedNode.FinalFields.Account === obj.node.Account;
+                })
+              .forEach(function (n) {
+                  tx_hash   = n.ModifiedNode.PreviousTxnID;
+                  tx_ledger = n.ModifiedNode.PreviousTxnLgrSeq;
+
+                  obj.history.push({
+                      tx_hash:    tx_hash,
+                      tx_ledger:  tx_ledger
+                    });
+console.log("augment_object: next: %s %s", tx_hash, tx_ledger);
+                });
+
+              callback();
+            })
+          .on('error', function (m) {
+              callback(m);
+            })
+          .request();
+      },
+      function (err) {
+        if (err) {
+          done();
+        }
+        else {
+          async.forEach(obj.history, function (o, callback) {
+              opts.remote.request_account_info(obj.node.Account)
+                .ledger_index(o.tx_ledger)
+                .on('success', function (m) {
+//console.log("augment_object: ", JSON.stringify(m));
+                    o.Balance       = m.account_data.Balance;
+//                    o.account_data  = m.account_data;
+                    callback();
+                  })
+                .on('error', function (m) {
+                    o.error = m;
+                    callback();
+                  })
+                .request();
+            },
+            function (err) {
+              done(err);
+            });
+        }
+      });
+  }
+  else {
+    done();
+  }
 };
 
 if (process.argv.length < 4 || process.argv.length > 7) {
@@ -248,15 +328,10 @@ else {
 // console.log("START");
   var self  = this;
   
-  self.base = {
-      hostname: ip,
-      port:     port,
-    };
-
   var remote  = (new Remote({
                     websocket_ip: ws_ip,
                     websocket_port: ws_port,
-//                    trace: true
+                    trace: false
                   }))
                   .on('state', function (m) {
                       console.log("STATE: %s", m);
@@ -266,6 +341,12 @@ else {
 //                  .once('ledger_closed', callback)
                   .connect()
                   ;
+
+  self.base = {
+      hostname: ip,
+      port:     port,
+      remote:   remote,
+    };
 
 // console.log("SERVE");
   var server  = http.createServer(function (req, res) {
@@ -294,14 +375,16 @@ else {
                 .on('success', function (m) {
                     // console.log("account_root: %s", JSON.stringify(m, undefined, 2));
 
-                    httpd_response(res,
-                        {
-                          statusCode: 200,
-                          url: _url,
-                          body: "<PRE>"
-                            + JSON.stringify(rewrite_object(m, self.base), undefined, 2)
-                            + "</PRE>"
-                        });
+                    augment_object(m, self.base, function() {
+                      httpd_response(res,
+                          {
+                            statusCode: 200,
+                            url: _url,
+                            body: "<PRE>"
+                              + JSON.stringify(rewrite_object(m, self.base), undefined, 2)
+                              + "</PRE>"
+                          });
+                    });
                   })
                 .request();
 
