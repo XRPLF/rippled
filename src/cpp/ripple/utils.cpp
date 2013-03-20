@@ -427,7 +427,7 @@ std::string DoSustain()
 			signal(SIGUSR2, SIG_DFL);
 			return str(boost::format("Launching child %d") % childCount);;
 		}
-		NameThread(boost::str(boost::format("sust%d") % childCount).c_str());
+		NameThread(boost::str(boost::format("#%d") % childCount).c_str());
 		do
 		{
 			int i;
