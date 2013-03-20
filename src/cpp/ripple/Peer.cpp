@@ -384,7 +384,7 @@ void Peer::handleReadHeader(const boost::system::error_code& error)
 	}
 	else
 	{
-		cLog(lsINFO) << "Peer: Header: Error: " << ADDRESS(this) << ": " << error.category().name() << ": " << error.message() << ": " << error;
+		cLog(lsINFO) << "Peer: Header: Error: " << getIP() << ": " << error.category().name() << ": " << error.message() << ": " << error;
 		detach("hrh2", true);
 	}
 }
