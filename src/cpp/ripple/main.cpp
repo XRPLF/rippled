@@ -187,7 +187,8 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	if (HaveSustain() && !vm.count("parameters") && !vm.count("fg") && !vm.count("standalone"))
+	if (HaveSustain() &&
+		!vm.count("parameters") && !vm.count("fg") && !vm.count("standalone") && !vm.count("unittest"))
 	{
 		std::string logMe = DoSustain();
 		if (!logMe.empty())
