@@ -24,8 +24,11 @@ LogPartition TaggedCachePartition("TaggedCache");
 LogPartition AutoSocketPartition("AutoSocket");
 Application* theApp = NULL;
 
+int DatabaseCon::sCount = 0;
+
 DatabaseCon::DatabaseCon(const std::string& strName, const char *initStrings[], int initCount)
 {
+	++sCount;
 	boost::filesystem::path	pPath	= (theConfig.RUN_STANDALONE && (theConfig.START_UP != Config::LOAD))
 										? ""								// Use temporary files.
 										: (theConfig.DATA_DIR / strName);		// Use regular db files.
@@ -171,6 +174,9 @@ void Application::setup()
 	mHashedObjectStore.tune(theConfig.getSize(siNodeCacheSize), theConfig.getSize(siNodeCacheAge));
 	mLedgerMaster.tune(theConfig.getSize(siLedgerSize), theConfig.getSize(siLedgerAge));
 	mLedgerMaster.setMinValidations(theConfig.VALIDATION_QUORUM);
+
+	theApp->getHashNodeDB()->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %
+		(theConfig.getSize(siDBCache) * 1024)));
 
 	//
 	// Allow peer connections.
