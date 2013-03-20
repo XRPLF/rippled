@@ -77,7 +77,7 @@ public:
 	bool checkSign() const;
 	void updateID() { mTransactionID=mTransaction->getTransactionID(); }
 
-	SerializedTransaction::pointer getSTransaction() { return mTransaction; }
+	SerializedTransaction::ref getSTransaction()	{ return mTransaction; }
 
 	const uint256& getID() const					{ return mTransactionID; }
 	const RippleAddress& getFromAccount() const		{ return mAccountFrom; }

@@ -27,6 +27,117 @@ typedef std::map<uint256, LCTransaction::pointer>::value_type u256_lct_pair;
 SETUP_LOG();
 DECLARE_INSTANCE(LedgerConsensus);
 
+void LCTransaction::setVote(const uint160& peer, bool votesYes)
+{ // Track a peer's yes/no vote on a particular disputed transaction
+	std::pair<boost::unordered_map<const uint160, bool>::iterator, bool> res =
+		mVotes.insert(std::pair<const uint160, bool>(peer, votesYes));
+
+	if (res.second)
+	{ // new vote
+		if (votesYes)
+		{
+			cLog(lsDEBUG) << "Peer " << peer << " votes YES on " << mTransactionID;
+			++mYays;
+		}
+		else
+		{
+			cLog(lsDEBUG) << "Peer " << peer << " votes NO on " << mTransactionID;
+			++mNays;
+		}
+	}
+	else if (votesYes && !res.first->second)
+	{ // changes vote to yes
+		cLog(lsDEBUG) << "Peer " << peer << " now votes YES on " << mTransactionID;
+		--mNays;
+		++mYays;
+		res.first->second = true;
+	}
+	else if (!votesYes && res.first->second)
+	{ // changes vote to no
+		cLog(lsDEBUG) << "Peer " << peer << " now votes NO on " << mTransactionID;
+		++mNays;
+		--mYays;
+		res.first->second = false;
+	}
+}
+
+void LCTransaction::unVote(const uint160& peer)
+{ // Remove a peer's vote on this disputed transasction
+	boost::unordered_map<uint160, bool>::iterator it = mVotes.find(peer);
+	if (it != mVotes.end())
+	{
+		if (it->second)
+			--mYays;
+		else
+			--mNays;
+		mVotes.erase(it);
+	}
+}
+
+bool LCTransaction::updateVote(int percentTime, bool proposing)
+{
+	if (mOurVote && (mNays == 0))
+		return false;
+	if (!mOurVote && (mYays == 0))
+		return false;
+
+	bool newPosition;
+	int weight;
+	if (proposing) // give ourselves full weight
+	{
+		// This is basically the percentage of nodes voting 'yes' (including us)
+		weight = (mYays * 100 + (mOurVote ? 100 : 0)) / (mNays + mYays + 1);
+
+		// To prevent avalanche stalls, we increase the needed weight slightly over time
+		if (percentTime < AV_MID_CONSENSUS_TIME)
+			newPosition = weight >  AV_INIT_CONSENSUS_PCT;
+		else if (percentTime < AV_LATE_CONSENSUS_TIME)
+			newPosition = weight > AV_MID_CONSENSUS_PCT;
+		else if (percentTime < AV_STUCK_CONSENSUS_TIME)
+			newPosition = weight > AV_LATE_CONSENSUS_PCT;
+		else
+			newPosition = weight > AV_STUCK_CONSENSUS_PCT;
+	}
+	else // don't let us outweigh a proposing node, just recognize consensus
+	{
+		weight = -1;
+		newPosition = mYays > mNays;
+	}
+
+	if (newPosition == mOurVote)
+	{
+		cLog(lsINFO) <<
+			"No change (" << (mOurVote ? "YES" : "NO") << ") : weight "	<< weight << ", percent " << percentTime;
+		cLog(lsDEBUG) << getJson();
+		return false;
+	}
+
+	mOurVote = newPosition;
+	cLog(lsDEBUG) << "We now vote " << (mOurVote ? "YES" : "NO") << " on " << mTransactionID;
+	cLog(lsDEBUG) << getJson();
+	return true;
+}
+
+Json::Value LCTransaction::getJson()
+{
+	Json::Value ret(Json::objectValue);
+
+	ret["yays"] = mYays;
+	ret["nays"] = mNays;
+	ret["our_vote"] = mOurVote;
+	if (!mVotes.empty())
+	{
+		Json::Value votesj(Json::objectValue);
+		typedef boost::unordered_map<uint160, bool>::value_type vt;
+		BOOST_FOREACH(vt& vote, mVotes)
+		{
+			votesj[vote.first.GetHex()] = vote.second;
+		}
+		ret["votes"] = votesj;
+	}
+	return ret;
+}
+
 LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime)
 		:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger),
 		mValPublic(theConfig.VALIDATION_PUB), mValPrivate(theConfig.VALIDATION_PRIV), mConsensusFail(false),
