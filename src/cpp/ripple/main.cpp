@@ -263,6 +263,7 @@ int main(int argc, char* argv[])
 	else
 	{
 		// Have a RPC command.
+		NameThread("rpc");
 		std::vector<std::string> vCmd	= vm["parameters"].as<std::vector<std::string> >();
 
 		iResult	= commandLineRPC(vCmd);

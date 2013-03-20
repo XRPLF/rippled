@@ -420,7 +420,7 @@ std::string DoSustain()
 			_exit(0);
 		if (pChild == 0)
 		{
-			NameThread("child");
+			NameThread("main");
 			signal(SIGINT, SIG_DFL);
 			signal(SIGHUP, SIG_DFL);
 			signal(SIGUSR1, SIG_DFL);
