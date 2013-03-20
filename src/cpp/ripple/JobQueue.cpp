@@ -266,6 +266,7 @@ void JobQueue::threadEntry()
 	boost::mutex::scoped_lock sl(mJobLock);
 	while (1)
 	{
+		NameThread("waiting");
 		while (mJobSet.empty() && !mShuttingDown)
 			mJobCond.wait(sl);
 
@@ -286,6 +287,7 @@ void JobQueue::threadEntry()
 
 			++(mJobCounts[type].second);
 			sl.unlock();
+			NameThread(Job::toString(type));
 			cLog(lsTRACE) << "Doing " << Job::toString(type) << " job";
 			job.doJob();
 		} // must destroy job without holding lock

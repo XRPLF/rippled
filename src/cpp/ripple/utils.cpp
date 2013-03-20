@@ -1,5 +1,9 @@
-#include "utils.h"
-#include "uint256.h"
+
+#ifdef __linux__
+#include <sys/prctl.h>
+#endif
+
+#include <fstream>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
@@ -8,6 +12,9 @@
 #include <boost/test/unit_test.hpp>
 
 #include <openssl/rand.h>
+
+#include "utils.h"
+#include "uint256.h"
 
 void getRand(unsigned char *buf, int num)
 {
@@ -331,6 +338,39 @@ uint32_t be32toh(uint32_t value)
 	return( _byteswap_ulong(value)); 
 }
 
+#endif
+
+#ifdef PR_SET_NAME
+#define HAVE_NAME_THREAD
+extern void NameThread(const char* n)
+{
+	static std::string pName;
+
+	if (pName.empty())
+	{
+		std::ifstream cLine("/proc/self/cmdline", std::ios::in);
+		cLine >> pName;
+		if (pName.empty())
+			pName = "rippled";
+		else
+		{
+			size_t zero = pName.find_first_of('\0');
+			if ((zero != std::string::npos) && (zero != 0))
+				pName = pName.substr(0, zero - 1);
+			size_t slash = pName.find_last_of('/');
+			if (slash != std::string::npos)
+				pName = pName.substr(slash + 1);
+		}
+		pName += " ";
+	}
+
+	prctl(PR_SET_NAME, (pName + n).c_str(), 0, 0, 0);
+}
+#endif
+
+#ifndef HAVE_NAME_THREAD
+extern void NameThread(const char*)
+{ ; }
 #endif
 
 BOOST_AUTO_TEST_SUITE( Utils)

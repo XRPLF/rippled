@@ -127,6 +127,7 @@ void printHelp(const po::options_description& desc)
 
 int main(int argc, char* argv[])
 {
+	NameThread("main");
 	int					iResult	= 0;
 	po::variables_map	vm;										// Map of options.
 
@@ -248,6 +249,7 @@ int main(int argc, char* argv[])
 	{
 		// No arguments. Run server.
 		setupServer();
+		NameThread("io");
 		startServer();
 	}
 	else
