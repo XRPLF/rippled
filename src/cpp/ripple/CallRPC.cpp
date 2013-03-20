@@ -69,7 +69,7 @@ static bool jvParseLedger(Json::Value& jvRequest, const std::string& strLedger)
 	{
 		jvRequest["ledger_index"]	= strLedger;
 	}
-	else if (strLedger.length() == 32)
+	else if (strLedger.length() == 64)
 	{
 		// YYY Could confirm this is a uint256.
 		jvRequest["ledger_hash"]	= strLedger;
