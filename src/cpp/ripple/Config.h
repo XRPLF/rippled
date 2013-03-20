@@ -64,7 +64,8 @@ enum SizedItemName
 	siLedgerAge,
 	siLedgerFetch,
 	siLineCacheSize,
-	siLineCacheAge
+	siLineCacheAge,
+	siDBCache
 };
 
 struct SizedItem
