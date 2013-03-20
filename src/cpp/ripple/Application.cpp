@@ -90,6 +90,12 @@ void sigIntHandler(int)
 }
 #endif
 
+static void runAux(boost::asio::io_service& svc)
+{
+	NameThread("aux");
+	svc.run();
+}
+
 void Application::setup()
 {
 	mJobQueue.setThreadCount();
@@ -117,7 +123,7 @@ void Application::setup()
 			LogPartition::setSeverity(lsDEBUG);
 	}
 
-	boost::thread(boost::bind(&boost::asio::io_service::run, &mAuxService)).detach();
+	boost::thread(boost::bind(runAux, boost::ref(mAuxService))).detach();
 
 	if (!theConfig.RUN_STANDALONE)
 		mSNTPClient.init(theConfig.SNTP_SERVERS);
