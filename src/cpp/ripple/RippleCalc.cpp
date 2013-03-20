@@ -114,7 +114,7 @@ TER PathState::pushImply(
 
 // Append a node and insert before it any implied nodes.
 // Offers may go back to back.
-// <-- terResult: tesSUCCESS, temBAD_PATH, terNO_LINE, tecPATH_DRY
+// <-- terResult: tesSUCCESS, temBAD_PATH, terNO_ACCOUNT, terNO_AUTH, terNO_LINE, tecPATH_DRY
 TER PathState::pushNode(
 	const int iType,
 	const uint160& uAccountID,
@@ -231,11 +231,30 @@ TER PathState::pushNode(
 						<< STAmount::createHumanCurrency(pnCur.uCurrencyID)
 						<< "." ;
 
-					STAmount	saOwed	= lesEntries.rippleOwed(pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID);
+					SLE::pointer		sleBck	= lesEntries.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(pnBck.uAccountID));
+					bool				bHigh	= pnBck.uAccountID > pnCur.uAccountID;
 
-					if (!saOwed.isPositive() && -saOwed >= lesEntries.rippleLimit(pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID))
+					if (!sleBck)
 					{
-						terResult	= tecPATH_DRY;
+						cLog(lsWARNING) << "pushNode: delay: can't receive IOUs from non-existent issuer: " << RippleAddress::createHumanAccountID(pnBck.uAccountID);
+
+						terResult	= terNO_ACCOUNT;
+					}
+					else if (isSetBit(sleBck->getFieldU32(sfFlags), lsfRequireAuth)
+						&& !isSetBit(sleRippleState->getFieldU32(sfFlags), (bHigh ? lsfHighAuth : lsfLowAuth))) {
+						cLog(lsWARNING) << "pushNode: delay: can't receive IOUs from issuer without auth.";
+
+						terResult	= terNO_AUTH;
+					}
+
+					if (tesSUCCESS == terResult)
+					{
+						STAmount	saOwed	= lesEntries.rippleOwed(pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID);
+
+						if (!saOwed.isPositive() && -saOwed >= lesEntries.rippleLimit(pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID))
+						{
+							terResult	= tecPATH_DRY;
+						}
 					}
 				}
 			}
@@ -287,7 +306,7 @@ TER PathState::pushNode(
 
 // Set to an expanded path.
 //
-// terStatus = tesSUCCESS, temBAD_PATH, terNO_LINE, or temBAD_PATH_LOOP
+// terStatus = tesSUCCESS, temBAD_PATH, terNO_LINE, terNO_ACCOUNT, terNO_AUTH, or temBAD_PATH_LOOP
 void PathState::setExpanded(
 	const LedgerEntrySet&	lesSource,
 	const STPath&			spSourcePath,
