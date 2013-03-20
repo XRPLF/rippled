@@ -426,6 +426,17 @@ TER OfferCreateTransactor::doApply()
 
 			terResult	= terNO_ACCOUNT;
 		}
+		else if (isSetBit(sleTakerPays->getFieldU32(sfFlags), lsfRequireAuth)) {
+			SLE::pointer	sleRippleState	= mEngine->entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uPaysIssuerID, uPaysCurrency));
+			bool			bHigh			= mTxnAccountID > uPaysIssuerID;
+
+			if (!sleRippleState
+				|| !isSetBit(sleRippleState->getFieldU32(sfFlags), (bHigh ? lsfHighAuth : lsfLowAuth))) {
+				cLog(lsWARNING) << "OfferCreate: delay: can't receive IOUs from issuer without auth.";
+
+				terResult	= terNO_AUTH;
+			}
+		}
 	}
 
 	STAmount		saPaid;
