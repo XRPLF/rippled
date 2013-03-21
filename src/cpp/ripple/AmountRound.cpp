@@ -46,17 +46,14 @@ static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool ro
 	}
 	else if (value > STAmount::cMaxValue)
 	{
-		cLog(lsWARNING) << "A: " << value << " : " << offset;
 		while (value > (10 * STAmount::cMaxValue))
 		{
 			value /= 10;
 			++offset;
 		}
-		cLog(lsWARNING) << "B: " << value << " : " << offset;
 		value += 9;		// add before last divide
 		value /= 10;
 		++offset;
-		cLog(lsWARNING) << "C: " << value << " : " << offset;
 	}
 	cLog(lsDEBUG) << "canonicalize> " << value << ":" << offset << (roundUp ? " up" : " down");
 }
