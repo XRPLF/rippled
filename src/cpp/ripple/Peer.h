@@ -117,6 +117,7 @@ public:
 	//bool operator == (const Peer& other);
 
 	std::string& getIP() { return mIpPort.first; }
+	std::string getDisplayName() { return mCluster ? mNodeName : mIpPort.first; }
 	int getPort() { return mIpPort.second; }
 
 	void setIpPort(const std::string& strIP, int iPort);
