@@ -32,26 +32,31 @@ static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool ro
 	{
 		if (offset < 0)
 		{
+			int loops = 0;
 			while (offset < -1)
 			{
 				value /= 10;
 				++offset;
+				++loops;
 			}
-			value += 10;	// add before last divide
+			value += (loops >= 2) ? 9 : 10;	// add before last divide
 			value /= 10;
 			++offset;
 		}
 	}
 	else if (value > STAmount::cMaxValue)
 	{
+		cLog(lsWARNING) << "A: " << value << " : " << offset;
 		while (value > (10 * STAmount::cMaxValue))
 		{
 			value /= 10;
 			++offset;
 		}
+		cLog(lsWARNING) << "B: " << value << " : " << offset;
 		value += 9;		// add before last divide
 		value /= 10;
 		++offset;
+		cLog(lsWARNING) << "C: " << value << " : " << offset;
 	}
 	cLog(lsDEBUG) << "canonicalize> " << value << ":" << offset << (roundUp ? " up" : " down");
 }
@@ -294,6 +299,10 @@ BOOST_AUTO_TEST_SUITE(amountRound)
 
 BOOST_AUTO_TEST_CASE( amountRound_test )
 {
+	uint64 value = 25000000000000000ull;
+	int offset = -14;
+	canonicalizeRound(false, value, offset, true);
+
 	STAmount one(CURRENCY_ONE, ACCOUNT_ONE, 1);
 	STAmount two(CURRENCY_ONE, ACCOUNT_ONE, 2);
 	STAmount three(CURRENCY_ONE, ACCOUNT_ONE, 3);
