@@ -52,7 +52,8 @@ bool ValidationCollection::addValidation(SerializedValidation::ref val)
 	}
 	else
 	{
-		cLog(lsINFO) << "Node " << signer.humanNodePublic() << " not in UNL";
+		cLog(lsDEBUG) << "Node " << signer.humanNodePublic() << " not in UNL st=" << val->getSignTime() <<
+			", hash=" << val->getLedgerHash() << ", shash=" << val->getSigningHash();
 	}
 
 	uint256 hash = val->getLedgerHash();
