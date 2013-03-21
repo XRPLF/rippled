@@ -788,7 +788,7 @@ Json::Value	PathState::getJson() const
 
 // If needed, advance to next funded offer.
 // - Automatically advances to first offer.
-// - Set bEntryAdvance to advance to next entry.
+// --> bEntryAdvance: true, to advance to next entry. false, recalculate.
 // <-- uOfferIndex : 0=end of list.
 TER RippleCalc::calcNodeAdvance(
 	const unsigned int			uNode,				// 0 < uNode < uLast
@@ -1081,8 +1081,8 @@ TER RippleCalc::calcNodeAdvance(
 }
 
 // Between offer nodes, the fee charged may vary.  Therefore, process one inbound offer at a time.  Propagate the inbound offer's
-// requirements to the previous node.  The previous node adjusts the amount output and the amount spent on fees.  Continue process
-// till request is satisified while we the rate does not increase past the initial rate.
+// requirements to the previous node.  The previous node adjusts the amount output and the amount spent on fees.  Continue
+// processing until the request is satisified as long as the rate does not increase past the initial rate.
 TER RippleCalc::calcNodeDeliverRev(
 	const unsigned int			uNode,			// 0 < uNode < uLast
 	PathState&					psCur,
@@ -1171,6 +1171,9 @@ TER RippleCalc::calcNodeDeliverRev(
 		else if (saOutFeeRate < saRateMax)
 		{
 			// Reducing rate. Additional offers will only considered for this increment if they are at least this good.
+			// At this point, the overall rate is reducing, while the overall rate is not saOutFeeRate, it would be wrong to add
+			// anthing with a rate above saOutFeeRate.
+			// The rate would be reduced if the current offer was from the issuer and the previous offer wasn't.
 
 			saRateMax	= saOutFeeRate;
 
@@ -1207,8 +1210,7 @@ TER RippleCalc::calcNodeDeliverRev(
 
 		// Compute portion of input needed to cover actual output.
 
-		// XXX This needs to round up!
-		STAmount	saInPassReq	= STAmount::multiply(saOutPass, saOfrRate, saTakerPays);
+		STAmount	saInPassReq	= STAmount::mulRound(saOutPass, saOfrRate, saTakerPays, true);
 		STAmount	saInPassAct;
 
 		cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: saInPassReq=%s saOfrRate=%s saOutPass=%s saOutPlusFees=%s")
@@ -1217,8 +1219,16 @@ TER RippleCalc::calcNodeDeliverRev(
 			% saOutPass
 			% saOutPlusFees);
 
+		if (!saInPassReq)
+		{
+			// After rounding did not want anything.
+			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: micro offer is unfunded."));
+
+			bEntryAdvance	= true;
+			continue;
+		}
 		// Find out input amount actually available at current rate.
-		if (!!uPrvAccountID)
+		else if (!!uPrvAccountID)
 		{
 			// account --> OFFER --> ?
 			// Due to node expansion, previous is guaranteed to be the issuer.
@@ -1300,15 +1310,16 @@ TER RippleCalc::calcNodeDeliverRev(
 			// Offer became unfunded.
 			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: offer became unfunded."));
 
-			bEntryAdvance	= true;
+			bEntryAdvance	= true;		// XXX When don't we want to set advance?
 		}
 
 		saOutAct	+= saOutPass;
 		saPrvDlvReq	+= saInPassAct;
 	}
 
+// XXX Perhaps need to check if partial is okay to relax this?
 	if (tesSUCCESS == terResult && !saOutAct)
-		terResult	= tecPATH_DRY;
+		terResult	= tecPATH_DRY;												// Unable to meet request, consider path dry.
 
 	return terResult;
 }
