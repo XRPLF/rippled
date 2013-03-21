@@ -1056,8 +1056,16 @@ static void checkValidation(Job&, SerializedValidation::pointer val, uint256 sig
 			return;
 		}
 
+		std::string source;
+		Peer::pointer lp = peer.lock();
+		if (lp)
+			source = lp->getDisplayName();
+		else
+			source = "unknown";
+
 		std::set<uint64> peers;
-		if (theApp->getOPs().recvValidation(val) && theApp->getSuppression().swapSet(signingHash, peers, SF_RELAYED))
+		if (theApp->getOPs().recvValidation(val, source) &&
+			theApp->getSuppression().swapSet(signingHash, peers, SF_RELAYED))
 		{
 			PackedMessage::pointer message = boost::make_shared<PackedMessage>(*packet, ripple::mtVALIDATION);
 			theApp->getConnectionPool().relayMessageBut(peers, message);

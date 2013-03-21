@@ -1164,10 +1164,10 @@ std::vector<RippleAddress>
 	return accounts;
 }
 
-bool NetworkOPs::recvValidation(SerializedValidation::ref val)
+bool NetworkOPs::recvValidation(SerializedValidation::ref val, const std::string& source)
 {
-	cLog(lsDEBUG) << "recvValidation " << val->getLedgerHash();
-	return theApp->getValidations().addValidation(val);
+	cLog(lsDEBUG) << "recvValidation " << val->getLedgerHash() << " from " << source;
+	return theApp->getValidations().addValidation(val, source);
 }
 
 Json::Value NetworkOPs::getConsensusInfo()
