@@ -7,6 +7,80 @@
 
 SETUP_LOG();
 
+// Make sure an offer is still valid. If not, mark it unfunded.
+bool OfferCreateTransactor::bValidOffer(
+	SLE::ref			sleOfferDir,
+	const uint256&		uOfferIndex,
+	const uint160&		uOfferOwnerID,
+	const STAmount&		saOfferPays,
+	const STAmount&		saOfferGets,
+	const uint160&		uTakerAccountID,
+	boost::unordered_set<uint256>&	usOfferUnfundedFound,
+	boost::unordered_set<uint256>&	usOfferUnfundedBecame,
+	boost::unordered_set<uint160>&	usAccountTouched,
+	STAmount&			saOfferFunds) {						// <--
+	bool	bValid;
+
+	if (sleOfferDir->isFieldPresent(sfExpiration) && sleOfferDir->getFieldU32(sfExpiration) <= mEngine->getLedger()->getParentCloseTimeNC())
+	{
+		// Offer is expired. Expired offers are considered unfunded. Delete it.
+		cLog(lsINFO) << "bValidOffer: encountered expired offer";
+
+		usOfferUnfundedFound.insert(uOfferIndex);
+
+		bValid	= false;
+	}
+	else if (uOfferOwnerID == uTakerAccountID)
+	{
+		// Would take own offer. Consider old offer expired. Delete it.
+		cLog(lsINFO) << "bValidOffer: encountered taker's own old offer";
+
+		usOfferUnfundedFound.insert(uOfferIndex);
+
+		bValid	= false;
+	}
+	else if (!saOfferGets.isPositive() || !saOfferPays.isPositive())
+	{
+		// Offer has bad amounts. Consider offer expired. Delete it.
+		cLog(lsWARNING) << boost::str(boost::format("bValidOffer: BAD OFFER: saOfferPays=%s saOfferGets=%s")
+			% saOfferPays % saOfferGets);
+
+		usOfferUnfundedFound.insert(uOfferIndex);
+	}
+	else
+	{
+		cLog(lsINFO) << "bValidOffer: saOfferPays=" << saOfferPays.getFullText();
+
+		saOfferFunds	= mEngine->getNodes().accountFunds(uOfferOwnerID, saOfferPays);
+
+		if (!saOfferFunds.isPositive())
+		{
+			// Offer is unfunded, possibly due to previous balance action.
+			cLog(lsINFO) << "bValidOffer: offer unfunded: delete";
+
+			boost::unordered_set<uint160>::iterator	account	= usAccountTouched.find(uOfferOwnerID);
+			if (account != usAccountTouched.end())
+			{
+				// Previously touched account.
+				usOfferUnfundedBecame.insert(uOfferIndex);	// Delete unfunded offer on success.
+			}
+			else
+			{
+				// Never touched source account.
+				usOfferUnfundedFound.insert(uOfferIndex);	// Delete found unfunded offer when possible.
+			}
+
+			bValid	= false;
+		}
+		else
+		{
+			bValid	= true;
+		}
+	}
+
+	return bValid;
+}
+
 // Take as much as possible. Adjusts account balances. Charges fees on top to taker.
 // -->    uBookBase: The order book to take against.
 // -->  saTakerPays: What the taker offers (w/ issuer)
@@ -28,7 +102,7 @@ TER OfferCreateTransactor::takeOffers(
 	bool&				bUnfunded)
 {
 	// The book has the most elements. Take the perspective of the book.
-	// Book is ordered for taker: taker pays / taker gets, < is better
+	// Book is ordered for taker: taker pays / taker gets (smaller is better)
 
 	// The order is for the other books currencys for get and pays are opposites.
 	// We want the same ratio for the respective currencies.
@@ -141,162 +215,121 @@ TER OfferCreateTransactor::takeOffers(
 			STAmount		saOfferPays		= sleOffer->getFieldAmount(sfTakerGets);
 			STAmount		saOfferGets		= sleOffer->getFieldAmount(sfTakerPays);
 
-			if (sleOffer->isFieldPresent(sfExpiration) && sleOffer->getFieldU32(sfExpiration) <= mEngine->getLedger()->getParentCloseTimeNC())
-			{
-				// Offer is expired. Expired offers are considered unfunded. Delete it.
-				cLog(lsINFO) << "takeOffers: encountered expired offer";
+			STAmount		saOfferFunds;	// Funds of offer owner to payout.
+			bool			bValid;
 
-				usOfferUnfundedFound.insert(uOfferIndex);
-			}
-			else if (uOfferOwnerID == uTakerAccountID)
-			{
-				// Would take own offer. Consider old offer expired. Delete it.
-				cLog(lsINFO) << "takeOffers: encountered taker's own old offer";
+			bValid	=  bValidOffer(
+				sleOfferDir, uOfferIndex, uOfferOwnerID, saOfferPays, saOfferGets,
+				uTakerAccountID,
+				usOfferUnfundedFound, usOfferUnfundedBecame, usAccountTouched,
+				saOfferFunds);
 
-				usOfferUnfundedBecame.insert(uOfferIndex);
-			}
-			else if (!saOfferGets.isPositive() || !saOfferPays.isPositive())
-			{
-				// Offer has bad amounts. Consider offer expired. Delete it.
-				cLog(lsWARNING) << boost::str(boost::format("takeOffers: BAD OFFER: saOfferPays=%s saOfferGets=%s")
-					% saOfferPays % saOfferGets);
+			if (bValid) {
+				STAmount	saSubTakerPaid;
+				STAmount	saSubTakerGot;
+				STAmount	saTakerIssuerFee;
+				STAmount	saOfferIssuerFee;
+				STAmount	saOfferRate	= STAmount::setRate(uTipQuality);
 
-				usOfferUnfundedFound.insert(uOfferIndex);
-			}
-			else
-			{
-				// Get offer funds available.
+				cLog(lsINFO) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
+				cLog(lsINFO) << "takeOffers: applyOffer:    saTakerPaid: " << saTakerPaid.getFullText();
+				cLog(lsINFO) << "takeOffers: applyOffer:   saTakerFunds: " << saTakerFunds.getFullText();
+				cLog(lsINFO) << "takeOffers: applyOffer:   saOfferFunds: " << saOfferFunds.getFullText();
+				cLog(lsINFO) << "takeOffers: applyOffer:    saOfferPays: " << saOfferPays.getFullText();
+				cLog(lsINFO) << "takeOffers: applyOffer:    saOfferGets: " << saOfferGets.getFullText();
+				cLog(lsINFO) << "takeOffers: applyOffer:    saOfferRate: " << saOfferRate.getFullText();
+				cLog(lsINFO) << "takeOffers: applyOffer: saSubTakerPays: " << saSubTakerPays.getFullText();
+				cLog(lsINFO) << "takeOffers: applyOffer: saSubTakerGets: " << saSubTakerGets.getFullText();
+				cLog(lsINFO) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
+				cLog(lsINFO) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText();
 
-				cLog(lsINFO) << "takeOffers: saOfferPays=" << saOfferPays.getFullText();
+				bool	bOfferDelete	= STAmount::applyOffer(
+					lesActive.rippleTransferRate(uTakerAccountID, uOfferOwnerID, uTakerPaysAccountID),
+					lesActive.rippleTransferRate(uOfferOwnerID, uTakerAccountID, uTakerGetsAccountID),
+					saOfferRate,
+					saOfferFunds,
+					saTakerFunds,
+					saOfferPays,
+					saOfferGets,
+					saSubTakerPays,
+					saSubTakerGets,
+					saSubTakerPaid,
+					saSubTakerGot,
+					saTakerIssuerFee,
+					saOfferIssuerFee);
 
-				STAmount		saOfferFunds	= lesActive.accountFunds(uOfferOwnerID, saOfferPays);
-				SLE::pointer	sleOfferAccount;	// Owner of offer.
+				cLog(lsINFO) << "takeOffers: applyOffer: saSubTakerPaid: " << saSubTakerPaid.getFullText();
+				cLog(lsINFO) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText();
 
-				if (!saOfferFunds.isPositive())		// Includes zero.
+				// Adjust offer
+
+				// Offer owner will pay less.  Subtract what taker just got.
+				sleOffer->setFieldAmount(sfTakerGets, saOfferPays -= saSubTakerGot);
+
+				// Offer owner will get less.  Subtract what owner just paid.
+				sleOffer->setFieldAmount(sfTakerPays, saOfferGets -= saSubTakerPaid);
+
+				mEngine->entryModify(sleOffer);
+
+				if (bOfferDelete)
 				{
-					// Offer is unfunded, possibly due to previous balance action.
-					cLog(lsINFO) << "takeOffers: offer unfunded: delete";
+					// Offer now fully claimed or now unfunded.
+					cLog(lsINFO) << "takeOffers: Offer claimed: Delete.";
 
-					boost::unordered_set<uint160>::iterator	account	= usAccountTouched.find(uOfferOwnerID);
-					if (account != usAccountTouched.end())
+					usOfferUnfundedBecame.insert(uOfferIndex);	// Delete unfunded offer on success.
+
+					// Offer owner's account is no longer pristine.
+					usAccountTouched.insert(uOfferOwnerID);
+				}
+				else if (saSubTakerGot)
+				{
+					cLog(lsINFO) << "takeOffers: Offer partial claim.";
+
+					if (!saOfferPays.isPositive() || !saOfferGets.isPositive())
 					{
-						// Previously touched account.
-						usOfferUnfundedBecame.insert(uOfferIndex);	// Delete unfunded offer on success.
-					}
-					else
-					{
-						// Never touched source account.
-						usOfferUnfundedFound.insert(uOfferIndex);	// Delete found unfunded offer when possible.
+						cLog(lsWARNING) << "takeOffers: ILLEGAL OFFER RESULT.";
+						bUnfunded	= true;
+						terResult	= bOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
 					}
 				}
 				else
 				{
-					STAmount	saSubTakerPaid;
-					STAmount	saSubTakerGot;
-					STAmount	saTakerIssuerFee;
-					STAmount	saOfferIssuerFee;
-					STAmount	saOfferRate	= STAmount::setRate(uTipQuality);
+					// Taker got nothing, probably due to rounding. Consider taker unfunded.
+					cLog(lsINFO) << "takeOffers: No claim.";
 
-					cLog(lsINFO) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
-					cLog(lsINFO) << "takeOffers: applyOffer:    saTakerPaid: " << saTakerPaid.getFullText();
-					cLog(lsINFO) << "takeOffers: applyOffer:   saTakerFunds: " << saTakerFunds.getFullText();
-					cLog(lsINFO) << "takeOffers: applyOffer:   saOfferFunds: " << saOfferFunds.getFullText();
-					cLog(lsINFO) << "takeOffers: applyOffer:    saOfferPays: " << saOfferPays.getFullText();
-					cLog(lsINFO) << "takeOffers: applyOffer:    saOfferGets: " << saOfferGets.getFullText();
-					cLog(lsINFO) << "takeOffers: applyOffer:    saOfferRate: " << saOfferRate.getFullText();
-					cLog(lsINFO) << "takeOffers: applyOffer: saSubTakerPays: " << saSubTakerPays.getFullText();
-					cLog(lsINFO) << "takeOffers: applyOffer: saSubTakerGets: " << saSubTakerGets.getFullText();
-					cLog(lsINFO) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
-					cLog(lsINFO) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText();
+					bUnfunded	= true;
+					terResult	= tesSUCCESS;					// Done.
+				}
 
-					bool	bOfferDelete	= STAmount::applyOffer(
-						lesActive.rippleTransferRate(uTakerAccountID, uOfferOwnerID, uTakerPaysAccountID),
-						lesActive.rippleTransferRate(uOfferOwnerID, uTakerAccountID, uTakerGetsAccountID),
-						saOfferRate,
-						saOfferFunds,
-						saTakerFunds,
-						saOfferPays,
-						saOfferGets,
-						saSubTakerPays,
-						saSubTakerGets,
-						saSubTakerPaid,
-						saSubTakerGot,
-						saTakerIssuerFee,
-						saOfferIssuerFee);
+				assert(uTakerGetsAccountID == saSubTakerGot.getIssuer());
+				assert(uTakerPaysAccountID == saSubTakerPaid.getIssuer());
 
-					cLog(lsINFO) << "takeOffers: applyOffer: saSubTakerPaid: " << saSubTakerPaid.getFullText();
+				if (!bUnfunded)
+				{
+					// Distribute funds. The sends charge appropriate fees which are implied by offer.
+
+					terResult	= lesActive.accountSend(uOfferOwnerID, uTakerAccountID, saSubTakerGot);				// Offer owner pays taker.
+
+					if (tesSUCCESS == terResult)
+						terResult	= lesActive.accountSend(uTakerAccountID, uOfferOwnerID, saSubTakerPaid);			// Taker pays offer owner.
+
+					// Reduce amount considered paid by taker's rate (not actual cost).
+					STAmount	saTakerCould	= saTakerPays - saTakerPaid;	// Taker could pay.
+					if (saTakerFunds < saTakerCould)
+						saTakerCould	= saTakerFunds;
+
+					STAmount	saTakerUsed	= STAmount::multiply(saSubTakerGot, saTakerRate, saTakerPays);
+
+					cLog(lsINFO) << "takeOffers: applyOffer:   saTakerCould: " << saTakerCould.getFullText();
 					cLog(lsINFO) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText();
+					cLog(lsINFO) << "takeOffers: applyOffer:    saTakerRate: " << saTakerRate.getFullText();
+					cLog(lsINFO) << "takeOffers: applyOffer:    saTakerUsed: " << saTakerUsed.getFullText();
 
-					// Adjust offer
+					saTakerPaid		+= std::min(saTakerCould, saTakerUsed);
+					saTakerGot		+= saSubTakerGot;
 
-					// Offer owner will pay less.  Subtract what taker just got.
-					sleOffer->setFieldAmount(sfTakerGets, saOfferPays -= saSubTakerGot);
-
-					// Offer owner will get less.  Subtract what owner just paid.
-					sleOffer->setFieldAmount(sfTakerPays, saOfferGets -= saSubTakerPaid);
-
-					mEngine->entryModify(sleOffer);
-
-					if (bOfferDelete)
-					{
-						// Offer now fully claimed or now unfunded.
-						cLog(lsINFO) << "takeOffers: Offer claimed: Delete.";
-
-						usOfferUnfundedBecame.insert(uOfferIndex);	// Delete unfunded offer on success.
-
-						// Offer owner's account is no longer pristine.
-						usAccountTouched.insert(uOfferOwnerID);
-					}
-					else if (saSubTakerGot)
-					{
-						cLog(lsINFO) << "takeOffers: Offer partial claim.";
-
-						if (!saOfferPays.isPositive() || !saOfferGets.isPositive())
-						{
-							cLog(lsWARNING) << "takeOffers: ILLEGAL OFFER RESULT.";
-							bUnfunded	= true;
-							terResult	= bOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
-						}
-					}
-					else
-					{
-						// Taker got nothing, probably due to rounding. Consider taker unfunded.
-						cLog(lsINFO) << "takeOffers: No claim.";
-
-						bUnfunded	= true;
-						terResult	= tesSUCCESS;					// Done.
-					}
-
-					assert(uTakerGetsAccountID == saSubTakerGot.getIssuer());
-					assert(uTakerPaysAccountID == saSubTakerPaid.getIssuer());
-
-					if (!bUnfunded)
-					{
-						// Distribute funds. The sends charge appropriate fees which are implied by offer.
-
-						terResult	= lesActive.accountSend(uOfferOwnerID, uTakerAccountID, saSubTakerGot);				// Offer owner pays taker.
-
-						if (tesSUCCESS == terResult)
-							terResult	= lesActive.accountSend(uTakerAccountID, uOfferOwnerID, saSubTakerPaid);			// Taker pays offer owner.
-
-						// Reduce amount considered paid by taker's rate (not actual cost).
-						STAmount	saTakerCould	= saTakerPays - saTakerPaid;	// Taker could pay.
-						if (saTakerFunds < saTakerCould)
-							saTakerCould	= saTakerFunds;
-
-						STAmount	saTakerUsed	= STAmount::multiply(saSubTakerGot, saTakerRate, saTakerPays);
-
-						cLog(lsINFO) << "takeOffers: applyOffer:   saTakerCould: " << saTakerCould.getFullText();
-						cLog(lsINFO) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText();
-						cLog(lsINFO) << "takeOffers: applyOffer:    saTakerRate: " << saTakerRate.getFullText();
-						cLog(lsINFO) << "takeOffers: applyOffer:    saTakerUsed: " << saTakerUsed.getFullText();
-
-						saTakerPaid		+= std::min(saTakerCould, saTakerUsed);
-						saTakerGot		+= saSubTakerGot;
-
-						if (tesSUCCESS == terResult)
-							terResult	= temUNCERTAIN;
-					}
+					if (tesSUCCESS == terResult)
+						terResult	= temUNCERTAIN;
 				}
 			}
 		}

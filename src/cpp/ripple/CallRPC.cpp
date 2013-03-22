@@ -328,6 +328,25 @@ Json::Value RPCParser::parseGetCounts(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+// json <command> <json>
+Json::Value RPCParser::parseJson(const Json::Value& jvParams)
+{
+	Json::Reader	reader;
+	Json::Value		jvRequest;
+
+	cLog(lsTRACE) << "RPC method: " << jvParams[0u];
+	cLog(lsTRACE) << "RPC json: " << jvParams[1u];
+
+	if (reader.parse(jvParams[1u].asString(), jvRequest))
+	{
+		jvRequest["method"]	= jvParams[0u];
+
+		return jvRequest;
+	}
+
+	return rpcError(rpcINVALID_PARAMS);
+}
+
 // ledger [id|index|current|closed|validated] [full]
 Json::Value RPCParser::parseLedger(const Json::Value& jvParams)
 {
@@ -631,6 +650,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"connect",				&RPCParser::parseConnect,				1,  2	},
 		{	"consensus_info",		&RPCParser::parseAsIs,					0,	0	},
 		{	"get_counts",			&RPCParser::parseGetCounts,				0,	1	},
+		{	"json",					&RPCParser::parseJson,					2,  2	},
 		{	"ledger",				&RPCParser::parseLedger,				0,  2	},
 		{	"ledger_accept",		&RPCParser::parseAsIs,					0,  0	},
 		{	"ledger_closed",		&RPCParser::parseAsIs,					0,  0	},

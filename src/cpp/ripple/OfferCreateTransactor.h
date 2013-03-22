@@ -6,6 +6,18 @@
 class OfferCreateTransactor : public Transactor
 {
 protected:
+	bool bValidOffer(
+		SLE::ref			sleOfferDir,
+		const uint256&		uOffer,
+		const uint160&		uOfferOwnerID,
+		const STAmount&		saOfferPays,
+		const STAmount&		saOfferGets,
+		const uint160&		uTakerAccountID,
+		boost::unordered_set<uint256>&	usOfferUnfundedFound,
+		boost::unordered_set<uint256>&	usOfferUnfundedBecame,
+		boost::unordered_set<uint160>&	usAccountTouched,
+		STAmount&			saOfferFunds);
+
 	TER takeOffers(
 		const bool			bOpenLedger,
 		const bool			bPassive,
