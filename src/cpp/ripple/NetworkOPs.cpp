@@ -1665,18 +1665,20 @@ void NetworkOPs::unsubAccountChanges(InfoSub* isrListener)
 // <-- bool: true=added, false=already there
 bool NetworkOPs::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
 {
-	Ledger::pointer lpClosed	= getClosedLedger();
+	Ledger::pointer lpClosed	= getValidatedLedger();
+	if (lpClosed)
+	{
+		jvResult["ledger_index"]	= lpClosed->getLedgerSeq();
+		jvResult["ledger_hash"]		= lpClosed->getHash().ToString();
+		jvResult["ledger_time"]		= Json::Value::UInt(lpClosed->getCloseTimeNC());
 
-	jvResult["ledger_index"]	= lpClosed->getLedgerSeq();
-	jvResult["ledger_hash"]		= lpClosed->getHash().ToString();
-	jvResult["ledger_time"]		= Json::Value::UInt(lpClosed->getCloseTimeNC());
+		jvResult["fee_ref"]			= Json::UInt(lpClosed->getReferenceFeeUnits());
+		jvResult["fee_base"]		= Json::UInt(lpClosed->getBaseFee());
+		jvResult["reserve_base"]	= Json::UInt(lpClosed->getReserve(0));
+		jvResult["reserve_inc"]		= Json::UInt(lpClosed->getReserveInc());
+	}
 
-	jvResult["fee_ref"]			= Json::UInt(lpClosed->getReferenceFeeUnits());
-	jvResult["fee_base"]		= Json::UInt(lpClosed->getBaseFee());
-	jvResult["reserve_base"]	= Json::UInt(lpClosed->getReserve(0));
-	jvResult["reserve_inc"]		= Json::UInt(lpClosed->getReserveInc());
-
-	if ((mMode == omFULL) || (mMode == omTRACKING))
+	if ((mMode == omFULL) || (mMode == omTRACKING) && !isNeedNetworkLedger())
 		jvResult["validated_ledgers"]	= theApp->getLedgerMaster().getCompleteLedgers();
 
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
