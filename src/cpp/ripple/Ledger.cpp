@@ -842,14 +842,11 @@ Json::Value Ledger::getJson(int options)
 
 		if (mCloseTime != 0)
 		{
+			ledger["close_time"]			= mCloseTime;
+			ledger["close_time_human"]		= boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
+			ledger["close_time_resolution"] = mCloseResolution;
 			if ((mCloseFlags & sLCF_NoConsensusTime) != 0)
-				ledger["close_time_estimate"] = boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
-			else
-			{
-				ledger["close_time"]			= mCloseTime;
-				ledger["close_time_human"]		= boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
-				ledger["close_time_resolution"] = mCloseResolution;
-			}
+				ledger["close_time_estimated"] = true;
 		}
 	}
 	else
