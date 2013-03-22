@@ -14,8 +14,6 @@
 #include "Log.h"
 #include "SHAMapSync.h"
 
-#define TX_ACQUIRE_TIMEOUT	250
-
 #define LEDGER_TOTAL_PASSES 8
 #define LEDGER_RETRY_PASSES 5
 
@@ -28,159 +26,6 @@ typedef std::map<uint256, LCTransaction::pointer>::value_type u256_lct_pair;
 
 SETUP_LOG();
 DECLARE_INSTANCE(LedgerConsensus);
-DECLARE_INSTANCE(TransactionAcquire);
-
-TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, TX_ACQUIRE_TIMEOUT), mHaveRoot(false)
-{
-	mMap = boost::make_shared<SHAMap>(smtTRANSACTION, hash);
-}
-
-void TransactionAcquire::done()
-{
-	if (mFailed)
-	{
-		cLog(lsWARNING) << "Failed to acquire TX set " << mHash;
-		theApp->getOPs().mapComplete(mHash, SHAMap::pointer());
-	}
-	else
-	{
-		cLog(lsINFO) << "Acquired TX set " << mHash;
-		mMap->setImmutable();
-		theApp->getOPs().mapComplete(mHash, mMap);
-	}
-	theApp->getMasterLedgerAcquire().dropLedger(mHash);
-}
-
-void TransactionAcquire::onTimer(bool progress)
-{
-	if (!getPeerCount())
-	{ // out of peers
-		cLog(lsWARNING) << "Out of peers for TX set " << getHash();
-
-		bool found = false;
-		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
-		BOOST_FOREACH(Peer::ref peer, peerList)
-		{
-			if (peer->hasTxSet(getHash()))
-			{
-				found = true;
-				peerHas(peer);
-			}
-		}
-		if (!found)
-		{
-			BOOST_FOREACH(Peer::ref peer, peerList)
-				peerHas(peer);
-		}
-	}
-	else if (!progress)
-		trigger(Peer::pointer());
-}
-
-boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast()
-{
-	return boost::shared_polymorphic_downcast<PeerSet>(shared_from_this());
-}
-
-void TransactionAcquire::trigger(Peer::ref peer)
-{
-	if (mComplete || mFailed)
-	{
-		cLog(lsINFO) << "complete or failed";
-		return;
-	}
-	if (!mHaveRoot)
-	{
-		cLog(lsTRACE) << "TransactionAcquire::trigger " << (peer ? "havePeer" : "noPeer") << " no root";
-		ripple::TMGetLedger tmGL;
-		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
-		tmGL.set_itype(ripple::liTS_CANDIDATE);
-		if (getTimeouts() != 0)
-			tmGL.set_querytype(ripple::qtINDIRECT);
-		*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
-		sendRequest(tmGL, peer);
-	}
-	else
-	{
-		std::vector<SHAMapNode> nodeIDs;
-		std::vector<uint256> nodeHashes;
-		ConsensusTransSetSF sf;
-		mMap->getMissingNodes(nodeIDs, nodeHashes, 256, &sf);
-		if (nodeIDs.empty())
-		{
-			if (mMap->isValid())
-				mComplete = true;
-			else
-				mFailed = true;
-			done();
-			return;
-		}
-		ripple::TMGetLedger tmGL;
-		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
-		tmGL.set_itype(ripple::liTS_CANDIDATE);
-		if (getTimeouts() != 0)
-			tmGL.set_querytype(ripple::qtINDIRECT);
-		BOOST_FOREACH(SHAMapNode& it, nodeIDs)
-			*(tmGL.add_nodeids()) = it.getRawString();
-		sendRequest(tmGL, peer);
-	}
-}
-
-SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
-	const std::list< std::vector<unsigned char> >& data, Peer::ref peer)
-{
-	if (mComplete)
-	{
-		cLog(lsTRACE) << "TX set complete";
-		return SMAddNode();
-	}
-	if (mFailed)
-	{
-		cLog(lsTRACE) << "TX set failed";
-		return SMAddNode();
-	}
-	try
-	{
-		if (nodeIDs.empty())
-			return SMAddNode::invalid();
-		std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
-		std::list< std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
-		ConsensusTransSetSF sf;
-		while (nodeIDit != nodeIDs.end())
-		{
-			if (nodeIDit->isRoot())
-			{
-				if (mHaveRoot)
-				{
-					cLog(lsWARNING) << "Got root TXS node, already have it";
-					return SMAddNode();
-				}
-				if (!mMap->addRootNode(getHash(), *nodeDatait, snfWIRE, NULL))
-				{
-					cLog(lsWARNING) << "TX acquire got bad root node";
-					return SMAddNode::invalid();
-				}
-				else
-					mHaveRoot = true;
-			}
-			else if (!mMap->addKnownNode(*nodeIDit, *nodeDatait, &sf))
-			{
-				cLog(lsWARNING) << "TX acquire got bad non-root node";
-				return SMAddNode::invalid();
-			}
-			++nodeIDit;
-			++nodeDatait;
-		}
-		trigger(peer);
-		progress();
-		return SMAddNode::useful();
-	}
-	catch (...)
-	{
-		cLog(lsERROR) << "Peer sends us junky transaction node data";
-		return SMAddNode::invalid();
-	}
-}
 
 void LCTransaction::setVote(const uint160& peer, bool votesYes)
 { // Track a peer's yes/no vote on a particular disputed transaction
@@ -356,7 +201,7 @@ void LedgerConsensus::checkOurValidation()
 	v->setTrusted();
 	v->sign(signingHash, mValPrivate);
 	theApp->isNew(signingHash);
-	theApp->getValidations().addValidation(v);
+	theApp->getValidations().addValidation(v, "localMissing");
 	std::vector<unsigned char> validation = v->getSigned();
 	ripple::TMValidation val;
 	val.set_validation(&validation[0], validation.size());
@@ -1337,7 +1182,7 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 		v->sign(signingHash, mValPrivate);
 		v->setTrusted();
 		theApp->isNew(signingHash); // suppress it if we receive it
-		theApp->getValidations().addValidation(v);
+		theApp->getValidations().addValidation(v, "local");
 		theApp->getOPs().setLastValidation(v);
 		std::vector<unsigned char> validation = v->getSigned();
 		ripple::TMValidation val;

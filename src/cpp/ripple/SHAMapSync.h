@@ -12,17 +12,11 @@ class ConsensusTransSetSF : public SHAMapSyncFilter
 { // sync filter for transaction sets during consensus building
 public:
 	ConsensusTransSetSF() { ; }
+
 	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
-		const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType)
-	{
-		// WRITEME: If 'isLeaf' is true, this is a transaction
-		theApp->getTempNodeCache().store(nodeHash, nodeData);
-	}
-	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
-	{
-		// WRITEME: We could check our own map, we could check transaction tables
-		return theApp->getTempNodeCache().retrieve(nodeHash, nodeData);
-	}
+		const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType);
+
+	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData);
 };
 
 // This class is only needed on add functions

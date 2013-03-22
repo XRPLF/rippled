@@ -65,19 +65,11 @@ std::string EncodeBase64(const std::string& s)
 // TODO New routine for parsing ledger parameters, other routines should standardize on this.
 static bool jvParseLedger(Json::Value& jvRequest, const std::string& strLedger)
 {
-	if (strLedger == "closed")
+	if (strLedger == "current" || strLedger == "closed" || strLedger == "validated")
 	{
-		jvRequest["ledger_index"]	= -1;
+		jvRequest["ledger_index"]	= strLedger;
 	}
-	else if (strLedger == "current")
-	{
-		jvRequest["ledger_index"]	= -2;
-	}
-	else if (strLedger == "validated")
-	{
-		jvRequest["ledger_index"]	= -3;
-	}
-	else if (strLedger.length() > 12)
+	else if (strLedger.length() == 64)
 	{
 		// YYY Could confirm this is a uint256.
 		jvRequest["ledger_hash"]	= strLedger;
@@ -143,7 +135,7 @@ Json::Value RPCParser::parseInternal(const Json::Value& jvParams)
 }
 
 // account_info <account>|<nickname>|<account_public_key>
-// account_info <seed>|<pass_phrase>|<key> [<index>]
+// account_info <seed>|<pass_phrase>|<key> [[<index>] <ledger>]
 Json::Value RPCParser::parseAccountInfo(const Json::Value& jvParams)
 {
 	Json::Value		jvRequest(Json::objectValue);
@@ -158,6 +150,9 @@ Json::Value RPCParser::parseAccountInfo(const Json::Value& jvParams)
 
 	jvRequest["ident"]			= strIdent;
 	jvRequest["account_index"]	= iIndex;
+
+	if (jvParams.size() == 3 && !jvParseLedger(jvRequest, jvParams[2u].asString()))
+		return rpcError(rpcLGR_IDX_MALFORMED);
 
 	return jvRequest;
 }
@@ -333,6 +328,25 @@ Json::Value RPCParser::parseGetCounts(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+// json <command> <json>
+Json::Value RPCParser::parseJson(const Json::Value& jvParams)
+{
+	Json::Reader	reader;
+	Json::Value		jvRequest;
+
+	cLog(lsTRACE) << "RPC method: " << jvParams[0u];
+	cLog(lsTRACE) << "RPC json: " << jvParams[1u];
+
+	if (reader.parse(jvParams[1u].asString(), jvRequest))
+	{
+		jvRequest["method"]	= jvParams[0u];
+
+		return jvRequest;
+	}
+
+	return rpcError(rpcINVALID_PARAMS);
+}
+
 // ledger [id|index|current|closed|validated] [full]
 Json::Value RPCParser::parseLedger(const Json::Value& jvParams)
 {
@@ -343,20 +357,7 @@ Json::Value RPCParser::parseLedger(const Json::Value& jvParams)
 		return jvRequest;
 	}
 
-	std::string		strLedger	= jvParams[0u].asString();
-
-	if (strLedger == "current" || strLedger == "closed" || strLedger == "validated")
-	{
-		jvRequest["ledger_index"]	= strLedger;
-	}
-	else if (strLedger.length() > 12)
-	{
-		jvRequest["ledger_hash"]	= strLedger;
-	}
-	else
-	{
-		jvRequest["ledger_index"]	= lexical_cast_s<uint32>(strLedger);
-	}
+	jvParseLedger(jvRequest, jvParams[0u].asString());
 
 	if (2 == jvParams.size() && jvParams[1u].asString() == "full")
 	{
@@ -373,7 +374,7 @@ Json::Value RPCParser::parseLedgerId(const Json::Value& jvParams)
 
 	std::string		strLedger	= jvParams[0u].asString();
 
-	if (strLedger.length() > 32)
+	if (strLedger.length() == 32)
 	{
 		jvRequest["ledger_hash"]	= strLedger;
 	}
@@ -641,7 +642,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		// Request-response methods
 		// - Returns an error, or the request.
 		// - To modify the method, provide a new method in the request.
-		{	"account_info",			&RPCParser::parseAccountInfo,			1,  2	},
+		{	"account_info",			&RPCParser::parseAccountInfo,			1,  3	},
 		{	"account_lines",		&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_offers",		&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_tx",			&RPCParser::parseAccountTransactions,	2,  4	},
@@ -649,6 +650,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"connect",				&RPCParser::parseConnect,				1,  2	},
 		{	"consensus_info",		&RPCParser::parseAsIs,					0,	0	},
 		{	"get_counts",			&RPCParser::parseGetCounts,				0,	1	},
+		{	"json",					&RPCParser::parseJson,					2,  2	},
 		{	"ledger",				&RPCParser::parseLedger,				0,  2	},
 		{	"ledger_accept",		&RPCParser::parseAsIs,					0,  0	},
 		{	"ledger_closed",		&RPCParser::parseAsIs,					0,  0	},

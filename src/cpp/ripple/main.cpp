@@ -84,6 +84,7 @@ void printHelp(const po::options_description& desc)
 	cerr << "     data_store <key> <value>" << endl;
 #endif
 	cerr << "     get_counts" << endl;
+	cerr << "     json <method> <json>" << endl;
 	cerr << "     ledger [<id>|current|closed|validated] [full]" << endl;
 	cerr << "     ledger_accept" << endl;
 	cerr << "     ledger_closed" << endl;
@@ -127,6 +128,7 @@ void printHelp(const po::options_description& desc)
 
 int main(int argc, char* argv[])
 {
+	NameThread("main");
 	int					iResult	= 0;
 	po::variables_map	vm;										// Map of options.
 
@@ -148,6 +150,7 @@ int main(int argc, char* argv[])
 		("ledger", po::value<std::string>(), "Load the specified ledger and start from .")
 		("start", "Start from a fresh Ledger.")
 		("net", "Get the initial ledger from the network.")
+		("fg", "Run in the foreground.")
 	;
 
 	// Interpret positional arguments as --parameters.
@@ -183,6 +186,14 @@ int main(int argc, char* argv[])
 		{
 			iResult	= 1;
 		}
+	}
+
+	if (HaveSustain() &&
+		!vm.count("parameters") && !vm.count("fg") && !vm.count("standalone") && !vm.count("unittest"))
+	{
+		std::string logMe = DoSustain();
+		if (!logMe.empty())
+			Log(lsWARNING) << logMe;
 	}
 
 	if (vm.count("quiet"))
@@ -248,11 +259,13 @@ int main(int argc, char* argv[])
 	{
 		// No arguments. Run server.
 		setupServer();
+		NameThread("io");
 		startServer();
 	}
 	else
 	{
 		// Have a RPC command.
+		NameThread("rpc");
 		std::vector<std::string> vCmd	= vm["parameters"].as<std::vector<std::string> >();
 
 		iResult	= commandLineRPC(vCmd);

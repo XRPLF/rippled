@@ -37,7 +37,7 @@ public:
 	ValidationCollection() : mValidations("Validations", 128, 600), mWriting(false)
 	{ mStaleValidations.reserve(512); }
 
-	bool addValidation(SerializedValidation::ref);
+	bool addValidation(SerializedValidation::ref, const std::string& source);
 	ValidationSet getValidations(const uint256& ledger);
 	void getValidationCount(const uint256& ledger, bool currentOnly, int& trusted, int& untrusted);
 	void getValidationTypes(const uint256& ledger, int& full, int& partial);

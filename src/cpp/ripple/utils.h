@@ -286,6 +286,12 @@ template<typename T, typename U> T range_check_cast(const U& value, const T& min
 
 bool parseUrl(const std::string& strUrl, std::string& strScheme, std::string& strDomain, int& iPort, std::string& strPath);
 
+extern void NameThread(const char *);
+
+extern bool HaveSustain();
+extern std::string StopSustain();
+extern std::string DoSustain();
+
 #if (!defined(FORCE_NO_C11X) && (__cplusplus > 201100L)) || defined(FORCE_C11X)
 
 #define C11X

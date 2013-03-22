@@ -1072,6 +1072,7 @@ buster.testCase("Offer tests", {
 
 buster.testCase("Offer cross currency", {
   'setUp' : testutils.build_setup(),
+  // 'setUp'     : testutils.build_setup({ verbose: true }),
   'tearDown' : testutils.build_teardown(),
 
   "ripple cross currency payment - start with XRP" :
@@ -1112,7 +1113,7 @@ buster.testCase("Offer cross currency", {
             self.what = "Create offer.";
 
             self.remote.transaction()
-              .offer_create("carol", "500", "50/USD/mtgox")
+              .offer_create("carol", "500.0", "50/USD/mtgox")
               .on('proposed', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
@@ -1126,7 +1127,7 @@ buster.testCase("Offer cross currency", {
 
             self.remote.transaction()
               .payment("alice", "bob", "25/USD/mtgox")
-              .send_max("333")
+              .send_max("333.0")
               .on('proposed', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
 

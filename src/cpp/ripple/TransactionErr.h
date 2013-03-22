@@ -95,6 +95,7 @@ enum TER	// aka TransactionEngineResult
 	terFUNDS_SPENT,			// This is a free transaction, therefore don't burden network.
 	terINSUF_FEE_B,			// Can't pay fee, therefore don't burden network.
 	terNO_ACCOUNT,			// Can't pay fee, therefore don't burden network.
+	terNO_AUTH,				// Not authorized to hold IOUs.
 	terNO_LINE,				// Internal flag.
 	terOWNERS,				// Can't succeed with non-zero owner count.
 	terPRE_SEQ,				// Can't pay fee, no point in forwarding, therefore don't burden network.

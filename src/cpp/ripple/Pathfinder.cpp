@@ -714,9 +714,9 @@ boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raA
 		STAmount		saBalance	= rspEntry->getBalance();
 
 		// Filter out non
-		if (saBalance.isPositive()					// Have IOUs to send.
-			|| (rspEntry->getLimitPeer()			// Peer extends credit.
-				&& -saBalance < rspEntry->getLimitPeer()))	// Credit left.
+		if (saBalance.isPositive()								// Have IOUs to send.
+			|| (rspEntry->getLimitPeer()						// Peer extends credit.
+				&& ((-saBalance) < rspEntry->getLimitPeer())))	// Credit left.
 		{
 			usCurrencies.insert(saBalance.getCurrency());
 		}

@@ -317,6 +317,7 @@ int LoadManager::getUptime()
 
 void LoadManager::threadEntry()
 {
+	NameThread("loadmgr");
 	boost::posix_time::ptime t = boost::posix_time::microsec_clock::universal_time();
 	while (1)
 	{

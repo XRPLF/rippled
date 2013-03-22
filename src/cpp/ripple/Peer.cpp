@@ -95,6 +95,8 @@ void Peer::detach(const char *rsn, bool onIOStrand)
 	if (!mDetaching)
 	{
 		mDetaching	= true;			// Race is ok.
+
+		tLog(mCluster, lsWARNING) << "Cluster peer detach \"" << mNodeName << "\": " << rsn;
 		/*
 		cLog(lsDEBUG) << "Peer: Detach: "
 			<< ADDRESS(this) << "> "
@@ -384,7 +386,15 @@ void Peer::handleReadHeader(const boost::system::error_code& error)
 	}
 	else
 	{
-		cLog(lsINFO) << "Peer: Header: Error: " << ADDRESS(this) << ": " << error.category().name() << ": " << error.message() << ": " << error;
+		if (mCluster)
+		{
+			cLog(lsINFO) << "Peer: Cluster connection lost to \"" << mNodeName << "\": " <<
+				error.category().name() << ": " << error.message() << ": " << error;
+		}
+		else
+		{
+			cLog(lsINFO) << "Peer: Header: Error: " << getIP() << ": " << error.category().name() << ": " << error.message() << ": " << error;
+		}
 		detach("hrh2", true);
 	}
 }
@@ -397,7 +407,15 @@ void Peer::handleReadBody(const boost::system::error_code& error)
 	}
 	else if (error)
 	{
-		cLog(lsINFO) << "Peer: Body: Error: " << ADDRESS(this) << ": " << error.category().name() << ": " << error.message() << ": " << error;
+		if (mCluster)
+		{
+			cLog(lsINFO) << "Peer: Cluster connection lost to \"" << mNodeName << "\": " <<
+				error.category().name() << ": " << error.message() << ": " << error;
+		}
+		else
+		{
+			cLog(lsINFO) << "Peer: Body: Error: " << getIP() << ": " << error.category().name() << ": " << error.message() << ": " << error;
+		}
 		boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 		detach("hrb", true);
 		return;
@@ -734,6 +752,8 @@ void Peer::recvHello(ripple::TMHello& packet)
 		{
 			mCluster = true;
 			mLoad.setPrivileged();
+			cLog(lsINFO) << "Cluster connection to \"" << (mNodeName.empty() ? getIP() : mNodeName)
+				<< "\" established";
 		}
 		if (isOutbound())
 			mLoad.setOutbound();
@@ -1036,8 +1056,16 @@ static void checkValidation(Job&, SerializedValidation::pointer val, uint256 sig
 			return;
 		}
 
+		std::string source;
+		Peer::pointer lp = peer.lock();
+		if (lp)
+			source = lp->getDisplayName();
+		else
+			source = "unknown";
+
 		std::set<uint64> peers;
-		if (theApp->getOPs().recvValidation(val) && theApp->getSuppression().swapSet(signingHash, peers, SF_RELAYED))
+		if (theApp->getOPs().recvValidation(val, source) &&
+			theApp->getSuppression().swapSet(signingHash, peers, SF_RELAYED))
 		{
 			PackedMessage::pointer message = boost::make_shared<PackedMessage>(*packet, ripple::mtVALIDATION);
 			theApp->getConnectionPool().relayMessageBut(peers, message);
@@ -1394,8 +1422,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		if (!map)
 		{
 			if (packet.has_querytype() && !packet.has_requestcookie())
-			{ 	// FIXME: Don't relay requests for older ledgers we would acquire
-				// (if we don't have them, we can't get them)
+			{
 				cLog(lsDEBUG) << "Trying to route TX set request";
 				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 				std::vector<Peer::pointer> usablePeers;
@@ -1622,7 +1649,7 @@ void Peer::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_ptr)
 		if (target)
 		{
 			packet.clear_requestcookie();
-			target->sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtLEDGER_DATA), true);
+			target->sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtLEDGER_DATA), false);
 		}
 		else
 		{

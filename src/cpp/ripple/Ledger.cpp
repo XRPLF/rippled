@@ -500,10 +500,8 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 			mCloseResolution % mCloseFlags % mAccountHash.GetHex() % mTransHash.GetHex()));
 	}
 
-#if 0
-	if (!fromConsensus)
+	if (!fromConsensus && (theConfig.NODE_SIZE < 2)) // tiny or small
 		dropCache();
-#endif
 
 	if (theApp->getJobQueue().getJobCountTotal(jtPUBOLDLEDGER) < 2)
 		theApp->getLedgerMaster().resumeAcquiring();
@@ -844,14 +842,11 @@ Json::Value Ledger::getJson(int options)
 
 		if (mCloseTime != 0)
 		{
+			ledger["close_time"]			= mCloseTime;
+			ledger["close_time_human"]		= boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
+			ledger["close_time_resolution"] = mCloseResolution;
 			if ((mCloseFlags & sLCF_NoConsensusTime) != 0)
-				ledger["close_time_estimate"] = boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
-			else
-			{
-				ledger["close_time"]			= mCloseTime;
-				ledger["close_time_human"]		= boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
-				ledger["close_time_resolution"] = mCloseResolution;
-			}
+				ledger["close_time_estimated"] = true;
 		}
 	}
 	else

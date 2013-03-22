@@ -1068,7 +1068,7 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 		str(boost::format("SELECT AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta FROM "
 			"AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
 			"WHERE Account = '%s' AND AccountTransactions.LedgerSeq <= '%u' AND AccountTransactions.LedgerSeq >= '%u' "
-			"ORDER BY AccountTransactions.LedgerSeq DESC LIMIT 200;")
+			"ORDER BY AccountTransactions.LedgerSeq,AccountTransactions.TransID DESC LIMIT 200;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{
@@ -1105,7 +1105,7 @@ std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
 	std::string sql = str(boost::format("SELECT AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta FROM "
 			"AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
 			"WHERE Account = '%s' AND AccountTransactions.LedgerSeq <= '%u' AND AccountTransactions.LedgerSeq >= '%u' "
-			"ORDER BY AccountTransactions.LedgerSeq DESC LIMIT 500;")
+			"ORDER BY AccountTransactions.LedgerSeq,AccountTransactions.TransID DESC LIMIT 500;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{
@@ -1164,10 +1164,10 @@ std::vector<RippleAddress>
 	return accounts;
 }
 
-bool NetworkOPs::recvValidation(SerializedValidation::ref val)
+bool NetworkOPs::recvValidation(SerializedValidation::ref val, const std::string& source)
 {
-	cLog(lsDEBUG) << "recvValidation " << val->getLedgerHash();
-	return theApp->getValidations().addValidation(val);
+	cLog(lsDEBUG) << "recvValidation " << val->getLedgerHash() << " from " << source;
+	return theApp->getValidations().addValidation(val, source);
 }
 
 Json::Value NetworkOPs::getConsensusInfo()
@@ -1665,18 +1665,20 @@ void NetworkOPs::unsubAccountChanges(InfoSub* isrListener)
 // <-- bool: true=added, false=already there
 bool NetworkOPs::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
 {
-	Ledger::pointer lpClosed	= getClosedLedger();
+	Ledger::pointer lpClosed	= getValidatedLedger();
+	if (lpClosed)
+	{
+		jvResult["ledger_index"]	= lpClosed->getLedgerSeq();
+		jvResult["ledger_hash"]		= lpClosed->getHash().ToString();
+		jvResult["ledger_time"]		= Json::Value::UInt(lpClosed->getCloseTimeNC());
 
-	jvResult["ledger_index"]	= lpClosed->getLedgerSeq();
-	jvResult["ledger_hash"]		= lpClosed->getHash().ToString();
-	jvResult["ledger_time"]		= Json::Value::UInt(lpClosed->getCloseTimeNC());
+		jvResult["fee_ref"]			= Json::UInt(lpClosed->getReferenceFeeUnits());
+		jvResult["fee_base"]		= Json::UInt(lpClosed->getBaseFee());
+		jvResult["reserve_base"]	= Json::UInt(lpClosed->getReserve(0));
+		jvResult["reserve_inc"]		= Json::UInt(lpClosed->getReserveInc());
+	}
 
-	jvResult["fee_ref"]			= Json::UInt(lpClosed->getReferenceFeeUnits());
-	jvResult["fee_base"]		= Json::UInt(lpClosed->getBaseFee());
-	jvResult["reserve_base"]	= Json::UInt(lpClosed->getReserve(0));
-	jvResult["reserve_inc"]		= Json::UInt(lpClosed->getReserveInc());
-
-	if ((mMode == omFULL) || (mMode == omTRACKING))
+	if (((mMode == omFULL) || (mMode == omTRACKING)) && !isNeedNetworkLedger())
 		jvResult["validated_ledgers"]	= theApp->getLedgerMaster().getCompleteLedgers();
 
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);

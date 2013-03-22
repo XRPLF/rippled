@@ -48,6 +48,7 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 
 void WSDoor::startListening()
 {
+	NameThread("websocket");
 	// Generate a single SSL context for use by all connections.
     boost::shared_ptr<boost::asio::ssl::context>	mCtx;
 	mCtx	= boost::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::sslv23);

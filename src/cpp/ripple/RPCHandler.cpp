@@ -2021,9 +2021,19 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest, int& cost)
 	BOOST_FOREACH(InstanceType::InstanceCount& it, count)
 		ret[it.first] = it.second;
 
-	int dbKB = theApp->getLedgerDB()->getDB()->getKBUsed();
+	int dbKB = theApp->getLedgerDB()->getDB()->getKBUsedAll();
 	if (dbKB > 0)
-		ret["dbKB"] = dbKB;
+		ret["dbKBTotal"] = dbKB;
+
+	dbKB = theApp->getLedgerDB()->getDB()->getKBUsedDB();
+	if (dbKB > 0)
+		ret["dbKBLedger"] = dbKB;
+	dbKB = theApp->getHashNodeDB()->getDB()->getKBUsedDB();
+	if (dbKB > 0)
+		ret["dbKBHashNode"] = dbKB;
+	dbKB = theApp->getTxnDB()->getDB()->getKBUsedDB();
+	if (dbKB > 0)
+		ret["dbKBTransaction"] = dbKB;
 
 	std::string uptime;
 	int s = upTime();

@@ -36,12 +36,14 @@ class DatabaseCon
 protected:
 	Database*				mDatabase;
 	boost::recursive_mutex	mLock;
+	static int				sCount;
 
 public:
 	DatabaseCon(const std::string& name, const char *initString[], int countInit);
 	~DatabaseCon();
-	Database* getDB() { return mDatabase; }
-	boost::recursive_mutex& getDBLock() { return mLock; }
+	Database* getDB()						{ return mDatabase; }
+	boost::recursive_mutex& getDBLock()		{ return mLock; }
+	static int getCount()					{ return sCount; }
 };
 
 class Application

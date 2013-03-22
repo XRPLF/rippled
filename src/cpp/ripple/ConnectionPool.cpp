@@ -319,7 +319,7 @@ Peer::pointer ConnectionPool::peerConnect(const std::string& strIp, int iPort)
 	if (ppResult)
 	{
 		ppResult->connect(strIp, iPort);
-		cLog(lsTRACE) << "Pool: Connecting: " << ADDRESS_SHARED(ppResult) << ": " << strIp << " " << iPort;
+		cLog(lsDEBUG) << "Pool: Connecting: " << strIp << " " << iPort;
 	}
 	else
 	{

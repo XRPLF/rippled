@@ -1,5 +1,11 @@
-#include "utils.h"
-#include "uint256.h"
+
+#ifdef __linux__
+#include <sys/types.h>
+#include <sys/prctl.h>
+#include <sys/wait.h>
+#endif
+
+#include <fstream>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
@@ -8,6 +14,9 @@
 #include <boost/test/unit_test.hpp>
 
 #include <openssl/rand.h>
+
+#include "utils.h"
+#include "uint256.h"
 
 void getRand(unsigned char *buf, int num)
 {
@@ -330,6 +339,112 @@ uint32_t be32toh(uint32_t value)
 { 
 	return( _byteswap_ulong(value)); 
 }
+
+#endif
+
+#ifdef PR_SET_NAME
+#define HAVE_NAME_THREAD
+extern void NameThread(const char* n)
+{
+	static std::string pName;
+
+	if (pName.empty())
+	{
+		std::ifstream cLine("/proc/self/cmdline", std::ios::in);
+		cLine >> pName;
+		if (pName.empty())
+			pName = "rippled";
+		else
+		{
+			size_t zero = pName.find_first_of('\0');
+			if ((zero != std::string::npos) && (zero != 0))
+				pName = pName.substr(0, zero);
+			size_t slash = pName.find_last_of('/');
+			if (slash != std::string::npos)
+				pName = pName.substr(slash + 1);
+		}
+		pName += " ";
+	}
+
+	prctl(PR_SET_NAME, (pName + n).c_str(), 0, 0, 0);
+}
+#endif
+
+#ifndef HAVE_NAME_THREAD
+extern void NameThread(const char*)
+{ ; }
+#endif
+
+#ifdef __unix__
+
+static pid_t pManager = static_cast<pid_t>(0);
+static pid_t pChild = static_cast<pid_t>(0);
+
+static void pass_signal(int a)
+{
+	kill(pChild, a);
+}
+
+static void stop_manager(int)
+{
+	kill(pChild, SIGINT);
+	_exit(0);
+}
+
+bool HaveSustain()
+{
+	return true;
+}
+
+std::string StopSustain()
+{
+	if (getppid() != pManager)
+		return std::string();
+	kill(pManager, SIGHUP);
+	return "Terminating monitor";
+}
+
+std::string DoSustain()
+{
+	int childCount = 0;
+	pManager = getpid();
+	signal(SIGINT, stop_manager);
+	signal(SIGHUP, stop_manager);
+	signal(SIGUSR1, pass_signal);
+	signal(SIGUSR2, pass_signal);
+	while (1)
+	{
+		++childCount;
+		pChild = fork();
+		if (pChild == -1)
+			_exit(0);
+		if (pChild == 0)
+		{
+			NameThread("main");
+			signal(SIGINT, SIG_DFL);
+			signal(SIGHUP, SIG_DFL);
+			signal(SIGUSR1, SIG_DFL);
+			signal(SIGUSR2, SIG_DFL);
+			return str(boost::format("Launching child %d") % childCount);;
+		}
+		NameThread(boost::str(boost::format("#%d") % childCount).c_str());
+		do
+		{
+			int i;
+			sleep(10);
+			waitpid(-1, &i, 0);
+		}
+		while (kill(pChild, 0) == 0);
+		rename("core", boost::str(boost::format("core.%d") % static_cast<int>(pChild)).c_str());
+		rename("debug.log", boost::str(boost::format("debug.log.%d") % static_cast<int>(pChild)).c_str());
+	}
+}
+
+#else
+
+bool HaveSustain()			{ return false; }
+std::string DoSustain()		{ return std::string; }
+std::string StopSustain()	{ return std::string; }
 
 #endif
 
