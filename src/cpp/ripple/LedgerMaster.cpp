@@ -289,6 +289,9 @@ bool LedgerMaster::shouldAcquire(uint32 currentLedger, uint32 ledgerHistory, uin
 
 void LedgerMaster::resumeAcquiring()
 {
+	if (theApp->getOPs().isNeedNetworkLedger())
+		return;
+
 	boost::recursive_mutex::scoped_lock ml(mLock);
 
 	if (mMissingLedger && mMissingLedger->isDone())
@@ -354,6 +357,9 @@ void LedgerMaster::setFullLedger(Ledger::pointer ledger)
 { // A new ledger has been accepted as part of the trusted chain
 	cLog(lsDEBUG) << "Ledger " << ledger->getLedgerSeq() << " accepted :" << ledger->getHash();
 	assert(ledger->peekAccountStateMap()->getHash().isNonZero());
+
+	if (theApp->getOPs().isNeedNetworkLedger())
+		return;
 
 	boost::recursive_mutex::scoped_lock ml(mLock);
 
