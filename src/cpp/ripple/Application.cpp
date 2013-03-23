@@ -184,6 +184,10 @@ void Application::setup()
 
 	theApp->getHashNodeDB()->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %
 		(theConfig.getSize(siHashNodeDBCache) * 1024)));
+	theApp->getLedgerDB()->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %
+		(theConfig.getSize(siTxnDBCache) * 1024)));
+	theApp->getTxnDB()->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %
+		(theConfig.getSize(siLgrDBCache) * 1024)));
 
 	//
 	// Allow peer connections.

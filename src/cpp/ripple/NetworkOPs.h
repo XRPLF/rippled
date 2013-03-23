@@ -253,7 +253,7 @@ public:
 		RippleAddress nodePublic, uint256 checkLedger, bool sigGood);
 	SMAddNode gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
-	bool recvValidation(SerializedValidation::ref val);
+	bool recvValidation(SerializedValidation::ref val, const std::string& source);
 	void takePosition(int seq, SHAMap::ref position);
 	SHAMap::pointer getTXMap(const uint256& hash);
 	bool hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, ripple::TxSetStatus status);

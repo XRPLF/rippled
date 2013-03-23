@@ -34,7 +34,7 @@ VSpointer ValidationCollection::findSet(const uint256& ledgerHash)
 	return mValidations.fetch(ledgerHash);
 }
 
-bool ValidationCollection::addValidation(SerializedValidation::ref val)
+bool ValidationCollection::addValidation(SerializedValidation::ref val, const std::string& source)
 {
 	RippleAddress signer = val->getSignerPublic();
 	bool isCurrent = false;
@@ -53,7 +53,7 @@ bool ValidationCollection::addValidation(SerializedValidation::ref val)
 	else
 	{
 		cLog(lsDEBUG) << "Node " << signer.humanNodePublic() << " not in UNL st=" << val->getSignTime() <<
-			", hash=" << val->getLedgerHash() << ", shash=" << val->getSigningHash();
+			", hash=" << val->getLedgerHash() << ", shash=" << val->getSigningHash() << " src=" << source;
 	}
 
 	uint256 hash = val->getLedgerHash();

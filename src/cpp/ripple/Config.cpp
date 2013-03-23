@@ -498,7 +498,9 @@ int Config::getSize(SizedItemName item)
 		{ siLineCacheSize,		{	8192,	32768,	131072,	1048576,	0		} },
 		{ siLineCacheAge,		{	500,	600,	1800,	3600,		7200	} },
 		{ siHashNodeDBCache,	{	24,		48,		64,		128,		256		} },
-			};
+		{ siTxnDBCache,			{	4,		8,		32,		64,			128		} },
+		{ siLgrDBCache,			{	4,		8,		32,		64,			128		} }
+	};
 
 	for (int i = 0; i < (sizeof(sizeTable) / sizeof(SizedItem)); ++i)
 	{

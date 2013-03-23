@@ -201,7 +201,7 @@ void LedgerConsensus::checkOurValidation()
 	v->setTrusted();
 	v->sign(signingHash, mValPrivate);
 	theApp->isNew(signingHash);
-	theApp->getValidations().addValidation(v);
+	theApp->getValidations().addValidation(v, "localMissing");
 	std::vector<unsigned char> validation = v->getSigned();
 	ripple::TMValidation val;
 	val.set_validation(&validation[0], validation.size());
@@ -1182,7 +1182,7 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 		v->sign(signingHash, mValPrivate);
 		v->setTrusted();
 		theApp->isNew(signingHash); // suppress it if we receive it
-		theApp->getValidations().addValidation(v);
+		theApp->getValidations().addValidation(v, "local");
 		theApp->getOPs().setLastValidation(v);
 		std::vector<unsigned char> validation = v->getSigned();
 		ripple::TMValidation val;
