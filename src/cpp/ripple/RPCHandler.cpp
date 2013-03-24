@@ -9,7 +9,6 @@
 
 #include "Pathfinder.h"
 #include "Log.h"
-#include "NetworkOPs.h"
 #include "RPCHandler.h"
 #include "RPCSub.h"
 #include "Application.h"
