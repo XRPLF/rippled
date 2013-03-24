@@ -188,8 +188,17 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	if (iResult)
+	{
+		nothing();
+	}
+	else if (vm.count("help"))
+	{
+		iResult	= 1;
+	}
+
 	if (HaveSustain() &&
-		!vm.count("parameters") && !vm.count("fg") && !vm.count("standalone") && !vm.count("unittest"))
+		!iResult && !vm.count("parameters") && !vm.count("fg") && !vm.count("standalone") && !vm.count("unittest"))
 	{
 		std::string logMe = DoSustain();
 		if (!logMe.empty())
@@ -250,10 +259,6 @@ int main(int argc, char* argv[])
 	if (iResult)
 	{
 		nothing();
-	}
-	else if (vm.count("help"))
-	{
-		iResult	= 1;
 	}
 	else if (!vm.count("parameters"))
 	{
