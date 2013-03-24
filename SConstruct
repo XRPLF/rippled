@@ -106,7 +106,7 @@ env.Append(LINKFLAGS = ['-rdynamic', '-pthread'])
 env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts', '-DSQLITE_THREADSAFE=1'])
 env.Append(CXXFLAGS = ['-O0', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+BOOSTFLAGS+DEBUGFLAGS)
 
-if (GCC_VERSION[0] > 4 or (GCC_VERSION[0] == 4 and GCC_VERSION[1] >= 7)):
+if (int(GCC_VERSION[0]) > 4 or (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) >= 7)):
     env.Append(CXXFLAGS = ['-std=c++11'])
 
 if OSX:
