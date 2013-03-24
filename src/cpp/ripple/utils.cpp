@@ -4,6 +4,10 @@
 #include <sys/prctl.h>
 #include <sys/wait.h>
 #endif
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#include <sys/wait.h>
+#endif
 
 #include <fstream>
 
@@ -336,8 +340,8 @@ uint32_t htobe32(uint32_t value)
 }
 
 uint32_t be32toh(uint32_t value)
-{ 
-	return( _byteswap_ulong(value)); 
+{
+	return( _byteswap_ulong(value));
 }
 
 #endif
