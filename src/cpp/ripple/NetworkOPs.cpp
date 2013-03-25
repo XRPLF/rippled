@@ -1059,6 +1059,18 @@ void NetworkOPs::setMode(OperatingMode om)
 }
 
 
+std::string
+	NetworkOPs::transactionsSQL(const RippleAddress& account, uint32 minLedger, uint32 maxLedger, bool descending, uint32 offset, uint32 limit, bool binary, bool bAdmin)
+{
+	std::string sql =
+		boost::str(boost::format("SELECT AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta FROM "
+		"AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
+		"WHERE Account = '%s' AND AccountTransactions.LedgerSeq <= '%u' AND AccountTransactions.LedgerSeq >= '%u' "
+		"ORDER BY AccountTransactions.LedgerSeq,AccountTransactions.TransID %sSC%s;")
+		% account.humanAccountID() % maxLedger % minLedger % (descending ? "DE" : "A") % (bAdmin ? "" : (" LIMIT "+boost::lexical_cast<std::string>(offset)+(binary?"500":"200") ) ) );
+	return sql;
+}
+
 std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 	NetworkOPs::getAccountTxs(const RippleAddress& account, uint32 minLedger, uint32 maxLedger, bool bAdmin)
 { // can be called with no locks

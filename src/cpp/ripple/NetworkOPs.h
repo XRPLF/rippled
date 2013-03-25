@@ -292,6 +292,10 @@ public:
 	bool addWantedHash(const uint256& h);
 	bool isWantedHash(const uint256& h, bool remove);
 
+	//Helper function to generate SQL query to get transactions
+	std::string transactionsSQL(const RippleAddress& account, uint32 minLedger, uint32 maxLedger, bool descending, uint32 offset, uint32 limit, bool binary, bool bAdmin);
+
+
 	// client information retrieval functions
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 		getAccountTxs(const RippleAddress& account, uint32 minLedger, uint32 maxLedger, bool bAdmin);
