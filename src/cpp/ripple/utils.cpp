@@ -447,8 +447,8 @@ std::string DoSustain()
 #else
 
 bool HaveSustain()			{ return false; }
-std::string DoSustain()		{ return std::string; }
-std::string StopSustain()	{ return std::string; }
+std::string DoSustain()		{ return std::string(); }
+std::string StopSustain()	{ return std::string(); }
 
 #endif
 
