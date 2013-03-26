@@ -4,6 +4,7 @@
 #include <limits.h>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/regex.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/test/unit_test.hpp>
@@ -257,134 +258,70 @@ std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 	return sCurrency;
 }
 
-// Assumes trusted input.
 bool STAmount::setValue(const std::string& sAmount)
 { // Note: mIsNative and mCurrency must be set already!
-	uint64	uValue;
-	int		iOffset;
-	size_t	uDecimal	= sAmount.find_first_of(mIsNative ? "^" : ".");
-	size_t	uExp		= uDecimal == std::string::npos ? sAmount.find_first_of("e") : std::string::npos;
-	bool	bInteger	= uDecimal == std::string::npos && uExp == std::string::npos;
 
-	mIsNegative = false;
-	if (bInteger)
+	static boost::regex reNumber("\\`([+-]?)(\\d*)(\\.(\\d+))?([eE]([+-]?)(\\d+))?\\'");
+	boost::smatch smMatch;
+
+	if (!boost::regex_match(sAmount, smMatch, reNumber))
 	{
-		// Integer input: does not necessarily mean native.
-
-		try
-		{
-			int64 a = sAmount.empty() ? 0 : lexical_cast_st<int64>(sAmount);
-			if (a >= 0)
-			{
-				uValue		= static_cast<uint64>(a);
-			}
-			else
-			{
-				uValue		= static_cast<uint64>(-a);
-				mIsNegative = true;
-			}
-
-		}
-		catch (...)
-		{
-			cLog(lsINFO) << "Bad integer amount: " << sAmount;
-
-			return false;
-		}
-		iOffset	= 0;
+		cLog(lsWARNING) << "Number not valid: \"" << sAmount << "\"";
+		return false;
 	}
-	else if (uExp != std::string::npos)
+
+	// Match fields: 0 = whole input, 1 = sign, 2 = integer portion, 3 = whole fraction (with '.')
+	// 4 = fraction (without '.'), 5 = whole exponent (with 'e'), 6 = exponent sign, 7 = exponent number
+
+	try
 	{
-		// e input
+		mIsNegative = (smMatch[1].matched && (smMatch[1] == "-"));
 
-		try
+		if (!smMatch[3].matched) // integer only
 		{
-			int64	iInteger	= uExp ? lexical_cast_st<uint64>(sAmount.substr(0, uExp)) : 0;
-			if (iInteger >= 0)
-			{
-				uValue		= static_cast<uint64>(iInteger);
-			}
-			else
-			{
-				uValue		= static_cast<uint64>(-iInteger);
-				mIsNegative = true;
-			}
-
-			iOffset = lexical_cast_st<uint64>(sAmount.substr(uExp+1));
+			mValue = lexical_cast_s<uint64>(smMatch[2]);
+			mOffset = 0;
 		}
-		catch (...)
-		{
-			cLog(lsINFO) << "Bad e amount: " << sAmount;
+		else
+		{ // integer and fraction
+			mValue = lexical_cast_s<uint64>(smMatch[2] + smMatch[4]);
+			mOffset = -(smMatch[4].length());
+		}
 
-			return false;
+		if (smMatch[5].matched)
+		{ // we have an exponent
+			if (smMatch[6].matched && (smMatch[6] == "-"))
+				mOffset -= lexical_cast_s<int>(smMatch[7]);
+			else
+				mOffset += lexical_cast_s<int>(smMatch[7]);
 		}
 	}
-	else
+	catch (...)
 	{
-		// Float input: has a decimal
-
-		// Example size decimal size-decimal offset
-		//    ^1      2       0            2     -1
-		// 123^       4       3            1      0
-		//   1^23     4       1            3     -2
-		try
-		{
-			iOffset	= -int(sAmount.size() - uDecimal - 1);
-
-			// Issolate integer and fraction.
-			uint64 uInteger;
-			int64	iInteger	= uDecimal ? lexical_cast_st<uint64>(sAmount.substr(0, uDecimal)) : 0;
-			if (iInteger >= 0)
-			{
-				uInteger	= static_cast<uint64>(iInteger);
-			}
-			else
-			{
-				uInteger	= static_cast<uint64>(-iInteger);
-				mIsNegative = true;
-			}
-
-			uint64	uFraction	= iOffset ? lexical_cast_st<uint64>(sAmount.substr(uDecimal+1)) : 0;
-
-			// Scale the integer portion to the same offset as the fraction.
-			uValue	= uInteger;
-			for (int i = -iOffset; i--;)
-				uValue	*= 10;
-
-			// Add in the fraction.
-			uValue += uFraction;
-		}
-		catch (...)
-		{
-			cLog(lsINFO) << "Bad float amount: " << sAmount;
-
-			return false;
-		}
+		cLog(lsWARNING) << "Number not parsed: \"" << sAmount << "\"";
+		return false;
 	}
+
+	cLog(lsTRACE) << "Float \"" << sAmount << "\" parsed to " << mValue << " : " << mOffset;
 
 	if (mIsNative)
 	{
-		if (bInteger)
-			iOffset	= -SYSTEM_CURRENCY_PRECISION;
+		if (smMatch[2].matched)
+			mOffset	-= SYSTEM_CURRENCY_PRECISION;
 
-		while (iOffset > -SYSTEM_CURRENCY_PRECISION) {
-			uValue	*= 10;
-			--iOffset;
+		while (mOffset > -SYSTEM_CURRENCY_PRECISION) {
+			mValue	*= 10;
+			--mOffset;
 		}
 
-		while (iOffset < -SYSTEM_CURRENCY_PRECISION) {
-			uValue	/= 10;
-			++iOffset;
+		while (mOffset < -SYSTEM_CURRENCY_PRECISION) {
+			mValue	/= 10;
+			++mOffset;
 		}
-
-		mValue		= uValue;
 	}
 	else
-	{
-		mValue		= uValue;
-		mOffset		= iOffset;
 		canonicalize();
-	}
+
 	return true;
 }
 
@@ -1287,11 +1224,13 @@ BOOST_AUTO_TEST_CASE( setValue_test )
 {
 	STAmount	saTmp;
 
+#if 0
 	// Check native floats
 	saTmp.setFullValue("1^0"); BOOST_CHECK_MESSAGE(SYSTEM_CURRENCY_PARTS == saTmp.getNValue(), "float integer failed");
 	saTmp.setFullValue("0^1"); BOOST_CHECK_MESSAGE(SYSTEM_CURRENCY_PARTS/10 == saTmp.getNValue(), "float fraction failed");
 	saTmp.setFullValue("0^12"); BOOST_CHECK_MESSAGE(12*SYSTEM_CURRENCY_PARTS/100 == saTmp.getNValue(), "float fraction failed");
 	saTmp.setFullValue("1^2"); BOOST_CHECK_MESSAGE(SYSTEM_CURRENCY_PARTS+(2*SYSTEM_CURRENCY_PARTS/10) == saTmp.getNValue(), "float combined failed");
+#endif
 
 	// Check native integer
 	saTmp.setFullValue("1"); BOOST_CHECK_MESSAGE(1 == saTmp.getNValue(), "integer failed");
