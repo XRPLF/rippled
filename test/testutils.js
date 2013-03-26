@@ -129,14 +129,14 @@ var build_teardown = function (host) {
           .connect(false);
       },
       function stopServerStep(callback) {
-
         if (opts.no_server)
         {
+          return callback();
+        }
 
-                return callback();
-                }
-
-        data.server.on('stopped', callback).stop();
+        data.server
+          .on('stopped', callback)
+          .stop();
       }
     ], done);
   };

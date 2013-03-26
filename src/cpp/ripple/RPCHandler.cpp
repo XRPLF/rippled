@@ -9,7 +9,6 @@
 
 #include "Pathfinder.h"
 #include "Log.h"
-#include "NetworkOPs.h"
 #include "RPCHandler.h"
 #include "RPCSub.h"
 #include "Application.h"
@@ -1706,7 +1705,8 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 		if (jvRequest.isMember("binary") && jvRequest["binary"].asBool())
 		{
 			std::vector<NetworkOPs::txnMetaLedgerType> txns =
-				mNetOps->getAccountTxsB(raAccount, minLedger, maxLedger);
+				mNetOps->getAccountTxsB(raAccount, minLedger, maxLedger, mRole == ADMIN);
+
 			for (std::vector<NetworkOPs::txnMetaLedgerType>::const_iterator it = txns.begin(), end = txns.end();
 				it != end; ++it)
 			{
@@ -1723,7 +1723,7 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 		}
 		else
 		{
-			std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(raAccount, minLedger, maxLedger);
+			std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(raAccount, minLedger, maxLedger, mRole == ADMIN);
 			for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
 			{
 				Json::Value	obj(Json::objectValue);

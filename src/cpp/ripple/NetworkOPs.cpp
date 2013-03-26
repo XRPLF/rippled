@@ -1065,16 +1065,16 @@ void NetworkOPs::setMode(OperatingMode om)
 
 
 std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
-	NetworkOPs::getAccountTxs(const RippleAddress& account, uint32 minLedger, uint32 maxLedger)
+	NetworkOPs::getAccountTxs(const RippleAddress& account, uint32 minLedger, uint32 maxLedger, bool bAdmin)
 { // can be called with no locks
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
 
 	std::string sql =
-		str(boost::format("SELECT AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta FROM "
+		boost::str(boost::format("SELECT AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta FROM "
 			"AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
 			"WHERE Account = '%s' AND AccountTransactions.LedgerSeq <= '%u' AND AccountTransactions.LedgerSeq >= '%u' "
-			"ORDER BY AccountTransactions.LedgerSeq,AccountTransactions.TransID DESC LIMIT 200;")
-			% account.humanAccountID() % maxLedger	% minLedger);
+			"ORDER BY AccountTransactions.LedgerSeq,AccountTransactions.TransID DESC%s;")
+			% account.humanAccountID() % maxLedger % minLedger % (bAdmin ? "" : " LIMIT 200"));
 
 	{
 		Database* db = theApp->getTxnDB()->getDB();
@@ -1103,15 +1103,15 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 }
 
 std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
-	const RippleAddress& account, uint32 minLedger, uint32 maxLedger)
+	const RippleAddress& account, uint32 minLedger, uint32 maxLedger, bool bAdmin)
 { // can be called with no locks
 	std::vector< txnMetaLedgerType> ret;
 
 	std::string sql = str(boost::format("SELECT AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta FROM "
 			"AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
 			"WHERE Account = '%s' AND AccountTransactions.LedgerSeq <= '%u' AND AccountTransactions.LedgerSeq >= '%u' "
-			"ORDER BY AccountTransactions.LedgerSeq,AccountTransactions.TransID DESC LIMIT 500;")
-			% account.humanAccountID() % maxLedger	% minLedger);
+			"ORDER BY AccountTransactions.LedgerSeq,AccountTransactions.TransID DESC%s;")
+			% account.humanAccountID() % maxLedger	% minLedger % (bAdmin ? "" : " LIMIT 500"));
 
 	{
 		Database* db = theApp->getTxnDB()->getDB();
