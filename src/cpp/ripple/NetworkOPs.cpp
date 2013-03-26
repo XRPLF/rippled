@@ -1060,28 +1060,52 @@ void NetworkOPs::setMode(OperatingMode om)
 
 
 std::string
-	NetworkOPs::transactionsSQL(const RippleAddress& account, uint32 minLedger, uint32 maxLedger, bool descending, uint32 offset, uint32 limit, bool binary, bool bAdmin)
+	NetworkOPs::transactionsSQL(std::string selection, const RippleAddress& account, int32 minLedger, int32 maxLedger, bool descending, uint32 offset, uint32 limit, bool binary, bool bAdmin)
 {
+	uint32 NONBINARY_PAGE_LENGTH = 200;
+	uint32 BINARY_PAGE_LENGTH = 500;
+	uint32 numberOfResults = limit;
+	if (limit == 0) {numberOfResults = std::numeric_limits<uint32>::max();}
+	if (!bAdmin) {
+		if (numberOfResults < (binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH)) {
+			numberOfResults = (binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH);
+		}
+	}
+	// How to get only validated ledgers?
+
+	std::string maxClause = "";
+	std::string minClause = "";
+	if (maxLedger != -1) {
+		maxClause = boost::str(boost::format("AND AccountTransactions.LedgerSeq <= '%u'") % maxLedger);
+	}
+	if (minLedger != -1) {
+		minClause = boost::str(boost::format("AND AccountTransactions.LedgerSeq >= '%u'") % minLedger);
+	}
+
 	std::string sql =
-		boost::str(boost::format("SELECT AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta FROM "
+		boost::str(boost::format("SELECT %s FROM "
 		"AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
-		"WHERE Account = '%s' AND AccountTransactions.LedgerSeq <= '%u' AND AccountTransactions.LedgerSeq >= '%u' "
-		"ORDER BY AccountTransactions.LedgerSeq,AccountTransactions.TransID %sSC%s;")
-		% account.humanAccountID() % maxLedger % minLedger % (descending ? "DE" : "A") % (bAdmin ? "" : (" LIMIT "+boost::lexical_cast<std::string>(offset)+(binary?"500":"200") ) ) );
+		"WHERE Account = '%s' %s %s "
+		"ORDER BY AccountTransactions.LedgerSeq %sSC, AccountTransactions.TransID %sSC LIMIT %u, %u;")
+		% selection
+		% account.humanAccountID()
+		% maxClause
+		% minClause
+		% (descending ? "DE" : "A")
+		% (descending ? "DE" : "A")
+		% boost::lexical_cast<std::string>(offset)
+		% boost::lexical_cast<std::string>(numberOfResults) 
+		);
+	std::cout << "SQL QUERY! " << sql;
 	return sql;
 }
 
 std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
-	NetworkOPs::getAccountTxs(const RippleAddress& account, uint32 minLedger, uint32 maxLedger, bool bAdmin)
+	NetworkOPs::getAccountTxs(const RippleAddress& account, int32 minLedger, int32 maxLedger, bool descending, uint32 offset, uint32 limit, bool bAdmin)
 { // can be called with no locks
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
 
-	std::string sql =
-		boost::str(boost::format("SELECT AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta FROM "
-			"AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
-			"WHERE Account = '%s' AND AccountTransactions.LedgerSeq <= '%u' AND AccountTransactions.LedgerSeq >= '%u' "
-			"ORDER BY AccountTransactions.LedgerSeq,AccountTransactions.TransID DESC%s;")
-			% account.humanAccountID() % maxLedger % minLedger % (bAdmin ? "" : " LIMIT 200"));
+	std::string sql = NetworkOPs::transactionsSQL("AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta", account, minLedger, maxLedger, descending, offset, limit, false, bAdmin);
 
 	{
 		Database* db = theApp->getTxnDB()->getDB();
@@ -1110,15 +1134,13 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 }
 
 std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
-	const RippleAddress& account, uint32 minLedger, uint32 maxLedger, bool bAdmin)
+	const RippleAddress& account, int32 minLedger, int32 maxLedger, bool descending, uint32 offset, uint32 limit, bool bAdmin)
 { // can be called with no locks
 	std::vector< txnMetaLedgerType> ret;
 
-	std::string sql = str(boost::format("SELECT AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta FROM "
-			"AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
-			"WHERE Account = '%s' AND AccountTransactions.LedgerSeq <= '%u' AND AccountTransactions.LedgerSeq >= '%u' "
-			"ORDER BY AccountTransactions.LedgerSeq,AccountTransactions.TransID DESC%s;")
-			% account.humanAccountID() % maxLedger	% minLedger % (bAdmin ? "" : " LIMIT 500"));
+
+	std::string sql = NetworkOPs::transactionsSQL("AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta", account, minLedger, maxLedger, descending, offset, limit, true/*binary*/, bAdmin);
+
 
 	{
 		Database* db = theApp->getTxnDB()->getDB();
@@ -1150,6 +1172,26 @@ std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
 
 			ret.push_back(boost::make_tuple(strHex(rawTxn), strHex(rawMeta), db->getInt("LedgerSeq")));
 		}
+	}
+
+	return ret;
+}
+
+
+
+
+uint32
+	NetworkOPs::countAccountTxs(const RippleAddress& account, int32 minLedger, int32 maxLedger, uint32 offset)
+{ // can be called with no locks
+	uint32 ret = 0;
+	std::string sql = NetworkOPs::transactionsSQL("COUNT(1) AS 'TransactionCount'", account, minLedger, maxLedger, false, offset, 0, true, true);
+
+	
+	Database* db = theApp->getTxnDB()->getDB();
+	ScopedLock sl(theApp->getTxnDB()->getDBLock());
+	SQL_FOREACH(db, sql)
+	{
+		ret = db->getInt("TransactionCount");
 	}
 
 	return ret;

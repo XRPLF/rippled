@@ -1664,8 +1664,14 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest, int& cost)
 Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 {
 	RippleAddress	raAccount;
-	uint32			minLedger;
-	uint32			maxLedger;
+	int32			minLedger;
+	int32			maxLedger;
+	bool			descending = false;
+	uint32			offset = 0;
+	uint32			limit = 0; 
+	bool			count = false;
+
+	bool allValidated = true;
 
 	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -1675,8 +1681,8 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 
 	if (jvRequest.isMember("ledger_min") && jvRequest.isMember("ledger_max"))
 	{
-		minLedger	= jvRequest["ledger_min"].asUInt();
-		maxLedger	= jvRequest["ledger_max"].asUInt();
+		minLedger	= jvRequest["ledger_min"].asInt();
+		maxLedger	= jvRequest["ledger_max"].asInt();
 	}
 	else
 	{
@@ -1692,6 +1698,23 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 		return rpcError(rpcLGR_IDXS_INVALID);
 	}
 
+	if (jvRequest.isMember("descending"))
+	{
+		descending	= jvRequest["descending"].asBool();
+	}
+	if (jvRequest.isMember("offset"))
+	{
+		offset	= jvRequest["offset"].asUInt();
+	}
+	if (jvRequest.isMember("limit"))
+	{
+		limit	= jvRequest["limit"].asUInt();
+	}
+	if (jvRequest.isMember("count"))
+	{
+		count	= jvRequest["count"].asBool();
+	}
+
 #ifndef DEBUG
 	try
 	{
@@ -1705,7 +1728,7 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 		if (jvRequest.isMember("binary") && jvRequest["binary"].asBool())
 		{
 			std::vector<NetworkOPs::txnMetaLedgerType> txns =
-				mNetOps->getAccountTxsB(raAccount, minLedger, maxLedger, mRole == ADMIN);
+				mNetOps->getAccountTxsB(raAccount, minLedger, maxLedger, descending, offset, limit, mRole == ADMIN);
 
 			for (std::vector<NetworkOPs::txnMetaLedgerType>::const_iterator it = txns.begin(), end = txns.end();
 				it != end; ++it)
@@ -1714,16 +1737,21 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 				obj["transaction"] = it->get<0>();
 				obj["meta"] = it->get<1>();
 				obj["inLedger"] = it->get<2>();
-				if (it->get<2>() > vl)
+				if (it->get<2>() > vl) {
 					obj["validated"] = false;
+					allValidated = false;
+				}
 				else if (mNetOps->haveLedger(it->get<2>()))
 					obj["validated"] = true;
+				else {
+					//return rpcError(rpcLGR_NOT_FOUND);
+				}
 				ret["transactions"].append(obj);
 			}
 		}
 		else
 		{
-			std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(raAccount, minLedger, maxLedger, mRole == ADMIN);
+			std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(raAccount, minLedger, maxLedger, descending, offset, limit, mRole == ADMIN);
 			for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
 			{
 				Json::Value	obj(Json::objectValue);
@@ -1735,15 +1763,31 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 					obj["meta"] = it->second->getJson(0);
 
 					uint32 s = it->second->getLgrSeq();
-					if (s > vl)
+					if (s > vl) {
 						obj["validated"] = false;
+						allValidated = false;
+					}
 					else if (mNetOps->haveLedger(s))
 						obj["validated"] = true;
+					else {
+						//return rpcError(rpcLGR_NOT_FOUND); //Can this also happen when s > vl?
+					}
 				}
 
 				ret["transactions"].append(obj);
 			}
 		}
+
+		//Add information about the original query
+		ret["validated"] = allValidated;
+		if(count) {
+			ret["count"] = mNetOps->countAccountTxs(raAccount, minLedger, maxLedger, offset);
+		}
+		ret["limit"] = limit;
+		ret["ledger_min"] = minLedger;
+		ret["ledger_max"] = maxLedger;
+		ret["offset"] = offset;
+
 		return ret;
 #ifndef DEBUG
 	}

@@ -293,20 +293,20 @@ public:
 	bool isWantedHash(const uint256& h, bool remove);
 
 	//Helper function to generate SQL query to get transactions
-	std::string transactionsSQL(const RippleAddress& account, uint32 minLedger, uint32 maxLedger, bool descending, uint32 offset, uint32 limit, bool binary, bool bAdmin);
+	std::string transactionsSQL(std::string selection, const RippleAddress& account, int32 minLedger, int32 maxLedger, bool descending, uint32 offset, uint32 limit, bool binary, bool bAdmin);
 
 
 	// client information retrieval functions
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
-		getAccountTxs(const RippleAddress& account, uint32 minLedger, uint32 maxLedger, bool bAdmin);
+		getAccountTxs(const RippleAddress& account, int32 minLedger, int32 maxLedger,  bool descending, uint32 offset, uint32 limit, bool bAdmin);
 
 	typedef boost::tuple<std::string, std::string, uint32> txnMetaLedgerType;
 	std::vector<txnMetaLedgerType>
-		getAccountTxsB(const RippleAddress& account, uint32 minL, uint32 maxL, bool bAdmin);
+		getAccountTxsB(const RippleAddress& account, int32 minLedger, int32 maxLedger,  bool descending, uint32 offset, uint32 limit, bool bAdmin);
 
 	std::vector<RippleAddress> getLedgerAffectedAccounts(uint32 ledgerSeq);
 	std::vector<SerializedTransaction> getLedgerTransactions(uint32 ledgerSeq);
-
+	uint32 NetworkOPs::countAccountTxs(const RippleAddress& account, int32 minLedger, int32 maxLedger, uint32 offset);
 	//
 	// Monitoring: publisher side
 	//
