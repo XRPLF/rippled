@@ -15,6 +15,10 @@
 #include "SHAMap.h"
 #include "Application.h"
 
+#ifndef STATE_MAP_BUCKETS
+#define STATE_MAP_BUCKETS 1024
+#endif
+
 SETUP_LOG();
 
 DECLARE_INSTANCE(SHAMap);
@@ -52,6 +56,8 @@ std::size_t hash_value(const uint160& u)
 
 SHAMap::SHAMap(SHAMapType t, uint32 seq) : mSeq(seq), mState(smsModifying), mType(t)
 {
+	if (t == smtSTATE)
+		mTNByID.rehash(STATE_MAP_BUCKETS);
 	root = boost::make_shared<SHAMapTreeNode>(mSeq, SHAMapNode(0, uint256()));
 	root->makeInner();
 	mTNByID[*root] = root;
@@ -59,6 +65,8 @@ SHAMap::SHAMap(SHAMapType t, uint32 seq) : mSeq(seq), mState(smsModifying), mTyp
 
 SHAMap::SHAMap(SHAMapType t, const uint256& hash) : mSeq(1), mState(smsSynching), mType(t)
 { // FIXME: Need to acquire root node
+	if (t == smtSTATE)
+		mTNByID.rehash(STATE_MAP_BUCKETS);
 	root = boost::make_shared<SHAMapTreeNode>(mSeq, SHAMapNode(0, uint256()));
 	root->makeInner();
 	mTNByID[*root] = root;
@@ -729,7 +737,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 	try
 	{
 		SHAMapTreeNode::pointer ret =
-			boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq, snfPREFIX, hash);
+			boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq, snfPREFIX, hash, true);
 		if (id != *ret)
 		{
 			cLog(lsFATAL) << "id:" << id << ", got:" << *ret;

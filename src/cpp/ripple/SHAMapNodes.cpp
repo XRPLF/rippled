@@ -177,7 +177,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::ref item, TNT
 }
 
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& rawNode, uint32 seq,
-	SHANodeFormat format, const uint256& hash) :
+	SHANodeFormat format, const uint256& hash, bool hashValid) :
 		SHAMapNode(id), mSeq(seq), mType(tnERROR), mIsBranch(0), mFullBelow(false)
 {
 	if (format == snfWIRE)
@@ -317,9 +317,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		throw std::runtime_error("Unknown format");
 	}
 
-	if (hash.isZero())
-		updateHash();
-	else
+	if (hashValid)
 	{
 		mHash = hash;
 #ifdef PARANOID
@@ -327,6 +325,8 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		assert(mHash == hash);
 #endif
 	}
+	else
+		updateHash();
 }
 
 bool SHAMapTreeNode::updateHash()
