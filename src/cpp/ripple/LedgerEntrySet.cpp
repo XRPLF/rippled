@@ -230,6 +230,14 @@ void LedgerEntrySet::entryDelete(SLE::ref sle)
 	}
 }
 
+bool LedgerEntrySet::hasChanges()
+{
+	BOOST_FOREACH(u256_LES_pair&, mEntries)
+		if (it.second.mAction != taaCACHED)
+			return true;
+	return false;
+}
+
 bool LedgerEntrySet::intersect(const LedgerEntrySet& lesLeft, const LedgerEntrySet& lesRight)
 {
 	return true;	// XXX Needs implementation
