@@ -134,29 +134,6 @@ Json::Value RPCParser::parseInternal(const Json::Value& jvParams)
 	return v;
 }
 
-// account_info <account>|<nickname>|<account_public_key>
-// account_info <seed>|<pass_phrase>|<key> [[<index>] <ledger>]
-Json::Value RPCParser::parseAccountInfo(const Json::Value& jvParams)
-{
-	Json::Value		jvRequest(Json::objectValue);
-	std::string		strIdent	= jvParams[0u].asString();
-	// YYY This could be more strict and report casting errors.
-	int				iIndex		= 2 == jvParams.size() ? lexical_cast_s<int>(jvParams[1u].asString()) : 0;
-
-	RippleAddress	raAddress;
-
-	if (!raAddress.setAccountPublic(strIdent) && !raAddress.setAccountID(strIdent) && !raAddress.setSeedGeneric(strIdent))
-		return rpcError(rpcACT_MALFORMED);
-
-	jvRequest["ident"]			= strIdent;
-	jvRequest["account_index"]	= iIndex;
-
-	if (jvParams.size() == 3 && !jvParseLedger(jvRequest, jvParams[2u].asString()))
-		return rpcError(rpcLGR_IDX_MALFORMED);
-
-	return jvRequest;
-}
-
 // account_tx <account> <minledger> <maxledger>
 // account_tx <account> <ledger>
 // account_tx <account> binary
@@ -420,29 +397,33 @@ Json::Value RPCParser::parseLogLevel(const Json::Value& jvParams)
 }
 
 // owner_info <account>|<nickname>|<account_public_key>
-// owner_info <seed>|<pass_phrase>|<key> [<index>]
-Json::Value RPCParser::parseOwnerInfo(const Json::Value& jvParams)
-{
-	return parseAccountInfo(jvParams);
-}
-
-// account_lines <account>|<nickname>|<account_public_key> [<index>]
-// account_offers <account>|<nickname>|<account_public_key> [<index>]
+// owner_info <seed>|<pass_phrase>|<key> [<ledfer>]
+// account_info <account>|<nickname>|<account_public_key>
+// account_info <seed>|<pass_phrase>|<key> [<ledger>]
+// account_lines <account>|<nickname>|<account_public_key> [<ledger>]
+// account_offers <account>|<nickname>|<account_public_key> [<ledger>]
 Json::Value RPCParser::parseAccountItems(const Json::Value& jvParams)
 {
 	std::string		strIdent	= jvParams[0u].asString();
-	bool			bIndex		= 2 == jvParams.size();
-	int				iIndex		= bIndex ? lexical_cast_s<int>(jvParams[1u].asString()) : 0;
+	// TODO: Get index from an alternate syntax: rXYZ:<index>
+	int				iIndex		= 0;
+//	int				iIndex		= jvParams.size() >= 2 ? lexical_cast_s<int>(jvParams[1u].asString()) : 0;
 
-	if (bIndex && !iIndex)	// Don't send default.
-		bIndex	= false;
+	RippleAddress	raAddress;
+
+	if (!raAddress.setAccountPublic(strIdent) && !raAddress.setAccountID(strIdent) && !raAddress.setSeedGeneric(strIdent))
+		return rpcError(rpcACT_MALFORMED);
 
 	// Get info on account.
 	Json::Value jvRequest(Json::objectValue);
 
 	jvRequest["account"]	= strIdent;
-	if (bIndex)
+
+	if (iIndex)
 		jvRequest["account_index"]	= iIndex;
+
+	if (jvParams.size() == 2 && !jvParseLedger(jvRequest, jvParams[1u].asString()))
+		return rpcError(rpcLGR_IDX_MALFORMED);
 
 	return jvRequest;
 }
@@ -456,13 +437,13 @@ Json::Value RPCParser::parseRipplePathFind(const Json::Value& jvParams)
 
 	cLog(lsTRACE) << "RPC json: " << jvParams[0u];
 
-	if (bLedger)
-	{
-		jvParseLedger(jvRequest, jvParams[1u].asString());
-	}
-
 	if (reader.parse(jvParams[0u].asString(), jvRequest))
 	{
+		if (bLedger)
+		{
+			jvParseLedger(jvRequest, jvParams[1u].asString());
+		}
+
 		return jvRequest;
 	}
 
@@ -642,7 +623,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		// Request-response methods
 		// - Returns an error, or the request.
 		// - To modify the method, provide a new method in the request.
-		{	"account_info",			&RPCParser::parseAccountInfo,			1,  3	},
+		{	"account_info",			&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_lines",		&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_offers",		&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_tx",			&RPCParser::parseAccountTransactions,	2,  4	},
@@ -660,7 +641,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"log_level",			&RPCParser::parseLogLevel,				0,  2	},
 		{	"logrotate",			&RPCParser::parseAsIs,					0,  0	},
 //		{	"nickname_info",		&RPCParser::parseNicknameInfo,			1,  1	},
-		{	"owner_info",			&RPCParser::parseOwnerInfo,				1,  2	},
+		{	"owner_info",			&RPCParser::parseAccountItems,			1,  2	},
 		{	"peers",				&RPCParser::parseAsIs,					0,  0	},
 		{	"ping",					&RPCParser::parseAsIs,					0,  0	},
 //		{	"profile",				&RPCParser::parseProfile,				1,  9	},

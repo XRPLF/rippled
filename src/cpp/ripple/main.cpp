@@ -70,10 +70,9 @@ void printHelp(const po::options_description& desc)
 	cerr << desc << endl;
 
 	cerr << "Commands: " << endl;
-	cerr << "     account_info <account>|<nickname>" << endl;
-	cerr << "     account_info <seed>|<pass_phrase>|<key> [<index>]" << endl;
-	cerr << "     account_lines <account>|<nickname>|<account_public_key> [<index>]" << endl;
-	cerr << "     account_offers <account>|<nickname>|<account_public_key> [<index>]" << endl;
+	cerr << "     account_info <account>|<nickname>|<seed>|<pass_phrase>|<key> [<ledger>]" << endl;
+	cerr << "     account_lines <account>|<nickname>|<account_public_key> [<ledger>]" << endl;
+	cerr << "     account_offers <account>|<nickname>|<account_public_key> [<ledger>]" << endl;
 	cerr << "     account_tx <account>|<nickname>|<account_public_key> <ledger>|(<minledger> <maxledger>)" << endl;
 	cerr << "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> [<limit> [<proof> [<marker>]]]]]" << endl;
 	cerr << "     connect <ip> [<port>]" << endl;
