@@ -261,7 +261,7 @@ std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 bool STAmount::setValue(const std::string& sAmount)
 { // Note: mIsNative and mCurrency must be set already!
 
-	static boost::regex reNumber("\\`([+-]?)(\\d*)(\\.(\\d+))?([eE]([+-]?)(\\d+))?\\'");
+	static boost::regex reNumber("\\`([+-]?)(\\d*)(\\.(\\d*))?([eE]([+-]?)(\\d+))?\\'");
 	boost::smatch smMatch;
 
 	if (!boost::regex_match(sAmount, smMatch, reNumber))
@@ -277,7 +277,7 @@ bool STAmount::setValue(const std::string& sAmount)
 	{
 		mIsNegative = (smMatch[1].matched && (smMatch[1] == "-"));
 
-		if (!smMatch[3].matched) // integer only
+		if (!smMatch[4].matched) // integer only
 		{
 			mValue = lexical_cast_s<uint64>(smMatch[2]);
 			mOffset = 0;
@@ -306,15 +306,16 @@ bool STAmount::setValue(const std::string& sAmount)
 
 	if (mIsNative)
 	{
-		if (smMatch[2].matched)
+		if (smMatch[3].matched)
 			mOffset	-= SYSTEM_CURRENCY_PRECISION;
 
-		while (mOffset > -SYSTEM_CURRENCY_PRECISION) {
+		while (mOffset > 0)
+		{
 			mValue	*= 10;
 			--mOffset;
 		}
 
-		while (mOffset < -SYSTEM_CURRENCY_PRECISION) {
+		while (mOffset < 0) {
 			mValue	/= 10;
 			++mOffset;
 		}
