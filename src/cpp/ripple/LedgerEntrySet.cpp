@@ -232,7 +232,8 @@ void LedgerEntrySet::entryDelete(SLE::ref sle)
 
 bool LedgerEntrySet::hasChanges()
 {
-	BOOST_FOREACH(u256_LES_pair&, mEntries)
+	typedef std::map<uint256, LedgerEntrySetEntry>::value_type u256_LES_pair;
+	BOOST_FOREACH(u256_LES_pair& it, mEntries)
 		if (it.second.mAction != taaCACHED)
 			return true;
 	return false;
