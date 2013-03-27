@@ -306,7 +306,7 @@ public:
 
 	std::vector<RippleAddress> getLedgerAffectedAccounts(uint32 ledgerSeq);
 	std::vector<SerializedTransaction> getLedgerTransactions(uint32 ledgerSeq);
-	uint32 NetworkOPs::countAccountTxs(const RippleAddress& account, int32 minLedger, int32 maxLedger, uint32 offset);
+	uint32 countAccountTxs(const RippleAddress& account, int32 minLedger, int32 maxLedger, uint32 offset);
 	//
 	// Monitoring: publisher side
 	//
