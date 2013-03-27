@@ -175,6 +175,7 @@
     <ClCompile Include="src\cpp\ripple\Suppression.cpp" />
     <ClCompile Include="src\cpp\ripple\Transaction.cpp" />
     <ClCompile Include="src\cpp\ripple\TransactionAcquire.cpp" />
+    <ClCompile Include="src\cpp\ripple\TransactionCheck.cpp" />
     <ClCompile Include="src\cpp\ripple\TransactionEngine.cpp" />
     <ClCompile Include="src\cpp\ripple\TransactionErr.cpp" />
     <ClCompile Include="src\cpp\ripple\TransactionFormats.cpp" />
