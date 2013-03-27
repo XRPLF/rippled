@@ -65,6 +65,7 @@ public:
 	void				entryModify(SLE::ref sleEntry)								{ mNodes.entryModify(sleEntry); }
 
 	TER applyTransaction(const SerializedTransaction&, TransactionEngineParams, bool& didApply);
+	bool checkInvariants(TER result, const SerializedTransaction& txn, TransactionEngineParams params);
 };
 
 inline TransactionEngineParams operator|(const TransactionEngineParams& l1, const TransactionEngineParams& l2)

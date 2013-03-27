@@ -564,7 +564,7 @@ Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const RippleAddre
 //
 
 void NetworkOPs::setStateTimer()
-{ // set timer early if ledger is closing
+{
 	mNetTimer.expires_from_now(boost::posix_time::milliseconds(LEDGER_GRANULARITY));
 	mNetTimer.async_wait(boost::bind(&NetworkOPs::checkState, this, boost::asio::placeholders::error));
 }
@@ -594,36 +594,41 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 { // Network state machine
 
 	if ((result == boost::asio::error::operation_aborted) || theConfig.RUN_STANDALONE)
+	{
+		cLog(lsFATAL) << "Network state timer error: " << result;
 		return;
+	}
+
+	{
+		ScopedLock(theApp->getMasterLock());
+
+		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+
+		// do we have sufficient peers? If not, we are disconnected.
+		if (peerList.size() < theConfig.NETWORK_QUORUM)
+		{
+			if (mMode != omDISCONNECTED)
+			{
+				setMode(omDISCONNECTED);
+				cLog(lsWARNING) << "Node count (" << peerList.size() <<
+					") has fallen below quorum (" << theConfig.NETWORK_QUORUM << ").";
+			}
+			return;
+		}
+		if (mMode == omDISCONNECTED)
+		{
+			setMode(omCONNECTED);
+			cLog(lsINFO) << "Node count (" << peerList.size() << ") is sufficient.";
+		}
+
+		if (!mConsensus)
+			tryStartConsensus();
+
+		if (mConsensus)
+			mConsensus->timerEntry();
+	}
 
 	setStateTimer();
-
-	ScopedLock(theApp->getMasterLock());
-
-	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
-
-	// do we have sufficient peers? If not, we are disconnected.
-	if (peerList.size() < theConfig.NETWORK_QUORUM)
-	{
-		if (mMode != omDISCONNECTED)
-		{
-			setMode(omDISCONNECTED);
-			cLog(lsWARNING) << "Node count (" << peerList.size() <<
-				") has fallen below quorum (" << theConfig.NETWORK_QUORUM << ").";
-		}
-		return;
-	}
-	if (mMode == omDISCONNECTED)
-	{
-		setMode(omCONNECTED);
-		cLog(lsINFO) << "Node count (" << peerList.size() << ") is sufficient.";
-	}
-
-	if (!mConsensus)
-		tryStartConsensus();
-
-	if (mConsensus)
-		mConsensus->timerEntry();
 }
 
 void NetworkOPs::tryStartConsensus()
