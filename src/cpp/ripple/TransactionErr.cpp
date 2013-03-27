@@ -38,6 +38,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	tefGEN_IN_USE,			"tefGEN_IN_USE",			"Generator already in use."								},
 		{	tefNO_AUTH_REQUIRED,	"tefNO_AUTH_REQUIRED",		"Auth is not required."									},
 		{	tefPAST_SEQ,			"tefPAST_SEQ",				"This sequence number has already past."				},
+		{	tefINTERNAL,			"tefINTERNAL",				"Internal error."										},
 
 		{	telLOCAL_ERROR,			"telLOCAL_ERROR",			"Local failure."										},
 		{	telBAD_DOMAIN,			"telBAD_DOMAIN",			"Domain too long."										},

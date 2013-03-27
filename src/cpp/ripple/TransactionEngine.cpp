@@ -160,6 +160,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				cLog(lsFATAL) << transToken(terResult) << ": " << transHuman(terResult);
 				cLog(lsFATAL) << mNodes.getJson(0);
 				didApply = false;
+				terResult = tefINTERNAL;
 			}
 			else
 			{
