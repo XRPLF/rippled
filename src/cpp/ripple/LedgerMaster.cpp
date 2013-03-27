@@ -141,6 +141,22 @@ bool LedgerMaster::haveLedger(uint32 seq)
 	return mCompleteLedgers.hasValue(seq);
 }
 
+bool LedgerMaster::getValidatedRange(uint32& minVal, uint32& maxVal)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	if (!mValidLedger)
+		return false;
+	maxVal = mValidLedger->getLedgerSeq();
+	if (maxVal == 0)
+		return false;
+	minVal = mCompleteLedgers.prevMissing(maxVal);
+	if (minVal == RangeSet::RangeSetAbsent)
+		minVal = 0;
+	else
+		++minVal;
+	return true;
+}
+
 void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 {
 	uint32 seq = ledger->getLedgerSeq();
