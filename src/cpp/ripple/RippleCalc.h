@@ -209,8 +209,8 @@ public:
 		const bool						bPartialPayment,
 		const bool						bLimitQuality,
 		const bool						bNoRippleDirect,
-		const bool						bStandAlone,
-		const bool						bOpenLedger = true
+		const bool						bStandAlone,		// --> True, not to affect accounts.
+		const bool						bOpenLedger = true	// --> What kind of errors to return.
 		);
 
 	static void setCanonical(STPathSet& spsDst, const std::vector<PathState::pointer>& vpsExpanded, bool bKeepDefault);

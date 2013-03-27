@@ -119,6 +119,10 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 		bool			bDefault;
 		LedgerEntrySet	lesActive(mLedger, tapNONE);
 
+		cLog(lsTRACE) << boost::str(boost::format("bDefaultPath> mSrcAmount=%s mDstAmount=%s")
+				% mSrcAmount.getFullText()
+				% mDstAmount.getFullText());
+
 		// Expand the current path.
 		pspCurrent->setExpanded(lesActive, spPath, mDstAccountID, mSrcAccountID);
 
@@ -126,8 +130,8 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 		// When path is a default (implied). Don't need to add it to return set.
 		bDefault	= pspCurrent->vpnNodes == mPsDefault->vpnNodes;
 
-		cLog(lsTRACE) << "findPaths: expanded path: " << pspCurrent->getJson();
-		cLog(lsTRACE) << "findPaths: default path: indirect: " << spPath.getJson(0);
+		cLog(lsTRACE) << "bDefaultPath: expanded path: " << pspCurrent->getJson();
+		cLog(lsTRACE) << "bDefaultPath: default path: indirect: " << spPath.getJson(0);
 
 		return bDefault;
 	}
@@ -161,6 +165,10 @@ Pathfinder::Pathfinder(Ledger::ref ledger,
 		// Later, reject anything that expands to the default path as the default is sufficient.
 
 		LedgerEntrySet	lesActive(mLedger, tapNONE);
+
+		cLog(lsTRACE) << boost::str(boost::format("Pathfinder> mSrcAmount=%s mDstAmount=%s")
+				% mSrcAmount.getFullText()
+				% mDstAmount.getFullText());
 
 		psDefault->setExpanded(lesActive, STPath(), mDstAccountID, mSrcAccountID);
 
@@ -296,6 +304,12 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 		if (sLog(lsTRACE))
 		{
+			cLog(lsTRACE) << boost::str(boost::format("findPaths: spe: %s/%s: %s amt: %s")
+				% RippleAddress::createHumanAccountID(speEnd.mAccountID)
+				% RippleAddress::createHumanAccountID(speEnd.mIssuerID)
+				% RippleAddress::createHumanAccountID(mDstAccountID)
+				% RippleAddress::createHumanAccountID(mDstAmount.getIssuer()));
+
 			cLog(lsTRACE) << "findPaths: finish? account: " << (speEnd.mAccountID == mDstAccountID);
 			cLog(lsTRACE) << "findPaths: finish? currency: " << (speEnd.mCurrencyID == mDstAmount.getCurrency());
 			cLog(lsTRACE) << "findPaths: finish? issuer: "
@@ -406,7 +420,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			SLE::pointer	sleEnd			= lesActive.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(speEnd.mAccountID));
 
 			tLog(!sleEnd, lsDEBUG)
-				<< boost::str(boost::format("findPaths: order book: %s/%s : ")
+				<< boost::str(boost::format("findPaths: tail: %s/%s : ")
 					% RippleAddress::createHumanAccountID(speEnd.mAccountID)
 					% RippleAddress::createHumanAccountID(speEnd.mIssuerID));
 
@@ -443,11 +457,14 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					{
 						// Path has no credit left. Ignore it.
 						cLog(lsTRACE) <<
-							boost::str(boost::format("findPaths: No credit: %s/%s -> %s/%s")
+							boost::str(boost::format("findPaths: No credit: %s/%s -> %s/%s balance=%s limit=%s")
 								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
 								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
 								% RippleAddress::createHumanAccountID(uPeerID)
-								% STAmount::createHumanCurrency(speEnd.mCurrencyID));
+								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
+								% rspEntry->getBalance().getFullText()
+								% rspEntry->getLimitPeer().getFullText()
+								);
 					}
 					else
 					{
@@ -461,11 +478,14 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 						bContinued	= true;
 
 						cLog(lsTRACE) <<
-							boost::str(boost::format("findPaths: push explore: %s/%s -> %s/%s")
+							boost::str(boost::format("findPaths: push explore: %s/%s -> %s/%s balance=%s limit=%s limit_peer=%s")
 								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
 								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
 								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
-								% RippleAddress::createHumanAccountID(uPeerID));
+								% RippleAddress::createHumanAccountID(uPeerID)
+								% rspEntry->getBalance().getFullText()
+								% rspEntry->getLimit().getFullText()
+								% rspEntry->getLimitPeer().getFullText());
 					}
 				}
 			}
@@ -473,7 +493,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			// Every book that wants the source currency.
 			std::vector<OrderBook::pointer> books;
 
-			// XXX Flip argument order to norm.
+			// XXX Need to flip getBooks argument order to be in normal order: currency then issuer.
 			theApp->getOrderBookDB().getBooks(speEnd.mIssuerID, speEnd.mCurrencyID, books);
 
 			BOOST_FOREACH(OrderBook::ref book, books)
@@ -533,8 +553,10 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			TER			terResult;
 
 			try {
+				LedgerEntrySet lesSandbox(lesActive.duplicate());
+
 				terResult	= RippleCalc::rippleCalc(
-					lesActive,
+					lesSandbox,
 					saMaxAmountAct,
 					saDstAmountAct,
 					vpsExpanded,

@@ -1234,7 +1234,6 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 
 		cost = rpcCOST_EXPENSIVE;
 		Ledger::pointer lSnapShot = boost::make_shared<Ledger>(boost::ref(*lpLedger), false);
-		LedgerEntrySet lesSnapshot(lSnapShot, tapNONE);
 
 		ScopedUnlock	su(theApp->getMasterLock()); // As long as we have a locked copy of the ledger, we can unlock.
 
@@ -1242,6 +1241,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 
 		for (unsigned int i=0; i != jvSrcCurrencies.size(); ++i) {
 			Json::Value	jvSource		= jvSrcCurrencies[i];
+
 			uint160		uSrcCurrencyID;
 			uint160		uSrcIssuerID;
 
@@ -1276,7 +1276,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 
 			if (!pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsComputed))
 			{
-				cLog(lsDEBUG) << "ripple_path_find: No paths found.";
+				cLog(lsWARNING) << "ripple_path_find: No paths found.";
 			}
 			else
 			{
@@ -1293,9 +1293,11 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 													1);
 					saMaxAmount.negate();
 
+				LedgerEntrySet	lesSandbox(lSnapShot, tapNONE);
+
 				TER	terResult	=
 					RippleCalc::rippleCalc(
-						lesSnapshot,
+						lesSandbox,
 						saMaxAmountAct,			// <--
 						saDstAmountAct,			// <--
 						vpsExpanded,			// <--
@@ -1313,8 +1315,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 				// cLog(lsDEBUG) << "ripple_path_find: PATHS IN: " << spsComputed.size() << " : " << spsComputed.getJson(0);
 				// cLog(lsDEBUG) << "ripple_path_find: PATHS EXP: " << vpsExpanded.size();
 
-
-				cLog(lsDEBUG)
+				cLog(lsWARNING)
 					<< boost::str(boost::format("ripple_path_find: saMaxAmount=%s saDstAmount=%s saMaxAmountAct=%s saDstAmountAct=%s")
 						% saMaxAmount
 						% saDstAmount
