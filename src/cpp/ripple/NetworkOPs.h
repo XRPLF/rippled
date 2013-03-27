@@ -175,6 +175,7 @@ public:
 	bool isValidated(uint32 seq);
 	bool isValidated(uint32 seq, const uint256& hash);
 	bool isValidated(Ledger::ref l) { return isValidated(l->getLedgerSeq(), l->getHash()); }
+	bool getValidatedRange(uint32& minVal, uint32& maxVal) { return mLedgerMaster->getValidatedRange(minVal, maxVal); }
 
 	SerializedValidation::ref getLastValidation()			{ return mLastValidation; }
 	void setLastValidation(SerializedValidation::ref v)		{ mLastValidation = v; }
