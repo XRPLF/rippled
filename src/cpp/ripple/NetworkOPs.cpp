@@ -1065,27 +1065,27 @@ void NetworkOPs::setMode(OperatingMode om)
 
 
 std::string
-	NetworkOPs::transactionsSQL(std::string selection, const RippleAddress& account, int32 minLedger, int32 maxLedger, bool descending, uint32 offset, int limit, bool binary, bool bAdmin)
+	NetworkOPs::transactionsSQL(std::string selection, const RippleAddress& account,
+		int32 minLedger, int32 maxLedger, bool descending, uint32 offset, int limit,
+		bool binary, bool count, bool bAmin)
 {
 	uint32 NONBINARY_PAGE_LENGTH = 200;
 	uint32 BINARY_PAGE_LENGTH = 500;
-	uint32 ADMIN_PAGE_LENGTH = 100000;
-	uint32 numberOfResults = limit;
 
-	if (limit == -1)
-		numberOfResults = ADMIN_PAGE_LENGTH;
-
-	if (!bAdmin)
-		 numberOfResults = std::min(binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH, numberOfResults);
+	uint32 numberOfResults;
+	if (count)
+		numberOfResults = 1000000000;
+	else if (limit < 0)
+		numberOfResults = binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH;
+	else if (!bAdmin)
+		numberOfResults = std::min(binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH, static_cast<uint32>(limit));
 
 	std::string maxClause = "";
 	std::string minClause = "";
-	if (maxLedger != -1) {
+	if (maxLedger != -1)
 		maxClause = boost::str(boost::format("AND AccountTransactions.LedgerSeq <= '%u'") % maxLedger);
-	}
-	if (minLedger != -1) {
+	if (minLedger != -1)
 		minClause = boost::str(boost::format("AND AccountTransactions.LedgerSeq >= '%u'") % minLedger);
-	}
 
 	std::string sql =
 		boost::str(boost::format("SELECT %s FROM "
@@ -1110,7 +1110,8 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 { // can be called with no locks
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
 
-	std::string sql = NetworkOPs::transactionsSQL("AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta", account, minLedger, maxLedger, descending, offset, limit, false, bAdmin);
+	std::string sql = NetworkOPs::transactionsSQL("AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta", account,
+		minLedger, maxLedger, descending, offset, limit, false, false, bAdmin);
 
 	{
 		Database* db = theApp->getTxnDB()->getDB();
@@ -1143,7 +1144,8 @@ std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
 { // can be called with no locks
 	std::vector< txnMetaLedgerType> ret;
 
-	std::string sql = NetworkOPs::transactionsSQL("AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta", account, minLedger, maxLedger, descending, offset, limit, true/*binary*/, bAdmin);
+	std::string sql = NetworkOPs::transactionsSQL("AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta", account,
+		minLedger, maxLedger, descending, offset, limit, true/*binary*/, false, bAdmin);
 
 	{
 		Database* db = theApp->getTxnDB()->getDB();
@@ -1187,7 +1189,8 @@ uint32
 	NetworkOPs::countAccountTxs(const RippleAddress& account, int32 minLedger, int32 maxLedger)
 { // can be called with no locks
 	uint32 ret = 0;
-	std::string sql = NetworkOPs::transactionsSQL("COUNT(*) AS 'TransactionCount'", account, minLedger, maxLedger, false, 0, -1, true, true);
+	std::string sql = NetworkOPs::transactionsSQL("COUNT(*) AS 'TransactionCount'", account,
+		minLedger, maxLedger, false, 0, -1, true, true, true);
 
 	Database* db = theApp->getTxnDB()->getDB();
 	ScopedLock sl(theApp->getTxnDB()->getDBLock());
