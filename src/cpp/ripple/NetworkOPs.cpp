@@ -1079,6 +1079,8 @@ std::string
 		numberOfResults = binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH;
 	else if (!bAdmin)
 		numberOfResults = std::min(binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH, static_cast<uint32>(limit));
+	else
+		numberOfResults = limit;
 
 	std::string maxClause = "";
 	std::string minClause = "";
