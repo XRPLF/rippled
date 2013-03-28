@@ -1067,7 +1067,7 @@ void NetworkOPs::setMode(OperatingMode om)
 std::string
 	NetworkOPs::transactionsSQL(std::string selection, const RippleAddress& account,
 		int32 minLedger, int32 maxLedger, bool descending, uint32 offset, int limit,
-		bool binary, bool count, bool bAmin)
+		bool binary, bool count, bool bAdmin)
 {
 	uint32 NONBINARY_PAGE_LENGTH = 200;
 	uint32 BINARY_PAGE_LENGTH = 500;

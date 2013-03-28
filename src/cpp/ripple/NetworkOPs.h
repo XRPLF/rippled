@@ -294,7 +294,9 @@ public:
 	bool isWantedHash(const uint256& h, bool remove);
 
 	//Helper function to generate SQL query to get transactions
-	std::string transactionsSQL(std::string selection, const RippleAddress& account, int32 minLedger, int32 maxLedger, bool descending, uint32 offset, int limit, bool binary, bool bAdmin);
+	std::string transactionsSQL(std::string selection, const RippleAddress& account,
+		int32 minLedger, int32 maxLedger, bool descending, uint32 offset, int limit,
+		bool binary, bool count, bool bAdmin);
 
 
 	// client information retrieval functions
