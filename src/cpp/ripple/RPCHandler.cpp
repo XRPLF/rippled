@@ -1688,11 +1688,17 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 
 	// DEPRECATED
 	if (jvRequest.isMember("ledger_min"))
+	{
 		jvRequest["ledger_index_min"]	= jvRequest["ledger_min"];
+		bDescending = true;
+	}
 
 	// DEPRECATED
 	if (jvRequest.isMember("ledger_max"))
+	{
 		jvRequest["ledger_index_max"]	= jvRequest["ledger_max"];
+		bDescending = true;
+	}
 
 	if (jvRequest.isMember("ledger_index_min") || jvRequest.isMember("ledger_index_max"))
 	{
