@@ -134,49 +134,70 @@ Json::Value RPCParser::parseInternal(const Json::Value& jvParams)
 	return v;
 }
 
-// account_tx <account> <minledger> <maxledger>
-// account_tx <account> <ledger>
-// account_tx <account> binary
-// account_tx <account> <minledger> <maxledger> binary
+// account_tx accountID [ledger_min [ledger_max [limit [offset]]]] [binary] [count] [descending]
 Json::Value RPCParser::parseAccountTransactions(const Json::Value& jvParams)
 {
 	Json::Value		jvRequest(Json::objectValue);
 	RippleAddress	raAccount;
-
-	unsigned size = jvParams.size();
-
-	if ((size > 1) && (jvParams[size - 1].asString() == "binary"))
-	{
-		jvRequest["binary"] = true;
-		--size;
-	}
-
-	if (size < 2 || size > 3)
-		return rpcError(rpcINVALID_PARAMS);
+	unsigned int	iParams = jvParams.size();
 
 	if (!raAccount.setAccountID(jvParams[0u].asString()))
 		return rpcError(rpcACT_MALFORMED);
 
-	// YYY This could be more strict and report casting errors.
-	if (size == 2)
+	jvRequest["account"]	= raAccount.humanAccountID();
+
+	bool			bDone	= false;
+
+	while (!bDone && iParams >= 2) {
+		if (jvParams[iParams-1].asString() == "binary")
+		{
+			jvRequest["binary"]		= true;
+			--iParams;
+		}
+		else if (jvParams[iParams-1].asString() == "count")
+		{
+			jvRequest["count"]		= true;
+			--iParams;
+		}
+		else if (jvParams[iParams-1].asString() == "descending")
+		{
+			jvRequest["descending"]	= true;
+			--iParams;
+		}
+		else
+		{
+			bDone	= true;
+		}
+	}
+
+	if (1 == iParams)
 	{
-		jvRequest["ledger"]		= jvParams[1u].asUInt();
+		nothing();
+	}
+	else if (2 == iParams)
+	{
+		if (!jvParseLedger(jvRequest, jvParams[1u].asString()))
+			return jvRequest;
 	}
 	else
 	{
-		uint32	uLedgerMin	= jvParams[1u].asUInt();
-		uint32	uLedgerMax	= jvParams[2u].asUInt();
+		int64	uLedgerMin	= jvParams[1u].asInt();
+		int64	uLedgerMax	= jvParams[2u].asInt();
 
-		if ((uLedgerMax < uLedgerMin) || (uLedgerMax == 0))
+		if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
 		{
 			return rpcError(rpcLGR_IDXS_INVALID);
 		}
 
-		jvRequest["ledger_min"]	= uLedgerMin;
-		jvRequest["ledger_max"]	= uLedgerMax;
-	}
+		jvRequest["ledger_index_min"]	= jvParams[1u].asInt();
+		jvRequest["ledger_index_max"]	= jvParams[2u].asInt();
 
-	jvRequest["account"]	= raAccount.humanAccountID();
+		if (iParams >= 4)
+			jvRequest["limit"]	= jvParams[3u].asInt();
+
+		if (iParams >= 5)
+			jvRequest["offset"]	= jvParams[4u].asInt();
+	}
 
 	return jvRequest;
 }
@@ -626,7 +647,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"account_info",			&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_lines",		&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_offers",		&RPCParser::parseAccountItems,			1,  2	},
-		{	"account_tx",			&RPCParser::parseAccountTransactions,	2,  4	},
+		{	"account_tx",			&RPCParser::parseAccountTransactions,	1,  8	},
 		{	"book_offers",			&RPCParser::parseBookOffers,			2,  7	},
 		{	"connect",				&RPCParser::parseConnect,				1,  2	},
 		{	"consensus_info",		&RPCParser::parseAsIs,					0,	0	},

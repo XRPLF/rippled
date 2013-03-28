@@ -1065,12 +1065,12 @@ void NetworkOPs::setMode(OperatingMode om)
 
 
 std::string
-	NetworkOPs::transactionsSQL(std::string selection, const RippleAddress& account, int32 minLedger, int32 maxLedger, bool descending, uint32 offset, uint32 limit, bool binary, bool bAdmin)
+	NetworkOPs::transactionsSQL(std::string selection, const RippleAddress& account, int32 minLedger, int32 maxLedger, bool descending, uint32 offset, int limit, bool binary, bool bAdmin)
 {
 	uint32 NONBINARY_PAGE_LENGTH = 200;
 	uint32 BINARY_PAGE_LENGTH = 500;
 	uint32 numberOfResults = limit;
-	if (limit == 0) {numberOfResults = std::numeric_limits<uint32>::max();}
+	if (limit == -1) {numberOfResults = std::numeric_limits<uint32>::max();}
 	if (!bAdmin) {
 		if (numberOfResults < (binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH)) {
 			numberOfResults = (binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH);
@@ -1106,7 +1106,7 @@ std::string
 }
 
 std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
-	NetworkOPs::getAccountTxs(const RippleAddress& account, int32 minLedger, int32 maxLedger, bool descending, uint32 offset, uint32 limit, bool bAdmin)
+	NetworkOPs::getAccountTxs(const RippleAddress& account, int32 minLedger, int32 maxLedger, bool descending, uint32 offset, int limit, bool bAdmin)
 { // can be called with no locks
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
 
@@ -1139,7 +1139,7 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 }
 
 std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
-	const RippleAddress& account, int32 minLedger, int32 maxLedger, bool descending, uint32 offset, uint32 limit, bool bAdmin)
+	const RippleAddress& account, int32 minLedger, int32 maxLedger, bool descending, uint32 offset, int limit, bool bAdmin)
 { // can be called with no locks
 	std::vector< txnMetaLedgerType> ret;
 
@@ -1184,10 +1184,10 @@ std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
 
 
 uint32
-	NetworkOPs::countAccountTxs(const RippleAddress& account, int32 minLedger, int32 maxLedger, uint32 offset)
+	NetworkOPs::countAccountTxs(const RippleAddress& account, int32 minLedger, int32 maxLedger)
 { // can be called with no locks
 	uint32 ret = 0;
-	std::string sql = NetworkOPs::transactionsSQL("COUNT(1) AS 'TransactionCount'", account, minLedger, maxLedger, false, offset, 0, true, true);
+	std::string sql = NetworkOPs::transactionsSQL("COUNT(*) AS 'TransactionCount'", account, minLedger, maxLedger, false, 0, -1, true, true);
 
 	Database* db = theApp->getTxnDB()->getDB();
 	ScopedLock sl(theApp->getTxnDB()->getDBLock());
