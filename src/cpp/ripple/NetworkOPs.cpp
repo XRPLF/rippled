@@ -1069,14 +1069,14 @@ std::string
 {
 	uint32 NONBINARY_PAGE_LENGTH = 200;
 	uint32 BINARY_PAGE_LENGTH = 500;
+	uint32 ADMIN_PAGE_LENGTH = 100000;
 	uint32 numberOfResults = limit;
-	if (limit == -1) {numberOfResults = std::numeric_limits<uint32>::max();}
-	if (!bAdmin) {
-		if (numberOfResults < (binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH)) {
-			numberOfResults = (binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH);
-		}
-	}
-	// How to get only validated ledgers?
+
+	if (limit == -1)
+		numberOfResults = ADMIN_PAGE_LENGTH;
+
+	if (!bAdmin)
+		 numberOfResults = std::min(binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH, numberOfResults);
 
 	std::string maxClause = "";
 	std::string minClause = "";
@@ -1101,7 +1101,7 @@ std::string
 		% boost::lexical_cast<std::string>(offset)
 		% boost::lexical_cast<std::string>(numberOfResults)
 		);
-	std::cout << "SQL QUERY! " << sql;
+	cLog(lsTRACE) << "txSQL query: " << sql;
 	return sql;
 }
 
