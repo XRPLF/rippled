@@ -1670,9 +1670,10 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 {
 	RippleAddress	raAccount;
 	uint32			offset		= jvRequest.isMember("offset") ? jvRequest["offset"].asUInt() : 0;
-	int				limit		= jvRequest.isMember("limit") ?  jvRequest["limit"].asUInt() : -1;
-	bool			descending	= jvRequest.isMember("descending") && jvRequest["descending"].asBool();
-	bool			count		= jvRequest.isMember("count") && jvRequest["count"].asBool();
+	int				limit		= jvRequest.isMember("limit") ? jvRequest["limit"].asUInt() : -1;
+	bool			bBinary		= jvRequest.isMember("binary") && jvRequest["binary"].asBool();
+	bool			bDescending	= jvRequest.isMember("descending") && jvRequest["descending"].asBool();
+	bool			bCount		= jvRequest.isMember("count") && jvRequest["count"].asBool();
 	uint32			uLedgerMin;
 	uint32			uLedgerMax;
 	uint32			uValidatedMin;
@@ -1722,10 +1723,10 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 
 		ret["account"] = raAccount.humanAccountID();
 
-		if (jvRequest.isMember("binary") && jvRequest["binary"].asBool())
+		if (bBinary)
 		{
 			std::vector<NetworkOPs::txnMetaLedgerType> txns =
-				mNetOps->getAccountTxsB(raAccount, uLedgerMin, uLedgerMax, descending, offset, limit, mRole == ADMIN);
+				mNetOps->getAccountTxsB(raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit, mRole == ADMIN);
 
 			for (std::vector<NetworkOPs::txnMetaLedgerType>::const_iterator it = txns.begin(), end = txns.end();
 				it != end; ++it)
@@ -1743,7 +1744,7 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 		}
 		else
 		{
-			std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(raAccount, uLedgerMin, uLedgerMax, descending, offset, limit, mRole == ADMIN);
+			std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit, mRole == ADMIN);
 
 			for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
 			{
@@ -1770,7 +1771,7 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 		ret["validated"]		= bValidated && uValidatedMin <= uLedgerMin && uValidatedMax >= uLedgerMax;
 		ret["offset"]			= offset;
 
-		if (count)
+		if (bCount)
 			ret["count"]		= mNetOps->countAccountTxs(raAccount, uLedgerMin, uLedgerMax);
 
 		if (jvRequest.isMember("limit"))
