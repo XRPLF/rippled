@@ -1668,7 +1668,6 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest, int& cost)
 // }
 Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 {
-	// XXX Perhaps don't allow a limit of 0.
 	RippleAddress	raAccount;
 	uint32			offset		= jvRequest.isMember("offset") ? jvRequest["offset"].asUInt() : 0;
 	int				limit		= jvRequest.isMember("limit") ?  jvRequest["limit"].asUInt() : -1;
