@@ -1686,6 +1686,14 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 	if (!raAccount.setAccountID(jvRequest["account"].asString()))
 		return rpcError(rpcACT_MALFORMED);
 
+	// DEPRECATED
+	if (jvRequest.isMember("ledger_min"))
+		jvRequest["ledger_index_min"]	= jvRequest["ledger_min"];
+
+	// DEPRECATED
+	if (jvRequest.isMember("ledger_max"))
+		jvRequest["ledger_index_max"]	= jvRequest["ledger_max"];
+
 	if (jvRequest.isMember("ledger_index_min") || jvRequest.isMember("ledger_index_max"))
 	{
 		int64		iLedgerMin	= jvRequest.isMember("ledger_index_min") ? jvRequest["ledger_index_min"].asInt() : -1;
