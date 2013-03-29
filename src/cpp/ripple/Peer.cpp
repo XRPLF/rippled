@@ -1441,7 +1441,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 				selectedPeer->sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtGET_LEDGER), false);
 				return;
 			}
-			cLog(lsERROR) << "We do not have the map our peer wants";
+			cLog(lsERROR) << "We do not have the map our peer wants " << getIP();
 			punishPeer(LT_InvalidRequest);
 			return;
 		}
