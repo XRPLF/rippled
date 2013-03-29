@@ -1,3 +1,4 @@
+#include <boost/asio.hpp>
 #include "RippleAddress.h"
 
 #include <algorithm>
