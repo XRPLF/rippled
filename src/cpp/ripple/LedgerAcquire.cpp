@@ -196,7 +196,7 @@ void LedgerAcquire::onTimer(bool progress)
 
 	if (getTimeouts() > LEDGER_TIMEOUT_COUNT)
 	{
-		cLog(lsWARNING) << "Too many timeouts for ledger " << mHash;
+		cLog(lsWARNING) << "Too many timeouts( " << getTimeouts() << ") for ledger " << mHash;
 		setFailed();
 		done();
 		return;
