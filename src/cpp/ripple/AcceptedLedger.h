@@ -14,6 +14,9 @@ protected:
 	TER								mResult;
 	std::vector<RippleAddress>		mAffected;
 	std::vector<unsigned char>		mRawMeta;
+	Json::Value						mJson;
+
+	void buildJson();
 
 public:
 
@@ -32,7 +35,7 @@ public:
 	bool isApplied() const									{ return !!mMeta; }
 	int getIndex() const									{ return mMeta ? mMeta->getIndex() : 0; }
 	std::string getEscMeta() const;
-	Json::Value getJson(int) const;
+	Json::Value getJson() const								{ return mJson; }
 };
 
 class AcceptedLedger

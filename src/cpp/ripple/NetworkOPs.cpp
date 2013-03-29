@@ -1375,7 +1375,7 @@ void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, SerializedTransac
 		}
 	}
 	ALTransaction alt(stTxn, terResult);
-	cLog(lsTRACE) << "pubProposed: " << alt.getJson(0);
+	cLog(lsTRACE) << "pubProposed: " << alt.getJson();
 	pubAccountTransaction(lpCurrent, ALTransaction(stTxn, terResult), false);
 }
 
@@ -1429,7 +1429,7 @@ void NetworkOPs::pubLedger(Ledger::ref accepted)
 	{
 		BOOST_FOREACH(const AcceptedLedger::value_type& vt, alpAccepted->getMap())
 		{
-			cLog(lsTRACE) << "pubAccepted: " << vt.second.getJson(0);
+			cLog(lsTRACE) << "pubAccepted: " << vt.second.getJson();
 			pubValidatedTransaction(lpAccepted, vt.second);
 		}
 	}
