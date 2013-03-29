@@ -19,6 +19,9 @@ const char *TxnDBInit[] = {
 		RawTxn		BLOB,						\
 		TxnMeta		BLOB						\
 	);",
+	"CREATE INDEX TxLgrIndex ON                 \
+		Transactions(LedgerSeq);",
+
 	"CREATE TABLE AccountTransactions (			\
 		TransID		CHARACTER(64),				\
 		Account		CHARACTER(64),				\

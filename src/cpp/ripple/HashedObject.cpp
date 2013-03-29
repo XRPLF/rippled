@@ -183,8 +183,8 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 
 #ifndef NO_SQLITE3_PREPARE
 	{
-		LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtDISK, "HOS::retrieve"));
 		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
+		LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtDISK, "HOS::retrieve"));
 		static SqliteStatement pSt(theApp->getHashNodeDB()->getDB()->getSqliteDB(),
 			"SELECT ObjType,LedgerIndex,Object FROM CommittedObjects WHERE Hash = ?;");
 

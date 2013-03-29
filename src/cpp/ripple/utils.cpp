@@ -4,6 +4,10 @@
 #include <sys/prctl.h>
 #include <sys/wait.h>
 #endif
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#include <sys/wait.h>
+#endif
 
 #include <fstream>
 
@@ -20,6 +24,9 @@
 
 void getRand(unsigned char *buf, int num)
 {
+#ifdef PURIFY
+	memset(buf, 0, num);
+#endif
 	if (RAND_bytes(buf, num) != 1)
 	{
 		assert(false);
@@ -336,8 +343,8 @@ uint32_t htobe32(uint32_t value)
 }
 
 uint32_t be32toh(uint32_t value)
-{ 
-	return( _byteswap_ulong(value)); 
+{
+	return( _byteswap_ulong(value));
 }
 
 #endif
@@ -443,8 +450,8 @@ std::string DoSustain()
 #else
 
 bool HaveSustain()			{ return false; }
-std::string DoSustain()		{ return std::string; }
-std::string StopSustain()	{ return std::string; }
+std::string DoSustain()		{ return std::string(); }
+std::string StopSustain()	{ return std::string(); }
 
 #endif
 

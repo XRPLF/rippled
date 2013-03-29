@@ -250,9 +250,15 @@ TER PathState::pushNode(
 					if (tesSUCCESS == terResult)
 					{
 						STAmount	saOwed	= lesEntries.rippleOwed(pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID);
+						STAmount	saLimit;
 
-						if (!saOwed.isPositive() && -saOwed >= lesEntries.rippleLimit(pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID))
+						if (!saOwed.isPositive()
+							&& -saOwed >= (saLimit = lesEntries.rippleLimit(pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID)))
 						{
+							cLog(lsWARNING) << boost::str(boost::format("pushNode: dry: saOwed=%s saLimit=%s")
+								% saOwed.getFullText()
+								% saLimit.getFullText());
+
 							terResult	= tecPATH_DRY;
 						}
 					}
@@ -323,6 +329,8 @@ void PathState::setExpanded(
 	const uint160	uOutIssuerID	= saOutReq.getIssuer();
 	const uint160	uSenderIssuerID	= !!uMaxCurrencyID ? uSenderID : ACCOUNT_XRP;	// Sender is always issuer for non-XRP.
 
+	// cLog(lsDEBUG) << boost::str(boost::format("setExpanded>"));
+
 	lesEntries	= lesSource.duplicate();
 
 	terStatus	= tesSUCCESS;
@@ -344,7 +352,7 @@ void PathState::setExpanded(
 			uMaxCurrencyID,									// Max specifes the currency.
 			uSenderIssuerID);
 
-	cLog(lsDEBUG) << boost::str(boost::format("PathState: pushed: account=%s currency=%s issuer=%s")
+	cLog(lsDEBUG) << boost::str(boost::format("setExpanded: pushed: account=%s currency=%s issuer=%s")
 		% RippleAddress::createHumanAccountID(uSenderID)
 		% STAmount::createHumanCurrency(uMaxCurrencyID)
 		% RippleAddress::createHumanAccountID(uSenderIssuerID));
@@ -366,8 +374,10 @@ void PathState::setExpanded(
 													: uOutIssuerID						// Use implied node.
 												: ACCOUNT_XRP;
 
-		cLog(lsDEBUG) << boost::str(boost::format("PathState: implied check: uNxtCurrencyID=%s uNxtAccountID=%s")
-			% RippleAddress::createHumanAccountID(uNxtCurrencyID)
+		cLog(lsDEBUG) << boost::str(boost::format("setExpanded: implied check: uMaxIssuerID=%s uSenderIssuerID=%s uNxtCurrencyID=%s uNxtAccountID=%s")
+			% RippleAddress::createHumanAccountID(uMaxIssuerID)
+			% RippleAddress::createHumanAccountID(uSenderIssuerID)
+			% STAmount::createHumanCurrency(uNxtCurrencyID)
 			% RippleAddress::createHumanAccountID(uNxtAccountID));
 
 		// Can't just use push implied, because it can't compensate for next account.
@@ -375,9 +385,9 @@ void PathState::setExpanded(
 				|| uMaxCurrencyID != uNxtCurrencyID	// Next is different currency, offer next...
 				|| uMaxIssuerID != uNxtAccountID)	// Next is not implied issuer
 		{
-			cLog(lsDEBUG) << boost::str(boost::format("PathState: sender implied: account=%s currency=%s issuer=%s")
+			cLog(lsDEBUG) << boost::str(boost::format("setExpanded: sender implied: account=%s currency=%s issuer=%s")
 				% RippleAddress::createHumanAccountID(uMaxIssuerID)
-				% RippleAddress::createHumanAccountID(uMaxCurrencyID)
+				% STAmount::createHumanCurrency(uMaxCurrencyID)
 				% RippleAddress::createHumanAccountID(uMaxIssuerID));
 			// Add account implied by SendMax.
 			terStatus	= pushNode(
@@ -394,7 +404,7 @@ void PathState::setExpanded(
 	{
 		if (tesSUCCESS == terStatus)
 		{
-			cLog(lsDEBUG) << boost::str(boost::format("PathState: element in path:"));
+			cLog(lsDEBUG) << boost::str(boost::format("setExpanded: element in path:"));
 			terStatus	= pushNode(speElement.getNodeType(), speElement.getAccountID(), speElement.getCurrency(), speElement.getIssuerID());
 		}
 	}
@@ -408,9 +418,9 @@ void PathState::setExpanded(
 			|| pnPrv.uAccountID != uOutIssuerID))	// Need the implied issuer.
 	{
 		// Add implied account.
-		cLog(lsDEBUG) << boost::str(boost::format("PathState: receiver implied: account=%s currency=%s issuer=%s")
+		cLog(lsDEBUG) << boost::str(boost::format("setExpanded: receiver implied: account=%s currency=%s issuer=%s")
 			% RippleAddress::createHumanAccountID(uOutIssuerID)
-			% RippleAddress::createHumanAccountID(uOutCurrencyID)
+			% STAmount::createHumanCurrency(uOutCurrencyID)
 			% RippleAddress::createHumanAccountID(uOutIssuerID));
 		terStatus	= pushNode(
 			!!uOutCurrencyID
@@ -449,7 +459,7 @@ void PathState::setExpanded(
 			if (!umForward.insert(std::make_pair(boost::make_tuple(pnCur.uAccountID, pnCur.uCurrencyID, pnCur.uIssuerID), uNode)).second)
 			{
 				// Failed to insert. Have a loop.
-				cLog(lsDEBUG) << boost::str(boost::format("PathState: loop detected: %s")
+				cLog(lsDEBUG) << boost::str(boost::format("setExpanded: loop detected: %s")
 					% getJson());
 
 				terStatus	= temBAD_PATH_LOOP;
@@ -457,7 +467,7 @@ void PathState::setExpanded(
 		}
 	}
 
-	cLog(lsDEBUG) << boost::str(boost::format("PathState: in=%s/%s out=%s/%s %s")
+	cLog(lsDEBUG) << boost::str(boost::format("setExpanded: in=%s/%s out=%s/%s %s")
 		% STAmount::createHumanCurrency(uMaxCurrencyID)
 		% RippleAddress::createHumanAccountID(uMaxIssuerID)
 		% STAmount::createHumanCurrency(uOutCurrencyID)
@@ -2612,6 +2622,10 @@ TER RippleCalc::rippleCalc(
 {
 	RippleCalc	rc(lesActive, bOpenLedger);
 
+	cLog(lsTRACE) << boost::str(boost::format("rippleCalc> saMaxAmountReq=%s saDstAmountReq=%s")
+		% saMaxAmountReq.getFullText()
+		% saDstAmountReq.getFullText());
+
     TER			terResult	= temUNCERTAIN;
 
 	// YYY Might do basic checks on src and dst validity as per doPayment.
@@ -2668,6 +2682,12 @@ int	iIndex	= 0;
 
 		if (!pspExpanded)
 			return temUNKNOWN;
+
+		cLog(lsTRACE) << boost::str(boost::format("rippleCalc: EXPAND: saDstAmountReq=%s saMaxAmountReq=%s uDstAccountID=%s uSrcAccountID=%s")
+				% saDstAmountReq.getFullText()
+				% saMaxAmountReq.getFullText()
+				% RippleAddress::createHumanAccountID(uDstAccountID)
+				% RippleAddress::createHumanAccountID(uSrcAccountID));
 
 		pspExpanded->setExpanded(lesActive, spPath, uDstAccountID, uSrcAccountID);
 
@@ -2764,6 +2784,7 @@ int iPass	= 0;
 				}
 			}
 	    }
+
 	    if (sLog(lsDEBUG))
 	    {
 		    cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: Pass: %d Dry: %d Paths: %d") % ++iPass % iDry % vpsExpanded.size());
@@ -3003,7 +3024,7 @@ void TransactionEngine::calcOfferBridgeNext(
 			{
 				// Offer must be redeeming IOUs.
 
-				// No additional 
+				// No additional
 				// XXX Broken
 			}
 

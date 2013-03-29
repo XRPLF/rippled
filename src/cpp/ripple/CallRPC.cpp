@@ -134,72 +134,70 @@ Json::Value RPCParser::parseInternal(const Json::Value& jvParams)
 	return v;
 }
 
-// account_info <account>|<nickname>|<account_public_key>
-// account_info <seed>|<pass_phrase>|<key> [[<index>] <ledger>]
-Json::Value RPCParser::parseAccountInfo(const Json::Value& jvParams)
-{
-	Json::Value		jvRequest(Json::objectValue);
-	std::string		strIdent	= jvParams[0u].asString();
-	// YYY This could be more strict and report casting errors.
-	int				iIndex		= 2 == jvParams.size() ? lexical_cast_s<int>(jvParams[1u].asString()) : 0;
-
-	RippleAddress	raAddress;
-
-	if (!raAddress.setAccountPublic(strIdent) && !raAddress.setAccountID(strIdent) && !raAddress.setSeedGeneric(strIdent))
-		return rpcError(rpcACT_MALFORMED);
-
-	jvRequest["ident"]			= strIdent;
-	jvRequest["account_index"]	= iIndex;
-
-	if (jvParams.size() == 3 && !jvParseLedger(jvRequest, jvParams[2u].asString()))
-		return rpcError(rpcLGR_IDX_MALFORMED);
-
-	return jvRequest;
-}
-
-// account_tx <account> <minledger> <maxledger>
-// account_tx <account> <ledger>
-// account_tx <account> binary
-// account_tx <account> <minledger> <maxledger> binary
+// account_tx accountID [ledger_min [ledger_max [limit [offset]]]] [binary] [count] [descending]
 Json::Value RPCParser::parseAccountTransactions(const Json::Value& jvParams)
 {
 	Json::Value		jvRequest(Json::objectValue);
 	RippleAddress	raAccount;
-
-	unsigned size = jvParams.size();
-
-	if ((size > 1) && (jvParams[size - 1].asString() == "binary"))
-	{
-		jvRequest["binary"] = true;
-		--size;
-	}
-
-	if (size < 2 || size > 3)
-		return rpcError(rpcINVALID_PARAMS);
+	unsigned int	iParams = jvParams.size();
 
 	if (!raAccount.setAccountID(jvParams[0u].asString()))
 		return rpcError(rpcACT_MALFORMED);
 
-	// YYY This could be more strict and report casting errors.
-	if (size == 2)
+	jvRequest["account"]	= raAccount.humanAccountID();
+
+	bool			bDone	= false;
+
+	while (!bDone && iParams >= 2) {
+		if (jvParams[iParams-1].asString() == "binary")
+		{
+			jvRequest["binary"]		= true;
+			--iParams;
+		}
+		else if (jvParams[iParams-1].asString() == "count")
+		{
+			jvRequest["count"]		= true;
+			--iParams;
+		}
+		else if (jvParams[iParams-1].asString() == "descending")
+		{
+			jvRequest["descending"]	= true;
+			--iParams;
+		}
+		else
+		{
+			bDone	= true;
+		}
+	}
+
+	if (1 == iParams)
 	{
-		jvRequest["ledger"]		= jvParams[1u].asUInt();
+		nothing();
+	}
+	else if (2 == iParams)
+	{
+		if (!jvParseLedger(jvRequest, jvParams[1u].asString()))
+			return jvRequest;
 	}
 	else
 	{
-		uint32	uLedgerMin	= jvParams[1u].asUInt();
-		uint32	uLedgerMax	= jvParams[2u].asUInt();
+		int64	uLedgerMin	= jvParams[1u].asInt();
+		int64	uLedgerMax	= jvParams[2u].asInt();
 
-		if ((uLedgerMax < uLedgerMin) || (uLedgerMax == 0))
+		if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
 		{
 			return rpcError(rpcLGR_IDXS_INVALID);
 		}
 
-		jvRequest["ledger_min"]	= uLedgerMin;
-		jvRequest["ledger_max"]	= uLedgerMax;
-	}
+		jvRequest["ledger_index_min"]	= jvParams[1u].asInt();
+		jvRequest["ledger_index_max"]	= jvParams[2u].asInt();
 
-	jvRequest["account"]	= raAccount.humanAccountID();
+		if (iParams >= 4)
+			jvRequest["limit"]	= jvParams[3u].asInt();
+
+		if (iParams >= 5)
+			jvRequest["offset"]	= jvParams[4u].asInt();
+	}
 
 	return jvRequest;
 }
@@ -420,29 +418,33 @@ Json::Value RPCParser::parseLogLevel(const Json::Value& jvParams)
 }
 
 // owner_info <account>|<nickname>|<account_public_key>
-// owner_info <seed>|<pass_phrase>|<key> [<index>]
-Json::Value RPCParser::parseOwnerInfo(const Json::Value& jvParams)
-{
-	return parseAccountInfo(jvParams);
-}
-
-// account_lines <account>|<nickname>|<account_public_key> [<index>]
-// account_offers <account>|<nickname>|<account_public_key> [<index>]
+// owner_info <seed>|<pass_phrase>|<key> [<ledfer>]
+// account_info <account>|<nickname>|<account_public_key>
+// account_info <seed>|<pass_phrase>|<key> [<ledger>]
+// account_lines <account>|<nickname>|<account_public_key> [<ledger>]
+// account_offers <account>|<nickname>|<account_public_key> [<ledger>]
 Json::Value RPCParser::parseAccountItems(const Json::Value& jvParams)
 {
 	std::string		strIdent	= jvParams[0u].asString();
-	bool			bIndex		= 2 == jvParams.size();
-	int				iIndex		= bIndex ? lexical_cast_s<int>(jvParams[1u].asString()) : 0;
+	// TODO: Get index from an alternate syntax: rXYZ:<index>
+	int				iIndex		= 0;
+//	int				iIndex		= jvParams.size() >= 2 ? lexical_cast_s<int>(jvParams[1u].asString()) : 0;
 
-	if (bIndex && !iIndex)	// Don't send default.
-		bIndex	= false;
+	RippleAddress	raAddress;
+
+	if (!raAddress.setAccountPublic(strIdent) && !raAddress.setAccountID(strIdent) && !raAddress.setSeedGeneric(strIdent))
+		return rpcError(rpcACT_MALFORMED);
 
 	// Get info on account.
 	Json::Value jvRequest(Json::objectValue);
 
 	jvRequest["account"]	= strIdent;
-	if (bIndex)
+
+	if (iIndex)
 		jvRequest["account_index"]	= iIndex;
+
+	if (jvParams.size() == 2 && !jvParseLedger(jvRequest, jvParams[1u].asString()))
+		return rpcError(rpcLGR_IDX_MALFORMED);
 
 	return jvRequest;
 }
@@ -456,13 +458,13 @@ Json::Value RPCParser::parseRipplePathFind(const Json::Value& jvParams)
 
 	cLog(lsTRACE) << "RPC json: " << jvParams[0u];
 
-	if (bLedger)
-	{
-		jvParseLedger(jvRequest, jvParams[1u].asString());
-	}
-
 	if (reader.parse(jvParams[0u].asString(), jvRequest))
 	{
+		if (bLedger)
+		{
+			jvParseLedger(jvRequest, jvParams[1u].asString());
+		}
+
 		return jvRequest;
 	}
 
@@ -642,10 +644,10 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		// Request-response methods
 		// - Returns an error, or the request.
 		// - To modify the method, provide a new method in the request.
-		{	"account_info",			&RPCParser::parseAccountInfo,			1,  3	},
+		{	"account_info",			&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_lines",		&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_offers",		&RPCParser::parseAccountItems,			1,  2	},
-		{	"account_tx",			&RPCParser::parseAccountTransactions,	2,  4	},
+		{	"account_tx",			&RPCParser::parseAccountTransactions,	1,  8	},
 		{	"book_offers",			&RPCParser::parseBookOffers,			2,  7	},
 		{	"connect",				&RPCParser::parseConnect,				1,  2	},
 		{	"consensus_info",		&RPCParser::parseAsIs,					0,	0	},
@@ -660,7 +662,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"log_level",			&RPCParser::parseLogLevel,				0,  2	},
 		{	"logrotate",			&RPCParser::parseAsIs,					0,  0	},
 //		{	"nickname_info",		&RPCParser::parseNicknameInfo,			1,  1	},
-		{	"owner_info",			&RPCParser::parseOwnerInfo,				1,  2	},
+		{	"owner_info",			&RPCParser::parseAccountItems,			1,  2	},
 		{	"peers",				&RPCParser::parseAsIs,					0,  0	},
 		{	"ping",					&RPCParser::parseAsIs,					0,  0	},
 //		{	"profile",				&RPCParser::parseProfile,				1,  9	},

@@ -306,7 +306,7 @@ void Config::load()
 			smtTmp	= sectionEntries(secConfig, SECTION_RPC_STARTUP);
 			if (smtTmp)
 			{
-				Json::Value	jvArray(Json::arrayValue);
+				RPC_STARTUP = Json::arrayValue;
 
 				BOOST_FOREACH(const std::string& strJson, *smtTmp)
 				{
@@ -316,10 +316,8 @@ void Config::load()
 					if (!jrReader.parse(strJson, jvCommand))
 						throw std::runtime_error(boost::str(boost::format("Couldn't parse [" SECTION_RPC_STARTUP "] command: %s") % strJson));
 
-					jvArray.append(jvCommand);
+					RPC_STARTUP.append(jvCommand);
 				}
-
-				RPC_STARTUP	= jvArray;
 			}
 
 			if (sectionSingleB(secConfig, SECTION_DATABASE_PATH, DATABASE_PATH))
@@ -498,7 +496,7 @@ int Config::getSize(SizedItemName item)
 		{ siLineCacheSize,		{	8192,	32768,	131072,	1048576,	0		} },
 		{ siLineCacheAge,		{	500,	600,	1800,	3600,		7200	} },
 		{ siHashNodeDBCache,	{	24,		48,		64,		128,		256		} },
-		{ siTxnDBCache,			{	4,		8,		32,		64,			128		} },
+		{ siTxnDBCache,			{	4,		12,		48,		96,			192		} },
 		{ siLgrDBCache,			{	4,		8,		32,		64,			128		} }
 	};
 

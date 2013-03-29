@@ -8,6 +8,7 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/asio.hpp>
 #include <boost/ref.hpp>
 
 #include "../json/value.h"
@@ -93,14 +94,19 @@ protected:
 	int								mThreadCount;
 	bool							mShuttingDown;
 
+	int								mIOThreadCount;
+	int								mMaxIOThreadCount;
+	boost::asio::io_service&		mIOService;
+
 	std::map<JobType, std::pair<int, int > >	mJobCounts;
 
 
-	void threadEntry(void);
+	void threadEntry();
+	void IOThread(boost::mutex::scoped_lock&);
 
 public:
 
-	JobQueue();
+	JobQueue(boost::asio::io_service&);
 
 	void addJob(JobType type, const std::string& name, const FUNCTION_TYPE<void(Job&)>& job);
 

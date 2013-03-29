@@ -70,11 +70,10 @@ void printHelp(const po::options_description& desc)
 	cerr << desc << endl;
 
 	cerr << "Commands: " << endl;
-	cerr << "     account_info <account>|<nickname>" << endl;
-	cerr << "     account_info <seed>|<pass_phrase>|<key> [<index>]" << endl;
-	cerr << "     account_lines <account>|<nickname>|<account_public_key> [<index>]" << endl;
-	cerr << "     account_offers <account>|<nickname>|<account_public_key> [<index>]" << endl;
-	cerr << "     account_tx <account>|<nickname>|<account_public_key> <ledger>|(<minledger> <maxledger>)" << endl;
+	cerr << "     account_info <account>|<nickname>|<seed>|<pass_phrase>|<key> [<ledger>]" << endl;
+	cerr << "     account_lines <account>|<nickname>|<account_public_key> [<ledger>]" << endl;
+	cerr << "     account_offers <account>|<nickname>|<account_public_key> [<ledger>]" << endl;
+	cerr << "     account_tx accountID [ledger_min [ledger_max [limit [offset]]]] [binary] [count] [descending]" << endl;
 	cerr << "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> [<limit> [<proof> [<marker>]]]]]" << endl;
 	cerr << "     connect <ip> [<port>]" << endl;
 	cerr << "     consensus_info" << endl;
@@ -188,8 +187,17 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	if (iResult)
+	{
+		nothing();
+	}
+	else if (vm.count("help"))
+	{
+		iResult	= 1;
+	}
+
 	if (HaveSustain() &&
-		!vm.count("parameters") && !vm.count("fg") && !vm.count("standalone") && !vm.count("unittest"))
+		!iResult && !vm.count("parameters") && !vm.count("fg") && !vm.count("standalone") && !vm.count("unittest"))
 	{
 		std::string logMe = DoSustain();
 		if (!logMe.empty())
@@ -251,16 +259,13 @@ int main(int argc, char* argv[])
 	{
 		nothing();
 	}
-	else if (vm.count("help"))
-	{
-		iResult	= 1;
-	}
 	else if (!vm.count("parameters"))
 	{
 		// No arguments. Run server.
 		setupServer();
 		NameThread("io");
 		startServer();
+		InstanceType::shutdown();
 	}
 	else
 	{

@@ -100,8 +100,7 @@ public:
 
 static ValueAllocator *&valueAllocator()
 {
-   static DefaultValueAllocator defaultAllocator;
-   static ValueAllocator *valueAllocator = &defaultAllocator;
+   static ValueAllocator *valueAllocator = new DefaultValueAllocator;
    return valueAllocator;
 }
 

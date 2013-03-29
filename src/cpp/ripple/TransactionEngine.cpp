@@ -93,7 +93,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	}
 #endif
 
-	UPTR_T<Transactor> transactor = Transactor::makeTransactor(txn,params,this);
+	UPTR_T<Transactor> transactor = Transactor::makeTransactor(txn, params, this);
 	if (transactor.get() != NULL)
 	{
 		uint256 txID		= txn.getTransactionID();
@@ -153,28 +153,40 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 
 		if (didApply)
 		{
-			// Transaction succeeded fully or (retries are not allowed and the transaction could claim a fee)
-			Serializer m;
-			mNodes.calcRawMeta(m, terResult, mTxnSeq++);
-
-			txnWrite();
-
-			Serializer s;
-			txn.add(s);
-
-			if (isSetBit(params, tapOPEN_LEDGER))
+			if (!checkInvariants(terResult, txn, params))
 			{
-				if (!mLedger->addTransaction(txID, s))
-					assert(false);
+				cLog(lsFATAL) << "Transaction violates invariants";
+				cLog(lsFATAL) << txn.getJson(0);
+				cLog(lsFATAL) << transToken(terResult) << ": " << transHuman(terResult);
+				cLog(lsFATAL) << mNodes.getJson(0);
+				didApply = false;
+				terResult = tefINTERNAL;
 			}
 			else
 			{
-				if (!mLedger->addTransaction(txID, s, m))
+				// Transaction succeeded fully or (retries are not allowed and the transaction could claim a fee)
+				Serializer m;
+				mNodes.calcRawMeta(m, terResult, mTxnSeq++);
+
+				txnWrite();
+
+				Serializer s;
+				txn.add(s);
+
+				if (isSetBit(params, tapOPEN_LEDGER))
+				{
+					if (!mLedger->addTransaction(txID, s))
+						assert(false);
+				}
+				else
+				{
+					if (!mLedger->addTransaction(txID, s, m))
 					assert(false);
 
-				// Charge whatever fee they specified.
-				STAmount saPaid = txn.getTransactionFee();
-				mLedger->destroyCoins(saPaid.getNValue());
+					// Charge whatever fee they specified.
+					STAmount saPaid = txn.getTransactionFee();
+					mLedger->destroyCoins(saPaid.getNValue());
+				}
 			}
 		}
 

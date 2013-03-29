@@ -564,7 +564,7 @@ Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const RippleAddre
 //
 
 void NetworkOPs::setStateTimer()
-{ // set timer early if ledger is closing
+{
 	mNetTimer.expires_from_now(boost::posix_time::milliseconds(LEDGER_GRANULARITY));
 	mNetTimer.async_wait(boost::bind(&NetworkOPs::checkState, this, boost::asio::placeholders::error));
 }
@@ -594,36 +594,41 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 { // Network state machine
 
 	if ((result == boost::asio::error::operation_aborted) || theConfig.RUN_STANDALONE)
+	{
+		cLog(lsFATAL) << "Network state timer error: " << result;
 		return;
+	}
+
+	{
+		ScopedLock(theApp->getMasterLock());
+
+		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+
+		// do we have sufficient peers? If not, we are disconnected.
+		if (peerList.size() < theConfig.NETWORK_QUORUM)
+		{
+			if (mMode != omDISCONNECTED)
+			{
+				setMode(omDISCONNECTED);
+				cLog(lsWARNING) << "Node count (" << peerList.size() <<
+					") has fallen below quorum (" << theConfig.NETWORK_QUORUM << ").";
+			}
+			return;
+		}
+		if (mMode == omDISCONNECTED)
+		{
+			setMode(omCONNECTED);
+			cLog(lsINFO) << "Node count (" << peerList.size() << ") is sufficient.";
+		}
+
+		if (!mConsensus)
+			tryStartConsensus();
+
+		if (mConsensus)
+			mConsensus->timerEntry();
+	}
 
 	setStateTimer();
-
-	ScopedLock(theApp->getMasterLock());
-
-	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
-
-	// do we have sufficient peers? If not, we are disconnected.
-	if (peerList.size() < theConfig.NETWORK_QUORUM)
-	{
-		if (mMode != omDISCONNECTED)
-		{
-			setMode(omDISCONNECTED);
-			cLog(lsWARNING) << "Node count (" << peerList.size() <<
-				") has fallen below quorum (" << theConfig.NETWORK_QUORUM << ").";
-		}
-		return;
-	}
-	if (mMode == omDISCONNECTED)
-	{
-		setMode(omCONNECTED);
-		cLog(lsINFO) << "Node count (" << peerList.size() << ") is sufficient.";
-	}
-
-	if (!mConsensus)
-		tryStartConsensus();
-
-	if (mConsensus)
-		mConsensus->timerEntry();
 }
 
 void NetworkOPs::tryStartConsensus()
@@ -1059,17 +1064,56 @@ void NetworkOPs::setMode(OperatingMode om)
 }
 
 
+std::string
+	NetworkOPs::transactionsSQL(std::string selection, const RippleAddress& account,
+		int32 minLedger, int32 maxLedger, bool descending, uint32 offset, int limit,
+		bool binary, bool count, bool bAdmin)
+{
+	uint32 NONBINARY_PAGE_LENGTH = 200;
+	uint32 BINARY_PAGE_LENGTH = 500;
+
+	uint32 numberOfResults;
+	if (count)
+		numberOfResults = 1000000000;
+	else if (limit < 0)
+		numberOfResults = binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH;
+	else if (!bAdmin)
+		numberOfResults = std::min(binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH, static_cast<uint32>(limit));
+	else
+		numberOfResults = limit;
+
+	std::string maxClause = "";
+	std::string minClause = "";
+	if (maxLedger != -1)
+		maxClause = boost::str(boost::format("AND AccountTransactions.LedgerSeq <= '%u'") % maxLedger);
+	if (minLedger != -1)
+		minClause = boost::str(boost::format("AND AccountTransactions.LedgerSeq >= '%u'") % minLedger);
+
+	std::string sql =
+		boost::str(boost::format("SELECT %s FROM "
+		"AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
+		"WHERE Account = '%s' %s %s "
+		"ORDER BY AccountTransactions.LedgerSeq %s, AccountTransactions.TransID %s LIMIT %u, %u;")
+		% selection
+		% account.humanAccountID()
+		% maxClause
+		% minClause
+		% (descending ? "DESC" : "ASC")
+		% (descending ? "DESC" : "ASC")
+		% boost::lexical_cast<std::string>(offset)
+		% boost::lexical_cast<std::string>(numberOfResults)
+		);
+	cLog(lsTRACE) << "txSQL query: " << sql;
+	return sql;
+}
+
 std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
-	NetworkOPs::getAccountTxs(const RippleAddress& account, uint32 minLedger, uint32 maxLedger)
+	NetworkOPs::getAccountTxs(const RippleAddress& account, int32 minLedger, int32 maxLedger, bool descending, uint32 offset, int limit, bool bAdmin)
 { // can be called with no locks
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
 
-	std::string sql =
-		str(boost::format("SELECT AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta FROM "
-			"AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
-			"WHERE Account = '%s' AND AccountTransactions.LedgerSeq <= '%u' AND AccountTransactions.LedgerSeq >= '%u' "
-			"ORDER BY AccountTransactions.LedgerSeq,AccountTransactions.TransID DESC LIMIT 200;")
-			% account.humanAccountID() % maxLedger	% minLedger);
+	std::string sql = NetworkOPs::transactionsSQL("AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta", account,
+		minLedger, maxLedger, descending, offset, limit, false, false, bAdmin);
 
 	{
 		Database* db = theApp->getTxnDB()->getDB();
@@ -1098,15 +1142,12 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 }
 
 std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
-	const RippleAddress& account, uint32 minLedger, uint32 maxLedger)
+	const RippleAddress& account, int32 minLedger, int32 maxLedger, bool descending, uint32 offset, int limit, bool bAdmin)
 { // can be called with no locks
 	std::vector< txnMetaLedgerType> ret;
 
-	std::string sql = str(boost::format("SELECT AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta FROM "
-			"AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
-			"WHERE Account = '%s' AND AccountTransactions.LedgerSeq <= '%u' AND AccountTransactions.LedgerSeq >= '%u' "
-			"ORDER BY AccountTransactions.LedgerSeq,AccountTransactions.TransID DESC LIMIT 500;")
-			% account.humanAccountID() % maxLedger	% minLedger);
+	std::string sql = NetworkOPs::transactionsSQL("AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta", account,
+		minLedger, maxLedger, descending, offset, limit, true/*binary*/, false, bAdmin);
 
 	{
 		Database* db = theApp->getTxnDB()->getDB();
@@ -1138,6 +1179,26 @@ std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
 
 			ret.push_back(boost::make_tuple(strHex(rawTxn), strHex(rawMeta), db->getInt("LedgerSeq")));
 		}
+	}
+
+	return ret;
+}
+
+
+
+
+uint32
+	NetworkOPs::countAccountTxs(const RippleAddress& account, int32 minLedger, int32 maxLedger)
+{ // can be called with no locks
+	uint32 ret = 0;
+	std::string sql = NetworkOPs::transactionsSQL("COUNT(*) AS 'TransactionCount'", account,
+		minLedger, maxLedger, false, 0, -1, true, true, true);
+
+	Database* db = theApp->getTxnDB()->getDB();
+	ScopedLock sl(theApp->getTxnDB()->getDBLock());
+	SQL_FOREACH(db, sql)
+	{
+		ret = db->getInt("TransactionCount");
 	}
 
 	return ret;

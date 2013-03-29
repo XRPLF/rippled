@@ -164,11 +164,8 @@ protected:
     unsigned char nVersion;
     std::vector<unsigned char> vchData;
 
-    CBase58Data()
-    {
-        nVersion = 1;
-        vchData.clear();
-    }
+    CBase58Data() : nVersion(1)
+    { ; }
 
     ~CBase58Data()
     {
@@ -247,13 +244,7 @@ public:
 	friend std::size_t hash_value(const CBase58Data& b58);
 };
 
-inline std::size_t hash_value(const CBase58Data& b58)
-{
-	std::size_t seed = boost::hash_value(b58.nVersion);
+extern std::size_t hash_value(const CBase58Data& b58);
 
-	boost::hash_combine(seed, b58.vchData);
-
-	return seed;
-}
 #endif
 // vim:ts=4

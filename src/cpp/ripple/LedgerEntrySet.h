@@ -95,6 +95,7 @@ public:
 	void entryCreate(SLE::ref);		// This entry will be created
 	void entryDelete(SLE::ref);		// This entry will be deleted
 	void entryModify(SLE::ref);		// This entry will be modified
+	bool hasChanges();				// True if LES has any changes
 
 	// higher-level ledger functions
 	SLE::pointer entryCreate(LedgerEntryType letType, const uint256& uIndex);

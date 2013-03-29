@@ -249,6 +249,9 @@
     <ClCompile Include="src\cpp\ripple\TransactionEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\TransactionCheck.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionErr.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -361,6 +364,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCSub.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\AmountRound.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

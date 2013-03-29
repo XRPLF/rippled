@@ -6,10 +6,12 @@
 
 #include "Log.h"
 #include "Config.h"
+#include "Application.h"
 
 SETUP_LOG();
 
-JobQueue::JobQueue() : mLastJob(0), mThreadCount(0), mShuttingDown(false)
+JobQueue::JobQueue(boost::asio::io_service& svc)
+	: mLastJob(0), mThreadCount(0), mShuttingDown(false), mIOThreadCount(0), mMaxIOThreadCount(1), mIOService(svc)
 {
 	mJobLoads[jtPUBOLDLEDGER].setTargetLatency(10000, 15000);
 	mJobLoads[jtVALIDATION_ut].setTargetLatency(2000, 5000);
@@ -240,6 +242,8 @@ void JobQueue::setThreadCount(int c)
 
 	boost::mutex::scoped_lock sl(mJobLock);
 
+	mMaxIOThreadCount = 1 + (c / 3);
+
 	while (mJobCounts[jtDEATH].first != 0)
 		mJobCond.wait(sl);
 
@@ -261,6 +265,26 @@ void JobQueue::setThreadCount(int c)
 	mJobCond.notify_one(); // in case we sucked up someone else's signal
 }
 
+void JobQueue::IOThread(boost::mutex::scoped_lock& sl)
+{ // call with a lock
+	++mIOThreadCount;
+	sl.unlock();
+	NameThread("IO+");
+	try
+	{
+		do
+			NameThread("IO+");
+		while ((mIOService.poll_one() == 1) && !theApp->isShutdown());
+	}
+	catch (...)
+	{
+		cLog(lsWARNING) << "Exception in IOThread";
+	}
+	NameThread("waiting");
+	sl.lock();
+	--mIOThreadCount;
+}
+
 void JobQueue::threadEntry()
 { // do jobs until asked to stop
 	boost::mutex::scoped_lock sl(mJobLock);
@@ -268,7 +292,12 @@ void JobQueue::threadEntry()
 	{
 		NameThread("waiting");
 		while (mJobSet.empty() && !mShuttingDown)
-			mJobCond.wait(sl);
+		{
+			if ((mIOThreadCount < mMaxIOThreadCount) && !theApp->isShutdown())
+				IOThread(sl);
+			else
+				mJobCond.wait(sl);
+		}
 
 		if (mShuttingDown)
 			break;

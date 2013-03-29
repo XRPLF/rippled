@@ -175,6 +175,7 @@ public:
 	bool isValidated(uint32 seq);
 	bool isValidated(uint32 seq, const uint256& hash);
 	bool isValidated(Ledger::ref l) { return isValidated(l->getLedgerSeq(), l->getHash()); }
+	bool getValidatedRange(uint32& minVal, uint32& maxVal) { return mLedgerMaster->getValidatedRange(minVal, maxVal); }
 
 	SerializedValidation::ref getLastValidation()			{ return mLastValidation; }
 	void setLastValidation(SerializedValidation::ref v)		{ mLastValidation = v; }
@@ -272,6 +273,7 @@ public:
 	void needNetworkLedger()			{ mNeedNetworkLedger = true; }
 	void clearNeedNetworkLedger()		{ mNeedNetworkLedger = false; }
 	bool isNeedNetworkLedger()			{ return mNeedNetworkLedger; }
+	bool isFull()						{ return !mNeedNetworkLedger && (mMode == omFULL); }
 	void setProposing(bool p, bool v)	{ mProposing = p; mValidating = v; }
 	bool isProposing()					{ return mProposing; }
 	bool isValidating()					{ return mValidating; }
@@ -292,17 +294,23 @@ public:
 	bool addWantedHash(const uint256& h);
 	bool isWantedHash(const uint256& h, bool remove);
 
+	//Helper function to generate SQL query to get transactions
+	std::string transactionsSQL(std::string selection, const RippleAddress& account,
+		int32 minLedger, int32 maxLedger, bool descending, uint32 offset, int limit,
+		bool binary, bool count, bool bAdmin);
+
+
 	// client information retrieval functions
 	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
-		getAccountTxs(const RippleAddress& account, uint32 minLedger, uint32 maxLedger);
+		getAccountTxs(const RippleAddress& account, int32 minLedger, int32 maxLedger,  bool descending, uint32 offset, int limit, bool bAdmin);
 
 	typedef boost::tuple<std::string, std::string, uint32> txnMetaLedgerType;
 	std::vector<txnMetaLedgerType>
-		getAccountTxsB(const RippleAddress& account, uint32 minL, uint32 maxL);
+		getAccountTxsB(const RippleAddress& account, int32 minLedger, int32 maxLedger,  bool descending, uint32 offset, int limit, bool bAdmin);
 
 	std::vector<RippleAddress> getLedgerAffectedAccounts(uint32 ledgerSeq);
 	std::vector<SerializedTransaction> getLedgerTransactions(uint32 ledgerSeq);
-
+	uint32 countAccountTxs(const RippleAddress& account, int32 minLedger, int32 maxLedger);
 	//
 	// Monitoring: publisher side
 	//

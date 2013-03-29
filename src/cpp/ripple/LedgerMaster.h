@@ -143,6 +143,7 @@ public:
 
 	bool haveLedgerRange(uint32 from, uint32 to);
 	bool haveLedger(uint32 seq);
+	bool getValidatedRange(uint32& minVal, uint32& maxVal);
 
 	void resumeAcquiring();
 

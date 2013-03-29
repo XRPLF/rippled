@@ -13,9 +13,9 @@ SETUP_LOG();
 DECLARE_INSTANCE(LedgerAcquire);
 
 #define LA_DEBUG
-#define LEDGER_ACQUIRE_TIMEOUT		1000	// millisecond for each ledger timeout
+#define LEDGER_ACQUIRE_TIMEOUT		2000	// millisecond for each ledger timeout
 #define LEDGER_TIMEOUT_COUNT		10 		// how many timeouts before we giveup
-#define LEDGER_TIMEOUT_AGGRESSIVE	4		// how many timeouts before we get aggressive
+#define LEDGER_TIMEOUT_AGGRESSIVE	6		// how many timeouts before we get aggressive
 #define TRUST_NETWORK
 
 PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterval(interval), mTimeouts(0),
@@ -98,7 +98,7 @@ bool PeerSet::isActive()
 
 LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT),
 	mHaveBase(false), mHaveState(false), mHaveTransactions(false), mAborted(false), mSignaled(false), mAccept(false),
-	mByHash(true)
+	mByHash(true), mWaitCount(0)
 {
 #ifdef LA_DEBUG
 	cLog(lsTRACE) << "Acquiring ledger " << mHash;
@@ -191,6 +191,9 @@ bool LedgerAcquire::tryLocal()
 
 void LedgerAcquire::onTimer(bool progress)
 {
+	mRecentTXNodes.clear();
+	mRecentASNodes.clear();
+
 	if (getTimeouts() > LEDGER_TIMEOUT_COUNT)
 	{
 		cLog(lsWARNING) << "Too many timeouts for ledger " << mHash;
@@ -199,19 +202,29 @@ void LedgerAcquire::onTimer(bool progress)
 		return;
 	}
 
-	mRecentTXNodes.clear();
-	mRecentASNodes.clear();
-
 	if (!progress)
 	{
 		mAggressive = true;
 		mByHash = true;
-		cLog(lsDEBUG) << "No progress for ledger " << mHash;
-		if (!getPeerCount())
+		int pc = getPeerCount();
+		cLog(lsDEBUG) << "No progress(" << pc << ") for ledger " << pc <<  mHash;
+		if (pc == 0)
 			addPeers();
 		else
 			trigger(Peer::pointer());
 	}
+}
+
+void LedgerAcquire::awaitData()
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	++mWaitCount;
+}
+
+void LedgerAcquire::noAwaitData()
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	if (mWaitCount > 0 ) --mWaitCount;
 }
 
 void LedgerAcquire::addPeers()
@@ -295,8 +308,16 @@ void LedgerAcquire::trigger(Peer::ref peer)
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (mAborted || mComplete || mFailed)
 	{
-		cLog(lsTRACE) << "Trigger on ledger:" <<
-			(mAborted ? " aborted": "") << (mComplete ? " completed": "") << (mFailed ? " failed" : "");
+		cLog(lsDEBUG) << "Trigger on ledger:" <<
+			(mAborted ? " aborted": "") << (mComplete ? " completed": "") << (mFailed ? " failed" : "") <<
+			" wc=" << mWaitCount;
+		return;
+	}
+
+	if ((mWaitCount > 0) && peer)
+	{
+		mRecentPeers.push_back(peer->getPeerId());
+		cLog(lsTRACE) << "Deferring peer";
 		return;
 	}
 
@@ -483,6 +504,8 @@ void LedgerAcquire::trigger(Peer::ref peer)
 			}
 		}
 	}
+
+	mRecentPeers.clear();
 
 	if (mComplete || mFailed)
 	{
@@ -786,13 +809,13 @@ std::vector<LedgerAcquire::neededHash_t> LedgerAcquire::getNeededHashes()
 	}
 	if (!mHaveState)
 	{
-		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(16);
+		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(4);
 		BOOST_FOREACH(const uint256& h, v)
 			ret.push_back(std::make_pair(ripple::TMGetObjectByHash::otSTATE_NODE, h));
 	}
 	if (!mHaveTransactions)
 	{
-		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(16);
+		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(4);
 		BOOST_FOREACH(const uint256& h, v)
 			ret.push_back(std::make_pair(ripple::TMGetObjectByHash::otTRANSACTION_NODE, h));
 	}
@@ -846,21 +869,21 @@ void LedgerAcquireMaster::dropLedger(const uint256& hash)
 	mLedgers.erase(hash);
 }
 
-void LedgerAcquireMaster::gotLedgerData(Job&, boost::shared_ptr<ripple::TMLedgerData> packet_ptr,
-	boost::weak_ptr<Peer> wPeer)
+bool LedgerAcquireMaster::awaitLedgerData(const uint256& ledgerHash)
+{
+	LedgerAcquire::pointer ledger = find(ledgerHash);
+	if (!ledger)
+		return false;
+	ledger->awaitData();
+	return true;
+}
+
+void LedgerAcquireMaster::gotLedgerData(Job&, uint256 hash,
+	boost::shared_ptr<ripple::TMLedgerData> packet_ptr,	boost::weak_ptr<Peer> wPeer)
 {
 	ripple::TMLedgerData& packet = *packet_ptr;
 	Peer::pointer peer = wPeer.lock();
-	if (!peer)
-		return;
 
-	uint256 hash;
-	if (packet.ledgerhash().size() != 32)
-	{
-		peer->punishPeer(LT_InvalidRequest);
-		return;
-	}
-	memcpy(hash.begin(), packet.ledgerhash().data(), 32);
 	cLog(lsTRACE) << "Got data (" << packet.nodes().size() << ") for acquiring ledger: " << hash;
 
 	LedgerAcquire::pointer ledger = find(hash);
@@ -870,6 +893,10 @@ void LedgerAcquireMaster::gotLedgerData(Job&, boost::shared_ptr<ripple::TMLedger
 		peer->punishPeer(LT_InvalidRequest);
 		return;
 	}
+	ledger->noAwaitData();
+
+	if (!peer)
+		return;
 
 	if (packet.type() == ripple::liBASE)
 	{

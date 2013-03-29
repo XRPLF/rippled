@@ -18,9 +18,16 @@
 #include "utils.h"
 #include "Log.h"
 #include "Serializer.h"
+#include "Application.h"
 
 SETUP_LOG();
 
+std::size_t hash_value(const CBase58Data& b58)
+{
+	std::size_t seed = theApp->getNonceST() + (b58.nVersion * 0x9e3779b9);
+	boost::hash_combine(seed, b58.vchData);
+	return seed;
+}
 
 RippleAddress::RippleAddress()
 {

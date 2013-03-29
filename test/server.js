@@ -192,7 +192,8 @@ Server.prototype.stop = function () {
         if (!self.quiet) console.log("server: stop: server exited");
 
         self.emit('stopped');
-        delete this.child;
+
+        delete self.child;
       });
 
     this.child.kill();

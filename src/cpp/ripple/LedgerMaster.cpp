@@ -141,6 +141,22 @@ bool LedgerMaster::haveLedger(uint32 seq)
 	return mCompleteLedgers.hasValue(seq);
 }
 
+bool LedgerMaster::getValidatedRange(uint32& minVal, uint32& maxVal)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	if (!mValidLedger)
+		return false;
+	maxVal = mValidLedger->getLedgerSeq();
+	if (maxVal == 0)
+		return false;
+	minVal = mCompleteLedgers.prevMissing(maxVal);
+	if (minVal == RangeSet::RangeSetAbsent)
+		minVal = 0;
+	else
+		++minVal;
+	return true;
+}
+
 void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 {
 	uint32 seq = ledger->getLedgerSeq();
@@ -232,7 +248,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 	int timeoutCount;
 	int fetchCount = theApp->getMasterLedgerAcquire().getFetchCount(timeoutCount);
 
-	if (fetchCount < fetchMax)
+	if ((fetchCount < fetchMax) && theApp->getOPs().isFull())
 	{
 		if (timeoutCount > 2)
 		{
@@ -289,7 +305,7 @@ bool LedgerMaster::shouldAcquire(uint32 currentLedger, uint32 ledgerHistory, uin
 
 void LedgerMaster::resumeAcquiring()
 {
-	if (theApp->getOPs().isNeedNetworkLedger())
+	if (!theApp->getOPs().isFull())
 		return;
 
 	boost::recursive_mutex::scoped_lock ml(mLock);

@@ -48,7 +48,7 @@ Network.protocol.start = function () {
 
 };
 
-// Target state: disconnectted
+// Target state: disconnect
 Network.protocol.stop = function () {
 
 };

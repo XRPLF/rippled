@@ -187,7 +187,7 @@ public:
 
 	// raw node functions
 	SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& data, uint32 seq,
-		SHANodeFormat format, const uint256& hash);
+		SHANodeFormat format, const uint256& hash, bool hashValid);
 	void addRaw(Serializer &, SHANodeFormat format);
 
 	virtual bool isPopulated() const { return true; }
