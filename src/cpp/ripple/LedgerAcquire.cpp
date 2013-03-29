@@ -807,13 +807,13 @@ std::vector<LedgerAcquire::neededHash_t> LedgerAcquire::getNeededHashes()
 	}
 	if (!mHaveState)
 	{
-		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(16);
+		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(4);
 		BOOST_FOREACH(const uint256& h, v)
 			ret.push_back(std::make_pair(ripple::TMGetObjectByHash::otSTATE_NODE, h));
 	}
 	if (!mHaveTransactions)
 	{
-		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(16);
+		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(4);
 		BOOST_FOREACH(const uint256& h, v)
 			ret.push_back(std::make_pair(ripple::TMGetObjectByHash::otTRANSACTION_NODE, h));
 	}
