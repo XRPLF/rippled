@@ -13,9 +13,9 @@ SETUP_LOG();
 DECLARE_INSTANCE(LedgerAcquire);
 
 #define LA_DEBUG
-#define LEDGER_ACQUIRE_TIMEOUT		1000	// millisecond for each ledger timeout
+#define LEDGER_ACQUIRE_TIMEOUT		2000	// millisecond for each ledger timeout
 #define LEDGER_TIMEOUT_COUNT		10 		// how many timeouts before we giveup
-#define LEDGER_TIMEOUT_AGGRESSIVE	4		// how many timeouts before we get aggressive
+#define LEDGER_TIMEOUT_AGGRESSIVE	6		// how many timeouts before we get aggressive
 #define TRUST_NETWORK
 
 PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterval(interval), mTimeouts(0),
@@ -191,6 +191,9 @@ bool LedgerAcquire::tryLocal()
 
 void LedgerAcquire::onTimer(bool progress)
 {
+	mRecentTXNodes.clear();
+	mRecentASNodes.clear();
+
 	if (getTimeouts() > LEDGER_TIMEOUT_COUNT)
 	{
 		cLog(lsWARNING) << "Too many timeouts for ledger " << mHash;
@@ -199,15 +202,13 @@ void LedgerAcquire::onTimer(bool progress)
 		return;
 	}
 
-	mRecentTXNodes.clear();
-	mRecentASNodes.clear();
-
 	if (!progress)
 	{
 		mAggressive = true;
 		mByHash = true;
-		cLog(lsDEBUG) << "No progress for ledger " << mHash;
-		if (!getPeerCount())
+		int pc = getPeerCount();
+		cLog(lsDEBUG) << "No progress(" << pc << ") for ledger " << pc <<  mHash;
+		if (pc == 0)
 			addPeers();
 		else
 			trigger(Peer::pointer());
@@ -307,8 +308,9 @@ void LedgerAcquire::trigger(Peer::ref peer)
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (mAborted || mComplete || mFailed)
 	{
-		cLog(lsTRACE) << "Trigger on ledger:" <<
-			(mAborted ? " aborted": "") << (mComplete ? " completed": "") << (mFailed ? " failed" : "");
+		cLog(lsDEBUG) << "Trigger on ledger:" <<
+			(mAborted ? " aborted": "") << (mComplete ? " completed": "") << (mFailed ? " failed" : "") <<
+			" wc=" << mWaitCount;
 		return;
 	}
 
