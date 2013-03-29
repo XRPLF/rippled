@@ -84,13 +84,20 @@ typedef boost::tuple<uint64, int, STAmount, unsigned int> path_LQ_t;
 // Lower numbers have better quality. Sort higher quality first.
 static bool bQualityCmp(const path_LQ_t& a, const path_LQ_t&b)
 {
+	// 1) Higher quality (lower cost) is better
 	if (a.get<0>() != b.get<0>())
 		return a.get<0>() < b.get<0>();
 
+	// 2) More liquidity (higher volume) is better
+	if (a.get<2>() != b.get<2>())
+		return a.get<2>() > b.get<2>();
+
+	// 3) Shorter paths are better
 	if (a.get<1>() != b.get<1>())
 		return a.get<1>() < b.get<1>();
 
-	return a.get<2>() > b.get<2>();
+	// 4) Tie breaker
+	return a.get<3>() > b.get<3>();
 }
 
 // Return true, if path is a default path with an element.
