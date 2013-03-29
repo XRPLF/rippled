@@ -24,6 +24,9 @@
 
 void getRand(unsigned char *buf, int num)
 {
+#ifdef PURIFY
+	memset(buf, 0, num);
+#endif
 	if (RAND_bytes(buf, num) != 1)
 	{
 		assert(false);
