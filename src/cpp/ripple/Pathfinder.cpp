@@ -79,7 +79,7 @@ PathOption::PathOption(PathOption::pointer other)
 #endif
 
 // quality, length, liquidity, index
-typedef boost::tuple<uint64, int, STAmount, unsigned int> path_LQ_t;
+typedef boost::tuple<uint64, int, STAmount, bool, unsigned int> path_LQ_t;
 
 // Lower numbers have better quality. Sort higher quality first.
 static bool bQualityCmp(const path_LQ_t& a, const path_LQ_t&b)
@@ -587,7 +587,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 						% uQuality
 						% spCurrent.getJson(0));
 
-				vMap.push_back(path_LQ_t(uQuality, spCurrent.mPath.size(), saDstAmountAct, i));
+				vMap.push_back(path_LQ_t(uQuality, spCurrent.mPath.size(), saDstAmountAct, false, i));
 			}
 			else
 			{
@@ -608,11 +608,25 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 			// Output best quality entries.
 			STAmount remaining = mDstAmount;
-			for (int i = 0; ((i < vMap.size()) && ((i < iLimit) || remaining.isGEZero())); ++i)
+			for (int i = 0; i < iLimit; ++i)
 			{
 				path_LQ_t& lqt = vMap[i];
 				remaining -= lqt.get<2>();
-				spsDst.addPath(vspResults[lqt.get<3>()]);
+				lqt.get<3>() = true;
+				spsDst.addPath(vspResults[lqt.get<4>()]);
+			}
+
+			if (remaining.isGEZero())
+			{ // we need an extra path to ensure liquidity
+				for (int i = 0; i < vMap.size(); ++i)
+				{
+					path_LQ_t& lqt = vMap[i];
+					if (!lqt.get<3>() && (lqt.get<2>() >= remaining))
+					{
+						spsDst.addPath(vspResults[lqt.get<4>()]);
+						break;
+					}
+				}
 			}
 
 			cLog(lsDEBUG) << boost::str(boost::format("findPaths: RESULTS: %s") % spsDst.getJson(0));
