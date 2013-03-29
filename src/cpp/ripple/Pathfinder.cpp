@@ -78,18 +78,19 @@ PathOption::PathOption(PathOption::pointer other)
 }
 #endif
 
+// quality, length, liquidity, index
+typedef boost::tuple<uint64, int, STAmount, unsigned int> path_LQ_t;
+
 // Lower numbers have better quality. Sort higher quality first.
-static bool bQualityCmp(
-	std::pair< std::pair<uint64, int>, unsigned int> a,
-	std::pair< std::pair<uint64, int>, unsigned int> b)
+static bool bQualityCmp(const path_LQ_t& a, const path_LQ_t&b)
 {
-	if (a.first.first != b.first.first)
-		return a.first.first < b.first.first;
+	if (a.get<0>() != b.get<0>())
+		return a.get<0>() < b.get<0>();
 
-	if (a.first.second != b.first.second)
-		return a.first.second < b.first.second;
+	if (a.get<1>() != b.get<1>())
+		return a.get<1>() < b.get<1>();
 
-	return a.second < b.second; // FIXME: this biases accounts
+	return a.get<2>() > b.get<2>();
 }
 
 // Return true, if path is a default path with an element.
@@ -537,7 +538,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 	// Only filter, sort, and limit if have non-default paths.
 	if (iLimit)
 	{
-		std::vector< std::pair< std::pair<uint64, int>, unsigned int> > vMap;
+		std::vector<path_LQ_t> vMap;
 
 		// Build map of quality to entry.
 		for (int i = vspResults.size(); i--;)
@@ -586,7 +587,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 						% uQuality
 						% spCurrent.getJson(0));
 
-				vMap.push_back(std::make_pair(std::make_pair(uQuality, spCurrent.mPath.size()), i));
+				vMap.push_back(path_LQ_t(uQuality, spCurrent.mPath.size(), saDstAmountAct, i));
 			}
 			else
 			{
@@ -606,9 +607,12 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			std::sort(vMap.begin(), vMap.end(), bQualityCmp);	// Lower is better and should be first.
 
 			// Output best quality entries.
-			for (int i = 0; i != iLimit; ++i)
+			STAmount remaining = mDstAmount;
+			for (int i = 0; ((i < vMap.size()) && ((i < iLimit) || remaining.isGEZero())); ++i)
 			{
-				spsDst.addPath(vspResults[vMap[i].second]);
+				path_LQ_t& lqt = vMap[i];
+				remaining -= lqt.get<2>();
+				spsDst.addPath(vspResults[lqt.get<3>()]);
 			}
 
 			cLog(lsDEBUG) << boost::str(boost::format("findPaths: RESULTS: %s") % spsDst.getJson(0));
