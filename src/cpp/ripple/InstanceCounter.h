@@ -50,6 +50,11 @@ public:
 		sMultiThreaded = true;
 	}
 
+	static void shutdown()
+	{
+		sMultiThreaded = false;
+	}
+
 	static bool isMultiThread()
 	{
 		return sMultiThreaded;

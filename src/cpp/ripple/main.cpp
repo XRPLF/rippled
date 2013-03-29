@@ -265,6 +265,7 @@ int main(int argc, char* argv[])
 		setupServer();
 		NameThread("io");
 		startServer();
+		InstanceType::shutdown();
 	}
 	else
 	{
