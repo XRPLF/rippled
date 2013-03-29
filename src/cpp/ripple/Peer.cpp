@@ -1659,18 +1659,17 @@ void Peer::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_ptr)
 		return;
 	}
 
+	uint256 hash;
+	if(packet.ledgerhash().size() != 32)
+	{
+		cLog(lsWARNING) << "TX candidate reply with invalid hash size";
+		punishPeer(LT_InvalidRequest);
+		return;
+	}
+	memcpy(hash.begin(), packet.ledgerhash().data(), 32);
+
 	if (packet.type() == ripple::liTS_CANDIDATE)
 	{ // got data for a candidate transaction set
-		uint256 hash;
-		if(packet.ledgerhash().size() != 32)
-		{
-			cLog(lsWARNING) << "TX candidate reply with invalid hash size";
-			punishPeer(LT_InvalidRequest);
-			return;
-		}
-		memcpy(hash.begin(), packet.ledgerhash().data(), 32);
-
-
 		std::list<SHAMapNode> nodeIDs;
 		std::list< std::vector<unsigned char> > nodeData;
 
@@ -1692,9 +1691,12 @@ void Peer::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_ptr)
 		return;
 	}
 
-	theApp->getJobQueue().addJob(jtLEDGER_DATA, "gotLedgerData",
-		BIND_TYPE(&LedgerAcquireMaster::gotLedgerData, &theApp->getMasterLedgerAcquire(),
-			P_1, packet_ptr, boost::weak_ptr<Peer>(shared_from_this())));
+	if (theApp->getMasterLedgerAcquire().awaitLedgerData(hash))
+		theApp->getJobQueue().addJob(jtLEDGER_DATA, "gotLedgerData",
+			BIND_TYPE(&LedgerAcquireMaster::gotLedgerData, &theApp->getMasterLedgerAcquire(),
+				P_1, hash, packet_ptr, boost::weak_ptr<Peer>(shared_from_this())));
+	else
+		punishPeer(LT_UnwantedData);
 }
 
 bool Peer::hasLedger(const uint256& hash) const
