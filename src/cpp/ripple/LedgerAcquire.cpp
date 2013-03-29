@@ -881,8 +881,6 @@ void LedgerAcquireMaster::gotLedgerData(Job&, uint256 hash,
 {
 	ripple::TMLedgerData& packet = *packet_ptr;
 	Peer::pointer peer = wPeer.lock();
-	if (!peer)
-		return;
 
 	cLog(lsTRACE) << "Got data (" << packet.nodes().size() << ") for acquiring ledger: " << hash;
 
@@ -894,6 +892,9 @@ void LedgerAcquireMaster::gotLedgerData(Job&, uint256 hash,
 		return;
 	}
 	ledger->noAwaitData();
+
+	if (!peer)
+		return;
 
 	if (packet.type() == ripple::liBASE)
 	{
