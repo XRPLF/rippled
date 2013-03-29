@@ -4,9 +4,15 @@
 #include <sys/prctl.h>
 #include <sys/wait.h>
 #endif
+
 #ifdef __FreeBSD__
 #include <sys/types.h>
 #include <sys/wait.h>
+#endif
+
+#ifdef WIN32
+#define _WINSOCK_
+#include <winsock2.h>
 #endif
 
 #include <fstream>
@@ -307,8 +313,6 @@ int strIPtoInt(std::string& ipStr)
 }
 */
 #ifdef WIN32
-#define _WINSOCK_
-#include <winsock2.h>
 
 //#include "Winsock2.h"
 //#include <windows.h>
