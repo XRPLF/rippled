@@ -821,20 +821,33 @@ Remote.prototype.request_account_offers = function (accountID, account_index, cu
     .ledger_choose(current);
 };
 
-Remote.prototype.request_account_tx = function (accountID, ledger_min, ledger_max) {
+Remote.prototype.request_account_tx = function (accountID, ledger_index_min, ledger_index_max, descending, limit, offset) {
   // XXX Does this require the server to be trusted?
   //utils.assert(this.trusted);
 
   var request = new Request(this, 'account_tx');
 
-  request.message.account     = accountID;
+  request.message.account = accountID;
+  request.message.count   = true;
 
-  if (ledger_min === ledger_max) {
-    request.message.ledger      = ledger_min;
+  if (descending) {
+    request.message.descending = descending;
+  }
+
+  if (limit) {
+    request.message.limit = limit;
+  }
+
+  if (offset) {
+    request.message.offset = offset;
+  }
+
+  if (ledger_index_min === ledger_index_max) {
+    request.message.ledger = ledger_index_min;
   }
   else {
-    request.message.ledger_min  = ledger_min;
-    request.message.ledger_max  = ledger_max;
+    request.message.ledger_index_min  = ledger_index_min;
+    request.message.ledger_index_max  = ledger_index_max;
   }
 
   return request;
