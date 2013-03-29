@@ -248,7 +248,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 	int timeoutCount;
 	int fetchCount = theApp->getMasterLedgerAcquire().getFetchCount(timeoutCount);
 
-	if (fetchCount < fetchMax)
+	if ((fetchCount < fetchMax) && theApp->getOPs().isFull())
 	{
 		if (timeoutCount > 2)
 		{
@@ -305,7 +305,7 @@ bool LedgerMaster::shouldAcquire(uint32 currentLedger, uint32 ledgerHistory, uin
 
 void LedgerMaster::resumeAcquiring()
 {
-	if (theApp->getOPs().isNeedNetworkLedger())
+	if (!theApp->getOPs().isFull())
 		return;
 
 	boost::recursive_mutex::scoped_lock ml(mLock);

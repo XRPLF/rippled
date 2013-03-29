@@ -273,6 +273,7 @@ public:
 	void needNetworkLedger()			{ mNeedNetworkLedger = true; }
 	void clearNeedNetworkLedger()		{ mNeedNetworkLedger = false; }
 	bool isNeedNetworkLedger()			{ return mNeedNetworkLedger; }
+	bool isFull()						{ return !mNeedNetworkLedger && (mMode == omFULL); }
 	void setProposing(bool p, bool v)	{ mProposing = p; mValidating = v; }
 	bool isProposing()					{ return mProposing; }
 	bool isValidating()					{ return mValidating; }
