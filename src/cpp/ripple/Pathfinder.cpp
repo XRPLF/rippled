@@ -607,8 +607,6 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 		if (vMap.size())
 		{
-			bFound	= true;
-
 			std::sort(vMap.begin(), vMap.end(), bQualityCmp);	// Lower is better and should be first.
 
 			// Output best quality entries.
@@ -626,7 +624,12 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					cLog(lsDEBUG) << "Skipping a non-filling path: " << vspResults[lqt.get<3>()].getJson(0);
 			}
 
-//			bFound = !remaining.isGEZero();
+			bFound = true;
+
+			// The lines below break the unit test "Issues Path negative: ripple-client issue #23: smaller"
+//			bFound = remaining.isZero() || remaining.isNegative();
+//			if (!bFound)
+//				cLog(lsWARNING) << "Paths could not send " << remaining << " of " << mDstAmount;
 
 			cLog(lsDEBUG) << boost::str(boost::format("findPaths: RESULTS: %s") % spsDst.getJson(0));
 		}
