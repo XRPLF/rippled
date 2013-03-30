@@ -291,19 +291,19 @@ void JobQueue::threadEntry()
 	while (1)
 	{
 		NameThread("waiting");
-		bool didIO = false;
+//		bool didIO = false;
 		while (mJobSet.empty() && !mShuttingDown)
 		{
-			if ((mIOThreadCount < mMaxIOThreadCount) && !didIO && !theApp->isShutdown())
-			{
-				IOThread(sl);
-				didIO = true;
-			}
-			else
-			{
+//			if ((mIOThreadCount < mMaxIOThreadCount) && !didIO && !theApp->isShutdown())
+//			{
+//				IOThread(sl);
+//				didIO = true;
+//			}
+//			else
+//			{
 				mJobCond.wait(sl);
-				didIO = false;
-			}
+//				didIO = false;
+//			}
 		}
 
 		if (mShuttingDown)
