@@ -1334,7 +1334,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 
 					jvEntry["source_amount"]	= saMaxAmountAct.getJson(0);
 //					jvEntry["paths_expanded"]	= vpsExpanded.getJson(0);
-					jvEntry["paths_canonical"]	= spsCanonical.getJson(0);
+					jvEntry["paths_canonical"]	= Json::arrayValue; // spsCanonical.getJson(0);
 					jvEntry["paths_computed"]	= spsComputed.getJson(0);
 
 					jvArray.append(jvEntry);
