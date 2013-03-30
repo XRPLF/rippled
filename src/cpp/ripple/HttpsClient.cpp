@@ -443,4 +443,48 @@ void HttpsClient::httpsRequest(
 	client->httpsRequest(bSSL, deqSites, setRequest, timeout, complete);
 }
 
+#define SMS_TIMEOUT	30
+
+bool responseSMS(const boost::system::error_code& ecResult, int iStatus, const std::string& strData) {
+	cLog(lsINFO) << "SMS: Response:" << iStatus << " :" << strData;
+
+	return true;
+}
+
+void HttpsClient::sendSMS(boost::asio::io_service& io_service, const std::string& strText) {
+	std::string	strScheme;
+	std::string	strDomain;
+	int			iPort;
+	std::string	strPath;
+
+	if (theConfig.SMS_URL == "" || !parseUrl(theConfig.SMS_URL, strScheme, strDomain, iPort, strPath))
+	{
+		cLog(lsWARNING) << "SMSRequest: Bad URL:" << theConfig.SMS_URL;
+	}
+	else
+	{
+		bool	bSSL	= strScheme == "https";
+
+		std::deque<std::string> deqSites(1, strDomain);
+		std::string	strURI	=
+			boost::str(boost::format("%s?from=%s&to=%s&api_key=%s&api_secret=%s&text=%s")
+				% (strPath.empty() ? "/" : strPath)
+				% theConfig.SMS_FROM
+				% theConfig.SMS_TO
+				% theConfig.SMS_KEY
+				% theConfig.SMS_SECRET
+				% strText);
+
+		// cLog(lsINFO) << "SMS: Request:" << strURI;
+		cLog(lsINFO) << "SMS: Request: '" << strText << "'";
+
+		if (iPort < 0)
+			iPort = bSSL ? 443 : 80;
+
+		boost::shared_ptr<HttpsClient> client(new HttpsClient(io_service, iPort, CLIENT_MAX_HEADER));
+
+		client->httpsGet(bSSL, deqSites, strURI, boost::posix_time::seconds(SMS_TIMEOUT),
+			BIND_TYPE(&responseSMS, P_1, P_2, P_3));
+	}
+}
 // vim:ts=4
