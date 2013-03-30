@@ -160,6 +160,12 @@ TER PathState::pushNode(
 
 		terResult	= temBAD_PATH;
 	}
+	else if (!bAccount && !bCurrency && !bIssuer)
+	{
+		cLog(lsDEBUG) << "pushNode: offer must specify at least currency or issuer.";
+
+		terResult	= temBAD_PATH;
+	}
 	else if (bAccount)
 	{
 		// Account link
