@@ -626,7 +626,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					cLog(lsDEBUG) << "Skipping a non-filling path: " << vspResults[lqt.get<3>()].getJson(0);
 			}
 
-			bFound = !remaining.isGEZero();
+//			bFound = !remaining.isGEZero();
 
 			cLog(lsDEBUG) << boost::str(boost::format("findPaths: RESULTS: %s") % spsDst.getJson(0));
 		}
