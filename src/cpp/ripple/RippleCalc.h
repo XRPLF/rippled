@@ -56,6 +56,8 @@ protected:
 
 public:
 	bool operator==(const PaymentNode& pnOther) const;
+
+	Json::Value						getJson() const;
 };
 
 // account id, currency id, issuer id :: node

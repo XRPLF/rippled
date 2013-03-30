@@ -133,13 +133,15 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 
 		// Expand the current path.
 		pspCurrent->setExpanded(lesActive, spPath, mDstAccountID, mSrcAccountID);
+		// XXX Need to report or act on errors returned in pspCurrent->terStatus.
 
 		// Determine if expanded current path is the default.
 		// When path is a default (implied). Don't need to add it to return set.
 		bDefault	= pspCurrent->vpnNodes == mPsDefault->vpnNodes;
 
 		cLog(lsTRACE) << "bDefaultPath: expanded path: " << pspCurrent->getJson();
-		cLog(lsTRACE) << "bDefaultPath: default path: indirect: " << spPath.getJson(0);
+		cLog(lsTRACE) << "bDefaultPath: source path: " << spPath.getJson(0);
+		cLog(lsTRACE) << "bDefaultPath: default path: " << mPsDefault->getJson();
 
 		return bDefault;
 	}
@@ -384,14 +386,16 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 		}
 		else if (!speEnd.mCurrencyID)
 		{
+			// XXX Might restrict the number of times bridging through XRP.
+
 			// Cursor is for XRP, continue with qualifying books: XRP -> non-XRP
 			BOOST_FOREACH(OrderBook::ref book, theApp->getOrderBookDB().getXRPInBooks())
 			{
 				// New end is an order book with the currency and issuer.
 
-				// Don't allow looping through same order books.
 				if (!spPath.hasSeen(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()))
 				{
+					// Not a order book already in path.
 					STPath			spNew(spPath);
 					STPathElement	speBook(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut());
 					STPathElement	speAccount(book->getIssuerOut(), book->getCurrencyOut(), book->getIssuerOut());
@@ -401,6 +405,8 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 					cLog(lsDEBUG)
 						<< boost::str(boost::format("findPaths: XRP -> %s/%s")
+//							% STAmount::createHumanCurrency(book->getCurrencyOut())
+//							% RippleAddress::createHumanAccountID(book->getIssuerOut())
 							% STAmount::createHumanCurrency(speBook.mCurrencyID)
 							% RippleAddress::createHumanAccountID(speBook.mIssuerID));
 
@@ -515,7 +521,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 					spNew.mPath.push_back(speBook);		// Add the order book.
 
-					if (!book->getCurrencyOut())
+					if (!!book->getCurrencyOut())
 					{
 						// For non-XRP out, don't end on the book, add the issuing account.
 						STPathElement	speAccount(book->getIssuerOut(), book->getCurrencyOut(), book->getIssuerOut());
