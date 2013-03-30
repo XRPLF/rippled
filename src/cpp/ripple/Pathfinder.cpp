@@ -622,6 +622,8 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					remaining -= lqt.get<2>();
 					spsDst.addPath(vspResults[lqt.get<3>()]);
 				}
+				else
+					cLog(lsDEBUG) << "Skipping a non-filling path: " << vspResults[lqt.get<3>()].getJson(0);
 			}
 
 			bFound = !remaining.isGEZero();
