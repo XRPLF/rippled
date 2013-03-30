@@ -609,11 +609,46 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 		{
 			std::sort(vMap.begin(), vMap.end(), bQualityCmp);	// Lower is better and should be first.
 
-//			if (bFound)
-//			{ // must subtract liquidity in default path from remaining amount WRITEME
-//			}
-
 			STAmount remaining = mDstAmount;
+			if (bFound)
+			{ // must subtract liquidity in default path from remaining amount
+				try
+				{
+					STAmount saMaxAmountAct, saDstAmountAct;
+					std::vector<PathState::pointer> vpsExpanded;
+					LedgerEntrySet lesSandbox(lesActive.duplicate());
+
+					TER result = RippleCalc::rippleCalc(
+							lesSandbox,
+							saMaxAmountAct,
+							saDstAmountAct,
+							vpsExpanded,
+							mSrcAmount,
+							mDstAmount,
+							mDstAccountID,
+							mSrcAccountID,
+							STPathSet(),
+							true,		// allow partial payment
+							false,
+							false,		// don't suppress default paths, that's the point
+							true);
+
+					if (tesSUCCESS == result)
+					{
+						cLog(lsDEBUG) << "Default path contributes: " << saDstAmountAct;
+						remaining -= saDstAmountAct;
+					}
+					else
+					{
+						cLog(lsDEBUG) << "Default path fails: " << transToken(result);
+					}
+				}
+				catch (...)
+				{
+					cLog(lsDEBUG) << "Default path causes exception";
+				}
+			}
+
 			for (int i = 0, iPathsLeft = iMaxPaths; (iPathsLeft > 0) && (i < vMap.size()); ++i)
 			{
 				path_LQ_t& lqt = vMap[i];
@@ -627,11 +662,13 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					cLog(lsDEBUG) << "Skipping a non-filling path: " << vspResults[lqt.get<3>()].getJson(0);
 			}
 
-//			if (remaining.isPositive())
-//			{
-//				bFound = false;
-//				cLog(lsWARNING) << "Paths could not send " << remaining << " of " << mDstAmount;
-//			|
+			if (remaining.isPositive())
+			{
+				bFound = false;
+				cLog(lsINFO) << "Paths could not send " << remaining << " of " << mDstAmount;
+			}
+			else
+				bFound = true;
 
 			cLog(lsDEBUG) << boost::str(boost::format("findPaths: RESULTS: %s") % spsDst.getJson(0));
 		}
