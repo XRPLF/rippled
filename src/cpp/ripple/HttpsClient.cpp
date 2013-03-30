@@ -473,7 +473,7 @@ void HttpsClient::sendSMS(boost::asio::io_service& io_service, const std::string
 				% theConfig.SMS_TO
 				% theConfig.SMS_KEY
 				% theConfig.SMS_SECRET
-				% strText);
+				% urlEncode(strText));
 
 		// cLog(lsINFO) << "SMS: Request:" << strURI;
 		cLog(lsINFO) << "SMS: Request: '" << strText << "'";
