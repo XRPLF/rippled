@@ -272,9 +272,7 @@ void JobQueue::IOThread(boost::mutex::scoped_lock& sl)
 	NameThread("IO+");
 	try
 	{
-		do
-			NameThread("IO+");
-		while ((mIOService.poll_one() == 1) && !theApp->isShutdown());
+		mIOService.poll();
 	}
 	catch (...)
 	{
