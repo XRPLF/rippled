@@ -799,7 +799,9 @@ STAmount operator+(const STAmount& v1, const STAmount& v2)
 	// this addition cannot overflow an int64, it can overflow an STAmount and the constructor will throw
 
 	int64 fv = vv1 + vv2;
-	if (fv >= 0)
+	if ((fv >= -10) && (fv <= 10))
+		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer);
+	else if (fv >= 0)
 		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, fv, ov1, false);
 	else
 		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, -fv, ov1, true);
@@ -834,7 +836,9 @@ STAmount operator-(const STAmount& v1, const STAmount& v2)
 	// this subtraction cannot overflow an int64, it can overflow an STAmount and the constructor will throw
 
 	int64 fv = vv1 - vv2;
-	if (fv >= 0)
+	if ((fv >= -10) && (fv <= 10))
+		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer);
+	else if (fv >= 0)
 		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, fv, ov1, false);
 	else
 		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, -fv, ov1, true);
