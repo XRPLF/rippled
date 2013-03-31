@@ -53,7 +53,7 @@ TER TrustSetTransactor::doApply()
 
 	if (saLimitAmount.isNegative())
 	{
-		cLog(lsINFO) << "doTrustSet: Malformed transaction: Negatived credit limit.";
+		cLog(lsINFO) << "doTrustSet: Malformed transaction: Negative credit limit.";
 
 		return temBAD_LIMIT;
 	}
