@@ -630,7 +630,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 	// CAUTION: code below appears in two places
 	bool loaded;
 	Ledger::pointer ret = boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
-		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq, loaded);
+		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq, boost::ref(loaded));
 	if (!loaded)
 		return Ledger::pointer();
 	ret->setClosed();
@@ -685,7 +685,7 @@ Ledger::pointer Ledger::getSQL1(SqliteStatement *stmt)
 	// CAUTION: code below appears in two places
 	bool loaded;
 	Ledger::pointer ret = boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
-		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq, loaded);
+		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq, boost::ref(loaded));
 	if (!loaded)
 		return Ledger::pointer();
 	return ret;
