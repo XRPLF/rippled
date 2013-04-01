@@ -45,6 +45,13 @@ void TransactionAcquire::done()
 
 void TransactionAcquire::onTimer(bool progress)
 {
+	if (getTimeouts() > 10)
+	{
+		cLog(lsWARNING) << "Giving up on TX set " << getHash();
+		mFailed = true;
+		done();
+		return;
+	}
 	if (!getPeerCount())
 	{ // out of peers
 		cLog(lsWARNING) << "Out of peers for TX set " << getHash();

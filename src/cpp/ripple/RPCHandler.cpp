@@ -1334,7 +1334,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 
 					jvEntry["source_amount"]	= saMaxAmountAct.getJson(0);
 //					jvEntry["paths_expanded"]	= vpsExpanded.getJson(0);
-					jvEntry["paths_canonical"]	= spsCanonical.getJson(0);
+					jvEntry["paths_canonical"]	= Json::arrayValue; // spsCanonical.getJson(0);
 					jvEntry["paths_computed"]	= spsComputed.getJson(0);
 
 					jvArray.append(jvEntry);
@@ -2235,6 +2235,15 @@ Json::Value RPCHandler::doUnlScore(Json::Value, int& cost)
 	return "scoring requested";
 }
 
+Json::Value RPCHandler::doSMS(Json::Value jvRequest, int& cost)
+{
+	if (!jvRequest.isMember("text"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	HttpsClient::sendSMS(theApp->getIOService(), jvRequest["text"].asString());
+
+	return "sms dispatched";
+}
 Json::Value RPCHandler::doStop(Json::Value, int& cost)
 {
 	theApp->stop();
@@ -3250,6 +3259,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 		{	"submit",				&RPCHandler::doSubmit,			    false,	optCurrent	},
 		{	"server_info",			&RPCHandler::doServerInfo,		    false,	optNone		},
 		{	"server_state",			&RPCHandler::doServerState,		    false,	optNone		},
+		{	"sms",					&RPCHandler::doSMS,					true,	optNone		},
 		{	"stop",					&RPCHandler::doStop,			    true,	optNone		},
 		{	"transaction_entry",	&RPCHandler::doTransactionEntry,    false,	optCurrent	},
 		{	"tx",					&RPCHandler::doTx,				    false,	optNetwork	},

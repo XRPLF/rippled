@@ -44,7 +44,8 @@ Ledger::Ledger(const RippleAddress& masterID, uint64 startAmount) : mTotCoins(st
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
-	uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution, uint32 ledgerSeq)
+	uint64 totCoins, uint32 closeTime, uint32 parentCloseTime,
+	int closeFlags, int closeResolution, uint32 ledgerSeq, bool& loaded)
 		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash), mTotCoins(totCoins),
 		mLedgerSeq(ledgerSeq), mCloseTime(closeTime), mParentCloseTime(parentCloseTime),
 		mCloseResolution(closeResolution), mCloseFlags(closeFlags),
@@ -53,10 +54,27 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 		mAccountStateMap(boost::make_shared<SHAMap>(smtSTATE, accountHash))
 { // This will throw if the root nodes are not available locally
 	updateHash();
-	if (mTransHash.isNonZero())
-		mTransactionMap->fetchRoot(mTransHash);
-	if (mAccountHash.isNonZero())
-		mAccountStateMap->fetchRoot(mAccountHash);
+	loaded = true;
+	try
+	{
+		if (mTransHash.isNonZero())
+			mTransactionMap->fetchRoot(mTransHash);
+	}
+	catch (...)
+	{
+		loaded = false;
+		cLog(lsWARNING) << "Don't have TX root for ledger";
+	}
+	try
+	{
+		if (mAccountHash.isNonZero())
+			mAccountStateMap->fetchRoot(mAccountHash);
+	}
+	catch (...)
+	{
+		loaded = false;
+		cLog(lsWARNING) << "Don't have AS root for ledger";
+	}
 	mTransactionMap->setImmutable();
 	mAccountStateMap->setImmutable();
 	zeroFees();
@@ -610,8 +628,11 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 	}
 
 	// CAUTION: code below appears in two places
-	Ledger::pointer ret = boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
-		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq);
+	bool loaded;
+	Ledger::pointer ret(new Ledger(prevHash, transHash, accountHash, totCoins,
+		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq, loaded));
+	if (!loaded)
+		return Ledger::pointer();
 	ret->setClosed();
 	if (theApp->getOPs().haveLedger(ledgerSeq))
 		ret->setAccepted();
@@ -662,8 +683,12 @@ Ledger::pointer Ledger::getSQL1(SqliteStatement *stmt)
 	ledgerSeq = stmt->getUInt32(9);
 
 	// CAUTION: code below appears in two places
-	return boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
-		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq);
+	bool loaded;
+	Ledger::pointer ret(new Ledger(prevHash, transHash, accountHash, totCoins,
+		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq, loaded));
+	if (!loaded)
+		return Ledger::pointer();
+	return ret;
 }
 
 void Ledger::getSQL2(Ledger::ref ret)

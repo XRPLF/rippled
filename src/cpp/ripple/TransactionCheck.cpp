@@ -7,5 +7,10 @@
 
 bool TransactionEngine::checkInvariants(TER result, const SerializedTransaction& txn, TransactionEngineParams params)
 {
+
+// 1) Make sure transaction changed account sequence number to correct value
+
+// 2) Make sure transaction didn't create XRP
+
 	return true;
 }

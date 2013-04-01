@@ -3,7 +3,7 @@
 #include "RippleCalc.h"
 #include "Application.h"
 
-#define RIPPLE_PATHS_MAX	3
+#define RIPPLE_PATHS_MAX	6
 
 SETUP_LOG();
 

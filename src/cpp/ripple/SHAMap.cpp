@@ -582,7 +582,7 @@ bool SHAMap::addGiveItem(SHAMapItem::ref item, bool isTransaction, bool hasMeta)
 	stack.pop();
 
 	if (node->isLeaf() && (node->peekItem()->getTag() == tag))
-		throw std::runtime_error("addGiveItem ends on leaf with same tag");
+		return false;
 
 	uint256 prevHash;
 	returnNode(node, true);

@@ -1274,4 +1274,132 @@ buster.testCase("Quality paths", {
         });
     },
 });
+
+buster.testCase("Trust auto clear", {
+  'setUp' : testutils.build_setup(),
+  // 'setUp' : testutils.build_setup({ verbose: true }),
+  // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
+  'tearDown' : testutils.build_teardown(),
+
+  "trust normal clear" :
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+          function (callback) {
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob"], callback);
+          },
+          function (callback) {
+            self.what = "Set credit limits.";
+
+            // Mutual trust.
+            testutils.credit_limits(self.remote,
+              {
+                "alice"   : "1000/USD/bob",
+                "bob"   : "1000/USD/alice",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Verify credit limits.";
+
+            testutils.verify_limit(self.remote, "bob", "1000/USD/alice", callback);
+          },
+          function (callback) {
+            self.what = "Clear credit limits.";
+
+            // Mutual trust.
+            testutils.credit_limits(self.remote,
+              {
+                "alice"   : "0/USD/bob",
+                "bob"   : "0/USD/alice",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Verify credit limits.";
+
+            testutils.verify_limit(self.remote, "bob", "0/USD/alice", function (m) {
+                var success = m && 'remoteError' === m.error && 'entryNotFound' === m.remote.error;
+
+                callback(!success);
+              });
+          },
+          // YYY Could verify owner counts are zero.
+        ], function (error) {
+          buster.refute(error, self.what);
+          done();
+        });
+    },
+
+  "trust auto clear" :
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+          function (callback) {
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "10000.0", ["alice", "bob"], callback);
+          },
+          function (callback) {
+            self.what = "Set credit limits.";
+
+            // Mutual trust.
+            testutils.credit_limits(self.remote,
+              {
+                "alice" : "1000/USD/bob",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Distribute funds.";
+
+            testutils.payments(self.remote,
+              {
+                "bob" : [ "50/USD/alice" ],
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Clear credit limits.";
+
+            // Mutual trust.
+            testutils.credit_limits(self.remote,
+              {
+                "alice"   : "0/USD/bob",
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Verify credit limits.";
+
+            testutils.verify_limit(self.remote, "alice", "0/USD/bob", callback);
+          },
+          function (callback) {
+            self.what = "Return funds.";
+
+            testutils.payments(self.remote,
+              {
+                "alice" : [ "50/USD/bob" ],
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Verify credit limit gone.";
+
+            testutils.verify_limit(self.remote, "bob", "0/USD/alice", function (m) {
+                var success = m && 'remoteError' === m.error && 'entryNotFound' === m.remote.error;
+
+                callback(!success);
+              });
+          },
+        ], function (error) {
+          buster.refute(error, self.what);
+          done();
+        });
+    },
+});
 // vim:sw=2:sts=2:ts=8:et

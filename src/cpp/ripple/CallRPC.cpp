@@ -505,6 +505,16 @@ Json::Value RPCParser::parseSignSubmit(const Json::Value& jvParams)
 	return rpcError(rpcINVALID_PARAMS);
 }
 
+// sms <text>
+Json::Value RPCParser::parseSMS(const Json::Value& jvParams)
+{
+	Json::Value		jvRequest;
+
+	jvRequest["text"]	= jvParams[0u].asString();
+
+	return jvRequest;
+}
+
 // tx <transaction_id>
 Json::Value RPCParser::parseTx(const Json::Value& jvParams)
 {
@@ -669,6 +679,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"random",				&RPCParser::parseAsIs,					0,  0	},
 		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	    1,  2	},
 		{	"sign",					&RPCParser::parseSignSubmit,			2,  2	},
+		{	"sms",					&RPCParser::parseSMS,					1,  1	},
 		{	"submit",				&RPCParser::parseSignSubmit,			1,  2	},
 		{	"server_info",			&RPCParser::parseAsIs,					0,  0	},
 		{	"server_state",			&RPCParser::parseAsIs,					0,	0	},

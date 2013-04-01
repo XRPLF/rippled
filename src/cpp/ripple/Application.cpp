@@ -46,6 +46,7 @@ DatabaseCon::~DatabaseCon()
 }
 
 Application::Application() :
+//	mIOService(2),
 	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService), mNetOps(mIOService, &mLedgerMaster),
 	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300), mSLECache("LedgerEntryCache", 4096, 120),
 	mSNTPClient(mAuxService), mJobQueue(mIOService), mFeeTrack(),

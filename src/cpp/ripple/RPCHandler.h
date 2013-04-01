@@ -76,6 +76,7 @@ class RPCHandler
 	Json::Value doServerState(Json::Value params, int& cost);	// for machines
 	Json::Value doSessionClose(Json::Value params, int& cost);
 	Json::Value doSessionOpen(Json::Value params, int& cost);
+	Json::Value doSMS(Json::Value params, int& cost);
 	Json::Value doStop(Json::Value params, int& cost);
 	Json::Value doSign(Json::Value params, int& cost);
 	Json::Value doSubmit(Json::Value params, int& cost);

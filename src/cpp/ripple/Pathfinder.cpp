@@ -78,18 +78,26 @@ PathOption::PathOption(PathOption::pointer other)
 }
 #endif
 
+// quality, length, liquidity, index
+typedef boost::tuple<uint64, int, STAmount, unsigned int> path_LQ_t;
+
 // Lower numbers have better quality. Sort higher quality first.
-static bool bQualityCmp(
-	std::pair< std::pair<uint64, int>, unsigned int> a,
-	std::pair< std::pair<uint64, int>, unsigned int> b)
+static bool bQualityCmp(const path_LQ_t& a, const path_LQ_t&b)
 {
-	if (a.first.first != b.first.first)
-		return a.first.first < b.first.first;
+	// 1) Higher quality (lower cost) is better
+	if (a.get<0>() != b.get<0>())
+		return a.get<0>() < b.get<0>();
 
-	if (a.first.second != b.first.second)
-		return a.first.second < b.first.second;
+	// 2) More liquidity (higher volume) is better
+	if (a.get<2>() != b.get<2>())
+		return a.get<2>() > b.get<2>();
 
-	return a.second < b.second; // FIXME: this biases accounts
+	// 3) Shorter paths are better
+	if (a.get<1>() != b.get<1>())
+		return a.get<1>() < b.get<1>();
+
+	// 4) Tie breaker
+	return a.get<3>() > b.get<3>();
 }
 
 // Return true, if path is a default path with an element.
@@ -125,13 +133,15 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 
 		// Expand the current path.
 		pspCurrent->setExpanded(lesActive, spPath, mDstAccountID, mSrcAccountID);
+		// XXX Need to report or act on errors returned in pspCurrent->terStatus.
 
 		// Determine if expanded current path is the default.
 		// When path is a default (implied). Don't need to add it to return set.
 		bDefault	= pspCurrent->vpnNodes == mPsDefault->vpnNodes;
 
 		cLog(lsTRACE) << "bDefaultPath: expanded path: " << pspCurrent->getJson();
-		cLog(lsTRACE) << "bDefaultPath: default path: indirect: " << spPath.getJson(0);
+		cLog(lsTRACE) << "bDefaultPath: source path: " << spPath.getJson(0);
+		cLog(lsTRACE) << "bDefaultPath: default path: " << mPsDefault->getJson();
 
 		return bDefault;
 	}
@@ -376,14 +386,16 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 		}
 		else if (!speEnd.mCurrencyID)
 		{
+			// XXX Might restrict the number of times bridging through XRP.
+
 			// Cursor is for XRP, continue with qualifying books: XRP -> non-XRP
 			BOOST_FOREACH(OrderBook::ref book, theApp->getOrderBookDB().getXRPInBooks())
 			{
 				// New end is an order book with the currency and issuer.
 
-				// Don't allow looping through same order books.
 				if (!spPath.hasSeen(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()))
 				{
+					// Not a order book already in path.
 					STPath			spNew(spPath);
 					STPathElement	speBook(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut());
 					STPathElement	speAccount(book->getIssuerOut(), book->getCurrencyOut(), book->getIssuerOut());
@@ -393,6 +405,8 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 					cLog(lsDEBUG)
 						<< boost::str(boost::format("findPaths: XRP -> %s/%s")
+//							% STAmount::createHumanCurrency(book->getCurrencyOut())
+//							% RippleAddress::createHumanAccountID(book->getIssuerOut())
 							% STAmount::createHumanCurrency(speBook.mCurrencyID)
 							% RippleAddress::createHumanAccountID(speBook.mIssuerID));
 
@@ -507,7 +521,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 					spNew.mPath.push_back(speBook);		// Add the order book.
 
-					if (!book->getCurrencyOut())
+					if (!!book->getCurrencyOut())
 					{
 						// For non-XRP out, don't end on the book, add the issuing account.
 						STPathElement	speAccount(book->getIssuerOut(), book->getCurrencyOut(), book->getIssuerOut());
@@ -537,7 +551,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 	// Only filter, sort, and limit if have non-default paths.
 	if (iLimit)
 	{
-		std::vector< std::pair< std::pair<uint64, int>, unsigned int> > vMap;
+		std::vector<path_LQ_t> vMap;
 
 		// Build map of quality to entry.
 		for (int i = vspResults.size(); i--;)
@@ -586,7 +600,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 						% uQuality
 						% spCurrent.getJson(0));
 
-				vMap.push_back(std::make_pair(std::make_pair(uQuality, spCurrent.mPath.size()), i));
+				vMap.push_back(path_LQ_t(uQuality, spCurrent.mPath.size(), saDstAmountAct, i));
 			}
 			else
 			{
@@ -599,17 +613,68 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 		if (vMap.size())
 		{
-			iLimit	= std::min(iMaxPaths, (unsigned int) vMap.size());
-
-			bFound	= true;
-
 			std::sort(vMap.begin(), vMap.end(), bQualityCmp);	// Lower is better and should be first.
 
-			// Output best quality entries.
-			for (int i = 0; i != iLimit; ++i)
-			{
-				spsDst.addPath(vspResults[vMap[i].second]);
+			STAmount remaining = mDstAmount;
+			if (bFound)
+			{ // must subtract liquidity in default path from remaining amount
+				try
+				{
+					STAmount saMaxAmountAct, saDstAmountAct;
+					std::vector<PathState::pointer> vpsExpanded;
+					LedgerEntrySet lesSandbox(lesActive.duplicate());
+
+					TER result = RippleCalc::rippleCalc(
+							lesSandbox,
+							saMaxAmountAct,
+							saDstAmountAct,
+							vpsExpanded,
+							mSrcAmount,
+							mDstAmount,
+							mDstAccountID,
+							mSrcAccountID,
+							STPathSet(),
+							true,		// allow partial payment
+							false,
+							false,		// don't suppress default paths, that's the point
+							true);
+
+					if (tesSUCCESS == result)
+					{
+						cLog(lsDEBUG) << "Default path contributes: " << saDstAmountAct;
+						remaining -= saDstAmountAct;
+					}
+					else
+					{
+						cLog(lsDEBUG) << "Default path fails: " << transToken(result);
+					}
+				}
+				catch (...)
+				{
+					cLog(lsDEBUG) << "Default path causes exception";
+				}
 			}
+
+			for (int i = 0, iPathsLeft = iMaxPaths; (iPathsLeft > 0) && (i < vMap.size()); ++i)
+			{
+				path_LQ_t& lqt = vMap[i];
+				if ((iPathsLeft != 1) || (lqt.get<2>() >= remaining))
+				{ // last path must fill
+					--iPathsLeft;
+					remaining -= lqt.get<2>();
+					spsDst.addPath(vspResults[lqt.get<3>()]);
+				}
+				else
+					cLog(lsDEBUG) << "Skipping a non-filling path: " << vspResults[lqt.get<3>()].getJson(0);
+			}
+
+			if (remaining.isPositive())
+			{
+				bFound = false;
+				cLog(lsINFO) << "Paths could not send " << remaining << " of " << mDstAmount;
+			}
+			else
+				bFound = true;
 
 			cLog(lsDEBUG) << boost::str(boost::format("findPaths: RESULTS: %s") % spsDst.getJson(0));
 		}
