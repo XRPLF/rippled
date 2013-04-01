@@ -158,7 +158,13 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 
 	mIsNative = !currency.isString() || currency.asString().empty() || (currency.asString() == SYSTEM_CURRENCY_CODE);
 
-	if (!mIsNative) {
+	if (mIsNative)
+	{
+		if (v.isObject())
+			throw std::runtime_error("XRP may not be specified as an object");
+	}
+	else
+	{ // non-XRP
 		if (!currencyFromString(mCurrency, currency.asString()))
 			throw std::runtime_error("invalid currency");
 
