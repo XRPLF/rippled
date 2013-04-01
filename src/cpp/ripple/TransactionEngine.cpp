@@ -176,12 +176,20 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				if (isSetBit(params, tapOPEN_LEDGER))
 				{
 					if (!mLedger->addTransaction(txID, s))
+					{
+						cLog(lsFATAL) << "Tried to add transaction to open ledger that already had it";
 						assert(false);
+						throw std::runtime_error("Duplicate transaction applied");
+					}
 				}
 				else
 				{
 					if (!mLedger->addTransaction(txID, s, m))
-					assert(false);
+					{
+						cLog(lsFATAL) << "Tried to add transaction to ledger that already had it";
+						assert(false);
+						throw std::runtime_error("Duplicate transaction applied to closed ledger");
+					}
 
 					// Charge whatever fee they specified.
 					STAmount saPaid = txn.getTransactionFee();
