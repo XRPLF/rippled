@@ -150,8 +150,9 @@ void LedgerEntrySet::entryCreate(SLE::ref sle)
 
 		case taaMODIFY:
 			throw std::runtime_error("Create after modify");
+
 		case taaCREATE:
-			throw std::runtime_error("Create after create"); // We could make this work
+			throw std::runtime_error("Create after create"); // This could be made to work
 
 		case taaCACHED:
 			throw std::runtime_error("Create after cache");
@@ -532,7 +533,7 @@ TER LedgerEntrySet::dirCount(const uint256& uRootIndex, uint32& uCount)
 // <--     uNodeDir: For deletion, present to make dirDelete efficient.
 // -->   uRootIndex: The index of the base of the directory.  Nodes are based off of this.
 // --> uLedgerIndex: Value to add to directory.
-// We only append. This allow for things that watch append only structure to just monitor from the last node on ward.
+// Only append. This allow for things that watch append only structure to just monitor from the last node on ward.
 // Within a node with no deletions order of elements is sequential.  Otherwise, order of elements is random.
 TER LedgerEntrySet::dirAdd(
 	uint64&								uNodeDir,
@@ -850,7 +851,7 @@ bool LedgerEntrySet::dirFirst(
 	sleNode		= entryCache(ltDIR_NODE, uRootIndex);
 	uDirEntry	= 0;
 
-	assert(sleNode);			// We never probe for directories.
+	assert(sleNode);			// Never probe for directories.
 
 	return LedgerEntrySet::dirNext(uRootIndex, sleNode, uDirEntry, uEntryIndex);
 }
@@ -1243,13 +1244,38 @@ TER LedgerEntrySet::trustCreate(
 
 		ownerCountAdjust(!bSetDst ? uSrcAccountID : uDstAccountID, 1, sleAccount);
 
-		sleRippleState->setFieldAmount(sfBalance, bSetHigh ? -saBalance : saBalance);
+		sleRippleState->setFieldAmount(sfBalance, bSetHigh ? -saBalance : saBalance);	// ONLY: Create ripple balance.
 	}
 
 	return terResult;
 }
 
-// Direct send w/o fees: redeeming IOUs and/or sending own IOUs.
+TER LedgerEntrySet::trustDelete(SLE::ref sleRippleState, const uint160& uLowAccountID, const uint160& uHighAccountID)
+{
+	bool		bLowNode	= sleRippleState->isFieldPresent(sfLowNode);	// Detect legacy dirs.
+	bool		bHighNode	= sleRippleState->isFieldPresent(sfHighNode);
+	uint64		uLowNode	= sleRippleState->getFieldU64(sfLowNode);
+	uint64		uHighNode	= sleRippleState->getFieldU64(sfHighNode);
+	TER			terResult;
+
+	cLog(lsTRACE) << "trustDelete: Deleting ripple line: low";
+	terResult	= dirDelete(false, uLowNode, Ledger::getOwnerDirIndex(uLowAccountID), sleRippleState->getIndex(), false, !bLowNode);
+
+	if (tesSUCCESS == terResult)
+	{
+		cLog(lsTRACE) << "trustDelete: Deleting ripple line: high";
+		terResult	= dirDelete(false, uHighNode, Ledger::getOwnerDirIndex(uHighAccountID), sleRippleState->getIndex(), false, !bHighNode);
+	}
+
+	cLog(lsINFO) << "trustDelete: Deleting ripple line: state";
+	entryDelete(sleRippleState);
+
+	return terResult;
+}
+
+// Direct send w/o fees:
+// - Redeeming IOUs and/or sending sender's own IOUs.
+// - Create trust line of needed.
 TER LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer)
 {
 	uint160				uIssuerID		= saAmount.getIssuer();
@@ -1306,14 +1332,46 @@ TER LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRecei
 			% saAmount.getFullText()
 			% saBalance.getFullText());
 
+		bool	bDelete	= false;
+		uint32	uFlags;
+
+		// YYY Could skip this if rippling in reverse.
+		if (saBefore.isPositive()																				// Sender balance was positive.
+			&& !saBalance.isPositive()																			// Sender is zero or negative.
+			&& isSetBit((uFlags = sleRippleState->getFieldU32(sfFlags)), !bSenderHigh ? lsfLowReserve : lsfHighReserve)	// Sender reserve is set.
+			&& !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)							// Sender trust limit is 0.
+			&& !sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)					// Sender quality in is 0.
+			&& !sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut))					// Sender quality out is 0.
+		{
+			// Clear the reserve of the sender, possibly delete the line!
+			SLE::pointer	sleSender	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uSenderID));
+
+			ownerCountAdjust(uSenderID, -1, sleSender);
+
+			sleRippleState->setFieldU32(sfFlags, uFlags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));	// Clear reserve flag.
+
+			bDelete	= !saBalance		// Balance is zero.
+						&& !isSetBit(uFlags, bSenderHigh ? lsfLowReserve : lsfHighReserve);	// Receiver reserve is clear.
+		}
+
 		if (bSenderHigh)
 			saBalance.negate();
 
-		sleRippleState->setFieldAmount(sfBalance, saBalance);
+		// Want to reflect balance to zero even if we are deleting line.
+		sleRippleState->setFieldAmount(sfBalance, saBalance);	// ONLY: Adjust ripple balance.
 
-		entryModify(sleRippleState);
+		if (bDelete)
+		{
+			terResult	= trustDelete(sleRippleState,
+				 bSenderHigh ? uReceiverID : uSenderID,
+				!bSenderHigh ? uReceiverID : uSenderID);
+		}
+		else
+		{
+			entryModify(sleRippleState);
 
-		terResult	= tesSUCCESS;
+			terResult	= tesSUCCESS;
+		}
 	}
 
 	return terResult;
@@ -1374,6 +1432,7 @@ TER LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uReceiv
 	}
 	else if (saAmount.isNative())
 	{
+		// XRP send which does not check reserve and can do pure adjustment.
 		SLE::pointer		sleSender	= !!uSenderID
 											? entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uSenderID))
 											: SLE::pointer();
@@ -1398,14 +1457,14 @@ TER LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uReceiv
 			}
 			else
 			{
-				sleSender->setFieldAmount(sfBalance, sleSender->getFieldAmount(sfBalance) - saAmount);
+				sleSender->setFieldAmount(sfBalance, sleSender->getFieldAmount(sfBalance) - saAmount);	// Decrement XRP balance.
 				entryModify(sleSender);
 			}
 		}
 
 		if (tesSUCCESS == terResult && sleReceiver)
 		{
-			sleReceiver->setFieldAmount(sfBalance, sleReceiver->getFieldAmount(sfBalance) + saAmount);
+			sleReceiver->setFieldAmount(sfBalance, sleReceiver->getFieldAmount(sfBalance) + saAmount);	// Increment XRP balance.
 			entryModify(sleReceiver);
 		}
 
