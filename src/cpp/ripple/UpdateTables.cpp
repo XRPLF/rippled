@@ -22,7 +22,7 @@ static std::vector<std::string> getSchema(DatabaseCon* dbc, const std::string& d
 static bool schemaHas(DatabaseCon* dbc, const std::string& dbName, int line, const std::string& content)
 {
 	std::vector<std::string> schema = getSchema(dbc, dbName);
-	if (schema.size() <= line)
+	if (static_cast<int>(schema.size()) <= line)
 	{
 		Log(lsFATAL) << "Schema for " << dbName << " has too few lines";
 		throw std::runtime_error("bad schema");
@@ -50,7 +50,7 @@ static void addTxnSeqField()
 		int metaSize = 2048;
 		rawMeta.resize(metaSize);
 		metaSize = db->getBinary("TxnMeta", &*rawMeta.begin(), rawMeta.size());
-		if (metaSize > rawMeta.size())
+		if (metaSize > static_cast<int>(rawMeta.size()))
 		{
 			rawMeta.resize(metaSize);
 			db->getBinary("TxnMeta", &*rawMeta.begin(), rawMeta.size());

@@ -99,7 +99,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::setTa
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	mTargetSize = s;
 	if (s > 0)
-		mCache.rehash((s + (s >> 2)) / mCache.max_load_factor() + 1);
+		mCache.rehash(static_cast<std::size_t>((s + (s >> 2)) / mCache.max_load_factor() + 1));
 	Log(lsDEBUG, TaggedCachePartition) << mName << " target size set to " << s;
 }
 
@@ -136,7 +136,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 	int target = mLastSweep - mTargetAge;
 	int cacheRemovals = 0, mapRemovals = 0, cc = 0;
 
-	if ((mTargetSize != 0) && (mCache.size() > mTargetSize))
+	if ((mTargetSize != 0) && (static_cast<int>(mCache.size()) > mTargetSize))
 	{
 		target = mLastSweep - (mTargetAge * mTargetSize / mCache.size());
 		if (target > (mLastSweep - 2))

@@ -81,7 +81,7 @@ void SNTPClient::resolveComplete(const boost::system::error_code& error, boost::
 			query.mReceivedReply = false;
 			query.mLocalTimeSent = now;
 			getRand(reinterpret_cast<unsigned char *>(&query.mQueryNonce), sizeof(query.mQueryNonce));
-			reinterpret_cast<uint32*>(SNTPQueryData)[NTP_OFF_XMITTS_INT] = time(NULL) + NTP_UNIX_OFFSET;
+			reinterpret_cast<uint32*>(SNTPQueryData)[NTP_OFF_XMITTS_INT] = static_cast<uint32>(time(NULL)) + NTP_UNIX_OFFSET;
 			reinterpret_cast<uint32*>(SNTPQueryData)[NTP_OFF_XMITTS_FRAC] = query.mQueryNonce;
 			mSocket.async_send_to(boost::asio::buffer(SNTPQueryData, 48), *sel,
 				boost::bind(&SNTPClient::sendComplete, this,
@@ -148,7 +148,7 @@ void SNTPClient::processReply()
 		return;
 	}
 
-	time_t now = time(NULL);
+	int64 now = static_cast<int>(time(NULL));
 	timev -= now;
 	timev -= NTP_UNIX_OFFSET;
 
