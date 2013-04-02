@@ -1093,11 +1093,13 @@ std::string
 		boost::str(boost::format("SELECT %s FROM "
 		"AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
 		"WHERE Account = '%s' %s %s "
-		"ORDER BY AccountTransactions.LedgerSeq %s, AccountTransactions.TransID %s LIMIT %u, %u;")
+		"ORDER BY AccountTransactions.LedgerSeq %s, AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
+		"LIMIT %u, %u;")
 		% selection
 		% account.humanAccountID()
 		% maxClause
 		% minClause
+		% (descending ? "DESC" : "ASC")
 		% (descending ? "DESC" : "ASC")
 		% (descending ? "DESC" : "ASC")
 		% boost::lexical_cast<std::string>(offset)

@@ -185,6 +185,7 @@
     <ClCompile Include="src\cpp\ripple\Transactor.cpp" />
     <ClCompile Include="src\cpp\ripple\TrustSetTransactor.cpp" />
     <ClCompile Include="src\cpp\ripple\UniqueNodeList.cpp" />
+    <ClCompile Include="src\cpp\ripple\UpdateTables.cpp" />
     <ClCompile Include="src\cpp\ripple\utils.cpp" />
     <ClCompile Include="src\cpp\ripple\ValidationCollection.cpp" />
     <ClCompile Include="src\cpp\ripple\Wallet.cpp" />

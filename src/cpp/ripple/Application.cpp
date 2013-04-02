@@ -143,6 +143,9 @@ void Application::setup()
 	mLedgerDB->getDB()->setupCheckpointing(&mJobQueue);
 	mHashNodeDB->getDB()->setupCheckpointing(&mJobQueue);
 
+	if (!theConfig.RUN_STANDALONE)
+		updateTables();
+
 	if (theConfig.START_UP == Config::FRESH)
 	{
 		cLog(lsINFO) << "Starting new Ledger";
@@ -416,12 +419,12 @@ void Application::loadOldLedger(const std::string& l)
 		mLedgerMaster.switchLedgers(loadLedger, openLedger);
 		mNetOps.setLastCloseTime(loadLedger->getCloseTimeNC());
 	}
-	catch (SHAMapMissingNode& mn)
+	catch (SHAMapMissingNode&)
 	{
 		cLog(lsFATAL) << "Data is missing for selected ledger";
 		exit(-1);
 	}
-	catch (boost::bad_lexical_cast& blc)
+	catch (boost::bad_lexical_cast&)
 	{
 		cLog(lsFATAL) << "Ledger specified '" << l << "' is not valid";
 		exit(-1);
