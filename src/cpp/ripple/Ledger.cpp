@@ -538,14 +538,13 @@ Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
 		Database* db = theApp->getLedgerDB()->getDB();
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 
-		static SqliteStatement pSt(db->getSqliteDB(), "SELECT "
+		SqliteStatement pSt(db->getSqliteDB(), "SELECT "
 			"LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
 			"ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
 			" from Ledgers WHERE LedgerSeq = ?;");
 
 		pSt.bind(1, ledgerIndex);
 		ledger = getSQL1(&pSt);
-		pSt.reset();
 	}
 	if (ledger)
 		Ledger::getSQL2(ledger);
@@ -559,14 +558,13 @@ Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 		Database* db = theApp->getLedgerDB()->getDB();
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 
-		static SqliteStatement pSt(db->getSqliteDB(), "SELECT "
+		SqliteStatement pSt(db->getSqliteDB(), "SELECT "
 			"LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
 			"ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
 			" from Ledgers WHERE LedgerHash = ?;");
 
 		pSt.bind(1, ledgerHash.GetHex());
 		ledger = getSQL1(&pSt);
-		pSt.reset();
 	}
 	if (ledger)
 	{
@@ -730,7 +728,7 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 	DatabaseCon *con = theApp->getLedgerDB();
 	ScopedLock sl(con->getDBLock());
 
-	static SqliteStatement pSt(con->getDB()->getSqliteDB(),
+	SqliteStatement pSt(con->getDB()->getSqliteDB(),
 		"SELECT LedgerHash,PrevHash FROM Ledgers INDEXED BY SeqLedger Where LedgerSeq = ?;");
 
 	pSt.bind(1, ledgerIndex);
@@ -738,13 +736,11 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 	int ret = pSt.step();
 	if (pSt.isDone(ret))
 	{
-		pSt.reset();
 		cLog(lsTRACE) << "Don't have ledger " << ledgerIndex;
 		return false;
 	}
 	if (!pSt.isRow(ret))
 	{
-		pSt.reset();
 		assert(false);
 		cLog(lsFATAL) << "Unexpected statement result " << ret;
 		return false;
@@ -752,7 +748,6 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 
 	ledgerHash.SetHex(pSt.peekString(0), true);
 	parentHash.SetHex(pSt.peekString(1), true);
-	pSt.reset();
 
 	return true;
 
@@ -790,7 +785,7 @@ std::map< uint32, std::pair<uint256, uint256> > Ledger::getHashesByIndex(uint32 
 	DatabaseCon *con = theApp->getLedgerDB();
 	ScopedLock sl(con->getDBLock());
 
-	static SqliteStatement pSt(con->getDB()->getSqliteDB(),
+	SqliteStatement pSt(con->getDB()->getSqliteDB(),
 		"SELECT LedgerSeq,LedgerHash,PrevHash FROM Ledgers INDEXED BY SeqLedger "
 		"WHERE LedgerSeq >= ? AND LedgerSeq <= ?;");
 
@@ -803,15 +798,9 @@ std::map< uint32, std::pair<uint256, uint256> > Ledger::getHashesByIndex(uint32 
 	{
 		int r = pSt.step();
 		if (pSt.isDone(r))
-		{
-			pSt.reset();
 			return ret;
-		}
 		if (!pSt.isRow(r))
-		{
-			pSt.reset();
 			return ret;
-		}
 		hashes.first.SetHex(pSt.peekString(1), true);
 		hashes.second.SetHex(pSt.peekString(2), true);
 		ret[pSt.getUInt32(0)] = hashes;
