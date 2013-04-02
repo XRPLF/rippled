@@ -269,7 +269,7 @@ int HashedObjectStore::import(const std::string& file)
 		uint256 hash;
 		std::string hashStr;
 		importDB->getStr("Hash", hashStr);
-		hash.SetHex(hashStr, true);
+		hash.SetHexExact(hashStr);
 		if (hash.isZero())
 		{
 			cLog(lsWARNING) << "zero hash found in import table";

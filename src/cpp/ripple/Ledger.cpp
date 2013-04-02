@@ -611,13 +611,13 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 			return Ledger::pointer();
 
 		db->getStr("LedgerHash", hash);
-		ledgerHash.SetHex(hash, true);
+		ledgerHash.SetHexExact(hash);
 		db->getStr("PrevHash", hash);
-		prevHash.SetHex(hash, true);
+		prevHash.SetHexExact(hash);
 		db->getStr("AccountSetHash", hash);
-		accountHash.SetHex(hash, true);
+		accountHash.SetHexExact(hash);
 		db->getStr("TransSetHash", hash);
-		transHash.SetHex(hash, true);
+		transHash.SetHexExact(hash);
 		totCoins = db->getBigInt("TotalCoins");
 		closingTime = db->getBigInt("ClosingTime");
 		prevClosingTime = db->getBigInt("PrevClosingTime");
@@ -671,10 +671,10 @@ Ledger::pointer Ledger::getSQL1(SqliteStatement *stmt)
 	unsigned closeFlags;
 	std::string hash;
 
-	ledgerHash.SetHex(stmt->peekString(0), true);
-	prevHash.SetHex(stmt->peekString(1), true);
-	accountHash.SetHex(stmt->peekString(2), true);
-	transHash.SetHex(stmt->peekString(3), true);
+	ledgerHash.SetHexExact(stmt->peekString(0));
+	prevHash.SetHexExact(stmt->peekString(1));
+	accountHash.SetHexExact(stmt->peekString(2));
+	transHash.SetHexExact(stmt->peekString(3));
 	totCoins = stmt->getInt64(4);
 	closingTime = stmt->getUInt32(5);
 	prevClosingTime = stmt->getUInt32(6);
@@ -717,7 +717,7 @@ uint256 Ledger::getHashByIndex(uint32 ledgerIndex)
 		db->endIterRows();
 	}
 
-	ret.SetHex(hash, true);
+	ret.SetHexExact(hash);
 	return ret;
 }
 
@@ -746,8 +746,8 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 		return false;
 	}
 
-	ledgerHash.SetHex(pSt.peekString(0), true);
-	parentHash.SetHex(pSt.peekString(1), true);
+	ledgerHash.SetHexExact(pSt.peekString(0));
+	parentHash.SetHexExact(pSt.peekString(1));
 
 	return true;
 
@@ -768,8 +768,8 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 		db->endIterRows();
 	}
 
-	ledgerHash.SetHex(hash, true);
-	parentHash.SetHex(prevHash, true);
+	ledgerHash.SetHexExact(hash);
+	parentHash.SetHexExact(prevHash);
 
 	assert(ledgerHash.isNonZero() && ((ledgerIndex == 0) || parentHash.isNonZero()));
 
@@ -801,8 +801,8 @@ std::map< uint32, std::pair<uint256, uint256> > Ledger::getHashesByIndex(uint32 
 			return ret;
 		if (!pSt.isRow(r))
 			return ret;
-		hashes.first.SetHex(pSt.peekString(1), true);
-		hashes.second.SetHex(pSt.peekString(2), true);
+		hashes.first.SetHexExact(pSt.peekString(1));
+		hashes.second.SetHexExact(pSt.peekString(2));
 		ret[pSt.getUInt32(0)] = hashes;
 	} while(1);
 
