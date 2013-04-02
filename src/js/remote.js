@@ -821,33 +821,37 @@ Remote.prototype.request_account_offers = function (accountID, account_index, cu
     .ledger_choose(current);
 };
 
-Remote.prototype.request_account_tx = function (accountID, ledger_index_min, ledger_index_max, descending, limit, offset) {
+
+/*
+  account: account,
+  ledger_index_min: ledger_index, // optional, defaults to -1 if ledger_index_max is specified.
+  ledger_index_max: ledger_index, // optional, defaults to -1 if ledger_index_min is specified.
+  binary: boolean,                // optional, defaults to false
+  count: boolean,                 // optional, defaults to false
+  descending: boolean,            // optional, defaults to false
+  offset: integer,                // optional, defaults to 0
+  limit: integer                  // optional
+*/
+
+Remote.prototype.request_account_tx = function (obj) {
   // XXX Does this require the server to be trusted?
   //utils.assert(this.trusted);
 
   var request = new Request(this, 'account_tx');
 
-  request.message.account = accountID;
-  request.message.count   = true;
+  request.message.account     = obj.account;
 
-  if (descending) {
-    request.message.descending = descending;
-  }
-
-  if (limit) {
-    request.message.limit = limit;
-  }
-
-  if (offset) {
-    request.message.offset = offset;
-  }
-
-  if (ledger_index_min === ledger_index_max) {
-    request.message.ledger = ledger_index_min;
+  if (false && ledger_min === ledger_max) {
+    //request.message.ledger      = ledger_min;
   }
   else {
-    request.message.ledger_index_min  = ledger_index_min;
-    request.message.ledger_index_max  = ledger_index_max;
+	if (obj.ledger_index_min) {request.message.ledger_index_min  = obj.ledger_index_min;}
+    if (obj.ledger_index_max) {request.message.ledger_index_max  = obj.ledger_index_max;}
+	if (obj.binary) {request.message.binary  = obj.binary;}
+	if (obj.count) {request.message.count  = obj.count;}
+	if (obj.descending) {request.message.descending  = obj.descending;}
+	if (obj.offset) {request.message.offset  = obj.offset;}
+	if (obj.limit) {request.message.limit  = obj.limit;}
   }
 
   return request;
