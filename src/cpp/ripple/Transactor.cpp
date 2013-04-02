@@ -142,7 +142,8 @@ TER Transactor::checkSeq()
 		cLog(lsWARNING) << "applyTransaction: past sequence number";
 
 		return tefPAST_SEQ;
-	}else
+	}
+	else
 	{
 		mTxnAccount->setFieldU32(sfSequence, t_seq + 1);
 	}
