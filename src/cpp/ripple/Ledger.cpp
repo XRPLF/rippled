@@ -479,7 +479,7 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 			const std::vector<RippleAddress>& accts = vt.second.getAffected();
 			if (!accts.empty())
 			{
-				std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
+				std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq, TxnSeq) VALUES ";
 				bool first = true;
 				for (std::vector<RippleAddress>::const_iterator it = accts.begin(), end = accts.end(); it != end; ++it)
 				{
@@ -495,6 +495,8 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 					sql += it->humanAccountID();
 					sql += "',";
 					sql += boost::lexical_cast<std::string>(getLedgerSeq());
+					sql += ",";
+					sql += boost::lexical_cast<std::string>(vt.second.getTxnSeq());
 					sql += ")";
 				}
 				sql += ";";

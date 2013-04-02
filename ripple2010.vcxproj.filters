@@ -267,6 +267,9 @@
     <ClCompile Include="src\cpp\ripple\UniqueNodeList.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\UpdateTables.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -90,6 +90,7 @@ class Application
 
 	volatile bool			mShutdown;
 
+	void updateTables();
 	void startNewLedger();
 	void loadOldLedger(const std::string&);
 

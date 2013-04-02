@@ -106,7 +106,7 @@ Ledger::pointer LedgerMaster::closeLedger(bool recover)
 					++recovers;
 			}
 			catch (...)
-			{
+			{ // CHECKME: We got a few of these
 				cLog(lsWARNING) << "Held transaction throws";
 			}
 		}

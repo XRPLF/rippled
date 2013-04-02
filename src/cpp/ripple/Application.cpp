@@ -143,6 +143,9 @@ void Application::setup()
 	mLedgerDB->getDB()->setupCheckpointing(&mJobQueue);
 	mHashNodeDB->getDB()->setupCheckpointing(&mJobQueue);
 
+	if (!theConfig.RUN_STANDALONE)
+		updateTables();
+
 	if (theConfig.START_UP == Config::FRESH)
 	{
 		cLog(lsINFO) << "Starting new Ledger";
