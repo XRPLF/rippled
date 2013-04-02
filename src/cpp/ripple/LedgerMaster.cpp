@@ -74,10 +74,10 @@ void LedgerMaster::switchLedgers(Ledger::pointer lastClosed, Ledger::pointer cur
 		mFinalizedLedger->setClosed();
 		mFinalizedLedger->setAccepted();
 		mCurrentLedger = current;
-	}
 
-	assert(!mCurrentLedger->isClosed());
-	mEngine.setLedger(mCurrentLedger);
+		assert(!mCurrentLedger->isClosed());
+		mEngine.setLedger(mCurrentLedger);
+	}
 	checkAccept(lastClosed->getHash(), lastClosed->getLedgerSeq());
 }
 
@@ -122,6 +122,7 @@ Ledger::pointer LedgerMaster::closeLedger(bool recover)
 
 TER LedgerMaster::doTransaction(SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply)
 {
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	TER result = mEngine.applyTransaction(*txn, params, didApply);
 //	if (didApply)
 		theApp->getOPs().pubProposedTransaction(mEngine.getLedger(), txn, result);

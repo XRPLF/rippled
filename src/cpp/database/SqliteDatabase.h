@@ -73,6 +73,7 @@ protected:
 
 public:
 	SqliteStatement(SqliteDatabase* db, const char *statement);
+	SqliteStatement(SqliteDatabase* db, const std::string& statement);
 	~SqliteStatement();
 
 	sqlite3_stmt* peekStatement();
