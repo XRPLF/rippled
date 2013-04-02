@@ -8,12 +8,9 @@
 
 bool AddSystemEntropy()
 { // Get entropy from the Windows crypto provider
-	RAND_screen();  // this isn't really that safe since it only works for end users not servers
-
-/* TODO: you need the cryptoAPI installed I think for the below to work. I suppose we should require people to install this to build the windows version
 	char name[512], rand[128];
 	DWORD count = 500;
-	HCRYPTOPROV cryptoHandle;
+	HCRYPTPROV cryptoHandle;
 
 	if (!CryptGetDefaultProvider(PROV_RSA_FULL, NULL, CRYPT_MACHINE_DEFAULT, name, &count))
 	{
@@ -43,7 +40,6 @@ bool AddSystemEntropy()
 	CryptReleaseContext(cryptoHandle, 0);
 	RAND_seed(rand, 128);
 
-*/
 	return true;
 }
 
