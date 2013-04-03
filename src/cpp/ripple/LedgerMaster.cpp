@@ -122,10 +122,13 @@ Ledger::pointer LedgerMaster::closeLedger(bool recover)
 
 TER LedgerMaster::doTransaction(SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply)
 {
+	Ledger::pointer ledger;
+	TER result;
+
 	{
 		boost::recursive_mutex::scoped_lock sl(mLock);
-		TER result = mEngine.applyTransaction(*txn, params, didApply);
-		Ledger::pointer ledger = mEngine.getLedger();
+		result = mEngine.applyTransaction(*txn, params, didApply);
+		ledger = mEngine.getLedger();
 	}
 //	if (didApply)
 		theApp->getOPs().pubProposedTransaction(ledger, txn, result);
