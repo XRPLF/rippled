@@ -26,11 +26,12 @@ const char *TxnDBInit[] = {
 		TransID		CHARACTER(64),				\
 		Account		CHARACTER(64),				\
 		LedgerSeq	BIGINT UNSIGNED				\
+		TxnSeq		INTEGER						\
 	);",
 	"CREATE INDEX AcctTxIDIndex ON				\
 		AccountTransactions(TransID);",
 	"CREATE INDEX AcctTxIndex ON				\
-		AccountTransactions(Account, LedgerSeq, TransID);",
+		AccountTransactions(Account, LedgerSeq, TxnSeq, TransID);",
 	"CREATE INDEX AcctLgrIndex ON				\
 		AccountTransactions(LedgerSeq, Account, TransID);",
 

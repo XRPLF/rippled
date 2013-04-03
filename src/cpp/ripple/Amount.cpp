@@ -158,7 +158,13 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 
 	mIsNative = !currency.isString() || currency.asString().empty() || (currency.asString() == SYSTEM_CURRENCY_CODE);
 
-	if (!mIsNative) {
+	if (mIsNative)
+	{
+		if (v.isObject())
+			throw std::runtime_error("XRP may not be specified as an object");
+	}
+	else
+	{ // non-XRP
 		if (!currencyFromString(mCurrency, currency.asString()))
 			throw std::runtime_error("invalid currency");
 
@@ -799,7 +805,9 @@ STAmount operator+(const STAmount& v1, const STAmount& v2)
 	// this addition cannot overflow an int64, it can overflow an STAmount and the constructor will throw
 
 	int64 fv = vv1 + vv2;
-	if (fv >= 0)
+	if ((fv >= -10) && (fv <= 10))
+		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer);
+	else if (fv >= 0)
 		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, fv, ov1, false);
 	else
 		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, -fv, ov1, true);
@@ -834,7 +842,9 @@ STAmount operator-(const STAmount& v1, const STAmount& v2)
 	// this subtraction cannot overflow an int64, it can overflow an STAmount and the constructor will throw
 
 	int64 fv = vv1 - vv2;
-	if (fv >= 0)
+	if ((fv >= -10) && (fv <= 10))
+		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer);
+	else if (fv >= 0)
 		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, fv, ov1, false);
 	else
 		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, -fv, ov1, true);

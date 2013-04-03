@@ -116,6 +116,8 @@ public:
 		std::size_t responseMax,
 		boost::posix_time::time_duration timeout,
 		FUNCTION_TYPE<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
+
+	static void sendSMS(boost::asio::io_service& io_service, const std::string& strText);
 };
 #endif
 // vim:ts=4

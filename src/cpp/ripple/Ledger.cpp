@@ -44,7 +44,8 @@ Ledger::Ledger(const RippleAddress& masterID, uint64 startAmount) : mTotCoins(st
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
-	uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution, uint32 ledgerSeq)
+	uint64 totCoins, uint32 closeTime, uint32 parentCloseTime,
+	int closeFlags, int closeResolution, uint32 ledgerSeq, bool& loaded)
 		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash), mTotCoins(totCoins),
 		mLedgerSeq(ledgerSeq), mCloseTime(closeTime), mParentCloseTime(parentCloseTime),
 		mCloseResolution(closeResolution), mCloseFlags(closeFlags),
@@ -53,10 +54,27 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 		mAccountStateMap(boost::make_shared<SHAMap>(smtSTATE, accountHash))
 { // This will throw if the root nodes are not available locally
 	updateHash();
-	if (mTransHash.isNonZero())
-		mTransactionMap->fetchRoot(mTransHash);
-	if (mAccountHash.isNonZero())
-		mAccountStateMap->fetchRoot(mAccountHash);
+	loaded = true;
+	try
+	{
+		if (mTransHash.isNonZero())
+			mTransactionMap->fetchRoot(mTransHash);
+	}
+	catch (...)
+	{
+		loaded = false;
+		cLog(lsWARNING) << "Don't have TX root for ledger";
+	}
+	try
+	{
+		if (mAccountHash.isNonZero())
+			mAccountStateMap->fetchRoot(mAccountHash);
+	}
+	catch (...)
+	{
+		loaded = false;
+		cLog(lsWARNING) << "Don't have AS root for ledger";
+	}
 	mTransactionMap->setImmutable();
 	mAccountStateMap->setImmutable();
 	zeroFees();
@@ -461,7 +479,7 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 			const std::vector<RippleAddress>& accts = vt.second.getAffected();
 			if (!accts.empty())
 			{
-				std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
+				std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq, TxnSeq) VALUES ";
 				bool first = true;
 				for (std::vector<RippleAddress>::const_iterator it = accts.begin(), end = accts.end(); it != end; ++it)
 				{
@@ -477,6 +495,8 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 					sql += it->humanAccountID();
 					sql += "',";
 					sql += boost::lexical_cast<std::string>(getLedgerSeq());
+					sql += ",";
+					sql += boost::lexical_cast<std::string>(vt.second.getTxnSeq());
 					sql += ")";
 				}
 				sql += ";";
@@ -518,14 +538,13 @@ Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
 		Database* db = theApp->getLedgerDB()->getDB();
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 
-		static SqliteStatement pSt(db->getSqliteDB(), "SELECT "
+		SqliteStatement pSt(db->getSqliteDB(), "SELECT "
 			"LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
 			"ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
 			" from Ledgers WHERE LedgerSeq = ?;");
 
 		pSt.bind(1, ledgerIndex);
 		ledger = getSQL1(&pSt);
-		pSt.reset();
 	}
 	if (ledger)
 		Ledger::getSQL2(ledger);
@@ -539,14 +558,13 @@ Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 		Database* db = theApp->getLedgerDB()->getDB();
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 
-		static SqliteStatement pSt(db->getSqliteDB(), "SELECT "
+		SqliteStatement pSt(db->getSqliteDB(), "SELECT "
 			"LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
 			"ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
 			" from Ledgers WHERE LedgerHash = ?;");
 
 		pSt.bind(1, ledgerHash.GetHex());
 		ledger = getSQL1(&pSt);
-		pSt.reset();
 	}
 	if (ledger)
 	{
@@ -593,13 +611,13 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 			return Ledger::pointer();
 
 		db->getStr("LedgerHash", hash);
-		ledgerHash.SetHex(hash, true);
+		ledgerHash.SetHexExact(hash);
 		db->getStr("PrevHash", hash);
-		prevHash.SetHex(hash, true);
+		prevHash.SetHexExact(hash);
 		db->getStr("AccountSetHash", hash);
-		accountHash.SetHex(hash, true);
+		accountHash.SetHexExact(hash);
 		db->getStr("TransSetHash", hash);
-		transHash.SetHex(hash, true);
+		transHash.SetHexExact(hash);
 		totCoins = db->getBigInt("TotalCoins");
 		closingTime = db->getBigInt("ClosingTime");
 		prevClosingTime = db->getBigInt("PrevClosingTime");
@@ -610,8 +628,11 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 	}
 
 	// CAUTION: code below appears in two places
-	Ledger::pointer ret = boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
-		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq);
+	bool loaded;
+	Ledger::pointer ret(new Ledger(prevHash, transHash, accountHash, totCoins,
+		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq, loaded));
+	if (!loaded)
+		return Ledger::pointer();
 	ret->setClosed();
 	if (theApp->getOPs().haveLedger(ledgerSeq))
 		ret->setAccepted();
@@ -650,10 +671,10 @@ Ledger::pointer Ledger::getSQL1(SqliteStatement *stmt)
 	unsigned closeFlags;
 	std::string hash;
 
-	ledgerHash.SetHex(stmt->peekString(0), true);
-	prevHash.SetHex(stmt->peekString(1), true);
-	accountHash.SetHex(stmt->peekString(2), true);
-	transHash.SetHex(stmt->peekString(3), true);
+	ledgerHash.SetHexExact(stmt->peekString(0));
+	prevHash.SetHexExact(stmt->peekString(1));
+	accountHash.SetHexExact(stmt->peekString(2));
+	transHash.SetHexExact(stmt->peekString(3));
 	totCoins = stmt->getInt64(4);
 	closingTime = stmt->getUInt32(5);
 	prevClosingTime = stmt->getUInt32(6);
@@ -662,8 +683,12 @@ Ledger::pointer Ledger::getSQL1(SqliteStatement *stmt)
 	ledgerSeq = stmt->getUInt32(9);
 
 	// CAUTION: code below appears in two places
-	return boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
-		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq);
+	bool loaded;
+	Ledger::pointer ret(new Ledger(prevHash, transHash, accountHash, totCoins,
+		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq, loaded));
+	if (!loaded)
+		return Ledger::pointer();
+	return ret;
 }
 
 void Ledger::getSQL2(Ledger::ref ret)
@@ -692,7 +717,7 @@ uint256 Ledger::getHashByIndex(uint32 ledgerIndex)
 		db->endIterRows();
 	}
 
-	ret.SetHex(hash, true);
+	ret.SetHexExact(hash);
 	return ret;
 }
 
@@ -703,7 +728,7 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 	DatabaseCon *con = theApp->getLedgerDB();
 	ScopedLock sl(con->getDBLock());
 
-	static SqliteStatement pSt(con->getDB()->getSqliteDB(),
+	SqliteStatement pSt(con->getDB()->getSqliteDB(),
 		"SELECT LedgerHash,PrevHash FROM Ledgers INDEXED BY SeqLedger Where LedgerSeq = ?;");
 
 	pSt.bind(1, ledgerIndex);
@@ -711,21 +736,18 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 	int ret = pSt.step();
 	if (pSt.isDone(ret))
 	{
-		pSt.reset();
 		cLog(lsTRACE) << "Don't have ledger " << ledgerIndex;
 		return false;
 	}
 	if (!pSt.isRow(ret))
 	{
-		pSt.reset();
 		assert(false);
 		cLog(lsFATAL) << "Unexpected statement result " << ret;
 		return false;
 	}
 
-	ledgerHash.SetHex(pSt.peekString(0), true);
-	parentHash.SetHex(pSt.peekString(1), true);
-	pSt.reset();
+	ledgerHash.SetHexExact(pSt.peekString(0));
+	parentHash.SetHexExact(pSt.peekString(1));
 
 	return true;
 
@@ -746,8 +768,8 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 		db->endIterRows();
 	}
 
-	ledgerHash.SetHex(hash, true);
-	parentHash.SetHex(prevHash, true);
+	ledgerHash.SetHexExact(hash);
+	parentHash.SetHexExact(prevHash);
 
 	assert(ledgerHash.isNonZero() && ((ledgerIndex == 0) || parentHash.isNonZero()));
 
@@ -763,7 +785,7 @@ std::map< uint32, std::pair<uint256, uint256> > Ledger::getHashesByIndex(uint32 
 	DatabaseCon *con = theApp->getLedgerDB();
 	ScopedLock sl(con->getDBLock());
 
-	static SqliteStatement pSt(con->getDB()->getSqliteDB(),
+	SqliteStatement pSt(con->getDB()->getSqliteDB(),
 		"SELECT LedgerSeq,LedgerHash,PrevHash FROM Ledgers INDEXED BY SeqLedger "
 		"WHERE LedgerSeq >= ? AND LedgerSeq <= ?;");
 
@@ -776,17 +798,11 @@ std::map< uint32, std::pair<uint256, uint256> > Ledger::getHashesByIndex(uint32 
 	{
 		int r = pSt.step();
 		if (pSt.isDone(r))
-		{
-			pSt.reset();
 			return ret;
-		}
 		if (!pSt.isRow(r))
-		{
-			pSt.reset();
 			return ret;
-		}
-		hashes.first.SetHex(pSt.peekString(1), true);
-		hashes.second.SetHex(pSt.peekString(2), true);
+		hashes.first.SetHexExact(pSt.peekString(1));
+		hashes.second.SetHexExact(pSt.peekString(2));
 		ret[pSt.getUInt32(0)] = hashes;
 	} while(1);
 

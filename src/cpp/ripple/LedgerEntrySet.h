@@ -156,6 +156,7 @@ public:
 							const STAmount& saSrcLimit,
 							const uint32	uSrcQualityIn = 0,
 							const uint32	uSrcQualityOut = 0);
+	TER					trustDelete(SLE::ref sleRippleState, const uint160& uLowAccountID, const uint160& uHighAccountID);
 
 	Json::Value getJson(int) const;
 	void calcRawMeta(Serializer&, TER result, uint32 index);

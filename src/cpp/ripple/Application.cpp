@@ -46,6 +46,7 @@ DatabaseCon::~DatabaseCon()
 }
 
 Application::Application() :
+//	mIOService(2),
 	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService), mNetOps(mIOService, &mLedgerMaster),
 	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300), mSLECache("LedgerEntryCache", 4096, 120),
 	mSNTPClient(mAuxService), mJobQueue(mIOService), mFeeTrack(),
@@ -148,6 +149,9 @@ void Application::setup()
 	mTxnDB->getDB()->setupCheckpointing(&mJobQueue);
 	mLedgerDB->getDB()->setupCheckpointing(&mJobQueue);
 	mHashNodeDB->getDB()->setupCheckpointing(&mJobQueue);
+
+	if (!theConfig.RUN_STANDALONE)
+		updateTables();
 
 	if (theConfig.START_UP == Config::FRESH)
 	{
@@ -423,12 +427,12 @@ void Application::loadOldLedger(const std::string& l)
 		mLedgerMaster.switchLedgers(loadLedger, openLedger);
 		mNetOps.setLastCloseTime(loadLedger->getCloseTimeNC());
 	}
-	catch (SHAMapMissingNode& mn)
+	catch (SHAMapMissingNode&)
 	{
 		cLog(lsFATAL) << "Data is missing for selected ledger";
 		exit(-1);
 	}
-	catch (boost::bad_lexical_cast& blc)
+	catch (boost::bad_lexical_cast&)
 	{
 		cLog(lsFATAL) << "Ledger specified '" << l << "' is not valid";
 		exit(-1);

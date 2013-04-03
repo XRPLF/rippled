@@ -1,5 +1,5 @@
-#ifndef __NEWCOIN_ADDRESS__
-#define __NEWCOIN_ADDRESS__
+#ifndef __RIPPLE_ADDRESS__
+#define __RIPPLE_ADDRESS__
 
 #include "base58.h"
 #include "uint256.h"

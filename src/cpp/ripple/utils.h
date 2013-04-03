@@ -103,6 +103,8 @@ int iToSeconds(boost::posix_time::ptime ptWhen);
 boost::posix_time::ptime ptFromSeconds(int iSeconds);
 uint64_t utFromSeconds(int iSeconds);
 
+extern std::string urlEncode(const std::string& strSrc);
+
 /*
 void intIPtoStr(int ip,std::string& retStr);
 int strIPtoInt(std::string& ipStr);
@@ -214,8 +216,8 @@ DH* DH_der_load(const std::string& strDer);
 std::string DH_der_gen(int iKeyLength);
 
 void getRand(unsigned char *buf, int num);
-inline static void getRand(char *buf, int num)		{ return getRand(reinterpret_cast<unsigned char *>(buf), num); } 
-inline static void getRand(void *buf, int num)		{ return getRand(reinterpret_cast<unsigned char *>(buf), num); } 
+inline static void getRand(char *buf, int num)		{ return getRand(reinterpret_cast<unsigned char *>(buf), num); }
+inline static void getRand(void *buf, int num)		{ return getRand(reinterpret_cast<unsigned char *>(buf), num); }
 
 inline std::string strGetEnv(const std::string& strKey)
 {

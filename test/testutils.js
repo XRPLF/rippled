@@ -226,7 +226,7 @@ var verify_limit = function (remote, src, amount, callback) {
 
           callback();
         })
-      .on('error', function (m) {
+      .once('error', function (m) {
           // console.log("error: %s", JSON.stringify(m));
 
           callback(m);

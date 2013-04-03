@@ -45,6 +45,11 @@
 #define SECTION_RPC_USER				"rpc_user"
 #define SECTION_RPC_PASSWORD			"rpc_password"
 #define SECTION_RPC_STARTUP				"rpc_startup"
+#define SECTION_SMS_FROM				"sms_from"
+#define SECTION_SMS_KEY					"sms_key"
+#define SECTION_SMS_SECRET				"sms_secret"
+#define SECTION_SMS_TO					"sms_to"
+#define SECTION_SMS_URL					"sms_url"
 #define SECTION_SNTP					"sntp_servers"
 #define SECTION_SSL_VERIFY				"ssl_verify"
 #define SECTION_SSL_VERIFY_FILE			"ssl_verify_file"
@@ -472,6 +477,12 @@ void Config::load()
 
 			if (sectionSingleB(secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
 				ACCOUNT_PROBE_MAX	= boost::lexical_cast<int>(strTemp);
+
+			(void) sectionSingleB(secConfig, SECTION_SMS_FROM, SMS_FROM);
+			(void) sectionSingleB(secConfig, SECTION_SMS_KEY, SMS_KEY);
+			(void) sectionSingleB(secConfig, SECTION_SMS_SECRET, SMS_SECRET);
+			(void) sectionSingleB(secConfig, SECTION_SMS_TO, SMS_TO);
+			(void) sectionSingleB(secConfig, SECTION_SMS_URL, SMS_URL);
 
 			if (sectionSingleB(secConfig, SECTION_VALIDATORS_FILE, strTemp))
 				VALIDATORS_FILE		= strTemp;

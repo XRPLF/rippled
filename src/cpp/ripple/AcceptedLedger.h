@@ -14,6 +14,9 @@ protected:
 	TER								mResult;
 	std::vector<RippleAddress>		mAffected;
 	std::vector<unsigned char>		mRawMeta;
+	Json::Value						mJson;
+
+	void buildJson();
 
 public:
 
@@ -28,11 +31,12 @@ public:
 	uint256 getTransactionID() const						{ return mTxn->getTransactionID(); }
 	TransactionType getTxnType() const						{ return mTxn->getTxnType(); }
 	TER getResult() const									{ return mResult; }
+	uint32 getTxnSeq() const								{ return mMeta->getIndex(); }
 
 	bool isApplied() const									{ return !!mMeta; }
 	int getIndex() const									{ return mMeta ? mMeta->getIndex() : 0; }
 	std::string getEscMeta() const;
-	Json::Value getJson(int) const;
+	Json::Value getJson() const								{ return mJson; }
 };
 
 class AcceptedLedger

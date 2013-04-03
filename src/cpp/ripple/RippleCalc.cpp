@@ -35,6 +35,55 @@ bool PaymentNode::operator==(const PaymentNode& pnOther) const {
 		&& pnOther.uIssuerID == uIssuerID;
 }
 
+// This is for debugging not end users. Output names can be changed without warning.
+Json::Value	PaymentNode::getJson() const
+{
+	Json::Value	jvNode(Json::objectValue);
+	Json::Value	jvFlags(Json::arrayValue);
+
+	jvNode["type"]	= uFlags;
+
+	if (isSetBit(uFlags, STPathElement::typeAccount) || !!uAccountID)
+		jvFlags.append(!!isSetBit(uFlags, STPathElement::typeAccount) == !!uAccountID ? "account" : "-account");
+
+	if (isSetBit(uFlags, STPathElement::typeCurrency) || !!uCurrencyID)
+		jvFlags.append(!!isSetBit(uFlags, STPathElement::typeCurrency) == !!uCurrencyID ? "currency" : "-currency");
+
+	if (isSetBit(uFlags, STPathElement::typeIssuer) || !!uIssuerID)
+		jvFlags.append(!!isSetBit(uFlags, STPathElement::typeIssuer) == !!uIssuerID ? "issuer" : "-issuer");
+
+	jvNode["flags"]	= jvFlags;
+
+	if (!!uAccountID)
+		jvNode["account"]	= RippleAddress::createHumanAccountID(uAccountID);
+
+	if (!!uCurrencyID)
+		jvNode["currency"]	= STAmount::createHumanCurrency(uCurrencyID);
+
+	if (!!uIssuerID)
+		jvNode["issuer"]	= RippleAddress::createHumanAccountID(uIssuerID);
+
+	if (saRevRedeem)
+		jvNode["rev_redeem"]	= saRevRedeem.getFullText();
+
+	if (saRevIssue)
+		jvNode["rev_issue"]		= saRevIssue.getFullText();
+
+	if (saRevDeliver)
+		jvNode["rev_deliver"]	= saRevDeliver.getFullText();
+
+	if (saFwdRedeem)
+		jvNode["fwd_redeem"]	= saFwdRedeem.getFullText();
+
+	if (saFwdIssue)
+		jvNode["fwd_issue"]		= saFwdIssue.getFullText();
+
+	if (saFwdDeliver)
+		jvNode["fwd_deliver"]	= saFwdDeliver.getFullText();
+
+	return jvNode;
+}
+
 //
 // PathState implementation
 //
@@ -160,6 +209,12 @@ TER PathState::pushNode(
 
 		terResult	= temBAD_PATH;
 	}
+	else if (!bAccount && !bCurrency && !bIssuer)
+	{
+		cLog(lsDEBUG) << "pushNode: offer must specify at least currency or issuer.";
+
+		terResult	= temBAD_PATH;
+	}
 	else if (bAccount)
 	{
 		// Account link
@@ -267,7 +322,9 @@ TER PathState::pushNode(
 		}
 
 		if (tesSUCCESS == terResult)
+		{
 			vpnNodes.push_back(pnCur);
+		}
 	}
 	else
 	{
@@ -305,6 +362,7 @@ TER PathState::pushNode(
 			vpnNodes.push_back(pnCur);
 		}
 	}
+
 	cLog(lsTRACE) << boost::str(boost::format("pushNode< : %s") % transToken(terResult));
 
 	return terResult;
@@ -329,7 +387,7 @@ void PathState::setExpanded(
 	const uint160	uOutIssuerID	= saOutReq.getIssuer();
 	const uint160	uSenderIssuerID	= !!uMaxCurrencyID ? uSenderID : ACCOUNT_XRP;	// Sender is always issuer for non-XRP.
 
-	// cLog(lsDEBUG) << boost::str(boost::format("setExpanded>"));
+	cLog(lsDEBUG) << boost::str(boost::format("setExpanded> %s") % spSourcePath.getJson(0));
 
 	lesEntries	= lesSource.duplicate();
 
@@ -726,43 +784,7 @@ Json::Value	PathState::getJson() const
 
 	BOOST_FOREACH(const PaymentNode& pnNode, vpnNodes)
 	{
-		Json::Value	jvNode(Json::objectValue);
-
-		Json::Value	jvFlags(Json::arrayValue);
-
-		if (pnNode.uFlags & STPathElement::typeAccount)
-			jvFlags.append("account");
-
-		jvNode["flags"]	= jvFlags;
-
-		if (pnNode.uFlags & STPathElement::typeAccount)
-			jvNode["account"]	= RippleAddress::createHumanAccountID(pnNode.uAccountID);
-
-		if (!!pnNode.uCurrencyID)
-			jvNode["currency"]	= STAmount::createHumanCurrency(pnNode.uCurrencyID);
-
-		if (!!pnNode.uIssuerID)
-			jvNode["issuer"]	= RippleAddress::createHumanAccountID(pnNode.uIssuerID);
-
-		if (pnNode.saRevRedeem)
-			jvNode["rev_redeem"]	= pnNode.saRevRedeem.getFullText();
-
-		if (pnNode.saRevIssue)
-			jvNode["rev_issue"]		= pnNode.saRevIssue.getFullText();
-
-		if (pnNode.saRevDeliver)
-			jvNode["rev_deliver"]	= pnNode.saRevDeliver.getFullText();
-
-		if (pnNode.saFwdRedeem)
-			jvNode["fwd_redeem"]	= pnNode.saFwdRedeem.getFullText();
-
-		if (pnNode.saFwdIssue)
-			jvNode["fwd_issue"]		= pnNode.saFwdIssue.getFullText();
-
-		if (pnNode.saFwdDeliver)
-			jvNode["fwd_deliver"]	= pnNode.saFwdDeliver.getFullText();
-
-		jvNodes.append(jvNode);
+		jvNodes.append(pnNode.getJson());
 	}
 
 	jvPathState["status"]	= terStatus;

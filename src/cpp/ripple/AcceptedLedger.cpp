@@ -14,17 +14,21 @@ ALTransaction::ALTransaction(uint32 seq, SerializerIterator& sit)
 	mMeta =		boost::make_shared<TransactionMetaSet>(mTxn->getTransactionID(), seq, mRawMeta);
 	mAffected =	mMeta->getAffectedAccounts();
 	mResult =	mMeta->getResultTER();
+	buildJson();
 }
 
 ALTransaction::ALTransaction(SerializedTransaction::ref txn, TransactionMetaSet::ref met) :
 	mTxn(txn), mMeta(met), mAffected(met->getAffectedAccounts())
 {
 	mResult = mMeta->getResultTER();
+	buildJson();
 }
 
 ALTransaction::ALTransaction(SerializedTransaction::ref txn, TER result) :
 	mTxn(txn), mResult(result), mAffected(txn->getMentionedAccounts())
-{ ; }
+{
+	buildJson();
+}
 
 std::string ALTransaction::getEscMeta() const
 {
@@ -32,16 +36,16 @@ std::string ALTransaction::getEscMeta() const
 	return sqlEscape(mRawMeta);
 }
 
-Json::Value ALTransaction::getJson(int j) const
+void ALTransaction::buildJson()
 {
-	Json::Value ret(Json::objectValue);
-	ret["transaction"] = mTxn->getJson(j);
+	mJson = Json::objectValue;
+	mJson["transaction"] = mTxn->getJson(0);
 	if (mMeta)
 	{
-		ret["meta"] = mMeta->getJson(j);
-		ret["raw_meta"] = strHex(mRawMeta);
+		mJson["meta"] = mMeta->getJson(0);
+		mJson["raw_meta"] = strHex(mRawMeta);
 	}
-	ret["result"] = transHuman(mResult);
+	mJson["result"] = transHuman(mResult);
 
 	if (!mAffected.empty())
 	{
@@ -50,10 +54,8 @@ Json::Value ALTransaction::getJson(int j) const
 		{
 			affected.append(ra.humanAccountID());
 		}
-		ret["affected"] = affected;
+		mJson["affected"] = affected;
 	}
-
-	return ret;
 }
 
 AcceptedLedger::AcceptedLedger(Ledger::ref ledger) : mLedger(ledger)

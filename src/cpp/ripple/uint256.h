@@ -2,8 +2,8 @@
 // Copyright (c) 2011 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
-#ifndef NEWCOIN_UINT256_H
-#define NEWCOIN_UINT256_H
+#ifndef RIPPLE_UINT256_H
+#define RIPPLE_UINT256_H
 
 #include <algorithm>
 #include <climits>
@@ -219,6 +219,41 @@ public:
 		return strHex(begin(), size());
 	}
 
+	void SetHexExact(const char* psz)
+	{ // must be precisely the correct number of hex digits
+		static signed char phexdigit[256] = {
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			 0, 1, 2, 3,  4, 5, 6, 7,  8, 9,-1,-1, -1,-1,-1,-1,
+
+			-1,0xa,0xb,0xc, 0xd,0xe,0xf,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,0xa,0xb,0xc, 0xd,0xe,0xf,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			};
+
+		char* pOut	= reinterpret_cast<char*>(pn);
+		for (int i = 0; i < sizeof(pn); ++i)
+		{
+			*pOut = phexdigit[*psz++] << 4;
+			*pOut++ |= phexdigit[*psz++];
+		}
+
+		assert(*psz == 0);
+		assert(pOut == reinterpret_cast<char*>(end()));
+	}
+
 	// Allow leading whitespace.
 	// Allow leading "0x".
 	// To be valid must be '\0' terminated.
@@ -289,6 +324,11 @@ public:
 	bool SetHex(const std::string& str, bool bStrict=false)
 	{
 		return SetHex(str.c_str(), bStrict);
+	}
+
+	void SetHexExact(const std::string& str)
+	{
+		SetHexExact(str.c_str());
 	}
 
 	std::string ToString() const

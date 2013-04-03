@@ -33,6 +33,7 @@ protected:
 	Json::Value parseOwnerInfo(const Json::Value& jvParams);
 	Json::Value parseRandom(const Json::Value& jvParams);
 	Json::Value parseRipplePathFind(const Json::Value& jvParams);
+	Json::Value parseSMS(const Json::Value& jvParams);
 	Json::Value parseSignSubmit(const Json::Value& jvParams);
 	Json::Value parseTx(const Json::Value& jvParams);
 	Json::Value parseTxHistory(const Json::Value& jvParams);

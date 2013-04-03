@@ -4,9 +4,15 @@
 #include <sys/prctl.h>
 #include <sys/wait.h>
 #endif
+
 #ifdef __FreeBSD__
 #include <sys/types.h>
 #include <sys/wait.h>
+#endif
+
+#ifdef WIN32
+#define _WINSOCK_
+#include <winsock2.h>
 #endif
 
 #include <fstream>
@@ -181,6 +187,38 @@ std::string strCopy(const std::vector<unsigned char>& vucSrc)
 
 }
 
+extern std::string urlEncode(const std::string& strSrc)
+{
+	std::string	strDst;
+	int			iOutput	= 0;
+	int			iSize	= strSrc.length();
+
+	strDst.resize(iSize*3);
+
+	for (int iInput = 0; iInput < iSize; iInput++) {
+		unsigned char c	= strSrc[iInput];
+
+		if (c == ' ')
+		{
+			strDst[iOutput++]	= '+';
+		}
+		else if (isalnum(c))
+		{
+			strDst[iOutput++]	= c;
+		}
+		else
+		{
+			strDst[iOutput++]	= '%';
+			strDst[iOutput++]	= charHex(c >> 4);
+			strDst[iOutput++]	= charHex(c & 15);
+		}
+	}
+
+	strDst.resize(iOutput);
+
+	return strDst;
+}
+
 //
 // DH support
 //
@@ -307,8 +345,6 @@ int strIPtoInt(std::string& ipStr)
 }
 */
 #ifdef WIN32
-#define _WINSOCK_
-#include <winsock2.h>
 
 //#include "Winsock2.h"
 //#include <windows.h>

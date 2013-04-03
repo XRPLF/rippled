@@ -279,6 +279,14 @@ SqliteStatement::SqliteStatement(SqliteDatabase* db, const char *sql)
 		throw j;
 }
 
+SqliteStatement::SqliteStatement(SqliteDatabase* db, const std::string& sql)
+{
+	assert(db);
+	int j = sqlite3_prepare_v2(db->peekConnection(), sql.c_str(), sql.size() + 1, &statement, NULL);
+	if (j != SQLITE_OK)
+		throw j;
+}
+
 SqliteStatement::~SqliteStatement()
 {
 	sqlite3_finalize(statement);
