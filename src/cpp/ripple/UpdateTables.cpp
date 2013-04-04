@@ -96,6 +96,7 @@ static void addTxnSeqField()
 			Log(lsINFO) << i << " transactions updated";
 	}
 
+	Log(lsINFO) << "Building new index";
 	db->executeSQL("CREATE INDEX AcctTxIndex ON AccountTransactions(Account, LedgerSeq, TxnSeq, TransID);");
 	db->executeSQL("END TRANSACTION;");
 }
