@@ -24,7 +24,7 @@ var LIMIT = 170;
 var SECOND_BATCH = 10; // Between NONBINARY_LIMIT and BINARY_LIMIT
 var THIRD_BATCH = 295; // Exceeds both limits
 
-buster.testCase("Account_tx tests", {
+buster.testCase("// Account_tx tests", {
   'setUp'     : testutils.build_setup(),
   'tearDown'  : testutils.build_teardown(),
 
