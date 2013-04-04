@@ -18,11 +18,11 @@ var BINARY_LIMIT = 500;
 var NONBINARY_LIMIT = 200;
 
 var ACCOUNT = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-var FIRST_BATCH = 19;//199; // Within both limits
-var OFFSET = 1;//18;//0;
-var LIMIT = 100;//17;//0;
+var FIRST_BATCH = 199; // Within both limits
+var OFFSET = 180;
+var LIMIT = 170;
 var SECOND_BATCH = 10; // Between NONBINARY_LIMIT and BINARY_LIMIT
-var THIRD_BATCH = 29;//295; // Exceeds both limits
+var THIRD_BATCH = 295; // Exceeds both limits
 
 buster.testCase("Account_tx tests", {
   'setUp'     : testutils.build_setup(),
@@ -46,12 +46,11 @@ buster.testCase("Account_tx tests", {
 				})
 				.on('final', function (m) {
 					f++;
-					console.log("FINALIZED TRANSACTION:", f);
+					console.log("Finalized transaction", f);
 					buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
 					buster.assert(final_create);
 					if ( f == transactionCounter ) {
-						console.log(m);
-						console.log("ALL TRANSACTIONS HAVE BEEN FINALIZED");
+						console.log("All transactions have been finalized.");
 						functionHolder();
 					}
 				})
@@ -65,7 +64,7 @@ buster.testCase("Account_tx tests", {
 			}
 			functionHolder = whenDone; //lolwut
 			async.parallel(bunchOfOffers, function (error) {
-				console.log("ABOUT TO ACCEPT LEDGER.");
+				console.log("Accepting ledger.");
 				buster.refute(error);
 				self.remote
 					.once('ledger_closed', function (message) {
@@ -77,23 +76,23 @@ buster.testCase("Account_tx tests", {
 		  
 		function firstBatch() {
 			lotsOfTransactions(FIRST_BATCH,
-				function(){runTests(self, FIRST_BATCH, undefined, undefined, 
-				function(){runTests(self, FIRST_BATCH, OFFSET,    0, 
-				function(){runTests(self, FIRST_BATCH, undefined, LIMIT,    secondBatch)})}
+				function(){runTests(self, FIRST_BATCH, 0,      undefined, 
+				function(){runTests(self, FIRST_BATCH, OFFSET, undefined, 
+				function(){runTests(self, FIRST_BATCH, 0,      LIMIT,    secondBatch)})}
 			)});
 		}
 		
 		function secondBatch() {
 			lotsOfTransactions(SECOND_BATCH,
-				function(){runTests(self, FIRST_BATCH+SECOND_BATCH, undefined, undefined, 
-				function(){runTests(self, FIRST_BATCH+SECOND_BATCH, OFFSET,    undefined, thirdBatch)}
+				function(){runTests(self, FIRST_BATCH+SECOND_BATCH, 0,      undefined, 
+				function(){runTests(self, FIRST_BATCH+SECOND_BATCH, OFFSET, undefined, thirdBatch)}
 			)});
 		}
 		
 		function thirdBatch() {
 			lotsOfTransactions(THIRD_BATCH,
-				function(){runTests(self, FIRST_BATCH+SECOND_BATCH+THIRD_BATCH, undefined, undefined, 
-				function(){runTests(self, FIRST_BATCH+SECOND_BATCH+THIRD_BATCH, OFFSET,    undefined, done)}
+				function(){runTests(self, FIRST_BATCH+SECOND_BATCH+THIRD_BATCH, 0,      undefined, 
+				function(){runTests(self, FIRST_BATCH+SECOND_BATCH+THIRD_BATCH, OFFSET, undefined, done)}
 			)});
 		}
 		
@@ -116,12 +115,12 @@ buster.testCase("Account_tx tests", {
 					console.log('nonbinary');
 					self.remote.request_account_tx({
 						account:ACCOUNT,
-						ledger_index_min:0,
-						ledger_index_max:100,
+						ledger_index_min:-1,
+						ledger_index_max:-1,
 						offset:offset,
 						limit:limit
 					}).on('success', function (r) {
-						console.log("GOT STUFF!",r);
+						//console.log("GOT STUFF!",r);
 						if (r.transactions) {
 							var targetLength = Math.min(NONBINARY_LIMIT, limit ? Math.min(limit,actualNumberOfTransactions-offset) : actualNumberOfTransactions-offset);
 							buster.assert(r.transactions.length == targetLength, "Got "+r.transactions.length+" transactions; expected "+targetLength );
@@ -129,8 +128,10 @@ buster.testCase("Account_tx tests", {
 							for (var i=0; i<r.transactions.length-1; i++) {
 								var t1 = r.transactions[i].tx;
 								var t2 = r.transactions[i+1].tx;
-								buster.assert(t1.inLedger<t2.inLedger  ||  (t1.inLedger==t2.inLedger && t1.hash < t2.hash ), 
-									"Transactions were not ordered correctly: "+t1.inLedger+"#"+t1.hash+" should not have come before "+t2.inLedger+"#"+t2.hash);
+								//buster.assert(t1.inLedger<t2.inLedger  ||  (t1.inLedger==t2.inLedger && t1.Sequence < t2.Sequence ), 
+								//	"Transactions were not ordered correctly: "+t1.inLedger+"#"+t1.Sequence+" should not have come before "+t2.inLedger+"#"+t2.Sequence);
+								buster.assert(t1.inLedger<=t2.inLedger, 
+									"Transactions were not ordered correctly: "+t1.inLedger+"#"+t1.Sequence+" should not have come before "+t2.inLedger+"#"+t2.Sequence);
 							}
 						} else {
 							buster.assert(r.transactions, "No transactions returned: "+offset+" "+limit);
@@ -146,13 +147,13 @@ buster.testCase("Account_tx tests", {
 					console.log('binary');
 					self.remote.request_account_tx({
 						account:ACCOUNT,
-						ledger_index_min:0,
-						ledger_index_max:100,
+						ledger_index_min:-1,
+						ledger_index_max:-1,
 						binary:true,
 						offset:offset,
 						limit:limit
 					}).on('success', function (r) {
-						console.log("GOT STUFF!",r);
+						//console.log("GOT STUFF!",r);
 						if (r.transactions) {
 							var targetLength = Math.min(BINARY_LIMIT, limit ? Math.min(limit,actualNumberOfTransactions-offset) : actualNumberOfTransactions-offset);
 							buster.assert(r.transactions.length == targetLength, "Got "+r.transactions.length+" transactions; expected "+targetLength );
@@ -169,13 +170,13 @@ buster.testCase("Account_tx tests", {
 					console.log('nonbinary+offset');
 					self.remote.request_account_tx({
 						account:ACCOUNT,
-						ledger_index_min:0,
-						ledger_index_max:100,
+						ledger_index_min:-1,
+						ledger_index_max:-1,
 						descending:true,
 						offset:offset,
 						limit:limit
 					}).on('success', function (r) {
-						console.log("GOT STUFF!",r);
+						//console.log("GOT STUFF!",r);
 						if (r.transactions) {	
 							var targetLength = Math.min(NONBINARY_LIMIT, limit ? Math.min(limit,actualNumberOfTransactions-offset) : actualNumberOfTransactions-offset );
 							buster.assert(r.transactions.length == targetLength, "Got "+r.transactions.length+" transactions; expected "+targetLength );
@@ -183,8 +184,10 @@ buster.testCase("Account_tx tests", {
 							for (var i=0; i<r.transactions.length-1; i++) {
 								var t1 = r.transactions[i].tx;
 								var t2 = r.transactions[i+1].tx;
-								buster.assert(t1.inLedger>t2.inLedger  ||  (t1.inLedger==t2.inLedger && t1.hash > t2.hash  ),
-									"Transactions were not ordered correctly: "+t1.inLedger+"#"+t1.hash+" should not have come before "+t2.inLedger+"#"+t2.hash);
+								//buster.assert(t1.inLedger>t2.inLedger  ||  (t1.inLedger==t2.inLedger && t1.Sequence > t2.Sequence  ),
+								//	"Transactions were not ordered correctly: "+t1.inLedger+"#"+t1.Sequence+" should not have come before "+t2.inLedger+"#"+t2.Sequence);
+								buster.assert(t1.inLedger>=t2.inLedger,
+									"Transactions were not ordered correctly: "+t1.inLedger+"#"+t1.Sequence+" should not have come before "+t2.inLedger+"#"+t2.Sequence);
 							}
 						} else {
 							buster.assert(r.transactions, "No transactions returned: "+offset+" "+limit);
