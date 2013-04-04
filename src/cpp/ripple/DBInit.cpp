@@ -25,7 +25,7 @@ const char *TxnDBInit[] = {
 	"CREATE TABLE AccountTransactions (			\
 		TransID		CHARACTER(64),				\
 		Account		CHARACTER(64),				\
-		LedgerSeq	BIGINT UNSIGNED				\
+		LedgerSeq	BIGINT UNSIGNED,			\
 		TxnSeq		INTEGER						\
 	);",
 	"CREATE INDEX AcctTxIDIndex ON				\
