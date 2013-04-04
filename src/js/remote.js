@@ -845,15 +845,14 @@ Remote.prototype.request_account_tx = function (obj) {
     //request.message.ledger      = ledger_min;
   }
   else {
-	if (obj.ledger_index_min) {request.message.ledger_index_min  = obj.ledger_index_min;}
-    if (obj.ledger_index_max) {request.message.ledger_index_max  = obj.ledger_index_max;}
-	if (obj.binary) {request.message.binary  = obj.binary;}
-	if (obj.count) {request.message.count  = obj.count;}
-	if (obj.descending) {request.message.descending  = obj.descending;}
-	if (obj.offset) {request.message.offset  = obj.offset;}
-	if (obj.limit) {request.message.limit  = obj.limit;}
+	if ("undefined" != typeof obj.ledger_index_min)	{request.message.ledger_index_min  = obj.ledger_index_min;}
+    if ("undefined" != typeof obj.ledger_index_max)	{request.message.ledger_index_max  = obj.ledger_index_max;}
+	if ("undefined" != typeof obj.binary)			{request.message.binary  = obj.binary;}
+	if ("undefined" != typeof obj.count)			{request.message.count  = obj.count;}
+	if ("undefined" != typeof obj.descending)		{request.message.descending  = obj.descending;}
+	if ("undefined" != typeof obj.offset)			{request.message.offset  = obj.offset;}
+	if ("undefined" != typeof obj.limit)			{request.message.limit  = obj.limit;}
   }
-
   return request;
 };
 
