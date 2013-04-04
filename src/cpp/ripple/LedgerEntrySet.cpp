@@ -962,6 +962,8 @@ STAmount LedgerEntrySet::rippleOwed(const uint160& uToAccountID, const uint160& 
 	}
 	else
 	{
+		saBalance.zero(uCurrencyID, uToAccountID);
+
 		cLog(lsDEBUG) << "rippleOwed: No credit line between "
 			<< RippleAddress::createHumanAccountID(uFromAccountID)
 			<< " and "
@@ -969,8 +971,11 @@ STAmount LedgerEntrySet::rippleOwed(const uint160& uToAccountID, const uint160& 
 			<< " for "
 			<< STAmount::createHumanCurrency(uCurrencyID)
 			<< "." ;
+#if 0
+		// We could cut off coming here if we test for no line sooner.
 
 		assert(false);
+#endif
 	}
 
 	return saBalance;
@@ -983,11 +988,18 @@ STAmount LedgerEntrySet::rippleLimit(const uint160& uToAccountID, const uint160&
 	STAmount		saLimit;
 	SLE::pointer	sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uToAccountID, uFromAccountID, uCurrencyID));
 
-	assert(sleRippleState);
 	if (sleRippleState)
 	{
 		saLimit	= sleRippleState->getFieldAmount(uToAccountID < uFromAccountID ? sfLowLimit : sfHighLimit);
 		saLimit.setIssuer(uToAccountID);
+	}
+	else
+	{
+		saLimit.zero(uCurrencyID, uToAccountID);
+#if 0
+		// We could cut off coming here if we test for no line sooner.
+		assert(false);
+#endif
 	}
 
 	return saLimit;
@@ -1042,6 +1054,11 @@ uint32 LedgerEntrySet::rippleQualityIn(const uint160& uToAccountID, const uint16
 			if (!uQuality)
 				uQuality	= 1;	// Avoid divide by zero.
 		}
+		else
+		{
+			// XXX Ideally, catch no before this. So we can assert to be stricter.
+			uQuality	= QUALITY_ONE;
+		}
 	}
 
 	cLog(lsTRACE) << boost::str(boost::format("rippleQuality: %s uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQuality=%f")
@@ -1052,7 +1069,7 @@ uint32 LedgerEntrySet::rippleQualityIn(const uint160& uToAccountID, const uint16
 		% !!sleRippleState
 		% (uQuality/1000000000.0));
 
-	assert(uToAccountID == uFromAccountID || !!sleRippleState);
+//	assert(uToAccountID == uFromAccountID || !!sleRippleState);
 
 	return uQuality;
 }
