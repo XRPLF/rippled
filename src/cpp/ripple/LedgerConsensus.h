@@ -170,6 +170,7 @@ public:
 	SHAMap::pointer getTransactionTree(const uint256& hash, bool doAcquire);
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);
 	void mapComplete(const uint256& hash, SHAMap::ref map, bool acquired);
+	bool stillNeedTXSet(const uint256& hash);
 	void checkLCL();
 	void handleLCL(const uint256& lclHash);
 

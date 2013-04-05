@@ -347,6 +347,18 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 		propose();
 }
 
+bool LedgerConsensus::stillNeedTXSet(const uint256& hash)
+{
+	if (mAcquired.find(hash) != mAcquired.end())
+		return false;
+	BOOST_FOREACH(u160_prop_pair& it, mPeerPositions)
+	{
+		if (it.second->getCurrentHash() == hash)
+			return true;
+	}
+	return false;
+}
+
 void LedgerConsensus::createDisputes(SHAMap::ref m1, SHAMap::ref m2)
 {
 	SHAMap::SHAMapDiff differences;

@@ -29,6 +29,7 @@ TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, TX_A
 
 void TransactionAcquire::done()
 {
+	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 	if (mFailed)
 	{
 		cLog(lsWARNING) << "Failed to acquire TX set " << mHash;
@@ -45,14 +46,27 @@ void TransactionAcquire::done()
 
 void TransactionAcquire::onTimer(bool progress)
 {
+	bool aggressive = false;
 	if (getTimeouts() > 10)
 	{
-		cLog(lsWARNING) << "Giving up on TX set " << getHash();
-		mFailed = true;
-		done();
-		return;
+		cLog(lsWARNING) << "Ten timeouts on TX set " << getHash();
+		{
+			boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+			if (theApp->getOPs().stillNeedTXSet(mHash))
+			{
+				cLog(lsWARNING) << "Still need it";
+				mTimeouts = 0;
+				aggressive = true;
+			}
+		}
+		if (!aggressive)
+		{
+			mFailed = true;
+			done();
+			return;
+		}
 	}
-	if (!getPeerCount())
+	if (aggressive || !getPeerCount())
 	{ // out of peers
 		cLog(lsWARNING) << "Out of peers for TX set " << getHash();
 
