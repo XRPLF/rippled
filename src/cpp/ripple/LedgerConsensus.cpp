@@ -395,10 +395,17 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::ref map, bool acq
 	}
 	assert(hash == map->getHash());
 
+	boost::unordered_map<uint256, SHAMap::pointer>::iterator it = mAcquired.find(hash);
 	if (mAcquired.find(hash) != mAcquired.end())
 	{
-		mAcquiring.erase(hash);
-		return; // we already have this map
+		if (it->second)
+		{
+			mAcquiring.erase(hash);
+			return; // we already have this map
+		}
+
+		// We previously failed to acquire this map, now we have it
+		mAcquired.erase(hash);
 	}
 
 	if (mOurPosition && (!mOurPosition->isBowOut()) && (hash != mOurPosition->getCurrentHash()))
