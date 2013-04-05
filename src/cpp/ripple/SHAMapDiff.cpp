@@ -16,7 +16,7 @@ class SHAMapDiffNode
 	SHAMapNode mNodeID;
 	uint256 mOurHash, mOtherHash;
 	
-	SHAMapDiffNode(SHAMapNode id, const uint256& ourHash, const uint256& otherHash) :
+	SHAMapDiffNode(const SHAMapNode& id, const uint256& ourHash, const uint256& otherHash) :
 		mNodeID(id), mOurHash(ourHash), mOtherHash(otherHash) { ; }
 };
 
@@ -33,7 +33,7 @@ bool SHAMap::walkBranch(SHAMapTreeNode* node, SHAMapItem::ref otherMapItem, bool
 	{
 		SHAMapTreeNode* node = nodeStack.top();
 		nodeStack.pop();
-		if(node->isInner())
+		if (node->isInner())
 		{ // This is an inner node, add all non-empty branches
 			for(int i = 0; i < 16; ++i)
 				if (!node->isEmptyBranch(i))
@@ -56,15 +56,16 @@ bool SHAMap::walkBranch(SHAMapTreeNode* node, SHAMapItem::ref otherMapItem, bool
 				emptyBranch = true;
 			}
 
-			if (emptyBranch || (item->getTag() < otherMapItem->getTag()))
+			if (emptyBranch || (item->getTag() != otherMapItem->getTag()))
 			{ // unmatched
 				if (isFirstMap)
 					differences.insert(std::make_pair(item->getTag(), std::make_pair(item, SHAMapItem::pointer())));
 				else
 					differences.insert(std::make_pair(item->getTag(), std::make_pair(SHAMapItem::pointer(), item)));
-				if (--maxCount <= 0) return false;
+				if (--maxCount <= 0)
+					return false;
 			}
-			else if (item->getTag() == otherMapItem->getTag())
+			else
 			{
 				if (item->peekData() != otherMapItem->peekData())
 				{ // non-matching items
@@ -72,11 +73,11 @@ bool SHAMap::walkBranch(SHAMapTreeNode* node, SHAMapItem::ref otherMapItem, bool
 						std::make_pair(item, otherMapItem)));
 					else differences.insert(std::make_pair(otherMapItem->getTag(),
 						std::make_pair(otherMapItem, item)));
-					if(--maxCount <= 0) return false;
-					item.reset();
+					if(--maxCount <= 0)
+						return false;
 				}
+				emptyBranch = true;
 			}
-			else assert(false);
 		}
 	}
 	
@@ -88,7 +89,8 @@ bool SHAMap::walkBranch(SHAMapTreeNode* node, SHAMapItem::ref otherMapItem, bool
 			else
 				differences.insert(std::make_pair(otherMapItem->getTag(),
 					std::make_pair(otherMapItem, SHAMapItem::pointer())));
-			if (--maxCount <= 0) return false;
+			if (--maxCount <= 0)
+				return false;
 	}
 	
 	return true;
@@ -160,7 +162,7 @@ bool SHAMap::compare(SHAMap::ref otherMap, SHAMapDiff& differences, int maxCount
 		else if (ourNode->isInner() && otherNode->isInner())
 		{
 			for (int i = 0; i < 16; ++i)
-				if (ourNode->getChildHash(i) != otherNode->getChildHash(i) )
+				if (ourNode->getChildHash(i) != otherNode->getChildHash(i))
 				{
 					if (otherNode->isEmptyBranch(i))
 					{ // We have a branch, the other tree does not
