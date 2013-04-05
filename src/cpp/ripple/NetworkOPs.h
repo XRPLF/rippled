@@ -259,6 +259,7 @@ public:
 	SHAMap::pointer getTXMap(const uint256& hash);
 	bool hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, ripple::TxSetStatus status);
 	void mapComplete(const uint256& hash, SHAMap::ref map);
+	bool stillNeedTXSet(const uint256& hash);
 
 	// network state machine
 	void checkState(const boost::system::error_code& result);

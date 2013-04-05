@@ -996,6 +996,13 @@ bool NetworkOPs::hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& se
 	return mConsensus->peerHasSet(peer, set, status);
 }
 
+bool NetworkOPs::stillNeedTXSet(const uint256& hash)
+{
+	if (!mConsensus)
+		return false;
+	return mConsensus->stillNeedTXSet(hash);
+}
+
 void NetworkOPs::mapComplete(const uint256& hash, SHAMap::ref map)
 {
 	if (haveConsensusObject())
