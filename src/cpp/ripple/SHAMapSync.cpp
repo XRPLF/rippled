@@ -122,11 +122,10 @@ std::vector<uint256> SHAMap::getNeededHashes(int max)
 			int branch = (base + ii) % 16;
 			if (!node->isEmptyBranch(branch))
 			{
-				SHAMapNode childID = node->getChildNodeID(branch);
 				const uint256& childHash = node->getChildHash(branch);
 				try
 				{
-					SHAMapTreeNode* d = getNodePointer(childID, childHash);
+					SHAMapTreeNode* d = getNodePointer(node->getChildNodeID(branch), childHash);
 					assert(d);
 					if (d->isInner() && !d->isFullBelow())
 					{

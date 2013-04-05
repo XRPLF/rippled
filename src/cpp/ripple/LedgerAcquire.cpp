@@ -80,8 +80,8 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 			cLog(lsDEBUG) << "Deferring PeerSet timer due to load";
 			ptr->setTimer();
 		}
-		else theApp->getJobQueue().addJob(jtLEDGER_DATA, "timerEntry",
-			BIND_TYPE(&PeerSet::TimerJobEntry, P_1, ptr));
+		else
+			theApp->getJobQueue().addJob(jtLEDGER_DATA, "timerEntry", BIND_TYPE(&PeerSet::TimerJobEntry, P_1, ptr));
 	}
 }
 
@@ -109,72 +109,65 @@ LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE
 bool LedgerAcquire::tryLocal()
 { // return value: true = no more work to do
 
-	if (!mHaveBase)
-	{
-		HashedObject::pointer node = theApp->getHashedObjectStore().retrieve(mHash);
-		if (!node)
-			return false;
+	assert(!mHaveBase && !mHaveTransactions && !mHaveState);
 
-		mLedger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
-		if (mLedger->getHash() != mHash)
-		{ // We know for a fact the ledger can never be acquired
-			cLog(lsWARNING) << mHash << " cannot be a ledger";
-			mFailed = true;
-			return true;
-		}
+	// Nothing we can do without the ledger base
+	HashedObject::pointer node = theApp->getHashedObjectStore().retrieve(mHash);
+	if (!node)
+		return false;
 
-		mHaveBase = true;
+	mLedger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
+	if (mLedger->getHash() != mHash)
+	{ // We know for a fact the ledger can never be acquired
+		cLog(lsWARNING) << mHash << " cannot be a ledger";
+		mFailed = true;
+		return true;
 	}
+	mHaveBase = true;
 
-	if (!mHaveTransactions)
+	if (mLedger->getTransHash().isZero())
 	{
-		if (mLedger->getTransHash().isZero())
+		cLog(lsDEBUG) << "No TXNs to fetch";
+		mHaveTransactions = true;
+	}
+	else
+	{
+		try
 		{
-			cLog(lsDEBUG) << "No TXNs to fetch";
-			mHaveTransactions = true;
+			mLedger->peekTransactionMap()->fetchRoot(mLedger->getTransHash());
+			cLog(lsDEBUG) << "Got root txn map locally";
+			std::vector<uint256> h = mLedger->getNeededTransactionHashes(1);
+			if (h.empty())
+			{
+				cLog(lsDEBUG) << "Had full txn map locally";
+				mHaveTransactions = true;
+			}
 		}
-		else
+		catch (SHAMapMissingNode&)
 		{
-			try
-			{
-				mLedger->peekTransactionMap()->fetchRoot(mLedger->getTransHash());
-				cLog(lsDEBUG) << "Got root txn map locally";
-				std::vector<uint256> h = mLedger->getNeededTransactionHashes(1);
-				if (h.empty())
-				{
-					cLog(lsDEBUG) << "Had full txn map locally";
-					mHaveTransactions = true;
-				}
-			}
-			catch (SHAMapMissingNode&)
-			{
-			}
 		}
 	}
 
-	if (!mHaveState)
+	if (mLedger->getAccountHash().isZero())
 	{
-		if (mLedger->getAccountHash().isZero())
+		cLog(lsFATAL) << "We are acquiring a ledger with a zero account hash";
+		mHaveState = true;
+	}
+	else
+	{
+		try
 		{
-			cLog(lsFATAL) << "We are acquiring a ledger with a zero account hash";
-			mHaveState = true;
+			mLedger->peekAccountStateMap()->fetchRoot(mLedger->getAccountHash());
+			cLog(lsDEBUG) << "Got root AS map locally";
+			std::vector<uint256> h = mLedger->getNeededAccountStateHashes(1);
+			if (h.empty())
+			{
+				cLog(lsDEBUG) << "Had full AS map locally";
+				mHaveState = true;
+			}
 		}
-		else
+		catch (SHAMapMissingNode&)
 		{
-			try
-			{
-				mLedger->peekAccountStateMap()->fetchRoot(mLedger->getAccountHash());
-				cLog(lsDEBUG) << "Got root AS map locally";
-				std::vector<uint256> h = mLedger->getNeededAccountStateHashes(1);
-				if (h.empty())
-				{
-					cLog(lsDEBUG) << "Had full AS map locally";
-					mHaveState = true;
-				}
-			}
-			catch (SHAMapMissingNode&)
-			{
-			}
 		}
 	}
 
@@ -306,11 +299,10 @@ bool LedgerAcquire::addOnComplete(FUNCTION_TYPE<void (LedgerAcquire::pointer)> t
 void LedgerAcquire::trigger(Peer::ref peer)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	if (mAborted || mComplete || mFailed)
+	if (isDone())
 	{
-		cLog(lsDEBUG) << "Trigger on ledger:" <<
-			(mAborted ? " aborted": "") << (mComplete ? " completed": "") << (mFailed ? " failed" : "") <<
-			" wc=" << mWaitCount;
+		cLog(lsDEBUG) << "Trigger on ledger: " << mHash <<
+			(mAborted ? " aborted": "") << (mComplete ? " completed": "") << (mFailed ? " failed" : "");
 		return;
 	}
 
