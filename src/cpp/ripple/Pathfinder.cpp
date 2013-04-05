@@ -389,7 +389,9 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			// XXX Might restrict the number of times bridging through XRP.
 
 			// Cursor is for XRP, continue with qualifying books: XRP -> non-XRP
-			BOOST_FOREACH(OrderBook::ref book, theApp->getOrderBookDB().getXRPInBooks())
+			std::vector<OrderBook::pointer> xrpBooks;
+			theApp->getOrderBookDB().getBooksByTakerPays(ACCOUNT_XRP, CURRENCY_XRP, xrpBooks);
+			BOOST_FOREACH(OrderBook::ref book, xrpBooks)
 			{
 				// New end is an order book with the currency and issuer.
 
@@ -504,11 +506,10 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				}
 			}
 
-			// Every book that wants the source currency.
-			std::vector<OrderBook::pointer> books;
 
-			// XXX Need to flip getBooks argument order to be in normal order: currency then issuer.
-			theApp->getOrderBookDB().getBooks(speEnd.mIssuerID, speEnd.mCurrencyID, books);
+			// XXX Flip argument order to norm. (currency, issuer)
+			std::vector<OrderBook::pointer> books;
+			theApp->getOrderBookDB().getBooksByTakerPays(speEnd.mIssuerID, speEnd.mCurrencyID, books);
 
 			BOOST_FOREACH(OrderBook::ref book, books)
 			{
@@ -718,7 +719,9 @@ void Pathfinder::addOptions(PathOption::pointer tail)
 {
 	if (!tail->mCurrencyID)
 	{ // source XRP
-		BOOST_FOREACH(OrderBook::ref book, theApp->getOrderBookDB().getXRPInBooks())
+		std::vector<OrderBook::pointer> xrpBooks;
+		theApp->getOrderBookDB().getBooksByTakerPays(ISSUER_XRP, CURRENCY_XRP, xrpBooks);
+		BOOST_FOREACH(OrderBook::ref book, xrpBooks)
 		{
 			PathOption::pointer pathOption(new PathOption(tail));
 
@@ -750,11 +753,10 @@ void Pathfinder::addOptions(PathOption::pointer tail)
 			}
 		}
 
-		// every offer that wants the source currency
+		// Every offer that can take this currency in
 		std::vector<OrderBook::pointer> books;
-		theApp->getOrderBookDB().getBooks(tail->mCurrentAccount, tail->mCurrencyID, books);
-
-		BOOST_FOREACH(OrderBook::ref book,books)
+		theApp->getOrderBookDB().getBooksByTakerPays(tail->mCurrentAccount, tail->mCurrencyID, books);
+		BOOST_FOREACH(OrderBook::ref book, books)
 		{
 			PathOption::pointer pathOption(new PathOption(tail));
 

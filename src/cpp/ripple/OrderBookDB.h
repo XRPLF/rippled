@@ -15,6 +15,9 @@
 // But, for now it is probably faster to just generate it each time.
 //
 
+typedef std::pair<uint160, uint160> currencyIssuer_t;
+typedef std::pair<const uint160&, const uint160&> currencyIssuer_ct;
+
 class BookListeners
 {
 	boost::unordered_map<uint64, InfoSub::wptr> mListeners;
@@ -30,10 +33,8 @@ public:
 
 class OrderBookDB
 {
-	std::vector<OrderBook::pointer> mEmptyVector;
-	std::vector<OrderBook::pointer> mXRPOrders;
-	boost::unordered_map<uint160, std::vector<OrderBook::pointer> > mIssuerMap;
-	//std::vector<OrderBook::pointer> mAllOrderBooks;
+	boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> > mSourceMap;	// by ci/ii
+	boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> > mDestMap;		// by co/io
 
 	// issuerPays, issuerGets, currencyPays, currencyGets
 	std::map<uint160, std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > > > mListeners;
@@ -46,18 +47,11 @@ public:
 	void setup(Ledger::ref ledger);
 	void invalidate();
 
-	// return list of all orderbooks that want XRP
-	std::vector<OrderBook::pointer>& getXRPInBooks(){ return mXRPOrders; }
-
-	// return list of all orderbooks that want IssuerID
-	std::vector<OrderBook::pointer>& getBooks(const uint160& issuerID);
-
 	// return list of all orderbooks that want this issuerID and currencyID
-	void getBooks(const uint160& issuerID, const uint160& currencyID, std::vector<OrderBook::pointer>& bookRet);
-
-	// returns the best rate we can find
-	float getPrice(uint160& currencyPays,uint160& currencyGets);
-
+	void getBooksByTakerPays(const uint160& issuerID, const uint160& currencyID,
+		std::vector<OrderBook::pointer>& bookRet);
+	void getBooksByTakerGets(const uint160& issuerID, const uint160& currencyID,
+		std::vector<OrderBook::pointer>& bookRet);
 
 	BookListeners::pointer getBookListeners(const uint160& currencyPays, const uint160& currencyGets,
 		const uint160& issuerPays, const uint160& issuerGets);
@@ -66,7 +60,6 @@ public:
 
 	// see if this txn effects any orderbook
 	void processTxn(Ledger::ref ledger, const ALTransaction& alTx, Json::Value& jvObj);
-
 };
 
 #endif

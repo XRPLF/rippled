@@ -294,7 +294,38 @@ const char *NetNodeDBInit[] = {
 	);"
 };
 
-
 int NetNodeDBCount = NUMBER(NetNodeDBInit);
+
+const char *PathFindDBInit[] = {
+	"PRAGMA synchronous = OFF;            ",
+
+	"DROP TABLE TrustLines;               ",
+
+	"CREATE TABLE TrustLines {            "
+		"To				CHARACTER(40),    "	// Hex of account trusted
+		"By				CHARACTER(40),    " // Hex of account trusting
+		"Currency		CHARACTER(80),    " // Hex currency, hex issuer
+		"Use			INTEGER,          " // Use count
+		"Seq			BIGINT UNSIGNED   " // Sequence when use count was updated
+	"};                                   ",
+
+	"CREATE INDEX TLBy ON TrustLines(By, Currency, Use);",
+	"CREATE INDEX TLTo ON TrustLines(To, Currency, Use);",
+
+	"DROP TABLE Exchanges;",
+
+	"CREATE TABLE Exchanges {             "
+		"From			CHARACTER(80),    "
+		"To				CHARACTER(80),    "
+		"Currency       CHARACTER(80),    "
+		"Use            INTEGER,          "
+		"Seq            BIGINT UNSIGNED   "
+	"};                                   ",
+
+	"CREATE INDEX ExBy ON Exchanges(By, Currency, Use);",
+	"CREATE INDEX ExTo ON Exchanges(To, Currency, Use);",
+};
+
+int PathFindDBCount = NUMBER(PathFindDBInit);
 
 // vim:ts=4
