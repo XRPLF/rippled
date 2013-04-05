@@ -747,7 +747,7 @@ SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool do
 		TransactionAcquire::pointer& acquiring = mAcquiring[hash];
 		if (!acquiring)
 		{
-			if (!hash)
+			if (hash.isZero())
 			{
 				SHAMap::pointer empty = boost::make_shared<SHAMap>(smtTRANSACTION);
 				mapComplete(hash, empty, false);
@@ -1329,10 +1329,13 @@ Json::Value LedgerConsensus::getJson(bool full)
 		if (!mAcquired.empty())
 		{ // acquired
 			typedef boost::unordered_map<uint256, SHAMap::pointer>::value_type ac_t;
-			Json::Value acq(Json::arrayValue);
+			Json::Value acq(Json::objectValue);
 			BOOST_FOREACH(ac_t& at, mAcquired)
 			{
-				acq.append(at.first.GetHex());
+				if (at.second)
+					acq[at.first.GetHex()] = "acquired";
+				else
+					acq[at.first.GetHex()] = "failed";
 			}
 			ret["acquired"] = acq;
 		}
