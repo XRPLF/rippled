@@ -1736,6 +1736,7 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost)
 		Json::Value ret(Json::objectValue);
 
 		ret["account"] = raAccount.humanAccountID();
+		ret["transactions"] = Json::arrayValue;
 
 		if (bBinary)
 		{
