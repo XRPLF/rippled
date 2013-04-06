@@ -13,9 +13,9 @@ public:
 	typedef boost::shared_ptr<PathDBEntry>	pointer;
 	typedef const pointer&					ref;
 
-	const unsigned int sIsExchange	= 0x00001;
-	const unsigned int sIsOffer 	= 0x00002;
-	const unsigned int sIsDirty		= 0x10000;
+	static const unsigned int sIsExchange	= 0x00001;
+	static const unsigned int sIsOffer 	= 0x00002;
+	static const unsigned int sIsDirty		= 0x10000;
 
 protected:
 	currencyIssuer_t	mIn;
