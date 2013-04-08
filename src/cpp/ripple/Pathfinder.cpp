@@ -481,10 +481,14 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					std::sort(candidates.begin(), candidates.end(),
 						BIND_TYPE(candCmp, mLedger->getLedgerSeq(), P_1, P_2));
 					int count = candidates.size();
-					if (count > 10)
+
+					if (count > 30)
 						count /= 3;
+					else if (count > 10)
+						count /= 2;
+
 					std::vector< std::pair<int, uint160> >::iterator it = candidates.begin();
-					while (--count != 0)
+					while (count-- != 0)
 					{
 						STPath			spNew(spPath);
 						STPathElement	speNew(it->second, speEnd.mCurrencyID, it->second);
