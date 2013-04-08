@@ -468,7 +468,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					}
 					else
 					{ // save this candidate
-						int paths_out = getPathsOut(speEnd.mCurrencyID, uPeerID);
+						int paths_out = getPathsOut(speEnd.mCurrencyID, uPeerID, dstCurrency, mDstAccountID);
 						if (paths_out != 0)
 							candidates.push_back(std::make_pair(paths_out, uPeerID));
 					}
@@ -831,7 +831,8 @@ bool Pathfinder::matchesOrigin(const uint160& currency, const uint160& issuer)
 	return (currency == mSrcCurrencyID) && (issuer == mSrcIssuerID);
 }
 
-int Pathfinder::getPathsOut(const uint160& currencyID, const uint160& accountID)
+int Pathfinder::getPathsOut(const uint160& currencyID, const uint160& accountID,
+	bool isDstCurrency, const uint160& dstAccount)
 {
 	std::pair<const uint160&, const uint160&> accountCurrency(currencyID, accountID);
 	boost::unordered_map<std::pair<uint160, uint160>, int>::iterator it = mPOMap.find(accountCurrency);
@@ -847,6 +848,8 @@ int Pathfinder::getPathsOut(const uint160& currencyID, const uint160& accountID)
 			nothing();
 		else if (!rspEntry->getBalance().isPositive() && !rspEntry->getLimitPeer().isPositive()) // no credit
 			nothing();
+		else if (isDstCurrency && (dstAccount == rspEntry->getAccountIDPeer()))
+			count += 10; // count a path to the destination extra
 		else
 			++count;
 	}
