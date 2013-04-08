@@ -117,6 +117,16 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 	return false;
 }
 
+typedef std::pair<int, uint160> candidate_t;
+bool candCmp(uint32 seq, const candidate_t& first, const candidate_t& second)
+{
+	if (first.first < second.first)
+		return true;
+	if (first.first > second.first)
+		return false;
+	return (first.first ^ seq) < (second.first ^ seq);
+}
+
 Pathfinder::Pathfinder(Ledger::ref ledger,
 		const RippleAddress& uSrcAccountID, const RippleAddress& uDstAccountID,
 		const uint160& uSrcCurrencyID, const uint160& uSrcIssuerID, const STAmount& saDstAmount)
@@ -408,10 +418,10 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				// On a non-XRP account:
 				// True, the cursor requires the next node to be authorized.
 				bool			bRequireAuth	= isSetBit(sleEnd->getFieldU32(sfFlags), lsfRequireAuth);
+				bool			dstCurrency		= speEnd.mCurrencyID == mDstAmount.getCurrency();
 
 				AccountItems& rippleLines(getRippleLines(speEnd.mAccountID));
 
-				typedef std::pair<int, uint160> candidate_t;
 				std::vector< std::pair<int, uint160> > candidates;
 				candidates.reserve(rippleLines.getItems().size());
 
@@ -452,30 +462,47 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 								% rspEntry->getLimitPeer().getFullText()
 								);
 					}
+					else if (dstCurrency && (uPeerID == mDstAccountID))
+					{ // never skip the destination node
+						candidates.push_back(std::make_pair(-1, uPeerID));
+					}
 					else
 					{ // save this candidate
-						candidates.push_back(std::make_pair(1, uPeerID));
+						int paths_out = getPathsOut(speEnd.mCurrencyID, uPeerID);
+						if (paths_out != 0)
+							candidates.push_back(std::make_pair(paths_out, uPeerID));
 					}
 				}
 
-				BOOST_FOREACH(const candidate_t& candidate, candidates)
+				if (!candidates.empty())
 				{
-					STPath			spNew(spPath);
-					STPathElement	speNew(candidate.second, speEnd.mCurrencyID, candidate.second);
+					bFound = true;
 
-					spNew.mPath.push_back(speNew);
-					qspExplore.push(spNew);
+					std::sort(candidates.begin(), candidates.end(),
+						BIND_TYPE(candCmp, mLedger->getLedgerSeq(), P_1, P_2));
+					int count = candidates.size();
+					if (count > 10)
+						count /= 3;
+					std::vector< std::pair<int, uint160> >::iterator it = candidates.begin();
+					while (--count != 0)
+					{
+						STPath			spNew(spPath);
+						STPathElement	speNew(it->second, speEnd.mCurrencyID, it->second);
 
-					bContinued	= true;
+						spNew.mPath.push_back(speNew);
+						qspExplore.push(spNew);
 
-					cLog(lsTRACE) <<
-						boost::str(boost::format("findPaths: push explore: %s/%s -> %s/%s")
-							% STAmount::createHumanCurrency(speEnd.mCurrencyID)
-							% RippleAddress::createHumanAccountID(speEnd.mAccountID)
-							% STAmount::createHumanCurrency(speEnd.mCurrencyID)
-							% RippleAddress::createHumanAccountID(candidate.second));
+						bContinued	= true;
+
+						cLog(lsTRACE) <<
+							boost::str(boost::format("findPaths: push explore: %s/%s -> %s/%s")
+								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
+								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
+								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
+								% RippleAddress::createHumanAccountID(it->second));
+						++it;
+					}
 				}
-
 			}
 
 
@@ -798,6 +825,29 @@ AccountItems& Pathfinder::getRippleLines(const uint160& accountID)
 bool Pathfinder::matchesOrigin(const uint160& currency, const uint160& issuer)
 {
 	return (currency == mSrcCurrencyID) && (issuer == mSrcIssuerID);
+}
+
+int Pathfinder::getPathsOut(const uint160& currencyID, const uint160& accountID)
+{
+	std::pair<const uint160&, const uint160&> accountCurrency(currencyID, accountID);
+	boost::unordered_map<std::pair<uint160, uint160>, int>::iterator it = mPOMap.find(accountCurrency);
+	if (it != mPOMap.end())
+		return it->second;
+
+	int count = 0;
+	AccountItems& rippleLines(getRippleLines(accountID));
+	BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
+	{
+		RippleState* rspEntry = (RippleState*) item.get();
+		if (currencyID != rspEntry->getLimit().getCurrency())
+			nothing();
+		else if (!rspEntry->getBalance().isPositive() && !rspEntry->getLimitPeer().isPositive()) // no credit
+			nothing();
+		else
+			++count;
+	}
+	mPOMap[accountCurrency] = count;
+	return count;
 }
 
 // vim:ts=4
