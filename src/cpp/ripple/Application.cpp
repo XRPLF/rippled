@@ -46,7 +46,7 @@ DatabaseCon::~DatabaseCon()
 }
 
 Application::Application() :
-//	mIOService(2),
+	mIOService((theConfig.NODE_SIZE >= 2) ? 2 : 1),
 	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService), mNetOps(mIOService, &mLedgerMaster),
 	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300), mSLECache("LedgerEntryCache", 4096, 120),
 	mSNTPClient(mAuxService), mJobQueue(mIOService), mFeeTrack(),
@@ -98,6 +98,12 @@ static void runAux(boost::asio::io_service& svc)
 {
 	NameThread("aux");
 	svc.run();
+}
+
+static void runIO(boost::asio::io_service& io)
+{
+	NameThread("io");
+	io.run();
 }
 
 void Application::setup()
@@ -307,6 +313,11 @@ void Application::setup()
 
 void Application::run()
 {
+	if (theConfig.NODE_SIZE >= 2)
+	{
+		boost::thread(boost::bind(runIO, boost::ref(mIOService))).detach();
+	}
+
 	mIOService.run(); // This blocks
 
 	if (mWSPublicDoor)
