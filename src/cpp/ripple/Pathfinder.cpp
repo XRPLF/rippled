@@ -121,9 +121,9 @@ typedef std::pair<int, uint160> candidate_t;
 bool candCmp(uint32 seq, const candidate_t& first, const candidate_t& second)
 {
 	if (first.first < second.first)
-		return true;
-	if (first.first > second.first)
 		return false;
+	if (first.first > second.first)
+		return true;
 	return (first.first ^ seq) < (second.first ^ seq);
 }
 
@@ -462,13 +462,13 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					}
 					else if (dstCurrency && (uPeerID == mDstAccountID))
 					{ // never skip the destination node
-						candidates.push_back(std::make_pair(-1, uPeerID));
+						candidates.push_back(std::make_pair(1000000, uPeerID));
 					}
 					else
 					{ // save this candidate
-						int paths_out = getPathsOut(speEnd.mCurrencyID, uPeerID, dstCurrency, mDstAccountID);
-						if (paths_out != 0)
-							candidates.push_back(std::make_pair(paths_out, uPeerID));
+						int out = getPathsOut(speEnd.mCurrencyID, uPeerID, bRequireAuth, dstCurrency, mDstAccountID);
+						if (out != 0)
+							candidates.push_back(std::make_pair(out, uPeerID));
 					}
 				}
 
@@ -830,7 +830,7 @@ bool Pathfinder::matchesOrigin(const uint160& currency, const uint160& issuer)
 }
 
 int Pathfinder::getPathsOut(const uint160& currencyID, const uint160& accountID,
-	bool isDstCurrency, const uint160& dstAccount)
+	bool authRequired, bool isDstCurrency, const uint160& dstAccount)
 {
 	std::pair<const uint160&, const uint160&> accountCurrency(currencyID, accountID);
 	boost::unordered_map<std::pair<uint160, uint160>, int>::iterator it = mPOMap.find(accountCurrency);
@@ -844,10 +844,13 @@ int Pathfinder::getPathsOut(const uint160& currencyID, const uint160& accountID,
 		RippleState* rspEntry = (RippleState*) item.get();
 		if (currencyID != rspEntry->getLimit().getCurrency())
 			nothing();
-		else if (!rspEntry->getBalance().isPositive() && !rspEntry->getLimitPeer().isPositive()) // no credit
+		else if (!rspEntry->getBalance().isPositive() &&
+			(!rspEntry->getLimitPeer()
+				|| -rspEntry->getBalance() >= rspEntry->getLimitPeer()
+				||	(authRequired && !rspEntry->getAuth())))
 			nothing();
 		else if (isDstCurrency && (dstAccount == rspEntry->getAccountIDPeer()))
-			count += 10; // count a path to the destination extra
+			count += 100; // count a path to the destination extra
 		else
 			++count;
 	}
