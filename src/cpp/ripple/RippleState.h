@@ -52,10 +52,9 @@ public:
 	bool				getAuth() const				{ return isSetBit(mFlags,  mViewLowest ? lsfLowAuth : lsfHighAuth); }
 	bool				getAuthPeer() const			{ return isSetBit(mFlags, !mViewLowest ? lsfLowAuth : lsfHighAuth); }
 
-	STAmount			getBalance() const			{ return mBalance; }
-
-	STAmount			getLimit() const			{ return  mViewLowest ? mLowLimit : mHighLimit; }
-	STAmount			getLimitPeer() const		{ return !mViewLowest ? mLowLimit : mHighLimit; }
+	const STAmount&		getBalance() const			{ return mBalance; }
+	const STAmount&		getLimit() const			{ return  mViewLowest ? mLowLimit : mHighLimit; }
+	const STAmount&		getLimitPeer() const		{ return !mViewLowest ? mLowLimit : mHighLimit; }
 
 	uint32				getQualityIn() const		{ return((uint32) (mViewLowest ? mLowQualityIn : mHighQualityIn)); }
 	uint32				getQualityOut() const		{ return((uint32) (mViewLowest ? mLowQualityOut : mHighQualityOut)); }
