@@ -49,6 +49,7 @@ class Pathfinder
 	LoadEvent::pointer	mLoadMonitor;
 
 	boost::unordered_map<uint160, AccountItems::pointer>	mRLMap;
+	boost::unordered_map<std::pair<uint160, uint160>, int>	mPOMap;
 
 //	std::list<PathOption::pointer> mBuildingPaths;
 //	std::list<PathOption::pointer> mCompletePaths;
@@ -63,6 +64,8 @@ class Pathfinder
 	bool matchesOrigin(const uint160& currency, const uint160& issuer);
 
 	AccountItems& getRippleLines(const uint160& accountID);
+
+	int getPathsOut(const uint160& currency, const uint160& accountID);
 
 public:
 	Pathfinder(Ledger::ref ledger,
