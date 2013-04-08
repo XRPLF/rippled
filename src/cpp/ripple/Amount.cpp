@@ -1148,21 +1148,25 @@ STAmount STAmount::deserialize(SerializerIterator& it)
 
 std::string STAmount::getFullText() const
 {
+	static boost::format nativeFormat("%s/" SYSTEM_CURRENCY_CODE);
+	static boost::format noIssuer("%s/%s/0");
+	static boost::format issuerOne("%s/%s/1");
+	static boost::format normal("%s/%s/%s");
 	if (mIsNative)
 	{
-		return str(boost::format("%s/" SYSTEM_CURRENCY_CODE) % getText());
+		return str(nativeFormat % getText());
 	}
 	else if (!mIssuer)
 	{
-		return str(boost::format("%s/%s/0") % getText() % getHumanCurrency());
+		return str(noIssuer % getText() % getHumanCurrency());
 	}
 	else if (mIssuer == ACCOUNT_ONE)
 	{
-		return str(boost::format("%s/%s/1") % getText() % getHumanCurrency());
+		return str(issuerOne % getText() % getHumanCurrency());
 	}
 	else
 	{
-		return str(boost::format("%s/%s/%s")
+		return str(normal
 			% getText()
 			% getHumanCurrency()
 			% RippleAddress::createHumanAccountID(mIssuer));
