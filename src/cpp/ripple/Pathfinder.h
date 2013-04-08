@@ -57,6 +57,8 @@ class Pathfinder
 
 //	void addPathOption(PathOption::pointer pathOption);
 
+	bool matchesOrigin(const uint160& currency, const uint160& issuer);
+
 public:
 	Pathfinder(Ledger::ref ledger,
 		const RippleAddress& srcAccountID, const RippleAddress& dstAccountID,
