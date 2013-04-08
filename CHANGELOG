@@ -1,6 +1,10 @@
 Critical protocol changes
 -------------------------
 
+Mon Apr  8 16:13:12 PDT 2013
+* The JSON field "inLedger" changing to "ledger_index"
+
+Previous
 * The JSON field "metaData" changing to "meta".
 * RPC ledger will no longer take "ledger", use "ledger_hash" or "ledger_index".
 * "ledgerClose" events:
