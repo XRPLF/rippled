@@ -43,7 +43,7 @@ public:
 	AccountItem::pointer makeItem(const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry);
 	LedgerEntryType getType(){ return(ltRIPPLE_STATE); }
 
-	void					setViewAccount(const uint160& accountID);
+	void				setViewAccount(const uint160& accountID);
 
 	const uint160&		getAccountID() const		{ return  mViewLowest ? mLowID : mHighID; }
 	const uint160&		getAccountIDPeer() const	{ return !mViewLowest ? mLowID : mHighID; }
