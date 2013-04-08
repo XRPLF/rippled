@@ -7,6 +7,7 @@
 #include "RippleAddress.h"
 #include "RippleCalc.h"
 #include "OrderBookDB.h"
+#include "AccountItems.h"
 
 #if 0
 //
@@ -47,6 +48,8 @@ class Pathfinder
 	PathState::pointer	mPsDefault;
 	LoadEvent::pointer	mLoadMonitor;
 
+	boost::unordered_map<uint160, AccountItems::pointer>	mRLMap;
+
 //	std::list<PathOption::pointer> mBuildingPaths;
 //	std::list<PathOption::pointer> mCompletePaths;
 
@@ -58,6 +61,8 @@ class Pathfinder
 //	void addPathOption(PathOption::pointer pathOption);
 
 	bool matchesOrigin(const uint160& currency, const uint160& issuer);
+
+	AccountItems& getRippleLines(const uint160& accountID);
 
 public:
 	Pathfinder(Ledger::ref ledger,
