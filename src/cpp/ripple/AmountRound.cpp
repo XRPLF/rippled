@@ -27,7 +27,7 @@ static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool ro
 	if (!roundUp) // canonicalize already rounds down
 		return;
 
-	cLog(lsDEBUG) << "canonicalize< " << value << ":" << offset << (roundUp ? " up" : " down");
+	cLog(lsTRACE) << "canonicalize< " << value << ":" << offset << (roundUp ? " up" : " down");
 	if (isNative)
 	{
 		if (offset < 0)
@@ -55,7 +55,7 @@ static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool ro
 		value /= 10;
 		++offset;
 	}
-	cLog(lsDEBUG) << "canonicalize> " << value << ":" << offset << (roundUp ? " up" : " down");
+	cLog(lsTRACE) << "canonicalize> " << value << ":" << offset << (roundUp ? " up" : " down");
 }
 
 STAmount STAmount::addRound(const STAmount& v1, const STAmount& v2, bool roundUp)
