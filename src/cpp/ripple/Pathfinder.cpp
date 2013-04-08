@@ -6,7 +6,6 @@
 #include <boost/foreach.hpp>
 
 #include "Application.h"
-#include "AccountItems.h"
 #include "Log.h"
 
 SETUP_LOG();
@@ -394,12 +393,6 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			// Last element is for non-XRP, continue by adding ripple lines and order books.
 
 			// Create new paths for each outbound account not already in the path.
-			boost::unordered_map<uint160, AccountItems::pointer>::iterator it = aiMap.find(speEnd.mAccountID);
-			if (it == aiMap.end())
-				it = aiMap.insert(std::make_pair(speEnd.mAccountID,
-					boost::make_shared<AccountItems>(
-						boost::cref(speEnd.mAccountID), boost::cref(mLedger), AccountItem::pointer(new RippleState())))).first;
-			AccountItems& rippleLines = *it->second;
 
 			SLE::pointer	sleEnd			= lesActive.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(speEnd.mAccountID));
 
@@ -414,7 +407,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				// True, the cursor requires the next node to be authorized.
 				bool			bRequireAuth	= isSetBit(sleEnd->getFieldU32(sfFlags), lsfRequireAuth);
 
-				BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
+				BOOST_FOREACH(AccountItem::ref item, getRippleLines(speEnd.mAccountID).getItems())
 				{
 					RippleState*	rspEntry	= (RippleState*) item.get();
 					const uint160&	uPeerID		= rspEntry->getAccountIDPeer();
@@ -780,6 +773,15 @@ boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raA
 	}
 
 	return usCurrencies;
+}
+
+AccountItems& Pathfinder::getRippleLines(const uint160& accountID)
+{
+	boost::unordered_map<uint160, AccountItems::pointer>::iterator it = mRLMap.find(accountID);
+	if (it == mRLMap.end())
+		it = mRLMap.insert(std::make_pair(accountID, boost::make_shared<AccountItems>
+			(boost::cref(accountID), boost::cref(mLedger), AccountItem::pointer(new RippleState())))).first;
+	return *it->second;
 }
 
 bool Pathfinder::matchesOrigin(const uint160& currency, const uint160& issuer)
