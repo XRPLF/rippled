@@ -409,7 +409,13 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				// True, the cursor requires the next node to be authorized.
 				bool			bRequireAuth	= isSetBit(sleEnd->getFieldU32(sfFlags), lsfRequireAuth);
 
-				BOOST_FOREACH(AccountItem::ref item, getRippleLines(speEnd.mAccountID).getItems())
+				AccountItems& rippleLines(getRippleLines(speEnd.mAccountID));
+
+				typedef std::pair<int, uint160> candidate_t;
+				std::vector< std::pair<int, uint160> > candidates;
+				candidates.reserve(rippleLines.getItems().size());
+
+				BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 				{
 					RippleState*	rspEntry	= (RippleState*) item.get();
 					const uint160&	uPeerID		= rspEntry->getAccountIDPeer();
@@ -446,27 +452,29 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 								);
 					}
 					else
-					{
-						// Can transmit IOUs and account to the path.
-						STPath			spNew(spPath);
-						STPathElement	speNew(uPeerID, speEnd.mCurrencyID, uPeerID);
-
-						spNew.mPath.push_back(speNew);
-						qspExplore.push(spNew);
-
-						bContinued	= true;
-
-						cLog(lsTRACE) <<
-							boost::str(boost::format("findPaths: push explore: %s/%s -> %s/%s balance=%s limit=%s limit_peer=%s")
-								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
-								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
-								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
-								% RippleAddress::createHumanAccountID(uPeerID)
-								% rspEntry->getBalance().getFullText()
-								% rspEntry->getLimit().getFullText()
-								% rspEntry->getLimitPeer().getFullText());
+					{ // save this candidate
+						candidates.push_back(std::make_pair(1, uPeerID));
 					}
 				}
+
+				BOOST_FOREACH(const candidate_t& candidate, candidates)
+				{
+					STPath			spNew(spPath);
+					STPathElement	speNew(candidate.second, speEnd.mCurrencyID, candidate.second);
+
+					spNew.mPath.push_back(speNew);
+					qspExplore.push(spNew);
+
+					bContinued	= true;
+
+					cLog(lsTRACE) <<
+						boost::str(boost::format("findPaths: push explore: %s/%s -> %s/%s")
+							% STAmount::createHumanCurrency(speEnd.mCurrencyID)
+							% RippleAddress::createHumanAccountID(speEnd.mAccountID)
+							% STAmount::createHumanCurrency(speEnd.mCurrencyID)
+							% RippleAddress::createHumanAccountID(candidate.second));
+				}
+
 			}
 
 
