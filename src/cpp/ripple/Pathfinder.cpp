@@ -425,7 +425,8 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 						// wrong currency
 						nothing();
 					}
-					else if (spPath.hasSeen(uPeerID, speEnd.mCurrencyID, uPeerID) && (uPeerID != mSrcAccountID))
+					else if (spPath.hasSeen(uPeerID, speEnd.mCurrencyID, uPeerID) ||
+						((uPeerID == mSrcAccountID) && (uPeerID != mDstAccountID)))
 					{
 						// Peer is in path already. Ignore it to avoid a loop.
 						cLog(lsTRACE) <<
