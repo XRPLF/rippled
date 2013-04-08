@@ -46,37 +46,6 @@ Test USD to EUR
 //    length of path
 //    width of path
 //    correct currency at the end
-#if 0
-bool sortPathOptions(PathOption::pointer first, PathOption::pointer second)
-{
-	if (first->mTotalCost<second->mTotalCost) return(true);
-	if (first->mTotalCost>second->mTotalCost) return(false);
-
-	if (first->mCorrectCurrency && !second->mCorrectCurrency) return(true);
-	if (!first->mCorrectCurrency && second->mCorrectCurrency) return(false);
-
-	if (first->mPath.size()<second->mPath.size()) return(true);
-	if (first->mPath.size()>second->mPath.size()) return(false);
-
-	if (first->mMinWidth<second->mMinWidth) return true;
-
-	return false;
-}
-
-PathOption::PathOption(uint160& srcAccount,uint160& srcCurrencyID,const uint160& dstCurrencyID)
-{
-	mCurrentAccount=srcAccount;
-	mCurrencyID=srcCurrencyID;
-	mCorrectCurrency=(srcCurrencyID==dstCurrencyID);
-	mQuality=0;
-	mMinWidth=STAmount(dstCurrencyID,99999,80);   // this will get lowered when we convert back to the correct currency
-}
-
-PathOption::PathOption(PathOption::pointer other)
-{
-	// TODO:
-}
-#endif
 
 // quality, length, liquidity, index
 typedef boost::tuple<uint64, int, STAmount, unsigned int> path_LQ_t;
@@ -393,7 +362,8 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			{
 				// New end is an order book with the currency and issuer.
 
-				if (!spPath.hasSeen(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()))
+				if (!spPath.hasSeen(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()) &&
+					!matchesOrigin(book->getCurrencyOut(), book->getIssuerOut()))
 				{
 					// Not a order book already in path.
 					STPath			spNew(spPath);
@@ -454,7 +424,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 						// wrong currency
 						nothing();
 					}
-					else if (spPath.hasSeen(uPeerID, speEnd.mCurrencyID, uPeerID))
+					else if (spPath.hasSeen(uPeerID, speEnd.mCurrencyID, uPeerID) && (uPeerID != mSrcAccountID))
 					{
 						// Peer is in path already. Ignore it to avoid a loop.
 						cLog(lsTRACE) <<
@@ -512,7 +482,8 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 			BOOST_FOREACH(OrderBook::ref book, books)
 			{
-				if (!spPath.hasSeen(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()))
+				if (!spPath.hasSeen(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()) &&
+					!matchesOrigin(book->getCurrencyOut(), book->getIssuerOut()))
 				{
 					// A book we haven't seen before. Add it.
 					STPath			spNew(spPath);
@@ -810,4 +781,10 @@ boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raA
 
 	return usCurrencies;
 }
+
+bool Pathfinder::matchesOrigin(const uint160& currency, const uint160& issuer)
+{
+	return (currency == mSrcCurrencyID) && (issuer == mSrcIssuerID);
+}
+
 // vim:ts=4
