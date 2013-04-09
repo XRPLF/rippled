@@ -127,7 +127,7 @@ ProofOfWork ProofOfWorkGenerator::getProof()
 
 	boost::mutex::scoped_lock sl(mLock);
 
-	std::string s = boost::str(f % challenge.GetHex() % mTarget.GetHex() % mIterations % now);
+	std::string s = boost::str(boost::format(f) % challenge.GetHex() % mTarget.GetHex() % mIterations % now);
 	std::string c = mSecret.GetHex() + s;
 	s += "-" + Serializer::getSHA512Half(c).GetHex();
 
