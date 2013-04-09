@@ -72,7 +72,7 @@ static bool bQualityCmp(const path_LQ_t& a, const path_LQ_t&b)
 // A path is a default path if it is implied via src, dst, send, and sendmax.
 bool Pathfinder::bDefaultPath(const STPath& spPath)
 {
-	if (2 == spPath.mPath.size()) {
+	if (2 >= spPath.mPath.size()) {
 		// Empty path is a default. Don't need to add it to return set.
 		cLog(lsTRACE) << "findPaths: empty path: direct";
 

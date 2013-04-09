@@ -559,6 +559,7 @@ void PathState::setCanonical(
 	const PathState&	psExpanded
 	)
 {
+	assert(false);
 	saInAct		= psExpanded.saInAct;
 	saOutAct	= psExpanded.saOutAct;
 
@@ -572,7 +573,7 @@ void PathState::setCanonical(
 
 	unsigned int	uEnd		= psExpanded.vpnNodes.size();	// The node, indexed by 0, not to include.
 
-	uint160			uDstAccountID	= psExpanded.vpnNodes[uEnd].uAccountID;
+	uint160			uDstAccountID	= psExpanded.vpnNodes[uEnd].uAccountID; // FIXME: This can't be right
 
 	uint160			uAccountID		= psExpanded.vpnNodes[0].uAccountID;
 	uint160			uCurrencyID		= uMaxCurrencyID;
