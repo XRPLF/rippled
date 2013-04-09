@@ -71,7 +71,7 @@ class Pathfinder
 public:
 	Pathfinder(Ledger::ref ledger,
 		const RippleAddress& srcAccountID, const RippleAddress& dstAccountID,
-		const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount);
+		const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount, bool bValid);
 
 	bool findPaths(const unsigned int iMaxSteps, const unsigned int iMaxPaths, STPathSet& spsDst);
 

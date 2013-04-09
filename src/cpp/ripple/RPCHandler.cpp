@@ -178,10 +178,11 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 				boost::ref(*mNetOps->getCurrentLedger()), false);
 			{
 				ScopedUnlock su(theApp->getMasterLock());
+				bool bValid;
 				Pathfinder pf(lSnapshot, raSrcAddressID, dstAccountID,
-					saSendMax.getCurrency(), saSendMax.getIssuer(), saSend);
+					saSendMax.getCurrency(), saSendMax.getIssuer(), saSend, bValid);
 
-				if (!pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsPaths))
+				if (!bValid || !pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsPaths))
 				{
 					cLog(lsDEBUG) << "transactionSign: build_path: No paths found.";
 
@@ -1272,9 +1273,10 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 			}
 
 			STPathSet	spsComputed;
-			Pathfinder	pf(lSnapShot, raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount);
+			bool		bValid;
+			Pathfinder	pf(lSnapShot, raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount, bValid);
 
-			if (!pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsComputed))
+			if (!bValid || !pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsComputed))
 			{
 				cLog(lsWARNING) << "ripple_path_find: No paths found.";
 			}
