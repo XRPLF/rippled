@@ -1215,11 +1215,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 		}
 		else
 		{
-			boost::unordered_set<uint160>	usCurrencies	= usAccountSourceCurrencies(raSrc, lpLedger);
-
-			// Add XRP as a source currency.
-			// YYY Only bother if they are above reserve.
-			usCurrencies.insert(uint160(CURRENCY_XRP));
+			boost::unordered_set<uint160>	usCurrencies	= usAccountSourceCurrencies(raSrc, lpLedger, true);
 
 			jvSrcCurrencies				= Json::Value(Json::arrayValue);
 
