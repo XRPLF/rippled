@@ -260,7 +260,7 @@ std::string SerializedTransaction::getSQL(Serializer rawTxn, uint32 inLedger, ch
 	static boost::format bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s)");
 	std::string rTxn	= sqlEscape(rawTxn.peekData());
 
-	return str(bfTrans
+	return str(boost::format(bfTrans)
 		% getTransactionID().GetHex() % getTransactionType() % getSourceAccount().humanAccountID()
 		% getSequence() % inLedger % status % rTxn);
 }
@@ -271,7 +271,7 @@ std::string SerializedTransaction::getMetaSQL(Serializer rawTxn, uint32 inLedger
 	static boost::format bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
 	std::string rTxn	= sqlEscape(rawTxn.peekData());
 
-	return str(bfTrans
+	return str(boost::format(bfTrans)
 		% getTransactionID().GetHex() % getTransactionType() % getSourceAccount().humanAccountID()
 		% getSequence() % inLedger % status % rTxn % escapedMetaData);
 }

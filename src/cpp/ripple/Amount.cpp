@@ -1154,19 +1154,19 @@ std::string STAmount::getFullText() const
 	static boost::format normal("%s/%s/%s");
 	if (mIsNative)
 	{
-		return str(nativeFormat % getText());
+		return str(boost::format(nativeFormat) % getText());
 	}
 	else if (!mIssuer)
 	{
-		return str(noIssuer % getText() % getHumanCurrency());
+		return str(boost::format(noIssuer) % getText() % getHumanCurrency());
 	}
 	else if (mIssuer == ACCOUNT_ONE)
 	{
-		return str(issuerOne % getText() % getHumanCurrency());
+		return str(boost::format(issuerOne) % getText() % getHumanCurrency());
 	}
 	else
 	{
-		return str(normal
+		return str(boost::format(normal)
 			% getText()
 			% getHumanCurrency()
 			% RippleAddress::createHumanAccountID(mIssuer));

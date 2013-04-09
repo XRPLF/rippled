@@ -162,7 +162,7 @@ inline std::string strHex(const uint64 uiHost)
 inline static std::string sqlEscape(const std::string& strSrc)
 {
 	static boost::format f("X'%s'");
-	return str(f % strHex(strSrc));
+	return str(boost::format(f) % strHex(strSrc));
 }
 
 inline static std::string sqlEscape(const std::vector<unsigned char>& vecSrc)

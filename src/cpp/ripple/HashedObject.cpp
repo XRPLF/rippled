@@ -154,7 +154,8 @@ void HashedObjectStore::bulkWrite()
 					case hotTRANSACTION_NODE:	type = 'N'; break;
 					default:					type = 'U';
 				}
-				db->executeSQL(boost::str(fAdd % it->getHash().GetHex() % type % it->getIndex() % sqlEscape(it->getData())));
+				db->executeSQL(boost::str(boost::format(fAdd)
+					% it->getHash().GetHex() % type % it->getIndex() % sqlEscape(it->getData())));
 			}
 
 			db->executeSQL("END TRANSACTION;");
