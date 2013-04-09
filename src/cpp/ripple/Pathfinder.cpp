@@ -800,9 +800,14 @@ void Pathfinder::addPathOption(PathOption::pointer pathOption)
 }
 #endif
 
-boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raAccountID, Ledger::ref lrLedger)
+boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raAccountID, Ledger::ref lrLedger,
+	bool includeXRP)
 {
 	boost::unordered_set<uint160>	usCurrencies;
+
+	// YYY Only bother if they are above reserve
+	if (includeXRP)
+		usCurrencies.insert(uint160(CURRENCY_XRP));
 
 	// List of ripple lines.
 	AccountItems rippleLines(raAccountID.getAccountID(), lrLedger, AccountItem::pointer(new RippleState()));

@@ -78,7 +78,8 @@ public:
 	bool bDefaultPath(const STPath& spPath);
 };
 
-boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raAccountID, Ledger::ref lrLedger);
+boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raAccountID, Ledger::ref lrLedger,
+	bool includeXRP);
 #endif
 
 // vim:ts=4
