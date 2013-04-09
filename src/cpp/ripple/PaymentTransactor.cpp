@@ -55,6 +55,12 @@ TER PaymentTransactor::doApply()
 
 		return temBAD_AMOUNT;
 	}
+	else if (CURRENCY_BAD == uSrcCurrency || CURRENCY_BAD == uDstCurrency)
+	{
+		cLog(lsINFO) << "Payment: Malformed transaction: Bad currency.";
+
+		return temBAD_CURRENCY;
+	}
 	else if (mTxnAccountID == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
 	{
 		cLog(lsINFO) << boost::str(boost::format("Payment: Malformed transaction: Redundant transaction: src=%s, dst=%s, src_cur=%s, dst_cur=%s")

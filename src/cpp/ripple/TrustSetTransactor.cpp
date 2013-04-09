@@ -248,9 +248,9 @@ TER TrustSetTransactor::doApply()
 		if (uFlagsIn != uFlagsOut)
 			sleRippleState->setFieldU32(sfFlags, uFlagsOut);
 
-		if (bDefault)
+		if (bDefault || CURRENCY_BAD == uCurrencyID)
 		{
-			// Can delete.
+			// Delete.
 
 			terResult	= mEngine->getNodes().trustDelete(sleRippleState, uLowAccountID, uHighAccountID);
 		}
@@ -284,6 +284,10 @@ TER TrustSetTransactor::doApply()
 
 		// Another transaction could create the account and then this transaction would succeed.
 		terResult	= tecNO_LINE_INSUF_RESERVE;
+	}
+	else if (CURRENCY_BAD == uCurrencyID)
+	{
+		terResult	= temBAD_CURRENCY;
 	}
 	else
 	{

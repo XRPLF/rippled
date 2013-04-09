@@ -39,9 +39,10 @@ static inline const uint160& get_u160_zero() { return u160_zero; }
 static inline const uint160& get_u160_one() { return u160_one; }
 
 #define CURRENCY_XRP		get_u160_zero()
-#define CURRENCY_ONE		get_u160_one()	// Used as a place holder
+#define CURRENCY_ONE		get_u160_one()					// Used as a place holder.
+#define CURRENCY_BAD		uint160(0x5852500000000000)		// Do not allow XRP as an IOU currency.
 #define ACCOUNT_XRP			get_u160_zero()
-#define ACCOUNT_ONE			get_u160_one()	// Used as a place holder
+#define ACCOUNT_ONE			get_u160_one()					// Used as a place holder.
 
 DEFINE_INSTANCE(SerializedValue);
 
