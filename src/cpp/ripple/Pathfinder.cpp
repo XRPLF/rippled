@@ -481,16 +481,14 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 				if (!candidates.empty())
 				{
-					bFound = true;
-
 					std::sort(candidates.begin(), candidates.end(),
 						BIND_TYPE(candCmp, mLedger->getLedgerSeq(), P_1, P_2));
-					int count = candidates.size();
 
-					if (count > 30)
-						count /= 3;
-					else if (count > 10)
-						count /= 2;
+					int count = candidates.size();
+					if ((count > 10) && (speEnd.mAccountID != mSrcAccountID)) // try more paths from source
+						count = 10;
+					else if (count > 50)
+						count = 50;
 
 					std::vector< std::pair<int, uint160> >::iterator it = candidates.begin();
 					while (count-- != 0)
@@ -699,104 +697,6 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 	return bFound;
 }
-
-#if 0
-bool Pathfinder::checkComplete(STPathSet& retPathSet)
-{
-	if (mCompletePaths.size())
-	{ // TODO: look through these and pick the most promising
-		int count=0;
-		BOOST_FOREACH(PathOption::ref pathOption,mCompletePaths)
-		{
-			retPathSet.addPath(pathOption->mPath);
-			count++;
-			if(count>2) return(true);
-		}
-		return(true);
-	}
-	return(false);
-}
-
-
-// get all the options from this accountID
-//   if source is XRP
-//		every offer that wants XRP
-//   else
-//		every ripple line that starts with the source currency
-//		every offer that we can take that wants the source currency
-
-void Pathfinder::addOptions(PathOption::pointer tail)
-{
-	if (!tail->mCurrencyID)
-	{ // source XRP
-		BOOST_FOREACH(OrderBook::ref book, theApp->getOrderBookDB().getXRPInBooks())
-		{
-			PathOption::pointer pathOption(new PathOption(tail));
-
-			STPathElement ele(uint160(), book->getCurrencyOut(), book->getIssuerOut());
-			pathOption->mPath.addElement(ele);
-
-			pathOption->mCurrentAccount=book->getIssuerOut();
-			pathOption->mCurrencyID=book->getCurrencyOut();
-			addPathOption(pathOption);
-		}
-	}
-	else
-	{ // ripple
-		RippleLines rippleLines(tail->mCurrentAccount);
-		BOOST_FOREACH(RippleState::ref line,rippleLines.getLines())
-		{
-			// TODO: make sure we can move in the correct direction
-			STAmount balance=line->getBalance();
-			if(balance.getCurrency()==tail->mCurrencyID)
-			{  // we have a ripple line from the tail to somewhere else
-				PathOption::pointer pathOption(new PathOption(tail));
-
-				STPathElement ele(line->getAccountIDPeer().getAccountID(), uint160(), uint160());
-				pathOption->mPath.addElement(ele);
-
-
-				pathOption->mCurrentAccount=line->getAccountIDPeer().getAccountID();
-				addPathOption(pathOption);
-			}
-		}
-
-		// every offer that wants the source currency
-		std::vector<OrderBook::pointer> books;
-		theApp->getOrderBookDB().getBooks(tail->mCurrentAccount, tail->mCurrencyID, books);
-
-		BOOST_FOREACH(OrderBook::ref book,books)
-		{
-			PathOption::pointer pathOption(new PathOption(tail));
-
-			STPathElement ele(uint160(), book->getCurrencyOut(), book->getIssuerOut());
-			pathOption->mPath.addElement(ele);
-
-			pathOption->mCurrentAccount=book->getIssuerOut();
-			pathOption->mCurrencyID=book->getCurrencyOut();
-			addPathOption(pathOption);
-		}
-	}
-}
-
-void Pathfinder::addPathOption(PathOption::pointer pathOption)
-{
-	if(pathOption->mCurrencyID==mDstAmount.getCurrency())
-	{
-		pathOption->mCorrectCurrency=true;
-
-		if(pathOption->mCurrentAccount==mDstAccountID)
-		{ // this path is complete
-			mCompletePaths.push_back(pathOption);
-		}else mBuildingPaths.push_back(pathOption);
-	}
-	else
-	{
-		pathOption->mCorrectCurrency=false;
-		mBuildingPaths.push_back(pathOption);
-	}
-}
-#endif
 
 boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raAccountID, Ledger::ref lrLedger,
 	bool includeXRP)
