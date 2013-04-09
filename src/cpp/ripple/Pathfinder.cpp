@@ -725,6 +725,7 @@ boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raA
 		}
 	}
 
+	usCurrencies.erase(CURRENCY_BAD);
 	return usCurrencies;
 }
 
