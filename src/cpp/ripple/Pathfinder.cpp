@@ -129,7 +129,7 @@ bool candCmp(uint32 seq, const candidate_t& first, const candidate_t& second)
 
 Pathfinder::Pathfinder(Ledger::ref ledger,
 		const RippleAddress& uSrcAccountID, const RippleAddress& uDstAccountID,
-		const uint160& uSrcCurrencyID, const uint160& uSrcIssuerID, const STAmount& saDstAmount, bool bValid)
+		const uint160& uSrcCurrencyID, const uint160& uSrcIssuerID, const STAmount& saDstAmount, bool& bValid)
 	:	mSrcAccountID(uSrcAccountID.getAccountID()),
 		mDstAccountID(uDstAccountID.getAccountID()),
 		mDstAmount(saDstAmount),
