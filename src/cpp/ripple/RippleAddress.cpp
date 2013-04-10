@@ -318,6 +318,8 @@ std::string RippleAddress::humanAccountID() const
 	    boost::unordered_map< std::vector<unsigned char>, std::string >::iterator it = rncMap.find(vchData);
 	    if (it != rncMap.end())
 	        return it->second;
+		if (rncMap.size() > 10000)
+			rncMap.clear();
 	    return rncMap[vchData] = ToString();
 	}
 
