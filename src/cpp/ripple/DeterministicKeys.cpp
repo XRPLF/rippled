@@ -153,6 +153,7 @@ EC_KEY* CKey::GenerateRootPubKey(BIGNUM* pubGenerator)
 		EC_KEY_free(pkey);
 		return NULL;
 	}
+	EC_POINT_free(pubPoint);
 
 	return pkey;
 }
