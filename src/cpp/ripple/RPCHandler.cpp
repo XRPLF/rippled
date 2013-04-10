@@ -1234,6 +1234,15 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 
 		ScopedUnlock	su(theApp->getMasterLock()); // As long as we have a locked copy of the ledger, we can unlock.
 
+		// Fill in currencies destination will accept
+		Json::Value jvDestCur(Json::arrayValue);
+
+		boost::unordered_set<uint160> usDestCurrID = usAccountDestCurrencies(raDst, lpLedger, true);
+		BOOST_FOREACH(const uint160& uCurrency, usDestCurrID)
+			jvDestCur.append(STAmount::createHumanCurrency(uCurrency));
+
+		jvResult["destination_currencies"] = jvDestCur;
+
 		Json::Value	jvArray(Json::arrayValue);
 
 		for (unsigned int i=0; i != jvSrcCurrencies.size(); ++i) {

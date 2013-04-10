@@ -714,7 +714,7 @@ boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raA
 	BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 	{
 		RippleState*	rspEntry	= (RippleState*) item.get();
-		STAmount		saBalance	= rspEntry->getBalance();
+		const STAmount&	saBalance	= rspEntry->getBalance();
 
 		// Filter out non
 		if (saBalance.isPositive()								// Have IOUs to send.
@@ -723,6 +723,30 @@ boost::unordered_set<uint160> usAccountSourceCurrencies(const RippleAddress& raA
 		{
 			usCurrencies.insert(saBalance.getCurrency());
 		}
+	}
+
+	usCurrencies.erase(CURRENCY_BAD);
+	return usCurrencies;
+}
+
+boost::unordered_set<uint160> usAccountDestCurrencies(const RippleAddress& raAccountID, Ledger::ref lrLedger,
+	bool includeXRP)
+{
+	boost::unordered_set<uint160>	usCurrencies;
+
+	if (includeXRP)
+		usCurrencies.insert(uint160(CURRENCY_XRP));	// Even if account doesn't exist
+
+	// List of ripple lines.
+	AccountItems rippleLines(raAccountID.getAccountID(), lrLedger, AccountItem::pointer(new RippleState()));
+
+	BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
+	{
+		RippleState*	rspEntry	= (RippleState*) item.get();
+		const STAmount&	saBalance	= rspEntry->getBalance();
+
+		if (saBalance < rspEntry->getLimit())					// Can take more
+			usCurrencies.insert(saBalance.getCurrency());
 	}
 
 	usCurrencies.erase(CURRENCY_BAD);
