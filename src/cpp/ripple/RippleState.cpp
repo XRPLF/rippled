@@ -3,32 +3,33 @@
 
 AccountItem::pointer RippleState::makeItem(const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry)
 {
-	if (!ledgerEntry || ledgerEntry->getType() != ltRIPPLE_STATE) return(AccountItem::pointer());
-	RippleState* rs=new RippleState(ledgerEntry);
+	if (!ledgerEntry || ledgerEntry->getType() != ltRIPPLE_STATE)
+		return AccountItem::pointer();
+	RippleState* rs = new RippleState(ledgerEntry);
 	rs->setViewAccount(accountID);
 
-	return(AccountItem::pointer(rs));
+	return AccountItem::pointer(rs);
 }
 
 RippleState::RippleState(SerializedLedgerEntry::ref ledgerEntry) : AccountItem(ledgerEntry),
 	mValid(false),
-	mViewLowest(true)
+	mViewLowest(true),
+
+	mLowLimit(ledgerEntry->getFieldAmount(sfLowLimit)),
+	mHighLimit(ledgerEntry->getFieldAmount(sfHighLimit)),
+
+	mLowID(mLowLimit.getIssuer()),
+	mHighID(mHighLimit.getIssuer()),
+
+	mBalance(ledgerEntry->getFieldAmount(sfBalance))
 {
 	mFlags			= mLedgerEntry->getFieldU32(sfFlags);
-
-	mLowLimit		= mLedgerEntry->getFieldAmount(sfLowLimit);
-	mHighLimit		= mLedgerEntry->getFieldAmount(sfHighLimit);
-
-	mLowID			= mLowLimit.getIssuer();
-	mHighID			= mHighLimit.getIssuer();
 
 	mLowQualityIn	= mLedgerEntry->getFieldU32(sfLowQualityIn);
 	mLowQualityOut	= mLedgerEntry->getFieldU32(sfLowQualityOut);
 
 	mHighQualityIn	= mLedgerEntry->getFieldU32(sfHighQualityIn);
 	mHighQualityOut	= mLedgerEntry->getFieldU32(sfHighQualityOut);
-
-	mBalance	= mLedgerEntry->getFieldAmount(sfBalance);
 
 	mValid		= true;
 }

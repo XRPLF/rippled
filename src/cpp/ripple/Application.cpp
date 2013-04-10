@@ -156,7 +156,11 @@ void Application::setup()
 	{
 		cLog(lsINFO) << "Loading specified Ledger";
 
-		loadOldLedger(theConfig.START_LEDGER);
+		if (!loadOldLedger(theConfig.START_LEDGER))
+		{
+			theApp->stop();
+			exit(-1);
+		}
 	}
 	else if (theConfig.START_UP == Config::NETWORK)
 	{ // This should probably become the default once we have a stable network
@@ -370,7 +374,7 @@ void Application::startNewLedger()
 	}
 }
 
-void Application::loadOldLedger(const std::string& l)
+bool Application::loadOldLedger(const std::string& l)
 {
 	try
 	{
@@ -389,7 +393,7 @@ void Application::loadOldLedger(const std::string& l)
 		if (!loadLedger)
 		{
 			cLog(lsFATAL) << "No Ledger found?" << std::endl;
-			exit(-1);
+			return false;
 		}
 		loadLedger->setClosed();
 
@@ -399,19 +403,19 @@ void Application::loadOldLedger(const std::string& l)
 		{
 			cLog(lsFATAL) << "Ledger is empty.";
 			assert(false);
-			exit(-1);
+			return false;
 		}
 
 		if (!loadLedger->walkLedger())
 		{
 			cLog(lsFATAL) << "Ledger is missing nodes.";
-			exit(-1);
+			return false;
 		}
 
 		if (!loadLedger->assertSane())
 		{
 			cLog(lsFATAL) << "Ledger is not sane.";
-			exit(-1);
+			return false;
 		}
 		mLedgerMaster.setLedgerRangePresent(loadLedger->getLedgerSeq(), loadLedger->getLedgerSeq());
 
@@ -422,13 +426,14 @@ void Application::loadOldLedger(const std::string& l)
 	catch (SHAMapMissingNode&)
 	{
 		cLog(lsFATAL) << "Data is missing for selected ledger";
-		exit(-1);
+		return false;
 	}
 	catch (boost::bad_lexical_cast&)
 	{
 		cLog(lsFATAL) << "Ledger specified '" << l << "' is not valid";
-		exit(-1);
+		return false;
 	}
+	return true;
 }
 
 // vim:ts=4

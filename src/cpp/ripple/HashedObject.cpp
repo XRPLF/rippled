@@ -184,17 +184,16 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 
 #ifndef NO_SQLITE3_PREPARE
 	{
-		std::string sql = "SELECT ObjType,LedgerIndex,Object FROM CommittedObjects WHERE Hash = '";
-		sql.append(hash.GetHex());
-		sql.append("';");
-
 		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
+		static SqliteStatement pSt(theApp->getHashNodeDB()->getDB()->getSqliteDB(),
+			"SELECT ObjType,LedgerIndex,Object FROM CommittedObjects WHERE Hash = ?;");
 		LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtDISK, "HOS::retrieve"));
-		SqliteStatement pSt(theApp->getHashNodeDB()->getDB()->getSqliteDB(), sql.c_str());
 
+		pSt.bind(1, hash.GetHex());
 		int ret = pSt.step();
 		if (pSt.isDone(ret))
 		{
+			pSt.reset();
 			mNegativeCache.add(hash);
 			cLog(lsTRACE) << "HOS: " << hash <<" fetch: not in db";
 			return obj;
@@ -203,6 +202,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		type = pSt.peekString(0);
 		index = pSt.getUInt32(1);
 		pSt.getBlob(2).swap(data);
+		pSt.reset();
 	}
 
 #else

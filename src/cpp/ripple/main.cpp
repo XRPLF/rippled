@@ -221,6 +221,7 @@ int main(int argc, char* argv[])
 	{
 		unit_test_main(init_unit_test, argc, argv);
 
+		InstanceType::shutdown();
 		return 0;
 	}
 
@@ -279,6 +280,7 @@ int main(int argc, char* argv[])
 	if (1 == iResult && !vm.count("quiet"))
 		printHelp(desc);
 
+	InstanceType::shutdown();
 	return iResult;
 }
 // vim:ts=4

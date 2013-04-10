@@ -639,14 +639,18 @@ std::vector<unsigned char> STObject::getFieldVL(SField::ref field) const
 	return cf->getValue();
 }
 
-STAmount STObject::getFieldAmount(SField::ref field) const
+static const STAmount defaultAmount;
+const STAmount& STObject::getFieldAmount(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
-	if (!rf) throw std::runtime_error("Field not found");
+	if (!rf)
+		throw std::runtime_error("Field not found");
 	SerializedTypeID id = rf->getSType();
-	if (id == STI_NOTPRESENT) return STAmount(); // optional field not present
+	if (id == STI_NOTPRESENT)
+		return defaultAmount; // optional field not present
 	const STAmount *cf = dynamic_cast<const STAmount *>(rf);
-	if (!cf) throw std::runtime_error("Wrong field type");
+	if (!cf)
+		throw std::runtime_error("Wrong field type");
 	return *cf;
 }
 
