@@ -226,9 +226,13 @@ std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 	{
 		return SYSTEM_CURRENCY_CODE;
 	}
-	else if (uCurrency == CURRENCY_ONE)
+	else if (CURRENCY_ONE == uCurrency)
 	{
 		return "1";
+	}
+	else if (CURRENCY_BAD == uCurrency)
+	{
+		return uCurrency.ToString();
 	}
 	else
 	{
@@ -243,21 +247,17 @@ std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 		std::vector<unsigned char>	vucVersion	= sit.getRaw(16/8);
 		std::vector<unsigned char>	vucReserved	= sit.getRaw(24/8);
 
-		if (!::isZero(vucZeros.begin(), vucZeros.size()))
+		bool	bIso	= ::isZero(vucZeros.begin(), vucZeros.size())				// Leading zeros
+							&& ::isZero(vucVersion.begin(), vucVersion.size())		// Zero version
+							&& ::isZero(vucReserved.begin(), vucReserved.size());	// Reserved is zero.
+
+		if (bIso)
 		{
-			throw std::runtime_error(boost::str(boost::format("bad currency: zeros: %s") % uCurrency));
-		}
-		else if (!::isZero(vucVersion.begin(), vucVersion.size()))
-		{
-			throw std::runtime_error(boost::str(boost::format("bad currency: version: %s") % uCurrency));
-		}
-		else if (!::isZero(vucReserved.begin(), vucReserved.size()))
-		{
-			throw std::runtime_error(boost::str(boost::format("bad currency: reserved: %s") % uCurrency));
+			sCurrency.assign(vucIso.begin(), vucIso.end());
 		}
 		else
 		{
-			sCurrency.assign(vucIso.begin(), vucIso.end());
+			sCurrency	= uCurrency.ToString();
 		}
 	}
 
