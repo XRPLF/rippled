@@ -462,6 +462,10 @@ public:
 	static STAmount getPay(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
 
 	static std::string createHumanCurrency(const uint160& uCurrency);
+	static Json::Value createJsonCurrency(const uint160& uCurrency)
+		// XXX Punted.
+		{ return createHumanCurrency(uCurrency); }
+
 	static STAmount deserialize(SerializerIterator&);
 	static bool currencyFromString(uint160& uDstCurrency, const std::string& sCurrency);
 	static bool issuerFromString(uint160& uDstIssuer, const std::string& sIssuer);
