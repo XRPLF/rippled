@@ -92,7 +92,7 @@ class Application
 
 	void updateTables();
 	void startNewLedger();
-	void loadOldLedger(const std::string&);
+	bool loadOldLedger(const std::string&);
 
 public:
 	Application();

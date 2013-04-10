@@ -14,10 +14,9 @@
 #include "TransactionErr.h"
 
 SETUP_LOG();
-DECLARE_INSTANCE(SerializedValue);
 
-STAmount saZero(CURRENCY_ONE, ACCOUNT_ONE, 0);
-STAmount saOne(CURRENCY_ONE, ACCOUNT_ONE, 1);
+const STAmount saZero(CURRENCY_ONE, ACCOUNT_ONE, 0);
+const STAmount saOne(CURRENCY_ONE, ACCOUNT_ONE, 1);
 
 SerializedType& SerializedType::operator=(const SerializedType& t)
 {

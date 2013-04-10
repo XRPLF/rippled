@@ -44,9 +44,7 @@ static inline const uint160& get_u160_one() { return u160_one; }
 #define ACCOUNT_XRP			get_u160_zero()
 #define ACCOUNT_ONE			get_u160_one()					// Used as a place holder.
 
-DEFINE_INSTANCE(SerializedValue);
-
-class SerializedType : private IS_INSTANCE(SerializedValue)
+class SerializedType
 {
 protected:
 	SField::ptr	fName;
@@ -475,8 +473,8 @@ public:
 	void roundSelf();
 };
 
-extern STAmount saZero;
-extern STAmount saOne;
+extern const STAmount saZero;
+extern const STAmount saOne;
 
 class STHash128 : public SerializedType
 {

@@ -17,13 +17,16 @@ public:
 	typedef boost::shared_ptr<RippleState> pointer;
 
 private:
-	uint32							mFlags;
+	bool							mValid;
+	bool							mViewLowest;
 
-	uint160							mLowID;
-	uint160							mHighID;
+	uint32							mFlags;
 
 	STAmount						mLowLimit;
 	STAmount						mHighLimit;
+
+	uint160							mLowID;
+	uint160							mHighID;
 
 	uint64							mLowQualityIn;
 	uint64							mLowQualityOut;
@@ -31,9 +34,6 @@ private:
 	uint64							mHighQualityOut;
 
 	STAmount						mBalance;
-
-	bool							mValid;
-	bool							mViewLowest;
 
 	RippleState(SerializedLedgerEntry::ref ledgerEntry);	// For accounts in a ledger
 
