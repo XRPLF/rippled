@@ -294,8 +294,9 @@ EC_KEY* CKey::GeneratePrivateDeterministicKey(const RippleAddress& pubGen, const
 	if(EC_POINT_mul(EC_KEY_get0_group(pkey), pubKey, privKey, NULL, NULL, ctx)==0)
 	{
 		BN_clear_free(privKey);
-		BN_CTX_free(ctx);
+		EC_POINT_free(pubKey);
 		EC_KEY_free(pkey);
+		BN_CTX_free(ctx);
 		return NULL;
 	}
 	BN_clear_free(privKey);
