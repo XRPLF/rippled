@@ -48,7 +48,8 @@ private:
 	bool			mPrivate;			// Keep peer IP private.
 	LoadSource		mLoad;
 
-	uint256			mClosedLedgerHash, mPreviousLedgerHash;
+	uint256			mClosedLedgerHash;
+	uint256			mPreviousLedgerHash;
 	std::list<uint256>	mRecentLedgers;
 	std::list<uint256>	mRecentTxSets;
 
@@ -148,14 +149,14 @@ public:
 	static void punishPeer(const boost::weak_ptr<Peer>&, LoadType);
 
 	Json::Value getJson();
-	bool isConnected() const				{ return mHelloed && !mDetaching; }
-	bool isInbound() const					{ return mInbound; }
-	bool isOutbound() const					{ return !mInbound; }
+	bool isConnected() const					{ return mHelloed && !mDetaching; }
+	bool isInbound() const						{ return mInbound; }
+	bool isOutbound() const						{ return !mInbound; }
 
-	uint256 getClosedLedgerHash() const		{ return mClosedLedgerHash; }
+	const uint256& getClosedLedgerHash() const	{ return mClosedLedgerHash; }
 	bool hasLedger(const uint256& hash) const;
 	bool hasTxSet(const uint256& hash) const;
-	uint64 getPeerId() const				{ return mPeerId; }
+	uint64 getPeerId() const					{ return mPeerId; }
 
 	const RippleAddress& getNodePublic() const	{ return mNodePublic; }
 	void cycleStatus() { mPreviousLedgerHash = mClosedLedgerHash; mClosedLedgerHash.zero(); }
