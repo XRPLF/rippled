@@ -1242,6 +1242,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost)
 			jvDestCur.append(STAmount::createHumanCurrency(uCurrency));
 
 		jvResult["destination_currencies"] = jvDestCur;
+		jvResult["destination_account"] = raDst.humanAccountID();
 
 		Json::Value	jvArray(Json::arrayValue);
 
