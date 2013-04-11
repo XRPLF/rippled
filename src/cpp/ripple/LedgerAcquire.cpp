@@ -80,8 +80,7 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 			cLog(lsDEBUG) << "Deferring PeerSet timer due to load";
 			ptr->setTimer();
 		}
-		else theApp->getJobQueue().addJob(jtLEDGER_DATA, "timerEntry",
-			BIND_TYPE(&PeerSet::TimerJobEntry, P_1, ptr));
+		else theApp->getJobQueue().addJob(jtLEDGER_DATA, "timerEntry", BIND_TYPE(&PeerSet::TimerJobEntry, P_1, ptr));
 	}
 }
 
@@ -306,11 +305,10 @@ bool LedgerAcquire::addOnComplete(FUNCTION_TYPE<void (LedgerAcquire::pointer)> t
 void LedgerAcquire::trigger(Peer::ref peer)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	if (mAborted || mComplete || mFailed)
+	if (isDone())
 	{
 		cLog(lsDEBUG) << "Trigger on ledger:" <<
-			(mAborted ? " aborted": "") << (mComplete ? " completed": "") << (mFailed ? " failed" : "") <<
-			" wc=" << mWaitCount;
+			(mAborted ? " aborted": "") << (mComplete ? " completed": "") << (mFailed ? " failed" : "");
 		return;
 	}
 

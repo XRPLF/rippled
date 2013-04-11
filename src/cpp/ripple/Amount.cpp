@@ -230,10 +230,6 @@ std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 	{
 		return "1";
 	}
-	else if (CURRENCY_BAD == uCurrency)
-	{
-		return uCurrency.ToString();
-	}
 	else
 	{
 		Serializer	s(160/8);

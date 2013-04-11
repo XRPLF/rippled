@@ -63,6 +63,11 @@ class Pathfinder
 
 	bool matchesOrigin(const uint160& currency, const uint160& issuer);
 
+	AccountItems& getRippleLines(const uint160& accountID);
+
+	int getPathsOut(const uint160& currency, const uint160& accountID,
+		bool isAuthRequired, bool isDestCurrency, const uint160& dest);
+
 public:
 	Pathfinder(Ledger::ref ledger,
 		const RippleAddress& srcAccountID, const RippleAddress& dstAccountID,
