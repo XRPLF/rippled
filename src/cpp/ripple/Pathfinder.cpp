@@ -369,7 +369,9 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 			continue;
 		}
-		else if (!speEnd.mCurrencyID)
+		bool isLast = (spPath.mPath.size() == (iMaxSteps - 1));
+
+		if (!speEnd.mCurrencyID)
 		{
 			// XXX Might restrict the number of times bridging through XRP.
 
@@ -379,7 +381,10 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				// New end is an order book with the currency and issuer.
 
 				if (!spPath.hasSeen(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()) &&
-					!matchesOrigin(book->getCurrencyOut(), book->getIssuerOut()))
+					!matchesOrigin(book->getCurrencyOut(), book->getIssuerOut()) &&
+					(!isLast ||
+						(book->getCurrencyOut() == mDstAmount.getCurrency() &&
+						book->getIssuerOut() == mDstAccountID)))
 				{
 					// Not a order book already in path.
 					STPath			spNew(spPath);
@@ -451,6 +456,10 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 								% RippleAddress::createHumanAccountID(uPeerID)
 								% STAmount::createHumanCurrency(speEnd.mCurrencyID));
 					}
+					else if (isLast && (!dstCurrency || (uPeerID != mDstAccountID)))
+					{
+						nothing();
+					}
 					else if (!rspEntry->getBalance().isPositive()							// No IOUs to send.
 						&& (!rspEntry->getLimitPeer()										// Peer does not extend credit.
 							|| -rspEntry->getBalance() >= rspEntry->getLimitPeer()			// No credit left.
@@ -521,7 +530,10 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			BOOST_FOREACH(OrderBook::ref book, books)
 			{
 				if (!spPath.hasSeen(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()) &&
-					!matchesOrigin(book->getCurrencyOut(), book->getIssuerOut()))
+					!matchesOrigin(book->getCurrencyOut(), book->getIssuerOut()) &&
+					(!isLast ||
+						(book->getCurrencyOut() == mDstAmount.getCurrency() &&
+						book->getIssuerOut() == mDstAccountID)))
 				{
 					// A book we haven't seen before. Add it.
 					STPath			spNew(spPath);
