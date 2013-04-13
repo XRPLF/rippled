@@ -82,7 +82,7 @@ public:
 	}
 	int getCount()
 	{
-		boost::mutex::scoped_lock(mLock);
+		boost::mutex::scoped_lock sl(mLock);
 		return mInstances;
 	}
 	const std::string& getName()
