@@ -271,9 +271,6 @@ STAmount STAmount::divRound(const STAmount& num, const STAmount& den,
 			--denOffset;
 		}
 
-	cLog(lsINFO) << "num: " << numVal << " " << numOffset;
-	cLog(lsINFO) << "den: " << denVal << " " << denOffset;
-
 	bool resultNegative = num.mIsNegative != num.mIsNegative;
 	// Compute (numerator * 10^17) / denominator
 	CBigNum v;
