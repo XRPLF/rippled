@@ -978,7 +978,11 @@ TER RippleCalc::calcNodeAdvance(
 
 			const aciSource			asLine				= boost::make_tuple(uOfrOwnerID, uCurCurrencyID, uCurIssuerID);
 
-			cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: uOfrOwnerID=%s") % RippleAddress::createHumanAccountID(uOfrOwnerID));
+			cLog(lsTRACE) << boost::str(boost::format("calcNodeAdvance: uOfrOwnerID=%s saTakerPays=%s saTakerGets=%s uOfferIndex=%s")
+				% RippleAddress::createHumanAccountID(uOfrOwnerID)
+				% saTakerPays
+				% saTakerGets
+				% uOfferIndex);
 
 			if (sleOffer->isFieldPresent(sfExpiration) && sleOffer->getFieldU32(sfExpiration) <= lesActive.getLedger()->getParentCloseTimeNC())
 			{
