@@ -118,13 +118,24 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 }
 
 typedef std::pair<int, uint160> candidate_t;
-bool candCmp(uint32 seq, const candidate_t& first, const candidate_t& second)
+static bool candCmp(uint32 seq, const candidate_t& first, const candidate_t& second)
 {
 	if (first.first < second.first)
 		return false;
 	if (first.first > second.first)
 		return true;
 	return (first.first ^ seq) < (second.first ^ seq);
+}
+
+static int getEffectiveLength(const STPath& spPath)
+{ // don't count exchanges to non-XRP currencies twice (only count the forced issuer account node)
+	int length = 0;
+	for (std::vector<STPathElement>::const_iterator it = spPath.begin(); it != spPath.end(); ++it)
+	{
+		if (it->isAccount() || it->getCurrency().isZero())
+			++length;
+	}
+	return length;
 }
 
 Pathfinder::Pathfinder(Ledger::ref ledger,
@@ -360,7 +371,8 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				% STAmount::createHumanCurrency(speEnd.mCurrencyID)
 				% RippleAddress::createHumanAccountID(speEnd.mIssuerID));
 
-		if (spPath.mPath.size() >= iMaxSteps)
+		int length = getEffectiveLength(spPath.mPath);
+		if (length >= iMaxSteps)
 		{
 			// Path is at maximum size. Don't want to add more.
 
@@ -369,10 +381,10 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 			continue;
 		}
-		else if (!speEnd.mCurrencyID)
-		{
-			// XXX Might restrict the number of times bridging through XRP.
+		bool isLast = (length == (iMaxSteps - 1));
 
+		if (!speEnd.mCurrencyID)
+		{
 			// Cursor is for XRP, continue with qualifying books: XRP -> non-XRP
 			std::vector<OrderBook::pointer> xrpBooks;
 			theApp->getOrderBookDB().getBooksByTakerPays(ACCOUNT_XRP, CURRENCY_XRP, xrpBooks);
@@ -381,7 +393,10 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				// New end is an order book with the currency and issuer.
 
 				if (!spPath.hasSeen(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()) &&
-					!matchesOrigin(book->getCurrencyOut(), book->getIssuerOut()))
+					!matchesOrigin(book->getCurrencyOut(), book->getIssuerOut()) &&
+					(!isLast ||
+						(book->getCurrencyOut() == mDstAmount.getCurrency() &&
+						book->getIssuerOut() == mDstAccountID)))
 				{
 					// Not a order book already in path.
 					STPath			spNew(spPath);
@@ -453,6 +468,10 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 								% RippleAddress::createHumanAccountID(uPeerID)
 								% STAmount::createHumanCurrency(speEnd.mCurrencyID));
 					}
+					else if (isLast && (!dstCurrency || (uPeerID != mDstAccountID)))
+					{
+						nothing();
+					}
 					else if (!rspEntry->getBalance().isPositive()							// No IOUs to send.
 						&& (!rspEntry->getLimitPeer()										// Peer does not extend credit.
 							|| -rspEntry->getBalance() >= rspEntry->getLimitPeer()			// No credit left.
@@ -522,7 +541,10 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			BOOST_FOREACH(OrderBook::ref book, books)
 			{
 				if (!spPath.hasSeen(ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()) &&
-					!matchesOrigin(book->getCurrencyOut(), book->getIssuerOut()))
+					!matchesOrigin(book->getCurrencyOut(), book->getIssuerOut()) &&
+					(!isLast ||
+						(book->getCurrencyOut() == mDstAmount.getCurrency() &&
+						book->getIssuerOut() == mDstAccountID)))
 				{
 					// A book we haven't seen before. Add it.
 					STPath			spNew(spPath);

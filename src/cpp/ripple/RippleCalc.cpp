@@ -1440,7 +1440,7 @@ TER RippleCalc::calcNodeDeliverFwd(
 
 			STAmount	saOutFunded		= std::min(saOfferFunds, saTakerGets);								// Offer maximum out - If there are no out fees.
 			STAmount	saInFunded		= STAmount::mulRound(saOutFunded, saOfrRate, saTakerPays, true);	// Offer maximum in - Limited by by payout.
-			STAmount	saInTotal		= STAmount::mulRound(saInFunded, saInTransRate, true);				// Offer maximum in with fees.
+			STAmount	saInTotal		= STAmount::mulRound(saInFunded, saInFeeRate, true);				// Offer maximum in with fees.
 			STAmount	saInSum			= std::min(saInTotal, saInReq-saInAct-saInFees);					// In limited by remaining.
 			STAmount	saInPassAct		= STAmount::divRound(saInSum, saInFeeRate, true);					// In without fees.
 			STAmount	saOutPassMax	= STAmount::divRound(saInPassAct, saOfrRate, saTakerGets, true);	// Out limited by in remaining.

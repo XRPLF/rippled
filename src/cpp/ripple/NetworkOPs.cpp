@@ -600,7 +600,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	}
 
 	{
-		ScopedLock(theApp->getMasterLock());
+		ScopedLock sl(theApp->getMasterLock());
 
 		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 

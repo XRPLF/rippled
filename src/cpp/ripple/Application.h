@@ -149,6 +149,13 @@ public:
 	void run();
 	void stop();
 	void sweep();
+
+#ifdef DEBUG
+	void mustHaveMasterLock()		{ bool tl = mMasterLock.try_lock(); assert(tl); mMasterLock.unlock(); }
+#else
+	void mustHaveMasterLock()		{ ; }
+#endif
+
 };
 
 extern Application* theApp;
