@@ -884,9 +884,13 @@ TER RippleCalc::calcNodeAdvance(
 		}
 
 		if (bDirectAdvance)
-		{
-			// Get next quality.
+		{ // Get next quality.
+
+			// FIXME: This looks at the original ledger and doesn't take into account any changes
+			// in the LedgerEntrySet. If this code, for example, created offers, this would
+			// not return the pages they're in.
 			uDirectTip		= lesActive.getLedger()->getNextLedgerIndex(uDirectTip, uDirectEnd);
+
 			bDirectDirDirty	= true;
 			bDirectAdvance	= false;
 
