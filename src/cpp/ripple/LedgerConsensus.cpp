@@ -153,7 +153,7 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previou
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
 		mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(), previousLedger->getLedgerSeq() + 1);
 
-	if (mValPublic.isValid() && mValPrivate.isValid() && !theApp->getOPs().isNeedNetworkLedger())
+	if (mValPublic.isSet() && mValPrivate.isSet() && !theApp->getOPs().isNeedNetworkLedger())
 	{
 		cLog(lsINFO) << "Entering consensus process, validating";
 		mValidating = true;
@@ -183,7 +183,7 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previou
 
 void LedgerConsensus::checkOurValidation()
 { // This only covers some cases - Fix for the case where we can't ever acquire the consensus ledger
-	if (!mHaveCorrectLCL || !mValPublic.isValid() || !mValPrivate.isValid() || theApp->getOPs().isNeedNetworkLedger())
+	if (!mHaveCorrectLCL || !mValPublic.isSet() || !mValPrivate.isSet() || theApp->getOPs().isNeedNetworkLedger())
 		return;
 
 	SerializedValidation::pointer lastVal = theApp->getOPs().getLastValidation();
