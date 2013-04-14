@@ -88,7 +88,7 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 		return false;			// Didn't generate a default path. So can't match.
 	}
 
-	PathState::pointer	pspCurrent	= boost::make_shared<PathState>(mDstAmount, mSrcAmount, mLedger);
+	PathState::pointer	pspCurrent	= boost::make_shared<PathState>(mDstAmount, mSrcAmount);
 
 	if (pspCurrent)
 	{
@@ -163,7 +163,7 @@ Pathfinder::Pathfinder(Ledger::ref ledger,
 
 	// Construct the default path for later comparison.
 
-	PathState::pointer	psDefault	= boost::make_shared<PathState>(mDstAmount, mSrcAmount, mLedger);
+	PathState::pointer	psDefault	= boost::make_shared<PathState>(mDstAmount, mSrcAmount);
 
 	if (psDefault)
 	{
