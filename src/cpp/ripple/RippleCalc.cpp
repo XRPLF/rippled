@@ -2668,7 +2668,7 @@ TER RippleCalc::rippleCalc(
 	    // Build a default path.  Use saDstAmountReq and saMaxAmountReq to imply nodes.
 	    // XXX Might also make a XRP bridge by default.
 
-	    PathState::pointer	pspDirect	= boost::make_shared<PathState>(saDstAmountReq, saMaxAmountReq, lesActive.getLedgerRef());
+	    PathState::pointer	pspDirect	= boost::make_shared<PathState>(saDstAmountReq, saMaxAmountReq);
 
 		if (!pspDirect)
 			return temUNKNOWN;
@@ -2698,10 +2698,10 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Build direct: status: %s"
 
     cLog(lsTRACE) << "rippleCalc: Paths in set: " << spsPaths.size();
 
-int	iIndex	= 0;
+    int	iIndex	= 0;
     BOOST_FOREACH(const STPath& spPath, spsPaths)
     {
-	    PathState::pointer pspExpanded	= boost::make_shared<PathState>(saDstAmountReq, saMaxAmountReq, lesActive.getLedgerRef());
+	    PathState::pointer pspExpanded	= boost::make_shared<PathState>(saDstAmountReq, saMaxAmountReq);
 
 		if (!pspExpanded)
 			return temUNKNOWN;
