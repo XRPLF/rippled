@@ -2649,6 +2649,7 @@ TER RippleCalc::rippleCalc(
 	const bool			bOpenLedger
     )
 {
+	assert(lesActive.isValid());
 	RippleCalc	rc(lesActive, bOpenLedger);
 
 	cLog(lsTRACE) << boost::str(boost::format("rippleCalc> saMaxAmountReq=%s saDstAmountReq=%s")
@@ -2807,7 +2808,10 @@ int iPass	= 0;
 							% pspCur->saInPass.getFullText()
 							% pspCur->saOutPass.getFullText());
 
+						assert(lesActive.isValid());
 						lesActive.swapWith(pspCur->lesEntries);							// For the path, save ledger state.
+						lesActive.invalidate();
+
 						iBest	= pspCur->getIndex();
 					}
 				}
@@ -2842,7 +2846,9 @@ int iPass	= 0;
 		    vuUnfundedBecame.insert(vuUnfundedBecame.end(), pspBest->vUnfundedBecame.begin(), pspBest->vUnfundedBecame.end());
 
 		    // Record best pass' LedgerEntrySet to build off of and potentially return.
+		    assert(pspBest->lesEntries.isValid());
 		    lesActive.swapWith(pspBest->lesEntries);
+		    pspBest->lesEntries.invalidate();
 
 			saMaxAmountAct	+= pspBest->saInPass;
 			saDstAmountAct	+= pspBest->saOutPass;
