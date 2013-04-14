@@ -2588,8 +2588,7 @@ void RippleCalc::pathNext(PathState::ref psrCur, const bool bMultiQuality, const
 
 	assert(psrCur->vpnNodes.size() >= 2);
 
-	lesCurrent	= lesCheckpoint;					// Restore from checkpoint.
-	lesCurrent.bumpSeq();							// Begin ledger variance.
+	lesCurrent	= lesCheckpoint.duplicate();		// Restore from checkpoint.
 
 	psrCur->terStatus	= calcNodeRev(uLast, *psrCur, bMultiQuality);
 
@@ -2598,8 +2597,7 @@ void RippleCalc::pathNext(PathState::ref psrCur, const bool bMultiQuality, const
 	if (tesSUCCESS == psrCur->terStatus)
 	{
 		// Do forward.
-		lesCurrent	= lesCheckpoint;				// Restore from checkpoint.
-		lesCurrent.bumpSeq();						// Begin ledger variance.
+		lesCurrent	= lesCheckpoint.duplicate();	// Restore from checkpoint.
 
 		psrCur->terStatus	= calcNodeFwd(0, *psrCur, bMultiQuality);
 	}
