@@ -27,7 +27,9 @@ public:
 
 	// For public and private key, checks if they are legal.
 	bool isValid() const;
+
 	void clear();
+	bool isSet() const;
 
 	std::string humanAddressType() const;
 
