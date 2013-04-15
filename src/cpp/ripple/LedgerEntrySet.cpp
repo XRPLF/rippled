@@ -39,18 +39,20 @@ LedgerEntrySet LedgerEntrySet::duplicate() const
 
 void LedgerEntrySet::setTo(const LedgerEntrySet& e)
 {
+	mLedger = e.mLedger;
 	mEntries = e.mEntries;
 	mSet = e.mSet;
+	mParams = e.mParams;
 	mSeq = e.mSeq;
-	mLedger = e.mLedger;
 }
 
 void LedgerEntrySet::swapWith(LedgerEntrySet& e)
 {
-	std::swap(mSeq, e.mSeq);
 	std::swap(mLedger, e.mLedger);
-	mSet.swap(e.mSet);
 	mEntries.swap(e.mEntries);
+	mSet.swap(e.mSet);
+	std::swap(mParams, e.mParams);
+	std::swap(mSeq, e.mSeq);
 }
 
 // Find an entry in the set.  If it has the wrong sequence number, copy it and update the sequence number.
@@ -65,6 +67,7 @@ SLE::pointer LedgerEntrySet::getEntry(const uint256& index, LedgerEntryAction& a
 	}
 	if (it->second.mSeq != mSeq)
 	{
+		assert(it->second.mSeq < mSeq);
 		it->second.mEntry = boost::make_shared<SerializedLedgerEntry>(*it->second.mEntry);
 		it->second.mSeq = mSeq;
 	}
@@ -82,6 +85,7 @@ SLE::pointer LedgerEntrySet::entryCreate(LedgerEntryType letType, const uint256&
 
 SLE::pointer LedgerEntrySet::entryCache(LedgerEntryType letType, const uint256& index)
 {
+	assert(mLedger);
 	SLE::pointer sleEntry;
 	if (index.isNonZero())
 	{
@@ -89,6 +93,7 @@ SLE::pointer LedgerEntrySet::entryCache(LedgerEntryType letType, const uint256& 
 		sleEntry = getEntry(index, action);
 		if (!sleEntry)
 		{
+			assert(action != taaDELETE);
 			sleEntry = mLedger->getSLE(index);
 			if (sleEntry)
 				entryCache(sleEntry);
@@ -109,6 +114,7 @@ LedgerEntryAction LedgerEntrySet::hasEntry(const uint256& index) const
 
 void LedgerEntrySet::entryCache(SLE::ref sle)
 {
+	assert(mLedger);
 	assert(sle->isMutable());
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
@@ -120,6 +126,7 @@ void LedgerEntrySet::entryCache(SLE::ref sle)
 	switch (it->second.mAction)
 	{
 		case taaCACHED:
+			assert(sle == it->second.mEntry);
 			it->second.mSeq	    = mSeq;
 			it->second.mEntry   = sle;
 			return;
@@ -131,6 +138,7 @@ void LedgerEntrySet::entryCache(SLE::ref sle)
 
 void LedgerEntrySet::entryCreate(SLE::ref sle)
 {
+	assert(mLedger);
 	assert(sle->isMutable());
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
@@ -143,6 +151,7 @@ void LedgerEntrySet::entryCreate(SLE::ref sle)
 	{
 
 		case taaDELETE:
+			cLog(lsDEBUG) << "Create after Delete = Modify";
 			it->second.mEntry = sle;
 			it->second.mAction = taaMODIFY;
 			it->second.mSeq = mSeq;
@@ -167,6 +176,7 @@ void LedgerEntrySet::entryCreate(SLE::ref sle)
 void LedgerEntrySet::entryModify(SLE::ref sle)
 {
 	assert(sle->isMutable());
+	assert(mLedger);
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
@@ -175,7 +185,7 @@ void LedgerEntrySet::entryModify(SLE::ref sle)
 	}
 
 	assert(it->second.mSeq == mSeq);
-	assert(*it->second.mEntry == *sle);
+	assert(it->second.mEntry == sle);
 
 	switch (it->second.mAction)
 	{
@@ -200,15 +210,17 @@ void LedgerEntrySet::entryModify(SLE::ref sle)
 void LedgerEntrySet::entryDelete(SLE::ref sle)
 {
 	assert(sle->isMutable());
+	assert(mLedger);
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
+		assert(false); // deleting an entry not cached?
 		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaDELETE, mSeq)));
 		return;
 	}
 
 	assert(it->second.mSeq == mSeq);
-	assert(*it->second.mEntry == *sle);
+	assert(it->second.mEntry == sle);
 
 	switch (it->second.mAction)
 	{
@@ -541,8 +553,7 @@ TER LedgerEntrySet::dirAdd(
 	const uint256&						uLedgerIndex,
 	FUNCTION_TYPE<void (SLE::ref)>		fDescriber)
 {
-cLog(lsDEBUG)
-	<< boost::str(boost::format("dirAdd: uRootIndex=%s uLedgerIndex=%s")
+	cLog(lsDEBUG) << boost::str(boost::format("dirAdd: uRootIndex=%s uLedgerIndex=%s")
 		% uRootIndex.ToString()
 		% uLedgerIndex.ToString());
 

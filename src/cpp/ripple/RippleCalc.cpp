@@ -884,9 +884,13 @@ TER RippleCalc::calcNodeAdvance(
 		}
 
 		if (bDirectAdvance)
-		{
-			// Get next quality.
+		{ // Get next quality.
+
+			// FIXME: This looks at the original ledger and doesn't take into account any changes
+			// in the LedgerEntrySet. If this code, for example, created offers, this would
+			// not return the pages they're in.
 			uDirectTip		= lesActive.getLedger()->getNextLedgerIndex(uDirectTip, uDirectEnd);
+
 			bDirectDirDirty	= true;
 			bDirectAdvance	= false;
 
@@ -2584,8 +2588,7 @@ void RippleCalc::pathNext(PathState::ref psrCur, const bool bMultiQuality, const
 
 	assert(psrCur->vpnNodes.size() >= 2);
 
-	lesCurrent	= lesCheckpoint;					// Restore from checkpoint.
-	lesCurrent.bumpSeq();							// Begin ledger variance.
+	lesCurrent	= lesCheckpoint.duplicate();		// Restore from checkpoint.
 
 	psrCur->terStatus	= calcNodeRev(uLast, *psrCur, bMultiQuality);
 
@@ -2594,8 +2597,7 @@ void RippleCalc::pathNext(PathState::ref psrCur, const bool bMultiQuality, const
 	if (tesSUCCESS == psrCur->terStatus)
 	{
 		// Do forward.
-		lesCurrent	= lesCheckpoint;				// Restore from checkpoint.
-		lesCurrent.bumpSeq();						// Begin ledger variance.
+		lesCurrent	= lesCheckpoint.duplicate();	// Restore from checkpoint.
 
 		psrCur->terStatus	= calcNodeFwd(0, *psrCur, bMultiQuality);
 	}
@@ -2647,6 +2649,7 @@ TER RippleCalc::rippleCalc(
 	const bool			bOpenLedger
     )
 {
+	assert(lesActive.isValid());
 	RippleCalc	rc(lesActive, bOpenLedger);
 
 	cLog(lsTRACE) << boost::str(boost::format("rippleCalc> saMaxAmountReq=%s saDstAmountReq=%s")
@@ -2672,7 +2675,7 @@ TER RippleCalc::rippleCalc(
 	    // Build a default path.  Use saDstAmountReq and saMaxAmountReq to imply nodes.
 	    // XXX Might also make a XRP bridge by default.
 
-	    PathState::pointer	pspDirect	= boost::make_shared<PathState>(saDstAmountReq, saMaxAmountReq, lesActive.getLedgerRef());
+	    PathState::pointer	pspDirect	= boost::make_shared<PathState>(saDstAmountReq, saMaxAmountReq);
 
 		if (!pspDirect)
 			return temUNKNOWN;
@@ -2702,10 +2705,10 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Build direct: status: %s"
 
     cLog(lsTRACE) << "rippleCalc: Paths in set: " << spsPaths.size();
 
-int	iIndex	= 0;
+    int	iIndex	= 0;
     BOOST_FOREACH(const STPath& spPath, spsPaths)
     {
-	    PathState::pointer pspExpanded	= boost::make_shared<PathState>(saDstAmountReq, saMaxAmountReq, lesActive.getLedgerRef());
+	    PathState::pointer pspExpanded	= boost::make_shared<PathState>(saDstAmountReq, saMaxAmountReq);
 
 		if (!pspExpanded)
 			return temUNKNOWN;
@@ -2805,7 +2808,10 @@ int iPass	= 0;
 							% pspCur->saInPass.getFullText()
 							% pspCur->saOutPass.getFullText());
 
+						assert(lesActive.isValid());
 						lesActive.swapWith(pspCur->lesEntries);							// For the path, save ledger state.
+						lesActive.invalidate();
+
 						iBest	= pspCur->getIndex();
 					}
 				}
@@ -2840,7 +2846,9 @@ int iPass	= 0;
 		    vuUnfundedBecame.insert(vuUnfundedBecame.end(), pspBest->vUnfundedBecame.begin(), pspBest->vUnfundedBecame.end());
 
 		    // Record best pass' LedgerEntrySet to build off of and potentially return.
+		    assert(pspBest->lesEntries.isValid());
 		    lesActive.swapWith(pspBest->lesEntries);
+		    pspBest->lesEntries.invalidate();
 
 			saMaxAmountAct	+= pspBest->saInPass;
 			saDstAmountAct	+= pspBest->saOutPass;

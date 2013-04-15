@@ -78,6 +78,8 @@ public:
 	LedgerEntrySet duplicate() const;	// Make a duplicate of this set
 	void setTo(const LedgerEntrySet&);	// Set this set to have the same contents as another
 	void swapWith(LedgerEntrySet&);		// Swap the contents of two sets
+	void invalidate()							{ mLedger.reset(); }
+	bool isValid() const						{ return !!mLedger; }
 
 	int getSeq() const							{ return mSeq; }
 	TransactionEngineParams getParams() const	{ return mParams; }

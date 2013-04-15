@@ -107,9 +107,9 @@ extern "C" {
 ** [sqlite3_libversion_number()], [sqlite3_sourceid()],
 ** [sqlite_version()] and [sqlite_source_id()].
 */
-#define SQLITE_VERSION        "3.7.15.2"
-#define SQLITE_VERSION_NUMBER 3007015
-#define SQLITE_SOURCE_ID      "2013-01-09 11:53:05 c0e09560d26f0a6456be9dd3447f5311eb4f238f"
+#define SQLITE_VERSION        "3.7.16.2"
+#define SQLITE_VERSION_NUMBER 3007016
+#define SQLITE_SOURCE_ID      "2013-04-12 11:52:43 cbea02d93865ce0e06789db95fd9168ebac970c7"
 
 /*
 ** CAPI3REF: Run-Time Library Version Numbers
@@ -285,10 +285,10 @@ typedef sqlite_uint64 sqlite3_uint64;
 ** destructors are called is arbitrary.
 **
 ** Applications should [sqlite3_finalize | finalize] all [prepared statements],
-** [sqlite3_blob_close | close] all [BLOB handles], and
+** [sqlite3_blob_close | close] all [BLOB handles], and 
 ** [sqlite3_backup_finish | finish] all [sqlite3_backup] objects associated
 ** with the [sqlite3] object prior to attempting to close the object.  ^If
-** sqlite3_close() is called on a [database connection] that still has
+** sqlite3_close_v2() is called on a [database connection] that still has
 ** outstanding [prepared statements], [BLOB handles], and/or
 ** [sqlite3_backup] objects then it returns SQLITE_OK but the deallocation
 ** of resources is deferred until all [prepared statements], [BLOB handles],
@@ -483,7 +483,17 @@ SQLITE_API int sqlite3_exec(
 #define SQLITE_CORRUPT_VTAB            (SQLITE_CORRUPT | (1<<8))
 #define SQLITE_READONLY_RECOVERY       (SQLITE_READONLY | (1<<8))
 #define SQLITE_READONLY_CANTLOCK       (SQLITE_READONLY | (2<<8))
+#define SQLITE_READONLY_ROLLBACK       (SQLITE_READONLY | (3<<8))
 #define SQLITE_ABORT_ROLLBACK          (SQLITE_ABORT | (2<<8))
+#define SQLITE_CONSTRAINT_CHECK        (SQLITE_CONSTRAINT | (1<<8))
+#define SQLITE_CONSTRAINT_COMMITHOOK   (SQLITE_CONSTRAINT | (2<<8))
+#define SQLITE_CONSTRAINT_FOREIGNKEY   (SQLITE_CONSTRAINT | (3<<8))
+#define SQLITE_CONSTRAINT_FUNCTION     (SQLITE_CONSTRAINT | (4<<8))
+#define SQLITE_CONSTRAINT_NOTNULL      (SQLITE_CONSTRAINT | (5<<8))
+#define SQLITE_CONSTRAINT_PRIMARYKEY   (SQLITE_CONSTRAINT | (6<<8))
+#define SQLITE_CONSTRAINT_TRIGGER      (SQLITE_CONSTRAINT | (7<<8))
+#define SQLITE_CONSTRAINT_UNIQUE       (SQLITE_CONSTRAINT | (8<<8))
+#define SQLITE_CONSTRAINT_VTAB         (SQLITE_CONSTRAINT | (9<<8))
 
 /*
 ** CAPI3REF: Flags For File Open Operations
@@ -2651,10 +2661,10 @@ SQLITE_API void sqlite3_progress_handler(sqlite3*, int, int(*)(void*), void*);
 **
 **   <li> <b>mode</b>: ^(The mode parameter may be set to either "ro", "rw",
 **     "rwc", or "memory". Attempting to set it to any other value is
-**     an error)^.
+**     an error)^. 
 **     ^If "ro" is specified, then the database is opened for read-only 
 **     access, just as if the [SQLITE_OPEN_READONLY] flag had been set in the 
-**     third argument to sqlite3_open_v2(). ^If the mode option is set to
+**     third argument to sqlite3_open_v2(). ^If the mode option is set to 
 **     "rw", then the database is opened for read-write (but not create) 
 **     access, as if SQLITE_OPEN_READWRITE (but not SQLITE_OPEN_CREATE) had 
 **     been set. ^Value "rwc" is equivalent to setting both 
@@ -2670,7 +2680,7 @@ SQLITE_API void sqlite3_progress_handler(sqlite3*, int, int(*)(void*), void*);
 **     sqlite3_open_v2(). ^Setting the cache parameter to "private" is 
 **     equivalent to setting the SQLITE_OPEN_PRIVATECACHE bit.
 **     ^If sqlite3_open_v2() is used and the "cache" parameter is present in
-**     a URI filename, its value overrides any behaviour requested by setting
+**     a URI filename, its value overrides any behavior requested by setting
 **     SQLITE_OPEN_PRIVATECACHE or SQLITE_OPEN_SHAREDCACHE flag.
 ** </ul>
 **
@@ -3988,7 +3998,8 @@ SQLITE_API SQLITE_DEPRECATED int sqlite3_expired(sqlite3_stmt*);
 SQLITE_API SQLITE_DEPRECATED int sqlite3_transfer_bindings(sqlite3_stmt*, sqlite3_stmt*);
 SQLITE_API SQLITE_DEPRECATED int sqlite3_global_recover(void);
 SQLITE_API SQLITE_DEPRECATED void sqlite3_thread_cleanup(void);
-SQLITE_API SQLITE_DEPRECATED int sqlite3_memory_alarm(void(*)(void*,sqlite3_int64,int),void*,sqlite3_int64);
+SQLITE_API SQLITE_DEPRECATED int sqlite3_memory_alarm(void(*)(void*,sqlite3_int64,int),
+                      void*,sqlite3_int64);
 #endif
 
 /*
@@ -4068,14 +4079,17 @@ SQLITE_API int sqlite3_value_numeric_type(sqlite3_value*);
 ** In those cases, sqlite3_aggregate_context() might be called for the
 ** first time from within xFinal().)^
 **
-** ^The sqlite3_aggregate_context(C,N) routine returns a NULL pointer if N is
-** less than or equal to zero or if a memory allocate error occurs.
+** ^The sqlite3_aggregate_context(C,N) routine returns a NULL pointer 
+** when first called if N is less than or equal to zero or if a memory
+** allocate error occurs.
 **
 ** ^(The amount of space allocated by sqlite3_aggregate_context(C,N) is
 ** determined by the N parameter on first successful call.  Changing the
 ** value of N in subsequent call to sqlite3_aggregate_context() within
 ** the same aggregate function instance will not resize the memory
-** allocation.)^
+** allocation.)^  Within the xFinal callback, it is customary to set
+** N=0 in calls to sqlite3_aggregate_context(C,N) so that no 
+** pointless memory allocations occur.
 **
 ** ^SQLite automatically frees the memory allocated by 
 ** sqlite3_aggregate_context() when the aggregate query concludes.
@@ -4531,7 +4545,7 @@ SQLITE_API int sqlite3_sleep(int);
 ** ^The [temp_store_directory pragma] may modify this variable and cause
 ** it to point to memory obtained from [sqlite3_malloc].  ^Furthermore,
 ** the [temp_store_directory pragma] always assumes that any string
-** that this variable points to is held in memory obtained from
+** that this variable points to is held in memory obtained from 
 ** [sqlite3_malloc] and the pragma may attempt to free that memory
 ** using [sqlite3_free].
 ** Hence, if this variable is modified directly, either it should be
@@ -6369,7 +6383,7 @@ struct sqlite3_pcache_page {
 ** parameter to help it determined what action to take:
 **
 ** <table border=1 width=85% align=center>
-** <tr><th> createFlag <th> Behaviour when page is not already in cache
+** <tr><th> createFlag <th> Behavior when page is not already in cache
 ** <tr><td> 0 <td> Do not allocate a new page.  Return NULL.
 ** <tr><td> 1 <td> Allocate a new page if it easy and convenient to do so.
 **                 Otherwise return NULL.

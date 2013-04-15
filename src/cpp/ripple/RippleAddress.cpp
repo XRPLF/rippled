@@ -46,6 +46,11 @@ void RippleAddress::clear()
     vchData.clear();
 }
 
+bool RippleAddress::isSet() const
+{
+	return nVersion != VER_NONE;
+}
+
 std::string RippleAddress::humanAddressType() const
 {
 	switch (nVersion)

@@ -505,6 +505,11 @@ Reader::readObject( Token &tokenStart )
                                     colon, 
                                     tokenObjectEnd );
       }
+
+      // Reject duplicate names
+      if (currentValue().isMember(name))
+        return addError( "Key '" + name + "' appears twice.", tokenName );
+
       Value &value = currentValue()[ name ];
       nodes_.push( &value );
       bool ok = readValue();
