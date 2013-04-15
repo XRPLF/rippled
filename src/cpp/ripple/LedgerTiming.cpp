@@ -53,7 +53,7 @@ bool ContinuousLedgerTiming::shouldClose(
 		return currentMSeconds >= (idleInterval * 1000); // normal idle
 	}
 
-	if (openMSeconds < LEDGER_MIN_CLOSE)
+	if ((openMSeconds < LEDGER_MIN_CLOSE) && ((proposersClosed + proposersValidated) < (previousProposers / 2 )))
 	{
 		cLog(lsDEBUG) << "Must wait minimum time before closing";
 		return false;
