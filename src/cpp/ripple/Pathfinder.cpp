@@ -139,8 +139,8 @@ Pathfinder::Pathfinder(Ledger::ref ledger,
 		mLedger(ledger)
 {
 
-	if ((mSrcAccountID == mDstAccountID) && (mSrcCurrencyID == mDstAmount.getCurrency()))
-	{ // no need to send to same account with same currency
+	if (((mSrcAccountID == mDstAccountID) && (mSrcCurrencyID == mDstAmount.getCurrency())) || mDstAmount.isZero())
+	{ // no need to send to same account with same currency, must send non-zero
 		bValid = false;
 		return;
 	}
