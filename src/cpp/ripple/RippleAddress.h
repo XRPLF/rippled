@@ -22,6 +22,8 @@ private:
 	    VER_FAMILY_SEED			= 33,
 	} VersionEncoding;
 
+	bool	mIsValid;
+
 public:
 	RippleAddress();
 
