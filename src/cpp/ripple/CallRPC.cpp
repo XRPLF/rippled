@@ -421,12 +421,24 @@ Json::Value RPCParser::parseLogLevel(const Json::Value& jvParams)
 // owner_info <seed>|<pass_phrase>|<key> [<ledfer>]
 // account_info <account>|<nickname>|<account_public_key>
 // account_info <seed>|<pass_phrase>|<key> [<ledger>]
-// account_lines <account>|<nickname>|<account_public_key> [<ledger>]
 // account_offers <account>|<nickname>|<account_public_key> [<ledger>]
 Json::Value RPCParser::parseAccountItems(const Json::Value& jvParams)
 {
+	return parseAccountRaw(jvParams, false);
+}
+
+// account_lines <account> <account>|"" [<ledger>]
+Json::Value RPCParser::parseAccountLines(const Json::Value& jvParams)
+{
+	return parseAccountRaw(jvParams, true);
+}
+
+// TODO: Get index from an alternate syntax: rXYZ:<index>
+Json::Value RPCParser::parseAccountRaw(const Json::Value& jvParams, bool bPeer)
+{
 	std::string		strIdent	= jvParams[0u].asString();
-	// TODO: Get index from an alternate syntax: rXYZ:<index>
+	std::string		strPeer		= bPeer && jvParams.size() >= 2 ? jvParams[1u].asString() : "";
+
 	int				iIndex		= 0;
 //	int				iIndex		= jvParams.size() >= 2 ? lexical_cast_s<int>(jvParams[1u].asString()) : 0;
 
@@ -443,7 +455,17 @@ Json::Value RPCParser::parseAccountItems(const Json::Value& jvParams)
 	if (iIndex)
 		jvRequest["account_index"]	= iIndex;
 
-	if (jvParams.size() == 2 && !jvParseLedger(jvRequest, jvParams[1u].asString()))
+	if (!strPeer.empty())
+	{
+		RippleAddress	raPeer;
+
+		if (!raPeer.setAccountPublic(strPeer) && !raPeer.setAccountID(strPeer) && !raPeer.setSeedGeneric(strPeer))
+			return rpcError(rpcACT_MALFORMED);
+
+		jvRequest["peer"]	= strPeer;
+	}
+
+	if (jvParams.size() == (2+bPeer) && !jvParseLedger(jvRequest, jvParams[1u+bPeer].asString()))
 		return rpcError(rpcLGR_IDX_MALFORMED);
 
 	return jvRequest;
@@ -655,7 +677,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		// - Returns an error, or the request.
 		// - To modify the method, provide a new method in the request.
 		{	"account_info",			&RPCParser::parseAccountItems,			1,  2	},
-		{	"account_lines",		&RPCParser::parseAccountItems,			1,  2	},
+		{	"account_lines",		&RPCParser::parseAccountLines,			1,  3	},
 		{	"account_offers",		&RPCParser::parseAccountItems,			1,  2	},
 		{	"account_tx",			&RPCParser::parseAccountTransactions,	1,  8	},
 		{	"book_offers",			&RPCParser::parseBookOffers,			2,  7	},

@@ -71,7 +71,7 @@ void printHelp(const po::options_description& desc)
 
 	cerr << "Commands: " << endl;
 	cerr << "     account_info <account>|<nickname>|<seed>|<pass_phrase>|<key> [<ledger>]" << endl;
-	cerr << "     account_lines <account>|<nickname>|<account_public_key> [<ledger>]" << endl;
+	cerr << "     account_lines <account> <account>|\"\" [<ledger>]" << endl;
 	cerr << "     account_offers <account>|<nickname>|<account_public_key> [<ledger>]" << endl;
 	cerr << "     account_tx accountID [ledger_min [ledger_max [limit [offset]]]] [binary] [count] [descending]" << endl;
 	cerr << "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> [<limit> [<proof> [<marker>]]]]]" << endl;
