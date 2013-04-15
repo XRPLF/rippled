@@ -16,6 +16,9 @@
 // The number of milliseconds we wait minimum to ensure participation
 #	define LEDGER_MIN_CONSENSUS		2000
 
+// The number of milliseconds we wait minimum to ensure others have computed the LCL
+#	define LEDGER_MIN_CLOSE			2000
+
 // Initial resolution of ledger close time
 #	define LEDGER_TIME_ACCURACY		30
 
@@ -62,8 +65,8 @@ public:
 	// Call when a consensus is reached and when any transaction is relayed to be added
 	static bool shouldClose(
 		bool anyTransactions,
-		int previousProposers,		int proposersClosed,
-		int previousSeconds,		int currentSeconds,
+		int previousProposers,		int proposersClosed,	int proposerersValidated,
+		int previousMSeconds,		int currentMSeconds,	int openMSeconds,
 		int idleInterval);
 
 	static bool haveConsensus(

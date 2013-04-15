@@ -485,6 +485,7 @@ void LedgerConsensus::statePreClose()
 { // it is shortly before ledger close time
 	bool anyTransactions = theApp->getLedgerMaster().getCurrentLedger()->peekTransactionMap()->getHash().isNonZero();
 	int proposersClosed = mPeerPositions.size();
+	int proposersValidated = theApp->getValidations().getTrustedValidationCount(mPrevLedgerHash);
 
 	// This ledger is open. This computes how long since the last ledger closed
 	int sinceClose;
@@ -503,8 +504,8 @@ void LedgerConsensus::statePreClose()
 		idleInterval = LEDGER_IDLE_INTERVAL;
 	}
 
-	if (ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed,
-				mPreviousMSeconds, sinceClose, idleInterval))
+	if (ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed, proposersValidated,
+				mPreviousMSeconds, sinceClose, mCurrentMSeconds, idleInterval))
 	{
 		closeLedger();
 	}

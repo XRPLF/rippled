@@ -17,8 +17,10 @@ bool ContinuousLedgerTiming::shouldClose(
 	bool anyTransactions,
 	int previousProposers,		// proposers in the last closing
 	int proposersClosed,		// proposers who have currently closed this ledgers
-	int previousMSeconds,		// seconds the previous ledger took to reach consensus
-	int currentMSeconds,		// seconds since the previous ledger closed
+	int proposersValidated,		// proposers who have validated the last closed ledger
+	int previousMSeconds,		// milliseconds the previous ledger took to reach consensus
+	int currentMSeconds,		// milliseconds since the previous ledger closed
+	int openMSeconds,			// milliseconds since the previous LCL was computed
 	int idleInterval)			// network's desired idle interval
 {
 	if ((previousMSeconds < -1000) || (previousMSeconds > 600000) ||
@@ -49,6 +51,18 @@ bool ContinuousLedgerTiming::shouldClose(
 		}
 #endif
 		return currentMSeconds >= (idleInterval * 1000); // normal idle
+	}
+
+	if (openMSeconds < LEDGER_MIN_CLOSE)
+	{
+		cLog(lsDEBUG) << "Must wait minimum time before closing";
+		return false;
+	}
+
+	if ((currentMSeconds < previousMSeconds) && ((proposersClosed + proposersValidated) < previousProposers))
+	{
+		cLog(lsDEBUG) << "We are waiting for more closes/validations";
+		return false;
 	}
 
 	return true; // this ledger should close now
