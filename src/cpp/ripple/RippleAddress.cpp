@@ -30,39 +30,14 @@ std::size_t hash_value(const CBase58Data& b58)
 	return seed;
 }
 
-RippleAddress::RippleAddress()
+RippleAddress::RippleAddress() : mIsValid(false)
 {
     nVersion = VER_NONE;
 }
 
 bool RippleAddress::isValid() const
 {
-    bool	bValid	= false;
-
-	if (!vchData.empty())
-	{
-		CKey	key;
-
-		switch (nVersion) {
-		case VER_NODE_PUBLIC:
-			bValid	= key.SetPubKey(getNodePublic());
-			break;
-
-		case VER_ACCOUNT_PUBLIC:
-			bValid	= key.SetPubKey(getAccountPublic());
-			break;
-
-		case VER_ACCOUNT_PRIVATE:
-			bValid	= key.SetPrivateKeyU(getAccountPrivate());
-			break;
-
-		default:
-			bValid	= true;
-			break;
-		}
-	}
-
-	return bValid;
+	return mIsValid;
 }
 
 void RippleAddress::clear()
@@ -170,11 +145,15 @@ std::string RippleAddress::humanNodePublic() const
 
 bool RippleAddress::setNodePublic(const std::string& strPublic)
 {
-	return SetString(strPublic.c_str(), VER_NODE_PUBLIC);
+	mIsValid		= SetString(strPublic.c_str(), VER_NODE_PUBLIC);
+
+	return mIsValid;
 }
 
 void RippleAddress::setNodePublic(const std::vector<unsigned char>& vPublic)
 {
+	mIsValid		= true;
+
     SetData(VER_NODE_PUBLIC, vPublic);
 }
 
@@ -264,15 +243,22 @@ std::string RippleAddress::humanNodePrivate() const
 
 bool RippleAddress::setNodePrivate(const std::string& strPrivate)
 {
-    return SetString(strPrivate.c_str(), VER_NODE_PRIVATE);
+	mIsValid		= SetString(strPrivate.c_str(), VER_NODE_PRIVATE);
+
+	return mIsValid;
 }
 
-void RippleAddress::setNodePrivate(const std::vector<unsigned char>& vPrivate) {
+void RippleAddress::setNodePrivate(const std::vector<unsigned char>& vPrivate)
+{
+	mIsValid		= true;
+
     SetData(VER_NODE_PRIVATE, vPrivate);
 }
 
 void RippleAddress::setNodePrivate(uint256 hash256)
 {
+	mIsValid		= true;
+
     SetData(VER_NODE_PRIVATE, hash256.begin(), 32);
 }
 
@@ -348,16 +334,20 @@ bool RippleAddress::setAccountID(const std::string& strAccountID)
 	{
 		setAccountID(uint160());
 
-		return true;
+		mIsValid	= true;
 	}
 	else
 	{
-		return SetString(strAccountID.c_str(), VER_ACCOUNT_ID);
+		mIsValid	= SetString(strAccountID.c_str(), VER_ACCOUNT_ID);
 	}
+
+	return mIsValid;
 }
 
 void RippleAddress::setAccountID(const uint160& hash160)
 {
+	mIsValid		= true;
+
     SetData(VER_ACCOUNT_ID, hash160.begin(), 20);
 }
 
@@ -412,11 +402,15 @@ std::string RippleAddress::humanAccountPublic() const
 
 bool RippleAddress::setAccountPublic(const std::string& strPublic)
 {
-    return SetString(strPublic.c_str(), VER_ACCOUNT_PUBLIC);
+    mIsValid		= SetString(strPublic.c_str(), VER_ACCOUNT_PUBLIC);
+
+	return mIsValid;
 }
 
 void RippleAddress::setAccountPublic(const std::vector<unsigned char>& vPublic)
 {
+	mIsValid		= true;
+
     SetData(VER_ACCOUNT_PUBLIC, vPublic);
 }
 
@@ -498,16 +492,22 @@ std::string RippleAddress::humanAccountPrivate() const
 
 bool RippleAddress::setAccountPrivate(const std::string& strPrivate)
 {
-    return SetString(strPrivate.c_str(), VER_ACCOUNT_PRIVATE);
+	mIsValid		= SetString(strPrivate.c_str(), VER_ACCOUNT_PRIVATE);
+
+	return mIsValid;
 }
 
 void RippleAddress::setAccountPrivate(const std::vector<unsigned char>& vPrivate)
 {
+	mIsValid		= true;
+
     SetData(VER_ACCOUNT_PRIVATE, vPrivate);
 }
 
 void RippleAddress::setAccountPrivate(uint256 hash256)
 {
+	mIsValid		= true;
+
     SetData(VER_ACCOUNT_PRIVATE, hash256.begin(), 32);
 }
 
@@ -678,11 +678,15 @@ std::string RippleAddress::humanGenerator() const
 
 bool RippleAddress::setGenerator(const std::string& strGenerator)
 {
-    return SetString(strGenerator.c_str(), VER_FAMILY_GENERATOR);
+	mIsValid		= SetString(strGenerator.c_str(), VER_FAMILY_GENERATOR);
+
+	return mIsValid;
 }
 
 void RippleAddress::setGenerator(const std::vector<unsigned char>& vPublic)
 {
+	mIsValid		= true;
+
     SetData(VER_FAMILY_GENERATOR, vPublic);
 }
 
@@ -773,7 +777,9 @@ int RippleAddress::setSeed1751(const std::string& strHuman1751)
 
 bool RippleAddress::setSeed(const std::string& strSeed)
 {
-    return SetString(strSeed.c_str(), VER_FAMILY_SEED);
+	mIsValid		= SetString(strSeed.c_str(), VER_FAMILY_SEED);
+
+	return mIsValid;
 }
 
 extern const char *ALPHABET;
@@ -817,6 +823,8 @@ bool RippleAddress::setSeedGeneric(const std::string& strText)
 }
 
 void RippleAddress::setSeed(uint128 hash128) {
+	mIsValid		= true;
+
     SetData(VER_FAMILY_SEED, hash128.begin(), 16);
 }
 

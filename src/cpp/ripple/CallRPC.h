@@ -10,7 +10,10 @@ class RPCParser
 protected:
 	typedef Json::Value (RPCParser::*parseFuncPtr)(const Json::Value &jvParams);
 
+	Json::Value parseAccountRaw(const Json::Value& jvParams, bool bPeer);
+
 	Json::Value parseAccountItems(const Json::Value& jvParams);
+	Json::Value parseAccountLines(const Json::Value& jvParams);
 	Json::Value parseAccountTransactions(const Json::Value& jvParams);
 	Json::Value parseAsIs(const Json::Value& jvParams);
 	Json::Value parseBookOffers(const Json::Value& jvParams);

@@ -899,11 +899,23 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost)
 	if (!jvResult.empty())
 		return jvResult;
 
-	// Get info on account.
+	std::string		strPeer		= jvRequest.isMember("peer") ? jvRequest["peer"].asString() : "";
+	bool			bPeerIndex		= jvRequest.isMember("peer_index");
+	int				iPeerIndex		= bIndex ? jvRequest["peer_index"].asUInt() : 0;
 
-	jvResult["account"]	= raAccount.humanAccountID();
-	if (bIndex)
-		jvResult["account_index"]	= iIndex;
+	RippleAddress	raPeer;
+
+	if (!strPeer.empty())
+	{
+		jvResult["peer"]	= raAccount.humanAccountID();
+		if (bPeerIndex)
+			jvResult["peer_index"]	= iPeerIndex;
+
+		jvResult	= accountFromString(lpLedger, raPeer, bPeerIndex, strPeer, iPeerIndex, false);
+
+		if (!jvResult.empty())
+			return jvResult;
+	}
 
 	AccountState::pointer	as		= mNetOps->getAccountState(lpLedger, raAccount);
 	if (as)
@@ -911,7 +923,6 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost)
 		Json::Value	jsonLines(Json::arrayValue);
 
 		jvResult["account"]	= raAccount.humanAccountID();
-
 
 		// XXX This is wrong, we do access the current ledger and do need to worry about changes.
 		// We access a committed ledger and need not worry about changes.
@@ -922,23 +933,26 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost)
 		{
 			RippleState* line=(RippleState*)item.get();
 
-			STAmount		saBalance	= line->getBalance();
-			STAmount		saLimit		= line->getLimit();
-			STAmount		saLimitPeer	= line->getLimitPeer();
+			if (!raPeer.isValid() || raPeer.getAccountID() == line->getAccountIDPeer())
+			{
+				STAmount		saBalance	= line->getBalance();
+				STAmount		saLimit		= line->getLimit();
+				STAmount		saLimitPeer	= line->getLimitPeer();
 
-			Json::Value			jPeer	= Json::Value(Json::objectValue);
+				Json::Value			jPeer	= Json::Value(Json::objectValue);
 
-			jPeer["account"]		= RippleAddress::createHumanAccountID(line->getAccountIDPeer());
-			// Amount reported is positive if current account holds other account's IOUs.
-			// Amount reported is negative if other account holds current account's IOUs.
-			jPeer["balance"]		= saBalance.getText();
-			jPeer["currency"]		= saBalance.getHumanCurrency();
-			jPeer["limit"]			= saLimit.getText();
-			jPeer["limit_peer"]		= saLimitPeer.getText();
-			jPeer["quality_in"]		= static_cast<Json::UInt>(line->getQualityIn());
-			jPeer["quality_out"]	= static_cast<Json::UInt>(line->getQualityOut());
+				jPeer["account"]		= RippleAddress::createHumanAccountID(line->getAccountIDPeer());
+				// Amount reported is positive if current account holds other account's IOUs.
+				// Amount reported is negative if other account holds current account's IOUs.
+				jPeer["balance"]		= saBalance.getText();
+				jPeer["currency"]		= saBalance.getHumanCurrency();
+				jPeer["limit"]			= saLimit.getText();
+				jPeer["limit_peer"]		= saLimitPeer.getText();
+				jPeer["quality_in"]		= static_cast<Json::UInt>(line->getQualityIn());
+				jPeer["quality_out"]	= static_cast<Json::UInt>(line->getQualityOut());
 
-			jsonLines.append(jPeer);
+				jsonLines.append(jPeer);
+			}
 		}
 		jvResult["lines"]	= jsonLines;
 	}
