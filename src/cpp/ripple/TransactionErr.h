@@ -31,6 +31,7 @@ enum TER	// aka TransactionEngineResult
 	temMALFORMED	= -299,
 	temBAD_AMOUNT,
 	temBAD_AUTH_MASTER,
+	temBAD_CURRENCY,
 	temBAD_FEE,
 	temBAD_EXPIRATION,
 	temBAD_ISSUER,

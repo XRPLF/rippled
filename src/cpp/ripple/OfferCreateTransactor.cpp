@@ -436,6 +436,12 @@ TER OfferCreateTransactor::doApply()
 
 		terResult	= temREDUNDANT;
 	}
+	else if (CURRENCY_BAD == uPaysCurrency || CURRENCY_BAD == uGetsCurrency)
+	{
+		cLog(lsWARNING) << "OfferCreate: Malformed offer: Bad currency.";
+
+		teResult	= temBAD_CURRENCY;
+	}
 	else if (saTakerPays.isNative() != !uPaysIssuerID || saTakerGets.isNative() != !uGetsIssuerID)
 	{
 		cLog(lsWARNING) << "OfferCreate: Malformed offer: bad issuer";

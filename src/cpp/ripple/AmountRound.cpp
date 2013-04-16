@@ -231,10 +231,8 @@ STAmount STAmount::mulRound(const STAmount& v1, const STAmount& v2,
 	if ((BN_add_word64(&v, value1) != 1) || (BN_mul_word64(&v, value2) != 1))
 		throw std::runtime_error("internal bn error");
 
-	if (resultNegative != roundUp)
+	if (resultNegative != roundUp) // rounding down is automatic when we divide
 		BN_add_word64(&v, tenTo14m1);
-	else
-		BN_sub_word64(&v, tenTo14m1);
 
 	if	(BN_div_word64(&v, tenTo14) == ((uint64) -1))
 		throw std::runtime_error("internal bn error");
@@ -279,10 +277,8 @@ STAmount STAmount::divRound(const STAmount& num, const STAmount& den,
 	if ((BN_add_word64(&v, numVal) != 1) || (BN_mul_word64(&v, tenTo17) != 1))
 		throw std::runtime_error("internal bn error");
 
-	if (resultNegative != roundUp)
+	if (resultNegative != roundUp) // Rounding down is automatic when we divide
 		BN_add_word64(&v, denVal - 1);
-	else
-		BN_sub_word64(&v, denVal - 1);
 
 	if (BN_div_word64(&v, denVal) == ((uint64) -1))
 		throw std::runtime_error("internal bn error");

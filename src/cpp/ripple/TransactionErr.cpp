@@ -51,6 +51,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	temMALFORMED,			"temMALFORMED",				"Malformed transaction."								},
 		{	temBAD_AMOUNT,			"temBAD_AMOUNT",			"Can only send positive amounts."						},
 		{	temBAD_AUTH_MASTER,		"temBAD_AUTH_MASTER",		"Auth for unclaimed account needs correct master key."	},
+		{	temBAD_CURRENCY,		"temBAD_CURRENCY",			"Malformed: Bad currency."								},
 		{	temBAD_FEE,				"temBAD_FEE",				"Invalid fee, negative or not XRP."						},
 		{	temBAD_EXPIRATION,		"temBAD_EXPIRATION",		"Malformed: Bad expiration."							},
 		{	temBAD_ISSUER,			"temBAD_ISSUER",			"Malformed: Bad issuer."								},
