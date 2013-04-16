@@ -169,7 +169,7 @@ public:
 	uint64 scaleFeeBase(uint64 fee, uint64 baseFee, uint32 referenceFeeUnits);
 
 	// Scale using load as well as base rate
-	uint64 scaleFeeLoad(uint64 fee, uint64 baseFee, uint32 referenceFeeUnits);
+	uint64 scaleFeeLoad(uint64 fee, uint64 baseFee, uint32 referenceFeeUnits, bool bAdmin);
 
 	uint32 getRemoteFee();
 	uint32 getLocalFee();

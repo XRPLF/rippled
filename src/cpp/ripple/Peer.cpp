@@ -850,7 +850,7 @@ static void checkTransaction(Job&, int flags, SerializedTransaction::pointer stx
 		else
 			tx = boost::make_shared<Transaction>(stx, false);
 
-		theApp->getOPs().processTransaction(tx);
+		theApp->getOPs().processTransaction(tx, (flags & SF_TRUSTED) != 0);
 
 #ifndef TRUST_NETWORK
 	}
@@ -888,6 +888,8 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 			if ((flags & SF_RETRY) == 0)
 				return;
 		}
+		if (mCluster)
+			flags |= SF_TRUSTED | SF_SIGGOOD;
 
 		theApp->getJobQueue().addJob(jtTRANSACTION, "recvTransction->checkTransaction",
 			BIND_TYPE(&checkTransaction, P_1, flags, stx, boost::weak_ptr<Peer>(shared_from_this())));
@@ -1043,13 +1045,13 @@ void Peer::recvHaveTxSet(ripple::TMHaveTransactionSet& packet)
 }
 
 static void checkValidation(Job&, SerializedValidation::pointer val, uint256 signingHash,
-	bool isTrusted, boost::shared_ptr<ripple::TMValidation> packet, boost::weak_ptr<Peer> peer)
+	bool isTrusted, bool isCluster, boost::shared_ptr<ripple::TMValidation> packet, boost::weak_ptr<Peer> peer)
 {
 #ifndef TRUST_NETWORK
 	try
 #endif
 	{
-		if (!val->isValid(signingHash))
+		if (!isCluster && !val->isValid(signingHash))
 		{
 			cLog(lsWARNING) << "Validation is invalid";
 			Peer::punishPeer(peer, LT_InvalidRequest);
@@ -1106,7 +1108,7 @@ void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet)
 
 		bool isTrusted = theApp->getUNL().nodeInUNL(val->getSignerPublic());
 		theApp->getJobQueue().addJob(isTrusted ? jtVALIDATION_t : jtVALIDATION_ut, "recvValidation->checkValidation",
-			BIND_TYPE(&checkValidation, P_1, val, signingHash, isTrusted, packet,
+			BIND_TYPE(&checkValidation, P_1, val, signingHash, isTrusted, mCluster, packet,
 			boost::weak_ptr<Peer>(shared_from_this())));
 	}
 #ifndef TRUST_NETWORK

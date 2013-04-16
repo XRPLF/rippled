@@ -350,7 +350,7 @@ public:
 	}
 
 	uint64 scaleFeeBase(uint64 fee);
-	uint64 scaleFeeLoad(uint64 fee);
+	uint64 scaleFeeLoad(uint64 fee, bool bAdmin);
 
 
 	Json::Value getJson(int options);

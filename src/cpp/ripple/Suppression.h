@@ -19,6 +19,7 @@ DEFINE_INSTANCE(Suppression);
 #define SF_SIGGOOD		0x04	// Signature is good
 #define SF_SAVED		0x08
 #define SF_RETRY		0x10	// Transaction can be retried
+#define SF_TRUSTED		0x20	// comes from trusted source
 
 class Suppression : private IS_INSTANCE(Suppression)
 {

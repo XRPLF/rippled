@@ -199,7 +199,7 @@ uint64 LoadFeeTrack::mulDiv(uint64 value, uint32 mul, uint64 div)
 		return (value * mul) / div;
 }
 
-uint64 LoadFeeTrack::scaleFeeLoad(uint64 fee, uint64 baseFee, uint32 referenceFeeUnits)
+uint64 LoadFeeTrack::scaleFeeLoad(uint64 fee, uint64 baseFee, uint32 referenceFeeUnits, bool bAdmin)
 {
 	static uint64 midrange(0x00000000FFFFFFFF);
 
@@ -209,9 +209,15 @@ uint64 LoadFeeTrack::scaleFeeLoad(uint64 fee, uint64 baseFee, uint32 referenceFe
 	else					// normal fee, multiply first for accuracy
 		fee *= referenceFeeUnits;
 
+	uint32 feeFactor = std::max(mLocalTxnLoadFee, mRemoteTxnLoadFee);
+
+	// Let admins pay the normal fee until the local load exceeds four times the remote
+	if (bAdmin && (feeFactor > mRemoteTxnLoadFee) && (feeFactor < (4 * mRemoteTxnLoadFee)))
+		feeFactor = mRemoteTxnLoadFee;
+
 	{
 		boost::mutex::scoped_lock sl(mLock);
-		fee = mulDiv(fee, std::max(mLocalTxnLoadFee, mRemoteTxnLoadFee), lftNormalFee);
+		fee = mulDiv(fee, feeFactor, lftNormalFee);
 	}
 
 	if (big)				// Fee was big to start, must now multiply
@@ -381,9 +387,9 @@ BOOST_AUTO_TEST_CASE(LoadFeeTrack_test)
 	LoadFeeTrack l;
 
 	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(10000, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE), 10000);
-	BOOST_REQUIRE_EQUAL(l.scaleFeeLoad(10000, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE), 10000);
+	BOOST_REQUIRE_EQUAL(l.scaleFeeLoad(10000, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE, false), 10000);
 	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(1, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE), 1);
-	BOOST_REQUIRE_EQUAL(l.scaleFeeLoad(1, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE), 1);
+	BOOST_REQUIRE_EQUAL(l.scaleFeeLoad(1, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE, false), 1);
 
 	// Check new default fee values give same fees as old defaults
 	BOOST_REQUIRE_EQUAL(l.scaleFeeBase(d.FEE_DEFAULT, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE), 10);

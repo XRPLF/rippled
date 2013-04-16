@@ -24,6 +24,8 @@ enum TransactionEngineParams
 
 	tapRETRY			= 0x20,	// This is not the transaction's last pass
 		// Transaction can be retried, soft failures allowed
+
+	tapADMIN			= 0x40,	// Transaction came from a privileged source
 };
 
 enum LedgerEntryAction

@@ -324,7 +324,8 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 
 	try
 	{
-		tpTrans	= mNetOps->submitTransactionSync(tpTrans, bSubmit); // FIXME: For performance, should use asynch interface
+		// FIXME: For performance, should use asynch interface
+		tpTrans	= mNetOps->submitTransactionSync(tpTrans, mRole == ADMIN, bSubmit);
 
 		if (!tpTrans) {
 			jvResult["error"]			= "invalidTransaction";
@@ -1452,7 +1453,7 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest, int& cost)
 
 	try
 	{
-		(void) mNetOps->processTransaction(tpTrans);
+		(void) mNetOps->processTransaction(tpTrans, mRole == ADMIN);
 	}
 	catch (std::exception& e)
 	{

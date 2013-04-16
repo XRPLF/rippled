@@ -1618,11 +1618,11 @@ uint64 Ledger::scaleFeeBase(uint64 fee)
 	return theApp->getFeeTrack().scaleFeeBase(fee, mBaseFee, mReferenceFeeUnits);
 }
 
-uint64 Ledger::scaleFeeLoad(uint64 fee)
+uint64 Ledger::scaleFeeLoad(uint64 fee, bool bAdmin)
 {
 	if (!mBaseFee)
 		updateFees();
-	return theApp->getFeeTrack().scaleFeeLoad(fee, mBaseFee, mReferenceFeeUnits);
+	return theApp->getFeeTrack().scaleFeeLoad(fee, mBaseFee, mReferenceFeeUnits, bAdmin);
 }
 
 std::vector<uint256> Ledger::getNeededTransactionHashes(int max)

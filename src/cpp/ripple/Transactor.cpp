@@ -42,7 +42,7 @@ Transactor::Transactor(const SerializedTransaction& txn,TransactionEngineParams 
 
 void Transactor::calculateFee()
 {
-	mFeeDue	= STAmount(mEngine->getLedger()->scaleFeeLoad(calculateBaseFee()));
+	mFeeDue	= STAmount(mEngine->getLedger()->scaleFeeLoad(calculateBaseFee(), isSetBit(mParams, tapADMIN)));
 }
 
 uint64 Transactor::calculateBaseFee()

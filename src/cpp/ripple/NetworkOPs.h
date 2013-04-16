@@ -188,12 +188,12 @@ public:
 	//
 	typedef FUNCTION_TYPE<void (Transaction::pointer, TER)> stCallback; // must complete immediately
 	void submitTransaction(Job&, SerializedTransaction::pointer, stCallback callback = stCallback());
-	Transaction::pointer submitTransactionSync(Transaction::ref tpTrans, bool bSubmit=true);
+	Transaction::pointer submitTransactionSync(Transaction::ref tpTrans, bool bAdmin, bool bSubmit);
 
 	void runTransactionQueue();
-	Transaction::pointer processTransaction(Transaction::pointer, stCallback);
-	Transaction::pointer processTransaction(Transaction::pointer transaction)
-	{ return processTransaction(transaction, stCallback()); }
+	Transaction::pointer processTransaction(Transaction::pointer, bool bAdmin, stCallback);
+	Transaction::pointer processTransaction(Transaction::pointer transaction, bool bAdmin)
+	{ return processTransaction(transaction, bAdmin, stCallback()); }
 
 	Transaction::pointer findTransactionByID(const uint256& transactionID);
 #if 0

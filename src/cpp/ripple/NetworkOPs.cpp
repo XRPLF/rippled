@@ -212,12 +212,12 @@ void NetworkOPs::submitTransaction(Job&, SerializedTransaction::pointer iTrans, 
 
 	// FIXME: Should submit to job queue
 	theApp->getIOService().post(boost::bind(&NetworkOPs::processTransaction, this,
-		boost::make_shared<Transaction>(trans, false), callback));
+		boost::make_shared<Transaction>(trans, false), false, callback));
 }
 
 // Sterilize transaction through serialization.
 // This is fully synchronous and deprecated
-Transaction::pointer NetworkOPs::submitTransactionSync(Transaction::ref tpTrans, bool bSubmit)
+Transaction::pointer NetworkOPs::submitTransactionSync(Transaction::ref tpTrans, bool bAdmin, bool bSubmit)
 {
 	Serializer s;
 	tpTrans->getSTransaction()->add(s);
@@ -232,7 +232,7 @@ Transaction::pointer NetworkOPs::submitTransactionSync(Transaction::ref tpTrans,
 	else if (tpTransNew->getSTransaction()->isEquivalent(*tpTrans->getSTransaction()))
 	{
 		if (bSubmit)
-			(void) NetworkOPs::processTransaction(tpTransNew);
+			(void) NetworkOPs::processTransaction(tpTransNew, bAdmin);
 	}
 	else
 	{
@@ -326,7 +326,7 @@ void NetworkOPs::runTransactionQueue()
 		theApp->getIOService().post(boost::bind(&NetworkOPs::runTransactionQueue, this));
 }
 
-Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, stCallback callback)
+Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, bool bAdmin, stCallback callback)
 {
 	LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC, "ProcessTXN");
 
@@ -352,7 +352,8 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 	Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(trans->getID(), true);
 	bool didApply;
-	TER r = mLedgerMaster->doTransaction(trans->getSTransaction(), tapOPEN_LEDGER | tapNO_CHECK_SIGN, didApply);
+	TER r = mLedgerMaster->doTransaction(trans->getSTransaction(),
+		bAdmin ? (tapOPEN_LEDGER | tapNO_CHECK_SIGN | tapADMIN) : (tapOPEN_LEDGER | tapNO_CHECK_SIGN), didApply);
 	trans->setResult(r);
 
 	if (isTemMalformed(r)) // malformed, cache bad
