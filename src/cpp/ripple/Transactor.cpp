@@ -8,6 +8,7 @@
 #include "OfferCancelTransactor.h"
 #include "OfferCreateTransactor.h"
 #include "TrustSetTransactor.h"
+#include "ChangeTransactor.h"
 
 SETUP_LOG();
 
@@ -29,6 +30,11 @@ UPTR_T<Transactor> Transactor::makeTransactor(const SerializedTransaction& txn,T
 		return UPTR_T<Transactor>(new OfferCancelTransactor(txn, params, engine));
 	case ttWALLET_ADD:
 		return UPTR_T<Transactor>(new WalletAddTransactor(txn, params, engine));
+
+	case ttFEATURE:
+	case ttFEE:
+		return UPTR_T<Transactor>(new ChangeTransactor(txn, params, engine));
+
 	default:
 		return UPTR_T<Transactor>();
 	}

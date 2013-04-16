@@ -315,6 +315,17 @@ bool STVector256::isEquivalent(const SerializedType& t) const
 	return v && (mValue == v->mValue);
 }
 
+bool STVector256::hasValue(const uint256& v) const
+{
+	BOOST_FOREACH(const uint256& hash, mValue)
+	{
+		if (hash == v)
+			return true;
+	}
+
+	return false;
+}
+
 //
 // STAccount
 //

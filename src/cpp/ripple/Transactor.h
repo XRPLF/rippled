@@ -22,9 +22,9 @@ protected:
 	bool							mHasAuthKey;
 	RippleAddress					mSigningPubKey;
 
-	TER preCheck();
-	TER checkSeq();
-	TER payFee();
+	virtual TER preCheck();
+	virtual TER checkSeq();
+	virtual TER payFee();
 
 	void calculateFee();
 

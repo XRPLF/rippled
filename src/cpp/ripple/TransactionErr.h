@@ -101,6 +101,7 @@ enum TER	// aka TransactionEngineResult
 	terNO_LINE,				// Internal flag.
 	terOWNERS,				// Can't succeed with non-zero owner count.
 	terPRE_SEQ,				// Can't pay fee, no point in forwarding, therefore don't burden network.
+	terLAST,				// Process after all other transactions
 
 	// 0: S Success (success)
 	// Causes:
