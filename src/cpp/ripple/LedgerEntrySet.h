@@ -16,14 +16,16 @@ enum TransactionEngineParams
 {
 	tapNONE				= 0x00,
 
-	tapNO_CHECK_SIGN	= 0x01,	// Signature already checked
+	tapNO_CHECK_SIGN	= 0x01,		// Signature already checked
 
-	tapOPEN_LEDGER		= 0x10,	// Transaction is running against an open ledger
+	tapOPEN_LEDGER		= 0x10,		// Transaction is running against an open ledger
 		// true = failures are not forwarded, check transaction fee
 		// false = debit ledger for consumed funds
 
-	tapRETRY			= 0x20,	// This is not the transaction's last pass
+	tapRETRY			= 0x20,		// This is not the transaction's last pass
 		// Transaction can be retried, soft failures allowed
+
+	tapADMIN			= 0x400,	// Transaction came from a privileged source
 };
 
 enum LedgerEntryAction

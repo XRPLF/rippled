@@ -869,7 +869,7 @@ public:
 	void setValue(const STVector256& v)				{ mValue = v.mValue; }
 	void setValue(const std::vector<uint256>& v)	{ mValue = v; }
 	void addValue(const uint256& v)					{ mValue.push_back(v); }
-
+	bool hasValue(const uint256& v) const;
 
 	Json::Value getJson(int) const;
 };
