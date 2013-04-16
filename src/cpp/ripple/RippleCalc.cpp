@@ -908,7 +908,7 @@ TER RippleCalc::calcNodeAdvance(
 			{
 				// No more offers. Should be done rather than fall off end of book.
 				cLog(lsWARNING) << "calcNodeAdvance: Unreachable: Fell off end of order book.";
-				assert(false);
+				// assert(false);
 
 				terResult	= tefEXCEPTION;
 			}
