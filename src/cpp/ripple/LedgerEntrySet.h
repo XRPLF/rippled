@@ -120,6 +120,9 @@ public:
 	bool				dirNext(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
 	TER					dirCount(const uint256& uDirIndex, uint32& uCount);
 
+	uint256				getNextLedgerIndex(const uint256& uHash);
+	uint256				getNextLedgerIndex(const uint256& uHash, const uint256& uEnd);
+
 	void				ownerCountAdjust(const uint160& uOwnerID, int iAmount, SLE::ref sleAccountRoot=SLE::pointer());
 
 	// Offer functions.

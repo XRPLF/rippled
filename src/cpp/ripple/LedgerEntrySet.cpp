@@ -892,6 +892,39 @@ bool LedgerEntrySet::dirNext(
 	return true;
 }
 
+uint256 LedgerEntrySet::getNextLedgerIndex(const uint256& uHash)
+{
+	// find next node in ledger that isn't deleted by LES
+	uint256 ledgerNext = uHash;
+	std::map<uint256, LedgerEntrySetEntry>::const_iterator it;
+	do
+	{
+		ledgerNext = mLedger->getNextLedgerIndex(ledgerNext);
+		it  = mEntries.find(ledgerNext);
+	} while ((it != mEntries.end()) && (it->second.mAction == taaDELETE));
+
+	// find next node in LES that isn't deleted
+	for (it = mEntries.upper_bound(uHash); it != mEntries.end(); ++it)
+	{
+
+		// node found in LES, node found in ledger, return earliest
+		if (it->second.mAction != taaDELETE)
+			return (ledgerNext < it->first) ? ledgerNext : it->first;
+
+	}
+
+	// nothing next in LES, return next ledger node
+	return ledgerNext;
+}
+
+uint256 LedgerEntrySet::getNextLedgerIndex(const uint256& uHash, const uint256& uEnd)
+{
+	uint256 next = getNextLedgerIndex(uHash);
+	if (next > uEnd)
+		return uint256();
+	return next;
+}
+
 // If there is a count, adjust the owner count by iAmount. Otherwise, compute the owner count and store it.
 void LedgerEntrySet::ownerCountAdjust(const uint160& uOwnerID, int iAmount, SLE::ref sleAccountRoot)
 {
