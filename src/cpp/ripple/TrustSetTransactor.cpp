@@ -250,7 +250,7 @@ TER TrustSetTransactor::doApply()
 
 		if (bDefault || CURRENCY_BAD == uCurrencyID)
 		{
-			// Can delete.
+			// Delete.
 
 			terResult	= mEngine->getNodes().trustDelete(sleRippleState, uLowAccountID, uHighAccountID);
 		}

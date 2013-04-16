@@ -440,7 +440,7 @@ TER OfferCreateTransactor::doApply()
 	{
 		cLog(lsWARNING) << "OfferCreate: Malformed offer: Bad currency.";
 
-		teResult	= temBAD_CURRENCY;
+		terResult	= temBAD_CURRENCY;
 	}
 	else if (saTakerPays.isNative() != !uPaysIssuerID || saTakerGets.isNative() != !uGetsIssuerID)
 	{

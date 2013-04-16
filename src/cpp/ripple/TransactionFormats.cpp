@@ -78,7 +78,6 @@ void TFInit()
 		;
 
 	DECLARE_TF(SetFee, ttFEE)
-		<< SOElement(sfFeatures,			SOE_REQUIRED)
 		<< SOElement(sfBaseFee,				SOE_REQUIRED)
 		<< SOElement(sfReferenceFeeUnits,	SOE_REQUIRED)
 		<< SOElement(sfReserveBase,			SOE_REQUIRED)

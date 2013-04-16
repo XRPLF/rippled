@@ -887,6 +887,7 @@ TER RippleCalc::calcNodeAdvance(
 		{
 			// Get next quality.
 			uDirectTip		= lesActive.getLedger()->getNextLedgerIndex(uDirectTip, uDirectEnd);
+
 			bDirectDirDirty	= true;
 			bDirectAdvance	= false;
 

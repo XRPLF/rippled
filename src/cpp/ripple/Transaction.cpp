@@ -295,10 +295,9 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 // options 1 to include the date of the transaction
 Json::Value Transaction::getJson(int options, bool binary) const
 {
-	
 	Json::Value ret(mTransaction->getJson(0, binary));
 
-	if (mInLedger) 
+	if (mInLedger)
 	{
 		ret["inLedger"] = mInLedger;
 
