@@ -600,7 +600,6 @@ void server<endpoint>::connection<connection_type>::handle_read_request(
 				reply.append("\0", 1);
 
                 m_version = -1;
-                assert(m_response.get_status_code() != http::status_code::SWITCHING_PROTOCOLS);
                 shared_const_buffer buffer(reply);
                 m_connection.get_socket().async_write(
                     shared_const_buffer(reply),
