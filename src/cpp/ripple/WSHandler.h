@@ -158,11 +158,57 @@ public:
 
 	void on_message(connection_ptr cpClient, message_ptr mpMessage)
 	{
-		theApp->getJobQueue().addJob(jtCLIENT, "WSClient::command",
-			BIND_TYPE(&WSServerHandler<endpoint_type>::do_message, this, P_1, cpClient, mpMessage));
+		wsc_ptr ptr;
+		{
+			boost::mutex::scoped_lock	sl(mMapLock);
+			typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find(cpClient);
+			if (it == mMap.end())
+				return;
+			ptr = it->second;
+		}
+
+		bool bRejected, bRunQ;
+		ptr->rcvMessage(mpMessage, bRejected, bRunQ);
+		if (bRejected)
+		{
+			try
+			{
+				cLog(lsDEBUG) << "Ws:: Rejected("
+					<< cpClient->get_socket().lowest_layer().remote_endpoint().address().to_string()
+					<< ") '" << mpMessage->get_payload() << "'";
+			}
+			catch (...)
+			{
+			}
+		}
+		if (bRunQ)
+			theApp->getJobQueue().addJob(jtCLIENT, "WSClient::command",
+				BIND_TYPE(&WSServerHandler<endpoint_type>::do_messages, this, P_1, cpClient));
 	}
 
-	void do_message(Job& job, connection_ptr cpClient, message_ptr mpMessage)
+	void do_messages(Job& job, connection_ptr cpClient)
+	{
+		wsc_ptr ptr;
+		{
+			boost::mutex::scoped_lock	sl(mMapLock);
+			typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find(cpClient);
+			if (it == mMap.end())
+				return;
+			ptr = it->second;
+		}
+
+		for (int i = 0; i < 10; ++i)
+		{
+			message_ptr msg = ptr->getMessage();
+			if (!msg)
+				return;
+			do_message(job, cpClient, ptr, msg);
+		}
+		theApp->getJobQueue().addJob(jtCLIENT, "WSClient::more",
+			BIND_TYPE(&WSServerHandler<endpoint_type>::do_messages, this, P_1, cpClient));
+	}
+
+	void do_message(Job& job, const connection_ptr& cpClient, const wsc_ptr& conn, const message_ptr& mpMessage)
 	{
 		Json::Value		jvRequest;
 		Json::Reader	jrReader;
@@ -200,15 +246,6 @@ public:
 		{
 			if (jvRequest.isMember("command"))
 				job.rename(std::string("WSClient::") + jvRequest["command"].asString());
-			boost::shared_ptr< WSConnection<endpoint_type> > conn;
-			{
-				boost::mutex::scoped_lock	sl(mMapLock);
-				typedef boost::shared_ptr< WSConnection<endpoint_type> > wsc_ptr;
-				typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find(cpClient);
-				if (it == mMap.end())
-					return;
-				conn = it->second;
-			}
 			send(cpClient, conn->invokeCommand(jvRequest), false);
 		}
 	}

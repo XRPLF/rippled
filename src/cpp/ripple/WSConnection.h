@@ -51,6 +51,10 @@ protected:
 	boost::asio::deadline_timer			mPingTimer;
 	bool								mPinged;
 
+	boost::recursive_mutex				mRcvQueueLock;
+	std::queue<message_ptr>				mRcvQueue;
+	bool								mRcvQueueRunning;
+
 public:
 	//	WSConnection()
 	//		: mHandler((WSServerHandler<websocketpp::WSDOOR_SERVER>*)(NULL)),
@@ -59,7 +63,7 @@ public:
 	WSConnection(WSServerHandler<endpoint_type>* wshpHandler, const connection_ptr& cpConnection)
 		: mHandler(wshpHandler), mConnection(cpConnection), mNetwork(theApp->getOPs()),
 		mRemoteIP(cpConnection->get_socket().lowest_layer().remote_endpoint().address().to_string()),
-		mLoadSource(mRemoteIP), mPingTimer(cpConnection->get_io_service()), mPinged(false)
+		mLoadSource(mRemoteIP), mPingTimer(cpConnection->get_io_service()), mPinged(false), mRcvQueueRunning(false)
 	{
 		cLog(lsDEBUG) << "Websocket connection from " << mRemoteIP;
 		setPingTimer();
@@ -192,6 +196,41 @@ public:
 		mPingTimer.expires_from_now(boost::posix_time::seconds(WEBSOCKET_PING_FREQUENCY));
 		mPingTimer.async_wait(boost::bind(
 			&WSConnection<endpoint_type>::pingTimer, mConnection, mHandler, boost::asio::placeholders::error));
+	}
+
+	void rcvMessage(message_ptr msg, bool& msgRejected, bool& runQueue)
+	{
+		boost::recursive_mutex::scoped_lock sl(mRcvQueueLock);
+		if (mRcvQueue.size() >= 1000)
+		{
+			msgRejected = true;
+			runQueue = false;
+		}
+		else
+		{
+			msgRejected = false;
+			mRcvQueue.push(msg);
+			if (mRcvQueueRunning)
+				runQueue = false;
+			else
+			{
+				runQueue = true;
+				mRcvQueueRunning = true;
+			}
+		}
+	}
+
+	message_ptr getMessage()
+	{
+		boost::recursive_mutex::scoped_lock sl(mRcvQueueLock);
+		if (mRcvQueue.empty())
+		{
+			mRcvQueueRunning = false;
+			return message_ptr();
+		}
+		message_ptr m = mRcvQueue.front();
+		mRcvQueue.pop();
+		return m;
 	}
 
 };
