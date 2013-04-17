@@ -223,10 +223,10 @@ bool SqliteDatabase::setupCheckpointing(JobQueue *q)
 
 void SqliteDatabase::doHook(const char *db, int pages)
 {
-	if (pages < 512)
+	if (pages < 1024)
 		return;
 	boost::mutex::scoped_lock sl(walMutex);
-	if (walDBs.insert(db).second && !walRunning)
+	if (!walRunning)
 	{
 		walRunning = true;
 		if (mWalQ)
@@ -238,36 +238,20 @@ void SqliteDatabase::doHook(const char *db, int pages)
 
 void SqliteDatabase::runWal()
 {
-	std::set<std::string> walSet;
-	std::string name = sqlite3_db_filename(mConnection, "main");
-
-	int pass = 1;
-	while (1)
+	int log = 0, ckpt = 0;
+	int ret = sqlite3_wal_checkpoint_v2(mConnection, NULL, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
+	if (ret != SQLITE_OK)
 	{
-		{
-			boost::mutex::scoped_lock sl(walMutex);
-			if (walDBs.empty())
-			{
-				walRunning = false;
-				return;
-			}
-			walDBs.swap(walSet);
-		}
+		cLog((ret == SQLITE_LOCKED) ? lsTRACE : lsWARNING) << "WAL("
+			<< sqlite3_db_filename(mConnection, "main") << "): error " << ret;
+	}
+	else
+		cLog(lsTRACE) << "WAL(" << sqlite3_db_filename(mConnection, "main") << 
+			"): frames=" << log << ", written=" << ckpt;
 
-		BOOST_FOREACH(const std::string& db, walSet)
-		{
-			int log = 0, ckpt = 0;
-			int ret = sqlite3_wal_checkpoint_v2(mConnection, db.c_str(), SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
-			if (ret != SQLITE_OK)
-			{
-				cLog((ret == SQLITE_LOCKED) ? lsTRACE : lsWARNING) << "WAL " << name << ":"
-					<< db << " error " << ret;
-			}
-			else
-				cLog(lsTRACE) << "WAL(" << name << "): pass=" << pass << ", frames=" << log << ", written=" << ckpt;
-		}
-		walSet.clear();
-		++pass;
+	{
+		boost::mutex::scoped_lock sl(walMutex);
+		walRunning = false;
 	}
 }
 
