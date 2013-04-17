@@ -17,7 +17,6 @@ class SqliteDatabase : public Database
 
 	boost::mutex			walMutex;
 	JobQueue*				mWalQ;
-	std::set<std::string>	walDBs;
 	bool					walRunning;
 
 public:
