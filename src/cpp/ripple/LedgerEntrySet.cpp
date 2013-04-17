@@ -909,7 +909,7 @@ uint256 LedgerEntrySet::getNextLedgerIndex(const uint256& uHash)
 
 		// node found in LES, node found in ledger, return earliest
 		if (it->second.mAction != taaDELETE)
-			return (!ledgerNext.isZero() && (ledgerNext < it->first)) ? ledgerNext : it->first;
+			return (ledgerNext.isNonZero() && (ledgerNext < it->first)) ? ledgerNext : it->first;
 
 	}
 
