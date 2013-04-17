@@ -258,6 +258,15 @@ boost::weak_ptr<PeerSet> LedgerAcquire::pmDowncast()
 	return boost::shared_polymorphic_downcast<PeerSet>(shared_from_this());
 }
 
+static void LADispatch(
+	Job& job,
+	LedgerAcquire::pointer la,
+	std::vector< FUNCTION_TYPE<void (LedgerAcquire::pointer)> > trig)
+{
+	for (unsigned int i = 0; i < trig.size(); ++i)
+		trig[i](la);
+}
+
 void LedgerAcquire::done()
 {
 	if (mSignaled)
@@ -288,9 +297,9 @@ void LedgerAcquire::done()
 	else
 		theApp->getMasterLedgerAcquire().logFailure(mHash);
 
-	// FIXME: We hold the PeerSet lock
-	for (unsigned int i = 0; i < triggers.size(); ++i)
-		triggers[i](shared_from_this());
+	if (!triggers.empty()) // We hold the PeerSet lock, so must dispatch
+		theApp->getJobQueue().addJob(jtLEDGER_DATA, "triggers",
+			BIND_TYPE(LADispatch, P_1, shared_from_this(), triggers));
 }
 
 bool LedgerAcquire::addOnComplete(FUNCTION_TYPE<void (LedgerAcquire::pointer)> trigger)
