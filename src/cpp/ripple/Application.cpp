@@ -26,6 +26,8 @@ Application* theApp = NULL;
 
 int DatabaseCon::sCount = 0;
 
+// #define RESERVE_BASE_100
+
 DatabaseCon::DatabaseCon(const std::string& strName, const char *initStrings[], int initCount)
 {
 	++sCount;
@@ -50,6 +52,13 @@ Application::Application() :
 	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService), mNetOps(mIOService, &mLedgerMaster),
 	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300), mSLECache("LedgerEntryCache", 4096, 120),
 	mSNTPClient(mAuxService), mJobQueue(mIOService), mFeeTrack(),
+
+#ifdef RESERVE_BASE_100
+	mFeeVote(10, 100, 25),
+#else
+	mFeeVote(10, 200, 50),
+#endif
+
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
 	mSweepTimer(mAuxService), mShutdown(false)

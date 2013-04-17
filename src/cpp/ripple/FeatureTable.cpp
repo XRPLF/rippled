@@ -236,4 +236,64 @@ Json::Value FeatureTable::getJson(int)
 	return ret;
 }
 
+template<typename INT> class VotableInteger
+{
+protected:
+	INT						mCurrent;		// The current setting
+	INT						mTarget;		// The setting we want
+	std::map<INT, int>		mVoteMap;
+
+	VotableInteger(INT current, INT target) : mCurrent(current), mTarget(target)
+	{
+		++mVoteMap[mTarget];				// Add our vote
+	}
+
+	bool mayVote()
+	{
+		return mCurrent != mTarget;			// If we love the current setting, we will not vote
+	}
+
+	void addVote(INT vote)
+	{
+		++mVoteMap[vote];
+	}
+
+	void noVote()
+	{
+		addVote(mCurrent);
+	}
+
+	INT getVotes()
+	{
+		INT ourVote = mCurrent;
+		int weight = 0;
+
+		typedef std::pair<INT, int> INTint_pair_t;
+		BOOST_FOREACH(INTint_pair_t& value, mVoteMap)
+		{ // Take most voted value between current and target, inclusive
+			if ((value.first <= std::max(mTarget, mCurrent)) &&
+				(value.first >= std::min(mTarget, mCurrent)) &&
+				(value.second > weight))
+			{
+				ourVote = value.first;
+				weight = value.second;
+			}
+		}
+
+		return ourVote;
+	}
+};
+
+void FeeVote::doFeeVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition)
+{
+	// LCL must be flag ledger
+	assert((lastClosedLedger->getLedgerSeq() % 256) == 0);
+
+	// get validations for ledger before flag
+
+	// choose our positions
+
+	// add transactions to our position
+}
+
 // vim:ts=4
