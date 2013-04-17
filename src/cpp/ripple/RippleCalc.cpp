@@ -1758,7 +1758,7 @@ void RippleCalc::calcNodeRipple(
 		// Fee.
 		cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple: Fee"));
 
-		uint64	uRate	= STAmount::getRate(STAmount(uQualityIn), STAmount(uQualityOut));
+		uint64	uRate	= STAmount::getRate(STAmount(uQualityOut), STAmount(uQualityIn));
 
 		if (!uRateMax || uRate <= uRateMax)
 		{
