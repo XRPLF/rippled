@@ -8,6 +8,7 @@
 #include "LedgerMaster.h"
 #include "UniqueNodeList.h"
 #include "ConnectionPool.h"
+#include "FeatureTable.h"
 #include "ScopedLock.h"
 #include "LedgerAcquire.h"
 #include "TransactionMaster.h"
@@ -71,6 +72,7 @@ class Application
 	LoadFeeTrack			mFeeTrack;
 	TXQueue					mTxnQueue;
 	OrderBookDB				mOrderBookDB;
+	FeeVote					mFeeVote;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB, *mPathFindDB;
 
@@ -124,6 +126,7 @@ public:
 	PeerDoor& getPeerDoor()							{ return *mPeerDoor; }
 	OrderBookDB& getOrderBookDB()					{ return mOrderBookDB; }
 	SLECache& getSLECache()							{ return mSLECache; }
+	FeeVote& getFeeVote()							{ return mFeeVote; }
 
 
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }

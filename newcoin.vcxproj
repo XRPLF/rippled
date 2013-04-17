@@ -112,6 +112,7 @@
     <ClCompile Include="src\cpp\ripple\DBInit.cpp" />
     <ClCompile Include="src\cpp\ripple\DeterministicKeys.cpp" />
     <ClCompile Include="src\cpp\ripple\ECIES.cpp" />
+    <ClCompile Include="src\cpp\ripple\FeatureTable.cpp" />
     <ClCompile Include="src\cpp\ripple\FieldNames.cpp" />
     <ClCompile Include="src\cpp\ripple\HashedObject.cpp" />
     <ClCompile Include="src\cpp\ripple\HTTPRequest.cpp" />

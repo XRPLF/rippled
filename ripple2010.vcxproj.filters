@@ -84,6 +84,9 @@
     <ClCompile Include="src\cpp\ripple\ECIES.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\FeatureTable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\FieldNames.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
