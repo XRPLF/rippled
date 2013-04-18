@@ -357,7 +357,7 @@ TER OfferCreateTransactor::takeOffers(
 
 TER OfferCreateTransactor::doApply()
 {
-	cLog(lsWARNING) << "OfferCreate> " << mTxn.getJson(0);
+	cLog(lsDEBUG) << "OfferCreate> " << mTxn.getJson(0);
 	const uint32			uTxFlags			= mTxn.getFlags();
 	const bool				bPassive			= isSetBit(uTxFlags, tfPassive);
 	const bool				bImmediateOrCancel	= isSetBit(uTxFlags, tfImmediateOrCancel);
@@ -493,7 +493,7 @@ TER OfferCreateTransactor::doApply()
 			% saTakerPays.getFullText());
 
 		// Take using the parameters of the offer.
-		cLog(lsWARNING) << "OfferCreate: takeOffers: BEFORE saTakerGets=" << saTakerGets.getFullText();
+		cLog(lsDEBUG) << "OfferCreate: takeOffers: BEFORE saTakerGets=" << saTakerGets.getFullText();
 
 		terResult	= takeOffers(
 			bOpenLedger,
@@ -507,27 +507,27 @@ TER OfferCreateTransactor::doApply()
 			saGot,			// How much was got.
 			bUnfunded);
 
-		cLog(lsWARNING) << "OfferCreate: takeOffers=" << terResult;
-		cLog(lsWARNING) << "OfferCreate: takeOffers: saPaid=" << saPaid.getFullText();
-		cLog(lsWARNING) << "OfferCreate: takeOffers:  saGot=" << saGot.getFullText();
+		cLog(lsDEBUG) << "OfferCreate: takeOffers=" << terResult;
+		cLog(lsDEBUG) << "OfferCreate: takeOffers: saPaid=" << saPaid.getFullText();
+		cLog(lsDEBUG) << "OfferCreate: takeOffers:  saGot=" << saGot.getFullText();
 
 		if (tesSUCCESS == terResult && !bUnfunded)
 		{
 			saTakerPays		-= saGot;				// Reduce pay in from takers by what offer just got.
 			saTakerGets		-= saPaid;				// Reduce pay out to takers by what srcAccount just paid.
 
-			cLog(lsWARNING) << "OfferCreate: takeOffers: AFTER saTakerPays=" << saTakerPays.getFullText();
-			cLog(lsWARNING) << "OfferCreate: takeOffers: AFTER saTakerGets=" << saTakerGets.getFullText();
+			cLog(lsDEBUG) << "OfferCreate: takeOffers: AFTER saTakerPays=" << saTakerPays.getFullText();
+			cLog(lsDEBUG) << "OfferCreate: takeOffers: AFTER saTakerGets=" << saTakerGets.getFullText();
 		}
 	}
 
-	cLog(lsWARNING) << "OfferCreate: takeOffers: saTakerPays=" << saTakerPays.getFullText();
-	cLog(lsWARNING) << "OfferCreate: takeOffers: saTakerGets=" << saTakerGets.getFullText();
-	cLog(lsWARNING) << "OfferCreate: takeOffers: mTxnAccountID=" << RippleAddress::createHumanAccountID(mTxnAccountID);
-	cLog(lsWARNING) << "OfferCreate: takeOffers:         FUNDS=" << lesActive.accountFunds(mTxnAccountID, saTakerGets).getFullText();
+	cLog(lsDEBUG) << "OfferCreate: takeOffers: saTakerPays=" << saTakerPays.getFullText();
+	cLog(lsDEBUG) << "OfferCreate: takeOffers: saTakerGets=" << saTakerGets.getFullText();
+	cLog(lsDEBUG) << "OfferCreate: takeOffers: mTxnAccountID=" << RippleAddress::createHumanAccountID(mTxnAccountID);
+	cLog(lsDEBUG) << "OfferCreate: takeOffers:         FUNDS=" << lesActive.accountFunds(mTxnAccountID, saTakerGets).getFullText();
 
-	// cLog(lsWARNING) << "OfferCreate: takeOffers: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
-	// cLog(lsWARNING) << "OfferCreate: takeOffers: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
+	// cLog(lsDEBUG) << "OfferCreate: takeOffers: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
+	// cLog(lsDEBUG) << "OfferCreate: takeOffers: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
 
 	if (tesSUCCESS != terResult)
 	{
@@ -611,13 +611,13 @@ TER OfferCreateTransactor::doApply()
 
 		if (tesSUCCESS == terResult)
 		{
-			cLog(lsWARNING) << "OfferCreate: sfAccount=" << RippleAddress::createHumanAccountID(mTxnAccountID);
-			cLog(lsWARNING) << "OfferCreate: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
-			cLog(lsWARNING) << "OfferCreate: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
-			cLog(lsWARNING) << "OfferCreate: saTakerPays.isNative()=" << saTakerPays.isNative();
-			cLog(lsWARNING) << "OfferCreate: saTakerGets.isNative()=" << saTakerGets.isNative();
-			cLog(lsWARNING) << "OfferCreate: uPaysCurrency=" << saTakerPays.getHumanCurrency();
-			cLog(lsWARNING) << "OfferCreate: uGetsCurrency=" << saTakerGets.getHumanCurrency();
+			cLog(lsDEBUG) << "OfferCreate: sfAccount=" << RippleAddress::createHumanAccountID(mTxnAccountID);
+			cLog(lsDEBUG) << "OfferCreate: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
+			cLog(lsDEBUG) << "OfferCreate: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
+			cLog(lsTRACE) << "OfferCreate: saTakerPays.isNative()=" << saTakerPays.isNative();
+			cLog(lsTRACE) << "OfferCreate: saTakerGets.isNative()=" << saTakerGets.isNative();
+			cLog(lsDEBUG) << "OfferCreate: uPaysCurrency=" << saTakerPays.getHumanCurrency();
+			cLog(lsDEBUG) << "OfferCreate: uGetsCurrency=" << saTakerGets.getHumanCurrency();
 
 			SLE::pointer			sleOffer		= mEngine->entryCreate(ltOFFER, uLedgerIndex);
 
