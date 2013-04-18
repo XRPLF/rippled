@@ -223,17 +223,18 @@ bool SqliteDatabase::setupCheckpointing(JobQueue *q)
 
 void SqliteDatabase::doHook(const char *db, int pages)
 {
-	if (pages < 1024)
+	if (pages < 1000)
 		return;
-	boost::mutex::scoped_lock sl(walMutex);
-	if (!walRunning)
 	{
+		boost::mutex::scoped_lock sl(walMutex);
+		if (walRunning)
+			return;
 		walRunning = true;
-		if (mWalQ)
-			mWalQ->addJob(jtWAL, std::string("WAL:") + mHost, boost::bind(&SqliteDatabase::runWal, this));
-		else
-			boost::thread(boost::bind(&SqliteDatabase::runWal, this)).detach();
 	}
+	if (mWalQ)
+		mWalQ->addJob(jtWAL, std::string("WAL:") + mHost, boost::bind(&SqliteDatabase::runWal, this));
+	else
+		boost::thread(boost::bind(&SqliteDatabase::runWal, this)).detach();
 }
 
 void SqliteDatabase::runWal()
@@ -246,7 +247,7 @@ void SqliteDatabase::runWal()
 			<< sqlite3_db_filename(mConnection, "main") << "): error " << ret;
 	}
 	else
-		cLog(lsTRACE) << "WAL(" << sqlite3_db_filename(mConnection, "main") << 
+		cLog(lsTRACE) << "WAL(" << sqlite3_db_filename(mConnection, "main") <<
 			"): frames=" << log << ", written=" << ckpt;
 
 	{
