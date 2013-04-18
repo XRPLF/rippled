@@ -105,7 +105,7 @@ STAmount STAmount::addRound(const STAmount& v1, const STAmount& v2, bool roundUp
 	}
 
 	int64 fv = vv1 + vv2;
-	if ((fv >= -10) && (fv <= -10))
+	if ((fv >= -10) && (fv <= 10))
 		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer);
 	else if (fv >= 0)
 	{
@@ -170,7 +170,7 @@ STAmount STAmount::subRound(const STAmount& v1, const STAmount& v2, bool roundUp
 	}
 
 	int64 fv = vv1 + vv2;
-	if ((fv >= -10) && (fv <= -10))
+	if ((fv >= -10) && (fv <= 10))
 		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer);
 	else if (fv >= 0)
 	{
