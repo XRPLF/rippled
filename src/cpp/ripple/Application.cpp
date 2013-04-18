@@ -150,7 +150,6 @@ void Application::setup()
 	t1.join(); t2.join(); t3.join(); t4.join(); t5.join(); t6.join();
 	mTxnDB->getDB()->setupCheckpointing(&mJobQueue);
 	mLedgerDB->getDB()->setupCheckpointing(&mJobQueue);
-	mHashNodeDB->getDB()->setupCheckpointing(&mJobQueue);
 
 	if (!theConfig.RUN_STANDALONE)
 		updateTables();
