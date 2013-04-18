@@ -163,7 +163,6 @@ void Application::setup()
 
 	mTxnDB->getDB()->setupCheckpointing(&mJobQueue);
 	mLedgerDB->getDB()->setupCheckpointing(&mJobQueue);
-	mHashNodeDB->getDB()->setupCheckpointing(&mJobQueue);
 
 	if (!theConfig.RUN_STANDALONE)
 		updateTables();
