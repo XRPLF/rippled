@@ -6,6 +6,7 @@
 const char *TxnDBInit[] = {
 	"PRAGMA synchronous=NORMAL;",
 	"PRAGMA journal_mode=WAL;",
+	"PRAGMA journal_size_limit=1582080;",
 
 	"BEGIN TRANSACTION;",
 
@@ -44,6 +45,7 @@ int TxnDBCount = NUMBER(TxnDBInit);
 const char *LedgerDBInit[] = {
 	"PRAGMA synchronous=NORMAL;",
 	"PRAGMA journal_mode=WAL;",
+	"PRAGMA journal_size_limit=1582080;",
 
 	"BEGIN TRANSACTION;",
 
@@ -265,6 +267,7 @@ int WalletDBCount = NUMBER(WalletDBInit);
 const char *HashNodeDBInit[] = {
 	"PRAGMA synchronous=NORMAL;",
 	"PRAGMA journal_mode=WAL;",
+	"PRAGMA journal_size_limit=1582080;",
 
 	"BEGIN TRANSACTION;",
 
