@@ -77,6 +77,8 @@ bool ValidationCollection::addValidation(SerializedValidation::ref val, const st
 				it->second = val;
 				condWrite();
 			}
+			else
+				isCurrent = false;
 		}
 	}
 
@@ -84,6 +86,8 @@ bool ValidationCollection::addValidation(SerializedValidation::ref val, const st
 		<< " added " << (val->isTrusted() ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
 	if (val->isTrusted())
 		theApp->getLedgerMaster().checkAccept(hash);
+
+	// FIXME: This never forwards untrusted validations
 	return isCurrent;
 }
 
@@ -93,7 +97,7 @@ ValidationSet ValidationCollection::getValidations(const uint256& ledger)
 		boost::mutex::scoped_lock sl(mValidationLock);
 		VSpointer set = findSet(ledger);
 		if (set)
-			return ValidationSet(*set);
+			return *set;
 	}
 	return ValidationSet();
 }
@@ -200,7 +204,7 @@ int ValidationCollection::getLoadRatio(bool overLoaded)
 
 std::list<SerializedValidation::pointer> ValidationCollection::getCurrentTrustedValidations()
 {
-    uint32 cutoff = theApp->getOPs().getNetworkTimeNC() - LEDGER_VAL_INTERVAL;
+	uint32 cutoff = theApp->getOPs().getNetworkTimeNC() - LEDGER_VAL_INTERVAL;
 
 	std::list<SerializedValidation::pointer> ret;
 
@@ -231,9 +235,9 @@ std::list<SerializedValidation::pointer> ValidationCollection::getCurrentTrusted
 boost::unordered_map<uint256, currentValidationCount>
 ValidationCollection::getCurrentValidations(uint256 currentLedger, uint256 priorLedger)
 {
-    uint32 cutoff = theApp->getOPs().getNetworkTimeNC() - LEDGER_VAL_INTERVAL;
-    bool valCurrentLedger = currentLedger.isNonZero();
-    bool valPriorLedger = priorLedger.isNonZero();
+	uint32 cutoff = theApp->getOPs().getNetworkTimeNC() - LEDGER_VAL_INTERVAL;
+	bool valCurrentLedger = currentLedger.isNonZero();
+	bool valPriorLedger = priorLedger.isNonZero();
 
 	boost::unordered_map<uint256, currentValidationCount> ret;
 
@@ -252,9 +256,14 @@ ValidationCollection::getCurrentValidations(uint256 currentLedger, uint256 prior
 		}
 		else
 		{ // contains a live record
-			bool countPreferred = (valCurrentLedger && it->second->isPreviousHash(currentLedger)) ||
-				(valPriorLedger && (it->second->getLedgerHash() == priorLedger));
-			tLog(countPreferred, lsDEBUG) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash();
+			bool countPreferred = valCurrentLedger && (it->second->getLedgerHash() == currentLedger);
+			if (!countPrefferred && // allow up to one ledger slip in either direction
+				((valCurrentLedger && it->second->isPreviousHash(currentLedger)) ||
+				(valPriorLedger && (it->second->getLedgerHash() == priorLedger))
+			{
+				countPreffered = true;
+				cLog(lsDEBUG) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash();
+			}
 			currentValidationCount& p = countPreferred ? ret[currentLedger] : ret[it->second->getLedgerHash()];
 
 			++(p.first);
