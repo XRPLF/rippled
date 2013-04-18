@@ -257,15 +257,15 @@ ValidationCollection::getCurrentValidations(uint256 currentLedger, uint256 prior
 		else
 		{ // contains a live record
 			bool countPreferred = valCurrentLedger && (it->second->getLedgerHash() == currentLedger);
-			if (!countPrefferred && // allow up to one ledger slip in either direction
+			if (!countPreferred && // allow up to one ledger slip in either direction
 				((valCurrentLedger && it->second->isPreviousHash(currentLedger)) ||
-				(valPriorLedger && (it->second->getLedgerHash() == priorLedger))
+				(valPriorLedger && (it->second->getLedgerHash() == priorLedger))))
 			{
-				countPreffered = true;
+				countPreferred = true;
 				cLog(lsDEBUG) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash();
 			}
-			currentValidationCount& p = countPreferred ? ret[currentLedger] : ret[it->second->getLedgerHash()];
 
+			currentValidationCount& p = countPreferred ? ret[currentLedger] : ret[it->second->getLedgerHash()];
 			++(p.first);
 			uint160 ni = it->second->getNodeID();
 			if (ni > p.second)
