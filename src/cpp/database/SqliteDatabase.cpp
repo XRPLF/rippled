@@ -164,7 +164,7 @@ bool SqliteDatabase::getNextRow(bool finalize)
 		if (rc==SQLITE_ROW)
 			return(true);
 		assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
-		cLog(lsWARNING) << "Rerror: " << mHost << ": " << rc;
+		tLog((rc != SQLITE_DONE), lsWARNING) << "Rerror: " << mHost << ": " << rc;
 	}
 
 	if (finalize)
