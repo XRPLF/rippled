@@ -109,7 +109,15 @@ std::string Log::rotateLog(void)
   } while (boost::filesystem::exists(boost::filesystem::path(abs_new_path_str)));
 
   outStream->close();
-  boost::filesystem::rename(abs_path, boost::filesystem::path(abs_new_path_str));
+
+  try
+  {
+    boost::filesystem::rename(abs_path, boost::filesystem::path(abs_new_path_str));
+  }
+  catch (...)
+  {
+    // unable to rename existing log file
+  }
 
   setLogFile(*pathToLog);
 
