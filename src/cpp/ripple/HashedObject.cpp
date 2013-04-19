@@ -94,12 +94,14 @@ void HashedObjectStore::bulkWrite()
 
 	{
 		Database* db = theApp->getHashNodeDB()->getDB();
-		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
-		SqliteStatement pSt(db->getSqliteDB(),
+		static SqliteStatement pStB(db->getSqliteDB(), "BEGIN TRANSACTION;", true);
+		static SqliteStatement pStE(db->getSqliteDB(), "END TRANSACTION;", true);
+		static SqliteStatement pSt(db->getSqliteDB(),
 			"INSERT OR IGNORE INTO CommittedObjects "
-				"(Hash,ObjType,LedgerIndex,Object) VALUES (?, ?, ?, ?);");
+				"(Hash,ObjType,LedgerIndex,Object) VALUES (?, ?, ?, ?);", true);
 
-		db->executeSQL("BEGIN TRANSACTION;");
+		pStB.step();
+		pStB.reset();
 
 		BOOST_FOREACH(const boost::shared_ptr<HashedObject>& it, set)
 		{
@@ -127,7 +129,8 @@ void HashedObjectStore::bulkWrite()
 			pSt.reset();
 		}
 
-		db->executeSQL("END TRANSACTION;");
+		pStE.step();
+		pStE.reset();
 	}
 
 #else
