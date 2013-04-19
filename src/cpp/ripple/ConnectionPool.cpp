@@ -84,6 +84,7 @@ bool ConnectionPool::savePeer(const std::string& strIp, int iPort, char code)
 			// is lost.
 			nothing();
 		}
+		db->endIterRows();
 	}
 	else
 	{
@@ -146,6 +147,7 @@ bool ConnectionPool::peerAvailable(std::string& strIp, int& iPort)
 			&& db->startIterRows())
 		{
 			strIpPort	= db->getStrBinary("IpPort");
+			db->endIterRows();
 		}
 	}
 
@@ -515,6 +517,7 @@ bool ConnectionPool::peerScanSet(const std::string& strIp, int iPort)
 			//cLog(lsINFO) << str(boost::format("Pool: Scan: schedule exists: %s %s (next %s, delay=%d)")
 			//	% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());
 		}
+		db->endIterRows();
 	}
 	else
 	{
@@ -680,6 +683,7 @@ void ConnectionPool::scanRefresh()
 
 				db->getStr("IpPort", strIpPort);
 				iInterval	= db->getInt("ScanInterval");
+				db->endIterRows();
 			}
 			else
 			{
