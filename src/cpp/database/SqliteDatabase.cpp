@@ -80,6 +80,7 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 #endif
 		}
 		return false;
+		endIterRows();
 	}
 	rc = sqlite3_step(mCurrentStmt);
 	if (rc == SQLITE_ROW)
@@ -88,6 +89,7 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 	}
 	else if (rc == SQLITE_DONE)
 	{
+		endIterRows();
 		mMoreRows = false;
 	}
 	else
@@ -107,6 +109,7 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 			cLog(lsWARNING) << "Error: " << sqlite3_errmsg(mConnection);
 #endif
 		}
+		endIterRows();
 		return false;
 	}
 
@@ -126,7 +129,7 @@ int SqliteDatabase::getLastInsertID()
 }
 
 // returns false if there are no results
-bool SqliteDatabase::startIterRows()
+bool SqliteDatabase::startIterRows(bool finalize)
 {
 	mColNameTable.clear();
 	mColNameTable.resize(sqlite3_column_count(mCurrentStmt));
@@ -134,6 +137,9 @@ bool SqliteDatabase::startIterRows()
 	{
 		mColNameTable[n]=sqlite3_column_name(mCurrentStmt,n);
 	}
+
+	if (!mMoreRows && finalize)
+		endIterRows();
 
 	return(mMoreRows);
 }
@@ -146,25 +152,20 @@ void SqliteDatabase::endIterRows()
 
 // call this after you executeSQL
 // will return false if there are no more rows
-bool SqliteDatabase::getNextRow()
+bool SqliteDatabase::getNextRow(bool finalize)
 {
-	if (!mMoreRows) return(false);
-
-	int rc=sqlite3_step(mCurrentStmt);
-	if (rc==SQLITE_ROW)
+	if (mMoreRows)
 	{
-		return(true);
-	}
-	else if (rc==SQLITE_DONE)
-	{
-		return(false);
-	}
-	else
-	{
+		int rc=sqlite3_step(mCurrentStmt);
+		if (rc==SQLITE_ROW)
+			return(true);
 		assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
 		cLog(lsWARNING) << "Rerror: " << mHost << ": " << rc;
-		return(false);
 	}
+
+	if (finalize)
+		endIterRows();
+	return false;
 }
 
 bool SqliteDatabase::getNull(int colIndex)

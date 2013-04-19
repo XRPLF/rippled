@@ -53,12 +53,12 @@ public:
 	virtual int getLastInsertID()=0;
 
 	// returns false if there are no results
-	virtual bool startIterRows()=0;
+	virtual bool startIterRows(bool finalize = true)=0;
 	virtual void endIterRows()=0;
 
 	// call this after you executeSQL
 	// will return false if there are no more rows
-	virtual bool getNextRow()=0;
+	virtual bool getNextRow(bool finalize = true)=0;
 
 	// get Data from the current row
 	bool getNull(const char* colName);
