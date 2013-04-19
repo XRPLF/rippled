@@ -65,6 +65,10 @@ void SqliteDatabase::disconnect()
 // returns true if the query went ok
 bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 {
+#ifdef DEBUG_HANGING_LOCKS
+	assert(fail_ok || (mCurrentStmt == NULL));
+#endif
+
 	sqlite3_finalize(mCurrentStmt);
 
 	int rc = sqlite3_prepare_v2(mConnection, sql, -1, &mCurrentStmt, NULL);
@@ -79,8 +83,8 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 			cLog(lsWARNING) << "Error: " << sqlite3_errmsg(mConnection);
 #endif
 		}
-		return false;
 		endIterRows();
+		return false;
 	}
 	rc = sqlite3_step(mCurrentStmt);
 	if (rc == SQLITE_ROW)

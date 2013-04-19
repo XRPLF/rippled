@@ -1625,9 +1625,11 @@ void UniqueNodeList::nodeBootstrap()
 
 		if (db->executeSQL(str(boost::format("SELECT COUNT(*) AS Count FROM SeedDomains WHERE Source='%s' OR Source='%c';") % vsManual % vsValidator)) && db->startIterRows())
 			iDomains	= db->getInt("Count");
+		db->endIterRows();
 
 		if (db->executeSQL(str(boost::format("SELECT COUNT(*) AS Count FROM SeedNodes WHERE Source='%s' OR Source='%c';") % vsManual % vsValidator)) && db->startIterRows())
 			iNodes		= db->getInt("Count");
+		db->endIterRows();
 	}
 
 	bool	bLoaded	= iDomains || iNodes;
