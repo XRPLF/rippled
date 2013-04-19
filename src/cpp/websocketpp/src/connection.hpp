@@ -263,7 +263,7 @@ public:
         boost::lock_guard<boost::recursive_mutex> lock(m_lock);
         
         if (m_state != session::state::OPEN) {return;}
-        if (m_detached) {return;}
+        if (m_detached || !m_processor) {return;}
         
         // TODO: optimize control messages and handle case where 
         // endpoint is out of messages
@@ -895,7 +895,7 @@ public:
         // try and read more
         if (m_state != session::state::CLOSED && 
         	m_processor &&
-            m_processor->get_bytes_needed() > 0 &&  // FIXME: m_processor had been reset here
+            m_processor->get_bytes_needed() > 0 &&
             !m_protocol_error)
         {
             // TODO: read timeout timer?
