@@ -218,13 +218,15 @@ protected:
 			((bytesTransferred < 3) || ((mBuffer[2] < 127) && (mBuffer[2] > 31))) &&
 			((bytesTransferred < 4) || ((mBuffer[3] < 127) && (mBuffer[3] > 31))))
 		{ // not ssl
-			Log(lsTRACE, AutoSocketPartition) << "non-SSL";
+			if (AutoSocketPartition.doLog(lsTRACE))
+				Log(lsTRACE, AutoSocketPartition) << "non-SSL";
 			mSecure = false;
 			cbFunc(ec);
 		}
 		else
 		{ // ssl
-			Log(lsTRACE, AutoSocketPartition) << "SSL";
+			if (AutoSocketPartition.doLog(lsTRACE))
+				Log(lsTRACE, AutoSocketPartition) << "SSL";
 			mSecure = true;
 			mSocket->async_handshake(ssl_socket::server, cbFunc);
 		}
