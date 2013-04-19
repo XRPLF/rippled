@@ -15,6 +15,8 @@ SETUP_LOG();
 
 static const uint256 uZero;
 
+KeyCache<uint256> SHAMap::fullBelowCache("fullBelowCache", 65536, 240);
+
 void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max,
 	SHAMapSyncFilter* filter)
 {
@@ -49,46 +51,56 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 			int branch = (base + ii) % 16;
 			if (!node->isEmptyBranch(branch))
 			{
-				SHAMapNode childID = node->getChildNodeID(branch);
 				const uint256& childHash = node->getChildHash(branch);
-				SHAMapTreeNode* d = NULL;
-				try
+				if (!fullBelowCache.isPresent(childHash))
 				{
-					d = getNodePointer(childID, childHash);
-				}
-				catch (SHAMapMissingNode&)
-				{ // node is not in the map
-					if (filter != NULL)
+					SHAMapNode childID = node->getChildNodeID(branch);
+					SHAMapTreeNode* d = NULL;
+					try
 					{
-						std::vector<unsigned char> nodeData;
-						if (filter->haveNode(childID, childHash, nodeData))
+						d = getNodePointer(childID, childHash);
+					}
+					catch (SHAMapMissingNode&)
+					{ // node is not in the map
+						if (filter != NULL)
 						{
-							assert(mSeq >= 1);
-							SHAMapTreeNode::pointer ptr =
-								boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq - 1, snfPREFIX, childHash, true);
-							cLog(lsTRACE) << "Got sync node from cache: " << *ptr;
-							mTNByID[*ptr] = ptr;
-							d = ptr.get();
+							std::vector<unsigned char> nodeData;
+							if (filter->haveNode(childID, childHash, nodeData))
+							{
+								assert(mSeq >= 1);
+								SHAMapTreeNode::pointer ptr =
+									boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq - 1, snfPREFIX, childHash, true);
+								cLog(lsTRACE) << "Got sync node from cache: " << *ptr;
+								mTNByID[*ptr] = ptr;
+								d = ptr.get();
+							}
 						}
 					}
-				}
-				if (!d)
-				{ // we need this node
-					nodeIDs.push_back(childID);
-					hashes.push_back(childHash);
-					if (--max <= 0)
-						return;
-					have_all = false;
-				}
-				else if (d->isInner() && !d->isFullBelow()) // we might need children of this node
-				{
-					have_all = false;
-					stack.push(d);
+					if (!d)
+					{ // we need this node
+						nodeIDs.push_back(childID);
+						hashes.push_back(childHash);
+						if (--max <= 0)
+							return;
+						have_all = false;
+					}
+					else if (d->isInner() && !d->isFullBelow()) // we might need children of this node
+					{
+						have_all = false;
+						stack.push(d);
+					}
 				}
 			}
 		}
 		if (have_all)
+		{
 			node->setFullBelow();
+			if (mType == smtSTATE)
+			{
+				fullBelowCache.add(node->getHash());
+				dropBelow(node);
+			}
+		}
 	}
 	if (nodeIDs.empty())
 		clearSynching();
@@ -123,27 +135,37 @@ std::vector<uint256> SHAMap::getNeededHashes(int max)
 			if (!node->isEmptyBranch(branch))
 			{
 				const uint256& childHash = node->getChildHash(branch);
-				try
+				if (!fullBelowCache.isPresent(childHash))
 				{
-					SHAMapTreeNode* d = getNodePointer(node->getChildNodeID(branch), childHash);
-					assert(d);
-					if (d->isInner() && !d->isFullBelow())
+					try
 					{
-						have_all = false;
-						stack.push(d);
+						SHAMapTreeNode* d = getNodePointer(node->getChildNodeID(branch), childHash);
+						assert(d);
+						if (d->isInner() && !d->isFullBelow())
+						{
+							have_all = false;
+							stack.push(d);
+						}
 					}
-				}
-				catch (SHAMapMissingNode&)
-				{ // node is not in the map
-					have_all = false;
-					ret.push_back(childHash);
-					if (--max <= 0)
-						return ret;
+					catch (SHAMapMissingNode&)
+					{ // node is not in the map
+						have_all = false;
+						ret.push_back(childHash);
+						if (--max <= 0)
+							return ret;
+					}
 				}
 			}
 		}
 		if (have_all)
+		{
 			node->setFullBelow();
+			if (mType == smtSTATE)
+			{
+				fullBelowCache.add(node->getHash());
+				dropBelow(node);
+			}
+		}
 	}
 	if (ret.empty())
 		clearSynching();

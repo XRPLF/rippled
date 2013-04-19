@@ -853,6 +853,14 @@ void SHAMap::dropCache()
 		mTNByID[*root] = root;
 }
 
+void SHAMap::dropBelow(SHAMapTreeNode* d)
+{
+	if (d->isInner())
+		for (int i = 0 ; i < 16; ++i)
+			if (!d->isEmptyBranch(i))
+				mTNByID.erase(d->getChildNodeID(i));
+}
+
 void SHAMap::dump(bool hash)
 {
 	cLog(lsINFO) << " MAP Contains";

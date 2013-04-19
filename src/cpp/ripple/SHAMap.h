@@ -354,6 +354,8 @@ private:
 
 	SHAMapType mType;
 
+	static KeyCache<uint256> fullBelowCache;
+
 protected:
 
 	void dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& target, uint256 prevHash);
@@ -372,6 +374,7 @@ protected:
 
 	SHAMapItem::pointer onlyBelow(SHAMapTreeNode*);
 	void eraseChildren(SHAMapTreeNode::pointer);
+	void dropBelow(SHAMapTreeNode*);
 
 	bool walkBranch(SHAMapTreeNode* node, SHAMapItem::ref otherMapItem, bool isFirstMap,
 	    SHAMapDiff& differences, int& maxCount);
@@ -472,6 +475,8 @@ public:
 
 	bool deepCompare(SHAMap& other);
 	virtual void dump(bool withHashes = false);
+
+	static void sweep()			{ fullBelowCache.sweep(); }
 };
 
 #endif
