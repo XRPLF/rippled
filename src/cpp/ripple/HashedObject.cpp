@@ -94,11 +94,11 @@ void HashedObjectStore::bulkWrite()
 
 	{
 		Database* db = theApp->getHashNodeDB()->getDB();
-		static SqliteStatement pStB(db->getSqliteDB(), "BEGIN TRANSACTION;", true);
-		static SqliteStatement pStE(db->getSqliteDB(), "END TRANSACTION;", true);
+		static SqliteStatement pStB(db->getSqliteDB(), "BEGIN TRANSACTION;", !theConfig.RUN_STANDALONE);
+		static SqliteStatement pStE(db->getSqliteDB(), "END TRANSACTION;", !theConfig.RUN_STANDALONE);
 		static SqliteStatement pSt(db->getSqliteDB(),
 			"INSERT OR IGNORE INTO CommittedObjects "
-				"(Hash,ObjType,LedgerIndex,Object) VALUES (?, ?, ?, ?);", true);
+				"(Hash,ObjType,LedgerIndex,Object) VALUES (?, ?, ?, ?);", !theConfig.RUN_STANDALONE);
 
 		pStB.step();
 		pStB.reset();
@@ -170,7 +170,6 @@ void HashedObjectStore::bulkWrite()
 
 HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 {
-
 	HashedObject::pointer obj = mCache.fetch(hash);
 	if (obj)
 		return obj;
