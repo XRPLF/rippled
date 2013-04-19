@@ -34,12 +34,12 @@ public:
 	int getLastInsertID();
 
 	// returns false if there are no results
-	bool startIterRows();
+	bool startIterRows(bool finalize);
 	void endIterRows();
 
 	// call this after you executeSQL
 	// will return false if there are no more rows
-	bool getNextRow();
+	bool getNextRow(bool finalize);
 
 	bool getNull(int colIndex);
 	char* getStr(int colIndex,std::string& retStr);
