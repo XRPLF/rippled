@@ -12,6 +12,7 @@ struct sqlite3_stmt;
 class SqliteDatabase : public Database
 {
 	sqlite3* mConnection;
+	sqlite3* mAuxConnection;
 	sqlite3_stmt* mCurrentStmt;
 	bool mMoreRows;
 
@@ -51,6 +52,7 @@ public:
 	uint64 getBigInt(int colIndex);
 
 	sqlite3* peekConnection() { return mConnection; }
+	sqlite3*	getAuxConnection();
 	virtual bool setupCheckpointing(JobQueue*);
 	virtual SqliteDatabase* getSqliteDB() { return this; }
 
@@ -71,8 +73,8 @@ protected:
 	sqlite3_stmt* statement;
 
 public:
-	SqliteStatement(SqliteDatabase* db, const char *statement);
-	SqliteStatement(SqliteDatabase* db, const std::string& statement);
+	SqliteStatement(SqliteDatabase* db, const char *statement, bool aux = false);
+	SqliteStatement(SqliteDatabase* db, const std::string& statement, bool aux = false);
 	~SqliteStatement();
 
 	sqlite3_stmt* peekStatement();

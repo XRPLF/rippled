@@ -19,6 +19,7 @@ using namespace std;
 SqliteDatabase::SqliteDatabase(const char* host) : Database(host,"",""), mWalQ(NULL), walRunning(false)
 {
 	mConnection		= NULL;
+	mAuxConnection	= NULL;
 	mCurrentStmt	= NULL;
 }
 
@@ -33,10 +34,32 @@ void SqliteDatabase::connect()
 	}
 }
 
+sqlite3* SqliteDatabase::getAuxConnection()
+{
+	boost::mutex::scoped_lock sl(walMutex);
+	if (mAuxConnection == NULL)
+	{
+		int rc = sqlite3_open(mHost.c_str(), &mAuxConnection);
+		if (rc)
+		{
+			cLog(lsFATAL) << "Can't aux open " << mHost << " " << rc;
+			assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
+			if (mAuxConnection != NULL)
+			{
+				sqlite3_close(mConnection);
+				mAuxConnection = NULL;
+			}
+		}
+	}
+	return mAuxConnection;
+}
+
 void SqliteDatabase::disconnect()
 {
 	sqlite3_finalize(mCurrentStmt);
 	sqlite3_close(mConnection);
+	if (mAuxConnection != NULL)
+		sqlite3_close(mAuxConnection);
 }
 
 // returns true if the query went ok
@@ -256,18 +279,22 @@ void SqliteDatabase::runWal()
 	}
 }
 
-SqliteStatement::SqliteStatement(SqliteDatabase* db, const char *sql)
+SqliteStatement::SqliteStatement(SqliteDatabase* db, const char *sql, bool aux)
 {
 	assert(db);
-	int j = sqlite3_prepare_v2(db->peekConnection(), sql, strlen(sql) + 1, &statement, NULL);
+
+	sqlite3* conn = aux ? db->getAuxConnection() : db->peekConnection();
+	int j = sqlite3_prepare_v2(conn, sql, strlen(sql) + 1, &statement, NULL);
 	if (j != SQLITE_OK)
 		throw j;
 }
 
-SqliteStatement::SqliteStatement(SqliteDatabase* db, const std::string& sql)
+SqliteStatement::SqliteStatement(SqliteDatabase* db, const std::string& sql, bool aux)
 {
 	assert(db);
-	int j = sqlite3_prepare_v2(db->peekConnection(), sql.c_str(), sql.size() + 1, &statement, NULL);
+
+	sqlite3* conn = aux ? db->getAuxConnection() : db->peekConnection();
+	int j = sqlite3_prepare_v2(conn, sql.c_str(), sql.size() + 1, &statement, NULL);
 	if (j != SQLITE_OK)
 		throw j;
 }
