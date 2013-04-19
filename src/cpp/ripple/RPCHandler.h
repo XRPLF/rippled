@@ -9,6 +9,7 @@
 #include "SerializedTypes.h"
 #include "Ledger.h"
 #include "NetworkOPs.h"
+#include "ScopedLock.h"
 
 #define LEDGER_CURRENT		-1
 #define LEDGER_CLOSED		-2
@@ -24,7 +25,7 @@ class RPCHandler
 	InfoSub::pointer	mInfoSub;
 	int					mRole;
 
-	typedef Json::Value (RPCHandler::*doFuncPtr)(Json::Value params, int& cost);
+	typedef Json::Value (RPCHandler::*doFuncPtr)(Json::Value params, int& cost, ScopedLock& MasterLockHolder);
 	enum {
 		optNone		= 0,
 		optNetwork	= 1,				// Need network
@@ -48,72 +49,72 @@ class RPCHandler
 
 	Json::Value accountFromString(Ledger::ref lrLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex, const bool bStrict);
 
-	Json::Value doAccountInfo(Json::Value params, int& cost);
-	Json::Value doAccountLines(Json::Value params, int& cost);
-	Json::Value doAccountOffers(Json::Value params, int& cost);
-	Json::Value doAccountTransactions(Json::Value params, int& cost);
-	Json::Value doBookOffers(Json::Value params, int& cost);
-	Json::Value doConnect(Json::Value params, int& cost);
-	Json::Value doConsensusInfo(Json::Value params, int& cost);
+	Json::Value doAccountInfo(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doAccountLines(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doAccountOffers(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doAccountTransactions(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doBookOffers(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doConnect(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doConsensusInfo(Json::Value params, int& cost, ScopedLock& mlh);
 #if ENABLE_INSECURE
-	Json::Value doDataDelete(Json::Value params, int& cost);
-	Json::Value doDataFetch(Json::Value params, int& cost);
-	Json::Value doDataStore(Json::Value params, int& cost);
+	Json::Value doDataDelete(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doDataFetch(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doDataStore(Json::Value params, int& cost, ScopedLock& mlh);
 #endif
-	Json::Value doGetCounts(Json::Value params, int& cost);
-	Json::Value doInternal(Json::Value params, int& cost);
-	Json::Value doLedger(Json::Value params, int& cost);
-	Json::Value doLogLevel(Json::Value params, int& cost);
-	Json::Value doLogRotate(Json::Value params, int& cost);
-	Json::Value doNicknameInfo(Json::Value params, int& cost);
-	Json::Value doOwnerInfo(Json::Value params, int& cost);
-	Json::Value doPeers(Json::Value params, int& cost);
-	Json::Value doPing(Json::Value params, int& cost);
-	Json::Value doProfile(Json::Value params, int& cost);
-	Json::Value doRandom(Json::Value jvRequest, int& cost);
-	Json::Value doRipplePathFind(Json::Value jvRequest, int& cost);
-	Json::Value doServerInfo(Json::Value params, int& cost);	// for humans
-	Json::Value doServerState(Json::Value params, int& cost);	// for machines
-	Json::Value doSessionClose(Json::Value params, int& cost);
-	Json::Value doSessionOpen(Json::Value params, int& cost);
-	Json::Value doSMS(Json::Value params, int& cost);
-	Json::Value doStop(Json::Value params, int& cost);
-	Json::Value doSign(Json::Value params, int& cost);
-	Json::Value doSubmit(Json::Value params, int& cost);
-	Json::Value doTx(Json::Value params, int& cost);
-	Json::Value doTxHistory(Json::Value params, int& cost);
-	Json::Value doUnlAdd(Json::Value params, int& cost);
-	Json::Value doUnlDelete(Json::Value params, int& cost);
-	Json::Value doUnlFetch(Json::Value params, int& cost);
-	Json::Value doUnlList(Json::Value params, int& cost);
-	Json::Value doUnlLoad(Json::Value params, int& cost);
-	Json::Value doUnlNetwork(Json::Value params, int& cost);
-	Json::Value doUnlReset(Json::Value params, int& cost);
-	Json::Value doUnlScore(Json::Value params, int& cost);
+	Json::Value doGetCounts(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doInternal(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doLedger(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doLogLevel(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doLogRotate(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doNicknameInfo(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doOwnerInfo(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doPeers(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doPing(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doProfile(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doRandom(Json::Value jvRequest, int& cost, ScopedLock& mlh);
+	Json::Value doRipplePathFind(Json::Value jvRequest, int& cost, ScopedLock& mlh);
+	Json::Value doServerInfo(Json::Value params, int& cost, ScopedLock& mlh);	// for humans
+	Json::Value doServerState(Json::Value params, int& cost, ScopedLock& mlh);	// for machines
+	Json::Value doSessionClose(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doSessionOpen(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doSMS(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doStop(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doSign(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doSubmit(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doTx(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doTxHistory(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doUnlAdd(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doUnlDelete(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doUnlFetch(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doUnlList(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doUnlLoad(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doUnlNetwork(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doUnlReset(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doUnlScore(Json::Value params, int& cost, ScopedLock& mlh);
 
-	Json::Value doValidationCreate(Json::Value params, int& cost);
-	Json::Value doValidationSeed(Json::Value params, int& cost);
+	Json::Value doValidationCreate(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doValidationSeed(Json::Value params, int& cost, ScopedLock& mlh);
 
-	Json::Value doWalletAccounts(Json::Value params, int& cost);
-	Json::Value doWalletLock(Json::Value params, int& cost);
-	Json::Value doWalletPropose(Json::Value params, int& cost);
-	Json::Value doWalletSeed(Json::Value params, int& cost);
-	Json::Value doWalletUnlock(Json::Value params, int& cost);
-	Json::Value doWalletVerify(Json::Value params, int& cost);
+	Json::Value doWalletAccounts(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doWalletLock(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doWalletPropose(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doWalletSeed(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doWalletUnlock(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doWalletVerify(Json::Value params, int& cost, ScopedLock& mlh);
 
 #if ENABLE_INSECURE
-	Json::Value doLogin(Json::Value params, int& cost);
+	Json::Value doLogin(Json::Value params, int& cost, ScopedLock& mlh);
 #endif
 
-	Json::Value doLedgerAccept(Json::Value params, int& cost);
-	Json::Value doLedgerClosed(Json::Value params, int& cost);
-	Json::Value doLedgerCurrent(Json::Value params, int& cost);
-	Json::Value doLedgerEntry(Json::Value params, int& cost);
-	Json::Value doLedgerHeader(Json::Value params, int& cost);
-	Json::Value doTransactionEntry(Json::Value params, int& cost);
+	Json::Value doLedgerAccept(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doLedgerClosed(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doLedgerCurrent(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doLedgerEntry(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doLedgerHeader(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doTransactionEntry(Json::Value params, int& cost, ScopedLock& mlh);
 
-	Json::Value doSubscribe(Json::Value params, int& cost);
-	Json::Value doUnsubscribe(Json::Value params, int& cost);
+	Json::Value doSubscribe(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doUnsubscribe(Json::Value params, int& cost, ScopedLock& mlh);
 
 public:
 
