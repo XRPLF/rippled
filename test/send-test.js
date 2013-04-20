@@ -372,7 +372,7 @@ buster.testCase("Sending future", {
               .submit();
           },
           function (callback) {
-            self.what = "Verify balance from alice's pov.";
+            self.what = "Verify balance from alice's pov: 1";
 
             self.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
               .once('ripple_state', function (m) {
@@ -397,7 +397,7 @@ buster.testCase("Sending future", {
               .submit();
           },
           function (callback) {
-            self.what = "Verify balance from alice's pov.";
+            self.what = "Verify balance from alice's pov: 2";
 
             self.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
               .once('ripple_state', function (m) {
@@ -422,7 +422,7 @@ buster.testCase("Sending future", {
               .submit();
           },
           function (callback) {
-            self.what = "Verify balance from alice's pov.";
+            self.what = "Verify balance from alice's pov: 3";
 
             self.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
               .once('ripple_state', function (m) {
@@ -445,7 +445,7 @@ buster.testCase("Sending future", {
               .submit();
           },
           function (callback) {
-            self.what = "Verify balance from alice's pov.";
+            self.what = "Verify balance from alice's pov: 4";
 
             self.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
               .once('ripple_state', function (m) {
@@ -467,7 +467,7 @@ buster.testCase("Sending future", {
 //            .ledger_accept();
 //        },
 //        function (callback) {
-//          self.what = "Verify balance from alice's pov.";
+//          self.what = "Verify balance from alice's pov: 5";
 //
 //          self.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
 //            .once('ripple_state', function (m) {
