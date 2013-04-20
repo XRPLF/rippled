@@ -69,6 +69,10 @@ Amount.from_json = function (j) {
   return (new Amount()).parse_json(j);
 };
 
+Amount.from_quality = function (q, c, i) {
+  return (new Amount()).parse_quality(q, c, i);
+};
+
 Amount.from_human = function (j) {
   return (new Amount()).parse_human(j);
 };
@@ -103,6 +107,16 @@ Amount.prototype.add = function (v) {
   if (!this.is_comparable(v)) {
     result              = Amount.NaN();
   }
+  else if (v.is_zero()) {
+    result              = this; 
+  }
+  else if (this.is_zero()) {
+    result              = v.clone();
+    result._is_negative = false;
+    result._is_native   = this._is_native;
+    result._currency    = this._currency;
+    result._issuer      = this._issuer;
+  }
   else if (this._is_native) {
     result              = new Amount();
 
@@ -112,13 +126,6 @@ Amount.prototype.add = function (v) {
 
     result._is_negative = s.compareTo(BigInteger.ZERO) < 0;
     result._value       = result._is_negative ? s.negate() : s;
-  }
-  else if (v.is_zero()) {
-    result              = this; 
-  }
-  else if (this.is_zero()) {
-    result              = v.clone();
-    // YYY Why are these cloned? We never modify them.
     result._currency    = this._currency;
     result._issuer      = this._issuer;
   }
@@ -258,7 +265,8 @@ Amount.prototype.compareTo = function (v) {
   return result;
 };
 
-// Returns copy.
+// Make d a copy of this. Returns d.
+// Modification of objects internally refered to is not allowed.
 Amount.prototype.copyTo = function (d, negate) {
   if ('object' === typeof this._value)
   {
@@ -275,8 +283,8 @@ Amount.prototype.copyTo = function (d, negate) {
 			? !this._is_negative    // Negating.
 			: this._is_negative;    // Just copying.
 
-  this._currency.copyTo(d._currency);
-  this._issuer.copyTo(d._issuer);
+  d._currency     = this._currency;
+  d._issuer       = this._issuer;
 
   // Prevent negative zero
   if (d.is_zero()) d._is_negative = false;
@@ -606,10 +614,24 @@ Amount.prototype.parse_human = function (j) {
 };
 
 Amount.prototype.parse_issuer = function (issuer) {
-  this._issuer.parse_json(issuer);
+  this._issuer  = UInt160.from_json(issuer);
 
   return this;
 };
+
+// --> h: 8 hex bytes quality or 32 hex bytes directory index.
+Amount.prototype.parse_quality = function (q, c, i) {
+  this._is_negative = false;
+  this._value       = new BigInteger(q.substring(q.length-14), 16);
+  this._offset      = parseInt(q.substring(q.length-16, q.length-14), 16)-100;
+  this._currency    = Currency.from_json(c);
+  this._issuer      = UInt160.from_json(i);
+  this._is_native   = this._currency.is_native();
+
+  this.canonicalize();
+
+  return this;
+}
 
 // <-> j
 Amount.prototype.parse_json = function (j) {
@@ -628,8 +650,8 @@ Amount.prototype.parse_json = function (j) {
     }
     else {
       this.parse_native(j);
-      this._currency  = new Currency();
-      this._issuer    = new UInt160();
+      this._currency  = Currency.from_json("0");
+      this._issuer    = UInt160.from_json("0");
     }
   }
   else if ('number' === typeof j) {
@@ -757,11 +779,11 @@ Amount.prototype.parse_value = function (j) {
 
 Amount.prototype.set_currency = function (c) {
   if ('string' === typeof c) {
-    this._currency.parse_json(c);  
+    this._currency  = Currency.from_json(c);  
   }
   else
   {
-    c.copyTo(this._currency);
+    this._currency  = c;
   }
   this._is_native = this._currency.is_native();
 
@@ -770,9 +792,9 @@ Amount.prototype.set_currency = function (c) {
 
 Amount.prototype.set_issuer = function (issuer) {
   if (issuer instanceof UInt160) {
-    issuer.copyTo(this._issuer);
+    this._issuer  = issuer;
   } else {
-    this._issuer.parse_json(issuer);
+    this._issuer  = UInt160.from_json(issuer);
   }
 
   return this;
@@ -975,7 +997,7 @@ Amount.prototype.not_equals_why = function (d, ignore_issuer) {
     if (!this._is_native) {
       if (!this._currency.equals(d._currency)) return "Non-XRP currency differs.";
       if (!ignore_issuer && !this._issuer.equals(d._issuer)) {
-        return "Non-XRP issuer differs.";
+        return "Non-XRP issuer differs: " + d._issuer.to_json() + "/" + this._issuer.to_json();
       }
     }
     return false;
