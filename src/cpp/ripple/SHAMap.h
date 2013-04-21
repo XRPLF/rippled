@@ -35,7 +35,7 @@ private:
 	int		mDepth;
 	mutable size_t	mHash;
 
-	void setHash() const;
+	void setMHash() const;
 
 protected:
 	SHAMapNode(int depth, const uint256& id, bool) : mNodeID(id), mDepth(depth), mHash(0) { ; }
@@ -51,7 +51,7 @@ public:
 	const uint256& getNodeID()	const	{ return mNodeID; }
 	bool isValid() const 				{ return (mDepth >= 0) && (mDepth < 64); }
 	bool isRoot() const					{ return mDepth == 0; }
-	size_t getHash() const				{ if (mHash == 0) setHash(); return mHash; }
+	size_t getMHash() const				{ if (mHash == 0) setMHash(); return mHash; }
 
 	virtual bool isPopulated() const	{ return false; }
 

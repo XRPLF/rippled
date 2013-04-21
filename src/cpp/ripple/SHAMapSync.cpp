@@ -97,7 +97,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 			node->setFullBelow();
 			if (mType == smtSTATE)
 			{
-				fullBelowCache.add(node->getHash());
+				fullBelowCache.add(node->getNodeHash());
 				dropBelow(node);
 			}
 		}
@@ -162,7 +162,7 @@ std::vector<uint256> SHAMap::getNeededHashes(int max)
 			node->setFullBelow();
 			if (mType == smtSTATE)
 			{
-				fullBelowCache.add(node->getHash());
+				fullBelowCache.add(node->getNodeHash());
 				dropBelow(node);
 			}
 		}

@@ -25,7 +25,7 @@ DECLARE_INSTANCE(SHAMap);
 DECLARE_INSTANCE(SHAMapItem);
 DECLARE_INSTANCE(SHAMapTreeNode);
 
-void SHAMapNode::setHash() const
+void SHAMapNode::setMHash() const
 {
 	std::size_t h = theApp->getNonceST() + (mDepth * 0x9e3779b9);
 	const unsigned int *ptr = reinterpret_cast<const unsigned int *>(mNodeID.begin());
@@ -36,7 +36,7 @@ void SHAMapNode::setHash() const
 
 std::size_t hash_value(const SHAMapNode& mn)
 {
-	return mn.getHash();
+	return mn.getMHash();
 }
 
 std::size_t hash_value(const uint256& u)
