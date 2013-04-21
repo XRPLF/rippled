@@ -1972,8 +1972,8 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 				// Only provide, if not fully funded.
 				jvOffer["taker_gets_funded"]	= saTakerGetsFunded.getJson(0);
 				jvOffer["taker_pays_funded"]	= saTakerPaysFunded.getJson(0);
-
 			}
+
 			STAmount	saOwnerPays		= QUALITY_ONE == uOfferRate
 											? saTakerGetsFunded
 											: std::min(saOwnerFunds, STAmount::multiply(saTakerGetsFunded, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9)));
@@ -1985,6 +1985,8 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 			if (!saOwnerFunds.isZero() || uOfferOwnerID == uTakerID)
 			{
 				// Only provide funded offers and offers of the taker.
+				jvOffer["quality"]	= saDirRate.getText();
+
 				jvOffers.append(jvOffer);
 			}
 
