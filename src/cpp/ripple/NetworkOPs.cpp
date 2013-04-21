@@ -2019,6 +2019,8 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_
 		reply.set_seq(request->seq());
 	reply.set_ledgerhash(reply.ledgerhash());
 
+	// WRITEME
+#if 0
 	std::list< std::pair<uint256, std::vector<unsigned char> > > pack1 = getSyncInfo(prevLedger->peekAccountStateMap(),
 		reqLedger->peekAccountStateMap(), 1024);
 
@@ -2045,6 +2047,7 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_
 
 	PackedMessage::pointer msg = boost::make_shared<PackedMessage>(reply, ripple::mtGET_OBJECTS);
 	peer->sendPacket(msg, false);
+#endif
 }
 
 // vim:ts=4
