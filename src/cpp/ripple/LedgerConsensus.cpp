@@ -290,7 +290,10 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 	{ // we need to switch the ledger we're working from
 		Ledger::pointer newLCL = theApp->getLedgerMaster().getLedgerByHash(lclHash);
 		if (newLCL)
+		{
 			mPreviousLedger = newLCL;
+			mPrevLedgerHash = newLCL->getHash();
+		}
 		else if (!mAcquiringLedger || (mAcquiringLedger->getHash() != mPrevLedgerHash))
 		{ // need to start acquiring the correct consensus LCL
 			cLog(lsWARNING) << "Need consensus ledger " << mPrevLedgerHash;
