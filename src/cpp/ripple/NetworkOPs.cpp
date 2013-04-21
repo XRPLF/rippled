@@ -2009,45 +2009,46 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_ptr<ripple::TMGetObjectByHash> request,
 	Ledger::pointer prevLedger, Ledger::pointer reqLedger)
 {
-	Peer::pointer peer = wPeer.lock();
-	if (!peer)
-		return;
-
-	ripple::TMGetObjectByHash reply;
-	reply.set_query(false);
-	if (request->has_seq())
-		reply.set_seq(request->seq());
-	reply.set_ledgerhash(reply.ledgerhash());
-
-	// WRITEME
-#if 0
-	std::list< std::pair<uint256, std::vector<unsigned char> > > pack1 = getSyncInfo(prevLedger->peekAccountStateMap(),
-		reqLedger->peekAccountStateMap(), 1024);
-
-	typedef std::pair< uint256, std::vector<unsigned char> > uvpair_t;
-	BOOST_FOREACH(uvpair_t& node, pack1)
+	try
 	{
-		ripple::TMIndexedObject& newObj = *reply.add_objects();
-		newObj.set_hash(node.first.begin(), 256 / 8);
-		newObj.set_data(&node.second[0], node.second.size());
-	}
+		Peer::pointer peer = wPeer.lock();
+		if (!peer)
+			return;
 
-	if (reqLedger->getAccountHash().isNonZero())
-	{
-		SHAMapIterator it(*reqLedger->peekTransactionMap(), true, true);
-		for (SHAMapTreeNode* node = it.getNext(); node != NULL; node = it.getNext())
+		ripple::TMGetObjectByHash reply;
+		reply.set_query(false);
+		if (request->has_seq())
+			reply.set_seq(request->seq());
+		reply.set_ledgerhash(reply.ledgerhash());
+
+		std::list<SHAMap::fetchPackEntry_t> pack =
+			reqLedger->peekAccountStateMap()->getFetchPack(prevLedger->peekAccountStateMap().get(), false, 1024);
+		BOOST_FOREACH(SHAMap::fetchPackEntry_t& node, pack)
 		{
-			Serializer s;
-			node->addRaw(s, snfPREFIX);
 			ripple::TMIndexedObject& newObj = *reply.add_objects();
-			newObj.set_hash(node->getNodeHash().begin(), 256 / 8);
-			newObj.set_data(&s.peekData()[0], s.peekData().size());
+			newObj.set_hash(node.first.begin(), 256 / 8);
+			newObj.set_data(&node.second[0], node.second.size());
 		}
-	}
 
-	PackedMessage::pointer msg = boost::make_shared<PackedMessage>(reply, ripple::mtGET_OBJECTS);
-	peer->sendPacket(msg, false);
-#endif
+		if (reqLedger->getAccountHash().isNonZero() && (pack.size() < 768))
+		{
+			pack = reqLedger->peekTransactionMap()->getFetchPack(NULL, true, 256);
+			BOOST_FOREACH(SHAMap::fetchPackEntry_t& node, pack)
+			{
+				ripple::TMIndexedObject& newObj = *reply.add_objects();
+				newObj.set_hash(node.first.begin(), 256 / 8);
+				newObj.set_data(&node.second[0], node.second.size());
+			}
+		}
+
+		cLog(lsINFO) << "Built fetch pack with " << reply.objects().size() << " nodes";
+		PackedMessage::pointer msg = boost::make_shared<PackedMessage>(reply, ripple::mtGET_OBJECTS);
+		peer->sendPacket(msg, false);
+	}
+	catch (...)
+	{
+		cLog(lsWARNING) << "Exception building fetch pach";
+	}
 }
 
 // vim:ts=4
