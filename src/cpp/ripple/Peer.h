@@ -93,7 +93,7 @@ protected:
 	void recvGetContacts(ripple::TMGetContacts& packet);
 	void recvGetPeers(ripple::TMGetPeers& packet);
 	void recvPeers(ripple::TMPeers& packet);
-	void recvGetObjectByHash(ripple::TMGetObjectByHash& packet);
+	void recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash>& packet);
 	void recvPing(ripple::TMPing& packet);
 	void recvErrorMessage(ripple::TMErrorMsg& packet);
 	void recvSearchTransaction(ripple::TMSearchTransaction& packet);
@@ -110,6 +110,8 @@ protected:
 
 	void addLedger(const uint256& ledger);
 	void addTxSet(const uint256& TxSet);
+
+	void doFetchPack(const boost::shared_ptr<ripple::TMGetObjectByHash>& packet);
 
 	static void doProofOfWork(Job&, boost::weak_ptr<Peer>, ProofOfWork::pointer);
 

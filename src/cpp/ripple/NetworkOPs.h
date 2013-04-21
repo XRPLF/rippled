@@ -260,6 +260,8 @@ public:
 	bool hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, ripple::TxSetStatus status);
 	void mapComplete(const uint256& hash, SHAMap::ref map);
 	bool stillNeedTXSet(const uint256& hash);
+	void makeFetchPack(Job&, boost::weak_ptr<Peer> peer, boost::shared_ptr<ripple::TMGetObjectByHash> request,
+		Ledger::pointer prevLedger, Ledger::pointer reqLedger);
 
 	// network state machine
 	void checkState(const boost::system::error_code& result);

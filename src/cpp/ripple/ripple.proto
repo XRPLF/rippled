@@ -233,6 +233,7 @@ message TMGetObjectByHash
 		otTRANSACTION_NODE	= 3;
 		otSTATE_NODE		= 4;
 		otCAS_OBJECT		= 5;
+		otFETCH_PACK		= 6;
 	}
 
 	required ObjectType type			= 1;

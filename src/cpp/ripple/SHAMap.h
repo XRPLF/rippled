@@ -35,7 +35,7 @@ private:
 	int		mDepth;
 	mutable size_t	mHash;
 
-	void setHash() const;
+	void setMHash() const;
 
 protected:
 	SHAMapNode(int depth, const uint256& id, bool) : mNodeID(id), mDepth(depth), mHash(0) { ; }
@@ -51,7 +51,7 @@ public:
 	const uint256& getNodeID()	const	{ return mNodeID; }
 	bool isValid() const 				{ return (mDepth >= 0) && (mDepth < 64); }
 	bool isRoot() const					{ return mDepth == 0; }
-	size_t getHash() const				{ if (mHash == 0) setHash(); return mHash; }
+	size_t getMHash() const				{ if (mHash == 0) setMHash(); return mHash; }
 
 	virtual bool isPopulated() const	{ return false; }
 
@@ -329,10 +329,33 @@ public:
 	static SMAddNode invalid()	{ return SMAddNode(true, false); }
 };
 
+class SHAMapIterator
+{
+friend class SHAMap;
+
+	typedef std::pair<SHAMapTreeNode*, int>			stack_t;
+
+	SHAMap&					mMap;
+	std::stack<stack_t>		mStack;
+	bool					mInner, mLeaf, mLock;
+
+public:
+	SHAMapIterator(SHAMap& map, bool returnInner, bool returnLeaf);
+	~SHAMapIterator();
+
+	bool lock();
+	bool unlock();
+	void reset();
+
+	SHAMapTreeNode* getNext();
+};
+
 extern bool SMANCombine(SMAddNode& existing, const SMAddNode& additional);
 
 class SHAMap : public IS_INSTANCE(SHAMap)
 {
+friend class SHAMapIterator;
+
 public:
 	typedef boost::shared_ptr<SHAMap> pointer;
 	typedef const boost::shared_ptr<SHAMap>& ref;
@@ -341,7 +364,7 @@ public:
 	typedef std::map<uint256, SHAMapDiffItem> SHAMapDiff;
 	typedef boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> SHADirtyMap;
 
-private:
+protected:
 	uint32 mSeq;
 	mutable boost::recursive_mutex mLock;
 	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> mTNByID;
@@ -355,8 +378,6 @@ private:
 	SHAMapType mType;
 
 	static KeyCache<uint256> fullBelowCache;
-
-protected:
 
 	void dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& target, uint256 prevHash);
 	std::stack<SHAMapTreeNode::pointer> getStack(const uint256& id, bool include_nonmatching_leaf, bool partialOk);
@@ -478,6 +499,9 @@ public:
 
 	static void sweep()			{ fullBelowCache.sweep(); }
 };
+
+extern std::list< std::pair<uint256, std::vector<unsigned char> > >
+	getSyncInfo(SHAMap::pointer have, SHAMap::pointer want, int max);
 
 #endif
 // vim:ts=4

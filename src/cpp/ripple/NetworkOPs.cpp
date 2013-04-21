@@ -2004,4 +2004,45 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 //	jvResult["nodes"]	= Json::Value(Json::arrayValue);
 }
 
+void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_ptr<ripple::TMGetObjectByHash> request,
+	Ledger::pointer prevLedger, Ledger::pointer reqLedger)
+{
+	Peer::pointer peer = wPeer.lock();
+	if (!peer)
+		return;
+
+	ripple::TMGetObjectByHash reply;
+	reply.set_query(false);
+	if (request->has_seq())
+		reply.set_seq(request->seq());
+	reply.set_ledgerhash(reply.ledgerhash());
+
+	std::list< std::pair<uint256, std::vector<unsigned char> > > pack1 = getSyncInfo(prevLedger->peekAccountStateMap(),
+		reqLedger->peekAccountStateMap(), 1024);
+
+	typedef std::pair< uint256, std::vector<unsigned char> > uvpair_t;
+	BOOST_FOREACH(uvpair_t& node, pack1)
+	{
+		ripple::TMIndexedObject& newObj = *reply.add_objects();
+		newObj.set_hash(node.first.begin(), 256 / 8);
+		newObj.set_data(&node.second[0], node.second.size());
+	}
+
+	if (reqLedger->getAccountHash().isNonZero())
+	{
+		SHAMapIterator it(*reqLedger->peekTransactionMap(), true, true);
+		for (SHAMapTreeNode* node = it.getNext(); node != NULL; node = it.getNext())
+		{
+			Serializer s;
+			node->addRaw(s, snfPREFIX);
+			ripple::TMIndexedObject& newObj = *reply.add_objects();
+			newObj.set_hash(node->getNodeHash().begin(), 256 / 8);
+			newObj.set_data(&s.peekData()[0], s.peekData().size());
+		}
+	}
+
+	PackedMessage::pointer msg = boost::make_shared<PackedMessage>(reply, ripple::mtGET_OBJECTS);
+	peer->sendPacket(msg, false);
+}
+
 // vim:ts=4
