@@ -176,31 +176,7 @@ std::list< std::pair<uint256, std::vector<unsigned char> > >
 	getSyncInfo(SHAMap::pointer have, SHAMap::pointer want, int max)
 {
 	std::list< std::pair< uint256, std::vector<unsigned char> > > ret;
-	SHAMapIterator haveI(*have, true, false);
-	SHAMapIterator wantI(*want, true, false);
-	SHAMapTreeNode *haveN = haveI.getNext();
-	SHAMapTreeNode *wantN = wantI.getNext();
-	while (wantN != NULL)
-	{
-		if (haveN && (haveN->getNodeHash() == wantN->getNodeHash()))
-		{ // they match, advance both
-			haveN = haveI.getNext();
-			wantN = wantI.getNext();
-		}
-		else if (haveN && (haveN->getNodeHash() < wantN->getNodeHash()))
-		{ // need to advance have pointer
-			haveN = haveI.getNext();
-		}
-		else
-		{ // unmatched inner node
-			Serializer s;
-			wantN->addRaw(s, snfPREFIX);
-			ret.push_back(std::make_pair(wantN->getNodeHash(), s.peekData()));
-			if (--max <= 0)
-				break;
-			wantN = wantI.getNext();
-		}
-	}
+	// WRITEME
 	return ret;
 }
 

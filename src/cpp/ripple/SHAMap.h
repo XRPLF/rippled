@@ -329,27 +329,6 @@ public:
 	static SMAddNode invalid()	{ return SMAddNode(true, false); }
 };
 
-class SHAMapIterator
-{
-friend class SHAMap;
-
-	typedef std::pair<SHAMapTreeNode*, int>			stack_t;
-
-	SHAMap&					mMap;
-	std::stack<stack_t>		mStack;
-	bool					mInner, mLeaf, mLock;
-
-public:
-	SHAMapIterator(SHAMap& map, bool returnInner, bool returnLeaf);
-	~SHAMapIterator();
-
-	bool lock();
-	bool unlock();
-	void reset();
-
-	SHAMapTreeNode* getNext();
-};
-
 extern bool SMANCombine(SMAddNode& existing, const SMAddNode& additional);
 
 class SHAMap : public IS_INSTANCE(SHAMap)
