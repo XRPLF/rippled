@@ -1164,11 +1164,11 @@ Remote.prototype.request_ripple_balance = function (account, issuer, currency, c
         var accountHigh     = UInt160.from_json(account).equals(highLimit.issuer());
 
         request.emit('ripple_state', {
-          'account_balance'     : ( accountHigh ? balance.negate() : balance).parse_issuer(account),
-          'peer_balance'        : (!accountHigh ? balance.negate() : balance).parse_issuer(issuer),
+          'account_balance'     : ( accountHigh ? balance.negate() : balance.clone()).parse_issuer(account),
+          'peer_balance'        : (!accountHigh ? balance.negate() : balance.clone()).parse_issuer(issuer),
 
-          'account_limit'       : ( accountHigh ? highLimit : lowLimit).parse_issuer(issuer),
-          'peer_limit'          : (!accountHigh ? highLimit : lowLimit).parse_issuer(account),
+          'account_limit'       : ( accountHigh ? highLimit : lowLimit).clone().parse_issuer(issuer),
+          'peer_limit'          : (!accountHigh ? highLimit : lowLimit).clone().parse_issuer(account),
 
           'account_quality_in'  : ( accountHigh ? node.HighQualityIn : node.LowQualityIn),
           'peer_quality_in'     : (!accountHigh ? node.HighQualityIn : node.LowQualityIn),

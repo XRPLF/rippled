@@ -329,7 +329,7 @@ buster.testCase("Amount", {
       var a = Amount.from_json("1/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
       var b = Amount.from_json("1/USD/rH5aWQJ4R7v4Mpyf4kDBUvDFT5cbpFq3XP");
       buster.refute(a.equals(b));
-      buster.assert.equals(a.not_equals_why(b), "Non-XRP issuer differs.");
+      buster.assert.equals(a.not_equals_why(b), "Non-XRP issuer differs: rH5aWQJ4R7v4Mpyf4kDBUvDFT5cbpFq3XP/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
     },
     "1 USD != 1 EUR" : function () {
       var a = Amount.from_json("1/USD/rNDKeo9RrCiRdfsMG8AdoZvNZxHASGzbZL");
