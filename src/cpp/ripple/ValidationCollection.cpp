@@ -78,7 +78,7 @@ bool ValidationCollection::addValidation(SerializedValidation::ref val, const st
 				condWrite();
 			}
 			else
-				isCurrenty = false;
+				isCurrent = false;
 		}
 	}
 
