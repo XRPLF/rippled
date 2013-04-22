@@ -305,7 +305,7 @@ void JobQueue::threadEntry()
 //			}
 		}
 
-		if (mShuttingDown)
+		if (mJobSet.empty())
 			break;
 
 		JobType type;
