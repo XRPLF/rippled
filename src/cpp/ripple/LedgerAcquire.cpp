@@ -787,7 +787,13 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 		ptr->setTimer(); // Cannot call in constructor
 	}
 	else
+	{
+		Ledger::pointer ledger = ptr->getLedger();
+		ledger->setClosed();
+		ledger->setImmutable();
+		theApp->getLedgerMaster().storeLedger(ledger);
 		cLog(lsDEBUG) << "Acquiring ledger we already have: " << hash;
+	}
 	return ptr;
 }
 

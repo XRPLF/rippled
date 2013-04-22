@@ -77,6 +77,8 @@ bool ValidationCollection::addValidation(SerializedValidation::ref val, const st
 				it->second = val;
 				condWrite();
 			}
+			else
+				isCurrenty = false;
 		}
 	}
 
@@ -200,7 +202,7 @@ int ValidationCollection::getLoadRatio(bool overLoaded)
 
 std::list<SerializedValidation::pointer> ValidationCollection::getCurrentTrustedValidations()
 {
-    uint32 cutoff = theApp->getOPs().getNetworkTimeNC() - LEDGER_VAL_INTERVAL;
+	uint32 cutoff = theApp->getOPs().getNetworkTimeNC() - LEDGER_VAL_INTERVAL;
 
 	std::list<SerializedValidation::pointer> ret;
 

@@ -571,6 +571,4 @@ std::ostream& operator<<(std::ostream& out, const SHAMapMissingNode& mn)
 	return out;
 }
 
-
-
 // vim:ts=4

@@ -82,7 +82,7 @@ void TFInit()
 		<< SOElement(sfReferenceFeeUnits,	SOE_REQUIRED)
 		<< SOElement(sfReserveBase,			SOE_REQUIRED)
 		<< SOElement(sfReserveIncrement,	SOE_REQUIRED)
-     ;
+		;
 }
 
 TransactionFormat* TransactionFormat::getTxnFormat(TransactionType t)
