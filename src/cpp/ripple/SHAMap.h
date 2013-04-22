@@ -477,7 +477,7 @@ public:
 	virtual void dump(bool withHashes = false);
 
 	typedef std::pair< uint256, std::vector<unsigned char> > fetchPackEntry_t;
-	std::list<fetchPackEntry_t> getFetchPack(SHAMap* prior, bool includeLeaves, int max);
+	std::list<fetchPackEntry_t> getFetchPack(SHAMap* have, bool includeLeaves, int max);
 
 	static void sweep()			{ fullBelowCache.sweep(); }
 };

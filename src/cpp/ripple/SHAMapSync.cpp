@@ -482,14 +482,14 @@ bool SHAMap::hasNode(const SHAMapNode& nodeID, const uint256& nodeHash)
 	return node->getNodeHash() == nodeHash;
 }
 
-std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* prior, bool includeLeaves, int max)
+std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool includeLeaves, int max)
 {
 	std::list<fetchPackEntry_t> ret;
 
 	if (root->isLeaf())
 	{
 		if (includeLeaves && !root->getNodeHash().isZero() &&
-			(!prior || !prior->hasNode(*root, root->getNodeHash())))
+			(!have || !have->hasNode(*root, root->getNodeHash())))
 		{
 			Serializer s;
 			root->addRaw(s, snfPREFIX);
@@ -501,7 +501,7 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* prior, bool inc
 	if (root->getNodeHash().isZero())
 		return ret;
 
-	if (prior && (root->getNodeHash() == prior->root->getNodeHash()))
+	if (have && (root->getNodeHash() == have->root->getNodeHash()))
 		return ret;
 
 	std::stack<SHAMapTreeNode*> stack; // contains unexplored non-matching inner node entries
@@ -529,10 +529,10 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* prior, bool inc
 				SHAMapTreeNode *next = getNodePointer(childID, childHash);
 				if (next->isInner())
 				{
-					if (!prior || !prior->hasNode(*next, childHash))
+					if (!have || !have->hasNode(*next, childHash))
 						stack.push(next);
 				}
-				else if (includeLeaves && (!prior || !prior->hasNode(childID, childHash)))
+				else if (includeLeaves && (!have || !have->hasNode(childID, childHash)))
 				{
 					Serializer s;
 					node->addRaw(s, snfPREFIX);

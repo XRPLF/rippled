@@ -34,7 +34,7 @@ void InfoSub::onSendEmpty()
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
 	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mProposing(false), mValidating(false),
 	mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0), mLastCloseProposers(0),
-	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0),
+	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0), mFetchPack("FetchPack", 2048, 12),
 	mLastLoadBase(256), mLastLoadFactor(256)
 {
 }
@@ -154,18 +154,6 @@ bool NetworkOPs::isValidated(uint32 seq, const uint256& hash)
 bool NetworkOPs::isValidated(uint32 seq)
 { // use when ledger was retrieved by seq
 	return haveLedger(seq) && (seq <= mLedgerMaster->getValidatedLedger()->getLedgerSeq());
-}
-
-bool NetworkOPs::addWantedHash(const uint256& h)
-{
-	boost::recursive_mutex::scoped_lock sl(mWantedHashLock);
-	return mWantedHashes.insert(h).second;
-}
-
-bool NetworkOPs::isWantedHash(const uint256& h, bool remove)
-{
-	boost::recursive_mutex::scoped_lock sl(mWantedHashLock);
-	return (remove ? mWantedHashes.erase(h) : mWantedHashes.count(h)) != 0;
 }
 
 void NetworkOPs::submitTransaction(Job&, SerializedTransaction::pointer iTrans, stCallback callback)
@@ -2007,7 +1995,7 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 }
 
 void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_ptr<ripple::TMGetObjectByHash> request,
-	Ledger::pointer prevLedger, Ledger::pointer reqLedger)
+	Ledger::pointer wantLedger, Ledger::pointer haveLedger)
 {
 	try
 	{
@@ -2021,25 +2009,32 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_
 			reply.set_seq(request->seq());
 		reply.set_ledgerhash(reply.ledgerhash());
 
-		std::list<SHAMap::fetchPackEntry_t> pack =
-			reqLedger->peekAccountStateMap()->getFetchPack(prevLedger->peekAccountStateMap().get(), false, 1024);
-		BOOST_FOREACH(SHAMap::fetchPackEntry_t& node, pack)
+		do
 		{
-			ripple::TMIndexedObject& newObj = *reply.add_objects();
-			newObj.set_hash(node.first.begin(), 256 / 8);
-			newObj.set_data(&node.second[0], node.second.size());
-		}
-
-		if (reqLedger->getAccountHash().isNonZero() && (pack.size() < 768))
-		{
-			pack = reqLedger->peekTransactionMap()->getFetchPack(NULL, true, 256);
+			std::list<SHAMap::fetchPackEntry_t> pack = wantLedger->peekAccountStateMap()->getFetchPack(
+				haveLedger->peekAccountStateMap().get(), false, 1024 - reply.objects().size());
 			BOOST_FOREACH(SHAMap::fetchPackEntry_t& node, pack)
 			{
 				ripple::TMIndexedObject& newObj = *reply.add_objects();
 				newObj.set_hash(node.first.begin(), 256 / 8);
 				newObj.set_data(&node.second[0], node.second.size());
 			}
-		}
+
+			if (wantLedger->getAccountHash().isNonZero() && (pack.size() < 768))
+			{
+				pack = wantLedger->peekTransactionMap()->getFetchPack(NULL, true, 256);
+				BOOST_FOREACH(SHAMap::fetchPackEntry_t& node, pack)
+				{
+					ripple::TMIndexedObject& newObj = *reply.add_objects();
+					newObj.set_hash(node.first.begin(), 256 / 8);
+					newObj.set_data(&node.second[0], node.second.size());
+				}
+			}
+			if (reply.objects().size() >= 768)
+				break;
+			haveLedger = wantLedger;
+			wantLedger = getLedgerByHash(haveLedger->getParentHash());
+		} while (wantLedger);
 
 		cLog(lsINFO) << "Built fetch pack with " << reply.objects().size() << " nodes";
 		PackedMessage::pointer msg = boost::make_shared<PackedMessage>(reply, ripple::mtGET_OBJECTS);
@@ -2049,6 +2044,21 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_
 	{
 		cLog(lsWARNING) << "Exception building fetch pach";
 	}
+}
+
+void NetworkOPs::sweepFetchPack()
+{
+	mFetchPack.sweep();
+}
+
+void NetworkOPs::addFetchPack(const uint256& hash, boost::shared_ptr< std::vector<unsigned char> >& data)
+{
+	mFetchPack.canonicalize(hash, data, false);
+}
+
+bool NetworkOPs::getFetchPack(const uint256& hash, std::vector<unsigned char>& data)
+{
+	return mFetchPack.retrieve(hash, data);
 }
 
 // vim:ts=4

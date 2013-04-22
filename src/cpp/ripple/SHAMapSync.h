@@ -35,8 +35,8 @@ public:
 		theApp->getHashedObjectStore().store(hotACCOUNT_NODE, mLedgerSeq, nodeData, nodeHash);
 	}
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
-	{ // fetchNodeExternal already tried
-		return false;
+	{
+		return theApp->getOPs().getFetchPack(nodeHash, nodeData);
 	}
 };
 
@@ -58,8 +58,8 @@ public:
 			mLedgerSeq, nodeData, nodeHash);
 	}
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
-	{ // fetchNodeExternal already tried
-		return false;
+	{
+		return theApp->getOPs().getFetchPack(nodeHash, nodeData);
 	}
 };
 

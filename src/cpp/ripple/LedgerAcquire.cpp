@@ -363,7 +363,6 @@ void LedgerAcquire::trigger(Peer::ref peer)
 				BOOST_FOREACH(neededHash_t& p, need)
 				{
 					cLog(lsWARNING) << "Want: " << p.second;
-					theApp->getOPs().addWantedHash(p.second);
 					if (!typeSet)
 					{
 						tmBH.set_type(p.first);

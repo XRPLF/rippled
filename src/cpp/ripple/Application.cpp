@@ -360,6 +360,7 @@ void Application::sweep()
 	mSLECache.sweep();
 	AcceptedLedger::sweep();
 	SHAMap::sweep();
+	mNetOps.sweepFetchPack();
 	mSweepTimer.expires_from_now(boost::posix_time::seconds(theConfig.getSize(siSweepInterval)));
 	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
 }

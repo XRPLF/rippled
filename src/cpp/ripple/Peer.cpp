@@ -1189,14 +1189,14 @@ void Peer::recvPeers(ripple::TMPeers& packet)
 void Peer::recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash>& ptr)
 {
 	ripple::TMGetObjectByHash& packet = *ptr;
-	if (packet.type() == ripple::TMGetObjectByHash::otFETCH_PACK)
-	{
-		doFetchPack(ptr);
-		return;
-	}
 
 	if (packet.query())
 	{ // this is a query
+		if (packet.type() == ripple::TMGetObjectByHash::otFETCH_PACK)
+		{
+			doFetchPack(ptr);
+			return;
+		}
 		ripple::TMGetObjectByHash reply;
 
 		reply.set_query(false);
@@ -1233,16 +1233,6 @@ void Peer::recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash
 	}
 	else
 	{ // this is a reply
-		uint32 seq = packet.has_seq() ? packet.seq() : 0;
-		HashedObjectType type;
-		switch (packet.type())
-		{
-			case ripple::TMGetObjectByHash::otLEDGER: type = hotLEDGER; break;
-			case ripple::TMGetObjectByHash::otTRANSACTION: type = hotTRANSACTION; break;
-			case ripple::TMGetObjectByHash::otSTATE_NODE: type = hotACCOUNT_NODE; break;
-			case ripple::TMGetObjectByHash::otTRANSACTION_NODE: type = hotTRANSACTION_NODE; break;
-			default: type = hotUNKNOWN;
-		}
 		for (int i = 0; i < packet.objects_size(); ++i)
 		{
 			const ripple::TMIndexedObject& obj = packet.objects(i);
@@ -1250,23 +1240,11 @@ void Peer::recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash
 			{
 				uint256 hash;
 				memcpy(hash.begin(), obj.hash().data(), 256 / 8);
-				if (theApp->getOPs().isWantedHash(hash, true))
-				{
-					std::vector<unsigned char> data(obj.data().begin(), obj.data().end());
-					if (Serializer::getSHA512Half(data) != hash)
-					{
-						cLog(lsWARNING) << "Bad hash in data from peer";
-						theApp->getOPs().addWantedHash(hash);
-						punishPeer(LT_BadData);
-					}
-					else
-					{
-						cLog(lsDEBUG) << "Got wanted hash " << hash;
-						theApp->getHashedObjectStore().store(type, seq, data, hash);
-					}
-				}
-				else
-					cLog(lsWARNING) << "Received unwanted hash " << getIP() << " " << hash;
+
+				boost::shared_ptr< std::vector<unsigned char> > data = boost::make_shared< std::vector<unsigned char> >
+					(obj.data().begin(), obj.data().end());
+
+				theApp->getOPs().addFetchPack(hash, data);
 			}
 		}
 	}
@@ -1868,22 +1846,22 @@ void Peer::doFetchPack(const boost::shared_ptr<ripple::TMGetObjectByHash>& packe
 		uint256 hash;
 		memcpy(hash.begin(), packet->ledgerhash().data(), 32);
 
-		Ledger::pointer reqLedger = theApp->getOPs().getLedgerByHash(hash);
-		if (!reqLedger)
+		Ledger::pointer haveLedger = theApp->getOPs().getLedgerByHash(hash);
+		if (!haveLedger)
 		{
 			cLog(lsINFO) << "Peer requests fetch pack for ledger we don't have: " << hash;
 			punishPeer(LT_RequestNoReply);
 			return;
 		}
-		if (!reqLedger->isClosed())
+		if (!haveLedger->isClosed())
 		{
-			cLog(lsWARNING) << "Peer requests fetch pack for open ledger: " << hash;
+			cLog(lsWARNING) << "Peer requests fetch pack from open ledger: " << hash;
 			punishPeer(LT_InvalidRequest);
 			return;
 		}
 
-		Ledger::pointer prevLedger = theApp->getOPs().getLedgerByHash(reqLedger->getParentHash());
-		if (!prevLedger)
+		Ledger::pointer wantLedger = theApp->getOPs().getLedgerByHash(haveLedger->getParentHash());
+		if (!wantLedger)
 		{
 			cLog(lsINFO) << "Peer requests fetch pack for ledger whose predecessor we don't have: " << hash;
 			punishPeer(LT_RequestNoReply);
@@ -1891,7 +1869,7 @@ void Peer::doFetchPack(const boost::shared_ptr<ripple::TMGetObjectByHash>& packe
 		}
 		theApp->getJobQueue().addJob(jtPACK, "MakeFetchPack",
 			BIND_TYPE(&NetworkOPs::makeFetchPack, &theApp->getOPs(), P_1,
-				boost::weak_ptr<Peer>(shared_from_this()), packet, prevLedger, reqLedger));
+				boost::weak_ptr<Peer>(shared_from_this()), packet, wantLedger, haveLedger));
 	}
 	else
 	{ // received fetch pack
