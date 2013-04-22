@@ -118,7 +118,7 @@ bool LedgerAcquire::tryLocal()
 		std::vector<unsigned char> data;
 		if (!theApp->getOPs().getFetchPack(mHash, data))
 			return false;
-		cLog(lsINFO) << "Ledger base found in fetch pack";
+		cLog(lsTRACE) << "Ledger base found in fetch pack";
 		mLedger = boost::make_shared<Ledger>(data, true);
 		theApp->getHashedObjectStore().store(hotLEDGER, mLedger->getLedgerSeq(), data, mHash);
 	}
@@ -792,7 +792,13 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 		ptr->setTimer(); // Cannot call in constructor
 	}
 	else
+	{
+		Ledger::pointer ledger = ptr->getLedger();
+		ledger->setClosed();
+		ledger->setImmutable();
+		theApp->getLedgerMaster().storeLedger(ledger);
 		cLog(lsDEBUG) << "Acquiring ledger we already have: " << hash;
+	}
 	return ptr;
 }
 

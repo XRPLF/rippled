@@ -2088,7 +2088,6 @@ bool NetworkOPs::getFetchPack(const uint256& hash, std::vector<unsigned char>& d
 		cLog(lsWARNING) << "Bad entry in fetch pack";
 		return false;
 	}
-	cLog(lsINFO) << hash << " found in fetch pack";
 	return true;
 }
 

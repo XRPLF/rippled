@@ -251,6 +251,38 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 			theApp->getIOService().post(boost::bind(&LedgerMaster::missingAcquireComplete, this, mMissingLedger));
 	}
 
+	int fetchMax = theConfig.getSize(siLedgerFetch);
+	int timeoutCount;
+	int fetchCount = theApp->getMasterLedgerAcquire().getFetchCount(timeoutCount);
+
+	if ((fetchCount < fetchMax) && theApp->getOPs().isFull())
+	{
+		if (timeoutCount > 2)
+		{
+			cLog(lsDEBUG) << "Not acquiring due to timeouts";
+		}
+		else
+		{
+			typedef std::pair<uint32, uint256> u_pair;
+			std::vector<u_pair> vec = origLedger->getLedgerHashes();
+			BOOST_FOREACH(const u_pair& it, vec)
+			{
+				if ((fetchCount < fetchMax) && (it.first < ledgerSeq) &&
+					!mCompleteLedgers.hasValue(it.first) && !theApp->getMasterLedgerAcquire().find(it.second))
+				{
+					LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(it.second);
+					if (acq && acq->isComplete())
+					{
+						acq->getLedger()->setAccepted();
+						setFullLedger(acq->getLedger());
+						mLedgerHistory.addAcceptedLedger(acq->getLedger(), false);
+					}
+					else ++fetchCount;
+				}
+			}
+		}
+	}
+
 	if (theApp->getOPs().shouldFetchPack())
 	{ // refill our fetch pack
 		Ledger::pointer nextLedger = mLedgerHistory.getLedgerBySeq(ledgerSeq + 1);
@@ -283,32 +315,6 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 			}
 			else
 				cLog(lsTRACE) << "No peer for fetch pack";
-		}
-	}
-
-	int fetchMax = theConfig.getSize(siLedgerFetch);
-	int timeoutCount;
-	int fetchCount = theApp->getMasterLedgerAcquire().getFetchCount(timeoutCount);
-
-	if ((fetchCount < fetchMax) && theApp->getOPs().isFull())
-	{
-		if (timeoutCount > 2)
-		{
-			cLog(lsDEBUG) << "Not acquiring due to timeouts";
-		}
-		else
-		{
-			typedef std::pair<uint32, uint256> u_pair;
-			std::vector<u_pair> vec = origLedger->getLedgerHashes();
-			BOOST_FOREACH(const u_pair& it, vec)
-			{
-				if ((fetchCount < fetchMax) && (it.first < ledgerSeq) &&
-					!mCompleteLedgers.hasValue(it.first) && !theApp->getMasterLedgerAcquire().find(it.second))
-				{
-					++fetchCount;
-					theApp->getMasterLedgerAcquire().findCreate(it.second);
-				}
-			}
 		}
 	}
 
