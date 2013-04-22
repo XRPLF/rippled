@@ -251,6 +251,41 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 			theApp->getIOService().post(boost::bind(&LedgerMaster::missingAcquireComplete, this, mMissingLedger));
 	}
 
+	if (theApp->getOPs().getFetchSize() < 256)
+	{ // refill our fetch pack
+		Ledger::pointer nextLedger = mLedgerHistory.getLedgerBySeq(ledgerSeq + 1);
+		if (nextLedger)
+		{
+			ripple::TMGetObjectByHash tmBH;
+			tmBH.set_type(ripple::TMGetObjectByHash::otFETCH_PACK);
+			tmBH.set_query(true);
+			tmBH.set_seq(ledgerSeq);
+			tmBH.set_ledgerhash(ledgerHash.begin(), 32);
+			std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+
+			Peer::pointer target;
+			int count = 0;
+
+			BOOST_FOREACH(const Peer::pointer& peer, peerList)
+			{
+				if (peer->hasRange(ledgerSeq, ledgerSeq + 1))
+				{
+					if (count++ == 0)
+						target = peer;
+					else if ((rand() % count) == 0)
+						target = peer;
+				}
+			}
+			if (target)
+			{
+				PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tmBH, ripple::mtGET_OBJECTS);
+				target->sendPacket(packet, false);
+			}
+			else
+				cLog(lsINFO) << "No peer for fetch pack";
+		}
+	}
+
 	int fetchMax = theConfig.getSize(siLedgerFetch);
 	int timeoutCount;
 	int fetchCount = theApp->getMasterLedgerAcquire().getFetchCount(timeoutCount);

@@ -731,7 +731,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 	}
 }
 
-void SHAMap::fetchRoot(const uint256& hash)
+void SHAMap::fetchRoot(const uint256& hash, SHAMapSyncFilter* filter)
 {
 	if (sLog(lsTRACE))
 	{
@@ -742,7 +742,20 @@ void SHAMap::fetchRoot(const uint256& hash)
 		else
 			cLog(lsTRACE) << "Fetch root SHAMap node " << hash;
 	}
-	root = fetchNodeExternal(SHAMapNode(), hash);
+	try
+	{
+		root = fetchNodeExternal(SHAMapNode(), hash);
+	}
+	catch (SHAMapMissingNode& mn)
+	{
+		std::vector<unsigned char> nodeData;
+		if (!filter || filter->haveNode(SHAMapNode(), hash, nodeData))
+			throw;
+		root = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), nodeData,
+			mSeq - 1, snfPREFIX, hash, true);
+		mTNByID[*root] = root;
+		filter->gotNode(true, SHAMapNode(), hash, nodeData, root->getType());
+	}
 	assert(root->getNodeHash() == hash);
 }
 

@@ -36,6 +36,8 @@ Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, 
 	mPeerId(peerID),
 	mPrivate(false),
 	mLoad(""),
+	mMinLedger(0),
+	mMaxLedger(0),
 	mSocketSsl(io_service, ctx),
 	mActivityTimer(io_service),
 	mIOStrand(io_service)
@@ -1381,6 +1383,11 @@ void Peer::recvStatus(ripple::TMStatusChange& packet)
 		addLedger(mPreviousLedgerHash);
 	}
 	else mPreviousLedgerHash.zero();
+
+	if (packet.has_firstseq())
+		mMinLedger = packet.firstseq();
+	if (packet.has_lastseq())
+		mMaxLedger = packet.lastseq();
 }
 
 void Peer::recvGetLedger(ripple::TMGetLedger& packet)
@@ -1875,6 +1882,11 @@ void Peer::doFetchPack(const boost::shared_ptr<ripple::TMGetObjectByHash>& packe
 	{ // received fetch pack
 		// WRITEME
 	}
+}
+
+bool Peer::hasProto(int version)
+{
+	return mHello.has_protoversion() && (mHello.protoversion() >= version);
 }
 
 Json::Value Peer::getJson()

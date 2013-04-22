@@ -6,7 +6,7 @@
 
 #define SERVER_VERSION_MAJOR		0
 #define SERVER_VERSION_MINOR		8
-#define SERVER_VERSION_SUB			"-b"
+#define SERVER_VERSION_SUB			"-c"
 #define SERVER_NAME					"Ripple"
 
 #define SV_STRINGIZE(x)				SV_STRINGIZE2(x)
@@ -16,7 +16,7 @@
 
 // Version we prefer to speak:
 #define PROTO_VERSION_MAJOR			1
-#define PROTO_VERSION_MINOR			2
+#define PROTO_VERSION_MINOR			3
 
 // Version we will speak to:
 #define MIN_PROTO_MAJOR				1

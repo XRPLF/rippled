@@ -263,6 +263,7 @@ public:
 		Ledger::pointer wantLedger, Ledger::pointer haveLedger);
 	void addFetchPack(const uint256& hash, boost::shared_ptr< std::vector<unsigned char> >& data);
 	bool getFetchPack(const uint256& hash, std::vector<unsigned char>& data);
+	int getFetchSize();
 	void sweepFetchPack();
 
 	// network state machine

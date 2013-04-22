@@ -119,6 +119,8 @@ message TMStatusChange {
 	optional bytes ledgerHash			= 4;
 	optional bytes ledgerHashPrevious	= 5;
 	optional uint64 networkTime			= 6;
+	optional uint32 firstSeq			= 7;
+	optional uint32 lastSeq				= 8;
 }
 
 

@@ -58,7 +58,7 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 	try
 	{
 		if (mTransHash.isNonZero())
-			mTransactionMap->fetchRoot(mTransHash);
+			mTransactionMap->fetchRoot(mTransHash, NULL);
 	}
 	catch (...)
 	{
@@ -68,7 +68,7 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 	try
 	{
 		if (mAccountHash.isNonZero())
-			mAccountStateMap->fetchRoot(mAccountHash);
+			mAccountStateMap->fetchRoot(mAccountHash, NULL);
 	}
 	catch (...)
 	{
@@ -1625,7 +1625,7 @@ uint64 Ledger::scaleFeeLoad(uint64 fee, bool bAdmin)
 	return theApp->getFeeTrack().scaleFeeLoad(fee, mBaseFee, mReferenceFeeUnits, bAdmin);
 }
 
-std::vector<uint256> Ledger::getNeededTransactionHashes(int max)
+std::vector<uint256> Ledger::getNeededTransactionHashes(int max, SHAMapSyncFilter* filter)
 {
 	std::vector<uint256> ret;
 	if (mTransHash.isNonZero())
@@ -1633,12 +1633,12 @@ std::vector<uint256> Ledger::getNeededTransactionHashes(int max)
 		if (mTransactionMap->getHash().isZero())
 			ret.push_back(mTransHash);
 		else
-			ret = mTransactionMap->getNeededHashes(max);
+			ret = mTransactionMap->getNeededHashes(max, filter);
 	}
 	return ret;
 }
 
-std::vector<uint256> Ledger::getNeededAccountStateHashes(int max)
+std::vector<uint256> Ledger::getNeededAccountStateHashes(int max, SHAMapSyncFilter* filter)
 {
 	std::vector<uint256> ret;
 	if (mAccountHash.isNonZero())
@@ -1646,7 +1646,7 @@ std::vector<uint256> Ledger::getNeededAccountStateHashes(int max)
 		if (mAccountStateMap->getHash().isZero())
 			ret.push_back(mAccountHash);
 		else
-			ret = mAccountStateMap->getNeededHashes(max);
+			ret = mAccountStateMap->getNeededHashes(max, filter);
 	}
 	return ret;
 }

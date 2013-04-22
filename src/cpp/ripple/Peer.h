@@ -47,6 +47,7 @@ private:
 	uint64			mPeerId;
 	bool			mPrivate;			// Keep peer IP private.
 	LoadSource		mLoad;
+	uint32			mMinLedger, mMaxLedger;
 
 	uint256			mClosedLedgerHash;
 	uint256			mPreviousLedgerHash;
@@ -162,6 +163,8 @@ public:
 
 	const RippleAddress& getNodePublic() const	{ return mNodePublic; }
 	void cycleStatus() { mPreviousLedgerHash = mClosedLedgerHash; mClosedLedgerHash.zero(); }
+	bool hasProto(int version);
+	bool hasRange(uint32 uMin, uint32 uMax)		{ return (uMin >= mMinLedger) && (uMax <= mMaxLedger); }
 };
 
 #endif

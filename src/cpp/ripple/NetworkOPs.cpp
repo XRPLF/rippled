@@ -2058,7 +2058,21 @@ void NetworkOPs::addFetchPack(const uint256& hash, boost::shared_ptr< std::vecto
 
 bool NetworkOPs::getFetchPack(const uint256& hash, std::vector<unsigned char>& data)
 {
-	return mFetchPack.retrieve(hash, data);
+	bool ret = mFetchPack.retrieve(hash, data);
+	if (!ret)
+		return false;
+	if (hash != Serializer::getSHA512Half(data))
+	{
+		cLog(lsWARNING) << "Bad entry in fetch pack";
+		return false;
+	}
+	cLog(lsTRACE) << hash << " found in fetch pack";
+	return true;
+}
+
+int NetworkOPs::getFetchSize()
+{
+	return mFetchPack.getCacheSize();
 }
 
 // vim:ts=4
