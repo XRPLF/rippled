@@ -472,7 +472,7 @@ bool SHAMap::deepCompare(SHAMap& other)
 bool SHAMap::hasNode(const SHAMapNode& nodeID, const uint256& nodeHash)
 {
 	SHAMapTreeNode* node = root.get();
-	while (node->isInner() && (node->getDepth() <= nodeID.getDepth()))
+	while (node->isInner() && (node->getDepth() < nodeID.getDepth()))
 	{
 		int branch = node->selectBranch(nodeID.getNodeID());
 		if (node->isEmptyBranch(branch))
