@@ -749,7 +749,7 @@ void SHAMap::fetchRoot(const uint256& hash, SHAMapSyncFilter* filter)
 	catch (SHAMapMissingNode& mn)
 	{
 		std::vector<unsigned char> nodeData;
-		if (!filter || filter->haveNode(SHAMapNode(), hash, nodeData))
+		if (!filter || !filter->haveNode(SHAMapNode(), hash, nodeData))
 			throw;
 		root = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), nodeData,
 			mSeq - 1, snfPREFIX, hash, true);
