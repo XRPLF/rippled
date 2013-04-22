@@ -363,8 +363,6 @@ void LedgerAcquire::trigger(Peer::ref peer)
 				ripple::TMGetObjectByHash tmBH;
 				tmBH.set_query(true);
 				tmBH.set_ledgerhash(mHash.begin(), mHash.size());
-				if (mHaveBase)
-					tmBH.set_seq(mLedger->getLedgerSeq());
 				bool typeSet = false;
 				BOOST_FOREACH(neededHash_t& p, need)
 				{
