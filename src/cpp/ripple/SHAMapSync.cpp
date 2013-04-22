@@ -506,6 +506,22 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool incl
 {
 	std::list<fetchPackEntry_t> ret;
 
+	boost::recursive_mutex::scoped_lock ul1(mLock);
+
+	UPTR_T< boost::unique_lock<boost::recursive_mutex> > ul2;
+	if (have)
+	{
+		UPTR_T< boost::unique_lock<boost::recursive_mutex> > ul3(
+			new boost::unique_lock<boost::recursive_mutex>(have->mLock, boost::try_to_lock));
+		if (!(*ul3))
+		{
+			cLog(lsINFO) << "Unable to create pack due to lock";
+			return ret;
+		}
+		ul2.swap(ul3);
+	}
+
+
 	if (root->isLeaf())
 	{
 		if (includeLeaves && !root->getNodeHash().isZero() &&
@@ -566,7 +582,7 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool incl
 			break;
 	}
 
-	cLog(lsINFO) << "Fetch pack has " << ret.size() << " entries";
+	cLog(lsINFO) << "Made pack with " << ret.size() << " entries";
 	return ret;
 }
 

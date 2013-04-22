@@ -1264,6 +1264,12 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 
 
 	info["complete_ledgers"] = theApp->getLedgerMaster().getCompleteLedgers();
+
+
+	size_t fp = mFetchPack.getCacheSize();
+	if (fp != 0)
+		info["fetch_pack"] = Json::UInt(fp);
+
 	info["peers"] = theApp->getConnectionPool().getPeerCount();
 
 	Json::Value lastClose = Json::objectValue;
@@ -2008,6 +2014,7 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_
 		if (request->has_seq())
 			reply.set_seq(request->seq());
 		reply.set_ledgerhash(reply.ledgerhash());
+		reply.set_type(ripple::TMGetObjectByHash::otFETCH_PACK);
 
 		do
 		{
@@ -2061,6 +2068,7 @@ bool NetworkOPs::getFetchPack(const uint256& hash, std::vector<unsigned char>& d
 	bool ret = mFetchPack.retrieve(hash, data);
 	if (!ret)
 		return false;
+	mFetchPack.del(hash, false);
 	if (hash != Serializer::getSHA512Half(data))
 	{
 		cLog(lsWARNING) << "Bad entry in fetch pack";
