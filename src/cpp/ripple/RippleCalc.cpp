@@ -1306,7 +1306,7 @@ TER RippleCalc::calcNodeDeliverRev(
 		{
 			// Adjust output to conform to limited input.
 			// XXX Verify it is impossible for these to be larger than available funds.
-			saOutPass		= STAmount::divRound(saInPassAct, saOfrRate, saTakerGets, true);
+			saOutPass		= STAmount::divRound(saInPassAct, saOfrRate, saTakerGets, !saTakerGets.isNative());
 			saOutPlusFees	= STAmount::mulRound(saOutPass, saOutFeeRate, true);
 
 			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: adjusted: saOutPass=%s saOutPlusFees=%s")
@@ -1447,7 +1447,7 @@ TER RippleCalc::calcNodeDeliverFwd(
 			STAmount	saInTotal		= STAmount::mulRound(saInFunded, saInFeeRate, true);				// Offer maximum in with fees.
 			STAmount	saInSum			= std::min(saInTotal, saInReq-saInAct-saInFees);					// In limited by remaining.
 			STAmount	saInPassAct		= STAmount::divRound(saInSum, saInFeeRate, true);					// In without fees.
-			STAmount	saOutPassMax	= STAmount::divRound(saInPassAct, saOfrRate, saTakerGets, true);	// Out limited by in remaining.
+			STAmount	saOutPassMax	= STAmount::divRound(saInPassAct, saOfrRate, saTakerGets, !saTakerGets.isNative());	// Out limited by in remaining.
 
 			STAmount	saInPassFeesMax	= saInSum-saInPassAct;
 
@@ -2280,7 +2280,7 @@ TER RippleCalc::calcNodeAccountFwd(
 
 			STAmount	saIssueCrd		= uQualityIn >= QUALITY_ONE
 											? saPrvIssueReq													// No fee.
-											: STAmount::mulRound(saPrvIssueReq, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uQualityIn, -9), false);	// Amount to credit.
+											: STAmount::mulRound(saPrvIssueReq, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uQualityIn, -9), true);	// Amount to credit.
 
 			// Amount to credit. Credit for less than received as a surcharge.
 			saCurReceive	= saPrvRedeemReq+saIssueCrd;

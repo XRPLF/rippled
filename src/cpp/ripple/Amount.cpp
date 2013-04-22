@@ -1057,7 +1057,7 @@ bool STAmount::applyOffer(
 		// Offer has limited funding, limit offer gets and pays by funds available.
 
 		saOfferPaysAvailable	= saOfferFundsAvailable;
-		saOfferGetsAvailable	= std::min(saOfferGets, multiply(saOfferPaysAvailable, saOfferRate, saOfferGets));
+		saOfferGetsAvailable	= std::min(saOfferGets, mulRound(saOfferPaysAvailable, saOfferRate, saOfferGets, true));
 	}
 
 	cLog(lsINFO) << "applyOffer: saOfferPaysAvailable=" << saOfferFundsAvailable.getFullText();
@@ -1069,14 +1069,14 @@ bool STAmount::applyOffer(
 	cLog(lsINFO) << "applyOffer: saTakerPaysMax=" << saTakerPaysMax.getFullText();
 	STAmount	saTakerGetsMax			= saTakerPaysMax >= saOfferGetsAvailable
 											? saOfferPaysAvailable									// Potentially take entire offer. Avoid math shenanigans.
-											: std::min(saOfferPaysAvailable, divide(saTakerPaysMax, saOfferRate, saTakerGets));	// Taker a portion of offer.
+											: std::min(saOfferPaysAvailable, divRound(saTakerPaysMax, saOfferRate, saTakerGets, !saTakerGets.isNative()));	// Taker a portion of offer.
 	cLog(lsINFO) << "applyOffer: saOfferRate=" << saOfferRate.getFullText();
 	cLog(lsINFO) << "applyOffer: saTakerGetsMax=" << saTakerGetsMax.getFullText();
 
 	saTakerGot	= std::min(saTakerGets, saTakerGetsMax);	// Limit by wanted.
 	saTakerPaid	= saTakerGot == saOfferPaysAvailable
 					? saOfferGetsAvailable
-					: std::min(saOfferGetsAvailable, multiply(saTakerGot, saOfferRate, saTakerFunds));
+					: std::min(saOfferGetsAvailable, mulRound(saTakerGot, saOfferRate, saTakerFunds, true));
 
 	cLog(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
 	cLog(lsINFO) << "applyOffer: saTakerPaid=" << saTakerPaid.getFullText();
@@ -1093,7 +1093,7 @@ bool STAmount::applyOffer(
 	cLog(lsINFO) << "applyOffer: saTransferRate=" << saTransferRate.getFullText();
 
 		// TakerCost includes transfer fees.
-		STAmount	saTakerCost		= STAmount::multiply(saTakerPaid, saTransferRate);
+		STAmount	saTakerCost		= STAmount::mulRound(saTakerPaid, saTransferRate, true);
 
 	cLog(lsINFO) << "applyOffer: saTakerCost=" << saTakerCost.getFullText();
 	cLog(lsINFO) << "applyOffer: saTakerFunds=" << saTakerFunds.getFullText();
@@ -1111,7 +1111,7 @@ bool STAmount::applyOffer(
 	else
 	{
 		// Compute fees in a rounding safe way.
-		STAmount	saOfferCost	= STAmount::multiply(saTakerGot, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uOfferPaysRate, -9));
+		STAmount	saOfferCost	= STAmount::mulRound(saTakerGot, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uOfferPaysRate, -9), true);
 
 		saOfferIssuerFee	= saOfferCost > saOfferFunds
 								? saOfferFunds-saTakerGot	// Not enough funds to cover fee, stiff issuer the rounding error.
