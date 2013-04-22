@@ -475,6 +475,8 @@ bool SHAMap::hasNode(const SHAMapNode& nodeID, const uint256& nodeHash)
 	while (node->isInner() && (node->getDepth() <= nodeID.getDepth()))
 	{
 		int branch = node->selectBranch(nodeID.getNodeID());
+		if (node->isEmptyBranch(branch))
+			break;
 		node = getNodePointer(node->getChildNodeID(branch), node->getChildHash(branch));
 	}
 	return node->getNodeHash() == nodeHash;
@@ -486,7 +488,7 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* prior, bool inc
 
 	if (root->isLeaf())
 	{
-		if (includeLeaves &&
+		if (includeLeaves && !root->getNodeHash().isZero() &&
 			(!prior || !prior->hasNode(*root, root->getNodeHash())))
 		{
 			Serializer s;
@@ -495,6 +497,10 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* prior, bool inc
 		}
 		return ret;
 	}
+
+	if (root->getNodeHash().isZero())
+		return ret;
+
 	if (prior && (root->getNodeHash() == prior->root->getNodeHash()))
 		return ret;
 
