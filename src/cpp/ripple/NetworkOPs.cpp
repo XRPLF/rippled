@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "Application.h"
 #include "Transaction.h"
+#include "HashPrefixes.h"
 #include "LedgerConsensus.h"
 #include "LedgerTiming.h"
 #include "Log.h"
@@ -34,7 +35,8 @@ void InfoSub::onSendEmpty()
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
 	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mProposing(false), mValidating(false),
 	mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0), mLastCloseProposers(0),
-	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0), mFetchPack("FetchPack", 2048, 12),
+	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0),
+	mFetchPack("FetchPack", 2048, 3), mLastFetchPack(0),
 	mLastLoadBase(256), mLastLoadFactor(256)
 {
 }
@@ -2018,6 +2020,16 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_
 
 		do
 		{
+			uint32 lSeq = wantLedger->getLedgerSeq();
+
+			ripple::TMIndexedObject& newObj = *reply.add_objects();
+			newObj.set_hash(wantLedger->getHash().begin(), 256 / 8);
+			Serializer s(256);
+			s.add32(sHP_Ledger);
+			wantLedger->addRaw(s);
+			newObj.set_data(s.getDataPtr(), s.getLength());
+			newObj.set_ledgerseq(lSeq);
+
 			std::list<SHAMap::fetchPackEntry_t> pack = wantLedger->peekAccountStateMap()->getFetchPack(
 				haveLedger->peekAccountStateMap().get(), false, 1024 - reply.objects().size());
 			BOOST_FOREACH(SHAMap::fetchPackEntry_t& node, pack)
@@ -2025,6 +2037,7 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_
 				ripple::TMIndexedObject& newObj = *reply.add_objects();
 				newObj.set_hash(node.first.begin(), 256 / 8);
 				newObj.set_data(&node.second[0], node.second.size());
+				newObj.set_ledgerseq(lSeq);
 			}
 
 			if (wantLedger->getAccountHash().isNonZero() && (pack.size() < 768))
@@ -2035,6 +2048,7 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_
 					ripple::TMIndexedObject& newObj = *reply.add_objects();
 					newObj.set_hash(node.first.begin(), 256 / 8);
 					newObj.set_data(&node.second[0], node.second.size());
+					newObj.set_ledgerseq(lSeq);
 				}
 			}
 			if (reply.objects().size() >= 768)
@@ -2074,7 +2088,19 @@ bool NetworkOPs::getFetchPack(const uint256& hash, std::vector<unsigned char>& d
 		cLog(lsWARNING) << "Bad entry in fetch pack";
 		return false;
 	}
-	cLog(lsTRACE) << hash << " found in fetch pack";
+	cLog(lsINFO) << hash << " found in fetch pack";
+	return true;
+}
+
+bool NetworkOPs::shouldFetchPack()
+{
+	uint32 now = getNetworkTimeNC();
+	if (mLastFetchPack == now)
+		 return false;
+	mFetchPack.sweep();
+	if (mFetchPack.getCacheSize() > 384)
+		return false;
+	mLastFetchPack = now;
 	return true;
 }
 

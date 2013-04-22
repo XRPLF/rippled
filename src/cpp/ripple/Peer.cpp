@@ -1235,18 +1235,40 @@ void Peer::recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash
 	}
 	else
 	{ // this is a reply
+		if (packet.type() == ripple::TMGetObjectByHash::otFETCH_PACK)
+			theApp->getOPs().gotFetchPack();
 		for (int i = 0; i < packet.objects_size(); ++i)
 		{
 			const ripple::TMIndexedObject& obj = packet.objects(i);
 			if (obj.has_hash() && (obj.hash().size() == (256/8)))
 			{
-				uint256 hash;
-				memcpy(hash.begin(), obj.hash().data(), 256 / 8);
+				uint32 pLSeq = 0;
+				bool pLDo = true;
 
-				boost::shared_ptr< std::vector<unsigned char> > data = boost::make_shared< std::vector<unsigned char> >
-					(obj.data().begin(), obj.data().end());
+				if (obj.has_ledgerseq())
+				{
+					if (obj.ledgerseq() != pLSeq)
+					{
+						pLSeq = obj.ledgerseq();
+						pLDo = !theApp->getOPs().haveLedger(pLSeq);
+						if (!pLDo)
+						{
+							cLog(lsDEBUG) << "Got pack for " << pLSeq << " too late";
+						}
+						else cLog(lsDEBUG) << "Got pack for " << pLSeq;
+					}
+				}
 
-				theApp->getOPs().addFetchPack(hash, data);
+				if (pLDo)
+				{
+					uint256 hash;
+					memcpy(hash.begin(), obj.hash().data(), 256 / 8);
+
+					boost::shared_ptr< std::vector<unsigned char> > data = boost::make_shared< std::vector<unsigned char> >
+						(obj.data().begin(), obj.data().end());
+
+					theApp->getOPs().addFetchPack(hash, data);
+				}
 			}
 		}
 	}

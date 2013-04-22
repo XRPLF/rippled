@@ -581,8 +581,6 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool incl
 		if (max <= 0)
 			break;
 	}
-
-	cLog(lsINFO) << "Made pack with " << ret.size() << " entries";
 	return ret;
 }
 

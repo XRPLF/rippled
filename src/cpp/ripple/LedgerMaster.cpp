@@ -251,7 +251,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 			theApp->getIOService().post(boost::bind(&LedgerMaster::missingAcquireComplete, this, mMissingLedger));
 	}
 
-	if (theApp->getOPs().getFetchSize() < 256)
+	if (theApp->getOPs().shouldFetchPack())
 	{ // refill our fetch pack
 		Ledger::pointer nextLedger = mLedgerHistory.getLedgerBySeq(ledgerSeq + 1);
 		if (nextLedger)
@@ -282,7 +282,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 				target->sendPacket(packet, false);
 			}
 			else
-				cLog(lsINFO) << "No peer for fetch pack";
+				cLog(lsTRACE) << "No peer for fetch pack";
 		}
 	}
 

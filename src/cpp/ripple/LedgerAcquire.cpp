@@ -118,6 +118,7 @@ bool LedgerAcquire::tryLocal()
 		std::vector<unsigned char> data;
 		if (!theApp->getOPs().getFetchPack(mHash, data))
 			return false;
+		cLog(lsINFO) << "Ledger base found in fetch pack";
 		mLedger = boost::make_shared<Ledger>(data, true);
 		theApp->getHashedObjectStore().store(hotLEDGER, mLedger->getLedgerSeq(), data, mHash);
 	}

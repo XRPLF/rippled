@@ -129,6 +129,7 @@ protected:
 	subMapType											mSubRTTransactions;		// all proposed and accepted transactions
 
 	TaggedCache< uint256, std::vector<unsigned char> >	mFetchPack;
+	uint32												mLastFetchPack;
 
 	uint32												mLastLoadBase;
 	uint32												mLastLoadFactor;
@@ -261,6 +262,8 @@ public:
 	bool stillNeedTXSet(const uint256& hash);
 	void makeFetchPack(Job&, boost::weak_ptr<Peer> peer, boost::shared_ptr<ripple::TMGetObjectByHash> request,
 		Ledger::pointer wantLedger, Ledger::pointer haveLedger);
+	bool shouldFetchPack();
+	void gotFetchPack() { mLastFetchPack = 0; }
 	void addFetchPack(const uint256& hash, boost::shared_ptr< std::vector<unsigned char> >& data);
 	bool getFetchPack(const uint256& hash, std::vector<unsigned char>& data);
 	int getFetchSize();
