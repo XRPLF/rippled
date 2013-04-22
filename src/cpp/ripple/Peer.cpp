@@ -1249,13 +1249,13 @@ void Peer::recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash
 				{
 					if (obj.ledgerseq() != pLSeq)
 					{
+						tLog(pLDo && (pLSeq != 0), lsDEBUG) << "Recevied full fetch pack for " << pLSeq;
 						pLSeq = obj.ledgerseq();
 						pLDo = !theApp->getOPs().haveLedger(pLSeq);
 						if (!pLDo)
 						{
 							cLog(lsDEBUG) << "Got pack for " << pLSeq << " too late";
 						}
-						else cLog(lsDEBUG) << "Got pack for " << pLSeq;
 					}
 				}
 
@@ -1271,6 +1271,7 @@ void Peer::recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash
 				}
 			}
 		}
+		tLog(pLDo && (pLSeq != 0), lsDEBUG) << "Received partial fetch pack for " << pLSeq;
 	}
 }
 
@@ -1864,46 +1865,44 @@ void Peer::doProofOfWork(Job&, boost::weak_ptr<Peer> peer, ProofOfWork::pointer 
 
 void Peer::doFetchPack(const boost::shared_ptr<ripple::TMGetObjectByHash>& packet)
 {
-	if (packet->query())
+	if (theApp->getFeeTrack().isLoaded())
 	{
-		if (packet->ledgerhash().size() != 32)
-		{
-			cLog(lsWARNING) << "FetchPack hash size malformed";
-			punishPeer(LT_InvalidRequest);
-			return;
-		}
-		uint256 hash;
-		memcpy(hash.begin(), packet->ledgerhash().data(), 32);
-
-		Ledger::pointer haveLedger = theApp->getOPs().getLedgerByHash(hash);
-		if (!haveLedger)
-		{
-			cLog(lsINFO) << "Peer requests fetch pack for ledger we don't have: " << hash;
-			punishPeer(LT_RequestNoReply);
-			return;
-		}
-		if (!haveLedger->isClosed())
-		{
-			cLog(lsWARNING) << "Peer requests fetch pack from open ledger: " << hash;
-			punishPeer(LT_InvalidRequest);
-			return;
-		}
-
-		Ledger::pointer wantLedger = theApp->getOPs().getLedgerByHash(haveLedger->getParentHash());
-		if (!wantLedger)
-		{
-			cLog(lsINFO) << "Peer requests fetch pack for ledger whose predecessor we don't have: " << hash;
-			punishPeer(LT_RequestNoReply);
-			return;
-		}
-		theApp->getJobQueue().addJob(jtPACK, "MakeFetchPack",
-			BIND_TYPE(&NetworkOPs::makeFetchPack, &theApp->getOPs(), P_1,
-				boost::weak_ptr<Peer>(shared_from_this()), packet, wantLedger, haveLedger));
+		cLog(lsINFO) << "Too busy to make fetch pack";
+		return;
 	}
-	else
-	{ // received fetch pack
-		// WRITEME
+	if (packet->ledgerhash().size() != 32)
+	{
+		cLog(lsWARNING) << "FetchPack hash size malformed";
+		punishPeer(LT_InvalidRequest);
+		return;
 	}
+	uint256 hash;
+	memcpy(hash.begin(), packet->ledgerhash().data(), 32);
+
+	Ledger::pointer haveLedger = theApp->getOPs().getLedgerByHash(hash);
+	if (!haveLedger)
+	{
+		cLog(lsINFO) << "Peer requests fetch pack for ledger we don't have: " << hash;
+		punishPeer(LT_RequestNoReply);
+		return;
+	}
+	if (!haveLedger->isClosed())
+	{
+		cLog(lsWARNING) << "Peer requests fetch pack from open ledger: " << hash;
+		punishPeer(LT_InvalidRequest);
+		return;
+	}
+
+	Ledger::pointer wantLedger = theApp->getOPs().getLedgerByHash(haveLedger->getParentHash());
+	if (!wantLedger)
+	{
+		cLog(lsINFO) << "Peer requests fetch pack for ledger whose predecessor we don't have: " << hash;
+		punishPeer(LT_RequestNoReply);
+		return;
+	}
+	theApp->getJobQueue().addJob(jtPACK, "MakeFetchPack",
+		BIND_TYPE(&NetworkOPs::makeFetchPack, &theApp->getOPs(), P_1,
+			boost::weak_ptr<Peer>(shared_from_this()), packet, wantLedger, haveLedger));
 }
 
 bool Peer::hasProto(int version)

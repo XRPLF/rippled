@@ -36,7 +36,7 @@ NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedge
 	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mProposing(false), mValidating(false),
 	mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0), mLastCloseProposers(0),
 	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0),
-	mFetchPack("FetchPack", 2048, 3), mLastFetchPack(0),
+	mFetchPack("FetchPack", 2048, 30), mLastFetchPack(0),
 	mLastLoadBase(256), mLastLoadFactor(256)
 {
 }
@@ -2051,7 +2051,7 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_
 					newObj.set_ledgerseq(lSeq);
 				}
 			}
-			if (reply.objects().size() >= 768)
+			if (reply.objects().size() >= 512)
 				break;
 			haveLedger = wantLedger;
 			wantLedger = getLedgerByHash(haveLedger->getParentHash());
