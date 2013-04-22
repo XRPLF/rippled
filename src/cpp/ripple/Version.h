@@ -16,7 +16,7 @@
 
 // Version we prefer to speak:
 #define PROTO_VERSION_MAJOR			1
-#define PROTO_VERSION_MINOR			3
+#define PROTO_VERSION_MINOR			2
 
 // Version we will speak to:
 #define MIN_PROTO_MAJOR				1
