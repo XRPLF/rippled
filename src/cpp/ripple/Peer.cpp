@@ -729,7 +729,7 @@ void Peer::recvHello(ripple::TMHello& packet)
 			cLog(lsINFO) << "Recv(Hello): " << getIP() << " :Clock far off -" << ourTime - packet.nettime();
 		}
 	}
-	else if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
+	else if (packet.protoversionmin() > MAKE_VERSION_INT(PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR))
 	{
 		cLog(lsINFO) << "Recv(Hello): Server requires protocol version " <<
 			GET_VERSION_MAJOR(packet.protoversion()) << "." << GET_VERSION_MINOR(packet.protoversion())
