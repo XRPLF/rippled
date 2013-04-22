@@ -375,6 +375,7 @@ protected:
 	SHAMapItem::pointer onlyBelow(SHAMapTreeNode*);
 	void eraseChildren(SHAMapTreeNode::pointer);
 	void dropBelow(SHAMapTreeNode*);
+	bool hasNode(const SHAMapNode& id, const uint256& hash);
 
 	bool walkBranch(SHAMapTreeNode* node, SHAMapItem::ref otherMapItem, bool isFirstMap,
 	    SHAMapDiff& differences, int& maxCount);
@@ -475,6 +476,9 @@ public:
 
 	bool deepCompare(SHAMap& other);
 	virtual void dump(bool withHashes = false);
+
+	typedef std::pair< uint256, std::vector<unsigned char> > fetchPackEntry_t;
+	std::list<fetchPackEntry_t> getFetchPack(SHAMap* have, bool includeLeaves, int max);
 
 	static void sweep()			{ fullBelowCache.sweep(); }
 };

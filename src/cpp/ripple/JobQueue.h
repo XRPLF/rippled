@@ -22,21 +22,22 @@
 enum JobType
 { // must be in priority order, low to high
 	jtINVALID		= -1,
-	jtPUBOLDLEDGER	= 1,	// An old ledger has been accepted
-	jtVALIDATION_ut	= 2,	// A validation from an untrusted source
-	jtPROOFWORK		= 3,	// A proof of work demand from another server
-	jtPROPOSAL_ut	= 4,	// A proposal from an untrusted source
-	jtLEDGER_DATA	= 5,	// Received data for a ledger we're acquiring
-	jtCLIENT		= 6,	// A websocket command from the client
-	jtTRANSACTION	= 7,	// A transaction received from the network
-	jtPUBLEDGER		= 8,	// Publish a fully-accepted ledger
-	jtWAL			= 9,	// Write-ahead logging
-	jtVALIDATION_t	= 10,	// A validation from a trusted source
-	jtWRITE			= 11,	// Write out hashed objects
-	jtTRANSACTION_l	= 12,	// A local transaction
-	jtPROPOSAL_t	= 13,	// A proposal from a trusted source
-	jtADMIN			= 14,	// An administrative operation
-	jtDEATH			= 15,	// job of death, used internally
+	jtPACK			= 1,	// Make a fetch pack for a peer
+	jtPUBOLDLEDGER	= 2,	// An old ledger has been accepted
+	jtVALIDATION_ut	= 3,	// A validation from an untrusted source
+	jtPROOFWORK		= 4,	// A proof of work demand from another server
+	jtPROPOSAL_ut	= 5,	// A proposal from an untrusted source
+	jtLEDGER_DATA	= 6,	// Received data for a ledger we're acquiring
+	jtCLIENT		= 7,	// A websocket command from the client
+	jtTRANSACTION	= 8,	// A transaction received from the network
+	jtPUBLEDGER		= 9,	// Publish a fully-accepted ledger
+	jtWAL			= 10,	// Write-ahead logging
+	jtVALIDATION_t	= 11,	// A validation from a trusted source
+	jtWRITE			= 12,	// Write out hashed objects
+	jtTRANSACTION_l	= 13,	// A local transaction
+	jtPROPOSAL_t	= 14,	// A proposal from a trusted source
+	jtADMIN			= 15,	// An administrative operation
+	jtDEATH			= 16,	// job of death, used internally
 
 // special types not dispatched by the job pool
 	jtPEER			= 24,

@@ -37,6 +37,7 @@ const char* Job::toString(JobType t)
 	switch(t)
 	{
 		case jtINVALID:			return "invalid";
+		case jtPACK:			return "makeFetchPack";
 		case jtPUBOLDLEDGER:	return "publishAcqLedger";
 		case jtVALIDATION_ut:	return "untrustedValidation";
 		case jtPROOFWORK:		return "proofOfWork";
@@ -304,7 +305,7 @@ void JobQueue::threadEntry()
 //			}
 		}
 
-		if (mShuttingDown)
+		if (mJobSet.empty())
 			break;
 
 		JobType type;

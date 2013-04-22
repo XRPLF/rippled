@@ -461,6 +461,101 @@ bool SHAMap::deepCompare(SHAMap& other)
 	return true;
 }
 
+bool SHAMap::hasNode(const SHAMapNode& nodeID, const uint256& nodeHash)
+{
+	SHAMapTreeNode* node = root.get();
+	while (node->isInner() && (node->getDepth() < nodeID.getDepth()))
+	{
+		int branch = node->selectBranch(nodeID.getNodeID());
+		if (node->isEmptyBranch(branch))
+			break;
+		node = getNodePointer(node->getChildNodeID(branch), node->getChildHash(branch));
+	}
+	return node->getNodeHash() == nodeHash;
+}
+
+std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool includeLeaves, int max)
+{
+	std::list<fetchPackEntry_t> ret;
+
+	boost::recursive_mutex::scoped_lock ul1(mLock);
+
+	UPTR_T< boost::unique_lock<boost::recursive_mutex> > ul2;
+	if (have)
+	{
+		UPTR_T< boost::unique_lock<boost::recursive_mutex> > ul3(
+			new boost::unique_lock<boost::recursive_mutex>(have->mLock, boost::try_to_lock));
+		if (!(*ul3))
+		{
+			cLog(lsINFO) << "Unable to create pack due to lock";
+			return ret;
+		}
+		ul2.swap(ul3);
+	}
+
+
+	if (root->isLeaf())
+	{
+		if (includeLeaves && !root->getNodeHash().isZero() &&
+			(!have || !have->hasNode(*root, root->getNodeHash())))
+		{
+			Serializer s;
+			root->addRaw(s, snfPREFIX);
+			ret.push_back(fetchPackEntry_t(root->getNodeHash(), s.peekData()));
+		}
+		return ret;
+	}
+
+	if (root->getNodeHash().isZero())
+		return ret;
+
+	if (have && (root->getNodeHash() == have->root->getNodeHash()))
+		return ret;
+
+	std::stack<SHAMapTreeNode*> stack; // contains unexplored non-matching inner node entries
+	stack.push(root.get());
+
+	while (!stack.empty())
+	{
+		SHAMapTreeNode* node = stack.top();
+		stack.pop();
+
+		// 1) Add this node to the pack
+		Serializer s;
+		node->addRaw(s, snfPREFIX);
+		ret.push_back(fetchPackEntry_t(node->getNodeHash(), s.peekData()));
+		--max;
+
+		// 2) push non-matching child inner nodes
+		for (int i = 0; i < 16; ++i)
+		{
+			if (!node->isEmptyBranch(i))
+			{
+				const uint256& childHash = node->getChildHash(i);
+				SHAMapNode childID = node->getChildNodeID(i);
+
+				SHAMapTreeNode *next = getNodePointer(childID, childHash);
+				if (next->isInner())
+				{
+					if (!have || !have->hasNode(*next, childHash))
+						stack.push(next);
+				}
+				else if (includeLeaves && (!have || !have->hasNode(childID, childHash)))
+				{
+					Serializer s;
+					node->addRaw(s, snfPREFIX);
+					ret.push_back(fetchPackEntry_t(node->getNodeHash(), s.peekData()));
+					--max;
+				}
+			}
+		}
+
+		if (max <= 0)
+			break;
+	}
+	return ret;
+}
+
 #ifdef DEBUG
 #define SMS_DEBUG
 #endif

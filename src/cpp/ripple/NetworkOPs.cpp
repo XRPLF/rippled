@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "Application.h"
 #include "Transaction.h"
+#include "HashPrefixes.h"
 #include "LedgerConsensus.h"
 #include "LedgerTiming.h"
 #include "Log.h"
@@ -2001,6 +2002,71 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 	jvResult["offers"]	= jvOffers;
 //	jvResult["marker"]	= Json::Value(Json::arrayValue);
 //	jvResult["nodes"]	= Json::Value(Json::arrayValue);
+}
+
+void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_ptr<ripple::TMGetObjectByHash> request,
+	Ledger::pointer wantLedger, Ledger::pointer haveLedger)
+{
+	try
+	{
+		Peer::pointer peer = wPeer.lock();
+		if (!peer)
+			return;
+
+		ripple::TMGetObjectByHash reply;
+		reply.set_query(false);
+		if (request->has_seq())
+			reply.set_seq(request->seq());
+		reply.set_ledgerhash(reply.ledgerhash());
+		reply.set_type(ripple::TMGetObjectByHash::otFETCH_PACK);
+
+		do
+		{
+			uint32 lSeq = wantLedger->getLedgerSeq();
+
+			ripple::TMIndexedObject& newObj = *reply.add_objects();
+			newObj.set_hash(wantLedger->getHash().begin(), 256 / 8);
+			Serializer s(256);
+			s.add32(sHP_Ledger);
+			wantLedger->addRaw(s);
+			newObj.set_data(s.getDataPtr(), s.getLength());
+			newObj.set_ledgerseq(lSeq);
+
+			std::list<SHAMap::fetchPackEntry_t> pack = wantLedger->peekAccountStateMap()->getFetchPack(
+				haveLedger->peekAccountStateMap().get(), false, 1024 - reply.objects().size());
+			BOOST_FOREACH(SHAMap::fetchPackEntry_t& node, pack)
+			{
+				ripple::TMIndexedObject& newObj = *reply.add_objects();
+				newObj.set_hash(node.first.begin(), 256 / 8);
+				newObj.set_data(&node.second[0], node.second.size());
+				newObj.set_ledgerseq(lSeq);
+			}
+
+			if (wantLedger->getAccountHash().isNonZero() && (pack.size() < 768))
+			{
+				pack = wantLedger->peekTransactionMap()->getFetchPack(NULL, true, 256);
+				BOOST_FOREACH(SHAMap::fetchPackEntry_t& node, pack)
+				{
+					ripple::TMIndexedObject& newObj = *reply.add_objects();
+					newObj.set_hash(node.first.begin(), 256 / 8);
+					newObj.set_data(&node.second[0], node.second.size());
+					newObj.set_ledgerseq(lSeq);
+				}
+			}
+			if (reply.objects().size() >= 768)
+				break;
+			haveLedger = wantLedger;
+			wantLedger = getLedgerByHash(haveLedger->getParentHash());
+		} while (wantLedger);
+
+		cLog(lsINFO) << "Built fetch pack with " << reply.objects().size() << " nodes";
+		PackedMessage::pointer msg = boost::make_shared<PackedMessage>(reply, ripple::mtGET_OBJECTS);
+		peer->sendPacket(msg, false);
+	}
+	catch (...)
+	{
+		cLog(lsWARNING) << "Exception building fetch pach";
+	}
 }
 
 // vim:ts=4
