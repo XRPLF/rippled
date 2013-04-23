@@ -33,7 +33,7 @@ enum LedgerNameSpace
 	spaceContract		= 'c',
 	spaceSkipList		= 's',
 	spaceFeature		= 'f',
-	spaceFee			= 's',
+	spaceFee			= 'e',
 };
 
 enum LedgerSpecificFlags
