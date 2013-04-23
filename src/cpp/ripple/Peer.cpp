@@ -1858,6 +1858,11 @@ void Peer::doProofOfWork(Job&, boost::weak_ptr<Peer> peer, ProofOfWork::pointer 
 
 void Peer::doFetchPack(const boost::shared_ptr<ripple::TMGetObjectByHash>& packet)
 {
+	if (theApp->getFeeTrack().isLoaded())
+	{
+		cLog(lsINFO) << "Too busy to make fetch pack";
+		return;
+	}
 	if (packet->ledgerhash().size() != 32)
 	{
 		cLog(lsWARNING) << "FetchPack hash size malformed";
