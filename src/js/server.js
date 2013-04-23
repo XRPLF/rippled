@@ -19,7 +19,7 @@ var Server = function (remote, cfg)
   this._id = 0;
   this._retry = 0;
 
-  this._requests = [];
+  this._requests = {};
 
   this.on('message', this._handle_message.bind(this));
   this.on('response_subscribe', this._handle_response_subscribe.bind(this));
@@ -207,6 +207,8 @@ Server.prototype._handle_message = function (json) {
   if (message.type === 'response') {
     // A response to a request.
     var request = self._requests[message.id];
+
+    delete self._requests[message.id];
 
     if (!request) {
       if (self._remote.trace) utils.logObject("server: UNEXPECTED: %s", message);
