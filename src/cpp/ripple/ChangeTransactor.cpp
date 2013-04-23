@@ -43,16 +43,29 @@ TER ChangeTransactor::checkSeq()
 
 TER ChangeTransactor::payFee()
 {
-	if (isSetBit(mParams, tapOPEN_LEDGER))
-	{
-		cLog(lsWARNING) << "Change transaction against open ledger";
-		return temINVALID;
-	}
-
 	if (mTxn.getTransactionFee() != STAmount())
 	{
 		cLog(lsWARNING) << "Change transaction with non-zero fee";
 		return temBAD_FEE;
+	}
+
+	return tesSUCCESS;
+}
+
+TER ChangeTransactor::preCheck()
+{
+	mTxnAccountID	= mTxn.getSourceAccount().getAccountID();
+	if (mTxnAccountID.isNonZero())
+	{
+		cLog(lsWARNING) << "applyTransaction: bad source id";
+
+		return temBAD_SRC_ACCOUNT;
+	}
+
+	if (isSetBit(mParams, tapOPEN_LEDGER))
+	{
+		cLog(lsWARNING) << "Change transaction against open ledger";
+		return temINVALID;
 	}
 
 	return tesSUCCESS;
@@ -84,12 +97,16 @@ TER ChangeTransactor::applyFee()
 	if (!feeObject)
 		feeObject = mEngine->entryCreate(ltFEE_SETTINGS, Ledger::getLedgerFeeIndex());
 
+	cLog(lsINFO) << "Previous fee object: " << feeObject->getJson(0);
+
 	feeObject->setFieldU64(sfBaseFee, mTxn.getFieldU64(sfBaseFee));
 	feeObject->setFieldU32(sfReferenceFeeUnits, mTxn.getFieldU32(sfReferenceFeeUnits));
 	feeObject->setFieldU32(sfReserveBase, mTxn.getFieldU32(sfReserveBase));
 	feeObject->setFieldU32(sfReserveIncrement, mTxn.getFieldU32(sfReserveIncrement));
 
 	mEngine->entryModify(feeObject);
+
+	cLog(lsINFO) << "New fee object: " << feeObject->getJson(0);
 	cLog(lsWARNING) << "Fees have been changed";
 	return tesSUCCESS;
 }

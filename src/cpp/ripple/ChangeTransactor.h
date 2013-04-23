@@ -7,6 +7,8 @@ protected:
 	TER applyFeature();
 	TER applyFee();
 
+	bool mustHaveValidAccount() { return false; }
+
 public:
 	ChangeTransactor(const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine *engine)
 		: Transactor(txn, params, engine)
@@ -16,6 +18,7 @@ public:
 	TER checkSig();
 	TER checkSeq();
 	TER payFee();
+	TER preCheck();
 };
 
 // vim:ts=4
