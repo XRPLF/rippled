@@ -480,17 +480,16 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool incl
 
 	boost::recursive_mutex::scoped_lock ul1(mLock);
 
-	UPTR_T< boost::unique_lock<boost::recursive_mutex> > ul2;
+	boost::shared_ptr< boost::unique_lock<boost::recursive_mutex> > ul2;
+
 	if (have)
 	{
-		UPTR_T< boost::unique_lock<boost::recursive_mutex> > ul3(
-			new boost::unique_lock<boost::recursive_mutex>(have->mLock, boost::try_to_lock));
-		if (!(*ul3))
+		ul2 = boost::make_shared< boost::unique_lock<boost::recursive_mutex> >(have->mLock, boost::try_to_lock);
+		if (!(*ul2))
 		{
 			cLog(lsINFO) << "Unable to create pack due to lock";
 			return ret;
 		}
-		ul2.swap(ul3);
 	}
 
 
