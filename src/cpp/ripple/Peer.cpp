@@ -1488,11 +1488,14 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			tLog(!ledger, lsTRACE) << "Don't have ledger " << ledgerhash;
 			if (!ledger && (packet.has_querytype() && !packet.has_requestcookie()))
 			{
+				uint32 seq = 0;
+				if (packet.has_ledgerseq())
+					seq = packet.ledgerseq();
 				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 				std::vector<Peer::pointer> usablePeers;
 				BOOST_FOREACH(Peer::ref peer, peerList)
 				{
-					if (peer->hasLedger(ledgerhash) && (peer.get() != this))
+					if (peer->hasLedger(ledgerhash, seq) && (peer.get() != this))
 						usablePeers.push_back(peer);
 				}
 				if (usablePeers.empty())
@@ -1716,8 +1719,10 @@ void Peer::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_ptr)
 		punishPeer(LT_UnwantedData);
 }
 
-bool Peer::hasLedger(const uint256& hash) const
+bool Peer::hasLedger(const uint256& hash, uint32 seq) const
 {
+	if ((seq != 0) && (seq >= mMinLedger) && (seq <= mMaxLedger))
+		return true;
 	BOOST_FOREACH(const uint256& ledger, mRecentLedgers)
 		if (ledger == hash)
 			return true;

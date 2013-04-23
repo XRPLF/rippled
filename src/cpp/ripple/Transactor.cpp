@@ -204,10 +204,13 @@ TER Transactor::apply()
 
 	if (!mTxnAccount)
 	{
-		cLog(lsTRACE) << boost::str(boost::format("applyTransaction: Delay transaction: source account does not exist: %s") %
-			mTxn.getSourceAccount().humanAccountID());
+		if (mustHaveValidAccount())
+		{
+			cLog(lsTRACE) << boost::str(boost::format("applyTransaction: Delay transaction: source account does not exist: %s") %
+				mTxn.getSourceAccount().humanAccountID());
 
-		return terNO_ACCOUNT;
+			return terNO_ACCOUNT;
+		}
 	}
 	else
 	{
@@ -225,7 +228,8 @@ TER Transactor::apply()
 	terResult = checkSig();
 	if (terResult != tesSUCCESS) return(terResult);
 
-	mEngine->entryModify(mTxnAccount);
+	if (mTxnAccount)
+		mEngine->entryModify(mTxnAccount);
 
 	return doApply();
 }

@@ -54,9 +54,9 @@ Application::Application() :
 	mSNTPClient(mAuxService), mJobQueue(mIOService), mFeeTrack(),
 
 #ifdef RESERVE_BASE_100
-	mFeeVote(10, 100, 25),
+	mFeeVote(10, 100 * SYSTEM_CURRENCY_PARTS, 25 * SYSTEM_CURRENCY_PARTS),
 #else
-	mFeeVote(10, 200, 50),
+	mFeeVote(10, 200 * SYSTEM_CURRENCY_PARTS, 50 * SYSTEM_CURRENCY_PARTS),
 #endif
 
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),

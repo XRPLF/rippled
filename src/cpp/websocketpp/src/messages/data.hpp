@@ -94,9 +94,9 @@ public:
                   << std::endl;*/
         
     	    if (!m_avaliable.empty()) {
-	            p = m_avaliable.front();
+	            p = m_avaliable.front(); // FIXME can call intrusive_ptr_add_ref (line 215) which can deadlock
 	            q = p;
-	            m_avaliable.pop(); // FIXME can call intrusive_ptr_release(line 217) which can deadlock
+	            m_avaliable.pop(); // FIXME can call intrusive_ptr_release (line 217) which can deadlock
 	            m_used[p->get_index()] = p;
 	        } else {
 	            if (m_cur_elements == m_max_elements) {
