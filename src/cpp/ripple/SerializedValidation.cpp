@@ -15,8 +15,10 @@ void SVFInit()
 	 sValidationFormat.push_back(SOElement(sfLedgerSequence,	SOE_OPTIONAL));
 	 sValidationFormat.push_back(SOElement(sfCloseTime,			SOE_OPTIONAL));
 	 sValidationFormat.push_back(SOElement(sfLoadFee,			SOE_OPTIONAL));
-	 sValidationFormat.push_back(SOElement(sfBaseFee,			SOE_OPTIONAL));
 	 sValidationFormat.push_back(SOElement(sfFeatures,			SOE_OPTIONAL));
+	 sValidationFormat.push_back(SOElement(sfBaseFee,			SOE_OPTIONAL));
+	 sValidationFormat.push_back(SOElement(sfReserveBase,		SOE_OPTIONAL));
+	 sValidationFormat.push_back(SOElement(sfReserveIncrement,	SOE_OPTIONAL));
 	 sValidationFormat.push_back(SOElement(sfSigningTime,		SOE_REQUIRED));
 	 sValidationFormat.push_back(SOElement(sfSigningPubKey,		SOE_REQUIRED));
 	 sValidationFormat.push_back(SOElement(sfSignature,			SOE_OPTIONAL));
