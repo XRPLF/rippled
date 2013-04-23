@@ -152,30 +152,35 @@ Server.prototype.disconnect = function ()
  */
 Server.prototype.request = function (request)
 {
-  // Only bother if we are still connected.
-  if (this._ws) {
-    request.message.id = this._id;
+  var self  = this;
 
-    this._requests[request.message.id] = request;
+  // Only bother if we are still connected.
+  if (self._ws) {
+    request.message.id = self._id;
+
+    self._requests[request.message.id] = request;
 
     // Advance message ID
-    this._id++;
+    self._id++;
 
-    if (this._state === "online" ||
-        (request.message.command === "subscribe" && this._ws.readyState === 1)) {
-      if (this._remote.trace) {
+    if (self._state === "online" ||
+        (request.message.command === "subscribe" && self._ws.readyState === 1)) {
+      if (self._remote.trace) {
         utils.logObject("server: request: %s", request.message);
       }
 
-      this._ws.send(JSON.stringify(request.message));
+      self._ws.send(JSON.stringify(request.message));
     } else {
-      // XXX There are many ways to make this smarter.
-      this.once('connect', function () {
-        this._ws.send(JSON.stringify(request.message));
+      // XXX There are many ways to make self smarter.
+      self.once('connect', function () {
+        if (self._remote.trace) {
+          utils.logObject("server: request: %s", request.message);
+        }
+        self._ws.send(JSON.stringify(request.message));
       });
     }
   } else {
-    if (this._remote.trace) {
+    if (self._remote.trace) {
       utils.logObject("server: request: DROPPING: %s", request.message);
     }
   }
@@ -241,3 +246,5 @@ Server.prototype._handle_response_subscribe = function (message)
 };
 
 exports.Server = Server;
+
+// vim:sw=2:sts=2:ts=8:et
