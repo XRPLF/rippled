@@ -511,7 +511,9 @@ Json::Value RPCHandler::accountFromString(Ledger::ref lrLedger, RippleAddress& n
 	}
 	else if (bStrict)
 	{
-		return rpcError(rpcACT_MALFORMED);
+		return naAccount.setAccountID(strIdent, ALPHABET_BITCOIN)
+			? rpcError(rpcACT_BITCOIN)
+			: rpcError(rpcACT_MALFORMED);
 	}
 	// Must be a seed.
 	else if (!naSeed.setSeedGeneric(strIdent))

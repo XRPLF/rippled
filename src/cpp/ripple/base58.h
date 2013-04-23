@@ -69,8 +69,10 @@ inline std::string EncodeBase58(const std::vector<unsigned char>& vch)
     return EncodeBase58(&vch[0], &vch[0] + vch.size());
 }
 
-inline bool DecodeBase58(const char* psz, std::vector<unsigned char>& vchRet)
+inline bool DecodeBase58(const char* psz, std::vector<unsigned char>& vchRet, const char* pAlphabet=0)
 {
+	const char*	pAlpha	= pAlphabet ? pAlphabet : ALPHABET;
+
     CAutoBN_CTX pctx;
     vchRet.clear();
     CBigNum bn58 = 58;
@@ -82,7 +84,7 @@ inline bool DecodeBase58(const char* psz, std::vector<unsigned char>& vchRet)
     // Convert big endian string to bignum
     for (const char* p = psz; *p; p++)
     {
-        const char* p1 = strchr(ALPHABET, *p);
+        const char* p1 = strchr(pAlpha, *p);
         if (p1 == NULL)
         {
             while (isspace(*p))
@@ -91,7 +93,7 @@ inline bool DecodeBase58(const char* psz, std::vector<unsigned char>& vchRet)
                 return false;
             break;
         }
-        bnChar.setuint(p1 - ALPHABET);
+        bnChar.setuint(p1 - pAlpha);
         if (!BN_mul(&bn, &bn, &bn58, pctx))
             throw bignum_error("DecodeBase58 : BN_mul failed");
         bn += bnChar;
@@ -106,7 +108,7 @@ inline bool DecodeBase58(const char* psz, std::vector<unsigned char>& vchRet)
 
     // Restore leading zeros
     int nLeadingZeros = 0;
-    for (const char* p = psz; *p == ALPHABET[0]; p++)
+    for (const char* p = psz; *p == pAlpha[0]; p++)
         nLeadingZeros++;
     vchRet.assign(nLeadingZeros + vchTmp.size(), 0);
 
@@ -133,9 +135,9 @@ inline std::string EncodeBase58Check(const std::vector<unsigned char>& vchIn)
     return EncodeBase58(vch);
 }
 
-inline bool DecodeBase58Check(const char* psz, std::vector<unsigned char>& vchRet)
+inline bool DecodeBase58Check(const char* psz, std::vector<unsigned char>& vchRet, const char* pAlphabet=0)
 {
-    if (!DecodeBase58(psz, vchRet))
+    if (!DecodeBase58(psz, vchRet, pAlphabet))
         return false;
     if (vchRet.size() < 4)
     {
@@ -152,9 +154,9 @@ inline bool DecodeBase58Check(const char* psz, std::vector<unsigned char>& vchRe
     return true;
 }
 
-inline bool DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vchRet)
+inline bool DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vchRet, const char* pAlphabet)
 {
-    return DecodeBase58Check(str.c_str(), vchRet);
+    return DecodeBase58Check(str.c_str(), vchRet, pAlphabet);
 }
 
 
@@ -193,10 +195,10 @@ protected:
     }
 
 public:
-    bool SetString(const char* psz, unsigned char version)
+    bool SetString(const char* psz, unsigned char version, const char* pAlphabet = 0)
     {
         std::vector<unsigned char> vchTemp;
-        DecodeBase58Check(psz, vchTemp);
+        DecodeBase58Check(psz, vchTemp, pAlphabet);
         if (vchTemp.empty() || vchTemp[0] != version)
         {
             vchData.clear();

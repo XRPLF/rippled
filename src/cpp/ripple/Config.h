@@ -200,6 +200,8 @@ public:
 
 extern Config theConfig;
 
+extern const char* ALPHABET;
+extern const char* ALPHABET_BITCOIN;
 #endif
 
 // vim:ts=4

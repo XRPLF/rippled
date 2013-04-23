@@ -15,6 +15,7 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 		const char*	pToken;
 		const char*	pMessage;
 	} errorInfoA[] = {
+		{ rpcACT_BITCOIN,			"actBitcoin",		"Account is bitcoin address."							},
 		{ rpcACT_EXISTS,			"actExists",		"Account already exists."								},
 		{ rpcACT_MALFORMED,			"actMalformed",		"Account malformed."									},
 		{ rpcACT_NOT_FOUND,			"actNotFound",		"Account not found."									},
