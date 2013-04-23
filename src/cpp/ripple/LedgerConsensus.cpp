@@ -298,7 +298,7 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 		{ // need to start acquiring the correct consensus LCL
 			cLog(lsWARNING) << "Need consensus ledger " << mPrevLedgerHash;
 
-			mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash);
+			mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash, 0);
 			mHaveCorrectLCL = false;
 			return;
 		}

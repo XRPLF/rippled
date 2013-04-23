@@ -230,7 +230,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 		return false;
 	}
 
-	mMissingLedger = theApp->getMasterLedgerAcquire().findCreate(ledgerHash);
+	mMissingLedger = theApp->getMasterLedgerAcquire().findCreate(ledgerHash, ledgerSeq);
 	if (mMissingLedger->isComplete())
 	{
 		Ledger::pointer lgr = mMissingLedger->getLedger();
@@ -270,7 +270,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 				if ((fetchCount < fetchMax) && (it.first < ledgerSeq) &&
 					!mCompleteLedgers.hasValue(it.first) && !theApp->getMasterLedgerAcquire().find(it.second))
 				{
-					LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(it.second);
+					LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(it.second, it.first);
 					if (acq && acq->isComplete())
 					{
 						acq->getLedger()->setAccepted();
@@ -602,7 +602,7 @@ void LedgerMaster::tryPublish()
 				}
 				else
 				{
-					LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(hash);
+					LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(hash, 0);
 					if (!acq->isDone())
 					{
 						acq->setAccept();

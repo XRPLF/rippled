@@ -85,9 +85,10 @@ public:
 	typedef boost::shared_ptr<LedgerAcquire> pointer;
 
 protected:
-	Ledger::pointer mLedger;
-	bool mHaveBase, mHaveState, mHaveTransactions, mAborted, mSignaled, mAccept, mByHash;
-	int mWaitCount;
+	Ledger::pointer			mLedger;
+	bool					mHaveBase, mHaveState, mHaveTransactions, mAborted, mSignaled, mAccept, mByHash;
+	int						mWaitCount;
+	uint32					mSeq;
 
 	std::set<SHAMapNode>	mRecentTXNodes;
 	std::set<SHAMapNode>	mRecentASNodes;
@@ -104,7 +105,7 @@ protected:
 	boost::weak_ptr<PeerSet> pmDowncast();
 
 public:
-	LedgerAcquire(const uint256& hash);
+	LedgerAcquire(const uint256& hash, uint32 seq);
 	virtual ~LedgerAcquire()			{ ; }
 
 	bool isBase() const					{ return mHaveBase; }
@@ -149,7 +150,7 @@ protected:
 public:
 	LedgerAcquireMaster() : mRecentFailures("LedgerAcquireRecentFailures", 0, LEDGER_REACQUIRE_INTERVAL) { ; }
 
-	LedgerAcquire::pointer findCreate(const uint256& hash);
+	LedgerAcquire::pointer findCreate(const uint256& hash, uint32 seq);
 	LedgerAcquire::pointer find(const uint256& hash);
 	bool hasLedger(const uint256& ledgerHash);
 	void dropLedger(const uint256& ledgerHash);

@@ -157,7 +157,7 @@ public:
 	bool isOutbound() const						{ return !mInbound; }
 
 	const uint256& getClosedLedgerHash() const	{ return mClosedLedgerHash; }
-	bool hasLedger(const uint256& hash) const;
+	bool hasLedger(const uint256& hash, uint32 seq) const;
 	bool hasTxSet(const uint256& hash) const;
 	uint64 getPeerId() const					{ return mPeerId; }
 

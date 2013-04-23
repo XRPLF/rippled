@@ -96,9 +96,9 @@ bool PeerSet::isActive()
 	return !isDone();
 }
 
-LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT),
+LedgerAcquire::LedgerAcquire(const uint256& hash, uint32 seq) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT),
 	mHaveBase(false), mHaveState(false), mHaveTransactions(false), mAborted(false), mSignaled(false), mAccept(false),
-	mByHash(true), mWaitCount(0)
+	mByHash(true), mWaitCount(0), mSeq(seq)
 {
 #ifdef LA_DEBUG
 	cLog(lsTRACE) << "Acquiring ledger " << mHash;
@@ -243,14 +243,15 @@ void LedgerAcquire::addPeers()
 	// We traverse the peer list in random order so as not to favor any particular peer
 	int firstPeer = rand() & vSize;
 
-	bool found = false;
+	int found = 0;
 	for (int i = 0; i < vSize; ++i)
 	{
 		Peer::ref peer = peerList[(i + firstPeer) % vSize];
-		if (peer->hasLedger(getHash()))
+		if (peer->hasLedger(getHash(), mSeq))
 		{
-			found = true;
 			peerHas(peer);
+			if (++found == 3)
+				break;
 		}
 	}
 
@@ -775,7 +776,7 @@ bool LedgerAcquire::takeTxRootNode(const std::vector<unsigned char>& data, SMAdd
 		mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), data, snfWIRE, &tFilter));
 }
 
-LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
+LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash, uint32 seq)
 {
 	assert(hash.isNonZero());
 	boost::mutex::scoped_lock sl(mLock);
@@ -785,7 +786,7 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 		ptr->touch();
 		return ptr;
 	}
-	ptr = boost::make_shared<LedgerAcquire>(hash);
+	ptr = boost::make_shared<LedgerAcquire>(hash, seq);
 	if (!ptr->isDone())
 	{
 		ptr->addPeers();
@@ -941,6 +942,8 @@ void LedgerAcquireMaster::gotLedgerData(Job&, uint256 hash,
 		}
 		if (!san.isInvalid())
 			ledger->trigger(peer);
+		else
+			cLog(lsDEBUG) << "Peer sends invalid base data";
 		return;
 	}
 
@@ -975,6 +978,8 @@ void LedgerAcquireMaster::gotLedgerData(Job&, uint256 hash,
 			ledger->takeAsNode(nodeIDs, nodeData, ret);
 		if (!ret.isInvalid())
 				ledger->trigger(peer);
+		else
+			cLog(lsDEBUG) << "Peer sends invalid node data";
 		return;
 	}
 

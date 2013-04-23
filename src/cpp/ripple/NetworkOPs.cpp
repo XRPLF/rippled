@@ -772,7 +772,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	{
 		cLog(lsINFO) << "Acquiring consensus ledger " << closedLedger;
 		if (!mAcquiringLedger || (mAcquiringLedger->getHash() != closedLedger))
-			mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(closedLedger);
+			mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(closedLedger, 0);
 		if (!mAcquiringLedger || mAcquiringLedger->isFailed())
 		{
 			theApp->getMasterLedgerAcquire().dropLedger(closedLedger);
