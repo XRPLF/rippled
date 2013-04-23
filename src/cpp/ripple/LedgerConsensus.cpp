@@ -319,7 +319,8 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 {
 	SHAMap::pointer initialSet;
 
-	if (mProposing && mHaveCorrectLCL && ((mPreviousLedger->getLedgerSeq() % 256) == 0))
+	if ((theConfig.RUN_STANDALONE || (mProposing && mHaveCorrectLCL))
+		 && ((mPreviousLedger->getLedgerSeq() % 256) == 0))
 	{ // previous ledger was flag ledger
 		SHAMap::pointer preSet = initialLedger.peekTransactionMap()->snapShot(true);
 		theApp->getFeeVote().doFeeVoting(mPreviousLedger, preSet);

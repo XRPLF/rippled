@@ -352,17 +352,16 @@ void FeeVote::doFeeVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosit
 	{
 		cLog(lsWARNING) << "We are voting for a fee change: " << baseFee << "/" << baseReserve << "/" << incReserve;
 		SerializedTransaction trans(ttFEE);
+		trans.setFieldAccount(sfAccount, uint160());
 		trans.setFieldU64(sfBaseFee, baseFee);
 		trans.setFieldU32(sfReferenceFeeUnits, 10);
 		trans.setFieldU32(sfReserveBase, baseReserve);
 		trans.setFieldU32(sfReserveIncrement, incReserve);
-
+		uint256 txID = trans.getTransactionID();
+		cLog(lsWARNING) << "Vote: " << txID;
 
 		Serializer s;
-		s.add32(sHP_TransactionID);
 		trans.add(s, true);
-		uint256 txID = s.getSHA512Half();
-		cLog(lsWARNING) << "Vote: " << txID;
 
 		SHAMapItem::pointer tItem = boost::make_shared<SHAMapItem>(txID, s.peekData());
 		if (!initialPosition->addGiveItem(tItem, true, false))

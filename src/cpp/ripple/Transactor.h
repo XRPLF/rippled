@@ -36,6 +36,8 @@ protected:
 
 	Transactor(const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine);
 
+	virtual bool mustHaveValidAccount() { return true; }
+
 public:
 	typedef boost::shared_ptr<Transactor> pointer;
 
