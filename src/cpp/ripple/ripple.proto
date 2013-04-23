@@ -119,6 +119,8 @@ message TMStatusChange {
 	optional bytes ledgerHash			= 4;
 	optional bytes ledgerHashPrevious	= 5;
 	optional uint64 networkTime			= 6;
+	optional uint32 firstSeq			= 7;
+	optional uint32 lastSeq				= 8;
 }
 
 
@@ -222,6 +224,7 @@ message TMIndexedObject
 	optional bytes nodeID		= 2;
 	optional bytes index		= 3;
 	optional bytes data			= 4;
+	optional uint32 ledgerSeq	= 5;
 }
 
 message TMGetObjectByHash

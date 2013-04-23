@@ -182,6 +182,7 @@ public:
 	void setRemoteFee(uint32);
 	bool raiseLocalFee();
 	bool lowerLocalFee();
+	bool isLoaded()				{ return (raiseCount != 0) || (mLocalTxnLoadFee != lftNormalFee); }
 };
 
 

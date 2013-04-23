@@ -21,6 +21,7 @@ DEFINE_INSTANCE(SHAMapItem);
 DEFINE_INSTANCE(SHAMapTreeNode);
 
 class SHAMap;
+class SHAMapSyncFilter;
 
 // A tree-like map of SHA256 hashes
 // The trees are designed for rapid synchronization and compression of differences
@@ -253,7 +254,7 @@ public:
 	SHAMapSyncFilter()				{ ; }
 	virtual ~SHAMapSyncFilter()		{ ; }
 
-	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
+	virtual void gotNode(bool fromFilter, const SHAMapNode& id, const uint256& nodeHash,
 		const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType type)
 	{ ; }
 
@@ -397,7 +398,7 @@ public:
 	ScopedLock Lock() const { return ScopedLock(mLock); }
 
 	bool hasNode(const SHAMapNode& id);
-	void fetchRoot(const uint256& hash);
+	void fetchRoot(const uint256& hash, SHAMapSyncFilter* filter);
 
 	// normal hash access functions
 	bool hasItem(const uint256& id);
@@ -431,7 +432,7 @@ public:
 	bool getNodeFat(const SHAMapNode& node, std::vector<SHAMapNode>& nodeIDs,
 	 std::list<std::vector<unsigned char> >& rawNode, bool fatRoot, bool fatLeaves);
 	bool getRootNode(Serializer& s, SHANodeFormat format);
-	std::vector<uint256> getNeededHashes(int max);
+	std::vector<uint256> getNeededHashes(int max, SHAMapSyncFilter* filter);
 	SMAddNode addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format,
 		SHAMapSyncFilter* filter);
 	SMAddNode addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format,
@@ -477,7 +478,7 @@ public:
 	virtual void dump(bool withHashes = false);
 
 	typedef std::pair< uint256, std::vector<unsigned char> > fetchPackEntry_t;
-	std::list<fetchPackEntry_t> getFetchPack(SHAMap* prior, bool includeLeaves, int max);
+	std::list<fetchPackEntry_t> getFetchPack(SHAMap* have, bool includeLeaves, int max);
 
 	static void sweep()			{ fullBelowCache.sweep(); }
 };

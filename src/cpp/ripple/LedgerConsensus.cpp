@@ -474,6 +474,12 @@ void LedgerConsensus::statusChange(ripple::NodeEvent event, Ledger& ledger)
 	s.set_ledgerhashprevious(hash.begin(), hash.size());
 	hash = ledger.getHash();
 	s.set_ledgerhash(hash.begin(), hash.size());
+
+	uint32 uMin, uMax;
+	theApp->getOPs().getValidatedRange(uMin, uMax);
+	s.set_firstseq(uMin);
+	s.set_lastseq(uMax);
+
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, ripple::mtSTATUS_CHANGE);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 	cLog(lsTRACE) << "send status change to peer";

@@ -232,7 +232,7 @@ template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::del(c
 
 	if (!valid || entry.isExpired())
 		mCache.erase(cit);
-	return true;
+	return ret;
 }
 
 template<typename c_Key, typename c_Data>

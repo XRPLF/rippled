@@ -195,9 +195,11 @@ SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 	}
 }
 
-void ConsensusTransSetSF::gotNode(const SHAMapNode& id, const uint256& nodeHash,
+void ConsensusTransSetSF::gotNode(bool fromFilter, const SHAMapNode& id, const uint256& nodeHash,
 	const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType type)
 {
+	if (fromFilter)
+		return;
 	theApp->getTempNodeCache().store(nodeHash, nodeData);
 	if ((type == SHAMapTreeNode::tnTRANSACTION_NM) && (nodeData.size() > 16))
 	{ // this is a transaction, and we didn't have it

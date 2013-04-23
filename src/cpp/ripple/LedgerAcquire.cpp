@@ -114,9 +114,19 @@ bool LedgerAcquire::tryLocal()
 	// Nothing we can do without the ledger base
 	HashedObject::pointer node = theApp->getHashedObjectStore().retrieve(mHash);
 	if (!node)
-		return false;
+	{
+		std::vector<unsigned char> data;
+		if (!theApp->getOPs().getFetchPack(mHash, data))
+			return false;
+		cLog(lsTRACE) << "Ledger base found in fetch pack";
+		mLedger = boost::make_shared<Ledger>(data, true);
+		theApp->getHashedObjectStore().store(hotLEDGER, mLedger->getLedgerSeq(), data, mHash);
+	}
+	else
+	{
+		mLedger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
+	}
 
-	mLedger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
 	if (mLedger->getHash() != mHash)
 	{ // We know for a fact the ledger can never be acquired
 		cLog(lsWARNING) << mHash << " cannot be a ledger";
@@ -134,9 +144,10 @@ bool LedgerAcquire::tryLocal()
 	{
 		try
 		{
-			mLedger->peekTransactionMap()->fetchRoot(mLedger->getTransHash());
+			TransactionStateSF filter(mLedger->getLedgerSeq());
+			mLedger->peekTransactionMap()->fetchRoot(mLedger->getTransHash(), &filter);
 			cLog(lsDEBUG) << "Got root txn map locally";
-			std::vector<uint256> h = mLedger->getNeededTransactionHashes(1);
+			std::vector<uint256> h = mLedger->getNeededTransactionHashes(1, &filter);
 			if (h.empty())
 			{
 				cLog(lsDEBUG) << "Had full txn map locally";
@@ -157,9 +168,10 @@ bool LedgerAcquire::tryLocal()
 	{
 		try
 		{
-			mLedger->peekAccountStateMap()->fetchRoot(mLedger->getAccountHash());
+			AccountStateSF filter(mLedger->getLedgerSeq());
+			mLedger->peekAccountStateMap()->fetchRoot(mLedger->getAccountHash(), &filter);
 			cLog(lsDEBUG) << "Got root AS map locally";
-			std::vector<uint256> h = mLedger->getNeededAccountStateHashes(1);
+			std::vector<uint256> h = mLedger->getNeededAccountStateHashes(1, &filter);
 			if (h.empty())
 			{
 				cLog(lsDEBUG) << "Had full AS map locally";
@@ -357,13 +369,10 @@ void LedgerAcquire::trigger(Peer::ref peer)
 				ripple::TMGetObjectByHash tmBH;
 				tmBH.set_query(true);
 				tmBH.set_ledgerhash(mHash.begin(), mHash.size());
-				if (mHaveBase)
-					tmBH.set_seq(mLedger->getLedgerSeq());
 				bool typeSet = false;
 				BOOST_FOREACH(neededHash_t& p, need)
 				{
 					cLog(lsWARNING) << "Want: " << p.second;
-					theApp->getOPs().addWantedHash(p.second);
 					if (!typeSet)
 					{
 						tmBH.set_type(p.first);
@@ -783,7 +792,13 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 		ptr->setTimer(); // Cannot call in constructor
 	}
 	else
+	{
+		Ledger::pointer ledger = ptr->getLedger();
+		ledger->setClosed();
+		ledger->setImmutable();
+		theApp->getLedgerMaster().storeLedger(ledger);
 		cLog(lsDEBUG) << "Acquiring ledger we already have: " << hash;
+	}
 	return ptr;
 }
 
@@ -810,13 +825,15 @@ std::vector<LedgerAcquire::neededHash_t> LedgerAcquire::getNeededHashes()
 	}
 	if (!mHaveState)
 	{
-		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(4);
+		AccountStateSF filter(mLedger->getLedgerSeq());
+		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(4, &filter);
 		BOOST_FOREACH(const uint256& h, v)
 			ret.push_back(std::make_pair(ripple::TMGetObjectByHash::otSTATE_NODE, h));
 	}
 	if (!mHaveTransactions)
 	{
-		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(4);
+		TransactionStateSF filter(mLedger->getLedgerSeq());
+		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(4, &filter);
 		BOOST_FOREACH(const uint256& h, v)
 			ret.push_back(std::make_pair(ripple::TMGetObjectByHash::otTRANSACTION_NODE, h));
 	}
@@ -840,7 +857,7 @@ Json::Value LedgerAcquire::getJson(int)
 	if (mHaveBase && !mHaveState)
 	{
 		Json::Value hv(Json::arrayValue);
-		std::vector<uint256> v = mLedger->peekAccountStateMap()->getNeededHashes(16);
+		std::vector<uint256> v = mLedger->peekAccountStateMap()->getNeededHashes(16, NULL);
 		BOOST_FOREACH(const uint256& h, v)
 			hv.append(h.GetHex());
 		ret["needed_state_hashes"] = hv;
@@ -848,7 +865,7 @@ Json::Value LedgerAcquire::getJson(int)
 	if (mHaveBase && !mHaveTransactions)
 	{
 		Json::Value hv(Json::arrayValue);
-		std::vector<uint256> v = mLedger->peekTransactionMap()->getNeededHashes(16);
+		std::vector<uint256> v = mLedger->peekTransactionMap()->getNeededHashes(16, NULL);
 		BOOST_FOREACH(const uint256& h, v)
 			hv.append(h.GetHex());
 		ret["needed_transaction_hashes"] = hv;

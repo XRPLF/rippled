@@ -13,7 +13,7 @@ class ConsensusTransSetSF : public SHAMapSyncFilter
 public:
 	ConsensusTransSetSF() { ; }
 
-	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
+	virtual void gotNode(bool fromFilter, const SHAMapNode& id, const uint256& nodeHash,
 		const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType);
 
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData);
@@ -29,14 +29,14 @@ public:
 	AccountStateSF(uint32 ledgerSeq) : mLedgerSeq(ledgerSeq)
 	{ ; }
 
-	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
+	virtual void gotNode(bool fromFilter, const SHAMapNode& id, const uint256& nodeHash,
 		const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType)
 	{
 		theApp->getHashedObjectStore().store(hotACCOUNT_NODE, mLedgerSeq, nodeData, nodeHash);
 	}
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
-	{ // fetchNodeExternal already tried
-		return false;
+	{
+		return theApp->getOPs().getFetchPack(nodeHash, nodeData);
 	}
 };
 
@@ -50,7 +50,7 @@ public:
 	TransactionStateSF(uint32 ledgerSeq) : mLedgerSeq(ledgerSeq)
 	{ ; }
 
-	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
+	virtual void gotNode(bool fromFilter, const SHAMapNode& id, const uint256& nodeHash,
 		const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType type)
 	{
 		theApp->getHashedObjectStore().store(
@@ -58,8 +58,8 @@ public:
 			mLedgerSeq, nodeData, nodeHash);
 	}
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
-	{ // fetchNodeExternal already tried
-		return false;
+	{
+		return theApp->getOPs().getFetchPack(nodeHash, nodeData);
 	}
 };
 

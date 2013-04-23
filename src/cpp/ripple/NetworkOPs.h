@@ -128,8 +128,8 @@ protected:
 	subMapType											mSubTransactions;		// all accepted transactions
 	subMapType											mSubRTTransactions;		// all proposed and accepted transactions
 
-	boost::recursive_mutex								mWantedHashLock;
-	boost::unordered_set<uint256>						mWantedHashes;
+	TaggedCache< uint256, std::vector<unsigned char> >	mFetchPack;
+	uint32												mLastFetchPack;
 
 	uint32												mLastLoadBase;
 	uint32												mLastLoadFactor;
@@ -261,7 +261,13 @@ public:
 	void mapComplete(const uint256& hash, SHAMap::ref map);
 	bool stillNeedTXSet(const uint256& hash);
 	void makeFetchPack(Job&, boost::weak_ptr<Peer> peer, boost::shared_ptr<ripple::TMGetObjectByHash> request,
-		Ledger::pointer prevLedger, Ledger::pointer reqLedger);
+		Ledger::pointer wantLedger, Ledger::pointer haveLedger);
+	bool shouldFetchPack();
+	void gotFetchPack() { mLastFetchPack = 0; }
+	void addFetchPack(const uint256& hash, boost::shared_ptr< std::vector<unsigned char> >& data);
+	bool getFetchPack(const uint256& hash, std::vector<unsigned char>& data);
+	int getFetchSize();
+	void sweepFetchPack();
 
 	// network state machine
 	void checkState(const boost::system::error_code& result);
@@ -293,9 +299,6 @@ public:
 	void storeProposal(LedgerProposal::ref proposal,	const RippleAddress& peerPublic);
 	uint256 getConsensusLCL();
 	void reportFeeChange();
-
-	bool addWantedHash(const uint256& h);
-	bool isWantedHash(const uint256& h, bool remove);
 
 	//Helper function to generate SQL query to get transactions
 	std::string transactionsSQL(std::string selection, const RippleAddress& account,

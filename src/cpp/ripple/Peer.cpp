@@ -36,6 +36,8 @@ Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, 
 	mPeerId(peerID),
 	mPrivate(false),
 	mLoad(""),
+	mMinLedger(0),
+	mMaxLedger(0),
 	mSocketSsl(io_service, ctx),
 	mActivityTimer(io_service),
 	mIOStrand(io_service)
@@ -727,7 +729,7 @@ void Peer::recvHello(ripple::TMHello& packet)
 			cLog(lsINFO) << "Recv(Hello): " << getIP() << " :Clock far off -" << ourTime - packet.nettime();
 		}
 	}
-	else if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
+	else if (packet.protoversionmin() > MAKE_VERSION_INT(PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR))
 	{
 		cLog(lsINFO) << "Recv(Hello): Server requires protocol version " <<
 			GET_VERSION_MAJOR(packet.protoversion()) << "." << GET_VERSION_MINOR(packet.protoversion())
@@ -1189,14 +1191,14 @@ void Peer::recvPeers(ripple::TMPeers& packet)
 void Peer::recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash>& ptr)
 {
 	ripple::TMGetObjectByHash& packet = *ptr;
-	if (packet.type() == ripple::TMGetObjectByHash::otFETCH_PACK)
-	{
-		doFetchPack(ptr);
-		return;
-	}
 
 	if (packet.query())
 	{ // this is a query
+		if (packet.type() == ripple::TMGetObjectByHash::otFETCH_PACK)
+		{
+			doFetchPack(ptr);
+			return;
+		}
 		ripple::TMGetObjectByHash reply;
 
 		reply.set_query(false);
@@ -1233,42 +1235,43 @@ void Peer::recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash
 	}
 	else
 	{ // this is a reply
-		uint32 seq = packet.has_seq() ? packet.seq() : 0;
-		HashedObjectType type;
-		switch (packet.type())
-		{
-			case ripple::TMGetObjectByHash::otLEDGER: type = hotLEDGER; break;
-			case ripple::TMGetObjectByHash::otTRANSACTION: type = hotTRANSACTION; break;
-			case ripple::TMGetObjectByHash::otSTATE_NODE: type = hotACCOUNT_NODE; break;
-			case ripple::TMGetObjectByHash::otTRANSACTION_NODE: type = hotTRANSACTION_NODE; break;
-			default: type = hotUNKNOWN;
-		}
+		if (packet.type() == ripple::TMGetObjectByHash::otFETCH_PACK)
+			theApp->getOPs().gotFetchPack();
+		uint32 pLSeq = 0;
+		bool pLDo = true;
 		for (int i = 0; i < packet.objects_size(); ++i)
 		{
 			const ripple::TMIndexedObject& obj = packet.objects(i);
 			if (obj.has_hash() && (obj.hash().size() == (256/8)))
 			{
-				uint256 hash;
-				memcpy(hash.begin(), obj.hash().data(), 256 / 8);
-				if (theApp->getOPs().isWantedHash(hash, true))
+
+				if (obj.has_ledgerseq())
 				{
-					std::vector<unsigned char> data(obj.data().begin(), obj.data().end());
-					if (Serializer::getSHA512Half(data) != hash)
+					if (obj.ledgerseq() != pLSeq)
 					{
-						cLog(lsWARNING) << "Bad hash in data from peer";
-						theApp->getOPs().addWantedHash(hash);
-						punishPeer(LT_BadData);
-					}
-					else
-					{
-						cLog(lsDEBUG) << "Got wanted hash " << hash;
-						theApp->getHashedObjectStore().store(type, seq, data, hash);
+						tLog(pLDo && (pLSeq != 0), lsDEBUG) << "Recevied full fetch pack for " << pLSeq;
+						pLSeq = obj.ledgerseq();
+						pLDo = !theApp->getOPs().haveLedger(pLSeq);
+						if (!pLDo)
+						{
+							cLog(lsDEBUG) << "Got pack for " << pLSeq << " too late";
+						}
 					}
 				}
-				else
-					cLog(lsWARNING) << "Received unwanted hash " << getIP() << " " << hash;
+
+				if (pLDo)
+				{
+					uint256 hash;
+					memcpy(hash.begin(), obj.hash().data(), 256 / 8);
+
+					boost::shared_ptr< std::vector<unsigned char> > data = boost::make_shared< std::vector<unsigned char> >
+						(obj.data().begin(), obj.data().end());
+
+					theApp->getOPs().addFetchPack(hash, data);
+				}
 			}
 		}
+		tLog(pLDo && (pLSeq != 0), lsDEBUG) << "Received partial fetch pack for " << pLSeq;
 	}
 }
 
@@ -1403,6 +1406,11 @@ void Peer::recvStatus(ripple::TMStatusChange& packet)
 		addLedger(mPreviousLedgerHash);
 	}
 	else mPreviousLedgerHash.zero();
+
+	if (packet.has_firstseq())
+		mMinLedger = packet.firstseq();
+	if (packet.has_lastseq())
+		mMaxLedger = packet.lastseq();
 }
 
 void Peer::recvGetLedger(ripple::TMGetLedger& packet)
@@ -1857,46 +1865,49 @@ void Peer::doProofOfWork(Job&, boost::weak_ptr<Peer> peer, ProofOfWork::pointer 
 
 void Peer::doFetchPack(const boost::shared_ptr<ripple::TMGetObjectByHash>& packet)
 {
-	if (packet->query())
+	if (theApp->getFeeTrack().isLoaded())
 	{
-		if (packet->ledgerhash().size() != 32)
-		{
-			cLog(lsWARNING) << "FetchPack hash size malformed";
-			punishPeer(LT_InvalidRequest);
-			return;
-		}
-		uint256 hash;
-		memcpy(hash.begin(), packet->ledgerhash().data(), 32);
-
-		Ledger::pointer reqLedger = theApp->getOPs().getLedgerByHash(hash);
-		if (!reqLedger)
-		{
-			cLog(lsINFO) << "Peer requests fetch pack for ledger we don't have: " << hash;
-			punishPeer(LT_RequestNoReply);
-			return;
-		}
-		if (!reqLedger->isClosed())
-		{
-			cLog(lsWARNING) << "Peer requests fetch pack for open ledger: " << hash;
-			punishPeer(LT_InvalidRequest);
-			return;
-		}
-
-		Ledger::pointer prevLedger = theApp->getOPs().getLedgerByHash(reqLedger->getParentHash());
-		if (!prevLedger)
-		{
-			cLog(lsINFO) << "Peer requests fetch pack for ledger whose predecessor we don't have: " << hash;
-			punishPeer(LT_RequestNoReply);
-			return;
-		}
-		theApp->getJobQueue().addJob(jtPACK, "MakeFetchPack",
-			BIND_TYPE(&NetworkOPs::makeFetchPack, &theApp->getOPs(), P_1,
-				boost::weak_ptr<Peer>(shared_from_this()), packet, prevLedger, reqLedger));
+		cLog(lsINFO) << "Too busy to make fetch pack";
+		return;
 	}
-	else
-	{ // received fetch pack
-		// WRITEME
+	if (packet->ledgerhash().size() != 32)
+	{
+		cLog(lsWARNING) << "FetchPack hash size malformed";
+		punishPeer(LT_InvalidRequest);
+		return;
 	}
+	uint256 hash;
+	memcpy(hash.begin(), packet->ledgerhash().data(), 32);
+
+	Ledger::pointer haveLedger = theApp->getOPs().getLedgerByHash(hash);
+	if (!haveLedger)
+	{
+		cLog(lsINFO) << "Peer requests fetch pack for ledger we don't have: " << hash;
+		punishPeer(LT_RequestNoReply);
+		return;
+	}
+	if (!haveLedger->isClosed())
+	{
+		cLog(lsWARNING) << "Peer requests fetch pack from open ledger: " << hash;
+		punishPeer(LT_InvalidRequest);
+		return;
+	}
+
+	Ledger::pointer wantLedger = theApp->getOPs().getLedgerByHash(haveLedger->getParentHash());
+	if (!wantLedger)
+	{
+		cLog(lsINFO) << "Peer requests fetch pack for ledger whose predecessor we don't have: " << hash;
+		punishPeer(LT_RequestNoReply);
+		return;
+	}
+	theApp->getJobQueue().addJob(jtPACK, "MakeFetchPack",
+		BIND_TYPE(&NetworkOPs::makeFetchPack, &theApp->getOPs(), P_1,
+			boost::weak_ptr<Peer>(shared_from_this()), packet, wantLedger, haveLedger));
+}
+
+bool Peer::hasProto(int version)
+{
+	return mHello.has_protoversion() && (mHello.protoversion() >= version);
 }
 
 Json::Value Peer::getJson()

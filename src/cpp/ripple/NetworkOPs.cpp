@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "Application.h"
 #include "Transaction.h"
+#include "HashPrefixes.h"
 #include "LedgerConsensus.h"
 #include "LedgerTiming.h"
 #include "Log.h"
@@ -35,6 +36,7 @@ NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedge
 	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mProposing(false), mValidating(false),
 	mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0), mLastCloseProposers(0),
 	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0),
+	mFetchPack("FetchPack", 2048, 30), mLastFetchPack(0),
 	mLastLoadBase(256), mLastLoadFactor(256)
 {
 }
@@ -154,18 +156,6 @@ bool NetworkOPs::isValidated(uint32 seq, const uint256& hash)
 bool NetworkOPs::isValidated(uint32 seq)
 { // use when ledger was retrieved by seq
 	return haveLedger(seq) && (seq <= mLedgerMaster->getValidatedLedger()->getLedgerSeq());
-}
-
-bool NetworkOPs::addWantedHash(const uint256& h)
-{
-	boost::recursive_mutex::scoped_lock sl(mWantedHashLock);
-	return mWantedHashes.insert(h).second;
-}
-
-bool NetworkOPs::isWantedHash(const uint256& h, bool remove)
-{
-	boost::recursive_mutex::scoped_lock sl(mWantedHashLock);
-	return (remove ? mWantedHashes.erase(h) : mWantedHashes.count(h)) != 0;
 }
 
 void NetworkOPs::submitTransaction(Job&, SerializedTransaction::pointer iTrans, stCallback callback)
@@ -1276,6 +1266,12 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 
 
 	info["complete_ledgers"] = theApp->getLedgerMaster().getCompleteLedgers();
+
+
+	size_t fp = mFetchPack.getCacheSize();
+	if (fp != 0)
+		info["fetch_pack"] = Json::UInt(fp);
+
 	info["peers"] = theApp->getConnectionPool().getPeerCount();
 
 	Json::Value lastClose = Json::objectValue;
@@ -2007,7 +2003,7 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 }
 
 void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_ptr<ripple::TMGetObjectByHash> request,
-	Ledger::pointer prevLedger, Ledger::pointer reqLedger)
+	Ledger::pointer wantLedger, Ledger::pointer haveLedger)
 {
 	try
 	{
@@ -2020,26 +2016,46 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_
 		if (request->has_seq())
 			reply.set_seq(request->seq());
 		reply.set_ledgerhash(reply.ledgerhash());
+		reply.set_type(ripple::TMGetObjectByHash::otFETCH_PACK);
 
-		std::list<SHAMap::fetchPackEntry_t> pack =
-			reqLedger->peekAccountStateMap()->getFetchPack(prevLedger->peekAccountStateMap().get(), false, 1024);
-		BOOST_FOREACH(SHAMap::fetchPackEntry_t& node, pack)
+		do
 		{
+			uint32 lSeq = wantLedger->getLedgerSeq();
+
 			ripple::TMIndexedObject& newObj = *reply.add_objects();
-			newObj.set_hash(node.first.begin(), 256 / 8);
-			newObj.set_data(&node.second[0], node.second.size());
-		}
+			newObj.set_hash(wantLedger->getHash().begin(), 256 / 8);
+			Serializer s(256);
+			s.add32(sHP_Ledger);
+			wantLedger->addRaw(s);
+			newObj.set_data(s.getDataPtr(), s.getLength());
+			newObj.set_ledgerseq(lSeq);
 
-		if (reqLedger->getAccountHash().isNonZero() && (pack.size() < 768))
-		{
-			pack = reqLedger->peekTransactionMap()->getFetchPack(NULL, true, 256);
+			std::list<SHAMap::fetchPackEntry_t> pack = wantLedger->peekAccountStateMap()->getFetchPack(
+				haveLedger->peekAccountStateMap().get(), false, 1024 - reply.objects().size());
 			BOOST_FOREACH(SHAMap::fetchPackEntry_t& node, pack)
 			{
 				ripple::TMIndexedObject& newObj = *reply.add_objects();
 				newObj.set_hash(node.first.begin(), 256 / 8);
 				newObj.set_data(&node.second[0], node.second.size());
+				newObj.set_ledgerseq(lSeq);
 			}
-		}
+
+			if (wantLedger->getAccountHash().isNonZero() && (pack.size() < 768))
+			{
+				pack = wantLedger->peekTransactionMap()->getFetchPack(NULL, true, 256);
+				BOOST_FOREACH(SHAMap::fetchPackEntry_t& node, pack)
+				{
+					ripple::TMIndexedObject& newObj = *reply.add_objects();
+					newObj.set_hash(node.first.begin(), 256 / 8);
+					newObj.set_data(&node.second[0], node.second.size());
+					newObj.set_ledgerseq(lSeq);
+				}
+			}
+			if (reply.objects().size() >= 512)
+				break;
+			haveLedger = wantLedger;
+			wantLedger = getLedgerByHash(haveLedger->getParentHash());
+		} while (wantLedger);
 
 		cLog(lsINFO) << "Built fetch pack with " << reply.objects().size() << " nodes";
 		PackedMessage::pointer msg = boost::make_shared<PackedMessage>(reply, ripple::mtGET_OBJECTS);
@@ -2049,6 +2065,47 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_
 	{
 		cLog(lsWARNING) << "Exception building fetch pach";
 	}
+}
+
+void NetworkOPs::sweepFetchPack()
+{
+	mFetchPack.sweep();
+}
+
+void NetworkOPs::addFetchPack(const uint256& hash, boost::shared_ptr< std::vector<unsigned char> >& data)
+{
+	mFetchPack.canonicalize(hash, data, false);
+}
+
+bool NetworkOPs::getFetchPack(const uint256& hash, std::vector<unsigned char>& data)
+{
+	bool ret = mFetchPack.retrieve(hash, data);
+	if (!ret)
+		return false;
+	mFetchPack.del(hash, false);
+	if (hash != Serializer::getSHA512Half(data))
+	{
+		cLog(lsWARNING) << "Bad entry in fetch pack";
+		return false;
+	}
+	return true;
+}
+
+bool NetworkOPs::shouldFetchPack()
+{
+	uint32 now = getNetworkTimeNC();
+	if (mLastFetchPack == now)
+		 return false;
+	mFetchPack.sweep();
+	if (mFetchPack.getCacheSize() > 384)
+		return false;
+	mLastFetchPack = now;
+	return true;
+}
+
+int NetworkOPs::getFetchSize()
+{
+	return mFetchPack.getCacheSize();
 }
 
 // vim:ts=4
