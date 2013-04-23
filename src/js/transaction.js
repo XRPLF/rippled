@@ -43,13 +43,15 @@
 //   - may or may not forward.
 //
 
+var EventEmitter     = require('events').EventEmitter;
+var util             = require('util');
+
 var sjcl             = require('../../build/sjcl');
 
 var Amount           = require('./amount').Amount;
 var Currency         = require('./amount').Currency;
 var UInt160          = require('./amount').UInt160;
 var Seed             = require('./seed').Seed;
-var EventEmitter     = require('events').EventEmitter;
 var SerializedObject = require('./serializedobject').SerializedObject;
 
 var config           = require('./config');
@@ -61,6 +63,8 @@ var SUBMIT_LOST     = 8;    // Give up tracking.
 // - Collects parameters
 // - Allow event listeners to be attached to determine the outcome.
 var Transaction = function (remote) {
+  EventEmitter.call(this);
+
   // YYY Make private as many variables as possible.
   var self  = this;
 
@@ -98,7 +102,7 @@ var Transaction = function (remote) {
     });
 };
 
-Transaction.prototype  = new EventEmitter;
+util.inherits(Transaction, EventEmitter);
 
 // XXX This needs to be determined from the network.
 Transaction.fees = {

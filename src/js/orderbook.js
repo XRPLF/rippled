@@ -9,6 +9,8 @@
 // var network = require("./network.js");
 
 var EventEmitter = require('events').EventEmitter;
+var util = require('util');
+
 var Amount = require('./amount').Amount;
 var UInt160 = require('./uint160').UInt160;
 var Currency = require('./currency').Currency;
@@ -18,6 +20,8 @@ var extend = require('extend');
 var OrderBook = function (remote,
                           currency_gets, issuer_gets,
                           currency_pays, issuer_pays) {
+  EventEmitter.call(this);
+
   var self = this;
 
   this._remote = remote;
@@ -70,7 +74,7 @@ var OrderBook = function (remote,
   return this;
 };
 
-OrderBook.prototype = new EventEmitter;
+util.inherits(OrderBook, EventEmitter);
 
 /**
  * List of events that require a remote subscription to the orderbook.

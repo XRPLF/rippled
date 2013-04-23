@@ -12,12 +12,15 @@
 // var network = require("./network.js");
 
 var EventEmitter = require('events').EventEmitter;
+var util = require('util');
+
 var Amount = require('./amount').Amount;
 var UInt160 = require('./uint160').UInt160;
 
 var extend = require('extend');
 
 var Account = function (remote, account) {
+  EventEmitter.call(this);
   var self = this;
 
   this._remote = remote;
@@ -73,7 +76,7 @@ var Account = function (remote, account) {
   return this;
 };
 
-Account.prototype = new EventEmitter;
+util.inherits(Account, EventEmitter);
 
 /**
  * List of events that require a remote subscription to the account.

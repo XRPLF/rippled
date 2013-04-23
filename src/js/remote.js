@@ -16,6 +16,8 @@
 
 // npm
 var EventEmitter  = require('events').EventEmitter;
+var util          = require('util');
+
 var Server        = require('./server').Server;
 var Amount        = require('./amount').Amount;
 var Currency      = require('./currency').Currency;
@@ -36,6 +38,8 @@ var sjcl          = require('../../build/sjcl');
 //   'remoteUnexpected'
 //   'remoteDisconnected'
 var Request = function (remote, command) {
+  EventEmitter.call(this);
+
   var self  = this;
 
   this.message    = {
@@ -46,7 +50,7 @@ var Request = function (remote, command) {
   this.requested  = false;
 };
 
-Request.prototype  = new EventEmitter;
+util.inherits(Request, EventEmitter);
 
 // Send the request to a remote.
 Request.prototype.request = function (remote) {
@@ -257,6 +261,8 @@ Request.prototype.books = function (books, snapshot) {
 
 // --> trusted: truthy, if remote is trusted
 var Remote = function (opts, trace) {
+  EventEmitter.call(this);
+
   var self  = this;
 
   this.trusted                = opts.trusted;
@@ -362,7 +368,7 @@ var Remote = function (opts, trace) {
     });
 };
 
-Remote.prototype      = new EventEmitter;
+util.inherits(Remote, EventEmitter);
 
 Remote.from_config = function (obj, trace) {
   var serverConfig = 'string' === typeof obj ? config.servers[obj] : obj;

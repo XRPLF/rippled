@@ -1,9 +1,12 @@
 var EventEmitter  = require('events').EventEmitter;
+var util          = require('util');
 
 var utils         = require('./utils');
 
 var Server = function (remote, cfg)
 {
+  EventEmitter.call(this);
+
   if ("object" !== typeof cfg || "string" !== typeof cfg.url) {
     throw new Error("Invalid server configuration.");
   }
@@ -25,7 +28,7 @@ var Server = function (remote, cfg)
   this.on('response_subscribe', this._handle_response_subscribe.bind(this));
 };
 
-Server.prototype = new EventEmitter;
+util.inherits(Server, EventEmitter);
 
 /**
  * Server states that we will treat as the server being online.
