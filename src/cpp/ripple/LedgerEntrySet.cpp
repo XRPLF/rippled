@@ -1337,12 +1337,17 @@ TER LedgerEntrySet::trustDelete(SLE::ref sleRippleState, const uint160& uLowAcco
 // Direct send w/o fees:
 // - Redeeming IOUs and/or sending sender's own IOUs.
 // - Create trust line of needed.
+// --> bCheckIssuer : normally require issuer to be involved.
 TER LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer)
 {
 	uint160				uIssuerID		= saAmount.getIssuer();
 	uint160				uCurrencyID		= saAmount.getCurrency();
 
+	// Make sure issuer is involved.
 	assert(!bCheckIssuer || uSenderID == uIssuerID || uReceiverID == uIssuerID);
+
+	// Disallow sending to self.
+	assert(uSenderID != uReceiverID);
 
 	bool				bSenderHigh		= uSenderID > uReceiverID;
 	uint256				uIndex			= Ledger::getRippleStateIndex(uSenderID, uReceiverID, saAmount.getCurrency());
@@ -1447,6 +1452,7 @@ TER LedgerEntrySet::rippleSend(const uint160& uSenderID, const uint160& uReceive
 	TER				terResult;
 
 	assert(!!uSenderID && !!uReceiverID);
+	assert(uSenderID != uReceiverID);
 
 	if (uSenderID == uIssuerID || uReceiverID == uIssuerID || uIssuerID == ACCOUNT_ONE)
 	{
