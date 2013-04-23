@@ -78,7 +78,8 @@
 #define DEFAULT_FEE_OPERATION			1
 
 Config theConfig;
-const char* ALPHABET = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
+const char* ALPHABET			= "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
+const char* ALPHABET_BITCOIN	= "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 void Config::setup(const std::string& strConf, bool bTestNet, bool bQuiet)
 {

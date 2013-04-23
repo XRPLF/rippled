@@ -44,6 +44,7 @@ enum {
 	rpcUNKNOWN_COMMAND,
 
 	// Bad parameter
+	rpcACT_BITCOIN,
 	rpcACT_MALFORMED,
 	rpcQUALITY_MALFORMED,
 	rpcBAD_BLOB,
