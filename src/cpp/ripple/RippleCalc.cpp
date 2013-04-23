@@ -1567,10 +1567,15 @@ TER RippleCalc::calcNodeDeliverFwd(
 
 			// Do inbound crediting.
 			// Credit offer owner from in issuer/limbo (input transfer fees left with owner).
-			terResult		= lesActive.accountSend(!!uPrvCurrencyID ? uInAccountID : ACCOUNT_XRP, uOfrOwnerID, saInPassAct);
+			// Don't attempt to have someone credit themselves, it is redundant.
+			if (!uPrvCurrencyID							// Always credit XRP from limbo.
+				|| uInAccountID != uOfrOwnerID)			// Never send non-XRP to the same account.
+			{
+				terResult		= lesActive.accountSend(!!uPrvCurrencyID ? uInAccountID : ACCOUNT_XRP, uOfrOwnerID, saInPassAct);
 
-			if (tesSUCCESS != terResult)
-				break;
+				if (tesSUCCESS != terResult)
+					break;
+			}
 
 			// Adjust offer
 			// Fees are considered paid from a seperate budget and are not named in the offer.
