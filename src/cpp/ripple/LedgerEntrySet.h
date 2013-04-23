@@ -25,8 +25,6 @@ enum TransactionEngineParams
 	tapRETRY			= 0x20,		// This is not the transaction's last pass
 		// Transaction can be retried, soft failures allowed
 
-	tapAFTER_END		= 0x40,		// We are processing the transaction last
-
 	tapADMIN			= 0x400,	// Transaction came from a privileged source
 };
 

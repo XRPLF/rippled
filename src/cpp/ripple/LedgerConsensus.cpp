@@ -317,7 +317,16 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 
 void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 {
-	SHAMap::pointer initialSet = initialLedger.peekTransactionMap()->snapShot(false);
+	SHAMap::pointer initialSet;
+
+	if (mProposing && mHaveCorrectLCL && ((mPreviousLedger->getLedgerSeq() % 256) == 0))
+	{ // previous ledger was flag ledger
+		SHAMap::pointer preSet = initialLedger.peekTransactionMap()->snapShot(true);
+		theApp->getFeeVote().doFeeVoting(mPreviousLedger, preSet);
+		initialSet = preSet->snapShot(false);
+	}
+	else
+		initialSet = initialLedger.peekTransactionMap()->snapShot(false);
 	uint256 txSet = initialSet->getHash();
 	cLog(lsINFO) << "initial position " << txSet;
 	mapComplete(txSet, initialSet, false);
@@ -1208,6 +1217,8 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 		SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
 				(newLCLHash, theApp->getOPs().getValidationTimeNC(), mValPublic, mProposing);
 		v->setFieldU32(sfLedgerSequence, newLCL->getLedgerSeq());
+		if (((newLCL->getLedgerSeq() + 1) % 256) == 0) // next ledger is flag ledger
+			theApp->getFeeVote().doValidation(newLCL, *v);
 		v->sign(signingHash, mValPrivate);
 		v->setTrusted();
 		theApp->isNew(signingHash); // suppress it if we receive it

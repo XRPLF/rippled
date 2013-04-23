@@ -93,8 +93,10 @@ public:
 		mTargetReserveIncrement(targetReserveIncrement)
 	{ ; }
 
-	void doValidation(STObject& baseValidation);
+	// add our wishes to our validation
+	void doValidation(Ledger::ref lastClosedLedger, STObject& baseValidation);
 
+	// vote on the fee we want
 	void doFeeVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition);
 };
 

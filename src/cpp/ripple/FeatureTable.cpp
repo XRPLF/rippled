@@ -3,6 +3,9 @@
 #include <boost/foreach.hpp>
 
 #include "Log.h"
+#include "Application.h"
+#include "ValidationCollection.h"
+#include "HashPrefixes.h"
 
 SETUP_LOG();
 
@@ -243,6 +246,7 @@ protected:
 	INT						mTarget;		// The setting we want
 	std::map<INT, int>		mVoteMap;
 
+public:
 	VotableInteger(INT current, INT target) : mCurrent(current), mTarget(target)
 	{
 		++mVoteMap[mTarget];				// Add our vote
@@ -268,8 +272,8 @@ protected:
 		INT ourVote = mCurrent;
 		int weight = 0;
 
-		typedef std::pair<INT, int> INTint_pair_t;
-		BOOST_FOREACH(INTint_pair_t& value, mVoteMap)
+		typedef typename std::map<INT, int>::value_type mapVType;
+		BOOST_FOREACH(const mapVType& value, mVoteMap)
 		{ // Take most voted value between current and target, inclusive
 			if ((value.first <= std::max(mTarget, mCurrent)) &&
 				(value.first >= std::min(mTarget, mCurrent)) &&
@@ -284,16 +288,88 @@ protected:
 	}
 };
 
+void FeeVote::doValidation(Ledger::ref lastClosedLedger, STObject& validation)
+{
+	if (lastClosedLedger->getBaseFee() != mTargetBaseFee)
+	{
+		cLog(lsINFO) << "Voting for base fee of " << mTargetBaseFee;
+		validation.setFieldU64(sfBaseFee, mTargetBaseFee);
+	}
+
+	if (lastClosedLedger->getReserve(0) != mTargetReserveBase)
+	{
+		cLog(lsINFO) << "Voting for base resrve of " << mTargetReserveBase;
+		validation.setFieldU32(sfReserveBase, mTargetReserveBase);
+	}
+
+	if (lastClosedLedger->getReserveInc() != mTargetReserveIncrement)
+	{
+		cLog(lsINFO) << "Voting for reserve increment of " << mTargetReserveIncrement;
+		validation.setFieldU32(sfReserveIncrement, mTargetReserveIncrement);
+	}
+}
+
 void FeeVote::doFeeVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition)
 {
 	// LCL must be flag ledger
 	assert((lastClosedLedger->getLedgerSeq() % 256) == 0);
 
+	VotableInteger<uint64> baseFeeVote(lastClosedLedger->getBaseFee(), mTargetBaseFee);
+	VotableInteger<uint32> baseReserveVote(lastClosedLedger->getReserve(0), mTargetReserveBase);
+	VotableInteger<uint32> incReserveVote(lastClosedLedger->getReserveInc(), mTargetReserveIncrement);
+
 	// get validations for ledger before flag
+	ValidationSet set = theApp->getValidations().getValidations(lastClosedLedger->getParentHash());
+	BOOST_FOREACH(ValidationSet::value_type& value, set)
+	{
+		SerializedValidation& val = *value.second;
+		if (val.isTrusted())
+		{
+			if (val.isFieldPresent(sfBaseFee))
+				baseFeeVote.addVote(val.getFieldU64(sfBaseFee));
+			else
+				baseFeeVote.noVote();
+			if (val.isFieldPresent(sfReserveBase))
+				baseReserveVote.addVote(val.getFieldU32(sfReserveBase));
+			else
+				baseReserveVote.noVote();
+			if (val.isFieldPresent(sfReserveIncrement))
+				incReserveVote.addVote(val.getFieldU32(sfReserveIncrement));
+			else
+				incReserveVote.noVote();
+		}
+	}
 
 	// choose our positions
+	uint64 baseFee = baseFeeVote.getVotes();
+	uint32 baseReserve = baseReserveVote.getVotes();
+	uint32 incReserve = incReserveVote.getVotes();
 
 	// add transactions to our position
+	if ((baseFee != lastClosedLedger->getBaseFee()) ||
+		(baseReserve != lastClosedLedger->getReserve(0)) ||
+		(incReserve != lastClosedLedger->getReserveInc()))
+	{
+		cLog(lsWARNING) << "We are voting for a fee change: " << baseFee << "/" << baseReserve << "/" << incReserve;
+		SerializedTransaction trans(ttFEE);
+		trans.setFieldU64(sfBaseFee, baseFee);
+		trans.setFieldU32(sfReferenceFeeUnits, 10);
+		trans.setFieldU32(sfReserveBase, baseReserve);
+		trans.setFieldU32(sfReserveIncrement, incReserve);
+
+
+		Serializer s;
+		s.add32(sHP_TransactionID);
+		trans.add(s, true);
+		uint256 txID = s.getSHA512Half();
+		cLog(lsWARNING) << "Vote: " << txID;
+
+		SHAMapItem::pointer tItem = boost::make_shared<SHAMapItem>(txID, s.peekData());
+		if (!initialPosition->addGiveItem(tItem, true, false))
+		{
+			cLog(lsWARNING) << "Ledger already had fee change";
+			}
+	}
 }
 
 // vim:ts=4

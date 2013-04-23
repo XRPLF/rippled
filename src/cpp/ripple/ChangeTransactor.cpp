@@ -1,4 +1,7 @@
 #include "ChangeTransactor.h"
+#include "Log.h"
+
+SETUP_LOG();
 
 TER ChangeTransactor::doApply()
 {
@@ -14,10 +17,16 @@ TER ChangeTransactor::doApply()
 TER ChangeTransactor::checkSig()
 {
 	if (mTxn.getFieldAccount160(sfAccount).isNonZero())
+	{
+		cLog(lsWARNING) << "Change transaction had bad source account";
 		return temBAD_SRC_ACCOUNT;
+	}
 
 	if (!mTxn.getSigningPubKey().empty() || !mTxn.getSignature().empty())
+	{
+		cLog(lsWARNING) << "Change transaction had bad signature";
 		return temBAD_SIGNATURE;
+	}
 
 	return tesSUCCESS;
 }
@@ -25,15 +34,26 @@ TER ChangeTransactor::checkSig()
 TER ChangeTransactor::checkSeq()
 {
 	if (mTxn.getSequence() != 0)
+	{
+		cLog(lsWARNING) << "Change transaction had bad sequence";
 		return temBAD_SEQUENCE;
-
+	}
 	return tesSUCCESS;
 }
 
 TER ChangeTransactor::payFee()
 {
+	if (isSetBit(mParams, tapOPEN_LEDGER))
+	{
+		cLog(lsWARNING) << "Change transaction against open ledger";
+		return temINVALID;
+	}
+
 	if (mTxn.getTransactionFee() != STAmount())
+	{
+		cLog(lsWARNING) << "Change transaction with non-zero fee";
 		return temBAD_FEE;
+	}
 
 	return tesSUCCESS;
 }
@@ -70,5 +90,6 @@ TER ChangeTransactor::applyFee()
 	feeObject->setFieldU32(sfReserveIncrement, mTxn.getFieldU32(sfReserveIncrement));
 
 	mEngine->entryModify(feeObject);
+	cLog(lsWARNING) << "Fees have been changed";
 	return tesSUCCESS;
 }
