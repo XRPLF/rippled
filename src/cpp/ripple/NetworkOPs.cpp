@@ -2031,7 +2031,7 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_
 			newObj.set_ledgerseq(lSeq);
 
 			std::list<SHAMap::fetchPackEntry_t> pack = wantLedger->peekAccountStateMap()->getFetchPack(
-				haveLedger->peekAccountStateMap().get(), false, 1024 - reply.objects().size());
+				haveLedger->peekAccountStateMap().get(), true, 1024);
 			BOOST_FOREACH(SHAMap::fetchPackEntry_t& node, pack)
 			{
 				ripple::TMIndexedObject& newObj = *reply.add_objects();
