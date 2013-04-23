@@ -484,7 +484,8 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool incl
 
 	if (have)
 	{
-		ul2 = boost::make_shared< boost::unique_lock<boost::recursive_mutex> >(have->mLock, boost::try_to_lock);
+		ul2 = boost::make_shared< boost::unique_lock<boost::recursive_mutex> >
+			(boost::ref(have->mLock), boost::try_to_lock);
 		if (!(*ul2))
 		{
 			cLog(lsINFO) << "Unable to create pack due to lock";
