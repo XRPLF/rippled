@@ -39,7 +39,8 @@ var ledger_verify = function (ledger) {
           currency: UInt160.from_generic(node.TakerPaysCurrency).to_json(),
           issuer: UInt160.from_generic(node.TakerPaysIssuer).to_json()
         },
-        quality: Amount.from_quality(node.RootIndex)
+        quality: Amount.from_quality(node.RootIndex),
+        index: node.RootIndex
       };
 
       books[book_key(book)] = book;
@@ -59,9 +60,11 @@ var ledger_verify = function (ledger) {
       {
         var book_cross_quality_inverted = Amount.from_json("1.0/1/1").divide(book_cross.quality);
 
-        if (book_cross_quality_inverted.compareTo(book.quality) > 0)
+        if (book_cross_quality_inverted.compareTo(book.quality) >= 0)
         {
-          console.log("crossing: #%s :: %s :: %s :: %s", ledger.ledger_index, key, book.quality.to_text(), book_cross.quality.to_text());
+          // Crossing books
+          console.log("crossing: #%s :: %s :: %s :: %s :: %s :: %s :: %s", ledger.ledger_index, key, book.quality.to_text(), book_cross.quality.to_text(), book_cross_quality_inverted.to_text(),
+            book.index, book_cross.index);
         }
 
         book_cross.done = true;
@@ -135,12 +138,12 @@ else {
             function (callback) {
               // console.log(ledger_cursor);
 
-              --ledger_cursor;
-
               ledger_request(remote, ledger_cursor, function (l) {
                   if (l) {
                     ledger_verify(l);
                   }
+
+                  --ledger_cursor;
 
                   callback();
                 });
