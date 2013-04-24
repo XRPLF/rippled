@@ -71,6 +71,8 @@ var ledger_verify = function (ledger) {
       }
     });
 
+  var ripple_selfs  = {};
+
   var accounts  = {};
   var counts    = {};
 
@@ -81,15 +83,18 @@ var ledger_verify = function (ledger) {
       }
       else if (entry.LedgerEntryType === 'RippleState')
       {
-        if (entry.flags & (0x10000 | 0x40000))
+        if (entry.Flags & (0x10000 | 0x40000))
         {
           counts[entry.LowLimit.issuer]   = (counts[entry.LowLimit.issuer] || 0) + 1;
         }
 
-        if (entry.flags & (0x20000 | 0x80000))
+        if (entry.Flags & (0x20000 | 0x80000))
         {
           counts[entry.HighLimit.issuer]  = (counts[entry.HighLimit.issuer] || 0) + 1;
         }
+
+        if (entry.HighLimit.issuer === entry.LowLimit.issuer)
+          ripple_selfs[entry.Account] = entry;
       }
       else if (entry.LedgerEntryType == 'AccountRoot')
       {
@@ -151,6 +156,10 @@ var ledger_verify = function (ledger) {
 
   if (missing_accounts)
     console.log("missing_accounts = %s", missing_accounts);
+
+  if (Object.keys(ripple_selfs).length)
+    console.log("RippleState selfs = %s", Object.keys(ripple_selfs).length);
+
 };
 
 var ledger_request = function (remote, ledger_index, done) {
