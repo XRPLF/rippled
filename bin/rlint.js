@@ -70,6 +70,87 @@ var ledger_verify = function (ledger) {
         book_cross.done = true;
       }
     });
+
+  var accounts  = {};
+  var counts    = {};
+
+  ledger.accountState.forEach(function (entry) {
+      if (entry.LedgerEntryType === 'Offer')
+      {
+        counts[entry.Account] = (counts[entry.Account] || 0) + 1;
+      }
+      else if (entry.LedgerEntryType === 'RippleState')
+      {
+        if (entry.flags & (0x10000 | 0x40000))
+        {
+          counts[entry.LowLimit.issuer]   = (counts[entry.LowLimit.issuer] || 0) + 1;
+        }
+
+        if (entry.flags & (0x20000 | 0x80000))
+        {
+          counts[entry.HighLimit.issuer]  = (counts[entry.HighLimit.issuer] || 0) + 1;
+        }
+      }
+      else if (entry.LedgerEntryType == 'AccountRoot')
+      {
+        accounts[entry.Account] = entry;
+      }
+    });
+
+  var low               = 0;  // Accounts with too low a count.
+  var high              = 0;
+  var missing_accounts  = 0;  // Objects with no referencing account.
+  var missing_objects   = 0;  // Accounts specifying an object but having none.
+
+  Object.keys(counts).forEach(function (account) {
+      if (account in accounts)
+      {
+        if (counts[account] !== accounts[account].OwnerCount)
+        {
+          if (counts[account] < accounts[account].OwnerCount)
+          {
+            high  += 1;
+            console.log("%s: high count %s/%s", account, counts[account], accounts[account].OwnerCount);
+          }
+          else
+          {
+            low   += 1;
+            console.log("%s: low count %s/%s", account, counts[account], accounts[account].OwnerCount);
+          }
+        }
+      }
+      else
+      {
+        missing_accounts  += 1;
+
+        console.log("%s: missing : count %s", account, counts[account]);
+      }
+    });
+
+  Object.keys(accounts).forEach(function (account) {
+      if (!('OwnerCount' in accounts[account]))
+      {
+          console.log("%s: bad entry : %s", account, JSON.stringify(accounts[account], undefined, 2));
+      }
+      else if (!(account in counts) && accounts[account].OwnerCount)
+      {
+          missing_objects += 1;
+
+          console.log("%s: no objects : %s/%s", account, 0, accounts[account].OwnerCount);
+      }
+    });
+
+  if (low)
+    console.log("counts too low = %s", low);
+
+  if (high)
+    console.log("counts too high = %s", high);
+
+  if (missing_objects)
+    console.log("missing_objects = %s", missing_objects);
+
+  if (missing_accounts)
+    console.log("missing_accounts = %s", missing_accounts);
 };
 
 var ledger_request = function (remote, ledger_index, done) {
