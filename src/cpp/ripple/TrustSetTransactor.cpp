@@ -68,9 +68,20 @@ TER TrustSetTransactor::doApply()
 
 	if (mTxnAccountID == uDstAccountID)
 	{
-		cLog(lsINFO) << "doTrustSet: Malformed transaction: Can not extend credit to self.";
+		SLE::pointer		selDelete	= mEngine->entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID));
 
-		return temDST_IS_SRC;
+		if (selDelete)
+		{
+			cLog(lsWARNING) << "doTrustSet: Clearing redundant line.";
+
+			return mEngine->getNodes().trustDelete(selDelete, mTxnAccountID, uDstAccountID);
+		}
+		else
+		{
+			cLog(lsINFO) << "doTrustSet: Malformed transaction: Can not extend credit to self.";
+
+			return temDST_IS_SRC;
+		}
 	}
 
 	SLE::pointer		sleDst			= mEngine->entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
@@ -81,9 +92,9 @@ TER TrustSetTransactor::doApply()
 		return tecNO_DST;
 	}
 
-	const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
+	const uint32		uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
 	// The reserve required to create the line.
-	const uint64	uReserveCreate	= mEngine->getLedger()->getReserve(uOwnerCount + 1);
+	const uint64		uReserveCreate	= mEngine->getLedger()->getReserve(uOwnerCount + 1);
 
 	STAmount			saLimitAllow	= saLimitAmount;
 	saLimitAllow.setIssuer(mTxnAccountID);
