@@ -86,6 +86,8 @@ bool ValidationCollection::addValidation(SerializedValidation::ref val, const st
 		<< " added " << (val->isTrusted() ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
 	if (val->isTrusted())
 		theApp->getLedgerMaster().checkAccept(hash);
+
+	// FIXME: This never forwards untrusted validations
 	return isCurrent;
 }
 
@@ -95,7 +97,7 @@ ValidationSet ValidationCollection::getValidations(const uint256& ledger)
 		boost::mutex::scoped_lock sl(mValidationLock);
 		VSpointer set = findSet(ledger);
 		if (set)
-			return ValidationSet(*set);
+			return *set;
 	}
 	return ValidationSet();
 }

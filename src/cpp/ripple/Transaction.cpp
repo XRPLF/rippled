@@ -299,7 +299,8 @@ Json::Value Transaction::getJson(int options, bool binary) const
 
 	if (mInLedger)
 	{
-		ret["inLedger"] = mInLedger;
+		ret["inLedger"] = mInLedger;		// Deprecated.
+		ret["ledger_index"] = mInLedger;
 
 		if(options == 1)
 		{

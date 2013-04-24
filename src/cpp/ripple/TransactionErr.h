@@ -80,9 +80,9 @@ enum TER	// aka TransactionEngineResult
 	tefCREATED,
 	tefEXCEPTION,
 	tefGEN_IN_USE,
+	tefINTERNAL,
 	tefNO_AUTH_REQUIRED,	// Can't set auth if auth is not required.
 	tefPAST_SEQ,
-	tefINTERNAL,
 
 	// -99 .. -1: R Retry (sequence too high, no funds for txn fee, originating account non-existent)
 	// Causes:

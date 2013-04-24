@@ -81,9 +81,9 @@ TER TrustSetTransactor::doApply()
 		return tecNO_DST;
 	}
 
-	const uint32	uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
+	const uint32		uOwnerCount		= mTxnAccount->getFieldU32(sfOwnerCount);
 	// The reserve required to create the line.
-	const uint64	uReserveCreate	= mEngine->getLedger()->getReserve(uOwnerCount + 1);
+	const uint64		uReserveCreate	= mEngine->getLedger()->getReserve(uOwnerCount + 1);
 
 	STAmount			saLimitAllow	= saLimitAmount;
 	saLimitAllow.setIssuer(mTxnAccountID);

@@ -493,7 +493,7 @@ TER OfferCreateTransactor::doApply()
 			% saTakerPays.getFullText());
 
 		// Take using the parameters of the offer.
-		cLog(lsWARNING) << "OfferCreate: takeOffers: BEFORE saTakerGets=" << saTakerGets.getFullText();
+		cLog(lsDEBUG) << "OfferCreate: takeOffers: BEFORE saTakerGets=" << saTakerGets.getFullText();
 
 		terResult	= takeOffers(
 			bOpenLedger,
@@ -614,8 +614,8 @@ TER OfferCreateTransactor::doApply()
 			cLog(lsDEBUG) << "OfferCreate: sfAccount=" << RippleAddress::createHumanAccountID(mTxnAccountID);
 			cLog(lsDEBUG) << "OfferCreate: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
 			cLog(lsDEBUG) << "OfferCreate: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
-			cLog(lsDEBUG) << "OfferCreate: saTakerPays.isNative()=" << saTakerPays.isNative();
-			cLog(lsDEBUG) << "OfferCreate: saTakerGets.isNative()=" << saTakerGets.isNative();
+			cLog(lsTRACE) << "OfferCreate: saTakerPays.isNative()=" << saTakerPays.isNative();
+			cLog(lsTRACE) << "OfferCreate: saTakerGets.isNative()=" << saTakerGets.isNative();
 			cLog(lsDEBUG) << "OfferCreate: uPaysCurrency=" << saTakerPays.getHumanCurrency();
 			cLog(lsDEBUG) << "OfferCreate: uGetsCurrency=" << saTakerGets.getHumanCurrency();
 
