@@ -1197,10 +1197,10 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 	while ((fc = SHAMap::flushDirty(*txnNodes, 256, hotTRANSACTION_NODE, newLCL->getLedgerSeq())) > 0)
 	{ cLog(lsTRACE) << "Flushed " << fc << " dirty transaction nodes"; }
 
-	cLog(lsDEBUG) << "Report: NewL  = " << newLCL->getHash() << ":" << newLCL->getLedgerSeq();
-
 	newLCL->setAccepted(closeTime, mCloseResolution, closeTimeCorrect);
 	newLCL->updateHash();
+
+	cLog(lsDEBUG) << "Report: NewL  = " << newLCL->getHash() << ":" << newLCL->getLedgerSeq();
 	uint256 newLCLHash = newLCL->getHash();
 
 	if (sLog(lsTRACE))
