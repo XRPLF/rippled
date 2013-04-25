@@ -146,7 +146,7 @@ TER PaymentTransactor::doApply()
 	{
 		cLog(lsINFO) << "Payment: Malformed transaction: DestinationTag required.";
 
-		return temDST_TAG_NEEDED;
+		return tefDST_TAG_NEEDED;
 	}
 	else
 	{
