@@ -21,6 +21,7 @@ protected:
 	TER takeOffers(
 		const bool			bOpenLedger,
 		const bool			bPassive,
+		const bool			bSell,
 		const uint256&		uBookBase,
 		const uint160&		uTakerAccountID,
 		SLE::ref			sleTakerAccount,

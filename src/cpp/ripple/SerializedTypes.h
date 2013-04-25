@@ -451,6 +451,7 @@ public:
 	// Someone is offering X for Y, I try to pay Z, how much do I get?
 	// And what's left of the offer? And how much do I actually pay?
 	static bool applyOffer(
+		const bool bSell,
 		const uint32 uTakerPaysRate, const uint32 uOfferPaysRate,
 		const STAmount& saOfferRate,
 		const STAmount& saOfferFunds, const STAmount& saTakerFunds,

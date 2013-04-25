@@ -70,7 +70,8 @@ const uint32 tfAccountSetMask		= ~(tfRequireDestTag|tfOptionalDestTag|tfRequireA
 const uint32 tfPassive				= 0x00010000;
 const uint32 tfImmediateOrCancel	= 0x00020000;
 const uint32 tfFillOrKill			= 0x00040000;
-const uint32 tfOfferCreateMask		= ~(tfPassive|tfImmediateOrCancel|tfFillOrKill);
+const uint32 tfSell					= 0x00080000;
+const uint32 tfOfferCreateMask		= ~(tfPassive|tfImmediateOrCancel|tfFillOrKill|tfSell);
 
 // Payment flags:
 const uint32 tfNoRippleDirect		= 0x00010000;
