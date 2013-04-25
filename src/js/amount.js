@@ -227,16 +227,15 @@ Amount.prototype.compareTo = function (v) {
     result  = Amount.NaN();
   }
   else if (this._is_negative !== v._is_negative) {
+    // Different sign.
     result  = this._is_negative ? -1 : 1;
   }
   else if (this._value.equals(BigInteger.ZERO)) {
-    result  = v._is_negative
-                ? 1
-                : v._value.equals(BigInteger.ZERO)
-                  ? 0
-                  : -1;
+    // Same sign: positive.
+    result  = v._value.equals(BigInteger.ZERO) ? 0 : -1;
   }
   else if (v._value.equals(BigInteger.ZERO)) {
+    // Same sign: positive.
     result  = 1;
   }
   else if (!this._is_native && this._offset > v._offset) {
@@ -248,10 +247,10 @@ Amount.prototype.compareTo = function (v) {
   else {
     result  = this._value.compareTo(v._value);
 
-    if (result > 1)
-      result  = 1;
-    else if (result < -1)
-      result  = -1;
+    if (result > 0)
+      result  = this._is_negative ? -1 : 1;
+    else if (result < 0)
+      result  = this._is_negative ? 1 : -1;
   }
 
   return result;
