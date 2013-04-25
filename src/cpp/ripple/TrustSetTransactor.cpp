@@ -17,7 +17,7 @@ TER TrustSetTransactor::doApply()
 	const bool			bHigh			= mTxnAccountID > uDstAccountID;		// true, iff current is high account.
 
 	uint32				uQualityIn		= bQualityIn ? mTxn.getFieldU32(sfQualityIn) : 0;
-	uint32				uQualityOut		= bQualityIn ? mTxn.getFieldU32(sfQualityOut) : 0;
+	uint32				uQualityOut		= bQualityOut ? mTxn.getFieldU32(sfQualityOut) : 0;
 
 	if (bQualityIn && QUALITY_ONE == uQualityIn)
 		uQualityIn	= 0;

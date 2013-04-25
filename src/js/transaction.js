@@ -116,6 +116,7 @@ Transaction.flags = {
     'Passive'                 : 0x00010000,
     'ImmediateOrCancel'       : 0x00020000,
     'FillOrKill'              : 0x00040000,
+    'Sell'                    : 0x00080000,
   },
 
   'Payment' : {
@@ -575,6 +576,8 @@ Transaction.prototype.offer_cancel = function (src, sequence) {
   return this;
 };
 
+// Options:
+//  .set_flags()
 // --> expiration : Date or Number
 Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expiration) {
   this._secret                  = this._account_secret(src);
