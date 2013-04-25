@@ -42,6 +42,7 @@ enum LedgerSpecificFlags
 	lsfPasswordSpent	= 0x00010000,	// True, if password set fee is spent.
 	lsfRequireDestTag	= 0x00020000,	// True, to require a DestinationTag for payments.
 	lsfRequireAuth		= 0x00040000,	// True, to require a authorization to hold IOUs.
+	lsfDisallowXRP		= 0x00080000,	// True, to disallow sending XRP.
 
 	// ltOFFER
 	lsfPassive			= 0x00010000,

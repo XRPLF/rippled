@@ -44,7 +44,7 @@ TER AccountSetTransactor::doApply()
 		uFlagsOut	|= lsfRequireAuth;
 	}
 
-	if (uTxFlags & tfOptionalAuth)
+	if ((uTxFlags & tfOptionalAuth) && isSetBit(uFlagsIn, lsfRequireAuth))
 	{
 		cLog(lsINFO) << "AccountSet: Clear RequireAuth.";
 
@@ -62,22 +62,47 @@ TER AccountSetTransactor::doApply()
 		return temINVALID_FLAG;
 	}
 
-	if (uTxFlags & tfRequireDestTag)
+	if ((uTxFlags & tfOptionalDestTag) && !isSetBit(uFlagsIn, lsfRequireDestTag))
 	{
-		cLog(lsINFO) << "AccountSet: Set RequireDestTag.";
+		cLog(lsINFO) << "AccountSet: Set lsfRequireDestTag.";
 
 		uFlagsOut	|= lsfRequireDestTag;
 	}
 
-	if (uTxFlags & tfOptionalDestTag)
+	if ((uTxFlags & tfOptionalDestTag) && isSetBit(uFlagsIn, lsfRequireDestTag))
 	{
-		cLog(lsINFO) << "AccountSet: Clear RequireDestTag.";
+		cLog(lsINFO) << "AccountSet: Clear lsfRequireDestTag.";
 
 		uFlagsOut	&= ~lsfRequireDestTag;
 	}
 
 	if (uFlagsIn != uFlagsOut)
 		mTxnAccount->setFieldU32(sfFlags, uFlagsOut);
+
+	//
+	// DisallowXRP
+	//
+
+	if ((tfDisallowXRP|tfAllowXRP) == (uTxFlags & (tfDisallowXRP|tfAllowXRP)))
+	{
+		cLog(lsINFO) << "AccountSet: Malformed transaction: Contradictory flags set.";
+
+		return temINVALID_FLAG;
+	}
+
+	if ((uTxFlags & tfDisallowXRP) && !isSetBit(uFlagsIn, lsfDisallowXRP))
+	{
+		cLog(lsINFO) << "AccountSet: Set lsfDisallowXRP.";
+
+		uFlagsOut	|= lsfDisallowXRP;
+	}
+
+	if ((uTxFlags & tfAllowXRP) && isSetBit(uFlagsIn, lsfDisallowXRP))
+	{
+		cLog(lsINFO) << "AccountSet: Clear lsfDisallowXRP.";
+
+		uFlagsOut	&= ~lsfDisallowXRP;
+	}
 
 	//
 	// EmailHash
