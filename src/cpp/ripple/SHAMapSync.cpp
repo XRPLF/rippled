@@ -336,94 +336,90 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigne
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	if (checkCacheNode(node))
+	if (checkCacheNode(node)) // Do we already have this node?
 		return SMAddNode::okay();
 
-	std::stack<SHAMapTreeNode::pointer> stack = getStack(node.getNodeID(), true, true);
-	if (stack.empty())
+	SHAMapTreeNode* iNode = root.get();
+	while (!iNode->isLeaf() && !iNode->isFullBelow())
 	{
-		cLog(lsWARNING) << "AddKnownNode with empty stack";
-		return SMAddNode::invalid();
-	}
+		if (iNode->isLeaf() || iNode->isFullBelow() || (iNode->getDepth() >= node.getDepth()))
+			return SMAddNode::okay();
 
-	SHAMapTreeNode::pointer iNode = stack.top();
-	if (!iNode)
-	{	// we should always have a root
-		assert(false);
-		return SMAddNode::invalid();
-	}
+		int branch = iNode->selectBranch(node.getNodeID());
+		assert(branch >= 0);
 
-	if (iNode->isLeaf() || (iNode->getDepth() >= node.getDepth()))
-	{
-		cLog(lsTRACE) << "got inner node, already had it (late)";
-		return SMAddNode::okay();
-	}
+		if (iNode->isEmptyBranch(branch))
+		{
+			cLog(lsWARNING) << "Add known node for empty branch" << node;
+			return SMAddNode::invalid();
+		}
+		if (fullBelowCache.isPresent(iNode->getChildHash(branch)))
+			return SMAddNode::okay();
 
-	if (iNode->getDepth() != (node.getDepth() - 1))
-	{ // Either this node is broken or we didn't request it (yet)
-		cLog(lsWARNING) << "unable to hook node " << node;
-		cLog(lsINFO) << " stuck at " << *iNode;
-		cLog(lsINFO) << "got depth=" << node.getDepth() << ", walked to= " << iNode->getDepth();
-		return SMAddNode::invalid();
-	}
+		try
+		{
+			iNode = getNodePointer(iNode->getChildNodeID(branch), iNode->getChildHash(branch));
+		}
+		catch (SHAMapMissingNode)
+		{
+			if (iNode->getDepth() != (node.getDepth() - 1))
+			{ // Either this node is broken or we didn't request it (yet)
+				cLog(lsWARNING) << "unable to hook node " << node;
+				cLog(lsINFO) << " stuck at " << *iNode;
+				cLog(lsINFO) << "got depth=" << node.getDepth() << ", walked to= " << iNode->getDepth();
+				return SMAddNode::invalid();
+			}
 
-	int branch = iNode->selectBranch(node.getNodeID());
-	if (branch < 0)
-	{
-		assert(false);
-		return SMAddNode::invalid();
-	}
-	uint256 hash = iNode->getChildHash(branch);
-	if (hash.isZero())
-	{
-		cLog(lsWARNING) << "AddKnownNode for empty branch";
-		return SMAddNode::invalid();
-	}
-
-	assert(mSeq >= 1);
-	SHAMapTreeNode::pointer newNode =
-		boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq - 1, snfWIRE, uZero, false);
-	if (hash != newNode->getNodeHash()) // these aren't the droids we're looking for
-		return SMAddNode::invalid();
-
-	if (filter)
-	{
-		Serializer s;
-		newNode->addRaw(s, snfPREFIX);
-		filter->gotNode(false, node, hash, s.peekData(), newNode->getType());
-	}
-
-	mTNByID[*newNode] = newNode;
-	if (!newNode->isLeaf())
-		return SMAddNode::useful(); // only a leaf can fill a branch
-
-	// did this new leaf cause its parents to fill up
-	do
-	{
-		iNode = stack.top();
-		stack.pop();
-		assert(iNode->isInner());
-		for (int i = 0; i < 16; ++i)
-			if (!iNode->isEmptyBranch(i))
+			SHAMapTreeNode::pointer newNode =
+				boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq - 1, snfWIRE, uZero, false);
+			if (iNode->getChildHash(branch) != newNode->getNodeHash())
 			{
-				try
-				{
-					SHAMapTreeNode::pointer nextNode = getNode(iNode->getChildNodeID(i), iNode->getChildHash(i), false);
-					if (nextNode->isInner() && !nextNode->isFullBelow())
-						return SMAddNode::useful();
-				}
-				catch (SHAMapMissingNode&)
-				{
-					return SMAddNode::useful();
+				return SMAddNode::invalid();
+			}
+
+			if (filter)
+			{
+				Serializer s;
+				newNode->addRaw(s, snfPREFIX);
+				filter->gotNode(false, node, iNode->getChildHash(branch), s.peekData(), newNode->getType());
+			}
+			mTNByID[node] = newNode;
+
+			if (!newNode->isLeaf()) // only a leaf can fill an inner node
+				return SMAddNode::useful();
+
+			try
+			{
+				for (int i = 0; i < 16; ++i)
+				{ // does the parent still need more nodes
+					if (!iNode->isEmptyBranch(i) && !fullBelowCache.isPresent(iNode->getChildHash(i)))
+					{
+						SHAMapTreeNode* d = getNodePointer(iNode->getChildNodeID(i), iNode->getChildHash(i));
+						if (d->isInner() && !d->isFullBelow()) // unfilled inner node
+							return SMAddNode::useful();
+					}
 				}
 			}
-		iNode->setFullBelow();
-	} while (!stack.empty());
+			catch (SHAMapMissingNode)
+			{ // still missing something
+				return SMAddNode::useful();
+			}
 
-	if (root->isFullBelow())
-		clearSynching();
+			// received leaf fills its parent
+			iNode->setFullBelow();
+			if (mType == smtSTATE)
+			{
+				fullBelowCache.add(iNode->getNodeHash());
+				dropBelow(iNode);
+			}
+			if (root->isFullBelow())
+				clearSynching();
+			return SMAddNode::useful();
+		}
+	}
 
-	return SMAddNode::useful();
+	cLog(lsTRACE) << "got inner node, already had it (late)";
+	return SMAddNode::okay();
 }
 
 bool SHAMap::deepCompare(SHAMap& other)

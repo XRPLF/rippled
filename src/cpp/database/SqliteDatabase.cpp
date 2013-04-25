@@ -179,8 +179,9 @@ bool SqliteDatabase::getNull(int colIndex)
 
 char* SqliteDatabase::getStr(int colIndex,std::string& retStr)
 {
-	retStr=(char*)sqlite3_column_text(mCurrentStmt, colIndex);
-	return((char*)retStr.c_str());
+	const char *text = reinterpret_cast<const char *>(sqlite3_column_text(mCurrentStmt, colIndex));
+	retStr = (text == NULL) ? "" : text;
+	return const_cast<char*>(retStr.c_str());
 }
 
 int32 SqliteDatabase::getInt(int colIndex)

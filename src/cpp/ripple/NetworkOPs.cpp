@@ -2108,4 +2108,11 @@ int NetworkOPs::getFetchSize()
 	return mFetchPack.getCacheSize();
 }
 
+void NetworkOPs::gotFetchPack(bool progress)
+{
+	mLastFetchPack = 0;
+	theApp->getJobQueue().addJob(jtLEDGER_DATA, "gotFetchPack",
+		boost::bind(&LedgerAcquireMaster::gotFetchPack, &theApp->getMasterLedgerAcquire(), _1));
+}
+
 // vim:ts=4
