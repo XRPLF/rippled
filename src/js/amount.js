@@ -46,7 +46,7 @@ var Amount = function () {
   //  integer : XRP
   //  { 'value' : ..., 'currency' : ..., 'issuer' : ...}
 
-  this._value	    = new BigInteger();	// NaN for bad value. Always positive for non-XRP.
+  this._value	    = new BigInteger();	// NaN for bad value. Always positive.
   this._offset	    = 0;	        // Always 0 for XRP.
   this._is_native   = true;		// Default to XRP. Only valid if value is not NaN.
   this._is_negative = false;
@@ -226,14 +226,6 @@ Amount.prototype.compareTo = function (v) {
   if (!this.is_comparable(v)) {
     result  = Amount.NaN();
   }
-  else if (this._is_native) {
-    result  = this._value.compareTo(v._value);
-
-    if (result > 1)
-      result  = 1;
-    else if (result < -1)
-      result  = -1;
-  }
   else if (this._is_negative !== v._is_negative) {
     result  = this._is_negative ? -1 : 1;
   }
@@ -242,15 +234,15 @@ Amount.prototype.compareTo = function (v) {
                 ? 1
                 : v._value.equals(BigInteger.ZERO)
                   ? 0
-                  : 1;
+                  : -1;
   }
   else if (v._value.equals(BigInteger.ZERO)) {
     result  = 1;
   }
-  else if (this._offset > v._offset) {
+  else if (!this._is_native && this._offset > v._offset) {
     result  = this._is_negative ? -1 : 1;
   }
-  else if (this._offset < v._offset) {
+  else if (!this._is_native && this._offset < v._offset) {
     result  = this._is_negative ? 1 : -1;
   }
   else {
