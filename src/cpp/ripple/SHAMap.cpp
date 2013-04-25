@@ -733,6 +733,8 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 
 void SHAMap::fetchRoot(const uint256& hash, SHAMapSyncFilter* filter)
 {
+	if (hash == root->getNodeHash())
+		return;
 	if (sLog(lsTRACE))
 	{
 		if (mType == smtTRANSACTION)

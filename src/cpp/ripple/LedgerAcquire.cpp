@@ -109,7 +109,7 @@ LedgerAcquire::LedgerAcquire(const uint256& hash, uint32 seq) : PeerSet(hash, LE
 void LedgerAcquire::checkLocal()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	if (mComplete)
+	if (isDone())
 		return;
 
 	if (tryLocal())
