@@ -265,7 +265,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 		{
 			typedef std::pair<uint32, uint256> u_pair;
 			std::vector<u_pair> vec = origLedger->getLedgerHashes();
-			BOOST_FOREACH(const u_pair& it, vec)
+			BOOST_REVERSE_FOREACH(const u_pair& it, vec)
 			{
 				if ((fetchCount < fetchMax) && (it.first < ledgerSeq) &&
 					!mCompleteLedgers.hasValue(it.first) && !theApp->getMasterLedgerAcquire().find(it.second))
@@ -277,7 +277,8 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 						setFullLedger(acq->getLedger());
 						mLedgerHistory.addAcceptedLedger(acq->getLedger(), false);
 					}
-					else ++fetchCount;
+					else
+						++fetchCount;
 				}
 			}
 		}

@@ -136,13 +136,13 @@ std::vector<uint256> SHAMap::getNeededHashes(int max, SHAMapSyncFilter* filter)
 			if (!node->isEmptyBranch(branch))
 			{
 				const uint256& childHash = node->getChildHash(branch);
-				SHAMapNode childID = node->getChildNodeID(branch);
 				if (!fullBelowCache.isPresent(childHash))
 				{
+					SHAMapNode childID = node->getChildNodeID(branch);
 					SHAMapTreeNode* d = NULL;
 					try
 					{
-						d = getNodePointer(node->getChildNodeID(branch), childHash);
+						d = getNodePointer(childID, childHash);
 						assert(d);
 					}
 					catch (SHAMapMissingNode&)

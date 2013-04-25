@@ -2094,7 +2094,7 @@ bool NetworkOPs::getFetchPack(const uint256& hash, std::vector<unsigned char>& d
 bool NetworkOPs::shouldFetchPack()
 {
 	uint32 now = getNetworkTimeNC();
-	if (mLastFetchPack == now)
+	if ((mLastFetchPack == now) || ((mLastFetchPack + 1) == now))
 		 return false;
 	mFetchPack.sweep();
 	if (mFetchPack.getCacheSize() > 384)
