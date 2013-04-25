@@ -456,7 +456,8 @@ void LedgerAcquire::trigger(Peer::ref peer)
 			std::vector<uint256> nodeHashes;
 			nodeIDs.reserve(256);
 			nodeHashes.reserve(256);
-			mLedger->peekTransactionMap()->getMissingNodes(nodeIDs, nodeHashes, 256, NULL);
+			TransactionStateSF filter(mSeq);
+			mLedger->peekTransactionMap()->getMissingNodes(nodeIDs, nodeHashes, 256, &filter);
 			if (nodeIDs.empty())
 			{
 				if (!mLedger->peekTransactionMap()->isValid())
@@ -503,7 +504,8 @@ void LedgerAcquire::trigger(Peer::ref peer)
 			std::vector<uint256> nodeHashes;
 			nodeIDs.reserve(256);
 			nodeHashes.reserve(256);
-			mLedger->peekAccountStateMap()->getMissingNodes(nodeIDs, nodeHashes, 256, NULL);
+			TransactionStateSF filter(mSeq);
+			mLedger->peekAccountStateMap()->getMissingNodes(nodeIDs, nodeHashes, 256, &filter);
 			if (nodeIDs.empty())
 			{
 				if (!mLedger->peekAccountStateMap()->isValid())
