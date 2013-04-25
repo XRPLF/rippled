@@ -263,7 +263,7 @@ public:
 	void makeFetchPack(Job&, boost::weak_ptr<Peer> peer, boost::shared_ptr<ripple::TMGetObjectByHash> request,
 		Ledger::pointer wantLedger, Ledger::pointer haveLedger);
 	bool shouldFetchPack();
-	void gotFetchPack() { mLastFetchPack = 0; }
+	void gotFetchPack(bool progress);
 	void addFetchPack(const uint256& hash, boost::shared_ptr< std::vector<unsigned char> >& data);
 	bool getFetchPack(const uint256& hash, std::vector<unsigned char>& data);
 	int getFetchSize();

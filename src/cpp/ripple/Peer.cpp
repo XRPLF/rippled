@@ -1235,10 +1235,9 @@ void Peer::recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash
 	}
 	else
 	{ // this is a reply
-		if (packet.type() == ripple::TMGetObjectByHash::otFETCH_PACK)
-			theApp->getOPs().gotFetchPack();
 		uint32 pLSeq = 0;
 		bool pLDo = true;
+		bool progress = false;
 		for (int i = 0; i < packet.objects_size(); ++i)
 		{
 			const ripple::TMIndexedObject& obj = packet.objects(i);
@@ -1256,6 +1255,8 @@ void Peer::recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash
 						{
 							cLog(lsDEBUG) << "Got pack for " << pLSeq << " too late";
 						}
+						else
+							progress = true;
 					}
 				}
 
@@ -1272,6 +1273,8 @@ void Peer::recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash
 			}
 		}
 		tLog(pLDo && (pLSeq != 0), lsDEBUG) << "Received partial fetch pack for " << pLSeq;
+		if (packet.type() == ripple::TMGetObjectByHash::otFETCH_PACK)
+			theApp->getOPs().gotFetchPack(progress);
 	}
 }
 

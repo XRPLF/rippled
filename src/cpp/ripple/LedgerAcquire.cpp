@@ -106,80 +106,97 @@ LedgerAcquire::LedgerAcquire(const uint256& hash, uint32 seq) : PeerSet(hash, LE
 	tryLocal();
 }
 
+void LedgerAcquire::checkLocal()
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	if (mComplete)
+		return;
+
+	if (tryLocal())
+		done();
+}
+
 bool LedgerAcquire::tryLocal()
 { // return value: true = no more work to do
 
-	assert(!mHaveBase && !mHaveTransactions && !mHaveState);
-
-	// Nothing we can do without the ledger base
-	HashedObject::pointer node = theApp->getHashedObjectStore().retrieve(mHash);
-	if (!node)
+	if (!mHaveBase)
 	{
-		std::vector<unsigned char> data;
-		if (!theApp->getOPs().getFetchPack(mHash, data))
-			return false;
-		cLog(lsTRACE) << "Ledger base found in fetch pack";
-		mLedger = boost::make_shared<Ledger>(data, true);
-		theApp->getHashedObjectStore().store(hotLEDGER, mLedger->getLedgerSeq(), data, mHash);
-	}
-	else
-	{
-		mLedger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
-	}
-
-	if (mLedger->getHash() != mHash)
-	{ // We know for a fact the ledger can never be acquired
-		cLog(lsWARNING) << mHash << " cannot be a ledger";
-		mFailed = true;
-		return true;
-	}
-	mHaveBase = true;
-
-	if (mLedger->getTransHash().isZero())
-	{
-		cLog(lsDEBUG) << "No TXNs to fetch";
-		mHaveTransactions = true;
-	}
-	else
-	{
-		try
+		// Nothing we can do without the ledger base
+		HashedObject::pointer node = theApp->getHashedObjectStore().retrieve(mHash);
+		if (!node)
 		{
-			TransactionStateSF filter(mLedger->getLedgerSeq());
-			mLedger->peekTransactionMap()->fetchRoot(mLedger->getTransHash(), &filter);
-			cLog(lsDEBUG) << "Got root txn map locally";
-			std::vector<uint256> h = mLedger->getNeededTransactionHashes(1, &filter);
-			if (h.empty())
+			std::vector<unsigned char> data;
+			if (!theApp->getOPs().getFetchPack(mHash, data))
+				return false;
+			cLog(lsTRACE) << "Ledger base found in fetch pack";
+			mLedger = boost::make_shared<Ledger>(data, true);
+			theApp->getHashedObjectStore().store(hotLEDGER, mLedger->getLedgerSeq(), data, mHash);
+		}
+		else
+		{
+			mLedger = boost::make_shared<Ledger>(strCopy(node->getData()), true);
+		}
+
+		if (mLedger->getHash() != mHash)
+		{ // We know for a fact the ledger can never be acquired
+			cLog(lsWARNING) << mHash << " cannot be a ledger";
+			mFailed = true;
+			return true;
+		}
+		mHaveBase = true;
+	}
+
+	if (!mHaveTransactions)
+	{
+		if (mLedger->getTransHash().isZero())
+		{
+			cLog(lsDEBUG) << "No TXNs to fetch";
+			mHaveTransactions = true;
+		}
+		else
+		{
+			try
 			{
-				cLog(lsDEBUG) << "Had full txn map locally";
-				mHaveTransactions = true;
+				TransactionStateSF filter(mLedger->getLedgerSeq());
+				mLedger->peekTransactionMap()->fetchRoot(mLedger->getTransHash(), &filter);
+				cLog(lsDEBUG) << "Got root txn map locally";
+				std::vector<uint256> h = mLedger->getNeededTransactionHashes(1, &filter);
+				if (h.empty())
+				{
+					cLog(lsDEBUG) << "Had full txn map locally";
+					mHaveTransactions = true;
+				}
+			}
+			catch (SHAMapMissingNode&)
+			{
 			}
 		}
-		catch (SHAMapMissingNode&)
-		{
-		}
 	}
 
-	if (mLedger->getAccountHash().isZero())
+	if (!mHaveState)
 	{
-		cLog(lsFATAL) << "We are acquiring a ledger with a zero account hash";
-		mHaveState = true;
-	}
-	else
-	{
-		try
+		if (mLedger->getAccountHash().isZero())
 		{
-			AccountStateSF filter(mLedger->getLedgerSeq());
-			mLedger->peekAccountStateMap()->fetchRoot(mLedger->getAccountHash(), &filter);
-			cLog(lsDEBUG) << "Got root AS map locally";
-			std::vector<uint256> h = mLedger->getNeededAccountStateHashes(1, &filter);
-			if (h.empty())
-			{
-				cLog(lsDEBUG) << "Had full AS map locally";
-				mHaveState = true;
-			}
+			cLog(lsFATAL) << "We are acquiring a ledger with a zero account hash";
+			mHaveState = true;
 		}
-		catch (SHAMapMissingNode&)
+		else
 		{
+			try
+			{
+				AccountStateSF filter(mLedger->getLedgerSeq());
+				mLedger->peekAccountStateMap()->fetchRoot(mLedger->getAccountHash(), &filter);
+				cLog(lsDEBUG) << "Got root AS map locally";
+				std::vector<uint256> h = mLedger->getNeededAccountStateHashes(1, &filter);
+				if (h.empty())
+				{
+					cLog(lsDEBUG) << "Had full AS map locally";
+					mHaveState = true;
+				}
+			}
+			catch (SHAMapMissingNode&)
+			{
+			}
 		}
 	}
 
@@ -1026,6 +1043,24 @@ int LedgerAcquireMaster::getFetchCount(int& timeoutCount)
 		}
 	}
 	return ret;
+}
+
+void LedgerAcquireMaster::gotFetchPack(Job&)
+{
+	std::vector<LedgerAcquire::pointer> acquires;
+	{
+		boost::mutex::scoped_lock sl(mLock);
+
+		acquires.reserve(mLedgers.size());
+		typedef std::pair<uint256, LedgerAcquire::pointer> u256_acq_pair;
+		BOOST_FOREACH(const u256_acq_pair& it, mLedgers)
+			acquires.push_back(it.second);
+	}
+
+	BOOST_FOREACH(const LedgerAcquire::pointer& acquire, acquires)
+	{
+		acquire->checkLocal();
+	}
 }
 
 // vim:ts=4

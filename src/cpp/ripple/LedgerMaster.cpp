@@ -283,7 +283,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 		}
 	}
 
-	if (theApp->getOPs().shouldFetchPack())
+	if (theApp->getOPs().shouldFetchPack() && (ledgerSeq > 40000))
 	{ // refill our fetch pack
 		Ledger::pointer nextLedger = mLedgerHistory.getLedgerBySeq(ledgerSeq + 1);
 		if (nextLedger)

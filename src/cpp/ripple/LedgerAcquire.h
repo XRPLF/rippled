@@ -130,6 +130,7 @@ public:
 	void addPeers();
 	void awaitData();
 	void noAwaitData();
+	void checkLocal();
 
 	typedef std::pair<ripple::TMGetObjectByHash::ObjectType, uint256> neededHash_t;
 	std::vector<neededHash_t> getNeededHashes();
@@ -162,6 +163,7 @@ public:
 	void logFailure(const uint256& h)	{ mRecentFailures.add(h); }
 	bool isFailure(const uint256& h)	{ return mRecentFailures.isPresent(h, false); }
 
+	void gotFetchPack(Job&);
 	void sweep();
 };
 
