@@ -92,6 +92,7 @@ bool OfferCreateTransactor::bValidOffer(
 TER OfferCreateTransactor::takeOffers(
 	const bool			bOpenLedger,
 	const bool			bPassive,
+	const bool			bSell,
 	const uint256&		uBookBase,
 	const uint160&		uTakerAccountID,
 	SLE::ref			sleTakerAccount,
@@ -110,7 +111,7 @@ TER OfferCreateTransactor::takeOffers(
 
 	assert(saTakerPays && saTakerGets);
 
-	cLog(lsINFO) << "takeOffers: against book: " << uBookBase.ToString();
+	cLog(lsINFO) << "takeOffers: bSell: " << bSell << ": against book: " << uBookBase.ToString();
 
 	LedgerEntrySet&			lesActive			= mEngine->getNodes();
 	uint256					uTipIndex			= uBookBase;
@@ -244,6 +245,7 @@ TER OfferCreateTransactor::takeOffers(
 				cLog(lsINFO) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText();
 
 				bool	bOfferDelete	= STAmount::applyOffer(
+					bSell,
 					lesActive.rippleTransferRate(uTakerAccountID, uOfferOwnerID, uTakerPaysAccountID),
 					lesActive.rippleTransferRate(uOfferOwnerID, uTakerAccountID, uTakerGetsAccountID),
 					saOfferRate,
@@ -313,19 +315,24 @@ TER OfferCreateTransactor::takeOffers(
 					if (tesSUCCESS == terResult)
 						terResult	= lesActive.accountSend(uTakerAccountID, uOfferOwnerID, saSubTakerPaid);			// Taker pays offer owner.
 
-					// Reduce amount considered paid by taker's rate (not actual cost).
-					STAmount	saTakerCould	= saTakerPays - saTakerPaid;	// Taker could pay.
-					if (saTakerFunds < saTakerCould)
-						saTakerCould	= saTakerFunds;
+					if (!bSell)
+					{
+						// Buy semantics: Reduce amount considered paid by taker's rate. Not by actual cost which is lower.
+						// That is, take less as to just satify our buy requirement.
+						STAmount	saTakerCould	= saTakerPays - saTakerPaid;	// Taker could pay.
+						if (saTakerFunds < saTakerCould)
+							saTakerCould	= saTakerFunds;
 
-					STAmount	saTakerUsed	= STAmount::multiply(saSubTakerGot, saTakerRate, saTakerPays);
+						STAmount	saTakerUsed	= STAmount::multiply(saSubTakerGot, saTakerRate, saTakerPays);
 
-					cLog(lsINFO) << "takeOffers: applyOffer:   saTakerCould: " << saTakerCould.getFullText();
-					cLog(lsINFO) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText();
-					cLog(lsINFO) << "takeOffers: applyOffer:    saTakerRate: " << saTakerRate.getFullText();
-					cLog(lsINFO) << "takeOffers: applyOffer:    saTakerUsed: " << saTakerUsed.getFullText();
+						cLog(lsINFO) << "takeOffers: applyOffer:   saTakerCould: " << saTakerCould.getFullText();
+						cLog(lsINFO) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText();
+						cLog(lsINFO) << "takeOffers: applyOffer:    saTakerRate: " << saTakerRate.getFullText();
+						cLog(lsINFO) << "takeOffers: applyOffer:    saTakerUsed: " << saTakerUsed.getFullText();
 
-					saTakerPaid		+= std::min(saTakerCould, saTakerUsed);
+						saSubTakerPaid	= std::min(saTakerCould, saTakerUsed);
+					}
+					saTakerPaid		+= saSubTakerPaid;
 					saTakerGot		+= saSubTakerGot;
 
 					if (tesSUCCESS == terResult)
@@ -362,6 +369,7 @@ TER OfferCreateTransactor::doApply()
 	const bool				bPassive			= isSetBit(uTxFlags, tfPassive);
 	const bool				bImmediateOrCancel	= isSetBit(uTxFlags, tfImmediateOrCancel);
 	const bool				bFillOrKill			= isSetBit(uTxFlags, tfFillOrKill);
+	const bool				bSell				= isSetBit(uTxFlags, tfSell);
 	STAmount				saTakerPays			= mTxn.getFieldAmount(sfTakerPays);
 	STAmount				saTakerGets			= mTxn.getFieldAmount(sfTakerGets);
 
@@ -498,12 +506,13 @@ TER OfferCreateTransactor::doApply()
 		terResult	= takeOffers(
 			bOpenLedger,
 			bPassive,
+			bSell,
 			uTakeBookBase,
 			mTxnAccountID,
 			sleCreator,
 			saTakerGets,	// Reverse as we are the taker for taking.
 			saTakerPays,
-			saPaid,			// How much would have spent at full price.
+			saPaid,			// Buy semantics: how much would have sold at full price. Sell semantics: how much was sold.
 			saGot,			// How much was got.
 			bUnfunded);
 

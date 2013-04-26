@@ -986,18 +986,19 @@ STAmount STAmount::setRate(uint64 rate)
 	return STAmount(CURRENCY_ONE, ACCOUNT_ONE, mantissa, exponent);
 }
 
+// Existing offer is on the books.
+// Price is offer owner's, which might be better for taker.
+// Taker pays what they can.
 // Taker gets all taker can pay for with saTakerFunds/uTakerPaysRate, limited by saOfferPays and saOfferFunds/uOfferPaysRate.
-//
-// Existing offer is on the books. Offer owner gets their rate.
-//
-// Taker pays what they can. If taker is an offer, doesn't matter what rate taker is. Taker is spending at same or better rate
-// than they wanted. Taker should consider themselves as wanting to buy X amount. Taker is willing to pay at most the rate of Y/X
-// each. Therefore, after having some part of their offer fulfilled at a better rate their offer should be reduced accordingly.
-//
-// YYY Could have a flag for spend up to behaviour vs current limit spend rate.
+// If taker is an offer, taker is spending at same or better rate than they wanted.
+// Taker should consider themselves as wanting to buy X amount.
+// Taker is willing to pay at most the rate of Y/X each.
+// Buy semantics:
+// - After having some part of their offer fulfilled at a better rate their offer should be reduced accordingly.
 //
 // There are no quality costs for offer vs offer taking.
 //
+// -->            bSell: True for sell semantics.
 // -->   uTakerPaysRate: >= QUALITY_ONE | TransferRate for third party IOUs paid by taker.
 // -->   uOfferPaysRate: >= QUALITY_ONE | TransferRate for third party IOUs paid by offer owner.
 // -->      saOfferRate: Original saOfferGets/saOfferPays, when offer was made.
@@ -1012,6 +1013,7 @@ STAmount STAmount::setRate(uint64 rate)
 // <-- saTakerIssuerFee: Actual
 // <-- saOfferIssuerFee: Actual
 bool STAmount::applyOffer(
+	const bool bSell,
 	const uint32 uTakerPaysRate, const uint32 uOfferPaysRate,
 	const STAmount& saOfferRate,
 	const STAmount& saOfferFunds, const STAmount& saTakerFunds,
@@ -1022,21 +1024,21 @@ bool STAmount::applyOffer(
 {
 	saOfferGets.throwComparable(saTakerFunds);
 
-	assert(!saOfferFunds.isZero() && !saTakerFunds.isZero());	// Must have funds.
-	assert(!saOfferGets.isZero() && !saOfferPays.isZero());		// Must not be a null offer.
+	assert(!saOfferFunds.isZero() && !saTakerFunds.isZero());		// Both must have funds.
+	assert(saOfferGets.isPositive() && saOfferPays.isPositive());	// Must not be a null offer.
 
 	// Limit offerer funds available, by transfer fees.
 	STAmount	saOfferFundsAvailable	= QUALITY_ONE == uOfferPaysRate
-											? saOfferFunds
-											: STAmount::divide(saOfferFunds, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uOfferPaysRate, -9));
+											? saOfferFunds			// As is.
+											: STAmount::divide(saOfferFunds, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uOfferPaysRate, -9));	// Reduce by offer fees.
 
 	cLog(lsINFO) << "applyOffer: uOfferPaysRate=" << uOfferPaysRate;
 	cLog(lsINFO) << "applyOffer: saOfferFundsAvailable=" << saOfferFundsAvailable.getFullText();
 
 	// Limit taker funds available, by transfer fees.
 	STAmount	saTakerFundsAvailable	= QUALITY_ONE == uTakerPaysRate
-											? saTakerFunds
-											: STAmount::divide(saTakerFunds, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9));
+											? saTakerFunds			// As is.
+											: STAmount::divide(saTakerFunds, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9));	// Reduce by taker fees.
 
 	cLog(lsINFO) << "applyOffer: TAKER_FEES=" << STAmount(CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9).getFullText();
 	cLog(lsINFO) << "applyOffer: uTakerPaysRate=" << uTakerPaysRate;
@@ -1069,12 +1071,14 @@ bool STAmount::applyOffer(
 	cLog(lsINFO) << "applyOffer: saTakerPaysMax=" << saTakerPaysMax.getFullText();
 	STAmount	saTakerGetsMax			= saTakerPaysMax >= saOfferGetsAvailable
 											? saOfferPaysAvailable									// Potentially take entire offer. Avoid math shenanigans.
-											: std::min(saOfferPaysAvailable, divRound(saTakerPaysMax, saOfferRate, saTakerGets, !saTakerGets.isNative()));	// Taker a portion of offer.
+											: std::min(saOfferPaysAvailable, divRound(saTakerPaysMax, saOfferRate, saTakerGets, true));	// Taker a portion of offer.
 	cLog(lsINFO) << "applyOffer: saOfferRate=" << saOfferRate.getFullText();
 	cLog(lsINFO) << "applyOffer: saTakerGetsMax=" << saTakerGetsMax.getFullText();
 
-	saTakerGot	= std::min(saTakerGets, saTakerGetsMax);	// Limit by wanted.
-	saTakerPaid	= saTakerGot == saOfferPaysAvailable
+	saTakerGot	= bSell
+					? saTakerGetsMax							// Get all available that are paid for.
+					: std::min(saTakerGets, saTakerGetsMax);	// Limit by wanted.
+	saTakerPaid	= saTakerGot >= saOfferPaysAvailable
 					? saOfferGetsAvailable
 					: std::min(saOfferGetsAvailable, mulRound(saTakerGot, saOfferRate, saTakerFunds, true));
 
@@ -1120,7 +1124,7 @@ bool STAmount::applyOffer(
 
 	cLog(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
 
-	return saTakerGot >= saOfferPaysAvailable;
+	return saTakerGot >= saOfferPaysAvailable;				// True, if consumed offer.
 }
 
 STAmount STAmount::getPay(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed)
