@@ -54,7 +54,7 @@ Application::Application() :
 	mFeeVote(10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS),
 
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
-	mHashNodeDB(NULL), mNetNodeDB(NULL), mPathFindDB(NULL),
+	mNetNodeDB(NULL), mPathFindDB(NULL), mHashNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
 	mSweepTimer(mAuxService), mShutdown(false)
 {
@@ -74,7 +74,7 @@ void Application::stop()
 	StopSustain();
 	mShutdown = true;
 	mIOService.stop();
-	mHashedObjectStore.bulkWrite();
+	mHashedObjectStore.waitWrite();
 	mValidations.flush();
 	mAuxService.stop();
 	mJobQueue.shutdown();
@@ -150,10 +150,23 @@ void Application::setup()
 	t1.join(); t2.join(); t3.join();
 
 	boost::thread t4(boost::bind(&InitDB, &mWalletDB, "wallet.db", WalletDBInit, WalletDBCount));
-	boost::thread t5(boost::bind(&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
 	boost::thread t6(boost::bind(&InitDB, &mNetNodeDB, "netnode.db", NetNodeDBInit, NetNodeDBCount));
 	boost::thread t7(boost::bind(&InitDB, &mPathFindDB, "pathfind.db", PathFindDBInit, PathFindDBCount));
-	t4.join(); t5.join(); t6.join(); t7.join();
+	t4.join(); t6.join(); t7.join();
+
+#ifdef USE_LEVELDB
+	leveldb::Options options;
+	options.create_if_missing = true;
+	leveldb::Status status = leveldb::DB::Open(options, (theConfig.DATA_DIR / "hashnode.ldb").string(), &mHashNodeDB);
+	if (!status.ok() || !mHashNodeDB)
+	{
+		cLog(lsFATAL) << "Unable to open/create hash node db";
+		exit(3);
+	}
+#else
+	boost::thread t5(boost::bind(&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
+	t5.join();
+#endif
 
 	mTxnDB->getDB()->setupCheckpointing(&mJobQueue);
 	mLedgerDB->getDB()->setupCheckpointing(&mJobQueue);
@@ -205,8 +218,11 @@ void Application::setup()
 	mLedgerMaster.tune(theConfig.getSize(siLedgerSize), theConfig.getSize(siLedgerAge));
 	mLedgerMaster.setMinValidations(theConfig.VALIDATION_QUORUM);
 
+#ifndef USE_LEVELDB
 	theApp->getHashNodeDB()->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %
 		(theConfig.getSize(siHashNodeDBCache) * 1024)));
+#endif
+
 	theApp->getLedgerDB()->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %
 		(theConfig.getSize(siTxnDBCache) * 1024)));
 	theApp->getTxnDB()->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %

@@ -1,6 +1,10 @@
 
 #include "HashedObject.h"
 
+#ifdef USE_LEVELDB
+#include "leveldb/db.h"
+#endif
+
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 
@@ -26,6 +30,83 @@ void HashedObjectStore::tune(int size, int age)
 	mCache.setTargetAge(age);
 }
 
+#ifdef USE_LEVELDB
+
+bool HashedObjectStore::store(HashedObjectType type, uint32 index,
+	const std::vector<unsigned char>& data, const uint256& hash)
+{ // return: false = already in cache, true = added to cache
+	if (!theApp->getHashNodeDB())
+	{
+		cLog(lsTRACE) << "HOS: no db";
+		return true;
+	}
+	if (mCache.touch(hash))
+	{
+		cLog(lsTRACE) << "HOS: " << hash << " store: incache";
+		return false;
+	}
+	assert(hash == Serializer::getSHA512Half(data));
+
+	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data, hash);
+	if (!mCache.canonicalize(hash, object))
+	{
+		Serializer s(1 + (32 / 8) + data.size());
+		s.add8(static_cast<unsigned char>(type));
+		s.add32(index);
+		s.addRaw(data);
+		leveldb::Status st = theApp->getHashNodeDB()->Put(leveldb::WriteOptions(), hash.GetHex(),
+			leveldb::Slice(reinterpret_cast<const char *>(s.getDataPtr()), s.getLength()));
+		if (!st.ok())
+		{
+			cLog(lsFATAL) << "Failed to store hash node";
+			assert(false);
+		}
+	}
+	mNegativeCache.del(hash);
+	return true;
+}
+
+void HashedObjectStore::waitWrite()
+{
+}
+
+HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
+{
+	HashedObject::pointer obj = mCache.fetch(hash);
+	if (obj)
+		return obj;
+
+	if (mNegativeCache.isPresent(hash))
+		return obj;
+
+	if (!theApp || !theApp->getHashNodeDB())
+		return obj;
+
+	std::string sData;
+	leveldb::Status st = theApp->getHashNodeDB()->Get(leveldb::ReadOptions(), hash.GetHex(), &sData);
+	if (!st.ok())
+	{
+		mNegativeCache.add(hash);
+		return obj;
+	}
+
+	Serializer s(sData);
+
+	int htype;
+	uint32 index;
+	std::vector<unsigned char> data;
+	s.get8(htype, 0);
+	s.get32(index, 1);
+	s.getRaw(data, 5, s.getLength() - 5);
+
+	obj = boost::make_shared<HashedObject>(static_cast<HashedObjectType>(htype), index, data, hash);
+	mCache.canonicalize(hash, obj);
+
+	cLog(lsTRACE) << "HOS: " << hash << " fetch: in db";
+	return obj;
+}
+
+#else
 
 bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	const std::vector<unsigned char>& data, const uint256& hash)
@@ -329,5 +410,7 @@ int HashedObjectStore::import(const std::string& file)
 	waitWrite();
 	return countYes;
 }
+
+#endif
 
 // vim:ts=4

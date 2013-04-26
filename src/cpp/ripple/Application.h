@@ -1,6 +1,10 @@
 #ifndef __APPLICATION__
 #define __APPLICATION__
 
+#ifdef USE_LEVELDB
+#include "leveldb/db.h"
+#endif
+
 #include <boost/asio.hpp>
 
 #include "../database/database.h"
@@ -74,7 +78,13 @@ class Application
 	OrderBookDB				mOrderBookDB;
 	FeeVote					mFeeVote;
 
-	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB, *mPathFindDB;
+	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB;
+
+#ifdef USE_LEVELDB
+	leveldb::DB				*mHashNodeDB;
+#else
+	DatabaseCon				*mHashNodeDB;
+#endif
 
 	ConnectionPool			mConnectionPool;
 	PeerDoor*				mPeerDoor;
@@ -140,9 +150,14 @@ public:
 	DatabaseCon* getTxnDB()			{ return mTxnDB; }
 	DatabaseCon* getLedgerDB()		{ return mLedgerDB; }
 	DatabaseCon* getWalletDB()		{ return mWalletDB; }
-	DatabaseCon* getHashNodeDB()	{ return mHashNodeDB; }
 	DatabaseCon* getNetNodeDB()		{ return mNetNodeDB; }
 	DatabaseCon* getPathFindDB()	{ return mPathFindDB; }
+
+#ifdef USE_LEVELDB
+	leveldb::DB* getHashNodeDB()	{ return mHashNodeDB; }
+#else
+	DatabaseCon* getHashNodeDB()	{ return mHashNodeDB; }
+#endif
 
 	uint256 getNonce256()			{ return mNonce256; }
 	std::size_t getNonceST()		{ return mNonceST; }
