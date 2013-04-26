@@ -1,10 +1,10 @@
 var async   = require("async");
 
-var Amount  = require("../src/js/amount").Amount;
-var Remote  = require("../src/js/remote").Remote;
+var Amount  = require("ripple-lib").Amount;
+var Remote  = require("ripple-lib").Remote;
 var Server  = require("./server").Server;
 
-var config  = require('../src/js/config').load(require('./config'));
+var config  = require('ripple-lib').config.load(require('./config'));
 
 var account_dump = function (remote, account, callback) {
   var self = this;

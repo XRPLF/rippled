@@ -2,7 +2,7 @@ var async = require("async");
 var fs	  = require("fs");
 var path  = require("path");
 
-var utils  = require("./utils.js");
+var utils  = require("ripple-lib").utils;
 
 // Empty a directory.
 // done(err) : err = true if an error occured.

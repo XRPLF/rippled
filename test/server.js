@@ -22,8 +22,8 @@ var path          = require("path");
 var util          = require("util");
 var EventEmitter  = require('events').EventEmitter;
 
-var config        = require("./config.js");
-var nodeutils     = require("../src/js/nodeutils.js");
+var config        = require("./config");
+var nodeutils     = require("./nodeutils");
 
 // Create a server object
 var Server = function (name, config, verbose) {
