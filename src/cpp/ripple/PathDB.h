@@ -45,7 +45,7 @@ protected:
 	boost::recursive_mutex						mLock;
 	TaggedCache<currencyIssuer_t, PathDBEntry>	mFromCache;
 	TaggedCache<currencyIssuer_t, PathDBEntry>	mToCache;
-	std::set<PathDBEntry::pointer>				mDirtyPaths;
+//	std::set<PathDBEntry::pointer>				mDirtyPaths;
 
 public:
 
