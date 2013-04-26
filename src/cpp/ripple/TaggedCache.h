@@ -77,6 +77,7 @@ public:
 	void setTargetSize(int size);
 	void setTargetAge(int age);
 	void sweep();
+	void clear();
 
 	bool touch(const key_type& key);
 	bool del(const key_type& key, bool valid);
@@ -126,6 +127,12 @@ template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getTra
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	return mCache.size();
+}
+
+template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::clear()
+{
+	mCache.clear();
+	mCacheCount = 0;
 }
 
 template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep()

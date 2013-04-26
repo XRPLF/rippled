@@ -36,7 +36,7 @@ NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedge
 	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mProposing(false), mValidating(false),
 	mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0), mLastCloseProposers(0),
 	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0),
-	mFetchPack("FetchPack", 2048, 30), mLastFetchPack(0),
+	mFetchPack("FetchPack", 2048, 30), mLastFetchPack(0), mFetchSeq(static_cast<uint32>(-1)),
 	mLastLoadBase(256), mLastLoadFactor(256)
 {
 }
@@ -2091,13 +2091,19 @@ bool NetworkOPs::getFetchPack(const uint256& hash, std::vector<unsigned char>& d
 	return true;
 }
 
-bool NetworkOPs::shouldFetchPack()
+bool NetworkOPs::shouldFetchPack(uint32 seq)
 {
 	uint32 now = getNetworkTimeNC();
 	if ((mLastFetchPack == now) || ((mLastFetchPack + 1) == now))
 		 return false;
-	mFetchPack.sweep();
-	if (mFetchPack.getCacheSize() > 384)
+	if (seq < mFetchSeq) // fetch pack has only data for ledgers ahead of where we are
+		mFetchPack.clear();
+	else
+		mFetchPack.sweep();
+	int size = mFetchPack.getCacheSize();
+	if (size == 0)
+		mFetchSeq = static_cast<uint32>(-1);
+	else if (mFetchPack.getCacheSize() > 384)
 		return false;
 	mLastFetchPack = now;
 	return true;
@@ -2108,9 +2114,10 @@ int NetworkOPs::getFetchSize()
 	return mFetchPack.getCacheSize();
 }
 
-void NetworkOPs::gotFetchPack(bool progress)
+void NetworkOPs::gotFetchPack(bool progress, uint32 seq)
 {
 	mLastFetchPack = 0;
+	mFetchSeq = seq;		// earliest pack we have data on
 	theApp->getJobQueue().addJob(jtLEDGER_DATA, "gotFetchPack",
 		boost::bind(&LedgerAcquireMaster::gotFetchPack, &theApp->getMasterLedgerAcquire(), _1));
 }
