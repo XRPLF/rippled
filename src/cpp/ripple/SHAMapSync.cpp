@@ -157,14 +157,6 @@ std::vector<uint256> SHAMap::getNeededHashes(int max, SHAMapSyncFilter* filter)
 	return ret;
 }
 
-std::list< std::pair<uint256, std::vector<unsigned char> > >
-	getSyncInfo(SHAMap::pointer have, SHAMap::pointer want, int max)
-{
-	std::list< std::pair< uint256, std::vector<unsigned char> > > ret;
-	// WRITEME
-	return ret;
-}
-
 bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeIDs,
 	std::list<std::vector<unsigned char> >& rawNodes, bool fatRoot, bool fatLeaves)
 { // Gets a node and some of its children
