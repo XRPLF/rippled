@@ -1,13 +1,13 @@
 var async     = require("async");
 var buster    = require("buster");
 
-var Amount    = require("../src/js/amount").Amount;
-var Remote    = require("../src/js/remote").Remote;
+var Amount    = require("ripple-lib").Amount;
+var Remote    = require("ripple-lib").Remote;
 var Server    = require("./server").Server;
 
 var testutils = require("./testutils");
 
-require('../src/js/config').load(require('./config'));
+require('ripple-lib').config.load(require('./config'));
 
 buster.testRunner.timeout = 5000;
 

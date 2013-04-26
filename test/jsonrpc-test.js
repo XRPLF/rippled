@@ -4,13 +4,13 @@ var http      = require("http");
 var jsonrpc   = require("simple-jsonrpc");
 var EventEmitter  = require('events').EventEmitter;
 
-var Amount    = require("../src/js/amount").Amount;
-var Remote    = require("../src/js/remote").Remote;
+var Amount    = require("ripple-lib").Amount;
+var Remote    = require("ripple-lib").Remote;
 var Server    = require("./server").Server;
 
 var testutils = require("./testutils");
 
-var config    = require('../src/js/config').load(require('./config'));
+var config    = require('ripple-lib').config.load(require('./config'));
 
 // How long to wait for server to start.
 var serverDelay = 1500;

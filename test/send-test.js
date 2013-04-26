@@ -1,13 +1,13 @@
 var async     = require("async");
 var buster    = require("buster");
 
-var Amount    = require("../src/js/amount.js").Amount;
-var Remote    = require("../src/js/remote.js").Remote;
-var Server    = require("./server.js").Server;
+var Amount    = require("ripple-lib").Amount;
+var Remote    = require("ripple-lib").Remote;
+var Server    = require("./server").Server;
 
-var testutils = require("./testutils.js");
+var testutils = require("./testutils");
 
-var config  = require('../src/js/config').load(require('./config'));
+var config  = require('ripple-lib').config.load(require('./config'));
 
 // How long to wait for server to start.
 var serverDelay = 1500;

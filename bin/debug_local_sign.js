@@ -1,4 +1,4 @@
-var ripple = require('../src/js');
+var ripple = require('ripple-lib');
 
 var v = {
   seed: "snoPBrXtMeMyMHUVTgbuqAfg1SUTb",

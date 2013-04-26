@@ -23,7 +23,7 @@ var extend    = require("extend");
 var http      = require("http");
 var url       = require("url");
 
-var Remote    = require("../src/js/remote.js").Remote;
+var Remote    = require("ripple-lib").Remote;
 
 var program   = process.argv[1];
 

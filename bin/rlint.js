@@ -1,10 +1,10 @@
 #!/usr/bin/node
 
 var async       = require('async');
-var Remote      = require('../src/js/remote').Remote;
-var Transaction = require('../src/js/transaction').Transaction;
-var UInt160     = require('../src/js/uint160').UInt160;
-var Amount      = require('../src/js/amount').Amount;
+var Remote      = require('ripple-lib').Remote;
+var Transaction = require('ripple-lib').Transaction;
+var UInt160     = require('ripple-lib').UInt160;
+var Amount      = require('ripple-lib').Amount;
 
 var book_key = function (book) {
   return book.taker_pays.currency
