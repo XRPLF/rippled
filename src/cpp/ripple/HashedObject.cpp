@@ -63,7 +63,6 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 			assert(false);
 		}
 	}
-	mNegativeCache.del(hash);
 	return true;
 }
 
@@ -77,19 +76,13 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 	if (obj)
 		return obj;
 
-	if (mNegativeCache.isPresent(hash))
-		return obj;
-
 	if (!theApp || !theApp->getHashNodeDB())
 		return obj;
 
 	std::string sData;
 	leveldb::Status st = theApp->getHashNodeDB()->Get(leveldb::ReadOptions(), hash.GetHex(), &sData);
 	if (!st.ok())
-	{
-		mNegativeCache.add(hash);
 		return obj;
-	}
 
 	Serializer s(sData);
 
@@ -139,7 +132,6 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	}
 //	else
 //		cLog(lsTRACE) << "HOS: already had " << hash;
-	mNegativeCache.del(hash);
 	return true;
 }
 
