@@ -1024,7 +1024,7 @@ bool STAmount::applyOffer(
 {
 	saOfferGets.throwComparable(saTakerFunds);
 
-	assert(!saOfferFunds.isZero() && !saTakerFunds.isZero());		// Both must have funds.
+	assert(saOfferFunds.isPositive() && saTakerFunds.isPositive());	// Both must have funds.
 	assert(saOfferGets.isPositive() && saOfferPays.isPositive());	// Must not be a null offer.
 
 	// Limit offerer funds available, by transfer fees.

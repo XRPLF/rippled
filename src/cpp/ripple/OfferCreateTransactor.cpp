@@ -138,7 +138,7 @@ TER OfferCreateTransactor::takeOffers(
 		STAmount		saSubTakerGets	= saTakerGets-saTakerGot;	// How much more is wanted.
 
 		// Figure out next offer to take, if needed.
-		if (saTakerFunds						// Taker has funds available.
+		if (saTakerFunds.isPositive()			// Taker has funds available.
 			&& saSubTakerPays.isPositive()
 			&& saSubTakerGets.isPositive())
 		{
@@ -162,7 +162,7 @@ TER OfferCreateTransactor::takeOffers(
 			}
 		}
 
-		if (!saTakerFunds)									// Taker has no funds.
+		if (!saTakerFunds.isPositive())						// Taker has no funds.
 		{
 			// Done. Ran out of funds on previous round. As fees aren't calculated directly in this routine, funds are checked here.
 			cLog(lsINFO) << "takeOffers: done: taker unfunded.";
