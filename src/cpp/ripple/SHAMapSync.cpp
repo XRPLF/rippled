@@ -58,37 +58,20 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 					SHAMapTreeNode* d = NULL;
 					try
 					{
-						d = getNodePointer(childID, childHash);
+						d = getNodePointer(childID, childHash, filter);
+						if (d->isInner() && !d->isFullBelow())
+						{
+							have_all = false;
+							stack.push(d);
+						}
 					}
 					catch (SHAMapMissingNode&)
 					{ // node is not in the map
-						if (filter != NULL)
-						{
-							std::vector<unsigned char> nodeData;
-							if (filter->haveNode(childID, childHash, nodeData))
-							{
-								assert(mSeq >= 1);
-								SHAMapTreeNode::pointer ptr =
-									boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq - 1,
-										snfPREFIX, childHash, true);
-								mTNByID[*ptr] = ptr;
-								d = ptr.get();
-								filter->gotNode(true, childID, childHash, nodeData, ptr->getType());
-							}
-						}
-					}
-					if (!d)
-					{ // we need this node
 						nodeIDs.push_back(childID);
 						hashes.push_back(childHash);
 						if (--max <= 0)
 							return;
 						have_all = false;
-					}
-					else if (d->isInner() && !d->isFullBelow()) // we might need children of this node
-					{
-						have_all = false;
-						stack.push(d);
 					}
 				}
 			}
@@ -142,32 +125,15 @@ std::vector<uint256> SHAMap::getNeededHashes(int max, SHAMapSyncFilter* filter)
 					SHAMapTreeNode* d = NULL;
 					try
 					{
-						d = getNodePointer(childID, childHash);
-						assert(d);
-					}
-					catch (SHAMapMissingNode&)
-					{ // node is not in the map
-						std::vector<unsigned char> nodeData;
-						if (filter && filter->haveNode(childID, childHash, nodeData))
-						{
-							SHAMapTreeNode::pointer ptr =
-								boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq -1,
-									snfPREFIX, childHash, true);
-							mTNByID[*ptr] = ptr;
-							d = ptr.get();
-							filter->gotNode(true, childID, childHash, nodeData, ptr->getType());
-						}
-					}
-					if (d)
-					{
+						d = getNodePointer(childID, childHash, filter);
 						if (d->isInner() && !d->isFullBelow())
 						{
 							have_all = false;
 							stack.push(d);
 						}
 					}
-					else
-					{
+					catch (SHAMapMissingNode&)
+					{ // node is not in the map
 						have_all = false;
 						ret.push_back(childHash);
 						if (--max <= 0)
@@ -340,11 +306,8 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigne
 		return SMAddNode::okay();
 
 	SHAMapTreeNode* iNode = root.get();
-	while (!iNode->isLeaf() && !iNode->isFullBelow())
+	while (!iNode->isLeaf() && !iNode->isFullBelow() && (iNode->getDepth() < node.getDepth()))
 	{
-		if (iNode->isLeaf() || iNode->isFullBelow() || (iNode->getDepth() >= node.getDepth()))
-			return SMAddNode::okay();
-
 		int branch = iNode->selectBranch(node.getNodeID());
 		assert(branch >= 0);
 
@@ -358,7 +321,7 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigne
 
 		try
 		{
-			iNode = getNodePointer(iNode->getChildNodeID(branch), iNode->getChildHash(branch));
+			iNode = getNodePointer(iNode->getChildNodeID(branch), iNode->getChildHash(branch), filter);
 		}
 		catch (SHAMapMissingNode)
 		{
@@ -374,6 +337,7 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigne
 				boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq - 1, snfWIRE, uZero, false);
 			if (iNode->getChildHash(branch) != newNode->getNodeHash())
 			{
+				cLog(lsWARNING) << "Corrupt node recevied";
 				return SMAddNode::invalid();
 			}
 
@@ -384,41 +348,11 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigne
 				filter->gotNode(false, node, iNode->getChildHash(branch), s.peekData(), newNode->getType());
 			}
 			mTNByID[node] = newNode;
-
-			if (!newNode->isLeaf()) // only a leaf can fill an inner node
-				return SMAddNode::useful();
-
-			try
-			{
-				for (int i = 0; i < 16; ++i)
-				{ // does the parent still need more nodes
-					if (!iNode->isEmptyBranch(i) && !fullBelowCache.isPresent(iNode->getChildHash(i)))
-					{
-						SHAMapTreeNode* d = getNodePointer(iNode->getChildNodeID(i), iNode->getChildHash(i));
-						if (d->isInner() && !d->isFullBelow()) // unfilled inner node
-							return SMAddNode::useful();
-					}
-				}
-			}
-			catch (SHAMapMissingNode)
-			{ // still missing something
-				return SMAddNode::useful();
-			}
-
-			// received leaf fills its parent
-			iNode->setFullBelow();
-			if (mType == smtSTATE)
-			{
-				fullBelowCache.add(iNode->getNodeHash());
-				dropBelow(iNode);
-			}
-			if (root->isFullBelow())
-				clearSynching();
 			return SMAddNode::useful();
 		}
 	}
 
-	cLog(lsTRACE) << "got inner node, already had it (late)";
+	cLog(lsTRACE) << "got node, already had it (late)";
 	return SMAddNode::okay();
 }
 

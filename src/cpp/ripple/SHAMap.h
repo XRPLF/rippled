@@ -369,6 +369,7 @@ protected:
 	SHAMapTreeNode::pointer getNode(const SHAMapNode& id);
 	SHAMapTreeNode::pointer getNode(const SHAMapNode& id, const uint256& hash, bool modify);
 	SHAMapTreeNode* getNodePointer(const SHAMapNode& id, const uint256& hash);
+	SHAMapTreeNode* getNodePointer(const SHAMapNode& id, const uint256& hash, SHAMapSyncFilter* filter);
 	SHAMapTreeNode* firstBelow(SHAMapTreeNode*);
 	SHAMapTreeNode* lastBelow(SHAMapTreeNode*);
 

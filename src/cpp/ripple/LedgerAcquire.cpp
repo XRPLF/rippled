@@ -960,7 +960,10 @@ void LedgerAcquireMaster::gotLedgerData(Job&, uint256 hash,
 			cLog(lsWARNING) << "Included TXbase invalid";
 		}
 		if (!san.isInvalid())
+		{
+			ledger->progress();
 			ledger->trigger(peer);
+		}
 		else
 			cLog(lsDEBUG) << "Peer sends invalid base data";
 		return;
@@ -996,7 +999,10 @@ void LedgerAcquireMaster::gotLedgerData(Job&, uint256 hash,
 		else
 			ledger->takeAsNode(nodeIDs, nodeData, ret);
 		if (!ret.isInvalid())
-				ledger->trigger(peer);
+		{
+			ledger->progress();
+			ledger->trigger(peer);
+		}
 		else
 			cLog(lsDEBUG) << "Peer sends invalid node data";
 		return;

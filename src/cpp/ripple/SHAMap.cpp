@@ -236,6 +236,31 @@ SHAMapTreeNode* SHAMap::getNodePointer(const SHAMapNode& id, const uint256& hash
 	return fetchNodeExternal(id, hash).get();
 }
 
+SHAMapTreeNode* SHAMap::getNodePointer(const SHAMapNode& id, const uint256& hash, SHAMapSyncFilter* filter)
+{
+	try
+	{
+		return getNodePointer(id, hash);
+	}
+	catch (SHAMapMissingNode)
+	{
+		if (filter)
+		{
+			std::vector<unsigned char> nodeData;
+			if (filter->haveNode(id, hash, nodeData))
+			{
+				SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(
+					boost::cref(id), boost::cref(nodeData), mSeq - 1, snfPREFIX, boost::cref(hash), true);
+				mTNByID[id] = node;
+				filter->gotNode(true, id, hash, nodeData, node->getType());
+				return node.get();
+			}
+		}
+		throw;
+	}
+}
+
+
 void SHAMap::returnNode(SHAMapTreeNode::pointer& node, bool modify)
 { // make sure the node is suitable for the intended operation (copy on write)
 	assert(node->isValid());
