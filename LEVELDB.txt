@@ -2,7 +2,7 @@
 To use LevelDB, follow these steps:
 
 1) At the top of the directory tree, type:
-	make -C src/cpp/level/db libleveldb.a
+	make -C src/cpp/leveldb libleveldb.a
 
 2) In the SConstruct file, change
 	LevelDB = bool(0)
