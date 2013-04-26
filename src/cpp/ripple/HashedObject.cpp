@@ -140,6 +140,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	}
 //	else
 //		cLog(lsTRACE) << "HOS: already had " << hash;
+	mNegativeCache.del(hash);
 	return true;
 }
 
