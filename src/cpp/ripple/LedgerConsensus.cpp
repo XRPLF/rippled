@@ -267,6 +267,7 @@ void LedgerConsensus::checkLCL()
 
 void LedgerConsensus::handleLCL(const uint256& lclHash)
 {
+	assert((lclHash != mPrevLedgerHash) || (mPreviousLedger->getHash() != lclHash));
 	if (mPrevLedgerHash != lclHash)
 	{ // first time switching to this ledger
 		mPrevLedgerHash = lclHash;
@@ -286,30 +287,32 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 		playbackProposals();
 	}
 
-	if (mPreviousLedger->getHash() != mPrevLedgerHash)
-	{ // we need to switch the ledger we're working from
-		Ledger::pointer newLCL = theApp->getLedgerMaster().getLedgerByHash(lclHash);
-		if (newLCL)
-		{
-			mPreviousLedger = newLCL;
-			mPrevLedgerHash = newLCL->getHash();
-		}
-		else if (!mAcquiringLedger || (mAcquiringLedger->getHash() != mPrevLedgerHash))
-		{ // need to start acquiring the correct consensus LCL
-			cLog(lsWARNING) << "Need consensus ledger " << mPrevLedgerHash;
+	if (mPreviousLedger->getHash() == mPrevLedgerHash)
+		return;
 
-			mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash, 0);
-			mHaveCorrectLCL = false;
-			return;
-		}
+	// we need to switch the ledger we're working from
+	Ledger::pointer newLCL = theApp->getLedgerMaster().getLedgerByHash(lclHash);
+	if (newLCL)
+	{
+		assert(newLCL->isClosed());
+		assert(newLCL->isImmutable());
+		assert(newLCL->getHash() == lclHash);
+		mPreviousLedger = newLCL;
+		mPrevLedgerHash = lclHash;
+	}
+	else if (!mAcquiringLedger || (mAcquiringLedger->getHash() != mPrevLedgerHash))
+	{ // need to start acquiring the correct consensus LCL
+		cLog(lsWARNING) << "Need consensus ledger " << mPrevLedgerHash;
+		if (mAcquiringLedger)
+			theApp->getMasterLedgerAcquire().dropLedger(mAcquiringLedger->getHash());
+		mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash, 0);
+		mHaveCorrectLCL = false;
+		return;
 	}
 
 	cLog(lsINFO) << "Have the consensus ledger " << mPrevLedgerHash;
 	mHaveCorrectLCL = true;
-#if 0 // FIXME: can trigger early
-	if (mAcquiringLedger && mAcquiringLedger->isComplete())
-		theApp->getOPs().clearNeedNetworkLedger();
-#endif
+
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
 		mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(),
 		mPreviousLedger->getLedgerSeq() + 1);

@@ -1,6 +1,8 @@
 #ifndef PATHDB__H
 #define PATHBD__H
 
+#include <set>
+
 #include "uint256.h"
 #include "TaggedCache.h"
 
@@ -45,7 +47,7 @@ protected:
 	boost::recursive_mutex						mLock;
 	TaggedCache<currencyIssuer_t, PathDBEntry>	mFromCache;
 	TaggedCache<currencyIssuer_t, PathDBEntry>	mToCache;
-	std::set<PathDBEntry::pointer>				mDirtyPaths;
+//	std::set<PathDBEntry::pointer>				mDirtyPaths;
 
 public:
 

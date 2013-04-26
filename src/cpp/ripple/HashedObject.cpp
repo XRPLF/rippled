@@ -37,7 +37,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 { // return: false = already in cache, true = added to cache
 	if (!theApp->getHashNodeDB())
 	{
-		cLog(lsTRACE) << "HOS: no db";
+		cLog(lsWARNING) << "HOS: no db";
 		return true;
 	}
 	if (mCache.touch(hash))
@@ -50,7 +50,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data, hash);
 	if (!mCache.canonicalize(hash, object))
 	{
-		Serializer s(1 + (32 / 8) + (32 / 8) + data.size());
+		Serializer s(9 + data.size());
 		s.add8(static_cast<unsigned char>(type));
 		s.add32(index);
 		s.add32(index);
@@ -63,6 +63,8 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 			assert(false);
 		}
 	}
+	else
+		cLog(lsDEBUG) << "HOS: store race";
 	return true;
 }
 
@@ -77,12 +79,18 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		return obj;
 
 	if (!theApp || !theApp->getHashNodeDB())
+	{
+		cLog(lsWARNING) << "HOS: no db";
 		return obj;
+	}
 
 	std::string sData;
 	leveldb::Status st = theApp->getHashNodeDB()->Get(leveldb::ReadOptions(), hash.GetHex(), &sData);
 	if (!st.ok())
+	{
+		assert(st.IsNotFound());
 		return obj;
+	}
 
 	Serializer s(sData);
 
@@ -132,6 +140,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	}
 //	else
 //		cLog(lsTRACE) << "HOS: already had " << hash;
+	mNegativeCache.del(hash);
 	return true;
 }
 

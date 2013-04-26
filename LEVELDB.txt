@@ -1,24 +1,16 @@
 
 To use LevelDB, follow these steps:
 
-1) Obtain the latest LevelDB package from http://code.google.com/p/leveldb/
-1.9.0 is known to work. Build it.
+1) At the top of the directory tree, type:
+	make -C src/cpp/leveldb libleveldb.a
 
-2) In the SConstruct file, change "LevelDB = bool(0)" to
-"LevelDB = bool(1)".
+2) In the SConstruct file, change
+	LevelDB = bool(0)
+to
+	LevelDB = bool(1)
 
-3) In your main directory, create a 'leveldb' directory with 'include' and
-'lib' subdirectories.
-
-4) In the 'leveldb/lib' file, place the 'libleveldb.a' file you built.
-
-5) Make a 'levedb/include/leveldb' directory. Place the leveldb header files
-(leveldb.h, slice.h, and so on) in this directory. 
-
-6) Compile with 'scons'.
+3) Compile with 'scons'.
 
 There is no import or export method, so your server will have to refetch
 all nodes. For simplicity, we recommend clearing your entire 'db' directory.
 LevelDB will store the hash nodes in a 'db/hashnode' directory.
-
-

@@ -1274,7 +1274,7 @@ void Peer::recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash
 		}
 		tLog(pLDo && (pLSeq != 0), lsDEBUG) << "Received partial fetch pack for " << pLSeq;
 		if (packet.type() == ripple::TMGetObjectByHash::otFETCH_PACK)
-			theApp->getOPs().gotFetchPack(progress);
+			theApp->getOPs().gotFetchPack(progress, pLSeq);
 	}
 }
 

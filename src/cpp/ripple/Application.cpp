@@ -1,5 +1,10 @@
 
 #include "Application.h"
+
+#ifdef USE_LEVELDB
+#include "leveldb/cache.h"
+#endif
+
 #include "AcceptedLedger.h"
 #include "Config.h"
 #include "PeerDoor.h"
@@ -79,6 +84,11 @@ void Application::stop()
 	mAuxService.stop();
 	mJobQueue.shutdown();
 
+#ifdef HAVE_LEVELDB
+	delete mHashNodeDB:
+	mHashNodeDB = NULL;
+#endif
+
 	cLog(lsINFO) << "Stopped: " << mIOService.stopped();
 	Instance::shutdown();
 }
@@ -157,6 +167,7 @@ void Application::setup()
 #ifdef USE_LEVELDB
 	leveldb::Options options;
 	options.create_if_missing = true;
+	options.block_cache = leveldb::NewLRUCache(theConfig.getSize(siHashNodeDBCache) * 1024 * 1024);
 	leveldb::Status status = leveldb::DB::Open(options, (theConfig.DATA_DIR / "hashnode").string(), &mHashNodeDB);
 	if (!status.ok() || !mHashNodeDB)
 	{
