@@ -7,11 +7,12 @@ import platform
 import commands
 import re
 
+LevelDB	= bool(0)
+
 OSX	= bool(platform.mac_ver()[0])
 FreeBSD	= bool('FreeBSD' == platform.system())
 Linux	= bool('Linux' == platform.system())
 Ubuntu	= bool(Linux and 'Ubuntu' == platform.linux_distribution()[0])
-LevelDB	= bool(0)
 
 if OSX or Ubuntu:
 	CTAGS = '/usr/bin/ctags'
@@ -116,7 +117,7 @@ if OSX:
 
 if LevelDB:
 	env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb/include', '-DUSE_LEVELDB'])
-	env.Append(LINKFLAGS = [ '-Lsrc/cpp/leveldb/lib' ])
+	env.Append(LINKFLAGS = [ '-Lsrc/cpp/leveldb' ])
 	env.Append(LIBS = [ '-lleveldb'])
 
 DB_SRCS   = glob.glob('src/cpp/database/*.c') + glob.glob('src/cpp/database/*.cpp')
