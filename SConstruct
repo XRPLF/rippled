@@ -115,8 +115,8 @@ if OSX:
 	env.Append(CXXFLAGS = ['-I/usr/local/opt/openssl/include'])
 
 if LevelDB:
-	env.Append(CXXFLAGS = [ '-Ileveldb/include', '-DUSE_LEVELDB'])
-	env.Append(LINKFLAGS = [ '-Lleveldb/lib' ])
+	env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb/include', '-DUSE_LEVELDB'])
+	env.Append(LINKFLAGS = [ '-Lsrc/cpp/leveldb/lib' ])
 	env.Append(LIBS = [ '-lleveldb'])
 
 DB_SRCS   = glob.glob('src/cpp/database/*.c') + glob.glob('src/cpp/database/*.cpp')
