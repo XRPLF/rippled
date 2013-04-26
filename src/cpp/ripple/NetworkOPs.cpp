@@ -36,7 +36,7 @@ NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedge
 	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mProposing(false), mValidating(false),
 	mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0), mLastCloseProposers(0),
 	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0),
-	mFetchPack("FetchPack", 2048, 30), mLastFetchPack(0), mFetchSeq(static_cast<uint32>(-1)),
+	mFetchPack("FetchPack", 2048, 20), mLastFetchPack(0), mFetchSeq(static_cast<uint32>(-1)),
 	mLastLoadBase(256), mLastLoadFactor(256)
 {
 }
@@ -2103,7 +2103,7 @@ bool NetworkOPs::shouldFetchPack(uint32 seq)
 	int size = mFetchPack.getCacheSize();
 	if (size == 0)
 		mFetchSeq = static_cast<uint32>(-1);
-	else if (mFetchPack.getCacheSize() > 384)
+	else if (mFetchPack.getCacheSize() > 64)
 		return false;
 	mLastFetchPack = now;
 	return true;
