@@ -53,7 +53,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 		Serializer s(1 + (32 / 8) + (32 / 8) + data.size());
 		s.add8(static_cast<unsigned char>(type));
 		s.add32(index);
-		s.add32(index)
+		s.add32(index);
 		s.addRaw(data);
 		leveldb::Status st = theApp->getHashNodeDB()->Put(leveldb::WriteOptions(), hash.GetHex(),
 			leveldb::Slice(reinterpret_cast<const char *>(s.getDataPtr()), s.getLength()));
