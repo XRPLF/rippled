@@ -50,13 +50,17 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data, hash);
 	if (!mCache.canonicalize(hash, object))
 	{
-		Serializer s(9 + data.size());
-		s.add8(static_cast<unsigned char>(type));
-		s.add32(index);
-		s.add32(index);
-		s.addRaw(data);
-		leveldb::Status st = theApp->getHashNodeDB()->Put(leveldb::WriteOptions(), hash.GetHex(),
-			leveldb::Slice(reinterpret_cast<const char *>(s.getDataPtr()), s.getLength()));
+		std::vector<unsigned char> rawData(9 + data.size());
+		unsigned char* bufPtr = &rawData.front();
+
+		*reinterpret_cast<uint32*>(bufPtr + 0) = ntohl(index);
+		*reinterpret_cast<uint32*>(bufPtr + 4) = ntohl(index);
+		*(bufPtr + 8) = static_cast<unsigned char>(type);
+		memcpy(bufPtr + 9, &data.front(), data.size());
+
+		leveldb::Status st = theApp->getHashNodeDB()->Put(leveldb::WriteOptions(),
+			leveldb::Slice(reinterpret_cast<const char *>(hash.begin()), hash.size()),
+			leveldb::Slice(reinterpret_cast<const char *>(bufPtr), 9 + data.size()));
 		if (!st.ok())
 		{
 			cLog(lsFATAL) << "Failed to store hash node";
@@ -85,23 +89,20 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 	}
 
 	std::string sData;
-	leveldb::Status st = theApp->getHashNodeDB()->Get(leveldb::ReadOptions(), hash.GetHex(), &sData);
+	leveldb::Status st = theApp->getHashNodeDB()->Get(leveldb::ReadOptions(),
+		leveldb::Slice(reinterpret_cast<const char *>(hash.begin()), hash.size()), &sData);
 	if (!st.ok())
 	{
 		assert(st.IsNotFound());
 		return obj;
 	}
 
-	Serializer s(sData);
+	const unsigned char* bufPtr = reinterpret_cast<const unsigned char*>(&sData.front());
+	uint32 index = htonl(*reinterpret_cast<const uint32*>(bufPtr));
+	int htype = bufPtr[8];
 
-	int htype;
-	uint32 index;
-	std::vector<unsigned char> data;
-	s.get8(htype, 0);
-	s.get32(index, 1);
-	s.getRaw(data, 9, s.getLength() - 9);
-
-	obj = boost::make_shared<HashedObject>(static_cast<HashedObjectType>(htype), index, data, hash);
+	obj = boost::make_shared<HashedObject>(static_cast<HashedObjectType>(htype), index,
+		bufPtr + 9, sData.size() - 9, hash);
 	mCache.canonicalize(hash, obj);
 
 	cLog(lsTRACE) << "HOS: " << hash << " fetch: in db";
