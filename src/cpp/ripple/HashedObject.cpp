@@ -50,9 +50,10 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data, hash);
 	if (!mCache.canonicalize(hash, object))
 	{
-		Serializer s(1 + (32 / 8) + data.size());
+		Serializer s(1 + (32 / 8) + (32 / 8) + data.size());
 		s.add8(static_cast<unsigned char>(type));
 		s.add32(index);
+		s.add32(index)
 		s.addRaw(data);
 		leveldb::Status st = theApp->getHashNodeDB()->Put(leveldb::WriteOptions(), hash.GetHex(),
 			leveldb::Slice(reinterpret_cast<const char *>(s.getDataPtr()), s.getLength()));
@@ -97,7 +98,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 	std::vector<unsigned char> data;
 	s.get8(htype, 0);
 	s.get32(index, 1);
-	s.getRaw(data, 5, s.getLength() - 5);
+	s.getRaw(data, 9, s.getLength() - 9);
 
 	obj = boost::make_shared<HashedObject>(static_cast<HashedObjectType>(htype), index, data, hash);
 	mCache.canonicalize(hash, obj);
