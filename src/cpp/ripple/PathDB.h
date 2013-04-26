@@ -1,6 +1,8 @@
 #ifndef PATHDB__H
 #define PATHBD__H
 
+#include <set>
+
 #include "uint256.h"
 #include "TaggedCache.h"
 
