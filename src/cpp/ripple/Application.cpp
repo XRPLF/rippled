@@ -79,6 +79,11 @@ void Application::stop()
 	mAuxService.stop();
 	mJobQueue.shutdown();
 
+#ifdef HAVE_LEVELDB
+	delete mHashNodeDB:
+	mHashNodeDB = NULL;
+#endif
+
 	cLog(lsINFO) << "Stopped: " << mIOService.stopped();
 	Instance::shutdown();
 }
