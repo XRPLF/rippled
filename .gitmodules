@@ -5,3 +5,6 @@
 	path = src/js/sjcl
 	url = git://github.com/bitwiseshiftleft/sjcl.git
 	ignore = dirty
+[submodule "src/cpp/leveldb"]
+	path = src/cpp/leveldb
+	url = https://code.google.com/p/leveldb/
