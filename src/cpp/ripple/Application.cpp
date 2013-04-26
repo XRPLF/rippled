@@ -157,7 +157,7 @@ void Application::setup()
 #ifdef USE_LEVELDB
 	leveldb::Options options;
 	options.create_if_missing = true;
-	leveldb::Status status = leveldb::DB::Open(options, (theConfig.DATA_DIR / "hashnode.ldb").string(), &mHashNodeDB);
+	leveldb::Status status = leveldb::DB::Open(options, (theConfig.DATA_DIR / "hashnode").string(), &mHashNodeDB);
 	if (!status.ok() || !mHashNodeDB)
 	{
 		cLog(lsFATAL) << "Unable to open/create hash node db";
