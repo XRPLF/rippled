@@ -313,9 +313,6 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 	cLog(lsINFO) << "Have the consensus ledger " << mPrevLedgerHash;
 	mHaveCorrectLCL = true;
 
-	if (mAcquiringLedger && mAcquiringLedger->isComplete())
-		theApp->getOPs().clearNeedNetworkLedger();
-
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
 		mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(),
 		mPreviousLedger->getLedgerSeq() + 1);
