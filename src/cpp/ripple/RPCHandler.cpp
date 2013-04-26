@@ -2111,9 +2111,13 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest, int& cost, ScopedLock
 	dbKB = theApp->getLedgerDB()->getDB()->getKBUsedDB();
 	if (dbKB > 0)
 		ret["dbKBLedger"] = dbKB;
+
+#ifndef USE_LEVELDB
 	dbKB = theApp->getHashNodeDB()->getDB()->getKBUsedDB();
 	if (dbKB > 0)
 		ret["dbKBHashNode"] = dbKB;
+#endif
+
 	dbKB = theApp->getTxnDB()->getDB()->getKBUsedDB();
 	if (dbKB > 0)
 		ret["dbKBTransaction"] = dbKB;

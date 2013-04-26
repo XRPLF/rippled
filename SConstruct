@@ -11,6 +11,7 @@ OSX	= bool(platform.mac_ver()[0])
 FreeBSD	= bool('FreeBSD' == platform.system())
 Linux	= bool('Linux' == platform.system())
 Ubuntu	= bool(Linux and 'Ubuntu' == platform.linux_distribution()[0])
+LevelDB	= bool(0)
 
 if OSX or Ubuntu:
 	CTAGS = '/usr/bin/ctags'
@@ -112,6 +113,11 @@ if (int(GCC_VERSION[0]) > 4 or (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1])
 if OSX:
 	env.Append(LINKFLAGS = ['-L/usr/local/opt/openssl/lib'])
 	env.Append(CXXFLAGS = ['-I/usr/local/opt/openssl/include'])
+
+if LevelDB:
+	env.Append(CXXFLAGS = [ '-Ileveldb/include', '-DUSE_LEVELDB'])
+	env.Append(LINKFLAGS = [ '-Lleveldb/lib' ])
+	env.Append(LIBS = [ '-lleveldb'])
 
 DB_SRCS   = glob.glob('src/cpp/database/*.c') + glob.glob('src/cpp/database/*.cpp')
 JSON_SRCS = glob.glob('src/cpp/json/*.cpp')
