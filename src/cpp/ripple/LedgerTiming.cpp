@@ -37,7 +37,7 @@ bool ContinuousLedgerTiming::shouldClose(
 	{ // no transactions so far this interval
 		if (proposersClosed > (previousProposers / 4)) // did we miss a transaction?
 		{
-			cLog(lsTRACE) << "no transactions, many proposers: now (" << proposersClosed << " closed, "
+			cLog(lsDEBUG) << "no transactions, many proposers: now (" << proposersClosed << " closed, "
 				<< previousProposers << " before)";
 			return true;
 		}
@@ -50,7 +50,12 @@ bool ContinuousLedgerTiming::shouldClose(
 			return previousMSeconds - 1000;
 		}
 #endif
-		return currentMSeconds >= (idleInterval * 1000); // normal idle
+		if (currentMSeconds >= (idleInterval * 1000))
+		{
+			cLog(lsDEBUG) << "Closing ledger, normal idle";
+			return true;
+		}
+		return false;
 	}
 
 	if ((openMSeconds < LEDGER_MIN_CLOSE) && ((proposersClosed + proposersValidated) < (previousProposers / 2 )))
@@ -65,6 +70,8 @@ bool ContinuousLedgerTiming::shouldClose(
 		return false;
 	}
 
+	cLog(lsDEBUG) << "Closing due to transactions. pms:" << previousMSeconds << " pc:" << proposersClosed
+		<< "pv:" << proposersValidated << " pp:" << previousProposers;
 	return true; // this ledger should close now
 }
 
