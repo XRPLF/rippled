@@ -71,10 +71,14 @@ public:
 	featureList_t getVetoedFeatures();
 	featureList_t getEnabledFeatures();
 	featureList_t getFeaturesToEnable(uint32 closeTime);	// gets features we would vote to enable
+	featureList_t getDesiredFeatures();						// features we support, do not veto, are not enabled
 
 	void reportValidations(const FeatureSet&);
 
 	Json::Value getJson(int);
+
+	void doValidation(Ledger::ref lastClosedLedger, STObject& baseValidation);
+	void doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition);
 };
 
 class FeeVote
@@ -97,7 +101,7 @@ public:
 	void doValidation(Ledger::ref lastClosedLedger, STObject& baseValidation);
 
 	// vote on the fee we want
-	void doFeeVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition);
+	void doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition);
 };
 
 #endif

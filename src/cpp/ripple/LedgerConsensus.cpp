@@ -326,7 +326,8 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 		 && ((mPreviousLedger->getLedgerSeq() % 256) == 0))
 	{ // previous ledger was flag ledger
 		SHAMap::pointer preSet = initialLedger.peekTransactionMap()->snapShot(true);
-		theApp->getFeeVote().doFeeVoting(mPreviousLedger, preSet);
+		theApp->getFeeVote().doVoting(mPreviousLedger, preSet);
+		theApp->getFeatureTable().doVoting(mPreviousLedger, preSet);
 		initialSet = preSet->snapShot(false);
 	}
 	else
@@ -1222,7 +1223,10 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 				(newLCLHash, theApp->getOPs().getValidationTimeNC(), mValPublic, mProposing);
 		v->setFieldU32(sfLedgerSequence, newLCL->getLedgerSeq());
 		if (((newLCL->getLedgerSeq() + 1) % 256) == 0) // next ledger is flag ledger
+		{
 			theApp->getFeeVote().doValidation(newLCL, *v);
+			theApp->getFeatureTable().doValidation(newLCL, *v);
+		}
 		v->sign(signingHash, mValPrivate);
 		v->setTrusted();
 		theApp->isNew(signingHash); // suppress it if we receive it

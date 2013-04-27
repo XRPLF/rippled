@@ -871,6 +871,7 @@ public:
 	void setValue(const std::vector<uint256>& v)	{ mValue = v; }
 	void addValue(const uint256& v)					{ mValue.push_back(v); }
 	bool hasValue(const uint256& v) const;
+	void sort()										{ std::sort(mValue.begin(), mValue.end()); }
 
 	Json::Value getJson(int) const;
 };

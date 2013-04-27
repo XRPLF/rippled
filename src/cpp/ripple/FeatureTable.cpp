@@ -125,6 +125,18 @@ FeatureTable::featureList_t FeatureTable::getFeaturesToEnable(uint32 closeTime)
 	return ret;
 }
 
+FeatureTable::featureList_t FeatureTable::getDesiredFeatures()
+{
+	featureList_t ret;
+	boost::mutex::scoped_lock sl(mMutex);
+	BOOST_FOREACH(const featureIt_t& it, mFeatureMap)
+	{
+		if (it.second.mSupported && !it.second.mEnabled && !it.second.mVetoed)
+			ret.insert(it.first);
+	}
+	return ret;
+}
+
 void FeatureTable::reportValidations(const FeatureSet& set)
 {
 	if (set.mTrustedValidations == 0)
@@ -186,6 +198,47 @@ void FeatureTable::setSupportedFeatures(const std::vector<uint256>& features)
 	BOOST_FOREACH(const uint256& it, features)
 	{
 		mFeatureMap[it].mSupported = true;
+	}
+}
+
+void FeatureTable::doValidation(Ledger::ref lastClosedLedger, STObject& baseValidation)
+{
+	featureList_t lFeatures = getDesiredFeatures();
+	if (lFeatures.empty())
+		return;
+
+	STVector256 vFeatures(sfFeatures);
+	BOOST_FOREACH(const uint256& uFeature, lFeatures)
+	{
+		vFeatures.addValue(uFeature);
+	}
+	vFeatures.sort();
+	baseValidation.setFieldV256(sfFeatures, vFeatures);
+}
+
+void FeatureTable::doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition)
+{
+	featureList_t lFeatures = getFeaturesToEnable(lastClosedLedger->getCloseTimeNC());
+	if (lFeatures.empty())
+		return;
+
+	BOOST_FOREACH(const uint256& uFeature, lFeatures)
+	{
+		cLog(lsWARNING) << "We are voting for feature " << uFeature;
+		SerializedTransaction trans(ttFEATURE);
+		trans.setFieldAccount(sfAccount, uint160());
+		trans.setFieldH256(sfFeature, uFeature);
+		uint256 txID = trans.getTransactionID();
+		cLog(lsWARNING) << "Vote: " << txID;
+
+		Serializer s;
+		trans.add(s, true);
+
+		SHAMapItem::pointer tItem = boost::make_shared<SHAMapItem>(txID, s.peekData());
+		if (!initialPosition->addGiveItem(tItem, true, false))
+		{
+			cLog(lsWARNING) << "Ledger already had feature transaction";
+		}
 	}
 }
 
@@ -309,7 +362,7 @@ void FeeVote::doValidation(Ledger::ref lastClosedLedger, STObject& validation)
 	}
 }
 
-void FeeVote::doFeeVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition)
+void FeeVote::doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition)
 {
 	// LCL must be flag ledger
 	assert((lastClosedLedger->getLedgerSeq() % 256) == 0);
@@ -367,7 +420,7 @@ void FeeVote::doFeeVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosit
 		if (!initialPosition->addGiveItem(tItem, true, false))
 		{
 			cLog(lsWARNING) << "Ledger already had fee change";
-			}
+		}
 	}
 }
 

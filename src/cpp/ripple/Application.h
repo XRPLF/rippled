@@ -77,6 +77,7 @@ class Application
 	TXQueue					mTxnQueue;
 	OrderBookDB				mOrderBookDB;
 	FeeVote					mFeeVote;
+	FeatureTable			mFeatureTable;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB;
 
@@ -137,6 +138,7 @@ public:
 	OrderBookDB& getOrderBookDB()					{ return mOrderBookDB; }
 	SLECache& getSLECache()							{ return mSLECache; }
 	FeeVote& getFeeVote()							{ return mFeeVote; }
+	FeatureTable& getFeatureTable()					{ return mFeatureTable; }
 
 
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }

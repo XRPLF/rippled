@@ -57,6 +57,7 @@ Application::Application() :
 	mSNTPClient(mAuxService), mJobQueue(mIOService), mFeeTrack(),
 
 	mFeeVote(10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS),
+	mFeatureTable(2 * 7 * 24 * 60 * 60, 200), // two weeks, 200/256
 
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
 	mNetNodeDB(NULL), mPathFindDB(NULL), mHashNodeDB(NULL),
