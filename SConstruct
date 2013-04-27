@@ -47,7 +47,7 @@ else:
 #
 # Put objects files in their own directory.
 #
-for dir in ['ripple', 'database', 'json', 'leveldb/db', 'leveldb/include', 'leveldb/table', 'leveldb/util', 'websocketpp']:
+for dir in ['ripple', 'database', 'json', 'leveldb/db', 'leveldb/port', 'leveldb/include', 'leveldb/table', 'leveldb/util', 'websocketpp']:
 	VariantDir('build/obj/'+dir, 'src/cpp/'+dir, duplicate=0)
 
 # Use openssl
@@ -117,10 +117,10 @@ if OSX:
 	env.Append(CXXFLAGS = ['-I/usr/local/opt/openssl/include'])
 
 if LevelDB:
-	env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb', '-Isrc/cpp/leveldb/include', '-DUSE_LEVELDB', '-DLEVELDB_PLATFORM_POSIX'])
+	env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb', '-Isrc/cpp/leveldb/port', '-Isrc/cpp/leveldb/include', '-DUSE_LEVELDB', '-DLEVELDB_PLATFORM_POSIX'])
 
 	LEVELDB_PREFIX	= 'src/cpp/leveldb'
-	PORTABLE_FILES	=commands.getoutput('find '
+	PORTABLE_FILES	= commands.getoutput('find '
 	    + LEVELDB_PREFIX + '/db '
 	    + LEVELDB_PREFIX + '/util '
 	    + LEVELDB_PREFIX + '/table '
@@ -129,7 +129,7 @@ if LevelDB:
 	    + ' -o -name leveldb_main.cc -prune'
 	    + ' -o -name "*.cc" -print | sort | tr "\n" " "').rstrip()
 	LEVELDB_SRCS	= re.split(' ', PORTABLE_FILES)
-	print LEVELDB_SRCS
+	LEVELDB_SRCS.append(LEVELDB_PREFIX + '/port/port_posix.cc')
 
 DB_SRCS		= glob.glob('src/cpp/database/*.c') + glob.glob('src/cpp/database/*.cpp')
 JSON_SRCS	= glob.glob('src/cpp/json/*.cpp')
