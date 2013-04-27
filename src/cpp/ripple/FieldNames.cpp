@@ -44,7 +44,8 @@ static int initFields()
 static const int f = initFields();
 
 
-SField::SField(SerializedTypeID tid, int fv) : fieldCode(FIELD_CODE(tid, fv)), fieldType(tid), fieldValue(fv)
+SField::SField(SerializedTypeID tid, int fv) : fieldCode(FIELD_CODE(tid, fv)), fieldType(tid), fieldValue(fv),
+	fieldMeta(sMD_Default), fieldNum(++num), signingField(true)
 { // call with the map mutex
 	fieldName = lexical_cast_i(tid) + "/" + lexical_cast_i(fv);
 	codeToField[fieldCode] = this;

@@ -35,7 +35,7 @@ void InfoSub::onSendEmpty()
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
 	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mProposing(false), mValidating(false),
 	mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0), mLastCloseProposers(0),
-	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0),
+	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastCloseTime(0), mLastValidationTime(0),
 	mFetchPack("FetchPack", 2048, 20), mLastFetchPack(0), mFetchSeq(static_cast<uint32>(-1)),
 	mLastLoadBase(256), mLastLoadFactor(256)
 {
@@ -1167,7 +1167,7 @@ std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
 				rawTxn.resize(txnSize);
 
 			int metaSize = 2048;
-			std::vector<unsigned char> rawMeta(2048);
+			std::vector<unsigned char> rawMeta(metaSize);
 			metaSize = db->getBinary("TxnMeta", &rawMeta[0], rawMeta.size());
 			if (metaSize > rawMeta.size())
 			{
@@ -1646,7 +1646,7 @@ void NetworkOPs::unsubAccount(uint64 uSeq, const boost::unordered_set<RippleAddr
 		subInfoMapType::iterator	simIterator	= subMap.find(naAccountID.getAccountID());
 
 
-		if (simIterator == mSubAccount.end())
+		if (simIterator == subMap.end())
 		{
 			// Not found.  Done.
 			nothing();

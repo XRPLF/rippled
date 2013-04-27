@@ -271,7 +271,7 @@ STAmount STAmount::divRound(const STAmount& num, const STAmount& den,
 			--denOffset;
 		}
 
-	bool resultNegative = num.mIsNegative != num.mIsNegative;
+	bool resultNegative = num.mIsNegative != den.mIsNegative;
 	// Compute (numerator * 10^17) / denominator
 	CBigNum v;
 	if ((BN_add_word64(&v, numVal) != 1) || (BN_mul_word64(&v, tenTo17) != 1))
