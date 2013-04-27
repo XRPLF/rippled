@@ -1027,6 +1027,7 @@ bool STAmount::applyOffer(
 	assert(saOfferFunds.isPositive() && saTakerFunds.isPositive());	// Both must have funds.
 	assert(saOfferGets.isPositive() && saOfferPays.isPositive());	// Must not be a null offer.
 
+	// Available = limited by funds.
 	// Limit offerer funds available, by transfer fees.
 	STAmount	saOfferFundsAvailable	= QUALITY_ONE == uOfferPaysRate
 											? saOfferFunds			// As is.
@@ -1067,20 +1068,30 @@ bool STAmount::applyOffer(
 
 	STAmount	saTakerPaysAvailable	= std::min(saTakerPays, saTakerFundsAvailable);
 	cLog(lsINFO) << "applyOffer: saTakerPaysAvailable=" << saTakerPaysAvailable.getFullText();
-	STAmount	saTakerPaysMax			= std::min(saTakerPaysAvailable, saOfferGetsAvailable);
-	cLog(lsINFO) << "applyOffer: saTakerPaysMax=" << saTakerPaysMax.getFullText();
-	STAmount	saTakerGetsMax			= saTakerPaysMax >= saOfferGetsAvailable
+
+	// Limited = limited by other sides raw numbers.
+	// Taker can't pay more to offer than offer can get.
+	STAmount	saTakerPaysLimited		= std::min(saTakerPaysAvailable, saOfferGetsAvailable);
+	cLog(lsINFO) << "applyOffer: saTakerPaysLimited=" << saTakerPaysLimited.getFullText();
+
+	// Align saTakerGetsLimited with saTakerPaysLimited.
+	STAmount	saTakerGetsLimited		= saTakerPaysLimited >= saOfferGetsAvailable
 											? saOfferPaysAvailable									// Potentially take entire offer. Avoid math shenanigans.
-											: std::min(saOfferPaysAvailable, divRound(saTakerPaysMax, saOfferRate, saTakerGets, true));	// Taker a portion of offer.
+											: std::min(saOfferPaysAvailable, divRound(saTakerPaysLimited, saOfferRate, saTakerGets, true));	// Taker a portion of offer.
+
 	cLog(lsINFO) << "applyOffer: saOfferRate=" << saOfferRate.getFullText();
-	cLog(lsINFO) << "applyOffer: saTakerGetsMax=" << saTakerGetsMax.getFullText();
+	cLog(lsINFO) << "applyOffer: saTakerGetsLimited=" << saTakerGetsLimited.getFullText();
+
+	// Got & Paid = Calculated by price and transfered without fees.
+	// Compute from got as when !bSell, we want got to be exact to finish off offer if possible.
 
 	saTakerGot	= bSell
-					? saTakerGetsMax							// Get all available that are paid for.
-					: std::min(saTakerGets, saTakerGetsMax);	// Limit by wanted.
+					? saTakerGetsLimited							// Get all available that are paid for.
+					: std::min(saTakerGets, saTakerGetsLimited);	// Limit by wanted.
 	saTakerPaid	= saTakerGot >= saOfferPaysAvailable
 					? saOfferGetsAvailable
 					: std::min(saOfferGetsAvailable, mulRound(saTakerGot, saOfferRate, saTakerFunds, true));
+	saTakerPaid	= std::min(saTakerPaid, saTakerPaysAvailable);		// Due to rounding must clamp.
 
 	cLog(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
 	cLog(lsINFO) << "applyOffer: saTakerPaid=" << saTakerPaid.getFullText();
