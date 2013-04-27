@@ -12,18 +12,15 @@
   "dependencies": {
     "ripple-lib": "0.7.10",
     "async": "~0.1.22",
-    "ws": "~0.4.22",
     "extend": "~1.1.1",
     "simple-jsonrpc": "~0.0.1"
   },
   "devDependencies": {
-    "grunt": "~0.3.17",
-    "buster": "~0.6.2",
-    "grunt-webpack": "~0.4.0"
+    "buster": "~0.6.2"
   },
 
   "scripts": {
-    "test": "buster test"
+    "test": "node_modules/buster/bin/buster test"
   },
 
   "repository": {
