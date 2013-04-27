@@ -37,6 +37,9 @@ public:
 	HashedObject(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data, const uint256& hash) :
 		mType(type), mHash(hash), mLedgerIndex(index), mData(data) { ; }
 
+	HashedObject(HashedObjectType type, uint32 index, const unsigned char *data, int dlen, const uint256& hash) :
+		mType(type), mHash(hash), mLedgerIndex(index), mData(data, data + dlen) { ; }
+
 	const std::vector<unsigned char>& getData() const	{ return mData; }
 	const uint256& getHash() const						{ return mHash; }
 	HashedObjectType getType() const					{ return mType; }
