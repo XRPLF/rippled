@@ -117,16 +117,19 @@ if OSX:
 	env.Append(CXXFLAGS = ['-I/usr/local/opt/openssl/include'])
 
 if LevelDB:
-	env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb', '-Isrc/cpp/leveldb/include', '-DUSE_LEVELDB'])
+	env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb', '-Isrc/cpp/leveldb/include', '-DUSE_LEVELDB', '-DLEVELDB_PLATFORM_POSIX'])
 
 	LEVELDB_PREFIX	= 'src/cpp/leveldb'
 	PORTABLE_FILES	=commands.getoutput('find '
-	    + LEVELDB_PREFIX
+	    + LEVELDB_PREFIX + '/db '
+	    + LEVELDB_PREFIX + '/util '
+	    + LEVELDB_PREFIX + '/table '
 	    + ' -name *test*.cc -prune'
 	    + ' -o -name *_bench.cc -prune'
 	    + ' -o -name leveldb_main.cc -prune'
 	    + ' -o -name "*.cc" -print | sort | tr "\n" " "').rstrip()
 	LEVELDB_SRCS	= re.split(' ', PORTABLE_FILES)
+	print LEVELDB_SRCS
 
 DB_SRCS		= glob.glob('src/cpp/database/*.c') + glob.glob('src/cpp/database/*.cpp')
 JSON_SRCS	= glob.glob('src/cpp/json/*.cpp')
