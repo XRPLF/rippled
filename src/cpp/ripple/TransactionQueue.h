@@ -55,7 +55,7 @@ protected:
 
 public:
 
-	TXQueue() { ; }
+	TXQueue() : mRunning(false) { ; }
 
 	// Return: true = must dispatch signature checker thread
 	bool addEntryForSigCheck(TXQEntry::ref);

@@ -82,7 +82,7 @@ public:
 		fieldNum = ++num;
 	}
 
-	SField(int fc) : fieldCode(fc), fieldType(STI_UNKNOWN), fieldValue(0), fieldMeta(sMD_Never)
+	SField(int fc) : fieldCode(fc), fieldType(STI_UNKNOWN), fieldValue(0), fieldMeta(sMD_Never), signingField(true)
 	{
 		boost::mutex::scoped_lock sl(mapMutex);
 		fieldNum = ++num;

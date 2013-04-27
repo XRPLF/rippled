@@ -669,7 +669,6 @@ Ledger::pointer Ledger::getSQL1(SqliteStatement *stmt)
 	uint32 closingTime, prevClosingTime, ledgerSeq;
 	int closeResolution;
 	unsigned closeFlags;
-	std::string hash;
 
 	ledgerHash.SetHexExact(stmt->peekString(0));
 	prevHash.SetHexExact(stmt->peekString(1));

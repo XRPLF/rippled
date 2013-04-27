@@ -54,7 +54,7 @@ protected:
 public:
 
 	FeatureTable(uint32 majorityTime, int majorityFraction)
-		: mMajorityTime(majorityTime), mMajorityFraction(majorityFraction), mFirstReport(0)
+		: mMajorityTime(majorityTime), mMajorityFraction(majorityFraction), mFirstReport(0), mLastReport(0)
 	{ ; }
 
 	bool vetoFeature(const uint256& feature);

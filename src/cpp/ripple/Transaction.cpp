@@ -62,7 +62,7 @@ Transaction::Transaction(
 	uint32					uSeq,
 	const STAmount&			saFee,
 	uint32					uSourceTag) :
-		mAccountFrom(naSourceAccount), mFromPubKey(naPublicKey), mStatus(NEW), mResult(temUNCERTAIN)
+		mAccountFrom(naSourceAccount), mFromPubKey(naPublicKey), mInLedger(0), mStatus(NEW), mResult(temUNCERTAIN)
 {
 	assert(mFromPubKey.isValid());
 

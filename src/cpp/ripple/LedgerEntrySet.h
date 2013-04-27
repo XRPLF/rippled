@@ -58,7 +58,7 @@ protected:
 	int mSeq;
 
 	LedgerEntrySet(Ledger::ref ledger, const std::map<uint256, LedgerEntrySetEntry> &e,
-		const TransactionMetaSet& s, int m) : mLedger(ledger), mEntries(e), mSet(s), mSeq(m) { ; }
+		const TransactionMetaSet& s, int m) : mLedger(ledger), mEntries(e), mSet(s), mParams(tapNONE), mSeq(m) { ; }
 
 	SLE::pointer getForMod(const uint256& node, Ledger::ref ledger,
 		boost::unordered_map<uint256, SLE::pointer>& newMods);

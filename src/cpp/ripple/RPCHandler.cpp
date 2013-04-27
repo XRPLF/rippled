@@ -66,10 +66,10 @@ int iAdminGet(const Json::Value& jvRequest, const std::string& strRemoteIp)
 	return iRole;
 }
 
-RPCHandler::RPCHandler(NetworkOPs* netOps) : mNetOps(netOps)
+RPCHandler::RPCHandler(NetworkOPs* netOps) : mNetOps(netOps), mRole(FORBID)
 { ; }
 
-RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub::pointer infoSub) : mNetOps(netOps), mInfoSub(infoSub)
+RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub::pointer infoSub) : mNetOps(netOps), mInfoSub(infoSub), mRole(FORBID)
 { ; }
 
 Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)

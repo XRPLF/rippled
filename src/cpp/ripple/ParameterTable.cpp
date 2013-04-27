@@ -39,6 +39,7 @@ bool ParameterNode::setValue(const std::string& name, const Json::Value& value, 
 		error = Json::objectValue;
 		error["error"] = "Node has no children";
 		error["name"] = it->second->getName();
+		return false;
 	}
 
 	return n->setValue(name.substr(dot + 1), value, error);
@@ -74,7 +75,6 @@ bool ParameterNode::addNode(const std::string& name, Parameter::ref node)
 		if (!n)
 			return false;
 	}
-
 	return n->addNode(name.substr(dot + 1), node);
 }
 
