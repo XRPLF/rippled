@@ -1727,6 +1727,7 @@ void RippleCalc::calcNodeRipple(
 		% saPrvAct.getFullText()
 		% saCurAct.getFullText());
 
+	assert(saCurReq.isPositive());
 	assert(saPrvReq.getCurrency() == saCurReq.getCurrency());
 
 	const bool		bPrvUnlimited	= saPrvReq.isNegative();
@@ -1915,9 +1916,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 		{
 			// account --> ACCOUNT --> $
 			// Overall deliverable.
-			const STAmount&	saCurWantedReq	= bPrvAccount
-												? std::min(psCur.saOutReq-psCur.saOutAct, saPrvLimit+saPrvOwed)	// If previous is an account, limit.
-												: psCur.saOutReq-psCur.saOutAct;								// Previous is an offer, no limit: redeem own IOUs.
+			const STAmount&	saCurWantedReq	= std::min(psCur.saOutReq-psCur.saOutAct, saPrvLimit+saPrvOwed);	// If previous is an account, limit.
 			STAmount		saCurWantedAct(saCurWantedReq.getCurrency(), saCurWantedReq.getIssuer());
 
 			cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: account --> ACCOUNT --> $ : saCurWantedReq=%s")
@@ -2079,13 +2078,15 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 		if (uNode == uLast)
 		{
 			// offer --> ACCOUNT --> $
-			const STAmount&	saCurWantedReq	= bPrvAccount
-												? std::min(psCur.saOutReq-psCur.saOutAct, saPrvLimit+saPrvOwed)	// If previous is an account, limit.
-												: psCur.saOutReq-psCur.saOutAct;								// Previous is an offer, no limit: redeem own IOUs.
+			const STAmount&	saCurWantedReq	= psCur.saOutReq-psCur.saOutAct;								// Previous is an offer, no limit: redeem own IOUs.
 			STAmount		saCurWantedAct(saCurWantedReq.getCurrency(), saCurWantedReq.getIssuer());
 
-			cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> $ : saCurWantedReq=%s")
-				% saCurWantedReq.getFullText());
+			cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> $ : saCurWantedReq=%s saOutAct=%s saOutReq=%s")
+				% saCurWantedReq.getFullText()
+				% psCur.saOutAct
+				% psCur.saOutReq);
+
+			assert(saCurWantedReq.isPositive());
 
 			// Rate: quality in : 1.0
 			calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvDeliverReq, saCurWantedReq, saPrvDeliverAct, saCurWantedAct, uRateMax);
@@ -2771,11 +2772,18 @@ int iPass	= 0;
 	    // Find the best path.
 	    BOOST_FOREACH(PathState::ref pspCur, vpsExpanded)
 	    {
-		    if (pspCur->uQuality)
+		    if (pspCur->uQuality)											// Only do active paths.
 			{
-				bMultiQuality	= 1 == vpsExpanded.size()-iDry,				// Computing the only non-dry path, compute multi-quality.
+				bMultiQuality		= 1 == vpsExpanded.size()-iDry,			// Computing the only non-dry path, compute multi-quality.
+
 				pspCur->saInAct		= saMaxAmountAct;						// Update to current amount processed.
 				pspCur->saOutAct	= saDstAmountAct;
+
+				tLog(pspCur->saInReq.isPositive() && pspCur->saInAct >= pspCur->saInReq, lsWARNING) << boost::str(boost::format("rippleCalc: DONE: saInAct=%s saInReq=%s")
+					% pspCur->saInAct
+					% pspCur->saInReq);
+
+				assert(pspCur->saInReq.isNegative() || pspCur->saInAct < pspCur->saInReq);	// Error if done.
 
 				rc.pathNext(pspCur, bMultiQuality, lesCheckpoint, lesActive);	// Compute increment.
 				cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: AFTER: mIndex=%d uQuality=%d rate=%s")
