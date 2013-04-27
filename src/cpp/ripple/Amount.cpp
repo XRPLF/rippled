@@ -281,7 +281,7 @@ bool STAmount::setValue(const std::string& sAmount)
 
 	try
 	{
-		if ((smMatch[2].length() + smMatch[4].length()) > 18)
+		if ((smMatch[2].length() + smMatch[4].length()) > 25)
 		{
 			cLog(lsWARNING) << "Overlong number: " << sAmount;
 			return false;
