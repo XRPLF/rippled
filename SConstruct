@@ -2,9 +2,10 @@
 # Ripple - SConstruct
 #
 
+import commands
+import copy
 import glob
 import platform
-import commands
 import re
 
 LevelDB	= bool(0)
@@ -46,7 +47,7 @@ else:
 #
 # Put objects files in their own directory.
 #
-for dir in ['ripple', 'database', 'json', 'websocketpp']:
+for dir in ['ripple', 'database', 'json', 'leveldb/db', 'leveldb/include', 'leveldb/table', 'leveldb/util', 'websocketpp']:
 	VariantDir('build/obj/'+dir, 'src/cpp/'+dir, duplicate=0)
 
 # Use openssl
@@ -116,12 +117,19 @@ if OSX:
 	env.Append(CXXFLAGS = ['-I/usr/local/opt/openssl/include'])
 
 if LevelDB:
-	env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb/include', '-DUSE_LEVELDB'])
-	env.Append(LINKFLAGS = [ '-Lsrc/cpp/leveldb' ])
-	env.Append(LIBS = [ '-lleveldb'])
+	env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb', '-Isrc/cpp/leveldb/include', '-DUSE_LEVELDB'])
 
-DB_SRCS   = glob.glob('src/cpp/database/*.c') + glob.glob('src/cpp/database/*.cpp')
-JSON_SRCS = glob.glob('src/cpp/json/*.cpp')
+	LEVELDB_PREFIX	= 'src/cpp/leveldb'
+	PORTABLE_FILES	=commands.getoutput('find '
+	    + LEVELDB_PREFIX
+	    + ' -name *test*.cc -prune'
+	    + ' -o -name *_bench.cc -prune'
+	    + ' -o -name leveldb_main.cc -prune'
+	    + ' -o -name "*.cc" -print | sort | tr "\n" " "').rstrip()
+	LEVELDB_SRCS	= re.split(' ', PORTABLE_FILES)
+
+DB_SRCS		= glob.glob('src/cpp/database/*.c') + glob.glob('src/cpp/database/*.cpp')
+JSON_SRCS	= glob.glob('src/cpp/json/*.cpp')
 
 WEBSOCKETPP_SRCS = [
 	'src/cpp/websocketpp/src/base64/base64.cpp',
@@ -146,7 +154,14 @@ UNUSED_SRCS = []
 for file in UNUSED_SRCS:
 	RIPPLE_SRCS.remove(file)
 
+# Only tag actual Ripple files.
+TAG_SRCS    = copy.copy(RIPPLE_SRCS)
+
+# Add other sources.
 RIPPLE_SRCS += DB_SRCS + JSON_SRCS + WEBSOCKETPP_SRCS
+
+if LevelDB:
+    RIPPLE_SRCS += LEVELDB_SRCS
 
 # Derive the object files from the source files.
 RIPPLE_OBJS = []
@@ -154,11 +169,15 @@ RIPPLE_OBJS = []
 RIPPLE_OBJS += PROTO_SRCS
 
 for file in RIPPLE_SRCS:
-	RIPPLE_OBJS.append('build/obj/' + file[8:])
+    # Strip src/cpp/
+    RIPPLE_OBJS.append('build/obj/' + file[8:])
+#
+# Targets
+#
 
 rippled = env.Program('build/rippled', RIPPLE_OBJS)
 
-tags = env.CTags('tags', RIPPLE_SRCS)
+tags	= env.CTags('tags', TAG_SRCS)
 
 Default(rippled, tags)
 
