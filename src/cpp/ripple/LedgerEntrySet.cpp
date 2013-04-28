@@ -1169,7 +1169,7 @@ STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& 
 			saAmount	= saBalance-uReserve;
 		}
 
-		cLog(lsDEBUG) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s saBalance=%s uReserve=%d")
+		cLog(lsTRACE) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s saBalance=%s uReserve=%d")
 			% RippleAddress::createHumanAccountID(uAccountID)
 			% saAmount.getFullText()
 			% saBalance.getFullText()
@@ -1179,7 +1179,7 @@ STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& 
 	{
 		saAmount	= rippleHolds(uAccountID, uCurrencyID, uIssuerID);
 
-		cLog(lsDEBUG) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s")
+		cLog(lsTRACE) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s")
 			% RippleAddress::createHumanAccountID(uAccountID)
 			% saAmount.getFullText());
 	}
