@@ -21,6 +21,7 @@
 
 class Peer;
 class LedgerConsensus;
+class PFRequest;
 
 DEFINE_INSTANCE(InfoSub);
 
@@ -29,6 +30,7 @@ class InfoSub : public IS_INSTANCE(InfoSub)
 protected:
 	boost::unordered_set<RippleAddress>			mSubAccountInfo;
 	boost::unordered_set<RippleAddress>			mSubAccountTransaction;
+	boost::shared_ptr<PFRequest>				mPFRequest;
 
 	boost::mutex								mLockInfo;
 
