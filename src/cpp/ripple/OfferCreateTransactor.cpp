@@ -49,14 +49,14 @@ bool OfferCreateTransactor::bValidOffer(
 	}
 	else
 	{
-		cLog(lsINFO) << "bValidOffer: saOfferPays=" << saOfferPays.getFullText();
+		cLog(lsTRACE) << "bValidOffer: saOfferPays=" << saOfferPays.getFullText();
 
 		saOfferFunds	= mEngine->getNodes().accountFunds(uOfferOwnerID, saOfferPays);
 
 		if (!saOfferFunds.isPositive())
 		{
 			// Offer is unfunded, possibly due to previous balance action.
-			cLog(lsINFO) << "bValidOffer: offer unfunded: delete";
+			cLog(lsDEBUG) << "bValidOffer: offer unfunded: delete";
 
 			boost::unordered_set<uint160>::iterator	account	= usAccountTouched.find(uOfferOwnerID);
 			if (account != usAccountTouched.end())
@@ -111,7 +111,7 @@ TER OfferCreateTransactor::takeOffers(
 
 	assert(saTakerPays && saTakerGets);
 
-	cLog(lsINFO) << "takeOffers: bSell: " << bSell << ": against book: " << uBookBase.ToString();
+	cLog(lsDEBUG) << "takeOffers: bSell: " << bSell << ": against book: " << uBookBase.ToString();
 
 	LedgerEntrySet&			lesActive			= mEngine->getNodes();
 	uint256					uTipIndex			= uBookBase;
@@ -148,14 +148,14 @@ TER OfferCreateTransactor::takeOffers(
 				uTipIndex		= sleOfferDir->getIndex();
 				uTipQuality		= Ledger::getQuality(uTipIndex);
 
-				cLog(lsINFO) << boost::str(boost::format("takeOffers: possible counter offer found: uTipQuality=%d uTipIndex=%s")
+				cLog(lsDEBUG) << boost::str(boost::format("takeOffers: possible counter offer found: uTipQuality=%d uTipIndex=%s")
 					% uTipQuality
 					% uTipIndex.ToString());
 
 			}
 			else
 			{
-				cLog(lsINFO) << "takeOffers: counter offer book is empty: "
+				cLog(lsTRACE) << "takeOffers: counter offer book is empty: "
 					<< uTipIndex.ToString()
 					<< " ... "
 					<< uBookEnd.ToString();
@@ -165,7 +165,7 @@ TER OfferCreateTransactor::takeOffers(
 		if (!saTakerFunds.isPositive())						// Taker has no funds.
 		{
 			// Done. Ran out of funds on previous round. As fees aren't calculated directly in this routine, funds are checked here.
-			cLog(lsINFO) << "takeOffers: done: taker unfunded.";
+			cLog(lsDEBUG) << "takeOffers: done: taker unfunded.";
 
 			bUnfunded	= true;								// Don't create an order.
 			terResult	= tesSUCCESS;
@@ -177,7 +177,7 @@ TER OfferCreateTransactor::takeOffers(
 			// Done.
 			STAmount	saTipRate			= sleOfferDir ? STAmount::setRate(uTipQuality) : saTakerRate;
 
-			cLog(lsINFO) << boost::str(boost::format("takeOffers: done: dir=%d uTakeQuality=%d %c uTipQuality=%d saTakerRate=%s %c saTipRate=%s bPassive=%d")
+			cLog(lsDEBUG) << boost::str(boost::format("takeOffers: done: dir=%d uTakeQuality=%d %c uTipQuality=%d saTakerRate=%s %c saTipRate=%s bPassive=%d")
 				% !!sleOfferDir
 				% uTakeQuality
 				% (uTakeQuality == uTipQuality
@@ -200,7 +200,7 @@ TER OfferCreateTransactor::takeOffers(
 		else
 		{
 			// Have an offer directory to consider.
-			cLog(lsINFO) << "takeOffers: considering dir: " << sleOfferDir->getJson(0);
+			cLog(lsTRACE) << "takeOffers: considering dir: " << sleOfferDir->getJson(0);
 
 			SLE::pointer	sleBookNode;
 			unsigned int	uBookEntry;
@@ -210,7 +210,7 @@ TER OfferCreateTransactor::takeOffers(
 
 			SLE::pointer	sleOffer		= mEngine->entryCache(ltOFFER, uOfferIndex);
 
-			cLog(lsINFO) << "takeOffers: considering offer : " << sleOffer->getJson(0);
+			cLog(lsDEBUG) << "takeOffers: considering offer : " << sleOffer->getJson(0);
 
 			const uint160	uOfferOwnerID	= sleOffer->getFieldAccount(sfAccount).getAccountID();
 			STAmount		saOfferPays		= sleOffer->getFieldAmount(sfTakerGets);
@@ -232,17 +232,17 @@ TER OfferCreateTransactor::takeOffers(
 				STAmount	saOfferIssuerFee;
 				STAmount	saOfferRate	= STAmount::setRate(uTipQuality);
 
-				cLog(lsINFO) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
-				cLog(lsINFO) << "takeOffers: applyOffer:    saTakerPaid: " << saTakerPaid.getFullText();
-				cLog(lsINFO) << "takeOffers: applyOffer:   saTakerFunds: " << saTakerFunds.getFullText();
-				cLog(lsINFO) << "takeOffers: applyOffer:   saOfferFunds: " << saOfferFunds.getFullText();
-				cLog(lsINFO) << "takeOffers: applyOffer:    saOfferPays: " << saOfferPays.getFullText();
-				cLog(lsINFO) << "takeOffers: applyOffer:    saOfferGets: " << saOfferGets.getFullText();
-				cLog(lsINFO) << "takeOffers: applyOffer:    saOfferRate: " << saOfferRate.getFullText();
-				cLog(lsINFO) << "takeOffers: applyOffer: saSubTakerPays: " << saSubTakerPays.getFullText();
-				cLog(lsINFO) << "takeOffers: applyOffer: saSubTakerGets: " << saSubTakerGets.getFullText();
-				cLog(lsINFO) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
-				cLog(lsINFO) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText();
+				cLog(lsDEBUG) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
+				cLog(lsDEBUG) << "takeOffers: applyOffer:    saTakerPaid: " << saTakerPaid.getFullText();
+				cLog(lsDEBUG) << "takeOffers: applyOffer:   saTakerFunds: " << saTakerFunds.getFullText();
+				cLog(lsDEBUG) << "takeOffers: applyOffer:   saOfferFunds: " << saOfferFunds.getFullText();
+				cLog(lsDEBUG) << "takeOffers: applyOffer:    saOfferPays: " << saOfferPays.getFullText();
+				cLog(lsDEBUG) << "takeOffers: applyOffer:    saOfferGets: " << saOfferGets.getFullText();
+				cLog(lsDEBUG) << "takeOffers: applyOffer:    saOfferRate: " << saOfferRate.getFullText();
+				cLog(lsDEBUG) << "takeOffers: applyOffer: saSubTakerPays: " << saSubTakerPays.getFullText();
+				cLog(lsDEBUG) << "takeOffers: applyOffer: saSubTakerGets: " << saSubTakerGets.getFullText();
+				cLog(lsDEBUG) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
+				cLog(lsDEBUG) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText();
 
 				bool	bOfferDelete	= STAmount::applyOffer(
 					bSell,
@@ -260,8 +260,8 @@ TER OfferCreateTransactor::takeOffers(
 					saTakerIssuerFee,
 					saOfferIssuerFee);
 
-				cLog(lsINFO) << "takeOffers: applyOffer: saSubTakerPaid: " << saSubTakerPaid.getFullText();
-				cLog(lsINFO) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText();
+				cLog(lsDEBUG) << "takeOffers: applyOffer: saSubTakerPaid: " << saSubTakerPaid.getFullText();
+				cLog(lsDEBUG) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText();
 
 				// Adjust offer
 
@@ -276,7 +276,7 @@ TER OfferCreateTransactor::takeOffers(
 				if (bOfferDelete)
 				{
 					// Offer now fully claimed or now unfunded.
-					cLog(lsINFO) << "takeOffers: Offer claimed: Delete.";
+					cLog(lsDEBUG) << "takeOffers: Offer claimed: Delete.";
 
 					usOfferUnfundedBecame.insert(uOfferIndex);	// Delete unfunded offer on success.
 
@@ -285,7 +285,7 @@ TER OfferCreateTransactor::takeOffers(
 				}
 				else if (saSubTakerGot)
 				{
-					cLog(lsINFO) << "takeOffers: Offer partial claim.";
+					cLog(lsDEBUG) << "takeOffers: Offer partial claim.";
 
 					if (!saOfferPays.isPositive() || !saOfferGets.isPositive())
 					{
@@ -297,7 +297,7 @@ TER OfferCreateTransactor::takeOffers(
 				else
 				{
 					// Taker got nothing, probably due to rounding. Consider taker unfunded.
-					cLog(lsINFO) << "takeOffers: No claim.";
+					cLog(lsDEBUG) << "takeOffers: No claim.";
 
 					bUnfunded	= true;
 					terResult	= tesSUCCESS;					// Done.
@@ -325,10 +325,10 @@ TER OfferCreateTransactor::takeOffers(
 
 						STAmount	saTakerUsed	= STAmount::multiply(saSubTakerGot, saTakerRate, saTakerPays);
 
-						cLog(lsINFO) << "takeOffers: applyOffer:   saTakerCould: " << saTakerCould.getFullText();
-						cLog(lsINFO) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText();
-						cLog(lsINFO) << "takeOffers: applyOffer:    saTakerRate: " << saTakerRate.getFullText();
-						cLog(lsINFO) << "takeOffers: applyOffer:    saTakerUsed: " << saTakerUsed.getFullText();
+						cLog(lsDEBUG) << "takeOffers: applyOffer:   saTakerCould: " << saTakerCould.getFullText();
+						cLog(lsDEBUG) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText();
+						cLog(lsDEBUG) << "takeOffers: applyOffer:    saTakerRate: " << saTakerRate.getFullText();
+						cLog(lsDEBUG) << "takeOffers: applyOffer:    saTakerUsed: " << saTakerUsed.getFullText();
 
 						saSubTakerPaid	= std::min(saTakerCould, saTakerUsed);
 					}
@@ -342,14 +342,14 @@ TER OfferCreateTransactor::takeOffers(
 		}
 	}
 
-	cLog(lsINFO) << "takeOffers: " << transToken(terResult);
+	cLog(lsDEBUG) << "takeOffers: " << transToken(terResult);
 
 	if (tesSUCCESS == terResult)
 	{
 		// On success, delete offers that became unfunded.
 		BOOST_FOREACH(const uint256& uOfferIndex, usOfferUnfundedBecame)
 		{
-			cLog(lsINFO) << "takeOffers: became unfunded: " << uOfferIndex.ToString();
+			cLog(lsDEBUG) << "takeOffers: became unfunded: " << uOfferIndex.ToString();
 
 			terResult	= lesActive.offerDelete(uOfferIndex);
 			if (tesSUCCESS != terResult)
@@ -357,14 +357,14 @@ TER OfferCreateTransactor::takeOffers(
 		}
 	}
 
-	cLog(lsINFO) << "takeOffers< " << transToken(terResult);
+	cLog(lsDEBUG) << "takeOffers< " << transToken(terResult);
 
 	return terResult;
 }
 
 TER OfferCreateTransactor::doApply()
 {
-	cLog(lsDEBUG) << "OfferCreate> " << mTxn.getJson(0);
+	cLog(lsTRACE) << "OfferCreate> " << mTxn.getJson(0);
 	const uint32			uTxFlags			= mTxn.getFlags();
 	const bool				bPassive			= isSetBit(uTxFlags, tfPassive);
 	const bool				bImmediateOrCancel	= isSetBit(uTxFlags, tfImmediateOrCancel);
@@ -373,7 +373,7 @@ TER OfferCreateTransactor::doApply()
 	STAmount				saTakerPays			= mTxn.getFieldAmount(sfTakerPays);
 	STAmount				saTakerGets			= mTxn.getFieldAmount(sfTakerGets);
 
-	cLog(lsINFO) << boost::str(boost::format("OfferCreate: saTakerPays=%s saTakerGets=%s")
+	cLog(lsTRACE) << boost::str(boost::format("OfferCreate: saTakerPays=%s saTakerGets=%s")
 		% saTakerPays.getFullText()
 		% saTakerGets.getFullText());
 
@@ -385,7 +385,7 @@ TER OfferCreateTransactor::doApply()
 
 	const uint256			uLedgerIndex		= Ledger::getOfferIndex(mTxnAccountID, uSequence);
 
-	cLog(lsINFO) << "OfferCreate: Creating offer node: " << uLedgerIndex.ToString() << " uSequence=" << uSequence;
+	cLog(lsTRACE) << "OfferCreate: Creating offer node: " << uLedgerIndex.ToString() << " uSequence=" << uSequence;
 
 	const uint160			uPaysCurrency		= saTakerPays.getCurrency();
 	const uint160			uGetsCurrency		= saTakerGets.getCurrency();

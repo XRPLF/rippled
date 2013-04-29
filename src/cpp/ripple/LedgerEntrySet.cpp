@@ -553,7 +553,7 @@ TER LedgerEntrySet::dirAdd(
 	const uint256&						uLedgerIndex,
 	FUNCTION_TYPE<void (SLE::ref)>		fDescriber)
 {
-	cLog(lsDEBUG) << boost::str(boost::format("dirAdd: uRootIndex=%s uLedgerIndex=%s")
+	cLog(lsTRACE) << boost::str(boost::format("dirAdd: uRootIndex=%s uLedgerIndex=%s")
 		% uRootIndex.ToString()
 		% uLedgerIndex.ToString());
 
@@ -637,9 +637,9 @@ TER LedgerEntrySet::dirAdd(
 	svIndexes.peekValue().push_back(uLedgerIndex);	// Append entry.
 	sleNode->setFieldV256(sfIndexes, svIndexes);	// Save entry.
 
-	cLog(lsDEBUG) << "dirAdd:   creating: root: " << uRootIndex.ToString();
-	cLog(lsDEBUG) << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString();
-	cLog(lsDEBUG) << "dirAdd:  appending: Node: " << strHex(uNodeDir);
+	cLog(lsTRACE) << "dirAdd:   creating: root: " << uRootIndex.ToString();
+	cLog(lsTRACE) << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString();
+	cLog(lsTRACE) << "dirAdd:  appending: Node: " << strHex(uNodeDir);
 	// cLog(lsINFO) << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString();
 
 	return tesSUCCESS;
@@ -1328,7 +1328,7 @@ TER LedgerEntrySet::trustDelete(SLE::ref sleRippleState, const uint160& uLowAcco
 		terResult	= dirDelete(false, uHighNode, Ledger::getOwnerDirIndex(uHighAccountID), sleRippleState->getIndex(), false, !bHighNode);
 	}
 
-	cLog(lsINFO) << "trustDelete: Deleting ripple line: state";
+	cLog(lsTRACE) << "trustDelete: Deleting ripple line: state";
 	entryDelete(sleRippleState);
 
 	return terResult;
