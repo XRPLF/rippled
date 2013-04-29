@@ -69,6 +69,7 @@ class RPCHandler
 	Json::Value doNicknameInfo(Json::Value params, int& cost, ScopedLock& mlh);
 	Json::Value doOwnerInfo(Json::Value params, int& cost, ScopedLock& mlh);
 	Json::Value doPeers(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doPathFind(Json::Value params, int& cost, ScopedLock& mlh);
 	Json::Value doPing(Json::Value params, int& cost, ScopedLock& mlh);
 	Json::Value doProfile(Json::Value params, int& cost, ScopedLock& mlh);
 	Json::Value doRandom(Json::Value jvRequest, int& cost, ScopedLock& mlh);

@@ -1166,6 +1166,30 @@ Json::Value RPCHandler::doRandom(Json::Value jvRequest, int& cost, ScopedLock& M
 	}
 }
 
+Json::Value RPCHandler::doPathFind(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+{
+	if (!jvRequest.isMember("subcommand") || !jvRequest["subcommand"].isString())
+		return rpcError(rpcINVALID_PARAMS);
+	std::string sSubCommand = jvRequest["subcommand"].asString();
+
+	if (sSubCommand == "create")
+	{
+		// WRITEME
+	}
+
+	if (sSubCommand == "close")
+	{
+		// WRITEME
+	}
+
+	if (sSubCommand == "status")
+	{
+		// WRITEME
+	}
+
+	return rpcError(rpcINVALID_PARAMS);
+}
+
 // TODO:
 // - Add support for specifying non-endpoint issuer.
 // - Return fully expanded path with proof.
@@ -3292,6 +3316,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 //		{	"nickname_info",		&RPCHandler::doNicknameInfo,	    false,	optCurrent	},
 		{	"owner_info",			&RPCHandler::doOwnerInfo,		    false,	optCurrent	},
 		{	"peers",				&RPCHandler::doPeers,			    true,	optNone		},
+		{	"path_find",			&RPCHandler::doPathFind,			false,	optCurrent	},
 		{	"ping",					&RPCHandler::doPing,			    false,	optNone		},
 //		{	"profile",				&RPCHandler::doProfile,			    false,	optCurrent	},
 		{	"random",				&RPCHandler::doRandom,				false,	optNone		},
