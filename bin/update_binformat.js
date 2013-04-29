@@ -13,9 +13,7 @@
 
 var filenameProto = __dirname + '/../src/cpp/ripple/SerializeProto.h',
     filenameTxFormatsH = __dirname + '/../src/cpp/ripple/TransactionFormats.h',
-    filenameTxFormats = __dirname + '/../src/cpp/ripple/TransactionFormats.cpp',
-
-    filenameOut = __dirname + '/../src/js/binformat.js';
+    filenameTxFormats = __dirname + '/../src/cpp/ripple/TransactionFormats.cpp';
 
 var fs = require('fs');
 
@@ -117,5 +115,5 @@ removeFinalComma(output);
 output.push('};');
 output.push('');
 
-fs.writeFileSync(filenameOut, output.join('\n'));
+console.log(output.join('\n'));
 
