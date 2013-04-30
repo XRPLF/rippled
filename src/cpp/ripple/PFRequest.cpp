@@ -46,38 +46,77 @@ int PFRequest::parseJson(const Json::Value& jvParams, bool complete)
 
 	if (jvParams.isMember("source_account"))
 	{
+		if (!raSrcAccount.setAccountID(jvParams["source_account"].asString()))
+		{
+			jvStatus = rpcError(rpcSRC_ACT_MALFORMED);
+			return PFR_PJ_INVALID;
+		}
 	}
 	else if (complete)
 	{
-		jvStatus = rpcSRC_ACT_MISSING;
+		jvStatus = rpcError(rpcSRC_ACT_MISSING);
 		return PFR_PJ_INVALID;
 	}
 
 	if (jvParams.isMember("destination_account"))
 	{
+		if (!raDstAccount.setAccountID(jvParams["source_account"].asString()))
+		{
+			jvStatus = rpcError(rpcDST_ACT_MALFORMED);
+			return PFR_PJ_INVALID;
+		}
 	}
 	else if (complete)
 	{
-		jvStatus = rpcDST_ACT_MISSING;
+		jvStatus = rpcError(rpcDST_ACT_MISSING);
 		return PFR_PJ_INVALID;
 	}
 
 	if (jvParams.isMember("destination_amount"))
 	{
+		if (!saDstAmount.bSetJson(jvParams["destination_amount"]) ||
+			(saDstAmount.getCurrency().isZero() != saDstAmount.getIssuer().isZero()) ||
+			(saDstAmount.getCurrency() == CURRENCY_BAD))
+		{
+			jvStatus = rpcError(rpcDST_AMT_MALFORMED);
+			return PFR_PJ_INVALID;
+		}
 	}
 	else if (complete)
 	{
+		jvStatus = rpcError(rpcDST_ACT_MISSING);
+		return PFR_PJ_INVALID;
 	}
 
 	if (jvParams.isMember("source_currencies"))
 	{
+		const Json::Value& jvSrcCur = jvParams["source_currencies"];
+		if (!jvSrcCur.isArray())
+		{
+			jvStatus = rpcError(rpcSRC_CUR_MALFORMED);
+			return PFR_PJ_INVALID;
+		}
+		sciSourceCurrencies.clear();
+		for (unsigned i = 0; i < jvSrcCur.size(); ++i)
+		{
+			const Json::Value& jvCur = jvSrcCur[i];
+			uint160 uCur, uIss;
+			if (!jvCur.isMember("currency") || !STAmount::currencyFromString(uCur, jvCur["currency"].asString()))
+			{
+				jvStatus = rpcError(rpcSRC_CUR_MALFORMED);
+				return PFR_PJ_INVALID;
+			}
+			if (jvCur.isMember("issuer"))
+			{
+				// parse issuer WRITEME
+			}
+			// sanity check WRITEME
+			// insert in set WRIEME
+		}
 	}
-
-
 
 	return ret;
 }
-
 Json::Value PFRequest::doClose(const Json::Value&)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
