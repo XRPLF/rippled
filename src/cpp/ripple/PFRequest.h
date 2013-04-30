@@ -21,6 +21,12 @@ class Ledger;
 class InfoSub;
 class STAmount;
 
+// Return values from parseJson
+#define PFR_PJ_COMPLETE				0
+#define PFR_PJ_NOCHANGE				1
+#define PFR_PJ_CHANGE				2
+#define PFR_PJ_INVALID				3
+
 class PFRequest
 {
 public:
@@ -31,6 +37,7 @@ public:
 
 
 protected:
+	boost::recursive_mutex			mLock;
 	boost::weak_ptr<InfoSub>		wpSubscriber;				// Who this request came from
 	Json::Value						jvStatus;					// Last result
 
@@ -41,19 +48,26 @@ protected:
 	std::set<currIssuer_t>			sciSourceCurrencies;
 	std::vector<Json::Value>		vjvBridges;
 
+	bool							bValid;
+
 	// Track all requests
 	static std::set<wptr>			sRequests;
 	static boost::recursive_mutex	sLock;
 
+	int parseJson(const Json::Value&);
+
 public:
 
 	PFRequest(const boost::shared_ptr<InfoSub>& subscriber, Json::Value request);
-	~PFRequest();
 
-	Json::Value	create(const Json::Value&);
-	Json::Value	close(const Json::Value&);
-	Json::Value	status(const Json::Value&);
-	void		update();
+	bool		isValid();
+	Json::Value	getStatus();
+
+	Json::Value	doCreate(const Json::Value&);
+	Json::Value	doClose(const Json::Value&);
+	Json::Value	doStatus(const Json::Value&);
+
+	void		doUpdate();
 
 	static void	updateAll(const boost::shared_ptr<Ledger> &);
 };
