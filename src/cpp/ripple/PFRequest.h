@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <boost/thread/recursive_mutex.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
@@ -21,13 +22,12 @@ class Ledger;
 class InfoSub;
 class STAmount;
 
-// Return values from parseJson
-#define PFR_PJ_COMPLETE				0
-#define PFR_PJ_NOCHANGE				1
-#define PFR_PJ_CHANGE				2
-#define PFR_PJ_INVALID				3
+// Return values from parseJson <0 = invalid, >0 = valid
+#define PFR_PJ_INVALID				-1
+#define PFR_PJ_NOCHANGE				0
+#define PFR_PJ_CHANGE				1
 
-class PFRequest
+class PFRequest : public boost::enable_shared_from_this<PFRequest>
 {
 public:
 	typedef boost::weak_ptr<PFRequest>		wptr;
@@ -54,11 +54,12 @@ protected:
 	static std::set<wptr>			sRequests;
 	static boost::recursive_mutex	sLock;
 
-	int parseJson(const Json::Value&);
+	void setValid();
+	int parseJson(const Json::Value&, bool complete);
 
 public:
 
-	PFRequest(const boost::shared_ptr<InfoSub>& subscriber, Json::Value request);
+	PFRequest(const boost::shared_ptr<InfoSub>& subscriber);
 
 	bool		isValid();
 	Json::Value	getStatus();
@@ -67,9 +68,12 @@ public:
 	Json::Value	doClose(const Json::Value&);
 	Json::Value	doStatus(const Json::Value&);
 
-	void		doUpdate();
+	void		doUpdate();	// do an update
+	void		trigger();	// schedule an update
 
 	static void	updateAll(const boost::shared_ptr<Ledger> &);
 };
 
 #endif
+
+// vim:ts=4

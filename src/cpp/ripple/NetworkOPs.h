@@ -66,6 +66,21 @@ public:
 
 		mSubAccountInfo.insert(addr);
 	}
+
+	void clearPFRequest()
+	{
+		mPFRequest.reset();
+	}
+
+	void setPFRequest(const boost::shared_ptr<PFRequest>& req)
+	{
+		mPFRequest = req;
+	}
+
+	const boost::shared_ptr<PFRequest>& getPFRequest()
+	{
+		return mPFRequest;
+	}
 };
 
 class NetworkOPs

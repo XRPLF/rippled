@@ -21,6 +21,7 @@
 #include "NicknameState.h"
 #include "InstanceCounter.h"
 #include "Offer.h"
+#include "PFRequest.h"
 
 SETUP_LOG();
 
@@ -1174,17 +1175,29 @@ Json::Value RPCHandler::doPathFind(Json::Value jvRequest, int& cost, ScopedLock&
 
 	if (sSubCommand == "create")
 	{
-		// WRITEME
+		mInfoSub->clearPFRequest();
+		PFRequest::pointer request = boost::make_shared<PFRequest>(mInfoSub);
+		Json::Value result = request->doCreate(jvRequest);
+		if (request->isValid())
+			mInfoSub->setPFRequest(request);
+		return result;
 	}
 
 	if (sSubCommand == "close")
 	{
-		// WRITEME
+		PFRequest::pointer request = mInfoSub->getPFRequest();
+		if (!request)
+			return rpcNO_PF_REQUEST;
+		mInfoSub->clearPFRequest();
+		return request->doClose(jvRequest);
 	}
 
 	if (sSubCommand == "status")
 	{
-		// WRITEME
+		PFRequest::pointer request = mInfoSub->getPFRequest();
+		if (!request)
+			return rpcNO_PF_REQUEST;
+		return request->doStatus(jvRequest);
 	}
 
 	return rpcError(rpcINVALID_PARAMS);
