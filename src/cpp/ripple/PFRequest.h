@@ -61,10 +61,11 @@ public:
 
 	PFRequest(const boost::shared_ptr<InfoSub>& subscriber);
 
+	bool		isValid(const boost::shared_ptr<Ledger>&);
 	bool		isValid();
 	Json::Value	getStatus();
 
-	Json::Value	doCreate(const Json::Value&);
+	Json::Value	doCreate(const boost::shared_ptr<Ledger>&, const Json::Value&);
 	Json::Value	doClose(const Json::Value&);
 	Json::Value	doStatus(const Json::Value&);
 
