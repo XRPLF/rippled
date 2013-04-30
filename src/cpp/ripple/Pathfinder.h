@@ -35,6 +35,21 @@ public:
 };
 #endif
 
+class RLCache
+{
+protected:
+	boost::mutex											mLock;
+	Ledger::pointer											mLedger;
+	boost::unordered_map<uint160, AccountItems::pointer>	mRLMap;
+
+public:
+	typedef boost::shared_ptr<RLCache>	pointer;
+	typedef const pointer&				ref;
+
+	RLCache(Ledger::ref l) : mLedger(l)	{ ; }
+	AccountItems& getRippleLines(const uint160& accountID);
+};
+
 class Pathfinder
 {
 	uint160				mSrcAccountID;
@@ -47,6 +62,7 @@ class Pathfinder
 	Ledger::pointer		mLedger;
 	PathState::pointer	mPsDefault;
 	LoadEvent::pointer	mLoadMonitor;
+	RLCache::pointer	mRLCache;
 
 	boost::unordered_map<uint160, AccountItems::pointer>	mRLMap;
 	boost::unordered_map<std::pair<uint160, uint160>, int>	mPOMap;
@@ -63,13 +79,11 @@ class Pathfinder
 
 	bool matchesOrigin(const uint160& currency, const uint160& issuer);
 
-	AccountItems& getRippleLines(const uint160& accountID);
-
 	int getPathsOut(const uint160& currency, const uint160& accountID,
 		bool isAuthRequired, bool isDestCurrency, const uint160& dest);
 
 public:
-	Pathfinder(Ledger::ref ledger,
+	Pathfinder(Ledger::ref ledger, RLCache::ref cache,
 		const RippleAddress& srcAccountID, const RippleAddress& dstAccountID,
 		const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount, bool& bValid);
 

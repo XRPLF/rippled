@@ -180,7 +180,8 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 			{
 				ScopedUnlock su(theApp->getMasterLock());
 				bool bValid;
-				Pathfinder pf(lSnapshot, raSrcAddressID, dstAccountID,
+				RLCache::pointer cache = boost::make_shared<RLCache>(lSnapshot);
+				Pathfinder pf(lSnapshot, cache, raSrcAddressID, dstAccountID,
 					saSendMax.getCurrency(), saSendMax.getIssuer(), saSend, bValid);
 
 				if (!bValid || !pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsPaths))
@@ -1304,6 +1305,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost, Scope
 		jvResult["destination_account"] = raDst.humanAccountID();
 
 		Json::Value	jvArray(Json::arrayValue);
+		RLCache::pointer cache = boost::make_shared<RLCache>(lSnapShot);
 
 		for (unsigned int i=0; i != jvSrcCurrencies.size(); ++i) {
 			Json::Value	jvSource		= jvSrcCurrencies[i];
@@ -1339,7 +1341,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost, Scope
 
 			STPathSet	spsComputed;
 			bool		bValid;
-			Pathfinder	pf(lSnapShot, raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount, bValid);
+			Pathfinder	pf(lSnapShot, cache, raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount, bValid);
 
 			if (!bValid || !pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsComputed))
 			{
