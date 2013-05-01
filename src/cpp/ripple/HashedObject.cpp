@@ -50,6 +50,8 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data, hash);
 	if (!mCache.canonicalize(hash, object))
 	{
+		LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtHO_WRITE, "HOS::store"));
+
 		std::vector<unsigned char> rawData(9 + data.size());
 		unsigned char* bufPtr = &rawData.front();
 
@@ -88,6 +90,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		return obj;
 	}
 
+	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtHO_READ, "HOS::retrieve"));
 	std::string sData;
 	leveldb::Status st = theApp->getHashNodeDB()->Get(leveldb::ReadOptions(),
 		leveldb::Slice(reinterpret_cast<const char *>(hash.begin()), hash.size()), &sData);
