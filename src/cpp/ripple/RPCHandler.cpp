@@ -1188,7 +1188,7 @@ Json::Value RPCHandler::doPathFind(Json::Value jvRequest, int& cost, ScopedLock&
 	{
 		PFRequest::pointer request = mInfoSub->getPFRequest();
 		if (!request)
-			return rpcNO_PF_REQUEST;
+			return rpcError(rpcNO_PF_REQUEST);
 		mInfoSub->clearPFRequest();
 		return request->doClose(jvRequest);
 	}
