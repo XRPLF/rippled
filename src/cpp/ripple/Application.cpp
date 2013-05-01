@@ -170,8 +170,8 @@ void Application::setup()
 	leveldb::Options options;
 	options.create_if_missing = true;
 	options.block_cache = leveldb::NewLRUCache(theConfig.getSize(siHashNodeDBCache) * 1024 * 1024);
-	if (NODE_SIZE >= 2)
-		options.filter_policy = NewBloomFilterPolicy(10);
+	if (theConfig.NODE_SIZE >= 2)
+		options.filter_policy = leveldb::NewBloomFilterPolicy(10);
 	leveldb::Status status = leveldb::DB::Open(options, (theConfig.DATA_DIR / "hashnode").string(), &mHashNodeDB);
 	if (!status.ok() || !mHashNodeDB)
 	{
