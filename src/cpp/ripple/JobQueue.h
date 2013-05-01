@@ -45,9 +45,11 @@ enum JobType
 	jtACCEPTLEDGER	= 26,
 	jtTXN_PROC		= 27,
 	jtOB_SETUP		= 28,
-	jtPATH_FIND		= 29
+	jtPATH_FIND		= 29,
+	jtHO_READ		= 30,
+	jtHO_WRITE		= 31,
 }; // CAUTION: If you add new types, add them to JobType.cpp too
-#define NUM_JOB_TYPES 32
+#define NUM_JOB_TYPES 48
 
 class Job
 {

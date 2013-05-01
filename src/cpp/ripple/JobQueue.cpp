@@ -60,6 +60,8 @@ const char* Job::toString(JobType t)
 		case jtTXN_PROC:		return "processTransaction";
 		case jtOB_SETUP:		return "orderBookSetup";
 		case jtPATH_FIND:		return "pathFind";
+		case jtHO_READ:			return "nodeRead";
+		case jtHO_WRITE:		return "nodeWrite";
 		default:				assert(false); return "unknown";
 	}
 }
