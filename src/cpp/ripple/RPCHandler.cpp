@@ -182,7 +182,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 				ScopedUnlock su(theApp->getMasterLock());
 				bool bValid;
 				RLCache::pointer cache = boost::make_shared<RLCache>(lSnapshot);
-				Pathfinder pf(lSnapshot, cache, raSrcAddressID, dstAccountID,
+				Pathfinder pf(cache, raSrcAddressID, dstAccountID,
 					saSendMax.getCurrency(), saSendMax.getIssuer(), saSend, bValid);
 
 				if (!bValid || !pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsPaths))
@@ -1173,13 +1173,17 @@ Json::Value RPCHandler::doPathFind(Json::Value jvRequest, int& cost, ScopedLock&
 {
 	if (!jvRequest.isMember("subcommand") || !jvRequest["subcommand"].isString())
 		return rpcError(rpcINVALID_PARAMS);
+
+	if (!mInfoSub)
+		return rpcError(rpcNO_EVENTS);
+
 	std::string sSubCommand = jvRequest["subcommand"].asString();
 
 	if (sSubCommand == "create")
 	{
 		mInfoSub->clearPFRequest();
 		PFRequest::pointer request = boost::make_shared<PFRequest>(mInfoSub);
-		Json::Value result = request->doCreate(mNetOps->getCurrentLedger(), jvRequest);
+		Json::Value result = request->doCreate(mNetOps->getClosedLedger(), jvRequest);
 		if (request->isValid())
 			mInfoSub->setPFRequest(request);
 		return result;
@@ -1342,7 +1346,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost, Scope
 
 			STPathSet	spsComputed;
 			bool		bValid;
-			Pathfinder	pf(lSnapShot, cache, raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount, bValid);
+			Pathfinder	pf(cache, raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount, bValid);
 
 			if (!bValid || !pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsComputed))
 			{

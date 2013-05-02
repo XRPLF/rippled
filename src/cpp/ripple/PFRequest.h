@@ -14,6 +14,7 @@
 #include "uint256.h"
 #include "RippleAddress.h"
 #include "SerializedTypes.h"
+#include "Pathfinder.h"
 
 // A pathfinding request submitted by a client
 // The request issuer must maintain a strong pointer
@@ -21,6 +22,7 @@
 class Ledger;
 class InfoSub;
 class STAmount;
+class RLCache;
 
 // Return values from parseJson <0 = invalid, >0 = valid
 #define PFR_PJ_INVALID				-1
@@ -69,8 +71,7 @@ public:
 	Json::Value	doClose(const Json::Value&);
 	Json::Value	doStatus(const Json::Value&);
 
-	void		doUpdate();	// do an update
-	void		trigger();	// schedule an update
+	bool		doUpdate(const boost::shared_ptr<RLCache>&, bool fast);	// update jvStatus
 
 	static void	updateAll(const boost::shared_ptr<Ledger> &);
 };

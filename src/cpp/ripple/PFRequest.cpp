@@ -4,6 +4,9 @@
 #include "RPCErr.h"
 #include "Ledger.h"
 #include "Application.h"
+#include "Pathfinder.h"
+#include "RippleCalc.h"
+#include "LedgerFormats.h"
 
 boost::recursive_mutex		PFRequest::sLock;
 std::set<PFRequest::wptr>	PFRequest::sRequests;
@@ -35,8 +38,10 @@ bool PFRequest::isValid(Ledger::ref lrLedger)
 		else
 		{
 			AccountState::pointer asDst = theApp->getOPs().getAccountState(lrLedger, raDstAccount);
+			Json::Value jvDestCur;
 			if (!asDst)
 			{ // no destination account
+				jvDestCur.append(Json::Value("XRP"));
 				if(!saDstAmount.isNative())
 				{ // only XRP can be send to a non-existent account
 					bValid = false;
@@ -48,21 +53,41 @@ bool PFRequest::isValid(Ledger::ref lrLedger)
 					jvStatus = rpcError(rpcDST_AMT_MALFORMED);
 				}
 			}
+			else
+			{
+				boost::unordered_set<uint160> usDestCurrID = usAccountDestCurrencies(raDstAccount, lrLedger, true);
+				BOOST_FOREACH(const uint160& uCurrency, usDestCurrID)
+					jvDestCur.append(STAmount::createHumanCurrency(uCurrency));
+				jvStatus["destination_tag"] = (asDst->peekSLE().getFlags() & lsfRequireDestTag) != 0;
+			}
+			jvStatus["destination_currencies"] = jvDestCur;
 		}
 	}
+	jvStatus["ledger_hash"] = lrLedger->getHash().GetHex();
+	jvStatus["ledger_index"] = lrLedger->getLedgerSeq();
 	return bValid;
 }
 
 Json::Value PFRequest::doCreate(Ledger::ref lrLedger, const Json::Value& value)
 {
+	assert(lrLedger->isClosed());
+
 	Json::Value status;
 	bool mValid;
 
 	{
 		boost::recursive_mutex::scoped_lock sl(mLock);
-		parseJson(value, true);
-		status = jvStatus;
-		mValid = isValid(lrLedger);
+		if (parseJson(value, true) != PFR_PJ_INVALID)
+		{
+			mValid = isValid(lrLedger);
+			if (mValid)
+			{
+				RLCache::pointer cache = boost::make_shared<RLCache>(lrLedger);
+				doUpdate(cache, true);
+			}
+		}
+		else
+			mValid = false;
 	}
 
 	if (mValid)
@@ -165,6 +190,62 @@ Json::Value PFRequest::doStatus(const Json::Value&)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	return jvStatus;
+}
+
+bool PFRequest::doUpdate(RLCache::ref cache, bool fast)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	jvStatus = Json::objectValue;
+	if (!isValid(cache->getLedger()))
+		return false;
+
+	std::set<currIssuer_t> sourceCurrencies(sciSourceCurrencies);
+	if (sourceCurrencies.empty())
+	{
+		boost::unordered_set<uint160> usCurrencies =
+			usAccountSourceCurrencies(raSrcAccount, cache->getLedger(), true);
+		bool sameAccount = raSrcAccount == raDstAccount;
+		BOOST_FOREACH(const uint160& c, usCurrencies)
+		{
+			if (!sameAccount || (c != saDstAmount.getCurrency()))
+				sourceCurrencies.insert(std::make_pair(c, ACCOUNT_XRP));
+		}
+	}
+
+	jvStatus["source_account"] = raSrcAccount.humanAccountID();
+	jvStatus["destination_account"] = raDstAccount.humanAccountID();
+
+	Json::Value jvArray = Json::arrayValue;
+
+	BOOST_FOREACH(const currIssuer_t& currIssuer, sourceCurrencies)
+	{
+		bool valid;
+		STPathSet spsPaths;
+		Pathfinder pf(cache, raSrcAccount, raDstAccount,
+			currIssuer.first, currIssuer.second, saDstAmount, valid);
+		if (valid && pf.findPaths(theConfig.PATH_SEARCH_SIZE - (fast ? 0 : 1), 3, spsPaths))
+		{
+			LedgerEntrySet						lesSandbox(cache->getLedger(), tapNONE);
+			std::vector<PathState::pointer>		vpsExpanded;
+			STAmount							saMaxAmountAct;
+			STAmount							saDstAmountAct;
+			STAmount							saMaxAmount(currIssuer.first,
+				currIssuer.second.isNonZero() ? currIssuer.second :
+					(currIssuer.first.isZero() ? ACCOUNT_XRP : raSrcAccount.getAccountID()), 1);
+			TER terResult = RippleCalc::rippleCalc(lesSandbox, saMaxAmountAct, saDstAmountAct,
+				vpsExpanded, saMaxAmount, saDstAmount, raDstAccount.getAccountID(), raSrcAccount.getAccountID(),
+				spsPaths, false, false, false, true);
+			if (terResult == tesSUCCESS)
+			{
+				Json::Value jvEntry(Json::objectValue);
+				jvEntry["source_amount"]	= saMaxAmountAct.getJson(0);
+				jvEntry["paths_computed"]	= spsPaths.getJson(0);
+				jvArray.append(jvEntry);
+			}
+		}
+	}
+	jvStatus["alternatives"] = jvArray;
+	return true;
 }
 
 // vim:ts=4

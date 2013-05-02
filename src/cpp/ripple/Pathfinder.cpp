@@ -138,7 +138,7 @@ static int getEffectiveLength(const STPath& spPath)
 	return length;
 }
 
-Pathfinder::Pathfinder(Ledger::ref ledger, RLCache::ref cache,
+Pathfinder::Pathfinder(RLCache::ref cache,
 		const RippleAddress& uSrcAccountID, const RippleAddress& uDstAccountID,
 		const uint160& uSrcCurrencyID, const uint160& uSrcIssuerID, const STAmount& saDstAmount, bool& bValid)
 	:	mSrcAccountID(uSrcAccountID.getAccountID()),
@@ -147,7 +147,7 @@ Pathfinder::Pathfinder(Ledger::ref ledger, RLCache::ref cache,
 		mSrcCurrencyID(uSrcCurrencyID),
 		mSrcIssuerID(uSrcIssuerID),
 		mSrcAmount(uSrcCurrencyID, uSrcIssuerID, 1u, 0, true),
-		mLedger(ledger), mRLCache(cache)
+		mLedger(cache->getLedger()), mRLCache(cache)
 {
 
 	if (((mSrcAccountID == mDstAccountID) && (mSrcCurrencyID == mDstAmount.getCurrency())) || mDstAmount.isZero())

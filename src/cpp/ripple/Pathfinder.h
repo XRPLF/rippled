@@ -47,7 +47,9 @@ public:
 	typedef const pointer&				ref;
 
 	RLCache(Ledger::ref l) : mLedger(l)	{ ; }
-	AccountItems& getRippleLines(const uint160& accountID);
+	Ledger::ref getLedger()				{ return mLedger; }
+
+	AccountItems&		getRippleLines(const uint160& accountID);
 };
 
 class Pathfinder
@@ -83,7 +85,7 @@ class Pathfinder
 		bool isAuthRequired, bool isDestCurrency, const uint160& dest);
 
 public:
-	Pathfinder(Ledger::ref ledger, RLCache::ref cache,
+	Pathfinder(RLCache::ref cache,
 		const RippleAddress& srcAccountID, const RippleAddress& dstAccountID,
 		const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount, bool& bValid);
 
