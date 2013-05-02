@@ -248,4 +248,47 @@ bool PFRequest::doUpdate(RLCache::ref cache, bool fast)
 	return true;
 }
 
+void PFRequest::updateAll(const boost::shared_ptr<Ledger>& ledger)
+{
+	assert(ledger->isImmutable());
+
+	std::set<wptr> requests;
+	{
+		boost::recursive_mutex::scoped_lock sl(sLock);
+		requests = sRequests;
+	}
+
+	if (requests.empty())
+		return;
+
+	RLCache::pointer cache = boost::make_shared<RLCache>(ledger);
+
+	BOOST_FOREACH(wref wRequest, requests)
+	{
+		bool remove = true;
+		PFRequest::pointer pRequest = wRequest.lock();
+		if (pRequest)
+		{
+			InfoSub::pointer ipSub = pRequest->wpSubscriber.lock();
+			if (ipSub)
+			{
+				Json::Value update;
+				{
+					boost::recursive_mutex::scoped_lock sl(pRequest->mLock);
+					pRequest->doUpdate(cache, true);
+					update = pRequest->jvStatus;
+				}
+				update["type"] = "path_find";
+				ipSub->send(update, false);
+				remove = false;
+			}
+		}
+		if (remove)
+		{
+			boost::recursive_mutex::scoped_lock sl(sLock);
+			sRequests.erase(wRequest);
+		}
+	}
+}
+
 // vim:ts=4

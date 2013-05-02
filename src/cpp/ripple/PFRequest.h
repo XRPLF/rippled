@@ -35,6 +35,7 @@ public:
 	typedef boost::weak_ptr<PFRequest>		wptr;
 	typedef boost::shared_ptr<PFRequest>	pointer;
 	typedef const pointer&					ref;
+	typedef const wptr&						wref;
 	typedef std::pair<uint160, uint160>		currIssuer_t;
 
 
