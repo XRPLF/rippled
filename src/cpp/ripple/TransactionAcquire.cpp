@@ -4,6 +4,7 @@
 #include <boost/bind.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/foreach.hpp>
+#include <boost/pointer_cast.hpp>
 
 #include "../json/writer.h"
 
@@ -92,7 +93,7 @@ void TransactionAcquire::onTimer(bool progress)
 
 boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast()
 {
-	return boost::shared_polymorphic_downcast<PeerSet>(shared_from_this());
+	return boost::dynamic_pointer_cast<PeerSet>(shared_from_this());
 }
 
 void TransactionAcquire::trigger(Peer::ref peer)

@@ -3,6 +3,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/pointer_cast.hpp>
 
 #include "Application.h"
 #include "Log.h"
@@ -279,7 +280,7 @@ void LedgerAcquire::addPeers()
 
 boost::weak_ptr<PeerSet> LedgerAcquire::pmDowncast()
 {
-	return boost::shared_polymorphic_downcast<PeerSet>(shared_from_this());
+	return boost::dynamic_pointer_cast<PeerSet>(shared_from_this());
 }
 
 static void LADispatch(

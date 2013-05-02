@@ -6,6 +6,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/pointer_cast.hpp>
 
 #include "Pathfinder.h"
 #include "Log.h"
@@ -2767,7 +2768,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost, ScopedLock
 			cLog(lsDEBUG) << boost::str(boost::format("doSubscribe: building: %s") % strUrl);
 
 			RPCSub::pointer rspSub = boost::make_shared<RPCSub>(strUrl, strUsername, strPassword);
-			ispSub	= mNetOps->addRpcSub(strUrl, boost::shared_polymorphic_downcast<InfoSub>(rspSub));
+			ispSub	= mNetOps->addRpcSub(strUrl, boost::dynamic_pointer_cast<InfoSub>(rspSub));
 		}
 		else
 		{

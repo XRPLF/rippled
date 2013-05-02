@@ -7,6 +7,7 @@
 #include <boost/weak_ptr.hpp>
 #include <boost/asio.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/pointer_cast.hpp>
 
 #include "WSDoor.h"
 #include "Application.h"
@@ -126,7 +127,7 @@ public:
 		}
 
 		int cost = 10;
-		RPCHandler	mRPCHandler(&mNetwork, boost::shared_polymorphic_downcast<InfoSub>(this->shared_from_this()));
+		RPCHandler	mRPCHandler(&mNetwork, boost::dynamic_pointer_cast<InfoSub>(this->shared_from_this()));
 		Json::Value	jvResult(Json::objectValue);
 
 		int iRole	= mHandler->getPublic()
