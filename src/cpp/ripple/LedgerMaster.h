@@ -45,6 +45,7 @@ protected:
 
 	std::list<Ledger::pointer>	mPubLedgers;		// List of ledgers to publish
 	bool						mPubThread;			// Publish thread is running
+	bool						mPathFindThread;	// Pathfind thread is running
 
 	void applyFutureTransactions(uint32 ledgerIndex);
 	bool isValidTransaction(Transaction::ref trans);
@@ -54,11 +55,12 @@ protected:
 	void asyncAccept(Ledger::pointer);
 	void missingAcquireComplete(LedgerAcquire::pointer);
 	void pubThread();
+	void updatePaths();
 
 public:
 
 	LedgerMaster() : mHeldTransactions(uint256()), mMissingSeq(0),
-		mMinValidations(0), mLastValidateSeq(0), mPubThread(false)
+		mMinValidations(0), mLastValidateSeq(0), mPubThread(false), mPathFindThread(false)
 	{ ; }
 
 	uint32 getCurrentLedgerIndex();

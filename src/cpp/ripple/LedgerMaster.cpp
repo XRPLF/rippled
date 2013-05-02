@@ -6,6 +6,7 @@
 #include "Application.h"
 #include "RippleAddress.h"
 #include "Log.h"
+#include "PFRequest.h"
 
 SETUP_LOG();
 
@@ -633,6 +634,7 @@ void LedgerMaster::tryPublish()
 void LedgerMaster::pubThread()
 {
 	std::list<Ledger::pointer> ledgers;
+	bool published = false;
 
 	while (1)
 	{
@@ -644,6 +646,12 @@ void LedgerMaster::pubThread()
 			if (ledgers.empty())
 			{
 				mPubThread = false;
+				if (published && !mPathFindThread)
+				{
+					mPathFindThread = true;
+					theApp->getJobQueue().addJob(jtUPDATE_PF, "updatePaths",
+						BIND_TYPE(&LedgerMaster::updatePaths, this));
+				}
 				return;
 			}
 		}
@@ -653,8 +661,30 @@ void LedgerMaster::pubThread()
 			cLog(lsDEBUG) << "Publishing ledger " << l->getLedgerSeq();
 			setFullLedger(l); // OPTIMIZEME: This is actually more work than we need to do
 			theApp->getOPs().pubLedger(l);
+			published = true;
 		}
 	}
+}
+
+void LedgerMaster::updatePaths()
+{
+	Ledger::pointer lastLedger;
+
+	do
+	{
+		{
+			boost::recursive_mutex::scoped_lock ml(mLock);
+			if (lastLedger.get() == mPubLedger.get())
+			{
+				mPathFindThread = false;
+				return;
+			}
+			lastLedger = mPubLedger;
+		}
+
+		PFRequest::updateAll(lastLedger);
+
+	} while(1);
 }
 
 // vim:ts=4

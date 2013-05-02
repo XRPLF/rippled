@@ -43,6 +43,7 @@ const char* Job::toString(JobType t)
 		case jtPROOFWORK:		return "proofOfWork";
 		case jtPROPOSAL_ut:		return "untrustedProposal";
 		case jtLEDGER_DATA:		return "ledgerData";
+		case jtUPDATE_PF:		return "updatePaths";
 		case jtCLIENT:			return "clientCommand";
 		case jtTRANSACTION:		return "transaction";
 		case jtPUBLEDGER:		return "publishNewLedger";
