@@ -12,7 +12,7 @@ boost::recursive_mutex		PFRequest::sLock;
 std::set<PFRequest::wptr>	PFRequest::sRequests;
 
 PFRequest::PFRequest(const boost::shared_ptr<InfoSub>& subscriber) :
-	wpSubscriber(subscriber), jvStatus(Json::objectValue), bValid(false)
+	wpSubscriber(subscriber), jvStatus(Json::objectValue), bValid(false), bNew(true)
 {
 	;
 }
@@ -21,6 +21,12 @@ bool PFRequest::isValid()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	return bValid;
+}
+
+bool PFRequest::isNew()
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	return bNew;
 }
 
 bool PFRequest::isValid(Ledger::ref lrLedger)
@@ -198,6 +204,8 @@ bool PFRequest::doUpdate(RLCache::ref cache, bool fast)
 	jvStatus = Json::objectValue;
 	if (!isValid(cache->getLedger()))
 		return false;
+	if (!fast)
+		bNew = false;
 
 	std::set<currIssuer_t> sourceCurrencies(sciSourceCurrencies);
 	if (sourceCurrencies.empty())
@@ -248,11 +256,10 @@ bool PFRequest::doUpdate(RLCache::ref cache, bool fast)
 	return true;
 }
 
-void PFRequest::updateAll(const boost::shared_ptr<Ledger>& ledger)
+void PFRequest::updateAll(Ledger::ref ledger, bool newOnly)
 {
-	assert(ledger->isImmutable());
-
 	std::set<wptr> requests;
+
 	{
 		boost::recursive_mutex::scoped_lock sl(sLock);
 		requests = sRequests;
@@ -267,7 +274,7 @@ void PFRequest::updateAll(const boost::shared_ptr<Ledger>& ledger)
 	{
 		bool remove = true;
 		PFRequest::pointer pRequest = wRequest.lock();
-		if (pRequest)
+		if (pRequest && (!newOnly || pRequest->isNew()))
 		{
 			InfoSub::pointer ipSub = pRequest->wpSubscriber.lock();
 			if (ipSub)
@@ -275,7 +282,7 @@ void PFRequest::updateAll(const boost::shared_ptr<Ledger>& ledger)
 				Json::Value update;
 				{
 					boost::recursive_mutex::scoped_lock sl(pRequest->mLock);
-					pRequest->doUpdate(cache, true);
+					pRequest->doUpdate(cache, false);
 					update = pRequest->jvStatus;
 				}
 				update["type"] = "path_find";

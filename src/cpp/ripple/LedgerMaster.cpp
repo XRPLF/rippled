@@ -628,6 +628,13 @@ void LedgerMaster::tryPublish()
 		mPubThread = true;
 		theApp->getJobQueue().addJob(jtPUBLEDGER, "Ledger::pubThread",
 			BIND_TYPE(&LedgerMaster::pubThread, this));
+		mPathFindNewLedger = true;
+		if (!mPathFindThread)
+		{
+			mPathFindThread = true;
+			theApp->getJobQueue().addJob(jtUPDATE_PF, "updatePaths",
+				BIND_TYPE(&LedgerMaster::updatePaths, this));
+		}
 	}
 }
 
@@ -669,22 +676,44 @@ void LedgerMaster::pubThread()
 void LedgerMaster::updatePaths()
 {
 	Ledger::pointer lastLedger;
-
 	do
 	{
+		bool newOnly = false;
+
 		{
 			boost::recursive_mutex::scoped_lock ml(mLock);
-			if (lastLedger.get() == mPubLedger.get())
+			if (mPathFindNewLedger || (lastLedger && (lastLedger.get() != mPubLedger.get())))
+				lastLedger = mPubLedger;
+			else if (mPathFindNewRequest)
+			{
+				newOnly = true;
+				lastLedger = boost::make_shared<Ledger>(*mCurrentLedger, false);
+			}
+			else
 			{
 				mPathFindThread = false;
 				return;
 			}
 			lastLedger = mPubLedger;
+			mPathFindNewLedger = false;
+			mPathFindNewRequest = false;
 		}
 
-		PFRequest::updateAll(lastLedger);
+		PFRequest::updateAll(lastLedger, newOnly);
 
 	} while(1);
+}
+
+void LedgerMaster::newPFRequest()
+{
+	boost::recursive_mutex::scoped_lock ml(mLock);
+	mPathFindNewRequest = true;
+	if (!mPathFindThread)
+	{
+		mPathFindThread = true;
+		theApp->getJobQueue().addJob(jtUPDATE_PF, "updatePaths",
+			BIND_TYPE(&LedgerMaster::updatePaths, this));
+	}
 }
 
 // vim:ts=4

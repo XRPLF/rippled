@@ -52,6 +52,7 @@ protected:
 	std::vector<Json::Value>		vjvBridges;
 
 	bool							bValid;
+	bool							bNew;
 
 	// Track all requests
 	static std::set<wptr>			sRequests;
@@ -66,6 +67,7 @@ public:
 
 	bool		isValid(const boost::shared_ptr<Ledger>&);
 	bool		isValid();
+	bool		isNew();
 	Json::Value	getStatus();
 
 	Json::Value	doCreate(const boost::shared_ptr<Ledger>&, const Json::Value&);
@@ -74,7 +76,7 @@ public:
 
 	bool		doUpdate(const boost::shared_ptr<RLCache>&, bool fast);	// update jvStatus
 
-	static void	updateAll(const boost::shared_ptr<Ledger> &);
+	static void	updateAll(const boost::shared_ptr<Ledger>& ledger, bool newOnly);
 };
 
 #endif

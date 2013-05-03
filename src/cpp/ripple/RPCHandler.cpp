@@ -1185,7 +1185,10 @@ Json::Value RPCHandler::doPathFind(Json::Value jvRequest, int& cost, ScopedLock&
 		PFRequest::pointer request = boost::make_shared<PFRequest>(mInfoSub);
 		Json::Value result = request->doCreate(mNetOps->getClosedLedger(), jvRequest);
 		if (request->isValid())
+		{
 			mInfoSub->setPFRequest(request);
+			theApp->getLedgerMaster().newPFRequest();
+		}
 		return result;
 	}
 
