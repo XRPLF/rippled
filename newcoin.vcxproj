@@ -34,9 +34,11 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="RippleD.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="RippleD.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -335,10 +337,10 @@
     <None Include="SConstruct" />
     <CustomBuild Include="src\cpp\ripple\ripple.proto">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"../protobuf/protoc" -I=..\newcoin --cpp_out=..\newcoin\  ..\newcoin/src/cpp/ripple/ripple.proto</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">\code\newcoin\src\ripple.pb.h</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">/code/protobuf/protoc -I=..\newcoin --cpp_out=\code\newcoin\  ..\newcoin/src/cpp/ripple/ripple.proto</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">\code\newcoin\src\ripple.pb.h</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">protoc --cpp_out=$(SrcDir) -I=$(SrcDir) "$(SrcDir)\%(Filename)%(Extension)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SrcDir)\%(Filename).pb.h;$(SrcDir)\%(Filename).pb.cc</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">protoc --cpp_out=$(SrcDir) -I=$(SrcDir) "$(SrcDir)\%(Filename)%(Extension)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SrcDir)\%(Filename).pb.h;$(SrcDir)\%(Filename).pb.cc</Outputs>
     </CustomBuild>
     <None Include="test\buster.js" />
     <None Include="test\server.js" />
