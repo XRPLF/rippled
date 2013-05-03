@@ -1,0 +1,8 @@
+# Set default behaviour, in case users don't have core.autocrlf set.
+* text=auto
+
+# Visual Studio
+*.sln       text eol=crlf
+*.vcproj    text eol=crlf
+*.vcxproj   text eol=crlf
+*.props     text eol=crlf

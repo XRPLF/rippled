@@ -36,6 +36,10 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/function.hpp>
 #include <boost/intrusive_ptr.hpp>
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 105300 // 1.53.00
+#include <boost/thread/lock_guard.hpp>
+#endif
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/utility.hpp>

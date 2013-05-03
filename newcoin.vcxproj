@@ -34,18 +34,24 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="RippleD.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="RippleD.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <TargetName>rippled</TargetName>
+    <OutDir>$(SolutionDir)build\VisualStudio2012\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\obj\VisualStudio2012\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <TargetName>rippled</TargetName>
+    <OutDir>$(SolutionDir)build\VisualStudio2012\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\obj\VisualStudio2012\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -55,6 +61,8 @@
       <PreprocessorDefinitions>BOOST_TEST_ALTERNATIVE_INIT_API;BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.\;..\OpenSSL\include;..\boost_1_52_0;..\protobuf\src</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MinimalRebuild>false</MinimalRebuild>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -79,6 +87,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>BOOST_TEST_ALTERNATIVE_INIT_API;BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.\;..\OpenSSL\include;..\boost_1_52_0;..\protobuf\src</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -106,6 +115,7 @@
     <ClCompile Include="src\cpp\ripple\BitcoinUtil.cpp" />
     <ClCompile Include="src\cpp\ripple\CallRPC.cpp" />
     <ClCompile Include="src\cpp\ripple\CanonicalTXSet.cpp" />
+    <ClCompile Include="src\cpp\ripple\ChangeTransactor.cpp" />
     <ClCompile Include="src\cpp\ripple\Config.cpp" />
     <ClCompile Include="src\cpp\ripple\ConnectionPool.cpp" />
     <ClCompile Include="src\cpp\ripple\Contract.cpp" />
@@ -220,6 +230,7 @@
     <ClInclude Include="src\cpp\ripple\BitcoinUtil.h" />
     <ClInclude Include="src\cpp\ripple\CallRPC.h" />
     <ClInclude Include="src\cpp\ripple\CanonicalTXSet.h" />
+    <ClInclude Include="src\cpp\ripple\ChangeTransactor.h" />
     <ClInclude Include="src\cpp\ripple\Config.h" />
     <ClInclude Include="src\cpp\ripple\ConnectionPool.h" />
     <ClInclude Include="src\cpp\ripple\Contract.h" />
@@ -328,10 +339,10 @@
     <None Include="SConstruct" />
     <CustomBuild Include="src\cpp\ripple\ripple.proto">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"../protobuf/protoc" -I=..\newcoin --cpp_out=..\newcoin\  ..\newcoin/src/cpp/ripple/ripple.proto</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">\code\newcoin\src\ripple.pb.h</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">/code/protobuf/protoc -I=..\newcoin --cpp_out=\code\newcoin\  ..\newcoin/src/cpp/ripple/ripple.proto</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">\code\newcoin\src\ripple.pb.h</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">protoc --cpp_out=$(SrcDir) -I=$(SrcDir) "$(SrcDir)\%(Filename)%(Extension)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SrcDir)\%(Filename).pb.h;$(SrcDir)\%(Filename).pb.cc</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">protoc --cpp_out=$(SrcDir) -I=$(SrcDir) "$(SrcDir)\%(Filename)%(Extension)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SrcDir)\%(Filename).pb.h;$(SrcDir)\%(Filename).pb.cc</Outputs>
     </CustomBuild>
     <None Include="test\buster.js" />
     <None Include="test\server.js" />
