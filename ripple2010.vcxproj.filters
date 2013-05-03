@@ -171,6 +171,9 @@
     <ClCompile Include="src\cpp\ripple\PeerDoor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\PFRequest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\PlatRand.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
