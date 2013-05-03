@@ -375,6 +375,9 @@
     <ClCompile Include="src\cpp\ripple\AmountRound.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ChangeTransactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="util\pugiconfig.hpp">
@@ -715,6 +718,9 @@
     </ClInclude>
     <ClInclude Include="src\cpp\websocketpp\src\sockets\tls.hpp">
       <Filter>Header Files\websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ChangeTransactor.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

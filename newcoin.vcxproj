@@ -115,6 +115,7 @@
     <ClCompile Include="src\cpp\ripple\BitcoinUtil.cpp" />
     <ClCompile Include="src\cpp\ripple\CallRPC.cpp" />
     <ClCompile Include="src\cpp\ripple\CanonicalTXSet.cpp" />
+    <ClCompile Include="src\cpp\ripple\ChangeTransactor.cpp" />
     <ClCompile Include="src\cpp\ripple\Config.cpp" />
     <ClCompile Include="src\cpp\ripple\ConnectionPool.cpp" />
     <ClCompile Include="src\cpp\ripple\Contract.cpp" />
@@ -229,6 +230,7 @@
     <ClInclude Include="src\cpp\ripple\BitcoinUtil.h" />
     <ClInclude Include="src\cpp\ripple\CallRPC.h" />
     <ClInclude Include="src\cpp\ripple\CanonicalTXSet.h" />
+    <ClInclude Include="src\cpp\ripple\ChangeTransactor.h" />
     <ClInclude Include="src\cpp\ripple\Config.h" />
     <ClInclude Include="src\cpp\ripple\ConnectionPool.h" />
     <ClInclude Include="src\cpp\ripple\Contract.h" />
