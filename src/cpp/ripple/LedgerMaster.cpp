@@ -6,6 +6,7 @@
 #include "Application.h"
 #include "RippleAddress.h"
 #include "Log.h"
+#include "PFRequest.h"
 
 SETUP_LOG();
 
@@ -627,12 +628,20 @@ void LedgerMaster::tryPublish()
 		mPubThread = true;
 		theApp->getJobQueue().addJob(jtPUBLEDGER, "Ledger::pubThread",
 			BIND_TYPE(&LedgerMaster::pubThread, this));
+		mPathFindNewLedger = true;
+		if (!mPathFindThread)
+		{
+			mPathFindThread = true;
+			theApp->getJobQueue().addJob(jtUPDATE_PF, "updatePaths",
+				BIND_TYPE(&LedgerMaster::updatePaths, this));
+		}
 	}
 }
 
 void LedgerMaster::pubThread()
 {
 	std::list<Ledger::pointer> ledgers;
+	bool published = false;
 
 	while (1)
 	{
@@ -644,6 +653,12 @@ void LedgerMaster::pubThread()
 			if (ledgers.empty())
 			{
 				mPubThread = false;
+				if (published && !mPathFindThread)
+				{
+					mPathFindThread = true;
+					theApp->getJobQueue().addJob(jtUPDATE_PF, "updatePaths",
+						BIND_TYPE(&LedgerMaster::updatePaths, this));
+				}
 				return;
 			}
 		}
@@ -653,7 +668,51 @@ void LedgerMaster::pubThread()
 			cLog(lsDEBUG) << "Publishing ledger " << l->getLedgerSeq();
 			setFullLedger(l); // OPTIMIZEME: This is actually more work than we need to do
 			theApp->getOPs().pubLedger(l);
+			published = true;
 		}
+	}
+}
+
+void LedgerMaster::updatePaths()
+{
+	Ledger::pointer lastLedger;
+	do
+	{
+		bool newOnly = false;
+
+		{
+			boost::recursive_mutex::scoped_lock ml(mLock);
+			if (mPathFindNewLedger || (lastLedger && (lastLedger.get() != mPubLedger.get())))
+				lastLedger = mPubLedger;
+			else if (mPathFindNewRequest)
+			{
+				newOnly = true;
+				lastLedger = boost::make_shared<Ledger>(*mCurrentLedger, false);
+			}
+			else
+			{
+				mPathFindThread = false;
+				return;
+			}
+			lastLedger = mPubLedger;
+			mPathFindNewLedger = false;
+			mPathFindNewRequest = false;
+		}
+
+		PFRequest::updateAll(lastLedger, newOnly);
+
+	} while(1);
+}
+
+void LedgerMaster::newPFRequest()
+{
+	boost::recursive_mutex::scoped_lock ml(mLock);
+	mPathFindNewRequest = true;
+	if (!mPathFindThread)
+	{
+		mPathFindThread = true;
+		theApp->getJobQueue().addJob(jtUPDATE_PF, "updatePaths",
+			BIND_TYPE(&LedgerMaster::updatePaths, this));
 	}
 }
 

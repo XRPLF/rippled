@@ -157,6 +157,7 @@
     <ClCompile Include="src\cpp\ripple\PaymentTransactor.cpp" />
     <ClCompile Include="src\cpp\ripple\Peer.cpp" />
     <ClCompile Include="src\cpp\ripple\PeerDoor.cpp" />
+    <ClCompile Include="src\cpp\ripple\PFRequest.cpp" />
     <ClCompile Include="src\cpp\ripple\PlatRand.cpp" />
     <ClCompile Include="src\cpp\ripple\ProofOfWork.cpp" />
     <ClCompile Include="src\cpp\ripple\RangeSet.cpp" />

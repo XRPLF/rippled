@@ -28,16 +28,17 @@ enum JobType
 	jtPROOFWORK		= 4,	// A proof of work demand from another server
 	jtPROPOSAL_ut	= 5,	// A proposal from an untrusted source
 	jtLEDGER_DATA	= 6,	// Received data for a ledger we're acquiring
-	jtCLIENT		= 7,	// A websocket command from the client
-	jtTRANSACTION	= 8,	// A transaction received from the network
-	jtPUBLEDGER		= 9,	// Publish a fully-accepted ledger
-	jtWAL			= 10,	// Write-ahead logging
-	jtVALIDATION_t	= 11,	// A validation from a trusted source
-	jtWRITE			= 12,	// Write out hashed objects
-	jtTRANSACTION_l	= 13,	// A local transaction
-	jtPROPOSAL_t	= 14,	// A proposal from a trusted source
-	jtADMIN			= 15,	// An administrative operation
-	jtDEATH			= 16,	// job of death, used internally
+	jtUPDATE_PF		= 7,	// Update pathfinding requests
+	jtCLIENT		= 8,	// A websocket command from the client
+	jtTRANSACTION	= 9,	// A transaction received from the network
+	jtPUBLEDGER		= 10,	// Publish a fully-accepted ledger
+	jtWAL			= 11,	// Write-ahead logging
+	jtVALIDATION_t	= 12,	// A validation from a trusted source
+	jtWRITE			= 13,	// Write out hashed objects
+	jtTRANSACTION_l	= 14,	// A local transaction
+	jtPROPOSAL_t	= 15,	// A proposal from a trusted source
+	jtADMIN			= 16,	// An administrative operation
+	jtDEATH			= 17,	// job of death, used internally
 
 // special types not dispatched by the job pool
 	jtPEER			= 24,

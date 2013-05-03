@@ -22,6 +22,7 @@
 #include "NicknameState.h"
 #include "InstanceCounter.h"
 #include "Offer.h"
+#include "PFRequest.h"
 
 SETUP_LOG();
 
@@ -180,7 +181,8 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 			{
 				ScopedUnlock su(theApp->getMasterLock());
 				bool bValid;
-				Pathfinder pf(lSnapshot, raSrcAddressID, dstAccountID,
+				RLCache::pointer cache = boost::make_shared<RLCache>(lSnapshot);
+				Pathfinder pf(cache, raSrcAddressID, dstAccountID,
 					saSendMax.getCurrency(), saSendMax.getIssuer(), saSend, bValid);
 
 				if (!bValid || !pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsPaths))
@@ -1167,6 +1169,49 @@ Json::Value RPCHandler::doRandom(Json::Value jvRequest, int& cost, ScopedLock& M
 	}
 }
 
+Json::Value RPCHandler::doPathFind(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+{
+	if (!jvRequest.isMember("subcommand") || !jvRequest["subcommand"].isString())
+		return rpcError(rpcINVALID_PARAMS);
+
+	if (!mInfoSub)
+		return rpcError(rpcNO_EVENTS);
+
+	std::string sSubCommand = jvRequest["subcommand"].asString();
+
+	if (sSubCommand == "create")
+	{
+		mInfoSub->clearPFRequest();
+		PFRequest::pointer request = boost::make_shared<PFRequest>(mInfoSub);
+		Json::Value result = request->doCreate(mNetOps->getClosedLedger(), jvRequest);
+		if (request->isValid())
+		{
+			mInfoSub->setPFRequest(request);
+			theApp->getLedgerMaster().newPFRequest();
+		}
+		return result;
+	}
+
+	if (sSubCommand == "close")
+	{
+		PFRequest::pointer request = mInfoSub->getPFRequest();
+		if (!request)
+			return rpcError(rpcNO_PF_REQUEST);
+		mInfoSub->clearPFRequest();
+		return request->doClose(jvRequest);
+	}
+
+	if (sSubCommand == "status")
+	{
+		PFRequest::pointer request = mInfoSub->getPFRequest();
+		if (!request)
+			return rpcNO_PF_REQUEST;
+		return request->doStatus(jvRequest);
+	}
+
+	return rpcError(rpcINVALID_PARAMS);
+}
+
 // TODO:
 // - Add support for specifying non-endpoint issuer.
 // - Return fully expanded path with proof.
@@ -1268,6 +1313,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost, Scope
 		jvResult["destination_account"] = raDst.humanAccountID();
 
 		Json::Value	jvArray(Json::arrayValue);
+		RLCache::pointer cache = boost::make_shared<RLCache>(lSnapShot);
 
 		for (unsigned int i=0; i != jvSrcCurrencies.size(); ++i) {
 			Json::Value	jvSource		= jvSrcCurrencies[i];
@@ -1303,7 +1349,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost, Scope
 
 			STPathSet	spsComputed;
 			bool		bValid;
-			Pathfinder	pf(lSnapShot, raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount, bValid);
+			Pathfinder	pf(cache, raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount, bValid);
 
 			if (!bValid || !pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsComputed))
 			{
@@ -3293,6 +3339,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 //		{	"nickname_info",		&RPCHandler::doNicknameInfo,	    false,	optCurrent	},
 		{	"owner_info",			&RPCHandler::doOwnerInfo,		    false,	optCurrent	},
 		{	"peers",				&RPCHandler::doPeers,			    true,	optNone		},
+		{	"path_find",			&RPCHandler::doPathFind,			false,	optCurrent	},
 		{	"ping",					&RPCHandler::doPing,			    false,	optNone		},
 //		{	"profile",				&RPCHandler::doProfile,			    false,	optCurrent	},
 		{	"random",				&RPCHandler::doRandom,				false,	optNone		},

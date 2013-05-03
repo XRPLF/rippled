@@ -42,6 +42,7 @@ enum {
 	// Malformed command
 	rpcINVALID_PARAMS,
 	rpcUNKNOWN_COMMAND,
+	rpcNO_PF_REQUEST,
 
 	// Bad parameter
 	rpcACT_BITCOIN,

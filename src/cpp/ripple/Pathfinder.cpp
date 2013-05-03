@@ -138,7 +138,7 @@ static int getEffectiveLength(const STPath& spPath)
 	return length;
 }
 
-Pathfinder::Pathfinder(Ledger::ref ledger,
+Pathfinder::Pathfinder(RLCache::ref cache,
 		const RippleAddress& uSrcAccountID, const RippleAddress& uDstAccountID,
 		const uint160& uSrcCurrencyID, const uint160& uSrcIssuerID, const STAmount& saDstAmount, bool& bValid)
 	:	mSrcAccountID(uSrcAccountID.getAccountID()),
@@ -147,7 +147,7 @@ Pathfinder::Pathfinder(Ledger::ref ledger,
 		mSrcCurrencyID(uSrcCurrencyID),
 		mSrcIssuerID(uSrcIssuerID),
 		mSrcAmount(uSrcCurrencyID, uSrcIssuerID, 1u, 0, true),
-		mLedger(ledger)
+		mLedger(cache->getLedger()), mRLCache(cache)
 {
 
 	if (((mSrcAccountID == mDstAccountID) && (mSrcCurrencyID == mDstAmount.getCurrency())) || mDstAmount.isZero())
@@ -443,7 +443,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				bool			bRequireAuth	= isSetBit(sleEnd->getFieldU32(sfFlags), lsfRequireAuth);
 				bool			dstCurrency		= speEnd.mCurrencyID == mDstAmount.getCurrency();
 
-				AccountItems& rippleLines(getRippleLines(speEnd.mAccountID));
+				AccountItems& rippleLines(mRLCache->getRippleLines(speEnd.mAccountID));
 
 				std::vector< std::pair<int, uint160> > candidates;
 				candidates.reserve(rippleLines.getItems().size());
@@ -776,8 +776,9 @@ boost::unordered_set<uint160> usAccountDestCurrencies(const RippleAddress& raAcc
 	return usCurrencies;
 }
 
-AccountItems& Pathfinder::getRippleLines(const uint160& accountID)
+AccountItems& RLCache::getRippleLines(const uint160& accountID)
 {
+	boost::mutex::scoped_lock sl(mLock);
 	boost::unordered_map<uint160, AccountItems::pointer>::iterator it = mRLMap.find(accountID);
 	if (it == mRLMap.end())
 		it = mRLMap.insert(std::make_pair(accountID, boost::make_shared<AccountItems>
@@ -799,7 +800,7 @@ int Pathfinder::getPathsOut(const uint160& currencyID, const uint160& accountID,
 		return it->second;
 
 	int count = 0;
-	AccountItems& rippleLines(getRippleLines(accountID));
+	AccountItems& rippleLines(mRLCache->getRippleLines(accountID));
 	BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 	{
 		RippleState* rspEntry = (RippleState*) item.get();
