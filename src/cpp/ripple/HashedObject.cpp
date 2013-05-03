@@ -347,13 +347,15 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 	return obj;
 }
 
-int HashedObjectStore::import(const std::string& file)
+#endif
+
+int HashedObjectStore::import(const std::string& file, bool checkHashes)
 {
-	cLog(lsWARNING) << "Hash import from \"" << file << "\".";
+	cLog(lsWARNING) << "Hashed object import from \"" << file << "\".";
 	UPTR_T<Database> importDB(new SqliteDatabase(file.c_str()));
 	importDB->connect();
 
-	int countYes = 0, countNo = 0;
+	int count = 0;
 
 	SQL_FOREACH(importDB, "SELECT * FROM CommittedObjects;")
 	{
@@ -367,56 +369,48 @@ int HashedObjectStore::import(const std::string& file)
 		}
 		else
 		{
-			if (retrieve(hash) != HashedObject::pointer())
-				++countNo;
-			else
-			{ // we don't have this object
-				std::vector<unsigned char> data;
-				std::string type;
-				importDB->getStr("ObjType", type);
-				uint32 index = importDB->getBigInt("LedgerIndex");
+			std::vector<unsigned char> data;
+			std::string type;
+			importDB->getStr("ObjType", type);
+			uint32 index = importDB->getBigInt("LedgerIndex");
 
-				int size = importDB->getBinary("Object", NULL, 0);
-				data.resize(size);
-				importDB->getBinary("Object", &(data.front()), size);
+			int size = importDB->getBinary("Object", NULL, 0);
+			data.resize(size);
+			importDB->getBinary("Object", &(data.front()), size);
 
-				assert(Serializer::getSHA512Half(data) == hash);
+			assert(Serializer::getSHA512Half(data) == hash);
 
-				HashedObjectType htype = hotUNKNOWN;
-				switch (type[0])
-				{
-					case 'L': htype = hotLEDGER; break;
-					case 'T': htype = hotTRANSACTION; break;
-					case 'A': htype = hotACCOUNT_NODE; break;
-					case 'N': htype = hotTRANSACTION_NODE; break;
-					default:
-						assert(false);
-						cLog(lsERROR) << "Invalid hashed object";
-				}
-
-				if (Serializer::getSHA512Half(data) != hash)
-				{
-					cLog(lsWARNING) << "Hash mismatch in import table " << hash
-						<< " " << Serializer::getSHA512Half(data);
-				}
-				else
-				{
-					store(htype, index, data, hash);
-					++countYes;
-				}
-			}
-			if (((countYes + countNo) % 100) == 99)
+			HashedObjectType htype = hotUNKNOWN;
+			switch (type[0])
 			{
-				cLog(lsINFO) << "Import in progress: yes=" << countYes << ", no=" << countNo;
+				case 'L': htype = hotLEDGER; break;
+				case 'T': htype = hotTRANSACTION; break;
+				case 'A': htype = hotACCOUNT_NODE; break;
+				case 'N': htype = hotTRANSACTION_NODE; break;
+				default:
+					assert(false);
+					cLog(lsERROR) << "Invalid hashed object";
 			}
+
+			if (checkHashes && Serializer::getSHA512Half(data) != hash)
+			{
+				cLog(lsWARNING) << "Hash mismatch in import table " << hash
+					<< " " << Serializer::getSHA512Half(data);
+			}
+			else
+			{
+				store(htype, index, data, hash);
+				++count;
+			}
+		}
+		if ((count % 10000) == 0)
+		{
+			cLog(lsINFO) << "Import in progress: " << count;
 		}
 	}
 
-	cLog(lsWARNING) << "Imported " << countYes << " nodes, had " << countNo << " nodes";
-	waitWrite();
-	return countYes;
+	cLog(lsWARNING) << "Imported " << count << " nodes";
+	return count;
 }
-
-#endif
 
 // vim:ts=4

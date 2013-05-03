@@ -73,7 +73,7 @@ public:
 	void tune(int size, int age);
 	void sweep() { mCache.sweep(); mNegativeCache.sweep(); }
 
-	int import(const std::string&);
+	int import(const std::string& fileName, bool checkHashes);
 };
 
 #endif
