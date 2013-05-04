@@ -687,7 +687,7 @@ void LedgerMaster::updatePaths()
 			else if (mPathFindNewRequest)
 			{
 				newOnly = true;
-				lastLedger = boost::make_shared<Ledger>(*mCurrentLedger, false);
+				lastLedger = boost::make_shared<Ledger>(boost::ref(*mCurrentLedger), false);
 			}
 			else
 			{
