@@ -76,9 +76,6 @@ TER AccountSetTransactor::doApply()
 		uFlagsOut	&= ~lsfRequireDestTag;
 	}
 
-	if (uFlagsIn != uFlagsOut)
-		mTxnAccount->setFieldU32(sfFlags, uFlagsOut);
-
 	//
 	// DisallowXRP
 	//
@@ -225,6 +222,9 @@ TER AccountSetTransactor::doApply()
 			return temBAD_TRANSFER_RATE;
 		}
 	}
+
+	if (uFlagsIn != uFlagsOut)
+		mTxnAccount->setFieldU32(sfFlags, uFlagsOut);
 
 	cLog(lsINFO) << "AccountSet<";
 
