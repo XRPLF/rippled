@@ -150,6 +150,9 @@ int main(int argc, char* argv[])
 		("start", "Start from a fresh Ledger.")
 		("net", "Get the initial ledger from the network.")
 		("fg", "Run in the foreground.")
+#ifdef USE_LEVELDB
+		("import", "Import SQLite node DB into LevelDB.")
+#endif
 	;
 
 	// Interpret positional arguments as --parameters.
@@ -240,6 +243,7 @@ int main(int argc, char* argv[])
 	}
 
 	if (vm.count("start")) theConfig.START_UP = Config::FRESH;
+	if (vm.count("import")) theConfig.LDB_IMPORT = true;
 	if (vm.count("ledger"))
 	{
 		theConfig.START_LEDGER = vm["ledger"].as<std::string>();

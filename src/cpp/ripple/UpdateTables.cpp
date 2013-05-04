@@ -101,9 +101,28 @@ static void addTxnSeqField()
 	db->executeSQL("END TRANSACTION;");
 }
 
-void Application::updateTables()
+void Application::updateTables(bool ldbImport)
 { // perform any needed table updates
 	assert(schemaHas(theApp->getTxnDB(), "AccountTransactions", 0, "TransID"));
 	assert(!schemaHas(theApp->getTxnDB(), "AccountTransactions", 0, "foobar"));
 	addTxnSeqField();
+
+#ifdef USE_LEVELDB
+	boost::filesystem::path hashPath = theConfig.DATA_DIR / "hashnode.db";
+	if (boost::filesystem::exists(hashPath))
+	{
+		if (theConfig.LDB_IMPORT)
+		{
+			Log(lsWARNING) << "Importing SQLite -> LevelDB";
+			theApp->getHashedObjectStore().import(hashPath.string(), true);
+			Log(lsWARNING) << "Remove or remname the hashnode.db file";
+		}
+		else
+		{
+			Log(lsWARNING) << "SQLite hashnode database exists. Please either remove or import";
+			Log(lsWARNING) << "To import, start with the '--import' option. Otherwise, remove hashnode.db";
+			exit(1);
+		}
+	}
+#endif
 }

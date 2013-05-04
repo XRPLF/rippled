@@ -187,7 +187,7 @@ void Application::setup()
 	mLedgerDB->getDB()->setupCheckpointing(&mJobQueue);
 
 	if (!theConfig.RUN_STANDALONE)
-		updateTables();
+		updateTables(theConfig.LDB_IMPORT);
 
 	if (theConfig.START_UP == Config::FRESH)
 	{

@@ -248,6 +248,7 @@ Config::Config()
 
 	SSL_VERIFY				= true;
 
+	LDB_IMPORT				= false;
 	RUN_STANDALONE			= false;
 	START_UP				= NORMAL;
 }
