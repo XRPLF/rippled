@@ -1,16 +1,16 @@
 
 To use LevelDB, follow these steps:
 
-1) At the top of the directory tree, type:
-	make -C src/cpp/leveldb libleveldb.a
-
-2) In the SConstruct file, change
+1) In the SConstruct file, change
 	LevelDB = bool(0)
 to
 	LevelDB = bool(1)
 
-3) Compile with 'scons'.
+2) Compile with 'scons'.
 
-There is no import or export method, so your server will have to refetch
-all nodes. For simplicity, we recommend clearing your entire 'db' directory.
-LevelDB will store the hash nodes in a 'db/hashnode' directory.
+3) If you have no databases you care about, remove them. Otherwise, start
+rippled with '--import' to import your existing hashnode database into
+LevelDB. After you import the hashnode database, either delete (or move) the
+'hashnode.db', 'hashnode.db-shm' and 'hashnode.db-wal' files from your
+database directory. Do not touch the LevelDB files in the 'hashnode'
+directory.
