@@ -929,7 +929,8 @@ void LedgerAcquireMaster::gotLedgerData(Job&, uint256 hash,
 	if (!ledger)
 	{
 		cLog(lsTRACE) << "Got data for ledger we're not acquiring";
-		peer->punishPeer(LT_InvalidRequest);
+		if (peer)
+			peer->punishPeer(LT_InvalidRequest);
 		return;
 	}
 	ledger->noAwaitData();
