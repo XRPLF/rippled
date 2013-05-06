@@ -381,6 +381,7 @@
     <ClCompile Include="src\cpp\ripple\ChangeTransactor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\leveldb_core.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="util\pugiconfig.hpp">
