@@ -126,6 +126,9 @@ var build_teardown = function (host) {
 
         data.remote
           .on('disconnected', callback)
+          .on('error', function (m) {
+              console.log("server error: ", m);
+            })
           .connect(false);
       },
       function stopServerStep(callback) {
