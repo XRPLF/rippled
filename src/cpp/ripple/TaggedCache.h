@@ -131,6 +131,7 @@ template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getTra
 
 template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::clear()
 {
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	mCache.clear();
 	mCacheCount = 0;
 }
