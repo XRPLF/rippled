@@ -1118,16 +1118,19 @@ TER RippleCalc::calcNodeAdvance(
 	return terResult;
 }
 
+// At the right most node of a list of consecutive offer nodes, given the amount requested to be delivered, push toward node 0 the
+// amount requested for previous nodes to know how much to deliver.
+//
 // Between offer nodes, the fee charged may vary.  Therefore, process one inbound offer at a time.  Propagate the inbound offer's
 // requirements to the previous node.  The previous node adjusts the amount output and the amount spent on fees.  Continue
 // processing until the request is satisified as long as the rate does not increase past the initial rate.
 TER RippleCalc::calcNodeDeliverRev(
 	const unsigned int			uNode,			// 0 < uNode < uLast
 	PathState&					psCur,
-	const bool					bMultiQuality,
+	const bool					bMultiQuality,	// True, if not constrained to do the same or better quality.
 	const uint160&				uOutAccountID,	// --> Output owner's account.
-	const STAmount&				saOutReq,		// --> Funds wanted.
-	STAmount&					saOutAct)		// <-- Funds delivered.
+	const STAmount&				saOutReq,		// --> Funds requested to be delivered for an increment.
+	STAmount&					saOutAct)		// <-- Funds actually delivered for an increment.
 {
 	TER	terResult	= tesSUCCESS;
 
@@ -1136,22 +1139,25 @@ TER RippleCalc::calcNodeDeliverRev(
 
 	const uint160&	uCurIssuerID	= pnCur.uIssuerID;
 	const uint160&	uPrvAccountID	= pnPrv.uAccountID;
-	const STAmount&	saTransferRate	= pnCur.saTransferRate;
+	const STAmount&	saTransferRate	= pnCur.saTransferRate;	// Transfer rate of the TakerGets issuer.
 
-	STAmount&		saPrvDlvReq		= pnPrv.saRevDeliver;	// To be set.
-	STAmount&		saCurDlvFwd		= pnCur.saFwdDeliver;
+	STAmount&		saPrvDlvReq		= pnPrv.saRevDeliver;	// Accumulation of what the previous node must deliver.
 
 	uint256&		uDirectTip		= pnCur.uDirectTip;
 
 	uDirectTip		= 0;									// Restart book searching.
 
-	saCurDlvFwd.zero(saOutReq);								// For forward pass zero deliver.
-
-	saPrvDlvReq.zero(pnPrv.uCurrencyID, pnPrv.uIssuerID);
+	// YYY Note this gets zeroed on each increment, ideally only on first increment, then it could be a limit on the forward pass.
 	saOutAct.zero(saOutReq);
 
+	cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: saOutAct=%s saOutReq=%s")
+		% saOutAct
+		% saOutReq);
+
+	assert(!!saOutReq);
+
 	int loopCount = 0;
-	while (saOutAct != saOutReq)							// Did not deliver limit.
+	while (saOutAct < saOutReq)								// Did not deliver as much as requested.
 	{
 		if (++loopCount > 40)
 		{
@@ -1178,17 +1184,23 @@ TER RippleCalc::calcNodeDeliverRev(
 			break;
 		}
 
-		const STAmount	saOutFeeRate	= uOfrOwnerID == uCurIssuerID || uOutAccountID == uCurIssuerID // Issuer receiving or sending.
+		const STAmount	saOutFeeRate	= uOfrOwnerID == uCurIssuerID || uOutAccountID == uCurIssuerID // Issuer sending or receiving.
 											? saOne				// No fee.
 											: saTransferRate;	// Transfer rate of issuer.
 		cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: uOfrOwnerID=%s uOutAccountID=%s uCurIssuerID=%s saTransferRate=%s saOutFeeRate=%s")
 			% RippleAddress::createHumanAccountID(uOfrOwnerID)
 			% RippleAddress::createHumanAccountID(uOutAccountID)
 			% RippleAddress::createHumanAccountID(uCurIssuerID)
-			% saTransferRate.getFullText()
-			% saOutFeeRate.getFullText());
+			% saTransferRate
+			% saOutFeeRate);
 
-		if (!saRateMax)
+		if (bMultiQuality)
+		{
+			// In multi-quality mode, ignore rate.
+
+			nothing();
+		}
+		else if (!saRateMax)
 		{
 			// Set initial rate.
 			saRateMax	= saOutFeeRate;
@@ -1220,43 +1232,45 @@ TER RippleCalc::calcNodeDeliverRev(
 		}
 
 		// Amount that goes to the taker.
-		STAmount	saOutPass		= std::min(std::min(saOfferFunds, saTakerGets), saOutReq-saOutAct);	// Offer maximum out - assuming no out fees.
+		STAmount	saOutPassReq	= std::min(std::min(saOfferFunds, saTakerGets), saOutReq-saOutAct);	// Maximum out - assuming no out fees.
+		STAmount	saOutPassAct	= saOutPassReq;
+
 		// Amount charged to the offer owner.
 		// The fee goes to issuer. The fee is paid by offer owner and not passed as a cost to taker.
 		// Round down: prefer liquidity rather than microscopic fees.
-		STAmount	saOutPlusFees	= STAmount::mulRound(saOutPass, saOutFeeRate, false);						// Offer out with fees.
+		STAmount	saOutPlusFees	= STAmount::mulRound(saOutPassAct, saOutFeeRate, false);						// Offer out with fees.
 
-		cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: saOutReq=%s saOutAct=%s saTakerGets=%s saOutPass=%s saOutPlusFees=%s saOfferFunds=%s")
+		cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: saOutReq=%s saOutAct=%s saTakerGets=%s saOutPassAct=%s saOutPlusFees=%s saOfferFunds=%s")
 			% saOutReq
 			% saOutAct
 			% saTakerGets
-			% saOutPass
+			% saOutPassAct
 			% saOutPlusFees
 			% saOfferFunds);
 
 		if (saOutPlusFees > saOfferFunds)
 		{
-			// Offer owner can not cover all fees, compute saOutPass based on saOfferFunds.
+			// Offer owner can not cover all fees, compute saOutPassAct based on saOfferFunds.
 
 			saOutPlusFees	= saOfferFunds;
-			// Round up: prefer liquidity rather than microscopic fees.
-			saOutPass		= STAmount::divRound(saOutPlusFees, saOutFeeRate, true);
+			// Round up: prefer liquidity rather than microscopic fees. But, limit by requested.
+			saOutPassAct	= std::min(saOutPassReq, STAmount::divRound(saOutPlusFees, saOutFeeRate, true));
 
-			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: Total exceeds fees: saOutPass=%s saOutPlusFees=%s saOfferFunds=%s")
-				% saOutPass
+			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: Total exceeds fees: saOutPassAct=%s saOutPlusFees=%s saOfferFunds=%s")
+				% saOutPassAct
 				% saOutPlusFees
 				% saOfferFunds);
 		}
 
 		// Compute portion of input needed to cover actual output.
 
-		STAmount	saInPassReq	= STAmount::mulRound(saOutPass, saOfrRate, saTakerPays, true);
+		STAmount	saInPassReq	= STAmount::mulRound(saOutPassAct, saOfrRate, saTakerPays, true);
 		STAmount	saInPassAct;
 
-		cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: saInPassReq=%s saOfrRate=%s saOutPass=%s saOutPlusFees=%s")
+		cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: saInPassReq=%s saOfrRate=%s saOutPassAct=%s saOutPlusFees=%s")
 			% saInPassReq
 			% saOfrRate
-			% saOutPass
+			% saOutPassAct
 			% saOutPlusFees);
 
 		if (!saInPassReq)
@@ -1280,12 +1294,12 @@ TER RippleCalc::calcNodeDeliverRev(
 			saInPassAct	= saInPassReq;
 
 			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: account --> OFFER --> ? : saInPassAct=%s")
-				% saPrvDlvReq);
+				% saInPassAct);
 		}
 		else
 		{
 			// offer --> OFFER --> ?
-			// Chain and compute the previous offer now.
+			// Compute in previous offer node how much could come in.
 
 			terResult	= calcNodeDeliverRev(
 				uNode-1,
@@ -1302,16 +1316,19 @@ TER RippleCalc::calcNodeDeliverRev(
 		if (tesSUCCESS != terResult)
 			break;
 
-		if (saInPassAct != saInPassReq)
+		if (saInPassAct < saInPassReq)
 		{
 			// Adjust output to conform to limited input.
-			// XXX Verify it is impossible for these to be larger than available funds.
-			saOutPass		= STAmount::divRound(saInPassAct, saOfrRate, saTakerGets, !saTakerGets.isNative());
-			saOutPlusFees	= STAmount::mulRound(saOutPass, saOutFeeRate, true);
+			saOutPassAct	= std::min(saOutPassReq, STAmount::divRound(saInPassAct, saOfrRate, saTakerGets, true));
+			saOutPlusFees	= std::min(saOfferFunds, STAmount::mulRound(saOutPassAct, saOutFeeRate, true));
 
-			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: adjusted: saOutPass=%s saOutPlusFees=%s")
-				% saOutPass
+			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: adjusted: saOutPassAct=%s saOutPlusFees=%s")
+				% saOutPassAct
 				% saOutPlusFees);
+		}
+		else
+		{
+			assert(saInPassAct == saInPassReq);
 		}
 
 		// Funds were spent.
@@ -1321,13 +1338,13 @@ TER RippleCalc::calcNodeDeliverRev(
 		// Sending could be complicated: could fund a previous offer not yet visited.
 		// However, these deductions and adjustments are tenative.
 		// Must reset balances when going forward to perform actual transfers.
-		terResult	= lesActive.accountSend(uOfrOwnerID, uCurIssuerID, saOutPass);
+		terResult	= lesActive.accountSend(uOfrOwnerID, uCurIssuerID, saOutPassAct);
 
 		if (tesSUCCESS != terResult)
 			break;
 
 		// Adjust offer
-		STAmount	saTakerGetsNew	= saTakerGets - saOutPass;
+		STAmount	saTakerGetsNew	= saTakerGets - saOutPassAct;
 		STAmount	saTakerPaysNew	= saTakerPays - saInPassAct;
 
 		if (saTakerPaysNew.isNegative() || saTakerGetsNew.isNegative())
@@ -1346,17 +1363,27 @@ TER RippleCalc::calcNodeDeliverRev(
 
 		lesActive.entryModify(sleOffer);
 
-		if (saOutPass == saTakerGets)
+		if (saOutPassAct == saTakerGets)
 		{
 			// Offer became unfunded.
 			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: offer became unfunded."));
 
 			bEntryAdvance	= true;		// XXX When don't we want to set advance?
 		}
+		else
+		{
+			assert(saOutPassAct < saTakerGets);
+		}
 
-		saOutAct	+= saOutPass;
-		saPrvDlvReq	+= saInPassAct;
+		saOutAct	+= saOutPassAct;
+		saPrvDlvReq	+= saInPassAct;		// Accumulate what is to be delivered from previous node.
 	}
+
+	tLog(saOutAct > saOutReq, lsWARNING)
+		<< boost::str(boost::format("calcNodeDeliverRev: TOO MUCH: saOutAct=%s saOutReq=%s")
+			% saOutAct
+			% saOutReq);
+	assert(saOutAct <= saOutReq);
 
 // XXX Perhaps need to check if partial is okay to relax this?
 	if (tesSUCCESS == terResult && !saOutAct)
@@ -1367,6 +1394,7 @@ TER RippleCalc::calcNodeDeliverRev(
 
 // For current offer, get input from deliver/limbo and output to next account or deliver for next offers.
 // <-- pnCur.saFwdDeliver: For calcNodeAccountFwd to know how much went through
+// --> pnCur.saRevDeliver: Do not exceed.
 TER RippleCalc::calcNodeDeliverFwd(
 	const unsigned int			uNode,			// 0 < uNode < uLast
 	PathState&					psCur,
@@ -1389,6 +1417,7 @@ TER RippleCalc::calcNodeDeliverFwd(
 	const uint160&	uPrvCurrencyID	= pnPrv.uCurrencyID;
 	const uint160&	uPrvIssuerID	= pnPrv.uIssuerID;
 	const STAmount&	saInTransRate	= pnPrv.saTransferRate;
+	const STAmount&	saCurDeliverMax	= pnCur.saRevDeliver;	// Don't deliver more than wanted.
 
 	STAmount&		saCurDeliverAct	= pnCur.saFwdDeliver;	// Zeroed in reverse pass.
 
@@ -1400,8 +1429,9 @@ TER RippleCalc::calcNodeDeliverFwd(
 	saInFees.zero(saInReq);
 
 	int loopCount = 0;
+	// XXX Perhaps make sure do not exceed saCurDeliverMax as another way to stop.
 	while (tesSUCCESS == terResult
-		&& saInAct + saInFees != saInReq)		// Did not deliver all funds.
+		&& saInAct + saInFees < saInReq)		// Did not spend all inbound deliver funds.
 	{
 		if (++loopCount > 40)
 		{
@@ -1442,12 +1472,13 @@ TER RippleCalc::calcNodeDeliverFwd(
 
 			// First calculate assuming no output fees: saInPassAct, saInPassFees, saOutPassAct
 
-			STAmount	saOutFunded		= std::min(saOfferFunds, saTakerGets);								// Offer maximum out - If there are no out fees.
-			STAmount	saInFunded		= STAmount::mulRound(saOutFunded, saOfrRate, saTakerPays, true);	// Offer maximum in - Limited by by payout.
+			STAmount	saOutFunded		= std::min(saOfferFunds, saTakerGets);								// Offer maximum out - limited by funds with out fees.
+			STAmount	saOutPassFunded	= std::min(saOutFunded, saCurDeliverMax-saCurDeliverAct);			// Offer maximum out - limit by most to deliver.
+			STAmount	saInFunded		= STAmount::mulRound(saOutPassFunded, saOfrRate, saTakerPays, true);// Offer maximum in - Limited by by payout.
 			STAmount	saInTotal		= STAmount::mulRound(saInFunded, saInFeeRate, true);				// Offer maximum in with fees.
 			STAmount	saInSum			= std::min(saInTotal, saInReq-saInAct-saInFees);					// In limited by remaining.
 			STAmount	saInPassAct		= STAmount::divRound(saInSum, saInFeeRate, true);					// In without fees.
-			STAmount	saOutPassMax	= STAmount::divRound(saInPassAct, saOfrRate, saTakerGets, !saTakerGets.isNative());	// Out limited by in remaining.
+			STAmount	saOutPassMax	= std::min(saOutPassFunded, STAmount::divRound(saInPassAct, saOfrRate, saTakerGets, true));	// Out limited by in remaining.
 
 			STAmount	saInPassFeesMax	= saInSum-saInPassAct;
 
@@ -1455,9 +1486,10 @@ TER RippleCalc::calcNodeDeliverFwd(
 			STAmount	saInPassFees;	// Will be determined by adjusted saInPassAct.
 
 
-			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverFwd: uNode=%d saOutFunded=%s saOfferFunds=%s saTakerGets=%s saInReq=%s saInAct=%s saInFees=%s saInFunded=%s saInTotal=%s saInSum=%s saInPassAct=%s saOutPassMax=%s")
+			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverFwd: uNode=%d saOutFunded=%s saOutPassFunded=%s saOfferFunds=%s saTakerGets=%s saInReq=%s saInAct=%s saInFees=%s saInFunded=%s saInTotal=%s saInSum=%s saInPassAct=%s saOutPassMax=%s")
 				% uNode
 				% saOutFunded
+				% saOutPassFunded
 				% saOfferFunds
 				% saTakerGets
 				% saInReq
@@ -1497,10 +1529,11 @@ TER RippleCalc::calcNodeDeliverFwd(
 				saOutPassAct	= saOutPassMax;
 				saInPassFees	= saInPassFeesMax;
 
-				cLog(lsDEBUG) << boost::str(boost::format("calcNodeDeliverFwd: ? --> OFFER --> account: uOfrOwnerID=%s uNxtAccountID=%s saOutPassAct=%s")
+				cLog(lsDEBUG) << boost::str(boost::format("calcNodeDeliverFwd: ? --> OFFER --> account: uOfrOwnerID=%s uNxtAccountID=%s saOutPassAct=%s saOutFunded=%s")
 					% RippleAddress::createHumanAccountID(uOfrOwnerID)
 					% RippleAddress::createHumanAccountID(uNxtAccountID)
-					% saOutPassAct.getFullText());
+					% saOutPassAct
+					% saOutFunded);
 
 				// Output: Debit offer owner, send XRP or non-XPR to next account.
 				terResult	= lesActive.accountSend(uOfrOwnerID, uNxtAccountID, saOutPassAct);
@@ -1540,6 +1573,9 @@ TER RippleCalc::calcNodeDeliverFwd(
 				{
 					// Fraction of output amount.
 					// Output fees are paid by offer owner and not passed to previous.
+
+					assert(saOutPassAct < saOutPassMax);
+
 					saInPassAct		= STAmount::mulRound(saOutPassAct, saOfrRate, saInReq, true);
 					saInPassFees	= std::min(saInPassFeesMax, STAmount::mulRound(saInPassAct, saInFeeRate, true));
 				}
@@ -1601,15 +1637,26 @@ TER RippleCalc::calcNodeDeliverFwd(
 			if (saOutPassAct == saOutFunded)
 			{
 				// Offer became unfunded.
+
+				cLog(lsWARNING) << boost::str(boost::format("calcNodeDeliverFwd: unfunded: saOutPassAct=%s saOutFunded=%s")
+					% saOutPassAct % saOutFunded);
+
 				psCur.vUnfundedBecame.push_back(uOfferIndex);
 				bEntryAdvance	= true;
+			}
+			else
+			{
+				tLog(saOutPassAct >= saOutFunded, lsWARNING) << boost::str(boost::format("calcNodeDeliverFwd: TOO MUCH: saOutPassAct=%s saOutFunded=%s")
+					% saOutPassAct % saOutFunded);
+
+				assert(saOutPassAct < saOutFunded);
 			}
 
 			saInAct			+= saInPassAct;
 			saInFees		+= saInPassFees;
 
 			// Adjust amount available to next node.
-			saCurDeliverAct	+= saOutPassAct;
+			saCurDeliverAct	= std::min(saCurDeliverMax, saCurDeliverAct+saOutPassAct);
 		}
 	}
 
@@ -1637,17 +1684,52 @@ TER RippleCalc::calcNodeOfferRev(
 		// Next is an account node, resolve current offer node's deliver.
 		STAmount		saDeliverAct;
 
+		// For each offer node in the sequence clear saRevDeliver and the previous saFwdDeliver.
+		for (unsigned int uIndex = uNode; uIndex;)
+		{
+			PaymentNode&	pnClrCur	= psCur.vpnNodes[uIndex];
+			PaymentNode&	pnClrPrv	= psCur.vpnNodes[uIndex-1];
+
+			if (!pnClrCur.uAccountID)
+			{
+				// An offer.
+
+				// Reverse pass.
+				// Current entry is previously calculated.
+				// Clear prior entries which are derived.
+				pnClrPrv.saRevDeliver.zero(pnClrPrv.uCurrencyID, pnClrPrv.uIssuerID);
+
+				// Clear deliver entry to be added to in forward pass.
+				pnClrCur.saFwdDeliver.zero(pnClrCur.uCurrencyID, pnClrCur.uIssuerID);
+
+				--uIndex;
+			}
+			else
+			{
+				// A non-offer.
+
+				uIndex	= 0;	// Done.
+			}
+		}
+
+		cLog(lsINFO) << boost::str(boost::format("calcNodeOfferRev: OFFER --> account: uNode=%d saRevDeliver=%s")
+			% uNode
+			% pnCur.saRevDeliver);
+
 		terResult	= calcNodeDeliverRev(
 							uNode,
 							psCur,
 							bMultiQuality,
 
 							pnNxt.uAccountID,
-							pnCur.saRevDeliver,
+							pnCur.saRevDeliver,	// The next node wants the current node to deliver this much.
 							saDeliverAct);
 	}
 	else
 	{
+		cLog(lsINFO) << boost::str(boost::format("calcNodeOfferRev: OFFER --> offer: uNode=%d")
+			% uNode);
+
 		// Next is an offer. Deliver has already been resolved.
 		terResult	= tesSUCCESS;
 	}
@@ -2096,6 +2178,12 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 				// Must have processed something.
 				terResult	= tecPATH_DRY;
 			}
+
+			cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: saPrvDeliverAct=%s saPrvDeliverReq=%s saCurWantedAct=%s saCurWantedReq=%s")
+				% saPrvDeliverAct
+				% saPrvDeliverReq
+				% saCurWantedAct
+				% saCurWantedReq);
 		}
 		else
 		{
@@ -2118,11 +2206,11 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 				calcNodeRipple(QUALITY_ONE, lesActive.rippleTransferRate(uCurAccountID), saPrvDeliverReq, saCurIssueReq, saPrvDeliverAct, saCurIssueAct, uRateMax);
 			}
 
-			cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: saCurRedeemReq=%s saCurIssueAct=%s saCurIssueReq=%s saPrvDeliverAct=%s")
-				% saCurRedeemReq.getFullText()
-				% saCurRedeemAct.getFullText()
-				% saCurIssueReq.getFullText()
-				% saPrvDeliverAct.getFullText());
+			cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: saCurIssueAct=%s saCurRedeemReq=%s saPrvDeliverAct=%s saCurIssueReq=%s")
+				% saCurRedeemAct
+				% saCurRedeemReq
+				% saPrvDeliverAct
+				% saCurIssueReq);
 
 			if (!saPrvDeliverAct)
 			{
@@ -2541,8 +2629,9 @@ TER RippleCalc::calcNodeRev(const unsigned int uNode, PathState& psCur, const bo
 
 		saTransferRate	= STAmount::saFromRate(lesActive.rippleTransferRate(uCurIssuerID));
 
-	cLog(lsDEBUG) << boost::str(boost::format("calcNodeRev> uNode=%d uIssuerID=%s saTransferRate=%s")
+	cLog(lsDEBUG) << boost::str(boost::format("calcNodeRev> uNode=%d bCurAccount=%d uIssuerID=%s saTransferRate=%s")
 		% uNode
+		% bCurAccount
 		% RippleAddress::createHumanAccountID(uCurIssuerID)
 		% saTransferRate.getFullText());
 
@@ -2779,11 +2868,19 @@ int iPass	= 0;
 				pspCur->saInAct		= saMaxAmountAct;						// Update to current amount processed.
 				pspCur->saOutAct	= saDstAmountAct;
 
-				tLog(pspCur->saInReq.isPositive() && pspCur->saInAct >= pspCur->saInReq, lsWARNING) << boost::str(boost::format("rippleCalc: DONE: saInAct=%s saInReq=%s")
-					% pspCur->saInAct
-					% pspCur->saInReq);
+				tLog(pspCur->saInReq.isPositive() && pspCur->saInAct >= pspCur->saInReq, lsWARNING)
+					<< boost::str(boost::format("rippleCalc: DONE: saInAct=%s saInReq=%s")
+						% pspCur->saInAct
+						% pspCur->saInReq);
 
 				assert(pspCur->saInReq.isNegative() || pspCur->saInAct < pspCur->saInReq);	// Error if done.
+
+				tLog(pspCur->saOutAct >= pspCur->saOutReq, lsWARNING)
+					<< boost::str(boost::format("rippleCalc: ALREADY DONE: saOutAct=%s saOutReq=%s")
+						% pspCur->saOutAct
+						% pspCur->saOutReq);
+
+				assert(pspCur->saOutAct < pspCur->saOutReq);								// Error if done, output met.
 
 				rc.pathNext(pspCur, bMultiQuality, lesCheckpoint, lesActive);	// Compute increment.
 				cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: AFTER: mIndex=%d uQuality=%d rate=%s")
@@ -2874,6 +2971,14 @@ int iPass	= 0;
 
 			    terResult	= tesSUCCESS;
 		    }
+		    else if (saDstAmountAct > saDstAmountReq)
+			{
+				cLog(lsWARNING) << boost::str(boost::format("rippleCalc: TOO MUCH: saDstAmountAct=%s saDstAmountReq=%s")
+					% saDstAmountAct
+					% saDstAmountReq);
+
+				assert(false);
+			}
 		    else if (saMaxAmountAct != saMaxAmountReq && iDry != vpsExpanded.size())
 		    {
 			    // Have not met requested amount or max send, try to do more. Prepare for next pass.
