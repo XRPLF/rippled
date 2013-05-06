@@ -191,6 +191,9 @@ int PFRequest::parseJson(const Json::Value& jvParams, bool complete)
 		}
 	}
 
+	if (jvParams.isMember("id"))
+		jvId = jvParams["id"];
+
 	return ret;
 }
 Json::Value PFRequest::doClose(const Json::Value&)
@@ -234,6 +237,10 @@ bool PFRequest::doUpdate(RLCache::ref cache, bool fast)
 
 	jvStatus["source_account"] = raSrcAccount.humanAccountID();
 	jvStatus["destination_account"] = raDstAccount.humanAccountID();
+	jvStatus["destination_amount"] = saDstAmount.getJson(0);
+
+	if (!jvId.isNull())
+		jvStatus["id"] = jvId;
 
 	Json::Value jvArray = Json::arrayValue;
 
