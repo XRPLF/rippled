@@ -1163,10 +1163,10 @@ STAmount STAmount::deserialize(SerializerIterator& it)
 
 std::string STAmount::getFullText() const
 {
-	static boost::format nativeFormat("%s/" SYSTEM_CURRENCY_CODE);
-	static boost::format noIssuer("%s/%s/0");
-	static boost::format issuerOne("%s/%s/1");
-	static boost::format normal("%s/%s/%s");
+	static const boost::format nativeFormat("%s/" SYSTEM_CURRENCY_CODE);
+	static const boost::format noIssuer("%s/%s/0");
+	static const boost::format issuerOne("%s/%s/1");
+	static const boost::format normal("%s/%s/%s");
 	if (mIsNative)
 	{
 		return str(boost::format(nativeFormat) % getText());
