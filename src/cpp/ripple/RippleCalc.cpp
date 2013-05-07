@@ -2667,6 +2667,16 @@ void RippleCalc::pathNext(PathState::ref psrCur, const bool bMultiQuality, const
 
 	lesCurrent	= lesCheckpoint.duplicate();		// Restore from checkpoint.
 
+	for (unsigned int uIndex = psrCur->vpnNodes.size(); uIndex--;)
+	{
+		PaymentNode&	pnCur	= psrCur->vpnNodes[uIndex];
+
+		pnCur.saRevRedeem.zero();
+		pnCur.saRevIssue.zero();
+		pnCur.saRevDeliver.zero();
+		pnCur.saFwdDeliver.zero();
+	}
+
 	psrCur->terStatus	= calcNodeRev(uLast, *psrCur, bMultiQuality);
 
 	cLog(lsDEBUG) << "pathNext: Path after reverse: " << psrCur->getJson();
