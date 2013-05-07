@@ -597,6 +597,7 @@ std::string STAmount::getRaw() const
 std::string STAmount::getText() const
 { // keep full internal accuracy, but make more human friendly if posible
 	if (isZero()) return "0";
+
 	if (mIsNative)
 	{
 		if (mIsNegative)

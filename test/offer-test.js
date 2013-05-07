@@ -1738,4 +1738,100 @@ buster.testCase("Offer tfSell", {
         });
     },
 });
+
+buster.testCase("Client Issue #535", {
+  'setUp'     : testutils.build_setup(),
+  // 'setUp'     : testutils.build_setup({ verbose: true }),
+  // 'setUp'     : testutils.build_setup({ verbose: true, standalone: true }),
+  'tearDown'  : testutils.build_teardown(),
+
+  "gateway cross currency" :
+    function (done) {
+      var self = this;
+      var final_create;
+
+      async.waterfall([
+          function (callback) {
+            // Provide micro amounts to compensate for fees to make results round nice.
+            self.what = "Create accounts.";
+
+            testutils.create_accounts(self.remote, "root", "350.000020", ["alice", "bob", "mtgox"], callback);
+          },
+          function (callback) {
+            self.what = "Set limits.";
+
+            testutils.credit_limits(self.remote,
+              {
+                "alice" : [ "1000/XTS/mtgox", "1000/XXX/mtgox" ],
+                "bob" : [ "1000/XTS/mtgox", "1000/XXX/mtgox" ],
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Distribute funds.";
+
+            testutils.payments(self.remote,
+              {
+                "mtgox" : [ "100/XTS/alice", "100/XXX/alice", "100/XTS/bob", "100/XXX/bob", ],
+              },
+              callback);
+          },
+          function (callback) {
+            self.what = "Create offer alice.";
+
+            self.remote.transaction()
+              .offer_create("alice", "100/XTS/mtgox", "100/XXX/mtgox")
+              .on('proposed', function (m) {
+                  // console.log("proposed: offer_create: %s", json.stringify(m));
+                  callback(m.result !== 'tesSUCCESS');
+
+                  seq_carol = m.tx_json.sequence;
+                })
+              .submit();
+          },
+          function (callback) {
+            self.what = "Bob converts XTS to XXX.";
+
+            self.remote.transaction()
+              .payment("bob", "bob", "1/XXX/bob")
+              .send_max("1.5/XTS/bob")
+              .build_path(true)
+              .on('proposed', function (m) {
+                  if (m.result !== 'tesSUCCESS')
+                    console.log("proposed: %s", JSON.stringify(m, undefined, 2));
+
+                  callback(m.result !== 'tesSUCCESS');
+                })
+              .submit();
+          },
+//          function (callback) {
+//            self.what = "Display ledger";
+//
+//            self.remote.request_ledger('current', true)
+//              .on('success', function (m) {
+//                  console.log("Ledger: %s", JSON.stringify(m, undefined, 2));
+//
+//                  callback();
+//                })
+//              .request();
+//          },
+          function (callback) {
+            self.what = "Verify balances.";
+
+            testutils.verify_balances(self.remote,
+              {
+                "alice"   : [ "101/XTS/mtgox", "99/XXX/mtgox", ],
+                "bob"   : [ "99/XTS/mtgox", "101/XXX/mtgox", ],
+              },
+              callback);
+          },
+        ], function (error) {
+          if (error)
+            console.log("result: %s: error=%s", self.what, error);
+          buster.refute(error);
+
+          done();
+        });
+    }
+});
 // vim:sw=2:sts=2:ts=8:et

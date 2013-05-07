@@ -225,8 +225,10 @@ TER PathState::pushNode(
 									: !!pnCur.uCurrencyID
 										? uAccountID
 										: ACCOUNT_XRP;
-		pnCur.saRevRedeem	= STAmount(uCurrencyID, uAccountID);
-		pnCur.saRevIssue	= STAmount(uCurrencyID, uAccountID);
+		pnCur.saRevRedeem	= STAmount(pnCur.uCurrencyID, uAccountID);
+		pnCur.saRevIssue	= STAmount(pnCur.uCurrencyID, uAccountID);
+		pnCur.saRevDeliver	= STAmount(pnCur.uCurrencyID, pnCur.uIssuerID);
+		pnCur.saFwdDeliver	= pnCur.saRevDeliver;
 
 		if (bFirst)
 		{
@@ -311,8 +313,8 @@ TER PathState::pushNode(
 							&& -saOwed >= (saLimit = lesEntries.rippleLimit(pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID)))
 						{
 							cLog(lsWARNING) << boost::str(boost::format("pushNode: dry: saOwed=%s saLimit=%s")
-								% saOwed.getFullText()
-								% saLimit.getFullText());
+								% saOwed
+								% saLimit);
 
 							terResult	= tecPATH_DRY;
 						}
@@ -338,6 +340,8 @@ TER PathState::pushNode(
 											: pnPrv.uAccountID	// Or previous account if no previous issuer.
 										: ACCOUNT_XRP;
 		pnCur.saRateMax		= saZero;
+		pnCur.saRevDeliver	= STAmount(pnCur.uCurrencyID, pnCur.uIssuerID);
+		pnCur.saFwdDeliver	= pnCur.saRevDeliver;
 
 		if (!!pnCur.uCurrencyID != !!pnCur.uIssuerID)
 		{
@@ -1150,9 +1154,10 @@ TER RippleCalc::calcNodeDeliverRev(
 	// YYY Note this gets zeroed on each increment, ideally only on first increment, then it could be a limit on the forward pass.
 	saOutAct.zero(saOutReq);
 
-	cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: saOutAct=%s saOutReq=%s")
+	cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev> saOutAct=%s saOutReq=%s saPrvDlvReq=%s")
 		% saOutAct
-		% saOutReq);
+		% saOutReq
+		% saPrvDlvReq);
 
 	assert(!!saOutReq);
 
@@ -1383,11 +1388,16 @@ TER RippleCalc::calcNodeDeliverRev(
 		<< boost::str(boost::format("calcNodeDeliverRev: TOO MUCH: saOutAct=%s saOutReq=%s")
 			% saOutAct
 			% saOutReq);
+
 	assert(saOutAct <= saOutReq);
 
 // XXX Perhaps need to check if partial is okay to relax this?
 	if (tesSUCCESS == terResult && !saOutAct)
 		terResult	= tecPATH_DRY;												// Unable to meet request, consider path dry.
+	cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev< saOutAct=%s saOutReq=%s saPrvDlvReq=%s")
+		% saOutAct
+		% saOutReq
+		% saPrvDlvReq);
 
 	return terResult;
 }
@@ -1684,34 +1694,6 @@ TER RippleCalc::calcNodeOfferRev(
 		// Next is an account node, resolve current offer node's deliver.
 		STAmount		saDeliverAct;
 
-		// For each offer node in the sequence clear saRevDeliver and the previous saFwdDeliver.
-		for (unsigned int uIndex = uNode; uIndex;)
-		{
-			PaymentNode&	pnClrCur	= psCur.vpnNodes[uIndex];
-			PaymentNode&	pnClrPrv	= psCur.vpnNodes[uIndex-1];
-
-			if (!pnClrCur.uAccountID)
-			{
-				// An offer.
-
-				// Reverse pass.
-				// Current entry is previously calculated.
-				// Clear prior entries which are derived.
-				pnClrPrv.saRevDeliver.zero(pnClrPrv.uCurrencyID, pnClrPrv.uIssuerID);
-
-				// Clear deliver entry to be added to in forward pass.
-				pnClrCur.saFwdDeliver.zero(pnClrCur.uCurrencyID, pnClrCur.uIssuerID);
-
-				--uIndex;
-			}
-			else
-			{
-				// A non-offer.
-
-				uIndex	= 0;	// Done.
-			}
-		}
-
 		cLog(lsINFO) << boost::str(boost::format("calcNodeOfferRev: OFFER --> account: uNode=%d saRevDeliver=%s")
 			% uNode
 			% pnCur.saRevDeliver);
@@ -1804,13 +1786,15 @@ void RippleCalc::calcNodeRipple(
 	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple> uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
 		% uQualityIn
 		% uQualityOut
-		% saPrvReq.getFullText()
-		% saCurReq.getFullText()
-		% saPrvAct.getFullText()
-		% saCurAct.getFullText());
+		% saPrvReq
+		% saCurReq
+		% saPrvAct
+		% saCurAct);
 
 	assert(saCurReq.isPositive());
 	assert(saPrvReq.getCurrency() == saCurReq.getCurrency());
+	assert(saPrvReq.getCurrency() == saPrvAct.getCurrency());
+	assert(saPrvReq.getIssuer() == saPrvAct.getIssuer());
 
 	const bool		bPrvUnlimited	= saPrvReq.isNegative();
 	const STAmount	saPrv			= bPrvUnlimited ? STAmount(saPrvReq) : saPrvReq-saPrvAct;
@@ -1819,8 +1803,8 @@ void RippleCalc::calcNodeRipple(
 #if 0
 	cLog(lsINFO) << boost::str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCur=%s")
 		% bPrvUnlimited
-		% saPrv.getFullText()
-		% saCur.getFullText());
+		% saPrv
+		% saCur);
 #endif
 
 	if (uQualityIn >= uQualityOut)
@@ -1859,19 +1843,19 @@ void RippleCalc::calcNodeRipple(
 
 			STAmount	saCurIn		= STAmount::divRound(STAmount::mulRound(saCur, uQualityOut, uCurrencyID, uCurIssuerID, true), uQualityIn, uCurrencyID, uCurIssuerID, true);
 
-	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCurIn=%s") % bPrvUnlimited % saPrv.getFullText() % saCurIn.getFullText());
+	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCurIn=%s") % bPrvUnlimited % saPrv % saCurIn);
 			if (bPrvUnlimited || saCurIn <= saPrv)
 			{
 				// All of cur. Some amount of prv.
 				saCurAct	+= saCur;
 				saPrvAct	+= saCurIn;
-	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple:3c: saCurReq=%s saPrvAct=%s") % saCurReq.getFullText() % saPrvAct.getFullText());
+	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple:3c: saCurReq=%s saPrvAct=%s") % saCurReq % saPrvAct);
 			}
 			else
 			{
 				// A part of cur. All of prv. (cur as driver)
 				STAmount	saCurOut	= STAmount::divRound(STAmount::mulRound(saPrv, uQualityIn, uCurrencyID, uCurIssuerID, true), uQualityOut, uCurrencyID, uCurIssuerID, true);
-	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple:4: saCurReq=%s") % saCurReq.getFullText());
+	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple:4: saCurReq=%s") % saCurReq);
 
 				saCurAct	+= saCurOut;
 				saPrvAct	= saPrvReq;
@@ -1885,10 +1869,10 @@ void RippleCalc::calcNodeRipple(
 	cLog(lsTRACE) << boost::str(boost::format("calcNodeRipple< uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
 		% uQualityIn
 		% uQualityOut
-		% saPrvReq.getFullText()
-		% saCurReq.getFullText()
-		% saPrvAct.getFullText()
-		% saCurAct.getFullText());
+		% saPrvReq
+		% saCurReq
+		% saPrvAct
+		% saCurAct);
 }
 
 // Calculate saPrvRedeemReq, saPrvIssueReq, saPrvDeliver from saCur...
@@ -1945,11 +1929,11 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 		% STAmount::createHumanCurrency(uCurrencyID)
 		% uQualityIn
 		% uQualityOut
-		% saPrvOwed.getFullText()
-		% saPrvLimit.getFullText());
+		% saPrvOwed
+		% saPrvLimit);
 
 	// Previous can redeem the owed IOUs it holds.
-	const STAmount	saPrvRedeemReq	= saPrvOwed.isPositive() ? saPrvOwed : STAmount(uCurrencyID, 0);
+	const STAmount	saPrvRedeemReq	= saPrvOwed.isPositive() ? saPrvOwed : STAmount(saPrvOwed.getCurrency(), saPrvOwed.getIssuer());
 	STAmount&		saPrvRedeemAct	= pnPrv.saRevRedeem;
 
 	// Previous can issue up to limit minus whatever portion of limit already used (not including redeemable amount).
@@ -1957,7 +1941,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 	STAmount&		saPrvIssueAct	= pnPrv.saRevIssue;
 
 	// For !bPrvAccount
-	const STAmount	saPrvDeliverReq	= STAmount(uCurrencyID, uCurAccountID, -1);	// Unlimited.
+	const STAmount	saPrvDeliverReq	= STAmount(pnPrv.saRevDeliver.getCurrency(), pnPrv.saRevDeliver.getIssuer(), -1);	// Unlimited.
 	STAmount&		saPrvDeliverAct	= pnPrv.saRevDeliver;
 
 	// For bNxtAccount
@@ -1971,12 +1955,14 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 	const STAmount&	saCurDeliverReq	= pnCur.saRevDeliver;
 	STAmount		saCurDeliverAct(saCurDeliverReq.getCurrency(), saCurDeliverReq.getIssuer());
 
-	cLog(lsTRACE) << boost::str(boost::format("calcNodeAccountRev: saPrvRedeemReq=%s saPrvIssueReq=%s saCurRedeemReq=%s saCurIssueReq=%s saNxtOwed=%s")
-		% saPrvRedeemReq.getFullText()
-		% saPrvIssueReq.getFullText()
-		% saCurRedeemReq.getFullText()
-		% saCurIssueReq.getFullText()
-		% saNxtOwed.getFullText());
+	cLog(lsTRACE) << boost::str(boost::format("calcNodeAccountRev: saPrvRedeemReq=%s saPrvIssueReq=%s saPrvDeliverAct=%s saPrvDeliverReq=%s saCurRedeemReq=%s saCurIssueReq=%s saNxtOwed=%s")
+		% saPrvRedeemReq
+		% saPrvIssueReq
+		% saPrvDeliverAct
+		% saPrvDeliverReq
+		% saCurRedeemReq
+		% saCurIssueReq
+		% saNxtOwed);
 
 	cLog(lsTRACE) << psCur.getJson();
 
@@ -1998,11 +1984,12 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 		{
 			// account --> ACCOUNT --> $
 			// Overall deliverable.
-			const STAmount&	saCurWantedReq	= std::min(psCur.saOutReq-psCur.saOutAct, saPrvLimit+saPrvOwed);	// If previous is an account, limit.
+			const STAmount	saCurWantedReq	= std::min(psCur.saOutReq-psCur.saOutAct, saPrvLimit+saPrvOwed);	// If previous is an account, limit.
 			STAmount		saCurWantedAct(saCurWantedReq.getCurrency(), saCurWantedReq.getIssuer());
 
 			cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: account --> ACCOUNT --> $ : saCurWantedReq=%s")
-				% saCurWantedReq.getFullText());
+				% saCurWantedReq);
+
 
 			// Calculate redeem
 			if (saPrvRedeemReq)							// Previous has IOUs to redeem.
@@ -2015,17 +2002,17 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 				uRateMax			= STAmount::uRateOne;
 
 				cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: Redeem at 1:1 saPrvRedeemReq=%s (available) saPrvRedeemAct=%s uRateMax=%s")
-					% saPrvRedeemReq.getFullText()
-					% saPrvRedeemAct.getFullText()
+					% saPrvRedeemReq
+					% saPrvRedeemAct
 					% STAmount::saFromRate(uRateMax).getText());
 			}
 			else
 			{
-				saPrvRedeemAct.zero(saCurWantedAct);
+				saPrvRedeemAct.zero(saPrvRedeemReq);
 			}
 
 			// Calculate issuing.
-			saPrvIssueAct.zero(saCurWantedAct);
+			saPrvIssueAct.zero(saPrvIssueReq);
 
 			if (saCurWantedReq != saCurWantedAct		// Need more.
 				&& saPrvIssueReq)						// Will accept IOUs from prevous.
@@ -2036,8 +2023,8 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurWantedReq, saPrvIssueAct, saCurWantedAct, uRateMax);
 
 				cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: Issuing: Rate: quality in : 1.0 saPrvIssueAct=%s saCurWantedAct=%s")
-					% saPrvIssueAct.getFullText()
-					% saCurWantedAct.getFullText());
+					% saPrvIssueAct
+					% saCurWantedAct);
 			}
 
 			if (!saCurWantedAct)
@@ -2049,8 +2036,8 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 		else
 		{
 			// ^|account --> ACCOUNT --> account
-			saPrvRedeemAct.zero(saCurRedeemReq);
-			saPrvIssueAct.zero(saCurRedeemReq);
+			saPrvRedeemAct.zero(saPrvRedeemReq);
+			saPrvIssueAct.zero(saPrvIssueReq);
 
 			// redeem (part 1) -> redeem
 			if (saCurRedeemReq							// Next wants IOUs redeemed.
@@ -2060,8 +2047,8 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq, saPrvRedeemAct, saCurRedeemAct, uRateMax);
 
 				cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: Rate : 1.0 : quality out saPrvRedeemAct=%s saCurRedeemAct=%s")
-					% saPrvRedeemAct.getFullText()
-					% saCurRedeemAct.getFullText());
+					% saPrvRedeemAct
+					% saCurRedeemAct);
 			}
 
 			// issue (part 1) -> redeem
@@ -2072,8 +2059,8 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 				calcNodeRipple(uQualityIn, uQualityOut, saPrvIssueReq, saCurRedeemReq, saPrvIssueAct, saCurRedeemAct, uRateMax);
 
 				cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: Rate: quality in : quality out: saPrvIssueAct=%s saCurRedeemAct=%s")
-					% saPrvIssueAct.getFullText()
-					% saCurRedeemAct.getFullText());
+					% saPrvIssueAct
+					% saCurRedeemAct);
 			}
 
 			// redeem (part 2) -> issue.
@@ -2085,8 +2072,8 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 				calcNodeRipple(QUALITY_ONE, lesActive.rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct, uRateMax);
 
 				cLog(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Rate : 1.0 : transfer_rate: saPrvRedeemAct=%s saCurIssueAct=%s")
-					% saPrvRedeemAct.getFullText()
-					% saCurIssueAct.getFullText());
+					% saPrvRedeemAct
+					% saCurIssueAct);
 			}
 
 			// issue (part 2) -> issue
@@ -2099,8 +2086,8 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq, saPrvIssueAct, saCurIssueAct, uRateMax);
 
 				cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: Rate: quality in : 1.0: saPrvIssueAct=%s saCurIssueAct=%s")
-					% saPrvIssueAct.getFullText()
-					% saCurIssueAct.getFullText());
+					% saPrvIssueAct
+					% saCurIssueAct);
 			}
 
 			if (!saCurRedeemAct && !saCurIssueAct)
@@ -2110,11 +2097,11 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 			}
 
 			cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: ^|account --> ACCOUNT --> account : saCurRedeemReq=%s saCurIssueReq=%s saPrvOwed=%s saCurRedeemAct=%s saCurIssueAct=%s")
-				% saCurRedeemReq.getFullText()
-				% saCurIssueReq.getFullText()
-				% saPrvOwed.getFullText()
-				% saCurRedeemAct.getFullText()
-				% saCurIssueAct.getFullText());
+				% saCurRedeemReq
+				% saCurIssueReq
+				% saPrvOwed
+				% saCurRedeemAct
+				% saCurIssueAct);
 		}
 	}
 	else if (bPrvAccount && !bNxtAccount)
@@ -2123,8 +2110,8 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 		// Note: deliver is always issue as ACCOUNT is the issuer for the offer input.
 		cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: account --> ACCOUNT --> offer"));
 
-		saPrvRedeemAct.zero(saCurRedeemReq);
-		saPrvIssueAct.zero(saCurRedeemReq);
+		saPrvRedeemAct.zero(saPrvRedeemReq);
+		saPrvIssueAct.zero(saPrvIssueReq);
 
 		// redeem -> deliver/issue.
 		if (saPrvOwed.isPositive()					// Previous has IOUs to redeem.
@@ -2149,14 +2136,12 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 		}
 
 		cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: saCurDeliverReq=%s saCurDeliverAct=%s saPrvOwed=%s")
-			% saCurDeliverReq.getFullText()
-			% saCurDeliverAct.getFullText()
-			% saPrvOwed.getFullText());
+			% saCurDeliverReq
+			% saCurDeliverAct
+			% saPrvOwed);
 	}
 	else if (!bPrvAccount && bNxtAccount)
 	{
-		saPrvDeliverAct.zero(saCurRedeemReq);
-
 		if (uNode == uLast)
 		{
 			// offer --> ACCOUNT --> $
@@ -2164,7 +2149,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 			STAmount		saCurWantedAct(saCurWantedReq.getCurrency(), saCurWantedReq.getIssuer());
 
 			cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> $ : saCurWantedReq=%s saOutAct=%s saOutReq=%s")
-				% saCurWantedReq.getFullText()
+				% saCurWantedReq
 				% psCur.saOutAct
 				% psCur.saOutReq);
 
@@ -2189,7 +2174,8 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 		{
 			// offer --> ACCOUNT --> account
 			// Note: offer is always delivering(redeeming) as account is issuer.
-			cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> account"));
+			cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> account : saCurRedeemReq=%s saCurIssueReq=%s")
+				% saCurRedeemReq % saCurIssueReq);
 
 			// deliver -> redeem
 			if (saCurRedeemReq)							// Next wants us to redeem.
@@ -2224,8 +2210,6 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 		// offer --> ACCOUNT --> offer
 		// deliver/redeem -> deliver/issue.
 		cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> offer"));
-
-		saPrvDeliverAct.zero(saCurRedeemReq);
 
 		// Rate : 1.0 : transfer_rate
 		calcNodeRipple(QUALITY_ONE, lesActive.rippleTransferRate(uCurAccountID), saPrvDeliverReq, saCurDeliverReq, saPrvDeliverAct, saCurDeliverAct, uRateMax);
@@ -2310,12 +2294,12 @@ TER RippleCalc::calcNodeAccountFwd(
 	cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountFwd> uNode=%d/%d saPrvRedeemReq=%s saPrvIssueReq=%s saPrvDeliverReq=%s saCurRedeemReq=%s saCurIssueReq=%s saCurDeliverReq=%s")
 		% uNode
 		% uLast
-		% saPrvRedeemReq.getFullText()
-		% saPrvIssueReq.getFullText()
-		% saPrvDeliverReq.getFullText()
-		% saCurRedeemReq.getFullText()
-		% saCurIssueReq.getFullText()
-		% saCurDeliverReq.getFullText());
+		% saPrvRedeemReq
+		% saPrvIssueReq
+		% saPrvDeliverReq
+		% saCurRedeemReq
+		% saCurIssueReq
+		% saCurDeliverReq);
 
 	// Ripple through account.
 
@@ -2352,12 +2336,12 @@ TER RippleCalc::calcNodeAccountFwd(
 			saCurSendMaxPass	+= saCurIssueAct;
 
 			cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountFwd: ^ --> ACCOUNT --> account : saInReq=%s saInAct=%s saCurRedeemAct=%s saCurIssueReq=%s saCurIssueAct=%s saCurSendMaxPass=%s")
-				% psCur.saInReq.getFullText()
-				% psCur.saInAct.getFullText()
-				% saCurRedeemAct.getFullText()
-				% saCurIssueReq.getFullText()
-				% saCurIssueAct.getFullText()
-				% saCurSendMaxPass.getFullText());
+				% psCur.saInReq
+				% psCur.saInAct
+				% saCurRedeemAct
+				% saCurIssueReq
+				% saCurIssueAct
+				% saCurSendMaxPass);
 		}
 		else if (uNode == uLast)
 		{
@@ -2365,8 +2349,8 @@ TER RippleCalc::calcNodeAccountFwd(
 			cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> $ : uPrvAccountID=%s uCurAccountID=%s saPrvRedeemReq=%s saPrvIssueReq=%s")
 				% RippleAddress::createHumanAccountID(uPrvAccountID)
 				% RippleAddress::createHumanAccountID(uCurAccountID)
-				% saPrvRedeemReq.getFullText()
-				% saPrvIssueReq.getFullText());
+				% saPrvRedeemReq
+				% saPrvIssueReq);
 
 			// Last node.  Accept all funds.  Calculate amount actually to credit.
 
@@ -2523,7 +2507,7 @@ TER RippleCalc::calcNodeAccountFwd(
 		if (uNode == uLast)
 		{
 			// offer --> ACCOUNT --> $
-			cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> $ : %s") % saPrvDeliverReq.getFullText());
+			cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> $ : %s") % saPrvDeliverReq);
 
 			STAmount&	saCurReceive	= psCur.saOutPass;
 
@@ -2633,7 +2617,7 @@ TER RippleCalc::calcNodeRev(const unsigned int uNode, PathState& psCur, const bo
 		% uNode
 		% bCurAccount
 		% RippleAddress::createHumanAccountID(uCurIssuerID)
-		% saTransferRate.getFullText());
+		% saTransferRate);
 
 	terResult	= bCurAccount
 					? calcNodeAccountRev(uNode, psCur, bMultiQuality)
@@ -2697,8 +2681,8 @@ void RippleCalc::pathNext(PathState::ref psrCur, const bool bMultiQuality, const
 	{
 		tLog(!psrCur->saInPass || !psrCur->saOutPass, lsDEBUG)
 			<< boost::str(boost::format("pathNext: Error calcNodeFwd reported success for nothing: saOutPass=%s saInPass=%s")
-				% psrCur->saOutPass.getFullText()
-				% psrCur->saInPass.getFullText());
+				% psrCur->saOutPass
+				% psrCur->saInPass);
 
 		if (!psrCur->saOutPass || !psrCur->saInPass)
 			throw std::runtime_error("Made no progress.");
@@ -2744,8 +2728,8 @@ TER RippleCalc::rippleCalc(
 	RippleCalc	rc(lesActive, bOpenLedger);
 
 	cLog(lsTRACE) << boost::str(boost::format("rippleCalc> saMaxAmountReq=%s saDstAmountReq=%s")
-		% saMaxAmountReq.getFullText()
-		% saDstAmountReq.getFullText());
+		% saMaxAmountReq
+		% saDstAmountReq);
 
     TER			terResult	= temUNCERTAIN;
 
@@ -2805,8 +2789,8 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Build direct: status: %s"
 			return temUNKNOWN;
 
 		cLog(lsTRACE) << boost::str(boost::format("rippleCalc: EXPAND: saDstAmountReq=%s saMaxAmountReq=%s uDstAccountID=%s uSrcAccountID=%s")
-				% saDstAmountReq.getFullText()
-				% saMaxAmountReq.getFullText()
+				% saDstAmountReq
+				% saMaxAmountReq
 				% RippleAddress::createHumanAccountID(uDstAccountID)
 				% RippleAddress::createHumanAccountID(uSrcAccountID));
 
@@ -2898,8 +2882,8 @@ int iPass	= 0;
 					tLog(!pspCur->saInPass || !pspCur->saOutPass, lsDEBUG)
 						<< boost::str(boost::format("rippleCalc: better: uQuality=%s saInPass=%s saOutPass=%s")
 							% STAmount::saFromRate(pspCur->uQuality)
-							% pspCur->saInPass.getFullText()
-							% pspCur->saOutPass.getFullText());
+							% pspCur->saInPass
+							% pspCur->saOutPass);
 
 					assert(!!pspCur->saInPass && !!pspCur->saOutPass);
 
@@ -2911,8 +2895,8 @@ int iPass	= 0;
 							% pspCur->mIndex
 							% pspCur->uQuality
 							% STAmount::saFromRate(pspCur->uQuality)
-							% pspCur->saInPass.getFullText()
-							% pspCur->saOutPass.getFullText());
+							% pspCur->saInPass
+							% pspCur->saOutPass);
 
 						assert(lesActive.isValid());
 						lesActive.swapWith(pspCur->lesEntries);							// For the path, save ledger state.
@@ -2945,8 +2929,8 @@ int iPass	= 0;
 
 			cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: best: uQuality=%s saInPass=%s saOutPass=%s")
 				% STAmount::saFromRate(pspBest->uQuality)
-				% pspBest->saInPass.getFullText()
-				% pspBest->saOutPass.getFullText());
+				% pspBest->saInPass
+				% pspBest->saOutPass);
 
 		    // Record best pass' offers that became unfunded for deletion on success.
 		    vuUnfundedBecame.insert(vuUnfundedBecame.end(), pspBest->vUnfundedBecame.begin(), pspBest->vUnfundedBecame.end());
