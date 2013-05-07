@@ -961,6 +961,7 @@ TER RippleCalc::calcNodeAdvance(
 			else if (!bReverse)
 			{
 				cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: unreachable: ran out of offers"));
+				return mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING; // TEMPORARY
 				assert(false);		// Can't run out of offers in forward direction.
 				terResult		= tefEXCEPTION;
 			}
