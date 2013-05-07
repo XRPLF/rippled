@@ -912,6 +912,7 @@ TER RippleCalc::calcNodeAdvance(
 			{
 				// No more offers. Should be done rather than fall off end of book.
 				cLog(lsWARNING) << "calcNodeAdvance: Unreachable: Fell off end of order book.";
+				return mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING; // FIXME
 				assert(false);
 
 				terResult	= tefEXCEPTION;
