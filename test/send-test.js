@@ -1048,8 +1048,8 @@ buster.testCase("Gateway", {
 });
 
 buster.testCase("Indirect ripple", {
-  // 'setUp'     : testutils.build_setup({ verbose: true }),
   'setUp'     : testutils.build_setup(),
+  // 'setUp'     : testutils.build_setup({ verbose: true }),
   'tearDown'  : testutils.build_teardown(),
 
   "indirect ripple" :
