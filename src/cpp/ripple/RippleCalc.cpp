@@ -912,6 +912,7 @@ TER RippleCalc::calcNodeAdvance(
 			{
 				// No more offers. Should be done rather than fall off end of book.
 				cLog(lsWARNING) << "calcNodeAdvance: Unreachable: Fell off end of order book.";
+				return mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING; // FIXME
 				assert(false);
 
 				terResult	= tefEXCEPTION;
@@ -961,6 +962,7 @@ TER RippleCalc::calcNodeAdvance(
 			else if (!bReverse)
 			{
 				cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: unreachable: ran out of offers"));
+				return mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING; // TEMPORARY
 				assert(false);		// Can't run out of offers in forward direction.
 				terResult		= tefEXCEPTION;
 			}
@@ -2665,6 +2667,16 @@ void RippleCalc::pathNext(PathState::ref psrCur, const bool bMultiQuality, const
 
 	lesCurrent	= lesCheckpoint.duplicate();		// Restore from checkpoint.
 
+	for (unsigned int uIndex = psrCur->vpnNodes.size(); uIndex--;)
+	{
+		PaymentNode&	pnCur	= psrCur->vpnNodes[uIndex];
+
+		pnCur.saRevRedeem.zero();
+		pnCur.saRevIssue.zero();
+		pnCur.saRevDeliver.zero();
+		pnCur.saFwdDeliver.zero();
+	}
+
 	psrCur->terStatus	= calcNodeRev(uLast, *psrCur, bMultiQuality);
 
 	cLog(lsDEBUG) << "pathNext: Path after reverse: " << psrCur->getJson();
@@ -2957,10 +2969,11 @@ int iPass	= 0;
 		    }
 		    else if (saDstAmountAct > saDstAmountReq)
 			{
-				cLog(lsWARNING) << boost::str(boost::format("rippleCalc: TOO MUCH: saDstAmountAct=%s saDstAmountReq=%s")
+				cLog(lsFATAL) << boost::str(boost::format("rippleCalc: TOO MUCH: saDstAmountAct=%s saDstAmountReq=%s")
 					% saDstAmountAct
 					% saDstAmountReq);
 
+				return tefEXCEPTION;  // TEMPORARY
 				assert(false);
 			}
 		    else if (saMaxAmountAct != saMaxAmountReq && iDry != vpsExpanded.size())

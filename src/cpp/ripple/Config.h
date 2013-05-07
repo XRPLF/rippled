@@ -51,7 +51,7 @@ const int SYSTEM_WEBSOCKET_PUBLIC_PORT	= 6563;	// XXX Going away.
 #define	DEFAULT_PEER_CONNECT_LOW_WATER	4
 
 // Grows exponentially worse.
-#define	DEFAULT_PATH_SEARCH_SIZE		5
+#define	DEFAULT_PATH_SEARCH_SIZE		4
 
 enum SizedItemName
 {
