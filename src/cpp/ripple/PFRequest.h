@@ -42,6 +42,7 @@ public:
 protected:
 	boost::recursive_mutex			mLock;
 	boost::weak_ptr<InfoSub>		wpSubscriber;				// Who this request came from
+	Json::Value						jvId;
 	Json::Value						jvStatus;					// Last result
 
 	// Client request parameters
