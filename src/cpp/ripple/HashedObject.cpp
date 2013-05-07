@@ -19,9 +19,27 @@ DECLARE_INSTANCE(HashedObject);
 
 HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
 	mCache("HashedObjectStore", cacheSize, cacheAge), mNegativeCache("HashedObjectNegativeCache", 0, 120),
-	mWriteGeneration(0), mWritePending(false)
+	mWriteGeneration(0), mWritePending(false), mLevelDB(false)
 {
 	mWriteSet.reserve(128);
+
+	if (theConfig.NODE_DB == "leveldb" || theConfig.NODE_DB == "LevelDB")
+		mLevelDB = true;
+	else if (theConfig.NODE_DB == "SQLite" || theConfig.NODE_DB == "sqlite")
+		mLevelDB = false;
+	else
+	{
+		cLog(lsFATAL) << "Incorrect database selection";
+		assert(false);
+	}
+#ifndef USE_LEVELDB
+	if (mLevelDB)
+	{
+		cLog(lsFATAL) << "LevelDB has been selected but not compiled";
+		assert(false);
+	}
+#endif
+
 }
 
 void HashedObjectStore::tune(int size, int age)
@@ -32,10 +50,10 @@ void HashedObjectStore::tune(int size, int age)
 
 #ifdef USE_LEVELDB
 
-bool HashedObjectStore::store(HashedObjectType type, uint32 index,
+bool HashedObjectStore::storeLevelDB(HashedObjectType type, uint32 index,
 	const std::vector<unsigned char>& data, const uint256& hash)
 { // return: false = already in cache, true = added to cache
-	if (!theApp->getHashNodeDB())
+	if (!theApp->getHashNodeLDB())
 	{
 		cLog(lsWARNING) << "HOS: no db";
 		return true;
@@ -60,7 +78,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 		*(bufPtr + 8) = static_cast<unsigned char>(type);
 		memcpy(bufPtr + 9, &data.front(), data.size());
 
-		leveldb::Status st = theApp->getHashNodeDB()->Put(leveldb::WriteOptions(),
+		leveldb::Status st = theApp->getHashNodeLDB()->Put(leveldb::WriteOptions(),
 			leveldb::Slice(reinterpret_cast<const char *>(hash.begin()), hash.size()),
 			leveldb::Slice(reinterpret_cast<const char *>(bufPtr), 9 + data.size()));
 		if (!st.ok())
@@ -74,17 +92,13 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	return true;
 }
 
-void HashedObjectStore::waitWrite()
-{
-}
-
-HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
+HashedObject::pointer HashedObjectStore::retrieveLevelDB(const uint256& hash)
 {
 	HashedObject::pointer obj = mCache.fetch(hash);
 	if (obj)
 		return obj;
 
-	if (!theApp || !theApp->getHashNodeDB())
+	if (!theApp || !theApp->getHashNodeLDB())
 	{
 		cLog(lsWARNING) << "HOS: no db";
 		return obj;
@@ -92,7 +106,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 
 	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtHO_READ, "HOS::retrieve"));
 	std::string sData;
-	leveldb::Status st = theApp->getHashNodeDB()->Get(leveldb::ReadOptions(),
+	leveldb::Status st = theApp->getHashNodeLDB()->Get(leveldb::ReadOptions(),
 		leveldb::Slice(reinterpret_cast<const char *>(hash.begin()), hash.size()), &sData);
 	if (!st.ok())
 	{
@@ -112,9 +126,9 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 	return obj;
 }
 
-#else
+#endif
 
-bool HashedObjectStore::store(HashedObjectType type, uint32 index,
+bool HashedObjectStore::storeSQLite(HashedObjectType type, uint32 index,
 	const std::vector<unsigned char>& data, const uint256& hash)
 { // return: false = already in cache, true = added to cache
 	if (!theApp->getHashNodeDB())
@@ -150,6 +164,8 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 
 void HashedObjectStore::waitWrite()
 {
+	if (mLevelDB)
+		return;
 	boost::mutex::scoped_lock sl(mWriteMutex);
 	int gen = mWriteGeneration;
 	while (mWritePending && (mWriteGeneration == gen))
@@ -158,6 +174,7 @@ void HashedObjectStore::waitWrite()
 
 void HashedObjectStore::bulkWrite()
 {
+	assert(!mLevelDB);
 	while (1)
 	{
 		std::vector< boost::shared_ptr<HashedObject> > set;
@@ -255,7 +272,7 @@ void HashedObjectStore::bulkWrite()
 	}
 }
 
-HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
+HashedObject::pointer HashedObjectStore::retrieveSQLite(const uint256& hash)
 {
 	HashedObject::pointer obj = mCache.fetch(hash);
 	if (obj)
@@ -347,7 +364,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 	return obj;
 }
 
-#endif
+#ifdef USE_LEVELDB
 
 int HashedObjectStore::import(const std::string& file, bool checkHashes)
 {
@@ -412,5 +429,7 @@ int HashedObjectStore::import(const std::string& file, bool checkHashes)
 	cLog(lsWARNING) << "Imported " << count << " nodes";
 	return count;
 }
+
+#endif
 
 // vim:ts=4

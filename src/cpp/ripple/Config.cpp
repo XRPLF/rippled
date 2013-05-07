@@ -23,6 +23,7 @@
 #define SECTION_FEE_OPERATION			"fee_operation"
 #define SECTION_FEE_ACCOUNT_RESERVE		"fee_account_reserve"
 #define SECTION_FEE_OWNER_RESERVE		"fee_owner_reserve"
+#define SECTION_NODE_DB					"node_db"
 #define SECTION_LEDGER_HISTORY			"ledger_history"
 #define SECTION_IPS						"ips"
 #define SECTION_NETWORK_QUORUM			"network_quorum"
@@ -248,6 +249,8 @@ Config::Config()
 
 	SSL_VERIFY				= true;
 
+	NODE_DB					= "sqlite";
+
 	LDB_IMPORT				= false;
 	RUN_STANDALONE			= false;
 	START_UP				= NORMAL;
@@ -330,6 +333,7 @@ void Config::load()
 			if (sectionSingleB(secConfig, SECTION_DATABASE_PATH, DATABASE_PATH))
 				DATA_DIR	= DATABASE_PATH;
 
+
 			(void) sectionSingleB(secConfig, SECTION_VALIDATORS_SITE, VALIDATORS_SITE);
 
 			(void) sectionSingleB(secConfig, SECTION_PEER_IP, PEER_IP);
@@ -351,6 +355,7 @@ void Config::load()
 			(void) sectionSingleB(secConfig, SECTION_RPC_IP, RPC_IP);
 			(void) sectionSingleB(secConfig, SECTION_RPC_PASSWORD, RPC_PASSWORD);
 			(void) sectionSingleB(secConfig, SECTION_RPC_USER, RPC_USER);
+			(void) sectionSingleB(secConfig, SECTION_NODE_DB, NODE_DB);
 
 			if (sectionSingleB(secConfig, SECTION_RPC_PORT, strTemp))
 				RPC_PORT = boost::lexical_cast<int>(strTemp);

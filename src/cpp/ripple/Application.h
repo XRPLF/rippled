@@ -79,12 +79,10 @@ class Application
 	FeeVote					mFeeVote;
 	FeatureTable			mFeatureTable;
 
-	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB;
+	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
 
 #ifdef USE_LEVELDB
-	leveldb::DB				*mHashNodeDB;
-#else
-	DatabaseCon				*mHashNodeDB;
+	leveldb::DB				*mHashNodeLDB;
 #endif
 
 	ConnectionPool			mConnectionPool;
@@ -154,11 +152,10 @@ public:
 	DatabaseCon* getWalletDB()		{ return mWalletDB; }
 	DatabaseCon* getNetNodeDB()		{ return mNetNodeDB; }
 	DatabaseCon* getPathFindDB()	{ return mPathFindDB; }
+	DatabaseCon* getHashNodeDB()	{ return mHashNodeDB; }
 
 #ifdef USE_LEVELDB
-	leveldb::DB* getHashNodeDB()	{ return mHashNodeDB; }
-#else
-	DatabaseCon* getHashNodeDB()	{ return mHashNodeDB; }
+	leveldb::DB* getHashNodeLDB()	{ return mHashNodeLDB; }
 #endif
 
 	uint256 getNonce256()			{ return mNonce256; }

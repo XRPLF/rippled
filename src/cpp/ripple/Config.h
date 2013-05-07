@@ -88,6 +88,7 @@ public:
 	boost::filesystem::path		DATA_DIR;
 	boost::filesystem::path		DEBUG_LOGFILE;
 	boost::filesystem::path		VALIDATORS_FILE;		// As specifed in rippled.cfg.
+	std::string					NODE_DB;				// Database to use for nodes
 	bool						LDB_IMPORT;				// Import into LevelDB
 
 	std::string					VALIDATORS_SITE;		// Where to find validators.txt on the Internet.

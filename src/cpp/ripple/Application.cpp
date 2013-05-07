@@ -62,6 +62,9 @@ Application::Application() :
 
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
 	mNetNodeDB(NULL), mPathFindDB(NULL), mHashNodeDB(NULL),
+#ifdef USE_LEVELDB
+	mHashNodeLDB(NULL),
+#endif
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
 	mSweepTimer(mAuxService), mShutdown(false)
 {
@@ -87,8 +90,8 @@ void Application::stop()
 	mJobQueue.shutdown();
 
 #ifdef HAVE_LEVELDB
-	delete mHashNodeDB:
-	mHashNodeDB = NULL;
+	delete mHashNodeLDB:
+	mHashNodeLDB = NULL;
 #endif
 
 	cLog(lsINFO) << "Stopped: " << mIOService.stopped();
@@ -167,20 +170,26 @@ void Application::setup()
 	t4.join(); t6.join(); t7.join();
 
 #ifdef USE_LEVELDB
-	leveldb::Options options;
-	options.create_if_missing = true;
-	options.block_cache = leveldb::NewLRUCache(theConfig.getSize(siHashNodeDBCache) * 1024 * 1024);
-	if (theConfig.NODE_SIZE >= 2)
-		options.filter_policy = leveldb::NewBloomFilterPolicy(10);
-	leveldb::Status status = leveldb::DB::Open(options, (theConfig.DATA_DIR / "hashnode").string(), &mHashNodeDB);
-	if (!status.ok() || !mHashNodeDB)
+	if (mHashedObjectStore.isLevelDB())
 	{
-		cLog(lsFATAL) << "Unable to open/create hash node db";
-		exit(3);
+		leveldb::Options options;
+		options.create_if_missing = true;
+		options.block_cache = leveldb::NewLRUCache(theConfig.getSize(siHashNodeDBCache) * 1024 * 1024);
+		if (theConfig.NODE_SIZE >= 2)
+			options.filter_policy = leveldb::NewBloomFilterPolicy(10);
+		leveldb::Status status = leveldb::DB::Open(options, (theConfig.DATA_DIR / "hashnode").string(), &mHashNodeLDB);
+		if (!status.ok() || !mHashNodeLDB)
+		{
+			cLog(lsFATAL) << "Unable to open/create hash node db";
+			exit(3);
+		}
 	}
+	else
 #else
-	boost::thread t5(boost::bind(&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
-	t5.join();
+	{
+		boost::thread t5(boost::bind(&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
+		t5.join();
+	}
 #endif
 
 	mTxnDB->getDB()->setupCheckpointing(&mJobQueue);
@@ -233,10 +242,11 @@ void Application::setup()
 	mLedgerMaster.tune(theConfig.getSize(siLedgerSize), theConfig.getSize(siLedgerAge));
 	mLedgerMaster.setMinValidations(theConfig.VALIDATION_QUORUM);
 
-#ifndef USE_LEVELDB
-	theApp->getHashNodeDB()->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %
-		(theConfig.getSize(siHashNodeDBCache) * 1024)));
+#ifdef USE_LEVELDB
+	if (!mHashedObjectStore.isLevelDB())
 #endif
+		theApp->getHashNodeDB()->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %
+			(theConfig.getSize(siHashNodeDBCache) * 1024)));
 
 	theApp->getLedgerDB()->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %
 		(theConfig.getSize(siTxnDBCache) * 1024)));
@@ -398,6 +408,9 @@ Application::~Application()
 	delete mHashNodeDB;
 	delete mNetNodeDB;
 	delete mPathFindDB;
+#ifdef USE_LEVELDB
+	delete mHashNodeLDB;
+#endif
 }
 
 void Application::startNewLedger()
