@@ -2959,10 +2959,11 @@ int iPass	= 0;
 		    }
 		    else if (saDstAmountAct > saDstAmountReq)
 			{
-				cLog(lsWARNING) << boost::str(boost::format("rippleCalc: TOO MUCH: saDstAmountAct=%s saDstAmountReq=%s")
+				cLog(lsFATAL) << boost::str(boost::format("rippleCalc: TOO MUCH: saDstAmountAct=%s saDstAmountReq=%s")
 					% saDstAmountAct
 					% saDstAmountReq);
 
+				return tefEXCEPTION;  // TEMPORARY
 				assert(false);
 			}
 		    else if (saMaxAmountAct != saMaxAmountReq && iDry != vpsExpanded.size())
