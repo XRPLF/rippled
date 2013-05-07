@@ -40,6 +40,13 @@ bool TransactionEngine::checkInvariants(TER result, const SerializedTransaction&
 		const LedgerEntrySetEntry& entry = it->second;
 		if (entry.mAction == taaMODIFY)
 		{
+#if 0
+			if (entry.mEntry->getType() == ltRIPPLE_STATE)
+			{
+				// if this transaction pushes a ripple state over its limit, make sure it also modifies
+				// an offer placed by that same user
+			}
+#endif
 			if (entry.mEntry->getType() == ltACCOUNT_ROOT)
 			{ // account modified
 				xrpChange += entry.mEntry->getFieldAmount(sfBalance).getSNValue();
