@@ -593,6 +593,8 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	{
 		ScopedLock sl(theApp->getMasterLock());
 
+		theApp->getLoadManager().noDeadLock();
+
 		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 
 		// do we have sufficient peers? If not, we are disconnected.
