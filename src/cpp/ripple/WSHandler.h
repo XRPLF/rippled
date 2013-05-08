@@ -49,7 +49,7 @@ public:
 
 	bool		getPublic() { return mPublic; };
 
-	void send(connection_ptr cpClient, message_ptr mpMessage)
+	static void ssend(connection_ptr cpClient, message_ptr mpMessage)
 	{
 		try
 		{
@@ -61,7 +61,7 @@ public:
 		}
 	}
 
-	void send(connection_ptr cpClient, const std::string& strMessage, bool broadcast)
+	static void ssend(connection_ptr cpClient, const std::string& strMessage, bool broadcast)
 	{
 		try
 		{
@@ -73,6 +73,18 @@ public:
 		{
 			cpClient->close(websocketpp::close::status::value(crTooSlow), std::string("Client is too slow."));
 		}
+	}
+
+	void send(connection_ptr cpClient, message_ptr mpMessage)
+	{
+		cpClient->get_strand().post(boost::bind(
+			&WSServerHandler<endpoint_type>::ssend, cpClient, mpMessage));
+	}
+
+	void send(connection_ptr cpClient, const std::string& strMessage, bool broadcast)
+	{
+		cpClient->get_strand().post(boost::bind(
+			&WSServerHandler<endpoint_type>::ssend, cpClient, strMessage, broadcast));
 	}
 
 	void send(connection_ptr cpClient, const Json::Value& jvObj, bool broadcast)

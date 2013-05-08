@@ -101,6 +101,7 @@ public:
 		if (theApp->getLoadManager().shouldCutoff(mLoadSource))
 		{
 #if SHOULD_DISCONNECT
+			// FIXME: Must dispatch to strand
 			connection_ptr ptr = mConnection.lock();
 			if (ptr)
 				ptr->close(websocketpp::close::status::PROTOCOL_ERROR, "overload");
@@ -199,9 +200,13 @@ public:
 
 	void setPingTimer()
 	{
-		mPingTimer.expires_from_now(boost::posix_time::seconds(WEBSOCKET_PING_FREQUENCY));
-		mPingTimer.async_wait(boost::bind(
-			&WSConnection<endpoint_type>::pingTimer, mConnection, mHandler, boost::asio::placeholders::error));
+		connection_ptr ptr = mConnection.lock();
+		if (ptr)
+		{
+			mPingTimer.expires_from_now(boost::posix_time::seconds(WEBSOCKET_PING_FREQUENCY));
+			mPingTimer.async_wait(ptr->get_strand().wrap(boost::bind(
+				&WSConnection<endpoint_type>::pingTimer, mConnection, mHandler, boost::asio::placeholders::error)));
+		}
 	}
 
 	void rcvMessage(message_ptr msg, bool& msgRejected, bool& runQueue)
