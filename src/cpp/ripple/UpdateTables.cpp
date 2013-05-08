@@ -116,7 +116,7 @@ void Application::updateTables(bool ldbImport)
 			if (theConfig.LDB_IMPORT)
 			{
 				Log(lsWARNING) << "Importing SQLite -> LevelDB";
-				theApp->getHashedObjectStore().import(hashPath.string(), true);
+				theApp->getHashedObjectStore().import(hashPath.string(), false);
 				Log(lsWARNING) << "Remove or remname the hashnode.db file";
 			}
 			else
