@@ -22,7 +22,7 @@ int upTime()
 
 LoadManager::LoadManager(int creditRate, int creditLimit, int debitWarn, int debitLimit) :
 		mCreditRate(creditRate), mCreditLimit(creditLimit), mDebitWarn(debitWarn), mDebitLimit(debitLimit),
-		mShutdown(false), mUptime(0), mCosts(LT_MAX)
+		mShutdown(false), mUptime(0), mDeadLock(0), mCosts(LT_MAX)
 {
 	addLoadCost(LoadCost(LT_InvalidRequest,		-10,		LC_CPU | LC_Network));
 	addLoadCost(LoadCost(LT_RequestNoReply,		-1,		LC_CPU | LC_Disk));
@@ -67,6 +67,11 @@ LoadManager::~LoadManager()
 	while (1);
 }
 
+void LoadManager::noDeadLock()
+{
+	boost::mutex::scoped_lock sl(mLock);
+	mDeadLock = mUptime;
+}
 
 int LoadManager::getCreditRate() const
 {
@@ -321,6 +326,11 @@ int LoadManager::getUptime()
 	return mUptime;
 }
 
+static void LogDeadLock(int dlTime)
+{
+	cLog(lsWARNING) << "Server stalled for " << dlTime << " seconds.";
+}
+
 void LoadManager::threadEntry()
 {
 	NameThread("loadmgr");
@@ -335,6 +345,18 @@ void LoadManager::threadEntry()
 				return;
 			}
 			++mUptime;
+
+			int dlTime = mUptime - mDeadLock;
+			if (dlTime >= 10)
+			{
+				if ((dlTime % 10) == 0)
+				{
+					boost::thread(BIND_TYPE(&LogDeadLock, dlTime)).detach();
+				}
+
+				assert (dlTime < 180);
+			}
+
 		}
 
 		bool change;

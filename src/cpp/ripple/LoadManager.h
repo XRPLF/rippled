@@ -106,6 +106,8 @@ protected:
 	int mUptime;
 	int mSpace2[4];
 
+	int mDeadLock;				// Detect server deadlocks
+
 	mutable boost::mutex mLock;
 
 	void canonicalize(LoadSource&, int upTime) const;
@@ -141,6 +143,7 @@ public:
 
 	int getCost(LoadType t)		{ return mCosts[static_cast<int>(t)].mCost; }
 	int getUptime();
+	void noDeadLock();
 };
 
 class LoadFeeTrack
