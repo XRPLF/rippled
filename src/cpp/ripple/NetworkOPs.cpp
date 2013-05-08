@@ -2124,4 +2124,12 @@ void NetworkOPs::gotFetchPack(bool progress, uint32 seq)
 		boost::bind(&LedgerAcquireMaster::gotFetchPack, &theApp->getMasterLedgerAcquire(), _1));
 }
 
+void NetworkOPs::missingNodeInLedger(uint32 seq)
+{
+	cLog(lsWARNING) << "We are missing a node in ledger " << seq;
+	uint256 hash = theApp->getLedgerMaster().getHashBySeq(seq);
+	if (hash.isNonZero())
+		theApp->getMasterLedgerAcquire().findCreate(hash, seq);
+}
+
 // vim:ts=4

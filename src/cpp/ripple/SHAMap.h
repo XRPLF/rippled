@@ -345,6 +345,7 @@ public:
 
 protected:
 	uint32 mSeq;
+	uint32 mLedgerSeq; // sequence number of ledger this is part of
 	mutable boost::recursive_mutex mLock;
 	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> mTNByID;
 
@@ -394,6 +395,8 @@ public:
 
 	// Remove nodes from memory
 	void dropCache();
+
+	void setLedgerSeq(uint32 lseq) { mLedgerSeq = lseq; }
 
 	// hold the map stable across operations
 	ScopedLock Lock() const { return ScopedLock(mLock); }

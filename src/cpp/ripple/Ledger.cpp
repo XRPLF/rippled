@@ -547,7 +547,10 @@ Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
 		ledger = getSQL1(&pSt);
 	}
 	if (ledger)
+	{
 		Ledger::getSQL2(ledger);
+		ledger->setFull();
+	}
 	return ledger;
 }
 
@@ -570,6 +573,7 @@ Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 	{
 		assert(ledger->getHash() == ledgerHash);
 		Ledger::getSQL2(ledger);
+		ledger->setFull();
 	}
 	return ledger;
 }

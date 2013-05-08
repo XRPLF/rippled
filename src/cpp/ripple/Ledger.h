@@ -133,6 +133,7 @@ public:
 	bool isAccepted()	{ return mAccepted; }
 	bool isImmutable()	{ return mImmutable; }
 	bool isFixed()		{ return mClosed || mImmutable; }
+	void setFull()		{ mTransactionMap->setLedgerSeq(mLedgerSeq); mAccountStateMap->setLedgerSeq(mLedgerSeq); }
 
 	// ledger signature operations
 	void addRaw(Serializer &s) const;
