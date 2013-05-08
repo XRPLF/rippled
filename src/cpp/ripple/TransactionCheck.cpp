@@ -56,6 +56,16 @@ bool TransactionEngine::checkInvariants(TER result, const SerializedTransaction&
 		}
 		else if (entry.mAction == taaCREATE)
 		{
+			if (entry.mEntry->getType() == ltRIPPLE_STATE)
+			{
+				if (entry.mEntry->getFieldAmount(sfLowLimit).getIssuer() ==
+					entry.mEntry->getFieldAmount(sfHighLimit).getIssuer())
+				{
+					cLog(lsFATAL) << "Ripple line to self";
+					assert(false);
+					return tefINTERNAL;
+				}
+			}
 			if (entry.mEntry->getType() == ltACCOUNT_ROOT) // account created
 				xrpChange += entry.mEntry->getFieldAmount(sfBalance).getSNValue();
 		}
