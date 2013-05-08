@@ -1,16 +1,14 @@
 
 To use LevelDB, follow these steps:
 
-1) In the SConstruct file, change
-	LevelDB = bool(0)
-to
-	LevelDB = bool(1)
+1) Add the following to your rippled.cfg file:
+[node_db]
+LevelDB
 
-2) Compile with 'scons'.
-
-3) If you have no databases you care about, remove them. Otherwise, start
-rippled with '--import' to import your existing hashnode database into
-LevelDB. After you import the hashnode database, either delete (or move) the
+2) If you have no databases, you can just start rippled. If you have
+databases you don't care about, just remove them. Otherwise, start rippled
+with '--import' to import your existing hashnode database into LevelDB.
+After you import the hashnode database, either delete (or move) the
 'hashnode.db', 'hashnode.db-shm' and 'hashnode.db-wal' files from your
 database directory. Do not touch the LevelDB files in the 'hashnode'
 directory.

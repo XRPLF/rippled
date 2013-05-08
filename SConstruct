@@ -8,7 +8,7 @@ import glob
 import platform
 import re
 
-LevelDB	= bool(0)
+LevelDB	= bool(1)
 
 OSX	= bool(platform.mac_ver()[0])
 FreeBSD	= bool('FreeBSD' == platform.system())

@@ -58,15 +58,42 @@ protected:
 
 	std::vector< boost::shared_ptr<HashedObject> > mWriteSet;
 	bool mWritePending;
+	bool mLevelDB;
 
 public:
 
 	HashedObjectStore(int cacheSize, int cacheAge);
 
-	bool store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
-		const uint256& hash);
+	bool isLevelDB()	{ return mLevelDB; }
 
-	HashedObject::pointer retrieve(const uint256& hash);
+	bool store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
+		const uint256& hash)
+	{
+#ifdef USE_LEVELDB
+		if (mLevelDB)
+			return storeLevelDB(type, index, data, hash);
+#endif
+		return storeSQLite(type, index, data, hash);
+	}
+
+	HashedObject::pointer retrieve(const uint256& hash)
+	{
+#ifdef USE_LEVELDB
+		if (mLevelDB)
+			return retrieveLevelDB(hash);
+#endif
+		return retrieveSQLite(hash);
+	}
+
+	bool storeSQLite(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
+		const uint256& hash);
+	HashedObject::pointer retrieveSQLite(const uint256& hash);
+
+#ifdef USE_LEVELDB
+	bool storeLevelDB(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
+		const uint256& hash);
+	HashedObject::pointer retrieveLevelDB(const uint256& hash);
+#endif
 
 	void bulkWrite();
 	void waitWrite();
