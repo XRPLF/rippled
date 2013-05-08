@@ -366,11 +366,14 @@ HashedObject::pointer HashedObjectStore::retrieveSQLite(const uint256& hash)
 
 #ifdef USE_LEVELDB
 
-int HashedObjectStore::import(const std::string& file, bool checkHashes)
+int HashedObjectStore::import(const std::string& file)
 {
 	cLog(lsWARNING) << "Hashed object import from \"" << file << "\".";
 	UPTR_T<Database> importDB(new SqliteDatabase(file.c_str()));
 	importDB->connect();
+
+	leveldb::DB* db = theApp->getHashNodeLDB();
+	leveldb::WriteOptions wo;
 
 	int count = 0;
 
@@ -386,17 +389,19 @@ int HashedObjectStore::import(const std::string& file, bool checkHashes)
 		}
 		else
 		{
-			std::vector<unsigned char> data;
+			std::vector<unsigned char> rawData;
+			int size = importDB->getBinary("Object", NULL, 0);
+			rawData.resize(9 + size);
+			unsigned char* bufPtr = &rawData.front();
+
+			importDB->getBinary("Object", bufPtr + 9, size);
+
+			uint32 index = importDB->getBigInt("LedgerIndex");
+			*reinterpret_cast<uint32*>(bufPtr + 0) = ntohl(index);
+			*reinterpret_cast<uint32*>(bufPtr + 4) = ntohl(index);
+
 			std::string type;
 			importDB->getStr("ObjType", type);
-			uint32 index = importDB->getBigInt("LedgerIndex");
-
-			int size = importDB->getBinary("Object", NULL, 0);
-			data.resize(size);
-			importDB->getBinary("Object", &(data.front()), size);
-
-			assert(Serializer::getSHA512Half(data) == hash);
-
 			HashedObjectType htype = hotUNKNOWN;
 			switch (type[0])
 			{
@@ -408,17 +413,17 @@ int HashedObjectStore::import(const std::string& file, bool checkHashes)
 					assert(false);
 					cLog(lsERROR) << "Invalid hashed object";
 			}
+			*(bufPtr + 8) = static_cast<unsigned char>(htype);
 
-			if (checkHashes && Serializer::getSHA512Half(data) != hash)
+			leveldb::Status st = db->Put(wo,
+				leveldb::Slice(reinterpret_cast<const char *>(hash.begin()), hash.size()),
+				leveldb::Slice(reinterpret_cast<const char *>(bufPtr), rawData.size()));
+			if (!st.ok())
 			{
-				cLog(lsWARNING) << "Hash mismatch in import table " << hash
-					<< " " << Serializer::getSHA512Half(data);
+				cLog(lsFATAL) << "Failed to store hash node";
+				assert(false);
 			}
-			else
-			{
-				store(htype, index, data, hash);
-				++count;
-			}
+			++count;
 		}
 		if ((count % 10000) == 0)
 		{
