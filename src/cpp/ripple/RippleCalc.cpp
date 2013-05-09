@@ -2155,7 +2155,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 				% psCur.saOutAct
 				% psCur.saOutReq);
 
-			assert(saCurWantedReq.isPositive());
+			assert(saCurWantedReq.isPositive()); // FIXME: We got one of these
 
 			// Rate: quality in : 1.0
 			calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvDeliverReq, saCurWantedReq, saPrvDeliverAct, saCurWantedAct, uRateMax);
@@ -3031,7 +3031,7 @@ int iPass	= 0;
 		BOOST_FOREACH(const uint256& uOfferIndex, rc.musUnfundedFound)
 		{
 			if (tesSUCCESS == terResult)
-				terResult = lesActive.offerDelete(uOfferIndex);
+				terResult = lesActive.offerDelete(uOfferIndex); // FIXME: This asserted
 		}
 	}
 
