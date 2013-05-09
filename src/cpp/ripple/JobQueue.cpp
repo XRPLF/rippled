@@ -239,6 +239,8 @@ void JobQueue::setThreadCount(int c)
 		c = boost::thread::hardware_concurrency();
 		if (c < 0)
 			c = 2;
+		if (c > 4) // I/O will bottleneck
+			c = 4;
 		c += 2;
 		cLog(lsINFO) << "Auto-tuning to " << c << " validation/transaction/proposal threads";
 	}
