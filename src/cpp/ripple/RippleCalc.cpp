@@ -2155,6 +2155,11 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 				% psCur.saOutAct
 				% psCur.saOutReq);
 
+			if (!saCurWantedReq.isPositive())
+			{ // TEMPORARY emergency fix
+				return tefEXCEPTION;
+			}
+
 			assert(saCurWantedReq.isPositive());
 
 			// Rate: quality in : 1.0
