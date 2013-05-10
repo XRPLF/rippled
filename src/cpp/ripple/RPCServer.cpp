@@ -146,7 +146,14 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 		return HTTPReply(400, "params unparseable");
 	}
 
-	mRole	= iAdminGet(jvRequest, mSocket.remote_endpoint().address().to_string());
+	try
+	{
+		mRole	= iAdminGet(jvRequest, mSocket.remote_endpoint().address().to_string());
+	}
+	catch (...)
+	{ // endpoint already disconnected
+		return "";
+	}
 
 	if (RPCHandler::FORBID == mRole)
 	{
