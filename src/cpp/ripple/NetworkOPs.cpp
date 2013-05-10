@@ -324,6 +324,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	if ((newFlags & SF_BAD) != 0)
 	{ // cached bad
 		trans->setStatus(INVALID);
+		trans->setResult(temBAD_SIGNATURE);
 		return trans;
 	}
 
@@ -333,6 +334,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		{
 			cLog(lsINFO) << "Transaction has bad signature";
 			trans->setStatus(INVALID);
+			trans->setResult(temBAD_SIGNATURE);
 			theApp->isNewFlag(trans->getID(), SF_BAD);
 			return trans;
 		}
