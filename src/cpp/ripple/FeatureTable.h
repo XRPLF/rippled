@@ -55,7 +55,9 @@ public:
 
 	FeatureTable(uint32 majorityTime, int majorityFraction)
 		: mMajorityTime(majorityTime), mMajorityFraction(majorityFraction), mFirstReport(0), mLastReport(0)
-	{ ; }
+	{ addInitialFeatures(); }
+
+	void addInitialFeatures();
 
 	bool vetoFeature(const uint256& feature);
 	bool unVetoFeature(const uint256& feature);

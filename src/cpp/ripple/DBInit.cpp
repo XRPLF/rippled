@@ -258,6 +258,12 @@ const char *WalletDBInit[] = {
 	"CREATE INDEX PeerScanIndex ON						\
 		PeerIps(ScanNext);",
 
+	"CREATE TABLE Features (							\
+		Hash			CHARACTER(64) PRIMARY KEY,		\
+		FirstMajority	BIGINT UNSIGNED,				\
+		LastMajority	BIGINT UNSIGNED					\
+	);",
+
 	"END TRANSACTION;"
 };
 
