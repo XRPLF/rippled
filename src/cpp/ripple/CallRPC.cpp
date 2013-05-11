@@ -471,6 +471,17 @@ Json::Value RPCParser::parseAccountRaw(const Json::Value& jvParams, bool bPeer)
 	return jvRequest;
 }
 
+// proof_create [<difficulty>]
+Json::Value RPCParser::parseProofCreate(const Json::Value& jvParams)
+{
+	Json::Value		jvRequest;
+
+	if (1 == jvParams.size())
+		jvRequest["difficulty"] = jvParams[0u].asInt();
+
+	return jvRequest;
+}
+
 // ripple_path_find <json> [<ledger>]
 Json::Value RPCParser::parseRipplePathFind(const Json::Value& jvParams)
 {
@@ -698,6 +709,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"peers",				&RPCParser::parseAsIs,					0,  0	},
 		{	"ping",					&RPCParser::parseAsIs,					0,  0	},
 //		{	"profile",				&RPCParser::parseProfile,				1,  9	},
+		{	"proof_create",			&RPCParser::parseProofCreate,			0,  1	},
 		{	"random",				&RPCParser::parseAsIs,					0,  0	},
 		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	    1,  2	},
 		{	"sign",					&RPCParser::parseSignSubmit,			2,  2	},

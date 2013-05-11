@@ -23,6 +23,7 @@
 #include "InstanceCounter.h"
 #include "Offer.h"
 #include "PFRequest.h"
+#include "ProofOfWork.h"
 
 SETUP_LOG();
 
@@ -875,6 +876,38 @@ Json::Value RPCHandler::doProfile(Json::Value jvRequest, int& cost, ScopedLock& 
 	*/
 	Json::Value obj(Json::objectValue);
 	return obj;
+}
+
+// {
+//   difficulty: <number>		// optional, if set, a temporary generator is
+//                       		//   instantiated and its secret included
+// }
+Json::Value RPCHandler::doProofCreate(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+{
+	// XXX: Add ability to create proof with arbitrary secret and time
+
+	Json::Value		jvResult(Json::objectValue);
+
+	if (jvRequest.isMember("difficulty"))
+	{
+		if (!jvRequest["difficulty"].isIntegral())
+			return rpcError(rpcINVALID_PARAMS);
+
+		int iDifficulty = jvRequest["difficulty"].asInt();
+
+		if (iDifficulty < 0 || iDifficulty > ProofOfWork::sMaxDifficulty)
+			return rpcError(rpcINVALID_PARAMS);
+
+		ProofOfWorkGenerator	pgGen;
+		pgGen.setDifficulty(iDifficulty);
+
+		jvResult["token"]	= pgGen.getProof().getToken();
+		jvResult["secret"]	= pgGen.getSecret().GetHex();
+	} else {
+		jvResult["token"]	= theApp->getPowGen().getProof().getToken();
+	}
+
+	return jvResult;
 }
 
 // {
@@ -3343,6 +3376,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 		{	"path_find",			&RPCHandler::doPathFind,			false,	optCurrent	},
 		{	"ping",					&RPCHandler::doPing,			    false,	optNone		},
 //		{	"profile",				&RPCHandler::doProfile,			    false,	optCurrent	},
+		{	"proof_create",			&RPCHandler::doProofCreate,		    false,	optNone		},
 		{	"random",				&RPCHandler::doRandom,				false,	optNone		},
 		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	    false,	optCurrent	},
 		{	"sign",					&RPCHandler::doSign,			    false,	optCurrent	},

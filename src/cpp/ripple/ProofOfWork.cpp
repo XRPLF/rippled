@@ -15,6 +15,7 @@ SETUP_LOG();
 
 const uint256 ProofOfWork::sMinTarget("00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 const int ProofOfWork::sMaxIterations(1 << 23);
+const int ProofOfWork::sMaxDifficulty(30);
 
 bool ProofOfWork::isValid() const
 {
@@ -243,7 +244,7 @@ struct PowEntry
 	int iterations;
 };
 
-PowEntry PowEntries[31] =
+PowEntry PowEntries[ProofOfWork::sMaxDifficulty + 1] =
 { //   target                                                             iterations  hashes  		memory
 	{ "0CFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 65536	}, // 1451874,		2 MB
 	{ "0CFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 98304	}, // 2177811,		3 MB
@@ -300,7 +301,7 @@ int ProofOfWorkGenerator::getPowEntry(const uint256& target, int iterations)
 
 void ProofOfWorkGenerator::setDifficulty(int i)
 {
-	assert((i >= 0) && (i <= 30));
+	assert((i >= 0) && (i <= ProofOfWork::sMaxDifficulty));
 	time_t now = time(NULL);
 
 	boost::mutex::scoped_lock sl(mLock);

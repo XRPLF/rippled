@@ -20,6 +20,7 @@ enum POWResult
 	powTOOEASY	= 5, // the difficulty increased too much while you solved it
 };
 
+
 class ProofOfWork
 {
 protected:
@@ -33,6 +34,8 @@ protected:
 	static const int sMaxIterations;
 
 public:
+	static const int sMaxDifficulty;
+
 	typedef boost::shared_ptr<ProofOfWork> pointer;
 
 	ProofOfWork(const std::string& token, int iterations, const uint256& challenge, const uint256& target) :
@@ -80,6 +83,8 @@ public:
 	void loadHigh();
 	void loadLow();
 	void sweep(void);
+
+	const uint256& getSecret() const		{ return mSecret; }
 
 	static int getPowEntry(const uint256& target, int iterations);
 };
