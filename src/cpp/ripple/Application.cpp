@@ -180,6 +180,7 @@ void Application::setup()
 			options.filter_policy = leveldb::NewBloomFilterPolicy(10);
 		if (theConfig.LDB_IMPORT)
 			options.write_buffer_size = 32 << 20;
+		options.write_buffer_size = std::max(options.write_buffer_size, theConfig.getSize(siLDBWriteSize) << 20);
 		leveldb::Status status = leveldb::DB::Open(options, (theConfig.DATA_DIR / "hashnode").string(), &mHashNodeLDB);
 		if (!status.ok() || !mHashNodeLDB)
 		{
