@@ -172,7 +172,7 @@ void Application::setup()
 #ifdef USE_LEVELDB
 	if (mHashedObjectStore.isLevelDB())
 	{
-		cLog(lsFATAL) << "LDB";
+		cLog(lsINFO) << "LevelDB used for nodes";
 		leveldb::Options options;
 		options.create_if_missing = true;
 		options.block_cache = leveldb::NewLRUCache(theConfig.getSize(siHashNodeDBCache) * 1024 * 1024);
@@ -191,7 +191,7 @@ void Application::setup()
 	else
 #endif
 	{
-		cLog(lsFATAL) << "SQLite";
+		cLog(lsINFO) << "SQLite used for nodes";
 		boost::thread t5(boost::bind(&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
 		t5.join();
 	}
