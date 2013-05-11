@@ -67,7 +67,8 @@ enum SizedItemName
 	siLineCacheAge,
 	siHashNodeDBCache,
 	siTxnDBCache,
-	siLgrDBCache
+	siLgrDBCache,
+	siLDBWriteSize
 };
 
 struct SizedItem
