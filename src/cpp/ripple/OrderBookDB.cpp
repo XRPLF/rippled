@@ -55,10 +55,8 @@ void OrderBookDB::setup(Ledger::ref ledger)
 				OrderBook::pointer book = boost::make_shared<OrderBook>(boost::cref(index),
 					boost::cref(ci), boost::cref(co), boost::cref(ii), boost::cref(io));
 
-				mSourceMap[currencyIssuer_ct(boost::reference_wrapper<const uint160>(ci),
-					boost::reference_wrapper<const uint160>(ii))].push_back(book);
-				mDestMap[currencyIssuer_ct(boost::reference_wrapper<const uint160>(co),
-					boost::reference_wrapper<const uint160>(io))].push_back(book);
+				mSourceMap[currencyIssuer_ct(ci, ii)].push_back(book);
+				mDestMap[currencyIssuer_ct(co, io)].push_back(book);
 			}
 		}
 
