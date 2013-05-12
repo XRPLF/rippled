@@ -20,6 +20,7 @@ enum POWResult
 	powTOOEASY	= 5, // the difficulty increased too much while you solved it
 };
 
+bool powResultInfo(POWResult powCode, std::string& strToken, std::string& strHuman);
 
 class ProofOfWork
 {

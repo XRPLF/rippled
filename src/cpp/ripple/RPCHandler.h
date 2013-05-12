@@ -73,6 +73,7 @@ class RPCHandler
 	Json::Value doPing(Json::Value params, int& cost, ScopedLock& mlh);
 	Json::Value doProfile(Json::Value params, int& cost, ScopedLock& mlh);
 	Json::Value doProofCreate(Json::Value params, int& cost, ScopedLock& mlh);
+	Json::Value doProofVerify(Json::Value params, int& cost, ScopedLock& mlh);
 	Json::Value doRandom(Json::Value jvRequest, int& cost, ScopedLock& mlh);
 	Json::Value doRipplePathFind(Json::Value jvRequest, int& cost, ScopedLock& mlh);
 	Json::Value doServerInfo(Json::Value params, int& cost, ScopedLock& mlh);	// for humans

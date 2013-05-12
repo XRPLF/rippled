@@ -13,6 +13,37 @@
 
 SETUP_LOG();
 
+
+bool powResultInfo(POWResult powCode, std::string& strToken, std::string& strHuman)
+{
+	static struct {
+		POWResult		powCode;
+		const char*		cpToken;
+		const char*		cpHuman;
+	} powResultInfoA[] = {
+		{	powREUSED,				"powREUSED",				"Proof-of-work has already been used."					},
+		{	powBADNONCE,			"powBADNONCE",				"The solution does not meet the required difficulty."	},
+		{	powEXPIRED,				"powEXPIRED",				"Token is expired."										},
+		{	powCORRUPT,				"powCORRUPT",				"Invalid token."										},
+		{	powTOOEASY,				"powTOOEASY",				"Difficulty has increased since token was issued."		},
+
+		{	powOK,					"powOK",					"Valid proof-of-work."									},
+	};
+
+	int	iIndex	= NUMBER(powResultInfoA);
+
+	while (iIndex-- && powResultInfoA[iIndex].powCode != powCode)
+		;
+
+	if (iIndex >= 0)
+	{
+		strToken	= powResultInfoA[iIndex].cpToken;
+		strHuman	= powResultInfoA[iIndex].cpHuman;
+	}
+
+	return iIndex >= 0;
+}
+
 const uint256 ProofOfWork::sMinTarget("00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 const int ProofOfWork::sMaxIterations(1 << 23);
 const int ProofOfWork::sMaxDifficulty(30);

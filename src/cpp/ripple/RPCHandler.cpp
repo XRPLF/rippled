@@ -910,6 +910,41 @@ Json::Value RPCHandler::doProofCreate(Json::Value jvRequest, int& cost, ScopedLo
 	return jvResult;
 }
 
+
+// {
+//   token: <token>
+//   solution: <solution>
+// }
+Json::Value RPCHandler::doProofVerify(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+{
+	// XXX Add ability to check proof against arbitrary secret & time
+
+	Json::Value			jvResult;
+
+	if (!jvRequest.isMember("token"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	if (!jvRequest.isMember("solution"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	std::string		strToken	= jvRequest["token"].asString();
+	uint256			uSolution(jvRequest["solution"].asString());
+
+	// XXX Proof should not be marked as used from this
+	POWResult		prResult = theApp->getPowGen().checkProof(strToken, uSolution);
+
+	std::string	sToken;
+	std::string	sHuman;
+
+	powResultInfo(prResult, sToken, sHuman);
+
+	jvResult["proof_result"]			= sToken;
+	jvResult["proof_result_code"]		= prResult;
+	jvResult["proof_result_message"]	= sHuman;
+
+	return jvResult;
+}
+
 // {
 //   account: <account>|<nickname>|<account_public_key>
 //   account_index: <number>		// optional, defaults to 0.
@@ -3377,6 +3412,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 		{	"ping",					&RPCHandler::doPing,			    false,	optNone		},
 //		{	"profile",				&RPCHandler::doProfile,			    false,	optCurrent	},
 		{	"proof_create",			&RPCHandler::doProofCreate,		    false,	optNone		},
+		{	"proof_verify",			&RPCHandler::doProofVerify,		    true,	optNone		},
 		{	"random",				&RPCHandler::doRandom,				false,	optNone		},
 		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	    false,	optCurrent	},
 		{	"sign",					&RPCHandler::doSign,			    false,	optCurrent	},
