@@ -794,7 +794,11 @@ bool Pathfinder::matchesOrigin(const uint160& currency, const uint160& issuer)
 int Pathfinder::getPathsOut(const uint160& currencyID, const uint160& accountID,
 	bool authRequired, bool isDstCurrency, const uint160& dstAccount)
 {
+#ifdef C11X
 	std::pair<const uint160&, const uint160&> accountCurrency(currencyID, accountID);
+#else
+	std::pair<uint160, uint160> accountCurrency(currencyID, accountID);
+#endif
 	boost::unordered_map<std::pair<uint160, uint160>, int>::iterator it = mPOMap.find(accountCurrency);
 	if (it != mPOMap.end())
 		return it->second;
