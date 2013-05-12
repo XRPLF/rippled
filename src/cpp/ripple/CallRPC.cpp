@@ -471,13 +471,16 @@ Json::Value RPCParser::parseAccountRaw(const Json::Value& jvParams, bool bPeer)
 	return jvRequest;
 }
 
-// proof_create [<difficulty>]
+// proof_create [<difficulty>] [<secret>]
 Json::Value RPCParser::parseProofCreate(const Json::Value& jvParams)
 {
 	Json::Value		jvRequest;
 
-	if (1 == jvParams.size())
+	if (jvParams.size() >= 1)
 		jvRequest["difficulty"] = jvParams[0u].asInt();
+
+	if (jvParams.size() >= 2)
+		jvRequest["secret"] = jvParams[1u].asString();
 
 	return jvRequest;
 }
@@ -730,7 +733,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"peers",				&RPCParser::parseAsIs,					0,  0	},
 		{	"ping",					&RPCParser::parseAsIs,					0,  0	},
 //		{	"profile",				&RPCParser::parseProfile,				1,  9	},
-		{	"proof_create",			&RPCParser::parseProofCreate,			0,  1	},
+		{	"proof_create",			&RPCParser::parseProofCreate,			0,  2	},
 		{	"proof_solve",			&RPCParser::parseProofSolve,			1,  1	},
 		{	"proof_verify",			&RPCParser::parseProofVerify,			2,  2	},
 		{	"random",				&RPCParser::parseAsIs,					0,  0	},

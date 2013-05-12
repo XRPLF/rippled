@@ -879,27 +879,38 @@ Json::Value RPCHandler::doProfile(Json::Value jvRequest, int& cost, ScopedLock& 
 }
 
 // {
-//   difficulty: <number>		// optional, if set, a temporary generator is
-//                       		//   instantiated and its secret included
+//   // if either of these parameters is set, a custom generator is used
+//   difficulty: <number>		// optional
+//   secret: <secret>           // optional
 // }
 Json::Value RPCHandler::doProofCreate(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
 {
-	// XXX: Add ability to create proof with arbitrary secret and time
+	// XXX: Add ability to create proof with arbitrary time
 
 	Json::Value		jvResult(Json::objectValue);
 
-	if (jvRequest.isMember("difficulty"))
+	if (jvRequest.isMember("difficulty") || jvRequest.isMember("secret"))
 	{
-		if (!jvRequest["difficulty"].isIntegral())
-			return rpcError(rpcINVALID_PARAMS);
-
-		int iDifficulty = jvRequest["difficulty"].asInt();
-
-		if (iDifficulty < 0 || iDifficulty > ProofOfWork::sMaxDifficulty)
-			return rpcError(rpcINVALID_PARAMS);
-
 		ProofOfWorkGenerator	pgGen;
-		pgGen.setDifficulty(iDifficulty);
+
+		if (jvRequest.isMember("difficulty"))
+		{
+			if (!jvRequest["difficulty"].isIntegral())
+				return rpcError(rpcINVALID_PARAMS);
+
+			int iDifficulty = jvRequest["difficulty"].asInt();
+
+			if (iDifficulty < 0 || iDifficulty > ProofOfWork::sMaxDifficulty)
+				return rpcError(rpcINVALID_PARAMS);
+
+			pgGen.setDifficulty(iDifficulty);
+		}
+
+		if (jvRequest.isMember("secret"))
+		{
+			uint256		uSecret(jvRequest["secret"].asString());
+			pgGen.setSecret(uSecret);
+		}
 
 		jvResult["token"]	= pgGen.getProof().getToken();
 		jvResult["secret"]	= pgGen.getSecret().GetHex();

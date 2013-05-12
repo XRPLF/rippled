@@ -90,6 +90,7 @@ public:
 	void sweep(void);
 
 	const uint256& getSecret() const		{ return mSecret; }
+	void setSecret(const uint256& secret)	{ mSecret = secret; }
 
 	static int getPowEntry(const uint256& target, int iterations);
 };
