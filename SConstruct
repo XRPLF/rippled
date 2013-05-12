@@ -94,6 +94,7 @@ if not FreeBSD:
 # Apparently, pkg-config --libs protobuf on bsd fails to provide this necessary include dir.
 if FreeBSD:
     env.Append(LINKFLAGS = ['-I/usr/local/include'])
+    env.Append(CXXFLAGS = ['-DOS_FREEBSD'])
 
 env.Append(
 	LIBS = [
