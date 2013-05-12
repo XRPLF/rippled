@@ -16,7 +16,12 @@
 //
 
 typedef std::pair<uint160, uint160> currencyIssuer_t;
+
+#ifdef C11X
 typedef std::pair<const uint160&, const uint160&> currencyIssuer_ct;
+#else
+typedef std::pair<uint160, uint160> currencyIssuer_ct; // C++ defect 106
+#endif
 
 class BookListeners
 {
