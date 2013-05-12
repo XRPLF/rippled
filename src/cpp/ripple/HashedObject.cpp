@@ -114,7 +114,7 @@ HashedObject::pointer HashedObjectStore::retrieveLevelDB(const uint256& hash)
 		return obj;
 	}
 
-	const unsigned char* bufPtr = reinterpret_cast<const unsigned char*>(&sData.front());
+	const unsigned char* bufPtr = reinterpret_cast<const unsigned char*>(&sData[0]);
 	uint32 index = htonl(*reinterpret_cast<const uint32*>(bufPtr));
 	int htype = bufPtr[8];
 
