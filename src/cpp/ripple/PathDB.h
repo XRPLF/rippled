@@ -69,11 +69,13 @@ public:
 		const uint160& currencyTo, const uint160& issuerTo);
 };
 
+#ifdef C11X
 extern std::size_t hash_value(const currencyIssuer_ct& ci)
 {
 	std::size_t r = hash_value(ci.second);
 	return ci.first.hash_combine(r);
 }
+#endif
 
 static inline std::size_t hash_value(const currencyIssuer_t& ci)
 {
