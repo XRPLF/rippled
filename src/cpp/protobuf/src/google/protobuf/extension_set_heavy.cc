@@ -96,12 +96,12 @@ void ExtensionSet::AppendToList(const Descriptor* containing_type,
   }
 }
 
-inline FieldDescriptor::Type real_type(FieldType type) {
+inline FieldDescriptor::Type real_type_heavy(FieldType type) {
   GOOGLE_DCHECK(type > 0 && type <= FieldDescriptor::MAX_TYPE);
   return static_cast<FieldDescriptor::Type>(type);
 }
 
-inline FieldDescriptor::CppType cpp_type(FieldType type) {
+inline FieldDescriptor::CppType cpp_type_heavy(FieldType type) {
   return FieldDescriptor::TypeToCppType(
       static_cast<FieldDescriptor::Type>(type));
 }
@@ -115,7 +115,7 @@ inline WireFormatLite::FieldType field_type(FieldType type) {
   GOOGLE_DCHECK_EQ((EXTENSION).is_repeated ? FieldDescriptor::LABEL_REPEATED     \
                                   : FieldDescriptor::LABEL_OPTIONAL,      \
             FieldDescriptor::LABEL_##LABEL);                              \
-  GOOGLE_DCHECK_EQ(cpp_type((EXTENSION).type), FieldDescriptor::CPPTYPE_##CPPTYPE)
+  GOOGLE_DCHECK_EQ(cpp_type_heavy((EXTENSION).type), FieldDescriptor::CPPTYPE_##CPPTYPE)
 
 const MessageLite& ExtensionSet::GetMessage(int number,
                                             const Descriptor* message_type,
@@ -140,7 +140,7 @@ MessageLite* ExtensionSet::MutableMessage(const FieldDescriptor* descriptor,
   Extension* extension;
   if (MaybeNewExtension(descriptor->number(), descriptor, &extension)) {
     extension->type = descriptor->type();
-    GOOGLE_DCHECK_EQ(cpp_type(extension->type), FieldDescriptor::CPPTYPE_MESSAGE);
+    GOOGLE_DCHECK_EQ(cpp_type_heavy(extension->type), FieldDescriptor::CPPTYPE_MESSAGE);
     extension->is_repeated = false;
     extension->is_packed = false;
     const MessageLite* prototype =
@@ -187,7 +187,7 @@ MessageLite* ExtensionSet::AddMessage(const FieldDescriptor* descriptor,
   Extension* extension;
   if (MaybeNewExtension(descriptor->number(), descriptor, &extension)) {
     extension->type = descriptor->type();
-    GOOGLE_DCHECK_EQ(cpp_type(extension->type), FieldDescriptor::CPPTYPE_MESSAGE);
+    GOOGLE_DCHECK_EQ(cpp_type_heavy(extension->type), FieldDescriptor::CPPTYPE_MESSAGE);
     extension->is_repeated = true;
     extension->repeated_message_value =
       new RepeatedPtrField<MessageLite>();
@@ -293,7 +293,7 @@ inline int ExtensionSet::RepeatedMessage_SpaceUsedExcludingSelf(
 int ExtensionSet::Extension::SpaceUsedExcludingSelf() const {
   int total_size = 0;
   if (is_repeated) {
-    switch (cpp_type(type)) {
+    switch (cpp_type_heavy(type)) {
 #define HANDLE_TYPE(UPPERCASE, LOWERCASE)                          \
       case FieldDescriptor::CPPTYPE_##UPPERCASE:                   \
         total_size += sizeof(*repeated_##LOWERCASE##_value) +      \
@@ -321,7 +321,7 @@ int ExtensionSet::Extension::SpaceUsedExcludingSelf() const {
         break;
     }
   } else {
-    switch (cpp_type(type)) {
+    switch (cpp_type_heavy(type)) {
       case FieldDescriptor::CPPTYPE_STRING:
         total_size += sizeof(*string_value) +
                       StringSpaceUsedExcludingSelf(*string_value);
@@ -376,7 +376,7 @@ uint8* ExtensionSet::Extension::SerializeFieldWithCachedSizesToArray(
           WireFormatLite::WIRETYPE_LENGTH_DELIMITED, target);
       target = WireFormatLite::WriteInt32NoTagToArray(cached_size, target);
 
-      switch (real_type(type)) {
+      switch (real_type_heavy(type)) {
 #define HANDLE_TYPE(UPPERCASE, CAMELCASE, LOWERCASE)                        \
         case FieldDescriptor::TYPE_##UPPERCASE:                             \
           for (int i = 0; i < repeated_##LOWERCASE##_value->size(); i++) {  \
@@ -409,7 +409,7 @@ uint8* ExtensionSet::Extension::SerializeFieldWithCachedSizesToArray(
           break;
       }
     } else {
-      switch (real_type(type)) {
+      switch (real_type_heavy(type)) {
 #define HANDLE_TYPE(UPPERCASE, CAMELCASE, LOWERCASE)                        \
         case FieldDescriptor::TYPE_##UPPERCASE:                             \
           for (int i = 0; i < repeated_##LOWERCASE##_value->size(); i++) {  \
@@ -440,7 +440,7 @@ uint8* ExtensionSet::Extension::SerializeFieldWithCachedSizesToArray(
       }
     }
   } else if (!is_cleared) {
-    switch (real_type(type)) {
+    switch (real_type_heavy(type)) {
 #define HANDLE_TYPE(UPPERCASE, CAMELCASE, VALUE)                 \
       case FieldDescriptor::TYPE_##UPPERCASE:                    \
         target = WireFormatLite::Write##CAMELCASE##ToArray(      \
