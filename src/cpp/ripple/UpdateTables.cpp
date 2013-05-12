@@ -107,6 +107,13 @@ void Application::updateTables(bool ldbImport)
 	assert(!schemaHas(theApp->getTxnDB(), "AccountTransactions", 0, "foobar"));
 	addTxnSeqField();
 
+	if (schemaHas(theApp->getTxnDB(), "AccountTransactions", 0, "PRIMARY"))
+	{
+		Log(lsFATAL) << "AccountTransactions database should not have a primary key";
+		StopSustain();
+		exit(1);
+	}
+
 #ifdef USE_LEVELDB
 	if (theApp->getHashedObjectStore().isLevelDB())
 	{
@@ -123,6 +130,7 @@ void Application::updateTables(bool ldbImport)
 			{
 				Log(lsWARNING) << "SQLite hashnode database exists. Please either remove or import";
 				Log(lsWARNING) << "To import, start with the '--import' option. Otherwise, remove hashnode.db";
+				StopSustain();
 				exit(1);
 			}
 		}
