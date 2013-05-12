@@ -382,6 +382,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\leveldb_core.cpp" />
+    <ClCompile Include="src\cpp\protobuf_core.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="util\pugiconfig.hpp">

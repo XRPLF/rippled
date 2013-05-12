@@ -43,15 +43,9 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>rippled</TargetName>
-    <OutDir>$(SolutionDir)build\VisualStudio2012\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)build\obj\VisualStudio2012\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>rippled</TargetName>
-    <OutDir>$(SolutionDir)build\VisualStudio2012\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)build\obj\VisualStudio2012\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -59,7 +53,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>BOOST_TEST_ALTERNATIVE_INIT_API;BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\;..\OpenSSL\include;..\boost_1_52_0;..\protobuf\src;$(RepoDir)\src\cpp\leveldb;$(RepoDir)\src\cpp\leveldb\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\OpenSSL\include;..\boost_1_52_0;$(RepoDir)\src\cpp\leveldb;$(RepoDir)\src\cpp\leveldb\include;$(RepoDir)\src\cpp\protobuf\src;$(RepoDir)\src\cpp\protobuf\vsprojects;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <MinimalRebuild>false</MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -86,7 +80,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>BOOST_TEST_ALTERNATIVE_INIT_API;BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\;..\OpenSSL\include;..\boost_1_52_0;..\protobuf\src;$(RepoDir)\src\cpp\leveldb;$(RepoDir)\src\cpp\leveldb\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\OpenSSL\include;..\boost_1_52_0;$(RepoDir)\src\cpp\leveldb;$(RepoDir)\src\cpp\leveldb\include;$(RepoDir)\src\cpp\protobuf\src;$(RepoDir)\src\cpp\protobuf\vsprojects;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -109,6 +103,7 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="src\cpp\protobuf_core.cpp" />
     <ClCompile Include="src\cpp\ripple\AcceptedLedger.cpp" />
     <ClCompile Include="src\cpp\ripple\AccountItems.cpp" />
     <ClCompile Include="src\cpp\ripple\AccountSetTransactor.cpp" />
