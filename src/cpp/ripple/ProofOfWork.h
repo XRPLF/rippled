@@ -43,6 +43,8 @@ public:
 		mToken(token), mChallenge(challenge), mTarget(target), mIterations(iterations)
 	{ ; }
 
+	ProofOfWork(const std::string& token);
+
 	bool isValid() const;
 
 	uint256 solve(int maxIterations = 2 * sMaxIterations) const;
@@ -54,6 +56,8 @@ public:
 	// approximate number of hashes needed to solve
 	static uint64 getDifficulty(const uint256& target, int iterations);
 	uint64 getDifficulty() const { return getDifficulty(mTarget, mIterations); }
+
+	static bool validateToken(const std::string& strToken);
 };
 
 class ProofOfWorkGenerator

@@ -5,6 +5,7 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
+#include <boost/regex.hpp>
 
 #include <openssl/rand.h>
 
@@ -47,6 +48,19 @@ bool powResultInfo(POWResult powCode, std::string& strToken, std::string& strHum
 const uint256 ProofOfWork::sMinTarget("00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 const int ProofOfWork::sMaxIterations(1 << 23);
 const int ProofOfWork::sMaxDifficulty(30);
+
+ProofOfWork::ProofOfWork(const std::string& token)
+{
+	std::vector<std::string> fields;
+	boost::split(fields, token, boost::algorithm::is_any_of("-"));
+	if (fields.size() != 5)
+		throw std::runtime_error("invalid token");
+
+	mToken = token;
+	mChallenge.SetHex(fields[0]);
+	mTarget.SetHex(fields[1]);
+	mIterations = lexical_cast_s<int>(fields[2]);
+}
 
 bool ProofOfWork::isValid() const
 {
@@ -139,6 +153,14 @@ bool ProofOfWork::checkSolution(const uint256& solution) const
 		buf2[i] = buf1[2];
 	}
 	return getSHA512Half(buf2) <= mTarget;
+}
+
+bool ProofOfWork::validateToken(const std::string& strToken)
+{
+	static boost::regex	reToken("[[:xdigit:]]{64}-[[:xdigit:]]{64}-[[:digit:]]+-[[:digit:]]+-[[:xdigit:]]{64}");
+	boost::smatch		smMatch;
+
+	return boost::regex_match(strToken, smMatch, reToken);
 }
 
 ProofOfWorkGenerator::ProofOfWorkGenerator() :	mValidTime(180)

@@ -910,6 +910,29 @@ Json::Value RPCHandler::doProofCreate(Json::Value jvRequest, int& cost, ScopedLo
 	return jvResult;
 }
 
+// {
+//   token: <token>
+// }
+Json::Value RPCHandler::doProofSolve(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+{
+	Json::Value			jvResult;
+
+	if (!jvRequest.isMember("token"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	std::string			strToken		= jvRequest["token"].asString();
+
+	if (!ProofOfWork::validateToken(strToken))
+		return rpcError(rpcINVALID_PARAMS);
+
+	ProofOfWork			powProof(strToken);
+	uint256				uSolution		= powProof.solve();
+
+	jvResult["solution"]				= uSolution.GetHex();
+
+	return jvResult;
+}
+
 
 // {
 //   token: <token>
@@ -3412,6 +3435,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 		{	"ping",					&RPCHandler::doPing,			    false,	optNone		},
 //		{	"profile",				&RPCHandler::doProfile,			    false,	optCurrent	},
 		{	"proof_create",			&RPCHandler::doProofCreate,		    false,	optNone		},
+		{	"proof_solve",			&RPCHandler::doProofSolve,		    true,	optNone		},
 		{	"proof_verify",			&RPCHandler::doProofVerify,		    true,	optNone		},
 		{	"random",				&RPCHandler::doRandom,				false,	optNone		},
 		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	    false,	optCurrent	},
