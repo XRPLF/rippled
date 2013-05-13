@@ -48,22 +48,28 @@ void HashedObjectStore::tune(int size, int age)
 	mCache.setTargetAge(age);
 }
 
+void HashedObjectStore::waitWrite()
+{
+	boost::mutex::scoped_lock sl(mWriteMutex);
+	int gen = mWriteGeneration;
+	while (mWritePending && (mWriteGeneration == gen))
+		mWriteCondition.wait(sl);
+}
+
 #ifdef USE_LEVELDB
 
 bool HashedObjectStore::storeLevelDB(HashedObjectType type, uint32 index,
 	const std::vector<unsigned char>& data, const uint256& hash)
 { // return: false = already in cache, true = added to cache
 	if (!theApp->getHashNodeLDB())
-	{
-		cLog(lsWARNING) << "HOS: no db";
 		return true;
-	}
+
 	if (mCache.touch(hash))
-	{
-		cLog(lsTRACE) << "HOS: " << hash << " store: incache";
 		return false;
-	}
+
+#ifdef PARANOID
 	assert(hash == Serializer::getSHA512Half(data));
+#endif
 
 	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data, hash);
 	if (!mCache.canonicalize(hash, object))
@@ -133,23 +139,20 @@ void HashedObjectStore::bulkWriteLevelDB()
 HashedObject::pointer HashedObjectStore::retrieveLevelDB(const uint256& hash)
 {
 	HashedObject::pointer obj = mCache.fetch(hash);
-	if (obj || mNegativeCache.isPresent(hash))
+	if (obj || mNegativeCache.isPresent(hash) || !theApp || !theApp->getHashNodeLDB())
 		return obj;
 
-	if (!theApp || !theApp->getHashNodeLDB())
-	{
-		cLog(lsWARNING) << "HOS: no db";
-		return obj;
-	}
-
-	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtHO_READ, "HOS::retrieve"));
 	std::string sData;
-	leveldb::Status st = theApp->getHashNodeLDB()->Get(leveldb::ReadOptions(),
-		leveldb::Slice(reinterpret_cast<const char *>(hash.begin()), hash.size()), &sData);
-	if (!st.ok())
+
 	{
-		assert(st.IsNotFound());
-		return obj;
+		LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtHO_READ, "HOS::retrieve"));
+		leveldb::Status st = theApp->getHashNodeLDB()->Get(leveldb::ReadOptions(),
+			leveldb::Slice(reinterpret_cast<const char *>(hash.begin()), hash.size()), &sData);
+		if (!st.ok())
+		{
+			assert(st.IsNotFound());
+			return obj;
+		}
 	}
 
 	const unsigned char* bufPtr = reinterpret_cast<const unsigned char*>(&sData[0]);
@@ -198,16 +201,6 @@ bool HashedObjectStore::storeSQLite(HashedObjectType type, uint32 index,
 //		cLog(lsTRACE) << "HOS: already had " << hash;
 	mNegativeCache.del(hash);
 	return true;
-}
-
-void HashedObjectStore::waitWrite()
-{
-	if (mLevelDB)
-		return;
-	boost::mutex::scoped_lock sl(mWriteMutex);
-	int gen = mWriteGeneration;
-	while (mWritePending && (mWriteGeneration == gen))
-		mWriteCondition.wait(sl);
 }
 
 void HashedObjectStore::bulkWriteSQLite()
