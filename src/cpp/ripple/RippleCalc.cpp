@@ -3028,7 +3028,10 @@ int iPass	= 0;
 			BOOST_FOREACH(const uint256& uOfferIndex, vuUnfundedBecame)
 			{
 				if (tesSUCCESS == terResult)
+				{
+					cLog(lsDEBUG) << "Became unfunded " << uOfferIndex.GetHex();
 					terResult = lesActive.offerDelete(uOfferIndex);
+				}
 			}
 		}
 
@@ -3036,7 +3039,10 @@ int iPass	= 0;
 		BOOST_FOREACH(const uint256& uOfferIndex, rc.musUnfundedFound)
 		{
 			if (tesSUCCESS == terResult)
+			{
+				cLog(lsDEBUG) << "Delete unfunded " << uOfferIndex.GetHex();
 				terResult = lesActive.offerDelete(uOfferIndex);
+			}
 		}
 	}
 
