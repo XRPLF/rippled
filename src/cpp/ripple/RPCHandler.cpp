@@ -885,6 +885,7 @@ Json::Value RPCHandler::doProfile(Json::Value jvRequest, int& cost, ScopedLock& 
 // }
 Json::Value RPCHandler::doProofCreate(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
 {
+	MasterLockHolder.unlock();
 	// XXX: Add ability to create proof with arbitrary time
 
 	Json::Value		jvResult(Json::objectValue);
@@ -926,6 +927,8 @@ Json::Value RPCHandler::doProofCreate(Json::Value jvRequest, int& cost, ScopedLo
 // }
 Json::Value RPCHandler::doProofSolve(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
 {
+	MasterLockHolder.unlock();
+
 	Json::Value			jvResult;
 
 	if (!jvRequest.isMember("token"))
@@ -954,6 +957,7 @@ Json::Value RPCHandler::doProofSolve(Json::Value jvRequest, int& cost, ScopedLoc
 // }
 Json::Value RPCHandler::doProofVerify(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
 {
+	MasterLockHolder.unlock();
 	// XXX Add ability to check proof against arbitrary time
 
 	Json::Value			jvResult;
