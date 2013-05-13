@@ -516,7 +516,6 @@ int Config::getSize(SizedItemName item)
 		{ siHashNodeDBCache,	{	24,		48,		64,		128,		256		} },
 		{ siTxnDBCache,			{	4,		12,		48,		96,			192		} },
 		{ siLgrDBCache,			{	4,		8,		32,		64,			128		} },
-		{ siLDBWriteSize,		{	8,		16,		32,		64,			128		} }
 	};
 
 	for (int i = 0; i < (sizeof(sizeTable) / sizeof(SizedItem)); ++i)
