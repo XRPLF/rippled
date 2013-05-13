@@ -183,7 +183,8 @@ void Application::setup()
 		leveldb::Status status = leveldb::DB::Open(options, (theConfig.DATA_DIR / "hashnode").string(), &mHashNodeLDB);
 		if (!status.ok() || !mHashNodeLDB)
 		{
-			cLog(lsFATAL) << "Unable to open/create hash node db";
+			cLog(lsFATAL) << "Unable to open/create hash node db: " << (theConfig.DATA_DIR / "hashnode").string();
+			StopSustain();
 			exit(3);
 		}
 	}
