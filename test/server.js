@@ -56,7 +56,7 @@ var Server = function (name, config, verbose) {
   }
 };
 
-Server.prototype  = new EventEmitter;
+util.inherits(Server, EventEmitter);
 
 Server.from_config = function (name, verbose) {
   return new Server(name, config.servers[name], verbose);
