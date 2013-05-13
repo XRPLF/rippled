@@ -1223,9 +1223,9 @@ void STAmount::roundSelf()
 	}
 }
 
-Json::Value STAmount::getJson(int) const
+void STAmount::setJson(Json::Value& elem) const
 {
-	Json::Value elem(Json::objectValue);
+	elem = Json::objectValue;
 
 	if (!mIsNative)
 	{
@@ -1237,9 +1237,14 @@ Json::Value STAmount::getJson(int) const
 	}
 	else
 	{
-		elem=getText();
+		elem = getText();
 	}
+}
 
+Json::Value STAmount::getJson(int) const
+{
+	Json::Value elem;
+	setJson(elem);
 	return elem;
 }
 
