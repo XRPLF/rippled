@@ -1,8 +1,8 @@
-
 #include "HashedObject.h"
 
 #ifdef USE_LEVELDB
 #include "leveldb/db.h"
+#include "leveldb/write_batch.h"
 #endif
 
 #include <boost/lexical_cast.hpp>
@@ -68,34 +68,72 @@ bool HashedObjectStore::storeLevelDB(HashedObjectType type, uint32 index,
 	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data, hash);
 	if (!mCache.canonicalize(hash, object))
 	{
-		LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtHO_WRITE, "HOS::store"));
-
-		std::vector<unsigned char> rawData(9 + data.size());
-		unsigned char* bufPtr = &rawData.front();
-
-		*reinterpret_cast<uint32*>(bufPtr + 0) = ntohl(index);
-		*reinterpret_cast<uint32*>(bufPtr + 4) = ntohl(index);
-		*(bufPtr + 8) = static_cast<unsigned char>(type);
-		memcpy(bufPtr + 9, &data.front(), data.size());
-
-		leveldb::Status st = theApp->getHashNodeLDB()->Put(leveldb::WriteOptions(),
-			leveldb::Slice(reinterpret_cast<const char *>(hash.begin()), hash.size()),
-			leveldb::Slice(reinterpret_cast<const char *>(bufPtr), 9 + data.size()));
-		if (!st.ok())
+		boost::mutex::scoped_lock sl(mWriteMutex);
+		mWriteSet.push_back(object);
+		if (!mWritePending)
 		{
-			cLog(lsFATAL) << "Failed to store hash node";
-			assert(false);
+			mWritePending = true;
+			theApp->getJobQueue().addJob(jtWRITE, "HashedObject::store",
+				BIND_TYPE(&HashedObjectStore::bulkWriteLevelDB, this));
 		}
 	}
-	else
-		cLog(lsDEBUG) << "HOS: store race";
+	mNegativeCache.del(hash);
 	return true;
+}
+
+void HashedObjectStore::bulkWriteLevelDB()
+{
+	assert(mLevelDB);
+	while (1)
+	{
+		std::vector< boost::shared_ptr<HashedObject> > set;
+		set.reserve(128);
+
+		{
+			boost::mutex::scoped_lock sl(mWriteMutex);
+			mWriteSet.swap(set);
+			assert(mWriteSet.empty());
+			++mWriteGeneration;
+			mWriteCondition.notify_all();
+			if (set.empty())
+			{
+				mWritePending = false;
+				return;
+			}
+		}
+
+		{
+			leveldb::WriteBatch batch;
+
+			BOOST_FOREACH(const boost::shared_ptr<HashedObject>& it, set)
+			{
+				const HashedObject& obj = *it;
+				std::vector<unsigned char> rawData(9 + obj.mData.size());
+				unsigned char* bufPtr = &rawData.front();
+
+				*reinterpret_cast<uint32*>(bufPtr + 0) = ntohl(obj.mLedgerIndex);
+				*reinterpret_cast<uint32*>(bufPtr + 4) = ntohl(obj.mLedgerIndex);
+				*(bufPtr + 8) = static_cast<unsigned char>(obj.mType);
+				memcpy(bufPtr + 9, &obj.mData.front(), obj.mData.size());
+
+				batch.Put(leveldb::Slice(reinterpret_cast<const char *>(obj.mHash.begin()), obj.mHash.size()),
+					leveldb::Slice(reinterpret_cast<const char *>(bufPtr), rawData.size()));
+			}
+
+			leveldb::Status st = theApp->getHashNodeLDB()->Write(leveldb::WriteOptions(), &batch);
+			if (!st.ok())
+			{
+				cLog(lsFATAL) << "Failed to store hash node";
+				assert(false);
+			}
+		}
+	}
 }
 
 HashedObject::pointer HashedObjectStore::retrieveLevelDB(const uint256& hash)
 {
 	HashedObject::pointer obj = mCache.fetch(hash);
-	if (obj)
+	if (obj || mNegativeCache.isPresent(hash))
 		return obj;
 
 	if (!theApp || !theApp->getHashNodeLDB())
@@ -153,7 +191,7 @@ bool HashedObjectStore::storeSQLite(HashedObjectType type, uint32 index,
 		{
 			mWritePending = true;
 			theApp->getJobQueue().addJob(jtWRITE, "HashedObject::store",
-				BIND_TYPE(&HashedObjectStore::bulkWrite, this));
+				BIND_TYPE(&HashedObjectStore::bulkWriteSQLite, this));
 		}
 	}
 //	else
@@ -172,7 +210,7 @@ void HashedObjectStore::waitWrite()
 		mWriteCondition.wait(sl);
 }
 
-void HashedObjectStore::bulkWrite()
+void HashedObjectStore::bulkWriteSQLite()
 {
 	assert(!mLevelDB);
 	while (1)
