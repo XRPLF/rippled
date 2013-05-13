@@ -34,6 +34,9 @@ protected:
 #endif
 	Json::Value parseLogLevel(const Json::Value& jvParams);
 	Json::Value parseOwnerInfo(const Json::Value& jvParams);
+	Json::Value parseProofCreate(const Json::Value& jvParams);
+	Json::Value parseProofSolve(const Json::Value& jvParams);
+	Json::Value parseProofVerify(const Json::Value& jvParams);
 	Json::Value parseRandom(const Json::Value& jvParams);
 	Json::Value parseRipplePathFind(const Json::Value& jvParams);
 	Json::Value parseSMS(const Json::Value& jvParams);

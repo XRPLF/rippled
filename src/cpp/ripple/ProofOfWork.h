@@ -20,6 +20,8 @@ enum POWResult
 	powTOOEASY	= 5, // the difficulty increased too much while you solved it
 };
 
+bool powResultInfo(POWResult powCode, std::string& strToken, std::string& strHuman);
+
 class ProofOfWork
 {
 protected:
@@ -33,11 +35,15 @@ protected:
 	static const int sMaxIterations;
 
 public:
+	static const int sMaxDifficulty;
+
 	typedef boost::shared_ptr<ProofOfWork> pointer;
 
 	ProofOfWork(const std::string& token, int iterations, const uint256& challenge, const uint256& target) :
 		mToken(token), mChallenge(challenge), mTarget(target), mIterations(iterations)
 	{ ; }
+
+	ProofOfWork(const std::string& token);
 
 	bool isValid() const;
 
@@ -50,6 +56,8 @@ public:
 	// approximate number of hashes needed to solve
 	static uint64 getDifficulty(const uint256& target, int iterations);
 	uint64 getDifficulty() const { return getDifficulty(mTarget, mIterations); }
+
+	static bool validateToken(const std::string& strToken);
 };
 
 class ProofOfWorkGenerator
@@ -80,6 +88,9 @@ public:
 	void loadHigh();
 	void loadLow();
 	void sweep(void);
+
+	const uint256& getSecret() const		{ return mSecret; }
+	void setSecret(const uint256& secret)	{ mSecret = secret; }
 
 	static int getPowEntry(const uint256& target, int iterations);
 };

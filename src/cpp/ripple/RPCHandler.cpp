@@ -23,6 +23,7 @@
 #include "InstanceCounter.h"
 #include "Offer.h"
 #include "PFRequest.h"
+#include "ProofOfWork.h"
 
 SETUP_LOG();
 
@@ -875,6 +876,141 @@ Json::Value RPCHandler::doProfile(Json::Value jvRequest, int& cost, ScopedLock& 
 	*/
 	Json::Value obj(Json::objectValue);
 	return obj;
+}
+
+// {
+//   // if either of these parameters is set, a custom generator is used
+//   difficulty: <number>		// optional
+//   secret: <secret>           // optional
+// }
+Json::Value RPCHandler::doProofCreate(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+{
+	// XXX: Add ability to create proof with arbitrary time
+
+	Json::Value		jvResult(Json::objectValue);
+
+	if (jvRequest.isMember("difficulty") || jvRequest.isMember("secret"))
+	{
+		ProofOfWorkGenerator	pgGen;
+
+		if (jvRequest.isMember("difficulty"))
+		{
+			if (!jvRequest["difficulty"].isIntegral())
+				return rpcError(rpcINVALID_PARAMS);
+
+			int iDifficulty = jvRequest["difficulty"].asInt();
+
+			if (iDifficulty < 0 || iDifficulty > ProofOfWork::sMaxDifficulty)
+				return rpcError(rpcINVALID_PARAMS);
+
+			pgGen.setDifficulty(iDifficulty);
+		}
+
+		if (jvRequest.isMember("secret"))
+		{
+			uint256		uSecret(jvRequest["secret"].asString());
+			pgGen.setSecret(uSecret);
+		}
+
+		jvResult["token"]	= pgGen.getProof().getToken();
+		jvResult["secret"]	= pgGen.getSecret().GetHex();
+	} else {
+		jvResult["token"]	= theApp->getPowGen().getProof().getToken();
+	}
+
+	return jvResult;
+}
+
+// {
+//   token: <token>
+// }
+Json::Value RPCHandler::doProofSolve(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+{
+	Json::Value			jvResult;
+
+	if (!jvRequest.isMember("token"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	std::string			strToken		= jvRequest["token"].asString();
+
+	if (!ProofOfWork::validateToken(strToken))
+		return rpcError(rpcINVALID_PARAMS);
+
+	ProofOfWork			powProof(strToken);
+	uint256				uSolution		= powProof.solve();
+
+	jvResult["solution"]				= uSolution.GetHex();
+
+	return jvResult;
+}
+
+
+// {
+//   token: <token>
+//   solution: <solution>
+//   // if either of these parameters is set, a custom verifier is used
+//   difficulty: <number>		// optional
+//   secret: <secret>           // optional
+// }
+Json::Value RPCHandler::doProofVerify(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+{
+	// XXX Add ability to check proof against arbitrary time
+
+	Json::Value			jvResult;
+
+	if (!jvRequest.isMember("token"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	if (!jvRequest.isMember("solution"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	std::string		strToken	= jvRequest["token"].asString();
+	uint256			uSolution(jvRequest["solution"].asString());
+
+	POWResult		prResult;
+	if (jvRequest.isMember("difficulty") || jvRequest.isMember("secret"))
+	{
+		ProofOfWorkGenerator	pgGen;
+
+		if (jvRequest.isMember("difficulty"))
+		{
+			if (!jvRequest["difficulty"].isIntegral())
+				return rpcError(rpcINVALID_PARAMS);
+
+			int iDifficulty = jvRequest["difficulty"].asInt();
+
+			if (iDifficulty < 0 || iDifficulty > ProofOfWork::sMaxDifficulty)
+				return rpcError(rpcINVALID_PARAMS);
+
+			pgGen.setDifficulty(iDifficulty);
+		}
+
+		if (jvRequest.isMember("secret"))
+		{
+			uint256		uSecret(jvRequest["secret"].asString());
+			pgGen.setSecret(uSecret);
+		}
+
+		prResult				= pgGen.checkProof(strToken, uSolution);
+
+		jvResult["secret"]		= pgGen.getSecret().GetHex();
+	}
+	else
+	{
+		// XXX Proof should not be marked as used from this
+		prResult = theApp->getPowGen().checkProof(strToken, uSolution);
+	}
+
+	std::string	sToken;
+	std::string	sHuman;
+
+	powResultInfo(prResult, sToken, sHuman);
+
+	jvResult["proof_result"]			= sToken;
+	jvResult["proof_result_code"]		= prResult;
+	jvResult["proof_result_message"]	= sHuman;
+
+	return jvResult;
 }
 
 // {
@@ -3343,6 +3479,9 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 		{	"path_find",			&RPCHandler::doPathFind,			false,	optCurrent	},
 		{	"ping",					&RPCHandler::doPing,			    false,	optNone		},
 //		{	"profile",				&RPCHandler::doProfile,			    false,	optCurrent	},
+		{	"proof_create",			&RPCHandler::doProofCreate,		    false,	optNone		},
+		{	"proof_solve",			&RPCHandler::doProofSolve,		    true,	optNone		},
+		{	"proof_verify",			&RPCHandler::doProofVerify,		    true,	optNone		},
 		{	"random",				&RPCHandler::doRandom,				false,	optNone		},
 		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	    false,	optCurrent	},
 		{	"sign",					&RPCHandler::doSign,			    false,	optCurrent	},
