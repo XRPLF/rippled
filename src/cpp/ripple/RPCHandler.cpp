@@ -948,10 +948,13 @@ Json::Value RPCHandler::doProofSolve(Json::Value jvRequest, int& cost, ScopedLoc
 // {
 //   token: <token>
 //   solution: <solution>
+//   // if either of these parameters is set, a custom verifier is used
+//   difficulty: <number>		// optional
+//   secret: <secret>           // optional
 // }
 Json::Value RPCHandler::doProofVerify(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
 {
-	// XXX Add ability to check proof against arbitrary secret & time
+	// XXX Add ability to check proof against arbitrary time
 
 	Json::Value			jvResult;
 
@@ -964,8 +967,39 @@ Json::Value RPCHandler::doProofVerify(Json::Value jvRequest, int& cost, ScopedLo
 	std::string		strToken	= jvRequest["token"].asString();
 	uint256			uSolution(jvRequest["solution"].asString());
 
-	// XXX Proof should not be marked as used from this
-	POWResult		prResult = theApp->getPowGen().checkProof(strToken, uSolution);
+	POWResult		prResult;
+	if (jvRequest.isMember("difficulty") || jvRequest.isMember("secret"))
+	{
+		ProofOfWorkGenerator	pgGen;
+
+		if (jvRequest.isMember("difficulty"))
+		{
+			if (!jvRequest["difficulty"].isIntegral())
+				return rpcError(rpcINVALID_PARAMS);
+
+			int iDifficulty = jvRequest["difficulty"].asInt();
+
+			if (iDifficulty < 0 || iDifficulty > ProofOfWork::sMaxDifficulty)
+				return rpcError(rpcINVALID_PARAMS);
+
+			pgGen.setDifficulty(iDifficulty);
+		}
+
+		if (jvRequest.isMember("secret"))
+		{
+			uint256		uSecret(jvRequest["secret"].asString());
+			pgGen.setSecret(uSecret);
+		}
+
+		prResult				= pgGen.checkProof(strToken, uSolution);
+
+		jvResult["secret"]		= pgGen.getSecret().GetHex();
+	}
+	else
+	{
+		// XXX Proof should not be marked as used from this
+		prResult = theApp->getPowGen().checkProof(strToken, uSolution);
+	}
 
 	std::string	sToken;
 	std::string	sHuman;

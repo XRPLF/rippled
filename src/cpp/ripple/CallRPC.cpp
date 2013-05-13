@@ -495,13 +495,19 @@ Json::Value RPCParser::parseProofSolve(const Json::Value& jvParams)
 	return jvRequest;
 }
 
-// proof_verify <token> <solution>
+// proof_verify <token> <solution> [<difficulty>] [<secret>]
 Json::Value RPCParser::parseProofVerify(const Json::Value& jvParams)
 {
 	Json::Value		jvRequest;
 
 	jvRequest["token"] = jvParams[0u].asString();
 	jvRequest["solution"] = jvParams[1u].asString();
+
+	if (jvParams.size() >= 3)
+		jvRequest["difficulty"] = jvParams[2u].asInt();
+
+	if (jvParams.size() >= 4)
+		jvRequest["secret"] = jvParams[3u].asString();
 
 	return jvRequest;
 }
@@ -735,7 +741,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 //		{	"profile",				&RPCParser::parseProfile,				1,  9	},
 		{	"proof_create",			&RPCParser::parseProofCreate,			0,  2	},
 		{	"proof_solve",			&RPCParser::parseProofSolve,			1,  1	},
-		{	"proof_verify",			&RPCParser::parseProofVerify,			2,  2	},
+		{	"proof_verify",			&RPCParser::parseProofVerify,			2,  4	},
 		{	"random",				&RPCParser::parseAsIs,					0,  0	},
 		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	    1,  2	},
 		{	"sign",					&RPCParser::parseSignSubmit,			2,  2	},
