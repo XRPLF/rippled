@@ -1870,7 +1870,7 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest, int& cost, ScopedLock& M
 
 	if ((bFull || bAccounts) && !lpLedger->isImmutable())
 	{ // For full or accounts, it's cheaper to snapshot
-		lpLedger = boost::make_shared<Ledger>(*lpLedger, true);
+		lpLedger = boost::make_shared<Ledger>(*lpLedger, false);
 		assert(lpLedger->isImmutable());
 	}
 
