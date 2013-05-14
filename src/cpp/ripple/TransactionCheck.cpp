@@ -9,7 +9,7 @@ SETUP_LOG();
 bool TransactionEngine::checkInvariants(TER result, const SerializedTransaction& txn, TransactionEngineParams params)
 {
 #if 0
-	const RippleAddress&	srcAccount	= txn.getFieldAccount(sfAccount);
+	RippleAddress			srcAccount	= txn.getFieldAccount(sfAccount);
 	uint32					txnSeq		= txn.getFieldU32(sfSequence);
 
 	LedgerEntryAction		leaAction;
