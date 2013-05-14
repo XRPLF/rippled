@@ -32,7 +32,7 @@ TER AccountSetTransactor::doApply()
 
 	if ((uTxFlags & tfRequireAuth) && !isSetBit(uFlagsIn, lsfRequireAuth))
 	{
-		if (mTxn.getFieldU32(sfOwnerCount))
+		if (mTxnAccount->getFieldU32(sfOwnerCount))
 		{
 			cLog(lsINFO) << "AccountSet: Retry: OwnerCount not zero.";
 
@@ -62,7 +62,7 @@ TER AccountSetTransactor::doApply()
 		return temINVALID_FLAG;
 	}
 
-	if ((uTxFlags & tfOptionalDestTag) && !isSetBit(uFlagsIn, lsfRequireDestTag))
+	if ((uTxFlags & tfRequireDestTag) && !isSetBit(uFlagsIn, lsfRequireDestTag))
 	{
 		cLog(lsINFO) << "AccountSet: Set lsfRequireDestTag.";
 
