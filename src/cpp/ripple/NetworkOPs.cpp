@@ -1874,12 +1874,12 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 		if (bDirectAdvance) {
 			bDirectAdvance	= false;
 
-			cLog(lsTRACE) << boost::str(boost::format("getBookPage: bDirectAdvance"));
+			cLog(lsTRACE) << "getBookPage: bDirectAdvance";
 
 			sleOfferDir		= lesActive.entryCache(ltDIR_NODE, lpLedger->getNextLedgerIndex(uTipIndex, uBookEnd));
 			if (!sleOfferDir)
 			{
-				cLog(lsTRACE) << boost::str(boost::format("getBookPage: bDone"));
+				cLog(lsTRACE) << "getBookPage: bDone";
 				bDone			= true;
 			}
 			else
