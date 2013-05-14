@@ -19,6 +19,8 @@ protected:
 	void buildJson();
 
 public:
+	typedef boost::shared_ptr<ALTransaction> pointer;
+	typedef const pointer& ref;
 
 	ALTransaction(uint32 ledgerSeq, SerializerIterator& sit);
 	ALTransaction(SerializedTransaction::ref, TransactionMetaSet::ref);
@@ -42,17 +44,17 @@ public:
 class AcceptedLedger
 {
 public:
-	typedef boost::shared_ptr<AcceptedLedger>	pointer;
-	typedef const pointer&						ret;
-	typedef std::map<int, ALTransaction>		map_t;				// Must be an ordered map!
-	typedef map_t::value_type					value_type;
-	typedef map_t::const_iterator				const_iterator;
+	typedef boost::shared_ptr<AcceptedLedger>		pointer;
+	typedef const pointer&							ret;
+	typedef std::map<int, ALTransaction::pointer>	map_t;				// Must be an ordered map!
+	typedef map_t::value_type						value_type;
+	typedef map_t::const_iterator					const_iterator;
 
 protected:
 	Ledger::pointer		mLedger;
 	map_t				mMap;
 
-	void insert(const ALTransaction&);
+	void insert(ALTransaction::ref);
 
 	static TaggedCache<uint256, AcceptedLedger>	ALCache;
 	AcceptedLedger(Ledger::ref ledger);
@@ -68,7 +70,7 @@ public:
 	int getLedgerSeq() const		{ return mLedger->getLedgerSeq(); }
 	int getTxnCount() const			{ return mMap.size(); }
 
-	const ALTransaction* getTxn(int) const;
+	ALTransaction::pointer getTxn(int) const;
 };
 
 #endif

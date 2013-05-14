@@ -1439,8 +1439,8 @@ void NetworkOPs::pubLedger(Ledger::ref accepted)
 	{
 		BOOST_FOREACH(const AcceptedLedger::value_type& vt, alpAccepted->getMap())
 		{
-			cLog(lsTRACE) << "pubAccepted: " << vt.second.getJson();
-			pubValidatedTransaction(lpAccepted, vt.second);
+			cLog(lsTRACE) << "pubAccepted: " << vt.second->getJson();
+			pubValidatedTransaction(lpAccepted, *vt.second);
 		}
 	}
 }

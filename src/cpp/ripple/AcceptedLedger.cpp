@@ -49,12 +49,11 @@ void ALTransaction::buildJson()
 
 	if (!mAffected.empty())
 	{
-		Json::Value affected(Json::arrayValue);
+		Json::Value& affected = (mJson["affected"] = Json::arrayValue);
 		BOOST_FOREACH(const RippleAddress& ra, mAffected)
 		{
 			affected.append(ra.humanAccountID());
 		}
-		mJson["affected"] = affected;
 	}
 }
 
@@ -64,7 +63,7 @@ AcceptedLedger::AcceptedLedger(Ledger::ref ledger) : mLedger(ledger)
 	for (SHAMapItem::pointer item = txSet.peekFirstItem(); !!item; item = txSet.peekNextItem(item->getTag()))
 	{
 		SerializerIterator sit(item->peekSerializer());
-		insert(ALTransaction(ledger->getLedgerSeq(), sit));
+		insert(boost::make_shared<ALTransaction>(ledger->getLedgerSeq(), sit));
 	}
 }
 
@@ -78,16 +77,16 @@ AcceptedLedger::pointer AcceptedLedger::makeAcceptedLedger(Ledger::ref ledger)
 	return ret;
 }
 
-void AcceptedLedger::insert(const ALTransaction& at)
+void AcceptedLedger::insert(ALTransaction::ref at)
 {
-	assert(mMap.find(at.getIndex()) == mMap.end());
-	mMap.insert(std::make_pair(at.getIndex(), at));
+	assert(mMap.find(at->getIndex()) == mMap.end());
+	mMap.insert(std::make_pair(at->getIndex(), at));
 }
 
-const ALTransaction* AcceptedLedger::getTxn(int i) const
+ALTransaction::pointer AcceptedLedger::getTxn(int i) const
 {
 	map_t::const_iterator it = mMap.find(i);
 	if (it == mMap.end())
-		return NULL;
-	return &it->second;
+		return ALTransaction::pointer();
+	return it->second;
 }
