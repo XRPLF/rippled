@@ -526,7 +526,7 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 	if (theApp->getJobQueue().getJobCountTotal(jtPUBOLDLEDGER) < 2)
 		theApp->getLedgerMaster().resumeAcquiring();
 	else
-		cLog(lsDEBUG) << "no resume, too many pending ledger saves";
+		cLog(lsTRACE) << "no resume, too many pending ledger saves";
 }
 
 #ifndef NO_SQLITE3_PREPARE
