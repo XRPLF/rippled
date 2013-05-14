@@ -173,6 +173,7 @@
     <ClCompile Include="src\cpp\json\json_reader.cpp" />
     <ClCompile Include="src\cpp\json\json_value.cpp" />
     <ClCompile Include="src\cpp\json\json_writer.cpp" />
+    <ClCompile Include="src\cpp\json_core.cpp" />
     <ClCompile Include="src\cpp\leveldb_core.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

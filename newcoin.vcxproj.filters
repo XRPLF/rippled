@@ -20,17 +20,14 @@
     <Filter Include="[1] Modules">
       <UniqueIdentifier>{a152ed99-bd05-4c37-8ae7-82888b1bb469}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[0] Libraries\json\core">
+      <UniqueIdentifier>{ca69d54b-9228-4767-9cef-81e489621683}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[0] Libraries\websocket\core">
+      <UniqueIdentifier>{9fe711b6-ec1c-4a6c-9f78-2812f4627e70}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\cpp\json\json_reader.cpp">
-      <Filter>[0] Libraries\json</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\json\json_value.cpp">
-      <Filter>[0] Libraries\json</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\json\json_writer.cpp">
-      <Filter>[0] Libraries\json</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\AccountState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -333,33 +330,6 @@
     </ClCompile>
     <ClCompile Include="src\cpp\leveldb_core.cpp" />
     <ClCompile Include="src\cpp\protobuf_core.cpp" />
-    <ClCompile Include="src\cpp\websocketpp\src\base64\base64.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\websocketpp\src\rng\boost_rng.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\websocketpp\src\messages\data.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\websocketpp\src\processors\hybi_header.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\websocketpp\src\processors\hybi_util.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\websocketpp\src\md5\md5.c">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\websocketpp\src\network_utilities.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\websocketpp\src\sha1\sha1.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\websocketpp\src\uri.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\database\database.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -369,70 +339,49 @@
     <ClCompile Include="src\cpp\websocket_core.cpp">
       <Filter>[0] Libraries</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\base64\base64.cpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\rng\boost_rng.cpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\messages\data.cpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\processors\hybi_header.cpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\processors\hybi_util.cpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\md5\md5.c">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\network_utilities.cpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\sha1\sha1.cpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\uri.cpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\json_core.cpp">
+      <Filter>[0] Libraries\json</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\json\json_reader.cpp">
+      <Filter>[0] Libraries\json\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\json\json_value.cpp">
+      <Filter>[0] Libraries\json\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\json\json_writer.cpp">
+      <Filter>[0] Libraries\json\core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\cpp\websocketpp\src\common.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\websocketpp\src\connection.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\websocketpp\src\endpoint.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\websocketpp\src\network_utilities.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\websocketpp\src\shared_const_buffer.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\websocketpp\src\uri.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\websocketpp\src\websocket_frame.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\websocketpp\src\websocketpp.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\websocketpp\src\sockets\plain.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\websocketpp\src\sockets\socket_base.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\websocketpp\src\sockets\tls.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\ChangeTransactor.h">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\autolink.h">
-      <Filter>[0] Libraries\json</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\config.h">
-      <Filter>[0] Libraries\json</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\features.h">
-      <Filter>[0] Libraries\json</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\forwards.h">
-      <Filter>[0] Libraries\json</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\json.h">
-      <Filter>[0] Libraries\json</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\json_batchallocator.h">
-      <Filter>[0] Libraries\json</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\reader.h">
-      <Filter>[0] Libraries\json</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\value.h">
-      <Filter>[0] Libraries\json</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\writer.h">
-      <Filter>[0] Libraries\json</Filter>
     </ClInclude>
     <ClInclude Include="database\sqlite3ext.h">
       <Filter>[0] Libraries\SQLite</Filter>
@@ -731,6 +680,66 @@
     <ClInclude Include="src\cpp\ripple\WSHandler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\common.hpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\connection.hpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\endpoint.hpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\network_utilities.hpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\sockets\plain.hpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\shared_const_buffer.hpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\sockets\socket_base.hpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\sockets\tls.hpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\uri.hpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\websocket_frame.hpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\websocketpp\src\websocketpp.hpp">
+      <Filter>[0] Libraries\websocket\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\json\autolink.h">
+      <Filter>[0] Libraries\json\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\json\config.h">
+      <Filter>[0] Libraries\json\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\json\features.h">
+      <Filter>[0] Libraries\json\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\json\forwards.h">
+      <Filter>[0] Libraries\json\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\json\json.h">
+      <Filter>[0] Libraries\json\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\json\json_batchallocator.h">
+      <Filter>[0] Libraries\json\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\json\reader.h">
+      <Filter>[0] Libraries\json\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\json\value.h">
+      <Filter>[0] Libraries\json\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\json\writer.h">
+      <Filter>[0] Libraries\json\core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="wallet.xml" />
@@ -742,14 +751,14 @@
     <None Include="test\server.js" />
     <None Include="test\standalone-test.js" />
     <None Include="test\utils.js" />
-    <None Include="src\cpp\json\json_internalmap.inl">
-      <Filter>[0] Libraries\json</Filter>
-    </None>
     <None Include="src\cpp\json\json_internalarray.inl">
-      <Filter>[0] Libraries\json</Filter>
+      <Filter>[0] Libraries\json\core</Filter>
+    </None>
+    <None Include="src\cpp\json\json_internalmap.inl">
+      <Filter>[0] Libraries\json\core</Filter>
     </None>
     <None Include="src\cpp\json\json_valueiterator.inl">
-      <Filter>[0] Libraries\json</Filter>
+      <Filter>[0] Libraries\json\core</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
