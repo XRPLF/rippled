@@ -866,7 +866,6 @@ static void checkTransaction(Job&, int flags, SerializedTransaction::pointer stx
 
 void Peer::recvTransaction(ripple::TMTransaction& packet)
 {
-	cLog(lsDEBUG) << "Got transaction from peer";
 
 	Transaction::pointer tx;
 #ifndef TRUST_NETWORK
@@ -890,6 +889,8 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 			if ((flags & SF_RETRY) == 0)
 				return;
 		}
+		cLog(lsDEBUG) << "Got new transaction from peer";
+
 		if (mCluster)
 			flags |= SF_TRUSTED | SF_SIGGOOD;
 
