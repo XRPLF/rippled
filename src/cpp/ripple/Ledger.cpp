@@ -471,12 +471,12 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 
 		BOOST_FOREACH(const AcceptedLedger::value_type& vt, aLedger->getMap())
 		{
-			uint256 txID = vt.second.getTransactionID();
+			uint256 txID = vt.second->getTransactionID();
 			theApp->getMasterTransaction().inLedger(txID, mLedgerSeq);
 
 			db->executeSQL(boost::str(deleteAcctTrans % txID.GetHex()));
 
-			const std::vector<RippleAddress>& accts = vt.second.getAffected();
+			const std::vector<RippleAddress>& accts = vt.second->getAffected();
 			if (!accts.empty())
 			{
 				std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq, TxnSeq) VALUES ";
@@ -496,7 +496,7 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 					sql += "',";
 					sql += boost::lexical_cast<std::string>(getLedgerSeq());
 					sql += ",";
-					sql += boost::lexical_cast<std::string>(vt.second.getTxnSeq());
+					sql += boost::lexical_cast<std::string>(vt.second->getTxnSeq());
 					sql += ")";
 				}
 				sql += ";";
@@ -507,7 +507,7 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 				cLog(lsWARNING) << "Transaction in ledger " << mLedgerSeq << " affects no accounts";
 
 			db->executeSQL(SerializedTransaction::getMetaSQLInsertReplaceHeader() +
-				vt.second.getTxn()->getMetaSQL(getLedgerSeq(), vt.second.getEscMeta()) + ";");
+				vt.second->getTxn()->getMetaSQL(getLedgerSeq(), vt.second->getEscMeta()) + ";");
 		}
 		db->executeSQL("COMMIT TRANSACTION;");
 	}

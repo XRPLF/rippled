@@ -1439,8 +1439,8 @@ void NetworkOPs::pubLedger(Ledger::ref accepted)
 	{
 		BOOST_FOREACH(const AcceptedLedger::value_type& vt, alpAccepted->getMap())
 		{
-			cLog(lsTRACE) << "pubAccepted: " << vt.second.getJson();
-			pubValidatedTransaction(lpAccepted, vt.second);
+			cLog(lsTRACE) << "pubAccepted: " << vt.second->getJson();
+			pubValidatedTransaction(lpAccepted, *vt.second);
 		}
 	}
 }
@@ -1841,8 +1841,9 @@ InfoSub::pointer NetworkOPs::addRpcSub(const std::string& strUrl, InfoSub::ref r
 // FIXME : support iLimit.
 void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const uint160& uTakerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult)
 {
-	boost::unordered_map<uint160, STAmount>	umBalance;
-	Json::Value		jvOffers	= Json::Value(Json::arrayValue);
+	Json::Value&	jvOffers	= (jvResult["offers"] = Json::Value(Json::arrayValue));
+
+	std::map<uint160, STAmount>	umBalance;
 	const uint256	uBookBase	= Ledger::getBookBase(uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
 	const uint256	uBookEnd	= Ledger::getQualityNext(uBookBase);
 	uint256			uTipIndex	= uBookBase;
@@ -1863,20 +1864,22 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 	unsigned int	uBookEntry;
 	STAmount		saDirRate;
 
-//	unsigned int	iLeft			= iLimit;
+	unsigned int	iLeft			= iLimit;
+	if ((iLeft == 0) || (iLeft > 300))
+		iLeft = 300;
 
 	uint32	uTransferRate	= lesActive.rippleTransferRate(uTakerGetsIssuerID);
 
-	while (!bDone) {
+	while (!bDone && (iLeft > 0)) {
 		if (bDirectAdvance) {
 			bDirectAdvance	= false;
 
-			cLog(lsTRACE) << boost::str(boost::format("getBookPage: bDirectAdvance"));
+			cLog(lsTRACE) << "getBookPage: bDirectAdvance";
 
 			sleOfferDir		= lesActive.entryCache(ltDIR_NODE, lpLedger->getNextLedgerIndex(uTipIndex, uBookEnd));
 			if (!sleOfferDir)
 			{
-				cLog(lsTRACE) << boost::str(boost::format("getBookPage: bDone"));
+				cLog(lsTRACE) << "getBookPage: bDone";
 				bDone			= true;
 			}
 			else
@@ -1895,9 +1898,9 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 		if (!bDone)
 		{
 			SLE::pointer	sleOffer		= lesActive.entryCache(ltOFFER, uOfferIndex);
-			const uint160	uOfferOwnerID	= sleOffer->getFieldAccount(sfAccount).getAccountID();
-			STAmount		saTakerGets		= sleOffer->getFieldAmount(sfTakerGets);
-			STAmount		saTakerPays		= sleOffer->getFieldAmount(sfTakerPays);
+			const uint160	uOfferOwnerID	= sleOffer->getFieldAccount160(sfAccount);
+			const STAmount&	saTakerGets		= sleOffer->getFieldAmount(sfTakerGets);
+			const STAmount&	saTakerPays		= sleOffer->getFieldAmount(sfTakerPays);
 			STAmount		saOwnerFunds;
 
 			if (uTakerGetsIssuerID == uOfferOwnerID)
@@ -1907,7 +1910,7 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 			}
 			else
 			{
-				boost::unordered_map<uint160, STAmount>::const_iterator	umBalanceEntry	= umBalance.find(uOfferOwnerID);
+				std::map<uint160, STAmount>::const_iterator	umBalanceEntry	= umBalance.find(uOfferOwnerID);
 
 				if (umBalanceEntry != umBalance.end())
 				{
@@ -1964,30 +1967,27 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 				// cLog(lsINFO) << boost::str(boost::format("getBookPage:    saDirRate=%s") % saDirRate.getText());
 				// cLog(lsINFO) << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate).getFullText());
 				// cLog(lsINFO) << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays).getFullText());
-				STAmount	saTakerPaysFunded;
-
-				saTakerGetsFunded	= saOwnerFundsLimit;
-				saTakerPaysFunded	= std::min(saTakerPays, STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays));
 
 				// Only provide, if not fully funded.
-				jvOffer["taker_gets_funded"]	= saTakerGetsFunded.getJson(0);
-				jvOffer["taker_pays_funded"]	= saTakerPaysFunded.getJson(0);
+
+				saTakerGetsFunded	= saOwnerFundsLimit;
+
+				saTakerGetsFunded.setJson(jvOffer["taker_gets_funded"]);
+				std::min(saTakerPays, STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays)).setJson(jvOffer["taker_pays_funded"]);
 			}
 
-			STAmount	saOwnerPays		= QUALITY_ONE == uOfferRate
+			STAmount	saOwnerPays		= (QUALITY_ONE == uOfferRate)
 											? saTakerGetsFunded
 											: std::min(saOwnerFunds, STAmount::multiply(saTakerGetsFunded, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9)));
 
-			STAmount	saOwnerBalance	= saOwnerFunds-saOwnerPays;
-
-			umBalance[uOfferOwnerID]	= saOwnerBalance;
+			umBalance[uOfferOwnerID]	= saOwnerFunds - saOwnerPays;
 
 			if (!saOwnerFunds.isZero() || uOfferOwnerID == uTakerID)
 			{
 				// Only provide funded offers and offers of the taker.
-				jvOffer["quality"]	= saDirRate.getText();
-
-				jvOffers.append(jvOffer);
+				Json::Value& jvOf	= jvOffers.append(jvOffer);
+				jvOf["quality"]		= saDirRate.getText();
+				--iLeft;
 			}
 
 			if (!lesActive.dirNext(uTipIndex, sleOfferDir, uBookEntry, uOfferIndex))
@@ -2001,7 +2001,6 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 		}
 	}
 
-	jvResult["offers"]	= jvOffers;
 //	jvResult["marker"]	= Json::Value(Json::arrayValue);
 //	jvResult["nodes"]	= Json::Value(Json::arrayValue);
 }

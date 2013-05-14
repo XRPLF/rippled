@@ -1064,12 +1064,12 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 	}
 
 	AccountState::pointer	as		= mNetOps->getAccountState(lpLedger, raAccount);
-	MasterLockHolder.unlock();
+
+	if (lpLedger->isImmutable())
+		MasterLockHolder.unlock();
 
 	if (as)
 	{
-		Json::Value	jsonLines(Json::arrayValue);
-
 		jvResult["account"]	= raAccount.humanAccountID();
 
 		// XXX This is wrong, we do access the current ledger and do need to worry about changes.
@@ -1077,6 +1077,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 
 		AccountItems rippleLines(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new RippleState()));
 
+		Json::Value&	jsonLines = (jvResult["lines"] = Json::arrayValue);
 		BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 		{
 			RippleState* line=(RippleState*)item.get();
@@ -1087,7 +1088,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 				STAmount		saLimit		= line->getLimit();
 				STAmount		saLimitPeer	= line->getLimitPeer();
 
-				Json::Value			jPeer	= Json::Value(Json::objectValue);
+				Json::Value&	jPeer	= jsonLines.append(Json::objectValue);
 
 				jPeer["account"]		= RippleAddress::createHumanAccountID(line->getAccountIDPeer());
 				// Amount reported is positive if current account holds other account's IOUs.
@@ -1098,11 +1099,8 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 				jPeer["limit_peer"]		= saLimitPeer.getText();
 				jPeer["quality_in"]		= static_cast<Json::UInt>(line->getQualityIn());
 				jPeer["quality_out"]	= static_cast<Json::UInt>(line->getQualityOut());
-
-				jsonLines.append(jPeer);
 			}
 		}
-		jvResult["lines"]	= jsonLines;
 	}
 	else
 	{
@@ -1147,11 +1145,14 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 		jvResult["account_index"]	= iIndex;
 
 	AccountState::pointer	as		= mNetOps->getAccountState(lpLedger, raAccount);
-	MasterLockHolder.unlock();
+
+	if (lpLedger->isImmutable())
+		MasterLockHolder.unlock();
 
 	if (as)
 	{
-		Json::Value	jsonLines(Json::arrayValue);
+		Json::Value&	jsonLines = jvResult["offers"];
+		jsonLines = Json::arrayValue;
 
 		AccountItems offers(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new Offer()));
 		BOOST_FOREACH(AccountItem::ref item, offers.getItems())
@@ -1162,16 +1163,15 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 			STAmount takerGets	= offer->getTakerGets();
 			//RippleAddress account	= offer->getAccount();
 
-			Json::Value	obj	= Json::Value(Json::objectValue);
+			Json::Value&	obj	= jsonLines.append(obj);
+			obj = Json::Value(Json::objectValue);
 
 			//obj["account"]		= account.humanAccountID();
-			obj["taker_pays"]		= takerPays.getJson(0);
-			obj["taker_gets"]		= takerGets.getJson(0);
+			takerPays.setJson(obj["taker_pays"]);
+			takerGets.setJson(obj["taker_gets"]);
 			obj["seq"]				= offer->getSeq();
 
-			jsonLines.append(obj);
 		}
-		jvResult["offers"]	= jsonLines;
 	}
 	else
 	{
@@ -1868,10 +1868,16 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest, int& cost, ScopedLock& M
 								| (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
 								| (bAccounts ? LEDGER_JSON_DUMP_STATE : 0);
 
-	Json::Value ret(Json::objectValue);
+	if ((bFull || bAccounts) && !lpLedger->isImmutable())
+	{ // For full or accounts, it's cheaper to snapshot
+		lpLedger = boost::make_shared<Ledger>(*lpLedger, false);
+		assert(lpLedger->isImmutable());
+	}
 
-	if (lpLedger->isClosed())
+	if (lpLedger->isImmutable())
 		MasterLockHolder.unlock();
+
+	Json::Value ret(Json::objectValue);
 	lpLedger->addJson(ret, iOptions);
 
 	return ret;
@@ -1957,7 +1963,7 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost, 
 		Json::Value ret(Json::objectValue);
 
 		ret["account"] = raAccount.humanAccountID();
-		ret["transactions"] = Json::arrayValue;
+		Json::Value& jvTxns = (ret["transactions"] = Json::arrayValue);
 
 		if (bBinary)
 		{
@@ -1967,15 +1973,14 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost, 
 			for (std::vector<NetworkOPs::txnMetaLedgerType>::const_iterator it = txns.begin(), end = txns.end();
 				it != end; ++it)
 			{
-				Json::Value jvObj(Json::objectValue);
-				uint32	uLedgerIndex	= it->get<2>();
+				Json::Value& jvObj = jvTxns.append(Json::objectValue);
 
+				uint32	uLedgerIndex	= it->get<2>();
 				jvObj["tx_blob"]		= it->get<0>();
 				jvObj["meta"]			= it->get<1>();
 				jvObj["ledger_index"]	= uLedgerIndex;
 				jvObj["validated"]		= bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
 
-				ret["transactions"].append(jvObj);
 			}
 		}
 		else
@@ -1984,7 +1989,7 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost, 
 
 			for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
 			{
-				Json::Value	jvObj(Json::objectValue);
+				Json::Value&	jvObj = jvTxns.append(Json::objectValue);
 
 				if (it->first)
 					jvObj["tx"]				= it->first->getJson(1);
@@ -1997,7 +2002,6 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost, 
 					jvObj["validated"]		= bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
 				}
 
-				ret["transactions"].append(jvObj);
 			}
 		}
 
@@ -2174,6 +2178,8 @@ Json::Value RPCHandler::doLogRotate(Json::Value, int& cost, ScopedLock& MasterLo
 // }
 Json::Value RPCHandler::doWalletPropose(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
 {
+	MasterLockHolder.unlock();
+
 	RippleAddress	naSeed;
 	RippleAddress	naAccount;
 
@@ -2672,7 +2678,8 @@ Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest, int& cost, ScopedLo
 
 	if (!lpLedger)
 		return jvResult;
-	if (lpLedger->isClosed())
+
+	if (lpLedger->isImmutable())
 		MasterLockHolder.unlock();
 
 	uint256		uNodeIndex;
@@ -2840,7 +2847,7 @@ Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest, int& cost, ScopedLo
 		jvResult["error"]	= "unknownOption";
 	}
 
-	if (!!uNodeIndex)
+	if (uNodeIndex.isNonZero())
 	{
 		SLE::pointer	sleNode	= mNetOps->getSLEi(lpLedger, uNodeIndex);
 
