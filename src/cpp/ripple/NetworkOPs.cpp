@@ -1864,11 +1864,13 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 	unsigned int	uBookEntry;
 	STAmount		saDirRate;
 
-//	unsigned int	iLeft			= iLimit;
+	unsigned int	iLeft			= iLimit;
+	if ((iLeft == 0) || (iLeft > 300))
+		iLeft = 300;
 
 	uint32	uTransferRate	= lesActive.rippleTransferRate(uTakerGetsIssuerID);
 
-	while (!bDone) {
+	while (!bDone && (iLeft > 0)) {
 		if (bDirectAdvance) {
 			bDirectAdvance	= false;
 
@@ -1896,7 +1898,7 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 		if (!bDone)
 		{
 			SLE::pointer	sleOffer		= lesActive.entryCache(ltOFFER, uOfferIndex);
-			const uint160	uOfferOwnerID	= sleOffer->getFieldAccount(sfAccount).getAccountID();
+			const uint160	uOfferOwnerID	= sleOffer->getFieldAccount160(sfAccount);
 			const STAmount&	saTakerGets		= sleOffer->getFieldAmount(sfTakerGets);
 			const STAmount&	saTakerPays		= sleOffer->getFieldAmount(sfTakerPays);
 			STAmount		saOwnerFunds;
@@ -1985,6 +1987,7 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 				// Only provide funded offers and offers of the taker.
 				Json::Value& jvOf	= jvOffers.append(jvOffer);
 				jvOf["quality"]		= saDirRate.getText();
+				--iLeft;
 			}
 
 			if (!lesActive.dirNext(uTipIndex, sleOfferDir, uBookEntry, uOfferIndex))

@@ -9,12 +9,11 @@ SETUP_LOG();
 bool TransactionEngine::checkInvariants(TER result, const SerializedTransaction& txn, TransactionEngineParams params)
 {
 #if 0
-	const RippleAddress&	srcAccount	= txn.getFieldAccount(sfAccount);
 	uint32					txnSeq		= txn.getFieldU32(sfSequence);
 
 	LedgerEntryAction		leaAction;
 
-	uint256					srcActId	= Ledger::getAccountRootIndex(srcAccount.getAccountID());
+	uint256					srcActId	= Ledger::getAccountRootIndex(txn.getFieldAccount(sfAccount));
 	SLE::pointer			origSrcAct	= mLedger->getSLE(srcActId);
 	SLE::pointer			newSrcAct	= mNodes.getEntry(srcActId, leaAction);
 

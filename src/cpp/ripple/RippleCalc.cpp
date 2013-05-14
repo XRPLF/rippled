@@ -978,7 +978,7 @@ TER RippleCalc::calcNodeAdvance(
 		{
 			// Got a new offer.
 			sleOffer	= lesActive.entryCache(ltOFFER, uOfferIndex);
-			uOfrOwnerID = sleOffer->getFieldAccount(sfAccount).getAccountID();
+			uOfrOwnerID = sleOffer->getFieldAccount160(sfAccount);
 			saTakerPays	= sleOffer->getFieldAmount(sfTakerPays);
 			saTakerGets	= sleOffer->getFieldAmount(sfTakerGets);
 
@@ -3136,7 +3136,7 @@ void TransactionEngine::calcOfferBridgeNext(
 
 		SLE::pointer	sleOffer		= entryCache(ltOFFER, uOfferIndex);
 
-		uint160			uOfferOwnerID	= sleOffer->getFieldAccount(sfAccount).getAccountID();
+		uint160			uOfferOwnerID	= sleOffer->getFieldAccount160(sfAccount);
 		STAmount		saOfferPays		= sleOffer->getFieldAmount(sfTakerGets);
 		STAmount		saOfferGets		= sleOffer->getFieldAmount(sfTakerPays);
 

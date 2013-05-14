@@ -97,7 +97,7 @@ TER Transactor::checkSig()
 {
 	// Consistency: Check signature
 	// Verify the transaction's signing public key is the key authorized for signing.
-	if (mHasAuthKey && mSigningPubKey.getAccountID() == mTxnAccount->getFieldAccount(sfRegularKey).getAccountID())
+	if (mHasAuthKey && mSigningPubKey.getAccountID() == mTxnAccount->getFieldAccount160(sfRegularKey))
 	{
 		// Authorized to continue.
 		nothing();
