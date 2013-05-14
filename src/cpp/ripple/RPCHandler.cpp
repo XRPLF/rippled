@@ -1151,7 +1151,8 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 
 	if (as)
 	{
-		Json::Value	jsonLines(Json::arrayValue);
+		Json::Value&	jsonLines = jvResult["offers"];
+		jsonLines = Json::arrayValue;
 
 		AccountItems offers(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new Offer()));
 		BOOST_FOREACH(AccountItem::ref item, offers.getItems())
@@ -1162,16 +1163,15 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 			STAmount takerGets	= offer->getTakerGets();
 			//RippleAddress account	= offer->getAccount();
 
-			Json::Value	obj	= Json::Value(Json::objectValue);
+			Json::Value&	obj	= jsonLines.append(obj);
+			obj = Json::Value(Json::objectValue);
 
 			//obj["account"]		= account.humanAccountID();
-			obj["taker_pays"]		= takerPays.getJson(0);
-			obj["taker_gets"]		= takerGets.getJson(0);
+			takerPays.setJson(obj["taker_pays"]);
+			takerGets.setJson(obj["taker_gets"]);
 			obj["seq"]				= offer->getSeq();
 
-			jsonLines.append(obj);
 		}
-		jvResult["offers"]	= jsonLines;
 	}
 	else
 	{
@@ -1967,15 +1967,14 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost, 
 			for (std::vector<NetworkOPs::txnMetaLedgerType>::const_iterator it = txns.begin(), end = txns.end();
 				it != end; ++it)
 			{
-				Json::Value jvObj(Json::objectValue);
-				uint32	uLedgerIndex	= it->get<2>();
+				Json::Value& jvObj = ret["transactions"].append(Json::objectValue);
 
+				uint32	uLedgerIndex	= it->get<2>();
 				jvObj["tx_blob"]		= it->get<0>();
 				jvObj["meta"]			= it->get<1>();
 				jvObj["ledger_index"]	= uLedgerIndex;
 				jvObj["validated"]		= bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
 
-				ret["transactions"].append(jvObj);
 			}
 		}
 		else
@@ -1984,7 +1983,7 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost, 
 
 			for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
 			{
-				Json::Value	jvObj(Json::objectValue);
+				Json::Value&	jvObj = ret["transactions"].append(Json::objectValue);
 
 				if (it->first)
 					jvObj["tx"]				= it->first->getJson(1);
@@ -1997,7 +1996,6 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost, 
 					jvObj["validated"]		= bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
 				}
 
-				ret["transactions"].append(jvObj);
 			}
 		}
 
