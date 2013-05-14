@@ -55,6 +55,7 @@ protected:
 	boost::mutex				mWriteMutex;
 	boost::condition_variable	mWriteCondition;
 	int							mWriteGeneration;
+	int							mWriteLoad;
 
 	std::vector< boost::shared_ptr<HashedObject> > mWriteSet;
 	bool mWritePending;
@@ -101,6 +102,7 @@ public:
 	void waitWrite();
 	void tune(int size, int age);
 	void sweep() { mCache.sweep(); mNegativeCache.sweep(); }
+	int getWriteLoad();
 
 	int import(const std::string& fileName);
 };

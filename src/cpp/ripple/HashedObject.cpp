@@ -19,7 +19,7 @@ DECLARE_INSTANCE(HashedObject);
 
 HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
 	mCache("HashedObjectStore", cacheSize, cacheAge), mNegativeCache("HashedObjectNegativeCache", 0, 120),
-	mWriteGeneration(0), mWritePending(false), mLevelDB(false)
+	mWriteGeneration(0), mWriteLoad(0), mWritePending(false), mLevelDB(false)
 {
 	mWriteSet.reserve(128);
 
@@ -56,6 +56,12 @@ void HashedObjectStore::waitWrite()
 		mWriteCondition.wait(sl);
 }
 
+int HashedObjectStore::getWriteLoad()
+{
+	boost::mutex::scoped_lock sl(mWriteMutex);
+	return std::max(mWriteLoad, static_cast<int>(mWriteSet.size()));
+}
+
 #ifdef USE_LEVELDB
 
 bool HashedObjectStore::storeLevelDB(HashedObjectType type, uint32 index,
@@ -90,6 +96,7 @@ bool HashedObjectStore::storeLevelDB(HashedObjectType type, uint32 index,
 void HashedObjectStore::bulkWriteLevelDB()
 {
 	assert(mLevelDB);
+	int setSize = 0;
 	while (1)
 	{
 		std::vector< boost::shared_ptr<HashedObject> > set;
@@ -97,6 +104,7 @@ void HashedObjectStore::bulkWriteLevelDB()
 
 		{
 			boost::mutex::scoped_lock sl(mWriteMutex);
+
 			mWriteSet.swap(set);
 			assert(mWriteSet.empty());
 			++mWriteGeneration;
@@ -104,8 +112,11 @@ void HashedObjectStore::bulkWriteLevelDB()
 			if (set.empty())
 			{
 				mWritePending = false;
+				mWriteLoad = 0;
 				return;
 			}
+			mWriteLoad = std::max(setSize, static_cast<int>(mWriteSet.size()));
+			setSize = set.size();
 		}
 
 		{

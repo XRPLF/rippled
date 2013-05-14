@@ -2317,6 +2317,8 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest, int& cost, ScopedLock
 	if (dbKB > 0)
 		ret["dbKBTransaction"] = dbKB;
 
+	ret["write_load"] = theApp->getHashedObjectStore().getWriteLoad();
+
 	std::string uptime;
 	int s = upTime();
 	textTime(uptime, s, "year", 365*24*60*60);
