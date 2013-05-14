@@ -985,8 +985,10 @@ TER LedgerEntrySet::offerDelete(SLE::ref sleOffer, const uint256& uOfferIndex, c
 TER LedgerEntrySet::offerDelete(const uint256& uOfferIndex)
 {
 	SLE::pointer	sleOffer	= entryCache(ltOFFER, uOfferIndex);
-	const uint160	uOwnerID	= sleOffer->getFieldAccount(sfAccount).getAccountID();
+	if (!sleOffer)
+		return tesSUCCESS;
 
+	const uint160	uOwnerID	= sleOffer->getFieldAccount160(sfAccount);
 	return offerDelete(sleOffer, uOfferIndex, uOwnerID);
 }
 
