@@ -279,23 +279,58 @@
     <ClCompile Include="src\cpp\ripple\Wallet.cpp" />
     <ClCompile Include="src\cpp\ripple\WalletAddTransactor.cpp" />
     <ClCompile Include="src\cpp\ripple\WSDoor.cpp" />
-    <ClCompile Include="src\cpp\websocketpp\src\base64\base64.cpp" />
-    <ClCompile Include="src\cpp\websocketpp\src\md5\md5.c" />
-    <ClCompile Include="src\cpp\websocketpp\src\messages\data.cpp" />
-    <ClCompile Include="src\cpp\websocketpp\src\network_utilities.cpp" />
-    <ClCompile Include="src\cpp\websocketpp\src\processors\hybi_header.cpp" />
-    <ClCompile Include="src\cpp\websocketpp\src\processors\hybi_util.cpp" />
-    <ClCompile Include="src\cpp\websocketpp\src\rng\blank_rng.cpp" />
-    <ClCompile Include="src\cpp\websocketpp\src\rng\boost_rng.cpp" />
-    <ClCompile Include="src\cpp\websocketpp\src\sha1\sha1.cpp" />
-    <ClCompile Include="src\cpp\websocketpp\src\uri.cpp" />
+    <ClCompile Include="src\cpp\websocketpp\src\base64\base64.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\md5\md5.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\messages\data.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\network_utilities.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\processors\hybi_header.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\processors\hybi_util.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\rng\boost_rng.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\sha1\sha1.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\uri.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocket_core.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="bitcoinUtil.h" />
     <ClInclude Include="database\database.h" />
     <ClInclude Include="database\sqlite3.h" />
     <ClInclude Include="database\sqlite3ext.h" />
     <ClInclude Include="database\SqliteDatabase.h" />
+    <ClInclude Include="src\cpp\json\autolink.h" />
+    <ClInclude Include="src\cpp\json\config.h" />
+    <ClInclude Include="src\cpp\json\features.h" />
+    <ClInclude Include="src\cpp\json\forwards.h" />
+    <ClInclude Include="src\cpp\json\json.h" />
+    <ClInclude Include="src\cpp\json\json_batchallocator.h" />
+    <ClInclude Include="src\cpp\json\reader.h" />
+    <ClInclude Include="src\cpp\json\value.h" />
+    <ClInclude Include="src\cpp\json\writer.h" />
     <ClInclude Include="src\cpp\ripple\AcceptedLedger.h" />
     <ClInclude Include="src\cpp\ripple\AccountItems.h" />
     <ClInclude Include="src\cpp\ripple\AccountSetTransactor.h" />
@@ -403,13 +438,8 @@
     <ClInclude Include="src\cpp\websocketpp\src\uri.hpp" />
     <ClInclude Include="src\cpp\websocketpp\src\websocketpp.hpp" />
     <ClInclude Include="src\cpp\websocketpp\src\websocket_frame.hpp" />
-    <ClInclude Include="util\pugiconfig.hpp" />
-    <ClInclude Include="util\pugixml.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="html\newcoin.html">
-      <SubType>Designer</SubType>
-    </None>
     <None Include="newcoind.cfg" />
     <None Include="README" />
     <None Include="SConstruct" />
@@ -424,6 +454,9 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SrcDir)\%(Filename).pb.h;$(SrcDir)\%(Filename).pb.cc</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SrcDir)\%(Filename).pb.h;$(SrcDir)\%(Filename).pb.cc</Outputs>
     </CustomBuild>
+    <None Include="src\cpp\json\json_internalarray.inl" />
+    <None Include="src\cpp\json\json_internalmap.inl" />
+    <None Include="src\cpp\json\json_valueiterator.inl" />
     <None Include="test\buster.js" />
     <None Include="test\server.js" />
     <None Include="test\standalone-test.js" />
