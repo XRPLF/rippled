@@ -1151,8 +1151,7 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 
 	if (as)
 	{
-		Json::Value&	jsonLines = jvResult["offers"];
-		jsonLines = Json::arrayValue;
+		Json::Value&	jsonLines = (jvResult["offers"] = Json::arrayValue);
 
 		AccountItems offers(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new Offer()));
 		BOOST_FOREACH(AccountItem::ref item, offers.getItems())
@@ -1163,8 +1162,7 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 			STAmount takerGets	= offer->getTakerGets();
 			//RippleAddress account	= offer->getAccount();
 
-			Json::Value&	obj	= jsonLines.append(obj);
-			obj = Json::Value(Json::objectValue);
+			Json::Value&	obj	= jsonLines.append(Json::objectValue);
 
 			//obj["account"]		= account.humanAccountID();
 			takerPays.setJson(obj["taker_pays"]);
