@@ -160,11 +160,11 @@ bool LedgerAcquire::tryLocal()
 			{
 				TransactionStateSF filter(mLedger->getLedgerSeq());
 				mLedger->peekTransactionMap()->fetchRoot(mLedger->getTransHash(), &filter);
-				cLog(lsDEBUG) << "Got root txn map locally";
+				cLog(lsTRACE) << "Got root txn map locally";
 				std::vector<uint256> h = mLedger->getNeededTransactionHashes(1, &filter);
 				if (h.empty())
 				{
-					cLog(lsDEBUG) << "Had full txn map locally";
+					cLog(lsTRACE) << "Had full txn map locally";
 					mHaveTransactions = true;
 				}
 			}
@@ -187,11 +187,11 @@ bool LedgerAcquire::tryLocal()
 			{
 				AccountStateSF filter(mLedger->getLedgerSeq());
 				mLedger->peekAccountStateMap()->fetchRoot(mLedger->getAccountHash(), &filter);
-				cLog(lsDEBUG) << "Got root AS map locally";
+				cLog(lsTRACE) << "Got root AS map locally";
 				std::vector<uint256> h = mLedger->getNeededAccountStateHashes(1, &filter);
 				if (h.empty())
 				{
-					cLog(lsDEBUG) << "Had full AS map locally";
+					cLog(lsTRACE) << "Had full AS map locally";
 					mHaveState = true;
 				}
 			}
