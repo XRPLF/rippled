@@ -1868,15 +1868,16 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest, int& cost, ScopedLock& M
 								| (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
 								| (bAccounts ? LEDGER_JSON_DUMP_STATE : 0);
 
-	if (bFull && !lpLedger->isImmutable())
-	{ // For full, it's cheaper to snapshot
+	if ((bFull || bAccounts) && !lpLedger->isImmutable())
+	{ // For full or accounts, it's cheaper to snapshot
 		lpLedger = boost::make_shared<Ledger>(*lpLedger, true);
+		assert(lpLedger->isImmutable());
 	}
-
-	Json::Value ret(Json::objectValue);
 
 	if (lpLedger->isImmutable())
 		MasterLockHolder.unlock();
+
+	Json::Value ret(Json::objectValue);
 	lpLedger->addJson(ret, iOptions);
 
 	return ret;
