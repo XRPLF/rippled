@@ -1202,12 +1202,15 @@ Json::Value RPCHandler::doBookOffers(Json::Value jvRequest, int& cost, ScopedLoc
 	if (!lpLedger)
 		return jvResult;
 
+	if (lpLedger->isImmutable())
+		MasterLockHolder.unlock();
+
 	if (!jvRequest.isMember("taker_pays") || !jvRequest.isMember("taker_gets") || !jvRequest["taker_pays"].isObject() || !jvRequest["taker_gets"].isObject())
 		return rpcError(rpcINVALID_PARAMS);
 
-	uint160		uTakerPaysCurrencyID;
-	uint160		uTakerPaysIssuerID;
-	Json::Value	jvTakerPays	= jvRequest["taker_pays"];
+	uint160				uTakerPaysCurrencyID;
+	uint160				uTakerPaysIssuerID;
+	const Json::Value&	jvTakerPays	= jvRequest["taker_pays"];
 
 	// Parse mandatory currency.
 	if (!jvTakerPays.isMember("currency")
@@ -1230,9 +1233,9 @@ Json::Value RPCHandler::doBookOffers(Json::Value jvRequest, int& cost, ScopedLoc
 		return rpcError(rpcSRC_ISR_MALFORMED);
 	}
 
-	uint160		uTakerGetsCurrencyID;
-	uint160		uTakerGetsIssuerID;
-	Json::Value	jvTakerGets	= jvRequest["taker_gets"];
+	uint160				uTakerGetsCurrencyID;
+	uint160				uTakerGetsIssuerID;
+	const Json::Value&	jvTakerGets	= jvRequest["taker_gets"];
 
 	// Parse mandatory currency.
 	if (!jvTakerGets.isMember("currency")
