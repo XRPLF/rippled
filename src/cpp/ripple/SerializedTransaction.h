@@ -32,6 +32,8 @@ protected:
 
 	SerializedTransaction* duplicate() const { return new SerializedTransaction(*this); }
 
+	mutable bool mSigGood, mSigBad;
+
 public:
 	SerializedTransaction(SerializerIterator& sit);
 	SerializedTransaction(TransactionType type);
@@ -69,6 +71,10 @@ public:
 	void sign(const RippleAddress& naAccountPrivate);
 	bool checkSign(const RippleAddress& naAccountPublic) const;
 	bool checkSign() const;
+	bool isKnownGood() const 	{ return mSigGood; }
+	bool isKnownBad() const		{ return mSigBad; }
+	void setGood() const		{ mSigGood = true; }
+	void setBad() const			{ mSigBad = true; }
 
 	// SQL Functions
 	static std::string getSQLValueHeader();

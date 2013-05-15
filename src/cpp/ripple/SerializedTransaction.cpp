@@ -11,7 +11,8 @@
 SETUP_LOG();
 DECLARE_INSTANCE(SerializedTransaction);
 
-SerializedTransaction::SerializedTransaction(TransactionType type) : STObject(sfTransaction), mType(type)
+SerializedTransaction::SerializedTransaction(TransactionType type) : STObject(sfTransaction), mType(type),
+	mSigGood(false), mSigBad(false)
 {
 	mFormat = TransactionFormat::getTxnFormat(type);
 	if (mFormat == NULL)
@@ -23,7 +24,8 @@ SerializedTransaction::SerializedTransaction(TransactionType type) : STObject(sf
 	setFieldU16(sfTransactionType, mFormat->t_type);
 }
 
-SerializedTransaction::SerializedTransaction(const STObject& object) : STObject(object)
+SerializedTransaction::SerializedTransaction(const STObject& object) : STObject(object),
+	mSigGood(false), mSigBad(false)
 {
 	mType = static_cast<TransactionType>(getFieldU16(sfTransactionType));
 	mFormat = TransactionFormat::getTxnFormat(mType);
@@ -38,7 +40,8 @@ SerializedTransaction::SerializedTransaction(const STObject& object) : STObject(
 	}
 }
 
-SerializedTransaction::SerializedTransaction(SerializerIterator& sit) : STObject(sfTransaction)
+SerializedTransaction::SerializedTransaction(SerializerIterator& sit) : STObject(sfTransaction),
+	mSigGood(false), mSigBad(false)
 {
 	int length = sit.getBytesLeft();
 	if ((length < TransactionMinLen) || (length > TransactionMaxLen))
@@ -156,16 +159,28 @@ void SerializedTransaction::sign(const RippleAddress& naAccountPrivate)
 
 bool SerializedTransaction::checkSign() const
 {
+	if (mSigGood)
+		return true;
+
+	if (mSigBad)
+		return false;
+
 	try
 	{
 		RippleAddress n;
 		n.setAccountPublic(getFieldVL(sfSigningPubKey));
-		return checkSign(n);
+		if (checkSign(n))
+		{
+			mSigGood = true;
+			return true;
+		}
 	}
 	catch (...)
 	{
-		return false;
+		;
 	}
+	mSigBad = true;
+	return false;
 }
 
 bool SerializedTransaction::checkSign(const RippleAddress& naAccountPublic) const
