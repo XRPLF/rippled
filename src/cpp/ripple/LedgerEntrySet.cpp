@@ -115,7 +115,7 @@ LedgerEntryAction LedgerEntrySet::hasEntry(const uint256& index) const
 void LedgerEntrySet::entryCache(SLE::ref sle)
 {
 	assert(mLedger);
-	assert(sle->isMutable());
+	assert(sle->isMutable() || !mImmutable);
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
