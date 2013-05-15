@@ -184,8 +184,7 @@ void NetworkOPs::submitTransaction(Job&, SerializedTransaction::pointer iTrans, 
 	{
 		try
 		{
-			RippleAddress fromPubKey = RippleAddress::createAccountPublic(trans->getSigningPubKey());
-			if (!trans->checkSign(fromPubKey))
+			if (!trans->checkSign())
 			{
 				cLog(lsWARNING) << "Submitted transaction has bad signature";
 				theApp->isNewFlag(suppress, SF_BAD);
