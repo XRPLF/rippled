@@ -978,7 +978,7 @@ TER RippleCalc::calcNodeAdvance(
 		{
 			// Got a new offer.
 			sleOffer	= lesActive.entryCache(ltOFFER, uOfferIndex);
-			uOfrOwnerID = sleOffer->getFieldAccount(sfAccount).getAccountID();
+			uOfrOwnerID = sleOffer->getFieldAccount160(sfAccount);
 			saTakerPays	= sleOffer->getFieldAmount(sfTakerPays);
 			saTakerGets	= sleOffer->getFieldAmount(sfTakerGets);
 
@@ -2157,10 +2157,11 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 
 			if (!saCurWantedReq.isPositive())
 			{ // TEMPORARY emergency fix
+				cLog(lsFATAL) << "CurWantReq was not positive";
 				return tefEXCEPTION;
 			}
 
-			assert(saCurWantedReq.isPositive());
+			assert(saCurWantedReq.isPositive()); // FIXME: We got one of these
 
 			// Rate: quality in : 1.0
 			calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvDeliverReq, saCurWantedReq, saPrvDeliverAct, saCurWantedAct, uRateMax);
@@ -3147,7 +3148,7 @@ void TransactionEngine::calcOfferBridgeNext(
 
 		SLE::pointer	sleOffer		= entryCache(ltOFFER, uOfferIndex);
 
-		uint160			uOfferOwnerID	= sleOffer->getFieldAccount(sfAccount).getAccountID();
+		uint160			uOfferOwnerID	= sleOffer->getFieldAccount160(sfAccount);
 		STAmount		saOfferPays		= sleOffer->getFieldAmount(sfTakerGets);
 		STAmount		saOfferGets		= sleOffer->getFieldAmount(sfTakerPays);
 

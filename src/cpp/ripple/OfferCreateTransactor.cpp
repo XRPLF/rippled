@@ -212,7 +212,7 @@ TER OfferCreateTransactor::takeOffers(
 
 			cLog(lsDEBUG) << "takeOffers: considering offer : " << sleOffer->getJson(0);
 
-			const uint160	uOfferOwnerID	= sleOffer->getFieldAccount(sfAccount).getAccountID();
+			const uint160	uOfferOwnerID	= sleOffer->getFieldAccount160(sfAccount);
 			STAmount		saOfferPays		= sleOffer->getFieldAmount(sfTakerGets);
 			STAmount		saOfferGets		= sleOffer->getFieldAmount(sfTakerPays);
 

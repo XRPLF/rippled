@@ -9,14 +9,37 @@
 
 SETUP_LOG();
 
-FeatureTable::FeatureState* FeatureTable::getCreateFeature(const uint256& feature, bool create)
+void FeatureTable::addInitialFeatures()
+{
+	// For each feature this version supports, call enableFeature.
+	// Permanent vetos can also be added here.
+}
+
+FeatureTable::FeatureState* FeatureTable::getCreateFeature(const uint256& featureHash, bool create)
 { // call with the mutex held
-	featureMap_t::iterator it = mFeatureMap.find(feature);
+	featureMap_t::iterator it = mFeatureMap.find(featureHash);
 	if (it == mFeatureMap.end())
 	{
 		if (!create)
 			return NULL;
-		return &(mFeatureMap[feature]);
+		FeatureState *feature = &(mFeatureMap[featureHash]);
+
+		{
+			std::string query = "SELECT FirstMajority,LastMajority FROM Features WHERE hash='";
+			query.append(featureHash.GetHex());
+			query.append("';");
+
+			ScopedLock sl(theApp->getWalletDB()->getDBLock());
+			Database* db = theApp->getWalletDB()->getDB();
+			if (db->executeSQL(query) && db->startIterRows())
+			{
+				feature->mFirstMajority = db->getBigInt("FirstMajority");
+				feature->mLastMajority = db->getBigInt("LastMajority");
+				db->endIterRows();
+			}
+		}
+
+		return feature;
 	}
 	return &(it->second);
 }
@@ -101,12 +124,8 @@ bool FeatureTable::shouldEnable(uint32 closeTime, const FeatureState& fs)
 	{ // had a majority when we first started the server, relaxed check
 		// WRITEME
 	}
-	else
-	{ // didn't have a majority when we first started the server, normal check
-		// WRITEME
-	}
-
-	return true;
+	// didn't have a majority when we first started the server, normal check
+	return (fs.mLastMajority - fs.mFirstMajority) > mMajorityTime;
 
 }
 
@@ -149,6 +168,10 @@ void FeatureTable::reportValidations(const FeatureSet& set)
 
 	if (mFirstReport == 0)
 		mFirstReport = set.mCloseTime;
+
+	std::vector<uint256> changedFeatures;
+	changedFeatures.resize(set.mVotes.size());
+
 	BOOST_FOREACH(const u256_int_pair& it, set.mVotes)
 	{
 		FeatureState& state = mFeatureMap[it.first];
@@ -160,6 +183,7 @@ void FeatureTable::reportValidations(const FeatureSet& set)
 			{
 				cLog(lsWARNING) << "Feature " << it.first << " attains a majority vote";
 				state.mFirstMajority = set.mCloseTime;
+				changedFeatures.push_back(it.first);
 			}
 		}
 		else // we have no majority
@@ -169,10 +193,16 @@ void FeatureTable::reportValidations(const FeatureSet& set)
 				cLog(lsWARNING) << "Feature " << it.first << " loses majority vote";
 				state.mFirstMajority = 0;
 				state.mLastMajority = 0;
+				changedFeatures.push_back(it.first);
 			}
 		}
 	}
 	mLastReport = set.mCloseTime;
+
+	if (!changedFeatures.empty())
+	{
+		// WRITEME write changed features to SQL db
+	}
 }
 
 void FeatureTable::setEnabledFeatures(const std::vector<uint256>& features)

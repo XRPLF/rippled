@@ -52,6 +52,8 @@ public:
 	virtual ~InfoSub();
 
 	virtual	void send(const Json::Value& jvObj, bool broadcast) = 0;
+	virtual void send(const Json::Value& jvObj, const std::string& sObj, bool broadcast)
+	{ send(jvObj, broadcast); }
 
 	uint64 getSeq()
 	{
@@ -183,6 +185,7 @@ public:
 	Ledger::ref		getCurrentLedger()						{ return mLedgerMaster->getCurrentLedger(); }
 	Ledger::pointer	getLedgerByHash(const uint256& hash)	{ return mLedgerMaster->getLedgerByHash(hash); }
 	Ledger::pointer	getLedgerBySeq(const uint32 seq);
+	void			missingNodeInLedger(const uint32 seq);
 
 	uint256			getClosedLedgerHash()					{ return mLedgerMaster->getClosedLedger()->getHash(); }
 

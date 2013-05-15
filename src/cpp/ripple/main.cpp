@@ -91,6 +91,9 @@ void printHelp(const po::options_description& desc)
 	cerr << "     ledger_header <ledger>" << endl;
 	cerr << "     logrotate " << endl;
 	cerr << "     peers" << endl;
+	cerr << "     proof_create [<difficulty>] [<secret>]" << endl;
+	cerr << "     proof_solve <token>" << endl;
+	cerr << "     proof_verify <token> <solution> [<difficulty>] [<secret>]" << endl;
 	cerr << "     random" << endl;
 	cerr << "     ripple ..." << endl;
 	cerr << "     ripple_path_find <json> [<ledger>]" << endl;

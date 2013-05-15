@@ -56,9 +56,11 @@ protected:
 	TransactionMetaSet mSet;
 	TransactionEngineParams mParams;
 	int mSeq;
+	bool mImmutable;
 
 	LedgerEntrySet(Ledger::ref ledger, const std::map<uint256, LedgerEntrySetEntry> &e,
-		const TransactionMetaSet& s, int m) : mLedger(ledger), mEntries(e), mSet(s), mParams(tapNONE), mSeq(m) { ; }
+		const TransactionMetaSet& s, int m) :
+			mLedger(ledger), mEntries(e), mSet(s), mParams(tapNONE), mSeq(m), mImmutable(false) { ; }
 
 	SLE::pointer getForMod(const uint256& node, Ledger::ref ledger,
 		boost::unordered_map<uint256, SLE::pointer>& newMods);
@@ -72,11 +74,14 @@ protected:
 
 public:
 
-	LedgerEntrySet(Ledger::ref ledger, TransactionEngineParams tep) : mLedger(ledger), mParams(tep), mSeq(0) { ; }
+	LedgerEntrySet(Ledger::ref ledger, TransactionEngineParams tep, bool immutable = false) :
+		mLedger(ledger), mParams(tep), mSeq(0), mImmutable(immutable) { ; }
 
-	LedgerEntrySet() : mParams(tapNONE), mSeq(0) { ; }
+	LedgerEntrySet() : mParams(tapNONE), mSeq(0), mImmutable(false) { ; }
 
 	// set functions
+	void setImmutable()							{ mImmutable = true; }
+	bool isImmutable() const					{ return mImmutable; }
 	LedgerEntrySet duplicate() const;	// Make a duplicate of this set
 	void setTo(const LedgerEntrySet&);	// Set this set to have the same contents as another
 	void swapWith(LedgerEntrySet&);		// Swap the contents of two sets

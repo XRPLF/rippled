@@ -54,7 +54,7 @@ std::size_t hash_value(const uint160& u)
 }
 
 
-SHAMap::SHAMap(SHAMapType t, uint32 seq) : mSeq(seq), mState(smsModifying), mType(t)
+SHAMap::SHAMap(SHAMapType t, uint32 seq) : mSeq(seq), mLedgerSeq(0), mState(smsModifying), mType(t)
 {
 	if (t == smtSTATE)
 		mTNByID.rehash(STATE_MAP_BUCKETS);
@@ -63,7 +63,7 @@ SHAMap::SHAMap(SHAMapType t, uint32 seq) : mSeq(seq), mState(smsModifying), mTyp
 	mTNByID[*root] = root;
 }
 
-SHAMap::SHAMap(SHAMapType t, const uint256& hash) : mSeq(1), mState(smsSynching), mType(t)
+SHAMap::SHAMap(SHAMapType t, const uint256& hash) : mSeq(1), mLedgerSeq(0), mState(smsSynching), mType(t)
 { // FIXME: Need to acquire root node
 	if (t == smtSTATE)
 		mTNByID.rehash(STATE_MAP_BUCKETS);
@@ -723,6 +723,11 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 	if (!obj)
 	{
 //		cLog(lsTRACE) << "fetchNodeExternal: missing " << hash;
+		if (mLedgerSeq != 0)
+		{
+			theApp->getOPs().missingNodeInLedger(mLedgerSeq);
+			mLedgerSeq = 0;
+		}
 		throw SHAMapMissingNode(mType, id, hash);
 	}
 

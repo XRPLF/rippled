@@ -5,13 +5,21 @@
     <RepoDir>.</RepoDir>
     <SrcDir>$(RepoDir)\src\cpp\ripple</SrcDir>
   </PropertyGroup>
-  <PropertyGroup />
+  <PropertyGroup>
+    <OutDir>$(SolutionDir)build\VisualStudio2012\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\obj\VisualStudio2012\$(Configuration)\</IntDir>
+    <TargetName>rippled</TargetName>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <PreprocessorDefinitions>USE_LEVELDB;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalIncludeDirectories>$(RepoDir)\src\cpp\leveldb;$(RepoDir)\src\cpp\leveldb\include;$(RepoDir)\src\cpp\protobuf\src;$(RepoDir)\src\cpp\protobuf\vsprojects;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <BuildMacro Include="RepoDir">

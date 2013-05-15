@@ -23,6 +23,7 @@
 #include "InstanceCounter.h"
 #include "Offer.h"
 #include "PFRequest.h"
+#include "ProofOfWork.h"
 
 SETUP_LOG();
 
@@ -878,6 +879,145 @@ Json::Value RPCHandler::doProfile(Json::Value jvRequest, int& cost, ScopedLock& 
 }
 
 // {
+//   // if either of these parameters is set, a custom generator is used
+//   difficulty: <number>		// optional
+//   secret: <secret>           // optional
+// }
+Json::Value RPCHandler::doProofCreate(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+{
+	MasterLockHolder.unlock();
+	// XXX: Add ability to create proof with arbitrary time
+
+	Json::Value		jvResult(Json::objectValue);
+
+	if (jvRequest.isMember("difficulty") || jvRequest.isMember("secret"))
+	{
+		ProofOfWorkGenerator	pgGen;
+
+		if (jvRequest.isMember("difficulty"))
+		{
+			if (!jvRequest["difficulty"].isIntegral())
+				return rpcError(rpcINVALID_PARAMS);
+
+			int iDifficulty = jvRequest["difficulty"].asInt();
+
+			if (iDifficulty < 0 || iDifficulty > ProofOfWork::sMaxDifficulty)
+				return rpcError(rpcINVALID_PARAMS);
+
+			pgGen.setDifficulty(iDifficulty);
+		}
+
+		if (jvRequest.isMember("secret"))
+		{
+			uint256		uSecret(jvRequest["secret"].asString());
+			pgGen.setSecret(uSecret);
+		}
+
+		jvResult["token"]	= pgGen.getProof().getToken();
+		jvResult["secret"]	= pgGen.getSecret().GetHex();
+	} else {
+		jvResult["token"]	= theApp->getPowGen().getProof().getToken();
+	}
+
+	return jvResult;
+}
+
+// {
+//   token: <token>
+// }
+Json::Value RPCHandler::doProofSolve(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+{
+	MasterLockHolder.unlock();
+
+	Json::Value			jvResult;
+
+	if (!jvRequest.isMember("token"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	std::string			strToken		= jvRequest["token"].asString();
+
+	if (!ProofOfWork::validateToken(strToken))
+		return rpcError(rpcINVALID_PARAMS);
+
+	ProofOfWork			powProof(strToken);
+	uint256				uSolution		= powProof.solve();
+
+	jvResult["solution"]				= uSolution.GetHex();
+
+	return jvResult;
+}
+
+
+// {
+//   token: <token>
+//   solution: <solution>
+//   // if either of these parameters is set, a custom verifier is used
+//   difficulty: <number>		// optional
+//   secret: <secret>           // optional
+// }
+Json::Value RPCHandler::doProofVerify(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+{
+	MasterLockHolder.unlock();
+	// XXX Add ability to check proof against arbitrary time
+
+	Json::Value			jvResult;
+
+	if (!jvRequest.isMember("token"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	if (!jvRequest.isMember("solution"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	std::string		strToken	= jvRequest["token"].asString();
+	uint256			uSolution(jvRequest["solution"].asString());
+
+	POWResult		prResult;
+	if (jvRequest.isMember("difficulty") || jvRequest.isMember("secret"))
+	{
+		ProofOfWorkGenerator	pgGen;
+
+		if (jvRequest.isMember("difficulty"))
+		{
+			if (!jvRequest["difficulty"].isIntegral())
+				return rpcError(rpcINVALID_PARAMS);
+
+			int iDifficulty = jvRequest["difficulty"].asInt();
+
+			if (iDifficulty < 0 || iDifficulty > ProofOfWork::sMaxDifficulty)
+				return rpcError(rpcINVALID_PARAMS);
+
+			pgGen.setDifficulty(iDifficulty);
+		}
+
+		if (jvRequest.isMember("secret"))
+		{
+			uint256		uSecret(jvRequest["secret"].asString());
+			pgGen.setSecret(uSecret);
+		}
+
+		prResult				= pgGen.checkProof(strToken, uSolution);
+
+		jvResult["secret"]		= pgGen.getSecret().GetHex();
+	}
+	else
+	{
+		// XXX Proof should not be marked as used from this
+		prResult = theApp->getPowGen().checkProof(strToken, uSolution);
+	}
+
+	std::string	sToken;
+	std::string	sHuman;
+
+	powResultInfo(prResult, sToken, sHuman);
+
+	jvResult["proof_result"]			= sToken;
+	jvResult["proof_result_code"]		= prResult;
+	jvResult["proof_result_message"]	= sHuman;
+
+	return jvResult;
+}
+
+// {
 //   account: <account>|<nickname>|<account_public_key>
 //   account_index: <number>		// optional, defaults to 0.
 //   ledger_hash : <ledger>
@@ -924,12 +1064,12 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 	}
 
 	AccountState::pointer	as		= mNetOps->getAccountState(lpLedger, raAccount);
-	MasterLockHolder.unlock();
+
+	if (lpLedger->isImmutable())
+		MasterLockHolder.unlock();
 
 	if (as)
 	{
-		Json::Value	jsonLines(Json::arrayValue);
-
 		jvResult["account"]	= raAccount.humanAccountID();
 
 		// XXX This is wrong, we do access the current ledger and do need to worry about changes.
@@ -937,6 +1077,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 
 		AccountItems rippleLines(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new RippleState()));
 
+		Json::Value&	jsonLines = (jvResult["lines"] = Json::arrayValue);
 		BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 		{
 			RippleState* line=(RippleState*)item.get();
@@ -947,7 +1088,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 				STAmount		saLimit		= line->getLimit();
 				STAmount		saLimitPeer	= line->getLimitPeer();
 
-				Json::Value			jPeer	= Json::Value(Json::objectValue);
+				Json::Value&	jPeer	= jsonLines.append(Json::objectValue);
 
 				jPeer["account"]		= RippleAddress::createHumanAccountID(line->getAccountIDPeer());
 				// Amount reported is positive if current account holds other account's IOUs.
@@ -958,11 +1099,8 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 				jPeer["limit_peer"]		= saLimitPeer.getText();
 				jPeer["quality_in"]		= static_cast<Json::UInt>(line->getQualityIn());
 				jPeer["quality_out"]	= static_cast<Json::UInt>(line->getQualityOut());
-
-				jsonLines.append(jPeer);
 			}
 		}
-		jvResult["lines"]	= jsonLines;
 	}
 	else
 	{
@@ -1007,11 +1145,13 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 		jvResult["account_index"]	= iIndex;
 
 	AccountState::pointer	as		= mNetOps->getAccountState(lpLedger, raAccount);
-	MasterLockHolder.unlock();
+
+	if (lpLedger->isImmutable())
+		MasterLockHolder.unlock();
 
 	if (as)
 	{
-		Json::Value	jsonLines(Json::arrayValue);
+		Json::Value&	jsonLines = (jvResult["offers"] = Json::arrayValue);
 
 		AccountItems offers(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new Offer()));
 		BOOST_FOREACH(AccountItem::ref item, offers.getItems())
@@ -1022,16 +1162,14 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 			STAmount takerGets	= offer->getTakerGets();
 			//RippleAddress account	= offer->getAccount();
 
-			Json::Value	obj	= Json::Value(Json::objectValue);
+			Json::Value&	obj	= jsonLines.append(Json::objectValue);
 
 			//obj["account"]		= account.humanAccountID();
-			obj["taker_pays"]		= takerPays.getJson(0);
-			obj["taker_gets"]		= takerGets.getJson(0);
+			takerPays.setJson(obj["taker_pays"]);
+			takerGets.setJson(obj["taker_gets"]);
 			obj["seq"]				= offer->getSeq();
 
-			jsonLines.append(obj);
 		}
-		jvResult["offers"]	= jsonLines;
 	}
 	else
 	{
@@ -1064,12 +1202,15 @@ Json::Value RPCHandler::doBookOffers(Json::Value jvRequest, int& cost, ScopedLoc
 	if (!lpLedger)
 		return jvResult;
 
+	if (lpLedger->isImmutable())
+		MasterLockHolder.unlock();
+
 	if (!jvRequest.isMember("taker_pays") || !jvRequest.isMember("taker_gets") || !jvRequest["taker_pays"].isObject() || !jvRequest["taker_gets"].isObject())
 		return rpcError(rpcINVALID_PARAMS);
 
-	uint160		uTakerPaysCurrencyID;
-	uint160		uTakerPaysIssuerID;
-	Json::Value	jvTakerPays	= jvRequest["taker_pays"];
+	uint160				uTakerPaysCurrencyID;
+	uint160				uTakerPaysIssuerID;
+	const Json::Value&	jvTakerPays	= jvRequest["taker_pays"];
 
 	// Parse mandatory currency.
 	if (!jvTakerPays.isMember("currency")
@@ -1092,9 +1233,9 @@ Json::Value RPCHandler::doBookOffers(Json::Value jvRequest, int& cost, ScopedLoc
 		return rpcError(rpcSRC_ISR_MALFORMED);
 	}
 
-	uint160		uTakerGetsCurrencyID;
-	uint160		uTakerGetsIssuerID;
-	Json::Value	jvTakerGets	= jvRequest["taker_gets"];
+	uint160				uTakerGetsCurrencyID;
+	uint160				uTakerGetsIssuerID;
+	const Json::Value&	jvTakerGets	= jvRequest["taker_gets"];
 
 	// Parse mandatory currency.
 	if (!jvTakerGets.isMember("currency")
@@ -1728,10 +1869,16 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest, int& cost, ScopedLock& M
 								| (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
 								| (bAccounts ? LEDGER_JSON_DUMP_STATE : 0);
 
-	Json::Value ret(Json::objectValue);
+	if ((bFull || bAccounts) && !lpLedger->isImmutable())
+	{ // For full or accounts, it's cheaper to snapshot
+		lpLedger = boost::make_shared<Ledger>(*lpLedger, false);
+		assert(lpLedger->isImmutable());
+	}
 
-	if (lpLedger->isClosed())
+	if (lpLedger->isImmutable())
 		MasterLockHolder.unlock();
+
+	Json::Value ret(Json::objectValue);
 	lpLedger->addJson(ret, iOptions);
 
 	return ret;
@@ -1817,7 +1964,7 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost, 
 		Json::Value ret(Json::objectValue);
 
 		ret["account"] = raAccount.humanAccountID();
-		ret["transactions"] = Json::arrayValue;
+		Json::Value& jvTxns = (ret["transactions"] = Json::arrayValue);
 
 		if (bBinary)
 		{
@@ -1827,15 +1974,14 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost, 
 			for (std::vector<NetworkOPs::txnMetaLedgerType>::const_iterator it = txns.begin(), end = txns.end();
 				it != end; ++it)
 			{
-				Json::Value jvObj(Json::objectValue);
-				uint32	uLedgerIndex	= it->get<2>();
+				Json::Value& jvObj = jvTxns.append(Json::objectValue);
 
+				uint32	uLedgerIndex	= it->get<2>();
 				jvObj["tx_blob"]		= it->get<0>();
 				jvObj["meta"]			= it->get<1>();
 				jvObj["ledger_index"]	= uLedgerIndex;
 				jvObj["validated"]		= bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
 
-				ret["transactions"].append(jvObj);
 			}
 		}
 		else
@@ -1844,7 +1990,7 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost, 
 
 			for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
 			{
-				Json::Value	jvObj(Json::objectValue);
+				Json::Value&	jvObj = jvTxns.append(Json::objectValue);
 
 				if (it->first)
 					jvObj["tx"]				= it->first->getJson(1);
@@ -1857,7 +2003,6 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest, int& cost, 
 					jvObj["validated"]		= bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
 				}
 
-				ret["transactions"].append(jvObj);
 			}
 		}
 
@@ -2034,6 +2179,8 @@ Json::Value RPCHandler::doLogRotate(Json::Value, int& cost, ScopedLock& MasterLo
 // }
 Json::Value RPCHandler::doWalletPropose(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
 {
+	MasterLockHolder.unlock();
+
 	RippleAddress	naSeed;
 	RippleAddress	naAccount;
 
@@ -2534,7 +2681,8 @@ Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest, int& cost, ScopedLo
 
 	if (!lpLedger)
 		return jvResult;
-	if (lpLedger->isClosed())
+
+	if (lpLedger->isImmutable())
 		MasterLockHolder.unlock();
 
 	uint256		uNodeIndex;
@@ -2702,7 +2850,7 @@ Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest, int& cost, ScopedLo
 		jvResult["error"]	= "unknownOption";
 	}
 
-	if (!!uNodeIndex)
+	if (uNodeIndex.isNonZero())
 	{
 		SLE::pointer	sleNode	= mNetOps->getSLEi(lpLedger, uNodeIndex);
 
@@ -3345,6 +3493,9 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 		{	"path_find",			&RPCHandler::doPathFind,			false,	optCurrent	},
 		{	"ping",					&RPCHandler::doPing,			    false,	optNone		},
 //		{	"profile",				&RPCHandler::doProfile,			    false,	optCurrent	},
+		{	"proof_create",			&RPCHandler::doProofCreate,		    false,	optNone		},
+		{	"proof_solve",			&RPCHandler::doProofSolve,		    true,	optNone		},
+		{	"proof_verify",			&RPCHandler::doProofVerify,		    true,	optNone		},
 		{	"random",				&RPCHandler::doRandom,				false,	optNone		},
 		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	    false,	optCurrent	},
 		{	"sign",					&RPCHandler::doSign,			    false,	optCurrent	},

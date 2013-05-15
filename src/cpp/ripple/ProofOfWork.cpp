@@ -5,6 +5,7 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
+#include <boost/regex.hpp>
 
 #include <openssl/rand.h>
 
@@ -13,8 +14,53 @@
 
 SETUP_LOG();
 
+
+bool powResultInfo(POWResult powCode, std::string& strToken, std::string& strHuman)
+{
+	static struct {
+		POWResult		powCode;
+		const char*		cpToken;
+		const char*		cpHuman;
+	} powResultInfoA[] = {
+		{	powREUSED,				"powREUSED",				"Proof-of-work has already been used."					},
+		{	powBADNONCE,			"powBADNONCE",				"The solution does not meet the required difficulty."	},
+		{	powEXPIRED,				"powEXPIRED",				"Token is expired."										},
+		{	powCORRUPT,				"powCORRUPT",				"Invalid token."										},
+		{	powTOOEASY,				"powTOOEASY",				"Difficulty has increased since token was issued."		},
+
+		{	powOK,					"powOK",					"Valid proof-of-work."									},
+	};
+
+	int	iIndex	= NUMBER(powResultInfoA);
+
+	while (iIndex-- && powResultInfoA[iIndex].powCode != powCode)
+		;
+
+	if (iIndex >= 0)
+	{
+		strToken	= powResultInfoA[iIndex].cpToken;
+		strHuman	= powResultInfoA[iIndex].cpHuman;
+	}
+
+	return iIndex >= 0;
+}
+
 const uint256 ProofOfWork::sMinTarget("00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 const int ProofOfWork::sMaxIterations(1 << 23);
+const int ProofOfWork::sMaxDifficulty(30);
+
+ProofOfWork::ProofOfWork(const std::string& token)
+{
+	std::vector<std::string> fields;
+	boost::split(fields, token, boost::algorithm::is_any_of("-"));
+	if (fields.size() != 5)
+		throw std::runtime_error("invalid token");
+
+	mToken = token;
+	mChallenge.SetHex(fields[0]);
+	mTarget.SetHex(fields[1]);
+	mIterations = lexical_cast_s<int>(fields[2]);
+}
 
 bool ProofOfWork::isValid() const
 {
@@ -107,6 +153,14 @@ bool ProofOfWork::checkSolution(const uint256& solution) const
 		buf2[i] = buf1[2];
 	}
 	return getSHA512Half(buf2) <= mTarget;
+}
+
+bool ProofOfWork::validateToken(const std::string& strToken)
+{
+	static boost::regex	reToken("[[:xdigit:]]{64}-[[:xdigit:]]{64}-[[:digit:]]+-[[:digit:]]+-[[:xdigit:]]{64}");
+	boost::smatch		smMatch;
+
+	return boost::regex_match(strToken, smMatch, reToken);
 }
 
 ProofOfWorkGenerator::ProofOfWorkGenerator() :	mValidTime(180)
@@ -243,7 +297,7 @@ struct PowEntry
 	int iterations;
 };
 
-PowEntry PowEntries[31] =
+PowEntry PowEntries[ProofOfWork::sMaxDifficulty + 1] =
 { //   target                                                             iterations  hashes  		memory
 	{ "0CFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 65536	}, // 1451874,		2 MB
 	{ "0CFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 98304	}, // 2177811,		3 MB
@@ -300,7 +354,7 @@ int ProofOfWorkGenerator::getPowEntry(const uint256& target, int iterations)
 
 void ProofOfWorkGenerator::setDifficulty(int i)
 {
-	assert((i >= 0) && (i <= 30));
+	assert((i >= 0) && (i <= ProofOfWork::sMaxDifficulty));
 	time_t now = time(NULL);
 
 	boost::mutex::scoped_lock sl(mLock);
