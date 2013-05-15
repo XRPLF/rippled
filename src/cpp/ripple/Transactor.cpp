@@ -160,7 +160,6 @@ TER Transactor::checkSeq()
 // check stuff before you bother to lock the ledger
 TER Transactor::preCheck()
 {
-
 	mTxnAccountID	= mTxn.getSourceAccount().getAccountID();
 	if (!mTxnAccountID)
 	{
@@ -177,11 +176,15 @@ TER Transactor::preCheck()
 	mSigningPubKey	= RippleAddress::createAccountPublic(mTxn.getSigningPubKey());
 
 	// Consistency: really signed.
-	if ( !isSetBit(mParams, tapNO_CHECK_SIGN) && !mTxn.checkSign(mSigningPubKey))
+	if (!mTxn.isKnownGood())
 	{
-		cLog(lsWARNING) << "applyTransaction: Invalid transaction: bad signature";
-
-		return temINVALID;
+		if (mTxn.isKnownBad() || (!isSetBit(mParams, tapNO_CHECK_SIGN) && !mTxn.checkSign(mSigningPubKey)))
+		{
+			mTxn.setGood();
+			cLog(lsWARNING) << "applyTransaction: Invalid transaction: bad signature";
+			return temINVALID;
+		}
+		mTxn.isKnownGood();
 	}
 
 	return tesSUCCESS;
