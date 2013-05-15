@@ -94,7 +94,7 @@ SLE::pointer LedgerEntrySet::entryCache(LedgerEntryType letType, const uint256& 
 		if (!sleEntry)
 		{
 			assert(action != taaDELETE);
-			sleEntry = mLedger->getSLE(index);
+			sleEntry = mImmutable ? mLedger->getSLEi(index) : mLedger->getSLE(index);
 			if (sleEntry)
 				entryCache(sleEntry);
 		}
@@ -138,7 +138,7 @@ void LedgerEntrySet::entryCache(SLE::ref sle)
 
 void LedgerEntrySet::entryCreate(SLE::ref sle)
 {
-	assert(mLedger);
+	assert(mLedger && !mImmutable);
 	assert(sle->isMutable());
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
@@ -175,7 +175,7 @@ void LedgerEntrySet::entryCreate(SLE::ref sle)
 
 void LedgerEntrySet::entryModify(SLE::ref sle)
 {
-	assert(sle->isMutable());
+	assert(sle->isMutable() && !mImmutable);
 	assert(mLedger);
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
@@ -209,7 +209,7 @@ void LedgerEntrySet::entryModify(SLE::ref sle)
 
 void LedgerEntrySet::entryDelete(SLE::ref sle)
 {
-	assert(sle->isMutable());
+	assert(sle->isMutable() && !mImmutable);
 	assert(mLedger);
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
