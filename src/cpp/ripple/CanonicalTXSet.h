@@ -23,6 +23,8 @@ public:
 
 	bool operator==(const CanonicalTXKey& k) const	{ return mTXid == k.mTXid; }
 	bool operator!=(const CanonicalTXKey& k) const	{ return mTXid != k.mTXid; }
+
+	const uint256& getTXID() const					{ return mTXid; }
 };
 
 class CanonicalTXSet
