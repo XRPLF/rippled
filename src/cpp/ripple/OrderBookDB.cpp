@@ -167,13 +167,13 @@ void OrderBookDB::processTxn(Ledger::ref ledger, const ALTransaction& alTx, Json
 						const STObject* data = dynamic_cast<const STObject*>(node.peekAtPField(*field));
 						if (data)
 						{
-							STAmount takerGets = data->getFieldAmount(sfTakerGets);
-							uint160 currencyGets = takerGets.getCurrency();
-							uint160 issuerGets = takerGets.getIssuer();
+							const STAmount& takerGets = data->getFieldAmount(sfTakerGets);
+							const uint160& currencyGets = takerGets.getCurrency();
+							const uint160& issuerGets = takerGets.getIssuer();
 
-							STAmount takerPays = data->getFieldAmount(sfTakerPays);
-							uint160 currencyPays = takerPays.getCurrency();
-							uint160 issuerPays = takerPays.getIssuer();
+							const STAmount& takerPays = data->getFieldAmount(sfTakerPays);
+							const uint160& currencyPays = takerPays.getCurrency();
+							const uint160& issuerPays = takerPays.getIssuer();
 
 							// determine the OrderBook
 							BookListeners::pointer book =
@@ -206,6 +206,9 @@ void BookListeners::removeSubscriber(uint64 seq)
 
 void BookListeners::publish(Json::Value& jvObj)
 {
+	Json::FastWriter jfwWriter;
+	std::string sObj = jfwWriter.write(jvObj);
+
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	NetworkOPs::subMapType::const_iterator it = mListeners.begin();
 	while (it != mListeners.end())
@@ -213,7 +216,7 @@ void BookListeners::publish(Json::Value& jvObj)
 		InfoSub::pointer p = it->second.lock();
 		if (p)
 		{
-			p->send(jvObj, true);
+			p->send(jvObj, sObj, true);
 			++it;
 		}
 		else

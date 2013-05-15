@@ -52,6 +52,8 @@ public:
 	virtual ~InfoSub();
 
 	virtual	void send(const Json::Value& jvObj, bool broadcast) = 0;
+	virtual void send(const Json::Value& jvObj, const std::string& sObj, bool broadcast)
+	{ send(jvObj, broadcast); }
 
 	uint64 getSeq()
 	{

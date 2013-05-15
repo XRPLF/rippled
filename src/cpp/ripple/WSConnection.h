@@ -95,6 +95,13 @@ public:
 			mHandler->send(ptr, jvObj, broadcast);
 	}
 
+	void send(const Json::Value& jvObj, const std::string& sObj, bool broadcast)
+	{
+		connection_ptr ptr = mConnection.lock();
+		if (ptr)
+			mHandler->send(ptr, sObj, broadcast);
+	}
+
 	// Utilities
 	Json::Value invokeCommand(Json::Value& jvRequest)
 	{
