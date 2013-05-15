@@ -1043,6 +1043,8 @@ int LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTrans
 	TransactionEngineParams parms = openLedger ? tapOPEN_LEDGER : tapNONE;
 	if (retryAssured)
 		parms = static_cast<TransactionEngineParams>(parms | tapRETRY);
+	if (theApp->isNewFlag(txn->getTransactionID(), SF_SIGGOOD))
+		parms = static_cast<TransactionEngineParams>(parms | tapNO_CHECK_SIGN);
 
 	cLog(lsDEBUG) << "TXN " << txn->getTransactionID()
 		<< (openLedger ? " open" : " closed")
