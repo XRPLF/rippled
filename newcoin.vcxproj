@@ -549,7 +549,9 @@
     <ClCompile Include="src\cpp\ripple\OrderBook.cpp" />
     <ClCompile Include="src\cpp\ripple\OrderBookDB.cpp" />
     <ClCompile Include="src\cpp\ripple\PackedMessage.cpp" />
+    <ClCompile Include="src\cpp\ripple\ParameterTable.cpp" />
     <ClCompile Include="src\cpp\ripple\ParseSection.cpp" />
+    <ClCompile Include="src\cpp\ripple\PathDB.cpp" />
     <ClCompile Include="src\cpp\ripple\Pathfinder.cpp" />
     <ClCompile Include="src\cpp\ripple\PaymentTransactor.cpp" />
     <ClCompile Include="src\cpp\ripple\Peer.cpp" />
@@ -640,10 +642,10 @@
     <ClCompile Include="src\cpp\websocket_core.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="database\database.h" />
     <ClInclude Include="database\sqlite3.h" />
     <ClInclude Include="database\sqlite3ext.h" />
-    <ClInclude Include="database\SqliteDatabase.h" />
+    <ClInclude Include="src\cpp\database\database.h" />
+    <ClInclude Include="src\cpp\database\SqliteDatabase.h" />
     <ClInclude Include="src\cpp\json\autolink.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -993,8 +995,10 @@
     <ClInclude Include="src\cpp\ripple\AccountSetTransactor.h" />
     <ClInclude Include="src\cpp\ripple\AccountState.h" />
     <ClInclude Include="src\cpp\ripple\Application.h" />
+    <ClInclude Include="src\cpp\ripple\AutoSocket.h" />
     <ClInclude Include="src\cpp\ripple\base58.h" />
     <ClInclude Include="src\cpp\ripple\bignum.h" />
+    <ClInclude Include="src\cpp\ripple\BigNum64.h" />
     <ClInclude Include="src\cpp\ripple\BitcoinUtil.h" />
     <ClInclude Include="src\cpp\ripple\CallRPC.h" />
     <ClInclude Include="src\cpp\ripple\CanonicalTXSet.h" />
@@ -1002,6 +1006,7 @@
     <ClInclude Include="src\cpp\ripple\Config.h" />
     <ClInclude Include="src\cpp\ripple\ConnectionPool.h" />
     <ClInclude Include="src\cpp\ripple\Contract.h" />
+    <ClInclude Include="src\cpp\ripple\FeatureTable.h" />
     <ClInclude Include="src\cpp\ripple\FieldNames.h" />
     <ClInclude Include="src\cpp\ripple\HashedObject.h" />
     <ClInclude Include="src\cpp\ripple\HashPrefixes.h" />
@@ -1011,6 +1016,7 @@
     <ClInclude Include="src\cpp\ripple\Interpreter.h" />
     <ClInclude Include="src\cpp\ripple\JobQueue.h" />
     <ClInclude Include="src\cpp\ripple\key.h" />
+    <ClInclude Include="src\cpp\ripple\KeyCache.h" />
     <ClInclude Include="src\cpp\ripple\Ledger.h" />
     <ClInclude Include="src\cpp\ripple\LedgerAcquire.h" />
     <ClInclude Include="src\cpp\ripple\LedgerConsensus.h" />
@@ -1020,6 +1026,8 @@
     <ClInclude Include="src\cpp\ripple\LedgerMaster.h" />
     <ClInclude Include="src\cpp\ripple\LedgerProposal.h" />
     <ClInclude Include="src\cpp\ripple\LedgerTiming.h" />
+    <ClInclude Include="src\cpp\ripple\LoadManager.h" />
+    <ClInclude Include="src\cpp\ripple\LoadMonitor.h" />
     <ClInclude Include="src\cpp\ripple\Log.h" />
     <ClInclude Include="src\cpp\ripple\NetworkOPs.h" />
     <ClInclude Include="src\cpp\ripple\NetworkStatus.h" />
@@ -1031,11 +1039,14 @@
     <ClInclude Include="src\cpp\ripple\OrderBook.h" />
     <ClInclude Include="src\cpp\ripple\OrderBookDB.h" />
     <ClInclude Include="src\cpp\ripple\PackedMessage.h" />
+    <ClInclude Include="src\cpp\ripple\ParameterTable.h" />
     <ClInclude Include="src\cpp\ripple\ParseSection.h" />
+    <ClInclude Include="src\cpp\ripple\PathDB.h" />
     <ClInclude Include="src\cpp\ripple\Pathfinder.h" />
     <ClInclude Include="src\cpp\ripple\PaymentTransactor.h" />
     <ClInclude Include="src\cpp\ripple\Peer.h" />
     <ClInclude Include="src\cpp\ripple\PeerDoor.h" />
+    <ClInclude Include="src\cpp\ripple\PFRequest.h" />
     <ClInclude Include="src\cpp\ripple\ProofOfWork.h" />
     <ClInclude Include="src\cpp\ripple\RangeSet.h" />
     <ClInclude Include="src\cpp\ripple\RegularKeySetTransactor.h" />
@@ -1045,10 +1056,11 @@
     <ClInclude Include="src\cpp\ripple\RippleCalc.h" />
     <ClInclude Include="src\cpp\ripple\RippleState.h" />
     <ClInclude Include="src\cpp\ripple\RPC.h" />
-    <ClInclude Include="src\cpp\ripple\RPCCommands.h" />
     <ClInclude Include="src\cpp\ripple\RPCDoor.h" />
+    <ClInclude Include="src\cpp\ripple\RPCErr.h" />
     <ClInclude Include="src\cpp\ripple\RPCHandler.h" />
     <ClInclude Include="src\cpp\ripple\RPCServer.h" />
+    <ClInclude Include="src\cpp\ripple\RPCSub.h" />
     <ClInclude Include="src\cpp\ripple\ScopedLock.h" />
     <ClInclude Include="src\cpp\ripple\ScriptData.h" />
     <ClInclude Include="src\cpp\ripple\SecureAllocator.h" />
