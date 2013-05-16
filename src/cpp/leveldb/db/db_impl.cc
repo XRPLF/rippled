@@ -310,15 +310,23 @@ Status DBImpl::Recover(VersionEdit* edit) {
     if (!s.ok()) {
       return s;
     }
+    std::set<uint64_t> expected;
+    versions_->AddLiveFiles(&expected);
     uint64_t number;
     FileType type;
     std::vector<uint64_t> logs;
     for (size_t i = 0; i < filenames.size(); i++) {
-      if (ParseFileName(filenames[i], &number, &type)
-          && type == kLogFile
-          && ((number >= min_log) || (number == prev_log))) {
+      if (ParseFileName(filenames[i], &number, &type)) {
+        expected.erase(number);
+        if (type == kLogFile && ((number >= min_log) || (number == prev_log)))
         logs.push_back(number);
       }
+    }
+    if (!expected.empty()) {
+      char buf[50];
+      snprintf(buf, sizeof(buf), "%d missing files; e.g.",
+               static_cast<int>(expected.size()));
+      return Status::Corruption(buf, TableFileName(dbname_, *(expected.begin())));
     }
 
     // Recover in the order in which the logs were generated
@@ -1268,10 +1276,11 @@ Status DBImpl::MakeRoomForWrite(bool force) {
     } else if (imm_ != NULL) {
       // We have filled up the current memtable, but the previous
       // one is still being compacted, so we wait.
+      Log(options_.info_log, "Current memtable full; waiting...\n");
       bg_cv_.Wait();
     } else if (versions_->NumLevelFiles(0) >= config::kL0_StopWritesTrigger) {
       // There are too many level-0 files.
-      Log(options_.info_log, "waiting...\n");
+      Log(options_.info_log, "Too many L0 files; waiting...\n");
       bg_cv_.Wait();
     } else {
       // Attempt to switch to a new memtable and trigger compaction of old
