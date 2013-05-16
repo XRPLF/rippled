@@ -118,7 +118,7 @@ if OSX:
 	env.Append(CXXFLAGS = ['-I/usr/local/opt/openssl/include'])
 
 if LevelDB:
-	env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb', '-Isrc/cpp/leveldb/port', '-Isrc/cpp/leveldb/include'])
+	env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb', '-Isrc/cpp/leveldb/port', '-Isrc/cpp/leveldb/include', '-DUSE_LEVELDB'])
 
 	LEVELDB_SRCS	= [ 'src/cpp/leveldb_core.cpp' ]
 
