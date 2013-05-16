@@ -94,6 +94,7 @@ message TMTransaction {
 	required bytes rawTransaction			= 1;
 	required TransactionStatus status		= 2;
 	optional uint64 receiveTimestamp		= 3;
+	optional bool checkedSignature			= 4;	// no vouches for signature being correct
 }
 
 
@@ -132,6 +133,7 @@ message TMProposeSet {
 	required uint32 closeTime			= 4;
 	required bytes signature			= 5;	// signature of above fields
 	optional bytes previousledger		= 6;
+	optional bool checkedSignature		= 7;	// node vouches signature is correct
 	repeated bytes addedTransactions	= 10;	// not required if number is large
 	repeated bytes removedTransactions	= 11;	// not required if number is large
 }
@@ -151,6 +153,7 @@ message TMHaveTransactionSet {
 // Used to sign a final closed ledger after reprocessing
 message TMValidation {
 	required bytes validation		= 1;		// in SerializedValidation signed form
+	optional bool checkedSignature	= 2;		// node vouches signature is correct
 }
 
 
