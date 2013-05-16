@@ -256,6 +256,7 @@ bool Ledger::addTransaction(const uint256& txID, const Serializer& txn)
 		cLog(lsWARNING) << "Attempt to add transaction to ledger that already had it";
 		return false;
 	}
+	mValidHash = false;
 	return true;
 }
 
@@ -270,6 +271,7 @@ bool Ledger::addTransaction(const uint256& txID, const Serializer& txn, const Se
 		cLog(lsFATAL) << "Attempt to add transaction+MD to ledger that already had it";
 		return false;
 	}
+	mValidHash = false;
 	return true;
 }
 

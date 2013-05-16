@@ -18,6 +18,14 @@ uint32 LedgerMaster::getCurrentLedgerIndex()
 	return mCurrentLedger->getLedgerSeq();
 }
 
+Ledger::ref LedgerMaster::getCurrentSnapshot()
+{
+	if (!mCurrentSnapshot || (mCurrentSnapshot->getHash() != mCurrentLedger->getHash()))
+		mCurrentSnapshot = boost::make_shared<Ledger>(boost::ref(*mCurrentLedger), false);
+	assert(mCurrentSnapshot->isImmutable());
+	return mCurrentSnapshot;
+}
+
 void LedgerMaster::addHeldTransaction(Transaction::ref transaction)
 { // returns true if transaction was added
 	boost::recursive_mutex::scoped_lock ml(mLock);
