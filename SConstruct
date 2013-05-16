@@ -47,7 +47,7 @@ else:
 #
 # Put objects files in their own directory.
 #
-for dir in ['ripple', 'database', 'json', 'leveldb/db', 'leveldb/port', 'leveldb/include', 'leveldb/table', 'leveldb/util', 'websocketpp']:
+for dir in ['.', 'ripple', 'database', 'json', 'leveldb/db', 'leveldb/port', 'leveldb/include', 'leveldb/table', 'leveldb/util', 'websocketpp']:
 	VariantDir('build/obj/'+dir, 'src/cpp/'+dir, duplicate=0)
 
 # Use openssl
@@ -118,19 +118,9 @@ if OSX:
 	env.Append(CXXFLAGS = ['-I/usr/local/opt/openssl/include'])
 
 if LevelDB:
-	env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb', '-Isrc/cpp/leveldb/port', '-Isrc/cpp/leveldb/include', '-DUSE_LEVELDB', '-DLEVELDB_PLATFORM_POSIX'])
+	env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb', '-Isrc/cpp/leveldb/port', '-Isrc/cpp/leveldb/include'])
 
-	LEVELDB_PREFIX	= 'src/cpp/leveldb'
-	PORTABLE_FILES	= commands.getoutput('find '
-	    + LEVELDB_PREFIX + '/db '
-	    + LEVELDB_PREFIX + '/util '
-	    + LEVELDB_PREFIX + '/table '
-	    + ' -name *test*.cc -prune'
-	    + ' -o -name *_bench.cc -prune'
-	    + ' -o -name leveldb_main.cc -prune'
-	    + ' -o -name "*.cc" -print | sort | tr "\n" " "').rstrip()
-	LEVELDB_SRCS	= re.split(' ', PORTABLE_FILES)
-	LEVELDB_SRCS.append(LEVELDB_PREFIX + '/port/port_posix.cc')
+	LEVELDB_SRCS	= [ 'src/cpp/leveldb_core.cpp' ]
 
 DB_SRCS		= glob.glob('src/cpp/database/*.c') + glob.glob('src/cpp/database/*.cpp')
 JSON_SRCS	= glob.glob('src/cpp/json/*.cpp')
@@ -149,8 +139,9 @@ WEBSOCKETPP_SRCS = [
 RIPPLE_SRCS = glob.glob('src/cpp/ripple/*.cpp')
 PROTO_SRCS = env.Protoc([], 'src/cpp/ripple/ripple.proto', PROTOCOUTDIR='build/proto', PROTOCPYTHONOUTDIR=None)
 env.Append(CXXFLAGS = ['-Ibuild/proto'])
-
 env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')
+# PROTO_SRCS  = [ 'src/cpp/protobuf_core.cpp' ]
+# env.Append(CXXFLAGS = ['-Ibuild/proto', '-Isrc/cpp/protobuf/src', '-Isrc/cpp/protobuf/vsprojects' ])
 
 # Remove unused source files.
 UNUSED_SRCS = []
