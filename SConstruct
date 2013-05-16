@@ -147,10 +147,12 @@ WEBSOCKETPP_SRCS = [
 	]
 
 RIPPLE_SRCS = glob.glob('src/cpp/ripple/*.cpp')
-PROTO_SRCS = env.Protoc([], 'src/cpp/ripple/ripple.proto', PROTOCOUTDIR='build/proto', PROTOCPYTHONOUTDIR=None)
-env.Append(CXXFLAGS = ['-Ibuild/proto'])
+PROTO_SRCS  = [ 'src/cpp/protobuf_core.cpp' ]
+# PROTO_SRCS = env.Protoc([], 'src/cpp/ripple/ripple.proto', PROTOCOUTDIR='build/proto', PROTOCPYTHONOUTDIR=None)
+# env.Append(CXXFLAGS = ['-Ibuild/proto'])
+env.Append(CXXFLAGS = ['-Ibuild/proto', '-Isrc/cpp/protobuf/src', '-Isrc/cpp/protobuf/vsprojects' ])
 
-env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')
+# env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')
 
 # Remove unused source files.
 UNUSED_SRCS = []
