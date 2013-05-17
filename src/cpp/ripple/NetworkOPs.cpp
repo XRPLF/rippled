@@ -2029,7 +2029,7 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer,
 		reply.set_query(false);
 		if (request->has_seq())
 			reply.set_seq(request->seq());
-		reply.set_ledgerhash(reply.ledgerhash());
+		reply.set_ledgerhash(request->ledgerhash());
 		reply.set_type(ripple::TMGetObjectByHash::otFETCH_PACK);
 
 		do
