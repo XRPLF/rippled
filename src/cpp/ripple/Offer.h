@@ -15,9 +15,9 @@ public:
 	AccountItem::pointer makeItem(const uint160&, SerializedLedgerEntry::ref ledgerEntry);
 	LedgerEntryType getType(){ return(ltOFFER); }
 
-	STAmount getTakerPays(){ return(mTakerPays); }
-	STAmount getTakerGets(){ return(mTakerGets); }
-	RippleAddress getAccount(){ return(mAccount); }
+	const STAmount& getTakerPays(){ return(mTakerPays); }
+	const STAmount& getTakerGets(){ return(mTakerGets); }
+	const RippleAddress& getAccount(){ return(mAccount); }
 	int getSeq(){ return(mSeq); }
 	Json::Value getJson(int);
 
