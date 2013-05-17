@@ -557,7 +557,10 @@ void LedgerMaster::checkAccept(const uint256& hash, uint32 seq)
 
 	Ledger::pointer ledger = mLedgerHistory.getLedgerByHash(hash);
 	if (!ledger)
+	{
+		theApp->getMasterLedgerAcquire().findCreate(hash, seq);
 		return;
+	}
 	mValidLedger = ledger;
 
 	tryPublish();
@@ -575,6 +578,8 @@ void LedgerMaster::tryPublish()
 	}
 	else if (mValidLedger->getLedgerSeq() > (mPubLedger->getLedgerSeq() + MAX_LEDGER_GAP))
 	{
+		cLog(lsWARNING) << "Gap in validated ledger stream " << mPubLedger->getLedgerSeq() << " - " <<
+			mValidLedger->getLedgerSeq() - 1;
 		mPubLedger = mValidLedger;
 		mPubLedgers.push_back(mValidLedger);
 	}
@@ -613,11 +618,11 @@ void LedgerMaster::tryPublish()
 			{
 				if (theApp->getMasterLedgerAcquire().isFailure(hash))
 				{
-					cLog(lsFATAL) << "Unable to acquire a recent validated ledger";
+					cLog(lsWARNING) << "Unable to acquire a recent validated ledger";
 				}
 				else
 				{
-					LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(hash, 0);
+					LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(hash, seq);
 					if (!acq->isDone())
 					{
 						acq->setAccept();

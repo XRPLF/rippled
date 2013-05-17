@@ -283,7 +283,7 @@ public:
 	void mapComplete(const uint256& hash, SHAMap::ref map);
 	bool stillNeedTXSet(const uint256& hash);
 	void makeFetchPack(Job&, boost::weak_ptr<Peer> peer, boost::shared_ptr<ripple::TMGetObjectByHash> request,
-		Ledger::pointer wantLedger, Ledger::pointer haveLedger);
+		Ledger::pointer wantLedger, Ledger::pointer haveLedger, uint32 uUptime);
 	bool shouldFetchPack(uint32 seq);
 	void gotFetchPack(bool progress, uint32 seq);
 	void addFetchPack(const uint256& hash, boost::shared_ptr< std::vector<unsigned char> >& data);
