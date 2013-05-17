@@ -29,14 +29,12 @@ void AccountItems::fillItems(const uint160& accountID, Ledger::ref ledger)
 		SLE::pointer ownerDir	= ledger->getDirNode(currentIndex);
 		if (!ownerDir) return;
 
-		STVector256 svOwnerNodes	= ownerDir->getFieldV256(sfIndexes);
-
-		BOOST_FOREACH(uint256& uNode, svOwnerNodes.peekValue())
+		BOOST_FOREACH(const uint256& uNode, ownerDir->getFieldV256(sfIndexes).peekValue())
 		{
 			SLE::pointer sleCur	= ledger->getSLEi(uNode);
 
 			AccountItem::pointer item = mOfType->makeItem(accountID, sleCur);
-			if(item)
+			if (item)
 			{
 				mItems.push_back(item);
 			}

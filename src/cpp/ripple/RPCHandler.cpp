@@ -1148,9 +1148,6 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 
 	AccountState::pointer	as		= mNetOps->getAccountState(lpLedger, raAccount);
 
-	if (lpLedger->isImmutable())
-		MasterLockHolder.unlock();
-
 	if (as)
 	{
 		Json::Value&	jsonLines = (jvResult["offers"] = Json::arrayValue);
@@ -1160,15 +1157,10 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 		{
 			Offer* offer=(Offer*)item.get();
 
-			STAmount takerPays	= offer->getTakerPays();
-			STAmount takerGets	= offer->getTakerGets();
-			//RippleAddress account	= offer->getAccount();
-
 			Json::Value&	obj	= jsonLines.append(Json::objectValue);
 
-			//obj["account"]		= account.humanAccountID();
-			takerPays.setJson(obj["taker_pays"]);
-			takerGets.setJson(obj["taker_gets"]);
+			offer->getTakerPays().setJson(obj["taker_pays"]);
+			offer->getTakerGets().setJson(obj["taker_gets"]);
 			obj["seq"]				= offer->getSeq();
 
 		}

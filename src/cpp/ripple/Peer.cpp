@@ -1608,7 +1608,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		SHAMapNode mn(packet.nodeids(i).data(), packet.nodeids(i).size());
 		if(!mn.isValid())
 		{
-			cLog(lsWARNING) << "Request for invalid node";
+			cLog(lsWARNING) << "Request for invalid node: " << logMe;
 			punishPeer(LT_InvalidRequest);
 			return;
 		}
