@@ -438,7 +438,7 @@ void Peer::processReadBuffer()
 
 	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtPEER, "Peer::read"));
 
-	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+	ScopedLock sl(theApp->getMasterLock());
 
 	// If connected and get a mtHELLO or if not connected and get a non-mtHELLO, wrong message was sent.
 	if (mHelloed == (type == ripple::mtHELLO))
@@ -601,7 +601,7 @@ void Peer::processReadBuffer()
 				event->reName("Peer::getledger");
 				ripple::TMGetLedger msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recvGetLedger(msg);
+					recvGetLedger(msg, sl);
 				else
 					cLog(lsWARNING) << "parse error: " << type;
 			}
@@ -866,7 +866,6 @@ static void checkTransaction(Job&, int flags, SerializedTransaction::pointer stx
 
 void Peer::recvTransaction(ripple::TMTransaction& packet)
 {
-
 	Transaction::pointer tx;
 #ifndef TRUST_NETWORK
 	try
@@ -1417,7 +1416,7 @@ void Peer::recvStatus(ripple::TMStatusChange& packet)
 		mMaxLedger = packet.lastseq();
 }
 
-void Peer::recvGetLedger(ripple::TMGetLedger& packet)
+void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHolder)
 {
 	SHAMap::pointer map;
 	ripple::TMLedgerData reply;
@@ -1543,6 +1542,13 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 					Log(lsWARNING) << "Ledger has wrong sequence";
 			}
 			return;
+		}
+
+		if (ledger->isImmutable())
+			MasterLockHolder.unlock();
+		else
+		{
+			cLog(lsWARNING) << "Request for data from mutable ledger";
 		}
 
 		// Fill out the reply
