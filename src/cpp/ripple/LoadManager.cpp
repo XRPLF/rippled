@@ -285,6 +285,12 @@ bool LoadFeeTrack::raiseLocalFee()
 	return true;
 }
 
+bool LoadFeeTrack::isLoaded()
+{
+	boost::mutex::scoped_lock sl(mLock);
+	return (raiseCount != 0) || (mLocalTxnLoadFee != lftNormalFee);
+}
+
 bool LoadFeeTrack::lowerLocalFee()
 {
 	boost::mutex::scoped_lock sl(mLock);

@@ -2004,9 +2004,16 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 //	jvResult["nodes"]	= Json::Value(Json::arrayValue);
 }
 
-void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_ptr<ripple::TMGetObjectByHash> request,
+void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer,
+	boost::shared_ptr<ripple::TMGetObjectByHash> request,
 	Ledger::pointer wantLedger, Ledger::pointer haveLedger)
 {
+	if (theApp->getFeeTrack().isLoaded())
+	{
+		cLog(lsINFO) << "Too busy to make fetch pack";
+		return;
+	}
+
 	try
 	{
 		Peer::pointer peer = wPeer.lock();
