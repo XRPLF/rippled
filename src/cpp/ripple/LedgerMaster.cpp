@@ -111,7 +111,7 @@ Ledger::pointer LedgerMaster::closeLedger(bool recover)
 			{
 				TransactionEngineParams tepFlags = tapOPEN_LEDGER;
 
-				if (theApp->isNew(it->first.getTXID(), SF_SIGGOOD));
+				if (theApp->isNew(it->first.getTXID(), SF_SIGGOOD))
 					tepFlags = static_cast<TransactionEngineParams>(tepFlags | tapNO_CHECK_SIGN);
 
 				bool didApply;
