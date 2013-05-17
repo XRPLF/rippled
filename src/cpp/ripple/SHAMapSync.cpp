@@ -502,7 +502,7 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool incl
 					if (!have || !have->hasInnerNode(*next, childHash))
 						stack.push(next);
 				}
-				if (includeLeaves && (!have || !have->hasLeafNode(node->getTag(), childHash)))
+				else if (includeLeaves && (!have || !have->hasLeafNode(node->getTag(), childHash)))
 				{
 					Serializer s;
 					node->addRaw(s, snfPREFIX);
