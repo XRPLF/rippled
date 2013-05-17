@@ -131,8 +131,8 @@ public:
 	uint160 getFieldAccount160(SField::ref field) const;
 	std::vector<unsigned char> getFieldVL(SField::ref field) const;
 	const STAmount& getFieldAmount(SField::ref field) const;
-	STPathSet getFieldPathSet(SField::ref field) const;
-	STVector256 getFieldV256(SField::ref field) const;
+	const STPathSet& getFieldPathSet(SField::ref field) const;
+	const STVector256& getFieldV256(SField::ref field) const;
 
 	void setFieldU8(SField::ref field, unsigned char);
 	void setFieldU16(SField::ref field, uint16);
