@@ -1911,7 +1911,7 @@ void Peer::doFetchPack(const boost::shared_ptr<ripple::TMGetObjectByHash>& packe
 	}
 	theApp->getJobQueue().addJob(jtPACK, "MakeFetchPack",
 		BIND_TYPE(&NetworkOPs::makeFetchPack, &theApp->getOPs(), P_1,
-			boost::weak_ptr<Peer>(shared_from_this()), packet, wantLedger, haveLedger));
+			boost::weak_ptr<Peer>(shared_from_this()), packet, wantLedger, haveLedger, upTime()));
 }
 
 bool Peer::hasProto(int version)

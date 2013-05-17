@@ -2006,8 +2006,13 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 
 void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer,
 	boost::shared_ptr<ripple::TMGetObjectByHash> request,
-	Ledger::pointer wantLedger, Ledger::pointer haveLedger)
+	Ledger::pointer wantLedger, Ledger::pointer haveLedger, uint32 uUptime)
 {
+	if (upTime() > (uUptime + 1))
+	{
+		cLog(lsINFO) << "Fetch pack request got stale";
+		return;
+	}
 	if (theApp->getFeeTrack().isLoaded())
 	{
 		cLog(lsINFO) << "Too busy to make fetch pack";
