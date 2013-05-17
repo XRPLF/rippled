@@ -2054,7 +2054,7 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer,
 				newObj.set_ledgerseq(lSeq);
 			}
 
-			if (wantLedger->getAccountHash().isNonZero() && (pack.size() < 768))
+			if (wantLedger->getAccountHash().isNonZero() && (pack.size() < 512))
 			{
 				pack = wantLedger->peekTransactionMap()->getFetchPack(NULL, true, 256);
 				BOOST_FOREACH(SHAMap::fetchPackEntry_t& node, pack)
@@ -2065,11 +2065,11 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer,
 					newObj.set_ledgerseq(lSeq);
 				}
 			}
-			if (reply.objects().size() >= 512)
+			if (reply.objects().size() >= 256)
 				break;
 			haveLedger = wantLedger;
 			wantLedger = getLedgerByHash(haveLedger->getParentHash());
-		} while (wantLedger);
+		} while (wantLedger && (upTime() <= (uUptime + 1)));
 
 		cLog(lsINFO) << "Built fetch pack with " << reply.objects().size() << " nodes";
 		PackedMessage::pointer msg = boost::make_shared<PackedMessage>(reply, ripple::mtGET_OBJECTS);
