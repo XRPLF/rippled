@@ -16,10 +16,22 @@
 */
 //==============================================================================
 
-/**	Add this to get the @ref ripple_basics module.
+/**	Include this to get the @ref ripple_basics module.
 
-    @file ripple_basics.cpp
+    @file ripple_basics.h
     @ingroup ripple_basics
 */
 
-#include "ripple_basics.h"
+/**	Basic classes.
+
+	This module provides utility classes and types used in the Ripple system.
+
+	@defgroup ripple_basics
+*/
+
+#ifndef RIPPLE_BASICS_H
+#define RIPPLE_BASICS_H
+
+
+
+#endif

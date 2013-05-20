@@ -167,6 +167,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="modules\ripple_basics\ripple_basics.cpp" />
     <ClCompile Include="src\cpp\database\database.cpp" />
     <ClCompile Include="src\cpp\database\sqlite3.c" />
     <ClCompile Include="src\cpp\database\SqliteDatabase.cpp" />
@@ -644,6 +645,7 @@
   <ItemGroup>
     <ClInclude Include="database\sqlite3.h" />
     <ClInclude Include="database\sqlite3ext.h" />
+    <ClInclude Include="modules\ripple_basics\ripple_basics.h" />
     <ClInclude Include="src\cpp\database\database.h" />
     <ClInclude Include="src\cpp\database\SqliteDatabase.h" />
     <ClInclude Include="src\cpp\json\autolink.h">
