@@ -26,6 +26,7 @@ protected:
 	TransactionEngine mEngine;
 
 	Ledger::pointer mCurrentLedger;		// The ledger we are currently processiong
+	Ledger::pointer mCurrentSnapshot;	// Snapshot of the current ledger
 	Ledger::pointer mFinalizedLedger;	// The ledger that most recently closed
 	Ledger::pointer mValidLedger;		// The highest-sequence ledger we have fully accepted
 	Ledger::pointer mPubLedger;			// The last ledger we have published
@@ -73,6 +74,9 @@ public:
 
 	// The current ledger is the ledger we believe new transactions should go in
 	Ledger::ref getCurrentLedger()		{ return mCurrentLedger; }
+
+	// An immutable snapshot of the current ledger
+	Ledger::ref getCurrentSnapshot();
 
 	// The finalized ledger is the last closed/accepted ledger
 	Ledger::ref getClosedLedger()		{ return mFinalizedLedger; }

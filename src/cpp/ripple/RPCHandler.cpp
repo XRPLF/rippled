@@ -177,8 +177,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 				return rpcError(rpcINVALID_PARAMS);
 			}
 
-			Ledger::pointer lSnapshot = boost::make_shared<Ledger>(
-				boost::ref(*mNetOps->getCurrentLedger()), false);
+			Ledger::pointer lSnapshot = mNetOps->getCurrentSnapshot();
 			{
 				ScopedUnlock su(theApp->getMasterLock());
 				bool bValid;
@@ -1031,6 +1030,9 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 	if (!lpLedger)
 		return jvResult;
 
+	if (lpLedger->isImmutable())
+		MasterLockHolder.unlock();
+
 	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
 
@@ -1064,9 +1066,6 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 	}
 
 	AccountState::pointer	as		= mNetOps->getAccountState(lpLedger, raAccount);
-
-	if (lpLedger->isImmutable())
-		MasterLockHolder.unlock();
 
 	if (as)
 	{
@@ -1123,6 +1122,9 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 
 	if (!lpLedger)
 		return jvResult;
+
+	if (lpLedger->isImmutable())
+		MasterLockHolder.unlock();
 
 	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -1852,6 +1854,9 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest, int& cost, ScopedLock& M
 	if (!lpLedger)
 		return jvResult;
 
+	if (lpLedger->isImmutable())
+		MasterLockHolder.unlock();
+
 	bool	bFull			= jvRequest.isMember("full") && jvRequest["full"].asBool();
 	bool	bTransactions	= jvRequest.isMember("transactions") && jvRequest["transactions"].asBool();
 	bool	bAccounts		= jvRequest.isMember("accounts") && jvRequest["accounts"].asBool();
@@ -1860,15 +1865,6 @@ Json::Value RPCHandler::doLedger(Json::Value jvRequest, int& cost, ScopedLock& M
 								| (bExpand ? LEDGER_JSON_EXPAND : 0)
 								| (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
 								| (bAccounts ? LEDGER_JSON_DUMP_STATE : 0);
-
-	if ((bFull || bAccounts) && !lpLedger->isImmutable())
-	{ // For full or accounts, it's cheaper to snapshot
-		lpLedger = boost::make_shared<Ledger>(*lpLedger, false);
-		assert(lpLedger->isImmutable());
-	}
-
-	if (lpLedger->isImmutable())
-		MasterLockHolder.unlock();
 
 	Json::Value ret(Json::objectValue);
 	lpLedger->addJson(ret, iOptions);
@@ -2612,7 +2608,7 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 
 	switch (iLedgerIndex) {
 	case LEDGER_CURRENT:
-		lpLedger		= mNetOps->getCurrentLedger();
+		lpLedger		= mNetOps->getCurrentSnapshot();
 		iLedgerIndex	= lpLedger->getLedgerSeq();
 		break;
 

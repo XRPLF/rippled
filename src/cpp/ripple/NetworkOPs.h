@@ -183,6 +183,7 @@ public:
 	Ledger::ref		getClosedLedger()						{ return mLedgerMaster->getClosedLedger(); }
 	Ledger::ref		getValidatedLedger()					{ return mLedgerMaster->getValidatedLedger(); }
 	Ledger::ref		getCurrentLedger()						{ return mLedgerMaster->getCurrentLedger(); }
+	Ledger::ref		getCurrentSnapshot()					{ return mLedgerMaster->getCurrentSnapshot(); }
 	Ledger::pointer	getLedgerByHash(const uint256& hash)	{ return mLedgerMaster->getLedgerByHash(hash); }
 	Ledger::pointer	getLedgerBySeq(const uint32 seq);
 	void			missingNodeInLedger(const uint32 seq);
