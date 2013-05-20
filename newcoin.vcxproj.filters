@@ -86,6 +86,9 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="1. Ripple Modules\basics\types">
+      <UniqueIdentifier>{1b463564-35d9-43d1-b3a0-21b344a3a1c7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -430,17 +433,8 @@
     <ClCompile Include="src\cpp\ripple\AccountState.cpp">
       <Filter>1. Ripple Modules\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Amount.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\AmountRound.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\Application.cpp">
       <Filter>1. Ripple Modules\main</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\BitcoinUtil.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\CallRPC.cpp">
       <Filter>1. Ripple Modules\client</Filter>
@@ -456,18 +450,6 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ConnectionPool.cpp">
       <Filter>1. Ripple Modules\network</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\DeterministicKeys.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ECIES.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\FieldNames.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\HashedObject.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\InstanceCounter.cpp">
       <Filter>1. Ripple Modules\main</Filter>
@@ -516,9 +498,6 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\PeerDoor.cpp">
       <Filter>1. Ripple Modules\network</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\PackedMessage.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RippleCalc.cpp">
       <Filter>1. Ripple Modules\ledger</Filter>
@@ -589,9 +568,6 @@
     <ClCompile Include="src\cpp\ripple\HTTPRequest.cpp">
       <Filter>1. Ripple Modules\main</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ParameterTable.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\Log.cpp">
       <Filter>1. Ripple Modules\main</Filter>
     </ClCompile>
@@ -606,15 +582,6 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\NetworkOPs.cpp">
       <Filter>1. Ripple Modules\network</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ParseSection.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ProofOfWork.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\PlatRand.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCDoor.cpp">
       <Filter>1. Ripple Modules\client</Filter>
@@ -652,27 +619,6 @@
     <ClCompile Include="src\cpp\ripple\FeatureTable.cpp">
       <Filter>1. Ripple Modules\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\RangeSet.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\rfc1751.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\SHAMap.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\SHAMapDiff.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\SHAMapNodes.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\SHAMapSync.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\utils.cpp">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\ValidationCollection.cpp">
       <Filter>1. Ripple Modules\network</Filter>
     </ClCompile>
@@ -681,6 +627,63 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\WSDoor.cpp">
       <Filter>1. Ripple Modules\network</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\Amount.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\AmountRound.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\BitcoinUtil.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\DeterministicKeys.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ECIES.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\FieldNames.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\HashedObject.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\PackedMessage.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ParameterTable.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ParseSection.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\PlatRand.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ProofOfWork.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\RangeSet.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\rfc1751.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\SHAMap.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\SHAMapDiff.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\SHAMapNodes.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\SHAMapSync.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\utils.cpp">
+      <Filter>1. Ripple Modules\basics\types</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1059,18 +1062,6 @@
     <ClInclude Include="src\cpp\ripple\AutoSocket.h">
       <Filter>1. Ripple Modules\network</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\bignum.h">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\base58.h">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\BigNum64.h">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\BitcoinUtil.h">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\CallRPC.h">
       <Filter>1. Ripple Modules\client</Filter>
     </ClInclude>
@@ -1086,20 +1077,8 @@
     <ClInclude Include="src\cpp\ripple\ConnectionPool.h">
       <Filter>1. Ripple Modules\network</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\FieldNames.h">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\HashedObject.h">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\HashPrefixes.h">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\InstanceCounter.h">
       <Filter>1. Ripple Modules\main</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\key.h">
-      <Filter>1. Ripple Modules\basics</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\JobQueue.h">
       <Filter>1. Ripple Modules\main</Filter>
@@ -1145,9 +1124,6 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Peer.h">
       <Filter>1. Ripple Modules\network</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\PackedMessage.h">
-      <Filter>1. Ripple Modules\basics</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RippleCalc.h">
       <Filter>1. Ripple Modules\ledger</Filter>
@@ -1209,9 +1185,6 @@
     <ClInclude Include="src\cpp\ripple\HTTPRequest.h">
       <Filter>1. Ripple Modules\main</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ParameterTable.h">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\Log.h">
       <Filter>1. Ripple Modules\main</Filter>
     </ClInclude>
@@ -1223,12 +1196,6 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\NetworkOPs.h">
       <Filter>1. Ripple Modules\network</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ParseSection.h">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ProofOfWork.h">
-      <Filter>1. Ripple Modules\basics</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPC.h">
       <Filter>1. Ripple Modules\client</Filter>
@@ -1244,9 +1211,6 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPCSub.h">
       <Filter>1. Ripple Modules\client</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\types.h">
-      <Filter>1. Ripple Modules\basics</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\SerializedLedger.h">
       <Filter>1. Ripple Modules\ledger\serialization</Filter>
@@ -1272,24 +1236,6 @@
     <ClInclude Include="src\cpp\ripple\FeatureTable.h">
       <Filter>1. Ripple Modules\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\RangeSet.h">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\rfc1751.h">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\TaggedCache.h">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\SHAMap.h">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\SHAMapSync.h">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\utils.h">
-      <Filter>1. Ripple Modules\basics</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\ValidationCollection.h">
       <Filter>1. Ripple Modules\network</Filter>
     </ClInclude>
@@ -1304,6 +1250,63 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\WSConnection.h">
       <Filter>1. Ripple Modules\network</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\base58.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\bignum.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\BigNum64.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\BitcoinUtil.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\FieldNames.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\HashedObject.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\HashPrefixes.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\key.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\PackedMessage.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ParameterTable.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ParseSection.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ProofOfWork.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\RangeSet.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\rfc1751.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\SHAMap.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\SHAMapSync.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\TaggedCache.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\types.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\utils.h">
+      <Filter>1. Ripple Modules\basics\types</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
