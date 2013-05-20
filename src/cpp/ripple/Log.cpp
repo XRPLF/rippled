@@ -5,6 +5,7 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 
 #include "../websocketpp/src/logger/logger.hpp"
 
@@ -171,7 +172,7 @@ LogSeverity Log::stringToSeverity(const std::string& s)
 	return lsINVALID;
 }
 
-void Log::setLogFile(boost::filesystem::path path)
+void Log::setLogFile(boost::filesystem::path const& path)
 {
 	std::ofstream* newStream = new std::ofstream(path.c_str(), std::fstream::app);
 	if (!newStream->good())

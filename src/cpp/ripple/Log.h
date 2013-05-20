@@ -6,7 +6,13 @@
 #include <limits>
 
 #include <boost/thread/recursive_mutex.hpp>
-#include <boost/filesystem.hpp>
+
+// Forward declaration
+namespace boost {
+	namespace filesystem {
+		class path;
+	}
+}
 
 // Ensure that we don't get value.h without writer.h
 #include "../json/json.h"
@@ -100,7 +106,7 @@ public:
 
 	static LogSeverity getMinSeverity();
 	static void setMinSeverity(LogSeverity, bool all);
-	static void setLogFile(boost::filesystem::path);
+	static void setLogFile(boost::filesystem::path const&);
 	static std::string rotateLog(void);
 };
 
