@@ -1071,9 +1071,6 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 	{
 		jvResult["account"]	= raAccount.humanAccountID();
 
-		// XXX This is wrong, we do access the current ledger and do need to worry about changes.
-		// We access a committed ledger and need not worry about changes.
-
 		AccountItems rippleLines(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new RippleState()));
 
 		Json::Value&	jsonLines = (jvResult["lines"] = Json::arrayValue);
@@ -1083,9 +1080,9 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 
 			if (!raPeer.isValid() || raPeer.getAccountID() == line->getAccountIDPeer())
 			{
-				STAmount		saBalance	= line->getBalance();
-				STAmount		saLimit		= line->getLimit();
-				STAmount		saLimitPeer	= line->getLimitPeer();
+				const STAmount&		saBalance	= line->getBalance();
+				const STAmount&		saLimit		= line->getLimit();
+				const STAmount&		saLimitPeer	= line->getLimitPeer();
 
 				Json::Value&	jPeer	= jsonLines.append(Json::objectValue);
 
@@ -2610,6 +2607,7 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 	case LEDGER_CURRENT:
 		lpLedger		= mNetOps->getCurrentSnapshot();
 		iLedgerIndex	= lpLedger->getLedgerSeq();
+		assert(lpLedger->isImmutable() && !lpLedger->isClosed());
 		break;
 
 	case LEDGER_CLOSED:
