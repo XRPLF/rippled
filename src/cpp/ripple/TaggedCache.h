@@ -63,16 +63,21 @@ protected:
 	cache_type	mCache;			// Hold strong reference to recent objects
 	int			mLastSweep;
 
+	uint64		mHits, mMisses;
+
 public:
 	TaggedCache(const char *name, int size, int age)
-		: mName(name), mTargetSize(size), mTargetAge(age), mCacheCount(0), mLastSweep(upTime()) { ; }
+		: mName(name), mTargetSize(size), mTargetAge(age), mCacheCount(0), mLastSweep(upTime()),
+		mHits(0), mMisses(0)
+	{ ; }
 
 	int getTargetSize() const;
 	int getTargetAge() const;
 
 	int getCacheSize();
 	int getTrackSize();
-	int getSweepAge();
+	float getHitRate();
+	void clearStats();
 
 	void setTargetSize(int size);
 	void setTargetAge(int age);
@@ -127,6 +132,19 @@ template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getTra
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	return mCache.size();
+}
+
+template<typename c_Key, typename c_Data> float TaggedCache<c_Key, c_Data>::getHitRate()
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	return (static_cast<float>(mHits) * 100) / (1.0 + mHits + mMisses);
+}
+
+template<typename c_Key, typename c_Data> float TaggedCache<c_Key, c_Data>::clearStats()
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	mHits = 0;
+	mMisses = 0;
 }
 
 template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::clear()
@@ -302,20 +320,27 @@ boost::shared_ptr<c_Data> TaggedCache<c_Key, c_Data>::fetch(const key_type& key)
 
 	cache_iterator cit = mCache.find(key);
 	if (cit == mCache.end())
+	{
+		++mMisses;
 		return data_ptr();
+	}
 	cache_entry& entry = cit->second;
 	entry.touch();
 
 	if (entry.isCached())
+	{
+		++mHits;
 		return entry.ptr;
+	}
 
 	entry.ptr = entry.lock();
 	if (entry.isCached())
-	{
+	{ // independent of cache size, so not counted as a hit
 		++mCacheCount;
 		return entry.ptr;
 	}
 	mCache.erase(cit);
+	++mMisses;
 	return data_ptr();
 }
 
