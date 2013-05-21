@@ -28,7 +28,7 @@ public:
 	RippleAddress();
 
 	// For public and private key, checks if they are legal.
-	bool isValid() const;
+	bool isValid() const			{ return mIsValid; }
 
 	void clear();
 	bool isSet() const;
