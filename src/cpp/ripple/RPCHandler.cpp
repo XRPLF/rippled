@@ -2304,6 +2304,11 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest, int& cost, ScopedLock
 
 	ret["write_load"] = theApp->getHashedObjectStore().getWriteLoad();
 
+	ret["SLE_hit_rate"] = theApp->getSLECache().getHitRate();
+	ret["node_hit_rate"] = theApp->getHashedObjectStore().getCacheHitRate();
+	ret["ledger_hit_rate"] = theApp->getLedgerMaster().getCacheHitRate();
+	ret["AL_hit_rate"] = AcceptedLedger::getCacheHitRate();
+
 	std::string uptime;
 	int s = upTime();
 	textTime(uptime, s, "year", 365*24*60*60);

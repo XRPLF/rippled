@@ -65,7 +65,9 @@ public:
 
 	HashedObjectStore(int cacheSize, int cacheAge);
 
-	bool isLevelDB()	{ return mLevelDB; }
+	bool isLevelDB()		{ return mLevelDB; }
+
+	float getCacheHitRate()	{ return mCache.getHitRate(); }
 
 	bool store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
 		const uint256& hash)

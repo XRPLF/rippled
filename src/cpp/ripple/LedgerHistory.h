@@ -15,6 +15,7 @@ public:
 	void addLedger(Ledger::pointer ledger);
 	void addAcceptedLedger(Ledger::pointer ledger, bool fromConsensus);
 
+	float getCacheHitRate() { return mLedgersByHash.getHitRate(); }
 	uint256 getLedgerHash(uint32 index);
 	Ledger::pointer getLedgerBySeq(uint32 index);
 	Ledger::pointer getLedgerByHash(const uint256& hash);
