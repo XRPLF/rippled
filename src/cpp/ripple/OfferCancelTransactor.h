@@ -1,3 +1,6 @@
+#ifndef OFFERCANCELTRANSACTOR_H
+#define OFFERCANCELTRANSACTOR_H
+
 #include "Transactor.h"
 
 class OfferCancelTransactor : public Transactor
@@ -7,5 +10,6 @@ public:
 
 	TER doApply();
 };
+#endif
 
 // vim:ts=4
