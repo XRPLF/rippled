@@ -24,6 +24,12 @@
 
 #include "ripple_ledger.h"
 
+#ifdef _MSC_VER
+#pragma warning (push)
+#pragma warning (disable: 4018) // signed/unsigned mismatch
+#pragma warning (disable: 4244) // conversion, possible loss of data
+#endif
+
 #if 0
 #include "src/cpp/ripple/Contract.cpp"
 #include "src/cpp/ripple/Operation.cpp"
@@ -48,4 +54,8 @@
 #include "src/cpp/ripple/OrderBookDB.cpp"
 #include "src/cpp/ripple/RippleCalc.cpp"
 #include "src/cpp/ripple/RippleState.cpp"
+#endif
+
+#ifdef _MSC_VER
+#pragma warning (pop)
 #endif
