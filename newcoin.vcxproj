@@ -962,7 +962,12 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\UniqueNodeList.cpp" />
     <ClCompile Include="src\cpp\ripple\UpdateTables.cpp" />
-    <ClCompile Include="src\cpp\ripple\utils.cpp" />
+    <ClCompile Include="src\cpp\ripple\utils.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\ValidationCollection.cpp" />
     <ClCompile Include="src\cpp\ripple\Wallet.cpp" />
     <ClCompile Include="src\cpp\ripple\WalletAddTransactor.cpp" />

@@ -544,9 +544,6 @@
     <ClCompile Include="src\cpp\ripple\Serializer.cpp">
       <Filter>1. Modules\ripple_ledger\serialization</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ValidationCollection.cpp">
-      <Filter>1. Modules\ripple_net</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\WSDoor.cpp">
       <Filter>1. Modules\ripple_net</Filter>
     </ClCompile>
@@ -702,6 +699,9 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCServer.cpp">
       <Filter>1. Modules\ripple_client\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ValidationCollection.cpp">
+      <Filter>1. Modules\ripple_main</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1170,9 +1170,6 @@
     <ClInclude Include="src\cpp\ripple\Serializer.h">
       <Filter>1. Modules\ripple_ledger\serialization</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ValidationCollection.h">
-      <Filter>1. Modules\ripple_net</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\WSDoor.h">
       <Filter>1. Modules\ripple_net</Filter>
     </ClInclude>
@@ -1334,6 +1331,9 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPCServer.h">
       <Filter>1. Modules\ripple_client\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ValidationCollection.h">
+      <Filter>1. Modules\ripple_main</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
