@@ -137,7 +137,7 @@ template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getTra
 template<typename c_Key, typename c_Data> float TaggedCache<c_Key, c_Data>::getHitRate()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	return (static_cast<float>(mHits) * 100) / (1.0 + mHits + mMisses);
+	return (static_cast<float>(mHits) * 100) / (1.0f + mHits + mMisses);
 }
 
 template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::clearStats()
