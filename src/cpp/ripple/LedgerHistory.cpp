@@ -1,14 +1,4 @@
 
-#include "LedgerHistory.h"
-
-#include <string>
-
-#include <boost/bind.hpp>
-#include <boost/thread.hpp>
-
-#include "Config.h"
-#include "Application.h"
-
 #ifndef CACHED_LEDGER_NUM
 #define CACHED_LEDGER_NUM 96
 #endif

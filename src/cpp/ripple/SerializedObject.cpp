@@ -1,18 +1,4 @@
 
-#include "SerializedObject.h"
-
-#include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/bind.hpp>
-#include <boost/test/unit_test.hpp>
-
-#include "../json/writer.h"
-
-#include "Log.h"
-#include "LedgerFormats.h"
-#include "TransactionFormats.h"
-#include "SerializedTransaction.h"
-
 DECLARE_INSTANCE(SerializedObject);
 DECLARE_INSTANCE(SerializedArray);
 

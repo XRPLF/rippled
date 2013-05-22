@@ -1,13 +1,4 @@
 
-#include "SerializedTransaction.h"
-
-#include <boost/foreach.hpp>
-#include <boost/test/unit_test.hpp>
-
-#include "Application.h"
-#include "Log.h"
-#include "HashPrefixes.h"
-
 DECLARE_INSTANCE(SerializedTransaction);
 
 SerializedTransaction::SerializedTransaction(TransactionType type) : STObject(sfTransaction), mType(type),

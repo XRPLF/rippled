@@ -1,11 +1,4 @@
 
-#include "LedgerEntrySet.h"
-
-#include <boost/bind.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/foreach.hpp>
-
-#include "Log.h"
 
 DECLARE_INSTANCE(LedgerEntrySetEntry);
 DECLARE_INSTANCE(LedgerEntrySet)

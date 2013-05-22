@@ -1,4 +1,3 @@
-#include "Offer.h"
 
 AccountItem::pointer Offer::makeItem(const uint160& ,SerializedLedgerEntry::ref ledgerEntry)
 {

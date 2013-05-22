@@ -1,5 +1,3 @@
-#include "RegularKeySetTransactor.h"
-#include "Log.h"
 
 uint64 RegularKeySetTransactor::calculateBaseFee()
 {

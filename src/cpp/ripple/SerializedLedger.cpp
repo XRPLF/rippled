@@ -1,9 +1,3 @@
-#include "SerializedLedger.h"
-
-#include <boost/format.hpp>
-
-#include "Ledger.h"
-#include "Log.h"
 
 DECLARE_INSTANCE(SerializedLedgerEntry)
 

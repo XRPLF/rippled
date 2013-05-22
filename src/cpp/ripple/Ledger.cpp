@@ -1,27 +1,4 @@
 
-#include <iostream>
-#include <fstream>
-
-#include <boost/lexical_cast.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/test/unit_test.hpp>
-
-#include "../json/writer.h"
-
-#include "../database/SqliteDatabase.h"
-
-#include "Application.h"
-#include "Ledger.h"
-#include "utils.h"
-#include "ripple.pb.h"
-#include "PackedMessage.h"
-#include "Config.h"
-#include "BitcoinUtil.h"
-#include "Wallet.h"
-#include "LedgerTiming.h"
-#include "HashPrefixes.h"
-#include "Log.h"
-
 DECLARE_INSTANCE(Ledger);
 
 Ledger::Ledger(const RippleAddress& masterID, uint64 startAmount) : mTotCoins(startAmount), mLedgerSeq(1),

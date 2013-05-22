@@ -1,13 +1,4 @@
 
-#include "LedgerMaster.h"
-
-#include <boost/foreach.hpp>
-
-#include "Application.h"
-#include "RippleAddress.h"
-#include "Log.h"
-#include "PFRequest.h"
-
 #define MIN_VALIDATION_RATIO	150		// 150/256ths of validations of previous ledger
 #define MAX_LEDGER_GAP			100		// Don't catch up more than 100 ledgers  (cannot exceed 256)
 

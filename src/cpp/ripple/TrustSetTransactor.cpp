@@ -1,6 +1,3 @@
-#include "Application.h"
-
-#include "TrustSetTransactor.h"
 
 TER TrustSetTransactor::doApply()
 {

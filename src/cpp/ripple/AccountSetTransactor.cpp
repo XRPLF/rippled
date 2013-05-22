@@ -1,5 +1,3 @@
-#include "AccountSetTransactor.h"
-#include "Config.h"
 
 TER AccountSetTransactor::doApply()
 {

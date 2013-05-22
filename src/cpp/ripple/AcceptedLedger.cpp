@@ -1,6 +1,3 @@
-#include "AcceptedLedger.h"
-
-#include <boost/foreach.hpp>
 
 TaggedCache<uint256, AcceptedLedger> AcceptedLedger::ALCache("AcceptedLedger", 4, 60);
 

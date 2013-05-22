@@ -22,14 +22,99 @@
     @ingroup ripple_ledger
 */
 
-#include "ripple_ledger.h"
-
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
 //#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
 #pragma warning (disable: 4018) // signed/unsigned mismatch
 #pragma warning (disable: 4244) // conversion, possible loss of data
 #endif
+
+#include "ripple_ledger.h"
+
+#include <algorithm>
+#include <cassert>
+#include <fstream>
+#include <iostream>
+#include <openssl/ripemd.h>
+#include <openssl/sha.h>
+#include <string>
+
+#include <boost/algorithm/string.hpp>
+#include <boost/bind.hpp>
+#include <boost/foreach.hpp>
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/pointer_cast.hpp>
+#include <boost/ref.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
+#include <boost/test/unit_test.hpp>
+#include <boost/thread.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
+#include <boost/unordered_set.hpp>
+
+#include "src/cpp/database/SqliteDatabase.h"
+#include "src/cpp/json/writer.h"
+
+#include "src/cpp/ripple/AcceptedLedger.h"
+#include "src/cpp/ripple/AccountItems.h"
+#include "src/cpp/ripple/AccountSetTransactor.h"
+#include "src/cpp/ripple/AccountState.h"
+#include "src/cpp/ripple/Application.h"
+#include "src/cpp/ripple/BitcoinUtil.h"
+#include "src/cpp/ripple/ChangeTransactor.h"
+#include "src/cpp/ripple/Config.h"
+#include "src/cpp/ripple/Contract.h"
+#include "src/cpp/ripple/FeatureTable.h"
+#include "src/cpp/ripple/FieldNames.h"
+#include "src/cpp/ripple/HashPrefixes.h"
+#include "src/cpp/ripple/Interpreter.h"
+#include "src/cpp/ripple/key.h"
+#include "src/cpp/ripple/Ledger.h"
+#include "src/cpp/ripple/LedgerAcquire.h"
+#include "src/cpp/ripple/LedgerConsensus.h"
+#include "src/cpp/ripple/LedgerEntrySet.h"
+#include "src/cpp/ripple/LedgerFormats.h"
+#include "src/cpp/ripple/LedgerHistory.h"
+#include "src/cpp/ripple/LedgerMaster.h"
+#include "src/cpp/ripple/LedgerProposal.h"
+#include "src/cpp/ripple/LedgerTiming.h"
+#include "src/cpp/ripple/Log.h"
+#include "src/cpp/ripple/NetworkOPs.h"
+#include "src/cpp/ripple/Offer.h"
+#include "src/cpp/ripple/OfferCancelTransactor.h"
+#include "src/cpp/ripple/OfferCreateTransactor.h"
+#include "src/cpp/ripple/Operation.h"
+#include "src/cpp/ripple/OrderBook.h"
+#include "src/cpp/ripple/OrderBookDB.h"
+#include "src/cpp/ripple/PackedMessage.h"
+#include "src/cpp/ripple/PaymentTransactor.h"
+#include "src/cpp/ripple/PFRequest.h"
+#include "src/cpp/ripple/RegularKeySetTransactor.h"
+#include "src/cpp/ripple/ripple.pb.h"
+#include "src/cpp/ripple/RippleAddress.h"
+#include "src/cpp/ripple/RippleCalc.h"
+#include "src/cpp/ripple/RippleState.h"
+#include "src/cpp/ripple/SerializedLedger.h"
+#include "src/cpp/ripple/SerializedObject.h"
+#include "src/cpp/ripple/SerializedTransaction.h"
+#include "src/cpp/ripple/SerializedTypes.h"
+#include "src/cpp/ripple/SerializedValidation.h"
+#include "src/cpp/ripple/Serializer.h"
+#include "src/cpp/ripple/SHAMapSync.h"
+#include "src/cpp/ripple/Transaction.h"
+#include "src/cpp/ripple/TransactionEngine.h"
+#include "src/cpp/ripple/TransactionErr.h"
+#include "src/cpp/ripple/TransactionFormats.h"
+#include "src/cpp/ripple/TransactionMaster.h"
+#include "src/cpp/ripple/TransactionMeta.h"
+#include "src/cpp/ripple/TransactionQueue.h"
+#include "src/cpp/ripple/Transactor.h"
+#include "src/cpp/ripple/TrustSetTransactor.h"
+#include "src/cpp/ripple/utils.h"
+#include "src/cpp/ripple/ValidationCollection.h"
+#include "src/cpp/ripple/Wallet.h"
+#include "src/cpp/ripple/WalletAddTransactor.h"
 
 // contracts
 #include "src/cpp/ripple/Contract.cpp" // no log

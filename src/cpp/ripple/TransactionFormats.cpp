@@ -1,4 +1,3 @@
-#include "TransactionFormats.h"
 
 std::map<int, TransactionFormat*> TransactionFormat::byType;
 std::map<std::string, TransactionFormat*> TransactionFormat::byName;

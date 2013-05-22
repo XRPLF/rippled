@@ -1,14 +1,3 @@
-#include "Transactor.h"
-#include "Log.h"
-#include "Config.h"
-#include "PaymentTransactor.h"
-#include "RegularKeySetTransactor.h"
-#include "AccountSetTransactor.h"
-#include "WalletAddTransactor.h"
-#include "OfferCancelTransactor.h"
-#include "OfferCreateTransactor.h"
-#include "TrustSetTransactor.h"
-#include "ChangeTransactor.h"
 
 UPTR_T<Transactor> Transactor::makeTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine)
 {

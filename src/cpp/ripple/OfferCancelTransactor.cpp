@@ -1,5 +1,3 @@
-#include "OfferCancelTransactor.h"
-#include "Log.h"
 
 TER OfferCancelTransactor::doApply()
 {

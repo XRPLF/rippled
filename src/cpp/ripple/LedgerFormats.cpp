@@ -1,6 +1,4 @@
 
-#include "LedgerFormats.h"
-
 std::map<int, LedgerEntryFormat*> LedgerEntryFormat::byType;
 std::map<std::string, LedgerEntryFormat*> LedgerEntryFormat::byName;
 

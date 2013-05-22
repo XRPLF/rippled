@@ -1,18 +1,3 @@
-#include "LedgerConsensus.h"
-
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-#include <boost/unordered_set.hpp>
-#include <boost/foreach.hpp>
-
-#include "../json/writer.h"
-
-#include "Application.h"
-#include "NetworkOPs.h"
-#include "LedgerTiming.h"
-#include "SerializedValidation.h"
-#include "Log.h"
-#include "SHAMapSync.h"
 
 #define LEDGER_TOTAL_PASSES 8
 #define LEDGER_RETRY_PASSES 5

@@ -5,14 +5,6 @@
 // all liquidity is used.
 //
 
-#include <boost/foreach.hpp>
-#include <boost/format.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
-
-#include "RippleCalc.h"
-#include "Log.h"
-
-#include "../json/writer.h"
 
 std::size_t hash_value(const aciSource& asValue)
 {

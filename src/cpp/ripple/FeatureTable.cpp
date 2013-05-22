@@ -1,11 +1,3 @@
-#include "FeatureTable.h"
-
-#include <boost/foreach.hpp>
-
-#include "Log.h"
-#include "Application.h"
-#include "ValidationCollection.h"
-#include "HashPrefixes.h"
 
 void FeatureTable::addInitialFeatures()
 {

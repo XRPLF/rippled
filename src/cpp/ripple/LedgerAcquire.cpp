@@ -1,15 +1,4 @@
 
-#include "LedgerAcquire.h"
-
-#include <boost/foreach.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/pointer_cast.hpp>
-
-#include "Application.h"
-#include "Log.h"
-#include "SHAMapSync.h"
-#include "HashPrefixes.h"
-
 DECLARE_INSTANCE(LedgerAcquire);
 
 #define LA_DEBUG

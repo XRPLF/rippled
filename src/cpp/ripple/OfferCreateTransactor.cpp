@@ -1,9 +1,3 @@
-#include "Application.h"
-
-#include "OfferCreateTransactor.h"
-
-#include <boost/foreach.hpp>
-#include <boost/bind.hpp>
 
 // Make sure an offer is still valid. If not, mark it unfunded.
 bool OfferCreateTransactor::bValidOffer(

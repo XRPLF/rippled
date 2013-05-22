@@ -1,17 +1,4 @@
 
-#include "Serializer.h"
-
-#include <cassert>
-
-#include <openssl/ripemd.h>
-#include <openssl/sha.h>
-
-#include <boost/test/unit_test.hpp>
-#include <boost/foreach.hpp>
-
-#include "key.h"
-#include "Log.h"
-
 int Serializer::addZeros(size_t uBytes)
 {
 	int ret = mData.size();

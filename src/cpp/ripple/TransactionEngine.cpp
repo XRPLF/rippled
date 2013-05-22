@@ -2,19 +2,6 @@
 // XXX Make sure all fields are recognized in transactions.
 //
 
-#include <boost/format.hpp>
-#include <boost/foreach.hpp>
-#include <boost/smart_ptr/shared_ptr.hpp>
-
-#include "TransactionEngine.h"
-#include "Transactor.h"
-
-#include "../json/writer.h"
-
-#include "Config.h"
-#include "Log.h"
-#include "TransactionFormats.h"
-#include "utils.h"
 
 DECLARE_INSTANCE(TransactionEngine);
 

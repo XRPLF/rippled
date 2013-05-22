@@ -1,10 +1,4 @@
 
-#include "TransactionMaster.h"
-
-#include <boost/bind.hpp>
-
-#include "Application.h"
-
 #ifndef CACHED_TRANSACTION_NUM
 #define CACHED_TRANSACTION_NUM 65536
 #endif

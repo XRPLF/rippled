@@ -1,7 +1,4 @@
 
-#include "TransactionErr.h"
-#include "TransactionEngine.h"
-
 // VFALCO: TODO, move this into TransactionEngine.cpp
 
 // Double check a transaction's metadata to make sure no system invariants were broken

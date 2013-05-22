@@ -1,12 +1,4 @@
 
-#include "LedgerProposal.h"
-
-#include <boost/make_shared.hpp>
-
-#include "key.h"
-#include "Application.h"
-#include "HashPrefixes.h"
-
 DECLARE_INSTANCE(LedgerProposal);
 
 LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& tx, uint32 closeTime,

@@ -1,19 +1,3 @@
-#include "LedgerConsensus.h"
-
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-#include <boost/unordered_set.hpp>
-#include <boost/foreach.hpp>
-#include <boost/pointer_cast.hpp>
-
-#include "../json/writer.h"
-
-#include "Application.h"
-#include "NetworkOPs.h"
-#include "SerializedValidation.h"
-#include "Log.h"
-#include "SHAMapSync.h"
-#include "HashPrefixes.h"
 
 #define TX_ACQUIRE_TIMEOUT	250
 

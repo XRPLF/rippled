@@ -1,13 +1,3 @@
-#include "TransactionMeta.h"
-
-#include <algorithm>
-
-#include <boost/make_shared.hpp>
-#include <boost/bind.hpp>
-#include <boost/foreach.hpp>
-
-#include "Log.h"
-#include "SerializedObject.h"
 
 // VFALCO: TODO, rename class to TransactionMeta
 
