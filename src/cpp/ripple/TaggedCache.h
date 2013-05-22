@@ -140,7 +140,7 @@ template<typename c_Key, typename c_Data> float TaggedCache<c_Key, c_Data>::getH
 	return (static_cast<float>(mHits) * 100) / (1.0 + mHits + mMisses);
 }
 
-template<typename c_Key, typename c_Data> float TaggedCache<c_Key, c_Data>::clearStats()
+template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::clearStats()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	mHits = 0;
