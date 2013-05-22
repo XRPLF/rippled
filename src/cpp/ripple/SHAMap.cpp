@@ -19,8 +19,6 @@
 #define STATE_MAP_BUCKETS 1024
 #endif
 
-SETUP_LOG();
-
 DECLARE_INSTANCE(SHAMap);
 DECLARE_INSTANCE(SHAMapItem);
 DECLARE_INSTANCE(SHAMapTreeNode);
@@ -140,12 +138,12 @@ void SHAMap::dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& 
 
 		if (!node->setChildHash(branch, prevHash))
 		{
-			cLog(lsFATAL) << "dirtyUp terminates early";
+			WriteLog (lsFATAL, SHAMap) << "dirtyUp terminates early";
 			assert(false);
 			return;
 		}
 #ifdef ST_DEBUG
-		cLog(lsTRACE) << "dirtyUp sets branch " << branch << " to " << prevHash;
+		WriteLog (lsTRACE, SHAMap) << "dirtyUp sets branch " << branch << " to " << prevHash;
 #endif
 		prevHash = node->getNodeHash();
 		assert(prevHash.isNonZero());
@@ -213,10 +211,10 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& id, const uint256& has
 #ifdef DEBUG
 		if (node->getNodeHash() != hash)
 		{
-			cLog(lsFATAL) << "Attempt to get node, hash not in tree";
-			cLog(lsFATAL) << "ID: " << id;
-			cLog(lsFATAL) << "TgtHash " << hash;
-			cLog(lsFATAL) << "NodHash " << node->getNodeHash();
+			WriteLog (lsFATAL, SHAMap) << "Attempt to get node, hash not in tree";
+			WriteLog (lsFATAL, SHAMap) << "ID: " << id;
+			WriteLog (lsFATAL, SHAMap) << "TgtHash " << hash;
+			WriteLog (lsFATAL, SHAMap) << "NodHash " << node->getNodeHash();
 			throw std::runtime_error("invalid node");
 		}
 #endif
@@ -351,7 +349,7 @@ SHAMapItem::pointer SHAMap::onlyBelow(SHAMapTreeNode* node)
 
 		if (!nextNode)
 		{
-			cLog(lsFATAL) << *node;
+			WriteLog (lsFATAL, SHAMap) << *node;
 			assert(false);
 			return SHAMapItem::pointer();
 		}
@@ -620,8 +618,8 @@ bool SHAMap::addGiveItem(SHAMapItem::ref item, bool isTransaction, bool hasMeta)
 			boost::make_shared<SHAMapTreeNode>(node->getChildNodeID(branch), item, type, mSeq);
 		if (!mTNByID.emplace(SHAMapNode(*newNode), newNode).second)
 		{
-			cLog(lsFATAL) << "Node: " << *node;
-			cLog(lsFATAL) << "NewNode: " << *newNode;
+			WriteLog (lsFATAL, SHAMap) << "Node: " << *node;
+			WriteLog (lsFATAL, SHAMap) << "NewNode: " << *newNode;
 			dump();
 			assert(false);
 			throw std::runtime_error("invalid inner node");
@@ -701,7 +699,7 @@ bool SHAMap::updateGiveItem(SHAMapItem::ref item, bool isTransaction, bool hasMe
 	if (!node->setItem(item, !isTransaction ? SHAMapTreeNode::tnACCOUNT_STATE :
 		(hasMeta ? SHAMapTreeNode::tnTRANSACTION_MD : SHAMapTreeNode::tnTRANSACTION_NM)))
 	{
-		cLog(lsWARNING) << "SHAMap setItem, no change";
+		WriteLog (lsWARNING, SHAMap) << "SHAMap setItem, no change";
 		return true;
 	}
 
@@ -711,7 +709,7 @@ bool SHAMap::updateGiveItem(SHAMapItem::ref item, bool isTransaction, bool hasMe
 
 void SHAMapItem::dump()
 {
-	cLog(lsINFO) << "SHAMapItem(" << mTag << ") " << mData.size() << "bytes";
+	WriteLog (lsINFO, SHAMap) << "SHAMapItem(" << mTag << ") " << mData.size() << "bytes";
 }
 
 SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const uint256& hash)
@@ -722,7 +720,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 	HashedObject::pointer obj(theApp->getHashedObjectStore().retrieve(hash));
 	if (!obj)
 	{
-//		cLog(lsTRACE) << "fetchNodeExternal: missing " << hash;
+//		WriteLog (lsTRACE, SHAMap) << "fetchNodeExternal: missing " << hash;
 		if (mLedgerSeq != 0)
 		{
 			theApp->getOPs().missingNodeInLedger(mLedgerSeq);
@@ -737,13 +735,13 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 			boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq, snfPREFIX, hash, true);
 		if (id != *ret)
 		{
-			cLog(lsFATAL) << "id:" << id << ", got:" << *ret;
+			WriteLog (lsFATAL, SHAMap) << "id:" << id << ", got:" << *ret;
 			assert(false);
 			return SHAMapTreeNode::pointer();
 		}
 		if (ret->getNodeHash() != hash)
 		{
-			cLog(lsFATAL) << "Hashes don't match";
+			WriteLog (lsFATAL, SHAMap) << "Hashes don't match";
 			assert(false);
 			return SHAMapTreeNode::pointer();
 		}
@@ -756,7 +754,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 	}
 	catch (...)
 	{
-		cLog(lsWARNING) << "fetchNodeExternal gets an invalid node: " << hash;
+		WriteLog (lsWARNING, SHAMap) << "fetchNodeExternal gets an invalid node: " << hash;
 		throw SHAMapMissingNode(mType, id, hash);
 	}
 }
@@ -765,14 +763,14 @@ void SHAMap::fetchRoot(const uint256& hash, SHAMapSyncFilter* filter)
 {
 	if (hash == root->getNodeHash())
 		return;
-	if (sLog(lsTRACE))
+	if (ShouldLog (lsTRACE, SHAMap))
 	{
 		if (mType == smtTRANSACTION)
-			cLog(lsTRACE) << "Fetch root TXN node " << hash;
+			WriteLog (lsTRACE, SHAMap) << "Fetch root TXN node " << hash;
 		else if (mType == smtSTATE)
-			cLog(lsTRACE) << "Fetch root STATE node " << hash;
+			WriteLog (lsTRACE, SHAMap) << "Fetch root STATE node " << hash;
 		else
-			cLog(lsTRACE) << "Fetch root SHAMap node " << hash;
+			WriteLog (lsTRACE, SHAMap) << "Fetch root SHAMap node " << hash;
 	}
 	try
 	{
@@ -812,9 +810,9 @@ int SHAMap::flushDirty(SHADirtyMap& map, int maxNodes, HashedObjectType t, uint3
 #ifdef DEBUG
 		if (s.getSHA512Half() != it->second->getNodeHash())
 		{
-			cLog(lsFATAL) << *(it->second);
-			cLog(lsFATAL) << lexical_cast_i(s.getDataLength());
-			cLog(lsFATAL) << s.getSHA512Half() << " != " << it->second->getNodeHash();
+			WriteLog (lsFATAL, SHAMap) << *(it->second);
+			WriteLog (lsFATAL, SHAMap) << lexical_cast_i(s.getDataLength());
+			WriteLog (lsFATAL, SHAMap) << s.getSHA512Half() << " != " << it->second->getNodeHash();
 			assert(false);
 		}
 #endif
@@ -908,13 +906,13 @@ void SHAMap::dropBelow(SHAMapTreeNode* d)
 
 void SHAMap::dump(bool hash)
 {
-	cLog(lsINFO) << " MAP Contains";
+	WriteLog (lsINFO, SHAMap) << " MAP Contains";
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	for(boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.begin();
 			it != mTNByID.end(); ++it)
 	{
-		cLog(lsINFO) << it->second->getString();
-		tLog(hash, lsINFO) << it->second->getNodeHash();
+		WriteLog (lsINFO, SHAMap) << it->second->getString();
+		CondLog (hash, lsINFO, SHAMap) << it->second->getNodeHash();
 	}
 
 }
@@ -931,7 +929,7 @@ BOOST_AUTO_TEST_SUITE(SHAMap_suite)
 
 BOOST_AUTO_TEST_CASE( SHAMap_test )
 { // h3 and h4 differ only in the leaf, same terminal node (level 19)
-	cLog(lsTRACE) << "SHAMap test";
+	WriteLog (lsTRACE, SHAMap) << "SHAMap test";
 	uint256 h1, h2, h3, h4, h5;
 	h1.SetHex("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 	h2.SetHex("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
@@ -967,7 +965,7 @@ BOOST_AUTO_TEST_CASE( SHAMap_test )
 	i = sMap.peekNextItem(i->getTag());
 	if (i) BOOST_FAIL("bad traverse");
 
-	cLog(lsTRACE) << "SHAMap snap test";
+	WriteLog (lsTRACE, SHAMap) << "SHAMap snap test";
 	uint256 mapHash = sMap.getHash();
 	SHAMap::pointer map2 = sMap.snapShot(false);
 	if (sMap.getHash() != mapHash) BOOST_FAIL("bad snapshot");

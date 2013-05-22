@@ -6,8 +6,6 @@
 
 #include "Log.h"
 
-SETUP_LOG();
-
 inline uint32 min(uint32 x, uint32 y)	{ return (x < y) ? x : y; }
 inline uint32 max(uint32 x, uint32 y)	{ return (x > y) ? x : y; }
 
@@ -54,7 +52,7 @@ uint32 RangeSet::getPrev(uint32 v) const
 
 uint32 RangeSet::prevMissing(uint32 v) const
 { // largest number not in the set that is less than the given number
-	cLog(lsTRACE) << "prevMissing(" << v << ") " << toString();
+	WriteLog (lsTRACE, RangeSet) << "prevMissing(" << v << ") " << toString();
 	for (const_reverse_iterator it = rbegin(); it != rend(); ++it)
 	{
 		if ((upper(it) + 1) < v)
@@ -111,7 +109,7 @@ BOOST_AUTO_TEST_SUITE(RangeSet_suite)
 
 BOOST_AUTO_TEST_CASE(RangeSet_test)
 {
-	cLog(lsTRACE) << "RangeSet test begins";
+	WriteLog (lsTRACE, RangeSet) << "RangeSet test begins";
 
 	RangeSet r1, r2;
 
@@ -127,7 +125,7 @@ BOOST_AUTO_TEST_CASE(RangeSet_test)
 
 	// TODO: Traverse functions must be tested
 
-	cLog(lsTRACE) << "RangeSet test complete";
+	WriteLog (lsTRACE, RangeSet) << "RangeSet test complete";
 }
 
 BOOST_AUTO_TEST_SUITE_END()

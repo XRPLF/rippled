@@ -8,7 +8,10 @@
 
 #define SECTION_DEFAULT_NAME	""
 
-SETUP_LOG();
+// for logging
+struct ParseSectionLog
+{
+};
 
 section ParseSection(const std::string& strInput, const bool bTrim)
 {
@@ -118,7 +121,7 @@ bool sectionSingleB(section& secSource, const std::string& strSection, std::stri
     }
 	else if (pmtEntries)
 	{
-		cLog(lsWARNING) << boost::str(boost::format("Section [%s]: requires 1 line not %d lines.")
+		WriteLog (lsWARNING, ParseSectionLog) << boost::str(boost::format("Section [%s]: requires 1 line not %d lines.")
 			% strSection
 			% pmtEntries->size());
 	}

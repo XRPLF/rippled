@@ -12,8 +12,6 @@
 #include "Serializer.h"
 #include "Log.h"
 
-SETUP_LOG();
-
 
 bool powResultInfo(POWResult powCode, std::string& strToken, std::string& strHuman)
 {
@@ -66,7 +64,7 @@ bool ProofOfWork::isValid() const
 {
 	if ((mIterations <= sMaxIterations) && (mTarget >= sMinTarget))
 		return true;
-	cLog(lsWARNING) << "Invalid PoW: " << mIterations << ", " << mTarget;
+	WriteLog (lsWARNING, ProofOfWork) << "Invalid PoW: " << mIterations << ", " << mTarget;
 	return false;
 }
 
@@ -74,10 +72,10 @@ uint64 ProofOfWork::getDifficulty(const uint256& target, int iterations)
 { // calculate the approximate number of hashes required to solve this proof of work
 	if ((iterations > sMaxIterations) || (target < sMinTarget))
 	{
-		cLog(lsINFO) << "Iterations:" << iterations;
-		cLog(lsINFO) << "MaxIterat: " << sMaxIterations;
-		cLog(lsINFO) << "Target:    " << target;
-		cLog(lsINFO) << "MinTarget: " << sMinTarget;
+		WriteLog (lsINFO, ProofOfWork) << "Iterations:" << iterations;
+		WriteLog (lsINFO, ProofOfWork) << "MaxIterat: " << sMaxIterations;
+		WriteLog (lsINFO, ProofOfWork) << "Target:    " << target;
+		WriteLog (lsINFO, ProofOfWork) << "MinTarget: " << sMinTarget;
 		throw std::runtime_error("invalid proof of work target/iteration");
 	}
 
@@ -195,14 +193,14 @@ POWResult ProofOfWorkGenerator::checkProof(const std::string& token, const uint2
 	boost::split(fields, token, boost::algorithm::is_any_of("-"));
 	if (fields.size() != 5)
 	{
-		cLog(lsDEBUG) << "PoW " << token << " is corrupt";
+		WriteLog (lsDEBUG, ProofOfWork) << "PoW " << token << " is corrupt";
 		return powCORRUPT;
 	}
 
 	std::string v = mSecret.GetHex() + fields[0] + "-" + fields[1] + "-" + fields[2] + "-" + fields[3];
 	if (fields[4] != Serializer::getSHA512Half(v).GetHex())
 	{
-		cLog(lsDEBUG) << "PoW " << token << " has a bad token";
+		WriteLog (lsDEBUG, ProofOfWork) << "PoW " << token << " has a bad token";
 		return powCORRUPT;
 	}
 
@@ -219,13 +217,13 @@ POWResult ProofOfWorkGenerator::checkProof(const std::string& token, const uint2
 		boost::mutex::scoped_lock sl(mLock);
 		if ((t * 4) > (now + mValidTime))
 		{
-			cLog(lsDEBUG) << "PoW " << token << " has expired";
+			WriteLog (lsDEBUG, ProofOfWork) << "PoW " << token << " has expired";
 			return powEXPIRED;
 		}
 
 		if (((iterations != mIterations) || (target != mTarget)) && getPowEntry(target, iterations) < (mPowEntry - 2))
 		{ // difficulty has increased more than two times since PoW requested
-			cLog(lsINFO) << "Difficulty has increased since PoW requested";
+			WriteLog (lsINFO, ProofOfWork) << "Difficulty has increased since PoW requested";
 			return powTOOEASY;
 		}
 	}
@@ -233,7 +231,7 @@ POWResult ProofOfWorkGenerator::checkProof(const std::string& token, const uint2
 	ProofOfWork pow(token, iterations, challenge, target);
 	if (!pow.checkSolution(solution))
 	{
-		cLog(lsDEBUG) << "PoW " << token << " has a bad nonce";
+		WriteLog (lsDEBUG, ProofOfWork) << "PoW " << token << " has a bad nonce";
 		return powBADNONCE;
 	}
 
@@ -241,7 +239,7 @@ POWResult ProofOfWorkGenerator::checkProof(const std::string& token, const uint2
 		boost::mutex::scoped_lock sl(mLock);
 		if (!mSolvedChallenges.insert(powMap_vt(now, challenge)).second)
 		{
-			cLog(lsDEBUG) << "PoW " << token << " has been reused";
+			WriteLog (lsDEBUG, ProofOfWork) << "PoW " << token << " has been reused";
 			return powREUSED;
 		}
 	}
@@ -370,14 +368,14 @@ BOOST_AUTO_TEST_CASE( ProofOfWork_test )
 {
 	ProofOfWorkGenerator gen;
 	ProofOfWork pow = gen.getProof();
-	cLog(lsINFO) << "Estimated difficulty: " << pow.getDifficulty();
+	WriteLog (lsINFO, ProofOfWork) << "Estimated difficulty: " << pow.getDifficulty();
 	uint256 solution = pow.solve(16777216);
 	if (solution.isZero())
 		BOOST_FAIL("Unable to solve proof of work");
 	if (!pow.checkSolution(solution))
 		BOOST_FAIL("Solution did not check");
 
-	cLog(lsDEBUG) << "A bad nonce error is expected";
+	WriteLog (lsDEBUG, ProofOfWork) << "A bad nonce error is expected";
 	POWResult r = gen.checkProof(pow.getToken(), uint256());
 	if (r != powBADNONCE)
 	{
@@ -386,7 +384,7 @@ BOOST_AUTO_TEST_CASE( ProofOfWork_test )
 	}
 	if (gen.checkProof(pow.getToken(), solution) != powOK)
 		BOOST_FAIL("Solution did not check with issuer");
-	cLog(lsDEBUG) << "A reused nonce error is expected";
+	WriteLog (lsDEBUG, ProofOfWork) << "A reused nonce error is expected";
 	if (gen.checkProof(pow.getToken(), solution) != powREUSED)
 		BOOST_FAIL("Reuse solution not detected");
 
@@ -395,16 +393,16 @@ BOOST_AUTO_TEST_CASE( ProofOfWork_test )
 	{
 		gen.setDifficulty(i);
 		ProofOfWork pow = gen.getProof();
-		cLog(lsINFO) << "Level: " << i << ", Estimated difficulty: " << pow.getDifficulty();
+		WriteLog (lsINFO, ProofOfWork) << "Level: " << i << ", Estimated difficulty: " << pow.getDifficulty();
 		uint256 solution = pow.solve(131072);
 		if (solution.isZero())
-			cLog(lsINFO) << "Giving up";
+			WriteLog (lsINFO, ProofOfWork) << "Giving up";
 		else
 		{
-			cLog(lsINFO) << "Solution found";
+			WriteLog (lsINFO, ProofOfWork) << "Solution found";
 			if (gen.checkProof(pow.getToken(), solution) != powOK)
 			{
-				cLog(lsFATAL) << "Solution fails";
+				WriteLog (lsFATAL, ProofOfWork) << "Solution fails";
 			}
 		}
 	}
