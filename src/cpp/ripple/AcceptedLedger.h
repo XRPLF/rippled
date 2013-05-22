@@ -70,6 +70,8 @@ public:
 	int getLedgerSeq() const		{ return mLedger->getLedgerSeq(); }
 	int getTxnCount() const			{ return mMap.size(); }
 
+	static float getCacheHitRate()	{ return ALCache.getHitRate(); }
+
 	ALTransaction::pointer getTxn(int) const;
 };
 
