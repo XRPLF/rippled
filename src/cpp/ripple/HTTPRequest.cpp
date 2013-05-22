@@ -5,7 +5,6 @@
 #include <boost/lexical_cast.hpp>
 
 #include "Log.h"
-SETUP_LOG();
 
 // Logic to handle incoming HTTP reqests
 
@@ -42,7 +41,7 @@ HTTPRequestAction HTTPRequest::consume(boost::asio::streambuf& buf)
 	std::getline(is, line);
 	boost::trim(line);
 
-//	cLog(lsTRACE) << "HTTPRequest line: " << line;
+//	WriteLog (lsTRACE, HTTPRequest) << "HTTPRequest line: " << line;
 
 	if (eState == await_request)
 	{ // VERB URL PROTO

@@ -7,8 +7,6 @@
 #include "LedgerTiming.h"
 #include "Log.h"
 
-SETUP_LOG();
-
 typedef std::map<uint160, SerializedValidation::pointer>::value_type u160_val_pair;
 typedef boost::shared_ptr<ValidationSet> VSpointer;
 
@@ -47,12 +45,12 @@ bool ValidationCollection::addValidation(SerializedValidation::ref val, const st
 			isCurrent = true;
 		else
 		{
-			cLog(lsWARNING) << "Received stale validation now=" << now << ", close=" << valClose;
+			WriteLog (lsWARNING, ValidationCollection) << "Received stale validation now=" << now << ", close=" << valClose;
 		}
 	}
 	else
 	{
-		cLog(lsDEBUG) << "Node " << signer.humanNodePublic() << " not in UNL st=" << val->getSignTime() <<
+		WriteLog (lsDEBUG, ValidationCollection) << "Node " << signer.humanNodePublic() << " not in UNL st=" << val->getSignTime() <<
 			", hash=" << val->getLedgerHash() << ", shash=" << val->getSigningHash() << " src=" << source;
 	}
 
@@ -82,7 +80,7 @@ bool ValidationCollection::addValidation(SerializedValidation::ref val, const st
 		}
 	}
 
-	cLog(lsDEBUG) << "Val for " << hash << " from " << signer.humanNodePublic()
+	WriteLog (lsDEBUG, ValidationCollection) << "Val for " << hash << " from " << signer.humanNodePublic()
 		<< " added " << (val->isTrusted() ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
 	if (val->isTrusted())
 		theApp->getLedgerMaster().checkAccept(hash);
@@ -120,7 +118,7 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 					isTrusted = false;
 				else
 				{
-					cLog(lsTRACE) << "VC: Untrusted due to time " << ledger;
+					WriteLog (lsTRACE, ValidationCollection) << "VC: Untrusted due to time " << ledger;
 				}
 			}
 			if (isTrusted)
@@ -129,7 +127,7 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 				++untrusted;
 		}
 	}
-	cLog(lsTRACE) << "VC: " << ledger << "t:" << trusted << " u:" << untrusted;
+	WriteLog (lsTRACE, ValidationCollection) << "VC: " << ledger << "t:" << trusted << " u:" << untrusted;
 }
 
 void ValidationCollection::getValidationTypes(const uint256& ledger, int& full, int& partial)
@@ -150,7 +148,7 @@ void ValidationCollection::getValidationTypes(const uint256& ledger, int& full, 
 			}
 		}
 	}
-	cLog(lsTRACE) << "VC: " << ledger << "f:" << full << " p:" << partial;
+	WriteLog (lsTRACE, ValidationCollection) << "VC: " << ledger << "f:" << full << " p:" << partial;
 }
 
 
@@ -262,7 +260,7 @@ ValidationCollection::getCurrentValidations(uint256 currentLedger, uint256 prior
 				(valPriorLedger && (it->second->getLedgerHash() == priorLedger))))
 			{
 				countPreferred = true;
-				cLog(lsDEBUG) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash();
+				WriteLog (lsDEBUG, ValidationCollection) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash();
 			}
 
 			currentValidationCount& p = countPreferred ? ret[currentLedger] : ret[it->second->getLedgerHash()];
@@ -281,7 +279,7 @@ void ValidationCollection::flush()
 {
 	bool anyNew = false;
 
-	cLog(lsINFO) << "Flushing validations";
+	WriteLog (lsINFO, ValidationCollection) << "Flushing validations";
 	boost::mutex::scoped_lock sl(mValidationLock);
 	BOOST_FOREACH(u160_val_pair& it, mCurrentValidations)
 	{
@@ -298,7 +296,7 @@ void ValidationCollection::flush()
 		boost::this_thread::sleep(boost::posix_time::milliseconds(100));
 		sl.lock();
 	}
-	cLog(lsDEBUG) << "Validations flushed";
+	WriteLog (lsDEBUG, ValidationCollection) << "Validations flushed";
 }
 
 void ValidationCollection::condWrite()

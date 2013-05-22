@@ -16,6 +16,7 @@ typedef boost::unordered_map<uint160, SerializedValidation::pointer> ValidationS
 
 typedef std::pair<int, uint160> currentValidationCount; // nodes validating and highest node ID validating
 
+// VFALCO: TODO, Rename this to "Validations"
 class ValidationCollection
 {
 protected:

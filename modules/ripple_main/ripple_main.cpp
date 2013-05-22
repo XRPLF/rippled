@@ -16,31 +16,30 @@
 */
 //==============================================================================
 
-/**	Add this to get the @ref ripple_client module.
+/**	Add this to get the @ref ripple_main module.
 
-    @file ripple_client.cpp
-    @ingroup ripple_client
+    @file ripple_main.cpp
+    @ingroup ripple_main
 */
 
-#include "ripple_client.h"
+#include "ripple_main.h"
 
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
 //#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
-#pragma warning (disable: 4018) // signed/unsigned mismatch
-#pragma warning (disable: 4244) // conversion, possible loss of data
+//#pragma warning (disable: 4018) // signed/unsigned mismatch
+//#pragma warning (disable: 4244) // conversion, possible loss of data
 #endif
 
-#include "src/cpp/ripple/HTTPRequest.cpp"
-#include "src/cpp/ripple/HttpsClient.cpp"
+#include "src/cpp/ripple/Application.cpp"
+#include "src/cpp/ripple/Config.cpp" // no log
+#include "src/cpp/ripple/InstanceCounter.cpp" // no log
+#include "src/cpp/ripple/JobQueue.cpp"
+#include "src/cpp/ripple/LoadManager.cpp"
+#include "src/cpp/ripple/LoadMonitor.cpp"
+#include "src/cpp/ripple/main.cpp"
+#include "src/cpp/ripple/ValidationCollection.cpp"
 
-#include "src/cpp/ripple/CallRPC.cpp"
-#include "src/cpp/ripple/rpc.cpp"
-#include "src/cpp/ripple/RPCDoor.cpp"
-#include "src/cpp/ripple/RPCErr.cpp"
-#include "src/cpp/ripple/RPCHandler.cpp"
-#include "src/cpp/ripple/RPCServer.cpp"
-#include "src/cpp/ripple/RPCSub.cpp"
 
 #ifdef _MSC_VER
 //#pragma warning (pop)

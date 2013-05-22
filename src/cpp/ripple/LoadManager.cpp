@@ -8,8 +8,6 @@
 #include "Config.h"
 #include "Application.h"
 
-SETUP_LOG();
-
 static volatile int* uptimePtr = NULL;
 
 int upTime()
@@ -281,7 +279,7 @@ bool LoadFeeTrack::raiseLocalFee()
 
 	if (origFee == mLocalTxnLoadFee)
 		return false;
-	cLog(lsDEBUG) << "Local load fee raised from " << origFee << " to " << mLocalTxnLoadFee;
+	WriteLog (lsDEBUG, LoadManager) << "Local load fee raised from " << origFee << " to " << mLocalTxnLoadFee;
 	return true;
 }
 
@@ -304,7 +302,7 @@ bool LoadFeeTrack::lowerLocalFee()
 
 	if (origFee == mLocalTxnLoadFee)
 		return false;
-	cLog(lsDEBUG) << "Local load fee lowered from " << origFee << " to " << mLocalTxnLoadFee;
+	WriteLog (lsDEBUG, LoadManager) << "Local load fee lowered from " << origFee << " to " << mLocalTxnLoadFee;
 	return true;
 }
 
@@ -334,7 +332,7 @@ int LoadManager::getUptime()
 
 static void LogDeadLock(int dlTime)
 {
-	cLog(lsWARNING) << "Server stalled for " << dlTime << " seconds.";
+	WriteLog (lsWARNING, LoadManager) << "Server stalled for " << dlTime << " seconds.";
 }
 
 void LoadManager::threadEntry()
@@ -368,7 +366,7 @@ void LoadManager::threadEntry()
 		bool change;
 		if (theApp->getJobQueue().isOverloaded())
 		{
-			cLog(lsINFO) << theApp->getJobQueue().getJson(0);
+			WriteLog (lsINFO, LoadManager) << theApp->getJobQueue().getJson(0);
 			change = theApp->getFeeTrack().raiseLocalFee();
 		}
 		else
@@ -381,7 +379,7 @@ void LoadManager::threadEntry()
 
 		if ((when.is_negative()) || (when.total_seconds() > 1))
 		{
-			cLog(lsWARNING) << "time jump";
+			WriteLog (lsWARNING, LoadManager) << "time jump";
 			t = boost::posix_time::microsec_clock::universal_time();
 		}
 		else
@@ -392,24 +390,24 @@ void LoadManager::threadEntry()
 void LoadManager::logWarning(const std::string& source) const
 {
 	if (source.empty())
-		cLog(lsDEBUG) << "Load warning from empty source";
+		WriteLog (lsDEBUG, LoadManager) << "Load warning from empty source";
 	else
-		cLog(lsINFO) << "Load warning: " << source;
+		WriteLog (lsINFO, LoadManager) << "Load warning: " << source;
 }
 
 void LoadManager::logDisconnect(const std::string& source) const
 {
 	if (source.empty())
-		cLog(lsINFO) << "Disconnect for empty source";
+		WriteLog (lsINFO, LoadManager) << "Disconnect for empty source";
 	else
-		cLog(lsWARNING) << "Disconnect for: " << source;
+		WriteLog (lsWARNING, LoadManager) << "Disconnect for: " << source;
 }
 
 BOOST_AUTO_TEST_SUITE(LoadManager_test)
 
 BOOST_AUTO_TEST_CASE(LoadFeeTrack_test)
 {
-	cLog(lsDEBUG) << "Running load fee track test";
+	WriteLog (lsDEBUG, LoadManager) << "Running load fee track test";
 
 	Config d; // get a default configuration object
 	LoadFeeTrack l;

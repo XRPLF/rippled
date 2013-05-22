@@ -101,6 +101,12 @@
     <Filter Include="1. Modules\ripple_db\storage">
       <UniqueIdentifier>{6097a179-ddad-4c69-9a34-2e3fc2c9fa1d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_main\core">
+      <UniqueIdentifier>{ed7b05c1-13c1-417c-a0c7-fb93a8edc5c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_client\http">
+      <UniqueIdentifier>{29cd2103-d553-4d82-9e6a-224e3b1cb667}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -430,20 +436,8 @@
     <ClCompile Include="src\cpp\ripple\ripple.pb.cc">
       <Filter>protoc_generated</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Application.cpp">
-      <Filter>1. Modules\ripple_main</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Config.cpp">
-      <Filter>1. Modules\ripple_main</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\ConnectionPool.cpp">
       <Filter>1. Modules\ripple_net</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\InstanceCounter.cpp">
-      <Filter>1. Modules\ripple_main</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\JobQueue.cpp">
-      <Filter>1. Modules\ripple_main</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Peer.cpp">
       <Filter>1. Modules\ripple_net</Filter>
@@ -498,18 +492,6 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\AccountSetTransactor.cpp">
       <Filter>1. Modules\ripple_ledger\transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
-      <Filter>1. Modules\ripple_main</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\LoadMonitor.cpp">
-      <Filter>1. Modules\ripple_main</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\main.cpp">
-      <Filter>1. Modules\ripple_main</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\HTTPRequest.cpp">
-      <Filter>1. Modules\ripple_main</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Operation.cpp">
       <Filter>1. Modules\ripple_ledger\contracts</Filter>
@@ -664,9 +646,6 @@
     <ClCompile Include="src\cpp\ripple\CallRPC.cpp">
       <Filter>1. Modules\ripple_client\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\HttpsClient.cpp">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\rpc.cpp">
       <Filter>1. Modules\ripple_client\rpc</Filter>
     </ClCompile>
@@ -694,9 +673,6 @@
     <ClCompile Include="src\cpp\ripple\RPCServer.cpp">
       <Filter>1. Modules\ripple_client\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ValidationCollection.cpp">
-      <Filter>1. Modules\ripple_main</Filter>
-    </ClCompile>
     <ClCompile Include="modules\ripple_db\ripple_db.cpp">
       <Filter>1. Modules\ripple_db</Filter>
     </ClCompile>
@@ -708,6 +684,39 @@
     </ClCompile>
     <ClCompile Include="src\cpp\database\SqliteDatabase.cpp">
       <Filter>1. Modules\ripple_db\storage</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\Application.cpp">
+      <Filter>1. Modules\ripple_main\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\Config.cpp">
+      <Filter>1. Modules\ripple_main\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\InstanceCounter.cpp">
+      <Filter>1. Modules\ripple_main\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\JobQueue.cpp">
+      <Filter>1. Modules\ripple_main\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
+      <Filter>1. Modules\ripple_main\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\LoadMonitor.cpp">
+      <Filter>1. Modules\ripple_main\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\main.cpp">
+      <Filter>1. Modules\ripple_main\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ValidationCollection.cpp">
+      <Filter>1. Modules\ripple_main\core</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_main\ripple_main.cpp">
+      <Filter>1. Modules\ripple_main</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\HttpsClient.cpp">
+      <Filter>1. Modules\ripple_client\http</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\HTTPRequest.cpp">
+      <Filter>1. Modules\ripple_client\http</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1065,23 +1074,11 @@
     <ClInclude Include="src\cpp\ripple\ripple.pb.h">
       <Filter>protoc_generated</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Application.h">
-      <Filter>1. Modules\ripple_main</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\AutoSocket.h">
       <Filter>1. Modules\ripple_net</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Config.h">
-      <Filter>1. Modules\ripple_main</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\ConnectionPool.h">
       <Filter>1. Modules\ripple_net</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\InstanceCounter.h">
-      <Filter>1. Modules\ripple_main</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\JobQueue.h">
-      <Filter>1. Modules\ripple_main</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\PeerDoor.h">
       <Filter>1. Modules\ripple_net</Filter>
@@ -1130,15 +1127,6 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\AccountSetTransactor.h">
       <Filter>1. Modules\ripple_ledger\transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\LoadManager.h">
-      <Filter>1. Modules\ripple_main</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\LoadMonitor.h">
-      <Filter>1. Modules\ripple_main</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\HTTPRequest.h">
-      <Filter>1. Modules\ripple_main</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Operation.h">
       <Filter>1. Modules\ripple_ledger\contracts</Filter>
@@ -1302,9 +1290,6 @@
     <ClInclude Include="src\cpp\ripple\CallRPC.h">
       <Filter>1. Modules\ripple_client\rpc</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\HttpsClient.h">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPC.h">
       <Filter>1. Modules\ripple_client\rpc</Filter>
     </ClInclude>
@@ -1332,9 +1317,6 @@
     <ClInclude Include="src\cpp\ripple\RPCServer.h">
       <Filter>1. Modules\ripple_client\rpc</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ValidationCollection.h">
-      <Filter>1. Modules\ripple_main</Filter>
-    </ClInclude>
     <ClInclude Include="modules\ripple_db\ripple_db.h">
       <Filter>1. Modules\ripple_db</Filter>
     </ClInclude>
@@ -1343,6 +1325,36 @@
     </ClInclude>
     <ClInclude Include="src\cpp\database\SqliteDatabase.h">
       <Filter>1. Modules\ripple_db\storage</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\Application.h">
+      <Filter>1. Modules\ripple_main\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\Config.h">
+      <Filter>1. Modules\ripple_main\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\InstanceCounter.h">
+      <Filter>1. Modules\ripple_main\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\JobQueue.h">
+      <Filter>1. Modules\ripple_main\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\LoadManager.h">
+      <Filter>1. Modules\ripple_main\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\LoadMonitor.h">
+      <Filter>1. Modules\ripple_main\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ValidationCollection.h">
+      <Filter>1. Modules\ripple_main\core</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_main\ripple_main.h">
+      <Filter>1. Modules\ripple_main</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\HttpsClient.h">
+      <Filter>1. Modules\ripple_client\http</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\HTTPRequest.h">
+      <Filter>1. Modules\ripple_client\http</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

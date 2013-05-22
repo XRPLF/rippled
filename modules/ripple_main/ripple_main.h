@@ -16,32 +16,22 @@
 */
 //==============================================================================
 
-/**	Add this to get the @ref ripple_client module.
+/**	Include this to get the @ref ripple_main module.
 
-    @file ripple_client.cpp
-    @ingroup ripple_client
+    @file ripple_main.h
+    @ingroup ripple_main
 */
 
-#include "ripple_client.h"
+/**	Core classes.
 
-// VFALCO: TODO, fix these warnings!
-#ifdef _MSC_VER
-//#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
-#pragma warning (disable: 4018) // signed/unsigned mismatch
-#pragma warning (disable: 4244) // conversion, possible loss of data
-#endif
+	This module contains the Ripple core instance object and related objects.
 
-#include "src/cpp/ripple/HTTPRequest.cpp"
-#include "src/cpp/ripple/HttpsClient.cpp"
+	@defgroup ripple_main
+*/
 
-#include "src/cpp/ripple/CallRPC.cpp"
-#include "src/cpp/ripple/rpc.cpp"
-#include "src/cpp/ripple/RPCDoor.cpp"
-#include "src/cpp/ripple/RPCErr.cpp"
-#include "src/cpp/ripple/RPCHandler.cpp"
-#include "src/cpp/ripple/RPCServer.cpp"
-#include "src/cpp/ripple/RPCSub.cpp"
+#ifndef RIPPLE_MAIN_H
+#define RIPPLE_MAIN_H
 
-#ifdef _MSC_VER
-//#pragma warning (pop)
+
+
 #endif
