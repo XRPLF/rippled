@@ -62,6 +62,7 @@
 #include "src/cpp/ripple/AccountState.h"
 #include "src/cpp/ripple/Application.h"
 #include "src/cpp/ripple/BitcoinUtil.h"
+#include "src/cpp/ripple/CanonicalTXSet.h"
 #include "src/cpp/ripple/ChangeTransactor.h"
 #include "src/cpp/ripple/Config.h"
 #include "src/cpp/ripple/Contract.h"
@@ -150,6 +151,8 @@
 
 // transactions
 #include "src/cpp/ripple/AccountSetTransactor.cpp"
+#include "src/cpp/ripple/ChangeTransactor.cpp" // no log
+#include "src/cpp/ripple/CanonicalTXSet.cpp"
 #include "src/cpp/ripple/OfferCancelTransactor.cpp"
 #include "src/cpp/ripple/OfferCreateTransactor.cpp"
 #include "src/cpp/ripple/PaymentTransactor.cpp"
