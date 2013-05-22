@@ -8,8 +8,6 @@
 #include "Log.h"
 #include "PFRequest.h"
 
-SETUP_LOG();
-
 #define MIN_VALIDATION_RATIO	150		// 150/256ths of validations of previous ledger
 #define MAX_LEDGER_GAP			100		// Don't catch up more than 100 ledgers  (cannot exceed 256)
 
@@ -52,14 +50,14 @@ void LedgerMaster::pushLedger(Ledger::pointer newLedger)
 {
 	// Caller should already have properly assembled this ledger into "ready-to-close" form --
 	// all candidate transactions must already be applied
-	cLog(lsINFO) << "PushLedger: " << newLedger->getHash();
+	WriteLog (lsINFO, LedgerMaster) << "PushLedger: " << newLedger->getHash();
 	boost::recursive_mutex::scoped_lock ml(mLock);
 	if (!mPubLedger)
 		mPubLedger = newLedger;
 	if (!!mFinalizedLedger)
 	{
 		mFinalizedLedger->setClosed();
-		cLog(lsTRACE) << "Finalizes: " << mFinalizedLedger->getHash();
+		WriteLog (lsTRACE, LedgerMaster) << "Finalizes: " << mFinalizedLedger->getHash();
 	}
 	mFinalizedLedger = mCurrentLedger;
 	mCurrentLedger = newLedger;
@@ -77,7 +75,7 @@ void LedgerMaster::pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL, boo
 		assert(newLCL->isClosed());
 		assert(newLCL->isImmutable());
 		mLedgerHistory.addAcceptedLedger(newLCL, fromConsensus);
-		cLog(lsINFO) << "StashAccepted: " << newLCL->getHash();
+		WriteLog (lsINFO, LedgerMaster) << "StashAccepted: " << newLCL->getHash();
 	}
 
 	{
@@ -137,10 +135,10 @@ Ledger::pointer LedgerMaster::closeLedger(bool recover)
 			}
 			catch (...)
 			{ // CHECKME: We got a few of these
-				cLog(lsWARNING) << "Held transaction throws";
+				WriteLog (lsWARNING, LedgerMaster) << "Held transaction throws";
 			}
 		}
-		tLog(recovers != 0, lsINFO) << "Recovered " << recovers << " held transactions";
+		CondLog (recovers != 0, lsINFO, LedgerMaster) << "Recovered " << recovers << " held transactions";
 		mHeldTransactions.reset(closingLedger->getHash());
 	}
 
@@ -248,7 +246,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 	Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq(ledgerSeq);
 	if (ledger && (Ledger::getHashByIndex(ledgerSeq) == ledgerHash))
 	{
-		cLog(lsTRACE) << "Ledger hash found in database";
+		WriteLog (lsTRACE, LedgerMaster) << "Ledger hash found in database";
 		theApp->getJobQueue().addJob(jtPUBOLDLEDGER, "LedgerMaster::asyncAccept",
 			BIND_TYPE(&LedgerMaster::asyncAccept, this, ledger));
 		return true;
@@ -256,7 +254,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 
 	if (theApp->getMasterLedgerAcquire().isFailure(ledgerHash))
 	{
-		cLog(lsTRACE) << "Already failed to acquire " << ledgerSeq;
+		WriteLog (lsTRACE, LedgerMaster) << "Already failed to acquire " << ledgerSeq;
 		return false;
 	}
 
@@ -289,7 +287,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 	{
 		if (timeoutCount > 2)
 		{
-			cLog(lsDEBUG) << "Not acquiring due to timeouts";
+			WriteLog (lsDEBUG, LedgerMaster) << "Not acquiring due to timeouts";
 		}
 		else
 		{
@@ -345,7 +343,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 				target->sendPacket(packet, false);
 			}
 			else
-				cLog(lsTRACE) << "No peer for fetch pack";
+				WriteLog (lsTRACE, LedgerMaster) << "No peer for fetch pack";
 		}
 	}
 
@@ -358,7 +356,7 @@ void LedgerMaster::missingAcquireComplete(LedgerAcquire::pointer acq)
 
 	if (acq->isFailed() && (mMissingSeq != 0))
 	{
-		cLog(lsWARNING) << "Acquire failed for " << mMissingSeq;
+		WriteLog (lsWARNING, LedgerMaster) << "Acquire failed for " << mMissingSeq;
 	}
 
 	mMissingLedger.reset();
@@ -378,7 +376,7 @@ bool LedgerMaster::shouldAcquire(uint32 currentLedger, uint32 ledgerHistory, uin
 	if (candidateLedger >= currentLedger)
 		ret = true;
 	else ret = (currentLedger - candidateLedger) <= ledgerHistory;
-	cLog(lsTRACE) << "Missing ledger " << candidateLedger << (ret ? " should" : " should NOT") << " be acquired";
+	WriteLog (lsTRACE, LedgerMaster) << "Missing ledger " << candidateLedger << (ret ? " should" : " should NOT") << " be acquired";
 	return ret;
 }
 
@@ -394,19 +392,19 @@ void LedgerMaster::resumeAcquiring()
 
 	if (mMissingLedger || !theConfig.LEDGER_HISTORY)
 	{
-		tLog(mMissingLedger, lsDEBUG) << "Fetch already in progress, not resuming";
+		CondLog (mMissingLedger, lsDEBUG, LedgerMaster) << "Fetch already in progress, not resuming";
 		return;
 	}
 
 	uint32 prevMissing = mCompleteLedgers.prevMissing(mFinalizedLedger->getLedgerSeq());
 	if (prevMissing == RangeSet::RangeSetAbsent)
 	{
-		cLog(lsDEBUG) << "no prior missing ledger, not resuming";
+		WriteLog (lsDEBUG, LedgerMaster) << "no prior missing ledger, not resuming";
 		return;
 	}
 	if (shouldAcquire(mCurrentLedger->getLedgerSeq(), theConfig.LEDGER_HISTORY, prevMissing))
 	{
-		cLog(lsTRACE) << "Resuming at " << prevMissing;
+		WriteLog (lsTRACE, LedgerMaster) << "Resuming at " << prevMissing;
 		assert(!mCompleteLedgers.hasValue(prevMissing));
 		Ledger::pointer nextLedger = getLedgerBySeq(prevMissing + 1);
 		if (nextLedger)
@@ -414,7 +412,7 @@ void LedgerMaster::resumeAcquiring()
 		else
 		{
 			mCompleteLedgers.clearValue(prevMissing);
-			cLog(lsINFO) << "We have a gap at: " << prevMissing + 1;
+			WriteLog (lsINFO, LedgerMaster) << "We have a gap at: " << prevMissing + 1;
 		}
 	}
 }
@@ -435,7 +433,7 @@ void LedgerMaster::fixMismatch(Ledger::ref ledger)
 				Ledger::pointer otherLedger = getLedgerBySeq(lSeq);
 				if (otherLedger && (otherLedger->getHash() == hash))
 				{ // we closed the seam
-					tLog(invalidate != 0, lsWARNING) << "Match at " << lSeq << ", " <<
+					CondLog (invalidate != 0, lsWARNING, LedgerMaster) << "Match at " << lSeq << ", " <<
 						invalidate << " prior ledgers invalidated";
 					return;
 				}
@@ -445,12 +443,12 @@ void LedgerMaster::fixMismatch(Ledger::ref ledger)
 		}
 
 	// all prior ledgers invalidated
-	tLog(invalidate != 0, lsWARNING) << "All " << invalidate << " prior ledgers invalidated";
+	CondLog (invalidate != 0, lsWARNING, LedgerMaster) << "All " << invalidate << " prior ledgers invalidated";
 }
 
 void LedgerMaster::setFullLedger(Ledger::pointer ledger)
 { // A new ledger has been accepted as part of the trusted chain
-	cLog(lsDEBUG) << "Ledger " << ledger->getLedgerSeq() << " accepted :" << ledger->getHash();
+	WriteLog (lsDEBUG, LedgerMaster) << "Ledger " << ledger->getLedgerSeq() << " accepted :" << ledger->getHash();
 	assert(ledger->peekAccountStateMap()->getHash().isNonZero());
 
 	if (theApp->getOPs().isNeedNetworkLedger())
@@ -471,7 +469,7 @@ void LedgerMaster::setFullLedger(Ledger::pointer ledger)
 		Ledger::pointer prevLedger = getLedgerBySeq(ledger->getLedgerSeq() - 1);
 		if (!prevLedger || (prevLedger->getHash() != ledger->getParentHash()))
 		{
-			cLog(lsWARNING) << "Acquired ledger invalidates previous ledger: " <<
+			WriteLog (lsWARNING, LedgerMaster) << "Acquired ledger invalidates previous ledger: " <<
 				(prevLedger ? "hashMismatch" : "missingLedger");
 			fixMismatch(ledger);
 		}
@@ -486,13 +484,13 @@ void LedgerMaster::setFullLedger(Ledger::pointer ledger)
 
 	if (mMissingLedger || !theConfig.LEDGER_HISTORY)
 	{
-		tLog(mMissingLedger, lsDEBUG) << "Fetch already in progress, " << mMissingLedger->getTimeouts() << " timeouts";
+		CondLog (mMissingLedger, lsDEBUG, LedgerMaster) << "Fetch already in progress, " << mMissingLedger->getTimeouts() << " timeouts";
 		return;
 	}
 
 	if (theApp->getJobQueue().getJobCountTotal(jtPUBOLDLEDGER) > 1)
 	{
-		cLog(lsDEBUG) << "Too many pending ledger saves";
+		WriteLog (lsDEBUG, LedgerMaster) << "Too many pending ledger saves";
 		return;
 	}
 
@@ -501,10 +499,10 @@ void LedgerMaster::setFullLedger(Ledger::pointer ledger)
 	{
 		if (!shouldAcquire(mCurrentLedger->getLedgerSeq(), theConfig.LEDGER_HISTORY, ledger->getLedgerSeq() - 1))
 		{
-			cLog(lsTRACE) << "Don't need any ledgers";
+			WriteLog (lsTRACE, LedgerMaster) << "Don't need any ledgers";
 			return;
 		}
-		cLog(lsDEBUG) << "We need the ledger before the ledger we just accepted: " << ledger->getLedgerSeq() - 1;
+		WriteLog (lsDEBUG, LedgerMaster) << "We need the ledger before the ledger we just accepted: " << ledger->getLedgerSeq() - 1;
 		acquireMissingLedger(ledger, ledger->getParentHash(), ledger->getLedgerSeq() - 1);
 	}
 	else
@@ -512,12 +510,12 @@ void LedgerMaster::setFullLedger(Ledger::pointer ledger)
 		uint32 prevMissing = mCompleteLedgers.prevMissing(ledger->getLedgerSeq());
 		if (prevMissing == RangeSet::RangeSetAbsent)
 		{
-			cLog(lsDEBUG) << "no prior missing ledger";
+			WriteLog (lsDEBUG, LedgerMaster) << "no prior missing ledger";
 			return;
 		}
 		if (shouldAcquire(mCurrentLedger->getLedgerSeq(), theConfig.LEDGER_HISTORY, prevMissing))
 		{
-			cLog(lsDEBUG) << "Ledger " << prevMissing << " is needed";
+			WriteLog (lsDEBUG, LedgerMaster) << "Ledger " << prevMissing << " is needed";
 			assert(!mCompleteLedgers.hasValue(prevMissing));
 			Ledger::pointer nextLedger = getLedgerBySeq(prevMissing + 1);
 			if (nextLedger)
@@ -525,11 +523,11 @@ void LedgerMaster::setFullLedger(Ledger::pointer ledger)
 			else
 			{
 				mCompleteLedgers.clearValue(prevMissing);
-				cLog(lsWARNING) << "We have a gap we can't fix: " << prevMissing + 1;
+				WriteLog (lsWARNING, LedgerMaster) << "We have a gap we can't fix: " << prevMissing + 1;
 			}
 		}
 		else
-			cLog(lsTRACE) << "Shouldn't acquire";
+			WriteLog (lsTRACE, LedgerMaster) << "Shouldn't acquire";
 	}
 }
 
@@ -566,7 +564,7 @@ void LedgerMaster::checkAccept(const uint256& hash, uint32 seq)
 	if (theApp->getValidations().getTrustedValidationCount(hash) < minVal) // nothing we can do
 		return;
 
-	cLog(lsINFO) << "Advancing accepted ledger to " << seq << " with >= " << minVal << " validations";
+	WriteLog (lsINFO, LedgerMaster) << "Advancing accepted ledger to " << seq << " with >= " << minVal << " validations";
 
 	mLastValidateHash = hash;
 	mLastValidateSeq = seq;
@@ -594,7 +592,7 @@ void LedgerMaster::tryPublish()
 	}
 	else if (mValidLedger->getLedgerSeq() > (mPubLedger->getLedgerSeq() + MAX_LEDGER_GAP))
 	{
-		cLog(lsWARNING) << "Gap in validated ledger stream " << mPubLedger->getLedgerSeq() << " - " <<
+		WriteLog (lsWARNING, LedgerMaster) << "Gap in validated ledger stream " << mPubLedger->getLedgerSeq() << " - " <<
 			mValidLedger->getLedgerSeq() - 1;
 		mPubLedger = mValidLedger;
 		mPubLedgers.push_back(mValidLedger);
@@ -603,7 +601,7 @@ void LedgerMaster::tryPublish()
 	{
 		for (uint32 seq = mPubLedger->getLedgerSeq() + 1; seq <= mValidLedger->getLedgerSeq(); ++seq)
 		{
-			cLog(lsTRACE) << "Trying to publish ledger " << seq;
+			WriteLog (lsTRACE, LedgerMaster) << "Trying to publish ledger " << seq;
 
 			Ledger::pointer ledger;
 			uint256 hash;
@@ -618,7 +616,7 @@ void LedgerMaster::tryPublish()
 				hash = mValidLedger->getLedgerHash(seq);
 				if (hash.isZero())
 				{
-					cLog(lsFATAL) << "Ledger: " << mValidLedger->getLedgerSeq() << " does not have hash for " <<
+					WriteLog (lsFATAL, LedgerMaster) << "Ledger: " << mValidLedger->getLedgerSeq() << " does not have hash for " <<
 						seq;
 					assert(false);
 				}
@@ -634,7 +632,7 @@ void LedgerMaster::tryPublish()
 			{
 				if (theApp->getMasterLedgerAcquire().isFailure(hash))
 				{
-					cLog(lsWARNING) << "Unable to acquire a recent validated ledger";
+					WriteLog (lsWARNING, LedgerMaster) << "Unable to acquire a recent validated ledger";
 				}
 				else
 				{
@@ -650,7 +648,7 @@ void LedgerMaster::tryPublish()
 						mPubLedgers.push_back(mPubLedger);
 					}
 					else
-						cLog(lsWARNING) << "Failed to acquire a published ledger";
+						WriteLog (lsWARNING, LedgerMaster) << "Failed to acquire a published ledger";
 				}
 			}
 		}
@@ -699,7 +697,7 @@ void LedgerMaster::pubThread()
 
 		BOOST_FOREACH(Ledger::ref l, ledgers)
 		{
-			cLog(lsDEBUG) << "Publishing ledger " << l->getLedgerSeq();
+			WriteLog (lsDEBUG, LedgerMaster) << "Publishing ledger " << l->getLedgerSeq();
 			setFullLedger(l); // OPTIMIZEME: This is actually more work than we need to do
 			theApp->getOPs().pubLedger(l);
 			published = true;

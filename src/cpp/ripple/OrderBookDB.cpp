@@ -6,8 +6,6 @@
 #include "Application.h"
 #include "Log.h"
 
-SETUP_LOG();
-
 OrderBookDB::OrderBookDB() : mSeq(0)
 {
 
@@ -34,7 +32,7 @@ void OrderBookDB::setup(Ledger::ref ledger)
 	mDestMap.clear();
 	mSourceMap.clear();
 
-	cLog(lsDEBUG) << "OrderBookDB>";
+	WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB>";
 
 	// walk through the entire ledger looking for orderbook entries
 	uint256 currentIndex = ledger->getFirstLedgerIndex();
@@ -63,7 +61,7 @@ void OrderBookDB::setup(Ledger::ref ledger)
 		currentIndex = ledger->getNextLedgerIndex(currentIndex);
 	}
 
-	cLog(lsDEBUG) << "OrderBookDB<";
+	WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB<";
 }
 
 // return list of all orderbooks that want this issuerID and currencyID
@@ -186,7 +184,7 @@ void OrderBookDB::processTxn(Ledger::ref ledger, const ALTransaction& alTx, Json
 			}
 			catch (...)
 			{
-				cLog(lsINFO) << "Fields not found in OrderBookDB::processTxn";
+				WriteLog (lsINFO, OrderBookDB) << "Fields not found in OrderBookDB::processTxn";
 			}
 		}
 	}

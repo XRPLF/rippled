@@ -19,16 +19,20 @@ namespace boost {
 
 #include "types.h"
 
+// DEPRECATED
 // Put at the beginning of a C++ file that needs its own log partition
 #define SETUP_LOG()	static LogPartition logPartition(__FILE__)
 #define SETUP_NLOG(x) static LogPartition logPartition(x)
 
+// DEPRECATED
 // Standard conditional log
 #define cLog(x)		if (!logPartition.doLog(x)) do {} while (0); else Log(x, logPartition)
 
+// DEPRECATED
 // Log only if an additional condition 'c' is true. Condition is not computed if not needed
 #define tLog(c,x)	if (!logPartition.doLog(x) || !(c)) do {} while(0); else Log(x, logPartition)
 
+// DEPRECATED
 // Check if should log
 #define sLog(x)		(logPartition.doLog(x))
 
@@ -125,7 +129,9 @@ inline Log getLog (LogSeverity level)
 	return Log (level, getLogPartition <Key> ());
 }
 
-#define WriteLog(s, k) if (!getLogPartition <k> ().doLog (s)) do {} while (0); else Log (s, getLogPartition <k> ())
+#define ShouldLog(s, k) (getLogPartition <k> ().doLog (s))
+#define WriteLog(s, k) if (!ShouldLog (s, k)) do {} while (0); else Log (s, getLogPartition <k> ())
+#define CondLog(c, s, k) if (!ShouldLog (s, k) || !(c)) do {} while(0); else Log(s, getLogPartition <k> ())
 
 #endif
 

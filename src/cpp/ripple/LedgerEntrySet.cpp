@@ -7,8 +7,6 @@
 
 #include "Log.h"
 
-SETUP_LOG();
-
 DECLARE_INSTANCE(LedgerEntrySetEntry);
 DECLARE_INSTANCE(LedgerEntrySet)
 
@@ -151,7 +149,7 @@ void LedgerEntrySet::entryCreate(SLE::ref sle)
 	{
 
 		case taaDELETE:
-			cLog(lsDEBUG) << "Create after Delete = Modify";
+			WriteLog (lsDEBUG, LedgerEntrySet) << "Create after Delete = Modify";
 			it->second.mEntry = sle;
 			it->second.mAction = taaMODIFY;
 			it->second.mSeq = mSeq;
@@ -303,7 +301,7 @@ SLE::pointer LedgerEntrySet::getForMod(const uint256& node, Ledger::ref ledger,
 	{
 		if (it->second.mAction == taaDELETE)
 		{
-			cLog(lsFATAL) << "Trying to thread to deleted node";
+			WriteLog (lsFATAL, LedgerEntrySet) << "Trying to thread to deleted node";
 			return SLE::pointer();
 		}
 		if (it->second.mAction == taaCACHED)
@@ -334,12 +332,12 @@ bool LedgerEntrySet::threadTx(const RippleAddress& threadTo, Ledger::ref ledger,
 	boost::unordered_map<uint256, SLE::pointer>& newMods)
 {
 #ifdef META_DEBUG
-	cLog(lsTRACE) << "Thread to " << threadTo.getAccountID();
+	WriteLog (lsTRACE, LedgerEntrySet) << "Thread to " << threadTo.getAccountID();
 #endif
 	SLE::pointer sle = getForMod(Ledger::getAccountRootIndex(threadTo.getAccountID()), ledger, newMods);
 	if (!sle)
 	{
-		cLog(lsFATAL) << "Threading to non-existent account: " << threadTo.humanAccountID();
+		WriteLog (lsFATAL, LedgerEntrySet) << "Threading to non-existent account: " << threadTo.humanAccountID();
 		assert(false);
 		return false;
 	}
@@ -369,14 +367,14 @@ bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger,
 	if (node->hasOneOwner()) // thread to owner's account
 	{
 #ifdef META_DEBUG
-		cLog(lsTRACE) << "Thread to single owner";
+		WriteLog (lsTRACE, LedgerEntrySet) << "Thread to single owner";
 #endif
 		return threadTx(node->getOwner(), ledger, newMods);
 	}
 	else if (node->hasTwoOwners()) // thread to owner's accounts
 	{
 #ifdef META_DEBUG
-		cLog(lsTRACE) << "Thread to two owners";
+		WriteLog (lsTRACE, LedgerEntrySet) << "Thread to two owners";
 #endif
 		return
 			threadTx(node->getFirstOwner(), ledger, newMods) &&
@@ -401,21 +399,21 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result, uint32 index)
 		{
 			case taaMODIFY:
 #ifdef META_DEBUG
-				cLog(lsTRACE) << "Modified Node " << it.first;
+				WriteLog (lsTRACE, LedgerEntrySet) << "Modified Node " << it.first;
 #endif
 				type = &sfModifiedNode;
 				break;
 
 			case taaDELETE:
 #ifdef META_DEBUG
-				cLog(lsTRACE) << "Deleted Node " << it.first;
+				WriteLog (lsTRACE, LedgerEntrySet) << "Deleted Node " << it.first;
 #endif
 				type = &sfDeletedNode;
 				break;
 
 			case taaCREATE:
 #ifdef META_DEBUG
-				cLog(lsTRACE) << "Created Node " << it.first;
+				WriteLog (lsTRACE, LedgerEntrySet) << "Created Node " << it.first;
 #endif
 				type = &sfCreatedNode;
 				break;
@@ -510,7 +508,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result, uint32 index)
 		entryModify(it.second);
 
 	mSet.addRaw(s, result, index);
-	cLog(lsTRACE) << "Metadata:" << mSet.getJson(0);
+	WriteLog (lsTRACE, LedgerEntrySet) << "Metadata:" << mSet.getJson(0);
 }
 
 TER LedgerEntrySet::dirCount(const uint256& uRootIndex, uint32& uCount)
@@ -531,7 +529,7 @@ TER LedgerEntrySet::dirCount(const uint256& uRootIndex, uint32& uCount)
 		}
 		else if (uNodeDir)
 		{
-			cLog(lsWARNING) << "dirCount: no such node";
+			WriteLog (lsWARNING, LedgerEntrySet) << "dirCount: no such node";
 
 			assert(false);
 
@@ -553,7 +551,7 @@ TER LedgerEntrySet::dirAdd(
 	const uint256&						uLedgerIndex,
 	FUNCTION_TYPE<void (SLE::ref)>		fDescriber)
 {
-	cLog(lsTRACE) << boost::str(boost::format("dirAdd: uRootIndex=%s uLedgerIndex=%s")
+	WriteLog (lsTRACE, LedgerEntrySet) << boost::str(boost::format("dirAdd: uRootIndex=%s uLedgerIndex=%s")
 		% uRootIndex.ToString()
 		% uLedgerIndex.ToString());
 
@@ -637,10 +635,10 @@ TER LedgerEntrySet::dirAdd(
 	svIndexes.peekValue().push_back(uLedgerIndex);	// Append entry.
 	sleNode->setFieldV256(sfIndexes, svIndexes);	// Save entry.
 
-	cLog(lsTRACE) << "dirAdd:   creating: root: " << uRootIndex.ToString();
-	cLog(lsTRACE) << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString();
-	cLog(lsTRACE) << "dirAdd:  appending: Node: " << strHex(uNodeDir);
-	// cLog(lsINFO) << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString();
+	WriteLog (lsTRACE, LedgerEntrySet) << "dirAdd:   creating: root: " << uRootIndex.ToString();
+	WriteLog (lsTRACE, LedgerEntrySet) << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString();
+	WriteLog (lsTRACE, LedgerEntrySet) << "dirAdd:  appending: Node: " << strHex(uNodeDir);
+	// WriteLog (lsINFO, LedgerEntrySet) << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString();
 
 	return tesSUCCESS;
 }
@@ -659,7 +657,7 @@ TER LedgerEntrySet::dirDelete(
 
 	if (!sleNode)
 	{
-		cLog(lsWARNING)
+		WriteLog (lsWARNING, LedgerEntrySet)
 			<< boost::str(boost::format("dirDelete: no such node: uRootIndex=%s uNodeDir=%s uLedgerIndex=%s")
 				% uRootIndex.ToString()
 				% strHex(uNodeDir)
@@ -694,7 +692,7 @@ TER LedgerEntrySet::dirDelete(
 		{
 			assert(false);
 
-			cLog(lsWARNING) << "dirDelete: no such entry";
+			WriteLog (lsWARNING, LedgerEntrySet) << "dirDelete: no such entry";
 
 			return tefBAD_LEDGER;
 		}
@@ -797,14 +795,14 @@ TER LedgerEntrySet::dirDelete(
 
 			if (!slePrevious)
 			{
-				cLog(lsWARNING) << "dirDelete: previous node is missing";
+				WriteLog (lsWARNING, LedgerEntrySet) << "dirDelete: previous node is missing";
 
 				return tefBAD_LEDGER;
 			}
 
 			if (!sleNext)
 			{
-				cLog(lsWARNING) << "dirDelete: next node is missing";
+				WriteLog (lsWARNING, LedgerEntrySet) << "dirDelete: next node is missing";
 
 				return tefBAD_LEDGER;
 			}
@@ -898,7 +896,7 @@ bool LedgerEntrySet::dirNext(
 	}
 
 	uEntryIndex	= vuiIndexes[uDirEntry++];
-	cLog(lsTRACE) << boost::str(boost::format("dirNext: uDirEntry=%d uEntryIndex=%s") % uDirEntry % uEntryIndex);
+	WriteLog (lsTRACE, LedgerEntrySet) << boost::str(boost::format("dirNext: uDirEntry=%d uEntryIndex=%s") % uDirEntry % uEntryIndex);
 
 	return true;
 }
@@ -1010,7 +1008,7 @@ STAmount LedgerEntrySet::rippleOwed(const uint160& uToAccountID, const uint160& 
 	{
 		saBalance.zero(uCurrencyID, uToAccountID);
 
-		cLog(lsDEBUG) << "rippleOwed: No credit line between "
+		WriteLog (lsDEBUG, LedgerEntrySet) << "rippleOwed: No credit line between "
 			<< RippleAddress::createHumanAccountID(uFromAccountID)
 			<< " and "
 			<< RippleAddress::createHumanAccountID(uToAccountID)
@@ -1060,7 +1058,7 @@ uint32 LedgerEntrySet::rippleTransferRate(const uint160& uIssuerID)
 									? sleAccount->getFieldU32(sfTransferRate)
 									: QUALITY_ONE;
 
-	cLog(lsDEBUG) << boost::str(boost::format("rippleTransferRate: uIssuerID=%s account_exists=%d transfer_rate=%f")
+	WriteLog (lsDEBUG, LedgerEntrySet) << boost::str(boost::format("rippleTransferRate: uIssuerID=%s account_exists=%d transfer_rate=%f")
 		% RippleAddress::createHumanAccountID(uIssuerID)
 		% !!sleAccount
 		% (uQuality/1000000000.0));
@@ -1107,7 +1105,7 @@ uint32 LedgerEntrySet::rippleQualityIn(const uint160& uToAccountID, const uint16
 		}
 	}
 
-	cLog(lsTRACE) << boost::str(boost::format("rippleQuality: %s uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQuality=%f")
+	WriteLog (lsTRACE, LedgerEntrySet) << boost::str(boost::format("rippleQuality: %s uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQuality=%f")
 		% (sfLow == sfLowQualityIn ? "in" : "out")
 		% RippleAddress::createHumanAccountID(uToAccountID)
 		% RippleAddress::createHumanAccountID(uFromAccountID)
@@ -1171,7 +1169,7 @@ STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& 
 			saAmount	= saBalance-uReserve;
 		}
 
-		cLog(lsTRACE) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s saBalance=%s uReserve=%d")
+		WriteLog (lsTRACE, LedgerEntrySet) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s saBalance=%s uReserve=%d")
 			% RippleAddress::createHumanAccountID(uAccountID)
 			% saAmount.getFullText()
 			% saBalance.getFullText()
@@ -1181,7 +1179,7 @@ STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& 
 	{
 		saAmount	= rippleHolds(uAccountID, uCurrencyID, uIssuerID);
 
-		cLog(lsTRACE) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s")
+		WriteLog (lsTRACE, LedgerEntrySet) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s")
 			% RippleAddress::createHumanAccountID(uAccountID)
 			% saAmount.getFullText());
 	}
@@ -1203,7 +1201,7 @@ STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount&
 	{
 		saFunds	= saDefault;
 
-		cLog(lsTRACE) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s SELF-FUNDED")
+		WriteLog (lsTRACE, LedgerEntrySet) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s SELF-FUNDED")
 			% RippleAddress::createHumanAccountID(uAccountID)
 			% saDefault.getFullText());
 	}
@@ -1211,7 +1209,7 @@ STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount&
 	{
 		saFunds	= accountHolds(uAccountID, saDefault.getCurrency(), saDefault.getIssuer());
 
-		cLog(lsTRACE) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s saFunds=%s")
+		WriteLog (lsTRACE, LedgerEntrySet) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s saFunds=%s")
 			% RippleAddress::createHumanAccountID(uAccountID)
 			% saDefault.getFullText()
 			% saFunds.getFullText());
@@ -1234,7 +1232,7 @@ STAmount LedgerEntrySet::rippleTransferFee(const uint160& uSenderID, const uint1
 			STAmount	saTransferTotal	= STAmount::multiply(saAmount, saTransitRate, saAmount.getCurrency(), saAmount.getIssuer());
 			STAmount	saTransferFee	= saTransferTotal-saAmount;
 
-			cLog(lsDEBUG) << boost::str(boost::format("rippleTransferFee: saTransferFee=%s")
+			WriteLog (lsDEBUG, LedgerEntrySet) << boost::str(boost::format("rippleTransferFee: saTransferFee=%s")
 				% saTransferFee.getFullText());
 
 			return saTransferFee;
@@ -1321,16 +1319,16 @@ TER LedgerEntrySet::trustDelete(SLE::ref sleRippleState, const uint160& uLowAcco
 	uint64		uHighNode	= sleRippleState->getFieldU64(sfHighNode);
 	TER			terResult;
 
-	cLog(lsTRACE) << "trustDelete: Deleting ripple line: low";
+	WriteLog (lsTRACE, LedgerEntrySet) << "trustDelete: Deleting ripple line: low";
 	terResult	= dirDelete(false, uLowNode, Ledger::getOwnerDirIndex(uLowAccountID), sleRippleState->getIndex(), false, !bLowNode);
 
 	if (tesSUCCESS == terResult)
 	{
-		cLog(lsTRACE) << "trustDelete: Deleting ripple line: high";
+		WriteLog (lsTRACE, LedgerEntrySet) << "trustDelete: Deleting ripple line: high";
 		terResult	= dirDelete(false, uHighNode, Ledger::getOwnerDirIndex(uHighAccountID), sleRippleState->getIndex(), false, !bHighNode);
 	}
 
-	cLog(lsTRACE) << "trustDelete: Deleting ripple line: state";
+	WriteLog (lsTRACE, LedgerEntrySet) << "trustDelete: Deleting ripple line: state";
 	entryDelete(sleRippleState);
 
 	return terResult;
@@ -1367,7 +1365,7 @@ TER LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRecei
 
 		saBalance.setIssuer(ACCOUNT_ONE);
 
-		cLog(lsDEBUG) << boost::str(boost::format("rippleCredit: create line: %s --> %s : %s")
+		WriteLog (lsDEBUG, LedgerEntrySet) << boost::str(boost::format("rippleCredit: create line: %s --> %s : %s")
 			% RippleAddress::createHumanAccountID(uSenderID)
 			% RippleAddress::createHumanAccountID(uReceiverID)
 			% saAmount.getFullText());
@@ -1393,7 +1391,7 @@ TER LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRecei
 
 		saBalance	-= saAmount;
 
-		cLog(lsDEBUG) << boost::str(boost::format("rippleCredit: %s --> %s : before=%s amount=%s after=%s")
+		WriteLog (lsDEBUG, LedgerEntrySet) << boost::str(boost::format("rippleCredit: %s --> %s : before=%s amount=%s after=%s")
 			% RippleAddress::createHumanAccountID(uSenderID)
 			% RippleAddress::createHumanAccountID(uReceiverID)
 			% saBefore.getFullText()
@@ -1475,7 +1473,7 @@ TER LedgerEntrySet::rippleSend(const uint160& uSenderID, const uint160& uReceive
 
 		saActual.setIssuer(uIssuerID);	// XXX Make sure this done in + above.
 
-		cLog(lsDEBUG) << boost::str(boost::format("rippleSend> %s -- > %s : deliver=%s fee=%s cost=%s")
+		WriteLog (lsDEBUG, LedgerEntrySet) << boost::str(boost::format("rippleSend> %s -- > %s : deliver=%s fee=%s cost=%s")
 			% RippleAddress::createHumanAccountID(uSenderID)
 			% RippleAddress::createHumanAccountID(uReceiverID)
 			% saAmount.getFullText()
@@ -1509,7 +1507,7 @@ TER LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uReceiv
 											? entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uReceiverID))
 											: SLE::pointer();
 
-		cLog(lsDEBUG) << boost::str(boost::format("accountSend> %s (%s) -> %s (%s) : %s")
+		WriteLog (lsDEBUG, LedgerEntrySet) << boost::str(boost::format("accountSend> %s (%s) -> %s (%s) : %s")
 			% RippleAddress::createHumanAccountID(uSenderID)
 			% (sleSender ? (sleSender->getFieldAmount(sfBalance)).getFullText() : "-")
 			% RippleAddress::createHumanAccountID(uReceiverID)
@@ -1537,7 +1535,7 @@ TER LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uReceiv
 			entryModify(sleReceiver);
 		}
 
-		cLog(lsDEBUG) << boost::str(boost::format("accountSend< %s (%s) -> %s (%s) : %s")
+		WriteLog (lsDEBUG, LedgerEntrySet) << boost::str(boost::format("accountSend< %s (%s) -> %s (%s) : %s")
 			% RippleAddress::createHumanAccountID(uSenderID)
 			% (sleSender ? (sleSender->getFieldAmount(sfBalance)).getFullText() : "-")
 			% RippleAddress::createHumanAccountID(uReceiverID)
@@ -1548,7 +1546,7 @@ TER LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uReceiv
 	{
 		STAmount	saActual;
 
-		cLog(lsDEBUG) << boost::str(boost::format("accountSend: %s -> %s : %s")
+		WriteLog (lsDEBUG, LedgerEntrySet) << boost::str(boost::format("accountSend: %s -> %s : %s")
 			% RippleAddress::createHumanAccountID(uSenderID)
 			% RippleAddress::createHumanAccountID(uReceiverID)
 			% saAmount.getFullText());

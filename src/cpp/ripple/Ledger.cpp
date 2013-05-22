@@ -643,7 +643,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		ret->setAccepted();
 	if (ret->getHash() != ledgerHash)
 	{
-		if (sLog(lsERROR))
+		if (ShouldLog (lsERROR, Ledger))
 		{
 			Log(lsERROR) << "Failed on ledger";
 			Json::Value p;
@@ -1463,13 +1463,13 @@ bool Ledger::walkLedger()
 {
 	std::vector<SHAMapMissingNode> missingNodes1, missingNodes2;
 	mAccountStateMap->walkMap(missingNodes1, 32);
-	if (sLog(lsINFO) && !missingNodes1.empty())
+	if (ShouldLog (lsINFO, Ledger) && !missingNodes1.empty())
 	{
 		Log(lsINFO) << missingNodes1.size() << " missing account node(s)";
 		Log(lsINFO) << "First: " << missingNodes1[0];
 	}
 	mTransactionMap->walkMap(missingNodes2, 32);
-	if (sLog(lsINFO) && !missingNodes2.empty())
+	if (ShouldLog (lsINFO, Ledger) && !missingNodes2.empty())
 	{
 		Log(lsINFO) << missingNodes2.size() << " missing transaction node(s)";
 		Log(lsINFO) << "First: " << missingNodes2[0];

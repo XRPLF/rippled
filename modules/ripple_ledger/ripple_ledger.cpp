@@ -30,31 +30,27 @@
 #pragma warning (disable: 4244) // conversion, possible loss of data
 #endif
 
-#if 0
-#include "src/cpp/ripple/Contract.cpp"
-#include "src/cpp/ripple/Operation.cpp"
+#include "src/cpp/ripple/Contract.cpp" // no log
+#include "src/cpp/ripple/Operation.cpp" // no log
 
-#include "src/cpp/ripple/AcceptedLedger.cpp"
-#include "src/cpp/ripple/AccountItems.cpp"
-#include "src/cpp/ripple/AccountState.cpp"
-#endif
+#include "src/cpp/ripple/AcceptedLedger.cpp" // no log
+#include "src/cpp/ripple/AccountItems.cpp" // no log
+#include "src/cpp/ripple/AccountState.cpp" // no log
 #include "src/cpp/ripple/FeatureTable.cpp"
 #include "src/cpp/ripple/Ledger.cpp"
-#if 0
 #include "src/cpp/ripple/LedgerAcquire.cpp"
 #include "src/cpp/ripple/LedgerConsensus.cpp"
 #include "src/cpp/ripple/LedgerEntrySet.cpp"
-#include "src/cpp/ripple/LedgerFormats.cpp"
-#include "src/cpp/ripple/LedgerHistory.cpp"
+#include "src/cpp/ripple/LedgerFormats.cpp" // no log
+#include "src/cpp/ripple/LedgerHistory.cpp" // no log
 #include "src/cpp/ripple/LedgerMaster.cpp"
-#include "src/cpp/ripple/LedgerProposal.cpp"
+#include "src/cpp/ripple/LedgerProposal.cpp" // no log
 #include "src/cpp/ripple/LedgerTiming.cpp"
-#include "src/cpp/ripple/Offer.cpp"
-#include "src/cpp/ripple/OrderBook.cpp"
+#include "src/cpp/ripple/Offer.cpp" // no log
+#include "src/cpp/ripple/OrderBook.cpp" // no log
 #include "src/cpp/ripple/OrderBookDB.cpp"
 #include "src/cpp/ripple/RippleCalc.cpp"
-#include "src/cpp/ripple/RippleState.cpp"
-#endif
+#include "src/cpp/ripple/RippleState.cpp" // no log
 
 #ifdef _MSC_VER
 //#pragma warning (pop)
