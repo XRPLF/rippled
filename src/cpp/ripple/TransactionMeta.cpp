@@ -9,7 +9,7 @@
 #include "Log.h"
 #include "SerializedObject.h"
 
-SETUP_LOG();
+// VFALCO: TODO, rename class to TransactionMeta
 
 TransactionMetaSet::TransactionMetaSet(const uint256& txid, uint32 ledger, const std::vector<unsigned char>& vec) :
 	mTransactionID(txid), mLedger(ledger), mNodes(sfAffectedNodes, 32)
@@ -99,7 +99,7 @@ std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts()
 						}
 						else
 						{
-							cLog(lsFATAL) << "limit is not amount " << field.getJson(0);
+							WriteLog (lsFATAL, TransactionMetaSet) << "limit is not amount " << field.getJson(0);
 						}
 					}
 				}

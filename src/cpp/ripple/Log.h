@@ -48,6 +48,9 @@ enum LogSeverity
 	lsFATAL		= 5		// A severe condition that indicates a server problem
 };
 
+//------------------------------------------------------------------------------
+
+// VFALCO: TODO, make this a nested class in Log
 class LogPartition
 {
 protected:
@@ -66,7 +69,24 @@ public:
 	static bool setSeverity(const std::string& partition, LogSeverity severity);
 	static void setSeverity(LogSeverity severity);
 	static std::vector< std::pair<std::string, std::string> > getSeverities();
+
+private:
+	template <class Key>
+	inline static LogPartition getFileName ()
+	{
+		// VFALCO: TODO, to implement this correctly get __FILE__ from Key
+		return __FILE__;
+	}
+public:
+	template <class Key>
+	inline static LogPartition const& get ()
+	{
+		static LogPartition logPartition (getFileName <Key> ());
+		return logPartition;
+	}
 };
+
+//------------------------------------------------------------------------------
 
 class Log
 {
@@ -114,24 +134,9 @@ public:
 	static std::string rotateLog(void);
 };
 
-//-----
-
-template <class Key>
-inline LogPartition const& getLogPartition ()
-{
-	static LogPartition logPartition (__FILE__);
-	return logPartition;
-}
-
-template <class Key>
-inline Log getLog (LogSeverity level)
-{
-	return Log (level, getLogPartition <Key> ());
-}
-
-#define ShouldLog(s, k) (getLogPartition <k> ().doLog (s))
-#define WriteLog(s, k) if (!ShouldLog (s, k)) do {} while (0); else Log (s, getLogPartition <k> ())
-#define CondLog(c, s, k) if (!ShouldLog (s, k) || !(c)) do {} while(0); else Log(s, getLogPartition <k> ())
+#define ShouldLog(s, k) (LogPartition::get <k> ().doLog (s))
+#define WriteLog(s, k) if (!ShouldLog (s, k)) do {} while (0); else Log (s, LogPartition::get <k> ())
+#define CondLog(c, s, k) if (!ShouldLog (s, k) || !(c)) do {} while(0); else Log(s, LogPartition::get <k> ())
 
 #endif
 

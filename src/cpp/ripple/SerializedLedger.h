@@ -8,6 +8,7 @@
 
 DEFINE_INSTANCE(SerializedLedgerEntry);
 
+// VFALCO: TODO, rename this to SerializedLedger
 class SerializedLedgerEntry : public STObject, private IS_INSTANCE(SerializedLedgerEntry)
 {
 public:

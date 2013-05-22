@@ -27,43 +27,43 @@ TER PaymentTransactor::doApply()
 	const uint160	uDstCurrency	= saDstAmount.getCurrency();
 	const bool		bXRPDirect		= uSrcCurrency.isZero() && uDstCurrency.isZero();
 
-	cLog(lsINFO) << boost::str(boost::format("Payment> saMaxAmount=%s saDstAmount=%s")
+	WriteLog (lsINFO, PaymentTransactor) << boost::str(boost::format("Payment> saMaxAmount=%s saDstAmount=%s")
 		% saMaxAmount.getFullText()
 		% saDstAmount.getFullText());
 
 	if (uTxFlags & tfPaymentMask)
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: Invalid flags set.";
+		WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: Invalid flags set.";
 
 		return temINVALID_FLAG;
 	}
 	else if (!uDstAccountID)
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: Payment destination account not specified.";
+		WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: Payment destination account not specified.";
 
 		return temDST_NEEDED;
 	}
 	else if (bMax && !saMaxAmount.isPositive())
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: bad max amount: " << saMaxAmount.getFullText();
+		WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: bad max amount: " << saMaxAmount.getFullText();
 
 		return temBAD_AMOUNT;
 	}
 	else if (!saDstAmount.isPositive())
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: bad dst amount: " << saDstAmount.getFullText();
+		WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: bad dst amount: " << saDstAmount.getFullText();
 
 		return temBAD_AMOUNT;
 	}
 	else if (CURRENCY_BAD == uSrcCurrency || CURRENCY_BAD == uDstCurrency)
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: Bad currency.";
+		WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: Bad currency.";
 
 		return temBAD_CURRENCY;
 	}
 	else if (mTxnAccountID == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
 	{
-		cLog(lsINFO) << boost::str(boost::format("Payment: Malformed transaction: Redundant transaction: src=%s, dst=%s, src_cur=%s, dst_cur=%s")
+		WriteLog (lsINFO, PaymentTransactor) << boost::str(boost::format("Payment: Malformed transaction: Redundant transaction: src=%s, dst=%s, src_cur=%s, dst_cur=%s")
 			% mTxnAccountID.ToString()
 			% uDstAccountID.ToString()
 			% uSrcCurrency.ToString()
@@ -73,37 +73,37 @@ TER PaymentTransactor::doApply()
 	}
 	else if (bMax && saMaxAmount == saDstAmount && saMaxAmount.getCurrency() == saDstAmount.getCurrency())
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: Redundant SendMax.";
+		WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: Redundant SendMax.";
 
 		return temREDUNDANT_SEND_MAX;
 	}
 	else if (bXRPDirect && bMax)
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: SendMax specified for XRP to XRP.";
+		WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: SendMax specified for XRP to XRP.";
 
 		return temBAD_SEND_XRP_MAX;
 	}
 	else if (bXRPDirect && bPaths)
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: Paths specified for XRP to XRP.";
+		WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: Paths specified for XRP to XRP.";
 
 		return temBAD_SEND_XRP_PATHS;
 	}
 	else if (bXRPDirect && bPartialPayment)
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: Partial payment specified for XRP to XRP.";
+		WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: Partial payment specified for XRP to XRP.";
 
 		return temBAD_SEND_XRP_PARTIAL;
 	}
 	else if (bXRPDirect && bLimitQuality)
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: Limit quality specified for XRP to XRP.";
+		WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: Limit quality specified for XRP to XRP.";
 
 		return temBAD_SEND_XRP_LIMIT;
 	}
 	else if (bXRPDirect && bNoRippleDirect)
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: No ripple direct specified for XRP to XRP.";
+		WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: No ripple direct specified for XRP to XRP.";
 
 		return temBAD_SEND_XRP_NO_DIRECT;
 	}
@@ -115,14 +115,14 @@ TER PaymentTransactor::doApply()
 
 		if (!saDstAmount.isNative())
 		{
-			cLog(lsINFO) << "Payment: Delay transaction: Destination account does not exist.";
+			WriteLog (lsINFO, PaymentTransactor) << "Payment: Delay transaction: Destination account does not exist.";
 
 			// Another transaction could create the account and then this transaction would succeed.
 			return tecNO_DST;
 		}
 		else if (isSetBit(mParams, tapOPEN_LEDGER) && bPartialPayment)
 		{
-			cLog(lsINFO) << "Payment: Delay transaction: Partial payment not allowed to create account.";
+			WriteLog (lsINFO, PaymentTransactor) << "Payment: Delay transaction: Partial payment not allowed to create account.";
 			// Make retry work smaller, by rejecting this.
 
 			// Another transaction could create the account and then this transaction would succeed.
@@ -130,7 +130,7 @@ TER PaymentTransactor::doApply()
 		}
 		else if (saDstAmount.getNValue() < mEngine->getLedger()->getReserve(0))	// Reserve is not scaled by load.
 		{
-			cLog(lsINFO) << "Payment: Delay transaction: Destination account does not exist. Insufficent payment to create account.";
+			WriteLog (lsINFO, PaymentTransactor) << "Payment: Delay transaction: Destination account does not exist. Insufficent payment to create account.";
 
 			// Another transaction could create the account and then this transaction would succeed.
 			return tecNO_DST_INSUF_XRP;
@@ -144,7 +144,7 @@ TER PaymentTransactor::doApply()
 	}
 	else if ((sleDst->getFlags() & lsfRequireDestTag) && !mTxn.isFieldPresent(sfDestinationTag))
 	{
-		cLog(lsINFO) << "Payment: Malformed transaction: DestinationTag required.";
+		WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: DestinationTag required.";
 
 		return tefDST_TAG_NEEDED;
 	}
@@ -188,7 +188,7 @@ TER PaymentTransactor::doApply()
 		}
 		catch (const std::exception& e)
 		{
-			cLog(lsINFO) << "Payment: Caught throw: " << e.what();
+			WriteLog (lsINFO, PaymentTransactor) << "Payment: Caught throw: " << e.what();
 
 			terResult	= tefEXCEPTION;
 		}
@@ -204,8 +204,8 @@ TER PaymentTransactor::doApply()
 		if (mPriorBalance < saDstAmount + uReserve)		// Reserve is not scaled by fee.
 		{
 			// Vote no. However, transaction might succeed, if applied in a different order.
-			cLog(lsINFO) << "";
-			cLog(lsINFO) << boost::str(boost::format("Payment: Delay transaction: Insufficient funds: %s / %s (%d)")
+			WriteLog (lsINFO, PaymentTransactor) << "";
+			WriteLog (lsINFO, PaymentTransactor) << boost::str(boost::format("Payment: Delay transaction: Insufficient funds: %s / %s (%d)")
 				% mPriorBalance.getText() % (saDstAmount + uReserve).getText() % uReserve);
 
 			terResult	= tecUNFUNDED_PAYMENT;
@@ -228,7 +228,7 @@ TER PaymentTransactor::doApply()
 
 	if (transResultInfo(terResult, strToken, strHuman))
 	{
-		cLog(lsINFO) << boost::str(boost::format("Payment: %s: %s") % strToken % strHuman);
+		WriteLog (lsINFO, PaymentTransactor) << boost::str(boost::format("Payment: %s: %s") % strToken % strHuman);
 	}
 	else
 	{

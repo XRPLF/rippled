@@ -20,7 +20,6 @@
 typedef std::map<uint160, LedgerProposal::pointer>::value_type u160_prop_pair;
 typedef std::map<uint256, LCTransaction::pointer>::value_type u256_lct_pair;
 
-SETUP_LOG();
 DECLARE_INSTANCE(TransactionAcquire);
 
 TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, TX_ACQUIRE_TIMEOUT), mHaveRoot(false)
@@ -33,12 +32,12 @@ void TransactionAcquire::done()
 	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 	if (mFailed)
 	{
-		cLog(lsWARNING) << "Failed to acquire TX set " << mHash;
+		WriteLog (lsWARNING, TransactionAcquire) << "Failed to acquire TX set " << mHash;
 		theApp->getOPs().mapComplete(mHash, SHAMap::pointer());
 	}
 	else
 	{
-		cLog(lsINFO) << "Acquired TX set " << mHash;
+		WriteLog (lsINFO, TransactionAcquire) << "Acquired TX set " << mHash;
 		mMap->setImmutable();
 		theApp->getOPs().mapComplete(mHash, mMap);
 	}
@@ -50,12 +49,12 @@ void TransactionAcquire::onTimer(bool progress)
 	bool aggressive = false;
 	if (getTimeouts() > 10)
 	{
-		cLog(lsWARNING) << "Ten timeouts on TX set " << getHash();
+		WriteLog (lsWARNING, TransactionAcquire) << "Ten timeouts on TX set " << getHash();
 		{
 			boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 			if (theApp->getOPs().stillNeedTXSet(mHash))
 			{
-				cLog(lsWARNING) << "Still need it";
+				WriteLog (lsWARNING, TransactionAcquire) << "Still need it";
 				mTimeouts = 0;
 				aggressive = true;
 			}
@@ -69,7 +68,7 @@ void TransactionAcquire::onTimer(bool progress)
 	}
 	if (aggressive || !getPeerCount())
 	{ // out of peers
-		cLog(lsWARNING) << "Out of peers for TX set " << getHash();
+		WriteLog (lsWARNING, TransactionAcquire) << "Out of peers for TX set " << getHash();
 
 		bool found = false;
 		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
@@ -100,12 +99,12 @@ void TransactionAcquire::trigger(Peer::ref peer)
 {
 	if (mComplete || mFailed)
 	{
-		cLog(lsINFO) << "complete or failed";
+		WriteLog (lsINFO, TransactionAcquire) << "complete or failed";
 		return;
 	}
 	if (!mHaveRoot)
 	{
-		cLog(lsTRACE) << "TransactionAcquire::trigger " << (peer ? "havePeer" : "noPeer") << " no root";
+		WriteLog (lsTRACE, TransactionAcquire) << "TransactionAcquire::trigger " << (peer ? "havePeer" : "noPeer") << " no root";
 		ripple::TMGetLedger tmGL;
 		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL.set_itype(ripple::liTS_CANDIDATE);
@@ -145,12 +144,12 @@ SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 {
 	if (mComplete)
 	{
-		cLog(lsTRACE) << "TX set complete";
+		WriteLog (lsTRACE, TransactionAcquire) << "TX set complete";
 		return SMAddNode();
 	}
 	if (mFailed)
 	{
-		cLog(lsTRACE) << "TX set failed";
+		WriteLog (lsTRACE, TransactionAcquire) << "TX set failed";
 		return SMAddNode();
 	}
 	try
@@ -166,12 +165,12 @@ SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 			{
 				if (mHaveRoot)
 				{
-					cLog(lsWARNING) << "Got root TXS node, already have it";
+					WriteLog (lsWARNING, TransactionAcquire) << "Got root TXS node, already have it";
 					return SMAddNode();
 				}
 				if (!mMap->addRootNode(getHash(), *nodeDatait, snfWIRE, NULL))
 				{
-					cLog(lsWARNING) << "TX acquire got bad root node";
+					WriteLog (lsWARNING, TransactionAcquire) << "TX acquire got bad root node";
 					return SMAddNode::invalid();
 				}
 				else
@@ -179,7 +178,7 @@ SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 			}
 			else if (!mMap->addKnownNode(*nodeIDit, *nodeDatait, &sf))
 			{
-				cLog(lsWARNING) << "TX acquire got bad non-root node";
+				WriteLog (lsWARNING, TransactionAcquire) << "TX acquire got bad non-root node";
 				return SMAddNode::invalid();
 			}
 			++nodeIDit;
@@ -191,7 +190,7 @@ SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 	}
 	catch (...)
 	{
-		cLog(lsERROR) << "Peer sends us junky transaction node data";
+		WriteLog (lsERROR, TransactionAcquire) << "Peer sends us junky transaction node data";
 		return SMAddNode::invalid();
 	}
 }
@@ -204,7 +203,7 @@ void ConsensusTransSetSF::gotNode(bool fromFilter, const SHAMapNode& id, const u
 	theApp->getTempNodeCache().store(nodeHash, nodeData);
 	if ((type == SHAMapTreeNode::tnTRANSACTION_NM) && (nodeData.size() > 16))
 	{ // this is a transaction, and we didn't have it
-		cLog(lsDEBUG) << "Node on our acquiring TX set is TXN we don't have";
+		WriteLog (lsDEBUG, TransactionAcquire) << "Node on our acquiring TX set is TXN we don't have";
 		try
 		{
 			Serializer s(nodeData.begin() + 4, nodeData.end()); // skip prefix
@@ -216,7 +215,7 @@ void ConsensusTransSetSF::gotNode(bool fromFilter, const SHAMapNode& id, const u
 		}
 		catch (...)
 		{
-			cLog(lsWARNING) << "Fetched invalid transaction in proposed set";
+			WriteLog (lsWARNING, TransactionAcquire) << "Fetched invalid transaction in proposed set";
 		}
 	}
 }
@@ -230,7 +229,7 @@ bool ConsensusTransSetSF::haveNode(const SHAMapNode& id, const uint256& nodeHash
 	Transaction::pointer txn = Transaction::load(nodeHash);
 	if (txn)
 	{ // this is a transaction, and we have it
-		cLog(lsDEBUG) << "Node in our acquiring TX set is TXN we have";
+		WriteLog (lsDEBUG, TransactionAcquire) << "Node in our acquiring TX set is TXN we have";
 		Serializer s;
 		s.add32(sHP_TransactionID);
 		txn->getSTransaction()->add(s, true);

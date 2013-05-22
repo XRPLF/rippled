@@ -24,15 +24,18 @@
 
 #include "ripple_ledger.h"
 
+// VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
 //#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
 #pragma warning (disable: 4018) // signed/unsigned mismatch
 #pragma warning (disable: 4244) // conversion, possible loss of data
 #endif
 
+// contracts
 #include "src/cpp/ripple/Contract.cpp" // no log
 #include "src/cpp/ripple/Operation.cpp" // no log
 
+// processing
 #include "src/cpp/ripple/AcceptedLedger.cpp" // no log
 #include "src/cpp/ripple/AccountItems.cpp" // no log
 #include "src/cpp/ripple/AccountState.cpp" // no log
@@ -51,6 +54,32 @@
 #include "src/cpp/ripple/OrderBookDB.cpp"
 #include "src/cpp/ripple/RippleCalc.cpp"
 #include "src/cpp/ripple/RippleState.cpp" // no log
+
+// serialization
+#include "src/cpp/ripple/SerializedLedger.cpp"
+#include "src/cpp/ripple/SerializedObject.cpp"
+#include "src/cpp/ripple/SerializedTransaction.cpp"
+#include "src/cpp/ripple/SerializedTypes.cpp"
+#include "src/cpp/ripple/SerializedValidation.cpp"
+#include "src/cpp/ripple/Serializer.cpp"
+
+// transactions
+#include "src/cpp/ripple/AccountSetTransactor.cpp"
+#include "src/cpp/ripple/OfferCancelTransactor.cpp"
+#include "src/cpp/ripple/OfferCreateTransactor.cpp"
+#include "src/cpp/ripple/PaymentTransactor.cpp"
+#include "src/cpp/ripple/RegularKeySetTransactor.cpp"
+#include "src/cpp/ripple/Transaction.cpp"
+#include "src/cpp/ripple/TransactionAcquire.cpp"
+#include "src/cpp/ripple/TransactionCheck.cpp"
+#include "src/cpp/ripple/TransactionEngine.cpp"
+#include "src/cpp/ripple/TransactionErr.cpp" // no log
+#include "src/cpp/ripple/TransactionFormats.cpp" // no log
+#include "src/cpp/ripple/TransactionMaster.cpp" // no log
+#include "src/cpp/ripple/TransactionMeta.cpp"
+#include "src/cpp/ripple/TransactionQueue.cpp" // no log
+#include "src/cpp/ripple/Transactor.cpp"
+#include "src/cpp/ripple/TrustSetTransactor.cpp"
 
 #ifdef _MSC_VER
 //#pragma warning (pop)

@@ -12,8 +12,6 @@
 #include "key.h"
 #include "Log.h"
 
-SETUP_LOG();
-
 int Serializer::addZeros(size_t uBytes)
 {
 	int ret = mData.size();
@@ -190,7 +188,7 @@ bool Serializer::getFieldID(int& type, int& name, int offset) const
 {
 	if (!get8(type, offset))
 	{
-		cLog(lsWARNING) << "gFID: unable to get type";
+		WriteLog (lsWARNING, Serializer) << "gFID: unable to get type";
 		return false;
 	}
 	name = type & 15;
@@ -201,7 +199,7 @@ bool Serializer::getFieldID(int& type, int& name, int offset) const
 			return false;
 		if ((type == 0) || (type < 16))
 		{
-			cLog(lsWARNING) << "gFID: uncommon type out of range " << type;
+			WriteLog (lsWARNING, Serializer) << "gFID: uncommon type out of range " << type;
 			return false;
 		}
 	}
@@ -211,7 +209,7 @@ bool Serializer::getFieldID(int& type, int& name, int offset) const
 			return false;
 		if ((name == 0) || (name < 16))
 		{
-			cLog(lsWARNING) << "gFID: uncommon name out of range " << name;
+			WriteLog (lsWARNING, Serializer) << "gFID: uncommon name out of range " << name;
 			return false;
 		}
 	}
