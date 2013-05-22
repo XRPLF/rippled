@@ -14,8 +14,6 @@
 #include "Config.h"
 #include "Log.h"
 
-SETUP_LOG();
-
 #define CLIENT_MAX_HEADER (32*1024)
 
 using namespace boost::system;
@@ -84,7 +82,7 @@ void HttpsClient::httpsGet(
 
 void HttpsClient::httpsNext()
 {
-	cLog(lsTRACE) << "Fetch: " << mDeqSites[0];
+	WriteLog (lsTRACE, HttpsClient) << "Fetch: " << mDeqSites[0];
 
     boost::shared_ptr<boost::asio::ip::tcp::resolver::query>	query(new boost::asio::ip::tcp::resolver::query(mDeqSites[0], boost::lexical_cast<std::string>(mPort),
 			ip::resolver_query_base::numeric_service));
@@ -92,7 +90,7 @@ void HttpsClient::httpsNext()
 
 	mDeadline.expires_from_now(mTimeout, mShutdown);
 
-	cLog(lsTRACE) << "expires_from_now: " << mShutdown.message();
+	WriteLog (lsTRACE, HttpsClient) << "expires_from_now: " << mShutdown.message();
 
 	if (!mShutdown)
 	{
@@ -105,7 +103,7 @@ void HttpsClient::httpsNext()
 
     if (!mShutdown)
     {
-		cLog(lsTRACE) << "Resolving: " << mDeqSites[0];
+		WriteLog (lsTRACE, HttpsClient) << "Resolving: " << mDeqSites[0];
 
 		mResolver.async_resolve(*mQuery,
 			boost::bind(
@@ -124,20 +122,20 @@ void HttpsClient::handleDeadline(const boost::system::error_code& ecResult)
 	if (ecResult == boost::asio::error::operation_aborted)
 	{
 		// Timer canceled because deadline no longer needed.
-		cLog(lsTRACE) << "Deadline cancelled.";
+		WriteLog (lsTRACE, HttpsClient) << "Deadline cancelled.";
 
 		nothing();  // Aborter is done.
 	}
 	else if (ecResult)
     {
-		cLog(lsTRACE) << "Deadline error: " << mDeqSites[0] << ": " << ecResult.message();
+		WriteLog (lsTRACE, HttpsClient) << "Deadline error: " << mDeqSites[0] << ": " << ecResult.message();
 
 		// Can't do anything sound.
 		abort();
     }
     else
     {
-		cLog(lsTRACE) << "Deadline arrived.";
+		WriteLog (lsTRACE, HttpsClient) << "Deadline arrived.";
 
 		// Mark us as shutting down.
 		// XXX Use our own error code.
@@ -161,7 +159,7 @@ void HttpsClient::handleShutdown(
 {
 	if (ecResult)
 	{
-		cLog(lsTRACE) << "Shutdown error: " << mDeqSites[0] << ": " << ecResult.message();
+		WriteLog (lsTRACE, HttpsClient) << "Shutdown error: " << mDeqSites[0] << ": " << ecResult.message();
 	}
 }
 
@@ -175,13 +173,13 @@ void HttpsClient::handleResolve(
 
     if (mShutdown)
     {
-		cLog(lsTRACE) << "Resolve error: " << mDeqSites[0] << ": " << mShutdown.message();
+		WriteLog (lsTRACE, HttpsClient) << "Resolve error: " << mDeqSites[0] << ": " << mShutdown.message();
 
 		invokeComplete(mShutdown);
     }
 	else
 	{
-		cLog(lsTRACE) << "Resolve complete.";
+		WriteLog (lsTRACE, HttpsClient) << "Resolve complete.";
 
 		boost::asio::async_connect(
 			mSocket.lowest_layer(),
@@ -200,19 +198,19 @@ void HttpsClient::handleConnect(const boost::system::error_code& ecResult)
 
     if (mShutdown)
     {
-		cLog(lsTRACE) << "Connect error: " << mShutdown.message();
+		WriteLog (lsTRACE, HttpsClient) << "Connect error: " << mShutdown.message();
     }
 
     if (!mShutdown)
 	{
-		cLog(lsTRACE) << "Connected.";
+		WriteLog (lsTRACE, HttpsClient) << "Connected.";
 
 		if (theConfig.SSL_VERIFY)
 		{
 			mShutdown	= mSocket.verify(mDeqSites[0]);
 		    if (mShutdown)
 			{
-				cLog(lsTRACE) << "set_verify_callback: " << mDeqSites[0] << ": " << mShutdown.message();
+				WriteLog (lsTRACE, HttpsClient) << "set_verify_callback: " << mDeqSites[0] << ": " << mShutdown.message();
 			}
 		}
 	}
@@ -243,13 +241,13 @@ void HttpsClient::handleRequest(const boost::system::error_code& ecResult)
 
     if (mShutdown)
     {
-		cLog(lsTRACE) << "Handshake error:" << mShutdown.message();
+		WriteLog (lsTRACE, HttpsClient) << "Handshake error:" << mShutdown.message();
 
 		invokeComplete(mShutdown);
     }
 	else
 	{
-		cLog(lsTRACE) << "Session started.";
+		WriteLog (lsTRACE, HttpsClient) << "Session started.";
 
 		mBuild(mRequest, mDeqSites[0]);
 
@@ -269,13 +267,13 @@ void HttpsClient::handleWrite(const boost::system::error_code& ecResult, std::si
 
     if (mShutdown)
     {
-		cLog(lsTRACE) << "Write error: " << mShutdown.message();
+		WriteLog (lsTRACE, HttpsClient) << "Write error: " << mShutdown.message();
 
 		invokeComplete(mShutdown);
     }
     else
     {
-		cLog(lsTRACE) << "Wrote.";
+		WriteLog (lsTRACE, HttpsClient) << "Wrote.";
 
 		mSocket.async_read_until(
 			mHeader,
@@ -290,7 +288,7 @@ void HttpsClient::handleWrite(const boost::system::error_code& ecResult, std::si
 void HttpsClient::handleHeader(const boost::system::error_code& ecResult, std::size_t bytes_transferred)
 {
 	std::string		strHeader((std::istreambuf_iterator<char>(&mHeader)), std::istreambuf_iterator<char>());
-	cLog(lsTRACE) << "Header: \"" << strHeader << "\"";
+	WriteLog (lsTRACE, HttpsClient) << "Header: \"" << strHeader << "\"";
 
 	static boost::regex	reStatus("\\`HTTP/1\\S+ (\\d{3}) .*\\'");			// HTTP/1.1 200 OK
 	static boost::regex reSize("\\`.*\\r\\nContent-Length:\\s+([0-9]+).*\\'");
@@ -302,7 +300,7 @@ void HttpsClient::handleHeader(const boost::system::error_code& ecResult, std::s
 	if (!bMatch)
 	{
 		// XXX Use our own error code.
-		cLog(lsTRACE) << "No status code";
+		WriteLog (lsTRACE, HttpsClient) << "No status code";
 		invokeComplete(boost::system::error_code(errc::bad_address, system_category()));
 		return;
 	}
@@ -339,7 +337,7 @@ void HttpsClient::handleData(const boost::system::error_code& ecResult, std::siz
 
     if (mShutdown && mShutdown != boost::asio::error::eof)
     {
-		cLog(lsTRACE) << "Read error: " << mShutdown.message();
+		WriteLog (lsTRACE, HttpsClient) << "Read error: " << mShutdown.message();
 
 		invokeComplete(mShutdown);
     }
@@ -347,7 +345,7 @@ void HttpsClient::handleData(const boost::system::error_code& ecResult, std::siz
     {
 		if (mShutdown)
 		{
-			cLog(lsTRACE) << "Complete.";
+			WriteLog (lsTRACE, HttpsClient) << "Complete.";
 
 			nothing();
 		}
@@ -369,10 +367,10 @@ void HttpsClient::invokeComplete(const boost::system::error_code& ecResult, int 
 
 	if (ecCancel)
 	{
-		cLog(lsTRACE) << "HttpsClient::invokeComplete: Deadline cancel error: " << ecCancel.message();
+		WriteLog (lsTRACE, HttpsClient) << "HttpsClient::invokeComplete: Deadline cancel error: " << ecCancel.message();
 	}
 
-	cLog(lsDEBUG) << "HttpsClient::invokeComplete: Deadline popping: " << mDeqSites.size();
+	WriteLog (lsDEBUG, HttpsClient) << "HttpsClient::invokeComplete: Deadline popping: " << mDeqSites.size();
 	if (!mDeqSites.empty())
 	{
 		mDeqSites.pop_front();
@@ -446,7 +444,7 @@ void HttpsClient::httpsRequest(
 #define SMS_TIMEOUT	30
 
 bool responseSMS(const boost::system::error_code& ecResult, int iStatus, const std::string& strData) {
-	cLog(lsINFO) << "SMS: Response:" << iStatus << " :" << strData;
+	WriteLog (lsINFO, HttpsClient) << "SMS: Response:" << iStatus << " :" << strData;
 
 	return true;
 }
@@ -459,7 +457,7 @@ void HttpsClient::sendSMS(boost::asio::io_service& io_service, const std::string
 
 	if (theConfig.SMS_URL == "" || !parseUrl(theConfig.SMS_URL, strScheme, strDomain, iPort, strPath))
 	{
-		cLog(lsWARNING) << "SMSRequest: Bad URL:" << theConfig.SMS_URL;
+		WriteLog (lsWARNING, HttpsClient) << "SMSRequest: Bad URL:" << theConfig.SMS_URL;
 	}
 	else
 	{
@@ -475,8 +473,8 @@ void HttpsClient::sendSMS(boost::asio::io_service& io_service, const std::string
 				% theConfig.SMS_SECRET
 				% urlEncode(strText));
 
-		// cLog(lsINFO) << "SMS: Request:" << strURI;
-		cLog(lsINFO) << "SMS: Request: '" << strText << "'";
+		// WriteLog (lsINFO) << "SMS: Request:" << strURI;
+		WriteLog (lsINFO, HttpsClient) << "SMS: Request: '" << strText << "'";
 
 		if (iPort < 0)
 			iPort = bSSL ? 443 : 80;

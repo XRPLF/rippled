@@ -25,8 +25,6 @@
 #include "PFRequest.h"
 #include "ProofOfWork.h"
 
-SETUP_LOG();
-
 static const int rpcCOST_DEFAULT	= 10;
 static const int rpcCOST_EXCEPTION	= 20;
 static const int rpcCOST_EXPENSIVE	= 50;
@@ -81,7 +79,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 	RippleAddress	naSeed;
 	RippleAddress	raSrcAddressID;
 
-	cLog(lsDEBUG) << boost::str(boost::format("transactionSign: %s") % jvRequest);
+	WriteLog (lsDEBUG, RPCHandler) << boost::str(boost::format("transactionSign: %s") % jvRequest);
 
 	if (!jvRequest.isMember("secret") || !jvRequest.isMember("tx_json"))
 	{
@@ -114,7 +112,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 	AccountState::pointer asSrc	= mNetOps->getAccountState(mNetOps->getCurrentLedger(), raSrcAddressID);
 	if (!asSrc)
 	{
-		cLog(lsDEBUG) << boost::str(boost::format("transactionSign: Failed to find source account in current ledger: %s")
+		WriteLog (lsDEBUG, RPCHandler) << boost::str(boost::format("transactionSign: Failed to find source account in current ledger: %s")
 			% raSrcAddressID.humanAccountID());
 
 		return rpcError(rpcSRC_ACT_NOT_FOUND);
@@ -187,13 +185,13 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 
 				if (!bValid || !pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsPaths))
 				{
-					cLog(lsDEBUG) << "transactionSign: build_path: No paths found.";
+					WriteLog (lsDEBUG, RPCHandler) << "transactionSign: build_path: No paths found.";
 
 					return rpcError(rpcNO_PATH);
 				}
 				else
 				{
-					cLog(lsDEBUG) << "transactionSign: build_path: " << spsPaths.getJson(0);
+					WriteLog (lsDEBUG, RPCHandler) << "transactionSign: build_path: " << spsPaths.getJson(0);
 				}
 
 				if (!spsPaths.isEmpty())
@@ -243,7 +241,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 	{
 		naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
 
-		cLog(lsWARNING) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << raSrcAddressID.humanAccountID();
+		WriteLog (lsWARNING, RPCHandler) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << raSrcAddressID.humanAccountID();
 
 		bFound	= raSrcAddressID.getAccountID() == naMasterAccountPublic.getAccountID();
 		if (!bFound)
@@ -458,7 +456,7 @@ Json::Value RPCHandler::authorize(Ledger::ref lrLedger,
 	{
 		naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
 
-		cLog(lsDEBUG) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << naSrcAccountID.humanAccountID();
+		WriteLog (lsDEBUG, RPCHandler) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << naSrcAccountID.humanAccountID();
 
 		bFound	= naSrcAccountID.getAccountID() == naMasterAccountPublic.getAccountID();
 		if (!bFound)
@@ -489,7 +487,7 @@ Json::Value RPCHandler::authorize(Ledger::ref lrLedger,
 
 	if (saSrcBalance < saFee)
 	{
-		cLog(lsINFO) << "authorize: Insufficient funds for fees: fee=" << saFee.getText() << " balance=" << saSrcBalance.getText();
+		WriteLog (lsINFO, RPCHandler) << "authorize: Insufficient funds for fees: fee=" << saFee.getText() << " balance=" << saSrcBalance.getText();
 
 		return rpcError(rpcINSUF_FUNDS);
 	}
@@ -1207,7 +1205,7 @@ Json::Value RPCHandler::doBookOffers(Json::Value jvRequest, int& cost, ScopedLoc
 	if (!jvTakerPays.isMember("currency")
 		|| !STAmount::currencyFromString(uTakerPaysCurrencyID, jvTakerPays["currency"].asString()))
 	{
-		cLog(lsINFO) << "Bad taker_pays currency.";
+		WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
 		return rpcError(rpcSRC_CUR_MALFORMED);
 	}
@@ -1219,7 +1217,7 @@ Json::Value RPCHandler::doBookOffers(Json::Value jvRequest, int& cost, ScopedLoc
 		|| (!uTakerPaysCurrencyID != !uTakerPaysIssuerID)
 		|| ACCOUNT_ONE == uTakerPaysIssuerID)
 	{
-		cLog(lsINFO) << "Bad taker_pays issuer.";
+		WriteLog (lsINFO, RPCHandler) << "Bad taker_pays issuer.";
 
 		return rpcError(rpcSRC_ISR_MALFORMED);
 	}
@@ -1232,7 +1230,7 @@ Json::Value RPCHandler::doBookOffers(Json::Value jvRequest, int& cost, ScopedLoc
 	if (!jvTakerGets.isMember("currency")
 		|| !STAmount::currencyFromString(uTakerGetsCurrencyID, jvTakerGets["currency"].asString()))
 	{
-		cLog(lsINFO) << "Bad taker_pays currency.";
+		WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
 		return rpcError(rpcSRC_CUR_MALFORMED);
 	}
@@ -1244,14 +1242,14 @@ Json::Value RPCHandler::doBookOffers(Json::Value jvRequest, int& cost, ScopedLoc
 		|| (!uTakerGetsCurrencyID != !uTakerGetsIssuerID)
 		|| ACCOUNT_ONE == uTakerGetsIssuerID)
 	{
-		cLog(lsINFO) << "Bad taker_gets issuer.";
+		WriteLog (lsINFO, RPCHandler) << "Bad taker_gets issuer.";
 
 		return rpcError(rpcDST_ISR_MALFORMED);
 	}
 
 	if (uTakerPaysCurrencyID == uTakerGetsCurrencyID
 		&& uTakerPaysIssuerID == uTakerGetsIssuerID) {
-		cLog(lsINFO) << "taker_gets same as taker_pays.";
+		WriteLog (lsINFO, RPCHandler) << "taker_gets same as taker_pays.";
 
 		return rpcError(rpcBAD_MARKET);
 	}
@@ -1355,7 +1353,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost, Scope
 	int jc = theApp->getJobQueue().getJobCountGE(jtCLIENT);
 	if (jc > 200)
 	{
-		cLog(lsDEBUG) << "Too busy for RPF: " << jc;
+		WriteLog (lsDEBUG, RPCHandler) << "Too busy for RPF: " << jc;
 		return rpcError(rpcTOO_BUSY);
 	}
 
@@ -1392,7 +1390,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost, Scope
 		|| !saDstAmount.bSetJson(jvRequest["destination_amount"])
 		|| (!!saDstAmount.getCurrency() && (!saDstAmount.getIssuer() || ACCOUNT_ONE == saDstAmount.getIssuer())))
 	{
-		cLog(lsINFO) << "Bad destination_amount.";
+		WriteLog (lsINFO, RPCHandler) << "Bad destination_amount.";
 		jvResult	= rpcError(rpcINVALID_PARAMS);
 	}
 	else if (
@@ -1402,7 +1400,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost, Scope
 			|| !jvRequest["source_currencies"].size())	// Don't allow empty currencies.
 		)
 	{
-		cLog(lsINFO) << "Bad source_currencies.";
+		WriteLog (lsINFO, RPCHandler) << "Bad source_currencies.";
 		jvResult	= rpcError(rpcINVALID_PARAMS);
 	}
 	else
@@ -1460,7 +1458,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost, Scope
 			if (!jvSource.isMember("currency")
 				|| !STAmount::currencyFromString(uSrcCurrencyID, jvSource["currency"].asString()))
 			{
-				cLog(lsINFO) << "Bad currency.";
+				WriteLog (lsINFO, RPCHandler) << "Bad currency.";
 
 				return rpcError(rpcSRC_CUR_MALFORMED);
 			}
@@ -1474,7 +1472,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost, Scope
 					(uSrcIssuerID.isZero() != uSrcCurrencyID.isZero()) ||
 					(ACCOUNT_ONE == uSrcIssuerID)))
 			{
-				cLog(lsINFO) << "Bad issuer.";
+				WriteLog (lsINFO, RPCHandler) << "Bad issuer.";
 
 				return rpcError(rpcSRC_ISR_MALFORMED);
 			}
@@ -1485,7 +1483,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost, Scope
 
 			if (!bValid || !pf.findPaths(theConfig.PATH_SEARCH_SIZE, 3, spsComputed))
 			{
-				cLog(lsWARNING) << "ripple_path_find: No paths found.";
+				WriteLog (lsWARNING, RPCHandler) << "ripple_path_find: No paths found.";
 			}
 			else
 			{
@@ -1521,10 +1519,10 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost, Scope
 						false,					// --> Allow direct ripple to be added to path set. to path set.
 						true);					// --> Stand alone mode, no point in deleting unfundeds.
 
-				// cLog(lsDEBUG) << "ripple_path_find: PATHS IN: " << spsComputed.size() << " : " << spsComputed.getJson(0);
-				// cLog(lsDEBUG) << "ripple_path_find: PATHS EXP: " << vpsExpanded.size();
+				// WriteLog (lsDEBUG, RPCHandler) << "ripple_path_find: PATHS IN: " << spsComputed.size() << " : " << spsComputed.getJson(0);
+				// WriteLog (lsDEBUG, RPCHandler) << "ripple_path_find: PATHS EXP: " << vpsExpanded.size();
 
-				cLog(lsWARNING)
+				WriteLog (lsWARNING, RPCHandler)
 					<< boost::str(boost::format("ripple_path_find: saMaxAmount=%s saDstAmount=%s saMaxAmountAct=%s saDstAmountAct=%s")
 						% saMaxAmount
 						% saDstAmount
@@ -1555,7 +1553,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost, Scope
 
 					transResultInfo(terResult, strToken, strHuman);
 
-					cLog(lsDEBUG)
+					WriteLog (lsDEBUG, RPCHandler)
 						<< boost::str(boost::format("ripple_path_find: %s %s %s")
 							% strToken
 							% strHuman
@@ -1568,7 +1566,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost, Scope
 		jvResult["alternatives"] = jvArray;
 	}
 
-	cLog(lsDEBUG)
+	WriteLog (lsDEBUG, RPCHandler)
 		<< boost::str(boost::format("ripple_path_find< %s")
 			% jvResult);
 
@@ -2025,7 +2023,7 @@ Json::Value RPCHandler::doValidationCreate(Json::Value jvRequest, int& cost, Sco
 
 	if (!jvRequest.isMember("secret"))
 	{
-		cLog(lsDEBUG) << "Creating random validation seed.";
+		WriteLog (lsDEBUG, RPCHandler) << "Creating random validation seed.";
 
 		raSeed.setSeedRandom();					// Get a random seed.
 	}
@@ -2815,7 +2813,7 @@ Json::Value RPCHandler::doLedgerEntry(Json::Value jvRequest, int& cost, ScopedLo
 			|| jvRippleState["accounts"][0u].asString() == jvRippleState["accounts"][1u].asString()
 			) {
 
-				cLog(lsINFO)
+				WriteLog (lsINFO, RPCHandler)
 					<< boost::str(boost::format("ledger_entry: ripple_state: accounts: %d currency: %d array: %d size: %d equal: %d")
 					% jvRippleState.isMember("accounts")
 					% jvRippleState.isMember("currency")
@@ -2930,7 +2928,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost, ScopedLock
 	if (!mInfoSub && !jvRequest.isMember("url"))
 	{
 		// Must be a JSON-RPC call.
-		cLog(lsINFO) << boost::str(boost::format("doSubscribe: RPC subscribe requires a url"));
+		WriteLog (lsINFO, RPCHandler) << boost::str(boost::format("doSubscribe: RPC subscribe requires a url"));
 
 		return rpcError(rpcINVALID_PARAMS);
 	}
@@ -2955,14 +2953,14 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost, ScopedLock
 		ispSub	= mNetOps->findRpcSub(strUrl);
 		if (!ispSub)
 		{
-			cLog(lsDEBUG) << boost::str(boost::format("doSubscribe: building: %s") % strUrl);
+			WriteLog (lsDEBUG, RPCHandler) << boost::str(boost::format("doSubscribe: building: %s") % strUrl);
 
 			RPCSub::pointer rspSub = boost::make_shared<RPCSub>(strUrl, strUsername, strPassword);
 			ispSub	= mNetOps->addRpcSub(strUrl, boost::dynamic_pointer_cast<InfoSub>(rspSub));
 		}
 		else
 		{
-			cLog(lsTRACE) << boost::str(boost::format("doSubscribe: reusing: %s") % strUrl);
+			WriteLog (lsTRACE, RPCHandler) << boost::str(boost::format("doSubscribe: reusing: %s") % strUrl);
 
 			if (jvRequest.isMember("username"))
 				dynamic_cast<RPCSub*>(&*ispSub)->setUsername(strUsername);
@@ -2982,7 +2980,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost, ScopedLock
 	}
 	else if (!jvRequest["streams"].isArray())
 	{
-		cLog(lsINFO) << boost::str(boost::format("doSubscribe: streams requires an array."));
+		WriteLog (lsINFO, RPCHandler) << boost::str(boost::format("doSubscribe: streams requires an array."));
 
 		return rpcError(rpcINVALID_PARAMS);
 	}
@@ -3068,7 +3066,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost, ScopedLock
 		{
 			mNetOps->subAccount(ispSub, usnaAccoundIds, uLedgerIndex, false);
 
-			cLog(lsDEBUG) << boost::str(boost::format("doSubscribe: accounts: %d") % usnaAccoundIds.size());
+			WriteLog (lsDEBUG, RPCHandler) << boost::str(boost::format("doSubscribe: accounts: %d") % usnaAccoundIds.size());
 		}
 	}
 
@@ -3109,7 +3107,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost, ScopedLock
 			if (!jvTakerPays.isMember("currency")
 				|| !STAmount::currencyFromString(uTakerPaysCurrencyID, jvTakerPays["currency"].asString()))
 			{
-				cLog(lsINFO) << "Bad taker_pays currency.";
+				WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
 				return rpcError(rpcSRC_CUR_MALFORMED);
 			}
@@ -3121,7 +3119,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost, ScopedLock
 					 || (!uTakerPaysCurrencyID != !uTakerPaysIssuerID)
 					 || ACCOUNT_ONE == uTakerPaysIssuerID)
 			{
-				cLog(lsINFO) << "Bad taker_pays issuer.";
+				WriteLog (lsINFO, RPCHandler) << "Bad taker_pays issuer.";
 
 				return rpcError(rpcSRC_ISR_MALFORMED);
 			}
@@ -3130,7 +3128,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost, ScopedLock
 			if (!jvTakerGets.isMember("currency")
 				|| !STAmount::currencyFromString(uTakerGetsCurrencyID, jvTakerGets["currency"].asString()))
 			{
-				cLog(lsINFO) << "Bad taker_pays currency.";
+				WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
 				return rpcError(rpcSRC_CUR_MALFORMED);
 			}
@@ -3142,7 +3140,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost, ScopedLock
 					 || (!uTakerGetsCurrencyID != !uTakerGetsIssuerID)
 					 || ACCOUNT_ONE == uTakerGetsIssuerID)
 			{
-				cLog(lsINFO) << "Bad taker_gets issuer.";
+				WriteLog (lsINFO, RPCHandler) << "Bad taker_gets issuer.";
 
 				return rpcError(rpcDST_ISR_MALFORMED);
 			}
@@ -3150,7 +3148,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost, ScopedLock
 			if (uTakerPaysCurrencyID == uTakerGetsCurrencyID
 				&& uTakerPaysIssuerID == uTakerGetsIssuerID)
 			{
-				cLog(lsINFO) << "taker_gets same as taker_pays.";
+				WriteLog (lsINFO, RPCHandler) << "taker_gets same as taker_pays.";
 
 				return rpcError(rpcBAD_MARKET);
 			}
@@ -3168,7 +3166,7 @@ Json::Value RPCHandler::doSubscribe(Json::Value jvRequest, int& cost, ScopedLock
 
 			if (!Ledger::isValidBook(uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID))
 			{
-				cLog(lsWARNING) << "Bad market: " <<
+				WriteLog (lsWARNING, RPCHandler) << "Bad market: " <<
 					uTakerPaysCurrencyID << ":" << uTakerPaysIssuerID << " -> " <<
 					uTakerGetsCurrencyID << ":" << uTakerGetsIssuerID;
 				return rpcError(rpcBAD_MARKET);
@@ -3335,7 +3333,7 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest, int& cost, ScopedLo
 			if (!jvTakerPays.isMember("currency")
 				|| !STAmount::currencyFromString(uTakerPaysCurrencyID, jvTakerPays["currency"].asString()))
 			{
-				cLog(lsINFO) << "Bad taker_pays currency.";
+				WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
 				return rpcError(rpcSRC_CUR_MALFORMED);
 			}
@@ -3347,7 +3345,7 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest, int& cost, ScopedLo
 					 || (!uTakerPaysCurrencyID != !uTakerPaysIssuerID)
 					 || ACCOUNT_ONE == uTakerPaysIssuerID)
 			{
-				cLog(lsINFO) << "Bad taker_pays issuer.";
+				WriteLog (lsINFO, RPCHandler) << "Bad taker_pays issuer.";
 
 				return rpcError(rpcSRC_ISR_MALFORMED);
 			}
@@ -3356,7 +3354,7 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest, int& cost, ScopedLo
 			if (!jvTakerGets.isMember("currency")
 				|| !STAmount::currencyFromString(uTakerGetsCurrencyID, jvTakerGets["currency"].asString()))
 			{
-				cLog(lsINFO) << "Bad taker_pays currency.";
+				WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
 				return rpcError(rpcSRC_CUR_MALFORMED);
 			}
@@ -3368,7 +3366,7 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest, int& cost, ScopedLo
 					 || (!uTakerGetsCurrencyID != !uTakerGetsIssuerID)
 					 || ACCOUNT_ONE == uTakerGetsIssuerID)
 			{
-				cLog(lsINFO) << "Bad taker_gets issuer.";
+				WriteLog (lsINFO, RPCHandler) << "Bad taker_gets issuer.";
 
 				return rpcError(rpcDST_ISR_MALFORMED);
 			}
@@ -3376,7 +3374,7 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest, int& cost, ScopedLo
 			if (uTakerPaysCurrencyID == uTakerGetsCurrencyID
 				&& uTakerPaysIssuerID == uTakerGetsIssuerID)
 			{
-				cLog(lsINFO) << "taker_gets same as taker_pays.";
+				WriteLog (lsINFO, RPCHandler) << "taker_gets same as taker_pays.";
 
 				return rpcError(rpcBAD_MARKET);
 			}
@@ -3397,7 +3395,7 @@ Json::Value RPCHandler::doRpcCommand(const std::string& strMethod, Json::Value& 
 {
 	if (cost == 0)
 		cost = rpcCOST_DEFAULT;
-	cLog(lsTRACE) << "doRpcCommand:" << strMethod << ":" << jvParams;
+	WriteLog (lsTRACE, RPCHandler) << "doRpcCommand:" << strMethod << ":" << jvParams;
 
 	if (!jvParams.isArray() || jvParams.size() > 1)
 		return rpcError(rpcINVALID_PARAMS);
@@ -3441,7 +3439,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 		int jc = theApp->getJobQueue().getJobCountGE(jtCLIENT);
 		if (jc > 500)
 		{
-			cLog(lsDEBUG) << "Too busy for command: " << jc;
+			WriteLog (lsDEBUG, RPCHandler) << "Too busy for command: " << jc;
 			return rpcError(rpcTOO_BUSY);
 		}
 	}
@@ -3451,8 +3449,8 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 
 	std::string		strCommand	= jvRequest["command"].asString();
 
-	cLog(lsTRACE) << "COMMAND:" << strCommand;
-	cLog(lsTRACE) << "REQUEST:" << jvRequest;
+	WriteLog (lsTRACE, RPCHandler) << "COMMAND:" << strCommand;
+	WriteLog (lsTRACE, RPCHandler) << "REQUEST:" << jvRequest;
 
 	mRole	= iRole;
 
@@ -3547,7 +3545,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 
 	if ((commandsA[i].iOptions & optNetwork) && (mNetOps->getOperatingMode() < NetworkOPs::omSYNCING))
 	{
-		cLog(lsINFO) << "Insufficient network mode for RPC: " << mNetOps->strOperatingMode();
+		WriteLog (lsINFO, RPCHandler) << "Insufficient network mode for RPC: " << mNetOps->strOperatingMode();
 
 		return rpcError(rpcNO_NETWORK);
 	}
@@ -3584,7 +3582,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 		}
 		catch (std::exception& e)
 		{
-			cLog(lsINFO) << "Caught throw: " << e.what();
+			WriteLog (lsINFO, RPCHandler) << "Caught throw: " << e.what();
 			if (cost == rpcCOST_DEFAULT)
 				cost = rpcCOST_EXCEPTION;
 
@@ -3608,9 +3606,9 @@ Json::Value RPCInternalHandler::runHandler(const std::string& name, const Json::
 	{
 		if (name == h->mName)
 		{
-			cLog(lsWARNING) << "Internal command " << name << ": " << params;
+			WriteLog (lsWARNING, RPCHandler) << "Internal command " << name << ": " << params;
 			Json::Value ret = h->mHandler(params);
-			cLog(lsWARNING) << "Internal command returns: " << ret;
+			WriteLog (lsWARNING, RPCHandler) << "Internal command returns: " << ret;
 			return ret;
 		}
 		h = h->mNextHandler;

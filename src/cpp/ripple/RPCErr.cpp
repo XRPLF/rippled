@@ -6,7 +6,10 @@
 
 #include "../json/writer.h"
 
-SETUP_LOG();
+// For logging
+struct RPCErr
+{
+};
 
 Json::Value rpcError(int iError, Json::Value jvResult)
 {
@@ -88,7 +91,7 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 
 	if (i >= 0)
 	{
-		cLog(lsDEBUG) << "rpcError: "
+		WriteLog (lsDEBUG, RPCErr) << "rpcError: "
 			<< errorInfoA[i].pToken << ": " << errorInfoA[i].pMessage << std::endl;
 	}
 

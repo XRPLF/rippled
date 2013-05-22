@@ -5,8 +5,6 @@
 #include <boost/bind.hpp>
 #include <iostream>
 
-SETUP_LOG();
-
 using namespace std;
 using namespace boost::asio::ip;
 
@@ -14,13 +12,13 @@ RPCDoor::RPCDoor(boost::asio::io_service& io_service) :
 	mAcceptor(io_service, tcp::endpoint(address::from_string(theConfig.RPC_IP), theConfig.RPC_PORT)),
 	mDelayTimer(io_service)
 {
-	cLog(lsINFO) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
+	WriteLog (lsINFO, RPCDoor) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
 	startListening();
 }
 
 RPCDoor::~RPCDoor()
 {
-	cLog(lsINFO) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
+	WriteLog (lsINFO, RPCDoor) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
 }
 
 void RPCDoor::startListening()
@@ -63,7 +61,7 @@ void RPCDoor::handleConnect(RPCServer::pointer new_connection,
 	{
 		if (error == boost::system::errc::too_many_files_open)
 			delay = true;
-		cLog(lsINFO) << "RPCDoor::handleConnect Error: " << error;
+		WriteLog (lsINFO, RPCDoor) << "RPCDoor::handleConnect Error: " << error;
 	}
 
 	if (delay)

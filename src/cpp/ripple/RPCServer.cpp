@@ -17,8 +17,6 @@
 #include "../json/reader.h"
 #include "../json/writer.h"
 
-SETUP_LOG();
-
 #ifndef RPC_MAXIMUM_QUERY
 #define RPC_MAXIMUM_QUERY	(1024*1024)
 #endif
@@ -66,7 +64,7 @@ void RPCServer::handle_read_line(const boost::system::error_code& e)
 
 	if (action == haDO_REQUEST)
 	{ // request with no body
-		cLog(lsWARNING) << "RPC HTTP request with no body";
+		WriteLog (lsWARNING, RPCServer) << "RPC HTTP request with no body";
 		boost::system::error_code ignore_ec;
 		mSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignore_ec);
 		return;
@@ -82,7 +80,7 @@ void RPCServer::handle_read_line(const boost::system::error_code& e)
 		int rLen = mHTTPRequest.getDataSize();
 		if ((rLen < 0) || (rLen > RPC_MAXIMUM_QUERY))
 		{
-			cLog(lsWARNING) << "Illegal RPC request length " << rLen;
+			WriteLog (lsWARNING, RPCServer) << "Illegal RPC request length " << rLen;
 			boost::system::error_code ignore_ec;
 			mSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignore_ec);
 			return;
@@ -95,7 +93,7 @@ void RPCServer::handle_read_line(const boost::system::error_code& e)
 			mQueryVec.resize(rLen - alreadyHave);
 			boost::asio::async_read(mSocket, boost::asio::buffer(mQueryVec),
 				boost::bind(&RPCServer::handle_read_req, shared_from_this(), boost::asio::placeholders::error));
-			cLog(lsTRACE) << "Waiting for completed request: " << rLen;
+			WriteLog (lsTRACE, RPCServer) << "Waiting for completed request: " << rLen;
 		}
 		else
 		{ // we have the whole thing
@@ -112,7 +110,7 @@ void RPCServer::handle_read_line(const boost::system::error_code& e)
 
 std::string RPCServer::handleRequest(const std::string& requestStr)
 {
-	cLog(lsTRACE) << "handleRequest " << requestStr;
+	WriteLog (lsTRACE, RPCServer) << "handleRequest " << requestStr;
 
 	Json::Value id;
 
@@ -163,10 +161,10 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 
 	RPCHandler mRPCHandler(mNetOps);
 
-	cLog(lsTRACE) << valParams;
+	WriteLog (lsTRACE, RPCServer) << valParams;
 	int cost = 10;
 	Json::Value result = mRPCHandler.doRpcCommand(strMethod, valParams, mRole, cost);
-	cLog(lsTRACE) << result;
+	WriteLog (lsTRACE, RPCServer) << result;
 
 	std::string strReply = JSONRPCReply(result, Json::Value(), id);
 	return HTTPReply(200, strReply);
