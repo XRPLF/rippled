@@ -5,8 +5,6 @@
 
 #define RIPPLE_PATHS_MAX	6
 
-SETUP_LOG();
-
 TER PaymentTransactor::doApply()
 {
 	// Ripple if source or destination is non-native or if there are paths.
