@@ -56,7 +56,7 @@ protected:
 public:
 	LogPartition(const char *name);
 
-	bool doLog(LogSeverity s)			{ return s >= mMinSeverity;	}
+	bool doLog(LogSeverity s) const	    { return s >= mMinSeverity;	}
 	const std::string& getName() const	{ return mName; }
 
 	static bool setSeverity(const std::string& partition, LogSeverity severity);
@@ -109,6 +109,23 @@ public:
 	static void setLogFile(boost::filesystem::path const&);
 	static std::string rotateLog(void);
 };
+
+//-----
+
+template <class Key>
+inline LogPartition const& getLogPartition ()
+{
+	static LogPartition logPartition (__FILE__);
+	return logPartition;
+}
+
+template <class Key>
+inline Log getLog (LogSeverity level)
+{
+	return Log (level, getLogPartition <Key> ());
+}
+
+#define WriteLog(s, k) if (!getLogPartition <k> ().doLog (s)) do {} while (0); else Log (s, getLogPartition <k> ())
 
 #endif
 

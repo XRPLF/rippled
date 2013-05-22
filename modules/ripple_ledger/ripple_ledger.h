@@ -16,12 +16,22 @@
 */
 //==============================================================================
 
-/**	Add this to get the @ref ripple_basics module.
+/**	Include this to get the @ref ripple_ledger module.
 
-    @file ripple_basics.cpp
-    @ingroup ripple_basics
+    @file ripple_ledger.h
+    @ingroup ripple_ledger
 */
 
-#include "ripple_basics.h"
+/**	Ledger classes.
 
-//#include "src/cpp/ripple/Amount.cpp"
+	This module exposes functionality for accessing and processing the ledger.
+
+	@defgroup ripple_ledger
+*/
+
+#ifndef RIPPLE_LEDGER_H
+#define RIPPLE_LEDGER_H
+
+
+
+#endif
