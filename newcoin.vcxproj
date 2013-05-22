@@ -169,10 +169,21 @@
   <ItemGroup>
     <ClCompile Include="modules\ripple_basics\ripple_basics.cpp" />
     <ClCompile Include="modules\ripple_client\ripple_client.cpp" />
+    <ClCompile Include="modules\ripple_db\ripple_db.cpp" />
     <ClCompile Include="modules\ripple_ledger\ripple_ledger.cpp" />
-    <ClCompile Include="src\cpp\database\database.cpp" />
+    <ClCompile Include="src\cpp\database\database.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\cpp\database\sqlite3.c" />
-    <ClCompile Include="src\cpp\database\SqliteDatabase.cpp" />
+    <ClCompile Include="src\cpp\database\SqliteDatabase.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\cpp\json\json_reader.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -580,7 +591,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\DBInit.cpp" />
+    <ClCompile Include="src\cpp\ripple\DBInit.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\DeterministicKeys.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1015,6 +1031,7 @@
     <ClInclude Include="database\sqlite3ext.h" />
     <ClInclude Include="modules\ripple_basics\ripple_basics.h" />
     <ClInclude Include="modules\ripple_client\ripple_client.h" />
+    <ClInclude Include="modules\ripple_db\ripple_db.h" />
     <ClInclude Include="modules\ripple_ledger\ripple_ledger.h" />
     <ClInclude Include="src\cpp\database\database.h" />
     <ClInclude Include="src\cpp\database\SqliteDatabase.h" />
