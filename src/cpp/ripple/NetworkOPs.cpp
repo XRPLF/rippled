@@ -783,24 +783,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 			return true;
 		}
 		if (!mAcquiringLedger->isComplete())
-		{ // add more peers
-			int count = 0;
-			BOOST_FOREACH(Peer::ref it, peerList)
-			{
-				if (it->getClosedLedgerHash() == closedLedger)
-				{
-					++count;
-					mAcquiringLedger->peerHas(it);
-				}
-			}
-			if (!count)
-			{ // just ask everyone
-				BOOST_FOREACH(Peer::ref it, peerList)
-					if (it->isConnected())
-						mAcquiringLedger->peerHas(it);
-			}
 			return true;
-		}
 		clearNeedNetworkLedger();
 		consensus = mAcquiringLedger->getLedger();
 	}
