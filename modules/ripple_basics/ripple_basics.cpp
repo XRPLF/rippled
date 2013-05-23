@@ -48,6 +48,9 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #pragma warning (disable: 4244) // conversion, possible loss of data
 #endif
 
+//VFALCO: TODO, figure out how to include this
+//#include "src/cpp/ripple.pb.cc"
+
 #include "src/cpp/ripple/Log.cpp"
 
 #include "src/cpp/ripple/Amount.cpp"

@@ -157,6 +157,8 @@
 #include "src/cpp/ripple/Offer.cpp" // no log
 #include "src/cpp/ripple/OrderBook.cpp" // no log
 #include "src/cpp/ripple/OrderBookDB.cpp"
+#include "src/cpp/ripple/Pathfinder.cpp"
+#include "src/cpp/ripple/PFRequest.cpp"
 #include "src/cpp/ripple/RippleCalc.cpp"
 #include "src/cpp/ripple/RippleState.cpp" // no log
 

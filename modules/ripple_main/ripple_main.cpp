@@ -37,6 +37,7 @@
 #include "src/cpp/ripple/JobQueue.cpp"
 #include "src/cpp/ripple/LoadManager.cpp"
 #include "src/cpp/ripple/LoadMonitor.cpp"
+#include "src/cpp/ripple/UpdateTables.cpp"
 #include "src/cpp/ripple/main.cpp"
 #include "src/cpp/ripple/ValidationCollection.cpp"
 
