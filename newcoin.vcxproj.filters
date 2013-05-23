@@ -403,9 +403,6 @@
     <ClCompile Include="src\cpp\ripple\NicknameState.cpp">
       <Filter>Unsorted Sources</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\PathDB.cpp">
-      <Filter>Unsorted Sources</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\Pathfinder.cpp">
       <Filter>Unsorted Sources</Filter>
     </ClCompile>
@@ -1036,9 +1033,6 @@
       <Filter>Unsorted Sources</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\NicknameState.h">
-      <Filter>Unsorted Sources</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\PathDB.h">
       <Filter>Unsorted Sources</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Pathfinder.h">
