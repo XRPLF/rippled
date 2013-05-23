@@ -41,6 +41,9 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 	return 512 == iKeyLength ? theApp->getWallet().getDh512() : theApp->getWallet().getDh1024();
 }
 
+#include "src/cpp/ripple/Suppression.cpp" // no log
+#include "src/cpp/ripple/UniqueNodeList.cpp"
+
 #include "src/cpp/ripple/SNTPClient.cpp"
 
 #include "src/cpp/ripple/ConnectionPool.cpp"

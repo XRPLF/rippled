@@ -113,6 +113,9 @@
     <Filter Include="1. Modules\ripple_net\service">
       <UniqueIdentifier>{074b2e47-f34b-42f1-945e-7e8083bbfb43}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_net\overlay">
+      <UniqueIdentifier>{1b44bca2-5d6b-45b6-815b-797059fb2c8e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -397,9 +400,6 @@
     <ClCompile Include="src\cpp\protobuf\src\google\protobuf\stubs\substitute.cc">
       <Filter>0. Third Party Code\protobuf\stubs</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\RippleAddress.cpp">
-      <Filter>Unsorted Sources</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\NicknameState.cpp">
       <Filter>Unsorted Sources</Filter>
     </ClCompile>
@@ -407,12 +407,6 @@
       <Filter>Unsorted Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\PFRequest.cpp">
-      <Filter>Unsorted Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Suppression.cpp">
-      <Filter>Unsorted Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\UniqueNodeList.cpp">
       <Filter>Unsorted Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\UpdateTables.cpp">
@@ -724,6 +718,15 @@
     <ClCompile Include="src\cpp\ripple\SNTPClient.cpp">
       <Filter>1. Modules\ripple_net\service</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\UniqueNodeList.cpp">
+      <Filter>1. Modules\ripple_net\overlay</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\Suppression.cpp">
+      <Filter>1. Modules\ripple_net\overlay</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\RippleAddress.cpp">
+      <Filter>1. Modules\ripple_basics\types</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="database\sqlite3ext.h">
@@ -1023,9 +1026,6 @@
     <ClInclude Include="src\cpp\protobuf\src\google\protobuf\stubs\type_traits.h">
       <Filter>0. Third Party Code\protobuf\stubs</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\RippleAddress.h">
-      <Filter>Unsorted Sources</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\KeyCache.h">
       <Filter>Unsorted Sources</Filter>
     </ClInclude>
@@ -1039,15 +1039,6 @@
       <Filter>Unsorted Sources</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\PFRequest.h">
-      <Filter>Unsorted Sources</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Suppression.h">
-      <Filter>Unsorted Sources</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\uint256.h">
-      <Filter>Unsorted Sources</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\UniqueNodeList.h">
       <Filter>Unsorted Sources</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Version.h">
@@ -1361,6 +1352,18 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\SNTPClient.h">
       <Filter>1. Modules\ripple_net\service</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\uint256.h">
+      <Filter>1. Modules\ripple_basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\UniqueNodeList.h">
+      <Filter>1. Modules\ripple_net\overlay</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\Suppression.h">
+      <Filter>1. Modules\ripple_net\overlay</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\RippleAddress.h">
+      <Filter>1. Modules\ripple_basics\types</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

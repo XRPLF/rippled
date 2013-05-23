@@ -22,8 +22,6 @@
 #include "Serializer.h"
 #include "utils.h"
 
-SETUP_LOG();
-
 #define VALIDATORS_FETCH_SECONDS	30
 #define VALIDATORS_FILE_BYTES_MAX	(50 << 10)
 
@@ -54,8 +52,8 @@ void UniqueNodeList::start()
 {
 	miscLoad();
 
-	cLog(lsDEBUG) << "Validator fetch updated: " << mtpFetchUpdated;
-	cLog(lsDEBUG) << "Validator score updated: " << mtpScoreUpdated;
+	WriteLog (lsDEBUG, UniqueNodeList) << "Validator fetch updated: " << mtpFetchUpdated;
+	WriteLog (lsDEBUG, UniqueNodeList) << "Validator score updated: " << mtpScoreUpdated;
 
 	fetchNext();			// Start fetching.
 	scoreNext(false);		// Start scoring.
@@ -107,7 +105,7 @@ void UniqueNodeList::trustedLoad()
 				sClusterNodes.insert(std::make_pair(a, match[2]));
 		}
 		else
-			cLog(lsWARNING) << "Entry in cluster list invalid: '" << c << "'";
+			WriteLog (lsWARNING, UniqueNodeList) << "Entry in cluster list invalid: '" << c << "'";
 	}
 
 	Database*	db=theApp->getWalletDB()->getDB();
@@ -147,12 +145,12 @@ bool UniqueNodeList::scoreRound(std::vector<scoreNode>& vsnNodes)
 		}
     }
 
-	if (sLog(lsTRACE))
+	if (ShouldLog (lsTRACE, UniqueNodeList))
 	{
-		cLog(lsTRACE) << "midway: ";
+		WriteLog (lsTRACE, UniqueNodeList) << "midway: ";
 		BOOST_FOREACH(scoreNode& sn, vsnNodes)
 		{
-			cLog(lsTRACE) << str(boost::format("%s| %d, %d, %d: [%s]")
+			WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("%s| %d, %d, %d: [%s]")
 				% sn.strValidator
 				% sn.iScore
 				% sn.iRoundScore
@@ -172,12 +170,12 @@ bool UniqueNodeList::scoreRound(std::vector<scoreNode>& vsnNodes)
 		sn.iRoundScore	= 0;
     }
 
-	if (sLog(lsTRACE))
+	if (ShouldLog (lsTRACE, UniqueNodeList))
 	{
-		cLog(lsTRACE) << "finish: ";
+		WriteLog (lsTRACE, UniqueNodeList) << "finish: ";
 		BOOST_FOREACH(scoreNode& sn, vsnNodes)
 		{
-			cLog(lsTRACE) << str(boost::format("%s| %d, %d, %d: [%s]")
+			WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("%s| %d, %d, %d: [%s]")
 				% sn.strValidator
 				% sn.iScore
 				% sn.iRoundScore
@@ -296,11 +294,11 @@ void UniqueNodeList::scoreCompute()
 	}
 
 	// For debugging, print out initial scores.
-	if (sLog(lsTRACE))
+	if (ShouldLog (lsTRACE, UniqueNodeList))
 	{
 		BOOST_FOREACH(scoreNode& sn, vsnNodes)
 		{
-			cLog(lsTRACE) << str(boost::format("%s| %d, %d, %d")
+			WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("%s| %d, %d, %d")
 				% sn.strValidator
 				% sn.iScore
 				% sn.iRoundScore
@@ -308,7 +306,7 @@ void UniqueNodeList::scoreCompute()
 		}
 	}
 
-	// cLog(lsTRACE) << str(boost::format("vsnNodes.size=%d") % vsnNodes.size());
+	// WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("vsnNodes.size=%d") % vsnNodes.size());
 
 	// Step through growing list of nodes adding each validation list.
 	// - Each validator may have provided referals.  Add those referals as validators.
@@ -357,7 +355,7 @@ void UniqueNodeList::scoreCompute()
 					iReferral	=  itEntry->second;
 				}
 
-				// cLog(lsTRACE) << str(boost::format("%s: Public=%s iReferral=%d") % strValidator % strReferral % iReferral);
+				// WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("%s: Public=%s iReferral=%d") % strValidator % strReferral % iReferral);
 
 			}
 			else
@@ -368,7 +366,7 @@ void UniqueNodeList::scoreCompute()
 								? -1			// We ignore domains we can't find entires for.
 								: itEntry->second;
 
-				// cLog(lsTRACE) << str(boost::format("%s: Domain=%s iReferral=%d") % strValidator % strReferral % iReferral);
+				// WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("%s: Domain=%s iReferral=%d") % strValidator % strReferral % iReferral);
 			}
 
 			if (iReferral >= 0 && iNode != iReferral)
@@ -384,12 +382,12 @@ void UniqueNodeList::scoreCompute()
     for (int i = SCORE_ROUNDS; bDist && i--;)
 		bDist	= scoreRound(vsnNodes);
 
-	if (sLog(lsTRACE))
+	if (ShouldLog (lsTRACE, UniqueNodeList))
 	{
-		cLog(lsTRACE) << "Scored:";
+		WriteLog (lsTRACE, UniqueNodeList) << "Scored:";
 		BOOST_FOREACH(scoreNode& sn, vsnNodes)
 		{
-			cLog(lsTRACE) << str(boost::format("%s| %d, %d, %d: [%s]")
+			WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("%s| %d, %d, %d: [%s]")
 				% sn.strValidator
 				% sn.iScore
 				% sn.iRoundScore
@@ -470,7 +468,7 @@ void UniqueNodeList::scoreCompute()
 		{
 			umValidators[db->getStrBinary("Validator")]	= db->getInt("Count");
 
-			// cLog(lsTRACE) << strValidator << ":" << db->getInt("Count");
+			// WriteLog (lsTRACE, UniqueNodeList) << strValidator << ":" << db->getInt("Count");
 		}
 	}
 
@@ -545,11 +543,11 @@ void UniqueNodeList::scoreTimerHandler(const boost::system::error_code& err)
 		mtpScoreNext	= boost::posix_time::ptime(boost::posix_time::not_a_date_time);	// Timer not set.
 		mtpScoreStart	= boost::posix_time::second_clock::universal_time();			// Scoring.
 
-		cLog(lsTRACE) << "Scoring: Start";
+		WriteLog (lsTRACE, UniqueNodeList) << "Scoring: Start";
 
 		scoreCompute();
 
-		cLog(lsTRACE) << "Scoring: End";
+		WriteLog (lsTRACE, UniqueNodeList) << "Scoring: End";
 
 		// Save update time.
 		mtpScoreUpdated	= mtpScoreStart;
@@ -569,7 +567,7 @@ void UniqueNodeList::scoreTimerHandler(const boost::system::error_code& err)
 // <-- bNow: true, to force scoring for debugging.
 void UniqueNodeList::scoreNext(bool bNow)
 {
-	// cLog(lsTRACE) << str(boost::format("scoreNext: mtpFetchUpdated=%s mtpScoreStart=%s mtpScoreUpdated=%s mtpScoreNext=%s") % mtpFetchUpdated % mtpScoreStart % mtpScoreUpdated % mtpScoreNext);
+	// WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("scoreNext: mtpFetchUpdated=%s mtpScoreStart=%s mtpScoreUpdated=%s mtpScoreNext=%s") % mtpFetchUpdated % mtpScoreStart % mtpScoreUpdated % mtpScoreNext);
 	bool	bCanScore	= mtpScoreStart.is_not_a_date_time()							// Not scoring.
 							&& !mtpFetchUpdated.is_not_a_date_time();					// Something to score.
 
@@ -588,7 +586,7 @@ void UniqueNodeList::scoreNext(bool bNow)
 		mtpScoreNext = boost::posix_time::second_clock::universal_time()					// Past now too.
 							+ boost::posix_time::seconds(bNow ? 0 : SCORE_DELAY_SECONDS);
 
-		// cLog(lsTRACE) << str(boost::format("scoreNext: @%s") % mtpScoreNext);
+		// WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("scoreNext: @%s") % mtpScoreNext);
 		mdtScoreTimer.expires_at(mtpScoreNext);
 		mdtScoreTimer.async_wait(boost::bind(&UniqueNodeList::scoreTimerHandler, this, _1));
 	}
@@ -630,7 +628,7 @@ void UniqueNodeList::processIps(const std::string& strSite, const RippleAddress&
 
 	std::string strEscNodePublic	= sqlEscape(naNodePublic.humanNodePublic());
 
-	cLog(lsDEBUG)
+	WriteLog (lsDEBUG, UniqueNodeList)
 		<< str(boost::format("Validator: '%s' processing %d ips.")
 			% strSite % ( pmtVecStrIps ? pmtVecStrIps->size() : 0));
 
@@ -668,7 +666,7 @@ void UniqueNodeList::processIps(const std::string& strSite, const RippleAddress&
 			}
 			else
 			{
-				cLog(lsTRACE)
+				WriteLog (lsTRACE, UniqueNodeList)
 					<< str(boost::format("Validator: '%s' [" SECTION_IPS "]: rejecting '%s'")
 						% strSite % strReferral);
 			}
@@ -699,7 +697,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 	std::string strNodePublic	= naNodePublic.isValid() ? naNodePublic.humanNodePublic() : strValidatorsSrc;
 	int			iValues			= 0;
 
-	cLog(lsTRACE)
+	WriteLog (lsTRACE, UniqueNodeList)
 		<< str(boost::format("Validator: '%s' : '%s' : processing %d validators.")
 			% strSite
 			% strValidatorsSrc
@@ -732,7 +730,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 
 			if (!boost::regex_match(strReferral, smMatch, reReferral))
 			{
-				cLog(lsWARNING) << str(boost::format("Bad validator: syntax error: %s: %s") % strSite % strReferral);
+				WriteLog (lsWARNING, UniqueNodeList) << str(boost::format("Bad validator: syntax error: %s: %s") % strSite % strReferral);
 			}
 			else
 			{
@@ -743,7 +741,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 				if (naValidator.setSeedGeneric(strRefered))
 				{
 
-					cLog(lsWARNING) << str(boost::format("Bad validator: domain or public key required: %s %s") % strRefered % strComment);
+					WriteLog (lsWARNING, UniqueNodeList) << str(boost::format("Bad validator: domain or public key required: %s %s") % strRefered % strComment);
 				}
 				else if (naValidator.setNodePublic(strRefered))
 				{
@@ -751,7 +749,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 					// XXX Schedule for CAS lookup.
 					nodeAddPublic(naValidator, vsWhy, strComment);
 
-					cLog(lsINFO) << str(boost::format("Node Public: %s %s") % strRefered % strComment);
+					WriteLog (lsINFO, UniqueNodeList) << str(boost::format("Node Public: %s %s") % strRefered % strComment);
 
 					if (naNodePublic.isValid())
 						vstrValues.push_back(str(boost::format("('%s',%d,'%s')") % strNodePublic % iValues % naValidator.humanNodePublic()));
@@ -763,7 +761,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 					// A domain: need to look it up.
 					nodeAddDomain(strRefered, vsWhy, strComment);
 
-					cLog(lsINFO) << str(boost::format("Node Domain: %s %s") % strRefered % strComment);
+					WriteLog (lsINFO, UniqueNodeList) << str(boost::format("Node Domain: %s %s") % strRefered % strComment);
 
 					if (naNodePublic.isValid())
 						vstrValues.push_back(str(boost::format("('%s',%d,%s)") % strNodePublic % iValues % sqlEscape(strRefered)));
@@ -914,7 +912,7 @@ void UniqueNodeList::processFile(const std::string& strDomain, const RippleAddre
 	if ((pvCurrencies = sectionEntries(secSite, SECTION_CURRENCIES)) && pvCurrencies->size())
 	{
 		// XXX Process currencies.
-		cLog(lsWARNING) << "Ignoring currencies: not implemented.";
+		WriteLog (lsWARNING, UniqueNodeList) << "Ignoring currencies: not implemented.";
 	}
 
 	getValidatorsUrl(naNodePublic, secSite);
@@ -932,11 +930,11 @@ bool UniqueNodeList::responseFetch(const std::string& strDomain, const boost::sy
 
 		if (bGood)
 		{
-			cLog(lsTRACE) << boost::format("Validator: '%s' received " NODE_FILE_NAME ".") % strDomain;
+			WriteLog (lsTRACE, UniqueNodeList) << boost::format("Validator: '%s' received " NODE_FILE_NAME ".") % strDomain;
 		}
 		else
 		{
-			cLog(lsTRACE)
+			WriteLog (lsTRACE, UniqueNodeList)
 				<< boost::format("Validator: '%s' unable to retrieve " NODE_FILE_NAME ": %s")
 					% strDomain
 					% err.message();
@@ -951,7 +949,7 @@ bool UniqueNodeList::responseFetch(const std::string& strDomain, const boost::sy
 		{
 			bGood	= false;
 
-			cLog(lsTRACE)
+			WriteLog (lsTRACE, UniqueNodeList)
 				<< boost::format("Validator: '%s' bad " NODE_FILE_NAME " missing single entry for " SECTION_DOMAIN ".")
 					% strDomain;
 		}
@@ -960,7 +958,7 @@ bool UniqueNodeList::responseFetch(const std::string& strDomain, const boost::sy
 		{
 			bGood	= false;
 
-			cLog(lsTRACE)
+			WriteLog (lsTRACE, UniqueNodeList)
 				<< boost::format("Validator: '%s' bad " NODE_FILE_NAME " " SECTION_DOMAIN " does not match: %s")
 					% strDomain
 					% strSite;
@@ -976,7 +974,7 @@ bool UniqueNodeList::responseFetch(const std::string& strDomain, const boost::sy
 			// Bad [validation_public_key] section.
 			bGood	= false;
 
-			cLog(lsTRACE)
+			WriteLog (lsTRACE, UniqueNodeList)
 				<< boost::format("Validator: '%s' bad " NODE_FILE_NAME " " SECTION_PUBLIC_KEY " does not have single entry.")
 					% strDomain;
 		}
@@ -988,7 +986,7 @@ bool UniqueNodeList::responseFetch(const std::string& strDomain, const boost::sy
 			// Bad public key.
 			bGood	= false;
 
-			cLog(lsTRACE)
+			WriteLog (lsTRACE, UniqueNodeList)
 				<< boost::format("Validator: '%s' bad " NODE_FILE_NAME " " SECTION_PUBLIC_KEY " is bad: ")
 					% strDomain
 					% strNodePublicKey;
@@ -996,7 +994,7 @@ bool UniqueNodeList::responseFetch(const std::string& strDomain, const boost::sy
 
 		if (bGood)
 		{
-	// cLog(lsTRACE) << boost::format("naNodePublic: '%s'") % naNodePublic.humanNodePublic();
+	// WriteLog (lsTRACE, UniqueNodeList) << boost::format("naNodePublic: '%s'") % naNodePublic.humanNodePublic();
 
 			seedDomain	sdCurrent;
 
@@ -1012,7 +1010,7 @@ bool UniqueNodeList::responseFetch(const std::string& strDomain, const boost::sy
 			// XXX Only if no other refs to keep it arround, other wise we have an attack vector.
 			sdCurrent.naPublicKey	= naNodePublic;
 
-	// cLog(lsTRACE) << boost::format("sdCurrent.naPublicKey: '%s'") % sdCurrent.naPublicKey.humanNodePublic();
+	// WriteLog (lsTRACE, UniqueNodeList) << boost::format("sdCurrent.naPublicKey: '%s'") % sdCurrent.naPublicKey.humanNodePublic();
 
 			sdCurrent.tpFetch		= boost::posix_time::second_clock::universal_time();
 			sdCurrent.iSha256		= iSha256;
@@ -1021,12 +1019,12 @@ bool UniqueNodeList::responseFetch(const std::string& strDomain, const boost::sy
 
 			if (bChangedB)
 			{
-				cLog(lsTRACE) << boost::format("Validator: '%s' processing new " NODE_FILE_NAME ".") % strDomain;
+				WriteLog (lsTRACE, UniqueNodeList) << boost::format("Validator: '%s' processing new " NODE_FILE_NAME ".") % strDomain;
 				processFile(strDomain, naNodePublic, secSite);
 			}
 			else
 			{
-				cLog(lsTRACE) << boost::format("Validator: '%s' no change for " NODE_FILE_NAME ".") % strDomain;
+				WriteLog (lsTRACE, UniqueNodeList) << boost::format("Validator: '%s' no change for " NODE_FILE_NAME ".") % strDomain;
 				fetchFinish();
 			}
 		}
@@ -1045,7 +1043,7 @@ bool UniqueNodeList::responseFetch(const std::string& strDomain, const boost::sy
 // Get the ripple.txt and process it.
 void UniqueNodeList::fetchProcess(std::string strDomain)
 {
-	cLog(lsTRACE) << "Fetching '" NODE_FILE_NAME "' from '" << strDomain << "'.";
+	WriteLog (lsTRACE, UniqueNodeList) << "Fetching '" NODE_FILE_NAME "' from '" << strDomain << "'.";
 
 	std::deque<std::string>	deqSites;
 
@@ -1071,7 +1069,7 @@ void UniqueNodeList::fetchTimerHandler(const boost::system::error_code& err)
 	if (!err)
 	{
 		// Time to check for another fetch.
-		cLog(lsTRACE) << "fetchTimerHandler";
+		WriteLog (lsTRACE, UniqueNodeList) << "fetchTimerHandler";
 		fetchNext();
 	}
 }
@@ -1105,7 +1103,7 @@ void UniqueNodeList::fetchNext()
 			tpNext	= ptFromSeconds(iNext);
 			tpNow	= boost::posix_time::second_clock::universal_time();
 
-			cLog(lsTRACE) << str(boost::format("fetchNext: iNext=%s tpNext=%s tpNow=%s") % iNext % tpNext % tpNow);
+			WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("fetchNext: iNext=%s tpNext=%s tpNow=%s") % iNext % tpNext % tpNow);
 			strDomain	= db->getStrBinary("Domain");
 
 			db->endIterRows();
@@ -1124,13 +1122,13 @@ void UniqueNodeList::fetchNext()
 
 		if (strDomain.empty() || bFull)
 		{
-			cLog(lsTRACE) << str(boost::format("fetchNext: strDomain=%s bFull=%d") % strDomain % bFull);
+			WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("fetchNext: strDomain=%s bFull=%d") % strDomain % bFull);
 
 			nothing();
 		}
 		else if (tpNext > tpNow)
 		{
-			cLog(lsTRACE) << str(boost::format("fetchNext: set timer : strDomain=%s") % strDomain);
+			WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("fetchNext: set timer : strDomain=%s") % strDomain);
 			// Fetch needs to happen in the future.  Set a timer to wake us.
 			mtpFetchNext	= tpNext;
 
@@ -1139,7 +1137,7 @@ void UniqueNodeList::fetchNext()
 		}
 		else
 		{
-			cLog(lsTRACE) << str(boost::format("fetchNext: fetch now: strDomain=%s tpNext=%s tpNow=%s") % strDomain % tpNext %tpNow);
+			WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("fetchNext: fetch now: strDomain=%s tpNext=%s tpNow=%s") % strDomain % tpNext %tpNow);
 			// Fetch needs to happen now.
 			mtpFetchNext	= boost::posix_time::ptime(boost::posix_time::not_a_date_time);
 
@@ -1156,7 +1154,7 @@ void UniqueNodeList::fetchNext()
 
 			setSeedDomains(sdCurrent, false);
 
-			cLog(lsTRACE) << "Validator: '" << strDomain << "' fetching " NODE_FILE_NAME ".";
+			WriteLog (lsTRACE, UniqueNodeList) << "Validator: '" << strDomain << "' fetching " NODE_FILE_NAME ".";
 
 			fetchProcess(strDomain);	// Go get it.
 
@@ -1251,7 +1249,7 @@ void UniqueNodeList::setSeedDomains(const seedDomain& sdSource, bool bNext)
 	int		iScan	= iToSeconds(sdSource.tpScan);
 	int		iFetch	= iToSeconds(sdSource.tpFetch);
 
-	// cLog(lsTRACE) << str(boost::format("setSeedDomains: iNext=%s tpNext=%s") % iNext % sdSource.tpNext);
+	// WriteLog (lsTRACE) << str(boost::format("setSeedDomains: iNext=%s tpNext=%s") % iNext % sdSource.tpNext);
 
 	std::string strSql	= boost::str(boost::format("REPLACE INTO SeedDomains (Domain,PublicKey,Source,Next,Scan,Fetch,Sha256,Comment) VALUES (%s, %s, %s, %d, %d, %d, '%s', %s);")
 		% sqlEscape(sdSource.strDomain)
@@ -1269,7 +1267,7 @@ void UniqueNodeList::setSeedDomains(const seedDomain& sdSource, bool bNext)
 	if (!db->executeSQL(strSql))
 	{
 		// XXX Check result.
-		cLog(lsWARNING) << "setSeedDomains: failed.";
+		WriteLog (lsWARNING, UniqueNodeList) << "setSeedDomains: failed.";
 	}
 
 	if (bNext && (mtpFetchNext.is_not_a_date_time() || mtpFetchNext > sdSource.tpNext))
@@ -1288,7 +1286,7 @@ void UniqueNodeList::nodeAddDomain(std::string strDomain, validatorSource vsWhy,
 	boost::to_lower(strDomain);
 
 	// YYY Would be best to verify strDomain is a valid domain.
-	// cLog(lsTRACE) << str(boost::format("nodeAddDomain: '%s' %c '%s'")
+	// WriteLog (lsTRACE) << str(boost::format("nodeAddDomain: '%s' %c '%s'")
 	//	% strDomain
 	//	% vsWhy
 	//	% strComment);
@@ -1389,7 +1387,7 @@ void UniqueNodeList::setSeedNodes(const seedNode& snSource, bool bNext)
 	int		iScan	= iToSeconds(snSource.tpScan);
 	int		iFetch	= iToSeconds(snSource.tpFetch);
 
-	// cLog(lsTRACE) << str(boost::format("setSeedNodes: iNext=%s tpNext=%s") % iNext % sdSource.tpNext);
+	// WriteLog (lsTRACE) << str(boost::format("setSeedNodes: iNext=%s tpNext=%s") % iNext % sdSource.tpNext);
 
 	assert(snSource.naPublicKey.isValid());
 
@@ -1409,7 +1407,7 @@ void UniqueNodeList::setSeedNodes(const seedNode& snSource, bool bNext)
 		if (!db->executeSQL(strSql))
 		{
 			// XXX Check result.
-			cLog(lsTRACE) << "setSeedNodes: failed.";
+			WriteLog (lsTRACE, UniqueNodeList) << "setSeedNodes: failed.";
 		}
 	}
 
@@ -1530,21 +1528,21 @@ bool UniqueNodeList::nodeLoad(boost::filesystem::path pConfig)
 {
 	if (pConfig.empty())
 	{
-		cLog(lsINFO) << VALIDATORS_FILE_NAME " path not specified.";
+		WriteLog (lsINFO, UniqueNodeList) << VALIDATORS_FILE_NAME " path not specified.";
 
 		return false;
 	}
 
 	if (!boost::filesystem::exists(pConfig))
 	{
-		cLog(lsWARNING) << str(boost::format(VALIDATORS_FILE_NAME " not found: %s") % pConfig);
+		WriteLog (lsWARNING, UniqueNodeList) << str(boost::format(VALIDATORS_FILE_NAME " not found: %s") % pConfig);
 
 		return false;
 	}
 
 	if (!boost::filesystem::is_regular_file(pConfig))
 	{
-		cLog(lsWARNING) << str(boost::format(VALIDATORS_FILE_NAME " not regular file: %s") % pConfig);
+		WriteLog (lsWARNING, UniqueNodeList) << str(boost::format(VALIDATORS_FILE_NAME " not regular file: %s") % pConfig);
 
 		return false;
 	}
@@ -1553,7 +1551,7 @@ bool UniqueNodeList::nodeLoad(boost::filesystem::path pConfig)
 
 	if (!ifsDefault)
 	{
-		cLog(lsFATAL) << str(boost::format(VALIDATORS_FILE_NAME " failed to open: %s") % pConfig);
+		WriteLog (lsFATAL, UniqueNodeList) << str(boost::format(VALIDATORS_FILE_NAME " failed to open: %s") % pConfig);
 
 		return false;
 	}
@@ -1565,14 +1563,14 @@ bool UniqueNodeList::nodeLoad(boost::filesystem::path pConfig)
 
 	if (ifsDefault.bad())
 	{
-		cLog(lsFATAL) << str(boost::format("Failed to read: %s") % pConfig);
+		WriteLog (lsFATAL, UniqueNodeList) << str(boost::format("Failed to read: %s") % pConfig);
 
 		return false;
 	}
 
 	nodeProcess("local", strValidators, pConfig.string());
 
-	cLog(lsTRACE) << str(boost::format("Processing: %s") % pConfig);
+	WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("Processing: %s") % pConfig);
 
 	return true;
 }
@@ -1583,7 +1581,7 @@ bool UniqueNodeList::validatorsResponse(const boost::system::error_code& err, in
 
 	if (!bReject)
 	{
-		cLog(lsTRACE) << "Fetch '" VALIDATORS_FILE_NAME "' complete.";
+		WriteLog (lsTRACE, UniqueNodeList) << "Fetch '" VALIDATORS_FILE_NAME "' complete.";
 
 		if (!err)
 		{
@@ -1591,7 +1589,7 @@ bool UniqueNodeList::validatorsResponse(const boost::system::error_code& err, in
 		}
 		else
 		{
-			cLog(lsWARNING) << "Error: " << err.message();
+			WriteLog (lsWARNING, UniqueNodeList) << "Error: " << err.message();
 		}
 	}
 
@@ -1637,7 +1635,7 @@ void UniqueNodeList::nodeBootstrap()
 	// Always merge in the file specified in the config.
 	if (!theConfig.VALIDATORS_FILE.empty())
 	{
-		cLog(lsINFO) << "Bootstrapping UNL: loading from unl_default.";
+		WriteLog (lsINFO, UniqueNodeList) << "Bootstrapping UNL: loading from unl_default.";
 
 		bLoaded	= nodeLoad(theConfig.VALIDATORS_FILE);
 	}
@@ -1645,7 +1643,7 @@ void UniqueNodeList::nodeBootstrap()
 	// If never loaded anything try the current directory.
 	if (!bLoaded && theConfig.VALIDATORS_FILE.empty())
 	{
-		cLog(lsINFO) << boost::str(boost::format("Bootstrapping UNL: loading from '%s'.")
+		WriteLog (lsINFO, UniqueNodeList) << boost::str(boost::format("Bootstrapping UNL: loading from '%s'.")
 			% theConfig.VALIDATORS_BASE);
 
 		bLoaded	= nodeLoad(theConfig.VALIDATORS_BASE);
@@ -1656,7 +1654,7 @@ void UniqueNodeList::nodeBootstrap()
 	{
 		RippleAddress	naInvalid;	// Don't want a referrer on added entries.
 
-		cLog(lsINFO) << boost::str(boost::format("Bootstrapping UNL: loading from '%s'.")
+		WriteLog (lsINFO, UniqueNodeList) << boost::str(boost::format("Bootstrapping UNL: loading from '%s'.")
 			% theConfig.CONFIG_FILE);
 
 		if (processValidators("local", theConfig.CONFIG_FILE.string(), naInvalid, vsConfig, &theConfig.VALIDATORS))
@@ -1665,7 +1663,7 @@ void UniqueNodeList::nodeBootstrap()
 
 	if (!bLoaded)
 	{
-		cLog(lsINFO) << boost::str(boost::format("Bootstrapping UNL: loading from '%s'.")
+		WriteLog (lsINFO, UniqueNodeList) << boost::str(boost::format("Bootstrapping UNL: loading from '%s'.")
 			% theConfig.VALIDATORS_SITE);
 
 		nodeNetwork();
@@ -1718,7 +1716,7 @@ void UniqueNodeList::nodeProcess(const std::string& strSite, const std::string& 
 	}
 	else
 	{
-		cLog(lsWARNING) << boost::str(boost::format("'%s' missing [" SECTION_VALIDATORS "].")
+		WriteLog (lsWARNING, UniqueNodeList) << boost::str(boost::format("'%s' missing [" SECTION_VALIDATORS "].")
 			% theConfig.VALIDATORS_BASE);
 	}
 }
