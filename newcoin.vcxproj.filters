@@ -400,9 +400,6 @@
     <ClCompile Include="src\cpp\protobuf\src\google\protobuf\stubs\substitute.cc">
       <Filter>0. Third Party Code\protobuf\stubs</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\NicknameState.cpp">
-      <Filter>Unsorted Sources</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\Pathfinder.cpp">
       <Filter>Unsorted Sources</Filter>
     </ClCompile>
@@ -727,6 +724,9 @@
     <ClCompile Include="src\cpp\ripple\Wallet.cpp">
       <Filter>1. Modules\ripple_ledger\transactions</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\NicknameState.cpp">
+      <Filter>1. Modules\ripple_ledger\processing</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="database\sqlite3ext.h">
@@ -1030,9 +1030,6 @@
       <Filter>Unsorted Sources</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\NetworkStatus.h">
-      <Filter>Unsorted Sources</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\NicknameState.h">
       <Filter>Unsorted Sources</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Pathfinder.h">
@@ -1364,6 +1361,9 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Wallet.h">
       <Filter>1. Modules\ripple_ledger\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\NicknameState.h">
+      <Filter>1. Modules\ripple_ledger\processing</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

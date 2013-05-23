@@ -90,6 +90,7 @@
 #include "src/cpp/ripple/LedgerTiming.h"
 #include "src/cpp/ripple/Log.h"
 #include "src/cpp/ripple/NetworkOPs.h"
+#include "src/cpp/ripple/NicknameState.h"
 #include "src/cpp/ripple/Offer.h"
 #include "src/cpp/ripple/OfferCancelTransactor.h"
 #include "src/cpp/ripple/OfferCreateTransactor.h"
@@ -152,6 +153,7 @@
 #include "src/cpp/ripple/LedgerMaster.cpp"
 #include "src/cpp/ripple/LedgerProposal.cpp" // no log
 #include "src/cpp/ripple/LedgerTiming.cpp"
+#include "src/cpp/ripple/NicknameState.cpp" // no log
 #include "src/cpp/ripple/Offer.cpp" // no log
 #include "src/cpp/ripple/OrderBook.cpp" // no log
 #include "src/cpp/ripple/OrderBookDB.cpp"
