@@ -397,9 +397,6 @@
     <ClCompile Include="src\cpp\ripple\RippleAddress.cpp">
       <Filter>Unsorted Sources</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Interpreter.cpp">
-      <Filter>Unsorted Sources</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\NicknameState.cpp">
       <Filter>Unsorted Sources</Filter>
     </ClCompile>
@@ -425,9 +422,6 @@
       <Filter>Unsorted Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\WalletAddTransactor.cpp">
-      <Filter>Unsorted Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ScriptData.cpp">
       <Filter>Unsorted Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\websocket_core.cpp">
@@ -720,6 +714,12 @@
     </ClCompile>
     <ClCompile Include="modules\ripple_net\ripple_net.cpp">
       <Filter>1. Modules\ripple_net</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\Interpreter.cpp">
+      <Filter>1. Modules\ripple_ledger\contracts</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ScriptData.cpp">
+      <Filter>1. Modules\ripple_ledger\contracts</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1023,9 +1023,6 @@
     <ClInclude Include="src\cpp\ripple\RippleAddress.h">
       <Filter>Unsorted Sources</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Interpreter.h">
-      <Filter>Unsorted Sources</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\KeyCache.h">
       <Filter>Unsorted Sources</Filter>
     </ClInclude>
@@ -1063,9 +1060,6 @@
       <Filter>Unsorted Sources</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ScopedLock.h">
-      <Filter>Unsorted Sources</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ScriptData.h">
       <Filter>Unsorted Sources</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\SecureAllocator.h">
@@ -1358,6 +1352,12 @@
     </ClInclude>
     <ClInclude Include="modules\ripple_net\ripple_net.h">
       <Filter>1. Modules\ripple_net</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\Interpreter.h">
+      <Filter>1. Modules\ripple_ledger\contracts</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ScriptData.h">
+      <Filter>1. Modules\ripple_ledger\contracts</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

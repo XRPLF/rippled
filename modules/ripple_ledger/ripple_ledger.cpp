@@ -29,6 +29,8 @@
 #pragma warning (disable: 4244) // conversion, possible loss of data
 #endif
 
+
+
 #include "ripple_ledger.h"
 
 #include <algorithm>
@@ -38,6 +40,9 @@
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 #include <string>
+#include <vector>
+
+//#include "uint256.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/bind.hpp>
@@ -47,6 +52,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/pointer_cast.hpp>
 #include <boost/ref.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/thread.hpp>
@@ -54,6 +60,7 @@
 #include <boost/unordered_set.hpp>
 
 #include "src/cpp/database/SqliteDatabase.h"
+
 #include "src/cpp/json/writer.h"
 
 #include "src/cpp/ripple/AcceptedLedger.h"
@@ -65,11 +72,9 @@
 #include "src/cpp/ripple/CanonicalTXSet.h"
 #include "src/cpp/ripple/ChangeTransactor.h"
 #include "src/cpp/ripple/Config.h"
-#include "src/cpp/ripple/Contract.h"
 #include "src/cpp/ripple/FeatureTable.h"
 #include "src/cpp/ripple/FieldNames.h"
 #include "src/cpp/ripple/HashPrefixes.h"
-#include "src/cpp/ripple/Interpreter.h"
 #include "src/cpp/ripple/key.h"
 #include "src/cpp/ripple/Ledger.h"
 #include "src/cpp/ripple/LedgerAcquire.h"
@@ -85,7 +90,6 @@
 #include "src/cpp/ripple/Offer.h"
 #include "src/cpp/ripple/OfferCancelTransactor.h"
 #include "src/cpp/ripple/OfferCreateTransactor.h"
-#include "src/cpp/ripple/Operation.h"
 #include "src/cpp/ripple/OrderBook.h"
 #include "src/cpp/ripple/OrderBookDB.h"
 #include "src/cpp/ripple/PackedMessage.h"
@@ -117,8 +121,18 @@
 #include "src/cpp/ripple/Wallet.h"
 #include "src/cpp/ripple/WalletAddTransactor.h"
 
+// contract stuff, order matters
+#include "src/cpp/ripple/ScriptData.h"
+#include "src/cpp/ripple/Contract.h"
+#include "src/cpp/ripple/Interpreter.h"
+#include "src/cpp/ripple/Operation.h"
+
+//------------------------------------------------------------------------------
+
 // contracts
 #include "src/cpp/ripple/Contract.cpp" // no log
+#include "src/cpp/ripple/Interpreter.cpp" // no log
+#include "src/cpp/ripple/ScriptData.cpp" // no log
 #include "src/cpp/ripple/Operation.cpp" // no log
 
 // processing
