@@ -1,7 +1,3 @@
-#include "WalletAddTransactor.h"
-
-SETUP_LOG();
-
 TER WalletAddTransactor::doApply()
 {
 	std::cerr << "WalletAdd>" << std::endl;
@@ -16,7 +12,7 @@ TER WalletAddTransactor::doApply()
 
 	if (uTxFlags)
 	{
-		cLog(lsINFO) << "WalletAdd: Malformed transaction: Invalid flags set.";
+		WriteLog (lsINFO, WalletAddTransactor) << "WalletAdd: Malformed transaction: Invalid flags set.";
 
 		return temINVALID_FLAG;
 	}
@@ -50,7 +46,7 @@ TER WalletAddTransactor::doApply()
 	if (saSrcBalance + saPaid < saDstAmount + uReserve)		// Reserve is not scaled by fee.
 	{
 		// Vote no. However, transaction might succeed, if applied in a different order.
-		cLog(lsINFO) << boost::str(boost::format("WalletAdd: Delay transaction: Insufficient funds: %s / %s (%d)")
+		WriteLog (lsINFO, WalletAddTransactor) << boost::str(boost::format("WalletAdd: Delay transaction: Insufficient funds: %s / %s (%d)")
 			% saSrcBalance.getText() % (saDstAmount + uReserve).getText() % uReserve);
 
 		return tecUNFUNDED_ADD;

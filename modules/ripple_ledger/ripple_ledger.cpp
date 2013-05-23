@@ -33,10 +33,13 @@
 
 #include "ripple_ledger.h"
 
+//#define WIN32_LEAN_AND_MEAN 
+
 #include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <iostream>
+#include <openssl/ec.h>
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 #include <string>
@@ -182,6 +185,8 @@
 #include "src/cpp/ripple/TransactionQueue.cpp" // no log
 #include "src/cpp/ripple/Transactor.cpp"
 #include "src/cpp/ripple/TrustSetTransactor.cpp"
+#include "src/cpp/ripple/Wallet.cpp"
+#include "src/cpp/ripple/WalletAddTransactor.cpp"
 
 #ifdef _MSC_VER
 //#pragma warning (pop)
