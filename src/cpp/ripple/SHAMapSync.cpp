@@ -697,7 +697,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 	destination.clearSynching();
 
 #ifdef SMS_DEBUG
-	WriteLog (lsINFO) << "SYNCHING COMPLETE " << items << " items, " << nodes << " nodes, " <<
+	WriteLog (lsINFO, SHAMap) << "SYNCHING COMPLETE " << items << " items, " << nodes << " nodes, " <<
 		bytes / 1024 << " KB";
 #endif
 
@@ -708,7 +708,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 	}
 
 #ifdef SMS_DEBUG
-	WriteLog (lsINFO) << "SHAMapSync test passed: " << items << " items, " <<
+	WriteLog (lsINFO, SHAMap) << "SHAMapSync test passed: " << items << " items, " <<
 		passes << " passes, " << nodes << " nodes";
 #endif
 	

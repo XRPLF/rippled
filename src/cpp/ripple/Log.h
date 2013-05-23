@@ -7,12 +7,16 @@
 
 #include <boost/thread/recursive_mutex.hpp>
 
+// VFALCO: TODO, fix this for Linux builds
 // Forward declaration
+/*
 namespace boost {
 	namespace filesystem {
 		class path;
 	}
 }
+*/
+#include <boost/filesystem.hpp> // unfortunately needed to compile
 
 // Ensure that we don't get value.h without writer.h
 #include "../json/json.h"
