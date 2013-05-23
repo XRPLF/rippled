@@ -107,6 +107,9 @@
     <Filter Include="1. Modules\ripple_client\http">
       <UniqueIdentifier>{29cd2103-d553-4d82-9e6a-224e3b1cb667}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_net\sockets">
+      <UniqueIdentifier>{afd09812-59e2-45e2-bf7f-d561b23d7da2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -436,15 +439,6 @@
     <ClCompile Include="src\cpp\ripple\ripple.pb.cc">
       <Filter>protoc_generated</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ConnectionPool.cpp">
-      <Filter>1. Modules\ripple_net</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Peer.cpp">
-      <Filter>1. Modules\ripple_net</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\PeerDoor.cpp">
-      <Filter>1. Modules\ripple_net</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\Transaction.cpp">
       <Filter>1. Modules\ripple_ledger\transactions</Filter>
     </ClCompile>
@@ -499,9 +493,6 @@
     <ClCompile Include="src\cpp\ripple\Contract.cpp">
       <Filter>1. Modules\ripple_ledger\contracts</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\NetworkOPs.cpp">
-      <Filter>1. Modules\ripple_net</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\SerializedLedger.cpp">
       <Filter>1. Modules\ripple_ledger\serialization</Filter>
     </ClCompile>
@@ -519,9 +510,6 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Serializer.cpp">
       <Filter>1. Modules\ripple_ledger\serialization</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\WSDoor.cpp">
-      <Filter>1. Modules\ripple_net</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Amount.cpp">
       <Filter>1. Modules\ripple_basics\types</Filter>
@@ -717,6 +705,24 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\HTTPRequest.cpp">
       <Filter>1. Modules\ripple_client\http</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ConnectionPool.cpp">
+      <Filter>1. Modules\ripple_net\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\NetworkOPs.cpp">
+      <Filter>1. Modules\ripple_net\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\Peer.cpp">
+      <Filter>1. Modules\ripple_net\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\PeerDoor.cpp">
+      <Filter>1. Modules\ripple_net\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\WSDoor.cpp">
+      <Filter>1. Modules\ripple_net\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_net\ripple_net.cpp">
+      <Filter>1. Modules\ripple_net</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1074,18 +1080,6 @@
     <ClInclude Include="src\cpp\ripple\ripple.pb.h">
       <Filter>protoc_generated</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\AutoSocket.h">
-      <Filter>1. Modules\ripple_net</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ConnectionPool.h">
-      <Filter>1. Modules\ripple_net</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\PeerDoor.h">
-      <Filter>1. Modules\ripple_net</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Peer.h">
-      <Filter>1. Modules\ripple_net</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\Transaction.h">
       <Filter>1. Modules\ripple_ledger\transactions</Filter>
     </ClInclude>
@@ -1134,9 +1128,6 @@
     <ClInclude Include="src\cpp\ripple\Contract.h">
       <Filter>1. Modules\ripple_ledger\contracts</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\NetworkOPs.h">
-      <Filter>1. Modules\ripple_net</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\SerializedLedger.h">
       <Filter>1. Modules\ripple_ledger\serialization</Filter>
     </ClInclude>
@@ -1157,12 +1148,6 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Serializer.h">
       <Filter>1. Modules\ripple_ledger\serialization</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\WSDoor.h">
-      <Filter>1. Modules\ripple_net</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\WSConnection.h">
-      <Filter>1. Modules\ripple_net</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\base58.h">
       <Filter>1. Modules\ripple_basics\types</Filter>
@@ -1355,6 +1340,30 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\HTTPRequest.h">
       <Filter>1. Modules\ripple_client\http</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\WSDoor.h">
+      <Filter>1. Modules\ripple_net\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\AutoSocket.h">
+      <Filter>1. Modules\ripple_net\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ConnectionPool.h">
+      <Filter>1. Modules\ripple_net\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\NetworkOPs.h">
+      <Filter>1. Modules\ripple_net\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\Peer.h">
+      <Filter>1. Modules\ripple_net\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\PeerDoor.h">
+      <Filter>1. Modules\ripple_net\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\WSConnection.h">
+      <Filter>1. Modules\ripple_net\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_net\ripple_net.h">
+      <Filter>1. Modules\ripple_net</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

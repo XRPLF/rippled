@@ -1,11 +1,9 @@
 
 #include "Log.h"
 
-#define WSDOOR_CPP
-#include "../websocketpp/src/sockets/autotls.hpp"
-#include "../websocketpp/src/websocketpp.hpp"
-
-SETUP_LOG();
+//#define WSDOOR_CPP
+//#include "../websocketpp/src/sockets/autotls.hpp"
+//#include "../websocketpp/src/websocketpp.hpp"
 
 #include "Application.h"
 #include "Config.h"
@@ -40,12 +38,6 @@ DECLARE_INSTANCE(WebSocketConnection);
 // - NetworkOPs is smart enough to subscribe and or pass back messages
 //
 
-// Generate DH for SSL connection.
-static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
-{
-	return 512 == iKeyLength ? theApp->getWallet().getDh512() : theApp->getWallet().getDh1024();
-}
-
 void WSDoor::startListening()
 {
 	NameThread("websocket");
@@ -78,7 +70,7 @@ void WSDoor::startListening()
 	}
 	catch (websocketpp::exception& e)
 	{
-		cLog(lsWARNING) << "websocketpp exception: " << e.what();
+		WriteLog (lsWARNING, WSDoor) << "websocketpp exception: " << e.what();
 		while (1) // temporary workaround for websocketpp throwing exceptions on access/close races
 		{ // https://github.com/zaphoyd/websocketpp/issues/98
 			try
@@ -88,7 +80,7 @@ void WSDoor::startListening()
 			}
 			catch (websocketpp::exception& e)
 			{
-				cLog(lsWARNING) << "websocketpp exception: " << e.what();
+				WriteLog (lsWARNING, WSDoor) << "websocketpp exception: " << e.what();
 			}
 		}
 	}
@@ -100,7 +92,7 @@ WSDoor* WSDoor::createWSDoor(const std::string& strIp, const int iPort, bool bPu
 {
 	WSDoor*	wdpResult	= new WSDoor(strIp, iPort, bPublic);
 
-	cLog(lsINFO) <<
+	WriteLog (lsINFO, WSDoor) <<
 		boost::str(boost::format("Websocket: %s: Listening: %s %d ")
 			% (bPublic ? "Public" : "Private")
 			% strIp

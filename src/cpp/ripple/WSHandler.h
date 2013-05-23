@@ -13,8 +13,13 @@ class WSConnection;
 
 // CAUTION: on_* functions are called by the websocket code while holding a lock
 
+struct WSServerHandlerLog // for logging
+{
+};
+
 // A single instance of this object is made.
 // This instance dispatches all events.  There is no per connection persistence.
+
 template <typename endpoint_type>
 class WSServerHandler : public endpoint_type::handler
 {
@@ -65,7 +70,7 @@ public:
 	{
 		try
 		{
-			cLog(broadcast ? lsTRACE : lsDEBUG) << "Ws:: Sending '" << strMessage << "'";
+			WriteLog (broadcast ? lsTRACE : lsDEBUG, WSServerHandlerLog) << "Ws:: Sending '" << strMessage << "'";
 
 			cpClient->send(strMessage);
 		}
@@ -91,7 +96,7 @@ public:
 	{
 		Json::FastWriter	jfwWriter;
 
-		// cLog(lsDEBUG) << "Ws:: Object '" << jfwWriter.write(jvObj) << "'";
+		// WriteLog (lsDEBUG, WSServerHandlerLog) << "Ws:: Object '" << jfwWriter.write(jvObj) << "'";
 
 		send(cpClient, jfwWriter.write(jvObj), broadcast);
 	}
@@ -109,7 +114,7 @@ public:
 		std::string data("ping");
 		if (ptr->onPingTimer(data))
 		{
-			cLog(lsWARNING) << "Connection pings out";
+			WriteLog (lsWARNING, WSServerHandlerLog) << "Connection pings out";
 			cpClient->close(websocketpp::close::status::PROTOCOL_ERROR, "ping timeout");
 		}
 		else
@@ -185,7 +190,7 @@ public:
 		{
 			try
 			{
-				cLog(lsDEBUG) << "Ws:: Rejected("
+				WriteLog (lsDEBUG, WSServerHandlerLog) << "Ws:: Rejected("
 					<< cpClient->get_socket().lowest_layer().remote_endpoint().address().to_string()
 					<< ") '" << mpMessage->get_payload() << "'";
 			}
@@ -227,7 +232,7 @@ public:
 
 		try
 		{
-		    cLog(lsDEBUG) << "Ws:: Receiving("
+		    WriteLog (lsDEBUG, WSServerHandlerLog) << "Ws:: Receiving("
 		    	<< cpClient->get_socket().lowest_layer().remote_endpoint().address().to_string()
 				<< ") '" << mpMessage->get_payload() << "'";
 		}

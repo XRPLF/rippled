@@ -64,7 +64,7 @@ public:
 		mLoadSource(mRemoteIP), mPingTimer(cpConnection->get_io_service()), mPinged(false),
 		mRcvQueueRunning(false), mDead(false)
 	{
-		cLog(lsDEBUG) << "Websocket connection from " << mRemoteIP;
+		WriteLog (lsDEBUG, WSServerHandlerLog) << "Websocket connection from " << mRemoteIP;
 		setPingTimer();
 	}
 
