@@ -21,8 +21,6 @@
 #include "Serializer.h"
 #include "Application.h"
 
-SETUP_LOG();
-
 std::size_t hash_value(const CBase58Data& b58)
 {
 	std::size_t seed = theApp->getNonceST() + (b58.nVersion * 0x9e3779b9);
@@ -424,7 +422,7 @@ bool RippleAddress::accountPublicVerify(const uint256& uHash, const std::vector<
 	if (!ckPublic.SetPubKey(getAccountPublic()))
 	{
 		// Bad private key.
-		cLog(lsWARNING) << "accountPublicVerify: Bad private key.";
+		WriteLog (lsWARNING, RippleAddress) << "accountPublicVerify: Bad private key.";
 		bVerified	= false;
 	}
 	else
@@ -525,13 +523,13 @@ bool RippleAddress::accountPrivateSign(const uint256& uHash, std::vector<unsigne
 	if (!ckPrivate.SetPrivateKeyU(getAccountPrivate()))
 	{
 		// Bad private key.
-		cLog(lsWARNING) << "accountPrivateSign: Bad private key.";
+		WriteLog (lsWARNING, RippleAddress) << "accountPrivateSign: Bad private key.";
 		bResult	= false;
 	}
 	else
 	{
 		bResult	= ckPrivate.Sign(uHash, vucSig);
-		tLog(!bResult, lsWARNING) << "accountPrivateSign: Signing failed.";
+		CondLog (!bResult, lsWARNING, RippleAddress) << "accountPrivateSign: Signing failed.";
 	}
 
 	return bResult;
@@ -546,7 +544,7 @@ bool RippleAddress::accountPrivateVerify(const uint256& uHash, const std::vector
 	if (!ckPrivate.SetPrivateKeyU(getAccountPrivate()))
 	{
 		// Bad private key.
-		cLog(lsWARNING) << "accountPrivateVerify: Bad private key.";
+		WriteLog (lsWARNING, RippleAddress) << "accountPrivateVerify: Bad private key.";
 		bVerified	= false;
 	}
 	else
@@ -567,12 +565,12 @@ std::vector<unsigned char> RippleAddress::accountPrivateEncrypt(const RippleAddr
 	if (!ckPublic.SetPubKey(naPublicTo.getAccountPublic()))
 	{
 		// Bad public key.
-		cLog(lsWARNING) << "accountPrivateEncrypt: Bad public key.";
+		WriteLog (lsWARNING, RippleAddress) << "accountPrivateEncrypt: Bad public key.";
 	}
 	else if (!ckPrivate.SetPrivateKeyU(getAccountPrivate()))
 	{
 		// Bad private key.
-		cLog(lsWARNING) << "accountPrivateEncrypt: Bad private key.";
+		WriteLog (lsWARNING, RippleAddress) << "accountPrivateEncrypt: Bad private key.";
 	}
 	else
 	{
@@ -598,12 +596,12 @@ std::vector<unsigned char> RippleAddress::accountPrivateDecrypt(const RippleAddr
 	if (!ckPublic.SetPubKey(naPublicFrom.getAccountPublic()))
 	{
 		// Bad public key.
-		cLog(lsWARNING) << "accountPrivateDecrypt: Bad public key.";
+		WriteLog (lsWARNING, RippleAddress) << "accountPrivateDecrypt: Bad public key.";
 	}
 	else if (!ckPrivate.SetPrivateKeyU(getAccountPrivate()))
 	{
 		// Bad private key.
-		cLog(lsWARNING) << "accountPrivateDecrypt: Bad private key.";
+		WriteLog (lsWARNING, RippleAddress) << "accountPrivateDecrypt: Bad private key.";
 	}
 	else
 	{
