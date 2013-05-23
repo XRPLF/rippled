@@ -101,7 +101,7 @@ protected:
 	void recvGetAccount(ripple::TMGetAccount& packet);
 	void recvAccount(ripple::TMAccount& packet);
 	void recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHolder);
-	void recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet);
+	void recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet, ScopedLock& MasterLockHolder);
 	void recvStatus(ripple::TMStatusChange& packet);
 	void recvPropose(const boost::shared_ptr<ripple::TMProposeSet>& packet);
 	void recvHaveTxSet(ripple::TMHaveTransactionSet& packet);
