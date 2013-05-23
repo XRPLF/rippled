@@ -699,6 +699,7 @@ Ledger::pointer Ledger::getSQL1(SqliteStatement *stmt)
 void Ledger::getSQL2(Ledger::ref ret)
 {
 	ret->setClosed();
+	ret->setImmutable();
 	if (theApp->getOPs().haveLedger(ret->getLedgerSeq()))
 		ret->setAccepted();
 	cLog(lsTRACE) << "Loaded ledger: " << ret->getHash().GetHex();
