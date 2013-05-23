@@ -83,6 +83,7 @@ else:
 		    'boost_regex-mt',
 		    'boost_system-mt',
 		    'boost_thread-mt',
+		    'boost_random-mt',
 	    ]
     )
 
@@ -172,9 +173,11 @@ RIPPLE_OBJS += PROTO_SRCS
 
 RIPPLE_OBJS = []
 
+RIPPLE_OBJS += [ 'src/cpp/database/sqlite3.c', 'build/proto/ripple.pb.cc' ]
+
 env.Append(CXXFLAGS = ['-I.', '-Isrc/cpp/ripple'])
 
-RIPPLE_CORES	= glob.glob('src/cpp/*_core.cpp')
+RIPPLE_CORES	= [ 'src/cpp/json_core.cpp', 'src/cpp/leveldb_core.cpp', 'src/cpp/websocket_core.cpp' ]
 RIPPLE_MODULES	= glob.glob('modules/*/*.cpp')
 
 for file in RIPPLE_MODULES:
