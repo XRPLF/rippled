@@ -50,6 +50,9 @@ else:
 for dir in ['.', 'ripple', 'database', 'json', 'leveldb/db', 'leveldb/port', 'leveldb/include', 'leveldb/table', 'leveldb/util', 'websocketpp']:
 	VariantDir('build/obj/'+dir, 'src/cpp/'+dir, duplicate=0)
 
+for dir in [ 'ripple_basics', 'ripple_client', 'ripple_db', 'ripple_ledger', 'ripple_main', 'ripple_net' ]:
+	VariantDir('build/obj/'+dir, 'modules/'+dir, duplicate=0)
+
 # Use openssl
 env.ParseConfig('pkg-config --cflags --libs openssl')
 
@@ -163,9 +166,25 @@ RIPPLE_OBJS = []
 
 RIPPLE_OBJS += PROTO_SRCS
 
-for file in RIPPLE_SRCS:
+# for file in RIPPLE_SRCS:
+#    # Strip src/cpp/
+#    RIPPLE_OBJS.append('build/obj/' + file[8:])
+
+RIPPLE_OBJS = []
+
+env.Append(CXXFLAGS = ['-I.', '-Isrc/cpp/ripple'])
+
+RIPPLE_CORES	= glob.glob('src/cpp/*_core.cpp')
+RIPPLE_MODULES	= glob.glob('modules/*/*.cpp')
+
+for file in RIPPLE_MODULES:
     # Strip src/cpp/
     RIPPLE_OBJS.append('build/obj/' + file[8:])
+
+for file in RIPPLE_CORES:
+    # Strip modules/
+    RIPPLE_OBJS.append('build/obj/' + file[8:])
+
 #
 # Targets
 #
