@@ -437,7 +437,18 @@ Json::Value RPCParser::parseAccountLines(const Json::Value& jvParams)
 Json::Value RPCParser::parseAccountRaw(const Json::Value& jvParams, bool bPeer)
 {
 	std::string		strIdent	= jvParams[0u].asString();
-	std::string		strPeer		= bPeer && jvParams.size() >= 2 ? jvParams[1u].asString() : "";
+	unsigned int	iCursor		= jvParams.size();
+	bool			bStrict		= false;
+	std::string		strPeer;
+
+	if (!bPeer && iCursor >= 2 && jvParams[iCursor-1] == "strict")
+	{
+		bStrict	= true;
+		--iCursor;
+	}
+
+	if (bPeer && iCursor >= 2)
+		strPeer	= jvParams[iCursor].asString();
 
 	int				iIndex		= 0;
 //	int				iIndex		= jvParams.size() >= 2 ? lexical_cast_s<int>(jvParams[1u].asString()) : 0;
@@ -452,6 +463,9 @@ Json::Value RPCParser::parseAccountRaw(const Json::Value& jvParams, bool bPeer)
 
 	jvRequest["account"]	= strIdent;
 
+	if (bStrict)
+		jvRequest["strict"]		= 1;
+
 	if (iIndex)
 		jvRequest["account_index"]	= iIndex;
 
@@ -465,7 +479,7 @@ Json::Value RPCParser::parseAccountRaw(const Json::Value& jvParams, bool bPeer)
 		jvRequest["peer"]	= strPeer;
 	}
 
-	if (jvParams.size() == (2+bPeer) && !jvParseLedger(jvRequest, jvParams[1u+bPeer].asString()))
+	if (iCursor == (2+bPeer) && !jvParseLedger(jvRequest, jvParams[1u+bPeer].asString()))
 		return rpcError(rpcLGR_IDX_MALFORMED);
 
 	return jvRequest;
