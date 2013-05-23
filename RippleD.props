@@ -15,7 +15,7 @@
       <PreprocessorDefinitions>USE_LEVELDB;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>$(RepoDir)\src\cpp\leveldb;$(RepoDir)\src\cpp\leveldb\include;$(RepoDir)\src\cpp\protobuf\src;$(RepoDir)\src\cpp\protobuf\vsprojects;$(RepoDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(RepoDir)\src\cpp\leveldb;$(RepoDir)\src\cpp\leveldb\include;$(RepoDir)\src\cpp\protobuf\src;$(RepoDir)\src\cpp\protobuf\vsprojects;$(RepoDir);$(RepoDir)\src\cpp\ripple;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>

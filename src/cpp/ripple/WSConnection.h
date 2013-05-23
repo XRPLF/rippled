@@ -20,6 +20,11 @@
 
 DEFINE_INSTANCE(WebSocketConnection);
 
+// This is for logging
+struct WSConnectionLog
+{
+};
+
 template <typename endpoint_type>
 class WSServerHandler;
 //
@@ -64,7 +69,7 @@ public:
 		mLoadSource(mRemoteIP), mPingTimer(cpConnection->get_io_service()), mPinged(false),
 		mRcvQueueRunning(false), mDead(false)
 	{
-		WriteLog (lsDEBUG, WSServerHandlerLog) << "Websocket connection from " << mRemoteIP;
+		WriteLog (lsDEBUG, WSConnectionLog) << "Websocket connection from " << mRemoteIP;
 		setPingTimer();
 	}
 
