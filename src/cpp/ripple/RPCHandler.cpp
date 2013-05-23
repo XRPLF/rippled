@@ -2618,11 +2618,13 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 	case LEDGER_CLOSED:
 		lpLedger		= theApp->getLedgerMaster().getClosedLedger();
 		iLedgerIndex	= lpLedger->getLedgerSeq();
+		assert(lpLedger->isImmutable() && lpLedger->isClosed());
 		break;
 
 	case LEDGER_VALIDATED:
 		lpLedger		= mNetOps->getValidatedLedger();
 		iLedgerIndex	= lpLedger->getLedgerSeq();
+		assert(lpLedger->isImmutable() && lpLedger->isClosed());
 		break;
 	}
 
