@@ -167,6 +167,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="build\proto\ripple.pb.cc">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="modules\ripple_basics\ripple_basics.cpp" />
     <ClCompile Include="modules\ripple_client\ripple_client.cpp" />
     <ClCompile Include="modules\ripple_db\ripple_db.cpp" />
@@ -874,7 +880,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple.pb.cc" />
     <ClCompile Include="src\cpp\ripple\RippleAddress.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1154,6 +1159,7 @@
     <ClCompile Include="src\cpp\websocket_core.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="build\proto\ripple.pb.h" />
     <ClInclude Include="database\sqlite3.h" />
     <ClInclude Include="database\sqlite3ext.h" />
     <ClInclude Include="modules\ripple_basics\ripple_basics.h" />
@@ -1586,7 +1592,6 @@
     <ClInclude Include="src\cpp\ripple\RangeSet.h" />
     <ClInclude Include="src\cpp\ripple\RegularKeySetTransactor.h" />
     <ClInclude Include="src\cpp\ripple\rfc1751.h" />
-    <ClInclude Include="src\cpp\ripple\ripple.pb.h" />
     <ClInclude Include="src\cpp\ripple\RippleAddress.h" />
     <ClInclude Include="src\cpp\ripple\RippleCalc.h" />
     <ClInclude Include="src\cpp\ripple\RippleState.h" />
@@ -1649,13 +1654,13 @@
     <None Include="SConstruct" />
     <CustomBuild Include="src\cpp\ripple\ripple.proto">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">protoc --cpp_out=$(SrcDir) -I=$(SrcDir) "$(SrcDir)\%(Filename)%(Extension)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">protoc --cpp_out=$(RepoDir)\build\proto -I=$(SrcDir) "$(SrcDir)\%(Filename)%(Extension)"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">protoc --cpp_out=$(SrcDir) -I=$(SrcDir) "$(SrcDir)\%(Filename)%(Extension)"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SrcDir)\%(Filename).pb.h;$(SrcDir)\%(Filename).pb.cc</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(RepoDir)\build\proto\%(Filename).pb.h;$(RepoDir)\build\proto\%(Filename).pb.cc</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SrcDir)\%(Filename).pb.h;$(SrcDir)\%(Filename).pb.cc</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">protoc --cpp_out=$(SrcDir) -I=$(SrcDir) "$(SrcDir)\%(Filename)%(Extension)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">protoc --cpp_out=$(RepoDir)\build\proto -I=$(SrcDir) "$(SrcDir)\%(Filename)%(Extension)"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">protoc --cpp_out=$(SrcDir) -I=$(SrcDir) "$(SrcDir)\%(Filename)%(Extension)"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SrcDir)\%(Filename).pb.h;$(SrcDir)\%(Filename).pb.cc</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(RepoDir)\build\proto\%(Filename).pb.h;$(RepoDir)\build\proto\%(Filename).pb.cc</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SrcDir)\%(Filename).pb.h;$(SrcDir)\%(Filename).pb.cc</Outputs>
     </CustomBuild>
     <None Include="src\cpp\json\json_internalarray.inl">

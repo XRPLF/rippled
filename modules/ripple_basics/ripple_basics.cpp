@@ -74,6 +74,8 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/SHAMapSync.cpp"
 #include "src/cpp/ripple/utils.cpp" // no log
 
+#include "ripple.pb.cc"
+
 #ifdef _MSC_VER
 //#pragma warning (pop)
 #endif

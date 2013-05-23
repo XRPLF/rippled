@@ -49,9 +49,6 @@
     <Filter Include="0. Third Party Code\protobuf\stubs">
       <UniqueIdentifier>{27858e65-9580-4a67-b0c5-054e970516af}</UniqueIdentifier>
     </Filter>
-    <Filter Include="protoc_generated">
-      <UniqueIdentifier>{7a289f3b-0204-4a4d-b161-589efd3589c0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules">
       <UniqueIdentifier>{a152ed99-bd05-4c37-8ae7-82888b1bb469}</UniqueIdentifier>
     </Filter>
@@ -114,6 +111,9 @@
     </Filter>
     <Filter Include="1. Modules\ripple_basics\containers">
       <UniqueIdentifier>{683c494b-1175-49ac-9714-65640ba50bf5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_basics\protobuf">
+      <UniqueIdentifier>{eb0c6bda-cf68-4334-a8c3-8d39202852a0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -723,8 +723,8 @@
     <ClCompile Include="src\cpp\ripple\Pathfinder.cpp">
       <Filter>1. Modules\ripple_ledger\processing</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple.pb.cc">
-      <Filter>protoc_generated</Filter>
+    <ClCompile Include="build\proto\ripple.pb.cc">
+      <Filter>1. Modules\ripple_basics\protobuf</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1361,8 +1361,8 @@
     <ClInclude Include="src\cpp\ripple\NetworkStatus.h">
       <Filter>1. Modules\ripple_main\core</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple.pb.h">
-      <Filter>protoc_generated</Filter>
+    <ClInclude Include="build\proto\ripple.pb.h">
+      <Filter>1. Modules\ripple_basics\protobuf</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
