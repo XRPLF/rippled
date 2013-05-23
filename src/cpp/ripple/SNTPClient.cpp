@@ -10,8 +10,6 @@
 #include "Config.h"
 #include "Log.h"
 
-SETUP_LOG();
-
 // #define SNTP_DEBUG
 
 static uint8_t SNTPQueryData[48] =
@@ -75,7 +73,7 @@ void SNTPClient::resolveComplete(const boost::system::error_code& error, boost::
 			time_t now = time(NULL);
 			if ((query.mLocalTimeSent == now) || ((query.mLocalTimeSent + 1) == now))
 			{ // This can happen if the same IP address is reached through multiple names
-				cLog(lsTRACE) << "SNTP: Redundant query suppressed";
+				WriteLog (lsTRACE, SNTPClient) << "SNTP: Redundant query suppressed";
 				return;
 			}
 			query.mReceivedReply = false;
@@ -96,23 +94,23 @@ void SNTPClient::receivePacket(const boost::system::error_code& error, std::size
 	{
 		boost::mutex::scoped_lock sl(mLock);
 #ifdef SNTP_DEBUG
-		cLog(lsTRACE) << "SNTP: Packet from " << mReceiveEndpoint;
+		WriteLog (lsTRACE, SNTPClient) << "SNTP: Packet from " << mReceiveEndpoint;
 #endif
 		std::map<boost::asio::ip::udp::endpoint, SNTPQuery>::iterator query = mQueries.find(mReceiveEndpoint);
 		if (query == mQueries.end())
-			cLog(lsDEBUG) << "SNTP: Reply from " << mReceiveEndpoint << " found without matching query";
+			WriteLog (lsDEBUG, SNTPClient) << "SNTP: Reply from " << mReceiveEndpoint << " found without matching query";
 		else if (query->second.mReceivedReply)
-			cLog(lsDEBUG) << "SNTP: Duplicate response from " << mReceiveEndpoint;
+			WriteLog (lsDEBUG, SNTPClient) << "SNTP: Duplicate response from " << mReceiveEndpoint;
 		else
 		{
 			query->second.mReceivedReply = true;
 			if (time(NULL) > (query->second.mLocalTimeSent + 1))
-				cLog(lsWARNING) << "SNTP: Late response from " << mReceiveEndpoint;
+				WriteLog (lsWARNING, SNTPClient) << "SNTP: Late response from " << mReceiveEndpoint;
 			else if (bytes_xferd < 48)
-				cLog(lsWARNING) << "SNTP: Short reply from " << mReceiveEndpoint
+				WriteLog (lsWARNING, SNTPClient) << "SNTP: Short reply from " << mReceiveEndpoint
 					<< " (" << bytes_xferd << ") " << mReceiveBuffer.size();
 			else if (reinterpret_cast<uint32*>(&mReceiveBuffer[0])[NTP_OFF_ORGTS_FRAC] != query->second.mQueryNonce)
-				cLog(lsWARNING) << "SNTP: Reply from " << mReceiveEndpoint << "had wrong nonce";
+				WriteLog (lsWARNING, SNTPClient) << "SNTP: Reply from " << mReceiveEndpoint << "had wrong nonce";
 			else
 				processReply();
 		}
@@ -125,7 +123,7 @@ void SNTPClient::receivePacket(const boost::system::error_code& error, std::size
 
 void SNTPClient::sendComplete(const boost::system::error_code& error, std::size_t)
 {
-	tLog(error, lsWARNING) << "SNTP: Send error";
+	CondLog (error, lsWARNING, SNTPClient) << "SNTP: Send error";
 }
 
 void SNTPClient::processReply()
@@ -139,12 +137,12 @@ void SNTPClient::processReply()
 
 	if ((info >> 30) == 3)
 	{
-		cLog(lsINFO) << "SNTP: Alarm condition " << mReceiveEndpoint;
+		WriteLog (lsINFO, SNTPClient) << "SNTP: Alarm condition " << mReceiveEndpoint;
 		return;
 	}
 	if ((stratum == 0) || (stratum > 14))
 	{
-		cLog(lsINFO) << "SNTP: Unreasonable stratum (" << stratum << ") from " << mReceiveEndpoint;
+		WriteLog (lsINFO, SNTPClient) << "SNTP: Unreasonable stratum (" << stratum << ") from " << mReceiveEndpoint;
 		return;
 	}
 
@@ -172,7 +170,7 @@ void SNTPClient::processReply()
 	if ((mOffset == -1) || (mOffset == 1)) // small corrections likely do more harm than good
 		mOffset = 0;
 
-	tLog(timev || mOffset, lsTRACE) << "SNTP: Offset is " << timev << ", new system offset is " << mOffset;
+	CondLog (timev || mOffset, lsTRACE, SNTPClient) << "SNTP: Offset is " << timev << ", new system offset is " << mOffset;
 }
 
 void SNTPClient::timerEntry(const boost::system::error_code& error)
@@ -196,7 +194,7 @@ void SNTPClient::init(const std::vector<std::string>& servers)
 	std::vector<std::string>::const_iterator it = servers.begin();
 	if (it == servers.end())
 	{
-		cLog(lsINFO) << "SNTP: no server specified";
+		WriteLog (lsINFO, SNTPClient) << "SNTP: no server specified";
 		return;
 	}
 	BOOST_FOREACH(const std::string& it, servers)
@@ -229,13 +227,13 @@ bool SNTPClient::doQuery()
 			best = it;
 	if (best == mServers.end())
 	{
-		cLog(lsINFO) << "SNTP: No server to query";
+		WriteLog (lsINFO, SNTPClient) << "SNTP: No server to query";
 		return false;
 	}
 	time_t now = time(NULL);
 	if ((best->second != (time_t) -1) && ((best->second + NTP_MIN_QUERY) >= now))
 	{
-		cLog(lsTRACE) << "SNTP: All servers recently queried";
+		WriteLog (lsTRACE, SNTPClient) << "SNTP: All servers recently queried";
 		return false;
 	}
 	best->second = now;
@@ -245,7 +243,7 @@ bool SNTPClient::doQuery()
 		boost::bind(&SNTPClient::resolveComplete, this,
 		boost::asio::placeholders::error, boost::asio::placeholders::iterator));
 #ifdef SNTP_DEBUG
-	cLog(lsTRACE) << "SNTP: Resolve pending for " << best->first;
+	WriteLog (lsTRACE, SNTPClient) << "SNTP: Resolve pending for " << best->first;
 #endif
 	return true;
 }

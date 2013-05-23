@@ -110,6 +110,9 @@
     <Filter Include="1. Modules\ripple_net\sockets">
       <UniqueIdentifier>{afd09812-59e2-45e2-bf7f-d561b23d7da2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_net\service">
+      <UniqueIdentifier>{074b2e47-f34b-42f1-945e-7e8083bbfb43}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -404,9 +407,6 @@
       <Filter>Unsorted Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\PFRequest.cpp">
-      <Filter>Unsorted Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\SNTPClient.cpp">
       <Filter>Unsorted Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Suppression.cpp">
@@ -720,6 +720,9 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ScriptData.cpp">
       <Filter>1. Modules\ripple_ledger\contracts</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\SNTPClient.cpp">
+      <Filter>1. Modules\ripple_net\service</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1036,9 +1039,6 @@
       <Filter>Unsorted Sources</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\PFRequest.h">
-      <Filter>Unsorted Sources</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\SNTPClient.h">
       <Filter>Unsorted Sources</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Suppression.h">
@@ -1358,6 +1358,9 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ScriptData.h">
       <Filter>1. Modules\ripple_ledger\contracts</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\SNTPClient.h">
+      <Filter>1. Modules\ripple_net\service</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
