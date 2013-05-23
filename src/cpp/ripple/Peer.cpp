@@ -512,7 +512,7 @@ void Peer::processReadBuffer()
 				ripple::TMGetPeers msg;
 
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recvGetPeers(msg);
+					recvGetPeers(msg, sl);
 				else
 					cLog(lsWARNING) << "parse error: " << type;
 			}
@@ -568,7 +568,7 @@ void Peer::processReadBuffer()
 				event->reName("Peer::transaction");
 				ripple::TMTransaction msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recvTransaction(msg);
+					recvTransaction(msg, sl);
 				else
 					cLog(lsWARNING) << "parse error: " << type;
 			}
@@ -634,7 +634,7 @@ void Peer::processReadBuffer()
 				event->reName("Peer::validation");
 				boost::shared_ptr<ripple::TMValidation> msg = boost::make_shared<ripple::TMValidation>();
 				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recvValidation(msg);
+					recvValidation(msg, sl);
 				else
 					cLog(lsWARNING) << "parse error: " << type;
 			}
@@ -864,15 +864,15 @@ static void checkTransaction(Job&, int flags, SerializedTransaction::pointer stx
 #endif
 }
 
-void Peer::recvTransaction(ripple::TMTransaction& packet)
+void Peer::recvTransaction(ripple::TMTransaction& packet, ScopedLock& MasterLockHolder)
 {
+	MasterLockHolder.unlock();
 	Transaction::pointer tx;
 #ifndef TRUST_NETWORK
 	try
 	{
 #endif
-		std::string rawTx = packet.rawtransaction();
-		Serializer s(rawTx);
+		Serializer s(packet.rawtransaction());
 		SerializerIterator sit(s);
 		SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction>(boost::ref(sit));
 
@@ -1084,8 +1084,9 @@ static void checkValidation(Job&, SerializedValidation::pointer val, uint256 sig
 #endif
 }
 
-void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet)
+void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet, ScopedLock& MasterLockHolder)
 {
+	MasterLockHolder.unlock();
 	if (packet->validation().size() < 50)
 	{
 		cLog(lsWARNING) << "Too small validation from peer";
@@ -1137,8 +1138,9 @@ void Peer::recvGetContacts(ripple::TMGetContacts& packet)
 // Return a list of your favorite people
 // TODO: filter out all the LAN peers
 // TODO: filter out the peer you are talking to
-void Peer::recvGetPeers(ripple::TMGetPeers& packet)
+void Peer::recvGetPeers(ripple::TMGetPeers& packet, ScopedLock& MasterLockHolder)
 {
+	MasterLockHolder.unlock();
 	std::vector<std::string> addrs;
 
 	theApp->getConnectionPool().getTopNAddrs(30, addrs);
