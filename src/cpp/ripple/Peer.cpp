@@ -612,7 +612,7 @@ void Peer::processReadBuffer()
 				event->reName("Peer::ledgerdata");
 				boost::shared_ptr<ripple::TMLedgerData> msg = boost::make_shared<ripple::TMLedgerData>();
 				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recvLedger(msg);
+					recvLedger(msg, sl);
 				else
 					cLog(lsWARNING) << "parse error: " << type;
 			}
@@ -1663,8 +1663,9 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHold
 	sendPacket(oPacket, true);
 }
 
-void Peer::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_ptr)
+void Peer::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_ptr, ScopedLock& MasterLockHolder)
 {
+	MasterLockHolder.unlock();
 	ripple::TMLedgerData& packet = *packet_ptr;
 	if (packet.nodes().size() <= 0)
 	{
