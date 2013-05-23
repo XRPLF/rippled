@@ -1206,6 +1206,7 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 
 	newLCL->setAccepted(closeTime, mCloseResolution, closeTimeCorrect);
 	newLCL->updateHash();
+	newLCL->setImmutable();
 
 	cLog(lsDEBUG) << "Report: NewL  = " << newLCL->getHash() << ":" << newLCL->getLedgerSeq();
 	uint256 newLCLHash = newLCL->getHash();
