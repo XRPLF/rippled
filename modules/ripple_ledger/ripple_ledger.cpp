@@ -66,6 +66,10 @@
 
 #include "src/cpp/json/writer.h"
 
+// VFALCO: TODO, resolve the location of this file
+//#include "src/cpp/ripple/ripple.pb.h"
+#include "ripple.pb.h"
+
 #include "src/cpp/ripple/AcceptedLedger.h"
 #include "src/cpp/ripple/AccountItems.h"
 #include "src/cpp/ripple/AccountSetTransactor.h"
@@ -100,7 +104,6 @@
 #include "src/cpp/ripple/PaymentTransactor.h"
 #include "src/cpp/ripple/PFRequest.h"
 #include "src/cpp/ripple/RegularKeySetTransactor.h"
-#include "src/cpp/ripple/ripple.pb.h"
 #include "src/cpp/ripple/RippleAddress.h"
 #include "src/cpp/ripple/RippleCalc.h"
 #include "src/cpp/ripple/RippleState.h"
