@@ -2155,6 +2155,12 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 				% psCur.saOutAct
 				% psCur.saOutReq);
 
+			if (!saCurWantedReq.isPositive())
+			{ // TEMPORARY emergency fix
+				cLog(lsFATAL) << "CurWantReq was not positive";
+				return tefEXCEPTION;
+			}
+
 			assert(saCurWantedReq.isPositive()); // FIXME: We got one of these
 
 			// Rate: quality in : 1.0
@@ -3023,7 +3029,10 @@ int iPass	= 0;
 			BOOST_FOREACH(const uint256& uOfferIndex, vuUnfundedBecame)
 			{
 				if (tesSUCCESS == terResult)
+				{
+					cLog(lsDEBUG) << "Became unfunded " << uOfferIndex.GetHex();
 					terResult = lesActive.offerDelete(uOfferIndex);
+				}
 			}
 		}
 
@@ -3031,7 +3040,10 @@ int iPass	= 0;
 		BOOST_FOREACH(const uint256& uOfferIndex, rc.musUnfundedFound)
 		{
 			if (tesSUCCESS == terResult)
-				terResult = lesActive.offerDelete(uOfferIndex); // FIXME: This asserted
+			{
+				cLog(lsDEBUG) << "Delete unfunded " << uOfferIndex.GetHex();
+				terResult = lesActive.offerDelete(uOfferIndex);
+			}
 		}
 	}
 
