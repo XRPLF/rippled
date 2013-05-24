@@ -83,6 +83,7 @@ public:
 
 	// The published ledger is the last fully validated ledger
 	Ledger::ref getValidatedLedger()	{ return mPubLedger; }
+	int getValidatedLedgerAge();
 
 	TER doTransaction(SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply);
 

@@ -98,8 +98,9 @@ public:
 	{ // how we process transactions or account balance requests
 		omDISCONNECTED	= 0,	// not ready to process requests
 		omCONNECTED		= 1,	// convinced we are talking to the network
-		omTRACKING		= 2,	// convinced we agree with the network
-		omFULL			= 3		// we have the ledger and can even validate
+		omSYNCING		= 2,	// fallen slightly behind
+		omTRACKING		= 3,	// convinced we agree with the network
+		omFULL			= 4		// we have the ledger and can even validate
 	};
 
 	typedef boost::unordered_map<uint64, InfoSub::wptr>				subMapType;

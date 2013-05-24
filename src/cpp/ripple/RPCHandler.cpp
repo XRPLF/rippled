@@ -3545,9 +3545,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 
 	ScopedLock MasterLockHolder(theApp->getMasterLock());
 
-	if (commandsA[i].iOptions & optNetwork
-		&& mNetOps->getOperatingMode() != NetworkOPs::omTRACKING
-		&& mNetOps->getOperatingMode() != NetworkOPs::omFULL)
+	if ((commandsA[i].iOptions & optNetwork) && (mNetOps->getOperatingMode() < NetworkOPs::omSYNCING))
 	{
 		cLog(lsINFO) << "Insufficient network mode for RPC: " << mNetOps->strOperatingMode();
 

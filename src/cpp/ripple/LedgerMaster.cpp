@@ -26,6 +26,22 @@ Ledger::ref LedgerMaster::getCurrentSnapshot()
 	return mCurrentSnapshot;
 }
 
+int LedgerMaster::getValidatedLedgerAge()
+{
+	if (!mValidLedger)
+	{
+		cLog(lsINFO) << "No validated ledger";
+		return 999999;
+	}
+
+	int64 ret = theApp->getOPs().getCloseTimeNC();
+	ret -= static_cast<int64>(mValidLedger->getCloseTimeNC());
+	ret = std::max(0LL, ret);
+
+	cLog(lsINFO) << "Validated ledger age is " << ret;
+	return static_cast<int>(ret);
+}
+
 void LedgerMaster::addHeldTransaction(Transaction::ref transaction)
 { // returns true if transaction was added
 	boost::recursive_mutex::scoped_lock ml(mLock);

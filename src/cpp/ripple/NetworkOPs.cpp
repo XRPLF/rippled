@@ -49,6 +49,7 @@ std::string NetworkOPs::strOperatingMode()
 	static const char*	paStatusToken[] = {
 		"disconnected",
 		"connected",
+		"syncing",
 		"tracking",
 		"full"
 	};
@@ -654,12 +655,6 @@ void NetworkOPs::tryStartConsensus()
 			setMode(omFULL);
 	}
 
-	if (mMode == omFULL)
-	{
-		// WRITEME
-		// check if the ledger is bad enough to go to omTRACKING
-	}
-
 	if ((!mConsensus) && (mMode != omDISCONNECTED))
 		beginConsensus(networkClosed, mLedgerMaster->getCurrentLedger());
 }
@@ -1038,6 +1033,12 @@ void NetworkOPs::setMode(OperatingMode om)
 {
 	if (mMode == om) return;
 
+	if (om == omCONNECTED)
+	{
+		if (theApp->getLedgerMaster().getValidatedLedgerAge() < 60)
+			om = omSYNCING;
+	}
+
 	if ((om >= omCONNECTED) && (mMode == omDISCONNECTED))
 		mConnectTime = boost::posix_time::second_clock::universal_time();
 
@@ -1398,7 +1399,7 @@ void NetworkOPs::pubLedger(Ledger::ref accepted)
 
 			jvObj["txn_count"]		= Json::UInt(alpAccepted->getTxnCount());
 
-			if ((mMode == omFULL) || (mMode == omTRACKING))
+			if (mMode >= omSYNCING)
 				jvObj["validated_ledgers"]	= theApp->getLedgerMaster().getCompleteLedgers();
 
 			NetworkOPs::subMapType::const_iterator it = mSubLedger.begin();
@@ -1731,7 +1732,7 @@ bool NetworkOPs::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
 		jvResult["reserve_inc"]		= Json::UInt(lpClosed->getReserveInc());
 	}
 
-	if (((mMode == omFULL) || (mMode == omTRACKING)) && !isNeedNetworkLedger())
+	if ((mMode >= omSYNCING) && !isNeedNetworkLedger())
 		jvResult["validated_ledgers"]	= theApp->getLedgerMaster().getCompleteLedgers();
 
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
