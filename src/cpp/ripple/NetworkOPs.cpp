@@ -616,6 +616,12 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 			cLog(lsINFO) << "Node count (" << peerList.size() << ") is sufficient.";
 		}
 
+		// Check if the last validated ledger forces a change between these states
+		if (mMode == omSYNCING)
+			setMode(omSYNCING);
+		else if (mMode == omCONNECTED)
+			setMode(omCONNECTED);
+
 		if (!mConsensus)
 			tryStartConsensus();
 
@@ -639,14 +645,14 @@ void NetworkOPs::tryStartConsensus()
 	// there shouldn't be a newer LCL. We need this information to do the next three
 	// tests.
 
-	if ((mMode == omCONNECTED) && !ledgerChange)
+	if (((mMode == omCONNECTED) || (mMode == omSYNCING)) && !ledgerChange)
 	{ // count number of peers that agree with us and UNL nodes whose validations we have for LCL
 		// if the ledger is good enough, go to omTRACKING - TODO
 		if (!mNeedNetworkLedger)
 			setMode(omTRACKING);
 	}
 
-	if ((mMode == omTRACKING) && !ledgerChange )
+	if (((mMode == omCONNECTED) || (mMode == omTRACKING)) && !ledgerChange)
 	{
 		// check if the ledger is good enough to go to omFULL
 		// Note: Do not go to omFULL if we don't have the previous ledger
@@ -1031,13 +1037,21 @@ void NetworkOPs::pubServer()
 
 void NetworkOPs::setMode(OperatingMode om)
 {
-	if (mMode == om) return;
 
 	if (om == omCONNECTED)
 	{
 		if (theApp->getLedgerMaster().getValidatedLedgerAge() < 60)
 			om = omSYNCING;
 	}
+
+	if (om == omSYNCING)
+	{
+		if (theApp->getLedgerMaster().getValidatedLedgerAge() >= 60)
+			om = omCONNECTED;
+	}
+
+	if (mMode == om)
+		return;
 
 	if ((om >= omCONNECTED) && (mMode == omDISCONNECTED))
 		mConnectTime = boost::posix_time::second_clock::universal_time();
