@@ -1649,8 +1649,6 @@
     <ClInclude Include="src\cpp\websocketpp\src\websocket_frame.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="newcoind.cfg" />
-    <None Include="README" />
     <None Include="SConstruct" />
     <CustomBuild Include="src\cpp\ripple\ripple.proto">
       <FileType>Document</FileType>
@@ -1685,11 +1683,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="test\server.js" />
-    <None Include="test\standalone-test.js" />
-    <None Include="test\utils.js" />
     <None Include="validators.txt" />
-    <None Include="wallet.xml" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
