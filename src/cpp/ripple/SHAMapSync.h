@@ -1,5 +1,5 @@
-#ifndef __SHAMAPYSNC__
-#define __SHAMAPSYNC__
+#ifndef SHAMAPSYNC_H
+#define SHAMAPSYNC_H
 
 #include "SHAMap.h"
 #include "Application.h"

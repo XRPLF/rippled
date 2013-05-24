@@ -2618,11 +2618,13 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 	case LEDGER_CLOSED:
 		lpLedger		= theApp->getLedgerMaster().getClosedLedger();
 		iLedgerIndex	= lpLedger->getLedgerSeq();
+		assert(lpLedger->isImmutable() && lpLedger->isClosed());
 		break;
 
 	case LEDGER_VALIDATED:
 		lpLedger		= mNetOps->getValidatedLedger();
 		iLedgerIndex	= lpLedger->getLedgerSeq();
+		assert(lpLedger->isImmutable() && lpLedger->isClosed());
 		break;
 	}
 
@@ -3543,9 +3545,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 
 	ScopedLock MasterLockHolder(theApp->getMasterLock());
 
-	if (commandsA[i].iOptions & optNetwork
-		&& mNetOps->getOperatingMode() != NetworkOPs::omTRACKING
-		&& mNetOps->getOperatingMode() != NetworkOPs::omFULL)
+	if ((commandsA[i].iOptions & optNetwork) && (mNetOps->getOperatingMode() < NetworkOPs::omSYNCING))
 	{
 		cLog(lsINFO) << "Insufficient network mode for RPC: " << mNetOps->strOperatingMode();
 
