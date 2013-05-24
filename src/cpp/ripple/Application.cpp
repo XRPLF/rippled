@@ -371,6 +371,7 @@ void Application::run()
 		boost::thread(boost::bind(runIO, boost::ref(mIOService))).detach();
 	}
 
+	theApp->getLoadManager().arm();
 	mIOService.run(); // This blocks
 
 	if (mWSPublicDoor)
