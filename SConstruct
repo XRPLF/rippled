@@ -174,7 +174,7 @@ RIPPLE_OBJS += PROTO_SRCS
 
 RIPPLE_OBJS = []
 
-RIPPLE_OBJS += [ 'src/cpp/database/sqlite3.c', 'build/proto/ripple.pb.cc' ]
+RIPPLE_OBJS += [ 'src/cpp/database/sqlite3.c' ]
 
 env.Append(CXXFLAGS = ['-I.', '-Isrc/cpp/ripple'])
 
