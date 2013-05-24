@@ -1133,9 +1133,6 @@
     <ClInclude Include="src\cpp\ripple\rfc1751.h">
       <Filter>1. Modules\ripple_basics\types</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\types.h">
-      <Filter>1. Modules\ripple_basics\types</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\utils.h">
       <Filter>1. Modules\ripple_basics\types</Filter>
     </ClInclude>
@@ -1363,6 +1360,9 @@
     </ClInclude>
     <ClInclude Include="build\proto\ripple.pb.h">
       <Filter>1. Modules\ripple_basics\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\IntegerTypes.h">
+      <Filter>1. Modules\ripple_basics\types</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

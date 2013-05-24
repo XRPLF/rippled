@@ -21,8 +21,6 @@ namespace boost {
 // Ensure that we don't get value.h without writer.h
 #include "../json/json.h"
 
-#include "types.h"
-
 enum LogSeverity
 {
 	lsINVALID	= -1,	// used to indicate an invalid severity

@@ -11,7 +11,6 @@
 
 #include "../json/value.h"
 
-#include "types.h"
 #include "RippleAddress.h"
 #include "SerializedLedger.h"
 

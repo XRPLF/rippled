@@ -7,7 +7,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "utils.h"
-#include "types.h"
 
 extern int upTime();
 

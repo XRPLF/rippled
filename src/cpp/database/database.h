@@ -3,7 +3,6 @@
 
 #include <string>
 #include <vector>
-#include "../ripple/types.h"
 #include "../ripple/utils.h"
 
 #define SQL_FOREACH(_db, _strQuery)		\

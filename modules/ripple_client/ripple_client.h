@@ -32,6 +32,6 @@
 #ifndef RIPPLE_CLIENT_H
 #define RIPPLE_CLIENT_H
 
-
+#include "modules/ripple_basics/ripple_basics.h"
 
 #endif

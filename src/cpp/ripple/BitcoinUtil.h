@@ -4,7 +4,6 @@
 // TODO: these things should all go somewhere
 
 #include <string>
-#include "types.h"
 #include "uint256.h"
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>

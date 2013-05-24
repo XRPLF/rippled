@@ -32,6 +32,6 @@
 #ifndef RIPPLE_LEDGER_H
 #define RIPPLE_LEDGER_H
 
-
+#include "modules/ripple_basics/ripple_basics.h"
 
 #endif

@@ -32,6 +32,6 @@
 #ifndef RIPPLE_BASICS_H
 #define RIPPLE_BASICS_H
 
-
+#include "src/cpp/ripple/IntegerTypes.h"
 
 #endif

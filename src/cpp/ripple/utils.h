@@ -10,7 +10,6 @@
 #endif
 
 #include <openssl/dh.h>
-#include "types.h"
 
 #define QUALITY_ONE			1000000000	// 10e9
 

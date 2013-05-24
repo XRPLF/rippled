@@ -7,7 +7,6 @@
 
 #include "../json/value.h"
 
-#include "types.h"
 
 extern int upTime();
 

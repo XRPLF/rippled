@@ -9,7 +9,6 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/unordered_map.hpp>
 
-#include "types.h"
 #include "uint256.h"
 #include "ScopedLock.h"
 #include "Serializer.h"

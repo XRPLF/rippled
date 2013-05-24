@@ -6,7 +6,6 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
 
-#include "types.h"
 #include "uint256.h"
 #include "ScopedLock.h"
 #include "TaggedCache.h"

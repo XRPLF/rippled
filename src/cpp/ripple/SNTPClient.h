@@ -9,8 +9,6 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/asio.hpp>
 
-#include "types.h"
-
 class SNTPQuery
 {
 public:

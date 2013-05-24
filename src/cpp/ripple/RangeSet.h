@@ -7,7 +7,6 @@
 #include <boost/foreach.hpp>
 #include <boost/icl/interval_set.hpp>
 
-#include "types.h"
 
 class RangeSet
 {

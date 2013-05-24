@@ -6,7 +6,6 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/filesystem.hpp>
 
-#include "types.h"
 #include "RippleAddress.h"
 #include "ParseSection.h"
 #include "SerializedTypes.h"

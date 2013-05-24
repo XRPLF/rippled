@@ -7,7 +7,6 @@
 #include <boost/thread/mutex.hpp>
 
 #include "uint256.h"
-#include "types.h"
 #include "SerializedValidation.h"
 #include "TaggedCache.h"
 #include "JobQueue.h"

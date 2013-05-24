@@ -1625,7 +1625,7 @@
     <ClInclude Include="src\cpp\ripple\TransactionQueue.h" />
     <ClInclude Include="src\cpp\ripple\Transactor.h" />
     <ClInclude Include="src\cpp\ripple\TrustSetTransactor.h" />
-    <ClInclude Include="src\cpp\ripple\types.h" />
+    <ClInclude Include="src\cpp\ripple\IntegerTypes.h" />
     <ClInclude Include="src\cpp\ripple\uint256.h" />
     <ClInclude Include="src\cpp\ripple\UniqueNodeList.h" />
     <ClInclude Include="src\cpp\ripple\utils.h" />
