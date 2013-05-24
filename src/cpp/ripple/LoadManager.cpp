@@ -22,7 +22,7 @@ int upTime()
 
 LoadManager::LoadManager(int creditRate, int creditLimit, int debitWarn, int debitLimit) :
 		mCreditRate(creditRate), mCreditLimit(creditLimit), mDebitWarn(debitWarn), mDebitLimit(debitLimit),
-		mShutdown(false), mUptime(0), mDeadLock(0), mCosts(LT_MAX)
+		mShutdown(false), mArmed(false), mUptime(0), mDeadLock(0), mCosts(LT_MAX)
 {
 	addLoadCost(LoadCost(LT_InvalidRequest,		-10,		LC_CPU | LC_Network));
 	addLoadCost(LoadCost(LT_RequestNoReply,		-1,		LC_CPU | LC_Disk));
@@ -353,14 +353,14 @@ void LoadManager::threadEntry()
 			++mUptime;
 
 			int dlTime = mUptime - mDeadLock;
-			if (dlTime >= 10)
+			if (mArmed && (dlTime >= 10))
 			{
 				if ((dlTime % 10) == 0)
 				{
 					boost::thread(BIND_TYPE(&LogDeadLock, dlTime)).detach();
 				}
 
-				assert (dlTime < 180);
+				assert (dlTime < 500);
 			}
 
 		}

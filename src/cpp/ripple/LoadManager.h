@@ -101,6 +101,7 @@ protected:
 	int mDebitLimit;			// when a source drops below this, we cut it off (should be negative)
 
 	bool mShutdown;
+	bool mArmed;
 
 	int mSpace1[4];				// We want mUptime to have its own cache line
 	int mUptime;
@@ -144,6 +145,7 @@ public:
 	int getCost(LoadType t)		{ return mCosts[static_cast<int>(t)].mCost; }
 	int getUptime();
 	void noDeadLock();
+	void arm()					{ mArmed = true; }
 };
 
 class LoadFeeTrack
