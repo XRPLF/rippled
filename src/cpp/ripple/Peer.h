@@ -87,12 +87,12 @@ protected:
 	void sendHello();
 
 	void recvHello(ripple::TMHello& packet);
-	void recvTransaction(ripple::TMTransaction& packet);
-	void recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet);
+	void recvTransaction(ripple::TMTransaction& packet, ScopedLock& MasterLockHolder);
+	void recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet, ScopedLock& MasterLockHolder);
 	void recvGetValidation(ripple::TMGetValidations& packet);
 	void recvContact(ripple::TMContact& packet);
 	void recvGetContacts(ripple::TMGetContacts& packet);
-	void recvGetPeers(ripple::TMGetPeers& packet);
+	void recvGetPeers(ripple::TMGetPeers& packet, ScopedLock& MasterLockHolder);
 	void recvPeers(ripple::TMPeers& packet);
 	void recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash>& packet);
 	void recvPing(ripple::TMPing& packet);
@@ -100,8 +100,8 @@ protected:
 	void recvSearchTransaction(ripple::TMSearchTransaction& packet);
 	void recvGetAccount(ripple::TMGetAccount& packet);
 	void recvAccount(ripple::TMAccount& packet);
-	void recvGetLedger(ripple::TMGetLedger& packet);
-	void recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet);
+	void recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHolder);
+	void recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet, ScopedLock& MasterLockHolder);
 	void recvStatus(ripple::TMStatusChange& packet);
 	void recvPropose(const boost::shared_ptr<ripple::TMProposeSet>& packet);
 	void recvHaveTxSet(ripple::TMHaveTransactionSet& packet);

@@ -639,38 +639,40 @@ std::vector<unsigned char> STObject::getFieldVL(SField::ref field) const
 	return cf->getValue();
 }
 
-static const STAmount defaultAmount;
 const STAmount& STObject::getFieldAmount(SField::ref field) const
 {
+	static STAmount empty;
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf)
 		throw std::runtime_error("Field not found");
 	SerializedTypeID id = rf->getSType();
 	if (id == STI_NOTPRESENT)
-		return defaultAmount; // optional field not present
+		return empty; // optional field not present
 	const STAmount *cf = dynamic_cast<const STAmount *>(rf);
 	if (!cf)
 		throw std::runtime_error("Wrong field type");
 	return *cf;
 }
 
-STPathSet STObject::getFieldPathSet(SField::ref field) const
+const STPathSet& STObject::getFieldPathSet(SField::ref field) const
 {
+	static STPathSet empty;
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
 	SerializedTypeID id = rf->getSType();
-	if (id == STI_NOTPRESENT) return STPathSet(); // optional field not present
+	if (id == STI_NOTPRESENT) return empty; // optional field not present
 	const STPathSet *cf = dynamic_cast<const STPathSet *>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	return *cf;
 }
 
-STVector256 STObject::getFieldV256(SField::ref field) const
+const STVector256& STObject::getFieldV256(SField::ref field) const
 {
+	static STVector256 empty;
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
 	SerializedTypeID id = rf->getSType();
-	if (id == STI_NOTPRESENT) return STVector256(); // optional field not present
+	if (id == STI_NOTPRESENT) return empty; // optional field not present
 	const STVector256 *cf = dynamic_cast<const STVector256 *>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	return *cf;

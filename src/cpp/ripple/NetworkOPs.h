@@ -98,8 +98,9 @@ public:
 	{ // how we process transactions or account balance requests
 		omDISCONNECTED	= 0,	// not ready to process requests
 		omCONNECTED		= 1,	// convinced we are talking to the network
-		omTRACKING		= 2,	// convinced we agree with the network
-		omFULL			= 3		// we have the ledger and can even validate
+		omSYNCING		= 2,	// fallen slightly behind
+		omTRACKING		= 3,	// convinced we agree with the network
+		omFULL			= 4		// we have the ledger and can even validate
 	};
 
 	typedef boost::unordered_map<uint64, InfoSub::wptr>				subMapType;
@@ -283,7 +284,7 @@ public:
 	void mapComplete(const uint256& hash, SHAMap::ref map);
 	bool stillNeedTXSet(const uint256& hash);
 	void makeFetchPack(Job&, boost::weak_ptr<Peer> peer, boost::shared_ptr<ripple::TMGetObjectByHash> request,
-		Ledger::pointer wantLedger, Ledger::pointer haveLedger);
+		Ledger::pointer wantLedger, Ledger::pointer haveLedger, uint32 uUptime);
 	bool shouldFetchPack(uint32 seq);
 	void gotFetchPack(bool progress, uint32 seq);
 	void addFetchPack(const uint256& hash, boost::shared_ptr< std::vector<unsigned char> >& data);

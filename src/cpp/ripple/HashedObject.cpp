@@ -86,14 +86,14 @@ bool HashedObjectStore::storeLevelDB(HashedObjectType type, uint32 index,
 		{
 			mWritePending = true;
 			theApp->getJobQueue().addJob(jtWRITE, "HashedObject::store",
-				BIND_TYPE(&HashedObjectStore::bulkWriteLevelDB, this));
+				BIND_TYPE(&HashedObjectStore::bulkWriteLevelDB, this, P_1));
 		}
 	}
 	mNegativeCache.del(hash);
 	return true;
 }
 
-void HashedObjectStore::bulkWriteLevelDB()
+void HashedObjectStore::bulkWriteLevelDB(Job &)
 {
 	assert(mLevelDB);
 	int setSize = 0;
@@ -205,7 +205,7 @@ bool HashedObjectStore::storeSQLite(HashedObjectType type, uint32 index,
 		{
 			mWritePending = true;
 			theApp->getJobQueue().addJob(jtWRITE, "HashedObject::store",
-				BIND_TYPE(&HashedObjectStore::bulkWriteSQLite, this));
+				BIND_TYPE(&HashedObjectStore::bulkWriteSQLite, this, P_1));
 		}
 	}
 //	else
@@ -214,7 +214,7 @@ bool HashedObjectStore::storeSQLite(HashedObjectType type, uint32 index,
 	return true;
 }
 
-void HashedObjectStore::bulkWriteSQLite()
+void HashedObjectStore::bulkWriteSQLite(Job&)
 {
 	assert(!mLevelDB);
 	while (1)

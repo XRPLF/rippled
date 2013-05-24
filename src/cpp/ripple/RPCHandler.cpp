@@ -1071,9 +1071,6 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 	{
 		jvResult["account"]	= raAccount.humanAccountID();
 
-		// XXX This is wrong, we do access the current ledger and do need to worry about changes.
-		// We access a committed ledger and need not worry about changes.
-
 		AccountItems rippleLines(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new RippleState()));
 
 		Json::Value&	jsonLines = (jvResult["lines"] = Json::arrayValue);
@@ -1083,9 +1080,9 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 
 			if (!raPeer.isValid() || raPeer.getAccountID() == line->getAccountIDPeer())
 			{
-				STAmount		saBalance	= line->getBalance();
-				STAmount		saLimit		= line->getLimit();
-				STAmount		saLimitPeer	= line->getLimitPeer();
+				const STAmount&		saBalance	= line->getBalance();
+				const STAmount&		saLimit		= line->getLimit();
+				const STAmount&		saLimitPeer	= line->getLimitPeer();
 
 				Json::Value&	jPeer	= jsonLines.append(Json::objectValue);
 
@@ -1148,9 +1145,6 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 
 	AccountState::pointer	as		= mNetOps->getAccountState(lpLedger, raAccount);
 
-	if (lpLedger->isImmutable())
-		MasterLockHolder.unlock();
-
 	if (as)
 	{
 		Json::Value&	jsonLines = (jvResult["offers"] = Json::arrayValue);
@@ -1160,15 +1154,10 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 		{
 			Offer* offer=(Offer*)item.get();
 
-			STAmount takerPays	= offer->getTakerPays();
-			STAmount takerGets	= offer->getTakerGets();
-			//RippleAddress account	= offer->getAccount();
-
 			Json::Value&	obj	= jsonLines.append(Json::objectValue);
 
-			//obj["account"]		= account.humanAccountID();
-			takerPays.setJson(obj["taker_pays"]);
-			takerGets.setJson(obj["taker_gets"]);
+			offer->getTakerPays().setJson(obj["taker_pays"]);
+			offer->getTakerGets().setJson(obj["taker_gets"]);
 			obj["seq"]				= offer->getSeq();
 
 		}
@@ -2315,6 +2304,11 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest, int& cost, ScopedLock
 
 	ret["write_load"] = theApp->getHashedObjectStore().getWriteLoad();
 
+	ret["SLE_hit_rate"] = theApp->getSLECache().getHitRate();
+	ret["node_hit_rate"] = theApp->getHashedObjectStore().getCacheHitRate();
+	ret["ledger_hit_rate"] = theApp->getLedgerMaster().getCacheHitRate();
+	ret["AL_hit_rate"] = AcceptedLedger::getCacheHitRate();
+
 	std::string uptime;
 	int s = upTime();
 	textTime(uptime, s, "year", 365*24*60*60);
@@ -2618,16 +2612,19 @@ Json::Value RPCHandler::lookupLedger(Json::Value jvRequest, Ledger::pointer& lpL
 	case LEDGER_CURRENT:
 		lpLedger		= mNetOps->getCurrentSnapshot();
 		iLedgerIndex	= lpLedger->getLedgerSeq();
+		assert(lpLedger->isImmutable() && !lpLedger->isClosed());
 		break;
 
 	case LEDGER_CLOSED:
 		lpLedger		= theApp->getLedgerMaster().getClosedLedger();
 		iLedgerIndex	= lpLedger->getLedgerSeq();
+		assert(lpLedger->isImmutable() && lpLedger->isClosed());
 		break;
 
 	case LEDGER_VALIDATED:
 		lpLedger		= mNetOps->getValidatedLedger();
 		iLedgerIndex	= lpLedger->getLedgerSeq();
+		assert(lpLedger->isImmutable() && lpLedger->isClosed());
 		break;
 	}
 
@@ -3548,9 +3545,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 
 	ScopedLock MasterLockHolder(theApp->getMasterLock());
 
-	if (commandsA[i].iOptions & optNetwork
-		&& mNetOps->getOperatingMode() != NetworkOPs::omTRACKING
-		&& mNetOps->getOperatingMode() != NetworkOPs::omFULL)
+	if ((commandsA[i].iOptions & optNetwork) && (mNetOps->getOperatingMode() < NetworkOPs::omSYNCING))
 	{
 		cLog(lsINFO) << "Insufficient network mode for RPC: " << mNetOps->strOperatingMode();
 

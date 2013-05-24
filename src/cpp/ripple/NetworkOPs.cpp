@@ -49,6 +49,7 @@ std::string NetworkOPs::strOperatingMode()
 	static const char*	paStatusToken[] = {
 		"disconnected",
 		"connected",
+		"syncing",
 		"tracking",
 		"full"
 	};
@@ -615,6 +616,12 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 			cLog(lsINFO) << "Node count (" << peerList.size() << ") is sufficient.";
 		}
 
+		// Check if the last validated ledger forces a change between these states
+		if (mMode == omSYNCING)
+			setMode(omSYNCING);
+		else if (mMode == omCONNECTED)
+			setMode(omCONNECTED);
+
 		if (!mConsensus)
 			tryStartConsensus();
 
@@ -638,26 +645,20 @@ void NetworkOPs::tryStartConsensus()
 	// there shouldn't be a newer LCL. We need this information to do the next three
 	// tests.
 
-	if ((mMode == omCONNECTED) && !ledgerChange)
+	if (((mMode == omCONNECTED) || (mMode == omSYNCING)) && !ledgerChange)
 	{ // count number of peers that agree with us and UNL nodes whose validations we have for LCL
 		// if the ledger is good enough, go to omTRACKING - TODO
 		if (!mNeedNetworkLedger)
 			setMode(omTRACKING);
 	}
 
-	if ((mMode == omTRACKING) && !ledgerChange )
+	if (((mMode == omCONNECTED) || (mMode == omTRACKING)) && !ledgerChange)
 	{
 		// check if the ledger is good enough to go to omFULL
 		// Note: Do not go to omFULL if we don't have the previous ledger
 		// check if the ledger is bad enough to go to omCONNECTED -- TODO
 		if (theApp->getOPs().getNetworkTimeNC() < mLedgerMaster->getCurrentLedger()->getCloseTimeNC())
 			setMode(omFULL);
-	}
-
-	if (mMode == omFULL)
-	{
-		// WRITEME
-		// check if the ledger is bad enough to go to omTRACKING
 	}
 
 	if ((!mConsensus) && (mMode != omDISCONNECTED))
@@ -783,24 +784,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 			return true;
 		}
 		if (!mAcquiringLedger->isComplete())
-		{ // add more peers
-			int count = 0;
-			BOOST_FOREACH(Peer::ref it, peerList)
-			{
-				if (it->getClosedLedgerHash() == closedLedger)
-				{
-					++count;
-					mAcquiringLedger->peerHas(it);
-				}
-			}
-			if (!count)
-			{ // just ask everyone
-				BOOST_FOREACH(Peer::ref it, peerList)
-					if (it->isConnected())
-						mAcquiringLedger->peerHas(it);
-			}
 			return true;
-		}
 		clearNeedNetworkLedger();
 		consensus = mAcquiringLedger->getLedger();
 	}
@@ -1053,7 +1037,21 @@ void NetworkOPs::pubServer()
 
 void NetworkOPs::setMode(OperatingMode om)
 {
-	if (mMode == om) return;
+
+	if (om == omCONNECTED)
+	{
+		if (theApp->getLedgerMaster().getValidatedLedgerAge() < 60)
+			om = omSYNCING;
+	}
+
+	if (om == omSYNCING)
+	{
+		if (theApp->getLedgerMaster().getValidatedLedgerAge() >= 60)
+			om = omCONNECTED;
+	}
+
+	if (mMode == om)
+		return;
 
 	if ((om >= omCONNECTED) && (mMode == omDISCONNECTED))
 		mConnectTime = boost::posix_time::second_clock::universal_time();
@@ -1415,7 +1413,7 @@ void NetworkOPs::pubLedger(Ledger::ref accepted)
 
 			jvObj["txn_count"]		= Json::UInt(alpAccepted->getTxnCount());
 
-			if ((mMode == omFULL) || (mMode == omTRACKING))
+			if (mMode >= omSYNCING)
 				jvObj["validated_ledgers"]	= theApp->getLedgerMaster().getCompleteLedgers();
 
 			NetworkOPs::subMapType::const_iterator it = mSubLedger.begin();
@@ -1748,7 +1746,7 @@ bool NetworkOPs::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
 		jvResult["reserve_inc"]		= Json::UInt(lpClosed->getReserveInc());
 	}
 
-	if (((mMode == omFULL) || (mMode == omTRACKING)) && !isNeedNetworkLedger())
+	if ((mMode >= omSYNCING) && !isNeedNetworkLedger())
 		jvResult["validated_ledgers"]	= theApp->getLedgerMaster().getCompleteLedgers();
 
 	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
@@ -2004,9 +2002,21 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 //	jvResult["nodes"]	= Json::Value(Json::arrayValue);
 }
 
-void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_ptr<ripple::TMGetObjectByHash> request,
-	Ledger::pointer wantLedger, Ledger::pointer haveLedger)
+void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer,
+	boost::shared_ptr<ripple::TMGetObjectByHash> request,
+	Ledger::pointer wantLedger, Ledger::pointer haveLedger, uint32 uUptime)
 {
+	if (upTime() > (uUptime + 1))
+	{
+		cLog(lsINFO) << "Fetch pack request got stale";
+		return;
+	}
+	if (theApp->getFeeTrack().isLoaded())
+	{
+		cLog(lsINFO) << "Too busy to make fetch pack";
+		return;
+	}
+
 	try
 	{
 		Peer::pointer peer = wPeer.lock();
@@ -2017,7 +2027,7 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_
 		reply.set_query(false);
 		if (request->has_seq())
 			reply.set_seq(request->seq());
-		reply.set_ledgerhash(reply.ledgerhash());
+		reply.set_ledgerhash(request->ledgerhash());
 		reply.set_type(ripple::TMGetObjectByHash::otFETCH_PACK);
 
 		do
@@ -2042,7 +2052,7 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_
 				newObj.set_ledgerseq(lSeq);
 			}
 
-			if (wantLedger->getAccountHash().isNonZero() && (pack.size() < 768))
+			if (wantLedger->getAccountHash().isNonZero() && (pack.size() < 512))
 			{
 				pack = wantLedger->peekTransactionMap()->getFetchPack(NULL, true, 256);
 				BOOST_FOREACH(SHAMap::fetchPackEntry_t& node, pack)
@@ -2053,11 +2063,11 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer, boost::shared_
 					newObj.set_ledgerseq(lSeq);
 				}
 			}
-			if (reply.objects().size() >= 512)
+			if (reply.objects().size() >= 256)
 				break;
 			haveLedger = wantLedger;
 			wantLedger = getLedgerByHash(haveLedger->getParentHash());
-		} while (wantLedger);
+		} while (wantLedger && (upTime() <= (uUptime + 1)));
 
 		cLog(lsINFO) << "Built fetch pack with " << reply.objects().size() << " nodes";
 		PackedMessage::pointer msg = boost::make_shared<PackedMessage>(reply, ripple::mtGET_OBJECTS);

@@ -83,6 +83,7 @@ public:
 
 	// The published ledger is the last fully validated ledger
 	Ledger::ref getValidatedLedger()	{ return mPubLedger; }
+	int getValidatedLedgerAge();
 
 	TER doTransaction(SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply);
 
@@ -157,8 +158,9 @@ public:
 
 	void resumeAcquiring();
 
-	void tune(int size, int age) { mLedgerHistory.tune(size, age); } 
-	void sweep(void) { mLedgerHistory.sweep(); }
+	void tune(int size, int age)	{ mLedgerHistory.tune(size, age); } 
+	void sweep()					{ mLedgerHistory.sweep(); }
+	float getCacheHitRate()			{ return mLedgerHistory.getCacheHitRate(); }
 
 	void addValidateCallback(callback& c) { mOnValidate.push_back(c); }
 

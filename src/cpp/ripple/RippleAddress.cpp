@@ -35,11 +35,6 @@ RippleAddress::RippleAddress() : mIsValid(false)
     nVersion = VER_NONE;
 }
 
-bool RippleAddress::isValid() const
-{
-	return mIsValid;
-}
-
 void RippleAddress::clear()
 {
     nVersion = VER_NONE;

@@ -695,7 +695,8 @@ void LedgerConsensus::updateOurPositions()
 
 		for (std::map<uint32, int>::iterator it = closeTimes.begin(), end = closeTimes.end(); it != end; ++it)
 		{
-			cLog(lsDEBUG) << "CCTime: " << it->first << " has " << it->second << ", " << threshVote << " required";
+			cLog(lsDEBUG) << "CCTime: seq" << mPreviousLedger->getLedgerSeq() + 1 << ": " <<
+				it->first << " has " << it->second << ", " << threshVote << " required";
 			if (it->second >= threshVote)
 			{
 				cLog(lsDEBUG) << "Close time consensus reached: " << it->first;
@@ -1205,6 +1206,7 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 
 	newLCL->setAccepted(closeTime, mCloseResolution, closeTimeCorrect);
 	newLCL->updateHash();
+	newLCL->setImmutable();
 
 	cLog(lsDEBUG) << "Report: NewL  = " << newLCL->getHash() << ":" << newLCL->getLedgerSeq();
 	uint256 newLCLHash = newLCL->getHash();

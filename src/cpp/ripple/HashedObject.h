@@ -15,6 +15,8 @@
 
 DEFINE_INSTANCE(HashedObject);
 
+class Job;
+
 enum HashedObjectType
 {
 	hotUNKNOWN = 0,
@@ -65,7 +67,9 @@ public:
 
 	HashedObjectStore(int cacheSize, int cacheAge);
 
-	bool isLevelDB()	{ return mLevelDB; }
+	bool isLevelDB()		{ return mLevelDB; }
+
+	float getCacheHitRate()	{ return mCache.getHitRate(); }
 
 	bool store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
 		const uint256& hash)
@@ -89,13 +93,13 @@ public:
 	bool storeSQLite(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
 		const uint256& hash);
 	HashedObject::pointer retrieveSQLite(const uint256& hash);
-	void bulkWriteSQLite();
+	void bulkWriteSQLite(Job&);
 
 #ifdef USE_LEVELDB
 	bool storeLevelDB(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
 		const uint256& hash);
 	HashedObject::pointer retrieveLevelDB(const uint256& hash);
-	void bulkWriteLevelDB();
+	void bulkWriteLevelDB(Job&);
 #endif
 
 

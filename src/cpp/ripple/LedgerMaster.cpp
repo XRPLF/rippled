@@ -26,6 +26,22 @@ Ledger::ref LedgerMaster::getCurrentSnapshot()
 	return mCurrentSnapshot;
 }
 
+int LedgerMaster::getValidatedLedgerAge()
+{
+	if (!mValidLedger)
+	{
+		cLog(lsDEBUG) << "No validated ledger";
+		return 999999;
+	}
+
+	int64 ret = theApp->getOPs().getCloseTimeNC();
+	ret -= static_cast<int64>(mValidLedger->getCloseTimeNC());
+	ret = std::max(0LL, ret);
+
+	cLog(lsTRACE) << "Validated ledger age is " << ret;
+	return static_cast<int>(ret);
+}
+
 void LedgerMaster::addHeldTransaction(Transaction::ref transaction)
 { // returns true if transaction was added
 	boost::recursive_mutex::scoped_lock ml(mLock);
@@ -557,7 +573,10 @@ void LedgerMaster::checkAccept(const uint256& hash, uint32 seq)
 
 	Ledger::pointer ledger = mLedgerHistory.getLedgerByHash(hash);
 	if (!ledger)
+	{
+		theApp->getMasterLedgerAcquire().findCreate(hash, seq);
 		return;
+	}
 	mValidLedger = ledger;
 
 	tryPublish();
@@ -575,6 +594,8 @@ void LedgerMaster::tryPublish()
 	}
 	else if (mValidLedger->getLedgerSeq() > (mPubLedger->getLedgerSeq() + MAX_LEDGER_GAP))
 	{
+		cLog(lsWARNING) << "Gap in validated ledger stream " << mPubLedger->getLedgerSeq() << " - " <<
+			mValidLedger->getLedgerSeq() - 1;
 		mPubLedger = mValidLedger;
 		mPubLedgers.push_back(mValidLedger);
 	}
@@ -613,11 +634,11 @@ void LedgerMaster::tryPublish()
 			{
 				if (theApp->getMasterLedgerAcquire().isFailure(hash))
 				{
-					cLog(lsFATAL) << "Unable to acquire a recent validated ledger";
+					cLog(lsWARNING) << "Unable to acquire a recent validated ledger";
 				}
 				else
 				{
-					LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(hash, 0);
+					LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(hash, seq);
 					if (!acq->isDone())
 					{
 						acq->setAccept();

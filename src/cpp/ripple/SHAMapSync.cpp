@@ -410,7 +410,7 @@ bool SHAMap::deepCompare(SHAMap& other)
 	return true;
 }
 
-bool SHAMap::hasNode(const SHAMapNode& nodeID, const uint256& nodeHash)
+bool SHAMap::hasInnerNode(const SHAMapNode& nodeID, const uint256& nodeHash)
 {
 	SHAMapTreeNode* node = root.get();
 	while (node->isInner() && (node->getDepth() < nodeID.getDepth()))
@@ -418,6 +418,19 @@ bool SHAMap::hasNode(const SHAMapNode& nodeID, const uint256& nodeHash)
 		int branch = node->selectBranch(nodeID.getNodeID());
 		if (node->isEmptyBranch(branch))
 			break;
+		node = getNodePointer(node->getChildNodeID(branch), node->getChildHash(branch));
+	}
+	return node->getNodeHash() == nodeHash;
+}
+
+bool SHAMap::hasLeafNode(const uint256& tag, const uint256& nodeHash)
+{
+	SHAMapTreeNode* node = root.get();
+	while (node->isInner())
+	{
+		int branch = node->selectBranch(tag);
+		if (node->isEmptyBranch(branch))
+			return false;
 		node = getNodePointer(node->getChildNodeID(branch), node->getChildHash(branch));
 	}
 	return node->getNodeHash() == nodeHash;
@@ -446,7 +459,7 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool incl
 	if (root->isLeaf())
 	{
 		if (includeLeaves && !root->getNodeHash().isZero() &&
-			(!have || !have->hasNode(*root, root->getNodeHash())))
+			(!have || !have->hasLeafNode(root->getTag(), root->getNodeHash())))
 		{
 			Serializer s;
 			root->addRaw(s, snfPREFIX);
@@ -486,10 +499,10 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool incl
 				SHAMapTreeNode *next = getNodePointer(childID, childHash);
 				if (next->isInner())
 				{
-					if (!have || !have->hasNode(*next, childHash))
+					if (!have || !have->hasInnerNode(*next, childHash))
 						stack.push(next);
 				}
-				else if (includeLeaves && (!have || !have->hasNode(childID, childHash)))
+				else if (includeLeaves && (!have || !have->hasLeafNode(next->getTag(), childHash)))
 				{
 					Serializer s;
 					node->addRaw(s, snfPREFIX);

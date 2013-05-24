@@ -438,7 +438,7 @@ void Peer::processReadBuffer()
 
 	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtPEER, "Peer::read"));
 
-	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+	ScopedLock sl(theApp->getMasterLock());
 
 	// If connected and get a mtHELLO or if not connected and get a non-mtHELLO, wrong message was sent.
 	if (mHelloed == (type == ripple::mtHELLO))
@@ -512,7 +512,7 @@ void Peer::processReadBuffer()
 				ripple::TMGetPeers msg;
 
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recvGetPeers(msg);
+					recvGetPeers(msg, sl);
 				else
 					cLog(lsWARNING) << "parse error: " << type;
 			}
@@ -568,7 +568,7 @@ void Peer::processReadBuffer()
 				event->reName("Peer::transaction");
 				ripple::TMTransaction msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recvTransaction(msg);
+					recvTransaction(msg, sl);
 				else
 					cLog(lsWARNING) << "parse error: " << type;
 			}
@@ -601,7 +601,7 @@ void Peer::processReadBuffer()
 				event->reName("Peer::getledger");
 				ripple::TMGetLedger msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recvGetLedger(msg);
+					recvGetLedger(msg, sl);
 				else
 					cLog(lsWARNING) << "parse error: " << type;
 			}
@@ -612,7 +612,7 @@ void Peer::processReadBuffer()
 				event->reName("Peer::ledgerdata");
 				boost::shared_ptr<ripple::TMLedgerData> msg = boost::make_shared<ripple::TMLedgerData>();
 				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recvLedger(msg);
+					recvLedger(msg, sl);
 				else
 					cLog(lsWARNING) << "parse error: " << type;
 			}
@@ -634,7 +634,7 @@ void Peer::processReadBuffer()
 				event->reName("Peer::validation");
 				boost::shared_ptr<ripple::TMValidation> msg = boost::make_shared<ripple::TMValidation>();
 				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recvValidation(msg);
+					recvValidation(msg, sl);
 				else
 					cLog(lsWARNING) << "parse error: " << type;
 			}
@@ -864,16 +864,15 @@ static void checkTransaction(Job&, int flags, SerializedTransaction::pointer stx
 #endif
 }
 
-void Peer::recvTransaction(ripple::TMTransaction& packet)
+void Peer::recvTransaction(ripple::TMTransaction& packet, ScopedLock& MasterLockHolder)
 {
-
+	MasterLockHolder.unlock();
 	Transaction::pointer tx;
 #ifndef TRUST_NETWORK
 	try
 	{
 #endif
-		std::string rawTx = packet.rawtransaction();
-		Serializer s(rawTx);
+		Serializer s(packet.rawtransaction());
 		SerializerIterator sit(s);
 		SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction>(boost::ref(sit));
 
@@ -1085,8 +1084,9 @@ static void checkValidation(Job&, SerializedValidation::pointer val, uint256 sig
 #endif
 }
 
-void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet)
+void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet, ScopedLock& MasterLockHolder)
 {
+	MasterLockHolder.unlock();
 	if (packet->validation().size() < 50)
 	{
 		cLog(lsWARNING) << "Too small validation from peer";
@@ -1138,8 +1138,9 @@ void Peer::recvGetContacts(ripple::TMGetContacts& packet)
 // Return a list of your favorite people
 // TODO: filter out all the LAN peers
 // TODO: filter out the peer you are talking to
-void Peer::recvGetPeers(ripple::TMGetPeers& packet)
+void Peer::recvGetPeers(ripple::TMGetPeers& packet, ScopedLock& MasterLockHolder)
 {
+	MasterLockHolder.unlock();
 	std::vector<std::string> addrs;
 
 	theApp->getConnectionPool().getTopNAddrs(30, addrs);
@@ -1417,7 +1418,7 @@ void Peer::recvStatus(ripple::TMStatusChange& packet)
 		mMaxLedger = packet.lastseq();
 }
 
-void Peer::recvGetLedger(ripple::TMGetLedger& packet)
+void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHolder)
 {
 	SHAMap::pointer map;
 	ripple::TMLedgerData reply;
@@ -1545,6 +1546,13 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			return;
 		}
 
+		if (ledger->isImmutable())
+			MasterLockHolder.unlock();
+		else
+		{
+			cLog(lsWARNING) << "Request for data from mutable ledger";
+		}
+
 		// Fill out the reply
 		uint256 lHash = ledger->getHash();
 		reply.set_ledgerhash(lHash.begin(), lHash.size());
@@ -1608,7 +1616,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		SHAMapNode mn(packet.nodeids(i).data(), packet.nodeids(i).size());
 		if(!mn.isValid())
 		{
-			cLog(lsWARNING) << "Request for invalid node";
+			cLog(lsWARNING) << "Request for invalid node: " << logMe;
 			punishPeer(LT_InvalidRequest);
 			return;
 		}
@@ -1657,8 +1665,9 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 	sendPacket(oPacket, true);
 }
 
-void Peer::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_ptr)
+void Peer::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_ptr, ScopedLock& MasterLockHolder)
 {
+	MasterLockHolder.unlock();
 	ripple::TMLedgerData& packet = *packet_ptr;
 	if (packet.nodes().size() <= 0)
 	{
@@ -1911,7 +1920,7 @@ void Peer::doFetchPack(const boost::shared_ptr<ripple::TMGetObjectByHash>& packe
 	}
 	theApp->getJobQueue().addJob(jtPACK, "MakeFetchPack",
 		BIND_TYPE(&NetworkOPs::makeFetchPack, &theApp->getOPs(), P_1,
-			boost::weak_ptr<Peer>(shared_from_this()), packet, wantLedger, haveLedger));
+			boost::weak_ptr<Peer>(shared_from_this()), packet, wantLedger, haveLedger, upTime()));
 }
 
 bool Peer::hasProto(int version)
