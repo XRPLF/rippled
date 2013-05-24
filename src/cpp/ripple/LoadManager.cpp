@@ -324,12 +324,6 @@ Json::Value LoadFeeTrack::getJson(uint64 baseFee, uint32 referenceFeeUnits)
 	return j;
 }
 
-int LoadManager::getUptime()
-{
-	boost::mutex::scoped_lock sl(mLock);
-	return mUptime;
-}
-
 static void LogDeadLock(int dlTime)
 {
 	WriteLog (lsWARNING, LoadManager) << "Server stalled for " << dlTime << " seconds.";

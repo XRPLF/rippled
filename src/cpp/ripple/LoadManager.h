@@ -142,7 +142,6 @@ public:
 	void logDisconnect(const std::string&) const;
 
 	int getCost(LoadType t)		{ return mCosts[static_cast<int>(t)].mCost; }
-	int getUptime();
 	void noDeadLock();
 	void arm()					{ mArmed = true; }
 };
