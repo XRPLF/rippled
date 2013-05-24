@@ -30,7 +30,7 @@ int LedgerMaster::getValidatedLedgerAge()
 {
 	if (!mValidLedger)
 	{
-		cLog(lsINFO) << "No validated ledger";
+		cLog(lsDEBUG) << "No validated ledger";
 		return 999999;
 	}
 
@@ -38,7 +38,7 @@ int LedgerMaster::getValidatedLedgerAge()
 	ret -= static_cast<int64>(mValidLedger->getCloseTimeNC());
 	ret = std::max(0LL, ret);
 
-	cLog(lsINFO) << "Validated ledger age is " << ret;
+	cLog(lsTRACE) << "Validated ledger age is " << ret;
 	return static_cast<int>(ret);
 }
 
