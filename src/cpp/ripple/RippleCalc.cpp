@@ -2147,7 +2147,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState& psCur, c
 
 			if (!saCurWantedReq.isPositive())
 			{ // TEMPORARY emergency fix
-				cLog(lsFATAL) << "CurWantReq was not positive";
+				WriteLog (lsFATAL, RippleCalc) << "CurWantReq was not positive";
 				return tefEXCEPTION;
 			}
 
@@ -3020,7 +3020,7 @@ int iPass	= 0;
 			{
 				if (tesSUCCESS == terResult)
 				{
-					cLog(lsDEBUG) << "Became unfunded " << uOfferIndex.GetHex();
+					WriteLog (lsDEBUG, RippleCalc) << "Became unfunded " << uOfferIndex.GetHex();
 					terResult = lesActive.offerDelete(uOfferIndex);
 				}
 			}
@@ -3031,7 +3031,7 @@ int iPass	= 0;
 		{
 			if (tesSUCCESS == terResult)
 			{
-				cLog(lsDEBUG) << "Delete unfunded " << uOfferIndex.GetHex();
+				WriteLog (lsDEBUG, RippleCalc) << "Delete unfunded " << uOfferIndex.GetHex();
 				terResult = lesActive.offerDelete(uOfferIndex);
 			}
 		}
