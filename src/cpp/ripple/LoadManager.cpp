@@ -8,6 +8,7 @@
 #include "Config.h"
 #include "Application.h"
 
+/*
 static volatile int* uptimePtr = NULL;
 
 int upTime()
@@ -17,10 +18,11 @@ int upTime()
 		return *uptimePtr;
 	return static_cast<int>(time(NULL) - firstCall);
 }
+*/
 
 LoadManager::LoadManager(int creditRate, int creditLimit, int debitWarn, int debitLimit) :
 		mCreditRate(creditRate), mCreditLimit(creditLimit), mDebitWarn(debitWarn), mDebitLimit(debitLimit),
-		mShutdown(false), mArmed(false), mUptime(0), mDeadLock(0), mCosts(LT_MAX)
+		mShutdown(false), mArmed(false), /*mUptime(0),*/ mDeadLock(0), mCosts(LT_MAX)
 {
 	addLoadCost(LoadCost(LT_InvalidRequest,		-10,		LC_CPU | LC_Network));
 	addLoadCost(LoadCost(LT_RequestNoReply,		-1,		LC_CPU | LC_Disk));
@@ -39,19 +41,22 @@ LoadManager::LoadManager(int creditRate, int creditLimit, int debitWarn, int deb
 
 void LoadManager::init()
 {
+	/*
 	if (uptimePtr == NULL)
 		uptimePtr = static_cast<volatile int *>(&mUptime);
+	*/
+	UptimeTimer::getInstance().beginManualUpdates ();
+
 	boost::thread(boost::bind(&LoadManager::threadEntry, this)).detach();
 }
 
 LoadManager::~LoadManager()
 {
+	/*
 	if (uptimePtr == &mUptime)
 		uptimePtr = NULL;
-	{
-		boost::mutex::scoped_lock sl(mLock);
-		mShutdown = true;
-	}
+	*/
+	UptimeTimer::getInstance().endManualUpdates ();
 
 	do
 	{
@@ -68,7 +73,8 @@ LoadManager::~LoadManager()
 void LoadManager::noDeadLock()
 {
 	boost::mutex::scoped_lock sl(mLock);
-	mDeadLock = mUptime;
+	//mDeadLock = mUptime;
+	mDeadLock = UptimeTimer::getInstance ().getElapsedSeconds ();
 }
 
 int LoadManager::getCreditRate() const
@@ -342,9 +348,11 @@ void LoadManager::threadEntry()
 				mShutdown = false;
 				return;
 			}
-			++mUptime;
+			
+			//++mUptime;
+			UptimeTimer::getInstance ().incrementElapsedTime ();
 
-			int dlTime = mUptime - mDeadLock;
+			int dlTime = UptimeTimer::getInstance ().getElapsedSeconds () - mDeadLock;
 			if (mArmed && (dlTime >= 10))
 			{
 				if ((dlTime % 10) == 0)

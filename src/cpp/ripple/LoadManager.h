@@ -102,9 +102,11 @@ protected:
 	bool mShutdown;
 	bool mArmed;
 
+	/*
 	int mSpace1[4];				// We want mUptime to have its own cache line
 	int mUptime;
 	int mSpace2[4];
+	*/
 
 	int mDeadLock;				// Detect server deadlocks
 

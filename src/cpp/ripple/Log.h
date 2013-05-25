@@ -55,6 +55,15 @@ public:
 	static std::vector< std::pair<std::string, std::string> > getSeverities();
 
 private:
+	/** Retrieve file name from a log partition.
+
+		Key must have this shape:
+
+		struct Key
+		{
+			static char const* getFileName ();
+		};
+	*/
 	template <class Key>
 	inline static LogPartition getFileName ()
 	{

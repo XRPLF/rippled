@@ -17,8 +17,9 @@
 //==============================================================================
 
 UptimeTimer::UptimeTimer ()
-	: m_shadowPointer (0)
+	: m_elapsedTime (0)
 	, m_startTime (::time (0))
+	, m_isUpdatingManually (false)
 {
 }
 
@@ -26,41 +27,47 @@ UptimeTimer::~UptimeTimer ()
 {
 }
 
-void UptimeTimer::initializeShadowPointerIfNecessary (int* shadowPointer)
-{
-	if (m_shadowPointer == 0)
-	{
-		m_shadowPointer = static_cast <int volatile*> (shadowPointer);
-	}
-
-}
-
-void UptimeTimer::resetShadowPointerIfSet (int* shadowPointer)
-{
-	if (m_shadowPointer == shadowPointer)
-	{
-		m_shadowPointer = 0;
-	}
-}
-
-int UptimeTimer::getElapsedSeconds ()
+int UptimeTimer::getElapsedSeconds () const
 {
 	int result;
 
-	if (m_shadowPointer != 0)
+	if (m_isUpdatingManually)
 	{
-		result = *m_shadowPointer;
+		// vf::memoryBarrier();
+		result = m_elapsedTime;
 	}
 	else
 	{
+		// VFALCO: TODO, use time_t instead of int return
 		result = static_cast <int> (::time (0) - m_startTime);
 	}
 
 	return result;
 }
 
+void UptimeTimer::beginManualUpdates ()
+{
+	//assert (!m_isUpdatingManually);
+
+	m_isUpdatingManually = true;
+}
+
+void UptimeTimer::endManualUpdates ()
+{
+	//assert (m_isUpdatingManually);
+
+	m_isUpdatingManually = false;
+}
+
+void UptimeTimer::incrementElapsedTime ()
+{
+	//assert (m_isUpdatingManually);
+	++m_elapsedTime;
+}
+
 UptimeTimer& UptimeTimer::getInstance ()
 {
 	static UptimeTimer instance;
+
 	return instance;
 }
