@@ -1177,6 +1177,7 @@
     <ClInclude Include="database\sqlite3ext.h" />
     <ClInclude Include="modules\ripple_basics\containers\ripple_KeyCache.h" />
     <ClInclude Include="modules\ripple_basics\containers\ripple_RangeSet.h" />
+    <ClInclude Include="modules\ripple_basics\containers\ripple_SecureAllocator.h" />
     <ClInclude Include="modules\ripple_basics\diagnostic\ripple_Log.h" />
     <ClInclude Include="modules\ripple_basics\events\ripple_UptimeTimer.h" />
     <ClInclude Include="modules\ripple_basics\ripple_basics.h" />
@@ -1575,7 +1576,6 @@
     <ClInclude Include="src\cpp\ripple\RPCSub.h" />
     <ClInclude Include="src\cpp\ripple\ScopedLock.h" />
     <ClInclude Include="src\cpp\ripple\ScriptData.h" />
-    <ClInclude Include="src\cpp\ripple\SecureAllocator.h" />
     <ClInclude Include="src\cpp\ripple\SerializedLedger.h" />
     <ClInclude Include="src\cpp\ripple\SerializedObject.h" />
     <ClInclude Include="src\cpp\ripple\SerializedTransaction.h" />

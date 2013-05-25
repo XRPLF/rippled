@@ -15,7 +15,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "SecureAllocator.h"
 #include "RippleAddress.h"
 #include "uint256.h"
 #include "base58.h"

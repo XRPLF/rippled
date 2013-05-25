@@ -1310,9 +1310,6 @@
     <ClInclude Include="src\cpp\ripple\ScopedLock.h">
       <Filter>1. Modules\ripple_mess\types</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\SecureAllocator.h">
-      <Filter>1. Modules\ripple_mess\containers</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\Version.h">
       <Filter>1. Modules\ripple_main\core</Filter>
     </ClInclude>
@@ -1398,6 +1395,9 @@
       <Filter>1. Modules\ripple_net\sockets\_OLD</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\containers\ripple_RangeSet.h">
+      <Filter>1. Modules\ripple_basics\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\containers\ripple_SecureAllocator.h">
       <Filter>1. Modules\ripple_basics\containers</Filter>
     </ClInclude>
   </ItemGroup>

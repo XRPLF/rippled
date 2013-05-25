@@ -69,6 +69,7 @@ namespace boost {
 
 #include "containers/ripple_KeyCache.h"
 #include "containers/ripple_RangeSet.h"
+#include "containers/ripple_SecureAllocator.h"
 
 #include "diagnostic/ripple_Log.h"
 
