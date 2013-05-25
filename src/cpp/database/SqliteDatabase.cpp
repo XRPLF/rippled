@@ -128,6 +128,7 @@ int SqliteDatabase::getNumRowsAffected()
 }
 
 // VFALCO: TODO, This must be fixed!!! return value needs to be int64
+//
 int SqliteDatabase::getLastInsertID()
 {
 	return(sqlite3_last_insert_rowid(mConnection));
@@ -192,12 +193,12 @@ int32 SqliteDatabase::getInt(int colIndex)
 
 float SqliteDatabase::getFloat(int colIndex)
 {
-	return(sqlite3_column_double(mCurrentStmt, colIndex));
+	return(static_cast <float> (sqlite3_column_double(mCurrentStmt, colIndex)));
 }
 
 bool SqliteDatabase::getBool(int colIndex)
 {
-	return(sqlite3_column_int(mCurrentStmt, colIndex));
+	return(sqlite3_column_int(mCurrentStmt, colIndex) ? true : false);
 }
 
 int SqliteDatabase::getBinary(int colIndex,unsigned char* buf,int maxSize)

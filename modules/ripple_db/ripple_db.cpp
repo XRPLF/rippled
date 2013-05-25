@@ -24,18 +24,6 @@
 
 #include "ripple_db.h"
 
-// VFALCO: TODO, fix these warnings!
-#ifdef _MSC_VER
-//#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
-//#pragma warning (disable: 4018) // signed/unsigned mismatch
-//#pragma warning (disable: 4244) // conversion, possible loss of data
-#endif
-
 #include "src/cpp/database/database.cpp"
 #include "src/cpp/database/SqliteDatabase.cpp"
 #include "src/cpp/ripple/DBInit.cpp"
-
-
-#ifdef _MSC_VER
-//#pragma warning (pop)
-#endif

@@ -778,7 +778,7 @@ void SHAMap::fetchRoot(const uint256& hash, SHAMapSyncFilter* filter)
 	{
 		root = fetchNodeExternal(SHAMapNode(), hash);
 	}
-	catch (SHAMapMissingNode& mn)
+	catch (SHAMapMissingNode&)
 	{
 		std::vector<unsigned char> nodeData;
 		if (!filter || !filter->haveNode(SHAMapNode(), hash, nodeData))

@@ -9,8 +9,20 @@
 #include "uint256.h"
 #include "ScopedLock.h"
 #include "TaggedCache.h"
-#include "KeyCache.h"
 #include "InstanceCounter.h"
+
+
+// VFALCO: TODO, Move this to someplace sensible!!
+// Adapter to furnish uptime information to KeyCache via UptimeTimer singleton
+struct KeyCacheUptimeTimer
+{
+	inline static int getElapsedSeconds ()
+	{
+		return UptimeTimer::getInstance().getElapsedSeconds ();
+	}
+};
+
+
 
 DEFINE_INSTANCE(HashedObject);
 
@@ -51,7 +63,7 @@ class HashedObjectStore
 {
 protected:
 	TaggedCache<uint256, HashedObject>	mCache;
-	KeyCache<uint256>					mNegativeCache;
+	KeyCache <uint256, KeyCacheUptimeTimer> mNegativeCache;
 
 	boost::mutex				mWriteMutex;
 	boost::condition_variable	mWriteCondition;

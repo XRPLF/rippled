@@ -1644,7 +1644,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHold
 			else
 				WriteLog (lsWARNING, Peer) << "getNodeFat returns false";
 		}
-		catch (std::exception& e)
+		catch (std::exception&)
 		{
 			std::string info;
 			if (packet.itype() == ripple::liTS_CANDIDATE)

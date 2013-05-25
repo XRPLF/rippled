@@ -1169,8 +1169,10 @@
     <ClInclude Include="build\proto\ripple.pb.h" />
     <ClInclude Include="database\sqlite3.h" />
     <ClInclude Include="database\sqlite3ext.h" />
+    <ClInclude Include="modules\ripple_basics\containers\ripple_KeyCache.h" />
     <ClInclude Include="modules\ripple_basics\events\ripple_UptimeTimer.h" />
     <ClInclude Include="modules\ripple_basics\ripple_basics.h" />
+    <ClInclude Include="modules\ripple_basics\types\ripple_IntegerTypes.h" />
     <ClInclude Include="modules\ripple_client\ripple_client.h" />
     <ClInclude Include="modules\ripple_db\ripple_db.h" />
     <ClInclude Include="modules\ripple_ledger\ripple_ledger.h" />
@@ -1567,7 +1569,6 @@
     <ClInclude Include="src\cpp\ripple\Interpreter.h" />
     <ClInclude Include="src\cpp\ripple\JobQueue.h" />
     <ClInclude Include="src\cpp\ripple\key.h" />
-    <ClInclude Include="src\cpp\ripple\KeyCache.h" />
     <ClInclude Include="src\cpp\ripple\Ledger.h" />
     <ClInclude Include="src\cpp\ripple\LedgerAcquire.h" />
     <ClInclude Include="src\cpp\ripple\LedgerConsensus.h" />
@@ -1634,7 +1635,6 @@
     <ClInclude Include="src\cpp\ripple\TransactionQueue.h" />
     <ClInclude Include="src\cpp\ripple\Transactor.h" />
     <ClInclude Include="src\cpp\ripple\TrustSetTransactor.h" />
-    <ClInclude Include="src\cpp\ripple\IntegerTypes.h" />
     <ClInclude Include="src\cpp\ripple\uint256.h" />
     <ClInclude Include="src\cpp\ripple\UniqueNodeList.h" />
     <ClInclude Include="src\cpp\ripple\utils.h" />

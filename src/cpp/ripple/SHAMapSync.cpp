@@ -13,7 +13,7 @@
 
 static const uint256 uZero;
 
-KeyCache<uint256> SHAMap::fullBelowCache("fullBelowCache", 65536, 240);
+KeyCache <uint256, KeyCacheUptimeTimer> SHAMap::fullBelowCache("fullBelowCache", 65536, 240);
 
 void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max,
 	SHAMapSyncFilter* filter)

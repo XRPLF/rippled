@@ -146,7 +146,7 @@ class LedgerAcquireMaster
 protected:
 	boost::mutex mLock;
 	std::map<uint256, LedgerAcquire::pointer> mLedgers;
-	KeyCache<uint256> mRecentFailures;
+	KeyCache<uint256, KeyCacheUptimeTimer> mRecentFailures;
 
 public:
 	LedgerAcquireMaster() : mRecentFailures("LedgerAcquireRecentFailures", 0, LEDGER_REACQUIRE_INTERVAL) { ; }

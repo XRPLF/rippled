@@ -356,7 +356,7 @@ protected:
 
 	SHAMapType mType;
 
-	static KeyCache<uint256> fullBelowCache;
+	static KeyCache <uint256, KeyCacheUptimeTimer> fullBelowCache;
 
 	void dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& target, uint256 prevHash);
 	std::stack<SHAMapTreeNode::pointer> getStack(const uint256& id, bool include_nonmatching_leaf, bool partialOk);

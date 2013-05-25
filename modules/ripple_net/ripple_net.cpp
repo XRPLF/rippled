@@ -27,8 +27,9 @@
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
 //#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
-//#pragma warning (disable: 4018) // signed/unsigned mismatch
-//#pragma warning (disable: 4244) // conversion, possible loss of data
+#pragma warning (disable: 4018) // signed/unsigned mismatch
+#pragma warning (disable: 4244) // conversion, possible loss of data
+#pragma warning (disable: 4309) // truncation of constant value
 #endif
 
 #include "src/cpp/ripple/Application.h"

@@ -34,7 +34,14 @@
 
 #include <ctime>
 
-#include "src/cpp/ripple/IntegerTypes.h"
+// KeyCache
+#include <string>
+#include <boost/unordered_map.hpp>
+#include <boost/thread/mutex.hpp>
+
+#include "types/ripple_IntegerTypes.h"
+
+#include "containers/ripple_KeyCache.h"
 
 #include "events/ripple_UptimeTimer.h"
 

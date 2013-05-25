@@ -1,15 +1,15 @@
-#ifndef KEY_CACHE__H
-#define KEY_CACHE__H
+#ifndef RIPPLE_KEYCACHE_H
+#define RIPPLE_KEYCACHE_H
 
-#include <string>
+/** Maintains a cache of keys with no associated data
 
-#include <boost/unordered_map.hpp>
-#include <boost/thread/mutex.hpp>
+	Timer must have this interface:
 
-extern int upTime();
-
-template <typename c_Key> class KeyCache
-{ // Maintains a cache of keys with no associated data
+	static int Timer::getElapsedSeconds ();
+*/
+template <typename c_Key, class Timer>
+class KeyCache
+{
 public:
 	typedef c_Key									key_type;
 	typedef boost::unordered_map<key_type, int>		map_type;
@@ -67,7 +67,7 @@ public:
 		if (it == mCache.end())
 			return false;
 		if (refresh)
-			it->second = upTime();
+			it->second = Timer::getElapsedSeconds ();
 		return true;
 	}
 
@@ -90,16 +90,16 @@ public:
 		map_iterator it = mCache.find(key);
 		if (it != mCache.end())
 		{
-			it->second = upTime();
+			it->second = Timer::getElapsedSeconds ();
 			return false;
 		}
-		mCache.insert(std::make_pair(key, upTime()));
+		mCache.insert(std::make_pair(key, Timer::getElapsedSeconds ()));
 		return true;
 	}
 
 	void sweep()
 	{ // Remove stale entries from the cache 
-		int now = upTime();
+		int now = Timer::getElapsedSeconds ();
 		boost::mutex::scoped_lock sl(mNCLock);
 
 		int target;

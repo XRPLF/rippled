@@ -1373,20 +1373,20 @@
     <ClInclude Include="build\proto\ripple.pb.h">
       <Filter>1. Modules\ripple_mess\protobuf</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\IntegerTypes.h">
-      <Filter>1. Modules\ripple_basics\types</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\SerializeProto.h">
       <Filter>1. Modules\ripple_mess\types</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_mess\ripple_mess.h">
       <Filter>1. Modules\ripple_mess</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\KeyCache.h">
-      <Filter>1. Modules\ripple_basics\containers</Filter>
-    </ClInclude>
     <ClInclude Include="modules\ripple_basics\events\ripple_UptimeTimer.h">
       <Filter>1. Modules\ripple_basics\events</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\containers\ripple_KeyCache.h">
+      <Filter>1. Modules\ripple_basics\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\types\ripple_IntegerTypes.h">
+      <Filter>1. Modules\ripple_basics\types</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
