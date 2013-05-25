@@ -26,15 +26,15 @@
 
 // VFALCO: TODO Remove unneeded includes
 #include <cstddef>
-//#include <cstdio>
-//#include <cstring>
+#include <cstdio>
+#include <cstring>
 #include <iomanip>
-//#include <iostream>
-//#include <sstream>
-//#include <stdexcept>
-//#include <stdio.h>
-//#include <string.h>
-//#include <utility>
+#include <iostream>
+#include <sstream>
+#include <stdexcept>
+#include <stdio.h>
+#include <string.h>
+#include <utility>
 
 #ifdef JSON_USE_CPPTL
 # include <cpptl/conststring.h>

@@ -34,11 +34,11 @@
 
 // VFALCO: TODO Remove unneeded includes
 #include <cassert>
-//#include <cstdlib>
+#include <cstring>
+#include <cstdlib>
 #include <deque>
-//#include <iostream>
+#include <iostream>
 #include <stack>
-#include <string>
 #include <vector>
 
 // Needed before these cpptl includes
