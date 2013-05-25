@@ -1,15 +1,5 @@
-#ifndef __TAGGEDCACHE__
-#define __TAGGEDCACHE__
-
-#include <string>
-
-#include <boost/thread/recursive_mutex.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/ref.hpp>
-#include <boost/make_shared.hpp>
-
-extern int upTime();
+#ifndef RIPPLE_TAGGEDCACHE_H
+#define RIPPLE_TAGGEDCACHE_H
 
 // This class implements a cache and a map. The cache keeps objects alive
 // in the map. The map allows multiple code paths that reference objects
@@ -26,7 +16,16 @@ struct TaggedCacheLog { };
 
 SETUP_LOG (TaggedCacheLog)
 
-template <typename c_Key, typename c_Data> class TaggedCache
+/** Combination cache/map container.
+
+	NOTE:
+
+	Timer must have this interface:
+
+	static int Timer::getElapsedSeconds ();
+*/
+template <typename c_Key, typename c_Data, class Timer>
+class TaggedCache
 {
 public:
 	typedef c_Key							key_type;
@@ -48,7 +47,7 @@ protected:
 		bool isCached()		{ return !!ptr; }
 		bool isExpired()	{ return weak_ptr.expired(); }
 		data_ptr lock()		{ return weak_ptr.lock(); }
-		void touch()		{ last_use = upTime(); }
+		void touch()		{ last_use = Timer::getElapsedSeconds (); }
 	};
 
 	typedef std::pair<key_type, cache_entry>				cache_pair;
@@ -69,9 +68,15 @@ protected:
 
 public:
 	TaggedCache(const char *name, int size, int age)
-		: mName(name), mTargetSize(size), mTargetAge(age), mCacheCount(0), mLastSweep(upTime()),
-		mHits(0), mMisses(0)
-	{ ; }
+		: mName(name)
+		, mTargetSize(size)
+		, mTargetAge(age)
+		, mCacheCount(0)
+		, mLastSweep(Timer::getElapsedSeconds())
+		, mHits(0)
+		, mMisses(0)
+	{
+	}
 
 	int getTargetSize() const;
 	int getTargetAge() const;
@@ -96,13 +101,15 @@ public:
 	boost::recursive_mutex& peekMutex() { return mLock; }
 };
 
-template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getTargetSize() const
+template<typename c_Key, typename c_Data, class Timer>
+int TaggedCache<c_Key, c_Data, Timer>::getTargetSize() const
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	return mTargetSize;
 }
 
-template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::setTargetSize(int s)
+template<typename c_Key, typename c_Data, class Timer>
+void TaggedCache<c_Key, c_Data, Timer>::setTargetSize(int s)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	mTargetSize = s;
@@ -111,56 +118,64 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::setTa
 	WriteLog (lsDEBUG, TaggedCacheLog) << mName << " target size set to " << s;
 }
 
-template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getTargetAge() const
+template<typename c_Key, typename c_Data, class Timer>
+int TaggedCache<c_Key, c_Data, Timer>::getTargetAge() const
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	return mTargetAge;
 }
 
-template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::setTargetAge(int s)
+template<typename c_Key, typename c_Data, class Timer>
+void TaggedCache<c_Key, c_Data, Timer>::setTargetAge(int s)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	mTargetAge = s;
 	WriteLog (lsDEBUG, TaggedCacheLog) << mName << " target age set to " << s;
 }
 
-template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getCacheSize()
+template<typename c_Key, typename c_Data, class Timer>
+int TaggedCache<c_Key, c_Data, Timer>::getCacheSize()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	return mCacheCount;
 }
 
-template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getTrackSize()
+template<typename c_Key, typename c_Data, class Timer>
+int TaggedCache<c_Key, c_Data, Timer>::getTrackSize()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	return mCache.size();
 }
 
-template<typename c_Key, typename c_Data> float TaggedCache<c_Key, c_Data>::getHitRate()
+template<typename c_Key, typename c_Data, class Timer>
+float TaggedCache<c_Key, c_Data, Timer>::getHitRate()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	return (static_cast<float>(mHits) * 100) / (1.0f + mHits + mMisses);
 }
 
-template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::clearStats()
+template<typename c_Key, typename c_Data, class Timer>
+void TaggedCache<c_Key, c_Data, Timer>::clearStats()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	mHits = 0;
 	mMisses = 0;
 }
 
-template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::clear()
+template<typename c_Key, typename c_Data, class Timer>
+void TaggedCache<c_Key, c_Data, Timer>::clear()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	mCache.clear();
 	mCacheCount = 0;
 }
 
-template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep()
+template<typename c_Key, typename c_Data, class Timer>
+void TaggedCache<c_Key, c_Data, Timer>::sweep()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	int mLastSweep = upTime();
+	int mLastSweep = Timer::getElapsedSeconds ();
 	int target = mLastSweep - mTargetAge;
 	int cacheRemovals = 0, mapRemovals = 0, cc = 0;
 
@@ -213,7 +228,8 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 		", map-=" << mapRemovals;
 }
 
-template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::touch(const key_type& key)
+template<typename c_Key, typename c_Data, class Timer>
+bool TaggedCache<c_Key, c_Data, Timer>::touch(const key_type& key)
 {	// If present, make current in cache
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -241,7 +257,8 @@ template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::touch
 	return false;
 }
 
-template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::del(const key_type& key, bool valid)
+template<typename c_Key, typename c_Data, class Timer>
+bool TaggedCache<c_Key, c_Data, Timer>::del(const key_type& key, bool valid)
 {	// Remove from cache, if !valid, remove from map too. Returns true if removed from cache
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -263,8 +280,8 @@ template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::del(c
 	return ret;
 }
 
-template<typename c_Key, typename c_Data>
-bool TaggedCache<c_Key, c_Data>::canonicalize(const key_type& key, boost::shared_ptr<c_Data>& data, bool replace)
+template<typename c_Key, typename c_Data, class Timer>
+bool TaggedCache<c_Key, c_Data, Timer>::canonicalize(const key_type& key, boost::shared_ptr<c_Data>& data, bool replace)
 {	// Return canonical value, store if needed, refresh in cache
 	// Return values: true=we had the data already
 	boost::recursive_mutex::scoped_lock sl(mLock);
@@ -272,7 +289,7 @@ bool TaggedCache<c_Key, c_Data>::canonicalize(const key_type& key, boost::shared
 	cache_iterator cit = mCache.find(key);
 	if (cit == mCache.end())
 	{
-		mCache.insert(cache_pair(key, cache_entry(upTime(), data)));
+		mCache.insert(cache_pair(key, cache_entry(Timer::getElapsedSeconds(), data)));
 		++mCacheCount;
 		return false;
 	}
@@ -315,8 +332,8 @@ bool TaggedCache<c_Key, c_Data>::canonicalize(const key_type& key, boost::shared
 	return false;
 }
 
-template<typename c_Key, typename c_Data>
-boost::shared_ptr<c_Data> TaggedCache<c_Key, c_Data>::fetch(const key_type& key)
+template<typename c_Key, typename c_Data, class Timer>
+boost::shared_ptr<c_Data> TaggedCache<c_Key, c_Data, Timer>::fetch(const key_type& key)
 { // fetch us a shared pointer to the stored data object
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -346,15 +363,15 @@ boost::shared_ptr<c_Data> TaggedCache<c_Key, c_Data>::fetch(const key_type& key)
 	return data_ptr();
 }
 
-template<typename c_Key, typename c_Data>
-bool TaggedCache<c_Key, c_Data>::store(const key_type& key, const c_Data& data)
+template<typename c_Key, typename c_Data, class Timer>
+bool TaggedCache<c_Key, c_Data, Timer>::store(const key_type& key, const c_Data& data)
 {
 	data_ptr d = boost::make_shared<c_Data>(boost::cref(data));
 	return canonicalize(key, d);
 }
 
-template<typename c_Key, typename c_Data>
-bool TaggedCache<c_Key, c_Data>::retrieve(const key_type& key, c_Data& data)
+template<typename c_Key, typename c_Data, class Timer>
+bool TaggedCache<c_Key, c_Data, Timer>::retrieve(const key_type& key, c_Data& data)
 { // retrieve the value of the stored data
 	data_ptr entry = fetch(key);
 	if (!entry)

@@ -25,7 +25,6 @@
 	system calls. (?)
 */
 // VFALCO: TODO, determine if the non-manual timing is actually needed
-
 class UptimeTimer
 {
 private:

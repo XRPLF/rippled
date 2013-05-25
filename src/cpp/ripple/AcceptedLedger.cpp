@@ -1,5 +1,5 @@
 
-TaggedCache<uint256, AcceptedLedger> AcceptedLedger::ALCache("AcceptedLedger", 4, 60);
+TaggedCache<uint256, AcceptedLedger, UptimeTimerAdapter> AcceptedLedger::ALCache("AcceptedLedger", 4, 60);
 
 ALTransaction::ALTransaction(uint32 seq, SerializerIterator& sit)
 {

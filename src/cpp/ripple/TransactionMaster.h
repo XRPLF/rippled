@@ -2,14 +2,13 @@
 #define __TRANSACTIONMASTER__
 
 #include "Transaction.h"
-#include "TaggedCache.h"
 
 // Tracks all transactions in memory
 
 class TransactionMaster
 {
 protected:
-	TaggedCache<uint256, Transaction> mCache;
+	TaggedCache<uint256, Transaction, UptimeTimerAdapter> mCache;
 
 public:
 

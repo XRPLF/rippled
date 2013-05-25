@@ -13,7 +13,6 @@
 #include "BitcoinUtil.h"
 #include "key.h"
 #include "utils.h"
-#include "TaggedCache.h"
 
 #include "../database/SqliteDatabase.h"
 

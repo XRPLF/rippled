@@ -61,17 +61,25 @@ namespace boost {
 #include <boost/foreach.hpp>
 #include <boost/icl/interval_set.hpp> // oof this one is ugly
 
+// TaggedCache
+#include <boost/thread/recursive_mutex.hpp>
+#include <boost/unordered_map.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/ref.hpp>
+#include <boost/make_shared.hpp>
+
 
 
 #include "../ripple_json/ripple_json.h"
 
-#include "types/ripple_IntegerTypes.h"
+#include "types/ripple_IntegerTypes.h" // must come first
+
+#include "diagnostic/ripple_Log.h" // Needed by others
 
 #include "containers/ripple_KeyCache.h"
 #include "containers/ripple_RangeSet.h"
 #include "containers/ripple_SecureAllocator.h"
-
-#include "diagnostic/ripple_Log.h"
+#include "containers/ripple_TaggedCache.h"
 
 #include "events/ripple_UptimeTimer.h"
 

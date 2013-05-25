@@ -148,7 +148,7 @@ protected:
 	subMapType											mSubTransactions;		// all accepted transactions
 	subMapType											mSubRTTransactions;		// all proposed and accepted transactions
 
-	TaggedCache< uint256, std::vector<unsigned char> >	mFetchPack;
+	TaggedCache< uint256, std::vector<unsigned char>, UptimeTimerAdapter >	mFetchPack;
 	uint32												mLastFetchPack;
 	uint32												mFetchSeq;
 

@@ -72,7 +72,7 @@ protected:
 
 	void insert(ALTransaction::ref);
 
-	static TaggedCache<uint256, AcceptedLedger>	ALCache;
+	static TaggedCache<uint256, AcceptedLedger, UptimeTimerAdapter>	ALCache;
 	AcceptedLedger(Ledger::ref ledger);
 
 public:

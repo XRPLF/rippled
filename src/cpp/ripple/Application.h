@@ -20,7 +20,6 @@
 #include "Peer.h"
 #include "NetworkOPs.h"
 #include "WSDoor.h"
-#include "TaggedCache.h"
 #include "ValidationCollection.h"
 #include "Suppression.h"
 #include "SNTPClient.h"
@@ -33,8 +32,8 @@
 
 class RPCDoor;
 class PeerDoor;
-typedef TaggedCache< uint256, std::vector<unsigned char> > NodeCache;
-typedef TaggedCache< uint256, SLE > SLECache;
+typedef TaggedCache< uint256, std::vector<unsigned char>, UptimeTimerAdapter> NodeCache;
+typedef TaggedCache< uint256, SLE, UptimeTimerAdapter> SLECache;
 
 class DatabaseCon
 {

@@ -1178,6 +1178,7 @@
     <ClInclude Include="modules\ripple_basics\containers\ripple_KeyCache.h" />
     <ClInclude Include="modules\ripple_basics\containers\ripple_RangeSet.h" />
     <ClInclude Include="modules\ripple_basics\containers\ripple_SecureAllocator.h" />
+    <ClInclude Include="modules\ripple_basics\containers\ripple_TaggedCache.h" />
     <ClInclude Include="modules\ripple_basics\diagnostic\ripple_Log.h" />
     <ClInclude Include="modules\ripple_basics\events\ripple_UptimeTimer.h" />
     <ClInclude Include="modules\ripple_basics\ripple_basics.h" />
@@ -1587,7 +1588,6 @@
     <ClInclude Include="src\cpp\ripple\SHAMapSync.h" />
     <ClInclude Include="src\cpp\ripple\SNTPClient.h" />
     <ClInclude Include="src\cpp\ripple\Suppression.h" />
-    <ClInclude Include="src\cpp\ripple\TaggedCache.h" />
     <ClInclude Include="src\cpp\ripple\Transaction.h" />
     <ClInclude Include="src\cpp\ripple\TransactionEngine.h" />
     <ClInclude Include="src\cpp\ripple\TransactionErr.h" />

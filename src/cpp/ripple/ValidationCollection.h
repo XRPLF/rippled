@@ -8,7 +8,6 @@
 
 #include "uint256.h"
 #include "SerializedValidation.h"
-#include "TaggedCache.h"
 #include "JobQueue.h"
 
 typedef boost::unordered_map<uint160, SerializedValidation::pointer> ValidationSet;
@@ -21,7 +20,7 @@ class ValidationCollection
 protected:
 
 	boost::mutex													mValidationLock;
-	TaggedCache<uint256, ValidationSet>								mValidations;
+	TaggedCache<uint256, ValidationSet, UptimeTimerAdapter>		mValidations;
 	boost::unordered_map<uint160, SerializedValidation::pointer> 	mCurrentValidations;
 	std::vector<SerializedValidation::pointer> 						mStaleValidations;
 
