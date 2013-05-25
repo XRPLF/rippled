@@ -68,6 +68,17 @@ namespace boost {
 #include <boost/ref.hpp>
 #include <boost/make_shared.hpp>
 
+// ByteOrder
+#ifdef WIN32
+  // (nothing)
+#elif __APPLE__
+# include <libkern/OSByteOrder.h>
+#elif defined(__FreeBSD__) || defined(__NetBSD__)
+# include <sys/endian.h>
+#elif defined(__OpenBSD__)
+# include <sys/types.h>
+#endif
+
 
 
 #include "../ripple_json/ripple_json.h"
@@ -80,6 +91,8 @@ namespace boost {
 #include "containers/ripple_RangeSet.h"
 #include "containers/ripple_SecureAllocator.h"
 #include "containers/ripple_TaggedCache.h"
+
+#include "memory/ripple_ByteOrder.h"
 
 #include "events/ripple_UptimeTimer.h"
 

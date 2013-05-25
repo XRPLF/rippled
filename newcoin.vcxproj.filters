@@ -133,6 +133,9 @@
     <Filter Include="1. Modules\ripple_net\sockets\_OLD">
       <UniqueIdentifier>{1194480b-fa6b-4d92-8656-2470f45f2753}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_basics\memory">
+      <UniqueIdentifier>{49faa808-02f3-44ba-a17c-43dce213672e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -752,6 +755,9 @@
     </ClCompile>
     <ClCompile Include="modules\ripple_basics\containers\ripple_RangeSet.cpp">
       <Filter>1. Modules\ripple_basics\containers</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_basics\memory\ripple_ByteOrder.cpp">
+      <Filter>1. Modules\ripple_basics\memory</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1399,6 +1405,9 @@
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\containers\ripple_TaggedCache.h">
       <Filter>1. Modules\ripple_basics\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\memory\ripple_ByteOrder.h">
+      <Filter>1. Modules\ripple_basics\memory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

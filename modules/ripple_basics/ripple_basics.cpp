@@ -44,6 +44,12 @@
 
 #include "events/ripple_UptimeTimer.cpp"
 
+#ifdef WIN32
+// Winsock #defines 'max' and does other stupid things so put it last
+#include "Winsock2.h" // for ripple_ByteOrder.cpp
+#endif
+#include "memory/ripple_ByteOrder.cpp"
+
 #ifdef _MSC_VER
 //#pragma warning (pop)
 #endif
