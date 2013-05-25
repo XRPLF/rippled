@@ -106,9 +106,6 @@
     <Filter Include="1. Modules\ripple_mess\containers">
       <UniqueIdentifier>{683c494b-1175-49ac-9714-65640ba50bf5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_mess\diagnostic">
-      <UniqueIdentifier>{505d1e20-ff6a-446b-8ce0-962e11b78820}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_mess\protobuf">
       <UniqueIdentifier>{eb0c6bda-cf68-4334-a8c3-8d39202852a0}</UniqueIdentifier>
     </Filter>
@@ -690,9 +687,6 @@
     <ClCompile Include="src\cpp\ripple\NicknameState.cpp">
       <Filter>1. Modules\ripple_ledger\processing</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\RangeSet.cpp">
-      <Filter>1. Modules\ripple_mess\containers</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\SHAMap.cpp">
       <Filter>1. Modules\ripple_mess\containers</Filter>
     </ClCompile>
@@ -755,6 +749,9 @@
     </ClCompile>
     <ClCompile Include="modules\ripple_basics\diagnostic\ripple_LogWebsockets.cpp">
       <Filter>1. Modules\ripple_net\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_basics\containers\ripple_RangeSet.cpp">
+      <Filter>1. Modules\ripple_basics\containers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1301,9 +1298,6 @@
     <ClInclude Include="src\cpp\ripple\NicknameState.h">
       <Filter>1. Modules\ripple_ledger\processing</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\RangeSet.h">
-      <Filter>1. Modules\ripple_mess\containers</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\SHAMap.h">
       <Filter>1. Modules\ripple_mess\containers</Filter>
     </ClInclude>
@@ -1402,6 +1396,9 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\WSDoor.h">
       <Filter>1. Modules\ripple_net\sockets\_OLD</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\containers\ripple_RangeSet.h">
+      <Filter>1. Modules\ripple_basics\containers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

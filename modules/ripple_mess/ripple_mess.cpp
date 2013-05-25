@@ -60,7 +60,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/ParseSection.cpp"
 #include "src/cpp/ripple/PlatRand.cpp" // no log
 #include "src/cpp/ripple/ProofOfWork.cpp"
-#include "src/cpp/ripple/RangeSet.cpp"
 #include "src/cpp/ripple/RippleAddress.cpp"
 #include "src/cpp/ripple/rfc1751.cpp" // no log
 #include "src/cpp/ripple/SHAMap.cpp"

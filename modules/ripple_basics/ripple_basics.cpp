@@ -26,9 +26,10 @@
 
 #include <fstream>
 
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/algorithm/string.hpp>
-//#include <boost/filesystem.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/test/unit_test.hpp>
 
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
@@ -36,6 +37,8 @@
 //#pragma warning (disable: 4018) // signed/unsigned mismatch
 //#pragma warning (disable: 4244) // conversion, possible loss of data
 #endif
+
+#include "containers/ripple_RangeSet.cpp"
 
 #include "diagnostic/ripple_Log.cpp"
 

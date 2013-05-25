@@ -1,18 +1,9 @@
-#ifndef RANGESET__H
-#define RANGESET__H
-
-#include <list>
-#include <string>
-
-#include <boost/foreach.hpp>
-#include <boost/icl/interval_set.hpp>
-
+#ifndef RIPPLE_RANGESET_H
+#define RIPPLE_RANGESET_H
 
 class RangeSet
 {
-
 public:
-
 	typedef boost::icl::interval_set<uint32>	iRangeSet;
 	typedef iRangeSet::iterator					iterator;
 	typedef iRangeSet::const_iterator			const_iterator;
@@ -21,7 +12,6 @@ public:
 	static const uint32 RangeSetAbsent = static_cast<uint32>(-1);
 
 protected:
-
 	iRangeSet mRanges;
 
 public:

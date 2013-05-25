@@ -34,13 +34,9 @@
 
 #include <ctime>
 #include <limits>
+#include <list>
 #include <sstream>
 #include <string>
-
-// KeyCache
-#include <string>
-#include <boost/unordered_map.hpp>
-#include <boost/thread/mutex.hpp>
 
 // Log
 #include <boost/thread/recursive_mutex.hpp>
@@ -54,11 +50,25 @@ namespace boost {
 */
 #include <boost/filesystem.hpp> // VFALCO: TODO, try to eliminate thie dependency
 
+
+
+// KeyCache
+#include <string>
+#include <boost/unordered_map.hpp>
+#include <boost/thread/mutex.hpp>
+
+// RangeSet
+#include <boost/foreach.hpp>
+#include <boost/icl/interval_set.hpp> // oof this one is ugly
+
+
+
 #include "../ripple_json/ripple_json.h"
 
 #include "types/ripple_IntegerTypes.h"
 
 #include "containers/ripple_KeyCache.h"
+#include "containers/ripple_RangeSet.h"
 
 #include "diagnostic/ripple_Log.h"
 
