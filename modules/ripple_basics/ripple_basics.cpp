@@ -24,12 +24,20 @@
 
 #include "ripple_basics.h"
 
+#include <fstream>
+
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/algorithm/string.hpp>
+//#include <boost/filesystem.hpp>
+
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
 //#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
 //#pragma warning (disable: 4018) // signed/unsigned mismatch
 //#pragma warning (disable: 4244) // conversion, possible loss of data
 #endif
+
+#include "diagnostic/ripple_Log.cpp"
 
 #include "events/ripple_UptimeTimer.cpp"
 

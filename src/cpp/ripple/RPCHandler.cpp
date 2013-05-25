@@ -9,7 +9,6 @@
 #include <boost/pointer_cast.hpp>
 
 #include "Pathfinder.h"
-#include "Log.h"
 #include "RPCHandler.h"
 #include "RPCSub.h"
 #include "Application.h"

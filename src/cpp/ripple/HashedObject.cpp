@@ -12,7 +12,6 @@
 
 #include "Serializer.h"
 #include "Application.h"
-#include "Log.h"
 
 SETUP_LOG (HashedObject)
 

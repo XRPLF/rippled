@@ -9,8 +9,6 @@
 
 #include <openssl/rand.h>
 
-#include "Log.h"
-
 static const uint256 uZero;
 
 KeyCache <uint256, KeyCacheUptimeTimer> SHAMap::fullBelowCache("fullBelowCache", 65536, 240);

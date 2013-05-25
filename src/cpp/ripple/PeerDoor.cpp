@@ -9,7 +9,6 @@
 #include "Application.h"
 #include "Config.h"
 #include "utils.h"
-#include "Log.h"
 
 SETUP_LOG (PeerDoor)
 

@@ -1,6 +1,4 @@
 
-#include "Log.h"
-
 #include "RPCErr.h"
 #include "utils.h"
 

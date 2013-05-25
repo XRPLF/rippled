@@ -11,7 +11,6 @@
 #include "RPC.h"
 #include "BitcoinUtil.h"
 #include "Config.h"
-#include "Log.h"
 #include "Version.h"
 
 // Used for logging

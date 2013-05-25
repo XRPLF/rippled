@@ -4,7 +4,6 @@
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
 
-#include "Log.h"
 #include "Config.h"
 #include "Application.h"
 

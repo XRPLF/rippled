@@ -12,7 +12,6 @@
 #include <boost/system/error_code.hpp>
 
 #include "Config.h"
-#include "Log.h"
 
 #define CLIENT_MAX_HEADER (32*1024)
 

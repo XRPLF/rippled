@@ -22,7 +22,6 @@
 
 #include "Application.h"
 #include "RPC.h"
-#include "Log.h"
 #include "RPCErr.h"
 #include "Config.h"
 #include "BitcoinUtil.h"

@@ -90,7 +90,6 @@
 #include "src/cpp/ripple/LedgerMaster.h"
 #include "src/cpp/ripple/LedgerProposal.h"
 #include "src/cpp/ripple/LedgerTiming.h"
-#include "src/cpp/ripple/Log.h"
 #include "src/cpp/ripple/NetworkOPs.h"
 #include "src/cpp/ripple/NicknameState.h"
 #include "src/cpp/ripple/Offer.h"

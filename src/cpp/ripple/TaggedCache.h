@@ -9,7 +9,6 @@
 #include <boost/ref.hpp>
 #include <boost/make_shared.hpp>
 
-#include "Log.h"
 extern LogPartition TaggedCachePartition;
 extern int upTime();
 

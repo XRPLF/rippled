@@ -11,7 +11,6 @@
 
 #include "Serializer.h"
 #include "BitcoinUtil.h"
-#include "Log.h"
 #include "SHAMap.h"
 #include "Application.h"
 

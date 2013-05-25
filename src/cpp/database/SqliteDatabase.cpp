@@ -10,7 +10,6 @@
 #include <boost/bind.hpp>
 
 #include "../ripple/JobQueue.h"
-#include "../ripple/Log.h"
 
 SETUP_LOG (SqliteDatabase)
 

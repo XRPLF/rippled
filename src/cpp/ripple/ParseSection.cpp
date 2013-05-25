@@ -1,5 +1,4 @@
 #include "ParseSection.h"
-#include "Log.h"
 #include "utils.h"
 
 #include <iostream>

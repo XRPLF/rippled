@@ -17,7 +17,6 @@
 
 #include "Application.h"
 #include "HttpsClient.h"
-#include "Log.h"
 #include "ParseSection.h"
 #include "Serializer.h"
 #include "utils.h"

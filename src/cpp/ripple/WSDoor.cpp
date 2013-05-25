@@ -1,5 +1,4 @@
 
-#include "Log.h"
 
 //#define WSDOOR_CPP
 //#include "../websocketpp/src/sockets/autotls.hpp"

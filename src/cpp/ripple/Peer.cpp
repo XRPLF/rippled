@@ -11,7 +11,6 @@
 #include "Application.h"
 #include "SerializedTransaction.h"
 #include "utils.h"
-#include "Log.h"
 
 SETUP_LOG (Peer)
 

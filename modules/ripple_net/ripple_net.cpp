@@ -24,6 +24,8 @@
 
 #include "ripple_net.h"
 
+#include "../websocketpp/src/logger/logger.hpp" // for ripple_LogWebSockets.cpp
+
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
 //#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
@@ -52,6 +54,8 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/Peer.cpp"
 #include "src/cpp/ripple/PeerDoor.cpp"
 #include "src/cpp/ripple/WSDoor.cpp" // uses logging in WSConnection.h 
+
+#include "sockets/ripple_LogWebsockets.cpp"
 
 #ifdef _MSC_VER
 //#pragma warning (pop)

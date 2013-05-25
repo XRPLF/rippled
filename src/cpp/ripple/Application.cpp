@@ -14,7 +14,6 @@
 #include "key.h"
 #include "utils.h"
 #include "TaggedCache.h"
-#include "Log.h"
 
 #include "../database/SqliteDatabase.h"
 

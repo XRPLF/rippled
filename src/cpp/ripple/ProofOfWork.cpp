@@ -10,7 +10,6 @@
 #include <openssl/rand.h>
 
 #include "Serializer.h"
-#include "Log.h"
 
 SETUP_LOG (ProofOfWork)
 

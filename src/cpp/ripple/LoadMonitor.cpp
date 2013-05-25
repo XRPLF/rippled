@@ -1,5 +1,4 @@
 #include "LoadMonitor.h"
-#include "Log.h"
 
 SETUP_LOG (LoadMonitor)
 

@@ -12,7 +12,6 @@
 #include "NetworkOPs.h"
 #include "CallRPC.h"
 #include "InstanceCounter.h"
-#include "Log.h"
 #include "LoadManager.h"
 #include "RPCErr.h"
 

@@ -2,7 +2,6 @@
 #include <boost/test/unit_test.hpp>
 
 #include "SerializedTypes.h"
-#include "Log.h"
 
 #if (ULONG_MAX > UINT_MAX)
 #define BN_add_word64(bn, word) BN_add_word(bn, word)

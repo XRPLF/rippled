@@ -13,7 +13,6 @@
 
 #include "Serializer.h"
 #include "BitcoinUtil.h"
-#include "Log.h"
 #include "HashPrefixes.h"
 
 SETUP_LOG (SHAMapNode)

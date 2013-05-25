@@ -9,7 +9,6 @@
 #include "Application.h"
 #include "CallRPC.h"
 #include "Config.h"
-#include "Log.h"
 #include "RPCHandler.h"
 #include "utils.h"
 

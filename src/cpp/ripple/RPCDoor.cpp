@@ -1,7 +1,6 @@
 #include "RPCDoor.h"
 #include "Application.h"
 #include "Config.h"
-#include "Log.h"
 #include <boost/bind.hpp>
 #include <iostream>
 

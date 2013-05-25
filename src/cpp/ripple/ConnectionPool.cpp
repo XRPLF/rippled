@@ -13,7 +13,6 @@
 #include "PeerDoor.h"
 #include "Application.h"
 #include "utils.h"
-#include "Log.h"
 
 // How often to enforce policies.
 #define POLICY_INTERVAL_SECONDS	5

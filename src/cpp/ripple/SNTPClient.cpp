@@ -8,7 +8,6 @@
 
 #include "utils.h"
 #include "Config.h"
-#include "Log.h"
 
 SETUP_LOG (SNTPClient)
 

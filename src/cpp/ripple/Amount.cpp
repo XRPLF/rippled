@@ -10,7 +10,6 @@
 #include <boost/test/unit_test.hpp>
 
 #include "Config.h"
-#include "Log.h"
 #include "SerializedTypes.h"
 #include "utils.h"
 

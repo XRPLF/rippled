@@ -5,7 +5,6 @@
 
 #include "Application.h"
 #include "LedgerTiming.h"
-#include "Log.h"
 
 SETUP_LOG (ValidationCollection)
 

@@ -33,16 +33,35 @@
 #define RIPPLE_BASICS_H
 
 #include <ctime>
+#include <limits>
+#include <sstream>
+#include <string>
 
 // KeyCache
 #include <string>
 #include <boost/unordered_map.hpp>
 #include <boost/thread/mutex.hpp>
 
+// Log
+#include <boost/thread/recursive_mutex.hpp>
+// Forward declaration
+/*
+namespace boost {
+	namespace filesystem {
+		class path;
+	}
+}
+*/
+#include <boost/filesystem.hpp> // VFALCO: TODO, try to eliminate thie dependency
+
 #include "../ripple_json/ripple_json.h"
 
 #include "types/ripple_IntegerTypes.h"
+
 #include "containers/ripple_KeyCache.h"
+
+#include "diagnostic/ripple_Log.h"
+
 #include "events/ripple_UptimeTimer.h"
 
 #endif

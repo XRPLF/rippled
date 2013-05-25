@@ -1,22 +1,5 @@
-#ifndef __LOG__
-#define __LOG__
-
-#include <sstream>
-#include <string>
-#include <limits>
-
-#include <boost/thread/recursive_mutex.hpp>
-
-// VFALCO: TODO, fix this for Linux builds
-// Forward declaration
-/*
-namespace boost {
-	namespace filesystem {
-		class path;
-	}
-}
-*/
-#include <boost/filesystem.hpp> // unfortunately needed to compile
+#ifndef RIPPLE_LOG_H
+#define RIPPLE_LOG_H
 
 enum LogSeverity
 {

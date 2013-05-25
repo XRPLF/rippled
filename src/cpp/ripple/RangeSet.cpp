@@ -4,8 +4,6 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "Log.h"
-
 SETUP_LOG (RangeSet)
 
 inline uint32 min(uint32 x, uint32 y)	{ return (x < y) ? x : y; }

@@ -48,8 +48,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #pragma warning (disable: 4244) // conversion, possible loss of data
 #endif
 
-#include "src/cpp/ripple/Log.cpp"
-
 #include "src/cpp/ripple/Amount.cpp"
 #include "src/cpp/ripple/AmountRound.cpp"
 #include "src/cpp/ripple/BitcoinUtil.cpp" // no log

@@ -130,6 +130,12 @@
     <Filter Include="1. Modules\ripple_json\json\DEPRECATED">
       <UniqueIdentifier>{e398b116-a7fa-4850-8b8e-6de95efdea4e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_basics\diagnostic">
+      <UniqueIdentifier>{8d816d89-3ab2-4a9f-ac8e-8b4346b23cf8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_net\sockets\_OLD">
+      <UniqueIdentifier>{1194480b-fa6b-4d92-8656-2470f45f2753}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -522,9 +528,6 @@
     <ClCompile Include="modules\ripple_basics\ripple_basics.cpp">
       <Filter>1. Modules\ripple_basics</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Log.cpp">
-      <Filter>1. Modules\ripple_mess\diagnostic</Filter>
-    </ClCompile>
     <ClCompile Include="modules\ripple_ledger\ripple_ledger.cpp">
       <Filter>1. Modules\ripple_ledger</Filter>
     </ClCompile>
@@ -657,21 +660,6 @@
     <ClCompile Include="src\cpp\ripple\HTTPRequest.cpp">
       <Filter>1. Modules\ripple_client\http</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ConnectionPool.cpp">
-      <Filter>1. Modules\ripple_net\sockets</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\NetworkOPs.cpp">
-      <Filter>1. Modules\ripple_net\sockets</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Peer.cpp">
-      <Filter>1. Modules\ripple_net\sockets</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\PeerDoor.cpp">
-      <Filter>1. Modules\ripple_net\sockets</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\WSDoor.cpp">
-      <Filter>1. Modules\ripple_net\sockets</Filter>
-    </ClCompile>
     <ClCompile Include="modules\ripple_net\ripple_net.cpp">
       <Filter>1. Modules\ripple_net</Filter>
     </ClCompile>
@@ -746,6 +734,27 @@
     </ClCompile>
     <ClCompile Include="modules\ripple_json\ripple_json.cpp">
       <Filter>1. Modules\ripple_json</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_basics\diagnostic\ripple_Log.cpp">
+      <Filter>1. Modules\ripple_basics\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ConnectionPool.cpp">
+      <Filter>1. Modules\ripple_net\sockets\_OLD</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\NetworkOPs.cpp">
+      <Filter>1. Modules\ripple_net\sockets\_OLD</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\Peer.cpp">
+      <Filter>1. Modules\ripple_net\sockets\_OLD</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\PeerDoor.cpp">
+      <Filter>1. Modules\ripple_net\sockets\_OLD</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\WSDoor.cpp">
+      <Filter>1. Modules\ripple_net\sockets\_OLD</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_basics\diagnostic\ripple_LogWebsockets.cpp">
+      <Filter>1. Modules\ripple_net\sockets</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1130,9 +1139,6 @@
     <ClInclude Include="modules\ripple_basics\ripple_basics.h">
       <Filter>1. Modules\ripple_basics</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Log.h">
-      <Filter>1. Modules\ripple_mess\diagnostic</Filter>
-    </ClInclude>
     <ClInclude Include="modules\ripple_ledger\ripple_ledger.h">
       <Filter>1. Modules\ripple_ledger</Filter>
     </ClInclude>
@@ -1262,27 +1268,6 @@
     <ClInclude Include="src\cpp\ripple\HTTPRequest.h">
       <Filter>1. Modules\ripple_client\http</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\WSDoor.h">
-      <Filter>1. Modules\ripple_net\sockets</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\AutoSocket.h">
-      <Filter>1. Modules\ripple_net\sockets</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ConnectionPool.h">
-      <Filter>1. Modules\ripple_net\sockets</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\NetworkOPs.h">
-      <Filter>1. Modules\ripple_net\sockets</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Peer.h">
-      <Filter>1. Modules\ripple_net\sockets</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\PeerDoor.h">
-      <Filter>1. Modules\ripple_net\sockets</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\WSConnection.h">
-      <Filter>1. Modules\ripple_net\sockets</Filter>
-    </ClInclude>
     <ClInclude Include="modules\ripple_net\ripple_net.h">
       <Filter>1. Modules\ripple_net</Filter>
     </ClInclude>
@@ -1393,6 +1378,30 @@
     </ClInclude>
     <ClInclude Include="modules\ripple_json\json\json_features.h">
       <Filter>1. Modules\ripple_json\json</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\diagnostic\ripple_Log.h">
+      <Filter>1. Modules\ripple_basics\diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\AutoSocket.h">
+      <Filter>1. Modules\ripple_net\sockets\_OLD</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ConnectionPool.h">
+      <Filter>1. Modules\ripple_net\sockets\_OLD</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\NetworkOPs.h">
+      <Filter>1. Modules\ripple_net\sockets\_OLD</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\Peer.h">
+      <Filter>1. Modules\ripple_net\sockets\_OLD</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\PeerDoor.h">
+      <Filter>1. Modules\ripple_net\sockets\_OLD</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\WSConnection.h">
+      <Filter>1. Modules\ripple_net\sockets\_OLD</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\WSDoor.h">
+      <Filter>1. Modules\ripple_net\sockets\_OLD</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,4 @@
 #include "RPCServer.h"
-#include "Log.h"
 
 #include "HttpsClient.h"
 #include "RPC.h"
