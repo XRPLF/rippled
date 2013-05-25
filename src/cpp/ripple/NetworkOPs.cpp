@@ -12,6 +12,7 @@
 #include "Log.h"
 #include "RippleAddress.h"
 
+SETUP_LOG (NetworkOPs)
 
 // This is the primary interface into the "client" portion of the program.
 // Code that wants to do normal operations on the network such as

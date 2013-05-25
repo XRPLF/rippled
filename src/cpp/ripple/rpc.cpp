@@ -22,6 +22,8 @@ struct RPC
 {
 };
 
+SETUP_LOG (RPC)
+
 using namespace boost;
 using namespace boost::asio;
 

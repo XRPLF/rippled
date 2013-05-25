@@ -1,4 +1,6 @@
 
+SETUP_LOG (LedgerAcquire)
+
 DECLARE_INSTANCE(LedgerAcquire);
 
 #define LA_DEBUG

@@ -1,3 +1,5 @@
+SETUP_LOG (WalletAddTransactor)
+
 TER WalletAddTransactor::doApply()
 {
 	std::cerr << "WalletAdd>" << std::endl;

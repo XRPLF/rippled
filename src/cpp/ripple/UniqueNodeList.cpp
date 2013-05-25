@@ -39,6 +39,8 @@
 #define REFERRAL_VALIDATORS_MAX	50
 #define REFERRAL_IPS_MAX		50
 
+SETUP_LOG (UniqueNodeList)
+
 UniqueNodeList::UniqueNodeList(boost::asio::io_service& io_service) :
 	mdtScoreTimer(io_service),
 	mFetchActive(0),

@@ -8,6 +8,8 @@
 #include "Config.h"
 #include "Application.h"
 
+SETUP_LOG (LoadManager)
+
 /*
 static volatile int* uptimePtr = NULL;
 

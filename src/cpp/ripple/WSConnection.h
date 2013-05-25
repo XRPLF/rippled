@@ -21,9 +21,9 @@
 DEFINE_INSTANCE(WebSocketConnection);
 
 // This is for logging
-struct WSConnectionLog
-{
-};
+struct WSConnectionLog { };
+
+SETUP_LOG (WSConnectionLog)
 
 template <typename endpoint_type>
 class WSServerHandler;

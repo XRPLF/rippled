@@ -1,4 +1,6 @@
 
+SETUP_LOG (FeatureTable)
+
 void FeatureTable::addInitialFeatures()
 {
 	// For each feature this version supports, call enableFeature.

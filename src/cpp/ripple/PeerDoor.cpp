@@ -11,6 +11,8 @@
 #include "utils.h"
 #include "Log.h"
 
+SETUP_LOG (PeerDoor)
+
 using namespace std;
 using namespace boost::asio::ip;
 

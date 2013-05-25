@@ -32,6 +32,8 @@
 
 #include "CallRPC.h"
 
+SETUP_LOG (RPCParser)
+
 static inline bool isSwitchChar(char c)
 {
 #ifdef __WXMSW__

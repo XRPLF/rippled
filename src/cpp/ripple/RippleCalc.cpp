@@ -5,6 +5,7 @@
 // all liquidity is used.
 //
 
+SETUP_LOG (RippleCalc)
 
 std::size_t hash_value(const aciSource& asValue)
 {

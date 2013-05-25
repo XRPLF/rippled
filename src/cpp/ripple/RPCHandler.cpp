@@ -25,6 +25,8 @@
 #include "PFRequest.h"
 #include "ProofOfWork.h"
 
+SETUP_LOG (RPCHandler)
+
 static const int rpcCOST_DEFAULT	= 10;
 static const int rpcCOST_EXCEPTION	= 20;
 static const int rpcCOST_EXPENSIVE	= 50;

@@ -16,6 +16,8 @@
 
 #define CLIENT_MAX_HEADER (32*1024)
 
+SETUP_LOG (HttpsClient)
+
 using namespace boost::system;
 using namespace boost::asio;
 

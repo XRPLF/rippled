@@ -22,6 +22,8 @@
 #include <boost/mem_fn.hpp>
 #include <boost/unordered_set.hpp>
 
+SETUP_LOG (WSDoor)
+
 DECLARE_INSTANCE(WebSocketConnection);
 
 //

@@ -1,4 +1,6 @@
 
+SETUP_LOG (STObject)
+
 DECLARE_INSTANCE(SerializedObject);
 DECLARE_INSTANCE(SerializedArray);
 

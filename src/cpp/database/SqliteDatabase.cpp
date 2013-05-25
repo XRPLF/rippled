@@ -12,6 +12,8 @@
 #include "../ripple/JobQueue.h"
 #include "../ripple/Log.h"
 
+SETUP_LOG (SqliteDatabase)
+
 using namespace std;
 
 SqliteDatabase::SqliteDatabase(const char* host) : Database(host,"",""), mWalQ(NULL), walRunning(false)

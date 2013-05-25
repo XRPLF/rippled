@@ -15,6 +15,8 @@
 #include "utils.h"
 #include "Log.h"
 
+SETUP_LOG (Peer)
+
 DECLARE_INSTANCE(Peer);
 
 // Don't try to run past receiving nonsense from a peer

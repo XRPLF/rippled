@@ -17,6 +17,8 @@ struct WSServerHandlerLog // for logging
 {
 };
 
+SETUP_LOG (WSServerHandlerLog)
+
 // A single instance of this object is made.
 // This instance dispatches all events.  There is no per connection persistence.
 

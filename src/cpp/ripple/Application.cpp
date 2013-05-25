@@ -24,6 +24,9 @@
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
 
+SETUP_LOG (Application)
+
+// VFALCO: TODO, fix this, it might have broken with the Log changes
 LogPartition TaggedCachePartition("TaggedCache");
 LogPartition AutoSocketPartition("AutoSocket");
 Application* theApp = NULL;

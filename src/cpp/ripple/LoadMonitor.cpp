@@ -1,6 +1,8 @@
 #include "LoadMonitor.h"
 #include "Log.h"
 
+SETUP_LOG (LoadMonitor)
+
 void LoadMonitor::update()
 { // call with the mutex
 	int now = upTime();

@@ -56,20 +56,15 @@ public:
 
 private:
 	/** Retrieve file name from a log partition.
-
-		Key must have this shape:
-
-		struct Key
-		{
-			static char const* getFileName ();
-		};
 	*/
 	template <class Key>
-	inline static LogPartition getFileName ()
+	inline static char const* getFileName ();
+	/*
 	{
-		// VFALCO: TODO, to implement this correctly get __FILE__ from Key
-		return __FILE__;
+		static_vfassert (false);
 	}
+	*/
+
 public:
 	template <class Key>
 	inline static LogPartition const& get ()
@@ -78,6 +73,8 @@ public:
 		return logPartition;
 	}
 };
+
+#define SETUP_LOG(k) template <> char const* LogPartition::getFileName <k> () { return __FILE__; }
 
 //------------------------------------------------------------------------------
 

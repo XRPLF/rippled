@@ -12,6 +12,7 @@
 #include "Serializer.h"
 #include "Log.h"
 
+SETUP_LOG (ProofOfWork)
 
 bool powResultInfo(POWResult powCode, std::string& strToken, std::string& strHuman)
 {

@@ -7,9 +7,9 @@
 #include "../json/writer.h"
 
 // For logging
-struct RPCErr
-{
-};
+struct RPCErr { };
+
+SETUP_LOG (RPCErr)
 
 Json::Value rpcError(int iError, Json::Value jvResult)
 {

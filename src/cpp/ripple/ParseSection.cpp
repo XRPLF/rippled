@@ -9,9 +9,9 @@
 #define SECTION_DEFAULT_NAME	""
 
 // for logging
-struct ParseSectionLog
-{
-};
+struct ParseSectionLog { };
+
+SETUP_LOG (ParseSectionLog)
 
 section ParseSection(const std::string& strInput, const bool bTrim)
 {

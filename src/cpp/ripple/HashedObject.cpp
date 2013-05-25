@@ -14,6 +14,8 @@
 #include "Application.h"
 #include "Log.h"
 
+SETUP_LOG (HashedObject)
+
 DECLARE_INSTANCE(HashedObject);
 
 HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :

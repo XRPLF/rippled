@@ -1,3 +1,4 @@
+SETUP_LOG (OrderBookDB)
 
 OrderBookDB::OrderBookDB() : mSeq(0)
 {

@@ -8,6 +8,8 @@
 #include "Config.h"
 #include "Application.h"
 
+SETUP_LOG (JobQueue)
+
 JobQueue::JobQueue(boost::asio::io_service& svc)
 	: mLastJob(0), mThreadCount(0), mShuttingDown(false), mIOThreadCount(0), mMaxIOThreadCount(1), mIOService(svc)
 {

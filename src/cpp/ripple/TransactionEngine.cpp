@@ -2,6 +2,8 @@
 // XXX Make sure all fields are recognized in transactions.
 //
 
+SETUP_LOG (TransactionEngine)
+
 
 DECLARE_INSTANCE(TransactionEngine);
 

@@ -18,6 +18,8 @@
 // How often to enforce policies.
 #define POLICY_INTERVAL_SECONDS	5
 
+SETUP_LOG (ConnectionPool)
+
 void splitIpPort(const std::string& strIpPort, std::string& strIp, int& iPort)
 {
 	std::vector<std::string>	vIpPort;

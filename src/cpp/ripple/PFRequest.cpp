@@ -8,6 +8,8 @@
 #include "RippleCalc.h"
 #include "LedgerFormats.h"
 
+SETUP_LOG (PFRequest)
+
 boost::recursive_mutex		PFRequest::sLock;
 std::set<PFRequest::wptr>	PFRequest::sRequests;
 

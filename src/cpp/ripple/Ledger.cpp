@@ -1,4 +1,6 @@
 
+SETUP_LOG (Ledger)
+
 DECLARE_INSTANCE(Ledger);
 
 Ledger::Ledger(const RippleAddress& masterID, uint64 startAmount) : mTotCoins(startAmount), mLedgerSeq(1),

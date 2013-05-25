@@ -21,6 +21,8 @@
 #define RPC_MAXIMUM_QUERY	(1024*1024)
 #endif
 
+SETUP_LOG (RPCServer)
+
 RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
 	: mNetOps(nopNetwork), mSocket(io_service)
 {

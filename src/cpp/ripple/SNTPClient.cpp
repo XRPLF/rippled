@@ -10,6 +10,8 @@
 #include "Config.h"
 #include "Log.h"
 
+SETUP_LOG (SNTPClient)
+
 // #define SNTP_DEBUG
 
 static uint8_t SNTPQueryData[48] =

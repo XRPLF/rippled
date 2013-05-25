@@ -6,6 +6,8 @@
 
 #include "Log.h"
 
+SETUP_LOG (RangeSet)
+
 inline uint32 min(uint32 x, uint32 y)	{ return (x < y) ? x : y; }
 inline uint32 max(uint32 x, uint32 y)	{ return (x > y) ? x : y; }
 

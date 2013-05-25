@@ -7,6 +7,8 @@
 #include "LedgerTiming.h"
 #include "Log.h"
 
+SETUP_LOG (ValidationCollection)
+
 typedef std::map<uint160, SerializedValidation::pointer>::value_type u160_val_pair;
 typedef boost::shared_ptr<ValidationSet> VSpointer;
 

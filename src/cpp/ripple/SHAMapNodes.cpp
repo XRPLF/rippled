@@ -16,6 +16,8 @@
 #include "Log.h"
 #include "HashPrefixes.h"
 
+SETUP_LOG (SHAMapNode)
+
 std::string SHAMapNode::getString() const
 {
 	static boost::format NodeID("NodeID(%s,%s)");

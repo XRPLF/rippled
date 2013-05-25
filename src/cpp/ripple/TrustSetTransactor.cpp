@@ -1,4 +1,6 @@
 
+SETUP_LOG (TrustSetTransactor)
+
 TER TrustSetTransactor::doApply()
 {
 	TER			terResult		= tesSUCCESS;

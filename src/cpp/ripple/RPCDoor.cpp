@@ -5,6 +5,8 @@
 #include <boost/bind.hpp>
 #include <iostream>
 
+SETUP_LOG (RPCDoor)
+
 using namespace std;
 using namespace boost::asio::ip;
 

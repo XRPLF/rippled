@@ -1,5 +1,7 @@
 
 
+SETUP_LOG (LedgerEntrySet)
+
 DECLARE_INSTANCE(LedgerEntrySetEntry);
 DECLARE_INSTANCE(LedgerEntrySet)
 

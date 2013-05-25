@@ -1,4 +1,6 @@
 
+SETUP_LOG (ChangeTransactor)
+
 TER ChangeTransactor::doApply()
 {
 	if (mTxn.getTxnType() == ttFEATURE)

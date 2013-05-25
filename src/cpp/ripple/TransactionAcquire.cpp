@@ -1,4 +1,6 @@
 
+SETUP_LOG (TransactionAcquire)
+
 #define TX_ACQUIRE_TIMEOUT	250
 
 typedef std::map<uint160, LedgerProposal::pointer>::value_type u160_prop_pair;

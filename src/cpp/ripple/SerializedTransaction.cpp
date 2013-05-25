@@ -1,4 +1,6 @@
 
+SETUP_LOG (SerializedTransaction)
+
 DECLARE_INSTANCE(SerializedTransaction);
 
 SerializedTransaction::SerializedTransaction(TransactionType type) : STObject(sfTransaction), mType(type),
