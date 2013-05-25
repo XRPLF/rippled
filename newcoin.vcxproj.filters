@@ -124,6 +124,9 @@
     <Filter Include="1. Modules\ripple_basics\containers">
       <UniqueIdentifier>{96cbc9ff-0118-4844-bb4c-05aef58a60b5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_basics\events">
+      <UniqueIdentifier>{f585ac4d-1867-4f3d-b0a2-eceae4d7e7e7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -737,6 +740,9 @@
     </ClCompile>
     <ClCompile Include="modules\ripple_mess\ripple_mess.cpp">
       <Filter>1. Modules\ripple_mess</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_basics\events\ripple_UptimeTimer.cpp">
+      <Filter>1. Modules\ripple_basics\events</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1378,6 +1384,9 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\KeyCache.h">
       <Filter>1. Modules\ripple_basics\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\events\ripple_UptimeTimer.h">
+      <Filter>1. Modules\ripple_basics\events</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

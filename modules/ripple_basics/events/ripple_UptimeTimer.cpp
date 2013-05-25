@@ -16,26 +16,51 @@
 */
 //==============================================================================
 
-/**	Include this to get the @ref ripple_basics module.
+UptimeTimer::UptimeTimer ()
+	: m_shadowPointer (0)
+	, m_startTime (::time (0))
+{
+}
 
-    @file ripple_basics.h
-    @ingroup ripple_basics
-*/
+UptimeTimer::~UptimeTimer ()
+{
+}
 
-/**	Basic classes.
+void UptimeTimer::initializeShadowPointerIfNecessary (int* shadowPointer)
+{
+	if (m_shadowPointer == 0)
+	{
+		m_shadowPointer = static_cast <int volatile*> (shadowPointer);
+	}
 
-	This module provides utility classes and types used in the Ripple system.
+}
 
-	@defgroup ripple_basics
-*/
+void UptimeTimer::resetShadowPointerIfSet (int* shadowPointer)
+{
+	if (m_shadowPointer == shadowPointer)
+	{
+		m_shadowPointer = 0;
+	}
+}
 
-#ifndef RIPPLE_BASICS_H
-#define RIPPLE_BASICS_H
+int UptimeTimer::getElapsedSeconds ()
+{
+	int result;
 
-#include <ctime>
+	if (m_shadowPointer != 0)
+	{
+		result = *m_shadowPointer;
+	}
+	else
+	{
+		result = static_cast <int> (::time (0) - m_startTime);
+	}
 
-#include "src/cpp/ripple/IntegerTypes.h"
+	return result;
+}
 
-#include "events/ripple_UptimeTimer.h"
-
-#endif
+UptimeTimer& UptimeTimer::getInstance ()
+{
+	static UptimeTimer instance;
+	return instance;
+}

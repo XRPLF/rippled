@@ -173,6 +173,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="modules\ripple_basics\events\ripple_UptimeTimer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="modules\ripple_basics\ripple_basics.cpp" />
     <ClCompile Include="modules\ripple_client\ripple_client.cpp" />
     <ClCompile Include="modules\ripple_db\ripple_db.cpp" />
@@ -1163,6 +1169,7 @@
     <ClInclude Include="build\proto\ripple.pb.h" />
     <ClInclude Include="database\sqlite3.h" />
     <ClInclude Include="database\sqlite3ext.h" />
+    <ClInclude Include="modules\ripple_basics\events\ripple_UptimeTimer.h" />
     <ClInclude Include="modules\ripple_basics\ripple_basics.h" />
     <ClInclude Include="modules\ripple_client\ripple_client.h" />
     <ClInclude Include="modules\ripple_db\ripple_db.h" />

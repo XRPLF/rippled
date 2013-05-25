@@ -16,26 +16,29 @@
 */
 //==============================================================================
 
-/**	Include this to get the @ref ripple_basics module.
+#ifndef RIPPLE_UPTIMETIMER_H
+#define RIPPLE_UPTIMETIMER_H
 
-    @file ripple_basics.h
-    @ingroup ripple_basics
+/** Singleton for tracking uptime.
 */
+class UptimeTimer
+{
+private:
+	UptimeTimer ();
+	~UptimeTimer ();
 
-/**	Basic classes.
+public:
+	void initializeShadowPointerIfNecessary (int* shadowPointer);
 
-	This module provides utility classes and types used in the Ripple system.
+	void resetShadowPointerIfSet (int* shadowPointer);
 
-	@defgroup ripple_basics
-*/
+	int getElapsedSeconds ();
 
-#ifndef RIPPLE_BASICS_H
-#define RIPPLE_BASICS_H
+	static UptimeTimer& getInstance ();
 
-#include <ctime>
-
-#include "src/cpp/ripple/IntegerTypes.h"
-
-#include "events/ripple_UptimeTimer.h"
+private:
+	time_t m_startTime;
+	int volatile* m_shadowPointer;
+};
 
 #endif
