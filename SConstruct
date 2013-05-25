@@ -47,10 +47,10 @@ else:
 #
 # Put objects files in their own directory.
 #
-for dir in ['.', 'ripple', 'database', 'json', 'leveldb/db', 'leveldb/port', 'leveldb/include', 'leveldb/table', 'leveldb/util', 'websocketpp']:
+for dir in ['.', 'ripple', 'database', 'leveldb/db', 'leveldb/port', 'leveldb/include', 'leveldb/table', 'leveldb/util', 'websocketpp']:
 	VariantDir('build/obj/'+dir, 'src/cpp/'+dir, duplicate=0)
 
-for dir in [ 'ripple_basics', 'ripple_client', 'ripple_db', 'ripple_ledger', 'ripple_main', 'ripple_net' ]:
+for dir in [ 'ripple_json', 'ripple_mess', 'ripple_basics', 'ripple_client', 'ripple_db', 'ripple_ledger', 'ripple_main', 'ripple_net' ]:
 	VariantDir('build/obj/'+dir, 'modules/'+dir, duplicate=0)
 
 # Use openssl
@@ -125,10 +125,9 @@ if OSX:
 if LevelDB:
 	env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb', '-Isrc/cpp/leveldb/port', '-Isrc/cpp/leveldb/include', '-DUSE_LEVELDB'])
 
-	LEVELDB_SRCS	= [ 'src/cpp/leveldb_core.cpp' ]
+LEVELDB_SRCS	= [ 'src/cpp/leveldb_core.cpp' ]
 
 DB_SRCS		= glob.glob('src/cpp/database/*.c') + glob.glob('src/cpp/database/*.cpp')
-JSON_SRCS	= glob.glob('src/cpp/json/*.cpp')
 
 WEBSOCKETPP_SRCS = [
 	'src/cpp/websocketpp/src/base64/base64.cpp',
@@ -158,7 +157,7 @@ for file in UNUSED_SRCS:
 TAG_SRCS    = copy.copy(RIPPLE_SRCS)
 
 # Add other sources.
-RIPPLE_SRCS += DB_SRCS + JSON_SRCS + WEBSOCKETPP_SRCS
+RIPPLE_SRCS += DB_SRCS + WEBSOCKETPP_SRCS
 
 if LevelDB:
     RIPPLE_SRCS += LEVELDB_SRCS
