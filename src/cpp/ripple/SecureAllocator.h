@@ -1,3 +1,7 @@
+
+#ifndef RIPPLE_SECUREALLOCATOR_H
+#define RIPPLE_SECUREALLOCATOR_H
+
 //
 // Allocator that locks its contents from being paged
 // out of memory and clears its contents before deletion.
@@ -41,3 +45,5 @@ struct secure_allocator : public std::allocator<T>
 		std::allocator<T>::deallocate(p, n);
 	}
 };
+
+#endif
