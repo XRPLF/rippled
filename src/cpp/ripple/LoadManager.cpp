@@ -10,21 +10,15 @@
 
 SETUP_LOG (LoadManager)
 
-/*
-static volatile int* uptimePtr = NULL;
-
-int upTime()
-{
-	static time_t firstCall = time(NULL);
-	if (uptimePtr != NULL)
-		return *uptimePtr;
-	return static_cast<int>(time(NULL) - firstCall);
-}
-*/
-
-LoadManager::LoadManager(int creditRate, int creditLimit, int debitWarn, int debitLimit) :
-		mCreditRate(creditRate), mCreditLimit(creditLimit), mDebitWarn(debitWarn), mDebitLimit(debitLimit),
-		mShutdown(false), mArmed(false), /*mUptime(0),*/ mDeadLock(0), mCosts(LT_MAX)
+LoadManager::LoadManager (int creditRate, int creditLimit, int debitWarn, int debitLimit)
+	: mCreditRate(creditRate)
+	, mCreditLimit(creditLimit)
+	, mDebitWarn(debitWarn)
+	, mDebitLimit(debitLimit)
+	, mShutdown(false)
+	, mArmed(false)
+	, mDeadLock(0)
+	, mCosts(LT_MAX)
 {
 	addLoadCost(LoadCost(LT_InvalidRequest,		-10,		LC_CPU | LC_Network));
 	addLoadCost(LoadCost(LT_RequestNoReply,		-1,		LC_CPU | LC_Disk));
@@ -43,10 +37,6 @@ LoadManager::LoadManager(int creditRate, int creditLimit, int debitWarn, int deb
 
 void LoadManager::init()
 {
-	/*
-	if (uptimePtr == NULL)
-		uptimePtr = static_cast<volatile int *>(&mUptime);
-	*/
 	UptimeTimer::getInstance().beginManualUpdates ();
 
 	boost::thread(boost::bind(&LoadManager::threadEntry, this)).detach();
@@ -54,10 +44,6 @@ void LoadManager::init()
 
 LoadManager::~LoadManager()
 {
-	/*
-	if (uptimePtr == &mUptime)
-		uptimePtr = NULL;
-	*/
 	UptimeTimer::getInstance().endManualUpdates ();
 
 	do
@@ -351,7 +337,6 @@ void LoadManager::threadEntry()
 				return;
 			}
 			
-			//++mUptime;
 			UptimeTimer::getInstance ().incrementElapsedTime ();
 
 			int dlTime = UptimeTimer::getInstance ().getElapsedSeconds () - mDeadLock;
