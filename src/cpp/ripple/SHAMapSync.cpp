@@ -126,7 +126,7 @@ std::vector<uint256> SHAMap::getNeededHashes(int max, SHAMapSyncFilter* filter)
 					try
 					{
 						d = getNodePointer(childID, childHash, filter);
-						if (d->isInner() && !d->isFullBelow())
+						if (d->isInner())
 						{
 							have_all = false;
 							stack.push(d);

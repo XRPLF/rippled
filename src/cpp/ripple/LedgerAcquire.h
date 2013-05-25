@@ -130,7 +130,7 @@ public:
 	void addPeers();
 	void awaitData();
 	void noAwaitData();
-	void checkLocal();
+	bool checkLocal();
 
 	typedef std::pair<ripple::TMGetObjectByHash::ObjectType, uint256> neededHash_t;
 	std::vector<neededHash_t> getNeededHashes();
