@@ -38,7 +38,7 @@
 #include <deque>
 //#include <iostream>
 #include <stack>
-//#include <string>
+#include <string>
 #include <vector>
 
 // Needed before these cpptl includes
