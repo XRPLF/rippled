@@ -5,8 +5,6 @@
 
 #include <boost/thread/mutex.hpp>
 
-#include "../json/value.h"
-
 
 extern int upTime();
 

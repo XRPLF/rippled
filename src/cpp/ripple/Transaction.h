@@ -11,8 +11,6 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/cstdint.hpp>
 
-#include "../json/value.h"
-
 #include "key.h"
 #include "uint256.h"
 #include "ripple.pb.h"

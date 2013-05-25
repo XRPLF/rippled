@@ -14,9 +14,6 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/asio/read_until.hpp>
 
-#include "../json/reader.h"
-#include "../json/writer.h"
-
 #ifndef RPC_MAXIMUM_QUERY
 #define RPC_MAXIMUM_QUERY	(1024*1024)
 #endif

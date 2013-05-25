@@ -4,8 +4,6 @@
 #include <vector>
 #include <string>
 
-#include "../json/value.h"
-
 #include "uint256.h"
 #include "Serializer.h"
 #include "FieldNames.h"

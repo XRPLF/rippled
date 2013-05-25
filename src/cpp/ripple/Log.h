@@ -18,9 +18,6 @@ namespace boost {
 */
 #include <boost/filesystem.hpp> // unfortunately needed to compile
 
-// Ensure that we don't get value.h without writer.h
-#include "../json/json.h"
-
 enum LogSeverity
 {
 	lsINVALID	= -1,	// used to indicate an invalid severity

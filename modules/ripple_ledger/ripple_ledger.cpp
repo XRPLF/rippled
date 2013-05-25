@@ -64,8 +64,6 @@
 
 #include "src/cpp/database/SqliteDatabase.h"
 
-#include "src/cpp/json/writer.h"
-
 // VFALCO: TODO, resolve the location of this file
 //#include "src/cpp/ripple/ripple.pb.h"
 #include "ripple.pb.h"

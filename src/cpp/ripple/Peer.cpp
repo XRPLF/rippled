@@ -5,8 +5,6 @@
 #include <boost/make_shared.hpp>
 #include <boost/ref.hpp>
 
-#include "../json/writer.h"
-
 #include "Version.h"
 #include "Peer.h"
 #include "Config.h"

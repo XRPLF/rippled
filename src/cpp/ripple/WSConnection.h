@@ -2,8 +2,6 @@
 #include "../websocketpp/src/sockets/autotls.hpp"
 #include "../websocketpp/src/websocketpp.hpp"
 
-#include "../json/value.h"
-
 #include <boost/weak_ptr.hpp>
 #include <boost/asio.hpp>
 #include <boost/enable_shared_from_this.hpp>

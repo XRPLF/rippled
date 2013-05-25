@@ -8,8 +8,6 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-#include "../json/value.h"
-
 #include "Transaction.h"
 #include "TransactionMeta.h"
 #include "AccountState.h"

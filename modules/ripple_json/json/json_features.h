@@ -1,7 +1,7 @@
 #ifndef CPPTL_JSON_FEATURES_H_INCLUDED
-# define CPPTL_JSON_FEATURES_H_INCLUDED
+#define CPPTL_JSON_FEATURES_H_INCLUDED
 
-# include "forwards.h"
+#include "json_forwards.h"
 
 namespace Json {
 

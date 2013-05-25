@@ -4,8 +4,6 @@
 #include "RPCErr.h"
 #include "utils.h"
 
-#include "../json/writer.h"
-
 // For logging
 struct RPCErr { };
 

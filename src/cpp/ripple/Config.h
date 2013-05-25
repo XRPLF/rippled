@@ -10,8 +10,6 @@
 #include "ParseSection.h"
 #include "SerializedTypes.h"
 
-#include "../json/value.h"
-
 #define ENABLE_INSECURE				0				// 1, to enable unnecessary features.
 
 #define SYSTEM_NAME					"ripple"

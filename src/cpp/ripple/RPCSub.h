@@ -3,8 +3,6 @@
 
 #include <deque>
 
-#include "../json/value.h"
-
 #include "NetworkOPs.h"
 
 #define RPC_EVENT_QUEUE_MAX	32

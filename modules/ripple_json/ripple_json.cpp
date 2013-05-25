@@ -16,33 +16,14 @@
 */
 //==============================================================================
 
-/**	Include this to get the @ref ripple_basics module.
+/**	Add this to get the @ref ripple_json module.
 
-    @file ripple_basics.h
-    @ingroup ripple_basics
+    @file ripple_json.cpp
+    @ingroup ripple_json
 */
 
-/**	Basic classes.
+#include "ripple_json.h"
 
-	This module provides utility classes and types used in the Ripple system.
-
-	@defgroup ripple_basics
-*/
-
-#ifndef RIPPLE_BASICS_H
-#define RIPPLE_BASICS_H
-
-#include <ctime>
-
-// KeyCache
-#include <string>
-#include <boost/unordered_map.hpp>
-#include <boost/thread/mutex.hpp>
-
-#include "../ripple_json/ripple_json.h"
-
-#include "types/ripple_IntegerTypes.h"
-#include "containers/ripple_KeyCache.h"
-#include "events/ripple_UptimeTimer.h"
-
-#endif
+#include "json/json_reader.cpp"
+#include "json/json_value.cpp"
+#include "json/json_writer.cpp"

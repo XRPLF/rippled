@@ -20,9 +20,6 @@
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
 
-#include "../json/value.h"
-#include "../json/reader.h"
-
 #include "Application.h"
 #include "RPC.h"
 #include "Log.h"

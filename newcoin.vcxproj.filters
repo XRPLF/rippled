@@ -7,12 +7,6 @@
     <Filter Include="0. Third Party Code\SQLite">
       <UniqueIdentifier>{60c3631e-8855-4a61-bdd3-9892d96242d5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="0. Third Party Code\json">
-      <UniqueIdentifier>{c642219d-cace-47c1-828a-58ba570da63a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="0. Third Party Code\json\core">
-      <UniqueIdentifier>{ca69d54b-9228-4767-9cef-81e489621683}</UniqueIdentifier>
-    </Filter>
     <Filter Include="0. Third Party Code\websocket">
       <UniqueIdentifier>{cd4c41c0-3ee6-49f8-8322-d11422b892f9}</UniqueIdentifier>
     </Filter>
@@ -127,6 +121,15 @@
     <Filter Include="1. Modules\ripple_basics\events">
       <UniqueIdentifier>{f585ac4d-1867-4f3d-b0a2-eceae4d7e7e7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_json">
+      <UniqueIdentifier>{9f33883e-d53d-469f-ab51-653ac3e8780b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_json\json">
+      <UniqueIdentifier>{670d727d-6c99-4893-b0bb-e620975e8b8d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_json\json\DEPRECATED">
+      <UniqueIdentifier>{e398b116-a7fa-4850-8b8e-6de95efdea4e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -158,18 +161,6 @@
     </ClCompile>
     <ClCompile Include="src\cpp\websocketpp\src\uri.cpp">
       <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\json_core.cpp">
-      <Filter>0. Third Party Code\json</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\json\json_reader.cpp">
-      <Filter>0. Third Party Code\json\core</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\json\json_value.cpp">
-      <Filter>0. Third Party Code\json\core</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\json\json_writer.cpp">
-      <Filter>0. Third Party Code\json\core</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\leveldb_core.cpp">
       <Filter>0. Third Party Code\LevelDB</Filter>
@@ -744,6 +735,18 @@
     <ClCompile Include="modules\ripple_basics\events\ripple_UptimeTimer.cpp">
       <Filter>1. Modules\ripple_basics\events</Filter>
     </ClCompile>
+    <ClCompile Include="modules\ripple_json\json\json_reader.cpp">
+      <Filter>1. Modules\ripple_json\json</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_json\json\json_value.cpp">
+      <Filter>1. Modules\ripple_json\json</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_json\json\json_writer.cpp">
+      <Filter>1. Modules\ripple_json\json</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_json\ripple_json.cpp">
+      <Filter>1. Modules\ripple_json</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="database\sqlite3ext.h">
@@ -784,33 +787,6 @@
     </ClInclude>
     <ClInclude Include="src\cpp\websocketpp\src\websocketpp.hpp">
       <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\autolink.h">
-      <Filter>0. Third Party Code\json\core</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\config.h">
-      <Filter>0. Third Party Code\json\core</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\features.h">
-      <Filter>0. Third Party Code\json\core</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\forwards.h">
-      <Filter>0. Third Party Code\json\core</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\json.h">
-      <Filter>0. Third Party Code\json\core</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\json_batchallocator.h">
-      <Filter>0. Third Party Code\json\core</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\reader.h">
-      <Filter>0. Third Party Code\json\core</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\value.h">
-      <Filter>0. Third Party Code\json\core</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\json\writer.h">
-      <Filter>0. Third Party Code\json\core</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\leveldb\db\builder.h">
       <Filter>0. Third Party Code\LevelDB\db</Filter>
@@ -1388,21 +1364,51 @@
     <ClInclude Include="modules\ripple_basics\types\ripple_IntegerTypes.h">
       <Filter>1. Modules\ripple_basics\types</Filter>
     </ClInclude>
+    <ClInclude Include="modules\ripple_json\json\json_batchallocator.h">
+      <Filter>1. Modules\ripple_json\json</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_json\json\json_config.h">
+      <Filter>1. Modules\ripple_json\json</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_json\json\json_forwards.h">
+      <Filter>1. Modules\ripple_json\json</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_json\json\json_reader.h">
+      <Filter>1. Modules\ripple_json\json</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_json\json\json_value.h">
+      <Filter>1. Modules\ripple_json\json</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_json\json\json_writer.h">
+      <Filter>1. Modules\ripple_json\json</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_json\json\json.h">
+      <Filter>1. Modules\ripple_json\json\DEPRECATED</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_json\json\json_autolink.h">
+      <Filter>1. Modules\ripple_json\json\DEPRECATED</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_json\ripple_json.h">
+      <Filter>1. Modules\ripple_json</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_json\json\json_features.h">
+      <Filter>1. Modules\ripple_json\json</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="SConstruct" />
     <None Include="validators.txt" />
-    <None Include="src\cpp\json\json_internalarray.inl">
-      <Filter>0. Third Party Code\json\core</Filter>
-    </None>
-    <None Include="src\cpp\json\json_internalmap.inl">
-      <Filter>0. Third Party Code\json\core</Filter>
-    </None>
-    <None Include="src\cpp\json\json_valueiterator.inl">
-      <Filter>0. Third Party Code\json\core</Filter>
-    </None>
     <None Include="src\cpp\protobuf\src\google\protobuf\descriptor.proto">
       <Filter>0. Third Party Code\protobuf\protobuf</Filter>
+    </None>
+    <None Include="modules\ripple_json\json\json_internalarray.inl">
+      <Filter>1. Modules\ripple_json\json</Filter>
+    </None>
+    <None Include="modules\ripple_json\json\json_internalmap.inl">
+      <Filter>1. Modules\ripple_json\json</Filter>
+    </None>
+    <None Include="modules\ripple_json\json\json_valueiterator.inl">
+      <Filter>1. Modules\ripple_json\json</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
