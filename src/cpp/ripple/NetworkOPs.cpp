@@ -2005,7 +2005,7 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer,
 	boost::shared_ptr<ripple::TMGetObjectByHash> request,
 	Ledger::pointer wantLedger, Ledger::pointer haveLedger, uint32 uUptime)
 {
-	if (upTime() > (uUptime + 1))
+	if (UptimeTimer::getInstance().getElapsedSeconds () > (uUptime + 1))
 	{
 		WriteLog (lsINFO, NetworkOPs) << "Fetch pack request got stale";
 		return;
@@ -2066,7 +2066,7 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer,
 				break;
 			haveLedger = wantLedger;
 			wantLedger = getLedgerByHash(haveLedger->getParentHash());
-		} while (wantLedger && (upTime() <= (uUptime + 1)));
+		} while (wantLedger && (UptimeTimer::getInstance().getElapsedSeconds () <= (uUptime + 1)));
 
 		WriteLog (lsINFO, NetworkOPs) << "Built fetch pack with " << reply.objects().size() << " nodes";
 		PackedMessage::pointer msg = boost::make_shared<PackedMessage>(reply, ripple::mtGET_OBJECTS);

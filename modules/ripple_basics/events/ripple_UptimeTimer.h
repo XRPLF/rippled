@@ -43,7 +43,7 @@ public:
 
 private:
 	// VFALCO: DEPRECATED, Use a memory barrier instead of forcing a cache line
-	int m_pad1; // make sure m_uptimeSeconds fits in its own cache line
+	int m_pad1; // make sure m_elapsedTime fits in its own cache line
 	int m_elapsedTime;
 	int m_pad2;
 
@@ -51,12 +51,5 @@ private:
 
 	bool m_isUpdatingManually;
 };
-
-// VFALCO: DEPRECATED, legacy compatibility function
-//
-inline int upTime ()
-{
-	return UptimeTimer::getInstance ().getElapsedSeconds ();
-}
 
 #endif

@@ -5,9 +5,6 @@
 
 #include <boost/thread/mutex.hpp>
 
-
-extern int upTime();
-
 enum LoadType
 { // types of load that can be placed on the server
 
@@ -66,12 +63,24 @@ protected:
 	bool		mLogged;
 
 public:
-	LoadSource(bool admin) :
-		mBalance(0), mFlags(admin ? lsfPrivileged : 0), mLastUpdate(upTime()), mLastWarning(0), mLogged(false)
-	{ ; }
-	LoadSource(const std::string& name) :
-		mName(name), mBalance(0), mFlags(0), mLastUpdate(upTime()), mLastWarning(0), mLogged(false)
-	{ ; }
+	LoadSource(bool admin)
+		: mBalance(0)
+		, mFlags(admin ? lsfPrivileged : 0)
+		, mLastUpdate(UptimeTimer::getInstance().getElapsedSeconds ())
+		, mLastWarning(0)
+		, mLogged(false)
+	{
+	}
+	
+	LoadSource(const std::string& name) 
+		: mName(name)
+		, mBalance(0)
+		, mFlags(0)
+		, mLastUpdate(UptimeTimer::getInstance().getElapsedSeconds ())
+		, mLastWarning(0)
+		, mLogged(false)
+	{
+	}
 
 	void rename(const std::string& name)	{ mName = name; }
 	const std::string& getName()			{ return mName; }

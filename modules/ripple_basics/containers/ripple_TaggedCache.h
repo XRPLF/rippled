@@ -224,8 +224,10 @@ void TaggedCache<c_Key, c_Data, Timer>::sweep()
 
 	assert(cc == mCacheCount);
 	if (ShouldLog (lsTRACE, TaggedCacheLog) && (mapRemovals || cacheRemovals))
+	{
 		WriteLog (lsTRACE, TaggedCacheLog) << mName << ": cache = " << mCache.size() << "-" << cacheRemovals <<
 		", map-=" << mapRemovals;
+	}
 }
 
 template<typename c_Key, typename c_Data, class Timer>

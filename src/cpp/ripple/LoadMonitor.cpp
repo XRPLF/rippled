@@ -4,7 +4,7 @@ SETUP_LOG (LoadMonitor)
 
 void LoadMonitor::update()
 { // call with the mutex
-	int now = upTime();
+	int now = UptimeTimer::getInstance().getElapsedSeconds ();
 
 	if (now == mLastUpdate) // current
 		return;

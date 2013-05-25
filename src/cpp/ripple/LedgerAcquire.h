@@ -52,7 +52,7 @@ public:
 	bool isActive();
 	void progress()						{ mProgress = true; mAggressive = false; }
 	bool isProgress()					{ return mProgress; }
-	void touch()						{ mLastAction = upTime(); }
+	void touch()						{ mLastAction = UptimeTimer::getInstance().getElapsedSeconds(); }
 	int getLastAction()					{ return mLastAction; }
 
 	void peerHas(Peer::ref);

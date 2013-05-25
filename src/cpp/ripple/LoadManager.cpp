@@ -134,7 +134,7 @@ bool LoadManager::shouldWarn(LoadSource& source) const
 	{
 		boost::mutex::scoped_lock sl(mLock);
 
-		int now = upTime();
+		int now = UptimeTimer::getInstance().getElapsedSeconds ();
 		canonicalize(source, now);
 		if (source.isPrivileged() || (source.mBalance > mDebitWarn) || (source.mLastWarning == now))
 			return false;
@@ -149,7 +149,7 @@ bool LoadManager::shouldCutoff(LoadSource& source) const
 {
 	{
 		boost::mutex::scoped_lock sl(mLock);
-		int now = upTime();
+		int now = UptimeTimer::getInstance().getElapsedSeconds ();
 		canonicalize(source, now);
 		if (source.isPrivileged() || (source.mBalance > mDebitLimit))
 			return false;
@@ -171,7 +171,7 @@ bool LoadManager::adjust(LoadSource& source, int credits) const
 { // return: true = need to warn/cutoff
 
 	// We do it this way in case we want to add exponential decay later
-	int now = upTime();
+	int now = UptimeTimer::getInstance().getElapsedSeconds ();
 	canonicalize(source, now);
 	source.mBalance += credits;
 	if (source.mBalance > mCreditLimit)
