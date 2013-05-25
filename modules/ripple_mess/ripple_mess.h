@@ -16,21 +16,22 @@
 */
 //==============================================================================
 
-/**	Add this to get the @ref ripple_basics module.
+/**	Include this to get the @ref ripple_mess module.
 
-    @file ripple_basics.cpp
-    @ingroup ripple_basics
+    @file ripple_mess.h
+    @ingroup ripple_mess
 */
 
-#include "ripple_basics.h"
+/**	Messy classes.
 
-// VFALCO: TODO, fix these warnings!
-#ifdef _MSC_VER
-//#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
-#pragma warning (disable: 4018) // signed/unsigned mismatch
-#pragma warning (disable: 4244) // conversion, possible loss of data
-#endif
+	Stuff I haven't gotten to cleaning up yet.
 
-#ifdef _MSC_VER
-//#pragma warning (pop)
+	@defgroup ripple_mess
+*/
+
+#ifndef RIPPLE_MESS_H
+#define RIPPLE_MESS_H
+
+#include "../ripple_basics/ripple_basics.h"
+
 #endif

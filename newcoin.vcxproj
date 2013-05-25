@@ -178,6 +178,7 @@
     <ClCompile Include="modules\ripple_db\ripple_db.cpp" />
     <ClCompile Include="modules\ripple_ledger\ripple_ledger.cpp" />
     <ClCompile Include="modules\ripple_main\ripple_main.cpp" />
+    <ClCompile Include="modules\ripple_mess\ripple_mess.cpp" />
     <ClCompile Include="modules\ripple_net\ripple_net.cpp" />
     <ClCompile Include="src\cpp\database\database.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -1167,6 +1168,7 @@
     <ClInclude Include="modules\ripple_db\ripple_db.h" />
     <ClInclude Include="modules\ripple_ledger\ripple_ledger.h" />
     <ClInclude Include="modules\ripple_main\ripple_main.h" />
+    <ClInclude Include="modules\ripple_mess\ripple_mess.h" />
     <ClInclude Include="modules\ripple_net\ripple_net.h" />
     <ClInclude Include="src\cpp\database\database.h" />
     <ClInclude Include="src\cpp\database\SqliteDatabase.h" />
