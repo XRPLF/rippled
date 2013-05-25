@@ -32,8 +32,31 @@
 #ifndef RIPPLE_JSON_H
 #define RIPPLE_JSON_H
 
+// VFALCO: TODO Remove unneeded includes
+#include <cassert>
+//#include <cstdlib>
+#include <deque>
+//#include <iostream>
+#include <stack>
+//#include <string>
+#include <vector>
+
+// Needed before these cpptl includes
+#include "json/json_config.h"
+
+#ifndef JSON_USE_CPPTL_SMALLMAP
+# include <map>
+#else
+# include <cpptl/smallmap.h>
+#endif
+#ifdef JSON_USE_CPPTL
+# include <cpptl/forwards.h>
+#endif
+
+#include "json/json_forwards.h"
+#include "json/json_features.h"
+#include "json/json_value.h"
 #include "json/json_reader.h"
 #include "json/json_writer.h"
-#include "json/json_value.h"
 
 #endif

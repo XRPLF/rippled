@@ -1,8 +1,6 @@
 #ifndef CPPTL_JSON_FEATURES_H_INCLUDED
 #define CPPTL_JSON_FEATURES_H_INCLUDED
 
-#include "json_forwards.h"
-
 namespace Json {
 
    /** \brief Configuration passed to reader and writer.

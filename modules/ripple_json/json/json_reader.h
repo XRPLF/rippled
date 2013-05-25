@@ -1,14 +1,6 @@
 #ifndef CPPTL_JSON_READER_H_INCLUDED
 # define CPPTL_JSON_READER_H_INCLUDED
 
-#include "json_features.h"
-#include "json_value.h"
-
-#include <deque>
-#include <stack>
-#include <string>
-#include <iostream>
-
 namespace Json {
 
    /** \brief Unserialize a <a HREF="http://www.json.org">JSON</a> document into a Value.

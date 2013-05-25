@@ -1,16 +1,3 @@
-#include <utility>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-
-#include "json_writer.h"
-
-#if _MSC_VER >= 1400 // VC++ 8.0
-#pragma warning( disable : 4996 )   // disable warning about strdup being deprecated.
-#endif
 
 namespace Json {
 

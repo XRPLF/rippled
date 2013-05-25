@@ -1,24 +1,3 @@
-#include <iostream>
-#include "json_value.h"
-#include "json_writer.h"
-#include <utility>
-#include <stdexcept>
-#include <cstring>
-#include <cassert>
-#ifdef JSON_USE_CPPTL
-# include <cpptl/conststring.h>
-#endif
-#include <cstddef>    // size_t
-
-#include <boost/lexical_cast.hpp>
-
-#ifndef JSON_USE_SIMPLE_INTERNAL_ALLOCATOR
-# include "json_batchallocator.h"
-#endif // #ifndef JSON_USE_SIMPLE_INTERNAL_ALLOCATOR
-
-#define JSON_ASSERT_UNREACHABLE assert( false )
-#define JSON_ASSERT( condition ) assert( condition );  // @todo <= change this into an exception throw
-#define JSON_ASSERT_MESSAGE( condition, message ) if (!( condition )) throw std::runtime_error( message );
 
 namespace Json {
 

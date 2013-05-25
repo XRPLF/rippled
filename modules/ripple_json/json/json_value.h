@@ -1,20 +1,6 @@
 #ifndef CPPTL_JSON_H_INCLUDED
 # define CPPTL_JSON_H_INCLUDED
 
-#include "json_forwards.h"
-
-#include <string>
-#include <vector>
-
-#ifndef JSON_USE_CPPTL_SMALLMAP
-# include <map>
-#else
-# include <cpptl/smallmap.h>
-#endif
-#ifdef JSON_USE_CPPTL
-# include <cpptl/forwards.h>
-#endif
-
 /** \brief JSON (JavaScript Object Notation).
  */
 namespace Json {
