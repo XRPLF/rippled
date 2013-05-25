@@ -178,7 +178,7 @@ RIPPLE_OBJS += [ 'src/cpp/database/sqlite3.c' ]
 
 env.Append(CXXFLAGS = ['-I.', '-Isrc/cpp/ripple'])
 
-RIPPLE_CORES	= [ 'src/cpp/json_core.cpp', 'src/cpp/leveldb_core.cpp', 'src/cpp/websocket_core.cpp' ]
+RIPPLE_CORES	= [ 'src/cpp/leveldb_core.cpp', 'src/cpp/websocket_core.cpp' ]
 RIPPLE_MODULES	= glob.glob('modules/*/*.cpp')
 
 for file in RIPPLE_MODULES:
