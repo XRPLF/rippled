@@ -47,14 +47,14 @@ private:
 
 public:
 	template <class Key>
-	inline static LogPartition const& get ()
+	static LogPartition const& get ()
 	{
 		static LogPartition logPartition (getFileName <Key> ());
 		return logPartition;
 	}
 };
 
-#define SETUP_LOG(k) template <> char const* LogPartition::getFileName <k> () { return __FILE__; }
+#define SETUP_LOG(k) template <> inline char const* LogPartition::getFileName <k> () { return __FILE__; }
 
 //------------------------------------------------------------------------------
 

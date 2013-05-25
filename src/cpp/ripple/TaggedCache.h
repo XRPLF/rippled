@@ -9,7 +9,6 @@
 #include <boost/ref.hpp>
 #include <boost/make_shared.hpp>
 
-extern LogPartition TaggedCachePartition;
 extern int upTime();
 
 // This class implements a cache and a map. The cache keeps objects alive
@@ -22,6 +21,10 @@ extern int upTime();
 
 // CAUTION: Callers must not modify data objects that are stored in the cache
 // unless they hold their own lock over all cache operations.
+
+struct TaggedCacheLog { };
+
+SETUP_LOG (TaggedCacheLog)
 
 template <typename c_Key, typename c_Data> class TaggedCache
 {
@@ -105,7 +108,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::setTa
 	mTargetSize = s;
 	if (s > 0)
 		mCache.rehash(static_cast<std::size_t>((s + (s >> 2)) / mCache.max_load_factor() + 1));
-	Log(lsDEBUG, TaggedCachePartition) << mName << " target size set to " << s;
+	WriteLog (lsDEBUG, TaggedCacheLog) << mName << " target size set to " << s;
 }
 
 template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getTargetAge() const
@@ -118,7 +121,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::setTa
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	mTargetAge = s;
-	Log(lsDEBUG, TaggedCachePartition) << mName << " target age set to " << s;
+	WriteLog (lsDEBUG, TaggedCacheLog) << mName << " target age set to " << s;
 }
 
 template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getCacheSize()
@@ -166,7 +169,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 		target = mLastSweep - (mTargetAge * mTargetSize / mCache.size());
 		if (target > (mLastSweep - 2))
 			target = mLastSweep - 2;
-		Log(lsINFO, TaggedCachePartition) << mName << " is growing fast " <<
+		WriteLog (lsINFO, TaggedCacheLog) << mName << " is growing fast " <<
 			mCache.size() << " of " << mTargetSize <<
 			" aging at " << (mLastSweep - target) << " of " << mTargetAge;
 	}
@@ -205,8 +208,8 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 	}
 
 	assert(cc == mCacheCount);
-	if (TaggedCachePartition.doLog(lsTRACE) && (mapRemovals || cacheRemovals))
-		Log(lsTRACE, TaggedCachePartition) << mName << ": cache = " << mCache.size() << "-" << cacheRemovals <<
+	if (ShouldLog (lsTRACE, TaggedCacheLog) && (mapRemovals || cacheRemovals))
+		WriteLog (lsTRACE, TaggedCacheLog) << mName << ": cache = " << mCache.size() << "-" << cacheRemovals <<
 		", map-=" << mapRemovals;
 }
 
