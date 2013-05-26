@@ -40,6 +40,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	tefINTERNAL,			"tefINTERNAL",				"Internal error."										},
 		{	tefNO_AUTH_REQUIRED,	"tefNO_AUTH_REQUIRED",		"Auth is not required."									},
 		{	tefPAST_SEQ,			"tefPAST_SEQ",				"This sequence number has already past."				},
+		{	tefWRONG_PRIOR,			"tefWRONG_PRIOR",			"This previous transaction does not match."				},
 
 		{	telLOCAL_ERROR,			"telLOCAL_ERROR",			"Local failure."										},
 		{	telBAD_DOMAIN,			"telBAD_DOMAIN",			"Domain too long."										},
