@@ -210,6 +210,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="modules\ripple_basics\ripple_basics.cpp" />
+    <ClCompile Include="modules\ripple_basics\system\ripple_RandomNumbers.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="modules\ripple_client\ripple_client.cpp" />
     <ClCompile Include="modules\ripple_db\ripple_db.cpp" />
     <ClCompile Include="modules\ripple_json\json\json_reader.cpp">
@@ -1196,6 +1202,8 @@
     <ClInclude Include="modules\ripple_basics\memory\ripple_ByteOrder.h" />
     <ClInclude Include="modules\ripple_basics\memory\ripple_StringUtilities.h" />
     <ClInclude Include="modules\ripple_basics\ripple_basics.h" />
+    <ClInclude Include="modules\ripple_basics\system\ripple_PlatformMacros.h" />
+    <ClInclude Include="modules\ripple_basics\system\ripple_RandomNumbers.h" />
     <ClInclude Include="modules\ripple_basics\types\ripple_IntegerTypes.h" />
     <ClInclude Include="modules\ripple_client\ripple_client.h" />
     <ClInclude Include="modules\ripple_db\ripple_db.h" />

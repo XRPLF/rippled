@@ -32,6 +32,15 @@
 #include <boost/asio.hpp> // for stupid parseIpPort
 #include <boost/regex.hpp>
 
+// VFALCO: TODO, Replace OpenSSL randomness with a dependency-free implementation
+//         Perhaps Schneier's Yarrow or a variant. Abstract the collection of
+//         entropy and provide OS-specific implementation. We can re-use the
+//         BearShare source code for this.
+//
+//         Add Random number generation to the new VFLib
+//
+#include <openssl/rand.h> // Because of ripple_RandomNumbers.cpp
+
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
 //#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
@@ -51,6 +60,8 @@
 #endif
 #include "memory/ripple_ByteOrder.cpp"
 #include "memory/ripple_StringUtilities.cpp"
+
+#include "system/ripple_RandomNumbers.cpp"
 
 #ifdef _MSC_VER
 //#pragma warning (pop)

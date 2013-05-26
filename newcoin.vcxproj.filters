@@ -136,6 +136,9 @@
     <Filter Include="1. Modules\ripple_basics\memory">
       <UniqueIdentifier>{49faa808-02f3-44ba-a17c-43dce213672e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_basics\system">
+      <UniqueIdentifier>{c4b8f568-a8ff-40a6-9eae-1d1f41d58e7a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -761,6 +764,9 @@
     </ClCompile>
     <ClCompile Include="modules\ripple_basics\memory\ripple_StringUtilities.cpp">
       <Filter>1. Modules\ripple_basics\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_basics\system\ripple_RandomNumbers.cpp">
+      <Filter>1. Modules\ripple_basics\system</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1414,6 +1420,12 @@
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\memory\ripple_StringUtilities.h">
       <Filter>1. Modules\ripple_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\system\ripple_PlatformMacros.h">
+      <Filter>1. Modules\ripple_basics\system</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\system\ripple_RandomNumbers.h">
+      <Filter>1. Modules\ripple_basics\system</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

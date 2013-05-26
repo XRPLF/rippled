@@ -101,4 +101,7 @@ namespace boost {
 
 #include "events/ripple_UptimeTimer.h"
 
+#include "system/ripple_PlatformMacros.h"
+#include "system/ripple_RandomNumbers.h"
+
 #endif

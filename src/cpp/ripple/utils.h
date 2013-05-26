@@ -26,10 +26,8 @@ uint64_t utFromSeconds(int iSeconds);
 DH* DH_der_load(const std::string& strDer);
 std::string DH_der_gen(int iKeyLength);
 
-void getRand(unsigned char *buf, int num);
-inline static void getRand(char *buf, int num)		{ return getRand(reinterpret_cast<unsigned char *>(buf), num); }
-inline static void getRand(void *buf, int num)		{ return getRand(reinterpret_cast<unsigned char *>(buf), num); }
-
+// VFALCO: NOTE, these three are unused.
+/*
 template<typename T> T range_check(const T& value, const T& minimum, const T& maximum)
 {
 	if ((value < minimum) || (value > maximum))
@@ -50,6 +48,7 @@ template<typename T> T range_check_max(const T& value, const T& maximum)
 		throw std::runtime_error("Value out of range");
 	return value;
 }
+*/
 
 template<typename T, typename U> T range_check_cast(const U& value, const T& minimum, const T& maximum)
 {
@@ -63,34 +62,6 @@ extern void NameThread(const char *);
 extern bool HaveSustain();
 extern std::string StopSustain();
 extern std::string DoSustain();
-
-#if (!defined(FORCE_NO_C11X) && (__cplusplus > 201100L)) || defined(FORCE_C11X)
-
-#define C11X
-#include			 	<functional>
-#define UPTR_T			std::unique_ptr
-#define MOVE_P(p)		std::move(p)
-#define BIND_TYPE		std::bind
-#define FUNCTION_TYPE	std::function
-#define P_1				std::placeholders::_1
-#define P_2				std::placeholders::_2
-#define P_3				std::placeholders::_3
-#define P_4				std::placeholders::_4
-
-#else
-
-#include 				<boost/bind.hpp>
-#include				<boost/function.hpp>
-#define UPTR_T			std::auto_ptr
-#define MOVE_P(p)		(p)
-#define BIND_TYPE		boost::bind
-#define FUNCTION_TYPE	boost::function
-#define P_1				_1
-#define P_2				_2
-#define P_3				_3
-#define P_4				_4
-
-#endif
 
 #endif
 

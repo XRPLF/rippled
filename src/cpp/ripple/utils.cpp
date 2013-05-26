@@ -23,22 +23,10 @@
 //#include <boost/regex.hpp>
 //#include <boost/test/unit_test.hpp>
 
-#include <openssl/rand.h>
+//#include <openssl/rand.h>
 
 #include "utils.h"
 #include "uint256.h"
-
-void getRand(unsigned char *buf, int num)
-{
-#ifdef PURIFY
-	memset(buf, 0, num);
-#endif
-	if (RAND_bytes(buf, num) != 1)
-	{
-		assert(false);
-		throw std::runtime_error("Entropy pool not seeded");
-	}
-}
 
 //
 // Time support
