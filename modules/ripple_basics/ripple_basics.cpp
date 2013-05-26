@@ -28,7 +28,6 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/asio.hpp> // for stupid parseIpPort
 #include <boost/regex.hpp>
