@@ -33,7 +33,7 @@ TER ChangeTransactor::checkSig()
 
 TER ChangeTransactor::checkSeq()
 {
-	if (mTxn.getSequence() != 0)
+	if ((mTxn.getSequence() != 0) || mTxn.isFieldPresent(sfPreviousTxnID))
 	{
 		cLog(lsWARNING) << "Change transaction had bad sequence";
 		return temBAD_SEQUENCE;
