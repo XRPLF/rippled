@@ -503,19 +503,17 @@ void Config::load()
 int Config::getSize(SizedItemName item)
 {
 	SizedItem sizeTable[] = { //    tiny    small   medium  large       huge
-		{ siSweepInterval,		{	10,		30,		60,		90,			90		} },
-		{ siLedgerFetch,		{	2,		2,		3,		4,			5		} },
+		{ siSweepInterval,		{	10,		30,		60,		90,			120		} },
+		{ siLedgerFetch,		{	2,		2,		3,		3,			3		} },
 		{ siValidationsSize,	{	256,	256,	512,	1024,		1024	} },
 		{ siValidationsAge,		{	500,	500,	500,	500,		500		} },
-		{ siNodeCacheSize,		{	8192,	32768,	131072,	1048576,	0		} },
-		{ siNodeCacheAge,		{	30,		60,		90,		300,		600		} },
-		{ siLedgerSize,			{	32,		64,		128,	1024,		0		} },
-		{ siLedgerAge,			{	30,		60,		120,	300,		600		} },
-		{ siLineCacheSize,		{	8192,	32768,	131072,	1048576,	0		} },
-		{ siLineCacheAge,		{	500,	600,	1800,	3600,		7200	} },
-		{ siHashNodeDBCache,	{	24,		48,		64,		128,		256		} },
-		{ siTxnDBCache,			{	4,		12,		48,		96,			192		} },
-		{ siLgrDBCache,			{	4,		8,		32,		64,			128		} },
+		{ siNodeCacheSize,		{	8192,	65536,	262144,	2097152,	0		} },
+		{ siNodeCacheAge,		{	30,		60,		90,		300,		900		} },
+		{ siLedgerSize,			{	32,		128,	256,	2048,		0		} },
+		{ siLedgerAge,			{	30,		90,		180,	300,		900		} },
+		{ siHashNodeDBCache,	{	4,		12,		24,		32,			64		} },
+		{ siTxnDBCache,			{	4,		12,		24,		32,			32		} },
+		{ siLgrDBCache,			{	4,		8,		16,		16,			16		} },
 	};
 
 	for (int i = 0; i < (sizeof(sizeTable) / sizeof(SizedItem)); ++i)

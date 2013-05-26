@@ -63,8 +63,6 @@ enum SizedItemName
 	siLedgerSize,
 	siLedgerAge,
 	siLedgerFetch,
-	siLineCacheSize,
-	siLineCacheAge,
 	siHashNodeDBCache,
 	siTxnDBCache,
 	siLgrDBCache,
