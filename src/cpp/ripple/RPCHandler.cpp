@@ -3486,7 +3486,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 		{	"path_find",			&RPCHandler::doPathFind,			false,	optCurrent	},
 		{	"ping",					&RPCHandler::doPing,			    false,	optNone		},
 //		{	"profile",				&RPCHandler::doProfile,			    false,	optCurrent	},
-		{	"proof_create",			&RPCHandler::doProofCreate,		    true,	optNone		},
+		{	"proof_create",			&RPCHandler::doProofCreate,		    false,	optNone		},
 		{	"proof_solve",			&RPCHandler::doProofSolve,		    true,	optNone		},
 		{	"proof_verify",			&RPCHandler::doProofVerify,		    true,	optNone		},
 		{	"random",				&RPCHandler::doRandom,				false,	optNone		},

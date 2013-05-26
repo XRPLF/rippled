@@ -107,17 +107,14 @@ LedgerAcquire::LedgerAcquire(const uint256& hash, uint32 seq) : PeerSet(hash, LE
 	tryLocal();
 }
 
-bool LedgerAcquire::checkLocal()
+void LedgerAcquire::checkLocal()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (isDone())
-		return false;
+		return;
 
-	if (!tryLocal())
-		return false;
-
-	done();
-	return true;
+	if (tryLocal())
+		done();
 }
 
 bool LedgerAcquire::tryLocal()
@@ -1067,20 +1064,13 @@ void LedgerAcquireMaster::gotFetchPack(Job&)
 		acquires.reserve(mLedgers.size());
 		typedef std::pair<uint256, LedgerAcquire::pointer> u256_acq_pair;
 		BOOST_FOREACH(const u256_acq_pair& it, mLedgers)
-		{
 			acquires.push_back(it.second);
-		}
 	}
 
-	int completed = 0;
 	BOOST_FOREACH(const LedgerAcquire::pointer& acquire, acquires)
 	{
-		if (acquire->checkLocal())
-			++completed;
+		acquire->checkLocal();
 	}
-
-	if (completed > 0)
-		theApp->getLedgerMaster().resumeAcquiring();
 }
 
 // vim:ts=4

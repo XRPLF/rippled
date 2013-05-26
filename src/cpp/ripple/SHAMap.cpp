@@ -260,6 +260,7 @@ SHAMapTreeNode* SHAMap::getNodePointer(const SHAMapNode& id, const uint256& hash
 	}
 }
 
+
 void SHAMap::returnNode(SHAMapTreeNode::pointer& node, bool modify)
 { // make sure the node is suitable for the intended operation (copy on write)
 	assert(node->isValid());

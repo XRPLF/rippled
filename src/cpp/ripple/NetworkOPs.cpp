@@ -2131,7 +2131,7 @@ void NetworkOPs::gotFetchPack(bool progress, uint32 seq)
 	mLastFetchPack = 0;
 	mFetchSeq = seq;		// earliest pack we have data on
 	theApp->getJobQueue().addJob(jtLEDGER_DATA, "gotFetchPack",
-		BIND_TYPE(&LedgerAcquireMaster::gotFetchPack, &theApp->getMasterLedgerAcquire(), P_1));
+		boost::bind(&LedgerAcquireMaster::gotFetchPack, &theApp->getMasterLedgerAcquire(), _1));
 }
 
 void NetworkOPs::missingNodeInLedger(uint32 seq)
