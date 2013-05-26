@@ -24,6 +24,7 @@
 
 #include "ripple_basics.h"
 
+#include <iostream>
 #include <fstream>
 
 #include <boost/algorithm/string.hpp>
@@ -54,12 +55,15 @@
 
 #include "events/ripple_UptimeTimer.cpp"
 
+#include "memory/ripple_StringUtilities.cpp"
+
 #ifdef WIN32
+#include <windows.h>  // for ripple_RandomNumbers.cpp
+#include <wincrypt.h> // for ripple_RandomNumbers.cpp
 // Winsock #defines 'max' and does other stupid things so put it last
-#include "Winsock2.h" // for ripple_ByteOrder.cpp
+#include <Winsock2.h> // for ripple_ByteOrder.cpp
 #endif
 #include "memory/ripple_ByteOrder.cpp"
-#include "memory/ripple_StringUtilities.cpp"
 
 #include "system/ripple_RandomNumbers.cpp"
 

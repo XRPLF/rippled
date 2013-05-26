@@ -19,6 +19,8 @@
 #ifndef RIPPLE_RANDOMNUMBERS_H
 #define RIPPLE_RANDOMNUMBERS_H
 
+extern bool AddSystemEntropy ();
+
 // Cryptographically secure random number source
 
 // VFALCO: TODO Clean this up, rename stuff

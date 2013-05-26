@@ -14,7 +14,6 @@
 
 namespace po = boost::program_options;
 
-extern bool AddSystemEntropy();
 extern void TFInit();
 extern void LEFInit();
 extern void SVFInit();

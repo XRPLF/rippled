@@ -516,9 +516,6 @@
     <ClCompile Include="src\cpp\ripple\ParseSection.cpp">
       <Filter>1. Modules\ripple_mess\types</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\PlatRand.cpp">
-      <Filter>1. Modules\ripple_mess\types</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\ProofOfWork.cpp">
       <Filter>1. Modules\ripple_mess\types</Filter>
     </ClCompile>
