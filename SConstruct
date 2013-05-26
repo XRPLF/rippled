@@ -50,7 +50,7 @@ else:
 for dir in ['.', 'ripple', 'database', 'json', 'leveldb/db', 'leveldb/port', 'leveldb/include', 'leveldb/table', 'leveldb/util', 'websocketpp']:
 	VariantDir('build/obj/'+dir, 'src/cpp/'+dir, duplicate=0)
 
-for dir in [ 'ripple_basics', 'ripple_client', 'ripple_db', 'ripple_json', 'ripple_ledger', 'ripple_main', 'ripple_mess', 'ripple_net' ]:
+for dir in [ 'ripple_basics', 'ripple_client', 'ripple_db', 'ripple_ledger', 'ripple_main', 'ripple_net' ]:
 	VariantDir('build/obj/'+dir, 'modules/'+dir, duplicate=0)
 
 # Use openssl
@@ -71,8 +71,7 @@ if FreeBSD or Ubuntu:
 		    'boost_program_options',
 		    'boost_regex',
 		    'boost_system',
-            'boost_thread',
-            'boost_random',
+		    'boost_thread',
 	    ]
     )
 else:
@@ -84,7 +83,6 @@ else:
 		    'boost_regex-mt',
 		    'boost_system-mt',
 		    'boost_thread-mt',
-		    'boost_random-mt',
 	    ]
     )
 
@@ -125,8 +123,28 @@ if OSX:
 if LevelDB:
 	env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb', '-Isrc/cpp/leveldb/port', '-Isrc/cpp/leveldb/include', '-DUSE_LEVELDB'])
 
+	LEVELDB_SRCS	= [ 'src/cpp/leveldb_core.cpp' ]
+
+DB_SRCS		= glob.glob('src/cpp/database/*.c') + glob.glob('src/cpp/database/*.cpp')
+JSON_SRCS	= glob.glob('src/cpp/json/*.cpp')
+
+WEBSOCKETPP_SRCS = [
+	'src/cpp/websocketpp/src/base64/base64.cpp',
+	'src/cpp/websocketpp/src/md5/md5.c',
+	'src/cpp/websocketpp/src/messages/data.cpp',
+	'src/cpp/websocketpp/src/network_utilities.cpp',
+	'src/cpp/websocketpp/src/processors/hybi_header.cpp',
+	'src/cpp/websocketpp/src/processors/hybi_util.cpp',
+	'src/cpp/websocketpp/src/sha1/sha1.cpp',
+	'src/cpp/websocketpp/src/uri.cpp'
+	]
+
 RIPPLE_SRCS = glob.glob('src/cpp/ripple/*.cpp')
+PROTO_SRCS = env.Protoc([], 'src/cpp/ripple/ripple.proto', PROTOCOUTDIR='build/proto', PROTOCPYTHONOUTDIR=None)
 env.Append(CXXFLAGS = ['-Ibuild/proto'])
+env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')
+# PROTO_SRCS  = [ 'src/cpp/protobuf_core.cpp' ]
+# env.Append(CXXFLAGS = ['-Ibuild/proto', '-Isrc/cpp/protobuf/src', '-Isrc/cpp/protobuf/vsprojects' ])
 
 # Remove unused source files.
 UNUSED_SRCS = []
@@ -137,21 +155,28 @@ for file in UNUSED_SRCS:
 # Only tag actual Ripple files.
 TAG_SRCS    = copy.copy(RIPPLE_SRCS)
 
+# Add other sources.
+RIPPLE_SRCS += DB_SRCS + JSON_SRCS + WEBSOCKETPP_SRCS
+
+if LevelDB:
+    RIPPLE_SRCS += LEVELDB_SRCS
+
+# Derive the object files from the source files.
 RIPPLE_OBJS = []
 
-RIPPLE_OBJS += [ 'src/cpp/database/sqlite3.c' ]
+RIPPLE_OBJS += PROTO_SRCS
 
 env.Append(CXXFLAGS = ['-I.', '-Isrc/cpp/ripple'])
 
-RIPPLE_CORES	= [ 'src/cpp/leveldb_core.cpp', 'src/cpp/websocket_core.cpp' ]
+RIPPLE_CORES	= glob.glob('src/cpp/*_core.cpp')
 RIPPLE_MODULES	= glob.glob('modules/*/*.cpp')
 
 for file in RIPPLE_MODULES:
-    # Strip modules/
+    # Strip src/cpp/
     RIPPLE_OBJS.append('build/obj/' + file[8:])
 
 for file in RIPPLE_CORES:
-    # Strip src/cpp/
+    # Strip modules/
     RIPPLE_OBJS.append('build/obj/' + file[8:])
 
 #
@@ -163,3 +188,4 @@ rippled = env.Program('build/rippled', RIPPLE_OBJS)
 tags	= env.CTags('tags', TAG_SRCS)
 
 Default(rippled, tags)
+
