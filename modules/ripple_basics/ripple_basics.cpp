@@ -30,6 +30,8 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/test/unit_test.hpp>
+#include <boost/asio.hpp> // for stupid parseIpPort
+#include <boost/regex.hpp>
 
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
@@ -49,6 +51,7 @@
 #include "Winsock2.h" // for ripple_ByteOrder.cpp
 #endif
 #include "memory/ripple_ByteOrder.cpp"
+#include "memory/ripple_StringUtilities.cpp"
 
 #ifdef _MSC_VER
 //#pragma warning (pop)

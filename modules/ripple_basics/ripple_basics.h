@@ -79,6 +79,9 @@ namespace boost {
 # include <sys/types.h>
 #endif
 
+// StringUtilities
+#include <boost/format.hpp>
+
 
 
 #include "../ripple_json/ripple_json.h"
@@ -93,6 +96,7 @@ namespace boost {
 #include "containers/ripple_TaggedCache.h"
 
 #include "memory/ripple_ByteOrder.h"
+#include "memory/ripple_StringUtilities.h"
 
 #include "events/ripple_UptimeTimer.h"
 
