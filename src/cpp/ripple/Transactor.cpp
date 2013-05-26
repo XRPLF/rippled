@@ -149,10 +149,12 @@ TER Transactor::checkSeq()
 
 		return tefPAST_SEQ;
 	}
-	else
-	{
-		mTxnAccount->setFieldU32(sfSequence, t_seq + 1);
-	}
+
+	if (mTxn.isFieldPresent(sfPreviousTxnID) &&
+		(mTxnAccount->getFieldH256(sfPreviousTxnID) != mTxn.getFieldH256(sfPreviousTxnID)))
+			return tefWRONG_PRIOR;
+
+	mTxnAccount->setFieldU32(sfSequence, t_seq + 1);
 
 	return tesSUCCESS;
 }
