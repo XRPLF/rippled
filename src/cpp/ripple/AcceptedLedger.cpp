@@ -2,7 +2,7 @@
 
 #include <boost/foreach.hpp>
 
-TaggedCache<uint256, AcceptedLedger> AcceptedLedger::ALCache("AcceptedLedger", 4, 60);
+TaggedCache<uint256, AcceptedLedger> AcceptedLedger::ALCache("AcceptedLedger", 8, 120);
 
 ALTransaction::ALTransaction(uint32 seq, SerializerIterator& sit)
 {
