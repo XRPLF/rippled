@@ -20,10 +20,6 @@
 
 DEFINE_INSTANCE(WebSocketConnection);
 
-#ifndef WEBSOCKET_PING_FREQUENCY
-#define WEBSOCKET_PING_FREQUENCY (5*60)
-#endif
-
 template <typename endpoint_type>
 class WSServerHandler;
 //
@@ -210,7 +206,7 @@ public:
 		connection_ptr ptr = mConnection.lock();
 		if (ptr)
 		{
-			mPingTimer.expires_from_now(boost::posix_time::seconds(WEBSOCKET_PING_FREQUENCY));
+			mPingTimer.expires_from_now(boost::posix_time::seconds(theConfig.WEBSOCKET_PING_FREQ));
 			mPingTimer.async_wait(ptr->get_strand().wrap(boost::bind(
 				&WSConnection<endpoint_type>::pingTimer, mConnection, mHandler, boost::asio::placeholders::error)));
 		}
