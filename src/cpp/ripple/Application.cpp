@@ -112,13 +112,13 @@ void sigIntHandler(int)
 
 static void runAux(boost::asio::io_service& svc)
 {
-	NameThread("aux");
+	setCallingThreadName("aux");
 	svc.run();
 }
 
 static void runIO(boost::asio::io_service& io)
 {
-	NameThread("io");
+	setCallingThreadName("io");
 	io.run();
 }
 

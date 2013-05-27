@@ -66,6 +66,8 @@
 #include "memory/ripple_ByteOrder.cpp"
 
 #include "system/ripple_RandomNumbers.cpp"
+#include "system/ripple_ThreadName.cpp"
+#include "system/ripple_Time.cpp"
 
 #ifdef _MSC_VER
 //#pragma warning (pop)

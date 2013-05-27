@@ -273,7 +273,7 @@ void JobQueue::IOThread(boost::mutex::scoped_lock& sl)
 { // call with a lock
 	++mIOThreadCount;
 	sl.unlock();
-	NameThread("IO+");
+	setCallingThreadName("IO+");
 	try
 	{
 		mIOService.poll();
@@ -282,7 +282,7 @@ void JobQueue::IOThread(boost::mutex::scoped_lock& sl)
 	{
 		WriteLog (lsWARNING, JobQueue) << "Exception in IOThread";
 	}
-	NameThread("waiting");
+	setCallingThreadName("waiting");
 	sl.lock();
 	--mIOThreadCount;
 }
@@ -292,7 +292,7 @@ void JobQueue::threadEntry()
 	boost::mutex::scoped_lock sl(mJobLock);
 	while (1)
 	{
-		NameThread("waiting");
+		setCallingThreadName("waiting");
 //		bool didIO = false;
 		while (mJobSet.empty() && !mShuttingDown)
 		{
@@ -325,7 +325,7 @@ void JobQueue::threadEntry()
 
 			++(mJobCounts[type].second);
 			sl.unlock();
-			NameThread(Job::toString(type));
+			setCallingThreadName(Job::toString(type));
 			WriteLog (lsTRACE, JobQueue) << "Doing " << Job::toString(type) << " job";
 			job.doJob();
 		} // must destroy job without holding lock

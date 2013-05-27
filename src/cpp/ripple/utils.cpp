@@ -29,43 +29,6 @@
 #include "uint256.h"
 
 //
-// Time support
-// We have our own epoch.
-//
-
-boost::posix_time::ptime ptEpoch()
-{
-	return boost::posix_time::ptime(boost::gregorian::date(2000, boost::gregorian::Jan, 1));
-}
-
-int iToSeconds(boost::posix_time::ptime ptWhen)
-{
-	return ptWhen.is_not_a_date_time()
-		? -1
-		: (ptWhen-ptEpoch()).total_seconds();
-}
-
-// Convert our time in seconds to a ptime.
-boost::posix_time::ptime ptFromSeconds(int iSeconds)
-{
-	return iSeconds < 0
-		? boost::posix_time::ptime(boost::posix_time::not_a_date_time)
-		: ptEpoch() + boost::posix_time::seconds(iSeconds);
-}
-
-// Convert from our time to UNIX time in seconds.
-uint64_t utFromSeconds(int iSeconds)
-{
-	boost::posix_time::time_duration	tdDelta	=
-		boost::posix_time::ptime(boost::gregorian::date(2000, boost::gregorian::Jan, 1))
-		-boost::posix_time::ptime(boost::gregorian::date(1970, boost::gregorian::Jan, 1))
-		+boost::posix_time::seconds(iSeconds)
-		;
-
-	return tdDelta.total_seconds();
-}
-
-//
 // DH support
 //
 
@@ -96,39 +59,6 @@ DH* DH_der_load(const std::string& strDer)
 
 	return d2i_DHparams(NULL, &pbuf, strDer.size());
 }
-
-#ifdef PR_SET_NAME
-#define HAVE_NAME_THREAD
-extern void NameThread(const char* n)
-{
-	static std::string pName;
-
-	if (pName.empty())
-	{
-		std::ifstream cLine("/proc/self/cmdline", std::ios::in);
-		cLine >> pName;
-		if (pName.empty())
-			pName = "rippled";
-		else
-		{
-			size_t zero = pName.find_first_of('\0');
-			if ((zero != std::string::npos) && (zero != 0))
-				pName = pName.substr(0, zero);
-			size_t slash = pName.find_last_of('/');
-			if (slash != std::string::npos)
-				pName = pName.substr(slash + 1);
-		}
-		pName += " ";
-	}
-
-	prctl(PR_SET_NAME, (pName + n).c_str(), 0, 0, 0);
-}
-#endif
-
-#ifndef HAVE_NAME_THREAD
-extern void NameThread(const char*)
-{ ; }
-#endif
 
 #ifdef __unix__
 
@@ -175,14 +105,14 @@ std::string DoSustain()
 			_exit(0);
 		if (pChild == 0)
 		{
-			NameThread("main");
+			setCallingThreadName("main");
 			signal(SIGINT, SIG_DFL);
 			signal(SIGHUP, SIG_DFL);
 			signal(SIGUSR1, SIG_DFL);
 			signal(SIGUSR2, SIG_DFL);
 			return str(boost::format("Launching child %d") % childCount);;
 		}
-		NameThread(boost::str(boost::format("#%d") % childCount).c_str());
+		setCallingThreadName(boost::str(boost::format("#%d") % childCount).c_str());
 		do
 		{
 			int i;

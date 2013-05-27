@@ -41,7 +41,7 @@ DECLARE_INSTANCE(WebSocketConnection);
 
 void WSDoor::startListening()
 {
-	NameThread("websocket");
+	setCallingThreadName("websocket");
 	// Generate a single SSL context for use by all connections.
     boost::shared_ptr<boost::asio::ssl::context>	mCtx;
 	mCtx	= boost::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::sslv23);

@@ -765,6 +765,12 @@
     <ClCompile Include="modules\ripple_basics\system\ripple_RandomNumbers.cpp">
       <Filter>1. Modules\ripple_basics\system</Filter>
     </ClCompile>
+    <ClCompile Include="modules\ripple_basics\system\ripple_Time.cpp">
+      <Filter>1. Modules\ripple_basics\system</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_basics\system\ripple_ThreadName.cpp">
+      <Filter>1. Modules\ripple_basics\system</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="database\sqlite3ext.h">
@@ -1422,6 +1428,12 @@
       <Filter>1. Modules\ripple_basics\system</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\system\ripple_RandomNumbers.h">
+      <Filter>1. Modules\ripple_basics\system</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\system\ripple_Time.h">
+      <Filter>1. Modules\ripple_basics\system</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\system\ripple_ThreadName.h">
       <Filter>1. Modules\ripple_basics\system</Filter>
     </ClInclude>
   </ItemGroup>

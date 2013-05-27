@@ -324,7 +324,7 @@ static void LogDeadLock(int dlTime)
 
 void LoadManager::threadEntry()
 {
-	NameThread("loadmgr");
+	setCallingThreadName("loadmgr");
 	boost::posix_time::ptime t = boost::posix_time::microsec_clock::universal_time();
 	while (1)
 	{

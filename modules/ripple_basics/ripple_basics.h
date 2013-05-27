@@ -38,6 +38,11 @@
 #include <sstream>
 #include <string>
 
+#include <boost/version.hpp>
+#if BOOST_VERSION < 104700
+#error Boost 1.47 or later is required
+#endif
+
 // Log
 #include <boost/thread/recursive_mutex.hpp>
 // Forward declaration
@@ -67,6 +72,9 @@ namespace boost {
 #include <boost/shared_ptr.hpp>
 #include <boost/ref.hpp>
 #include <boost/make_shared.hpp>
+
+// RippleTime
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 // ByteOrder
 #ifdef WIN32
@@ -103,5 +111,7 @@ namespace boost {
 
 #include "system/ripple_PlatformMacros.h"
 #include "system/ripple_RandomNumbers.h"
+#include "system/ripple_ThreadName.h"
+#include "system/ripple_Time.h"
 
 #endif
