@@ -58,7 +58,6 @@ namespace boost {
 
 
 // KeyCache
-#include <string>
 #include <boost/unordered_map.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -108,6 +107,7 @@ namespace boost {
 #include "utility/ripple_UptimeTimer.h"
 #include "utility/ripple_PlatformMacros.h"
 #include "utility/ripple_RandomNumbers.h"
+#include "utility/ripple_Sustain.h"
 #include "utility/ripple_ThreadName.h"
 #include "utility/ripple_Time.h"
 

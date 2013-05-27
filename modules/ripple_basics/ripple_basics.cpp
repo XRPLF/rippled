@@ -55,17 +55,19 @@
 #include "utility/ripple_UptimeTimer.cpp"
 #include "utility/ripple_StringUtilities.cpp"
 
+#include "utility/ripple_ByteOrder.cpp"
+#include "utility/ripple_Sustain.cpp"
+#include "utility/ripple_ThreadName.cpp"
+#include "utility/ripple_Time.cpp"
+
 #ifdef WIN32
 #include <windows.h>  // for ripple_RandomNumbers.cpp
 #include <wincrypt.h> // for ripple_RandomNumbers.cpp
 // Winsock #defines 'max' and does other stupid things so put it last
 #include <Winsock2.h> // for ripple_ByteOrder.cpp
 #endif
-#include "utility/ripple_ByteOrder.cpp"
+#include "utility/ripple_RandomNumbers.cpp" // has Win32/Posix dependencies
 
-#include "utility/ripple_RandomNumbers.cpp"
-#include "utility/ripple_ThreadName.cpp"
-#include "utility/ripple_Time.cpp"
 
 #ifdef _MSC_VER
 //#pragma warning (pop)

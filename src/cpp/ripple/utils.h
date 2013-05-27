@@ -14,10 +14,6 @@
 DH* DH_der_load(const std::string& strDer);
 std::string DH_der_gen(int iKeyLength);
 
-extern bool HaveSustain();
-extern std::string StopSustain();
-extern std::string DoSustain();
-
 #endif
 
 // vim:ts=4

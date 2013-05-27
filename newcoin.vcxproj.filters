@@ -759,6 +759,9 @@
     <ClCompile Include="modules\ripple_basics\utility\ripple_UptimeTimer.cpp">
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClCompile>
+    <ClCompile Include="modules\ripple_basics\utility\ripple_Sustain.cpp">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="database\sqlite3ext.h">
@@ -1422,6 +1425,9 @@
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\utility\ripple_IntegerTypes.h">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\utility\ripple_Sustain.h">
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
   </ItemGroup>
