@@ -135,6 +135,8 @@ public:
 	int							WEBSOCKET_PORT;
 	int							WEBSOCKET_SECURE;
 
+	int							WEBSOCKET_PING_FREQ;
+
 	std::string					WEBSOCKET_SSL_CERT;
 	std::string					WEBSOCKET_SSL_CHAIN;
 	std::string					WEBSOCKET_SSL_KEY;

@@ -61,6 +61,7 @@
 #define SECTION_WEBSOCKET_PUBLIC_IP		"websocket_public_ip"
 #define SECTION_WEBSOCKET_PUBLIC_PORT	"websocket_public_port"
 #define SECTION_WEBSOCKET_PUBLIC_SECURE	"websocket_public_secure"
+#define SECTION_WEBSOCKET_PING_FREQ		"weboscket_ping_frequency"
 #define SECTION_WEBSOCKET_IP			"websocket_ip"
 #define SECTION_WEBSOCKET_PORT			"websocket_port"
 #define SECTION_WEBSOCKET_SECURE		"websocket_secure"
@@ -211,6 +212,7 @@ Config::Config()
 	WEBSOCKET_PUBLIC_PORT	= SYSTEM_WEBSOCKET_PUBLIC_PORT;
 	WEBSOCKET_PUBLIC_SECURE	= 1;
 	WEBSOCKET_SECURE		= 0;
+	WEBSOCKET_PING_FREQ		= (5 * 60);
 	NUMBER_CONNECTIONS		= 30;
 
 	// a new ledger every minute
@@ -403,6 +405,9 @@ void Config::load()
 
 			if (sectionSingleB(secConfig, SECTION_WEBSOCKET_PUBLIC_SECURE, strTemp))
 				WEBSOCKET_PUBLIC_SECURE	= boost::lexical_cast<int>(strTemp);
+
+			if (sectionSingleB(secConfig, SECTION_WEBSOCKET_PING_FREQ, strTemp))
+				WEBSOCKET_PING_FREQ	= boost::lexical_cast<int>(strTemp);
 
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_CERT, WEBSOCKET_SSL_CERT);
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_CHAIN, WEBSOCKET_SSL_CHAIN);
