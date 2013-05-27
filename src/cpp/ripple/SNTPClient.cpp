@@ -6,7 +6,6 @@
 
 #include <openssl/rand.h>
 
-#include "utils.h"
 #include "Config.h"
 
 SETUP_LOG (SNTPClient)

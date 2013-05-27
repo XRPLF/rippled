@@ -90,6 +90,8 @@ namespace boost {
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 
+// VFALCO: TODO, remove this dependency!!!
+#include <openssl/dh.h> // for DiffieHellmanUtil
 
 
 #include "../ripple_json/ripple_json.h"
@@ -103,12 +105,13 @@ namespace boost {
 #include "containers/ripple_TaggedCache.h"
 
 #include "utility/ripple_ByteOrder.h"
-#include "utility/ripple_StringUtilities.h"
-#include "utility/ripple_UptimeTimer.h"
+#include "utility/ripple_DiffieHellmanUtil.h"
 #include "utility/ripple_PlatformMacros.h"
 #include "utility/ripple_RandomNumbers.h"
+#include "utility/ripple_StringUtilities.h"
 #include "utility/ripple_Sustain.h"
 #include "utility/ripple_ThreadName.h"
 #include "utility/ripple_Time.h"
+#include "utility/ripple_UptimeTimer.h"
 
 #endif

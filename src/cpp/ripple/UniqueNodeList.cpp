@@ -19,7 +19,6 @@
 #include "HttpsClient.h"
 #include "ParseSection.h"
 #include "Serializer.h"
-#include "utils.h"
 
 #define VALIDATORS_FETCH_SECONDS	30
 #define VALIDATORS_FILE_BYTES_MAX	(50 << 10)

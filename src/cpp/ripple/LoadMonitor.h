@@ -6,7 +6,6 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "utils.h"
 
 // Monitors load levels and response times
 

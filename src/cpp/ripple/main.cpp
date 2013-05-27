@@ -10,7 +10,6 @@
 #include "CallRPC.h"
 #include "Config.h"
 #include "RPCHandler.h"
-#include "utils.h"
 
 namespace po = boost::program_options;
 

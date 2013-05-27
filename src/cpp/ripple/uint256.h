@@ -15,8 +15,6 @@
 
 #include <boost/functional/hash.hpp>
 
-#include "utils.h"
-
 #if defined(_MSC_VER) && _MSC_VER < 1300
 #define for  if (false) ; else for
 #endif

@@ -510,9 +510,6 @@
     <ClCompile Include="src\cpp\ripple\rfc1751.cpp">
       <Filter>1. Modules\ripple_mess\types</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\utils.cpp">
-      <Filter>1. Modules\ripple_mess\types</Filter>
-    </ClCompile>
     <ClCompile Include="modules\ripple_basics\ripple_basics.cpp">
       <Filter>1. Modules\ripple_basics</Filter>
     </ClCompile>
@@ -760,6 +757,9 @@
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_basics\utility\ripple_Sustain.cpp">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_basics\utility\ripple_DiffieHellmanUtil.cpp">
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1139,9 +1139,6 @@
     <ClInclude Include="src\cpp\ripple\rfc1751.h">
       <Filter>1. Modules\ripple_mess\types</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\utils.h">
-      <Filter>1. Modules\ripple_mess\types</Filter>
-    </ClInclude>
     <ClInclude Include="modules\ripple_basics\ripple_basics.h">
       <Filter>1. Modules\ripple_basics</Filter>
     </ClInclude>
@@ -1428,6 +1425,9 @@
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\utility\ripple_Sustain.h">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\utility\ripple_DiffieHellmanUtil.h">
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
   </ItemGroup>

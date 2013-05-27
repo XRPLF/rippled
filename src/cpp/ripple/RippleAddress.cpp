@@ -16,7 +16,6 @@
 #include "key.h"
 #include "BitcoinUtil.h"
 #include "rfc1751.h"
-#include "utils.h"
 #include "Serializer.h"
 #include "Application.h"
 

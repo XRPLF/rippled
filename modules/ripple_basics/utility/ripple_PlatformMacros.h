@@ -49,4 +49,10 @@
 
 #endif
 
+// VFALCO: TODO, Clean this junk up
+#define nothing()			do {} while (0)
+#define fallthru()			do {} while (0)
+#define NUMBER(x)			(sizeof(x)/sizeof((x)[0]))
+#define isSetBit(x,y)		(!!((x) & (y)))
+
 #endif

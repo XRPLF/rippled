@@ -7,7 +7,6 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 
-#include "utils.h"
 
 // These must stay at the top of this file
 std::map<int, SField::ptr> SField::codeToField;

@@ -3,7 +3,6 @@
 
 #include <boost/foreach.hpp>
 
-#include "utils.h"
 #include "Application.h"
 #include "Transaction.h"
 #include "HashPrefixes.h"

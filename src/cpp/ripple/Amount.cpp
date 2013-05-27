@@ -11,7 +11,6 @@
 
 #include "Config.h"
 #include "SerializedTypes.h"
-#include "utils.h"
 
 SETUP_LOG (STAmount)
 

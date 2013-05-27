@@ -10,7 +10,9 @@
 #include "Config.h"
 #include "Application.h"
 #include "SerializedTransaction.h"
-#include "utils.h"
+
+// VFALCO: TODO, make this an inline function
+#define ADDRESS(p)			strHex(uint64( ((char*) p) - ((char*) 0)))
 
 SETUP_LOG (Peer)
 

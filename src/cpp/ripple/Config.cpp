@@ -10,7 +10,6 @@
 
 #include "Config.h"
 
-#include "utils.h"
 #include "HashPrefixes.h"
 
 #define SECTION_ACCOUNT_PROBE_MAX		"account_probe_max"

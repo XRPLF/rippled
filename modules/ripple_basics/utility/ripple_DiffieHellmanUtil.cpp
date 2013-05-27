@@ -1,36 +1,4 @@
 
-#ifdef __linux__
-#include <sys/types.h>
-#include <sys/prctl.h>
-#include <sys/wait.h>
-#endif
-
-#ifdef __FreeBSD__
-#include <sys/types.h>
-#include <sys/wait.h>
-#endif
-
-#ifdef WIN32
-#define _WINSOCK_
-#include <winsock2.h>
-#endif
-
-#include <fstream>
-
-//#include <boost/algorithm/string.hpp>
-//#include <boost/asio.hpp>
-#include <boost/foreach.hpp>
-//#include <boost/regex.hpp>
-//#include <boost/test/unit_test.hpp>
-
-//#include <openssl/rand.h>
-
-#include "utils.h"
-#include "uint256.h"
-
-//
-// DH support
-//
 
 std::string DH_der_gen(int iKeyLength)
 {

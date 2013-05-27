@@ -65,13 +65,14 @@
 #include "containers/ripple_RangeSet.cpp"
 
 #include "utility/ripple_Log.cpp"
-#include "utility/ripple_UptimeTimer.cpp"
-#include "utility/ripple_StringUtilities.cpp"
 
 #include "utility/ripple_ByteOrder.cpp"
+#include "utility/ripple_DiffieHellmanUtil.cpp"
+#include "utility/ripple_StringUtilities.cpp"
 #include "utility/ripple_Sustain.cpp"
 #include "utility/ripple_ThreadName.cpp"
 #include "utility/ripple_Time.cpp"
+#include "utility/ripple_UptimeTimer.cpp"
 
 #ifdef WIN32
 #include <windows.h>  // for ripple_RandomNumbers.cpp

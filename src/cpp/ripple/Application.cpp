@@ -12,7 +12,6 @@
 #include "RPCDoor.h"
 #include "BitcoinUtil.h"
 #include "key.h"
-#include "utils.h"
 
 #include "../database/SqliteDatabase.h"
 

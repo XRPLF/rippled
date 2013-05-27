@@ -1,6 +1,5 @@
 
 #include "RPCErr.h"
-#include "utils.h"
 
 // For logging
 struct RPCErr { };

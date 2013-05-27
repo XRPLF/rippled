@@ -120,7 +120,6 @@
 #include "src/cpp/ripple/TransactionQueue.h"
 #include "src/cpp/ripple/Transactor.h"
 #include "src/cpp/ripple/TrustSetTransactor.h"
-#include "src/cpp/ripple/utils.h"
 #include "src/cpp/ripple/ValidationCollection.h"
 #include "src/cpp/ripple/Wallet.h"
 #include "src/cpp/ripple/WalletAddTransactor.h"

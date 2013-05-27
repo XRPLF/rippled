@@ -3,7 +3,6 @@
 //
 
 #include "HttpsClient.h"
-#include "utils.h"
 
 #include <iostream>
 #include <boost/date_time/posix_time/posix_time.hpp>
