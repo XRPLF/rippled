@@ -163,6 +163,8 @@ TAG_SRCS    = copy.copy(RIPPLE_SRCS)
 # Derive the object files from the source files.
 RIPPLE_OBJS = []
 
+RIPPLE_OBJS += PROTO_SRCS
+
 for file in RIPPLE_SRCS:
     # Strip src/cpp/ or modules/
     RIPPLE_OBJS.append('build/obj/' + file[8:])
