@@ -61,7 +61,7 @@
 #define SECTION_WEBSOCKET_PUBLIC_IP		"websocket_public_ip"
 #define SECTION_WEBSOCKET_PUBLIC_PORT	"websocket_public_port"
 #define SECTION_WEBSOCKET_PUBLIC_SECURE	"websocket_public_secure"
-#define SECTION_WEBSOCKET_PING_FREQ		"weboscket_ping_frequency"
+#define SECTION_WEBSOCKET_PING_FREQ		"websocket_ping_frequency"
 #define SECTION_WEBSOCKET_IP			"websocket_ip"
 #define SECTION_WEBSOCKET_PORT			"websocket_port"
 #define SECTION_WEBSOCKET_SECURE		"websocket_secure"
