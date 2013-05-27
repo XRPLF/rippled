@@ -50,7 +50,16 @@ else:
 for dir in ['.', 'ripple', 'database', 'json', 'leveldb/db', 'leveldb/port', 'leveldb/include', 'leveldb/table', 'leveldb/util', 'websocketpp']:
 	VariantDir('build/obj/'+dir, 'src/cpp/'+dir, duplicate=0)
 
-for dir in [ 'ripple_basics', 'ripple_client', 'ripple_db', 'ripple_ledger', 'ripple_main', 'ripple_net' ]:
+for dir in [
+             'ripple_basics',
+             'ripple_client',
+             'ripple_db',
+             'ripple_json',
+             'ripple_ledger',
+	     'ripple_main',
+             'ripple_mess',
+             'ripple_net'
+            ]:
 	VariantDir('build/obj/'+dir, 'modules/'+dir, duplicate=0)
 
 # Use openssl
