@@ -67,7 +67,9 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/SHAMapSync.cpp"
 
 // VFALCO: TODO Fix this for SConstruct
-//#include "ripple.pb.cc" // BROKEN because of SConstruct
+#ifdef _MSC_VER
+#include "ripple.pb.cc" // BROKEN because of SConstruct
+#endif
 
 #ifdef _MSC_VER
 //#pragma warning (pop)
