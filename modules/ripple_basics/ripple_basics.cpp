@@ -27,6 +27,19 @@
 #include <iostream>
 #include <fstream>
 
+// These are for Sustain Linux variants
+#ifdef __linux__
+#include <sys/types.h>
+#include <sys/prctl.h>
+#include <sys/wait.h>
+#endif
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#include <sys/wait.h>
+#endif
+
+
+
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/test/unit_test.hpp>
