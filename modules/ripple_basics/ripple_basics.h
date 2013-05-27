@@ -95,23 +95,20 @@ namespace boost {
 
 #include "../ripple_json/ripple_json.h"
 
-#include "types/ripple_IntegerTypes.h" // must come first
-
-#include "diagnostic/ripple_Log.h" // Needed by others
+#include "utility/ripple_IntegerTypes.h" // must come first
+#include "utility/ripple_Log.h" // Needed by others
 
 #include "containers/ripple_KeyCache.h"
 #include "containers/ripple_RangeSet.h"
 #include "containers/ripple_SecureAllocator.h"
 #include "containers/ripple_TaggedCache.h"
 
-#include "memory/ripple_ByteOrder.h"
-#include "memory/ripple_StringUtilities.h"
-
-#include "events/ripple_UptimeTimer.h"
-
-#include "system/ripple_PlatformMacros.h"
-#include "system/ripple_RandomNumbers.h"
-#include "system/ripple_ThreadName.h"
-#include "system/ripple_Time.h"
+#include "utility/ripple_ByteOrder.h"
+#include "utility/ripple_StringUtilities.h"
+#include "utility/ripple_UptimeTimer.h"
+#include "utility/ripple_PlatformMacros.h"
+#include "utility/ripple_RandomNumbers.h"
+#include "utility/ripple_ThreadName.h"
+#include "utility/ripple_Time.h"
 
 #endif

@@ -97,9 +97,6 @@
     <Filter Include="1. Modules\ripple_net\overlay">
       <UniqueIdentifier>{1b44bca2-5d6b-45b6-815b-797059fb2c8e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_basics\types">
-      <UniqueIdentifier>{71aefc54-1459-47a5-af76-995f121d498a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_mess">
       <UniqueIdentifier>{becffa9b-61f7-42d4-815a-1ec822cad0e7}</UniqueIdentifier>
     </Filter>
@@ -115,9 +112,6 @@
     <Filter Include="1. Modules\ripple_basics\containers">
       <UniqueIdentifier>{96cbc9ff-0118-4844-bb4c-05aef58a60b5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_basics\events">
-      <UniqueIdentifier>{f585ac4d-1867-4f3d-b0a2-eceae4d7e7e7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_json">
       <UniqueIdentifier>{9f33883e-d53d-469f-ab51-653ac3e8780b}</UniqueIdentifier>
     </Filter>
@@ -127,17 +121,11 @@
     <Filter Include="1. Modules\ripple_json\json\DEPRECATED">
       <UniqueIdentifier>{e398b116-a7fa-4850-8b8e-6de95efdea4e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_basics\diagnostic">
-      <UniqueIdentifier>{8d816d89-3ab2-4a9f-ac8e-8b4346b23cf8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_net\sockets\_OLD">
       <UniqueIdentifier>{1194480b-fa6b-4d92-8656-2470f45f2753}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_basics\memory">
-      <UniqueIdentifier>{49faa808-02f3-44ba-a17c-43dce213672e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_basics\system">
-      <UniqueIdentifier>{c4b8f568-a8ff-40a6-9eae-1d1f41d58e7a}</UniqueIdentifier>
+    <Filter Include="1. Modules\ripple_basics\utility">
+      <UniqueIdentifier>{c30623e7-e0ab-4a8e-a213-aeaceb4327e2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -717,9 +705,6 @@
     <ClCompile Include="modules\ripple_mess\ripple_mess.cpp">
       <Filter>1. Modules\ripple_mess</Filter>
     </ClCompile>
-    <ClCompile Include="modules\ripple_basics\events\ripple_UptimeTimer.cpp">
-      <Filter>1. Modules\ripple_basics\events</Filter>
-    </ClCompile>
     <ClCompile Include="modules\ripple_json\json\json_reader.cpp">
       <Filter>1. Modules\ripple_json\json</Filter>
     </ClCompile>
@@ -731,9 +716,6 @@
     </ClCompile>
     <ClCompile Include="modules\ripple_json\ripple_json.cpp">
       <Filter>1. Modules\ripple_json</Filter>
-    </ClCompile>
-    <ClCompile Include="modules\ripple_basics\diagnostic\ripple_Log.cpp">
-      <Filter>1. Modules\ripple_basics\diagnostic</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ConnectionPool.cpp">
       <Filter>1. Modules\ripple_net\sockets\_OLD</Filter>
@@ -756,20 +738,26 @@
     <ClCompile Include="modules\ripple_basics\containers\ripple_RangeSet.cpp">
       <Filter>1. Modules\ripple_basics\containers</Filter>
     </ClCompile>
-    <ClCompile Include="modules\ripple_basics\memory\ripple_ByteOrder.cpp">
-      <Filter>1. Modules\ripple_basics\memory</Filter>
+    <ClCompile Include="modules\ripple_basics\utility\ripple_Time.cpp">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="modules\ripple_basics\memory\ripple_StringUtilities.cpp">
-      <Filter>1. Modules\ripple_basics\memory</Filter>
+    <ClCompile Include="modules\ripple_basics\utility\ripple_ThreadName.cpp">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="modules\ripple_basics\system\ripple_RandomNumbers.cpp">
-      <Filter>1. Modules\ripple_basics\system</Filter>
+    <ClCompile Include="modules\ripple_basics\utility\ripple_RandomNumbers.cpp">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="modules\ripple_basics\system\ripple_Time.cpp">
-      <Filter>1. Modules\ripple_basics\system</Filter>
+    <ClCompile Include="modules\ripple_basics\utility\ripple_Log.cpp">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="modules\ripple_basics\system\ripple_ThreadName.cpp">
-      <Filter>1. Modules\ripple_basics\system</Filter>
+    <ClCompile Include="modules\ripple_basics\utility\ripple_StringUtilities.cpp">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_basics\utility\ripple_ByteOrder.cpp">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_basics\utility\ripple_UptimeTimer.cpp">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1346,14 +1334,8 @@
     <ClInclude Include="modules\ripple_mess\ripple_mess.h">
       <Filter>1. Modules\ripple_mess</Filter>
     </ClInclude>
-    <ClInclude Include="modules\ripple_basics\events\ripple_UptimeTimer.h">
-      <Filter>1. Modules\ripple_basics\events</Filter>
-    </ClInclude>
     <ClInclude Include="modules\ripple_basics\containers\ripple_KeyCache.h">
       <Filter>1. Modules\ripple_basics\containers</Filter>
-    </ClInclude>
-    <ClInclude Include="modules\ripple_basics\types\ripple_IntegerTypes.h">
-      <Filter>1. Modules\ripple_basics\types</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_json\json\json_batchallocator.h">
       <Filter>1. Modules\ripple_json\json</Filter>
@@ -1385,9 +1367,6 @@
     <ClInclude Include="modules\ripple_json\json\json_features.h">
       <Filter>1. Modules\ripple_json\json</Filter>
     </ClInclude>
-    <ClInclude Include="modules\ripple_basics\diagnostic\ripple_Log.h">
-      <Filter>1. Modules\ripple_basics\diagnostic</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\AutoSocket.h">
       <Filter>1. Modules\ripple_net\sockets\_OLD</Filter>
     </ClInclude>
@@ -1418,23 +1397,32 @@
     <ClInclude Include="modules\ripple_basics\containers\ripple_TaggedCache.h">
       <Filter>1. Modules\ripple_basics\containers</Filter>
     </ClInclude>
-    <ClInclude Include="modules\ripple_basics\memory\ripple_ByteOrder.h">
-      <Filter>1. Modules\ripple_basics\memory</Filter>
+    <ClInclude Include="modules\ripple_basics\utility\ripple_Time.h">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="modules\ripple_basics\memory\ripple_StringUtilities.h">
-      <Filter>1. Modules\ripple_basics\memory</Filter>
+    <ClInclude Include="modules\ripple_basics\utility\ripple_ThreadName.h">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="modules\ripple_basics\system\ripple_PlatformMacros.h">
-      <Filter>1. Modules\ripple_basics\system</Filter>
+    <ClInclude Include="modules\ripple_basics\utility\ripple_RandomNumbers.h">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="modules\ripple_basics\system\ripple_RandomNumbers.h">
-      <Filter>1. Modules\ripple_basics\system</Filter>
+    <ClInclude Include="modules\ripple_basics\utility\ripple_PlatformMacros.h">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="modules\ripple_basics\system\ripple_Time.h">
-      <Filter>1. Modules\ripple_basics\system</Filter>
+    <ClInclude Include="modules\ripple_basics\utility\ripple_Log.h">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="modules\ripple_basics\system\ripple_ThreadName.h">
-      <Filter>1. Modules\ripple_basics\system</Filter>
+    <ClInclude Include="modules\ripple_basics\utility\ripple_ByteOrder.h">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\utility\ripple_StringUtilities.h">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\utility\ripple_UptimeTimer.h">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\utility\ripple_IntegerTypes.h">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

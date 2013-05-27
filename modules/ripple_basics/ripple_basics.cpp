@@ -51,11 +51,9 @@
 
 #include "containers/ripple_RangeSet.cpp"
 
-#include "diagnostic/ripple_Log.cpp"
-
-#include "events/ripple_UptimeTimer.cpp"
-
-#include "memory/ripple_StringUtilities.cpp"
+#include "utility/ripple_Log.cpp"
+#include "utility/ripple_UptimeTimer.cpp"
+#include "utility/ripple_StringUtilities.cpp"
 
 #ifdef WIN32
 #include <windows.h>  // for ripple_RandomNumbers.cpp
@@ -63,11 +61,11 @@
 // Winsock #defines 'max' and does other stupid things so put it last
 #include <Winsock2.h> // for ripple_ByteOrder.cpp
 #endif
-#include "memory/ripple_ByteOrder.cpp"
+#include "utility/ripple_ByteOrder.cpp"
 
-#include "system/ripple_RandomNumbers.cpp"
-#include "system/ripple_ThreadName.cpp"
-#include "system/ripple_Time.cpp"
+#include "utility/ripple_RandomNumbers.cpp"
+#include "utility/ripple_ThreadName.cpp"
+#include "utility/ripple_Time.cpp"
 
 #ifdef _MSC_VER
 //#pragma warning (pop)
