@@ -127,6 +127,9 @@
     <Filter Include="1. Modules\ripple_basics\utility">
       <UniqueIdentifier>{c30623e7-e0ab-4a8e-a213-aeaceb4327e2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_basics\types">
+      <UniqueIdentifier>{0d38ac4f-f094-4b17-9f4c-ac4011ea3bca}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -1283,9 +1286,6 @@
     <ClInclude Include="src\cpp\ripple\SNTPClient.h">
       <Filter>1. Modules\ripple_net\service</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\uint256.h">
-      <Filter>1. Modules\ripple_mess\types</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\UniqueNodeList.h">
       <Filter>1. Modules\ripple_net\overlay</Filter>
     </ClInclude>
@@ -1429,6 +1429,9 @@
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\utility\ripple_DiffieHellmanUtil.h">
       <Filter>1. Modules\ripple_basics\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\types\ripple_UInt256.h">
+      <Filter>1. Modules\ripple_basics\types</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

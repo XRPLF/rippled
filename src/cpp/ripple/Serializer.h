@@ -8,7 +8,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "key.h"
-#include "uint256.h"
 #include "FieldNames.h"
 
 class Serializer

@@ -8,8 +8,6 @@
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/bimap/multiset_of.hpp>
 
-#include "uint256.h"
-
 enum POWResult
 {
 	powOK		= 0,

@@ -6,7 +6,6 @@
 #include <boost/unordered_map.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "uint256.h"
 #include "SerializedValidation.h"
 #include "JobQueue.h"
 

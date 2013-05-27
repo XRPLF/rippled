@@ -12,7 +12,6 @@
 #include <boost/cstdint.hpp>
 
 #include "key.h"
-#include "uint256.h"
 #include "ripple.pb.h"
 #include "Serializer.h"
 #include "SHAMap.h"

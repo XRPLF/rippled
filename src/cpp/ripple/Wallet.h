@@ -12,7 +12,6 @@
 #include "openssl/ec.h"
 #include "openssl/dh.h"
 
-#include "uint256.h"
 #include "Serializer.h"
 
 class Ledger;

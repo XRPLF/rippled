@@ -4,7 +4,6 @@
 #include <vector>
 #include <string>
 
-#include "uint256.h"
 #include "Serializer.h"
 #include "FieldNames.h"
 #include "InstanceCounter.h"

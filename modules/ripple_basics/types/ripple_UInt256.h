@@ -2,22 +2,9 @@
 // Copyright (c) 2011 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
+
 #ifndef RIPPLE_UINT256_H
 #define RIPPLE_UINT256_H
-
-#include <algorithm>
-#include <climits>
-#include <string>
-#include <vector>
-#include <cstdio>
-#include <cstring>
-#include <cassert>
-
-#include <boost/functional/hash.hpp>
-
-#if defined(_MSC_VER) && _MSC_VER < 1300
-#define for  if (false) ; else for
-#endif
 
 // These classes all store their values internally
 // in big-endian form
@@ -751,6 +738,8 @@ inline const std::string strHex(const uint160& ui)
 	return strHex(ui.begin(), ui.size());
 }
 
-
 #endif
+
+// vim:ts=4
+
 // vim:ts=4

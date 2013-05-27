@@ -38,6 +38,15 @@
 #include <sstream>
 #include <string>
 
+// UInt256
+#include <algorithm>
+#include <cassert>
+#include <climits>
+#include <cstdio>
+#include <cstring>
+#include <string>
+#include <vector>
+
 #include <boost/version.hpp>
 #if BOOST_VERSION < 104700
 #error Boost 1.47 or later is required
@@ -90,6 +99,9 @@ namespace boost {
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 
+// UInt256
+#include <boost/functional/hash.hpp>
+
 // VFALCO: TODO, remove this dependency!!!
 #include <openssl/dh.h> // for DiffieHellmanUtil
 
@@ -113,5 +125,7 @@ namespace boost {
 #include "utility/ripple_ThreadName.h"
 #include "utility/ripple_Time.h"
 #include "utility/ripple_UptimeTimer.h"
+
+#include "types/ripple_UInt256.h"
 
 #endif

@@ -9,7 +9,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
-#include "uint256.h"
 #include "RippleAddress.h"
 #include "SerializedTypes.h"
 #include "Pathfinder.h"

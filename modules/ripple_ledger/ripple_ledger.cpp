@@ -45,7 +45,6 @@
 #include <string>
 #include <vector>
 
-//#include "uint256.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/bind.hpp>
