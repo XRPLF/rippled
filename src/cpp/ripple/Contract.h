@@ -1,9 +1,6 @@
-#ifndef __CONTRACT__
-#define __CONTRACT__
+#ifndef CONTRACT_H
+#define CONTRACT_H
 
-#include "SerializedLedger.h"
-#include <boost/shared_ptr.hpp>
-#include "ScriptData.h"
 /*
 	Encapsulates the SLE for a Contract
 */

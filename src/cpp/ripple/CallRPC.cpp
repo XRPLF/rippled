@@ -20,19 +20,15 @@
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
 
-#include "../json/value.h"
-#include "../json/reader.h"
-
 #include "Application.h"
 #include "RPC.h"
-#include "Log.h"
 #include "RPCErr.h"
 #include "Config.h"
 #include "BitcoinUtil.h"
 
 #include "CallRPC.h"
 
-SETUP_LOG();
+SETUP_LOG (RPCParser)
 
 static inline bool isSwitchChar(char c)
 {
@@ -332,8 +328,8 @@ Json::Value RPCParser::parseJson(const Json::Value& jvParams)
 	Json::Reader	reader;
 	Json::Value		jvRequest;
 
-	cLog(lsTRACE) << "RPC method: " << jvParams[0u];
-	cLog(lsTRACE) << "RPC json: " << jvParams[1u];
+	WriteLog (lsTRACE, RPCParser) << "RPC method: " << jvParams[0u];
+	WriteLog (lsTRACE, RPCParser) << "RPC json: " << jvParams[1u];
 
 	if (reader.parse(jvParams[1u].asString(), jvRequest))
 	{
@@ -533,7 +529,7 @@ Json::Value RPCParser::parseRipplePathFind(const Json::Value& jvParams)
 	Json::Value		jvRequest;
 	bool			bLedger		= 2 == jvParams.size();
 
-	cLog(lsTRACE) << "RPC json: " << jvParams[0u];
+	WriteLog (lsTRACE, RPCParser) << "RPC json: " << jvParams[0u];
 
 	if (reader.parse(jvParams[0u].asString(), jvRequest))
 	{
@@ -719,8 +715,8 @@ Json::Value RPCParser::parseWalletSeed(const Json::Value& jvParams)
 // <-- { method: xyz, params: [... ] } or { error: ..., ... }
 Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 {
-	cLog(lsTRACE) << "RPC method:" << strMethod;
-	cLog(lsTRACE) << "RPC params:" << jvParams;
+	WriteLog (lsTRACE, RPCParser) << "RPC method:" << strMethod;
+	WriteLog (lsTRACE, RPCParser) << "RPC params:" << jvParams;
 
 	static struct {
 		const char*		pCommand;
@@ -811,7 +807,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 	else if ((commandsA[i].iMinParams >= 0 && jvParams.size() < commandsA[i].iMinParams)
 		|| (commandsA[i].iMaxParams >= 0 && jvParams.size() > commandsA[i].iMaxParams))
 	{
-		cLog(lsWARNING) << "Wrong number of parameters: minimum=" << commandsA[i].iMinParams
+		WriteLog (lsWARNING, RPCParser) << "Wrong number of parameters: minimum=" << commandsA[i].iMinParams
 			<< " maximum=" << commandsA[i].iMaxParams
 			<< " actual=" << jvParams.size();
 
@@ -850,7 +846,7 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 
 		jvRequest	= rpParser.parseCommand(vCmd[0], jvRpcParams);
 
-		cLog(lsTRACE) << "RPC Request: " << jvRequest << std::endl;
+		WriteLog (lsTRACE, RPCParser) << "RPC Request: " << jvRequest << std::endl;
 
 		if (jvRequest.isMember("error"))
 		{
@@ -960,7 +956,7 @@ bool responseRPC(
 			throw std::runtime_error("no response from server");
 
 		// Parse reply
-		cLog(lsDEBUG) << "RPC reply: " << strData << std::endl;
+		WriteLog (lsDEBUG, RPCParser) << "RPC reply: " << strData << std::endl;
 
 		Json::Reader	reader;
 		Json::Value		jvReply;
@@ -986,7 +982,7 @@ void requestRPC(const std::string& strMethod, const Json::Value& jvParams,
 	const std::map<std::string, std::string>& mHeaders, const std::string& strPath,
 	boost::asio::streambuf& sb, const std::string& strHost)
 {
-	cLog(lsDEBUG) << "requestRPC: strPath='" << strPath << "'";
+	WriteLog (lsDEBUG, RPCParser) << "requestRPC: strPath='" << strPath << "'";
 
 	std::ostream	osRequest(&sb);
 
@@ -1024,7 +1020,7 @@ void callRPC(
 
 	// Send request
 	// Log(lsDEBUG) << "requesting" << std::endl;
-	// cLog(lsDEBUG) << "send request " << strMethod << " : " << strRequest << std::endl;
+	// WriteLog (lsDEBUG, RPCParser) << "send request " << strMethod << " : " << strRequest << std::endl;
 
 	HttpsClient::httpsRequest(
 		bSSL,

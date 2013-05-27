@@ -1,5 +1,3 @@
-#include "TransactionErr.h"
-#include "utils.h"
 
 bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 {

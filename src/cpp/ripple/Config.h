@@ -6,12 +6,9 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/filesystem.hpp>
 
-#include "types.h"
 #include "RippleAddress.h"
 #include "ParseSection.h"
 #include "SerializedTypes.h"
-
-#include "../json/value.h"
 
 #define ENABLE_INSECURE				0				// 1, to enable unnecessary features.
 

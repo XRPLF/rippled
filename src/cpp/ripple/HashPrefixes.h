@@ -1,7 +1,6 @@
 #ifndef __HASHPREFIXES__
 #define __HASHPREFIXES__
 
-#include "types.h"
 
 // TXN - Hash of transaction plus signature to give transaction ID
 const uint32 sHP_TransactionID =	0x54584E00;

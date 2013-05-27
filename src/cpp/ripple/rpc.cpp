@@ -8,16 +8,17 @@
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
 
-#include "../json/value.h"
-#include "../json/writer.h"
-
 #include "RPC.h"
 #include "BitcoinUtil.h"
 #include "Config.h"
-#include "Log.h"
 #include "Version.h"
 
-SETUP_LOG();
+// Used for logging
+struct RPC
+{
+};
+
+SETUP_LOG (RPC)
 
 using namespace boost;
 using namespace boost::asio;
@@ -77,7 +78,7 @@ std::string rfc1123Time()
 
 std::string HTTPReply(int nStatus, const std::string& strMsg)
 {
-	cLog(lsTRACE) << "HTTP Reply " << nStatus << " " << strMsg;
+	WriteLog (lsTRACE, RPC) << "HTTP Reply " << nStatus << " " << strMsg;
 
 	if (nStatus == 401)
 		return strprintf("HTTP/1.0 401 Authorization Required\r\n"

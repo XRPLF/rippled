@@ -8,19 +8,11 @@
 
 #include "Application.h"
 #include "Config.h"
-#include "utils.h"
-#include "Log.h"
 
-SETUP_LOG();
+SETUP_LOG (PeerDoor)
 
 using namespace std;
 using namespace boost::asio::ip;
-
-// Generate DH for SSL connection.
-static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
-{
-	return 512 == iKeyLength ? theApp->getWallet().getDh512() : theApp->getWallet().getDh1024();
-}
 
 PeerDoor::PeerDoor(boost::asio::io_service& io_service) :
 	mAcceptor(io_service,
@@ -67,7 +59,7 @@ void PeerDoor::handleConnect(Peer::pointer new_connection,
 	{
 		if (error == boost::system::errc::too_many_files_open)
 			delay = true;
-		cLog(lsERROR) << error;
+		WriteLog (lsERROR, PeerDoor) << error;
 	}
 
 	if (delay)

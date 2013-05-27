@@ -44,12 +44,6 @@ if OSX:
 else:
 	env.Replace(CTAGS = CTAGS, CTAGSOPTIONS = '--tag-relative')
 
-#
-# Put objects files in their own directory.
-#
-for dir in ['.', 'ripple', 'database', 'json', 'leveldb/db', 'leveldb/port', 'leveldb/include', 'leveldb/table', 'leveldb/util', 'websocketpp']:
-	VariantDir('build/obj/'+dir, 'src/cpp/'+dir, duplicate=0)
-
 # Use openssl
 env.ParseConfig('pkg-config --cflags --libs openssl')
 
@@ -69,6 +63,7 @@ if FreeBSD or Ubuntu:
 		    'boost_regex',
 		    'boost_system',
 		    'boost_thread',
+		    'boost_random',
 	    ]
     )
 else:
@@ -80,6 +75,7 @@ else:
 		    'boost_regex-mt',
 		    'boost_system-mt',
 		    'boost_thread-mt',
+		    'boost_random-mt',
 	    ]
     )
 
@@ -109,6 +105,9 @@ BOOSTFLAGS	= ['-DBOOST_TEST_DYN_LINK', '-DBOOST_FILESYSTEM_NO_DEPRECATED']
 env.Append(LINKFLAGS = ['-rdynamic', '-pthread'])
 env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts', '-DSQLITE_THREADSAFE=1'])
 env.Append(CXXFLAGS = ['-O0', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+BOOSTFLAGS+DEBUGFLAGS)
+env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb', '-Isrc/cpp/leveldb/port', '-Isrc/cpp/leveldb/include', '-DUSE_LEVELDB'])
+env.Append(CXXFLAGS = [ '-Ibuild/proto'])
+env.Append(CXXFLAGS = [ '-I.', '-Isrc/cpp/ripple'])
 
 if (int(GCC_VERSION[0]) > 4 or (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) >= 7)):
     env.Append(CXXFLAGS = ['-std=c++11'])
@@ -117,28 +116,37 @@ if OSX:
 	env.Append(LINKFLAGS = ['-L/usr/local/opt/openssl/lib'])
 	env.Append(CXXFLAGS = ['-I/usr/local/opt/openssl/include'])
 
-if LevelDB:
-	env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb', '-Isrc/cpp/leveldb/port', '-Isrc/cpp/leveldb/include', '-DUSE_LEVELDB'])
-
-	LEVELDB_SRCS	= [ 'src/cpp/leveldb_core.cpp' ]
-
-DB_SRCS		= glob.glob('src/cpp/database/*.c') + glob.glob('src/cpp/database/*.cpp')
-JSON_SRCS	= glob.glob('src/cpp/json/*.cpp')
-
-WEBSOCKETPP_SRCS = [
-	'src/cpp/websocketpp/src/base64/base64.cpp',
-	'src/cpp/websocketpp/src/md5/md5.c',
-	'src/cpp/websocketpp/src/messages/data.cpp',
-	'src/cpp/websocketpp/src/network_utilities.cpp',
-	'src/cpp/websocketpp/src/processors/hybi_header.cpp',
-	'src/cpp/websocketpp/src/processors/hybi_util.cpp',
-	'src/cpp/websocketpp/src/sha1/sha1.cpp',
-	'src/cpp/websocketpp/src/uri.cpp'
+RIPPLE_SRCS = [
+	'src/cpp/database/sqlite3.c',
+	'src/cpp/leveldb_core.cpp',
+	'src/cpp/websocket_core.cpp',
+	'modules/ripple_basics/ripple_basics.cpp',
+	'modules/ripple_client/ripple_client.cpp',
+	'modules/ripple_db/ripple_db.cpp',
+	'modules/ripple_json/ripple_json.cpp',
+	'modules/ripple_ledger/ripple_ledger.cpp',
+	'modules/ripple_main/ripple_main.cpp',
+	'modules/ripple_mess/ripple_mess.cpp',
+	'modules/ripple_net/ripple_net.cpp'
 	]
 
-RIPPLE_SRCS = glob.glob('src/cpp/ripple/*.cpp')
+# Put objects files in their own directory.
+for dir in ['.', 'ripple', 'database', 'json', 'leveldb/db', 'leveldb/port', 'leveldb/include', 'leveldb/table', 'leveldb/util', 'websocketpp']:
+	VariantDir('build/obj/'+dir, 'src/cpp/'+dir, duplicate=0)
+
+for dir in [
+             'ripple_basics',
+             'ripple_client',
+             'ripple_db',
+             'ripple_json',
+             'ripple_ledger',
+	     'ripple_main',
+             'ripple_mess',
+             'ripple_net'
+            ]:
+	VariantDir('build/obj/'+dir, 'modules/'+dir, duplicate=0)
+
 PROTO_SRCS = env.Protoc([], 'src/cpp/ripple/ripple.proto', PROTOCOUTDIR='build/proto', PROTOCPYTHONOUTDIR=None)
-env.Append(CXXFLAGS = ['-Ibuild/proto'])
 env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')
 # PROTO_SRCS  = [ 'src/cpp/protobuf_core.cpp' ]
 # env.Append(CXXFLAGS = ['-Ibuild/proto', '-Isrc/cpp/protobuf/src', '-Isrc/cpp/protobuf/vsprojects' ])
@@ -152,20 +160,13 @@ for file in UNUSED_SRCS:
 # Only tag actual Ripple files.
 TAG_SRCS    = copy.copy(RIPPLE_SRCS)
 
-# Add other sources.
-RIPPLE_SRCS += DB_SRCS + JSON_SRCS + WEBSOCKETPP_SRCS
-
-if LevelDB:
-    RIPPLE_SRCS += LEVELDB_SRCS
-
 # Derive the object files from the source files.
 RIPPLE_OBJS = []
 
-RIPPLE_OBJS += PROTO_SRCS
-
 for file in RIPPLE_SRCS:
-    # Strip src/cpp/
+    # Strip src/cpp/ or modules/
     RIPPLE_OBJS.append('build/obj/' + file[8:])
+
 #
 # Targets
 #

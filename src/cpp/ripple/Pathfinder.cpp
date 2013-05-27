@@ -6,9 +6,8 @@
 #include <boost/foreach.hpp>
 
 #include "Application.h"
-#include "Log.h"
 
-SETUP_LOG();
+SETUP_LOG (Pathfinder)
 
 /*
 we just need to find a succession of the highest quality paths there until we find enough width
@@ -74,7 +73,7 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 {
 	if (2 >= spPath.mPath.size()) {
 		// Empty path is a default. Don't need to add it to return set.
-		cLog(lsTRACE) << "findPaths: empty path: direct";
+		WriteLog (lsTRACE, Pathfinder) << "findPaths: empty path: direct";
 
 		return true;
 	}
@@ -95,7 +94,7 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 		bool			bDefault;
 		LedgerEntrySet	lesActive(mLedger, tapNONE);
 
-		cLog(lsTRACE) << boost::str(boost::format("bDefaultPath> mSrcAmount=%s mDstAmount=%s")
+		WriteLog (lsTRACE, Pathfinder) << boost::str(boost::format("bDefaultPath> mSrcAmount=%s mDstAmount=%s")
 				% mSrcAmount.getFullText()
 				% mDstAmount.getFullText());
 
@@ -107,9 +106,9 @@ bool Pathfinder::bDefaultPath(const STPath& spPath)
 		// When path is a default (implied). Don't need to add it to return set.
 		bDefault	= pspCurrent->vpnNodes == mPsDefault->vpnNodes;
 
-		cLog(lsTRACE) << "bDefaultPath: expanded path: " << pspCurrent->getJson();
-		cLog(lsTRACE) << "bDefaultPath: source path: " << spPath.getJson(0);
-		cLog(lsTRACE) << "bDefaultPath: default path: " << mPsDefault->getJson();
+		WriteLog (lsTRACE, Pathfinder) << "bDefaultPath: expanded path: " << pspCurrent->getJson();
+		WriteLog (lsTRACE, Pathfinder) << "bDefaultPath: source path: " << spPath.getJson(0);
+		WriteLog (lsTRACE, Pathfinder) << "bDefaultPath: default path: " << mPsDefault->getJson();
 
 		return bDefault;
 	}
@@ -173,7 +172,7 @@ Pathfinder::Pathfinder(RLCache::ref cache,
 
 		LedgerEntrySet	lesActive(mLedger, tapNONE);
 
-		cLog(lsTRACE) << boost::str(boost::format("Pathfinder> mSrcAmount=%s mDstAmount=%s")
+		WriteLog (lsTRACE, Pathfinder) << boost::str(boost::format("Pathfinder> mSrcAmount=%s mDstAmount=%s")
 				% mSrcAmount.getFullText()
 				% mDstAmount.getFullText());
 
@@ -182,14 +181,14 @@ Pathfinder::Pathfinder(RLCache::ref cache,
 		if (tesSUCCESS == psDefault->terStatus)
 		{
 			// The default path works, remember it.
-			cLog(lsTRACE) << "Pathfinder: default path: " << psDefault->getJson();
+			WriteLog (lsTRACE, Pathfinder) << "Pathfinder: default path: " << psDefault->getJson();
 
 			mPsDefault	= psDefault;
 		}
 		else
 		{
 			// The default path doesn't work.
-			cLog(lsTRACE) << "Pathfinder: default path: NONE: " << transToken(psDefault->terStatus);
+			WriteLog (lsTRACE, Pathfinder) << "Pathfinder: default path: NONE: " << transToken(psDefault->terStatus);
 		}
 	}
 }
@@ -212,7 +211,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 {
 	bool	bFound		= false;	// True, iff found a path.
 
-	cLog(lsTRACE) << boost::str(boost::format("findPaths> mSrcAccountID=%s mDstAccountID=%s mDstAmount=%s mSrcCurrencyID=%s mSrcIssuerID=%s")
+	WriteLog (lsTRACE, Pathfinder) << boost::str(boost::format("findPaths> mSrcAccountID=%s mDstAccountID=%s mDstAmount=%s mSrcCurrencyID=%s mSrcIssuerID=%s")
 		% RippleAddress::createHumanAccountID(mSrcAccountID)
 		% RippleAddress::createHumanAccountID(mDstAccountID)
 		% mDstAmount.getFullText()
@@ -222,7 +221,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 	if (!mLedger)
 	{
-		cLog(lsDEBUG) << "findPaths< no ledger";
+		WriteLog (lsDEBUG, Pathfinder) << "findPaths< no ledger";
 
 		return false;
 	}
@@ -233,7 +232,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 	SLE::pointer	sleSrc		= lesActive.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(mSrcAccountID));
 	if (!sleSrc)
 	{
-		cLog(lsDEBUG) << boost::str(boost::format("findPaths< no source"));
+		WriteLog (lsDEBUG, Pathfinder) << boost::str(boost::format("findPaths< no source"));
 
 		return false;
 	}
@@ -241,7 +240,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 	SLE::pointer	sleDst		= lesActive.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(mDstAccountID));
 	if (!sleDst)
 	{
-		cLog(lsDEBUG) << boost::str(boost::format("findPaths< no dest"));
+		WriteLog (lsDEBUG, Pathfinder) << boost::str(boost::format("findPaths< no dest"));
 
 		return false;
 	}
@@ -297,35 +296,35 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			if (spPath.size())
 			{
 				// There is an actual path element.
-				cLog(lsTRACE) << "findPaths: adding path: " << spPath.getJson(0);
+				WriteLog (lsTRACE, Pathfinder) << "findPaths: adding path: " << spPath.getJson(0);
 
 				vspResults.push_back(spPath);						// Potential result.
 			}
 			else
 			{
-				cLog(lsWARNING) << "findPaths: empty path: XRP->XRP";
+				WriteLog (lsWARNING, Pathfinder) << "findPaths: empty path: XRP->XRP";
 			}
 
 			continue;
 		}
 
-		if (sLog(lsTRACE))
+		if (ShouldLog (lsTRACE, Pathfinder))
 		{
-			cLog(lsTRACE) << boost::str(boost::format("findPaths: spe: %s/%s: %s amt: %s")
+			WriteLog (lsTRACE, Pathfinder) << boost::str(boost::format("findPaths: spe: %s/%s: %s amt: %s")
 				% RippleAddress::createHumanAccountID(speEnd.mAccountID)
 				% RippleAddress::createHumanAccountID(speEnd.mIssuerID)
 				% RippleAddress::createHumanAccountID(mDstAccountID)
 				% RippleAddress::createHumanAccountID(mDstAmount.getIssuer()));
 
-			cLog(lsTRACE) << "findPaths: finish? account: " << (speEnd.mAccountID == mDstAccountID);
-			cLog(lsTRACE) << "findPaths: finish? currency: " << (speEnd.mCurrencyID == mDstAmount.getCurrency());
-			cLog(lsTRACE) << "findPaths: finish? issuer: "
+			WriteLog (lsTRACE, Pathfinder) << "findPaths: finish? account: " << (speEnd.mAccountID == mDstAccountID);
+			WriteLog (lsTRACE, Pathfinder) << "findPaths: finish? currency: " << (speEnd.mCurrencyID == mDstAmount.getCurrency());
+			WriteLog (lsTRACE, Pathfinder) << "findPaths: finish? issuer: "
 				<< RippleAddress::createHumanAccountID(speEnd.mIssuerID)
 				<< " / "
 				<< RippleAddress::createHumanAccountID(mDstAmount.getIssuer())
 				<< " / "
 				<< RippleAddress::createHumanAccountID(mDstAccountID);
-			cLog(lsTRACE) << "findPaths: finish? issuer is desired: " << (speEnd.mIssuerID == mDstAmount.getIssuer());
+			WriteLog (lsTRACE, Pathfinder) << "findPaths: finish? issuer is desired: " << (speEnd.mIssuerID == mDstAmount.getIssuer());
 		}
 
 		// YYY Allows going through self.  Is this wanted?
@@ -339,7 +338,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			// Cursor on the dest account with correct currency and issuer.
 
 			if (bDefaultPath(spPath)) {
-				cLog(lsTRACE) << "findPaths: dropping: default path: " << spPath.getJson(0);
+				WriteLog (lsTRACE, Pathfinder) << "findPaths: dropping: default path: " << spPath.getJson(0);
 
 				bFound	= true;
 			}
@@ -358,7 +357,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 				vspResults.push_back(spPath);						// Potential result.
 
-				cLog(lsDEBUG) << "findPaths: adding path: " << spPath.getJson(0);
+				WriteLog (lsDEBUG, Pathfinder) << "findPaths: adding path: " << spPath.getJson(0);
 			}
 
 			continue;
@@ -366,7 +365,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 		bool	bContinued	= false;								// True, if wasn't a dead end.
 
-		cLog(lsTRACE) <<
+		WriteLog (lsTRACE, Pathfinder) <<
 			boost::str(boost::format("findPaths: cursor: %s - %s/%s")
 				% RippleAddress::createHumanAccountID(speEnd.mAccountID)
 				% STAmount::createHumanCurrency(speEnd.mCurrencyID)
@@ -377,7 +376,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 		{
 			// Path is at maximum size. Don't want to add more.
 
-			cLog(lsTRACE)
+			WriteLog (lsTRACE, Pathfinder)
 				<< boost::str(boost::format("findPaths: dropping: path would exceed max steps"));
 
 			continue;
@@ -407,7 +406,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					spNew.mPath.push_back(speBook);		// Add the order book.
 					spNew.mPath.push_back(speAccount);	// Add the account and currency
 
-					cLog(lsDEBUG)
+					WriteLog (lsDEBUG, Pathfinder)
 						<< boost::str(boost::format("findPaths: XRP -> %s/%s")
 //							% STAmount::createHumanCurrency(book->getCurrencyOut())
 //							% RippleAddress::createHumanAccountID(book->getIssuerOut())
@@ -420,7 +419,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				}
 			}
 
-			tLog(!bContinued, lsDEBUG)
+			CondLog (!bContinued, lsDEBUG, Pathfinder)
 				<< boost::str(boost::format("findPaths: XRP -> dead end"));
 		}
 		else
@@ -431,7 +430,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 			SLE::pointer	sleEnd			= lesActive.entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(speEnd.mAccountID));
 
-			tLog(!sleEnd, lsDEBUG)
+			CondLog (!sleEnd, lsDEBUG, Pathfinder)
 				<< boost::str(boost::format("findPaths: tail: %s/%s : ")
 					% RippleAddress::createHumanAccountID(speEnd.mAccountID)
 					% RippleAddress::createHumanAccountID(speEnd.mIssuerID));
@@ -462,7 +461,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 						((uPeerID == mSrcAccountID) && (uPeerID != mDstAccountID)))
 					{
 						// Peer is in path already. Ignore it to avoid a loop.
-						cLog(lsTRACE) <<
+						WriteLog (lsTRACE, Pathfinder) <<
 							boost::str(boost::format("findPaths: SEEN: %s/%s -> %s/%s")
 								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
 								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
@@ -479,7 +478,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 							|| (bRequireAuth && !rspEntry->getAuth())))						// Not authorized to hold credit.
 					{
 						// Path has no credit left. Ignore it.
-						cLog(lsTRACE) <<
+						WriteLog (lsTRACE, Pathfinder) <<
 							boost::str(boost::format("findPaths: No credit: %s/%s -> %s/%s balance=%s limit=%s")
 								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
 								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
@@ -523,7 +522,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 						bContinued	= true;
 
-						cLog(lsTRACE) <<
+						WriteLog (lsTRACE, Pathfinder) <<
 							boost::str(boost::format("findPaths: push explore: %s/%s -> %s/%s")
 								% STAmount::createHumanCurrency(speEnd.mCurrencyID)
 								% RippleAddress::createHumanAccountID(speEnd.mAccountID)
@@ -565,7 +564,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 					bContinued	= true;
 
-					cLog(lsTRACE) <<
+					WriteLog (lsTRACE, Pathfinder) <<
 						boost::str(boost::format("findPaths: push book: %s/%s -> %s/%s")
 							% STAmount::createHumanCurrency(speEnd.mCurrencyID)
 							% RippleAddress::createHumanAccountID(speEnd.mIssuerID)
@@ -574,7 +573,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 				}
 			}
 
-			tLog(!bContinued, lsTRACE)
+			CondLog (!bContinued, lsTRACE, Pathfinder)
 				<< boost::str(boost::format("findPaths: dropping: non-XRP -> dead end"));
 		}
 	}
@@ -619,7 +618,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			}
 			catch (const std::exception& e)
 			{
-				cLog(lsINFO) << "findPaths: Caught throw: " << e.what();
+				WriteLog (lsINFO, Pathfinder) << "findPaths: Caught throw: " << e.what();
 
 				terResult	= tefEXCEPTION;
 			}
@@ -628,7 +627,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			{
 				uint64	uQuality	= STAmount::getRate(saDstAmountAct, saMaxAmountAct);
 
-				cLog(lsDEBUG)
+				WriteLog (lsDEBUG, Pathfinder)
 					<< boost::str(boost::format("findPaths: quality: %d: %s")
 						% uQuality
 						% spCurrent.getJson(0));
@@ -637,7 +636,7 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 			}
 			else
 			{
-				cLog(lsDEBUG)
+				WriteLog (lsDEBUG, Pathfinder)
 					<< boost::str(boost::format("findPaths: dropping: %s: %s")
 						% transToken(terResult)
 						% spCurrent.getJson(0));
@@ -674,17 +673,17 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 
 					if (tesSUCCESS == result)
 					{
-						cLog(lsDEBUG) << "Default path contributes: " << saDstAmountAct;
+						WriteLog (lsDEBUG, Pathfinder) << "Default path contributes: " << saDstAmountAct;
 						remaining -= saDstAmountAct;
 					}
 					else
 					{
-						cLog(lsDEBUG) << "Default path fails: " << transToken(result);
+						WriteLog (lsDEBUG, Pathfinder) << "Default path fails: " << transToken(result);
 					}
 				}
 				catch (...)
 				{
-					cLog(lsDEBUG) << "Default path causes exception";
+					WriteLog (lsDEBUG, Pathfinder) << "Default path causes exception";
 				}
 			}
 
@@ -698,26 +697,26 @@ bool Pathfinder::findPaths(const unsigned int iMaxSteps, const unsigned int iMax
 					spsDst.addPath(vspResults[lqt.get<3>()]);
 				}
 				else
-					cLog(lsDEBUG) << "Skipping a non-filling path: " << vspResults[lqt.get<3>()].getJson(0);
+					WriteLog (lsDEBUG, Pathfinder) << "Skipping a non-filling path: " << vspResults[lqt.get<3>()].getJson(0);
 			}
 
 			if (remaining.isPositive())
 			{
 				bFound = false;
-				cLog(lsINFO) << "Paths could not send " << remaining << " of " << mDstAmount;
+				WriteLog (lsINFO, Pathfinder) << "Paths could not send " << remaining << " of " << mDstAmount;
 			}
 			else
 				bFound = true;
 
-			cLog(lsDEBUG) << boost::str(boost::format("findPaths: RESULTS: %s") % spsDst.getJson(0));
+			WriteLog (lsDEBUG, Pathfinder) << boost::str(boost::format("findPaths: RESULTS: %s") % spsDst.getJson(0));
 		}
 		else
 		{
-			cLog(lsDEBUG) << boost::str(boost::format("findPaths: RESULTS: non-defaults filtered away"));
+			WriteLog (lsDEBUG, Pathfinder) << boost::str(boost::format("findPaths: RESULTS: non-defaults filtered away"));
 		}
 	}
 
-	cLog(lsDEBUG) << boost::str(boost::format("findPaths< bFound=%d") % bFound);
+	WriteLog (lsDEBUG, Pathfinder) << boost::str(boost::format("findPaths< bFound=%d") % bFound);
 
 	return bFound;
 }

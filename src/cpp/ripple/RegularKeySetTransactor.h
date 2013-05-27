@@ -1,3 +1,6 @@
+#ifndef REGULARKEYSETTRANSACTOR_H
+#define REGULARKEYSETTRANSACTOR_H
+
 #include "Transactor.h"
 
 class RegularKeySetTransactor : public Transactor
@@ -8,5 +11,6 @@ public:
 	TER checkFee();
 	TER doApply();
 };
+#endif
 
 // vim:ts=4

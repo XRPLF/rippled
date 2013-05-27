@@ -10,15 +10,13 @@
 #include <boost/test/unit_test.hpp>
 
 #include "Config.h"
-#include "Log.h"
 #include "SerializedTypes.h"
-#include "utils.h"
 
-SETUP_LOG();
+SETUP_LOG (STAmount)
 
 uint64	STAmount::uRateOne	= STAmount::getRate(STAmount(1), STAmount(1));
-static const uint64 tenTo14 = 100000000000000ull;
-static const uint64 tenTo17 = tenTo14 * 1000;
+
+
 
 #if (ULONG_MAX > UINT_MAX)
 #define BN_add_word64(bn, word) BN_add_word(bn, word)
@@ -107,7 +105,7 @@ bool STAmount::bSetJson(const Json::Value& jvSource)
 	}
 	catch (const std::exception& e)
 	{
-		cLog(lsINFO)
+		WriteLog (lsINFO, STAmount)
 			<< boost::str(boost::format("bSetJson(): caught: %s")
 				% e.what());
 
@@ -122,7 +120,7 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 
 	if (v.isObject())
 	{
-		cLog(lsTRACE)
+		WriteLog (lsTRACE, STAmount)
 			<< boost::str(boost::format("value='%s', currency='%s', issuer='%s'")
 				% v["value"].asString()
 				% v["currency"].asString()
@@ -272,7 +270,7 @@ bool STAmount::setValue(const std::string& sAmount)
 
 	if (!boost::regex_match(sAmount, smMatch, reNumber))
 	{
-		cLog(lsWARNING) << "Number not valid: \"" << sAmount << "\"";
+		WriteLog (lsWARNING, STAmount) << "Number not valid: \"" << sAmount << "\"";
 		return false;
 	}
 
@@ -283,7 +281,7 @@ bool STAmount::setValue(const std::string& sAmount)
 	{
 		if ((smMatch[2].length() + smMatch[4].length()) > 32)
 		{
-			cLog(lsWARNING) << "Overlong number: " << sAmount;
+			WriteLog (lsWARNING, STAmount) << "Overlong number: " << sAmount;
 			return false;
 		}
 
@@ -310,11 +308,11 @@ bool STAmount::setValue(const std::string& sAmount)
 	}
 	catch (...)
 	{
-		cLog(lsWARNING) << "Number not parsed: \"" << sAmount << "\"";
+		WriteLog (lsWARNING, STAmount) << "Number not parsed: \"" << sAmount << "\"";
 		return false;
 	}
 
-	cLog(lsTRACE) << "Float \"" << sAmount << "\" parsed to " << mValue << " : " << mOffset;
+	WriteLog (lsTRACE, STAmount) << "Float \"" << sAmount << "\" parsed to " << mValue << " : " << mOffset;
 
 	if (mIsNative)
 	{
@@ -351,7 +349,7 @@ bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurr
 	//
 	if (!currencyFromString(mCurrency, sCurrency))
 	{
-		cLog(lsINFO) << "Currency malformed: " << sCurrency;
+		WriteLog (lsINFO, STAmount) << "Currency malformed: " << sCurrency;
 
 		return false;
 	}
@@ -366,7 +364,7 @@ bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurr
 	// Issuer must be "" or a valid account string.
 	if (!naIssuerID.setAccountID(sIssuer))
 	{
-		cLog(lsINFO) << "Issuer malformed: " << sIssuer;
+		WriteLog (lsINFO, STAmount) << "Issuer malformed: " << sIssuer;
 
 		return false;
 	}
@@ -376,7 +374,7 @@ bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurr
 	// Stamps not must have an issuer.
 	if (mIsNative && !mIssuer.isZero())
 	{
-		cLog(lsINFO) << "Issuer specified for XRP: " << sIssuer;
+		WriteLog (lsINFO, STAmount) << "Issuer specified for XRP: " << sIssuer;
 
 		return false;
 	}
@@ -1034,17 +1032,17 @@ bool STAmount::applyOffer(
 											? saOfferFunds			// As is.
 											: STAmount::divide(saOfferFunds, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uOfferPaysRate, -9));	// Reduce by offer fees.
 
-	cLog(lsINFO) << "applyOffer: uOfferPaysRate=" << uOfferPaysRate;
-	cLog(lsINFO) << "applyOffer: saOfferFundsAvailable=" << saOfferFundsAvailable.getFullText();
+	WriteLog (lsINFO, STAmount) << "applyOffer: uOfferPaysRate=" << uOfferPaysRate;
+	WriteLog (lsINFO, STAmount) << "applyOffer: saOfferFundsAvailable=" << saOfferFundsAvailable.getFullText();
 
 	// Limit taker funds available, by transfer fees.
 	STAmount	saTakerFundsAvailable	= QUALITY_ONE == uTakerPaysRate
 											? saTakerFunds			// As is.
 											: STAmount::divide(saTakerFunds, STAmount(CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9));	// Reduce by taker fees.
 
-	cLog(lsINFO) << "applyOffer: TAKER_FEES=" << STAmount(CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9).getFullText();
-	cLog(lsINFO) << "applyOffer: uTakerPaysRate=" << uTakerPaysRate;
-	cLog(lsINFO) << "applyOffer: saTakerFundsAvailable=" << saTakerFundsAvailable.getFullText();
+	WriteLog (lsINFO, STAmount) << "applyOffer: TAKER_FEES=" << STAmount(CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9).getFullText();
+	WriteLog (lsINFO, STAmount) << "applyOffer: uTakerPaysRate=" << uTakerPaysRate;
+	WriteLog (lsINFO, STAmount) << "applyOffer: saTakerFundsAvailable=" << saTakerFundsAvailable.getFullText();
 
 	STAmount	saOfferPaysAvailable;	// Amount offer can pay out, limited by offer and offerer funds.
 	STAmount	saOfferGetsAvailable;	// Amount offer would get, limited by offer funds.
@@ -1064,24 +1062,24 @@ bool STAmount::applyOffer(
 		saOfferGetsAvailable	= std::min(saOfferGets, mulRound(saOfferPaysAvailable, saOfferRate, saOfferGets, true));
 	}
 
-	cLog(lsINFO) << "applyOffer: saOfferPaysAvailable=" << saOfferFundsAvailable.getFullText();
-	cLog(lsINFO) << "applyOffer: saOfferGetsAvailable=" << saOfferGetsAvailable.getFullText();
+	WriteLog (lsINFO, STAmount) << "applyOffer: saOfferPaysAvailable=" << saOfferFundsAvailable.getFullText();
+	WriteLog (lsINFO, STAmount) << "applyOffer: saOfferGetsAvailable=" << saOfferGetsAvailable.getFullText();
 
 	STAmount	saTakerPaysAvailable	= std::min(saTakerPays, saTakerFundsAvailable);
-	cLog(lsINFO) << "applyOffer: saTakerPaysAvailable=" << saTakerPaysAvailable.getFullText();
+	WriteLog (lsINFO, STAmount) << "applyOffer: saTakerPaysAvailable=" << saTakerPaysAvailable.getFullText();
 
 	// Limited = limited by other sides raw numbers.
 	// Taker can't pay more to offer than offer can get.
 	STAmount	saTakerPaysLimited		= std::min(saTakerPaysAvailable, saOfferGetsAvailable);
-	cLog(lsINFO) << "applyOffer: saTakerPaysLimited=" << saTakerPaysLimited.getFullText();
+	WriteLog (lsINFO, STAmount) << "applyOffer: saTakerPaysLimited=" << saTakerPaysLimited.getFullText();
 
 	// Align saTakerGetsLimited with saTakerPaysLimited.
 	STAmount	saTakerGetsLimited		= saTakerPaysLimited >= saOfferGetsAvailable
 											? saOfferPaysAvailable									// Potentially take entire offer. Avoid math shenanigans.
 											: std::min(saOfferPaysAvailable, divRound(saTakerPaysLimited, saOfferRate, saTakerGets, true));	// Taker a portion of offer.
 
-	cLog(lsINFO) << "applyOffer: saOfferRate=" << saOfferRate.getFullText();
-	cLog(lsINFO) << "applyOffer: saTakerGetsLimited=" << saTakerGetsLimited.getFullText();
+	WriteLog (lsINFO, STAmount) << "applyOffer: saOfferRate=" << saOfferRate.getFullText();
+	WriteLog (lsINFO, STAmount) << "applyOffer: saTakerGetsLimited=" << saTakerGetsLimited.getFullText();
 
 	// Got & Paid = Calculated by price and transfered without fees.
 	// Compute from got as when !bSell, we want got to be exact to finish off offer if possible.
@@ -1094,8 +1092,8 @@ bool STAmount::applyOffer(
 					: std::min(saOfferGetsAvailable, mulRound(saTakerGot, saOfferRate, saTakerFunds, true));
 	saTakerPaid	= std::min(saTakerPaid, saTakerPaysAvailable);		// Due to rounding must clamp.
 
-	cLog(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
-	cLog(lsINFO) << "applyOffer: saTakerPaid=" << saTakerPaid.getFullText();
+	WriteLog (lsINFO, STAmount) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
+	WriteLog (lsINFO, STAmount) << "applyOffer: saTakerPaid=" << saTakerPaid.getFullText();
 
 	if (uTakerPaysRate == QUALITY_ONE)
 	{
@@ -1106,17 +1104,17 @@ bool STAmount::applyOffer(
 		// Compute fees in a rounding safe way.
 
 		STAmount	saTransferRate	= STAmount(CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9);
-	cLog(lsINFO) << "applyOffer: saTransferRate=" << saTransferRate.getFullText();
+	WriteLog (lsINFO, STAmount) << "applyOffer: saTransferRate=" << saTransferRate.getFullText();
 
 		// TakerCost includes transfer fees.
 		STAmount	saTakerCost		= STAmount::mulRound(saTakerPaid, saTransferRate, true);
 
-	cLog(lsINFO) << "applyOffer: saTakerCost=" << saTakerCost.getFullText();
-	cLog(lsINFO) << "applyOffer: saTakerFunds=" << saTakerFunds.getFullText();
+	WriteLog (lsINFO, STAmount) << "applyOffer: saTakerCost=" << saTakerCost.getFullText();
+	WriteLog (lsINFO, STAmount) << "applyOffer: saTakerFunds=" << saTakerFunds.getFullText();
 		saTakerIssuerFee	= saTakerCost > saTakerFunds
 								? saTakerFunds-saTakerPaid	// Not enough funds to cover fee, stiff issuer the rounding error.
 								: saTakerCost-saTakerPaid;
-	cLog(lsINFO) << "applyOffer: saTakerIssuerFee=" << saTakerIssuerFee.getFullText();
+	WriteLog (lsINFO, STAmount) << "applyOffer: saTakerIssuerFee=" << saTakerIssuerFee.getFullText();
 		assert(!saTakerIssuerFee.isNegative());
 	}
 
@@ -1134,7 +1132,7 @@ bool STAmount::applyOffer(
 								: saOfferCost-saTakerGot;
 	}
 
-	cLog(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
+	WriteLog (lsINFO, STAmount) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
 
 	return saTakerGot >= saOfferPaysAvailable;				// True, if consumed offer.
 }
@@ -1436,7 +1434,7 @@ BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 		BOOST_FAIL("STAmount multiply fail 4");
 	if (STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount(3), CURRENCY_ONE, ACCOUNT_ONE).getText() != "20")
 	{
-		cLog(lsFATAL) << "60/3 = " <<
+		WriteLog (lsFATAL, STAmount) << "60/3 = " <<
 			STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60),
 				STAmount(3), CURRENCY_ONE, ACCOUNT_ONE).getText();
 		BOOST_FAIL("STAmount divide fail");
@@ -1475,7 +1473,7 @@ static bool roundTest(int n, int d, int m)
 	if (res == cmp)
 		return true;
 	cmp.throwComparable(res);
-	cLog(lsWARNING) << "(" << num.getText() << "/" << den.getText() << ") X " << mul.getText() << " = "
+	WriteLog (lsWARNING, STAmount) << "(" << num.getText() << "/" << den.getText() << ") X " << mul.getText() << " = "
 		<< res.getText() << " not " << cmp.getText();
 	BOOST_FAIL("Round fail");
 	return false;
@@ -1492,7 +1490,7 @@ static void mulTest(int a, int b)
 	STAmount prod2(CURRENCY_ONE, ACCOUNT_ONE, static_cast<uint64>(a) * static_cast<uint64>(b));
 	if (prod1 != prod2)
 	{
-		cLog(lsWARNING) << "nn(" << aa.getFullText() << " * " << bb.getFullText() << ") = " << prod1.getFullText()
+		WriteLog (lsWARNING, STAmount) << "nn(" << aa.getFullText() << " * " << bb.getFullText() << ") = " << prod1.getFullText()
 			<< " not " << prod2.getFullText();
 		BOOST_WARN("Multiplication result is not exact");
 	}
@@ -1500,7 +1498,7 @@ static void mulTest(int a, int b)
 	prod1 = STAmount::multiply(aa, bb, CURRENCY_ONE, ACCOUNT_ONE);
 	if (prod1 != prod2)
 	{
-		cLog(lsWARNING) << "n(" << aa.getFullText() << " * " << bb.getFullText() << ") = " << prod1.getFullText()
+		WriteLog (lsWARNING, STAmount) << "n(" << aa.getFullText() << " * " << bb.getFullText() << ") = " << prod1.getFullText()
 			<< " not " << prod2.getFullText();
 		BOOST_WARN("Multiplication result is not exact");
 	}
@@ -1518,7 +1516,7 @@ BOOST_AUTO_TEST_CASE( CurrencyMulDivTests )
 		b.setuint64(r);
 		if (b.getuint64() != r)
 		{
-			cLog(lsFATAL) << r << " != " << b.getuint64() << " " << b.ToString(16);
+			WriteLog (lsFATAL, STAmount) << r << " != " << b.getuint64() << " " << b.ToString(16);
 			BOOST_FAIL("setull64/getull64 failure");
 		}
 	}

@@ -6,12 +6,21 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
 
-#include "types.h"
-#include "uint256.h"
 #include "ScopedLock.h"
-#include "TaggedCache.h"
-#include "KeyCache.h"
 #include "InstanceCounter.h"
+
+
+// VFALCO: TODO, Move this to someplace sensible!!
+// Adapter to furnish uptime information to KeyCache via UptimeTimer singleton
+struct UptimeTimerAdapter
+{
+	inline static int getElapsedSeconds ()
+	{
+		return UptimeTimer::getInstance().getElapsedSeconds ();
+	}
+};
+
+
 
 DEFINE_INSTANCE(HashedObject);
 
@@ -51,8 +60,8 @@ public:
 class HashedObjectStore
 {
 protected:
-	TaggedCache<uint256, HashedObject>	mCache;
-	KeyCache<uint256>					mNegativeCache;
+	TaggedCache<uint256, HashedObject, UptimeTimerAdapter>	mCache;
+	KeyCache <uint256, UptimeTimerAdapter> mNegativeCache;
 
 	boost::mutex				mWriteMutex;
 	boost::condition_variable	mWriteCondition;

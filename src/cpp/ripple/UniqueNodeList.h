@@ -8,8 +8,6 @@
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 
-#include "../json/value.h"
-
 #include "RippleAddress.h"
 #include "Config.h"
 #include "HttpsClient.h"

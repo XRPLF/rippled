@@ -15,10 +15,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "SecureAllocator.h"
 #include "RippleAddress.h"
-#include "uint256.h"
-#include "base58.h"
 
 // secp256k1:
 // const unsigned int PRIVATE_KEY_SIZE = 279;

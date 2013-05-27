@@ -1,11 +1,3 @@
-#include "AccountItems.h"
-
-#include <boost/foreach.hpp>
-
-#include "Application.h"
-#include "Log.h"
-
-SETUP_LOG();
 
 AccountItem::AccountItem(SerializedLedgerEntry::ref ledger) : mLedgerEntry(ledger)
 {

@@ -1,16 +1,4 @@
 
-#include "AccountState.h"
-
-#include <boost/lexical_cast.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/algorithm/string.hpp>
-
-#include "../json/writer.h"
-
-#include "Ledger.h"
-#include "Serializer.h"
-#include "Log.h"
-
 AccountState::AccountState(const RippleAddress& naAccountID) : mAccountID(naAccountID), mValid(false)
 {
 	if (!naAccountID.isValid()) return;

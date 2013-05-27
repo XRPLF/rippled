@@ -5,7 +5,19 @@
 #include "TransactionMeta.h"
 #include "Ledger.h"
 
+/*============================================================================*/
+/**
+    A transaction that is in a closed ledger.
 
+    Description
+
+	@code
+    @endcode
+
+    @see {uri}
+
+    @ingroup ripple_ledger
+*/
 class ALTransaction
 {
 protected:
@@ -41,6 +53,10 @@ public:
 	Json::Value getJson() const								{ return mJson; }
 };
 
+/*============================================================================*/
+/**
+	
+*/
 class AcceptedLedger
 {
 public:
@@ -56,7 +72,7 @@ protected:
 
 	void insert(ALTransaction::ref);
 
-	static TaggedCache<uint256, AcceptedLedger>	ALCache;
+	static TaggedCache<uint256, AcceptedLedger, UptimeTimerAdapter>	ALCache;
 	AcceptedLedger(Ledger::ref ledger);
 
 public:

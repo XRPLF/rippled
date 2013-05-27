@@ -7,6 +7,10 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
+#include "../websocketpp/src/sockets/autotls.hpp"
+#include "../websocketpp/src/websocketpp.hpp"
+
+/*
 #ifndef WSDOOR_CPP
 
 namespace websocketpp
@@ -16,6 +20,7 @@ namespace websocketpp
 }
 
 #endif
+*/
 
 class WSDoor
 {

@@ -1,4 +1,3 @@
-#include "NicknameState.h"
 
 NicknameState::NicknameState(SerializedLedgerEntry::pointer ledgerEntry) :
     mLedgerEntry(ledgerEntry)

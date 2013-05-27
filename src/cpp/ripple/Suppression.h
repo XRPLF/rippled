@@ -8,8 +8,6 @@
 #include <boost/unordered_map.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "uint256.h"
-#include "types.h"
 #include "InstanceCounter.h"
 
 DEFINE_INSTANCE(Suppression);

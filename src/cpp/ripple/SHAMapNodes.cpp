@@ -13,10 +13,9 @@
 
 #include "Serializer.h"
 #include "BitcoinUtil.h"
-#include "Log.h"
 #include "HashPrefixes.h"
 
-SETUP_LOG();
+SETUP_LOG (SHAMapNode)
 
 std::string SHAMapNode::getString() const
 {
@@ -152,7 +151,7 @@ int SHAMapNode::selectBranch(const uint256& hash) const
 
 void SHAMapNode::dump() const
 {
-	cLog(lsDEBUG) << getString();
+	WriteLog (lsDEBUG, SHAMapNode) << getString();
 }
 
 SHAMapTreeNode::SHAMapTreeNode(uint32 seq, const SHAMapNode& nodeID) : SHAMapNode(nodeID), mHash(0),
@@ -254,7 +253,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 	{
 		if (rawNode.size() < 4)
 		{
-			cLog(lsINFO) << "size < 4";
+			WriteLog (lsINFO, SHAMapNode) << "size < 4";
 			throw std::runtime_error("invalid P node");
 		}
 
@@ -276,7 +275,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 			s.chop(32);
 			if (u.isZero())
 			{
-				cLog(lsINFO) << "invalid PLN node";
+				WriteLog (lsINFO, SHAMapNode) << "invalid PLN node";
 				throw std::runtime_error("invalid PLN node");
 			}
 			mItem = boost::make_shared<SHAMapItem>(u, s.peekData()); 
@@ -306,7 +305,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 		else
 		{
-			cLog(lsINFO) << "Unknown node prefix " << std::hex << prefix << std::dec;
+			WriteLog (lsINFO, SHAMapNode) << "Unknown node prefix " << std::hex << prefix << std::dec;
 			throw std::runtime_error("invalid node prefix");
 		}
 	}
@@ -504,7 +503,7 @@ void SHAMapTreeNode::makeInner()
 
 void SHAMapTreeNode::dump()
 {
-	cLog(lsDEBUG) << "SHAMapTreeNode(" << getNodeID() << ")";
+	WriteLog (lsDEBUG, SHAMapNode) << "SHAMapTreeNode(" << getNodeID() << ")";
 }
 
 std::string SHAMapTreeNode::getString() const

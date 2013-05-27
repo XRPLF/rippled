@@ -1,11 +1,10 @@
 #include "LoadMonitor.h"
-#include "Log.h"
 
-SETUP_LOG();
+SETUP_LOG (LoadMonitor)
 
 void LoadMonitor::update()
 { // call with the mutex
-	int now = upTime();
+	int now = UptimeTimer::getInstance().getElapsedSeconds ();
 
 	if (now == mLastUpdate) // current
 		return;
@@ -59,7 +58,7 @@ void LoadMonitor::addCountAndLatency(const std::string& name, int latency)
 {
 	if (latency > 500)
 	{
-		cLog((latency > 1000) ? lsWARNING : lsINFO) << "Job: " << name << " ExecutionTime: " << latency;
+		WriteLog ((latency > 1000) ? lsWARNING : lsINFO, LoadMonitor) << "Job: " << name << " ExecutionTime: " << latency;
 	}
 	if (latency == 1)
 		latency = 0;

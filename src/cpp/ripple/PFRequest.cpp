@@ -8,7 +8,7 @@
 #include "RippleCalc.h"
 #include "LedgerFormats.h"
 
-SETUP_LOG();
+SETUP_LOG (PFRequest)
 
 boost::recursive_mutex		PFRequest::sLock;
 std::set<PFRequest::wptr>	PFRequest::sRequests;
@@ -100,9 +100,9 @@ Json::Value PFRequest::doCreate(Ledger::ref lrLedger, const Json::Value& value)
 
 	if (mValid)
 	{
-		cLog(lsINFO) << "Request created: " << raSrcAccount.humanAccountID() <<
+		WriteLog (lsINFO, PFRequest) << "Request created: " << raSrcAccount.humanAccountID() <<
 			" -> " << raDstAccount.humanAccountID();
-		cLog(lsINFO) << "Deliver: " << saDstAmount.getFullText();
+		WriteLog (lsINFO, PFRequest) << "Deliver: " << saDstAmount.getFullText();
 
 		boost::recursive_mutex::scoped_lock sl(sLock);
 		sRequests.insert(shared_from_this());
@@ -248,13 +248,13 @@ bool PFRequest::doUpdate(RLCache::ref cache, bool fast)
 	{
 		{
 			STAmount test(currIssuer.first, currIssuer.second, 1);
-			cLog(lsDEBUG) << "Trying to find paths: " << test.getFullText();
+			WriteLog (lsDEBUG, PFRequest) << "Trying to find paths: " << test.getFullText();
 		}
 		bool valid;
 		STPathSet spsPaths;
 		Pathfinder pf(cache, raSrcAccount, raDstAccount,
 			currIssuer.first, currIssuer.second, saDstAmount, valid);
-		tLog(!valid, lsINFO) << "PF request not valid";
+		CondLog (!valid, lsINFO, PFRequest) << "PF request not valid";
 		if (valid && pf.findPaths(theConfig.PATH_SEARCH_SIZE - (fast ? 0 : 1), 3, spsPaths))
 		{
 			LedgerEntrySet						lesSandbox(cache->getLedger(), tapNONE);
@@ -265,7 +265,7 @@ bool PFRequest::doUpdate(RLCache::ref cache, bool fast)
 				currIssuer.second.isNonZero() ? currIssuer.second :
 					(currIssuer.first.isZero() ? ACCOUNT_XRP : raSrcAccount.getAccountID()), 1);
 			saMaxAmount.negate();
-			cLog(lsDEBUG) << "Paths found, calling rippleCalc";
+			WriteLog (lsDEBUG, PFRequest) << "Paths found, calling rippleCalc";
 			TER terResult = RippleCalc::rippleCalc(lesSandbox, saMaxAmountAct, saDstAmountAct,
 				vpsExpanded, saMaxAmount, saDstAmount, raDstAccount.getAccountID(), raSrcAccount.getAccountID(),
 				spsPaths, false, false, false, true);
@@ -278,12 +278,12 @@ bool PFRequest::doUpdate(RLCache::ref cache, bool fast)
 			}
 			else
 			{
-				cLog(lsINFO) << "rippleCalc returns " << transHuman(terResult);
+				WriteLog (lsINFO, PFRequest) << "rippleCalc returns " << transHuman(terResult);
 			}
 		}
 		else
 		{
-			cLog(lsINFO) << "No paths found";
+			WriteLog (lsINFO, PFRequest) << "No paths found";
 		}
 	}
 	jvStatus["alternatives"] = jvArray;

@@ -1,16 +1,5 @@
-#include "Transactor.h"
-#include "Log.h"
-#include "Config.h"
-#include "PaymentTransactor.h"
-#include "RegularKeySetTransactor.h"
-#include "AccountSetTransactor.h"
-#include "WalletAddTransactor.h"
-#include "OfferCancelTransactor.h"
-#include "OfferCreateTransactor.h"
-#include "TrustSetTransactor.h"
-#include "ChangeTransactor.h"
 
-SETUP_LOG();
+SETUP_LOG (Transactor)
 
 UPTR_T<Transactor> Transactor::makeTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine)
 {
@@ -63,7 +52,7 @@ TER Transactor::payFee()
 	// Only check fee is sufficient when the ledger is open.
 	if (isSetBit(mParams, tapOPEN_LEDGER) && saPaid < mFeeDue)
 	{
-		cLog(lsINFO) << boost::str(boost::format("applyTransaction: Insufficient fee paid: %s/%s")
+		WriteLog (lsINFO, Transactor) << boost::str(boost::format("applyTransaction: Insufficient fee paid: %s/%s")
 			% saPaid.getText()
 			% mFeeDue.getText());
 
@@ -79,7 +68,7 @@ TER Transactor::payFee()
 	// Will only write the account back, if the transaction succeeds.
 	if (mSourceBalance < saPaid)
 	{
-		cLog(lsINFO)
+		WriteLog (lsINFO, Transactor)
 			<< boost::str(boost::format("applyTransaction: Delay: insufficient balance: balance=%s paid=%s")
 			% mSourceBalance.getText()
 			% saPaid.getText());
@@ -109,13 +98,13 @@ TER Transactor::checkSig()
 	}
 	else if (mHasAuthKey)
 	{
-		cLog(lsINFO) << "applyTransaction: Delay: Not authorized to use account.";
+		WriteLog (lsINFO, Transactor) << "applyTransaction: Delay: Not authorized to use account.";
 
 		return tefBAD_AUTH;
 	}
 	else
 	{
-		cLog(lsINFO) << "applyTransaction: Invalid: Not authorized to use account.";
+		WriteLog (lsINFO, Transactor) << "applyTransaction: Invalid: Not authorized to use account.";
 
 		return temBAD_AUTH_MASTER;
 	}
@@ -128,13 +117,13 @@ TER Transactor::checkSeq()
 	uint32 t_seq = mTxn.getSequence();
 	uint32 a_seq = mTxnAccount->getFieldU32(sfSequence);
 
-	cLog(lsTRACE) << "Aseq=" << a_seq << ", Tseq=" << t_seq;
+	WriteLog (lsTRACE, Transactor) << "Aseq=" << a_seq << ", Tseq=" << t_seq;
 
 	if (t_seq != a_seq)
 	{
 		if (a_seq < t_seq)
 		{
-			cLog(lsINFO) << "applyTransaction: future sequence number";
+			WriteLog (lsINFO, Transactor) << "applyTransaction: future sequence number";
 
 			return terPRE_SEQ;
 		}
@@ -145,7 +134,7 @@ TER Transactor::checkSeq()
 				return tefALREADY;
 		}
 
-		cLog(lsWARNING) << "applyTransaction: past sequence number";
+		WriteLog (lsWARNING, Transactor) << "applyTransaction: past sequence number";
 
 		return tefPAST_SEQ;
 	}
@@ -165,7 +154,7 @@ TER Transactor::preCheck()
 	mTxnAccountID	= mTxn.getSourceAccount().getAccountID();
 	if (!mTxnAccountID)
 	{
-		cLog(lsWARNING) << "applyTransaction: bad source id";
+		WriteLog (lsWARNING, Transactor) << "applyTransaction: bad source id";
 
 		return temBAD_SRC_ACCOUNT;
 	}
@@ -183,7 +172,7 @@ TER Transactor::preCheck()
 		if (mTxn.isKnownBad() || (!isSetBit(mParams, tapNO_CHECK_SIGN) && !mTxn.checkSign(mSigningPubKey)))
 		{
 			mTxn.setGood();
-			cLog(lsWARNING) << "applyTransaction: Invalid transaction: bad signature";
+			WriteLog (lsWARNING, Transactor) << "applyTransaction: Invalid transaction: bad signature";
 			return temINVALID;
 		}
 		mTxn.isKnownGood();
@@ -211,7 +200,7 @@ TER Transactor::apply()
 	{
 		if (mustHaveValidAccount())
 		{
-			cLog(lsTRACE) << boost::str(boost::format("applyTransaction: Delay transaction: source account does not exist: %s") %
+			WriteLog (lsTRACE, Transactor) << boost::str(boost::format("applyTransaction: Delay transaction: source account does not exist: %s") %
 				mTxn.getSourceAccount().humanAccountID());
 
 			return terNO_ACCOUNT;

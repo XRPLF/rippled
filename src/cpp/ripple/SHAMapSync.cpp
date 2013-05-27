@@ -9,13 +9,9 @@
 
 #include <openssl/rand.h>
 
-#include "Log.h"
-
-SETUP_LOG();
-
 static const uint256 uZero;
 
-KeyCache<uint256> SHAMap::fullBelowCache("fullBelowCache", 65536, 240);
+KeyCache <uint256, UptimeTimerAdapter> SHAMap::fullBelowCache("fullBelowCache", 65536, 240);
 
 void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max,
 	SHAMapSyncFilter* filter)
@@ -32,7 +28,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 
 	if (!root->isInner())
 	{
-		cLog(lsWARNING) << "synching empty tree";
+		WriteLog (lsWARNING, SHAMap) << "synching empty tree";
 		return;
 	}
 
@@ -165,13 +161,13 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 	SHAMapTreeNode::pointer node = getNode(wanted);
 	if (!node)
 	{
-		cLog(lsWARNING) << "peer requested node that is not in the map: " << wanted;
+		WriteLog (lsWARNING, SHAMap) << "peer requested node that is not in the map: " << wanted;
 		throw std::runtime_error("Peer requested node not in map");
 	}
 
 	if (node->isInner() && node->isEmpty())
 	{
-		cLog(lsWARNING) << "peer requests empty node";
+		WriteLog (lsWARNING, SHAMap) << "peer requests empty node";
 		return false;
 	}
 
@@ -215,7 +211,7 @@ SMAddNode SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, SHANod
 	// we already have a root node
 	if (root->getNodeHash().isNonZero())
 	{
-		cLog(lsTRACE) << "got root node, already have one";
+		WriteLog (lsTRACE, SHAMap) << "got root node, already have one";
 		return SMAddNode::okay();
 	}
 
@@ -254,7 +250,7 @@ SMAddNode SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned ch
 	// we already have a root node
 	if (root->getNodeHash().isNonZero())
 	{
-		cLog(lsTRACE) << "got root node, already have one";
+		WriteLog (lsTRACE, SHAMap) << "got root node, already have one";
 		assert(root->getNodeHash() == hash);
 		return SMAddNode::okay();
 	}
@@ -288,7 +284,7 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigne
 	assert(!node.isRoot());
 	if (!isSynching())
 	{
-		cLog(lsTRACE) << "AddKnownNode while not synching";
+		WriteLog (lsTRACE, SHAMap) << "AddKnownNode while not synching";
 		return SMAddNode::okay();
 	}
 
@@ -305,7 +301,7 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigne
 
 		if (iNode->isEmptyBranch(branch))
 		{
-			cLog(lsWARNING) << "Add known node for empty branch" << node;
+			WriteLog (lsWARNING, SHAMap) << "Add known node for empty branch" << node;
 			return SMAddNode::invalid();
 		}
 		if (fullBelowCache.isPresent(iNode->getChildHash(branch)))
@@ -319,9 +315,9 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigne
 		{
 			if (iNode->getDepth() != (node.getDepth() - 1))
 			{ // Either this node is broken or we didn't request it (yet)
-				cLog(lsWARNING) << "unable to hook node " << node;
-				cLog(lsINFO) << " stuck at " << *iNode;
-				cLog(lsINFO) << "got depth=" << node.getDepth() << ", walked to= " << iNode->getDepth();
+				WriteLog (lsWARNING, SHAMap) << "unable to hook node " << node;
+				WriteLog (lsINFO, SHAMap) << " stuck at " << *iNode;
+				WriteLog (lsINFO, SHAMap) << "got depth=" << node.getDepth() << ", walked to= " << iNode->getDepth();
 				return SMAddNode::invalid();
 			}
 
@@ -329,7 +325,7 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigne
 				boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq - 1, snfWIRE, uZero, false);
 			if (iNode->getChildHash(branch) != newNode->getNodeHash())
 			{
-				cLog(lsWARNING) << "Corrupt node recevied";
+				WriteLog (lsWARNING, SHAMap) << "Corrupt node recevied";
 				return SMAddNode::invalid();
 			}
 
@@ -344,7 +340,7 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigne
 		}
 	}
 
-	cLog(lsTRACE) << "got node, already had it (late)";
+	WriteLog (lsTRACE, SHAMap) << "got node, already had it (late)";
 	return SMAddNode::okay();
 }
 
@@ -365,16 +361,16 @@ bool SHAMap::deepCompare(SHAMap& other)
 
 		if (!otherNode)
 		{
-			cLog(lsINFO) << "unable to fetch node";
+			WriteLog (lsINFO, SHAMap) << "unable to fetch node";
 			return false;
 		}
 		else if (otherNode->getNodeHash() != node->getNodeHash())
 		{
-			cLog(lsWARNING) << "node hash mismatch";
+			WriteLog (lsWARNING, SHAMap) << "node hash mismatch";
 			return false;
 		}
 
-//		cLog(lsTRACE) << "Comparing inner nodes " << *node;
+//		WriteLog (lsTRACE) << "Comparing inner nodes " << *node;
 
 		if (node->getNodeHash() != otherNode->getNodeHash())
 			return false;
@@ -399,7 +395,7 @@ bool SHAMap::deepCompare(SHAMap& other)
 					SHAMapTreeNode::pointer next = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
 					if (!next)
 					{
-						cLog(lsWARNING) << "unable to fetch inner node";
+						WriteLog (lsWARNING, SHAMap) << "unable to fetch inner node";
 						return false;
 					}
 					stack.push(next);
@@ -450,7 +446,7 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool incl
 			(boost::ref(have->mLock), boost::try_to_lock);
 		if (!(*ul2))
 		{
-			cLog(lsINFO) << "Unable to create pack due to lock";
+			WriteLog (lsINFO, SHAMap) << "Unable to create pack due to lock";
 			return ret;
 		}
 	}
@@ -543,7 +539,7 @@ static bool confuseMap(SHAMap &map, int count)
 		items.push_back(item->getTag());
 		if (!map.addItem(*item, false, false))
 		{
-			cLog(lsFATAL) << "Unable to add item to map";
+			WriteLog (lsFATAL, SHAMap) << "Unable to add item to map";
 			return false;
 		}
 	}
@@ -552,14 +548,14 @@ static bool confuseMap(SHAMap &map, int count)
 	{
 		if (!map.delItem(*it))
 		{
-			cLog(lsFATAL) << "Unable to remove item from map";
+			WriteLog (lsFATAL, SHAMap) << "Unable to remove item from map";
 			return false;
 		}
 	}
 
 	if (beforeHash != map.getHash())
 	{
-		cLog(lsFATAL) << "Hashes do not match";
+		WriteLog (lsFATAL, SHAMap) << "Hashes do not match";
 		return false;
 	}
 
@@ -590,26 +586,26 @@ BOOST_AUTO_TEST_SUITE( SHAMapSync )
 
 BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 {
-	cLog(lsTRACE) << "begin sync test";
+	WriteLog (lsTRACE, SHAMap) << "begin sync test";
 	unsigned int seed;
 	RAND_pseudo_bytes(reinterpret_cast<unsigned char *>(&seed), sizeof(seed));
 	srand(seed);
 
-	cLog(lsTRACE) << "Constructing maps";
+	WriteLog (lsTRACE, SHAMap) << "Constructing maps";
 	SHAMap source(smtFREE), destination(smtFREE);
 
 	// add random data to the source map
-	cLog(lsTRACE) << "Adding random data";
+	WriteLog (lsTRACE, SHAMap) << "Adding random data";
 	int items = 10000;
 	for (int i = 0; i < items; ++i)
 		source.addItem(*makeRandomAS(), false, false);
 
-	cLog(lsTRACE) << "Adding items, then removing them";
+	WriteLog (lsTRACE, SHAMap) << "Adding items, then removing them";
 	if (!confuseMap(source, 500)) BOOST_FAIL("ConfuseMap");
 
 	source.setImmutable();
 
-	cLog(lsTRACE) << "SOURCE COMPLETE, SYNCHING";
+	WriteLog (lsTRACE, SHAMap) << "SOURCE COMPLETE, SYNCHING";
 
 	std::vector<SHAMapNode> nodeIDs, gotNodeIDs;
 	std::list< std::vector<unsigned char> > gotNodes;
@@ -625,24 +621,24 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 
 	if (!source.getNodeFat(SHAMapNode(), nodeIDs, gotNodes, (rand() % 2) == 0, (rand() % 2) == 0))
 	{
-		cLog(lsFATAL) << "GetNodeFat(root) fails";
+		WriteLog (lsFATAL, SHAMap) << "GetNodeFat(root) fails";
 		BOOST_FAIL("GetNodeFat");
 	}
 	if (gotNodes.size() < 1)
 	{
-		cLog(lsFATAL) << "Didn't get root node " << gotNodes.size();
+		WriteLog (lsFATAL, SHAMap) << "Didn't get root node " << gotNodes.size();
 		BOOST_FAIL("NodeSize");
 	}
 
 	if (!destination.addRootNode(*gotNodes.begin(), snfWIRE, NULL))
 	{
-		cLog(lsFATAL) << "AddRootNode fails";
+		WriteLog (lsFATAL, SHAMap) << "AddRootNode fails";
 		BOOST_FAIL("AddRootNode");
 	}
 	nodeIDs.clear();
 	gotNodes.clear();
 
-	cLog(lsINFO) << "ROOT COMPLETE, INNER SYNCHING";
+	WriteLog (lsINFO, SHAMap) << "ROOT COMPLETE, INNER SYNCHING";
 #ifdef SMS_DEBUG
 	int bytes = 0;
 #endif
@@ -656,14 +652,14 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 		destination.getMissingNodes(nodeIDs, hashes, 2048, NULL);
 		if (nodeIDs.empty()) break;
 
-		cLog(lsINFO) << nodeIDs.size() << " needed nodes";
+		WriteLog (lsINFO, SHAMap) << nodeIDs.size() << " needed nodes";
 		
 		// get as many nodes as possible based on this information
 		for (nodeIDIterator = nodeIDs.begin(); nodeIDIterator != nodeIDs.end(); ++nodeIDIterator)
 		{
 			if (!source.getNodeFat(*nodeIDIterator, gotNodeIDs, gotNodes, (rand() % 2) == 0, (rand() % 2) == 0))
 			{
-				cLog(lsFATAL) << "GetNodeFat fails";
+				WriteLog (lsFATAL, SHAMap) << "GetNodeFat fails";
 				BOOST_FAIL("GetNodeFat");
 			}
 		}
@@ -673,11 +669,11 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 
 		if (gotNodeIDs.empty())
 		{
-			cLog(lsFATAL) << "No nodes gotten";
+			WriteLog (lsFATAL, SHAMap) << "No nodes gotten";
 			BOOST_FAIL("Got Node ID");
 		}
 
-		cLog(lsTRACE) << gotNodeIDs.size() << " found nodes";
+		WriteLog (lsTRACE, SHAMap) << gotNodeIDs.size() << " found nodes";
 		for (nodeIDIterator = gotNodeIDs.begin(), rawNodeIterator = gotNodes.begin();
 				nodeIDIterator != gotNodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
 		{
@@ -687,7 +683,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 #endif
 			if (!destination.addKnownNode(*nodeIDIterator, *rawNodeIterator, NULL))
 			{
-				cLog(lsTRACE) << "AddKnownNode fails";
+				WriteLog (lsTRACE, SHAMap) << "AddKnownNode fails";
 				BOOST_FAIL("AddKnownNode");
 			}
 		}
@@ -699,18 +695,18 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 	destination.clearSynching();
 
 #ifdef SMS_DEBUG
-	cLog(lsINFO) << "SYNCHING COMPLETE " << items << " items, " << nodes << " nodes, " <<
+	WriteLog (lsINFO, SHAMap) << "SYNCHING COMPLETE " << items << " items, " << nodes << " nodes, " <<
 		bytes / 1024 << " KB";
 #endif
 
 	if (!source.deepCompare(destination))
 	{
-		cLog(lsFATAL) << "DeepCompare fails";
+		WriteLog (lsFATAL, SHAMap) << "DeepCompare fails";
 		BOOST_FAIL("Deep Compare");
 	}
 
 #ifdef SMS_DEBUG
-	cLog(lsINFO) << "SHAMapSync test passed: " << items << " items, " <<
+	WriteLog (lsINFO, SHAMap) << "SHAMapSync test passed: " << items << " items, " <<
 		passes << " passes, " << nodes << " nodes";
 #endif
 	

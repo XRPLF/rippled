@@ -10,9 +10,8 @@
 #include <boost/bind.hpp>
 
 #include "../ripple/JobQueue.h"
-#include "../ripple/Log.h"
 
-SETUP_NLOG("DataBase");
+SETUP_LOG (SqliteDatabase)
 
 using namespace std;
 
@@ -28,7 +27,7 @@ void SqliteDatabase::connect()
 	int rc = sqlite3_open(mHost.c_str(), &mConnection);
 	if (rc)
 	{
-		cLog(lsFATAL) << "Can't open " << mHost << " " << rc;
+		WriteLog (lsFATAL, SqliteDatabase) << "Can't open " << mHost << " " << rc;
 		sqlite3_close(mConnection);
 		assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
 	}
@@ -42,7 +41,7 @@ sqlite3* SqliteDatabase::getAuxConnection()
 		int rc = sqlite3_open(mHost.c_str(), &mAuxConnection);
 		if (rc)
 		{
-			cLog(lsFATAL) << "Can't aux open " << mHost << " " << rc;
+			WriteLog (lsFATAL, SqliteDatabase) << "Can't aux open " << mHost << " " << rc;
 			assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
 			if (mAuxConnection != NULL)
 			{
@@ -78,9 +77,9 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 		if (!fail_ok)
 		{
 #ifdef DEBUG
-			cLog(lsWARNING) << "Perror:" << mHost << ": " << rc;
-			cLog(lsWARNING) << "Statement: " << sql;
-			cLog(lsWARNING) << "Error: " << sqlite3_errmsg(mConnection);
+			WriteLog (lsWARNING, SqliteDatabase) << "Perror:" << mHost << ": " << rc;
+			WriteLog (lsWARNING, SqliteDatabase) << "Statement: " << sql;
+			WriteLog (lsWARNING, SqliteDatabase) << "Error: " << sqlite3_errmsg(mConnection);
 #endif
 		}
 		endIterRows();
@@ -100,7 +99,7 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 	{
 		if ((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED))
 		{
-			cLog(lsFATAL) << mHost  << " returns error " << rc << ": " << sqlite3_errmsg(mConnection);
+			WriteLog (lsFATAL, SqliteDatabase) << mHost  << " returns error " << rc << ": " << sqlite3_errmsg(mConnection);
 			assert(false);
 		}
 		mMoreRows = false;
@@ -108,9 +107,9 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 		if (!fail_ok)
 		{
 #ifdef DEBUG
-			cLog(lsWARNING) << "SQL Serror:" << mHost << ": " << rc;
-			cLog(lsWARNING) << "Statement: " << sql;
-			cLog(lsWARNING) << "Error: " << sqlite3_errmsg(mConnection);
+			WriteLog (lsWARNING, SqliteDatabase) << "SQL Serror:" << mHost << ": " << rc;
+			WriteLog (lsWARNING, SqliteDatabase) << "Statement: " << sql;
+			WriteLog (lsWARNING, SqliteDatabase) << "Error: " << sqlite3_errmsg(mConnection);
 #endif
 		}
 		endIterRows();
@@ -127,6 +126,8 @@ int SqliteDatabase::getNumRowsAffected()
 	return(0);
 }
 
+// VFALCO: TODO, This must be fixed!!! return value needs to be int64
+//
 int SqliteDatabase::getLastInsertID()
 {
 	return(sqlite3_last_insert_rowid(mConnection));
@@ -164,7 +165,7 @@ bool SqliteDatabase::getNextRow(bool finalize)
 		if (rc==SQLITE_ROW)
 			return(true);
 		assert((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
-		tLog((rc != SQLITE_DONE), lsWARNING) << "Rerror: " << mHost << ": " << rc;
+		CondLog ((rc != SQLITE_DONE), lsWARNING, SqliteDatabase) << "Rerror: " << mHost << ": " << rc;
 	}
 
 	if (finalize)
@@ -191,12 +192,12 @@ int32 SqliteDatabase::getInt(int colIndex)
 
 float SqliteDatabase::getFloat(int colIndex)
 {
-	return(sqlite3_column_double(mCurrentStmt, colIndex));
+	return(static_cast <float> (sqlite3_column_double(mCurrentStmt, colIndex)));
 }
 
 bool SqliteDatabase::getBool(int colIndex)
 {
-	return(sqlite3_column_int(mCurrentStmt, colIndex));
+	return(sqlite3_column_int(mCurrentStmt, colIndex) ? true : false);
 }
 
 int SqliteDatabase::getBinary(int colIndex,unsigned char* buf,int maxSize)
@@ -272,11 +273,11 @@ void SqliteDatabase::runWal()
 	int ret = sqlite3_wal_checkpoint_v2(mConnection, NULL, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
 	if (ret != SQLITE_OK)
 	{
-		cLog((ret == SQLITE_LOCKED) ? lsTRACE : lsWARNING) << "WAL("
+		WriteLog ((ret == SQLITE_LOCKED) ? lsTRACE : lsWARNING, SqliteDatabase) << "WAL("
 			<< sqlite3_db_filename(mConnection, "main") << "): error " << ret;
 	}
 	else
-		cLog(lsTRACE) << "WAL(" << sqlite3_db_filename(mConnection, "main") <<
+		WriteLog (lsTRACE, SqliteDatabase) << "WAL(" << sqlite3_db_filename(mConnection, "main") <<
 			"): frames=" << log << ", written=" << ckpt;
 
 	{

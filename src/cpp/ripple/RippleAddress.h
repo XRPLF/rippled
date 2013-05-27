@@ -2,7 +2,6 @@
 #define __RIPPLE_ADDRESS__
 
 #include "base58.h"
-#include "uint256.h"
 
 //
 // Used to hold addresses and parse and produce human formats.

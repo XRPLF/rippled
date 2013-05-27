@@ -11,9 +11,6 @@
 #include <boost/asio.hpp>
 #include <boost/ref.hpp>
 
-#include "../json/value.h"
-
-#include "types.h"
 #include "LoadMonitor.h"
 
 // Note that this queue should only be used for CPU-bound jobs

@@ -3,8 +3,6 @@
 
 #include <string>
 
-#include "../json/value.h"
-
 class RPCParser
 {
 protected:

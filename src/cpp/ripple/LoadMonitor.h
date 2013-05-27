@@ -6,10 +6,6 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "utils.h"
-#include "types.h"
-
-extern int upTime();
 
 // Monitors load levels and response times
 
@@ -28,9 +24,16 @@ protected:
 	void update();
 
 public:
-	LoadMonitor() : mCounts(0), mLatencyEvents(0), mLatencyMSAvg(0), mLatencyMSPeak(0),
-		mTargetLatencyAvg(0), mTargetLatencyPk(0)
-	{ mLastUpdate = upTime(); }
+	LoadMonitor()
+		: mCounts(0)
+		, mLatencyEvents(0)
+		, mLatencyMSAvg(0)
+		, mLatencyMSPeak(0)
+		, mTargetLatencyAvg(0)
+		, mTargetLatencyPk(0)
+	{
+		mLastUpdate = UptimeTimer::getInstance().getElapsedSeconds ();
+	}
 
 	void addCount();
 	void addLatency(int latency);

@@ -11,7 +11,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "AutoSocket.h"
-#include "utils.h"
 
 //
 // Async https client.

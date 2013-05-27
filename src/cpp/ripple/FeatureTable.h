@@ -5,8 +5,6 @@
 #include <boost/unordered_set.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "../json/value.h"
-
 #include "Ledger.h"
 
 class FeatureSet

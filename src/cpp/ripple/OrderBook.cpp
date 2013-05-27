@@ -1,5 +1,3 @@
-#include "OrderBook.h"
-#include "Ledger.h"
 
 OrderBook::OrderBook(SerializedLedgerEntry::ref ledgerEntry)
 {

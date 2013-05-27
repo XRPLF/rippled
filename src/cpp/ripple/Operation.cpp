@@ -1,5 +1,3 @@
-#include "Operation.h"
-#include "Config.h"
 
 /*
 We also need to charge for each op

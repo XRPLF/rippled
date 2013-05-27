@@ -5,12 +5,6 @@
 
 #include <boost/thread/mutex.hpp>
 
-#include "../json/value.h"
-
-#include "types.h"
-
-extern int upTime();
-
 enum LoadType
 { // types of load that can be placed on the server
 
@@ -69,12 +63,24 @@ protected:
 	bool		mLogged;
 
 public:
-	LoadSource(bool admin) :
-		mBalance(0), mFlags(admin ? lsfPrivileged : 0), mLastUpdate(upTime()), mLastWarning(0), mLogged(false)
-	{ ; }
-	LoadSource(const std::string& name) :
-		mName(name), mBalance(0), mFlags(0), mLastUpdate(upTime()), mLastWarning(0), mLogged(false)
-	{ ; }
+	LoadSource(bool admin)
+		: mBalance(0)
+		, mFlags(admin ? lsfPrivileged : 0)
+		, mLastUpdate(UptimeTimer::getInstance().getElapsedSeconds ())
+		, mLastWarning(0)
+		, mLogged(false)
+	{
+	}
+	
+	LoadSource(const std::string& name) 
+		: mName(name)
+		, mBalance(0)
+		, mFlags(0)
+		, mLastUpdate(UptimeTimer::getInstance().getElapsedSeconds ())
+		, mLastWarning(0)
+		, mLogged(false)
+	{
+	}
 
 	void rename(const std::string& name)	{ mName = name; }
 	const std::string& getName()			{ return mName; }
@@ -103,9 +109,11 @@ protected:
 	bool mShutdown;
 	bool mArmed;
 
+	/*
 	int mSpace1[4];				// We want mUptime to have its own cache line
 	int mUptime;
 	int mSpace2[4];
+	*/
 
 	int mDeadLock;				// Detect server deadlocks
 
@@ -143,7 +151,6 @@ public:
 	void logDisconnect(const std::string&) const;
 
 	int getCost(LoadType t)		{ return mCosts[static_cast<int>(t)].mCost; }
-	int getUptime();
 	void noDeadLock();
 	void arm()					{ mArmed = true; }
 };

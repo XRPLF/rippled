@@ -7,8 +7,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
-#include "../json/value.h"
-
 class Parameter : public boost::enable_shared_from_this<Parameter>
 { // abstract base class parameters are derived from
 public:

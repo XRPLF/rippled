@@ -1,13 +1,5 @@
-#include "FeatureTable.h"
 
-#include <boost/foreach.hpp>
-
-#include "Log.h"
-#include "Application.h"
-#include "ValidationCollection.h"
-#include "HashPrefixes.h"
-
-SETUP_LOG();
+SETUP_LOG (FeatureTable)
 
 void FeatureTable::addInitialFeatures()
 {
@@ -175,13 +167,13 @@ void FeatureTable::reportValidations(const FeatureSet& set)
 	BOOST_FOREACH(const u256_int_pair& it, set.mVotes)
 	{
 		FeatureState& state = mFeatureMap[it.first];
-		cLog(lsDEBUG) << "Feature " << it.first.GetHex() << " has " << it.second << " votes, needs " << threshold;
+		WriteLog (lsDEBUG, FeatureTable) << "Feature " << it.first.GetHex() << " has " << it.second << " votes, needs " << threshold;
 		if (it.second >= threshold)
 		{ // we have a majority
 			state.mLastMajority = set.mCloseTime;
 			if (state.mFirstMajority == 0)
 			{
-				cLog(lsWARNING) << "Feature " << it.first << " attains a majority vote";
+				WriteLog (lsWARNING, FeatureTable) << "Feature " << it.first << " attains a majority vote";
 				state.mFirstMajority = set.mCloseTime;
 				changedFeatures.push_back(it.first);
 			}
@@ -190,7 +182,7 @@ void FeatureTable::reportValidations(const FeatureSet& set)
 		{
 			if (state.mFirstMajority != 0)
 			{
-				cLog(lsWARNING) << "Feature " << it.first << " loses majority vote";
+				WriteLog (lsWARNING, FeatureTable) << "Feature " << it.first << " loses majority vote";
 				state.mFirstMajority = 0;
 				state.mLastMajority = 0;
 				changedFeatures.push_back(it.first);
@@ -254,12 +246,12 @@ void FeatureTable::doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPos
 
 	BOOST_FOREACH(const uint256& uFeature, lFeatures)
 	{
-		cLog(lsWARNING) << "We are voting for feature " << uFeature;
+		WriteLog (lsWARNING, FeatureTable) << "We are voting for feature " << uFeature;
 		SerializedTransaction trans(ttFEATURE);
 		trans.setFieldAccount(sfAccount, uint160());
 		trans.setFieldH256(sfFeature, uFeature);
 		uint256 txID = trans.getTransactionID();
-		cLog(lsWARNING) << "Vote: " << txID;
+		WriteLog (lsWARNING, FeatureTable) << "Vote: " << txID;
 
 		Serializer s;
 		trans.add(s, true);
@@ -267,7 +259,7 @@ void FeatureTable::doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPos
 		SHAMapItem::pointer tItem = boost::make_shared<SHAMapItem>(txID, s.peekData());
 		if (!initialPosition->addGiveItem(tItem, true, false))
 		{
-			cLog(lsWARNING) << "Ledger already had feature transaction";
+			WriteLog (lsWARNING, FeatureTable) << "Ledger already had feature transaction";
 		}
 	}
 }
@@ -375,19 +367,19 @@ void FeeVote::doValidation(Ledger::ref lastClosedLedger, STObject& validation)
 {
 	if (lastClosedLedger->getBaseFee() != mTargetBaseFee)
 	{
-		cLog(lsINFO) << "Voting for base fee of " << mTargetBaseFee;
+		WriteLog (lsINFO, FeatureTable) << "Voting for base fee of " << mTargetBaseFee;
 		validation.setFieldU64(sfBaseFee, mTargetBaseFee);
 	}
 
 	if (lastClosedLedger->getReserve(0) != mTargetReserveBase)
 	{
-		cLog(lsINFO) << "Voting for base resrve of " << mTargetReserveBase;
+		WriteLog (lsINFO, FeatureTable) << "Voting for base resrve of " << mTargetReserveBase;
 		validation.setFieldU32(sfReserveBase, mTargetReserveBase);
 	}
 
 	if (lastClosedLedger->getReserveInc() != mTargetReserveIncrement)
 	{
-		cLog(lsINFO) << "Voting for reserve increment of " << mTargetReserveIncrement;
+		WriteLog (lsINFO, FeatureTable) << "Voting for reserve increment of " << mTargetReserveIncrement;
 		validation.setFieldU32(sfReserveIncrement, mTargetReserveIncrement);
 	}
 }
@@ -433,7 +425,7 @@ void FeeVote::doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition
 		(baseReserve != lastClosedLedger->getReserve(0)) ||
 		(incReserve != lastClosedLedger->getReserveInc()))
 	{
-		cLog(lsWARNING) << "We are voting for a fee change: " << baseFee << "/" << baseReserve << "/" << incReserve;
+		WriteLog (lsWARNING, FeatureTable) << "We are voting for a fee change: " << baseFee << "/" << baseReserve << "/" << incReserve;
 		SerializedTransaction trans(ttFEE);
 		trans.setFieldAccount(sfAccount, uint160());
 		trans.setFieldU64(sfBaseFee, baseFee);
@@ -441,7 +433,7 @@ void FeeVote::doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition
 		trans.setFieldU32(sfReserveBase, baseReserve);
 		trans.setFieldU32(sfReserveIncrement, incReserve);
 		uint256 txID = trans.getTransactionID();
-		cLog(lsWARNING) << "Vote: " << txID;
+		WriteLog (lsWARNING, FeatureTable) << "Vote: " << txID;
 
 		Serializer s;
 		trans.add(s, true);
@@ -449,7 +441,7 @@ void FeeVote::doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition
 		SHAMapItem::pointer tItem = boost::make_shared<SHAMapItem>(txID, s.peekData());
 		if (!initialPosition->addGiveItem(tItem, true, false))
 		{
-			cLog(lsWARNING) << "Ledger already had fee change";
+			WriteLog (lsWARNING, FeatureTable) << "Ledger already had fee change";
 		}
 	}
 }

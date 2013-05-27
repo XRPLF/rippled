@@ -12,9 +12,6 @@
 #include "RPCDoor.h"
 #include "BitcoinUtil.h"
 #include "key.h"
-#include "utils.h"
-#include "TaggedCache.h"
-#include "Log.h"
 
 #include "../database/SqliteDatabase.h"
 
@@ -24,9 +21,9 @@
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
 
-SETUP_LOG();
+SETUP_LOG (Application)
 
-LogPartition TaggedCachePartition("TaggedCache");
+// VFALCO: TODO, fix/clean this, it might have broken with the Log changes
 LogPartition AutoSocketPartition("AutoSocket");
 Application* theApp = NULL;
 
@@ -80,7 +77,7 @@ bool Instance::running = true;
 
 void Application::stop()
 {
-	cLog(lsINFO) << "Received shutdown request";
+	WriteLog (lsINFO, Application) << "Received shutdown request";
 	StopSustain();
 	mShutdown = true;
 	mIOService.stop();
@@ -94,7 +91,7 @@ void Application::stop()
 	mHashNodeLDB = NULL;
 #endif
 
-	cLog(lsINFO) << "Stopped: " << mIOService.stopped();
+	WriteLog (lsINFO, Application) << "Stopped: " << mIOService.stopped();
 	Instance::shutdown();
 }
 
@@ -114,13 +111,13 @@ void sigIntHandler(int)
 
 static void runAux(boost::asio::io_service& svc)
 {
-	NameThread("aux");
+	setCallingThreadName("aux");
 	svc.run();
 }
 
 static void runIO(boost::asio::io_service& io)
 {
-	NameThread("io");
+	setCallingThreadName("io");
 	io.run();
 }
 
@@ -172,7 +169,7 @@ void Application::setup()
 #ifdef USE_LEVELDB
 	if (mHashedObjectStore.isLevelDB())
 	{
-		cLog(lsINFO) << "LevelDB used for nodes";
+		WriteLog (lsINFO, Application) << "LevelDB used for nodes";
 		leveldb::Options options;
 		options.create_if_missing = true;
 		options.block_cache = leveldb::NewLRUCache(theConfig.getSize(siHashNodeDBCache) * 1024 * 1024);
@@ -183,7 +180,7 @@ void Application::setup()
 		leveldb::Status status = leveldb::DB::Open(options, (theConfig.DATA_DIR / "hashnode").string(), &mHashNodeLDB);
 		if (!status.ok() || !mHashNodeLDB)
 		{
-			cLog(lsFATAL) << "Unable to open/create hash node db: "
+			WriteLog (lsFATAL, Application) << "Unable to open/create hash node db: "
 				<< (theConfig.DATA_DIR / "hashnode").string()
 				<< " " << status.ToString();
 			StopSustain();
@@ -193,7 +190,7 @@ void Application::setup()
 	else
 #endif
 	{
-		cLog(lsINFO) << "SQLite used for nodes";
+		WriteLog (lsINFO, Application) << "SQLite used for nodes";
 		boost::thread t5(boost::bind(&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
 		t5.join();
 	}
@@ -206,13 +203,13 @@ void Application::setup()
 
 	if (theConfig.START_UP == Config::FRESH)
 	{
-		cLog(lsINFO) << "Starting new Ledger";
+		WriteLog (lsINFO, Application) << "Starting new Ledger";
 
 		startNewLedger();
 	}
 	else if (theConfig.START_UP == Config::LOAD)
 	{
-		cLog(lsINFO) << "Loading specified Ledger";
+		WriteLog (lsINFO, Application) << "Loading specified Ledger";
 
 		if (!loadOldLedger(theConfig.START_LEDGER))
 		{
@@ -271,14 +268,14 @@ void Application::setup()
 		catch (const std::exception& e)
 		{
 			// Must run as directed or exit.
-			cLog(lsFATAL) << boost::str(boost::format("Can not open peer service: %s") % e.what());
+			WriteLog (lsFATAL, Application) << boost::str(boost::format("Can not open peer service: %s") % e.what());
 
 			exit(3);
 		}
 	}
 	else
 	{
-		cLog(lsINFO) << "Peer interface: disabled";
+		WriteLog (lsINFO, Application) << "Peer interface: disabled";
 	}
 
 	//
@@ -293,14 +290,14 @@ void Application::setup()
 		catch (const std::exception& e)
 		{
 			// Must run as directed or exit.
-			cLog(lsFATAL) << boost::str(boost::format("Can not open RPC service: %s") % e.what());
+			WriteLog (lsFATAL, Application) << boost::str(boost::format("Can not open RPC service: %s") % e.what());
 
 			exit(3);
 		}
 	}
 	else
 	{
-		cLog(lsINFO) << "RPC interface: disabled";
+		WriteLog (lsINFO, Application) << "RPC interface: disabled";
 	}
 
 	//
@@ -315,14 +312,14 @@ void Application::setup()
 		catch (const std::exception& e)
 		{
 			// Must run as directed or exit.
-			cLog(lsFATAL) << boost::str(boost::format("Can not open private websocket service: %s") % e.what());
+			WriteLog (lsFATAL, Application) << boost::str(boost::format("Can not open private websocket service: %s") % e.what());
 
 			exit(3);
 		}
 	}
 	else
 	{
-		cLog(lsINFO) << "WS private interface: disabled";
+		WriteLog (lsINFO, Application) << "WS private interface: disabled";
 	}
 
 	//
@@ -337,14 +334,14 @@ void Application::setup()
 		catch (const std::exception& e)
 		{
 			// Must run as directed or exit.
-			cLog(lsFATAL) << boost::str(boost::format("Can not open public websocket service: %s") % e.what());
+			WriteLog (lsFATAL, Application) << boost::str(boost::format("Can not open public websocket service: %s") % e.what());
 
 			exit(3);
 		}
 	}
 	else
 	{
-		cLog(lsINFO) << "WS public interface: disabled";
+		WriteLog (lsINFO, Application) << "WS public interface: disabled";
 	}
 
 	//
@@ -356,7 +353,7 @@ void Application::setup()
 
 	if (theConfig.RUN_STANDALONE)
 	{
-		cLog(lsWARNING) << "Running in standalone mode";
+		WriteLog (lsWARNING, Application) << "Running in standalone mode";
 
 		mNetOps.setStandAlone();
 	}
@@ -380,7 +377,7 @@ void Application::run()
 	if (mWSPrivateDoor)
 		mWSPrivateDoor->stop();
 
-	cLog(lsINFO) << "Done.";
+	WriteLog (lsINFO, Application) << "Done.";
 }
 
 void Application::sweep()
@@ -389,7 +386,7 @@ void Application::sweep()
 	boost::filesystem::space_info space = boost::filesystem::space(theConfig.DATA_DIR);
 	if (space.available < (512 * 1024 * 1024))
 	{
-		cLog(lsFATAL) << "Remaining free disk space is less than 512MB";
+		WriteLog (lsFATAL, Application) << "Remaining free disk space is less than 512MB";
 		theApp->stop();
 	}
 
@@ -428,8 +425,8 @@ void Application::startNewLedger()
 	RippleAddress	rootAddress			= RippleAddress::createAccountPublic(rootGeneratorMaster, 0);
 
 	// Print enough information to be able to claim root account.
-	cLog(lsINFO) << "Root master seed: " << rootSeedMaster.humanSeed();
-	cLog(lsINFO) << "Root account: " << rootAddress.humanAccountID();
+	WriteLog (lsINFO, Application) << "Root master seed: " << rootSeedMaster.humanSeed();
+	WriteLog (lsINFO, Application) << "Root account: " << rootAddress.humanAccountID();
 
 	{
 		Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, SYSTEM_CURRENCY_START);
@@ -466,29 +463,29 @@ bool Application::loadOldLedger(const std::string& l)
 
 		if (!loadLedger)
 		{
-			cLog(lsFATAL) << "No Ledger found?" << std::endl;
+			WriteLog (lsFATAL, Application) << "No Ledger found?" << std::endl;
 			return false;
 		}
 		loadLedger->setClosed();
 
-		cLog(lsINFO) << "Loading ledger " << loadLedger->getHash() << " seq:" << loadLedger->getLedgerSeq();
+		WriteLog (lsINFO, Application) << "Loading ledger " << loadLedger->getHash() << " seq:" << loadLedger->getLedgerSeq();
 
 		if (loadLedger->getAccountHash().isZero())
 		{
-			cLog(lsFATAL) << "Ledger is empty.";
+			WriteLog (lsFATAL, Application) << "Ledger is empty.";
 			assert(false);
 			return false;
 		}
 
 		if (!loadLedger->walkLedger())
 		{
-			cLog(lsFATAL) << "Ledger is missing nodes.";
+			WriteLog (lsFATAL, Application) << "Ledger is missing nodes.";
 			return false;
 		}
 
 		if (!loadLedger->assertSane())
 		{
-			cLog(lsFATAL) << "Ledger is not sane.";
+			WriteLog (lsFATAL, Application) << "Ledger is not sane.";
 			return false;
 		}
 		mLedgerMaster.setLedgerRangePresent(loadLedger->getLedgerSeq(), loadLedger->getLedgerSeq());
@@ -499,12 +496,12 @@ bool Application::loadOldLedger(const std::string& l)
 	}
 	catch (SHAMapMissingNode&)
 	{
-		cLog(lsFATAL) << "Data is missing for selected ledger";
+		WriteLog (lsFATAL, Application) << "Data is missing for selected ledger";
 		return false;
 	}
 	catch (boost::bad_lexical_cast&)
 	{
-		cLog(lsFATAL) << "Ledger specified '" << l << "' is not valid";
+		WriteLog (lsFATAL, Application) << "Ledger specified '" << l << "' is not valid";
 		return false;
 	}
 	return true;

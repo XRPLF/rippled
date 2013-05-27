@@ -5,7 +5,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "uint256.h"
 #include "SerializedObject.h"
 #include "TransactionFormats.h"
 #include "RippleAddress.h"

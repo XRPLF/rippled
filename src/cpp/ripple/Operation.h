@@ -1,4 +1,5 @@
-#include "Interpreter.h"
+#ifndef OPERATION_H
+#define OPERATION_H
 
 namespace Script {
 
@@ -317,4 +318,7 @@ public:
 
 }
 
+#endif
+
 // vim:ts=4
+

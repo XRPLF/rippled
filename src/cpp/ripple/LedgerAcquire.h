@@ -15,7 +15,6 @@
 
 #include "Ledger.h"
 #include "Peer.h"
-#include "TaggedCache.h"
 #include "InstanceCounter.h"
 #include "ripple.pb.h"
 
@@ -53,7 +52,7 @@ public:
 	bool isActive();
 	void progress()						{ mProgress = true; mAggressive = false; }
 	bool isProgress()					{ return mProgress; }
-	void touch()						{ mLastAction = upTime(); }
+	void touch()						{ mLastAction = UptimeTimer::getInstance().getElapsedSeconds(); }
 	int getLastAction()					{ return mLastAction; }
 
 	void peerHas(Peer::ref);
@@ -146,7 +145,7 @@ class LedgerAcquireMaster
 protected:
 	boost::mutex mLock;
 	std::map<uint256, LedgerAcquire::pointer> mLedgers;
-	KeyCache<uint256> mRecentFailures;
+	KeyCache<uint256, UptimeTimerAdapter> mRecentFailures;
 
 public:
 	LedgerAcquireMaster() : mRecentFailures("LedgerAcquireRecentFailures", 0, LEDGER_REACQUIRE_INTERVAL) { ; }

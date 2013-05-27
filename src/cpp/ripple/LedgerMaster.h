@@ -4,11 +4,9 @@
 #include "Ledger.h"
 #include "LedgerHistory.h"
 #include "Peer.h"
-#include "types.h"
 #include "LedgerAcquire.h"
 #include "Transaction.h"
 #include "TransactionEngine.h"
-#include "RangeSet.h"
 #include "CanonicalTXSet.h"
 
 // Tracks the current ledger and any ledgers in the process of closing

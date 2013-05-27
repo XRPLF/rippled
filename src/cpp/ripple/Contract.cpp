@@ -1,5 +1,3 @@
-#include "Contract.h"
-#include "Interpreter.h"
 
 using namespace Script;
 /*

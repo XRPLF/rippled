@@ -4,8 +4,6 @@
 
 DECLARE_INSTANCE(Suppression);
 
-extern int upTime();
-
 Suppression& SuppressionTable::findCreateEntry(const uint256& index, bool& created)
 {
 	boost::unordered_map<uint256, Suppression>::iterator fit = mSuppressionMap.find(index);
@@ -17,7 +15,7 @@ Suppression& SuppressionTable::findCreateEntry(const uint256& index, bool& creat
 	}
 	created = true;
 
-	int now = upTime();
+	int now = UptimeTimer::getInstance().getElapsedSeconds ();
 	int expireTime = now - mHoldTime;
 
 	// See if any supressions need to be expired

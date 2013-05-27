@@ -5,8 +5,6 @@
 
 #include <boost/ptr_container/ptr_vector.hpp>
 
-#include "../json/value.h"
-
 #include "SerializedTypes.h"
 #include "InstanceCounter.h"
 
