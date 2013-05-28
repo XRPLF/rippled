@@ -1,4 +1,3 @@
-#include "RippleState.h"
 
 
 AccountItem::pointer RippleState::makeItem(const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry)

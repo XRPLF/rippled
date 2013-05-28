@@ -1,9 +1,4 @@
 
-#include "SerializedValidation.h"
-
-#include "Config.h"
-#include "Log.h"
-
 DECLARE_INSTANCE(SerializedValidation);
 
 SOTemplate sValidationFormat;

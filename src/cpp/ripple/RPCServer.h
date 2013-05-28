@@ -6,8 +6,6 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio.hpp>
 
-#include "../json/value.h"
-
 #include "HTTPRequest.h"
 #include "RippleAddress.h"
 #include "NetworkOPs.h"

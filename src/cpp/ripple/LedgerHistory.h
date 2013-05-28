@@ -1,12 +1,11 @@
 #ifndef __LEDGERHISTORY__
 #define __LEDGERHISTORY__
 
-#include "TaggedCache.h"
 #include "Ledger.h"
 
 class LedgerHistory
 {
-	TaggedCache<uint256, Ledger> mLedgersByHash;
+	TaggedCache<uint256, Ledger, UptimeTimerAdapter> mLedgersByHash;
 	std::map<uint32, uint256> mLedgersByIndex; // accepted ledgers
 
 public:

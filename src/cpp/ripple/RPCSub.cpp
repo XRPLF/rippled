@@ -5,7 +5,7 @@
 
 #include "CallRPC.h"
 
-SETUP_LOG();
+SETUP_LOG (RPCSub)
 
 RPCSub::RPCSub(const std::string& strUrl, const std::string& strUsername, const std::string& strPassword)
     : mUrl(strUrl), mSSL(false), mUsername(strUsername), mPassword(strPassword), mSending(false)
@@ -30,7 +30,7 @@ RPCSub::RPCSub(const std::string& strUrl, const std::string& strUsername, const 
     if (mPort < 0)
 		mPort	= mSSL ? 443 : 80;
 
-	cLog(lsINFO) << boost::str(boost::format("callRPC sub: ip='%s' port=%d ssl=%d path='%s'")
+	WriteLog (lsINFO, RPCSub) << boost::str(boost::format("callRPC sub: ip='%s' port=%d ssl=%d path='%s'")
 		% mIp
 		% mPort
 		% mSSL
@@ -73,7 +73,7 @@ void RPCSub::sendThread()
 			// XXX Might not need this in a try.
 			try
 			{
-				cLog(lsINFO) << boost::str(boost::format("callRPC calling: %s") % mIp);
+				WriteLog (lsINFO, RPCSub) << boost::str(boost::format("callRPC calling: %s") % mIp);
 
 				callRPC(
 					theApp->getIOService(),
@@ -85,7 +85,7 @@ void RPCSub::sendThread()
 			}
 			catch (const std::exception& e)
 			{
-				cLog(lsINFO) << boost::str(boost::format("callRPC exception: %s") % e.what());
+				WriteLog (lsINFO, RPCSub) << boost::str(boost::format("callRPC exception: %s") % e.what());
 			}
 		}
     } while (bSend);
@@ -98,11 +98,11 @@ void RPCSub::send(const Json::Value& jvObj, bool broadcast)
     if (RPC_EVENT_QUEUE_MAX == mDeque.size())
     {
 		// Drop the previous event.
-		cLog(lsWARNING) << boost::str(boost::format("callRPC drop"));
+		WriteLog (lsWARNING, RPCSub) << boost::str(boost::format("callRPC drop"));
 		mDeque.pop_back();
     }
 
-    cLog(broadcast ? lsDEBUG : lsINFO) << boost::str(boost::format("callRPC push: %s") % jvObj);
+    WriteLog (broadcast ? lsDEBUG : lsINFO, RPCSub) << boost::str(boost::format("callRPC push: %s") % jvObj);
 
     mDeque.push_back(std::make_pair(mSeq++, jvObj));
 
@@ -111,7 +111,7 @@ void RPCSub::send(const Json::Value& jvObj, bool broadcast)
 		// Start a sending thread.
 		mSending    = true;
 
-	    cLog(lsINFO) << boost::str(boost::format("callRPC start"));
+	    WriteLog (lsINFO, RPCSub) << boost::str(boost::format("callRPC start"));
 		boost::thread(boost::bind(&RPCSub::sendThread, this)).detach();
     }
 }

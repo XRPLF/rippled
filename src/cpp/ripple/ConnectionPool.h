@@ -8,7 +8,6 @@
 
 #include "Peer.h"
 #include "PackedMessage.h"
-#include "types.h"
 
 //
 // Access to the Ripple network.

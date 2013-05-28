@@ -1,17 +1,3 @@
-#include <cassert>
-
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/ref.hpp>
-
-#include "Application.h"
-#include "Transaction.h"
-#include "Wallet.h"
-#include "BitcoinUtil.h"
-#include "Serializer.h"
-#include "SerializedTransaction.h"
-#include "Log.h"
 
 DECLARE_INSTANCE(Transaction);
 

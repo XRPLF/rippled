@@ -1,19 +1,5 @@
 
-#include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
-
-#include "SerializedTypes.h"
-#include "SerializedObject.h"
-#include "TransactionFormats.h"
-#include "LedgerFormats.h"
-#include "FieldNames.h"
-#include "Log.h"
-#include "RippleAddress.h"
-#include "utils.h"
-#include "RippleAddress.h"
-#include "TransactionErr.h"
-
-SETUP_LOG();
+SETUP_LOG (SerializedType)
 
 const STAmount saZero(CURRENCY_ONE, ACCOUNT_ONE, 0);
 const STAmount saOne(CURRENCY_ONE, ACCOUNT_ONE, 1);
@@ -22,7 +8,7 @@ SerializedType& SerializedType::operator=(const SerializedType& t)
 {
 	if ((t.fName != fName) && fName->isUseful() && t.fName->isUseful())
 	{
-		cLog((t.getSType() == STI_AMOUNT) ? lsDEBUG : lsWARNING) // This is common for amounts
+		WriteLog ((t.getSType() == STI_AMOUNT) ? lsDEBUG : lsWARNING, SerializedType) // This is common for amounts
 			<< "Caution: " << t.fName->getName() << " not replacing " << fName->getName();
 	}
 	if (!fName->isUseful()) fName = t.fName;
@@ -93,7 +79,7 @@ Json::Value STUInt8::getJson(int) const
 		if (transResultInfo(static_cast<TER>(value), token, human))
 			return token;
 		else
-			cLog(lsWARNING) << "Unknown result code in metadata: " << value;
+			WriteLog (lsWARNING, SerializedType) << "Unknown result code in metadata: " << value;
 	}
 	return value;
 }
@@ -381,7 +367,7 @@ STPathSet* STPathSet::construct(SerializerIterator& s, SField::ref name)
 		{
 			if (path.empty())
 			{
-				cLog(lsINFO) << "STPathSet: Empty path.";
+				WriteLog (lsINFO, SerializedType) << "STPathSet: Empty path.";
 
 				throw std::runtime_error("empty path");
 			}
@@ -396,7 +382,7 @@ STPathSet* STPathSet::construct(SerializerIterator& s, SField::ref name)
 		}
 		else if (iType & ~STPathElement::typeValidBits)
 		{
-			cLog(lsINFO) << "STPathSet: Bad path element: " << iType;
+			WriteLog (lsINFO, SerializedType) << "STPathSet: Bad path element: " << iType;
 
 			throw std::runtime_error("bad path element");
 		}

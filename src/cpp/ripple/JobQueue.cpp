@@ -4,11 +4,10 @@
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
 
-#include "Log.h"
 #include "Config.h"
 #include "Application.h"
 
-SETUP_LOG();
+SETUP_LOG (JobQueue)
 
 JobQueue::JobQueue(boost::asio::io_service& svc)
 	: mLastJob(0), mThreadCount(0), mShuttingDown(false), mIOThreadCount(0), mMaxIOThreadCount(1), mIOService(svc)
@@ -222,7 +221,7 @@ int JobQueue::isOverloaded()
 
 void JobQueue::shutdown()
 { // shut down the job queue without completing pending jobs
-	cLog(lsINFO) << "Job queue shutting down";
+	WriteLog (lsINFO, JobQueue) << "Job queue shutting down";
 	boost::mutex::scoped_lock sl(mJobLock);
 	mShuttingDown = true;
 	mJobCond.notify_all();
@@ -242,7 +241,7 @@ void JobQueue::setThreadCount(int c)
 		if (c > 4) // I/O will bottleneck
 			c = 4;
 		c += 2;
-		cLog(lsINFO) << "Auto-tuning to " << c << " validation/transaction/proposal threads";
+		WriteLog (lsINFO, JobQueue) << "Auto-tuning to " << c << " validation/transaction/proposal threads";
 	}
 
 	boost::mutex::scoped_lock sl(mJobLock);
@@ -274,16 +273,16 @@ void JobQueue::IOThread(boost::mutex::scoped_lock& sl)
 { // call with a lock
 	++mIOThreadCount;
 	sl.unlock();
-	NameThread("IO+");
+	setCallingThreadName("IO+");
 	try
 	{
 		mIOService.poll();
 	}
 	catch (...)
 	{
-		cLog(lsWARNING) << "Exception in IOThread";
+		WriteLog (lsWARNING, JobQueue) << "Exception in IOThread";
 	}
-	NameThread("waiting");
+	setCallingThreadName("waiting");
 	sl.lock();
 	--mIOThreadCount;
 }
@@ -293,7 +292,7 @@ void JobQueue::threadEntry()
 	boost::mutex::scoped_lock sl(mJobLock);
 	while (1)
 	{
-		NameThread("waiting");
+		setCallingThreadName("waiting");
 //		bool didIO = false;
 		while (mJobSet.empty() && !mShuttingDown)
 		{
@@ -326,8 +325,8 @@ void JobQueue::threadEntry()
 
 			++(mJobCounts[type].second);
 			sl.unlock();
-			NameThread(Job::toString(type));
-			cLog(lsTRACE) << "Doing " << Job::toString(type) << " job";
+			setCallingThreadName(Job::toString(type));
+			WriteLog (lsTRACE, JobQueue) << "Doing " << Job::toString(type) << " job";
 			job.doJob();
 		} // must destroy job without holding lock
 		sl.lock();

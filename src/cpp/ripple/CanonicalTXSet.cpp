@@ -1,6 +1,4 @@
 
-#include "CanonicalTXSet.h"
-
 bool CanonicalTXKey::operator<(const CanonicalTXKey& key) const
 {
 	if (mAccount < key.mAccount) return true;

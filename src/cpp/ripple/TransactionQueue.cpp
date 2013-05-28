@@ -1,6 +1,3 @@
-#include "TransactionQueue.h"
-
-#include <boost/foreach.hpp>
 
 void TXQEntry::addCallbacks(const TXQEntry& otherEntry)
 {

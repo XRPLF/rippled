@@ -1,19 +1,6 @@
 
-#include "SerializedObject.h"
+SETUP_LOG (STObject)
 
-#include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/bind.hpp>
-#include <boost/test/unit_test.hpp>
-
-#include "../json/writer.h"
-
-#include "Log.h"
-#include "LedgerFormats.h"
-#include "TransactionFormats.h"
-#include "SerializedTransaction.h"
-
-SETUP_LOG();
 DECLARE_INSTANCE(SerializedObject);
 DECLARE_INSTANCE(SerializedArray);
 
@@ -69,7 +56,7 @@ UPTR_T<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, SField::
 			return UPTR_T<SerializedType>(new STArray(name));
 
 		default:
-			cLog(lsFATAL) << "Object type: " << lexical_cast_i(id);
+			WriteLog (lsFATAL, STObject) << "Object type: " << lexical_cast_i(id);
 			assert(false);
 			throw std::runtime_error("Unknown object type");
 	}
@@ -176,7 +163,7 @@ bool STObject::setType(const SOTemplate &type)
 				match = true;
 				if ((elem->flags == SOE_DEFAULT) && it->isDefault())
 				{
-					cLog(lsWARNING) << "setType( " << getFName().getName() << ") invalid default "
+					WriteLog (lsWARNING, STObject) << "setType( " << getFName().getName() << ") invalid default "
 						<< elem->e_field.fieldName;
 					valid = false;
 				}
@@ -188,7 +175,7 @@ bool STObject::setType(const SOTemplate &type)
 		{ // no match found
 			if (elem->flags == SOE_REQUIRED)
 			{
-				cLog(lsWARNING) << "setType( " << getFName().getName() << ") invalid missing "
+				WriteLog (lsWARNING, STObject) << "setType( " << getFName().getName() << ") invalid missing "
 					<< elem->e_field.fieldName;
 				valid = false;
 			}
@@ -200,7 +187,7 @@ bool STObject::setType(const SOTemplate &type)
 	{ // Anything left over must be discardable
 		if (!t.getFName().isDiscardable())
 		{
-			cLog(lsWARNING) << "setType( " << getFName().getName() << ") invalid leftover "
+			WriteLog (lsWARNING, STObject) << "setType( " << getFName().getName() << ") invalid leftover "
 				<< t.getFName().getName();
 			valid = false;
 		}
@@ -244,7 +231,7 @@ bool STObject::set(SerializerIterator& sit, int depth)
 		SField::ref fn = SField::getField(type, field);
 		if (fn.isInvalid())
 		{
-			cLog(lsWARNING) << "Unknown field: field_type=" << type << ", field_name=" << field;
+			WriteLog (lsWARNING, STObject) << "Unknown field: field_type=" << type << ", field_name=" << field;
 			throw std::runtime_error("Unknown field");
 		}
 		giveObject(makeDeserializedObject(fn.fieldType, fn, sit, depth + 1));
@@ -947,7 +934,7 @@ STArray* STArray::construct(SerializerIterator& sit, SField::ref field)
 		SField::ref fn = SField::getField(type, field);
 		if (fn.isInvalid())
 		{
-			cLog(lsTRACE) << "Unknown field: " << type << "/" << field;
+			WriteLog (lsTRACE, STObject) << "Unknown field: " << type << "/" << field;
 			throw std::runtime_error("Unknown field");
 		}
 
@@ -1209,7 +1196,7 @@ UPTR_T<STObject> STObject::parseJson(const Json::Value& object, SField::ref inNa
 					RippleAddress a;
 					if (!a.setAccountID(strValue))
 					{
-						cLog(lsINFO) << "Invalid acccount JSON: " << fieldName << ": " << strValue;
+						WriteLog (lsINFO, STObject) << "Invalid acccount JSON: " << fieldName << ": " << strValue;
 						throw std::runtime_error("Account invalid");
 					}
 					data.push_back(new STAccount(field, a.getAccountID()));
@@ -1278,8 +1265,8 @@ BOOST_AUTO_TEST_CASE( FieldManipulation_test )
 
 	if (object1.getSerializer() == object2.getSerializer())
 	{
-		cLog(lsINFO) << "O1: " << object1.getJson(0);
-		cLog(lsINFO) << "O2: " << object2.getJson(0);
+		WriteLog (lsINFO, STObject) << "O1: " << object1.getJson(0);
+		WriteLog (lsINFO, STObject) << "O2: " << object2.getJson(0);
 		BOOST_FAIL("STObject error 4");
 	}
 	object1.makeFieldAbsent(sfTestH256);

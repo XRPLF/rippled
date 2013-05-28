@@ -1,19 +1,3 @@
-#define WIN32_LEAN_AND_MEAN 
-
-#include <string>
-
-#include "openssl/ec.h"
-
-#include <boost/foreach.hpp>
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/make_shared.hpp>
-
-#include "Wallet.h"
-#include "Ledger.h"
-#include "RippleAddress.h"
-#include "Application.h"
-#include "utils.h"
 
 Wallet::Wallet() : mDh512(NULL), mDh1024(NULL), mLedger(0)
 { ; }

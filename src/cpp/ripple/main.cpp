@@ -9,13 +9,10 @@
 #include "Application.h"
 #include "CallRPC.h"
 #include "Config.h"
-#include "Log.h"
 #include "RPCHandler.h"
-#include "utils.h"
 
 namespace po = boost::program_options;
 
-extern bool AddSystemEntropy();
 extern void TFInit();
 extern void LEFInit();
 extern void SVFInit();
@@ -130,7 +127,7 @@ void printHelp(const po::options_description& desc)
 
 int main(int argc, char* argv[])
 {
-	NameThread("main");
+	setCallingThreadName("main");
 	int					iResult	= 0;
 	po::variables_map	vm;										// Map of options.
 
@@ -271,14 +268,14 @@ int main(int argc, char* argv[])
 	{
 		// No arguments. Run server.
 		setupServer();
-		NameThread("io");
+		setCallingThreadName("io");
 		startServer();
 		InstanceType::shutdown();
 	}
 	else
 	{
 		// Have a RPC command.
-		NameThread("rpc");
+		setCallingThreadName("rpc");
 		std::vector<std::string> vCmd	= vm["parameters"].as<std::vector<std::string> >();
 
 		iResult	= commandLineRPC(vCmd);

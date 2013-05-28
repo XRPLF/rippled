@@ -5,17 +5,17 @@
 #include <boost/make_shared.hpp>
 #include <boost/ref.hpp>
 
-#include "../json/writer.h"
-
 #include "Version.h"
 #include "Peer.h"
 #include "Config.h"
 #include "Application.h"
 #include "SerializedTransaction.h"
-#include "utils.h"
-#include "Log.h"
 
-SETUP_LOG();
+// VFALCO: TODO, make this an inline function
+#define ADDRESS(p)			strHex(uint64( ((char*) p) - ((char*) 0)))
+
+SETUP_LOG (Peer)
+
 DECLARE_INSTANCE(Peer);
 
 // Don't try to run past receiving nonsense from a peer
@@ -42,7 +42,7 @@ Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, 
 	mActivityTimer(io_service),
 	mIOStrand(io_service)
 {
-	cLog(lsDEBUG) << "CREATING PEER: " << ADDRESS(this);
+	WriteLog (lsDEBUG, Peer) << "CREATING PEER: " << ADDRESS(this);
 }
 
 void Peer::handleWrite(const boost::system::error_code& error, size_t bytes_transferred)
@@ -61,7 +61,7 @@ void Peer::handleWrite(const boost::system::error_code& error, size_t bytes_tran
 	}
 	else if (error)
 	{
-		cLog(lsINFO) << "Peer: Write: Error: " << ADDRESS(this) << ": bytes=" << bytes_transferred << ": " << error.category().name() << ": " << error.message() << ": " << error;
+		WriteLog (lsINFO, Peer) << "Peer: Write: Error: " << ADDRESS(this) << ": bytes=" << bytes_transferred << ": " << error.category().name() << ": " << error.message() << ": " << error;
 
 		detach("hw", true);
 	}
@@ -82,7 +82,7 @@ void Peer::setIpPort(const std::string& strIP, int iPort)
 	mIpPort = make_pair(strIP, iPort);
 	mLoad.rename(strIP);
 
-	cLog(lsDEBUG) << "Peer: Set: "
+	WriteLog (lsDEBUG, Peer) << "Peer: Set: "
 		<< ADDRESS(this) << "> "
 		<< (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-") << " " << getIP() << " " << getPort();
 }
@@ -98,9 +98,9 @@ void Peer::detach(const char *rsn, bool onIOStrand)
 	{
 		mDetaching	= true;			// Race is ok.
 
-		tLog(mCluster, lsWARNING) << "Cluster peer detach \"" << mNodeName << "\": " << rsn;
+		CondLog (mCluster, lsWARNING, Peer) << "Cluster peer detach \"" << mNodeName << "\": " << rsn;
 		/*
-		cLog(lsDEBUG) << "Peer: Detach: "
+		WriteLog (lsDEBUG, Peer) << "Peer: Detach: "
 			<< ADDRESS(this) << "> "
 			<< rsn << ": "
 			<< (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-") << " " << getIP() << " " << getPort();
@@ -128,7 +128,7 @@ void Peer::detach(const char *rsn, bool onIOStrand)
 			mIpPort.first.clear();		// Be idempotent.
 		}
 		/*
-		cLog(lsDEBUG) << "Peer: Detach: "
+		WriteLog (lsDEBUG, Peer) << "Peer: Detach: "
 			<< ADDRESS(this) << "< "
 			<< rsn << ": "
 			<< (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-") << " " << getIP() << " " << getPort();
@@ -174,11 +174,11 @@ void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
 	}
 	else if (ecResult)
 	{
-		cLog(lsINFO) << "Peer verify timer error";
+		WriteLog (lsINFO, Peer) << "Peer verify timer error";
 	}
 	else
 	{
-		//cLog(lsINFO) << "Peer: Verify: Peer failed to verify in time.";
+		//WriteLog (lsINFO, Peer) << "Peer: Verify: Peer failed to verify in time.";
 
 		detach("hvt", true);
 	}
@@ -204,7 +204,7 @@ void Peer::connect(const std::string& strIp, int iPort)
 
 	if (err || itrEndpoint == boost::asio::ip::tcp::resolver::iterator())
 	{
-		cLog(lsWARNING) << "Peer: Connect: Bad IP: " << strIp;
+		WriteLog (lsWARNING, Peer) << "Peer: Connect: Bad IP: " << strIp;
 		detach("c", false);
 		return;
 	}
@@ -216,7 +216,7 @@ void Peer::connect(const std::string& strIp, int iPort)
 
 		if (err)
 		{
-			cLog(lsWARNING) << "Peer: Connect: Failed to set timer.";
+			WriteLog (lsWARNING, Peer) << "Peer: Connect: Failed to set timer.";
 			detach("c2", false);
 			return;
 		}
@@ -224,7 +224,7 @@ void Peer::connect(const std::string& strIp, int iPort)
 
 	if (!err)
 	{
-		cLog(lsINFO) << "Peer: Connect: Outbound: " << ADDRESS(this) << ": " << mIpPort.first << " " << mIpPort.second;
+		WriteLog (lsINFO, Peer) << "Peer: Connect: Outbound: " << ADDRESS(this) << ": " << mIpPort.first << " " << mIpPort.second;
 
 		boost::asio::async_connect(
 			getSocket(),
@@ -245,7 +245,7 @@ void Peer::handleStart(const boost::system::error_code& error)
 {
 	if (error)
 	{
-		cLog(lsINFO) << "Peer: Handshake: Error: " << error.category().name() << ": " << error.message() << ": " << error;
+		WriteLog (lsINFO, Peer) << "Peer: Handshake: Error: " << error.category().name() << ": " << error.message() << ": " << error;
 		detach("hs", true);
 	}
 	else
@@ -260,12 +260,12 @@ void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip
 {
 	if (error)
 	{
-		cLog(lsINFO) << "Peer: Connect: Error: " << error.category().name() << ": " << error.message() << ": " << error;
+		WriteLog (lsINFO, Peer) << "Peer: Connect: Error: " << error.category().name() << ": " << error.message() << ": " << error;
 		detach("hc", true);
 	}
 	else
 	{
-		cLog(lsINFO) << "Connect peer: success.";
+		WriteLog (lsINFO, Peer) << "Connect peer: success.";
 
 		mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
 
@@ -292,7 +292,7 @@ void Peer::connected(const boost::system::error_code& error)
 	{
 		// Not redundant ip and port, handshake, and start.
 
-		cLog(lsINFO) << "Peer: Inbound: Accepted: " << ADDRESS(this) << ": " << strIp << " " << iPort;
+		WriteLog (lsINFO, Peer) << "Peer: Inbound: Accepted: " << ADDRESS(this) << ": " << strIp << " " << iPort;
 
 
 		mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
@@ -302,7 +302,7 @@ void Peer::connected(const boost::system::error_code& error)
 	}
 	else if (!mDetaching)
 	{
-		cLog(lsINFO) << "Peer: Inbound: Error: " << ADDRESS(this) << ": " << strIp << " " << iPort << " : " << error.category().name() << ": " << error.message() << ": " << error;
+		WriteLog (lsINFO, Peer) << "Peer: Inbound: Error: " << ADDRESS(this) << ": " << strIp << " " << iPort << " : " << error.category().name() << ": " << error.message() << ": " << error;
 
 		detach("ctd", false);
 	}
@@ -390,12 +390,12 @@ void Peer::handleReadHeader(const boost::system::error_code& error)
 	{
 		if (mCluster)
 		{
-			cLog(lsINFO) << "Peer: Cluster connection lost to \"" << mNodeName << "\": " <<
+			WriteLog (lsINFO, Peer) << "Peer: Cluster connection lost to \"" << mNodeName << "\": " <<
 				error.category().name() << ": " << error.message() << ": " << error;
 		}
 		else
 		{
-			cLog(lsINFO) << "Peer: Header: Error: " << getIP() << ": " << error.category().name() << ": " << error.message() << ": " << error;
+			WriteLog (lsINFO, Peer) << "Peer: Header: Error: " << getIP() << ": " << error.category().name() << ": " << error.message() << ": " << error;
 		}
 		detach("hrh2", true);
 	}
@@ -411,12 +411,12 @@ void Peer::handleReadBody(const boost::system::error_code& error)
 	{
 		if (mCluster)
 		{
-			cLog(lsINFO) << "Peer: Cluster connection lost to \"" << mNodeName << "\": " <<
+			WriteLog (lsINFO, Peer) << "Peer: Cluster connection lost to \"" << mNodeName << "\": " <<
 				error.category().name() << ": " << error.message() << ": " << error;
 		}
 		else
 		{
-			cLog(lsINFO) << "Peer: Body: Error: " << getIP() << ": " << error.category().name() << ": " << error.message() << ": " << error;
+			WriteLog (lsINFO, Peer) << "Peer: Body: Error: " << getIP() << ": " << error.category().name() << ": " << error.message() << ": " << error;
 		}
 		boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 		detach("hrb", true);
@@ -443,7 +443,7 @@ void Peer::processReadBuffer()
 	// If connected and get a mtHELLO or if not connected and get a non-mtHELLO, wrong message was sent.
 	if (mHelloed == (type == ripple::mtHELLO))
 	{
-		cLog(lsWARNING) << "Wrong message type: " << type;
+		WriteLog (lsWARNING, Peer) << "Wrong message type: " << type;
 		detach("prb1", true);
 	}
 	else
@@ -457,7 +457,7 @@ void Peer::processReadBuffer()
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvHello(msg);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -468,7 +468,7 @@ void Peer::processReadBuffer()
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvErrorMessage(msg);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -479,7 +479,7 @@ void Peer::processReadBuffer()
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvPing(msg);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -490,7 +490,7 @@ void Peer::processReadBuffer()
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetContacts(msg);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -502,7 +502,7 @@ void Peer::processReadBuffer()
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvContact(msg);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -514,7 +514,7 @@ void Peer::processReadBuffer()
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetPeers(msg, sl);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -526,7 +526,7 @@ void Peer::processReadBuffer()
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvPeers(msg);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -537,7 +537,7 @@ void Peer::processReadBuffer()
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvSearchTransaction(msg);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -548,7 +548,7 @@ void Peer::processReadBuffer()
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetAccount(msg);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -559,7 +559,7 @@ void Peer::processReadBuffer()
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvAccount(msg);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -570,7 +570,7 @@ void Peer::processReadBuffer()
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvTransaction(msg, sl);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -581,7 +581,7 @@ void Peer::processReadBuffer()
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvStatus(msg);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -592,7 +592,7 @@ void Peer::processReadBuffer()
 				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvPropose(msg);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -603,7 +603,7 @@ void Peer::processReadBuffer()
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetLedger(msg, sl);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -614,7 +614,7 @@ void Peer::processReadBuffer()
 				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvLedger(msg, sl);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -625,7 +625,7 @@ void Peer::processReadBuffer()
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvHaveTxSet(msg);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -636,7 +636,7 @@ void Peer::processReadBuffer()
 				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvValidation(msg, sl);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 #if 0
@@ -646,7 +646,7 @@ void Peer::processReadBuffer()
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recv(msg);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -658,7 +658,7 @@ void Peer::processReadBuffer()
 				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetObjectByHash(msg);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
@@ -669,15 +669,15 @@ void Peer::processReadBuffer()
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvProofWork(msg);
 				else
-					cLog(lsWARNING) << "parse error: " << type;
+					WriteLog (lsWARNING, Peer) << "parse error: " << type;
 			}
 			break;
 
 
 		default:
 			event->reName("Peer::unknown");
-			cLog(lsWARNING) << "Unknown Msg: " << type;
-			cLog(lsWARNING) << strHex(&mReadbuf[0], mReadbuf.size());
+			WriteLog (lsWARNING, Peer) << "Unknown Msg: " << type;
+			WriteLog (lsWARNING, Peer) << strHex(&mReadbuf[0], mReadbuf.size());
 		}
 	}
 }
@@ -707,14 +707,14 @@ void Peer::recvHello(ripple::TMHello& packet)
 	{
 		int64 to = ourTime;
 		to -= packet.nettime();
-		cLog(lsDEBUG) << "Connect: time offset " << to;
+		WriteLog (lsDEBUG, Peer) << "Connect: time offset " << to;
 	}
 #endif
 
 	if ((packet.has_testnet() && packet.testnet()) != theConfig.TESTNET)
 	{
 		// Format: actual/requested.
-		cLog(lsINFO) << boost::str(boost::format("Recv(Hello): Network mismatch: %d/%d")
+		WriteLog (lsINFO, Peer) << boost::str(boost::format("Recv(Hello): Network mismatch: %d/%d")
 			% packet.testnet()
 			% theConfig.TESTNET);
 	}
@@ -722,31 +722,31 @@ void Peer::recvHello(ripple::TMHello& packet)
 	{
 		if (packet.nettime() > maxTime)
 		{
-			cLog(lsINFO) << "Recv(Hello): " << getIP() << " :Clock far off +" << packet.nettime() - ourTime;
+			WriteLog (lsINFO, Peer) << "Recv(Hello): " << getIP() << " :Clock far off +" << packet.nettime() - ourTime;
 		}
 		else if(packet.nettime() < minTime)
 		{
-			cLog(lsINFO) << "Recv(Hello): " << getIP() << " :Clock far off -" << ourTime - packet.nettime();
+			WriteLog (lsINFO, Peer) << "Recv(Hello): " << getIP() << " :Clock far off -" << ourTime - packet.nettime();
 		}
 	}
 	else if (packet.protoversionmin() > MAKE_VERSION_INT(PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR))
 	{
-		cLog(lsINFO) << "Recv(Hello): Server requires protocol version " <<
+		WriteLog (lsINFO, Peer) << "Recv(Hello): Server requires protocol version " <<
 			GET_VERSION_MAJOR(packet.protoversion()) << "." << GET_VERSION_MINOR(packet.protoversion())
 				<< " we run " << PROTO_VERSION_MAJOR << "." << PROTO_VERSION_MINOR;
 	}
 	else if (!mNodePublic.setNodePublic(packet.nodepublic()))
 	{
-		cLog(lsINFO) << "Recv(Hello): Disconnect: Bad node public key.";
+		WriteLog (lsINFO, Peer) << "Recv(Hello): Disconnect: Bad node public key.";
 	}
 	else if (!mNodePublic.verifyNodePublic(mCookieHash, packet.nodeproof()))
 	{ // Unable to verify they have private key for claimed public key.
-		cLog(lsINFO) << "Recv(Hello): Disconnect: Failed to verify session.";
+		WriteLog (lsINFO, Peer) << "Recv(Hello): Disconnect: Failed to verify session.";
 	}
 	else
 	{ // Successful connection.
-		cLog(lsINFO) << "Recv(Hello): Connect: " << mNodePublic.humanNodePublic();
-		tLog(packet.protoversion() != MAKE_VERSION_INT(PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR), lsINFO)
+		WriteLog (lsINFO, Peer) << "Recv(Hello): Connect: " << mNodePublic.humanNodePublic();
+		CondLog (packet.protoversion() != MAKE_VERSION_INT(PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR), lsINFO, Peer)
 			<< "Peer speaks version " <<
 				(packet.protoversion() >> 16) << "." << (packet.protoversion() & 0xFF);
 		mHello = packet;
@@ -754,7 +754,7 @@ void Peer::recvHello(ripple::TMHello& packet)
 		{
 			mCluster = true;
 			mLoad.setPrivileged();
-			cLog(lsINFO) << "Cluster connection to \"" << (mNodeName.empty() ? getIP() : mNodeName)
+			WriteLog (lsINFO, Peer) << "Cluster connection to \"" << (mNodeName.empty() ? getIP() : mNodeName)
 				<< "\" established";
 		}
 		if (isOutbound())
@@ -768,7 +768,7 @@ void Peer::recvHello(ripple::TMHello& packet)
 
 		if (!theApp->getConnectionPool().peerConnected(shared_from_this(), mNodePublic, getIP(), getPort()))
 		{ // Already connected, self, or some other reason.
-			cLog(lsINFO) << "Recv(Hello): Disconnect: Extraneous connection.";
+			WriteLog (lsINFO, Peer) << "Recv(Hello): Disconnect: Extraneous connection.";
 		}
 		else
 		{
@@ -785,7 +785,7 @@ void Peer::recvHello(ripple::TMHello& packet)
 
 				if (mHello.nodeprivate())
 				{
-					cLog(lsINFO) << boost::str(boost::format("Recv(Hello): Private connection: %s %s") % strIP % iPort);
+					WriteLog (lsINFO, Peer) << boost::str(boost::format("Recv(Hello): Private connection: %s %s") % strIP % iPort);
 				}
 				else
 				{
@@ -888,7 +888,7 @@ void Peer::recvTransaction(ripple::TMTransaction& packet, ScopedLock& MasterLock
 			if ((flags & SF_RETRY) == 0)
 				return;
 		}
-		cLog(lsDEBUG) << "Got new transaction from peer";
+		WriteLog (lsDEBUG, Peer) << "Got new transaction from peer";
 
 		if (mCluster)
 			flags |= SF_TRUSTED | SF_SIGGOOD;
@@ -917,7 +917,7 @@ static void checkPropose(Job& job, boost::shared_ptr<ripple::TMProposeSet> packe
 	bool sigGood = false;
 	bool isTrusted = (job.getType() == jtPROPOSAL_t);
 
-	cLog(lsTRACE) << "Checking " << (isTrusted ? "trusted" : "UNtrusted") << " proposal";
+	WriteLog (lsTRACE, Peer) << "Checking " << (isTrusted ? "trusted" : "UNtrusted") << " proposal";
 
 	assert(packet);
 	ripple::TMProposeSet& set = *packet;
@@ -925,12 +925,12 @@ static void checkPropose(Job& job, boost::shared_ptr<ripple::TMProposeSet> packe
 	uint256 prevLedger;
 	if (set.has_previousledger())
 	{ // proposal includes a previous ledger
-		cLog(lsTRACE) << "proposal with previous ledger";
+		WriteLog (lsTRACE, Peer) << "proposal with previous ledger";
 		memcpy(prevLedger.begin(), set.previousledger().data(), 256 / 8);
 		if (!proposal->checkSign(set.signature()))
 		{
 			Peer::pointer p = peer.lock();
-			cLog(lsWARNING) << "proposal with previous ledger fails signature check: " <<
+			WriteLog (lsWARNING, Peer) << "proposal with previous ledger fails signature check: " <<
 				(p ? p->getIP() : std::string("???"));
 			Peer::punishPeer(peer, LT_InvalidSignature);
 			return;
@@ -947,7 +947,7 @@ static void checkPropose(Job& job, boost::shared_ptr<ripple::TMProposeSet> packe
 		}
 		else
 		{
-			cLog(lsWARNING) << "Ledger proposal fails signature check"; // Could be mismatched prev ledger
+			WriteLog (lsWARNING, Peer) << "Ledger proposal fails signature check"; // Could be mismatched prev ledger
 			proposal->setSignature(set.signature());
 		}
 	}
@@ -960,14 +960,14 @@ static void checkPropose(Job& job, boost::shared_ptr<ripple::TMProposeSet> packe
 	}
 	else if (sigGood && (prevLedger == consensusLCL))
 	{ // relay untrusted proposal
-		cLog(lsTRACE) << "relaying untrusted proposal";
+		WriteLog (lsTRACE, Peer) << "relaying untrusted proposal";
 		std::set<uint64> peers;
 		theApp->getSuppression().swapSet(proposal->getSuppression(), peers, SF_RELAYED);
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(set, ripple::mtPROPOSE_LEDGER);
 		theApp->getConnectionPool().relayMessageBut(peers, message);
 	}
 	else
-		cLog(lsDEBUG) << "Not relaying untrusted proposal";
+		WriteLog (lsDEBUG, Peer) << "Not relaying untrusted proposal";
 }
 
 void Peer::recvPropose(const boost::shared_ptr<ripple::TMProposeSet>& packet)
@@ -978,14 +978,14 @@ void Peer::recvPropose(const boost::shared_ptr<ripple::TMProposeSet>& packet)
 	if ((set.currenttxhash().size() != 32) || (set.nodepubkey().size() < 28) ||
 		(set.signature().size() < 56) || (set.nodepubkey().size() > 128) || (set.signature().size() > 128))
 	{
-		cLog(lsWARNING) << "Received proposal is malformed";
+		WriteLog (lsWARNING, Peer) << "Received proposal is malformed";
 		punishPeer(LT_InvalidSignature);
 		return;
 	}
 
 	if (set.has_previousledger() && (set.previousledger().size() != 32))
 	{
-		cLog(lsWARNING) << "Received proposal is malformed";
+		WriteLog (lsWARNING, Peer) << "Received proposal is malformed";
 		punishPeer(LT_InvalidRequest);
 		return;
 	}
@@ -1007,18 +1007,18 @@ void Peer::recvPropose(const boost::shared_ptr<ripple::TMProposeSet>& packet)
 
 	if (!theApp->isNew(suppression, mPeerId))
 	{
-		cLog(lsTRACE) << "Received duplicate proposal from peer " << mPeerId;
+		WriteLog (lsTRACE, Peer) << "Received duplicate proposal from peer " << mPeerId;
 		return;
 	}
 
 	RippleAddress signerPublic = RippleAddress::createNodePublic(strCopy(set.nodepubkey()));
 	if (signerPublic == theConfig.VALIDATION_PUB)
 	{
-		cLog(lsTRACE) << "Received our own proposal from peer " << mPeerId;
+		WriteLog (lsTRACE, Peer) << "Received our own proposal from peer " << mPeerId;
 		return;
 	}
 	bool isTrusted = theApp->getUNL().nodeInUNL(signerPublic);
-	cLog(lsTRACE) << "Received " << (isTrusted ? "trusted" : "UNtrusted") << " proposal from " << mPeerId;
+	WriteLog (lsTRACE, Peer) << "Received " << (isTrusted ? "trusted" : "UNtrusted") << " proposal from " << mPeerId;
 
 	uint256 consensusLCL = theApp->getOPs().getConsensusLCL();
 	LedgerProposal::pointer proposal = boost::make_shared<LedgerProposal>(
@@ -1055,7 +1055,7 @@ static void checkValidation(Job&, SerializedValidation::pointer val, uint256 sig
 	{
 		if (!isCluster && !val->isValid(signingHash))
 		{
-			cLog(lsWARNING) << "Validation is invalid";
+			WriteLog (lsWARNING, Peer) << "Validation is invalid";
 			Peer::punishPeer(peer, LT_InvalidRequest);
 			return;
 		}
@@ -1078,7 +1078,7 @@ static void checkValidation(Job&, SerializedValidation::pointer val, uint256 sig
 #ifndef TRUST_NETWORK
 	catch (...)
 	{
-		cLog(lsWARNING) << "Exception processing validation";
+		WriteLog (lsWARNING, Peer) << "Exception processing validation";
 		Peer::punishPeer(peer, LT_InvalidRequest);
 	}
 #endif
@@ -1089,7 +1089,7 @@ void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet,
 	MasterLockHolder.unlock();
 	if (packet->validation().size() < 50)
 	{
-		cLog(lsWARNING) << "Too small validation from peer";
+		WriteLog (lsWARNING, Peer) << "Too small validation from peer";
 		punishPeer(LT_InvalidRequest);
 		return;
 	}
@@ -1105,7 +1105,7 @@ void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet,
 		uint256 signingHash = val->getSigningHash();
 		if (!theApp->isNew(signingHash, mPeerId))
 		{
-			cLog(lsTRACE) << "Validation is duplicate";
+			WriteLog (lsTRACE, Peer) << "Validation is duplicate";
 			return;
 		}
 
@@ -1117,7 +1117,7 @@ void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet,
 #ifndef TRUST_NETWORK
 	catch (...)
 	{
-		cLog(lsWARNING) << "Exception processing validation";
+		WriteLog (lsWARNING, Peer) << "Exception processing validation";
 		punishPeer(LT_InvalidRequest);
 	}
 #endif
@@ -1161,7 +1161,7 @@ void Peer::recvGetPeers(ripple::TMGetPeers& packet, ScopedLock& MasterLockHolder
 			addr->set_ipv4(inet_addr(strIP.c_str()));
 			addr->set_ipv4port(iPort);
 
-			//cLog(lsINFO) << "Peer: Teaching: " << ADDRESS(this) << ": " << n << ": " << strIP << " " << iPort;
+			//WriteLog (lsINFO, Peer) << "Peer: Teaching: " << ADDRESS(this) << ": " << n << ": " << strIP << " " << iPort;
 		}
 
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(peers, ripple::mtPEERS);
@@ -1183,7 +1183,7 @@ void Peer::recvPeers(ripple::TMPeers& packet)
 
 		if (strIP != "0.0.0.0" && strIP != "127.0.0.1")
 		{
-			//cLog(lsINFO) << "Peer: Learning: " << ADDRESS(this) << ": " << i << ": " << strIP << " " << iPort;
+			//WriteLog (lsINFO, Peer) << "Peer: Learning: " << ADDRESS(this) << ": " << i << ": " << strIP << " " << iPort;
 
 			theApp->getConnectionPool().savePeer(strIP, iPort, UniqueNodeList::vsTold);
 		}
@@ -1231,7 +1231,7 @@ void Peer::recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash
 				}
 			}
 		}
-		cLog(lsTRACE) << "GetObjByHash had " << reply.objects_size() << " of " << packet.objects_size()
+		WriteLog (lsTRACE, Peer) << "GetObjByHash had " << reply.objects_size() << " of " << packet.objects_size()
 			<< " for " << getIP();
 		sendPacket(boost::make_shared<PackedMessage>(reply, ripple::mtGET_OBJECTS), true);
 	}
@@ -1250,12 +1250,12 @@ void Peer::recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash
 				{
 					if (obj.ledgerseq() != pLSeq)
 					{
-						tLog(pLDo && (pLSeq != 0), lsDEBUG) << "Recevied full fetch pack for " << pLSeq;
+						CondLog (pLDo && (pLSeq != 0), lsDEBUG, Peer) << "Recevied full fetch pack for " << pLSeq;
 						pLSeq = obj.ledgerseq();
 						pLDo = !theApp->getOPs().haveLedger(pLSeq);
 						if (!pLDo)
 						{
-							cLog(lsDEBUG) << "Got pack for " << pLSeq << " too late";
+							WriteLog (lsDEBUG, Peer) << "Got pack for " << pLSeq << " too late";
 						}
 						else
 							progress = true;
@@ -1274,7 +1274,7 @@ void Peer::recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByHash
 				}
 			}
 		}
-		tLog(pLDo && (pLSeq != 0), lsDEBUG) << "Received partial fetch pack for " << pLSeq;
+		CondLog (pLDo && (pLSeq != 0), lsDEBUG, Peer) << "Received partial fetch pack for " << pLSeq;
 		if (packet.type() == ripple::TMGetObjectByHash::otFETCH_PACK)
 			theApp->getOPs().gotFetchPack(progress, pLSeq);
 	}
@@ -1365,12 +1365,12 @@ void Peer::recvProofWork(ripple::TMProofWork& packet)
 		return;
 	}
 
-	cLog(lsINFO) << "Received in valid proof of work object from peer";
+	WriteLog (lsINFO, Peer) << "Received in valid proof of work object from peer";
 }
 
 void Peer::recvStatus(ripple::TMStatusChange& packet)
 {
-	cLog(lsTRACE) << "Received status change from peer " << getIP();
+	WriteLog (lsTRACE, Peer) << "Received status change from peer " << getIP();
 	if (!packet.has_networktime())
 		packet.set_networktime(theApp->getOPs().getNetworkTimeNC());
 
@@ -1387,7 +1387,7 @@ void Peer::recvStatus(ripple::TMStatusChange& packet)
 	{
 		if (!mClosedLedgerHash.isZero())
 		{
-			cLog(lsTRACE) << "peer has lost sync " << getIP();
+			WriteLog (lsTRACE, Peer) << "peer has lost sync " << getIP();
 			mClosedLedgerHash.zero();
 		}
 		mPreviousLedgerHash.zero();
@@ -1397,11 +1397,11 @@ void Peer::recvStatus(ripple::TMStatusChange& packet)
 	{ // a peer has changed ledgers
 		memcpy(mClosedLedgerHash.begin(), packet.ledgerhash().data(), 256 / 8);
 		addLedger(mClosedLedgerHash);
-		cLog(lsTRACE) << "peer LCL is " << mClosedLedgerHash << " " << getIP();
+		WriteLog (lsTRACE, Peer) << "peer LCL is " << mClosedLedgerHash << " " << getIP();
 	}
 	else
 	{
-		cLog(lsTRACE) << "peer has no ledger hash" << getIP();
+		WriteLog (lsTRACE, Peer) << "peer has no ledger hash" << getIP();
 		mClosedLedgerHash.zero();
 	}
 
@@ -1431,11 +1431,11 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHold
 
 	if (packet.itype() == ripple::liTS_CANDIDATE)
 	{ // Request is for a transaction candidate set
-		cLog(lsDEBUG) << "Received request for TX candidate set data " << getIP();
+		WriteLog (lsDEBUG, Peer) << "Received request for TX candidate set data " << getIP();
 		if ((!packet.has_ledgerhash() || packet.ledgerhash().size() != 32))
 		{
 			punishPeer(LT_InvalidRequest);
-			cLog(lsWARNING) << "invalid request for TX candidate set data";
+			WriteLog (lsWARNING, Peer) << "invalid request for TX candidate set data";
 			return;
 		}
 		uint256 txHash;
@@ -1445,7 +1445,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHold
 		{
 			if (packet.has_querytype() && !packet.has_requestcookie())
 			{
-				cLog(lsDEBUG) << "Trying to route TX set request";
+				WriteLog (lsDEBUG, Peer) << "Trying to route TX set request";
 				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 				std::vector<Peer::pointer> usablePeers;
 				BOOST_FOREACH(Peer::ref peer, peerList)
@@ -1455,7 +1455,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHold
 				}
 				if (usablePeers.empty())
 				{
-					cLog(lsINFO) << "Unable to route TX set request";
+					WriteLog (lsINFO, Peer) << "Unable to route TX set request";
 					return;
 				}
 				Peer::ref selectedPeer = usablePeers[rand() % usablePeers.size()];
@@ -1463,7 +1463,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHold
 				selectedPeer->sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtGET_LEDGER), false);
 				return;
 			}
-			cLog(lsERROR) << "We do not have the map our peer wants " << getIP();
+			WriteLog (lsERROR, Peer) << "We do not have the map our peer wants " << getIP();
 			punishPeer(LT_InvalidRequest);
 			return;
 		}
@@ -1475,7 +1475,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHold
 	}
 	else
 	{ // Figure out what ledger they want
-		cLog(lsTRACE) << "Received request for ledger data " << getIP();
+		WriteLog (lsTRACE, Peer) << "Received request for ledger data " << getIP();
 		Ledger::pointer ledger;
 		if (packet.has_ledgerhash())
 		{
@@ -1483,14 +1483,14 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHold
 			if (packet.ledgerhash().size() != 32)
 			{
 				punishPeer(LT_InvalidRequest);
-				cLog(lsWARNING) << "Invalid request";
+				WriteLog (lsWARNING, Peer) << "Invalid request";
 				return;
 			}
 			memcpy(ledgerhash.begin(), packet.ledgerhash().data(), 32);
 			logMe += "LedgerHash:"; logMe += ledgerhash.GetHex();
 			ledger = theApp->getLedgerMaster().getLedgerByHash(ledgerhash);
 
-			tLog(!ledger, lsTRACE) << "Don't have ledger " << ledgerhash;
+			CondLog (!ledger, lsTRACE, Peer) << "Don't have ledger " << ledgerhash;
 			if (!ledger && (packet.has_querytype() && !packet.has_requestcookie()))
 			{
 				uint32 seq = 0;
@@ -1505,20 +1505,20 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHold
 				}
 				if (usablePeers.empty())
 				{
-					cLog(lsTRACE) << "Unable to route ledger request";
+					WriteLog (lsTRACE, Peer) << "Unable to route ledger request";
 					return;
 				}
 				Peer::ref selectedPeer = usablePeers[rand() % usablePeers.size()];
 				packet.set_requestcookie(getPeerId());
 				selectedPeer->sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtGET_LEDGER), false);
-				cLog(lsDEBUG) << "Ledger request routed";
+				WriteLog (lsDEBUG, Peer) << "Ledger request routed";
 				return;
 			}
 		}
 		else if (packet.has_ledgerseq())
 		{
 			ledger = theApp->getLedgerMaster().getLedgerBySeq(packet.ledgerseq());
-			tLog(!ledger, lsDEBUG) << "Don't have ledger " << packet.ledgerseq();
+			CondLog (!ledger, lsDEBUG, Peer) << "Don't have ledger " << packet.ledgerseq();
 		}
 		else if (packet.has_ltype() && (packet.ltype() == ripple::ltCURRENT))
 			ledger = theApp->getLedgerMaster().getCurrentLedger();
@@ -1531,14 +1531,14 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHold
 		else
 		{
 			punishPeer(LT_InvalidRequest);
-			cLog(lsWARNING) << "Can't figure out what ledger they want";
+			WriteLog (lsWARNING, Peer) << "Can't figure out what ledger they want";
 			return;
 		}
 
 		if ((!ledger) || (packet.has_ledgerseq() && (packet.ledgerseq() != ledger->getLedgerSeq())))
 		{
 			punishPeer(LT_InvalidRequest);
-			if (sLog(lsWARNING))
+			if (ShouldLog (lsWARNING, Peer))
 			{
 				if (ledger)
 					Log(lsWARNING) << "Ledger has wrong sequence";
@@ -1550,7 +1550,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHold
 			MasterLockHolder.unlock();
 		else
 		{
-			cLog(lsWARNING) << "Request for data from mutable ledger";
+			WriteLog (lsWARNING, Peer) << "Request for data from mutable ledger";
 		}
 
 		// Fill out the reply
@@ -1561,7 +1561,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHold
 
 		if(packet.itype() == ripple::liBASE)
 		{ // they want the ledger base data
-			cLog(lsTRACE) << "They want ledger base data";
+			WriteLog (lsTRACE, Peer) << "They want ledger base data";
 			Serializer nData(128);
 			ledger->addRaw(nData);
 			reply.add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
@@ -1605,18 +1605,18 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHold
 
 	if ((!map) || (packet.nodeids_size() == 0))
 	{
-		cLog(lsWARNING) << "Can't find map or empty request";
+		WriteLog (lsWARNING, Peer) << "Can't find map or empty request";
 		punishPeer(LT_InvalidRequest);
 		return;
 	}
 
-	cLog(lsTRACE) << "Request: " << logMe;
+	WriteLog (lsTRACE, Peer) << "Request: " << logMe;
 	for(int i = 0; i < packet.nodeids().size(); ++i)
 	{
 		SHAMapNode mn(packet.nodeids(i).data(), packet.nodeids(i).size());
 		if(!mn.isValid())
 		{
-			cLog(lsWARNING) << "Request for invalid node: " << logMe;
+			WriteLog (lsWARNING, Peer) << "Request for invalid node: " << logMe;
 			punishPeer(LT_InvalidRequest);
 			return;
 		}
@@ -1627,7 +1627,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHold
 			if(map->getNodeFat(mn, nodeIDs, rawNodes, fatRoot, fatLeaves))
 			{
 				assert(nodeIDs.size() == rawNodes.size());
-				cLog(lsTRACE) << "getNodeFat got " << rawNodes.size() << " nodes";
+				WriteLog (lsTRACE, Peer) << "getNodeFat got " << rawNodes.size() << " nodes";
 				std::vector<SHAMapNode>::iterator nodeIDIterator;
 				std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
 				for(nodeIDIterator = nodeIDs.begin(), rawNodeIterator = rawNodes.begin();
@@ -1641,9 +1641,9 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHold
 				}
 			}
 			else
-				cLog(lsWARNING) << "getNodeFat returns false";
+				WriteLog (lsWARNING, Peer) << "getNodeFat returns false";
 		}
-		catch (std::exception& e)
+		catch (std::exception&)
 		{
 			std::string info;
 			if (packet.itype() == ripple::liTS_CANDIDATE)
@@ -1658,7 +1658,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockHold
 			if (!packet.has_ledgerhash())
 				info += ", no hash specified";
 
-			cLog(lsWARNING) << "getNodeFat( " << mn <<") throws exception: " << info;
+			WriteLog (lsWARNING, Peer) << "getNodeFat( " << mn <<") throws exception: " << info;
 		}
 	}
 	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, ripple::mtLEDGER_DATA);
@@ -1671,7 +1671,7 @@ void Peer::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_ptr,
 	ripple::TMLedgerData& packet = *packet_ptr;
 	if (packet.nodes().size() <= 0)
 	{
-		cLog(lsWARNING) << "Ledger/TXset data with no nodes";
+		WriteLog (lsWARNING, Peer) << "Ledger/TXset data with no nodes";
 		punishPeer(LT_InvalidRequest);
 		return;
 	}
@@ -1686,7 +1686,7 @@ void Peer::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_ptr,
 		}
 		else
 		{
-			cLog(lsINFO) << "Unable to route TX/ledger data reply";
+			WriteLog (lsINFO, Peer) << "Unable to route TX/ledger data reply";
 			punishPeer(LT_UnwantedData);
 		}
 		return;
@@ -1695,7 +1695,7 @@ void Peer::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_ptr,
 	uint256 hash;
 	if(packet.ledgerhash().size() != 32)
 	{
-		cLog(lsWARNING) << "TX candidate reply with invalid hash size";
+		WriteLog (lsWARNING, Peer) << "TX candidate reply with invalid hash size";
 		punishPeer(LT_InvalidRequest);
 		return;
 	}
@@ -1711,7 +1711,7 @@ void Peer::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_ptr,
 			const ripple::TMLedgerNode& node = packet.nodes(i);
 			if (!node.has_nodeid() || !node.has_nodedata() || (node.nodeid().size() != 33))
 			{
-				cLog(lsWARNING) << "LedgerData request with invalid node ID";
+				WriteLog (lsWARNING, Peer) << "LedgerData request with invalid node ID";
 				punishPeer(LT_InvalidRequest);
 				return;
 			}
@@ -1862,7 +1862,7 @@ void Peer::doProofOfWork(Job&, boost::weak_ptr<Peer> peer, ProofOfWork::pointer 
 	uint256 solution = pow->solve();
 	if (solution.isZero())
 	{
-		cLog(lsWARNING) << "Failed to solve proof of work";
+		WriteLog (lsWARNING, Peer) << "Failed to solve proof of work";
 	}
 	else
 	{
@@ -1885,12 +1885,12 @@ void Peer::doFetchPack(const boost::shared_ptr<ripple::TMGetObjectByHash>& packe
 {
 	if (theApp->getFeeTrack().isLoaded())
 	{
-		cLog(lsINFO) << "Too busy to make fetch pack";
+		WriteLog (lsINFO, Peer) << "Too busy to make fetch pack";
 		return;
 	}
 	if (packet->ledgerhash().size() != 32)
 	{
-		cLog(lsWARNING) << "FetchPack hash size malformed";
+		WriteLog (lsWARNING, Peer) << "FetchPack hash size malformed";
 		punishPeer(LT_InvalidRequest);
 		return;
 	}
@@ -1900,13 +1900,13 @@ void Peer::doFetchPack(const boost::shared_ptr<ripple::TMGetObjectByHash>& packe
 	Ledger::pointer haveLedger = theApp->getOPs().getLedgerByHash(hash);
 	if (!haveLedger)
 	{
-		cLog(lsINFO) << "Peer requests fetch pack for ledger we don't have: " << hash;
+		WriteLog (lsINFO, Peer) << "Peer requests fetch pack for ledger we don't have: " << hash;
 		punishPeer(LT_RequestNoReply);
 		return;
 	}
 	if (!haveLedger->isClosed())
 	{
-		cLog(lsWARNING) << "Peer requests fetch pack from open ledger: " << hash;
+		WriteLog (lsWARNING, Peer) << "Peer requests fetch pack from open ledger: " << hash;
 		punishPeer(LT_InvalidRequest);
 		return;
 	}
@@ -1914,13 +1914,13 @@ void Peer::doFetchPack(const boost::shared_ptr<ripple::TMGetObjectByHash>& packe
 	Ledger::pointer wantLedger = theApp->getOPs().getLedgerByHash(haveLedger->getParentHash());
 	if (!wantLedger)
 	{
-		cLog(lsINFO) << "Peer requests fetch pack for ledger whose predecessor we don't have: " << hash;
+		WriteLog (lsINFO, Peer) << "Peer requests fetch pack for ledger whose predecessor we don't have: " << hash;
 		punishPeer(LT_RequestNoReply);
 		return;
 	}
 	theApp->getJobQueue().addJob(jtPACK, "MakeFetchPack",
 		BIND_TYPE(&NetworkOPs::makeFetchPack, &theApp->getOPs(), P_1,
-			boost::weak_ptr<Peer>(shared_from_this()), packet, wantLedger, haveLedger, upTime()));
+			boost::weak_ptr<Peer>(shared_from_this()), packet, wantLedger, haveLedger, UptimeTimer::getInstance().getElapsedSeconds ()));
 }
 
 bool Peer::hasProto(int version)
@@ -1966,7 +1966,7 @@ Json::Value Peer::getJson()
 			case ripple::nsMONITORING:		ret["status"] = "monitoring";	break;
 			case ripple::nsVALIDATING:		ret["status"] = "validating";	break;
 			case ripple::nsSHUTTING:		ret["status"] = "shutting";		break;
-			default:						cLog(lsWARNING) << "Peer has unknown status: " << mLastStatus.newstatus();
+			default:						WriteLog (lsWARNING, Peer) << "Peer has unknown status: " << mLastStatus.newstatus();
 		}
 	}
 

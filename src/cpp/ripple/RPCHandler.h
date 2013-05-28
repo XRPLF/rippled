@@ -3,8 +3,6 @@
 
 #include <boost/unordered_set.hpp>
 
-#include "../json/value.h"
-
 #include "RippleAddress.h"
 #include "SerializedTypes.h"
 #include "Ledger.h"

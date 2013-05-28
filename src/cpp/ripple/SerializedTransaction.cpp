@@ -1,14 +1,6 @@
 
-#include "SerializedTransaction.h"
+SETUP_LOG (SerializedTransaction)
 
-#include <boost/foreach.hpp>
-#include <boost/test/unit_test.hpp>
-
-#include "Application.h"
-#include "Log.h"
-#include "HashPrefixes.h"
-
-SETUP_LOG();
 DECLARE_INSTANCE(SerializedTransaction);
 
 SerializedTransaction::SerializedTransaction(TransactionType type) : STObject(sfTransaction), mType(type),
@@ -17,7 +9,7 @@ SerializedTransaction::SerializedTransaction(TransactionType type) : STObject(sf
 	mFormat = TransactionFormat::getTxnFormat(type);
 	if (mFormat == NULL)
 	{
-		cLog(lsWARNING) << "Transaction type: " << type;
+		WriteLog (lsWARNING, SerializedTransaction) << "Transaction type: " << type;
 		throw std::runtime_error("invalid transaction type");
 	}
 	set(mFormat->elements);
@@ -31,7 +23,7 @@ SerializedTransaction::SerializedTransaction(const STObject& object) : STObject(
 	mFormat = TransactionFormat::getTxnFormat(mType);
 	if (!mFormat)
 	{
-		cLog(lsWARNING) << "Transaction type: " << mType;
+		WriteLog (lsWARNING, SerializedTransaction) << "Transaction type: " << mType;
 		throw std::runtime_error("invalid transaction type");
 	}
 	if (!setType(mFormat->elements))
@@ -56,7 +48,7 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit) : STObject
 	mFormat = TransactionFormat::getTxnFormat(mType);
 	if (!mFormat)
 	{
-		cLog(lsWARNING) << "Transaction type: " << mType;
+		WriteLog (lsWARNING, SerializedTransaction) << "Transaction type: " << mType;
 		throw std::runtime_error("invalid transaction type");
 	}
 	if (!setType(mFormat->elements))

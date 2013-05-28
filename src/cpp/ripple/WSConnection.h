@@ -2,8 +2,6 @@
 #include "../websocketpp/src/sockets/autotls.hpp"
 #include "../websocketpp/src/websocketpp.hpp"
 
-#include "../json/value.h"
-
 #include <boost/weak_ptr.hpp>
 #include <boost/asio.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -14,11 +12,15 @@
 #include "NetworkOPs.h"
 #include "CallRPC.h"
 #include "InstanceCounter.h"
-#include "Log.h"
 #include "LoadManager.h"
 #include "RPCErr.h"
 
 DEFINE_INSTANCE(WebSocketConnection);
+
+// This is for logging
+struct WSConnectionLog { };
+
+SETUP_LOG (WSConnectionLog)
 
 template <typename endpoint_type>
 class WSServerHandler;
@@ -64,7 +66,7 @@ public:
 		mLoadSource(mRemoteIP), mPingTimer(cpConnection->get_io_service()), mPinged(false),
 		mRcvQueueRunning(false), mDead(false)
 	{
-		cLog(lsDEBUG) << "Websocket connection from " << mRemoteIP;
+		WriteLog (lsDEBUG, WSConnectionLog) << "Websocket connection from " << mRemoteIP;
 		setPingTimer();
 	}
 

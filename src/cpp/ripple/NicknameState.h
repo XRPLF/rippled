@@ -1,14 +1,10 @@
-#ifndef _NICKNAMESTATE_
-#define _NICKNAMESTATE_
+#ifndef NICKNAMESTATE_H
+#define NICKNAMESTATE_H
 
 //
 // State of a nickname node.
 // - Isolate ledger entry format.
 //
-
-#include "SerializedLedger.h"
-
-#include <boost/shared_ptr.hpp>
 
 class NicknameState
 {

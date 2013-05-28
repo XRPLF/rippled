@@ -1,12 +1,5 @@
-#ifndef __INTERPRETER__
-#define __INTERPRETER__
-
-#include "uint256.h"
-#include "Contract.h"
-#include <boost/shared_ptr.hpp>
-#include <vector>
-#include "ScriptData.h"
-#include "TransactionEngine.h"
+#ifndef INTERPRETER_H
+#define INTERPRETER_H
 
 namespace Script {
 

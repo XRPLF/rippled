@@ -2,9 +2,6 @@
 #include <boost/test/unit_test.hpp>
 
 #include "SerializedTypes.h"
-#include "Log.h"
-
-SETUP_LOG();
 
 #if (ULONG_MAX > UINT_MAX)
 #define BN_add_word64(bn, word) BN_add_word(bn, word)
@@ -15,11 +12,6 @@ SETUP_LOG();
 #include "BigNum64.h"
 #endif
 
-static const uint64 tenTo14 = 100000000000000ull;
-static const uint64 tenTo14m1 = tenTo14 - 1;
-static const uint64 tenTo17 = tenTo14 * 1000;
-static const uint64 tenTo17m1 = tenTo17 - 1;
-
 // CAUTION: This is early code and is *NOT* ready for real use yet.
 
 static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool roundUp)
@@ -27,7 +19,7 @@ static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool ro
 	if (!roundUp) // canonicalize already rounds down
 		return;
 
-	cLog(lsTRACE) << "canonicalize< " << value << ":" << offset << (roundUp ? " up" : " down");
+	WriteLog (lsTRACE, STAmount) << "canonicalize< " << value << ":" << offset << (roundUp ? " up" : " down");
 	if (isNative)
 	{
 		if (offset < 0)
@@ -55,7 +47,7 @@ static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool ro
 		value /= 10;
 		++offset;
 	}
-	cLog(lsTRACE) << "canonicalize> " << value << ":" << offset << (roundUp ? " up" : " down");
+	WriteLog (lsTRACE, STAmount) << "canonicalize> " << value << ":" << offset << (roundUp ? " up" : " down");
 }
 
 STAmount STAmount::addRound(const STAmount& v1, const STAmount& v2, bool roundUp)
@@ -307,37 +299,37 @@ BOOST_AUTO_TEST_CASE( amountRound_test )
 	STAmount oneThird1 = STAmount::divRound(one, three, CURRENCY_ONE, ACCOUNT_ONE, false);
 	STAmount oneThird2 = STAmount::divide(one, three, CURRENCY_ONE, ACCOUNT_ONE);
 	STAmount oneThird3 = STAmount::divRound(one, three, CURRENCY_ONE, ACCOUNT_ONE, true);
-	cLog(lsINFO) << oneThird1;
-	cLog(lsINFO) << oneThird2;
-	cLog(lsINFO) << oneThird3;
+	WriteLog (lsINFO, STAmount) << oneThird1;
+	WriteLog (lsINFO, STAmount) << oneThird2;
+	WriteLog (lsINFO, STAmount) << oneThird3;
 
 	STAmount twoThird1 = STAmount::divRound(two, three, CURRENCY_ONE, ACCOUNT_ONE, false);
 	STAmount twoThird2 = STAmount::divide(two, three, CURRENCY_ONE, ACCOUNT_ONE);
 	STAmount twoThird3 = STAmount::divRound(two, three, CURRENCY_ONE, ACCOUNT_ONE, true);
-	cLog(lsINFO) << twoThird1;
-	cLog(lsINFO) << twoThird2;
-	cLog(lsINFO) << twoThird3;
+	WriteLog (lsINFO, STAmount) << twoThird1;
+	WriteLog (lsINFO, STAmount) << twoThird2;
+	WriteLog (lsINFO, STAmount) << twoThird3;
 
 	STAmount oneA = STAmount::mulRound(oneThird1, three, CURRENCY_ONE, ACCOUNT_ONE, false);
 	STAmount oneB = STAmount::multiply(oneThird2, three, CURRENCY_ONE, ACCOUNT_ONE);
 	STAmount oneC = STAmount::mulRound(oneThird3, three, CURRENCY_ONE, ACCOUNT_ONE, true);
-	cLog(lsINFO) << oneA;
-	cLog(lsINFO) << oneB;
-	cLog(lsINFO) << oneC;
+	WriteLog (lsINFO, STAmount) << oneA;
+	WriteLog (lsINFO, STAmount) << oneB;
+	WriteLog (lsINFO, STAmount) << oneC;
 
 	STAmount fourThirdsA = STAmount::addRound(twoThird2, twoThird2, false);
 	STAmount fourThirdsB = twoThird2 + twoThird2;
 	STAmount fourThirdsC = STAmount::addRound(twoThird2, twoThird2, true);
-	cLog(lsINFO) << fourThirdsA;
-	cLog(lsINFO) << fourThirdsB;
-	cLog(lsINFO) << fourThirdsC;
+	WriteLog (lsINFO, STAmount) << fourThirdsA;
+	WriteLog (lsINFO, STAmount) << fourThirdsB;
+	WriteLog (lsINFO, STAmount) << fourThirdsC;
 
 	STAmount dripTest1 = STAmount::mulRound(twoThird2, two, uint160(), uint160(), false);
 	STAmount dripTest2 = STAmount::multiply(twoThird2, two, uint160(), uint160());
 	STAmount dripTest3 = STAmount::mulRound(twoThird2, two, uint160(), uint160(), true);
-	cLog(lsINFO) << dripTest1;
-	cLog(lsINFO) << dripTest2;
-	cLog(lsINFO) << dripTest3;
+	WriteLog (lsINFO, STAmount) << dripTest1;
+	WriteLog (lsINFO, STAmount) << dripTest2;
+	WriteLog (lsINFO, STAmount) << dripTest3;
 }
 
 BOOST_AUTO_TEST_SUITE_END()

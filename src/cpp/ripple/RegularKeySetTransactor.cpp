@@ -1,7 +1,5 @@
-#include "RegularKeySetTransactor.h"
-#include "Log.h"
 
-SETUP_LOG();
+SETUP_LOG (RegularKeySetTransactor)
 
 uint64 RegularKeySetTransactor::calculateBaseFee()
 {
@@ -22,7 +20,7 @@ TER RegularKeySetTransactor::doApply()
 
 	if (uTxFlags)
 	{
-		cLog(lsINFO) << "RegularKeySet: Malformed transaction: Invalid flags set.";
+		WriteLog (lsINFO, RegularKeySetTransactor) << "RegularKeySet: Malformed transaction: Invalid flags set.";
 
 		return temINVALID_FLAG;
 	}

@@ -12,7 +12,6 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/read_until.hpp>
 
-#include "Log.h"
 extern LogPartition AutoSocketPartition;
 
 // Socket wrapper that supports both SSL and non-SSL connections.

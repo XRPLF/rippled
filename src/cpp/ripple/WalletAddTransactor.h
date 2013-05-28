@@ -1,5 +1,5 @@
-#include "Transactor.h"
-
+#ifndef WALLETADDTRANSACTOR_H
+#define WALLETADDTRANSACTOR_H
 
 class WalletAddTransactor : public Transactor
 {
@@ -8,5 +8,6 @@ public:
 
 	TER doApply();
 };
+#endif
 
 // vim:ts=4

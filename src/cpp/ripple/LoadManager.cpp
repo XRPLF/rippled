@@ -4,25 +4,20 @@
 #include <boost/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-#include "Log.h"
 #include "Config.h"
 #include "Application.h"
 
-SETUP_LOG();
+SETUP_LOG (LoadManager)
 
-static volatile int* uptimePtr = NULL;
-
-int upTime()
-{
-	static time_t firstCall = time(NULL);
-	if (uptimePtr != NULL)
-		return *uptimePtr;
-	return static_cast<int>(time(NULL) - firstCall);
-}
-
-LoadManager::LoadManager(int creditRate, int creditLimit, int debitWarn, int debitLimit) :
-		mCreditRate(creditRate), mCreditLimit(creditLimit), mDebitWarn(debitWarn), mDebitLimit(debitLimit),
-		mShutdown(false), mArmed(false), mUptime(0), mDeadLock(0), mCosts(LT_MAX)
+LoadManager::LoadManager (int creditRate, int creditLimit, int debitWarn, int debitLimit)
+	: mCreditRate(creditRate)
+	, mCreditLimit(creditLimit)
+	, mDebitWarn(debitWarn)
+	, mDebitLimit(debitLimit)
+	, mShutdown(false)
+	, mArmed(false)
+	, mDeadLock(0)
+	, mCosts(LT_MAX)
 {
 	addLoadCost(LoadCost(LT_InvalidRequest,		-10,		LC_CPU | LC_Network));
 	addLoadCost(LoadCost(LT_RequestNoReply,		-1,		LC_CPU | LC_Disk));
@@ -41,19 +36,14 @@ LoadManager::LoadManager(int creditRate, int creditLimit, int debitWarn, int deb
 
 void LoadManager::init()
 {
-	if (uptimePtr == NULL)
-		uptimePtr = static_cast<volatile int *>(&mUptime);
+	UptimeTimer::getInstance().beginManualUpdates ();
+
 	boost::thread(boost::bind(&LoadManager::threadEntry, this)).detach();
 }
 
 LoadManager::~LoadManager()
 {
-	if (uptimePtr == &mUptime)
-		uptimePtr = NULL;
-	{
-		boost::mutex::scoped_lock sl(mLock);
-		mShutdown = true;
-	}
+	UptimeTimer::getInstance().endManualUpdates ();
 
 	do
 	{
@@ -70,7 +60,8 @@ LoadManager::~LoadManager()
 void LoadManager::noDeadLock()
 {
 	boost::mutex::scoped_lock sl(mLock);
-	mDeadLock = mUptime;
+	//mDeadLock = mUptime;
+	mDeadLock = UptimeTimer::getInstance ().getElapsedSeconds ();
 }
 
 int LoadManager::getCreditRate() const
@@ -143,7 +134,7 @@ bool LoadManager::shouldWarn(LoadSource& source) const
 	{
 		boost::mutex::scoped_lock sl(mLock);
 
-		int now = upTime();
+		int now = UptimeTimer::getInstance().getElapsedSeconds ();
 		canonicalize(source, now);
 		if (source.isPrivileged() || (source.mBalance > mDebitWarn) || (source.mLastWarning == now))
 			return false;
@@ -158,7 +149,7 @@ bool LoadManager::shouldCutoff(LoadSource& source) const
 {
 	{
 		boost::mutex::scoped_lock sl(mLock);
-		int now = upTime();
+		int now = UptimeTimer::getInstance().getElapsedSeconds ();
 		canonicalize(source, now);
 		if (source.isPrivileged() || (source.mBalance > mDebitLimit))
 			return false;
@@ -180,7 +171,7 @@ bool LoadManager::adjust(LoadSource& source, int credits) const
 { // return: true = need to warn/cutoff
 
 	// We do it this way in case we want to add exponential decay later
-	int now = upTime();
+	int now = UptimeTimer::getInstance().getElapsedSeconds ();
 	canonicalize(source, now);
 	source.mBalance += credits;
 	if (source.mBalance > mCreditLimit)
@@ -281,7 +272,7 @@ bool LoadFeeTrack::raiseLocalFee()
 
 	if (origFee == mLocalTxnLoadFee)
 		return false;
-	cLog(lsDEBUG) << "Local load fee raised from " << origFee << " to " << mLocalTxnLoadFee;
+	WriteLog (lsDEBUG, LoadManager) << "Local load fee raised from " << origFee << " to " << mLocalTxnLoadFee;
 	return true;
 }
 
@@ -304,7 +295,7 @@ bool LoadFeeTrack::lowerLocalFee()
 
 	if (origFee == mLocalTxnLoadFee)
 		return false;
-	cLog(lsDEBUG) << "Local load fee lowered from " << origFee << " to " << mLocalTxnLoadFee;
+	WriteLog (lsDEBUG, LoadManager) << "Local load fee lowered from " << origFee << " to " << mLocalTxnLoadFee;
 	return true;
 }
 
@@ -326,20 +317,14 @@ Json::Value LoadFeeTrack::getJson(uint64 baseFee, uint32 referenceFeeUnits)
 	return j;
 }
 
-int LoadManager::getUptime()
-{
-	boost::mutex::scoped_lock sl(mLock);
-	return mUptime;
-}
-
 static void LogDeadLock(int dlTime)
 {
-	cLog(lsWARNING) << "Server stalled for " << dlTime << " seconds.";
+	WriteLog (lsWARNING, LoadManager) << "Server stalled for " << dlTime << " seconds.";
 }
 
 void LoadManager::threadEntry()
 {
-	NameThread("loadmgr");
+	setCallingThreadName("loadmgr");
 	boost::posix_time::ptime t = boost::posix_time::microsec_clock::universal_time();
 	while (1)
 	{
@@ -350,9 +335,10 @@ void LoadManager::threadEntry()
 				mShutdown = false;
 				return;
 			}
-			++mUptime;
+			
+			UptimeTimer::getInstance ().incrementElapsedTime ();
 
-			int dlTime = mUptime - mDeadLock;
+			int dlTime = UptimeTimer::getInstance ().getElapsedSeconds () - mDeadLock;
 			if (mArmed && (dlTime >= 10))
 			{
 				if ((dlTime % 10) == 0)
@@ -368,7 +354,7 @@ void LoadManager::threadEntry()
 		bool change;
 		if (theApp->getJobQueue().isOverloaded())
 		{
-			cLog(lsINFO) << theApp->getJobQueue().getJson(0);
+			WriteLog (lsINFO, LoadManager) << theApp->getJobQueue().getJson(0);
 			change = theApp->getFeeTrack().raiseLocalFee();
 		}
 		else
@@ -381,7 +367,7 @@ void LoadManager::threadEntry()
 
 		if ((when.is_negative()) || (when.total_seconds() > 1))
 		{
-			cLog(lsWARNING) << "time jump";
+			WriteLog (lsWARNING, LoadManager) << "time jump";
 			t = boost::posix_time::microsec_clock::universal_time();
 		}
 		else
@@ -392,24 +378,24 @@ void LoadManager::threadEntry()
 void LoadManager::logWarning(const std::string& source) const
 {
 	if (source.empty())
-		cLog(lsDEBUG) << "Load warning from empty source";
+		WriteLog (lsDEBUG, LoadManager) << "Load warning from empty source";
 	else
-		cLog(lsINFO) << "Load warning: " << source;
+		WriteLog (lsINFO, LoadManager) << "Load warning: " << source;
 }
 
 void LoadManager::logDisconnect(const std::string& source) const
 {
 	if (source.empty())
-		cLog(lsINFO) << "Disconnect for empty source";
+		WriteLog (lsINFO, LoadManager) << "Disconnect for empty source";
 	else
-		cLog(lsWARNING) << "Disconnect for: " << source;
+		WriteLog (lsWARNING, LoadManager) << "Disconnect for: " << source;
 }
 
 BOOST_AUTO_TEST_SUITE(LoadManager_test)
 
 BOOST_AUTO_TEST_CASE(LoadFeeTrack_test)
 {
-	cLog(lsDEBUG) << "Running load fee track test";
+	WriteLog (lsDEBUG, LoadManager) << "Running load fee track test";
 
 	Config d; // get a default configuration object
 	LoadFeeTrack l;

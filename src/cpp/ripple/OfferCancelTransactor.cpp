@@ -1,7 +1,5 @@
-#include "OfferCancelTransactor.h"
-#include "Log.h"
 
-SETUP_LOG();
+SETUP_LOG (OfferCancelTransactor)
 
 TER OfferCancelTransactor::doApply()
 {
@@ -9,20 +7,20 @@ TER OfferCancelTransactor::doApply()
 	const uint32	uOfferSequence			= mTxn.getFieldU32(sfOfferSequence);
 	const uint32	uAccountSequenceNext	= mTxnAccount->getFieldU32(sfSequence);
 
-	cLog(lsDEBUG) << "OfferCancel: uAccountSequenceNext=" << uAccountSequenceNext << " uOfferSequence=" << uOfferSequence;
+	WriteLog (lsDEBUG, OfferCancelTransactor) << "OfferCancel: uAccountSequenceNext=" << uAccountSequenceNext << " uOfferSequence=" << uOfferSequence;
 
 	const uint32	uTxFlags				= mTxn.getFlags();
 
 	if (uTxFlags)
 	{
-		cLog(lsINFO) << "OfferCancel: Malformed transaction: Invalid flags set.";
+		WriteLog (lsINFO, OfferCancelTransactor) << "OfferCancel: Malformed transaction: Invalid flags set.";
 
 		return temINVALID_FLAG;
 	}
 
 	if (!uOfferSequence || uAccountSequenceNext-1 <= uOfferSequence)
 	{
-		cLog(lsINFO) << "OfferCancel: uAccountSequenceNext=" << uAccountSequenceNext << " uOfferSequence=" << uOfferSequence;
+		WriteLog (lsINFO, OfferCancelTransactor) << "OfferCancel: uAccountSequenceNext=" << uAccountSequenceNext << " uOfferSequence=" << uOfferSequence;
 
 		terResult	= temBAD_SEQUENCE;
 	}
@@ -33,13 +31,13 @@ TER OfferCancelTransactor::doApply()
 
 		if (sleOffer)
 		{
-			cLog(lsWARNING) << "OfferCancel: uOfferSequence=" << uOfferSequence;
+			WriteLog (lsWARNING, OfferCancelTransactor) << "OfferCancel: uOfferSequence=" << uOfferSequence;
 
 			terResult	= mEngine->getNodes().offerDelete(sleOffer, uOfferIndex, mTxnAccountID);
 		}
 		else
 		{
-			cLog(lsWARNING) << "OfferCancel: offer not found: "
+			WriteLog (lsWARNING, OfferCancelTransactor) << "OfferCancel: offer not found: "
 				<< RippleAddress::createHumanAccountID(mTxnAccountID)
 				<< " : " << uOfferSequence
 				<< " : " << uOfferIndex.ToString();

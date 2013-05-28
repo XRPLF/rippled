@@ -1,10 +1,7 @@
 
-#include "TransactionErr.h"
-#include "TransactionEngine.h"
+// VFALCO: TODO, move this into TransactionEngine.cpp
 
 // Double check a transaction's metadata to make sure no system invariants were broken
-
-SETUP_LOG();
 
 bool TransactionEngine::checkInvariants(TER result, const SerializedTransaction& txn, TransactionEngineParams params)
 {
@@ -19,7 +16,7 @@ bool TransactionEngine::checkInvariants(TER result, const SerializedTransaction&
 
 	if (!newSrcAct || !origSrcAct)
 	{
-		cLog(lsFATAL) << "Transaction created or destroyed its issuing account";
+		WriteLog (lsFATAL, TransactionEngine) << "Transaction created or destroyed its issuing account";
 		assert(false);
 		return tefINTERNAL;
 	}
@@ -27,8 +24,8 @@ bool TransactionEngine::checkInvariants(TER result, const SerializedTransaction&
 	if ((newSrcAct->getFieldU32(sfSequence) != (txnSeq + 1)) ||
 		(origSrcAct->getFieldU32(sfSequence) != txnSeq))
 	{
-		cLog(lsFATAL) << "Transaction mangles sequence numbers";
-		cLog(lsFATAL) << "t:" << txnSeq << " o: " << origSrcAct->getFieldU32(sfSequence)
+		WriteLog (lsFATAL, TransactionEngine) << "Transaction mangles sequence numbers";
+		WriteLog (lsFATAL, TransactionEngine) << "t:" << txnSeq << " o: " << origSrcAct->getFieldU32(sfSequence)
 			<< " n: " << newSrcAct->getFieldU32(sfSequence);
 		assert(false);
 		return tefINTERNAL;
@@ -60,7 +57,7 @@ bool TransactionEngine::checkInvariants(TER result, const SerializedTransaction&
 				if (entry.mEntry->getFieldAmount(sfLowLimit).getIssuer() ==
 					entry.mEntry->getFieldAmount(sfHighLimit).getIssuer())
 				{
-					cLog(lsFATAL) << "Ripple line to self";
+					WriteLog (lsFATAL, TransactionEngine) << "Ripple line to self";
 					assert(false);
 					return tefINTERNAL;
 				}
@@ -71,7 +68,7 @@ bool TransactionEngine::checkInvariants(TER result, const SerializedTransaction&
 	}
 	if (xrpChange != 0)
 	{
-		cLog(lsFATAL) << "Transaction creates/destroys XRP";
+		WriteLog (lsFATAL, TransactionEngine) << "Transaction creates/destroys XRP";
 		assert(false);
 		return tefINTERNAL;
 	}

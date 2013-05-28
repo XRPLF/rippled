@@ -1,7 +1,5 @@
-#ifndef __SCRIPT_DATA__
-#define __SCRIPT_DATA__
-#include "uint256.h"
-#include <boost/shared_ptr.hpp>
+#ifndef SCRIPT_DATA_H
+#define SCRIPT_DATA_H
 
 namespace Script {
 class Data

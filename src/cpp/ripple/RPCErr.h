@@ -1,8 +1,6 @@
 #ifndef __RPCERR__
 #define __RPCERR__
 
-#include "../json/value.h"
-
 enum {
 	rpcSUCCESS = 0,
 	rpcBAD_SYNTAX,	// Must be 1 to print usage to command line.

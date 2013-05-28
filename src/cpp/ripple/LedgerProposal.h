@@ -6,8 +6,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "../json/value.h"
-
 #include "RippleAddress.h"
 #include "Serializer.h"
 #include "InstanceCounter.h"

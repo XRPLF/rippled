@@ -1,7 +1,5 @@
-#include "ChangeTransactor.h"
-#include "Log.h"
 
-SETUP_LOG();
+SETUP_LOG (ChangeTransactor)
 
 TER ChangeTransactor::doApply()
 {
@@ -18,13 +16,13 @@ TER ChangeTransactor::checkSig()
 {
 	if (mTxn.getFieldAccount160(sfAccount).isNonZero())
 	{
-		cLog(lsWARNING) << "Change transaction had bad source account";
+		WriteLog (lsWARNING, ChangeTransactor) << "Change transaction had bad source account";
 		return temBAD_SRC_ACCOUNT;
 	}
 
 	if (!mTxn.getSigningPubKey().empty() || !mTxn.getSignature().empty())
 	{
-		cLog(lsWARNING) << "Change transaction had bad signature";
+		WriteLog (lsWARNING, ChangeTransactor) << "Change transaction had bad signature";
 		return temBAD_SIGNATURE;
 	}
 
@@ -33,9 +31,9 @@ TER ChangeTransactor::checkSig()
 
 TER ChangeTransactor::checkSeq()
 {
-	if (mTxn.getSequence() != 0)
+	if ((mTxn.getSequence() != 0) || mTxn.isFieldPresent(sfPreviousTxnID))
 	{
-		cLog(lsWARNING) << "Change transaction had bad sequence";
+		WriteLog (lsWARNING, ChangeTransactor) << "Change transaction had bad sequence";
 		return temBAD_SEQUENCE;
 	}
 	return tesSUCCESS;
@@ -45,7 +43,7 @@ TER ChangeTransactor::payFee()
 {
 	if (mTxn.getTransactionFee() != STAmount())
 	{
-		cLog(lsWARNING) << "Change transaction with non-zero fee";
+		WriteLog (lsWARNING, ChangeTransactor) << "Change transaction with non-zero fee";
 		return temBAD_FEE;
 	}
 
@@ -57,14 +55,14 @@ TER ChangeTransactor::preCheck()
 	mTxnAccountID	= mTxn.getSourceAccount().getAccountID();
 	if (mTxnAccountID.isNonZero())
 	{
-		cLog(lsWARNING) << "applyTransaction: bad source id";
+		WriteLog (lsWARNING, ChangeTransactor) << "applyTransaction: bad source id";
 
 		return temBAD_SRC_ACCOUNT;
 	}
 
 	if (isSetBit(mParams, tapOPEN_LEDGER))
 	{
-		cLog(lsWARNING) << "Change transaction against open ledger";
+		WriteLog (lsWARNING, ChangeTransactor) << "Change transaction against open ledger";
 		return temINVALID;
 	}
 
@@ -97,7 +95,7 @@ TER ChangeTransactor::applyFee()
 	if (!feeObject)
 		feeObject = mEngine->entryCreate(ltFEE_SETTINGS, Ledger::getLedgerFeeIndex());
 
-	cLog(lsINFO) << "Previous fee object: " << feeObject->getJson(0);
+	WriteLog (lsINFO, ChangeTransactor) << "Previous fee object: " << feeObject->getJson(0);
 
 	feeObject->setFieldU64(sfBaseFee, mTxn.getFieldU64(sfBaseFee));
 	feeObject->setFieldU32(sfReferenceFeeUnits, mTxn.getFieldU32(sfReferenceFeeUnits));
@@ -106,7 +104,7 @@ TER ChangeTransactor::applyFee()
 
 	mEngine->entryModify(feeObject);
 
-	cLog(lsINFO) << "New fee object: " << feeObject->getJson(0);
-	cLog(lsWARNING) << "Fees have been changed";
+	WriteLog (lsINFO, ChangeTransactor) << "New fee object: " << feeObject->getJson(0);
+	WriteLog (lsWARNING, ChangeTransactor) << "Fees have been changed";
 	return tesSUCCESS;
 }

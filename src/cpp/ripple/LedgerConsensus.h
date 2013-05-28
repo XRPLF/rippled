@@ -8,8 +8,6 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/unordered_map.hpp>
 
-#include "../json/value.h"
-
 #include "key.h"
 #include "Transaction.h"
 #include "LedgerAcquire.h"

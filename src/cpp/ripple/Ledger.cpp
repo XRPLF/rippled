@@ -1,28 +1,6 @@
 
-#include <iostream>
-#include <fstream>
+SETUP_LOG (Ledger)
 
-#include <boost/lexical_cast.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/test/unit_test.hpp>
-
-#include "../json/writer.h"
-
-#include "../database/SqliteDatabase.h"
-
-#include "Application.h"
-#include "Ledger.h"
-#include "utils.h"
-#include "ripple.pb.h"
-#include "PackedMessage.h"
-#include "Config.h"
-#include "BitcoinUtil.h"
-#include "Wallet.h"
-#include "LedgerTiming.h"
-#include "HashPrefixes.h"
-#include "Log.h"
-
-SETUP_LOG();
 DECLARE_INSTANCE(Ledger);
 
 Ledger::Ledger(const RippleAddress& masterID, uint64 startAmount) : mTotCoins(startAmount), mLedgerSeq(1),
@@ -35,7 +13,7 @@ Ledger::Ledger(const RippleAddress& masterID, uint64 startAmount) : mTotCoins(st
 	AccountState::pointer startAccount = boost::make_shared<AccountState>(masterID);
 	startAccount->peekSLE().setFieldAmount(sfBalance, startAmount);
 	startAccount->peekSLE().setFieldU32(sfSequence, 1);
-	cLog(lsTRACE) << "root account: " << startAccount->peekSLE().getJson(0);
+	WriteLog (lsTRACE, Ledger) << "root account: " << startAccount->peekSLE().getJson(0);
 
 	mAccountStateMap->armDirty();
 	writeBack(lepCREATE, startAccount->getSLE());
@@ -63,7 +41,7 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 	catch (...)
 	{
 		loaded = false;
-		cLog(lsWARNING) << "Don't have TX root for ledger";
+		WriteLog (lsWARNING, Ledger) << "Don't have TX root for ledger";
 	}
 	try
 	{
@@ -73,7 +51,7 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 	catch (...)
 	{
 		loaded = false;
-		cLog(lsWARNING) << "Don't have AS root for ledger";
+		WriteLog (lsWARNING, Ledger) << "Don't have AS root for ledger";
 	}
 	mTransactionMap->setImmutable();
 	mAccountStateMap->setImmutable();
@@ -221,7 +199,7 @@ AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
 	SLE::pointer sle = getSLEi(Ledger::getAccountRootIndex(accountID));
 	if (!sle)
 	{
-		cLog(lsDEBUG) << boost::str(boost::format("Ledger:getAccountState: not found: %s: %s")
+		WriteLog (lsDEBUG, Ledger) << boost::str(boost::format("Ledger:getAccountState: not found: %s: %s")
 			% accountID.humanAccountID()
 			% Ledger::getAccountRootIndex(accountID).GetHex());
 
@@ -253,7 +231,7 @@ bool Ledger::addTransaction(const uint256& txID, const Serializer& txn)
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(txID, txn.peekData());
 	if (!mTransactionMap->addGiveItem(item, true, false))
 	{
-		cLog(lsWARNING) << "Attempt to add transaction to ledger that already had it";
+		WriteLog (lsWARNING, Ledger) << "Attempt to add transaction to ledger that already had it";
 		return false;
 	}
 	mValidHash = false;
@@ -268,7 +246,7 @@ bool Ledger::addTransaction(const uint256& txID, const Serializer& txn, const Se
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(txID, s.peekData());
 	if (!mTransactionMap->addGiveItem(item, true, true))
 	{
-		cLog(lsFATAL) << "Attempt to add transaction+MD to ledger that already had it";
+		WriteLog (lsFATAL, Ledger) << "Attempt to add transaction+MD to ledger that already had it";
 		return false;
 	}
 	mValidHash = false;
@@ -422,7 +400,7 @@ uint256 Ledger::getHash()
 
 void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 {
-	cLog(lsTRACE) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq();
+	WriteLog (lsTRACE, Ledger) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq();
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers INDEXED BY SeqLedger where LedgerSeq = %u;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %u;");
 	static boost::format deleteTrans1("DELETE FROM Transactions WHERE LedgerSeq = %u;");
@@ -437,14 +415,14 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 
 	if (!getAccountHash().isNonZero())
 	{
-		cLog(lsFATAL) << "AH is zero: " << getJson(0);
+		WriteLog (lsFATAL, Ledger) << "AH is zero: " << getJson(0);
 		assert(false);
 	}
 
 	if (getAccountHash() != mAccountStateMap->getHash())
 	{
-		cLog(lsFATAL) << "sAL: " << getAccountHash() << " != " << mAccountStateMap->getHash();
-		cLog(lsFATAL) << "saveAcceptedLedger: seq=" << mLedgerSeq << ", fromcons=" << fromConsensus;
+		WriteLog (lsFATAL, Ledger) << "sAL: " << getAccountHash() << " != " << mAccountStateMap->getHash();
+		WriteLog (lsFATAL, Ledger) << "saveAcceptedLedger: seq=" << mLedgerSeq << ", fromcons=" << fromConsensus;
 		assert(false);
 	}
 
@@ -502,11 +480,11 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 					sql += ")";
 				}
 				sql += ";";
-				cLog(lsTRACE) << "ActTx: " << sql;
+				WriteLog (lsTRACE, Ledger) << "ActTx: " << sql;
 				db->executeSQL(sql);
 			}
 			else
-				cLog(lsWARNING) << "Transaction in ledger " << mLedgerSeq << " affects no accounts";
+				WriteLog (lsWARNING, Ledger) << "Transaction in ledger " << mLedgerSeq << " affects no accounts";
 
 			db->executeSQL(SerializedTransaction::getMetaSQLInsertReplaceHeader() +
 				vt.second->getTxn()->getMetaSQL(getLedgerSeq(), vt.second->getEscMeta()) + ";");
@@ -528,7 +506,7 @@ void Ledger::saveAcceptedLedger(Job&, bool fromConsensus)
 	if (theApp->getJobQueue().getJobCountTotal(jtPUBOLDLEDGER) < 2)
 		theApp->getLedgerMaster().resumeAcquiring();
 	else
-		cLog(lsTRACE) << "no resume, too many pending ledger saves";
+		WriteLog (lsTRACE, Ledger) << "no resume, too many pending ledger saves";
 }
 
 #ifndef NO_SQLITE3_PREPARE
@@ -644,7 +622,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		ret->setAccepted();
 	if (ret->getHash() != ledgerHash)
 	{
-		if (sLog(lsERROR))
+		if (ShouldLog (lsERROR, Ledger))
 		{
 			Log(lsERROR) << "Failed on ledger";
 			Json::Value p;
@@ -654,7 +632,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		assert(false);
 		return Ledger::pointer();
 	}
-	cLog(lsTRACE) << "Loaded ledger: " << ledgerHash;
+	WriteLog (lsTRACE, Ledger) << "Loaded ledger: " << ledgerHash;
 	return ret;
 }
 
@@ -666,7 +644,7 @@ Ledger::pointer Ledger::getSQL1(SqliteStatement *stmt)
 
 	if (!stmt->isRow(iRet))
 	{
-		cLog(lsINFO) << "Ledger not found: " << iRet << " = " << stmt->getError(iRet);
+		WriteLog (lsINFO, Ledger) << "Ledger not found: " << iRet << " = " << stmt->getError(iRet);
 		return Ledger::pointer();
 	}
 
@@ -702,7 +680,7 @@ void Ledger::getSQL2(Ledger::ref ret)
 	ret->setImmutable();
 	if (theApp->getOPs().haveLedger(ret->getLedgerSeq()))
 		ret->setAccepted();
-	cLog(lsTRACE) << "Loaded ledger: " << ret->getHash().GetHex();
+	WriteLog (lsTRACE, Ledger) << "Loaded ledger: " << ret->getHash().GetHex();
 }
 
 uint256 Ledger::getHashByIndex(uint32 ledgerIndex)
@@ -742,13 +720,13 @@ bool Ledger::getHashesByIndex(uint32 ledgerIndex, uint256& ledgerHash, uint256& 
 	int ret = pSt.step();
 	if (pSt.isDone(ret))
 	{
-		cLog(lsTRACE) << "Don't have ledger " << ledgerIndex;
+		WriteLog (lsTRACE, Ledger) << "Don't have ledger " << ledgerIndex;
 		return false;
 	}
 	if (!pSt.isRow(ret))
 	{
 		assert(false);
-		cLog(lsFATAL) << "Unexpected statement result " << ret;
+		WriteLog (lsFATAL, Ledger) << "Unexpected statement result " << ret;
 		return false;
 	}
 
@@ -825,7 +803,7 @@ Ledger::pointer Ledger::getLastFullLedger()
 	}
 	catch (SHAMapMissingNode& sn)
 	{
-		cLog(lsWARNING) << "Database contains ledger with missing nodes: " << sn;
+		WriteLog (lsWARNING, Ledger) << "Database contains ledger with missing nodes: " << sn;
 		return Ledger::pointer();
 	}
 }
@@ -1252,7 +1230,7 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 	// easy cases
 	if (ledgerIndex > mLedgerSeq)
 	{
-		cLog(lsWARNING) << "Can't get seq " << ledgerIndex << " from " << mLedgerSeq << " future";
+		WriteLog (lsWARNING, Ledger) << "Can't get seq " << ledgerIndex << " from " << mLedgerSeq << " future";
 		return uint256();
 	}
 
@@ -1273,15 +1251,15 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 			STVector256 vec = hashIndex->getFieldV256(sfHashes);
 			if (vec.size() >= diff)
 				return vec.at(vec.size() - diff);
-			cLog(lsWARNING) << "Ledger " << mLedgerSeq << " missing hash for " << ledgerIndex
+			WriteLog (lsWARNING, Ledger) << "Ledger " << mLedgerSeq << " missing hash for " << ledgerIndex
 				<< " (" << vec.size() << "," << diff << ")";
 		}
-		else cLog(lsWARNING) << "Ledger " << mLedgerSeq << ":" << getHash() << " missing normal list";
+		else WriteLog (lsWARNING, Ledger) << "Ledger " << mLedgerSeq << ":" << getHash() << " missing normal list";
 	}
 
 	if ((ledgerIndex & 0xff) != 0)
 	{
-		cLog(lsWARNING) << "Can't get seq " << ledgerIndex << " from " << mLedgerSeq << " past";
+		WriteLog (lsWARNING, Ledger) << "Can't get seq " << ledgerIndex << " from " << mLedgerSeq << " past";
 		return uint256();
 	}
 
@@ -1299,7 +1277,7 @@ uint256 Ledger::getLedgerHash(uint32 ledgerIndex)
 			return vec.at(vec.size() - sDiff - 1);
 	}
 
-	cLog(lsWARNING) << "Can't get seq " << ledgerIndex << " from " << mLedgerSeq << " error";
+	WriteLog (lsWARNING, Ledger) << "Can't get seq " << ledgerIndex << " from " << mLedgerSeq << " error";
 	return uint256();
 }
 
@@ -1371,7 +1349,7 @@ uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uT
 
 	uint256	uBaseIndex	= getQualityIndex(s.getSHA512Half());	// Return with quality 0.
 
-	cLog(lsTRACE) << boost::str(boost::format("getBookBase(%s,%s,%s,%s) = %s")
+	WriteLog (lsTRACE, Ledger) << boost::str(boost::format("getBookBase(%s,%s,%s,%s) = %s")
 		% STAmount::createHumanCurrency(uTakerPaysCurrency)
 		% RippleAddress::createHumanAccountID(uTakerPaysIssuerID)
 		% STAmount::createHumanCurrency(uTakerGetsCurrency)
@@ -1464,13 +1442,13 @@ bool Ledger::walkLedger()
 {
 	std::vector<SHAMapMissingNode> missingNodes1, missingNodes2;
 	mAccountStateMap->walkMap(missingNodes1, 32);
-	if (sLog(lsINFO) && !missingNodes1.empty())
+	if (ShouldLog (lsINFO, Ledger) && !missingNodes1.empty())
 	{
 		Log(lsINFO) << missingNodes1.size() << " missing account node(s)";
 		Log(lsINFO) << "First: " << missingNodes1[0];
 	}
 	mTransactionMap->walkMap(missingNodes2, 32);
-	if (sLog(lsINFO) && !missingNodes2.empty())
+	if (ShouldLog (lsINFO, Ledger) && !missingNodes2.empty())
 	{
 		Log(lsINFO) << missingNodes2.size() << " missing transaction node(s)";
 		Log(lsINFO) << "First: " << missingNodes2[0];

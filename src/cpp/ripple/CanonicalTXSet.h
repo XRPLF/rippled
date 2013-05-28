@@ -3,7 +3,6 @@
 
 #include <map>
 
-#include "uint256.h"
 #include "SerializedTransaction.h"
 
 class CanonicalTXKey

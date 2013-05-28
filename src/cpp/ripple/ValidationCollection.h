@@ -6,22 +6,20 @@
 #include <boost/unordered_map.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "uint256.h"
-#include "types.h"
 #include "SerializedValidation.h"
-#include "TaggedCache.h"
 #include "JobQueue.h"
 
 typedef boost::unordered_map<uint160, SerializedValidation::pointer> ValidationSet;
 
 typedef std::pair<int, uint160> currentValidationCount; // nodes validating and highest node ID validating
 
+// VFALCO: TODO, Rename this to "Validations"
 class ValidationCollection
 {
 protected:
 
 	boost::mutex													mValidationLock;
-	TaggedCache<uint256, ValidationSet>								mValidations;
+	TaggedCache<uint256, ValidationSet, UptimeTimerAdapter>		mValidations;
 	boost::unordered_map<uint160, SerializedValidation::pointer> 	mCurrentValidations;
 	std::vector<SerializedValidation::pointer> 						mStaleValidations;
 
