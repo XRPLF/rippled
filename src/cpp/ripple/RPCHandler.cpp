@@ -3512,8 +3512,8 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 		{	"validation_seed",		&RPCHandler::doValidationSeed,	    true,	optNone		},
 
 		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,	    false,	optCurrent	},
-		{	"wallet_propose",		&RPCHandler::doWalletPropose,	    false,	optNone		},
-		{	"wallet_seed",			&RPCHandler::doWalletSeed,		    false,	optNone		},
+		{	"wallet_propose",		&RPCHandler::doWalletPropose,	    true,	optNone		},
+		{	"wallet_seed",			&RPCHandler::doWalletSeed,		    true,	optNone		},
 
 #if ENABLE_INSECURE
 		// XXX Unnecessary commands which should be removed.
