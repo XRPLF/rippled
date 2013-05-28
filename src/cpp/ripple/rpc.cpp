@@ -23,6 +23,8 @@ SETUP_LOG (RPC)
 using namespace boost;
 using namespace boost::asio;
 
+unsigned int const gMaxHTTPHeaderSize = 0x02000000;
+
 Json::Value JSONRPCError(int code, const std::string& message)
 {
 	Json::Value error(Json::objectValue);
@@ -173,7 +175,7 @@ int ReadHTTP(std::basic_istream<char>& stream, std::map<std::string, std::string
 
 	// Read header
 	int nLen = ReadHTTPHeader(stream, mapHeadersRet);
-	if (nLen < 0 || nLen > MAX_SIZE)
+	if (nLen < 0 || nLen > gMaxHTTPHeaderSize)
 		return 500;
 
 	// Read message
