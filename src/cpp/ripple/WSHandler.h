@@ -7,6 +7,8 @@
 extern void initSSLContext(boost::asio::ssl::context& context,
 	std::string key_file, std::string cert_file, std::string chain_file);
 
+extern bool serverOkay(std::string& reason);
+
 template <typename endpoint_type>
 class WSConnection;
 
@@ -274,11 +276,18 @@ public:
 	}
 
 	// Respond to http requests.
-	void http(connection_ptr cpClient)
+	bool http(connection_ptr cpClient)
 	{
+		std::string reason;
+		if (!serverOkay(reason))
+		{
+			cpClient->set_body(std::string("<HTML><BODY>Server cannot accept clients: ") + reason + "</BODY></HTML>");
+			return false;
+		}
 		cpClient->set_body(
 			"<!DOCTYPE html><html><head><title>" SYSTEM_NAME " Test</title></head>"
 			"<body><h1>" SYSTEM_NAME " Test</h1><p>This page shows http(s) connectivity is working.</p></body></html>");
+		return true;
 	}
 };
 

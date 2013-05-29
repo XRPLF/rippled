@@ -16,6 +16,7 @@
 #define SECTION_CLUSTER_NODES			"cluster_nodes"
 #define SECTION_DATABASE_PATH			"database_path"
 #define SECTION_DEBUG_LOGFILE			"debug_logfile"
+#define SECTION_ELB_SUPPORT				"elb_support"
 #define SECTION_FEE_DEFAULT				"fee_default"
 #define SECTION_FEE_NICKNAME_CREATE		"fee_nickname_create"
 #define SECTION_FEE_OFFER				"fee_offer"
@@ -253,6 +254,7 @@ Config::Config()
 	NODE_DB					= "sqlite";
 
 	LDB_IMPORT				= false;
+	ELB_SUPPORT				= false;
 	RUN_STANDALONE			= false;
 	START_UP				= NORMAL;
 }
@@ -388,6 +390,9 @@ void Config::load()
 						NODE_SIZE = 4;
 				}
 			}
+
+			if (sectionSingleB(secConfig, SECTION_ELB_SUPPORT, strTemp))
+				ELB_SUPPORT			= boost::lexical_cast<bool>(strTemp);
 
 			(void) sectionSingleB(secConfig, SECTION_WEBSOCKET_IP, WEBSOCKET_IP);
 

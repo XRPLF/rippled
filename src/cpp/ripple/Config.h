@@ -85,6 +85,7 @@ public:
 	boost::filesystem::path		VALIDATORS_FILE;		// As specifed in rippled.cfg.
 	std::string					NODE_DB;				// Database to use for nodes
 	bool						LDB_IMPORT;				// Import into LevelDB
+	bool						ELB_SUPPORT;			// Support Amazon ELB
 
 	std::string					VALIDATORS_SITE;		// Where to find validators.txt on the Internet.
 	std::string					VALIDATORS_URI;			// URI of validators.txt.

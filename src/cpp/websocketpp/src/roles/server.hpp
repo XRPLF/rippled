@@ -227,7 +227,7 @@ public:
         virtual bool on_ping(connection_ptr con,std::string) {return true;}
         virtual void on_pong(connection_ptr con,std::string) {}
         virtual void on_pong_timeout(connection_ptr con,std::string) {}
-        virtual void http(connection_ptr con) {}
+        virtual bool http(connection_ptr con) { return true; }
 
         virtual void on_send_empty(connection_ptr con) {}
     };
@@ -744,9 +744,10 @@ void server<endpoint>::connection<connection_type>::handle_read_request(
             }
             
             // continue as HTTP?
-            m_endpoint.get_handler()->http(m_connection.shared_from_this());
-            
-            m_response.set_status(http::status_code::OK);
+            if (m_endpoint.get_handler()->http(m_connection.shared_from_this()))
+                m_response.set_status(http::status_code::OK);
+            else
+                m_response.set_status(http::status_code::INTERNAL_SERVER_ERROR);
         }
     } catch (const http::exception& e) {
         m_endpoint.m_elog->at(log::elevel::RERROR) << e.what() << log::endl;
