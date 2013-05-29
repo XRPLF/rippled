@@ -201,6 +201,8 @@ void Application::setup()
 	if (!theConfig.RUN_STANDALONE)
 		updateTables(theConfig.LDB_IMPORT);
 
+	mFeatureTable.addInitialFeatures();
+
 	if (theConfig.START_UP == Config::FRESH)
 	{
 		WriteLog (lsINFO, Application) << "Starting new Ledger";

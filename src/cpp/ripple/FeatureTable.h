@@ -61,7 +61,7 @@ public:
 
 	FeatureTable(uint32 majorityTime, int majorityFraction)
 		: mMajorityTime(majorityTime), mMajorityFraction(majorityFraction), mFirstReport(0), mLastReport(0)
-	{ addInitialFeatures(); }
+	{ ; }
 
 	void addInitialFeatures();
 
