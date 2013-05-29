@@ -11,8 +11,6 @@ std::string strprintf(const char* format, ...);
 std::string FormatFullVersion();
 void RandAddSeedPerfmon();
 
-static const unsigned int MAX_SIZE = 0x02000000;
-
 #define loop                for (;;)
 #define PAIR(t1, t2)        pair<t1, t2>
 
