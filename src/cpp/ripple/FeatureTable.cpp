@@ -193,7 +193,22 @@ void FeatureTable::reportValidations(const FeatureSet& set)
 
 	if (!changedFeatures.empty())
 	{
-		// WRITEME write changed features to SQL db
+		ScopedLock sl(theApp->getWalletDB()->getDBLock());
+		Database* db = theApp->getWalletDB()->getDB();
+
+		db->executeSQL("BEGIN TRANSACTION;");
+		BOOST_FOREACH(const uint256& hash, changedFeatures)
+		{
+			FeatureState& fState = mFeatureMap[hash];
+			db->executeSQL(boost::str(boost::format(
+				"UPDATE Features SET FirstMajority = %d WHERE Hash = '%s';"
+				) % fState.mFirstMajority % hash.GetHex()));
+			db->executeSQL(boost::str(boost::format(
+				"UPDATE Features SET LastMajority = %d WHERE Hash = '%s';"
+				) % fState.mLastMajority % hash.GetHex()));
+		}
+		db->executeSQL("END TRANSACTION;");
+		changedFeatures.clear();
 	}
 }
 
@@ -246,12 +261,12 @@ void FeatureTable::doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPos
 
 	BOOST_FOREACH(const uint256& uFeature, lFeatures)
 	{
-		WriteLog (lsWARNING, FeatureTable) << "We are voting for feature " << uFeature;
+		WriteLog (lsWARNING, FeatureTable) << "Voting for feature: " << uFeature;
 		SerializedTransaction trans(ttFEATURE);
 		trans.setFieldAccount(sfAccount, uint160());
 		trans.setFieldH256(sfFeature, uFeature);
 		uint256 txID = trans.getTransactionID();
-		WriteLog (lsWARNING, FeatureTable) << "Vote: " << txID;
+		WriteLog (lsWARNING, FeatureTable) << "Vote ID: " << txID;
 
 		Serializer s;
 		trans.add(s, true);
@@ -271,7 +286,7 @@ Json::Value FeatureTable::getJson(int)
 		boost::mutex::scoped_lock sl(mMutex);
 		BOOST_FOREACH(const featureIt_t& it, mFeatureMap)
 		{
-			Json::Value v(Json::objectValue);
+			Json::Value& v(ret[it.first.GetHex()] = Json::objectValue);
 
 			v["supported"] = it.second.mSupported;
 
@@ -283,7 +298,9 @@ Json::Value FeatureTable::getJson(int)
 				if (mLastReport != 0)
 				{
 					if (it.second.mLastMajority == 0)
+					{
 						v["majority"] = false;
+					}
 					else
 					{
 						if (it.second.mFirstMajority != 0)
@@ -306,8 +323,6 @@ Json::Value FeatureTable::getJson(int)
 
 			if (it.second.mVetoed)
 				v["veto"] = true;
-
-			ret[it.first.GetHex()] = v;
 		}
 	}
 
@@ -350,6 +365,7 @@ public:
 		typedef typename std::map<INT, int>::value_type mapVType;
 		BOOST_FOREACH(const mapVType& value, mVoteMap)
 		{ // Take most voted value between current and target, inclusive
+			// FIXME: Should take best value that can get a significant majority
 			if ((value.first <= std::max(mTarget, mCurrent)) &&
 				(value.first >= std::min(mTarget, mCurrent)) &&
 				(value.second > weight))
