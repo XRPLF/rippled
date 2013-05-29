@@ -486,9 +486,6 @@
     <ClCompile Include="src\cpp\ripple\AmountRound.cpp">
       <Filter>1. Modules\ripple_mess\types</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\DeterministicKeys.cpp">
-      <Filter>1. Modules\ripple_mess\types</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\HashedObject.cpp">
       <Filter>1. Modules\ripple_mess\types</Filter>
     </ClCompile>
@@ -785,6 +782,9 @@
     </ClCompile>
     <ClCompile Include="modules\ripple_data\crypto\ripple_CKeyECIES.cpp">
       <Filter>1. Modules\ripple_data\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_data\crypto\ripple_CKeyDeterministic.cpp">
+      <Filter>1. Modules\ripple_data\types</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

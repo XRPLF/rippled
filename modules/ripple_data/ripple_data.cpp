@@ -38,7 +38,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 
-// CKeyECIES
+// CKeyECIES, CKeyDeterministic
 #include <openssl/ec.h>
 #include <openssl/bn.h>
 #include <openssl/ecdsa.h>
@@ -48,6 +48,9 @@
 #include <vector>
 #include <cassert>
 
+// CKeyDeterministic
+#include <openssl/err.h>
+#include <boost/test/unit_test.hpp>
 
 
 #include "ripple_data.h"
@@ -66,6 +69,7 @@
 
 #include "crypto/ripple_CBigNum.cpp"
 #include "crypto/ripple_CKey.cpp"
+#include "crypto/ripple_CKeyDeterministic.cpp"
 #include "crypto/ripple_CKeyECIES.cpp"
 #include "crypto/ripple_Base58.cpp"
 #include "crypto/ripple_Base58Data.cpp"

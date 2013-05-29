@@ -1,15 +1,7 @@
 
-#include <openssl/ec.h>
-#include <openssl/bn.h>
-#include <openssl/ecdsa.h>
-#include <openssl/pem.h>
-#include <openssl/err.h>
-
 // #define EC_DEBUG
 
 // Functions to add CKey support for deterministic EC keys
-
-#include <boost/test/unit_test.hpp>
 
 // <-- seed
 uint128 CKey::PassPhraseToKey(const std::string& passPhrase)

@@ -40,7 +40,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #include "src/cpp/ripple/Amount.cpp"
 #include "src/cpp/ripple/AmountRound.cpp"
-#include "src/cpp/ripple/DeterministicKeys.cpp"
 #include "src/cpp/ripple/HashedObject.cpp"
 #include "src/cpp/ripple/PackedMessage.cpp" // no log
 #include "src/cpp/ripple/ParameterTable.cpp" // no log
