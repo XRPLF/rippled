@@ -507,4 +507,36 @@ bool Application::loadOldLedger(const std::string& l)
 	return true;
 }
 
+bool serverOkay(std::string& reason)
+{
+	if (!theConfig.ELB_SUPPORT)
+		return true;
+
+	if (!theApp)
+	{
+		reason = "Server has not started";
+		return false;
+	}
+
+	if (theApp->getOPs().isNeedNetworkLedger())
+	{
+		reason = "Not synchronized with network yet";
+		return false;
+	}
+
+	if (theApp->getOPs().getOperatingMode() < NetworkOPs::omSYNCING)
+	{
+		reason = "Not synchronized with network";
+		return false;
+	}
+
+	if (theApp->getFeeTrack().isLoaded())
+	{
+		reason = "Too much load";
+		return false;
+	}
+
+	return true;
+}
+
 // vim:ts=4
