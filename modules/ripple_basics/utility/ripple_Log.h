@@ -54,7 +54,10 @@ public:
 	}
 };
 
-#define SETUP_LOG(k) template <> inline char const* LogPartition::getFileName <k> () { return __FILE__; }
+#define SETUP_LOG(k) \
+	template <> inline char const* LogPartition::getFileName <k> () { return __FILE__; } \
+	struct k##Instantiator { k##Instantiator () { LogPartition::get <k> (); } }; \
+	static k##Instantiator k##Instantiator_instance;
 
 //------------------------------------------------------------------------------
 
