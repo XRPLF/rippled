@@ -18,22 +18,30 @@ public:
 	void addVote(const uint256& feature)	{ ++mVotes[feature]; }
 };
 
+class FeatureState
+{
+public:
+	uint256	mHash;				// Feature hash
+	bool	mVetoed;			// We don't want this feature enabled
+	bool	mEnabled;
+	bool	mSupported;
+	bool	mDefault;			// Include in genesis ledger
+
+	uint32	mFirstMajority;		// First time we saw a majority (close time)
+	uint32	mLastMajority;		// Most recent time we saw a majority (close time)
+
+	FeatureState()
+		: mVetoed(false), mEnabled(false), mSupported(false), mDefault(false),
+		mFirstMajority(0), mLastMajority(0)	{ ; }
+
+	void setVeto()							{ mVetoed = true; }
+	void setDefault()						{ mDefault = true; }
+};
+
+
 class FeatureTable
 {
 protected:
-
-	class FeatureState
-	{
-	public:
-		bool	mVetoed;			// We don't want this feature enabled
-		bool	mEnabled;
-		bool	mSupported;
-
-		uint32	mFirstMajority;		// First time we saw a majority (close time)
-		uint32	mLastMajority;		// Most recent time we saw a majority (close time)
-
-		FeatureState() : mVetoed(false), mEnabled(false), mSupported(false), mFirstMajority(0), mLastMajority(0) { ; }
-	};
 
 	typedef boost::unordered_map<uint256, FeatureState> featureMap_t;
 	typedef std::pair<const uint256, FeatureState> featureIt_t;

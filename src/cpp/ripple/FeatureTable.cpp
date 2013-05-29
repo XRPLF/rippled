@@ -3,11 +3,11 @@ SETUP_LOG (FeatureTable)
 
 void FeatureTable::addInitialFeatures()
 {
-	// For each feature this version supports, call enableFeature.
-	// Permanent vetos can also be added here.
+	// For each feature this version supports, construct the FeatureState object by calling
+	// getCreateFeature. Set any vetoes or defaults. A pointer to the FeatureState can be stashed
 }
 
-FeatureTable::FeatureState* FeatureTable::getCreateFeature(const uint256& featureHash, bool create)
+FeatureState* FeatureTable::getCreateFeature(const uint256& featureHash, bool create)
 { // call with the mutex held
 	featureMap_t::iterator it = mFeatureMap.find(featureHash);
 	if (it == mFeatureMap.end())

@@ -431,6 +431,8 @@ void Application::startNewLedger()
 	{
 		Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, SYSTEM_CURRENCY_START);
 		assert(!!firstLedger->getAccountState(rootAddress));
+		// WRITEME: Add any default features
+		// WRITEME: Set default fee/reserve
 		firstLedger->updateHash();
 		firstLedger->setClosed();
 		firstLedger->setAccepted();
