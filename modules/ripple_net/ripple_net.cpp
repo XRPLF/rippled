@@ -24,6 +24,8 @@
 
 #include "ripple_net.h"
 
+#include "../ripple_data/ripple_data.h"
+
 #include "../websocketpp/src/logger/logger.hpp" // for ripple_LogWebSockets.cpp
 
 // VFALCO: TODO, fix these warnings!

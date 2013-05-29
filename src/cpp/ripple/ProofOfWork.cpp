@@ -9,8 +9,6 @@
 
 #include <openssl/rand.h>
 
-#include "Serializer.h"
-
 SETUP_LOG (ProofOfWork)
 
 bool powResultInfo(POWResult powCode, std::string& strToken, std::string& strHuman)

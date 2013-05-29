@@ -1,32 +1,11 @@
-#include <boost/asio.hpp>
-#include "RippleAddress.h"
 
-#include <algorithm>
-#include <cassert>
-#include <iostream>
 
-#include <boost/format.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/test/unit_test.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/unordered_map.hpp>
-
-#include <openssl/rand.h>
-
-#include "key.h"
-#include "BitcoinUtil.h"
-#include "rfc1751.h"
-#include "Serializer.h"
-#include "Application.h"
+// VFALCO: TODO, remove this when it's safe to do so.
+#ifdef __APPLICATION__
+#error Including Application.h is disallowed!
+#endif
 
 SETUP_LOG (RippleAddress)
-
-std::size_t hash_value(const CBase58Data& b58)
-{
-	std::size_t seed = theApp->getNonceST() + (b58.nVersion * 0x9e3779b9);
-	boost::hash_combine(seed, b58.vchData);
-	return seed;
-}
 
 RippleAddress::RippleAddress() : mIsValid(false)
 {
@@ -728,7 +707,7 @@ std::string RippleAddress::humanSeed1751() const
 
 			strBig.assign(strLittle.rbegin(), strLittle.rend());
 
-			key2eng(strHuman, strBig);
+			RFC1751::getEnglishFromKey (strHuman, strBig);
 
 			return strHuman;
 		}
@@ -755,7 +734,7 @@ std::string RippleAddress::humanSeed() const
 int RippleAddress::setSeed1751(const std::string& strHuman1751)
 {
 	std::string strKey;
-	int			iResult	= eng2key(strKey, strHuman1751);
+	int			iResult	= RFC1751::getKeyFromEnglish (strKey, strHuman1751);
 
 	if (1 == iResult)
 	{
@@ -774,8 +753,6 @@ bool RippleAddress::setSeed(const std::string& strSeed)
 
 	return mIsValid;
 }
-
-extern const char *ALPHABET;
 
 bool RippleAddress::setSeedGeneric(const std::string& strText)
 {

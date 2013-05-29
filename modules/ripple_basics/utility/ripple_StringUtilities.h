@@ -58,6 +58,8 @@
 
 //------------------------------------------------------------------------------
 
+extern std::string strprintf(const char* format, ...);
+
 extern std::string urlEncode(const std::string& strSrc);
 
 template<class Iterator>

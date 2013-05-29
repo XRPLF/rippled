@@ -4,8 +4,6 @@
 #include <vector>
 #include <string>
 
-#include "Serializer.h"
-#include "FieldNames.h"
 #include "InstanceCounter.h"
 
 // CAUTION: Do not create a vector (or similar container) of any object derived from

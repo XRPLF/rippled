@@ -7,7 +7,6 @@
 
 #include "SerializedObject.h"
 #include "TransactionFormats.h"
-#include "RippleAddress.h"
 #include "InstanceCounter.h"
 
 #define TXN_SQL_NEW			'N'

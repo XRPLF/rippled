@@ -505,7 +505,6 @@ inline bool operator!=(const uint256& a, const uint256& b)			  { return (base_ui
 inline const uint256 operator^(const uint256& a, const uint256& b)	  { return (base_uint256)a ^  (base_uint256)b; }
 inline const uint256 operator&(const uint256& a, const uint256& b)	  { return (base_uint256)a &  (base_uint256)b; }
 inline const uint256 operator|(const uint256& a, const uint256& b)	  { return (base_uint256)a |  (base_uint256)b; }
-extern std::size_t hash_value(const uint256&);
 
 template<unsigned int BITS> inline std::ostream& operator<<(std::ostream& out, const base_uint<BITS>& u)
 {
@@ -730,8 +729,6 @@ inline bool operator!=(const uint160& a, const uint160& b)			  { return (base_ui
 inline const uint160 operator^(const uint160& a, const uint160& b)	  { return (base_uint160)a ^  (base_uint160)b; }
 inline const uint160 operator&(const uint160& a, const uint160& b)	  { return (base_uint160)a &  (base_uint160)b; }
 inline const uint160 operator|(const uint160& a, const uint160& b)	  { return (base_uint160)a |  (base_uint160)b; }
-
-extern std::size_t hash_value(const uint160&);
 
 inline const std::string strHex(const uint160& ui)
 {

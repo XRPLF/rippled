@@ -1,14 +1,5 @@
-#ifndef __SERIALIZER__
-#define __SERIALIZER__
-
-#include <vector>
-#include <string>
-#include <list>
-
-#include <boost/shared_ptr.hpp>
-
-#include "key.h"
-#include "FieldNames.h"
+#ifndef RIPPLE_SERIALIZER_H
+#define RIPPLE_SERIALIZER_H
 
 class Serializer
 {

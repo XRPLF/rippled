@@ -9,8 +9,6 @@
 #include <boost/test/unit_test.hpp>
 #include <iostream>
 
-#include "Serializer.h"
-#include "BitcoinUtil.h"
 #include "SHAMap.h"
 #include "Application.h"
 
@@ -36,20 +34,6 @@ void SHAMapNode::setMHash() const
 std::size_t hash_value(const SHAMapNode& mn)
 {
 	return mn.getMHash();
-}
-
-std::size_t hash_value(const uint256& u)
-{
-	std::size_t seed = theApp->getNonceST();
-
-	return u.hash_combine(seed);
-}
-
-std::size_t hash_value(const uint160& u)
-{
-	std::size_t seed = theApp->getNonceST();
-
-	return u.hash_combine(seed);
 }
 
 

@@ -106,3 +106,77 @@ bool AddSystemEntropy()
 }
 
 #endif
+
+//------------------------------------------------------------------------------
+
+//
+// "Never go to sea with two chronometers; take one or three."
+// Our three time sources are:
+//  - System clock
+//  - Median of other nodes's clocks
+//  - The user (asking the user to fix the system clock if the first two disagree)
+//
+
+void RandAddSeedPerfmon()
+{
+	// VFALCO: This is how we simulate local functions
+	struct
+	{
+		int64 operator() () const
+		{
+			return time (NULL);
+		}
+	} GetTime;
+
+	struct
+	{
+		void operator() ()
+		{
+			struct
+			{
+				// VFALCO: TODO, clean this up
+				int64 operator() () const
+				{
+					int64 nCounter = 0;
+#if defined(WIN32) || defined(WIN64)
+					QueryPerformanceCounter((LARGE_INTEGER*)&nCounter);
+#else
+					timeval t;
+					gettimeofday(&t, NULL);
+					nCounter = t.tv_sec * 1000000 + t.tv_usec;
+#endif
+					return nCounter;
+				}
+			} GetPerformanceCounter;
+
+			// Seed with CPU performance counter
+			int64 nCounter = GetPerformanceCounter();
+			RAND_add(&nCounter, sizeof(nCounter), 1.5);
+			memset(&nCounter, 0, sizeof(nCounter));
+		}
+	} RandAddSeed;
+
+	RandAddSeed();
+
+	// This can take up to 2 seconds, so only do it every 10 minutes
+	static int64 nLastPerfmon;
+	if (GetTime () < nLastPerfmon + 10 * 60)
+		return;
+	nLastPerfmon = GetTime ();
+
+#ifdef WIN32
+	// Don't need this on Linux, OpenSSL automatically uses /dev/urandom
+	// Seed with the entire set of perfmon data
+	unsigned char pdata[250000];
+	memset(pdata, 0, sizeof(pdata));
+	unsigned long nSize = sizeof(pdata);
+	long ret = RegQueryValueExA(HKEY_PERFORMANCE_DATA, "Global", NULL, NULL, pdata, &nSize);
+	RegCloseKey(HKEY_PERFORMANCE_DATA);
+	if (ret == ERROR_SUCCESS)
+	{
+		RAND_add(pdata, nSize, nSize/100.0);
+		memset(pdata, 0, nSize);
+		//printf("%s RandAddSeed() %d bytes\n", DateTimeStrFormat("%x %H:%M", GetTime()).c_str(), nSize);
+	}
+#endif
+}

@@ -14,7 +14,6 @@
 #include "Application.h"
 #include "AccountItems.h"
 #include "Wallet.h"
-#include "RippleAddress.h"
 #include "RippleCalc.h"
 #include "RPCErr.h"
 #include "AccountState.h"
@@ -514,7 +513,7 @@ Json::Value RPCHandler::accountFromString(Ledger::ref lrLedger, RippleAddress& n
 	}
 	else if (bStrict)
 	{
-		return naAccount.setAccountID(strIdent, ALPHABET_BITCOIN)
+		return naAccount.setAccountID(strIdent, Base58::getBitcoinAlphabet ())
 			? rpcError(rpcACT_BITCOIN)
 			: rpcError(rpcACT_MALFORMED);
 	}

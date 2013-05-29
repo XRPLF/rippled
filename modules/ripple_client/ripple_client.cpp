@@ -24,6 +24,8 @@
 
 #include "ripple_client.h"
 
+#include "../ripple_data/ripple_data.h"
+
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
 //#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"

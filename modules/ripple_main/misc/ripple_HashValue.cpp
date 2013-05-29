@@ -16,36 +16,23 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RANDOMNUMBERS_H
-#define RIPPLE_RANDOMNUMBERS_H
-
-extern bool AddSystemEntropy ();
-
-// Cryptographically secure random number source
-
-// VFALCO: TODO Clean this up, rename stuff
-// Seriously...wtf...rename "num" to bytes, or make it work
-// using a template so the destination can be a vector of objects.
-//
-// VFALCO: Should accept void* not unsigned char*
-//
-extern void getRand (unsigned char *buf, int num);
-
-inline static void getRand (char *buf, int num)
+std::size_t hash_value(const uint256& u)
 {
-	return getRand (reinterpret_cast<unsigned char *>(buf), num);
+	std::size_t seed = theApp->getNonceST();
+
+	return u.hash_combine(seed);
 }
 
-// VFALCO: TODO Clean this
-// "num" is really bytes this should just be called getRandomBytes()
-// This function is unnecessary!
-//
-inline static void getRand (void *buf, int num)
+std::size_t hash_value(const uint160& u)
 {
-	return getRand (reinterpret_cast<unsigned char *>(buf), num);
+	std::size_t seed = theApp->getNonceST();
+
+	return u.hash_combine(seed);
 }
 
-// Lifted from BitcoinUtil.h
-extern void RandAddSeedPerfmon();
-
-#endif
+std::size_t hash_value(const CBase58Data& b58)
+{
+	std::size_t seed = theApp->getNonceST() + (b58.nVersion * 0x9e3779b9);
+	boost::hash_combine(seed, b58.vchData);
+	return seed;
+}

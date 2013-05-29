@@ -11,8 +11,6 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "Serializer.h"
-
 // <-- seed
 uint128 CKey::PassPhraseToKey(const std::string& passPhrase)
 {

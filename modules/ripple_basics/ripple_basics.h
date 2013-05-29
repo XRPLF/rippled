@@ -104,6 +104,8 @@ namespace boost {
 
 // VFALCO: TODO, remove this dependency!!!
 #include <openssl/dh.h> // for DiffieHellmanUtil
+#include <openssl/ripemd.h> // For HashUtilities
+#include <openssl/sha.h> // For HashUtilities
 
 
 #include "../ripple_json/ripple_json.h"
@@ -127,5 +129,6 @@ namespace boost {
 #include "utility/ripple_UptimeTimer.h"
 
 #include "types/ripple_UInt256.h"
+#include "utility/ripple_HashUtilities.h" // requires UInt256
 
 #endif

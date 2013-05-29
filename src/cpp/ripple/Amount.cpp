@@ -16,17 +16,6 @@ SETUP_LOG (STAmount)
 
 uint64	STAmount::uRateOne	= STAmount::getRate(STAmount(1), STAmount(1));
 
-
-
-#if (ULONG_MAX > UINT_MAX)
-#define BN_add_word64(bn, word) BN_add_word(bn, word)
-#define BN_sub_word64(bn, word) BN_sub_word(bn, word)
-#define BN_mul_word64(bn, word) BN_mul_word(bn, word)
-#define BN_div_word64(bn, word) BN_div_word(bn, word)
-#else
-#include "BigNum64.h"
-#endif
-
 bool STAmount::issuerFromString(uint160& uDstIssuer, const std::string& sIssuer)
 {
 	bool	bSuccess	= true;

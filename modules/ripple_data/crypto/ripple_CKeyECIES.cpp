@@ -1,14 +1,3 @@
-#include <openssl/ec.h>
-#include <openssl/bn.h>
-#include <openssl/ecdsa.h>
-#include <openssl/pem.h>
-#include <openssl/hmac.h>
-#include <openssl/rand.h>
-
-#include <vector>
-#include <cassert>
-
-#include "key.h"
 
 // ECIES uses elliptic curve keys to send an encrypted message.
 

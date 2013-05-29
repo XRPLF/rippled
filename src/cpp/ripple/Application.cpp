@@ -10,8 +10,6 @@
 #include "Config.h"
 #include "PeerDoor.h"
 #include "RPCDoor.h"
-#include "BitcoinUtil.h"
-#include "key.h"
 
 #include "../database/SqliteDatabase.h"
 

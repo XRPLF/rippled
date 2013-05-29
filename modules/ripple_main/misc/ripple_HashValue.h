@@ -16,36 +16,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RANDOMNUMBERS_H
-#define RIPPLE_RANDOMNUMBERS_H
+#ifndef RIPPLE_HASH_VALUE_H
+#define RIPPLE_HASH_VALUE_H
 
-extern bool AddSystemEntropy ();
-
-// Cryptographically secure random number source
-
-// VFALCO: TODO Clean this up, rename stuff
-// Seriously...wtf...rename "num" to bytes, or make it work
-// using a template so the destination can be a vector of objects.
+// VFALCO: TODO, clean this up
 //
-// VFALCO: Should accept void* not unsigned char*
-//
-extern void getRand (unsigned char *buf, int num);
+// These are needed for boost::hash stuff. The implemnetations access
+// the Application object for the nonce, introducing a nasty dependency
+// so I have split them away from the relevant classes and put them here.
 
-inline static void getRand (char *buf, int num)
-{
-	return getRand (reinterpret_cast<unsigned char *>(buf), num);
-}
+extern std::size_t hash_value(const uint160&);
 
-// VFALCO: TODO Clean this
-// "num" is really bytes this should just be called getRandomBytes()
-// This function is unnecessary!
-//
-inline static void getRand (void *buf, int num)
-{
-	return getRand (reinterpret_cast<unsigned char *>(buf), num);
-}
+extern std::size_t hash_value(const uint256&);
 
-// Lifted from BitcoinUtil.h
-extern void RandAddSeedPerfmon();
+extern std::size_t hash_value(const CBase58Data& b58);
 
 #endif

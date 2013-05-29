@@ -123,7 +123,8 @@ RIPPLE_SRCS = [
 	'src/cpp/leveldb_core.cpp',
 	'src/cpp/websocket_core.cpp',
 	'modules/ripple_basics/ripple_basics.cpp',
-	'modules/ripple_client/ripple_client.cpp',
+    'modules/ripple_client/ripple_client.cpp',
+    'modules/ripple_data/ripple_data.cpp',
 	'modules/ripple_db/ripple_db.cpp',
 	'modules/ripple_json/ripple_json.cpp',
 	'modules/ripple_ledger/ripple_ledger.cpp',
@@ -139,6 +140,7 @@ for dir in ['.', 'ripple', 'database', 'json', 'leveldb/db', 'leveldb/port', 'le
 for dir in [
              'ripple_basics',
              'ripple_client',
+             'ripple_data',
              'ripple_db',
              'ripple_json',
              'ripple_ledger',

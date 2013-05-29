@@ -7,7 +7,6 @@
 #include <boost/asio.hpp>
 
 #include "HTTPRequest.h"
-#include "RippleAddress.h"
 #include "NetworkOPs.h"
 #include "SerializedLedger.h"
 #include "RPCHandler.h"

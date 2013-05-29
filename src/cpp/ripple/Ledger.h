@@ -12,7 +12,6 @@
 #include "TransactionMeta.h"
 #include "AccountState.h"
 #include "NicknameState.h"
-#include "BitcoinUtil.h"
 #include "SHAMap.h"
 #include "InstanceCounter.h"
 #include "LoadMonitor.h"

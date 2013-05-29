@@ -24,17 +24,7 @@
 
 #include "ripple_mess.h"
 
-// VFALCO: TODO, clean this up
-// This is here for Amount*.cpp
-#include "src/cpp/ripple/bignum.h"
-#if (ULONG_MAX > UINT_MAX)
-#define BN_add_word64(bn, word) BN_add_word(bn, word)
-#define BN_sub_word64(bn, word) BN_sub_word(bn, word)
-#define BN_mul_word64(bn, word) BN_mul_word(bn, word)
-#define BN_div_word64(bn, word) BN_div_word(bn, word)
-#else
-#include "src/cpp/ripple/BigNum64.h"
-#endif
+#include "../ripple_data/ripple_data.h"
 
 static const uint64 tenTo14 = 100000000000000ull;
 static const uint64 tenTo14m1 = tenTo14 - 1;
@@ -50,17 +40,12 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #include "src/cpp/ripple/Amount.cpp"
 #include "src/cpp/ripple/AmountRound.cpp"
-#include "src/cpp/ripple/BitcoinUtil.cpp" // no log
 #include "src/cpp/ripple/DeterministicKeys.cpp"
-#include "src/cpp/ripple/ECIES.cpp" // no log
-#include "src/cpp/ripple/FieldNames.cpp" // no log
 #include "src/cpp/ripple/HashedObject.cpp"
 #include "src/cpp/ripple/PackedMessage.cpp" // no log
 #include "src/cpp/ripple/ParameterTable.cpp" // no log
 #include "src/cpp/ripple/ParseSection.cpp"
 #include "src/cpp/ripple/ProofOfWork.cpp"
-#include "src/cpp/ripple/RippleAddress.cpp"
-#include "src/cpp/ripple/rfc1751.cpp" // no log
 #include "src/cpp/ripple/SHAMap.cpp"
 #include "src/cpp/ripple/SHAMapDiff.cpp" // no log
 #include "src/cpp/ripple/SHAMapNodes.cpp" // no log

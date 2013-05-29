@@ -24,7 +24,6 @@
 #include "RPC.h"
 #include "RPCErr.h"
 #include "Config.h"
-#include "BitcoinUtil.h"
 
 #include "CallRPC.h"
 

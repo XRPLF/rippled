@@ -10,7 +10,6 @@
 #include <boost/unordered_map.hpp>
 
 #include "ScopedLock.h"
-#include "Serializer.h"
 #include "HashedObject.h"
 #include "InstanceCounter.h"
 
