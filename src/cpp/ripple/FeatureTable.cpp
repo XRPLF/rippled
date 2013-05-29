@@ -1,10 +1,14 @@
 
 SETUP_LOG (FeatureTable)
 
+FeatureState* testFeature = NULL;
+
 void FeatureTable::addInitialFeatures()
 {
 	// For each feature this version supports, construct the FeatureState object by calling
 	// getCreateFeature. Set any vetoes or defaults. A pointer to the FeatureState can be stashed
+
+	testFeature = getCreateFeature(uint256("1234"), true);
 }
 
 FeatureState* FeatureTable::getCreateFeature(const uint256& featureHash, bool create)

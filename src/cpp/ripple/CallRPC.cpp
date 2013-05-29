@@ -311,6 +311,20 @@ Json::Value RPCParser::parseEvented(const Json::Value& jvParams)
 	return rpcError(rpcNO_EVENTS);
 }
 
+// feature [<feature>] [true|false]
+Json::Value RPCParser::parseFeature(const Json::Value& jvParams)
+{
+	Json::Value		jvRequest(Json::objectValue);
+
+	if (jvParams.size() > 0)
+		jvRequest["feature"]	= jvParams[0u].asString();
+
+	if (jvParams.size() > 1)
+		jvRequest["vote"]		= boost::lexical_cast<bool>(jvParams[1u].asString());
+
+	return jvRequest;
+}
+
 // get_counts [<min_count>]
 Json::Value RPCParser::parseGetCounts(const Json::Value& jvParams)
 {
@@ -734,6 +748,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"book_offers",			&RPCParser::parseBookOffers,			2,  7	},
 		{	"connect",				&RPCParser::parseConnect,				1,  2	},
 		{	"consensus_info",		&RPCParser::parseAsIs,					0,	0	},
+		{	"feature",				&RPCParser::parseFeature,				0,	2	},
 		{	"get_counts",			&RPCParser::parseGetCounts,				0,	1	},
 		{	"json",					&RPCParser::parseJson,					2,  2	},
 		{	"ledger",				&RPCParser::parseLedger,				0,  2	},

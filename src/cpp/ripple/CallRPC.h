@@ -22,6 +22,7 @@ protected:
 	Json::Value parseDataStore(const Json::Value& jvParams);
 #endif
 	Json::Value parseEvented(const Json::Value& jvParams);
+	Json::Value parseFeature(const Json::Value& jvParams);
 	Json::Value parseGetCounts(const Json::Value& jvParams);
 	Json::Value parseInternal(const Json::Value& jvParams);
 	Json::Value parseJson(const Json::Value& jvParams);

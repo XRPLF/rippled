@@ -59,6 +59,7 @@ class RPCHandler
 	Json::Value doDataFetch(Json::Value params, int& cost, ScopedLock& mlh);
 	Json::Value doDataStore(Json::Value params, int& cost, ScopedLock& mlh);
 #endif
+	Json::Value doFeature(Json::Value params, int& cost, ScopedLock& mlh);
 	Json::Value doGetCounts(Json::Value params, int& cost, ScopedLock& mlh);
 	Json::Value doInternal(Json::Value params, int& cost, ScopedLock& mlh);
 	Json::Value doLedger(Json::Value params, int& cost, ScopedLock& mlh);
