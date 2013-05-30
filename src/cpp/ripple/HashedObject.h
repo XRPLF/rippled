@@ -8,7 +8,6 @@
 
 #include "modules/ripple_main/misc/ripple_HashValue.h"
 
-#include "ScopedLock.h"
 #include "InstanceCounter.h"
 
 

@@ -13,7 +13,6 @@
 #include "UniqueNodeList.h"
 #include "ConnectionPool.h"
 #include "FeatureTable.h"
-#include "ScopedLock.h"
 #include "LedgerAcquire.h"
 #include "TransactionMaster.h"
 #include "Wallet.h"

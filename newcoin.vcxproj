@@ -1239,6 +1239,7 @@
     <ClInclude Include="modules\ripple_basics\utility\ripple_Log.h" />
     <ClInclude Include="modules\ripple_basics\utility\ripple_PlatformMacros.h" />
     <ClInclude Include="modules\ripple_basics\utility\ripple_RandomNumbers.h" />
+    <ClInclude Include="modules\ripple_basics\utility\ripple_ScopedLock.h" />
     <ClInclude Include="modules\ripple_basics\utility\ripple_StringUtilities.h" />
     <ClInclude Include="modules\ripple_basics\utility\ripple_Sustain.h" />
     <ClInclude Include="modules\ripple_basics\utility\ripple_ThreadName.h" />
@@ -1639,7 +1640,6 @@
     <ClInclude Include="src\cpp\ripple\RPCHandler.h" />
     <ClInclude Include="src\cpp\ripple\RPCServer.h" />
     <ClInclude Include="src\cpp\ripple\RPCSub.h" />
-    <ClInclude Include="src\cpp\ripple\ScopedLock.h" />
     <ClInclude Include="src\cpp\ripple\ScriptData.h" />
     <ClInclude Include="src\cpp\ripple\SerializedLedger.h" />
     <ClInclude Include="src\cpp\ripple\SerializedObject.h" />

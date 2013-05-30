@@ -6,7 +6,6 @@
 #include "SerializedTypes.h"
 #include "Ledger.h"
 #include "NetworkOPs.h"
-#include "ScopedLock.h"
 
 #define LEDGER_CURRENT		-1
 #define LEDGER_CLOSED		-2

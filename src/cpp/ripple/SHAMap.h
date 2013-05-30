@@ -9,7 +9,6 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/unordered_map.hpp>
 
-#include "ScopedLock.h"
 #include "HashedObject.h"
 #include "InstanceCounter.h"
 

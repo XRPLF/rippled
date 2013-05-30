@@ -84,6 +84,12 @@ namespace boost {
 // RippleTime
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+// ScopedLock
+//#include <boost/thread/recursive_mutex.hpp>
+//#include <boost/shared_ptr.hpp>
+//#include <boost/make_shared.hpp>
+//#include <boost/ref.hpp>
+
 // ByteOrder
 #ifdef WIN32
   // (nothing)
@@ -122,6 +128,7 @@ namespace boost {
 #include "utility/ripple_DiffieHellmanUtil.h"
 #include "utility/ripple_PlatformMacros.h"
 #include "utility/ripple_RandomNumbers.h"
+#include "utility/ripple_ScopedLock.h"
 #include "utility/ripple_StringUtilities.h"
 #include "utility/ripple_Sustain.h"
 #include "utility/ripple_ThreadName.h"

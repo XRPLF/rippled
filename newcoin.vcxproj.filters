@@ -1295,9 +1295,6 @@
     <ClInclude Include="src\cpp\ripple\SHAMapSync.h">
       <Filter>1. Modules\ripple_mess\containers</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ScopedLock.h">
-      <Filter>1. Modules\ripple_mess\types</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\Version.h">
       <Filter>1. Modules\ripple_main\_old</Filter>
     </ClInclude>
@@ -1459,6 +1456,9 @@
     </ClInclude>
     <ClInclude Include="modules\ripple_data\types\ripple_Serializer.h">
       <Filter>1. Modules\ripple_data\types</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\utility\ripple_ScopedLock.h">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
