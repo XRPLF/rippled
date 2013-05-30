@@ -1062,9 +1062,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 			return jvResult;
 	}
 
-	AccountState::pointer	as		= mNetOps->getAccountState(lpLedger, raAccount);
-
-	if (as)
+	if (lpLedger->hasAccount(raAccount))
 	{
 		jvResult["account"]	= raAccount.humanAccountID();
 
@@ -1140,9 +1138,7 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 	if (bIndex)
 		jvResult["account_index"]	= iIndex;
 
-	AccountState::pointer	as		= mNetOps->getAccountState(lpLedger, raAccount);
-
-	if (as)
+	if (lpLedger->hasAccount(raAccount))
 	{
 		Json::Value&	jsonLines = (jvResult["offers"] = Json::arrayValue);
 

@@ -190,6 +190,11 @@ void Ledger::setAccepted()
 	setImmutable();
 }
 
+bool Ledger::hasAccount(const RippleAddress& accountID)
+{
+	return mAccountStateMap->hasItem(Ledger::getAccountRootIndex(accountID));
+}
+
 AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
 {
 #ifdef DEBUG
