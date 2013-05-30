@@ -56,6 +56,8 @@ enum SizedItemName
 	siValidationsAge,
 	siNodeCacheSize,
 	siNodeCacheAge,
+	siSLECacheSize,
+	siSLECacheAge,
 	siLedgerSize,
 	siLedgerAge,
 	siLedgerFetch,

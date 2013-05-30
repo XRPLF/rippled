@@ -243,6 +243,9 @@ void Application::setup()
 	mValidations.tune(theConfig.getSize(siValidationsSize), theConfig.getSize(siValidationsAge));
 	mHashedObjectStore.tune(theConfig.getSize(siNodeCacheSize), theConfig.getSize(siNodeCacheAge));
 	mLedgerMaster.tune(theConfig.getSize(siLedgerSize), theConfig.getSize(siLedgerAge));
+	mSLECache.setTargetSize(theConfig.getSize(siSLECacheSize));
+	mSLECache.setTargetAge(theConfig.getSize(siSLECacheAge));
+
 	mLedgerMaster.setMinValidations(theConfig.VALIDATION_QUORUM);
 
 #ifdef USE_LEVELDB

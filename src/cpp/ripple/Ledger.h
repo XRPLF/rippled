@@ -189,6 +189,7 @@ public:
 	SLE::pointer getAccountRoot(const uint160& accountID);
 	SLE::pointer getAccountRoot(const RippleAddress& naAccountID);
 	void updateSkipList();
+	void visitAccountItems(const uint160& acctID, FUNCTION_TYPE<void(SLE::ref)>);
 
 	// database functions (low-level)
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);
