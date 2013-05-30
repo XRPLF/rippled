@@ -9,6 +9,7 @@ void FeatureTable::addInitialFeatures()
 	// getCreateFeature. Set any vetoes or defaults. A pointer to the FeatureState can be stashed
 
 	testFeature = getCreateFeature(uint256("1234"), true);
+	testFeature->setFriendlyName("testFeature");
 }
 
 FeatureState* FeatureTable::getCreateFeature(const uint256& featureHash, bool create)
@@ -298,6 +299,9 @@ Json::Value FeatureTable::getJson(int)
 		BOOST_FOREACH(const featureIt_t& it, mFeatureMap)
 		{
 			Json::Value& v(ret[it.first.GetHex()] = Json::objectValue);
+
+			if (!it.second.mFriendlyName.empty())
+				v["name"] = it.second.mFriendlyName;
 
 			v["supported"] = it.second.mSupported;
 

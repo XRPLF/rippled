@@ -21,24 +21,28 @@ public:
 class FeatureState
 {
 public:
-	bool	mVetoed;			// We don't want this feature enabled
-	bool	mEnabled;
-	bool	mSupported;
-	bool	mDefault;			// Include in genesis ledger
+	bool		mVetoed;			// We don't want this feature enabled
+	bool		mEnabled;
+	bool		mSupported;
+	bool		mDefault;			// Include in genesis ledger
 
-	uint32	mFirstMajority;		// First time we saw a majority (close time)
-	uint32	mLastMajority;		// Most recent time we saw a majority (close time)
+	uint32		mFirstMajority;		// First time we saw a majority (close time)
+	uint32		mLastMajority;		// Most recent time we saw a majority (close time)
+
+	std::string	mFriendlyName;
 
 	FeatureState()
 		: mVetoed(false), mEnabled(false), mSupported(false), mDefault(false),
 		mFirstMajority(0), mLastMajority(0)	{ ; }
 
-	void setVeto()							{ mVetoed = true; }
-	void setDefault()						{ mDefault = true; }
-	bool isDefault()						{ return mDefault; }
-	bool isSupported()						{ return mSupported; }
-	bool isVetoed()							{ return mVetoed; }
-	bool isEnabled()						{ return mEnabled; }
+	void setVeto()								{ mVetoed = true; }
+	void setDefault()							{ mDefault = true; }
+	bool isDefault()							{ return mDefault; }
+	bool isSupported()							{ return mSupported; }
+	bool isVetoed()								{ return mVetoed; }
+	bool isEnabled()							{ return mEnabled; }
+	const std::string& getFiendlyName()			{ return mFriendlyName; }
+	void setFriendlyName(const std::string& n)	{ mFriendlyName = n; }
 };
 
 
