@@ -36,6 +36,10 @@ public:
 
 	void setVeto()							{ mVetoed = true; }
 	void setDefault()						{ mDefault = true; }
+	bool isDefault()						{ return mDefault; }
+	bool isSupported()						{ return mSupported; }
+	bool isVetoed()							{ return mVetoed; }
+	bool isEnabled()						{ return mEnabled; }
 };
 
 
