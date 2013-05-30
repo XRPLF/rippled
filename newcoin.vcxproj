@@ -192,6 +192,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="modules\ripple_basics\utility\ripple_InstanceCounter.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="modules\ripple_basics\utility\ripple_Log.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -766,12 +772,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\InstanceCounter.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\Interpreter.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1235,6 +1235,7 @@
     <ClInclude Include="modules\ripple_basics\utility\ripple_ByteOrder.h" />
     <ClInclude Include="modules\ripple_basics\utility\ripple_DiffieHellmanUtil.h" />
     <ClInclude Include="modules\ripple_basics\utility\ripple_HashUtilities.h" />
+    <ClInclude Include="modules\ripple_basics\utility\ripple_InstanceCounter.h" />
     <ClInclude Include="modules\ripple_basics\utility\ripple_IntegerTypes.h" />
     <ClInclude Include="modules\ripple_basics\utility\ripple_Log.h" />
     <ClInclude Include="modules\ripple_basics\utility\ripple_PlatformMacros.h" />
@@ -1599,7 +1600,6 @@
     <ClInclude Include="src\cpp\ripple\HashPrefixes.h" />
     <ClInclude Include="src\cpp\ripple\HTTPRequest.h" />
     <ClInclude Include="src\cpp\ripple\HttpsClient.h" />
-    <ClInclude Include="src\cpp\ripple\InstanceCounter.h" />
     <ClInclude Include="src\cpp\ripple\Interpreter.h" />
     <ClInclude Include="src\cpp\ripple\JobQueue.h" />
     <ClInclude Include="src\cpp\ripple\Ledger.h" />

@@ -18,7 +18,6 @@
 #include "RPCErr.h"
 #include "AccountState.h"
 #include "NicknameState.h"
-#include "InstanceCounter.h"
 #include "Offer.h"
 #include "PFRequest.h"
 #include "ProofOfWork.h"

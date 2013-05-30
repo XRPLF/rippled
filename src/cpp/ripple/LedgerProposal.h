@@ -6,7 +6,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "InstanceCounter.h"
 
 DEFINE_INSTANCE(LedgerProposal);
 

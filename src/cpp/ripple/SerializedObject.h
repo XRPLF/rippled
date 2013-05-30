@@ -6,7 +6,6 @@
 #include <boost/ptr_container/ptr_vector.hpp>
 
 #include "SerializedTypes.h"
-#include "InstanceCounter.h"
 
 DEFINE_INSTANCE(SerializedObject);
 DEFINE_INSTANCE(SerializedArray);

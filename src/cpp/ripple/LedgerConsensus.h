@@ -14,7 +14,6 @@
 #include "Peer.h"
 #include "CanonicalTXSet.h"
 #include "TransactionEngine.h"
-#include "InstanceCounter.h"
 #include "LoadMonitor.h"
 
 DEFINE_INSTANCE(LedgerConsensus);

@@ -609,9 +609,6 @@
     <ClCompile Include="src\cpp\ripple\Config.cpp">
       <Filter>1. Modules\ripple_main\_old</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\InstanceCounter.cpp">
-      <Filter>1. Modules\ripple_main\_old</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\JobQueue.cpp">
       <Filter>1. Modules\ripple_main\_old</Filter>
     </ClCompile>
@@ -785,6 +782,9 @@
     </ClCompile>
     <ClCompile Include="modules\ripple_data\crypto\ripple_CKeyDeterministic.cpp">
       <Filter>1. Modules\ripple_data\types</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_basics\utility\ripple_InstanceCounter.cpp">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1247,9 +1247,6 @@
     <ClInclude Include="src\cpp\ripple\Config.h">
       <Filter>1. Modules\ripple_main\_old</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\InstanceCounter.h">
-      <Filter>1. Modules\ripple_main\_old</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\JobQueue.h">
       <Filter>1. Modules\ripple_main\_old</Filter>
     </ClInclude>
@@ -1458,6 +1455,9 @@
       <Filter>1. Modules\ripple_data\types</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\utility\ripple_ScopedLock.h">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\utility\ripple_InstanceCounter.h">
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
   </ItemGroup>

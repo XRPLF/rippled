@@ -15,7 +15,6 @@
 #include "SHAMap.h"
 #include "SerializedTransaction.h"
 #include "TransactionErr.h"
-#include "InstanceCounter.h"
 
 class Database;
 

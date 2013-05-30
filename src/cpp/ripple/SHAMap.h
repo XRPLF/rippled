@@ -10,7 +10,6 @@
 #include <boost/unordered_map.hpp>
 
 #include "HashedObject.h"
-#include "InstanceCounter.h"
 
 DEFINE_INSTANCE(SHAMap);
 DEFINE_INSTANCE(SHAMapItem);

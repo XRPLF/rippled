@@ -3,7 +3,6 @@
 
 #include "SerializedObject.h"
 #include "LedgerFormats.h"
-#include "InstanceCounter.h"
 
 DEFINE_INSTANCE(SerializedLedgerEntry);
 

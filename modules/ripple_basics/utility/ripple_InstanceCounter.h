@@ -1,10 +1,9 @@
-#ifndef INSTANCE_COUNTER__H
-#define INSTANCE_COUNTER__H
+#ifndef RIPPLE_INSTANCECOUNTER_H
+#define RIPPLE_INSTANCECOUNTER_H
 
-#include <string>
-#include <vector>
-
-#include <boost/thread/mutex.hpp>
+// VFALCO: TODO Clean up this junk, remove the macros, replace
+//		   with a robust leak checker when we have atomics.
+//
 
 #define DEFINE_INSTANCE(x)								\
 	extern InstanceType IT_##x;							\
@@ -23,6 +22,7 @@
 
 #define IS_INSTANCE(x) Instance_##x
 
+// VFALCO: NOTE, that this is just a glorified leak checker with an awkward API
 class InstanceType
 {
 protected:
@@ -64,6 +64,7 @@ public:
 	{
 		if (sMultiThreaded)
 		{
+			// VFALCO: NOTE, Junk that will go away with atomics
 			mLock.lock();
 			++mInstances;
 			mLock.unlock();

@@ -2,7 +2,6 @@
 #define __VALIDATION__
 
 #include "SerializedObject.h"
-#include "InstanceCounter.h"
 
 DEFINE_INSTANCE(SerializedValidation);
 

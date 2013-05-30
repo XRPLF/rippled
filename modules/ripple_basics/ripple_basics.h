@@ -74,6 +74,11 @@ namespace boost {
 #include <boost/foreach.hpp>
 #include <boost/icl/interval_set.hpp> // oof this one is ugly
 
+// InstanceCounter
+//#include <string>
+//#include <vector>
+//#include <boost/thread/mutex.hpp>
+
 // TaggedCache
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/unordered_map.hpp>
@@ -126,6 +131,7 @@ namespace boost {
 
 #include "utility/ripple_ByteOrder.h"
 #include "utility/ripple_DiffieHellmanUtil.h"
+#include "utility/ripple_InstanceCounter.h"
 #include "utility/ripple_PlatformMacros.h"
 #include "utility/ripple_RandomNumbers.h"
 #include "utility/ripple_ScopedLock.h"

@@ -36,7 +36,6 @@
 
 #include "src/cpp/ripple/Application.cpp"
 #include "src/cpp/ripple/Config.cpp" // no log
-#include "src/cpp/ripple/InstanceCounter.cpp" // no log
 #include "src/cpp/ripple/JobQueue.cpp"
 #include "src/cpp/ripple/LoadManager.cpp"
 #include "src/cpp/ripple/LoadMonitor.cpp"

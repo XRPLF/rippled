@@ -8,8 +8,6 @@
 #include <boost/unordered_map.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "InstanceCounter.h"
-
 DEFINE_INSTANCE(Suppression);
 
 #define SF_RELAYED		0x01	// Has already been relayed to other nodes

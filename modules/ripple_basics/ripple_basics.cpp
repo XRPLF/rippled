@@ -69,6 +69,7 @@
 
 #include "utility/ripple_ByteOrder.cpp"
 #include "utility/ripple_DiffieHellmanUtil.cpp"
+#include "utility/ripple_InstanceCounter.cpp"
 #include "utility/ripple_StringUtilities.cpp"
 #include "utility/ripple_Sustain.cpp"
 #include "utility/ripple_ThreadName.cpp"

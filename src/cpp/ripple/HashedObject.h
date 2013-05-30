@@ -8,8 +8,6 @@
 
 #include "modules/ripple_main/misc/ripple_HashValue.h"
 
-#include "InstanceCounter.h"
-
 
 // VFALCO: TODO, Move this to someplace sensible!!
 // Adapter to furnish uptime information to KeyCache via UptimeTimer singleton
