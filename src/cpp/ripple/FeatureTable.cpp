@@ -8,8 +8,7 @@ void FeatureTable::addInitialFeatures()
 	// For each feature this version supports, construct the FeatureState object by calling
 	// getCreateFeature. Set any vetoes or defaults. A pointer to the FeatureState can be stashed
 
-	testFeature = getCreateFeature(uint256("1234"), true);
-	testFeature->setFriendlyName("testFeature");
+	testFeature = addKnownFeature("1234", "testFeature", false);
 }
 
 FeatureState* FeatureTable::getCreateFeature(const uint256& featureHash, bool create)
@@ -39,6 +38,26 @@ FeatureState* FeatureTable::getCreateFeature(const uint256& featureHash, bool cr
 		return feature;
 	}
 	return &(it->second);
+}
+
+FeatureState* FeatureTable::addKnownFeature(const char *featureID, const char *friendlyName, bool veto)
+{
+	uint256 hash;
+	hash.SetHex(featureID);
+	if (hash.isZero())
+	{
+		assert(false);
+		return NULL;
+	}
+	FeatureState* f = getCreateFeature(hash, true);
+
+	if (friendlyName != NULL)
+		f->setFriendlyName(friendlyName);
+
+	f->mVetoed = veto;
+	f->mSupported = true;
+
+	return f;
 }
 
 bool FeatureTable::vetoFeature(const uint256& feature)
@@ -304,6 +323,7 @@ Json::Value FeatureTable::getJson(int)
 				v["name"] = it.second.mFriendlyName;
 
 			v["supported"] = it.second.mSupported;
+			v["vetoed"] = it.second.mVetoed;
 
 			if (it.second.mEnabled)
 				v["enabled"] = true;

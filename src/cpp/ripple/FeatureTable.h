@@ -72,6 +72,8 @@ public:
 
 	void addInitialFeatures();
 
+	FeatureState* addKnownFeature(const char *featureID, const char *friendlyName, bool veto);
+
 	bool vetoFeature(const uint256& feature);
 	bool unVetoFeature(const uint256& feature);
 
