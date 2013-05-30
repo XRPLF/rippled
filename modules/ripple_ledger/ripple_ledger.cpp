@@ -47,7 +47,6 @@
 #include <string>
 #include <vector>
 
-
 #include <boost/algorithm/string.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -64,10 +63,6 @@
 #include <boost/unordered_set.hpp>
 
 #include "src/cpp/database/SqliteDatabase.h"
-
-// VFALCO: TODO, resolve the location of this file
-//#include "src/cpp/ripple/ripple.pb.h"
-#include "ripple.pb.h"
 
 #include "src/cpp/ripple/AcceptedLedger.h"
 #include "src/cpp/ripple/AccountItems.h"

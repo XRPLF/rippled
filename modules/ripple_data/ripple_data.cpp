@@ -80,6 +80,11 @@
 #include "types/ripple_RippleAddress.cpp"
 #include "types/ripple_Serializer.cpp"
 
+// VFALCO: TODO Fix this for SConstruct
+#ifdef _MSC_VER
+#include "ripple.pb.cc" // BROKEN because of SConstruct
+#endif
+
 #ifdef _MSC_VER
 //#pragma warning (pop)
 #endif

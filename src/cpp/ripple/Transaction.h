@@ -11,7 +11,6 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/cstdint.hpp>
 
-#include "ripple.pb.h"
 #include "SHAMap.h"
 #include "SerializedTransaction.h"
 #include "TransactionErr.h"

@@ -136,6 +136,9 @@
     <Filter Include="1. Modules\ripple_data\types">
       <UniqueIdentifier>{2f3572a9-2882-4656-ab93-82b7761c9e3d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_data\protobuf">
+      <UniqueIdentifier>{9f8ed40a-9f16-42fe-82fd-caf72d3d6a2b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -672,9 +675,6 @@
     <ClCompile Include="src\cpp\ripple\Pathfinder.cpp">
       <Filter>1. Modules\ripple_ledger\processing</Filter>
     </ClCompile>
-    <ClCompile Include="build\proto\ripple.pb.cc">
-      <Filter>1. Modules\ripple_mess\protobuf</Filter>
-    </ClCompile>
     <ClCompile Include="modules\ripple_mess\ripple_mess.cpp">
       <Filter>1. Modules\ripple_mess</Filter>
     </ClCompile>
@@ -785,6 +785,9 @@
     </ClCompile>
     <ClCompile Include="modules\ripple_basics\utility\ripple_InstanceCounter.cpp">
       <Filter>1. Modules\ripple_basics\utility</Filter>
+    </ClCompile>
+    <ClCompile Include="build\proto\ripple.pb.cc">
+      <Filter>1. Modules\ripple_data\protobuf</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1304,9 +1307,6 @@
     <ClInclude Include="src\cpp\ripple\NetworkStatus.h">
       <Filter>1. Modules\ripple_main\_old</Filter>
     </ClInclude>
-    <ClInclude Include="build\proto\ripple.pb.h">
-      <Filter>1. Modules\ripple_mess\protobuf</Filter>
-    </ClInclude>
     <ClInclude Include="modules\ripple_mess\ripple_mess.h">
       <Filter>1. Modules\ripple_mess</Filter>
     </ClInclude>
@@ -1459,6 +1459,9 @@
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\utility\ripple_InstanceCounter.h">
       <Filter>1. Modules\ripple_basics\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="build\proto\ripple.pb.h">
+      <Filter>1. Modules\ripple_data\protobuf</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
