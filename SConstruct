@@ -105,9 +105,11 @@ BOOSTFLAGS	= ['-DBOOST_TEST_DYN_LINK', '-DBOOST_FILESYSTEM_NO_DEPRECATED']
 env.Append(LINKFLAGS = ['-rdynamic', '-pthread'])
 env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts', '-DSQLITE_THREADSAFE=1'])
 env.Append(CXXFLAGS = ['-O0', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+BOOSTFLAGS+DEBUGFLAGS)
-env.Append(CXXFLAGS = [ '-Isrc/cpp/leveldb', '-Isrc/cpp/leveldb/port', '-Isrc/cpp/leveldb/include', '-DUSE_LEVELDB'])
-env.Append(CXXFLAGS = [ '-Ibuild/proto'])
-env.Append(CXXFLAGS = [ '-I.', '-Isrc/cpp/ripple'])
+env.Append(CXXFLAGS = ['-DUSE_LEVELDB'])
+
+env.Append(CPPPATH = [ 'src/cpp/leveldb', 'src/cpp/leveldb/port', 'src/cpp/leveldb/include'])
+env.Append(CPPPATH = [ 'build/proto'])
+env.Append(CPPPATH = [ '.', 'src/cpp/ripple'])
 
 if (int(GCC_VERSION[0]) > 4 or (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) >= 7)):
     env.Append(CXXFLAGS = ['-std=c++11'])
@@ -140,7 +142,7 @@ for dir in [
              'ripple_db',
              'ripple_json',
              'ripple_ledger',
-	     'ripple_main',
+             'ripple_main',
              'ripple_mess',
              'ripple_net'
             ]:
