@@ -143,6 +143,7 @@
 	// vector of 256-bit
 	FIELD(Indexes,				VECTOR256, 1)
 	FIELD(Hashes,				VECTOR256, 2)
+	FIELD(Features,				VECTOR256, 3)
 
 	// inner object
 	// OBJECT/1 is reserved for end of object
@@ -164,6 +165,5 @@
 	FIELD(Necessary,			ARRAY, 6)
 	FIELD(Sufficient,			ARRAY, 7)
 	FIELD(AffectedNodes,		ARRAY, 8)
-	FIELD(Features,				ARRAY, 9)
 
 // vim:ts=4
