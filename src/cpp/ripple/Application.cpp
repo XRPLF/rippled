@@ -518,6 +518,12 @@ bool serverOkay(std::string& reason)
 		return false;
 	}
 
+	if (theApp->isShutdown())
+	{
+		reason = "Server is shutting down";
+		return false;
+	}
+
 	if (theApp->getOPs().isNeedNetworkLedger())
 	{
 		reason = "Not synchronized with network yet";
