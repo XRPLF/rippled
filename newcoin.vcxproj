@@ -1680,6 +1680,7 @@
     <ClInclude Include="src\cpp\websocketpp\src\websocket_frame.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Doxyfile" />
     <None Include="modules\ripple_json\json\json_internalarray.inl" />
     <None Include="modules\ripple_json\json\json_internalmap.inl" />
     <None Include="modules\ripple_json\json\json_valueiterator.inl" />

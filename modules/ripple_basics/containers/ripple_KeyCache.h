@@ -1,51 +1,73 @@
+
+//------------------------------------------------------------------------------
+
 #ifndef RIPPLE_KEYCACHE_H
 #define RIPPLE_KEYCACHE_H
 
-/** Maintains a cache of keys with no associated data
+/** Maintains a cache of keys with no associated data.
 
-	Timer must have this interface:
+	The cache has a target size and an expiration time. When cached items become
+	older than the maximum age they are eligible for removal during a
+	call to @ref sweep.
 
-	static int Timer::getElapsedSeconds ();
+	@note 
+		Timer must provide this function:
+		@code
+		static int getElapsedSeconds ();
+		@endcode
+
+	file vf_db.h
+    @ingroup ripple_basics
 */
-template <typename c_Key, class Timer>
+template <class Key, class Timer>
 class KeyCache
 {
 public:
-	typedef c_Key									key_type;
-	typedef boost::unordered_map<key_type, int>		map_type;
-	typedef typename map_type::iterator				map_iterator;
+	/** Provides a type for the key.
+	*/
+	typedef Key									key_type;
 
-protected:
-	const std::string	mName;
-	boost::mutex		mNCLock;
-	map_type			mCache;
-	unsigned int		mTargetSize, mTargetAge;
+	/** Construct with the specified name.
 
-public:
-
-	KeyCache(const std::string& name, int size = 0, int age = 120) : mName(name), mTargetSize(size), mTargetAge(age)
+		@param size The initial target size.
+		@param age  The initial expiration time.
+	*/
+	KeyCache (const std::string& name,
+			  int size = 0,
+			  int age = 120) : mName(name), mTargetSize(size), mTargetAge(age)
 	{
 		assert((size >= 0) && (age > 2));
 	}
 
-	void getSize()
+	/** Returns the current size.
+	*/
+	unsigned int getSize ()
 	{
 		boost::mutex::scoped_lock sl(mNCLock);
 		return mCache.size();
 	}
 
-	void getTargetSize()
+	/** Returns the desired target size.
+	*/
+	unsigned int getTargetSize ()
 	{
 		boost::mutex::scoped_lock sl(mNCLock);
 		return mTargetSize;
 	}
 
-	void getTargetAge()
+	/** Returns the desired target age.
+	*/
+	unsigned int getTargetAge ()
 	{
 		boost::mutex::scoped_lock sl(mNCLock);
 		return mTargetAge;
 	}
 
+	/** Simultaneously set the target size and age.
+
+		@param size The target size.
+		@param age  The target age.
+	*/
 	void setTargets(int size, int age)
 	{
 		boost::mutex::scoped_lock sl(mNCLock);
@@ -54,13 +76,21 @@ public:
 		assert((mTargetSize >= 0) && (mTargetAge > 2));
 	}
 
+	/** Retrieve the name of this object.
+	*/
 	const std::string& getName()
 	{
 		return mName;
 	}
 
+	/** Determine if the specified key is cached, and optionally refresh it.
+
+		@param key     The key to check
+		@param refresh Whether or not to refresh the entry.
+		@return        `true` if the key was found.
+	*/
 	bool isPresent(const key_type& key, bool refresh = true)
-	{ // Check if an entry is cached, refresh it if so
+	{
 		boost::mutex::scoped_lock sl(mNCLock);
 
 		map_iterator it = mCache.find(key);
@@ -71,8 +101,13 @@ public:
 		return true;
 	}
 
+	/** Remove the specified cache entry.
+
+		@param key The key to remove.
+		@return    `false` if the key was not found.
+	*/
 	bool del(const key_type& key)
-	{ // Remove an entry from the cache, return false if not-present
+	{ 
 		boost::mutex::scoped_lock sl(mNCLock);
 
 		map_iterator it = mCache.find(key);
@@ -83,8 +118,13 @@ public:
 		return true;
 	}
 
-	bool add(const key_type& key)
-	{ // Add an entry to the cache, return true if it is new
+	/** Add the specified cache entry.
+
+		@param key The key to add.
+		@return    `true` if the key did not previously exist.
+	*/
+	bool add (const key_type& key)
+	{
 		boost::mutex::scoped_lock sl(mNCLock);
 
 		map_iterator it = mCache.find(key);
@@ -97,8 +137,10 @@ public:
 		return true;
 	}
 
-	void sweep()
-	{ // Remove stale entries from the cache 
+	/** Remove stale entries from the cache.
+	*/
+	void sweep ()
+	{
 		int now = Timer::getElapsedSeconds ();
 		boost::mutex::scoped_lock sl(mNCLock);
 
@@ -121,11 +163,29 @@ public:
 				++it;
 			}
 			else if (it->second < target)
+			{
 				it = mCache.erase(it);
+			}
 			else
+			{
 				++it;
+			}
 		}
 	}
+
+protected:
+	/** Provides a type for the underlying map.
+	*/
+	typedef boost::unordered_map<key_type, int>	map_type;
+
+	/** The type of the iterator used for traversals.
+	*/
+	typedef typename map_type::iterator			map_iterator;
+
+	std::string	const	mName;
+	boost::mutex		mNCLock;
+	map_type			mCache;
+	unsigned int		mTargetSize, mTargetAge;
 };
 
 #endif

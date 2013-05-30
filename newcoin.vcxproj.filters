@@ -94,9 +94,6 @@
     <Filter Include="1. Modules\ripple_mess\containers">
       <UniqueIdentifier>{683c494b-1175-49ac-9714-65640ba50bf5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_mess\protobuf">
-      <UniqueIdentifier>{eb0c6bda-cf68-4334-a8c3-8d39202852a0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_mess\types">
       <UniqueIdentifier>{1b463564-35d9-43d1-b3a0-21b344a3a1c7}</UniqueIdentifier>
     </Filter>
@@ -1479,6 +1476,7 @@
     <None Include="modules\ripple_json\json\json_valueiterator.inl">
       <Filter>1. Modules\ripple_json\json</Filter>
     </None>
+    <None Include="Doxyfile" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="src\cpp\ripple\ripple.proto" />

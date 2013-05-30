@@ -17,7 +17,11 @@
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = modules src/cpp/ripple
+INPUT                  = \
+	modules \
+	src/cpp/ripple
+
+	#modules/ripple_basics/containers/ripple_KeyCache.h
 
 
 # If the value of the INPUT tag contains directories, you can use the
