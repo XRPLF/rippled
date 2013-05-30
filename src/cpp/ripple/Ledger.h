@@ -183,6 +183,7 @@ public:
 	 TransactionMetaSet::pointer& txMeta);
 
 	// high-level functions
+	bool hasAccount(const RippleAddress& acctID);
 	AccountState::pointer getAccountState(const RippleAddress& acctID);
 	LedgerStateParms writeBack(LedgerStateParms parms, SLE::ref);
 	SLE::pointer getAccountRoot(const uint160& accountID);
