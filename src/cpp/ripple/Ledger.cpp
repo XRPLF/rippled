@@ -1327,15 +1327,12 @@ std::vector< std::pair<uint32, uint256> > Ledger::getLedgerHashes()
 	return ret;
 }
 
-boost::unordered_set<uint256> Ledger::getLedgerFeatures()
+std::vector<uint256> Ledger::getLedgerFeatures()
 {
-	boost::unordered_set<uint256> usFeatures;
+	std::vector<uint256> usFeatures;
 	SLE::pointer sleFeatures = getSLEi(getLedgerFeatureIndex());
 	if (sleFeatures)
-	{
-		BOOST_FOREACH(const uint256& uFeature, sleFeatures->getFieldV256(sfFeatures).peekValue())
-			usFeatures.insert(uFeature);
-	}
+		usFeatures = sleFeatures->getFieldV256(sfFeatures).peekValue();
 	return usFeatures;
 }
 

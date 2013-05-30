@@ -547,6 +547,12 @@ bool serverOkay(std::string& reason)
 		return false;
 	}
 
+	if (theApp->getOPs().isFeatureBlocked())
+	{
+		reason = "Server version too old";
+		return false;
+	}
+
 	return true;
 }
 

@@ -31,6 +31,7 @@ void InfoSub::onSendEmpty()
 
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
 	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mProposing(false), mValidating(false),
+	mFeatureBlocked(false),
 	mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0), mLastCloseProposers(0),
 	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastCloseTime(0), mLastValidationTime(0),
 	mFetchPack("FetchPack", 2048, 20), mLastFetchPack(0), mFetchSeq(static_cast<uint32>(-1)),
@@ -553,6 +554,12 @@ Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const RippleAddre
 // Other
 //
 
+void NetworkOPs::setFeatureBlocked()
+{
+	mFeatureBlocked = true;
+	setMode(omTRACKING);
+}
+
 void NetworkOPs::setStateTimer()
 {
 	mNetTimer.expires_from_now(boost::posix_time::milliseconds(LEDGER_GRANULARITY));
@@ -1047,6 +1054,9 @@ void NetworkOPs::setMode(OperatingMode om)
 			om = omCONNECTED;
 	}
 
+	if ((om > omTRACKING) && mFeatureBlocked)
+		om = omTRACKING;
+
 	if (mMode == om)
 		return;
 
@@ -1265,6 +1275,8 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 
 	info["complete_ledgers"] = theApp->getLedgerMaster().getCompleteLedgers();
 
+	if (mFeatureBlocked)
+		info["feature_blocked"] = true;
 
 	size_t fp = mFetchPack.getCacheSize();
 	if (fp != 0)

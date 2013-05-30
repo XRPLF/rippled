@@ -87,6 +87,13 @@ bool FeatureTable::isFeatureEnabled(const uint256& feature)
 	return s && s->mEnabled;
 }
 
+bool FeatureTable::isFeatureSupported(const uint256& feature)
+{
+	boost::mutex::scoped_lock sl(mMutex);
+	FeatureState *s = getCreateFeature(feature, false);
+	return s && s->mSupported;
+}
+
 FeatureTable::featureList_t FeatureTable::getVetoedFeatures()
 {
 	featureList_t ret;

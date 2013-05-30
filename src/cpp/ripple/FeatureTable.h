@@ -75,6 +75,7 @@ public:
 	bool disableFeature(const uint256& feature);
 
 	bool isFeatureEnabled(const uint256& feature);
+	bool isFeatureSupported(const uint256& feature);
 
 	void setEnabledFeatures(const std::vector<uint256>& features);
 	void setSupportedFeatures(const std::vector<uint256>& features);

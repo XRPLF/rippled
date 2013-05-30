@@ -220,7 +220,7 @@ public:
 
 	static uint256 getLedgerFeatureIndex();
 	static uint256 getLedgerFeeIndex();
-	boost::unordered_set<uint256> getLedgerFeatures();
+	std::vector<uint256> getLedgerFeatures();
 
 	std::vector<uint256> getNeededTransactionHashes(int max, SHAMapSyncFilter* filter);
 	std::vector<uint256> getNeededAccountStateHashes(int max, SHAMapSyncFilter* filter);
