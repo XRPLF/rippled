@@ -21,7 +21,6 @@ public:
 class FeatureState
 {
 public:
-	uint256	mHash;				// Feature hash
 	bool	mVetoed;			// We don't want this feature enabled
 	bool	mEnabled;
 	bool	mSupported;
