@@ -58,6 +58,7 @@
 
 
 #include "crypto/ripple_Base58.h" // for RippleAddress
+#include "crypto/ripple_CKey.h" // needs RippleAddress VFALCO: TODO, remove this dependency cycle
 #include "crypto/ripple_RFC1751.h"
 
 // VFALCO: TODO, fix these warnings!

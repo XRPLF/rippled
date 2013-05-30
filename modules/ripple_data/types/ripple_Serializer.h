@@ -1,6 +1,8 @@
 #ifndef RIPPLE_SERIALIZER_H
 #define RIPPLE_SERIALIZER_H
 
+class CKey; // forward declaration
+
 class Serializer
 {
 public:
