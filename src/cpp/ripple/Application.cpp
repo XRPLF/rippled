@@ -52,7 +52,7 @@ Application::Application() :
 	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300), mSLECache("LedgerEntryCache", 4096, 120),
 	mSNTPClient(mAuxService), mJobQueue(mIOService), mFeeTrack(),
 
-	mFeeVote(10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS),
+	mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS)),
 	mFeatureTable(2 * 7 * 24 * 60 * 60, 200), // two weeks, 200/256
 
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
@@ -407,6 +407,7 @@ void Application::sweep()
 
 Application::~Application()
 {
+	delete mFeeVote;
 	delete mTxnDB;
 	delete mLedgerDB;
 	delete mWalletDB;
