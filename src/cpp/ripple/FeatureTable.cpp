@@ -40,6 +40,19 @@ FeatureState* FeatureTable::getCreateFeature(const uint256& featureHash, bool cr
 	return &(it->second);
 }
 
+uint256 FeatureTable::getFeature(const std::string& name)
+{
+	if (!name.empty())
+	{
+		BOOST_FOREACH(featureMap_t::value_type& it, mFeatureMap)
+		{
+			if (name == it.second.mFriendlyName)
+				return it.first;
+		}
+	}
+	return uint256();
+}
+
 FeatureState* FeatureTable::addKnownFeature(const char *featureID, const char *friendlyName, bool veto)
 {
 	uint256 hash;
@@ -317,50 +330,60 @@ Json::Value FeatureTable::getJson(int)
 		boost::mutex::scoped_lock sl(mMutex);
 		BOOST_FOREACH(const featureIt_t& it, mFeatureMap)
 		{
-			Json::Value& v(ret[it.first.GetHex()] = Json::objectValue);
+			setJson(ret[it.first.GetHex()] = Json::objectValue, it.second);
+		}
+	}
+	return ret;
+}
 
-			if (!it.second.mFriendlyName.empty())
-				v["name"] = it.second.mFriendlyName;
+void FeatureTable::setJson(Json::Value& v, const FeatureState& fs)
+{
+	if (!fs.mFriendlyName.empty())
+		v["name"] = fs.mFriendlyName;
 
-			v["supported"] = it.second.mSupported;
-			v["vetoed"] = it.second.mVetoed;
+	v["supported"] = fs.mSupported;
+	v["vetoed"] = fs.mVetoed;
 
-			if (it.second.mEnabled)
-				v["enabled"] = true;
+	if (fs.mEnabled)
+		v["enabled"] = true;
+	else
+	{
+		v["enabled"] = false;
+		if (mLastReport != 0)
+		{
+			if (fs.mLastMajority == 0)
+			{
+				v["majority"] = false;
+			}
 			else
 			{
-				v["enabled"] = false;
-				if (mLastReport != 0)
+				if (fs.mFirstMajority != 0)
 				{
-					if (it.second.mLastMajority == 0)
-					{
-						v["majority"] = false;
-					}
+					if (fs.mFirstMajority == mFirstReport)
+						v["majority_start"] = "start";
 					else
-					{
-						if (it.second.mFirstMajority != 0)
-						{
-							if (it.second.mFirstMajority == mFirstReport)
-								v["majority_start"] = "start";
-							else
-								v["majority_start"] = it.second.mFirstMajority;
-						}
-						if (it.second.mLastMajority != 0)
-						{
-							if (it.second.mLastMajority == mLastReport)
-								v["majority_until"] = "now";
-							else
-								v["majority_until"] = it.second.mLastMajority;
-						}
-					}
+						v["majority_start"] = fs.mFirstMajority;
+				}
+				if (fs.mLastMajority != 0)
+				{
+					if (fs.mLastMajority == mLastReport)
+						v["majority_until"] = "now";
+					else
+						v["majority_until"] = fs.mLastMajority;
 				}
 			}
-
-			if (it.second.mVetoed)
-				v["veto"] = true;
 		}
 	}
 
+	if (fs.mVetoed)
+		v["veto"] = true;
+}
+
+Json::Value FeatureTable::getJson(const uint256& feature)
+{
+	Json::Value ret = Json::objectValue;
+	boost::mutex::scoped_lock sl(mMutex);
+	setJson(ret[feature.GetHex()] = Json::objectValue, *getCreateFeature(feature, true));
 	return ret;
 }
 

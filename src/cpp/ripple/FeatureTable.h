@@ -63,6 +63,7 @@ protected:
 
 	FeatureState*	getCreateFeature(const uint256& feature, bool create);
 	bool shouldEnable (uint32 closeTime, const FeatureState& fs);
+	void setJson(Json::Value& v, const FeatureState&);
 
 public:
 
@@ -73,6 +74,7 @@ public:
 	void addInitialFeatures();
 
 	FeatureState* addKnownFeature(const char *featureID, const char *friendlyName, bool veto);
+	uint256 getFeature(const std::string& name);
 
 	bool vetoFeature(const uint256& feature);
 	bool unVetoFeature(const uint256& feature);
@@ -94,6 +96,7 @@ public:
 	void reportValidations(const FeatureSet&);
 
 	Json::Value getJson(int);
+	Json::Value getJson(const uint256&);
 
 	void doValidation(Ledger::ref lastClosedLedger, STObject& baseValidation);
 	void doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition);

@@ -2263,10 +2263,16 @@ Json::Value RPCHandler::doFeature(Json::Value jvRequest, int& cost, ScopedLock& 
 		return jvReply;
 	}
 
-	if (!jvRequest.isMember("vote"))
+	uint256 uFeature = theApp->getFeatureTable().getFeature(jvRequest["feature"].asString());
+	if (uFeature.isZero())
 	{
-		// WRITEME
+		uFeature.SetHex(jvRequest["feature"].asString());
+		if (uFeature.isZero())
+			return rpcError(rpcBAD_FEATURE);
 	}
+
+	if (!jvRequest.isMember("vote"))
+		return theApp->getFeatureTable().getJson(uFeature);
 
 	// WRITEME
 	return rpcError(rpcNOT_SUPPORTED);
