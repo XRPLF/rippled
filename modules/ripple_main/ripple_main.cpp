@@ -34,7 +34,6 @@
 #pragma warning (disable: 4535) // call requires /EHa
 #endif
 
-#include "src/cpp/ripple/Application.cpp"
 #include "src/cpp/ripple/Config.cpp" // no log
 #include "src/cpp/ripple/JobQueue.cpp"
 #include "src/cpp/ripple/LoadManager.cpp"

@@ -29,6 +29,10 @@
 #include "TransactionQueue.h"
 #include "OrderBookDB.h"
 
+// VFALCO: TODO, Fix forward declares required for header dependency loops
+class IFeatureTable;
+class IFeeVote;
+
 class RPCDoor;
 class PeerDoor;
 typedef TaggedCache< uint256, std::vector<unsigned char>, UptimeTimerAdapter> NodeCache;
@@ -74,7 +78,7 @@ class Application
 	LoadFeeTrack			mFeeTrack;
 	TXQueue					mTxnQueue;
 	OrderBookDB				mOrderBookDB;
-	FeeVote					mFeeVote;
+	IFeeVote*				mFeeVote;
 	FeatureTable			mFeatureTable;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
@@ -133,7 +137,7 @@ public:
 	PeerDoor& getPeerDoor()							{ return *mPeerDoor; }
 	OrderBookDB& getOrderBookDB()					{ return mOrderBookDB; }
 	SLECache& getSLECache()							{ return mSLECache; }
-	FeeVote& getFeeVote()							{ return mFeeVote; }
+	IFeeVote& getFeeVote()							{ return *mFeeVote; }
 	FeatureTable& getFeatureTable()					{ return mFeatureTable; }
 
 

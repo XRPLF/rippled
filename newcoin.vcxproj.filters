@@ -94,9 +94,6 @@
     <Filter Include="1. Modules\ripple_mess\containers">
       <UniqueIdentifier>{683c494b-1175-49ac-9714-65640ba50bf5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_mess\protobuf">
-      <UniqueIdentifier>{eb0c6bda-cf68-4334-a8c3-8d39202852a0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_mess\types">
       <UniqueIdentifier>{1b463564-35d9-43d1-b3a0-21b344a3a1c7}</UniqueIdentifier>
     </Filter>
@@ -138,6 +135,9 @@
     </Filter>
     <Filter Include="1. Modules\ripple_data\protobuf">
       <UniqueIdentifier>{9f8ed40a-9f16-42fe-82fd-caf72d3d6a2b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_ledger\main">
+      <UniqueIdentifier>{1ccfc5ad-5cd7-4a8e-b305-08f663c2397c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -606,9 +606,6 @@
     <ClCompile Include="src\cpp\database\SqliteDatabase.cpp">
       <Filter>1. Modules\ripple_db\storage</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Application.cpp">
-      <Filter>1. Modules\ripple_main\_old</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\Config.cpp">
       <Filter>1. Modules\ripple_main\_old</Filter>
     </ClCompile>
@@ -788,6 +785,12 @@
     </ClCompile>
     <ClCompile Include="build\proto\ripple.pb.cc">
       <Filter>1. Modules\ripple_data\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_FeeVote.cpp">
+      <Filter>1. Modules\ripple_ledger\processing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\Application.cpp">
+      <Filter>1. Modules\ripple_ledger\main</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1244,9 +1247,6 @@
     <ClInclude Include="src\cpp\database\SqliteDatabase.h">
       <Filter>1. Modules\ripple_db\storage</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Application.h">
-      <Filter>1. Modules\ripple_main\_old</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\Config.h">
       <Filter>1. Modules\ripple_main\_old</Filter>
     </ClInclude>
@@ -1463,6 +1463,15 @@
     <ClInclude Include="build\proto\ripple.pb.h">
       <Filter>1. Modules\ripple_data\protobuf</Filter>
     </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_IFeatures.h">
+      <Filter>1. Modules\ripple_ledger\processing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_IFeeVote.h">
+      <Filter>1. Modules\ripple_ledger\processing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\Application.h">
+      <Filter>1. Modules\ripple_ledger\main</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="SConstruct" />
@@ -1479,6 +1488,7 @@
     <None Include="modules\ripple_json\json\json_valueiterator.inl">
       <Filter>1. Modules\ripple_json\json</Filter>
     </None>
+    <None Include="Doxyfile" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="src\cpp\ripple\ripple.proto" />
