@@ -1,3 +1,7 @@
+
+#ifndef RIPPLE_SQLITEDATABASE_H
+#define RIPPLE_SQLITEDATABASE_H
+
 #include "database.h"
 
 #include <string>
@@ -112,4 +116,7 @@ public:
 	std::string getError(int);
 };
 
+#endif
+
 // vim:ts=4
+

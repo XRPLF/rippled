@@ -72,7 +72,6 @@
 #include "src/cpp/ripple/CanonicalTXSet.h"
 #include "src/cpp/ripple/ChangeTransactor.h"
 #include "src/cpp/ripple/Config.h"
-#include "src/cpp/ripple/FeatureTable.h"
 #include "src/cpp/ripple/HashPrefixes.h"
 #include "src/cpp/ripple/Ledger.h"
 #include "src/cpp/ripple/LedgerAcquire.h"
@@ -121,7 +120,16 @@
 #include "src/cpp/ripple/Interpreter.h"
 #include "src/cpp/ripple/Operation.h"
 
+
+// New abstract interfaces
+#include "src/cpp/ripple/ripple_IFeatures.h"
+#include "src/cpp/ripple/ripple_IFeeVote.h"
+#include "src/cpp/ripple/FeatureTable.h"
+
 //------------------------------------------------------------------------------
+
+// main
+#include "src/cpp/ripple/Application.cpp"
 
 // contracts
 #include "src/cpp/ripple/Contract.cpp" // no log
@@ -180,6 +188,10 @@
 #include "src/cpp/ripple/TrustSetTransactor.cpp"
 #include "src/cpp/ripple/Wallet.cpp"
 #include "src/cpp/ripple/WalletAddTransactor.cpp"
+
+// Implementation of interfaces
+
+#include "src/cpp/ripple/ripple_FeeVote.cpp"
 
 #ifdef _MSC_VER
 //#pragma warning (pop)

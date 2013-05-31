@@ -81,27 +81,4 @@ public:
 	void doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition);
 };
 
-class FeeVote
-{
-protected:
-
-	// What we'd like to see
-	uint64 mTargetBaseFee;
-	uint32 mTargetReserveBase, mTargetReserveIncrement;
-
-
-public:
-	FeeVote(uint64 targetBaseFee, uint32 targetReserveBase, uint32 targetReserveIncrement) :
-		mTargetBaseFee(targetBaseFee),
-		mTargetReserveBase(targetReserveBase),
-		mTargetReserveIncrement(targetReserveIncrement)
-	{ ; }
-
-	// add our wishes to our validation
-	void doValidation(Ledger::ref lastClosedLedger, STObject& baseValidation);
-
-	// vote on the fee we want
-	void doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition);
-};
-
 #endif
