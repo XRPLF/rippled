@@ -124,12 +124,15 @@
 // New abstract interfaces
 #include "src/cpp/ripple/ripple_IFeatures.h"
 #include "src/cpp/ripple/ripple_IFeeVote.h"
+#include "src/cpp/ripple/ripple_ILoadFeeTrack.h"
 #include "src/cpp/ripple/FeatureTable.h"
 
 //------------------------------------------------------------------------------
 
 // main
+#include "src/cpp/ripple/ripple_DatabaseCon.cpp"
 #include "src/cpp/ripple/Application.cpp"
+#include "src/cpp/ripple/LoadManager.cpp"
 
 // contracts
 #include "src/cpp/ripple/Contract.cpp" // no log
@@ -192,6 +195,7 @@
 // Implementation of interfaces
 
 #include "src/cpp/ripple/ripple_FeeVote.cpp"
+#include "src/cpp/ripple/ripple_LoadFeeTrack.cpp"
 
 #ifdef _MSC_VER
 //#pragma warning (pop)

@@ -28,6 +28,8 @@
 
 #include "../websocketpp/src/logger/logger.hpp" // for ripple_LogWebSockets.cpp
 
+#include "src/cpp/ripple/ripple_ILoadFeeTrack.h" // for NetworkOPs
+
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
 //#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
