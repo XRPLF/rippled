@@ -19,7 +19,6 @@
 #include "Peer.h"
 #include "NetworkOPs.h"
 #include "WSDoor.h"
-#include "ValidationCollection.h"
 #include "Suppression.h"
 #include "SNTPClient.h"
 #include "JobQueue.h"
@@ -35,6 +34,7 @@
 class IFeatureTable;
 class IFeeVote;
 class ILoadFeeTrack;
+class IValidations;
 
 class RPCDoor;
 class PeerDoor;
@@ -55,7 +55,6 @@ class Application
 	TransactionMaster		mMasterTransaction;
 	NetworkOPs				mNetOps;
 	NodeCache				mTempNodeCache;
-	ValidationCollection	mValidations;
 	SuppressionTable		mSuppressions;
 	HashedObjectStore		mHashedObjectStore;
 	SLECache				mSLECache;
@@ -65,9 +64,14 @@ class Application
 	LoadManager				mLoadMgr;
 	TXQueue					mTxnQueue;
 	OrderBookDB				mOrderBookDB;
-	IFeeVote*				mFeeVote;
+	
+    // VFALCO: Clean stuff
+    IFeeVote*				mFeeVote;
 	ILoadFeeTrack*			mFeeTrack;
-	FeatureTable			mFeatureTable;
+	IValidations*       	mValidations;
+    // VFALCO: End Clean stuff
+
+    FeatureTable			mFeatureTable;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
 
@@ -114,20 +118,20 @@ public:
 	TransactionMaster& getMasterTransaction()		{ return mMasterTransaction; }
 	NodeCache& getTempNodeCache()					{ return mTempNodeCache; }
 	HashedObjectStore& getHashedObjectStore()		{ return mHashedObjectStore; }
-	ValidationCollection& getValidations()			{ return mValidations; }
 	JobQueue& getJobQueue()							{ return mJobQueue; }
 	SuppressionTable& getSuppression()				{ return mSuppressions; }
 	boost::recursive_mutex& getMasterLock()			{ return mMasterLock; }
 	ProofOfWorkGenerator& getPowGen()				{ return mPOWGen; }
 	LoadManager& getLoadManager()					{ return mLoadMgr; }
-	ILoadFeeTrack& getFeeTrack()				    { return *mFeeTrack; }
 	TXQueue& getTxnQueue()							{ return mTxnQueue; }
 	PeerDoor& getPeerDoor()							{ return *mPeerDoor; }
 	OrderBookDB& getOrderBookDB()					{ return mOrderBookDB; }
 	SLECache& getSLECache()							{ return mSLECache; }
-	IFeeVote& getFeeVote()							{ return *mFeeVote; }
 	FeatureTable& getFeatureTable()					{ return mFeatureTable; }
 
+	IFeeVote& getFeeVote()							{ return *mFeeVote; }
+	ILoadFeeTrack& getFeeTrack()				    { return *mFeeTrack; }
+	IValidations& getValidations()			        { return *mValidations; }
 
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }
 	bool isNew(const uint256& s, uint64 p)			{ return mSuppressions.addSuppressionPeer(s, p); }

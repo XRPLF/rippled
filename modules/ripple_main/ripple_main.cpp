@@ -41,7 +41,6 @@
 #include "src/cpp/ripple/LoadMonitor.cpp"
 #include "src/cpp/ripple/UpdateTables.cpp"
 #include "src/cpp/ripple/main.cpp"
-#include "src/cpp/ripple/ValidationCollection.cpp"
 
 #include "misc/ripple_HashValue.cpp"
 
