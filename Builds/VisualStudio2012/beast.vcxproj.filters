@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <None Include="..\..\README.md" />
+    <None Include="..\..\CodingStyle.md" />
+    <None Include="..\..\modules\beast_core.mm">
+      <Filter>beast_core</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="beast_core">
+      <UniqueIdentifier>{6dafd8d5-2901-4b41-85b7-52f6e86baacc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_core\memory">
+      <UniqueIdentifier>{883f776d-bec2-4e7a-b4e8-726ed3039071}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\modules\memory\beast_ScopedPointer.h">
+      <Filter>beast_core\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core.h">
+      <Filter>beast_core</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\modules\beast_core.cpp">
+      <Filter>beast_core</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
