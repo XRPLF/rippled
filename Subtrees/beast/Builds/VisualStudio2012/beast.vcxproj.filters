@@ -3,7 +3,7 @@
   <ItemGroup>
     <None Include="..\..\README.md" />
     <None Include="..\..\CodingStyle.md" />
-    <None Include="..\..\modules\beast_core.mm">
+    <None Include="..\..\modules\beast_core\beast_core.mm">
       <Filter>beast_core</Filter>
     </None>
   </ItemGroup>
@@ -16,15 +16,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\modules\memory\beast_ScopedPointer.h">
+    <ClInclude Include="..\..\modules\beast_core\memory\beast_ScopedPointer.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core.h">
+    <ClInclude Include="..\..\modules\beast_core\beast_core.h">
       <Filter>beast_core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\modules\beast_core.cpp">
+    <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
       <Filter>beast_core</Filter>
     </ClCompile>
   </ItemGroup>
