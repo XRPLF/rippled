@@ -36,6 +36,7 @@ Application::Application()
     , mJobQueue (mIOService)
     , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
     , mFeeTrack (ILoadFeeTrack::New ())
+    , mValidations (IValidations::New ())
     , mFeatureTable (2 * 7 * 24 * 60 * 60, 200) // two weeks, 200/256
     // VFALCO: TODO replace all NULL with nullptr
     , mRpcDB (NULL)
@@ -74,7 +75,7 @@ void Application::stop()
 	mShutdown = true;
 	mIOService.stop();
 	mHashedObjectStore.waitWrite();
-	mValidations.flush();
+	mValidations->flush();
 	mAuxService.stop();
 	mJobQueue.shutdown();
 
@@ -246,7 +247,7 @@ void Application::setup()
 	if (!theConfig.RUN_STANDALONE)
 		getUNL().nodeBootstrap();
 
-	mValidations.tune(theConfig.getSize(siValidationsSize), theConfig.getSize(siValidationsAge));
+	mValidations->tune(theConfig.getSize(siValidationsSize), theConfig.getSize(siValidationsAge));
 	mHashedObjectStore.tune(theConfig.getSize(siNodeCacheSize), theConfig.getSize(siNodeCacheAge));
 	mLedgerMaster.tune(theConfig.getSize(siLedgerSize), theConfig.getSize(siLedgerAge));
 	mSLECache.setTargetSize(theConfig.getSize(siSLECacheSize));
@@ -401,7 +402,7 @@ void Application::sweep()
 	mHashedObjectStore.sweep();
 	mLedgerMaster.sweep();
 	mTempNodeCache.sweep();
-	mValidations.sweep();
+	mValidations->sweep();
 	getMasterLedgerAcquire().sweep();
 	mSLECache.sweep();
 	AcceptedLedger::sweep();
@@ -413,8 +414,10 @@ void Application::sweep()
 
 Application::~Application()
 {
+    delete mValidations;
     delete mFeeTrack;
 	delete mFeeVote;
+
 	delete mTxnDB;
 	delete mLedgerDB;
 	delete mWalletDB;

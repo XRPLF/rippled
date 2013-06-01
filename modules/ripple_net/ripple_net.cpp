@@ -24,11 +24,10 @@
 
 #include "ripple_net.h"
 
-#include "../ripple_data/ripple_data.h"
-
 #include "../websocketpp/src/logger/logger.hpp" // for ripple_LogWebSockets.cpp
 
-#include "src/cpp/ripple/ripple_ILoadFeeTrack.h" // for NetworkOPs
+#include "../ripple_data/ripple_data.h"
+#include "../ripple_ledger/ripple_ledger.h"
 
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
