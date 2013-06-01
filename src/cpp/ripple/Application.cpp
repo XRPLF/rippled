@@ -23,7 +23,7 @@ SETUP_LOG (Application)
 LogPartition AutoSocketPartition("AutoSocket");
 Application* theApp = NULL;
 
-Application::Application()
+Application::Application ()
     : mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
     , mIOWork (mIOService)
     , mAuxWork (mAuxService)
@@ -414,10 +414,6 @@ void Application::sweep()
 
 Application::~Application()
 {
-    delete mValidations;
-    delete mFeeTrack;
-	delete mFeeVote;
-
 	delete mTxnDB;
 	delete mLedgerDB;
 	delete mWalletDB;
