@@ -618,9 +618,6 @@
     <ClCompile Include="src\cpp\ripple\main.cpp">
       <Filter>1. Modules\ripple_main\_old</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ValidationCollection.cpp">
-      <Filter>1. Modules\ripple_main\_old</Filter>
-    </ClCompile>
     <ClCompile Include="modules\ripple_main\ripple_main.cpp">
       <Filter>1. Modules\ripple_main</Filter>
     </ClCompile>
@@ -796,6 +793,9 @@
       <Filter>1. Modules\ripple_ledger\main</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_DatabaseCon.cpp">
+      <Filter>1. Modules\ripple_ledger\main</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_Validations.cpp">
       <Filter>1. Modules\ripple_ledger\main</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1262,9 +1262,6 @@
     <ClInclude Include="src\cpp\ripple\LoadMonitor.h">
       <Filter>1. Modules\ripple_main\_old</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ValidationCollection.h">
-      <Filter>1. Modules\ripple_main\_old</Filter>
-    </ClInclude>
     <ClInclude Include="modules\ripple_main\ripple_main.h">
       <Filter>1. Modules\ripple_main</Filter>
     </ClInclude>
@@ -1482,6 +1479,9 @@
       <Filter>1. Modules\ripple_ledger\main</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_DatabaseCon.h">
+      <Filter>1. Modules\ripple_ledger\main</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_IValidations.h">
       <Filter>1. Modules\ripple_ledger\main</Filter>
     </ClInclude>
   </ItemGroup>

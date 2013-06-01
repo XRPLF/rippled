@@ -992,6 +992,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_Validations.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\rpc.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1173,12 +1179,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\UpdateTables.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ValidationCollection.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1656,6 +1656,7 @@
     <ClInclude Include="src\cpp\ripple\ripple_IFeatures.h" />
     <ClInclude Include="src\cpp\ripple\ripple_IFeeVote.h" />
     <ClInclude Include="src\cpp\ripple\ripple_ILoadFeeTrack.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_IValidations.h" />
     <ClInclude Include="src\cpp\ripple\RPC.h" />
     <ClInclude Include="src\cpp\ripple\RPCDoor.h" />
     <ClInclude Include="src\cpp\ripple\RPCErr.h" />
@@ -1682,7 +1683,6 @@
     <ClInclude Include="src\cpp\ripple\Transactor.h" />
     <ClInclude Include="src\cpp\ripple\TrustSetTransactor.h" />
     <ClInclude Include="src\cpp\ripple\UniqueNodeList.h" />
-    <ClInclude Include="src\cpp\ripple\ValidationCollection.h" />
     <ClInclude Include="src\cpp\ripple\Version.h" />
     <ClInclude Include="src\cpp\ripple\Wallet.h" />
     <ClInclude Include="src\cpp\ripple\WalletAddTransactor.h" />
