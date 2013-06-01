@@ -78,7 +78,7 @@ class Application
 	LoadFeeTrack			mFeeTrack;
 	TXQueue					mTxnQueue;
 	OrderBookDB				mOrderBookDB;
-	IFeeVote*				mFeeVote;
+	beast::ScopedPointer <IFeeVote> mFeeVote;
 	FeatureTable			mFeatureTable;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;

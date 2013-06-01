@@ -139,6 +139,9 @@
     <Filter Include="1. Modules\ripple_ledger\main">
       <UniqueIdentifier>{1ccfc5ad-5cd7-4a8e-b305-08f663c2397c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="0. Third Party Code\beast">
+      <UniqueIdentifier>{290b7b39-a4e6-4b8b-b464-d1e458562fdd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">

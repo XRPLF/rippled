@@ -407,7 +407,6 @@ void Application::sweep()
 
 Application::~Application()
 {
-	delete mFeeVote;
 	delete mTxnDB;
 	delete mLedgerDB;
 	delete mWalletDB;

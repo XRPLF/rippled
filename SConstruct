@@ -110,6 +110,7 @@ env.Append(CXXFLAGS = ['-DUSE_LEVELDB'])
 env.Append(CPPPATH = [ 'src/cpp/leveldb', 'src/cpp/leveldb/port', 'src/cpp/leveldb/include'])
 env.Append(CPPPATH = [ 'build/proto'])
 env.Append(CPPPATH = [ '.', 'src/cpp/ripple'])
+env.Append(CPPPATH = [ 'Subtrees/beast' ])
 
 if (int(GCC_VERSION[0]) > 4 or (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) >= 7)):
     env.Append(CXXFLAGS = ['-std=c++11'])
@@ -123,16 +124,18 @@ RIPPLE_SRCS = [
 	'src/cpp/leveldb_core.cpp',
 	'src/cpp/websocket_core.cpp',
 	'modules/ripple_basics/ripple_basics.cpp',
-    'modules/ripple_client/ripple_client.cpp',
-    'modules/ripple_data/ripple_data.cpp',
+	'modules/ripple_client/ripple_client.cpp',
+	'modules/ripple_data/ripple_data.cpp',
 	'modules/ripple_db/ripple_db.cpp',
 	'modules/ripple_json/ripple_json.cpp',
 	'modules/ripple_ledger/ripple_ledger.cpp',
 	'modules/ripple_main/ripple_main.cpp',
 	'modules/ripple_mess/ripple_mess.cpp',
-	'modules/ripple_net/ripple_net.cpp'
+	'modules/ripple_net/ripple_net.cpp',
+	'Subtrees/beast/modules/beast_core/beast_core.cpp'
 	]
 
+# VFALCO: TODO, Remove these ugly loops and just extract the data from RIPPLE_SRCS for the call to VariantDir()
 # Put objects files in their own directory.
 for dir in ['.', 'ripple', 'database', 'json', 'leveldb/db', 'leveldb/port', 'leveldb/include', 'leveldb/table', 'leveldb/util', 'websocketpp']:
 	VariantDir('build/obj/'+dir, 'src/cpp/'+dir, duplicate=0)
@@ -149,6 +152,11 @@ for dir in [
              'ripple_net'
             ]:
 	VariantDir('build/obj/'+dir, 'modules/'+dir, duplicate=0)
+
+for dir in [
+			 'beast_core'
+            ]:
+	VariantDir('build/obj/'+dir, 'Subtrees/beast/modules/'+dir, duplicate=0)
 
 PROTO_SRCS = env.Protoc([], 'src/cpp/ripple/ripple.proto', PROTOCOUTDIR='build/proto', PROTOCPYTHONOUTDIR=None)
 env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')

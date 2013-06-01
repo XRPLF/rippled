@@ -118,6 +118,7 @@ namespace boost {
 #include <openssl/ripemd.h> // For HashUtilities
 #include <openssl/sha.h> // For HashUtilities
 
+#include "modules/beast_core/beast_core.h"
 
 #include "../ripple_json/ripple_json.h"
 
