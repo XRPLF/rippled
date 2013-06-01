@@ -612,9 +612,6 @@
     <ClCompile Include="src\cpp\ripple\JobQueue.cpp">
       <Filter>1. Modules\ripple_main\_old</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
-      <Filter>1. Modules\ripple_main\_old</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\LoadMonitor.cpp">
       <Filter>1. Modules\ripple_main\_old</Filter>
     </ClCompile>
@@ -790,6 +787,15 @@
       <Filter>1. Modules\ripple_ledger\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Application.cpp">
+      <Filter>1. Modules\ripple_ledger\main</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_LoadFeeTrack.cpp">
+      <Filter>1. Modules\ripple_ledger\main</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
+      <Filter>1. Modules\ripple_ledger\main</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_DatabaseCon.cpp">
       <Filter>1. Modules\ripple_ledger\main</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1253,9 +1259,6 @@
     <ClInclude Include="src\cpp\ripple\JobQueue.h">
       <Filter>1. Modules\ripple_main\_old</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\LoadManager.h">
-      <Filter>1. Modules\ripple_main\_old</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\LoadMonitor.h">
       <Filter>1. Modules\ripple_main\_old</Filter>
     </ClInclude>
@@ -1470,6 +1473,15 @@
       <Filter>1. Modules\ripple_ledger\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Application.h">
+      <Filter>1. Modules\ripple_ledger\main</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_ILoadFeeTrack.h">
+      <Filter>1. Modules\ripple_ledger\main</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\LoadManager.h">
+      <Filter>1. Modules\ripple_ledger\main</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_DatabaseCon.h">
       <Filter>1. Modules\ripple_ledger\main</Filter>
     </ClInclude>
   </ItemGroup>

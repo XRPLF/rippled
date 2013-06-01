@@ -34,9 +34,10 @@
 #pragma warning (disable: 4535) // call requires /EHa
 #endif
 
+#include "src/cpp/ripple/Application.h" // VFALCO: TODO Remove this dependency
+
 #include "src/cpp/ripple/Config.cpp" // no log
 #include "src/cpp/ripple/JobQueue.cpp"
-#include "src/cpp/ripple/LoadManager.cpp"
 #include "src/cpp/ripple/LoadMonitor.cpp"
 #include "src/cpp/ripple/UpdateTables.cpp"
 #include "src/cpp/ripple/main.cpp"

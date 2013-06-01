@@ -29,29 +29,17 @@
 #include "TransactionQueue.h"
 #include "OrderBookDB.h"
 
+#include "ripple_DatabaseCon.h"
+
 // VFALCO: TODO, Fix forward declares required for header dependency loops
 class IFeatureTable;
 class IFeeVote;
+class ILoadFeeTrack;
 
 class RPCDoor;
 class PeerDoor;
 typedef TaggedCache< uint256, std::vector<unsigned char>, UptimeTimerAdapter> NodeCache;
 typedef TaggedCache< uint256, SLE, UptimeTimerAdapter> SLECache;
-
-class DatabaseCon
-{
-protected:
-	Database*				mDatabase;
-	boost::recursive_mutex	mLock;
-	static int				sCount;
-
-public:
-	DatabaseCon(const std::string& name, const char *initString[], int countInit);
-	~DatabaseCon();
-	Database* getDB()						{ return mDatabase; }
-	boost::recursive_mutex& getDBLock()		{ return mLock; }
-	static int getCount()					{ return sCount; }
-};
 
 class Application
 {
@@ -75,10 +63,10 @@ class Application
 	JobQueue				mJobQueue;
 	ProofOfWorkGenerator	mPOWGen;
 	LoadManager				mLoadMgr;
-	LoadFeeTrack			mFeeTrack;
 	TXQueue					mTxnQueue;
 	OrderBookDB				mOrderBookDB;
 	IFeeVote*				mFeeVote;
+	ILoadFeeTrack*			mFeeTrack;
 	FeatureTable			mFeatureTable;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
@@ -132,7 +120,7 @@ public:
 	boost::recursive_mutex& getMasterLock()			{ return mMasterLock; }
 	ProofOfWorkGenerator& getPowGen()				{ return mPOWGen; }
 	LoadManager& getLoadManager()					{ return mLoadMgr; }
-	LoadFeeTrack& getFeeTrack()						{ return mFeeTrack; }
+	ILoadFeeTrack& getFeeTrack()				    { return *mFeeTrack; }
 	TXQueue& getTxnQueue()							{ return mTxnQueue; }
 	PeerDoor& getPeerDoor()							{ return *mPeerDoor; }
 	OrderBookDB& getOrderBookDB()					{ return mOrderBookDB; }

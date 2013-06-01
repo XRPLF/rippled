@@ -25,46 +25,42 @@ SETUP_LOG (Application)
 LogPartition AutoSocketPartition("AutoSocket");
 Application* theApp = NULL;
 
-int DatabaseCon::sCount = 0;
-
-DatabaseCon::DatabaseCon(const std::string& strName, const char *initStrings[], int initCount)
-{
-	++sCount;
-	boost::filesystem::path	pPath	= (theConfig.RUN_STANDALONE && (theConfig.START_UP != Config::LOAD))
-										? ""								// Use temporary files.
-										: (theConfig.DATA_DIR / strName);		// Use regular db files.
-
-	mDatabase = new SqliteDatabase(pPath.string().c_str());
-	mDatabase->connect();
-	for(int i = 0; i < initCount; ++i)
-		mDatabase->executeSQL(initStrings[i], true);
-}
-
-DatabaseCon::~DatabaseCon()
-{
-	mDatabase->disconnect();
-	delete mDatabase;
-}
-
-Application::Application() :
-	mIOService((theConfig.NODE_SIZE >= 2) ? 2 : 1),
-	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService), mNetOps(mIOService, &mLedgerMaster),
-	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300), mSLECache("LedgerEntryCache", 4096, 120),
-	mSNTPClient(mAuxService), mJobQueue(mIOService), mFeeTrack(),
-
-	mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS)),
-	mFeatureTable(2 * 7 * 24 * 60 * 60, 200), // two weeks, 200/256
-
-	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
-	mNetNodeDB(NULL), mPathFindDB(NULL), mHashNodeDB(NULL),
+Application::Application()
+    : mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
+    , mIOWork (mIOService)
+    , mAuxWork (mAuxService)
+    , mUNL (mIOService)
+    , mNetOps (mIOService, &mLedgerMaster)
+    , mTempNodeCache ("NodeCache", 16384, 90)
+    , mHashedObjectStore (16384, 300)
+    , mSLECache ("LedgerEntryCache", 4096, 120)
+    , mSNTPClient (mAuxService)
+    , mJobQueue (mIOService)
+    , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
+    , mFeeTrack (ILoadFeeTrack::New ())
+    , mFeatureTable (2 * 7 * 24 * 60 * 60, 200) // two weeks, 200/256
+    // VFALCO: TODO replace all NULL with nullptr
+    , mRpcDB (NULL)
+    , mTxnDB (NULL)
+    , mLedgerDB (NULL)
+    , mWalletDB (NULL) // VFALCO: NOTE, are all these 'NULL' ctor params necessary?
+    , mNetNodeDB (NULL)
+    , mPathFindDB (NULL)
+    , mHashNodeDB (NULL)
+    // VFALCO: TODO eliminate USE_LEVELDB macro
 #ifdef USE_LEVELDB
-	mHashNodeLDB(NULL),
+	, mHashNodeLDB (NULL)
 #endif
-	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
-	mSweepTimer(mAuxService), mShutdown(false)
+	, mConnectionPool (mIOService)
+    , mPeerDoor (NULL)
+    , mRPCDoor (NULL)
+    , mWSPublicDoor (NULL)
+    , mWSPrivateDoor (NULL)
+    , mSweepTimer (mAuxService)
+    , mShutdown (false)
 {
-	getRand(mNonce256.begin(), mNonce256.size());
-	getRand(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
+	getRand (mNonce256.begin(), mNonce256.size());
+	getRand (reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
 }
 
 extern const char *RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[],
@@ -407,6 +403,7 @@ void Application::sweep()
 
 Application::~Application()
 {
+    delete mFeeTrack;
 	delete mFeeVote;
 	delete mTxnDB;
 	delete mLedgerDB;

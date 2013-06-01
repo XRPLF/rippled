@@ -155,49 +155,6 @@ public:
 	void arm()					{ mArmed = true; }
 };
 
-class LoadFeeTrack
-{ // structure that tracks our current fee/load schedule
-protected:
-
-	static const int lftNormalFee = 256;		// 256 is the minimum/normal load factor
-	static const int lftFeeIncFraction = 16;	// increase fee by 1/16
-	static const int lftFeeDecFraction = 4;		// decrease fee by 1/4
-	static const int lftFeeMax = lftNormalFee * 1000000;
-
-	uint32 mLocalTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
-	uint32 mRemoteTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
-	int raiseCount;
-
-	boost::mutex mLock;
-
-	static uint64 mulDiv(uint64 value, uint32 mul, uint64 div);
-
-public:
-
-	LoadFeeTrack() : mLocalTxnLoadFee(lftNormalFee), mRemoteTxnLoadFee(lftNormalFee), raiseCount(0)
-	{ ; }
-
-	// Scale from fee units to millionths of a ripple
-	uint64 scaleFeeBase(uint64 fee, uint64 baseFee, uint32 referenceFeeUnits);
-
-	// Scale using load as well as base rate
-	uint64 scaleFeeLoad(uint64 fee, uint64 baseFee, uint32 referenceFeeUnits, bool bAdmin);
-
-	uint32 getRemoteFee();
-	uint32 getLocalFee();
-
-	uint32 getLoadBase()		{ return lftNormalFee; }
-	uint32 getLoadFactor();
-
-	Json::Value getJson(uint64 baseFee, uint32 referenceFeeUnits);
-
-	void setRemoteFee(uint32);
-	bool raiseLocalFee();
-	bool lowerLocalFee();
-	bool isLoaded();
-};
-
-
 #endif
 
 // vim:ts=4
