@@ -2366,13 +2366,13 @@ Json::Value RPCHandler::doUnlAdd(Json::Value jvRequest, int& cost, ScopedLock& M
 
 	if (raNodePublic.setNodePublic(strNode))
 	{
-		theApp->getUNL().nodeAddPublic(raNodePublic, UniqueNodeList::vsManual, strComment);
+		theApp->getUNL().nodeAddPublic(raNodePublic, IUniqueNodeList::vsManual, strComment);
 
 		return "adding node by public key";
 	}
 	else
 	{
-		theApp->getUNL().nodeAddDomain(strNode, UniqueNodeList::vsManual, strComment);
+		theApp->getUNL().nodeAddDomain(strNode, IUniqueNodeList::vsManual, strComment);
 
 		return "adding node by domain";
 	}

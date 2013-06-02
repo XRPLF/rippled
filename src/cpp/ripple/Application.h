@@ -10,7 +10,6 @@
 #include "../database/database.h"
 
 #include "LedgerMaster.h"
-#include "UniqueNodeList.h"
 #include "ConnectionPool.h"
 #include "FeatureTable.h"
 #include "LedgerAcquire.h"
@@ -35,6 +34,7 @@ class IFeatureTable;
 class IFeeVote;
 class ILoadFeeTrack;
 class IValidations;
+class IUniqueNodeList;
 
 class RPCDoor;
 class PeerDoor;
@@ -49,7 +49,6 @@ class Application
 	boost::recursive_mutex	mMasterLock;
 
 	Wallet					mWallet;
-	UniqueNodeList			mUNL;
 	LedgerMaster			mLedgerMaster;
 	LedgerAcquireMaster		mMasterLedgerAcquire;
 	TransactionMaster		mMasterTransaction;
@@ -69,6 +68,7 @@ class Application
 	beast::ScopedPointer <IFeeVote> mFeeVote;
     beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
 	beast::ScopedPointer <IValidations> mValidations;
+	beast::ScopedPointer <IUniqueNodeList> mUNL;
     // VFALCO: End Clean stuff
 
     FeatureTable			mFeatureTable;
@@ -105,7 +105,7 @@ public:
 
 	ConnectionPool& getConnectionPool()				{ return mConnectionPool; }
 
-	UniqueNodeList& getUNL()						{ return mUNL; }
+	IUniqueNodeList& getUNL()						{ return *mUNL; }
 
 	Wallet& getWallet()								{ return mWallet ; }
 	NetworkOPs& getOPs()							{ return mNetOps; }

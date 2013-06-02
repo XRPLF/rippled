@@ -291,8 +291,8 @@ void ConnectionPool::connectTo(const std::string& strIp, int iPort)
 
 		db->executeSQL(str(boost::format("REPLACE INTO PeerIps (IpPort,Score,Source,ScanNext) values (%s,%d,'%c',0);")
 			% sqlEscape(str(boost::format("%s %d") % strIp % iPort))
-			% theApp->getUNL().iSourceScore(UniqueNodeList::vsManual)
-			% char(UniqueNodeList::vsManual)));
+			% theApp->getUNL().iSourceScore(IUniqueNodeList::vsManual)
+			% char(IUniqueNodeList::vsManual)));
 	}
 
 	scanRefresh();
