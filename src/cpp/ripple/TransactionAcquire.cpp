@@ -13,21 +13,27 @@ TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, TX_A
 	mMap = boost::make_shared<SHAMap>(smtTRANSACTION, hash);
 }
 
-void TransactionAcquire::done()
+static void TACompletionHandler(uint256 hash, SHAMap::pointer map)
 {
 	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+	theApp->getOPs().mapComplete(hash, map);
+	theApp->getMasterLedgerAcquire().dropLedger(hash);
+}
+
+void TransactionAcquire::done()
+{ // We hold a PeerSet lock and so cannot acquire the master lock here
+	SHAMap::pointer map;
 	if (mFailed)
 	{
 		WriteLog (lsWARNING, TransactionAcquire) << "Failed to acquire TX set " << mHash;
-		theApp->getOPs().mapComplete(mHash, SHAMap::pointer());
 	}
 	else
 	{
 		WriteLog (lsINFO, TransactionAcquire) << "Acquired TX set " << mHash;
 		mMap->setImmutable();
-		theApp->getOPs().mapComplete(mHash, mMap);
+		map = mMap;
 	}
-	theApp->getMasterLedgerAcquire().dropLedger(mHash);
+	theApp->getIOService().post(boost::bind(&TACompletionHandler, mHash, map));
 }
 
 void TransactionAcquire::onTimer(bool progress)
