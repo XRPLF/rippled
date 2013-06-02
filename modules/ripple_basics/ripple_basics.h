@@ -74,6 +74,11 @@ namespace boost {
 #include <boost/foreach.hpp>
 #include <boost/icl/interval_set.hpp> // oof this one is ugly
 
+// InstanceCounter
+//#include <string>
+//#include <vector>
+//#include <boost/thread/mutex.hpp>
+
 // TaggedCache
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/unordered_map.hpp>
@@ -83,6 +88,12 @@ namespace boost {
 
 // RippleTime
 #include <boost/date_time/posix_time/posix_time.hpp>
+
+// ScopedLock
+//#include <boost/thread/recursive_mutex.hpp>
+//#include <boost/shared_ptr.hpp>
+//#include <boost/make_shared.hpp>
+//#include <boost/ref.hpp>
 
 // ByteOrder
 #ifdef WIN32
@@ -104,6 +115,8 @@ namespace boost {
 
 // VFALCO: TODO, remove this dependency!!!
 #include <openssl/dh.h> // for DiffieHellmanUtil
+#include <openssl/ripemd.h> // For HashUtilities
+#include <openssl/sha.h> // For HashUtilities
 
 
 #include "../ripple_json/ripple_json.h"
@@ -118,8 +131,10 @@ namespace boost {
 
 #include "utility/ripple_ByteOrder.h"
 #include "utility/ripple_DiffieHellmanUtil.h"
+#include "utility/ripple_InstanceCounter.h"
 #include "utility/ripple_PlatformMacros.h"
 #include "utility/ripple_RandomNumbers.h"
+#include "utility/ripple_ScopedLock.h"
 #include "utility/ripple_StringUtilities.h"
 #include "utility/ripple_Sustain.h"
 #include "utility/ripple_ThreadName.h"
@@ -127,5 +142,6 @@ namespace boost {
 #include "utility/ripple_UptimeTimer.h"
 
 #include "types/ripple_UInt256.h"
+#include "utility/ripple_HashUtilities.h" // requires UInt256
 
 #endif

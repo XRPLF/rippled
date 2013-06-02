@@ -4,10 +4,6 @@
 #include <vector>
 #include <string>
 
-#include "Serializer.h"
-#include "FieldNames.h"
-#include "InstanceCounter.h"
-
 // CAUTION: Do not create a vector (or similar container) of any object derived from
 // SerializedType. Use Boost ptr_* containers. The copy assignment operator of
 // SerializedType has semantics that will cause contained types to change their names

@@ -1,4 +1,3 @@
-#include "InstanceCounter.h"
 
 InstanceType* InstanceType::sHeadInstance = NULL;
 bool InstanceType::sMultiThreaded = false;

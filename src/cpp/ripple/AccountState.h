@@ -9,7 +9,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "RippleAddress.h"
 #include "SerializedLedger.h"
 
 class AccountState

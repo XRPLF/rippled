@@ -12,7 +12,6 @@
 #include "SerializedLedger.h"
 #include "LedgerEntrySet.h"
 #include "TransactionErr.h"
-#include "InstanceCounter.h"
 
 
 DEFINE_INSTANCE(TransactionEngine);

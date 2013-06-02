@@ -1,12 +1,4 @@
 
-#include "FieldNames.h"
-
-#include <map>
-
-#include <boost/thread/mutex.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/foreach.hpp>
-
 
 // These must stay at the top of this file
 std::map<int, SField::ptr> SField::codeToField;
@@ -22,7 +14,7 @@ SField sfIndex(STI_HASH256, 258, "index");
 
 #define FIELD(name, type, index) SField sf##name(FIELD_CODE(STI_##type, index), STI_##type, index, #name);
 #define TYPE(name, type, index)
-#include "SerializeProto.h"
+#include "modules/ripple_data/types/ripple_SerializeDeclarations.h"
 #undef FIELD
 #undef TYPE
 
@@ -73,7 +65,7 @@ SField::ref SField::getField(int code)
 
 #define FIELD(name, type, index)
 #define TYPE(name, type, index) case STI_##type:
-#include "SerializeProto.h"
+#include "modules/ripple_data/types/ripple_SerializeDeclarations.h"
 #undef FIELD
 #undef TYPE
 

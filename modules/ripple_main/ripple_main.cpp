@@ -24,6 +24,8 @@
 
 #include "ripple_main.h"
 
+#include "../ripple_data/ripple_data.h"
+
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
 //#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
@@ -34,13 +36,14 @@
 
 #include "src/cpp/ripple/Application.cpp"
 #include "src/cpp/ripple/Config.cpp" // no log
-#include "src/cpp/ripple/InstanceCounter.cpp" // no log
 #include "src/cpp/ripple/JobQueue.cpp"
 #include "src/cpp/ripple/LoadManager.cpp"
 #include "src/cpp/ripple/LoadMonitor.cpp"
 #include "src/cpp/ripple/UpdateTables.cpp"
 #include "src/cpp/ripple/main.cpp"
 #include "src/cpp/ripple/ValidationCollection.cpp"
+
+#include "misc/ripple_HashValue.cpp"
 
 #ifdef _MSC_VER
 //#pragma warning (pop)

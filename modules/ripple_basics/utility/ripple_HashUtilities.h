@@ -1,24 +1,11 @@
-#ifndef __BITCOIN_UTIL__
-#define __BITCOIN_UTIL__
+#ifndef RIPPLE_HASHUTILITIES_H
+#define RIPPLE_HASHUTILITIES_H
 
-// TODO: these things should all go somewhere
+// VFALCO: NOTE, these came from BitcoinUtil.h
 
-#include <string>
-#include <openssl/ripemd.h>
-#include <openssl/sha.h>
-
-std::string strprintf(const char* format, ...);
-std::string FormatFullVersion();
-void RandAddSeedPerfmon();
-
-#define loop                for (;;)
-#define PAIR(t1, t2)        pair<t1, t2>
-
-#if !defined(WIN32) && !defined(WIN64)
-#define _vsnprintf(a,b,c,d) vsnprintf(a,b,c,d)
-#endif
-
-
+// VFALCO: TODO, Rewrite the callers so we don't need templates,
+//		   then define these in a .cpp so they are no longer inline.
+//
 template<typename T1>
 inline uint256 SHA256Hash(const T1 pbegin, const T1 pend)
 {

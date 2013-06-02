@@ -9,10 +9,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/unordered_map.hpp>
 
-#include "ScopedLock.h"
-#include "Serializer.h"
 #include "HashedObject.h"
-#include "InstanceCounter.h"
 
 DEFINE_INSTANCE(SHAMap);
 DEFINE_INSTANCE(SHAMapItem);

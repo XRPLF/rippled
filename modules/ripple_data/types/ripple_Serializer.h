@@ -1,14 +1,7 @@
-#ifndef __SERIALIZER__
-#define __SERIALIZER__
+#ifndef RIPPLE_SERIALIZER_H
+#define RIPPLE_SERIALIZER_H
 
-#include <vector>
-#include <string>
-#include <list>
-
-#include <boost/shared_ptr.hpp>
-
-#include "key.h"
-#include "FieldNames.h"
+class CKey; // forward declaration
 
 class Serializer
 {

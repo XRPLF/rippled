@@ -37,3 +37,6 @@ db/*.db-*
 rippled.cfg
 validators.txt
 test/config.js
+
+# Doxygen generated documentation output
+HtmlDocumentation

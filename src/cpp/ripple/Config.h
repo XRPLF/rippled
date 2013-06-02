@@ -6,7 +6,6 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/filesystem.hpp>
 
-#include "RippleAddress.h"
 #include "ParseSection.h"
 #include "SerializedTypes.h"
 
@@ -202,8 +201,6 @@ public:
 
 extern Config theConfig;
 
-extern const char* ALPHABET;
-extern const char* ALPHABET_BITCOIN;
 #endif
 
 // vim:ts=4

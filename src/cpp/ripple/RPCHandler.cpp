@@ -14,12 +14,10 @@
 #include "Application.h"
 #include "AccountItems.h"
 #include "Wallet.h"
-#include "RippleAddress.h"
 #include "RippleCalc.h"
 #include "RPCErr.h"
 #include "AccountState.h"
 #include "NicknameState.h"
-#include "InstanceCounter.h"
 #include "Offer.h"
 #include "PFRequest.h"
 #include "ProofOfWork.h"
@@ -514,7 +512,7 @@ Json::Value RPCHandler::accountFromString(Ledger::ref lrLedger, RippleAddress& n
 	}
 	else if (bStrict)
 	{
-		return naAccount.setAccountID(strIdent, ALPHABET_BITCOIN)
+		return naAccount.setAccountID(strIdent, Base58::getBitcoinAlphabet ())
 			? rpcError(rpcACT_BITCOIN)
 			: rpcError(rpcACT_MALFORMED);
 	}
@@ -1064,9 +1062,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 			return jvResult;
 	}
 
-	AccountState::pointer	as		= mNetOps->getAccountState(lpLedger, raAccount);
-
-	if (as)
+	if (lpLedger->hasAccount(raAccount))
 	{
 		jvResult["account"]	= raAccount.humanAccountID();
 
@@ -1103,6 +1099,17 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 	}
 
 	return jvResult;
+}
+
+static void offerAdder(Json::Value& jvLines, SLE::ref offer)
+{
+	if (offer->getType() == ltOFFER)
+	{
+		Json::Value&	obj = jvLines.append(Json::objectValue);
+		offer->getFieldAmount(sfTakerPays).setJson(obj["taker_pays"]);
+		offer->getFieldAmount(sfTakerGets).setJson(obj["taker_gets"]);
+		obj["seq"] = offer->getFieldU32(sfSequence);
+	}
 }
 
 // {
@@ -1142,29 +1149,11 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 	if (bIndex)
 		jvResult["account_index"]	= iIndex;
 
-	AccountState::pointer	as		= mNetOps->getAccountState(lpLedger, raAccount);
-
-	if (as)
-	{
-		Json::Value&	jsonLines = (jvResult["offers"] = Json::arrayValue);
-
-		AccountItems offers(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new Offer()));
-		BOOST_FOREACH(AccountItem::ref item, offers.getItems())
-		{
-			Offer* offer=(Offer*)item.get();
-
-			Json::Value&	obj	= jsonLines.append(Json::objectValue);
-
-			offer->getTakerPays().setJson(obj["taker_pays"]);
-			offer->getTakerGets().setJson(obj["taker_gets"]);
-			obj["seq"]				= offer->getSeq();
-
-		}
-	}
+	if (lpLedger->hasAccount(raAccount))
+		lpLedger->visitAccountItems(raAccount.getAccountID(),
+			BIND_TYPE(&offerAdder, boost::ref(jvResult["offers"] = Json::arrayValue), P_1));
 	else
-	{
 		jvResult	= rpcError(rpcACT_NOT_FOUND);
-	}
 
 	return jvResult;
 }

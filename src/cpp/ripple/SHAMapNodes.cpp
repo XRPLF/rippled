@@ -11,8 +11,6 @@
 
 #include <openssl/sha.h>
 
-#include "Serializer.h"
-#include "BitcoinUtil.h"
 #include "HashPrefixes.h"
 
 SETUP_LOG (SHAMapNode)

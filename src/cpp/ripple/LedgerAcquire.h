@@ -15,8 +15,6 @@
 
 #include "Ledger.h"
 #include "Peer.h"
-#include "InstanceCounter.h"
-#include "ripple.pb.h"
 
 // How long before we try again to acquire the same ledger
 #ifndef LEDGER_REACQUIRE_INTERVAL

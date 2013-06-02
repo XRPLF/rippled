@@ -1,3 +1,7 @@
+
+// VFALCO: NOTE, this looks like some facility for giving websocket
+//		   a way to produce logging output.
+//
 namespace websocketpp
 {
 	namespace log

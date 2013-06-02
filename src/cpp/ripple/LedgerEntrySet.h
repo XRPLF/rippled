@@ -7,7 +7,6 @@
 #include "TransactionMeta.h"
 #include "Ledger.h"
 #include "TransactionErr.h"
-#include "InstanceCounter.h"
 
 DEFINE_INSTANCE(LedgerEntrySetEntry);
 DEFINE_INSTANCE(LedgerEntrySet);

@@ -4,7 +4,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "SerializedTypes.h"
-#include "RippleAddress.h"
 #include "RippleCalc.h"
 #include "OrderBookDB.h"
 #include "AccountItems.h"

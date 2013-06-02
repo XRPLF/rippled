@@ -10,7 +10,6 @@
 
 #include "../database/SqliteDatabase.h"
 
-#include "Serializer.h"
 #include "Application.h"
 
 SETUP_LOG (HashedObject)

@@ -22,8 +22,6 @@
     @ingroup ripple_basics
 */
 
-#include "ripple_basics.h"
-
 #include <iostream>
 #include <fstream>
 
@@ -38,8 +36,6 @@
 #include <sys/wait.h>
 #endif
 
-
-
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/test/unit_test.hpp>
@@ -47,13 +43,18 @@
 #include <boost/regex.hpp>
 
 // VFALCO: TODO, Replace OpenSSL randomness with a dependency-free implementation
-//         Perhaps Schneier's Yarrow or a variant. Abstract the collection of
+//         Perhaps Schneier's Fortuna or a variant. Abstract the collection of
 //         entropy and provide OS-specific implementation. We can re-use the
 //         BearShare source code for this.
 //
 //         Add Random number generation to the new VFLib
 //
 #include <openssl/rand.h> // Because of ripple_RandomNumbers.cpp
+
+
+#include "ripple_basics.h"
+
+
 
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
@@ -68,6 +69,7 @@
 
 #include "utility/ripple_ByteOrder.cpp"
 #include "utility/ripple_DiffieHellmanUtil.cpp"
+#include "utility/ripple_InstanceCounter.cpp"
 #include "utility/ripple_StringUtilities.cpp"
 #include "utility/ripple_Sustain.cpp"
 #include "utility/ripple_ThreadName.cpp"

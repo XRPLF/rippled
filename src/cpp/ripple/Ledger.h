@@ -12,9 +12,7 @@
 #include "TransactionMeta.h"
 #include "AccountState.h"
 #include "NicknameState.h"
-#include "BitcoinUtil.h"
 #include "SHAMap.h"
-#include "InstanceCounter.h"
 #include "LoadMonitor.h"
 #include "JobQueue.h"
 
@@ -185,11 +183,13 @@ public:
 	 TransactionMetaSet::pointer& txMeta);
 
 	// high-level functions
+	bool hasAccount(const RippleAddress& acctID);
 	AccountState::pointer getAccountState(const RippleAddress& acctID);
 	LedgerStateParms writeBack(LedgerStateParms parms, SLE::ref);
 	SLE::pointer getAccountRoot(const uint160& accountID);
 	SLE::pointer getAccountRoot(const RippleAddress& naAccountID);
 	void updateSkipList();
+	void visitAccountItems(const uint160& acctID, FUNCTION_TYPE<void(SLE::ref)>);
 
 	// database functions (low-level)
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);

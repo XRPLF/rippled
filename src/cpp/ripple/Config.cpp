@@ -80,8 +80,6 @@
 #define DEFAULT_FEE_OPERATION			1
 
 Config theConfig;
-const char* ALPHABET			= "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
-const char* ALPHABET_BITCOIN	= "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 void Config::setup(const std::string& strConf, bool bTestNet, bool bQuiet)
 {
@@ -112,7 +110,7 @@ void Config::setup(const std::string& strConf, bool bTestNet, bool bQuiet)
 	SIGN_PROPOSAL		= TESTNET ? sHP_TestNetProposal			: sHP_Proposal;
 
 	if (TESTNET)
-		ALPHABET = "RPShNAF39wBUDnEGHJKLM4pQrsT7VWXYZ2bcdeCg65jkm8ofqi1tuvaxyz";
+		Base58::setCurrentAlphabet (Base58::getTestnetAlphabet ());
 
 	if (!strConf.empty())
 	{

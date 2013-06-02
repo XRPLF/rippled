@@ -6,9 +6,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "RippleAddress.h"
-#include "Serializer.h"
-#include "InstanceCounter.h"
 
 DEFINE_INSTANCE(LedgerProposal);
 

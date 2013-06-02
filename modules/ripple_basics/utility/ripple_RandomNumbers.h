@@ -45,4 +45,7 @@ inline static void getRand (void *buf, int num)
 	return getRand (reinterpret_cast<unsigned char *>(buf), num);
 }
 
+// Lifted from BitcoinUtil.h
+extern void RandAddSeedPerfmon();
+
 #endif

@@ -3,15 +3,6 @@
 
 #include "SerializedTypes.h"
 
-#if (ULONG_MAX > UINT_MAX)
-#define BN_add_word64(bn, word) BN_add_word(bn, word)
-#define BN_sub_word64(bn, word) BN_sub_word(bn, word)
-#define BN_mul_word64(bn, word) BN_mul_word(bn, word)
-#define BN_div_word64(bn, word) BN_div_word(bn, word)
-#else
-#include "BigNum64.h"
-#endif
-
 // CAUTION: This is early code and is *NOT* ready for real use yet.
 
 static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool roundUp)

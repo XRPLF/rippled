@@ -1,5 +1,5 @@
-#ifndef __FIELDNAMES__
-#define __FIELDNAMES__
+#ifndef RIPPLE_FIELDNAMES_H
+#define RIPPLE_FIELDNAMES_H
 
 #include <string>
 
@@ -16,7 +16,7 @@ enum SerializedTypeID
 
 #define TYPE(name, field, value) STI_##field = value,
 #define FIELD(name, field, value)
-#include "SerializeProto.h"
+#include "modules/ripple_data/types/ripple_SerializeDeclarations.h"
 #undef TYPE
 #undef FIELD
 
@@ -126,7 +126,7 @@ extern SField sfInvalid, sfGeneric, sfLedgerEntry, sfTransaction, sfValidation;
 
 #define FIELD(name, type, index) extern SField sf##name;
 #define TYPE(name, type, index)
-#include "SerializeProto.h"
+#include "modules/ripple_data/types/ripple_SerializeDeclarations.h"
 #undef FIELD
 #undef TYPE
 

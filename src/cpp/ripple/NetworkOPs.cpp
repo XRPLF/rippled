@@ -8,7 +8,6 @@
 #include "HashPrefixes.h"
 #include "LedgerConsensus.h"
 #include "LedgerTiming.h"
-#include "RippleAddress.h"
 
 SETUP_LOG (NetworkOPs)
 

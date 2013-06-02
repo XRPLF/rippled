@@ -8,14 +8,12 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/unordered_map.hpp>
 
-#include "key.h"
 #include "Transaction.h"
 #include "LedgerAcquire.h"
 #include "LedgerProposal.h"
 #include "Peer.h"
 #include "CanonicalTXSet.h"
 #include "TransactionEngine.h"
-#include "InstanceCounter.h"
 #include "LoadMonitor.h"
 
 DEFINE_INSTANCE(LedgerConsensus);

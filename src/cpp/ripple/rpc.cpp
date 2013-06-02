@@ -9,7 +9,6 @@
 #include <openssl/evp.h>
 
 #include "RPC.h"
-#include "BitcoinUtil.h"
 #include "Config.h"
 #include "Version.h"
 
@@ -24,6 +23,15 @@ using namespace boost;
 using namespace boost::asio;
 
 unsigned int const gMaxHTTPHeaderSize = 0x02000000;
+
+std::string gFormatStr("v1");
+
+// VFALCO: TODO, clean up this nonsense
+std::string FormatFullVersion()
+{
+	return(gFormatStr);
+}
+
 
 Json::Value JSONRPCError(int code, const std::string& message)
 {
@@ -142,7 +150,7 @@ int ReadHTTPStatus(std::basic_istream<char>& stream)
 int ReadHTTPHeader(std::basic_istream<char>& stream, std::map<std::string, std::string>& mapHeadersRet)
 {
 	int nLen = 0;
-	loop
+	for (;;)
 	{
 		std::string str;
 		std::getline(stream, str);

@@ -11,13 +11,9 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/cstdint.hpp>
 
-#include "key.h"
-#include "ripple.pb.h"
-#include "Serializer.h"
 #include "SHAMap.h"
 #include "SerializedTransaction.h"
 #include "TransactionErr.h"
-#include "InstanceCounter.h"
 
 class Database;
 

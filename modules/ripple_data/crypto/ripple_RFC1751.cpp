@@ -2,6 +2,7 @@
 // RFC 1751 code converted to C++/Boost.
 //
 
+// VFALCO: TODO, move these
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -11,7 +12,7 @@
 #include <string>
 #include <vector>
 
-static const char* pcDict[2048] = {
+char const* RFC1751::s_dictionary [2048] = {
 	"A", "ABE", "ACE", "ACT", "AD", "ADA", "ADD",
 	"AGO", "AID", "AIM", "AIR", "ALL", "ALP", "AM", "AMY", "AN", "ANA",
 	"AND", "ANN", "ANT", "ANY", "APE", "APS", "APT", "ARC", "ARE", "ARK",
@@ -238,7 +239,7 @@ static const char* pcDict[2048] = {
 
 /* Extract 'length' bits from the char array 's'
    starting with bit 'start' */
-static unsigned long extract(char *s, int start, int length)
+unsigned long RFC1751::extract(char *s, int start, int length)
 {
 	unsigned char cl;
 	unsigned char cc;
@@ -263,7 +264,7 @@ static unsigned long extract(char *s, int start, int length)
 
 // Encode 8 bytes in 'c' as a string of English words.
 // Returns a pointer to a static buffer
-static void btoe(std::string& strHuman, const std::string& strData)
+void RFC1751::btoe(std::string& strHuman, const std::string& strData)
 {
 	char	caBuffer[9];     /* add in room for the parity 2 bits*/
 	int		p, i;
@@ -277,15 +278,15 @@ static void btoe(std::string& strHuman, const std::string& strData)
 	caBuffer[8] = char(p) << 6;
 
 	strHuman	= std::string()
-		+ pcDict[extract(caBuffer, 0, 11)] + " "
-		+ pcDict[extract(caBuffer, 11, 11)] + " "
-		+ pcDict[extract(caBuffer, 22, 11)] + " "
-		+ pcDict[extract(caBuffer, 33, 11)] + " "
-		+ pcDict[extract(caBuffer, 44, 11)] + " "
-		+ pcDict[extract(caBuffer, 55, 11)];
+		+ s_dictionary[extract(caBuffer, 0, 11)] + " "
+		+ s_dictionary[extract(caBuffer, 11, 11)] + " "
+		+ s_dictionary[extract(caBuffer, 22, 11)] + " "
+		+ s_dictionary[extract(caBuffer, 33, 11)] + " "
+		+ s_dictionary[extract(caBuffer, 44, 11)] + " "
+		+ s_dictionary[extract(caBuffer, 55, 11)];
 }
 
-static void insert(char *s, int x, int start, int length)
+void RFC1751::insert(char *s, int x, int start, int length)
 {
 	unsigned char cl;
 	unsigned char cc;
@@ -315,7 +316,7 @@ static void insert(char *s, int x, int start, int length)
 	}
 }
 
-static void standard(std::string& strWord)
+void RFC1751::standard(std::string& strWord)
 {
     BOOST_FOREACH(char cLetter, strWord)
 	{
@@ -343,7 +344,7 @@ static void standard(std::string& strWord)
 }
 
 // Binary search of dictionary.
-static int wsrch(const std::string& strWord, int iMin, int iMax)
+int RFC1751::wsrch (const std::string& strWord, int iMin, int iMax)
 {
 	int iResult	= -1;
 
@@ -351,7 +352,7 @@ static int wsrch(const std::string& strWord, int iMin, int iMax)
 	{
 		// Have a range to search.
 		int	iMid	= iMin+(iMax-iMin)/2;
-		int iDir	= strWord.compare(pcDict[iMid]);
+		int iDir	= strWord.compare(s_dictionary[iMid]);
 
 		if (!iDir)
 		{
@@ -376,7 +377,7 @@ static int wsrch(const std::string& strWord, int iMin, int iMax)
 //         0 word not in data base
 //        -1 badly formed in put ie > 4 char word
 //        -2 words OK but parity is wrong
-static int etob(std::string& strData, std::vector<std::string> vsHuman)
+int RFC1751::etob (std::string& strData, std::vector<std::string> vsHuman)
 {
 	int i, p, v,l;
 	char b[9];
@@ -393,7 +394,7 @@ static int etob(std::string& strData, std::vector<std::string> vsHuman)
 		if(l > 4 || l < 1)
 			return -1;
 
-		standard(strWord);
+		standard (strWord);
 
 		v = wsrch(strWord,
 			l < 4 ? 0 : 571,
@@ -418,13 +419,15 @@ static int etob(std::string& strData, std::vector<std::string> vsHuman)
 	return 1;
 }
 
-// eng2key() convert words seperated by spaces into a 128 bit key in big-endian format.
-// eng2key() returns
-//   1 if succeeded
-//   0 if word not in dictionary
-//  -1 if badly formed string
-//  -2 if words are okay but parity is wrong.
-int eng2key(std::string& strKey, const std::string& strHuman)
+/**	Convert words seperated by spaces into a 128 bit key in big-endian format.
+
+	@return
+		 1 if succeeded
+	     0 if word not in dictionary
+		-1 if badly formed string
+		-2 if words are okay but parity is wrong.
+*/
+int RFC1751::getKeyFromEnglish (std::string& strKey, const std::string& strHuman)
 {
     std::vector<std::string> vWords;
 	std::string	strFirst, strSecond;
@@ -451,8 +454,9 @@ int eng2key(std::string& strKey, const std::string& strHuman)
 	return rc;
 }
 
-// key2eng() given a 128 bit key in big-endian format, convert to human.
-void key2eng(std::string& strHuman, const std::string& strKey)
+/** Convert to human from a 128 bit key in big-endian format
+*/
+void RFC1751::getEnglishFromKey (std::string& strHuman, const std::string& strKey)
 {
 	std::string	strFirst, strSecond;
 

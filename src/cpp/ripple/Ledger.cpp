@@ -190,6 +190,11 @@ void Ledger::setAccepted()
 	setImmutable();
 }
 
+bool Ledger::hasAccount(const RippleAddress& accountID)
+{
+	return mAccountStateMap->hasItem(Ledger::getAccountRootIndex(accountID));
+}
+
 AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
 {
 #ifdef DEBUG
@@ -1013,6 +1018,31 @@ SLE::pointer Ledger::getSLEi(const uint256& uId)
 		theApp->getSLECache().canonicalize(hash, ret);
 	}
 	return ret;
+}
+
+void Ledger::visitAccountItems(const uint160& accountID, FUNCTION_TYPE<void(SLE::ref)> func)
+{ // Visit each item in this account's owner directory
+	uint256 rootIndex		= Ledger::getOwnerDirIndex(accountID);
+	uint256 currentIndex	= rootIndex;
+
+	while (1)
+	{
+		SLE::pointer ownerDir	= getSLEi(currentIndex);
+		if (!ownerDir || (ownerDir->getType() != ltDIR_NODE))
+			return;
+
+		BOOST_FOREACH(const uint256& uNode, ownerDir->getFieldV256(sfIndexes).peekValue())
+		{
+			func(getSLEi(uNode));
+		}
+
+		uint64 uNodeNext	= ownerDir->getFieldU64(sfIndexNext);
+		if (!uNodeNext)
+			return;
+
+		currentIndex	= Ledger::getDirNodeIndex(rootIndex, uNodeNext);
+	}
+
 }
 
 uint256 Ledger::getFirstLedgerIndex()

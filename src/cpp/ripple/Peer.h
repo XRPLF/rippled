@@ -8,11 +8,9 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "ripple.pb.h"
 #include "PackedMessage.h"
 #include "Ledger.h"
 #include "Transaction.h"
-#include "InstanceCounter.h"
 #include "JobQueue.h"
 #include "ProofOfWork.h"
 #include "LoadManager.h"

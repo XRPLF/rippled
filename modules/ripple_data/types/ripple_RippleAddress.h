@@ -1,7 +1,5 @@
-#ifndef __RIPPLE_ADDRESS__
-#define __RIPPLE_ADDRESS__
-
-#include "base58.h"
+#ifndef RIPPLE_RIPPLEADDRESS_H
+#define RIPPLE_RIPPLEADDRESS_H
 
 //
 // Used to hold addresses and parse and produce human formats.
