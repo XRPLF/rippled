@@ -798,6 +798,9 @@
     <ClCompile Include="src\cpp\ripple\ripple_LogWebsockets.cpp">
       <Filter>1. Modules\ripple_main\sockets</Filter>
     </ClCompile>
+    <ClCompile Include="Subtrees\beast\modules\beast_core\beast_core.cpp">
+      <Filter>0. Third Party Code\beast</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="database\sqlite3ext.h">

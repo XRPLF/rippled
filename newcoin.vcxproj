@@ -1239,6 +1239,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="src\cpp\websocket_core.cpp" />
+    <ClCompile Include="Subtrees\beast\modules\beast_core\beast_core.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="build\proto\ripple.pb.h" />
