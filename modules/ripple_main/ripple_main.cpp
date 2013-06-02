@@ -22,9 +22,34 @@
     @ingroup ripple_main
 */
 
-#include "ripple_main.h"
+//------------------------------------------------------------------------------
 
-#include "../ripple_data/ripple_data.h"
+#include <algorithm>
+#include <cassert>
+#include <fstream>
+#include <iostream>
+#include <openssl/ec.h>
+#include <openssl/ripemd.h>
+#include <openssl/sha.h>
+#include <string>
+#include <vector>
+
+#include <boost/algorithm/string.hpp>
+#include <boost/bind.hpp>
+#include <boost/foreach.hpp>
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/pointer_cast.hpp>
+#include <boost/ref.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
+#include <boost/test/unit_test.hpp>
+#include <boost/thread.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
+#include <boost/unordered_set.hpp>
+
+//------------------------------------------------------------------------------
 
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
@@ -34,16 +59,204 @@
 #pragma warning (disable: 4535) // call requires /EHa
 #endif
 
-#include "src/cpp/ripple/Application.h" // VFALCO: TODO Remove this dependency
+//------------------------------------------------------------------------------
 
+#include "ripple_main.h"
+
+#include "../ripple_data/ripple_data.h"
+
+#include "src/cpp/database/SqliteDatabase.h"
+
+#include "src/cpp/ripple/AcceptedLedger.h"
+#include "src/cpp/ripple/AccountItems.h"
+#include "src/cpp/ripple/AccountSetTransactor.h"
+#include "src/cpp/ripple/AccountState.h"
+#include "src/cpp/ripple/Application.h"
+#include "src/cpp/ripple/CanonicalTXSet.h"
+#include "src/cpp/ripple/ChangeTransactor.h"
+#include "src/cpp/ripple/Config.h"
+#include "src/cpp/ripple/HashPrefixes.h"
+#include "src/cpp/ripple/Ledger.h"
+#include "src/cpp/ripple/LedgerAcquire.h"
+#include "src/cpp/ripple/LedgerConsensus.h"
+#include "src/cpp/ripple/LedgerEntrySet.h"
+#include "src/cpp/ripple/LedgerFormats.h"
+#include "src/cpp/ripple/LedgerHistory.h"
+#include "src/cpp/ripple/LedgerMaster.h"
+#include "src/cpp/ripple/LedgerProposal.h"
+#include "src/cpp/ripple/LedgerTiming.h"
+#include "src/cpp/ripple/NetworkOPs.h"
+#include "src/cpp/ripple/NicknameState.h"
+#include "src/cpp/ripple/Offer.h"
+#include "src/cpp/ripple/OfferCancelTransactor.h"
+#include "src/cpp/ripple/OfferCreateTransactor.h"
+#include "src/cpp/ripple/OrderBook.h"
+#include "src/cpp/ripple/OrderBookDB.h"
+#include "src/cpp/ripple/PackedMessage.h"
+#include "src/cpp/ripple/PaymentTransactor.h"
+#include "src/cpp/ripple/PFRequest.h"
+#include "src/cpp/ripple/RegularKeySetTransactor.h"
+#include "src/cpp/ripple/RippleCalc.h"
+#include "src/cpp/ripple/RippleState.h"
+#include "src/cpp/ripple/SerializedLedger.h"
+#include "src/cpp/ripple/SerializedObject.h"
+#include "src/cpp/ripple/SerializedTransaction.h"
+#include "src/cpp/ripple/SerializedTypes.h"
+#include "src/cpp/ripple/SerializedValidation.h"
+#include "src/cpp/ripple/SHAMapSync.h"
+#include "src/cpp/ripple/Transaction.h"
+#include "src/cpp/ripple/TransactionEngine.h"
+#include "src/cpp/ripple/TransactionErr.h"
+#include "src/cpp/ripple/TransactionFormats.h"
+#include "src/cpp/ripple/TransactionMaster.h"
+#include "src/cpp/ripple/TransactionMeta.h"
+#include "src/cpp/ripple/TransactionQueue.h"
+#include "src/cpp/ripple/Transactor.h"
+#include "src/cpp/ripple/TrustSetTransactor.h"
+#include "src/cpp/ripple/Wallet.h"
+#include "src/cpp/ripple/WalletAddTransactor.h"
+
+// contract stuff, order matters
+#include "src/cpp/ripple/ScriptData.h"
+#include "src/cpp/ripple/Contract.h"
+#include "src/cpp/ripple/Interpreter.h"
+#include "src/cpp/ripple/Operation.h"
+
+#include "../websocketpp/src/logger/logger.hpp" // for ripple_LogWebSockets.cpp
+
+// New abstract interfaces
+#include "src/cpp/ripple/ripple_IFeatures.h"
+#include "src/cpp/ripple/ripple_IFeeVote.h"
+#include "src/cpp/ripple/ripple_ILoadFeeTrack.h"
+#include "src/cpp/ripple/ripple_IValidations.h"
+#include "src/cpp/ripple/FeatureTable.h"
+
+//------------------------------------------------------------------------------
+
+// VFALCO: TODO, figure out who needs these and move to a sensible private header.
+static const uint64 tenTo14 = 100000000000000ull;
+static const uint64 tenTo14m1 = tenTo14 - 1;
+static const uint64 tenTo17 = tenTo14 * 1000;
+static const uint64 tenTo17m1 = tenTo17 - 1;
+
+// This is for PeerDoor and WSDoor
+// Generate DH for SSL connection.
+static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
+{
+// VFALCO: TODO, eliminate this horrendous dependency on theApp and Wallet
+	return 512 == iKeyLength ? theApp->getWallet().getDh512() : theApp->getWallet().getDh1024();
+}
+
+//------------------------------------------------------------------------------
+
+// main
+#include "src/cpp/ripple/ripple_DatabaseCon.cpp"
+#include "src/cpp/ripple/Application.cpp"
+#include "src/cpp/ripple/LoadManager.cpp"
 #include "src/cpp/ripple/Config.cpp" // no log
 #include "src/cpp/ripple/JobQueue.cpp"
 #include "src/cpp/ripple/LoadMonitor.cpp"
 #include "src/cpp/ripple/UpdateTables.cpp"
 #include "src/cpp/ripple/main.cpp"
 
-#include "misc/ripple_HashValue.cpp"
+// contracts
+#include "src/cpp/ripple/Contract.cpp" // no log
+#include "src/cpp/ripple/Interpreter.cpp" // no log
+#include "src/cpp/ripple/ScriptData.cpp" // no log
+#include "src/cpp/ripple/Operation.cpp" // no log
+
+// processing
+#include "src/cpp/ripple/AcceptedLedger.cpp" // no log
+#include "src/cpp/ripple/AccountItems.cpp" // no log
+#include "src/cpp/ripple/AccountState.cpp" // no log
+#include "src/cpp/ripple/FeatureTable.cpp"
+#include "src/cpp/ripple/Ledger.cpp"
+#include "src/cpp/ripple/LedgerAcquire.cpp"
+#include "src/cpp/ripple/LedgerConsensus.cpp"
+#include "src/cpp/ripple/LedgerEntrySet.cpp"
+#include "src/cpp/ripple/LedgerFormats.cpp" // no log
+#include "src/cpp/ripple/LedgerHistory.cpp" // no log
+#include "src/cpp/ripple/LedgerMaster.cpp"
+#include "src/cpp/ripple/LedgerProposal.cpp" // no log
+#include "src/cpp/ripple/LedgerTiming.cpp"
+#include "src/cpp/ripple/NicknameState.cpp" // no log
+#include "src/cpp/ripple/Offer.cpp" // no log
+#include "src/cpp/ripple/OrderBook.cpp" // no log
+#include "src/cpp/ripple/OrderBookDB.cpp"
+#include "src/cpp/ripple/Pathfinder.cpp"
+#include "src/cpp/ripple/PFRequest.cpp"
+#include "src/cpp/ripple/RippleCalc.cpp"
+#include "src/cpp/ripple/RippleState.cpp" // no log
+
+// serialization
+#include "src/cpp/ripple/SerializedLedger.cpp"
+#include "src/cpp/ripple/SerializedObject.cpp"
+#include "src/cpp/ripple/SerializedTransaction.cpp"
+#include "src/cpp/ripple/SerializedTypes.cpp"
+#include "src/cpp/ripple/SerializedValidation.cpp"
+
+// transactions
+#include "src/cpp/ripple/AccountSetTransactor.cpp"
+#include "src/cpp/ripple/ChangeTransactor.cpp" // no log
+#include "src/cpp/ripple/CanonicalTXSet.cpp"
+#include "src/cpp/ripple/OfferCancelTransactor.cpp"
+#include "src/cpp/ripple/OfferCreateTransactor.cpp"
+#include "src/cpp/ripple/PaymentTransactor.cpp"
+#include "src/cpp/ripple/RegularKeySetTransactor.cpp"
+#include "src/cpp/ripple/Transaction.cpp"
+#include "src/cpp/ripple/TransactionAcquire.cpp"
+#include "src/cpp/ripple/TransactionCheck.cpp"
+#include "src/cpp/ripple/TransactionEngine.cpp"
+#include "src/cpp/ripple/TransactionErr.cpp" // no log
+#include "src/cpp/ripple/TransactionFormats.cpp" // no log
+#include "src/cpp/ripple/TransactionMaster.cpp" // no log
+#include "src/cpp/ripple/TransactionMeta.cpp"
+#include "src/cpp/ripple/TransactionQueue.cpp" // no log
+#include "src/cpp/ripple/Transactor.cpp"
+#include "src/cpp/ripple/TrustSetTransactor.cpp"
+#include "src/cpp/ripple/Wallet.cpp"
+#include "src/cpp/ripple/WalletAddTransactor.cpp"
+
+// types
+#include "src/cpp/ripple/Amount.cpp"
+#include "src/cpp/ripple/AmountRound.cpp"
+#include "src/cpp/ripple/HashedObject.cpp"
+#include "src/cpp/ripple/PackedMessage.cpp" // no log
+#include "src/cpp/ripple/ParameterTable.cpp" // no log
+#include "src/cpp/ripple/ParseSection.cpp"
+#include "src/cpp/ripple/ProofOfWork.cpp"
+
+// containers
+#include "src/cpp/ripple/SHAMap.cpp"
+#include "src/cpp/ripple/SHAMapDiff.cpp" // no log
+#include "src/cpp/ripple/SHAMapNodes.cpp" // no log
+#include "src/cpp/ripple/SHAMapSync.cpp"
+
+// misc
+#include "src/cpp/ripple/ripple_HashValue.cpp"
+
+// sockets
+#include "src/cpp/ripple/Suppression.cpp" // no log
+#include "src/cpp/ripple/UniqueNodeList.cpp"
+#include "src/cpp/ripple/SNTPClient.cpp"
+#include "src/cpp/ripple/ConnectionPool.cpp"
+#include "src/cpp/ripple/NetworkOPs.cpp"
+#include "src/cpp/ripple/Peer.cpp"
+#include "src/cpp/ripple/PeerDoor.cpp"
+#include "src/cpp/ripple/WSDoor.cpp" // uses logging in WSConnection.h 
+#include "src/cpp/ripple/ripple_LogWebsockets.cpp"
+
+//------------------------------------------------------------------------------
+
+// Implementation of interfaces
+
+#include "src/cpp/ripple/ripple_FeeVote.cpp"
+#include "src/cpp/ripple/ripple_LoadFeeTrack.cpp"
+#include "src/cpp/ripple/ripple_Validations.cpp"
+
+//------------------------------------------------------------------------------
 
 #ifdef _MSC_VER
 //#pragma warning (pop)
 #endif
+
