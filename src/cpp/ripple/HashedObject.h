@@ -6,7 +6,7 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
 
-#include "modules/ripple_main/misc/ripple_HashValue.h"
+#include "ripple_HashValue.h"
 
 
 // VFALCO: TODO, Move this to someplace sensible!!

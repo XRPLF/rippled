@@ -16,6 +16,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <WarningLevel>Level3</WarningLevel>
       <AdditionalIncludeDirectories>$(RepoDir);$(RepoDir)\src\cpp\leveldb;$(RepoDir)\src\cpp\leveldb\include;$(RepoDir)\src\cpp\protobuf\src;$(RepoDir)\src\cpp\protobuf\vsprojects;$(RepoDir)\build\proto;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>

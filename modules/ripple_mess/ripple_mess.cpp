@@ -23,33 +23,3 @@
 */
 
 #include "ripple_mess.h"
-
-#include "../ripple_data/ripple_data.h"
-
-static const uint64 tenTo14 = 100000000000000ull;
-static const uint64 tenTo14m1 = tenTo14 - 1;
-static const uint64 tenTo17 = tenTo14 * 1000;
-static const uint64 tenTo17m1 = tenTo17 - 1;
-
-// VFALCO: TODO, fix these warnings!
-#ifdef _MSC_VER
-//#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
-#pragma warning (disable: 4018) // signed/unsigned mismatch
-#pragma warning (disable: 4244) // conversion, possible loss of data
-#endif
-
-#include "src/cpp/ripple/Amount.cpp"
-#include "src/cpp/ripple/AmountRound.cpp"
-#include "src/cpp/ripple/HashedObject.cpp"
-#include "src/cpp/ripple/PackedMessage.cpp" // no log
-#include "src/cpp/ripple/ParameterTable.cpp" // no log
-#include "src/cpp/ripple/ParseSection.cpp"
-#include "src/cpp/ripple/ProofOfWork.cpp"
-#include "src/cpp/ripple/SHAMap.cpp"
-#include "src/cpp/ripple/SHAMapDiff.cpp" // no log
-#include "src/cpp/ripple/SHAMapNodes.cpp" // no log
-#include "src/cpp/ripple/SHAMapSync.cpp"
-
-#ifdef _MSC_VER
-//#pragma warning (pop)
-#endif
