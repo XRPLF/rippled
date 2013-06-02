@@ -171,11 +171,11 @@ TER Transactor::preCheck()
 	{
 		if (mTxn.isKnownBad() || (!isSetBit(mParams, tapNO_CHECK_SIGN) && !mTxn.checkSign(mSigningPubKey)))
 		{
-			mTxn.setGood();
+			mTxn.setBad();
 			WriteLog (lsWARNING, Transactor) << "applyTransaction: Invalid transaction: bad signature";
 			return temINVALID;
 		}
-		mTxn.isKnownGood();
+		mTxn.setGood();
 	}
 
 	return tesSUCCESS;
