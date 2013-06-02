@@ -124,16 +124,16 @@
     <Filter Include="1. Modules\ripple_main\types">
       <UniqueIdentifier>{1b463564-35d9-43d1-b3a0-21b344a3a1c7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="3. Empty">
+    <Filter Include="2. Empty">
       <UniqueIdentifier>{786657f9-b1b3-483c-a8e6-863cc2e02eb8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="3. Empty\ripple_ledger">
+    <Filter Include="2. Empty\ripple_ledger">
       <UniqueIdentifier>{b6175f9a-7d46-4b57-877f-f58b0b3bba89}</UniqueIdentifier>
     </Filter>
-    <Filter Include="3. Empty\ripple_mess">
+    <Filter Include="2. Empty\ripple_mess">
       <UniqueIdentifier>{becffa9b-61f7-42d4-815a-1ec822cad0e7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="3. Empty\ripple_net">
+    <Filter Include="2. Empty\ripple_net">
       <UniqueIdentifier>{7f76ce57-c428-487e-97a0-979c0990a81d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -505,7 +505,7 @@
       <Filter>1. Modules\ripple_basics</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_ledger\ripple_ledger.cpp">
-      <Filter>3. Empty\ripple_ledger</Filter>
+      <Filter>2. Empty\ripple_ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\AcceptedLedger.cpp">
       <Filter>1. Modules\ripple_main\processing</Filter>
@@ -613,7 +613,7 @@
       <Filter>1. Modules\ripple_client\http</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_net\ripple_net.cpp">
-      <Filter>3. Empty\ripple_net</Filter>
+      <Filter>2. Empty\ripple_net</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Interpreter.cpp">
       <Filter>1. Modules\ripple_main\contracts</Filter>
@@ -649,7 +649,7 @@
       <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_mess\ripple_mess.cpp">
-      <Filter>3. Empty\ripple_mess</Filter>
+      <Filter>2. Empty\ripple_mess</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_json\json\json_reader.cpp">
       <Filter>1. Modules\ripple_json\json</Filter>
@@ -1152,7 +1152,7 @@
       <Filter>1. Modules\ripple_basics</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_ledger\ripple_ledger.h">
-      <Filter>3. Empty\ripple_ledger</Filter>
+      <Filter>2. Empty\ripple_ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\AcceptedLedger.h">
       <Filter>1. Modules\ripple_main\processing</Filter>
@@ -1260,7 +1260,7 @@
       <Filter>1. Modules\ripple_client\http</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_net\ripple_net.h">
-      <Filter>3. Empty\ripple_net</Filter>
+      <Filter>2. Empty\ripple_net</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Interpreter.h">
       <Filter>1. Modules\ripple_main\contracts</Filter>
@@ -1290,7 +1290,7 @@
       <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_mess\ripple_mess.h">
-      <Filter>3. Empty\ripple_mess</Filter>
+      <Filter>2. Empty\ripple_mess</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\containers\ripple_KeyCache.h">
       <Filter>1. Modules\ripple_basics\containers</Filter>
