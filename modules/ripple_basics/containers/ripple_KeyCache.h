@@ -10,7 +10,7 @@
 	older than the maximum age they are eligible for removal during a
 	call to @ref sweep.
 
-	@note 
+	@note
 		Timer must provide this function:
 		@code
 		static int getElapsedSeconds ();
@@ -107,7 +107,7 @@ public:
 		@return    `false` if the key was not found.
 	*/
 	bool del(const key_type& key)
-	{ 
+	{
 		boost::mutex::scoped_lock sl(mNCLock);
 
 		map_iterator it = mCache.find(key);
