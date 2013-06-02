@@ -64,8 +64,8 @@ class Application
 	OrderBookDB				mOrderBookDB;
 	
     // VFALCO: Clean stuff
-    beast::ScopedPointer <IFeeVote> mFeeVote;
-	beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
+	beast::ScopedPointer <IFeeVote> mFeeVote;
+    beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
 	beast::ScopedPointer <IValidations> mValidations;
     // VFALCO: End Clean stuff
 
