@@ -1,3 +1,6 @@
+#ifndef RIPPLE_OFFER_H
+#define RIPPLE_OFFER_H
+
 #include "AccountItems.h"
 
 class Offer : public AccountItem
@@ -22,5 +25,7 @@ public:
 	Json::Value getJson(int);
 
 };
+
+#endif
 
 // vim:ts=4

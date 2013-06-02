@@ -130,7 +130,8 @@
 #include "src/cpp/ripple/ripple_IFeeVote.h"
 #include "src/cpp/ripple/ripple_ILoadFeeTrack.h"
 #include "src/cpp/ripple/ripple_IValidations.h"
-#include "src/cpp/ripple/FeatureTable.h"
+#include "src/cpp/ripple/ripple_IUniqueNodeList.h"
+#include "src/cpp/ripple/FeatureTable.h" // ??
 
 //------------------------------------------------------------------------------
 
@@ -238,7 +239,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 
 // sockets
 #include "src/cpp/ripple/Suppression.cpp" // no log
-#include "src/cpp/ripple/UniqueNodeList.cpp"
 #include "src/cpp/ripple/SNTPClient.cpp"
 #include "src/cpp/ripple/ConnectionPool.cpp"
 #include "src/cpp/ripple/NetworkOPs.cpp"
@@ -247,6 +247,19 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/WSDoor.cpp" // uses logging in WSConnection.h 
 #include "src/cpp/ripple/ripple_LogWebsockets.cpp"
 
+// http
+#include "src/cpp/ripple/HTTPRequest.cpp"
+#include "src/cpp/ripple/HttpsClient.cpp"
+
+// rpc
+#include "src/cpp/ripple/CallRPC.cpp"
+#include "src/cpp/ripple/rpc.cpp"
+#include "src/cpp/ripple/RPCDoor.cpp"
+#include "src/cpp/ripple/RPCErr.cpp"
+#include "src/cpp/ripple/RPCHandler.cpp"
+#include "src/cpp/ripple/RPCServer.cpp"
+#include "src/cpp/ripple/RPCSub.cpp"
+
 //------------------------------------------------------------------------------
 
 // Implementation of interfaces
@@ -254,6 +267,7 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_FeeVote.cpp"
 #include "src/cpp/ripple/ripple_LoadFeeTrack.cpp"
 #include "src/cpp/ripple/ripple_Validations.cpp"
+#include "src/cpp/ripple/ripple_UniqueNodeList.cpp"
 
 //------------------------------------------------------------------------------
 

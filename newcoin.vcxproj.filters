@@ -52,23 +52,14 @@
     <Filter Include="1. Modules\ripple_basics">
       <UniqueIdentifier>{84e43f43-816e-4ccd-80c2-38b322904894}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_client">
-      <UniqueIdentifier>{97c96b68-70fd-4679-89fc-c1c8c87c265e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_db">
       <UniqueIdentifier>{a5190241-c5bc-4e23-8ef1-6adf757c75e3}</UniqueIdentifier>
     </Filter>
     <Filter Include="1. Modules\ripple_main">
       <UniqueIdentifier>{1a379c07-ccf1-4636-8018-2cfc0685edf0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_client\rpc">
-      <UniqueIdentifier>{3f351c55-360d-40bc-a136-4944ce572efd}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_db\storage">
       <UniqueIdentifier>{6097a179-ddad-4c69-9a34-2e3fc2c9fa1d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_client\http">
-      <UniqueIdentifier>{29cd2103-d553-4d82-9e6a-224e3b1cb667}</UniqueIdentifier>
     </Filter>
     <Filter Include="1. Modules\ripple_basics\containers">
       <UniqueIdentifier>{96cbc9ff-0118-4844-bb4c-05aef58a60b5}</UniqueIdentifier>
@@ -138,6 +129,15 @@
     </Filter>
     <Filter Include="2. Empty\ripple_net">
       <UniqueIdentifier>{7f76ce57-c428-487e-97a0-979c0990a81d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_main\rpc">
+      <UniqueIdentifier>{3f351c55-360d-40bc-a136-4944ce572efd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_main\http">
+      <UniqueIdentifier>{29cd2103-d553-4d82-9e6a-224e3b1cb667}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="2. Empty\ripple_client">
+      <UniqueIdentifier>{97c96b68-70fd-4679-89fc-c1c8c87c265e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -565,25 +565,25 @@
       <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\CallRPC.cpp">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
+      <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\rpc.cpp">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
+      <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCDoor.cpp">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
+      <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCErr.cpp">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
+      <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCHandler.cpp">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
+      <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCSub.cpp">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
+      <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_client\ripple_client.cpp">
-      <Filter>1. Modules\ripple_client</Filter>
+      <Filter>2. Empty\ripple_client</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ChangeTransactor.cpp">
       <Filter>1. Modules\ripple_main\transactions</Filter>
@@ -592,7 +592,7 @@
       <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCServer.cpp">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
+      <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_db\ripple_db.cpp">
       <Filter>1. Modules\ripple_db</Filter>
@@ -610,10 +610,10 @@
       <Filter>1. Modules\ripple_main</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\HttpsClient.cpp">
-      <Filter>1. Modules\ripple_client\http</Filter>
+      <Filter>1. Modules\ripple_main\http</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\HTTPRequest.cpp">
-      <Filter>1. Modules\ripple_client\http</Filter>
+      <Filter>1. Modules\ripple_main\http</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_net\ripple_net.cpp">
       <Filter>2. Empty\ripple_net</Filter>
@@ -789,9 +789,6 @@
     <ClCompile Include="src\cpp\ripple\Suppression.cpp">
       <Filter>1. Modules\ripple_main\sockets</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\UniqueNodeList.cpp">
-      <Filter>1. Modules\ripple_main\sockets</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\WSDoor.cpp">
       <Filter>1. Modules\ripple_main\sockets</Filter>
     </ClCompile>
@@ -800,6 +797,9 @@
     </ClCompile>
     <ClCompile Include="Subtrees\beast\modules\beast_core\beast_core.cpp">
       <Filter>0. Third Party Code\beast</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_UniqueNodeList.cpp">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1215,28 +1215,28 @@
       <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\WSHandler.h">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
+      <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\CallRPC.h">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
+      <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPC.h">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
+      <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPCDoor.h">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
+      <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPCErr.h">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
+      <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPCHandler.h">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
+      <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPCSub.h">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
+      <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_client\ripple_client.h">
-      <Filter>1. Modules\ripple_client</Filter>
+      <Filter>2. Empty\ripple_client</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ChangeTransactor.h">
       <Filter>1. Modules\ripple_main\transactions</Filter>
@@ -1245,7 +1245,7 @@
       <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPCServer.h">
-      <Filter>1. Modules\ripple_client\rpc</Filter>
+      <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_db\ripple_db.h">
       <Filter>1. Modules\ripple_db</Filter>
@@ -1260,10 +1260,10 @@
       <Filter>1. Modules\ripple_main</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\HttpsClient.h">
-      <Filter>1. Modules\ripple_client\http</Filter>
+      <Filter>1. Modules\ripple_main\http</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\HTTPRequest.h">
-      <Filter>1. Modules\ripple_client\http</Filter>
+      <Filter>1. Modules\ripple_main\http</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_net\ripple_net.h">
       <Filter>2. Empty\ripple_net</Filter>
@@ -1481,10 +1481,10 @@
     <ClInclude Include="src\cpp\ripple\Suppression.h">
       <Filter>1. Modules\ripple_main\sockets</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\UniqueNodeList.h">
+    <ClInclude Include="src\cpp\ripple\WSConnection.h">
       <Filter>1. Modules\ripple_main\sockets</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\WSConnection.h">
+    <ClInclude Include="src\cpp\ripple\ripple_IUniqueNodeList.h">
       <Filter>1. Modules\ripple_main\sockets</Filter>
     </ClInclude>
   </ItemGroup>
