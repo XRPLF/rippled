@@ -55,26 +55,8 @@
     <Filter Include="1. Modules\ripple_db">
       <UniqueIdentifier>{a5190241-c5bc-4e23-8ef1-6adf757c75e3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_ledger">
-      <UniqueIdentifier>{b6175f9a-7d46-4b57-877f-f58b0b3bba89}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_ledger\transactions">
-      <UniqueIdentifier>{1d36a65a-de7c-41f9-85dd-93b29d67606e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_ledger\contracts">
-      <UniqueIdentifier>{c7f863ce-204b-4a15-b236-24fe1e3430e5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_ledger\serialization">
-      <UniqueIdentifier>{4b5cbcb4-5525-4ac8-83b7-32bfb0a0b5bf}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_main">
       <UniqueIdentifier>{1a379c07-ccf1-4636-8018-2cfc0685edf0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_net">
-      <UniqueIdentifier>{7f76ce57-c428-487e-97a0-979c0990a81d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_ledger\processing">
-      <UniqueIdentifier>{c441b367-d096-401f-a3f0-5ac24290d7b7}</UniqueIdentifier>
     </Filter>
     <Filter Include="1. Modules\ripple_client\rpc">
       <UniqueIdentifier>{3f351c55-360d-40bc-a136-4944ce572efd}</UniqueIdentifier>
@@ -84,18 +66,6 @@
     </Filter>
     <Filter Include="1. Modules\ripple_client\http">
       <UniqueIdentifier>{29cd2103-d553-4d82-9e6a-224e3b1cb667}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_net\sockets">
-      <UniqueIdentifier>{afd09812-59e2-45e2-bf7f-d561b23d7da2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_mess">
-      <UniqueIdentifier>{becffa9b-61f7-42d4-815a-1ec822cad0e7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_mess\containers">
-      <UniqueIdentifier>{683c494b-1175-49ac-9714-65640ba50bf5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_mess\types">
-      <UniqueIdentifier>{1b463564-35d9-43d1-b3a0-21b344a3a1c7}</UniqueIdentifier>
     </Filter>
     <Filter Include="1. Modules\ripple_basics\containers">
       <UniqueIdentifier>{96cbc9ff-0118-4844-bb4c-05aef58a60b5}</UniqueIdentifier>
@@ -115,20 +85,11 @@
     <Filter Include="1. Modules\ripple_basics\types">
       <UniqueIdentifier>{0d38ac4f-f094-4b17-9f4c-ac4011ea3bca}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_net\_unsorted">
-      <UniqueIdentifier>{b78453cf-8932-43ad-9312-09e5a8ca3375}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_data">
       <UniqueIdentifier>{8d0241d2-071c-4d6c-a15e-980cc51b26ce}</UniqueIdentifier>
     </Filter>
     <Filter Include="1. Modules\ripple_data\crypto">
       <UniqueIdentifier>{095d33d8-dbf7-44d0-a675-6722b02bb3be}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_main\_old">
-      <UniqueIdentifier>{ed7b05c1-13c1-417c-a0c7-fb93a8edc5c9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_main\misc">
-      <UniqueIdentifier>{a624c4e9-2c7b-4b98-9dff-f57d876999f0}</UniqueIdentifier>
     </Filter>
     <Filter Include="1. Modules\ripple_data\types">
       <UniqueIdentifier>{2f3572a9-2882-4656-ab93-82b7761c9e3d}</UniqueIdentifier>
@@ -136,8 +97,44 @@
     <Filter Include="1. Modules\ripple_data\protobuf">
       <UniqueIdentifier>{9f8ed40a-9f16-42fe-82fd-caf72d3d6a2b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_ledger\main">
+    <Filter Include="1. Modules\ripple_main\containers">
+      <UniqueIdentifier>{683c494b-1175-49ac-9714-65640ba50bf5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_main\contracts">
+      <UniqueIdentifier>{c7f863ce-204b-4a15-b236-24fe1e3430e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_main\main">
       <UniqueIdentifier>{1ccfc5ad-5cd7-4a8e-b305-08f663c2397c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_main\misc">
+      <UniqueIdentifier>{a624c4e9-2c7b-4b98-9dff-f57d876999f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_main\sockets">
+      <UniqueIdentifier>{78b0aa30-f238-4e41-821f-ce84dde82ceb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_main\processing">
+      <UniqueIdentifier>{c441b367-d096-401f-a3f0-5ac24290d7b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_main\serialization">
+      <UniqueIdentifier>{4b5cbcb4-5525-4ac8-83b7-32bfb0a0b5bf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_main\transactions">
+      <UniqueIdentifier>{1d36a65a-de7c-41f9-85dd-93b29d67606e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_main\types">
+      <UniqueIdentifier>{1b463564-35d9-43d1-b3a0-21b344a3a1c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3. Empty">
+      <UniqueIdentifier>{786657f9-b1b3-483c-a8e6-863cc2e02eb8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3. Empty\ripple_ledger">
+      <UniqueIdentifier>{b6175f9a-7d46-4b57-877f-f58b0b3bba89}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3. Empty\ripple_mess">
+      <UniqueIdentifier>{becffa9b-61f7-42d4-815a-1ec822cad0e7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3. Empty\ripple_net">
+      <UniqueIdentifier>{7f76ce57-c428-487e-97a0-979c0990a81d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -415,154 +412,154 @@
       <Filter>0. Third Party Code\websocket</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Transaction.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionAcquire.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionCheck.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionEngine.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionErr.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionFormats.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionMaster.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionMeta.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionQueue.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Transactor.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TrustSetTransactor.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\OfferCreateTransactor.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\OfferCancelTransactor.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RegularKeySetTransactor.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\PaymentTransactor.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\AccountSetTransactor.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Operation.cpp">
-      <Filter>1. Modules\ripple_ledger\contracts</Filter>
+      <Filter>1. Modules\ripple_main\contracts</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Contract.cpp">
-      <Filter>1. Modules\ripple_ledger\contracts</Filter>
+      <Filter>1. Modules\ripple_main\contracts</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\SerializedLedger.cpp">
-      <Filter>1. Modules\ripple_ledger\serialization</Filter>
+      <Filter>1. Modules\ripple_main\serialization</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\SerializedObject.cpp">
-      <Filter>1. Modules\ripple_ledger\serialization</Filter>
+      <Filter>1. Modules\ripple_main\serialization</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\SerializedTransaction.cpp">
-      <Filter>1. Modules\ripple_ledger\serialization</Filter>
+      <Filter>1. Modules\ripple_main\serialization</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\SerializedTypes.cpp">
-      <Filter>1. Modules\ripple_ledger\serialization</Filter>
+      <Filter>1. Modules\ripple_main\serialization</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\SerializedValidation.cpp">
-      <Filter>1. Modules\ripple_ledger\serialization</Filter>
+      <Filter>1. Modules\ripple_main\serialization</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Amount.cpp">
-      <Filter>1. Modules\ripple_mess\types</Filter>
+      <Filter>1. Modules\ripple_main\types</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\AmountRound.cpp">
-      <Filter>1. Modules\ripple_mess\types</Filter>
+      <Filter>1. Modules\ripple_main\types</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\HashedObject.cpp">
-      <Filter>1. Modules\ripple_mess\types</Filter>
+      <Filter>1. Modules\ripple_main\types</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\PackedMessage.cpp">
-      <Filter>1. Modules\ripple_mess\types</Filter>
+      <Filter>1. Modules\ripple_main\types</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ParameterTable.cpp">
-      <Filter>1. Modules\ripple_mess\types</Filter>
+      <Filter>1. Modules\ripple_main\types</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ParseSection.cpp">
-      <Filter>1. Modules\ripple_mess\types</Filter>
+      <Filter>1. Modules\ripple_main\types</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ProofOfWork.cpp">
-      <Filter>1. Modules\ripple_mess\types</Filter>
+      <Filter>1. Modules\ripple_main\types</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_basics\ripple_basics.cpp">
       <Filter>1. Modules\ripple_basics</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_ledger\ripple_ledger.cpp">
-      <Filter>1. Modules\ripple_ledger</Filter>
+      <Filter>3. Empty\ripple_ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\AcceptedLedger.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\AccountItems.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\AccountState.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\FeatureTable.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Ledger.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerAcquire.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerConsensus.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerEntrySet.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerFormats.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerHistory.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerMaster.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerProposal.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerTiming.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Offer.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\OrderBook.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\OrderBookDB.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RippleCalc.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RippleState.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\CallRPC.cpp">
       <Filter>1. Modules\ripple_client\rpc</Filter>
@@ -586,10 +583,10 @@
       <Filter>1. Modules\ripple_client</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ChangeTransactor.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\CanonicalTXSet.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCServer.cpp">
       <Filter>1. Modules\ripple_client\rpc</Filter>
@@ -606,18 +603,6 @@
     <ClCompile Include="src\cpp\database\SqliteDatabase.cpp">
       <Filter>1. Modules\ripple_db\storage</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Config.cpp">
-      <Filter>1. Modules\ripple_main\_old</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\JobQueue.cpp">
-      <Filter>1. Modules\ripple_main\_old</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\LoadMonitor.cpp">
-      <Filter>1. Modules\ripple_main\_old</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\main.cpp">
-      <Filter>1. Modules\ripple_main\_old</Filter>
-    </ClCompile>
     <ClCompile Include="modules\ripple_main\ripple_main.cpp">
       <Filter>1. Modules\ripple_main</Filter>
     </ClCompile>
@@ -628,46 +613,43 @@
       <Filter>1. Modules\ripple_client\http</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_net\ripple_net.cpp">
-      <Filter>1. Modules\ripple_net</Filter>
+      <Filter>3. Empty\ripple_net</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Interpreter.cpp">
-      <Filter>1. Modules\ripple_ledger\contracts</Filter>
+      <Filter>1. Modules\ripple_main\contracts</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ScriptData.cpp">
-      <Filter>1. Modules\ripple_ledger\contracts</Filter>
+      <Filter>1. Modules\ripple_main\contracts</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\WalletAddTransactor.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Wallet.cpp">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\NicknameState.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\SHAMap.cpp">
-      <Filter>1. Modules\ripple_mess\containers</Filter>
+      <Filter>1. Modules\ripple_main\containers</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\SHAMapDiff.cpp">
-      <Filter>1. Modules\ripple_mess\containers</Filter>
+      <Filter>1. Modules\ripple_main\containers</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\SHAMapNodes.cpp">
-      <Filter>1. Modules\ripple_mess\containers</Filter>
+      <Filter>1. Modules\ripple_main\containers</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\SHAMapSync.cpp">
-      <Filter>1. Modules\ripple_mess\containers</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\UpdateTables.cpp">
-      <Filter>1. Modules\ripple_main\_old</Filter>
+      <Filter>1. Modules\ripple_main\containers</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\PFRequest.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Pathfinder.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_mess\ripple_mess.cpp">
-      <Filter>1. Modules\ripple_mess</Filter>
+      <Filter>3. Empty\ripple_mess</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_json\json\json_reader.cpp">
       <Filter>1. Modules\ripple_json\json</Filter>
@@ -710,33 +692,6 @@
     </ClCompile>
     <ClCompile Include="modules\ripple_basics\utility\ripple_DiffieHellmanUtil.cpp">
       <Filter>1. Modules\ripple_basics\utility</Filter>
-    </ClCompile>
-    <ClCompile Include="modules\ripple_net\sockets\ripple_LogWebsockets.cpp">
-      <Filter>1. Modules\ripple_net\sockets</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ConnectionPool.cpp">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\NetworkOPs.cpp">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Peer.cpp">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\PeerDoor.cpp">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\WSDoor.cpp">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Suppression.cpp">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\UniqueNodeList.cpp">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\SNTPClient.cpp">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_data\ripple_data.cpp">
       <Filter>1. Modules\ripple_data</Filter>
@@ -781,22 +736,64 @@
       <Filter>1. Modules\ripple_data\protobuf</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_FeeVote.cpp">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Application.cpp">
-      <Filter>1. Modules\ripple_ledger\main</Filter>
+      <Filter>1. Modules\ripple_main\main</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_LoadFeeTrack.cpp">
-      <Filter>1. Modules\ripple_ledger\main</Filter>
+      <Filter>1. Modules\ripple_main\main</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
-      <Filter>1. Modules\ripple_ledger\main</Filter>
+      <Filter>1. Modules\ripple_main\main</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_DatabaseCon.cpp">
-      <Filter>1. Modules\ripple_ledger\main</Filter>
+      <Filter>1. Modules\ripple_main\main</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_Validations.cpp">
-      <Filter>1. Modules\ripple_ledger\main</Filter>
+      <Filter>1. Modules\ripple_main\main</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\Config.cpp">
+      <Filter>1. Modules\ripple_main\main</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\JobQueue.cpp">
+      <Filter>1. Modules\ripple_main\main</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\LoadMonitor.cpp">
+      <Filter>1. Modules\ripple_main\main</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\main.cpp">
+      <Filter>1. Modules\ripple_main\main</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\UpdateTables.cpp">
+      <Filter>1. Modules\ripple_main\main</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ConnectionPool.cpp">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\NetworkOPs.cpp">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\Peer.cpp">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\PeerDoor.cpp">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\SNTPClient.cpp">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\Suppression.cpp">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\UniqueNodeList.cpp">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\WSDoor.cpp">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_LogWebsockets.cpp">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1071,145 +1068,145 @@
       <Filter>0. Third Party Code\protobuf\stubs</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Transaction.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\TransactionEngine.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\TransactionErr.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\TransactionFormats.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\TransactionMaster.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\TransactionMeta.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\TransactionQueue.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Transactor.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\TrustSetTransactor.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\OfferCreateTransactor.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\OfferCancelTransactor.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RegularKeySetTransactor.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\PaymentTransactor.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\AccountSetTransactor.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Operation.h">
-      <Filter>1. Modules\ripple_ledger\contracts</Filter>
+      <Filter>1. Modules\ripple_main\contracts</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Contract.h">
-      <Filter>1. Modules\ripple_ledger\contracts</Filter>
+      <Filter>1. Modules\ripple_main\contracts</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\SerializedLedger.h">
-      <Filter>1. Modules\ripple_ledger\serialization</Filter>
+      <Filter>1. Modules\ripple_main\serialization</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\SerializedObject.h">
-      <Filter>1. Modules\ripple_ledger\serialization</Filter>
+      <Filter>1. Modules\ripple_main\serialization</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\SerializedTransaction.h">
-      <Filter>1. Modules\ripple_ledger\serialization</Filter>
+      <Filter>1. Modules\ripple_main\serialization</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\SerializedTypes.h">
-      <Filter>1. Modules\ripple_ledger\serialization</Filter>
+      <Filter>1. Modules\ripple_main\serialization</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\SerializedValidation.h">
-      <Filter>1. Modules\ripple_ledger\serialization</Filter>
+      <Filter>1. Modules\ripple_main\serialization</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\HashedObject.h">
-      <Filter>1. Modules\ripple_mess\types</Filter>
+      <Filter>1. Modules\ripple_main\types</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\HashPrefixes.h">
-      <Filter>1. Modules\ripple_mess\types</Filter>
+      <Filter>1. Modules\ripple_main\types</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\PackedMessage.h">
-      <Filter>1. Modules\ripple_mess\types</Filter>
+      <Filter>1. Modules\ripple_main\types</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ParameterTable.h">
-      <Filter>1. Modules\ripple_mess\types</Filter>
+      <Filter>1. Modules\ripple_main\types</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ParseSection.h">
-      <Filter>1. Modules\ripple_mess\types</Filter>
+      <Filter>1. Modules\ripple_main\types</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ProofOfWork.h">
-      <Filter>1. Modules\ripple_mess\types</Filter>
+      <Filter>1. Modules\ripple_main\types</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\ripple_basics.h">
       <Filter>1. Modules\ripple_basics</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_ledger\ripple_ledger.h">
-      <Filter>1. Modules\ripple_ledger</Filter>
+      <Filter>3. Empty\ripple_ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\AcceptedLedger.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\AccountItems.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\AccountState.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\FeatureTable.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Ledger.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerAcquire.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerConsensus.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerEntrySet.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerFormats.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerHistory.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerMaster.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerProposal.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerTiming.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Offer.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\OrderBook.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\OrderBookDB.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RippleCalc.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RippleState.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\WSHandler.h">
       <Filter>1. Modules\ripple_client\rpc</Filter>
@@ -1236,10 +1233,10 @@
       <Filter>1. Modules\ripple_client</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ChangeTransactor.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\CanonicalTXSet.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPCServer.h">
       <Filter>1. Modules\ripple_client\rpc</Filter>
@@ -1253,15 +1250,6 @@
     <ClInclude Include="src\cpp\database\SqliteDatabase.h">
       <Filter>1. Modules\ripple_db\storage</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Config.h">
-      <Filter>1. Modules\ripple_main\_old</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\JobQueue.h">
-      <Filter>1. Modules\ripple_main\_old</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\LoadMonitor.h">
-      <Filter>1. Modules\ripple_main\_old</Filter>
-    </ClInclude>
     <ClInclude Include="modules\ripple_main\ripple_main.h">
       <Filter>1. Modules\ripple_main</Filter>
     </ClInclude>
@@ -1272,43 +1260,37 @@
       <Filter>1. Modules\ripple_client\http</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_net\ripple_net.h">
-      <Filter>1. Modules\ripple_net</Filter>
+      <Filter>3. Empty\ripple_net</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Interpreter.h">
-      <Filter>1. Modules\ripple_ledger\contracts</Filter>
+      <Filter>1. Modules\ripple_main\contracts</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ScriptData.h">
-      <Filter>1. Modules\ripple_ledger\contracts</Filter>
+      <Filter>1. Modules\ripple_main\contracts</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\WalletAddTransactor.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Wallet.h">
-      <Filter>1. Modules\ripple_ledger\transactions</Filter>
+      <Filter>1. Modules\ripple_main\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\NicknameState.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\SHAMap.h">
-      <Filter>1. Modules\ripple_mess\containers</Filter>
+      <Filter>1. Modules\ripple_main\containers</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\SHAMapSync.h">
-      <Filter>1. Modules\ripple_mess\containers</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Version.h">
-      <Filter>1. Modules\ripple_main\_old</Filter>
+      <Filter>1. Modules\ripple_main\containers</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\PFRequest.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Pathfinder.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\NetworkStatus.h">
-      <Filter>1. Modules\ripple_main\_old</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_mess\ripple_mess.h">
-      <Filter>1. Modules\ripple_mess</Filter>
+      <Filter>3. Empty\ripple_mess</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\containers\ripple_KeyCache.h">
       <Filter>1. Modules\ripple_basics\containers</Filter>
@@ -1388,36 +1370,6 @@
     <ClInclude Include="modules\ripple_basics\types\ripple_UInt256.h">
       <Filter>1. Modules\ripple_basics\types</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\WSDoor.h">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\AutoSocket.h">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ConnectionPool.h">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\NetworkOPs.h">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Peer.h">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\PeerDoor.h">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\WSConnection.h">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Suppression.h">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\UniqueNodeList.h">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\SNTPClient.h">
-      <Filter>1. Modules\ripple_net\_unsorted</Filter>
-    </ClInclude>
     <ClInclude Include="modules\ripple_basics\utility\ripple_HashUtilities.h">
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
@@ -1464,25 +1416,70 @@
       <Filter>1. Modules\ripple_data\protobuf</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IFeatures.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IFeeVote.h">
-      <Filter>1. Modules\ripple_ledger\processing</Filter>
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Application.h">
-      <Filter>1. Modules\ripple_ledger\main</Filter>
+      <Filter>1. Modules\ripple_main\main</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_ILoadFeeTrack.h">
-      <Filter>1. Modules\ripple_ledger\main</Filter>
+      <Filter>1. Modules\ripple_main\main</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LoadManager.h">
-      <Filter>1. Modules\ripple_ledger\main</Filter>
+      <Filter>1. Modules\ripple_main\main</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_DatabaseCon.h">
-      <Filter>1. Modules\ripple_ledger\main</Filter>
+      <Filter>1. Modules\ripple_main\main</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IValidations.h">
-      <Filter>1. Modules\ripple_ledger\main</Filter>
+      <Filter>1. Modules\ripple_main\main</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\Config.h">
+      <Filter>1. Modules\ripple_main\main</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\JobQueue.h">
+      <Filter>1. Modules\ripple_main\main</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\LoadMonitor.h">
+      <Filter>1. Modules\ripple_main\main</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\NetworkStatus.h">
+      <Filter>1. Modules\ripple_main\main</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\Version.h">
+      <Filter>1. Modules\ripple_main\main</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\WSDoor.h">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\AutoSocket.h">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ConnectionPool.h">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\NetworkOPs.h">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\Peer.h">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\PeerDoor.h">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\SNTPClient.h">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\Suppression.h">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\UniqueNodeList.h">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\WSConnection.h">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
