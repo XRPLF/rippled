@@ -67,8 +67,8 @@ class Application
 	
     // VFALCO: Clean stuff
 	beast::ScopedPointer <IFeeVote> mFeeVote;
-	ILoadFeeTrack*			mFeeTrack;
-	IValidations*       	mValidations;
+    beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
+	beast::ScopedPointer <IValidations> mValidations;
     // VFALCO: End Clean stuff
 
     FeatureTable			mFeatureTable;
