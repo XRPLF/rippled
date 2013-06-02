@@ -71,7 +71,7 @@ public:
 
 	std::string humanAccountID() const;
 
-	bool setAccountID(const std::string& strAccountID, const char* pAlphabet=0);
+	bool setAccountID(const std::string& strAccountID, const char* pAlphabet=Base58::getCurrentAlphabet ());
 	void setAccountID(const uint160& hash160In);
 
 	static RippleAddress createAccountID(const std::string& strAccountID)
