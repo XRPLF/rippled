@@ -406,7 +406,6 @@ Application::~Application()
 {
     delete mValidations;
     delete mFeeTrack;
-	delete mFeeVote;
 
 	delete mTxnDB;
 	delete mLedgerDB;

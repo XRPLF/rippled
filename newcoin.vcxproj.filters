@@ -4,6 +4,9 @@
     <Filter Include="0. Third Party Code">
       <UniqueIdentifier>{475c5b33-c9b5-415f-89df-fb9961f3b57c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="0. Third Party Code\beast">
+      <UniqueIdentifier>{290b7b39-a4e6-4b8b-b464-d1e458562fdd}</UniqueIdentifier>
+    </Filter>
     <Filter Include="0. Third Party Code\SQLite">
       <UniqueIdentifier>{60c3631e-8855-4a61-bdd3-9892d96242d5}</UniqueIdentifier>
     </Filter>
