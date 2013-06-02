@@ -158,8 +158,8 @@ bool Base58::decode (const std::string& str, std::vector<unsigned char>& vchRet)
 
 bool Base58::decodeWithCheck (const char* psz, std::vector<unsigned char>& vchRet, const char* pAlphabet)
 {
-	if (pAlphabet == NULL)
-		pAlphabet = s_currentAlphabet;
+	assert (pAlphabet != NULL);
+
 	if (!decode (psz, vchRet, pAlphabet))
 		return false;
 	if (vchRet.size() < 4)
