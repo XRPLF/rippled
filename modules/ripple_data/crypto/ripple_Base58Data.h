@@ -45,7 +45,7 @@ protected:
     void SetData(int nVersionIn, const unsigned char *pbegin, const unsigned char *pend);
 
 public:
-    bool SetString(const char* psz, unsigned char version, const char* pAlphabet = 0);
+    bool SetString(const char* psz, unsigned char version, const char* pAlphabet = Base58::getCurrentAlphabet());
     bool SetString(const std::string& str, unsigned char version);
 
     std::string ToString() const;
