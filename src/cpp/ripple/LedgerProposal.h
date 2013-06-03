@@ -48,7 +48,7 @@ public:
 	const uint160& getPeerID() const		{ return mPeerID; }
 	const uint256& getCurrentHash() const	{ return mCurrentHash; }
 	const uint256& getPrevLedger() const	{ return mPreviousLedger; }
-	const uint256& getSuppression() const	{ return mSuppression; }
+	const uint256& getHashRouter() const	{ return mSuppression; }
 	uint32 getProposeSeq() const			{ return mProposeSeq; }
 	uint32 getCloseTime() const				{ return mCloseTime; }
 	const RippleAddress& peekPublic() const		{ return mPublicKey; }

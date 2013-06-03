@@ -786,9 +786,6 @@
     <ClCompile Include="src\cpp\ripple\SNTPClient.cpp">
       <Filter>1. Modules\ripple_main\sockets</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Suppression.cpp">
-      <Filter>1. Modules\ripple_main\sockets</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\WSDoor.cpp">
       <Filter>1. Modules\ripple_main\sockets</Filter>
     </ClCompile>
@@ -799,6 +796,9 @@
       <Filter>0. Third Party Code\beast</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_UniqueNodeList.cpp">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_HashRouter.cpp">
       <Filter>1. Modules\ripple_main\sockets</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1478,13 +1478,13 @@
     <ClInclude Include="src\cpp\ripple\SNTPClient.h">
       <Filter>1. Modules\ripple_main\sockets</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Suppression.h">
-      <Filter>1. Modules\ripple_main\sockets</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\WSConnection.h">
       <Filter>1. Modules\ripple_main\sockets</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IUniqueNodeList.h">
+      <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_IHashRouter.h">
       <Filter>1. Modules\ripple_main\sockets</Filter>
     </ClInclude>
   </ItemGroup>

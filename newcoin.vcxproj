@@ -1106,7 +1106,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Suppression.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_HashRouter.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1674,7 +1674,7 @@
     <ClInclude Include="src\cpp\ripple\SHAMap.h" />
     <ClInclude Include="src\cpp\ripple\SHAMapSync.h" />
     <ClInclude Include="src\cpp\ripple\SNTPClient.h" />
-    <ClInclude Include="src\cpp\ripple\Suppression.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_IHashRouter.h" />
     <ClInclude Include="src\cpp\ripple\Transaction.h" />
     <ClInclude Include="src\cpp\ripple\TransactionEngine.h" />
     <ClInclude Include="src\cpp\ripple\TransactionErr.h" />

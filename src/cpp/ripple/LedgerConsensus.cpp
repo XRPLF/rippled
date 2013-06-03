@@ -1004,7 +1004,7 @@ void LedgerConsensus::playbackProposals()
 			}
 #if 0 // FIXME: We can't do delayed relay because we don't have the signature
 			std::set<uint64> peers
-			if (relay && theApp->getSuppression().swapSet(proposal.getSuppress(), set, SF_RELAYED))
+			if (relay && theApp->getHashRouter().swapSet(proposal.getSuppress(), set, SF_RELAYED))
 			{
 				WriteLog (lsDEBUG, LedgerConsensus) << "Stored proposal delayed relay";
 				ripple::TMProposeSet set;
