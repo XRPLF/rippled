@@ -22,16 +22,6 @@ bool powResultInfo(POWResult powCode, std::string& strToken, std::string& strHum
 
 class ProofOfWork
 {
-protected:
-
-	std::string		mToken;
-	uint256			mChallenge;
-	uint256			mTarget;
-	int				mIterations;
-
-	static const uint256 sMinTarget;
-	static const int sMaxIterations;
-
 public:
 	static const int sMaxDifficulty;
 
@@ -56,6 +46,15 @@ public:
 	uint64 getDifficulty() const { return getDifficulty(mTarget, mIterations); }
 
 	static bool validateToken(const std::string& strToken);
+
+private:
+	std::string		mToken;
+	uint256			mChallenge;
+	uint256			mTarget;
+	int				mIterations;
+
+	static const uint256 sMinTarget;
+	static const int sMaxIterations;
 };
 
 class ProofOfWorkGenerator
@@ -63,17 +62,6 @@ class ProofOfWorkGenerator
 public:
 	typedef boost::bimap< boost::bimaps::multiset_of<time_t>, boost::bimaps::unordered_set_of<uint256> > powMap_t;
 	typedef powMap_t::value_type	powMap_vt;
-
-protected:
-	uint256							mSecret;
-	int								mIterations;
-	uint256							mTarget;
-	time_t							mLastDifficultyChange;
-	int								mValidTime;
-	int								mPowEntry;
-
-	powMap_t						mSolvedChallenges;
-	boost::mutex					mLock;
 
 public:
 	ProofOfWorkGenerator();
@@ -91,6 +79,17 @@ public:
 	void setSecret(const uint256& secret)	{ mSecret = secret; }
 
 	static int getPowEntry(const uint256& target, int iterations);
+
+private:
+	uint256							mSecret;
+	int								mIterations;
+	uint256							mTarget;
+	time_t							mLastDifficultyChange;
+	int								mValidTime;
+	int								mPowEntry;
+
+	powMap_t						mSolvedChallenges;
+	boost::mutex					mLock;
 };
 
 #endif

@@ -9,8 +9,6 @@
 //
 class AccountItem
 {
-protected:
-	SerializedLedgerEntry::pointer	mLedgerEntry;
 public:
 	typedef boost::shared_ptr<AccountItem> pointer;
 	typedef const pointer& ref;
@@ -27,15 +25,14 @@ public:
 	SerializedLedgerEntry& peekSLE() { return *mLedgerEntry; }
 
 	std::vector<unsigned char> getRaw() const;
+
+    // VFALCO: TODO make an accessor for mLedgerEntry so we can change protected to private
+protected:
+	SerializedLedgerEntry::pointer	mLedgerEntry;
 };
 
 class AccountItems
 {
-	AccountItem::pointer mOfType;
-
-	std::vector<AccountItem::pointer> mItems;
-	void fillItems(const uint160& accountID, Ledger::ref ledger);
-
 public:
 	typedef boost::shared_ptr<AccountItems> pointer;
 
@@ -43,6 +40,12 @@ public:
 
 	std::vector<AccountItem::pointer>& getItems() { return(mItems); }
 	Json::Value getJson(int);
+
+private:
+	AccountItem::pointer mOfType;
+
+	std::vector<AccountItem::pointer> mItems;
+	void fillItems(const uint160& accountID, Ledger::ref ledger);
 };
 
 #endif

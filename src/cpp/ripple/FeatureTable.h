@@ -20,8 +20,7 @@ public:
 
 class FeatureTable
 {
-protected:
-
+private:
 	class FeatureState
 	{
 	public:

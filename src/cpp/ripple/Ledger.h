@@ -42,6 +42,7 @@ class SqliteStatement;
 
 class Ledger : public boost::enable_shared_from_this<Ledger>, public IS_INSTANCE(Ledger)
 { // The basic Ledger structure, can be opened, closed, or synching
+    // VFALCO: TODO, eliminate the need for friends
 	friend class TransactionEngine;
 	friend class Transactor;
 public:
@@ -65,39 +66,6 @@ public:
 
 	// ledger close flags
 	static const uint32 sLCF_NoConsensusTime = 1;
-
-private:
-
-	uint256		mHash, mParentHash, mTransHash, mAccountHash;
-	uint64		mTotCoins;
-	uint32		mLedgerSeq;
-	uint32		mCloseTime;			// when this ledger closed
-	uint32		mParentCloseTime;	// when the previous ledger closed
-	int			mCloseResolution;	// the resolution for this ledger close time (2-120 seconds)
-	uint32		mCloseFlags;		// flags indicating how this ledger close took place
-	bool		mClosed, mValidHash, mAccepted, mImmutable;
-
-	uint32		mReferenceFeeUnits;					// Fee units for the reference transaction
-	uint32		mReserveBase, mReserveIncrement;	// Reserve basse and increment in fee units
-	uint64		mBaseFee;							// Ripple cost of the reference transaction
-
-	SHAMap::pointer mTransactionMap, mAccountStateMap;
-
-	mutable boost::recursive_mutex mLock;
-
-	Ledger(const Ledger&);				// no implementation
-	Ledger& operator=(const Ledger&);	// no implementation
-
-protected:
-	SLE::pointer getASNode(LedgerStateParms& parms, const uint256& nodeID, LedgerEntryType let);
-
-	// returned SLE is immutable
-	SLE::pointer getASNodeI(const uint256& nodeID, LedgerEntryType let);
-
-	void saveAcceptedLedger(Job&, bool fromConsensus);
-
-	void updateFees();
-	void zeroFees();
 
 public:
 	Ledger(const RippleAddress& masterID, uint64 startAmount); // used for the starting bootstrap ledger
@@ -356,6 +324,39 @@ public:
 
 	bool walkLedger();
 	bool assertSane();
+
+protected:
+	SLE::pointer getASNode(LedgerStateParms& parms, const uint256& nodeID, LedgerEntryType let);
+
+	// returned SLE is immutable
+	SLE::pointer getASNodeI(const uint256& nodeID, LedgerEntryType let);
+
+	void saveAcceptedLedger(Job&, bool fromConsensus);
+
+	void updateFees();
+	void zeroFees();
+
+private:
+	uint256		mHash, mParentHash, mTransHash, mAccountHash;
+	uint64		mTotCoins;
+	uint32		mLedgerSeq;
+	uint32		mCloseTime;			// when this ledger closed
+	uint32		mParentCloseTime;	// when the previous ledger closed
+	int			mCloseResolution;	// the resolution for this ledger close time (2-120 seconds)
+	uint32		mCloseFlags;		// flags indicating how this ledger close took place
+	bool		mClosed, mValidHash, mAccepted, mImmutable;
+
+	uint32		mReferenceFeeUnits;					// Fee units for the reference transaction
+	uint32		mReserveBase, mReserveIncrement;	// Reserve basse and increment in fee units
+	uint64		mBaseFee;							// Ripple cost of the reference transaction
+
+	SHAMap::pointer mTransactionMap, mAccountStateMap;
+
+	mutable boost::recursive_mutex mLock;
+
+    // VFALCO: TODO, derive this from beast::Uncopyable
+	Ledger(const Ledger&);				// no implementation
+	Ledger& operator=(const Ledger&);	// no implementation
 };
 
 inline LedgerStateParms operator|(const LedgerStateParms& l1, const LedgerStateParms& l2)

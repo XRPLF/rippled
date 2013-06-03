@@ -34,8 +34,23 @@ public:
 	typedef const wptr&						wref;
 	typedef std::pair<uint160, uint160>		currIssuer_t;
 
+public:
+	PFRequest(const boost::shared_ptr<InfoSub>& subscriber);
 
-protected:
+	bool		isValid(const boost::shared_ptr<Ledger>&);
+	bool		isValid();
+	bool		isNew();
+	Json::Value	getStatus();
+
+	Json::Value	doCreate(const boost::shared_ptr<Ledger>&, const Json::Value&);
+	Json::Value	doClose(const Json::Value&);
+	Json::Value	doStatus(const Json::Value&);
+
+	bool		doUpdate(const boost::shared_ptr<RLCache>&, bool fast);	// update jvStatus
+
+	static void	updateAll(const boost::shared_ptr<Ledger>& ledger, bool newOnly);
+
+private:
 	boost::recursive_mutex			mLock;
 	boost::weak_ptr<InfoSub>		wpSubscriber;				// Who this request came from
 	Json::Value						jvId;
@@ -57,23 +72,6 @@ protected:
 
 	void setValid();
 	int parseJson(const Json::Value&, bool complete);
-
-public:
-
-	PFRequest(const boost::shared_ptr<InfoSub>& subscriber);
-
-	bool		isValid(const boost::shared_ptr<Ledger>&);
-	bool		isValid();
-	bool		isNew();
-	Json::Value	getStatus();
-
-	Json::Value	doCreate(const boost::shared_ptr<Ledger>&, const Json::Value&);
-	Json::Value	doClose(const Json::Value&);
-	Json::Value	doStatus(const Json::Value&);
-
-	bool		doUpdate(const boost::shared_ptr<RLCache>&, bool fast);	// update jvStatus
-
-	static void	updateAll(const boost::shared_ptr<Ledger>& ledger, bool newOnly);
 };
 
 #endif

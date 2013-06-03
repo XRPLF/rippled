@@ -37,23 +37,6 @@ public:
 	typedef typename boost::weak_ptr<connection> weak_connection_ptr;
 	typedef typename endpoint_type::handler::message_ptr message_ptr;
 
-protected:
-	typedef void (WSConnection::*doFuncPtr)(Json::Value& jvResult, Json::Value &jvRequest);
-
-	WSServerHandler<endpoint_type>*		mHandler;
-	weak_connection_ptr					mConnection;
-	NetworkOPs&							mNetwork;
-	std::string							mRemoteIP;
-	LoadSource							mLoadSource;
-
-	boost::asio::deadline_timer			mPingTimer;
-	bool								mPinged;
-
-	boost::recursive_mutex				mRcvQueueLock;
-	std::queue<message_ptr>				mRcvQueue;
-	bool								mRcvQueueRunning;
-	bool								mDead;
-
 public:
 	//	WSConnection()
 	//		: mHandler((WSServerHandler<websocketpp::WSDOOR_SERVER>*)(NULL)),
@@ -254,6 +237,22 @@ public:
 		return m;
 	}
 
+private:
+	typedef void (WSConnection::*doFuncPtr)(Json::Value& jvResult, Json::Value &jvRequest);
+
+	WSServerHandler<endpoint_type>*		mHandler;
+	weak_connection_ptr					mConnection;
+	NetworkOPs&							mNetwork;
+	std::string							mRemoteIP;
+	LoadSource							mLoadSource;
+
+	boost::asio::deadline_timer			mPingTimer;
+	bool								mPinged;
+
+	boost::recursive_mutex				mRcvQueueLock;
+	std::queue<message_ptr>				mRcvQueue;
+	bool								mRcvQueueRunning;
+	bool								mDead;
 };
 
 // vim:ts=4

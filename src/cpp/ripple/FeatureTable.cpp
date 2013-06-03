@@ -316,11 +316,6 @@ Json::Value FeatureTable::getJson(int)
 
 template<typename INT> class VotableInteger
 {
-protected:
-	INT						mCurrent;		// The current setting
-	INT						mTarget;		// The setting we want
-	std::map<INT, int>		mVoteMap;
-
 public:
 	VotableInteger(INT current, INT target) : mCurrent(current), mTarget(target)
 	{
@@ -361,6 +356,11 @@ public:
 
 		return ourVote;
 	}
+
+private:
+    INT						mCurrent;		// The current setting
+	INT						mTarget;		// The setting we want
+	std::map<INT, int>		mVoteMap;
 };
 
 // vim:ts=4

@@ -10,23 +10,6 @@
 // Subscription object for JSON-RPC
 class RPCSub : public InfoSub
 {
-	std::string				mUrl;
-	std::string				mIp;
-	int						mPort;
-	bool					mSSL;
-	std::string				mUsername;
-	std::string				mPassword;
-	std::string				mPath;
-
-	int						mSeq;						// Next id to allocate.
-
-	bool					mSending;					// Sending threead is active.
-
-	std::deque<std::pair<int, Json::Value> >	mDeque;
-
-protected:
-	void	sendThread();
-
 public:
 	typedef boost::shared_ptr<RPCSub>	pointer;
 	typedef const pointer&				ref;
@@ -51,6 +34,24 @@ public:
 
 		mPassword = strPassword;
 	}
+
+protected:
+	void	sendThread();
+
+private:
+	std::string				mUrl;
+	std::string				mIp;
+	int						mPort;
+	bool					mSSL;
+	std::string				mUsername;
+	std::string				mPassword;
+	std::string				mPath;
+
+	int						mSeq;						// Next id to allocate.
+
+	bool					mSending;					// Sending threead is active.
+
+	std::deque<std::pair<int, Json::Value> >	mDeque;
 };
 
 #endif
