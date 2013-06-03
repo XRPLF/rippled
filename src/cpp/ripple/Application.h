@@ -16,7 +16,6 @@
 #include "Peer.h"
 #include "NetworkOPs.h"
 #include "WSDoor.h"
-#include "Suppression.h"
 #include "SNTPClient.h"
 #include "JobQueue.h"
 #include "RPCHandler.h"
@@ -30,6 +29,7 @@
 // VFALCO: TODO, Fix forward declares required for header dependency loops
 class IFeatureTable;
 class IFeeVote;
+class IHashRouter;
 class ILoadFeeTrack;
 class IValidations;
 class IUniqueNodeList;
@@ -52,7 +52,6 @@ class Application
 	TransactionMaster		mMasterTransaction;
 	NetworkOPs				mNetOps;
 	NodeCache				mTempNodeCache;
-	SuppressionTable		mSuppressions;
 	HashedObjectStore		mHashedObjectStore;
 	SLECache				mSLECache;
 	SNTPClient				mSNTPClient;
@@ -63,8 +62,9 @@ class Application
 	OrderBookDB				mOrderBookDB;
 	
     // VFALCO: Clean stuff
-    beast::ScopedPointer <IFeeVote> mFeeVote;
-	beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
+	beast::ScopedPointer <IFeeVote> mFeeVote;
+    beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
+    beast::ScopedPointer <IHashRouter> mHashRouter;
 	beast::ScopedPointer <IValidations> mValidations;
 	beast::ScopedPointer <IUniqueNodeList> mUNL;
     // VFALCO: End Clean stuff
@@ -116,7 +116,7 @@ public:
 	NodeCache& getTempNodeCache()					{ return mTempNodeCache; }
 	HashedObjectStore& getHashedObjectStore()		{ return mHashedObjectStore; }
 	JobQueue& getJobQueue()							{ return mJobQueue; }
-	SuppressionTable& getSuppression()				{ return mSuppressions; }
+	IHashRouter& getHashRouter()				    { return *mHashRouter; }
 	boost::recursive_mutex& getMasterLock()			{ return mMasterLock; }
 	ProofOfWorkGenerator& getPowGen()				{ return mPOWGen; }
 	LoadManager& getLoadManager()					{ return mLoadMgr; }
@@ -130,11 +130,14 @@ public:
 	ILoadFeeTrack& getFeeTrack()				    { return *mFeeTrack; }
 	IValidations& getValidations()			        { return *mValidations; }
 
-	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }
-	bool isNew(const uint256& s, uint64 p)			{ return mSuppressions.addSuppressionPeer(s, p); }
-	bool isNew(const uint256& s, uint64 p, int& f)	{ return mSuppressions.addSuppressionPeer(s, p, f); }
-	bool isNewFlag(const uint256& s, int f)			{ return mSuppressions.setFlag(s, f); }
-	bool running()									{ return mTxnDB != NULL; }
+    // VFALCO: TODO, eliminate these, change callers to just call IHashRouter directly!
+	bool isNew(const uint256& s);
+	bool isNew(const uint256& s, uint64 p);
+	bool isNew(const uint256& s, uint64 p, int& f);
+	bool isNewFlag(const uint256& s, int f);
+
+    // VFALCO: TODO, Move these to the .cpp
+    bool running()									{ return mTxnDB != NULL; } // VFALCO: TODO, replace with nullptr when beast is available
 	bool getSystemTimeOffset(int& offset)			{ return mSNTPClient.getOffset(offset); }
 
 	DatabaseCon* getRpcDB()			{ return mRpcDB; }

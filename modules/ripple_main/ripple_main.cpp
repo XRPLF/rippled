@@ -28,11 +28,15 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
+#include <string>
+#include <vector>
+#include <set>
+#include <map>
+#include <list>
+
 #include <openssl/ec.h>
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
-#include <string>
-#include <vector>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/bind.hpp>
@@ -46,8 +50,10 @@
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/thread.hpp>
+#include <boost/thread/mutex.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 #include <boost/unordered_set.hpp>
+#include <boost/unordered_map.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -128,6 +134,7 @@
 // New abstract interfaces
 #include "src/cpp/ripple/ripple_IFeatures.h"
 #include "src/cpp/ripple/ripple_IFeeVote.h"
+#include "src/cpp/ripple/ripple_IHashRouter.h"
 #include "src/cpp/ripple/ripple_ILoadFeeTrack.h"
 #include "src/cpp/ripple/ripple_IValidations.h"
 #include "src/cpp/ripple/ripple_IUniqueNodeList.h"
@@ -238,7 +245,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_HashValue.cpp"
 
 // sockets
-#include "src/cpp/ripple/Suppression.cpp" // no log
 #include "src/cpp/ripple/SNTPClient.cpp"
 #include "src/cpp/ripple/ConnectionPool.cpp"
 #include "src/cpp/ripple/NetworkOPs.cpp"
@@ -265,6 +271,7 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 // Implementation of interfaces
 
 #include "src/cpp/ripple/ripple_FeeVote.cpp"
+#include "src/cpp/ripple/ripple_HashRouter.cpp"
 #include "src/cpp/ripple/ripple_LoadFeeTrack.cpp"
 #include "src/cpp/ripple/ripple_Validations.cpp"
 #include "src/cpp/ripple/ripple_UniqueNodeList.cpp"
