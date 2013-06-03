@@ -54,7 +54,19 @@ Log::~Log()
 		case lsINVALID:	assert(false); return;
 	}
 
-	logMsg += oss.str();
+	std::string ls = oss.str();
+	size_t s = ls.find("\"secret\"");
+	if (s != std::string::npos)
+	{
+		s += 8;
+		size_t sEnd = ls.size() - 1;
+		if (sEnd > (s + 35))
+			sEnd = s + 35;
+		for (int i = s; i < sEnd; ++i)
+			ls[i] = '*';
+	}
+	logMsg += ls;
+
 	if (logMsg.size() > LOG_MAX_MESSAGE)
 	{
 		logMsg.resize(LOG_MAX_MESSAGE);
