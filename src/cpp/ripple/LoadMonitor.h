@@ -12,39 +12,27 @@
 class LoadMonitor
 {
 public:
-	LoadMonitor()
-		: mCounts(0)
-		, mLatencyEvents(0)
-		, mLatencyMSAvg(0)
-		, mLatencyMSPeak(0)
-		, mTargetLatencyAvg(0)
-		, mTargetLatencyPk(0)
-	{
-		mLastUpdate = UptimeTimer::getInstance().getElapsedSeconds ();
-	}
+	LoadMonitor ();
 
-	void addCount();
-	void addLatency(int latency);
-	void addCountAndLatency(const std::string& name, int latency);
+	void addCount ();
+	
+    void addLatency (int latency);
 
-	void setTargetLatency(uint64 avg, uint64 pk)
-	{
-		mTargetLatencyAvg  = avg;
-		mTargetLatencyPk = pk;
-	}
+    void addCountAndLatency (const std::string& name, int latency);
 
-	bool isOverTarget(uint64 avg, uint64 peak)
-	{
-		return (mTargetLatencyPk && (peak > mTargetLatencyPk)) ||
-			(mTargetLatencyAvg && (avg > mTargetLatencyAvg));
-	}
+	void setTargetLatency (uint64 avg, uint64 pk);
 
-	void getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& latencyPeak, bool& isOver);
-	bool isOver();
+	bool isOverTarget(uint64 avg, uint64 peak);
+
+    // VFALCO: TODO, make this return the values in a struct.
+	void getCountAndLatency (uint64& count, uint64& latencyAvg, uint64& latencyPeak, bool& isOver);
+
+    bool isOver ();
 
 private:
-	void update();
+	void update ();
 
+	boost::mutex		mLock;
     uint64				mCounts;
 	uint64				mLatencyEvents;
 	uint64				mLatencyMSAvg;
@@ -52,7 +40,6 @@ private:
 	uint64				mTargetLatencyAvg;
 	uint64				mTargetLatencyPk;
 	int					mLastUpdate;
-	boost::mutex		mLock;
 };
 
 #endif
