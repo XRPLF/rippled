@@ -52,14 +52,8 @@
     <Filter Include="1. Modules\ripple_basics">
       <UniqueIdentifier>{84e43f43-816e-4ccd-80c2-38b322904894}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_db">
-      <UniqueIdentifier>{a5190241-c5bc-4e23-8ef1-6adf757c75e3}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_main">
       <UniqueIdentifier>{1a379c07-ccf1-4636-8018-2cfc0685edf0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_db\storage">
-      <UniqueIdentifier>{6097a179-ddad-4c69-9a34-2e3fc2c9fa1d}</UniqueIdentifier>
     </Filter>
     <Filter Include="1. Modules\ripple_basics\containers">
       <UniqueIdentifier>{96cbc9ff-0118-4844-bb4c-05aef58a60b5}</UniqueIdentifier>
@@ -138,6 +132,12 @@
     </Filter>
     <Filter Include="2. Empty\ripple_client">
       <UniqueIdentifier>{97c96b68-70fd-4679-89fc-c1c8c87c265e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_main\storage">
+      <UniqueIdentifier>{6097a179-ddad-4c69-9a34-2e3fc2c9fa1d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="2. Empty\ripple_db">
+      <UniqueIdentifier>{a5190241-c5bc-4e23-8ef1-6adf757c75e3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -592,16 +592,16 @@
       <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_db\ripple_db.cpp">
-      <Filter>1. Modules\ripple_db</Filter>
+      <Filter>2. Empty\ripple_db</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\database\database.cpp">
-      <Filter>1. Modules\ripple_db\storage</Filter>
+      <Filter>1. Modules\ripple_main\storage</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\DBInit.cpp">
-      <Filter>1. Modules\ripple_db\storage</Filter>
+      <Filter>1. Modules\ripple_main\storage</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\database\SqliteDatabase.cpp">
-      <Filter>1. Modules\ripple_db\storage</Filter>
+      <Filter>1. Modules\ripple_main\storage</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_main\ripple_main.cpp">
       <Filter>1. Modules\ripple_main</Filter>
@@ -1248,13 +1248,13 @@
       <Filter>1. Modules\ripple_main\rpc</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_db\ripple_db.h">
-      <Filter>1. Modules\ripple_db</Filter>
+      <Filter>2. Empty\ripple_db</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\database\database.h">
-      <Filter>1. Modules\ripple_db\storage</Filter>
+      <Filter>1. Modules\ripple_main\storage</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\database\SqliteDatabase.h">
-      <Filter>1. Modules\ripple_db\storage</Filter>
+      <Filter>1. Modules\ripple_main\storage</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_main\ripple_main.h">
       <Filter>1. Modules\ripple_main</Filter>

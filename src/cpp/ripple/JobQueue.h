@@ -11,6 +11,9 @@
 #include <boost/asio.hpp>
 #include <boost/ref.hpp>
 
+// VFALCO: Does this belong here?
+#include "ripple_LoadEvent.h"
+
 #include "LoadMonitor.h"
 
 // Note that this queue should only be used for CPU-bound jobs
@@ -61,6 +64,7 @@ public:
 	Job(JobType type, const std::string& name, uint64 index, LoadMonitor& lm, const FUNCTION_TYPE<void(Job&)>& job)
 		: mType(type), mJobIndex(index), mJob(job), mName(name)
 	{
+        // VFALCO: NOTE, what the heck does this mean?
 		mLoadMonitor = boost::make_shared<LoadEvent>(boost::ref(lm), name, false);
 	}
 
@@ -86,8 +90,7 @@ protected:
 class JobQueue
 {
 public:
-
-	JobQueue(boost::asio::io_service&);
+	explicit JobQueue (boost::asio::io_service&);
 
 	void addJob(JobType type, const std::string& name, const FUNCTION_TYPE<void(Job&)>& job);
 
@@ -112,8 +115,11 @@ public:
 	int isOverloaded();
 	Json::Value getJson(int c = 0);
 
-protected:
-	boost::mutex					mJobLock;
+private:
+	void threadEntry();
+	void IOThread(boost::mutex::scoped_lock&);
+
+    boost::mutex					mJobLock;
 	boost::condition_variable		mJobCond;
 
 	uint64							mLastJob;
@@ -127,10 +133,6 @@ protected:
 	boost::asio::io_service&		mIOService;
 
 	std::map<JobType, std::pair<int, int > >	mJobCounts;
-
-
-	void threadEntry();
-	void IOThread(boost::mutex::scoped_lock&);
 };
 
 #endif

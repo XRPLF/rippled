@@ -169,6 +169,11 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/UpdateTables.cpp"
 #include "src/cpp/ripple/main.cpp"
 
+// storage
+#include "src/cpp/database/database.cpp"
+#include "src/cpp/database/SqliteDatabase.cpp"
+#include "src/cpp/ripple/DBInit.cpp"
+
 // contracts
 #include "src/cpp/ripple/Contract.cpp" // no log
 #include "src/cpp/ripple/Interpreter.cpp" // no log
