@@ -9,7 +9,6 @@
 
 #include "LedgerMaster.h"
 #include "ConnectionPool.h"
-#include "FeatureTable.h"
 #include "LedgerAcquire.h"
 #include "TransactionMaster.h"
 #include "Wallet.h"
@@ -27,7 +26,7 @@
 #include "ripple_DatabaseCon.h"
 
 // VFALCO: TODO, Fix forward declares required for header dependency loops
-class IFeatureTable;
+class IFeatures;
 class IFeeVote;
 class IHashRouter;
 class ILoadFeeTrack;
@@ -62,14 +61,13 @@ class Application
 	OrderBookDB				mOrderBookDB;
 	
     // VFALCO: Clean stuff
+    beast::ScopedPointer <IFeatures> mFeatures;
 	beast::ScopedPointer <IFeeVote> mFeeVote;
     beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
     beast::ScopedPointer <IHashRouter> mHashRouter;
 	beast::ScopedPointer <IValidations> mValidations;
 	beast::ScopedPointer <IUniqueNodeList> mUNL;
     // VFALCO: End Clean stuff
-
-    FeatureTable			mFeatureTable;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
 
@@ -124,7 +122,7 @@ public:
 	PeerDoor& getPeerDoor()							{ return *mPeerDoor; }
 	OrderBookDB& getOrderBookDB()					{ return mOrderBookDB; }
 	SLECache& getSLECache()							{ return mSLECache; }
-	FeatureTable& getFeatureTable()					{ return mFeatureTable; }
+	IFeatures& getFeatureTable()				    { return *mFeatures; }
 
 	IFeeVote& getFeeVote()							{ return *mFeeVote; }
 	ILoadFeeTrack& getFeeTrack()				    { return *mFeeTrack; }

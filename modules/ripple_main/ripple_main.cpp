@@ -138,7 +138,6 @@
 #include "src/cpp/ripple/ripple_ILoadFeeTrack.h"
 #include "src/cpp/ripple/ripple_IValidations.h"
 #include "src/cpp/ripple/ripple_IUniqueNodeList.h"
-#include "src/cpp/ripple/FeatureTable.h" // ??
 
 //------------------------------------------------------------------------------
 
@@ -178,7 +177,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/AcceptedLedger.cpp" // no log
 #include "src/cpp/ripple/AccountItems.cpp" // no log
 #include "src/cpp/ripple/AccountState.cpp" // no log
-#include "src/cpp/ripple/FeatureTable.cpp"
 #include "src/cpp/ripple/Ledger.cpp"
 #include "src/cpp/ripple/LedgerAcquire.cpp"
 #include "src/cpp/ripple/LedgerConsensus.cpp"
@@ -270,6 +268,7 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 
 // Implementation of interfaces
 
+#include "src/cpp/ripple/ripple_Features.cpp"
 #include "src/cpp/ripple/ripple_FeeVote.cpp"
 #include "src/cpp/ripple/ripple_HashRouter.cpp"
 #include "src/cpp/ripple/ripple_LoadFeeTrack.cpp"
