@@ -1022,6 +1022,7 @@ void LedgerConsensus::playbackProposals()
 	}
 }
 
+// VFALCO: TODO, clean these macros up and put them somewhere. Try to eliminate them if possible.
 #define LCAT_SUCCESS	0
 #define LCAT_FAIL		1
 #define LCAT_RETRY		2
@@ -1040,6 +1041,7 @@ int LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTrans
 		<< (retryAssured ? "/retry" : "/final");
 	WriteLog (lsTRACE, LedgerConsensus) << txn->getJson(0);
 
+// VFALCO: TODO, figure out what this "trust network" is all about and why it needs exceptions.
 #ifndef TRUST_NETWORK
 	try
 	{
