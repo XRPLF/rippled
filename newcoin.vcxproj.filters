@@ -801,6 +801,9 @@
     <ClCompile Include="src\cpp\ripple\ripple_Features.cpp">
       <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_LoadEvent.cpp">
+      <Filter>1. Modules\ripple_main\main</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="database\sqlite3ext.h">
@@ -1448,9 +1451,6 @@
     <ClInclude Include="src\cpp\ripple\LoadMonitor.h">
       <Filter>1. Modules\ripple_main\main</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\NetworkStatus.h">
-      <Filter>1. Modules\ripple_main\main</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\Version.h">
       <Filter>1. Modules\ripple_main\main</Filter>
     </ClInclude>
@@ -1483,6 +1483,9 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IHashRouter.h">
       <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_LoadEvent.h">
+      <Filter>1. Modules\ripple_main\main</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

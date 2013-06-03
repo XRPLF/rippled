@@ -74,6 +74,8 @@
 
 #include "src/cpp/database/SqliteDatabase.h"
 
+#include "src/cpp/ripple/ripple_LoadEvent.h"
+
 #include "src/cpp/ripple/AcceptedLedger.h"
 #include "src/cpp/ripple/AccountItems.h"
 #include "src/cpp/ripple/AccountSetTransactor.h"
@@ -265,6 +267,10 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/RPCSub.cpp"
 
 //------------------------------------------------------------------------------
+
+// Refactored sources
+
+#include "src/cpp/ripple/ripple_LoadEvent.cpp"
 
 // Implementation of interfaces
 
