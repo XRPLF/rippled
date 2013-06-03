@@ -17,14 +17,6 @@ public:
 	typedef boost::shared_ptr<TransactionMetaSet> pointer;
 	typedef const pointer& ref;
 
-protected:
-	uint256	mTransactionID;
-	uint32	mLedger;
-	uint32  mIndex;
-	int		mResult;
-
-	STArray mNodes;
-
 public:
 	TransactionMetaSet() : mLedger(0), mIndex(static_cast<uint32>(-1)), mResult(255) { ; }
 	TransactionMetaSet(const uint256& txID, uint32 ledger, uint32 index) :
@@ -56,6 +48,14 @@ public:
 	STArray& getNodes(){ return(mNodes); }
 
 	static bool thread(STObject& node, const uint256& prevTxID, uint32 prevLgrID);
+
+private:
+	uint256	mTransactionID;
+	uint32	mLedger;
+	uint32  mIndex;
+	int		mResult;
+
+	STArray mNodes;
 };
 
 #endif

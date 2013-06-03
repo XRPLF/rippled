@@ -18,49 +18,7 @@ class LedgerMaster
 public:
 	typedef FUNCTION_TYPE<void(Ledger::ref)> callback;
 
-protected:
-	boost::recursive_mutex mLock;
-
-	TransactionEngine mEngine;
-
-	Ledger::pointer mCurrentLedger;		// The ledger we are currently processiong
-	Ledger::pointer mCurrentSnapshot;	// Snapshot of the current ledger
-	Ledger::pointer mFinalizedLedger;	// The ledger that most recently closed
-	Ledger::pointer mValidLedger;		// The highest-sequence ledger we have fully accepted
-	Ledger::pointer mPubLedger;			// The last ledger we have published
-
-	LedgerHistory mLedgerHistory;
-
-	CanonicalTXSet mHeldTransactions;
-
-	RangeSet mCompleteLedgers;
-	LedgerAcquire::pointer mMissingLedger;
-	uint32 mMissingSeq;
-
-	int							mMinValidations;	// The minimum validations to publish a ledger
-	uint256						mLastValidateHash;
-	uint32						mLastValidateSeq;
-	std::list<callback>			mOnValidate;		// Called when a ledger has enough validations
-
-	std::list<Ledger::pointer>	mPubLedgers;		// List of ledgers to publish
-	bool						mPubThread;			// Publish thread is running
-
-	bool						mPathFindThread;	// Pathfind thread is running
-	bool						mPathFindNewLedger;
-	bool						mPathFindNewRequest;
-
-	void applyFutureTransactions(uint32 ledgerIndex);
-	bool isValidTransaction(Transaction::ref trans);
-	bool isTransactionOnFutureList(Transaction::ref trans);
-
-	bool acquireMissingLedger(Ledger::ref from, const uint256& ledgerHash, uint32 ledgerSeq);
-	void asyncAccept(Ledger::pointer);
-	void missingAcquireComplete(LedgerAcquire::pointer);
-	void pubThread();
-	void updatePaths();
-
 public:
-
 	LedgerMaster() : mHeldTransactions(uint256()), mMissingSeq(0),
 		mMinValidations(0), mLastValidateSeq(0), mPubThread(false),
 		mPathFindThread(false), mPathFindNewLedger(false), mPathFindNewRequest(false)
@@ -168,6 +126,47 @@ public:
 	void newPFRequest();
 
 	static bool shouldAcquire(uint32 currentLedgerID, uint32 ledgerHistory, uint32 targetLedger);
+
+private:
+	void applyFutureTransactions(uint32 ledgerIndex);
+	bool isValidTransaction(Transaction::ref trans);
+	bool isTransactionOnFutureList(Transaction::ref trans);
+
+	bool acquireMissingLedger(Ledger::ref from, const uint256& ledgerHash, uint32 ledgerSeq);
+	void asyncAccept(Ledger::pointer);
+	void missingAcquireComplete(LedgerAcquire::pointer);
+	void pubThread();
+	void updatePaths();
+
+    boost::recursive_mutex mLock;
+
+	TransactionEngine mEngine;
+
+	Ledger::pointer mCurrentLedger;		// The ledger we are currently processiong
+	Ledger::pointer mCurrentSnapshot;	// Snapshot of the current ledger
+	Ledger::pointer mFinalizedLedger;	// The ledger that most recently closed
+	Ledger::pointer mValidLedger;		// The highest-sequence ledger we have fully accepted
+	Ledger::pointer mPubLedger;			// The last ledger we have published
+
+	LedgerHistory mLedgerHistory;
+
+	CanonicalTXSet mHeldTransactions;
+
+	RangeSet mCompleteLedgers;
+	LedgerAcquire::pointer mMissingLedger;
+	uint32 mMissingSeq;
+
+	int							mMinValidations;	// The minimum validations to publish a ledger
+	uint256						mLastValidateHash;
+	uint32						mLastValidateSeq;
+	std::list<callback>			mOnValidate;		// Called when a ledger has enough validations
+
+	std::list<Ledger::pointer>	mPubLedgers;		// List of ledgers to publish
+	bool						mPubThread;			// Publish thread is running
+
+	bool						mPathFindThread;	// Pathfind thread is running
+	bool						mPathFindNewLedger;
+	bool						mPathFindNewRequest;
 };
 
 #endif

@@ -5,7 +5,11 @@
 
 class OfferCreateTransactor : public Transactor
 {
-protected:
+public:
+	OfferCreateTransactor (const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine) : Transactor(txn,params,engine) {}
+	TER doApply();
+
+private:
 	bool bValidOffer(
 		SLE::ref			sleOfferDir,
 		const uint256&		uOffer,
@@ -33,10 +37,8 @@ protected:
 
 	boost::unordered_set<uint256>	usOfferUnfundedFound;	// Offers found unfunded.
 
-public:
-	OfferCreateTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine) : Transactor(txn,params,engine) {}
-	TER doApply();
 };
+
 #endif
 
 // vim:ts=4

@@ -16,19 +16,10 @@ class TXQeueue;
 
 class TXQEntry
 {
-	friend class TXQueue;
-
 public:
 	typedef boost::shared_ptr<TXQEntry> pointer;
 	typedef const boost::shared_ptr<TXQEntry>& ref;
     typedef FUNCTION_TYPE<void (Transaction::pointer, TER)> stCallback; // must complete immediately
-
-protected:
-	Transaction::pointer	mTxn;
-	bool					mSigChecked;
-	std::list<stCallback>	mCallbacks;
-
-	void addCallbacks(const TXQEntry& otherEntry);
 
 public:
 	TXQEntry(Transaction::ref tx, bool sigChecked) : mTxn(tx), mSigChecked(sigChecked) { ; }
@@ -39,22 +30,20 @@ public:
 	const uint256& getID() const				{ return mTxn->getID(); }
 
 	void doCallbacks(TER);
+
+private:
+	friend class TXQueue;
+
+    Transaction::pointer	mTxn;
+	bool					mSigChecked;
+	std::list<stCallback>	mCallbacks;
+
+	void addCallbacks(const TXQEntry& otherEntry);
 };
 
 class TXQueue
 {
-protected:
-	typedef boost::bimaps::unordered_set_of<uint256>	leftType;
-	typedef boost::bimaps::list_of<TXQEntry::pointer>	rightType;
-	typedef boost::bimap<leftType, rightType>			mapType;
-	typedef mapType::value_type							valueType;
-
-	mapType			mTxMap;
-	bool			mRunning;
-	boost::mutex	mLock;
-
 public:
-
 	TXQueue() : mRunning(false) { ; }
 
 	// Return: true = must dispatch signature checker thread
@@ -69,6 +58,16 @@ public:
 	// Transaction execution interface
 	void getJob(TXQEntry::pointer&);
 	bool stopProcessing(TXQEntry::ref finishedJob);
+
+private:
+	typedef boost::bimaps::unordered_set_of<uint256>	leftType;
+	typedef boost::bimaps::list_of<TXQEntry::pointer>	rightType;
+	typedef boost::bimap<leftType, rightType>			mapType;
+	typedef mapType::value_type							valueType;
+
+	mapType			mTxMap;
+	bool			mRunning;
+	boost::mutex	mLock;
 };
 
 #endif

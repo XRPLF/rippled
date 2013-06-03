@@ -20,16 +20,6 @@
 */
 class ALTransaction
 {
-protected:
-	SerializedTransaction::pointer	mTxn;
-	TransactionMetaSet::pointer		mMeta;
-	TER								mResult;
-	std::vector<RippleAddress>		mAffected;
-	std::vector<unsigned char>		mRawMeta;
-	Json::Value						mJson;
-
-	void buildJson();
-
 public:
 	typedef boost::shared_ptr<ALTransaction> pointer;
 	typedef const pointer& ref;
@@ -51,6 +41,16 @@ public:
 	int getIndex() const									{ return mMeta ? mMeta->getIndex() : 0; }
 	std::string getEscMeta() const;
 	Json::Value getJson() const								{ return mJson; }
+
+private:
+	SerializedTransaction::pointer	mTxn;
+	TransactionMetaSet::pointer		mMeta;
+	TER								mResult;
+	std::vector<RippleAddress>		mAffected;
+	std::vector<unsigned char>		mRawMeta;
+	Json::Value						mJson;
+
+	void buildJson();
 };
 
 /*============================================================================*/
@@ -66,17 +66,7 @@ public:
 	typedef map_t::value_type						value_type;
 	typedef map_t::const_iterator					const_iterator;
 
-protected:
-	Ledger::pointer		mLedger;
-	map_t				mMap;
-
-	void insert(ALTransaction::ref);
-
-	static TaggedCache<uint256, AcceptedLedger, UptimeTimerAdapter>	ALCache;
-	AcceptedLedger(Ledger::ref ledger);
-
 public:
-
 	static pointer makeAcceptedLedger(Ledger::ref ledger);
 	static void sweep()				{ ALCache.sweep(); }
 
@@ -89,6 +79,15 @@ public:
 	static float getCacheHitRate()	{ return ALCache.getHitRate(); }
 
 	ALTransaction::pointer getTxn(int) const;
+
+private:
+	Ledger::pointer		mLedger;
+	map_t				mMap;
+
+	void insert(ALTransaction::ref);
+
+	static TaggedCache<uint256, AcceptedLedger, UptimeTimerAdapter>	ALCache;
+	AcceptedLedger(Ledger::ref ledger);
 };
 
 #endif

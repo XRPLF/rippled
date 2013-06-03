@@ -46,21 +46,14 @@ public:
 
 class LoadSource
 { // a single endpoint that can impose load
+private:
+    // VFALCO: Make this not a friend
 	friend class LoadManager;
 
 public:
-
 	// load source flags
 	static const int lsfPrivileged	= 1;
 	static const int lsfOutbound	= 2; // outbound connection
-
-protected:
-	std::string	mName;
-	int			mBalance;
-	int			mFlags;
-	int			mLastUpdate;
-	int			mLastWarning;
-	bool		mLogged;
 
 public:
 	LoadSource(bool admin)
@@ -94,39 +87,19 @@ public:
 
 	void	setOutbound()			{ mFlags |= lsfOutbound; }
 	bool	isOutbound() const		{ return (mFlags & lsfOutbound) != 0; }
+
+private:
+	std::string	mName;
+	int			mBalance;
+	int			mFlags;
+	int			mLastUpdate;
+	int			mLastWarning;
+	bool		mLogged;
 };
 
 
 class LoadManager
 { // a collection of load sources
-protected:
-
-	int mCreditRate;			// credits gained/lost per second
-	int mCreditLimit;			// the most credits a source can have
-	int mDebitWarn;				// when a source drops below this, we warn
-	int mDebitLimit;			// when a source drops below this, we cut it off (should be negative)
-
-	bool mShutdown;
-	bool mArmed;
-
-	/*
-	int mSpace1[4];				// We want mUptime to have its own cache line
-	int mUptime;
-	int mSpace2[4];
-	*/
-
-	int mDeadLock;				// Detect server deadlocks
-
-	mutable boost::mutex mLock;
-
-	void canonicalize(LoadSource&, int upTime) const;
-
-	std::vector<LoadCost>	mCosts;
-
-	void addLoadCost(const LoadCost& c) { mCosts[static_cast<int>(c.mType)] = c; }
-
-	void threadEntry();
-
 public:
 
 	LoadManager(int creditRate = 100, int creditLimit = 500, int debitWarn = -500, int debitLimit = -1000);
@@ -153,6 +126,33 @@ public:
 	int getCost(LoadType t)		{ return mCosts[static_cast<int>(t)].mCost; }
 	void noDeadLock();
 	void arm()					{ mArmed = true; }
+
+private:
+	int mCreditRate;			// credits gained/lost per second
+	int mCreditLimit;			// the most credits a source can have
+	int mDebitWarn;				// when a source drops below this, we warn
+	int mDebitLimit;			// when a source drops below this, we cut it off (should be negative)
+
+	bool mShutdown;
+	bool mArmed;
+
+	/*
+	int mSpace1[4];				// We want mUptime to have its own cache line
+	int mUptime;
+	int mSpace2[4];
+	*/
+
+	int mDeadLock;				// Detect server deadlocks
+
+	mutable boost::mutex mLock;
+
+	void canonicalize(LoadSource&, int upTime) const;
+
+	std::vector<LoadCost>	mCosts;
+
+	void addLoadCost(const LoadCost& c) { mCosts[static_cast<int>(c.mType)] = c; }
+
+	void threadEntry();
 };
 
 #endif

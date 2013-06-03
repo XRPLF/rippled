@@ -14,10 +14,6 @@ DEFINE_INSTANCE (HashRouterEntry);
 // VFALCO: TODO move this class into the scope of class HashRouter
 class HashRouterEntry : private IS_INSTANCE (HashRouterEntry)
 {
-protected:
-	int						mFlags;
-	std::set<uint64>		mPeers;
-
 public:
 	HashRouterEntry ()	: mFlags(0)					{ ; }
 
@@ -30,6 +26,10 @@ public:
 	void setFlag(int f)							{ mFlags |= f; }
 	void clearFlag(int f)						{ mFlags &= ~f; }
 	void swapSet(std::set<uint64>& s)			{ mPeers.swap(s); }
+
+protected:
+	int						mFlags;
+	std::set<uint64>		mPeers;
 };
 
 class IHashRouter

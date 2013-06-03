@@ -11,18 +11,6 @@
 
 class LoadMonitor
 {
-protected:
-	uint64				mCounts;
-	uint64				mLatencyEvents;
-	uint64				mLatencyMSAvg;
-	uint64				mLatencyMSPeak;
-	uint64				mTargetLatencyAvg;
-	uint64				mTargetLatencyPk;
-	int					mLastUpdate;
-	boost::mutex		mLock;
-
-	void update();
-
 public:
 	LoadMonitor()
 		: mCounts(0)
@@ -53,6 +41,18 @@ public:
 
 	void getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& latencyPeak, bool& isOver);
 	bool isOver();
+
+private:
+	void update();
+
+    uint64				mCounts;
+	uint64				mLatencyEvents;
+	uint64				mLatencyMSAvg;
+	uint64				mLatencyMSPeak;
+	uint64				mTargetLatencyAvg;
+	uint64				mTargetLatencyPk;
+	int					mLastUpdate;
+	boost::mutex		mLock;
 };
 
 class LoadEvent
@@ -60,12 +60,6 @@ class LoadEvent
 public:
 	typedef boost::shared_ptr<LoadEvent>	pointer;
 	typedef UPTR_T<LoadEvent>				autoptr;
-
-protected:
-	LoadMonitor&				mMonitor;
-	bool						mRunning;
-	std::string					mName;
-	boost::posix_time::ptime	mStartTime;
 
 public:
 	LoadEvent(LoadMonitor& monitor, const std::string& name, bool shouldStart) :
@@ -100,6 +94,12 @@ public:
 		mMonitor.addCountAndLatency(mName,
 			static_cast<int>((boost::posix_time::microsec_clock::universal_time() - mStartTime).total_milliseconds()));
 	}
+
+private:
+	LoadMonitor&				mMonitor;
+	bool						mRunning;
+	std::string					mName;
+	boost::posix_time::ptime	mStartTime;
 };
 
 #endif
