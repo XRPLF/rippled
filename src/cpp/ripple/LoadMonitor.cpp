@@ -2,25 +2,47 @@
 
 SETUP_LOG (LoadMonitor)
 
-void LoadMonitor::update()
-{ // call with the mutex
+LoadMonitor::LoadMonitor ()
+	: mCounts (0)
+	, mLatencyEvents (0)
+	, mLatencyMSAvg (0)
+	, mLatencyMSPeak (0)
+	, mTargetLatencyAvg (0)
+	, mTargetLatencyPk (0)
+    , mLastUpdate (UptimeTimer::getInstance().getElapsedSeconds ())
+{
+}
+
+// VFALCO: NOTE WHY do we need "the mutex?" This dependence on
+//         a hidden global, especially a synchronization primitive,
+//         is a flawed design.
+//         It's not clear exactly which data needs to be protected.
+//
+// call with the mutex
+void LoadMonitor::update ()
+{
 	int now = UptimeTimer::getInstance().getElapsedSeconds ();
+
+    // VFALCO: TODO stop returning from the middle of functions.
 
 	if (now == mLastUpdate) // current
 		return;
 
 	if ((now < mLastUpdate) || (now > (mLastUpdate + 8)))
-	{ // way out of date
+	{
+        // way out of date
 		mCounts = 0;
 		mLatencyEvents = 0;
 		mLatencyMSAvg = 0;
 		mLatencyMSPeak = 0;
 		mLastUpdate = now;
+        // VFALCO: TODO, don't return from the middle...
 		return;
 	}
 
+    // do exponential decay
 	do
-	{ // do exponential decay
+	{
 		++mLastUpdate;
 		mCounts -= ((mCounts + 3) / 4);
 		mLatencyEvents -= ((mLatencyEvents + 3) / 4);
@@ -29,7 +51,7 @@ void LoadMonitor::update()
 	} while (mLastUpdate < now);
 }
 
-void LoadMonitor::addCount()
+void LoadMonitor::addCount ()
 {
 	boost::mutex::scoped_lock sl(mLock);
 
@@ -37,7 +59,7 @@ void LoadMonitor::addCount()
 	++mCounts;
 }
 
-void LoadMonitor::addLatency(int latency)
+void LoadMonitor::addLatency (int latency)
 {
 	if (latency == 1)
 		latency = 0;
@@ -54,7 +76,7 @@ void LoadMonitor::addLatency(int latency)
 		mLatencyMSPeak = lp;
 }
 
-void LoadMonitor::addCountAndLatency(const std::string& name, int latency)
+void LoadMonitor::addCountAndLatency (const std::string& name, int latency)
 {
 	if (latency > 500)
 	{
@@ -76,7 +98,19 @@ void LoadMonitor::addCountAndLatency(const std::string& name, int latency)
 		mLatencyMSPeak = lp;
 }
 
-bool LoadMonitor::isOver()
+void LoadMonitor::setTargetLatency (uint64 avg, uint64 pk)
+{
+	mTargetLatencyAvg  = avg;
+	mTargetLatencyPk = pk;
+}
+
+bool LoadMonitor::isOverTarget (uint64 avg, uint64 peak)
+{
+	return (mTargetLatencyPk && (peak > mTargetLatencyPk)) ||
+		(mTargetLatencyAvg && (avg > mTargetLatencyAvg));
+}
+
+bool LoadMonitor::isOver ()
 {
 	boost::mutex::scoped_lock sl(mLock);
 
@@ -88,7 +122,7 @@ bool LoadMonitor::isOver()
 	return isOverTarget(mLatencyMSAvg / (mLatencyEvents * 4), mLatencyMSPeak / (mLatencyEvents * 4));
 }
 
-void LoadMonitor::getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& latencyPeak, bool& isOver)
+void LoadMonitor::getCountAndLatency (uint64& count, uint64& latencyAvg, uint64& latencyPeak, bool& isOver)
 {
 	boost::mutex::scoped_lock sl(mLock);
 
@@ -106,7 +140,8 @@ void LoadMonitor::getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& 
 		latencyAvg = mLatencyMSAvg / (mLatencyEvents * 4);
 		latencyPeak = mLatencyMSPeak / (mLatencyEvents * 4);
 	}
-	isOver = isOverTarget(latencyAvg, latencyPeak);
+
+    isOver = isOverTarget(latencyAvg, latencyPeak);
 }
 
 // vim:ts=4
