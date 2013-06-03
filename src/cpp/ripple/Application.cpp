@@ -38,6 +38,7 @@ Application::Application()
     // VFALCO: New stuff
     , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
     , mFeeTrack (ILoadFeeTrack::New ())
+    , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
     , mValidations (IValidations::New ())
     , mUNL (IUniqueNodeList::New (mIOService))
     // VFALCO: End new stuff
@@ -106,6 +107,7 @@ void sigIntHandler(int)
 }
 #endif
 
+// VFALCO: TODO, Figure this out it looks like the wrong tool
 static void runAux(boost::asio::io_service& svc)
 {
 	setCallingThreadName("aux");
@@ -116,6 +118,26 @@ static void runIO(boost::asio::io_service& io)
 {
 	setCallingThreadName("io");
 	io.run();
+}
+
+bool Application::isNew(const uint256& s)
+{
+    return mHashRouter->addSuppression(s);
+}
+
+bool Application::isNew(const uint256& s, uint64 p)
+{
+    return mHashRouter->addSuppressionPeer(s, p);
+}
+
+bool Application::isNew(const uint256& s, uint64 p, int& f)
+{
+    return mHashRouter->addSuppressionPeer(s, p, f);
+}
+
+bool Application::isNewFlag(const uint256& s, int f)
+{
+    return mHashRouter->setFlag(s, f);
 }
 
 void Application::setup()

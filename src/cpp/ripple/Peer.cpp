@@ -842,12 +842,12 @@ static void checkTransaction(Job&, int flags, SerializedTransaction::pointer stx
 			tx = boost::make_shared<Transaction>(stx, true);
 			if (tx->getStatus() == INVALID)
 			{
-				theApp->getSuppression().setFlag(stx->getTransactionID(), SF_BAD);
+				theApp->getHashRouter().setFlag(stx->getTransactionID(), SF_BAD);
 				Peer::punishPeer(peer, LT_InvalidSignature);
 				return;
 			}
 			else
-				theApp->getSuppression().setFlag(stx->getTransactionID(), SF_SIGGOOD);
+				theApp->getHashRouter().setFlag(stx->getTransactionID(), SF_SIGGOOD);
 		}
 		else
 			tx = boost::make_shared<Transaction>(stx, false);
@@ -858,7 +858,7 @@ static void checkTransaction(Job&, int flags, SerializedTransaction::pointer stx
 	}
 	catch (...)
 	{
-		theApp->getSuppression().setFlags(stx->getTransactionID(), SF_BAD);
+		theApp->getHashRouter().setFlags(stx->getTransactionID(), SF_BAD);
 		punishPeer(peer, LT_InvalidRequest);
 	}
 #endif
@@ -962,7 +962,7 @@ static void checkPropose(Job& job, boost::shared_ptr<ripple::TMProposeSet> packe
 	{ // relay untrusted proposal
 		WriteLog (lsTRACE, Peer) << "relaying untrusted proposal";
 		std::set<uint64> peers;
-		theApp->getSuppression().swapSet(proposal->getSuppression(), peers, SF_RELAYED);
+		theApp->getHashRouter().swapSet(proposal->getHashRouter(), peers, SF_RELAYED);
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(set, ripple::mtPROPOSE_LEDGER);
 		theApp->getConnectionPool().relayMessageBut(peers, message);
 	}
@@ -1069,7 +1069,7 @@ static void checkValidation(Job&, SerializedValidation::pointer val, uint256 sig
 
 		std::set<uint64> peers;
 		if (theApp->getOPs().recvValidation(val, source) &&
-			theApp->getSuppression().swapSet(signingHash, peers, SF_RELAYED))
+			theApp->getHashRouter().swapSet(signingHash, peers, SF_RELAYED))
 		{
 			PackedMessage::pointer message = boost::make_shared<PackedMessage>(*packet, ripple::mtVALIDATION);
 			theApp->getConnectionPool().relayMessageBut(peers, message);

@@ -291,7 +291,7 @@ void NetworkOPs::runTransactionQueue()
 			if (didApply || (mMode != omFULL))
 			{
 				std::set<uint64> peers;
-				if (theApp->getSuppression().swapSet(txn->getID(), peers, SF_RELAYED))
+				if (theApp->getHashRouter().swapSet(txn->getID(), peers, SF_RELAYED))
 				{
 					ripple::TMTransaction tx;
 					Serializer s;
@@ -317,7 +317,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 {
 	LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC, "ProcessTXN");
 
-	int newFlags = theApp->getSuppression().getFlags(trans->getID());
+	int newFlags = theApp->getHashRouter().getFlags(trans->getID());
 	if ((newFlags & SF_BAD) != 0)
 	{ // cached bad
 		trans->setStatus(INVALID);
@@ -391,7 +391,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	if (didApply || (mMode != omFULL))
 	{
 		std::set<uint64> peers;
-		if (theApp->getSuppression().swapSet(trans->getID(), peers, SF_RELAYED))
+		if (theApp->getHashRouter().swapSet(trans->getID(), peers, SF_RELAYED))
 		{
 			ripple::TMTransaction tx;
 			Serializer s;
@@ -914,7 +914,7 @@ void NetworkOPs::processTrustedProposal(LedgerProposal::pointer proposal,
 	if (relay)
 	{
 		std::set<uint64> peers;
-		theApp->getSuppression().swapSet(proposal->getSuppression(), peers, SF_RELAYED);
+		theApp->getHashRouter().swapSet(proposal->getHashRouter(), peers, SF_RELAYED);
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(*set, ripple::mtPROPOSE_LEDGER);
 		theApp->getConnectionPool().relayMessageBut(peers, message);
 	}
