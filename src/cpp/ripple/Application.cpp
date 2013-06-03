@@ -36,13 +36,13 @@ Application::Application()
     , mSNTPClient (mAuxService)
     , mJobQueue (mIOService)
     // VFALCO: New stuff
+    , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
     , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
     , mFeeTrack (ILoadFeeTrack::New ())
     , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
     , mValidations (IValidations::New ())
     , mUNL (IUniqueNodeList::New (mIOService))
     // VFALCO: End new stuff
-    , mFeatureTable (2 * 7 * 24 * 60 * 60, 200) // two weeks, 200/256
     // VFALCO: TODO replace all NULL with nullptr
     , mRpcDB (NULL)
     , mTxnDB (NULL)

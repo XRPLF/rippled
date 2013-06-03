@@ -1,13 +1,89 @@
 
-SETUP_LOG (FeatureTable)
+class Features;
 
-void FeatureTable::addInitialFeatures()
+SETUP_LOG (Features)
+
+class FeatureSet
+{ // the status of all features requested in a given window
+public:
+	uint32	mCloseTime;
+	int		mTrustedValidations;				// number of trusted validations
+	boost::unordered_map<uint256, int> mVotes;	// yes votes by feature
+
+	FeatureSet(uint32 ct, int tv) : mCloseTime(ct), mTrustedValidations(tv) { ; }
+	void addVote(const uint256& feature)	{ ++mVotes[feature]; }
+};
+
+// VFALCO: TODO, inline all function definitions
+class Features : public IFeatures
+{
+private:
+	class FeatureState
+	{
+	public:
+		bool	mVetoed;			// We don't want this feature enabled
+		bool	mEnabled;
+		bool	mSupported;
+
+		uint32	mFirstMajority;		// First time we saw a majority (close time)
+		uint32	mLastMajority;		// Most recent time we saw a majority (close time)
+
+		FeatureState() : mVetoed(false), mEnabled(false), mSupported(false), mFirstMajority(0), mLastMajority(0) { ; }
+	};
+
+	typedef boost::unordered_map<uint256, FeatureState> featureMap_t;
+	typedef std::pair<const uint256, FeatureState> featureIt_t;
+	typedef boost::unordered_set<uint256> featureList_t;
+
+	boost::mutex	mMutex;
+	featureMap_t	mFeatureMap;
+	int				mMajorityTime;		// Seconds a feature must hold a majority
+	int				mMajorityFraction;	// 256 = 100%
+	uint32			mFirstReport;		// close time of first majority report
+	uint32			mLastReport;		// close time of most recent majority report
+
+	FeatureState*	getCreateFeature(const uint256& feature, bool create);
+	bool shouldEnable (uint32 closeTime, const FeatureState& fs);
+
+public:
+
+	Features(uint32 majorityTime, int majorityFraction)
+		: mMajorityTime(majorityTime), mMajorityFraction(majorityFraction), mFirstReport(0), mLastReport(0)
+	{ addInitialFeatures(); }
+
+	void addInitialFeatures();
+
+	bool vetoFeature(const uint256& feature);
+	bool unVetoFeature(const uint256& feature);
+
+	bool enableFeature(const uint256& feature);
+	bool disableFeature(const uint256& feature);
+
+	bool isFeatureEnabled(const uint256& feature);
+
+	void setEnabledFeatures(const std::vector<uint256>& features);
+	void setSupportedFeatures(const std::vector<uint256>& features);
+
+	featureList_t getVetoedFeatures();
+	featureList_t getEnabledFeatures();
+	featureList_t getFeaturesToEnable(uint32 closeTime);	// gets features we would vote to enable
+	featureList_t getDesiredFeatures();						// features we support, do not veto, are not enabled
+
+	void reportValidations(const FeatureSet&);
+
+	Json::Value getJson(int);
+
+	void doValidation(Ledger::ref lastClosedLedger, STObject& baseValidation);
+	void doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition);
+};
+
+void Features::addInitialFeatures()
 {
 	// For each feature this version supports, call enableFeature.
 	// Permanent vetos can also be added here.
 }
 
-FeatureTable::FeatureState* FeatureTable::getCreateFeature(const uint256& featureHash, bool create)
+Features::FeatureState* Features::getCreateFeature(const uint256& featureHash, bool create)
 { // call with the mutex held
 	featureMap_t::iterator it = mFeatureMap.find(featureHash);
 	if (it == mFeatureMap.end())
@@ -36,7 +112,7 @@ FeatureTable::FeatureState* FeatureTable::getCreateFeature(const uint256& featur
 	return &(it->second);
 }
 
-bool FeatureTable::vetoFeature(const uint256& feature)
+bool Features::vetoFeature(const uint256& feature)
 {
 	boost::mutex::scoped_lock sl(mMutex);
 	FeatureState *s = getCreateFeature(feature, true);
@@ -46,7 +122,7 @@ bool FeatureTable::vetoFeature(const uint256& feature)
 	return true;
 }
 
-bool FeatureTable::unVetoFeature(const uint256& feature)
+bool Features::unVetoFeature(const uint256& feature)
 {
 	boost::mutex::scoped_lock sl(mMutex);
 	FeatureState *s = getCreateFeature(feature, false);
@@ -56,7 +132,7 @@ bool FeatureTable::unVetoFeature(const uint256& feature)
 	return true;
 }
 
-bool FeatureTable::enableFeature(const uint256& feature)
+bool Features::enableFeature(const uint256& feature)
 {
 	boost::mutex::scoped_lock sl(mMutex);
 	FeatureState *s = getCreateFeature(feature, true);
@@ -66,7 +142,7 @@ bool FeatureTable::enableFeature(const uint256& feature)
 	return true;
 }
 
-bool FeatureTable::disableFeature(const uint256& feature)
+bool Features::disableFeature(const uint256& feature)
 {
 	boost::mutex::scoped_lock sl(mMutex);
 	FeatureState *s = getCreateFeature(feature, false);
@@ -76,14 +152,14 @@ bool FeatureTable::disableFeature(const uint256& feature)
 	return true;
 }
 
-bool FeatureTable::isFeatureEnabled(const uint256& feature)
+bool Features::isFeatureEnabled(const uint256& feature)
 {
 	boost::mutex::scoped_lock sl(mMutex);
 	FeatureState *s = getCreateFeature(feature, false);
 	return s && s->mEnabled;
 }
 
-FeatureTable::featureList_t FeatureTable::getVetoedFeatures()
+Features::featureList_t Features::getVetoedFeatures()
 {
 	featureList_t ret;
 	boost::mutex::scoped_lock sl(mMutex);
@@ -95,7 +171,7 @@ FeatureTable::featureList_t FeatureTable::getVetoedFeatures()
 	return ret;
 }
 
-FeatureTable::featureList_t FeatureTable::getEnabledFeatures()
+Features::featureList_t Features::getEnabledFeatures()
 {
 	featureList_t ret;
 	boost::mutex::scoped_lock sl(mMutex);
@@ -107,7 +183,7 @@ FeatureTable::featureList_t FeatureTable::getEnabledFeatures()
 	return ret;
 }
 
-bool FeatureTable::shouldEnable(uint32 closeTime, const FeatureState& fs)
+bool Features::shouldEnable(uint32 closeTime, const FeatureState& fs)
 {
 	if (fs.mVetoed || fs.mEnabled || !fs.mSupported || (fs.mLastMajority != mLastReport))
 		return false;
@@ -121,7 +197,7 @@ bool FeatureTable::shouldEnable(uint32 closeTime, const FeatureState& fs)
 
 }
 
-FeatureTable::featureList_t FeatureTable::getFeaturesToEnable(uint32 closeTime)
+Features::featureList_t Features::getFeaturesToEnable(uint32 closeTime)
 {
 	featureList_t ret;
 	boost::mutex::scoped_lock sl(mMutex);
@@ -136,7 +212,7 @@ FeatureTable::featureList_t FeatureTable::getFeaturesToEnable(uint32 closeTime)
 	return ret;
 }
 
-FeatureTable::featureList_t FeatureTable::getDesiredFeatures()
+Features::featureList_t Features::getDesiredFeatures()
 {
 	featureList_t ret;
 	boost::mutex::scoped_lock sl(mMutex);
@@ -148,7 +224,7 @@ FeatureTable::featureList_t FeatureTable::getDesiredFeatures()
 	return ret;
 }
 
-void FeatureTable::reportValidations(const FeatureSet& set)
+void Features::reportValidations(const FeatureSet& set)
 {
 	if (set.mTrustedValidations == 0)
 		return;
@@ -167,13 +243,13 @@ void FeatureTable::reportValidations(const FeatureSet& set)
 	BOOST_FOREACH(const u256_int_pair& it, set.mVotes)
 	{
 		FeatureState& state = mFeatureMap[it.first];
-		WriteLog (lsDEBUG, FeatureTable) << "Feature " << it.first.GetHex() << " has " << it.second << " votes, needs " << threshold;
+		WriteLog (lsDEBUG, Features) << "Feature " << it.first.GetHex() << " has " << it.second << " votes, needs " << threshold;
 		if (it.second >= threshold)
 		{ // we have a majority
 			state.mLastMajority = set.mCloseTime;
 			if (state.mFirstMajority == 0)
 			{
-				WriteLog (lsWARNING, FeatureTable) << "Feature " << it.first << " attains a majority vote";
+				WriteLog (lsWARNING, Features) << "Feature " << it.first << " attains a majority vote";
 				state.mFirstMajority = set.mCloseTime;
 				changedFeatures.push_back(it.first);
 			}
@@ -182,7 +258,7 @@ void FeatureTable::reportValidations(const FeatureSet& set)
 		{
 			if (state.mFirstMajority != 0)
 			{
-				WriteLog (lsWARNING, FeatureTable) << "Feature " << it.first << " loses majority vote";
+				WriteLog (lsWARNING, Features) << "Feature " << it.first << " loses majority vote";
 				state.mFirstMajority = 0;
 				state.mLastMajority = 0;
 				changedFeatures.push_back(it.first);
@@ -197,7 +273,7 @@ void FeatureTable::reportValidations(const FeatureSet& set)
 	}
 }
 
-void FeatureTable::setEnabledFeatures(const std::vector<uint256>& features)
+void Features::setEnabledFeatures(const std::vector<uint256>& features)
 {
 	boost::mutex::scoped_lock sl(mMutex);
 	BOOST_FOREACH(featureIt_t& it, mFeatureMap)
@@ -210,7 +286,7 @@ void FeatureTable::setEnabledFeatures(const std::vector<uint256>& features)
 	}
 }
 
-void FeatureTable::setSupportedFeatures(const std::vector<uint256>& features)
+void Features::setSupportedFeatures(const std::vector<uint256>& features)
 {
 	boost::mutex::scoped_lock sl(mMutex);
 	BOOST_FOREACH(featureIt_t& it, mFeatureMap)
@@ -223,7 +299,7 @@ void FeatureTable::setSupportedFeatures(const std::vector<uint256>& features)
 	}
 }
 
-void FeatureTable::doValidation(Ledger::ref lastClosedLedger, STObject& baseValidation)
+void Features::doValidation(Ledger::ref lastClosedLedger, STObject& baseValidation)
 {
 	featureList_t lFeatures = getDesiredFeatures();
 	if (lFeatures.empty())
@@ -238,7 +314,7 @@ void FeatureTable::doValidation(Ledger::ref lastClosedLedger, STObject& baseVali
 	baseValidation.setFieldV256(sfFeatures, vFeatures);
 }
 
-void FeatureTable::doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition)
+void Features::doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition)
 {
 	featureList_t lFeatures = getFeaturesToEnable(lastClosedLedger->getCloseTimeNC());
 	if (lFeatures.empty())
@@ -246,12 +322,12 @@ void FeatureTable::doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPos
 
 	BOOST_FOREACH(const uint256& uFeature, lFeatures)
 	{
-		WriteLog (lsWARNING, FeatureTable) << "We are voting for feature " << uFeature;
+		WriteLog (lsWARNING, Features) << "We are voting for feature " << uFeature;
 		SerializedTransaction trans(ttFEATURE);
 		trans.setFieldAccount(sfAccount, uint160());
 		trans.setFieldH256(sfFeature, uFeature);
 		uint256 txID = trans.getTransactionID();
-		WriteLog (lsWARNING, FeatureTable) << "Vote: " << txID;
+		WriteLog (lsWARNING, Features) << "Vote: " << txID;
 
 		Serializer s;
 		trans.add(s, true);
@@ -259,12 +335,12 @@ void FeatureTable::doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPos
 		SHAMapItem::pointer tItem = boost::make_shared<SHAMapItem>(txID, s.peekData());
 		if (!initialPosition->addGiveItem(tItem, true, false))
 		{
-			WriteLog (lsWARNING, FeatureTable) << "Ledger already had feature transaction";
+			WriteLog (lsWARNING, Features) << "Ledger already had feature transaction";
 		}
 	}
 }
 
-Json::Value FeatureTable::getJson(int)
+Json::Value Features::getJson(int)
 {
 	Json::Value ret(Json::objectValue);
 	{
@@ -314,53 +390,9 @@ Json::Value FeatureTable::getJson(int)
 	return ret;
 }
 
-template<typename INT> class VotableInteger
+IFeatures* IFeatures::New (uint32 majorityTime, int majorityFraction)
 {
-public:
-	VotableInteger(INT current, INT target) : mCurrent(current), mTarget(target)
-	{
-		++mVoteMap[mTarget];				// Add our vote
-	}
-
-	bool mayVote()
-	{
-		return mCurrent != mTarget;			// If we love the current setting, we will not vote
-	}
-
-	void addVote(INT vote)
-	{
-		++mVoteMap[vote];
-	}
-
-	void noVote()
-	{
-		addVote(mCurrent);
-	}
-
-	INT getVotes()
-	{
-		INT ourVote = mCurrent;
-		int weight = 0;
-
-		typedef typename std::map<INT, int>::value_type mapVType;
-		BOOST_FOREACH(const mapVType& value, mVoteMap)
-		{ // Take most voted value between current and target, inclusive
-			if ((value.first <= std::max(mTarget, mCurrent)) &&
-				(value.first >= std::min(mTarget, mCurrent)) &&
-				(value.second > weight))
-			{
-				ourVote = value.first;
-				weight = value.second;
-			}
-		}
-
-		return ourVote;
-	}
-
-private:
-    INT						mCurrent;		// The current setting
-	INT						mTarget;		// The setting we want
-	std::map<INT, int>		mVoteMap;
-};
+    return new Features (majorityTime, majorityFraction);
+}
 
 // vim:ts=4

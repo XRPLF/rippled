@@ -519,9 +519,6 @@
     <ClCompile Include="src\cpp\ripple\AccountState.cpp">
       <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\FeatureTable.cpp">
-      <Filter>1. Modules\ripple_main\processing</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\Ledger.cpp">
       <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
@@ -800,6 +797,9 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_HashRouter.cpp">
       <Filter>1. Modules\ripple_main\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_Features.cpp">
+      <Filter>1. Modules\ripple_main\processing</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1167,9 +1167,6 @@
       <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\AccountState.h">
-      <Filter>1. Modules\ripple_main\processing</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\FeatureTable.h">
       <Filter>1. Modules\ripple_main\processing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Ledger.h">
