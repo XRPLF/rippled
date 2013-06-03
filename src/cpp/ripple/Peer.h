@@ -61,7 +61,6 @@ private:
 	void			handlePingTimer(const boost::system::error_code& ecResult);
 
 protected:
-
 	boost::asio::io_service::strand		mIOStrand;
 	std::vector<uint8_t>				mReadbuf;
 	std::list<PackedMessage::pointer>	mSendQ;

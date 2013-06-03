@@ -45,7 +45,6 @@ public:
 	void setFriendlyName(const std::string& n)	{ mFriendlyName = n; }
 };
 
-
 class FeatureTable
 {
 protected:

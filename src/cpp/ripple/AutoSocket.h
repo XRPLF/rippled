@@ -33,12 +33,6 @@ public:
     typedef boost::system::error_code				error_code;
     typedef boost::function<void(error_code)>		callback;
 
-protected:
-	socket_ptr			mSocket;
-	bool				mSecure;
-
-	std::vector<char>	mBuffer;
-
 public:
 	AutoSocket(basio::io_service& s, bassl::context& c) : mSecure(false), mBuffer(4)
 	{
@@ -230,6 +224,12 @@ protected:
 			mSocket->async_handshake(ssl_socket::server, cbFunc);
 		}
 	}
+
+private:
+	socket_ptr			mSocket;
+	bool				mSecure;
+
+	std::vector<char>	mBuffer;
 };
 
 #endif

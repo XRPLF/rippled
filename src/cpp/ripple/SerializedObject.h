@@ -23,27 +23,19 @@ public:
 
 class SOTemplate
 {
-protected:
-	std::vector<const SOElement*>	mTypes;
-	std::vector<int>				mIndex;		// field num -> index
-
 public:
 	SOTemplate()											{ ; }
 	const std::vector<const SOElement*>& peek() const		{ return mTypes; }
 	void push_back(const SOElement& r);
 	int getIndex(SField::ref) const;
+
+private:
+	std::vector<const SOElement*>	mTypes;
+	std::vector<int>				mIndex;		// field num -> index
 };
 
 class STObject : public SerializedType, private IS_INSTANCE(SerializedObject)
 {
-protected:
-	boost::ptr_vector<SerializedType>	mData;
-	const SOTemplate*					mType;
-
-	STObject* duplicate() const { return new STObject(*this); }
-	STObject(SField::ref name, boost::ptr_vector<SerializedType>& data) : SerializedType(name), mType(NULL)
-	{ mData.swap(data); }
-
 public:
 	STObject() : mType(NULL)										{ ; }
 
@@ -176,6 +168,14 @@ public:
 
 	bool operator==(const STObject& o) const;
 	bool operator!=(const STObject& o) const { return ! (*this == o); }
+
+private:
+	boost::ptr_vector<SerializedType>	mData;
+	const SOTemplate*					mType;
+
+	STObject* duplicate() const { return new STObject(*this); }
+	STObject(SField::ref name, boost::ptr_vector<SerializedType>& data) : SerializedType(name), mType(NULL)
+	{ mData.swap(data); }
 };
 
 // allow ptr_* collections of STObject's
@@ -202,15 +202,7 @@ public:
 	typedef boost::ptr_vector<STObject>::const_reverse_iterator	const_reverse_iterator;
 	typedef boost::ptr_vector<STObject>::size_type				size_type;
 
-protected:
-
-	vector value;
-
-	STArray* duplicate() const { return new STArray(*this); }
-	static STArray* construct(SerializerIterator&, SField::ref);
-
 public:
-
 	STArray()																{ ; }
 	STArray(int n)															{ value.reserve(n); }
 	STArray(SField::ref f) : SerializedType(f)								{ ; }
@@ -260,6 +252,12 @@ public:
 	virtual SerializedTypeID getSType() const		{ return STI_ARRAY; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 	virtual bool isDefault() const					{ return value.empty(); }
+
+private:
+	vector value;
+
+	STArray* duplicate() const { return new STArray(*this); }
+	static STArray* construct(SerializerIterator&, SField::ref);
 };
 
 inline STArray::iterator range_begin(STArray& x)		{ return x.begin(); }

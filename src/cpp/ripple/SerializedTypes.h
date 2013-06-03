@@ -38,11 +38,6 @@ static inline const uint160& get_u160_one() { return u160_one; }
 
 class SerializedType
 {
-protected:
-	SField::ptr	fName;
-
-	virtual SerializedType* duplicate() const { return new SerializedType(*fName); }
-
 public:
 
 	SerializedType() : fName(&sfGeneric) { ; }
@@ -80,6 +75,13 @@ public:
 	{ return (getSType() != t.getSType()) || !isEquivalent(t); }
 
 	virtual bool isDefault() const	{ return true; }
+
+protected:
+    // VFALCO: TODO, make accessors for this
+	SField::ptr	fName;
+
+private:
+	virtual SerializedType* duplicate() const { return new SerializedType(*fName); }
 };
 
 inline SerializedType* new_clone(const SerializedType& s) { return s.clone().release(); }
@@ -88,12 +90,6 @@ inline std::ostream& operator<<(std::ostream& out, const SerializedType& t) { re
 
 class STUInt8 : public SerializedType
 {
-protected:
-	unsigned char value;
-
-	STUInt8* duplicate() const { return new STUInt8(*this); }
-	static STUInt8* construct(SerializerIterator&, SField::ref f);
-
 public:
 
 	STUInt8(unsigned char v = 0) : value(v) { ; }
@@ -112,16 +108,16 @@ public:
 	operator unsigned char() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 	virtual bool isDefault() const	{ return value == 0; }
+
+private:
+	unsigned char value;
+
+	STUInt8* duplicate() const { return new STUInt8(*this); }
+	static STUInt8* construct(SerializerIterator&, SField::ref f);
 };
 
 class STUInt16 : public SerializedType
 {
-protected:
-	uint16 value;
-
-	STUInt16* duplicate() const { return new STUInt16(*this); }
-	static STUInt16* construct(SerializerIterator&, SField::ref name);
-
 public:
 
 	STUInt16(uint16 v = 0) : value(v) { ; }
@@ -140,16 +136,16 @@ public:
 	operator uint16() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 	virtual bool isDefault() const	{ return value == 0; }
+
+private:
+	uint16 value;
+
+	STUInt16* duplicate() const { return new STUInt16(*this); }
+	static STUInt16* construct(SerializerIterator&, SField::ref name);
 };
 
 class STUInt32 : public SerializedType
 {
-protected:
-	uint32 value;
-
-	STUInt32* duplicate() const { return new STUInt32(*this); }
-	static STUInt32* construct(SerializerIterator&, SField::ref name);
-
 public:
 
 	STUInt32(uint32 v = 0) : value(v) { ; }
@@ -168,16 +164,16 @@ public:
 	operator uint32() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 	virtual bool isDefault() const	{ return value == 0; }
+
+private:
+	uint32 value;
+
+	STUInt32* duplicate() const { return new STUInt32(*this); }
+	static STUInt32* construct(SerializerIterator&, SField::ref name);
 };
 
 class STUInt64 : public SerializedType
 {
-protected:
-	uint64 value;
-
-	STUInt64* duplicate() const { return new STUInt64(*this); }
-	static STUInt64* construct(SerializerIterator&, SField::ref name);
-
 public:
 
 	STUInt64(uint64 v = 0) : value(v) { ; }
@@ -196,66 +192,26 @@ public:
 	operator uint64() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 	virtual bool isDefault() const	{ return value == 0; }
+
+private:
+	uint64 value;
+
+	STUInt64* duplicate() const { return new STUInt64(*this); }
+	static STUInt64* construct(SerializerIterator&, SField::ref name);
 };
 
+// Internal form:
+// 1: If amount is zero, then value is zero and offset is -100
+// 2: Otherwise:
+//   legal offset range is -96 to +80 inclusive
+//   value range is 10^15 to (10^16 - 1) inclusive
+//  amount = value * [10 ^ offset]
+
+// Wire form:
+// High 8 bits are (offset+142), legal range is, 80 to 22 inclusive
+// Low 56 bits are value, legal range is 10^15 to (10^16 - 1) inclusive
 class STAmount : public SerializedType
 {
-	// Internal form:
-	// 1: If amount is zero, then value is zero and offset is -100
-	// 2: Otherwise:
-	//   legal offset range is -96 to +80 inclusive
-	//   value range is 10^15 to (10^16 - 1) inclusive
-	//  amount = value * [10 ^ offset]
-
-	// Wire form:
-	// High 8 bits are (offset+142), legal range is, 80 to 22 inclusive
-	// Low 56 bits are value, legal range is 10^15 to (10^16 - 1) inclusive
-
-protected:
-	uint160	mCurrency;		// Compared by ==. Always update mIsNative.
-	uint160	mIssuer;		// Not compared by ==. 0 for XRP.
-
-	uint64	mValue;
-	int		mOffset;
-	bool	mIsNative;		// Always !mCurrency. Native is XRP.
-	bool	mIsNegative;
-
-	void canonicalize();
-	STAmount* duplicate() const { return new STAmount(*this); }
-	static STAmount* construct(SerializerIterator&, SField::ref name);
-
-	STAmount(SField::ref name, const uint160& cur, const uint160& iss, uint64 val, int off, bool isNat, bool isNeg)
-		: SerializedType(name), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
-			mIsNative(isNat), mIsNegative(isNeg) { ; }
-
-	void set(int64 v)
-	{
-		if (v < 0)
-		{
-			mIsNegative = true;
-			mValue = static_cast<uint64>(-v);
-		}
-		else
-		{
-			mIsNegative = false;
-			mValue = static_cast<uint64>(v);
-		}
-	}
-
-	void set(int v)
-	{
-		if (v < 0)
-		{
-			mIsNegative = true;
-			mValue = static_cast<uint64>(-v);
-		}
-		else
-		{
-			mIsNegative = false;
-			mValue = static_cast<uint64>(v);
-		}
-	}
-
 public:
 	static const int cMinOffset = -96, cMaxOffset = 80;
 	static const uint64 cMinValue = 1000000000000000ull, cMaxValue = 9999999999999999ull;
@@ -469,6 +425,51 @@ public:
 
 	STAmount getRound() const;
 	void roundSelf();
+
+private:
+	uint160	mCurrency;		// Compared by ==. Always update mIsNative.
+	uint160	mIssuer;		// Not compared by ==. 0 for XRP.
+
+	uint64	mValue;
+	int		mOffset;
+	bool	mIsNative;		// Always !mCurrency. Native is XRP.
+	bool	mIsNegative;
+
+	void canonicalize();
+	STAmount* duplicate() const { return new STAmount(*this); }
+	static STAmount* construct(SerializerIterator&, SField::ref name);
+
+	STAmount(SField::ref name, const uint160& cur, const uint160& iss, uint64 val, int off, bool isNat, bool isNeg)
+		: SerializedType(name), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
+			mIsNative(isNat), mIsNegative(isNeg) { ; }
+
+	void set(int64 v)
+	{
+		if (v < 0)
+		{
+			mIsNegative = true;
+			mValue = static_cast<uint64>(-v);
+		}
+		else
+		{
+			mIsNegative = false;
+			mValue = static_cast<uint64>(v);
+		}
+	}
+
+	void set(int v)
+	{
+		if (v < 0)
+		{
+			mIsNegative = true;
+			mValue = static_cast<uint64>(-v);
+		}
+		else
+		{
+			mIsNegative = false;
+			mValue = static_cast<uint64>(v);
+		}
+	}
 };
 
 extern const STAmount saZero;
@@ -476,14 +477,7 @@ extern const STAmount saOne;
 
 class STHash128 : public SerializedType
 {
-protected:
-	uint128 value;
-
-	STHash128* duplicate() const { return new STHash128(*this); }
-	static STHash128* construct(SerializerIterator&, SField::ref name);
-
 public:
-
 	STHash128(const uint128& v) : value(v) { ; }
 	STHash128(SField::ref n, const uint128& v) : SerializedType(n), value(v) { ; }
 	STHash128(SField::ref n, const char *v) : SerializedType(n) { value.SetHex(v); }
@@ -503,18 +497,17 @@ public:
 	operator uint128() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 	virtual bool isDefault() const	{ return value.isZero(); }
+
+private:
+	uint128 value;
+
+	STHash128* duplicate() const { return new STHash128(*this); }
+	static STHash128* construct(SerializerIterator&, SField::ref name);
 };
 
 class STHash160 : public SerializedType
 {
-protected:
-	uint160 value;
-
-	STHash160* duplicate() const { return new STHash160(*this); }
-	static STHash160* construct(SerializerIterator&, SField::ref name);
-
 public:
-
 	STHash160(const uint160& v) : value(v) { ; }
 	STHash160(SField::ref n, const uint160& v) : SerializedType(n), value(v) { ; }
 	STHash160(SField::ref n, const char *v) : SerializedType(n) { value.SetHex(v); }
@@ -534,18 +527,17 @@ public:
 	operator uint160() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 	virtual bool isDefault() const	{ return value.isZero(); }
+
+private:
+	uint160 value;
+
+	STHash160* duplicate() const { return new STHash160(*this); }
+	static STHash160* construct(SerializerIterator&, SField::ref name);
 };
 
 class STHash256 : public SerializedType
 {
-protected:
-	uint256 value;
-
-	STHash256* duplicate() const { return new STHash256(*this); }
-	static STHash256* construct(SerializerIterator&, SField::ref);
-
 public:
-
 	STHash256(const uint256& v) : value(v) { ; }
 	STHash256(SField::ref n, const uint256& v) : SerializedType(n), value(v) { ; }
 	STHash256(SField::ref n, const char *v) : SerializedType(n) { value.SetHex(v); }
@@ -565,18 +557,18 @@ public:
 	operator uint256() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 	virtual bool isDefault() const	{ return value.isZero(); }
+
+private:
+	uint256 value;
+
+	STHash256* duplicate() const { return new STHash256(*this); }
+	static STHash256* construct(SerializerIterator&, SField::ref);
 };
 
+// variable length byte string
 class STVariableLength : public SerializedType
-{ // variable length byte string protected:
-protected:
-	std::vector<unsigned char> value;
-
-	virtual STVariableLength* duplicate() const { return new STVariableLength(*this); }
-	static STVariableLength* construct(SerializerIterator&, SField::ref);
-
+{
 public:
-
 	STVariableLength(const std::vector<unsigned char>& v) : value(v) { ; }
 	STVariableLength(SField::ref n, const std::vector<unsigned char>& v) : SerializedType(n), value(v) { ; }
 	STVariableLength(SField::ref n) : SerializedType(n) { ; }
@@ -597,16 +589,17 @@ public:
 	operator std::vector<unsigned char>() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 	virtual bool isDefault() const	{ return value.empty(); }
+
+private:
+	std::vector<unsigned char> value;
+
+	virtual STVariableLength* duplicate() const { return new STVariableLength(*this); }
+	static STVariableLength* construct(SerializerIterator&, SField::ref);
 };
 
 class STAccount : public STVariableLength
 {
-protected:
-	virtual STAccount* duplicate() const { return new STAccount(*this); }
-	static STAccount* construct(SerializerIterator&, SField::ref);
-
 public:
-
 	STAccount(const std::vector<unsigned char>& v) : STVariableLength(v) { ; }
 	STAccount(SField::ref n, const std::vector<unsigned char>& v) : STVariableLength(n, v) { ; }
 	STAccount(SField::ref n, const uint160& v);
@@ -624,13 +617,20 @@ public:
 	void setValueH160(const uint160& v);
 	bool getValueH160(uint160&) const;
 	bool isValueH160() const;
+
+private:
+	virtual STAccount* duplicate() const { return new STAccount(*this); }
+	static STAccount* construct(SerializerIterator&, SField::ref);
 };
 
 class STPathElement
 {
-  friend class STPathSet;
-  friend class STPath;
-  friend class Pathfinder;
+private:
+    // VFALCO: Remove these friend declarations
+    friend class STPathSet;
+    friend class STPath;
+    friend class Pathfinder;
+
 public:
 	enum {
 		typeEnd			= 0x00,
@@ -644,12 +644,6 @@ public:
 				| typeIssuer
 			),	// Bits that may be non-zero.
 	};
-
-protected:
-	unsigned int	mType;
-	uint160			mAccountID;
-	uint160			mCurrencyID;
-	uint160			mIssuerID;
 
 public:
 	STPathElement(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID,
@@ -682,15 +676,16 @@ public:
 		return mType == t.mType && mAccountID == t.mAccountID && mCurrencyID == t.mCurrencyID &&
 			mIssuerID == t.mIssuerID;
 	}
+
+private:
+	unsigned int	mType;
+	uint160			mAccountID;
+	uint160			mCurrencyID;
+	uint160			mIssuerID;
 };
 
 class STPath
 {
-  friend class STPathSet;
-  friend class Pathfinder;
-protected:
-	std::vector<STPathElement> mPath;
-
 public:
 	STPath()		{ ; }
 	STPath(const std::vector<STPathElement>& p) : mPath(p) { ; }
@@ -717,6 +712,12 @@ public:
 	bool operator==(const STPath& t) const						{ return mPath == t.mPath; }
 
 	void setCanonical(const STPath& spExpanded);
+
+private:
+    friend class STPathSet;
+    friend class Pathfinder;
+
+    std::vector<STPathElement> mPath;
 };
 
 inline std::vector<STPathElement>::iterator range_begin(STPath & x)
@@ -754,21 +755,22 @@ namespace boost
 	};
 }
 
+// A set of zero or more payment paths
 class STPathSet : public SerializedType
-{ // A set of zero or more payment paths
-protected:
-	std::vector<STPath> value;
-
-	STPathSet* duplicate() const { return new STPathSet(*this); }
-	static STPathSet* construct(SerializerIterator&, SField::ref);
-
+{
 public:
-	STPathSet() { ; }
-	STPathSet(SField::ref n) : SerializedType(n) { ; }
-	STPathSet(const std::vector<STPath>& v) : value(v) { ; }
-	STPathSet(SField::ref n, const std::vector<STPath>& v) : SerializedType(n), value(v) { ; }
-	static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
-	{ return UPTR_T<SerializedType>(construct(sit, name)); }
+	STPathSet () { ; }
+	
+    explicit STPathSet(SField::ref n) : SerializedType(n) { ; }
+	
+    explicit STPathSet(const std::vector<STPath>& v) : value(v) { ; }
+	
+    STPathSet(SField::ref n, const std::vector<STPath>& v) : SerializedType(n), value(v) { ; }
+	
+    static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
+	{
+        return UPTR_T<SerializedType>(construct(sit, name));
+    }
 
 //	std::string getText() const;
 	void add(Serializer& s) const;
@@ -791,6 +793,12 @@ public:
 	std::vector<STPath>::iterator end()					{ return value.end(); }
 	std::vector<STPath>::const_iterator begin() const	{ return value.begin(); }
 	std::vector<STPath>::const_iterator end() const		{ return value.end(); }
+
+private:
+	std::vector<STPath> value;
+
+	STPathSet* duplicate() const { return new STPathSet(*this); }
+	static STPathSet* construct(SerializerIterator&, SField::ref);
 };
 
 inline std::vector<STPath>::iterator range_begin(STPathSet & x)
@@ -830,12 +838,6 @@ namespace boost
 
 class STVector256 : public SerializedType
 {
-protected:
-	std::vector<uint256>	mValue;
-
-	STVector256* duplicate() const { return new STVector256(*this); }
-	static STVector256* construct(SerializerIterator&, SField::ref);
-
 public:
 	STVector256() { ; }
 	STVector256(SField::ref n) : SerializedType(n) { ; }
@@ -867,6 +869,12 @@ public:
 	void sort()										{ std::sort(mValue.begin(), mValue.end()); }
 
 	Json::Value getJson(int) const;
+
+private:
+	std::vector<uint256>	mValue;
+
+	STVector256* duplicate() const { return new STVector256(*this); }
+	static STVector256* construct(SerializerIterator&, SField::ref);
 };
 
 #endif
