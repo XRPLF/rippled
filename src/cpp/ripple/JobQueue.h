@@ -1,26 +1,11 @@
 #ifndef JOB_QUEUE__H
 #define JOB_QUEUE__H
 
-#include <map>
-#include <set>
-#include <vector>
-
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/condition_variable.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/asio.hpp>
-#include <boost/ref.hpp>
-
-// VFALCO: Does this belong here?
-#include "ripple_LoadEvent.h"
-
-#include "LoadMonitor.h"
-
 // Note that this queue should only be used for CPU-bound jobs
 // It is primarily intended for signature checking
-
 enum JobType
-{ // must be in priority order, low to high
+{
+    // must be in priority order, low to high
 	jtINVALID		= -1,
 	jtPACK			= 1,	// Make a fetch pack for a peer
 	jtPUBOLDLEDGER	= 2,	// An old ledger has been accepted
@@ -50,7 +35,9 @@ enum JobType
 	jtHO_READ		= 30,
 	jtHO_WRITE		= 31,
 }; // CAUTION: If you add new types, add them to JobType.cpp too
-#define NUM_JOB_TYPES 48
+
+// VFALCO: TODO, move this into the enum so it calculates itself?
+#define NUM_JOB_TYPES 48 // why 48 and not 32?
 
 class Job
 {
@@ -77,7 +64,7 @@ public:
 	bool operator<=(const Job& j) const;
 	bool operator>=(const Job& j) const;
 
-	static const char* toString(JobType);
+	static const char* toString (JobType);
 
 protected:
 	JobType						mType;
@@ -123,8 +110,8 @@ private:
 	boost::condition_variable		mJobCond;
 
 	uint64							mLastJob;
-	std::set<Job>					mJobSet;
-	LoadMonitor						mJobLoads[NUM_JOB_TYPES];
+	std::set <Job>					mJobSet;
+	LoadMonitor						mJobLoads [NUM_JOB_TYPES];
 	int								mThreadCount;
 	bool							mShuttingDown;
 

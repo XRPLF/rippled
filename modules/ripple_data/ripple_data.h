@@ -68,6 +68,8 @@
 #include "types/ripple_RippleAddress.h"
 #include "types/ripple_Serializer.h" // needs CKey
 
+#include "src/cpp/ripple/SerializedTypes.h"
+
 // VFALCO: TODO, resolve the location of this file
 #include "ripple.pb.h"
 

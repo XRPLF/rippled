@@ -1,13 +1,6 @@
 #ifndef RIPPLE_IVALIDATIONS_H
 #define RIPPLE_IVALIDATIONS_H
 
-//#include <vector>
-//#include <boost/unordered_map.hpp>
-//#include <boost/thread/mutex.hpp>
-
-//#include "SerializedValidation.h"
-//#include "JobQueue.h"
-
 // VFALCO: TODO rename and move these typedefs into the IValidations interface
 typedef boost::unordered_map<uint160, SerializedValidation::pointer> ValidationSet;
 typedef std::pair<int, uint160> currentValidationCount; // nodes validating and highest node ID validating

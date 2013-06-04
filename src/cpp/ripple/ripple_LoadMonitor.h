@@ -1,11 +1,5 @@
-#ifndef LOADMONITOR__H_
-#define LOADMONITOR__H_
-
-#include <string>
-
-#include <boost/thread/mutex.hpp>
-#include <boost/shared_ptr.hpp>
-
+#ifndef RIPPLE_LOADMONITOR_H
+#define RIPPLE_LOADMONITOR_H
 
 // Monitors load levels and response times
 

@@ -1,4 +1,3 @@
-#include "JobQueue.h"
 
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
