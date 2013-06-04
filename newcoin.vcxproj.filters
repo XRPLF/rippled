@@ -729,9 +729,6 @@
     <ClCompile Include="src\cpp\ripple\SHAMapSync.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\containers</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_HashValue.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
     <ClCompile Include="modules\ripple_data\crypto\ripple_CKeyDeterministic.cpp">
       <Filter>1. Modules\ripple_data\crypto</Filter>
     </ClCompile>
@@ -809,6 +806,9 @@
     </ClCompile>
     <ClCompile Include="modules\ripple_data\protocol\ripple_STAmountRound.cpp">
       <Filter>1. Modules\ripple_data\protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_basics\types\ripple_Uint256.cpp">
+      <Filter>1. Modules\ripple_basics\types</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1424,9 +1424,6 @@
     <ClInclude Include="src\cpp\ripple\SHAMapSync.h">
       <Filter>1. Modules\ripple_main\_unfactored\containers</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_HashValue.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\SerializedValidation.h">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
@@ -1505,7 +1502,7 @@
     <ClInclude Include="modules\ripple_data\protocol\ripple_RippleSystem.h">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="modules\ripple_basics\types\ripple_HashTables.h">
+    <ClInclude Include="modules\ripple_basics\types\ripple_HashMaps.h">
       <Filter>1. Modules\ripple_basics\types</Filter>
     </ClInclude>
   </ItemGroup>

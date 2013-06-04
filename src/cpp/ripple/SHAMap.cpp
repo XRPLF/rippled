@@ -24,11 +24,15 @@ DECLARE_INSTANCE(SHAMapTreeNode);
 
 void SHAMapNode::setMHash() const
 {
-	std::size_t h = theApp->getNonceST() + (mDepth * 0x9e3779b9);
-	const unsigned int *ptr = reinterpret_cast<const unsigned int *>(mNodeID.begin());
-	for (int i = (mDepth + 7) / 8; i != 0; --i)
+    std::size_t h = HashMaps::getInstance ().getNonce <std::size_t> ()
+                    + (mDepth * 0x9e3779b9);
+
+    const unsigned int *ptr = reinterpret_cast <const unsigned int *>(mNodeID.begin());
+	
+    for (int i = (mDepth + 7) / 8; i != 0; --i)
 		h = (h * 0x9e3779b9) ^ *ptr++;
-	mHash = h;
+
+    mHash = h;
 }
 
 std::size_t hash_value(const SHAMapNode& mn)

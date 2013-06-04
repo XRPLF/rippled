@@ -107,4 +107,14 @@ bool CBase58Data::operator>=(const CBase58Data& b58) const { return CompareTo(b5
 bool CBase58Data::operator< (const CBase58Data& b58) const { return CompareTo(b58) <  0; }
 bool CBase58Data::operator> (const CBase58Data& b58) const { return CompareTo(b58) >  0; }
 
+std::size_t hash_value(const CBase58Data& b58)
+{
+	std::size_t seed = HashMaps::getInstance ().getNonce <size_t> ()
+                       + (b58.nVersion * 0x9e3779b9);
+
+    boost::hash_combine (seed, b58.vchData);
+	
+    return seed;
+}
+
 // vim:ts=4

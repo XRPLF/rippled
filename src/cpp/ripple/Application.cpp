@@ -70,9 +70,10 @@ Application::Application()
     , mSweepTimer (mAuxService)
     , mShutdown (false)
 {
-	RandomNumbers::getInstance ().fillBytes (mNonce256.begin(), mNonce256.size());
-	RandomNumbers::getInstance ().fill (&mNonceST);
+    // VFALCO: TODO, remove these once the call is thread safe.
+    HashMaps::getInstance ().initializeNonce <size_t> ();
 }
+
 
 extern const char *RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[],
 	*NetNodeDBInit[], *PathFindDBInit[];

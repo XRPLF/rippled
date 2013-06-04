@@ -148,6 +148,6 @@ namespace boost {
 
 #include "types/ripple_UInt256.h"
 #include "utility/ripple_HashUtilities.h" // requires UInt256
-#include "types/ripple_HashTables.h"
+#include "types/ripple_HashMaps.h"
 
 #endif

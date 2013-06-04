@@ -82,9 +82,6 @@ class Application
 	WSDoor*					mWSPublicDoor;
 	WSDoor*					mWSPrivateDoor;
 
-	uint256					mNonce256;
-	std::size_t				mNonceST;
-
 	boost::asio::deadline_timer	mSweepTimer;
 
 	std::map<std::string, Peer::pointer> mPeerMap;
@@ -151,9 +148,6 @@ public:
 #ifdef USE_LEVELDB
 	leveldb::DB* getHashNodeLDB()	{ return mHashNodeLDB; }
 #endif
-
-	uint256 getNonce256()			{ return mNonce256; }
-	std::size_t getNonceST()		{ return mNonceST; }
 
 	bool isShutdown()				{ return mShutdown; }
 	void setup();
