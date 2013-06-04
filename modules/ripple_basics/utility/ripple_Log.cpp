@@ -35,6 +35,60 @@ std::vector< std::pair<std::string, std::string> > LogPartition::getSeverities()
 	return sevs;
 }
 
+//------------------------------------------------------------------------------
+
+// VFALCO: TODO, remove original code once we know the replacement is correct.
+// Original code
+/*
+std::string ls = oss.str();
+size_t s = ls.find("\"secret\"");
+if (s != std::string::npos)
+{
+	s += 8;
+	size_t sEnd = ls.size() - 1;
+	if (sEnd > (s + 35))
+		sEnd = s + 35;
+	for (int i = s; i < sEnd; ++i)
+		ls[i] = '*';
+}
+logMsg += ls;
+*/
+
+//------------------------------------------------------------------------------
+
+std::string Log::replaceFirstSecretWithAsterisks (std::string s)
+{
+    using namespace std;
+
+    char const* secretToken = "\"secret\"";
+
+    // Look for the first occurrence of "secret" in the string.
+    //
+    size_t startingPosition = s.find (secretToken);
+
+    if (startingPosition != string::npos)
+    {
+        // Found it, advance past the token.
+        //
+        startingPosition += strlen (secretToken);
+
+        // VFALCO: NOTE, are base58 encoded secrets always exactly 35 characters?
+        //         I thought that the secret was variable length. Or is that the
+        //         public / private keys?
+        //
+        // Replace the next 35 characters at most, without overwriting the end.
+        // 
+        size_t endingPosition = std::min (startingPosition + 35, s.size () - 1);
+
+        for (size_t i = startingPosition; i < endingPosition; ++i)
+            s [i] = '*';
+    }
+
+    return s;
+}
+
+//------------------------------------------------------------------------------
+
 Log::~Log()
 {
 	std::string logMsg = boost::posix_time::to_simple_string(boost::posix_time::second_clock::universal_time());
@@ -54,18 +108,7 @@ Log::~Log()
 		case lsINVALID:	assert(false); return;
 	}
 
-	std::string ls = oss.str();
-	size_t s = ls.find("\"secret\"");
-	if (s != std::string::npos)
-	{
-		s += 8;
-		size_t sEnd = ls.size() - 1;
-		if (sEnd > (s + 35))
-			sEnd = s + 35;
-		for (int i = s; i < sEnd; ++i)
-			ls[i] = '*';
-	}
-	logMsg += ls;
+    logMsg += replaceFirstSecretWithAsterisks (oss.str ());
 
 	if (logMsg.size() > LOG_MAX_MESSAGE)
 	{
