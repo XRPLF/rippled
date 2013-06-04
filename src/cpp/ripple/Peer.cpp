@@ -7,7 +7,6 @@
 
 #include "Version.h"
 #include "Peer.h"
-#include "Config.h"
 #include "Application.h"
 #include "SerializedTransaction.h"
 

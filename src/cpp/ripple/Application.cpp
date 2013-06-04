@@ -7,7 +7,6 @@
 #endif
 
 #include "AcceptedLedger.h"
-#include "Config.h"
 #include "PeerDoor.h"
 #include "RPCDoor.h"
 

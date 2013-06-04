@@ -28,19 +28,17 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
+#include <list>
+#include <map>
+#include <set>
 #include <string>
 #include <vector>
-#include <set>
-#include <map>
-#include <list>
-
-#include <openssl/ec.h>
-#include <openssl/ripemd.h>
-#include <openssl/sha.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 #include <boost/bind.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
@@ -54,10 +52,12 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 
-//------------------------------------------------------------------------------
+#include <openssl/ec.h>
+#include <openssl/ripemd.h>
+#include <openssl/sha.h>
 
 //------------------------------------------------------------------------------
 
@@ -85,10 +85,13 @@
 //
 // VFALCO: BEGIN CLEAN AREA
 
+#include "src/cpp/ripple/ripple_Config.h"
 #include "src/cpp/ripple/ripple_DatabaseCon.h"
 #include "src/cpp/ripple/ripple_HashValue.h"
 #include "src/cpp/ripple/ripple_LoadEvent.h"
 #include "src/cpp/ripple/ripple_LoadMonitor.h"
+#include "src/cpp/ripple/ripple_Job.h"
+#include "src/cpp/ripple/ripple_JobQueue.h"
 
 #include "src/cpp/ripple/ripple_IFeatures.h"
 #include "src/cpp/ripple/ripple_IFeeVote.h"
@@ -111,18 +114,16 @@
 #include "src/cpp/ripple/Contract.h"
 #include "src/cpp/ripple/Interpreter.h"
 #include "src/cpp/ripple/Operation.h"
-
+// VFALCO: NOTE, Order matters
 #include "src/cpp/ripple/AcceptedLedger.h"
 #include "src/cpp/ripple/AccountItems.h"
 #include "src/cpp/ripple/AccountSetTransactor.h"
 #include "src/cpp/ripple/AccountState.h"
-#include "src/cpp/ripple/JobQueue.h"
 #include "src/cpp/ripple/Application.h"
 #include "src/cpp/ripple/AutoSocket.h"
 #include "src/cpp/ripple/CallRPC.h"
 #include "src/cpp/ripple/CanonicalTXSet.h"
 #include "src/cpp/ripple/ChangeTransactor.h"
-#include "src/cpp/ripple/Config.h"
 #include "src/cpp/ripple/ConnectionPool.h"
 #include "src/cpp/ripple/FeatureTable.h"
 #include "src/cpp/ripple/HTTPRequest.h"
@@ -215,7 +216,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/CallRPC.cpp"
 #include "src/cpp/ripple/CanonicalTXSet.cpp"
 #include "src/cpp/ripple/ChangeTransactor.cpp" // no log
-#include "src/cpp/ripple/Config.cpp" // no log
 #include "src/cpp/ripple/ConnectionPool.cpp"
 #include "src/cpp/ripple/Contract.cpp" // no log
 #include "src/cpp/ripple/DBInit.cpp"
@@ -223,7 +223,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/HTTPRequest.cpp"
 #include "src/cpp/ripple/HttpsClient.cpp"
 #include "src/cpp/ripple/Interpreter.cpp" // no log
-#include "src/cpp/ripple/JobQueue.cpp"
 #include "src/cpp/ripple/Ledger.cpp"
 #include "src/cpp/ripple/LedgerAcquire.cpp"
 #include "src/cpp/ripple/LedgerConsensus.cpp"
@@ -287,11 +286,14 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 
 // Refactored sources
 
+#include "src/cpp/ripple/ripple_Config.cpp" // no log
 #include "src/cpp/ripple/ripple_DatabaseCon.cpp"
 #include "src/cpp/ripple/ripple_Features.cpp"
 #include "src/cpp/ripple/ripple_FeeVote.cpp"
 #include "src/cpp/ripple/ripple_HashRouter.cpp"
 #include "src/cpp/ripple/ripple_HashValue.cpp"
+#include "src/cpp/ripple/ripple_Job.cpp"
+#include "src/cpp/ripple/ripple_JobQueue.cpp"
 #include "src/cpp/ripple/ripple_LoadEvent.cpp"
 #include "src/cpp/ripple/ripple_LoadMonitor.cpp"
 #include "src/cpp/ripple/ripple_LogWebsockets.cpp"

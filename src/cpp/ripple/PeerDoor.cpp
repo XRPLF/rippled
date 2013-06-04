@@ -7,7 +7,6 @@
 #include <boost/mem_fn.hpp>
 
 #include "Application.h"
-#include "Config.h"
 
 SETUP_LOG (PeerDoor)
 

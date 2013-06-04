@@ -3,8 +3,6 @@
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
 
-#include "Config.h"
-
 SETUP_LOG (JobQueue)
 
 JobQueue::JobQueue(boost::asio::io_service& svc)
@@ -26,78 +24,6 @@ JobQueue::JobQueue(boost::asio::io_service& svc)
 	mJobLoads[jtPEER].setTargetLatency(200, 1250);
 	mJobLoads[jtDISK].setTargetLatency(500, 1000);
 	mJobLoads[jtACCEPTLEDGER].setTargetLatency(1000, 2500);
-}
-
-
-const char* Job::toString(JobType t)
-{
-	switch(t)
-	{
-		case jtINVALID:			return "invalid";
-		case jtPACK:			return "makeFetchPack";
-		case jtPUBOLDLEDGER:	return "publishAcqLedger";
-		case jtVALIDATION_ut:	return "untrustedValidation";
-		case jtPROOFWORK:		return "proofOfWork";
-		case jtPROPOSAL_ut:		return "untrustedProposal";
-		case jtLEDGER_DATA:		return "ledgerData";
-		case jtUPDATE_PF:		return "updatePaths";
-		case jtCLIENT:			return "clientCommand";
-		case jtTRANSACTION:		return "transaction";
-		case jtPUBLEDGER:		return "publishNewLedger";
-		case jtVALIDATION_t:	return "trustedValidation";
-		case jtWAL:				return "writeAhead";
-		case jtWRITE:			return "writeObjects";
-		case jtTRANSACTION_l:	return "localTransaction";
-		case jtPROPOSAL_t:		return "trustedProposal";
-		case jtADMIN:			return "administration";
-		case jtDEATH:			return "jobOfDeath";
-
-		case jtPEER:			return "peerCommand";
-		case jtDISK:			return "diskAccess";
-		case jtACCEPTLEDGER:	return "acceptLedger";
-		case jtTXN_PROC:		return "processTransaction";
-		case jtOB_SETUP:		return "orderBookSetup";
-		case jtPATH_FIND:		return "pathFind";
-		case jtHO_READ:			return "nodeRead";
-		case jtHO_WRITE:		return "nodeWrite";
-		default:				assert(false); return "unknown";
-	}
-}
-
-bool Job::operator>(const Job& j) const
-{ // These comparison operators make the jobs sort in priority order in the job set
-	if (mType < j.mType)
-		return true;
-	if (mType > j.mType)
-		return false;
-	return mJobIndex > j.mJobIndex;
-}
-
-bool Job::operator>=(const Job& j) const
-{
-	if (mType < j.mType)
-		return true;
-	if (mType > j.mType)
-		return false;
-	return mJobIndex >= j.mJobIndex;
-}
-
-bool Job::operator<(const Job& j) const
-{
-	if (mType < j.mType)
-		return false;
-	if (mType > j.mType)
-		return true;
-	return mJobIndex < j.mJobIndex;
-}
-
-bool Job::operator<=(const Job& j) const
-{
-	if (mType < j.mType)
-		return false;
-	if (mType > j.mType)
-		return true;
-	return mJobIndex <= j.mJobIndex;
 }
 
 void JobQueue::addJob(JobType type, const std::string& name, const FUNCTION_TYPE<void(Job&)>& jobFunc)
