@@ -14,8 +14,6 @@
 #include "AccountState.h"
 #include "NicknameState.h"
 #include "SHAMap.h"
-#include "LoadMonitor.h"
-#include "JobQueue.h"
 
 enum LedgerStateParms
 {

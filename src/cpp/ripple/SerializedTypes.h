@@ -26,10 +26,12 @@ enum PathFlags
 	PF_ISSUE			= 0x80,
 };
 
+// VFALCO: TODO, make these non static or otherwise clean constants.
 static const uint160 u160_zero(0), u160_one(1);
 static inline const uint160& get_u160_zero() { return u160_zero; }
 static inline const uint160& get_u160_one() { return u160_one; }
 
+// VFALCO: TODO, replace these with language constructs, gah!
 #define CURRENCY_XRP		get_u160_zero()
 #define CURRENCY_ONE		get_u160_one()					// Used as a place holder.
 #define CURRENCY_BAD		uint160(0x5852500000000000)		// Do not allow XRP as an IOU currency.
@@ -39,10 +41,11 @@ static inline const uint160& get_u160_one() { return u160_one; }
 class SerializedType
 {
 public:
-
 	SerializedType() : fName(&sfGeneric) { ; }
-	SerializedType(SField::ref n) : fName(&n) { assert(fName); }
-	virtual ~SerializedType() { ; }
+	
+    explicit SerializedType (SField::ref n) : fName(&n) { assert(fName); }
+
+    virtual ~SerializedType() { }
 
 	static UPTR_T<SerializedType> deserialize(SField::ref name)
 	{ return UPTR_T<SerializedType>(new SerializedType(name)); }
@@ -472,6 +475,7 @@ private:
 	}
 };
 
+// VFALCO: TODO Make static member accessors for these in STAmount
 extern const STAmount saZero;
 extern const STAmount saOne;
 

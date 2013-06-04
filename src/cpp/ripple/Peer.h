@@ -11,7 +11,6 @@
 #include "PackedMessage.h"
 #include "Ledger.h"
 #include "Transaction.h"
-#include "JobQueue.h"
 #include "ProofOfWork.h"
 #include "LoadManager.h"
 

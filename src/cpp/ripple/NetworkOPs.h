@@ -13,7 +13,6 @@
 #include "SerializedValidation.h"
 #include "LedgerAcquire.h"
 #include "LedgerProposal.h"
-#include "JobQueue.h"
 #include "AcceptedLedger.h"
 
 // Operations that clients may wish to perform against the network

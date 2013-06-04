@@ -1,5 +1,3 @@
-#include "LoadMonitor.h"
-
 SETUP_LOG (LoadMonitor)
 
 LoadMonitor::LoadMonitor ()
@@ -48,7 +46,8 @@ void LoadMonitor::update ()
 		mLatencyEvents -= ((mLatencyEvents + 3) / 4);
 		mLatencyMSAvg -= (mLatencyMSAvg / 4);
 		mLatencyMSPeak -= (mLatencyMSPeak / 4);
-	} while (mLastUpdate < now);
+	}
+    while (mLastUpdate < now);
 }
 
 void LoadMonitor::addCount ()

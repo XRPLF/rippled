@@ -16,7 +16,6 @@
 #include "NetworkOPs.h"
 #include "WSDoor.h"
 #include "SNTPClient.h"
-#include "JobQueue.h"
 #include "RPCHandler.h"
 #include "ProofOfWork.h"
 #include "LoadManager.h"
