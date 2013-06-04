@@ -3,7 +3,6 @@
 
 #include <boost/unordered_set.hpp>
 
-#include "SerializedTypes.h"
 #include "Ledger.h"
 #include "NetworkOPs.h"
 

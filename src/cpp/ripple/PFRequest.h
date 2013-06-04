@@ -9,7 +9,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
-#include "SerializedTypes.h"
 #include "Pathfinder.h"
 
 // A pathfinding request submitted by a client

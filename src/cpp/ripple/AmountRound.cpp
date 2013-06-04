@@ -1,8 +1,6 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "SerializedTypes.h"
-
 // CAUTION: This is early code and is *NOT* ready for real use yet.
 
 static void canonicalizeRound(bool isNative, uint64& value, int& offset, bool roundUp)

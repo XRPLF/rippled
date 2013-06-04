@@ -22,44 +22,29 @@
     @ingroup ripple_data
 */
 
-// RippleAddress
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <map>
+#include <vector>
+
 #include <boost/format.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/unordered_map.hpp>
-
-// FieldNames
-#include <map>
 #include <boost/thread/mutex.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 
-// CKeyECIES, CKeyDeterministic
 #include <openssl/ec.h>
 #include <openssl/bn.h>
 #include <openssl/ecdsa.h>
 #include <openssl/pem.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
-#include <vector>
-#include <cassert>
-
-// CKeyDeterministic
 #include <openssl/err.h>
 #include <boost/test/unit_test.hpp>
-
-
-#include "ripple_data.h"
-
-
-
-#include "crypto/ripple_Base58.h" // for RippleAddress
-#include "crypto/ripple_CKey.h" // needs RippleAddress VFALCO: TODO, remove this dependency cycle
-#include "crypto/ripple_RFC1751.h"
 
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
@@ -67,6 +52,12 @@
 #pragma warning (disable: 4018) // signed/unsigned mismatch
 //#pragma warning (disable: 4244) // conversion, possible loss of data
 #endif
+
+#include "ripple_data.h"
+
+#include "crypto/ripple_Base58.h" // for RippleAddress
+#include "crypto/ripple_CKey.h" // needs RippleAddress VFALCO: TODO, remove this dependency cycle
+#include "crypto/ripple_RFC1751.h"
 
 #include "crypto/ripple_CBigNum.cpp"
 #include "crypto/ripple_CKey.cpp"
@@ -76,9 +67,14 @@
 #include "crypto/ripple_Base58Data.cpp"
 #include "crypto/ripple_RFC1751.cpp"
 
-#include "types/ripple_FieldNames.cpp"
-#include "types/ripple_RippleAddress.cpp"
-#include "types/ripple_Serializer.cpp"
+#include "format/ripple_FieldNames.cpp"
+#include "format/ripple_LedgerFormat.cpp"
+#include "format/ripple_RippleAddress.cpp"
+#include "format/ripple_SerializedTypes.cpp"
+#include "format/ripple_Serializer.cpp"
+#include "format/ripple_SerializedObject.cpp"
+#include "format/ripple_TER.cpp"
+#include "format/ripple_TransactionFormat.cpp"
 
 // VFALCO: TODO Fix this for SConstruct
 #ifdef _MSC_VER

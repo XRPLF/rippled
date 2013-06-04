@@ -1,7 +1,5 @@
-#ifndef __LEDGERFORMATS__
-#define __LEDGERFORMATS__
-
-#include "SerializedObject.h"
+#ifndef RIPPLE_LEDGERFORMAT_H
+#define RIPPLE_LEDGERFORMAT_H
 
 // Used as the type of a transaction or the type of a ledger entry.
 enum LedgerEntryType

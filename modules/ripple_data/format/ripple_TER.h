@@ -1,8 +1,12 @@
-#ifndef _TRANSACTION_ERR_
-#define _TRANSACTION_ERR_
+#ifndef RIPPLE_TER_H
+#define RIPPLE_TER_H
 
-#include <string>
-
+// VFALCO: TODO do not use auto-incrementing. Explicitly assign each
+//              constant so there is no possibility of someone coming in
+//              and screwing it up.
+//
+// VFALCO: TODO, consider renaming TER to TxErr or TxResult for clarity.
+//
 enum TER	// aka TransactionEngineResult
 {
 	// Note: Range is stable.  Exact numbers are currently unstable.  Use tokens.
@@ -13,7 +17,7 @@ enum TER	// aka TransactionEngineResult
 	// - Not forwarded
 	// - No fee check
 	telLOCAL_ERROR	= -399,
-	telBAD_DOMAIN,
+	telBAD_DOMAIN, // VFALCO: TODO, should read "telBAD_DOMAIN = -398," etc...
 	telBAD_PATH_COUNT,
 	telBAD_PUBLIC_KEY,
 	telFAILED_PROCESSING,
@@ -139,6 +143,7 @@ enum TER	// aka TransactionEngineResult
 	tecUNFUNDED					= 129,	// Deprecated, old ambiguous unfunded.
 };
 
+// VFALCO: TODO, change these to normal functions.
 #define isTelLocal(x)		((x) >= telLOCAL_ERROR && (x) < temMALFORMED)
 #define isTemMalformed(x)	((x) >= temMALFORMED && (x) < tefFAILURE)
 #define isTefFailure(x)		((x) >= tefFAILURE && (x) < terRETRY)
@@ -146,9 +151,10 @@ enum TER	// aka TransactionEngineResult
 #define isTesSuccess(x)		((x) == tesSUCCESS)
 #define isTecClaim(x)		((x) >= tecCLAIM)
 
-bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman);
-std::string transToken(TER terCode);
-std::string transHuman(TER terCode);
+// VFALCO: TODO, group these into a shell class along with the defines above.
+extern bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman);
+extern std::string transToken (TER terCode);
+extern std::string transHuman (TER terCode);
 
 #endif
 // vim:ts=4

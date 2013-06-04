@@ -34,6 +34,4 @@
 
 #include "modules/ripple_basics/ripple_basics.h"
 
-#include "../ripple_data/ripple_data.h"
-
 #endif

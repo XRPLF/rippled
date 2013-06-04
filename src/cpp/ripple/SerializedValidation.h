@@ -1,8 +1,6 @@
 #ifndef __VALIDATION__
 #define __VALIDATION__
 
-#include "SerializedObject.h"
-
 DEFINE_INSTANCE(SerializedValidation);
 
 class SerializedValidation : public STObject, private IS_INSTANCE(SerializedValidation)

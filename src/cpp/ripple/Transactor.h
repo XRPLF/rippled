@@ -1,10 +1,7 @@
 #ifndef __TRANSACTOR__
 #define __TRANSACTOR__
 
-#include <boost/shared_ptr.hpp>
-
 #include "SerializedTransaction.h"
-#include "TransactionErr.h"
 #include "TransactionEngine.h"
 
 class Transactor

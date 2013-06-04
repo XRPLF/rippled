@@ -133,7 +133,6 @@
 #include "src/cpp/ripple/LedgerAcquire.h"
 #include "src/cpp/ripple/LedgerConsensus.h"
 #include "src/cpp/ripple/LedgerEntrySet.h"
-#include "src/cpp/ripple/LedgerFormats.h"
 #include "src/cpp/ripple/LedgerHistory.h"
 #include "src/cpp/ripple/LedgerMaster.h"
 #include "src/cpp/ripple/LedgerProposal.h"
@@ -168,14 +167,10 @@
 #include "src/cpp/ripple/SHAMapSync.h"
 #include "src/cpp/ripple/SNTPClient.h"
 #include "src/cpp/ripple/SerializedLedger.h"
-#include "src/cpp/ripple/SerializedObject.h"
 #include "src/cpp/ripple/SerializedTransaction.h"
-#include "src/cpp/ripple/SerializedTypes.h"
 #include "src/cpp/ripple/SerializedValidation.h"
 #include "src/cpp/ripple/Transaction.h"
 #include "src/cpp/ripple/TransactionEngine.h"
-#include "src/cpp/ripple/TransactionErr.h"
-#include "src/cpp/ripple/TransactionFormats.h"
 #include "src/cpp/ripple/TransactionMaster.h"
 #include "src/cpp/ripple/TransactionMeta.h"
 #include "src/cpp/ripple/TransactionQueue.h"
@@ -233,7 +228,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/LedgerAcquire.cpp"
 #include "src/cpp/ripple/LedgerConsensus.cpp"
 #include "src/cpp/ripple/LedgerEntrySet.cpp"
-#include "src/cpp/ripple/LedgerFormats.cpp" // no log
 #include "src/cpp/ripple/LedgerHistory.cpp" // no log
 #include "src/cpp/ripple/LedgerMaster.cpp"
 #include "src/cpp/ripple/LedgerProposal.cpp" // no log
@@ -268,9 +262,7 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/RPCSub.cpp"
 #include "src/cpp/ripple/ScriptData.cpp" // no log
 #include "src/cpp/ripple/SerializedLedger.cpp"
-#include "src/cpp/ripple/SerializedObject.cpp"
 #include "src/cpp/ripple/SerializedTransaction.cpp"
-#include "src/cpp/ripple/SerializedTypes.cpp"
 #include "src/cpp/ripple/SerializedValidation.cpp"
 #include "src/cpp/ripple/SHAMap.cpp"
 #include "src/cpp/ripple/SHAMapDiff.cpp" // no log
@@ -281,8 +273,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/TransactionAcquire.cpp"
 #include "src/cpp/ripple/TransactionCheck.cpp"
 #include "src/cpp/ripple/TransactionEngine.cpp"
-#include "src/cpp/ripple/TransactionErr.cpp" // no log
-#include "src/cpp/ripple/TransactionFormats.cpp" // no log
 #include "src/cpp/ripple/TransactionMaster.cpp" // no log
 #include "src/cpp/ripple/TransactionMeta.cpp"
 #include "src/cpp/ripple/TransactionQueue.cpp" // no log

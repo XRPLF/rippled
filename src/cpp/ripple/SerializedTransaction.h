@@ -1,12 +1,7 @@
 #ifndef __SERIALIZEDTRANSACTION__
 #define __SERIALIZEDTRANSACTION__
 
-#include <vector>
-
-#include <boost/shared_ptr.hpp>
-
-#include "SerializedObject.h"
-#include "TransactionFormats.h"
+// VFALCO: TODO, eliminate these macros
 
 #define TXN_SQL_NEW			'N'
 #define TXN_SQL_CONFLICT	'C'
