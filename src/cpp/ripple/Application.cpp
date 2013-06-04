@@ -1,4 +1,5 @@
 
+/*
 #include "Application.h"
 
 #include "leveldb/cache.h"
@@ -15,6 +16,13 @@
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
+*/
+
+// VFALCO: TODO Replace these with beast "unsigned long long" generators
+#define SYSTEM_CURRENCY_GIFT		1000ull
+#define SYSTEM_CURRENCY_USERS		100000000ull
+#define SYSTEM_CURRENCY_PARTS		1000000ull		// 10^SYSTEM_CURRENCY_PRECISION
+#define SYSTEM_CURRENCY_START		(SYSTEM_CURRENCY_GIFT*SYSTEM_CURRENCY_USERS*SYSTEM_CURRENCY_PARTS)
 
 SETUP_LOG (Application)
 

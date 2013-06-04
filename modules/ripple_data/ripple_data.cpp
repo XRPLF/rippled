@@ -22,20 +22,26 @@
     @ingroup ripple_data
 */
 
+#include <limits.h>
+
 #include <algorithm>
 #include <cassert>
+#include <cmath>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #include <vector>
 
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 #include <boost/format.hpp>
+#include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/regex.hpp>
+#include <boost/unordered_map.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/thread/mutex.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/foreach.hpp>
 
 #include <openssl/ec.h>
 #include <openssl/bn.h>
@@ -44,7 +50,6 @@
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
-#include <boost/test/unit_test.hpp>
 
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
@@ -54,6 +59,10 @@
 #endif
 
 #include "ripple_data.h"
+
+#ifdef min
+#undef min
+#endif
 
 #include "crypto/ripple_Base58.h" // for RippleAddress
 #include "crypto/ripple_CKey.h" // needs RippleAddress VFALCO: TODO, remove this dependency cycle
@@ -67,14 +76,22 @@
 #include "crypto/ripple_Base58Data.cpp"
 #include "crypto/ripple_RFC1751.cpp"
 
-#include "format/ripple_FieldNames.cpp"
-#include "format/ripple_LedgerFormat.cpp"
-#include "format/ripple_RippleAddress.cpp"
-#include "format/ripple_SerializedTypes.cpp"
-#include "format/ripple_Serializer.cpp"
-#include "format/ripple_SerializedObject.cpp"
-#include "format/ripple_TER.cpp"
-#include "format/ripple_TransactionFormat.cpp"
+#include "protocol/ripple_FieldNames.cpp"
+#include "protocol/ripple_LedgerFormat.cpp"
+#include "protocol/ripple_RippleAddress.cpp"
+#include "protocol/ripple_SerializedTypes.cpp"
+#include "protocol/ripple_Serializer.cpp"
+#include "protocol/ripple_SerializedObject.cpp"
+#include "protocol/ripple_TER.cpp"
+#include "protocol/ripple_TransactionFormat.cpp"
+
+// These are for STAmount
+static const uint64 tenTo14 = 100000000000000ull;
+static const uint64 tenTo14m1 = tenTo14 - 1;
+static const uint64 tenTo17 = tenTo14 * 1000;
+static const uint64 tenTo17m1 = tenTo17 - 1;
+#include "protocol/ripple_STAmount.cpp"
+#include "protocol/ripple_STAmountRound.cpp"
 
 // VFALCO: TODO Fix this for SConstruct
 #ifdef _MSC_VER

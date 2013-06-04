@@ -1,13 +1,3 @@
-#include <cmath>
-#include <iomanip>
-#include <algorithm>
-#include <limits.h>
-
-#include <boost/lexical_cast.hpp>
-#include <boost/regex.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/test/unit_test.hpp>
 
 SETUP_LOG (STAmount)
 
