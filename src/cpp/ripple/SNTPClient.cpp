@@ -76,7 +76,7 @@ void SNTPClient::resolveComplete(const boost::system::error_code& error, boost::
 			}
 			query.mReceivedReply = false;
 			query.mLocalTimeSent = now;
-			getRand(reinterpret_cast<unsigned char *>(&query.mQueryNonce), sizeof(query.mQueryNonce));
+			RandomNumbers::getInstance ().fill (&query.mQueryNonce);
 			reinterpret_cast<uint32*>(SNTPQueryData)[NTP_OFF_XMITTS_INT] = static_cast<uint32>(time(NULL)) + NTP_UNIX_OFFSET;
 			reinterpret_cast<uint32*>(SNTPQueryData)[NTP_OFF_XMITTS_FRAC] = query.mQueryNonce;
 			mSocket.async_send_to(boost::asio::buffer(SNTPQueryData, 48), *sel,

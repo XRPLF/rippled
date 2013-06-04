@@ -103,7 +103,7 @@ uint256 ProofOfWork::solve(int maxIterations) const
 		throw std::runtime_error("invalid proof of work target/iteration");
 
 	uint256 nonce;
-	getRand(nonce.begin(), nonce.size());
+	RandomNumbers::getInstance ().fill (&nonce);
 
 	std::vector<uint256> buf2;
 	buf2.resize(mIterations);
@@ -162,7 +162,7 @@ bool ProofOfWork::validateToken(const std::string& strToken)
 ProofOfWorkGenerator::ProofOfWorkGenerator() :	mValidTime(180)
 {
 	setDifficulty(1);
-	getRand(mSecret.begin(), mSecret.size());
+	RandomNumbers::getInstance ().fillBytes (mSecret.begin(), mSecret.size());
 }
 
 ProofOfWork ProofOfWorkGenerator::getProof()
@@ -173,7 +173,7 @@ ProofOfWork ProofOfWorkGenerator::getProof()
 	int now = static_cast<int>(time(NULL) / 4);
 
 	uint256 challenge;
-	getRand(challenge.begin(), challenge.size());
+	RandomNumbers::getInstance ().fillBytes (challenge.begin(), challenge.size());
 
 	boost::mutex::scoped_lock sl(mLock);
 

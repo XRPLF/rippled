@@ -803,7 +803,7 @@ void RippleAddress::setSeedRandom()
 	// XXX Maybe we should call MakeNewKey
 	uint128 key;
 
-	getRand(key.begin(), key.size());
+	RandomNumbers::getInstance ().fillBytes (key.begin(), key.size());
 
 	RippleAddress::setSeed(key);
 }
