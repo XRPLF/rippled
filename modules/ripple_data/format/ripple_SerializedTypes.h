@@ -1,9 +1,8 @@
-#ifndef __SERIALIZEDTYPES__
-#define __SERIALIZEDTYPES__
+#ifndef RIPPLE_SERIALIZEDTYPES_H
+#define RIPPLE_SERIALIZEDTYPES_H
 
-#include <vector>
-#include <string>
-
+// VFALCO: TODO, fix this restriction on copy assignment.
+//
 // CAUTION: Do not create a vector (or similar container) of any object derived from
 // SerializedType. Use Boost ptr_* containers. The copy assignment operator of
 // SerializedType has semantics that will cause contained types to change their names

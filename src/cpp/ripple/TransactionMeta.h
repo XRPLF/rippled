@@ -6,10 +6,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 
-#include "SerializedTypes.h"
-#include "SerializedObject.h"
 #include "SerializedLedger.h"
-#include "TransactionErr.h"
 
 class TransactionMetaSet
 {

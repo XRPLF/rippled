@@ -38,6 +38,11 @@ DEFINE_INSTANCE(Ledger);
 
 class SqliteStatement;
 
+// VFALCO: TODO, figure out exactly how this thing works.
+//         It seems like some ledger database is stored as a global, static in the
+//         class. But then what is the meaning of a Ledger object? Is this
+//         really two classes in one? StoreOfAllLedgers + SingleLedgerObject?
+//
 class Ledger : public boost::enable_shared_from_this<Ledger>, public IS_INSTANCE(Ledger)
 { // The basic Ledger structure, can be opened, closed, or synching
     // VFALCO: TODO, eliminate the need for friends

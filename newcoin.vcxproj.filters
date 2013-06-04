@@ -79,9 +79,6 @@
     <Filter Include="1. Modules\ripple_data\crypto">
       <UniqueIdentifier>{095d33d8-dbf7-44d0-a675-6722b02bb3be}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_data\types">
-      <UniqueIdentifier>{2f3572a9-2882-4656-ab93-82b7761c9e3d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_data\protobuf">
       <UniqueIdentifier>{9f8ed40a-9f16-42fe-82fd-caf72d3d6a2b}</UniqueIdentifier>
     </Filter>
@@ -112,9 +109,6 @@
     <Filter Include="1. Modules\ripple_main\_unfactored\contracts">
       <UniqueIdentifier>{c7f863ce-204b-4a15-b236-24fe1e3430e5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_main\_unfactored\processing">
-      <UniqueIdentifier>{c441b367-d096-401f-a3f0-5ac24290d7b7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_main\_unfactored\rpc">
       <UniqueIdentifier>{3f351c55-360d-40bc-a136-4944ce572efd}</UniqueIdentifier>
     </Filter>
@@ -141,6 +135,12 @@
     </Filter>
     <Filter Include="1. Modules\ripple_main\_unfactored\containers">
       <UniqueIdentifier>{6a33d317-620f-4cf0-88a9-2d943b4c00a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_data\format">
+      <UniqueIdentifier>{2f3572a9-2882-4656-ab93-82b7761c9e3d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_main\_unfactored\ledger">
+      <UniqueIdentifier>{c441b367-d096-401f-a3f0-5ac24290d7b7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -429,9 +429,6 @@
     <ClCompile Include="src\cpp\ripple\TransactionEngine.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\TransactionErr.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionFormats.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
     </ClCompile>
@@ -474,13 +471,7 @@
     <ClCompile Include="src\cpp\ripple\SerializedLedger.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\serialization</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\SerializedObject.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\serialization</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\SerializedTransaction.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\serialization</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\SerializedTypes.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\serialization</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\SerializedValidation.cpp">
@@ -639,23 +630,11 @@
     <ClCompile Include="modules\ripple_data\crypto\ripple_RFC1751.cpp">
       <Filter>1. Modules\ripple_data\crypto</Filter>
     </ClCompile>
-    <ClCompile Include="modules\ripple_data\types\ripple_RippleAddress.cpp">
-      <Filter>1. Modules\ripple_data\types</Filter>
-    </ClCompile>
-    <ClCompile Include="modules\ripple_data\types\ripple_FieldNames.cpp">
-      <Filter>1. Modules\ripple_data\types</Filter>
-    </ClCompile>
     <ClCompile Include="modules\ripple_data\crypto\ripple_CKey.cpp">
       <Filter>1. Modules\ripple_data\crypto</Filter>
     </ClCompile>
-    <ClCompile Include="modules\ripple_data\types\ripple_Serializer.cpp">
-      <Filter>1. Modules\ripple_data\types</Filter>
-    </ClCompile>
     <ClCompile Include="modules\ripple_data\crypto\ripple_CKeyECIES.cpp">
       <Filter>1. Modules\ripple_data\crypto</Filter>
-    </ClCompile>
-    <ClCompile Include="modules\ripple_data\crypto\ripple_CKeyDeterministic.cpp">
-      <Filter>1. Modules\ripple_data\types</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_basics\utility\ripple_InstanceCounter.cpp">
       <Filter>1. Modules\ripple_basics\utility</Filter>
@@ -733,64 +712,64 @@
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\AcceptedLedger.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\AccountItems.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\AccountState.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Ledger.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerAcquire.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerConsensus.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerEntrySet.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerFormats.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerHistory.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerMaster.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerProposal.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerTiming.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\NicknameState.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Offer.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\OrderBook.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\OrderBookDB.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Pathfinder.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\PFRequest.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RippleCalc.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RippleState.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\SHAMap.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\containers</Filter>
@@ -806,6 +785,33 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_HashValue.cpp">
       <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_data\crypto\ripple_CKeyDeterministic.cpp">
+      <Filter>1. Modules\ripple_data\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_data\format\ripple_FieldNames.cpp">
+      <Filter>1. Modules\ripple_data\format</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_data\format\ripple_LedgerFormat.cpp">
+      <Filter>1. Modules\ripple_data\format</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_data\format\ripple_RippleAddress.cpp">
+      <Filter>1. Modules\ripple_data\format</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_data\format\ripple_SerializedObject.cpp">
+      <Filter>1. Modules\ripple_data\format</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_data\format\ripple_SerializedTypes.cpp">
+      <Filter>1. Modules\ripple_data\format</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_data\format\ripple_Serializer.cpp">
+      <Filter>1. Modules\ripple_data\format</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_data\format\ripple_TER.cpp">
+      <Filter>1. Modules\ripple_data\format</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_data\format\ripple_TransactionFormat.cpp">
+      <Filter>1. Modules\ripple_data\format</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1085,9 +1091,6 @@
     <ClInclude Include="src\cpp\ripple\TransactionEngine.h">
       <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\TransactionErr.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\TransactionFormats.h">
       <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
     </ClInclude>
@@ -1130,13 +1133,7 @@
     <ClInclude Include="src\cpp\ripple\SerializedLedger.h">
       <Filter>1. Modules\ripple_main\_unfactored\serialization</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\SerializedObject.h">
-      <Filter>1. Modules\ripple_main\_unfactored\serialization</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\SerializedTransaction.h">
-      <Filter>1. Modules\ripple_main\_unfactored\serialization</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\SerializedTypes.h">
       <Filter>1. Modules\ripple_main\_unfactored\serialization</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\SerializedValidation.h">
@@ -1331,20 +1328,8 @@
     <ClInclude Include="modules\ripple_data\crypto\ripple_RFC1751.h">
       <Filter>1. Modules\ripple_data\crypto</Filter>
     </ClInclude>
-    <ClInclude Include="modules\ripple_data\types\ripple_RippleAddress.h">
-      <Filter>1. Modules\ripple_data\types</Filter>
-    </ClInclude>
-    <ClInclude Include="modules\ripple_data\types\ripple_FieldNames.h">
-      <Filter>1. Modules\ripple_data\types</Filter>
-    </ClInclude>
-    <ClInclude Include="modules\ripple_data\types\ripple_SerializeDeclarations.h">
-      <Filter>1. Modules\ripple_data\types</Filter>
-    </ClInclude>
     <ClInclude Include="modules\ripple_data\crypto\ripple_CKey.h">
       <Filter>1. Modules\ripple_data\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="modules\ripple_data\types\ripple_Serializer.h">
-      <Filter>1. Modules\ripple_data\types</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\utility\ripple_ScopedLock.h">
       <Filter>1. Modules\ripple_basics\utility</Filter>
@@ -1422,64 +1407,64 @@
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\AcceptedLedger.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\AccountItems.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\AccountState.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Ledger.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerAcquire.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerConsensus.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerEntrySet.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerFormats.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerHistory.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerMaster.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerProposal.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerTiming.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\NicknameState.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Offer.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\OrderBook.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\OrderBookDB.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Pathfinder.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\PFRequest.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RippleCalc.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RippleState.h">
-      <Filter>1. Modules\ripple_main\_unfactored\processing</Filter>
+      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\SHAMap.h">
       <Filter>1. Modules\ripple_main\_unfactored\containers</Filter>
@@ -1489,6 +1474,33 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_HashValue.h">
       <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\format\ripple_FieldNames.h">
+      <Filter>1. Modules\ripple_data\format</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\format\ripple_LedgerFormat.h">
+      <Filter>1. Modules\ripple_data\format</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\format\ripple_RippleAddress.h">
+      <Filter>1. Modules\ripple_data\format</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\format\ripple_SerializeDeclarations.h">
+      <Filter>1. Modules\ripple_data\format</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\format\ripple_SerializedObject.h">
+      <Filter>1. Modules\ripple_data\format</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\format\ripple_SerializedTypes.h">
+      <Filter>1. Modules\ripple_data\format</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\format\ripple_Serializer.h">
+      <Filter>1. Modules\ripple_data\format</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\format\ripple_TER.h">
+      <Filter>1. Modules\ripple_data\format</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\format\ripple_TransactionFormat.h">
+      <Filter>1. Modules\ripple_data\format</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

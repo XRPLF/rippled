@@ -1,9 +1,6 @@
 #ifndef __SERIALIZEDLEDGER__
 #define __SERIALIZEDLEDGER__
 
-#include "SerializedObject.h"
-#include "LedgerFormats.h"
-
 DEFINE_INSTANCE(SerializedLedgerEntry);
 
 // VFALCO: TODO, rename this to SerializedLedger

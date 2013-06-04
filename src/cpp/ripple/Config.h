@@ -7,7 +7,6 @@
 #include <boost/filesystem.hpp>
 
 #include "ParseSection.h"
-#include "SerializedTypes.h"
 
 #define ENABLE_INSECURE				0				// 1, to enable unnecessary features.
 

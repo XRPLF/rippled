@@ -10,7 +10,6 @@
 #include <boost/test/unit_test.hpp>
 
 #include "Config.h"
-#include "SerializedTypes.h"
 
 SETUP_LOG (STAmount)
 

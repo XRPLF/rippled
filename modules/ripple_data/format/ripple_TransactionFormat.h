@@ -1,8 +1,5 @@
-#ifndef __TRANSACTIONFORMATS__
-#define __TRANSACTIONFORMATS__
-
-#include "SerializedObject.h"
-#include "LedgerFormats.h"
+#ifndef RIPPLE_TRANSACTIONFORMAT_H
+#define RIPPLE_TRANSACTIONFORMAT_H
 
 enum TransactionType
 {

@@ -1,11 +1,5 @@
-#ifndef __SERIALIZEDOBJECT__
-#define __SERIALIZEDOBJECT__
-
-#include <vector>
-
-#include <boost/ptr_container/ptr_vector.hpp>
-
-#include "SerializedTypes.h"
+#ifndef RIPPLE_SERIALIZEDOBJECT_H
+#define RIPPLE_SERIALIZEDOBJECT_H
 
 DEFINE_INSTANCE(SerializedObject);
 DEFINE_INSTANCE(SerializedArray);

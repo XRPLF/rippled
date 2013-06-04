@@ -6,7 +6,6 @@
 #include "SerializedLedger.h"
 #include "TransactionMeta.h"
 #include "Ledger.h"
-#include "TransactionErr.h"
 
 DEFINE_INSTANCE(LedgerEntrySetEntry);
 DEFINE_INSTANCE(LedgerEntrySet);

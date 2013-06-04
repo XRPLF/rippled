@@ -1,10 +1,7 @@
 #ifndef RIPPLE_FIELDNAMES_H
 #define RIPPLE_FIELDNAMES_H
 
-#include <string>
-
-#include <boost/thread/mutex.hpp>
-
+// VFALCO: TODO, lose the macro.
 #define FIELD_CODE(type, index) ((static_cast<int>(type) << 16) | index)
 
 enum SerializedTypeID
@@ -16,7 +13,7 @@ enum SerializedTypeID
 
 #define TYPE(name, field, value) STI_##field = value,
 #define FIELD(name, field, value)
-#include "modules/ripple_data/types/ripple_SerializeDeclarations.h"
+#include "../format/ripple_SerializeDeclarations.h"
 #undef TYPE
 #undef FIELD
 
@@ -47,13 +44,6 @@ public:
 	static const int sMD_Create			= 0x08; // value when it's created
 	static const int sMD_Always			= 0x10; // value when node containing it is affected at all
 	static const int sMD_Default		= sMD_ChangeOrig | sMD_ChangeNew | sMD_DeleteFinal | sMD_Create;
-
-protected:
-	static std::map<int, ptr>	codeToField;
-	static boost::mutex			mapMutex;
-	static int 					num;
-
-	SField(SerializedTypeID id, int val);
 
 public:
 
@@ -120,13 +110,21 @@ public:
 	bool operator!=(const SField& f) const { return fieldCode != f.fieldCode; }
 
 	static int compare(SField::ref f1, SField::ref f2);
+
+    // VFALCO: TODO, make these private
+protected:
+	static std::map<int, ptr>	codeToField;
+	static boost::mutex			mapMutex;
+	static int 					num;
+
+	SField(SerializedTypeID id, int val);
 };
 
 extern SField sfInvalid, sfGeneric, sfLedgerEntry, sfTransaction, sfValidation;
 
 #define FIELD(name, type, index) extern SField sf##name;
 #define TYPE(name, type, index)
-#include "modules/ripple_data/types/ripple_SerializeDeclarations.h"
+#include "../format/ripple_SerializeDeclarations.h"
 #undef FIELD
 #undef TYPE
 
