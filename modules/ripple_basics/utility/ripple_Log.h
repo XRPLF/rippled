@@ -63,48 +63,62 @@ public:
 
 class Log
 {
-private:
-	Log(const Log&);			// no implementation
-	Log& operator=(const Log&);	// no implementation
-
-protected:
-	static boost::recursive_mutex sLock;
-	static LogSeverity sMinSeverity;
-	static std::ofstream* outStream;
-
-	mutable std::ostringstream	oss;
-	LogSeverity					mSeverity;
-	std::string					mPartitionName;
-
-	static boost::filesystem::path *pathToLog;
-	static uint32 logRotateCounter;
-
 public:
-	Log(LogSeverity s) : mSeverity(s)
-	{ ; }
+	explicit Log (LogSeverity s) : mSeverity(s)
+	{
+    }
 
-	Log(LogSeverity s, const LogPartition& p) : mSeverity(s), mPartitionName(p.getName())
-	{ ; }
+	Log (LogSeverity s, LogPartition const& p)
+        : mSeverity (s)
+        , mPartitionName (p.getName())
+	{
+    }
 
-	~Log();
+	~Log ();
 
-	template<typename T> std::ostream& operator<<(const T& t) const
+	template <class T>
+    std::ostream& operator<< (const T& t) const
 	{
 		return oss << t;
 	}
 
-	std::ostringstream& ref(void) const
+	std::ostringstream& ref () const
 	{
 		return oss;
 	}
 
-	static std::string severityToString(LogSeverity);
-	static LogSeverity stringToSeverity(const std::string&);
+	static std::string severityToString (LogSeverity);
 
-	static LogSeverity getMinSeverity();
-	static void setMinSeverity(LogSeverity, bool all);
-	static void setLogFile(boost::filesystem::path const&);
-	static std::string rotateLog(void);
+    static LogSeverity stringToSeverity (std::string const&);
+
+	static LogSeverity getMinSeverity ();
+
+    static void setMinSeverity (LogSeverity, bool all);
+
+    static void setLogFile (boost::filesystem::path const& pathToLogFile);
+
+    static std::string rotateLog ();
+
+private:
+    // VFALCO: TODO, derive from beast::Uncopyable
+	Log (const Log&);            // no implementation
+	Log& operator= (const Log&); // no implementation
+
+    // VFALCO: TODO, looks like there are really TWO classes in here.
+    //         One is a stream target for '<<' operator and the other
+    //         is a singleton. Split the singleton out to a new class.
+    //
+    static boost::recursive_mutex sLock;
+	static LogSeverity sMinSeverity;
+	static std::ofstream* outStream;
+	static boost::filesystem::path *pathToLog;
+	static uint32 logRotateCounter;
+
+    static std::string replaceFirstSecretWithAsterisks (std::string s);
+
+    mutable std::ostringstream	oss;
+	LogSeverity					mSeverity;
+	std::string					mPartitionName;
 };
 
 // Manually test for whether we should log
