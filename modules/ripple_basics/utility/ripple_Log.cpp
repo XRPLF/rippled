@@ -72,12 +72,8 @@ std::string Log::replaceFirstSecretWithAsterisks (std::string s)
         //
         startingPosition += strlen (secretToken);
 
-        // VFALCO: NOTE, are base58 encoded secrets always exactly 35 characters?
-        //         I thought that the secret was variable length. Or is that the
-        //         public / private keys?
-        //
         // Replace the next 35 characters at most, without overwriting the end.
-        // 
+        //
         size_t endingPosition = std::min (startingPosition + 35, s.size () - 1);
 
         for (size_t i = startingPosition; i < endingPosition; ++i)
