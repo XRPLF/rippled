@@ -1276,7 +1276,7 @@ Json::Value RPCHandler::doRandom(Json::Value jvRequest, int& cost, ScopedLock& M
 
 	try
 	{
-		getRand(uRandom.begin(), uRandom.size());
+		RandomNumbers::getInstance ().fillBytes (uRandom.begin(), uRandom.size());
 
 		Json::Value jvResult;
 

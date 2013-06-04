@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
 	// Prepare to run
 	//
 
-	if (!AddSystemEntropy())
+	if (! RandomNumbers::getInstance ().initialize ())
 	{
 		std::cerr << "Unable to add system entropy" << std::endl;
 		iResult	= 2;

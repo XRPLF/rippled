@@ -118,9 +118,6 @@
     <Filter Include="1. Modules\ripple_main\_unfactored\types">
       <UniqueIdentifier>{1b463564-35d9-43d1-b3a0-21b344a3a1c7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_main\_unfactored\http">
-      <UniqueIdentifier>{29cd2103-d553-4d82-9e6a-224e3b1cb667}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_main\_unfactored\main">
       <UniqueIdentifier>{1ccfc5ad-5cd7-4a8e-b305-08f663c2397c}</UniqueIdentifier>
     </Filter>
@@ -1507,6 +1504,9 @@
     </ClInclude>
     <ClInclude Include="modules\ripple_data\protocol\ripple_RippleSystem.h">
       <Filter>1. Modules\ripple_data\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\types\ripple_HashTables.h">
+      <Filter>1. Modules\ripple_basics\types</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -68,8 +68,8 @@ Application::Application ()
     , mSweepTimer (mAuxService)
     , mShutdown (false)
 {
-	getRand (mNonce256.begin(), mNonce256.size());
-	getRand (reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
+	RandomNumbers::getInstance ().fillBytes (mNonce256.begin(), mNonce256.size());
+	RandomNumbers::getInstance ().fill (&mNonceST);
 }
 
 extern const char *RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[],

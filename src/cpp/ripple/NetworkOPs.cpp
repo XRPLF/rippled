@@ -1782,7 +1782,7 @@ bool NetworkOPs::subServer(InfoSub::ref isrListener, Json::Value& jvResult)
 	if (theConfig.TESTNET)
 		jvResult["testnet"]		= theConfig.TESTNET;
 
-	getRand(uRandom.begin(), uRandom.size());
+	RandomNumbers::getInstance ().fillBytes (uRandom.begin(), uRandom.size());
 	jvResult["random"]			= uRandom.ToString();
 	jvResult["server_status"]	= strOperatingMode();
 	jvResult["load_base"]		= theApp->getFeeTrack().getLoadBase();
