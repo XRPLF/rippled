@@ -61,6 +61,14 @@
 
 //------------------------------------------------------------------------------
 
+// VFALCO: TODO, prepare a unity header for LevelDB
+#ifdef USE_LEVELDB
+#include "leveldb/cache.h"
+#include "leveldb/filter_policy.h"
+#endif
+
+//------------------------------------------------------------------------------
+
 // VFALCO: TODO, fix these warnings!
 #ifdef _MSC_VER
 //#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
@@ -210,8 +218,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/AccountItems.cpp" // no log
 #include "src/cpp/ripple/AccountSetTransactor.cpp"
 #include "src/cpp/ripple/AccountState.cpp" // no log
-#include "src/cpp/ripple/Amount.cpp"
-#include "src/cpp/ripple/AmountRound.cpp"
 #include "src/cpp/ripple/Application.cpp"
 #include "src/cpp/ripple/CallRPC.cpp"
 #include "src/cpp/ripple/CanonicalTXSet.cpp"

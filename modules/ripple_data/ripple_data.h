@@ -58,14 +58,15 @@
 #include "crypto/ripple_Base58.h" // VFALCO: TODO, Can be moved to .cpp if we clean up setAlphabet stuff
 #include "crypto/ripple_Base58Data.h"
 
-#include "format/ripple_FieldNames.h"
-#include "format/ripple_RippleAddress.h"
-#include "format/ripple_Serializer.h" // needs CKey
-#include "format/ripple_TER.h"
-#include "format/ripple_SerializedTypes.h" // needs Serializer, TER
-#include "format/ripple_SerializedObject.h"
-#include "format/ripple_LedgerFormat.h" // needs SOTemplate from SerializedObject
-#include "format/ripple_TransactionFormat.h"
+#include "protocol/ripple_FieldNames.h"
+#include "protocol/ripple_RippleAddress.h"
+#include "protocol/ripple_RippleSystem.h"
+#include "protocol/ripple_Serializer.h" // needs CKey
+#include "protocol/ripple_TER.h"
+#include "protocol/ripple_SerializedTypes.h" // needs Serializer, TER
+#include "protocol/ripple_SerializedObject.h"
+#include "protocol/ripple_LedgerFormat.h" // needs SOTemplate from SerializedObject
+#include "protocol/ripple_TransactionFormat.h"
 
 // VFALCO: TODO, resolve the location of this file
 #include "ripple.pb.h"

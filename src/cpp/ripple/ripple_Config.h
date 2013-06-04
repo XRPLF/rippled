@@ -4,19 +4,6 @@
 // VFALCO: NOTE, Set this to 1 to enable code which is unnecessary
 #define ENABLE_INSECURE				0
 
-// VFALCO: TODO, replace all these macros with language constructs
-
-#define SYSTEM_NAME					"ripple"
-#define SYSTEM_CURRENCY_CODE		"XRP"
-#define SYSTEM_CURRENCY_PRECISION	6
-#define SYSTEM_CURRENCY_CODE_RIPPLE	"XRR"
-
-// VFALCO: TODO Replace these with beast "unsigned long long" generators
-#define SYSTEM_CURRENCY_GIFT		1000ull
-#define SYSTEM_CURRENCY_USERS		100000000ull
-#define SYSTEM_CURRENCY_PARTS		1000000ull		// 10^SYSTEM_CURRENCY_PRECISION
-#define SYSTEM_CURRENCY_START		(SYSTEM_CURRENCY_GIFT*SYSTEM_CURRENCY_USERS*SYSTEM_CURRENCY_PARTS)
-
 #define CONFIG_FILE_NAME			SYSTEM_NAME "d.cfg"	// rippled.cfg
 
 #define DEFAULT_VALIDATORS_SITE		""
