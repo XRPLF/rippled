@@ -6,9 +6,6 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
 
-#include "ripple_HashValue.h"
-
-
 // VFALCO: TODO, Move this to someplace sensible!!
 // Adapter to furnish uptime information to KeyCache via UptimeTimer singleton
 struct UptimeTimerAdapter

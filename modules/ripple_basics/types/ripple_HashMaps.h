@@ -84,7 +84,7 @@ private:
         @note This routine will be called concurrently.
     */
     template <class T>
-    NonceHolder <T> const& getNonceHolder ()
+    NonceHolder <T> const& getNonceHolder () const
     {
         static NonceHolder <T> nonceHolder;
 

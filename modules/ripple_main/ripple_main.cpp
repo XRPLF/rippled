@@ -95,7 +95,6 @@
 
 #include "src/cpp/ripple/ripple_Config.h"
 #include "src/cpp/ripple/ripple_DatabaseCon.h"
-#include "src/cpp/ripple/ripple_HashValue.h"
 #include "src/cpp/ripple/ripple_LoadEvent.h"
 #include "src/cpp/ripple/ripple_LoadMonitor.h"
 #include "src/cpp/ripple/ripple_Job.h"
@@ -297,7 +296,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_Features.cpp"
 #include "src/cpp/ripple/ripple_FeeVote.cpp"
 #include "src/cpp/ripple/ripple_HashRouter.cpp"
-#include "src/cpp/ripple/ripple_HashValue.cpp"
 #include "src/cpp/ripple/ripple_Job.cpp"
 #include "src/cpp/ripple/ripple_JobQueue.cpp"
 #include "src/cpp/ripple/ripple_LoadEvent.cpp"

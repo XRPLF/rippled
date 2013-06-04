@@ -180,6 +180,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="modules\ripple_basics\ripple_basics.cpp" />
+    <ClCompile Include="modules\ripple_basics\types\ripple_Uint256.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="modules\ripple_basics\utility\ripple_ByteOrder.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -846,12 +852,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_HashValue.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_Job.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1270,7 +1270,7 @@
     <ClInclude Include="modules\ripple_basics\containers\ripple_SecureAllocator.h" />
     <ClInclude Include="modules\ripple_basics\containers\ripple_TaggedCache.h" />
     <ClInclude Include="modules\ripple_basics\ripple_basics.h" />
-    <ClInclude Include="modules\ripple_basics\types\ripple_HashTables.h" />
+    <ClInclude Include="modules\ripple_basics\types\ripple_HashMaps.h" />
     <ClInclude Include="modules\ripple_basics\types\ripple_UInt256.h" />
     <ClInclude Include="modules\ripple_basics\utility\ripple_ByteOrder.h" />
     <ClInclude Include="modules\ripple_basics\utility\ripple_DiffieHellmanUtil.h" />
@@ -1655,7 +1655,6 @@
     <ClInclude Include="src\cpp\ripple\LedgerProposal.h" />
     <ClInclude Include="src\cpp\ripple\LedgerTiming.h" />
     <ClInclude Include="src\cpp\ripple\LoadManager.h" />
-    <ClInclude Include="src\cpp\ripple\ripple_HashValue.h" />
     <ClInclude Include="src\cpp\ripple\ripple_Job.h" />
     <ClInclude Include="src\cpp\ripple\ripple_JobQueue.h" />
     <ClInclude Include="src\cpp\ripple\ripple_LoadMonitor.h" />
