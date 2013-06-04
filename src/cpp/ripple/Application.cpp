@@ -5,7 +5,6 @@
 #include "leveldb/filter_policy.h"
 
 #include "AcceptedLedger.h"
-#include "Config.h"
 #include "PeerDoor.h"
 #include "RPCDoor.h"
 

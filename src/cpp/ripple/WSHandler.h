@@ -2,7 +2,6 @@
 #define __WSHANDLER__
 
 #include "Application.h"
-#include "Config.h"
 
 extern void initSSLContext(boost::asio::ssl::context& context,
 	std::string key_file, std::string cert_file, std::string chain_file);

@@ -1,20 +1,17 @@
-#ifndef __CONFIG__
-#define __CONFIG__
+#ifndef RIPPLE_CONFIG_H
+#define RIPPLE_CONFIG_H
 
-#include <string>
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/filesystem.hpp>
+// VFALCO: NOTE, Set this to 1 to enable code which is unnecessary
+#define ENABLE_INSECURE				0
 
-#include "ParseSection.h"
-
-#define ENABLE_INSECURE				0				// 1, to enable unnecessary features.
+// VFALCO: TODO, replace all these macros with language constructs
 
 #define SYSTEM_NAME					"ripple"
 #define SYSTEM_CURRENCY_CODE		"XRP"
 #define SYSTEM_CURRENCY_PRECISION	6
 #define SYSTEM_CURRENCY_CODE_RIPPLE	"XRR"
 
+// VFALCO: TODO Replace these with beast "unsigned long long" generators
 #define SYSTEM_CURRENCY_GIFT		1000ull
 #define SYSTEM_CURRENCY_USERS		100000000ull
 #define SYSTEM_CURRENCY_PARTS		1000000ull		// 10^SYSTEM_CURRENCY_PRECISION
@@ -194,11 +191,12 @@ public:
 	std::string					SMS_TO;
 	std::string					SMS_URL;
 
-	Config();
+public:
+	Config ();
 
-	int getSize(SizedItemName);
-	void setup(const std::string& strConf, bool bTestNet, bool bQuiet);
-	void load();
+	int getSize (SizedItemName);
+	void setup (const std::string& strConf, bool bTestNet, bool bQuiet);
+	void load ();
 };
 
 extern Config theConfig;

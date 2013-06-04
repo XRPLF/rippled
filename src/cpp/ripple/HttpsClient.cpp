@@ -10,8 +10,6 @@
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/system/error_code.hpp>
 
-#include "Config.h"
-
 #define CLIENT_MAX_HEADER (32*1024)
 
 SETUP_LOG (HttpsClient)
