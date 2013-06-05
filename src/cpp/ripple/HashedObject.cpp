@@ -1,9 +1,7 @@
 #include "HashedObject.h"
 
-#ifdef USE_LEVELDB
 #include "leveldb/db.h"
 #include "leveldb/write_batch.h"
-#endif
 
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
@@ -31,14 +29,6 @@ HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
 		WriteLog (lsFATAL, HashedObject) << "Incorrect database selection";
 		assert(false);
 	}
-#ifndef USE_LEVELDB
-	if (mLevelDB)
-	{
-		WriteLog (lsFATAL) << "LevelDB has been selected but not compiled";
-		assert(false);
-	}
-#endif
-
 }
 
 void HashedObjectStore::tune(int size, int age)
@@ -60,8 +50,6 @@ int HashedObjectStore::getWriteLoad()
 	boost::mutex::scoped_lock sl(mWriteMutex);
 	return std::max(mWriteLoad, static_cast<int>(mWriteSet.size()));
 }
-
-#ifdef USE_LEVELDB
 
 bool HashedObjectStore::storeLevelDB(HashedObjectType type, uint32 index,
 	const std::vector<unsigned char>& data, const uint256& hash)
@@ -176,8 +164,6 @@ HashedObject::pointer HashedObjectStore::retrieveLevelDB(const uint256& hash)
 	WriteLog (lsTRACE, HashedObject) << "HOS: " << hash << " fetch: in db";
 	return obj;
 }
-
-#endif
 
 bool HashedObjectStore::storeSQLite(HashedObjectType type, uint32 index,
 	const std::vector<unsigned char>& data, const uint256& hash)
@@ -405,8 +391,6 @@ HashedObject::pointer HashedObjectStore::retrieveSQLite(const uint256& hash)
 	return obj;
 }
 
-#ifdef USE_LEVELDB
-
 int HashedObjectStore::import(const std::string& file)
 {
 	WriteLog (lsWARNING, HashedObject) << "Hashed object import from \"" << file << "\".";
@@ -475,7 +459,5 @@ int HashedObjectStore::import(const std::string& file)
 	WriteLog (lsWARNING, HashedObject) << "Imported " << count << " nodes";
 	return count;
 }
-
-#endif
 
 // vim:ts=4

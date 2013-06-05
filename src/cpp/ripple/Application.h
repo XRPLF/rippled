@@ -1,9 +1,7 @@
 #ifndef __APPLICATION__
 #define __APPLICATION__
 
-#ifdef USE_LEVELDB
 #include "leveldb/db.h"
-#endif
 
 #include <boost/asio.hpp>
 
@@ -83,9 +81,7 @@ class Application
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
 
-#ifdef USE_LEVELDB
 	leveldb::DB				*mHashNodeLDB;
-#endif
 
 	ConnectionPool			mConnectionPool;
 	PeerDoor*				mPeerDoor;
@@ -156,9 +152,7 @@ public:
 	DatabaseCon* getPathFindDB()	{ return mPathFindDB; }
 	DatabaseCon* getHashNodeDB()	{ return mHashNodeDB; }
 
-#ifdef USE_LEVELDB
 	leveldb::DB* getHashNodeLDB()	{ return mHashNodeLDB; }
-#endif
 
 	uint256 getNonce256()			{ return mNonce256; }
 	std::size_t getNonceST()		{ return mNonceST; }
