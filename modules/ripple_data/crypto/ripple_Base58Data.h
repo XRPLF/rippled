@@ -61,5 +61,7 @@ public:
 	friend std::size_t hash_value(const CBase58Data& b58);
 };
 
+extern std::size_t hash_value (const CBase58Data& b58);
+
 #endif
 // vim:ts=4

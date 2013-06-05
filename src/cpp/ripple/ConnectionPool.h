@@ -6,9 +6,6 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "Peer.h"
-#include "PackedMessage.h"
-
 //
 // Access to the Ripple network.
 //

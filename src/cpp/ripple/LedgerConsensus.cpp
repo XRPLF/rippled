@@ -188,7 +188,7 @@ void LedgerConsensus::checkOurValidation()
 		(mPreviousLedger->getHash(), theApp->getOPs().getValidationTimeNC(), mValPublic, false);
 	v->setTrusted();
 	v->sign(signingHash, mValPrivate);
-	theApp->isNew(signingHash);
+	theApp->getHashRouter ().addSuppression (signingHash);
 	theApp->getValidations().addValidation(v, "localMissing");
 	std::vector<unsigned char> validation = v->getSigned();
 	ripple::TMValidation val;
@@ -314,8 +314,8 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 		 && ((mPreviousLedger->getLedgerSeq() % 256) == 0))
 	{ // previous ledger was flag ledger
 		SHAMap::pointer preSet = initialLedger.peekTransactionMap()->snapShot(true);
-		theApp->getFeeVote().doVoting(mPreviousLedger, preSet);
-		theApp->getFeatureTable().doVoting(mPreviousLedger, preSet);
+		theApp->getFeeVote().doVoting (mPreviousLedger, preSet);
+		theApp->getFeatureTable().doVoting (mPreviousLedger, preSet);
 		initialSet = preSet->snapShot(false);
 	}
 	else
@@ -561,6 +561,7 @@ void LedgerConsensus::stateAccepted()
 	endConsensus();
 }
 
+// VFALCO: TODO implement shutdown without a naked global
 extern volatile bool doShutdown;
 
 void LedgerConsensus::timerEntry()
@@ -858,7 +859,7 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 			txn->setVote(pit.first, cit->second->hasItem(txID));
 	}
 
-	if (theApp->isNewFlag(txID, SF_RELAYED))
+	if (theApp->getHashRouter ().setFlag (txID, SF_RELAYED))
 	{
 		ripple::TMTransaction msg;
 		msg.set_rawtransaction(&(tx.front()), tx.size());
@@ -1004,7 +1005,7 @@ void LedgerConsensus::playbackProposals()
 			}
 #if 0 // FIXME: We can't do delayed relay because we don't have the signature
 			std::set<uint64> peers
-			if (relay && theApp->getSuppression().swapSet(proposal.getSuppress(), set, SF_RELAYED))
+			if (relay && theApp->getHashRouter().swapSet(proposal.getSuppress(), set, SF_RELAYED))
 			{
 				WriteLog (lsDEBUG, LedgerConsensus) << "Stored proposal delayed relay";
 				ripple::TMProposeSet set;
@@ -1022,6 +1023,7 @@ void LedgerConsensus::playbackProposals()
 	}
 }
 
+// VFALCO: TODO, clean these macros up and put them somewhere. Try to eliminate them if possible.
 #define LCAT_SUCCESS	0
 #define LCAT_FAIL		1
 #define LCAT_RETRY		2
@@ -1032,7 +1034,7 @@ int LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTrans
 	TransactionEngineParams parms = openLedger ? tapOPEN_LEDGER : tapNONE;
 	if (retryAssured)
 		parms = static_cast<TransactionEngineParams>(parms | tapRETRY);
-	if (theApp->isNewFlag(txn->getTransactionID(), SF_SIGGOOD))
+	if (theApp->getHashRouter ().setFlag (txn->getTransactionID(), SF_SIGGOOD))
 		parms = static_cast<TransactionEngineParams>(parms | tapNO_CHECK_SIGN);
 
 	WriteLog (lsDEBUG, LedgerConsensus) << "TXN " << txn->getTransactionID()
@@ -1040,6 +1042,7 @@ int LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTrans
 		<< (retryAssured ? "/retry" : "/final");
 	WriteLog (lsTRACE, LedgerConsensus) << txn->getJson(0);
 
+// VFALCO: TODO, figure out what this "trust network" is all about and why it needs exceptions.
 #ifndef TRUST_NETWORK
 	try
 	{
@@ -1221,7 +1224,7 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 		}
 		v->sign(signingHash, mValPrivate);
 		v->setTrusted();
-		theApp->isNew(signingHash); // suppress it if we receive it
+		theApp->getHashRouter ().addSuppression (signingHash); // suppress it if we receive it
 		theApp->getValidations().addValidation(v, "local");
 		theApp->getOPs().setLastValidation(v);
 		std::vector<unsigned char> validation = v->getSigned();

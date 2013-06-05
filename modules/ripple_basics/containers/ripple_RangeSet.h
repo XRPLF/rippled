@@ -94,6 +94,7 @@ template<typename T> T range_check_max(const T& value, const T& maximum)
 }
 */
 
+// VFALCO: TODO, these parameters should not be const references.
 template<typename T, typename U> T range_check_cast(const U& value, const T& minimum, const T& maximum)
 {
 	if ((value < minimum) || (value > maximum))

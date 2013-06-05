@@ -23,7 +23,3 @@
 */
 
 #include "ripple_db.h"
-
-#include "src/cpp/database/database.cpp"
-#include "src/cpp/database/SqliteDatabase.cpp"
-#include "src/cpp/ripple/DBInit.cpp"

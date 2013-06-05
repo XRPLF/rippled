@@ -9,7 +9,6 @@
 #include <openssl/evp.h>
 
 #include "RPC.h"
-#include "Config.h"
 #include "Version.h"
 
 // Used for logging

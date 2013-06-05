@@ -7,15 +7,16 @@
 	Individuals features are voted on by validators during the consensus
 	process.
 */
-class IFeatureTable
+class IFeatures
 {
 public:
-	static IFeatureTable* New (uint32 majorityTime, int majorityFraction);
+	static IFeatures* New (uint32 majorityTime, int majorityFraction);
 
-	virtual ~IFeatureTable () { }
+	virtual ~IFeatures () { }
 
 	virtual void doValidation (Ledger::ref lastClosedLedger, STObject& baseValidation) = 0;
-	virtual void doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPosition) = 0;
+
+    virtual void doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPosition) = 0;
 };
 
 #endif

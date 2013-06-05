@@ -1565,7 +1565,7 @@ uint32 Ledger::roundCloseTime(uint32 closeTime, uint32 closeResolution)
 
 void Ledger::pendSave(bool fromConsensus)
 {
-	if (!fromConsensus && !theApp->isNewFlag(getHash(), SF_SAVED))
+	if (!fromConsensus && !theApp->getHashRouter ().setFlag (getHash(), SF_SAVED))
 		return;
 	assert(isImmutable());
 

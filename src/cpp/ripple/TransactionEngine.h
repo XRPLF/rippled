@@ -11,7 +11,6 @@
 #include "SerializedTransaction.h"
 #include "SerializedLedger.h"
 #include "LedgerEntrySet.h"
-#include "TransactionErr.h"
 
 
 DEFINE_INSTANCE(TransactionEngine);

@@ -6,24 +6,13 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 
-#include "SerializedTypes.h"
-#include "SerializedObject.h"
 #include "SerializedLedger.h"
-#include "TransactionErr.h"
 
 class TransactionMetaSet
 {
 public:
 	typedef boost::shared_ptr<TransactionMetaSet> pointer;
 	typedef const pointer& ref;
-
-protected:
-	uint256	mTransactionID;
-	uint32	mLedger;
-	uint32  mIndex;
-	int		mResult;
-
-	STArray mNodes;
 
 public:
 	TransactionMetaSet() : mLedger(0), mIndex(static_cast<uint32>(-1)), mResult(255) { ; }
@@ -56,6 +45,14 @@ public:
 	STArray& getNodes(){ return(mNodes); }
 
 	static bool thread(STObject& node, const uint256& prevTxID, uint32 prevLgrID);
+
+private:
+	uint256	mTransactionID;
+	uint32	mLedger;
+	uint32  mIndex;
+	int		mResult;
+
+	STArray mNodes;
 };
 
 #endif

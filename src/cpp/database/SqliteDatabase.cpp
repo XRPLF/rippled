@@ -9,8 +9,6 @@
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
-#include "../ripple/JobQueue.h"
-
 SETUP_LOG (SqliteDatabase)
 
 using namespace std;

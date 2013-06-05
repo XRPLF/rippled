@@ -8,8 +8,6 @@
 #include <boost/algorithm/string.hpp>
 #include <algorithm>
 
-#include "Config.h"
-#include "Peer.h"
 #include "PeerDoor.h"
 #include "Application.h"
 
@@ -291,8 +289,8 @@ void ConnectionPool::connectTo(const std::string& strIp, int iPort)
 
 		db->executeSQL(str(boost::format("REPLACE INTO PeerIps (IpPort,Score,Source,ScanNext) values (%s,%d,'%c',0);")
 			% sqlEscape(str(boost::format("%s %d") % strIp % iPort))
-			% theApp->getUNL().iSourceScore(UniqueNodeList::vsManual)
-			% char(UniqueNodeList::vsManual)));
+			% theApp->getUNL().iSourceScore(IUniqueNodeList::vsManual)
+			% char(IUniqueNodeList::vsManual)));
 	}
 
 	scanRefresh();
@@ -311,8 +309,10 @@ Peer::pointer ConnectionPool::peerConnect(const std::string& strIp, int iPort)
 		boost::recursive_mutex::scoped_lock sl(mPeerLock);
 		if (mIpMap.find(pipPeer) == mIpMap.end())
 		{
-			ppResult = Peer::create(theApp->getIOService(), theApp->getPeerDoor().getSSLContext(),
-				++mLastPeer, false);
+			ppResult = Peer::New (theApp->getIOService(),
+                                  theApp->getPeerDoor().getSSLContext(),
+				                  ++mLastPeer,
+                                  false);
 
 			mIpMap[pipPeer]	= ppResult;
 			// ++miConnectStarting;

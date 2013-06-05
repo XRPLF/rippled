@@ -2,13 +2,6 @@
 
 class ChangeTransactor : public Transactor
 {
-protected:
-
-	TER applyFeature();
-	TER applyFee();
-
-	bool mustHaveValidAccount() { return false; }
-
 public:
 	ChangeTransactor(const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine *engine)
 		: Transactor(txn, params, engine)
@@ -19,6 +12,13 @@ public:
 	TER checkSeq();
 	TER payFee();
 	TER preCheck();
+
+private:
+	TER applyFeature();
+	TER applyFee();
+
+    // VFALCO: TODO, Can this be removed?
+	bool mustHaveValidAccount() { return false; }
 };
 
 // vim:ts=4

@@ -1,5 +1,7 @@
+#ifndef RIPPLE_RPCDOOR_H
+#define RIPPLE_RPCDOOR_H
+
 #include "RPCServer.h"
-#include <boost/asio.hpp>
 
 /*
 Handles incoming connections from people making RPC Requests
@@ -7,6 +9,11 @@ Handles incoming connections from people making RPC Requests
 
 class RPCDoor
 {
+public:
+	explicit RPCDoor (boost::asio::io_service& io_service);
+	~RPCDoor ();
+
+private:
 	boost::asio::ip::tcp::acceptor	mAcceptor;
 	boost::asio::deadline_timer		mDelayTimer;
 
@@ -15,7 +22,6 @@ class RPCDoor
 		const boost::system::error_code& error);
 
 	bool isClientAllowed(const std::string& ip);
-public:
-	RPCDoor(boost::asio::io_service& io_service);
-	~RPCDoor();
 };
+
+#endif

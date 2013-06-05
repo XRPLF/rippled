@@ -7,7 +7,6 @@
 #include <boost/mem_fn.hpp>
 
 #include "Application.h"
-#include "Config.h"
 
 SETUP_LOG (PeerDoor)
 
@@ -39,8 +38,11 @@ PeerDoor::PeerDoor(boost::asio::io_service& io_service) :
 
 void PeerDoor::startListening()
 {
-	Peer::pointer new_connection = Peer::create(mAcceptor.get_io_service(), mCtx,
-		theApp->getConnectionPool().assignPeerId(), true);
+	Peer::pointer new_connection = Peer::New (
+        mAcceptor.get_io_service(),
+        mCtx,
+		theApp->getConnectionPool().assignPeerId(),
+        true);
 
 	mAcceptor.async_accept(new_connection->getSocket(),
 		boost::bind(&PeerDoor::handleConnect, this, new_connection,

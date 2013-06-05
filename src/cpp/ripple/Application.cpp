@@ -1,4 +1,5 @@
 
+/*
 #include "Application.h"
 
 #ifdef USE_LEVELDB
@@ -7,7 +8,6 @@
 #endif
 
 #include "AcceptedLedger.h"
-#include "Config.h"
 #include "PeerDoor.h"
 #include "RPCDoor.h"
 
@@ -18,6 +18,13 @@
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
+*/
+
+// VFALCO: TODO Replace these with beast "unsigned long long" generators
+#define SYSTEM_CURRENCY_GIFT		1000ull
+#define SYSTEM_CURRENCY_USERS		100000000ull
+#define SYSTEM_CURRENCY_PARTS		1000000ull		// 10^SYSTEM_CURRENCY_PRECISION
+#define SYSTEM_CURRENCY_START		(SYSTEM_CURRENCY_GIFT*SYSTEM_CURRENCY_USERS*SYSTEM_CURRENCY_PARTS)
 
 SETUP_LOG (Application)
 
@@ -25,47 +32,49 @@ SETUP_LOG (Application)
 LogPartition AutoSocketPartition("AutoSocket");
 Application* theApp = NULL;
 
-int DatabaseCon::sCount = 0;
-
-DatabaseCon::DatabaseCon(const std::string& strName, const char *initStrings[], int initCount)
-{
-	++sCount;
-	boost::filesystem::path	pPath	= (theConfig.RUN_STANDALONE && (theConfig.START_UP != Config::LOAD))
-										? ""								// Use temporary files.
-										: (theConfig.DATA_DIR / strName);		// Use regular db files.
-
-	mDatabase = new SqliteDatabase(pPath.string().c_str());
-	mDatabase->connect();
-	for(int i = 0; i < initCount; ++i)
-		mDatabase->executeSQL(initStrings[i], true);
-}
-
-DatabaseCon::~DatabaseCon()
-{
-	mDatabase->disconnect();
-	delete mDatabase;
-}
-
-Application::Application() :
-	mIOService((theConfig.NODE_SIZE >= 2) ? 2 : 1),
-	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService), mNetOps(mIOService, &mLedgerMaster),
-	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300), mSLECache("LedgerEntryCache", 4096, 120),
-	mSNTPClient(mAuxService), mJobQueue(mIOService), mFeeTrack(),
-
-	mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS)),
-	mFeatureTable(2 * 7 * 24 * 60 * 60, 200), // two weeks, 200/256
-
-	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
-	mNetNodeDB(NULL), mPathFindDB(NULL), mHashNodeDB(NULL),
+Application::Application()
+    : mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
+    , mIOWork (mIOService)
+    , mAuxWork (mAuxService)
+    , mNetOps (mIOService, &mLedgerMaster)
+    , mTempNodeCache ("NodeCache", 16384, 90)
+    , mHashedObjectStore (16384, 300)
+    , mSLECache ("LedgerEntryCache", 4096, 120)
+    , mSNTPClient (mAuxService)
+    , mJobQueue (mIOService)
+    // VFALCO: New stuff
+    , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
+    , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
+    , mFeeTrack (ILoadFeeTrack::New ())
+    , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
+    , mValidations (IValidations::New ())
+    , mUNL (IUniqueNodeList::New (mIOService))
+    , mProofOfWorkFactory (IProofOfWorkFactory::New ())
+    // VFALCO: End new stuff
+    // VFALCO: TODO replace all NULL with nullptr
+    , mRpcDB (NULL)
+    , mTxnDB (NULL)
+    , mLedgerDB (NULL)
+    , mWalletDB (NULL) // VFALCO: NOTE, are all these 'NULL' ctor params necessary?
+    , mNetNodeDB (NULL)
+    , mPathFindDB (NULL)
+    , mHashNodeDB (NULL)
+    // VFALCO: TODO eliminate USE_LEVELDB macro
 #ifdef USE_LEVELDB
-	mHashNodeLDB(NULL),
+	, mHashNodeLDB (NULL)
 #endif
-	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
-	mSweepTimer(mAuxService), mShutdown(false)
+	, mConnectionPool (mIOService)
+    , mPeerDoor (NULL)
+    , mRPCDoor (NULL)
+    , mWSPublicDoor (NULL)
+    , mWSPrivateDoor (NULL)
+    , mSweepTimer (mAuxService)
+    , mShutdown (false)
 {
-	getRand(mNonce256.begin(), mNonce256.size());
-	getRand(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
+    // VFALCO: TODO, remove these once the call is thread safe.
+    HashMaps::getInstance ().initializeNonce <size_t> ();
 }
+
 
 extern const char *RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[],
 	*NetNodeDBInit[], *PathFindDBInit[];
@@ -80,7 +89,7 @@ void Application::stop()
 	mShutdown = true;
 	mIOService.stop();
 	mHashedObjectStore.waitWrite();
-	mValidations.flush();
+	mValidations->flush();
 	mAuxService.stop();
 	mJobQueue.shutdown();
 
@@ -107,6 +116,7 @@ void sigIntHandler(int)
 }
 #endif
 
+// VFALCO: TODO, Figure this out it looks like the wrong tool
 static void runAux(boost::asio::io_service& svc)
 {
 	setCallingThreadName("aux");
@@ -238,7 +248,7 @@ void Application::setup()
 	if (!theConfig.RUN_STANDALONE)
 		getUNL().nodeBootstrap();
 
-	mValidations.tune(theConfig.getSize(siValidationsSize), theConfig.getSize(siValidationsAge));
+	mValidations->tune(theConfig.getSize(siValidationsSize), theConfig.getSize(siValidationsAge));
 	mHashedObjectStore.tune(theConfig.getSize(siNodeCacheSize), theConfig.getSize(siNodeCacheAge));
 	mLedgerMaster.tune(theConfig.getSize(siLedgerSize), theConfig.getSize(siLedgerAge));
 	mSLECache.setTargetSize(theConfig.getSize(siSLECacheSize));
@@ -391,23 +401,27 @@ void Application::sweep()
 		theApp->stop();
 	}
 
+    // VFALCO: NOTE, Does the order of calls matter?
+    // VFALCO: TODO, fix the dependency inversion using an observer,
+    //         have listeners register for "onSweep ()" notification.
+    //         
 	mMasterTransaction.sweep();
 	mHashedObjectStore.sweep();
 	mLedgerMaster.sweep();
 	mTempNodeCache.sweep();
-	mValidations.sweep();
+	mValidations->sweep();
 	getMasterLedgerAcquire().sweep();
 	mSLECache.sweep();
-	AcceptedLedger::sweep();
-	SHAMap::sweep();
+	AcceptedLedger::sweep(); // VFALCO: NOTE, AcceptedLedger is/has a singleton?
+	SHAMap::sweep(); // VFALCO: NOTE, SHAMap is/has a singleton?
 	mNetOps.sweepFetchPack();
+    // VFALCO: NOTE, does the call to sweep() happen on another thread?
 	mSweepTimer.expires_from_now(boost::posix_time::seconds(theConfig.getSize(siSweepInterval)));
 	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
 }
 
 Application::~Application()
 {
-	delete mFeeVote;
 	delete mTxnDB;
 	delete mLedgerDB;
 	delete mWalletDB;

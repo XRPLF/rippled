@@ -3,7 +3,6 @@
 
 #include <boost/unordered_set.hpp>
 
-#include "SerializedTypes.h"
 #include "Ledger.h"
 #include "NetworkOPs.h"
 
@@ -132,19 +131,20 @@ class RPCInternalHandler
 public:
 	typedef Json::Value (*handler_t)(const Json::Value&);
 
-protected:
+public:
+	RPCInternalHandler(const std::string& name, handler_t handler);
+	static Json::Value runHandler(const std::string& name, const Json::Value& params);
+
+private:
 	static RPCInternalHandler*	sHeadHandler;
 
 	RPCInternalHandler*			mNextHandler;
 	std::string					mName;
 	handler_t					mHandler;
-
-public:
-	RPCInternalHandler(const std::string& name, handler_t handler);
-	static Json::Value runHandler(const std::string& name, const Json::Value& params);
 };
 
-int iAdminGet(const Json::Value& jvRequest, const std::string& strRemoteIp);
+// VFALCO: TODO, tidy up this loose function
+int iAdminGet (const Json::Value& jvRequest, const std::string& strRemoteIp);
 
 #endif
 // vim:ts=4

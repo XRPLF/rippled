@@ -19,33 +19,67 @@
 #ifndef RIPPLE_RANDOMNUMBERS_H
 #define RIPPLE_RANDOMNUMBERS_H
 
-extern bool AddSystemEntropy ();
-
-// Cryptographically secure random number source
-
-// VFALCO: TODO Clean this up, rename stuff
-// Seriously...wtf...rename "num" to bytes, or make it work
-// using a template so the destination can be a vector of objects.
-//
-// VFALCO: Should accept void* not unsigned char*
-//
-extern void getRand (unsigned char *buf, int num);
-
-inline static void getRand (char *buf, int num)
+/** Cryptographically secure random number source.
+*/
+class RandomNumbers
 {
-	return getRand (reinterpret_cast<unsigned char *>(buf), num);
-}
+public:
+    /** Retrieve the instance of the generator.
+    */
+    static RandomNumbers& getInstance ();
 
-// VFALCO: TODO Clean this
-// "num" is really bytes this should just be called getRandomBytes()
-// This function is unnecessary!
-//
-inline static void getRand (void *buf, int num)
-{
-	return getRand (reinterpret_cast<unsigned char *>(buf), num);
-}
+    /** Initialize the generator.
 
-// Lifted from BitcoinUtil.h
-extern void RandAddSeedPerfmon();
+        If the generator is not manually initialized, it will be
+        automatically initialized on first use. If automatic initialization
+        fails, an exception is thrown.
+
+        @return `true` if enough entropy could be retrieved.
+    */
+    bool initialize ();
+
+    /** Generate secure random numbers.
+
+        The generated data is suitable for cryptography.
+
+        @invariant The destination buffer must be large enough or
+                   undefined behavior results.
+
+        @param destinationBuffer The place to store the bytes.
+        @param numberOfBytes The number of bytes to generate.
+    */
+    void fillBytes (void* destinationBuffer, int numberOfBytes);
+
+    /** Generate secure random numbers.
+
+        The generated data is suitable for cryptography.
+
+        Fills the memory for the object with random numbers.
+        This is a type-safe alternative to the function above.
+
+        @param object A pointer to the object to fill.
+
+        @tparam T The type of `object`
+
+        @note Undefined behavior results if `T` is not a POD type.
+    */
+    template <class T>
+    void fill (T* object)
+    {
+        fillBytes (object, sizeof (T));
+    }
+
+private:
+    RandomNumbers ();
+
+    ~RandomNumbers ();
+
+    bool platformAddEntropy ();
+
+    void platformAddPerformanceMonitorEntropy ();
+
+private:
+    bool m_initialized;
+};
 
 #endif
