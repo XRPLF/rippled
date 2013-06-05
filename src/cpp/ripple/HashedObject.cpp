@@ -192,7 +192,10 @@ HashedObject::pointer HashedObjectStore::retrieveLevelDB(const uint256& hash)
 	{
 		obj = LLRetrieve(hash, theApp->getEphemeralLDB());
 		if (obj)
+		{
+			mCache.canonicalize(hash, obj);
 			return obj;
+		}
 	}
 
 	{
@@ -365,7 +368,10 @@ HashedObject::pointer HashedObjectStore::retrieveSQLite(const uint256& hash)
 	{
 		obj = LLRetrieve(hash, theApp->getEphemeralLDB());
 		if (obj)
+		{
+			mCache.canonicalize(hash, obj);
 			return obj;
+		}
 	}
 
 	if (!theApp || !theApp->getHashNodeDB())
