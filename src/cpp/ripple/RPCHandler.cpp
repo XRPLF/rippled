@@ -625,7 +625,7 @@ Json::Value RPCHandler::doConnect(Json::Value jvRequest, int& cost, ScopedLock& 
 	int			iPort	= jvRequest.isMember("port") ? jvRequest["port"].asInt() : -1;
 
 	// XXX Validate legal IP and port
-	theApp->getConnectionPool().connectTo(strIp, iPort);
+	theApp->getPeers().connectTo(strIp, iPort);
 
 	return "connecting";
 }
@@ -772,7 +772,7 @@ Json::Value RPCHandler::doPeers(Json::Value, int& cost, ScopedLock& MasterLockHo
 {
 	Json::Value jvResult(Json::objectValue);
 
-	jvResult["peers"]	= theApp->getConnectionPool().getPeersJson();
+	jvResult["peers"]	= theApp->getPeers().getPeersJson();
 
 	return jvResult;
 }

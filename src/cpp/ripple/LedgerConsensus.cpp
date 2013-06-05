@@ -194,7 +194,7 @@ void LedgerConsensus::checkOurValidation()
 	ripple::TMValidation val;
 	val.set_validation(&validation[0], validation.size());
 #if 0
-	theApp->getConnectionPool().relayMessage(NULL,
+	theApp->getPeers().relayMessage(NULL,
 		boost::make_shared<PackedMessage>(val, ripple::mtVALIDATION));
 #endif
 	theApp->getOPs().setLastValidation(v);
@@ -450,7 +450,7 @@ void LedgerConsensus::sendHaveTxSet(const uint256& hash, bool direct)
 	msg.set_hash(hash.begin(), 256 / 8);
 	msg.set_status(direct ? ripple::tsHAVE : ripple::tsCAN_GET);
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(msg, ripple::mtHAVE_SET);
-	theApp->getConnectionPool().relayMessage(NULL, packet);
+	theApp->getPeers().relayMessage(NULL, packet);
 }
 
 void LedgerConsensus::adjustCount(SHAMap::ref map, const std::vector<uint160>& peers)
@@ -483,7 +483,7 @@ void LedgerConsensus::statusChange(ripple::NodeEvent event, Ledger& ledger)
 	s.set_lastseq(uMax);
 
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, ripple::mtSTATUS_CHANGE);
-	theApp->getConnectionPool().relayMessage(NULL, packet);
+	theApp->getPeers().relayMessage(NULL, packet);
 	WriteLog (lsTRACE, LedgerConsensus) << "send status change to peer";
 }
 
@@ -803,7 +803,7 @@ void LedgerConsensus::startAcquiring(TransactionAcquire::pointer acquire)
 		}
 	}
 
-	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+	std::vector<Peer::pointer> peerList = theApp->getPeers().getPeerVector();
 	BOOST_FOREACH(Peer::ref peer, peerList)
 	{
 		if (peer->hasTxSet(acquire->getHash()))
@@ -828,7 +828,7 @@ void LedgerConsensus::propose()
 	std::vector<unsigned char> sig = mOurPosition->sign();
 	prop.set_nodepubkey(&pubKey[0], pubKey.size());
 	prop.set_signature(&sig[0], sig.size());
-	theApp->getConnectionPool().relayMessage(NULL,
+	theApp->getPeers().relayMessage(NULL,
 		boost::make_shared<PackedMessage>(prop, ripple::mtPROPOSE_LEDGER));
 }
 
@@ -866,7 +866,7 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 		msg.set_status(ripple::tsNEW);
 		msg.set_receivetimestamp(theApp->getOPs().getNetworkTimeNC());
 		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(msg, ripple::mtTRANSACTION);
-        theApp->getConnectionPool().relayMessage(NULL, packet);
+        theApp->getPeers().relayMessage(NULL, packet);
 	}
 }
 
@@ -1016,7 +1016,7 @@ void LedgerConsensus::playbackProposals()
 				nodepubkey
 				signature
 				PackedMessage::pointer message = boost::make_shared<PackedMessage>(set, ripple::mtPROPOSE_LEDGER);
-				theApp->getConnectionPool().relayMessageBut(peers, message);
+				theApp->getPeers().relayMessageBut(peers, message);
 			}
 #endif
 		}
@@ -1230,7 +1230,7 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 		std::vector<unsigned char> validation = v->getSigned();
 		ripple::TMValidation val;
 		val.set_validation(&validation[0], validation.size());
-		int j = theApp->getConnectionPool().relayMessage(NULL,
+		int j = theApp->getPeers().relayMessage(NULL,
 			boost::make_shared<PackedMessage>(val, ripple::mtVALIDATION));
 		WriteLog (lsINFO, LedgerConsensus) << "CNF Val " << newLCLHash << " to " << j << " peers";
 	}

@@ -1,23 +1,123 @@
 
-#include "ConnectionPool.h"
-
-#include <boost/asio.hpp>
-#include <boost/bind.hpp>
-#include <boost/foreach.hpp>
-#include <boost/format.hpp>
-#include <boost/algorithm/string.hpp>
-#include <algorithm>
-
-#include "PeerDoor.h"
-#include "Application.h"
-
 // VFALCO: TODO, make this an inline function
 #define ADDRESS_SHARED(p)	strHex(uint64( ((char*) (p).get()) - ((char*) 0)))
 
 // How often to enforce policies.
 #define POLICY_INTERVAL_SECONDS	5
 
-SETUP_LOG (ConnectionPool)
+class Peers;
+
+SETUP_LOG (Peers)
+
+class Peers : public IPeers
+{
+public:
+	explicit Peers (boost::asio::io_service& io_service)
+        : mLastPeer (0)
+        , mPhase (0)
+        , mScanTimer (io_service)
+        , mPolicyTimer (io_service)
+	{
+    }
+
+	// Begin enforcing connection policy.
+	void start();
+
+	// Send message to network.
+	int relayMessage(Peer* fromPeer, const PackedMessage::pointer& msg);
+	void relayMessageTo(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg);
+	void relayMessageBut(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg);
+
+	// Manual connection request.
+	// Queue for immediate scanning.
+	void connectTo(const std::string& strIp, int iPort);
+
+	//
+	// Peer connectivity notification.
+	//
+	bool getTopNAddrs(int n,std::vector<std::string>& addrs);
+	bool savePeer(const std::string& strIp, int iPort, char code);
+
+	// We know peers node public key.
+	// <-- bool: false=reject
+	bool peerConnected(Peer::ref peer, const RippleAddress& naPeer, const std::string& strIP, int iPort);
+
+	// No longer connected.
+	void peerDisconnected(Peer::ref peer, const RippleAddress& naPeer);
+
+	// As client accepted.
+	void peerVerified(Peer::ref peer);
+
+	// As client failed connect and be accepted.
+	void peerClosed(Peer::ref peer, const std::string& strIp, int iPort);
+
+	int getPeerCount();
+	Json::Value getPeersJson();
+	std::vector<Peer::pointer> getPeerVector();
+
+	// Peer 64-bit ID function
+	uint64 assignPeerId();
+	Peer::pointer getPeerById(const uint64& id);
+	bool hasPeer(const uint64& id);
+
+	//
+	// Scanning
+	//
+
+	void scanRefresh();
+
+	//
+	// Connection policy
+	//
+	void policyLowWater();
+	void policyEnforce();
+
+	// configured connections
+	void makeConfigured();
+
+private:
+    boost::recursive_mutex	mPeerLock;
+    uint64					mLastPeer;
+    int						mPhase;
+
+	typedef std::pair<RippleAddress, Peer::pointer>		naPeer;
+	typedef std::pair<ipPort, Peer::pointer>			pipPeer;
+	typedef std::map<ipPort, Peer::pointer>::value_type	vtPeer;
+
+	// Peers we are connecting with and non-thin peers we are connected to.
+	// Only peers we know the connection ip for are listed.
+	// We know the ip and port for:
+	// - All outbound connections
+	// - Some inbound connections (which we figured out).
+    boost::unordered_map<ipPort, Peer::pointer>			mIpMap;
+
+	// Non-thin peers which we are connected to.
+	// Peers we have the public key for.
+	typedef boost::unordered_map<RippleAddress, Peer::pointer>::value_type vtConMap;
+    boost::unordered_map<RippleAddress, Peer::pointer>	mConnectedMap;
+
+    // Connections with have a 64-bit identifier
+    boost::unordered_map<uint64, Peer::pointer>			mPeerIdMap;
+
+	Peer::pointer										mScanning;
+	boost::asio::deadline_timer							mScanTimer;
+	std::string											mScanIp;
+	int													mScanPort;
+
+	void			scanHandler(const boost::system::error_code& ecResult);
+
+	boost::asio::deadline_timer							mPolicyTimer;
+
+	void			policyHandler(const boost::system::error_code& ecResult);
+
+	// Peers we are establishing a connection with as a client.
+	// int												miConnectStarting;
+
+	bool			peerAvailable(std::string& strIp, int& iPort);
+	bool			peerScanSet(const std::string& strIp, int iPort);
+
+	Peer::pointer	peerConnect(const std::string& strIp, int iPort);
+};
 
 void splitIpPort(const std::string& strIpPort, std::string& strIp, int& iPort)
 {
@@ -28,7 +128,7 @@ void splitIpPort(const std::string& strIpPort, std::string& strIp, int& iPort)
 	iPort	= boost::lexical_cast<int>(vIpPort[1]);
 }
 
-void ConnectionPool::start()
+void Peers::start()
 {
 	if (theConfig.RUN_STANDALONE)
 		return;
@@ -40,7 +140,7 @@ void ConnectionPool::start()
 	scanRefresh();
 }
 
-bool ConnectionPool::getTopNAddrs(int n,std::vector<std::string>& addrs)
+bool Peers::getTopNAddrs(int n,std::vector<std::string>& addrs)
 {
 	// XXX Filter out other local addresses (like ipv6)
 	Database*	db = theApp->getWalletDB()->getDB();
@@ -58,7 +158,7 @@ bool ConnectionPool::getTopNAddrs(int n,std::vector<std::string>& addrs)
 	return true;
 }
 
-bool ConnectionPool::savePeer(const std::string& strIp, int iPort, char code)
+bool Peers::savePeer(const std::string& strIp, int iPort, char code)
 {
 	bool	bNew	= false;
 
@@ -96,7 +196,7 @@ bool ConnectionPool::savePeer(const std::string& strIp, int iPort, char code)
 	return bNew;
 }
 
-Peer::pointer ConnectionPool::getPeerById(const uint64& id)
+Peer::pointer Peers::getPeerById(const uint64& id)
 {
 	boost::recursive_mutex::scoped_lock sl(mPeerLock);
 	const boost::unordered_map<uint64, Peer::pointer>::iterator& it = mPeerIdMap.find(id);
@@ -105,7 +205,7 @@ Peer::pointer ConnectionPool::getPeerById(const uint64& id)
 	return it->second;
 }
 
-bool ConnectionPool::hasPeer(const uint64& id)
+bool Peers::hasPeer(const uint64& id)
 {
 	boost::recursive_mutex::scoped_lock sl(mPeerLock);
 	return mPeerIdMap.find(id) != mPeerIdMap.end();
@@ -115,7 +215,7 @@ bool ConnectionPool::hasPeer(const uint64& id)
 // too.
 //
 // <-- true, if a peer is available to connect to
-bool ConnectionPool::peerAvailable(std::string& strIp, int& iPort)
+bool Peers::peerAvailable(std::string& strIp, int& iPort)
 {
 	Database*					db = theApp->getWalletDB()->getDB();
 	std::vector<std::string>	vstrIpPort;
@@ -159,7 +259,7 @@ bool ConnectionPool::peerAvailable(std::string& strIp, int& iPort)
 }
 
 // Make sure we have at least low water connections.
-void ConnectionPool::policyLowWater()
+void Peers::policyLowWater()
 {
 	std::string	strIp;
 	int			iPort;
@@ -168,7 +268,7 @@ void ConnectionPool::policyLowWater()
 	if (getPeerCount() > theConfig.PEER_CONNECT_LOW_WATER)
 	{
 		// Above low water mark, don't need more connections.
-		WriteLog (lsTRACE, ConnectionPool) << "Pool: Low water: sufficient connections: " << mConnectedMap.size() << "/" << theConfig.PEER_CONNECT_LOW_WATER;
+		WriteLog (lsTRACE, Peers) << "Pool: Low water: sufficient connections: " << mConnectedMap.size() << "/" << theConfig.PEER_CONNECT_LOW_WATER;
 
 		nothing();
 	}
@@ -182,7 +282,7 @@ void ConnectionPool::policyLowWater()
 	else if (!peerAvailable(strIp, iPort))
 	{
 		// No more connections available to start.
-		WriteLog (lsTRACE, ConnectionPool) << "Pool: Low water: no peers available.";
+		WriteLog (lsTRACE, Peers) << "Pool: Low water: no peers available.";
 
 		// XXX Might ask peers for more ips.
 		nothing();
@@ -190,11 +290,11 @@ void ConnectionPool::policyLowWater()
 	else
 	{
 		// Try to start connection.
-		WriteLog (lsTRACE, ConnectionPool) << "Pool: Low water: start connection.";
+		WriteLog (lsTRACE, Peers) << "Pool: Low water: start connection.";
 
 		if (!peerConnect(strIp, iPort))
 		{
-			WriteLog (lsINFO, ConnectionPool) << "Pool: Low water: already connected.";
+			WriteLog (lsINFO, Peers) << "Pool: Low water: already connected.";
 		}
 
 		// Check if we need more.
@@ -202,7 +302,7 @@ void ConnectionPool::policyLowWater()
 	}
 }
 
-void ConnectionPool::policyEnforce()
+void Peers::policyEnforce()
 {
 	// Cancel any in progress timer.
 	(void) mPolicyTimer.cancel();
@@ -212,16 +312,16 @@ void ConnectionPool::policyEnforce()
 
 	if (((++mPhase) % 12) == 0)
 	{
-		WriteLog (lsTRACE, ConnectionPool) << "Making configured connections";
+		WriteLog (lsTRACE, Peers) << "Making configured connections";
 		makeConfigured();
 	}
 
 	// Schedule next enforcement.
 	mPolicyTimer.expires_at(boost::posix_time::second_clock::universal_time()+boost::posix_time::seconds(POLICY_INTERVAL_SECONDS));
-	mPolicyTimer.async_wait(boost::bind(&ConnectionPool::policyHandler, this, _1));
+	mPolicyTimer.async_wait(boost::bind(&Peers::policyHandler, this, _1));
 }
 
-void ConnectionPool::policyHandler(const boost::system::error_code& ecResult)
+void Peers::policyHandler(const boost::system::error_code& ecResult)
 {
 	if (ecResult == boost::asio::error::operation_aborted)
 	{
@@ -239,7 +339,7 @@ void ConnectionPool::policyHandler(const boost::system::error_code& ecResult)
 
 // YYY: Should probably do this in the background.
 // YYY: Might end up sending to disconnected peer?
-int ConnectionPool::relayMessage(Peer* fromPeer, const PackedMessage::pointer& msg)
+int Peers::relayMessage(Peer* fromPeer, const PackedMessage::pointer& msg)
 {
 	int sentTo = 0;
 	std::vector<Peer::pointer> peerVector = getPeerVector();
@@ -255,7 +355,7 @@ int ConnectionPool::relayMessage(Peer* fromPeer, const PackedMessage::pointer& m
 	return sentTo;
 }
 
-void ConnectionPool::relayMessageBut(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg)
+void Peers::relayMessageBut(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg)
 { // Relay message to all but the specified peers
 	std::vector<Peer::pointer> peerVector = getPeerVector();
 	BOOST_FOREACH(Peer::ref peer, peerVector)
@@ -266,7 +366,7 @@ void ConnectionPool::relayMessageBut(const std::set<uint64>& fromPeers, const Pa
 
 }
 
-void ConnectionPool::relayMessageTo(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg)
+void Peers::relayMessageTo(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg)
 { // Relay message to the specified peers
 	std::vector<Peer::pointer> peerVector = getPeerVector();
 	BOOST_FOREACH(Peer::ref peer, peerVector)
@@ -281,7 +381,7 @@ void ConnectionPool::relayMessageTo(const std::set<uint64>& fromPeers, const Pac
 //
 // Add or modify into PeerIps as a manual entry for immediate scanning.
 // Requires sane IP and port.
-void ConnectionPool::connectTo(const std::string& strIp, int iPort)
+void Peers::connectTo(const std::string& strIp, int iPort)
 {
 	{
 		Database*	db	= theApp->getWalletDB()->getDB();
@@ -299,7 +399,7 @@ void ConnectionPool::connectTo(const std::string& strIp, int iPort)
 // Start a connection, if not already known connected or connecting.
 //
 // <-- true, if already connected.
-Peer::pointer ConnectionPool::peerConnect(const std::string& strIp, int iPort)
+Peer::pointer Peers::peerConnect(const std::string& strIp, int iPort)
 {
 	ipPort			pipPeer		= make_pair(strIp, iPort);
 	Peer::pointer	ppResult;
@@ -322,18 +422,18 @@ Peer::pointer ConnectionPool::peerConnect(const std::string& strIp, int iPort)
 	if (ppResult)
 	{
 		ppResult->connect(strIp, iPort);
-		WriteLog (lsDEBUG, ConnectionPool) << "Pool: Connecting: " << strIp << " " << iPort;
+		WriteLog (lsDEBUG, Peers) << "Pool: Connecting: " << strIp << " " << iPort;
 	}
 	else
 	{
-		WriteLog (lsTRACE, ConnectionPool) << "Pool: Already connected: " << strIp << " " << iPort;
+		WriteLog (lsTRACE, Peers) << "Pool: Already connected: " << strIp << " " << iPort;
 	}
 
 	return ppResult;
 }
 
 // Returns information on verified peers.
-Json::Value ConnectionPool::getPeersJson()
+Json::Value Peers::getPeersJson()
 {
     Json::Value					ret(Json::arrayValue);
 	std::vector<Peer::pointer>	vppPeers	= getPeerVector();
@@ -346,14 +446,14 @@ Json::Value ConnectionPool::getPeersJson()
     return ret;
 }
 
-int ConnectionPool::getPeerCount()
+int Peers::getPeerCount()
 {
 	boost::recursive_mutex::scoped_lock sl(mPeerLock);
 
 	return mConnectedMap.size();
 }
 
-std::vector<Peer::pointer> ConnectionPool::getPeerVector()
+std::vector<Peer::pointer> Peers::getPeerVector()
 {
 	std::vector<Peer::pointer> ret;
 
@@ -370,7 +470,7 @@ std::vector<Peer::pointer> ConnectionPool::getPeerVector()
     return ret;
 }
 
-uint64 ConnectionPool::assignPeerId()
+uint64 Peers::assignPeerId()
 {
 	boost::recursive_mutex::scoped_lock sl(mPeerLock);
 	return ++mLastPeer;
@@ -378,7 +478,7 @@ uint64 ConnectionPool::assignPeerId()
 
 // Now know peer's node public key.  Determine if we want to stay connected.
 // <-- bNew: false = redundant
-bool ConnectionPool::peerConnected(Peer::ref peer, const RippleAddress& naPeer,
+bool Peers::peerConnected(Peer::ref peer, const RippleAddress& naPeer,
 	const std::string& strIP, int iPort)
 {
 	bool	bNew	= false;
@@ -387,7 +487,7 @@ bool ConnectionPool::peerConnected(Peer::ref peer, const RippleAddress& naPeer,
 
 	if (naPeer == theApp->getWallet().getNodePublic())
 	{
-		WriteLog (lsINFO, ConnectionPool) << "Pool: Connected: self: " << ADDRESS_SHARED(peer) << ": " << naPeer.humanNodePublic() << " " << strIP << " " << iPort;
+		WriteLog (lsINFO, Peers) << "Pool: Connected: self: " << ADDRESS_SHARED(peer) << ": " << naPeer.humanNodePublic() << " " << strIP << " " << iPort;
 	}
 	else
 	{
@@ -397,7 +497,7 @@ bool ConnectionPool::peerConnected(Peer::ref peer, const RippleAddress& naPeer,
 		if (itCm == mConnectedMap.end())
 		{
 			// New connection.
-			//WriteLog (lsINFO, ConnectionPool) << "Pool: Connected: new: " << ADDRESS_SHARED(peer) << ": " << naPeer.humanNodePublic() << " " << strIP << " " << iPort;
+			//WriteLog (lsINFO, Peers) << "Pool: Connected: new: " << ADDRESS_SHARED(peer) << ": " << naPeer.humanNodePublic() << " " << strIP << " " << iPort;
 
 			mConnectedMap[naPeer]	= peer;
 			bNew					= true;
@@ -413,7 +513,7 @@ bool ConnectionPool::peerConnected(Peer::ref peer, const RippleAddress& naPeer,
 			if (itCm->second->getIP().empty())
 			{
 				// Old peer did not know it's IP.
-				//WriteLog (lsINFO, ConnectionPool) << "Pool: Connected: redundant: outbound: " << ADDRESS_SHARED(peer) << " discovered: " << ADDRESS_SHARED(itCm->second) << ": " << strIP << " " << iPort;
+				//WriteLog (lsINFO, Peers) << "Pool: Connected: redundant: outbound: " << ADDRESS_SHARED(peer) << " discovered: " << ADDRESS_SHARED(itCm->second) << ": " << strIP << " " << iPort;
 
 				itCm->second->setIpPort(strIP, iPort);
 
@@ -423,14 +523,14 @@ bool ConnectionPool::peerConnected(Peer::ref peer, const RippleAddress& naPeer,
 			else
 			{
 				// Old peer knew its IP.  Do nothing.
-				//WriteLog (lsINFO, ConnectionPool) << "Pool: Connected: redundant: outbound: rediscovered: " << ADDRESS_SHARED(peer) << " " << strIP << " " << iPort;
+				//WriteLog (lsINFO, Peers) << "Pool: Connected: redundant: outbound: rediscovered: " << ADDRESS_SHARED(peer) << " " << strIP << " " << iPort;
 
 				nothing();
 			}
 		}
 		else
 		{
-			//WriteLog (lsINFO, ConnectionPool) << "Pool: Connected: redundant: inbound: " << ADDRESS_SHARED(peer) << " " << strIP << " " << iPort;
+			//WriteLog (lsINFO, Peers) << "Pool: Connected: redundant: inbound: " << ADDRESS_SHARED(peer) << " " << strIP << " " << iPort;
 
 			nothing();
 		}
@@ -440,7 +540,7 @@ bool ConnectionPool::peerConnected(Peer::ref peer, const RippleAddress& naPeer,
 }
 
 // We maintain a map of public key to peer for connected and verified peers.  Maintain it.
-void ConnectionPool::peerDisconnected(Peer::ref peer, const RippleAddress& naPeer)
+void Peers::peerDisconnected(Peer::ref peer, const RippleAddress& naPeer)
 {
 	boost::recursive_mutex::scoped_lock sl(mPeerLock);
 
@@ -451,12 +551,12 @@ void ConnectionPool::peerDisconnected(Peer::ref peer, const RippleAddress& naPee
 		if (itCm == mConnectedMap.end())
 		{
 			// Did not find it.  Not already connecting or connected.
-			WriteLog (lsWARNING, ConnectionPool) << "Pool: disconnected: Internal Error: mConnectedMap was inconsistent.";
+			WriteLog (lsWARNING, Peers) << "Pool: disconnected: Internal Error: mConnectedMap was inconsistent.";
 			// XXX Maybe bad error, considering we have racing connections, may not so bad.
 		}
 		else if (itCm->second != peer)
 		{
-			WriteLog (lsWARNING, ConnectionPool) << "Pool: disconected: non canonical entry";
+			WriteLog (lsWARNING, Peers) << "Pool: disconected: non canonical entry";
 
 			nothing();
 		}
@@ -465,12 +565,12 @@ void ConnectionPool::peerDisconnected(Peer::ref peer, const RippleAddress& naPee
 			// Found it. Delete it.
 			mConnectedMap.erase(itCm);
 
-			//WriteLog (lsINFO, ConnectionPool) << "Pool: disconnected: " << naPeer.humanNodePublic() << " " << peer->getIP() << " " << peer->getPort();
+			//WriteLog (lsINFO, Peers) << "Pool: disconnected: " << naPeer.humanNodePublic() << " " << peer->getIP() << " " << peer->getPort();
 		}
 	}
 	else
 	{
-		//WriteLog (lsINFO, ConnectionPool) << "Pool: disconnected: anonymous: " << peer->getIP() << " " << peer->getPort();
+		//WriteLog (lsINFO, Peers) << "Pool: disconnected: anonymous: " << peer->getIP() << " " << peer->getPort();
 	}
 
 	assert(peer->getPeerId() != 0);
@@ -480,7 +580,7 @@ void ConnectionPool::peerDisconnected(Peer::ref peer, const RippleAddress& naPee
 // Schedule for immediate scanning, if not already scheduled.
 //
 // <-- true, scanRefresh needed.
-bool ConnectionPool::peerScanSet(const std::string& strIp, int iPort)
+bool Peers::peerScanSet(const std::string& strIp, int iPort)
 {
 	std::string	strIpPort	= str(boost::format("%s %d") % strIp % iPort);
 	bool		bScanDirty	= false;
@@ -499,7 +599,7 @@ bool ConnectionPool::peerScanSet(const std::string& strIp, int iPort)
 			boost::posix_time::ptime	tpNow		= boost::posix_time::second_clock::universal_time();
 			boost::posix_time::ptime	tpNext		= tpNow + boost::posix_time::seconds(iInterval);
 
-			//WriteLog (lsINFO, ConnectionPool) << str(boost::format("Pool: Scan: schedule create: %s %s (next %s, delay=%d)")
+			//WriteLog (lsINFO, Peers) << str(boost::format("Pool: Scan: schedule create: %s %s (next %s, delay=%d)")
 			//	% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());
 
 			db->executeSQL(str(boost::format("UPDATE PeerIps SET ScanNext=%d,ScanInterval=%d WHERE IpPort=%s;")
@@ -515,21 +615,21 @@ bool ConnectionPool::peerScanSet(const std::string& strIp, int iPort)
 			// boost::posix_time::ptime	tpNow		= boost::posix_time::second_clock::universal_time();
 			// boost::posix_time::ptime	tpNext		= ptFromSeconds(db->getInt("ScanNext"));
 
-			//WriteLog (lsINFO, ConnectionPool) << str(boost::format("Pool: Scan: schedule exists: %s %s (next %s, delay=%d)")
+			//WriteLog (lsINFO, Peers) << str(boost::format("Pool: Scan: schedule exists: %s %s (next %s, delay=%d)")
 			//	% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());
 		}
 		db->endIterRows();
 	}
 	else
 	{
-		//WriteLog (lsWARNING, ConnectionPool) << "Pool: Scan: peer wasn't in PeerIps: " << strIp << " " << iPort;
+		//WriteLog (lsWARNING, Peers) << "Pool: Scan: peer wasn't in PeerIps: " << strIp << " " << iPort;
 	}
 
 	return bScanDirty;
 }
 
 // --> strIp: not empty
-void ConnectionPool::peerClosed(Peer::ref peer, const std::string& strIp, int iPort)
+void Peers::peerClosed(Peer::ref peer, const std::string& strIp, int iPort)
 {
 	ipPort		ipPeer			= make_pair(strIp, iPort);
 	bool		bScanRefresh	= false;
@@ -537,7 +637,7 @@ void ConnectionPool::peerClosed(Peer::ref peer, const std::string& strIp, int iP
 	// If the connection was our scan, we are no longer scanning.
 	if (mScanning && mScanning == peer)
 	{
-		//WriteLog (lsINFO, ConnectionPool) << "Pool: Scan: scan fail: " << strIp << " " << iPort;
+		//WriteLog (lsINFO, Peers) << "Pool: Scan: scan fail: " << strIp << " " << iPort;
 
 		mScanning.reset();					// No longer scanning.
 		bScanRefresh	= true;				// Look for more to scan.
@@ -552,13 +652,13 @@ void ConnectionPool::peerClosed(Peer::ref peer, const std::string& strIp, int iP
 		if (itIp == mIpMap.end())
 		{
 			// Did not find it.  Not already connecting or connected.
-			WriteLog (lsWARNING, ConnectionPool) << "Pool: Closed: UNEXPECTED: " << ADDRESS_SHARED(peer) << ": " << strIp << " " << iPort;
+			WriteLog (lsWARNING, Peers) << "Pool: Closed: UNEXPECTED: " << ADDRESS_SHARED(peer) << ": " << strIp << " " << iPort;
 			// XXX Internal error.
 		}
 		else if (mIpMap[ipPeer] == peer)
 		{
 			// We were the identified connection.
-			//WriteLog (lsINFO, ConnectionPool) << "Pool: Closed: identified: " << ADDRESS_SHARED(peer) << ": " << strIp << " " << iPort;
+			//WriteLog (lsINFO, Peers) << "Pool: Closed: identified: " << ADDRESS_SHARED(peer) << ": " << strIp << " " << iPort;
 
 			// Delete our entry.
 			mIpMap.erase(itIp);
@@ -568,7 +668,7 @@ void ConnectionPool::peerClosed(Peer::ref peer, const std::string& strIp, int iP
 		else
 		{
 			// Found it.  But, we were redundant.
-			//WriteLog (lsINFO, ConnectionPool) << "Pool: Closed: redundant: " << ADDRESS_SHARED(peer) << ": " << strIp << " " << iPort;
+			//WriteLog (lsINFO, Peers) << "Pool: Closed: redundant: " << ADDRESS_SHARED(peer) << ": " << strIp << " " << iPort;
 		}
 	}
 
@@ -582,7 +682,7 @@ void ConnectionPool::peerClosed(Peer::ref peer, const std::string& strIp, int iP
 		scanRefresh();
 }
 
-void ConnectionPool::peerVerified(Peer::ref peer)
+void Peers::peerVerified(Peer::ref peer)
 {
 	if (mScanning && mScanning == peer)
 	{
@@ -592,7 +692,7 @@ void ConnectionPool::peerVerified(Peer::ref peer)
 
 		std::string	strIpPort	= str(boost::format("%s %d") % strIp % iPort);
 
-		//WriteLog (lsINFO, ConnectionPool) << str(boost::format("Pool: Scan: connected: %s %s %s (scanned)") % ADDRESS_SHARED(peer) % strIp % iPort);
+		//WriteLog (lsINFO, Peers) << str(boost::format("Pool: Scan: connected: %s %s %s (scanned)") % ADDRESS_SHARED(peer) % strIp % iPort);
 
 		if (peer->getNodePublic() == theApp->getWallet().getNodePublic())
 		{
@@ -617,7 +717,7 @@ void ConnectionPool::peerVerified(Peer::ref peer)
 	}
 }
 
-void ConnectionPool::scanHandler(const boost::system::error_code& ecResult)
+void Peers::scanHandler(const boost::system::error_code& ecResult)
 {
 	if (ecResult == boost::asio::error::operation_aborted)
 	{
@@ -633,7 +733,7 @@ void ConnectionPool::scanHandler(const boost::system::error_code& ecResult)
 	}
 }
 
-void ConnectionPool::makeConfigured()
+void Peers::makeConfigured()
 {
 	if (theConfig.RUN_STANDALONE)
 		return;
@@ -648,7 +748,7 @@ void ConnectionPool::makeConfigured()
 }
 
 // Scan ips as per db entries.
-void ConnectionPool::scanRefresh()
+void Peers::scanRefresh()
 {
 	if (theConfig.RUN_STANDALONE)
 	{
@@ -657,7 +757,7 @@ void ConnectionPool::scanRefresh()
 	else if (mScanning)
 	{
 		// Currently scanning, will scan again after completion.
-		WriteLog (lsTRACE, ConnectionPool) << "Pool: Scan: already scanning";
+		WriteLog (lsTRACE, Peers) << "Pool: Scan: already scanning";
 
 		nothing();
 	}
@@ -695,7 +795,7 @@ void ConnectionPool::scanRefresh()
 
 		if (tpNow.is_not_a_date_time())
 		{
-			//WriteLog (lsINFO, ConnectionPool) << "Pool: Scan: stop.";
+			//WriteLog (lsINFO, Peers) << "Pool: Scan: stop.";
 
 			(void) mScanTimer.cancel();
 		}
@@ -710,7 +810,7 @@ void ConnectionPool::scanRefresh()
 
 			tpNext		= tpNow + boost::posix_time::seconds(iInterval);
 
-			//WriteLog (lsINFO, ConnectionPool) << str(boost::format("Pool: Scan: Now: %s %s (next %s, delay=%d)")
+			//WriteLog (lsINFO, Peers) << str(boost::format("Pool: Scan: Now: %s %s (next %s, delay=%d)")
 			//	% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());
 
 			iInterval	*= 2;
@@ -735,17 +835,22 @@ void ConnectionPool::scanRefresh()
 		}
 		else
 		{
-			//WriteLog (lsINFO, ConnectionPool) << str(boost::format("Pool: Scan: Next: %s (next %s, delay=%d)")
+			//WriteLog (lsINFO, Peers) << str(boost::format("Pool: Scan: Next: %s (next %s, delay=%d)")
 			//	% strIpPort % tpNext % (tpNext-tpNow).total_seconds());
 
 			mScanTimer.expires_at(tpNext);
-			mScanTimer.async_wait(boost::bind(&ConnectionPool::scanHandler, this, _1));
+			mScanTimer.async_wait(boost::bind(&Peers::scanHandler, this, _1));
 		}
 	}
 }
 
+IPeers* IPeers::New (boost::asio::io_service& io_service)
+{
+    return new Peers (io_service);
+}
+
 #if 0
-bool ConnectionPool::isMessageKnown(PackedMessage::pointer msg)
+bool Peers::isMessageKnown(PackedMessage::pointer msg)
 {
 	for(unsigned int n=0; n<mBroadcastMessages.size(); n++)
 	{

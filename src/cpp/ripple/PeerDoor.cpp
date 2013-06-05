@@ -41,7 +41,7 @@ void PeerDoor::startListening()
 	Peer::pointer new_connection = Peer::New (
         mAcceptor.get_io_service(),
         mCtx,
-		theApp->getConnectionPool().assignPeerId(),
+		theApp->getPeers().assignPeerId(),
         true);
 
 	mAcceptor.async_accept(new_connection->getSocket(),
@@ -70,10 +70,12 @@ void PeerDoor::handleConnect(Peer::pointer new_connection,
 		mDelayTimer.async_wait(boost::bind(&PeerDoor::startListening, this));
 	}
 	else
+    {
 		startListening();
+    }
 }
 
-void initSSLContext(boost::asio::ssl::context& context,
+void initSSLContext (boost::asio::ssl::context& context,
 	std::string key_file, std::string cert_file, std::string chain_file)
 {
 	SSL_CTX* sslContext = context.native_handle();
@@ -95,6 +97,7 @@ void initSSLContext(boost::asio::ssl::context& context,
 
 	if (!chain_file.empty())
 	{
+        // VFALCO: Replace fopen() with RAII
 		FILE *f = fopen(chain_file.c_str(), "r");
 		if (!f)
 			throw std::runtime_error("Unable to open chain file");

@@ -63,7 +63,7 @@ void TransactionAcquire::onTimer(bool progress)
 		WriteLog (lsWARNING, TransactionAcquire) << "Out of peers for TX set " << getHash();
 
 		bool found = false;
-		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+		std::vector<Peer::pointer> peerList = theApp->getPeers().getPeerVector();
 		BOOST_FOREACH(Peer::ref peer, peerList)
 		{
 			if (peer->hasTxSet(getHash()))

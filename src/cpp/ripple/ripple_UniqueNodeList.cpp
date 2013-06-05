@@ -680,7 +680,7 @@ void UniqueNodeList::scoreTimerHandler(const boost::system::error_code& err)
 		scoreNext(false);
 
 		// Scan may be dirty due to new ips.
-		theApp->getConnectionPool().scanRefresh();
+		theApp->getPeers().scanRefresh();
 	}
 }
 

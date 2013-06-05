@@ -240,7 +240,7 @@ void PeerImp::detach(const char *rsn, bool onIOStrand)
 
 		if (mNodePublic.isValid())
 		{
-			theApp->getConnectionPool().peerDisconnected(shared_from_this(), mNodePublic);
+			theApp->getPeers().peerDisconnected(shared_from_this(), mNodePublic);
 
 			mNodePublic.clear();		// Be idempotent.
 		}
@@ -249,7 +249,7 @@ void PeerImp::detach(const char *rsn, bool onIOStrand)
 		{
 			// Connection might be part of scanning.  Inform connect failed.
 			// Might need to scan. Inform connection closed.
-			theApp->getConnectionPool().peerClosed(shared_from_this(), mIpPort.first, mIpPort.second);
+			theApp->getPeers().peerClosed(shared_from_this(), mIpPort.first, mIpPort.second);
 
 			mIpPort.first.clear();		// Be idempotent.
 		}
@@ -897,10 +897,10 @@ void PeerImp::recvHello(ripple::TMHello& packet)
 		if (mClientConnect)
 		{
 			// If we connected due to scan, no longer need to scan.
-			theApp->getConnectionPool().peerVerified(shared_from_this());
+			theApp->getPeers().peerVerified(shared_from_this());
 		}
 
-		if (!theApp->getConnectionPool().peerConnected(shared_from_this(), mNodePublic, getIP(), getPort()))
+		if (! theApp->getPeers().peerConnected(shared_from_this(), mNodePublic, getIP(), getPort()))
 		{ // Already connected, self, or some other reason.
 			WriteLog (lsINFO, Peer) << "Recv(Hello): Disconnect: Extraneous connection.";
 		}
@@ -926,7 +926,7 @@ void PeerImp::recvHello(ripple::TMHello& packet)
 					// Don't save IP address if the node wants privacy.
 					// Note: We don't go so far as to delete it.  If a node which has previously announced itself now wants
 					// privacy, it should at least change its port.
-					theApp->getConnectionPool().savePeer(strIP, iPort, IUniqueNodeList::vsInbound);
+					theApp->getPeers().savePeer(strIP, iPort, IUniqueNodeList::vsInbound);
 				}
 			}
 
@@ -1100,7 +1100,7 @@ static void checkPropose(Job& job, boost::shared_ptr<ripple::TMProposeSet> packe
 		std::set<uint64> peers;
 		theApp->getHashRouter().swapSet(proposal->getHashRouter(), peers, SF_RELAYED);
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(set, ripple::mtPROPOSE_LEDGER);
-		theApp->getConnectionPool().relayMessageBut(peers, message);
+		theApp->getPeers().relayMessageBut(peers, message);
 	}
 	else
 		WriteLog (lsDEBUG, Peer) << "Not relaying untrusted proposal";
@@ -1208,7 +1208,7 @@ static void checkValidation(Job&, SerializedValidation::pointer val, uint256 sig
 			theApp->getHashRouter().swapSet(signingHash, peers, SF_RELAYED))
 		{
 			PackedMessage::pointer message = boost::make_shared<PackedMessage>(*packet, ripple::mtVALIDATION);
-			theApp->getConnectionPool().relayMessageBut(peers, message);
+			theApp->getPeers().relayMessageBut(peers, message);
 		}
 	}
 #ifndef TRUST_NETWORK
@@ -1279,7 +1279,7 @@ void PeerImp::recvGetPeers(ripple::TMGetPeers& packet, ScopedLock& MasterLockHol
 	MasterLockHolder.unlock();
 	std::vector<std::string> addrs;
 
-	theApp->getConnectionPool().getTopNAddrs(30, addrs);
+	theApp->getPeers().getTopNAddrs(30, addrs);
 
 	if (!addrs.empty())
 	{
@@ -1321,7 +1321,7 @@ void PeerImp::recvPeers(ripple::TMPeers& packet)
 		{
 			//WriteLog (lsINFO, Peer) << "Peer: Learning: " << ADDRESS(this) << ": " << i << ": " << strIP << " " << iPort;
 
-			theApp->getConnectionPool().savePeer(strIP, iPort, IUniqueNodeList::vsTold);
+			theApp->getPeers().savePeer(strIP, iPort, IUniqueNodeList::vsTold);
 		}
 	}
 }
@@ -1584,7 +1584,7 @@ void PeerImp::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockH
 			if (packet.has_querytype() && !packet.has_requestcookie())
 			{
 				WriteLog (lsDEBUG, Peer) << "Trying to route TX set request";
-				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+				std::vector<Peer::pointer> peerList = theApp->getPeers().getPeerVector();
 				std::vector<Peer::pointer> usablePeers;
 				BOOST_FOREACH(Peer::ref peer, peerList)
 				{
@@ -1634,7 +1634,7 @@ void PeerImp::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockH
 				uint32 seq = 0;
 				if (packet.has_ledgerseq())
 					seq = packet.ledgerseq();
-				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+				std::vector<Peer::pointer> peerList = theApp->getPeers().getPeerVector();
 				std::vector<Peer::pointer> usablePeers;
 				BOOST_FOREACH(Peer::ref peer, peerList)
 				{
@@ -1816,7 +1816,7 @@ void PeerImp::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_p
 
 	if (packet.has_requestcookie())
 	{
-		Peer::pointer target = theApp->getConnectionPool().getPeerById(packet.requestcookie());
+		Peer::pointer target = theApp->getPeers().getPeerById(packet.requestcookie());
 		if (target)
 		{
 			packet.clear_requestcookie();

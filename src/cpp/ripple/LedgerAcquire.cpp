@@ -242,7 +242,7 @@ void LedgerAcquire::noAwaitData()
 
 void LedgerAcquire::addPeers()
 {
-	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+	std::vector<Peer::pointer> peerList = theApp->getPeers().getPeerVector();
 
 	int vSize = peerList.size();
 	if (vSize == 0)
@@ -399,7 +399,7 @@ void LedgerAcquire::trigger(Peer::ref peer)
 					for (boost::unordered_map<uint64, int>::iterator it = mPeers.begin(), end = mPeers.end();
 						it != end; ++it)
 					{
-						Peer::pointer iPeer = theApp->getConnectionPool().getPeerById(it->first);
+						Peer::pointer iPeer = theApp->getPeers().getPeerById(it->first);
 						if (iPeer)
 						{
 							mByHash = false;
@@ -554,7 +554,7 @@ void PeerSet::sendRequest(const ripple::TMGetLedger& tmGL)
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tmGL, ripple::mtGET_LEDGER);
 	for (boost::unordered_map<uint64, int>::iterator it = mPeers.begin(), end = mPeers.end(); it != end; ++it)
 	{
-		Peer::pointer peer = theApp->getConnectionPool().getPeerById(it->first);
+		Peer::pointer peer = theApp->getPeers().getPeerById(it->first);
 		if (peer)
 			peer->sendPacket(packet, false);
 	}
@@ -577,7 +577,7 @@ int PeerSet::getPeerCount() const
 {
 	int ret = 0;
 	for (boost::unordered_map<uint64, int>::const_iterator it = mPeers.begin(), end = mPeers.end(); it != end; ++it)
-		if (theApp->getConnectionPool().hasPeer(it->first))
+		if (theApp->getPeers().hasPeer(it->first))
 			++ret;
 	return ret;
 }

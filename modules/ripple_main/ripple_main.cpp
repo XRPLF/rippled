@@ -111,6 +111,7 @@
 #include "src/cpp/ripple/ripple_IHashRouter.h"
 #include "src/cpp/ripple/ripple_ILoadFeeTrack.h"
 #include "src/cpp/ripple/ripple_Peer.h" // VFALCO: TODO Rename to IPeer
+#include "src/cpp/ripple/ripple_IPeers.h"
 #include "src/cpp/ripple/ripple_IProofOfWorkFactory.h"
 #include "src/cpp/ripple/ripple_IUniqueNodeList.h"
 #include "src/cpp/ripple/ripple_IValidations.h"
@@ -118,9 +119,6 @@
 // VFALCO: END CLEAN AREA
 //
 //------------------------------------------------------------------------------
-
-
-
 
 // VFALCO: NOTE, Order matters! If you get compile errors, move just 1
 //               include upwards as little as possible to fix it.
@@ -139,7 +137,6 @@
 #include "src/cpp/ripple/CallRPC.h"
 #include "src/cpp/ripple/CanonicalTXSet.h"
 #include "src/cpp/ripple/ChangeTransactor.h"
-#include "src/cpp/ripple/ConnectionPool.h"
 #include "src/cpp/ripple/FeatureTable.h"
 #include "src/cpp/ripple/HTTPRequest.h"
 #include "src/cpp/ripple/HashPrefixes.h"
@@ -226,7 +223,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/CallRPC.cpp"
 #include "src/cpp/ripple/CanonicalTXSet.cpp"
 #include "src/cpp/ripple/ChangeTransactor.cpp" // no log
-#include "src/cpp/ripple/ConnectionPool.cpp"
 #include "src/cpp/ripple/Contract.cpp" // no log
 #include "src/cpp/ripple/DBInit.cpp"
 #include "src/cpp/ripple/HashedObject.cpp"
@@ -305,6 +301,7 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_LogWebsockets.cpp"
 #include "src/cpp/ripple/ripple_LoadFeeTrack.cpp"
 #include "src/cpp/ripple/ripple_Peer.cpp"
+#include "src/cpp/ripple/ripple_Peers.cpp"
 #include "src/cpp/ripple/ripple_ProofOfWork.cpp"
 #include "src/cpp/ripple/ripple_ProofOfWorkFactory.cpp"
 #include "src/cpp/ripple/ripple_Validations.cpp"
