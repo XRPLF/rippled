@@ -179,24 +179,24 @@ void Application::setup()
 			StopSustain();
 			exit(3);
 		}
-
-		if (!theConfig.LDB_EPHEMERAL.empty())
-		{
-			leveldb::Status status = leveldb::DB::Open(options, theConfig.LDB_EPHEMERAL, &mEphemeralLDB);
-			if (!status.ok() || !mEphemeralLDB)
-			{
-				WriteLog(lsFATAL, Application) << "Unable to open/create epehemeral db: "
-					<< theConfig.LDB_EPHEMERAL << " " << status.ToString();
-				StopSustain();
-				exit(3);
-			}
-		}
 	}
 	else
 	{
 		WriteLog (lsINFO, Application) << "SQLite used for nodes";
 		boost::thread t5(boost::bind(&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
 		t5.join();
+	}
+
+	if (!theConfig.LDB_EPHEMERAL.empty())
+	{
+		leveldb::Status status = leveldb::DB::Open(options, theConfig.LDB_EPHEMERAL, &mEphemeralLDB);
+		if (!status.ok() || !mEphemeralLDB)
+		{
+			WriteLog(lsFATAL, Application) << "Unable to open/create epehemeral db: "
+				<< theConfig.LDB_EPHEMERAL << " " << status.ToString();
+			StopSustain();
+			exit(3);
+		}
 	}
 
 	mTxnDB->getDB()->setupCheckpointing(&mJobQueue);
