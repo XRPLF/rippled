@@ -50,6 +50,7 @@ Application::Application()
     , mValidations (IValidations::New ())
     , mUNL (IUniqueNodeList::New (mIOService))
     , mProofOfWorkFactory (IProofOfWorkFactory::New ())
+    , mPeers (IPeers::New (mIOService))
     // VFALCO: End new stuff
     // VFALCO: TODO replace all NULL with nullptr
     , mRpcDB (NULL)
@@ -63,8 +64,7 @@ Application::Application()
 #ifdef USE_LEVELDB
 	, mHashNodeLDB (NULL)
 #endif
-	, mConnectionPool (mIOService)
-    , mPeerDoor (NULL)
+	, mPeerDoor (NULL)
     , mRPCDoor (NULL)
     , mWSPublicDoor (NULL)
     , mWSPrivateDoor (NULL)
@@ -359,7 +359,7 @@ void Application::setup()
 	// Begin connecting to network.
 	//
 	if (!theConfig.RUN_STANDALONE)
-		mConnectionPool.start();
+		mPeers->start();
 
 
 	if (theConfig.RUN_STANDALONE)

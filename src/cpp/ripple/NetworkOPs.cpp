@@ -301,7 +301,7 @@ void NetworkOPs::runTransactionQueue()
 					tx.set_receivetimestamp(getNetworkTimeNC()); // FIXME: This should be when we received it
 
 					PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
-					theApp->getConnectionPool().relayMessageBut(peers, packet);
+					theApp->getPeers().relayMessageBut(peers, packet);
 				}
 			}
 
@@ -401,7 +401,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 			tx.set_receivetimestamp(getNetworkTimeNC()); // FIXME: This should be when we received it
 
 			PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
-			theApp->getConnectionPool().relayMessageBut(peers, packet);
+			theApp->getPeers().relayMessageBut(peers, packet);
 		}
 	}
 
@@ -594,7 +594,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 
 		theApp->getLoadManager().noDeadLock();
 
-		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+		std::vector<Peer::pointer> peerList = theApp->getPeers().getPeerVector();
 
 		// do we have sufficient peers? If not, we are disconnected.
 		if (peerList.size() < theConfig.NETWORK_QUORUM)
@@ -632,7 +632,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 void NetworkOPs::tryStartConsensus()
 {
 	uint256 networkClosed;
-	bool ledgerChange = checkLastClosedLedger(theApp->getConnectionPool().getPeerVector(), networkClosed);
+	bool ledgerChange = checkLastClosedLedger(theApp->getPeers().getPeerVector(), networkClosed);
 	if (networkClosed.isZero())
 		return;
 
@@ -815,7 +815,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringCo
 	hash = newLedger->getHash();
 	s.set_ledgerhash(hash.begin(), hash.size());
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, ripple::mtSTATUS_CHANGE);
-	theApp->getConnectionPool().relayMessage(NULL, packet);
+	theApp->getPeers().relayMessage(NULL, packet);
 }
 
 int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger)
@@ -858,7 +858,7 @@ bool NetworkOPs::haveConsensusObject()
 	else
 	{ // we need to get into the consensus process
 		uint256 networkClosed;
-		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+		std::vector<Peer::pointer> peerList = theApp->getPeers().getPeerVector();
 		bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
 		if (!ledgerChange)
 		{
@@ -916,7 +916,7 @@ void NetworkOPs::processTrustedProposal(LedgerProposal::pointer proposal,
 		std::set<uint64> peers;
 		theApp->getHashRouter().swapSet(proposal->getHashRouter(), peers, SF_RELAYED);
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(*set, ripple::mtPROPOSE_LEDGER);
-		theApp->getConnectionPool().relayMessageBut(peers, message);
+		theApp->getPeers().relayMessageBut(peers, message);
 	}
 	else
 		WriteLog (lsINFO, NetworkOPs) << "Not relaying trusted proposal";
@@ -987,7 +987,7 @@ void NetworkOPs::mapComplete(const uint256& hash, SHAMap::ref map)
 void NetworkOPs::endConsensus(bool correctLCL)
 {
 	uint256 deadLedger = mLedgerMaster->getClosedLedger()->getParentHash();
-	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+	std::vector<Peer::pointer> peerList = theApp->getPeers().getPeerVector();
 	BOOST_FOREACH(Peer::ref it, peerList)
 		if (it && (it->getClosedLedgerHash() == deadLedger))
 		{
@@ -1270,7 +1270,7 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 	if (fp != 0)
 		info["fetch_pack"] = Json::UInt(fp);
 
-	info["peers"] = theApp->getConnectionPool().getPeerCount();
+	info["peers"] = theApp->getPeers().getPeerCount();
 
 	Json::Value lastClose = Json::objectValue;
 	lastClose["proposers"] = theApp->getOPs().getPreviousProposers();

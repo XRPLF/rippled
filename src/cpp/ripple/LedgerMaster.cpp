@@ -315,7 +315,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 			tmBH.set_query(true);
 			tmBH.set_seq(ledgerSeq);
 			tmBH.set_ledgerhash(ledgerHash.begin(), 32);
-			std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+			std::vector<Peer::pointer> peerList = theApp->getPeers().getPeerVector();
 
 			Peer::pointer target;
 			int count = 0;

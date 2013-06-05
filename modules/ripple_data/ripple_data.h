@@ -57,13 +57,13 @@
 // VFALCO: TODO, try to reduce these dependencies
 #include "../ripple_basics/ripple_basics.h"
 
-// VFALCO: TODO, resolve the location of this file
+// VFALCO: TODO, figure out a good place for this file, perhaps give it some
+//         additional hierarchy via directories.
 #include "ripple.pb.h"
 
 #include "crypto/ripple_CBigNum.h"
 #include "crypto/ripple_Base58.h" // VFALCO: TODO, Can be moved to .cpp if we clean up setAlphabet stuff
 #include "crypto/ripple_Base58Data.h"
-// #include "src/cpp/ripple/ProofOfWork.h"
 
 #include "protocol/ripple_FieldNames.h"
 #include "protocol/ripple_PackedMessage.h"

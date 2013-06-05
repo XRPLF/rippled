@@ -10,7 +10,6 @@
 #include "../database/database.h"
 
 #include "LedgerMaster.h"
-#include "ConnectionPool.h"
 #include "LedgerAcquire.h"
 #include "TransactionMaster.h"
 #include "Wallet.h"
@@ -32,6 +31,7 @@ class ILoadFeeTrack;
 class IValidations;
 class IUniqueNodeList;
 class IProofOfWorkFactory;
+class IPeers;
 
 class RPCDoor;
 class PeerDoor;
@@ -40,65 +40,9 @@ typedef TaggedCache< uint256, SLE, UptimeTimerAdapter> SLECache;
 
 class Application
 {
-	boost::asio::io_service			mIOService, mAuxService;
-	boost::asio::io_service::work	mIOWork, mAuxWork;
-
-	boost::recursive_mutex	mMasterLock;
-
-	Wallet					mWallet;
-	LedgerMaster			mLedgerMaster;
-	LedgerAcquireMaster		mMasterLedgerAcquire;
-	TransactionMaster		mMasterTransaction;
-	NetworkOPs				mNetOps;
-	NodeCache				mTempNodeCache;
-	HashedObjectStore		mHashedObjectStore;
-	SLECache				mSLECache;
-	SNTPClient				mSNTPClient;
-	JobQueue				mJobQueue;
-	LoadManager				mLoadMgr;
-	TXQueue					mTxnQueue;
-	OrderBookDB				mOrderBookDB;
-	
-    // VFALCO: Clean stuff
-    beast::ScopedPointer <IFeatures> mFeatures;
-	beast::ScopedPointer <IFeeVote> mFeeVote;
-    beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
-    beast::ScopedPointer <IHashRouter> mHashRouter;
-	beast::ScopedPointer <IValidations> mValidations;
-	beast::ScopedPointer <IUniqueNodeList> mUNL;
-	beast::ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
-    // VFALCO: End Clean stuff
-
-	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
-
-#ifdef USE_LEVELDB
-	leveldb::DB				*mHashNodeLDB;
-#endif
-
-	ConnectionPool			mConnectionPool;
-	PeerDoor*				mPeerDoor;
-	RPCDoor*				mRPCDoor;
-	WSDoor*					mWSPublicDoor;
-	WSDoor*					mWSPrivateDoor;
-
-	boost::asio::deadline_timer	mSweepTimer;
-
-	std::map<std::string, Peer::pointer> mPeerMap;
-	boost::recursive_mutex	mPeerMapLock;
-
-	volatile bool			mShutdown;
-
-	void updateTables(bool);
-	void startNewLedger();
-	bool loadOldLedger(const std::string&);
-
 public:
 	Application();
 	~Application();
-
-	ConnectionPool& getConnectionPool()				{ return mConnectionPool; }
-
-	IUniqueNodeList& getUNL()						{ return *mUNL; }
 
 	Wallet& getWallet()								{ return mWallet ; }
 	NetworkOPs& getOPs()							{ return mNetOps; }
@@ -124,7 +68,9 @@ public:
 	IFeeVote& getFeeVote()							{ return *mFeeVote; }
 	IHashRouter& getHashRouter()				    { return *mHashRouter; }
 	IValidations& getValidations()			        { return *mValidations; }
+	IUniqueNodeList& getUNL()						{ return *mUNL; }
 	IProofOfWorkFactory& getProofOfWorkFactory()    { return *mProofOfWorkFactory; }
+	IPeers& getPeers ()                             { return *mPeers; }
 
     // VFALCO: TODO, Move these to the .cpp
     bool running()									{ return mTxnDB != NULL; } // VFALCO: TODO, replace with nullptr when beast is available
@@ -148,12 +94,60 @@ public:
 	void stop();
 	void sweep();
 
-#ifdef DEBUG
-	void mustHaveMasterLock()		{ bool tl = mMasterLock.try_lock(); assert(tl); mMasterLock.unlock(); }
-#else
-	void mustHaveMasterLock()		{ ; }
+private:
+	boost::asio::io_service	mIOService;
+    boost::asio::io_service mAuxService;
+	boost::asio::io_service::work mIOWork;
+    boost::asio::io_service::work mAuxWork;
+
+	boost::recursive_mutex	mMasterLock;
+
+	Wallet					mWallet;
+	LedgerMaster			mLedgerMaster;
+	LedgerAcquireMaster		mMasterLedgerAcquire;
+	TransactionMaster		mMasterTransaction;
+	NetworkOPs				mNetOps;
+	NodeCache				mTempNodeCache;
+	HashedObjectStore		mHashedObjectStore;
+	SLECache				mSLECache;
+	SNTPClient				mSNTPClient;
+	JobQueue				mJobQueue;
+	LoadManager				mLoadMgr;
+	TXQueue					mTxnQueue;
+	OrderBookDB				mOrderBookDB;
+	
+    // VFALCO: Clean stuff
+    beast::ScopedPointer <IFeatures> mFeatures;
+	beast::ScopedPointer <IFeeVote> mFeeVote;
+    beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
+    beast::ScopedPointer <IHashRouter> mHashRouter;
+	beast::ScopedPointer <IValidations> mValidations;
+	beast::ScopedPointer <IUniqueNodeList> mUNL;
+	beast::ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
+	beast::ScopedPointer <IPeers> mPeers;
+    // VFALCO: End Clean stuff
+
+	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
+
+#ifdef USE_LEVELDB
+	leveldb::DB				*mHashNodeLDB;
 #endif
 
+	PeerDoor*				mPeerDoor;
+	RPCDoor*				mRPCDoor;
+	WSDoor*					mWSPublicDoor;
+	WSDoor*					mWSPrivateDoor;
+
+	boost::asio::deadline_timer	mSweepTimer;
+
+	std::map<std::string, Peer::pointer> mPeerMap;
+	boost::recursive_mutex	mPeerMapLock;
+
+	volatile bool			mShutdown;
+
+	void updateTables(bool);
+	void startNewLedger();
+	bool loadOldLedger(const std::string&);
 };
 
 extern Application* theApp;

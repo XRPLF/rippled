@@ -600,9 +600,6 @@
     <ClCompile Include="src\cpp\ripple\UpdateTables.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ConnectionPool.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\NetworkOPs.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
     </ClCompile>
@@ -811,6 +808,9 @@
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_Peer.cpp">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_Peers.cpp">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1310,9 +1310,6 @@
     <ClInclude Include="src\cpp\ripple\AutoSocket.h">
       <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ConnectionPool.h">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\NetworkOPs.h">
       <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
     </ClInclude>
@@ -1509,6 +1506,9 @@
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_Peer.h">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_IPeers.h">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
   </ItemGroup>
