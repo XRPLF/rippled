@@ -117,6 +117,7 @@ if (int(GCC_VERSION[0]) > 4 or (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1])
 if OSX:
 	env.Append(LINKFLAGS = ['-L/usr/local/opt/openssl/lib'])
 	env.Append(CXXFLAGS = ['-I/usr/local/opt/openssl/include'])
+	env.Append(CXXFLAGS = ['-DOS_MACOSX'])
 
 RIPPLE_SRCS = [
 	'src/cpp/database/sqlite3.c',
