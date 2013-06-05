@@ -85,7 +85,7 @@ void Application::stop()
 	mJobQueue.shutdown();
 
 #ifdef USE_LEVELDB
-	delete mHashNodeLDB:
+	delete mHashNodeLDB;
 	mHashNodeLDB = NULL;
 #endif
 
