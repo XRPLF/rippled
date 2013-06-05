@@ -127,26 +127,6 @@ static void runIO(boost::asio::io_service& io)
 	io.run();
 }
 
-bool Application::isNew(const uint256& s)
-{
-    return mHashRouter->addSuppression(s);
-}
-
-bool Application::isNew(const uint256& s, uint64 p)
-{
-    return mHashRouter->addSuppressionPeer(s, p);
-}
-
-bool Application::isNew(const uint256& s, uint64 p, int& f)
-{
-    return mHashRouter->addSuppressionPeer(s, p, f);
-}
-
-bool Application::isNewFlag(const uint256& s, int f)
-{
-    return mHashRouter->setFlag(s, f);
-}
-
 void Application::setup()
 {
 	mJobQueue.setThreadCount();

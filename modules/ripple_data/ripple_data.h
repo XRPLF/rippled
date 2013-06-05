@@ -32,14 +32,17 @@
 #ifndef RIPPLE_DATA_H
 #define RIPPLE_DATA_H
 
-#include <cassert>
 #include <algorithm>
+#include <cassert>
+#include <cstdio>
 #include <list>
 #include <stdexcept>
 #include <string>
 #include <stdexcept>
 #include <vector>
 
+#include <boost/cstdint.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/ptr_container/ptr_vector.hpp> // VFALCO: NOTE, this looks like junk
@@ -54,12 +57,16 @@
 // VFALCO: TODO, try to reduce these dependencies
 #include "../ripple_basics/ripple_basics.h"
 
+// VFALCO: TODO, resolve the location of this file
+#include "ripple.pb.h"
+
 #include "crypto/ripple_CBigNum.h"
 #include "crypto/ripple_Base58.h" // VFALCO: TODO, Can be moved to .cpp if we clean up setAlphabet stuff
 #include "crypto/ripple_Base58Data.h"
 // #include "src/cpp/ripple/ProofOfWork.h"
 
 #include "protocol/ripple_FieldNames.h"
+#include "protocol/ripple_PackedMessage.h"
 #include "protocol/ripple_RippleAddress.h"
 #include "protocol/ripple_RippleSystem.h"
 #include "protocol/ripple_Serializer.h" // needs CKey
@@ -68,8 +75,5 @@
 #include "protocol/ripple_SerializedObject.h"
 #include "protocol/ripple_LedgerFormat.h" // needs SOTemplate from SerializedObject
 #include "protocol/ripple_TransactionFormat.h"
-
-// VFALCO: TODO, resolve the location of this file
-#include "ripple.pb.h"
 
 #endif

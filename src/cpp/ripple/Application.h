@@ -110,7 +110,6 @@ public:
 	NodeCache& getTempNodeCache()					{ return mTempNodeCache; }
 	HashedObjectStore& getHashedObjectStore()		{ return mHashedObjectStore; }
 	JobQueue& getJobQueue()							{ return mJobQueue; }
-	IHashRouter& getHashRouter()				    { return *mHashRouter; }
 	boost::recursive_mutex& getMasterLock()			{ return mMasterLock; }
 	ProofOfWorkGenerator& getPowGen()				{ return mPOWGen; }
 	LoadManager& getLoadManager()					{ return mLoadMgr; }
@@ -118,17 +117,12 @@ public:
 	PeerDoor& getPeerDoor()							{ return *mPeerDoor; }
 	OrderBookDB& getOrderBookDB()					{ return mOrderBookDB; }
 	SLECache& getSLECache()							{ return mSLECache; }
-	IFeatures& getFeatureTable()				    { return *mFeatures; }
 
-	IFeeVote& getFeeVote()							{ return *mFeeVote; }
+    IFeatures& getFeatureTable()				    { return *mFeatures; }
 	ILoadFeeTrack& getFeeTrack()				    { return *mFeeTrack; }
+	IFeeVote& getFeeVote()							{ return *mFeeVote; }
+	IHashRouter& getHashRouter()				    { return *mHashRouter; }
 	IValidations& getValidations()			        { return *mValidations; }
-
-    // VFALCO: TODO, eliminate these, change callers to just call IHashRouter directly!
-	bool isNew(const uint256& s);
-	bool isNew(const uint256& s, uint64 p);
-	bool isNew(const uint256& s, uint64 p, int& f);
-	bool isNewFlag(const uint256& s, int f);
 
     // VFALCO: TODO, Move these to the .cpp
     bool running()									{ return mTxnDB != NULL; } // VFALCO: TODO, replace with nullptr when beast is available
