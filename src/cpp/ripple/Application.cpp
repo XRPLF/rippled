@@ -84,7 +84,7 @@ void Application::stop()
 	mAuxService.stop();
 	mJobQueue.shutdown();
 
-#ifdef HAVE_LEVELDB
+#ifdef USE_LEVELDB
 	delete mHashNodeLDB:
 	mHashNodeLDB = NULL;
 #endif
