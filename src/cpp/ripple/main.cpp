@@ -150,9 +150,7 @@ int main(int argc, char* argv[])
 		("start", "Start from a fresh Ledger.")
 		("net", "Get the initial ledger from the network.")
 		("fg", "Run in the foreground.")
-#ifdef USE_LEVELDB
 		("import", "Import SQLite node DB into LevelDB.")
-#endif
 	;
 
 	// Interpret positional arguments as --parameters.

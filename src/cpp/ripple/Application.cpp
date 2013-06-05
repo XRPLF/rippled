@@ -1,10 +1,8 @@
 
 #include "Application.h"
 
-#ifdef USE_LEVELDB
 #include "leveldb/cache.h"
 #include "leveldb/filter_policy.h"
-#endif
 
 #include "AcceptedLedger.h"
 #include "Config.h"
@@ -56,10 +54,7 @@ Application::Application() :
 	mFeatureTable(2 * 7 * 24 * 60 * 60, 200), // two weeks, 200/256
 
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
-	mNetNodeDB(NULL), mPathFindDB(NULL), mHashNodeDB(NULL),
-#ifdef USE_LEVELDB
-	mHashNodeLDB(NULL),
-#endif
+	mNetNodeDB(NULL), mPathFindDB(NULL), mHashNodeDB(NULL), mHashNodeLDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
 	mSweepTimer(mAuxService), mShutdown(false)
 {
@@ -84,10 +79,8 @@ void Application::stop()
 	mAuxService.stop();
 	mJobQueue.shutdown();
 
-#ifdef USE_LEVELDB
 	delete mHashNodeLDB;
 	mHashNodeLDB = NULL;
-#endif
 
 	WriteLog (lsINFO, Application) << "Stopped: " << mIOService.stopped();
 	Instance::shutdown();
@@ -164,7 +157,6 @@ void Application::setup()
 	boost::thread t7(boost::bind(&InitDB, &mPathFindDB, "pathfind.db", PathFindDBInit, PathFindDBCount));
 	t4.join(); t6.join(); t7.join();
 
-#ifdef USE_LEVELDB
 	if (mHashedObjectStore.isLevelDB())
 	{
 		WriteLog (lsINFO, Application) << "LevelDB used for nodes";
@@ -186,7 +178,6 @@ void Application::setup()
 		}
 	}
 	else
-#endif
 	{
 		WriteLog (lsINFO, Application) << "SQLite used for nodes";
 		boost::thread t5(boost::bind(&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
@@ -246,9 +237,7 @@ void Application::setup()
 
 	mLedgerMaster.setMinValidations(theConfig.VALIDATION_QUORUM);
 
-#ifdef USE_LEVELDB
 	if (!mHashedObjectStore.isLevelDB())
-#endif
 		theApp->getHashNodeDB()->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %
 			(theConfig.getSize(siHashNodeDBCache) * 1024)));
 
@@ -413,9 +402,7 @@ Application::~Application()
 	delete mHashNodeDB;
 	delete mNetNodeDB;
 	delete mPathFindDB;
-#ifdef USE_LEVELDB
 	delete mHashNodeLDB;
-#endif
 }
 
 void Application::startNewLedger()

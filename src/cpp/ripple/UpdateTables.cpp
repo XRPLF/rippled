@@ -113,7 +113,6 @@ void Application::updateTables(bool ldbImport)
 		exit(1);
 	}
 
-#ifdef USE_LEVELDB
 	if (theApp->getHashedObjectStore().isLevelDB())
 	{
 		boost::filesystem::path hashPath = theConfig.DATA_DIR / "hashnode.db";
@@ -134,5 +133,4 @@ void Application::updateTables(bool ldbImport)
 			}
 		}
 	}
-#endif
 }
