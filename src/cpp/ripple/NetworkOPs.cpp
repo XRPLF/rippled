@@ -1309,7 +1309,6 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 		Json::Value l(Json::objectValue);
 		l["seq"]				= Json::UInt(lpClosed->getLedgerSeq());
 		l["hash"]				= lpClosed->getHash().GetHex();
-		l["validated"]			= valid;
 		if (!human)
 		{
 			l["base_fee"]		= Json::Value::UInt(baseFee);
@@ -1335,7 +1334,10 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 					l["age"]			= Json::UInt(age);
 			}
 		}
-		info["closed_ledger"] = l;
+		if (valid)
+			info["validated_ledger"] = l;
+		else
+			info["closed_ledger"] = l;
 	}
 
 	return info;
