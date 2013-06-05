@@ -606,9 +606,6 @@
     <ClCompile Include="src\cpp\ripple\NetworkOPs.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Peer.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\PeerDoor.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
     </ClCompile>
@@ -811,6 +808,9 @@
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_ProofOfWork.cpp">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_Peer.cpp">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1316,9 +1316,6 @@
     <ClInclude Include="src\cpp\ripple\NetworkOPs.h">
       <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Peer.h">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\PeerDoor.h">
       <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
     </ClInclude>
@@ -1509,6 +1506,9 @@
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IProofOfWorkFactory.h">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_Peer.h">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
   </ItemGroup>

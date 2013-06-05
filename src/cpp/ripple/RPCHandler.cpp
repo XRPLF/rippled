@@ -888,7 +888,8 @@ Json::Value RPCHandler::doProofCreate(Json::Value jvRequest, int& cost, ScopedLo
 
 	if (jvRequest.isMember("difficulty") || jvRequest.isMember("secret"))
 	{
-		ProofOfWorkFactory	pgGen;
+        // VFALCO: TODO, why aren't we using the app's factory?
+        beast::ScopedPointer <IProofOfWorkFactory> pgGen (IProofOfWorkFactory::New ());
 
 		if (jvRequest.isMember("difficulty"))
 		{
@@ -900,18 +901,20 @@ Json::Value RPCHandler::doProofCreate(Json::Value jvRequest, int& cost, ScopedLo
 			if (iDifficulty < 0 || iDifficulty > ProofOfWork::sMaxDifficulty)
 				return rpcError(rpcINVALID_PARAMS);
 
-			pgGen.setDifficulty(iDifficulty);
+			pgGen->setDifficulty(iDifficulty);
 		}
 
 		if (jvRequest.isMember("secret"))
 		{
 			uint256		uSecret(jvRequest["secret"].asString());
-			pgGen.setSecret(uSecret);
+			pgGen->setSecret(uSecret);
 		}
 
-		jvResult["token"]	= pgGen.getProof().getToken();
-		jvResult["secret"]	= pgGen.getSecret().GetHex();
-	} else {
+		jvResult["token"]	= pgGen->getProof().getToken();
+		jvResult["secret"]	= pgGen->getSecret().GetHex();
+	}
+    else
+    {
 		jvResult["token"]	= theApp->getProofOfWorkFactory().getProof().getToken();
 	}
 
@@ -970,7 +973,8 @@ Json::Value RPCHandler::doProofVerify(Json::Value jvRequest, int& cost, ScopedLo
 	POWResult		prResult;
 	if (jvRequest.isMember("difficulty") || jvRequest.isMember("secret"))
 	{
-		ProofOfWorkFactory	pgGen;
+        // VFALCO: TODO, why aren't we using the app's factory?
+        beast::ScopedPointer <IProofOfWorkFactory> pgGen (IProofOfWorkFactory::New ());
 
 		if (jvRequest.isMember("difficulty"))
 		{
@@ -982,18 +986,18 @@ Json::Value RPCHandler::doProofVerify(Json::Value jvRequest, int& cost, ScopedLo
 			if (iDifficulty < 0 || iDifficulty > ProofOfWork::sMaxDifficulty)
 				return rpcError(rpcINVALID_PARAMS);
 
-			pgGen.setDifficulty(iDifficulty);
+			pgGen->setDifficulty(iDifficulty);
 		}
 
 		if (jvRequest.isMember("secret"))
 		{
 			uint256		uSecret(jvRequest["secret"].asString());
-			pgGen.setSecret(uSecret);
+			pgGen->setSecret(uSecret);
 		}
 
-		prResult				= pgGen.checkProof(strToken, uSolution);
+		prResult				= pgGen->checkProof(strToken, uSolution);
 
-		jvResult["secret"]		= pgGen.getSecret().GetHex();
+		jvResult["secret"]		= pgGen->getSecret().GetHex();
 	}
 	else
 	{

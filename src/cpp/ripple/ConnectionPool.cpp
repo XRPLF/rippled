@@ -309,8 +309,10 @@ Peer::pointer ConnectionPool::peerConnect(const std::string& strIp, int iPort)
 		boost::recursive_mutex::scoped_lock sl(mPeerLock);
 		if (mIpMap.find(pipPeer) == mIpMap.end())
 		{
-			ppResult = Peer::create(theApp->getIOService(), theApp->getPeerDoor().getSSLContext(),
-				++mLastPeer, false);
+			ppResult = Peer::New (theApp->getIOService(),
+                                  theApp->getPeerDoor().getSSLContext(),
+				                  ++mLastPeer,
+                                  false);
 
 			mIpMap[pipPeer]	= ppResult;
 			// ++miConnectStarting;
