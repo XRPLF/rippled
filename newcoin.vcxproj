@@ -954,12 +954,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Peer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\PeerDoor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1019,6 +1013,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_LogWebsockets.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_Peer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1677,7 +1677,6 @@
     <ClInclude Include="src\cpp\ripple\ParseSection.h" />
     <ClInclude Include="src\cpp\ripple\Pathfinder.h" />
     <ClInclude Include="src\cpp\ripple\PaymentTransactor.h" />
-    <ClInclude Include="src\cpp\ripple\Peer.h" />
     <ClInclude Include="src\cpp\ripple\PeerDoor.h" />
     <ClInclude Include="src\cpp\ripple\PFRequest.h" />
     <ClInclude Include="src\cpp\ripple\RegularKeySetTransactor.h" />
@@ -1690,6 +1689,7 @@
     <ClInclude Include="src\cpp\ripple\ripple_IUniqueNodeList.h" />
     <ClInclude Include="src\cpp\ripple\ripple_IValidations.h" />
     <ClInclude Include="src\cpp\ripple\ripple_LoadEvent.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_Peer.h" />
     <ClInclude Include="src\cpp\ripple\ripple_ProofOfWork.h" />
     <ClInclude Include="src\cpp\ripple\ripple_IProofOfWorkFactory.h" />
     <ClInclude Include="src\cpp\ripple\RPC.h" />

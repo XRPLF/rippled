@@ -1,5 +1,16 @@
-#ifndef RIPPLE_PEER_H
-#define RIPPLE_PEER_H
+#ifndef __PEER__
+#define __PEER__
+
+#include <bitset>
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
+
+#include "Ledger.h"
+#include "Transaction.h"
+#include "LoadManager.h"
 
 typedef std::pair <std::string,int> ipPort;
 

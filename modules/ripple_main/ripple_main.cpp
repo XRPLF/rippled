@@ -25,6 +25,7 @@
 //------------------------------------------------------------------------------
 
 #include <algorithm>
+#include <bitset>
 #include <cassert>
 #include <fstream>
 #include <iostream>
@@ -41,13 +42,13 @@
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/bimap/multiset_of.hpp>
 #include <boost/bind.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/pointer_cast.hpp>
-//#include <boost/regex.hpp>
 #include <boost/ref.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
@@ -60,7 +61,6 @@
 #include <boost/unordered_set.hpp>
 
 #include <openssl/ec.h>
-//#include <openssl/rand.h> // is this needed?
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 
@@ -102,6 +102,7 @@
 #include "src/cpp/ripple/ripple_DatabaseCon.h"
 #include "src/cpp/ripple/ripple_LoadEvent.h"
 #include "src/cpp/ripple/ripple_LoadMonitor.h"
+#include "src/cpp/ripple/ripple_ProofOfWork.h"
 #include "src/cpp/ripple/ripple_Job.h"
 #include "src/cpp/ripple/ripple_JobQueue.h"
 
@@ -109,6 +110,8 @@
 #include "src/cpp/ripple/ripple_IFeeVote.h"
 #include "src/cpp/ripple/ripple_IHashRouter.h"
 #include "src/cpp/ripple/ripple_ILoadFeeTrack.h"
+#include "src/cpp/ripple/ripple_Peer.h" // VFALCO: TODO Rename to IPeer
+#include "src/cpp/ripple/ripple_IProofOfWorkFactory.h"
 #include "src/cpp/ripple/ripple_IUniqueNodeList.h"
 #include "src/cpp/ripple/ripple_IValidations.h"
 
@@ -131,9 +134,6 @@
 #include "src/cpp/ripple/AccountItems.h"
 #include "src/cpp/ripple/AccountSetTransactor.h"
 #include "src/cpp/ripple/AccountState.h"
-#include "src/cpp/ripple/ripple_ProofOfWork.h"
-#include "src/cpp/ripple/ripple_IProofOfWorkFactory.h"
-#include "src/cpp/ripple/Peer.h"
 #include "src/cpp/ripple/Application.h"
 #include "src/cpp/ripple/AutoSocket.h"
 #include "src/cpp/ripple/CallRPC.h"
@@ -255,11 +255,8 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ParseSection.cpp"
 #include "src/cpp/ripple/Pathfinder.cpp"
 #include "src/cpp/ripple/PaymentTransactor.cpp"
-#include "src/cpp/ripple/Peer.cpp"
 #include "src/cpp/ripple/PeerDoor.cpp"
 #include "src/cpp/ripple/PFRequest.cpp"
-#include "src/cpp/ripple/ripple_ProofOfWork.cpp"
-#include "src/cpp/ripple/ripple_ProofOfWorkFactory.cpp"
 #include "src/cpp/ripple/RegularKeySetTransactor.cpp"
 #include "src/cpp/ripple/RippleCalc.cpp"
 #include "src/cpp/ripple/RippleState.cpp" // no log
@@ -307,6 +304,9 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_LoadMonitor.cpp"
 #include "src/cpp/ripple/ripple_LogWebsockets.cpp"
 #include "src/cpp/ripple/ripple_LoadFeeTrack.cpp"
+#include "src/cpp/ripple/ripple_Peer.cpp"
+#include "src/cpp/ripple/ripple_ProofOfWork.cpp"
+#include "src/cpp/ripple/ripple_ProofOfWorkFactory.cpp"
 #include "src/cpp/ripple/ripple_Validations.cpp"
 #include "src/cpp/ripple/ripple_UniqueNodeList.cpp"
 
