@@ -936,7 +936,7 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 }
 
 #define RPC_REPLY_MAX_BYTES		(128*1024*1024)
-#define RPC_NOTIFY_SECONDS		10
+#define RPC_NOTIFY_SECONDS		30
 
 bool responseRPC(
 	FUNCTION_TYPE<void(const Json::Value& jvInput)> callbackFuncP,
