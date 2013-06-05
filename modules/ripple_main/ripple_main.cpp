@@ -37,6 +37,9 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
+#include <boost/bimap.hpp>
+#include <boost/bimap/unordered_set_of.hpp>
+#include <boost/bimap/multiset_of.hpp>
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
@@ -44,6 +47,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/pointer_cast.hpp>
+//#include <boost/regex.hpp>
 #include <boost/ref.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
@@ -56,6 +60,7 @@
 #include <boost/unordered_set.hpp>
 
 #include <openssl/ec.h>
+//#include <openssl/rand.h> // is this needed?
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 
@@ -126,6 +131,9 @@
 #include "src/cpp/ripple/AccountItems.h"
 #include "src/cpp/ripple/AccountSetTransactor.h"
 #include "src/cpp/ripple/AccountState.h"
+#include "src/cpp/ripple/ripple_ProofOfWork.h"
+#include "src/cpp/ripple/ripple_IProofOfWorkFactory.h"
+#include "src/cpp/ripple/Peer.h"
 #include "src/cpp/ripple/Application.h"
 #include "src/cpp/ripple/AutoSocket.h"
 #include "src/cpp/ripple/CallRPC.h"
@@ -158,9 +166,7 @@
 #include "src/cpp/ripple/ParseSection.h"
 #include "src/cpp/ripple/Pathfinder.h"
 #include "src/cpp/ripple/PaymentTransactor.h"
-#include "src/cpp/ripple/Peer.h"
 #include "src/cpp/ripple/PeerDoor.h"
-#include "src/cpp/ripple/ProofOfWork.h"
 #include "src/cpp/ripple/RPC.h"
 #include "src/cpp/ripple/RPCDoor.h"
 #include "src/cpp/ripple/RPCErr.h"
@@ -252,7 +258,8 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/Peer.cpp"
 #include "src/cpp/ripple/PeerDoor.cpp"
 #include "src/cpp/ripple/PFRequest.cpp"
-#include "src/cpp/ripple/ProofOfWork.cpp"
+#include "src/cpp/ripple/ripple_ProofOfWork.cpp"
+#include "src/cpp/ripple/ripple_ProofOfWorkFactory.cpp"
 #include "src/cpp/ripple/RegularKeySetTransactor.cpp"
 #include "src/cpp/ripple/RippleCalc.cpp"
 #include "src/cpp/ripple/RippleState.cpp" // no log

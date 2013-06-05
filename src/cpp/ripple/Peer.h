@@ -10,7 +10,6 @@
 
 #include "Ledger.h"
 #include "Transaction.h"
-#include "ProofOfWork.h"
 #include "LoadManager.h"
 
 typedef std::pair<std::string,int> ipPort;

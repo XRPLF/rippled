@@ -20,7 +20,6 @@
 #include "NicknameState.h"
 #include "Offer.h"
 #include "PFRequest.h"
-#include "ProofOfWork.h"
 
 SETUP_LOG (RPCHandler)
 
@@ -888,7 +887,7 @@ Json::Value RPCHandler::doProofCreate(Json::Value jvRequest, int& cost, ScopedLo
 
 	if (jvRequest.isMember("difficulty") || jvRequest.isMember("secret"))
 	{
-		ProofOfWorkGenerator	pgGen;
+		ProofOfWorkFactory	pgGen;
 
 		if (jvRequest.isMember("difficulty"))
 		{
@@ -912,7 +911,7 @@ Json::Value RPCHandler::doProofCreate(Json::Value jvRequest, int& cost, ScopedLo
 		jvResult["token"]	= pgGen.getProof().getToken();
 		jvResult["secret"]	= pgGen.getSecret().GetHex();
 	} else {
-		jvResult["token"]	= theApp->getPowGen().getProof().getToken();
+		jvResult["token"]	= theApp->getProofOfWorkFactory().getProof().getToken();
 	}
 
 	return jvResult;
@@ -970,7 +969,7 @@ Json::Value RPCHandler::doProofVerify(Json::Value jvRequest, int& cost, ScopedLo
 	POWResult		prResult;
 	if (jvRequest.isMember("difficulty") || jvRequest.isMember("secret"))
 	{
-		ProofOfWorkGenerator	pgGen;
+		ProofOfWorkFactory	pgGen;
 
 		if (jvRequest.isMember("difficulty"))
 		{
@@ -998,7 +997,7 @@ Json::Value RPCHandler::doProofVerify(Json::Value jvRequest, int& cost, ScopedLo
 	else
 	{
 		// XXX Proof should not be marked as used from this
-		prResult = theApp->getPowGen().checkProof(strToken, uSolution);
+		prResult = theApp->getProofOfWorkFactory().checkProof(strToken, uSolution);
 	}
 
 	std::string	sToken;

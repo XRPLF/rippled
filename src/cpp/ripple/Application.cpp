@@ -49,6 +49,7 @@ Application::Application()
     , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
     , mValidations (IValidations::New ())
     , mUNL (IUniqueNodeList::New (mIOService))
+    , mProofOfWorkFactory (IProofOfWorkFactory::New ())
     // VFALCO: End new stuff
     // VFALCO: TODO replace all NULL with nullptr
     , mRpcDB (NULL)

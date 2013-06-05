@@ -3,7 +3,6 @@
 
 #include "Ledger.h"
 #include "LedgerHistory.h"
-#include "Peer.h"
 #include "LedgerAcquire.h"
 #include "Transaction.h"
 #include "TransactionEngine.h"

@@ -8,7 +8,6 @@
 #include <boost/algorithm/string.hpp>
 #include <algorithm>
 
-#include "Peer.h"
 #include "PeerDoor.h"
 #include "Application.h"
 
