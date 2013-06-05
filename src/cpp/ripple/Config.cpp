@@ -24,6 +24,7 @@
 #define SECTION_FEE_ACCOUNT_RESERVE		"fee_account_reserve"
 #define SECTION_FEE_OWNER_RESERVE		"fee_owner_reserve"
 #define SECTION_NODE_DB					"node_db"
+#define SECTION_LDB_EPHEMERAL			"ephemeral_db"
 #define SECTION_LEDGER_HISTORY			"ledger_history"
 #define SECTION_IPS						"ips"
 #define SECTION_NETWORK_QUORUM			"network_quorum"
@@ -357,6 +358,7 @@ void Config::load()
 			(void) sectionSingleB(secConfig, SECTION_RPC_PASSWORD, RPC_PASSWORD);
 			(void) sectionSingleB(secConfig, SECTION_RPC_USER, RPC_USER);
 			(void) sectionSingleB(secConfig, SECTION_NODE_DB, NODE_DB);
+			(void) sectionSingleB(secConfig, SECTION_LDB_EPHEMERAL, LDB_EPHEMERAL);
 
 			if (sectionSingleB(secConfig, SECTION_RPC_PORT, strTemp))
 				RPC_PORT = boost::lexical_cast<int>(strTemp);
