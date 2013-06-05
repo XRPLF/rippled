@@ -11,7 +11,6 @@
 #include "Transaction.h"
 #include "LedgerAcquire.h"
 #include "LedgerProposal.h"
-#include "Peer.h"
 #include "CanonicalTXSet.h"
 #include "TransactionEngine.h"
 

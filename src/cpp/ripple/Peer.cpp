@@ -6,7 +6,6 @@
 #include <boost/ref.hpp>
 
 #include "Version.h"
-#include "Peer.h"
 #include "Application.h"
 #include "SerializedTransaction.h"
 
@@ -1319,7 +1318,7 @@ void Peer::recvProofWork(ripple::TMProofWork& packet)
 		}
 		uint256 response;
 		memcpy(response.begin(), packet.response().data(), 256 / 8);
-		POWResult r = theApp->getPowGen().checkProof(packet.token(), response);
+		POWResult r = theApp->getProofOfWorkFactory().checkProof(packet.token(), response);
 		if (r == powOK)
 		{
 			// credit peer

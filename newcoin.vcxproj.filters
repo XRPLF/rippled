@@ -465,16 +465,10 @@
     <ClCompile Include="src\cpp\ripple\HashedObject.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\PackedMessage.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\ParameterTable.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ParseSection.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ProofOfWork.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_basics\ripple_basics.cpp">
@@ -813,6 +807,12 @@
     <ClCompile Include="modules\ripple_data\protocol\ripple_PackedMessage.cpp">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_ProofOfWorkFactory.cpp">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_ProofOfWork.cpp">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="database\sqlite3ext.h">
@@ -1136,16 +1136,10 @@
     <ClInclude Include="src\cpp\ripple\HashPrefixes.h">
       <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\PackedMessage.h">
-      <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\ParameterTable.h">
       <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ParseSection.h">
-      <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ProofOfWork.h">
       <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\ripple_basics.h">
@@ -1510,6 +1504,12 @@
     </ClInclude>
     <ClInclude Include="modules\ripple_data\protocol\ripple_PackedMessage.h">
       <Filter>1. Modules\ripple_data\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_ProofOfWork.h">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_IProofOfWorkFactory.h">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

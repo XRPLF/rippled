@@ -12,12 +12,10 @@
 #include "LedgerAcquire.h"
 #include "TransactionMaster.h"
 #include "Wallet.h"
-#include "Peer.h"
 #include "NetworkOPs.h"
 #include "WSDoor.h"
 #include "SNTPClient.h"
 #include "RPCHandler.h"
-#include "ProofOfWork.h"
 #include "LoadManager.h"
 #include "TransactionQueue.h"
 #include "OrderBookDB.h"
@@ -31,6 +29,7 @@ class IHashRouter;
 class ILoadFeeTrack;
 class IValidations;
 class IUniqueNodeList;
+class IProofOfWorkFactory;
 
 class RPCDoor;
 class PeerDoor;
@@ -54,7 +53,6 @@ class Application
 	SLECache				mSLECache;
 	SNTPClient				mSNTPClient;
 	JobQueue				mJobQueue;
-	ProofOfWorkGenerator	mPOWGen;
 	LoadManager				mLoadMgr;
 	TXQueue					mTxnQueue;
 	OrderBookDB				mOrderBookDB;
@@ -66,6 +64,7 @@ class Application
     beast::ScopedPointer <IHashRouter> mHashRouter;
 	beast::ScopedPointer <IValidations> mValidations;
 	beast::ScopedPointer <IUniqueNodeList> mUNL;
+	beast::ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
     // VFALCO: End Clean stuff
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
@@ -111,7 +110,6 @@ public:
 	HashedObjectStore& getHashedObjectStore()		{ return mHashedObjectStore; }
 	JobQueue& getJobQueue()							{ return mJobQueue; }
 	boost::recursive_mutex& getMasterLock()			{ return mMasterLock; }
-	ProofOfWorkGenerator& getPowGen()				{ return mPOWGen; }
 	LoadManager& getLoadManager()					{ return mLoadMgr; }
 	TXQueue& getTxnQueue()							{ return mTxnQueue; }
 	PeerDoor& getPeerDoor()							{ return *mPeerDoor; }
@@ -123,6 +121,7 @@ public:
 	IFeeVote& getFeeVote()							{ return *mFeeVote; }
 	IHashRouter& getHashRouter()				    { return *mHashRouter; }
 	IValidations& getValidations()			        { return *mValidations; }
+	IProofOfWorkFactory& getProofOfWorkFactory()    { return *mProofOfWorkFactory; }
 
     // VFALCO: TODO, Move these to the .cpp
     bool running()									{ return mTxnDB != NULL; } // VFALCO: TODO, replace with nullptr when beast is available

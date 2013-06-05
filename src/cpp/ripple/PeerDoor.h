@@ -4,8 +4,6 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 
-#include "Peer.h"
-
 /*
 Handles incoming connections from other Peers
 */
