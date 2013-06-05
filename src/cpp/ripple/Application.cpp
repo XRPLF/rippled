@@ -160,16 +160,17 @@ void Application::setup()
 	boost::thread t7(boost::bind(&InitDB, &mPathFindDB, "pathfind.db", PathFindDBInit, PathFindDBCount));
 	t4.join(); t6.join(); t7.join();
 
+	leveldb::Options options;
+	options.create_if_missing = true;
+	options.block_cache = leveldb::NewLRUCache(theConfig.getSize(siHashNodeDBCache) * 1024 * 1024);
+	if (theConfig.NODE_SIZE >= 2)
+		options.filter_policy = leveldb::NewBloomFilterPolicy(10);
+	if (theConfig.LDB_IMPORT)
+		options.write_buffer_size = 32 << 20;
+
 	if (mHashedObjectStore.isLevelDB())
 	{
 		WriteLog (lsINFO, Application) << "LevelDB used for nodes";
-		leveldb::Options options;
-		options.create_if_missing = true;
-		options.block_cache = leveldb::NewLRUCache(theConfig.getSize(siHashNodeDBCache) * 1024 * 1024);
-		if (theConfig.NODE_SIZE >= 2)
-			options.filter_policy = leveldb::NewBloomFilterPolicy(10);
-		if (theConfig.LDB_IMPORT)
-			options.write_buffer_size = 32 << 20;
 		leveldb::Status status = leveldb::DB::Open(options, (theConfig.DATA_DIR / "hashnode").string(), &mHashNodeLDB);
 		if (!status.ok() || !mHashNodeLDB)
 		{
