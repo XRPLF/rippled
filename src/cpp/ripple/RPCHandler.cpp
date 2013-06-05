@@ -72,8 +72,10 @@ RPCHandler::RPCHandler(NetworkOPs* netOps) : mNetOps(netOps), mRole(FORBID)
 RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub::pointer infoSub) : mNetOps(netOps), mInfoSub(infoSub), mRole(FORBID)
 { ; }
 
-Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
+Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit, ScopedLock& mlh)
 {
+	mlh.unlock();
+
 	Json::Value		jvResult;
 	RippleAddress	naSeed;
 	RippleAddress	raSrcAddressID;
@@ -108,7 +110,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 		return rpcError(rpcINVALID_PARAMS);
 	}
 
-	AccountState::pointer asSrc	= mNetOps->getAccountState(mNetOps->getCurrentLedger(), raSrcAddressID);
+	AccountState::pointer asSrc	= mNetOps->getAccountState(mNetOps->getCurrentSnapshot(), raSrcAddressID);
 	if (!asSrc)
 	{
 		WriteLog (lsDEBUG, RPCHandler) << boost::str(boost::format("transactionSign: Failed to find source account in current ledger: %s")
@@ -176,7 +178,6 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 
 			Ledger::pointer lSnapshot = mNetOps->getCurrentSnapshot();
 			{
-				ScopedUnlock su(theApp->getMasterLock());
 				bool bValid;
 				RLCache::pointer cache = boost::make_shared<RLCache>(lSnapshot);
 				Pathfinder pf(cache, raSrcAddressID, dstAccountID,
@@ -214,7 +215,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit)
 	if (!txJSON.isMember("Sequence")) txJSON["Sequence"] = asSrc->getSeq();
 	if (!txJSON.isMember("Flags")) txJSON["Flags"] = 0;
 
-	Ledger::pointer	lpCurrent		= mNetOps->getCurrentLedger();
+	Ledger::pointer	lpCurrent		= mNetOps->getCurrentSnapshot();
 	SLE::pointer	sleAccountRoot	= mNetOps->getSLEi(lpCurrent, Ledger::getAccountRootIndex(raSrcAddressID.getAccountID()));
 
 	if (!sleAccountRoot)
@@ -1570,7 +1571,7 @@ Json::Value RPCHandler::doRipplePathFind(Json::Value jvRequest, int& cost, Scope
 Json::Value RPCHandler::doSign(Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
 {
 	cost = rpcCOST_EXPENSIVE;
-	return transactionSign(jvRequest, false);
+	return transactionSign(jvRequest, false, MasterLockHolder);
 }
 
 // {
@@ -1581,7 +1582,7 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest, int& cost, ScopedLock& M
 {
 	if (!jvRequest.isMember("tx_blob"))
 	{
-		return transactionSign(jvRequest, true);
+		return transactionSign(jvRequest, true, MasterLockHolder);
 	}
 
 	Json::Value					jvResult;
