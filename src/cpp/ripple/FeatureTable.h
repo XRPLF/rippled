@@ -18,22 +18,37 @@ public:
 	void addVote(const uint256& feature)	{ ++mVotes[feature]; }
 };
 
+class FeatureState
+{
+public:
+	bool		mVetoed;			// We don't want this feature enabled
+	bool		mEnabled;
+	bool		mSupported;
+	bool		mDefault;			// Include in genesis ledger
+
+	uint32		mFirstMajority;		// First time we saw a majority (close time)
+	uint32		mLastMajority;		// Most recent time we saw a majority (close time)
+
+	std::string	mFriendlyName;
+
+	FeatureState()
+		: mVetoed(false), mEnabled(false), mSupported(false), mDefault(false),
+		mFirstMajority(0), mLastMajority(0)	{ ; }
+
+	void setVeto()								{ mVetoed = true; }
+	void setDefault()							{ mDefault = true; }
+	bool isDefault()							{ return mDefault; }
+	bool isSupported()							{ return mSupported; }
+	bool isVetoed()								{ return mVetoed; }
+	bool isEnabled()							{ return mEnabled; }
+	const std::string& getFiendlyName()			{ return mFriendlyName; }
+	void setFriendlyName(const std::string& n)	{ mFriendlyName = n; }
+};
+
+
 class FeatureTable
 {
 protected:
-
-	class FeatureState
-	{
-	public:
-		bool	mVetoed;			// We don't want this feature enabled
-		bool	mEnabled;
-		bool	mSupported;
-
-		uint32	mFirstMajority;		// First time we saw a majority (close time)
-		uint32	mLastMajority;		// Most recent time we saw a majority (close time)
-
-		FeatureState() : mVetoed(false), mEnabled(false), mSupported(false), mFirstMajority(0), mLastMajority(0) { ; }
-	};
 
 	typedef boost::unordered_map<uint256, FeatureState> featureMap_t;
 	typedef std::pair<const uint256, FeatureState> featureIt_t;
@@ -48,14 +63,18 @@ protected:
 
 	FeatureState*	getCreateFeature(const uint256& feature, bool create);
 	bool shouldEnable (uint32 closeTime, const FeatureState& fs);
+	void setJson(Json::Value& v, const FeatureState&);
 
 public:
 
 	FeatureTable(uint32 majorityTime, int majorityFraction)
 		: mMajorityTime(majorityTime), mMajorityFraction(majorityFraction), mFirstReport(0), mLastReport(0)
-	{ addInitialFeatures(); }
+	{ ; }
 
 	void addInitialFeatures();
+
+	FeatureState* addKnownFeature(const char *featureID, const char *friendlyName, bool veto);
+	uint256 getFeature(const std::string& name);
 
 	bool vetoFeature(const uint256& feature);
 	bool unVetoFeature(const uint256& feature);
@@ -64,6 +83,7 @@ public:
 	bool disableFeature(const uint256& feature);
 
 	bool isFeatureEnabled(const uint256& feature);
+	bool isFeatureSupported(const uint256& feature);
 
 	void setEnabledFeatures(const std::vector<uint256>& features);
 	void setSupportedFeatures(const std::vector<uint256>& features);
@@ -76,6 +96,7 @@ public:
 	void reportValidations(const FeatureSet&);
 
 	Json::Value getJson(int);
+	Json::Value getJson(const uint256&);
 
 	void doValidation(Ledger::ref lastClosedLedger, STObject& baseValidation);
 	void doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition);

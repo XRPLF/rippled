@@ -2255,6 +2255,30 @@ static void textTime(std::string& text, int& seconds, const char *unitName, int 
 		text += "s";
 }
 
+Json::Value RPCHandler::doFeature(Json::Value jvRequest, int& cost, ScopedLock& mlh)
+{
+	if (!jvRequest.isMember("feature"))
+	{
+		Json::Value jvReply = Json::objectValue;
+		jvReply["features"] = theApp->getFeatureTable().getJson(0);
+		return jvReply;
+	}
+
+	uint256 uFeature = theApp->getFeatureTable().getFeature(jvRequest["feature"].asString());
+	if (uFeature.isZero())
+	{
+		uFeature.SetHex(jvRequest["feature"].asString());
+		if (uFeature.isZero())
+			return rpcError(rpcBAD_FEATURE);
+	}
+
+	if (!jvRequest.isMember("vote"))
+		return theApp->getFeatureTable().getJson(uFeature);
+
+	// WRITEME
+	return rpcError(rpcNOT_SUPPORTED);
+}
+
 // {
 //   min_count: <number>  // optional, defaults to 10
 // }
@@ -3461,6 +3485,7 @@ Json::Value RPCHandler::doCommand(const Json::Value& jvRequest, int iRole, int &
 		{	"consensus_info",		&RPCHandler::doConsensusInfo,	    true,	optNone		},
 		{	"get_counts",			&RPCHandler::doGetCounts,		    true,	optNone		},
 		{	"internal",				&RPCHandler::doInternal,			true,	optNone		},
+		{	"feature",				&RPCHandler::doFeature,				true,	optNone		},
 		{	"ledger",				&RPCHandler::doLedger,			    false,	optNetwork	},
 		{	"ledger_accept",		&RPCHandler::doLedgerAccept,	    true,	optCurrent	},
 		{	"ledger_closed",		&RPCHandler::doLedgerClosed,	    false,	optClosed	},

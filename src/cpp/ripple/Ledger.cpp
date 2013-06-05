@@ -1327,6 +1327,15 @@ std::vector< std::pair<uint32, uint256> > Ledger::getLedgerHashes()
 	return ret;
 }
 
+std::vector<uint256> Ledger::getLedgerFeatures()
+{
+	std::vector<uint256> usFeatures;
+	SLE::pointer sleFeatures = getSLEi(getLedgerFeatureIndex());
+	if (sleFeatures)
+		usFeatures = sleFeatures->getFieldV256(sfFeatures).peekValue();
+	return usFeatures;
+}
+
 // XRP to XRP not allowed.
 // Currencies must have appropriate issuer.
 // Currencies or accounts must differ.

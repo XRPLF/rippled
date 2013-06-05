@@ -115,6 +115,7 @@ protected:
 	OperatingMode						mMode;
 	bool								mNeedNetworkLedger;
 	bool								mProposing, mValidating;
+	bool								mFeatureBlocked;
 	boost::posix_time::ptime			mConnectTime;
 	boost::asio::deadline_timer			mNetTimer;
 	boost::shared_ptr<LedgerConsensus>	mConsensus;
@@ -309,6 +310,8 @@ public:
 	void setProposing(bool p, bool v)	{ mProposing = p; mValidating = v; }
 	bool isProposing()					{ return mProposing; }
 	bool isValidating()					{ return mValidating; }
+	bool isFeatureBlocked()				{ return mFeatureBlocked; }
+	void setFeatureBlocked();
 	void consensusViewChange();
 	int getPreviousProposers()			{ return mLastCloseProposers; }
 	int getPreviousConvergeTime()		{ return mLastCloseConvergeTime; }

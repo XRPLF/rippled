@@ -1,13 +1,17 @@
 
 SETUP_LOG (FeatureTable)
 
+FeatureState* testFeature = NULL;
+
 void FeatureTable::addInitialFeatures()
 {
-	// For each feature this version supports, call enableFeature.
-	// Permanent vetos can also be added here.
+	// For each feature this version supports, construct the FeatureState object by calling
+	// getCreateFeature. Set any vetoes or defaults. A pointer to the FeatureState can be stashed
+
+	testFeature = addKnownFeature("1234", "testFeature", false);
 }
 
-FeatureTable::FeatureState* FeatureTable::getCreateFeature(const uint256& featureHash, bool create)
+FeatureState* FeatureTable::getCreateFeature(const uint256& featureHash, bool create)
 { // call with the mutex held
 	featureMap_t::iterator it = mFeatureMap.find(featureHash);
 	if (it == mFeatureMap.end())
@@ -34,6 +38,39 @@ FeatureTable::FeatureState* FeatureTable::getCreateFeature(const uint256& featur
 		return feature;
 	}
 	return &(it->second);
+}
+
+uint256 FeatureTable::getFeature(const std::string& name)
+{
+	if (!name.empty())
+	{
+		BOOST_FOREACH(featureMap_t::value_type& it, mFeatureMap)
+		{
+			if (name == it.second.mFriendlyName)
+				return it.first;
+		}
+	}
+	return uint256();
+}
+
+FeatureState* FeatureTable::addKnownFeature(const char *featureID, const char *friendlyName, bool veto)
+{
+	uint256 hash;
+	hash.SetHex(featureID);
+	if (hash.isZero())
+	{
+		assert(false);
+		return NULL;
+	}
+	FeatureState* f = getCreateFeature(hash, true);
+
+	if (friendlyName != NULL)
+		f->setFriendlyName(friendlyName);
+
+	f->mVetoed = veto;
+	f->mSupported = true;
+
+	return f;
 }
 
 bool FeatureTable::vetoFeature(const uint256& feature)
@@ -81,6 +118,13 @@ bool FeatureTable::isFeatureEnabled(const uint256& feature)
 	boost::mutex::scoped_lock sl(mMutex);
 	FeatureState *s = getCreateFeature(feature, false);
 	return s && s->mEnabled;
+}
+
+bool FeatureTable::isFeatureSupported(const uint256& feature)
+{
+	boost::mutex::scoped_lock sl(mMutex);
+	FeatureState *s = getCreateFeature(feature, false);
+	return s && s->mSupported;
 }
 
 FeatureTable::featureList_t FeatureTable::getVetoedFeatures()
@@ -193,7 +237,22 @@ void FeatureTable::reportValidations(const FeatureSet& set)
 
 	if (!changedFeatures.empty())
 	{
-		// WRITEME write changed features to SQL db
+		ScopedLock sl(theApp->getWalletDB()->getDBLock());
+		Database* db = theApp->getWalletDB()->getDB();
+
+		db->executeSQL("BEGIN TRANSACTION;");
+		BOOST_FOREACH(const uint256& hash, changedFeatures)
+		{
+			FeatureState& fState = mFeatureMap[hash];
+			db->executeSQL(boost::str(boost::format(
+				"UPDATE Features SET FirstMajority = %d WHERE Hash = '%s';"
+				) % fState.mFirstMajority % hash.GetHex()));
+			db->executeSQL(boost::str(boost::format(
+				"UPDATE Features SET LastMajority = %d WHERE Hash = '%s';"
+				) % fState.mLastMajority % hash.GetHex()));
+		}
+		db->executeSQL("END TRANSACTION;");
+		changedFeatures.clear();
 	}
 }
 
@@ -246,12 +305,12 @@ void FeatureTable::doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPos
 
 	BOOST_FOREACH(const uint256& uFeature, lFeatures)
 	{
-		WriteLog (lsWARNING, FeatureTable) << "We are voting for feature " << uFeature;
+		WriteLog (lsWARNING, FeatureTable) << "Voting for feature: " << uFeature;
 		SerializedTransaction trans(ttFEATURE);
 		trans.setFieldAccount(sfAccount, uint160());
 		trans.setFieldH256(sfFeature, uFeature);
 		uint256 txID = trans.getTransactionID();
-		WriteLog (lsWARNING, FeatureTable) << "Vote: " << txID;
+		WriteLog (lsWARNING, FeatureTable) << "Vote ID: " << txID;
 
 		Serializer s;
 		trans.add(s, true);
@@ -271,46 +330,60 @@ Json::Value FeatureTable::getJson(int)
 		boost::mutex::scoped_lock sl(mMutex);
 		BOOST_FOREACH(const featureIt_t& it, mFeatureMap)
 		{
-			Json::Value v(Json::objectValue);
+			setJson(ret[it.first.GetHex()] = Json::objectValue, it.second);
+		}
+	}
+	return ret;
+}
 
-			v["supported"] = it.second.mSupported;
+void FeatureTable::setJson(Json::Value& v, const FeatureState& fs)
+{
+	if (!fs.mFriendlyName.empty())
+		v["name"] = fs.mFriendlyName;
 
-			if (it.second.mEnabled)
-				v["enabled"] = true;
+	v["supported"] = fs.mSupported;
+	v["vetoed"] = fs.mVetoed;
+
+	if (fs.mEnabled)
+		v["enabled"] = true;
+	else
+	{
+		v["enabled"] = false;
+		if (mLastReport != 0)
+		{
+			if (fs.mLastMajority == 0)
+			{
+				v["majority"] = false;
+			}
 			else
 			{
-				v["enabled"] = false;
-				if (mLastReport != 0)
+				if (fs.mFirstMajority != 0)
 				{
-					if (it.second.mLastMajority == 0)
-						v["majority"] = false;
+					if (fs.mFirstMajority == mFirstReport)
+						v["majority_start"] = "start";
 					else
-					{
-						if (it.second.mFirstMajority != 0)
-						{
-							if (it.second.mFirstMajority == mFirstReport)
-								v["majority_start"] = "start";
-							else
-								v["majority_start"] = it.second.mFirstMajority;
-						}
-						if (it.second.mLastMajority != 0)
-						{
-							if (it.second.mLastMajority == mLastReport)
-								v["majority_until"] = "now";
-							else
-								v["majority_until"] = it.second.mLastMajority;
-						}
-					}
+						v["majority_start"] = fs.mFirstMajority;
+				}
+				if (fs.mLastMajority != 0)
+				{
+					if (fs.mLastMajority == mLastReport)
+						v["majority_until"] = "now";
+					else
+						v["majority_until"] = fs.mLastMajority;
 				}
 			}
-
-			if (it.second.mVetoed)
-				v["veto"] = true;
-
-			ret[it.first.GetHex()] = v;
 		}
 	}
 
+	if (fs.mVetoed)
+		v["veto"] = true;
+}
+
+Json::Value FeatureTable::getJson(const uint256& feature)
+{
+	Json::Value ret = Json::objectValue;
+	boost::mutex::scoped_lock sl(mMutex);
+	setJson(ret[feature.GetHex()] = Json::objectValue, *getCreateFeature(feature, true));
 	return ret;
 }
 
@@ -350,6 +423,7 @@ public:
 		typedef typename std::map<INT, int>::value_type mapVType;
 		BOOST_FOREACH(const mapVType& value, mVoteMap)
 		{ // Take most voted value between current and target, inclusive
+			// FIXME: Should take best value that can get a significant majority
 			if ((value.first <= std::max(mTarget, mCurrent)) &&
 				(value.first >= std::min(mTarget, mCurrent)) &&
 				(value.second > weight))

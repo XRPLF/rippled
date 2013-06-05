@@ -18,6 +18,7 @@ Json::Value rpcError(int iError, Json::Value jvResult)
 		{ rpcACT_MALFORMED,			"actMalformed",		"Account malformed."									},
 		{ rpcACT_NOT_FOUND,			"actNotFound",		"Account not found."									},
 		{ rpcBAD_BLOB,				"badBlob",			"Blob must be a non-empty hex string."					},
+		{ rpcBAD_FEATURE,			"badFeature",		"Feature unknown or invalid."							},
 		{ rpcBAD_ISSUER,			"badIssuer",		"Issuer account malformed."								},
 		{ rpcBAD_MARKET,			"badMarket",		"No such market."										},
 		{ rpcBAD_SECRET,			"badSecret",		"Secret does not match account."						},

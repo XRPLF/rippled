@@ -5,6 +5,7 @@
 #include <list>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/unordered_set.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -219,6 +220,7 @@ public:
 
 	static uint256 getLedgerFeatureIndex();
 	static uint256 getLedgerFeeIndex();
+	std::vector<uint256> getLedgerFeatures();
 
 	std::vector<uint256> getNeededTransactionHashes(int max, SHAMapSyncFilter* filter);
 	std::vector<uint256> getNeededAccountStateHashes(int max, SHAMapSyncFilter* filter);

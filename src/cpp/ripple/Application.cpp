@@ -206,6 +206,8 @@ void Application::setup()
 	if (!theConfig.RUN_STANDALONE)
 		updateTables(theConfig.LDB_IMPORT);
 
+	mFeatureTable.addInitialFeatures();
+
 	if (theConfig.START_UP == Config::FRESH)
 	{
 		WriteLog (lsINFO, Application) << "Starting new Ledger";
@@ -437,6 +439,8 @@ void Application::startNewLedger()
 	{
 		Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, SYSTEM_CURRENCY_START);
 		assert(!!firstLedger->getAccountState(rootAddress));
+		// WRITEME: Add any default features
+		// WRITEME: Set default fee/reserve
 		firstLedger->updateHash();
 		firstLedger->setClosed();
 		firstLedger->setAccepted();
@@ -545,6 +549,12 @@ bool serverOkay(std::string& reason)
 	if (theApp->getFeeTrack().isLoaded())
 	{
 		reason = "Too much load";
+		return false;
+	}
+
+	if (theApp->getOPs().isFeatureBlocked())
+	{
+		reason = "Server version too old";
 		return false;
 	}
 
