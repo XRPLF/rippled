@@ -1,10 +1,8 @@
 
 #include "Application.h"
 
-#ifdef USE_LEVELDB
 #include "leveldb/cache.h"
 #include "leveldb/filter_policy.h"
-#endif
 
 #include "AcceptedLedger.h"
 #include "Config.h"
@@ -56,10 +54,7 @@ Application::Application() :
 	mFeatureTable(2 * 7 * 24 * 60 * 60, 200), // two weeks, 200/256
 
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
-	mNetNodeDB(NULL), mPathFindDB(NULL), mHashNodeDB(NULL),
-#ifdef USE_LEVELDB
-	mHashNodeLDB(NULL),
-#endif
+	mNetNodeDB(NULL), mPathFindDB(NULL), mHashNodeDB(NULL), mHashNodeLDB(NULL), mEphemeralLDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
 	mSweepTimer(mAuxService), mShutdown(false)
 {
@@ -84,10 +79,11 @@ void Application::stop()
 	mAuxService.stop();
 	mJobQueue.shutdown();
 
-#ifdef USE_LEVELDB
 	delete mHashNodeLDB;
 	mHashNodeLDB = NULL;
-#endif
+
+	delete mEphemeralLDB;
+	mEphemeralLDB = NULL;
 
 	WriteLog (lsINFO, Application) << "Stopped: " << mIOService.stopped();
 	Instance::shutdown();
@@ -164,17 +160,17 @@ void Application::setup()
 	boost::thread t7(boost::bind(&InitDB, &mPathFindDB, "pathfind.db", PathFindDBInit, PathFindDBCount));
 	t4.join(); t6.join(); t7.join();
 
-#ifdef USE_LEVELDB
+	leveldb::Options options;
+	options.create_if_missing = true;
+	options.block_cache = leveldb::NewLRUCache(theConfig.getSize(siHashNodeDBCache) * 1024 * 1024);
+	if (theConfig.NODE_SIZE >= 2)
+		options.filter_policy = leveldb::NewBloomFilterPolicy(10);
+	if (theConfig.LDB_IMPORT)
+		options.write_buffer_size = 32 << 20;
+
 	if (mHashedObjectStore.isLevelDB())
 	{
 		WriteLog (lsINFO, Application) << "LevelDB used for nodes";
-		leveldb::Options options;
-		options.create_if_missing = true;
-		options.block_cache = leveldb::NewLRUCache(theConfig.getSize(siHashNodeDBCache) * 1024 * 1024);
-		if (theConfig.NODE_SIZE >= 2)
-			options.filter_policy = leveldb::NewBloomFilterPolicy(10);
-		if (theConfig.LDB_IMPORT)
-			options.write_buffer_size = 32 << 20;
 		leveldb::Status status = leveldb::DB::Open(options, (theConfig.DATA_DIR / "hashnode").string(), &mHashNodeLDB);
 		if (!status.ok() || !mHashNodeLDB)
 		{
@@ -186,11 +182,22 @@ void Application::setup()
 		}
 	}
 	else
-#endif
 	{
 		WriteLog (lsINFO, Application) << "SQLite used for nodes";
 		boost::thread t5(boost::bind(&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
 		t5.join();
+	}
+
+	if (!theConfig.LDB_EPHEMERAL.empty())
+	{
+		leveldb::Status status = leveldb::DB::Open(options, theConfig.LDB_EPHEMERAL, &mEphemeralLDB);
+		if (!status.ok() || !mEphemeralLDB)
+		{
+			WriteLog(lsFATAL, Application) << "Unable to open/create epehemeral db: "
+				<< theConfig.LDB_EPHEMERAL << " " << status.ToString();
+			StopSustain();
+			exit(3);
+		}
 	}
 
 	mTxnDB->getDB()->setupCheckpointing(&mJobQueue);
@@ -246,9 +253,7 @@ void Application::setup()
 
 	mLedgerMaster.setMinValidations(theConfig.VALIDATION_QUORUM);
 
-#ifdef USE_LEVELDB
 	if (!mHashedObjectStore.isLevelDB())
-#endif
 		theApp->getHashNodeDB()->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %
 			(theConfig.getSize(siHashNodeDBCache) * 1024)));
 
@@ -414,9 +419,8 @@ Application::~Application()
 	delete mHashNodeDB;
 	delete mNetNodeDB;
 	delete mPathFindDB;
-#ifdef USE_LEVELDB
 	delete mHashNodeLDB;
-#endif
+	delete mEphemeralLDB;
 }
 
 void Application::startNewLedger()

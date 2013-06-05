@@ -32,7 +32,7 @@ class RPCHandler
 	// Utilities
 	void addSubmitPath(Json::Value& txJSON);
 	boost::unordered_set<RippleAddress> parseAccountIds(const Json::Value& jvArray);
-	Json::Value transactionSign(Json::Value jvRequest, bool bSubmit);
+	Json::Value transactionSign(Json::Value jvRequest, bool bSubmit, ScopedLock& mlh);
 
 	Json::Value lookupLedger(Json::Value jvRequest, Ledger::pointer& lpLedger);
 

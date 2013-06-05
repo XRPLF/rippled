@@ -69,7 +69,7 @@ protected:
 
 	std::vector< boost::shared_ptr<HashedObject> > mWriteSet;
 	bool mWritePending;
-	bool mLevelDB;
+	bool mLevelDB, mEphemeralDB;
 
 public:
 
@@ -82,19 +82,15 @@ public:
 	bool store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
 		const uint256& hash)
 	{
-#ifdef USE_LEVELDB
 		if (mLevelDB)
 			return storeLevelDB(type, index, data, hash);
-#endif
 		return storeSQLite(type, index, data, hash);
 	}
 
 	HashedObject::pointer retrieve(const uint256& hash)
 	{
-#ifdef USE_LEVELDB
 		if (mLevelDB)
 			return retrieveLevelDB(hash);
-#endif
 		return retrieveSQLite(hash);
 	}
 
@@ -103,12 +99,10 @@ public:
 	HashedObject::pointer retrieveSQLite(const uint256& hash);
 	void bulkWriteSQLite(Job&);
 
-#ifdef USE_LEVELDB
 	bool storeLevelDB(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
 		const uint256& hash);
 	HashedObject::pointer retrieveLevelDB(const uint256& hash);
 	void bulkWriteLevelDB(Job&);
-#endif
 
 
 	void waitWrite();
