@@ -5,6 +5,7 @@
 
 #include <boost/thread/mutex.hpp>
 
+// VFALCO: TODO replace LT_ with loadType in constants
 enum LoadType
 { // types of load that can be placed on the server
 
@@ -44,8 +45,9 @@ public:
 	LoadCost(LoadType t, int cost, int cat) : mType(t), mCost(cost), mCategories(cat) { ; }
 };
 
+// a single endpoint that can impose load
 class LoadSource
-{ // a single endpoint that can impose load
+{ 
 private:
     // VFALCO: Make this not a friend
 	friend class LoadManager;
@@ -97,9 +99,9 @@ private:
 	bool		mLogged;
 };
 
-
+// a collection of load sources
 class LoadManager
-{ // a collection of load sources
+{
 public:
 
 	LoadManager(int creditRate = 100, int creditLimit = 500, int debitWarn = -500, int debitLimit = -1000);

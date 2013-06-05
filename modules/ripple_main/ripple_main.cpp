@@ -154,7 +154,6 @@
 #include "src/cpp/ripple/OrderBook.h"
 #include "src/cpp/ripple/OrderBookDB.h"
 #include "src/cpp/ripple/PFRequest.h"
-#include "src/cpp/ripple/PackedMessage.h"
 #include "src/cpp/ripple/ParameterTable.h"
 #include "src/cpp/ripple/ParseSection.h"
 #include "src/cpp/ripple/Pathfinder.h"
@@ -246,7 +245,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/Operation.cpp" // no log
 #include "src/cpp/ripple/OrderBook.cpp" // no log
 #include "src/cpp/ripple/OrderBookDB.cpp"
-#include "src/cpp/ripple/PackedMessage.cpp" // no log
 #include "src/cpp/ripple/ParameterTable.cpp" // no log
 #include "src/cpp/ripple/ParseSection.cpp"
 #include "src/cpp/ripple/Pathfinder.cpp"

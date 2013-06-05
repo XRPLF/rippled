@@ -78,6 +78,7 @@
 
 #include "protocol/ripple_FieldNames.cpp"
 #include "protocol/ripple_LedgerFormat.cpp"
+#include "protocol/ripple_PackedMessage.cpp"
 #include "protocol/ripple_RippleAddress.cpp"
 #include "protocol/ripple_SerializedTypes.cpp"
 #include "protocol/ripple_Serializer.cpp"

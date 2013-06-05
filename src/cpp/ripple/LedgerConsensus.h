@@ -27,7 +27,16 @@ class TransactionAcquire
 public:
 	typedef boost::shared_ptr<TransactionAcquire> pointer;
 
-protected:
+public:
+	TransactionAcquire(const uint256& hash);
+	virtual ~TransactionAcquire()		{ ; }
+
+	SHAMap::ref getMap()				{ return mMap; }
+
+	SMAddNode takeNodes(const std::list<SHAMapNode>& IDs,
+		const std::list< std::vector<unsigned char> >& data, Peer::ref);
+
+private:
 	SHAMap::pointer		mMap;
 	bool				mHaveRoot;
 
@@ -37,26 +46,11 @@ protected:
 	void done();
 	void trigger(Peer::ref);
 	boost::weak_ptr<PeerSet> pmDowncast();
-
-public:
-	TransactionAcquire(const uint256& hash);
-	virtual ~TransactionAcquire()		{ ; }
-
-	SHAMap::ref getMap()				{ return mMap; }
-
-	SMAddNode takeNodes(const std::list<SHAMapNode>& IDs,
-		const std::list< std::vector<unsigned char> >& data, Peer::ref);
 };
 
+// A transaction that may be disputed
 class LCTransaction
-{ // A transaction that may be disputed
-protected:
-	uint256 mTransactionID;
-	int mYays, mNays;
-	bool mOurVote;
-	Serializer transaction;
-	boost::unordered_map<uint160, bool> mVotes;
-
+{
 public:
 	typedef boost::shared_ptr<LCTransaction> pointer;
 
@@ -73,6 +67,13 @@ public:
 
 	bool updateVote(int percentTime, bool proposing);
 	Json::Value getJson();
+
+private:
+	uint256 mTransactionID;
+	int mYays, mNays;
+	bool mOurVote;
+	Serializer transaction;
+	boost::unordered_map<uint160, bool> mVotes;
 };
 
 enum LCState
@@ -85,76 +86,6 @@ enum LCState
 
 class LedgerConsensus : public boost::enable_shared_from_this<LedgerConsensus>, IS_INSTANCE(LedgerConsensus)
 {
-protected:
-	LCState mState;
-	uint32 mCloseTime;						// The wall time this ledger closed
-	uint256 mPrevLedgerHash, mNewLedgerHash;
-	Ledger::pointer mPreviousLedger;
-	LedgerAcquire::pointer mAcquiringLedger;
-	LedgerProposal::pointer mOurPosition;
-	RippleAddress mValPublic, mValPrivate;
-	bool mProposing, mValidating, mHaveCorrectLCL, mConsensusFail;
-
-	int mCurrentMSeconds, mClosePercent, mCloseResolution;
-	bool mHaveCloseTimeConsensus;
-
-	boost::posix_time::ptime		mConsensusStartTime;
-	int								mPreviousProposers;
-	int								mPreviousMSeconds;
-
-	// Convergence tracking, trusted peers indexed by hash of public key
-	boost::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
-
-	// Transaction Sets, indexed by hash of transaction tree
-	boost::unordered_map<uint256, SHAMap::pointer> mAcquired;
-	boost::unordered_map<uint256, TransactionAcquire::pointer> mAcquiring;
-
-	// Peer sets
-	boost::unordered_map<uint256, std::vector< boost::weak_ptr<Peer> > > mPeerData;
-
-	// Disputed transactions
-	boost::unordered_map<uint256, LCTransaction::pointer> mDisputes;
-
-	// Close time estimates
-	std::map<uint32, int> mCloseTimes;
-
-	// nodes that have bowed out of this consensus process
-	boost::unordered_set<uint160> mDeadNodes;
-
-	// final accept logic
-	void accept(SHAMap::ref txSet, LoadEvent::pointer);
-
-	void weHave(const uint256& id, Peer::ref avoidPeer);
-	void startAcquiring(TransactionAcquire::pointer);
-	SHAMap::pointer find(const uint256& hash);
-
-	void createDisputes(SHAMap::ref, SHAMap::ref);
-	void addDisputedTransaction(const uint256&, const std::vector<unsigned char>& transaction);
-	void adjustCount(SHAMap::ref map, const std::vector<uint160>& peers);
-	void propose();
-
-	void addPosition(LedgerProposal&, bool ours);
-	void removePosition(LedgerProposal&, bool ours);
-	void sendHaveTxSet(const uint256& set, bool direct);
-	void applyTransactions(SHAMap::ref transactionSet, Ledger::ref targetLedger,
-		Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, bool openLgr);
-	int applyTransaction(TransactionEngine& engine, SerializedTransaction::ref txn, Ledger::ref targetLedger,
-		bool openLgr, bool retryAssured);
-
-	uint32 roundCloseTime(uint32 closeTime);
-
-	// manipulating our own position
-	void statusChange(ripple::NodeEvent, Ledger& ledger);
-	void takeInitialPosition(Ledger& initialLedger);
-	void updateOurPositions();
-	void playbackProposals();
-	int getThreshold();
-	void closeLedger();
-	void checkOurValidation();
-
-	void beginAccept(bool synchronous);
-	void endConsensus();
-
 public:
 	LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime);
 
@@ -193,6 +124,77 @@ public:
 
 	// test/debug
 	void simulate();
+
+private:
+	// final accept logic
+	void accept(SHAMap::ref txSet, LoadEvent::pointer);
+
+	void weHave(const uint256& id, Peer::ref avoidPeer);
+	void startAcquiring(TransactionAcquire::pointer);
+	SHAMap::pointer find(const uint256& hash);
+
+	void createDisputes(SHAMap::ref, SHAMap::ref);
+	void addDisputedTransaction(const uint256&, const std::vector<unsigned char>& transaction);
+	void adjustCount(SHAMap::ref map, const std::vector<uint160>& peers);
+	void propose();
+
+	void addPosition(LedgerProposal&, bool ours);
+	void removePosition(LedgerProposal&, bool ours);
+	void sendHaveTxSet(const uint256& set, bool direct);
+	void applyTransactions(SHAMap::ref transactionSet, Ledger::ref targetLedger,
+		Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, bool openLgr);
+	int applyTransaction(TransactionEngine& engine, SerializedTransaction::ref txn, Ledger::ref targetLedger,
+		bool openLgr, bool retryAssured);
+
+	uint32 roundCloseTime(uint32 closeTime);
+
+	// manipulating our own position
+	void statusChange(ripple::NodeEvent, Ledger& ledger);
+	void takeInitialPosition(Ledger& initialLedger);
+	void updateOurPositions();
+	void playbackProposals();
+	int getThreshold();
+	void closeLedger();
+	void checkOurValidation();
+
+	void beginAccept(bool synchronous);
+	void endConsensus();
+
+private:
+	LCState mState;
+	uint32 mCloseTime;						// The wall time this ledger closed
+	uint256 mPrevLedgerHash, mNewLedgerHash;
+	Ledger::pointer mPreviousLedger;
+	LedgerAcquire::pointer mAcquiringLedger;
+	LedgerProposal::pointer mOurPosition;
+	RippleAddress mValPublic, mValPrivate;
+	bool mProposing, mValidating, mHaveCorrectLCL, mConsensusFail;
+
+	int mCurrentMSeconds, mClosePercent, mCloseResolution;
+	bool mHaveCloseTimeConsensus;
+
+	boost::posix_time::ptime		mConsensusStartTime;
+	int								mPreviousProposers;
+	int								mPreviousMSeconds;
+
+	// Convergence tracking, trusted peers indexed by hash of public key
+	boost::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
+
+	// Transaction Sets, indexed by hash of transaction tree
+	boost::unordered_map<uint256, SHAMap::pointer> mAcquired;
+	boost::unordered_map<uint256, TransactionAcquire::pointer> mAcquiring;
+
+	// Peer sets
+	boost::unordered_map<uint256, std::vector< boost::weak_ptr<Peer> > > mPeerData;
+
+	// Disputed transactions
+	boost::unordered_map<uint256, LCTransaction::pointer> mDisputes;
+
+	// Close time estimates
+	std::map<uint32, int> mCloseTimes;
+
+	// nodes that have bowed out of this consensus process
+	boost::unordered_set<uint160> mDeadNodes;
 };
 
 

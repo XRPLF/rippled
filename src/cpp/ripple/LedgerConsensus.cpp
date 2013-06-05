@@ -188,7 +188,7 @@ void LedgerConsensus::checkOurValidation()
 		(mPreviousLedger->getHash(), theApp->getOPs().getValidationTimeNC(), mValPublic, false);
 	v->setTrusted();
 	v->sign(signingHash, mValPrivate);
-	theApp->isNew(signingHash);
+	theApp->getHashRouter ().addSuppression (signingHash);
 	theApp->getValidations().addValidation(v, "localMissing");
 	std::vector<unsigned char> validation = v->getSigned();
 	ripple::TMValidation val;
@@ -561,6 +561,7 @@ void LedgerConsensus::stateAccepted()
 	endConsensus();
 }
 
+// VFALCO: TODO implement shutdown without a naked global
 extern volatile bool doShutdown;
 
 void LedgerConsensus::timerEntry()
@@ -858,7 +859,7 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 			txn->setVote(pit.first, cit->second->hasItem(txID));
 	}
 
-	if (theApp->isNewFlag(txID, SF_RELAYED))
+	if (theApp->getHashRouter ().setFlag (txID, SF_RELAYED))
 	{
 		ripple::TMTransaction msg;
 		msg.set_rawtransaction(&(tx.front()), tx.size());
@@ -1033,7 +1034,7 @@ int LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTrans
 	TransactionEngineParams parms = openLedger ? tapOPEN_LEDGER : tapNONE;
 	if (retryAssured)
 		parms = static_cast<TransactionEngineParams>(parms | tapRETRY);
-	if (theApp->isNewFlag(txn->getTransactionID(), SF_SIGGOOD))
+	if (theApp->getHashRouter ().setFlag (txn->getTransactionID(), SF_SIGGOOD))
 		parms = static_cast<TransactionEngineParams>(parms | tapNO_CHECK_SIGN);
 
 	WriteLog (lsDEBUG, LedgerConsensus) << "TXN " << txn->getTransactionID()
@@ -1223,7 +1224,7 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 		}
 		v->sign(signingHash, mValPrivate);
 		v->setTrusted();
-		theApp->isNew(signingHash); // suppress it if we receive it
+		theApp->getHashRouter ().addSuppression (signingHash); // suppress it if we receive it
 		theApp->getValidations().addValidation(v, "local");
 		theApp->getOPs().setLastValidation(v);
 		std::vector<unsigned char> validation = v->getSigned();

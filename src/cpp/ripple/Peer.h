@@ -8,7 +8,6 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "PackedMessage.h"
 #include "Ledger.h"
 #include "Transaction.h"
 #include "ProofOfWork.h"
@@ -18,16 +17,73 @@ typedef std::pair<std::string,int> ipPort;
 
 DEFINE_INSTANCE(Peer);
 
-class Peer : public boost::enable_shared_from_this<Peer>, public IS_INSTANCE(Peer)
+class Peer : public boost::enable_shared_from_this <Peer>
+           , public IS_INSTANCE (Peer)
 {
 public:
 	typedef boost::shared_ptr<Peer>			pointer;
 	typedef const boost::shared_ptr<Peer>&	ref;
 
-	static const int psbGotHello = 0, psbSentHello = 1, psbInMap = 2, psbTrusted = 3;
-	static const int psbNoLedgers = 4, psbNoTransactions = 5, psbDownLevel = 6;
+	static int const psbGotHello        = 0;
+    static int const psbSentHello       = 1;
+    static int const psbInMap           = 2;
+    static int const psbTrusted         = 3;
+	static int const psbNoLedgers       = 4;
+    static int const psbNoTransactions  = 5;
+    static int const psbDownLevel       = 6;
 
-	void			handleConnect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it);
+public:
+	//bool operator == (const Peer& other);
+
+	void handleConnect (const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it);
+
+    std::string& getIP() { return mIpPort.first; }
+	std::string getDisplayName() { return mCluster ? mNodeName : mIpPort.first; }
+	int getPort() { return mIpPort.second; }
+
+	void setIpPort(const std::string& strIP, int iPort);
+
+	static pointer create(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 id, bool inbound)
+	{
+		return pointer(new Peer(io_service, ctx, id, inbound));
+	}
+
+	boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::lowest_layer_type& getSocket()
+	{
+		return mSocketSsl.lowest_layer();
+	}
+
+	void connect(const std::string& strIp, int iPort);
+	void connected(const boost::system::error_code& error);
+	void detach(const char *, bool onIOStrand);
+	bool samePeer(Peer::ref p)			{ return samePeer(*p); }
+	bool samePeer(const Peer& p)		{ return this == &p; }
+
+	void sendPacket(const PackedMessage::pointer& packet, bool onStrand);
+	void sendLedgerProposal(Ledger::ref ledger);
+	void sendFullLedger(Ledger::ref ledger);
+	void sendGetFullLedger(uint256& hash);
+	void sendGetPeers();
+
+	void punishPeer(LoadType);
+
+    // VFALCO: NOTE, what's with this odd parameter passing? Why the static member?
+	static void punishPeer(const boost::weak_ptr<Peer>&, LoadType);
+
+	Json::Value getJson();
+	bool isConnected() const					{ return mHelloed && !mDetaching; }
+	bool isInbound() const						{ return mInbound; }
+	bool isOutbound() const						{ return !mInbound; }
+
+	const uint256& getClosedLedgerHash() const	{ return mClosedLedgerHash; }
+	bool hasLedger(const uint256& hash, uint32 seq) const;
+	bool hasTxSet(const uint256& hash) const;
+	uint64 getPeerId() const					{ return mPeerId; }
+
+	const RippleAddress& getNodePublic() const	{ return mNodePublic; }
+	void cycleStatus() { mPreviousLedgerHash = mClosedLedgerHash; mClosedLedgerHash.zero(); }
+	bool hasProto(int version);
+	bool hasRange(uint32 uMin, uint32 uMax)		{ return (uMin >= mMinLedger) && (uMax <= mMaxLedger); }
 
 private:
 	bool			mInbound;			// Connection is inbound
@@ -59,7 +115,7 @@ private:
 	void			handleVerifyTimer(const boost::system::error_code& ecResult);
 	void			handlePingTimer(const boost::system::error_code& ecResult);
 
-protected:
+private:
 	boost::asio::io_service::strand		mIOStrand;
 	std::vector<uint8_t>				mReadbuf;
 	std::list<PackedMessage::pointer>	mSendQ;
@@ -110,57 +166,8 @@ protected:
 
 	void doFetchPack(const boost::shared_ptr<ripple::TMGetObjectByHash>& packet);
 
+    // VFALCO: NOTE, why is this a static member instead of a regular member?
 	static void doProofOfWork(Job&, boost::weak_ptr<Peer>, ProofOfWork::pointer);
-
-public:
-
-	//bool operator == (const Peer& other);
-
-	std::string& getIP() { return mIpPort.first; }
-	std::string getDisplayName() { return mCluster ? mNodeName : mIpPort.first; }
-	int getPort() { return mIpPort.second; }
-
-	void setIpPort(const std::string& strIP, int iPort);
-
-	static pointer create(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 id, bool inbound)
-	{
-		return pointer(new Peer(io_service, ctx, id, inbound));
-	}
-
-	boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::lowest_layer_type& getSocket()
-	{
-		return mSocketSsl.lowest_layer();
-	}
-
-	void connect(const std::string& strIp, int iPort);
-	void connected(const boost::system::error_code& error);
-	void detach(const char *, bool onIOStrand);
-	bool samePeer(Peer::ref p)			{ return samePeer(*p); }
-	bool samePeer(const Peer& p)		{ return this == &p; }
-
-	void sendPacket(const PackedMessage::pointer& packet, bool onStrand);
-	void sendLedgerProposal(Ledger::ref ledger);
-	void sendFullLedger(Ledger::ref ledger);
-	void sendGetFullLedger(uint256& hash);
-	void sendGetPeers();
-
-	void punishPeer(LoadType);
-	static void punishPeer(const boost::weak_ptr<Peer>&, LoadType);
-
-	Json::Value getJson();
-	bool isConnected() const					{ return mHelloed && !mDetaching; }
-	bool isInbound() const						{ return mInbound; }
-	bool isOutbound() const						{ return !mInbound; }
-
-	const uint256& getClosedLedgerHash() const	{ return mClosedLedgerHash; }
-	bool hasLedger(const uint256& hash, uint32 seq) const;
-	bool hasTxSet(const uint256& hash) const;
-	uint64 getPeerId() const					{ return mPeerId; }
-
-	const RippleAddress& getNodePublic() const	{ return mNodePublic; }
-	void cycleStatus() { mPreviousLedgerHash = mClosedLedgerHash; mClosedLedgerHash.zero(); }
-	bool hasProto(int version);
-	bool hasRange(uint32 uMin, uint32 uMax)		{ return (uMin >= mMinLedger) && (uMax <= mMaxLedger); }
 };
 
 #endif

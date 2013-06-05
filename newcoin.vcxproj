@@ -297,6 +297,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="modules\ripple_data\protocol\ripple_PackedMessage.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="modules\ripple_data\protocol\ripple_RippleAddress.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1294,6 +1300,7 @@
     <ClInclude Include="modules\ripple_data\crypto\ripple_RFC1751.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_FieldNames.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_LedgerFormat.h" />
+    <ClInclude Include="modules\ripple_data\protocol\ripple_PackedMessage.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_RippleAddress.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_RippleSystem.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_SerializeDeclarations.h" />

@@ -345,7 +345,7 @@ void Peer::startReadHeader()
 	if (!mDetaching)
 	{
 		mReadbuf.clear();
-		mReadbuf.resize(HEADER_SIZE);
+		mReadbuf.resize(PackedMessage::kHeaderBytes);
 
 		boost::asio::async_read(mSocketSsl, boost::asio::buffer(mReadbuf), mIOStrand.wrap(
 			boost::bind(&Peer::handleReadHeader, shared_from_this(), boost::asio::placeholders::error)));
@@ -354,15 +354,15 @@ void Peer::startReadHeader()
 
 void Peer::startReadBody(unsigned msg_len)
 {
-	// m_readbuf already contains the header in its first HEADER_SIZE
+	// m_readbuf already contains the header in its first PackedMessage::kHeaderBytes
 	// bytes. Expand it to fit in the body as well, and start async
 	// read into the body.
 
 	if (!mDetaching)
 	{
-		mReadbuf.resize(HEADER_SIZE + msg_len);
+		mReadbuf.resize(PackedMessage::kHeaderBytes + msg_len);
 
-		boost::asio::async_read(mSocketSsl, boost::asio::buffer(&mReadbuf[HEADER_SIZE], msg_len),
+		boost::asio::async_read(mSocketSsl, boost::asio::buffer(&mReadbuf[PackedMessage::kHeaderBytes], msg_len),
 			mIOStrand.wrap(boost::bind(&Peer::handleReadBody, shared_from_this(), boost::asio::placeholders::error)));
 	}
 }
@@ -430,7 +430,7 @@ void Peer::processReadBuffer()
 { // must not hold peer lock
 	int type = PackedMessage::getType(mReadbuf);
 #ifdef DEBUG
-//	std::cerr << "PRB(" << type << "), len=" << (mReadbuf.size()-HEADER_SIZE) << std::endl;
+//	std::cerr << "PRB(" << type << "), len=" << (mReadbuf.size()-PackedMessage::kHeaderBytes) << std::endl;
 #endif
 
 //	std::cerr << "Peer::processReadBuffer: " << mIpPort.first << " " << mIpPort.second << std::endl;
@@ -453,7 +453,7 @@ void Peer::processReadBuffer()
 			{
 				event->reName("Peer::hello");
 				ripple::TMHello msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg.ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvHello(msg);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -464,7 +464,7 @@ void Peer::processReadBuffer()
 			{
 				event->reName("Peer::errormessage");
 				ripple::TMErrorMsg msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg.ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvErrorMessage(msg);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -475,7 +475,7 @@ void Peer::processReadBuffer()
 			{
 				event->reName("Peer::ping");
 				ripple::TMPing msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg.ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvPing(msg);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -486,7 +486,7 @@ void Peer::processReadBuffer()
 			{
 				event->reName("Peer::getcontacts");
 				ripple::TMGetContacts msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg.ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvGetContacts(msg);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -498,7 +498,7 @@ void Peer::processReadBuffer()
 				event->reName("Peer::contact");
 				ripple::TMContact msg;
 
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg.ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvContact(msg);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -510,7 +510,7 @@ void Peer::processReadBuffer()
 				event->reName("Peer::getpeers");
 				ripple::TMGetPeers msg;
 
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg.ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvGetPeers(msg, sl);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -522,7 +522,7 @@ void Peer::processReadBuffer()
 				event->reName("Peer::peers");
 				ripple::TMPeers msg;
 
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg.ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvPeers(msg);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -533,7 +533,7 @@ void Peer::processReadBuffer()
 			{
 				event->reName("Peer::searchtransaction");
 				ripple::TMSearchTransaction msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg.ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvSearchTransaction(msg);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -544,7 +544,7 @@ void Peer::processReadBuffer()
 			{
 				event->reName("Peer::getaccount");
 				ripple::TMGetAccount msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg.ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvGetAccount(msg);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -555,7 +555,7 @@ void Peer::processReadBuffer()
 			{
 				event->reName("Peer::account");
 				ripple::TMAccount msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg.ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvAccount(msg);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -566,7 +566,7 @@ void Peer::processReadBuffer()
 			{
 				event->reName("Peer::transaction");
 				ripple::TMTransaction msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg.ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvTransaction(msg, sl);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -577,7 +577,7 @@ void Peer::processReadBuffer()
 			{
 				event->reName("Peer::statuschange");
 				ripple::TMStatusChange msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg.ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvStatus(msg);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -588,7 +588,7 @@ void Peer::processReadBuffer()
 			{
 				event->reName("Peer::propose");
 				boost::shared_ptr<ripple::TMProposeSet> msg = boost::make_shared<ripple::TMProposeSet>();
-				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg->ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvPropose(msg);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -599,7 +599,7 @@ void Peer::processReadBuffer()
 			{
 				event->reName("Peer::getledger");
 				ripple::TMGetLedger msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg.ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvGetLedger(msg, sl);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -610,7 +610,7 @@ void Peer::processReadBuffer()
 			{
 				event->reName("Peer::ledgerdata");
 				boost::shared_ptr<ripple::TMLedgerData> msg = boost::make_shared<ripple::TMLedgerData>();
-				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg->ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvLedger(msg, sl);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -621,7 +621,7 @@ void Peer::processReadBuffer()
 			{
 				event->reName("Peer::haveset");
 				ripple::TMHaveTransactionSet msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg.ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvHaveTxSet(msg);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -632,7 +632,7 @@ void Peer::processReadBuffer()
 			{
 				event->reName("Peer::validation");
 				boost::shared_ptr<ripple::TMValidation> msg = boost::make_shared<ripple::TMValidation>();
-				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg->ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvValidation(msg, sl);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -642,7 +642,7 @@ void Peer::processReadBuffer()
 		case ripple::mtGET_VALIDATION:
 			{
 				ripple::TM msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg.ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recv(msg);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -654,7 +654,7 @@ void Peer::processReadBuffer()
 			{
 				event->reName("Peer::getobjects");
 				boost::shared_ptr<ripple::TMGetObjectByHash> msg = boost::make_shared<ripple::TMGetObjectByHash>();
-				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg->ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvGetObjectByHash(msg);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -665,7 +665,7 @@ void Peer::processReadBuffer()
 			{
 				event->reName("Peer::proofofwork");
 				ripple::TMProofWork msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				if (msg.ParseFromArray(&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
 					recvProofWork(msg);
 				else
 					WriteLog (lsWARNING, Peer) << "parse error: " << type;
@@ -876,7 +876,7 @@ void Peer::recvTransaction(ripple::TMTransaction& packet, ScopedLock& MasterLock
 		SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction>(boost::ref(sit));
 
 		int flags;
-		if (!theApp->isNew(stx->getTransactionID(), mPeerId, flags))
+		if (! theApp->getHashRouter ().addSuppressionPeer (stx->getTransactionID(), mPeerId, flags))
 		{ // we have seen this transaction recently
 			if ((flags & SF_BAD) != 0)
 			{
@@ -1004,7 +1004,7 @@ void Peer::recvPropose(const boost::shared_ptr<ripple::TMProposeSet>& packet)
 		s.add256(prevLedger);
 	uint256 suppression = s.getSHA512Half();
 
-	if (!theApp->isNew(suppression, mPeerId))
+	if (! theApp->getHashRouter ().addSuppressionPeer (suppression, mPeerId))
 	{
 		WriteLog (lsTRACE, Peer) << "Received duplicate proposal from peer " << mPeerId;
 		return;
@@ -1102,7 +1102,7 @@ void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet,
 		SerializedValidation::pointer val = boost::make_shared<SerializedValidation>(boost::ref(sit), false);
 
 		uint256 signingHash = val->getSigningHash();
-		if (!theApp->isNew(signingHash, mPeerId))
+		if (! theApp->getHashRouter ().addSuppressionPeer (signingHash, mPeerId))
 		{
 			WriteLog (lsTRACE, Peer) << "Validation is duplicate";
 			return;

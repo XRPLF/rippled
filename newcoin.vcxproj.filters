@@ -810,6 +810,9 @@
     <ClCompile Include="modules\ripple_basics\types\ripple_Uint256.cpp">
       <Filter>1. Modules\ripple_basics\types</Filter>
     </ClCompile>
+    <ClCompile Include="modules\ripple_data\protocol\ripple_PackedMessage.cpp">
+      <Filter>1. Modules\ripple_data\protocol</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="database\sqlite3ext.h">
@@ -1504,6 +1507,9 @@
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\types\ripple_HashMaps.h">
       <Filter>1. Modules\ripple_basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\protocol\ripple_PackedMessage.h">
+      <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

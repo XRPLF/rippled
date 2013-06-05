@@ -12,6 +12,11 @@ Handles incoming connections from other Peers
 
 class PeerDoor
 {
+public:
+	PeerDoor (boost::asio::io_service& io_service);
+
+    boost::asio::ssl::context&	getSSLContext()	{ return mCtx; }
+
 private:
 	boost::asio::ip::tcp::acceptor	mAcceptor;
 	boost::asio::ssl::context		mCtx;
@@ -19,10 +24,6 @@ private:
 
 	void	startListening();
 	void	handleConnect(Peer::pointer new_connection, const boost::system::error_code& error);
-
-public:
-	PeerDoor(boost::asio::io_service& io_service);
-	boost::asio::ssl::context&	getSSLContext()	{ return mCtx; }
 };
 
 #endif

@@ -446,8 +446,9 @@ SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id, SHAMapTreeNode::TNTy
 	return no_item;
 }
 
+// Get a pointer to the previous item in the tree after a given item - item must be in tree
 SHAMapItem::pointer SHAMap::peekPrevItem(const uint256& id)
-{ // Get a pointer to the previous item in the tree after a given item - item must be in tree
+{
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	std::stack<SHAMapTreeNode::pointer> stack = getStack(id, true, false);
@@ -461,17 +462,25 @@ SHAMapItem::pointer SHAMap::peekPrevItem(const uint256& id)
 			if (node->peekItem()->getTag() < id)
 				return node->peekItem();
 		}
-		else for (int i = node->selectBranch(id) - 1; i >= 0; --i)
-				if (!node->isEmptyBranch(i))
-				{
-					node = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
-					SHAMapTreeNode* item = firstBelow(node.get());
-					if (!item)
-						throw std::runtime_error("missing node");
-					return item->peekItem();
-				}
+		else
+        {
+            for (int i = node->selectBranch(id) - 1; i >= 0; --i)
+            {
+		        if (!node->isEmptyBranch(i))
+		        {
+			        node = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
+			        SHAMapTreeNode* item = firstBelow(node.get());
+
+                    if (!item)
+				        throw std::runtime_error("missing node");
+			        
+                    return item->peekItem();
+		        }
+            }
+        }
 	}
-	// must be last item
+
+    // must be last item
 	return no_item;
 }
 
