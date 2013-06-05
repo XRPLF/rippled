@@ -54,7 +54,7 @@ Application::Application() :
 	mFeatureTable(2 * 7 * 24 * 60 * 60, 200), // two weeks, 200/256
 
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
-	mNetNodeDB(NULL), mPathFindDB(NULL), mHashNodeDB(NULL), mHashNodeLDB(NULL),
+	mNetNodeDB(NULL), mPathFindDB(NULL), mHashNodeDB(NULL), mHashNodeLDB(NULL), mEphemeralLDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
 	mSweepTimer(mAuxService), mShutdown(false)
 {
@@ -81,6 +81,9 @@ void Application::stop()
 
 	delete mHashNodeLDB;
 	mHashNodeLDB = NULL;
+
+	delete mEphemeralLDB;
+	mEphemeralLDB = NULL;
 
 	WriteLog (lsINFO, Application) << "Stopped: " << mIOService.stopped();
 	Instance::shutdown();
@@ -175,6 +178,18 @@ void Application::setup()
 				<< " " << status.ToString();
 			StopSustain();
 			exit(3);
+		}
+
+		if (!theConfig.LDB_EPHEMERAL.empty())
+		{
+			leveldb::Status status = leveldb::DB::Open(options, theConfig.LDB_EPHEMERAL, &mEphemeralLDB);
+			if (!status.ok() || !mEphemeralLDB)
+			{
+				WriteLog(lsFATAL, Application) << "Unable to open/create epehemeral db: "
+					<< theConfig.LDB_EPHEMERAL << " " << status.ToString();
+				StopSustain();
+				exit(3);
+			}
 		}
 	}
 	else
@@ -404,6 +419,7 @@ Application::~Application()
 	delete mNetNodeDB;
 	delete mPathFindDB;
 	delete mHashNodeLDB;
+	delete mEphemeralLDB;
 }
 
 void Application::startNewLedger()

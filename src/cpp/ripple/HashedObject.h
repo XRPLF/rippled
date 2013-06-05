@@ -69,7 +69,7 @@ protected:
 
 	std::vector< boost::shared_ptr<HashedObject> > mWriteSet;
 	bool mWritePending;
-	bool mLevelDB;
+	bool mLevelDB, mEphemeralDB;
 
 public:
 

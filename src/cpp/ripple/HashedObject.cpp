@@ -16,7 +16,7 @@ DECLARE_INSTANCE(HashedObject);
 
 HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
 	mCache("HashedObjectStore", cacheSize, cacheAge), mNegativeCache("HashedObjectNegativeCache", 0, 120),
-	mWriteGeneration(0), mWriteLoad(0), mWritePending(false), mLevelDB(false)
+	mWriteGeneration(0), mWriteLoad(0), mWritePending(false), mLevelDB(false), mEphemeralDB(false)
 {
 	mWriteSet.reserve(128);
 
@@ -29,6 +29,8 @@ HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
 		WriteLog (lsFATAL, HashedObject) << "Incorrect database selection";
 		assert(false);
 	}
+	if (!theConfig.LDB_EPHEMERAL.empty())
+		mEphemeralDB = true;
 }
 
 void HashedObjectStore::tune(int size, int age)
@@ -49,6 +51,74 @@ int HashedObjectStore::getWriteLoad()
 {
 	boost::mutex::scoped_lock sl(mWriteMutex);
 	return std::max(mWriteLoad, static_cast<int>(mWriteSet.size()));
+}
+
+static HashedObject::pointer LLRetrieve(const uint256& hash, leveldb::DB* db)
+{ // low-level retrieve
+	std::string sData;
+
+	leveldb::Status st = db->Get(leveldb::ReadOptions(),
+		leveldb::Slice(reinterpret_cast<const char *>(hash.begin()), hash.size()), &sData);
+	if (!st.ok())
+	{
+		assert(st.IsNotFound());
+		return HashedObject::pointer();
+	}
+
+	const unsigned char* bufPtr = reinterpret_cast<const unsigned char*>(&sData[0]);
+	uint32 index = htonl(*reinterpret_cast<const uint32*>(bufPtr));
+	int htype = bufPtr[8];
+
+	return boost::make_shared<HashedObject>(static_cast<HashedObjectType>(htype), index,
+		bufPtr + 9, sData.size() - 9, hash);
+}
+
+static void LLWrite(boost::shared_ptr<HashedObject> ptr, leveldb::DB* db)
+{ // low-level write single
+	HashedObject& obj = *ptr;
+	std::vector<unsigned char> rawData(9 + obj.mData.size());
+	unsigned char* bufPtr = &rawData.front();
+
+	*reinterpret_cast<uint32*>(bufPtr + 0) = ntohl(obj.mLedgerIndex);
+	*reinterpret_cast<uint32*>(bufPtr + 4) = ntohl(obj.mLedgerIndex);
+	*(bufPtr + 8) = static_cast<unsigned char>(obj.mType);
+	memcpy(bufPtr + 9, &obj.mData.front(), obj.mData.size());
+
+	leveldb::Status st = db->Put(leveldb::WriteOptions(),
+		leveldb::Slice(reinterpret_cast<const char *>(obj.mHash.begin()), obj.mHash.size()),
+		leveldb::Slice(reinterpret_cast<const char *>(bufPtr), rawData.size()));
+	if (!st.ok())
+	{
+		WriteLog (lsFATAL, HashedObject) << "Failed to store hash node";
+		assert(false);
+	}
+}
+
+static void LLWrite(const std::vector< boost::shared_ptr<HashedObject> >& set, leveldb::DB* db)
+{ // low-level write set
+	leveldb::WriteBatch batch;
+
+	BOOST_FOREACH(const boost::shared_ptr<HashedObject>& it, set)
+	{
+		const HashedObject& obj = *it;
+		std::vector<unsigned char> rawData(9 + obj.mData.size());
+		unsigned char* bufPtr = &rawData.front();
+
+		*reinterpret_cast<uint32*>(bufPtr + 0) = ntohl(obj.mLedgerIndex);
+		*reinterpret_cast<uint32*>(bufPtr + 4) = ntohl(obj.mLedgerIndex);
+		*(bufPtr + 8) = static_cast<unsigned char>(obj.mType);
+		memcpy(bufPtr + 9, &obj.mData.front(), obj.mData.size());
+
+		batch.Put(leveldb::Slice(reinterpret_cast<const char *>(obj.mHash.begin()), obj.mHash.size()),
+			leveldb::Slice(reinterpret_cast<const char *>(bufPtr), rawData.size()));
+	}
+
+	leveldb::Status st = db->Write(leveldb::WriteOptions(), &batch);
+	if (!st.ok())
+	{
+		WriteLog (lsFATAL, HashedObject) << "Failed to store hash node";
+		assert(false);
+	}
 }
 
 bool HashedObjectStore::storeLevelDB(HashedObjectType type, uint32 index,
@@ -106,31 +176,9 @@ void HashedObjectStore::bulkWriteLevelDB(Job &)
 			setSize = set.size();
 		}
 
-		{
-			leveldb::WriteBatch batch;
-
-			BOOST_FOREACH(const boost::shared_ptr<HashedObject>& it, set)
-			{
-				const HashedObject& obj = *it;
-				std::vector<unsigned char> rawData(9 + obj.mData.size());
-				unsigned char* bufPtr = &rawData.front();
-
-				*reinterpret_cast<uint32*>(bufPtr + 0) = ntohl(obj.mLedgerIndex);
-				*reinterpret_cast<uint32*>(bufPtr + 4) = ntohl(obj.mLedgerIndex);
-				*(bufPtr + 8) = static_cast<unsigned char>(obj.mType);
-				memcpy(bufPtr + 9, &obj.mData.front(), obj.mData.size());
-
-				batch.Put(leveldb::Slice(reinterpret_cast<const char *>(obj.mHash.begin()), obj.mHash.size()),
-					leveldb::Slice(reinterpret_cast<const char *>(bufPtr), rawData.size()));
-			}
-
-			leveldb::Status st = theApp->getHashNodeLDB()->Write(leveldb::WriteOptions(), &batch);
-			if (!st.ok())
-			{
-				WriteLog (lsFATAL, HashedObject) << "Failed to store hash node";
-				assert(false);
-			}
-		}
+		LLWrite(set, theApp->getHashNodeLDB());
+		if (mEphemeralDB)
+			LLWrite(set, theApp->getEphemeralLDB());
 	}
 }
 
@@ -140,26 +188,27 @@ HashedObject::pointer HashedObjectStore::retrieveLevelDB(const uint256& hash)
 	if (obj || mNegativeCache.isPresent(hash) || !theApp || !theApp->getHashNodeLDB())
 		return obj;
 
-	std::string sData;
+	if (mEphemeralDB)
+	{
+		obj = LLRetrieve(hash, theApp->getEphemeralLDB());
+		if (obj)
+			return obj;
+	}
 
 	{
 		LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtHO_READ, "HOS::retrieve"));
-		leveldb::Status st = theApp->getHashNodeLDB()->Get(leveldb::ReadOptions(),
-			leveldb::Slice(reinterpret_cast<const char *>(hash.begin()), hash.size()), &sData);
-		if (!st.ok())
+		obj = LLRetrieve(hash, theApp->getHashNodeLDB());
+		if (!obj)
 		{
-			assert(st.IsNotFound());
+			mNegativeCache.add(hash);
 			return obj;
 		}
 	}
 
-	const unsigned char* bufPtr = reinterpret_cast<const unsigned char*>(&sData[0]);
-	uint32 index = htonl(*reinterpret_cast<const uint32*>(bufPtr));
-	int htype = bufPtr[8];
-
-	obj = boost::make_shared<HashedObject>(static_cast<HashedObjectType>(htype), index,
-		bufPtr + 9, sData.size() - 9, hash);
 	mCache.canonicalize(hash, obj);
+
+	if (mEphemeralDB)
+		LLWrite(obj, theApp->getEphemeralLDB());
 
 	WriteLog (lsTRACE, HashedObject) << "HOS: " << hash << " fetch: in db";
 	return obj;
@@ -196,6 +245,7 @@ bool HashedObjectStore::storeSQLite(HashedObjectType type, uint32 index,
 //	else
 //		WriteLog (lsTRACE, HashedObject) << "HOS: already had " << hash;
 	mNegativeCache.del(hash);
+
 	return true;
 }
 
@@ -222,6 +272,9 @@ void HashedObjectStore::bulkWriteSQLite(Job&)
 //		WriteLog (lsTRACE, HashedObject) << "HOS: writing " << set.size();
 
 #ifndef NO_SQLITE3_PREPARE
+
+		if (mEphemeralDB)
+			LLWrite(set, theApp->getEphemeralLDB());
 
 	{
 		Database* db = theApp->getHashNodeDB()->getDB();
@@ -308,6 +361,13 @@ HashedObject::pointer HashedObjectStore::retrieveSQLite(const uint256& hash)
 	if (mNegativeCache.isPresent(hash))
 		return obj;
 
+	if (mEphemeralDB)
+	{
+		obj = LLRetrieve(hash, theApp->getEphemeralLDB());
+		if (obj)
+			return obj;
+	}
+
 	if (!theApp || !theApp->getHashNodeDB())
 		return obj;
 
@@ -386,6 +446,9 @@ HashedObject::pointer HashedObjectStore::retrieveSQLite(const uint256& hash)
 
 	obj = boost::make_shared<HashedObject>(htype, index, data, hash);
 	mCache.canonicalize(hash, obj);
+
+	if (mEphemeralDB)
+		LLWrite(obj, theApp->getEphemeralLDB());
 
 	WriteLog (lsTRACE, HashedObject) << "HOS: " << hash << " fetch: in db";
 	return obj;

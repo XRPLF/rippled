@@ -82,6 +82,7 @@ class Application
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
 
 	leveldb::DB				*mHashNodeLDB;
+	leveldb::DB				*mEphemeralLDB;
 
 	ConnectionPool			mConnectionPool;
 	PeerDoor*				mPeerDoor;
@@ -153,6 +154,7 @@ public:
 	DatabaseCon* getHashNodeDB()	{ return mHashNodeDB; }
 
 	leveldb::DB* getHashNodeLDB()	{ return mHashNodeLDB; }
+	leveldb::DB* getEphemeralLDB()	{ return mEphemeralLDB; }
 
 	uint256 getNonce256()			{ return mNonce256; }
 	std::size_t getNonceST()		{ return mNonceST; }
