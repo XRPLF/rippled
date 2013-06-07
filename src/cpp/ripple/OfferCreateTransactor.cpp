@@ -367,6 +367,9 @@ TER OfferCreateTransactor::doApply()
 	STAmount				saTakerPays			= mTxn.getFieldAmount(sfTakerPays);
 	STAmount				saTakerGets			= mTxn.getFieldAmount(sfTakerGets);
 
+	if (!saTakerPays.isLegalNet() || !saTakerGets.isLegalNet())
+		return temBAD_AMOUNT;
+
 	WriteLog (lsTRACE, OfferCreateTransactor) << boost::str(boost::format("OfferCreate: saTakerPays=%s saTakerGets=%s")
 		% saTakerPays.getFullText()
 		% saTakerGets.getFullText());
@@ -587,8 +590,7 @@ TER OfferCreateTransactor::doApply()
 
 		// Add offer to owner's directory.
 		terResult	= lesActive.dirAdd(uOwnerNode, Ledger::getOwnerDirIndex(mTxnAccountID), uLedgerIndex,
-			BIND_TYPE(&Ledger::qualityDirDescriber, P_1, saTakerPays.getCurrency(), uPaysIssuerID,
-				saTakerGets.getCurrency(), uGetsIssuerID, uRate));
+			BIND_TYPE(&Ledger::ownerDirDescriber, P_1, mTxnAccountID));
 
 
 		if (tesSUCCESS == terResult)

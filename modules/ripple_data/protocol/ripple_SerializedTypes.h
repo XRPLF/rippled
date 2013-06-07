@@ -215,11 +215,12 @@ private:
 class STAmount : public SerializedType
 {
 public:
-	static const int cMinOffset = -96, cMaxOffset = 80;
-	static const uint64 cMinValue = 1000000000000000ull, cMaxValue = 9999999999999999ull;
-	static const uint64 cMaxNative = 9000000000000000000ull;
-	static const uint64 cNotNative = 0x8000000000000000ull;
-	static const uint64 cPosNative = 0x4000000000000000ull;
+	static const int cMinOffset		= -96, cMaxOffset = 80;
+	static const uint64 cMinValue 	= 1000000000000000ull, cMaxValue = 9999999999999999ull;
+	static const uint64 cMaxNative 	= 9000000000000000000ull;
+	static const uint64 cMaxNativeN	= 100000000000000000ull; // max native value on network
+	static const uint64 cNotNative 	= 0x8000000000000000ull;
+	static const uint64 cPosNative 	= 0x4000000000000000ull;
 
 	static uint64	uRateOne;
 
@@ -311,6 +312,7 @@ public:
 	bool isNegative() const		{ return mIsNegative && !isZero(); }
 	bool isPositive() const		{ return !mIsNegative && !isZero(); }
 	bool isGEZero() const		{ return !mIsNegative; }
+	bool isLegalNet() const		{ return !mIsNative || (mValue < cMaxNativeN); }
 	operator bool() const		{ return !isZero(); }
 
 	void negate()				{ if (!isZero()) mIsNegative = !mIsNegative; }

@@ -16,6 +16,9 @@ TER TrustSetTransactor::doApply()
 	uint32				uQualityIn		= bQualityIn ? mTxn.getFieldU32(sfQualityIn) : 0;
 	uint32				uQualityOut		= bQualityOut ? mTxn.getFieldU32(sfQualityOut) : 0;
 
+	if (!saLimitAmount.isLegalNet())
+		return temBAD_AMOUNT;
+
 	if (bQualityIn && QUALITY_ONE == uQualityIn)
 		uQualityIn	= 0;
 

@@ -27,6 +27,9 @@ TER PaymentTransactor::doApply()
 		% saMaxAmount.getFullText()
 		% saDstAmount.getFullText());
 
+	if (!saDstAmount.isLegalNet() || !saMaxAmount.isLegalNet())
+		return temBAD_AMOUNT;
+
 	if (uTxFlags & tfPaymentMask)
 	{
 		WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: Invalid flags set.";

@@ -48,6 +48,8 @@ uint64 Transactor::calculateBaseFee()
 TER Transactor::payFee()
 {
 	STAmount saPaid = mTxn.getTransactionFee();
+	if (!saPaid.isLegalNet())
+		return temBAD_AMOUNT;
 
 	// Only check fee is sufficient when the ledger is open.
 	if (isSetBit(mParams, tapOPEN_LEDGER) && saPaid < mFeeDue)
