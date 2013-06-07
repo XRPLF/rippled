@@ -1,23 +1,4 @@
 
-/*
-#include "Application.h"
-
-#include "leveldb/cache.h"
-#include "leveldb/filter_policy.h"
-
-#include "AcceptedLedger.h"
-#include "PeerDoor.h"
-#include "RPCDoor.h"
-
-#include "../database/SqliteDatabase.h"
-
-#include <iostream>
-
-#include <boost/bind.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/thread.hpp>
-*/
-
 // VFALCO: TODO Replace these with beast "unsigned long long" generators
 #define SYSTEM_CURRENCY_GIFT		1000ull
 #define SYSTEM_CURRENCY_USERS		100000000ull
@@ -58,10 +39,7 @@ Application::Application ()
     , mNetNodeDB (NULL)
     , mPathFindDB (NULL)
     , mHashNodeDB (NULL)
-    // VFALCO: TODO eliminate USE_LEVELDB macro
-#ifdef USE_LEVELDB
 	, mHashNodeLDB (NULL)
-#endif
 	, mPeerDoor (NULL)
     , mRPCDoor (NULL)
     , mWSPublicDoor (NULL)

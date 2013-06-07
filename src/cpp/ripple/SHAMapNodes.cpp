@@ -1,18 +1,4 @@
 
-#include "SHAMap.h"
-
-#include <cstring>
-#include <iostream>
-
-#include <boost/foreach.hpp>
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/smart_ptr/make_shared.hpp>
-
-#include <openssl/sha.h>
-
-#include "HashPrefixes.h"
-
 SETUP_LOG (SHAMapNode)
 
 std::string SHAMapNode::getString() const

@@ -1,6 +1,4 @@
 
-#include "SHAMap.h"
-
 #include <stack>
 
 #include <boost/foreach.hpp>
@@ -8,9 +6,6 @@
 #include <boost/smart_ptr/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
 #include <iostream>
-
-#include "SHAMap.h"
-#include "Application.h"
 
 #ifndef STATE_MAP_BUCKETS
 #define STATE_MAP_BUCKETS 1024

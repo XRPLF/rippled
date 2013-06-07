@@ -1,19 +1,17 @@
-#ifndef __LEDGER__
-#define __LEDGER__
+#ifndef RIPPLE_LEDGER_H
+#define RIPPLE_LEDGER_H
 
-#include <map>
-#include <list>
+// VFALCO: TODO Get this include out of here!
+#include "ripple_HashedObject.h"
 
-#include <boost/shared_ptr.hpp>
-#include <boost/unordered_set.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "Transaction.h"
 #include "TransactionMeta.h"
 #include "AccountState.h"
 #include "NicknameState.h"
 #include "SHAMap.h"
+
+class Job;
 
 enum LedgerStateParms
 {

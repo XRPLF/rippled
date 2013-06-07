@@ -18,54 +18,7 @@
 
 class HttpsClient : public boost::enable_shared_from_this<HttpsClient>
 {
-private:
-	typedef boost::shared_ptr<HttpsClient> pointer;
-
-	bool														mSSL;
-    AutoSocket													mSocket;
-    boost::asio::ip::tcp::resolver								mResolver;
-	boost::shared_ptr<boost::asio::ip::tcp::resolver::query>	mQuery;
-	boost::asio::streambuf										mRequest;
-	boost::asio::streambuf										mHeader;
-    boost::asio::streambuf										mResponse;
-    std::string													mBody;
-	const unsigned short										mPort;
-	int															mResponseMax;
-	int															mStatus;
-	FUNCTION_TYPE<void(boost::asio::streambuf& sb, const std::string& strHost)>			mBuild;
-    FUNCTION_TYPE<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)>	mComplete;
-
-	boost::asio::deadline_timer									mDeadline;
-
-	// If not success, we are shutting down.
-	boost::system::error_code									mShutdown;
-
-	std::deque<std::string>										mDeqSites;
-	boost::posix_time::time_duration							mTimeout;
-
-	void handleDeadline(const boost::system::error_code& ecResult);
-
-    void handleResolve(const boost::system::error_code& ecResult, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
-
-    void handleConnect(const boost::system::error_code& ecResult);
-
-	void handleRequest(const boost::system::error_code& ecResult);
-
-    void handleWrite(const boost::system::error_code& ecResult, std::size_t bytes_transferred);
-
-    void handleHeader(const boost::system::error_code& ecResult, std::size_t bytes_transferred);
-
-    void handleData(const boost::system::error_code& ecResult, std::size_t bytes_transferred);
-
-	void handleShutdown(const boost::system::error_code& ecResult);
-
-	void httpsNext();
-
-	void invokeComplete(const boost::system::error_code& ecResult, int iStatus = 0, const std::string& strData = "");
-
-	void makeGet(const std::string& strPath, boost::asio::streambuf& sb, const std::string& strHost);
 public:
-
     HttpsClient(
 		boost::asio::io_service& io_service,
 		const unsigned short port,
@@ -117,6 +70,56 @@ public:
 		FUNCTION_TYPE<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
 
 	static void sendSMS(boost::asio::io_service& io_service, const std::string& strText);
+
+private:
+    static const int maxClientHeaderBytes = 32 * 1024;
+
+    typedef boost::shared_ptr<HttpsClient> pointer;
+
+	bool														mSSL;
+    AutoSocket													mSocket;
+    boost::asio::ip::tcp::resolver								mResolver;
+	boost::shared_ptr<boost::asio::ip::tcp::resolver::query>	mQuery;
+	boost::asio::streambuf										mRequest;
+	boost::asio::streambuf										mHeader;
+    boost::asio::streambuf										mResponse;
+    std::string													mBody;
+	const unsigned short										mPort;
+	int															mResponseMax;
+	int															mStatus;
+	FUNCTION_TYPE<void(boost::asio::streambuf& sb, const std::string& strHost)>			mBuild;
+    FUNCTION_TYPE<bool(const boost::system::error_code& ecResult, int iStatus, const std::string& strData)>	mComplete;
+
+	boost::asio::deadline_timer									mDeadline;
+
+	// If not success, we are shutting down.
+	boost::system::error_code									mShutdown;
+
+	std::deque<std::string>										mDeqSites;
+	boost::posix_time::time_duration							mTimeout;
+
+	void handleDeadline(const boost::system::error_code& ecResult);
+
+    void handleResolve(const boost::system::error_code& ecResult, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
+
+    void handleConnect(const boost::system::error_code& ecResult);
+
+	void handleRequest(const boost::system::error_code& ecResult);
+
+    void handleWrite(const boost::system::error_code& ecResult, std::size_t bytes_transferred);
+
+    void handleHeader(const boost::system::error_code& ecResult, std::size_t bytes_transferred);
+
+    void handleData(const boost::system::error_code& ecResult, std::size_t bytes_transferred);
+
+	void handleShutdown(const boost::system::error_code& ecResult);
+
+	void httpsNext();
+
+	void invokeComplete(const boost::system::error_code& ecResult, int iStatus = 0, const std::string& strData = "");
+
+	void makeGet(const std::string& strPath, boost::asio::streambuf& sb, const std::string& strHost);
 };
+
 #endif
 // vim:ts=4

@@ -2,35 +2,20 @@
 // Fetch a web page via https.
 //
 
-#include "HttpsClient.h"
-
-#include <iostream>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/regex.hpp>
-#include <boost/smart_ptr/shared_ptr.hpp>
-#include <boost/system/error_code.hpp>
-
-#define CLIENT_MAX_HEADER (32*1024)
-
 SETUP_LOG (HttpsClient)
 
-using namespace boost::system;
-using namespace boost::asio;
-
-HttpsClient::HttpsClient(
-    boost::asio::io_service& io_service,
-	const unsigned short port,
-    std::size_t responseMax
-    ) :
-		mSocket(io_service, theConfig.SSL_CONTEXT),
-		mResolver(io_service),
-		mHeader(CLIENT_MAX_HEADER),
-		mPort(port),
-		mResponseMax(responseMax),
-		mDeadline(io_service)
+HttpsClient::HttpsClient (boost::asio::io_service& io_service,
+                          const unsigned short port,
+                          std::size_t responseMax)
+    : mSocket (io_service, theConfig.SSL_CONTEXT)
+    , mResolver (io_service)
+    , mHeader (maxClientHeaderBytes)
+    , mPort (port)
+    , mResponseMax (responseMax)
+    , mDeadline (io_service)
 {
 	if (!theConfig.SSL_VERIFY)
-		mSocket.SSLSocket().set_verify_mode(boost::asio::ssl::verify_none);
+		mSocket.SSLSocket().set_verify_mode (boost::asio::ssl::verify_none);
 }
 
 void HttpsClient::makeGet(const std::string& strPath, boost::asio::streambuf& sb, const std::string& strHost)
@@ -82,8 +67,11 @@ void HttpsClient::httpsNext()
 {
 	WriteLog (lsTRACE, HttpsClient) << "Fetch: " << mDeqSites[0];
 
-    boost::shared_ptr<boost::asio::ip::tcp::resolver::query>	query(new boost::asio::ip::tcp::resolver::query(mDeqSites[0], boost::lexical_cast<std::string>(mPort),
-			ip::resolver_query_base::numeric_service));
+    boost::shared_ptr <boost::asio::ip::tcp::resolver::query> query (
+        new boost::asio::ip::tcp::resolver::query (
+            mDeqSites[0],
+            boost::lexical_cast <std::string>(mPort),
+			boost::asio::ip::resolver_query_base::numeric_service));
 	mQuery	= query;
 
 	mDeadline.expires_from_now(mTimeout, mShutdown);
@@ -477,7 +465,7 @@ void HttpsClient::sendSMS(boost::asio::io_service& io_service, const std::string
 		if (iPort < 0)
 			iPort = bSSL ? 443 : 80;
 
-		boost::shared_ptr<HttpsClient> client(new HttpsClient(io_service, iPort, CLIENT_MAX_HEADER));
+		boost::shared_ptr<HttpsClient> client(new HttpsClient(io_service, iPort, maxClientHeaderBytes));
 
 		client->httpsGet(bSSL, deqSites, strURI, boost::posix_time::seconds(SMS_TIMEOUT),
 			BIND_TYPE(&responseSMS, P_1, P_2, P_3));

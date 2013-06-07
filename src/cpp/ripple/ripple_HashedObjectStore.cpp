@@ -1,18 +1,11 @@
-#include "HashedObject.h"
 
+/*
+#include "HashedObject.h"
 #include "leveldb/db.h"
 #include "leveldb/write_batch.h"
-
-#include <boost/lexical_cast.hpp>
-#include <boost/foreach.hpp>
-
 #include "../database/SqliteDatabase.h"
-
 #include "Application.h"
-
-SETUP_LOG (HashedObject)
-
-DECLARE_INSTANCE(HashedObject);
+*/
 
 HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
 	mCache("HashedObjectStore", cacheSize, cacheAge), mNegativeCache("HashedObjectNegativeCache", 0, 120),
@@ -53,8 +46,9 @@ int HashedObjectStore::getWriteLoad()
 	return std::max(mWriteLoad, static_cast<int>(mWriteSet.size()));
 }
 
-static HashedObject::pointer LLRetrieve(const uint256& hash, leveldb::DB* db)
-{ // low-level retrieve
+// low-level retrieve
+HashedObject::pointer HashedObjectStore::LLRetrieve(const uint256& hash, leveldb::DB* db)
+{
 	std::string sData;
 
 	leveldb::Status st = db->Get(leveldb::ReadOptions(),
@@ -73,19 +67,20 @@ static HashedObject::pointer LLRetrieve(const uint256& hash, leveldb::DB* db)
 		bufPtr + 9, sData.size() - 9, hash);
 }
 
-static void LLWrite(boost::shared_ptr<HashedObject> ptr, leveldb::DB* db)
-{ // low-level write single
+// low-level write single
+void HashedObjectStore::LLWrite(boost::shared_ptr<HashedObject> ptr, leveldb::DB* db)
+{
 	HashedObject& obj = *ptr;
-	std::vector<unsigned char> rawData(9 + obj.mData.size());
+	std::vector<unsigned char> rawData(9 + obj.getData ().size());
 	unsigned char* bufPtr = &rawData.front();
 
-	*reinterpret_cast<uint32*>(bufPtr + 0) = ntohl(obj.mLedgerIndex);
-	*reinterpret_cast<uint32*>(bufPtr + 4) = ntohl(obj.mLedgerIndex);
-	*(bufPtr + 8) = static_cast<unsigned char>(obj.mType);
-	memcpy(bufPtr + 9, &obj.mData.front(), obj.mData.size());
+	*reinterpret_cast<uint32*>(bufPtr + 0) = ntohl(obj.getIndex ());
+	*reinterpret_cast<uint32*>(bufPtr + 4) = ntohl(obj.getIndex ());
+	*(bufPtr + 8) = static_cast<unsigned char>(obj.getType ());
+	memcpy(bufPtr + 9, &obj.getData ().front(), obj.getData ().size());
 
 	leveldb::Status st = db->Put(leveldb::WriteOptions(),
-		leveldb::Slice(reinterpret_cast<const char *>(obj.mHash.begin()), obj.mHash.size()),
+		leveldb::Slice(reinterpret_cast<const char *>(obj.getHash ().begin()), obj.getHash ().size()),
 		leveldb::Slice(reinterpret_cast<const char *>(bufPtr), rawData.size()));
 	if (!st.ok())
 	{
@@ -94,22 +89,23 @@ static void LLWrite(boost::shared_ptr<HashedObject> ptr, leveldb::DB* db)
 	}
 }
 
-static void LLWrite(const std::vector< boost::shared_ptr<HashedObject> >& set, leveldb::DB* db)
-{ // low-level write set
+// low-level write set
+void HashedObjectStore::LLWrite(const std::vector< boost::shared_ptr<HashedObject> >& set, leveldb::DB* db)
+{
 	leveldb::WriteBatch batch;
 
 	BOOST_FOREACH(const boost::shared_ptr<HashedObject>& it, set)
 	{
 		const HashedObject& obj = *it;
-		std::vector<unsigned char> rawData(9 + obj.mData.size());
+		std::vector<unsigned char> rawData(9 + obj.getData ().size());
 		unsigned char* bufPtr = &rawData.front();
 
-		*reinterpret_cast<uint32*>(bufPtr + 0) = ntohl(obj.mLedgerIndex);
-		*reinterpret_cast<uint32*>(bufPtr + 4) = ntohl(obj.mLedgerIndex);
-		*(bufPtr + 8) = static_cast<unsigned char>(obj.mType);
-		memcpy(bufPtr + 9, &obj.mData.front(), obj.mData.size());
+		*reinterpret_cast<uint32*>(bufPtr + 0) = ntohl(obj.getIndex ());
+		*reinterpret_cast<uint32*>(bufPtr + 4) = ntohl(obj.getIndex ());
+		*(bufPtr + 8) = static_cast<unsigned char>(obj.getType ());
+		memcpy(bufPtr + 9, &obj.getData ().front(), obj.getData ().size());
 
-		batch.Put(leveldb::Slice(reinterpret_cast<const char *>(obj.mHash.begin()), obj.mHash.size()),
+		batch.Put(leveldb::Slice(reinterpret_cast<const char *>(obj.getHash ().begin()), obj.getHash ().size()),
 			leveldb::Slice(reinterpret_cast<const char *>(bufPtr), rawData.size()));
 	}
 

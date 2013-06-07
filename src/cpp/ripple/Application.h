@@ -33,8 +33,9 @@ class IPeers;
 
 class RPCDoor;
 class PeerDoor;
-typedef TaggedCache< uint256, std::vector<unsigned char>, UptimeTimerAdapter> NodeCache;
-typedef TaggedCache< uint256, SLE, UptimeTimerAdapter> SLECache;
+
+typedef TaggedCache <uint256, std::vector <unsigned char>, UptimeTimerAdapter> NodeCache;
+typedef TaggedCache <uint256, SLE, UptimeTimerAdapter> SLECache;
 
 class Application
 {
@@ -92,7 +93,11 @@ public:
 	void sweep();
 
 private:	
-	boost::asio::io_service	mIOService;
+	void updateTables (bool);
+	void startNewLedger ();
+	bool loadOldLedger (const std::string&);
+
+    boost::asio::io_service	mIOService;
     boost::asio::io_service mAuxService;
 	boost::asio::io_service::work mIOWork;
     boost::asio::io_service::work mAuxWork;
@@ -112,7 +117,7 @@ private:
 	LoadManager				mLoadMgr;
 	TXQueue					mTxnQueue;
 	OrderBookDB				mOrderBookDB;
-	
+
     // VFALCO: Clean stuff
     beast::ScopedPointer <IFeatures> mFeatures;
 	beast::ScopedPointer <IFeeVote> mFeeVote;
@@ -140,10 +145,6 @@ private:
 	boost::recursive_mutex	mPeerMapLock;
 
 	volatile bool			mShutdown;
-
-	void updateTables(bool);
-	void startNewLedger();
-	bool loadOldLedger(const std::string&);
 };
 
 extern Application* theApp;

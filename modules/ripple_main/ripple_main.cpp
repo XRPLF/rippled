@@ -67,10 +67,10 @@
 //------------------------------------------------------------------------------
 
 // VFALCO: TODO, prepare a unity header for LevelDB
-#ifdef USE_LEVELDB
 #include "leveldb/cache.h"
 #include "leveldb/filter_policy.h"
-#endif
+#include "leveldb/db.h"
+#include "leveldb/write_batch.h"
 
 //------------------------------------------------------------------------------
 
@@ -93,6 +93,7 @@
 #include "src/cpp/ripple/Ledger.h"
 #include "src/cpp/ripple/SerializedValidation.h"
 #include "src/cpp/database/SqliteDatabase.h"
+#include "src/cpp/ripple/LoadManager.h"
 
 //------------------------------------------------------------------------------
 //
@@ -105,6 +106,9 @@
 #include "src/cpp/ripple/ripple_ProofOfWork.h"
 #include "src/cpp/ripple/ripple_Job.h"
 #include "src/cpp/ripple/ripple_JobQueue.h"
+#include "src/cpp/ripple/ripple_UptimeTimerAdapter.h"
+#include "src/cpp/ripple/ripple_HashedObject.h"
+#include "src/cpp/ripple/ripple_HashedObjectStore.h"
 
 #include "src/cpp/ripple/ripple_IFeatures.h"
 #include "src/cpp/ripple/ripple_IFeeVote.h"
@@ -139,7 +143,6 @@
 #include "src/cpp/ripple/ChangeTransactor.h"
 #include "src/cpp/ripple/HTTPRequest.h"
 #include "src/cpp/ripple/HashPrefixes.h"
-#include "src/cpp/ripple/HashedObject.h"
 #include "src/cpp/ripple/HttpsClient.h"
 #include "src/cpp/ripple/Ledger.h"
 #include "src/cpp/ripple/LedgerAcquire.h"
@@ -149,7 +152,6 @@
 #include "src/cpp/ripple/LedgerMaster.h"
 #include "src/cpp/ripple/LedgerProposal.h"
 #include "src/cpp/ripple/LedgerTiming.h"
-#include "src/cpp/ripple/LoadManager.h"
 #include "src/cpp/ripple/NetworkOPs.h"
 #include "src/cpp/ripple/NicknameState.h"
 #include "src/cpp/ripple/Offer.h"
@@ -224,7 +226,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ChangeTransactor.cpp" // no log
 #include "src/cpp/ripple/Contract.cpp" // no log
 #include "src/cpp/ripple/DBInit.cpp"
-#include "src/cpp/ripple/HashedObject.cpp"
 #include "src/cpp/ripple/HTTPRequest.cpp"
 #include "src/cpp/ripple/HttpsClient.cpp"
 #include "src/cpp/ripple/Interpreter.cpp" // no log
@@ -288,10 +289,12 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 
 // Refactored sources
 
-#include "src/cpp/ripple/ripple_Config.cpp" // no log
+#include "src/cpp/ripple/ripple_Config.cpp"
 #include "src/cpp/ripple/ripple_DatabaseCon.cpp"
 #include "src/cpp/ripple/ripple_Features.cpp"
 #include "src/cpp/ripple/ripple_FeeVote.cpp"
+#include "src/cpp/ripple/ripple_HashedObject.cpp"
+#include "src/cpp/ripple/ripple_HashedObjectStore.cpp"
 #include "src/cpp/ripple/ripple_HashRouter.cpp"
 #include "src/cpp/ripple/ripple_Job.cpp"
 #include "src/cpp/ripple/ripple_JobQueue.cpp"

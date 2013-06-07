@@ -1,15 +1,8 @@
-#ifndef __SHAMAP__
-#define __SHAMAP__
+#ifndef RIPPLE_SHAMAP_H
+#define RIPPLE_SHAMAP_H
 
-#include <list>
-#include <map>
-#include <stack>
-
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/unordered_map.hpp>
-
-#include "HashedObject.h"
+// VFALCO: TODO Get this include out of here!
+#include "ripple_UptimeTimerAdapter.h"
 
 DEFINE_INSTANCE(SHAMap);
 DEFINE_INSTANCE(SHAMapItem);

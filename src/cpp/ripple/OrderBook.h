@@ -2,26 +2,14 @@
 #ifndef ORDERBOOK_H
 #define ORDERBOOK_H
 
-
 #include "SerializedLedger.h"
 #include "NetworkOPs.h"
-#include <boost/shared_ptr.hpp>
 
 /*
 	Encapsulates the SLE for an orderbook
 */
 class OrderBook
 {
-	uint256 mBookBase;
-
-	uint160 mCurrencyIn;
-	uint160 mCurrencyOut;
-	uint160 mIssuerIn;
-	uint160 mIssuerOut;
-
-	//SerializedLedgerEntry::pointer	mLedgerEntry;
-	OrderBook(SerializedLedgerEntry::ref ledgerEntry);	// For accounts in a ledger
-
 public:
 	typedef boost::shared_ptr<OrderBook> pointer;
 	typedef const boost::shared_ptr<OrderBook>& ref;
@@ -42,6 +30,17 @@ public:
 
 	// looks through the best offers to see how much it would cost to take the given amount
 	STAmount& getTakePrice(STAmount& takeAmount);
+
+private:
+	uint256 mBookBase;
+
+	uint160 mCurrencyIn;
+	uint160 mCurrencyOut;
+	uint160 mIssuerIn;
+	uint160 mIssuerOut;
+
+	//SerializedLedgerEntry::pointer	mLedgerEntry;
+	OrderBook(SerializedLedgerEntry::ref ledgerEntry);	// For accounts in a ledger
 };
 
 #endif
