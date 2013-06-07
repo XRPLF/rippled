@@ -144,7 +144,7 @@ private:
 	handler_t					mHandler;
 };
 
-// VFALCO: TODO, tidy up this loose function
+// VFALCO TODO tidy up this loose function
 int iAdminGet (const Json::Value& jvRequest, const std::string& strRemoteIp);
 
 #endif

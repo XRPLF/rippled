@@ -13,7 +13,7 @@ SETUP_LOG (LedgerConsensus)
 
 DECLARE_INSTANCE(LedgerConsensus);
 
-// VFALCO: TODO, move LCTransaction to its own file and rename to ConsensusTransactor
+// VFALCO TODO move LCTransaction to its own file and rename to ConsensusTransactor
 //
 void LCTransaction::setVote(const uint160& peer, bool votesYes)
 { // Track a peer's yes/no vote on a particular disputed transaction
@@ -561,7 +561,7 @@ void LedgerConsensus::stateAccepted()
 	endConsensus();
 }
 
-// VFALCO: TODO implement shutdown without a naked global
+// VFALCO TODO implement shutdown without a naked global
 extern volatile bool doShutdown;
 
 void LedgerConsensus::timerEntry()
@@ -1023,7 +1023,7 @@ void LedgerConsensus::playbackProposals()
 	}
 }
 
-// VFALCO: TODO, clean these macros up and put them somewhere. Try to eliminate them if possible.
+// VFALCO TODO clean these macros up and put them somewhere. Try to eliminate them if possible.
 #define LCAT_SUCCESS	0
 #define LCAT_FAIL		1
 #define LCAT_RETRY		2
@@ -1042,7 +1042,7 @@ int LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTrans
 		<< (retryAssured ? "/retry" : "/final");
 	WriteLog (lsTRACE, LedgerConsensus) << txn->getJson(0);
 
-// VFALCO: TODO, figure out what this "trust network" is all about and why it needs exceptions.
+// VFALCO TODO figure out what this "trust network" is all about and why it needs exceptions.
 #ifndef TRUST_NETWORK
 	try
 	{

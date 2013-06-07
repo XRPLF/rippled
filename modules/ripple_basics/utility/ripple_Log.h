@@ -14,7 +14,7 @@ enum LogSeverity
 
 //------------------------------------------------------------------------------
 
-// VFALCO: TODO, make this a nested class in Log
+// VFALCO TODO make this a nested class in Log
 class LogPartition
 {
 protected:
@@ -100,11 +100,11 @@ public:
     static std::string rotateLog ();
 
 private:
-    // VFALCO: TODO, derive from beast::Uncopyable
+    // VFALCO TODO derive from beast::Uncopyable
 	Log (const Log&);            // no implementation
 	Log& operator= (const Log&); // no implementation
 
-    // VFALCO: TODO, looks like there are really TWO classes in here.
+    // VFALCO TODO looks like there are really TWO classes in here.
     //         One is a stream target for '<<' operator and the other
     //         is a singleton. Split the singleton out to a new class.
     //

@@ -1,5 +1,5 @@
 
-// VFALCO: TODO, make this an inline function
+// VFALCO TODO make this an inline function
 #define ADDRESS_SHARED(p)	strHex(uint64( ((char*) (p).get()) - ((char*) 0)))
 
 // How often to enforce policies.

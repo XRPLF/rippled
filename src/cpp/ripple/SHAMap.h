@@ -1,7 +1,7 @@
 #ifndef RIPPLE_SHAMAP_H
 #define RIPPLE_SHAMAP_H
 
-// VFALCO: TODO Get this include out of here!
+// VFALCO TODO Get this include out of here!
 #include "ripple_UptimeTimerAdapter.h"
 
 DEFINE_INSTANCE(SHAMap);
@@ -319,7 +319,7 @@ private:
 	SMAddNode(bool i, bool u) : mInvalid(i), mUseful(u)	{ ; }
 };
 
-// VFALCO: TODO, tidy up this loose function
+// VFALCO TODO tidy up this loose function
 extern bool SMANCombine(SMAddNode& existing, const SMAddNode& additional);
 
 class SHAMap : public IS_INSTANCE(SHAMap)

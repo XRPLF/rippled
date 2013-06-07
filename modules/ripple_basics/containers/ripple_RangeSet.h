@@ -68,9 +68,9 @@ namespace boost
 	};
 }
 
-// VFALCO: Maybe not the best place for this but it sort of makes sense here
+// VFALCO Maybe not the best place for this but it sort of makes sense here
 
-// VFALCO: NOTE, these three are unused.
+// VFALCO NOTE these three are unused.
 /*
 template<typename T> T range_check(const T& value, const T& minimum, const T& maximum)
 {
@@ -94,7 +94,7 @@ template<typename T> T range_check_max(const T& value, const T& maximum)
 }
 */
 
-// VFALCO: TODO, these parameters should not be const references.
+// VFALCO TODO these parameters should not be const references.
 template<typename T, typename U> T range_check_cast(const U& value, const T& minimum, const T& maximum)
 {
 	if ((value < minimum) || (value > maximum))

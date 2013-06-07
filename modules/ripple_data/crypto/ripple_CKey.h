@@ -32,7 +32,7 @@
 // see www.keylength.com
 // script supports up to 75 for single byte push
 
-// VFALCO: NOTE, this is unused
+// VFALCO NOTE this is unused
 /*
 int static inline EC_KEY_regenerate_key(EC_KEY *eckey, BIGNUM *priv_key)
 {

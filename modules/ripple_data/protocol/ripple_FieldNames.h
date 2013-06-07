@@ -1,7 +1,7 @@
 #ifndef RIPPLE_FIELDNAMES_H
 #define RIPPLE_FIELDNAMES_H
 
-// VFALCO: TODO, lose the macro.
+// VFALCO TODO lose the macro.
 #define FIELD_CODE(type, index) ((static_cast<int>(type) << 16) | index)
 
 enum SerializedTypeID
@@ -23,7 +23,7 @@ enum SerializedTypeID
 	STI_VALIDATION	= 10003,
 };
 
-// VFALCO: TODO, rename this to NamedField
+// VFALCO TODO rename this to NamedField
 class SField
 {
 public:
@@ -104,7 +104,7 @@ public:
 
 	static int compare(SField::ref f1, SField::ref f2);
 
-    // VFALCO: TODO, make these private
+    // VFALCO TODO make these private
 protected:
 	static std::map<int, ptr>	codeToField;
 	static boost::mutex			mapMutex;

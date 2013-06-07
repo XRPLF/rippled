@@ -1,5 +1,5 @@
 
-//VFALCO: TODO, clean this up since it is just a file holding a single member function definition
+//VFALCO TODO clean this up since it is just a file holding a single member function definition
 
 static std::vector<std::string> getSchema(DatabaseCon* dbc, const std::string& dbName)
 {

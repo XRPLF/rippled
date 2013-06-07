@@ -19,7 +19,7 @@
 #ifndef RIPPLE_SUSTAIN_H
 #define RIPPLE_SUSTAIN_H
 
-// VFALCO: TODO, figure out what the heck this is??
+// VFALCO TODO figure out what the heck this is??
 extern bool HaveSustain();
 extern std::string StopSustain();
 extern std::string DoSustain();

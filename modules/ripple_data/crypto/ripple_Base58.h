@@ -36,7 +36,7 @@
 class Base58
 {
 public:
-	// VFALCO: TODO, clean up this poor API
+	// VFALCO TODO clean up this poor API
 	static char const* getCurrentAlphabet ();
 	static void setCurrentAlphabet (char const* alphabet);
 

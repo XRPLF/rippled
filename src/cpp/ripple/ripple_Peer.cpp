@@ -1,4 +1,4 @@
-// VFALCO: TODO, make this an inline function
+// VFALCO TODO make this an inline function
 #define ADDRESS(p)			strHex(uint64( ((char*) p) - ((char*) 0)))
 
 SETUP_LOG (Peer)
@@ -44,7 +44,7 @@ public:
 	void connected(const boost::system::error_code& error);
 	void detach(const char *, bool onIOStrand);
 	
-    // VFALCO: Seems no one is using these
+    // VFALCO Seems no one is using these
     //bool samePeer (Peer::ref p)			{ return samePeer(*p); }
 	//bool samePeer (const Peer& p)		{ return this == &p; }
 
@@ -148,7 +148,7 @@ private:
 
 	void doFetchPack(const boost::shared_ptr<ripple::TMGetObjectByHash>& packet);
 
-    // VFALCO: NOTE, why is this a static member instead of a regular member?
+    // VFALCO NOTE why is this a static member instead of a regular member?
 	static void doProofOfWork (Job&, boost::weak_ptr <Peer>, ProofOfWork::pointer);
 };
 

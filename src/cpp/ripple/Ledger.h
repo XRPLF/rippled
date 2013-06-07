@@ -1,7 +1,7 @@
 #ifndef RIPPLE_LEDGER_H
 #define RIPPLE_LEDGER_H
 
-// VFALCO: TODO Get this include out of here!
+// VFALCO TODO Get this include out of here!
 #include "ripple_HashedObject.h"
 
 
@@ -37,14 +37,14 @@ DEFINE_INSTANCE(Ledger);
 
 class SqliteStatement;
 
-// VFALCO: TODO, figure out exactly how this thing works.
+// VFALCO TODO figure out exactly how this thing works.
 //         It seems like some ledger database is stored as a global, static in the
 //         class. But then what is the meaning of a Ledger object? Is this
 //         really two classes in one? StoreOfAllLedgers + SingleLedgerObject?
 //
 class Ledger : public boost::enable_shared_from_this<Ledger>, public IS_INSTANCE(Ledger)
 { // The basic Ledger structure, can be opened, closed, or synching
-    // VFALCO: TODO, eliminate the need for friends
+    // VFALCO TODO eliminate the need for friends
 	friend class TransactionEngine;
 	friend class Transactor;
 public:
@@ -357,7 +357,7 @@ private:
 
 	mutable boost::recursive_mutex mLock;
 
-    // VFALCO: TODO, derive this from beast::Uncopyable
+    // VFALCO TODO derive this from beast::Uncopyable
 	Ledger(const Ledger&);				// no implementation
 	Ledger& operator=(const Ledger&);	// no implementation
 };

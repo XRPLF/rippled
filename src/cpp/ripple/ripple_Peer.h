@@ -23,7 +23,7 @@ public:
                         uint64 id,
                         bool inbound);
 
-    // VFALCO: TODO see if this and below can be private
+    // VFALCO TODO see if this and below can be private
     virtual void handleConnect (const boost::system::error_code& error,
                                 boost::asio::ip::tcp::resolver::iterator it) = 0;
 
@@ -52,7 +52,7 @@ public:
 
 	virtual void punishPeer (LoadType) = 0;
 
-    // VFALCO: NOTE, what's with this odd parameter passing? Why the static member?
+    // VFALCO NOTE what's with this odd parameter passing? Why the static member?
 	static void punishPeer (const boost::weak_ptr<Peer>&, LoadType);
 
 	virtual Json::Value getJson () = 0;

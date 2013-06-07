@@ -24,7 +24,7 @@ class PFRequest;
 
 DEFINE_INSTANCE(InfoSub);
 
-// VFALCO: TODO Move InfoSub to a separate file
+// VFALCO TODO Move InfoSub to a separate file
 class InfoSub : public IS_INSTANCE(InfoSub)
 {
 public:
@@ -74,7 +74,7 @@ public:
 	}
 
 protected:
-    // VFALCO: TODO, make accessor for this member
+    // VFALCO TODO make accessor for this member
 	boost::mutex								mLockInfo;
 
 private:

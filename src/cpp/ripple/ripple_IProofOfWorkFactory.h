@@ -11,7 +11,7 @@ enum POWResult
 	powTOOEASY	= 5, // the difficulty increased too much while you solved it
 };
 
-// VFALCO: TODO move this to the class as a static member and rename it
+// VFALCO TODO move this to the class as a static member and rename it
 bool powResultInfo (POWResult powCode, std::string& strToken, std::string& strHuman);
 
 class IProofOfWorkFactory
@@ -25,7 +25,7 @@ public:
 
     virtual ~IProofOfWorkFactory () { }
 
-    // VFALCO: TODO which members can be const?
+    // VFALCO TODO which members can be const?
 
 	virtual ProofOfWork getProof () = 0;
 	

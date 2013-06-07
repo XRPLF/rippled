@@ -1,6 +1,6 @@
 
 
-// VFALCO: TODO, remove this when it's safe to do so.
+// VFALCO TODO remove this when it's safe to do so.
 #ifdef __APPLICATION__
 #error Including Application.h is disallowed!
 #endif

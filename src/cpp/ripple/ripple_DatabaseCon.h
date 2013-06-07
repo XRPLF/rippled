@@ -1,7 +1,7 @@
 #ifndef RIPPLE_DATABASECON_H
 #define RIPPLE_DATABASECON_H
 
-// VFALCO: NOTE This looks like a pointless class. Figure out
+// VFALCO NOTE This looks like a pointless class. Figure out
 //         what purpose it is really trying to serve and do it better.
 class DatabaseCon
 {
@@ -12,10 +12,10 @@ public:
 	boost::recursive_mutex& getDBLock()		{ return mLock; }
 	static int getCount()					{ return sCount; }
 
-// VFALCO: TODO, change "protected" to "private" throughout the code
+// VFALCO TODO change "protected" to "private" throughout the code
 private:
 	Database*				mDatabase;
-    // VFALCO: TODO replace these with a single atomic counter.
+    // VFALCO TODO replace these with a single atomic counter.
 	boost::recursive_mutex	mLock;
 	static int				sCount;
 };

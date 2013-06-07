@@ -19,11 +19,11 @@
 #ifndef RIPPLE_PLATFORMMACROS_H
 #define RIPPLE_PLATFORMMACROS_H
 
-// VFALCO: TODO Clean this up
+// VFALCO TODO Clean this up
 
 #if (!defined(FORCE_NO_C11X) && (__cplusplus > 201100L)) || defined(FORCE_C11X)
 
-// VFALCO: TODO, replace BIND_TYPE with a namespace lift
+// VFALCO TODO replace BIND_TYPE with a namespace lift
 
 #define C11X
 #include			 	<functional>
@@ -49,7 +49,7 @@
 
 #endif
 
-// VFALCO: TODO, Clean this junk up
+// VFALCO TODO Clean this junk up
 #define nothing()			do {} while (0)
 #define fallthru()			do {} while (0)
 #define NUMBER(x)			(sizeof(x)/sizeof((x)[0]))

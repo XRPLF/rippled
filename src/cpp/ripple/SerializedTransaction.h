@@ -1,7 +1,7 @@
 #ifndef __SERIALIZEDTRANSACTION__
 #define __SERIALIZEDTRANSACTION__
 
-// VFALCO: TODO, eliminate these macros
+// VFALCO TODO eliminate these macros
 
 #define TXN_SQL_NEW			'N'
 #define TXN_SQL_CONFLICT	'C'

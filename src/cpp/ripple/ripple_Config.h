@@ -1,7 +1,7 @@
 #ifndef RIPPLE_CONFIG_H
 #define RIPPLE_CONFIG_H
 
-// VFALCO: NOTE, Set this to 1 to enable code which is unnecessary
+// VFALCO NOTE Set this to 1 to enable code which is unnecessary
 #define ENABLE_INSECURE				0
 
 #define CONFIG_FILE_NAME			SYSTEM_NAME "d.cfg"	// rippled.cfg
@@ -55,8 +55,8 @@ struct SizedItem
 	int				sizes[5];
 };
 
-// VFALCO: TODO, rename all fields to not look like macros, and be more verbose
-// VFALCO: TODO, document every member
+// VFALCO TODO rename all fields to not look like macros, and be more verbose
+// VFALCO TODO document every member
 class Config
 {
 public:

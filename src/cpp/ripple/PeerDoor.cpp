@@ -97,7 +97,7 @@ void initSSLContext (boost::asio::ssl::context& context,
 
 	if (!chain_file.empty())
 	{
-        // VFALCO: Replace fopen() with RAII
+        // VFALCO Replace fopen() with RAII
 		FILE *f = fopen(chain_file.c_str(), "r");
 		if (!f)
 			throw std::runtime_error("Unable to open chain file");

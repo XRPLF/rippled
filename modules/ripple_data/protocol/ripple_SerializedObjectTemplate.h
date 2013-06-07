@@ -5,7 +5,7 @@
 
 /** Flags for elements in a SerializedObjectTemplate.
 */
-// VFALCO: NOTE, these don't look like bit-flags...
+// VFALCO NOTE these don't look like bit-flags...
 enum SOE_Flags
 {
 	SOE_INVALID  = -1,

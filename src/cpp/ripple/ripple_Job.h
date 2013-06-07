@@ -36,19 +36,19 @@ enum JobType
 	jtHO_WRITE		= 31,
 }; // CAUTION: If you add new types, add them to JobType.cpp too
 
-// VFALCO: TODO, move this into the enum so it calculates itself?
+// VFALCO TODO move this into the enum so it calculates itself?
 #define NUM_JOB_TYPES 48 // why 48 and not 32?
 
 class Job
 {
 public:
 
-    // VFALCO: TODO, find out why these extra constructors are needed
+    // VFALCO TODO find out why these extra constructors are needed
 	Job();
 
 	Job (JobType type, uint64 index);
 
-    // VFALCO: TODO, try to remove the dependency on LoadMonitor.
+    // VFALCO TODO try to remove the dependency on LoadMonitor.
 	Job (JobType type,
          std::string const& name,
          uint64 index,
@@ -73,7 +73,7 @@ private:
 	JobType						mType;
 	uint64						mJobIndex;
 	FUNCTION_TYPE <void (Job&)>	mJob;
-    // VFALCO: TODO, why is this called mLoadMonitor if the type is LoadEvent pointer?
+    // VFALCO TODO why is this called mLoadMonitor if the type is LoadEvent pointer?
 	LoadEvent::pointer			mLoadMonitor;
 	std::string					mName;
 };

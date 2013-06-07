@@ -11,7 +11,7 @@ LoadMonitor::LoadMonitor ()
 {
 }
 
-// VFALCO: NOTE WHY do we need "the mutex?" This dependence on
+// VFALCO NOTE WHY do we need "the mutex?" This dependence on
 //         a hidden global, especially a synchronization primitive,
 //         is a flawed design.
 //         It's not clear exactly which data needs to be protected.
@@ -21,7 +21,7 @@ void LoadMonitor::update ()
 {
 	int now = UptimeTimer::getInstance().getElapsedSeconds ();
 
-    // VFALCO: TODO stop returning from the middle of functions.
+    // VFALCO TODO stop returning from the middle of functions.
 
 	if (now == mLastUpdate) // current
 		return;
@@ -34,7 +34,7 @@ void LoadMonitor::update ()
 		mLatencyMSAvg = 0;
 		mLatencyMSPeak = 0;
 		mLastUpdate = now;
-        // VFALCO: TODO, don't return from the middle...
+        // VFALCO TODO don't return from the middle...
 		return;
 	}
 

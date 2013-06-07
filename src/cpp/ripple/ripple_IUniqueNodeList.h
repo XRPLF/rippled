@@ -14,19 +14,19 @@ public:
 		vsWeb		= 'W',
 	} validatorSource;
 
-    // VFALCO: TODO, rename this to use the right coding style
+    // VFALCO TODO rename this to use the right coding style
     typedef long score;
 
 public:
-    // VFALCO: TODO, make this not use boost::asio...
+    // VFALCO TODO make this not use boost::asio...
 	static IUniqueNodeList* New (boost::asio::io_service& io_service);
 
     virtual ~IUniqueNodeList () { }
 
-    // VFALCO: TODO, Roll this into the constructor so there is one less state.
+    // VFALCO TODO Roll this into the constructor so there is one less state.
 	virtual void start () = 0;
 
-    // VFALCO: TODO, rename all these, the "node" prefix is redundant (lol)
+    // VFALCO TODO rename all these, the "node" prefix is redundant (lol)
 	virtual void nodeAddPublic (const RippleAddress& naNodePublic, validatorSource vsWhy, const std::string& strComment) = 0;
 	virtual void nodeAddDomain(std::string strDomain, validatorSource vsWhy, const std::string& strComment="") = 0;
 	virtual void nodeRemovePublic(const RippleAddress& naNodePublic) = 0;

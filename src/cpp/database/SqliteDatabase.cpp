@@ -124,7 +124,7 @@ int SqliteDatabase::getNumRowsAffected()
 	return(0);
 }
 
-// VFALCO: TODO, This must be fixed!!! return value needs to be int64
+// VFALCO TODO This must be fixed!!! return value needs to be int64
 //
 int SqliteDatabase::getLastInsertID()
 {

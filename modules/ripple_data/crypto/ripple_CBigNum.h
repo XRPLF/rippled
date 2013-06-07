@@ -51,7 +51,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-// VFALCO: TODO figure out a way to remove the dependency on openssl in the
+// VFALCO TODO figure out a way to remove the dependency on openssl in the
 //		   header. Maybe rewrite this to use cryptopp.
 
 class CBigNum : public BIGNUM
@@ -130,7 +130,7 @@ bool operator>(const CBigNum& a, const CBigNum& b);
 
 //------------------------------------------------------------------------------
 
-// VFALCO: NOTE, this seems as good a place as any for this.
+// VFALCO NOTE this seems as good a place as any for this.
 
 // Here's the old implementation using macros, in case something broke
 //#if (ULONG_MAX > UINT_MAX)
@@ -140,7 +140,7 @@ bool operator>(const CBigNum& a, const CBigNum& b);
 //#define BN_div_word64(bn, word) BN_div_word(bn, word)
 //#endif
 
-// VFALCO: I believe only STAmount uses these
+// VFALCO I believe only STAmount uses these
 extern int BN_add_word64 (BIGNUM *a, uint64 w);
 extern int BN_sub_word64 (BIGNUM *a, uint64 w);
 extern int BN_mul_word64 (BIGNUM *a, uint64 w);

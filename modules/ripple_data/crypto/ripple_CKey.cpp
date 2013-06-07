@@ -4,4 +4,4 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 
-// VFALCO: TODO, move inlined stuff from CKey into here
+// VFALCO TODO move inlined stuff from CKey into here

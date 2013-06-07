@@ -25,7 +25,7 @@ unsigned int const gMaxHTTPHeaderSize = 0x02000000;
 
 std::string gFormatStr("v1");
 
-// VFALCO: TODO, clean up this nonsense
+// VFALCO TODO clean up this nonsense
 std::string FormatFullVersion()
 {
 	return(gFormatStr);

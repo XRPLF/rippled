@@ -1,5 +1,5 @@
 
-// VFALCO: Should rename ContinuousLedgerTiming to LedgerTiming
+// VFALCO Should rename ContinuousLedgerTiming to LedgerTiming
 struct LedgerTimingLog;
 SETUP_LOG (LedgerTimingLog)
 

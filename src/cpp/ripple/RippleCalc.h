@@ -6,7 +6,7 @@
 
 #include "LedgerEntrySet.h"
 
-// VFALCO: TODO, move this to a separate file
+// VFALCO TODO move this to a separate file
 class PaymentNode
 {
 public:
@@ -15,7 +15,7 @@ public:
 	Json::Value						getJson() const;
 
 private:
-    // VFALCO: TODO, remove the need for friend declaration
+    // VFALCO TODO remove the need for friend declaration
 	friend class RippleCalc;
 	friend class PathState;
 

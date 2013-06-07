@@ -186,7 +186,7 @@ public:
 	const vector& getValue() const					{ return value; }
 	vector& getValue()								{ return value; }
 
-    // VFALCO: NOTE as long as we're married to boost why not use boost::iterator_facade?
+    // VFALCO NOTE as long as we're married to boost why not use boost::iterator_facade?
     //
     // vector-like functions
 	void push_back(const STObject& object)			{ value.push_back(object.oClone().release()); }

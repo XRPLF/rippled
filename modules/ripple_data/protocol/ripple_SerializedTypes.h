@@ -1,7 +1,7 @@
 #ifndef RIPPLE_SERIALIZEDTYPES_H
 #define RIPPLE_SERIALIZEDTYPES_H
 
-// VFALCO: TODO, fix this restriction on copy assignment.
+// VFALCO TODO fix this restriction on copy assignment.
 //
 // CAUTION: Do not create a vector (or similar container) of any object derived from
 // SerializedType. Use Boost ptr_* containers. The copy assignment operator of
@@ -25,12 +25,12 @@ enum PathFlags
 	PF_ISSUE			= 0x80,
 };
 
-// VFALCO: TODO, make these non static or otherwise clean constants.
+// VFALCO TODO make these non static or otherwise clean constants.
 static const uint160 u160_zero(0), u160_one(1);
 static inline const uint160& get_u160_zero() { return u160_zero; }
 static inline const uint160& get_u160_one() { return u160_one; }
 
-// VFALCO: TODO, replace these with language constructs, gah!
+// VFALCO TODO replace these with language constructs, gah!
 #define CURRENCY_XRP		get_u160_zero()
 #define CURRENCY_ONE		get_u160_one()					// Used as a place holder.
 #define CURRENCY_BAD		uint160(0x5852500000000000)		// Do not allow XRP as an IOU currency.
@@ -79,7 +79,7 @@ public:
 	virtual bool isDefault() const	{ return true; }
 
 protected:
-    // VFALCO: TODO, make accessors for this
+    // VFALCO TODO make accessors for this
 	SField::ptr	fName;
 
 private:
@@ -476,7 +476,7 @@ private:
 	}
 };
 
-// VFALCO: TODO Make static member accessors for these in STAmount
+// VFALCO TODO Make static member accessors for these in STAmount
 extern const STAmount saZero;
 extern const STAmount saOne;
 
@@ -631,7 +631,7 @@ private:
 class STPathElement
 {
 private:
-    // VFALCO: Remove these friend declarations
+    // VFALCO Remove these friend declarations
     friend class STPathSet;
     friend class STPath;
     friend class Pathfinder;

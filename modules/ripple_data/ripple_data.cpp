@@ -51,7 +51,7 @@
 #include <openssl/rand.h>
 #include <openssl/err.h>
 
-// VFALCO: TODO, fix these warnings!
+// VFALCO TODO fix these warnings!
 #ifdef _MSC_VER
 //#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
 #pragma warning (disable: 4018) // signed/unsigned mismatch
@@ -65,7 +65,7 @@
 #endif
 
 #include "crypto/ripple_Base58.h" // for RippleAddress
-#include "crypto/ripple_CKey.h" // needs RippleAddress VFALCO: TODO, remove this dependency cycle
+#include "crypto/ripple_CKey.h" // needs RippleAddress VFALCO TODO remove this dependency cycle
 #include "crypto/ripple_RFC1751.h"
 
 #include "crypto/ripple_CBigNum.cpp"
@@ -95,7 +95,7 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "protocol/ripple_STAmount.cpp"
 #include "protocol/ripple_STAmountRound.cpp"
 
-// VFALCO: TODO Fix this for SConstruct
+// VFALCO TODO Fix this for SConstruct
 #ifdef _MSC_VER
 #include "ripple.pb.cc" // BROKEN because of SConstruct
 #endif

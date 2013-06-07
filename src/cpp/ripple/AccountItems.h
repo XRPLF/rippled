@@ -26,7 +26,7 @@ public:
 
 	std::vector<unsigned char> getRaw() const;
 
-    // VFALCO: TODO make an accessor for mLedgerEntry so we can change protected to private
+    // VFALCO TODO make an accessor for mLedgerEntry so we can change protected to private
 protected:
 	SerializedLedgerEntry::pointer	mLedgerEntry;
 };

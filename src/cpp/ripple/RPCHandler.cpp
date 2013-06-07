@@ -888,7 +888,7 @@ Json::Value RPCHandler::doProofCreate(Json::Value jvRequest, int& cost, ScopedLo
 
 	if (jvRequest.isMember("difficulty") || jvRequest.isMember("secret"))
 	{
-        // VFALCO: TODO, why aren't we using the app's factory?
+        // VFALCO TODO why aren't we using the app's factory?
         beast::ScopedPointer <IProofOfWorkFactory> pgGen (IProofOfWorkFactory::New ());
 
 		if (jvRequest.isMember("difficulty"))
@@ -973,7 +973,7 @@ Json::Value RPCHandler::doProofVerify(Json::Value jvRequest, int& cost, ScopedLo
 	POWResult		prResult;
 	if (jvRequest.isMember("difficulty") || jvRequest.isMember("secret"))
 	{
-        // VFALCO: TODO, why aren't we using the app's factory?
+        // VFALCO TODO why aren't we using the app's factory?
         beast::ScopedPointer <IProofOfWorkFactory> pgGen (IProofOfWorkFactory::New ());
 
 		if (jvRequest.isMember("difficulty"))

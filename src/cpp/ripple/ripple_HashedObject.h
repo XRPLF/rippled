@@ -25,7 +25,7 @@ DEFINE_INSTANCE (HashedObject);
     @note No checking is performed to make sure the hash matches the data.
     @see SHAMap
 */
-// VFALCO: TODO, consider making the instance a private member of SHAMap
+// VFALCO TODO consider making the instance a private member of SHAMap
 //         since its the primary user.
 //
 class HashedObject : private IS_INSTANCE (HashedObject)
@@ -81,7 +81,7 @@ public:
 
     /** Retrieve the ledger index in which this object appears.
     */
-    // VFALCO: TODO rename to getLedgerIndex or getLedgerId
+    // VFALCO TODO rename to getLedgerIndex or getLedgerId
     uint32 getIndex () const
     {
         return mLedgerIndex;

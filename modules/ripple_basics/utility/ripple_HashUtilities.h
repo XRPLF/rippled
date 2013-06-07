@@ -1,9 +1,9 @@
 #ifndef RIPPLE_HASHUTILITIES_H
 #define RIPPLE_HASHUTILITIES_H
 
-// VFALCO: NOTE, these came from BitcoinUtil.h
+// VFALCO NOTE these came from BitcoinUtil.h
 
-// VFALCO: TODO, Rewrite the callers so we don't need templates,
+// VFALCO TODO Rewrite the callers so we don't need templates,
 //		   then define these in a .cpp so they are no longer inline.
 //
 template<typename T1>

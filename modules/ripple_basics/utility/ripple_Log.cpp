@@ -37,7 +37,7 @@ std::vector< std::pair<std::string, std::string> > LogPartition::getSeverities()
 
 //------------------------------------------------------------------------------
 
-// VFALCO: TODO, remove original code once we know the replacement is correct.
+// VFALCO TODO remove original code once we know the replacement is correct.
 // Original code
 /*
 std::string ls = oss.str();

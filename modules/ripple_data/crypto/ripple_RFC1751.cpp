@@ -2,7 +2,7 @@
 // RFC 1751 code converted to C++/Boost.
 //
 
-// VFALCO: TODO, move these
+// VFALCO TODO move these
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/predicate.hpp>

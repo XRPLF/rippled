@@ -12,7 +12,7 @@
 
 namespace po = boost::program_options;
 
-// VFALCO: TODO make these singletons that initialize statically
+// VFALCO TODO make these singletons that initialize statically
 extern void TFInit();
 extern void LEFInit();
 
@@ -213,7 +213,7 @@ int main(int argc, char* argv[])
 
 	InstanceType::multiThread();
 
-    // VFALCO: TODO make these singletons that initialize statically
+    // VFALCO TODO make these singletons that initialize statically
 	TFInit();
 	LEFInit();
 

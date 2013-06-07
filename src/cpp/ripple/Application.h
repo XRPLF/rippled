@@ -21,7 +21,7 @@
 
 #include "ripple_DatabaseCon.h"
 
-// VFALCO: TODO, Fix forward declares required for header dependency loops
+// VFALCO TODO Fix forward declares required for header dependency loops
 class IFeatures;
 class IFeeVote;
 class IHashRouter;
@@ -71,8 +71,8 @@ public:
 	IProofOfWorkFactory& getProofOfWorkFactory()    { return *mProofOfWorkFactory; }
 	IPeers& getPeers ()                             { return *mPeers; }
 
-    // VFALCO: TODO, Move these to the .cpp
-    bool running()									{ return mTxnDB != NULL; } // VFALCO: TODO, replace with nullptr when beast is available
+    // VFALCO TODO Move these to the .cpp
+    bool running()									{ return mTxnDB != NULL; } // VFALCO TODO replace with nullptr when beast is available
 	bool getSystemTimeOffset(int& offset)			{ return mSNTPClient.getOffset(offset); }
 
 	DatabaseCon* getRpcDB()			{ return mRpcDB; }
@@ -118,7 +118,7 @@ private:
 	TXQueue					mTxnQueue;
 	OrderBookDB				mOrderBookDB;
 
-    // VFALCO: Clean stuff
+    // VFALCO Clean stuff
     beast::ScopedPointer <IFeatures> mFeatures;
 	beast::ScopedPointer <IFeeVote> mFeeVote;
     beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
@@ -127,7 +127,7 @@ private:
 	beast::ScopedPointer <IUniqueNodeList> mUNL;
 	beast::ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
 	beast::ScopedPointer <IPeers> mPeers;
-    // VFALCO: End Clean stuff
+    // VFALCO End Clean stuff
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
 

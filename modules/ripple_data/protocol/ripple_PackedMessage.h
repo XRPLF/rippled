@@ -25,7 +25,7 @@ public:
 
     /** Retrieve the packed message data.
     */
-    // VFALCO: TODO, shouldn't this be const?
+    // VFALCO TODO shouldn't this be const?
 	std::vector <uint8_t>& getBuffer()
     {
         return mBuffer;

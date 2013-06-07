@@ -6,7 +6,7 @@ class Features;
 class FeeVote : public IFeeVote
 {
 private:
-    // VFALCO: TODO, rename template parameter (wtf, looks like a macro)
+    // VFALCO TODO rename template parameter (wtf, looks like a macro)
     template <typename INT>
     class VotableInteger
     {

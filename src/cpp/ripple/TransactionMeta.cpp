@@ -1,5 +1,5 @@
 
-// VFALCO: TODO, rename class to TransactionMeta
+// VFALCO TODO rename class to TransactionMeta
 
 SETUP_LOG (TransactionMetaSet)
 

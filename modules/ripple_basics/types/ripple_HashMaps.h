@@ -11,7 +11,7 @@
     done by seeding the hashing function with a random number generated
     at program startup.
 */
-// VFALCO: TODO derive from Uncopyable
+// VFALCO TODO derive from Uncopyable
 class HashMaps // : beast::Uncopayble
 {
 public:
@@ -88,7 +88,7 @@ private:
     public:
         NonceHolder ()
         {
-            // VFALCO: NOTE, this can be dangerous if T is an object type
+            // VFALCO NOTE this can be dangerous if T is an object type
             RandomNumbers::getInstance ().fill (&m_nonce);
         }
 

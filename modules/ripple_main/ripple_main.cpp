@@ -66,7 +66,7 @@
 
 //------------------------------------------------------------------------------
 
-// VFALCO: TODO, prepare a unity header for LevelDB
+// VFALCO TODO prepare a unity header for LevelDB
 #include "leveldb/cache.h"
 #include "leveldb/filter_policy.h"
 #include "leveldb/db.h"
@@ -74,7 +74,7 @@
 
 //------------------------------------------------------------------------------
 
-// VFALCO: TODO, fix these warnings!
+// VFALCO TODO fix these warnings!
 #ifdef _MSC_VER
 //#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
 #pragma warning (disable: 4018) // signed/unsigned mismatch
@@ -83,7 +83,7 @@
 #pragma warning (disable: 4535) // call requires /EHa
 #endif
 
-// VFALCO: NOTE, these includes generate warnings, unfortunately.
+// VFALCO NOTE these includes generate warnings, unfortunately.
 #include "ripple_main.h"
 #include "../ripple_data/ripple_data.h"
 
@@ -97,7 +97,7 @@
 
 //------------------------------------------------------------------------------
 //
-// VFALCO: BEGIN CLEAN AREA
+// VFALCO BEGIN CLEAN AREA
 
 #include "src/cpp/ripple/ripple_Config.h"
 #include "src/cpp/ripple/ripple_DatabaseCon.h"
@@ -114,24 +114,24 @@
 #include "src/cpp/ripple/ripple_IFeeVote.h"
 #include "src/cpp/ripple/ripple_IHashRouter.h"
 #include "src/cpp/ripple/ripple_ILoadFeeTrack.h"
-#include "src/cpp/ripple/ripple_Peer.h" // VFALCO: TODO Rename to IPeer
+#include "src/cpp/ripple/ripple_Peer.h" // VFALCO TODO Rename to IPeer
 #include "src/cpp/ripple/ripple_IPeers.h"
 #include "src/cpp/ripple/ripple_IProofOfWorkFactory.h"
 #include "src/cpp/ripple/ripple_IUniqueNodeList.h"
 #include "src/cpp/ripple/ripple_IValidations.h"
 
-// VFALCO: END CLEAN AREA
+// VFALCO END CLEAN AREA
 //
 //------------------------------------------------------------------------------
 
-// VFALCO: NOTE, Order matters! If you get compile errors, move just 1
+// VFALCO NOTE Order matters! If you get compile errors, move just 1
 //               include upwards as little as possible to fix it.
 //            
 #include "src/cpp/ripple/ScriptData.h"
 #include "src/cpp/ripple/Contract.h"
 #include "src/cpp/ripple/Interpreter.h"
 #include "src/cpp/ripple/Operation.h"
-// VFALCO: NOTE, Order matters
+// VFALCO NOTE Order matters
 #include "src/cpp/ripple/AcceptedLedger.h"
 #include "src/cpp/ripple/AccountItems.h"
 #include "src/cpp/ripple/AccountSetTransactor.h"
@@ -198,7 +198,7 @@
 
 //------------------------------------------------------------------------------
 
-// VFALCO: TODO, figure out who needs these and move to a sensible private header.
+// VFALCO TODO figure out who needs these and move to a sensible private header.
 static const uint64 tenTo14 = 100000000000000ull;
 static const uint64 tenTo14m1 = tenTo14 - 1;
 static const uint64 tenTo17 = tenTo14 * 1000;
@@ -208,7 +208,7 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 // Generate DH for SSL connection.
 static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 {
-// VFALCO: TODO, eliminate this horrendous dependency on theApp and Wallet
+// VFALCO TODO eliminate this horrendous dependency on theApp and Wallet
 	return 512 == iKeyLength ? theApp->getWallet().getDh512() : theApp->getWallet().getDh1024();
 }
 

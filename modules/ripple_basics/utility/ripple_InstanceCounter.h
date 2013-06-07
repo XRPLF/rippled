@@ -1,11 +1,11 @@
 #ifndef RIPPLE_INSTANCECOUNTER_H
 #define RIPPLE_INSTANCECOUNTER_H
 
-// VFALCO: TODO Clean up this junk, remove the macros, replace
+// VFALCO TODO Clean up this junk, remove the macros, replace
 //		   with a robust leak checker when we have atomics.
 //
 
-// VFALCO: TODO, swap these. Declaration means header, definition means .cpp!!!
+// VFALCO TODO swap these. Declaration means header, definition means .cpp!!!
 #define DEFINE_INSTANCE(x)								\
 	extern InstanceType IT_##x;							\
 	class Instance_##x : private Instance				\
@@ -23,7 +23,7 @@
 
 #define IS_INSTANCE(x) Instance_##x
 
-// VFALCO: NOTE, that this is just a glorified leak checker with an awkward API
+// VFALCO NOTE that this is just a glorified leak checker with an awkward API
 class InstanceType
 {
 protected:
@@ -65,7 +65,7 @@ public:
 	{
 		if (sMultiThreaded)
 		{
-			// VFALCO: NOTE, Junk that will go away with atomics
+			// VFALCO NOTE Junk that will go away with atomics
 			mLock.lock();
 			++mInstances;
 			mLock.unlock();

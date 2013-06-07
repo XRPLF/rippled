@@ -32,7 +32,7 @@
 #ifndef RIPPLE_JSON_H
 #define RIPPLE_JSON_H
 
-// VFALCO: TODO Remove unneeded includes
+// VFALCO TODO Remove unneeded includes
 #include <cassert>
 #include <cstring>
 #include <cstdlib>

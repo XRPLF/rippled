@@ -16,7 +16,7 @@
 */
 //==============================================================================
 
-// VFALCO: TODO, use VFLIB_MSVC macro instead
+// VFALCO TODO use VFLIB_MSVC macro instead
 #if _MSC_VER
 
 void setCallingThreadName (char const* threadName)

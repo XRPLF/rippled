@@ -216,7 +216,7 @@ void JobQueue::IOThread(boost::mutex::scoped_lock& sl)
 void JobQueue::threadEntry()
 {
 
-    // VFALCO: TODO, Replace this mutex nonsense
+    // VFALCO TODO Replace this mutex nonsense
     //
 	boost::mutex::scoped_lock sl(mJobLock);
 	while (1)

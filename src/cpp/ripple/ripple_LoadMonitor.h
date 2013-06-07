@@ -18,7 +18,7 @@ public:
 
 	bool isOverTarget(uint64 avg, uint64 peak);
 
-    // VFALCO: TODO, make this return the values in a struct.
+    // VFALCO TODO make this return the values in a struct.
 	void getCountAndLatency (uint64& count, uint64& latencyAvg, uint64& latencyPeak, bool& isOver);
 
     bool isOver ();

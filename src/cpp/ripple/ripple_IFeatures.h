@@ -69,7 +69,7 @@ public:
 	virtual void setEnabledFeatures(const std::vector<uint256>& features) = 0;
 	virtual void setSupportedFeatures(const std::vector<uint256>& features) = 0;
 
-    // VFALCO: NOTE these can't possibly be used since featureList_t was/is private.
+    // VFALCO NOTE these can't possibly be used since featureList_t was/is private.
     /*
 	featureList_t getVetoedFeatures() = 0;
 	featureList_t getEnabledFeatures() = 0;

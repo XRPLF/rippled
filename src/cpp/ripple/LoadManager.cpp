@@ -194,7 +194,7 @@ void LoadManager::threadEntry()
 {
 	setCallingThreadName ("loadmgr");
 
-    // VFALCO: TODO replace this with a beast Time object
+    // VFALCO TODO replace this with a beast Time object
 	boost::posix_time::ptime t = boost::posix_time::microsec_clock::universal_time();
 	while (1)
 	{
@@ -221,7 +221,7 @@ void LoadManager::threadEntry()
 
 		}
 
-        // VFALCO: TODO Eliminate the dependence on the Application object by
+        // VFALCO TODO Eliminate the dependence on the Application object by
         //         constructing with the job queue and the fee tracker.
 		bool change;
 		if (theApp->getJobQueue().isOverloaded())
@@ -236,7 +236,7 @@ void LoadManager::threadEntry()
 
         if (change)
         {
-            // VFALCO: TODO replace this with a Listener / observer and subscribe in NetworkOPs or Application
+            // VFALCO TODO replace this with a Listener / observer and subscribe in NetworkOPs or Application
 			theApp->getOPs().reportFeeChange();
         }
 

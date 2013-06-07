@@ -39,11 +39,11 @@ bool RandomNumbers::initialize ()
 
 void RandomNumbers::fillBytes (void* destinationBuffer, int numberOfBytes)
 {
-    // VFALCO: NOTE this assert is here to remind us that the code is not yet
+    // VFALCO NOTE this assert is here to remind us that the code is not yet
     //         thread safe.
     assert (m_initialized);
 
-    // VFALCO: NOTE When a spinlock is available in beast, use it here.
+    // VFALCO NOTE When a spinlock is available in beast, use it here.
     if (! m_initialized)
     {
         if (! initialize ())
@@ -75,7 +75,7 @@ RandomNumbers& RandomNumbers::getInstance ()
 
 //------------------------------------------------------------------------------
 
-// VFALCO: TODO replace WIN32 macro
+// VFALCO TODO replace WIN32 macro
 
 #ifdef WIN32
 
@@ -160,7 +160,7 @@ bool RandomNumbers::platformAddEntropy ()
 
 void RandomNumbers::platformAddPerformanceMonitorEntropy ()
 {
-	// VFALCO: This is how we simulate local functions
+	// VFALCO This is how we simulate local functions
 	struct
 	{
 		int64 operator() () const
@@ -175,7 +175,7 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
 		{
 			struct
 			{
-				// VFALCO: TODO, clean this up
+				// VFALCO TODO clean this up
 				int64 operator() () const
 				{
 					int64 nCounter = 0;
