@@ -412,9 +412,21 @@ void PeerImp::handleConnect(const boost::system::error_code& error, boost::asio:
 // - We don't bother remembering the inbound IP or port.  Only useful for debugging.
 void PeerImp::connected(const boost::system::error_code& error)
 {
-	boost::asio::ip::tcp::endpoint	ep		= getSocket().remote_endpoint();
-	int								iPort	= ep.port();
-	std::string						strIp	= ep.address().to_string();
+	boost::asio::ip::tcp::endpoint	ep;
+	int								iPort;
+	std::string						strIp;
+
+	try
+	{
+		ep		= getSocket().remote_endpoint();
+		iPort 	= ep.port();
+		strIp	= ep.address().to_string();
+	}
+	catch (...)
+	{
+		detach("edc", false);
+		return;
+	}
 
 	mClientConnect	= false;
 	mIpPortConnect	= make_pair(strIp, iPort);
