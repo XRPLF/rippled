@@ -40,7 +40,7 @@ CBase58Data::~CBase58Data()
         memset(&vchData[0], 0, vchData.size());
 }
 
-void CBase58Data::SetData(int nVersionIn, const std::vector<unsigned char>& vchDataIn)
+void CBase58Data::SetData(int nVersionIn, Blob const& vchDataIn)
 {
 	nVersion    = nVersionIn;
 	vchData	    = vchDataIn;
@@ -61,7 +61,7 @@ void CBase58Data::SetData(int nVersionIn, const unsigned char *pbegin, const uns
 
 bool CBase58Data::SetString(const char* psz, unsigned char version, const char* pAlphabet)
 {
-    std::vector<unsigned char> vchTemp;
+    Blob vchTemp;
     Base58::decodeWithCheck (psz, vchTemp, pAlphabet);
     if (vchTemp.empty() || vchTemp[0] != version)
     {
@@ -84,7 +84,7 @@ bool CBase58Data::SetString(const std::string& str, unsigned char version)
 
 std::string CBase58Data::ToString() const
 {
-    std::vector<unsigned char> vch(1, nVersion);
+    Blob vch(1, nVersion);
 
 	vch.insert(vch.end(), vchData.begin(), vchData.end());
 

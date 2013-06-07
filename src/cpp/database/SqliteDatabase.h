@@ -52,7 +52,7 @@ public:
 	bool getBool(int colIndex);
 	// returns amount stored in buf
 	int getBinary(int colIndex,unsigned char* buf,int maxSize);
-	std::vector<unsigned char> getBinary(int colIndex);
+	Blob getBinary(int colIndex);
 	uint64 getBigInt(int colIndex);
 
 	sqlite3* peekConnection() { return mConnection; }
@@ -86,7 +86,7 @@ public:
 	// positions start at 1
 	int bind(int position, const void *data, int length);
 	int bindStatic(int position, const void *data, int length);
-	int bindStatic(int position, const std::vector<unsigned char>& value);
+	int bindStatic(int position, Blob const& value);
 
 	int bind(int position, const std::string& value);
 	int bindStatic(int position, const std::string& value);
@@ -98,7 +98,7 @@ public:
 	int size(int column);
 
 	const void* peekBlob(int column);
-	std::vector<unsigned char> getBlob(int column);
+	Blob getBlob(int column);
 
 	std::string getString(int column);
 	const char* peekString(int column);

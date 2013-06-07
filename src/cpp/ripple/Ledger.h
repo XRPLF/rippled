@@ -76,7 +76,7 @@ public:
 		uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution,
 		uint32 ledgerSeq, bool& loaded); // used for database ledgers
 
-	Ledger(const std::vector<unsigned char>& rawLedger, bool hasPrefix);
+	Ledger(Blob const& rawLedger, bool hasPrefix);
 	Ledger(const std::string& rawLedger, bool hasPrefix);
 
 	Ledger(bool dummy, Ledger& previous);	// ledger after this one

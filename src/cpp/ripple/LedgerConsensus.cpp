@@ -190,7 +190,7 @@ void LedgerConsensus::checkOurValidation()
 	v->sign(signingHash, mValPrivate);
 	theApp->getHashRouter ().addSuppression (signingHash);
 	theApp->getValidations().addValidation(v, "localMissing");
-	std::vector<unsigned char> validation = v->getSigned();
+	Blob validation = v->getSigned();
 	ripple::TMValidation val;
 	val.set_validation(&validation[0], validation.size());
 #if 0
@@ -824,15 +824,15 @@ void LedgerConsensus::propose()
 	prop.set_proposeseq(mOurPosition->getProposeSeq());
 	prop.set_closetime(mOurPosition->getCloseTime());
 
-	std::vector<unsigned char> pubKey = mOurPosition->getPubKey();
-	std::vector<unsigned char> sig = mOurPosition->sign();
+	Blob pubKey = mOurPosition->getPubKey();
+	Blob sig = mOurPosition->sign();
 	prop.set_nodepubkey(&pubKey[0], pubKey.size());
 	prop.set_signature(&sig[0], sig.size());
 	theApp->getPeers().relayMessage(NULL,
 		boost::make_shared<PackedMessage>(prop, ripple::mtPROPOSE_LEDGER));
 }
 
-void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vector<unsigned char>& tx)
+void LedgerConsensus::addDisputedTransaction(const uint256& txID, Blob const& tx)
 {
 	if (mDisputes.find(txID) != mDisputes.end())
 		return;
@@ -945,7 +945,7 @@ bool LedgerConsensus::peerHasSet(Peer::ref peer, const uint256& hashSet, ripple:
 }
 
 SMAddNode LedgerConsensus::peerGaveNodes(Peer::ref peer, const uint256& setHash,
-	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
+	const std::list<SHAMapNode>& nodeIDs, const std::list< Blob >& nodeData)
 {
 	boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(setHash);
 	if (acq == mAcquiring.end())
@@ -1227,7 +1227,7 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 		theApp->getHashRouter ().addSuppression (signingHash); // suppress it if we receive it
 		theApp->getValidations().addValidation(v, "local");
 		theApp->getOPs().setLastValidation(v);
-		std::vector<unsigned char> validation = v->getSigned();
+		Blob validation = v->getSigned();
 		ripple::TMValidation val;
 		val.set_validation(&validation[0], validation.size());
 		int j = theApp->getPeers().relayMessage(NULL,

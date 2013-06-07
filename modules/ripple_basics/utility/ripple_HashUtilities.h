@@ -51,7 +51,7 @@ inline uint256 SHA256Hash(const T1 p1begin, const T1 p1end,
 	return hash2;
 }
 
-inline uint160 Hash160(const std::vector<unsigned char>& vch)
+inline uint160 Hash160(Blob const& vch)
 {
 	uint256 hash1;
 	SHA256(&vch[0], vch.size(), (unsigned char*)&hash1);

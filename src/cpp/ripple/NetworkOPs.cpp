@@ -958,7 +958,7 @@ void NetworkOPs::takePosition(int seq, SHAMap::ref position)
 }
 
 SMAddNode NetworkOPs::gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
-	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
+	const std::list<SHAMapNode>& nodeIDs, const std::list< Blob >& nodeData)
 {
 	if (!haveConsensusObject())
 	{
@@ -1164,7 +1164,7 @@ std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
 		SQL_FOREACH(db, sql)
 		{
 			int txnSize = 2048;
-			std::vector<unsigned char> rawTxn(txnSize);
+			Blob rawTxn(txnSize);
 			txnSize = db->getBinary("RawTxn", &rawTxn[0], rawTxn.size());
 			if (txnSize > rawTxn.size())
 			{
@@ -1175,7 +1175,7 @@ std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB(
 				rawTxn.resize(txnSize);
 
 			int metaSize = 2048;
-			std::vector<unsigned char> rawMeta(metaSize);
+			Blob rawMeta(metaSize);
 			metaSize = db->getBinary("TxnMeta", &rawMeta[0], rawMeta.size());
 			if (metaSize > rawMeta.size())
 			{
@@ -2095,12 +2095,12 @@ void NetworkOPs::sweepFetchPack()
 	mFetchPack.sweep();
 }
 
-void NetworkOPs::addFetchPack(const uint256& hash, boost::shared_ptr< std::vector<unsigned char> >& data)
+void NetworkOPs::addFetchPack(const uint256& hash, boost::shared_ptr< Blob >& data)
 {
 	mFetchPack.canonicalize(hash, data, false);
 }
 
-bool NetworkOPs::getFetchPack(const uint256& hash, std::vector<unsigned char>& data)
+bool NetworkOPs::getFetchPack(const uint256& hash, Blob & data)
 {
 	bool ret = mFetchPack.retrieve(hash, data);
 	if (!ret)

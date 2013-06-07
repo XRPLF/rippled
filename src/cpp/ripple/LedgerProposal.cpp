@@ -66,9 +66,9 @@ void LedgerProposal::bowOut()
 	mProposeSeq		= seqLeave;
 }
 
-std::vector<unsigned char> LedgerProposal::sign(void)
+Blob LedgerProposal::sign(void)
 {
-	std::vector<unsigned char> ret;
+	Blob ret;
 
 	mPrivateKey.signNodePrivate(getSigningHash(), ret);
 	// XXX If this can fail, find out sooner.

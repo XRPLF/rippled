@@ -40,7 +40,7 @@ void SerializedValidation::sign(const RippleAddress& raPriv)
 void SerializedValidation::sign(uint256& signingHash, const RippleAddress& raPriv)
 {
     signingHash = getSigningHash();
-    std::vector<unsigned char> signature;
+    Blob signature;
     raPriv.signNodePrivate(signingHash, signature);
     setFieldVL(sfSignature, signature);
 }
@@ -96,12 +96,12 @@ bool SerializedValidation::isFull() const
     return (getFlags() & sFullFlag) != 0;
 }
 
-std::vector<unsigned char> SerializedValidation::getSignature() const
+Blob SerializedValidation::getSignature() const
 {
     return getFieldVL(sfSignature);
 }
 
-std::vector<unsigned char> SerializedValidation::getSigned() const
+Blob SerializedValidation::getSigned() const
 {
     Serializer s;
     add(s);

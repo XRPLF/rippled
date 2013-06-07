@@ -3,7 +3,7 @@
 
 SETUP_LOG (TransactionMetaSet)
 
-TransactionMetaSet::TransactionMetaSet(const uint256& txid, uint32 ledger, const std::vector<unsigned char>& vec) :
+TransactionMetaSet::TransactionMetaSet(const uint256& txid, uint32 ledger, Blob const& vec) :
 	mTransactionID(txid), mLedger(ledger), mNodes(sfAffectedNodes, 32)
 {
 	Serializer s(vec);

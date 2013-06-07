@@ -64,7 +64,7 @@ public:
 	SerializedLedgerEntry& peekSLE() { return *mLedgerEntry; }
 	Json::Value getJson(int);
 
-	std::vector<unsigned char> getRaw() const;
+	Blob getRaw() const;
 };
 #endif
 // vim:ts=4

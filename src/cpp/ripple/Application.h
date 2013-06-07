@@ -34,7 +34,7 @@ class IPeers;
 class RPCDoor;
 class PeerDoor;
 
-typedef TaggedCache <uint256, std::vector <unsigned char>, UptimeTimerAdapter> NodeCache;
+typedef TaggedCache <uint256, Blob , UptimeTimerAdapter> NodeCache;
 typedef TaggedCache <uint256, SLE, UptimeTimerAdapter> SLECache;
 
 class Application

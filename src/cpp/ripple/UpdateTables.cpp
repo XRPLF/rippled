@@ -45,7 +45,7 @@ static void addTxnSeqField()
 	uint256 transID;
 	SQL_FOREACH(db, "SELECT TransID,TxnMeta FROM Transactions;")
 	{
-		std::vector<unsigned char> rawMeta;
+		Blob rawMeta;
 		int metaSize = 2048;
 		rawMeta.resize(metaSize);
 		metaSize = db->getBinary("TxnMeta", &*rawMeta.begin(), rawMeta.size());

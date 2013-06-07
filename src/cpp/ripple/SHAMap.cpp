@@ -230,7 +230,7 @@ SHAMapTreeNode* SHAMap::getNodePointer(const SHAMapNode& id, const uint256& hash
 	{
 		if (filter)
 		{
-			std::vector<unsigned char> nodeData;
+			Blob nodeData;
 			if (filter->haveNode(id, hash, nodeData))
 			{
 				SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(
@@ -270,7 +270,7 @@ void SHAMap::trackNewNode(SHAMapTreeNode::pointer& node)
 		(*mDirtyNodes)[*node] = node;
 }
 
-SHAMapItem::SHAMapItem(const uint256& tag, const std::vector<unsigned char>& data)
+SHAMapItem::SHAMapItem(const uint256& tag, Blob const& data)
 	: mTag(tag), mData(data)
 { ; }
 
@@ -773,7 +773,7 @@ void SHAMap::fetchRoot(const uint256& hash, SHAMapSyncFilter* filter)
 	}
 	catch (SHAMapMissingNode&)
 	{
-		std::vector<unsigned char> nodeData;
+		Blob nodeData;
 		if (!filter || !filter->haveNode(SHAMapNode(), hash, nodeData))
 			throw;
 		root = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), nodeData,
@@ -850,7 +850,7 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& nodeID)
 	return node;
 }
 
-bool SHAMap::getPath(const uint256& index, std::vector< std::vector<unsigned char> >& nodes, SHANodeFormat format)
+bool SHAMap::getPath(const uint256& index, std::vector< Blob >& nodes, SHANodeFormat format)
 {
 	// Return the path of nodes to the specified index in the specified format
 	// Return value: true = node present, false = node not present
@@ -912,9 +912,9 @@ void SHAMap::dump(bool hash)
 
 }
 
-static std::vector<unsigned char>IntToVUC(int v)
+static Blob IntToVUC(int v)
 {
-	std::vector<unsigned char> vuc;
+	Blob vuc;
 	for (int i = 0; i < 32; ++i)
 		vuc.push_back(static_cast<unsigned char>(v));
 	return vuc;

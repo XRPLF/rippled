@@ -13,7 +13,7 @@ class Interpreter
 	std::vector<Data::pointer> mStack;
 
 	Contract* mContract;
-	std::vector<unsigned char>* mCode;
+	Blob * mCode;
 	unsigned int mInstructionPointer;
 	int mTotalFee;
 
@@ -44,7 +44,7 @@ public:
 	Interpreter();
 
 	// returns a TransactionEngineResult
-	TER interpret(Contract* contract,const SerializedTransaction& txn,std::vector<unsigned char>& code);
+	TER interpret(Contract* contract,const SerializedTransaction& txn,Blob & code);
 
 	void stop();
 

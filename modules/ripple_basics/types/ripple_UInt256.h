@@ -415,7 +415,7 @@ public:
 			pn[i] = b.pn[i];
 	}
 
-	explicit uint128(const std::vector<unsigned char>& vch)
+	explicit uint128(Blob const& vch)
 	{
 		if (vch.size() == size())
 			memcpy(pn, &vch[0], size());
@@ -472,7 +472,7 @@ public:
 		SetHex(str);
 	}
 
-	explicit uint256(const std::vector<unsigned char>& vch)
+	explicit uint256(Blob const& vch)
 	{
 		if (vch.size() == sizeof(pn))
 			memcpy(pn, &vch[0], sizeof(pn));
@@ -689,7 +689,7 @@ public:
 		SetHex(str);
 	}
 
-	explicit uint160(const std::vector<unsigned char>& vch)
+	explicit uint160(Blob const& vch)
 	{
 		if (vch.size() == sizeof(pn))
 			memcpy(pn, &vch[0], sizeof(pn));

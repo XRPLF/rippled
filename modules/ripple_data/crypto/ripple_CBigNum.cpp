@@ -41,7 +41,7 @@ CBigNum::CBigNum(unsigned int n)	{ BN_init(this); setulong(n); }
 CBigNum::CBigNum(uint64 n)			{ BN_init(this); setuint64(n); }
 CBigNum::CBigNum(uint256 n)			{ BN_init(this); setuint256(n); }
 
-CBigNum::CBigNum(const std::vector<unsigned char>& vch)
+CBigNum::CBigNum(Blob const& vch)
 {
 	BN_init(this);
 	setvch(vch);
@@ -154,9 +154,9 @@ uint256 CBigNum::getuint256()
 	return ret;
 }
 
-void CBigNum::setvch(const std::vector<unsigned char>& vch)
+void CBigNum::setvch(Blob const& vch)
 {
-	std::vector<unsigned char> vch2(vch.size() + 4);
+	Blob vch2(vch.size() + 4);
 	unsigned int nSize = vch.size();
 	// BIGNUM's byte stream format expects 4 bytes of
 	// big endian size data info at the front
@@ -169,12 +169,12 @@ void CBigNum::setvch(const std::vector<unsigned char>& vch)
 	BN_mpi2bn(&vch2[0], vch2.size(), this);
 }
 
-std::vector<unsigned char> CBigNum::getvch() const
+Blob CBigNum::getvch() const
 {
 	unsigned int nSize = BN_bn2mpi(this, NULL);
 	if (nSize < 4)
-		return std::vector<unsigned char>();
-	std::vector<unsigned char> vch(nSize);
+		return Blob ();
+	Blob vch(nSize);
 	BN_bn2mpi(this, &vch[0]);
 	vch.erase(vch.begin(), vch.begin() + 4);
 	reverse(vch.begin(), vch.end());
@@ -184,7 +184,7 @@ std::vector<unsigned char> CBigNum::getvch() const
 CBigNum& CBigNum::SetCompact(unsigned int nCompact)
 {
 	unsigned int nSize = nCompact >> 24;
-	std::vector<unsigned char> vch(4 + nSize);
+	Blob vch(4 + nSize);
 	vch[3] = nSize;
 	if (nSize >= 1) vch[4] = (nCompact >> 16) & 0xff;
 	if (nSize >= 2) vch[5] = (nCompact >> 8) & 0xff;
@@ -196,7 +196,7 @@ CBigNum& CBigNum::SetCompact(unsigned int nCompact)
 unsigned int CBigNum::GetCompact() const
 {
 	unsigned int nSize = BN_bn2mpi(this, NULL);
-	std::vector<unsigned char> vch(nSize);
+	Blob vch(nSize);
 	nSize -= 4;
 	BN_bn2mpi(this, &vch[0]);
 	unsigned int nCompact = nSize << 24;

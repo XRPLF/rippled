@@ -18,7 +18,7 @@ public:
         return mCache.getHitRate();
     }
 
-	bool store (HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
+	bool store (HashedObjectType type, uint32 index, Blob const& data,
 		const uint256& hash)
 	{
 		if (mLevelDB)
@@ -34,12 +34,12 @@ public:
 		return retrieveSQLite(hash);
 	}
 
-	bool storeSQLite(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
+	bool storeSQLite(HashedObjectType type, uint32 index, Blob const& data,
 		const uint256& hash);
 	HashedObject::pointer retrieveSQLite(const uint256& hash);
 	void bulkWriteSQLite(Job&);
 
-	bool storeLevelDB(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
+	bool storeLevelDB(HashedObjectType type, uint32 index, Blob const& data,
 		const uint256& hash);
 	HashedObject::pointer retrieveLevelDB(const uint256& hash);
 	void bulkWriteLevelDB(Job&);

@@ -29,8 +29,8 @@ public:
 	std::string getText() const;
 
 	// outer transaction functions / signature functions
-	std::vector<unsigned char> getSignature() const;
-	void setSignature(const std::vector<unsigned char>& s)	{ setFieldVL(sfTxnSignature, s); }
+	Blob getSignature() const;
+	void setSignature(Blob const& s)	{ setFieldVL(sfTxnSignature, s); }
 	uint256 getSigningHash() const;
 
 	TransactionType getTxnType() const			{ return mType; }
@@ -38,7 +38,7 @@ public:
 	void setTransactionFee(const STAmount& fee)	{ setFieldAmount(sfFee, fee); }
 
 	RippleAddress getSourceAccount() const		{ return getFieldAccount(sfAccount); }
-	std::vector<unsigned char> getSigningPubKey() const { return getFieldVL(sfSigningPubKey); }
+	Blob getSigningPubKey() const { return getFieldVL(sfSigningPubKey); }
 	void setSigningPubKey(const RippleAddress& naSignPubKey);
 	void setSourceAccount(const RippleAddress& naSource);
 	std::string getTransactionType() const { return mFormat->t_name; }

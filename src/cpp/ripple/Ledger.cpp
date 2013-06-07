@@ -90,7 +90,7 @@ Ledger::Ledger(bool /* dummy */, Ledger& prevLedger) :
 	zeroFees();
 }
 
-Ledger::Ledger(const std::vector<unsigned char>& rawLedger, bool hasPrefix) :
+Ledger::Ledger(Blob const& rawLedger, bool hasPrefix) :
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
 	Serializer s(rawLedger);
@@ -272,7 +272,7 @@ Transaction::pointer Ledger::getTransaction(const uint256& transID) const
 		txn = Transaction::sharedTransaction(item->getData(), true);
 	else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
 	{
-		std::vector<unsigned char> txnData;
+		Blob txnData;
 		int txnLength;
 		if (!item->peekSerializer().getVL(txnData, 0, txnLength))
 			return Transaction::pointer();

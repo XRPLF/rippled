@@ -70,7 +70,7 @@ public:
 	CBigNum(unsigned int n);
 	CBigNum(uint64 n);
 	explicit CBigNum(uint256 n);
-	explicit CBigNum(const std::vector<unsigned char>& vch);
+	explicit CBigNum(Blob const& vch);
 	~CBigNum();
 
 	void setuint(unsigned int n);
@@ -81,8 +81,8 @@ public:
 	void setuint64(uint64 n);
 	void setuint256(const uint256& n);
 	uint256 getuint256();
-	void setvch(const std::vector<unsigned char>& vch);
-	std::vector<unsigned char> getvch() const;
+	void setvch(Blob const& vch);
+	Blob getvch() const;
 	CBigNum& SetCompact(unsigned int nCompact);
 	unsigned int GetCompact() const;
 	void SetHex(const std::string& str);

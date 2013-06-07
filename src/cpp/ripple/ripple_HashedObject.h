@@ -39,7 +39,7 @@ public:
     */
 	HashedObject (HashedObjectType type,
                   uint32 ledgerIndex,
-                  std::vector <unsigned char> const& binaryDataToCopy,
+                  Blob const& binaryDataToCopy,
                   uint256 const& hash)
         : mType (type)
         , mHash (hash)
@@ -89,7 +89,7 @@ public:
 
     /** Retrieve the binary data.
     */
-	std::vector <unsigned char> const& getData() const
+	Blob const& getData() const
     {
         return mData;
     }
@@ -98,7 +98,7 @@ private:
 	HashedObjectType const mType;
 	uint256 const mHash;
 	uint32 const mLedgerIndex;
-	std::vector <unsigned char> const mData;
+	Blob const mData;
 };
 
 #endif

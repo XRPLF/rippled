@@ -116,7 +116,7 @@ bool LedgerAcquire::tryLocal()
 		HashedObject::pointer node = theApp->getHashedObjectStore().retrieve(mHash);
 		if (!node)
 		{
-			std::vector<unsigned char> data;
+			Blob data;
 			if (!theApp->getOPs().getFetchPack(mHash, data))
 				return false;
 			WriteLog (lsTRACE, LedgerAcquire) << "Ledger base found in fetch pack";
@@ -672,7 +672,7 @@ bool LedgerAcquire::takeBase(const std::string& data) // data must not have hash
 }
 
 bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
-	const std::list< std::vector<unsigned char> >& data, SMAddNode& san)
+	const std::list< Blob >& data, SMAddNode& san)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (!mHaveBase)
@@ -681,7 +681,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 		return true;
 
 	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
-	std::list< std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
+	std::list< Blob >::const_iterator nodeDatait = data.begin();
 	TransactionStateSF tFilter(mLedger->getLedgerSeq());
 	while (nodeIDit != nodeIDs.end())
 	{
@@ -713,7 +713,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 }
 
 bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
-	const std::list< std::vector<unsigned char> >& data, SMAddNode& san)
+	const std::list< Blob >& data, SMAddNode& san)
 {
 	WriteLog (lsTRACE, LedgerAcquire) << "got ASdata (" << nodeIDs.size() <<") acquiring ledger " << mHash;
 	CondLog (nodeIDs.size() == 1, lsTRACE, LedgerAcquire) << "got AS node: " << nodeIDs.front();
@@ -728,7 +728,7 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 		return true;
 
 	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
-	std::list< std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
+	std::list< Blob >::const_iterator nodeDatait = data.begin();
 	AccountStateSF tFilter(mLedger->getLedgerSeq());
 	while (nodeIDit != nodeIDs.end())
 	{
@@ -762,7 +762,7 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 	return true;
 }
 
-bool LedgerAcquire::takeAsRootNode(const std::vector<unsigned char>& data, SMAddNode& san)
+bool LedgerAcquire::takeAsRootNode(Blob const& data, SMAddNode& san)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (mFailed || mHaveState)
@@ -774,7 +774,7 @@ bool LedgerAcquire::takeAsRootNode(const std::vector<unsigned char>& data, SMAdd
 		mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), data, snfWIRE, &tFilter));
 }
 
-bool LedgerAcquire::takeTxRootNode(const std::vector<unsigned char>& data, SMAddNode& san)
+bool LedgerAcquire::takeTxRootNode(Blob const& data, SMAddNode& san)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (mFailed || mHaveState)
@@ -964,7 +964,7 @@ void LedgerAcquireMaster::gotLedgerData(Job&, uint256 hash,
 	if ((packet.type() == ripple::liTX_NODE) || (packet.type() == ripple::liAS_NODE))
 	{
 		std::list<SHAMapNode> nodeIDs;
-		std::list< std::vector<unsigned char> > nodeData;
+		std::list< Blob > nodeData;
 
 		if (packet.nodes().size() <= 0)
 		{
@@ -983,7 +983,7 @@ void LedgerAcquireMaster::gotLedgerData(Job&, uint256 hash,
 			}
 
 			nodeIDs.push_back(SHAMapNode(node.nodeid().data(), node.nodeid().size()));
-			nodeData.push_back(std::vector<unsigned char>(node.nodedata().begin(), node.nodedata().end()));
+			nodeData.push_back(Blob (node.nodedata().begin(), node.nodedata().end()));
 		}
 		SMAddNode ret;
 		if (packet.type() == ripple::liTX_NODE)

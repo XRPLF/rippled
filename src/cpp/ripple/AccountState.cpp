@@ -22,7 +22,7 @@ AccountState::AccountState(SLE::ref ledgerEntry, const RippleAddress& naAccountI
 
 std::string AccountState::createGravatarUrl(uint128 uEmailHash)
 {
-	std::vector<unsigned char>	vucMD5(uEmailHash.begin(), uEmailHash.end());
+	Blob 	vucMD5(uEmailHash.begin(), uEmailHash.end());
 	std::string					strMD5Lower	= strHex(vucMD5);
 		boost::to_lower(strMD5Lower);
 

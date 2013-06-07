@@ -64,7 +64,7 @@ int Serializer::add256(const uint256& i)
 	return ret;
 }
 
-int Serializer::addRaw(const std::vector<unsigned char> &vector)
+int Serializer::addRaw(Blob const& vector)
 {
 	int ret = mData.size();
 	mData.insert(mData.end(), vector.begin(), vector.end());
@@ -239,16 +239,16 @@ int Serializer::removeLastByte()
 	return ret;
 }
 
-bool Serializer::getRaw(std::vector<unsigned char>& o, int offset, int length) const
+bool Serializer::getRaw(Blob & o, int offset, int length) const
 {
 	if ((offset + length) > mData.size()) return false;
 	o.assign(mData.begin() + offset, mData.begin() + offset + length);
 	return true;
 }
 
-std::vector<unsigned char> Serializer::getRaw(int offset, int length) const
+Blob Serializer::getRaw(int offset, int length) const
 {
-	std::vector<unsigned char> o;
+	Blob o;
 	if ((offset + length) > mData.size()) return o;
 	o.assign(mData.begin() + offset, mData.begin() + offset + length);
 	return o;
@@ -275,7 +275,7 @@ uint256 Serializer::getSHA512Half(int size) const
 	return getSHA512Half(mData, size);
 }
 
-uint256 Serializer::getSHA512Half(const std::vector<unsigned char>& data, int size)
+uint256 Serializer::getSHA512Half(Blob const& data, int size)
 {
 	uint256 j[2];
 	if ((size < 0) || (size > data.size())) size = data.size();
@@ -315,7 +315,7 @@ uint256 Serializer::getPrefixHash(uint32 prefix, const unsigned char *data, int 
 
 bool Serializer::checkSignature(int pubkeyOffset, int signatureOffset) const
 {
-	std::vector<unsigned char> pubkey, signature;
+	Blob pubkey, signature;
 	if (!getRaw(pubkey, pubkeyOffset, 65)) return false;
 	if (!getRaw(signature, signatureOffset, 72)) return false;
 
@@ -324,26 +324,26 @@ bool Serializer::checkSignature(int pubkeyOffset, int signatureOffset) const
 	return pubCKey.Verify(getSHA512Half(signatureOffset), signature);
 }
 
-bool Serializer::checkSignature(const std::vector<unsigned char> &signature, CKey& key) const
+bool Serializer::checkSignature(Blob const& signature, CKey& key) const
 {
 	return key.Verify(getSHA512Half(), signature);
 }
 
-bool Serializer::makeSignature(std::vector<unsigned char> &signature, CKey& key) const
+bool Serializer::makeSignature(Blob &signature, CKey& key) const
 {
 	return key.Sign(getSHA512Half(), signature);
 }
 
 bool Serializer::addSignature(CKey& key)
 {
-	std::vector<unsigned char> signature;
+	Blob signature;
 	if (!key.Sign(getSHA512Half(), signature)) return false;
 	assert(signature.size() == 72);
 	addRaw(signature);
 	return true;
 }
 
-int Serializer::addVL(const std::vector<unsigned char>& vector)
+int Serializer::addVL(Blob const& vector)
 {
 	int ret = addRaw(encodeVL(vector.size()));
 	addRaw(vector);
@@ -367,7 +367,7 @@ int Serializer::addVL(const std::string& string)
 	return ret;
 }
 
-bool Serializer::getVL(std::vector<unsigned char>& objectVL, int offset, int& length) const
+bool Serializer::getVL(Blob & objectVL, int offset, int& length) const
 {
 	int b1;
 	if (!get8(b1, offset++)) return false;
@@ -432,20 +432,20 @@ bool Serializer::getVLLength(int& length, int offset) const
 	return true;
 }
 
-std::vector<unsigned char> Serializer::encodeVL(int length)
+Blob Serializer::encodeVL(int length)
 {
 	unsigned char lenBytes[4];
 	if (length <= 192)
 	{
 		lenBytes[0] = static_cast<unsigned char>(length);
-		return std::vector<unsigned char>(&lenBytes[0], &lenBytes[1]);
+		return Blob (&lenBytes[0], &lenBytes[1]);
 	}
 	else if (length <= 12480)
 	{
 		length -= 193;
 		lenBytes[0] = 193 + static_cast<unsigned char>(length >> 8);
 		lenBytes[1] = static_cast<unsigned char>(length & 0xff);
-		return std::vector<unsigned char>(&lenBytes[0], &lenBytes[2]);
+		return Blob (&lenBytes[0], &lenBytes[2]);
 	}
 	else if (length <= 918744)
 	{
@@ -453,7 +453,7 @@ std::vector<unsigned char> Serializer::encodeVL(int length)
 		lenBytes[0] = 241 + static_cast<unsigned char>(length >> 16);
 		lenBytes[1] = static_cast<unsigned char>((length >> 8) & 0xff);
 		lenBytes[2] = static_cast<unsigned char>(length & 0xff);
-		return std::vector<unsigned char>(&lenBytes[0], &lenBytes[3]);
+		return Blob (&lenBytes[0], &lenBytes[3]);
 	}
 	else throw std::overflow_error("lenlen");
 }
@@ -574,16 +574,16 @@ uint256 SerializerIterator::get256()
 	return val;
 }
 
-std::vector<unsigned char> SerializerIterator::getVL()
+Blob SerializerIterator::getVL()
 {
 	int length;
-	std::vector<unsigned char> vl;
+	Blob vl;
 	if (!mSerializer.getVL(vl, mPos, length)) throw std::runtime_error("invalid serializer getVL");
 	mPos += length;
 	return vl;
 }
 
-std::vector<unsigned char> SerializerIterator::getRaw(int iLength)
+Blob SerializerIterator::getRaw(int iLength)
 {
 	int	iPos	= mPos;
 	mPos		+= iLength;

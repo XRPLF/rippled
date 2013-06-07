@@ -31,8 +31,8 @@ public:
 	bool			isValid(const uint256&) const;
 
 	void 						setTrusted()				{ mTrusted = true; }
-	std::vector<unsigned char>	getSigned()					const;
-	std::vector<unsigned char>	getSignature()				const;
+	Blob 	getSigned()					const;
+	Blob 	getSignature()				const;
 	void sign(uint256& signingHash, const RippleAddress& raPrivate);
 	void sign(const RippleAddress& raPrivate);
 

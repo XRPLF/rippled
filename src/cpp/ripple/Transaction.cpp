@@ -19,7 +19,7 @@ Transaction::Transaction(SerializedTransaction::ref sit, bool bValidate)
 		mStatus = NEW;
 }
 
-Transaction::pointer Transaction::sharedTransaction(const std::vector<unsigned char>&vucTransaction, bool bValidate)
+Transaction::pointer Transaction::sharedTransaction(Blob const& vucTransaction, bool bValidate)
 {
 	try
 	{

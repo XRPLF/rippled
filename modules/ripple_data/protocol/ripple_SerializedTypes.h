@@ -574,8 +574,8 @@ private:
 class STVariableLength : public SerializedType
 {
 public:
-	STVariableLength(const std::vector<unsigned char>& v) : value(v) { ; }
-	STVariableLength(SField::ref n, const std::vector<unsigned char>& v) : SerializedType(n), value(v) { ; }
+	STVariableLength(Blob const& v) : value(v) { ; }
+	STVariableLength(SField::ref n, Blob const& v) : SerializedType(n), value(v) { ; }
 	STVariableLength(SField::ref n) : SerializedType(n) { ; }
 	STVariableLength(SerializerIterator&, SField::ref name = sfGeneric);
 	STVariableLength() { ; }
@@ -586,17 +586,17 @@ public:
 	virtual std::string getText() const;
 	void add(Serializer& s) const { s.addVL(value); }
 
-	const std::vector<unsigned char>& peekValue() const { return value; }
-	std::vector<unsigned char>& peekValue() { return value; }
-	std::vector<unsigned char> getValue() const { return value; }
-	void setValue(const std::vector<unsigned char>& v) { value=v; }
+	Blob const& peekValue() const { return value; }
+	Blob & peekValue() { return value; }
+	Blob getValue() const { return value; }
+	void setValue(Blob const& v) { value=v; }
 
-	operator std::vector<unsigned char>() const { return value; }
+	operator Blob () const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 	virtual bool isDefault() const	{ return value.empty(); }
 
 private:
-	std::vector<unsigned char> value;
+	Blob value;
 
 	virtual STVariableLength* duplicate() const { return new STVariableLength(*this); }
 	static STVariableLength* construct(SerializerIterator&, SField::ref);
@@ -605,8 +605,8 @@ private:
 class STAccount : public STVariableLength
 {
 public:
-	STAccount(const std::vector<unsigned char>& v) : STVariableLength(v) { ; }
-	STAccount(SField::ref n, const std::vector<unsigned char>& v) : STVariableLength(n, v) { ; }
+	STAccount(Blob const& v) : STVariableLength(v) { ; }
+	STAccount(SField::ref n, Blob const& v) : STVariableLength(n, v) { ; }
 	STAccount(SField::ref n, const uint160& v);
 	STAccount(SField::ref n) : STVariableLength(n) { ; }
 	STAccount() { ; }

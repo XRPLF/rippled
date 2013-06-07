@@ -47,7 +47,7 @@ private:
 	TransactionMetaSet::pointer		mMeta;
 	TER								mResult;
 	std::vector<RippleAddress>		mAffected;
-	std::vector<unsigned char>		mRawMeta;
+	Blob 		mRawMeta;
 	Json::Value						mJson;
 
 	void buildJson();

@@ -599,12 +599,12 @@ uint160 STObject::getFieldAccount160(SField::ref field) const
 	return a;
 }
 
-std::vector<unsigned char> STObject::getFieldVL(SField::ref field) const
+Blob STObject::getFieldVL(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
 	SerializedTypeID id = rf->getSType();
-	if (id == STI_NOTPRESENT) return std::vector<unsigned char>(); // optional field not present
+	if (id == STI_NOTPRESENT) return Blob (); // optional field not present
 	const STVariableLength *cf = dynamic_cast<const STVariableLength *>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	return cf->getValue();
@@ -739,7 +739,7 @@ void STObject::setFieldAccount(SField::ref field, const uint160& v)
 	cf->setValueH160(v);
 }
 
-void STObject::setFieldVL(SField::ref field, const std::vector<unsigned char>& v)
+void STObject::setFieldVL(SField::ref field, Blob const& v)
 {
 	SerializedType* rf = getPField(field, true);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -1267,7 +1267,7 @@ BOOST_AUTO_TEST_CASE( FieldManipulation_test )
 
 	for (int i = 0; i < 1000; i++)
 	{
-		std::vector<unsigned char> j(i, 2);
+		Blob j(i, 2);
 
 		object1.setFieldVL(sfTestVL, j);
 

@@ -1526,6 +1526,9 @@
     <ClInclude Include="modules\ripple_data\protocol\ripple_SerializedObjectTemplate.h">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClInclude>
+    <ClInclude Include="modules\ripple_basics\types\ripple_Types.h">
+      <Filter>1. Modules\ripple_basics\types</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="SConstruct" />

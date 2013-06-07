@@ -25,7 +25,7 @@ public:
 	const SerializedLedgerEntry& peekSLE() const { return *mLedgerEntry; }
 	SerializedLedgerEntry& peekSLE() { return *mLedgerEntry; }
 
-	std::vector<unsigned char> getRaw() const;
+	Blob getRaw() const;
 	void addJson(Json::Value& value);
 };
 

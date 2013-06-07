@@ -71,7 +71,7 @@ HashedObject::pointer HashedObjectStore::LLRetrieve(const uint256& hash, leveldb
 void HashedObjectStore::LLWrite(boost::shared_ptr<HashedObject> ptr, leveldb::DB* db)
 {
 	HashedObject& obj = *ptr;
-	std::vector<unsigned char> rawData(9 + obj.getData ().size());
+	Blob rawData(9 + obj.getData ().size());
 	unsigned char* bufPtr = &rawData.front();
 
 	*reinterpret_cast<uint32*>(bufPtr + 0) = ntohl(obj.getIndex ());
@@ -97,7 +97,7 @@ void HashedObjectStore::LLWrite(const std::vector< boost::shared_ptr<HashedObjec
 	BOOST_FOREACH(const boost::shared_ptr<HashedObject>& it, set)
 	{
 		const HashedObject& obj = *it;
-		std::vector<unsigned char> rawData(9 + obj.getData ().size());
+		Blob rawData(9 + obj.getData ().size());
 		unsigned char* bufPtr = &rawData.front();
 
 		*reinterpret_cast<uint32*>(bufPtr + 0) = ntohl(obj.getIndex ());
@@ -118,7 +118,7 @@ void HashedObjectStore::LLWrite(const std::vector< boost::shared_ptr<HashedObjec
 }
 
 bool HashedObjectStore::storeLevelDB(HashedObjectType type, uint32 index,
-	const std::vector<unsigned char>& data, const uint256& hash)
+	Blob const& data, const uint256& hash)
 { // return: false = already in cache, true = added to cache
 	if (!theApp->getHashNodeLDB())
 		return true;
@@ -214,7 +214,7 @@ HashedObject::pointer HashedObjectStore::retrieveLevelDB(const uint256& hash)
 }
 
 bool HashedObjectStore::storeSQLite(HashedObjectType type, uint32 index,
-	const std::vector<unsigned char>& data, const uint256& hash)
+	Blob const& data, const uint256& hash)
 { // return: false = already in cache, true = added to cache
 	if (!theApp->getHashNodeDB())
 	{
@@ -373,7 +373,7 @@ HashedObject::pointer HashedObjectStore::retrieveSQLite(const uint256& hash)
 	if (!theApp || !theApp->getHashNodeDB())
 		return obj;
 
-	std::vector<unsigned char> data;
+	Blob data;
 	std::string type;
 	uint32 index;
 
@@ -479,7 +479,7 @@ int HashedObjectStore::import(const std::string& file)
 		}
 		else
 		{
-			std::vector<unsigned char> rawData;
+			Blob rawData;
 			int size = importDB->getBinary("Object", NULL, 0);
 			rawData.resize(9 + size);
 			unsigned char* bufPtr = &rawData.front();

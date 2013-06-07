@@ -269,8 +269,8 @@ STAccount* STAccount::construct(SerializerIterator& u, SField::ref name)
 // Return a new object from a SerializerIterator.
 STVector256* STVector256::construct(SerializerIterator& u, SField::ref name)
 {
-	std::vector<unsigned char> data = u.getVL();
-	std::vector<unsigned char>::iterator begin = data.begin();
+	Blob data = u.getVL();
+	Blob ::iterator begin = data.begin();
 
 	UPTR_T<STVector256> vec(new STVector256(name));
 
@@ -283,7 +283,7 @@ STVector256* STVector256::construct(SerializerIterator& u, SField::ref name)
 		unsigned int	uEnd	= uStart + (256 / 8);
 
 		// This next line could be optimized to construct a default uint256 in the vector and then copy into it
-		vec->mValue.push_back(uint256(std::vector<unsigned char>(begin + uStart, begin + uEnd)));
+		vec->mValue.push_back(uint256(Blob (begin + uStart, begin + uEnd)));
 		uStart	= uEnd;
 	}
 

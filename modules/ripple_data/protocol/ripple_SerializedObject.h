@@ -88,7 +88,7 @@ public:
 	uint256 getFieldH256(SField::ref field) const;
 	RippleAddress getFieldAccount(SField::ref field) const;
 	uint160 getFieldAccount160(SField::ref field) const;
-	std::vector<unsigned char> getFieldVL(SField::ref field) const;
+	Blob getFieldVL(SField::ref field) const;
 	const STAmount& getFieldAmount(SField::ref field) const;
 	const STPathSet& getFieldPathSet(SField::ref field) const;
 	const STVector256& getFieldV256(SField::ref field) const;
@@ -100,7 +100,7 @@ public:
 	void setFieldH128(SField::ref field, const uint128&);
 	void setFieldH160(SField::ref field, const uint160&);
 	void setFieldH256(SField::ref field, const uint256&);
-	void setFieldVL(SField::ref field, const std::vector<unsigned char>&);
+	void setFieldVL(SField::ref field, Blob const&);
 	void setFieldAccount(SField::ref field, const uint160&);
 	void setFieldAccount(SField::ref field, const RippleAddress& addr)
 	{ setFieldAccount(field, addr.getAccountID()); }

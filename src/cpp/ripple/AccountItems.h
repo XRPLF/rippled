@@ -24,7 +24,7 @@ public:
 	const SerializedLedgerEntry& peekSLE() const { return *mLedgerEntry; }
 	SerializedLedgerEntry& peekSLE() { return *mLedgerEntry; }
 
-	std::vector<unsigned char> getRaw() const;
+	Blob getRaw() const;
 
     // VFALCO TODO make an accessor for mLedgerEntry so we can change protected to private
 protected:

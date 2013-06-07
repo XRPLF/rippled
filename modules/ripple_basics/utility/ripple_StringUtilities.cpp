@@ -90,7 +90,7 @@ int strUnHex(std::string& strDst, const std::string& strSrc)
 	return iBytes;
 }
 
-std::vector<unsigned char> strUnHex(const std::string& strSrc)
+Blob strUnHex(const std::string& strSrc)
 {
 	std::string	strTmp;
 
@@ -113,9 +113,9 @@ uint64_t uintFromHex(const std::string& strSrc)
 // Misc string
 //
 
-std::vector<unsigned char> strCopy(const std::string& strSrc)
+Blob strCopy(const std::string& strSrc)
 {
-	std::vector<unsigned char> vucDst;
+	Blob vucDst;
 
 	vucDst.resize(strSrc.size());
 
@@ -124,7 +124,7 @@ std::vector<unsigned char> strCopy(const std::string& strSrc)
 	return vucDst;
 }
 
-std::string strCopy(const std::vector<unsigned char>& vucSrc)
+std::string strCopy(Blob const& vucSrc)
 {
 	std::string strDst;
 
