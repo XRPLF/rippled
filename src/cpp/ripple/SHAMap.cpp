@@ -29,6 +29,9 @@ void SHAMapNode::setMHash() const
     // VFALCO: TODO, figure out what this is for and whether or
     //               not it affects the protocol specification.
     //
+    //         NOTE, this constant is used elsewhere as well.
+    //               should it be DRY?
+    //
     const std::size_t mysteriousConstant = 0x9e3779b9;
 
     std::size_t h = HashMaps::getInstance ().getNonce <std::size_t> ()
