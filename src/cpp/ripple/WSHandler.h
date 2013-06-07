@@ -142,7 +142,13 @@ public:
 	{
 		boost::mutex::scoped_lock	sl(mMapLock);
 
-		mMap[cpClient]	= boost::make_shared< WSConnection<endpoint_type> >(this, cpClient);
+		try
+		{
+			mMap[cpClient]	= boost::make_shared< WSConnection<endpoint_type> >(this, cpClient);
+		}
+		catch (...)
+		{
+		}
 	}
 
 	void on_pong(connection_ptr cpClient, std::string data)

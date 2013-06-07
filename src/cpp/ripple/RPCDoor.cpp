@@ -50,8 +50,16 @@ void RPCDoor::handleConnect(RPCServer::pointer new_connection,
 	if (!error)
 	{
 		// Restrict callers by IP
-		if (!isClientAllowed(new_connection->getSocket().remote_endpoint().address().to_string()))
+		try
 		{
+			if (!isClientAllowed(new_connection->getSocket().remote_endpoint().address().to_string()))
+			{
+				startListening();
+				return;
+			}
+		}
+		catch (...)
+		{ // client may have disconnected
 			startListening();
 			return;
 		}
