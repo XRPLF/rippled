@@ -5,6 +5,7 @@
 //		   with a robust leak checker when we have atomics.
 //
 
+// VFALCO: TODO, swap these. Declaration means header, definition means .cpp!!!
 #define DEFINE_INSTANCE(x)								\
 	extern InstanceType IT_##x;							\
 	class Instance_##x : private Instance				\

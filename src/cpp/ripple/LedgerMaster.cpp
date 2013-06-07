@@ -118,7 +118,7 @@ Ledger::pointer LedgerMaster::closeLedger(bool recover)
 			{
 				TransactionEngineParams tepFlags = tapOPEN_LEDGER;
 
-				if (theApp->isNew(it->first.getTXID(), SF_SIGGOOD))
+				if (theApp->getHashRouter ().addSuppressionPeer (it->first.getTXID(), SF_SIGGOOD))
 					tepFlags = static_cast<TransactionEngineParams>(tepFlags | tapNO_CHECK_SIGN);
 
 				bool didApply;
@@ -315,7 +315,7 @@ bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& l
 			tmBH.set_query(true);
 			tmBH.set_seq(ledgerSeq);
 			tmBH.set_ledgerhash(ledgerHash.begin(), 32);
-			std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+			std::vector<Peer::pointer> peerList = theApp->getPeers().getPeerVector();
 
 			Peer::pointer target;
 			int count = 0;

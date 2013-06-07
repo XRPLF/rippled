@@ -6,8 +6,16 @@
 
 #include "LedgerEntrySet.h"
 
-class PaymentNode {
-protected:
+// VFALCO: TODO, move this to a separate file
+class PaymentNode
+{
+public:
+	bool operator==(const PaymentNode& pnOther) const;
+
+	Json::Value						getJson() const;
+
+private:
+    // VFALCO: TODO, remove the need for friend declaration
 	friend class RippleCalc;
 	friend class PathState;
 
@@ -54,10 +62,6 @@ protected:
 	STAmount						saTakerPays;
 	STAmount						saTakerGets;
 
-public:
-	bool operator==(const PaymentNode& pnOther) const;
-
-	Json::Value						getJson() const;
 };
 
 // account id, currency id, issuer id :: node
@@ -70,10 +74,6 @@ extern std::size_t hash_value(const aciSource& asValue);
 // Holds a path state under incremental application.
 class PathState
 {
-protected:
-	TER		pushNode(const int iType, const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
-	TER		pushImply(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
-
 public:
 	typedef boost::shared_ptr<PathState>		pointer;
 	typedef const boost::shared_ptr<PathState>&	ref;
@@ -146,14 +146,14 @@ public:
 	}
 #endif
 	static bool lessPriority(PathState& lhs, PathState& rhs);
+
+private:
+	TER		pushNode(const int iType, const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
+	TER		pushImply(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
 };
 
 class RippleCalc
 {
-protected:
-	LedgerEntrySet&					lesActive;
-	bool							mOpenLedger;
-
 public:
 	// First time working in reverse a funding source was mentioned.  Source may only be used there.
 	curIssuerNode					mumSource;			// Map of currency, issuer to node index.
@@ -213,6 +213,10 @@ public:
 		);
 
 	static void setCanonical(STPathSet& spsDst, const std::vector<PathState::pointer>& vpsExpanded, bool bKeepDefault);
+
+protected:
+	LedgerEntrySet&					lesActive;
+	bool							mOpenLedger;
 };
 
 #endif

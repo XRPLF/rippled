@@ -1,9 +1,6 @@
 #ifndef __SERIALIZEDLEDGER__
 #define __SERIALIZEDLEDGER__
 
-#include "SerializedObject.h"
-#include "LedgerFormats.h"
-
 DEFINE_INSTANCE(SerializedLedgerEntry);
 
 // VFALCO: TODO, rename this to SerializedLedger
@@ -12,14 +9,6 @@ class SerializedLedgerEntry : public STObject, private IS_INSTANCE(SerializedLed
 public:
 	typedef boost::shared_ptr<SerializedLedgerEntry>		pointer;
 	typedef const boost::shared_ptr<SerializedLedgerEntry>&	ref;
-
-protected:
-	uint256						mIndex;
-	LedgerEntryType				mType;
-	const LedgerEntryFormat*	mFormat;
-	bool						mMutable;
-
-	SerializedLedgerEntry* duplicate() const { return new SerializedLedgerEntry(*this); }
 
 public:
 	SerializedLedgerEntry(const Serializer& s, const uint256& index);
@@ -53,6 +42,14 @@ public:
 	uint32 getThreadedLedger();
 	bool thread(const uint256& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID);
 	std::vector<uint256> getOwners();	// nodes notified if this node is deleted
+
+private:
+	uint256						mIndex;
+	LedgerEntryType				mType;
+	const LedgerEntryFormat*	mFormat;
+	bool						mMutable;
+
+	SerializedLedgerEntry* duplicate() const { return new SerializedLedgerEntry(*this); }
 };
 
 typedef SerializedLedgerEntry SLE;

@@ -23,6 +23,8 @@
 
 #if (!defined(FORCE_NO_C11X) && (__cplusplus > 201100L)) || defined(FORCE_C11X)
 
+// VFALCO: TODO, replace BIND_TYPE with a namespace lift
+
 #define C11X
 #include			 	<functional>
 #define UPTR_T			std::unique_ptr
@@ -36,8 +38,6 @@
 
 #else
 
-#include 				<boost/bind.hpp>
-#include				<boost/function.hpp>
 #define UPTR_T			std::auto_ptr
 #define MOVE_P(p)		(p)
 #define BIND_TYPE		boost::bind

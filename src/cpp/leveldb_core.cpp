@@ -8,6 +8,12 @@
 # define LEVELDB_PLATFORM_POSIX
 #endif
 
+#ifdef _MSC_VER
+#pragma warning (push)
+#pragma warning (disable: 4018) // signed/unsigned mismatch
+#pragma warning (disable: 4244) // conversion, possible loss of data
+#endif
+
 #include "leveldb/db/builder.cc"
 #include "leveldb/db/db_impl.cc"
 #include "leveldb/db/db_iter.cc"
@@ -85,3 +91,8 @@
 
 //#include "leveldb/table/filter_block_test.cc"
 //#include "leveldb/table/table_test.cc"
+
+#ifdef _MSC_VER
+#pragma warning (pop)
+#endif
+

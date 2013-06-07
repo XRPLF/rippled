@@ -20,7 +20,6 @@
 #include "NicknameState.h"
 #include "Offer.h"
 #include "PFRequest.h"
-#include "ProofOfWork.h"
 
 SETUP_LOG (RPCHandler)
 
@@ -626,7 +625,7 @@ Json::Value RPCHandler::doConnect(Json::Value jvRequest, int& cost, ScopedLock& 
 	int			iPort	= jvRequest.isMember("port") ? jvRequest["port"].asInt() : -1;
 
 	// XXX Validate legal IP and port
-	theApp->getConnectionPool().connectTo(strIp, iPort);
+	theApp->getPeers().connectTo(strIp, iPort);
 
 	return "connecting";
 }
@@ -773,7 +772,7 @@ Json::Value RPCHandler::doPeers(Json::Value, int& cost, ScopedLock& MasterLockHo
 {
 	Json::Value jvResult(Json::objectValue);
 
-	jvResult["peers"]	= theApp->getConnectionPool().getPeersJson();
+	jvResult["peers"]	= theApp->getPeers().getPeersJson();
 
 	return jvResult;
 }
@@ -889,7 +888,8 @@ Json::Value RPCHandler::doProofCreate(Json::Value jvRequest, int& cost, ScopedLo
 
 	if (jvRequest.isMember("difficulty") || jvRequest.isMember("secret"))
 	{
-		ProofOfWorkGenerator	pgGen;
+        // VFALCO: TODO, why aren't we using the app's factory?
+        beast::ScopedPointer <IProofOfWorkFactory> pgGen (IProofOfWorkFactory::New ());
 
 		if (jvRequest.isMember("difficulty"))
 		{
@@ -901,19 +901,21 @@ Json::Value RPCHandler::doProofCreate(Json::Value jvRequest, int& cost, ScopedLo
 			if (iDifficulty < 0 || iDifficulty > ProofOfWork::sMaxDifficulty)
 				return rpcError(rpcINVALID_PARAMS);
 
-			pgGen.setDifficulty(iDifficulty);
+			pgGen->setDifficulty(iDifficulty);
 		}
 
 		if (jvRequest.isMember("secret"))
 		{
 			uint256		uSecret(jvRequest["secret"].asString());
-			pgGen.setSecret(uSecret);
+			pgGen->setSecret(uSecret);
 		}
 
-		jvResult["token"]	= pgGen.getProof().getToken();
-		jvResult["secret"]	= pgGen.getSecret().GetHex();
-	} else {
-		jvResult["token"]	= theApp->getPowGen().getProof().getToken();
+		jvResult["token"]	= pgGen->getProof().getToken();
+		jvResult["secret"]	= pgGen->getSecret().GetHex();
+	}
+    else
+    {
+		jvResult["token"]	= theApp->getProofOfWorkFactory().getProof().getToken();
 	}
 
 	return jvResult;
@@ -971,7 +973,8 @@ Json::Value RPCHandler::doProofVerify(Json::Value jvRequest, int& cost, ScopedLo
 	POWResult		prResult;
 	if (jvRequest.isMember("difficulty") || jvRequest.isMember("secret"))
 	{
-		ProofOfWorkGenerator	pgGen;
+        // VFALCO: TODO, why aren't we using the app's factory?
+        beast::ScopedPointer <IProofOfWorkFactory> pgGen (IProofOfWorkFactory::New ());
 
 		if (jvRequest.isMember("difficulty"))
 		{
@@ -983,23 +986,23 @@ Json::Value RPCHandler::doProofVerify(Json::Value jvRequest, int& cost, ScopedLo
 			if (iDifficulty < 0 || iDifficulty > ProofOfWork::sMaxDifficulty)
 				return rpcError(rpcINVALID_PARAMS);
 
-			pgGen.setDifficulty(iDifficulty);
+			pgGen->setDifficulty(iDifficulty);
 		}
 
 		if (jvRequest.isMember("secret"))
 		{
 			uint256		uSecret(jvRequest["secret"].asString());
-			pgGen.setSecret(uSecret);
+			pgGen->setSecret(uSecret);
 		}
 
-		prResult				= pgGen.checkProof(strToken, uSolution);
+		prResult				= pgGen->checkProof(strToken, uSolution);
 
-		jvResult["secret"]		= pgGen.getSecret().GetHex();
+		jvResult["secret"]		= pgGen->getSecret().GetHex();
 	}
 	else
 	{
 		// XXX Proof should not be marked as used from this
-		prResult = theApp->getPowGen().checkProof(strToken, uSolution);
+		prResult = theApp->getProofOfWorkFactory().checkProof(strToken, uSolution);
 	}
 
 	std::string	sToken;
@@ -1276,7 +1279,7 @@ Json::Value RPCHandler::doRandom(Json::Value jvRequest, int& cost, ScopedLock& M
 
 	try
 	{
-		getRand(uRandom.begin(), uRandom.size());
+		RandomNumbers::getInstance ().fillBytes (uRandom.begin(), uRandom.size());
 
 		Json::Value jvResult;
 
@@ -2391,13 +2394,13 @@ Json::Value RPCHandler::doUnlAdd(Json::Value jvRequest, int& cost, ScopedLock& M
 
 	if (raNodePublic.setNodePublic(strNode))
 	{
-		theApp->getUNL().nodeAddPublic(raNodePublic, UniqueNodeList::vsManual, strComment);
+		theApp->getUNL().nodeAddPublic(raNodePublic, IUniqueNodeList::vsManual, strComment);
 
 		return "adding node by public key";
 	}
 	else
 	{
-		theApp->getUNL().nodeAddDomain(strNode, UniqueNodeList::vsManual, strComment);
+		theApp->getUNL().nodeAddDomain(strNode, IUniqueNodeList::vsManual, strComment);
 
 		return "adding node by domain";
 	}

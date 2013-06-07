@@ -16,26 +16,72 @@
 */
 //==============================================================================
 
-void getRand(unsigned char *buf, int num)
+RandomNumbers::RandomNumbers ()
+    : m_initialized (false)
 {
+}
+
+RandomNumbers::~RandomNumbers ()
+{
+}
+
+bool RandomNumbers::initialize ()
+{
+    assert (!m_initialized);
+
+    bool success = platformAddEntropy ();
+
+    if (success)
+        m_initialized = true;
+
+    return success;
+}
+
+void RandomNumbers::fillBytes (void* destinationBuffer, int numberOfBytes)
+{
+    // VFALCO: NOTE this assert is here to remind us that the code is not yet
+    //         thread safe.
+    assert (m_initialized);
+
+    // VFALCO: NOTE When a spinlock is available in beast, use it here.
+    if (! m_initialized)
+    {
+        if (! initialize ())
+        {
+            char const* message = "Unable to add system entropy";
+            std::cerr << message << std::endl;
+            throw std::runtime_error (message);
+        }
+    }
+
 #ifdef PURIFY
-	memset(buf, 0, num);
+	memset (destinationBuffer, 0, numberOfBytes);
 #endif
-	if (RAND_bytes(buf, num) != 1)
+
+	if (RAND_bytes (reinterpret_cast <unsigned char*> (destinationBuffer), numberOfBytes) != 1)
 	{
 		assert(false);
-		throw std::runtime_error("Entropy pool not seeded");
+
+        throw std::runtime_error ("Entropy pool not seeded");
 	}
+}
+
+RandomNumbers& RandomNumbers::getInstance ()
+{
+    static RandomNumbers instance;
+
+    return instance;
 }
 
 //------------------------------------------------------------------------------
 
-// VFALCO: TODO replace WIN32 macro with VFLIB_WIN32
+// VFALCO: TODO replace WIN32 macro
 
 #ifdef WIN32
 
-bool AddSystemEntropy()
-{ // Get entropy from the Windows crypto provider
+// Get entropy from the Windows crypto provider
+bool RandomNumbers::platformAddEntropy ()
+{
 	char name[512], rand[128];
 	DWORD count = 500;
 	HCRYPTPROV cryptoHandle;
@@ -73,12 +119,7 @@ bool AddSystemEntropy()
 
 #else
 
-#include <iostream>
-#include <fstream>
-
-#include <openssl/rand.h>
-
-bool AddSystemEntropy()
+bool RandomNumbers::platformAddEntropy ()
 {
 	char rand[128];
 	std::ifstream reader;
@@ -117,7 +158,7 @@ bool AddSystemEntropy()
 //  - The user (asking the user to fix the system clock if the first two disagree)
 //
 
-void RandAddSeedPerfmon()
+void RandomNumbers::platformAddPerformanceMonitorEntropy ()
 {
 	// VFALCO: This is how we simulate local functions
 	struct
