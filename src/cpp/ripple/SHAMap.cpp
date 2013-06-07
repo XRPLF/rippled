@@ -26,21 +26,13 @@ void SHAMapNode::setMHash() const
 {
     using namespace std;
 
-    // VFALCO: TODO, figure out what this is for and whether or
-    //               not it affects the protocol specification.
-    //
-    //         NOTE, this constant is used elsewhere as well.
-    //               should it be DRY?
-    //
-    const std::size_t mysteriousConstant = 0x9e3779b9;
-
     std::size_t h = HashMaps::getInstance ().getNonce <std::size_t> ()
-                    + (mDepth * mysteriousConstant);
+                    + (mDepth * HashMaps::goldenRatio);
 
     const unsigned int *ptr = reinterpret_cast <const unsigned int *>(mNodeID.begin());
 	
     for (int i = (mDepth + 7) / 8; i != 0; --i)
-		h = (h * mysteriousConstant) ^ *ptr++;
+		h = (h * HashMaps::goldenRatio) ^ *ptr++;
 
     mHash = h;
 }
