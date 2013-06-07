@@ -24,13 +24,20 @@ DECLARE_INSTANCE(SHAMapTreeNode);
 
 void SHAMapNode::setMHash() const
 {
+    using namespace std;
+
+    // VFALCO: TODO, figure out what this is for and whether or
+    //               not it affects the protocol specification.
+    //
+    const std::size_t mysteriousConstant = 0x9e3779b9;
+
     std::size_t h = HashMaps::getInstance ().getNonce <std::size_t> ()
-                    + (mDepth * 0x9e3779b9);
+                    + (mDepth * mysteriousConstant);
 
     const unsigned int *ptr = reinterpret_cast <const unsigned int *>(mNodeID.begin());
 	
     for (int i = (mDepth + 7) / 8; i != 0; --i)
-		h = (h * 0x9e3779b9) ^ *ptr++;
+		h = (h * mysteriousConstant) ^ *ptr++;
 
     mHash = h;
 }
