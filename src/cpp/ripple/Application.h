@@ -8,7 +8,6 @@
 #include "../database/database.h"
 
 #include "LedgerMaster.h"
-#include "UniqueNodeList.h"
 #include "ConnectionPool.h"
 #include "FeatureTable.h"
 #include "LedgerAcquire.h"
@@ -17,8 +16,6 @@
 #include "Peer.h"
 #include "NetworkOPs.h"
 #include "WSDoor.h"
-#include "ValidationCollection.h"
-#include "Suppression.h"
 #include "SNTPClient.h"
 #include "JobQueue.h"
 #include "RPCHandler.h"
@@ -27,29 +24,20 @@
 #include "TransactionQueue.h"
 #include "OrderBookDB.h"
 
+#include "ripple_DatabaseCon.h"
+
 // VFALCO: TODO, Fix forward declares required for header dependency loops
 class IFeatureTable;
 class IFeeVote;
+class IHashRouter;
+class ILoadFeeTrack;
+class IValidations;
+class IUniqueNodeList;
 
 class RPCDoor;
 class PeerDoor;
 typedef TaggedCache< uint256, std::vector<unsigned char>, UptimeTimerAdapter> NodeCache;
 typedef TaggedCache< uint256, SLE, UptimeTimerAdapter> SLECache;
-
-class DatabaseCon
-{
-protected:
-	Database*				mDatabase;
-	boost::recursive_mutex	mLock;
-	static int				sCount;
-
-public:
-	DatabaseCon(const std::string& name, const char *initString[], int countInit);
-	~DatabaseCon();
-	Database* getDB()						{ return mDatabase; }
-	boost::recursive_mutex& getDBLock()		{ return mLock; }
-	static int getCount()					{ return sCount; }
-};
 
 class Application
 {
@@ -59,25 +47,29 @@ class Application
 	boost::recursive_mutex	mMasterLock;
 
 	Wallet					mWallet;
-	UniqueNodeList			mUNL;
 	LedgerMaster			mLedgerMaster;
 	LedgerAcquireMaster		mMasterLedgerAcquire;
 	TransactionMaster		mMasterTransaction;
 	NetworkOPs				mNetOps;
 	NodeCache				mTempNodeCache;
-	ValidationCollection	mValidations;
-	SuppressionTable		mSuppressions;
 	HashedObjectStore		mHashedObjectStore;
 	SLECache				mSLECache;
 	SNTPClient				mSNTPClient;
 	JobQueue				mJobQueue;
 	ProofOfWorkGenerator	mPOWGen;
 	LoadManager				mLoadMgr;
-	LoadFeeTrack			mFeeTrack;
 	TXQueue					mTxnQueue;
 	OrderBookDB				mOrderBookDB;
-	IFeeVote*				mFeeVote;
-	FeatureTable			mFeatureTable;
+	
+    // VFALCO: Clean stuff
+	beast::ScopedPointer <IFeeVote> mFeeVote;
+    beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
+    beast::ScopedPointer <IHashRouter> mHashRouter;
+	beast::ScopedPointer <IValidations> mValidations;
+	beast::ScopedPointer <IUniqueNodeList> mUNL;
+    // VFALCO: End Clean stuff
+
+    FeatureTable			mFeatureTable;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
 
@@ -110,7 +102,7 @@ public:
 
 	ConnectionPool& getConnectionPool()				{ return mConnectionPool; }
 
-	UniqueNodeList& getUNL()						{ return mUNL; }
+	IUniqueNodeList& getUNL()						{ return *mUNL; }
 
 	Wallet& getWallet()								{ return mWallet ; }
 	NetworkOPs& getOPs()							{ return mNetOps; }
@@ -123,26 +115,29 @@ public:
 	TransactionMaster& getMasterTransaction()		{ return mMasterTransaction; }
 	NodeCache& getTempNodeCache()					{ return mTempNodeCache; }
 	HashedObjectStore& getHashedObjectStore()		{ return mHashedObjectStore; }
-	ValidationCollection& getValidations()			{ return mValidations; }
 	JobQueue& getJobQueue()							{ return mJobQueue; }
-	SuppressionTable& getSuppression()				{ return mSuppressions; }
+	IHashRouter& getHashRouter()				    { return *mHashRouter; }
 	boost::recursive_mutex& getMasterLock()			{ return mMasterLock; }
 	ProofOfWorkGenerator& getPowGen()				{ return mPOWGen; }
 	LoadManager& getLoadManager()					{ return mLoadMgr; }
-	LoadFeeTrack& getFeeTrack()						{ return mFeeTrack; }
 	TXQueue& getTxnQueue()							{ return mTxnQueue; }
 	PeerDoor& getPeerDoor()							{ return *mPeerDoor; }
 	OrderBookDB& getOrderBookDB()					{ return mOrderBookDB; }
 	SLECache& getSLECache()							{ return mSLECache; }
-	IFeeVote& getFeeVote()							{ return *mFeeVote; }
 	FeatureTable& getFeatureTable()					{ return mFeatureTable; }
 
+	IFeeVote& getFeeVote()							{ return *mFeeVote; }
+	ILoadFeeTrack& getFeeTrack()				    { return *mFeeTrack; }
+	IValidations& getValidations()			        { return *mValidations; }
 
-	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }
-	bool isNew(const uint256& s, uint64 p)			{ return mSuppressions.addSuppressionPeer(s, p); }
-	bool isNew(const uint256& s, uint64 p, int& f)	{ return mSuppressions.addSuppressionPeer(s, p, f); }
-	bool isNewFlag(const uint256& s, int f)			{ return mSuppressions.setFlag(s, f); }
-	bool running()									{ return mTxnDB != NULL; }
+    // VFALCO: TODO, eliminate these, change callers to just call IHashRouter directly!
+	bool isNew(const uint256& s);
+	bool isNew(const uint256& s, uint64 p);
+	bool isNew(const uint256& s, uint64 p, int& f);
+	bool isNewFlag(const uint256& s, int f);
+
+    // VFALCO: TODO, Move these to the .cpp
+    bool running()									{ return mTxnDB != NULL; } // VFALCO: TODO, replace with nullptr when beast is available
 	bool getSystemTimeOffset(int& offset)			{ return mSNTPClient.getOffset(offset); }
 
 	DatabaseCon* getRpcDB()			{ return mRpcDB; }

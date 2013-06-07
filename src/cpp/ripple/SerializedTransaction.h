@@ -23,14 +23,6 @@ public:
 	typedef boost::shared_ptr<SerializedTransaction>		pointer;
 	typedef const boost::shared_ptr<SerializedTransaction>&	ref;
 
-protected:
-	TransactionType mType;
-	const TransactionFormat* mFormat;
-
-	SerializedTransaction* duplicate() const { return new SerializedTransaction(*this); }
-
-	mutable bool mSigGood, mSigBad;
-
 public:
 	SerializedTransaction(SerializerIterator& sit);
 	SerializedTransaction(TransactionType type);
@@ -89,6 +81,13 @@ public:
 	std::string getMetaSQL(uint32 inLedger, const std::string& escapedMetaData) const;
 	std::string getMetaSQL(Serializer rawTxn, uint32 inLedger, char status, const std::string& escapedMetaData) const;
 
+private:
+	TransactionType mType;
+	const TransactionFormat* mFormat;
+
+	SerializedTransaction* duplicate() const { return new SerializedTransaction(*this); }
+
+	mutable bool mSigGood, mSigBad;
 };
 
 #endif

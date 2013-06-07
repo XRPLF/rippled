@@ -288,7 +288,8 @@ public:
         }
         
         msg->set_header(std::string(1,0x00));
-        
+
+        // VFALCO: TODO fix this warning C4309 "truncation of constant value"
         msg->append_payload(std::string(1,0xFF));
         
         msg->set_prepared(true);

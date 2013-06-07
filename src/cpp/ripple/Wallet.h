@@ -23,16 +23,6 @@ private:
 	Wallet(const Wallet&); // no implementation
 	Wallet& operator=(const Wallet&); // no implementation
 
-protected:
-	boost::recursive_mutex mLock;
-
-	RippleAddress	mNodePublicKey;
-	RippleAddress	mNodePrivateKey;
-	DH*				mDh512;
-	DH*				mDh1024;
-
-	uint32 mLedger; // ledger we last synched to
-
 public:
 	Wallet();
 
@@ -49,6 +39,16 @@ public:
 	bool		dataDelete(const std::string& strKey);
 	bool		dataFetch(const std::string& strKey, std::string& strValue);
 	bool		dataStore(const std::string& strKey, const std::string& strValue);
+
+private:
+	boost::recursive_mutex mLock;
+
+	RippleAddress	mNodePublicKey;
+	RippleAddress	mNodePrivateKey;
+	DH*				mDh512;
+	DH*				mDh1024;
+
+	uint32 mLedger; // ledger we last synched to
 };
 
 #endif

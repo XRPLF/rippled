@@ -11,18 +11,6 @@ DEFINE_INSTANCE(LedgerProposal);
 
 class LedgerProposal : private IS_INSTANCE(LedgerProposal)
 {
-protected:
-
-	uint256 mPreviousLedger, mCurrentHash, mSuppression;
-	uint32 mCloseTime, mProposeSeq;
-
-	uint160			mPeerID;
-	RippleAddress	mPublicKey;
-	RippleAddress	mPrivateKey;	// If ours
-
-	std::string					mSignature; // set only if needed
-	boost::posix_time::ptime	mTime;
-
 public:
 	static const uint32 seqLeave = 0xffffffff; // leaving the consensus process
 
@@ -48,7 +36,7 @@ public:
 	const uint160& getPeerID() const		{ return mPeerID; }
 	const uint256& getCurrentHash() const	{ return mCurrentHash; }
 	const uint256& getPrevLedger() const	{ return mPreviousLedger; }
-	const uint256& getSuppression() const	{ return mSuppression; }
+	const uint256& getHashRouter() const	{ return mSuppression; }
 	uint32 getProposeSeq() const			{ return mProposeSeq; }
 	uint32 getCloseTime() const				{ return mCloseTime; }
 	const RippleAddress& peekPublic() const		{ return mPublicKey; }
@@ -67,6 +55,17 @@ public:
 	bool changePosition(const uint256& newPosition, uint32 newCloseTime);
 	void bowOut();
 	Json::Value getJson() const;
+
+private:
+	uint256 mPreviousLedger, mCurrentHash, mSuppression;
+	uint32 mCloseTime, mProposeSeq;
+
+	uint160			mPeerID;
+	RippleAddress	mPublicKey;
+	RippleAddress	mPrivateKey;	// If ours
+
+	std::string					mSignature; // set only if needed
+	boost::posix_time::ptime	mTime;
 };
 
 #endif
