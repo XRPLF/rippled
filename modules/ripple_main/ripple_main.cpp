@@ -137,7 +137,6 @@
 #include "src/cpp/ripple/CallRPC.h"
 #include "src/cpp/ripple/CanonicalTXSet.h"
 #include "src/cpp/ripple/ChangeTransactor.h"
-#include "src/cpp/ripple/FeatureTable.h"
 #include "src/cpp/ripple/HTTPRequest.h"
 #include "src/cpp/ripple/HashPrefixes.h"
 #include "src/cpp/ripple/HashedObject.h"
