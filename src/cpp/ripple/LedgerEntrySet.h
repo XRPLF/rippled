@@ -49,30 +49,7 @@ public:
 
 class LedgerEntrySet : private IS_INSTANCE(LedgerEntrySet)
 {
-protected:
-	Ledger::pointer mLedger;
-	std::map<uint256, LedgerEntrySetEntry>	mEntries; // cannot be unordered!
-	TransactionMetaSet mSet;
-	TransactionEngineParams mParams;
-	int mSeq;
-	bool mImmutable;
-
-	LedgerEntrySet(Ledger::ref ledger, const std::map<uint256, LedgerEntrySetEntry> &e,
-		const TransactionMetaSet& s, int m) :
-			mLedger(ledger), mEntries(e), mSet(s), mParams(tapNONE), mSeq(m), mImmutable(false) { ; }
-
-	SLE::pointer getForMod(const uint256& node, Ledger::ref ledger,
-		boost::unordered_map<uint256, SLE::pointer>& newMods);
-
-	bool threadTx(const RippleAddress& threadTo, Ledger::ref ledger,
-		boost::unordered_map<uint256, SLE::pointer>& newMods);
-
-	bool threadTx(SLE::ref threadTo, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods);
-
-	bool threadOwners(SLE::ref node, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods);
-
 public:
-
 	LedgerEntrySet(Ledger::ref ledger, TransactionEngineParams tep, bool immutable = false) :
 		mLedger(ledger), mParams(tep), mSeq(0), mImmutable(immutable) { ; }
 
@@ -182,6 +159,28 @@ public:
 	std::map<uint256, LedgerEntrySetEntry>::iterator end()					{ return mEntries.end(); }
 
 	static bool intersect(const LedgerEntrySet& lesLeft, const LedgerEntrySet& lesRight);
+
+private:
+	Ledger::pointer mLedger;
+	std::map<uint256, LedgerEntrySetEntry>	mEntries; // cannot be unordered!
+	TransactionMetaSet mSet;
+	TransactionEngineParams mParams;
+	int mSeq;
+	bool mImmutable;
+
+	LedgerEntrySet(Ledger::ref ledger, const std::map<uint256, LedgerEntrySetEntry> &e,
+		const TransactionMetaSet& s, int m) :
+			mLedger(ledger), mEntries(e), mSet(s), mParams(tapNONE), mSeq(m), mImmutable(false) { ; }
+
+	SLE::pointer getForMod(const uint256& node, Ledger::ref ledger,
+		boost::unordered_map<uint256, SLE::pointer>& newMods);
+
+	bool threadTx(const RippleAddress& threadTo, Ledger::ref ledger,
+		boost::unordered_map<uint256, SLE::pointer>& newMods);
+
+	bool threadTx(SLE::ref threadTo, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods);
+
+	bool threadOwners(SLE::ref node, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods);
 };
 
 inline LedgerEntrySet::iterator range_begin(LedgerEntrySet& x)		{ return x.begin(); }

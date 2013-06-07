@@ -21,7 +21,16 @@ public:
 
 class SNTPClient
 {
-protected:
+public:
+	SNTPClient(boost::asio::io_service& service);
+	void init(const std::vector<std::string>& servers);
+	void addServer(const std::string& mServer);
+
+	void queryAll();
+	bool doQuery();
+	bool getOffset(int& offset);
+
+private:
 	std::map<boost::asio::ip::udp::endpoint, SNTPQuery>	mQueries;
 	boost::mutex						mLock;
 
@@ -44,15 +53,6 @@ protected:
 	void timerEntry(const boost::system::error_code&);
 	void sendComplete(const boost::system::error_code& error, std::size_t bytesTransferred);
 	void processReply();
-
-public:
-	SNTPClient(boost::asio::io_service& service);
-	void init(const std::vector<std::string>& servers);
-	void addServer(const std::string& mServer);
-
-	void queryAll();
-	bool doQuery();
-	bool getOffset(int& offset);
 };
 
 #endif

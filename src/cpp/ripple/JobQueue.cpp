@@ -5,7 +5,6 @@
 #include <boost/thread.hpp>
 
 #include "Config.h"
-#include "Application.h"
 
 SETUP_LOG (JobQueue)
 
@@ -229,8 +228,9 @@ void JobQueue::shutdown()
 		mJobCond.wait(sl);
 }
 
+// set the number of thread serving the job queue to precisely this number
 void JobQueue::setThreadCount(int c)
-{ // set the number of thread serving the job queue to precisely this number
+{
 	if (theConfig.RUN_STANDALONE)
 		c = 1;
 	else if (c == 0)
@@ -287,8 +287,12 @@ void JobQueue::IOThread(boost::mutex::scoped_lock& sl)
 	--mIOThreadCount;
 }
 
+// do jobs until asked to stop
 void JobQueue::threadEntry()
-{ // do jobs until asked to stop
+{
+
+    // VFALCO: TODO, Replace this mutex nonsense
+    //
 	boost::mutex::scoped_lock sl(mJobLock);
 	while (1)
 	{

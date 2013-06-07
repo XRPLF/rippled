@@ -5,7 +5,10 @@
 
 class RPCParser
 {
-protected:
+public:
+	Json::Value parseCommand(std::string strMethod, Json::Value jvParams);
+
+private:
 	typedef Json::Value (RPCParser::*parseFuncPtr)(const Json::Value &jvParams);
 
 	Json::Value parseAccountRaw(const Json::Value& jvParams, bool bPeer);
@@ -49,9 +52,6 @@ protected:
 	Json::Value parseWalletAccounts(const Json::Value& jvParams);
 	Json::Value parseWalletPropose(const Json::Value& jvParams);
 	Json::Value parseWalletSeed(const Json::Value& jvParams);
-
-public:
-	Json::Value parseCommand(std::string strMethod, Json::Value jvParams);
 };
 
 extern int commandLineRPC(const std::vector<std::string>& vCmd);

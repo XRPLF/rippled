@@ -21,21 +21,9 @@ class SHAMapSyncFilter;
 // A tree-like map of SHA256 hashes
 // The trees are designed for rapid synchronization and compression of differences
 
-
+// Identifies a node in a SHA256 hash map
 class SHAMapNode
-{ // Identifies a node in a SHA256 hash map
-private:
-	static uint256 smMasks[65]; // AND with hash to get node id
-
-	uint256	mNodeID;
-	int		mDepth;
-	mutable size_t	mHash;
-
-	void setMHash() const;
-
-protected:
-	SHAMapNode(int depth, const uint256& id, bool) : mNodeID(id), mDepth(depth), mHash(0) { ; }
-
+{
 public:
 
 	static const int rootDepth = 0;
@@ -81,6 +69,18 @@ public:
 	std::string getRawString() const;
 	static int getRawIDLength(void) { return 33; }
 	SHAMapNode(const void *ptr, int len);
+
+protected:
+	SHAMapNode(int depth, const uint256& id, bool) : mNodeID(id), mDepth(depth), mHash(0) { ; }
+
+private:
+	static uint256 smMasks[65]; // AND with hash to get node id
+
+	uint256	mNodeID;
+	int		mDepth;
+	mutable size_t	mHash;
+
+	void setMHash() const;
 };
 
 extern std::size_t hash_value(const SHAMapNode& mn);
@@ -259,12 +259,6 @@ public:
 
 class SHAMapMissingNode : public std::runtime_error
 {
-protected:
-	SHAMapType mType;
-	SHAMapNode mNodeID;
-	uint256 mNodeHash;
-	uint256 mTargetIndex;
-
 public:
 	SHAMapMissingNode(SHAMapType t, const SHAMapNode& nodeID, const uint256& nodeHash) :
 		std::runtime_error("SHAMapMissingNode"), mType(t), mNodeID(nodeID), mNodeHash(nodeHash)
@@ -285,17 +279,19 @@ public:
 	const uint256& getNodeHash() const		{ return mNodeHash; }
 	const uint256& getTargetIndex() const	{ return mTargetIndex; }
 	bool hasTargetIndex() const				{ return !mTargetIndex.isZero(); }
+
+private:
+	SHAMapType mType;
+	SHAMapNode mNodeID;
+	uint256 mNodeHash;
+	uint256 mTargetIndex;
 };
 
 extern std::ostream& operator<<(std::ostream&, const SHAMapMissingNode&);
 
+// results of adding nodes
 class SMAddNode
-{ // results of adding nodes
-protected:
-	bool mInvalid, mUseful;
-
-	SMAddNode(bool i, bool u) : mInvalid(i), mUseful(u)	{ ; }
-
+{
 public:
 	SMAddNode() : mInvalid(false), mUseful(false) 		{ ; }
 
@@ -323,13 +319,18 @@ public:
 	static SMAddNode okay()		{ return SMAddNode(false, false); }
 	static SMAddNode useful()	{ return SMAddNode(false, true); }
 	static SMAddNode invalid()	{ return SMAddNode(true, false); }
+
+private:
+	bool mInvalid, mUseful;
+
+	SMAddNode(bool i, bool u) : mInvalid(i), mUseful(u)	{ ; }
 };
 
+// VFALCO: TODO, tidy up this loose function
 extern bool SMANCombine(SMAddNode& existing, const SMAddNode& additional);
 
 class SHAMap : public IS_INSTANCE(SHAMap)
 {
-
 public:
 	typedef boost::shared_ptr<SHAMap> pointer;
 	typedef const boost::shared_ptr<SHAMap>& ref;
@@ -338,48 +339,7 @@ public:
 	typedef std::map<uint256, SHAMapDiffItem> SHAMapDiff;
 	typedef boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> SHADirtyMap;
 
-protected:
-	uint32 mSeq;
-	uint32 mLedgerSeq; // sequence number of ledger this is part of
-	mutable boost::recursive_mutex mLock;
-	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> mTNByID;
-
-	boost::shared_ptr<SHADirtyMap> mDirtyNodes;
-
-	SHAMapTreeNode::pointer root;
-
-	SHAMapState mState;
-
-	SHAMapType mType;
-
-	static KeyCache <uint256, UptimeTimerAdapter> fullBelowCache;
-
-	void dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& target, uint256 prevHash);
-	std::stack<SHAMapTreeNode::pointer> getStack(const uint256& id, bool include_nonmatching_leaf, bool partialOk);
-	SHAMapTreeNode::pointer walkTo(const uint256& id, bool modify);
-	SHAMapTreeNode* walkToPointer(const uint256& id);
-	SHAMapTreeNode::pointer checkCacheNode(const SHAMapNode&);
-	void returnNode(SHAMapTreeNode::pointer&, bool modify);
-	void trackNewNode(SHAMapTreeNode::pointer&);
-
-	SHAMapTreeNode::pointer getNode(const SHAMapNode& id);
-	SHAMapTreeNode::pointer getNode(const SHAMapNode& id, const uint256& hash, bool modify);
-	SHAMapTreeNode* getNodePointer(const SHAMapNode& id, const uint256& hash);
-	SHAMapTreeNode* getNodePointer(const SHAMapNode& id, const uint256& hash, SHAMapSyncFilter* filter);
-	SHAMapTreeNode* firstBelow(SHAMapTreeNode*);
-	SHAMapTreeNode* lastBelow(SHAMapTreeNode*);
-
-	SHAMapItem::pointer onlyBelow(SHAMapTreeNode*);
-	void eraseChildren(SHAMapTreeNode::pointer);
-	void dropBelow(SHAMapTreeNode*);
-	bool hasInnerNode(const SHAMapNode& nodeID, const uint256& hash);
-	bool hasLeafNode(const uint256& tag, const uint256& hash);
-
-	bool walkBranch(SHAMapTreeNode* node, SHAMapItem::ref otherMapItem, bool isFirstMap,
-	    SHAMapDiff& differences, int& maxCount);
-
 public:
-
 	// build new map
 	SHAMap(SHAMapType t, uint32 seq = 1);
 	SHAMap(SHAMapType t, const uint256& hash);
@@ -481,6 +441,46 @@ public:
 	std::list<fetchPackEntry_t> getFetchPack(SHAMap* have, bool includeLeaves, int max);
 
 	static void sweep()			{ fullBelowCache.sweep(); }
+
+private:
+	uint32 mSeq;
+	uint32 mLedgerSeq; // sequence number of ledger this is part of
+	mutable boost::recursive_mutex mLock;
+	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> mTNByID;
+
+	boost::shared_ptr<SHADirtyMap> mDirtyNodes;
+
+	SHAMapTreeNode::pointer root;
+
+	SHAMapState mState;
+
+	SHAMapType mType;
+
+	static KeyCache <uint256, UptimeTimerAdapter> fullBelowCache;
+
+	void dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& target, uint256 prevHash);
+	std::stack<SHAMapTreeNode::pointer> getStack(const uint256& id, bool include_nonmatching_leaf, bool partialOk);
+	SHAMapTreeNode::pointer walkTo(const uint256& id, bool modify);
+	SHAMapTreeNode* walkToPointer(const uint256& id);
+	SHAMapTreeNode::pointer checkCacheNode(const SHAMapNode&);
+	void returnNode(SHAMapTreeNode::pointer&, bool modify);
+	void trackNewNode(SHAMapTreeNode::pointer&);
+
+	SHAMapTreeNode::pointer getNode(const SHAMapNode& id);
+	SHAMapTreeNode::pointer getNode(const SHAMapNode& id, const uint256& hash, bool modify);
+	SHAMapTreeNode* getNodePointer(const SHAMapNode& id, const uint256& hash);
+	SHAMapTreeNode* getNodePointer(const SHAMapNode& id, const uint256& hash, SHAMapSyncFilter* filter);
+	SHAMapTreeNode* firstBelow(SHAMapTreeNode*);
+	SHAMapTreeNode* lastBelow(SHAMapTreeNode*);
+
+	SHAMapItem::pointer onlyBelow(SHAMapTreeNode*);
+	void eraseChildren(SHAMapTreeNode::pointer);
+	void dropBelow(SHAMapTreeNode*);
+	bool hasInnerNode(const SHAMapNode& nodeID, const uint256& hash);
+	bool hasLeafNode(const uint256& tag, const uint256& hash);
+
+	bool walkBranch(SHAMapTreeNode* node, SHAMapItem::ref otherMapItem, bool isFirstMap,
+	    SHAMapDiff& differences, int& maxCount);
 };
 
 #endif

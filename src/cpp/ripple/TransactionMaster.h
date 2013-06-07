@@ -7,11 +7,7 @@
 
 class TransactionMaster
 {
-protected:
-	TaggedCache<uint256, Transaction, UptimeTimerAdapter> mCache;
-
 public:
-
 	TransactionMaster();
 
 	Transaction::pointer			fetch(const uint256&, bool checkDisk);
@@ -22,6 +18,9 @@ public:
 	bool inLedger(const uint256& hash, uint32 ledger);
 	bool canonicalize(Transaction::pointer& txn, bool maybeNew);
 	void sweep(void) { mCache.sweep(); }
+
+private:
+	TaggedCache <uint256, Transaction, UptimeTimerAdapter> mCache;
 };
 
 #endif

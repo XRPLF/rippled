@@ -17,26 +17,6 @@ enum HTTPRequestAction
 
 class HTTPRequest
 { // an HTTP request we are handling from a client
-protected:
-
-	enum state
-	{
-		await_request,	// We are waiting for the request line
-		await_header,	// We are waiting for request headers
-		getting_body,	// We are waiting for the body
-		do_request,		// We are waiting for the request to complete
-	};
-
-	state eState;
-	std::string sRequest;			// VERB URL PROTO
-	std::string sRequestBody;
-	std::string sAuthorization;
-
-	std::map<std::string, std::string> mHeaders;
-
-	int iDataSize;
-	bool bShouldClose;
-
 public:
 
 	HTTPRequest() : eState(await_request), iDataSize(0), bShouldClose(true) { ; }
@@ -56,6 +36,25 @@ public:
 	HTTPRequestAction requestDone(bool forceClose);	// call after reply is sent
 
 	int getDataSize()			{ return iDataSize; }
+
+private:
+	enum state
+	{
+		await_request,	// We are waiting for the request line
+		await_header,	// We are waiting for request headers
+		getting_body,	// We are waiting for the body
+		do_request,		// We are waiting for the request to complete
+	};
+
+	state eState;
+	std::string sRequest;			// VERB URL PROTO
+	std::string sRequestBody;
+	std::string sAuthorization;
+
+	std::map<std::string, std::string> mHeaders;
+
+	int iDataSize;
+	bool bShouldClose;
 };
 
 #endif

@@ -19,9 +19,12 @@
 DEFINE_INSTANCE(LedgerConsensus);
 DEFINE_INSTANCE(TransactionAcquire);
 
-class TransactionAcquire :
-	private IS_INSTANCE(TransactionAcquire), public PeerSet, public boost::enable_shared_from_this<TransactionAcquire>
-{ // A transaction set we are trying to acquire
+// A transaction set we are trying to acquire
+class TransactionAcquire
+    : private IS_INSTANCE (TransactionAcquire)
+    , public PeerSet
+    , public boost::enable_shared_from_this <TransactionAcquire>
+{
 public:
 	typedef boost::shared_ptr<TransactionAcquire> pointer;
 
@@ -37,7 +40,6 @@ protected:
 	boost::weak_ptr<PeerSet> pmDowncast();
 
 public:
-
 	TransactionAcquire(const uint256& hash);
 	virtual ~TransactionAcquire()		{ ; }
 

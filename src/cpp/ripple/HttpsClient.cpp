@@ -139,7 +139,7 @@ void HttpsClient::handleDeadline(const boost::system::error_code& ecResult)
 
 		// Mark us as shutting down.
 		// XXX Use our own error code.
-		mShutdown	= boost::system::error_code(errc::bad_address, system_category());
+		mShutdown	= boost::system::error_code(boost::system::errc::bad_address, boost::system::system_category());
 
 		// Cancel any resolving.
 		mResolver.cancel();
@@ -301,7 +301,7 @@ void HttpsClient::handleHeader(const boost::system::error_code& ecResult, std::s
 	{
 		// XXX Use our own error code.
 		WriteLog (lsTRACE, HttpsClient) << "No status code";
-		invokeComplete(boost::system::error_code(errc::bad_address, system_category()));
+		invokeComplete(boost::system::error_code(boost::system::errc::bad_address, boost::system::system_category()));
 		return;
 	}
 	mStatus = lexical_cast_st<int>(smMatch[1]);

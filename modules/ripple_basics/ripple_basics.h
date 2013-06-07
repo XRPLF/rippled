@@ -113,11 +113,16 @@ namespace boost {
 // UInt256
 #include <boost/functional/hash.hpp>
 
+// ripple_PlatformMacros.h
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
+
 // VFALCO: TODO, remove this dependency!!!
 #include <openssl/dh.h> // for DiffieHellmanUtil
 #include <openssl/ripemd.h> // For HashUtilities
 #include <openssl/sha.h> // For HashUtilities
 
+#include "modules/beast_core/beast_core.h"
 
 #include "../ripple_json/ripple_json.h"
 

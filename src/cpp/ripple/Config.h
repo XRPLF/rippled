@@ -72,6 +72,8 @@ struct SizedItem
 	int				sizes[5];
 };
 
+// VFALCO: TODO, rename all fields to not look like macros, and be more verbose
+// VFALCO: TODO, document every member
 class Config
 {
 public:
