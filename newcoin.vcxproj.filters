@@ -816,6 +816,9 @@
     <ClCompile Include="src\cpp\ripple\ripple_HashedObject.cpp">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClCompile>
+    <ClCompile Include="modules\ripple_data\protocol\ripple_SerializedObjectTemplate.cpp">
+      <Filter>1. Modules\ripple_data\protocol</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="database\sqlite3ext.h">
@@ -1519,6 +1522,9 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_HashedObject.h">
       <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\protocol\ripple_SerializedObjectTemplate.h">
+      <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

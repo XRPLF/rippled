@@ -117,22 +117,6 @@ UPTR_T<SerializedType> STObject::makeDeserializedObject(SerializedTypeID id, SFi
 	}
 }
 
-void SOTemplate::push_back(const SOElement &r)
-{
-	if (mIndex.empty())
-		mIndex.resize(SField::getNumFields() + 1, -1);
-	assert(r.e_field.getNum() < mIndex.size());
-	assert(getIndex(r.e_field) == -1);
-	mIndex[r.e_field.getNum()] = mTypes.size();
-	mTypes.push_back(new SOElement(r));
-}
-
-int SOTemplate::getIndex(SField::ref f) const
-{
-	assert(f.getNum() < mIndex.size());
-	return mIndex[f.getNum()];
-}
-
 void STObject::set(const SOTemplate& type)
 {
 	mData.clear();

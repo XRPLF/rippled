@@ -72,6 +72,7 @@
 #include "protocol/ripple_Serializer.h" // needs CKey
 #include "protocol/ripple_TER.h"
 #include "protocol/ripple_SerializedTypes.h" // needs Serializer, TER
+#include "protocol/ripple_SerializedObjectTemplate.h"
 #include "protocol/ripple_SerializedObject.h"
 #include "protocol/ripple_LedgerFormat.h" // needs SOTemplate from SerializedObject
 #include "protocol/ripple_TransactionFormat.h"

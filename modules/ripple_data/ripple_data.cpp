@@ -82,6 +82,7 @@
 #include "protocol/ripple_RippleAddress.cpp"
 #include "protocol/ripple_SerializedTypes.cpp"
 #include "protocol/ripple_Serializer.cpp"
+#include "protocol/ripple_SerializedObjectTemplate.cpp"
 #include "protocol/ripple_SerializedObject.cpp"
 #include "protocol/ripple_TER.cpp"
 #include "protocol/ripple_TransactionFormat.cpp"

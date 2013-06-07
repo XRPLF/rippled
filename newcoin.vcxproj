@@ -315,6 +315,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="modules\ripple_data\protocol\ripple_SerializedObjectTemplate.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="modules\ripple_data\protocol\ripple_SerializedTypes.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1311,6 +1317,7 @@
     <ClInclude Include="modules\ripple_data\protocol\ripple_RippleSystem.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_SerializeDeclarations.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_SerializedObject.h" />
+    <ClInclude Include="modules\ripple_data\protocol\ripple_SerializedObjectTemplate.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_SerializedTypes.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_Serializer.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_TER.h" />
