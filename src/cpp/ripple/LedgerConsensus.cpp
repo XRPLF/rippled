@@ -188,13 +188,13 @@ void LedgerConsensus::checkOurValidation()
 		(mPreviousLedger->getHash(), theApp->getOPs().getValidationTimeNC(), mValPublic, false);
 	v->setTrusted();
 	v->sign(signingHash, mValPrivate);
-	theApp->isNew(signingHash);
+	theApp->getHashRouter ().addSuppression (signingHash);
 	theApp->getValidations().addValidation(v, "localMissing");
 	std::vector<unsigned char> validation = v->getSigned();
 	ripple::TMValidation val;
 	val.set_validation(&validation[0], validation.size());
 #if 0
-	theApp->getConnectionPool().relayMessage(NULL,
+	theApp->getPeers().relayMessage(NULL,
 		boost::make_shared<PackedMessage>(val, ripple::mtVALIDATION));
 #endif
 	theApp->getOPs().setLastValidation(v);
@@ -314,8 +314,8 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 		 && ((mPreviousLedger->getLedgerSeq() % 256) == 0))
 	{ // previous ledger was flag ledger
 		SHAMap::pointer preSet = initialLedger.peekTransactionMap()->snapShot(true);
-		theApp->getFeeVote().doVoting(mPreviousLedger, preSet);
-		theApp->getFeatureTable().doVoting(mPreviousLedger, preSet);
+		theApp->getFeeVote().doVoting (mPreviousLedger, preSet);
+		theApp->getFeatureTable().doVoting (mPreviousLedger, preSet);
 		initialSet = preSet->snapShot(false);
 	}
 	else
@@ -450,7 +450,7 @@ void LedgerConsensus::sendHaveTxSet(const uint256& hash, bool direct)
 	msg.set_hash(hash.begin(), 256 / 8);
 	msg.set_status(direct ? ripple::tsHAVE : ripple::tsCAN_GET);
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(msg, ripple::mtHAVE_SET);
-	theApp->getConnectionPool().relayMessage(NULL, packet);
+	theApp->getPeers().relayMessage(NULL, packet);
 }
 
 void LedgerConsensus::adjustCount(SHAMap::ref map, const std::vector<uint160>& peers)
@@ -483,7 +483,7 @@ void LedgerConsensus::statusChange(ripple::NodeEvent event, Ledger& ledger)
 	s.set_lastseq(uMax);
 
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, ripple::mtSTATUS_CHANGE);
-	theApp->getConnectionPool().relayMessage(NULL, packet);
+	theApp->getPeers().relayMessage(NULL, packet);
 	WriteLog (lsTRACE, LedgerConsensus) << "send status change to peer";
 }
 
@@ -561,6 +561,7 @@ void LedgerConsensus::stateAccepted()
 	endConsensus();
 }
 
+// VFALCO: TODO implement shutdown without a naked global
 extern volatile bool doShutdown;
 
 void LedgerConsensus::timerEntry()
@@ -802,7 +803,7 @@ void LedgerConsensus::startAcquiring(TransactionAcquire::pointer acquire)
 		}
 	}
 
-	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+	std::vector<Peer::pointer> peerList = theApp->getPeers().getPeerVector();
 	BOOST_FOREACH(Peer::ref peer, peerList)
 	{
 		if (peer->hasTxSet(acquire->getHash()))
@@ -827,7 +828,7 @@ void LedgerConsensus::propose()
 	std::vector<unsigned char> sig = mOurPosition->sign();
 	prop.set_nodepubkey(&pubKey[0], pubKey.size());
 	prop.set_signature(&sig[0], sig.size());
-	theApp->getConnectionPool().relayMessage(NULL,
+	theApp->getPeers().relayMessage(NULL,
 		boost::make_shared<PackedMessage>(prop, ripple::mtPROPOSE_LEDGER));
 }
 
@@ -858,14 +859,14 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 			txn->setVote(pit.first, cit->second->hasItem(txID));
 	}
 
-	if (theApp->isNewFlag(txID, SF_RELAYED))
+	if (theApp->getHashRouter ().setFlag (txID, SF_RELAYED))
 	{
 		ripple::TMTransaction msg;
 		msg.set_rawtransaction(&(tx.front()), tx.size());
 		msg.set_status(ripple::tsNEW);
 		msg.set_receivetimestamp(theApp->getOPs().getNetworkTimeNC());
 		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(msg, ripple::mtTRANSACTION);
-        theApp->getConnectionPool().relayMessage(NULL, packet);
+        theApp->getPeers().relayMessage(NULL, packet);
 	}
 }
 
@@ -1004,7 +1005,7 @@ void LedgerConsensus::playbackProposals()
 			}
 #if 0 // FIXME: We can't do delayed relay because we don't have the signature
 			std::set<uint64> peers
-			if (relay && theApp->getSuppression().swapSet(proposal.getSuppress(), set, SF_RELAYED))
+			if (relay && theApp->getHashRouter().swapSet(proposal.getSuppress(), set, SF_RELAYED))
 			{
 				WriteLog (lsDEBUG, LedgerConsensus) << "Stored proposal delayed relay";
 				ripple::TMProposeSet set;
@@ -1015,13 +1016,14 @@ void LedgerConsensus::playbackProposals()
 				nodepubkey
 				signature
 				PackedMessage::pointer message = boost::make_shared<PackedMessage>(set, ripple::mtPROPOSE_LEDGER);
-				theApp->getConnectionPool().relayMessageBut(peers, message);
+				theApp->getPeers().relayMessageBut(peers, message);
 			}
 #endif
 		}
 	}
 }
 
+// VFALCO: TODO, clean these macros up and put them somewhere. Try to eliminate them if possible.
 #define LCAT_SUCCESS	0
 #define LCAT_FAIL		1
 #define LCAT_RETRY		2
@@ -1032,7 +1034,7 @@ int LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTrans
 	TransactionEngineParams parms = openLedger ? tapOPEN_LEDGER : tapNONE;
 	if (retryAssured)
 		parms = static_cast<TransactionEngineParams>(parms | tapRETRY);
-	if (theApp->isNewFlag(txn->getTransactionID(), SF_SIGGOOD))
+	if (theApp->getHashRouter ().setFlag (txn->getTransactionID(), SF_SIGGOOD))
 		parms = static_cast<TransactionEngineParams>(parms | tapNO_CHECK_SIGN);
 
 	WriteLog (lsDEBUG, LedgerConsensus) << "TXN " << txn->getTransactionID()
@@ -1040,6 +1042,7 @@ int LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTrans
 		<< (retryAssured ? "/retry" : "/final");
 	WriteLog (lsTRACE, LedgerConsensus) << txn->getJson(0);
 
+// VFALCO: TODO, figure out what this "trust network" is all about and why it needs exceptions.
 #ifndef TRUST_NETWORK
 	try
 	{
@@ -1221,13 +1224,13 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 		}
 		v->sign(signingHash, mValPrivate);
 		v->setTrusted();
-		theApp->isNew(signingHash); // suppress it if we receive it
+		theApp->getHashRouter ().addSuppression (signingHash); // suppress it if we receive it
 		theApp->getValidations().addValidation(v, "local");
 		theApp->getOPs().setLastValidation(v);
 		std::vector<unsigned char> validation = v->getSigned();
 		ripple::TMValidation val;
 		val.set_validation(&validation[0], validation.size());
-		int j = theApp->getConnectionPool().relayMessage(NULL,
+		int j = theApp->getPeers().relayMessage(NULL,
 			boost::make_shared<PackedMessage>(val, ripple::mtVALIDATION));
 		WriteLog (lsINFO, LedgerConsensus) << "CNF Val " << newLCLHash << " to " << j << " peers";
 	}

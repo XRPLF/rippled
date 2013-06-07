@@ -735,6 +735,10 @@ inline const std::string strHex(const uint160& ui)
 	return strHex(ui.begin(), ui.size());
 }
 
+extern std::size_t hash_value (const uint160&);
+
+extern std::size_t hash_value (const uint256&);
+
 #endif
 
 // vim:ts=4

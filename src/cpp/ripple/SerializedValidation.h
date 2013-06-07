@@ -1,19 +1,10 @@
 #ifndef __VALIDATION__
 #define __VALIDATION__
 
-#include "SerializedObject.h"
-
 DEFINE_INSTANCE(SerializedValidation);
 
 class SerializedValidation : public STObject, private IS_INSTANCE(SerializedValidation)
 {
-protected:
-	uint256	mPreviousHash;
-	uint160 mNodeID;
-	bool mTrusted;
-
-	void setNode();
-
 public:
 	typedef boost::shared_ptr<SerializedValidation>			pointer;
 	typedef const boost::shared_ptr<SerializedValidation>&	ref;
@@ -47,6 +38,13 @@ public:
 	const uint256& getPreviousHash()		{ return mPreviousHash; }
 	bool isPreviousHash(const uint256& h)	{ return mPreviousHash == h; }
 	void setPreviousHash(const uint256& h)	{ mPreviousHash = h; }
+
+private:
+	uint256	mPreviousHash;
+	uint160 mNodeID;
+	bool mTrusted;
+
+	void setNode();
 };
 
 #endif

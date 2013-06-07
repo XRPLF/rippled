@@ -13,7 +13,6 @@
 #include "SerializedValidation.h"
 #include "LedgerAcquire.h"
 #include "LedgerProposal.h"
-#include "JobQueue.h"
 #include "AcceptedLedger.h"
 
 // Operations that clients may wish to perform against the network
@@ -25,19 +24,9 @@ class PFRequest;
 
 DEFINE_INSTANCE(InfoSub);
 
+// VFALCO: TODO Move InfoSub to a separate file
 class InfoSub : public IS_INSTANCE(InfoSub)
 {
-protected:
-	boost::unordered_set<RippleAddress>			mSubAccountInfo;
-	boost::unordered_set<RippleAddress>			mSubAccountTransaction;
-	boost::shared_ptr<PFRequest>				mPFRequest;
-
-	boost::mutex								mLockInfo;
-
-	uint64										mSeq;
-	static uint64								sSeq;
-	static boost::mutex							sSeqLock;
-
 public:
 	typedef boost::shared_ptr<InfoSub>			pointer;
 	typedef boost::weak_ptr<InfoSub>			wptr;
@@ -83,6 +72,19 @@ public:
 	{
 		return mPFRequest;
 	}
+
+protected:
+    // VFALCO: TODO, make accessor for this member
+	boost::mutex								mLockInfo;
+
+private:
+	boost::unordered_set<RippleAddress>			mSubAccountInfo;
+	boost::unordered_set<RippleAddress>			mSubAccountTransaction;
+	boost::shared_ptr<PFRequest>				mPFRequest;
+
+	uint64										mSeq;
+	static uint64								sSeq;
+	static boost::mutex							sSeqLock;
 };
 
 class NetworkOPs
@@ -104,69 +106,6 @@ public:
 	};
 
 	typedef boost::unordered_map<uint64, InfoSub::wptr>				subMapType;
-
-protected:
-	typedef boost::unordered_map<uint160, subMapType>				subInfoMapType;
-	typedef boost::unordered_map<uint160, subMapType>::value_type	subInfoMapValue;
-	typedef boost::unordered_map<uint160, subMapType>::iterator		subInfoMapIterator;
-
-	typedef boost::unordered_map<std::string, InfoSub::pointer>		subRpcMapType;
-
-	OperatingMode						mMode;
-	bool								mNeedNetworkLedger;
-	bool								mProposing, mValidating;
-	bool								mFeatureBlocked;
-	boost::posix_time::ptime			mConnectTime;
-	boost::asio::deadline_timer			mNetTimer;
-	boost::shared_ptr<LedgerConsensus>	mConsensus;
-	boost::unordered_map<uint160,
-		std::list<LedgerProposal::pointer> > mStoredProposals;
-
-	LedgerMaster*						mLedgerMaster;
-	LedgerAcquire::pointer				mAcquiringLedger;
-
-	int									mCloseTimeOffset;
-
-	// last ledger close
-	int									mLastCloseProposers, mLastCloseConvergeTime;
-	uint256								mLastCloseHash;
-	uint32								mLastCloseTime;
-	uint32								mLastValidationTime;
-	SerializedValidation::pointer		mLastValidation;
-
-	// Recent positions taken
-	std::map<uint256, std::pair<int, SHAMap::pointer> >	mRecentPositions;
-
-	// XXX Split into more locks.
-    boost::recursive_mutex								mMonitorLock;
-	subInfoMapType										mSubAccount;
-	subInfoMapType										mSubRTAccount;
-
-	subRpcMapType										mRpcSubMap;
-
-	subMapType											mSubLedger;				// accepted ledgers
-	subMapType											mSubServer;				// when server changes connectivity state
-	subMapType											mSubTransactions;		// all accepted transactions
-	subMapType											mSubRTTransactions;		// all proposed and accepted transactions
-
-	TaggedCache< uint256, std::vector<unsigned char>, UptimeTimerAdapter >	mFetchPack;
-	uint32												mLastFetchPack;
-	uint32												mFetchSeq;
-
-	uint32												mLastLoadBase;
-	uint32												mLastLoadFactor;
-
-	void setMode(OperatingMode);
-
-	Json::Value transJson(const SerializedTransaction& stTxn, TER terResult, bool bValidated, Ledger::ref lpCurrent);
-	bool haveConsensusObject();
-
-	Json::Value pubBootstrapAccountInfo(Ledger::ref lpAccepted, const RippleAddress& naAccountID);
-
-	void pubValidatedTransaction(Ledger::ref alAccepted, const ALTransaction& alTransaction);
-	void pubAccountTransaction(Ledger::ref lpCurrent, const ALTransaction& alTransaction, bool isAccepted);
-
-	void pubServer();
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
@@ -259,7 +198,16 @@ public:
 	// Book functions
 	//
 
-	void getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const uint160& uTakerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult);
+	void getBookPage (Ledger::pointer lpLedger,
+                      const uint160& uTakerPaysCurrencyID,
+                      const uint160& uTakerPaysIssuerID,
+                      const uint160& uTakerGetsCurrencyID,
+                      const uint160& uTakerGetsIssuerID,
+                      const uint160& uTakerID,
+                      const bool bProof,
+                      const unsigned int iLimit,
+                      const Json::Value& jvMarker,
+                      Json::Value& jvResult);
 
 	// raw object operations
 	bool findRawLedger(const uint256& ledgerHash, std::vector<unsigned char>& rawLedger);
@@ -375,6 +323,69 @@ public:
 
 	InfoSub::pointer	findRpcSub(const std::string& strUrl);
 	InfoSub::pointer	addRpcSub(const std::string& strUrl, InfoSub::ref rspEntry);
+
+private:
+	typedef boost::unordered_map<uint160, subMapType>				subInfoMapType;
+	typedef boost::unordered_map<uint160, subMapType>::value_type	subInfoMapValue;
+	typedef boost::unordered_map<uint160, subMapType>::iterator		subInfoMapIterator;
+
+	typedef boost::unordered_map<std::string, InfoSub::pointer>		subRpcMapType;
+
+	OperatingMode						mMode;
+	bool								mNeedNetworkLedger;
+	bool								mProposing, mValidating;
+	bool								mFeatureBlocked;
+	boost::posix_time::ptime			mConnectTime;
+	boost::asio::deadline_timer			mNetTimer;
+	boost::shared_ptr<LedgerConsensus>	mConsensus;
+	boost::unordered_map<uint160,
+		std::list<LedgerProposal::pointer> > mStoredProposals;
+
+	LedgerMaster*						mLedgerMaster;
+	LedgerAcquire::pointer				mAcquiringLedger;
+
+	int									mCloseTimeOffset;
+
+	// last ledger close
+	int									mLastCloseProposers, mLastCloseConvergeTime;
+	uint256								mLastCloseHash;
+	uint32								mLastCloseTime;
+	uint32								mLastValidationTime;
+	SerializedValidation::pointer		mLastValidation;
+
+	// Recent positions taken
+	std::map<uint256, std::pair<int, SHAMap::pointer> >	mRecentPositions;
+
+	// XXX Split into more locks.
+    boost::recursive_mutex								mMonitorLock;
+	subInfoMapType										mSubAccount;
+	subInfoMapType										mSubRTAccount;
+
+	subRpcMapType										mRpcSubMap;
+
+	subMapType											mSubLedger;				// accepted ledgers
+	subMapType											mSubServer;				// when server changes connectivity state
+	subMapType											mSubTransactions;		// all accepted transactions
+	subMapType											mSubRTTransactions;		// all proposed and accepted transactions
+
+	TaggedCache< uint256, std::vector<unsigned char>, UptimeTimerAdapter >	mFetchPack;
+	uint32												mLastFetchPack;
+	uint32												mFetchSeq;
+
+	uint32												mLastLoadBase;
+	uint32												mLastLoadFactor;
+
+	void setMode(OperatingMode);
+
+	Json::Value transJson(const SerializedTransaction& stTxn, TER terResult, bool bValidated, Ledger::ref lpCurrent);
+	bool haveConsensusObject();
+
+	Json::Value pubBootstrapAccountInfo(Ledger::ref lpAccepted, const RippleAddress& naAccountID);
+
+	void pubValidatedTransaction(Ledger::ref alAccepted, const ALTransaction& alTransaction);
+	void pubAccountTransaction(Ledger::ref lpCurrent, const ALTransaction& alTransaction, bool isAccepted);
+
+	void pubServer();
 };
 
 #endif

@@ -167,7 +167,7 @@ void NetworkOPs::submitTransaction(Job&, SerializedTransaction::pointer iTrans, 
 
 	uint256 suppress = trans->getTransactionID();
 	int flags;
-	if (theApp->isNew(suppress, 0, flags) && ((flags & SF_RETRY) != 0))
+	if (theApp->getHashRouter ().addSuppressionPeer (suppress, 0, flags) && ((flags & SF_RETRY) != 0))
 	{
 		WriteLog (lsWARNING, NetworkOPs) << "Redundant transactions submitted";
 		return;
@@ -186,10 +186,10 @@ void NetworkOPs::submitTransaction(Job&, SerializedTransaction::pointer iTrans, 
 			if (!trans->checkSign())
 			{
 				WriteLog (lsWARNING, NetworkOPs) << "Submitted transaction has bad signature";
-				theApp->isNewFlag(suppress, SF_BAD);
+				theApp->getHashRouter ().setFlag (suppress, SF_BAD);
 				return;
 			}
-			theApp->isNewFlag(suppress, SF_SIGGOOD);
+			theApp->getHashRouter ().setFlag (suppress, SF_SIGGOOD);
 		}
 		catch (...)
 		{
@@ -260,9 +260,9 @@ void NetworkOPs::runTransactionQueue()
 			dbtx->setResult(r);
 
 			if (isTemMalformed(r)) // malformed, cache bad
-				theApp->isNewFlag(txn->getID(), SF_BAD);
+				theApp->getHashRouter ().setFlag (txn->getID(), SF_BAD);
 			else if(isTelLocal(r) || isTerRetry(r)) // can be retried
-				theApp->isNewFlag(txn->getID(), SF_RETRY);
+				theApp->getHashRouter ().setFlag (txn->getID(), SF_RETRY);
 
 
 			if (isTerRetry(r))
@@ -292,7 +292,7 @@ void NetworkOPs::runTransactionQueue()
 			if (didApply || (mMode != omFULL))
 			{
 				std::set<uint64> peers;
-				if (theApp->getSuppression().swapSet(txn->getID(), peers, SF_RELAYED))
+				if (theApp->getHashRouter().swapSet(txn->getID(), peers, SF_RELAYED))
 				{
 					ripple::TMTransaction tx;
 					Serializer s;
@@ -302,7 +302,7 @@ void NetworkOPs::runTransactionQueue()
 					tx.set_receivetimestamp(getNetworkTimeNC()); // FIXME: This should be when we received it
 
 					PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
-					theApp->getConnectionPool().relayMessageBut(peers, packet);
+					theApp->getPeers().relayMessageBut(peers, packet);
 				}
 			}
 
@@ -318,7 +318,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 {
 	LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC, "ProcessTXN");
 
-	int newFlags = theApp->getSuppression().getFlags(trans->getID());
+	int newFlags = theApp->getHashRouter().getFlags(trans->getID());
 	if ((newFlags & SF_BAD) != 0)
 	{ // cached bad
 		trans->setStatus(INVALID);
@@ -333,10 +333,10 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 			WriteLog (lsINFO, NetworkOPs) << "Transaction has bad signature";
 			trans->setStatus(INVALID);
 			trans->setResult(temBAD_SIGNATURE);
-			theApp->isNewFlag(trans->getID(), SF_BAD);
+			theApp->getHashRouter ().setFlag (trans->getID(), SF_BAD);
 			return trans;
 		}
-		theApp->isNewFlag(trans->getID(), SF_SIGGOOD);
+		theApp->getHashRouter ().setFlag (trans->getID(), SF_SIGGOOD);
 	}
 
 	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
@@ -347,9 +347,9 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	trans->setResult(r);
 
 	if (isTemMalformed(r)) // malformed, cache bad
-		theApp->isNewFlag(trans->getID(), SF_BAD);
+		theApp->getHashRouter ().setFlag (trans->getID(), SF_BAD);
 	else if(isTelLocal(r) || isTerRetry(r)) // can be retried
-		theApp->isNewFlag(trans->getID(), SF_RETRY);
+		theApp->getHashRouter ().setFlag (trans->getID(), SF_RETRY);
 
 #ifdef DEBUG
 	if (r != tesSUCCESS)
@@ -392,7 +392,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	if (didApply || (mMode != omFULL))
 	{
 		std::set<uint64> peers;
-		if (theApp->getSuppression().swapSet(trans->getID(), peers, SF_RELAYED))
+		if (theApp->getHashRouter().swapSet(trans->getID(), peers, SF_RELAYED))
 		{
 			ripple::TMTransaction tx;
 			Serializer s;
@@ -402,7 +402,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 			tx.set_receivetimestamp(getNetworkTimeNC()); // FIXME: This should be when we received it
 
 			PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
-			theApp->getConnectionPool().relayMessageBut(peers, packet);
+			theApp->getPeers().relayMessageBut(peers, packet);
 		}
 	}
 
@@ -601,7 +601,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 
 		theApp->getLoadManager().noDeadLock();
 
-		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+		std::vector<Peer::pointer> peerList = theApp->getPeers().getPeerVector();
 
 		// do we have sufficient peers? If not, we are disconnected.
 		if (peerList.size() < theConfig.NETWORK_QUORUM)
@@ -639,7 +639,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 void NetworkOPs::tryStartConsensus()
 {
 	uint256 networkClosed;
-	bool ledgerChange = checkLastClosedLedger(theApp->getConnectionPool().getPeerVector(), networkClosed);
+	bool ledgerChange = checkLastClosedLedger(theApp->getPeers().getPeerVector(), networkClosed);
 	if (networkClosed.isZero())
 		return;
 
@@ -822,7 +822,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringCo
 	hash = newLedger->getHash();
 	s.set_ledgerhash(hash.begin(), hash.size());
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, ripple::mtSTATUS_CHANGE);
-	theApp->getConnectionPool().relayMessage(NULL, packet);
+	theApp->getPeers().relayMessage(NULL, packet);
 }
 
 int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger)
@@ -865,7 +865,7 @@ bool NetworkOPs::haveConsensusObject()
 	else
 	{ // we need to get into the consensus process
 		uint256 networkClosed;
-		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+		std::vector<Peer::pointer> peerList = theApp->getPeers().getPeerVector();
 		bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
 		if (!ledgerChange)
 		{
@@ -921,9 +921,9 @@ void NetworkOPs::processTrustedProposal(LedgerProposal::pointer proposal,
 	if (relay)
 	{
 		std::set<uint64> peers;
-		theApp->getSuppression().swapSet(proposal->getSuppression(), peers, SF_RELAYED);
+		theApp->getHashRouter().swapSet(proposal->getHashRouter(), peers, SF_RELAYED);
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(*set, ripple::mtPROPOSE_LEDGER);
-		theApp->getConnectionPool().relayMessageBut(peers, message);
+		theApp->getPeers().relayMessageBut(peers, message);
 	}
 	else
 		WriteLog (lsINFO, NetworkOPs) << "Not relaying trusted proposal";
@@ -994,7 +994,7 @@ void NetworkOPs::mapComplete(const uint256& hash, SHAMap::ref map)
 void NetworkOPs::endConsensus(bool correctLCL)
 {
 	uint256 deadLedger = mLedgerMaster->getClosedLedger()->getParentHash();
-	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+	std::vector<Peer::pointer> peerList = theApp->getPeers().getPeerVector();
 	BOOST_FOREACH(Peer::ref it, peerList)
 		if (it && (it->getClosedLedgerHash() == deadLedger))
 		{
@@ -1282,7 +1282,7 @@ Json::Value NetworkOPs::getServerInfo(bool human, bool admin)
 	if (fp != 0)
 		info["fetch_pack"] = Json::UInt(fp);
 
-	info["peers"] = theApp->getConnectionPool().getPeerCount();
+	info["peers"] = theApp->getPeers().getPeerCount();
 
 	Json::Value lastClose = Json::objectValue;
 	lastClose["proposers"] = theApp->getOPs().getPreviousProposers();
@@ -1782,7 +1782,7 @@ bool NetworkOPs::subServer(InfoSub::ref isrListener, Json::Value& jvResult)
 	if (theConfig.TESTNET)
 		jvResult["testnet"]		= theConfig.TESTNET;
 
-	getRand(uRandom.begin(), uRandom.size());
+	RandomNumbers::getInstance ().fillBytes (uRandom.begin(), uRandom.size());
 	jvResult["random"]			= uRandom.ToString();
 	jvResult["server_status"]	= strOperatingMode();
 	jvResult["load_base"]		= theApp->getFeeTrack().getLoadBase();

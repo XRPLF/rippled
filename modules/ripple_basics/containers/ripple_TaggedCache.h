@@ -33,39 +33,6 @@ public:
 	typedef boost::weak_ptr<data_type>		weak_data_ptr;
 	typedef boost::shared_ptr<data_type>	data_ptr;
 
-protected:
-
-	class cache_entry
-	{
-	public:
-		int				last_use;
-		data_ptr		ptr;
-		weak_data_ptr	weak_ptr;
-
-		cache_entry(int l, const data_ptr& d) : last_use(l), ptr(d), weak_ptr(d) { ; }
-		bool isWeak()		{ return !ptr; }
-		bool isCached()		{ return !!ptr; }
-		bool isExpired()	{ return weak_ptr.expired(); }
-		data_ptr lock()		{ return weak_ptr.lock(); }
-		void touch()		{ last_use = Timer::getElapsedSeconds (); }
-	};
-
-	typedef std::pair<key_type, cache_entry>				cache_pair;
-	typedef boost::unordered_map<key_type, cache_entry>		cache_type;
-	typedef typename cache_type::iterator					cache_iterator;
-
-	mutable boost::recursive_mutex mLock;
-
-	std::string	mName;			// Used for logging
-	int			mTargetSize;	// Desired number of cache entries (0 = ignore)
-	int			mTargetAge;		// Desired maximum cache age
-	int			mCacheCount;	// Number of items cached
-
-	cache_type	mCache;			// Hold strong reference to recent objects
-	int			mLastSweep;
-
-	uint64		mHits, mMisses;
-
 public:
 	TaggedCache(const char *name, int size, int age)
 		: mName(name)
@@ -99,6 +66,38 @@ public:
 	bool retrieve(const key_type& key, c_Data& data);
 
 	boost::recursive_mutex& peekMutex() { return mLock; }
+
+private:
+	class cache_entry
+	{
+	public:
+		int				last_use;
+		data_ptr		ptr;
+		weak_data_ptr	weak_ptr;
+
+		cache_entry(int l, const data_ptr& d) : last_use(l), ptr(d), weak_ptr(d) { ; }
+		bool isWeak()		{ return !ptr; }
+		bool isCached()		{ return !!ptr; }
+		bool isExpired()	{ return weak_ptr.expired(); }
+		data_ptr lock()		{ return weak_ptr.lock(); }
+		void touch()		{ last_use = Timer::getElapsedSeconds (); }
+	};
+
+	typedef std::pair<key_type, cache_entry>				cache_pair;
+	typedef boost::unordered_map<key_type, cache_entry>		cache_type;
+	typedef typename cache_type::iterator					cache_iterator;
+
+	mutable boost::recursive_mutex mLock;
+
+	std::string	mName;			// Used for logging
+	int			mTargetSize;	// Desired number of cache entries (0 = ignore)
+	int			mTargetAge;		// Desired maximum cache age
+	int			mCacheCount;	// Number of items cached
+
+	cache_type	mCache;			// Hold strong reference to recent objects
+	int			mLastSweep;
+
+	uint64		mHits, mMisses;
 };
 
 template<typename c_Key, typename c_Data, class Timer>

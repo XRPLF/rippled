@@ -6,9 +6,6 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
 
-#include "modules/ripple_main/misc/ripple_HashValue.h"
-
-
 // VFALCO: TODO, Move this to someplace sensible!!
 // Adapter to furnish uptime information to KeyCache via UptimeTimer singleton
 struct UptimeTimerAdapter
@@ -58,21 +55,7 @@ public:
 
 class HashedObjectStore
 {
-protected:
-	TaggedCache<uint256, HashedObject, UptimeTimerAdapter>	mCache;
-	KeyCache <uint256, UptimeTimerAdapter> mNegativeCache;
-
-	boost::mutex				mWriteMutex;
-	boost::condition_variable	mWriteCondition;
-	int							mWriteGeneration;
-	int							mWriteLoad;
-
-	std::vector< boost::shared_ptr<HashedObject> > mWriteSet;
-	bool mWritePending;
-	bool mLevelDB, mEphemeralDB;
-
 public:
-
 	HashedObjectStore(int cacheSize, int cacheAge);
 
 	bool isLevelDB()		{ return mLevelDB; }
@@ -111,6 +94,20 @@ public:
 	int getWriteLoad();
 
 	int import(const std::string& fileName);
+
+private:
+	TaggedCache<uint256, HashedObject, UptimeTimerAdapter>	mCache;
+	KeyCache <uint256, UptimeTimerAdapter> mNegativeCache;
+
+	boost::mutex				mWriteMutex;
+	boost::condition_variable	mWriteCondition;
+	int							mWriteGeneration;
+	int							mWriteLoad;
+
+	std::vector< boost::shared_ptr<HashedObject> > mWriteSet;
+	bool mWritePending;
+	bool mLevelDB;
+	bool mEphemeralDB;
 };
 
 #endif

@@ -5,6 +5,7 @@
 
 #include <boost/thread/mutex.hpp>
 
+// VFALCO: TODO replace LT_ with loadType in constants
 enum LoadType
 { // types of load that can be placed on the server
 
@@ -44,23 +45,17 @@ public:
 	LoadCost(LoadType t, int cost, int cat) : mType(t), mCost(cost), mCategories(cat) { ; }
 };
 
+// a single endpoint that can impose load
 class LoadSource
-{ // a single endpoint that can impose load
+{ 
+private:
+    // VFALCO: Make this not a friend
 	friend class LoadManager;
 
 public:
-
 	// load source flags
 	static const int lsfPrivileged	= 1;
 	static const int lsfOutbound	= 2; // outbound connection
-
-protected:
-	std::string	mName;
-	int			mBalance;
-	int			mFlags;
-	int			mLastUpdate;
-	int			mLastWarning;
-	bool		mLogged;
 
 public:
 	LoadSource(bool admin)
@@ -94,39 +89,19 @@ public:
 
 	void	setOutbound()			{ mFlags |= lsfOutbound; }
 	bool	isOutbound() const		{ return (mFlags & lsfOutbound) != 0; }
+
+private:
+	std::string	mName;
+	int			mBalance;
+	int			mFlags;
+	int			mLastUpdate;
+	int			mLastWarning;
+	bool		mLogged;
 };
 
-
+// a collection of load sources
 class LoadManager
-{ // a collection of load sources
-protected:
-
-	int mCreditRate;			// credits gained/lost per second
-	int mCreditLimit;			// the most credits a source can have
-	int mDebitWarn;				// when a source drops below this, we warn
-	int mDebitLimit;			// when a source drops below this, we cut it off (should be negative)
-
-	bool mShutdown;
-	bool mArmed;
-
-	/*
-	int mSpace1[4];				// We want mUptime to have its own cache line
-	int mUptime;
-	int mSpace2[4];
-	*/
-
-	int mDeadLock;				// Detect server deadlocks
-
-	mutable boost::mutex mLock;
-
-	void canonicalize(LoadSource&, int upTime) const;
-
-	std::vector<LoadCost>	mCosts;
-
-	void addLoadCost(const LoadCost& c) { mCosts[static_cast<int>(c.mType)] = c; }
-
-	void threadEntry();
-
+{
 public:
 
 	LoadManager(int creditRate = 100, int creditLimit = 500, int debitWarn = -500, int debitLimit = -1000);
@@ -153,50 +128,34 @@ public:
 	int getCost(LoadType t)		{ return mCosts[static_cast<int>(t)].mCost; }
 	void noDeadLock();
 	void arm()					{ mArmed = true; }
+
+private:
+	int mCreditRate;			// credits gained/lost per second
+	int mCreditLimit;			// the most credits a source can have
+	int mDebitWarn;				// when a source drops below this, we warn
+	int mDebitLimit;			// when a source drops below this, we cut it off (should be negative)
+
+	bool mShutdown;
+	bool mArmed;
+
+	/*
+	int mSpace1[4];				// We want mUptime to have its own cache line
+	int mUptime;
+	int mSpace2[4];
+	*/
+
+	int mDeadLock;				// Detect server deadlocks
+
+	mutable boost::mutex mLock;
+
+	void canonicalize(LoadSource&, int upTime) const;
+
+	std::vector<LoadCost>	mCosts;
+
+	void addLoadCost(const LoadCost& c) { mCosts[static_cast<int>(c.mType)] = c; }
+
+	void threadEntry();
 };
-
-class LoadFeeTrack
-{ // structure that tracks our current fee/load schedule
-protected:
-
-	static const int lftNormalFee = 256;		// 256 is the minimum/normal load factor
-	static const int lftFeeIncFraction = 16;	// increase fee by 1/16
-	static const int lftFeeDecFraction = 4;		// decrease fee by 1/4
-	static const int lftFeeMax = lftNormalFee * 1000000;
-
-	uint32 mLocalTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
-	uint32 mRemoteTxnLoadFee;		// Scale factor, lftNormalFee = normal fee
-	int raiseCount;
-
-	boost::mutex mLock;
-
-	static uint64 mulDiv(uint64 value, uint32 mul, uint64 div);
-
-public:
-
-	LoadFeeTrack() : mLocalTxnLoadFee(lftNormalFee), mRemoteTxnLoadFee(lftNormalFee), raiseCount(0)
-	{ ; }
-
-	// Scale from fee units to millionths of a ripple
-	uint64 scaleFeeBase(uint64 fee, uint64 baseFee, uint32 referenceFeeUnits);
-
-	// Scale using load as well as base rate
-	uint64 scaleFeeLoad(uint64 fee, uint64 baseFee, uint32 referenceFeeUnits, bool bAdmin);
-
-	uint32 getRemoteFee();
-	uint32 getLocalFee();
-
-	uint32 getLoadBase()		{ return lftNormalFee; }
-	uint32 getLoadFactor();
-
-	Json::Value getJson(uint64 baseFee, uint32 referenceFeeUnits);
-
-	void setRemoteFee(uint32);
-	bool raiseLocalFee();
-	bool lowerLocalFee();
-	bool isLoaded();
-};
-
 
 #endif
 

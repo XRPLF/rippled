@@ -1,10 +1,61 @@
 
-class FeatureTable;
+class Features;
 
 //------------------------------------------------------------------------------
 
 class FeeVote : public IFeeVote
 {
+private:
+    // VFALCO: TODO, rename template parameter (wtf, looks like a macro)
+    template <typename INT>
+    class VotableInteger
+    {
+    public:
+	    VotableInteger(INT current, INT target) : mCurrent(current), mTarget(target)
+	    {
+		    ++mVoteMap[mTarget];				// Add our vote
+	    }
+
+	    bool mayVote()
+	    {
+		    return mCurrent != mTarget;			// If we love the current setting, we will not vote
+	    }
+
+	    void addVote(INT vote)
+	    {
+		    ++mVoteMap[vote];
+	    }
+
+	    void noVote()
+	    {
+		    addVote(mCurrent);
+	    }
+
+	    INT getVotes()
+	    {
+		    INT ourVote = mCurrent;
+		    int weight = 0;
+
+		    typedef typename std::map<INT, int>::value_type mapVType;
+		    BOOST_FOREACH(const mapVType& value, mVoteMap)
+		    { // Take most voted value between current and target, inclusive
+			    if ((value.first <= std::max(mTarget, mCurrent)) &&
+				    (value.first >= std::min(mTarget, mCurrent)) &&
+				    (value.second > weight))
+			    {
+				    ourVote = value.first;
+				    weight = value.second;
+			    }
+		    }
+
+		    return ourVote;
+	    }
+
+    private:
+        INT						mCurrent;		// The current setting
+	    INT						mTarget;		// The setting we want
+	    std::map<INT, int>		mVoteMap;
+    };
 public:
 	FeeVote (uint64 targetBaseFee, uint32 targetReserveBase, uint32 targetReserveIncrement)
 		: mTargetBaseFee (targetBaseFee)
@@ -19,19 +70,19 @@ public:
 	{
 		if (lastClosedLedger->getBaseFee() != mTargetBaseFee)
 		{
-			WriteLog (lsINFO, FeatureTable) << "Voting for base fee of " << mTargetBaseFee;
+			WriteLog (lsINFO, Features) << "Voting for base fee of " << mTargetBaseFee;
 			baseValidation.setFieldU64(sfBaseFee, mTargetBaseFee);
 		}
 
 		if (lastClosedLedger->getReserve(0) != mTargetReserveBase)
 		{
-			WriteLog (lsINFO, FeatureTable) << "Voting for base resrve of " << mTargetReserveBase;
+			WriteLog (lsINFO, Features) << "Voting for base resrve of " << mTargetReserveBase;
 			baseValidation.setFieldU32(sfReserveBase, mTargetReserveBase);
 		}
 
 		if (lastClosedLedger->getReserveInc() != mTargetReserveIncrement)
 		{
-			WriteLog (lsINFO, FeatureTable) << "Voting for reserve increment of " << mTargetReserveIncrement;
+			WriteLog (lsINFO, Features) << "Voting for reserve increment of " << mTargetReserveIncrement;
 			baseValidation.setFieldU32(sfReserveIncrement, mTargetReserveIncrement);
 		}
 	}
@@ -94,7 +145,7 @@ public:
 			(baseReserve != lastClosedLedger->getReserve(0)) ||
 			(incReserve != lastClosedLedger->getReserveInc()))
 		{
-			WriteLog (lsWARNING, FeatureTable) << "We are voting for a fee change: " << baseFee << "/" << baseReserve << "/" << incReserve;
+			WriteLog (lsWARNING, Features) << "We are voting for a fee change: " << baseFee << "/" << baseReserve << "/" << incReserve;
 
 			SerializedTransaction trans(ttFEE);
 			trans.setFieldAccount(sfAccount, uint160());
@@ -105,7 +156,7 @@ public:
 
 			uint256 txID = trans.getTransactionID();
 
-			WriteLog (lsWARNING, FeatureTable) << "Vote: " << txID;
+			WriteLog (lsWARNING, Features) << "Vote: " << txID;
 
 			Serializer s;
 			trans.add(s, true);
@@ -113,7 +164,7 @@ public:
 			SHAMapItem::pointer tItem = boost::make_shared<SHAMapItem>(txID, s.peekData());
 			if (!initialPosition->addGiveItem(tItem, true, false))
 			{
-				WriteLog (lsWARNING, FeatureTable) << "Ledger already had fee change";
+				WriteLog (lsWARNING, Features) << "Ledger already had fee change";
 			}
 		}
 	}

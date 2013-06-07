@@ -3,7 +3,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "SerializedTypes.h"
 #include "RippleCalc.h"
 #include "OrderBookDB.h"
 #include "AccountItems.h"
@@ -36,11 +35,6 @@ public:
 
 class RLCache
 {
-protected:
-	boost::mutex											mLock;
-	Ledger::pointer											mLedger;
-	boost::unordered_map<uint160, AccountItems::pointer>	mRLMap;
-
 public:
 	typedef boost::shared_ptr<RLCache>	pointer;
 	typedef const pointer&				ref;
@@ -49,10 +43,25 @@ public:
 	Ledger::ref getLedger()				{ return mLedger; }
 
 	AccountItems&		getRippleLines(const uint160& accountID);
+
+private:
+	boost::mutex											mLock;
+	Ledger::pointer											mLedger;
+	boost::unordered_map<uint160, AccountItems::pointer>	mRLMap;
 };
 
 class Pathfinder
 {
+public:
+	Pathfinder(RLCache::ref cache,
+		const RippleAddress& srcAccountID, const RippleAddress& dstAccountID,
+		const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount, bool& bValid);
+
+	bool findPaths(const unsigned int iMaxSteps, const unsigned int iMaxPaths, STPathSet& spsDst);
+
+	bool bDefaultPath(const STPath& spPath);
+
+private:
 	uint160				mSrcAccountID;
 	uint160				mDstAccountID;
 	STAmount			mDstAmount;
@@ -82,15 +91,6 @@ class Pathfinder
 
 	int getPathsOut(const uint160& currency, const uint160& accountID,
 		bool isAuthRequired, bool isDestCurrency, const uint160& dest);
-
-public:
-	Pathfinder(RLCache::ref cache,
-		const RippleAddress& srcAccountID, const RippleAddress& dstAccountID,
-		const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount, bool& bValid);
-
-	bool findPaths(const unsigned int iMaxSteps, const unsigned int iMaxPaths, STPathSet& spsDst);
-
-	bool bDefaultPath(const STPath& spPath);
 };
 
 boost::unordered_set<uint160> usAccountDestCurrencies(const RippleAddress& raAccountID, Ledger::ref lrLedger,

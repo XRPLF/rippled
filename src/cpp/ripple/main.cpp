@@ -8,7 +8,6 @@
 
 #include "Application.h"
 #include "CallRPC.h"
-#include "Config.h"
 #include "RPCHandler.h"
 
 namespace po = boost::program_options;
@@ -161,7 +160,7 @@ int main(int argc, char* argv[])
 	// Prepare to run
 	//
 
-	if (!AddSystemEntropy())
+	if (! RandomNumbers::getInstance ().initialize ())
 	{
 		std::cerr << "Unable to add system entropy" << std::endl;
 		iResult	= 2;

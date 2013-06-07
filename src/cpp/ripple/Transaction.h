@@ -13,7 +13,6 @@
 
 #include "SHAMap.h"
 #include "SerializedTransaction.h"
-#include "TransactionErr.h"
 
 class Database;
 

@@ -1,12 +1,7 @@
 #ifndef __SERIALIZEDTRANSACTION__
 #define __SERIALIZEDTRANSACTION__
 
-#include <vector>
-
-#include <boost/shared_ptr.hpp>
-
-#include "SerializedObject.h"
-#include "TransactionFormats.h"
+// VFALCO: TODO, eliminate these macros
 
 #define TXN_SQL_NEW			'N'
 #define TXN_SQL_CONFLICT	'C'
@@ -22,14 +17,6 @@ class SerializedTransaction : public STObject, private IS_INSTANCE(SerializedTra
 public:
 	typedef boost::shared_ptr<SerializedTransaction>		pointer;
 	typedef const boost::shared_ptr<SerializedTransaction>&	ref;
-
-protected:
-	TransactionType mType;
-	const TransactionFormat* mFormat;
-
-	SerializedTransaction* duplicate() const { return new SerializedTransaction(*this); }
-
-	mutable bool mSigGood, mSigBad;
 
 public:
 	SerializedTransaction(SerializerIterator& sit);
@@ -89,6 +76,13 @@ public:
 	std::string getMetaSQL(uint32 inLedger, const std::string& escapedMetaData) const;
 	std::string getMetaSQL(Serializer rawTxn, uint32 inLedger, char status, const std::string& escapedMetaData) const;
 
+private:
+	TransactionType mType;
+	const TransactionFormat* mFormat;
+
+	SerializedTransaction* duplicate() const { return new SerializedTransaction(*this); }
+
+	mutable bool mSigGood, mSigBad;
 };
 
 #endif

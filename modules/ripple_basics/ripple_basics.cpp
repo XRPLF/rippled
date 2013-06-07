@@ -84,6 +84,7 @@
 #endif
 #include "utility/ripple_RandomNumbers.cpp" // has Win32/Posix dependencies
 
+#include "types/ripple_UInt256.cpp"
 
 #ifdef _MSC_VER
 //#pragma warning (pop)

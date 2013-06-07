@@ -20,11 +20,9 @@ public:
 };
 
 // This class is only needed on add functions
+// sync filter for account state nodes during ledger sync
 class AccountStateSF : public SHAMapSyncFilter
-{ // sync filter for account state nodes during ledger sync
-protected:
-	uint32 mLedgerSeq;
-
+{
 public:
 	AccountStateSF(uint32 ledgerSeq) : mLedgerSeq(ledgerSeq)
 	{ ; }
@@ -38,14 +36,15 @@ public:
 	{
 		return theApp->getOPs().getFetchPack(nodeHash, nodeData);
 	}
+
+private:
+	uint32 mLedgerSeq;
 };
 
 // This class is only needed on add functions
+// sync filter for transactions tree during ledger sync
 class TransactionStateSF : public SHAMapSyncFilter
-{ // sync filter for transactions tree during ledger sync
-protected:
-	uint32 mLedgerSeq;
-
+{ 
 public:
 	TransactionStateSF(uint32 ledgerSeq) : mLedgerSeq(ledgerSeq)
 	{ ; }
@@ -61,6 +60,9 @@ public:
 	{
 		return theApp->getOPs().getFetchPack(nodeHash, nodeData);
 	}
+
+private:
+	uint32 mLedgerSeq;
 };
 
 #endif

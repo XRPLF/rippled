@@ -14,7 +14,6 @@
 #include <boost/weak_ptr.hpp>
 
 #include "Ledger.h"
-#include "Peer.h"
 
 // How long before we try again to acquire the same ledger
 #ifndef LEDGER_REACQUIRE_INTERVAL
@@ -25,22 +24,6 @@ DEFINE_INSTANCE(LedgerAcquire);
 
 class PeerSet
 {
-protected:
-	uint256 mHash;
-	int mTimerInterval, mTimeouts;
-	bool mComplete, mFailed, mProgress, mAggressive;
-	int mLastAction;
-
-	boost::recursive_mutex					mLock;
-	boost::asio::deadline_timer				mTimer;
-	boost::unordered_map<uint64, int>		mPeers;
-
-	PeerSet(const uint256& hash, int interval);
-	virtual ~PeerSet() { ; }
-
-	void sendRequest(const ripple::TMGetLedger& message);
-	void sendRequest(const ripple::TMGetLedger& message, Peer::ref peer);
-
 public:
 	const uint256& getHash() const		{ return mHash; }
 	bool isComplete() const				{ return mComplete; }
@@ -69,6 +52,22 @@ protected:
 	void setComplete()					{ mComplete = true; }
 	void setFailed()					{ mFailed = true; }
 	void invokeOnTimer();
+
+protected:
+	uint256 mHash;
+	int mTimerInterval, mTimeouts;
+	bool mComplete, mFailed, mProgress, mAggressive;
+	int mLastAction;
+
+	boost::recursive_mutex					mLock;
+	boost::asio::deadline_timer				mTimer;
+	boost::unordered_map<uint64, int>		mPeers;
+
+	PeerSet(const uint256& hash, int interval);
+	virtual ~PeerSet() { ; }
+
+	void sendRequest(const ripple::TMGetLedger& message);
+	void sendRequest(const ripple::TMGetLedger& message, Peer::ref peer);
 
 private:
 	static void TimerEntry(boost::weak_ptr<PeerSet>, const boost::system::error_code& result);

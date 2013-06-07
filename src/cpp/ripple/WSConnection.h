@@ -1,4 +1,7 @@
 
+#ifndef RIPPLE_WSCONNECTION_H
+#define RIPPLE_WSCONNECTION_H
+
 #include "../websocketpp/src/sockets/autotls.hpp"
 #include "../websocketpp/src/websocketpp.hpp"
 
@@ -36,23 +39,6 @@ public:
 	typedef typename boost::shared_ptr<connection> connection_ptr;
 	typedef typename boost::weak_ptr<connection> weak_connection_ptr;
 	typedef typename endpoint_type::handler::message_ptr message_ptr;
-
-protected:
-	typedef void (WSConnection::*doFuncPtr)(Json::Value& jvResult, Json::Value &jvRequest);
-
-	WSServerHandler<endpoint_type>*		mHandler;
-	weak_connection_ptr					mConnection;
-	NetworkOPs&							mNetwork;
-	std::string							mRemoteIP;
-	LoadSource							mLoadSource;
-
-	boost::asio::deadline_timer			mPingTimer;
-	bool								mPinged;
-
-	boost::recursive_mutex				mRcvQueueLock;
-	std::queue<message_ptr>				mRcvQueue;
-	bool								mRcvQueueRunning;
-	bool								mDead;
 
 public:
 	//	WSConnection()
@@ -254,6 +240,24 @@ public:
 		return m;
 	}
 
+private:
+	typedef void (WSConnection::*doFuncPtr)(Json::Value& jvResult, Json::Value &jvRequest);
+
+	WSServerHandler<endpoint_type>*		mHandler;
+	weak_connection_ptr					mConnection;
+	NetworkOPs&							mNetwork;
+	std::string							mRemoteIP;
+	LoadSource							mLoadSource;
+
+	boost::asio::deadline_timer			mPingTimer;
+	bool								mPinged;
+
+	boost::recursive_mutex				mRcvQueueLock;
+	std::queue<message_ptr>				mRcvQueue;
+	bool								mRcvQueueRunning;
+	bool								mDead;
 };
+
+#endif
 
 // vim:ts=4
