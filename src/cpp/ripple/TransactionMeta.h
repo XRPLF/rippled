@@ -1,12 +1,5 @@
-#ifndef __TRANSACTIONMETA__
-#define __TRANSACTIONMETA__
-
-#include <vector>
-
-#include <boost/shared_ptr.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
-
-#include "SerializedLedger.h"
+#ifndef RIPPLE_TRANSACTIONMETA_H
+#define RIPPLE_TRANSACTIONMETA_H
 
 class TransactionMetaSet
 {
@@ -16,25 +9,25 @@ public:
 
 public:
 	TransactionMetaSet() : mLedger(0), mIndex(static_cast<uint32>(-1)), mResult(255) { ; }
-	TransactionMetaSet(const uint256& txID, uint32 ledger, uint32 index) :
+	TransactionMetaSet(uint256 const& txID, uint32 ledger, uint32 index) :
 		mTransactionID(txID), mLedger(ledger), mIndex(static_cast<uint32>(-1)), mResult(255) { ; }
-	TransactionMetaSet(const uint256& txID, uint32 ledger, Blob const&);
+	TransactionMetaSet(uint256 const& txID, uint32 ledger, Blob const&);
 
-	void init(const uint256& transactionID, uint32 ledger);
+	void init(uint256 const& transactionID, uint32 ledger);
 	void clear() { mNodes.clear(); }
 	void swap(TransactionMetaSet&);
 
-	const uint256& getTxID()	{ return mTransactionID; }
+	uint256 const& getTxID()	{ return mTransactionID; }
 	uint32 getLgrSeq()			{ return mLedger; }
 	int getResult() const		{ return mResult; }
 	TER getResultTER() const	{ return static_cast<TER>(mResult); }
 	uint32 getIndex() const		{ return mIndex; }
 
-	bool isNodeAffected(const uint256&) const;
-	void setAffectedNode(const uint256&, SField::ref type, uint16 nodeType);
+	bool isNodeAffected(uint256 const& ) const;
+	void setAffectedNode(uint256 const& , SField::ref type, uint16 nodeType);
 	STObject& getAffectedNode(SLE::ref node, SField::ref type); // create if needed
-	STObject& getAffectedNode(const uint256&);
-	const STObject& peekAffectedNode(const uint256&) const;
+	STObject& getAffectedNode(uint256 const& );
+	const STObject& peekAffectedNode(uint256 const& ) const;
 	std::vector<RippleAddress> getAffectedAccounts();
 
 
@@ -44,7 +37,7 @@ public:
 	STObject getAsObject() const;
 	STArray& getNodes(){ return(mNodes); }
 
-	static bool thread(STObject& node, const uint256& prevTxID, uint32 prevLgrID);
+	static bool thread(STObject& node, uint256 const& prevTxID, uint32 prevLgrID);
 
 private:
 	uint256	mTransactionID;

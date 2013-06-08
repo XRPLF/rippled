@@ -27,7 +27,7 @@ public:
 	int add64(uint64);				// native currency amounts
 	int add128(const uint128&);		// private key generators
 	int add160(const uint160&);		// account names, hankos
-	int add256(const uint256&);		// transaction and ledger hashes
+	int add256(uint256 const& );		// transaction and ledger hashes
 	int addRaw(Blob const& vector);
 	int addRaw(const void *ptr, int len);
 	int addRaw(const Serializer& s);
@@ -47,10 +47,10 @@ public:
 	bool get160(uint160&, int offset) const;
 	bool get256(uint256&, int offset) const;
 	uint256 get256(int offset) const;
-	bool getRaw(Blob &, int offset, int length) const;
+	bool getRaw(Blob&, int offset, int length) const;
 	Blob getRaw(int offset, int length) const;
 
-	bool getVL(Blob & objectVL, int offset, int& length) const;
+	bool getVL(Blob& objectVL, int offset, int& length) const;
 	bool getVLLength(int& length, int offset) const;
 
 	bool getFieldID(int& type, int& name, int offset) const;
@@ -77,7 +77,7 @@ public:
 	// totality functions
 	Blob const& peekData() const		{ return mData; }
 	Blob getData() const				{ return mData; }
-	Blob & modData()					{ return mData; }
+	Blob& modData()					{ return mData; }
 	int getCapacity() const				{ return mData.capacity(); }
 	int getDataLength() const			{ return mData.size(); }
 	const void* getDataPtr() const		{ return &mData.front(); }
@@ -107,7 +107,7 @@ public:
 	// signature functions
 	bool checkSignature(int pubkeyOffset, int signatureOffset) const;
 	bool checkSignature(Blob const& signature, CKey& rkey) const;
-	bool makeSignature(Blob & signature, CKey& rkey) const;
+	bool makeSignature(Blob& signature, CKey& rkey) const;
 	bool addSignature(CKey& rkey);
 
 	// low-level VL length encode/decode functions

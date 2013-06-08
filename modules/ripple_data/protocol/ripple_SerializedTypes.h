@@ -543,8 +543,8 @@ private:
 class STHash256 : public SerializedType
 {
 public:
-	STHash256(const uint256& v) : value(v) { ; }
-	STHash256(SField::ref n, const uint256& v) : SerializedType(n), value(v) { ; }
+	STHash256(uint256 const& v) : value(v) { ; }
+	STHash256(SField::ref n, uint256 const& v) : SerializedType(n), value(v) { ; }
 	STHash256(SField::ref n, const char *v) : SerializedType(n) { value.SetHex(v); }
 	STHash256(SField::ref n, const std::string &v) : SerializedType(n) { value.SetHex(v); }
 	STHash256(SField::ref n) : SerializedType(n) { ; }
@@ -556,8 +556,8 @@ public:
 	std::string getText() const;
 	void add(Serializer& s) const { s.add256(value); }
 
-	const uint256& getValue() const { return value; }
-	void setValue(const uint256& v) { value=v; }
+	uint256 const& getValue() const { return value; }
+	void setValue(uint256 const& v) { value=v; }
 
 	operator uint256() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
@@ -587,7 +587,7 @@ public:
 	void add(Serializer& s) const { s.addVL(value); }
 
 	Blob const& peekValue() const { return value; }
-	Blob & peekValue() { return value; }
+	Blob& peekValue() { return value; }
 	Blob getValue() const { return value; }
 	void setValue(Blob const& v) { value=v; }
 
@@ -864,13 +864,13 @@ public:
 	int size() const								{ return mValue.size(); }
 	bool isEmpty() const							{ return mValue.empty(); }
 
-	const uint256& at(int i) const					{ assert((i >= 0) && (i < size())); return mValue.at(i); }
+	uint256 const& at(int i) const					{ assert((i >= 0) && (i < size())); return mValue.at(i); }
 	uint256& at(int i)								{ assert((i >= 0) && (i < size())); return mValue.at(i); }
 
 	void setValue(const STVector256& v)				{ mValue = v.mValue; }
 	void setValue(const std::vector<uint256>& v)	{ mValue = v; }
-	void addValue(const uint256& v)					{ mValue.push_back(v); }
-	bool hasValue(const uint256& v) const;
+	void addValue(uint256 const& v)					{ mValue.push_back(v); }
+	bool hasValue(uint256 const& v) const;
 	void sort()										{ std::sort(mValue.begin(), mValue.end()); }
 
 	Json::Value getJson(int) const;

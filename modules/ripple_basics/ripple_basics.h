@@ -134,7 +134,7 @@ namespace boost {
 #include "containers/ripple_SecureAllocator.h"
 #include "containers/ripple_TaggedCache.h"
 
-#include "types/ripple_Types.h"
+#include "types/ripple_BasicTypes.h"
 #include "utility/ripple_ByteOrder.h"
 #include "utility/ripple_DiffieHellmanUtil.h"
 #include "utility/ripple_InstanceCounter.h"

@@ -12,7 +12,7 @@ public:
 private:
 	bool bValidOffer(
 		SLE::ref			sleOfferDir,
-		const uint256&		uOffer,
+		uint256 const& 		uOffer,
 		const uint160&		uOfferOwnerID,
 		const STAmount&		saOfferPays,
 		const STAmount&		saOfferGets,
@@ -26,7 +26,7 @@ private:
 		const bool			bOpenLedger,
 		const bool			bPassive,
 		const bool			bSell,
-		const uint256&		uBookBase,
+		uint256 const& 		uBookBase,
 		const uint160&		uTakerAccountID,
 		SLE::ref			sleTakerAccount,
 		const STAmount&		saTakerPays,

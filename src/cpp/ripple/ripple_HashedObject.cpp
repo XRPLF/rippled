@@ -1,14 +1,50 @@
 
-/*
-#include "HashedObject.h"
-#include "leveldb/db.h"
-#include "leveldb/write_batch.h"
-#include "../database/SqliteDatabase.h"
-#include "Application.h"
-*/
-
 SETUP_LOG (HashedObject)
 
-DECLARE_INSTANCE(HashedObject);
+DECLARE_INSTANCE (HashedObject);
 
-// vim:ts=4
+HashedObject::HashedObject (
+    HashedObjectType type,
+    LedgerIndex ledgerIndex,
+    Blob const& binaryDataToCopy,
+    uint256 const& hash)
+    : mType (type)
+    , mHash (hash)
+    , mLedgerIndex (ledgerIndex)
+    , mData (binaryDataToCopy)
+{
+}
+
+HashedObject::HashedObject (
+    HashedObjectType type,
+    LedgerIndex ledgerIndex,
+    void const* bufferToCopy,
+    int bytesInBuffer,
+    uint256 const& hash)
+    : mType (type)
+    , mHash (hash)
+    , mLedgerIndex (ledgerIndex)
+    , mData (static_cast <unsigned char const*> (bufferToCopy),
+             static_cast <unsigned char const*> (bufferToCopy) + bytesInBuffer)
+{
+}
+
+HashedObjectType HashedObject::getType () const
+{
+    return mType;
+}
+
+uint256 const& HashedObject::getHash() const
+{
+    return mHash;
+}
+
+LedgerIndex HashedObject::getIndex () const
+{
+    return mLedgerIndex;
+}
+
+Blob const& HashedObject::getData() const
+{
+    return mData;
+}

@@ -1,17 +1,13 @@
-#ifndef __LEDGERMASTER__
-#define __LEDGERMASTER__
-
-#include "Ledger.h"
-#include "LedgerHistory.h"
-#include "LedgerAcquire.h"
-#include "Transaction.h"
-#include "TransactionEngine.h"
-#include "CanonicalTXSet.h"
+#ifndef RIPPLE_LEDGERMASTER_H
+#define RIPPLE_LEDGERMASTER_H
 
 // Tracks the current ledger and any ledgers in the process of closing
 // Tracks ledger history
 // Tracks held transactions
 
+// VFALCO TODO Rename to Ledgers
+//        It sounds like this holds all the ledgers...
+//
 class LedgerMaster
 {
 public:
@@ -84,7 +80,7 @@ public:
 		return ret;
 	}
 
-	Ledger::pointer getLedgerByHash(const uint256& hash)
+	Ledger::pointer getLedgerByHash(uint256 const& hash)
 	{
 		if (hash.isZero())
 			return boost::make_shared<Ledger>(boost::ref(*mCurrentLedger), false);
@@ -119,8 +115,8 @@ public:
 
 	void addValidateCallback(callback& c) { mOnValidate.push_back(c); }
 
-	void checkAccept(const uint256& hash);
-	void checkAccept(const uint256& hash, uint32 seq);
+	void checkAccept(uint256 const& hash);
+	void checkAccept(uint256 const& hash, uint32 seq);
 	void tryPublish();
 	void newPFRequest();
 
@@ -131,7 +127,7 @@ private:
 	bool isValidTransaction(Transaction::ref trans);
 	bool isTransactionOnFutureList(Transaction::ref trans);
 
-	bool acquireMissingLedger(Ledger::ref from, const uint256& ledgerHash, uint32 ledgerSeq);
+	bool acquireMissingLedger(Ledger::ref from, uint256 const& ledgerHash, uint32 ledgerSeq);
 	void asyncAccept(Ledger::pointer);
 	void missingAcquireComplete(LedgerAcquire::pointer);
 	void pubThread();

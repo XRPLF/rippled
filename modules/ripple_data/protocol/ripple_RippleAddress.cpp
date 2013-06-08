@@ -129,7 +129,7 @@ void RippleAddress::setNodePublic(Blob const& vPublic)
     SetData(VER_NODE_PUBLIC, vPublic);
 }
 
-bool RippleAddress::verifyNodePublic(const uint256& hash, Blob const& vchSig) const
+bool RippleAddress::verifyNodePublic(uint256 const& hash, Blob const& vchSig) const
 {
 	CKey	pubkey	= CKey();
 	bool	bVerified;
@@ -147,7 +147,7 @@ bool RippleAddress::verifyNodePublic(const uint256& hash, Blob const& vchSig) co
 	return bVerified;
 }
 
-bool RippleAddress::verifyNodePublic(const uint256& hash, const std::string& strSig) const
+bool RippleAddress::verifyNodePublic(uint256 const& hash, const std::string& strSig) const
 {
 	Blob vchSig(strSig.begin(), strSig.end());
 
@@ -234,7 +234,7 @@ void RippleAddress::setNodePrivate(uint256 hash256)
     SetData(VER_NODE_PRIVATE, hash256.begin(), 32);
 }
 
-void RippleAddress::signNodePrivate(const uint256& hash, Blob & vchSig) const
+void RippleAddress::signNodePrivate(uint256 const& hash, Blob& vchSig) const
 {
 	CKey	ckPrivKey;
 
@@ -393,7 +393,7 @@ void RippleAddress::setAccountPublic(const RippleAddress& generator, int seq)
 	setAccountPublic(pubkey.GetPubKey());
 }
 
-bool RippleAddress::accountPublicVerify(const uint256& uHash, Blob const& vucSig) const
+bool RippleAddress::accountPublicVerify(uint256 const& uHash, Blob const& vucSig) const
 {
 	CKey		ckPublic;
 	bool		bVerified;
@@ -494,7 +494,7 @@ void RippleAddress::setAccountPrivate(const RippleAddress& naGenerator, const Ri
 	setAccountPrivate(uPrivKey);
 }
 
-bool RippleAddress::accountPrivateSign(const uint256& uHash, Blob & vucSig) const
+bool RippleAddress::accountPrivateSign(uint256 const& uHash, Blob& vucSig) const
 {
 	CKey		ckPrivate;
 	bool		bResult;
@@ -515,7 +515,7 @@ bool RippleAddress::accountPrivateSign(const uint256& uHash, Blob & vucSig) cons
 }
 
 #if 0
-bool RippleAddress::accountPrivateVerify(const uint256& uHash, Blob const& vucSig) const
+bool RippleAddress::accountPrivateVerify(uint256 const& uHash, Blob const& vucSig) const
 {
 	CKey		ckPrivate;
 	bool		bVerified;

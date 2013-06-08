@@ -1,5 +1,5 @@
-#ifndef __SERIALIZEDTRANSACTION__
-#define __SERIALIZEDTRANSACTION__
+#ifndef RIPPLE_SERIALIZEDTRANSACTION_H
+#define RIPPLE_SERIALIZEDTRANSACTION_H
 
 // VFALCO TODO eliminate these macros
 
@@ -82,7 +82,8 @@ private:
 
 	SerializedTransaction* duplicate() const { return new SerializedTransaction(*this); }
 
-	mutable bool mSigGood, mSigBad;
+	mutable bool mSigGood;
+    mutable bool mSigBad;
 };
 
 #endif

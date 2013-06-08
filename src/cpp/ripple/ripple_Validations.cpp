@@ -22,7 +22,7 @@ private:
 	bool mWriting;
 
 private:
-	boost::shared_ptr<ValidationSet> findCreateSet(const uint256& ledgerHash)
+	boost::shared_ptr<ValidationSet> findCreateSet(uint256 const& ledgerHash)
     {
 	    VSpointer j = mValidations.fetch(ledgerHash);
 	    if (!j)
@@ -33,7 +33,7 @@ private:
 	    return j;
     }
 
-	boost::shared_ptr<ValidationSet> findSet(const uint256& ledgerHash)
+	boost::shared_ptr<ValidationSet> findSet(uint256 const& ledgerHash)
     {
 	    return mValidations.fetch(ledgerHash);
     }
@@ -108,7 +108,7 @@ private:
 	    mValidations.setTargetAge(age);
     }
 
-    ValidationSet getValidations(const uint256& ledger)
+    ValidationSet getValidations(uint256 const& ledger)
     {
 	    {
 		    boost::mutex::scoped_lock sl(mValidationLock);
@@ -119,7 +119,7 @@ private:
 	    return ValidationSet();
     }
 
-    void getValidationCount(const uint256& ledger, bool currentOnly, int& trusted, int &untrusted)
+    void getValidationCount(uint256 const& ledger, bool currentOnly, int& trusted, int &untrusted)
     {
 	    trusted = untrusted = 0;
 	    boost::mutex::scoped_lock sl(mValidationLock);
@@ -149,7 +149,7 @@ private:
 	    WriteLog (lsTRACE, Validations) << "VC: " << ledger << "t:" << trusted << " u:" << untrusted;
     }
 
-    void getValidationTypes(const uint256& ledger, int& full, int& partial)
+    void getValidationTypes(uint256 const& ledger, int& full, int& partial)
     {
 	    full = partial = 0;
 	    boost::mutex::scoped_lock sl(mValidationLock);
@@ -171,7 +171,7 @@ private:
     }
 
 
-    int getTrustedValidationCount(const uint256& ledger)
+    int getTrustedValidationCount(uint256 const& ledger)
     {
 	    int trusted = 0;
 	    boost::mutex::scoped_lock sl(mValidationLock);
@@ -187,7 +187,7 @@ private:
 	    return trusted;
     }
 
-    int getNodesAfter(const uint256& ledger)
+    int getNodesAfter(uint256 const& ledger)
     { // Number of trusted nodes that have moved past this ledger
 	    int count = 0;
 	    boost::mutex::scoped_lock sl(mValidationLock);

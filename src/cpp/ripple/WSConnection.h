@@ -12,7 +12,6 @@
 
 #include "WSDoor.h"
 #include "Application.h"
-#include "NetworkOPs.h"
 #include "CallRPC.h"
 #include "LoadManager.h"
 #include "RPCErr.h"

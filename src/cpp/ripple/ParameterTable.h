@@ -1,11 +1,5 @@
-#ifndef PARAMETER_TABLE__H
-#define PARAMETER_TABLE__H
-
-#include <string>
-#include <map>
-
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
+#ifndef RIPPLE_PARAMETERTABLE_H
+#define RIPPLE_PARAMETERTABLE_H
 
 class Parameter : public boost::enable_shared_from_this<Parameter>
 { // abstract base class parameters are derived from

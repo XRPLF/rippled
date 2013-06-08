@@ -45,7 +45,7 @@ bool TXQueue::addEntryForExecution(TXQEntry::ref entry)
 	return true; // A thread needs to handle this account
 }
 
-TXQEntry::pointer TXQueue::removeEntry(const uint256& id)
+TXQEntry::pointer TXQueue::removeEntry(uint256 const& id)
 {
 	TXQEntry::pointer ret;
 

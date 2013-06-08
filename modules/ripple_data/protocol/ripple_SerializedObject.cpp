@@ -709,7 +709,7 @@ void STObject::setFieldH160(SField::ref field, const uint160& v)
 	cf->setValue(v);
 }
 
-void STObject::setFieldH256(SField::ref field, const uint256& v)
+void STObject::setFieldH256(SField::ref field, uint256 const& v)
 {
 	SerializedType* rf = getPField(field, true);
 	if (!rf) throw std::runtime_error("Field not found");

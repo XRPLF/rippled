@@ -1,8 +1,8 @@
 
 DECLARE_INSTANCE(LedgerProposal);
 
-LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& tx, uint32 closeTime,
-	const RippleAddress& naPeerPublic, const uint256& suppression) :
+LedgerProposal::LedgerProposal(uint256 const& pLgr, uint32 seq, uint256 const& tx, uint32 closeTime,
+	const RippleAddress& naPeerPublic, uint256 const& suppression) :
 		mPreviousLedger(pLgr), mCurrentHash(tx), mSuppression(suppression), mCloseTime(closeTime),
 		mProposeSeq(seq), mPublicKey(naPeerPublic)
 {
@@ -16,7 +16,7 @@ LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& t
 
 
 LedgerProposal::LedgerProposal(const RippleAddress& naPub, const RippleAddress& naPriv,
-		const uint256& prevLgr,	const uint256& position, uint32 closeTime) :
+		uint256 const& prevLgr,	uint256 const& position, uint32 closeTime) :
 	mPreviousLedger(prevLgr), mCurrentHash(position), mCloseTime(closeTime), mProposeSeq(0),
 	mPublicKey(naPub), mPrivateKey(naPriv)
 {
@@ -24,7 +24,7 @@ LedgerProposal::LedgerProposal(const RippleAddress& naPub, const RippleAddress& 
 	mTime		= boost::posix_time::second_clock::universal_time();
 }
 
-LedgerProposal::LedgerProposal(const uint256& prevLgr, const uint256& position, uint32 closeTime) :
+LedgerProposal::LedgerProposal(uint256 const& prevLgr, uint256 const& position, uint32 closeTime) :
 	mPreviousLedger(prevLgr), mCurrentHash(position), mCloseTime(closeTime), mProposeSeq(0)
 {
 	mTime		= boost::posix_time::second_clock::universal_time();
@@ -43,12 +43,12 @@ uint256 LedgerProposal::getSigningHash() const
 	return s.getSHA512Half();
 }
 
-bool LedgerProposal::checkSign(const std::string& signature, const uint256& signingHash)
+bool LedgerProposal::checkSign(const std::string& signature, uint256 const& signingHash)
 {
 	return mPublicKey.verifyNodePublic(signingHash, signature);
 }
 
-bool LedgerProposal::changePosition(const uint256& newPosition, uint32 closeTime)
+bool LedgerProposal::changePosition(uint256 const& newPosition, uint32 closeTime)
 {
 	if (mProposeSeq == seqLeave)
 		return false;

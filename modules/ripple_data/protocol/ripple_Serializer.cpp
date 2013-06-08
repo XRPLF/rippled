@@ -57,7 +57,7 @@ int Serializer::add160(const uint160& i)
 	return ret;
 }
 
-int Serializer::add256(const uint256& i)
+int Serializer::add256(uint256 const& i)
 {
 	int ret = mData.size();
 	mData.insert(mData.end(), i.begin(), i.end());
@@ -239,7 +239,7 @@ int Serializer::removeLastByte()
 	return ret;
 }
 
-bool Serializer::getRaw(Blob & o, int offset, int length) const
+bool Serializer::getRaw(Blob& o, int offset, int length) const
 {
 	if ((offset + length) > mData.size()) return false;
 	o.assign(mData.begin() + offset, mData.begin() + offset + length);
@@ -329,7 +329,7 @@ bool Serializer::checkSignature(Blob const& signature, CKey& key) const
 	return key.Verify(getSHA512Half(), signature);
 }
 
-bool Serializer::makeSignature(Blob &signature, CKey& key) const
+bool Serializer::makeSignature(Blob&signature, CKey& key) const
 {
 	return key.Sign(getSHA512Half(), signature);
 }
@@ -367,7 +367,7 @@ int Serializer::addVL(const std::string& string)
 	return ret;
 }
 
-bool Serializer::getVL(Blob & objectVL, int offset, int& length) const
+bool Serializer::getVL(Blob& objectVL, int offset, int& length) const
 {
 	int b1;
 	if (!get8(b1, offset++)) return false;

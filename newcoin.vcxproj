@@ -710,7 +710,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="src\cpp\protobuf_core.cpp" />
-    <ClCompile Include="src\cpp\ripple\AcceptedLedger.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_AcceptedLedger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -746,7 +746,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\CanonicalTXSet.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_AcceptedLedgerTx.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_CanonicalTXSet.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -771,6 +777,18 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_HashedObjectStore.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_InfoSub.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_LedgerAcquireMaster.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -816,7 +834,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\LedgerAcquire.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_LedgerAcquire.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -840,7 +858,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\LedgerHistory.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_LedgerHistory.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1036,6 +1054,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_PeerSet.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_ProofOfWork.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1043,6 +1067,30 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_ProofOfWorkFactory.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_SHAMapItem.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_SHAMapNode.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_SHAMapSyncFilters.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_SHAMapTreeNode.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1102,13 +1150,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\SerializedLedger.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_SerializedLedger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\SerializedTransaction.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_SerializedTransaction.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1120,25 +1168,25 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\SHAMap.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_SHAMap.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\SHAMapDiff.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_SHAMapDelta.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\SHAMapNodes.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_SHAMapMissingNode.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\SHAMapSync.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_SHAMapSync.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1289,7 +1337,7 @@
     <ClInclude Include="modules\ripple_basics\containers\ripple_TaggedCache.h" />
     <ClInclude Include="modules\ripple_basics\ripple_basics.h" />
     <ClInclude Include="modules\ripple_basics\types\ripple_HashMaps.h" />
-    <ClInclude Include="modules\ripple_basics\types\ripple_Types.h" />
+    <ClInclude Include="modules\ripple_basics\types\ripple_BasicTypes.h" />
     <ClInclude Include="modules\ripple_basics\types\ripple_UInt256.h" />
     <ClInclude Include="modules\ripple_basics\utility\ripple_ByteOrder.h" />
     <ClInclude Include="modules\ripple_basics\utility\ripple_DiffieHellmanUtil.h" />
@@ -1314,6 +1362,7 @@
     <ClInclude Include="modules\ripple_data\protocol\ripple_FieldNames.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_LedgerFormat.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_PackedMessage.h" />
+    <ClInclude Include="modules\ripple_data\protocol\ripple_ProtocolTypes.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_RippleAddress.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_RippleSystem.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_SerializeDeclarations.h" />
@@ -1649,18 +1698,20 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\AcceptedLedger.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_AcceptedLedger.h" />
     <ClInclude Include="src\cpp\ripple\AccountItems.h" />
     <ClInclude Include="src\cpp\ripple\AccountSetTransactor.h" />
     <ClInclude Include="src\cpp\ripple\AccountState.h" />
     <ClInclude Include="src\cpp\ripple\Application.h" />
     <ClInclude Include="src\cpp\ripple\AutoSocket.h" />
     <ClInclude Include="src\cpp\ripple\CallRPC.h" />
-    <ClInclude Include="src\cpp\ripple\CanonicalTXSet.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_AcceptedLedgerTx.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_CanonicalTXSet.h" />
     <ClInclude Include="src\cpp\ripple\ChangeTransactor.h" />
     <ClInclude Include="src\cpp\ripple\ripple_Config.h" />
     <ClInclude Include="src\cpp\ripple\ripple_HashedObject.h" />
     <ClInclude Include="src\cpp\ripple\ripple_HashedObjectStore.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_InfoSub.h" />
     <ClInclude Include="src\cpp\ripple\ripple_IPeers.h" />
     <ClInclude Include="src\cpp\ripple\Contract.h" />
     <ClInclude Include="src\cpp\ripple\HashPrefixes.h" />
@@ -1668,17 +1719,18 @@
     <ClInclude Include="src\cpp\ripple\HttpsClient.h" />
     <ClInclude Include="src\cpp\ripple\Interpreter.h" />
     <ClInclude Include="src\cpp\ripple\Ledger.h" />
-    <ClInclude Include="src\cpp\ripple\LedgerAcquire.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_LedgerAcquire.h" />
     <ClInclude Include="src\cpp\ripple\LedgerConsensus.h" />
     <ClInclude Include="src\cpp\ripple\LedgerEntrySet.h" />
     <ClInclude Include="src\cpp\ripple\LedgerFormats.h" />
-    <ClInclude Include="src\cpp\ripple\LedgerHistory.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_LedgerHistory.h" />
     <ClInclude Include="src\cpp\ripple\LedgerMaster.h" />
     <ClInclude Include="src\cpp\ripple\LedgerProposal.h" />
     <ClInclude Include="src\cpp\ripple\LedgerTiming.h" />
     <ClInclude Include="src\cpp\ripple\LoadManager.h" />
     <ClInclude Include="src\cpp\ripple\ripple_Job.h" />
     <ClInclude Include="src\cpp\ripple\ripple_JobQueue.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_LedgerAcquireMaster.h" />
     <ClInclude Include="src\cpp\ripple\ripple_LoadMonitor.h" />
     <ClInclude Include="src\cpp\ripple\NetworkOPs.h" />
     <ClInclude Include="src\cpp\ripple\NicknameState.h" />
@@ -1705,8 +1757,15 @@
     <ClInclude Include="src\cpp\ripple\ripple_IValidations.h" />
     <ClInclude Include="src\cpp\ripple\ripple_LoadEvent.h" />
     <ClInclude Include="src\cpp\ripple\ripple_Peer.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_PeerSet.h" />
     <ClInclude Include="src\cpp\ripple\ripple_ProofOfWork.h" />
     <ClInclude Include="src\cpp\ripple\ripple_IProofOfWorkFactory.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_SHAMapAddNode.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_SHAMapItem.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_SHAMapMissingNode.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_SHAMapNode.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_SHAMapSyncFilter.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_SHAMapTreeNode.h" />
     <ClInclude Include="src\cpp\ripple\ripple_UptimeTimerAdapter.h" />
     <ClInclude Include="src\cpp\ripple\RPC.h" />
     <ClInclude Include="src\cpp\ripple\RPCDoor.h" />
@@ -1715,11 +1774,11 @@
     <ClInclude Include="src\cpp\ripple\RPCServer.h" />
     <ClInclude Include="src\cpp\ripple\RPCSub.h" />
     <ClInclude Include="src\cpp\ripple\ScriptData.h" />
-    <ClInclude Include="src\cpp\ripple\SerializedLedger.h" />
-    <ClInclude Include="src\cpp\ripple\SerializedTransaction.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_SerializedLedger.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_SerializedTransaction.h" />
     <ClInclude Include="src\cpp\ripple\SerializedValidation.h" />
-    <ClInclude Include="src\cpp\ripple\SHAMap.h" />
-    <ClInclude Include="src\cpp\ripple\SHAMapSync.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_SHAMap.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_SHAMapSyncFilters.h" />
     <ClInclude Include="src\cpp\ripple\SNTPClient.h" />
     <ClInclude Include="src\cpp\ripple\ripple_IHashRouter.h" />
     <ClInclude Include="src\cpp\ripple\Transaction.h" />
@@ -1777,6 +1836,9 @@
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="StyleCheatSheet.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

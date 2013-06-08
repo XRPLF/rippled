@@ -5,7 +5,6 @@
 //#include "../websocketpp/src/websocketpp.hpp"
 
 #include "Application.h"
-#include "NetworkOPs.h"
 #include "WSConnection.h"
 #include "WSHandler.h"
 

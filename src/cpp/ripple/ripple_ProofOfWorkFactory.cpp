@@ -7,7 +7,7 @@ public:
 	ProofOfWorkFactory ();
 
 	ProofOfWork getProof();
-	POWResult checkProof(const std::string& token, const uint256& solution);
+	POWResult checkProof(const std::string& token, uint256 const& solution);
 	uint64 getDifficulty()	{ return ProofOfWork::getDifficulty(mTarget, mIterations); }
 	void setDifficulty(int i);
 
@@ -15,10 +15,10 @@ public:
 	void loadLow();
 	void sweep(void);
 
-	const uint256& getSecret() const		{ return mSecret; }
-	void setSecret(const uint256& secret)	{ mSecret = secret; }
+	uint256 const& getSecret() const		{ return mSecret; }
+	void setSecret(uint256 const& secret)	{ mSecret = secret; }
 
-	static int getPowEntry (const uint256& target, int iterations);
+	static int getPowEntry (uint256 const& target, int iterations);
 
 private:
 	uint256		 mSecret;
@@ -57,7 +57,7 @@ ProofOfWork ProofOfWorkFactory::getProof()
 	return ProofOfWork(s, mIterations, challenge, mTarget);
 }
 
-POWResult ProofOfWorkFactory::checkProof(const std::string& token, const uint256& solution)
+POWResult ProofOfWorkFactory::checkProof(const std::string& token, uint256 const& solution)
 { // challenge - target - iterations - time - validator
 
 	std::vector<std::string> fields;
@@ -208,7 +208,7 @@ PowEntry PowEntries[ProofOfWork::sMaxDifficulty + 1] =
 	{ "00003FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 262144}, // 77309411328,	8 MB
 };
 
-int ProofOfWorkFactory::getPowEntry(const uint256& target, int iterations)
+int ProofOfWorkFactory::getPowEntry(uint256 const& target, int iterations)
 {
 	for (int i = 0; i < 31; ++i)
 		if (PowEntries[i].iterations == iterations)

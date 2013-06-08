@@ -1,142 +1,4 @@
-
-SETUP_LOG (SHAMapNode)
-
-std::string SHAMapNode::getString() const
-{
-	static boost::format NodeID("NodeID(%s,%s)");
-
-	if ((mDepth == 0) && (mNodeID.isZero()))
-		return "NodeID(root)";
-
-	return str(boost::format(NodeID)
-			% boost::lexical_cast<std::string>(mDepth)
-			% mNodeID.GetHex());
-}
-
-uint256 SHAMapNode::smMasks[65];
-
-bool SHAMapNode::operator<(const SHAMapNode &s) const
-{
-	if (s.mDepth < mDepth) return true;
-	if (s.mDepth > mDepth) return false;
-	return mNodeID < s.mNodeID;
-}
-
-bool SHAMapNode::operator>(const SHAMapNode &s) const
-{
-	if (s.mDepth < mDepth) return false;
-	if (s.mDepth > mDepth) return true;
-	return mNodeID > s.mNodeID;
-}
-
-bool SHAMapNode::operator<=(const SHAMapNode &s) const
-{
-	if (s.mDepth < mDepth) return true;
-	if (s.mDepth > mDepth) return false;
-	return mNodeID <= s.mNodeID;
-}
-
-bool SHAMapNode::operator>=(const SHAMapNode &s) const
-{
-	if (s.mDepth < mDepth) return false;
-	if (s.mDepth > mDepth) return true;
-	return mNodeID >= s.mNodeID;
-}
-
-bool SMN_j = SHAMapNode::ClassInit();
-
-bool SHAMapNode::ClassInit()
-{ // set up the depth masks
-	uint256 selector;
-	for (int i = 0; i < 64; i += 2)
-	{
-		smMasks[i] = selector;
-		*(selector.begin() + (i / 2)) = 0xF0;
-		smMasks[i + 1] = selector;
-		*(selector.begin() + (i / 2)) = 0xFF;
-	}
-	smMasks[64] = selector;
-	return true;
-}
-
-uint256 SHAMapNode::getNodeID(int depth, const uint256& hash)
-{
-	assert((depth >= 0) && (depth <= 64));
-	return hash & smMasks[depth];
-}
-
-SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mNodeID(hash), mDepth(depth), mHash(0)
-{ // canonicalize the hash to a node ID for this depth
-	assert((depth >= 0) && (depth < 65));
-	mNodeID &= smMasks[depth];
-}
-
-SHAMapNode::SHAMapNode(const void *ptr, int len) : mHash(0)
-{
-	if (len < 33)
-		mDepth = -1;
-	else
-	{
-		memcpy(mNodeID.begin(), ptr, 32);
-		mDepth = *(static_cast<const unsigned char *>(ptr) + 32);
-	}
-}
-
-void SHAMapNode::addIDRaw(Serializer &s) const
-{
-	s.add256(mNodeID);
-	s.add8(mDepth);
-}
-
-std::string SHAMapNode::getRawString() const
-{
-	Serializer s(33);
-	addIDRaw(s);
-	return s.getString();
-}
-
-SHAMapNode SHAMapNode::getChildNodeID(int m) const
-{ // This can be optimized to avoid the << if needed
-	assert((m >= 0) && (m < 16));
-
-	uint256 child(mNodeID);
-	child.begin()[mDepth/2] |= (mDepth & 1) ? m : (m << 4);
-
-	return SHAMapNode(mDepth + 1, child, true);
-}
-
-int SHAMapNode::selectBranch(const uint256& hash) const
-{ // Which branch would contain the specified hash
-#ifdef PARANOID
-	if (mDepth >= 64)
-	{
-		assert(false);
-		return -1;
-	}
-
-	if ((hash & smMasks[mDepth]) != mNodeID)
-	{
-		std::cerr << "selectBranch(" << getString() << std::endl;
-		std::cerr << "  " << hash << " off branch" << std::endl;
-		assert(false);
-		return -1;	// does not go under this node
-	}
-#endif
-
-	int branch = *(hash.begin() + (mDepth / 2));
-	if (mDepth & 1)
-		branch &= 0xf;
-	else
-		branch >>= 4;
-
-	assert((branch >= 0) && (branch < 16));
-	return branch;
-}
-
-void SHAMapNode::dump() const
-{
-	WriteLog (lsDEBUG, SHAMapNode) << getString();
-}
+DECLARE_INSTANCE(SHAMapTreeNode);
 
 SHAMapTreeNode::SHAMapTreeNode(uint32 seq, const SHAMapNode& nodeID) : SHAMapNode(nodeID), mHash(0),
 	mSeq(seq), mAccessSeq(seq),	mType(tnERROR), mIsBranch(0), mFullBelow(false)
@@ -160,7 +22,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::ref item, TNT
 }
 
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, Blob const& rawNode, uint32 seq,
-	SHANodeFormat format, const uint256& hash, bool hashValid) :
+	SHANodeFormat format, uint256 const& hash, bool hashValid) :
 		SHAMapNode(id), mSeq(seq), mType(tnERROR), mIsBranch(0), mFullBelow(false)
 {
 	if (format == snfWIRE)
@@ -529,7 +391,7 @@ std::string SHAMapTreeNode::getString() const
 	return ret;
 }
 
-bool SHAMapTreeNode::setChildHash(int m, const uint256 &hash)
+bool SHAMapTreeNode::setChildHash(int m, uint256 const& hash)
 {
 	assert((m >= 0) && (m < 16));
 	assert(mType == tnINNER);
@@ -542,16 +404,3 @@ bool SHAMapTreeNode::setChildHash(int m, const uint256 &hash)
 		mIsBranch &= ~(1 << m);
 	return updateHash();
 }
-
-std::ostream& operator<<(std::ostream& out, const SHAMapMissingNode& mn)
-{
-	if (mn.getMapType() == smtTRANSACTION)
-		out << "Missing/TXN(" << mn.getNodeID() << "/" << mn.getNodeHash() << ")";
-	else if (mn.getMapType() == smtSTATE)
-		out << "Missing/STA(" << mn.getNodeID() << "/" << mn.getNodeHash() << ")";
-	else
-		out << "Missing/" << mn.getNodeID();
-	return out;
-}
-
-// vim:ts=4

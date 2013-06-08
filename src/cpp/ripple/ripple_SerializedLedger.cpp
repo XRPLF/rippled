@@ -2,11 +2,11 @@
 DECLARE_INSTANCE(SerializedLedgerEntry)
 
 // For logging
-struct SerializedLedgerLog { };
+struct SerializedLedgerLog;
 
 SETUP_LOG (SerializedLedgerLog)
 
-SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint256& index)
+SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, uint256 const& index)
 	: STObject(sfLedgerEntry), mIndex(index), mMutable(true)
 {
 	set(sit);
@@ -19,7 +19,7 @@ SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint
 		throw std::runtime_error("ledger entry not valid for type");
 }
 
-SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256& index)
+SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, uint256 const& index)
 	: STObject(sfLedgerEntry), mIndex(index), mMutable(true)
 {
 	SerializerIterator sit(const_cast<Serializer&>(s)); // we know 's' isn't going away
@@ -38,7 +38,7 @@ SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256&
 	}
 }
 
-SerializedLedgerEntry::SerializedLedgerEntry(LedgerEntryType type, const uint256& index) :
+SerializedLedgerEntry::SerializedLedgerEntry(LedgerEntryType type, uint256 const& index) :
 	STObject(sfLedgerEntry), mIndex(index), mType(type), mMutable(true)
 {
 	mFormat = LedgerEntryFormat::getLgrFormat(type);
@@ -102,7 +102,7 @@ uint32 SerializedLedgerEntry::getThreadedLedger()
 	return getFieldU32(sfPreviousTxnLgrSeq);
 }
 
-bool SerializedLedgerEntry::thread(const uint256& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID)
+bool SerializedLedgerEntry::thread(uint256 const& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID)
 {
 	uint256 oldPrevTxID = getFieldH256(sfPreviousTxnID);
 	WriteLog (lsTRACE, SerializedLedgerLog) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;

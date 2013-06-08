@@ -1,8 +1,6 @@
 #ifndef ACCOUNTSETTRANSACTOR_H
 #define ACCOUNTSETTRANSACTOR_H
 
-#include "Transactor.h"
-
 class AccountSetTransactor : public Transactor
 {
 public:

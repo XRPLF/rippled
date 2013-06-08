@@ -14,14 +14,14 @@ public:
 
 	virtual bool addValidation (SerializedValidation::ref, const std::string& source) = 0;
 	
-    virtual ValidationSet getValidations (const uint256& ledger) = 0;
+    virtual ValidationSet getValidations (uint256 const& ledger) = 0;
 
-	virtual void getValidationCount (const uint256& ledger, bool currentOnly, int& trusted, int& untrusted) = 0;
-	virtual void getValidationTypes (const uint256& ledger, int& full, int& partial) = 0;
+	virtual void getValidationCount (uint256 const& ledger, bool currentOnly, int& trusted, int& untrusted) = 0;
+	virtual void getValidationTypes (uint256 const& ledger, int& full, int& partial) = 0;
 
-	virtual int getTrustedValidationCount (const uint256& ledger) = 0;
+	virtual int getTrustedValidationCount (uint256 const& ledger) = 0;
 
-	virtual int getNodesAfter (const uint256& ledger) = 0;
+	virtual int getNodesAfter (uint256 const& ledger) = 0;
 	virtual int getLoadRatio (bool overLoaded) = 0;
 
     // VFALCO TODO make a typedef for this ugly return value!

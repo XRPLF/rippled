@@ -1,9 +1,6 @@
 #ifndef __ACCOUNT_ITEMS__
 #define __ACCOUNT_ITEMS__
 
-#include "Ledger.h"
-#include "SerializedLedger.h"
-
 //
 // Fetch ledger entries from an account's owner dir.
 //

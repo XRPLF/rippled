@@ -67,6 +67,7 @@
 
 #include "protocol/ripple_FieldNames.h"
 #include "protocol/ripple_PackedMessage.h"
+#include "protocol/ripple_ProtocolTypes.h"
 #include "protocol/ripple_RippleAddress.h"
 #include "protocol/ripple_RippleSystem.h"
 #include "protocol/ripple_Serializer.h" // needs CKey
@@ -76,5 +77,7 @@
 #include "protocol/ripple_SerializedObject.h"
 #include "protocol/ripple_LedgerFormat.h" // needs SOTemplate from SerializedObject
 #include "protocol/ripple_TransactionFormat.h"
+
+#include "utility/ripple_UptimeTimerAdapter.h"
 
 #endif

@@ -234,7 +234,7 @@ void LedgerMaster::asyncAccept(Ledger::pointer ledger)
 	resumeAcquiring();
 }
 
-bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, const uint256& ledgerHash, uint32 ledgerSeq)
+bool LedgerMaster::acquireMissingLedger(Ledger::ref origLedger, uint256 const& ledgerHash, uint32 ledgerSeq)
 { // return: false = already gave up recently
 	Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq(ledgerSeq);
 	if (ledger && (Ledger::getHashByIndex(ledgerSeq) == ledgerHash))
@@ -524,14 +524,14 @@ void LedgerMaster::setFullLedger(Ledger::pointer ledger)
 	}
 }
 
-void LedgerMaster::checkAccept(const uint256& hash)
+void LedgerMaster::checkAccept(uint256 const& hash)
 {
 	Ledger::pointer ledger = mLedgerHistory.getLedgerByHash(hash);
 	if (ledger)
 		checkAccept(hash, ledger->getLedgerSeq());
 }
 
-void LedgerMaster::checkAccept(const uint256& hash, uint32 seq)
+void LedgerMaster::checkAccept(uint256 const& hash, uint32 seq)
 { // Can we advance the last fully accepted ledger? If so, can we publish?
 	boost::recursive_mutex::scoped_lock ml(mLock);
 

@@ -1,10 +1,6 @@
 #ifndef __RPCSUB__
 #define __RPCSUB__
 
-#include <deque>
-
-#include "NetworkOPs.h"
-
 #define RPC_EVENT_QUEUE_MAX	32
 
 // Subscription object for JSON-RPC

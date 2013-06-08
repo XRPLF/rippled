@@ -12,7 +12,7 @@ TransactionMaster::TransactionMaster() : mCache("TransactionCache", CACHED_TRANS
 	;
 }
 
-bool TransactionMaster::inLedger(const uint256& hash, uint32 ledger)
+bool TransactionMaster::inLedger(uint256 const& hash, uint32 ledger)
 {
 	Transaction::pointer txn = mCache.fetch(hash);
 	if (!txn)
@@ -21,7 +21,7 @@ bool TransactionMaster::inLedger(const uint256& hash, uint32 ledger)
 	return true;
 }
 
-Transaction::pointer TransactionMaster::fetch(const uint256& txnID, bool checkDisk)
+Transaction::pointer TransactionMaster::fetch(uint256 const& txnID, bool checkDisk)
 {
 	Transaction::pointer txn = mCache.fetch(txnID);
 	if (!checkDisk || txn)

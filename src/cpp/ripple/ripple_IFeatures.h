@@ -9,7 +9,7 @@ public:
 	boost::unordered_map<uint256, int> mVotes;	// yes votes by feature
 
 	FeatureSet(uint32 ct, int tv) : mCloseTime(ct), mTrustedValidations(tv) { ; }
-	void addVote(const uint256& feature)	{ ++mVotes[feature]; }
+	void addVote(uint256 const& feature)	{ ++mVotes[feature]; }
 };
 
 class FeatureState
@@ -57,14 +57,14 @@ public:
 	virtual FeatureState* addKnownFeature(const char *featureID, const char *friendlyName, bool veto) = 0;
 	virtual uint256 getFeature(const std::string& name) = 0;
 
-	virtual bool vetoFeature(const uint256& feature) = 0;
-	virtual bool unVetoFeature(const uint256& feature) = 0;
+	virtual bool vetoFeature(uint256 const& feature) = 0;
+	virtual bool unVetoFeature(uint256 const& feature) = 0;
 
-	virtual bool enableFeature(const uint256& feature) = 0;
-	virtual bool disableFeature(const uint256& feature) = 0;
+	virtual bool enableFeature(uint256 const& feature) = 0;
+	virtual bool disableFeature(uint256 const& feature) = 0;
 
-	virtual bool isFeatureEnabled(const uint256& feature) = 0;
-	virtual bool isFeatureSupported(const uint256& feature) = 0;
+	virtual bool isFeatureEnabled(uint256 const& feature) = 0;
+	virtual bool isFeatureSupported(uint256 const& feature) = 0;
 
 	virtual void setEnabledFeatures(const std::vector<uint256>& features) = 0;
 	virtual void setSupportedFeatures(const std::vector<uint256>& features) = 0;
@@ -80,7 +80,7 @@ public:
 	virtual void reportValidations(const FeatureSet&) = 0;
 
 	virtual Json::Value getJson(int) = 0;
-	virtual Json::Value getJson(const uint256&) = 0;
+	virtual Json::Value getJson(uint256 const& ) = 0;
 
 	virtual void doValidation(Ledger::ref lastClosedLedger, STObject& baseValidation) = 0;
 	virtual void doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition) = 0;

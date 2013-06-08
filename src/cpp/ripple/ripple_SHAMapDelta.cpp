@@ -6,18 +6,18 @@
 // makes no sense at all. (And our sync algorithm will avoid
 // synchronizing matching brances too.)
 
-class SHAMapDiffNode
+class SHAMapDeltaNode
 {
 	public:
 	SHAMapNode mNodeID;
 	uint256 mOurHash, mOtherHash;
 	
-	SHAMapDiffNode(const SHAMapNode& id, const uint256& ourHash, const uint256& otherHash) :
+	SHAMapDeltaNode(const SHAMapNode& id, uint256 const& ourHash, uint256 const& otherHash) :
 		mNodeID(id), mOurHash(ourHash), mOtherHash(otherHash) { ; }
 };
 
 bool SHAMap::walkBranch(SHAMapTreeNode* node, SHAMapItem::ref otherMapItem, bool isFirstMap,
-	SHAMapDiff& differences, int& maxCount)
+	Delta& differences, int& maxCount)
 {
 	// Walk a branch of a SHAMap that's matched by an empty branch or single item in the other map
 	std::stack<SHAMapTreeNode*> nodeStack;
@@ -92,7 +92,7 @@ bool SHAMap::walkBranch(SHAMapTreeNode* node, SHAMapItem::ref otherMapItem, bool
 	return true;
 }
 
-bool SHAMap::compare(SHAMap::ref otherMap, SHAMapDiff& differences, int maxCount)
+bool SHAMap::compare(SHAMap::ref otherMap, Delta& differences, int maxCount)
 {   // compare two hash trees, add up to maxCount differences to the difference table
 	// return value: true=complete table of differences given, false=too many differences
 	// throws on corrupt tables or missing nodes
@@ -100,17 +100,17 @@ bool SHAMap::compare(SHAMap::ref otherMap, SHAMapDiff& differences, int maxCount
 
 	assert(isValid() && otherMap && otherMap->isValid());
 
-	std::stack<SHAMapDiffNode> nodeStack; // track nodes we've pushed
+	std::stack<SHAMapDeltaNode> nodeStack; // track nodes we've pushed
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	if (getHash() == otherMap->getHash())
 		return true;
 
-	nodeStack.push(SHAMapDiffNode(SHAMapNode(), getHash(), otherMap->getHash()));
+	nodeStack.push(SHAMapDeltaNode(SHAMapNode(), getHash(), otherMap->getHash()));
  	while (!nodeStack.empty())
  	{
-		SHAMapDiffNode dNode(nodeStack.top());
+		SHAMapDeltaNode dNode(nodeStack.top());
  		nodeStack.pop();
 
 		SHAMapTreeNode* ourNode = getNodePointer(dNode.mNodeID, dNode.mOurHash);
@@ -174,7 +174,7 @@ bool SHAMap::compare(SHAMap::ref otherMap, SHAMapDiff& differences, int maxCount
 							return false;
 					}
 					else // The two trees have different non-empty branches
-						nodeStack.push(SHAMapDiffNode(ourNode->getChildNodeID(i),
+						nodeStack.push(SHAMapDeltaNode(ourNode->getChildNodeID(i),
 							ourNode->getChildHash(i), otherNode->getChildHash(i)));
 				}
 		}

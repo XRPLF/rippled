@@ -21,7 +21,7 @@ protected:
 	uint32			mFirstReport;		// close time of first majority report
 	uint32			mLastReport;		// close time of most recent majority report
 
-	FeatureState*	getCreateFeature(const uint256& feature, bool create);
+	FeatureState*	getCreateFeature(uint256 const& feature, bool create);
 	bool shouldEnable (uint32 closeTime, const FeatureState& fs);
 	void setJson(Json::Value& v, const FeatureState&);
 
@@ -36,14 +36,14 @@ public:
 	FeatureState* addKnownFeature(const char *featureID, const char *friendlyName, bool veto);
 	uint256 getFeature(const std::string& name);
 
-	bool vetoFeature(const uint256& feature);
-	bool unVetoFeature(const uint256& feature);
+	bool vetoFeature(uint256 const& feature);
+	bool unVetoFeature(uint256 const& feature);
 
-	bool enableFeature(const uint256& feature);
-	bool disableFeature(const uint256& feature);
+	bool enableFeature(uint256 const& feature);
+	bool disableFeature(uint256 const& feature);
 
-	bool isFeatureEnabled(const uint256& feature);
-	bool isFeatureSupported(const uint256& feature);
+	bool isFeatureEnabled(uint256 const& feature);
+	bool isFeatureSupported(uint256 const& feature);
 
 	void setEnabledFeatures(const std::vector<uint256>& features);
 	void setSupportedFeatures(const std::vector<uint256>& features);
@@ -56,7 +56,7 @@ public:
 	void reportValidations(const FeatureSet&);
 
 	Json::Value getJson(int);
-	Json::Value getJson(const uint256&);
+	Json::Value getJson(uint256 const& );
 
 	void doValidation(Ledger::ref lastClosedLedger, STObject& baseValidation);
 	void doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPosition);
@@ -70,7 +70,7 @@ void Features::addInitialFeatures()
 	testFeature = addKnownFeature("1234", "testFeature", false);
 }
 
-FeatureState* Features::getCreateFeature(const uint256& featureHash, bool create)
+FeatureState* Features::getCreateFeature(uint256 const& featureHash, bool create)
 { // call with the mutex held
 	featureMap_t::iterator it = mFeatureMap.find(featureHash);
 	if (it == mFeatureMap.end())
@@ -132,7 +132,7 @@ FeatureState* Features::addKnownFeature(const char *featureID, const char *frien
 	return f;
 }
 
-bool Features::vetoFeature(const uint256& feature)
+bool Features::vetoFeature(uint256 const& feature)
 {
 	boost::mutex::scoped_lock sl(mMutex);
 	FeatureState *s = getCreateFeature(feature, true);
@@ -142,7 +142,7 @@ bool Features::vetoFeature(const uint256& feature)
 	return true;
 }
 
-bool Features::unVetoFeature(const uint256& feature)
+bool Features::unVetoFeature(uint256 const& feature)
 {
 	boost::mutex::scoped_lock sl(mMutex);
 	FeatureState *s = getCreateFeature(feature, false);
@@ -152,7 +152,7 @@ bool Features::unVetoFeature(const uint256& feature)
 	return true;
 }
 
-bool Features::enableFeature(const uint256& feature)
+bool Features::enableFeature(uint256 const& feature)
 {
 	boost::mutex::scoped_lock sl(mMutex);
 	FeatureState *s = getCreateFeature(feature, true);
@@ -162,7 +162,7 @@ bool Features::enableFeature(const uint256& feature)
 	return true;
 }
 
-bool Features::disableFeature(const uint256& feature)
+bool Features::disableFeature(uint256 const& feature)
 {
 	boost::mutex::scoped_lock sl(mMutex);
 	FeatureState *s = getCreateFeature(feature, false);
@@ -172,14 +172,14 @@ bool Features::disableFeature(const uint256& feature)
 	return true;
 }
 
-bool Features::isFeatureEnabled(const uint256& feature)
+bool Features::isFeatureEnabled(uint256 const& feature)
 {
 	boost::mutex::scoped_lock sl(mMutex);
 	FeatureState *s = getCreateFeature(feature, false);
 	return s && s->mEnabled;
 }
 
-bool Features::isFeatureSupported(const uint256& feature)
+bool Features::isFeatureSupported(uint256 const& feature)
 {
 	boost::mutex::scoped_lock sl(mMutex);
 	FeatureState *s = getCreateFeature(feature, false);
@@ -300,7 +300,7 @@ void Features::reportValidations(const FeatureSet& set)
 		Database* db = theApp->getWalletDB()->getDB();
 
 		db->executeSQL("BEGIN TRANSACTION;");
-		BOOST_FOREACH(const uint256& hash, changedFeatures)
+		BOOST_FOREACH(uint256 const& hash, changedFeatures)
 		{
 			FeatureState& fState = mFeatureMap[hash];
 			db->executeSQL(boost::str(boost::format(
@@ -322,7 +322,7 @@ void Features::setEnabledFeatures(const std::vector<uint256>& features)
 	{
 		it.second.mEnabled = false;
 	}
-	BOOST_FOREACH(const uint256& it, features)
+	BOOST_FOREACH(uint256 const& it, features)
 	{
 		mFeatureMap[it].mEnabled = true;
 	}
@@ -335,7 +335,7 @@ void Features::setSupportedFeatures(const std::vector<uint256>& features)
 	{
 		it.second.mSupported = false;
 	}
-	BOOST_FOREACH(const uint256& it, features)
+	BOOST_FOREACH(uint256 const& it, features)
 	{
 		mFeatureMap[it].mSupported = true;
 	}
@@ -348,7 +348,7 @@ void Features::doValidation(Ledger::ref lastClosedLedger, STObject& baseValidati
 		return;
 
 	STVector256 vFeatures(sfFeatures);
-	BOOST_FOREACH(const uint256& uFeature, lFeatures)
+	BOOST_FOREACH(uint256 const& uFeature, lFeatures)
 	{
 		vFeatures.addValue(uFeature);
 	}
@@ -362,7 +362,7 @@ void Features::doVoting(Ledger::ref lastClosedLedger, SHAMap::ref initialPositio
 	if (lFeatures.empty())
 		return;
 
-	BOOST_FOREACH(const uint256& uFeature, lFeatures)
+	BOOST_FOREACH(uint256 const& uFeature, lFeatures)
 	{
 		WriteLog (lsWARNING, Features) << "Voting for feature: " << uFeature;
 		SerializedTransaction trans(ttFEATURE);
@@ -438,7 +438,7 @@ void Features::setJson(Json::Value& v, const FeatureState& fs)
 		v["veto"] = true;
 }
 
-Json::Value Features::getJson(const uint256& feature)
+Json::Value Features::getJson(uint256 const& feature)
 {
 	Json::Value ret = Json::objectValue;
 	boost::mutex::scoped_lock sl(mMutex);

@@ -10,18 +10,18 @@ public:
 
 	ProofOfWork (const std::string& token,
                  int iterations,
-                 const uint256& challenge,
-                 const uint256& target);
+                 uint256 const& challenge,
+                 uint256 const& target);
 
 	explicit ProofOfWork (const std::string& token);
 
 	bool isValid() const;
 
 	uint256 solve(int maxIterations = 2 * sMaxIterations) const;
-	bool checkSolution(const uint256& solution) const;
+	bool checkSolution(uint256 const& solution) const;
 
 	const std::string& getToken() const		{ return mToken; }
-	const uint256& getChallenge() const		{ return mChallenge; }
+	uint256 const& getChallenge() const		{ return mChallenge; }
 
     uint64 getDifficulty() const
     {
@@ -29,7 +29,7 @@ public:
     }
 
 	// approximate number of hashes needed to solve
-	static uint64 getDifficulty (const uint256& target, int iterations);
+	static uint64 getDifficulty (uint256 const& target, int iterations);
 
     static bool validateToken (const std::string& strToken);
 

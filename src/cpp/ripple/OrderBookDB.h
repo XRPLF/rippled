@@ -2,11 +2,6 @@
 #ifndef ORDERBOOK_DB_H
 #define ORDERBOOK_DB_H
 
-#include <boost/shared_ptr.hpp>
-#include <boost/unordered_map.hpp>
-
-#include "Ledger.h"
-#include "AcceptedLedger.h"
 #include "OrderBook.h"
 
 
@@ -57,7 +52,7 @@ public:
 		const uint160& issuerPays, const uint160& issuerGets);
 
 	// see if this txn effects any orderbook
-	void processTxn(Ledger::ref ledger, const ALTransaction& alTx, Json::Value& jvObj);
+	void processTxn(Ledger::ref ledger, const AcceptedLedgerTx& alTx, Json::Value& jvObj);
 
 private:
 	boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> > mSourceMap;	// by ci/ii

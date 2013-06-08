@@ -59,9 +59,9 @@ public:
 	bool isInbound() const						{ return mInbound; }
 	bool isOutbound() const						{ return !mInbound; }
 
-	const uint256& getClosedLedgerHash() const	{ return mClosedLedgerHash; }
-	bool hasLedger(const uint256& hash, uint32 seq) const;
-	bool hasTxSet(const uint256& hash) const;
+	uint256 const& getClosedLedgerHash() const	{ return mClosedLedgerHash; }
+	bool hasLedger(uint256 const& hash, uint32 seq) const;
+	bool hasTxSet(uint256 const& hash) const;
 	uint64 getPeerId() const					{ return mPeerId; }
 
 	const RippleAddress& getNodePublic() const	{ return mNodePublic; }
@@ -143,8 +143,8 @@ private:
 
 	void getSessionCookie(std::string& strDst);
 
-	void addLedger(const uint256& ledger);
-	void addTxSet(const uint256& TxSet);
+	void addLedger(uint256 const& ledger);
+	void addTxSet(uint256 const& TxSet);
 
 	void doFetchPack(const boost::shared_ptr<ripple::TMGetObjectByHash>& packet);
 
@@ -1868,7 +1868,7 @@ void PeerImp::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_p
 			nodeIDs.push_back(SHAMapNode(node.nodeid().data(), node.nodeid().size()));
 			nodeData.push_back(Blob (node.nodedata().begin(), node.nodedata().end()));
 		}
-		SMAddNode san =  theApp->getOPs().gotTXData(shared_from_this(), hash, nodeIDs, nodeData);
+		SHAMapAddNode san =  theApp->getOPs().gotTXData(shared_from_this(), hash, nodeIDs, nodeData);
 		if (san.isInvalid())
 			punishPeer(LT_UnwantedData);
 		return;
@@ -1882,19 +1882,19 @@ void PeerImp::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_p
 		punishPeer(LT_UnwantedData);
 }
 
-bool PeerImp::hasLedger(const uint256& hash, uint32 seq) const
+bool PeerImp::hasLedger(uint256 const& hash, uint32 seq) const
 {
 	if ((seq != 0) && (seq >= mMinLedger) && (seq <= mMaxLedger))
 		return true;
-	BOOST_FOREACH(const uint256& ledger, mRecentLedgers)
+	BOOST_FOREACH(uint256 const& ledger, mRecentLedgers)
 		if (ledger == hash)
 			return true;
 	return false;
 }
 
-void PeerImp::addLedger(const uint256& hash)
+void PeerImp::addLedger(uint256 const& hash)
 {
-	BOOST_FOREACH(const uint256& ledger, mRecentLedgers)
+	BOOST_FOREACH(uint256 const& ledger, mRecentLedgers)
 		if (ledger == hash)
 			return;
 	if (mRecentLedgers.size() == 128)
@@ -1902,17 +1902,17 @@ void PeerImp::addLedger(const uint256& hash)
 	mRecentLedgers.push_back(hash);
 }
 
-bool PeerImp::hasTxSet(const uint256& hash) const
+bool PeerImp::hasTxSet(uint256 const& hash) const
 {
-	BOOST_FOREACH(const uint256& set, mRecentTxSets)
+	BOOST_FOREACH(uint256 const& set, mRecentTxSets)
 		if (set == hash)
 			return true;
 	return false;
 }
 
-void PeerImp::addTxSet(const uint256& hash)
+void PeerImp::addTxSet(uint256 const& hash)
 {
-	BOOST_FOREACH(const uint256& set, mRecentTxSets)
+	BOOST_FOREACH(uint256 const& set, mRecentTxSets)
 		if (set == hash)
 			return;
 	if (mRecentTxSets.size() == 128)

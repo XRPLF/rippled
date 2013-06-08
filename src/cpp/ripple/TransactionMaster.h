@@ -10,12 +10,12 @@ class TransactionMaster
 public:
 	TransactionMaster();
 
-	Transaction::pointer			fetch(const uint256&, bool checkDisk);
+	Transaction::pointer			fetch(uint256 const& , bool checkDisk);
 	SerializedTransaction::pointer	fetch(SHAMapItem::ref item, SHAMapTreeNode:: TNType type,
 		bool checkDisk, uint32 uCommitLedger);
 
 	// return value: true = we had the transaction already
-	bool inLedger(const uint256& hash, uint32 ledger);
+	bool inLedger(uint256 const& hash, uint32 ledger);
 	bool canonicalize(Transaction::pointer& txn, bool maybeNew);
 	void sweep(void) { mCache.sweep(); }
 

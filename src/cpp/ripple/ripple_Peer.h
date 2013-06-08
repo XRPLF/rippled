@@ -63,11 +63,11 @@ public:
 	
     virtual bool isOutbound () const = 0;
 
-    virtual const uint256& getClosedLedgerHash () const = 0;
+    virtual uint256 const& getClosedLedgerHash () const = 0;
 
-    virtual bool hasLedger (const uint256& hash, uint32 seq) const = 0;
+    virtual bool hasLedger (uint256 const& hash, uint32 seq) const = 0;
 	
-    virtual bool hasTxSet (const uint256& hash) const = 0;
+    virtual bool hasTxSet (uint256 const& hash) const = 0;
 	
     virtual uint64 getPeerId () const = 0;
 

@@ -19,7 +19,7 @@ public:
     }
 
 	bool store (HashedObjectType type, uint32 index, Blob const& data,
-		const uint256& hash)
+		uint256 const& hash)
 	{
 		if (mLevelDB)
 			return storeLevelDB(type, index, data, hash);
@@ -27,7 +27,7 @@ public:
         return storeSQLite(type, index, data, hash);
 	}
 
-	HashedObject::pointer retrieve(const uint256& hash)
+	HashedObject::pointer retrieve(uint256 const& hash)
 	{
 		if (mLevelDB)
 			return retrieveLevelDB(hash);
@@ -35,13 +35,13 @@ public:
 	}
 
 	bool storeSQLite(HashedObjectType type, uint32 index, Blob const& data,
-		const uint256& hash);
-	HashedObject::pointer retrieveSQLite(const uint256& hash);
+		uint256 const& hash);
+	HashedObject::pointer retrieveSQLite(uint256 const& hash);
 	void bulkWriteSQLite(Job&);
 
 	bool storeLevelDB(HashedObjectType type, uint32 index, Blob const& data,
-		const uint256& hash);
-	HashedObject::pointer retrieveLevelDB(const uint256& hash);
+		uint256 const& hash);
+	HashedObject::pointer retrieveLevelDB(uint256 const& hash);
 	void bulkWriteLevelDB(Job&);
 
 
@@ -53,7 +53,7 @@ public:
 	int import(const std::string& fileName);
 
 private:
-    static HashedObject::pointer LLRetrieve(const uint256& hash, leveldb::DB* db);
+    static HashedObject::pointer LLRetrieve(uint256 const& hash, leveldb::DB* db);
     static void LLWrite(boost::shared_ptr<HashedObject> ptr, leveldb::DB* db);
     static void LLWrite(const std::vector< boost::shared_ptr<HashedObject> >& set, leveldb::DB* db);
 

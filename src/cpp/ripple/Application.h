@@ -8,10 +8,8 @@
 #include "../database/database.h"
 
 #include "LedgerMaster.h"
-#include "LedgerAcquire.h"
 #include "TransactionMaster.h"
 #include "Wallet.h"
-#include "NetworkOPs.h"
 #include "WSDoor.h"
 #include "SNTPClient.h"
 #include "RPCHandler.h"

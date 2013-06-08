@@ -1,7 +1,6 @@
 #ifndef __TRANSACTOR__
 #define __TRANSACTOR__
 
-#include "SerializedTransaction.h"
 #include "TransactionEngine.h"
 
 class Transactor

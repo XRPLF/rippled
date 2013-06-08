@@ -27,7 +27,7 @@ public:
 
 	Transaction::ref getTransaction() const		{ return mTxn; }
 	bool getSigChecked() const					{ return mSigChecked; }
-	const uint256& getID() const				{ return mTxn->getID(); }
+	uint256 const& getID() const				{ return mTxn->getID(); }
 
 	void doCallbacks(TER);
 
@@ -53,7 +53,7 @@ public:
 	bool addEntryForExecution(TXQEntry::ref);
 
 	// Call if signature is bad (returns entry so you can run its callbacks)
-	TXQEntry::pointer removeEntry(const uint256& txID);
+	TXQEntry::pointer removeEntry(uint256 const& txID);
 
 	// Transaction execution interface
 	void getJob(TXQEntry::pointer&);

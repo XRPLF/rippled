@@ -221,7 +221,7 @@ EC_KEY* CKey::GeneratePublicDeterministicKey(const RippleAddress& pubGen, int se
 	return success ? pkey : NULL;
 }
 
-EC_KEY* CKey::GeneratePrivateDeterministicKey(const RippleAddress& pubGen, const uint256& u, int seq)
+EC_KEY* CKey::GeneratePrivateDeterministicKey(const RippleAddress& pubGen, uint256 const& u, int seq)
 {
 	CBigNum bn(u);
 	return GeneratePrivateDeterministicKey(pubGen, static_cast<BIGNUM*>(&bn), seq);

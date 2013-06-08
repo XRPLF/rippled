@@ -1,9 +1,6 @@
 #ifndef __DATABASE__
 #define __DATABASE__
 
-#include <string>
-#include <vector>
-
 #define SQL_FOREACH(_db, _strQuery)		\
 	if ((_db)->executeSQL(_strQuery))	\
 	for (bool _bMore = (_db)->startIterRows(); _bMore; _bMore = (_db)->getNextRow())

@@ -6,10 +6,7 @@
 // - Isolate ledger entry format.
 //
 
-#include "SerializedLedger.h"
 #include "AccountItems.h"
-
-#include <boost/shared_ptr.hpp>
 
 class RippleState : public AccountItem
 {

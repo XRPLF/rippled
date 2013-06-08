@@ -99,7 +99,7 @@ public:
 	void setFieldU64(SField::ref field, uint64);
 	void setFieldH128(SField::ref field, const uint128&);
 	void setFieldH160(SField::ref field, const uint160&);
-	void setFieldH256(SField::ref field, const uint256&);
+	void setFieldH256(SField::ref field, uint256 const& );
 	void setFieldVL(SField::ref field, Blob const&);
 	void setFieldAccount(SField::ref field, const uint160&);
 	void setFieldAccount(SField::ref field, const RippleAddress& addr)

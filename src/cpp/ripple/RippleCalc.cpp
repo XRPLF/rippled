@@ -1416,7 +1416,7 @@ TER RippleCalc::calcNodeDeliverFwd(
 	const uint160&	uNxtAccountID	= pnNxt.uAccountID;
 	const uint160&	uCurCurrencyID	= pnCur.uCurrencyID;
 	const uint160&	uCurIssuerID	= pnCur.uIssuerID;
-	const uint256&	uOfferIndex		= pnCur.uOfferIndex;
+	uint256 const& 	uOfferIndex		= pnCur.uOfferIndex;
 	const uint160&	uPrvCurrencyID	= pnPrv.uCurrencyID;
 	const uint160&	uPrvIssuerID	= pnPrv.uIssuerID;
 	const STAmount&	saInTransRate	= pnPrv.saTransferRate;
@@ -3017,7 +3017,7 @@ int iPass	= 0;
 		if (tesSUCCESS == terResult)
 		{
 			// Delete became unfunded offers.
-			BOOST_FOREACH(const uint256& uOfferIndex, vuUnfundedBecame)
+			BOOST_FOREACH(uint256 const& uOfferIndex, vuUnfundedBecame)
 			{
 				if (tesSUCCESS == terResult)
 				{
@@ -3028,7 +3028,7 @@ int iPass	= 0;
 		}
 
 		// Delete found unfunded offers.
-		BOOST_FOREACH(const uint256& uOfferIndex, rc.musUnfundedFound)
+		BOOST_FOREACH(uint256 const& uOfferIndex, rc.musUnfundedFound)
 		{
 			if (tesSUCCESS == terResult)
 			{
@@ -3116,8 +3116,8 @@ TER calcOfferFill(PaymentNode& pnSrc, PaymentNode& pnDst, bool bAllowPartial)
 // Get the next offer limited by funding.
 // - Stop when becomes unfunded.
 void TransactionEngine::calcOfferBridgeNext(
-	const uint256&		uBookRoot,		// --> Which order book to look in.
-	const uint256&		uBookEnd,		// --> Limit of how far to look.
+	uint256 const& 		uBookRoot,		// --> Which order book to look in.
+	uint256 const& 		uBookEnd,		// --> Limit of how far to look.
 	uint256&			uBookDirIndex,	// <-> Current directory. <-- 0 = no offer available.
 	uint64&				uBookDirNode,	// <-> Which node. 0 = first.
 	unsigned int&		uBookDirEntry,	// <-> Entry in node. 0 = first.

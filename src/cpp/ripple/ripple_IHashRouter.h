@@ -48,17 +48,17 @@ public:
 
     virtual ~IHashRouter () { }
 
-	virtual bool addSuppression(const uint256& index) = 0;
+	virtual bool addSuppression(uint256 const& index) = 0;
 
-	virtual bool addSuppressionPeer(const uint256& index, uint64 peer) = 0;
-	virtual bool addSuppressionPeer(const uint256& index, uint64 peer, int& flags) = 0;
-	virtual bool addSuppressionFlags(const uint256& index, int flag) = 0;
-	virtual bool setFlag(const uint256& index, int flag) = 0;
-	virtual int getFlags(const uint256& index) = 0;
+	virtual bool addSuppressionPeer(uint256 const& index, uint64 peer) = 0;
+	virtual bool addSuppressionPeer(uint256 const& index, uint64 peer, int& flags) = 0;
+	virtual bool addSuppressionFlags(uint256 const& index, int flag) = 0;
+	virtual bool setFlag(uint256 const& index, int flag) = 0;
+	virtual int getFlags(uint256 const& index) = 0;
 
-	virtual HashRouterEntry getEntry(const uint256&) = 0;
+	virtual HashRouterEntry getEntry(uint256 const& ) = 0;
 
-	virtual bool swapSet(const uint256& index, std::set<uint64>& peers, int flag) = 0;
+	virtual bool swapSet(uint256 const& index, std::set<uint64>& peers, int flag) = 0;
 };
 
 

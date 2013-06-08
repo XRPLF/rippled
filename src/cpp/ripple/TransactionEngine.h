@@ -1,18 +1,6 @@
 #ifndef __TRANSACTIONENGINE__
 #define __TRANSACTIONENGINE__
 
-#include <boost/unordered_set.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/shared_ptr.hpp>
-
-#include "Ledger.h"
-#include "SerializedTransaction.h"
-#include "SerializedLedger.h"
-#include "LedgerEntrySet.h"
-
-
 DEFINE_INSTANCE(TransactionEngine);
 
 // A TransactionEngine applies serialized transactions to a ledger
@@ -30,7 +18,7 @@ private:
 
 	TER takeOffers(
 		bool				bPassive,
-		const uint256&		uBookBase,
+		uint256 const& 		uBookBase,
 		const uint160&		uTakerAccountID,
 		SLE::ref			sleTakerAccount,
 		const STAmount&		saTakerPays,
@@ -57,8 +45,8 @@ public:
 	Ledger::ref getLedger()				{ return mLedger; }
 	void setLedger(Ledger::ref ledger)	{ assert(ledger); mLedger = ledger; }
 
-	SLE::pointer		entryCreate(LedgerEntryType type, const uint256& index)		{ return mNodes.entryCreate(type, index); }
-	SLE::pointer		entryCache(LedgerEntryType type, const uint256& index)		{ return mNodes.entryCache(type, index); }
+	SLE::pointer		entryCreate(LedgerEntryType type, uint256 const& index)		{ return mNodes.entryCreate(type, index); }
+	SLE::pointer		entryCache(LedgerEntryType type, uint256 const& index)		{ return mNodes.entryCache(type, index); }
 	void				entryDelete(SLE::ref sleEntry)								{ mNodes.entryDelete(sleEntry); }
 	void				entryModify(SLE::ref sleEntry)								{ mNodes.entryModify(sleEntry); }
 

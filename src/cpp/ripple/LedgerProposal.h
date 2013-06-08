@@ -1,12 +1,6 @@
 #ifndef __PROPOSELEDGER__
 #define __PROPOSELEDGER__
 
-#include <vector>
-#include <string>
-
-#include <boost/shared_ptr.hpp>
-
-
 DEFINE_INSTANCE(LedgerProposal);
 
 class LedgerProposal : private IS_INSTANCE(LedgerProposal)
@@ -18,41 +12,41 @@ public:
 	typedef const pointer& ref;
 
 	// proposal from peer
-	LedgerProposal(const uint256& prevLgr, uint32 proposeSeq, const uint256& propose,
-		uint32 closeTime, const RippleAddress& naPeerPublic, const uint256& suppress);
+	LedgerProposal(uint256 const& prevLgr, uint32 proposeSeq, uint256 const& propose,
+		uint32 closeTime, const RippleAddress& naPeerPublic, uint256 const& suppress);
 
 	// our first proposal
 	LedgerProposal(const RippleAddress& pubKey, const RippleAddress& privKey,
-		const uint256& prevLedger, const uint256& position,	uint32 closeTime);
+		uint256 const& prevLedger, uint256 const& position,	uint32 closeTime);
 
 	// an unsigned "dummy" proposal for nodes not validating
-	LedgerProposal(const uint256& prevLedger, const uint256& position, uint32 closeTime);
+	LedgerProposal(uint256 const& prevLedger, uint256 const& position, uint32 closeTime);
 
 	uint256 getSigningHash() const;
-	bool checkSign(const std::string& signature, const uint256& signingHash);
+	bool checkSign(const std::string& signature, uint256 const& signingHash);
 	bool checkSign(const std::string& signature) { return checkSign(signature, getSigningHash()); }
 	bool checkSign() { return checkSign(mSignature, getSigningHash()); }
 
 	const uint160& getPeerID() const		{ return mPeerID; }
-	const uint256& getCurrentHash() const	{ return mCurrentHash; }
-	const uint256& getPrevLedger() const	{ return mPreviousLedger; }
-	const uint256& getHashRouter() const	{ return mSuppression; }
+	uint256 const& getCurrentHash() const	{ return mCurrentHash; }
+	uint256 const& getPrevLedger() const	{ return mPreviousLedger; }
+	uint256 const& getHashRouter() const	{ return mSuppression; }
 	uint32 getProposeSeq() const			{ return mProposeSeq; }
 	uint32 getCloseTime() const				{ return mCloseTime; }
 	const RippleAddress& peekPublic() const		{ return mPublicKey; }
 	Blob getPubKey() const	{ return mPublicKey.getNodePublic(); }
 	Blob sign();
 
-	void setPrevLedger(const uint256& prevLedger)	{ mPreviousLedger = prevLedger; }
+	void setPrevLedger(uint256 const& prevLedger)	{ mPreviousLedger = prevLedger; }
 	void setSignature(const std::string& signature)	{ mSignature = signature; }
 	bool hasSignature()								{ return !mSignature.empty(); }
-	bool isPrevLedger(const uint256& pl)			{ return mPreviousLedger == pl; }
+	bool isPrevLedger(uint256 const& pl)			{ return mPreviousLedger == pl; }
 	bool isBowOut()									{ return mProposeSeq == seqLeave; }
 
 	const boost::posix_time::ptime getCreateTime()	{ return mTime; }
 	bool isStale(boost::posix_time::ptime cutoff)	{ return mTime <= cutoff; }
 
-	bool changePosition(const uint256& newPosition, uint32 newCloseTime);
+	bool changePosition(uint256 const& newPosition, uint32 newCloseTime);
 	void bowOut();
 	Json::Value getJson() const;
 

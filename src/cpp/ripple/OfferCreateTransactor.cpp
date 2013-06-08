@@ -4,7 +4,7 @@ SETUP_LOG (OfferCreateTransactor)
 // Make sure an offer is still valid. If not, mark it unfunded.
 bool OfferCreateTransactor::bValidOffer(
 	SLE::ref			sleOfferDir,
-	const uint256&		uOfferIndex,
+	uint256 const& 		uOfferIndex,
 	const uint160&		uOfferOwnerID,
 	const STAmount&		saOfferPays,
 	const STAmount&		saOfferGets,
@@ -87,7 +87,7 @@ TER OfferCreateTransactor::takeOffers(
 	const bool			bOpenLedger,
 	const bool			bPassive,
 	const bool			bSell,
-	const uint256&		uBookBase,
+	uint256 const& 		uBookBase,
 	const uint160&		uTakerAccountID,
 	SLE::ref			sleTakerAccount,
 	const STAmount&		saTakerPays,
@@ -341,7 +341,7 @@ TER OfferCreateTransactor::takeOffers(
 	if (tesSUCCESS == terResult)
 	{
 		// On success, delete offers that became unfunded.
-		BOOST_FOREACH(const uint256& uOfferIndex, usOfferUnfundedBecame)
+		BOOST_FOREACH(uint256 const& uOfferIndex, usOfferUnfundedBecame)
 		{
 			WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: became unfunded: " << uOfferIndex.ToString();
 
@@ -649,7 +649,7 @@ TER OfferCreateTransactor::doApply()
 	// On storing meta data, delete offers that were found unfunded to prevent encountering them in future.
 	if (tesSUCCESS == terResult)
 	{
-		BOOST_FOREACH(const uint256& uOfferIndex, usOfferUnfundedFound)
+		BOOST_FOREACH(uint256 const& uOfferIndex, usOfferUnfundedFound)
 		{
 
 			WriteLog (lsINFO, OfferCreateTransactor) << "takeOffers: found unfunded: " << uOfferIndex.ToString();

@@ -1,91 +1,11 @@
-#ifndef __NETWORK_OPS__
-#define __NETWORK_OPS__
-
-#include <boost/thread/recursive_mutex.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
-#include <boost/tuple/tuple.hpp>
-
-#include "AccountState.h"
-#include "LedgerMaster.h"
-#include "NicknameState.h"
-#include "RippleState.h"
-#include "SerializedValidation.h"
-#include "LedgerAcquire.h"
-#include "LedgerProposal.h"
-#include "AcceptedLedger.h"
+#ifndef RIPPLE_NETWORKOPS_H
+#define RIPPLE_NETWORKOPS_H
 
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
 
 class Peer;
 class LedgerConsensus;
-class PFRequest;
-
-DEFINE_INSTANCE(InfoSub);
-
-// VFALCO TODO Move InfoSub to a separate file
-class InfoSub : public IS_INSTANCE(InfoSub)
-{
-public:
-	typedef boost::shared_ptr<InfoSub>			pointer;
-	typedef boost::weak_ptr<InfoSub>			wptr;
-	typedef const boost::shared_ptr<InfoSub>&	ref;
-
-	InfoSub()
-	{
-		boost::mutex::scoped_lock sl(sSeqLock);
-		mSeq = ++sSeq;
-	}
-
-	virtual ~InfoSub();
-
-	virtual	void send(const Json::Value& jvObj, bool broadcast) = 0;
-	virtual void send(const Json::Value& jvObj, const std::string& sObj, bool broadcast)
-	{ send(jvObj, broadcast); }
-
-	uint64 getSeq()
-	{
-		return mSeq;
-	}
-
-	void onSendEmpty();
-
-	void insertSubAccountInfo(RippleAddress addr, uint32 uLedgerIndex)
-	{
-		boost::mutex::scoped_lock sl(mLockInfo);
-
-		mSubAccountInfo.insert(addr);
-	}
-
-	void clearPFRequest()
-	{
-		mPFRequest.reset();
-	}
-
-	void setPFRequest(const boost::shared_ptr<PFRequest>& req)
-	{
-		mPFRequest = req;
-	}
-
-	const boost::shared_ptr<PFRequest>& getPFRequest()
-	{
-		return mPFRequest;
-	}
-
-protected:
-    // VFALCO TODO make accessor for this member
-	boost::mutex								mLockInfo;
-
-private:
-	boost::unordered_set<RippleAddress>			mSubAccountInfo;
-	boost::unordered_set<RippleAddress>			mSubAccountTransaction;
-	boost::shared_ptr<PFRequest>				mPFRequest;
-
-	uint64										mSeq;
-	static uint64								sSeq;
-	static boost::mutex							sSeqLock;
-};
 
 class NetworkOPs
 {
@@ -116,7 +36,7 @@ public:
 	uint32 getValidationTimeNC();				// Use *only* to timestamp our own validation
 	void closeTimeOffset(int);
 	boost::posix_time::ptime getNetworkTimePT();
-	uint32 getLedgerID(const uint256& hash);
+	uint32 getLedgerID(uint256 const& hash);
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }
 	std::string strOperatingMode();
@@ -125,7 +45,7 @@ public:
 	Ledger::ref		getValidatedLedger()					{ return mLedgerMaster->getValidatedLedger(); }
 	Ledger::ref		getCurrentLedger()						{ return mLedgerMaster->getCurrentLedger(); }
 	Ledger::ref		getCurrentSnapshot()					{ return mLedgerMaster->getCurrentSnapshot(); }
-	Ledger::pointer	getLedgerByHash(const uint256& hash)	{ return mLedgerMaster->getLedgerByHash(hash); }
+	Ledger::pointer	getLedgerByHash(uint256 const& hash)	{ return mLedgerMaster->getLedgerByHash(hash); }
 	Ledger::pointer	getLedgerBySeq(const uint32 seq);
 	void			missingNodeInLedger(const uint32 seq);
 
@@ -136,15 +56,15 @@ public:
 	bool haveLedger(uint32 seq);
 	uint32 getValidatedSeq();
 	bool isValidated(uint32 seq);
-	bool isValidated(uint32 seq, const uint256& hash);
+	bool isValidated(uint32 seq, uint256 const& hash);
 	bool isValidated(Ledger::ref l) { return isValidated(l->getLedgerSeq(), l->getHash()); }
 	bool getValidatedRange(uint32& minVal, uint32& maxVal) { return mLedgerMaster->getValidatedRange(minVal, maxVal); }
 
 	SerializedValidation::ref getLastValidation()			{ return mLastValidation; }
 	void setLastValidation(SerializedValidation::ref v)		{ mLastValidation = v; }
 
-	SLE::pointer getSLE(Ledger::pointer lpLedger, const uint256& uHash) { return lpLedger->getSLE(uHash); }
-	SLE::pointer getSLEi(Ledger::pointer lpLedger, const uint256& uHash) { return lpLedger->getSLEi(uHash); }
+	SLE::pointer getSLE(Ledger::pointer lpLedger, uint256 const& uHash) { return lpLedger->getSLE(uHash); }
+	SLE::pointer getSLEi(Ledger::pointer lpLedger, uint256 const& uHash) { return lpLedger->getSLEi(uHash); }
 
 	//
 	// Transaction operations
@@ -158,9 +78,9 @@ public:
 	Transaction::pointer processTransaction(Transaction::pointer transaction, bool bAdmin)
 	{ return processTransaction(transaction, bAdmin, stCallback()); }
 
-	Transaction::pointer findTransactionByID(const uint256& transactionID);
+	Transaction::pointer findTransactionByID(uint256 const& transactionID);
 #if 0
-	int findTransactionsBySource(const uint256& uLedger, std::list<Transaction::pointer>&, const RippleAddress& sourceAccount,
+	int findTransactionsBySource(uint256 const& uLedger, std::list<Transaction::pointer>&, const RippleAddress& sourceAccount,
 		uint32 minSeq, uint32 maxSeq);
 #endif
 	int findTransactionsByDestination(std::list<Transaction::pointer>&, const RippleAddress& destinationAccount,
@@ -177,7 +97,7 @@ public:
 	// Directory functions
 	//
 
-	STVector256				getDirNodeInfo(Ledger::ref lrLedger, const uint256& uRootIndex,
+	STVector256				getDirNodeInfo(Ledger::ref lrLedger, uint256 const& uRootIndex,
 								uint64& uNodePrevious, uint64& uNodeNext);
 
 #if 0
@@ -185,7 +105,7 @@ public:
 	// Nickname functions
 	//
 
-	NicknameState::pointer	getNicknameState(const uint256& uLedger, const std::string& strNickname);
+	NicknameState::pointer	getNicknameState(uint256 const& uLedger, const std::string& strNickname);
 #endif
 
 	//
@@ -210,34 +130,34 @@ public:
                       Json::Value& jvResult);
 
 	// raw object operations
-	bool findRawLedger(const uint256& ledgerHash, Blob & rawLedger);
-	bool findRawTransaction(const uint256& transactionHash, Blob & rawTransaction);
-	bool findAccountNode(const uint256& nodeHash, Blob & rawAccountNode);
-	bool findTransactionNode(const uint256& nodeHash, Blob & rawTransactionNode);
+	bool findRawLedger(uint256 const& ledgerHash, Blob& rawLedger);
+	bool findRawTransaction(uint256 const& transactionHash, Blob& rawTransaction);
+	bool findAccountNode(uint256 const& nodeHash, Blob& rawAccountNode);
+	bool findTransactionNode(uint256 const& nodeHash, Blob& rawTransactionNode);
 
 	// tree synchronization operations
-	bool getTransactionTreeNodes(uint32 ledgerSeq, const uint256& myNodeID,
+	bool getTransactionTreeNodes(uint32 ledgerSeq, uint256 const& myNodeID,
 		Blob const& myNode, std::list< Blob >& newNodes);
-	bool getAccountStateNodes(uint32 ledgerSeq, const uint256& myNodeId,
+	bool getAccountStateNodes(uint32 ledgerSeq, uint256 const& myNodeId,
 		Blob const& myNode, std::list< Blob >& newNodes);
 
 	// ledger proposal/close functions
 	void processTrustedProposal(LedgerProposal::pointer proposal, boost::shared_ptr<ripple::TMProposeSet> set,
 		RippleAddress nodePublic, uint256 checkLedger, bool sigGood);
-	SMAddNode gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
+	SHAMapAddNode gotTXData(const boost::shared_ptr<Peer>& peer, uint256 const& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< Blob >& nodeData);
 	bool recvValidation(SerializedValidation::ref val, const std::string& source);
 	void takePosition(int seq, SHAMap::ref position);
-	SHAMap::pointer getTXMap(const uint256& hash);
-	bool hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, ripple::TxSetStatus status);
-	void mapComplete(const uint256& hash, SHAMap::ref map);
-	bool stillNeedTXSet(const uint256& hash);
+	SHAMap::pointer getTXMap(uint256 const& hash);
+	bool hasTXSet(const boost::shared_ptr<Peer>& peer, uint256 const& set, ripple::TxSetStatus status);
+	void mapComplete(uint256 const& hash, SHAMap::ref map);
+	bool stillNeedTXSet(uint256 const& hash);
 	void makeFetchPack(Job&, boost::weak_ptr<Peer> peer, boost::shared_ptr<ripple::TMGetObjectByHash> request,
 		Ledger::pointer wantLedger, Ledger::pointer haveLedger, uint32 uUptime);
 	bool shouldFetchPack(uint32 seq);
 	void gotFetchPack(bool progress, uint32 seq);
-	void addFetchPack(const uint256& hash, boost::shared_ptr< Blob >& data);
-	bool getFetchPack(const uint256& hash, Blob & data);
+	void addFetchPack(uint256 const& hash, boost::shared_ptr< Blob >& data);
+	bool getFetchPack(uint256 const& hash, Blob& data);
 	int getFetchSize();
 	void sweepFetchPack();
 
@@ -245,12 +165,12 @@ public:
 	void checkState(const boost::system::error_code& result);
 	void switchLastClosedLedger(Ledger::pointer newLedger, bool duringConsensus); // Used for the "jump" case
 	bool checkLastClosedLedger(const std::vector<Peer::pointer>&, uint256& networkClosed);
-	int beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger);
+	int beginConsensus(uint256 const& networkClosed, Ledger::pointer closingLedger);
 	void tryStartConsensus();
 	void endConsensus(bool correctLCL);
 	void setStandAlone()				{ setMode(omFULL); }
 	void setStateTimer();
-	void newLCL(int proposers, int convergeTime, const uint256& ledgerHash);
+	void newLCL(int proposers, int convergeTime, uint256 const& ledgerHash);
 	void needNetworkLedger()			{ mNeedNetworkLedger = true; }
 	void clearNeedNetworkLedger()		{ mNeedNetworkLedger = false; }
 	bool isNeedNetworkLedger()			{ return mNeedNetworkLedger; }
@@ -382,8 +302,8 @@ private:
 
 	Json::Value pubBootstrapAccountInfo(Ledger::ref lpAccepted, const RippleAddress& naAccountID);
 
-	void pubValidatedTransaction(Ledger::ref alAccepted, const ALTransaction& alTransaction);
-	void pubAccountTransaction(Ledger::ref lpCurrent, const ALTransaction& alTransaction, bool isAccepted);
+	void pubValidatedTransaction(Ledger::ref alAccepted, const AcceptedLedgerTx& alTransaction);
+	void pubAccountTransaction(Ledger::ref lpCurrent, const AcceptedLedgerTx& alTransaction, bool isAccepted);
 
 	void pubServer();
 };

@@ -1,16 +1,6 @@
 #ifndef RIPPLE_LEDGER_H
 #define RIPPLE_LEDGER_H
 
-// VFALCO TODO Get this include out of here!
-#include "ripple_HashedObject.h"
-
-
-#include "Transaction.h"
-#include "TransactionMeta.h"
-#include "AccountState.h"
-#include "NicknameState.h"
-#include "SHAMap.h"
-
 class Job;
 
 enum LedgerStateParms
@@ -72,7 +62,7 @@ public:
 public:
 	Ledger(const RippleAddress& masterID, uint64 startAmount); // used for the starting bootstrap ledger
 
-	Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
+	Ledger(uint256 const& parentHash, uint256 const& transHash, uint256 const& accountHash,
 		uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution,
 		uint32 ledgerSeq, bool& loaded); // used for database ledgers
 
@@ -105,9 +95,9 @@ public:
 	void setRaw(Serializer& s, bool hasPrefix);
 
 	uint256 getHash();
-	const uint256& getParentHash() const	{ return mParentHash; }
-	const uint256& getTransHash() const		{ return mTransHash; }
-	const uint256& getAccountHash() const	{ return mAccountHash; }
+	uint256 const& getParentHash() const	{ return mParentHash; }
+	uint256 const& getTransHash() const		{ return mTransHash; }
+	uint256 const& getAccountHash() const	{ return mAccountHash; }
 	uint64 getTotalCoins() const			{ return mTotCoins; }
 	void destroyCoins(uint64 fee)			{ mTotCoins -= fee; }
 	uint32 getCloseTimeNC() const			{ return mCloseTime; }
@@ -140,13 +130,13 @@ public:
 	bool isAcquiringAS(void);
 
 	// Transaction Functions
-	bool addTransaction(const uint256& id, const Serializer& txn);
-	bool addTransaction(const uint256& id, const Serializer& txn, const Serializer& metaData);
-	bool hasTransaction(const uint256& TransID) const { return mTransactionMap->hasItem(TransID); }
-	Transaction::pointer getTransaction(const uint256& transID) const;
-	bool getTransaction(const uint256& transID, Transaction::pointer& txn, TransactionMetaSet::pointer& txMeta);
-	bool getTransactionMeta(const uint256& transID, TransactionMetaSet::pointer& txMeta);
-	bool getMetaHex(const uint256& transID, std::string& hex);
+	bool addTransaction(uint256 const& id, const Serializer& txn);
+	bool addTransaction(uint256 const& id, const Serializer& txn, const Serializer& metaData);
+	bool hasTransaction(uint256 const& TransID) const { return mTransactionMap->hasItem(TransID); }
+	Transaction::pointer getTransaction(uint256 const& transID) const;
+	bool getTransaction(uint256 const& transID, Transaction::pointer& txn, TransactionMetaSet::pointer& txMeta);
+	bool getTransactionMeta(uint256 const& transID, TransactionMetaSet::pointer& txMeta);
+	bool getMetaHex(uint256 const& transID, std::string& hex);
 
 	static SerializedTransaction::pointer getSTransaction(SHAMapItem::ref, SHAMapTreeNode::TNType);
 	SerializedTransaction::pointer getSMTransaction(SHAMapItem::ref, SHAMapTreeNode::TNType,
@@ -163,21 +153,21 @@ public:
 
 	// database functions (low-level)
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);
-	static Ledger::pointer loadByHash(const uint256& ledgerHash);
+	static Ledger::pointer loadByHash(uint256 const& ledgerHash);
 	static uint256 getHashByIndex(uint32 index);
 	static bool getHashesByIndex(uint32 index, uint256& ledgerHash, uint256& parentHash);
 	static std::map< uint32, std::pair<uint256, uint256> > getHashesByIndex(uint32 minSeq, uint32 maxSeq);
 	void pendSave(bool fromConsensus);
 
 	// next/prev function
-	SLE::pointer getSLE(const uint256& uHash);	// SLE is mutable
-	SLE::pointer getSLEi(const uint256& uHash); // SLE is immutable
+	SLE::pointer getSLE(uint256 const& uHash);	// SLE is mutable
+	SLE::pointer getSLEi(uint256 const& uHash); // SLE is immutable
 	uint256 getFirstLedgerIndex();
 	uint256 getLastLedgerIndex();
-	uint256 getNextLedgerIndex(const uint256& uHash);							// first node >hash
-	uint256 getNextLedgerIndex(const uint256& uHash, const uint256& uEnd);		// first node >hash, <end
-	uint256 getPrevLedgerIndex(const uint256& uHash);							// last node <hash
-	uint256 getPrevLedgerIndex(const uint256& uHash, const uint256& uBegin);	// last node <hash, >begin
+	uint256 getNextLedgerIndex(uint256 const& uHash);							// first node >hash
+	uint256 getNextLedgerIndex(uint256 const& uHash, uint256 const& uEnd);		// first node >hash, <end
+	uint256 getPrevLedgerIndex(uint256 const& uHash);							// last node <hash
+	uint256 getPrevLedgerIndex(uint256 const& uHash, uint256 const& uBegin);	// last node <hash, >begin
 
 	// Ledger hash table function
 	static uint256 getLedgerHashIndex();
@@ -215,14 +205,14 @@ public:
 	static uint256 getNicknameHash(const std::string& strNickname)
 	{ Serializer s(strNickname); return s.getSHA256(); }
 
-	NicknameState::pointer getNicknameState(const uint256& uNickname);
+	NicknameState::pointer getNicknameState(uint256 const& uNickname);
 	NicknameState::pointer getNicknameState(const std::string& strNickname)
 	{ return getNicknameState(getNicknameHash(strNickname)); }
 
-	SLE::pointer getNickname(const uint256& uNickname);
+	SLE::pointer getNickname(uint256 const& uNickname);
 	SLE::pointer getNickname(const std::string& strNickname)	{ return getNickname(getNicknameHash(strNickname)); }
 
-	static uint256 getNicknameIndex(const uint256& uNickname);
+	static uint256 getNicknameIndex(uint256 const& uNickname);
 
 	//
 	// Order book functions
@@ -239,7 +229,7 @@ public:
 	// Offer functions
 	//
 
-	SLE::pointer getOffer(const uint256& uIndex);
+	SLE::pointer getOffer(uint256 const& uIndex);
 
 	SLE::pointer getOffer(const uint160& uAccountID, uint32 uSequence)
 	{ return getOffer(getOfferIndex(uAccountID, uSequence)); }
@@ -259,19 +249,19 @@ public:
 	// Directories are doubly linked lists of nodes.
 
 	// Given a directory root and and index compute the index of a node.
-	static uint256 getDirNodeIndex(const uint256& uDirRoot, const uint64 uNodeIndex = 0);
+	static uint256 getDirNodeIndex(uint256 const& uDirRoot, const uint64 uNodeIndex = 0);
 	static void ownerDirDescriber(SLE::ref, const uint160& owner);
 
 	// Return a node: root or normal
-	SLE::pointer getDirNode(const uint256& uNodeIndex);
+	SLE::pointer getDirNode(uint256 const& uNodeIndex);
 
 	//
 	// Quality
 	//
 
-	static uint256	getQualityIndex(const uint256& uBase, const uint64 uNodeDir = 0);
-	static uint256	getQualityNext(const uint256& uBase);
-	static uint64	getQuality(const uint256& uBase);
+	static uint256	getQualityIndex(uint256 const& uBase, const uint64 uNodeDir = 0);
+	static uint256	getQualityNext(uint256 const& uBase);
+	static uint64	getQuality(uint256 const& uBase);
 	static void		qualityDirDescriber(SLE::ref,
 		const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuer,
 		const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuer,
@@ -286,7 +276,7 @@ public:
 	static uint256 getRippleStateIndex(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
 		{ return getRippleStateIndex(RippleAddress::createAccountID(uiA), RippleAddress::createAccountID(uiB), uCurrency); }
 
-	SLE::pointer getRippleState(const uint256& uNode);
+	SLE::pointer getRippleState(uint256 const& uNode);
 
 	SLE::pointer getRippleState(const RippleAddress& naA, const RippleAddress& naB, const uint160& uCurrency)
 		{ return getRippleState(getRippleStateIndex(naA, naB, uCurrency)); }
@@ -329,18 +319,23 @@ public:
 	bool assertSane();
 
 protected:
-	SLE::pointer getASNode(LedgerStateParms& parms, const uint256& nodeID, LedgerEntryType let);
+	SLE::pointer getASNode(LedgerStateParms& parms, uint256 const& nodeID, LedgerEntryType let);
 
 	// returned SLE is immutable
-	SLE::pointer getASNodeI(const uint256& nodeID, LedgerEntryType let);
+	SLE::pointer getASNodeI(uint256 const& nodeID, LedgerEntryType let);
 
 	void saveAcceptedLedger(Job&, bool fromConsensus);
 
 	void updateFees();
-	void zeroFees();
 
 private:
-	uint256		mHash, mParentHash, mTransHash, mAccountHash;
+	void initializeFees ();
+
+private:
+    uint256		mHash;
+    uint256		mParentHash;
+    uint256		mTransHash;
+    uint256		mAccountHash;
 	uint64		mTotCoins;
 	uint32		mLedgerSeq;
 	uint32		mCloseTime;			// when this ledger closed
@@ -353,7 +348,8 @@ private:
 	uint32		mReserveBase, mReserveIncrement;	// Reserve basse and increment in fee units
 	uint64		mBaseFee;							// Ripple cost of the reference transaction
 
-	SHAMap::pointer mTransactionMap, mAccountStateMap;
+	SHAMap::pointer mTransactionMap;
+    SHAMap::pointer mAccountStateMap;
 
 	mutable boost::recursive_mutex mLock;
 

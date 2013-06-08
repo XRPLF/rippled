@@ -5,6 +5,18 @@
 #define SYSTEM_CURRENCY_PARTS		1000000ull		// 10^SYSTEM_CURRENCY_PRECISION
 #define SYSTEM_CURRENCY_START		(SYSTEM_CURRENCY_GIFT*SYSTEM_CURRENCY_USERS*SYSTEM_CURRENCY_PARTS)
 
+/* VFALCO NOTE
+
+    The master lock protects:
+
+    - The open ledger
+    - Server global state
+        * What the last closed ledger is
+        * State of the consensus engine
+
+    other things
+*/
+
 SETUP_LOG (Application)
 
 // VFALCO TODO fix/clean this, it might have broken with the Log changes
