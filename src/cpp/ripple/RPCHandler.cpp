@@ -109,8 +109,10 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit, Sco
 		return rpcError(rpcINVALID_PARAMS);
 	}
 
-	AccountState::pointer asSrc	= mNetOps->getAccountState(mNetOps->getCurrentSnapshot(), raSrcAddressID);
-	if (!asSrc)
+	bool	bOffline	= mNetOps->getOperatingMode() < NetworkOPs::omSYNCING;
+
+	AccountState::pointer asSrc	= bOffline ? AccountState::pointer() : mNetOps->getAccountState(mNetOps->getCurrentSnapshot(), raSrcAddressID);
+	if (!bOffline && !asSrc)
 	{
 		WriteLog (lsDEBUG, RPCHandler) << boost::str(boost::format("transactionSign: Failed to find source account in current ledger: %s")
 			% raSrcAddressID.humanAccountID());
@@ -211,7 +213,18 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit, Sco
 		txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
 	}
 
-	if (!txJSON.isMember("Sequence")) txJSON["Sequence"] = asSrc->getSeq();
+	if (!txJSON.isMember("Sequence"))
+	{
+		if (bOffline)
+		{
+			return rpcError(rpcINVALID_PARAMS);
+		}
+		else
+		{
+			txJSON["Sequence"] = asSrc->getSeq();
+		}
+	}
+
 	if (!txJSON.isMember("Flags")) txJSON["Flags"] = 0;
 
 	Ledger::pointer	lpCurrent		= mNetOps->getCurrentSnapshot();
