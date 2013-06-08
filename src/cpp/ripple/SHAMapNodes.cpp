@@ -1,18 +1,4 @@
 
-#include "SHAMap.h"
-
-#include <cstring>
-#include <iostream>
-
-#include <boost/foreach.hpp>
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/smart_ptr/make_shared.hpp>
-
-#include <openssl/sha.h>
-
-#include "HashPrefixes.h"
-
 SETUP_LOG (SHAMapNode)
 
 std::string SHAMapNode::getString() const
@@ -173,7 +159,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::ref item, TNT
 	updateHash();
 }
 
-SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& rawNode, uint32 seq,
+SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, Blob const& rawNode, uint32 seq,
 	SHANodeFormat format, const uint256& hash, bool hashValid) :
 		SHAMapNode(id), mSeq(seq), mType(tnERROR), mIsBranch(0), mFullBelow(false)
 {

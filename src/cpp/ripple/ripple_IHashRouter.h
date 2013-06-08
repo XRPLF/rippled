@@ -3,7 +3,7 @@
 
 DEFINE_INSTANCE (HashRouterEntry);
 
-// VFALCO: TODO, convert these macros to int constants
+// VFALCO TODO convert these macros to int constants
 #define SF_RELAYED		0x01	// Has already been relayed to other nodes
 #define SF_BAD			0x02	// Signature/format is bad
 #define SF_SIGGOOD		0x04	// Signature is good
@@ -11,7 +11,7 @@ DEFINE_INSTANCE (HashRouterEntry);
 #define SF_RETRY		0x10	// Transaction can be retried
 #define SF_TRUSTED		0x20	// comes from trusted source
 
-// VFALCO: TODO move this class into the scope of class HashRouter
+// VFALCO TODO move this class into the scope of class HashRouter
 class HashRouterEntry : private IS_INSTANCE (HashRouterEntry)
 {
 public:
@@ -35,7 +35,7 @@ protected:
 class IHashRouter
 {
 public:
-    // VFALCO: NOTE, this preferred alternative to default parameters makes
+    // VFALCO NOTE this preferred alternative to default parameters makes
     //         behavior clear.
     //
     static inline int getDefaultHoldTime ()
@@ -43,7 +43,7 @@ public:
         return 120;
     }
 
-    // VFALCO: TODO rename the parameter to entryHoldTimeInSeconds
+    // VFALCO TODO rename the parameter to entryHoldTimeInSeconds
     static IHashRouter* New (int holdTime);
 
     virtual ~IHashRouter () { }

@@ -24,7 +24,7 @@ class PFRequest;
 
 DEFINE_INSTANCE(InfoSub);
 
-// VFALCO: TODO Move InfoSub to a separate file
+// VFALCO TODO Move InfoSub to a separate file
 class InfoSub : public IS_INSTANCE(InfoSub)
 {
 public:
@@ -74,7 +74,7 @@ public:
 	}
 
 protected:
-    // VFALCO: TODO, make accessor for this member
+    // VFALCO TODO make accessor for this member
 	boost::mutex								mLockInfo;
 
 private:
@@ -210,22 +210,22 @@ public:
                       Json::Value& jvResult);
 
 	// raw object operations
-	bool findRawLedger(const uint256& ledgerHash, std::vector<unsigned char>& rawLedger);
-	bool findRawTransaction(const uint256& transactionHash, std::vector<unsigned char>& rawTransaction);
-	bool findAccountNode(const uint256& nodeHash, std::vector<unsigned char>& rawAccountNode);
-	bool findTransactionNode(const uint256& nodeHash, std::vector<unsigned char>& rawTransactionNode);
+	bool findRawLedger(const uint256& ledgerHash, Blob & rawLedger);
+	bool findRawTransaction(const uint256& transactionHash, Blob & rawTransaction);
+	bool findAccountNode(const uint256& nodeHash, Blob & rawAccountNode);
+	bool findTransactionNode(const uint256& nodeHash, Blob & rawTransactionNode);
 
 	// tree synchronization operations
 	bool getTransactionTreeNodes(uint32 ledgerSeq, const uint256& myNodeID,
-		const std::vector<unsigned char>& myNode, std::list< std::vector<unsigned char> >& newNodes);
+		Blob const& myNode, std::list< Blob >& newNodes);
 	bool getAccountStateNodes(uint32 ledgerSeq, const uint256& myNodeId,
-		const std::vector<unsigned char>& myNode, std::list< std::vector<unsigned char> >& newNodes);
+		Blob const& myNode, std::list< Blob >& newNodes);
 
 	// ledger proposal/close functions
 	void processTrustedProposal(LedgerProposal::pointer proposal, boost::shared_ptr<ripple::TMProposeSet> set,
 		RippleAddress nodePublic, uint256 checkLedger, bool sigGood);
 	SMAddNode gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
-		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
+		const std::list<SHAMapNode>& nodeIDs, const std::list< Blob >& nodeData);
 	bool recvValidation(SerializedValidation::ref val, const std::string& source);
 	void takePosition(int seq, SHAMap::ref position);
 	SHAMap::pointer getTXMap(const uint256& hash);
@@ -236,8 +236,8 @@ public:
 		Ledger::pointer wantLedger, Ledger::pointer haveLedger, uint32 uUptime);
 	bool shouldFetchPack(uint32 seq);
 	void gotFetchPack(bool progress, uint32 seq);
-	void addFetchPack(const uint256& hash, boost::shared_ptr< std::vector<unsigned char> >& data);
-	bool getFetchPack(const uint256& hash, std::vector<unsigned char>& data);
+	void addFetchPack(const uint256& hash, boost::shared_ptr< Blob >& data);
+	bool getFetchPack(const uint256& hash, Blob & data);
 	int getFetchSize();
 	void sweepFetchPack();
 
@@ -368,7 +368,7 @@ private:
 	subMapType											mSubTransactions;		// all accepted transactions
 	subMapType											mSubRTTransactions;		// all proposed and accepted transactions
 
-	TaggedCache< uint256, std::vector<unsigned char>, UptimeTimerAdapter >	mFetchPack;
+	TaggedCache< uint256, Blob , UptimeTimerAdapter >	mFetchPack;
 	uint32												mLastFetchPack;
 	uint32												mFetchSeq;
 

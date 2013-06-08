@@ -2,7 +2,7 @@
 // TODO: Check permissions on config file before using it.
 //
 
-// VFALCO: TODO Rename and replace these macros with variables.
+// VFALCO TODO Rename and replace these macros with variables.
 #define SECTION_ACCOUNT_PROBE_MAX		"account_probe_max"
 #define SECTION_CLUSTER_NODES			"cluster_nodes"
 #define SECTION_DATABASE_PATH			"database_path"

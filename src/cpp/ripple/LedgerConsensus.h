@@ -33,7 +33,7 @@ public:
 	SHAMap::ref getMap()				{ return mMap; }
 
 	SMAddNode takeNodes(const std::list<SHAMapNode>& IDs,
-		const std::list< std::vector<unsigned char> >& data, Peer::ref);
+		const std::list< Blob >& data, Peer::ref);
 
 private:
 	SHAMap::pointer		mMap;
@@ -53,7 +53,7 @@ class LCTransaction
 public:
 	typedef boost::shared_ptr<LCTransaction> pointer;
 
-	LCTransaction(const uint256 &txID, const std::vector<unsigned char>& tx, bool ourVote) :
+	LCTransaction(const uint256 &txID, Blob const& tx, bool ourVote) :
 		mTransactionID(txID), mYays(0), mNays(0), mOurVote(ourVote), transaction(tx) { ; }
 
 	const uint256& getTransactionID() const				{ return mTransactionID; }
@@ -117,7 +117,7 @@ public:
 	bool peerHasSet(Peer::ref peer, const uint256& set, ripple::TxSetStatus status);
 
 	SMAddNode peerGaveNodes(Peer::ref peer, const uint256& setHash,
-		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
+		const std::list<SHAMapNode>& nodeIDs, const std::list< Blob >& nodeData);
 
 	bool isOurPubKey(const RippleAddress &k)	{ return k == mValPublic; }
 
@@ -133,7 +133,7 @@ private:
 	SHAMap::pointer find(const uint256& hash);
 
 	void createDisputes(SHAMap::ref, SHAMap::ref);
-	void addDisputedTransaction(const uint256&, const std::vector<unsigned char>& transaction);
+	void addDisputedTransaction(const uint256&, Blob const& transaction);
 	void adjustCount(SHAMap::ref map, const std::vector<uint160>& peers);
 	void propose();
 

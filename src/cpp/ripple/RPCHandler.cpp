@@ -389,8 +389,8 @@ Json::Value RPCHandler::getMasterGenerator(Ledger::ref lrLedger, const RippleAdd
 		return rpcError(rpcNO_ACCOUNT);
 	}
 
-	std::vector<unsigned char>	vucCipher			= sleGen->getFieldVL(sfGenerator);
-	std::vector<unsigned char>	vucMasterGenerator	= na0Private.accountPrivateDecrypt(na0Public, vucCipher);
+	Blob 	vucCipher			= sleGen->getFieldVL(sfGenerator);
+	Blob 	vucMasterGenerator	= na0Private.accountPrivateDecrypt(na0Public, vucCipher);
 	if (vucMasterGenerator.empty())
 	{
 		return rpcError(rpcFAIL_GEN_DECRPYT);
@@ -543,8 +543,8 @@ Json::Value RPCHandler::accountFromString(Ledger::ref lrLedger, RippleAddress& n
 		else
 		{
 			// Found master public key.
-			std::vector<unsigned char>	vucCipher				= sleGen->getFieldVL(sfGenerator);
-			std::vector<unsigned char>	vucMasterGenerator		= naRegular0Private.accountPrivateDecrypt(naRegular0Public, vucCipher);
+			Blob 	vucCipher				= sleGen->getFieldVL(sfGenerator);
+			Blob 	vucMasterGenerator		= naRegular0Private.accountPrivateDecrypt(naRegular0Public, vucCipher);
 			if (vucMasterGenerator.empty())
 			{
 				rpcError(rpcNO_GEN_DECRPYT);
@@ -888,7 +888,7 @@ Json::Value RPCHandler::doProofCreate(Json::Value jvRequest, int& cost, ScopedLo
 
 	if (jvRequest.isMember("difficulty") || jvRequest.isMember("secret"))
 	{
-        // VFALCO: TODO, why aren't we using the app's factory?
+        // VFALCO TODO why aren't we using the app's factory?
         beast::ScopedPointer <IProofOfWorkFactory> pgGen (IProofOfWorkFactory::New ());
 
 		if (jvRequest.isMember("difficulty"))
@@ -973,7 +973,7 @@ Json::Value RPCHandler::doProofVerify(Json::Value jvRequest, int& cost, ScopedLo
 	POWResult		prResult;
 	if (jvRequest.isMember("difficulty") || jvRequest.isMember("secret"))
 	{
-        // VFALCO: TODO, why aren't we using the app's factory?
+        // VFALCO TODO why aren't we using the app's factory?
         beast::ScopedPointer <IProofOfWorkFactory> pgGen (IProofOfWorkFactory::New ());
 
 		if (jvRequest.isMember("difficulty"))
@@ -1590,7 +1590,7 @@ Json::Value RPCHandler::doSubmit(Json::Value jvRequest, int& cost, ScopedLock& M
 
 	Json::Value					jvResult;
 
-	std::vector<unsigned char>	vucBlob(strUnHex(jvRequest["tx_blob"].asString()));
+	Blob 	vucBlob(strUnHex(jvRequest["tx_blob"].asString()));
 
 	if (!vucBlob.size())
 	{

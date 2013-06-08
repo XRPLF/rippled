@@ -1,5 +1,5 @@
 
-//VFALCO: TODO, clean this up since it is just a file holding a single member function definition
+//VFALCO TODO clean this up since it is just a file holding a single member function definition
 
 static std::vector<std::string> getSchema(DatabaseCon* dbc, const std::string& dbName)
 {
@@ -45,7 +45,7 @@ static void addTxnSeqField()
 	uint256 transID;
 	SQL_FOREACH(db, "SELECT TransID,TxnMeta FROM Transactions;")
 	{
-		std::vector<unsigned char> rawMeta;
+		Blob rawMeta;
 		int metaSize = 2048;
 		rawMeta.resize(metaSize);
 		metaSize = db->getBinary("TxnMeta", &*rawMeta.begin(), rawMeta.size());

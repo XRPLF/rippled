@@ -148,7 +148,7 @@ TER AccountSetTransactor::doApply()
 
 	if (mTxn.isFieldPresent(sfMessageKey))
 	{
-		std::vector<unsigned char>	vucPublic	= mTxn.getFieldVL(sfMessageKey);
+		Blob 	vucPublic	= mTxn.getFieldVL(sfMessageKey);
 
 		if (vucPublic.size() > PUBLIC_BYTES_MAX)
 		{
@@ -170,7 +170,7 @@ TER AccountSetTransactor::doApply()
 
 	if (mTxn.isFieldPresent(sfDomain))
 	{
-		std::vector<unsigned char>	vucDomain	= mTxn.getFieldVL(sfDomain);
+		Blob 	vucDomain	= mTxn.getFieldVL(sfDomain);
 
 		if (vucDomain.empty())
 		{

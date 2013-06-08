@@ -36,31 +36,31 @@ public:
 	// Node Public - Also used for Validators
 	//
 	uint160 getNodeID() const;
-	const std::vector<unsigned char>& getNodePublic() const;
+	Blob const& getNodePublic() const;
 
 	std::string humanNodePublic() const;
 
 	bool setNodePublic(const std::string& strPublic);
-	void setNodePublic(const std::vector<unsigned char>& vPublic);
-	bool verifyNodePublic(const uint256& hash, const std::vector<unsigned char>& vchSig) const;
+	void setNodePublic(Blob const& vPublic);
+	bool verifyNodePublic(const uint256& hash, Blob const& vchSig) const;
 	bool verifyNodePublic(const uint256& hash, const std::string& strSig) const;
 
 	static RippleAddress createNodePublic(const RippleAddress& naSeed);
-	static RippleAddress createNodePublic(const std::vector<unsigned char>& vPublic);
+	static RippleAddress createNodePublic(Blob const& vPublic);
 	static RippleAddress createNodePublic(const std::string& strPublic);
 
 	//
 	// Node Private
 	//
-	const std::vector<unsigned char>& getNodePrivateData() const;
+	Blob const& getNodePrivateData() const;
 	uint256 getNodePrivate() const;
 
 	std::string humanNodePrivate() const;
 
 	bool setNodePrivate(const std::string& strPrivate);
-	void setNodePrivate(const std::vector<unsigned char>& vPrivate);
+	void setNodePrivate(Blob const& vPrivate);
 	void setNodePrivate(uint256 hash256);
-	void signNodePrivate(const uint256& hash, std::vector<unsigned char>& vchSig) const;
+	void signNodePrivate(const uint256& hash, Blob & vchSig) const;
 
 	static RippleAddress createNodePrivate(const RippleAddress& naSeed);
 
@@ -82,23 +82,23 @@ public:
 	static std::string createHumanAccountID(const uint160& uiAccountID)
 	{ return createAccountID(uiAccountID).humanAccountID(); }
 
-	static std::string createHumanAccountID(const std::vector<unsigned char>& vPrivate)
+	static std::string createHumanAccountID(Blob const& vPrivate)
 	{ return createAccountPrivate(vPrivate).humanAccountID(); }
 
 	//
 	// Accounts Public
 	//
-	const std::vector<unsigned char>& getAccountPublic() const;
+	Blob const& getAccountPublic() const;
 
 	std::string humanAccountPublic() const;
 
 	bool setAccountPublic(const std::string& strPublic);
-	void setAccountPublic(const std::vector<unsigned char>& vPublic);
+	void setAccountPublic(Blob const& vPublic);
 	void setAccountPublic(const RippleAddress& generator, int seq);
 
-	bool accountPublicVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const;
+	bool accountPublicVerify(const uint256& uHash, Blob const& vucSig) const;
 
-	static RippleAddress createAccountPublic(const std::vector<unsigned char>& vPublic)
+	static RippleAddress createAccountPublic(Blob const& vPublic)
 	{
 		RippleAddress	naNew;
 
@@ -107,7 +107,7 @@ public:
 		return naNew;
 	}
 
-	static std::string createHumanAccountPublic(const std::vector<unsigned char>& vPublic) {
+	static std::string createHumanAccountPublic(Blob const& vPublic) {
 		return createAccountPublic(vPublic).humanAccountPublic();
 	}
 
@@ -122,22 +122,22 @@ public:
 	std::string humanAccountPrivate() const;
 
 	bool setAccountPrivate(const std::string& strPrivate);
-	void setAccountPrivate(const std::vector<unsigned char>& vPrivate);
+	void setAccountPrivate(Blob const& vPrivate);
 	void setAccountPrivate(uint256 hash256);
 	void setAccountPrivate(const RippleAddress& naGenerator, const RippleAddress& naSeed, int seq);
 
-	bool accountPrivateSign(const uint256& uHash, std::vector<unsigned char>& vucSig) const;
-	// bool accountPrivateVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const;
+	bool accountPrivateSign(const uint256& uHash, Blob & vucSig) const;
+	// bool accountPrivateVerify(const uint256& uHash, Blob const& vucSig) const;
 
 	// Encrypt a message.
-	std::vector<unsigned char> accountPrivateEncrypt(const RippleAddress& naPublicTo, const std::vector<unsigned char>& vucPlainText) const;
+	Blob accountPrivateEncrypt(const RippleAddress& naPublicTo, Blob const& vucPlainText) const;
 
 	// Decrypt a message.
-	std::vector<unsigned char> accountPrivateDecrypt(const RippleAddress& naPublicFrom, const std::vector<unsigned char>& vucCipherText) const;
+	Blob accountPrivateDecrypt(const RippleAddress& naPublicFrom, Blob const& vucCipherText) const;
 
 	static RippleAddress createAccountPrivate(const RippleAddress& naGenerator, const RippleAddress& naSeed, int iSeq);
 
-	static RippleAddress createAccountPrivate(const std::vector<unsigned char>& vPrivate)
+	static RippleAddress createAccountPrivate(Blob const& vPrivate)
 	{
 		RippleAddress	naNew;
 
@@ -146,7 +146,7 @@ public:
 		return naNew;
 	}
 
-	static std::string createHumanAccountPrivate(const std::vector<unsigned char>& vPrivate) {
+	static std::string createHumanAccountPrivate(Blob const& vPrivate) {
 		return createAccountPrivate(vPrivate).humanAccountPrivate();
 	}
 
@@ -155,12 +155,12 @@ public:
 	// Use to generate a master or regular family.
 	//
 	BIGNUM* getGeneratorBN() const; // DEPRECATED
-	const std::vector<unsigned char>& getGenerator() const;
+	Blob const& getGenerator() const;
 
 	std::string humanGenerator() const;
 
 	bool setGenerator(const std::string& strGenerator);
-	void setGenerator(const std::vector<unsigned char>& vPublic);
+	void setGenerator(Blob const& vPublic);
 	// void setGenerator(const RippleAddress& seed);
 
 	// Create generator for making public deterministic keys.

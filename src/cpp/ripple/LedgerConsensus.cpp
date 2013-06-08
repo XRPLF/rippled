@@ -13,7 +13,7 @@ SETUP_LOG (LedgerConsensus)
 
 DECLARE_INSTANCE(LedgerConsensus);
 
-// VFALCO: TODO, move LCTransaction to its own file and rename to ConsensusTransactor
+// VFALCO TODO move LCTransaction to its own file and rename to ConsensusTransactor
 //
 void LCTransaction::setVote(const uint160& peer, bool votesYes)
 { // Track a peer's yes/no vote on a particular disputed transaction
@@ -190,7 +190,7 @@ void LedgerConsensus::checkOurValidation()
 	v->sign(signingHash, mValPrivate);
 	theApp->getHashRouter ().addSuppression (signingHash);
 	theApp->getValidations().addValidation(v, "localMissing");
-	std::vector<unsigned char> validation = v->getSigned();
+	Blob validation = v->getSigned();
 	ripple::TMValidation val;
 	val.set_validation(&validation[0], validation.size());
 #if 0
@@ -561,7 +561,7 @@ void LedgerConsensus::stateAccepted()
 	endConsensus();
 }
 
-// VFALCO: TODO implement shutdown without a naked global
+// VFALCO TODO implement shutdown without a naked global
 extern volatile bool doShutdown;
 
 void LedgerConsensus::timerEntry()
@@ -824,15 +824,15 @@ void LedgerConsensus::propose()
 	prop.set_proposeseq(mOurPosition->getProposeSeq());
 	prop.set_closetime(mOurPosition->getCloseTime());
 
-	std::vector<unsigned char> pubKey = mOurPosition->getPubKey();
-	std::vector<unsigned char> sig = mOurPosition->sign();
+	Blob pubKey = mOurPosition->getPubKey();
+	Blob sig = mOurPosition->sign();
 	prop.set_nodepubkey(&pubKey[0], pubKey.size());
 	prop.set_signature(&sig[0], sig.size());
 	theApp->getPeers().relayMessage(NULL,
 		boost::make_shared<PackedMessage>(prop, ripple::mtPROPOSE_LEDGER));
 }
 
-void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vector<unsigned char>& tx)
+void LedgerConsensus::addDisputedTransaction(const uint256& txID, Blob const& tx)
 {
 	if (mDisputes.find(txID) != mDisputes.end())
 		return;
@@ -945,7 +945,7 @@ bool LedgerConsensus::peerHasSet(Peer::ref peer, const uint256& hashSet, ripple:
 }
 
 SMAddNode LedgerConsensus::peerGaveNodes(Peer::ref peer, const uint256& setHash,
-	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
+	const std::list<SHAMapNode>& nodeIDs, const std::list< Blob >& nodeData)
 {
 	boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(setHash);
 	if (acq == mAcquiring.end())
@@ -1023,7 +1023,7 @@ void LedgerConsensus::playbackProposals()
 	}
 }
 
-// VFALCO: TODO, clean these macros up and put them somewhere. Try to eliminate them if possible.
+// VFALCO TODO clean these macros up and put them somewhere. Try to eliminate them if possible.
 #define LCAT_SUCCESS	0
 #define LCAT_FAIL		1
 #define LCAT_RETRY		2
@@ -1042,7 +1042,7 @@ int LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTrans
 		<< (retryAssured ? "/retry" : "/final");
 	WriteLog (lsTRACE, LedgerConsensus) << txn->getJson(0);
 
-// VFALCO: TODO, figure out what this "trust network" is all about and why it needs exceptions.
+// VFALCO TODO figure out what this "trust network" is all about and why it needs exceptions.
 #ifndef TRUST_NETWORK
 	try
 	{
@@ -1227,7 +1227,7 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 		theApp->getHashRouter ().addSuppression (signingHash); // suppress it if we receive it
 		theApp->getValidations().addValidation(v, "local");
 		theApp->getOPs().setLastValidation(v);
-		std::vector<unsigned char> validation = v->getSigned();
+		Blob validation = v->getSigned();
 		ripple::TMValidation val;
 		val.set_validation(&validation[0], validation.size());
 		int j = theApp->getPeers().relayMessage(NULL,

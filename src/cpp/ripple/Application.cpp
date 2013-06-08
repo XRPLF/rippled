@@ -1,24 +1,5 @@
 
-/*
-#include "Application.h"
-
-#include "leveldb/cache.h"
-#include "leveldb/filter_policy.h"
-
-#include "AcceptedLedger.h"
-#include "PeerDoor.h"
-#include "RPCDoor.h"
-
-#include "../database/SqliteDatabase.h"
-
-#include <iostream>
-
-#include <boost/bind.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/thread.hpp>
-*/
-
-// VFALCO: TODO Replace these with beast "unsigned long long" generators
+// VFALCO TODO Replace these with beast "unsigned long long" generators
 #define SYSTEM_CURRENCY_GIFT		1000ull
 #define SYSTEM_CURRENCY_USERS		100000000ull
 #define SYSTEM_CURRENCY_PARTS		1000000ull		// 10^SYSTEM_CURRENCY_PRECISION
@@ -26,7 +7,7 @@
 
 SETUP_LOG (Application)
 
-// VFALCO: TODO, fix/clean this, it might have broken with the Log changes
+// VFALCO TODO fix/clean this, it might have broken with the Log changes
 LogPartition AutoSocketPartition("AutoSocket");
 Application* theApp = NULL;
 
@@ -40,7 +21,7 @@ Application::Application ()
     , mSLECache ("LedgerEntryCache", 4096, 120)
     , mSNTPClient (mAuxService)
     , mJobQueue (mIOService)
-    // VFALCO: New stuff
+    // VFALCO New stuff
     , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
     , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
     , mFeeTrack (ILoadFeeTrack::New ())
@@ -49,19 +30,16 @@ Application::Application ()
     , mUNL (IUniqueNodeList::New (mIOService))
     , mProofOfWorkFactory (IProofOfWorkFactory::New ())
     , mPeers (IPeers::New (mIOService))
-    // VFALCO: End new stuff
-    // VFALCO: TODO replace all NULL with nullptr
+    // VFALCO End new stuff
+    // VFALCO TODO replace all NULL with nullptr
     , mRpcDB (NULL)
     , mTxnDB (NULL)
     , mLedgerDB (NULL)
-    , mWalletDB (NULL) // VFALCO: NOTE, are all these 'NULL' ctor params necessary?
+    , mWalletDB (NULL) // VFALCO NOTE are all these 'NULL' ctor params necessary?
     , mNetNodeDB (NULL)
     , mPathFindDB (NULL)
     , mHashNodeDB (NULL)
-    // VFALCO: TODO eliminate USE_LEVELDB macro
-#ifdef USE_LEVELDB
 	, mHashNodeLDB (NULL)
-#endif
 	, mPeerDoor (NULL)
     , mRPCDoor (NULL)
     , mWSPublicDoor (NULL)
@@ -69,7 +47,7 @@ Application::Application ()
     , mSweepTimer (mAuxService)
     , mShutdown (false)
 {
-    // VFALCO: TODO, remove these once the call is thread safe.
+    // VFALCO TODO remove these once the call is thread safe.
     HashMaps::getInstance ().initializeNonce <size_t> ();
 }
 
@@ -115,7 +93,7 @@ void sigIntHandler(int)
 }
 #endif
 
-// VFALCO: TODO, Figure this out it looks like the wrong tool
+// VFALCO TODO Figure this out it looks like the wrong tool
 static void runAux(boost::asio::io_service& svc)
 {
 	setCallingThreadName("aux");
@@ -411,8 +389,8 @@ void Application::sweep()
 		theApp->stop();
 	}
 
-    // VFALCO: NOTE, Does the order of calls matter?
-    // VFALCO: TODO, fix the dependency inversion using an observer,
+    // VFALCO NOTE Does the order of calls matter?
+    // VFALCO TODO fix the dependency inversion using an observer,
     //         have listeners register for "onSweep ()" notification.
     //         
 	mMasterTransaction.sweep();
@@ -422,10 +400,10 @@ void Application::sweep()
 	mValidations->sweep();
 	getMasterLedgerAcquire().sweep();
 	mSLECache.sweep();
-	AcceptedLedger::sweep(); // VFALCO: NOTE, AcceptedLedger is/has a singleton?
-	SHAMap::sweep(); // VFALCO: NOTE, SHAMap is/has a singleton?
+	AcceptedLedger::sweep(); // VFALCO NOTE AcceptedLedger is/has a singleton?
+	SHAMap::sweep(); // VFALCO NOTE SHAMap is/has a singleton?
 	mNetOps.sweepFetchPack();
-    // VFALCO: NOTE, does the call to sweep() happen on another thread?
+    // VFALCO NOTE does the call to sweep() happen on another thread?
 	mSweepTimer.expires_from_now(boost::posix_time::seconds(theConfig.getSize(siSweepInterval)));
 	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
 }

@@ -462,9 +462,6 @@
     <ClCompile Include="src\cpp\ripple\Contract.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\contracts</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\HashedObject.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\ParameterTable.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
     </ClCompile>
@@ -813,6 +810,15 @@
     <ClCompile Include="src\cpp\ripple\ripple_Peers.cpp">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_HashedObjectStore.cpp">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_HashedObject.cpp">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_data\protocol\ripple_SerializedObjectTemplate.cpp">
+      <Filter>1. Modules\ripple_data\protocol</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="database\sqlite3ext.h">
@@ -1129,9 +1135,6 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Contract.h">
       <Filter>1. Modules\ripple_main\_unfactored\contracts</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\HashedObject.h">
-      <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\HashPrefixes.h">
       <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
@@ -1510,6 +1513,21 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IPeers.h">
       <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_HashedObjectStore.h">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_UptimeTimerAdapter.h">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_HashedObject.h">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\protocol\ripple_SerializedObjectTemplate.h">
+      <Filter>1. Modules\ripple_data\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\types\ripple_Types.h">
+      <Filter>1. Modules\ripple_basics\types</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

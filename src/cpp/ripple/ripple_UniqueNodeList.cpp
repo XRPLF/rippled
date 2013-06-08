@@ -15,7 +15,7 @@
 // Don't bother propagating past this number of rounds.
 #define SCORE_ROUNDS			10
 
-// VFALCO: TODO, move all function definitions inlined into the class.
+// VFALCO TODO move all function definitions inlined into the class.
 class UniqueNodeList : public IUniqueNodeList
 {
 private:
@@ -140,7 +140,7 @@ public:
 	int iSourceScore(validatorSource vsWhy);
 };
 
-// VFALCO: TODO Replace macros with language constructs
+// VFALCO TODO Replace macros with language constructs
 #define VALIDATORS_FETCH_SECONDS	30
 #define VALIDATORS_FILE_BYTES_MAX	(50 << 10)
 

@@ -71,7 +71,7 @@ void CKey::getECIESSecret(CKey& otherKey, ECIES_ENC_KEY_TYPE& enc_key, ECIES_HMA
 	memset(hbuf, 0, ECIES_KEY_LENGTH);
 }
 
-static ECIES_HMAC_TYPE makeHMAC(const ECIES_HMAC_KEY_TYPE& secret, const std::vector<unsigned char>& data)
+static ECIES_HMAC_TYPE makeHMAC(const ECIES_HMAC_KEY_TYPE& secret, Blob const& data)
 {
 	HMAC_CTX ctx;
 	HMAC_CTX_init(&ctx);
@@ -101,7 +101,7 @@ static ECIES_HMAC_TYPE makeHMAC(const ECIES_HMAC_KEY_TYPE& secret, const std::ve
 	return ret;
 }
 
-std::vector<unsigned char> CKey::encryptECIES(CKey& otherKey, const std::vector<unsigned char>& plaintext)
+Blob CKey::encryptECIES(CKey& otherKey, Blob const& plaintext)
 {
 
 	ECIES_ENC_IV_TYPE iv;
@@ -125,7 +125,7 @@ std::vector<unsigned char> CKey::encryptECIES(CKey& otherKey, const std::vector<
 	}
 	secret.zero();
 
-	std::vector<unsigned char> out(plaintext.size() + ECIES_HMAC_SIZE + ECIES_ENC_KEY_SIZE + ECIES_ENC_BLK_SIZE, 0);
+	Blob out(plaintext.size() + ECIES_HMAC_SIZE + ECIES_ENC_KEY_SIZE + ECIES_ENC_BLK_SIZE, 0);
 	int len = 0, bytesWritten;
 
 	// output IV
@@ -169,7 +169,7 @@ std::vector<unsigned char> CKey::encryptECIES(CKey& otherKey, const std::vector<
 	return out;
 }
 
-std::vector<unsigned char> CKey::decryptECIES(CKey& otherKey, const std::vector<unsigned char>& ciphertext)
+Blob CKey::decryptECIES(CKey& otherKey, Blob const& ciphertext)
 {
 	// minimum ciphertext = IV + HMAC + 1 block
 	if (ciphertext.size() < ((2 * ECIES_ENC_BLK_SIZE) + ECIES_HMAC_SIZE) )
@@ -208,7 +208,7 @@ std::vector<unsigned char> CKey::decryptECIES(CKey& otherKey, const std::vector<
 	}
 	
 	// decrypt plaintext (after IV and encrypted mac)
-	std::vector<unsigned char> plaintext(ciphertext.size() - ECIES_HMAC_SIZE - ECIES_ENC_BLK_SIZE);
+	Blob plaintext(ciphertext.size() - ECIES_HMAC_SIZE - ECIES_ENC_BLK_SIZE);
 	outlen = plaintext.size();
 	if (EVP_DecryptUpdate(&ctx, &(plaintext.front()), &outlen,
 		&(ciphertext.front()) + ECIES_ENC_BLK_SIZE + ECIES_HMAC_SIZE + 1,
@@ -265,17 +265,17 @@ bool checkECIES(void)
 		}
 
 		// generate message
-		std::vector<unsigned char> message(4096);
+		Blob message(4096);
 		int msglen = i%3000;
 
 		RandomNumbers::getInstance ().fillBytes (&message.front(), msglen);
 		message.resize(msglen);
 
 		// encrypt message with sender's private key and recipient's public key
-		std::vector<unsigned char> ciphertext = senderPriv.encryptECIES(recipientPub, message);
+		Blob ciphertext = senderPriv.encryptECIES(recipientPub, message);
 
 		// decrypt message with recipient's private key and sender's public key
-		std::vector<unsigned char> decrypt = recipientPriv.decryptECIES(senderPub, ciphertext);
+		Blob decrypt = recipientPriv.decryptECIES(senderPub, ciphertext);
 
 		if (decrypt != message)
 		{

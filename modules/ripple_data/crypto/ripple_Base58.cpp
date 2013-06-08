@@ -58,7 +58,7 @@ std::string Base58::encode (const unsigned char* pbegin, const unsigned char* pe
 
 	// Convert big endian data to little endian
 	// Extra zero at the end make sure bignum will interpret as a positive number
-	std::vector<unsigned char> vchTmp(pend-pbegin+1, 0);
+	Blob vchTmp(pend-pbegin+1, 0);
 	std::reverse_copy(pbegin, pend, vchTmp.begin());
 
 	// Convert little endian data to bignum
@@ -89,21 +89,21 @@ std::string Base58::encode (const unsigned char* pbegin, const unsigned char* pe
 	return str;
 }
 
-std::string Base58::encode (const std::vector<unsigned char>& vch)
+std::string Base58::encode (Blob const& vch)
 {
 	return encode (&vch[0], &vch[0] + vch.size());
 }
 
-std::string Base58::encodeWithCheck (const std::vector<unsigned char>& vchIn)
+std::string Base58::encodeWithCheck (Blob const& vchIn)
 {
 	// add 4-byte hash check to the end
-	std::vector<unsigned char> vch(vchIn);
+	Blob vch(vchIn);
 	uint256 hash = SHA256Hash(vch.begin(), vch.end());
 	vch.insert(vch.end(), (unsigned char*)&hash, (unsigned char*)&hash + 4);
 	return encode (vch);
 }
 
-bool Base58::decode (const char* psz, std::vector<unsigned char>& vchRet, const char* pAlpha)
+bool Base58::decode (const char* psz, Blob & vchRet, const char* pAlpha)
 {
 	assert (pAlpha != 0);
 
@@ -134,7 +134,7 @@ bool Base58::decode (const char* psz, std::vector<unsigned char>& vchRet, const 
 	}
 
 	// Get bignum as little endian data
-	std::vector<unsigned char> vchTmp = bn.getvch();
+	Blob vchTmp = bn.getvch();
 
 	// Trim off sign byte if present
 	if (vchTmp.size() >= 2 && vchTmp.end()[-1] == 0 && vchTmp.end()[-2] >= 0x80)
@@ -151,12 +151,12 @@ bool Base58::decode (const char* psz, std::vector<unsigned char>& vchRet, const 
 	return true;
 }
 
-bool Base58::decode (const std::string& str, std::vector<unsigned char>& vchRet)
+bool Base58::decode (const std::string& str, Blob & vchRet)
 {
 	return decode (str.c_str(), vchRet);
 }
 
-bool Base58::decodeWithCheck (const char* psz, std::vector<unsigned char>& vchRet, const char* pAlphabet)
+bool Base58::decodeWithCheck (const char* psz, Blob & vchRet, const char* pAlphabet)
 {
 	assert (pAlphabet != NULL);
 
@@ -177,7 +177,7 @@ bool Base58::decodeWithCheck (const char* psz, std::vector<unsigned char>& vchRe
 	return true;
 }
 
-bool Base58::decodeWithCheck (const std::string& str, std::vector<unsigned char>& vchRet, const char* pAlphabet)
+bool Base58::decodeWithCheck (const std::string& str, Blob & vchRet, const char* pAlphabet)
 {
 	return decodeWithCheck (str.c_str(), vchRet, pAlphabet);
 }

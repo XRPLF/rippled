@@ -62,7 +62,7 @@ namespace boost {
 	}
 }
 */
-#include <boost/filesystem.hpp> // VFALCO: TODO, try to eliminate thie dependency
+#include <boost/filesystem.hpp> // VFALCO TODO try to eliminate thie dependency
 
 
 
@@ -117,7 +117,7 @@ namespace boost {
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
-// VFALCO: TODO, remove this dependency!!!
+// VFALCO TODO remove this dependency!!!
 #include <openssl/dh.h> // for DiffieHellmanUtil
 #include <openssl/ripemd.h> // For HashUtilities
 #include <openssl/sha.h> // For HashUtilities
@@ -134,6 +134,7 @@ namespace boost {
 #include "containers/ripple_SecureAllocator.h"
 #include "containers/ripple_TaggedCache.h"
 
+#include "types/ripple_Types.h"
 #include "utility/ripple_ByteOrder.h"
 #include "utility/ripple_DiffieHellmanUtil.h"
 #include "utility/ripple_InstanceCounter.h"

@@ -1,6 +1,6 @@
 
 
-// VFALCO: TODO, remove this when it's safe to do so.
+// VFALCO TODO remove this when it's safe to do so.
 #ifdef __APPLICATION__
 #error Including Application.h is disallowed!
 #endif
@@ -55,7 +55,7 @@ RippleAddress RippleAddress::createNodePublic(const RippleAddress& naSeed)
 	return naNew;
 }
 
-RippleAddress RippleAddress::createNodePublic(const std::vector<unsigned char>& vPublic)
+RippleAddress RippleAddress::createNodePublic(Blob const& vPublic)
 {
 	RippleAddress	naNew;
 
@@ -87,7 +87,7 @@ uint160 RippleAddress::getNodeID() const
 		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
-const std::vector<unsigned char>& RippleAddress::getNodePublic() const
+Blob const& RippleAddress::getNodePublic() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -122,14 +122,14 @@ bool RippleAddress::setNodePublic(const std::string& strPublic)
 	return mIsValid;
 }
 
-void RippleAddress::setNodePublic(const std::vector<unsigned char>& vPublic)
+void RippleAddress::setNodePublic(Blob const& vPublic)
 {
 	mIsValid		= true;
 
     SetData(VER_NODE_PUBLIC, vPublic);
 }
 
-bool RippleAddress::verifyNodePublic(const uint256& hash, const std::vector<unsigned char>& vchSig) const
+bool RippleAddress::verifyNodePublic(const uint256& hash, Blob const& vchSig) const
 {
 	CKey	pubkey	= CKey();
 	bool	bVerified;
@@ -149,7 +149,7 @@ bool RippleAddress::verifyNodePublic(const uint256& hash, const std::vector<unsi
 
 bool RippleAddress::verifyNodePublic(const uint256& hash, const std::string& strSig) const
 {
-	std::vector<unsigned char> vchSig(strSig.begin(), strSig.end());
+	Blob vchSig(strSig.begin(), strSig.end());
 
 	return verifyNodePublic(hash, vchSig);
 }
@@ -171,7 +171,7 @@ RippleAddress RippleAddress::createNodePrivate(const RippleAddress& naSeed)
 	return naNew;
 }
 
-const std::vector<unsigned char>& RippleAddress::getNodePrivateData() const
+Blob const& RippleAddress::getNodePrivateData() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -220,7 +220,7 @@ bool RippleAddress::setNodePrivate(const std::string& strPrivate)
 	return mIsValid;
 }
 
-void RippleAddress::setNodePrivate(const std::vector<unsigned char>& vPrivate)
+void RippleAddress::setNodePrivate(Blob const& vPrivate)
 {
 	mIsValid		= true;
 
@@ -234,7 +234,7 @@ void RippleAddress::setNodePrivate(uint256 hash256)
     SetData(VER_NODE_PRIVATE, hash256.begin(), 32);
 }
 
-void RippleAddress::signNodePrivate(const uint256& hash, std::vector<unsigned char>& vchSig) const
+void RippleAddress::signNodePrivate(const uint256& hash, Blob & vchSig) const
 {
 	CKey	ckPrivKey;
 
@@ -267,7 +267,7 @@ uint160 RippleAddress::getAccountID() const
 }
 
 static boost::mutex rncLock;
-static boost::unordered_map< std::vector<unsigned char>, std::string > rncMap;
+static boost::unordered_map< Blob , std::string > rncMap;
 
 std::string RippleAddress::humanAccountID() const
 {
@@ -278,7 +278,7 @@ std::string RippleAddress::humanAccountID() const
     case VER_ACCOUNT_ID:
     {
 	    boost::mutex::scoped_lock sl(rncLock);
-	    boost::unordered_map< std::vector<unsigned char>, std::string >::iterator it = rncMap.find(vchData);
+	    boost::unordered_map< Blob , std::string >::iterator it = rncMap.find(vchData);
 	    if (it != rncMap.end())
 	        return it->second;
 		if (rncMap.size() > 10000)
@@ -337,7 +337,7 @@ RippleAddress RippleAddress::createAccountPublic(const RippleAddress& naGenerato
 	return naNew;
 }
 
-const std::vector<unsigned char>& RippleAddress::getAccountPublic() const
+Blob const& RippleAddress::getAccountPublic() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -379,7 +379,7 @@ bool RippleAddress::setAccountPublic(const std::string& strPublic)
 	return mIsValid;
 }
 
-void RippleAddress::setAccountPublic(const std::vector<unsigned char>& vPublic)
+void RippleAddress::setAccountPublic(Blob const& vPublic)
 {
 	mIsValid		= true;
 
@@ -393,7 +393,7 @@ void RippleAddress::setAccountPublic(const RippleAddress& generator, int seq)
 	setAccountPublic(pubkey.GetPubKey());
 }
 
-bool RippleAddress::accountPublicVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const
+bool RippleAddress::accountPublicVerify(const uint256& uHash, Blob const& vucSig) const
 {
 	CKey		ckPublic;
 	bool		bVerified;
@@ -469,7 +469,7 @@ bool RippleAddress::setAccountPrivate(const std::string& strPrivate)
 	return mIsValid;
 }
 
-void RippleAddress::setAccountPrivate(const std::vector<unsigned char>& vPrivate)
+void RippleAddress::setAccountPrivate(Blob const& vPrivate)
 {
 	mIsValid		= true;
 
@@ -494,7 +494,7 @@ void RippleAddress::setAccountPrivate(const RippleAddress& naGenerator, const Ri
 	setAccountPrivate(uPrivKey);
 }
 
-bool RippleAddress::accountPrivateSign(const uint256& uHash, std::vector<unsigned char>& vucSig) const
+bool RippleAddress::accountPrivateSign(const uint256& uHash, Blob & vucSig) const
 {
 	CKey		ckPrivate;
 	bool		bResult;
@@ -515,7 +515,7 @@ bool RippleAddress::accountPrivateSign(const uint256& uHash, std::vector<unsigne
 }
 
 #if 0
-bool RippleAddress::accountPrivateVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const
+bool RippleAddress::accountPrivateVerify(const uint256& uHash, Blob const& vucSig) const
 {
 	CKey		ckPrivate;
 	bool		bVerified;
@@ -535,11 +535,11 @@ bool RippleAddress::accountPrivateVerify(const uint256& uHash, const std::vector
 }
 #endif
 
-std::vector<unsigned char> RippleAddress::accountPrivateEncrypt(const RippleAddress& naPublicTo, const std::vector<unsigned char>& vucPlainText) const
+Blob RippleAddress::accountPrivateEncrypt(const RippleAddress& naPublicTo, Blob const& vucPlainText) const
 {
 	CKey						ckPrivate;
 	CKey						ckPublic;
-	std::vector<unsigned char>	vucCipherText;
+	Blob 	vucCipherText;
 
 	if (!ckPublic.SetPubKey(naPublicTo.getAccountPublic()))
 	{
@@ -566,11 +566,11 @@ std::vector<unsigned char> RippleAddress::accountPrivateEncrypt(const RippleAddr
 	return vucCipherText;
 }
 
-std::vector<unsigned char> RippleAddress::accountPrivateDecrypt(const RippleAddress& naPublicFrom, const std::vector<unsigned char>& vucCipherText) const
+Blob RippleAddress::accountPrivateDecrypt(const RippleAddress& naPublicFrom, Blob const& vucCipherText) const
 {
 	CKey						ckPrivate;
 	CKey						ckPublic;
-	std::vector<unsigned char>	vucPlainText;
+	Blob 	vucPlainText;
 
 	if (!ckPublic.SetPubKey(naPublicFrom.getAccountPublic()))
 	{
@@ -619,7 +619,7 @@ BIGNUM* RippleAddress::getGeneratorBN() const
     return ret;
 }
 
-const std::vector<unsigned char>& RippleAddress::getGenerator() const
+Blob const& RippleAddress::getGenerator() const
 { // returns the public generator
     switch (nVersion) {
     case VER_NONE:
@@ -655,7 +655,7 @@ bool RippleAddress::setGenerator(const std::string& strGenerator)
 	return mIsValid;
 }
 
-void RippleAddress::setGenerator(const std::vector<unsigned char>& vPublic)
+void RippleAddress::setGenerator(Blob const& vPublic)
 {
 	mIsValid		= true;
 
@@ -738,7 +738,7 @@ int RippleAddress::setSeed1751(const std::string& strHuman1751)
 
 	if (1 == iResult)
 	{
-		std::vector<unsigned char>	vchLittle(strKey.rbegin(), strKey.rend());
+		Blob 	vchLittle(strKey.rbegin(), strKey.rend());
 		uint128		uSeed(vchLittle);
 
 		setSeed(uSeed);
@@ -844,9 +844,9 @@ BOOST_AUTO_TEST_CASE( check_crypto )
 	BOOST_CHECK_MESSAGE(naNodePrivate.humanNodePrivate() == "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe", naNodePrivate.humanNodePrivate());
 
 	// Check node signing.
-	std::vector<unsigned char> vucTextSrc = strCopy("Hello, nurse!");
+	Blob vucTextSrc = strCopy("Hello, nurse!");
 	uint256	uHash	= Serializer::getSHA512Half(vucTextSrc);
-	std::vector<unsigned char> vucTextSig;
+	Blob vucTextSig;
 
 	naNodePrivate.signNodePrivate(uHash, vucTextSig);
 	BOOST_CHECK_MESSAGE(naNodePublic.verifyNodePublic(uHash, vucTextSig), "Verify failed.");
@@ -882,9 +882,9 @@ BOOST_AUTO_TEST_CASE( check_crypto )
 	BOOST_CHECK_MESSAGE(!naAccountPublic0.accountPublicVerify(uHash, vucTextSig), "Anti-verify failed.");
 
 	// Check account encryption.
-	std::vector<unsigned char> vucTextCipher
+	Blob vucTextCipher
 		= naAccountPrivate0.accountPrivateEncrypt(naAccountPublic1, vucTextSrc);
-	std::vector<unsigned char> vucTextRecovered
+	Blob vucTextRecovered
 		= naAccountPrivate1.accountPrivateDecrypt(naAccountPublic0, vucTextCipher);
 
 	BOOST_CHECK_MESSAGE(vucTextSrc == vucTextRecovered, "Encrypt-decrypt failed.");

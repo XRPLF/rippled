@@ -3,7 +3,7 @@ std::map<int, TransactionFormat*> TransactionFormat::byType;
 
 std::map<std::string, TransactionFormat*> TransactionFormat::byName;
 
-// VFALCO: TODO, surely we can think of a better way than to use macros??
+// VFALCO TODO surely we can think of a better way than to use macros??
 #define TF_BASE												\
 		<< SOElement(sfTransactionType,		SOE_REQUIRED)	\
 		<< SOElement(sfFlags,				SOE_OPTIONAL)	\

@@ -45,7 +45,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/ptr_container/ptr_vector.hpp> // VFALCO: NOTE, this looks like junk
+#include <boost/ptr_container/ptr_vector.hpp> // VFALCO NOTE this looks like junk
 
 #include <openssl/bn.h>
 #include <openssl/ec.h>
@@ -54,15 +54,15 @@
 
 //------------------------------------------------------------------------------
 
-// VFALCO: TODO, try to reduce these dependencies
+// VFALCO TODO try to reduce these dependencies
 #include "../ripple_basics/ripple_basics.h"
 
-// VFALCO: TODO, figure out a good place for this file, perhaps give it some
+// VFALCO TODO figure out a good place for this file, perhaps give it some
 //         additional hierarchy via directories.
 #include "ripple.pb.h"
 
 #include "crypto/ripple_CBigNum.h"
-#include "crypto/ripple_Base58.h" // VFALCO: TODO, Can be moved to .cpp if we clean up setAlphabet stuff
+#include "crypto/ripple_Base58.h" // VFALCO TODO Can be moved to .cpp if we clean up setAlphabet stuff
 #include "crypto/ripple_Base58Data.h"
 
 #include "protocol/ripple_FieldNames.h"
@@ -72,6 +72,7 @@
 #include "protocol/ripple_Serializer.h" // needs CKey
 #include "protocol/ripple_TER.h"
 #include "protocol/ripple_SerializedTypes.h" // needs Serializer, TER
+#include "protocol/ripple_SerializedObjectTemplate.h"
 #include "protocol/ripple_SerializedObject.h"
 #include "protocol/ripple_LedgerFormat.h" // needs SOTemplate from SerializedObject
 #include "protocol/ripple_TransactionFormat.h"

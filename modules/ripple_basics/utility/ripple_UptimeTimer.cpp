@@ -38,7 +38,7 @@ int UptimeTimer::getElapsedSeconds () const
 	}
 	else
 	{
-		// VFALCO: TODO, use time_t instead of int return
+		// VFALCO TODO use time_t instead of int return
 		result = static_cast <int> (::time (0) - m_startTime);
 	}
 

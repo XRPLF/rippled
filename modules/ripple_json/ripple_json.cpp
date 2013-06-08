@@ -24,7 +24,7 @@
 
 #include "ripple_json.h"
 
-// VFALCO: TODO Remove unneeded includes
+// VFALCO TODO Remove unneeded includes
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
@@ -40,7 +40,7 @@
 # include <cpptl/conststring.h>
 #endif
 
-// VFALCO: TODO, eliminate this boost dependency
+// VFALCO TODO eliminate this boost dependency
 #include <boost/lexical_cast.hpp>
 
 #ifndef JSON_USE_SIMPLE_INTERNAL_ALLOCATOR

@@ -21,7 +21,7 @@ Job::Job (JobType type,
     , mJob (job)
     , mName (name)
 {
-    // VFALCO: NOTE, what the heck does this do?
+    // VFALCO NOTE what the heck does this do?
 	mLoadMonitor = boost::make_shared <LoadEvent> (boost::ref (lm), name, false);
 }
 

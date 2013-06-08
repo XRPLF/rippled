@@ -1,4 +1,4 @@
-// VFALCO: TODO, make this an inline function
+// VFALCO TODO make this an inline function
 #define ADDRESS(p)			strHex(uint64( ((char*) p) - ((char*) 0)))
 
 SETUP_LOG (Peer)
@@ -44,7 +44,7 @@ public:
 	void connected(const boost::system::error_code& error);
 	void detach(const char *, bool onIOStrand);
 	
-    // VFALCO: Seems no one is using these
+    // VFALCO Seems no one is using these
     //bool samePeer (Peer::ref p)			{ return samePeer(*p); }
 	//bool samePeer (const Peer& p)		{ return this == &p; }
 
@@ -148,7 +148,7 @@ private:
 
 	void doFetchPack(const boost::shared_ptr<ripple::TMGetObjectByHash>& packet);
 
-    // VFALCO: NOTE, why is this a static member instead of a regular member?
+    // VFALCO NOTE why is this a static member instead of a regular member?
 	static void doProofOfWork (Job&, boost::weak_ptr <Peer>, ProofOfWork::pointer);
 };
 
@@ -1415,7 +1415,7 @@ void PeerImp::recvGetObjectByHash(const boost::shared_ptr<ripple::TMGetObjectByH
 					uint256 hash;
 					memcpy(hash.begin(), obj.hash().data(), 256 / 8);
 
-					boost::shared_ptr< std::vector<unsigned char> > data = boost::make_shared< std::vector<unsigned char> >
+					boost::shared_ptr< Blob > data = boost::make_shared< Blob >
 						(obj.data().begin(), obj.data().end());
 
 					theApp->getOPs().addFetchPack(hash, data);
@@ -1771,7 +1771,7 @@ void PeerImp::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockH
 			return;
 		}
 		std::vector<SHAMapNode> nodeIDs;
-		std::list< std::vector<unsigned char> > rawNodes;
+		std::list< Blob > rawNodes;
 		try
 		{
 			if(map->getNodeFat(mn, nodeIDs, rawNodes, fatRoot, fatLeaves))
@@ -1779,7 +1779,7 @@ void PeerImp::recvGetLedger(ripple::TMGetLedger& packet, ScopedLock& MasterLockH
 				assert(nodeIDs.size() == rawNodes.size());
 				WriteLog (lsTRACE, Peer) << "getNodeFat got " << rawNodes.size() << " nodes";
 				std::vector<SHAMapNode>::iterator nodeIDIterator;
-				std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
+				std::list< Blob >::iterator rawNodeIterator;
 				for(nodeIDIterator = nodeIDs.begin(), rawNodeIterator = rawNodes.begin();
 					nodeIDIterator != nodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
 				{
@@ -1854,7 +1854,7 @@ void PeerImp::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_p
 	if (packet.type() == ripple::liTS_CANDIDATE)
 	{ // got data for a candidate transaction set
 		std::list<SHAMapNode> nodeIDs;
-		std::list< std::vector<unsigned char> > nodeData;
+		std::list< Blob > nodeData;
 
 		for (int i = 0; i < packet.nodes().size(); ++i)
 		{
@@ -1866,7 +1866,7 @@ void PeerImp::recvLedger(const boost::shared_ptr<ripple::TMLedgerData>& packet_p
 				return;
 			}
 			nodeIDs.push_back(SHAMapNode(node.nodeid().data(), node.nodeid().size()));
-			nodeData.push_back(std::vector<unsigned char>(node.nodedata().begin(), node.nodedata().end()));
+			nodeData.push_back(Blob (node.nodedata().begin(), node.nodedata().end()));
 		}
 		SMAddNode san =  theApp->getOPs().gotTXData(shared_from_this(), hash, nodeIDs, nodeData);
 		if (san.isInvalid())
@@ -1952,7 +1952,7 @@ void PeerImp::getSessionCookie(std::string& strDst)
 void PeerImp::sendHello()
 {
 	std::string					strCookie;
-	std::vector<unsigned char>	vchSig;
+	Blob 	vchSig;
 
 	getSessionCookie(strCookie);
 	mCookieHash	= Serializer::getSHA512Half(strCookie);

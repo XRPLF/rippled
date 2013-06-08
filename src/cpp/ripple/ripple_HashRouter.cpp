@@ -1,7 +1,7 @@
 
 DECLARE_INSTANCE(HashRouterEntry);
 
-// VFALCO: TODO Inline the function definitions
+// VFALCO TODO Inline the function definitions
 class HashRouter : public IHashRouter
 {
 public:

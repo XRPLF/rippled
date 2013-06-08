@@ -35,12 +35,12 @@ class CBase58Data
 {
 protected:
     unsigned char nVersion;
-    std::vector<unsigned char> vchData;
+    Blob vchData;
 
     CBase58Data();
     ~CBase58Data();
 
-	void SetData(int nVersionIn, const std::vector<unsigned char>& vchDataIn);
+	void SetData(int nVersionIn, Blob const& vchDataIn);
     void SetData(int nVersionIn, const void* pdata, size_t nSize);
     void SetData(int nVersionIn, const unsigned char *pbegin, const unsigned char *pend);
 

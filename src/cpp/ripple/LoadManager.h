@@ -5,7 +5,7 @@
 
 #include <boost/thread/mutex.hpp>
 
-// VFALCO: TODO replace LT_ with loadType in constants
+// VFALCO TODO replace LT_ with loadType in constants
 enum LoadType
 { // types of load that can be placed on the server
 
@@ -49,7 +49,7 @@ public:
 class LoadSource
 { 
 private:
-    // VFALCO: Make this not a friend
+    // VFALCO Make this not a friend
 	friend class LoadManager;
 
 public:

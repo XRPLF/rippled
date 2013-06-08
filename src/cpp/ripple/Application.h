@@ -21,7 +21,7 @@
 
 #include "ripple_DatabaseCon.h"
 
-// VFALCO: TODO, Fix forward declares required for header dependency loops
+// VFALCO TODO Fix forward declares required for header dependency loops
 class IFeatures;
 class IFeeVote;
 class IHashRouter;
@@ -33,8 +33,9 @@ class IPeers;
 
 class RPCDoor;
 class PeerDoor;
-typedef TaggedCache< uint256, std::vector<unsigned char>, UptimeTimerAdapter> NodeCache;
-typedef TaggedCache< uint256, SLE, UptimeTimerAdapter> SLECache;
+
+typedef TaggedCache <uint256, Blob , UptimeTimerAdapter> NodeCache;
+typedef TaggedCache <uint256, SLE, UptimeTimerAdapter> SLECache;
 
 class Application
 {
@@ -70,8 +71,8 @@ public:
 	IProofOfWorkFactory& getProofOfWorkFactory()    { return *mProofOfWorkFactory; }
 	IPeers& getPeers ()                             { return *mPeers; }
 
-    // VFALCO: TODO, Move these to the .cpp
-    bool running()									{ return mTxnDB != NULL; } // VFALCO: TODO, replace with nullptr when beast is available
+    // VFALCO TODO Move these to the .cpp
+    bool running()									{ return mTxnDB != NULL; } // VFALCO TODO replace with nullptr when beast is available
 	bool getSystemTimeOffset(int& offset)			{ return mSNTPClient.getOffset(offset); }
 
 	DatabaseCon* getRpcDB()			{ return mRpcDB; }
@@ -92,7 +93,11 @@ public:
 	void sweep();
 
 private:	
-	boost::asio::io_service	mIOService;
+	void updateTables (bool);
+	void startNewLedger ();
+	bool loadOldLedger (const std::string&);
+
+    boost::asio::io_service	mIOService;
     boost::asio::io_service mAuxService;
 	boost::asio::io_service::work mIOWork;
     boost::asio::io_service::work mAuxWork;
@@ -112,8 +117,8 @@ private:
 	LoadManager				mLoadMgr;
 	TXQueue					mTxnQueue;
 	OrderBookDB				mOrderBookDB;
-	
-    // VFALCO: Clean stuff
+
+    // VFALCO Clean stuff
     beast::ScopedPointer <IFeatures> mFeatures;
 	beast::ScopedPointer <IFeeVote> mFeeVote;
     beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
@@ -122,7 +127,7 @@ private:
 	beast::ScopedPointer <IUniqueNodeList> mUNL;
 	beast::ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
 	beast::ScopedPointer <IPeers> mPeers;
-    // VFALCO: End Clean stuff
+    // VFALCO End Clean stuff
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
 
@@ -140,10 +145,6 @@ private:
 	boost::recursive_mutex	mPeerMapLock;
 
 	volatile bool			mShutdown;
-
-	void updateTables(bool);
-	void startNewLedger();
-	bool loadOldLedger(const std::string&);
 };
 
 extern Application* theApp;

@@ -25,7 +25,7 @@ private:
 	boost::asio::ip::tcp::socket mSocket;
 
 	boost::asio::streambuf mLineBuffer;
-	std::vector<unsigned char> mQueryVec;
+	Blob mQueryVec;
 	std::string mReplyStr;
 
 	HTTPRequest mHTTPRequest;

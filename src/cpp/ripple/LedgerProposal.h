@@ -40,8 +40,8 @@ public:
 	uint32 getProposeSeq() const			{ return mProposeSeq; }
 	uint32 getCloseTime() const				{ return mCloseTime; }
 	const RippleAddress& peekPublic() const		{ return mPublicKey; }
-	std::vector<unsigned char> getPubKey() const	{ return mPublicKey.getNodePublic(); }
-	std::vector<unsigned char> sign();
+	Blob getPubKey() const	{ return mPublicKey.getNodePublic(); }
+	Blob sign();
 
 	void setPrevLedger(const uint256& prevLedger)	{ mPreviousLedger = prevLedger; }
 	void setSignature(const std::string& signature)	{ mSignature = signature; }

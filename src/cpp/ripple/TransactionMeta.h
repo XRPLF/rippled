@@ -18,7 +18,7 @@ public:
 	TransactionMetaSet() : mLedger(0), mIndex(static_cast<uint32>(-1)), mResult(255) { ; }
 	TransactionMetaSet(const uint256& txID, uint32 ledger, uint32 index) :
 		mTransactionID(txID), mLedger(ledger), mIndex(static_cast<uint32>(-1)), mResult(255) { ; }
-	TransactionMetaSet(const uint256& txID, uint32 ledger, const std::vector<unsigned char>&);
+	TransactionMetaSet(const uint256& txID, uint32 ledger, Blob const&);
 
 	void init(const uint256& transactionID, uint32 ledger);
 	void clear() { mNodes.clear(); }

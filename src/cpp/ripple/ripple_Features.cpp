@@ -5,7 +5,7 @@ SETUP_LOG (Features)
 
 FeatureState* testFeature = NULL;
 
-// VFALCO: TODO Rename this to Features
+// VFALCO TODO Rename this to Features
 class Features : public IFeatures
 {
 protected:

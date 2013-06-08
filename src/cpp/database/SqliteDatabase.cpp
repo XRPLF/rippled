@@ -124,7 +124,7 @@ int SqliteDatabase::getNumRowsAffected()
 	return(0);
 }
 
-// VFALCO: TODO, This must be fixed!!! return value needs to be int64
+// VFALCO TODO This must be fixed!!! return value needs to be int64
 //
 int SqliteDatabase::getLastInsertID()
 {
@@ -207,11 +207,11 @@ int SqliteDatabase::getBinary(int colIndex,unsigned char* buf,int maxSize)
 	return(size);
 }
 
-std::vector<unsigned char> SqliteDatabase::getBinary(int colIndex)
+Blob SqliteDatabase::getBinary(int colIndex)
 {
 	const unsigned char*		blob	= reinterpret_cast<const unsigned char*>(sqlite3_column_blob(mCurrentStmt, colIndex));
 	size_t						iSize	= sqlite3_column_bytes(mCurrentStmt, colIndex);
-	std::vector<unsigned char>	vucResult;
+	Blob 	vucResult;
 
 	vucResult.resize(iSize);
 	std::copy(blob, blob+iSize, vucResult.begin());
@@ -324,7 +324,7 @@ int SqliteStatement::bindStatic(int position, const void *data, int length)
 	return sqlite3_bind_blob(statement, position, data, length, SQLITE_STATIC);
 }
 
-int SqliteStatement::bindStatic(int position, const std::vector<unsigned char>& value)
+int SqliteStatement::bindStatic(int position, Blob const& value)
 {
 	return sqlite3_bind_blob(statement, position, &value.front(), value.size(), SQLITE_STATIC);
 }
@@ -359,10 +359,10 @@ const void* SqliteStatement::peekBlob(int column)
 	return sqlite3_column_blob(statement, column);
 }
 
-std::vector<unsigned char> SqliteStatement::getBlob(int column)
+Blob SqliteStatement::getBlob(int column)
 {
 	int size = sqlite3_column_bytes(statement, column);
-	std::vector<unsigned char> ret(size);
+	Blob ret(size);
 	memcpy(&(ret.front()), sqlite3_column_blob(statement, column), size);
 	return ret;
 }

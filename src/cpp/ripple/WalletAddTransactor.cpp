@@ -4,8 +4,8 @@ TER WalletAddTransactor::doApply()
 {
 	std::cerr << "WalletAdd>" << std::endl;
 
-	const std::vector<unsigned char>	vucPubKey		= mTxn.getFieldVL(sfPublicKey);
-	const std::vector<unsigned char>	vucSignature	= mTxn.getFieldVL(sfSignature);
+	Blob const vucPubKey	= mTxn.getFieldVL(sfPublicKey);
+	Blob const vucSignature	= mTxn.getFieldVL(sfSignature);
 	const uint160						uAuthKeyID		= mTxn.getFieldAccount160(sfRegularKey);
 	const RippleAddress					naMasterPubKey	= RippleAddress::createAccountPublic(vucPubKey);
 	const uint160						uDstAccountID	= naMasterPubKey.getAccountID();

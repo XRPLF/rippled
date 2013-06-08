@@ -132,7 +132,7 @@ void TransactionAcquire::trigger(Peer::ref peer)
 }
 
 SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
-	const std::list< std::vector<unsigned char> >& data, Peer::ref peer)
+	const std::list< Blob >& data, Peer::ref peer)
 {
 	if (mComplete)
 	{
@@ -149,7 +149,7 @@ SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 		if (nodeIDs.empty())
 			return SMAddNode::invalid();
 		std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
-		std::list< std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
+		std::list< Blob >::const_iterator nodeDatait = data.begin();
 		ConsensusTransSetSF sf;
 		while (nodeIDit != nodeIDs.end())
 		{
@@ -188,7 +188,7 @@ SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 }
 
 void ConsensusTransSetSF::gotNode(bool fromFilter, const SHAMapNode& id, const uint256& nodeHash,
-	const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType type)
+	Blob const& nodeData, SHAMapTreeNode::TNType type)
 {
 	if (fromFilter)
 		return;
@@ -213,7 +213,7 @@ void ConsensusTransSetSF::gotNode(bool fromFilter, const SHAMapNode& id, const u
 }
 
 bool ConsensusTransSetSF::haveNode(const SHAMapNode& id, const uint256& nodeHash,
-	std::vector<unsigned char>& nodeData)
+	Blob & nodeData)
 {
 	if (theApp->getTempNodeCache().retrieve(nodeHash, nodeData))
 		return true;

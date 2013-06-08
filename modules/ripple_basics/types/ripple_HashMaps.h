@@ -11,10 +11,32 @@
     done by seeding the hashing function with a random number generated
     at program startup.
 */
-// VFALCO: TODO derive from Uncopyable
+// VFALCO TODO derive from Uncopyable
 class HashMaps // : beast::Uncopayble
 {
 public:
+    /** Golden ratio constant used in hashing functions.
+
+        The magic number is supposed to be 32 random bits, where each is
+        equally likely to be 0 or 1, and with no simple correlation between
+        the bits. A common way to find a string of such bits is to use the
+        binary expansion of an irrational number; in this case, that number
+        is the reciprocal of the golden ratio:
+
+        @code
+
+        phi = (1 + sqrt(5)) / 2
+        2^32 / phi = 0x9e3779b9
+
+        @endcode
+
+        References:
+
+            http://stackoverflow.com/questions/4948780/magic-number-in-boosthash-combine
+            http://burtleburtle.net/bob/hash/doobs.html
+    */
+    static std::size_t const goldenRatio = 0x9e3779b9;
+
     /** Retrieve the singleton.
 
         @return The global instance of the singleton.
@@ -66,7 +88,7 @@ private:
     public:
         NonceHolder ()
         {
-            // VFALCO: NOTE, this can be dangerous if T is an object type
+            // VFALCO NOTE this can be dangerous if T is an object type
             RandomNumbers::getInstance ().fill (&m_nonce);
         }
 

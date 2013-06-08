@@ -315,6 +315,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="modules\ripple_data\protocol\ripple_SerializedObjectTemplate.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="modules\ripple_data\protocol\ripple_SerializedTypes.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -758,6 +764,18 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_HashedObject.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_HashedObjectStore.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_Peers.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -771,12 +789,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\DBInit.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\HashedObject.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1277,6 +1289,7 @@
     <ClInclude Include="modules\ripple_basics\containers\ripple_TaggedCache.h" />
     <ClInclude Include="modules\ripple_basics\ripple_basics.h" />
     <ClInclude Include="modules\ripple_basics\types\ripple_HashMaps.h" />
+    <ClInclude Include="modules\ripple_basics\types\ripple_Types.h" />
     <ClInclude Include="modules\ripple_basics\types\ripple_UInt256.h" />
     <ClInclude Include="modules\ripple_basics\utility\ripple_ByteOrder.h" />
     <ClInclude Include="modules\ripple_basics\utility\ripple_DiffieHellmanUtil.h" />
@@ -1305,6 +1318,7 @@
     <ClInclude Include="modules\ripple_data\protocol\ripple_RippleSystem.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_SerializeDeclarations.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_SerializedObject.h" />
+    <ClInclude Include="modules\ripple_data\protocol\ripple_SerializedObjectTemplate.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_SerializedTypes.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_Serializer.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_TER.h" />
@@ -1645,9 +1659,10 @@
     <ClInclude Include="src\cpp\ripple\CanonicalTXSet.h" />
     <ClInclude Include="src\cpp\ripple\ChangeTransactor.h" />
     <ClInclude Include="src\cpp\ripple\ripple_Config.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_HashedObject.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_HashedObjectStore.h" />
     <ClInclude Include="src\cpp\ripple\ripple_IPeers.h" />
     <ClInclude Include="src\cpp\ripple\Contract.h" />
-    <ClInclude Include="src\cpp\ripple\HashedObject.h" />
     <ClInclude Include="src\cpp\ripple\HashPrefixes.h" />
     <ClInclude Include="src\cpp\ripple\HTTPRequest.h" />
     <ClInclude Include="src\cpp\ripple\HttpsClient.h" />
@@ -1692,6 +1707,7 @@
     <ClInclude Include="src\cpp\ripple\ripple_Peer.h" />
     <ClInclude Include="src\cpp\ripple\ripple_ProofOfWork.h" />
     <ClInclude Include="src\cpp\ripple\ripple_IProofOfWorkFactory.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_UptimeTimerAdapter.h" />
     <ClInclude Include="src\cpp\ripple\RPC.h" />
     <ClInclude Include="src\cpp\ripple\RPCDoor.h" />
     <ClInclude Include="src\cpp\ripple\RPCErr.h" />

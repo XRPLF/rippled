@@ -51,7 +51,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-// VFALCO: TODO figure out a way to remove the dependency on openssl in the
+// VFALCO TODO figure out a way to remove the dependency on openssl in the
 //		   header. Maybe rewrite this to use cryptopp.
 
 class CBigNum : public BIGNUM
@@ -70,7 +70,7 @@ public:
 	CBigNum(unsigned int n);
 	CBigNum(uint64 n);
 	explicit CBigNum(uint256 n);
-	explicit CBigNum(const std::vector<unsigned char>& vch);
+	explicit CBigNum(Blob const& vch);
 	~CBigNum();
 
 	void setuint(unsigned int n);
@@ -81,8 +81,8 @@ public:
 	void setuint64(uint64 n);
 	void setuint256(const uint256& n);
 	uint256 getuint256();
-	void setvch(const std::vector<unsigned char>& vch);
-	std::vector<unsigned char> getvch() const;
+	void setvch(Blob const& vch);
+	Blob getvch() const;
 	CBigNum& SetCompact(unsigned int nCompact);
 	unsigned int GetCompact() const;
 	void SetHex(const std::string& str);
@@ -130,7 +130,7 @@ bool operator>(const CBigNum& a, const CBigNum& b);
 
 //------------------------------------------------------------------------------
 
-// VFALCO: NOTE, this seems as good a place as any for this.
+// VFALCO NOTE this seems as good a place as any for this.
 
 // Here's the old implementation using macros, in case something broke
 //#if (ULONG_MAX > UINT_MAX)
@@ -140,7 +140,7 @@ bool operator>(const CBigNum& a, const CBigNum& b);
 //#define BN_div_word64(bn, word) BN_div_word(bn, word)
 //#endif
 
-// VFALCO: I believe only STAmount uses these
+// VFALCO I believe only STAmount uses these
 extern int BN_add_word64 (BIGNUM *a, uint64 w);
 extern int BN_sub_word64 (BIGNUM *a, uint64 w);
 extern int BN_mul_word64 (BIGNUM *a, uint64 w);

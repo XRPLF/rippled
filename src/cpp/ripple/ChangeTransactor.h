@@ -17,7 +17,7 @@ private:
 	TER applyFeature();
 	TER applyFee();
 
-    // VFALCO: TODO, Can this be removed?
+    // VFALCO TODO Can this be removed?
 	bool mustHaveValidAccount() { return false; }
 };
 

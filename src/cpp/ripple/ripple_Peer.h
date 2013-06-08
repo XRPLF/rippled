@@ -1,17 +1,6 @@
 #ifndef __PEER__
 #define __PEER__
 
-#include <bitset>
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/shared_ptr.hpp>
-
-#include "Ledger.h"
-#include "Transaction.h"
-#include "LoadManager.h"
-
 typedef std::pair <std::string,int> ipPort;
 
 class Peer : public boost::enable_shared_from_this <Peer>
@@ -34,7 +23,7 @@ public:
                         uint64 id,
                         bool inbound);
 
-    // VFALCO: TODO see if this and below can be private
+    // VFALCO TODO see if this and below can be private
     virtual void handleConnect (const boost::system::error_code& error,
                                 boost::asio::ip::tcp::resolver::iterator it) = 0;
 
@@ -63,7 +52,7 @@ public:
 
 	virtual void punishPeer (LoadType) = 0;
 
-    // VFALCO: NOTE, what's with this odd parameter passing? Why the static member?
+    // VFALCO NOTE what's with this odd parameter passing? Why the static member?
 	static void punishPeer (const boost::weak_ptr<Peer>&, LoadType);
 
 	virtual Json::Value getJson () = 0;

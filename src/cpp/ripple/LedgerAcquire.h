@@ -115,12 +115,12 @@ public:
 	bool addOnComplete(FUNCTION_TYPE<void (LedgerAcquire::pointer)>);
 
 	bool takeBase(const std::string& data);
-	bool takeTxNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data,
+	bool takeTxNode(const std::list<SHAMapNode>& IDs, const std::list<Blob >& data,
 		SMAddNode&);
-	bool takeTxRootNode(const std::vector<unsigned char>& data, SMAddNode&);
-	bool takeAsNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data,
+	bool takeTxRootNode(Blob const& data, SMAddNode&);
+	bool takeAsNode(const std::list<SHAMapNode>& IDs, const std::list<Blob >& data,
 		SMAddNode&);
-	bool takeAsRootNode(const std::vector<unsigned char>& data, SMAddNode&);
+	bool takeAsRootNode(Blob const& data, SMAddNode&);
 	void trigger(Peer::ref);
 	bool tryLocal();
 	void addPeers();

@@ -86,7 +86,7 @@ int Database::getBinary(const char* colName,unsigned char* buf,int maxSize)
 	return(0);
 }
 
-std::vector<unsigned char> Database::getBinary(const std::string& strColName)
+Blob Database::getBinary(const std::string& strColName)
 {
 	int index;
 
@@ -95,7 +95,7 @@ std::vector<unsigned char> Database::getBinary(const std::string& strColName)
 		return getBinary(index);
 	}
 
-	return std::vector<unsigned char>();
+	return Blob ();
 }
 
 std::string Database::getStrBinary(const std::string& strColName)

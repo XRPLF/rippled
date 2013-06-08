@@ -154,7 +154,7 @@ std::vector<uint256> SHAMap::getNeededHashes(int max, SHAMapSyncFilter* filter)
 }
 
 bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeIDs,
-	std::list<std::vector<unsigned char> >& rawNodes, bool fatRoot, bool fatLeaves)
+	std::list<Blob >& rawNodes, bool fatRoot, bool fatLeaves)
 { // Gets a node and some of its children
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -203,7 +203,7 @@ bool SHAMap::getRootNode(Serializer& s, SHANodeFormat format)
 	return true;
 }
 
-SMAddNode SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format,
+SMAddNode SHAMap::addRootNode(Blob const& rootNode, SHANodeFormat format,
 	SHAMapSyncFilter* filter)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
@@ -242,7 +242,7 @@ SMAddNode SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, SHANod
 	return SMAddNode::useful();
 }
 
-SMAddNode SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format,
+SMAddNode SHAMap::addRootNode(const uint256& hash, Blob const& rootNode, SHANodeFormat format,
 	SHAMapSyncFilter* filter)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
@@ -278,7 +278,7 @@ SMAddNode SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned ch
 	return SMAddNode::useful();
 }
 
-SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned char>& rawNode,
+SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, Blob const& rawNode,
 	SHAMapSyncFilter* filter)
 { // return value: true=okay, false=error
 	assert(!node.isRoot());
@@ -562,7 +562,7 @@ static bool confuseMap(SHAMap &map, int count)
 	return true;
 }
 
-std::list<std::vector<unsigned char> > SHAMap::getTrustedPath(const uint256& index)
+std::list<Blob > SHAMap::getTrustedPath(const uint256& index)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	std::stack<SHAMapTreeNode::pointer> stack = SHAMap::getStack(index, false, false);
@@ -570,7 +570,7 @@ std::list<std::vector<unsigned char> > SHAMap::getTrustedPath(const uint256& ind
 	if (stack.empty() || !stack.top()->isLeaf())
 		throw std::runtime_error("requested leaf not present");
 
-	std::list< std::vector<unsigned char> > path;
+	std::list< Blob > path;
 	Serializer s;
 	while (!stack.empty())
 	{
@@ -608,11 +608,11 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 	WriteLog (lsTRACE, SHAMap) << "SOURCE COMPLETE, SYNCHING";
 
 	std::vector<SHAMapNode> nodeIDs, gotNodeIDs;
-	std::list< std::vector<unsigned char> > gotNodes;
+	std::list< Blob > gotNodes;
 	std::vector<uint256> hashes;
 
 	std::vector<SHAMapNode>::iterator nodeIDIterator;
-	std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
+	std::list< Blob >::iterator rawNodeIterator;
 
 	int passes = 0;
 	int nodes = 0;

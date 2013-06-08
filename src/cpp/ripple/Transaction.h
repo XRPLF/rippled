@@ -53,7 +53,7 @@ private:
 public:
 	Transaction(SerializedTransaction::ref st, bool bValidate);
 
-	static Transaction::pointer sharedTransaction(const std::vector<unsigned char>&vucTransaction, bool bValidate);
+	static Transaction::pointer sharedTransaction(Blob const& vucTransaction, bool bValidate);
 	static Transaction::pointer transactionFromSQL(Database* db, bool bValidate);
 
 	Transaction(
@@ -77,7 +77,7 @@ public:
 	STAmount getFee() const							{ return mTransaction->getTransactionFee(); }
 	uint32 getFromAccountSeq() const				{ return mTransaction->getSequence(); }
 	uint32 getSourceTag() const						{ return mTransaction->getFieldU32(sfSourceTag); }
-	std::vector<unsigned char> getSignature() const	{ return mTransaction->getSignature(); }
+	Blob getSignature() const	{ return mTransaction->getSignature(); }
 	uint32 getLedger() const						{ return mInLedger; }
 	TransStatus getStatus() const					{ return mStatus; }
 

@@ -39,7 +39,7 @@ bool STAmount::currencyFromString(uint160& uDstCurrency, const std::string& sCur
 	}
 	else if (3 == sCurrency.size())
 	{
-		std::vector<unsigned char>	vucIso(3);
+		Blob 	vucIso(3);
 
 		std::transform(sCurrency.begin(), sCurrency.end(), vucIso.begin(), ::toupper);
 
@@ -216,10 +216,10 @@ std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 
 		SerializerIterator	sit(s);
 
-		std::vector<unsigned char>	vucZeros	= sit.getRaw(96/8);
-		std::vector<unsigned char>	vucIso		= sit.getRaw(24/8);
-		std::vector<unsigned char>	vucVersion	= sit.getRaw(16/8);
-		std::vector<unsigned char>	vucReserved	= sit.getRaw(24/8);
+		Blob 	vucZeros	= sit.getRaw(96/8);
+		Blob 	vucIso		= sit.getRaw(24/8);
+		Blob 	vucVersion	= sit.getRaw(16/8);
+		Blob 	vucReserved	= sit.getRaw(24/8);
 
 		bool	bIso	= ::isZero(vucZeros.begin(), vucZeros.size())				// Leading zeros
 							&& ::isZero(vucVersion.begin(), vucVersion.size())		// Zero version

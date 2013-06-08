@@ -82,7 +82,7 @@ else:
 
 #-------------------------------------------------------------------------------
 #
-# VFALCO: This is my oasis of sanity. Nothing having to do with directories,
+# VFALCO This is my oasis of sanity. Nothing having to do with directories,
 #         source files, or include paths should reside outside the boundaries.
 #
 

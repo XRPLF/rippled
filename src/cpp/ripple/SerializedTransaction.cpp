@@ -130,7 +130,7 @@ uint256 SerializedTransaction::getTransactionID() const
 	return getHash(sHP_TransactionID);
 }
 
-std::vector<unsigned char> SerializedTransaction::getSignature() const
+Blob SerializedTransaction::getSignature() const
 {
 	try
 	{
@@ -138,13 +138,13 @@ std::vector<unsigned char> SerializedTransaction::getSignature() const
 	}
 	catch (...)
 	{
-		return std::vector<unsigned char>();
+		return Blob ();
 	}
 }
 
 void SerializedTransaction::sign(const RippleAddress& naAccountPrivate)
 {
-	std::vector<unsigned char> signature;
+	Blob signature;
 	naAccountPrivate.accountPrivateSign(getSigningHash(), signature);
 	setFieldVL(sfTxnSignature, signature);
 }

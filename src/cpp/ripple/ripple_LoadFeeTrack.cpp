@@ -17,7 +17,7 @@ private:
 
 	boost::mutex mLock;
 
-    // VFALCO: TODO Move this function to some "math utilities" file
+    // VFALCO TODO Move this function to some "math utilities" file
     // compute (value)*(mul)/(div) - avoid overflow but keep precision
     uint64 mulDiv (uint64 value, uint32 mul, uint64 div)
     {

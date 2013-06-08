@@ -1,15 +1,8 @@
-#ifndef __SHAMAP__
-#define __SHAMAP__
+#ifndef RIPPLE_SHAMAP_H
+#define RIPPLE_SHAMAP_H
 
-#include <list>
-#include <map>
-#include <stack>
-
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/unordered_map.hpp>
-
-#include "HashedObject.h"
+// VFALCO TODO Get this include out of here!
+#include "ripple_UptimeTimerAdapter.h"
 
 DEFINE_INSTANCE(SHAMap);
 DEFINE_INSTANCE(SHAMapItem);
@@ -100,17 +93,17 @@ private:
 public:
 
 	SHAMapItem(const uint256& tag) : mTag(tag) { ; }
-	SHAMapItem(const uint256& tag, const std::vector<unsigned char>& data);
+	SHAMapItem(const uint256& tag, Blob const& data);
 	SHAMapItem(const uint256& tag, const Serializer& s);
-	SHAMapItem(const std::vector<unsigned char>& data); // tag by hash
+	SHAMapItem(Blob const& data); // tag by hash
 
 	const uint256& getTag() const				{ return mTag; }
-	std::vector<unsigned char> getData() const	{ return mData.getData(); }
-	const std::vector<unsigned char>& peekData() const { return mData.peekData(); }
+	Blob getData() const	{ return mData.getData(); }
+	Blob const& peekData() const { return mData.peekData(); }
 	Serializer& peekSerializer()				{ return mData; }
-	void addRaw(std::vector<unsigned char>& s) const { s.insert(s.end(), mData.begin(), mData.end()); }
+	void addRaw(Blob & s) const { s.insert(s.end(), mData.begin(), mData.end()); }
 
-	void updateData(const std::vector<unsigned char>& data) { mData=data; }
+	void updateData(Blob const& data) { mData=data; }
 
 	bool operator==(const SHAMapItem& i) const		{ return mTag == i.mTag; }
 	bool operator!=(const SHAMapItem& i) const		{ return mTag != i.mTag; }
@@ -182,7 +175,7 @@ public:
 	SHAMapTreeNode(const SHAMapNode& nodeID, SHAMapItem::ref item, TNType type, uint32 seq);
 
 	// raw node functions
-	SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& data, uint32 seq,
+	SHAMapTreeNode(const SHAMapNode& id, Blob const& data, uint32 seq,
 		SHANodeFormat format, const uint256& hash, bool hashValid);
 	void addRaw(Serializer &, SHANodeFormat format);
 
@@ -223,8 +216,8 @@ public:
 	SHAMapItem::pointer getItem() const;
 	bool setItem(SHAMapItem::ref i, TNType type);
 	const uint256& getTag() const { return mItem->getTag(); }
-	const std::vector<unsigned char>& peekData() { return mItem->peekData(); }
-	std::vector<unsigned char> getData() const { return mItem->getData(); }
+	Blob const& peekData() { return mItem->peekData(); }
+	Blob getData() const { return mItem->getData(); }
 
 	// sync functions
 	bool isFullBelow(void) const		{ return mFullBelow; }
@@ -250,10 +243,10 @@ public:
 	virtual ~SHAMapSyncFilter()		{ ; }
 
 	virtual void gotNode(bool fromFilter, const SHAMapNode& id, const uint256& nodeHash,
-		const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType type)
+		Blob const& nodeData, SHAMapTreeNode::TNType type)
 	{ ; }
 
-	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
+	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, Blob & nodeData)
 	{ return false; }
 };
 
@@ -326,7 +319,7 @@ private:
 	SMAddNode(bool i, bool u) : mInvalid(i), mUseful(u)	{ ; }
 };
 
-// VFALCO: TODO, tidy up this loose function
+// VFALCO TODO tidy up this loose function
 extern bool SMANCombine(SMAddNode& existing, const SMAddNode& additional);
 
 class SHAMap : public IS_INSTANCE(SHAMap)
@@ -390,14 +383,14 @@ public:
 	void getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max,
 		SHAMapSyncFilter* filter);
 	bool getNodeFat(const SHAMapNode& node, std::vector<SHAMapNode>& nodeIDs,
-	 std::list<std::vector<unsigned char> >& rawNode, bool fatRoot, bool fatLeaves);
+	 std::list<Blob >& rawNode, bool fatRoot, bool fatLeaves);
 	bool getRootNode(Serializer& s, SHANodeFormat format);
 	std::vector<uint256> getNeededHashes(int max, SHAMapSyncFilter* filter);
-	SMAddNode addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format,
+	SMAddNode addRootNode(const uint256& hash, Blob const& rootNode, SHANodeFormat format,
 		SHAMapSyncFilter* filter);
-	SMAddNode addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format,
+	SMAddNode addRootNode(Blob const& rootNode, SHANodeFormat format,
 		SHAMapSyncFilter* filter);
-	SMAddNode addKnownNode(const SHAMapNode& nodeID, const std::vector<unsigned char>& rawNode,
+	SMAddNode addKnownNode(const SHAMapNode& nodeID, Blob const& rawNode,
 		SHAMapSyncFilter* filter);
 
 	// status functions
@@ -426,18 +419,18 @@ public:
 	bool operator==(const SHAMap& s) { return getHash() == s.getHash(); }
 
 	// trusted path operations - prove a particular node is in a particular ledger
-	std::list<std::vector<unsigned char> > getTrustedPath(const uint256& index);
-	static std::vector<unsigned char> checkTrustedPath(const uint256& ledgerHash, const uint256& leafIndex,
-		const std::list<std::vector<unsigned char> >& path);
+	std::list<Blob > getTrustedPath(const uint256& index);
+	static Blob checkTrustedPath(const uint256& ledgerHash, const uint256& leafIndex,
+		const std::list<Blob >& path);
 
 	void walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing);
 
-	bool getPath(const uint256& index, std::vector< std::vector<unsigned char> >& nodes, SHANodeFormat format);
+	bool getPath(const uint256& index, std::vector< Blob >& nodes, SHANodeFormat format);
 
 	bool deepCompare(SHAMap& other);
 	virtual void dump(bool withHashes = false);
 
-	typedef std::pair< uint256, std::vector<unsigned char> > fetchPackEntry_t;
+	typedef std::pair< uint256, Blob > fetchPackEntry_t;
 	std::list<fetchPackEntry_t> getFetchPack(SHAMap* have, bool includeLeaves, int max);
 
 	static void sweep()			{ fullBelowCache.sweep(); }

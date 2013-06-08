@@ -129,7 +129,7 @@ bool Wallet::dataFetch(const std::string& strKey, std::string& strValue)
 	if (db->executeSQL(str(boost::format("SELECT Value FROM RPCData WHERE Key=%s;")
 		% sqlEscape(strKey))) && db->startIterRows())
 	{
-		std::vector<unsigned char> vucData	= db->getBinary("Value");
+		Blob vucData	= db->getBinary("Value");
 		strValue.assign(vucData.begin(), vucData.end());
 
 		db->endIterRows();

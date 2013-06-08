@@ -99,7 +99,7 @@ inline const std::string strHex(const std::string& strSrc)
 	return strHex(strSrc.begin(), strSrc.size());
 }
 
-inline std::string strHex(const std::vector<unsigned char>& vucData)
+inline std::string strHex(Blob const& vucData)
 {
 	return strHex(vucData.begin(), vucData.size());
 }
@@ -117,7 +117,7 @@ inline static std::string sqlEscape(const std::string& strSrc)
 	return str(boost::format(f) % strHex(strSrc));
 }
 
-inline static std::string sqlEscape(const std::vector<unsigned char>& vecSrc)
+inline static std::string sqlEscape(Blob const& vecSrc)
 {
 	size_t size = vecSrc.size();
 	if (size == 0)
@@ -156,10 +156,10 @@ int strUnHex(std::string& strDst, const std::string& strSrc);
 
 uint64_t uintFromHex(const std::string& strSrc);
 
-std::vector<unsigned char> strUnHex(const std::string& strSrc);
+Blob strUnHex(const std::string& strSrc);
 
-std::vector<unsigned char> strCopy(const std::string& strSrc);
-std::string strCopy(const std::vector<unsigned char>& vucSrc);
+Blob strCopy(const std::string& strSrc);
+std::string strCopy(Blob const& vucSrc);
 
 bool parseIpPort(const std::string& strSource, std::string& strIP, int& iPort);
 bool parseQuality(const std::string& strSource, uint32& uQuality);

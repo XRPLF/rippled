@@ -62,13 +62,13 @@ public:
 	// Connection policy
 	//
 	virtual void policyLowWater() = 0;
-	virtual void policyEnforce() = 0; // VFALCO: This and others can be made private
+	virtual void policyEnforce() = 0; // VFALCO This and others can be made private
 
 	// configured connections
 	virtual void makeConfigured() = 0;
 };
 
-// VFALCO: TODO Put this in some group of utilities
+// VFALCO TODO Put this in some group of utilities
 extern void splitIpPort(const std::string& strIpPort, std::string& strIp, int& iPort);
 
 #endif

@@ -4,41 +4,17 @@
 DEFINE_INSTANCE(SerializedObject);
 DEFINE_INSTANCE(SerializedArray);
 
-// Serializable object/array types
-
-class SOElement
-{ // An element in the description of a serialized object
-public:
-	SField::ref			e_field;
-	const SOE_Flags		flags;
-
-	SOElement(SField::ref fi, SOE_Flags fl) : e_field(fi), flags(fl)	{ ; }
-};
-
-class SOTemplate
-{
-public:
-	SOTemplate()											{ ; }
-	const std::vector<const SOElement*>& peek() const		{ return mTypes; }
-	void push_back(const SOElement& r);
-	int getIndex(SField::ref) const;
-
-private:
-	std::vector<const SOElement*>	mTypes;
-	std::vector<int>				mIndex;		// field num -> index
-};
-
 class STObject : public SerializedType, private IS_INSTANCE(SerializedObject)
 {
 public:
 	STObject() : mType(NULL)										{ ; }
 
-	STObject(SField::ref name) : SerializedType(name), mType(NULL)	{ ; }
+	explicit STObject(SField::ref name) : SerializedType(name), mType(NULL)	{ ; }
 
-	STObject(const SOTemplate& type, SField::ref name) : SerializedType(name)
+	STObject (const SOTemplate& type, SField::ref name) : SerializedType(name)
 	{ set(type); }
 
-	STObject(const SOTemplate& type, SerializerIterator& sit, SField::ref name) : SerializedType(name)
+	STObject (const SOTemplate& type, SerializerIterator& sit, SField::ref name) : SerializedType(name)
 	{ set(sit); setType(type); }
 
 	UPTR_T<STObject> oClone() const { return UPTR_T<STObject>(new STObject(*this)); }
@@ -112,7 +88,7 @@ public:
 	uint256 getFieldH256(SField::ref field) const;
 	RippleAddress getFieldAccount(SField::ref field) const;
 	uint160 getFieldAccount160(SField::ref field) const;
-	std::vector<unsigned char> getFieldVL(SField::ref field) const;
+	Blob getFieldVL(SField::ref field) const;
 	const STAmount& getFieldAmount(SField::ref field) const;
 	const STPathSet& getFieldPathSet(SField::ref field) const;
 	const STVector256& getFieldV256(SField::ref field) const;
@@ -124,7 +100,7 @@ public:
 	void setFieldH128(SField::ref field, const uint128&);
 	void setFieldH160(SField::ref field, const uint160&);
 	void setFieldH256(SField::ref field, const uint256&);
-	void setFieldVL(SField::ref field, const std::vector<unsigned char>&);
+	void setFieldVL(SField::ref field, Blob const&);
 	void setFieldAccount(SField::ref field, const uint160&);
 	void setFieldAccount(SField::ref field, const RippleAddress& addr)
 	{ setFieldAccount(field, addr.getAccountID()); }
@@ -184,7 +160,7 @@ namespace boost
 	template<> struct range_const_iterator<STObject>	{ typedef STObject::const_iterator type; };
 }
 
-
+//------------------------------------------------------------------------------
 
 class STArray : public SerializedType, private IS_INSTANCE(SerializedArray)
 {
@@ -197,12 +173,12 @@ public:
 	typedef boost::ptr_vector<STObject>::size_type				size_type;
 
 public:
-	STArray()																{ ; }
-	STArray(int n)															{ value.reserve(n); }
-	STArray(SField::ref f) : SerializedType(f)								{ ; }
+	STArray ()																{ ; }
+	explicit STArray(int n)													{ value.reserve(n); }
+	explicit STArray(SField::ref f) : SerializedType(f)						{ ; }
 	STArray(SField::ref f, int n) : SerializedType(f)						{ value.reserve(n); }
 	STArray(SField::ref f, const vector& v) : SerializedType(f), value(v)	{ ; }
-	STArray(vector& v) : value(v)											{ ; }
+	explicit STArray(vector& v) : value(v)								    { ; }
 
 	static UPTR_T<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
 		{ return UPTR_T<SerializedType>(construct(sit, name)); }
@@ -210,7 +186,9 @@ public:
 	const vector& getValue() const					{ return value; }
 	vector& getValue()								{ return value; }
 
-	// vector-like functions
+    // VFALCO NOTE as long as we're married to boost why not use boost::iterator_facade?
+    //
+    // vector-like functions
 	void push_back(const STObject& object)			{ value.push_back(object.oClone().release()); }
 	STObject& operator[](int j)						{ return value[j]; }
 	const STObject& operator[](int j) const			{ return value[j]; }

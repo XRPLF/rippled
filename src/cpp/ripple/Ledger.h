@@ -1,19 +1,17 @@
-#ifndef __LEDGER__
-#define __LEDGER__
+#ifndef RIPPLE_LEDGER_H
+#define RIPPLE_LEDGER_H
 
-#include <map>
-#include <list>
+// VFALCO TODO Get this include out of here!
+#include "ripple_HashedObject.h"
 
-#include <boost/shared_ptr.hpp>
-#include <boost/unordered_set.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "Transaction.h"
 #include "TransactionMeta.h"
 #include "AccountState.h"
 #include "NicknameState.h"
 #include "SHAMap.h"
+
+class Job;
 
 enum LedgerStateParms
 {
@@ -39,14 +37,14 @@ DEFINE_INSTANCE(Ledger);
 
 class SqliteStatement;
 
-// VFALCO: TODO, figure out exactly how this thing works.
+// VFALCO TODO figure out exactly how this thing works.
 //         It seems like some ledger database is stored as a global, static in the
 //         class. But then what is the meaning of a Ledger object? Is this
 //         really two classes in one? StoreOfAllLedgers + SingleLedgerObject?
 //
 class Ledger : public boost::enable_shared_from_this<Ledger>, public IS_INSTANCE(Ledger)
 { // The basic Ledger structure, can be opened, closed, or synching
-    // VFALCO: TODO, eliminate the need for friends
+    // VFALCO TODO eliminate the need for friends
 	friend class TransactionEngine;
 	friend class Transactor;
 public:
@@ -78,7 +76,7 @@ public:
 		uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution,
 		uint32 ledgerSeq, bool& loaded); // used for database ledgers
 
-	Ledger(const std::vector<unsigned char>& rawLedger, bool hasPrefix);
+	Ledger(Blob const& rawLedger, bool hasPrefix);
 	Ledger(const std::string& rawLedger, bool hasPrefix);
 
 	Ledger(bool dummy, Ledger& previous);	// ledger after this one
@@ -359,7 +357,7 @@ private:
 
 	mutable boost::recursive_mutex mLock;
 
-    // VFALCO: TODO, derive this from beast::Uncopyable
+    // VFALCO TODO derive this from beast::Uncopyable
 	Ledger(const Ledger&);				// no implementation
 	Ledger& operator=(const Ledger&);	// no implementation
 };

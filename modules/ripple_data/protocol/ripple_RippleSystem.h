@@ -3,7 +3,7 @@
 
 /** Protocol specific constant globals.
 */
-// VFALCO: NOTE, use these from now on instead of the macros!!
+// VFALCO NOTE use these from now on instead of the macros!!
 class RippleSystem
 {
 public:
@@ -28,7 +28,7 @@ public:
     }
 };
 
-// VFALCO: TODO, I would love to replace these macros with the language
+// VFALCO TODO I would love to replace these macros with the language
 //         constructs above. The problem is the way they are used at
 //         the point of call, i.e. "User-agent:" SYSTEM_NAME
 //         It will be necessary to rewrite some of them to use string streams.

@@ -32,7 +32,7 @@
 // see www.keylength.com
 // script supports up to 75 for single byte push
 
-// VFALCO: NOTE, this is unused
+// VFALCO NOTE this is unused
 /*
 int static inline EC_KEY_regenerate_key(EC_KEY *eckey, BIGNUM *priv_key)
 {
@@ -224,7 +224,7 @@ public:
 		return true;
 	}
 
-	bool SetPubKey(const std::vector<unsigned char>& vchPubKey)
+	bool SetPubKey(Blob const& vchPubKey)
 	{
 		return SetPubKey(&vchPubKey[0], vchPubKey.size());
 	}
@@ -234,13 +234,13 @@ public:
 		return SetPubKey(pubKey.data(), pubKey.size());
 	}
 
-	std::vector<unsigned char> GetPubKey() const
+	Blob GetPubKey() const
 	{
 		unsigned int nSize = i2o_ECPublicKey(pkey, NULL);
 		assert(nSize<=33);
 		if (!nSize)
 			throw key_error("CKey::GetPubKey() : i2o_ECPublicKey failed");
-		std::vector<unsigned char> vchPubKey(33, 0);
+		Blob vchPubKey(33, 0);
 		unsigned char* pbegin = &vchPubKey[0];
 		if (i2o_ECPublicKey(pkey, &pbegin) != nSize)
 			throw key_error("CKey::GetPubKey() : i2o_ECPublicKey returned unexpected size");
@@ -248,7 +248,7 @@ public:
 		return vchPubKey;
 	}
 
-	bool Sign(const uint256& hash, std::vector<unsigned char>& vchSig)
+	bool Sign(const uint256& hash, Blob & vchSig)
 	{
 		unsigned char pchSig[10000];
 		unsigned int nSize = 0;
@@ -272,7 +272,7 @@ public:
 		return true;
 	}
 
-	bool Verify(const uint256& hash, const std::vector<unsigned char>& vchSig) const
+	bool Verify(const uint256& hash, Blob const& vchSig) const
 	{
 		return Verify(hash, &vchSig[0], vchSig.size());
 	}
@@ -289,8 +289,8 @@ public:
 
 	// encrypt/decrypt functions with integrity checking.
 	// Note that the other side must somehow know what keys to use
-	std::vector<unsigned char> encryptECIES(CKey& otherKey, const std::vector<unsigned char>& plaintext);
-	std::vector<unsigned char> decryptECIES(CKey& otherKey, const std::vector<unsigned char>& ciphertext);
+	Blob encryptECIES(CKey& otherKey, Blob const& plaintext);
+	Blob decryptECIES(CKey& otherKey, Blob const& ciphertext);
 };
 
 #endif

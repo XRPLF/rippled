@@ -68,7 +68,7 @@ public:
 
 	// returns amount stored in buf
 	int getBinary(const char* colName, unsigned char* buf, int maxSize);
-	std::vector<unsigned char> getBinary(const std::string& strColName);
+	Blob getBinary(const std::string& strColName);
 
 	uint64 getBigInt(const char* colName);
 
@@ -79,7 +79,7 @@ public:
 	virtual bool getBool(int colIndex)=0;
 	virtual int getBinary(int colIndex,unsigned char* buf,int maxSize)=0;
 	virtual uint64 getBigInt(int colIndex)=0;
-	virtual std::vector<unsigned char> getBinary(int colIndex)=0;
+	virtual Blob getBinary(int colIndex)=0;
 
 	// int getSingleDBValueInt(const char* sql);
 	// float getSingleDBValueFloat(const char* sql);

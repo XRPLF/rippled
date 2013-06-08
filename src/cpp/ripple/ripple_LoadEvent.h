@@ -10,14 +10,14 @@ public:
 	typedef UPTR_T<LoadEvent>				autoptr;
 
 public:
-    // VFALCO: TODO, remove the dependency on LoadMonitor.
+    // VFALCO TODO remove the dependency on LoadMonitor.
 	LoadEvent (LoadMonitor& monitor,
                const std::string& name,
                bool shouldStart);
 
 	~LoadEvent();
 
-    // VFALCO: TODO, rename this to setName () or setLabel ()
+    // VFALCO TODO rename this to setName () or setLabel ()
 	void reName (const std::string& name);
 
     // okay to call if already started

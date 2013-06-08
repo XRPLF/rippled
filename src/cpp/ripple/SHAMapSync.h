@@ -14,9 +14,9 @@ public:
 	ConsensusTransSetSF() { ; }
 
 	virtual void gotNode(bool fromFilter, const SHAMapNode& id, const uint256& nodeHash,
-		const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType);
+		Blob const& nodeData, SHAMapTreeNode::TNType);
 
-	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData);
+	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, Blob & nodeData);
 };
 
 // This class is only needed on add functions
@@ -28,11 +28,11 @@ public:
 	{ ; }
 
 	virtual void gotNode(bool fromFilter, const SHAMapNode& id, const uint256& nodeHash,
-		const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType)
+		Blob const& nodeData, SHAMapTreeNode::TNType)
 	{
 		theApp->getHashedObjectStore().store(hotACCOUNT_NODE, mLedgerSeq, nodeData, nodeHash);
 	}
-	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
+	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, Blob & nodeData)
 	{
 		return theApp->getOPs().getFetchPack(nodeHash, nodeData);
 	}
@@ -50,13 +50,13 @@ public:
 	{ ; }
 
 	virtual void gotNode(bool fromFilter, const SHAMapNode& id, const uint256& nodeHash,
-		const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType type)
+		Blob const& nodeData, SHAMapTreeNode::TNType type)
 	{
 		theApp->getHashedObjectStore().store(
 			(type == SHAMapTreeNode::tnTRANSACTION_NM) ? hotTRANSACTION : hotTRANSACTION_NODE,
 			mLedgerSeq, nodeData, nodeHash);
 	}
-	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
+	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, Blob & nodeData)
 	{
 		return theApp->getOPs().getFetchPack(nodeHash, nodeData);
 	}

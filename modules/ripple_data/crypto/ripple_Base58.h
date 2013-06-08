@@ -36,7 +36,7 @@
 class Base58
 {
 public:
-	// VFALCO: TODO, clean up this poor API
+	// VFALCO TODO clean up this poor API
 	static char const* getCurrentAlphabet ();
 	static void setCurrentAlphabet (char const* alphabet);
 
@@ -45,13 +45,13 @@ public:
 	static char const* getTestnetAlphabet ();
 
 	static std::string encode (const unsigned char* pbegin, const unsigned char* pend);
-	static std::string encode (const std::vector<unsigned char>& vch);
-	static std::string encodeWithCheck (const std::vector<unsigned char>& vchIn);
+	static std::string encode (Blob const& vch);
+	static std::string encodeWithCheck (Blob const& vchIn);
 
-	static bool decode (const char* psz, std::vector<unsigned char>& vchRet, const char* pAlphabet=getCurrentAlphabet ());
-	static bool decode (const std::string& str, std::vector<unsigned char>& vchRet);
-	static bool decodeWithCheck (const char* psz, std::vector<unsigned char>& vchRet, const char* pAlphabet=getCurrentAlphabet ());
-	static bool decodeWithCheck (const std::string& str, std::vector<unsigned char>& vchRet, const char* pAlphabet);
+	static bool decode (const char* psz, Blob & vchRet, const char* pAlphabet=getCurrentAlphabet ());
+	static bool decode (const std::string& str, Blob & vchRet);
+	static bool decodeWithCheck (const char* psz, Blob & vchRet, const char* pAlphabet=getCurrentAlphabet ());
+	static bool decodeWithCheck (const std::string& str, Blob & vchRet, const char* pAlphabet);
 
 private:
 	static char const* s_currentAlphabet;

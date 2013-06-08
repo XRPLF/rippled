@@ -6,7 +6,7 @@ typedef boost::recursive_mutex::scoped_lock ScopedLock;
 // A lock holder that can be returned and copied by value
 // When the last reference goes away, the lock is released
 
-// VFALCO: TODO, replace these with a more generic template, and not use boost
+// VFALCO TODO replace these with a more generic template, and not use boost
 //
 class SharedScopedLock
 {
@@ -30,7 +30,7 @@ protected:
 	boost::recursive_mutex& mMutex;
 
 public:
-	// VFALCO: TODO, get rid of this unlock parameter to restore sanity
+	// VFALCO TODO get rid of this unlock parameter to restore sanity
 	ScopedUnlock(boost::recursive_mutex& mutex, bool unlock = true) : mUnlocked(unlock), mMutex(mutex)
 	{
 		if (unlock)
