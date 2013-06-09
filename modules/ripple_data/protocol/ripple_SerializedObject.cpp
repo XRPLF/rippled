@@ -203,6 +203,8 @@ bool STObject::isFieldAllowed(SField::ref field)
 	return mType->getIndex(field) != -1;
 }
 
+// OLD
+/*
 bool STObject::set(SerializerIterator& sit, int depth)
 { // return true = terminated with end-of-object
 	mData.clear();
@@ -222,6 +224,51 @@ bool STObject::set(SerializerIterator& sit, int depth)
 	}
 	return false;
 }
+*/
+
+// return true = terminated with end-of-object
+bool STObject::set(SerializerIterator& sit, int depth)
+{
+    bool reachedEndOfObject = false;
+
+    // Empty the destination buffer
+    //
+    mData.clear ();
+
+    // Consume data in the pipe until we run out or reach the end
+    //
+    while (!reachedEndOfObject && !sit.empty ())
+    {
+        int type;
+        int field;
+
+        // Get the metadata for the next field
+        //
+        sit.getFieldID(type, field);
+
+        reachedEndOfObject = (type == STI_OBJECT) && (field == 1);
+
+        if (!reachedEndOfObject)
+        {
+            // Figure out the field
+            //
+            SField::ref fn = SField::getField(type, field);
+
+            if (fn.isInvalid ())
+            {
+                WriteLog (lsWARNING, STObject) << "Unknown field: field_type=" << type << ", field_name=" << field;
+                throw std::runtime_error("Unknown field");
+            }
+
+            // Unflatten the field
+            //
+            giveObject (makeDeserializedObject (fn.fieldType, fn, sit, depth + 1));
+        }
+    }
+
+    return reachedEndOfObject;
+}
+
 
 UPTR_T<SerializedType> STObject::deserialize(SerializerIterator& sit, SField::ref name)
 {
