@@ -78,6 +78,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit, Sco
 	Json::Value		jvResult;
 	RippleAddress	naSeed;
 	RippleAddress	raSrcAddressID;
+	bool			bOffline			= jvRequest.isMember("offline");
 
 	WriteLog (lsDEBUG, RPCHandler) << boost::str(boost::format("transactionSign: %s") % jvRequest);
 
@@ -109,11 +110,13 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit, Sco
 		return rpcError(rpcINVALID_PARAMS);
 	}
 
-	bool	bOffline	= mNetOps->getOperatingMode() < NetworkOPs::omSYNCING;
+	AccountState::pointer asSrc	= bOffline
+		? AccountState::pointer()								// Don't look up address if offline.
+		: mNetOps->getAccountState(mNetOps->getCurrentSnapshot(), raSrcAddressID);
 
-	AccountState::pointer asSrc	= bOffline ? AccountState::pointer() : mNetOps->getAccountState(mNetOps->getCurrentSnapshot(), raSrcAddressID);
 	if (!bOffline && !asSrc)
 	{
+		// If not offline and did not find account, error.
 		WriteLog (lsDEBUG, RPCHandler) << boost::str(boost::format("transactionSign: Failed to find source account in current ledger: %s")
 			% raSrcAddressID.humanAccountID());
 
@@ -217,6 +220,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit, Sco
 	{
 		if (bOffline)
 		{
+			// If offline, Sequence is mandatory.
 			return rpcError(rpcINVALID_PARAMS);
 		}
 		else
