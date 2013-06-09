@@ -78,7 +78,7 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit, Sco
 	Json::Value		jvResult;
 	RippleAddress	naSeed;
 	RippleAddress	raSrcAddressID;
-	bool			bOffline			= jvRequest.isMember("offline");
+	bool			bOffline			= jvRequest.isMember("offline") && jvRequest["offline"].asBool();
 
 	WriteLog (lsDEBUG, RPCHandler) << boost::str(boost::format("transactionSign: %s") % jvRequest);
 
@@ -231,13 +231,16 @@ Json::Value RPCHandler::transactionSign(Json::Value jvRequest, bool bSubmit, Sco
 
 	if (!txJSON.isMember("Flags")) txJSON["Flags"] = 0;
 
-	Ledger::pointer	lpCurrent		= mNetOps->getCurrentSnapshot();
-	SLE::pointer	sleAccountRoot	= mNetOps->getSLEi(lpCurrent, Ledger::getAccountRootIndex(raSrcAddressID.getAccountID()));
-
-	if (!sleAccountRoot)
+	if (!bOffline)
 	{
-		// XXX Ignore transactions for accounts not created.
-		return rpcError(rpcSRC_ACT_NOT_FOUND);
+		Ledger::pointer	lpCurrent		= mNetOps->getCurrentSnapshot();
+		SLE::pointer	sleAccountRoot	= mNetOps->getSLEi(lpCurrent, Ledger::getAccountRootIndex(raSrcAddressID.getAccountID()));
+
+		if (!sleAccountRoot)
+		{
+			// XXX Ignore transactions for accounts not created.
+			return rpcError(rpcSRC_ACT_NOT_FOUND);
+		}
 	}
 
 	bool			bHaveAuthKey	= false;

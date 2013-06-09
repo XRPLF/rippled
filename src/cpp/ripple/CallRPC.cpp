@@ -558,13 +558,14 @@ Json::Value RPCParser::parseRipplePathFind(const Json::Value& jvParams)
 
 // sign/submit any transaction to the network
 //
-// sign private_key json
-// submit private_key json
-// submit tx_blob
+// sign <private_key> <json> offline
+// submit <private_key> <json>
+// submit <tx_blob>
 Json::Value RPCParser::parseSignSubmit(const Json::Value& jvParams)
 {
 	Json::Value		txJSON;
 	Json::Reader	reader;
+	bool			bOffline	= 3 == jvParams.size() && jvParams[2u].asString() == "offline";
 
 	if (1 == jvParams.size())
 	{
@@ -576,13 +577,16 @@ Json::Value RPCParser::parseSignSubmit(const Json::Value& jvParams)
 
 		return jvRequest;
 	}
-	// Submitting tx_json.
-	else if (reader.parse(jvParams[1u].asString(), txJSON))
+	else if ((2 == jvParams.size() || bOffline)
+		&& reader.parse(jvParams[1u].asString(), txJSON))
 	{
+		// Signing or submitting tx_json.
 		Json::Value	jvRequest;
 
 		jvRequest["secret"]		= jvParams[0u].asString();
 		jvRequest["tx_json"]	= txJSON;
+		if (bOffline)
+			jvRequest["offline"]	= true;
 
 		return jvRequest;
 	}
@@ -767,7 +771,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"proof_verify",			&RPCParser::parseProofVerify,			2,  4	},
 		{	"random",				&RPCParser::parseAsIs,					0,  0	},
 		{	"ripple_path_find",		&RPCParser::parseRipplePathFind,	    1,  2	},
-		{	"sign",					&RPCParser::parseSignSubmit,			2,  2	},
+		{	"sign",					&RPCParser::parseSignSubmit,			2,  3	},
 		{	"sms",					&RPCParser::parseSMS,					1,  1	},
 		{	"submit",				&RPCParser::parseSignSubmit,			1,  2	},
 		{	"server_info",			&RPCParser::parseAsIs,					0,  0	},
