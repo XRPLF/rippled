@@ -1,9 +1,9 @@
-#ifndef __SERIALIZEDLEDGER__
-#define __SERIALIZEDLEDGER__
+#ifndef RIPPLE_SERIALIZEDLEDGER_H
+#define RIPPLE_SERIALIZEDLEDGER_H
 
 DEFINE_INSTANCE(SerializedLedgerEntry);
 
-// VFALCO TODO rename this to SerializedLedger
+// VFALCO TODO rename this to SerializedLedger?
 class SerializedLedgerEntry : public STObject, private IS_INSTANCE(SerializedLedgerEntry)
 {
 public:
@@ -11,17 +11,17 @@ public:
 	typedef const boost::shared_ptr<SerializedLedgerEntry>&	ref;
 
 public:
-	SerializedLedgerEntry(const Serializer& s, const uint256& index);
-	SerializedLedgerEntry(SerializerIterator& sit, const uint256& index);
-	SerializedLedgerEntry(LedgerEntryType type, const uint256& index);
+	SerializedLedgerEntry(const Serializer& s, uint256 const& index);
+	SerializedLedgerEntry(SerializerIterator& sit, uint256 const& index);
+	SerializedLedgerEntry(LedgerEntryType type, uint256 const& index);
 
 	SerializedTypeID getSType() const { return STI_LEDGERENTRY; }
 	std::string getFullText() const;
 	std::string getText() const;
 	Json::Value getJson(int options) const;
 
-	const uint256& getIndex() const		{ return mIndex; }
-	void setIndex(const uint256& i)		{ mIndex = i; }
+	uint256 const& getIndex() const		{ return mIndex; }
+	void setIndex(uint256 const& i)		{ mIndex = i; }
 
 	void setImmutable()					{ mMutable = false; }
 	bool isMutable()					{ return mMutable; }
@@ -40,16 +40,17 @@ public:
 	RippleAddress getSecondOwner();
 	uint256 getThreadedTransaction();
 	uint32 getThreadedLedger();
-	bool thread(const uint256& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID);
+	bool thread(uint256 const& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID);
 	std::vector<uint256> getOwners();	// nodes notified if this node is deleted
+
+private:
+	SerializedLedgerEntry* duplicate() const { return new SerializedLedgerEntry(*this); }
 
 private:
 	uint256						mIndex;
 	LedgerEntryType				mType;
 	const LedgerEntryFormat*	mFormat;
 	bool						mMutable;
-
-	SerializedLedgerEntry* duplicate() const { return new SerializedLedgerEntry(*this); }
 };
 
 typedef SerializedLedgerEntry SLE;

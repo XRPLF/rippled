@@ -50,6 +50,9 @@ public:
     */
 	SOTemplate ();
 
+    // VFALCO NOTE Why do we even bother with the 'private' keyword if
+    //             this function is present?
+    //
     std::vector <SOElement const*> const& peek() const
     {
         return mTypes;
@@ -64,8 +67,9 @@ public:
     int getIndex (SField::ref) const;
 
 private:
-	std::vector<SOElement const*> mTypes;
-	std::vector <int> mIndex;		// field num -> index
+	std::vector <SOElement const*> mTypes;
+
+    std::vector <int> mIndex;		// field num -> index
 };
 
 #endif

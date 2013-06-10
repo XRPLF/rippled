@@ -38,66 +38,41 @@ public:
         @note A copy of the data is created.
     */
 	HashedObject (HashedObjectType type,
-                  uint32 ledgerIndex,
+                  LedgerIndex ledgerIndex,
                   Blob const& binaryDataToCopy,
-                  uint256 const& hash)
-        : mType (type)
-        , mHash (hash)
-        , mLedgerIndex (ledgerIndex)
-        , mData (binaryDataToCopy)
-    {
-    }
+                  uint256 const& hash);
 
     /** Create from an area of memory.
 
         @note A copy of the data is created.
     */
 	HashedObject (HashedObjectType type,
-                  uint32 ledgerIndex,
+                  LedgerIndex ledgerIndex,
                   void const* bufferToCopy,
                   int bytesInBuffer,
-                  uint256 const& hash)
-        : mType (type)
-        , mHash (hash)
-        , mLedgerIndex (ledgerIndex)
-        , mData (static_cast <unsigned char const*> (bufferToCopy),
-                 static_cast <unsigned char const*> (bufferToCopy) + bytesInBuffer)
-    {
-    }
+                  uint256 const& hash);
 
     /** Retrieve the type of this object.
     */
-    HashedObjectType getType () const
-    {
-        return mType;
-    }
+    HashedObjectType getType () const;
 
     /** Retrieve the hash metadata.
     */
-    uint256 const& getHash() const
-    {
-        return mHash;
-    }
+    uint256 const& getHash() const;
 
     /** Retrieve the ledger index in which this object appears.
     */
     // VFALCO TODO rename to getLedgerIndex or getLedgerId
-    uint32 getIndex () const
-    {
-        return mLedgerIndex;
-    }
+    LedgerIndex getIndex () const;
 
     /** Retrieve the binary data.
     */
-	Blob const& getData() const
-    {
-        return mData;
-    }
+	Blob const& getData() const;
 	
 private:
 	HashedObjectType const mType;
 	uint256 const mHash;
-	uint32 const mLedgerIndex;
+	LedgerIndex const mLedgerIndex;
 	Blob const mData;
 };
 

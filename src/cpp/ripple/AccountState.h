@@ -1,31 +1,18 @@
-#ifndef __ACCOUNTSTATE__
-#define __ACCOUNTSTATE__
+#ifndef RIPPLE_ACCOUNTSTATE_H
+#define RIPPLE_ACCOUNTSTATE_H
 
 //
 // Provide abstract access to an account's state, such that access to the serialized format is hidden.
 //
-
-#include <vector>
-
-#include <boost/shared_ptr.hpp>
-
-#include "SerializedLedger.h"
 
 class AccountState
 {
 public:
 	typedef boost::shared_ptr<AccountState> pointer;
 
-private:
-	RippleAddress					mAccountID;
-	RippleAddress					mAuthorizedKey;
-	SerializedLedgerEntry::pointer	mLedgerEntry;
-
-	bool							mValid;
-
 public:
-	AccountState(const RippleAddress& naAccountID);						// For new accounts
-	AccountState(SLE::ref ledgerEntry,const RippleAddress& naAccountI);	// For accounts in a ledger
+	explicit AccountState(const RippleAddress& naAccountID); // For new accounts
+	AccountState (SLE::ref ledgerEntry,const RippleAddress& naAccountI);	// For accounts in a ledger
 
 	bool	bHaveAuthorizedKey()
 	{
@@ -49,6 +36,13 @@ public:
 	void dump();
 
 	static std::string createGravatarUrl(uint128 uEmailHash);
+
+private:
+	RippleAddress					mAccountID;
+	RippleAddress					mAuthorizedKey;
+	SerializedLedgerEntry::pointer	mLedgerEntry;
+
+	bool							mValid;
 };
 
 #endif

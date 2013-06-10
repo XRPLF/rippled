@@ -10,17 +10,17 @@ public:
     {
     }
 
-	bool addSuppression(const uint256& index);
+	bool addSuppression(uint256 const& index);
 
-	bool addSuppressionPeer(const uint256& index, uint64 peer);
-	bool addSuppressionPeer(const uint256& index, uint64 peer, int& flags);
-	bool addSuppressionFlags(const uint256& index, int flag);
-	bool setFlag(const uint256& index, int flag);
-	int getFlags(const uint256& index);
+	bool addSuppressionPeer(uint256 const& index, uint64 peer);
+	bool addSuppressionPeer(uint256 const& index, uint64 peer, int& flags);
+	bool addSuppressionFlags(uint256 const& index, int flag);
+	bool setFlag(uint256 const& index, int flag);
+	int getFlags(uint256 const& index);
 
-	HashRouterEntry getEntry(const uint256&);
+	HashRouterEntry getEntry(uint256 const& );
 
-	bool swapSet(const uint256& index, std::set<uint64>& peers, int flag);
+	bool swapSet(uint256 const& index, std::set<uint64>& peers, int flag);
 
 private:
 	boost::mutex mSuppressionMutex;
@@ -33,10 +33,10 @@ private:
 
 	int mHoldTime;
 
-	HashRouterEntry& findCreateEntry(const uint256&, bool& created);
+	HashRouterEntry& findCreateEntry(uint256 const& , bool& created);
 };
 
-HashRouterEntry& HashRouter::findCreateEntry(const uint256& index, bool& created)
+HashRouterEntry& HashRouter::findCreateEntry(uint256 const& index, bool& created)
 {
 	boost::unordered_map<uint256, HashRouterEntry>::iterator fit = mSuppressionMap.find(index);
 
@@ -54,7 +54,7 @@ HashRouterEntry& HashRouter::findCreateEntry(const uint256& index, bool& created
 	std::map< int, std::list<uint256> >::iterator it = mSuppressionTimes.begin();
 	if ((it != mSuppressionTimes.end()) && (it->first <= expireTime))
 	{
-		BOOST_FOREACH(const uint256& lit, it->second)
+		BOOST_FOREACH(uint256 const& lit, it->second)
 			mSuppressionMap.erase(lit);
 		mSuppressionTimes.erase(it);
 	}
@@ -63,7 +63,7 @@ HashRouterEntry& HashRouter::findCreateEntry(const uint256& index, bool& created
 	return mSuppressionMap.emplace(index, HashRouterEntry ()).first->second;
 }
 
-bool HashRouter::addSuppression(const uint256& index)
+bool HashRouter::addSuppression(uint256 const& index)
 {
 	boost::mutex::scoped_lock sl(mSuppressionMutex);
 
@@ -72,7 +72,7 @@ bool HashRouter::addSuppression(const uint256& index)
 	return created;
 }
 
-HashRouterEntry HashRouter::getEntry(const uint256& index)
+HashRouterEntry HashRouter::getEntry(uint256 const& index)
 {
 	boost::mutex::scoped_lock sl(mSuppressionMutex);
 
@@ -80,7 +80,7 @@ HashRouterEntry HashRouter::getEntry(const uint256& index)
 	return findCreateEntry(index, created);
 }
 
-bool HashRouter::addSuppressionPeer(const uint256& index, uint64 peer)
+bool HashRouter::addSuppressionPeer(uint256 const& index, uint64 peer)
 {
 	boost::mutex::scoped_lock sl(mSuppressionMutex);
 
@@ -89,7 +89,7 @@ bool HashRouter::addSuppressionPeer(const uint256& index, uint64 peer)
 	return created;
 }
 
-bool HashRouter::addSuppressionPeer(const uint256& index, uint64 peer, int& flags)
+bool HashRouter::addSuppressionPeer(uint256 const& index, uint64 peer, int& flags)
 {
 	boost::mutex::scoped_lock sl(mSuppressionMutex);
 
@@ -100,7 +100,7 @@ bool HashRouter::addSuppressionPeer(const uint256& index, uint64 peer, int& flag
 	return created;
 }
 
-int HashRouter::getFlags(const uint256& index)
+int HashRouter::getFlags(uint256 const& index)
 {
 	boost::mutex::scoped_lock sl(mSuppressionMutex);
 
@@ -108,7 +108,7 @@ int HashRouter::getFlags(const uint256& index)
 	return findCreateEntry(index, created).getFlags();
 }
 
-bool HashRouter::addSuppressionFlags(const uint256& index, int flag)
+bool HashRouter::addSuppressionFlags(uint256 const& index, int flag)
 {
 	boost::mutex::scoped_lock sl(mSuppressionMutex);
 
@@ -117,7 +117,7 @@ bool HashRouter::addSuppressionFlags(const uint256& index, int flag)
 	return created;
 }
 
-bool HashRouter::setFlag(const uint256& index, int flag)
+bool HashRouter::setFlag(uint256 const& index, int flag)
 { // return: true = changed, false = unchanged
 	assert(flag != 0);
 
@@ -133,7 +133,7 @@ bool HashRouter::setFlag(const uint256& index, int flag)
 	return true;
 }
 
-bool HashRouter::swapSet(const uint256& index, std::set<uint64>& peers, int flag)
+bool HashRouter::swapSet(uint256 const& index, std::set<uint64>& peers, int flag)
 {
 	boost::mutex::scoped_lock sl(mSuppressionMutex);
 

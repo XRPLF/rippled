@@ -42,8 +42,8 @@ public:
 
 	bool setNodePublic(const std::string& strPublic);
 	void setNodePublic(Blob const& vPublic);
-	bool verifyNodePublic(const uint256& hash, Blob const& vchSig) const;
-	bool verifyNodePublic(const uint256& hash, const std::string& strSig) const;
+	bool verifyNodePublic(uint256 const& hash, Blob const& vchSig) const;
+	bool verifyNodePublic(uint256 const& hash, const std::string& strSig) const;
 
 	static RippleAddress createNodePublic(const RippleAddress& naSeed);
 	static RippleAddress createNodePublic(Blob const& vPublic);
@@ -60,7 +60,7 @@ public:
 	bool setNodePrivate(const std::string& strPrivate);
 	void setNodePrivate(Blob const& vPrivate);
 	void setNodePrivate(uint256 hash256);
-	void signNodePrivate(const uint256& hash, Blob & vchSig) const;
+	void signNodePrivate(uint256 const& hash, Blob& vchSig) const;
 
 	static RippleAddress createNodePrivate(const RippleAddress& naSeed);
 
@@ -96,7 +96,7 @@ public:
 	void setAccountPublic(Blob const& vPublic);
 	void setAccountPublic(const RippleAddress& generator, int seq);
 
-	bool accountPublicVerify(const uint256& uHash, Blob const& vucSig) const;
+	bool accountPublicVerify(uint256 const& uHash, Blob const& vucSig) const;
 
 	static RippleAddress createAccountPublic(Blob const& vPublic)
 	{
@@ -126,8 +126,8 @@ public:
 	void setAccountPrivate(uint256 hash256);
 	void setAccountPrivate(const RippleAddress& naGenerator, const RippleAddress& naSeed, int seq);
 
-	bool accountPrivateSign(const uint256& uHash, Blob & vucSig) const;
-	// bool accountPrivateVerify(const uint256& uHash, Blob const& vucSig) const;
+	bool accountPrivateSign(uint256 const& uHash, Blob& vucSig) const;
+	// bool accountPrivateVerify(uint256 const& uHash, Blob const& vucSig) const;
 
 	// Encrypt a message.
 	Blob accountPrivateEncrypt(const RippleAddress& naPublicTo, Blob const& vucPlainText) const;

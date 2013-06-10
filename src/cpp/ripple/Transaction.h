@@ -1,18 +1,9 @@
-#ifndef __TRANSACTION__
-#define __TRANSACTION__
+#ifndef RIPPLE_TRANSACTION_H
+#define RIPPLE_TRANSACTION_H
 
 //
 // Transactions should be constructed in JSON with. Use STObject::parseJson to obtain a binary version.
 //
-
-#include <vector>
-
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/cstdint.hpp>
-
-#include "SHAMap.h"
-#include "SerializedTransaction.h"
 
 class Database;
 
@@ -38,20 +29,8 @@ public:
 	typedef boost::shared_ptr<Transaction> pointer;
 	typedef const pointer& ref;
 
-private:
-	uint256			mTransactionID;
-	RippleAddress	mAccountFrom;
-	RippleAddress	mFromPubKey;	// Sign transaction with this. mSignPubKey
-	RippleAddress	mSourcePrivate;	// Sign transaction with this.
-
-	uint32			mInLedger;
-	TransStatus		mStatus;
-	TER				mResult;
-
-	SerializedTransaction::pointer mTransaction;
-
 public:
-	Transaction(SerializedTransaction::ref st, bool bValidate);
+	Transaction (SerializedTransaction::ref st, bool bValidate);
 
 	static Transaction::pointer sharedTransaction(Blob const& vucTransaction, bool bValidate);
 	static Transaction::pointer transactionFromSQL(Database* db, bool bValidate);
@@ -65,38 +44,46 @@ public:
 		uint32					uSourceTag);		// User call back value.
 
 
-	bool sign(const RippleAddress& naAccountPrivate);
-	bool checkSign() const;
-	void updateID() { mTransactionID=mTransaction->getTransactionID(); }
+	bool sign (const RippleAddress& naAccountPrivate);
+
+    bool checkSign() const;
+	
+    void updateID() { mTransactionID=mTransaction->getTransactionID(); }
 
 	SerializedTransaction::ref getSTransaction()	{ return mTransaction; }
 
-	const uint256& getID() const					{ return mTransactionID; }
-	const RippleAddress& getFromAccount() const		{ return mAccountFrom; }
-	STAmount getAmount() const						{ return mTransaction->getFieldU64(sfAmount); }
-	STAmount getFee() const							{ return mTransaction->getTransactionFee(); }
-	uint32 getFromAccountSeq() const				{ return mTransaction->getSequence(); }
-	uint32 getSourceTag() const						{ return mTransaction->getFieldU32(sfSourceTag); }
-	Blob getSignature() const	{ return mTransaction->getSignature(); }
-	uint32 getLedger() const						{ return mInLedger; }
-	TransStatus getStatus() const					{ return mStatus; }
+	uint256 const& getID() const					{ return mTransactionID; }
+	
+    const RippleAddress& getFromAccount() const		{ return mAccountFrom; }
+	
+    STAmount getAmount() const						{ return mTransaction->getFieldU64(sfAmount); }
+	
+    STAmount getFee() const							{ return mTransaction->getTransactionFee(); }
+	
+    uint32 getFromAccountSeq() const				{ return mTransaction->getSequence(); }
+	
+    uint32 getSourceTag() const						{ return mTransaction->getFieldU32(sfSourceTag); }
+	
+    // VFALCO TODO Should this return a const reference?
+    Blob getSignature() const	                    { return mTransaction->getSignature(); }
+	
+    LedgerIndex getLedger() const			        { return mInLedger; }
+	
+    TransStatus getStatus() const					{ return mStatus; }
 
 	TER getResult()									{ return mResult; }
-	void setResult(TER terResult)					{ mResult = terResult; }
+	
+    void setResult(TER terResult)					{ mResult = terResult; }
 
 	void setStatus(TransStatus status, uint32 ledgerSeq);
-	void setStatus(TransStatus status) { mStatus=status; }
-	void setLedger(uint32 ledger) { mInLedger = ledger; }
+	
+    void setStatus(TransStatus status) { mStatus=status; }
+	
+    void setLedger(LedgerIndex ledger) { mInLedger = ledger; }
 
 	// database functions
 	void save();
-	static Transaction::pointer load(const uint256& id);
-
-	// conversion function
-	static bool convertToTransactions(uint32 ourLedgerSeq, uint32 otherLedgerSeq,
-		bool checkFirstTransactions, bool checkSecondTransactions, const SHAMap::SHAMapDiff& inMap,
-		std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >& outMap);
-
+	
 	bool operator<(const Transaction&) const;
 	bool operator>(const Transaction&) const;
 	bool operator==(const Transaction&) const;
@@ -104,12 +91,31 @@ public:
 	bool operator<=(const Transaction&) const;
 	bool operator>=(const Transaction&) const;
 
-	Json::Value getJson(int options, bool binary = false) const;
+    Json::Value getJson(int options, bool binary = false) const;
 
-	static bool isHexTxID(const std::string&);
+    static Transaction::pointer load(uint256 const& id);
+
+	// conversion function
+	static bool convertToTransactions(uint32 ourLedgerSeq, uint32 otherLedgerSeq,
+		bool checkFirstTransactions, bool checkSecondTransactions, const SHAMap::Delta& inMap,
+		std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >& outMap);
+
+    static bool isHexTxID(const std::string&);
 
 protected:
 	static Transaction::pointer transactionFromSQL(const std::string& statement);
+
+private:
+	uint256			mTransactionID;
+	RippleAddress	mAccountFrom;
+	RippleAddress	mFromPubKey;	// Sign transaction with this. mSignPubKey
+	RippleAddress	mSourcePrivate;	// Sign transaction with this.
+
+	LedgerIndex     mInLedger;
+	TransStatus		mStatus;
+	TER				mResult;
+
+	SerializedTransaction::pointer mTransaction;
 };
 
 #endif

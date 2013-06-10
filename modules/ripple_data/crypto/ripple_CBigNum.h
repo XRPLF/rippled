@@ -79,7 +79,7 @@ public:
 	void setint64(int64 n);
 	uint64 getuint64() const;
 	void setuint64(uint64 n);
-	void setuint256(const uint256& n);
+	void setuint256(uint256 const& n);
 	uint256 getuint256();
 	void setvch(Blob const& vch);
 	Blob getvch() const;

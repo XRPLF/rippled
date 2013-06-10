@@ -1,8 +1,4 @@
 
-#include "NetworkOPs.h"
-
-#include <boost/foreach.hpp>
-
 #include "Application.h"
 #include "Transaction.h"
 #include "HashPrefixes.h"
@@ -22,13 +18,6 @@ SETUP_LOG (NetworkOPs)
 // code assumes this node is synched (and will continue to do so until
 // there's a functional network.
 
-DECLARE_INSTANCE(InfoSub);
-
-void InfoSub::onSendEmpty()
-{
-
-}
-
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
 	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mProposing(false), mValidating(false),
 	mFeatureBlocked(false),
@@ -38,9 +27,6 @@ NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedge
 	mLastLoadBase(256), mLastLoadFactor(256)
 {
 }
-
-uint64 InfoSub::sSeq = 0;
-boost::mutex InfoSub::sSeqLock;
 
 std::string NetworkOPs::strOperatingMode()
 {
@@ -100,7 +86,7 @@ void NetworkOPs::closeTimeOffset(int offset)
 	CondLog (mCloseTimeOffset != 0, lsINFO, NetworkOPs) << "Close time offset now " << mCloseTimeOffset;
 }
 
-uint32 NetworkOPs::getLedgerID(const uint256& hash)
+uint32 NetworkOPs::getLedgerID(uint256 const& hash)
 {
 	Ledger::pointer  lrLedger	= mLedgerMaster->getLedgerByHash(hash);
 
@@ -144,7 +130,7 @@ uint32 NetworkOPs::getValidatedSeq()
 	return mLedgerMaster->getValidatedLedger()->getLedgerSeq();
 }
 
-bool NetworkOPs::isValidated(uint32 seq, const uint256& hash)
+bool NetworkOPs::isValidated(uint32 seq, uint256 const& hash)
 {
 	if (!isValidated(seq))
 		return false;
@@ -409,7 +395,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	return trans;
 }
 
-Transaction::pointer NetworkOPs::findTransactionByID(const uint256& transactionID)
+Transaction::pointer NetworkOPs::findTransactionByID(uint256 const& transactionID)
 {
 	return Transaction::load(transactionID);
 }
@@ -444,7 +430,7 @@ SLE::pointer NetworkOPs::getGenerator(Ledger::ref lrLedger, const uint160& uGene
 // <-- false : no entrieS
 STVector256 NetworkOPs::getDirNodeInfo(
 	Ledger::ref			lrLedger,
-	const uint256&		uNodeIndex,
+	uint256 const& 		uNodeIndex,
 	uint64&				uNodePrevious,
 	uint64&				uNodeNext)
 {
@@ -481,7 +467,7 @@ STVector256 NetworkOPs::getDirNodeInfo(
 // Nickname functions
 //
 
-NicknameState::pointer NetworkOPs::getNicknameState(const uint256& uLedger, const std::string& strNickname)
+NicknameState::pointer NetworkOPs::getNicknameState(uint256 const& uLedger, const std::string& strNickname)
 {
 	return mLedgerMaster->getLedgerByHash(uLedger)->getNicknameState(strNickname);
 }
@@ -508,7 +494,7 @@ Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const RippleAddre
 			STVector256					svIndexes	= sleNode->getFieldV256(sfIndexes);
 			const std::vector<uint256>&	vuiIndexes	= svIndexes.peekValue();
 
-			BOOST_FOREACH(const uint256& uDirEntry, vuiIndexes)
+			BOOST_FOREACH(uint256 const& uDirEntry, vuiIndexes)
 			{
 				SLE::pointer		sleCur		= lpLedger->getSLEi(uDirEntry);
 
@@ -825,7 +811,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringCo
 	theApp->getPeers().relayMessage(NULL, packet);
 }
 
-int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger)
+int NetworkOPs::beginConsensus(uint256 const& networkClosed, Ledger::pointer closingLedger)
 {
 	WriteLog (lsINFO, NetworkOPs) << "Consensus time for ledger " << closingLedger->getLedgerSeq();
 	WriteLog (lsINFO, NetworkOPs) << " LCL is " << closingLedger->getParentHash();
@@ -929,7 +915,7 @@ void NetworkOPs::processTrustedProposal(LedgerProposal::pointer proposal,
 		WriteLog (lsINFO, NetworkOPs) << "Not relaying trusted proposal";
 }
 
-SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
+SHAMap::pointer NetworkOPs::getTXMap(uint256 const& hash)
 {
 	std::map<uint256, std::pair<int, SHAMap::pointer> >::iterator it = mRecentPositions.find(hash);
 	if (it != mRecentPositions.end())
@@ -957,18 +943,18 @@ void NetworkOPs::takePosition(int seq, SHAMap::ref position)
 	}
 }
 
-SMAddNode NetworkOPs::gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
+SHAMapAddNode NetworkOPs::gotTXData(const boost::shared_ptr<Peer>& peer, uint256 const& hash,
 	const std::list<SHAMapNode>& nodeIDs, const std::list< Blob >& nodeData)
 {
 	if (!haveConsensusObject())
 	{
 		WriteLog (lsWARNING, NetworkOPs) << "Got TX data with no consensus object";
-		return SMAddNode();
+		return SHAMapAddNode();
 	}
 	return mConsensus->peerGaveNodes(peer, hash, nodeIDs, nodeData);
 }
 
-bool NetworkOPs::hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, ripple::TxSetStatus status)
+bool NetworkOPs::hasTXSet(const boost::shared_ptr<Peer>& peer, uint256 const& set, ripple::TxSetStatus status)
 {
 	if (!haveConsensusObject())
 	{
@@ -978,14 +964,14 @@ bool NetworkOPs::hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& se
 	return mConsensus->peerHasSet(peer, set, status);
 }
 
-bool NetworkOPs::stillNeedTXSet(const uint256& hash)
+bool NetworkOPs::stillNeedTXSet(uint256 const& hash)
 {
 	if (!mConsensus)
 		return false;
 	return mConsensus->stillNeedTXSet(hash);
 }
 
-void NetworkOPs::mapComplete(const uint256& hash, SHAMap::ref map)
+void NetworkOPs::mapComplete(uint256 const& hash, SHAMap::ref map)
 {
 	if (haveConsensusObject())
 		mConsensus->mapComplete(hash, map, true);
@@ -1392,9 +1378,9 @@ void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, SerializedTransac
 				it = mSubRTTransactions.erase(it);
 		}
 	}
-	ALTransaction alt(stTxn, terResult);
+	AcceptedLedgerTx alt(stTxn, terResult);
 	WriteLog (lsTRACE, NetworkOPs) << "pubProposed: " << alt.getJson();
-	pubAccountTransaction(lpCurrent, ALTransaction(stTxn, terResult), false);
+	pubAccountTransaction(lpCurrent, AcceptedLedgerTx(stTxn, terResult), false);
 }
 
 void NetworkOPs::pubLedger(Ledger::ref accepted)
@@ -1492,7 +1478,7 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 	return jvObj;
 }
 
-void NetworkOPs::pubValidatedTransaction(Ledger::ref alAccepted, const ALTransaction& alTx)
+void NetworkOPs::pubValidatedTransaction(Ledger::ref alAccepted, const AcceptedLedgerTx& alTx)
 {
 	Json::Value	jvObj	= transJson(*alTx.getTxn(), alTx.getResult(), true, alAccepted);
 	jvObj["meta"] = alTx.getMeta()->getJson(0);
@@ -1530,7 +1516,7 @@ void NetworkOPs::pubValidatedTransaction(Ledger::ref alAccepted, const ALTransac
 	pubAccountTransaction(alAccepted, alTx, true);
 }
 
-void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const ALTransaction& alTx, bool bAccepted)
+void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const AcceptedLedgerTx& alTx, bool bAccepted)
 {
 	boost::unordered_set<InfoSub::pointer>	notify;
 	int								iProposed	= 0;
@@ -1697,7 +1683,7 @@ bool NetworkOPs::unsubBook(uint64 uSeq,
 	return true;
 }
 
-void NetworkOPs::newLCL(int proposers, int convergeTime, const uint256& ledgerHash)
+void NetworkOPs::newLCL(int proposers, int convergeTime, uint256 const& ledgerHash)
 {
 	assert(convergeTime);
 	mLastCloseProposers = proposers;
@@ -1718,17 +1704,6 @@ void NetworkOPs::storeProposal(LedgerProposal::ref proposal, const RippleAddress
 	if (props.size() >= (unsigned)(mLastCloseProposers + 10))
 		props.pop_front();
 	props.push_back(proposal);
-}
-
-InfoSub::~InfoSub()
-{
-	NetworkOPs& ops = theApp->getOPs();
-	ops.unsubTransactions(mSeq);
-	ops.unsubRTTransactions(mSeq);
-	ops.unsubLedger(mSeq);
-	ops.unsubServer(mSeq);
-	ops.unsubAccount(mSeq, mSubAccountInfo, true);
-	ops.unsubAccount(mSeq, mSubAccountInfo, false);
 }
 
 #if 0
@@ -2095,12 +2070,12 @@ void NetworkOPs::sweepFetchPack()
 	mFetchPack.sweep();
 }
 
-void NetworkOPs::addFetchPack(const uint256& hash, boost::shared_ptr< Blob >& data)
+void NetworkOPs::addFetchPack(uint256 const& hash, boost::shared_ptr< Blob >& data)
 {
 	mFetchPack.canonicalize(hash, data, false);
 }
 
-bool NetworkOPs::getFetchPack(const uint256& hash, Blob & data)
+bool NetworkOPs::getFetchPack(uint256 const& hash, Blob& data)
 {
 	bool ret = mFetchPack.retrieve(hash, data);
 	if (!ret)

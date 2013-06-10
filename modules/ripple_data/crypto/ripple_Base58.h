@@ -48,10 +48,10 @@ public:
 	static std::string encode (Blob const& vch);
 	static std::string encodeWithCheck (Blob const& vchIn);
 
-	static bool decode (const char* psz, Blob & vchRet, const char* pAlphabet=getCurrentAlphabet ());
-	static bool decode (const std::string& str, Blob & vchRet);
-	static bool decodeWithCheck (const char* psz, Blob & vchRet, const char* pAlphabet=getCurrentAlphabet ());
-	static bool decodeWithCheck (const std::string& str, Blob & vchRet, const char* pAlphabet);
+	static bool decode (const char* psz, Blob& vchRet, const char* pAlphabet=getCurrentAlphabet ());
+	static bool decode (const std::string& str, Blob& vchRet);
+	static bool decodeWithCheck (const char* psz, Blob& vchRet, const char* pAlphabet=getCurrentAlphabet ());
+	static bool decodeWithCheck (const std::string& str, Blob& vchRet, const char* pAlphabet);
 
 private:
 	static char const* s_currentAlphabet;

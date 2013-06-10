@@ -485,26 +485,26 @@ public:
 };
 
 
-inline bool operator==(const uint256& a, uint64 b)						   { return (base_uint256)a == b; }
-inline bool operator!=(const uint256& a, uint64 b)						   { return (base_uint256)a != b; }
+inline bool operator==(uint256 const& a, uint64 b)						   { return (base_uint256)a == b; }
+inline bool operator!=(uint256 const& a, uint64 b)						   { return (base_uint256)a != b; }
 inline const uint256 operator^(const base_uint256& a, const base_uint256& b) { return uint256(a) ^= b; }
 inline const uint256 operator&(const base_uint256& a, const base_uint256& b) { return uint256(a) &= b; }
 inline const uint256 operator|(const base_uint256& a, const base_uint256& b) { return uint256(a) |= b; }
-inline bool operator==(const base_uint256& a, const uint256& b)		 { return (base_uint256)a == (base_uint256)b; }
-inline bool operator!=(const base_uint256& a, const uint256& b)		 { return (base_uint256)a != (base_uint256)b; }
-inline const uint256 operator^(const base_uint256& a, const uint256& b) { return (base_uint256)a ^  (base_uint256)b; }
-inline const uint256 operator&(const base_uint256& a, const uint256& b) { return (base_uint256)a &  (base_uint256)b; }
-inline const uint256 operator|(const base_uint256& a, const uint256& b) { return (base_uint256)a |  (base_uint256)b; }
-inline bool operator==(const uint256& a, const base_uint256& b)		 { return (base_uint256)a == (base_uint256)b; }
-inline bool operator!=(const uint256& a, const base_uint256& b)		 { return (base_uint256)a != (base_uint256)b; }
-inline const uint256 operator^(const uint256& a, const base_uint256& b) { return (base_uint256)a ^  (base_uint256)b; }
-inline const uint256 operator&(const uint256& a, const base_uint256& b) { return uint256(a) &= b; }
-inline const uint256 operator|(const uint256& a, const base_uint256& b) { return (base_uint256)a |  (base_uint256)b; }
-inline bool operator==(const uint256& a, const uint256& b)			  { return (base_uint256)a == (base_uint256)b; }
-inline bool operator!=(const uint256& a, const uint256& b)			  { return (base_uint256)a != (base_uint256)b; }
-inline const uint256 operator^(const uint256& a, const uint256& b)	  { return (base_uint256)a ^  (base_uint256)b; }
-inline const uint256 operator&(const uint256& a, const uint256& b)	  { return (base_uint256)a &  (base_uint256)b; }
-inline const uint256 operator|(const uint256& a, const uint256& b)	  { return (base_uint256)a |  (base_uint256)b; }
+inline bool operator==(const base_uint256& a, uint256 const& b)		 { return (base_uint256)a == (base_uint256)b; }
+inline bool operator!=(const base_uint256& a, uint256 const& b)		 { return (base_uint256)a != (base_uint256)b; }
+inline const uint256 operator^(const base_uint256& a, uint256 const& b) { return (base_uint256)a ^  (base_uint256)b; }
+inline const uint256 operator&(const base_uint256& a, uint256 const& b) { return (base_uint256)a &  (base_uint256)b; }
+inline const uint256 operator|(const base_uint256& a, uint256 const& b) { return (base_uint256)a |  (base_uint256)b; }
+inline bool operator==(uint256 const& a, const base_uint256& b)		 { return (base_uint256)a == (base_uint256)b; }
+inline bool operator!=(uint256 const& a, const base_uint256& b)		 { return (base_uint256)a != (base_uint256)b; }
+inline const uint256 operator^(uint256 const& a, const base_uint256& b) { return (base_uint256)a ^  (base_uint256)b; }
+inline const uint256 operator&(uint256 const& a, const base_uint256& b) { return uint256(a) &= b; }
+inline const uint256 operator|(uint256 const& a, const base_uint256& b) { return (base_uint256)a |  (base_uint256)b; }
+inline bool operator==(uint256 const& a, uint256 const& b)			  { return (base_uint256)a == (base_uint256)b; }
+inline bool operator!=(uint256 const& a, uint256 const& b)			  { return (base_uint256)a != (base_uint256)b; }
+inline const uint256 operator^(uint256 const& a, uint256 const& b)	  { return (base_uint256)a ^  (base_uint256)b; }
+inline const uint256 operator&(uint256 const& a, uint256 const& b)	  { return (base_uint256)a &  (base_uint256)b; }
+inline const uint256 operator|(uint256 const& a, uint256 const& b)	  { return (base_uint256)a |  (base_uint256)b; }
 
 template<unsigned int BITS> inline std::ostream& operator<<(std::ostream& out, const base_uint<BITS>& u)
 {
@@ -737,7 +737,7 @@ inline const std::string strHex(const uint160& ui)
 
 extern std::size_t hash_value (const uint160&);
 
-extern std::size_t hash_value (const uint256&);
+extern std::size_t hash_value (uint256 const& );
 
 #endif
 

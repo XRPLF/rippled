@@ -3,93 +3,24 @@ SETUP_LOG (LedgerAcquire)
 
 DECLARE_INSTANCE(LedgerAcquire);
 
+// VFALCO TODO replace macros
 #define LA_DEBUG
 #define LEDGER_ACQUIRE_TIMEOUT		2000	// millisecond for each ledger timeout
 #define LEDGER_TIMEOUT_COUNT		10 		// how many timeouts before we giveup
 #define LEDGER_TIMEOUT_AGGRESSIVE	6		// how many timeouts before we get aggressive
 #define TRUST_NETWORK
 
-PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterval(interval), mTimeouts(0),
-	mComplete(false), mFailed(false), mProgress(true), mAggressive(false), mTimer(theApp->getIOService())
-{
-	mLastAction = UptimeTimer::getInstance().getElapsedSeconds();
-	assert((mTimerInterval > 10) && (mTimerInterval < 30000));
-}
-
-void PeerSet::peerHas(Peer::ref ptr)
-{
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	if (!mPeers.insert(std::make_pair(ptr->getPeerId(), 0)).second)
-		return;
-	newPeer(ptr);
-}
-
-void PeerSet::badPeer(Peer::ref ptr)
-{
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	mPeers.erase(ptr->getPeerId());
-}
-
-void PeerSet::setTimer()
-{
-	mTimer.expires_from_now(boost::posix_time::milliseconds(mTimerInterval));
-	mTimer.async_wait(boost::bind(&PeerSet::TimerEntry, pmDowncast(), boost::asio::placeholders::error));
-}
-
-void PeerSet::invokeOnTimer()
-{
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	if (isDone())
-		return;
-
-	if (!mProgress)
-	{
-		++mTimeouts;
-		WriteLog (lsWARNING, LedgerAcquire) << "Timeout(" << mTimeouts << ") pc=" << mPeers.size() << " acquiring " << mHash;
-		onTimer(false);
-	}
-	else
-	{
-		mProgress = false;
-		onTimer(true);
-	}
-
-	if (!isDone())
-		setTimer();
-}
-
-void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::error_code& result)
-{
-	if (result == boost::asio::error::operation_aborted)
-		return;
-	boost::shared_ptr<PeerSet> ptr = wptr.lock();
-	if (ptr)
-	{
-		int jc = theApp->getJobQueue().getJobCountTotal(jtLEDGER_DATA);
-		if (jc > 4)
-		{
-			WriteLog (lsDEBUG, LedgerAcquire) << "Deferring PeerSet timer due to load";
-			ptr->setTimer();
-		}
-		else
-			theApp->getJobQueue().addJob(jtLEDGER_DATA, "timerEntry", BIND_TYPE(&PeerSet::TimerJobEntry, P_1, ptr));
-	}
-}
-
-void PeerSet::TimerJobEntry(Job&, boost::shared_ptr<PeerSet> ptr)
-{
-	ptr->invokeOnTimer();
-}
-
-bool PeerSet::isActive()
-{
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	return !isDone();
-}
-
-LedgerAcquire::LedgerAcquire(const uint256& hash, uint32 seq) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT),
-	mHaveBase(false), mHaveState(false), mHaveTransactions(false), mAborted(false), mSignaled(false), mAccept(false),
-	mByHash(true), mWaitCount(0), mSeq(seq)
+LedgerAcquire::LedgerAcquire (uint256 const& hash, uint32 seq)
+    : PeerSet (hash, LEDGER_ACQUIRE_TIMEOUT)
+    , mHaveBase (false)
+    , mHaveState (false)
+    , mHaveTransactions (false)
+    , mAborted (false)
+    , mSignaled (false)
+    , mAccept (false)
+    , mByHash (true)
+    , mWaitCount (0)
+    , mSeq(seq)
 {
 #ifdef LA_DEBUG
 	WriteLog (lsTRACE, LedgerAcquire) << "Acquiring ledger " << mHash;
@@ -672,7 +603,7 @@ bool LedgerAcquire::takeBase(const std::string& data) // data must not have hash
 }
 
 bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
-	const std::list< Blob >& data, SMAddNode& san)
+	const std::list< Blob >& data, SHAMapAddNode& san)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (!mHaveBase)
@@ -713,7 +644,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 }
 
 bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
-	const std::list< Blob >& data, SMAddNode& san)
+	const std::list< Blob >& data, SHAMapAddNode& san)
 {
 	WriteLog (lsTRACE, LedgerAcquire) << "got ASdata (" << nodeIDs.size() <<") acquiring ledger " << mHash;
 	CondLog (nodeIDs.size() == 1, lsTRACE, LedgerAcquire) << "got AS node: " << nodeIDs.front();
@@ -762,7 +693,7 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 	return true;
 }
 
-bool LedgerAcquire::takeAsRootNode(Blob const& data, SMAddNode& san)
+bool LedgerAcquire::takeAsRootNode(Blob const& data, SHAMapAddNode& san)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (mFailed || mHaveState)
@@ -774,7 +705,7 @@ bool LedgerAcquire::takeAsRootNode(Blob const& data, SMAddNode& san)
 		mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), data, snfWIRE, &tFilter));
 }
 
-bool LedgerAcquire::takeTxRootNode(Blob const& data, SMAddNode& san)
+bool LedgerAcquire::takeTxRootNode(Blob const& data, SHAMapAddNode& san)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (mFailed || mHaveState)
@@ -784,46 +715,6 @@ bool LedgerAcquire::takeTxRootNode(Blob const& data, SMAddNode& san)
 	TransactionStateSF tFilter(mLedger->getLedgerSeq());
 	return san.combine(
 		mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), data, snfWIRE, &tFilter));
-}
-
-LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash, uint32 seq)
-{
-	assert(hash.isNonZero());
-	boost::mutex::scoped_lock sl(mLock);
-	LedgerAcquire::pointer& ptr = mLedgers[hash];
-	if (ptr)
-	{
-		ptr->touch();
-		return ptr;
-	}
-	ptr = boost::make_shared<LedgerAcquire>(hash, seq);
-	if (!ptr->isDone())
-	{
-		ptr->addPeers();
-		ptr->setTimer(); // Cannot call in constructor
-	}
-	else
-	{
-		Ledger::pointer ledger = ptr->getLedger();
-		ledger->setClosed();
-		ledger->setImmutable();
-		theApp->getLedgerMaster().storeLedger(ledger);
-		WriteLog (lsDEBUG, LedgerAcquire) << "Acquiring ledger we already have: " << hash;
-	}
-	return ptr;
-}
-
-LedgerAcquire::pointer LedgerAcquireMaster::find(const uint256& hash)
-{
-	assert(hash.isNonZero());
-	boost::mutex::scoped_lock sl(mLock);
-	std::map<uint256, LedgerAcquire::pointer>::iterator it = mLedgers.find(hash);
-	if (it != mLedgers.end())
-	{
-		it->second->touch();
-		return it->second;
-	}
-	return LedgerAcquire::pointer();
 }
 
 std::vector<LedgerAcquire::neededHash_t> LedgerAcquire::getNeededHashes()
@@ -838,14 +729,14 @@ std::vector<LedgerAcquire::neededHash_t> LedgerAcquire::getNeededHashes()
 	{
 		AccountStateSF filter(mLedger->getLedgerSeq());
 		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(4, &filter);
-		BOOST_FOREACH(const uint256& h, v)
+		BOOST_FOREACH(uint256 const& h, v)
 			ret.push_back(std::make_pair(ripple::TMGetObjectByHash::otSTATE_NODE, h));
 	}
 	if (!mHaveTransactions)
 	{
 		TransactionStateSF filter(mLedger->getLedgerSeq());
 		std::vector<uint256> v = mLedger->getNeededAccountStateHashes(4, &filter);
-		BOOST_FOREACH(const uint256& h, v)
+		BOOST_FOREACH(uint256 const& h, v)
 			ret.push_back(std::make_pair(ripple::TMGetObjectByHash::otTRANSACTION_NODE, h));
 	}
 	return ret;
@@ -869,7 +760,7 @@ Json::Value LedgerAcquire::getJson(int)
 	{
 		Json::Value hv(Json::arrayValue);
 		std::vector<uint256> v = mLedger->peekAccountStateMap()->getNeededHashes(16, NULL);
-		BOOST_FOREACH(const uint256& h, v)
+		BOOST_FOREACH(uint256 const& h, v)
 			hv.append(h.GetHex());
 		ret["needed_state_hashes"] = hv;
 	}
@@ -877,190 +768,9 @@ Json::Value LedgerAcquire::getJson(int)
 	{
 		Json::Value hv(Json::arrayValue);
 		std::vector<uint256> v = mLedger->peekTransactionMap()->getNeededHashes(16, NULL);
-		BOOST_FOREACH(const uint256& h, v)
+		BOOST_FOREACH(uint256 const& h, v)
 			hv.append(h.GetHex());
 		ret["needed_transaction_hashes"] = hv;
 	}
 	return ret;
 }
-
-bool LedgerAcquireMaster::hasLedger(const uint256& hash)
-{
-	assert(hash.isNonZero());
-	boost::mutex::scoped_lock sl(mLock);
-	return mLedgers.find(hash) != mLedgers.end();
-}
-
-void LedgerAcquireMaster::dropLedger(const uint256& hash)
-{
-	assert(hash.isNonZero());
-	boost::mutex::scoped_lock sl(mLock);
-	mLedgers.erase(hash);
-}
-
-bool LedgerAcquireMaster::awaitLedgerData(const uint256& ledgerHash)
-{
-	LedgerAcquire::pointer ledger = find(ledgerHash);
-	if (!ledger)
-		return false;
-	ledger->awaitData();
-	return true;
-}
-
-void LedgerAcquireMaster::gotLedgerData(Job&, uint256 hash,
-	boost::shared_ptr<ripple::TMLedgerData> packet_ptr,	boost::weak_ptr<Peer> wPeer)
-{
-	ripple::TMLedgerData& packet = *packet_ptr;
-	Peer::pointer peer = wPeer.lock();
-
-	WriteLog (lsTRACE, LedgerAcquire) << "Got data (" << packet.nodes().size() << ") for acquiring ledger: " << hash;
-
-	LedgerAcquire::pointer ledger = find(hash);
-	if (!ledger)
-	{
-		WriteLog (lsTRACE, LedgerAcquire) << "Got data for ledger we're not acquiring";
-		if (peer)
-			peer->punishPeer(LT_InvalidRequest);
-		return;
-	}
-	ledger->noAwaitData();
-
-	if (!peer)
-		return;
-
-	if (packet.type() == ripple::liBASE)
-	{
-		if (packet.nodes_size() < 1)
-		{
-			WriteLog (lsWARNING, LedgerAcquire) << "Got empty base data";
-			peer->punishPeer(LT_InvalidRequest);
-			return;
-		}
-		if (!ledger->takeBase(packet.nodes(0).nodedata()))
-		{
-			WriteLog (lsWARNING, LedgerAcquire) << "Got invalid base data";
-			peer->punishPeer(LT_InvalidRequest);
-			return;
-		}
-		SMAddNode san = SMAddNode::useful();
-		if ((packet.nodes().size() > 1) && !ledger->takeAsRootNode(strCopy(packet.nodes(1).nodedata()), san))
-		{
-			WriteLog (lsWARNING, LedgerAcquire) << "Included ASbase invalid";
-		}
-		if ((packet.nodes().size() > 2) && !ledger->takeTxRootNode(strCopy(packet.nodes(2).nodedata()), san))
-		{
-			WriteLog (lsWARNING, LedgerAcquire) << "Included TXbase invalid";
-		}
-		if (!san.isInvalid())
-		{
-			ledger->progress();
-			ledger->trigger(peer);
-		}
-		else
-			WriteLog (lsDEBUG, LedgerAcquire) << "Peer sends invalid base data";
-		return;
-	}
-
-	if ((packet.type() == ripple::liTX_NODE) || (packet.type() == ripple::liAS_NODE))
-	{
-		std::list<SHAMapNode> nodeIDs;
-		std::list< Blob > nodeData;
-
-		if (packet.nodes().size() <= 0)
-		{
-			WriteLog (lsINFO, LedgerAcquire) << "Got response with no nodes";
-			peer->punishPeer(LT_InvalidRequest);
-			return;
-		}
-		for (int i = 0; i < packet.nodes().size(); ++i)
-		{
-			const ripple::TMLedgerNode& node = packet.nodes(i);
-			if (!node.has_nodeid() || !node.has_nodedata())
-			{
-				WriteLog (lsWARNING, LedgerAcquire) << "Got bad node";
-				peer->punishPeer(LT_InvalidRequest);
-				return;
-			}
-
-			nodeIDs.push_back(SHAMapNode(node.nodeid().data(), node.nodeid().size()));
-			nodeData.push_back(Blob (node.nodedata().begin(), node.nodedata().end()));
-		}
-		SMAddNode ret;
-		if (packet.type() == ripple::liTX_NODE)
-			ledger->takeTxNode(nodeIDs, nodeData, ret);
-		else
-			ledger->takeAsNode(nodeIDs, nodeData, ret);
-		if (!ret.isInvalid())
-		{
-			ledger->progress();
-			ledger->trigger(peer);
-		}
-		else
-			WriteLog (lsDEBUG, LedgerAcquire) << "Peer sends invalid node data";
-		return;
-	}
-
-	WriteLog (lsWARNING, LedgerAcquire) << "Not sure what ledger data we got";
-	peer->punishPeer(LT_InvalidRequest);
-}
-
-void LedgerAcquireMaster::sweep()
-{
-	mRecentFailures.sweep();
-
-	int now = UptimeTimer::getInstance().getElapsedSeconds();
-	boost::mutex::scoped_lock sl(mLock);
-
-	std::map<uint256, LedgerAcquire::pointer>::iterator it = mLedgers.begin();
-	while (it != mLedgers.end())
-	{
-		if (it->second->getLastAction() > now)
-		{
-			it->second->touch();
-			++it;
-		}
-		else if ((it->second->getLastAction() + 60) < now)
-			mLedgers.erase(it++);
-		else
-			++it;
-	}
-}
-
-int LedgerAcquireMaster::getFetchCount(int& timeoutCount)
-{
-	timeoutCount = 0;
-	int ret = 0;
-	{
-		typedef std::pair<uint256, LedgerAcquire::pointer> u256_acq_pair;
-		boost::mutex::scoped_lock sl(mLock);
-		BOOST_FOREACH(const u256_acq_pair& it, mLedgers)
-		{
-			if (it.second->isActive())
-			{
-				++ret;
-				timeoutCount += it.second->getTimeouts();
-			}
-		}
-	}
-	return ret;
-}
-
-void LedgerAcquireMaster::gotFetchPack(Job&)
-{
-	std::vector<LedgerAcquire::pointer> acquires;
-	{
-		boost::mutex::scoped_lock sl(mLock);
-
-		acquires.reserve(mLedgers.size());
-		typedef std::pair<uint256, LedgerAcquire::pointer> u256_acq_pair;
-		BOOST_FOREACH(const u256_acq_pair& it, mLedgers)
-			acquires.push_back(it.second);
-	}
-
-	BOOST_FOREACH(const LedgerAcquire::pointer& acquire, acquires)
-	{
-		acquire->checkLocal();
-	}
-}
-
-// vim:ts=4

@@ -1,14 +1,10 @@
-#ifndef LOADMANAGER__H
-#define LOADMANAGER__H
+#ifndef RIPPLE_LOADMANAGER_H
+#define RIPPLE_LOADMANAGER_H
 
-#include <vector>
-
-#include <boost/thread/mutex.hpp>
-
+// types of load that can be placed on the server
 // VFALCO TODO replace LT_ with loadType in constants
 enum LoadType
-{ // types of load that can be placed on the server
-
+{
 	// Bad things
 	LT_InvalidRequest,			// A request that we can immediately tell is invalid
 	LT_RequestNoReply,			// A request that we cannot satisfy
@@ -58,7 +54,7 @@ public:
 	static const int lsfOutbound	= 2; // outbound connection
 
 public:
-	LoadSource(bool admin)
+	explicit LoadSource (bool admin)
 		: mBalance(0)
 		, mFlags(admin ? lsfPrivileged : 0)
 		, mLastUpdate(UptimeTimer::getInstance().getElapsedSeconds ())
@@ -67,7 +63,7 @@ public:
 	{
 	}
 	
-	LoadSource(const std::string& name) 
+	explicit LoadSource (std::string const& name) 
 		: mName(name)
 		, mBalance(0)
 		, mFlags(0)
@@ -77,8 +73,8 @@ public:
 	{
 	}
 
-	void rename(const std::string& name)	{ mName = name; }
-	const std::string& getName()			{ return mName; }
+	void rename (std::string const & name)	{ mName = name; }
+	std::string const& getName()			{ return mName; }
 
 	bool	isPrivileged() const	{ return (mFlags & lsfPrivileged) != 0; }
 	void	setPrivileged()			{ mFlags |= lsfPrivileged; }
@@ -103,7 +99,6 @@ private:
 class LoadManager
 {
 public:
-
 	LoadManager(int creditRate = 100, int creditLimit = 500, int debitWarn = -500, int debitLimit = -1000);
 	~LoadManager();
 	void init();
@@ -130,7 +125,12 @@ public:
 	void arm()					{ mArmed = true; }
 
 private:
-	int mCreditRate;			// credits gained/lost per second
+	void canonicalize(LoadSource&, int upTime) const;
+	void addLoadCost(const LoadCost& c) { mCosts[static_cast<int>(c.mType)] = c; }
+	void threadEntry();
+
+private:
+    int mCreditRate;			// credits gained/lost per second
 	int mCreditLimit;			// the most credits a source can have
 	int mDebitWarn;				// when a source drops below this, we warn
 	int mDebitLimit;			// when a source drops below this, we cut it off (should be negative)
@@ -138,23 +138,11 @@ private:
 	bool mShutdown;
 	bool mArmed;
 
-	/*
-	int mSpace1[4];				// We want mUptime to have its own cache line
-	int mUptime;
-	int mSpace2[4];
-	*/
-
 	int mDeadLock;				// Detect server deadlocks
 
 	mutable boost::mutex mLock;
 
-	void canonicalize(LoadSource&, int upTime) const;
-
 	std::vector<LoadCost>	mCosts;
-
-	void addLoadCost(const LoadCost& c) { mCosts[static_cast<int>(c.mType)] = c; }
-
-	void threadEntry();
 };
 
 #endif

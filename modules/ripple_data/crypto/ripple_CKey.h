@@ -126,7 +126,7 @@ public:
 	static EC_KEY* GenerateRootPubKey(BIGNUM* pubGenerator);
 	static EC_KEY* GeneratePublicDeterministicKey(const RippleAddress& generator, int n);
 	static EC_KEY* GeneratePrivateDeterministicKey(const RippleAddress& family, const BIGNUM* rootPriv, int n);
-	static EC_KEY* GeneratePrivateDeterministicKey(const RippleAddress& family, const uint256& rootPriv, int n);
+	static EC_KEY* GeneratePrivateDeterministicKey(const RippleAddress& family, uint256 const& rootPriv, int n);
 
 	CKey(const uint128& passPhrase) : fSet(false)
 	{
@@ -149,7 +149,7 @@ public:
 		assert(pkey);
 	}
 
-	CKey(const uint256& privateKey) : pkey(NULL), fSet(false)
+	CKey(uint256 const& privateKey) : pkey(NULL), fSet(false)
 	{
 		// XXX Broken pkey is null.
 		SetPrivateKeyU(privateKey);
@@ -194,7 +194,7 @@ public:
 		BN_bn2bin(bn, privKey.begin() + (privKey.size() - BN_num_bytes(bn)));
 	}
 
-	bool SetPrivateKeyU(const uint256& key, bool bThrow=false)
+	bool SetPrivateKeyU(uint256 const& key, bool bThrow=false)
 	{
 		// XXX Broken if pkey is not set.
 		BIGNUM* bn			= BN_bin2bn(key.begin(), key.size(), NULL);
@@ -248,7 +248,7 @@ public:
 		return vchPubKey;
 	}
 
-	bool Sign(const uint256& hash, Blob & vchSig)
+	bool Sign(uint256 const& hash, Blob& vchSig)
 	{
 		unsigned char pchSig[10000];
 		unsigned int nSize = 0;
@@ -264,7 +264,7 @@ public:
 		return true;
 	}
 
-	bool Verify(const uint256& hash, const void *sig, size_t sigLen) const
+	bool Verify(uint256 const& hash, const void *sig, size_t sigLen) const
 	{
 		// -1 = error, 0 = bad sig, 1 = good
 		if (ECDSA_verify(0, hash.begin(), hash.size(), (const unsigned char *) sig, sigLen, pkey) != 1)
@@ -272,12 +272,12 @@ public:
 		return true;
 	}
 
-	bool Verify(const uint256& hash, Blob const& vchSig) const
+	bool Verify(uint256 const& hash, Blob const& vchSig) const
 	{
 		return Verify(hash, &vchSig[0], vchSig.size());
 	}
 
-	bool Verify(const uint256& hash, const std::string& sig) const
+	bool Verify(uint256 const& hash, const std::string& sig) const
 	{
 		return Verify(hash, sig.data(), sig.size());
 	}

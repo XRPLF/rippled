@@ -301,9 +301,9 @@ bool STVector256::isEquivalent(const SerializedType& t) const
 	return v && (mValue == v->mValue);
 }
 
-bool STVector256::hasValue(const uint256& v) const
+bool STVector256::hasValue(uint256 const& v) const
 {
-	BOOST_FOREACH(const uint256& hash, mValue)
+	BOOST_FOREACH(uint256 const& hash, mValue)
 	{
 		if (hash == v)
 			return true;

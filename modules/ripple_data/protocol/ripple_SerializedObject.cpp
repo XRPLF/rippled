@@ -62,6 +62,7 @@ UPTR_T<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, SField::
 	}
 }
 
+// VFALCO TODO Remove the 'depth' parameter
 UPTR_T<SerializedType> STObject::makeDeserializedObject(SerializedTypeID id, SField::ref name,
 	SerializerIterator& sit, int depth)
 {
@@ -184,7 +185,8 @@ bool STObject::setType(const SOTemplate &type)
 bool STObject::isValidForType()
 {
 	boost::ptr_vector<SerializedType>::iterator it = mData.begin();
-	BOOST_FOREACH(const SOElement* elem, mType->peek())
+	
+    BOOST_FOREACH(const SOElement* elem, mType->peek())
 	{
 		if (it == mData.end())
 			return false;
@@ -203,6 +205,8 @@ bool STObject::isFieldAllowed(SField::ref field)
 	return mType->getIndex(field) != -1;
 }
 
+// OLD
+/*
 bool STObject::set(SerializerIterator& sit, int depth)
 { // return true = terminated with end-of-object
 	mData.clear();
@@ -222,6 +226,51 @@ bool STObject::set(SerializerIterator& sit, int depth)
 	}
 	return false;
 }
+*/
+
+// return true = terminated with end-of-object
+bool STObject::set (SerializerIterator& sit, int depth)
+{
+    bool reachedEndOfObject = false;
+
+    // Empty the destination buffer
+    //
+    mData.clear ();
+
+    // Consume data in the pipe until we run out or reach the end
+    //
+    while (!reachedEndOfObject && !sit.empty ())
+    {
+        int type;
+        int field;
+
+        // Get the metadata for the next field
+        //
+        sit.getFieldID(type, field);
+
+        reachedEndOfObject = (type == STI_OBJECT) && (field == 1);
+
+        if (!reachedEndOfObject)
+        {
+            // Figure out the field
+            //
+            SField::ref fn = SField::getField(type, field);
+
+            if (fn.isInvalid ())
+            {
+                WriteLog (lsWARNING, STObject) << "Unknown field: field_type=" << type << ", field_name=" << field;
+                throw std::runtime_error("Unknown field");
+            }
+
+            // Unflatten the field
+            //
+            giveObject (makeDeserializedObject (fn.fieldType, fn, sit, depth + 1));
+        }
+    }
+
+    return reachedEndOfObject;
+}
+
 
 UPTR_T<SerializedType> STObject::deserialize(SerializerIterator& sit, SField::ref name)
 {
@@ -709,7 +758,7 @@ void STObject::setFieldH160(SField::ref field, const uint160& v)
 	cf->setValue(v);
 }
 
-void STObject::setFieldH256(SField::ref field, const uint256& v)
+void STObject::setFieldH256(SField::ref field, uint256 const& v)
 {
 	SerializedType* rf = getPField(field, true);
 	if (!rf) throw std::runtime_error("Field not found");

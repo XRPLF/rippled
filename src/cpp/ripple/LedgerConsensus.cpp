@@ -126,7 +126,7 @@ Json::Value LCTransaction::getJson()
 	return ret;
 }
 
-LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime)
+LedgerConsensus::LedgerConsensus(uint256 const& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime)
 		:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger),
 		mValPublic(theConfig.VALIDATION_PUB), mValPrivate(theConfig.VALIDATION_PRIV), mConsensusFail(false),
 		mCurrentMSeconds(0), mClosePercent(0), mHaveCloseTimeConsensus(false),
@@ -253,7 +253,7 @@ void LedgerConsensus::checkLCL()
 		handleLCL(netLgr);
 }
 
-void LedgerConsensus::handleLCL(const uint256& lclHash)
+void LedgerConsensus::handleLCL(uint256 const& lclHash)
 {
 	assert((lclHash != mPrevLedgerHash) || (mPreviousLedger->getHash() != lclHash));
 	if (mPrevLedgerHash != lclHash)
@@ -352,7 +352,7 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 		propose();
 }
 
-bool LedgerConsensus::stillNeedTXSet(const uint256& hash)
+bool LedgerConsensus::stillNeedTXSet(uint256 const& hash)
 {
 	if (mAcquired.find(hash) != mAcquired.end())
 		return false;
@@ -366,10 +366,10 @@ bool LedgerConsensus::stillNeedTXSet(const uint256& hash)
 
 void LedgerConsensus::createDisputes(SHAMap::ref m1, SHAMap::ref m2)
 {
-	SHAMap::SHAMapDiff differences;
+	SHAMap::Delta differences;
 	m1->compare(m2, differences, 16384);
 
-	typedef std::map<uint256, SHAMap::SHAMapDiffItem>::value_type u256_diff_pair;
+	typedef std::map<uint256, SHAMap::DeltaItem>::value_type u256_diff_pair;
 	BOOST_FOREACH (u256_diff_pair& pos, differences)
 	{ // create disputed transactions (from the ledger that has them)
 		if (pos.second.first)
@@ -387,7 +387,7 @@ void LedgerConsensus::createDisputes(SHAMap::ref m1, SHAMap::ref m2)
 	}
 }
 
-void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::ref map, bool acquired)
+void LedgerConsensus::mapComplete(uint256 const& hash, SHAMap::ref map, bool acquired)
 {
 	CondLog (acquired, lsINFO, LedgerConsensus) << "We have acquired TXS " << hash;
 
@@ -444,7 +444,7 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::ref map, bool acq
 	sendHaveTxSet(hash, true);
 }
 
-void LedgerConsensus::sendHaveTxSet(const uint256& hash, bool direct)
+void LedgerConsensus::sendHaveTxSet(uint256 const& hash, bool direct)
 {
 	ripple::TMHaveTransactionSet msg;
 	msg.set_hash(hash.begin(), 256 / 8);
@@ -746,7 +746,7 @@ bool LedgerConsensus::haveConsensus(bool forReal)
 		mPreviousMSeconds, mCurrentMSeconds, forReal, mConsensusFail);
 }
 
-SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool doAcquire)
+SHAMap::pointer LedgerConsensus::getTransactionTree(uint256 const& hash, bool doAcquire)
 {
 	boost::unordered_map<uint256, SHAMap::pointer>::iterator it = mAcquired.find(hash);
 	if (it != mAcquired.end())
@@ -832,7 +832,7 @@ void LedgerConsensus::propose()
 		boost::make_shared<PackedMessage>(prop, ripple::mtPROPOSE_LEDGER));
 }
 
-void LedgerConsensus::addDisputedTransaction(const uint256& txID, Blob const& tx)
+void LedgerConsensus::addDisputedTransaction(uint256 const& txID, Blob const& tx)
 {
 	if (mDisputes.find(txID) != mDisputes.end())
 		return;
@@ -924,7 +924,7 @@ bool LedgerConsensus::peerPosition(LedgerProposal::ref newPosition)
 	return true;
 }
 
-bool LedgerConsensus::peerHasSet(Peer::ref peer, const uint256& hashSet, ripple::TxSetStatus status)
+bool LedgerConsensus::peerHasSet(Peer::ref peer, uint256 const& hashSet, ripple::TxSetStatus status)
 {
 	if (status != ripple::tsHAVE) // Indirect requests are for future support
 		return true;
@@ -944,14 +944,14 @@ bool LedgerConsensus::peerHasSet(Peer::ref peer, const uint256& hashSet, ripple:
 	return true;
 }
 
-SMAddNode LedgerConsensus::peerGaveNodes(Peer::ref peer, const uint256& setHash,
+SHAMapAddNode LedgerConsensus::peerGaveNodes(Peer::ref peer, uint256 const& setHash,
 	const std::list<SHAMapNode>& nodeIDs, const std::list< Blob >& nodeData)
 {
 	boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(setHash);
 	if (acq == mAcquiring.end())
 	{
 		WriteLog (lsDEBUG, LedgerConsensus) << "Got TX data for set no longer acquiring: " << setHash;
-		return SMAddNode();
+		return SHAMapAddNode();
 	}
 	TransactionAcquire::pointer set = acq->second; // We must keep the set around during the function
 	return set->takeNodes(nodeIDs, nodeData, peer);
@@ -1185,8 +1185,8 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 	applyTransactions(set, newLCL, newLCL, failedTransactions, false);
 	newLCL->updateSkipList();
 	newLCL->setClosed();
-	boost::shared_ptr<SHAMap::SHADirtyMap> acctNodes = newLCL->peekAccountStateMap()->disarmDirty();
-	boost::shared_ptr<SHAMap::SHADirtyMap> txnNodes = newLCL->peekTransactionMap()->disarmDirty();
+	boost::shared_ptr<SHAMap::DirtyMap> acctNodes = newLCL->peekAccountStateMap()->disarmDirty();
+	boost::shared_ptr<SHAMap::DirtyMap> txnNodes = newLCL->peekTransactionMap()->disarmDirty();
 
 	// write out dirty nodes (temporarily done here) Most come before setAccepted
 	int fc;

@@ -46,8 +46,8 @@ const int ProofOfWork::sMaxDifficulty(30);
 
 ProofOfWork::ProofOfWork (const std::string& token,
                          int iterations,
-                         const uint256& challenge,
-                         const uint256& target)
+                         uint256 const& challenge,
+                         uint256 const& target)
     : mToken (token)
     , mChallenge (challenge)
     , mTarget (target)
@@ -76,7 +76,7 @@ bool ProofOfWork::isValid() const
 	return false;
 }
 
-uint64 ProofOfWork::getDifficulty(const uint256& target, int iterations)
+uint64 ProofOfWork::getDifficulty(uint256 const& target, int iterations)
 { // calculate the approximate number of hashes required to solve this proof of work
 	if ((iterations > sMaxIterations) || (target < sMinTarget))
 	{
@@ -141,7 +141,7 @@ uint256 ProofOfWork::solve(int maxIterations) const
 	return uint256();
 }
 
-bool ProofOfWork::checkSolution(const uint256& solution) const
+bool ProofOfWork::checkSolution(uint256 const& solution) const
 {
 	if (mIterations > sMaxIterations)
 		return false;

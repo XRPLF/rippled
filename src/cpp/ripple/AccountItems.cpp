@@ -21,7 +21,7 @@ void AccountItems::fillItems(const uint160& accountID, Ledger::ref ledger)
 		SLE::pointer ownerDir	= ledger->getDirNode(currentIndex);
 		if (!ownerDir) return;
 
-		BOOST_FOREACH(const uint256& uNode, ownerDir->getFieldV256(sfIndexes).peekValue())
+		BOOST_FOREACH(uint256 const& uNode, ownerDir->getFieldV256(sfIndexes).peekValue())
 		{
 			SLE::pointer sleCur	= ledger->getSLEi(uNode);
 

@@ -9,7 +9,7 @@ DECLARE_INSTANCE(LedgerEntrySet)
 
 #define DIR_NODE_MAX		32
 
-void LedgerEntrySet::init(Ledger::ref ledger, const uint256& transactionID,
+void LedgerEntrySet::init(Ledger::ref ledger, uint256 const& transactionID,
 	uint32 ledgerID, TransactionEngineParams params)
 {
 	mEntries.clear();
@@ -50,7 +50,7 @@ void LedgerEntrySet::swapWith(LedgerEntrySet& e)
 
 // Find an entry in the set.  If it has the wrong sequence number, copy it and update the sequence number.
 // This is basically: copy-on-read.
-SLE::pointer LedgerEntrySet::getEntry(const uint256& index, LedgerEntryAction& action)
+SLE::pointer LedgerEntrySet::getEntry(uint256 const& index, LedgerEntryAction& action)
 {
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(index);
 	if (it == mEntries.end())
@@ -68,7 +68,7 @@ SLE::pointer LedgerEntrySet::getEntry(const uint256& index, LedgerEntryAction& a
 	return it->second.mEntry;
 }
 
-SLE::pointer LedgerEntrySet::entryCreate(LedgerEntryType letType, const uint256& index)
+SLE::pointer LedgerEntrySet::entryCreate(LedgerEntryType letType, uint256 const& index)
 {
 	assert(index.isNonZero());
 	SLE::pointer sleNew = boost::make_shared<SLE>(letType, index);
@@ -76,7 +76,7 @@ SLE::pointer LedgerEntrySet::entryCreate(LedgerEntryType letType, const uint256&
 	return sleNew;
 }
 
-SLE::pointer LedgerEntrySet::entryCache(LedgerEntryType letType, const uint256& index)
+SLE::pointer LedgerEntrySet::entryCache(LedgerEntryType letType, uint256 const& index)
 {
 	assert(mLedger);
 	SLE::pointer sleEntry;
@@ -97,7 +97,7 @@ SLE::pointer LedgerEntrySet::entryCache(LedgerEntryType letType, const uint256& 
 	return sleEntry;
 }
 
-LedgerEntryAction LedgerEntrySet::hasEntry(const uint256& index) const
+LedgerEntryAction LedgerEntrySet::hasEntry(uint256 const& index) const
 {
 	std::map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.find(index);
 	if (it == mEntries.end())
@@ -288,7 +288,7 @@ Json::Value LedgerEntrySet::getJson(int) const
 	return ret;
 }
 
-SLE::pointer LedgerEntrySet::getForMod(const uint256& node, Ledger::ref ledger,
+SLE::pointer LedgerEntrySet::getForMod(uint256 const& node, Ledger::ref ledger,
 	boost::unordered_map<uint256, SLE::pointer>& newMods)
 {
 	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(node);
@@ -506,7 +506,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result, uint32 index)
 	WriteLog (lsTRACE, LedgerEntrySet) << "Metadata:" << mSet.getJson(0);
 }
 
-TER LedgerEntrySet::dirCount(const uint256& uRootIndex, uint32& uCount)
+TER LedgerEntrySet::dirCount(uint256 const& uRootIndex, uint32& uCount)
 {
 	uint64	uNodeDir	= 0;
 
@@ -542,8 +542,8 @@ TER LedgerEntrySet::dirCount(const uint256& uRootIndex, uint32& uCount)
 // Within a node with no deletions order of elements is sequential.  Otherwise, order of elements is random.
 TER LedgerEntrySet::dirAdd(
 	uint64&								uNodeDir,
-	const uint256&						uRootIndex,
-	const uint256&						uLedgerIndex,
+	uint256 const& 						uRootIndex,
+	uint256 const& 						uLedgerIndex,
 	FUNCTION_TYPE<void (SLE::ref)>		fDescriber)
 {
 	WriteLog (lsTRACE, LedgerEntrySet) << boost::str(boost::format("dirAdd: uRootIndex=%s uLedgerIndex=%s")
@@ -642,8 +642,8 @@ TER LedgerEntrySet::dirAdd(
 TER LedgerEntrySet::dirDelete(
 	const bool						bKeepRoot,		// --> True, if we never completely clean up, after we overflow the root node.
 	const uint64&					uNodeDir,		// --> Node containing entry.
-	const uint256&					uRootIndex,		// --> The index of the base of the directory.  Nodes are based off of this.
-	const uint256&					uLedgerIndex,	// --> Value to remove from directory.
+	uint256 const& 					uRootIndex,		// --> The index of the base of the directory.  Nodes are based off of this.
+	uint256 const& 					uLedgerIndex,	// --> Value to remove from directory.
 	const bool						bStable,		// --> True, not to change relative order of entries.
 	const bool						bSoft)			// --> True, uNodeDir is not hard and fast (pass uNodeDir=0).
 {
@@ -847,7 +847,7 @@ TER LedgerEntrySet::dirDelete(
 // Return the first entry and advance uDirEntry.
 // <-- true, if had a next entry.
 bool LedgerEntrySet::dirFirst(
-	const uint256& uRootIndex,	// --> Root of directory.
+	uint256 const& uRootIndex,	// --> Root of directory.
 	SLE::pointer& sleNode,		// <-- current node
 	unsigned int& uDirEntry,	// <-- next entry
 	uint256& uEntryIndex)		// <-- The entry, if available. Otherwise, zero.
@@ -863,7 +863,7 @@ bool LedgerEntrySet::dirFirst(
 // Return the current entry and advance uDirEntry.
 // <-- true, if had a next entry.
 bool LedgerEntrySet::dirNext(
-	const uint256& uRootIndex,	// --> Root of directory
+	uint256 const& uRootIndex,	// --> Root of directory
 	SLE::pointer& sleNode,		// <-> current node
 	unsigned int& uDirEntry,	// <-> next entry
 	uint256& uEntryIndex)		// <-- The entry, if available. Otherwise, zero.
@@ -896,7 +896,7 @@ bool LedgerEntrySet::dirNext(
 	return true;
 }
 
-uint256 LedgerEntrySet::getNextLedgerIndex(const uint256& uHash)
+uint256 LedgerEntrySet::getNextLedgerIndex(uint256 const& uHash)
 {
 	// find next node in ledger that isn't deleted by LES
 	uint256 ledgerNext = uHash;
@@ -921,7 +921,7 @@ uint256 LedgerEntrySet::getNextLedgerIndex(const uint256& uHash)
 	return ledgerNext;
 }
 
-uint256 LedgerEntrySet::getNextLedgerIndex(const uint256& uHash, const uint256& uEnd)
+uint256 LedgerEntrySet::getNextLedgerIndex(uint256 const& uHash, uint256 const& uEnd)
 {
 	uint256 next = getNextLedgerIndex(uHash);
 	if (next > uEnd)
@@ -953,7 +953,7 @@ void LedgerEntrySet::ownerCountAdjust(const uint160& uOwnerID, int iAmount, SLE:
 	}
 }
 
-TER LedgerEntrySet::offerDelete(SLE::ref sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID)
+TER LedgerEntrySet::offerDelete(SLE::ref sleOffer, uint256 const& uOfferIndex, const uint160& uOwnerID)
 {
 	bool	bOwnerNode	= sleOffer->isFieldPresent(sfOwnerNode);	// Detect legacy dirs.
 	uint64	uOwnerNode	= sleOffer->getFieldU64(sfOwnerNode);
@@ -975,7 +975,7 @@ TER LedgerEntrySet::offerDelete(SLE::ref sleOffer, const uint256& uOfferIndex, c
 	return terResult;
 }
 
-TER LedgerEntrySet::offerDelete(const uint256& uOfferIndex)
+TER LedgerEntrySet::offerDelete(uint256 const& uOfferIndex)
 {
 	SLE::pointer	sleOffer	= entryCache(ltOFFER, uOfferIndex);
 	if (!sleOffer)
@@ -1241,7 +1241,7 @@ TER LedgerEntrySet::trustCreate(
 	const bool		bSrcHigh,
 	const uint160&	uSrcAccountID,
 	const uint160&	uDstAccountID,
-	const uint256&	uIndex,				// --> ripple state entry
+	uint256 const& 	uIndex,				// --> ripple state entry
 	SLE::ref		sleAccount,			// --> the account being set.
 	const bool		bAuth,				// --> authorize account.
 	const STAmount& saBalance,			// --> balance of account being set. Issuer should be ACCOUNT_ONE

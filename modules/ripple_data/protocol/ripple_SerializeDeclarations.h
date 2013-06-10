@@ -1,6 +1,15 @@
 // This is not really a header file, but it can be used as one with
 // appropriate #define statements.
 
+/*
+    Common type common field - 1 byte
+    Common type uncommon field - 2 bytes
+    ...
+
+    Rarity of fields determines the number of bytes.
+    This is done to reduce the average size of the messages.
+*/
+
 	// types (common)
 	TYPE(Int16,				UINT16,		1)
 	TYPE(Int32,				UINT32,		2)

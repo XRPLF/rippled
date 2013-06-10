@@ -2,16 +2,8 @@
 #ifndef RIPPLE_SQLITEDATABASE_H
 #define RIPPLE_SQLITEDATABASE_H
 
-#include "database.h"
-
-#include <string>
-#include <set>
-
-#include <boost/thread/mutex.hpp>
-
 struct sqlite3;
 struct sqlite3_stmt;
-
 
 class SqliteDatabase : public Database
 {

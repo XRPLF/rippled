@@ -44,7 +44,7 @@ public:
 	Interpreter();
 
 	// returns a TransactionEngineResult
-	TER interpret(Contract* contract,const SerializedTransaction& txn,Blob & code);
+	TER interpret(Contract* contract,const SerializedTransaction& txn,Blob& code);
 
 	void stop();
 

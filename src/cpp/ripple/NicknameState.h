@@ -1,5 +1,5 @@
-#ifndef NICKNAMESTATE_H
-#define NICKNAMESTATE_H
+#ifndef RIPPLE_NICKNAMESTATE_H
+#define RIPPLE_NICKNAMESTATE_H
 
 //
 // State of a nickname node.
@@ -10,9 +10,6 @@ class NicknameState
 {
 public:
 	typedef boost::shared_ptr<NicknameState> pointer;
-
-private:
-	SerializedLedgerEntry::pointer	mLedgerEntry;
 
 public:
 	NicknameState(SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
@@ -27,6 +24,9 @@ public:
 
 	Blob getRaw() const;
 	void addJson(Json::Value& value);
+
+private:
+	SerializedLedgerEntry::pointer	mLedgerEntry;
 };
 
 #endif

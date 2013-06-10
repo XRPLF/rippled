@@ -1,12 +1,4 @@
 
-/*
-#include "HashedObject.h"
-#include "leveldb/db.h"
-#include "leveldb/write_batch.h"
-#include "../database/SqliteDatabase.h"
-#include "Application.h"
-*/
-
 HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
 	mCache("HashedObjectStore", cacheSize, cacheAge), mNegativeCache("HashedObjectNegativeCache", 0, 120),
 	mWriteGeneration(0), mWriteLoad(0), mWritePending(false), mLevelDB(false), mEphemeralDB(false)
@@ -47,7 +39,7 @@ int HashedObjectStore::getWriteLoad()
 }
 
 // low-level retrieve
-HashedObject::pointer HashedObjectStore::LLRetrieve(const uint256& hash, leveldb::DB* db)
+HashedObject::pointer HashedObjectStore::LLRetrieve(uint256 const& hash, leveldb::DB* db)
 {
 	std::string sData;
 
@@ -118,7 +110,7 @@ void HashedObjectStore::LLWrite(const std::vector< boost::shared_ptr<HashedObjec
 }
 
 bool HashedObjectStore::storeLevelDB(HashedObjectType type, uint32 index,
-	Blob const& data, const uint256& hash)
+	Blob const& data, uint256 const& hash)
 { // return: false = already in cache, true = added to cache
 	if (!theApp->getHashNodeLDB())
 		return true;
@@ -178,7 +170,7 @@ void HashedObjectStore::bulkWriteLevelDB(Job &)
 	}
 }
 
-HashedObject::pointer HashedObjectStore::retrieveLevelDB(const uint256& hash)
+HashedObject::pointer HashedObjectStore::retrieveLevelDB(uint256 const& hash)
 {
 	HashedObject::pointer obj = mCache.fetch(hash);
 	if (obj || mNegativeCache.isPresent(hash) || !theApp || !theApp->getHashNodeLDB())
@@ -214,7 +206,7 @@ HashedObject::pointer HashedObjectStore::retrieveLevelDB(const uint256& hash)
 }
 
 bool HashedObjectStore::storeSQLite(HashedObjectType type, uint32 index,
-	Blob const& data, const uint256& hash)
+	Blob const& data, uint256 const& hash)
 { // return: false = already in cache, true = added to cache
 	if (!theApp->getHashNodeDB())
 	{
@@ -351,7 +343,7 @@ void HashedObjectStore::bulkWriteSQLite(Job&)
 	}
 }
 
-HashedObject::pointer HashedObjectStore::retrieveSQLite(const uint256& hash)
+HashedObject::pointer HashedObjectStore::retrieveSQLite(uint256 const& hash)
 {
 	HashedObject::pointer obj = mCache.fetch(hash);
 	if (obj)

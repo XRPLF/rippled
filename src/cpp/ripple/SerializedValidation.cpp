@@ -15,7 +15,7 @@ SerializedValidation::SerializedValidation (SerializerIterator& sit, bool checkS
 }
 
 SerializedValidation::SerializedValidation (
-    const uint256& ledgerHash, uint32 signTime,
+    uint256 const& ledgerHash, uint32 signTime,
     const RippleAddress& raPub, bool isFull)
     : STObject (getFormat (), sfValidation)
     , mTrusted (false)
@@ -70,7 +70,7 @@ bool SerializedValidation::isValid() const
     return isValid(getSigningHash());
 }
 
-bool SerializedValidation::isValid(const uint256& signingHash) const
+bool SerializedValidation::isValid(uint256 const& signingHash) const
 {
     try
     {

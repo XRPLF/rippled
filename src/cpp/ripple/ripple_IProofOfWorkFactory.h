@@ -29,7 +29,7 @@ public:
 
 	virtual ProofOfWork getProof () = 0;
 	
-    virtual POWResult checkProof (const std::string& token, const uint256& solution) = 0;
+    virtual POWResult checkProof (const std::string& token, uint256 const& solution) = 0;
 	
     virtual uint64 getDifficulty() = 0;
 
@@ -41,12 +41,12 @@ public:
 	
     virtual void sweep () = 0;
 
-	virtual const uint256& getSecret () const = 0;
+	virtual uint256 const& getSecret () const = 0;
 
-	virtual void setSecret (const uint256& secret) = 0;
+	virtual void setSecret (uint256 const& secret) = 0;
 
 public:
-	static int getPowEntry (const uint256& target, int iterations);
+	static int getPowEntry (uint256 const& target, int iterations);
 };
 
 #endif

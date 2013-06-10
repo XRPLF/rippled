@@ -8,7 +8,7 @@ typedef std::map<uint256, LCTransaction::pointer>::value_type u256_lct_pair;
 
 DECLARE_INSTANCE(TransactionAcquire);
 
-TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, TX_ACQUIRE_TIMEOUT), mHaveRoot(false)
+TransactionAcquire::TransactionAcquire(uint256 const& hash) : PeerSet(hash, TX_ACQUIRE_TIMEOUT), mHaveRoot(false)
 {
 	mMap = boost::make_shared<SHAMap>(smtTRANSACTION, hash);
 }
@@ -131,23 +131,23 @@ void TransactionAcquire::trigger(Peer::ref peer)
 	}
 }
 
-SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
+SHAMapAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 	const std::list< Blob >& data, Peer::ref peer)
 {
 	if (mComplete)
 	{
 		WriteLog (lsTRACE, TransactionAcquire) << "TX set complete";
-		return SMAddNode();
+		return SHAMapAddNode();
 	}
 	if (mFailed)
 	{
 		WriteLog (lsTRACE, TransactionAcquire) << "TX set failed";
-		return SMAddNode();
+		return SHAMapAddNode();
 	}
 	try
 	{
 		if (nodeIDs.empty())
-			return SMAddNode::invalid();
+			return SHAMapAddNode::invalid();
 		std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
 		std::list< Blob >::const_iterator nodeDatait = data.begin();
 		ConsensusTransSetSF sf;
@@ -158,12 +158,12 @@ SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 				if (mHaveRoot)
 				{
 					WriteLog (lsWARNING, TransactionAcquire) << "Got root TXS node, already have it";
-					return SMAddNode();
+					return SHAMapAddNode();
 				}
 				if (!mMap->addRootNode(getHash(), *nodeDatait, snfWIRE, NULL))
 				{
 					WriteLog (lsWARNING, TransactionAcquire) << "TX acquire got bad root node";
-					return SMAddNode::invalid();
+					return SHAMapAddNode::invalid();
 				}
 				else
 					mHaveRoot = true;
@@ -171,64 +171,18 @@ SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 			else if (!mMap->addKnownNode(*nodeIDit, *nodeDatait, &sf))
 			{
 				WriteLog (lsWARNING, TransactionAcquire) << "TX acquire got bad non-root node";
-				return SMAddNode::invalid();
+				return SHAMapAddNode::invalid();
 			}
 			++nodeIDit;
 			++nodeDatait;
 		}
 		trigger(peer);
 		progress();
-		return SMAddNode::useful();
+		return SHAMapAddNode::useful();
 	}
 	catch (...)
 	{
 		WriteLog (lsERROR, TransactionAcquire) << "Peer sends us junky transaction node data";
-		return SMAddNode::invalid();
+		return SHAMapAddNode::invalid();
 	}
-}
-
-void ConsensusTransSetSF::gotNode(bool fromFilter, const SHAMapNode& id, const uint256& nodeHash,
-	Blob const& nodeData, SHAMapTreeNode::TNType type)
-{
-	if (fromFilter)
-		return;
-	theApp->getTempNodeCache().store(nodeHash, nodeData);
-	if ((type == SHAMapTreeNode::tnTRANSACTION_NM) && (nodeData.size() > 16))
-	{ // this is a transaction, and we didn't have it
-		WriteLog (lsDEBUG, TransactionAcquire) << "Node on our acquiring TX set is TXN we don't have";
-		try
-		{
-			Serializer s(nodeData.begin() + 4, nodeData.end()); // skip prefix
-			SerializerIterator sit(s);
-			SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction>(boost::ref(sit));
-			assert(stx->getTransactionID() == nodeHash);
-			theApp->getJobQueue().addJob(jtTRANSACTION, "TXS->TXN",
-				BIND_TYPE(&NetworkOPs::submitTransaction, &theApp->getOPs(), P_1, stx, NetworkOPs::stCallback()));
-		}
-		catch (...)
-		{
-			WriteLog (lsWARNING, TransactionAcquire) << "Fetched invalid transaction in proposed set";
-		}
-	}
-}
-
-bool ConsensusTransSetSF::haveNode(const SHAMapNode& id, const uint256& nodeHash,
-	Blob & nodeData)
-{
-	if (theApp->getTempNodeCache().retrieve(nodeHash, nodeData))
-		return true;
-
-	Transaction::pointer txn = Transaction::load(nodeHash);
-	if (txn)
-	{ // this is a transaction, and we have it
-		WriteLog (lsDEBUG, TransactionAcquire) << "Node in our acquiring TX set is TXN we have";
-		Serializer s;
-		s.add32(sHP_TransactionID);
-		txn->getSTransaction()->add(s, true);
-		assert(s.getSHA512Half() == nodeHash);
-		nodeData = s.peekData();
-		return true;
-	}
-
-	return false;
 }

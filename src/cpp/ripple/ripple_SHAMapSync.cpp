@@ -1,13 +1,5 @@
 
-#include "SHAMap.h"
-
-#include <stack>
-#include <iostream>
-
-#include <boost/make_shared.hpp>
-#include <boost/test/unit_test.hpp>
-
-#include <openssl/rand.h>
+// VFALCO TODO tidy up this global
 
 static const uint256 uZero;
 
@@ -47,7 +39,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 			int branch = (base + ii) % 16;
 			if (!node->isEmptyBranch(branch))
 			{
-				const uint256& childHash = node->getChildHash(branch);
+				uint256 const& childHash = node->getChildHash(branch);
 				if (!fullBelowCache.isPresent(childHash))
 				{
 					SHAMapNode childID = node->getChildNodeID(branch);
@@ -114,7 +106,7 @@ std::vector<uint256> SHAMap::getNeededHashes(int max, SHAMapSyncFilter* filter)
 			int branch = (base + ii) % 16;
 			if (!node->isEmptyBranch(branch))
 			{
-				const uint256& childHash = node->getChildHash(branch);
+				uint256 const& childHash = node->getChildHash(branch);
 				if (!fullBelowCache.isPresent(childHash))
 				{
 					SHAMapNode childID = node->getChildNodeID(branch);
@@ -203,7 +195,7 @@ bool SHAMap::getRootNode(Serializer& s, SHANodeFormat format)
 	return true;
 }
 
-SMAddNode SHAMap::addRootNode(Blob const& rootNode, SHANodeFormat format,
+SHAMapAddNode SHAMap::addRootNode(Blob const& rootNode, SHANodeFormat format,
 	SHAMapSyncFilter* filter)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
@@ -212,14 +204,14 @@ SMAddNode SHAMap::addRootNode(Blob const& rootNode, SHANodeFormat format,
 	if (root->getNodeHash().isNonZero())
 	{
 		WriteLog (lsTRACE, SHAMap) << "got root node, already have one";
-		return SMAddNode::okay();
+		return SHAMapAddNode::okay();
 	}
 
 	assert(mSeq >= 1);
 	SHAMapTreeNode::pointer node =
 		boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, mSeq - 1, format, uZero, false);
 	if (!node)
-		return SMAddNode::invalid();
+		return SHAMapAddNode::invalid();
 
 #ifdef DEBUG
 	node->dump();
@@ -239,10 +231,10 @@ SMAddNode SHAMap::addRootNode(Blob const& rootNode, SHANodeFormat format,
 		filter->gotNode(false, *root, root->getNodeHash(), s.peekData(), root->getType());
 	}
 
-	return SMAddNode::useful();
+	return SHAMapAddNode::useful();
 }
 
-SMAddNode SHAMap::addRootNode(const uint256& hash, Blob const& rootNode, SHANodeFormat format,
+SHAMapAddNode SHAMap::addRootNode(uint256 const& hash, Blob const& rootNode, SHANodeFormat format,
 	SHAMapSyncFilter* filter)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
@@ -252,14 +244,14 @@ SMAddNode SHAMap::addRootNode(const uint256& hash, Blob const& rootNode, SHANode
 	{
 		WriteLog (lsTRACE, SHAMap) << "got root node, already have one";
 		assert(root->getNodeHash() == hash);
-		return SMAddNode::okay();
+		return SHAMapAddNode::okay();
 	}
 
 	assert(mSeq >= 1);
 	SHAMapTreeNode::pointer node =
 		boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, mSeq - 1, format, uZero, false);
 	if (!node || node->getNodeHash() != hash)
-		return SMAddNode::invalid();
+		return SHAMapAddNode::invalid();
 
 	root = node;
 	mTNByID[*root] = root;
@@ -275,23 +267,23 @@ SMAddNode SHAMap::addRootNode(const uint256& hash, Blob const& rootNode, SHANode
 		filter->gotNode(false, *root, root->getNodeHash(), s.peekData(), root->getType());
 	}
 
-	return SMAddNode::useful();
+	return SHAMapAddNode::useful();
 }
 
-SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, Blob const& rawNode,
+SHAMapAddNode SHAMap::addKnownNode(const SHAMapNode& node, Blob const& rawNode,
 	SHAMapSyncFilter* filter)
 { // return value: true=okay, false=error
 	assert(!node.isRoot());
 	if (!isSynching())
 	{
 		WriteLog (lsTRACE, SHAMap) << "AddKnownNode while not synching";
-		return SMAddNode::okay();
+		return SHAMapAddNode::okay();
 	}
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	if (checkCacheNode(node)) // Do we already have this node?
-		return SMAddNode::okay();
+		return SHAMapAddNode::okay();
 
 	SHAMapTreeNode* iNode = root.get();
 	while (!iNode->isLeaf() && !iNode->isFullBelow() && (iNode->getDepth() < node.getDepth()))
@@ -302,10 +294,10 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, Blob const& rawNode,
 		if (iNode->isEmptyBranch(branch))
 		{
 			WriteLog (lsWARNING, SHAMap) << "Add known node for empty branch" << node;
-			return SMAddNode::invalid();
+			return SHAMapAddNode::invalid();
 		}
 		if (fullBelowCache.isPresent(iNode->getChildHash(branch)))
-			return SMAddNode::okay();
+			return SHAMapAddNode::okay();
 
 		try
 		{
@@ -318,7 +310,7 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, Blob const& rawNode,
 				WriteLog (lsWARNING, SHAMap) << "unable to hook node " << node;
 				WriteLog (lsINFO, SHAMap) << " stuck at " << *iNode;
 				WriteLog (lsINFO, SHAMap) << "got depth=" << node.getDepth() << ", walked to= " << iNode->getDepth();
-				return SMAddNode::invalid();
+				return SHAMapAddNode::invalid();
 			}
 
 			SHAMapTreeNode::pointer newNode =
@@ -326,7 +318,7 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, Blob const& rawNode,
 			if (iNode->getChildHash(branch) != newNode->getNodeHash())
 			{
 				WriteLog (lsWARNING, SHAMap) << "Corrupt node recevied";
-				return SMAddNode::invalid();
+				return SHAMapAddNode::invalid();
 			}
 
 			if (filter)
@@ -336,12 +328,12 @@ SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, Blob const& rawNode,
 				filter->gotNode(false, node, iNode->getChildHash(branch), s.peekData(), newNode->getType());
 			}
 			mTNByID[node] = newNode;
-			return SMAddNode::useful();
+			return SHAMapAddNode::useful();
 		}
 	}
 
 	WriteLog (lsTRACE, SHAMap) << "got node, already had it (late)";
-	return SMAddNode::okay();
+	return SHAMapAddNode::okay();
 }
 
 bool SHAMap::deepCompare(SHAMap& other)
@@ -406,7 +398,7 @@ bool SHAMap::deepCompare(SHAMap& other)
 	return true;
 }
 
-bool SHAMap::hasInnerNode(const SHAMapNode& nodeID, const uint256& nodeHash)
+bool SHAMap::hasInnerNode(const SHAMapNode& nodeID, uint256 const& nodeHash)
 {
 	SHAMapTreeNode* node = root.get();
 	while (node->isInner() && (node->getDepth() < nodeID.getDepth()))
@@ -419,7 +411,7 @@ bool SHAMap::hasInnerNode(const SHAMapNode& nodeID, const uint256& nodeHash)
 	return node->getNodeHash() == nodeHash;
 }
 
-bool SHAMap::hasLeafNode(const uint256& tag, const uint256& nodeHash)
+bool SHAMap::hasLeafNode(uint256 const& tag, uint256 const& nodeHash)
 {
 	SHAMapTreeNode* node = root.get();
 	while (node->isInner())
@@ -489,7 +481,7 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool incl
 		{
 			if (!node->isEmptyBranch(i))
 			{
-				const uint256& childHash = node->getChildHash(i);
+				uint256 const& childHash = node->getChildHash(i);
 				SHAMapNode childID = node->getChildNodeID(i);
 
 				SHAMapTreeNode *next = getNodePointer(childID, childHash);
@@ -562,7 +554,7 @@ static bool confuseMap(SHAMap &map, int count)
 	return true;
 }
 
-std::list<Blob > SHAMap::getTrustedPath(const uint256& index)
+std::list<Blob > SHAMap::getTrustedPath(uint256 const& index)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	std::stack<SHAMapTreeNode::pointer> stack = SHAMap::getStack(index, false, false);

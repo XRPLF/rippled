@@ -111,7 +111,7 @@ bool Interpreter::endBlock()
 	return(true);
 }
 
-TER Interpreter::interpret(Contract* contract,const SerializedTransaction& txn,Blob & code)
+TER Interpreter::interpret(Contract* contract,const SerializedTransaction& txn,Blob& code)
 {
 	mContract=contract;
 	mCode=&code;

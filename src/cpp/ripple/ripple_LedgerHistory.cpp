@@ -1,4 +1,6 @@
 
+// VFALCO TODO replace macros
+
 #ifndef CACHED_LEDGER_NUM
 #define CACHED_LEDGER_NUM 96
 #endif
@@ -67,7 +69,7 @@ Ledger::pointer LedgerHistory::getLedgerBySeq(uint32 index)
 	return (ret->getLedgerSeq() == index) ? ret : Ledger::pointer();
 }
 
-Ledger::pointer LedgerHistory::getLedgerByHash(const uint256& hash)
+Ledger::pointer LedgerHistory::getLedgerByHash(uint256 const& hash)
 {
 	Ledger::pointer ret = mLedgersByHash.fetch(hash);
 	if (ret)

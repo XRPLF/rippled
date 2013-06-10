@@ -17,7 +17,7 @@ public:
 	SerializedValidation (SerializerIterator& sit, bool checkSignature = true);
 
 	// Does not sign the validation
-	SerializedValidation (const uint256& ledgerHash, uint32 signTime, const RippleAddress& raPub, bool isFull);
+	SerializedValidation (uint256 const& ledgerHash, uint32 signTime, const RippleAddress& raPub, bool isFull);
 
 	uint256			getLedgerHash()		const;
 	uint32			getSignTime()		const;
@@ -28,7 +28,7 @@ public:
 	bool			isFull()			const;
 	bool			isTrusted()			const	{ return mTrusted; }
 	uint256			getSigningHash()	const;
-	bool			isValid(const uint256&) const;
+	bool			isValid(uint256 const& ) const;
 
 	void 						setTrusted()				{ mTrusted = true; }
 	Blob 	getSigned()					const;
@@ -37,9 +37,9 @@ public:
 	void sign(const RippleAddress& raPrivate);
 
 	// The validation this replaced
-	const uint256& getPreviousHash()		{ return mPreviousHash; }
-	bool isPreviousHash(const uint256& h) const	{ return mPreviousHash == h; }
-	void setPreviousHash(const uint256& h)	{ mPreviousHash = h; }
+	uint256 const& getPreviousHash()		{ return mPreviousHash; }
+	bool isPreviousHash(uint256 const& h) const	{ return mPreviousHash == h; }
+	void setPreviousHash(uint256 const& h)	{ mPreviousHash = h; }
 
 private:
     static SOTemplate const& getFormat ();

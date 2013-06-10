@@ -1,10 +1,3 @@
-#include "LoadManager.h"
-
-#include <boost/test/unit_test.hpp>
-#include <boost/thread.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-
-#include "Application.h"
 
 SETUP_LOG (LoadManager)
 
@@ -44,6 +37,7 @@ LoadManager::~LoadManager()
 {
 	UptimeTimer::getInstance().endManualUpdates ();
 
+    // VFALCO What is this loop? it doesn't seem to do anything useful.
 	do
 	{
 		boost::this_thread::sleep(boost::posix_time::milliseconds(100));

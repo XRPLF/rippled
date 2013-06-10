@@ -139,7 +139,7 @@ void CBigNum::setuint64(uint64 n)
 #endif
 }
 
-void CBigNum::setuint256(const uint256& n)
+void CBigNum::setuint256(uint256 const& n)
 {
 	BN_bin2bn(n.begin(), n.size(), NULL);
 }

@@ -1,22 +1,14 @@
 #ifndef __LEDGER_CONSENSUS__
 #define __LEDGER_CONSENSUS__
 
-#include <list>
-#include <map>
-
-#include <boost/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/unordered_map.hpp>
-
 #include "Transaction.h"
-#include "LedgerAcquire.h"
 #include "LedgerProposal.h"
-#include "CanonicalTXSet.h"
 #include "TransactionEngine.h"
 
 DEFINE_INSTANCE(LedgerConsensus);
 DEFINE_INSTANCE(TransactionAcquire);
 
+// VFALCO TODO rename to PeerTxRequest
 // A transaction set we are trying to acquire
 class TransactionAcquire
     : private IS_INSTANCE (TransactionAcquire)
@@ -27,12 +19,12 @@ public:
 	typedef boost::shared_ptr<TransactionAcquire> pointer;
 
 public:
-	TransactionAcquire(const uint256& hash);
+	explicit TransactionAcquire(uint256 const& hash);
 	virtual ~TransactionAcquire()		{ ; }
 
 	SHAMap::ref getMap()				{ return mMap; }
 
-	SMAddNode takeNodes(const std::list<SHAMapNode>& IDs,
+	SHAMapAddNode takeNodes(const std::list<SHAMapNode>& IDs,
 		const std::list< Blob >& data, Peer::ref);
 
 private:
@@ -53,10 +45,10 @@ class LCTransaction
 public:
 	typedef boost::shared_ptr<LCTransaction> pointer;
 
-	LCTransaction(const uint256 &txID, Blob const& tx, bool ourVote) :
+	LCTransaction(uint256 const& txID, Blob const& tx, bool ourVote) :
 		mTransactionID(txID), mYays(0), mNays(0), mOurVote(ourVote), transaction(tx) { ; }
 
-	const uint256& getTransactionID() const				{ return mTransactionID; }
+	uint256 const& getTransactionID() const				{ return mTransactionID; }
 	bool getOurVote() const								{ return mOurVote; }
 	Serializer& peekTransaction()						{ return transaction; }
 	void setOurVote(bool o)								{ mOurVote = o; }
@@ -86,7 +78,7 @@ enum LCState
 class LedgerConsensus : public boost::enable_shared_from_this<LedgerConsensus>, IS_INSTANCE(LedgerConsensus)
 {
 public:
-	LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime);
+	LedgerConsensus(uint256 const& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime);
 
 	int startup();
 	Json::Value getJson(bool full);
@@ -94,12 +86,12 @@ public:
 	Ledger::ref peekPreviousLedger()	{ return mPreviousLedger; }
 	uint256 getLCL()					{ return mPrevLedgerHash; }
 
-	SHAMap::pointer getTransactionTree(const uint256& hash, bool doAcquire);
-	TransactionAcquire::pointer getAcquiring(const uint256& hash);
-	void mapComplete(const uint256& hash, SHAMap::ref map, bool acquired);
-	bool stillNeedTXSet(const uint256& hash);
+	SHAMap::pointer getTransactionTree(uint256 const& hash, bool doAcquire);
+	TransactionAcquire::pointer getAcquiring(uint256 const& hash);
+	void mapComplete(uint256 const& hash, SHAMap::ref map, bool acquired);
+	bool stillNeedTXSet(uint256 const& hash);
 	void checkLCL();
-	void handleLCL(const uint256& lclHash);
+	void handleLCL(uint256 const& lclHash);
 
 	void timerEntry();
 
@@ -114,9 +106,9 @@ public:
 
 	bool peerPosition(LedgerProposal::ref);
 
-	bool peerHasSet(Peer::ref peer, const uint256& set, ripple::TxSetStatus status);
+	bool peerHasSet(Peer::ref peer, uint256 const& set, ripple::TxSetStatus status);
 
-	SMAddNode peerGaveNodes(Peer::ref peer, const uint256& setHash,
+	SHAMapAddNode peerGaveNodes(Peer::ref peer, uint256 const& setHash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< Blob >& nodeData);
 
 	bool isOurPubKey(const RippleAddress &k)	{ return k == mValPublic; }
@@ -128,18 +120,18 @@ private:
 	// final accept logic
 	void accept(SHAMap::ref txSet, LoadEvent::pointer);
 
-	void weHave(const uint256& id, Peer::ref avoidPeer);
+	void weHave(uint256 const& id, Peer::ref avoidPeer);
 	void startAcquiring(TransactionAcquire::pointer);
-	SHAMap::pointer find(const uint256& hash);
+	SHAMap::pointer find(uint256 const& hash);
 
 	void createDisputes(SHAMap::ref, SHAMap::ref);
-	void addDisputedTransaction(const uint256&, Blob const& transaction);
+	void addDisputedTransaction(uint256 const& , Blob const& transaction);
 	void adjustCount(SHAMap::ref map, const std::vector<uint160>& peers);
 	void propose();
 
 	void addPosition(LedgerProposal&, bool ours);
 	void removePosition(LedgerProposal&, bool ours);
-	void sendHaveTxSet(const uint256& set, bool direct);
+	void sendHaveTxSet(uint256 const& set, bool direct);
 	void applyTransactions(SHAMap::ref transactionSet, Ledger::ref targetLedger,
 		Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, bool openLgr);
 	int applyTransaction(TransactionEngine& engine, SerializedTransaction::ref txn, Ledger::ref targetLedger,

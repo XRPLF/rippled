@@ -1,12 +1,6 @@
 #ifndef __LEDGERENTRYSET__
 #define __LEDGERENTRYSET__
 
-#include <boost/unordered_map.hpp>
-
-#include "SerializedLedger.h"
-#include "TransactionMeta.h"
-#include "Ledger.h"
-
 DEFINE_INSTANCE(LedgerEntrySetEntry);
 DEFINE_INSTANCE(LedgerEntrySet);
 
@@ -66,15 +60,15 @@ public:
 	int getSeq() const							{ return mSeq; }
 	TransactionEngineParams getParams() const	{ return mParams; }
 	void bumpSeq()								{ ++mSeq; }
-	void init(Ledger::ref ledger, const uint256& transactionID, uint32 ledgerID, TransactionEngineParams params);
+	void init(Ledger::ref ledger, uint256 const& transactionID, uint32 ledgerID, TransactionEngineParams params);
 	void clear();
 
 	Ledger::pointer& getLedger()		{ return mLedger; }
 	Ledger::ref getLedgerRef() const	{ return mLedger; }
 
 	// basic entry functions
-	SLE::pointer getEntry(const uint256& index, LedgerEntryAction&);
-	LedgerEntryAction hasEntry(const uint256& index) const;
+	SLE::pointer getEntry(uint256 const& index, LedgerEntryAction&);
+	LedgerEntryAction hasEntry(uint256 const& index) const;
 	void entryCache(SLE::ref);		// Add this entry to the cache
 	void entryCreate(SLE::ref);		// This entry will be created
 	void entryDelete(SLE::ref);		// This entry will be deleted
@@ -82,36 +76,36 @@ public:
 	bool hasChanges();				// True if LES has any changes
 
 	// higher-level ledger functions
-	SLE::pointer entryCreate(LedgerEntryType letType, const uint256& uIndex);
-	SLE::pointer entryCache(LedgerEntryType letType, const uint256& uIndex);
+	SLE::pointer entryCreate(LedgerEntryType letType, uint256 const& uIndex);
+	SLE::pointer entryCache(LedgerEntryType letType, uint256 const& uIndex);
 
 	// Directory functions.
 	TER dirAdd(
 		uint64&								uNodeDir,		// Node of entry.
-		const uint256&						uRootIndex,
-		const uint256&						uLedgerIndex,
+		uint256 const& 						uRootIndex,
+		uint256 const& 						uLedgerIndex,
 		FUNCTION_TYPE<void (SLE::ref)>		fDescriber);
 
 	TER dirDelete(
 		const bool						bKeepRoot,
 		const uint64&					uNodeDir,		// Node item is mentioned in.
-		const uint256&					uRootIndex,
-		const uint256&					uLedgerIndex,	// Item being deleted
+		uint256 const& 					uRootIndex,
+		uint256 const& 					uLedgerIndex,	// Item being deleted
 		const bool						bStable,
 		const bool						bSoft);
 
-	bool				dirFirst(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
-	bool				dirNext(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
-	TER					dirCount(const uint256& uDirIndex, uint32& uCount);
+	bool				dirFirst(uint256 const& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
+	bool				dirNext(uint256 const& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
+	TER					dirCount(uint256 const& uDirIndex, uint32& uCount);
 
-	uint256				getNextLedgerIndex(const uint256& uHash);
-	uint256				getNextLedgerIndex(const uint256& uHash, const uint256& uEnd);
+	uint256				getNextLedgerIndex(uint256 const& uHash);
+	uint256				getNextLedgerIndex(uint256 const& uHash, uint256 const& uEnd);
 
 	void				ownerCountAdjust(const uint160& uOwnerID, int iAmount, SLE::ref sleAccountRoot=SLE::pointer());
 
 	// Offer functions.
-	TER					offerDelete(const uint256& uOfferIndex);
-	TER					offerDelete(SLE::ref sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID);
+	TER					offerDelete(uint256 const& uOfferIndex);
+	TER					offerDelete(SLE::ref sleOffer, uint256 const& uOfferIndex, const uint160& uOwnerID);
 
 	// Balance functions.
 	uint32				rippleTransferRate(const uint160& uIssuerID);
@@ -136,7 +130,7 @@ public:
 							const bool		bSrcHigh,
 							const uint160&	uSrcAccountID,
 							const uint160&	uDstAccountID,
-							const uint256&	uIndex,
+							uint256 const& 	uIndex,
 							SLE::ref		sleAccount,
 							const bool		bAuth,
 							const STAmount& saSrcBalance,
@@ -171,7 +165,7 @@ private:
 		const TransactionMetaSet& s, int m) :
 			mLedger(ledger), mEntries(e), mSet(s), mParams(tapNONE), mSeq(m), mImmutable(false) { ; }
 
-	SLE::pointer getForMod(const uint256& node, Ledger::ref ledger,
+	SLE::pointer getForMod(uint256 const& node, Ledger::ref ledger,
 		boost::unordered_map<uint256, SLE::pointer>& newMods);
 
 	bool threadTx(const RippleAddress& threadTo, Ledger::ref ledger,

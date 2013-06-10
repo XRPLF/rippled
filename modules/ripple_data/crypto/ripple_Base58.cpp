@@ -103,7 +103,7 @@ std::string Base58::encodeWithCheck (Blob const& vchIn)
 	return encode (vch);
 }
 
-bool Base58::decode (const char* psz, Blob & vchRet, const char* pAlpha)
+bool Base58::decode (const char* psz, Blob& vchRet, const char* pAlpha)
 {
 	assert (pAlpha != 0);
 
@@ -151,12 +151,12 @@ bool Base58::decode (const char* psz, Blob & vchRet, const char* pAlpha)
 	return true;
 }
 
-bool Base58::decode (const std::string& str, Blob & vchRet)
+bool Base58::decode (const std::string& str, Blob& vchRet)
 {
 	return decode (str.c_str(), vchRet);
 }
 
-bool Base58::decodeWithCheck (const char* psz, Blob & vchRet, const char* pAlphabet)
+bool Base58::decodeWithCheck (const char* psz, Blob& vchRet, const char* pAlphabet)
 {
 	assert (pAlphabet != NULL);
 
@@ -177,7 +177,7 @@ bool Base58::decodeWithCheck (const char* psz, Blob & vchRet, const char* pAlpha
 	return true;
 }
 
-bool Base58::decodeWithCheck (const std::string& str, Blob & vchRet, const char* pAlphabet)
+bool Base58::decodeWithCheck (const std::string& str, Blob& vchRet, const char* pAlphabet)
 {
 	return decodeWithCheck (str.c_str(), vchRet, pAlphabet);
 }

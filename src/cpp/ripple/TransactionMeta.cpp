@@ -3,7 +3,7 @@
 
 SETUP_LOG (TransactionMetaSet)
 
-TransactionMetaSet::TransactionMetaSet(const uint256& txid, uint32 ledger, Blob const& vec) :
+TransactionMetaSet::TransactionMetaSet(uint256 const& txid, uint32 ledger, Blob const& vec) :
 	mTransactionID(txid), mLedger(ledger), mNodes(sfAffectedNodes, 32)
 {
 	Serializer s(vec);
@@ -19,7 +19,7 @@ TransactionMetaSet::TransactionMetaSet(const uint256& txid, uint32 ledger, Blob 
 	mNodes = * dynamic_cast<STArray*>(&obj->getField(sfAffectedNodes));
 }
 
-bool TransactionMetaSet::isNodeAffected(const uint256& node) const
+bool TransactionMetaSet::isNodeAffected(uint256 const& node) const
 {
 	BOOST_FOREACH(const STObject& it, mNodes)
 		if (it.getFieldH256(sfLedgerIndex) == node)
@@ -27,7 +27,7 @@ bool TransactionMetaSet::isNodeAffected(const uint256& node) const
 	return false;
 }
 
-void TransactionMetaSet::setAffectedNode(const uint256& node, SField::ref type, uint16 nodeType)
+void TransactionMetaSet::setAffectedNode(uint256 const& node, SField::ref type, uint16 nodeType)
 { // make sure the node exists and force its type
 	BOOST_FOREACH(STObject& it, mNodes)
 	{
@@ -122,7 +122,7 @@ STObject& TransactionMetaSet::getAffectedNode(SLE::ref node, SField::ref type)
 	return obj;
 }
 
-STObject& TransactionMetaSet::getAffectedNode(const uint256& node)
+STObject& TransactionMetaSet::getAffectedNode(uint256 const& node)
 {
 	BOOST_FOREACH(STObject& it, mNodes)
 	{
@@ -133,7 +133,7 @@ STObject& TransactionMetaSet::getAffectedNode(const uint256& node)
 	throw std::runtime_error("Affected node not found");
 }
 
-const STObject& TransactionMetaSet::peekAffectedNode(const uint256& node) const
+const STObject& TransactionMetaSet::peekAffectedNode(uint256 const& node) const
 {
 	BOOST_FOREACH(const STObject& it, mNodes)
 		if (it.getFieldH256(sfLedgerIndex) == node)
@@ -141,7 +141,7 @@ const STObject& TransactionMetaSet::peekAffectedNode(const uint256& node) const
 	throw std::runtime_error("Affected node not found");
 }
 
-void TransactionMetaSet::init(const uint256& id, uint32 ledger)
+void TransactionMetaSet::init(uint256 const& id, uint32 ledger)
 {
 	mTransactionID = id;
 	mLedger = ledger;
@@ -154,7 +154,7 @@ void TransactionMetaSet::swap(TransactionMetaSet& s)
 	mNodes.swap(s.mNodes);
 }
 
-bool TransactionMetaSet::thread(STObject& node, const uint256& prevTxID, uint32 prevLgrID)
+bool TransactionMetaSet::thread(STObject& node, uint256 const& prevTxID, uint32 prevLgrID)
 {
 	if (node.getFieldIndex(sfPreviousTxnID) == -1)
 	{
