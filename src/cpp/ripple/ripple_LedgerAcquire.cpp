@@ -552,7 +552,7 @@ void LedgerAcquire::filterNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<ui
 				}
 				++insertPoint;
 			}
-		WriteLog (lsDEBUG, LedgerAcquire) << "filterNodes " << nodeIDs.size() << " to " << insertPoint;
+		WriteLog (lsTRACE, LedgerAcquire) << "filterNodes " << nodeIDs.size() << " to " << insertPoint;
 		nodeIDs.resize(insertPoint);
 		nodeHashes.resize(insertPoint);
 	}
