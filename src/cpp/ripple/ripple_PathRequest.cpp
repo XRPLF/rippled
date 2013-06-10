@@ -1,35 +1,30 @@
-#include "PFRequest.h"
+SETUP_LOG (PathRequest)
 
-#include "RPCErr.h"
-#include "Ledger.h"
-#include "Application.h"
-#include "Pathfinder.h"
-#include "RippleCalc.h"
+// VFALCO TODO Move these globals into a PathRequests collection inteface
+boost::recursive_mutex       PathRequest::sLock;
+std::set <PathRequest::wptr> PathRequest::sRequests;
 
-SETUP_LOG (PFRequest)
-
-boost::recursive_mutex		PFRequest::sLock;
-std::set<PFRequest::wptr>	PFRequest::sRequests;
-
-PFRequest::PFRequest(const boost::shared_ptr<InfoSub>& subscriber) :
-	wpSubscriber(subscriber), jvStatus(Json::objectValue), bValid(false), bNew(true)
+PathRequest::PathRequest (const boost::shared_ptr<InfoSub>& subscriber)
+    : wpSubscriber (subscriber)
+    , jvStatus (Json::objectValue)
+    , bValid (false)
+    , bNew (true)
 {
-	;
 }
 
-bool PFRequest::isValid()
+bool PathRequest::isValid()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	return bValid;
 }
 
-bool PFRequest::isNew()
+bool PathRequest::isNew()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	return bNew;
 }
 
-bool PFRequest::isValid(Ledger::ref lrLedger)
+bool PathRequest::isValid(Ledger::ref lrLedger)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	bValid = raSrcAccount.isSet() && raDstAccount.isSet() && saDstAmount.isPositive();
@@ -74,7 +69,7 @@ bool PFRequest::isValid(Ledger::ref lrLedger)
 	return bValid;
 }
 
-Json::Value PFRequest::doCreate(Ledger::ref lrLedger, const Json::Value& value)
+Json::Value PathRequest::doCreate(Ledger::ref lrLedger, const Json::Value& value)
 {
 	assert(lrLedger->isClosed());
 
@@ -98,9 +93,9 @@ Json::Value PFRequest::doCreate(Ledger::ref lrLedger, const Json::Value& value)
 
 	if (mValid)
 	{
-		WriteLog (lsINFO, PFRequest) << "Request created: " << raSrcAccount.humanAccountID() <<
+		WriteLog (lsINFO, PathRequest) << "Request created: " << raSrcAccount.humanAccountID() <<
 			" -> " << raDstAccount.humanAccountID();
-		WriteLog (lsINFO, PFRequest) << "Deliver: " << saDstAmount.getFullText();
+		WriteLog (lsINFO, PathRequest) << "Deliver: " << saDstAmount.getFullText();
 
 		boost::recursive_mutex::scoped_lock sl(sLock);
 		sRequests.insert(shared_from_this());
@@ -109,7 +104,7 @@ Json::Value PFRequest::doCreate(Ledger::ref lrLedger, const Json::Value& value)
 	return jvStatus;
 }
 
-int PFRequest::parseJson(const Json::Value& jvParams, bool complete)
+int PathRequest::parseJson(const Json::Value& jvParams, bool complete)
 {
 	int ret = PFR_PJ_NOCHANGE;
 
@@ -194,19 +189,19 @@ int PFRequest::parseJson(const Json::Value& jvParams, bool complete)
 
 	return ret;
 }
-Json::Value PFRequest::doClose(const Json::Value&)
+Json::Value PathRequest::doClose(const Json::Value&)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	return jvStatus;
 }
 
-Json::Value PFRequest::doStatus(const Json::Value&)
+Json::Value PathRequest::doStatus(const Json::Value&)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	return jvStatus;
 }
 
-bool PFRequest::doUpdate(RLCache::ref cache, bool fast)
+bool PathRequest::doUpdate(RLCache::ref cache, bool fast)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	jvStatus = Json::objectValue;
@@ -246,13 +241,13 @@ bool PFRequest::doUpdate(RLCache::ref cache, bool fast)
 	{
 		{
 			STAmount test(currIssuer.first, currIssuer.second, 1);
-			WriteLog (lsDEBUG, PFRequest) << "Trying to find paths: " << test.getFullText();
+			WriteLog (lsDEBUG, PathRequest) << "Trying to find paths: " << test.getFullText();
 		}
 		bool valid;
 		STPathSet spsPaths;
 		Pathfinder pf(cache, raSrcAccount, raDstAccount,
 			currIssuer.first, currIssuer.second, saDstAmount, valid);
-		CondLog (!valid, lsINFO, PFRequest) << "PF request not valid";
+		CondLog (!valid, lsINFO, PathRequest) << "PF request not valid";
 		if (valid && pf.findPaths(theConfig.PATH_SEARCH_SIZE - (fast ? 0 : 1), 3, spsPaths))
 		{
 			LedgerEntrySet						lesSandbox(cache->getLedger(), tapNONE);
@@ -263,7 +258,7 @@ bool PFRequest::doUpdate(RLCache::ref cache, bool fast)
 				currIssuer.second.isNonZero() ? currIssuer.second :
 					(currIssuer.first.isZero() ? ACCOUNT_XRP : raSrcAccount.getAccountID()), 1);
 			saMaxAmount.negate();
-			WriteLog (lsDEBUG, PFRequest) << "Paths found, calling rippleCalc";
+			WriteLog (lsDEBUG, PathRequest) << "Paths found, calling rippleCalc";
 			TER terResult = RippleCalc::rippleCalc(lesSandbox, saMaxAmountAct, saDstAmountAct,
 				vpsExpanded, saMaxAmount, saDstAmount, raDstAccount.getAccountID(), raSrcAccount.getAccountID(),
 				spsPaths, false, false, false, true);
@@ -276,19 +271,19 @@ bool PFRequest::doUpdate(RLCache::ref cache, bool fast)
 			}
 			else
 			{
-				WriteLog (lsINFO, PFRequest) << "rippleCalc returns " << transHuman(terResult);
+				WriteLog (lsINFO, PathRequest) << "rippleCalc returns " << transHuman(terResult);
 			}
 		}
 		else
 		{
-			WriteLog (lsINFO, PFRequest) << "No paths found";
+			WriteLog (lsINFO, PathRequest) << "No paths found";
 		}
 	}
 	jvStatus["alternatives"] = jvArray;
 	return true;
 }
 
-void PFRequest::updateAll(Ledger::ref ledger, bool newOnly)
+void PathRequest::updateAll(Ledger::ref ledger, bool newOnly)
 {
 	std::set<wptr> requests;
 
@@ -305,7 +300,7 @@ void PFRequest::updateAll(Ledger::ref ledger, bool newOnly)
 	BOOST_FOREACH(wref wRequest, requests)
 	{
 		bool remove = true;
-		PFRequest::pointer pRequest = wRequest.lock();
+		PathRequest::pointer pRequest = wRequest.lock();
 		if (pRequest && (!newOnly || pRequest->isNew()))
 		{
 			InfoSub::pointer ipSub = pRequest->wpSubscriber.lock();

@@ -1,24 +1,6 @@
 #ifndef __APPLICATION__
 #define __APPLICATION__
 
-#include "leveldb/db.h"
-
-#include <boost/asio.hpp>
-
-#include "../database/database.h"
-
-#include "LedgerMaster.h"
-#include "TransactionMaster.h"
-#include "Wallet.h"
-#include "WSDoor.h"
-#include "SNTPClient.h"
-#include "RPCHandler.h"
-#include "LoadManager.h"
-#include "TransactionQueue.h"
-#include "OrderBookDB.h"
-
-#include "ripple_DatabaseCon.h"
-
 // VFALCO TODO Fix forward declares required for header dependency loops
 class IFeatures;
 class IFeeVote;

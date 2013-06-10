@@ -990,7 +990,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\PFRequest.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_PathRequest.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
@@ -1745,7 +1745,7 @@
     <ClInclude Include="src\cpp\ripple\Pathfinder.h" />
     <ClInclude Include="src\cpp\ripple\PaymentTransactor.h" />
     <ClInclude Include="src\cpp\ripple\PeerDoor.h" />
-    <ClInclude Include="src\cpp\ripple\PFRequest.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_PathRequest.h" />
     <ClInclude Include="src\cpp\ripple\RegularKeySetTransactor.h" />
     <ClInclude Include="src\cpp\ripple\RippleCalc.h" />
     <ClInclude Include="src\cpp\ripple\RippleState.h" />

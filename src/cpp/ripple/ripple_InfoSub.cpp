@@ -10,7 +10,7 @@
 // code assumes this node is synched (and will continue to do so until
 // there's a functional network.
 
-DECLARE_INSTANCE(InfoSub);
+DECLARE_INSTANCE (InfoSub);
 
 // VFALCO TODO Figure out how to clean up these globals
 uint64 InfoSub::sSeq = 0;
@@ -54,17 +54,17 @@ void InfoSub::insertSubAccountInfo (RippleAddress addr, uint32 uLedgerIndex)
 	mSubAccountInfo.insert(addr);
 }
 
-void InfoSub::clearPFRequest()
+void InfoSub::clearPathRequest()
 {
-	mPFRequest.reset();
+	mPathRequest.reset();
 }
 
-void InfoSub::setPFRequest(const boost::shared_ptr<PFRequest>& req)
+void InfoSub::setPathRequest(const boost::shared_ptr<PathRequest>& req)
 {
-	mPFRequest = req;
+	mPathRequest = req;
 }
 
-const boost::shared_ptr<PFRequest>& InfoSub::getPFRequest()
+const boost::shared_ptr<PathRequest>& InfoSub::getPathRequest()
 {
-	return mPFRequest;
+	return mPathRequest;
 }

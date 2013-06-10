@@ -726,12 +726,13 @@ void LedgerMaster::updatePaths()
 			mPathFindNewRequest = false;
 		}
 
-		PFRequest::updateAll(lastLedger, newOnly);
+        // VFALCO TODO Fix this global variable
+		PathRequest::updateAll (lastLedger, newOnly);
 
 	} while(1);
 }
 
-void LedgerMaster::newPFRequest()
+void LedgerMaster::newPathRequest()
 {
 	boost::recursive_mutex::scoped_lock ml(mLock);
 	mPathFindNewRequest = true;
