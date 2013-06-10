@@ -3,7 +3,7 @@
 
 DEFINE_INSTANCE(LedgerAcquire);
 
-// VFALCO TODO Rename to IncomingLedger
+// VFALCO TODO Rename to InboundLedger
 // A ledger we are trying to acquire
 class LedgerAcquire : private IS_INSTANCE(LedgerAcquire)
                     , public PeerSet

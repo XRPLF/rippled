@@ -14,10 +14,17 @@ public:
 	typedef FUNCTION_TYPE<void(Ledger::ref)> callback;
 
 public:
-	LedgerMaster() : mHeldTransactions(uint256()), mMissingSeq(0),
-		mMinValidations(0), mLastValidateSeq(0), mPubThread(false),
-		mPathFindThread(false), mPathFindNewLedger(false), mPathFindNewRequest(false)
-	{ ; }
+	LedgerMaster ()
+        : mHeldTransactions (uint256())
+        , mMissingSeq (0)
+        , mMinValidations (0)
+        , mLastValidateSeq (0)
+        , mPubThread (false)
+        , mPathFindThread (false)
+        , mPathFindNewLedger (false)
+        , mPathFindNewRequest (false)
+	{
+    }
 
 	uint32 getCurrentLedgerIndex();
 
@@ -133,6 +140,7 @@ private:
 	void pubThread();
 	void updatePaths();
 
+private:
     boost::recursive_mutex mLock;
 
 	TransactionEngine mEngine;

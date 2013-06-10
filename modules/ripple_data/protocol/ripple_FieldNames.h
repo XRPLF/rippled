@@ -23,6 +23,11 @@ enum SerializedTypeID
 	STI_VALIDATION	= 10003,
 };
 
+/** Identifies fields.
+
+    Fields are necessary to tag data in signed transactions so that
+    the binary format of the transaction can be canonicalized.
+*/
 // VFALCO TODO rename this to NamedField
 class SField
 {
@@ -43,40 +48,58 @@ public:
 	const int				fieldCode;		// (type<<16)|index
 	const SerializedTypeID	fieldType;		// STI_*
 	const int				fieldValue;		// Code number for protocol
-	std::string				fieldName;
+	std::string	            fieldName;
 	int						fieldMeta;
 	int						fieldNum;
 	bool					signingField;
 
-	SField(int fc, SerializedTypeID tid, int fv, const char* fn) : 
-		fieldCode(fc), fieldType(tid), fieldValue(fv), fieldName(fn), fieldMeta(sMD_Default), signingField(true)
+	SField (int fc, SerializedTypeID tid, int fv, const char* fn)
+        : fieldCode (fc)
+        , fieldType (tid)
+        , fieldValue (fv)
+        , fieldName (fn)
+        , fieldMeta (sMD_Default)
+        , signingField (true)
 	{
 		boost::mutex::scoped_lock sl(mapMutex);
-		codeToField[fieldCode] = this;
+
+        codeToField[fieldCode] = this;
+		
+        fieldNum = ++num;
+	}
+
+	SField (SerializedTypeID tid, int fv, const char *fn)
+        : fieldCode (FIELD_CODE (tid, fv))
+        , fieldType (tid)
+        , fieldValue (fv)
+        , fieldName (fn)
+        , fieldMeta (sMD_Default)
+        , signingField (true)
+	{
+		boost::mutex::scoped_lock sl(mapMutex);
+
+        codeToField[fieldCode] = this;
+		
+        fieldNum = ++num;
+	}
+
+	explicit SField (int fc)
+        : fieldCode (fc)
+        , fieldType (STI_UNKNOWN)
+        , fieldValue (0)
+        , fieldMeta (sMD_Never)
+        , signingField (true)
+	{
+		boost::mutex::scoped_lock sl(mapMutex);
 		fieldNum = ++num;
 	}
 
-	SField(SerializedTypeID tid, int fv, const char *fn) :
-		fieldCode(FIELD_CODE(tid, fv)), fieldType(tid), fieldValue(fv), fieldName(fn),
-		fieldMeta(sMD_Default), signingField(true)
-	{
-		boost::mutex::scoped_lock sl(mapMutex);
-		codeToField[fieldCode] = this;
-		fieldNum = ++num;
-	}
+	~SField ();
 
-	SField(int fc) : fieldCode(fc), fieldType(STI_UNKNOWN), fieldValue(0), fieldMeta(sMD_Never), signingField(true)
-	{
-		boost::mutex::scoped_lock sl(mapMutex);
-		fieldNum = ++num;
-	}
-
-	~SField();
-
-	static SField::ref getField(int fieldCode);
-	static SField::ref getField(const std::string& fieldName);
-	static SField::ref getField(int type, int value)				{ return getField(FIELD_CODE(type, value)); }
-	static SField::ref getField(SerializedTypeID type, int value)	{ return getField(FIELD_CODE(type, value)); }
+	static SField::ref getField (int fieldCode);
+	static SField::ref getField (const std::string& fieldName);
+	static SField::ref getField (int type, int value)				{ return getField(FIELD_CODE(type, value)); }
+	static SField::ref getField (SerializedTypeID type, int value)	{ return getField(FIELD_CODE(type, value)); }
 
 	std::string getName() const;
 	bool hasName() const		{ return !fieldName.empty(); }
@@ -86,8 +109,11 @@ public:
 	bool isUseful() const		{ return fieldCode > 0; }
 	bool isKnown() const		{ return fieldType != STI_UNKNOWN; }
 	bool isBinary() const		{ return fieldValue < 256; }
-	bool isDiscardable() const	{ return fieldValue > 256; }
-	int getCode() const			{ return fieldCode; }
+
+    // VFALCO NOTE What is a discardable field?
+    bool isDiscardable() const	{ return fieldValue > 256; }
+
+    int getCode() const			{ return fieldCode; }
 	int getNum() const			{ return fieldNum; }
 	static int getNumFields()	{ return num; }
 
@@ -99,8 +125,9 @@ public:
 	bool shouldInclude(bool withSigningField) const
 		{ return (fieldValue < 256) && (withSigningField || signingField); }
 
-	bool operator==(const SField& f) const { return fieldCode == f.fieldCode; }
-	bool operator!=(const SField& f) const { return fieldCode != f.fieldCode; }
+	bool operator== (const SField& f) const { return fieldCode == f.fieldCode; }
+
+    bool operator!= (const SField& f) const { return fieldCode != f.fieldCode; }
 
 	static int compare(SField::ref f1, SField::ref f2);
 
@@ -110,7 +137,7 @@ protected:
 	static boost::mutex			mapMutex;
 	static int 					num;
 
-	SField(SerializedTypeID id, int val);
+	SField (SerializedTypeID id, int val);
 };
 
 extern SField sfInvalid, sfGeneric, sfLedgerEntry, sfTransaction, sfValidation;

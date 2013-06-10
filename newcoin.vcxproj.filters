@@ -1606,5 +1606,6 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="StyleCheatSheet.txt" />
+    <Text Include="RefactoringNotes.txt" />
   </ItemGroup>
 </Project>

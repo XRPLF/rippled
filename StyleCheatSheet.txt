@@ -3,3 +3,5 @@
 - Place each ctor-initializer on its own line.
 - Create typedefs for primitive types to describe them.
 - Return descriptive local variables instead of constants.
+- Use "explicit" for single-argument ctors
+

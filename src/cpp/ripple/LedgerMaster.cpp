@@ -132,7 +132,9 @@ Ledger::pointer LedgerMaster::closeLedger(bool recover)
 			}
 		}
 		CondLog (recovers != 0, lsINFO, LedgerMaster) << "Recovered " << recovers << " held transactions";
-		mHeldTransactions.reset(closingLedger->getHash());
+
+        // VFALCO TODO recreate the CanonicalTxSet object instead of resetting it
+        mHeldTransactions.reset(closingLedger->getHash());
 	}
 
 	mCurrentLedger = boost::make_shared<Ledger>(boost::ref(*closingLedger), true);

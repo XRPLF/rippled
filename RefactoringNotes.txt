@@ -1,0 +1,51 @@
+--------------------------------------------------------------------------------
+
+Naming
+
+Some names don't make sense.
+
+  LedgerAcquire
+    Not a noun.
+    Is it really an InboundLedger ?
+    Does it continue to exist after the ledger is received?
+
+Inconsistent names
+
+  We have full names like SerializedType and then acronyms like STObject
+  Two names for some things, e.g. SerializedLedgerEntry and SLE
+
+  Shared/Smart pointer typedefs in classes have a variety of different names
+  for the same thing. e.g. "pointer", "ptr", "ptr_t", "wptr"
+
+Verbose names
+
+  The prefix "Flat" is more appealing than "Serialized" because its shorter and
+    easier to pronounce.
+
+Ledger "Skip List"
+
+  Is not really a skip list
+
+--------------------------------------------------------------------------------
+
+Interfaces
+
+  Serializer
+
+    Upon analysis this class does two incompatible things. Flattening, and
+    unflattening. The interface should be reimplemented as two distinct
+    abstract classes, InputStream and OutputStream with suitable implementations
+    such as to and from a block of memory or dynamically allocated buffer.
+
+    The name and conflation of dual roles serves to confuse code at the point
+    of call. Does set(Serializer& s) flatten or unflatten the data? This
+    would be more clear:
+        bool write (OutputStream& stream);
+
+
+
+Implementation
+
+  LoadManager
+    
+    What is going on in the destructor

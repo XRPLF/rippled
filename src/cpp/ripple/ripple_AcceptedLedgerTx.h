@@ -1,11 +1,19 @@
 #ifndef RIPPLE_ACCEPTEDLEDGERTX_H
 #define RIPPLE_ACCEPTEDLEDGERTX_H
 
-/*============================================================================*/
+//------------------------------------------------------------------------------
+
 /**
     A transaction that is in a closed ledger.
 
     Description
+
+    An accepted ledger transaction contains additional information that the
+    server needs to tell clients about the transaction. For example,
+        - The transaction in JSON form
+        - Which accounts are affected
+          * This is used by InfoSub to report to clients
+        - Cached stuff
 
 	@code
     @endcode
@@ -17,7 +25,7 @@
 class AcceptedLedgerTx
 {
 public:
-	typedef boost::shared_ptr<AcceptedLedgerTx> pointer;
+	typedef boost::shared_ptr <AcceptedLedgerTx> pointer;
 	typedef const pointer& ref;
 
 public:

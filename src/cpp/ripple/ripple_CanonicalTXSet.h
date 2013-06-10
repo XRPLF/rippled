@@ -1,6 +1,14 @@
 #ifndef RIPPLE_CANONICALTXSET_H
 #define RIPPLE_CANONICALTXSET_H
 
+/** Holds transactions which were deferred to the next pass of consensus.
+
+    "Canonical" refers to the order in which transactions are applied.
+
+    - Puts transactions from the same account in sequence order
+
+*/
+// VFALCO TODO rename to SortedTxSet
 class CanonicalTXSet
 {
 public:
@@ -25,7 +33,8 @@ public:
 	    uint256 const& getTXID() const					{ return mTXid; }
 
     private:
-	    uint256 mAccount, mTXid;
+	    uint256 mAccount;
+        uint256 mTXid;
 	    uint32 mSeq;
     };
 
@@ -33,13 +42,14 @@ public:
 	typedef std::map <Key, SerializedTransaction::pointer>::const_iterator const_iterator;
 
 public:
-	CanonicalTXSet (LedgerHash const& lastClosedLedgerHash)
+	explicit CanonicalTXSet (LedgerHash const& lastClosedLedgerHash)
         : mSetHash (lastClosedLedgerHash)
     {
     }
 
 	void push_back (SerializedTransaction::ref txn);
 
+    // VFALCO TODO remove this function
 	void reset (LedgerHash const& newLastClosedLedgerHash)
 	{
 		mSetHash = newLastClosedLedgerHash;
@@ -57,6 +67,7 @@ public:
 	bool empty() const				{ return mMap.empty(); }
 
 private:
+    // Used to salt the accounts so people can't mine for low account numbers
 	uint256 mSetHash;
 
     std::map <Key, SerializedTransaction::pointer> mMap;

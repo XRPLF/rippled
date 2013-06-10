@@ -8,6 +8,7 @@
 DEFINE_INSTANCE(LedgerConsensus);
 DEFINE_INSTANCE(TransactionAcquire);
 
+// VFALCO TODO rename to PeerTxRequest
 // A transaction set we are trying to acquire
 class TransactionAcquire
     : private IS_INSTANCE (TransactionAcquire)
@@ -18,7 +19,7 @@ public:
 	typedef boost::shared_ptr<TransactionAcquire> pointer;
 
 public:
-	TransactionAcquire(uint256 const& hash);
+	explicit TransactionAcquire(uint256 const& hash);
 	virtual ~TransactionAcquire()		{ ; }
 
 	SHAMap::ref getMap()				{ return mMap; }

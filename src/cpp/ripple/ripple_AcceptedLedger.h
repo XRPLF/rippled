@@ -2,7 +2,12 @@
 #define ACCEPTED_LEDGER_H
 
 /**
-	
+
+    An accepted ledger is a ledger that has a sufficient number of
+    validations to convince the local server that it is irrevocable.
+
+    The existence of an accepted ledger implies all preceding ledgers
+    are accepted.
 */
 class AcceptedLedger
 {

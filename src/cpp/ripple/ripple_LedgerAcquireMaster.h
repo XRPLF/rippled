@@ -1,9 +1,9 @@
 #ifndef RIPPLE_LEDGERACQUIREMASTER_H
 #define RIPPLE_LEDGERACQUIREMASTER_H
 
-/** Manages the acquisition of ledgers.
+/** Manages the lifetime of inbound ledgers.
 */
-// VFALCO TODO Rename to IncomingLedgerManager
+// VFALCO TODO Rename to InboundLedgerManager
 // VFALCO TODO Create abstract interface
 class LedgerAcquireMaster
 {

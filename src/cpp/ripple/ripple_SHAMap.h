@@ -24,8 +24,8 @@ public:
 
 public:
 	// build new map
-	SHAMap(SHAMapType t, uint32 seq = 1);
-	SHAMap(SHAMapType t, uint256 const& hash);
+	explicit SHAMap (SHAMapType t, uint32 seq = 1);
+	SHAMap (SHAMapType t, uint256 const& hash);
 
 	~SHAMap() { mState = smsInvalid; }
 

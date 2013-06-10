@@ -62,6 +62,7 @@ UPTR_T<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, SField::
 	}
 }
 
+// VFALCO TODO Remove the 'depth' parameter
 UPTR_T<SerializedType> STObject::makeDeserializedObject(SerializedTypeID id, SField::ref name,
 	SerializerIterator& sit, int depth)
 {
@@ -184,7 +185,8 @@ bool STObject::setType(const SOTemplate &type)
 bool STObject::isValidForType()
 {
 	boost::ptr_vector<SerializedType>::iterator it = mData.begin();
-	BOOST_FOREACH(const SOElement* elem, mType->peek())
+	
+    BOOST_FOREACH(const SOElement* elem, mType->peek())
 	{
 		if (it == mData.end())
 			return false;
@@ -227,7 +229,7 @@ bool STObject::set(SerializerIterator& sit, int depth)
 */
 
 // return true = terminated with end-of-object
-bool STObject::set(SerializerIterator& sit, int depth)
+bool STObject::set (SerializerIterator& sit, int depth)
 {
     bool reachedEndOfObject = false;
 

@@ -38,8 +38,13 @@ public:
 	virtual bool isDefault() const { return mData.empty(); }
 
 	virtual void add(Serializer& s) const	{ add(s, true);	} // just inner elements
-	void add(Serializer& s, bool withSignature) const;
+
+    void add(Serializer& s, bool withSignature) const;
+
+    // VFALCO NOTE does this return an expensive copy of an object with a dynamic buffer?
+    // VFALCO TODO Remove this function and fix the few callers.
 	Serializer getSerializer() const { Serializer s; add(s); return s; }
+
 	std::string getFullText() const;
 	std::string getText() const;
 	virtual Json::Value getJson(int options) const;
@@ -116,14 +121,24 @@ public:
 	bool delField(SField::ref field);
 	void delField(int index);
 
-	static UPTR_T<SerializedType> makeDefaultObject(SerializedTypeID id, SField::ref name);
-	static UPTR_T<SerializedType> makeDeserializedObject(SerializedTypeID id, SField::ref name,
-		SerializerIterator&, int depth);
+	static UPTR_T <SerializedType> makeDefaultObject(SerializedTypeID id, SField::ref name);
 
-	static UPTR_T<SerializedType> makeNonPresentObject(SField::ref name)
-	{ return makeDefaultObject(STI_NOTPRESENT, name); }
-	static UPTR_T<SerializedType> makeDefaultObject(SField::ref name)
-	{ return makeDefaultObject(name.fieldType, name); }
+    // VFALCO TODO remove the 'depth' parameter
+    static UPTR_T<SerializedType> makeDeserializedObject (
+        SerializedTypeID id,
+        SField::ref name,
+        SerializerIterator &,
+        int depth);
+
+	static UPTR_T<SerializedType> makeNonPresentObject (SField::ref name)
+	{
+        return makeDefaultObject(STI_NOTPRESENT, name);
+    }
+
+    static UPTR_T<SerializedType> makeDefaultObject (SField::ref name)
+	{
+        return makeDefaultObject(name.fieldType, name);
+    }
 
 	// field iterator stuff
 	typedef boost::ptr_vector<SerializedType>::iterator iterator;
@@ -148,9 +163,7 @@ private:
 	{ mData.swap(data); }
 };
 
-// allow ptr_* collections of STObject's
-inline STObject* new_clone(const STObject& s) { return s.oClone().release(); }
-inline void delete_clone(const STObject* s) { boost::checked_delete(s); }
+//------------------------------------------------------------------------------
 
 inline STObject::iterator range_begin(STObject& x)		{ return x.begin(); }
 inline STObject::iterator range_end(STObject &x)		{ return x.end(); }
