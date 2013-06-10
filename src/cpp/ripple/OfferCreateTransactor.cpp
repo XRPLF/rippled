@@ -136,7 +136,7 @@ TER OfferCreateTransactor::takeOffers(
 			&& saSubTakerPays.isPositive()
 			&& saSubTakerGets.isPositive())
 		{
-			sleOfferDir		= mEngine->entryCache(ltDIR_NODE, mEngine->getLedger()->getNextLedgerIndex(uTipIndex, uBookEnd));
+			sleOfferDir		= mEngine->entryCache(ltDIR_NODE, lesActive.getNextLedgerIndex(uTipIndex, uBookEnd));
 			if (sleOfferDir)
 			{
 				uTipIndex		= sleOfferDir->getIndex();
