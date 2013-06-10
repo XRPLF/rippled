@@ -910,11 +910,9 @@ uint256 LedgerEntrySet::getNextLedgerIndex(uint256 const& uHash)
 	// find next node in LES that isn't deleted
 	for (it = mEntries.upper_bound(uHash); it != mEntries.end(); ++it)
 	{
-
 		// node found in LES, node found in ledger, return earliest
 		if (it->second.mAction != taaDELETE)
-			return (!ledgerNext.isZero() && (ledgerNext < it->first)) ? ledgerNext : it->first;
-
+			return (ledgerNext.isNonZero() && (ledgerNext < it->first)) ? ledgerNext : it->first;
 	}
 
 	// nothing next in LES, return next ledger node
