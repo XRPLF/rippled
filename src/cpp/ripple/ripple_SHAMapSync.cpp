@@ -43,23 +43,19 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 				if (!fullBelowCache.isPresent(childHash))
 				{
 					SHAMapNode childID = node->getChildNodeID(branch);
-					SHAMapTreeNode* d = NULL;
-					try
-					{
-						d = getNodePointer(childID, childHash, filter);
-						if (d->isInner() && !d->isFullBelow())
-						{
-							have_all = false;
-							stack.push(d);
-						}
-					}
-					catch (SHAMapMissingNode&)
+					SHAMapTreeNode* d = getNodePointerNT(childID, childHash, filter);
+					if (!d)
 					{ // node is not in the map
 						nodeIDs.push_back(childID);
 						hashes.push_back(childHash);
 						if (--max <= 0)
 							return;
 						have_all = false;
+					}
+					else if (d->isInner() && !d->isFullBelow())
+					{
+						have_all = false;
+						stack.push(d);
 					}
 				}
 			}
@@ -110,22 +106,18 @@ std::vector<uint256> SHAMap::getNeededHashes(int max, SHAMapSyncFilter* filter)
 				if (!fullBelowCache.isPresent(childHash))
 				{
 					SHAMapNode childID = node->getChildNodeID(branch);
-					SHAMapTreeNode* d = NULL;
-					try
+					SHAMapTreeNode* d = getNodePointerNT(childID, childHash, filter);
+					if (!d)
 					{
-						d = getNodePointer(childID, childHash, filter);
-						if (d->isInner() && !d->isFullBelow())
-						{
-							have_all = false;
-							stack.push(d);
-						}
-					}
-					catch (SHAMapMissingNode&)
-					{ // node is not in the map
 						have_all = false;
 						ret.push_back(childHash);
 						if (--max <= 0)
 							return ret;
+					}
+					else if (d->isInner() && !d->isFullBelow())
+					{
+						have_all = false;
+						stack.push(d);
 					}
 				}
 			}
@@ -270,8 +262,7 @@ SHAMapAddNode SHAMap::addRootNode(uint256 const& hash, Blob const& rootNode, SHA
 	return SHAMapAddNode::useful();
 }
 
-SHAMapAddNode SHAMap::addKnownNode(const SHAMapNode& node, Blob const& rawNode,
-	SHAMapSyncFilter* filter)
+SHAMapAddNode SHAMap::addKnownNode(const SHAMapNode& node, Blob const& rawNode, SHAMapSyncFilter* filter)
 { // return value: true=okay, false=error
 	assert(!node.isRoot());
 	if (!isSynching())
@@ -303,7 +294,7 @@ SHAMapAddNode SHAMap::addKnownNode(const SHAMapNode& node, Blob const& rawNode,
 		{
 			iNode = getNodePointer(iNode->getChildNodeID(branch), iNode->getChildHash(branch), filter);
 		}
-		catch (SHAMapMissingNode)
+		catch (SHAMapMissingNode&)
 		{
 			if (iNode->getDepth() != (node.getDepth() - 1))
 			{ // Either this node is broken or we didn't request it (yet)

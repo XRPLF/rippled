@@ -77,10 +77,9 @@ bool LedgerAcquire::tryLocal()
 		}
 		else
 		{
-			try
+			TransactionStateSF filter(mLedger->getLedgerSeq());
+			if (mLedger->peekTransactionMap()->fetchRoot(mLedger->getTransHash(), &filter))
 			{
-				TransactionStateSF filter(mLedger->getLedgerSeq());
-				mLedger->peekTransactionMap()->fetchRoot(mLedger->getTransHash(), &filter);
 				WriteLog (lsTRACE, LedgerAcquire) << "Got root txn map locally";
 				std::vector<uint256> h = mLedger->getNeededTransactionHashes(1, &filter);
 				if (h.empty())
@@ -88,9 +87,6 @@ bool LedgerAcquire::tryLocal()
 					WriteLog (lsTRACE, LedgerAcquire) << "Had full txn map locally";
 					mHaveTransactions = true;
 				}
-			}
-			catch (SHAMapMissingNode&)
-			{
 			}
 		}
 	}
@@ -104,10 +100,9 @@ bool LedgerAcquire::tryLocal()
 		}
 		else
 		{
-			try
+			AccountStateSF filter(mLedger->getLedgerSeq());
+			if (mLedger->peekAccountStateMap()->fetchRoot(mLedger->getAccountHash(), &filter))
 			{
-				AccountStateSF filter(mLedger->getLedgerSeq());
-				mLedger->peekAccountStateMap()->fetchRoot(mLedger->getAccountHash(), &filter);
 				WriteLog (lsTRACE, LedgerAcquire) << "Got root AS map locally";
 				std::vector<uint256> h = mLedger->getNeededAccountStateHashes(1, &filter);
 				if (h.empty())
@@ -115,9 +110,6 @@ bool LedgerAcquire::tryLocal()
 					WriteLog (lsTRACE, LedgerAcquire) << "Had full AS map locally";
 					mHaveState = true;
 				}
-			}
-			catch (SHAMapMissingNode&)
-			{
 			}
 		}
 	}

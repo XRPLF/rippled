@@ -41,7 +41,7 @@ public:
 	ScopedLock Lock() const { return ScopedLock(mLock); }
 
 	bool hasNode(const SHAMapNode& id);
-	void fetchRoot(uint256 const& hash, SHAMapSyncFilter* filter);
+	bool fetchRoot(uint256 const& hash, SHAMapSyncFilter* filter);
 
 	// normal hash access functions
 	bool hasItem(uint256 const& id);
@@ -104,7 +104,8 @@ public:
 	uint32 getSeq()				{ return mSeq; }
 
 	// overloads for backed maps
-	boost::shared_ptr<SHAMapTreeNode> fetchNodeExternal(const SHAMapNode& id, uint256 const& hash);
+	boost::shared_ptr<SHAMapTreeNode> fetchNodeExternal(const SHAMapNode& id, uint256 const& hash); // throws
+	boost::shared_ptr<SHAMapTreeNode> fetchNodeExternalNT(const SHAMapNode& id, uint256 const& hash); // no throw
 
 	bool operator==(const SHAMap& s) { return getHash() == s.getHash(); }
 
@@ -143,7 +144,9 @@ private:
 	SHAMapTreeNode::pointer getNode(const SHAMapNode& id);
 	SHAMapTreeNode::pointer getNode(const SHAMapNode& id, uint256 const& hash, bool modify);
 	SHAMapTreeNode* getNodePointer(const SHAMapNode& id, uint256 const& hash);
+	SHAMapTreeNode* getNodePointerNT(const SHAMapNode& id, uint256 const& hash);
 	SHAMapTreeNode* getNodePointer(const SHAMapNode& id, uint256 const& hash, SHAMapSyncFilter* filter);
+	SHAMapTreeNode* getNodePointerNT(const SHAMapNode& id, uint256 const& hash, SHAMapSyncFilter* filter);
 	SHAMapTreeNode* firstBelow(SHAMapTreeNode*);
 	SHAMapTreeNode* lastBelow(SHAMapTreeNode*);
 
