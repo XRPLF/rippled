@@ -2297,6 +2297,8 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest, int& cost, ScopedLock
 	ret["ledger_hit_rate"] = theApp->getLedgerMaster().getCacheHitRate();
 	ret["AL_hit_rate"] = AcceptedLedger::getCacheHitRate();
 
+	ret["fullbelow_size"] = SHAMap::getFullBelowSize();
+
 	std::string uptime;
 	int s = UptimeTimer::getInstance().getElapsedSeconds();
 	textTime(uptime, s, "year", 365*24*60*60);
