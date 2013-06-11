@@ -25,7 +25,22 @@ public:
 		omFULL			= 4		// we have the ledger and can even validate
 	};
 
-	typedef boost::unordered_map<uint64, InfoSub::wptr>				subMapType;
+#if 0
+    /** Subscription data interface.
+    */
+    class Subscriber
+    {
+    public:
+        typedef boost::weak_ptr <Subscriber> WeakPtr;
+    
+        /** Called every time new JSON data is available.
+        */
+        virtual void onSubscriberReceiveJSON (Json::Value const& json) { }
+    };
+    typedef boost::unordered_map <uint64, Subscriber::WeakPtr> subMapType;
+#endif
+    
+	typedef boost::unordered_map <uint64, InfoSub::wptr> subMapType;
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);

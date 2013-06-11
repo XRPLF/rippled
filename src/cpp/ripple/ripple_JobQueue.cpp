@@ -215,10 +215,8 @@ void JobQueue::IOThread(boost::mutex::scoped_lock& sl)
 // do jobs until asked to stop
 void JobQueue::threadEntry()
 {
-
-    // VFALCO TODO Replace this mutex nonsense
-    //
 	boost::mutex::scoped_lock sl(mJobLock);
+
 	while (1)
 	{
 		setCallingThreadName("waiting");

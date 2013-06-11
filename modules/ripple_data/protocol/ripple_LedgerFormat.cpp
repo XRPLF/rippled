@@ -3,8 +3,6 @@ std::map <int, LedgerEntryFormat*> LedgerEntryFormat::byType;
 
 std::map <std::string, LedgerEntryFormat*> LedgerEntryFormat::byName;
 
-// VFALCO TODO surely we can think of a better way than macros?
-
 #define LEF_BASE											\
 	<< SOElement(sfLedgerIndex,				SOE_OPTIONAL)	\
 	<< SOElement(sfLedgerEntryType,			SOE_REQUIRED)	\
