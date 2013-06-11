@@ -986,17 +986,16 @@ static void checkTransaction(Job&, int flags, SerializedTransaction::pointer stx
 		if (isSetBit(flags, SF_SIGGOOD))
 			tx = boost::make_shared<Transaction>(stx, false);
 		else
-		{
 			tx = boost::make_shared<Transaction>(stx, true);
-			if (tx->getStatus() == INVALID)
-			{
-				theApp->getHashRouter().setFlag(stx->getTransactionID(), SF_BAD);
-				Peer::punishPeer(peer, LT_InvalidSignature);
-				return;
-			}
-			else
-				theApp->getHashRouter().setFlag(stx->getTransactionID(), SF_SIGGOOD);
+
+		if (tx->getStatus() == INVALID)
+		{
+			theApp->getHashRouter().setFlag(stx->getTransactionID(), SF_BAD);
+			Peer::punishPeer(peer, LT_InvalidSignature);
+			return;
 		}
+		else
+			theApp->getHashRouter().setFlag(stx->getTransactionID(), SF_SIGGOOD);
 
 		theApp->getOPs().processTransaction(tx, isSetBit(flags, SF_TRUSTED));
 
