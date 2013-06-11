@@ -125,7 +125,8 @@ public:
 	
     std::list<fetchPackEntry_t> getFetchPack(SHAMap* have, bool includeLeaves, int max);
 
-	static void sweep()			{ fullBelowCache.sweep(); }
+    static int getFullBelowSize()	{ return fullBelowCache.getSize(); }
+	static void sweep()				{ fullBelowCache.sweep(); }
 
 private:
 	static KeyCache <uint256, UptimeTimerAdapter> fullBelowCache;
