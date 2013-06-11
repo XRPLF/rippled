@@ -28,19 +28,19 @@ public:
 		assert((size >= 0) && (age > 2));
 	}
 
-	void getSize()
+	int getSize()
 	{
 		boost::mutex::scoped_lock sl(mNCLock);
 		return mCache.size();
 	}
 
-	void getTargetSize()
+	int getTargetSize()
 	{
 		boost::mutex::scoped_lock sl(mNCLock);
 		return mTargetSize;
 	}
 
-	void getTargetAge()
+	int getTargetAge()
 	{
 		boost::mutex::scoped_lock sl(mNCLock);
 		return mTargetAge;
