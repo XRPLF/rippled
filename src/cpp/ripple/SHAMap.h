@@ -480,8 +480,8 @@ public:
 	typedef std::pair< uint256, std::vector<unsigned char> > fetchPackEntry_t;
 	std::list<fetchPackEntry_t> getFetchPack(SHAMap* have, bool includeLeaves, int max);
 
-	static int getFullBelowCacheSize()	{ return fullBelowCache.getSize(); }
-	static void sweep()					{ fullBelowCache.sweep(); }
+	static int getFullBelowSize()	{ return fullBelowCache.getSize(); }
+	static void sweep()				{ fullBelowCache.sweep(); }
 };
 
 #endif
