@@ -7,6 +7,10 @@ const char *TxnDBInit[] = {
 	"PRAGMA journal_mode=WAL;",
 	"PRAGMA journal_size_limit=1582080;",
 
+#if (ULONG_MAX > UINT_MAX) && !defined (NO_SQLITE_MMAP)
+	"PRAGMA mmap_size=4294967296;",
+#endif
+
 	"BEGIN TRANSACTION;",
 
 	"CREATE TABLE Transactions (				\
@@ -273,6 +277,10 @@ const char *HashNodeDBInit[] = {
 	"PRAGMA synchronous=NORMAL;",
 	"PRAGMA journal_mode=WAL;",
 	"PRAGMA journal_size_limit=1582080;",
+
+#if (ULONG_MAX > UINT_MAX) && !defined (NO_SQLITE_MMAP)
+	"PRAGMA mmap_size=4294967296;",
+#endif
 
 	"BEGIN TRANSACTION;",
 
