@@ -283,9 +283,6 @@ const char *HashNodeDBInit[] = {
 		Object		BLOB							\
 	);",
 
-	"CREATE INDEX ObjectLocate ON					\
-		CommittedObjects(LedgerIndex, ObjType);",
-
 	"END TRANSACTION;"
 };
 
