@@ -204,35 +204,45 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& id, uint256 const& has
 
 SHAMapTreeNode* SHAMap::getNodePointer(const SHAMapNode& id, uint256 const& hash)
 { // fast, but you do not hold a reference
+	SHAMapTreeNode* ret = getNodePointerNT(id, hash);
+	if (!ret)
+		throw SHAMapMissingNode(mType, id, hash);
+	return ret;
+}
+
+SHAMapTreeNode* SHAMap::getNodePointerNT(const SHAMapNode& id, uint256 const& hash)
+{ // fast, but you do not hold a reference
 	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.find(id);
 	if (it != mTNByID.end())
 		return it->second.get();
 
-	return fetchNodeExternal(id, hash).get();
+	return fetchNodeExternalNT(id, hash).get();
 }
 
 SHAMapTreeNode* SHAMap::getNodePointer(const SHAMapNode& id, uint256 const& hash, SHAMapSyncFilter* filter)
 {
-	try
+	SHAMapTreeNode* ret = getNodePointerNT(id, hash, filter);
+	if (!ret)
+		throw SHAMapMissingNode(mType, id, hash);
+	return ret;
+}
+
+SHAMapTreeNode* SHAMap::getNodePointerNT(const SHAMapNode& id, uint256 const& hash, SHAMapSyncFilter* filter)
+{
+	SHAMapTreeNode* node = getNodePointerNT(id, hash);
+	if (!node && filter)
 	{
-		return getNodePointer(id, hash);
-	}
-	catch (SHAMapMissingNode)
-	{
-		if (filter)
+		Blob nodeData;
+		if (filter->haveNode(id, hash, nodeData))
 		{
-			Blob nodeData;
-			if (filter->haveNode(id, hash, nodeData))
-			{
-				SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(
-					boost::cref(id), boost::cref(nodeData), mSeq - 1, snfPREFIX, boost::cref(hash), true);
-				mTNByID[id] = node;
-				filter->gotNode(true, id, hash, nodeData, node->getType());
-				return node.get();
-			}
+			SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(
+				boost::cref(id), boost::cref(nodeData), mSeq - 1, snfPREFIX, boost::cref(hash), true);
+			mTNByID[id] = node;
+			filter->gotNode(true, id, hash, nodeData, node->getType());
+			return node.get();
 		}
-		throw;
 	}
+	return node;
 }
 
 
@@ -692,8 +702,18 @@ void SHAMapItem::dump()
 
 SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, uint256 const& hash)
 {
-	if (!theApp->running())
+	SHAMapTreeNode::pointer ret = fetchNodeExternalNT(id, hash);
+	if (!ret)
 		throw SHAMapMissingNode(mType, id, hash);
+	return ret;
+}
+
+SHAMapTreeNode::pointer SHAMap::fetchNodeExternalNT(const SHAMapNode& id, uint256 const& hash)
+{
+	SHAMapTreeNode::pointer ret;
+
+	if (!theApp->running())
+		return ret;
 
 	HashedObject::pointer obj(theApp->getHashedObjectStore().retrieve(hash));
 	if (!obj)
@@ -704,13 +724,12 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, uint256 
 			theApp->getOPs().missingNodeInLedger(mLedgerSeq);
 			mLedgerSeq = 0;
 		}
-		throw SHAMapMissingNode(mType, id, hash);
+		return ret;
 	}
 
 	try
 	{
-		SHAMapTreeNode::pointer ret =
-			boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq, snfPREFIX, hash, true);
+		ret = boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq, snfPREFIX, hash, true);
 		if (id != *ret)
 		{
 			WriteLog (lsFATAL, SHAMap) << "id:" << id << ", got:" << *ret;
@@ -733,14 +752,14 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, uint256 
 	catch (...)
 	{
 		WriteLog (lsWARNING, SHAMap) << "fetchNodeExternal gets an invalid node: " << hash;
-		throw SHAMapMissingNode(mType, id, hash);
+		return SHAMapTreeNode::pointer();
 	}
 }
 
-void SHAMap::fetchRoot(uint256 const& hash, SHAMapSyncFilter* filter)
+bool SHAMap::fetchRoot(uint256 const& hash, SHAMapSyncFilter* filter)
 {
 	if (hash == root->getNodeHash())
-		return;
+		return true;
 	if (ShouldLog (lsTRACE, SHAMap))
 	{
 		if (mType == smtTRANSACTION)
@@ -750,21 +769,19 @@ void SHAMap::fetchRoot(uint256 const& hash, SHAMapSyncFilter* filter)
 		else
 			WriteLog (lsTRACE, SHAMap) << "Fetch root SHAMap node " << hash;
 	}
-	try
-	{
-		root = fetchNodeExternal(SHAMapNode(), hash);
-	}
-	catch (SHAMapMissingNode&)
+	root = fetchNodeExternalNT(SHAMapNode(), hash);
+	if (!root)
 	{
 		Blob nodeData;
 		if (!filter || !filter->haveNode(SHAMapNode(), hash, nodeData))
-			throw;
+			return false;
 		root = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), nodeData,
 			mSeq - 1, snfPREFIX, hash, true);
 		mTNByID[*root] = root;
 		filter->gotNode(true, SHAMapNode(), hash, nodeData, root->getType());
 	}
 	assert(root->getNodeHash() == hash);
+	return true;
 }
 
 int SHAMap::armDirty()

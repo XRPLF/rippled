@@ -65,27 +65,15 @@ Ledger::Ledger (uint256 const& parentHash,
 	updateHash();
 	loaded = true;
 
-    try
-	{
-		if (mTransHash.isNonZero())
-			mTransactionMap->fetchRoot(mTransHash, NULL);
-	}
-	catch (...)
+	if (mTransHash.isNonZero() && !mTransactionMap->fetchRoot(mTransHash, NULL))
 	{
 		loaded = false;
-
         WriteLog (lsWARNING, Ledger) << "Don't have TX root for ledger";
 	}
 
-    try
-	{
-		if (mAccountHash.isNonZero())
-			mAccountStateMap->fetchRoot(mAccountHash, NULL);
-	}
-	catch (...)
+	if (mAccountHash.isNonZero() && !mAccountStateMap->fetchRoot(mAccountHash, NULL))
 	{
 		loaded = false;
-
 		WriteLog (lsWARNING, Ledger) << "Don't have AS root for ledger";
 	}
 
