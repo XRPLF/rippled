@@ -57,6 +57,15 @@
 // VFALCO TODO try to reduce these dependencies
 #include "../ripple_basics/ripple_basics.h"
 
+//------------------------------------------------------------------------------
+
+// VFALCO TODO prepare a unity header for LevelDB
+// VFALCO TODO don't expose leveldb throughout the headers
+#include "leveldb/cache.h"
+#include "leveldb/filter_policy.h"
+#include "leveldb/db.h"
+#include "leveldb/write_batch.h"
+
 // VFALCO TODO figure out a good place for this file, perhaps give it some
 //         additional hierarchy via directories.
 #include "ripple.pb.h"

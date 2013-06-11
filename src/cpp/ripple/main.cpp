@@ -10,7 +10,7 @@ using namespace boost::unit_test;
 
 void setupServer()
 {
-	theApp = new Application();
+	theApp = IApplication::New ();
 	theApp->setup();
 }
 
@@ -43,7 +43,7 @@ void startServer()
 
 bool init_unit_test()
 {
-	theApp = new Application();
+	theApp = IApplication::New ();
 
     return true;
 }

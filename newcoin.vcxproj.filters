@@ -579,16 +579,10 @@
     <ClCompile Include="build\proto\ripple.pb.cc">
       <Filter>1. Modules\ripple_data\protobuf</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Application.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\main.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\UpdateTables.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\NetworkOPs.cpp">
@@ -839,6 +833,9 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_PathRequest.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_Application.cpp">
+      <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1316,9 +1313,6 @@
     <ClInclude Include="build\proto\ripple.pb.h">
       <Filter>1. Modules\ripple_data\protobuf</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Application.h">
-      <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\LoadManager.h">
       <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
     </ClInclude>
@@ -1582,6 +1576,9 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_PathRequest.h">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_IApplication.h">
+      <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

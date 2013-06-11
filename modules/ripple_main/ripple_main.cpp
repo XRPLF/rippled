@@ -40,6 +40,8 @@
 #include <string>
 #include <vector>
 
+// VFALCO NOTE Holy smokes...that's a lot of boost!!!
+
 #include <boost/algorithm/string.hpp>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
@@ -78,14 +80,6 @@
 #include <openssl/ec.h>
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
-
-//------------------------------------------------------------------------------
-
-// VFALCO TODO prepare a unity header for LevelDB
-#include "leveldb/cache.h"
-#include "leveldb/filter_policy.h"
-#include "leveldb/db.h"
-#include "leveldb/write_batch.h"
 
 //------------------------------------------------------------------------------
 
@@ -210,7 +204,7 @@
 #include "src/cpp/ripple/OrderBookDB.h"
 #include "src/cpp/ripple/ripple_DatabaseCon.h"
 
-#include "src/cpp/ripple/Application.h"
+#include "src/cpp/ripple/ripple_IApplication.h"
 #include "src/cpp/ripple/AutoSocket.h"
 #include "src/cpp/ripple/CallRPC.h"
 #include "src/cpp/ripple/ChangeTransactor.h"
@@ -276,7 +270,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/AccountItems.cpp" // no log
 #include "src/cpp/ripple/AccountSetTransactor.cpp"
 #include "src/cpp/ripple/AccountState.cpp" // no log
-#include "src/cpp/ripple/Application.cpp"
 #include "src/cpp/ripple/CallRPC.cpp"
 #include "src/cpp/ripple/ripple_CanonicalTXSet.cpp"
 #include "src/cpp/ripple/ChangeTransactor.cpp" // no log
@@ -327,7 +320,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/TransactionQueue.cpp" // no log
 #include "src/cpp/ripple/Transactor.cpp"
 #include "src/cpp/ripple/TrustSetTransactor.cpp"
-#include "src/cpp/ripple/UpdateTables.cpp"
 #include "src/cpp/ripple/Wallet.cpp"
 #include "src/cpp/ripple/WalletAddTransactor.cpp"
 #include "src/cpp/ripple/WSDoor.cpp" // uses logging in WSConnection.h 
@@ -344,13 +336,14 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 
 #include "src/cpp/ripple/ripple_AcceptedLedgerTx.cpp"
 #include "src/cpp/ripple/ripple_AcceptedLedger.cpp"
+#include "src/cpp/ripple/ripple_Application.cpp"
 #include "src/cpp/ripple/ripple_Config.cpp"
 #include "src/cpp/ripple/ripple_DatabaseCon.cpp"
 #include "src/cpp/ripple/ripple_Features.cpp"
 #include "src/cpp/ripple/ripple_FeeVote.cpp"
 #include "src/cpp/ripple/ripple_HashedObjectStore.cpp"
 #include "src/cpp/ripple/ripple_HashRouter.cpp"
-#include "src/cpp/ripple/ripple_InfoSub.cpp"
+//#include "src/cpp/ripple/ripple_InfoSub.cpp"
 #include "src/cpp/ripple/ripple_Job.cpp"
 #include "src/cpp/ripple/ripple_JobQueue.cpp"
 #include "src/cpp/ripple/ripple_LedgerAcquire.cpp"
