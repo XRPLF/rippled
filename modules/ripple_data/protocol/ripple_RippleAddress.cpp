@@ -1,13 +1,8 @@
 
-
-// VFALCO TODO remove this when it's safe to do so.
-#ifdef __APPLICATION__
-#error Including Application.h is disallowed!
-#endif
-
 SETUP_LOG (RippleAddress)
 
-RippleAddress::RippleAddress() : mIsValid(false)
+RippleAddress::RippleAddress ()
+    : mIsValid (false)
 {
     nVersion = VER_NONE;
 }

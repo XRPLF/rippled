@@ -160,7 +160,7 @@ bool RandomNumbers::platformAddEntropy ()
 
 void RandomNumbers::platformAddPerformanceMonitorEntropy ()
 {
-	// VFALCO This is how we simulate local functions
+    // VFALCO TODO Remove all this fancy stuff
 	struct
 	{
 		int64 operator() () const

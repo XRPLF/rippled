@@ -1,13 +1,4 @@
 
-#include "PeerDoor.h"
-
-#include <iostream>
-
-#include <boost/bind.hpp>
-#include <boost/mem_fn.hpp>
-
-#include "Application.h"
-
 SETUP_LOG (PeerDoor)
 
 using namespace std;

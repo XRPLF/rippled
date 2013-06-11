@@ -1,27 +1,125 @@
 
-// VFALCO TODO Replace these with beast "unsigned long long" generators
-#define SYSTEM_CURRENCY_GIFT		1000ull
-#define SYSTEM_CURRENCY_USERS		100000000ull
-#define SYSTEM_CURRENCY_PARTS		1000000ull		// 10^SYSTEM_CURRENCY_PRECISION
-#define SYSTEM_CURRENCY_START		(SYSTEM_CURRENCY_GIFT*SYSTEM_CURRENCY_USERS*SYSTEM_CURRENCY_PARTS)
 
-/* VFALCO NOTE
+IApplication* theApp = NULL;
 
-    The master lock protects:
 
-    - The open ledger
-    - Server global state
-        * What the last closed ledger is
-        * State of the consensus engine
-
-    other things
-*/
+class Application;
 
 SETUP_LOG (Application)
 
 // VFALCO TODO fix/clean this, it might have broken with the Log changes
 LogPartition AutoSocketPartition("AutoSocket");
-Application* theApp = NULL;
+
+// VFALCO TODO Move the function definitions into the class declaration
+class Application : public IApplication
+{
+public:
+	Application();
+	~Application();
+
+	Wallet& getWallet()								{ return mWallet ; }
+	NetworkOPs& getOPs()							{ return mNetOps; }
+
+	boost::asio::io_service& getIOService()			{ return mIOService; }
+	boost::asio::io_service& getAuxService()		{ return mAuxService; }
+
+	LedgerMaster& getLedgerMaster()					{ return mLedgerMaster; }
+	LedgerAcquireMaster& getMasterLedgerAcquire()	{ return mMasterLedgerAcquire; }
+	TransactionMaster& getMasterTransaction()		{ return mMasterTransaction; }
+	NodeCache& getTempNodeCache()					{ return mTempNodeCache; }
+	HashedObjectStore& getHashedObjectStore()		{ return mHashedObjectStore; }
+	JobQueue& getJobQueue()							{ return mJobQueue; }
+	boost::recursive_mutex& getMasterLock()			{ return mMasterLock; }
+	LoadManager& getLoadManager()					{ return mLoadMgr; }
+	TXQueue& getTxnQueue()							{ return mTxnQueue; }
+	PeerDoor& getPeerDoor()							{ return *mPeerDoor; }
+	OrderBookDB& getOrderBookDB()					{ return mOrderBookDB; }
+	SLECache& getSLECache()							{ return mSLECache; }
+
+    IFeatures& getFeatureTable()				    { return *mFeatures; }
+	ILoadFeeTrack& getFeeTrack()				    { return *mFeeTrack; }
+	IFeeVote& getFeeVote()							{ return *mFeeVote; }
+	IHashRouter& getHashRouter()				    { return *mHashRouter; }
+	IValidations& getValidations()			        { return *mValidations; }
+	IUniqueNodeList& getUNL()						{ return *mUNL; }
+	IProofOfWorkFactory& getProofOfWorkFactory()    { return *mProofOfWorkFactory; }
+	IPeers& getPeers ()                             { return *mPeers; }
+
+    // VFALCO TODO Move these to the .cpp
+    bool running()									{ return mTxnDB != NULL; } // VFALCO TODO replace with nullptr when beast is available
+	bool getSystemTimeOffset(int& offset)			{ return mSNTPClient.getOffset(offset); }
+
+	DatabaseCon* getRpcDB()			{ return mRpcDB; }
+	DatabaseCon* getTxnDB()			{ return mTxnDB; }
+	DatabaseCon* getLedgerDB()		{ return mLedgerDB; }
+	DatabaseCon* getWalletDB()		{ return mWalletDB; }
+	DatabaseCon* getNetNodeDB()		{ return mNetNodeDB; }
+	DatabaseCon* getPathFindDB()	{ return mPathFindDB; }
+	DatabaseCon* getHashNodeDB()	{ return mHashNodeDB; }
+
+	leveldb::DB* getHashNodeLDB()	{ return mHashNodeLDB; }
+	leveldb::DB* getEphemeralLDB()	{ return mEphemeralLDB; }
+
+	bool isShutdown()				{ return mShutdown; }
+	void setup();
+	void run();
+	void stop();
+	void sweep();
+
+private:	
+	void updateTables (bool);
+	void startNewLedger ();
+	bool loadOldLedger (const std::string&);
+
+    boost::asio::io_service	mIOService;
+    boost::asio::io_service mAuxService;
+	boost::asio::io_service::work mIOWork;
+    boost::asio::io_service::work mAuxWork;
+
+	boost::recursive_mutex	mMasterLock;
+
+	Wallet					mWallet;
+	LedgerMaster			mLedgerMaster;
+	LedgerAcquireMaster		mMasterLedgerAcquire;
+	TransactionMaster		mMasterTransaction;
+	NetworkOPs				mNetOps;
+	NodeCache				mTempNodeCache;
+	HashedObjectStore		mHashedObjectStore;
+	SLECache				mSLECache;
+	SNTPClient				mSNTPClient;
+	JobQueue				mJobQueue;
+	LoadManager				mLoadMgr;
+	TXQueue					mTxnQueue;
+	OrderBookDB				mOrderBookDB;
+
+    // VFALCO Clean stuff
+    beast::ScopedPointer <IFeatures> mFeatures;
+	beast::ScopedPointer <IFeeVote> mFeeVote;
+    beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
+    beast::ScopedPointer <IHashRouter> mHashRouter;
+	beast::ScopedPointer <IValidations> mValidations;
+	beast::ScopedPointer <IUniqueNodeList> mUNL;
+	beast::ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
+	beast::ScopedPointer <IPeers> mPeers;
+    // VFALCO End Clean stuff
+
+	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
+
+	leveldb::DB				*mHashNodeLDB;
+	leveldb::DB				*mEphemeralLDB;
+
+	PeerDoor*				mPeerDoor;
+	RPCDoor*				mRPCDoor;
+	WSDoor*					mWSPublicDoor;
+	WSDoor*					mWSPrivateDoor;
+
+	boost::asio::deadline_timer	mSweepTimer;
+
+	std::map<std::string, Peer::pointer> mPeerMap;
+	boost::recursive_mutex	mPeerMapLock;
+
+	volatile bool			mShutdown;
+};
 
 Application::Application ()
     : mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
@@ -568,4 +666,143 @@ bool serverOkay(std::string& reason)
 	return true;
 }
 
-// vim:ts=4
+//VFALCO TODO clean this up since it is just a file holding a single member function definition
+
+static std::vector<std::string> getSchema(DatabaseCon* dbc, const std::string& dbName)
+{
+	std::vector<std::string> schema;
+
+	std::string sql = "SELECT sql FROM sqlite_master WHERE tbl_name='";
+	sql += dbName;
+	sql += "';";
+
+	SQL_FOREACH(dbc->getDB(), sql)
+	{
+			dbc->getDB()->getStr("sql", sql);
+			schema.push_back(sql);
+	}
+
+	return schema;
+}
+
+static bool schemaHas(DatabaseCon* dbc, const std::string& dbName, int line, const std::string& content)
+{
+	std::vector<std::string> schema = getSchema(dbc, dbName);
+	if (static_cast<int>(schema.size()) <= line)
+	{
+		Log(lsFATAL) << "Schema for " << dbName << " has too few lines";
+		throw std::runtime_error("bad schema");
+	}
+	return schema[line].find(content) != std::string::npos;
+}
+
+static void addTxnSeqField()
+{
+	if (schemaHas(theApp->getTxnDB(), "AccountTransactions", 0, "TxnSeq"))
+		return;
+	Log(lsWARNING) << "Transaction sequence field is missing";
+
+	Database* db = theApp->getTxnDB()->getDB();
+
+	std::vector< std::pair<uint256, int> > txIDs;
+	txIDs.reserve(300000);
+
+	Log(lsINFO) << "Parsing transactions";
+	int i = 0;
+	uint256 transID;
+	SQL_FOREACH(db, "SELECT TransID,TxnMeta FROM Transactions;")
+	{
+		Blob rawMeta;
+		int metaSize = 2048;
+		rawMeta.resize(metaSize);
+		metaSize = db->getBinary("TxnMeta", &*rawMeta.begin(), rawMeta.size());
+		if (metaSize > static_cast<int>(rawMeta.size()))
+		{
+			rawMeta.resize(metaSize);
+			db->getBinary("TxnMeta", &*rawMeta.begin(), rawMeta.size());
+		}
+		else rawMeta.resize(metaSize);
+
+		std::string tid;
+		db->getStr("TransID", tid);
+		transID.SetHex(tid, true);
+
+		if (rawMeta.size() == 0)
+		{
+			txIDs.push_back(std::make_pair(transID, -1));
+			Log(lsINFO) << "No metadata for " << transID;
+		}
+		else
+		{
+			TransactionMetaSet m(transID, 0, rawMeta);
+			txIDs.push_back(std::make_pair(transID, m.getIndex()));
+		}
+
+		if ((++i % 1000) == 0)
+			Log(lsINFO) << i << " transactions read";
+	}
+
+	Log(lsINFO) << "All " << i << " transactions read";
+
+	db->executeSQL("BEGIN TRANSACTION;");
+
+	Log(lsINFO) << "Dropping old index";
+	db->executeSQL("DROP INDEX AcctTxIndex;");
+
+	Log(lsINFO) << "Altering table";
+	db->executeSQL("ALTER TABLE AccountTransactions ADD COLUMN TxnSeq INTEGER;");
+
+	typedef std::pair<uint256, int> u256_int_pair_t;
+	boost::format fmt("UPDATE AccountTransactions SET TxnSeq = %d WHERE TransID = '%s';");
+	i = 0;
+	BOOST_FOREACH(u256_int_pair_t& t, txIDs)
+	{
+		db->executeSQL(boost::str(fmt % t.second % t.first.GetHex()));
+		if ((++i % 1000) == 0)
+			Log(lsINFO) << i << " transactions updated";
+	}
+
+	Log(lsINFO) << "Building new index";
+	db->executeSQL("CREATE INDEX AcctTxIndex ON AccountTransactions(Account, LedgerSeq, TxnSeq, TransID);");
+	db->executeSQL("END TRANSACTION;");
+}
+
+void Application::updateTables(bool ldbImport)
+{ // perform any needed table updates
+	assert(schemaHas(theApp->getTxnDB(), "AccountTransactions", 0, "TransID"));
+	assert(!schemaHas(theApp->getTxnDB(), "AccountTransactions", 0, "foobar"));
+	addTxnSeqField();
+
+	if (schemaHas(theApp->getTxnDB(), "AccountTransactions", 0, "PRIMARY"))
+	{
+		Log(lsFATAL) << "AccountTransactions database should not have a primary key";
+		StopSustain();
+		exit(1);
+	}
+
+	if (theApp->getHashedObjectStore().isLevelDB())
+	{
+		boost::filesystem::path hashPath = theConfig.DATA_DIR / "hashnode.db";
+		if (boost::filesystem::exists(hashPath))
+		{
+			if (theConfig.LDB_IMPORT)
+			{
+				Log(lsWARNING) << "Importing SQLite -> LevelDB";
+				theApp->getHashedObjectStore().import(hashPath.string());
+				Log(lsWARNING) << "Remove or remname the hashnode.db file";
+			}
+			else
+			{
+				Log(lsWARNING) << "SQLite hashnode database exists. Please either remove or import";
+				Log(lsWARNING) << "To import, start with the '--import' option. Otherwise, remove hashnode.db";
+				StopSustain();
+				exit(1);
+			}
+		}
+	}
+}
+
+IApplication* IApplication::New ()
+{
+    return new Application;
+}

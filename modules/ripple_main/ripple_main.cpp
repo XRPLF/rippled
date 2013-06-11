@@ -34,10 +34,13 @@
 #include <iostream>
 #include <list>
 #include <map>
+#include <queue>
 #include <set>
 #include <stack>
 #include <string>
 #include <vector>
+
+// VFALCO NOTE Holy smokes...that's a lot of boost!!!
 
 #include <boost/algorithm/string.hpp>
 #include <boost/array.hpp>
@@ -55,11 +58,14 @@
 #include <boost/function.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/mem_fn.hpp>
 #include <boost/pointer_cast.hpp>
+#include <boost/program_options.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/ref.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
+#include <boost/test/included/unit_test.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/condition_variable.hpp>
@@ -74,14 +80,6 @@
 #include <openssl/ec.h>
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
-
-//------------------------------------------------------------------------------
-
-// VFALCO TODO prepare a unity header for LevelDB
-#include "leveldb/cache.h"
-#include "leveldb/filter_policy.h"
-#include "leveldb/db.h"
-#include "leveldb/write_batch.h"
 
 //------------------------------------------------------------------------------
 
@@ -197,7 +195,16 @@
 //
 // -----------
 
-#include "src/cpp/ripple/Application.h"
+#include "src/cpp/ripple/TransactionMaster.h"
+#include "src/cpp/ripple/Wallet.h"
+#include "src/cpp/ripple/WSDoor.h"
+#include "src/cpp/ripple/SNTPClient.h"
+#include "src/cpp/ripple/RPCHandler.h"
+#include "src/cpp/ripple/TransactionQueue.h"
+#include "src/cpp/ripple/OrderBookDB.h"
+#include "src/cpp/ripple/ripple_DatabaseCon.h"
+
+#include "src/cpp/ripple/ripple_IApplication.h"
 #include "src/cpp/ripple/AutoSocket.h"
 #include "src/cpp/ripple/CallRPC.h"
 #include "src/cpp/ripple/ChangeTransactor.h"
@@ -210,8 +217,7 @@
 #include "src/cpp/ripple/OfferCancelTransactor.h"
 #include "src/cpp/ripple/OfferCreateTransactor.h"
 #include "src/cpp/ripple/OrderBook.h"
-#include "src/cpp/ripple/OrderBookDB.h"
-#include "src/cpp/ripple/PFRequest.h"
+#include "src/cpp/ripple/ripple_PathRequest.h"
 #include "src/cpp/ripple/ParameterTable.h"
 #include "src/cpp/ripple/ParseSection.h"
 #include "src/cpp/ripple/Pathfinder.h"
@@ -220,24 +226,18 @@
 #include "src/cpp/ripple/RPC.h"
 #include "src/cpp/ripple/RPCDoor.h"
 #include "src/cpp/ripple/RPCErr.h"
-#include "src/cpp/ripple/RPCHandler.h"
 #include "src/cpp/ripple/RPCServer.h"
 #include "src/cpp/ripple/RPCSub.h"
 #include "src/cpp/ripple/RegularKeySetTransactor.h"
 #include "src/cpp/ripple/RippleCalc.h"
 #include "src/cpp/ripple/RippleState.h"
-#include "src/cpp/ripple/SNTPClient.h"
 #include "src/cpp/ripple/SerializedValidation.h"
-#include "src/cpp/ripple/TransactionMaster.h"
-#include "src/cpp/ripple/TransactionQueue.h"
 #include "src/cpp/ripple/Transactor.h"
 #include "src/cpp/ripple/AccountSetTransactor.h"
 #include "src/cpp/ripple/TrustSetTransactor.h"
 #include "src/cpp/ripple/Version.h"
 #include "src/cpp/ripple/WSConnection.h"
-#include "src/cpp/ripple/WSDoor.h"
 #include "src/cpp/ripple/WSHandler.h"
-#include "src/cpp/ripple/Wallet.h"
 #include "src/cpp/ripple/WalletAddTransactor.h"
 
 #include "../websocketpp/src/logger/logger.hpp" // for ripple_LogWebSockets.cpp
@@ -270,7 +270,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/AccountItems.cpp" // no log
 #include "src/cpp/ripple/AccountSetTransactor.cpp"
 #include "src/cpp/ripple/AccountState.cpp" // no log
-#include "src/cpp/ripple/Application.cpp"
 #include "src/cpp/ripple/CallRPC.cpp"
 #include "src/cpp/ripple/ripple_CanonicalTXSet.cpp"
 #include "src/cpp/ripple/ChangeTransactor.cpp" // no log
@@ -300,7 +299,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/Pathfinder.cpp"
 #include "src/cpp/ripple/PaymentTransactor.cpp"
 #include "src/cpp/ripple/PeerDoor.cpp"
-#include "src/cpp/ripple/PFRequest.cpp"
 #include "src/cpp/ripple/RegularKeySetTransactor.cpp"
 #include "src/cpp/ripple/RippleCalc.cpp"
 #include "src/cpp/ripple/RippleState.cpp" // no log
@@ -322,7 +320,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/TransactionQueue.cpp" // no log
 #include "src/cpp/ripple/Transactor.cpp"
 #include "src/cpp/ripple/TrustSetTransactor.cpp"
-#include "src/cpp/ripple/UpdateTables.cpp"
 #include "src/cpp/ripple/Wallet.cpp"
 #include "src/cpp/ripple/WalletAddTransactor.cpp"
 #include "src/cpp/ripple/WSDoor.cpp" // uses logging in WSConnection.h 
@@ -339,13 +336,14 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 
 #include "src/cpp/ripple/ripple_AcceptedLedgerTx.cpp"
 #include "src/cpp/ripple/ripple_AcceptedLedger.cpp"
+#include "src/cpp/ripple/ripple_Application.cpp"
 #include "src/cpp/ripple/ripple_Config.cpp"
 #include "src/cpp/ripple/ripple_DatabaseCon.cpp"
 #include "src/cpp/ripple/ripple_Features.cpp"
 #include "src/cpp/ripple/ripple_FeeVote.cpp"
 #include "src/cpp/ripple/ripple_HashedObjectStore.cpp"
 #include "src/cpp/ripple/ripple_HashRouter.cpp"
-#include "src/cpp/ripple/ripple_InfoSub.cpp"
+//#include "src/cpp/ripple/ripple_InfoSub.cpp"
 #include "src/cpp/ripple/ripple_Job.cpp"
 #include "src/cpp/ripple/ripple_JobQueue.cpp"
 #include "src/cpp/ripple/ripple_LedgerAcquire.cpp"
@@ -355,6 +353,7 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_LoadMonitor.cpp"
 #include "src/cpp/ripple/ripple_LogWebsockets.cpp"
 #include "src/cpp/ripple/ripple_LoadFeeTrack.cpp"
+#include "src/cpp/ripple/ripple_PathRequest.cpp"
 #include "src/cpp/ripple/ripple_Peer.cpp"
 #include "src/cpp/ripple/ripple_Peers.cpp"
 #include "src/cpp/ripple/ripple_PeerSet.cpp"

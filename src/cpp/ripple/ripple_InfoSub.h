@@ -4,11 +4,10 @@
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
 
-class PFRequest;
+class PathRequest;
 
 DEFINE_INSTANCE(InfoSub);
 
-// VFALCO TODO Move InfoSub to a separate file
 class InfoSub : public IS_INSTANCE(InfoSub)
 {
 public:
@@ -35,23 +34,24 @@ public:
 
 	void insertSubAccountInfo (RippleAddress addr, uint32 uLedgerIndex);
 
-	void clearPFRequest();
+	void clearPathRequest();
 
-	void setPFRequest (const boost::shared_ptr<PFRequest>& req);
+	void setPathRequest (const boost::shared_ptr<PathRequest>& req);
 
-	boost::shared_ptr <PFRequest> const& getPFRequest ();
+	boost::shared_ptr <PathRequest> const& getPathRequest ();
 
 protected:
     // VFALCO TODO make accessor for this member
 	boost::mutex								mLockInfo;
 
 private:
+    // VFALCO TODO Move these globals to class instance
 	static uint64								sSeq;
 	static boost::mutex							sSeqLock;
 
-    boost::unordered_set<RippleAddress>			mSubAccountInfo;
-	boost::unordered_set<RippleAddress>			mSubAccountTransaction;
-	boost::shared_ptr <PFRequest>				mPFRequest;
+    boost::unordered_set <RippleAddress>		mSubAccountInfo;
+	boost::unordered_set <RippleAddress>	    mSubAccountTransaction;
+	boost::shared_ptr <PathRequest>				mPathRequest;
 
 	uint64										mSeq;
 };

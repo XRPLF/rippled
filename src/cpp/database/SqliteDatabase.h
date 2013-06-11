@@ -27,7 +27,6 @@ public:
 
 	// tells you how many rows were changed by an update or insert
 	int getNumRowsAffected();
-	int getLastInsertID();
 
 	// returns false if there are no results
 	bool startIterRows(bool finalize);

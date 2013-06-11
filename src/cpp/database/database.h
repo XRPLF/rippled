@@ -43,10 +43,6 @@ public:
 	    return executeSQL(strSql.c_str(), fail_okay);
 	}
 
-	// tells you how many rows were changed by an update or insert
-	virtual int getNumRowsAffected()=0;
-	virtual int getLastInsertID()=0;
-
 	// returns false if there are no results
 	virtual bool startIterRows(bool finalize = true)=0;
 	virtual void endIterRows()=0;

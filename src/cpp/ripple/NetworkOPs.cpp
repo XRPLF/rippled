@@ -1,10 +1,4 @@
 
-#include "Application.h"
-#include "Transaction.h"
-#include "HashPrefixes.h"
-#include "LedgerConsensus.h"
-#include "LedgerTiming.h"
-
 SETUP_LOG (NetworkOPs)
 
 // This is the primary interface into the "client" portion of the program.
@@ -977,16 +971,21 @@ void NetworkOPs::mapComplete(uint256 const& hash, SHAMap::ref map)
 		mConsensus->mapComplete(hash, map, true);
 }
 
-void NetworkOPs::endConsensus(bool correctLCL)
+void NetworkOPs::endConsensus (bool correctLCL)
 {
 	uint256 deadLedger = mLedgerMaster->getClosedLedger()->getParentHash();
-	std::vector<Peer::pointer> peerList = theApp->getPeers().getPeerVector();
-	BOOST_FOREACH(Peer::ref it, peerList)
+
+    std::vector <Peer::pointer> peerList = theApp->getPeers().getPeerVector ();
+
+    BOOST_FOREACH(Peer::ref it, peerList)
+    {
 		if (it && (it->getClosedLedgerHash() == deadLedger))
 		{
 			WriteLog (lsTRACE, NetworkOPs) << "Killing obsolete peer status";
 			it->cycleStatus();
 		}
+    }
+
 	mConsensus = boost::shared_ptr<LedgerConsensus>();
 }
 
@@ -996,33 +995,43 @@ void NetworkOPs::consensusViewChange()
 		setMode(omCONNECTED);
 }
 
-void NetworkOPs::pubServer()
+void NetworkOPs::pubServer ()
 {
-	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
+    // VFALCO TODO Don't hold the lock across calls to send...make a copy of the
+    //             list into a local array while holding the lock then release the
+    //             lock and call send on everyone.
+    //
+    boost::recursive_mutex::scoped_lock	sl (mMonitorLock);
 
-	if (!mSubServer.empty())
-	{
-		Json::Value jvObj(Json::objectValue);
+    if (!mSubServer.empty ())
+    {
+        Json::Value jvObj (Json::objectValue);
 
-		jvObj["type"]			= "serverStatus";
-		jvObj["server_status"]	= strOperatingMode();
-		jvObj["load_base"]		= (mLastLoadBase = theApp->getFeeTrack().getLoadBase());
-		jvObj["load_factor"]	= (mLastLoadFactor = theApp->getFeeTrack().getLoadFactor());
+        jvObj ["type"]			= "serverStatus";
+        jvObj ["server_status"]	= strOperatingMode();
+        jvObj ["load_base"]		= (mLastLoadBase = theApp->getFeeTrack().getLoadBase());
+        jvObj ["load_factor"]	= (mLastLoadFactor = theApp->getFeeTrack().getLoadFactor());
 
-		NetworkOPs::subMapType::const_iterator it = mSubServer.begin();
-		while (it != mSubServer.end())
-		{
-			InfoSub::pointer p = it->second.lock();
-			if (p)
-			{
-				p->send(jvObj, true);
-				++it;
-			}
-			else
-				it = mSubServer.erase(it);
-		}
+        NetworkOPs::subMapType::const_iterator it = mSubServer.begin();
 
-	}
+        while (it != mSubServer.end())
+        {
+            InfoSub::pointer p = it->second.lock();
+
+            // VFALCO TODO research the possibility of using thread queues and linearizing
+            //             the deletion of subscribers with the sending of JSON data.
+            if (p)
+            {
+                p->send(jvObj, true);
+
+                ++it;
+            }
+            else
+            {
+                it = mSubServer.erase(it);
+            }
+        }
+    }
 }
 
 void NetworkOPs::setMode(OperatingMode om)
@@ -1668,9 +1677,11 @@ bool NetworkOPs::subBook(InfoSub::ref isrListener, const uint160& currencyPays, 
 {
 	BookListeners::pointer listeners =
 		theApp->getOrderBookDB().makeBookListeners(currencyPays, currencyGets, issuerPays, issuerGets);
-	if (listeners)
+
+    if (listeners)
 		listeners->addSubscriber(isrListener);
-	return true;
+	
+    return true;
 }
 
 bool NetworkOPs::unsubBook(uint64 uSeq,
