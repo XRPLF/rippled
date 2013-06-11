@@ -849,7 +849,9 @@ static void checkTransaction(Job&, int flags, SerializedTransaction::pointer stx
 #endif
 		Transaction::pointer tx;
 
-		if ((flags & SF_SIGGOOD) != 0)
+		if (isSetBit(flags, SF_SIGGOOD))
+			tx = boost::make_shared<Transaction>(stx, false);
+		else
 		{
 			tx = boost::make_shared<Transaction>(stx, true);
 			if (tx->getStatus() == INVALID)
@@ -861,10 +863,8 @@ static void checkTransaction(Job&, int flags, SerializedTransaction::pointer stx
 			else
 				theApp->getSuppression().setFlag(stx->getTransactionID(), SF_SIGGOOD);
 		}
-		else
-			tx = boost::make_shared<Transaction>(stx, false);
 
-		theApp->getOPs().processTransaction(tx, (flags & SF_TRUSTED) != 0);
+		theApp->getOPs().processTransaction(tx, isSetBit(flags, SF_TRUSTED));
 
 #ifndef TRUST_NETWORK
 	}
@@ -891,13 +891,13 @@ void Peer::recvTransaction(ripple::TMTransaction& packet, ScopedLock& MasterLock
 		int flags;
 		if (!theApp->isNew(stx->getTransactionID(), mPeerId, flags))
 		{ // we have seen this transaction recently
-			if ((flags & SF_BAD) != 0)
+			if (isSetBit(flags, SF_BAD))
 			{
 				punishPeer(LT_InvalidSignature);
 				return;
 			}
 
-			if ((flags & SF_RETRY) == 0)
+			if (!isSetBit(flags, SF_RETRY))
 				return;
 		}
 		WriteLog (lsDEBUG, Peer) << "Got new transaction from peer";
