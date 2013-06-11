@@ -1988,6 +1988,15 @@ void NetworkOPs::getBookPage(Ledger::pointer lpLedger, const uint160& uTakerPays
 //	jvResult["nodes"]	= Json::Value(Json::arrayValue);
 }
 
+static void fpAppender(ripple::TMGetObjectByHash* reply, uint32 ledgerSeq,
+	const uint256& hash, const Blob& blob)
+{
+	ripple::TMIndexedObject& newObj = *(reply->add_objects());
+	newObj.set_ledgerseq(ledgerSeq);
+	newObj.set_hash(hash.begin(), 256 / 8);
+	newObj.set_data(&blob[0], blob.size());
+}
+
 void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer,
 	boost::shared_ptr<ripple::TMGetObjectByHash> request,
 	Ledger::pointer wantLedger, Ledger::pointer haveLedger, uint32 uUptime)
@@ -2028,27 +2037,13 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer,
 			newObj.set_data(s.getDataPtr(), s.getLength());
 			newObj.set_ledgerseq(lSeq);
 
-			std::list<SHAMap::fetchPackEntry_t> pack = wantLedger->peekAccountStateMap()->getFetchPack(
-				haveLedger->peekAccountStateMap().get(), true, 1024);
-			BOOST_FOREACH(SHAMap::fetchPackEntry_t& node, pack)
-			{
-				ripple::TMIndexedObject& newObj = *reply.add_objects();
-				newObj.set_hash(node.first.begin(), 256 / 8);
-				newObj.set_data(&node.second[0], node.second.size());
-				newObj.set_ledgerseq(lSeq);
-			}
+			wantLedger->peekAccountStateMap()->getFetchPack(haveLedger->peekAccountStateMap().get(), true, 1024,
+				BIND_TYPE(fpAppender, &reply, lSeq, P_1, P_2));
 
-			if (wantLedger->getAccountHash().isNonZero() && (pack.size() < 512))
-			{
-				pack = wantLedger->peekTransactionMap()->getFetchPack(NULL, true, 256);
-				BOOST_FOREACH(SHAMap::fetchPackEntry_t& node, pack)
-				{
-					ripple::TMIndexedObject& newObj = *reply.add_objects();
-					newObj.set_hash(node.first.begin(), 256 / 8);
-					newObj.set_data(&node.second[0], node.second.size());
-					newObj.set_ledgerseq(lSeq);
-				}
-			}
+			if (wantLedger->getAccountHash().isNonZero())
+				wantLedger->peekTransactionMap()->getFetchPack(NULL, true, 256,
+					BIND_TYPE(fpAppender, &reply, lSeq, P_1, P_2));
+
 			if (reply.objects().size() >= 256)
 				break;
 			haveLedger = wantLedger;

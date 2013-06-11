@@ -419,15 +419,29 @@ bool SHAMap::hasLeafNode(uint256 const& tag, uint256 const& nodeHash)
 		int branch = node->selectBranch(tag);
 		if (node->isEmptyBranch(branch))
 			return false;
-		node = getNodePointer(node->getChildNodeID(branch), node->getChildHash(branch));
+		const uint256& nextHash = node->getChildHash(branch);
+		if (nextHash == nodeHash)
+			return true;
+		node = getNodePointer(node->getChildNodeID(branch), nextHash);
 	}
-	return node->getNodeHash() == nodeHash;
+	return false;
+}
+
+static void addFPtoList(std::list<SHAMap::fetchPackEntry_t>& list, const uint256& hash, const Blob& blob)
+{
+	list.push_back(SHAMap::fetchPackEntry_t(hash, blob));
 }
 
 std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool includeLeaves, int max)
 {
 	std::list<fetchPackEntry_t> ret;
+	getFetchPack(have, includeLeaves, max, BIND_TYPE(addFPtoList, boost::ref(ret), P_1, P_2));
+	return ret;
+}
 
+void SHAMap::getFetchPack(SHAMap* have, bool includeLeaves, int max,
+	FUNCTION_TYPE<void (const uint256&, const Blob&)> func)
+{
 	boost::recursive_mutex::scoped_lock ul1(mLock);
 
 	boost::shared_ptr< boost::unique_lock<boost::recursive_mutex> > ul2;
@@ -439,7 +453,7 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool incl
 		if (!(*ul2))
 		{
 			WriteLog (lsINFO, SHAMap) << "Unable to create pack due to lock";
-			return ret;
+			return;
 		}
 	}
 
@@ -451,16 +465,16 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool incl
 		{
 			Serializer s;
 			root->addRaw(s, snfPREFIX);
-			ret.push_back(fetchPackEntry_t(root->getNodeHash(), s.peekData()));
+			func(root->getNodeHash(), s.peekData());
 		}
-		return ret;
+		return;
 	}
 
 	if (root->getNodeHash().isZero())
-		return ret;
+		return;
 
 	if (have && (root->getNodeHash() == have->root->getNodeHash()))
-		return ret;
+		return;
 
 	std::stack<SHAMapTreeNode*> stack; // contains unexplored non-matching inner node entries
 	stack.push(root.get());
@@ -473,7 +487,7 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool incl
 		// 1) Add this node to the pack
 		Serializer s;
 		node->addRaw(s, snfPREFIX);
-		ret.push_back(fetchPackEntry_t(node->getNodeHash(), s.peekData()));
+		func(node->getNodeHash(), s.peekData());
 		--max;
 
 		// 2) push non-matching child inner nodes
@@ -494,7 +508,7 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool incl
 				{
 					Serializer s;
 					node->addRaw(s, snfPREFIX);
-					ret.push_back(fetchPackEntry_t(node->getNodeHash(), s.peekData()));
+					func(node->getNodeHash(), s.peekData());
 					--max;
 				}
 			}
@@ -503,7 +517,6 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack(SHAMap* have, bool incl
 		if (max <= 0)
 			break;
 	}
-	return ret;
 }
 
 #ifdef DEBUG

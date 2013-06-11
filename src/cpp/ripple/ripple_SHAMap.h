@@ -124,6 +124,7 @@ public:
 	typedef std::pair <uint256, Blob> fetchPackEntry_t;
 	
     std::list<fetchPackEntry_t> getFetchPack(SHAMap* have, bool includeLeaves, int max);
+    void getFetchPack(SHAMap* have, bool includeLeaves, int max, FUNCTION_TYPE<void (const uint256&, const Blob&)>);
 
     static int getFullBelowSize()	{ return fullBelowCache.getSize(); }
 	static void sweep()				{ fullBelowCache.sweep(); }
