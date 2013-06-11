@@ -191,6 +191,8 @@ bool SHAMapTreeNode::updateHash()
 			assert(nh == s.getSHA512Half());
 #endif
 		}
+		else
+			nh.zero();
 	}
 	else if (mType == tnTRANSACTION_NM)
 	{
