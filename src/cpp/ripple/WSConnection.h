@@ -11,7 +11,6 @@
 #include <boost/pointer_cast.hpp>
 
 #include "WSDoor.h"
-#include "Application.h"
 #include "CallRPC.h"
 #include "LoadManager.h"
 #include "RPCErr.h"

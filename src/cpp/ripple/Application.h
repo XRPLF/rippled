@@ -1,5 +1,5 @@
-#ifndef __APPLICATION__
-#define __APPLICATION__
+#ifndef RIPPLE_APPLICATION_H
+#define RIPPLE_APPLICATION_H
 
 // VFALCO TODO Fix forward declares required for header dependency loops
 class IFeatures;

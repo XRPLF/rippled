@@ -11,7 +11,6 @@
 #include "Pathfinder.h"
 #include "RPCHandler.h"
 #include "RPCSub.h"
-#include "Application.h"
 #include "AccountItems.h"
 #include "Wallet.h"
 #include "RippleCalc.h"

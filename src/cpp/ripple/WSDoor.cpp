@@ -4,7 +4,6 @@
 //#include "../websocketpp/src/sockets/autotls.hpp"
 //#include "../websocketpp/src/websocketpp.hpp"
 
-#include "Application.h"
 #include "WSConnection.h"
 #include "WSHandler.h"
 

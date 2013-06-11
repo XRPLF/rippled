@@ -34,6 +34,7 @@
 #include <iostream>
 #include <list>
 #include <map>
+#include <queue>
 #include <set>
 #include <stack>
 #include <string>
@@ -55,11 +56,14 @@
 #include <boost/function.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/mem_fn.hpp>
 #include <boost/pointer_cast.hpp>
+#include <boost/program_options.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/ref.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
+#include <boost/test/included/unit_test.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/condition_variable.hpp>

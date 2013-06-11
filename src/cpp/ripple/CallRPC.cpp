@@ -20,7 +20,6 @@
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
 
-#include "Application.h"
 #include "RPC.h"
 #include "RPCErr.h"
 
