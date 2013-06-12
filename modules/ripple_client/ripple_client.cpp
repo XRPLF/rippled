@@ -37,6 +37,7 @@
 #include "src/cpp/ripple/ripple_InfoSub.h"
 
 // Order and indentation reflect the hierarchy of dependencies
+    #include   "src/cpp/ripple/JSONCache.h"
     #include   "src/cpp/ripple/ripple_HashedObject.h"
     #include   "src/cpp/ripple/ripple_SHAMapItem.h"
     #include   "src/cpp/ripple/ripple_SHAMapNode.h"

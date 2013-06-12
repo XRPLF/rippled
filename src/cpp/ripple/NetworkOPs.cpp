@@ -17,7 +17,7 @@ NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedge
 	mFeatureBlocked(false),
 	mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0), mLastCloseProposers(0),
 	mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastCloseTime(0), mLastValidationTime(0),
-	mFetchPack("FetchPack", 2048, 20), mLastFetchPack(0), mFetchSeq(static_cast<uint32>(-1)),
+	mJSONCache(120), mFetchPack("FetchPack", 2048, 20), mLastFetchPack(0), mFetchSeq(static_cast<uint32>(-1)),
 	mLastLoadBase(256), mLastLoadFactor(256)
 {
 }
@@ -2074,6 +2074,7 @@ void NetworkOPs::makeFetchPack(Job&, boost::weak_ptr<Peer> wPeer,
 void NetworkOPs::sweepFetchPack()
 {
 	mFetchPack.sweep();
+	mJSONCache.sweep();
 }
 
 void NetworkOPs::addFetchPack(uint256 const& hash, boost::shared_ptr< Blob >& data)

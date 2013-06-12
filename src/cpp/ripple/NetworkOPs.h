@@ -176,6 +176,16 @@ public:
 	int getFetchSize();
 	void sweepFetchPack();
 
+	float getJSONHitRate()				{ return mJSONCache.getHitRate(); }
+	int getJSONEntries()				{ return mJSONCache.getCount(); }
+
+	void storeJSONCache(int operation, const uint256& ledger, const uint160& object,
+		const boost::shared_ptr<Json::Value>& data)
+	{ mJSONCache.storeEntry(operation, ledger, object, data); }
+
+	boost::shared_ptr<Json::Value> getJSONCache(int operation, const uint256& ledger, const uint160& object)
+	{ return mJSONCache.getEntry(operation, ledger, object); }
+
 	// network state machine
 	void checkState(const boost::system::error_code& result);
 	void switchLastClosedLedger(Ledger::pointer newLedger, bool duringConsensus); // Used for the "jump" case
@@ -302,6 +312,8 @@ private:
 	subMapType											mSubServer;				// when server changes connectivity state
 	subMapType											mSubTransactions;		// all accepted transactions
 	subMapType											mSubRTTransactions;		// all proposed and accepted transactions
+
+	JSONCache<UptimeTimerAdapter>						mJSONCache;
 
 	TaggedCache< uint256, Blob , UptimeTimerAdapter >	mFetchPack;
 	uint32												mLastFetchPack;

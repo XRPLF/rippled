@@ -1049,8 +1049,12 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 	if (!lpLedger)
 		return jvResult;
 
+	bool bUnlocked = false;
 	if (lpLedger->isImmutable())
+	{
 		MasterLockHolder.unlock();
+		bUnlocked = true;
+	}
 
 	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -1088,32 +1092,47 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 	{
 		jvResult["account"]	= raAccount.humanAccountID();
 
-		AccountItems rippleLines(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new RippleState()));
+		boost::shared_ptr<Json::Value> jvsLines =
+			theApp->getOPs().getJSONCache(JC_OP_ACCOUNT_LINES, lpLedger->getHash(), raAccount.getAccountID());
 
-		Json::Value&	jsonLines = (jvResult["lines"] = Json::arrayValue);
-		BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
+		if (!jvsLines)
 		{
-			RippleState* line=(RippleState*)item.get();
+			jvsLines = boost::make_shared<Json::Value>(Json::arrayValue);
+			Json::Value& jsonLines = *jvsLines;
 
-			if (!raPeer.isValid() || raPeer.getAccountID() == line->getAccountIDPeer())
+			AccountItems rippleLines(raAccount.getAccountID(), lpLedger, AccountItem::pointer(new RippleState()));
+
+			BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
 			{
-				const STAmount&		saBalance	= line->getBalance();
-				const STAmount&		saLimit		= line->getLimit();
-				const STAmount&		saLimitPeer	= line->getLimitPeer();
+				RippleState* line=(RippleState*)item.get();
 
-				Json::Value&	jPeer	= jsonLines.append(Json::objectValue);
+				if (!raPeer.isValid() || raPeer.getAccountID() == line->getAccountIDPeer())
+				{
+					const STAmount&		saBalance	= line->getBalance();
+					const STAmount&		saLimit		= line->getLimit();
+					const STAmount&		saLimitPeer	= line->getLimitPeer();
 
-				jPeer["account"]		= RippleAddress::createHumanAccountID(line->getAccountIDPeer());
-				// Amount reported is positive if current account holds other account's IOUs.
-				// Amount reported is negative if other account holds current account's IOUs.
-				jPeer["balance"]		= saBalance.getText();
-				jPeer["currency"]		= saBalance.getHumanCurrency();
-				jPeer["limit"]			= saLimit.getText();
-				jPeer["limit_peer"]		= saLimitPeer.getText();
-				jPeer["quality_in"]		= static_cast<Json::UInt>(line->getQualityIn());
-				jPeer["quality_out"]	= static_cast<Json::UInt>(line->getQualityOut());
+					Json::Value&	jPeer	= jsonLines.append(Json::objectValue);
+
+					jPeer["account"]		= RippleAddress::createHumanAccountID(line->getAccountIDPeer());
+					// Amount reported is positive if current account holds other account's IOUs.
+					// Amount reported is negative if other account holds current account's IOUs.
+					jPeer["balance"]		= saBalance.getText();
+					jPeer["currency"]		= saBalance.getHumanCurrency();
+					jPeer["limit"]			= saLimit.getText();
+					jPeer["limit_peer"]		= saLimitPeer.getText();
+					jPeer["quality_in"]		= static_cast<Json::UInt>(line->getQualityIn());
+					jPeer["quality_out"]	= static_cast<Json::UInt>(line->getQualityOut());
+				}
 			}
+
+			theApp->getOPs().storeJSONCache(JC_OP_ACCOUNT_LINES, lpLedger->getHash(),
+				raAccount.getAccountID(), jvsLines);
 		}
+		if (!bUnlocked)
+			MasterLockHolder.unlock();
+
+		jvResult["lines"] = *jvsLines;
 	}
 	else
 	{
@@ -1149,8 +1168,12 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 	if (!lpLedger)
 		return jvResult;
 
+	bool bUnlocked = false;
 	if (lpLedger->isImmutable())
+	{
 		MasterLockHolder.unlock();
+		bUnlocked = true;
+	}
 
 	if (!jvRequest.isMember("account"))
 		return rpcError(rpcINVALID_PARAMS);
@@ -1172,11 +1195,22 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 	if (bIndex)
 		jvResult["account_index"]	= iIndex;
 
-	if (lpLedger->hasAccount(raAccount))
-		lpLedger->visitAccountItems(raAccount.getAccountID(),
-			BIND_TYPE(&offerAdder, boost::ref(jvResult["offers"] = Json::arrayValue), P_1));
-	else
-		jvResult	= rpcError(rpcACT_NOT_FOUND);
+	if (!lpLedger->hasAccount(raAccount))
+		return rpcError(rpcACT_NOT_FOUND);
+
+	boost::shared_ptr<Json::Value> jvsOffers =
+		theApp->getOPs().getJSONCache(JC_OP_ACCOUNT_OFFERS, lpLedger->getHash(), raAccount.getAccountID());
+
+	if (!jvsOffers)
+	{
+		jvsOffers = boost::make_shared<Json::Value>(Json::arrayValue);
+		lpLedger->visitAccountItems(raAccount.getAccountID(), BIND_TYPE(&offerAdder, boost::ref(*jvsOffers), P_1));
+		theApp->getOPs().storeJSONCache(JC_OP_ACCOUNT_OFFERS, lpLedger->getHash(), raAccount.getAccountID(), jvsOffers);
+	}
+	if (!bUnlocked)
+		MasterLockHolder.unlock();
+
+	jvResult["offers"] = *jvsOffers;
 
 	return jvResult;
 }
@@ -2343,6 +2377,8 @@ Json::Value RPCHandler::doGetCounts(Json::Value jvRequest, int& cost, ScopedLock
 	ret["node_hit_rate"] = theApp->getHashedObjectStore().getCacheHitRate();
 	ret["ledger_hit_rate"] = theApp->getLedgerMaster().getCacheHitRate();
 	ret["AL_hit_rate"] = AcceptedLedger::getCacheHitRate();
+	ret["JC_hit_rate"] = theApp->getOPs().getJSONHitRate();
+	ret["JC_size"] = theApp->getOPs().getJSONEntries();
 
 	ret["fullbelow_size"] = SHAMap::getFullBelowSize();
 
