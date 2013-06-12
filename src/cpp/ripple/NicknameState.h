@@ -9,10 +9,10 @@
 class NicknameState
 {
 public:
-	typedef boost::shared_ptr<NicknameState> pointer;
+	typedef boost::shared_ptr <NicknameState> pointer;
 
 public:
-	NicknameState(SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
+	explicit NicknameState (SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
 
 	bool					haveMinimumOffer() const;
 	STAmount				getMinimumOffer() const;

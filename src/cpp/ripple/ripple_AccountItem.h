@@ -5,6 +5,14 @@
 // Fetch ledger entries from an account's owner dir.
 //
 /** Base class representing account items.
+
+    Account items include:
+
+    - Offers
+    - Trust Lines
+
+    NOTE these are deprecated and will go away, to be replaced with
+    simple visitor patterns.
 */
 class AccountItem
 {

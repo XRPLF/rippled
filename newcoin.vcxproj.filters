@@ -642,9 +642,6 @@
     <ClCompile Include="src\cpp\ripple\LedgerEntrySet.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\LedgerFormats.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerMaster.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
@@ -1407,9 +1404,6 @@
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerEntrySet.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\LedgerFormats.h">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerMaster.h">
