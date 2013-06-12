@@ -954,7 +954,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\OrderBook.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_OrderBook.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1740,7 +1740,7 @@
     <ClInclude Include="src\cpp\ripple\OfferCancelTransactor.h" />
     <ClInclude Include="src\cpp\ripple\OfferCreateTransactor.h" />
     <ClInclude Include="src\cpp\ripple\Operation.h" />
-    <ClInclude Include="src\cpp\ripple\OrderBook.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_OrderBook.h" />
     <ClInclude Include="src\cpp\ripple\OrderBookDB.h" />
     <ClInclude Include="src\cpp\ripple\ParameterTable.h" />
     <ClInclude Include="src\cpp\ripple\ParseSection.h" />

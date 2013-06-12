@@ -143,6 +143,7 @@
 #include "src/cpp/ripple/ripple_InfoSub.h"
 #include "src/cpp/ripple/ripple_HashedObject.h"
 #include "src/cpp/ripple/ripple_HashedObjectStore.h"
+#include "src/cpp/ripple/ripple_OrderBook.h"
 #include "src/cpp/ripple/ripple_SHAMapSyncFilters.h"
 
 // Abstract interfaces
@@ -220,7 +221,6 @@
 #include "src/cpp/ripple/Offer.h"
 #include "src/cpp/ripple/OfferCancelTransactor.h"
 #include "src/cpp/ripple/OfferCreateTransactor.h"
-#include "src/cpp/ripple/OrderBook.h"
 #include "src/cpp/ripple/ripple_PathRequest.h"
 #include "src/cpp/ripple/ParameterTable.h"
 #include "src/cpp/ripple/ParseSection.h"
@@ -292,7 +292,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/OfferCancelTransactor.cpp"
 #include "src/cpp/ripple/OfferCreateTransactor.cpp"
 #include "src/cpp/ripple/Operation.cpp" // no log
-#include "src/cpp/ripple/OrderBook.cpp" // no log
 #include "src/cpp/ripple/OrderBookDB.cpp"
 
 #endif
@@ -382,6 +381,7 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_LoadMonitor.cpp"
 #include "src/cpp/ripple/ripple_LogWebsockets.cpp"
 #include "src/cpp/ripple/ripple_LoadFeeTrack.cpp"
+#include "src/cpp/ripple/ripple_OrderBook.cpp"
 #include "src/cpp/ripple/ripple_PathRequest.cpp"
 #include "src/cpp/ripple/ripple_Peer.cpp"
 #include "src/cpp/ripple/ripple_Peers.cpp"

@@ -44,6 +44,7 @@ void OrderBookDB::setup(Ledger::ref ledger)
 			uint256 index = Ledger::getBookBase(ci, ii, co, io);
 			if (mSeen.insert(index).second)
 			{
+                // VFALCO TODO Reduce the clunkiness of these parameter wrappers
 				OrderBook::pointer book = boost::make_shared<OrderBook>(boost::cref(index),
 					boost::cref(ci), boost::cref(co), boost::cref(ii), boost::cref(io));
 

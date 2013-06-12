@@ -666,9 +666,6 @@
     <ClCompile Include="src\cpp\ripple\Offer.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\OrderBook.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\OrderBookDB.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
@@ -842,6 +839,9 @@
     </ClCompile>
     <ClCompile Include="modules\ripple_data\utility\ripple_JSONCache.cpp">
       <Filter>1. Modules\ripple_data\utility</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_OrderBook.cpp">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1403,9 +1403,6 @@
     <ClInclude Include="src\cpp\ripple\Offer.h">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\OrderBook.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\OrderBookDB.h">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
@@ -1591,6 +1588,9 @@
     </ClInclude>
     <ClInclude Include="modules\ripple_data\utility\ripple_JSONCache.h">
       <Filter>1. Modules\ripple_data\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_OrderBook.h">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
