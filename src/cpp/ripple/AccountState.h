@@ -11,10 +11,13 @@ public:
 	typedef boost::shared_ptr<AccountState> pointer;
 
 public:
-	explicit AccountState(const RippleAddress& naAccountID); // For new accounts
-	AccountState (SLE::ref ledgerEntry,const RippleAddress& naAccountI);	// For accounts in a ledger
+    // For new accounts
+	explicit AccountState (const RippleAddress& naAccountID);
+	
+    // For accounts in a ledger
+    AccountState (SLE::ref ledgerEntry, const RippleAddress& naAccountI);
 
-	bool	bHaveAuthorizedKey()
+	bool haveAuthorizedKey ()
 	{
 		return mLedgerEntry->isFieldPresent(sfRegularKey);
 	}

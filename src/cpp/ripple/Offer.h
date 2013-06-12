@@ -1,8 +1,6 @@
 #ifndef RIPPLE_OFFER_H
 #define RIPPLE_OFFER_H
 
-#include "AccountItems.h"
-
 class Offer : public AccountItem
 {
 	RippleAddress mAccount;

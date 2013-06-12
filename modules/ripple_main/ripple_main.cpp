@@ -184,7 +184,8 @@
 
 
 
-#include "src/cpp/ripple/AccountItems.h"
+#include "src/cpp/ripple/ripple_AccountItem.h"
+#include "src/cpp/ripple/ripple_AccountItems.h"
 #include "src/cpp/ripple/ripple_AcceptedLedgerTx.h"
 #include "src/cpp/ripple/ripple_AcceptedLedger.h"
 #include "src/cpp/ripple/LedgerEntrySet.h"
@@ -267,7 +268,8 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/database/database.cpp"
 #include "src/cpp/database/SqliteDatabase.cpp"
 
-#include "src/cpp/ripple/AccountItems.cpp" // no log
+#include "src/cpp/ripple/ripple_AccountItem.cpp"
+#include "src/cpp/ripple/ripple_AccountItems.cpp"
 #include "src/cpp/ripple/AccountSetTransactor.cpp"
 #include "src/cpp/ripple/AccountState.cpp" // no log
 #include "src/cpp/ripple/CallRPC.cpp"

@@ -6,8 +6,6 @@
 // - Isolate ledger entry format.
 //
 
-#include "AccountItems.h"
-
 class RippleState : public AccountItem
 {
 public:

@@ -136,6 +136,9 @@
     <Filter Include="1. Modules\ripple_data\utility">
       <UniqueIdentifier>{ba524810-8446-4c50-ad59-d284747ba220}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_main\refactored\shamap">
+      <UniqueIdentifier>{5b22fcf9-c9f0-4260-9a17-7b448e30bb57}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -633,9 +636,6 @@
     <ClCompile Include="src\cpp\ripple\ripple_UniqueNodeList.cpp">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\AccountItems.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\AccountState.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
@@ -780,30 +780,6 @@
     <ClCompile Include="src\cpp\ripple\ripple_InfoSub.cpp">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_SHAMapNode.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_SHAMapItem.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_SHAMapTreeNode.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_SHAMapMissingNode.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_SHAMapSync.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_SHAMapSyncFilters.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_SHAMap.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_SHAMapDelta.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_PeerSet.cpp">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClCompile>
@@ -854,6 +830,36 @@
     </ClCompile>
     <ClCompile Include="modules\ripple_main\ripple_main_pt4.cpp">
       <Filter>1. Modules\ripple_main</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_AccountItem.cpp">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_AccountItems.cpp">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_SHAMapDelta.cpp">
+      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_SHAMapItem.cpp">
+      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_SHAMapMissingNode.cpp">
+      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_SHAMapNode.cpp">
+      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_SHAMapSync.cpp">
+      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_SHAMapSyncFilters.cpp">
+      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_SHAMapTreeNode.cpp">
+      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_SHAMap.cpp">
+      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1382,9 +1388,6 @@
     <ClInclude Include="src\cpp\ripple\ripple_IUniqueNodeList.h">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\AccountItems.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\AccountState.h">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
@@ -1532,30 +1535,6 @@
     <ClInclude Include="src\cpp\ripple\ripple_InfoSub.h">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_SHAMapNode.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_SHAMapItem.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_SHAMapTreeNode.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_SHAMapMissingNode.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_SHAMapSyncFilter.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_SHAMapAddNode.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_SHAMapSyncFilters.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_SHAMap.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_PeerSet.h">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
@@ -1603,6 +1582,36 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_OrderBook.h">
       <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_AccountItem.h">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_AccountItems.h">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_SHAMapTreeNode.h">
+      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_SHAMapAddNode.h">
+      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_SHAMapItem.h">
+      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_SHAMapMissingNode.h">
+      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_SHAMapNode.h">
+      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_SHAMapSyncFilter.h">
+      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_SHAMapSyncFilters.h">
+      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_SHAMap.h">
+      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
