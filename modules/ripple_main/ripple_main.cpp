@@ -65,8 +65,6 @@
 #include <boost/ref.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
-#include <boost/test/included/unit_test.hpp>
-#include <boost/test/unit_test.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
@@ -76,6 +74,12 @@
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/weak_ptr.hpp>
+
+#if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 1
+#include <boost/test/included/unit_test.hpp>
+#endif
+
+#include <boost/test/unit_test.hpp>
 
 #include <openssl/ec.h>
 #include <openssl/ripemd.h>
@@ -250,19 +254,15 @@ static const uint64 tenTo14m1 = tenTo14 - 1;
 static const uint64 tenTo17 = tenTo14 * 1000;
 static const uint64 tenTo17m1 = tenTo17 - 1;
 
-// This is for PeerDoor and WSDoor
-// Generate DH for SSL connection.
-static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
-{
-// VFALCO TODO eliminate this horrendous dependency on theApp and Wallet
-	return 512 == iKeyLength ? theApp->getWallet().getDh512() : theApp->getWallet().getDh1024();
-}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
+
+#if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 1
 
 #include "src/cpp/database/database.cpp"
 #include "src/cpp/database/SqliteDatabase.cpp"
@@ -294,6 +294,21 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/Operation.cpp" // no log
 #include "src/cpp/ripple/OrderBook.cpp" // no log
 #include "src/cpp/ripple/OrderBookDB.cpp"
+
+#endif
+
+//------------------------------------------------------------------------------
+
+#if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 2
+
+// This is for PeerDoor and WSDoor
+// Generate DH for SSL connection.
+static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
+{
+// VFALCO TODO eliminate this horrendous dependency on theApp and Wallet
+	return 512 == iKeyLength ? theApp->getWallet().getDh512() : theApp->getWallet().getDh1024();
+}
+
 #include "src/cpp/ripple/ParameterTable.cpp" // no log
 #include "src/cpp/ripple/ParseSection.cpp"
 #include "src/cpp/ripple/Pathfinder.cpp"
@@ -320,9 +335,16 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/TransactionQueue.cpp" // no log
 #include "src/cpp/ripple/Transactor.cpp"
 #include "src/cpp/ripple/TrustSetTransactor.cpp"
+#include "src/cpp/ripple/WSDoor.cpp" // uses logging in WSConnection.h 
+
+#endif
+
+//------------------------------------------------------------------------------
+
+#if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 3
+
 #include "src/cpp/ripple/Wallet.cpp"
 #include "src/cpp/ripple/WalletAddTransactor.cpp"
-#include "src/cpp/ripple/WSDoor.cpp" // uses logging in WSConnection.h 
 
 #include "src/cpp/ripple/ripple_HashedObject.cpp"
 
@@ -344,6 +366,13 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_HashedObjectStore.cpp"
 #include "src/cpp/ripple/ripple_HashRouter.cpp"
 //#include "src/cpp/ripple/ripple_InfoSub.cpp"
+
+#endif
+
+//------------------------------------------------------------------------------
+
+#if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 4
+
 #include "src/cpp/ripple/ripple_Job.cpp"
 #include "src/cpp/ripple/ripple_JobQueue.cpp"
 #include "src/cpp/ripple/ripple_LedgerAcquire.cpp"
@@ -365,6 +394,10 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_UniqueNodeList.cpp"
 
 #include "src/cpp/ripple/ripple_SHAMapSyncFilters.cpp" // requires Application
+
+#endif
+
+//------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
 
