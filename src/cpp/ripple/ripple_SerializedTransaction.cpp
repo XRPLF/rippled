@@ -53,7 +53,7 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit) : STObject
 	}
 	if (!setType(mFormat->elements))
 	{
-		assert(false);
+		WriteLog (lsWARNING, SerializedTransaction) << "Transaction not legal for format";
 		throw std::runtime_error("transaction not valid");
 	}
 }
