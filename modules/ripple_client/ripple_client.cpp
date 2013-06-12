@@ -22,6 +22,8 @@
     @ingroup ripple_client
 */
 
+#include <set>
+
 #include <boost/unordered_set.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
@@ -32,7 +34,7 @@
 
 #include "../ripple_data/ripple_data.h"
 
-#include      "src/cpp/ripple/ripple_InfoSub.h"
+#include "src/cpp/ripple/ripple_InfoSub.h"
 
 // Order and indentation reflect the hierarchy of dependencies
     #include   "src/cpp/ripple/ripple_HashedObject.h"
