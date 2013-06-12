@@ -843,6 +843,18 @@
     <ClCompile Include="src\cpp\ripple\ripple_OrderBook.cpp">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClCompile>
+    <ClCompile Include="modules\ripple_main\ripple_main_pt1.cpp">
+      <Filter>1. Modules\ripple_main</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_main\ripple_main_pt2.cpp">
+      <Filter>1. Modules\ripple_main</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_main\ripple_main_pt3.cpp">
+      <Filter>1. Modules\ripple_main</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_main\ripple_main_pt4.cpp">
+      <Filter>1. Modules\ripple_main</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="database\sqlite3ext.h">
