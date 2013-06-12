@@ -3,7 +3,7 @@
 
 /** Manages the lifetime of inbound ledgers.
 */
-// VFALCO TODO Rename to InboundLedgerManager
+// VFALCO TODO Rename to InboundLedgers
 // VFALCO TODO Create abstract interface
 class LedgerAcquireMaster
 {

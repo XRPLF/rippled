@@ -139,6 +139,12 @@
     <Filter Include="1. Modules\ripple_data\utility">
       <UniqueIdentifier>{82b7f371-8bc6-474b-b10c-18c004467b46}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_main\refactored\transactions">
+      <UniqueIdentifier>{babbb25a-e143-4140-bc6f-16b659d8098b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_main\refactored\consensus">
+      <UniqueIdentifier>{8b88138b-e5bd-492b-bd34-012b9f43e544}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -415,9 +421,6 @@
       <Filter>0. Third Party Code\websocket</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Transaction.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\TransactionAcquire.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionCheck.cpp">
@@ -869,6 +872,12 @@
     </ClCompile>
     <ClCompile Include="build\proto\ripple.pb.cc">
       <Filter>1. Modules\ripple_data\protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_TransactionAcquire.cpp">
+      <Filter>1. Modules\ripple_main\refactored\transactions</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_DisputedTx.cpp">
+      <Filter>1. Modules\ripple_main\refactored\consensus</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1621,6 +1630,12 @@
     </ClInclude>
     <ClInclude Include="build\proto\ripple.pb.h">
       <Filter>1. Modules\ripple_data\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_TransactionAcquire.h">
+      <Filter>1. Modules\ripple_main\refactored\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_DisputedTx.h">
+      <Filter>1. Modules\ripple_main\refactored\consensus</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,13 +1,21 @@
-#ifndef ACCEPTED_LEDGER_H
-#define ACCEPTED_LEDGER_H
+#ifndef RIPPLE_ACCEPTEDLEDGER_H
+#define RIPPLE_ACCEPTEDLEDGER_H
 
-/**
+/** A ledger that has become irrevocable.
 
     An accepted ledger is a ledger that has a sufficient number of
     validations to convince the local server that it is irrevocable.
 
     The existence of an accepted ledger implies all preceding ledgers
     are accepted.
+*/
+/* VFALCO TODO digest this terminology clarification:
+    Closed and accepted refer to ledgers that have not passed the
+    validation threshold yet. Once they pass the threshold, they are
+    "Validated". Closed just means its close time has passed and no
+    new transactions can get in. "Accepted" means we believe it to be
+    the result of the a consensus process (though haven't validated
+    it yet).
 */
 class AcceptedLedger
 {

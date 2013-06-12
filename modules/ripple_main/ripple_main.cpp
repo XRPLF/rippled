@@ -24,6 +24,21 @@
 
 //------------------------------------------------------------------------------
 
+#if 0
+#include <boost/foreach.hpp>
+#include <boost/bind.hpp>
+#include <boost/thread.hpp>
+#include <string>
+
+#include <boost/test/unit_test.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/format.hpp>
+
+#include <openssl/rand.h>
+#include <string>
+#include <boost/test/unit_test.hpp>
+#endif
+
 //------------------------------------------------------------------------------
 
 #include <algorithm>
@@ -64,6 +79,7 @@
 #include <boost/program_options.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/ref.hpp>
+#include <boost/regex.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/thread.hpp>
@@ -219,6 +235,8 @@
 #include "src/cpp/ripple/HTTPRequest.h"
 #include "src/cpp/ripple/HashPrefixes.h"
 #include "src/cpp/ripple/HttpsClient.h"
+#include "src/cpp/ripple/ripple_TransactionAcquire.h"
+#include "src/cpp/ripple/ripple_DisputedTx.h"
 #include "src/cpp/ripple/LedgerConsensus.h"
 #include "src/cpp/ripple/LedgerTiming.h"
 #include "src/cpp/ripple/Offer.h"
@@ -330,7 +348,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/SerializedValidation.cpp"
 #include "src/cpp/ripple/SNTPClient.cpp"
 #include "src/cpp/ripple/Transaction.cpp"
-#include "src/cpp/ripple/TransactionAcquire.cpp"
 #include "src/cpp/ripple/TransactionCheck.cpp"
 #include "src/cpp/ripple/TransactionEngine.cpp"
 #include "src/cpp/ripple/TransactionMaster.cpp" // no log
@@ -366,6 +383,7 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_Application.cpp"
 #include "src/cpp/ripple/ripple_Config.cpp"
 #include "src/cpp/ripple/ripple_DatabaseCon.cpp"
+#include "src/cpp/ripple/ripple_DisputedTx.cpp"
 #include "src/cpp/ripple/ripple_Features.cpp"
 #include "src/cpp/ripple/ripple_FeeVote.cpp"
 #include "src/cpp/ripple/ripple_HashedObjectStore.cpp"
@@ -396,6 +414,7 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_ProofOfWorkFactory.cpp"
 #include "src/cpp/ripple/ripple_SerializedLedger.cpp"
 #include "src/cpp/ripple/ripple_SerializedTransaction.cpp"
+#include "src/cpp/ripple/ripple_TransactionAcquire.cpp"
 #include "src/cpp/ripple/ripple_Validations.cpp"
 #include "src/cpp/ripple/ripple_UniqueNodeList.cpp"
 

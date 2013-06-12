@@ -1,7 +1,4 @@
 
-#include <boost/foreach.hpp>
-#include <boost/bind.hpp>
-#include <boost/thread.hpp>
 
 SETUP_LOG (JobQueue)
 

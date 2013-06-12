@@ -797,6 +797,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_DisputedTx.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_HashedObject.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1237,7 +1243,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\TransactionAcquire.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_TransactionAcquire.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1738,6 +1744,7 @@
     <ClInclude Include="src\cpp\ripple\ripple_AccountState.h" />
     <ClInclude Include="src\cpp\ripple\ripple_AccountItem.h" />
     <ClInclude Include="src\cpp\ripple\ripple_AccountItems.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_DisputedTx.h" />
     <ClInclude Include="src\cpp\ripple\ripple_IApplication.h" />
     <ClInclude Include="src\cpp\ripple\AutoSocket.h" />
     <ClInclude Include="src\cpp\ripple\CallRPC.h" />
@@ -1802,6 +1809,7 @@
     <ClInclude Include="src\cpp\ripple\ripple_SHAMapNode.h" />
     <ClInclude Include="src\cpp\ripple\ripple_SHAMapSyncFilter.h" />
     <ClInclude Include="src\cpp\ripple\ripple_SHAMapTreeNode.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_TransactionAcquire.h" />
     <ClInclude Include="src\cpp\ripple\RPC.h" />
     <ClInclude Include="src\cpp\ripple\RPCDoor.h" />
     <ClInclude Include="src\cpp\ripple\RPCErr.h" />
