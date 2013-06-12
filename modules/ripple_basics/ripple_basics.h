@@ -72,7 +72,6 @@ namespace boost {
 
 // RangeSet
 #include <boost/foreach.hpp>
-#include <boost/icl/interval_set.hpp> // oof this one is ugly
 
 // InstanceCounter
 //#include <string>

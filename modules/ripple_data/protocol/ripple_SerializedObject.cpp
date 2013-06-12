@@ -1021,13 +1021,13 @@ UPTR_T<STObject> STObject::parseJson(const Json::Value& object, SField::ref inNa
 				else if (value.isInt())
 				{
 					if (value.asInt() < 0 || value.asInt() > 255)
-						throw std::runtime_error("value out of rand");
+						throw std::runtime_error("value out of range");
 					data.push_back(new STUInt8(field, range_check_cast<unsigned char>(value.asInt(), 0, 255)));
 				}
 				else if (value.isUInt())
 				{
 					if (value.asUInt() > 255)
-						throw std::runtime_error("value out of rand");
+						throw std::runtime_error("value out of range");
 					data.push_back(new STUInt8(field, range_check_cast<unsigned char>(value.asUInt(), 0, 255)));
 				}
 				else
