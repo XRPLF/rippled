@@ -43,6 +43,7 @@
 // VFALCO NOTE Holy smokes...that's a lot of boost!!!
 
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
@@ -82,6 +83,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <openssl/ec.h>
+#include <openssl/md5.h>
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 
@@ -124,7 +126,7 @@
 #include "src/cpp/ripple/ripple_SerializedLedger.h"
 #include "src/cpp/ripple/TransactionMeta.h"
 #include "src/cpp/ripple/Transaction.h"
-#include "src/cpp/ripple/AccountState.h"
+#include "src/cpp/ripple/ripple_AccountState.h"
 #include "src/cpp/ripple/NicknameState.h"
 #include "src/cpp/ripple/Ledger.h"
 
@@ -271,7 +273,7 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/ripple_AccountItem.cpp"
 #include "src/cpp/ripple/ripple_AccountItems.cpp"
 #include "src/cpp/ripple/AccountSetTransactor.cpp"
-#include "src/cpp/ripple/AccountState.cpp" // no log
+#include "src/cpp/ripple/ripple_AccountState.cpp"
 #include "src/cpp/ripple/CallRPC.cpp"
 #include "src/cpp/ripple/ripple_CanonicalTXSet.cpp"
 #include "src/cpp/ripple/ChangeTransactor.cpp" // no log

@@ -79,9 +79,6 @@
     <Filter Include="1. Modules\ripple_data\crypto">
       <UniqueIdentifier>{095d33d8-dbf7-44d0-a675-6722b02bb3be}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_data\protobuf">
-      <UniqueIdentifier>{9f8ed40a-9f16-42fe-82fd-caf72d3d6a2b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="2. Empty">
       <UniqueIdentifier>{786657f9-b1b3-483c-a8e6-863cc2e02eb8}</UniqueIdentifier>
     </Filter>
@@ -138,6 +135,9 @@
     </Filter>
     <Filter Include="1. Modules\ripple_main\refactored\shamap">
       <UniqueIdentifier>{5b22fcf9-c9f0-4260-9a17-7b448e30bb57}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_data\utility">
+      <UniqueIdentifier>{82b7f371-8bc6-474b-b10c-18c004467b46}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -582,9 +582,6 @@
     <ClCompile Include="modules\ripple_basics\utility\ripple_InstanceCounter.cpp">
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="build\proto\ripple.pb.cc">
-      <Filter>1. Modules\ripple_data\protobuf</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
     </ClCompile>
@@ -635,9 +632,6 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_UniqueNodeList.cpp">
       <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\AccountState.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Ledger.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
@@ -869,6 +863,12 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\WSHandler.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_AccountState.cpp">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClCompile>
+    <ClCompile Include="build\proto\ripple.pb.cc">
+      <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1343,9 +1343,6 @@
     <ClInclude Include="modules\ripple_basics\utility\ripple_InstanceCounter.h">
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="build\proto\ripple.pb.h">
-      <Filter>1. Modules\ripple_data\protobuf</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\LoadManager.h">
       <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
     </ClInclude>
@@ -1396,9 +1393,6 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IUniqueNodeList.h">
       <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\AccountState.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Ledger.h">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
@@ -1532,9 +1526,6 @@
     <ClInclude Include="src\cpp\ripple\ripple_HashedObjectStore.h">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_UptimeTimerAdapter.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_HashedObject.h">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
@@ -1621,6 +1612,15 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_SHAMap.h">
       <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_AccountState.h">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\utility\ripple_UptimeTimerAdapter.h">
+      <Filter>1. Modules\ripple_data\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="build\proto\ripple.pb.h">
+      <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
