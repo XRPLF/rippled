@@ -26,7 +26,7 @@ std::string AccountState::createGravatarUrl(uint128 uEmailHash)
 	std::string					strMD5Lower	= strHex(vucMD5);
 		boost::to_lower(strMD5Lower);
 
-	return str(boost::format("http://www.gravatar.com/avatar/%s") % strMD5Lower);
+	return str(boost::format("https://www.gravatar.com/avatar/%s") % strMD5Lower);
 }
 
 void AccountState::addJson(Json::Value& val)
