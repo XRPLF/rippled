@@ -354,6 +354,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="modules\ripple_data\ripple_data.cpp" />
+    <ClCompile Include="modules\ripple_data\utility\ripple_JSONCache.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="modules\ripple_db\ripple_db.cpp" />
     <ClCompile Include="modules\ripple_json\json\json_reader.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -1367,6 +1373,8 @@
     <ClInclude Include="modules\ripple_data\protocol\ripple_TER.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_TransactionFormat.h" />
     <ClInclude Include="modules\ripple_data\ripple_data.h" />
+    <ClInclude Include="modules\ripple_data\utility\ripple_JSONCache.h" />
+    <ClInclude Include="modules\ripple_data\utility\ripple_UptimeTimerAdapter.h" />
     <ClInclude Include="modules\ripple_db\ripple_db.h" />
     <ClInclude Include="modules\ripple_json\json\json.h" />
     <ClInclude Include="modules\ripple_json\json\json_autolink.h" />

@@ -177,14 +177,16 @@ public:
 	void sweepFetchPack();
 
 	float getJSONHitRate()				{ return mJSONCache.getHitRate(); }
-	int getJSONEntries()				{ return mJSONCache.getCount(); }
 
-	void storeJSONCache(int operation, const uint256& ledger, const uint160& object,
-		const boost::shared_ptr<Json::Value>& data)
-	{ mJSONCache.storeEntry(operation, ledger, object, data); }
+    // VFALCO TODO Rename this to getNumberOfCachedJSONItems or something similar
+	int getJSONEntries()				{ return mJSONCache.getNumberOfEntries(); }
 
-	boost::shared_ptr<Json::Value> getJSONCache(int operation, const uint256& ledger, const uint160& object)
-	{ return mJSONCache.getEntry(operation, ledger, object); }
+	void storeJSONCache(JSONCache::Kind kind, const uint256& ledger, const uint160& object,
+		const boost::shared_ptr <Json::Value>& data)
+	{ mJSONCache.storeEntry(kind, ledger, object, data); }
+
+	boost::shared_ptr<Json::Value> getJSONCache(JSONCache::Kind kind, const uint256& ledger, const uint160& object)
+	{ return mJSONCache.getEntry(kind, ledger, object); }
 
 	// network state machine
 	void checkState(const boost::system::error_code& result);
@@ -313,7 +315,7 @@ private:
 	subMapType											mSubTransactions;		// all accepted transactions
 	subMapType											mSubRTTransactions;		// all proposed and accepted transactions
 
-	JSONCache<UptimeTimerAdapter>						mJSONCache;
+	JSONCache                                           mJSONCache;
 
 	TaggedCache< uint256, Blob , UptimeTimerAdapter >	mFetchPack;
 	uint32												mLastFetchPack;

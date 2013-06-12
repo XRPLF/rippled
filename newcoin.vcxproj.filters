@@ -133,6 +133,9 @@
     <Filter Include="1. Modules\ripple_client">
       <UniqueIdentifier>{97c96b68-70fd-4679-89fc-c1c8c87c265e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_data\utility">
+      <UniqueIdentifier>{ba524810-8446-4c50-ad59-d284747ba220}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -836,6 +839,9 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_Application.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_data\utility\ripple_JSONCache.cpp">
+      <Filter>1. Modules\ripple_data\utility</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1579,6 +1585,12 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IApplication.h">
       <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\utility\ripple_UptimeTimerAdapter.h">
+      <Filter>1. Modules\ripple_data\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\utility\ripple_JSONCache.h">
+      <Filter>1. Modules\ripple_data\utility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

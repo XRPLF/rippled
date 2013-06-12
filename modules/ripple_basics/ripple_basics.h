@@ -129,11 +129,6 @@ namespace boost {
 #include "utility/ripple_IntegerTypes.h" // must come first
 #include "utility/ripple_Log.h" // Needed by others
 
-#include "containers/ripple_KeyCache.h"
-#include "containers/ripple_RangeSet.h"
-#include "containers/ripple_SecureAllocator.h"
-#include "containers/ripple_TaggedCache.h"
-
 #include "types/ripple_BasicTypes.h"
 #include "utility/ripple_ByteOrder.h"
 #include "utility/ripple_DiffieHellmanUtil.h"
@@ -150,5 +145,10 @@ namespace boost {
 #include "types/ripple_UInt256.h"
 #include "utility/ripple_HashUtilities.h" // requires UInt256
 #include "types/ripple_HashMaps.h"
+
+#include "containers/ripple_KeyCache.h"
+#include "containers/ripple_RangeSet.h"
+#include "containers/ripple_SecureAllocator.h"
+#include "containers/ripple_TaggedCache.h"
 
 #endif

@@ -87,6 +87,7 @@
 #include "protocol/ripple_LedgerFormat.h" // needs SOTemplate from SerializedObject
 #include "protocol/ripple_TransactionFormat.h"
 
+#include "utility/ripple_JSONCache.h"
 #include "utility/ripple_UptimeTimerAdapter.h"
 
 #endif
