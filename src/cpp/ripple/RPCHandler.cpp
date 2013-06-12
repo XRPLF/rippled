@@ -1133,6 +1133,7 @@ static void offerAdder(Json::Value& jvLines, SLE::ref offer)
 		offer->getFieldAmount(sfTakerPays).setJson(obj["taker_pays"]);
 		offer->getFieldAmount(sfTakerGets).setJson(obj["taker_gets"]);
 		obj["seq"] = offer->getFieldU32(sfSequence);
+		obj["flags"] = offer->getFieldU32(sfFlags);
 	}
 }
 
