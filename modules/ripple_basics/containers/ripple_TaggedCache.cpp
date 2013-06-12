@@ -1,0 +1,1 @@
+SETUP_LOG (TaggedCacheLog)

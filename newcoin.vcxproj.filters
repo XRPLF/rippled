@@ -861,6 +861,15 @@
     <ClCompile Include="src\cpp\ripple\ripple_SHAMap.cpp">
       <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
     </ClCompile>
+    <ClCompile Include="modules\ripple_basics\containers\ripple_TaggedCache.cpp">
+      <Filter>1. Modules\ripple_basics\containers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\WSConnection.cpp">
+      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\WSHandler.cpp">
+      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="database\sqlite3ext.h">

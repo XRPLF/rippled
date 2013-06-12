@@ -336,7 +336,9 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/TransactionQueue.cpp" // no log
 #include "src/cpp/ripple/Transactor.cpp"
 #include "src/cpp/ripple/TrustSetTransactor.cpp"
+#include "src/cpp/ripple/WSConnection.cpp"
 #include "src/cpp/ripple/WSDoor.cpp" // uses logging in WSConnection.h 
+#include "src/cpp/ripple/WSHandler.cpp"
 
 #endif
 
