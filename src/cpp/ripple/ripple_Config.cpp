@@ -38,6 +38,10 @@
 #define SECTION_RPC_USER				"rpc_user"
 #define SECTION_RPC_PASSWORD			"rpc_password"
 #define SECTION_RPC_STARTUP				"rpc_startup"
+#define SECTION_RPC_SECURE				"rpc_secure"
+#define SECTION_RPC_SSL_CERT			"rpc_ssl_cert"
+#define SECTION_RPC_SSL_CHAIN			"rpc_ssl_chain"
+#define SECTION_RPC_SSL_KEY				"rpc_ssl_key"
 #define SECTION_SMS_FROM				"sms_from"
 #define SECTION_SMS_KEY					"sms_key"
 #define SECTION_SMS_SECRET				"sms_secret"
@@ -198,6 +202,7 @@ Config::Config()
 
 	PEER_PORT				= SYSTEM_PEER_PORT;
 	RPC_PORT				= 5001;
+	RPC_SECURE				= 0;
 	WEBSOCKET_PORT			= SYSTEM_WEBSOCKET_PORT;
 	WEBSOCKET_PUBLIC_PORT	= SYSTEM_WEBSOCKET_PUBLIC_PORT;
 	WEBSOCKET_PUBLIC_SECURE	= 1;
@@ -407,6 +412,13 @@ void Config::load()
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_CERT, WEBSOCKET_SSL_CERT);
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_CHAIN, WEBSOCKET_SSL_CHAIN);
 			sectionSingleB(secConfig, SECTION_WEBSOCKET_SSL_KEY, WEBSOCKET_SSL_KEY);
+
+			if (sectionSingleB(secConfig, SECTION_RPC_SECURE, strTemp))
+				RPC_SECURE	= boost::lexical_cast<int>(strTemp);
+			sectionSingleB(secConfig, SECTION_RPC_SSL_CERT, RPC_SSL_CERT);
+			sectionSingleB(secConfig, SECTION_RPC_SSL_CHAIN, RPC_SSL_CHAIN);
+			sectionSingleB(secConfig, SECTION_RPC_SSL_KEY, RPC_SSL_KEY);
+
 
 			sectionSingleB(secConfig, SECTION_SSL_VERIFY_FILE, SSL_VERIFY_FILE);
 			sectionSingleB(secConfig, SECTION_SSL_VERIFY_DIR, SSL_VERIFY_DIR);

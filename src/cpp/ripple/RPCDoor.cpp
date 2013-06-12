@@ -7,11 +7,18 @@ SETUP_LOG (RPCDoor)
 using namespace std;
 using namespace boost::asio::ip;
 
+extern void initSSLContext(boost::asio::ssl::context& context,
+	std::string key_file, std::string cert_file, std::string chain_file);
+
 RPCDoor::RPCDoor(boost::asio::io_service& io_service) :
 	mAcceptor(io_service, tcp::endpoint(address::from_string(theConfig.RPC_IP), theConfig.RPC_PORT)),
-	mDelayTimer(io_service)
+	mDelayTimer(io_service), mSSLContext(boost::asio::ssl::context::sslv23)
 {
 	WriteLog (lsINFO, RPCDoor) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
+
+	if (theConfig.RPC_SECURE != 0)
+		initSSLContext(mSSLContext, theConfig.RPC_SSL_KEY, theConfig.RPC_SSL_CERT, theConfig.RPC_SSL_CHAIN);
+
 	startListening();
 }
 
@@ -22,10 +29,10 @@ RPCDoor::~RPCDoor()
 
 void RPCDoor::startListening()
 {
-	RPCServer::pointer new_connection = RPCServer::create(mAcceptor.get_io_service(), &theApp->getOPs());
+	RPCServer::pointer new_connection = RPCServer::create(mAcceptor.get_io_service(), mSSLContext, &theApp->getOPs());
 	mAcceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
 
-	mAcceptor.async_accept(new_connection->getSocket(),
+	mAcceptor.async_accept(new_connection->getRawSocket(),
 		boost::bind(&RPCDoor::handleConnect, this, new_connection,
 		boost::asio::placeholders::error));
 }
@@ -41,8 +48,7 @@ bool RPCDoor::isClientAllowed(const std::string& ip)
 	return false;
 }
 
-void RPCDoor::handleConnect(RPCServer::pointer new_connection,
-	const boost::system::error_code& error)
+void RPCDoor::handleConnect(RPCServer::pointer new_connection, const boost::system::error_code& error)
 {
 	bool delay = false;
 	if (!error)
@@ -50,7 +56,7 @@ void RPCDoor::handleConnect(RPCServer::pointer new_connection,
 		// Restrict callers by IP
 		try
 		{
-			if (!isClientAllowed(new_connection->getSocket().remote_endpoint().address().to_string()))
+			if (!isClientAllowed(new_connection->getRawSocket().remote_endpoint().address().to_string()))
 			{
 				startListening();
 				return;
@@ -62,7 +68,8 @@ void RPCDoor::handleConnect(RPCServer::pointer new_connection,
 			return;
 		}
 
-		new_connection->connected();
+		new_connection->getSocket().async_handshake(AutoSocket::ssl_socket::server,
+			boost::bind(&RPCServer::connected, new_connection));
 	}
 	else
 	{

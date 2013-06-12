@@ -18,8 +18,8 @@
 
 SETUP_LOG (RPCServer)
 
-RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
-	: mNetOps(nopNetwork), mSocket(io_service)
+RPCServer::RPCServer(boost::asio::io_service& io_service, boost::asio::ssl::context& context, NetworkOPs* nopNetwork)
+	: mNetOps(nopNetwork), mSocket(io_service, context)
 {
 	mRole = RPCHandler::GUEST;
 }
@@ -52,6 +52,11 @@ void RPCServer::handle_read_req(const boost::system::error_code& e)
 		boost::bind(&RPCServer::handle_write, shared_from_this(), boost::asio::placeholders::error));
 }
 
+static void dummy_handler()
+{
+	;
+}
+
 void RPCServer::handle_read_line(const boost::system::error_code& e)
 {
 	if (e)
@@ -62,8 +67,7 @@ void RPCServer::handle_read_line(const boost::system::error_code& e)
 	if (action == haDO_REQUEST)
 	{ // request with no body
 		WriteLog (lsWARNING, RPCServer) << "RPC HTTP request with no body";
-		boost::system::error_code ignore_ec;
-		mSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignore_ec);
+		mSocket.async_shutdown(boost::bind(&dummy_handler));
 		return;
 	}
 	else if (action == haREAD_LINE)
@@ -78,8 +82,7 @@ void RPCServer::handle_read_line(const boost::system::error_code& e)
 		if ((rLen < 0) || (rLen > RPC_MAXIMUM_QUERY))
 		{
 			WriteLog (lsWARNING, RPCServer) << "Illegal RPC request length " << rLen;
-			boost::system::error_code ignore_ec;
-			mSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignore_ec);
+			mSocket.async_shutdown(boost::bind(&dummy_handler));
 			return;
 		}
 
@@ -99,10 +102,7 @@ void RPCServer::handle_read_line(const boost::system::error_code& e)
 		}
 	}
 	else
-	{
-		boost::system::error_code ignore_ec;
-		mSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignore_ec);
-	}
+		mSocket.async_shutdown(boost::bind(&dummy_handler));
 }
 
 std::string RPCServer::handleRequest(const std::string& requestStr)
@@ -143,7 +143,7 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 
 	try
 	{
-		mRole	= iAdminGet(jvRequest, mSocket.remote_endpoint().address().to_string());
+		mRole	= iAdminGet(jvRequest, mSocket.PlainSocket().remote_endpoint().address().to_string());
 	}
 	catch (...)
 	{ // endpoint already disconnected
@@ -187,10 +187,7 @@ void RPCServer::handle_write(const boost::system::error_code& e)
 	{
 		HTTPRequestAction action = mHTTPRequest.requestDone(false);
 		if (action == haCLOSE_CONN)
-		{
-			boost::system::error_code ignored_ec;
-			mSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-		}
+			mSocket.async_shutdown(boost::bind(&dummy_handler));
 		else
 		{
 			boost::asio::async_read_until(mSocket, mLineBuffer, "\r\n",

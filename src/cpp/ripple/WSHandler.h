@@ -54,6 +54,8 @@ public:
 
 	bool		getPublic() { return mPublic; };
 
+	boost::asio::ssl::context& getASIOContext() { return *mCtx; }
+
 	static void ssend(connection_ptr cpClient, message_ptr mpMessage)
 	{
 		try

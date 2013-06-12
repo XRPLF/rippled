@@ -15,7 +15,7 @@ private:
 	
 	NetworkOPs*	mNetOps;
 
-	boost::asio::ip::tcp::socket mSocket;
+	AutoSocket mSocket;
 
 	boost::asio::streambuf mLineBuffer;
 	Blob mQueryVec;
@@ -26,7 +26,7 @@ private:
 	
 	int mRole;
 
-	RPCServer(boost::asio::io_service& io_service, NetworkOPs* nopNetwork);
+	RPCServer(boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context, NetworkOPs* nopNetwork);
 
 	RPCServer(const RPCServer&); // no implementation
 	RPCServer& operator=(const RPCServer&); // no implementation
@@ -38,14 +38,19 @@ private:
 	std::string handleRequest(const std::string& requestStr);
 
 public:
-	static pointer create(boost::asio::io_service& io_service, NetworkOPs* mNetOps)
+	static pointer create(boost::asio::io_service& io_service, boost::asio::ssl::context& context, NetworkOPs* mNetOps)
 	{
-		return pointer(new RPCServer(io_service, mNetOps));
+		return pointer(new RPCServer(io_service, context, mNetOps));
 	}
 
-	boost::asio::ip::tcp::socket& getSocket()
+	AutoSocket& getSocket()
 	{
 		return mSocket;
+	}
+
+	boost::asio::ip::tcp::socket& getRawSocket()
+	{
+		return mSocket.PlainSocket();
 	}
 
 	void connected();

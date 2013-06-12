@@ -14,8 +14,9 @@ public:
 	~RPCDoor ();
 
 private:
-	boost::asio::ip::tcp::acceptor	mAcceptor;
-	boost::asio::deadline_timer		mDelayTimer;
+	boost::asio::ip::tcp::acceptor		mAcceptor;
+	boost::asio::deadline_timer			mDelayTimer;
+	boost::asio::ssl::context			mSSLContext;
 
 	void startListening();
 	void handleConnect(RPCServer::pointer new_connection,

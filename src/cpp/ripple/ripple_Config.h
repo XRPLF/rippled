@@ -137,6 +137,11 @@ public:
 	bool						RPC_ALLOW_REMOTE;
 	Json::Value					RPC_STARTUP;
 
+	int							RPC_SECURE;
+	std::string					RPC_SSL_CERT;
+	std::string					RPC_SSL_CHAIN;
+	std::string					RPC_SSL_KEY;
+
 	// Path searching
 	int							PATH_SEARCH_SIZE;
 
