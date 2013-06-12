@@ -1093,7 +1093,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 		jvResult["account"]	= raAccount.humanAccountID();
 
 		boost::shared_ptr<Json::Value> jvsLines =
-			theApp->getOPs().getJSONCache(JC_OP_ACCOUNT_LINES, lpLedger->getHash(), raAccount.getAccountID());
+			theApp->getOPs().getJSONCache(JSONCache::kindLines, lpLedger->getHash(), raAccount.getAccountID());
 
 		if (!jvsLines)
 		{
@@ -1126,7 +1126,7 @@ Json::Value RPCHandler::doAccountLines(Json::Value jvRequest, int& cost, ScopedL
 				}
 			}
 
-			theApp->getOPs().storeJSONCache(JC_OP_ACCOUNT_LINES, lpLedger->getHash(),
+			theApp->getOPs().storeJSONCache(JSONCache::kindLines, lpLedger->getHash(),
 				raAccount.getAccountID(), jvsLines);
 		}
 		if (!bUnlocked)
@@ -1199,13 +1199,13 @@ Json::Value RPCHandler::doAccountOffers(Json::Value jvRequest, int& cost, Scoped
 		return rpcError(rpcACT_NOT_FOUND);
 
 	boost::shared_ptr<Json::Value> jvsOffers =
-		theApp->getOPs().getJSONCache(JC_OP_ACCOUNT_OFFERS, lpLedger->getHash(), raAccount.getAccountID());
+		theApp->getOPs().getJSONCache(JSONCache::kindOffers, lpLedger->getHash(), raAccount.getAccountID());
 
 	if (!jvsOffers)
 	{
 		jvsOffers = boost::make_shared<Json::Value>(Json::arrayValue);
 		lpLedger->visitAccountItems(raAccount.getAccountID(), BIND_TYPE(&offerAdder, boost::ref(*jvsOffers), P_1));
-		theApp->getOPs().storeJSONCache(JC_OP_ACCOUNT_OFFERS, lpLedger->getHash(), raAccount.getAccountID(), jvsOffers);
+		theApp->getOPs().storeJSONCache(JSONCache::kindOffers, lpLedger->getHash(), raAccount.getAccountID(), jvsOffers);
 	}
 	if (!bUnlocked)
 		MasterLockHolder.unlock();

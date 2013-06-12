@@ -185,7 +185,6 @@
 #include "src/cpp/ripple/LedgerEntrySet.h"
 #include "src/cpp/ripple/TransactionEngine.h"
 #include "src/cpp/ripple/ripple_CanonicalTXSet.h"
-#include "src/cpp/ripple/JSONCache.h"
 
 #include "src/cpp/ripple/ripple_LedgerHistory.h"
 #include "src/cpp/ripple/LedgerMaster.h"

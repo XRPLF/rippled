@@ -95,6 +95,8 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "protocol/ripple_STAmount.cpp"
 #include "protocol/ripple_STAmountRound.cpp"
 
+#include "utility/ripple_JSONCache.cpp"
+
 // VFALCO TODO Fix this for SConstruct
 #ifdef _MSC_VER
 #include "ripple.pb.cc" // BROKEN because of SConstruct
