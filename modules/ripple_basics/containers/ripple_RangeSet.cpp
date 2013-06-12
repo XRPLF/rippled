@@ -6,98 +6,150 @@ inline uint32 max(uint32 x, uint32 y)	{ return (x > y) ? x : y; }
 
 bool RangeSet::hasValue(uint32 v) const
 {
-	return mRanges.find(v) != mRanges.end();
+	BOOST_FOREACH(const value_type& it, mRanges)
+	{
+		if (contains(it, v))
+			return true;
+	}
+	return false;
 }
 
 uint32 RangeSet::getFirst() const
 {
-	const_iterator it = begin();
-	if (it == end())
+	const_iterator it = mRanges.begin();
+	if (it == mRanges.end())
 		return RangeSetAbsent;
-	return lower(it);
+	return it->first;
 }
 
 uint32 RangeSet::getNext(uint32 v) const
 {
-	for (const_iterator it = begin(); it != end(); ++it)
+	BOOST_FOREACH(const value_type& it, mRanges)
 	{
-		if (upper(it) > v)
-			return max(v + 1, lower(it));
+		if (it.first > v)
+			return it.first;
+		if (contains(it, v + 1))
+			return v + 1;
 	}
 	return RangeSetAbsent;
 }
 
 uint32 RangeSet::getLast() const
 {
-	const_reverse_iterator it = rbegin();
-	if (it == rend())
+	const_reverse_iterator it = mRanges.rbegin();
+	if (it == mRanges.rend())
 		return RangeSetAbsent;
-	return upper(it);
+	return it->second;
 }
 
 uint32 RangeSet::getPrev(uint32 v) const
 {
-	for (const_reverse_iterator it = rbegin(); it != rend(); ++it)
+	BOOST_REVERSE_FOREACH(const value_type& it, mRanges)
 	{
-		if (lower(it) < v)
-			return min(v - 1, upper(it));
+		if (it.second < v)
+			return it.second;
+		if (contains(it, v + 1))
+			return v - 1;
 	}
 	return RangeSetAbsent;
 }
 
 uint32 RangeSet::prevMissing(uint32 v) const
 { // largest number not in the set that is less than the given number
-	WriteLog (lsTRACE, RangeSet) << "prevMissing(" << v << ") " << toString();
-	for (const_reverse_iterator it = rbegin(); it != rend(); ++it)
+	BOOST_FOREACH(const value_type& it, mRanges)
 	{
-		if ((upper(it) + 1) < v)
-			return upper(it) + 1;
-		if (lower(it) == 0)
-			return RangeSetAbsent;
-		if ((lower(it) - 1) < v)
-			return lower(it) - 1;
+		if (contains(it, v))
+			return it.first - 1;
+		if (it.first > v)
+			return v + 1;
 	}
-	if (v > 0)
-		return v - 1;
 	return RangeSetAbsent;
 }
 
 void RangeSet::setValue(uint32 v)
 {
-	setRange(v, v);
+	if (!hasValue(v))
+	{
+		mRanges[v] = v;
+		simplify();
+	}
 }
 
 void RangeSet::setRange(uint32 minV, uint32 maxV)
 {
-	mRanges.add(boost::icl::discrete_interval<uint32>(minV, maxV + 1));
+	while (hasValue(minV))
+	{
+		++minV;
+		if (minV >= maxV)
+			return;
+	}
+	mRanges[minV] = maxV;
+	simplify();
 }
 
 void RangeSet::clearValue(uint32 v)
 {
-	clearRange(v, v);
-}
-
-void RangeSet::clearRange(uint32 minV, uint32 maxV)
-{
-	mRanges.erase(boost::icl::discrete_interval<uint32>(minV, maxV + 1));
+	for (iterator it = mRanges.begin(); it != mRanges.end(); ++it)
+	{
+		if (contains(*it, v))
+		{
+			if (it->first == v)
+			{
+				if (it->second == v)
+					mRanges.erase(it);
+				else
+				{
+					mRanges[v + 1] = it->second;
+					it->second = v - 1;
+				}
+			}
+			else if (it->second == v)
+				--(it->second);
+			else
+			{
+				uint32 oldEnd = it->second;
+				it->second = v - 1;
+				mRanges[v + 1] = oldEnd;
+			}
+			return;
+		}
+	}
 }
 
 std::string RangeSet::toString() const
 {
 	std::string ret;
-	for (const_iterator it = begin(); it != end(); ++it)
+	BOOST_FOREACH(value_type const& it, mRanges)
 	{
 		if (!ret.empty())
 			ret += ",";
-		if (lower(it) == upper(it))
-			ret += boost::lexical_cast<std::string>(lower(it));
+		if (it.first == it.second)
+			ret += boost::lexical_cast<std::string>((it.first));
 		else
-			ret += boost::lexical_cast<std::string>(lower(it)) + "-"
-				+ boost::lexical_cast<std::string>(upper(it));
+			ret += boost::lexical_cast<std::string>(it.first) + "-"
+				+ boost::lexical_cast<std::string>(it.second);
 	}
 	if (ret.empty())
 		return "empty";
 	return ret;
+}
+
+void RangeSet::simplify()
+{
+	iterator it = mRanges.begin();
+	while (1)
+	{
+		iterator nit = it;
+		if (++nit == mRanges.end())
+			return;
+		if (it->second >= (nit->first - 1))
+		{ // ranges overlap
+			it->second = nit->second;
+			mRanges.erase(nit);
+		}
+		else
+			it = nit;
+	}
 }
 
 BOOST_AUTO_TEST_SUITE(RangeSet_suite)
