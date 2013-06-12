@@ -1,37 +1,37 @@
 #ifndef RIPPLE_LEDGERCONSENSUS_H
 #define RIPPLE_LEDGERCONSENSUS_H
 
-#include "Transaction.h"
-#include "LedgerProposal.h"
-#include "TransactionEngine.h"
-
 DEFINE_INSTANCE(LedgerConsensus);
 
-enum LCState
-{
-	lcsPRE_CLOSE,		// We haven't closed our ledger yet, but others might have
-	lcsESTABLISH,		// Establishing consensus
-	lcsFINISHED,		// We have closed on a transaction set
-	lcsACCEPTED,		// We have accepted/validated a new last closed ledger
-};
+/** Manager for achieving consensus on the next ledger.
 
+    This object is created when the consensus process starts, and
+    is destroyed when the process is complete.
+*/
 class LedgerConsensus : public boost::enable_shared_from_this<LedgerConsensus>, IS_INSTANCE(LedgerConsensus)
 {
 public:
-	LedgerConsensus(uint256 const& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime);
+	LedgerConsensus (LedgerHash const& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime);
 
 	int startup();
+
 	Json::Value getJson(bool full);
 
 	Ledger::ref peekPreviousLedger()	{ return mPreviousLedger; }
-	uint256 getLCL()					{ return mPrevLedgerHash; }
+
+    uint256 getLCL()					{ return mPrevLedgerHash; }
 
 	SHAMap::pointer getTransactionTree(uint256 const& hash, bool doAcquire);
-	TransactionAcquire::pointer getAcquiring(uint256 const& hash);
-	void mapComplete(uint256 const& hash, SHAMap::ref map, bool acquired);
-	bool stillNeedTXSet(uint256 const& hash);
-	void checkLCL();
-	void handleLCL(uint256 const& lclHash);
+	
+    TransactionAcquire::pointer getAcquiring(uint256 const& hash);
+	
+    void mapComplete(uint256 const& hash, SHAMap::ref map, bool acquired);
+	
+    bool stillNeedTXSet(uint256 const& hash);
+	
+    void checkLCL();
+	
+    void handleLCL(uint256 const& lclHash);
 
 	void timerEntry();
 
@@ -92,7 +92,16 @@ private:
 	void endConsensus();
 
 private:
-	LCState mState;
+    // VFALCO TODO Rename these to look pretty
+    enum LCState
+    {
+	    lcsPRE_CLOSE,		// We haven't closed our ledger yet, but others might have
+	    lcsESTABLISH,		// Establishing consensus
+	    lcsFINISHED,		// We have closed on a transaction set
+	    lcsACCEPTED,		// We have accepted/validated a new last closed ledger
+    };
+
+    LCState mState;
 	uint32 mCloseTime;						// The wall time this ledger closed
 	uint256 mPrevLedgerHash, mNewLedgerHash;
 	Ledger::pointer mPreviousLedger;

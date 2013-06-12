@@ -24,21 +24,6 @@
 
 //------------------------------------------------------------------------------
 
-#if 0
-#include <boost/foreach.hpp>
-#include <boost/bind.hpp>
-#include <boost/thread.hpp>
-#include <string>
-
-#include <boost/test/unit_test.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/format.hpp>
-
-#include <openssl/rand.h>
-#include <string>
-#include <boost/test/unit_test.hpp>
-#endif
-
 //------------------------------------------------------------------------------
 
 #include <algorithm>
@@ -237,7 +222,7 @@
 #include "src/cpp/ripple/HttpsClient.h"
 #include "src/cpp/ripple/ripple_TransactionAcquire.h"
 #include "src/cpp/ripple/ripple_DisputedTx.h"
-#include "src/cpp/ripple/LedgerConsensus.h"
+#include "src/cpp/ripple/ripple_LedgerConsensus.h"
 #include "src/cpp/ripple/LedgerTiming.h"
 #include "src/cpp/ripple/Offer.h"
 #include "src/cpp/ripple/OfferCancelTransactor.h"
@@ -301,7 +286,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/HttpsClient.cpp"
 #include "src/cpp/ripple/Interpreter.cpp" // no log
 #include "src/cpp/ripple/Ledger.cpp"
-#include "src/cpp/ripple/LedgerConsensus.cpp"
 #include "src/cpp/ripple/LedgerEntrySet.cpp"
 #include "src/cpp/ripple/LedgerMaster.cpp"
 #include "src/cpp/ripple/LedgerProposal.cpp" // no log
@@ -400,6 +384,7 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_JobQueue.cpp"
 #include "src/cpp/ripple/ripple_LedgerAcquire.cpp"
 #include "src/cpp/ripple/ripple_LedgerAcquireMaster.cpp"
+#include "src/cpp/ripple/ripple_LedgerConsensus.cpp"
 #include "src/cpp/ripple/ripple_LedgerHistory.cpp"
 #include "src/cpp/ripple/ripple_LoadEvent.cpp"
 #include "src/cpp/ripple/ripple_LoadMonitor.cpp"

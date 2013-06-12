@@ -639,9 +639,6 @@
     <ClCompile Include="src\cpp\ripple\Ledger.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\LedgerConsensus.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerEntrySet.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
@@ -877,6 +874,9 @@
       <Filter>1. Modules\ripple_main\refactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_DisputedTx.cpp">
+      <Filter>1. Modules\ripple_main\refactored\consensus</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_LedgerConsensus.cpp">
       <Filter>1. Modules\ripple_main\refactored\consensus</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1406,9 +1406,6 @@
     <ClInclude Include="src\cpp\ripple\Ledger.h">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\LedgerConsensus.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerEntrySet.h">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
@@ -1635,6 +1632,9 @@
       <Filter>1. Modules\ripple_main\refactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_DisputedTx.h">
+      <Filter>1. Modules\ripple_main\refactored\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_LedgerConsensus.h">
       <Filter>1. Modules\ripple_main\refactored\consensus</Filter>
     </ClInclude>
   </ItemGroup>
