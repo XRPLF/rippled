@@ -117,20 +117,6 @@ bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 	return true;
 }
 
-// tells you how many rows were changed by an update or insert
-int SqliteDatabase::getNumRowsAffected()
-{
-	// TODO: SqliteDatabase::getNumRowsAffected()
-	return(0);
-}
-
-// VFALCO TODO This must be fixed!!! return value needs to be int64
-//
-int SqliteDatabase::getLastInsertID()
-{
-	return(sqlite3_last_insert_rowid(mConnection));
-}
-
 // returns false if there are no results
 bool SqliteDatabase::startIterRows(bool finalize)
 {

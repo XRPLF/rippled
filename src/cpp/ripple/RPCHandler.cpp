@@ -11,7 +11,6 @@
 #include "Pathfinder.h"
 #include "RPCHandler.h"
 #include "RPCSub.h"
-#include "Application.h"
 #include "AccountItems.h"
 #include "Wallet.h"
 #include "RippleCalc.h"
@@ -19,7 +18,6 @@
 #include "AccountState.h"
 #include "NicknameState.h"
 #include "Offer.h"
-#include "PFRequest.h"
 
 SETUP_LOG (RPCHandler)
 
@@ -1326,29 +1324,29 @@ Json::Value RPCHandler::doPathFind(Json::Value jvRequest, int& cost, ScopedLock&
 
 	if (sSubCommand == "create")
 	{
-		mInfoSub->clearPFRequest();
-		PFRequest::pointer request = boost::make_shared<PFRequest>(mInfoSub);
+		mInfoSub->clearPathRequest();
+		PathRequest::pointer request = boost::make_shared<PathRequest>(mInfoSub);
 		Json::Value result = request->doCreate(mNetOps->getClosedLedger(), jvRequest);
 		if (request->isValid())
 		{
-			mInfoSub->setPFRequest(request);
-			theApp->getLedgerMaster().newPFRequest();
+			mInfoSub->setPathRequest(request);
+			theApp->getLedgerMaster().newPathRequest();
 		}
 		return result;
 	}
 
 	if (sSubCommand == "close")
 	{
-		PFRequest::pointer request = mInfoSub->getPFRequest();
+		PathRequest::pointer request = mInfoSub->getPathRequest();
 		if (!request)
 			return rpcError(rpcNO_PF_REQUEST);
-		mInfoSub->clearPFRequest();
+		mInfoSub->clearPathRequest();
 		return request->doClose(jvRequest);
 	}
 
 	if (sSubCommand == "status")
 	{
-		PFRequest::pointer request = mInfoSub->getPFRequest();
+		PathRequest::pointer request = mInfoSub->getPathRequest();
 		if (!request)
 			return rpcNO_PF_REQUEST;
 		return request->doStatus(jvRequest);

@@ -1,6 +1,5 @@
 #include <boost/thread.hpp>
 
-#include "Application.h"
 #include "RPCSub.h"
 
 #include "CallRPC.h"

@@ -30,7 +30,7 @@ static const uint160 u160_zero(0), u160_one(1);
 static inline const uint160& get_u160_zero() { return u160_zero; }
 static inline const uint160& get_u160_one() { return u160_one; }
 
-// VFALCO TODO replace these with language constructs, gah!
+// VFALCO TODO replace these with language constructs
 #define CURRENCY_XRP		get_u160_zero()
 #define CURRENCY_ONE		get_u160_one()					// Used as a place holder.
 #define CURRENCY_BAD		uint160(0x5852500000000000)		// Do not allow XRP as an IOU currency.

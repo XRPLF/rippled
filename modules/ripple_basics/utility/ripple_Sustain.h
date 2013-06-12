@@ -19,7 +19,10 @@
 #ifndef RIPPLE_SUSTAIN_H
 #define RIPPLE_SUSTAIN_H
 
-// VFALCO TODO figure out what the heck this is??
+// "Sustain" is a system for a buddy process that monitors the main process
+// and relaunches it on a fault.
+//
+// VFALCO TODO Rename this and put it in a class.
 extern bool HaveSustain();
 extern std::string StopSustain();
 extern std::string DoSustain();

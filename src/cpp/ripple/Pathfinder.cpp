@@ -1,12 +1,4 @@
 
-#include "Pathfinder.h"
-
-#include <queue>
-
-#include <boost/foreach.hpp>
-
-#include "Application.h"
-
 SETUP_LOG (Pathfinder)
 
 /*

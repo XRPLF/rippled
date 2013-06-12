@@ -39,7 +39,14 @@ public:
 	LedgerEntrySetEntry(SLE::ref e, LedgerEntryAction a, int s) : mEntry(e), mAction(a), mSeq(s) { ; }
 };
 
+/** An LES is a LedgerEntrySet.
 
+    It's a view into a ledger used while a transaction is processing.
+    The transaction manipulates the LES rather than the ledger
+    (because it's cheaper, can be checkpointed, and so on). When the
+    transaction finishes, the LES is committed into the ledger to make
+    the modifications. The transaction metadata is built from the LES too.
+*/
 class LedgerEntrySet : private IS_INSTANCE(LedgerEntrySet)
 {
 public:

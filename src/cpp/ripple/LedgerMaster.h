@@ -11,7 +11,7 @@
 class LedgerMaster
 {
 public:
-	typedef FUNCTION_TYPE<void(Ledger::ref)> callback;
+	typedef FUNCTION_TYPE <void(Ledger::ref)> callback;
 
 public:
 	LedgerMaster ()
@@ -125,7 +125,7 @@ public:
 	void checkAccept(uint256 const& hash);
 	void checkAccept(uint256 const& hash, uint32 seq);
 	void tryPublish();
-	void newPFRequest();
+	void newPathRequest();
 
 	static bool shouldAcquire(uint32 currentLedgerID, uint32 ledgerHistory, uint32 targetLedger);
 

@@ -1,15 +1,4 @@
 
-#include <iostream>
-
-#include <boost/asio.hpp>
-#include <boost/foreach.hpp>
-#include <boost/program_options.hpp>
-#include <boost/test/included/unit_test.hpp>
-
-#include "Application.h"
-#include "CallRPC.h"
-#include "RPCHandler.h"
-
 namespace po = boost::program_options;
 
 // VFALCO TODO make these singletons that initialize statically
@@ -21,7 +10,7 @@ using namespace boost::unit_test;
 
 void setupServer()
 {
-	theApp = new Application();
+	theApp = IApplication::New ();
 	theApp->setup();
 }
 
@@ -54,7 +43,7 @@ void startServer()
 
 bool init_unit_test()
 {
-	theApp = new Application();
+	theApp = IApplication::New ();
 
     return true;
 }

@@ -3,6 +3,7 @@
 
 /** Persistency layer for hashed objects.
 */
+// VFALCO TODO Move all definitions to the .cpp
 class HashedObjectStore
 {
 public:

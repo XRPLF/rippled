@@ -1,7 +1,7 @@
 #ifndef RIPPLE_INSTANCECOUNTER_H
 #define RIPPLE_INSTANCECOUNTER_H
 
-// VFALCO TODO Clean up this junk, remove the macros, replace
+// VFALCO TODO Clean this up, remove the macros, replace
 //		   with a robust leak checker when we have atomics.
 //
 
@@ -38,7 +38,7 @@ protected:
 public:
 	typedef std::pair<std::string, int> InstanceCount;
 
-	InstanceType(const char *n) : mInstances(0), mName(n)
+	explicit InstanceType (const char *n) : mInstances(0), mName(n)
 	{
 		mNextInstance = sHeadInstance;
 		sHeadInstance = this;
@@ -65,7 +65,7 @@ public:
 	{
 		if (sMultiThreaded)
 		{
-			// VFALCO NOTE Junk that will go away with atomics
+			// VFALCO NOTE This will go away with atomics
 			mLock.lock();
 			++mInstances;
 			mLock.unlock();

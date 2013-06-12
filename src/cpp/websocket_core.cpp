@@ -3,8 +3,8 @@
 //
 
 // VFALCO TODO Fix this right. It's not really needed
-//				 to include this file, its a hack to keep
-//				 __STDC_LIMIT_MACROS from generating redefinition warnings
+//			   to include this file, its a hack to keep
+//			   __STDC_LIMIT_MACROS from generating redefinition warnings
 #include "websocketpp/src/rng/boost_rng.hpp"
 
 // Must come first to prevent compile errors
