@@ -640,6 +640,9 @@ TER OfferCreateTransactor::doApply()
 			if (bPassive)
 				sleOffer->setFlag(lsfPassive);
 
+			if (bSell)
+				sleOffer->setFlag(lsfSell);
+
 			WriteLog (lsINFO, OfferCreateTransactor) << boost::str(boost::format("OfferCreate: final terResult=%s sleOffer=%s")
 				% transToken(terResult)
 				% sleOffer->getJson(0));
