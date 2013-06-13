@@ -5,22 +5,10 @@
 #include "../websocketpp/src/sockets/autotls.hpp"
 #include "../websocketpp/src/websocketpp.hpp"
 
-#include <boost/weak_ptr.hpp>
-#include <boost/asio.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/pointer_cast.hpp>
-
-#include "WSDoor.h"
-#include "CallRPC.h"
-#include "LoadManager.h"
-#include "RPCErr.h"
-
 DEFINE_INSTANCE(WebSocketConnection);
 
 // This is for logging
-struct WSConnectionLog { };
-
-SETUP_LOG (WSConnectionLog)
+struct WSConnectionLog;
 
 template <typename endpoint_type>
 class WSServerHandler;

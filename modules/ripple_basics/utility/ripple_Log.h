@@ -38,7 +38,7 @@ private:
 	/** Retrieve file name from a log partition.
 	*/
 	template <class Key>
-	inline static char const* getFileName ();
+	static char const* getFileName ();
 	/*
 	{
 		static_vfassert (false);
@@ -55,7 +55,7 @@ public:
 };
 
 #define SETUP_LOG(k) \
-	template <> inline char const* LogPartition::getFileName <k> () { return __FILE__; } \
+	template <> char const* LogPartition::getFileName <k> () { return __FILE__; } \
 	struct k##Instantiator { k##Instantiator () { LogPartition::get <k> (); } }; \
 	static k##Instantiator k##Instantiator_instance;
 

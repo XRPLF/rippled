@@ -2,20 +2,12 @@
 // Carries out the RPC.
 //
 
-#include <openssl/md5.h>
-
-#include <boost/foreach.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/pointer_cast.hpp>
-
 #include "Pathfinder.h"
 #include "RPCHandler.h"
 #include "RPCSub.h"
-#include "AccountItems.h"
 #include "Wallet.h"
 #include "RippleCalc.h"
 #include "RPCErr.h"
-#include "AccountState.h"
 #include "NicknameState.h"
 #include "Offer.h"
 
@@ -443,7 +435,7 @@ Json::Value RPCHandler::authorize(Ledger::ref lrLedger,
 
 	RippleAddress	naMasterGenerator;
 
-	if (asSrc->bHaveAuthorizedKey())
+	if (asSrc->haveAuthorizedKey())
 	{
 		Json::Value	obj	= getMasterGenerator(lrLedger, naRegularSeed, naMasterGenerator);
 
@@ -491,7 +483,7 @@ Json::Value RPCHandler::authorize(Ledger::ref lrLedger,
 	naAccountPublic.setAccountPublic(naGenerator, iIndex);
 	naAccountPrivate.setAccountPrivate(naGenerator, naRegularSeed, iIndex);
 
-	if (asSrc->bHaveAuthorizedKey() && (asSrc->getAuthorizedKey().getAccountID() != naAccountPublic.getAccountID()))
+	if (asSrc->haveAuthorizedKey() && (asSrc->getAuthorizedKey().getAccountID() != naAccountPublic.getAccountID()))
 	{
 		// std::cerr << "iIndex: " << iIndex << std::endl;
 		// std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID()) << std::endl;

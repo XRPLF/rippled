@@ -1,0 +1,2 @@
+
+SETUP_LOG (WSConnectionLog)

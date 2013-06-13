@@ -64,6 +64,7 @@
 #endif
 
 #include "containers/ripple_RangeSet.cpp"
+#include "containers/ripple_TaggedCache.cpp"
 
 #include "utility/ripple_Log.cpp"
 

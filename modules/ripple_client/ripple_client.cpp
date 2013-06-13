@@ -50,7 +50,7 @@
      #include  "src/cpp/ripple/ripple_SerializedLedger.h"
     #include   "src/cpp/ripple/TransactionMeta.h"
    #include    "src/cpp/ripple/Transaction.h"
-   #include    "src/cpp/ripple/AccountState.h"
+   #include    "src/cpp/ripple/ripple_AccountState.h"
    #include    "src/cpp/ripple/NicknameState.h"
   #include     "src/cpp/ripple/Ledger.h"
     #include   "src/cpp/ripple/LedgerEntrySet.h"

@@ -12,9 +12,7 @@
 // CAUTION: Callers must not modify data objects that are stored in the cache
 // unless they hold their own lock over all cache operations.
 
-struct TaggedCacheLog { };
-
-SETUP_LOG (TaggedCacheLog)
+struct TaggedCacheLog;
 
 /** Combination cache/map container.
 

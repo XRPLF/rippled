@@ -1103,6 +1103,49 @@ void Ledger::visitAccountItems(const uint160& accountID, FUNCTION_TYPE<void(SLE:
 
 }
 
+/*
+// VFALCO: A proof of concept for making an iterator instead of a visitor
+class AccountItemIterator
+{
+public:
+    explicit AccountItemIterator (uint160 const& accountID)
+    {
+        // Convert the account ID to the root hash
+        //
+    	m_rootKey = Ledger::getOwnerDirIndex (accountID);
+
+        // Start iterating from the root
+        //
+	    m_currentKey = rootKey;
+
+    }
+
+    SerializedLedgerEntry::ref operator* () const
+    {
+        return m_currentEntry;
+    }
+
+    SerializedLedgerEntry::ref end () const
+    {
+        return s_end;
+    }
+
+    AccountItemIterator& operator++ (int)
+    {
+    }
+
+private:
+    static SerializedLedgerEntry s_end;
+
+	uint256 m_rootKey;
+	uint256 m_currentKey;
+
+    SerializedLedgerEntry::pointer m_currentEntry;
+}
+//	typedef const boost::shared_ptr<SerializedLedgerEntry>&	ref;
+*/
+
+
 uint256 Ledger::getFirstLedgerIndex()
 {
 	SHAMapItem::pointer node = mAccountStateMap->peekFirstItem();

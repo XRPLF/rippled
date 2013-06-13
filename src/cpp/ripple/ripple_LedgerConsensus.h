@@ -1,97 +1,37 @@
-#ifndef __LEDGER_CONSENSUS__
-#define __LEDGER_CONSENSUS__
-
-#include "Transaction.h"
-#include "LedgerProposal.h"
-#include "TransactionEngine.h"
+#ifndef RIPPLE_LEDGERCONSENSUS_H
+#define RIPPLE_LEDGERCONSENSUS_H
 
 DEFINE_INSTANCE(LedgerConsensus);
-DEFINE_INSTANCE(TransactionAcquire);
 
-// VFALCO TODO rename to PeerTxRequest
-// A transaction set we are trying to acquire
-class TransactionAcquire
-    : private IS_INSTANCE (TransactionAcquire)
-    , public PeerSet
-    , public boost::enable_shared_from_this <TransactionAcquire>
-{
-public:
-	typedef boost::shared_ptr<TransactionAcquire> pointer;
+/** Manager for achieving consensus on the next ledger.
 
-public:
-	explicit TransactionAcquire(uint256 const& hash);
-	virtual ~TransactionAcquire()		{ ; }
-
-	SHAMap::ref getMap()				{ return mMap; }
-
-	SHAMapAddNode takeNodes(const std::list<SHAMapNode>& IDs,
-		const std::list< Blob >& data, Peer::ref);
-
-private:
-	SHAMap::pointer		mMap;
-	bool				mHaveRoot;
-
-	void onTimer(bool progress);
-	void newPeer(Peer::ref peer)	{ trigger(peer); }
-
-	void done();
-	void trigger(Peer::ref);
-	boost::weak_ptr<PeerSet> pmDowncast();
-};
-
-// A transaction that may be disputed
-class LCTransaction
-{
-public:
-	typedef boost::shared_ptr<LCTransaction> pointer;
-
-	LCTransaction(uint256 const& txID, Blob const& tx, bool ourVote) :
-		mTransactionID(txID), mYays(0), mNays(0), mOurVote(ourVote), transaction(tx) { ; }
-
-	uint256 const& getTransactionID() const				{ return mTransactionID; }
-	bool getOurVote() const								{ return mOurVote; }
-	Serializer& peekTransaction()						{ return transaction; }
-	void setOurVote(bool o)								{ mOurVote = o; }
-
-	void setVote(const uint160& peer, bool votesYes);
-	void unVote(const uint160& peer);
-
-	bool updateVote(int percentTime, bool proposing);
-	Json::Value getJson();
-
-private:
-	uint256 mTransactionID;
-	int mYays, mNays;
-	bool mOurVote;
-	Serializer transaction;
-	boost::unordered_map<uint160, bool> mVotes;
-};
-
-enum LCState
-{
-	lcsPRE_CLOSE,		// We haven't closed our ledger yet, but others might have
-	lcsESTABLISH,		// Establishing consensus
-	lcsFINISHED,		// We have closed on a transaction set
-	lcsACCEPTED,		// We have accepted/validated a new last closed ledger
-};
-
+    This object is created when the consensus process starts, and
+    is destroyed when the process is complete.
+*/
 class LedgerConsensus : public boost::enable_shared_from_this<LedgerConsensus>, IS_INSTANCE(LedgerConsensus)
 {
 public:
-	LedgerConsensus(uint256 const& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime);
+	LedgerConsensus (LedgerHash const& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime);
 
 	int startup();
+
 	Json::Value getJson(bool full);
 
 	Ledger::ref peekPreviousLedger()	{ return mPreviousLedger; }
-	uint256 getLCL()					{ return mPrevLedgerHash; }
+
+    uint256 getLCL()					{ return mPrevLedgerHash; }
 
 	SHAMap::pointer getTransactionTree(uint256 const& hash, bool doAcquire);
-	TransactionAcquire::pointer getAcquiring(uint256 const& hash);
-	void mapComplete(uint256 const& hash, SHAMap::ref map, bool acquired);
-	bool stillNeedTXSet(uint256 const& hash);
-	void checkLCL();
-	void handleLCL(uint256 const& lclHash);
+	
+    TransactionAcquire::pointer getAcquiring(uint256 const& hash);
+	
+    void mapComplete(uint256 const& hash, SHAMap::ref map, bool acquired);
+	
+    bool stillNeedTXSet(uint256 const& hash);
+	
+    void checkLCL();
+	
+    void handleLCL(uint256 const& lclHash);
 
 	void timerEntry();
 
@@ -152,7 +92,16 @@ private:
 	void endConsensus();
 
 private:
-	LCState mState;
+    // VFALCO TODO Rename these to look pretty
+    enum LCState
+    {
+	    lcsPRE_CLOSE,		// We haven't closed our ledger yet, but others might have
+	    lcsESTABLISH,		// Establishing consensus
+	    lcsFINISHED,		// We have closed on a transaction set
+	    lcsACCEPTED,		// We have accepted/validated a new last closed ledger
+    };
+
+    LCState mState;
 	uint32 mCloseTime;						// The wall time this ledger closed
 	uint256 mPrevLedgerHash, mNewLedgerHash;
 	Ledger::pointer mPreviousLedger;
@@ -179,7 +128,7 @@ private:
 	boost::unordered_map<uint256, std::vector< boost::weak_ptr<Peer> > > mPeerData;
 
 	// Disputed transactions
-	boost::unordered_map<uint256, LCTransaction::pointer> mDisputes;
+	boost::unordered_map<uint256, DisputedTx::pointer> mDisputes;
 
 	// Close time estimates
 	std::map<uint32, int> mCloseTimes;

@@ -1,12 +1,17 @@
 
-AccountState::AccountState(const RippleAddress& naAccountID) : mAccountID(naAccountID), mValid(false)
+AccountState::AccountState (RippleAddress const& naAccountID)
+    : mAccountID (naAccountID)
+    , mValid (false)
 {
-	if (!naAccountID.isValid()) return;
+	if (naAccountID.isValid ())
+    {
+	    mValid = true;
 
-	mLedgerEntry = boost::make_shared<SerializedLedgerEntry>(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(naAccountID));
-	mLedgerEntry->setFieldAccount(sfAccount, naAccountID.getAccountID());
+        mLedgerEntry = boost::make_shared <SerializedLedgerEntry> (
+            ltACCOUNT_ROOT, Ledger::getAccountRootIndex (naAccountID));
 
-	mValid = true;
+	    mLedgerEntry->setFieldAccount (sfAccount, naAccountID.getAccountID());
+    }
 }
 
 AccountState::AccountState(SLE::ref ledgerEntry, const RippleAddress& naAccountID) :
@@ -20,13 +25,17 @@ AccountState::AccountState(SLE::ref ledgerEntry, const RippleAddress& naAccountI
 	mValid = true;
 }
 
+// VFALCO TODO Make this a generic utility function of some container class
+//
 std::string AccountState::createGravatarUrl(uint128 uEmailHash)
 {
 	Blob 	vucMD5(uEmailHash.begin(), uEmailHash.end());
 	std::string					strMD5Lower	= strHex(vucMD5);
 		boost::to_lower(strMD5Lower);
 
-	return str(boost::format("https://www.gravatar.com/avatar/%s") % strMD5Lower);
+    // VFALCO TODO Give a name and move this constant to a more visible location.
+    //             Also shouldn't this be https?
+	return str(boost::format("http://www.gravatar.com/avatar/%s") % strMD5Lower);
 }
 
 void AccountState::addJson(Json::Value& val)

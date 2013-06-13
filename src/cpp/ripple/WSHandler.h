@@ -11,11 +11,7 @@ class WSConnection;
 
 // CAUTION: on_* functions are called by the websocket code while holding a lock
 
-struct WSServerHandlerLog // for logging
-{
-};
-
-SETUP_LOG (WSServerHandlerLog)
+struct WSServerHandlerLog;
 
 // A single instance of this object is made.
 // This instance dispatches all events.  There is no per connection persistence.

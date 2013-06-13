@@ -1,12 +1,4 @@
 
-#include <string>
-
-#include <boost/test/unit_test.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/format.hpp>
-#include <boost/regex.hpp>
-
-#include <openssl/rand.h>
 
 SETUP_LOG (ProofOfWork)
 

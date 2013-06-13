@@ -22,8 +22,7 @@ protected:
 	void simplify();
 
 public:
-
-	RangeSet()					{ ; }
+	RangeSet () { }
 
 	bool hasValue(uint32) const;
 	uint32 getFirst() const;

@@ -241,6 +241,9 @@ public:
 	// Owner functions
 	//
 
+    // VFALCO NOTE This is a simple math operation that converts the account ID
+    //             into a 256 bit object (I think....need to research this)
+    //
 	// All items controlled by an account are here: offers
 	static uint256 getOwnerDirIndex(const uint160& uAccountID);
 
