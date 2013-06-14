@@ -5,10 +5,10 @@
 */
 struct UptimeTimerAdapter
 {
-	inline static int getElapsedSeconds ()
-	{
-		return UptimeTimer::getInstance().getElapsedSeconds ();
-	}
+    inline static int getElapsedSeconds ()
+    {
+        return UptimeTimer::getInstance ().getElapsedSeconds ();
+    }
 };
 
 #endif

@@ -8,7 +8,7 @@
 
 // Ripple specific constant used for parsing qualities and other things
 //
-#define QUALITY_ONE			1000000000	// 10e9
+#define QUALITY_ONE         1000000000  // 10e9
 
 //------------------------------------------------------------------------------
 
@@ -58,152 +58,158 @@
 
 //------------------------------------------------------------------------------
 
-extern std::string strprintf(const char* format, ...);
+extern std::string strprintf (const char* format, ...);
 
-extern std::string urlEncode(const std::string& strSrc);
-
-template<class Iterator>
-std::string strJoin(Iterator first, Iterator last, std::string strSeperator)
-{
-	std::ostringstream	ossValues;
-
-	for (Iterator start = first; first != last; first++)
-	{
-		ossValues << str(boost::format("%s%s") % (start == first ? "" : strSeperator) % *first);
-	}
-
-	return ossValues.str();
-}
-
-char charHex(int iDigit);
+extern std::string urlEncode (const std::string& strSrc);
 
 template<class Iterator>
-std::string strHex(Iterator first, int iSize)
+std::string strJoin (Iterator first, Iterator last, std::string strSeperator)
 {
-	std::string		strDst;
+    std::ostringstream  ossValues;
 
-	strDst.resize(iSize*2);
+    for (Iterator start = first; first != last; first++)
+    {
+        ossValues << str (boost::format ("%s%s") % (start == first ? "" : strSeperator) % *first);
+    }
 
-	for (int i = 0; i < iSize; i++) {
-		unsigned char c	= *first++;
-
-		strDst[i*2]		= charHex(c >> 4);
-		strDst[i*2+1]	= charHex(c & 15);
-	}
-
-	return strDst;
+    return ossValues.str ();
 }
 
-inline const std::string strHex(const std::string& strSrc)
+char charHex (int iDigit);
+
+template<class Iterator>
+std::string strHex (Iterator first, int iSize)
 {
-	return strHex(strSrc.begin(), strSrc.size());
+    std::string     strDst;
+
+    strDst.resize (iSize * 2);
+
+    for (int i = 0; i < iSize; i++)
+    {
+        unsigned char c = *first++;
+
+        strDst[i * 2]     = charHex (c >> 4);
+        strDst[i * 2 + 1]   = charHex (c & 15);
+    }
+
+    return strDst;
 }
 
-inline std::string strHex(Blob const& vucData)
+inline const std::string strHex (const std::string& strSrc)
 {
-	return strHex(vucData.begin(), vucData.size());
+    return strHex (strSrc.begin (), strSrc.size ());
 }
 
-inline std::string strHex(const uint64 uiHost)
+inline std::string strHex (Blob const& vucData)
 {
-	uint64_t	uBig	= htobe64(uiHost);
-
-	return strHex((unsigned char*) &uBig, sizeof(uBig));
+    return strHex (vucData.begin (), vucData.size ());
 }
 
-inline static std::string sqlEscape(const std::string& strSrc)
+inline std::string strHex (const uint64 uiHost)
 {
-	static boost::format f("X'%s'");
-	return str(boost::format(f) % strHex(strSrc));
+    uint64_t    uBig    = htobe64 (uiHost);
+
+    return strHex ((unsigned char*) &uBig, sizeof (uBig));
 }
 
-inline static std::string sqlEscape(Blob const& vecSrc)
+inline static std::string sqlEscape (const std::string& strSrc)
 {
-	size_t size = vecSrc.size();
-	if (size == 0)
-		return "X''";
+    static boost::format f ("X'%s'");
+    return str (boost::format (f) % strHex (strSrc));
+}
 
-	std::string j(size * 2 + 3, 0);
+inline static std::string sqlEscape (Blob const& vecSrc)
+{
+    size_t size = vecSrc.size ();
 
-	unsigned char *oPtr = reinterpret_cast<unsigned char *>(&*j.begin());
-	const unsigned char *iPtr = &vecSrc[0];
+    if (size == 0)
+        return "X''";
 
-	*oPtr++ = 'X';
-	*oPtr++ = '\'';
+    std::string j (size * 2 + 3, 0);
 
-	for (int i = size; i != 0; --i)
-	{
-		unsigned char c = *iPtr++;
-		*oPtr++ = charHex(c >> 4);
-		*oPtr++ = charHex(c & 15);
-	}
+    unsigned char* oPtr = reinterpret_cast<unsigned char*> (&*j.begin ());
+    const unsigned char* iPtr = &vecSrc[0];
 
-	*oPtr++ = '\'';
-	return j;
+    *oPtr++ = 'X';
+    *oPtr++ = '\'';
+
+    for (int i = size; i != 0; --i)
+    {
+        unsigned char c = *iPtr++;
+        *oPtr++ = charHex (c >> 4);
+        *oPtr++ = charHex (c & 15);
+    }
+
+    *oPtr++ = '\'';
+    return j;
 }
 
 template<class Iterator>
-bool isZero(Iterator first, int iSize)
+bool isZero (Iterator first, int iSize)
 {
-	while (iSize && !*first++)
-		--iSize;
+    while (iSize && !*first++)
+        --iSize;
 
-	return !iSize;
+    return !iSize;
 }
 
-int charUnHex(char cDigit);
-int strUnHex(std::string& strDst, const std::string& strSrc);
+int charUnHex (char cDigit);
+int strUnHex (std::string& strDst, const std::string& strSrc);
 
-uint64_t uintFromHex(const std::string& strSrc);
+uint64_t uintFromHex (const std::string& strSrc);
 
-Blob strUnHex(const std::string& strSrc);
+Blob strUnHex (const std::string& strSrc);
 
-Blob strCopy(const std::string& strSrc);
-std::string strCopy(Blob const& vucSrc);
+Blob strCopy (const std::string& strSrc);
+std::string strCopy (Blob const& vucSrc);
 
-bool parseIpPort(const std::string& strSource, std::string& strIP, int& iPort);
-bool parseQuality(const std::string& strSource, uint32& uQuality);
+bool parseIpPort (const std::string& strSource, std::string& strIP, int& iPort);
+bool parseQuality (const std::string& strSource, uint32& uQuality);
 
-inline std::string strGetEnv(const std::string& strKey)
+inline std::string strGetEnv (const std::string& strKey)
 {
-	return getenv(strKey.c_str()) ? getenv(strKey.c_str()) : "";
+    return getenv (strKey.c_str ()) ? getenv (strKey.c_str ()) : "";
 }
 
-template<typename T> T lexical_cast_s(const std::string& string)
-{ // lexically cast a string to the selected type. Does not throw
-	try
-	{
-		return boost::lexical_cast<T>(string);
-	}
-	catch (...)
-	{
-		return 0;
-	}
+template<typename T> T lexical_cast_s (const std::string& string)
+{
+    // lexically cast a string to the selected type. Does not throw
+    try
+    {
+        return boost::lexical_cast<T> (string);
+    }
+    catch (...)
+    {
+        return 0;
+    }
 }
 
-template<typename T> std::string lexical_cast_i(const T& t)
-{ // lexicaly cast the selected type to a string. Does not throw
-	try
-	{
-		return boost::lexical_cast<std::string>(t);
-	}
-	catch (...)
-	{
-		return "";
-	}
+template<typename T> std::string lexical_cast_i (const T& t)
+{
+    // lexicaly cast the selected type to a string. Does not throw
+    try
+    {
+        return boost::lexical_cast<std::string> (t);
+    }
+    catch (...)
+    {
+        return "";
+    }
 }
 
-template<typename T> T lexical_cast_st(const std::string& string)
-{ // lexically cast a string to the selected type. Does throw
-	return boost::lexical_cast<T>(string);
+template<typename T> T lexical_cast_st (const std::string& string)
+{
+    // lexically cast a string to the selected type. Does throw
+    return boost::lexical_cast<T> (string);
 }
 
-template<typename T> std::string lexical_cast_it(const T& t)
-{ // lexicaly cast the selected type to a string. Does not throw
-	return boost::lexical_cast<std::string>(t);
+template<typename T> std::string lexical_cast_it (const T& t)
+{
+    // lexicaly cast the selected type to a string. Does not throw
+    return boost::lexical_cast<std::string> (t);
 }
 
-bool parseUrl(const std::string& strUrl, std::string& strScheme, std::string& strDomain, int& iPort, std::string& strPath);
+bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& strDomain, int& iPort, std::string& strPath);
 
 #endif
 

@@ -12,13 +12,13 @@ public:
     {
     public:
         Key (int op, const uint256& ledger, const uint160& object, int lastUse);
-        int compare(const Key& k) const;
-        bool operator<(const Key &k) const;
-        bool operator>(const Key &k) const;
-        bool operator<=(const Key &k) const;    
-        bool operator>=(const Key &k) const;
-        bool operator!=(const Key &k) const;
-        bool operator==(const Key &k) const;
+        int compare (const Key& k) const;
+        bool operator< (const Key& k) const;
+        bool operator> (const Key& k) const;
+        bool operator<= (const Key& k) const;
+        bool operator>= (const Key& k) const;
+        bool operator!= (const Key& k) const;
+        bool operator== (const Key& k) const;
 
         void touch (Key const& key)    const;
         bool isExpired (int expireTime) const;

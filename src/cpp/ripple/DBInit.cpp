@@ -2,18 +2,19 @@
 #include <string>
 
 // Transaction database holds transactions and public keys
-const char *TxnDBInit[] = {
-	"PRAGMA synchronous=NORMAL;",
-	"PRAGMA journal_mode=WAL;",
-	"PRAGMA journal_size_limit=1582080;",
+const char* TxnDBInit[] =
+{
+    "PRAGMA synchronous=NORMAL;",
+    "PRAGMA journal_mode=WAL;",
+    "PRAGMA journal_size_limit=1582080;",
 
 #if (ULONG_MAX > UINT_MAX) && !defined (NO_SQLITE_MMAP)
-	"PRAGMA mmap_size=4294967296;",
+    "PRAGMA mmap_size=4294967296;",
 #endif
 
-	"BEGIN TRANSACTION;",
+    "BEGIN TRANSACTION;",
 
-	"CREATE TABLE Transactions (				\
+    "CREATE TABLE Transactions (				\
 		TransID		CHARACTER(64) PRIMARY KEY,	\
 		TransType	CHARACTER(24),				\
 		FromAcct	CHARACTER(35),				\
@@ -23,36 +24,37 @@ const char *TxnDBInit[] = {
 		RawTxn		BLOB,						\
 		TxnMeta		BLOB						\
 	);",
-	"CREATE INDEX TxLgrIndex ON                 \
+    "CREATE INDEX TxLgrIndex ON                 \
 		Transactions(LedgerSeq);",
 
-	"CREATE TABLE AccountTransactions (			\
+    "CREATE TABLE AccountTransactions (			\
 		TransID		CHARACTER(64),				\
 		Account		CHARACTER(64),				\
 		LedgerSeq	BIGINT UNSIGNED,			\
 		TxnSeq		INTEGER						\
 	);",
-	"CREATE INDEX AcctTxIDIndex ON				\
+    "CREATE INDEX AcctTxIDIndex ON				\
 		AccountTransactions(TransID);",
-	"CREATE INDEX AcctTxIndex ON				\
+    "CREATE INDEX AcctTxIndex ON				\
 		AccountTransactions(Account, LedgerSeq, TxnSeq, TransID);",
-	"CREATE INDEX AcctLgrIndex ON				\
+    "CREATE INDEX AcctLgrIndex ON				\
 		AccountTransactions(LedgerSeq, Account, TransID);",
 
-	"END TRANSACTION;"
+    "END TRANSACTION;"
 };
 
-int TxnDBCount = NUMBER(TxnDBInit);
+int TxnDBCount = NUMBER (TxnDBInit);
 
 // Ledger database holds ledgers and ledger confirmations
-const char *LedgerDBInit[] = {
-	"PRAGMA synchronous=NORMAL;",
-	"PRAGMA journal_mode=WAL;",
-	"PRAGMA journal_size_limit=1582080;",
+const char* LedgerDBInit[] =
+{
+    "PRAGMA synchronous=NORMAL;",
+    "PRAGMA journal_mode=WAL;",
+    "PRAGMA journal_size_limit=1582080;",
 
-	"BEGIN TRANSACTION;",
+    "BEGIN TRANSACTION;",
 
-	"CREATE TABLE Ledgers (							\
+    "CREATE TABLE Ledgers (							\
 		LedgerHash		CHARACTER(64) PRIMARY KEY,	\
 		LedgerSeq		BIGINT UNSIGNED,			\
 		PrevHash		CHARACTER(64),				\
@@ -64,82 +66,84 @@ const char *LedgerDBInit[] = {
 		AccountSetHash	CHARACTER(64),				\
 		TransSetHash	CHARACTER(64)				\
 	);",
-	"CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);",
+    "CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);",
 
-	"CREATE TABLE Validations	(					\
+    "CREATE TABLE Validations	(					\
 		LedgerHash	CHARACTER(64),					\
 		NodePubKey	CHARACTER(56),					\
 		SignTime	BIGINT UNSIGNED,				\
 		RawData		BLOB							\
 	);",
-	"CREATE INDEX ValidationsByHash ON				\
+    "CREATE INDEX ValidationsByHash ON				\
 		Validations(LedgerHash);",
-	"CREATE INDEX ValidationsByTime ON				\
+    "CREATE INDEX ValidationsByTime ON				\
 		Validations(SignTime);",
 
-	"END TRANSACTION;"
+    "END TRANSACTION;"
 };
 
-int LedgerDBCount = NUMBER(LedgerDBInit);
+int LedgerDBCount = NUMBER (LedgerDBInit);
 
 // RPC database holds persistent data for RPC clients.
-const char *RpcDBInit[] = {
+const char* RpcDBInit[] =
+{
 
-	// Local persistence of the RPC client
-	"CREATE TABLE RPCData (							\
+    // Local persistence of the RPC client
+    "CREATE TABLE RPCData (							\
 		Key			TEXT PRIMARY Key,				\
 		Value		TEXT							\
 	);",
 };
 
-int RpcDBCount = NUMBER(RpcDBInit);
+int RpcDBCount = NUMBER (RpcDBInit);
 
 // Wallet database holds local accounts and trusted nodes
-const char *WalletDBInit[] = {
-	// Node identity must be persisted for CAS routing and responsibilities.
-	"BEGIN TRANSACTION;",
+const char* WalletDBInit[] =
+{
+    // Node identity must be persisted for CAS routing and responsibilities.
+    "BEGIN TRANSACTION;",
 
-	"CREATE TABLE NodeIdentity (					\
+    "CREATE TABLE NodeIdentity (					\
 		PublicKey		CHARACTER(53),				\
 		PrivateKey		CHARACTER(52),				\
 		Dh512			TEXT,						\
 		Dh1024			TEXT						\
 	);",
 
-	// Miscellaneous persistent information
-	// Integer: 1 : Used to simplify SQL.
-	// ScoreUpdated: when scores was last updated.
-	// FetchUpdated: when last fetch succeeded.
-	"CREATE TABLE Misc (							\
+    // Miscellaneous persistent information
+    // Integer: 1 : Used to simplify SQL.
+    // ScoreUpdated: when scores was last updated.
+    // FetchUpdated: when last fetch succeeded.
+    "CREATE TABLE Misc (							\
 		Magic			INTEGER UNIQUE NOT NULL,	\
 		ScoreUpdated	DATETIME,					\
 		FetchUpdated	DATETIME					\
 	);",
 
-	// Scoring and other information for domains.
-	//
-	// Domain:
-	//  Domain source for https.
-	// PublicKey:
-	//  Set if ever succeeded.
-	// XXX Use NULL in place of ""
-	// Source:
-	//  'M' = Manually added.	: 1500
-	//  'V' = validators.txt	: 1000
-	//  'W' = Web browsing.		:  200
-	//  'R' = Referral			:    0
-	// Next:
-	//  Time of next fetch attempt.
-	// Scan:
-	//  Time of last fetch attempt.
-	// Fetch:
-	//  Time of last successful fetch.
-	// Sha256:
-	//  Checksum of last fetch.
-	// Comment:
-	//  User supplied comment.
-	// Table of Domains user has asked to trust.
-	"CREATE TABLE SeedDomains (						\
+    // Scoring and other information for domains.
+    //
+    // Domain:
+    //  Domain source for https.
+    // PublicKey:
+    //  Set if ever succeeded.
+    // XXX Use NULL in place of ""
+    // Source:
+    //  'M' = Manually added.   : 1500
+    //  'V' = validators.txt    : 1000
+    //  'W' = Web browsing.     :  200
+    //  'R' = Referral          :    0
+    // Next:
+    //  Time of next fetch attempt.
+    // Scan:
+    //  Time of last fetch attempt.
+    // Fetch:
+    //  Time of last successful fetch.
+    // Sha256:
+    //  Checksum of last fetch.
+    // Comment:
+    //  User supplied comment.
+    // Table of Domains user has asked to trust.
+    "CREATE TABLE SeedDomains (						\
 		Domain			TEXT PRIMARY KEY NOT NULL,	\
 		PublicKey		CHARACTER(53),				\
 		Source			CHARACTER(1) NOT NULL,		\
@@ -150,27 +154,27 @@ const char *WalletDBInit[] = {
 		Comment			TEXT						\
 	);",
 
-	// Allow us to easily find the next SeedDomain to fetch.
-	"CREATE INDEX SeedDomainNext ON SeedDomains (Next);",
+    // Allow us to easily find the next SeedDomain to fetch.
+    "CREATE INDEX SeedDomainNext ON SeedDomains (Next);",
 
-	// Table of PublicKeys user has asked to trust.
-	// Fetches are made to the CAS.  This gets the ripple.txt so even validators without a web server can publish a ripple.txt.
-	// Source:
-	//  'M' = Manually added.	: 1500
-	//  'V' = validators.txt	: 1000
-	//  'W' = Web browsing.		:  200
-	//  'R' = Referral			:    0
-	// Next:
-	//  Time of next fetch attempt.
-	// Scan:
-	//  Time of last fetch attempt.
-	// Fetch:
-	//  Time of last successful fetch.
-	// Sha256:
-	//  Checksum of last fetch.
-	// Comment:
-	//  User supplied comment.
-	"CREATE TABLE SeedNodes (						\
+    // Table of PublicKeys user has asked to trust.
+    // Fetches are made to the CAS.  This gets the ripple.txt so even validators without a web server can publish a ripple.txt.
+    // Source:
+    //  'M' = Manually added.   : 1500
+    //  'V' = validators.txt    : 1000
+    //  'W' = Web browsing.     :  200
+    //  'R' = Referral          :    0
+    // Next:
+    //  Time of next fetch attempt.
+    // Scan:
+    //  Time of last fetch attempt.
+    // Fetch:
+    //  Time of last successful fetch.
+    // Sha256:
+    //  Checksum of last fetch.
+    // Comment:
+    //  User supplied comment.
+    "CREATE TABLE SeedNodes (						\
 		PublicKey		CHARACTER(53) PRIMARY KEY NOT NULL,		\
 		Source			CHARACTER(1) NOT NULL,		\
 		Next			DATETIME,					\
@@ -180,51 +184,51 @@ const char *WalletDBInit[] = {
 		Comment			TEXT						\
 	);",
 
-	// Allow us to easily find the next SeedNode to fetch.
-	"CREATE INDEX SeedNodeNext ON SeedNodes (Next);",
+    // Allow us to easily find the next SeedNode to fetch.
+    "CREATE INDEX SeedNodeNext ON SeedNodes (Next);",
 
-	// Nodes we trust to not grossly collude against us.  Derived from SeedDomains, SeedNodes, and ValidatorReferrals.
-	//
-	// Score:
-	//  Computed trust score.  Higher is better.
-	// Seen:
-	//  Last validation received.
-	"CREATE TABLE TrustedNodes (							\
+    // Nodes we trust to not grossly collude against us.  Derived from SeedDomains, SeedNodes, and ValidatorReferrals.
+    //
+    // Score:
+    //  Computed trust score.  Higher is better.
+    // Seen:
+    //  Last validation received.
+    "CREATE TABLE TrustedNodes (							\
 		PublicKey		CHARACTER(53) PRIMARY KEY NOT NULL,	\
 		Score			INTEGER DEFAULT 0 NOT NULL,			\
 		Seen			DATETIME,							\
 		Comment			TEXT								\
 	);",
 
-	// List of referrals.
-	// - There may be multiple sources for a Validator.  The last source is used.
-	// Validator:
-	//  Public key of referrer.
-	// Entry:
-	//  Entry index in [validators] table.
-	// Referral:
-	//  This is the form provided by the ripple.txt:
-	//  - Public key for CAS based referral.
-	//  - Domain for domain based referral.
-	// XXX Do garbage collection when validators have no references.
-	"CREATE TABLE ValidatorReferrals (				\
+    // List of referrals.
+    // - There may be multiple sources for a Validator.  The last source is used.
+    // Validator:
+    //  Public key of referrer.
+    // Entry:
+    //  Entry index in [validators] table.
+    // Referral:
+    //  This is the form provided by the ripple.txt:
+    //  - Public key for CAS based referral.
+    //  - Domain for domain based referral.
+    // XXX Do garbage collection when validators have no references.
+    "CREATE TABLE ValidatorReferrals (				\
 		Validator		CHARACTER(53) NOT NULL,		\
 		Entry			INTEGER NOT NULL,			\
 		Referral		TEXT NOT NULL,				\
 		PRIMARY KEY (Validator,Entry)				\
 	);",
 
-	// List of referrals from ripple.txt files.
-	// Validator:
-	//  Public key of referree.
-	// Entry:
-	//  Entry index in [validators] table.
-	// IP:
-	//  IP of referred.
-	// Port:
-	//  -1 = Default
-	// XXX Do garbage collection when ips have no references.
-	"CREATE TABLE IpReferrals (							\
+    // List of referrals from ripple.txt files.
+    // Validator:
+    //  Public key of referree.
+    // Entry:
+    //  Entry index in [validators] table.
+    // IP:
+    //  IP of referred.
+    // Port:
+    //  -1 = Default
+    // XXX Do garbage collection when ips have no references.
+    "CREATE TABLE IpReferrals (							\
 		Validator		CHARACTER(53) NOT NULL,			\
 		Entry			INTEGER NOT NULL,				\
 		IP				TEXT NOT NULL,					\
@@ -232,25 +236,25 @@ const char *WalletDBInit[] = {
 		PRIMARY KEY (Validator,Entry)					\
 	);",
 
-	// Table of IPs to contact the network.
-	// IP:
-	//  IP address to contact.
-	// Port:
-	//  Port to contact.
-	//  -1 = Default
-	// Score:
-	//  Computed trust score.  Higher is better.
-	// Source:
-	//  'V' = Validation file
-	//  'M' = Manually added.
-	//  'I' = Inbound connection.
-	//	'T' = Told by other peer
-	//  'O' = Other.
-	// ScanNext:
-	//  When to next scan.  Null=not scanning.
-	// ScanInterval:
-	//  Delay between scans.
-	"CREATE TABLE PeerIps (								\
+    // Table of IPs to contact the network.
+    // IP:
+    //  IP address to contact.
+    // Port:
+    //  Port to contact.
+    //  -1 = Default
+    // Score:
+    //  Computed trust score.  Higher is better.
+    // Source:
+    //  'V' = Validation file
+    //  'M' = Manually added.
+    //  'I' = Inbound connection.
+    //  'T' = Told by other peer
+    //  'O' = Other.
+    // ScanNext:
+    //  When to next scan.  Null=not scanning.
+    // ScanInterval:
+    //  Delay between scans.
+    "CREATE TABLE PeerIps (								\
 		IpPort			TEXT NOT NULL PRIMARY KEY,		\
 		Score			INTEGER NOT NULL DEFAULT 0,		\
 		Source			CHARACTER(1) NOT NULL,			\
@@ -258,48 +262,50 @@ const char *WalletDBInit[] = {
 		ScanInterval	INTEGER NOT NULL DEFAULT 0		\
 	);",
 
-	"CREATE INDEX PeerScanIndex ON						\
+    "CREATE INDEX PeerScanIndex ON						\
 		PeerIps(ScanNext);",
 
-	"CREATE TABLE Features (							\
+    "CREATE TABLE Features (							\
 		Hash			CHARACTER(64) PRIMARY KEY,		\
 		FirstMajority	BIGINT UNSIGNED,				\
 		LastMajority	BIGINT UNSIGNED					\
 	);",
 
-	"END TRANSACTION;"
+    "END TRANSACTION;"
 };
 
-int WalletDBCount = NUMBER(WalletDBInit);
+int WalletDBCount = NUMBER (WalletDBInit);
 
 // Hash node database holds nodes indexed by hash
-const char *HashNodeDBInit[] = {
-	"PRAGMA synchronous=NORMAL;",
-	"PRAGMA journal_mode=WAL;",
-	"PRAGMA journal_size_limit=1582080;",
+const char* HashNodeDBInit[] =
+{
+    "PRAGMA synchronous=NORMAL;",
+    "PRAGMA journal_mode=WAL;",
+    "PRAGMA journal_size_limit=1582080;",
 
 #if (ULONG_MAX > UINT_MAX) && !defined (NO_SQLITE_MMAP)
-	"PRAGMA mmap_size=4294967296;",
+    "PRAGMA mmap_size=4294967296;",
 #endif
 
-	"BEGIN TRANSACTION;",
+    "BEGIN TRANSACTION;",
 
-	"CREATE TABLE CommittedObjects (				\
+    "CREATE TABLE CommittedObjects (				\
 		Hash		CHARACTER(64) PRIMARY KEY,		\
 		ObjType		CHAR(1)	NOT	NULL,				\
 		LedgerIndex	BIGINT UNSIGNED,				\
 		Object		BLOB							\
 	);",
 
-	"END TRANSACTION;"
+    "END TRANSACTION;"
 };
 
-int HashNodeDBCount = NUMBER(HashNodeDBInit);
+int HashNodeDBCount = NUMBER (HashNodeDBInit);
 
 // Net node database holds nodes seen on the network
 // XXX Not really used needs replacement.
-const char *NetNodeDBInit[] = {
-	"CREATE TABLE KnownNodes	(					\
+const char* NetNodeDBInit[] =
+{
+    "CREATE TABLE KnownNodes	(					\
 		Hanko			CHARACTER(35) PRIMARY KEY,	\
 		LastSeen		TEXT,						\
 		HaveContactInfo	CHARACTER(1),				\
@@ -307,38 +313,39 @@ const char *NetNodeDBInit[] = {
 	);"
 };
 
-int NetNodeDBCount = NUMBER(NetNodeDBInit);
+int NetNodeDBCount = NUMBER (NetNodeDBInit);
 
-const char *PathFindDBInit[] = {
-	"PRAGMA synchronous = OFF;            ",
+const char* PathFindDBInit[] =
+{
+    "PRAGMA synchronous = OFF;            ",
 
-	"DROP TABLE TrustLines;               ",
+    "DROP TABLE TrustLines;               ",
 
-	"CREATE TABLE TrustLines {            "
-		"To				CHARACTER(40),    "	// Hex of account trusted
-		"By				CHARACTER(40),    " // Hex of account trusting
-		"Currency		CHARACTER(80),    " // Hex currency, hex issuer
-		"Use			INTEGER,          " // Use count
-		"Seq			BIGINT UNSIGNED   " // Sequence when use count was updated
-	"};                                   ",
+    "CREATE TABLE TrustLines {            "
+    "To				CHARACTER(40),    "  // Hex of account trusted
+    "By				CHARACTER(40),    " // Hex of account trusting
+    "Currency		CHARACTER(80),    " // Hex currency, hex issuer
+    "Use			INTEGER,          " // Use count
+    "Seq			BIGINT UNSIGNED   " // Sequence when use count was updated
+    "};                                   ",
 
-	"CREATE INDEX TLBy ON TrustLines(By, Currency, Use);",
-	"CREATE INDEX TLTo ON TrustLines(To, Currency, Use);",
+    "CREATE INDEX TLBy ON TrustLines(By, Currency, Use);",
+    "CREATE INDEX TLTo ON TrustLines(To, Currency, Use);",
 
-	"DROP TABLE Exchanges;",
+    "DROP TABLE Exchanges;",
 
-	"CREATE TABLE Exchanges {             "
-		"From			CHARACTER(80),    "
-		"To				CHARACTER(80),    "
-		"Currency       CHARACTER(80),    "
-		"Use            INTEGER,          "
-		"Seq            BIGINT UNSIGNED   "
-	"};                                   ",
+    "CREATE TABLE Exchanges {             "
+    "From			CHARACTER(80),    "
+    "To				CHARACTER(80),    "
+    "Currency       CHARACTER(80),    "
+    "Use            INTEGER,          "
+    "Seq            BIGINT UNSIGNED   "
+    "};                                   ",
 
-	"CREATE INDEX ExBy ON Exchanges(By, Currency, Use);",
-	"CREATE INDEX ExTo ON Exchanges(To, Currency, Use);",
+    "CREATE INDEX ExBy ON Exchanges(By, Currency, Use);",
+    "CREATE INDEX ExTo ON Exchanges(To, Currency, Use);",
 };
 
-int PathFindDBCount = NUMBER(PathFindDBInit);
+int PathFindDBCount = NUMBER (PathFindDBInit);
 
 // vim:ts=4

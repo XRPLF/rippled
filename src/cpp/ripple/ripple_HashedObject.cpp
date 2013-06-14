@@ -34,7 +34,7 @@ HashedObjectType HashedObject::getType () const
     return mType;
 }
 
-uint256 const& HashedObject::getHash() const
+uint256 const& HashedObject::getHash () const
 {
     return mHash;
 }
@@ -44,7 +44,7 @@ LedgerIndex HashedObject::getIndex () const
     return mLedgerIndex;
 }
 
-Blob const& HashedObject::getData() const
+Blob const& HashedObject::getData () const
 {
     return mData;
 }

@@ -7,70 +7,75 @@
 class HashedObjectStore
 {
 public:
-	HashedObjectStore (int cacheSize, int cacheAge);
+    HashedObjectStore (int cacheSize, int cacheAge);
 
-	bool isLevelDB()
+    bool isLevelDB ()
     {
         return mLevelDB;
     }
 
-	float getCacheHitRate ()
+    float getCacheHitRate ()
     {
-        return mCache.getHitRate();
+        return mCache.getHitRate ();
     }
 
-	bool store (HashedObjectType type, uint32 index, Blob const& data,
-		uint256 const& hash)
-	{
-		if (mLevelDB)
-			return storeLevelDB(type, index, data, hash);
+    bool store (HashedObjectType type, uint32 index, Blob const& data,
+                uint256 const& hash)
+    {
+        if (mLevelDB)
+            return storeLevelDB (type, index, data, hash);
 
-        return storeSQLite(type, index, data, hash);
-	}
+        return storeSQLite (type, index, data, hash);
+    }
 
-	HashedObject::pointer retrieve(uint256 const& hash)
-	{
-		if (mLevelDB)
-			return retrieveLevelDB(hash);
-		return retrieveSQLite(hash);
-	}
+    HashedObject::pointer retrieve (uint256 const& hash)
+    {
+        if (mLevelDB)
+            return retrieveLevelDB (hash);
 
-	bool storeSQLite(HashedObjectType type, uint32 index, Blob const& data,
-		uint256 const& hash);
-	HashedObject::pointer retrieveSQLite(uint256 const& hash);
-	void bulkWriteSQLite(Job&);
+        return retrieveSQLite (hash);
+    }
 
-	bool storeLevelDB(HashedObjectType type, uint32 index, Blob const& data,
-		uint256 const& hash);
-	HashedObject::pointer retrieveLevelDB(uint256 const& hash);
-	void bulkWriteLevelDB(Job&);
+    bool storeSQLite (HashedObjectType type, uint32 index, Blob const& data,
+                      uint256 const& hash);
+    HashedObject::pointer retrieveSQLite (uint256 const& hash);
+    void bulkWriteSQLite (Job&);
+
+    bool storeLevelDB (HashedObjectType type, uint32 index, Blob const& data,
+                       uint256 const& hash);
+    HashedObject::pointer retrieveLevelDB (uint256 const& hash);
+    void bulkWriteLevelDB (Job&);
 
 
-	void waitWrite();
-	void tune(int size, int age);
-	void sweep() { mCache.sweep(); mNegativeCache.sweep(); }
-	int getWriteLoad();
+    void waitWrite ();
+    void tune (int size, int age);
+    void sweep ()
+    {
+        mCache.sweep ();
+        mNegativeCache.sweep ();
+    }
+    int getWriteLoad ();
 
-	int import(const std::string& fileName);
+    int import (const std::string& fileName);
 
 private:
-    static HashedObject::pointer LLRetrieve(uint256 const& hash, leveldb::DB* db);
-    static void LLWrite(boost::shared_ptr<HashedObject> ptr, leveldb::DB* db);
-    static void LLWrite(const std::vector< boost::shared_ptr<HashedObject> >& set, leveldb::DB* db);
+    static HashedObject::pointer LLRetrieve (uint256 const& hash, leveldb::DB* db);
+    static void LLWrite (boost::shared_ptr<HashedObject> ptr, leveldb::DB* db);
+    static void LLWrite (const std::vector< boost::shared_ptr<HashedObject> >& set, leveldb::DB* db);
 
 private:
-	TaggedCache<uint256, HashedObject, UptimeTimerAdapter>	mCache;
-	KeyCache <uint256, UptimeTimerAdapter> mNegativeCache;
+    TaggedCache<uint256, HashedObject, UptimeTimerAdapter>  mCache;
+    KeyCache <uint256, UptimeTimerAdapter> mNegativeCache;
 
-	boost::mutex				mWriteMutex;
-	boost::condition_variable	mWriteCondition;
-	int							mWriteGeneration;
-	int							mWriteLoad;
+    boost::mutex                mWriteMutex;
+    boost::condition_variable   mWriteCondition;
+    int                         mWriteGeneration;
+    int                         mWriteLoad;
 
-	std::vector< boost::shared_ptr<HashedObject> > mWriteSet;
-	bool mWritePending;
-	bool mLevelDB;
-	bool mEphemeralDB;
+    std::vector< boost::shared_ptr<HashedObject> > mWriteSet;
+    bool mWritePending;
+    bool mLevelDB;
+    bool mEphemeralDB;
 };
 
 #endif

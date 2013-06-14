@@ -1,28 +1,28 @@
 
-NicknameState::NicknameState(SerializedLedgerEntry::pointer ledgerEntry) :
-    mLedgerEntry(ledgerEntry)
+NicknameState::NicknameState (SerializedLedgerEntry::pointer ledgerEntry) :
+    mLedgerEntry (ledgerEntry)
 {
-    if (!mLedgerEntry || mLedgerEntry->getType() != ltNICKNAME) return;
+    if (!mLedgerEntry || mLedgerEntry->getType () != ltNICKNAME) return;
 }
 
-bool NicknameState::haveMinimumOffer() const
+bool NicknameState::haveMinimumOffer () const
 {
-    return mLedgerEntry->isFieldPresent(sfMinimumOffer);
+    return mLedgerEntry->isFieldPresent (sfMinimumOffer);
 }
 
-STAmount NicknameState::getMinimumOffer() const
+STAmount NicknameState::getMinimumOffer () const
 {
-    return mLedgerEntry->isFieldPresent(sfMinimumOffer)
-	? mLedgerEntry->getFieldAmount(sfMinimumOffer)
-	: STAmount();
+    return mLedgerEntry->isFieldPresent (sfMinimumOffer)
+           ? mLedgerEntry->getFieldAmount (sfMinimumOffer)
+           : STAmount ();
 }
 
-RippleAddress NicknameState::getAccountID() const
+RippleAddress NicknameState::getAccountID () const
 {
-    return mLedgerEntry->getFieldAccount(sfAccount);
+    return mLedgerEntry->getFieldAccount (sfAccount);
 }
 
-void NicknameState::addJson(Json::Value& val)
+void NicknameState::addJson (Json::Value& val)
 {
-    val = mLedgerEntry->getJson(0);
+    val = mLedgerEntry->getJson (0);
 }

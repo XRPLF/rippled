@@ -4,30 +4,30 @@ using namespace Script;
 JED: V III
 */
 
-Contract::Contract()
+Contract::Contract ()
 {
 
 }
 
 
-void Contract::executeCreate()
+void Contract::executeCreate ()
 {
 
 }
-void Contract::executeRemove()
+void Contract::executeRemove ()
 {
 
 }
-void Contract::executeFund()
+void Contract::executeFund ()
 {
 
 }
-void Contract::executeAccept()
+void Contract::executeAccept ()
 {
-	//std::vector<char> code;
+    //std::vector<char> code;
 
-	//Interpreter interpreter;
-	//interpreter.interpret(this,code);
+    //Interpreter interpreter;
+    //interpreter.interpret(this,code);
 }
 
 // vim:ts=4

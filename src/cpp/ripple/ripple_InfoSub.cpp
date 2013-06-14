@@ -18,29 +18,29 @@ boost::mutex InfoSub::sSeqLock;
 
 InfoSub::InfoSub ()
 {
-	boost::mutex::scoped_lock sl(sSeqLock);
-	mSeq = ++sSeq;
+    boost::mutex::scoped_lock sl (sSeqLock);
+    mSeq = ++sSeq;
 }
 
-InfoSub::~InfoSub()
+InfoSub::~InfoSub ()
 {
-	NetworkOPs& ops = theApp->getOPs();
-	ops.unsubTransactions(mSeq);
-	ops.unsubRTTransactions(mSeq);
-	ops.unsubLedger(mSeq);
-	ops.unsubServer(mSeq);
-	ops.unsubAccount(mSeq, mSubAccountInfo, true);
-	ops.unsubAccount(mSeq, mSubAccountInfo, false);
+    NetworkOPs& ops = theApp->getOPs ();
+    ops.unsubTransactions (mSeq);
+    ops.unsubRTTransactions (mSeq);
+    ops.unsubLedger (mSeq);
+    ops.unsubServer (mSeq);
+    ops.unsubAccount (mSeq, mSubAccountInfo, true);
+    ops.unsubAccount (mSeq, mSubAccountInfo, false);
 }
 
-void InfoSub::send(const Json::Value& jvObj, const std::string& sObj, bool broadcast)
+void InfoSub::send (const Json::Value& jvObj, const std::string& sObj, bool broadcast)
 {
     send (jvObj, broadcast);
 }
 
-uint64 InfoSub::getSeq()
+uint64 InfoSub::getSeq ()
 {
-	return mSeq;
+    return mSeq;
 }
 
 void InfoSub::onSendEmpty ()
@@ -49,22 +49,22 @@ void InfoSub::onSendEmpty ()
 
 void InfoSub::insertSubAccountInfo (RippleAddress addr, uint32 uLedgerIndex)
 {
-	boost::mutex::scoped_lock sl(mLockInfo);
+    boost::mutex::scoped_lock sl (mLockInfo);
 
-	mSubAccountInfo.insert(addr);
+    mSubAccountInfo.insert (addr);
 }
 
-void InfoSub::clearPathRequest()
+void InfoSub::clearPathRequest ()
 {
-	mPathRequest.reset();
+    mPathRequest.reset ();
 }
 
-void InfoSub::setPathRequest(const boost::shared_ptr<PathRequest>& req)
+void InfoSub::setPathRequest (const boost::shared_ptr<PathRequest>& req)
 {
-	mPathRequest = req;
+    mPathRequest = req;
 }
 
-const boost::shared_ptr<PathRequest>& InfoSub::getPathRequest()
+const boost::shared_ptr<PathRequest>& InfoSub::getPathRequest ()
 {
-	return mPathRequest;
+    return mPathRequest;
 }

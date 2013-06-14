@@ -6,18 +6,27 @@
 class DatabaseCon
 {
 public:
-	DatabaseCon (const std::string& name, const char *initString[], int countInit);
-	~DatabaseCon ();
-	Database* getDB ()						{ return mDatabase; }
-	boost::recursive_mutex& getDBLock()		{ return mLock; }
-	static int getCount()					{ return sCount; }
+    DatabaseCon (const std::string& name, const char* initString[], int countInit);
+    ~DatabaseCon ();
+    Database* getDB ()
+    {
+        return mDatabase;
+    }
+    boost::recursive_mutex& getDBLock ()
+    {
+        return mLock;
+    }
+    static int getCount ()
+    {
+        return sCount;
+    }
 
-// VFALCO TODO change "protected" to "private" throughout the code
+    // VFALCO TODO change "protected" to "private" throughout the code
 private:
-	Database*				mDatabase;
+    Database*               mDatabase;
     // VFALCO TODO replace these with a single atomic counter.
-	boost::recursive_mutex	mLock;
-	static int				sCount;
+    boost::recursive_mutex  mLock;
+    static int              sCount;
 };
 
 #endif

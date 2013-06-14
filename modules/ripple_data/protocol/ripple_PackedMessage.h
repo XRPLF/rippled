@@ -14,7 +14,7 @@ class PackedMessage : public boost::enable_shared_from_this <PackedMessage>
 {
 public:
     typedef boost::shared_ptr< ::google::protobuf::Message > MessagePointer;
-	typedef boost::shared_ptr<PackedMessage> pointer;
+    typedef boost::shared_ptr<PackedMessage> pointer;
 
 public:
     /** Number of bytes in a message header.
@@ -26,27 +26,27 @@ public:
     /** Retrieve the packed message data.
     */
     // VFALCO TODO shouldn't this be const?
-	std::vector <uint8_t>& getBuffer()
+    std::vector <uint8_t>& getBuffer ()
     {
         return mBuffer;
     }
 
     /** Determine bytewise equality.
     */
-	bool operator == (PackedMessage const& other) const;
+    bool operator == (PackedMessage const& other) const;
 
     /** Calculate the length of a packed message.
     */
-	static unsigned getLength (std::vector <uint8_t> const& buf);
-	
+    static unsigned getLength (std::vector <uint8_t> const& buf);
+
     /** Determine the type of a packed message.
     */
     static int getType (std::vector <uint8_t> const& buf);
 
 private:
-	// Encodes the size and type into a header at the beginning of buf
-	//
-	void encodeHeader (unsigned size, int type);
+    // Encodes the size and type into a header at the beginning of buf
+    //
+    void encodeHeader (unsigned size, int type);
 
     std::vector <uint8_t> mBuffer;
 };

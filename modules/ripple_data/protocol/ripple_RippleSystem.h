@@ -33,9 +33,9 @@ public:
 //         the point of call, i.e. "User-agent:" SYSTEM_NAME
 //         It will be necessary to rewrite some of them to use string streams.
 //
-#define SYSTEM_NAME					"ripple"
-#define SYSTEM_CURRENCY_CODE		"XRP"
-#define SYSTEM_CURRENCY_PRECISION	6
-#define SYSTEM_CURRENCY_CODE_RIPPLE	"XRR"
+#define SYSTEM_NAME                 "ripple"
+#define SYSTEM_CURRENCY_CODE        "XRP"
+#define SYSTEM_CURRENCY_PRECISION   6
+#define SYSTEM_CURRENCY_CODE_RIPPLE "XRR"
 
 #endif

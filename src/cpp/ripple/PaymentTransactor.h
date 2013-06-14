@@ -6,9 +6,9 @@
 class PaymentTransactor : public Transactor
 {
 public:
-	PaymentTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine) : Transactor(txn,params,engine) {}
+    PaymentTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
 
-	TER doApply();
+    TER doApply ();
 };
 #endif
 

@@ -15,7 +15,7 @@
           * This is used by InfoSub to report to clients
         - Cached stuff
 
-	@code
+    @code
     @endcode
 
     @see {uri}
@@ -25,37 +25,67 @@
 class AcceptedLedgerTx
 {
 public:
-	typedef boost::shared_ptr <AcceptedLedgerTx> pointer;
-	typedef const pointer& ref;
+    typedef boost::shared_ptr <AcceptedLedgerTx> pointer;
+    typedef const pointer& ref;
 
 public:
-	AcceptedLedgerTx (LedgerIndex ledgerSeq, SerializerIterator& sit);
-	AcceptedLedgerTx (SerializedTransaction::ref, TransactionMetaSet::ref);
-	AcceptedLedgerTx (SerializedTransaction::ref, TER result);
+    AcceptedLedgerTx (LedgerIndex ledgerSeq, SerializerIterator& sit);
+    AcceptedLedgerTx (SerializedTransaction::ref, TransactionMetaSet::ref);
+    AcceptedLedgerTx (SerializedTransaction::ref, TER result);
 
-	SerializedTransaction::ref getTxn()	const				{ return mTxn; }
-	TransactionMetaSet::ref getMeta() const					{ return mMeta; }
-	std::vector <RippleAddress> const& getAffected() const	{ return mAffected; }
+    SerializedTransaction::ref getTxn () const
+    {
+        return mTxn;
+    }
+    TransactionMetaSet::ref getMeta () const
+    {
+        return mMeta;
+    }
+    std::vector <RippleAddress> const& getAffected () const
+    {
+        return mAffected;
+    }
 
-	TxID getTransactionID() const						    { return mTxn->getTransactionID(); }
-	TransactionType getTxnType() const						{ return mTxn->getTxnType(); }
-	TER getResult() const									{ return mResult; }
-	uint32 getTxnSeq() const								{ return mMeta->getIndex(); }
+    TxID getTransactionID () const
+    {
+        return mTxn->getTransactionID ();
+    }
+    TransactionType getTxnType () const
+    {
+        return mTxn->getTxnType ();
+    }
+    TER getResult () const
+    {
+        return mResult;
+    }
+    uint32 getTxnSeq () const
+    {
+        return mMeta->getIndex ();
+    }
 
-	bool isApplied() const									{ return !!mMeta; }
-	int getIndex() const									{ return mMeta ? mMeta->getIndex() : 0; }
-	std::string getEscMeta() const;
-	Json::Value getJson() const								{ return mJson; }
+    bool isApplied () const
+    {
+        return !!mMeta;
+    }
+    int getIndex () const
+    {
+        return mMeta ? mMeta->getIndex () : 0;
+    }
+    std::string getEscMeta () const;
+    Json::Value getJson () const
+    {
+        return mJson;
+    }
 
 private:
-	SerializedTransaction::pointer	mTxn;
-	TransactionMetaSet::pointer		mMeta;
-	TER								mResult;
-	std::vector <RippleAddress>		mAffected;
-	Blob 		mRawMeta;
-	Json::Value						mJson;
+    SerializedTransaction::pointer  mTxn;
+    TransactionMetaSet::pointer     mMeta;
+    TER                             mResult;
+    std::vector <RippleAddress>     mAffected;
+    Blob        mRawMeta;
+    Json::Value                     mJson;
 
-	void buildJson();
+    void buildJson ();
 };
 
 #endif

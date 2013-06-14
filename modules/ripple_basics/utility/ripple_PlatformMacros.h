@@ -1,18 +1,18 @@
 //------------------------------------------------------------------------------
 /*
-	Copyright (c) 2011-2013, OpenCoin, Inc.
+    Copyright (c) 2011-2013, OpenCoin, Inc.
 
-	Permission to use, copy, modify, and/or distribute this software for any
-	purpose with  or without fee is hereby granted,  provided that the above
-	copyright notice and this permission notice appear in all copies.
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose with  or without fee is hereby granted,  provided that the above
+    copyright notice and this permission notice appear in all copies.
 
-	THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-	WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES OF
-	MERCHANTABILITY  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-	ANY SPECIAL,  DIRECT, INDIRECT,  OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-	WHATSOEVER  RESULTING  FROM LOSS OF USE, DATA OR PROFITS,  WHETHER IN AN
-	ACTION OF CONTRACT, NEGLIGENCE  OR OTHER TORTIOUS ACTION, ARISING OUT OF
-	OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES OF
+    MERCHANTABILITY  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY SPECIAL,  DIRECT, INDIRECT,  OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM LOSS OF USE, DATA OR PROFITS,  WHETHER IN AN
+    ACTION OF CONTRACT, NEGLIGENCE  OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
@@ -26,33 +26,33 @@
 // VFALCO TODO replace BIND_TYPE with a namespace lift
 
 #define C11X
-#include			 	<functional>
-#define UPTR_T			std::unique_ptr
-#define MOVE_P(p)		std::move(p)
-#define BIND_TYPE		std::bind
-#define FUNCTION_TYPE	std::function
-#define P_1				std::placeholders::_1
-#define P_2				std::placeholders::_2
-#define P_3				std::placeholders::_3
-#define P_4				std::placeholders::_4
+#include                <functional>
+#define UPTR_T          std::unique_ptr
+#define MOVE_P(p)       std::move(p)
+#define BIND_TYPE       std::bind
+#define FUNCTION_TYPE   std::function
+#define P_1             std::placeholders::_1
+#define P_2             std::placeholders::_2
+#define P_3             std::placeholders::_3
+#define P_4             std::placeholders::_4
 
 #else
 
-#define UPTR_T			std::auto_ptr
-#define MOVE_P(p)		(p)
-#define BIND_TYPE		boost::bind
-#define FUNCTION_TYPE	boost::function
-#define P_1				_1
-#define P_2				_2
-#define P_3				_3
-#define P_4				_4
+#define UPTR_T          std::auto_ptr
+#define MOVE_P(p)       (p)
+#define BIND_TYPE       boost::bind
+#define FUNCTION_TYPE   boost::function
+#define P_1             _1
+#define P_2             _2
+#define P_3             _3
+#define P_4             _4
 
 #endif
 
 // VFALCO TODO Clean this junk up
-#define nothing()			do {} while (0)
-#define fallthru()			do {} while (0)
-#define NUMBER(x)			(sizeof(x)/sizeof((x)[0]))
-#define isSetBit(x,y)		(!!((x) & (y)))
+#define nothing()           do {} while (0)
+#define fallthru()          do {} while (0)
+#define NUMBER(x)           (sizeof(x)/sizeof((x)[0]))
+#define isSetBit(x,y)       (!!((x) & (y)))
 
 #endif

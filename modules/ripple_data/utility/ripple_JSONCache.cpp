@@ -10,29 +10,55 @@ JSONCache::Key::Key (int op, uint256 const& ledger, uint160 const& object, int l
     mHash = static_cast <std::size_t> (mOperation);
 
     mLedger.hash_combine (mHash);
-    
+
     mObject.hash_combine (mHash);
 }
 
 int JSONCache::Key::compare (Key const& other) const
 {
     if (mHash < other.mHash)           return -1;
+
     if (mHash > other.mHash)           return  1;
+
     if (mOperation < other.mOperation) return -1;
+
     if (mOperation > other.mOperation) return  1;
+
     if (mLedger < other.mLedger)       return -1;
+
     if (mLedger > other.mLedger)       return  1;
+
     if (mObject < other.mObject)       return -1;
+
     if (mObject > other.mObject)       return  1;
+
     return 0;
 }
 
-bool JSONCache::Key::operator<  (Key const& rhs) const { return compare (rhs) < 0; }
-bool JSONCache::Key::operator>  (Key const& rhs) const { return compare (rhs) > 0; }
-bool JSONCache::Key::operator<= (Key const& rhs) const { return compare (rhs) <= 0; }
-bool JSONCache::Key::operator>= (Key const& rhs) const { return compare (rhs) >= 0; }
-bool JSONCache::Key::operator!= (Key const& rhs) const { return compare (rhs) != 0; }
-bool JSONCache::Key::operator== (Key const& rhs) const { return compare (rhs) == 0; }
+bool JSONCache::Key::operator<  (Key const& rhs) const
+{
+    return compare (rhs) < 0;
+}
+bool JSONCache::Key::operator>  (Key const& rhs) const
+{
+    return compare (rhs) > 0;
+}
+bool JSONCache::Key::operator<= (Key const& rhs) const
+{
+    return compare (rhs) <= 0;
+}
+bool JSONCache::Key::operator>= (Key const& rhs) const
+{
+    return compare (rhs) >= 0;
+}
+bool JSONCache::Key::operator!= (Key const& rhs) const
+{
+    return compare (rhs) != 0;
+}
+bool JSONCache::Key::operator== (Key const& rhs) const
+{
+    return compare (rhs) == 0;
+}
 
 void JSONCache::Key::touch (Key const& key) const
 {
@@ -85,10 +111,10 @@ JSONCache::data_t JSONCache::getEntry (Kind kind, LedgerHash const& ledger, uint
     Key key (kind, ledger, object, getUptime ());
 
     {
-        boost::recursive_mutex::scoped_lock sl(m_lock);
+        boost::recursive_mutex::scoped_lock sl (m_lock);
 
         boost::unordered_map <Key, data_t>::iterator it = m_cache.find (key);
-    
+
         if (it != m_cache.end ())
         {
             ++mHits;
@@ -113,7 +139,7 @@ void JSONCache::storeEntry (Kind kind, uint256 const& ledger, uint160 const& obj
     Key key (kind, ledger, object, getUptime ());
 
     {
-        boost::recursive_mutex::scoped_lock sl(m_lock);
+        boost::recursive_mutex::scoped_lock sl (m_lock);
 
         m_cache.insert (std::pair <Key, data_t> (key, data));
     }
@@ -130,15 +156,15 @@ void JSONCache::sweep ()
         sweepTime -= m_expirationTime;
 
         {
-            boost::recursive_mutex::scoped_lock sl(m_lock);
-         
-            boost::unordered_map <Key, data_t>::iterator it = m_cache.begin();
+            boost::recursive_mutex::scoped_lock sl (m_lock);
+
+            boost::unordered_map <Key, data_t>::iterator it = m_cache.begin ();
 
             while (it != m_cache.end ())
             {
                 if (it->first.isExpired (sweepTime))
                 {
-                    it = m_cache.erase(it);
+                    it = m_cache.erase (it);
                 }
                 else
                 {
@@ -153,5 +179,5 @@ void JSONCache::sweep ()
 
 int JSONCache::getUptime () const
 {
-    return UptimeTimer::getInstance().getElapsedSeconds();
+    return UptimeTimer::getInstance ().getElapsedSeconds ();
 }
