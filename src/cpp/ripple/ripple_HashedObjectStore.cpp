@@ -243,6 +243,7 @@ bool HashedObjectStore::storeSQLite(HashedObjectType type, uint32 index,
 void HashedObjectStore::bulkWriteSQLite(Job&)
 {
 	assert(!mLevelDB);
+	int setSize = 0;
 	while (1)
 	{
 		std::vector< boost::shared_ptr<HashedObject> > set;
@@ -257,8 +258,11 @@ void HashedObjectStore::bulkWriteSQLite(Job&)
 			if (set.empty())
 			{
 				mWritePending = false;
+				mWriteLoad = 0;
 				return;
 			}
+			mWriteLoad = std::max(setSize, static_cast<int>(mWriteSet.size()));
+			setSize = set.size();
 		}
 //		WriteLog (lsTRACE, HashedObject) << "HOS: writing " << set.size();
 
