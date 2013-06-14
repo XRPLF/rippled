@@ -6,26 +6,26 @@
 class SHAMapSyncFilter
 {
 public:
-	SHAMapSyncFilter ()
+    SHAMapSyncFilter ()
     {
     }
-	
+
     virtual ~SHAMapSyncFilter ()
     {
     }
 
-	virtual void gotNode (bool fromFilter,
+    virtual void gotNode (bool fromFilter,
                           SHAMapNode const& id,
                           uint256 const& nodeHash,
                           Blob const& nodeData,
                           SHAMapTreeNode::TNType type)
-	{
+    {
     }
 
-	virtual bool haveNode (SHAMapNode const& id,
+    virtual bool haveNode (SHAMapNode const& id,
                            uint256 const& nodeHash,
-                           Blob&nodeData)
-	{
+                           Blob& nodeData)
+    {
         return false;
     }
 };

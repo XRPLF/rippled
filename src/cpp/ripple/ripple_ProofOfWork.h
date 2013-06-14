@@ -4,43 +4,49 @@
 class ProofOfWork
 {
 public:
-	static const int sMaxDifficulty;
+    static const int sMaxDifficulty;
 
-	typedef boost::shared_ptr <ProofOfWork> pointer;
+    typedef boost::shared_ptr <ProofOfWork> pointer;
 
-	ProofOfWork (const std::string& token,
+    ProofOfWork (const std::string& token,
                  int iterations,
                  uint256 const& challenge,
                  uint256 const& target);
 
-	explicit ProofOfWork (const std::string& token);
+    explicit ProofOfWork (const std::string& token);
 
-	bool isValid() const;
+    bool isValid () const;
 
-	uint256 solve(int maxIterations = 2 * sMaxIterations) const;
-	bool checkSolution(uint256 const& solution) const;
+    uint256 solve (int maxIterations = 2 * sMaxIterations) const;
+    bool checkSolution (uint256 const& solution) const;
 
-	const std::string& getToken() const		{ return mToken; }
-	uint256 const& getChallenge() const		{ return mChallenge; }
-
-    uint64 getDifficulty() const
+    const std::string& getToken () const
     {
-        return getDifficulty(mTarget, mIterations);
+        return mToken;
+    }
+    uint256 const& getChallenge () const
+    {
+        return mChallenge;
     }
 
-	// approximate number of hashes needed to solve
-	static uint64 getDifficulty (uint256 const& target, int iterations);
+    uint64 getDifficulty () const
+    {
+        return getDifficulty (mTarget, mIterations);
+    }
+
+    // approximate number of hashes needed to solve
+    static uint64 getDifficulty (uint256 const& target, int iterations);
 
     static bool validateToken (const std::string& strToken);
 
 private:
-	std::string		mToken;
-	uint256			mChallenge;
-	uint256			mTarget;
-	int				mIterations;
+    std::string     mToken;
+    uint256         mChallenge;
+    uint256         mTarget;
+    int             mIterations;
 
-	static const uint256 sMinTarget;
-	static const int sMaxIterations;
+    static const uint256 sMinTarget;
+    static const int sMaxIterations;
 };
 
 #endif

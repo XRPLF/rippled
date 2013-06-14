@@ -5,63 +5,107 @@
 class SHAMapNode
 {
 public:
-	SHAMapNode() : mDepth(0), mHash(0)	{ ; }
-	SHAMapNode(int depth, uint256 const& hash);
+    SHAMapNode () : mDepth (0), mHash (0)
+    {
+        ;
+    }
+    SHAMapNode (int depth, uint256 const& hash);
 
-	int getDepth() const				{ return mDepth; }
-	uint256 const& getNodeID()	const	{ return mNodeID; }
-	bool isValid() const 				{ return (mDepth >= 0) && (mDepth < 64); }
-	bool isRoot() const					{ return mDepth == 0; }
-	size_t getMHash() const				{ if (mHash == 0) setMHash(); return mHash; }
+    int getDepth () const
+    {
+        return mDepth;
+    }
+    uint256 const& getNodeID ()  const
+    {
+        return mNodeID;
+    }
+    bool isValid () const
+    {
+        return (mDepth >= 0) && (mDepth < 64);
+    }
+    bool isRoot () const
+    {
+        return mDepth == 0;
+    }
+    size_t getMHash () const
+    {
+        if (mHash == 0) setMHash ();
 
-	virtual bool isPopulated() const	{ return false; }
+        return mHash;
+    }
 
-	SHAMapNode getParentNodeID() const
-	{
-		assert(mDepth);
-		return SHAMapNode(mDepth - 1, mNodeID);
-	}
+    virtual bool isPopulated () const
+    {
+        return false;
+    }
 
-	SHAMapNode getChildNodeID(int m) const;
-	int selectBranch(uint256 const& hash) const;
+    SHAMapNode getParentNodeID () const
+    {
+        assert (mDepth);
+        return SHAMapNode (mDepth - 1, mNodeID);
+    }
 
-	bool operator<(const SHAMapNode&) const;
-	bool operator>(const SHAMapNode&) const;
-	bool operator<=(const SHAMapNode&) const;
-	bool operator>=(const SHAMapNode&) const;
+    SHAMapNode getChildNodeID (int m) const;
+    int selectBranch (uint256 const& hash) const;
 
-	bool operator==(const SHAMapNode& n) const	{ return (mDepth == n.mDepth) && (mNodeID == n.mNodeID); }
-	bool operator==(uint256 const& n) const		{ return n == mNodeID; }
-	bool operator!=(const SHAMapNode& n) const	{ return (mDepth != n.mDepth) || (mNodeID != n.mNodeID); }
-	bool operator!=(uint256 const& n) const		{ return n != mNodeID; }
+    bool operator< (const SHAMapNode&) const;
+    bool operator> (const SHAMapNode&) const;
+    bool operator<= (const SHAMapNode&) const;
+    bool operator>= (const SHAMapNode&) const;
 
-	virtual std::string getString() const;
-	void dump() const;
+    bool operator== (const SHAMapNode& n) const
+    {
+        return (mDepth == n.mDepth) && (mNodeID == n.mNodeID);
+    }
+    bool operator== (uint256 const& n) const
+    {
+        return n == mNodeID;
+    }
+    bool operator!= (const SHAMapNode& n) const
+    {
+        return (mDepth != n.mDepth) || (mNodeID != n.mNodeID);
+    }
+    bool operator!= (uint256 const& n) const
+    {
+        return n != mNodeID;
+    }
 
-	static bool ClassInit();
-	static uint256 getNodeID(int depth, uint256 const& hash);
+    virtual std::string getString () const;
+    void dump () const;
 
-	// Convert to/from wire format (256-bit nodeID, 1-byte depth)
-	void addIDRaw(Serializer &s) const;
-	std::string getRawString() const;
-	static int getRawIDLength(void) { return 33; }
-	SHAMapNode(const void *ptr, int len);
+    static bool ClassInit ();
+    static uint256 getNodeID (int depth, uint256 const& hash);
+
+    // Convert to/from wire format (256-bit nodeID, 1-byte depth)
+    void addIDRaw (Serializer& s) const;
+    std::string getRawString () const;
+    static int getRawIDLength (void)
+    {
+        return 33;
+    }
+    SHAMapNode (const void* ptr, int len);
 
 protected:
-	SHAMapNode(int depth, uint256 const& id, bool) : mNodeID(id), mDepth(depth), mHash(0) { ; }
+    SHAMapNode (int depth, uint256 const& id, bool) : mNodeID (id), mDepth (depth), mHash (0)
+    {
+        ;
+    }
 
 private:
-	static uint256 smMasks[65]; // AND with hash to get node id
+    static uint256 smMasks[65]; // AND with hash to get node id
 
-	uint256	mNodeID;
-	int		mDepth;
-	mutable size_t	mHash;
+    uint256 mNodeID;
+    int     mDepth;
+    mutable size_t  mHash;
 
-	void setMHash() const;
+    void setMHash () const;
 };
 
-extern std::size_t hash_value(const SHAMapNode& mn);
+extern std::size_t hash_value (const SHAMapNode& mn);
 
-inline std::ostream& operator<<(std::ostream& out, const SHAMapNode& node) { return out << node.getString(); }
+inline std::ostream& operator<< (std::ostream& out, const SHAMapNode& node)
+{
+    return out << node.getString ();
+}
 
 #endif

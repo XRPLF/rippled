@@ -9,15 +9,15 @@
 class ConsensusTransSetSF : public SHAMapSyncFilter
 {
 public:
-	ConsensusTransSetSF ();
+    ConsensusTransSetSF ();
 
-	void gotNode (bool fromFilter,
+    void gotNode (bool fromFilter,
                   SHAMapNode const& id,
                   uint256 const& nodeHash,
                   Blob const& nodeData,
                   SHAMapTreeNode::TNType);
 
-	bool haveNode (SHAMapNode const& id,
+    bool haveNode (SHAMapNode const& id,
                    uint256 const& nodeHash,
                    Blob& nodeData);
 };
@@ -27,28 +27,7 @@ public:
 class AccountStateSF : public SHAMapSyncFilter
 {
 public:
-	explicit AccountStateSF (uint32 ledgerSeq);
-
-	void gotNode (bool fromFilter,
-                  SHAMapNode const& id,
-                  uint256 const& nodeHash,
-                  Blob const& nodeData,
-                  SHAMapTreeNode::TNType);
-
-	bool haveNode (SHAMapNode const& id,
-                   uint256 const& nodeHash,
-                   Blob& nodeData);
-
-private:
-	uint32 mLedgerSeq;
-};
-
-// This class is only needed on add functions
-// sync filter for transactions tree during ledger sync
-class TransactionStateSF : public SHAMapSyncFilter
-{ 
-public:
-	explicit TransactionStateSF (uint32 ledgerSeq);
+    explicit AccountStateSF (uint32 ledgerSeq);
 
     void gotNode (bool fromFilter,
                   SHAMapNode const& id,
@@ -56,12 +35,33 @@ public:
                   Blob const& nodeData,
                   SHAMapTreeNode::TNType);
 
-	bool haveNode (SHAMapNode const& id,
+    bool haveNode (SHAMapNode const& id,
                    uint256 const& nodeHash,
                    Blob& nodeData);
 
 private:
-	uint32 mLedgerSeq;
+    uint32 mLedgerSeq;
+};
+
+// This class is only needed on add functions
+// sync filter for transactions tree during ledger sync
+class TransactionStateSF : public SHAMapSyncFilter
+{
+public:
+    explicit TransactionStateSF (uint32 ledgerSeq);
+
+    void gotNode (bool fromFilter,
+                  SHAMapNode const& id,
+                  uint256 const& nodeHash,
+                  Blob const& nodeData,
+                  SHAMapTreeNode::TNType);
+
+    bool haveNode (SHAMapNode const& id,
+                   uint256 const& nodeHash,
+                   Blob& nodeData);
+
+private:
+    uint32 mLedgerSeq;
 };
 
 #endif

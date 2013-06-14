@@ -9,358 +9,395 @@ typedef boost::shared_ptr<ValidationSet> VSpointer;
 class Validations : public IValidations
 {
 private:
-	boost::mutex													mValidationLock;
-	TaggedCache<uint256, ValidationSet, UptimeTimerAdapter>		mValidations;
-	boost::unordered_map<uint160, SerializedValidation::pointer> 	mCurrentValidations;
-	std::vector<SerializedValidation::pointer> 						mStaleValidations;
+    boost::mutex                                                    mValidationLock;
+    TaggedCache<uint256, ValidationSet, UptimeTimerAdapter>     mValidations;
+    boost::unordered_map<uint160, SerializedValidation::pointer>    mCurrentValidations;
+    std::vector<SerializedValidation::pointer>                      mStaleValidations;
 
-	bool mWriting;
+    bool mWriting;
 
 private:
-	boost::shared_ptr<ValidationSet> findCreateSet(uint256 const& ledgerHash)
+    boost::shared_ptr<ValidationSet> findCreateSet (uint256 const& ledgerHash)
     {
-	    VSpointer j = mValidations.fetch(ledgerHash);
-	    if (!j)
-	    {
-		    j = boost::make_shared<ValidationSet>();
-		    mValidations.canonicalize(ledgerHash, j);
-	    }
-	    return j;
+        VSpointer j = mValidations.fetch (ledgerHash);
+
+        if (!j)
+        {
+            j = boost::make_shared<ValidationSet> ();
+            mValidations.canonicalize (ledgerHash, j);
+        }
+
+        return j;
     }
 
-	boost::shared_ptr<ValidationSet> findSet(uint256 const& ledgerHash)
+    boost::shared_ptr<ValidationSet> findSet (uint256 const& ledgerHash)
     {
-	    return mValidations.fetch(ledgerHash);
+        return mValidations.fetch (ledgerHash);
     }
 
 public:
-	Validations() : mValidations("Validations", 128, 600), mWriting(false)
-	{
-        mStaleValidations.reserve(512);
+    Validations () : mValidations ("Validations", 128, 600), mWriting (false)
+    {
+        mStaleValidations.reserve (512);
     }
 
 private:
-	bool addValidation (SerializedValidation::ref val, const std::string& source)
+    bool addValidation (SerializedValidation::ref val, const std::string& source)
     {
-	    RippleAddress signer = val->getSignerPublic();
-	    bool isCurrent = false;
-	    if (theApp->getUNL().nodeInUNL(signer) || val->isTrusted())
-	    {
-		    val->setTrusted();
-		    uint32 now = theApp->getOPs().getCloseTimeNC();
-		    uint32 valClose = val->getSignTime();
-		    if ((now > (valClose - LEDGER_EARLY_INTERVAL)) && (now < (valClose + LEDGER_VAL_INTERVAL)))
-			    isCurrent = true;
-		    else
-		    {
-			    WriteLog (lsWARNING, Validations) << "Received stale validation now=" << now << ", close=" << valClose;
-		    }
-	    }
-	    else
-	    {
-		    WriteLog (lsDEBUG, Validations) << "Node " << signer.humanNodePublic() << " not in UNL st=" << val->getSignTime() <<
-			    ", hash=" << val->getLedgerHash() << ", shash=" << val->getSigningHash() << " src=" << source;
-	    }
+        RippleAddress signer = val->getSignerPublic ();
+        bool isCurrent = false;
 
-	    uint256 hash = val->getLedgerHash();
-	    uint160 node = signer.getNodeID();
+        if (theApp->getUNL ().nodeInUNL (signer) || val->isTrusted ())
+        {
+            val->setTrusted ();
+            uint32 now = theApp->getOPs ().getCloseTimeNC ();
+            uint32 valClose = val->getSignTime ();
 
-	    {
-		    boost::mutex::scoped_lock sl(mValidationLock);
-		    if (!findCreateSet(hash)->insert(std::make_pair(node, val)).second)
-			    return false;
-		    if (isCurrent)
-		    {
-			    boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.find(node);
-			    if (it == mCurrentValidations.end())
-				    mCurrentValidations.emplace(node, val);
-			    else if (!it->second)
-				    it->second = val;
-			    else if (val->getSignTime() > it->second->getSignTime())
-			    {
-				    val->setPreviousHash(it->second->getLedgerHash());
-				    mStaleValidations.push_back(it->second);
-				    it->second = val;
-				    condWrite();
-			    }
-			    else
-				    isCurrent = false;
-		    }
-	    }
+            if ((now > (valClose - LEDGER_EARLY_INTERVAL)) && (now < (valClose + LEDGER_VAL_INTERVAL)))
+                isCurrent = true;
+            else
+            {
+                WriteLog (lsWARNING, Validations) << "Received stale validation now=" << now << ", close=" << valClose;
+            }
+        }
+        else
+        {
+            WriteLog (lsDEBUG, Validations) << "Node " << signer.humanNodePublic () << " not in UNL st=" << val->getSignTime () <<
+                                            ", hash=" << val->getLedgerHash () << ", shash=" << val->getSigningHash () << " src=" << source;
+        }
 
-	    WriteLog (lsDEBUG, Validations) << "Val for " << hash << " from " << signer.humanNodePublic()
-		    << " added " << (val->isTrusted() ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
-	    if (val->isTrusted())
-		    theApp->getLedgerMaster().checkAccept(hash);
+        uint256 hash = val->getLedgerHash ();
+        uint160 node = signer.getNodeID ();
 
-	    // FIXME: This never forwards untrusted validations
-	    return isCurrent;
+        {
+            boost::mutex::scoped_lock sl (mValidationLock);
+
+            if (!findCreateSet (hash)->insert (std::make_pair (node, val)).second)
+                return false;
+
+            if (isCurrent)
+            {
+                boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.find (node);
+
+                if (it == mCurrentValidations.end ())
+                    mCurrentValidations.emplace (node, val);
+                else if (!it->second)
+                    it->second = val;
+                else if (val->getSignTime () > it->second->getSignTime ())
+                {
+                    val->setPreviousHash (it->second->getLedgerHash ());
+                    mStaleValidations.push_back (it->second);
+                    it->second = val;
+                    condWrite ();
+                }
+                else
+                    isCurrent = false;
+            }
+        }
+
+        WriteLog (lsDEBUG, Validations) << "Val for " << hash << " from " << signer.humanNodePublic ()
+                                        << " added " << (val->isTrusted () ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
+
+        if (val->isTrusted ())
+            theApp->getLedgerMaster ().checkAccept (hash);
+
+        // FIXME: This never forwards untrusted validations
+        return isCurrent;
     }
 
-	void tune (int size, int age)
+    void tune (int size, int age)
     {
-	    mValidations.setTargetSize(size);
-	    mValidations.setTargetAge(age);
+        mValidations.setTargetSize (size);
+        mValidations.setTargetAge (age);
     }
 
-    ValidationSet getValidations(uint256 const& ledger)
+    ValidationSet getValidations (uint256 const& ledger)
     {
-	    {
-		    boost::mutex::scoped_lock sl(mValidationLock);
-		    VSpointer set = findSet(ledger);
-		    if (set)
-			    return *set;
-	    }
-	    return ValidationSet();
+        {
+            boost::mutex::scoped_lock sl (mValidationLock);
+            VSpointer set = findSet (ledger);
+
+            if (set)
+                return *set;
+        }
+        return ValidationSet ();
     }
 
-    void getValidationCount(uint256 const& ledger, bool currentOnly, int& trusted, int &untrusted)
+    void getValidationCount (uint256 const& ledger, bool currentOnly, int& trusted, int& untrusted)
     {
-	    trusted = untrusted = 0;
-	    boost::mutex::scoped_lock sl(mValidationLock);
-	    VSpointer set = findSet(ledger);
-	    if (set)
-	    {
-		    uint32 now = theApp->getOPs().getNetworkTimeNC();
-		    BOOST_FOREACH(u160_val_pair& it, *set)
-		    {
-			    bool isTrusted = it.second->isTrusted();
-			    if (isTrusted && currentOnly)
-			    {
-				    uint32 closeTime = it.second->getSignTime();
-				    if ((now < (closeTime - LEDGER_EARLY_INTERVAL)) || (now > (closeTime + LEDGER_VAL_INTERVAL)))
-					    isTrusted = false;
-				    else
-				    {
-					    WriteLog (lsTRACE, Validations) << "VC: Untrusted due to time " << ledger;
-				    }
-			    }
-			    if (isTrusted)
-				    ++trusted;
-			    else
-				    ++untrusted;
-		    }
-	    }
-	    WriteLog (lsTRACE, Validations) << "VC: " << ledger << "t:" << trusted << " u:" << untrusted;
+        trusted = untrusted = 0;
+        boost::mutex::scoped_lock sl (mValidationLock);
+        VSpointer set = findSet (ledger);
+
+        if (set)
+        {
+            uint32 now = theApp->getOPs ().getNetworkTimeNC ();
+            BOOST_FOREACH (u160_val_pair & it, *set)
+            {
+                bool isTrusted = it.second->isTrusted ();
+
+                if (isTrusted && currentOnly)
+                {
+                    uint32 closeTime = it.second->getSignTime ();
+
+                    if ((now < (closeTime - LEDGER_EARLY_INTERVAL)) || (now > (closeTime + LEDGER_VAL_INTERVAL)))
+                        isTrusted = false;
+                    else
+                    {
+                        WriteLog (lsTRACE, Validations) << "VC: Untrusted due to time " << ledger;
+                    }
+                }
+
+                if (isTrusted)
+                    ++trusted;
+                else
+                    ++untrusted;
+            }
+        }
+
+        WriteLog (lsTRACE, Validations) << "VC: " << ledger << "t:" << trusted << " u:" << untrusted;
     }
 
-    void getValidationTypes(uint256 const& ledger, int& full, int& partial)
+    void getValidationTypes (uint256 const& ledger, int& full, int& partial)
     {
-	    full = partial = 0;
-	    boost::mutex::scoped_lock sl(mValidationLock);
-	    VSpointer set = findSet(ledger);
-	    if (set)
-	    {
-		    BOOST_FOREACH(u160_val_pair& it, *set)
-		    {
-			    if (it.second->isTrusted())
-			    {
-				    if (it.second->isFull())
-					    ++full;
-				    else
-					    ++partial;
-			    }
-		    }
-	    }
-	    WriteLog (lsTRACE, Validations) << "VC: " << ledger << "f:" << full << " p:" << partial;
+        full = partial = 0;
+        boost::mutex::scoped_lock sl (mValidationLock);
+        VSpointer set = findSet (ledger);
+
+        if (set)
+        {
+            BOOST_FOREACH (u160_val_pair & it, *set)
+            {
+                if (it.second->isTrusted ())
+                {
+                    if (it.second->isFull ())
+                        ++full;
+                    else
+                        ++partial;
+                }
+            }
+        }
+
+        WriteLog (lsTRACE, Validations) << "VC: " << ledger << "f:" << full << " p:" << partial;
     }
 
 
-    int getTrustedValidationCount(uint256 const& ledger)
+    int getTrustedValidationCount (uint256 const& ledger)
     {
-	    int trusted = 0;
-	    boost::mutex::scoped_lock sl(mValidationLock);
-	    VSpointer set = findSet(ledger);
-	    if (set)
-	    {
-		    BOOST_FOREACH(u160_val_pair& it, *set)
-		    {
-			    if (it.second->isTrusted())
-				    ++trusted;
-		    }
-	    }
-	    return trusted;
+        int trusted = 0;
+        boost::mutex::scoped_lock sl (mValidationLock);
+        VSpointer set = findSet (ledger);
+
+        if (set)
+        {
+            BOOST_FOREACH (u160_val_pair & it, *set)
+            {
+                if (it.second->isTrusted ())
+                    ++trusted;
+            }
+        }
+
+        return trusted;
     }
 
-    int getNodesAfter(uint256 const& ledger)
-    { // Number of trusted nodes that have moved past this ledger
-	    int count = 0;
-	    boost::mutex::scoped_lock sl(mValidationLock);
-	    BOOST_FOREACH(u160_val_pair& it, mCurrentValidations)
-	    {
-		    if (it.second->isTrusted() && it.second->isPreviousHash(ledger))
-			    ++count;
-	    }
-	    return count;
-    }
-
-    int getLoadRatio(bool overLoaded)
-    { // how many trusted nodes are able to keep up, higher is better
-	    int goodNodes = overLoaded ? 1 : 0;
-	    int badNodes = overLoaded ? 0 : 1;
-	    {
-		    boost::mutex::scoped_lock sl(mValidationLock);
-		    BOOST_FOREACH(u160_val_pair& it, mCurrentValidations)
-		    {
-			    if (it.second->isTrusted())
-			    {
-				    if (it.second->isFull())
-					    ++goodNodes;
-				    else
-					    ++badNodes;
-			    }
-		    }
-	    }
-	    return (goodNodes * 100) / (goodNodes + badNodes);
-    }
-
-    std::list<SerializedValidation::pointer> getCurrentTrustedValidations()
+    int getNodesAfter (uint256 const& ledger)
     {
-	    uint32 cutoff = theApp->getOPs().getNetworkTimeNC() - LEDGER_VAL_INTERVAL;
+        // Number of trusted nodes that have moved past this ledger
+        int count = 0;
+        boost::mutex::scoped_lock sl (mValidationLock);
+        BOOST_FOREACH (u160_val_pair & it, mCurrentValidations)
+        {
+            if (it.second->isTrusted () && it.second->isPreviousHash (ledger))
+                ++count;
+        }
+        return count;
+    }
 
-	    std::list<SerializedValidation::pointer> ret;
+    int getLoadRatio (bool overLoaded)
+    {
+        // how many trusted nodes are able to keep up, higher is better
+        int goodNodes = overLoaded ? 1 : 0;
+        int badNodes = overLoaded ? 0 : 1;
+        {
+            boost::mutex::scoped_lock sl (mValidationLock);
+            BOOST_FOREACH (u160_val_pair & it, mCurrentValidations)
+            {
+                if (it.second->isTrusted ())
+                {
+                    if (it.second->isFull ())
+                        ++goodNodes;
+                    else
+                        ++badNodes;
+                }
+            }
+        }
+        return (goodNodes * 100) / (goodNodes + badNodes);
+    }
 
-	    boost::mutex::scoped_lock sl(mValidationLock);
-	    boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin();
-	    while (it != mCurrentValidations.end())
-	    {
-		    if (!it->second) // contains no record
-			    it = mCurrentValidations.erase(it);
-		    else if (it->second->getSignTime() < cutoff)
-		    { // contains a stale record
-			    mStaleValidations.push_back(it->second);
-			    it->second.reset();
-			    condWrite();
-			    it = mCurrentValidations.erase(it);
-		    }
-		    else
-		    { // contains a live record
-			    if (it->second->isTrusted())
-				    ret.push_back(it->second);
-			    ++it;
-		    }
-	    }
+    std::list<SerializedValidation::pointer> getCurrentTrustedValidations ()
+    {
+        uint32 cutoff = theApp->getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
 
-	    return ret;
+        std::list<SerializedValidation::pointer> ret;
+
+        boost::mutex::scoped_lock sl (mValidationLock);
+        boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin ();
+
+        while (it != mCurrentValidations.end ())
+        {
+            if (!it->second) // contains no record
+                it = mCurrentValidations.erase (it);
+            else if (it->second->getSignTime () < cutoff)
+            {
+                // contains a stale record
+                mStaleValidations.push_back (it->second);
+                it->second.reset ();
+                condWrite ();
+                it = mCurrentValidations.erase (it);
+            }
+            else
+            {
+                // contains a live record
+                if (it->second->isTrusted ())
+                    ret.push_back (it->second);
+
+                ++it;
+            }
+        }
+
+        return ret;
     }
 
     boost::unordered_map<uint256, currentValidationCount>
-    getCurrentValidations(uint256 currentLedger, uint256 priorLedger)
+    getCurrentValidations (uint256 currentLedger, uint256 priorLedger)
     {
-	    uint32 cutoff = theApp->getOPs().getNetworkTimeNC() - LEDGER_VAL_INTERVAL;
-	    bool valCurrentLedger = currentLedger.isNonZero();
-	    bool valPriorLedger = priorLedger.isNonZero();
+        uint32 cutoff = theApp->getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
+        bool valCurrentLedger = currentLedger.isNonZero ();
+        bool valPriorLedger = priorLedger.isNonZero ();
 
-	    boost::unordered_map<uint256, currentValidationCount> ret;
+        boost::unordered_map<uint256, currentValidationCount> ret;
 
-	    boost::mutex::scoped_lock sl(mValidationLock);
-	    boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin();
-	    while (it != mCurrentValidations.end())
-	    {
-		    if (!it->second) // contains no record
-			    it = mCurrentValidations.erase(it);
-		    else if (it->second->getSignTime() < cutoff)
-		    { // contains a stale record
-			    mStaleValidations.push_back(it->second);
-			    it->second.reset();
-			    condWrite();
-			    it = mCurrentValidations.erase(it);
-		    }
-		    else
-		    { // contains a live record
-			    bool countPreferred = valCurrentLedger && (it->second->getLedgerHash() == currentLedger);
-			    if (!countPreferred && // allow up to one ledger slip in either direction
-				    ((valCurrentLedger && it->second->isPreviousHash(currentLedger)) ||
-				    (valPriorLedger && (it->second->getLedgerHash() == priorLedger))))
-			    {
-				    countPreferred = true;
-				    WriteLog (lsDEBUG, Validations) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash();
-			    }
+        boost::mutex::scoped_lock sl (mValidationLock);
+        boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin ();
 
-			    currentValidationCount& p = countPreferred ? ret[currentLedger] : ret[it->second->getLedgerHash()];
-			    ++(p.first);
-			    uint160 ni = it->second->getNodeID();
-			    if (ni > p.second)
-				    p.second = ni;
-			    ++it;
-		    }
-	    }
+        while (it != mCurrentValidations.end ())
+        {
+            if (!it->second) // contains no record
+                it = mCurrentValidations.erase (it);
+            else if (it->second->getSignTime () < cutoff)
+            {
+                // contains a stale record
+                mStaleValidations.push_back (it->second);
+                it->second.reset ();
+                condWrite ();
+                it = mCurrentValidations.erase (it);
+            }
+            else
+            {
+                // contains a live record
+                bool countPreferred = valCurrentLedger && (it->second->getLedgerHash () == currentLedger);
 
-	    return ret;
+                if (!countPreferred && // allow up to one ledger slip in either direction
+                        ((valCurrentLedger && it->second->isPreviousHash (currentLedger)) ||
+                         (valPriorLedger && (it->second->getLedgerHash () == priorLedger))))
+                {
+                    countPreferred = true;
+                    WriteLog (lsDEBUG, Validations) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash ();
+                }
+
+                currentValidationCount& p = countPreferred ? ret[currentLedger] : ret[it->second->getLedgerHash ()];
+                ++ (p.first);
+                uint160 ni = it->second->getNodeID ();
+
+                if (ni > p.second)
+                    p.second = ni;
+
+                ++it;
+            }
+        }
+
+        return ret;
     }
 
-    void flush()
+    void flush ()
     {
-	    bool anyNew = false;
+        bool anyNew = false;
 
-	    WriteLog (lsINFO, Validations) << "Flushing validations";
-	    boost::mutex::scoped_lock sl(mValidationLock);
-	    BOOST_FOREACH(u160_val_pair& it, mCurrentValidations)
-	    {
-		    if (it.second)
-			    mStaleValidations.push_back(it.second);
-		    anyNew = true;
-	    }
-	    mCurrentValidations.clear();
-	    if (anyNew)
-		    condWrite();
-	    while (mWriting)
-	    {
-		    sl.unlock();
-		    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-		    sl.lock();
-	    }
-	    WriteLog (lsDEBUG, Validations) << "Validations flushed";
+        WriteLog (lsINFO, Validations) << "Flushing validations";
+        boost::mutex::scoped_lock sl (mValidationLock);
+        BOOST_FOREACH (u160_val_pair & it, mCurrentValidations)
+        {
+            if (it.second)
+                mStaleValidations.push_back (it.second);
+
+            anyNew = true;
+        }
+        mCurrentValidations.clear ();
+
+        if (anyNew)
+            condWrite ();
+
+        while (mWriting)
+        {
+            sl.unlock ();
+            boost::this_thread::sleep (boost::posix_time::milliseconds (100));
+            sl.lock ();
+        }
+
+        WriteLog (lsDEBUG, Validations) << "Validations flushed";
     }
 
-    void condWrite()
+    void condWrite ()
     {
-	    if (mWriting)
-		    return;
-	    mWriting = true;
-	    theApp->getJobQueue().addJob(jtWRITE, "Validations::doWrite",
-		    BIND_TYPE(&Validations::doWrite, this, P_1));
+        if (mWriting)
+            return;
+
+        mWriting = true;
+        theApp->getJobQueue ().addJob (jtWRITE, "Validations::doWrite",
+                                       BIND_TYPE (&Validations::doWrite, this, P_1));
     }
 
-    void doWrite(Job&)
+    void doWrite (Job&)
     {
-	    LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtDISK, "ValidationWrite"));
-	    boost::format insVal("INSERT INTO Validations "
-		    "(LedgerHash,NodePubKey,SignTime,RawData) VALUES ('%s','%s','%u',%s);");
+        LoadEvent::autoptr event (theApp->getJobQueue ().getLoadEventAP (jtDISK, "ValidationWrite"));
+        boost::format insVal ("INSERT INTO Validations "
+                              "(LedgerHash,NodePubKey,SignTime,RawData) VALUES ('%s','%s','%u',%s);");
 
-	    boost::mutex::scoped_lock sl(mValidationLock);
-	    assert(mWriting);
-	    while (!mStaleValidations.empty())
-	    {
-		    std::vector<SerializedValidation::pointer> vector;
-		    vector.reserve(512);
-		    mStaleValidations.swap(vector);
-		    sl.unlock();
-		    {
-			    Database *db = theApp->getLedgerDB()->getDB();
-			    ScopedLock dbl(theApp->getLedgerDB()->getDBLock());
+        boost::mutex::scoped_lock sl (mValidationLock);
+        assert (mWriting);
 
-			    Serializer s(1024);
-			    db->executeSQL("BEGIN TRANSACTION;");
-			    BOOST_FOREACH(SerializedValidation::ref it, vector)
-			    {
-				    s.erase();
-				    it->add(s);
-				    db->executeSQL(boost::str(insVal % it->getLedgerHash().GetHex()
-					    % it->getSignerPublic().humanNodePublic() % it->getSignTime()
-					    % sqlEscape(s.peekData())));
-			    }
-			    db->executeSQL("END TRANSACTION;");
-		    }
-		    sl.lock();
-	    }
-	    mWriting = false;
+        while (!mStaleValidations.empty ())
+        {
+            std::vector<SerializedValidation::pointer> vector;
+            vector.reserve (512);
+            mStaleValidations.swap (vector);
+            sl.unlock ();
+            {
+                Database* db = theApp->getLedgerDB ()->getDB ();
+                ScopedLock dbl (theApp->getLedgerDB ()->getDBLock ());
+
+                Serializer s (1024);
+                db->executeSQL ("BEGIN TRANSACTION;");
+                BOOST_FOREACH (SerializedValidation::ref it, vector)
+                {
+                    s.erase ();
+                    it->add (s);
+                    db->executeSQL (boost::str (insVal % it->getLedgerHash ().GetHex ()
+                                                % it->getSignerPublic ().humanNodePublic () % it->getSignTime ()
+                                                % sqlEscape (s.peekData ())));
+                }
+                db->executeSQL ("END TRANSACTION;");
+            }
+            sl.lock ();
+        }
+
+        mWriting = false;
     }
 
-    void sweep()
+    void sweep ()
     {
-	    boost::mutex::scoped_lock sl(mValidationLock);
-	    mValidations.sweep();
+        boost::mutex::scoped_lock sl (mValidationLock);
+        mValidations.sweep ();
     }
 };
 

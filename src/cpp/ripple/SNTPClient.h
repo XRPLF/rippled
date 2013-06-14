@@ -12,47 +12,50 @@
 class SNTPQuery
 {
 public:
-	bool				mReceivedReply;
-	time_t				mLocalTimeSent;
-	uint32				mQueryNonce;
+    bool                mReceivedReply;
+    time_t              mLocalTimeSent;
+    uint32              mQueryNonce;
 
-	SNTPQuery(time_t j = (time_t) -1)	: mReceivedReply(false), mLocalTimeSent(j) { ; }
+    SNTPQuery (time_t j = (time_t) - 1)   : mReceivedReply (false), mLocalTimeSent (j)
+    {
+        ;
+    }
 };
 
 class SNTPClient
 {
 public:
-	SNTPClient(boost::asio::io_service& service);
-	void init(const std::vector<std::string>& servers);
-	void addServer(const std::string& mServer);
+    SNTPClient (boost::asio::io_service& service);
+    void init (const std::vector<std::string>& servers);
+    void addServer (const std::string& mServer);
 
-	void queryAll();
-	bool doQuery();
-	bool getOffset(int& offset);
+    void queryAll ();
+    bool doQuery ();
+    bool getOffset (int& offset);
 
 private:
-	std::map<boost::asio::ip::udp::endpoint, SNTPQuery>	mQueries;
-	boost::mutex						mLock;
+    std::map<boost::asio::ip::udp::endpoint, SNTPQuery> mQueries;
+    boost::mutex                        mLock;
 
-	boost::asio::ip::udp::socket		mSocket;
-	boost::asio::deadline_timer			mTimer;
-	boost::asio::ip::udp::resolver		mResolver;
+    boost::asio::ip::udp::socket        mSocket;
+    boost::asio::deadline_timer         mTimer;
+    boost::asio::ip::udp::resolver      mResolver;
 
-	std::vector< std::pair<std::string, time_t> >	mServers;
+    std::vector< std::pair<std::string, time_t> >   mServers;
 
-	int												mOffset;
-	time_t											mLastOffsetUpdate;
-	std::list<int>									mOffsetList;
+    int                                             mOffset;
+    time_t                                          mLastOffsetUpdate;
+    std::list<int>                                  mOffsetList;
 
-	std::vector<uint8_t>				mReceiveBuffer;
-	boost::asio::ip::udp::endpoint		mReceiveEndpoint;
+    std::vector<uint8_t>                mReceiveBuffer;
+    boost::asio::ip::udp::endpoint      mReceiveEndpoint;
 
-	void receivePacket(const boost::system::error_code& error, std::size_t bytes);
-	void resolveComplete(const boost::system::error_code& error, boost::asio::ip::udp::resolver::iterator iterator);
-	void sentPacket(boost::shared_ptr<std::string>, const boost::system::error_code&, std::size_t);
-	void timerEntry(const boost::system::error_code&);
-	void sendComplete(const boost::system::error_code& error, std::size_t bytesTransferred);
-	void processReply();
+    void receivePacket (const boost::system::error_code& error, std::size_t bytes);
+    void resolveComplete (const boost::system::error_code& error, boost::asio::ip::udp::resolver::iterator iterator);
+    void sentPacket (boost::shared_ptr<std::string>, const boost::system::error_code&, std::size_t);
+    void timerEntry (const boost::system::error_code&);
+    void sendComplete (const boost::system::error_code& error, std::size_t bytesTransferred);
+    void processReply ();
 };
 
 #endif

@@ -8,117 +8,225 @@ class Application;
 SETUP_LOG (Application)
 
 // VFALCO TODO fix/clean this, it might have broken with the Log changes
-LogPartition AutoSocketPartition("AutoSocket");
+LogPartition AutoSocketPartition ("AutoSocket");
 
 // VFALCO TODO Move the function definitions into the class declaration
 class Application : public IApplication
 {
 public:
-	Application();
-	~Application();
+    Application ();
+    ~Application ();
 
-	Wallet& getWallet()								{ return mWallet ; }
-	NetworkOPs& getOPs()							{ return mNetOps; }
+    Wallet& getWallet ()
+    {
+        return mWallet ;
+    }
+    NetworkOPs& getOPs ()
+    {
+        return mNetOps;
+    }
 
-	boost::asio::io_service& getIOService()			{ return mIOService; }
-	boost::asio::io_service& getAuxService()		{ return mAuxService; }
+    boost::asio::io_service& getIOService ()
+    {
+        return mIOService;
+    }
+    boost::asio::io_service& getAuxService ()
+    {
+        return mAuxService;
+    }
 
-	LedgerMaster& getLedgerMaster()					{ return mLedgerMaster; }
-	LedgerAcquireMaster& getMasterLedgerAcquire()	{ return mMasterLedgerAcquire; }
-	TransactionMaster& getMasterTransaction()		{ return mMasterTransaction; }
-	NodeCache& getTempNodeCache()					{ return mTempNodeCache; }
-	HashedObjectStore& getHashedObjectStore()		{ return mHashedObjectStore; }
-	JobQueue& getJobQueue()							{ return mJobQueue; }
-	boost::recursive_mutex& getMasterLock()			{ return mMasterLock; }
-	LoadManager& getLoadManager()					{ return mLoadMgr; }
-	TXQueue& getTxnQueue()							{ return mTxnQueue; }
-	PeerDoor& getPeerDoor()							{ return *mPeerDoor; }
-	OrderBookDB& getOrderBookDB()					{ return mOrderBookDB; }
-	SLECache& getSLECache()							{ return mSLECache; }
+    LedgerMaster& getLedgerMaster ()
+    {
+        return mLedgerMaster;
+    }
+    LedgerAcquireMaster& getMasterLedgerAcquire ()
+    {
+        return mMasterLedgerAcquire;
+    }
+    TransactionMaster& getMasterTransaction ()
+    {
+        return mMasterTransaction;
+    }
+    NodeCache& getTempNodeCache ()
+    {
+        return mTempNodeCache;
+    }
+    HashedObjectStore& getHashedObjectStore ()
+    {
+        return mHashedObjectStore;
+    }
+    JobQueue& getJobQueue ()
+    {
+        return mJobQueue;
+    }
+    boost::recursive_mutex& getMasterLock ()
+    {
+        return mMasterLock;
+    }
+    LoadManager& getLoadManager ()
+    {
+        return mLoadMgr;
+    }
+    TXQueue& getTxnQueue ()
+    {
+        return mTxnQueue;
+    }
+    PeerDoor& getPeerDoor ()
+    {
+        return *mPeerDoor;
+    }
+    OrderBookDB& getOrderBookDB ()
+    {
+        return mOrderBookDB;
+    }
+    SLECache& getSLECache ()
+    {
+        return mSLECache;
+    }
 
-    IFeatures& getFeatureTable()				    { return *mFeatures; }
-	ILoadFeeTrack& getFeeTrack()				    { return *mFeeTrack; }
-	IFeeVote& getFeeVote()							{ return *mFeeVote; }
-	IHashRouter& getHashRouter()				    { return *mHashRouter; }
-	IValidations& getValidations()			        { return *mValidations; }
-	IUniqueNodeList& getUNL()						{ return *mUNL; }
-	IProofOfWorkFactory& getProofOfWorkFactory()    { return *mProofOfWorkFactory; }
-	IPeers& getPeers ()                             { return *mPeers; }
+    IFeatures& getFeatureTable ()
+    {
+        return *mFeatures;
+    }
+    ILoadFeeTrack& getFeeTrack ()
+    {
+        return *mFeeTrack;
+    }
+    IFeeVote& getFeeVote ()
+    {
+        return *mFeeVote;
+    }
+    IHashRouter& getHashRouter ()
+    {
+        return *mHashRouter;
+    }
+    IValidations& getValidations ()
+    {
+        return *mValidations;
+    }
+    IUniqueNodeList& getUNL ()
+    {
+        return *mUNL;
+    }
+    IProofOfWorkFactory& getProofOfWorkFactory ()
+    {
+        return *mProofOfWorkFactory;
+    }
+    IPeers& getPeers ()
+    {
+        return *mPeers;
+    }
 
     // VFALCO TODO Move these to the .cpp
-    bool running()									{ return mTxnDB != NULL; } // VFALCO TODO replace with nullptr when beast is available
-	bool getSystemTimeOffset(int& offset)			{ return mSNTPClient.getOffset(offset); }
+    bool running ()
+    {
+        return mTxnDB != NULL;    // VFALCO TODO replace with nullptr when beast is available
+    }
+    bool getSystemTimeOffset (int& offset)
+    {
+        return mSNTPClient.getOffset (offset);
+    }
 
-	DatabaseCon* getRpcDB()			{ return mRpcDB; }
-	DatabaseCon* getTxnDB()			{ return mTxnDB; }
-	DatabaseCon* getLedgerDB()		{ return mLedgerDB; }
-	DatabaseCon* getWalletDB()		{ return mWalletDB; }
-	DatabaseCon* getNetNodeDB()		{ return mNetNodeDB; }
-	DatabaseCon* getPathFindDB()	{ return mPathFindDB; }
-	DatabaseCon* getHashNodeDB()	{ return mHashNodeDB; }
+    DatabaseCon* getRpcDB ()
+    {
+        return mRpcDB;
+    }
+    DatabaseCon* getTxnDB ()
+    {
+        return mTxnDB;
+    }
+    DatabaseCon* getLedgerDB ()
+    {
+        return mLedgerDB;
+    }
+    DatabaseCon* getWalletDB ()
+    {
+        return mWalletDB;
+    }
+    DatabaseCon* getNetNodeDB ()
+    {
+        return mNetNodeDB;
+    }
+    DatabaseCon* getPathFindDB ()
+    {
+        return mPathFindDB;
+    }
+    DatabaseCon* getHashNodeDB ()
+    {
+        return mHashNodeDB;
+    }
 
-	leveldb::DB* getHashNodeLDB()	{ return mHashNodeLDB; }
-	leveldb::DB* getEphemeralLDB()	{ return mEphemeralLDB; }
+    leveldb::DB* getHashNodeLDB ()
+    {
+        return mHashNodeLDB;
+    }
+    leveldb::DB* getEphemeralLDB ()
+    {
+        return mEphemeralLDB;
+    }
 
-	bool isShutdown()				{ return mShutdown; }
-	void setup();
-	void run();
-	void stop();
-	void sweep();
+    bool isShutdown ()
+    {
+        return mShutdown;
+    }
+    void setup ();
+    void run ();
+    void stop ();
+    void sweep ();
 
-private:	
-	void updateTables (bool);
-	void startNewLedger ();
-	bool loadOldLedger (const std::string&);
+private:
+    void updateTables (bool);
+    void startNewLedger ();
+    bool loadOldLedger (const std::string&);
 
-    boost::asio::io_service	mIOService;
+    boost::asio::io_service mIOService;
     boost::asio::io_service mAuxService;
-	boost::asio::io_service::work mIOWork;
+    boost::asio::io_service::work mIOWork;
     boost::asio::io_service::work mAuxWork;
 
-	boost::recursive_mutex	mMasterLock;
+    boost::recursive_mutex  mMasterLock;
 
-	Wallet					mWallet;
-	LedgerMaster			mLedgerMaster;
-	LedgerAcquireMaster		mMasterLedgerAcquire;
-	TransactionMaster		mMasterTransaction;
-	NetworkOPs				mNetOps;
-	NodeCache				mTempNodeCache;
-	HashedObjectStore		mHashedObjectStore;
-	SLECache				mSLECache;
-	SNTPClient				mSNTPClient;
-	JobQueue				mJobQueue;
-	LoadManager				mLoadMgr;
-	TXQueue					mTxnQueue;
-	OrderBookDB				mOrderBookDB;
+    Wallet                  mWallet;
+    LedgerMaster            mLedgerMaster;
+    LedgerAcquireMaster     mMasterLedgerAcquire;
+    TransactionMaster       mMasterTransaction;
+    NetworkOPs              mNetOps;
+    NodeCache               mTempNodeCache;
+    HashedObjectStore       mHashedObjectStore;
+    SLECache                mSLECache;
+    SNTPClient              mSNTPClient;
+    JobQueue                mJobQueue;
+    LoadManager             mLoadMgr;
+    TXQueue                 mTxnQueue;
+    OrderBookDB             mOrderBookDB;
 
     // VFALCO Clean stuff
     beast::ScopedPointer <IFeatures> mFeatures;
-	beast::ScopedPointer <IFeeVote> mFeeVote;
+    beast::ScopedPointer <IFeeVote> mFeeVote;
     beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
     beast::ScopedPointer <IHashRouter> mHashRouter;
-	beast::ScopedPointer <IValidations> mValidations;
-	beast::ScopedPointer <IUniqueNodeList> mUNL;
-	beast::ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
-	beast::ScopedPointer <IPeers> mPeers;
+    beast::ScopedPointer <IValidations> mValidations;
+    beast::ScopedPointer <IUniqueNodeList> mUNL;
+    beast::ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
+    beast::ScopedPointer <IPeers> mPeers;
     // VFALCO End Clean stuff
 
-	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
+    DatabaseCon*             mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
 
-	leveldb::DB				*mHashNodeLDB;
-	leveldb::DB				*mEphemeralLDB;
+    leveldb::DB*             mHashNodeLDB;
+    leveldb::DB*             mEphemeralLDB;
 
-	PeerDoor*				mPeerDoor;
-	RPCDoor*				mRPCDoor;
-	WSDoor*					mWSPublicDoor;
-	WSDoor*					mWSPrivateDoor;
+    PeerDoor*               mPeerDoor;
+    RPCDoor*                mRPCDoor;
+    WSDoor*                 mWSPublicDoor;
+    WSDoor*                 mWSPrivateDoor;
 
-	boost::asio::deadline_timer	mSweepTimer;
+    boost::asio::deadline_timer mSweepTimer;
 
-	std::map<std::string, Peer::pointer> mPeerMap;
-	boost::recursive_mutex	mPeerMapLock;
+    std::map<std::string, Peer::pointer> mPeerMap;
+    boost::recursive_mutex  mPeerMapLock;
 
-	volatile bool			mShutdown;
+    volatile bool           mShutdown;
 };
 
 Application::Application ()
@@ -149,8 +257,8 @@ Application::Application ()
     , mNetNodeDB (NULL)
     , mPathFindDB (NULL)
     , mHashNodeDB (NULL)
-	, mHashNodeLDB (NULL)
-	, mPeerDoor (NULL)
+    , mHashNodeLDB (NULL)
+    , mPeerDoor (NULL)
     , mRPCDoor (NULL)
     , mWSPublicDoor (NULL)
     , mWSPrivateDoor (NULL)
@@ -162,644 +270,672 @@ Application::Application ()
 }
 
 
-extern const char *RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[],
-	*NetNodeDBInit[], *PathFindDBInit[];
+extern const char* RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[],
+       *NetNodeDBInit[], *PathFindDBInit[];
 extern int RpcDBCount, TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount,
-	NetNodeDBCount, PathFindDBCount;
+       NetNodeDBCount, PathFindDBCount;
 bool Instance::running = true;
 
-void Application::stop()
+void Application::stop ()
 {
-	WriteLog (lsINFO, Application) << "Received shutdown request";
-	StopSustain();
-	mShutdown = true;
-	mIOService.stop();
-	mHashedObjectStore.waitWrite();
-	mValidations->flush();
-	mAuxService.stop();
-	mJobQueue.shutdown();
+    WriteLog (lsINFO, Application) << "Received shutdown request";
+    StopSustain ();
+    mShutdown = true;
+    mIOService.stop ();
+    mHashedObjectStore.waitWrite ();
+    mValidations->flush ();
+    mAuxService.stop ();
+    mJobQueue.shutdown ();
 
-	delete mHashNodeLDB;
-	mHashNodeLDB = NULL;
+    delete mHashNodeLDB;
+    mHashNodeLDB = NULL;
 
-	delete mEphemeralLDB;
-	mEphemeralLDB = NULL;
+    delete mEphemeralLDB;
+    mEphemeralLDB = NULL;
 
-	WriteLog (lsINFO, Application) << "Stopped: " << mIOService.stopped();
-	Instance::shutdown();
+    WriteLog (lsINFO, Application) << "Stopped: " << mIOService.stopped ();
+    Instance::shutdown ();
 }
 
-static void InitDB(DatabaseCon** dbCon, const char *fileName, const char *dbInit[], int dbCount)
+static void InitDB (DatabaseCon** dbCon, const char* fileName, const char* dbInit[], int dbCount)
 {
-	*dbCon = new DatabaseCon(fileName, dbInit, dbCount);
+    *dbCon = new DatabaseCon (fileName, dbInit, dbCount);
 }
 
 volatile bool doShutdown = false;
 
 #ifdef SIGINT
-void sigIntHandler(int)
+void sigIntHandler (int)
 {
-	doShutdown = true;
+    doShutdown = true;
 }
 #endif
 
 // VFALCO TODO Figure this out it looks like the wrong tool
-static void runAux(boost::asio::io_service& svc)
+static void runAux (boost::asio::io_service& svc)
 {
-	setCallingThreadName("aux");
-	svc.run();
+    setCallingThreadName ("aux");
+    svc.run ();
 }
 
-static void runIO(boost::asio::io_service& io)
+static void runIO (boost::asio::io_service& io)
 {
-	setCallingThreadName("io");
-	io.run();
+    setCallingThreadName ("io");
+    io.run ();
 }
 
-void Application::setup()
+void Application::setup ()
 {
-	mJobQueue.setThreadCount();
-	mSweepTimer.expires_from_now(boost::posix_time::seconds(10));
-	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
-	mLoadMgr.init();
+    mJobQueue.setThreadCount ();
+    mSweepTimer.expires_from_now (boost::posix_time::seconds (10));
+    mSweepTimer.async_wait (boost::bind (&Application::sweep, this));
+    mLoadMgr.init ();
 
 #ifndef WIN32
 #ifdef SIGINT
-	if (!theConfig.RUN_STANDALONE)
-	{
-		struct sigaction sa;
-		memset(&sa, 0, sizeof(sa));
-		sa.sa_handler = sigIntHandler;
-		sigaction(SIGINT, &sa, NULL);
-	}
+
+    if (!theConfig.RUN_STANDALONE)
+    {
+        struct sigaction sa;
+        memset (&sa, 0, sizeof (sa));
+        sa.sa_handler = sigIntHandler;
+        sigaction (SIGINT, &sa, NULL);
+    }
+
 #endif
 #endif
 
-	assert(mTxnDB == NULL);
-	if (!theConfig.DEBUG_LOGFILE.empty())
-	{ // Let DEBUG messages go to the file but only WARNING or higher to regular output (unless verbose)
-		Log::setLogFile(theConfig.DEBUG_LOGFILE);
-		if (Log::getMinSeverity() > lsDEBUG)
-			LogPartition::setSeverity(lsDEBUG);
-	}
+    assert (mTxnDB == NULL);
 
-	boost::thread(boost::bind(runAux, boost::ref(mAuxService))).detach();
+    if (!theConfig.DEBUG_LOGFILE.empty ())
+    {
+        // Let DEBUG messages go to the file but only WARNING or higher to regular output (unless verbose)
+        Log::setLogFile (theConfig.DEBUG_LOGFILE);
 
-	if (!theConfig.RUN_STANDALONE)
-		mSNTPClient.init(theConfig.SNTP_SERVERS);
+        if (Log::getMinSeverity () > lsDEBUG)
+            LogPartition::setSeverity (lsDEBUG);
+    }
 
-	//
-	// Construct databases.
-	//
-	boost::thread t1(boost::bind(&InitDB, &mRpcDB, "rpc.db", RpcDBInit, RpcDBCount));
-	boost::thread t2(boost::bind(&InitDB, &mTxnDB, "transaction.db", TxnDBInit, TxnDBCount));
-	boost::thread t3(boost::bind(&InitDB, &mLedgerDB, "ledger.db", LedgerDBInit, LedgerDBCount));
-	t1.join(); t2.join(); t3.join();
+    boost::thread (boost::bind (runAux, boost::ref (mAuxService))).detach ();
 
-	boost::thread t4(boost::bind(&InitDB, &mWalletDB, "wallet.db", WalletDBInit, WalletDBCount));
-	boost::thread t6(boost::bind(&InitDB, &mNetNodeDB, "netnode.db", NetNodeDBInit, NetNodeDBCount));
-	boost::thread t7(boost::bind(&InitDB, &mPathFindDB, "pathfind.db", PathFindDBInit, PathFindDBCount));
-	t4.join(); t6.join(); t7.join();
+    if (!theConfig.RUN_STANDALONE)
+        mSNTPClient.init (theConfig.SNTP_SERVERS);
 
-	leveldb::Options options;
-	options.create_if_missing = true;
-	options.block_cache = leveldb::NewLRUCache(theConfig.getSize(siHashNodeDBCache) * 1024 * 1024);
-	if (theConfig.NODE_SIZE >= 2)
-		options.filter_policy = leveldb::NewBloomFilterPolicy(10);
-	if (theConfig.LDB_IMPORT)
-		options.write_buffer_size = 32 << 20;
+    //
+    // Construct databases.
+    //
+    boost::thread t1 (boost::bind (&InitDB, &mRpcDB, "rpc.db", RpcDBInit, RpcDBCount));
+    boost::thread t2 (boost::bind (&InitDB, &mTxnDB, "transaction.db", TxnDBInit, TxnDBCount));
+    boost::thread t3 (boost::bind (&InitDB, &mLedgerDB, "ledger.db", LedgerDBInit, LedgerDBCount));
+    t1.join ();
+    t2.join ();
+    t3.join ();
 
-	if (mHashedObjectStore.isLevelDB())
-	{
-		WriteLog (lsINFO, Application) << "LevelDB used for nodes";
-		leveldb::Status status = leveldb::DB::Open(options, (theConfig.DATA_DIR / "hashnode").string(), &mHashNodeLDB);
-		if (!status.ok() || !mHashNodeLDB)
-		{
-			WriteLog (lsFATAL, Application) << "Unable to open/create hash node db: "
-				<< (theConfig.DATA_DIR / "hashnode").string()
-				<< " " << status.ToString();
-			StopSustain();
-			exit(3);
-		}
-	}
-	else
-	{
-		WriteLog (lsINFO, Application) << "SQLite used for nodes";
-		boost::thread t5(boost::bind(&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
-		t5.join();
-	}
+    boost::thread t4 (boost::bind (&InitDB, &mWalletDB, "wallet.db", WalletDBInit, WalletDBCount));
+    boost::thread t6 (boost::bind (&InitDB, &mNetNodeDB, "netnode.db", NetNodeDBInit, NetNodeDBCount));
+    boost::thread t7 (boost::bind (&InitDB, &mPathFindDB, "pathfind.db", PathFindDBInit, PathFindDBCount));
+    t4.join ();
+    t6.join ();
+    t7.join ();
 
-	if (!theConfig.LDB_EPHEMERAL.empty())
-	{
-		leveldb::Status status = leveldb::DB::Open(options, theConfig.LDB_EPHEMERAL, &mEphemeralLDB);
-		if (!status.ok() || !mEphemeralLDB)
-		{
-			WriteLog(lsFATAL, Application) << "Unable to open/create epehemeral db: "
-				<< theConfig.LDB_EPHEMERAL << " " << status.ToString();
-			StopSustain();
-			exit(3);
-		}
-	}
+    leveldb::Options options;
+    options.create_if_missing = true;
+    options.block_cache = leveldb::NewLRUCache (theConfig.getSize (siHashNodeDBCache) * 1024 * 1024);
 
-	mTxnDB->getDB()->setupCheckpointing(&mJobQueue);
-	mLedgerDB->getDB()->setupCheckpointing(&mJobQueue);
+    if (theConfig.NODE_SIZE >= 2)
+        options.filter_policy = leveldb::NewBloomFilterPolicy (10);
 
-	if (!theConfig.RUN_STANDALONE)
-		updateTables(theConfig.LDB_IMPORT);
+    if (theConfig.LDB_IMPORT)
+        options.write_buffer_size = 32 << 20;
 
-	mFeatures->addInitialFeatures();
+    if (mHashedObjectStore.isLevelDB ())
+    {
+        WriteLog (lsINFO, Application) << "LevelDB used for nodes";
+        leveldb::Status status = leveldb::DB::Open (options, (theConfig.DATA_DIR / "hashnode").string (), &mHashNodeLDB);
 
-	if (theConfig.START_UP == Config::FRESH)
-	{
-		WriteLog (lsINFO, Application) << "Starting new Ledger";
+        if (!status.ok () || !mHashNodeLDB)
+        {
+            WriteLog (lsFATAL, Application) << "Unable to open/create hash node db: "
+                                            << (theConfig.DATA_DIR / "hashnode").string ()
+                                            << " " << status.ToString ();
+            StopSustain ();
+            exit (3);
+        }
+    }
+    else
+    {
+        WriteLog (lsINFO, Application) << "SQLite used for nodes";
+        boost::thread t5 (boost::bind (&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
+        t5.join ();
+    }
 
-		startNewLedger();
-	}
-	else if (theConfig.START_UP == Config::LOAD)
-	{
-		WriteLog (lsINFO, Application) << "Loading specified Ledger";
+    if (!theConfig.LDB_EPHEMERAL.empty ())
+    {
+        leveldb::Status status = leveldb::DB::Open (options, theConfig.LDB_EPHEMERAL, &mEphemeralLDB);
 
-		if (!loadOldLedger(theConfig.START_LEDGER))
-		{
-			theApp->stop();
-			exit(-1);
-		}
-	}
-	else if (theConfig.START_UP == Config::NETWORK)
-	{ // This should probably become the default once we have a stable network
-		if (!theConfig.RUN_STANDALONE)
-			mNetOps.needNetworkLedger();
-		startNewLedger();
-	}
-	else
-		startNewLedger();
+        if (!status.ok () || !mEphemeralLDB)
+        {
+            WriteLog (lsFATAL, Application) << "Unable to open/create epehemeral db: "
+                                            << theConfig.LDB_EPHEMERAL << " " << status.ToString ();
+            StopSustain ();
+            exit (3);
+        }
+    }
 
-	mOrderBookDB.setup(theApp->getLedgerMaster().getCurrentLedger());
+    mTxnDB->getDB ()->setupCheckpointing (&mJobQueue);
+    mLedgerDB->getDB ()->setupCheckpointing (&mJobQueue);
 
-	//
-	// Begin validation and ip maintenance.
-	// - Wallet maintains local information: including identity and network connection persistence information.
-	//
-	mWallet.start();
+    if (!theConfig.RUN_STANDALONE)
+        updateTables (theConfig.LDB_IMPORT);
 
-	//
-	// Set up UNL.
-	//
-	if (!theConfig.RUN_STANDALONE)
-		getUNL().nodeBootstrap();
+    mFeatures->addInitialFeatures ();
 
-	mValidations->tune(theConfig.getSize(siValidationsSize), theConfig.getSize(siValidationsAge));
-	mHashedObjectStore.tune(theConfig.getSize(siNodeCacheSize), theConfig.getSize(siNodeCacheAge));
-	mLedgerMaster.tune(theConfig.getSize(siLedgerSize), theConfig.getSize(siLedgerAge));
-	mSLECache.setTargetSize(theConfig.getSize(siSLECacheSize));
-	mSLECache.setTargetAge(theConfig.getSize(siSLECacheAge));
+    if (theConfig.START_UP == Config::FRESH)
+    {
+        WriteLog (lsINFO, Application) << "Starting new Ledger";
 
-	mLedgerMaster.setMinValidations(theConfig.VALIDATION_QUORUM);
+        startNewLedger ();
+    }
+    else if (theConfig.START_UP == Config::LOAD)
+    {
+        WriteLog (lsINFO, Application) << "Loading specified Ledger";
 
-	if (!mHashedObjectStore.isLevelDB())
-		theApp->getHashNodeDB()->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %
-			(theConfig.getSize(siHashNodeDBCache) * 1024)));
+        if (!loadOldLedger (theConfig.START_LEDGER))
+        {
+            theApp->stop ();
+            exit (-1);
+        }
+    }
+    else if (theConfig.START_UP == Config::NETWORK)
+    {
+        // This should probably become the default once we have a stable network
+        if (!theConfig.RUN_STANDALONE)
+            mNetOps.needNetworkLedger ();
 
-	theApp->getLedgerDB()->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %
-		(theConfig.getSize(siLgrDBCache) * 1024)));
-	theApp->getTxnDB()->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %
-		(theConfig.getSize(siTxnDBCache) * 1024)));
+        startNewLedger ();
+    }
+    else
+        startNewLedger ();
 
-	//
-	// Allow peer connections.
-	//
-	if (!theConfig.RUN_STANDALONE)
-	{
-		try
-		{
-			mPeerDoor = new PeerDoor(mIOService);
-		}
-		catch (const std::exception& e)
-		{
-			// Must run as directed or exit.
-			WriteLog (lsFATAL, Application) << boost::str(boost::format("Can not open peer service: %s") % e.what());
+    mOrderBookDB.setup (theApp->getLedgerMaster ().getCurrentLedger ());
 
-			exit(3);
-		}
-	}
-	else
-	{
-		WriteLog (lsINFO, Application) << "Peer interface: disabled";
-	}
+    //
+    // Begin validation and ip maintenance.
+    // - Wallet maintains local information: including identity and network connection persistence information.
+    //
+    mWallet.start ();
 
-	//
-	// Allow RPC connections.
-	//
-	if (!theConfig.RPC_IP.empty() && theConfig.RPC_PORT)
-	{
-		try
-		{
-			mRPCDoor = new RPCDoor(mIOService);
-		}
-		catch (const std::exception& e)
-		{
-			// Must run as directed or exit.
-			WriteLog (lsFATAL, Application) << boost::str(boost::format("Can not open RPC service: %s") % e.what());
+    //
+    // Set up UNL.
+    //
+    if (!theConfig.RUN_STANDALONE)
+        getUNL ().nodeBootstrap ();
 
-			exit(3);
-		}
-	}
-	else
-	{
-		WriteLog (lsINFO, Application) << "RPC interface: disabled";
-	}
+    mValidations->tune (theConfig.getSize (siValidationsSize), theConfig.getSize (siValidationsAge));
+    mHashedObjectStore.tune (theConfig.getSize (siNodeCacheSize), theConfig.getSize (siNodeCacheAge));
+    mLedgerMaster.tune (theConfig.getSize (siLedgerSize), theConfig.getSize (siLedgerAge));
+    mSLECache.setTargetSize (theConfig.getSize (siSLECacheSize));
+    mSLECache.setTargetAge (theConfig.getSize (siSLECacheAge));
 
-	//
-	// Allow private WS connections.
-	//
-	if (!theConfig.WEBSOCKET_IP.empty() && theConfig.WEBSOCKET_PORT)
-	{
-		try
-		{
-			mWSPrivateDoor	= WSDoor::createWSDoor(theConfig.WEBSOCKET_IP, theConfig.WEBSOCKET_PORT, false);
-		}
-		catch (const std::exception& e)
-		{
-			// Must run as directed or exit.
-			WriteLog (lsFATAL, Application) << boost::str(boost::format("Can not open private websocket service: %s") % e.what());
+    mLedgerMaster.setMinValidations (theConfig.VALIDATION_QUORUM);
 
-			exit(3);
-		}
-	}
-	else
-	{
-		WriteLog (lsINFO, Application) << "WS private interface: disabled";
-	}
+    if (!mHashedObjectStore.isLevelDB ())
+        theApp->getHashNodeDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+                (theConfig.getSize (siHashNodeDBCache) * 1024)));
 
-	//
-	// Allow public WS connections.
-	//
-	if (!theConfig.WEBSOCKET_PUBLIC_IP.empty() && theConfig.WEBSOCKET_PUBLIC_PORT)
-	{
-		try
-		{
-			mWSPublicDoor	= WSDoor::createWSDoor(theConfig.WEBSOCKET_PUBLIC_IP, theConfig.WEBSOCKET_PUBLIC_PORT, true);
-		}
-		catch (const std::exception& e)
-		{
-			// Must run as directed or exit.
-			WriteLog (lsFATAL, Application) << boost::str(boost::format("Can not open public websocket service: %s") % e.what());
+    theApp->getLedgerDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+            (theConfig.getSize (siLgrDBCache) * 1024)));
+    theApp->getTxnDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+            (theConfig.getSize (siTxnDBCache) * 1024)));
 
-			exit(3);
-		}
-	}
-	else
-	{
-		WriteLog (lsINFO, Application) << "WS public interface: disabled";
-	}
+    //
+    // Allow peer connections.
+    //
+    if (!theConfig.RUN_STANDALONE)
+    {
+        try
+        {
+            mPeerDoor = new PeerDoor (mIOService);
+        }
+        catch (const std::exception& e)
+        {
+            // Must run as directed or exit.
+            WriteLog (lsFATAL, Application) << boost::str (boost::format ("Can not open peer service: %s") % e.what ());
 
-	//
-	// Begin connecting to network.
-	//
-	if (!theConfig.RUN_STANDALONE)
-		mPeers->start();
+            exit (3);
+        }
+    }
+    else
+    {
+        WriteLog (lsINFO, Application) << "Peer interface: disabled";
+    }
+
+    //
+    // Allow RPC connections.
+    //
+    if (!theConfig.RPC_IP.empty () && theConfig.RPC_PORT)
+    {
+        try
+        {
+            mRPCDoor = new RPCDoor (mIOService);
+        }
+        catch (const std::exception& e)
+        {
+            // Must run as directed or exit.
+            WriteLog (lsFATAL, Application) << boost::str (boost::format ("Can not open RPC service: %s") % e.what ());
+
+            exit (3);
+        }
+    }
+    else
+    {
+        WriteLog (lsINFO, Application) << "RPC interface: disabled";
+    }
+
+    //
+    // Allow private WS connections.
+    //
+    if (!theConfig.WEBSOCKET_IP.empty () && theConfig.WEBSOCKET_PORT)
+    {
+        try
+        {
+            mWSPrivateDoor  = WSDoor::createWSDoor (theConfig.WEBSOCKET_IP, theConfig.WEBSOCKET_PORT, false);
+        }
+        catch (const std::exception& e)
+        {
+            // Must run as directed or exit.
+            WriteLog (lsFATAL, Application) << boost::str (boost::format ("Can not open private websocket service: %s") % e.what ());
+
+            exit (3);
+        }
+    }
+    else
+    {
+        WriteLog (lsINFO, Application) << "WS private interface: disabled";
+    }
+
+    //
+    // Allow public WS connections.
+    //
+    if (!theConfig.WEBSOCKET_PUBLIC_IP.empty () && theConfig.WEBSOCKET_PUBLIC_PORT)
+    {
+        try
+        {
+            mWSPublicDoor   = WSDoor::createWSDoor (theConfig.WEBSOCKET_PUBLIC_IP, theConfig.WEBSOCKET_PUBLIC_PORT, true);
+        }
+        catch (const std::exception& e)
+        {
+            // Must run as directed or exit.
+            WriteLog (lsFATAL, Application) << boost::str (boost::format ("Can not open public websocket service: %s") % e.what ());
+
+            exit (3);
+        }
+    }
+    else
+    {
+        WriteLog (lsINFO, Application) << "WS public interface: disabled";
+    }
+
+    //
+    // Begin connecting to network.
+    //
+    if (!theConfig.RUN_STANDALONE)
+        mPeers->start ();
 
 
-	if (theConfig.RUN_STANDALONE)
-	{
-		WriteLog (lsWARNING, Application) << "Running in standalone mode";
+    if (theConfig.RUN_STANDALONE)
+    {
+        WriteLog (lsWARNING, Application) << "Running in standalone mode";
 
-		mNetOps.setStandAlone();
-	}
-	else
-		mNetOps.setStateTimer();
+        mNetOps.setStandAlone ();
+    }
+    else
+        mNetOps.setStateTimer ();
 }
 
-void Application::run()
+void Application::run ()
 {
-	if (theConfig.NODE_SIZE >= 2)
-	{
-		boost::thread(boost::bind(runIO, boost::ref(mIOService))).detach();
-	}
+    if (theConfig.NODE_SIZE >= 2)
+    {
+        boost::thread (boost::bind (runIO, boost::ref (mIOService))).detach ();
+    }
 
-	theApp->getLoadManager().arm();
-	mIOService.run(); // This blocks
+    theApp->getLoadManager ().arm ();
+    mIOService.run (); // This blocks
 
-	if (mWSPublicDoor)
-		mWSPublicDoor->stop();
+    if (mWSPublicDoor)
+        mWSPublicDoor->stop ();
 
-	if (mWSPrivateDoor)
-		mWSPrivateDoor->stop();
+    if (mWSPrivateDoor)
+        mWSPrivateDoor->stop ();
 
-	WriteLog (lsINFO, Application) << "Done.";
+    WriteLog (lsINFO, Application) << "Done.";
 }
 
-void Application::sweep()
+void Application::sweep ()
 {
 
-	boost::filesystem::space_info space = boost::filesystem::space(theConfig.DATA_DIR);
-	if (space.available < (512 * 1024 * 1024))
-	{
-		WriteLog (lsFATAL, Application) << "Remaining free disk space is less than 512MB";
-		theApp->stop();
-	}
+    boost::filesystem::space_info space = boost::filesystem::space (theConfig.DATA_DIR);
+
+    if (space.available < (512 * 1024 * 1024))
+    {
+        WriteLog (lsFATAL, Application) << "Remaining free disk space is less than 512MB";
+        theApp->stop ();
+    }
 
     // VFALCO NOTE Does the order of calls matter?
     // VFALCO TODO fix the dependency inversion using an observer,
     //         have listeners register for "onSweep ()" notification.
-    //         
-	mMasterTransaction.sweep();
-	mHashedObjectStore.sweep();
-	mLedgerMaster.sweep();
-	mTempNodeCache.sweep();
-	mValidations->sweep();
-	getMasterLedgerAcquire().sweep();
-	mSLECache.sweep();
-	AcceptedLedger::sweep(); // VFALCO NOTE AcceptedLedger is/has a singleton?
-	SHAMap::sweep(); // VFALCO NOTE SHAMap is/has a singleton?
-	mNetOps.sweepFetchPack();
+    //
+    mMasterTransaction.sweep ();
+    mHashedObjectStore.sweep ();
+    mLedgerMaster.sweep ();
+    mTempNodeCache.sweep ();
+    mValidations->sweep ();
+    getMasterLedgerAcquire ().sweep ();
+    mSLECache.sweep ();
+    AcceptedLedger::sweep (); // VFALCO NOTE AcceptedLedger is/has a singleton?
+    SHAMap::sweep (); // VFALCO NOTE SHAMap is/has a singleton?
+    mNetOps.sweepFetchPack ();
     // VFALCO NOTE does the call to sweep() happen on another thread?
-	mSweepTimer.expires_from_now(boost::posix_time::seconds(theConfig.getSize(siSweepInterval)));
-	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
+    mSweepTimer.expires_from_now (boost::posix_time::seconds (theConfig.getSize (siSweepInterval)));
+    mSweepTimer.async_wait (boost::bind (&Application::sweep, this));
 }
 
-Application::~Application()
+Application::~Application ()
 {
-	delete mTxnDB;
-	delete mLedgerDB;
-	delete mWalletDB;
-	delete mHashNodeDB;
-	delete mNetNodeDB;
-	delete mPathFindDB;
-	delete mHashNodeLDB;
-	delete mEphemeralLDB;
+    delete mTxnDB;
+    delete mLedgerDB;
+    delete mWalletDB;
+    delete mHashNodeDB;
+    delete mNetNodeDB;
+    delete mPathFindDB;
+    delete mHashNodeLDB;
+    delete mEphemeralLDB;
 }
 
-void Application::startNewLedger()
+void Application::startNewLedger ()
 {
-	// New stuff.
-	RippleAddress	rootSeedMaster		= RippleAddress::createSeedGeneric("masterpassphrase");
-	RippleAddress	rootGeneratorMaster	= RippleAddress::createGeneratorPublic(rootSeedMaster);
-	RippleAddress	rootAddress			= RippleAddress::createAccountPublic(rootGeneratorMaster, 0);
+    // New stuff.
+    RippleAddress   rootSeedMaster      = RippleAddress::createSeedGeneric ("masterpassphrase");
+    RippleAddress   rootGeneratorMaster = RippleAddress::createGeneratorPublic (rootSeedMaster);
+    RippleAddress   rootAddress         = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
 
-	// Print enough information to be able to claim root account.
-	WriteLog (lsINFO, Application) << "Root master seed: " << rootSeedMaster.humanSeed();
-	WriteLog (lsINFO, Application) << "Root account: " << rootAddress.humanAccountID();
+    // Print enough information to be able to claim root account.
+    WriteLog (lsINFO, Application) << "Root master seed: " << rootSeedMaster.humanSeed ();
+    WriteLog (lsINFO, Application) << "Root account: " << rootAddress.humanAccountID ();
 
-	{
-		Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, SYSTEM_CURRENCY_START);
-		assert(!!firstLedger->getAccountState(rootAddress));
-		// WRITEME: Add any default features
-		// WRITEME: Set default fee/reserve
-		firstLedger->updateHash();
-		firstLedger->setClosed();
-		firstLedger->setAccepted();
-		mLedgerMaster.pushLedger(firstLedger);
+    {
+        Ledger::pointer firstLedger = boost::make_shared<Ledger> (rootAddress, SYSTEM_CURRENCY_START);
+        assert (!!firstLedger->getAccountState (rootAddress));
+        // WRITEME: Add any default features
+        // WRITEME: Set default fee/reserve
+        firstLedger->updateHash ();
+        firstLedger->setClosed ();
+        firstLedger->setAccepted ();
+        mLedgerMaster.pushLedger (firstLedger);
 
-		Ledger::pointer secondLedger = boost::make_shared<Ledger>(true, boost::ref(*firstLedger));
-		secondLedger->setClosed();
-		secondLedger->setAccepted();
-		mLedgerMaster.pushLedger(secondLedger, boost::make_shared<Ledger>(true, boost::ref(*secondLedger)), false);
-		assert(!!secondLedger->getAccountState(rootAddress));
-		mNetOps.setLastCloseTime(secondLedger->getCloseTimeNC());
-	}
+        Ledger::pointer secondLedger = boost::make_shared<Ledger> (true, boost::ref (*firstLedger));
+        secondLedger->setClosed ();
+        secondLedger->setAccepted ();
+        mLedgerMaster.pushLedger (secondLedger, boost::make_shared<Ledger> (true, boost::ref (*secondLedger)), false);
+        assert (!!secondLedger->getAccountState (rootAddress));
+        mNetOps.setLastCloseTime (secondLedger->getCloseTimeNC ());
+    }
 }
 
-bool Application::loadOldLedger(const std::string& l)
+bool Application::loadOldLedger (const std::string& l)
 {
-	try
-	{
-		Ledger::pointer loadLedger;
-		if (l.empty() || (l == "latest"))
-			loadLedger = Ledger::getLastFullLedger();
-		else if (l.length() == 64)
-		{ // by hash
-			uint256 hash;
-			hash.SetHex(l);
-			loadLedger = Ledger::loadByHash(hash);
-		}
-		else // assume by sequence
-			loadLedger = Ledger::loadByIndex(boost::lexical_cast<uint32>(l));
+    try
+    {
+        Ledger::pointer loadLedger;
 
-		if (!loadLedger)
-		{
-			WriteLog (lsFATAL, Application) << "No Ledger found?" << std::endl;
-			return false;
-		}
-		loadLedger->setClosed();
+        if (l.empty () || (l == "latest"))
+            loadLedger = Ledger::getLastFullLedger ();
+        else if (l.length () == 64)
+        {
+            // by hash
+            uint256 hash;
+            hash.SetHex (l);
+            loadLedger = Ledger::loadByHash (hash);
+        }
+        else // assume by sequence
+            loadLedger = Ledger::loadByIndex (boost::lexical_cast<uint32> (l));
 
-		WriteLog (lsINFO, Application) << "Loading ledger " << loadLedger->getHash() << " seq:" << loadLedger->getLedgerSeq();
+        if (!loadLedger)
+        {
+            WriteLog (lsFATAL, Application) << "No Ledger found?" << std::endl;
+            return false;
+        }
 
-		if (loadLedger->getAccountHash().isZero())
-		{
-			WriteLog (lsFATAL, Application) << "Ledger is empty.";
-			assert(false);
-			return false;
-		}
+        loadLedger->setClosed ();
 
-		if (!loadLedger->walkLedger())
-		{
-			WriteLog (lsFATAL, Application) << "Ledger is missing nodes.";
-			return false;
-		}
+        WriteLog (lsINFO, Application) << "Loading ledger " << loadLedger->getHash () << " seq:" << loadLedger->getLedgerSeq ();
 
-		if (!loadLedger->assertSane())
-		{
-			WriteLog (lsFATAL, Application) << "Ledger is not sane.";
-			return false;
-		}
-		mLedgerMaster.setLedgerRangePresent(loadLedger->getLedgerSeq(), loadLedger->getLedgerSeq());
+        if (loadLedger->getAccountHash ().isZero ())
+        {
+            WriteLog (lsFATAL, Application) << "Ledger is empty.";
+            assert (false);
+            return false;
+        }
 
-		Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*loadLedger));
-		mLedgerMaster.switchLedgers(loadLedger, openLedger);
-		mNetOps.setLastCloseTime(loadLedger->getCloseTimeNC());
-	}
-	catch (SHAMapMissingNode&)
-	{
-		WriteLog (lsFATAL, Application) << "Data is missing for selected ledger";
-		return false;
-	}
-	catch (boost::bad_lexical_cast&)
-	{
-		WriteLog (lsFATAL, Application) << "Ledger specified '" << l << "' is not valid";
-		return false;
-	}
-	return true;
+        if (!loadLedger->walkLedger ())
+        {
+            WriteLog (lsFATAL, Application) << "Ledger is missing nodes.";
+            return false;
+        }
+
+        if (!loadLedger->assertSane ())
+        {
+            WriteLog (lsFATAL, Application) << "Ledger is not sane.";
+            return false;
+        }
+
+        mLedgerMaster.setLedgerRangePresent (loadLedger->getLedgerSeq (), loadLedger->getLedgerSeq ());
+
+        Ledger::pointer openLedger = boost::make_shared<Ledger> (false, boost::ref (*loadLedger));
+        mLedgerMaster.switchLedgers (loadLedger, openLedger);
+        mNetOps.setLastCloseTime (loadLedger->getCloseTimeNC ());
+    }
+    catch (SHAMapMissingNode&)
+    {
+        WriteLog (lsFATAL, Application) << "Data is missing for selected ledger";
+        return false;
+    }
+    catch (boost::bad_lexical_cast&)
+    {
+        WriteLog (lsFATAL, Application) << "Ledger specified '" << l << "' is not valid";
+        return false;
+    }
+
+    return true;
 }
 
-bool serverOkay(std::string& reason)
+bool serverOkay (std::string& reason)
 {
-	if (!theConfig.ELB_SUPPORT)
-		return true;
+    if (!theConfig.ELB_SUPPORT)
+        return true;
 
-	if (!theApp)
-	{
-		reason = "Server has not started";
-		return false;
-	}
+    if (!theApp)
+    {
+        reason = "Server has not started";
+        return false;
+    }
 
-	if (theApp->isShutdown())
-	{
-		reason = "Server is shutting down";
-		return false;
-	}
+    if (theApp->isShutdown ())
+    {
+        reason = "Server is shutting down";
+        return false;
+    }
 
-	if (theApp->getOPs().isNeedNetworkLedger())
-	{
-		reason = "Not synchronized with network yet";
-		return false;
-	}
+    if (theApp->getOPs ().isNeedNetworkLedger ())
+    {
+        reason = "Not synchronized with network yet";
+        return false;
+    }
 
-	if (theApp->getOPs().getOperatingMode() < NetworkOPs::omSYNCING)
-	{
-		reason = "Not synchronized with network";
-		return false;
-	}
+    if (theApp->getOPs ().getOperatingMode () < NetworkOPs::omSYNCING)
+    {
+        reason = "Not synchronized with network";
+        return false;
+    }
 
-	if (theApp->getFeeTrack().isLoaded())
-	{
-		reason = "Too much load";
-		return false;
-	}
+    if (theApp->getFeeTrack ().isLoaded ())
+    {
+        reason = "Too much load";
+        return false;
+    }
 
-	if (theApp->getOPs().isFeatureBlocked())
-	{
-		reason = "Server version too old";
-		return false;
-	}
+    if (theApp->getOPs ().isFeatureBlocked ())
+    {
+        reason = "Server version too old";
+        return false;
+    }
 
-	return true;
+    return true;
 }
 
 //VFALCO TODO clean this up since it is just a file holding a single member function definition
 
-static std::vector<std::string> getSchema(DatabaseCon* dbc, const std::string& dbName)
+static std::vector<std::string> getSchema (DatabaseCon* dbc, const std::string& dbName)
 {
-	std::vector<std::string> schema;
+    std::vector<std::string> schema;
 
-	std::string sql = "SELECT sql FROM sqlite_master WHERE tbl_name='";
-	sql += dbName;
-	sql += "';";
+    std::string sql = "SELECT sql FROM sqlite_master WHERE tbl_name='";
+    sql += dbName;
+    sql += "';";
 
-	SQL_FOREACH(dbc->getDB(), sql)
-	{
-			dbc->getDB()->getStr("sql", sql);
-			schema.push_back(sql);
-	}
+    SQL_FOREACH (dbc->getDB (), sql)
+    {
+        dbc->getDB ()->getStr ("sql", sql);
+        schema.push_back (sql);
+    }
 
-	return schema;
+    return schema;
 }
 
-static bool schemaHas(DatabaseCon* dbc, const std::string& dbName, int line, const std::string& content)
+static bool schemaHas (DatabaseCon* dbc, const std::string& dbName, int line, const std::string& content)
 {
-	std::vector<std::string> schema = getSchema(dbc, dbName);
-	if (static_cast<int>(schema.size()) <= line)
-	{
-		Log(lsFATAL) << "Schema for " << dbName << " has too few lines";
-		throw std::runtime_error("bad schema");
-	}
-	return schema[line].find(content) != std::string::npos;
+    std::vector<std::string> schema = getSchema (dbc, dbName);
+
+    if (static_cast<int> (schema.size ()) <= line)
+    {
+        Log (lsFATAL) << "Schema for " << dbName << " has too few lines";
+        throw std::runtime_error ("bad schema");
+    }
+
+    return schema[line].find (content) != std::string::npos;
 }
 
-static void addTxnSeqField()
+static void addTxnSeqField ()
 {
-	if (schemaHas(theApp->getTxnDB(), "AccountTransactions", 0, "TxnSeq"))
-		return;
-	Log(lsWARNING) << "Transaction sequence field is missing";
+    if (schemaHas (theApp->getTxnDB (), "AccountTransactions", 0, "TxnSeq"))
+        return;
 
-	Database* db = theApp->getTxnDB()->getDB();
+    Log (lsWARNING) << "Transaction sequence field is missing";
 
-	std::vector< std::pair<uint256, int> > txIDs;
-	txIDs.reserve(300000);
+    Database* db = theApp->getTxnDB ()->getDB ();
 
-	Log(lsINFO) << "Parsing transactions";
-	int i = 0;
-	uint256 transID;
-	SQL_FOREACH(db, "SELECT TransID,TxnMeta FROM Transactions;")
-	{
-		Blob rawMeta;
-		int metaSize = 2048;
-		rawMeta.resize(metaSize);
-		metaSize = db->getBinary("TxnMeta", &*rawMeta.begin(), rawMeta.size());
-		if (metaSize > static_cast<int>(rawMeta.size()))
-		{
-			rawMeta.resize(metaSize);
-			db->getBinary("TxnMeta", &*rawMeta.begin(), rawMeta.size());
-		}
-		else rawMeta.resize(metaSize);
+    std::vector< std::pair<uint256, int> > txIDs;
+    txIDs.reserve (300000);
 
-		std::string tid;
-		db->getStr("TransID", tid);
-		transID.SetHex(tid, true);
+    Log (lsINFO) << "Parsing transactions";
+    int i = 0;
+    uint256 transID;
+    SQL_FOREACH (db, "SELECT TransID,TxnMeta FROM Transactions;")
+    {
+        Blob rawMeta;
+        int metaSize = 2048;
+        rawMeta.resize (metaSize);
+        metaSize = db->getBinary ("TxnMeta", &*rawMeta.begin (), rawMeta.size ());
 
-		if (rawMeta.size() == 0)
-		{
-			txIDs.push_back(std::make_pair(transID, -1));
-			Log(lsINFO) << "No metadata for " << transID;
-		}
-		else
-		{
-			TransactionMetaSet m(transID, 0, rawMeta);
-			txIDs.push_back(std::make_pair(transID, m.getIndex()));
-		}
+        if (metaSize > static_cast<int> (rawMeta.size ()))
+        {
+            rawMeta.resize (metaSize);
+            db->getBinary ("TxnMeta", &*rawMeta.begin (), rawMeta.size ());
+        }
+        else rawMeta.resize (metaSize);
 
-		if ((++i % 1000) == 0)
-			Log(lsINFO) << i << " transactions read";
-	}
+        std::string tid;
+        db->getStr ("TransID", tid);
+        transID.SetHex (tid, true);
 
-	Log(lsINFO) << "All " << i << " transactions read";
+        if (rawMeta.size () == 0)
+        {
+            txIDs.push_back (std::make_pair (transID, -1));
+            Log (lsINFO) << "No metadata for " << transID;
+        }
+        else
+        {
+            TransactionMetaSet m (transID, 0, rawMeta);
+            txIDs.push_back (std::make_pair (transID, m.getIndex ()));
+        }
 
-	db->executeSQL("BEGIN TRANSACTION;");
+        if ((++i % 1000) == 0)
+            Log (lsINFO) << i << " transactions read";
+    }
 
-	Log(lsINFO) << "Dropping old index";
-	db->executeSQL("DROP INDEX AcctTxIndex;");
+    Log (lsINFO) << "All " << i << " transactions read";
 
-	Log(lsINFO) << "Altering table";
-	db->executeSQL("ALTER TABLE AccountTransactions ADD COLUMN TxnSeq INTEGER;");
+    db->executeSQL ("BEGIN TRANSACTION;");
 
-	typedef std::pair<uint256, int> u256_int_pair_t;
-	boost::format fmt("UPDATE AccountTransactions SET TxnSeq = %d WHERE TransID = '%s';");
-	i = 0;
-	BOOST_FOREACH(u256_int_pair_t& t, txIDs)
-	{
-		db->executeSQL(boost::str(fmt % t.second % t.first.GetHex()));
-		if ((++i % 1000) == 0)
-			Log(lsINFO) << i << " transactions updated";
-	}
+    Log (lsINFO) << "Dropping old index";
+    db->executeSQL ("DROP INDEX AcctTxIndex;");
 
-	Log(lsINFO) << "Building new index";
-	db->executeSQL("CREATE INDEX AcctTxIndex ON AccountTransactions(Account, LedgerSeq, TxnSeq, TransID);");
-	db->executeSQL("END TRANSACTION;");
+    Log (lsINFO) << "Altering table";
+    db->executeSQL ("ALTER TABLE AccountTransactions ADD COLUMN TxnSeq INTEGER;");
+
+    typedef std::pair<uint256, int> u256_int_pair_t;
+    boost::format fmt ("UPDATE AccountTransactions SET TxnSeq = %d WHERE TransID = '%s';");
+    i = 0;
+    BOOST_FOREACH (u256_int_pair_t & t, txIDs)
+    {
+        db->executeSQL (boost::str (fmt % t.second % t.first.GetHex ()));
+
+        if ((++i % 1000) == 0)
+            Log (lsINFO) << i << " transactions updated";
+    }
+
+    Log (lsINFO) << "Building new index";
+    db->executeSQL ("CREATE INDEX AcctTxIndex ON AccountTransactions(Account, LedgerSeq, TxnSeq, TransID);");
+    db->executeSQL ("END TRANSACTION;");
 }
 
-void Application::updateTables(bool ldbImport)
-{ // perform any needed table updates
-	assert(schemaHas(theApp->getTxnDB(), "AccountTransactions", 0, "TransID"));
-	assert(!schemaHas(theApp->getTxnDB(), "AccountTransactions", 0, "foobar"));
-	addTxnSeqField();
+void Application::updateTables (bool ldbImport)
+{
+    // perform any needed table updates
+    assert (schemaHas (theApp->getTxnDB (), "AccountTransactions", 0, "TransID"));
+    assert (!schemaHas (theApp->getTxnDB (), "AccountTransactions", 0, "foobar"));
+    addTxnSeqField ();
 
-	if (schemaHas(theApp->getTxnDB(), "AccountTransactions", 0, "PRIMARY"))
-	{
-		Log(lsFATAL) << "AccountTransactions database should not have a primary key";
-		StopSustain();
-		exit(1);
-	}
+    if (schemaHas (theApp->getTxnDB (), "AccountTransactions", 0, "PRIMARY"))
+    {
+        Log (lsFATAL) << "AccountTransactions database should not have a primary key";
+        StopSustain ();
+        exit (1);
+    }
 
-	if (theApp->getHashedObjectStore().isLevelDB())
-	{
-		boost::filesystem::path hashPath = theConfig.DATA_DIR / "hashnode.db";
-		if (boost::filesystem::exists(hashPath))
-		{
-			if (theConfig.LDB_IMPORT)
-			{
-				Log(lsWARNING) << "Importing SQLite -> LevelDB";
-				theApp->getHashedObjectStore().import(hashPath.string());
-				Log(lsWARNING) << "Remove or remname the hashnode.db file";
-			}
-			else
-			{
-				Log(lsWARNING) << "SQLite hashnode database exists. Please either remove or import";
-				Log(lsWARNING) << "To import, start with the '--import' option. Otherwise, remove hashnode.db";
-				StopSustain();
-				exit(1);
-			}
-		}
-	}
+    if (theApp->getHashedObjectStore ().isLevelDB ())
+    {
+        boost::filesystem::path hashPath = theConfig.DATA_DIR / "hashnode.db";
+
+        if (boost::filesystem::exists (hashPath))
+        {
+            if (theConfig.LDB_IMPORT)
+            {
+                Log (lsWARNING) << "Importing SQLite -> LevelDB";
+                theApp->getHashedObjectStore ().import (hashPath.string ());
+                Log (lsWARNING) << "Remove or remname the hashnode.db file";
+            }
+            else
+            {
+                Log (lsWARNING) << "SQLite hashnode database exists. Please either remove or import";
+                Log (lsWARNING) << "To import, start with the '--import' option. Otherwise, remove hashnode.db";
+                StopSustain ();
+                exit (1);
+            }
+        }
+    }
 }
 
 IApplication* IApplication::New ()

@@ -5,11 +5,11 @@
 */
 enum HashedObjectType
 {
-	hotUNKNOWN = 0,
-	hotLEDGER = 1,
-	hotTRANSACTION = 2,
-	hotACCOUNT_NODE = 3,
-	hotTRANSACTION_NODE = 4
+    hotUNKNOWN = 0,
+    hotLEDGER = 1,
+    hotTRANSACTION = 2,
+    hotACCOUNT_NODE = 3,
+    hotTRANSACTION_NODE = 4
 };
 
 DEFINE_INSTANCE (HashedObject);
@@ -31,26 +31,26 @@ DEFINE_INSTANCE (HashedObject);
 class HashedObject : private IS_INSTANCE (HashedObject)
 {
 public:
-	typedef boost::shared_ptr <HashedObject> pointer;
+    typedef boost::shared_ptr <HashedObject> pointer;
 
     /** Create from a vector of data.
 
         @note A copy of the data is created.
     */
-	HashedObject (HashedObjectType type,
+    HashedObject (HashedObjectType type,
                   LedgerIndex ledgerIndex,
-                  Blob const& binaryDataToCopy,
-                  uint256 const& hash);
+                  Blob const & binaryDataToCopy,
+                  uint256 const & hash);
 
     /** Create from an area of memory.
 
         @note A copy of the data is created.
     */
-	HashedObject (HashedObjectType type,
+    HashedObject (HashedObjectType type,
                   LedgerIndex ledgerIndex,
-                  void const* bufferToCopy,
+                  void const * bufferToCopy,
                   int bytesInBuffer,
-                  uint256 const& hash);
+                  uint256 const & hash);
 
     /** Retrieve the type of this object.
     */
@@ -58,7 +58,7 @@ public:
 
     /** Retrieve the hash metadata.
     */
-    uint256 const& getHash() const;
+    uint256 const& getHash () const;
 
     /** Retrieve the ledger index in which this object appears.
     */
@@ -67,13 +67,13 @@ public:
 
     /** Retrieve the binary data.
     */
-	Blob const& getData() const;
-	
+    Blob const& getData () const;
+
 private:
-	HashedObjectType const mType;
-	uint256 const mHash;
-	LedgerIndex const mLedgerIndex;
-	Blob const mData;
+    HashedObjectType const mType;
+    uint256 const mHash;
+    LedgerIndex const mLedgerIndex;
+    Blob const mData;
 };
 
 #endif

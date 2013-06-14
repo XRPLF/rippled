@@ -8,52 +8,52 @@
 class RPCServer : public boost::enable_shared_from_this<RPCServer>
 {
 public:
-	
-	typedef boost::shared_ptr<RPCServer> pointer;
+
+    typedef boost::shared_ptr<RPCServer> pointer;
 
 private:
-	
-	NetworkOPs*	mNetOps;
 
-	AutoSocket mSocket;
+    NetworkOPs* mNetOps;
 
-	boost::asio::streambuf mLineBuffer;
-	Blob mQueryVec;
-	std::string mReplyStr;
+    AutoSocket mSocket;
 
-	HTTPRequest mHTTPRequest;
+    boost::asio::streambuf mLineBuffer;
+    Blob mQueryVec;
+    std::string mReplyStr;
 
-	
-	int mRole;
+    HTTPRequest mHTTPRequest;
 
-	RPCServer(boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context, NetworkOPs* nopNetwork);
 
-	RPCServer(const RPCServer&); // no implementation
-	RPCServer& operator=(const RPCServer&); // no implementation
+    int mRole;
 
-	void handle_write(const boost::system::error_code& ec);
-	void handle_read_line(const boost::system::error_code& ec);
-	void handle_read_req(const boost::system::error_code& ec);
+    RPCServer (boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context, NetworkOPs* nopNetwork);
 
-	std::string handleRequest(const std::string& requestStr);
+    RPCServer (const RPCServer&); // no implementation
+    RPCServer& operator= (const RPCServer&); // no implementation
+
+    void handle_write (const boost::system::error_code& ec);
+    void handle_read_line (const boost::system::error_code& ec);
+    void handle_read_req (const boost::system::error_code& ec);
+
+    std::string handleRequest (const std::string& requestStr);
 
 public:
-	static pointer create(boost::asio::io_service& io_service, boost::asio::ssl::context& context, NetworkOPs* mNetOps)
-	{
-		return pointer(new RPCServer(io_service, context, mNetOps));
-	}
+    static pointer create (boost::asio::io_service& io_service, boost::asio::ssl::context& context, NetworkOPs* mNetOps)
+    {
+        return pointer (new RPCServer (io_service, context, mNetOps));
+    }
 
-	AutoSocket& getSocket()
-	{
-		return mSocket;
-	}
+    AutoSocket& getSocket ()
+    {
+        return mSocket;
+    }
 
-	boost::asio::ip::tcp::socket& getRawSocket()
-	{
-		return mSocket.PlainSocket();
-	}
+    boost::asio::ip::tcp::socket& getRawSocket ()
+    {
+        return mSocket.PlainSocket ();
+    }
 
-	void connected();
+    void connected ();
 };
 
 #endif

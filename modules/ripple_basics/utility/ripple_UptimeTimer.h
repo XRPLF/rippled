@@ -1,18 +1,18 @@
 //------------------------------------------------------------------------------
 /*
-	Copyright (c) 2011-2013, OpenCoin, Inc.
+    Copyright (c) 2011-2013, OpenCoin, Inc.
 
-	Permission to use, copy, modify, and/or distribute this software for any
-	purpose with  or without fee is hereby granted,  provided that the above
-	copyright notice and this permission notice appear in all copies.
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose with  or without fee is hereby granted,  provided that the above
+    copyright notice and this permission notice appear in all copies.
 
-	THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-	WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES OF
-	MERCHANTABILITY  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-	ANY SPECIAL,  DIRECT, INDIRECT,  OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-	WHATSOEVER  RESULTING  FROM LOSS OF USE, DATA OR PROFITS,  WHETHER IN AN
-	ACTION OF CONTRACT, NEGLIGENCE  OR OTHER TORTIOUS ACTION, ARISING OUT OF
-	OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES OF
+    MERCHANTABILITY  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY SPECIAL,  DIRECT, INDIRECT,  OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM LOSS OF USE, DATA OR PROFITS,  WHETHER IN AN
+    ACTION OF CONTRACT, NEGLIGENCE  OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
@@ -21,35 +21,35 @@
 
 /** Tracks program uptime.
 
-	The timer can be switched to a manual system of updating, to reduce
-	system calls. (?)
+    The timer can be switched to a manual system of updating, to reduce
+    system calls. (?)
 */
 // VFALCO TODO determine if the non-manual timing is actually needed
 class UptimeTimer
 {
 private:
-	UptimeTimer ();
-	~UptimeTimer ();
+    UptimeTimer ();
+    ~UptimeTimer ();
 
 public:
-	int getElapsedSeconds () const;
+    int getElapsedSeconds () const;
 
-	void beginManualUpdates ();
-	void endManualUpdates ();
+    void beginManualUpdates ();
+    void endManualUpdates ();
 
-	void incrementElapsedTime ();
+    void incrementElapsedTime ();
 
-	static UptimeTimer& getInstance ();
+    static UptimeTimer& getInstance ();
 
 private:
-	// VFALCO DEPRECATED, Use a memory barrier instead of forcing a cache line
-	int m_pad1; // make sure m_elapsedTime fits in its own cache line
-	int volatile m_elapsedTime;
-	int m_pad2;
+    // VFALCO DEPRECATED, Use a memory barrier instead of forcing a cache line
+    int m_pad1; // make sure m_elapsedTime fits in its own cache line
+    int volatile m_elapsedTime;
+    int m_pad2;
 
-	time_t m_startTime;
+    time_t m_startTime;
 
-	bool m_isUpdatingManually;
+    bool m_isUpdatingManually;
 };
 
 #endif

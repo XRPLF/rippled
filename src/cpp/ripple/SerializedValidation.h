@@ -8,47 +8,65 @@ class SerializedValidation
     , private IS_INSTANCE (SerializedValidation)
 {
 public:
-	typedef boost::shared_ptr<SerializedValidation>			pointer;
-	typedef const boost::shared_ptr<SerializedValidation>&	ref;
+    typedef boost::shared_ptr<SerializedValidation>         pointer;
+    typedef const boost::shared_ptr<SerializedValidation>&  ref;
 
-	static const uint32	sFullFlag = 0x1;
+    static const uint32 sFullFlag = 0x1;
 
     // These throw if the object is not valid
-	SerializedValidation (SerializerIterator& sit, bool checkSignature = true);
+    SerializedValidation (SerializerIterator & sit, bool checkSignature = true);
 
-	// Does not sign the validation
-	SerializedValidation (uint256 const& ledgerHash, uint32 signTime, const RippleAddress& raPub, bool isFull);
+    // Does not sign the validation
+    SerializedValidation (uint256 const & ledgerHash, uint32 signTime, const RippleAddress & raPub, bool isFull);
 
-	uint256			getLedgerHash()		const;
-	uint32			getSignTime()		const;
-	uint32			getFlags()			const;
-	RippleAddress	getSignerPublic()	const;
-	uint160			getNodeID()			const	{ return mNodeID; }
-	bool			isValid()			const;
-	bool			isFull()			const;
-	bool			isTrusted()			const	{ return mTrusted; }
-	uint256			getSigningHash()	const;
-	bool			isValid(uint256 const& ) const;
+    uint256         getLedgerHash ()     const;
+    uint32          getSignTime ()       const;
+    uint32          getFlags ()          const;
+    RippleAddress   getSignerPublic ()   const;
+    uint160         getNodeID ()         const
+    {
+        return mNodeID;
+    }
+    bool            isValid ()           const;
+    bool            isFull ()            const;
+    bool            isTrusted ()         const
+    {
+        return mTrusted;
+    }
+    uint256         getSigningHash ()    const;
+    bool            isValid (uint256 const& ) const;
 
-	void 						setTrusted()				{ mTrusted = true; }
-	Blob 	getSigned()					const;
-	Blob 	getSignature()				const;
-	void sign(uint256& signingHash, const RippleAddress& raPrivate);
-	void sign(const RippleAddress& raPrivate);
+    void                        setTrusted ()
+    {
+        mTrusted = true;
+    }
+    Blob    getSigned ()                 const;
+    Blob    getSignature ()              const;
+    void sign (uint256 & signingHash, const RippleAddress & raPrivate);
+    void sign (const RippleAddress & raPrivate);
 
-	// The validation this replaced
-	uint256 const& getPreviousHash()		{ return mPreviousHash; }
-	bool isPreviousHash(uint256 const& h) const	{ return mPreviousHash == h; }
-	void setPreviousHash(uint256 const& h)	{ mPreviousHash = h; }
+    // The validation this replaced
+    uint256 const& getPreviousHash ()
+    {
+        return mPreviousHash;
+    }
+    bool isPreviousHash (uint256 const & h) const
+    {
+        return mPreviousHash == h;
+    }
+    void setPreviousHash (uint256 const & h)
+    {
+        mPreviousHash = h;
+    }
 
 private:
     static SOTemplate const& getFormat ();
 
-	void setNode ();
+    void setNode ();
 
-    uint256	mPreviousHash;
-	uint160 mNodeID;
-	bool mTrusted;
+    uint256 mPreviousHash;
+    uint160 mNodeID;
+    bool mTrusted;
 };
 
 #endif

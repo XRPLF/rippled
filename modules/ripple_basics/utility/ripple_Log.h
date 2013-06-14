@@ -3,13 +3,13 @@
 
 enum LogSeverity
 {
-	lsINVALID	= -1,	// used to indicate an invalid severity
-	lsTRACE		= 0,	// Very low-level progress information, details inside an operation
-	lsDEBUG		= 1,	// Function-level progress information, operations
-	lsINFO		= 2,	// Server-level progress information, major operations
-	lsWARNING	= 3,	// Conditions that warrant human attention, may indicate a problem
-	lsERROR		= 4,	// A condition that indicates a problem
-	lsFATAL		= 5		// A severe condition that indicates a server problem
+    lsINVALID   = -1,   // used to indicate an invalid severity
+    lsTRACE     = 0,    // Very low-level progress information, details inside an operation
+    lsDEBUG     = 1,    // Function-level progress information, operations
+    lsINFO      = 2,    // Server-level progress information, major operations
+    lsWARNING   = 3,    // Conditions that warrant human attention, may indicate a problem
+    lsERROR     = 4,    // A condition that indicates a problem
+    lsFATAL     = 5     // A severe condition that indicates a server problem
 };
 
 //------------------------------------------------------------------------------
@@ -18,80 +18,86 @@ enum LogSeverity
 class LogPartition
 {
 protected:
-	static LogPartition* headLog;
+    static LogPartition* headLog;
 
-	LogPartition*		mNextLog;
-	LogSeverity			mMinSeverity;
-	std::string			mName;
+    LogPartition*       mNextLog;
+    LogSeverity         mMinSeverity;
+    std::string         mName;
 
 public:
-	LogPartition(const char *name);
+    LogPartition (const char* name);
 
-	bool doLog(LogSeverity s) const	    { return s >= mMinSeverity;	}
-	const std::string& getName() const	{ return mName; }
+    bool doLog (LogSeverity s) const
+    {
+        return s >= mMinSeverity;
+    }
+    const std::string& getName () const
+    {
+        return mName;
+    }
 
-	static bool setSeverity(const std::string& partition, LogSeverity severity);
-	static void setSeverity(LogSeverity severity);
-	static std::vector< std::pair<std::string, std::string> > getSeverities();
+    static bool setSeverity (const std::string& partition, LogSeverity severity);
+    static void setSeverity (LogSeverity severity);
+    static std::vector< std::pair<std::string, std::string> > getSeverities ();
 
 private:
-	/** Retrieve file name from a log partition.
-	*/
-	template <class Key>
-	static char const* getFileName ();
-	/*
-	{
-		static_vfassert (false);
-	}
-	*/
+    /** Retrieve file name from a log partition.
+    */
+    template <class Key>
+    static char const* getFileName ();
+    /*
+    {
+        static_vfassert (false);
+    }
+    */
 
 public:
-	template <class Key>
-	static LogPartition const& get ()
-	{
-		static LogPartition logPartition (getFileName <Key> ());
-		return logPartition;
-	}
+    template <class Key>
+    static LogPartition const& get ()
+    {
+        static LogPartition logPartition (getFileName <Key> ());
+        return logPartition;
+    }
 };
 
 #define SETUP_LOG(k) \
-	template <> char const* LogPartition::getFileName <k> () { return __FILE__; } \
-	struct k##Instantiator { k##Instantiator () { LogPartition::get <k> (); } }; \
-	static k##Instantiator k##Instantiator_instance;
+    template <> char const* LogPartition::getFileName <k> () { return __FILE__; } \
+    struct k##Instantiator { k##Instantiator () { LogPartition::get <k> (); } }; \
+    static k##Instantiator k##Instantiator_instance;
 
 //------------------------------------------------------------------------------
 
 class Log
 {
 public:
-	explicit Log (LogSeverity s) : mSeverity(s)
-	{
+    explicit Log (LogSeverity s) : mSeverity (s)
+    {
     }
 
-	Log (LogSeverity s, LogPartition const& p)
+    Log (LogSeverity s, LogPartition const& p)
         : mSeverity (s)
-        , mPartitionName (p.getName())
-	{
+        , mPartitionName (p.getName ())
+    {
     }
 
-	~Log ();
+    ~Log ();
 
-	template <class T>
+    template <class T>
     std::ostream& operator<< (const T& t) const
-	{
-		return oss << t;
-	}
+    {
+        return oss << t;
+    }
 
-	std::ostringstream& ref () const
-	{
-		return oss;
-	}
+    std::ostringstream& ref () const
+    {
+        return oss;
+    }
 
-	static std::string severityToString (LogSeverity);
+    static std::string severityToString (LogSeverity);
 
     static LogSeverity stringToSeverity (std::string const&);
 
-	static LogSeverity getMinSeverity ();
+    static LogSeverity getMinSeverity ();
 
     static void setMinSeverity (LogSeverity, bool all);
 
@@ -101,24 +107,24 @@ public:
 
 private:
     // VFALCO TODO derive from beast::Uncopyable
-	Log (const Log&);            // no implementation
-	Log& operator= (const Log&); // no implementation
+    Log (const Log&);            // no implementation
+    Log& operator= (const Log&); // no implementation
 
     // VFALCO TODO looks like there are really TWO classes in here.
     //         One is a stream target for '<<' operator and the other
     //         is a singleton. Split the singleton out to a new class.
     //
     static boost::recursive_mutex sLock;
-	static LogSeverity sMinSeverity;
-	static std::ofstream* outStream;
-	static boost::filesystem::path *pathToLog;
-	static uint32 logRotateCounter;
+    static LogSeverity sMinSeverity;
+    static std::ofstream* outStream;
+    static boost::filesystem::path* pathToLog;
+    static uint32 logRotateCounter;
 
     static std::string replaceFirstSecretWithAsterisks (std::string s);
 
-    mutable std::ostringstream	oss;
-	LogSeverity					mSeverity;
-	std::string					mPartitionName;
+    mutable std::ostringstream  oss;
+    LogSeverity                 mSeverity;
+    std::string                 mPartitionName;
 };
 
 // Manually test for whether we should log

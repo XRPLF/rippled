@@ -4,34 +4,34 @@ LoadEvent::LoadEvent (LoadMonitor& monitor, const std::string& name, bool should
     , mRunning (false)
     , mName (name)
 {
-	mStartTime = boost::posix_time::microsec_clock::universal_time();
+    mStartTime = boost::posix_time::microsec_clock::universal_time ();
 
     if (shouldStart)
-		start();
+        start ();
 }
 
-LoadEvent::~LoadEvent()
+LoadEvent::~LoadEvent ()
 {
-	if (mRunning)
-		stop();
+    if (mRunning)
+        stop ();
 }
 
-void LoadEvent::reName(const std::string& name)
+void LoadEvent::reName (const std::string& name)
 {
-	mName = name;
+    mName = name;
 }
 
-void LoadEvent::start()
+void LoadEvent::start ()
 {
-	mRunning = true;
-	mStartTime = boost::posix_time::microsec_clock::universal_time();
+    mRunning = true;
+    mStartTime = boost::posix_time::microsec_clock::universal_time ();
 }
 
-void LoadEvent::stop()
+void LoadEvent::stop ()
 {
-	assert(mRunning);
+    assert (mRunning);
 
     mRunning = false;
-	mMonitor.addCountAndLatency (mName,
-		static_cast<int>((boost::posix_time::microsec_clock::universal_time() - mStartTime).total_milliseconds()));
+    mMonitor.addCountAndLatency (mName,
+                                 static_cast<int> ((boost::posix_time::microsec_clock::universal_time () - mStartTime).total_milliseconds ()));
 }

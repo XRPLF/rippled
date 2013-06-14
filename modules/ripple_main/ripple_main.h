@@ -1,32 +1,32 @@
 //------------------------------------------------------------------------------
 /*
-	Copyright (c) 2011-2013, OpenCoin, Inc.
+    Copyright (c) 2011-2013, OpenCoin, Inc.
 
-	Permission to use, copy, modify, and/or distribute this software for any
-	purpose with  or without fee is hereby granted,  provided that the above
-	copyright notice and this permission notice appear in all copies.
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose with  or without fee is hereby granted,  provided that the above
+    copyright notice and this permission notice appear in all copies.
 
-	THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-	WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES OF
-	MERCHANTABILITY  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-	ANY SPECIAL,  DIRECT, INDIRECT,  OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-	WHATSOEVER  RESULTING  FROM LOSS OF USE, DATA OR PROFITS,  WHETHER IN AN
-	ACTION OF CONTRACT, NEGLIGENCE  OR OTHER TORTIOUS ACTION, ARISING OUT OF
-	OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES OF
+    MERCHANTABILITY  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY SPECIAL,  DIRECT, INDIRECT,  OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM LOSS OF USE, DATA OR PROFITS,  WHETHER IN AN
+    ACTION OF CONTRACT, NEGLIGENCE  OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
-/**	Include this to get the @ref ripple_main module.
+/** Include this to get the @ref ripple_main module.
 
     @file ripple_main.h
     @ingroup ripple_main
 */
 
-/**	Core classes.
+/** Core classes.
 
-	This module contains the Ripple core instance object and related objects.
+    This module contains the Ripple core instance object and related objects.
 
-	@defgroup ripple_main
+    @defgroup ripple_main
 */
 
 #ifndef RIPPLE_MAIN_H

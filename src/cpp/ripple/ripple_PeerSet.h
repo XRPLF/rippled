@@ -8,64 +8,98 @@
 class PeerSet
 {
 public:
-	uint256 const& getHash() const		{ return mHash; }
-	bool isComplete() const				{ return mComplete; }
-	bool isFailed() const				{ return mFailed; }
-	int getTimeouts() const				{ return mTimeouts; }
+    uint256 const& getHash () const
+    {
+        return mHash;
+    }
+    bool isComplete () const
+    {
+        return mComplete;
+    }
+    bool isFailed () const
+    {
+        return mFailed;
+    }
+    int getTimeouts () const
+    {
+        return mTimeouts;
+    }
 
-	bool isActive();
-	void progress()						{ mProgress = true; mAggressive = false; }
-	bool isProgress()					{ return mProgress; }
-	void touch()						{ mLastAction = UptimeTimer::getInstance().getElapsedSeconds(); }
-	int getLastAction()					{ return mLastAction; }
+    bool isActive ();
+    void progress ()
+    {
+        mProgress = true;
+        mAggressive = false;
+    }
+    bool isProgress ()
+    {
+        return mProgress;
+    }
+    void touch ()
+    {
+        mLastAction = UptimeTimer::getInstance ().getElapsedSeconds ();
+    }
+    int getLastAction ()
+    {
+        return mLastAction;
+    }
 
-	void peerHas(Peer::ref);
-	void badPeer(Peer::ref);
-	void setTimer();
+    void peerHas (Peer::ref);
+    void badPeer (Peer::ref);
+    void setTimer ();
 
-	int takePeerSetFrom(const PeerSet& s);
-	int getPeerCount() const;
-	virtual bool isDone() const			{ return mComplete || mFailed; }
+    int takePeerSetFrom (const PeerSet& s);
+    int getPeerCount () const;
+    virtual bool isDone () const
+    {
+        return mComplete || mFailed;
+    }
 
 private:
-	static void TimerEntry (boost::weak_ptr<PeerSet>, const boost::system::error_code& result);
-	static void TimerJobEntry (Job&, boost::shared_ptr<PeerSet>);
+    static void TimerEntry (boost::weak_ptr<PeerSet>, const boost::system::error_code& result);
+    static void TimerJobEntry (Job&, boost::shared_ptr<PeerSet>);
 
     // VFALCO TODO try to make some of these private
 protected:
-	PeerSet (uint256 const& hash, int interval);
-	virtual ~PeerSet() { }
+    PeerSet (uint256 const& hash, int interval);
+    virtual ~PeerSet () { }
 
-	virtual void newPeer(Peer::ref) = 0;
-	virtual void onTimer(bool progress) = 0;
-	virtual boost::weak_ptr<PeerSet> pmDowncast() = 0;
+    virtual void newPeer (Peer::ref) = 0;
+    virtual void onTimer (bool progress) = 0;
+    virtual boost::weak_ptr<PeerSet> pmDowncast () = 0;
 
-	void setComplete()					{ mComplete = true; }
-	void setFailed()					{ mFailed = true; }
-	void invokeOnTimer();
+    void setComplete ()
+    {
+        mComplete = true;
+    }
+    void setFailed ()
+    {
+        mFailed = true;
+    }
+    void invokeOnTimer ();
 
-	void sendRequest(const ripple::TMGetLedger& message);
-	void sendRequest(const ripple::TMGetLedger& message, Peer::ref peer);
+    void sendRequest (const ripple::TMGetLedger& message);
+    void sendRequest (const ripple::TMGetLedger& message, Peer::ref peer);
 
 protected:
-	uint256 mHash;
-	int mTimerInterval;
+    uint256 mHash;
+    int mTimerInterval;
     int mTimeouts;
-	bool mComplete;
+    bool mComplete;
     bool mFailed;
     bool mProgress;
     bool mAggressive;
-	int mLastAction;
+    int mLastAction;
 
 
-	boost::recursive_mutex					mLock;
+    boost::recursive_mutex                  mLock;
     // VFALCO TODO move the responsibility for the timer to a higher level
-	boost::asio::deadline_timer				mTimer;
+    boost::asio::deadline_timer             mTimer;
 
     // VFALCO TODO Verify that these are used in the way that the names suggest.
     typedef uint64 PeerIdentifier;
     typedef int ReceivedChunkCount;
-	boost::unordered_map <PeerIdentifier, ReceivedChunkCount> mPeers;
+    boost::unordered_map <PeerIdentifier, ReceivedChunkCount> mPeers;
 };
 
 #endif

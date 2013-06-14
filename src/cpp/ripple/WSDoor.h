@@ -15,8 +15,8 @@
 
 namespace websocketpp
 {
-	class server;
-	class server_autotls;
+    class server;
+    class server_autotls;
 }
 
 #endif
@@ -25,22 +25,25 @@ namespace websocketpp
 class WSDoor
 {
 private:
-	websocketpp::server_autotls*	mSEndpoint;
+    websocketpp::server_autotls*    mSEndpoint;
 
-	boost::thread*					mThread;
-	bool							mPublic;
-	std::string						mIp;
-	int								mPort;
+    boost::thread*                  mThread;
+    bool                            mPublic;
+    std::string                     mIp;
+    int                             mPort;
 
-	void		startListening();
+    void        startListening ();
 
 public:
 
-	WSDoor(const std::string& strIp, int iPort, bool bPublic) : mSEndpoint(0), mThread(0), mPublic(bPublic), mIp(strIp), mPort(iPort) { ; }
+    WSDoor (const std::string& strIp, int iPort, bool bPublic) : mSEndpoint (0), mThread (0), mPublic (bPublic), mIp (strIp), mPort (iPort)
+    {
+        ;
+    }
 
-	void		stop();
+    void        stop ();
 
-	static WSDoor* createWSDoor(const std::string& strIp, const int iPort, bool bPublic);
+    static WSDoor* createWSDoor (const std::string& strIp, const int iPort, bool bPublic);
 };
 
 #endif

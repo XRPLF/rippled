@@ -1,32 +1,32 @@
 //------------------------------------------------------------------------------
 /*
-	Copyright (c) 2011-2013, OpenCoin, Inc.
+    Copyright (c) 2011-2013, OpenCoin, Inc.
 
-	Permission to use, copy, modify, and/or distribute this software for any
-	purpose with  or without fee is hereby granted,  provided that the above
-	copyright notice and this permission notice appear in all copies.
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose with  or without fee is hereby granted,  provided that the above
+    copyright notice and this permission notice appear in all copies.
 
-	THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-	WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES OF
-	MERCHANTABILITY  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-	ANY SPECIAL,  DIRECT, INDIRECT,  OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-	WHATSOEVER  RESULTING  FROM LOSS OF USE, DATA OR PROFITS,  WHETHER IN AN
-	ACTION OF CONTRACT, NEGLIGENCE  OR OTHER TORTIOUS ACTION, ARISING OUT OF
-	OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES OF
+    MERCHANTABILITY  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY SPECIAL,  DIRECT, INDIRECT,  OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM LOSS OF USE, DATA OR PROFITS,  WHETHER IN AN
+    ACTION OF CONTRACT, NEGLIGENCE  OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
-/**	Include this to get the @ref ripple_basics module.
+/** Include this to get the @ref ripple_basics module.
 
     @file ripple_basics.h
     @ingroup ripple_basics
 */
 
-/**	Basic classes.
+/** Basic classes.
 
-	This module provides utility classes and types used in the Ripple system.
+    This module provides utility classes and types used in the Ripple system.
 
-	@defgroup ripple_basics
+    @defgroup ripple_basics
 */
 
 #ifndef RIPPLE_BASICS_H
@@ -57,9 +57,9 @@
 // Forward declaration
 /*
 namespace boost {
-	namespace filesystem {
-		class path;
-	}
+    namespace filesystem {
+        class path;
+    }
 }
 */
 #include <boost/filesystem.hpp> // VFALCO TODO try to eliminate thie dependency
@@ -72,7 +72,7 @@ namespace boost {
 
 // RangeSet
 #include <boost/foreach.hpp>
-//#include <boost/icl/interval_set.hpp> // oof this one is ugly 
+//#include <boost/icl/interval_set.hpp> // oof this one is ugly
 
 // InstanceCounter
 //#include <string>
@@ -97,7 +97,7 @@ namespace boost {
 
 // ByteOrder
 #ifdef WIN32
-  // (nothing)
+// (nothing)
 #elif __APPLE__
 # include <libkern/OSByteOrder.h>
 #elif defined(__FreeBSD__) || defined(__NetBSD__)

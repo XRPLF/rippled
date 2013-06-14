@@ -9,24 +9,33 @@
 class NicknameState
 {
 public:
-	typedef boost::shared_ptr <NicknameState> pointer;
+    typedef boost::shared_ptr <NicknameState> pointer;
 
 public:
-	explicit NicknameState (SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
+    explicit NicknameState (SerializedLedgerEntry::pointer ledgerEntry);    // For accounts in a ledger
 
-	bool					haveMinimumOffer() const;
-	STAmount				getMinimumOffer() const;
-	RippleAddress			getAccountID() const;
+    bool                    haveMinimumOffer () const;
+    STAmount                getMinimumOffer () const;
+    RippleAddress           getAccountID () const;
 
-	SerializedLedgerEntry::pointer getSLE() { return mLedgerEntry; }
-	const SerializedLedgerEntry& peekSLE() const { return *mLedgerEntry; }
-	SerializedLedgerEntry& peekSLE() { return *mLedgerEntry; }
+    SerializedLedgerEntry::pointer getSLE ()
+    {
+        return mLedgerEntry;
+    }
+    const SerializedLedgerEntry& peekSLE () const
+    {
+        return *mLedgerEntry;
+    }
+    SerializedLedgerEntry& peekSLE ()
+    {
+        return *mLedgerEntry;
+    }
 
-	Blob getRaw() const;
-	void addJson(Json::Value& value);
+    Blob getRaw () const;
+    void addJson (Json::Value& value);
 
 private:
-	SerializedLedgerEntry::pointer	mLedgerEntry;
+    SerializedLedgerEntry::pointer  mLedgerEntry;
 };
 
 #endif

@@ -11,14 +11,23 @@ typedef boost::recursive_mutex::scoped_lock ScopedLock;
 class SharedScopedLock
 {
 protected:
-	mutable boost::shared_ptr<boost::recursive_mutex::scoped_lock> mHolder;
+    mutable boost::shared_ptr<boost::recursive_mutex::scoped_lock> mHolder;
 
 public:
-	SharedScopedLock(boost::recursive_mutex& mutex) :
-		mHolder(boost::make_shared<boost::recursive_mutex::scoped_lock>(boost::ref(mutex)))	{ ;	}
+    SharedScopedLock (boost::recursive_mutex& mutex) :
+        mHolder (boost::make_shared<boost::recursive_mutex::scoped_lock> (boost::ref (mutex)))
+    {
+        ;
+    }
 
-	void lock() const	{ mHolder->lock(); }
-	void unlock() const	{ mHolder->unlock(); }
+    void lock () const
+    {
+        mHolder->lock ();
+    }
+    void unlock () const
+    {
+        mHolder->unlock ();
+    }
 };
 
 // A class that unlocks on construction and locks on destruction
@@ -26,44 +35,44 @@ public:
 class ScopedUnlock
 {
 protected:
-	bool mUnlocked;
-	boost::recursive_mutex& mMutex;
+    bool mUnlocked;
+    boost::recursive_mutex& mMutex;
 
 public:
-	// VFALCO TODO get rid of this unlock parameter to restore sanity
-	ScopedUnlock(boost::recursive_mutex& mutex, bool unlock = true) : mUnlocked(unlock), mMutex(mutex)
-	{
-		if (unlock)
-			mMutex.unlock();
-	}
+    // VFALCO TODO get rid of this unlock parameter to restore sanity
+    ScopedUnlock (boost::recursive_mutex& mutex, bool unlock = true) : mUnlocked (unlock), mMutex (mutex)
+    {
+        if (unlock)
+            mMutex.unlock ();
+    }
 
-	~ScopedUnlock()
-	{
-		if (mUnlocked)
-			mMutex.lock();
-	}
+    ~ScopedUnlock ()
+    {
+        if (mUnlocked)
+            mMutex.lock ();
+    }
 
-	void lock()
-	{
-		if (mUnlocked)
-		{
-			mMutex.lock();
-			mUnlocked = false;
-		}
-	}
+    void lock ()
+    {
+        if (mUnlocked)
+        {
+            mMutex.lock ();
+            mUnlocked = false;
+        }
+    }
 
-	void unlock()
-	{
-		if (!mUnlocked)
-		{
-			mUnlocked = true;
-			mMutex.unlock();
-		}
-	}
+    void unlock ()
+    {
+        if (!mUnlocked)
+        {
+            mUnlocked = true;
+            mMutex.unlock ();
+        }
+    }
 
 private:
-	ScopedUnlock(const ScopedUnlock&); // no implementation
-	ScopedUnlock& operator=(const ScopedUnlock&); // no implementation
+    ScopedUnlock (const ScopedUnlock&); // no implementation
+    ScopedUnlock& operator= (const ScopedUnlock&); // no implementation
 };
 
 #endif
