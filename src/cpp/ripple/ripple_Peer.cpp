@@ -1100,11 +1100,7 @@ static void checkPropose(Job& job, boost::shared_ptr<ripple::TMProposeSet> packe
 	}
 
 	if (isTrusted)
-	{
-		theApp->getJobQueue().addJob(jtPROPOSAL_t, "trustedProposal",
-			BIND_TYPE(&NetworkOPs::processTrustedProposal, &theApp->getOPs(),
-				proposal, packet, nodePublic, prevLedger, sigGood));
-	}
+		theApp->getOPs().processTrustedProposal(proposal, packet, nodePublic, prevLedger, sigGood);
 	else if (sigGood && (prevLedger == consensusLCL))
 	{ // relay untrusted proposal
 		WriteLog (lsTRACE, Peer) << "relaying untrusted proposal";

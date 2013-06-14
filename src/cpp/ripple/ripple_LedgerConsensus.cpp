@@ -1043,6 +1043,8 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 	boost::recursive_mutex::scoped_lock masterLock(theApp->getMasterLock());
 	assert(set->getHash() == mOurPosition->getCurrentHash());
 
+	theApp->getOPs().peekStoredProposals().clear(); // these are now obsolete
+
 	uint32 closeTime = roundCloseTime(mOurPosition->getCloseTime());
 	bool closeTimeCorrect = true;
 	if (closeTime == 0)
