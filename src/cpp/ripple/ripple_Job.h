@@ -42,9 +42,18 @@ enum JobType
 class Job
 {
 public:
+    /** Default constructor.
 
-    // VFALCO TODO find out why these extra constructors are needed
-	Job();
+        Allows Job to be used as a container type.
+        
+        This is used to allow things like jobMap [key] = value.
+    */
+    // VFALCO NOTE I'd prefer not to have a default constructed object.
+    //             What is the semantic meaning of a Job with no associated
+    //             function? Having the invariant "all Job objects refer to
+    //             a job" would reduce the number of states.
+    //             
+	Job ();
 
 	Job (JobType type, uint64 index);
 
@@ -73,8 +82,7 @@ private:
 	JobType						mType;
 	uint64						mJobIndex;
 	FUNCTION_TYPE <void (Job&)>	mJob;
-    // VFALCO TODO why is this called mLoadMonitor if the type is LoadEvent pointer?
-	LoadEvent::pointer			mLoadMonitor;
+	LoadEvent::pointer			m_loadEvent;
 	std::string					mName;
 };
 

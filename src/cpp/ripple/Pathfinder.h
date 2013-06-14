@@ -70,7 +70,7 @@ private:
 
 	Ledger::pointer		mLedger;
 	PathState::pointer	mPsDefault;
-	LoadEvent::pointer	mLoadMonitor;
+	LoadEvent::pointer	m_loadEvent;
 	RLCache::pointer	mRLCache;
 
 	boost::unordered_map<uint160, AccountItems::pointer>	mRLMap;

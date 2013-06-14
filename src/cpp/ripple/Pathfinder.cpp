@@ -151,7 +151,7 @@ Pathfinder::Pathfinder(RLCache::ref cache,
 
 	theApp->getOrderBookDB().setup(mLedger);
 
-	mLoadMonitor = theApp->getJobQueue().getLoadEvent(jtPATH_FIND, "FindPath");
+	m_loadEvent = theApp->getJobQueue().getLoadEvent(jtPATH_FIND, "FindPath");
 
 	// Construct the default path for later comparison.
 

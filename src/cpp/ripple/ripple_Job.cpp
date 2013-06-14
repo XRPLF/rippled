@@ -21,8 +21,7 @@ Job::Job (JobType type,
     , mJob (job)
     , mName (name)
 {
-    // VFALCO NOTE what the heck does this do?
-	mLoadMonitor = boost::make_shared <LoadEvent> (boost::ref (lm), name, false);
+	m_loadEvent = boost::make_shared <LoadEvent> (boost::ref (lm), name, false);
 }
 
 JobType Job::getType() const
@@ -32,9 +31,15 @@ JobType Job::getType() const
 
 void Job::doJob ()
 {
-    mLoadMonitor->start();
+    m_loadEvent->start();
+
     mJob (*this);
-    mLoadMonitor->reName(mName);
+
+    // VFALCO TODO Isn't there a way to construct the load event with
+    //             the proper name? This way the load event object
+    //             can have the invariant "name is always set"
+    //
+    m_loadEvent->reName (mName);
 }
 
 void Job::rename (std::string const& newName)
