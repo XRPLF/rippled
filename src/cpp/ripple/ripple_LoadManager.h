@@ -26,25 +26,12 @@ enum LoadType
 };
 
 // load categories
-static const int LC_Disk    = 1;
-static const int LC_CPU     = 2;
-static const int LC_Network = 4;
-
-class LoadCost
+// VFALCO NOTE These look like bit flags, name them accordingly
+enum
 {
-public:
-    LoadType    mType;
-    int         mCost;
-    int         mCategories;
-
-    LoadCost () : mType (), mCost (0), mCategories (0)
-    {
-        ;
-    }
-    LoadCost (LoadType t, int cost, int cat) : mType (t), mCost (cost), mCategories (cat)
-    {
-        ;
-    }
+    LC_Disk = 1,
+    LC_CPU = 2,
+    LC_Network = 4
 };
 
 // a single endpoint that can impose load
@@ -79,24 +66,30 @@ public:
     {
     }
 
+    // VFALCO TODO Figure out a way to construct the LoadSource object with
+    //             the proper name instead of renaming it later.
+    //
     void rename (std::string const& name)
     {
         mName = name;
     }
-    std::string const& getName ()
+
+    std::string const& getName () const
     {
         return mName;
     }
 
-    bool    isPrivileged () const
+    bool isPrivileged () const
     {
         return (mFlags & lsfPrivileged) != 0;
     }
-    void    setPrivileged ()
+
+    void setPrivileged ()
     {
         mFlags |= lsfPrivileged;
     }
-    int     getBalance () const
+
+    int getBalance () const
     {
         return mBalance;
     }
@@ -105,16 +98,18 @@ public:
     {
         return mLogged;
     }
+
     void clearLogged ()
     {
         mLogged = false;
     }
 
-    void    setOutbound ()
+    void setOutbound ()
     {
         mFlags |= lsfOutbound;
     }
-    bool    isOutbound () const
+
+    bool isOutbound () const
     {
         return (mFlags & lsfOutbound) != 0;
     }
@@ -132,43 +127,89 @@ private:
 class LoadManager
 {
 public:
-    LoadManager (int creditRate = 100, int creditLimit = 500, int debitWarn = -500, int debitLimit = -1000);
+    LoadManager (int creditRate = 100,
+                 int creditLimit = 500,
+                 int debitWarn = -500,
+                 int debitLimit = -1000);
+
     ~LoadManager ();
+
     void init ();
 
     int getCreditRate () const;
+
     int getCreditLimit () const;
+
     int getDebitWarn () const;
+
     int getDebitLimit () const;
+
     void setCreditRate (int);
+
     void setCreditLimit (int);
+
     void setDebitWarn (int);
+
     void setDebitLimit (int);
 
     bool shouldWarn (LoadSource&) const;
+
     bool shouldCutoff (LoadSource&) const;
+
     bool adjust (LoadSource&, int credits) const; // return value: false=balance okay, true=warn/cutoff
+
     bool adjust (LoadSource&, LoadType l) const;
 
     void logWarning (const std::string&) const;
+
     void logDisconnect (const std::string&) const;
 
-    int getCost (LoadType t)
+    int getCost (LoadType t) const
     {
-        return mCosts[static_cast<int> (t)].mCost;
+        return mCosts [static_cast <int> (t)].mCost;
     }
+
     void noDeadLock ();
+
     void arm ()
     {
         mArmed = true;
     }
 
 private:
-    void canonicalize (LoadSource&, int upTime) const;
-    void addLoadCost (const LoadCost& c)
+    class Cost
     {
-        mCosts[static_cast<int> (c.mType)] = c;
+    public:
+        Cost ()
+            : mType ()
+            , mCost (0)
+            , mCategories (0)
+        {
+        }
+        
+        Cost (LoadType typeOfLoad, int cost, int category)
+            : mType (typeOfLoad)
+            , mCost (cost)
+            , mCategories (category)
+        {
+        }
+
+    public:
+        // VFALCO TODO Make these private
+        LoadType    mType;
+        int         mCost;
+        int         mCategories;
+    };
+
+    void canonicalize (LoadSource&, int upTime) const;
+
+    void addCost (const Cost& c)
+    {
+        mCosts [static_cast <int> (c.mType)] = c;
     }
+
+    // VFALCO NOTE Where's the thread object? It's not a data member...
+    //
     void threadEntry ();
 
 private:
@@ -182,9 +223,9 @@ private:
 
     int mDeadLock;              // Detect server deadlocks
 
-    mutable boost::mutex mLock;
+    mutable boost::mutex mLock; // VFALCO TODO Replace with juce::Mutex and remove the mutable attribute
 
-    std::vector<LoadCost>   mCosts;
+    std::vector <Cost> mCosts;
 };
 
 #endif

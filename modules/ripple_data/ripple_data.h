@@ -75,8 +75,9 @@
 #include "crypto/ripple_Base58Data.h"
 
 #include "protocol/ripple_FieldNames.h"
+#include "protocol/ripple_HashPrefix.h"
 #include "protocol/ripple_PackedMessage.h"
-#include "protocol/ripple_ProtocolTypes.h"
+#include "protocol/ripple_Protocol.h"
 #include "protocol/ripple_RippleAddress.h"
 #include "protocol/ripple_RippleSystem.h"
 #include "protocol/ripple_Serializer.h" // needs CKey
@@ -85,7 +86,9 @@
 #include "protocol/ripple_SerializedObjectTemplate.h"
 #include "protocol/ripple_SerializedObject.h"
 #include "protocol/ripple_LedgerFormat.h" // needs SOTemplate from SerializedObject
-#include "protocol/ripple_TransactionFormat.h"
+#include "protocol/ripple_TxFlags.h"
+#include "protocol/ripple_TxFormat.h"
+#include "protocol/ripple_TxFormats.h"
 
 #include "utility/ripple_JSONCache.h"
 #include "utility/ripple_UptimeTimerAdapter.h"

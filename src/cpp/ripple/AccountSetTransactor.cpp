@@ -52,14 +52,15 @@ TER AccountSetTransactor::doApply ()
     // RequireDestTag
     //
 
-    if ((tfRequireDestTag | tfOptionalDestTag) == (uTxFlags & (tfRequireDestTag | tfOptionalDestTag)))
+    // VFALCO TODO Make a function bool areBothFlagsSet (uint value, uint flag1, uint flag2)
+    if ((TxFlag::requireDestTag | tfOptionalDestTag) == (uTxFlags & (TxFlag::requireDestTag | tfOptionalDestTag)))
     {
         WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Malformed transaction: Contradictory flags set.";
 
         return temINVALID_FLAG;
     }
 
-    if ((uTxFlags & tfRequireDestTag) && !isSetBit (uFlagsIn, lsfRequireDestTag))
+    if ((uTxFlags & TxFlag::requireDestTag) && !isSetBit (uFlagsIn, lsfRequireDestTag))
     {
         WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Set lsfRequireDestTag.";
 

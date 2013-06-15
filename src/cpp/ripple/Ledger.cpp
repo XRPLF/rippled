@@ -192,7 +192,7 @@ void Ledger::updateHash ()
     }
 
     Serializer s (118);
-    s.add32 (sHP_Ledger);
+    s.add32 (HashPrefix::ledgerMaster);
     addRaw (s);
     mHash = s.getSHA512Half ();
     mValidHash = true;
@@ -526,7 +526,7 @@ void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
 
     // Save the ledger header in the hashed object store
     Serializer s (128);
-    s.add32 (sHP_Ledger);
+    s.add32 (HashPrefix::ledgerMaster);
     addRaw (s);
     theApp->getHashedObjectStore ().store (hotLEDGER, mLedgerSeq, s.peekData (), mHash);
 

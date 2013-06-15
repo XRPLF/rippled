@@ -3,7 +3,21 @@
 
 DEFINE_INSTANCE (SerializedLedgerEntry);
 
-// VFALCO TODO rename this to SerializedLedger?
+// VFALCO NOTE
+//
+//      This looks like a central class for Ripple. Almost everything that
+//      does anything of interest deals with SLE objects. Any documentation
+//      effort should start with a complete description of this object and
+//      all of its operations.
+//
+//      It is derived from STObject so it inherits a lot of behavior from that.
+//
+// VFALCO TODO Rename the source file to match the class
+//
+// VFALCO TODO Can we rename this class to something shorter and more concise?
+//
+//             Can we just call this LedgerEntry?
+//
 class SerializedLedgerEntry : public STObject, private IS_INSTANCE (SerializedLedgerEntry)
 {
 public:

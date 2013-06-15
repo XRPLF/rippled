@@ -2,15 +2,6 @@
 // Carries out the RPC.
 //
 
-#include "Pathfinder.h"
-#include "RPCHandler.h"
-#include "RPCSub.h"
-#include "Wallet.h"
-#include "RippleCalc.h"
-#include "RPCErr.h"
-#include "NicknameState.h"
-#include "Offer.h"
-
 SETUP_LOG (RPCHandler)
 
 static const int rpcCOST_DEFAULT    = 10;
@@ -182,7 +173,7 @@ Json::Value RPCHandler::transactionSign (Json::Value jvRequest, bool bSubmit, Sc
             Ledger::pointer lSnapshot = mNetOps->getCurrentSnapshot ();
             {
                 bool bValid;
-                RLCache::pointer cache = boost::make_shared<RLCache> (lSnapshot);
+                RippleLineCache::pointer cache = boost::make_shared<RippleLineCache> (lSnapshot);
                 Pathfinder pf (cache, raSrcAddressID, dstAccountID,
                                saSendMax.getCurrency (), saSendMax.getIssuer (), saSend, bValid);
 
@@ -1517,7 +1508,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value jvRequest, int& cost, Scop
         jvResult["destination_account"] = raDst.humanAccountID ();
 
         Json::Value jvArray (Json::arrayValue);
-        RLCache::pointer cache = boost::make_shared<RLCache> (lSnapShot);
+        RippleLineCache::pointer cache = boost::make_shared<RippleLineCache> (lSnapShot);
 
         for (unsigned int i = 0; i != jvSrcCurrencies.size (); ++i)
         {

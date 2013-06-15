@@ -128,11 +128,11 @@
 #include "src/cpp/ripple/TransactionMeta.h"
 #include "src/cpp/ripple/Transaction.h"
 #include "src/cpp/ripple/ripple_AccountState.h"
-#include "src/cpp/ripple/NicknameState.h"
+#include "src/cpp/ripple/ripple_NicknameState.h"
 #include "src/cpp/ripple/Ledger.h"
 
 #include "src/cpp/ripple/SerializedValidation.h"
-#include "src/cpp/ripple/LoadManager.h" // VFALCO TODO Split this file up
+#include "src/cpp/ripple/ripple_LoadManager.h"
 
 
 // These have few dependencies
@@ -218,19 +218,23 @@
 #include "src/cpp/ripple/CallRPC.h"
 #include "src/cpp/ripple/ChangeTransactor.h"
 #include "src/cpp/ripple/HTTPRequest.h"
-#include "src/cpp/ripple/HashPrefixes.h"
 #include "src/cpp/ripple/HttpsClient.h"
 #include "src/cpp/ripple/ripple_TransactionAcquire.h"
 #include "src/cpp/ripple/ripple_DisputedTx.h"
 #include "src/cpp/ripple/ripple_LedgerConsensus.h"
 #include "src/cpp/ripple/LedgerTiming.h"
-#include "src/cpp/ripple/Offer.h"
+#include "src/cpp/ripple/ripple_Offer.h"
 #include "src/cpp/ripple/OfferCancelTransactor.h"
 #include "src/cpp/ripple/OfferCreateTransactor.h"
 #include "src/cpp/ripple/ripple_PathRequest.h"
 #include "src/cpp/ripple/ParameterTable.h"
 #include "src/cpp/ripple/ParseSection.h"
-#include "src/cpp/ripple/Pathfinder.h"
+
+ #include "src/cpp/ripple/ripple_RippleLineCache.h"
+ #include "src/cpp/ripple/ripple_PathState.h"
+ #include "src/cpp/ripple/ripple_RippleCalc.h"
+#include  "src/cpp/ripple/ripple_Pathfinder.h"
+
 #include "src/cpp/ripple/PaymentTransactor.h"
 #include "src/cpp/ripple/PeerDoor.h"
 #include "src/cpp/ripple/RPC.h"
@@ -239,8 +243,7 @@
 #include "src/cpp/ripple/RPCServer.h"
 #include "src/cpp/ripple/RPCSub.h"
 #include "src/cpp/ripple/RegularKeySetTransactor.h"
-#include "src/cpp/ripple/RippleCalc.h"
-#include "src/cpp/ripple/RippleState.h"
+#include "src/cpp/ripple/ripple_RippleState.h"
 #include "src/cpp/ripple/SerializedValidation.h"
 #include "src/cpp/ripple/Transactor.h"
 #include "src/cpp/ripple/AccountSetTransactor.h"
@@ -290,11 +293,11 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/LedgerMaster.cpp"
 #include "src/cpp/ripple/LedgerProposal.cpp" // no log
 #include "src/cpp/ripple/LedgerTiming.cpp"
-#include "src/cpp/ripple/LoadManager.cpp"
+#include "src/cpp/ripple/ripple_LoadManager.cpp"
 #include "src/cpp/ripple/main.cpp"
 #include "src/cpp/ripple/NetworkOPs.cpp"
-#include "src/cpp/ripple/NicknameState.cpp" // no log
-#include "src/cpp/ripple/Offer.cpp" // no log
+#include "src/cpp/ripple/ripple_NicknameState.cpp"
+#include "src/cpp/ripple/ripple_Offer.cpp" // no log
 #include "src/cpp/ripple/OfferCancelTransactor.cpp"
 #include "src/cpp/ripple/OfferCreateTransactor.cpp"
 #include "src/cpp/ripple/Operation.cpp" // no log
@@ -316,12 +319,14 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #include "src/cpp/ripple/ParameterTable.cpp" // no log
 #include "src/cpp/ripple/ParseSection.cpp"
-#include "src/cpp/ripple/Pathfinder.cpp"
+#include "src/cpp/ripple/ripple_Pathfinder.cpp"
 #include "src/cpp/ripple/PaymentTransactor.cpp"
 #include "src/cpp/ripple/PeerDoor.cpp"
 #include "src/cpp/ripple/RegularKeySetTransactor.cpp"
-#include "src/cpp/ripple/RippleCalc.cpp"
-#include "src/cpp/ripple/RippleState.cpp" // no log
+#include "src/cpp/ripple/ripple_PathState.cpp"
+#include "src/cpp/ripple/ripple_RippleCalc.cpp"
+#include "src/cpp/ripple/ripple_RippleLineCache.cpp"
+#include "src/cpp/ripple/ripple_RippleState.cpp"
 #include "src/cpp/ripple/rpc.cpp"
 #include "src/cpp/ripple/RPCDoor.cpp"
 #include "src/cpp/ripple/RPCErr.cpp"

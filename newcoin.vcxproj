@@ -353,7 +353,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="modules\ripple_data\protocol\ripple_TransactionFormat.cpp">
+    <ClCompile Include="modules\ripple_data\protocol\ripple_TxFormat.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_data\protocol\ripple_TxFormats.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -827,6 +833,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_PathState.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_Peers.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -909,7 +921,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_LoadManager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -945,13 +957,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\NicknameState.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_NicknameState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Offer.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_Offer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -999,7 +1011,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Pathfinder.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_Pathfinder.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1027,13 +1039,19 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\RippleCalc.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_RippleCalc.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\RippleState.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_RippleLineCache.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_RippleState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1393,9 +1411,10 @@
     <ClInclude Include="modules\ripple_data\crypto\ripple_CKey.h" />
     <ClInclude Include="modules\ripple_data\crypto\ripple_RFC1751.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_FieldNames.h" />
+    <ClInclude Include="modules\ripple_data\protocol\ripple_HashPrefix.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_LedgerFormat.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_PackedMessage.h" />
-    <ClInclude Include="modules\ripple_data\protocol\ripple_ProtocolTypes.h" />
+    <ClInclude Include="modules\ripple_data\protocol\ripple_Protocol.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_RippleAddress.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_RippleSystem.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_SerializeDeclarations.h" />
@@ -1404,7 +1423,9 @@
     <ClInclude Include="modules\ripple_data\protocol\ripple_SerializedTypes.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_Serializer.h" />
     <ClInclude Include="modules\ripple_data\protocol\ripple_TER.h" />
-    <ClInclude Include="modules\ripple_data\protocol\ripple_TransactionFormat.h" />
+    <ClInclude Include="modules\ripple_data\protocol\ripple_TxFlags.h" />
+    <ClInclude Include="modules\ripple_data\protocol\ripple_TxFormat.h" />
+    <ClInclude Include="modules\ripple_data\protocol\ripple_TxFormats.h" />
     <ClInclude Include="modules\ripple_data\ripple_data.h" />
     <ClInclude Include="modules\ripple_data\utility\ripple_JSONCache.h" />
     <ClInclude Include="modules\ripple_data\utility\ripple_UptimeTimerAdapter.h" />
@@ -1751,7 +1772,6 @@
     <ClInclude Include="src\cpp\ripple\ripple_InfoSub.h" />
     <ClInclude Include="src\cpp\ripple\ripple_IPeers.h" />
     <ClInclude Include="src\cpp\ripple\Contract.h" />
-    <ClInclude Include="src\cpp\ripple\HashPrefixes.h" />
     <ClInclude Include="src\cpp\ripple\HTTPRequest.h" />
     <ClInclude Include="src\cpp\ripple\HttpsClient.h" />
     <ClInclude Include="src\cpp\ripple\Interpreter.h" />
@@ -1763,14 +1783,14 @@
     <ClInclude Include="src\cpp\ripple\LedgerMaster.h" />
     <ClInclude Include="src\cpp\ripple\LedgerProposal.h" />
     <ClInclude Include="src\cpp\ripple\LedgerTiming.h" />
-    <ClInclude Include="src\cpp\ripple\LoadManager.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_LoadManager.h" />
     <ClInclude Include="src\cpp\ripple\ripple_Job.h" />
     <ClInclude Include="src\cpp\ripple\ripple_JobQueue.h" />
     <ClInclude Include="src\cpp\ripple\ripple_LedgerAcquireMaster.h" />
     <ClInclude Include="src\cpp\ripple\ripple_LoadMonitor.h" />
     <ClInclude Include="src\cpp\ripple\NetworkOPs.h" />
-    <ClInclude Include="src\cpp\ripple\NicknameState.h" />
-    <ClInclude Include="src\cpp\ripple\Offer.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_NicknameState.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_Offer.h" />
     <ClInclude Include="src\cpp\ripple\OfferCancelTransactor.h" />
     <ClInclude Include="src\cpp\ripple\OfferCreateTransactor.h" />
     <ClInclude Include="src\cpp\ripple\Operation.h" />
@@ -1778,13 +1798,15 @@
     <ClInclude Include="src\cpp\ripple\OrderBookDB.h" />
     <ClInclude Include="src\cpp\ripple\ParameterTable.h" />
     <ClInclude Include="src\cpp\ripple\ParseSection.h" />
-    <ClInclude Include="src\cpp\ripple\Pathfinder.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_Pathfinder.h" />
     <ClInclude Include="src\cpp\ripple\PaymentTransactor.h" />
     <ClInclude Include="src\cpp\ripple\PeerDoor.h" />
     <ClInclude Include="src\cpp\ripple\ripple_PathRequest.h" />
     <ClInclude Include="src\cpp\ripple\RegularKeySetTransactor.h" />
-    <ClInclude Include="src\cpp\ripple\RippleCalc.h" />
-    <ClInclude Include="src\cpp\ripple\RippleState.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_PathState.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_RippleCalc.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_RippleLineCache.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_RippleState.h" />
     <ClInclude Include="src\cpp\ripple\ripple_DatabaseCon.h" />
     <ClInclude Include="src\cpp\ripple\ripple_IFeatures.h" />
     <ClInclude Include="src\cpp\ripple\ripple_IFeeVote.h" />

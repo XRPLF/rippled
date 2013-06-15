@@ -85,7 +85,8 @@
 #include "protocol/ripple_SerializedObjectTemplate.cpp"
 #include "protocol/ripple_SerializedObject.cpp"
 #include "protocol/ripple_TER.cpp"
-#include "protocol/ripple_TransactionFormat.cpp"
+#include "protocol/ripple_TxFormat.cpp"
+#include "protocol/ripple_TxFormats.cpp"
 
 // These are for STAmount
 static const uint64 tenTo14 = 100000000000000ull;

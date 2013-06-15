@@ -135,7 +135,7 @@ static int getEffectiveLength (const STPath& spPath)
     return length;
 }
 
-Pathfinder::Pathfinder (RLCache::ref cache,
+Pathfinder::Pathfinder (RippleLineCache::ref cache,
                         const RippleAddress& uSrcAccountID, const RippleAddress& uDstAccountID,
                         const uint160& uSrcCurrencyID, const uint160& uSrcIssuerID, const STAmount& saDstAmount, bool& bValid)
     :   mSrcAccountID (uSrcAccountID.getAccountID ()),
@@ -790,18 +790,6 @@ boost::unordered_set<uint160> usAccountDestCurrencies (const RippleAddress& raAc
 
     usCurrencies.erase (CURRENCY_BAD);
     return usCurrencies;
-}
-
-AccountItems& RLCache::getRippleLines (const uint160& accountID)
-{
-    boost::mutex::scoped_lock sl (mLock);
-    boost::unordered_map<uint160, AccountItems::pointer>::iterator it = mRLMap.find (accountID);
-
-    if (it == mRLMap.end ())
-        it = mRLMap.insert (std::make_pair (accountID, boost::make_shared<AccountItems>
-                                            (boost::cref (accountID), boost::cref (mLedger), AccountItem::pointer (new RippleState ())))).first;
-
-    return *it->second;
 }
 
 bool Pathfinder::matchesOrigin (const uint160& currency, const uint160& issuer)

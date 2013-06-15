@@ -64,7 +64,7 @@ public:
     void setSourceAccount (const RippleAddress & naSource);
     std::string getTransactionType () const
     {
-        return mFormat->t_name;
+        return mFormat->getName ();
     }
 
     uint32 getSequence () const
@@ -120,7 +120,7 @@ public:
 
 private:
     TransactionType mType;
-    const TransactionFormat* mFormat;
+    const TxFormat* mFormat;
 
     SerializedTransaction* duplicate () const
     {

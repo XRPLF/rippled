@@ -1,22 +1,12 @@
-#ifndef _PFREQUEST__H
-#define _PFREQUEST__H
-
-#include <set>
-#include <vector>
-
-#include <boost/thread/recursive_mutex.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-
-#include "Pathfinder.h"
+#ifndef RIPPLE_PATHREQUEST_H
+#define RIPPLE_PATHREQUEST_H
 
 // A pathfinding request submitted by a client
 // The request issuer must maintain a strong pointer
 
 class InfoSub;
 class STAmount;
-class RLCache;
+class RippleLineCache;
 
 // Return values from parseJson <0 = invalid, >0 = valid
 #define PFR_PJ_INVALID              -1
@@ -45,7 +35,7 @@ public:
     Json::Value doClose (const Json::Value&);
     Json::Value doStatus (const Json::Value&);
 
-    bool        doUpdate (const boost::shared_ptr<RLCache>&, bool fast); // update jvStatus
+    bool        doUpdate (const boost::shared_ptr<RippleLineCache>&, bool fast); // update jvStatus
 
     static void updateAll (const boost::shared_ptr<Ledger>& ledger, bool newOnly);
 

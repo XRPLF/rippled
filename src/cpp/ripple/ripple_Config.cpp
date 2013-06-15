@@ -101,9 +101,18 @@ void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
                                       % VALIDATORS_FILE_NAME);
     VALIDATORS_URI      = boost::str (boost::format ("/%s") % VALIDATORS_BASE);
 
-    SIGN_TRANSACTION    = TESTNET ? sHP_TestNetTransactionSign  : sHP_TransactionSign;
-    SIGN_VALIDATION     = TESTNET ? sHP_TestNetValidation       : sHP_Validation;
-    SIGN_PROPOSAL       = TESTNET ? sHP_TestNetProposal         : sHP_Proposal;
+    if (TESTNET)
+    {
+        SIGN_TRANSACTION    = HashPrefix::txSignTestnet;
+        SIGN_VALIDATION     = HashPrefix::validationTestnet;
+        SIGN_PROPOSAL       = HashPrefix::proposalTestnet;
+    }
+    else
+    {
+        SIGN_TRANSACTION    = HashPrefix::txSign;
+        SIGN_VALIDATION     = HashPrefix::validation;
+        SIGN_PROPOSAL       = HashPrefix::proposal;
+    }
 
     if (TESTNET)
         Base58::setCurrentAlphabet (Base58::getTestnetAlphabet ());

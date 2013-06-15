@@ -108,4 +108,3 @@ public:
 extern IApplication* theApp;
 
 #endif
-// vim:ts=4

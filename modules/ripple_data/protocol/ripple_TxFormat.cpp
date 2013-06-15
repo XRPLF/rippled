@@ -1,10 +1,7 @@
 
-std::map<int, TransactionFormat*> TransactionFormat::byType;
+// VFALCO TODO Find a way to not use macros. inline function?
 
-std::map<std::string, TransactionFormat*> TransactionFormat::byName;
-
-// VFALCO TODO surely we can think of a better way than to use macros??
-#define TF_BASE                                             \
+#define TF_BASE                                                 \
             << SOElement(sfTransactionType,     SOE_REQUIRED)   \
             << SOElement(sfFlags,               SOE_OPTIONAL)   \
             << SOElement(sfSourceTag,           SOE_OPTIONAL)   \
@@ -16,11 +13,11 @@ std::map<std::string, TransactionFormat*> TransactionFormat::byName;
             << SOElement(sfSigningPubKey,       SOE_REQUIRED)   \
             << SOElement(sfTxnSignature,        SOE_OPTIONAL)
 
-#define DECLARE_TF(name, type) tf = new TransactionFormat(#name, type); (*tf) TF_BASE
+#define DECLARE_TF(name, type) tf = TxFormats::getInstance().add (new TxFormat(#name, type)); (*tf) TF_BASE
 
 void TFInit ()
 {
-    TransactionFormat* tf;
+    TxFormat* tf;
 
     DECLARE_TF (AccountSet, ttACCOUNT_SET)
             << SOElement (sfEmailHash,       SOE_OPTIONAL)
@@ -86,35 +83,3 @@ void TFInit ()
             << SOElement (sfReserveIncrement,    SOE_REQUIRED)
             ;
 }
-
-TransactionFormat* TransactionFormat::getTxnFormat (TransactionType t)
-{
-    std::map<int, TransactionFormat*>::iterator it = byType.find (static_cast<int> (t));
-
-    if (it == byType.end ())
-        return NULL;
-
-    return it->second;
-}
-
-TransactionFormat* TransactionFormat::getTxnFormat (int t)
-{
-    std::map<int, TransactionFormat*>::iterator it = byType.find ((t));
-
-    if (it == byType.end ())
-        return NULL;
-
-    return it->second;
-}
-
-TransactionFormat* TransactionFormat::getTxnFormat (const std::string& t)
-{
-    std::map<std::string, TransactionFormat*>::iterator it = byName.find ((t));
-
-    if (it == byName.end ())
-        return NULL;
-
-    return it->second;
-}
-
-//  vim:ts=4

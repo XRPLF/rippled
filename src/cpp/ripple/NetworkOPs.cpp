@@ -2172,7 +2172,7 @@ void NetworkOPs::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
             ripple::TMIndexedObject& newObj = *reply.add_objects ();
             newObj.set_hash (wantLedger->getHash ().begin (), 256 / 8);
             Serializer s (256);
-            s.add32 (sHP_Ledger);
+            s.add32 (HashPrefix::ledgerMaster);
             wantLedger->addRaw (s);
             newObj.set_data (s.getDataPtr (), s.getLength ());
             newObj.set_ledgerseq (lSeq);

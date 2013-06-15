@@ -145,6 +145,9 @@
     <Filter Include="1. Modules\ripple_main\refactored\consensus">
       <UniqueIdentifier>{8b88138b-e5bd-492b-bd34-012b9f43e544}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_main\refactored\pathing">
+      <UniqueIdentifier>{90a5527e-0de0-4d5f-a731-b6b196a013b5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -585,9 +588,6 @@
     <ClCompile Include="modules\ripple_basics\utility\ripple_InstanceCounter.cpp">
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\LoadManager.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\main.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
     </ClCompile>
@@ -651,22 +651,7 @@
     <ClCompile Include="src\cpp\ripple\LedgerTiming.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\NicknameState.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Offer.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\OrderBookDB.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Pathfinder.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\RippleCalc.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\RippleState.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_data\crypto\ripple_CKeyDeterministic.cpp">
@@ -732,9 +717,6 @@
     <ClCompile Include="modules\ripple_data\protocol\ripple_TER.cpp">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="modules\ripple_data\protocol\ripple_TransactionFormat.cpp">
-      <Filter>1. Modules\ripple_data\protocol</Filter>
-    </ClCompile>
     <ClCompile Include="modules\ripple_data\protocol\ripple_STAmount.cpp">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClCompile>
@@ -797,12 +779,6 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_AcceptedLedger.cpp">
       <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_PathRequest.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_Application.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_data\utility\ripple_JSONCache.cpp">
       <Filter>1. Modules\ripple_data\utility</Filter>
@@ -875,6 +851,42 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_LedgerConsensus.cpp">
       <Filter>1. Modules\ripple_main\refactored\consensus</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_Offer.cpp">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_NicknameState.cpp">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_LoadManager.cpp">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_Application.cpp">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_PathRequest.cpp">
+      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_Pathfinder.cpp">
+      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_RippleState.cpp">
+      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_RippleLineCache.cpp">
+      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_PathState.cpp">
+      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_RippleCalc.cpp">
+      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_data\protocol\ripple_TxFormat.cpp">
+      <Filter>1. Modules\ripple_data\protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_data\protocol\ripple_TxFormats.cpp">
+      <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1193,9 +1205,6 @@
     <ClInclude Include="src\cpp\ripple\Contract.h">
       <Filter>1. Modules\ripple_main\_unfactored\contracts</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\HashPrefixes.h">
-      <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\ParameterTable.h">
       <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
     </ClInclude>
@@ -1349,9 +1358,6 @@
     <ClInclude Include="modules\ripple_basics\utility\ripple_InstanceCounter.h">
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\LoadManager.h">
-      <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\Version.h">
       <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
     </ClInclude>
@@ -1415,22 +1421,7 @@
     <ClInclude Include="src\cpp\ripple\LedgerTiming.h">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\NicknameState.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Offer.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\OrderBookDB.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Pathfinder.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\RippleCalc.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\RippleState.h">
       <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\SerializedValidation.h">
@@ -1499,9 +1490,6 @@
     <ClInclude Include="modules\ripple_data\protocol\ripple_TER.h">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="modules\ripple_data\protocol\ripple_TransactionFormat.h">
-      <Filter>1. Modules\ripple_data\protocol</Filter>
-    </ClInclude>
     <ClInclude Include="modules\ripple_data\protocol\ripple_RippleSystem.h">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClInclude>
@@ -1544,9 +1532,6 @@
     <ClInclude Include="modules\ripple_basics\types\ripple_BasicTypes.h">
       <Filter>1. Modules\ripple_basics\types</Filter>
     </ClInclude>
-    <ClInclude Include="modules\ripple_data\protocol\ripple_ProtocolTypes.h">
-      <Filter>1. Modules\ripple_data\protocol</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_LedgerAcquire.h">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
@@ -1567,12 +1552,6 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_AcceptedLedger.h">
       <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_PathRequest.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_IApplication.h">
-      <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_data\utility\ripple_UptimeTimerAdapter.h">
       <Filter>1. Modules\ripple_data\utility</Filter>
@@ -1630,6 +1609,51 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_LedgerConsensus.h">
       <Filter>1. Modules\ripple_main\refactored\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_Offer.h">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_NicknameState.h">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_LoadManager.h">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_IApplication.h">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_PathRequest.h">
+      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_Pathfinder.h">
+      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_RippleState.h">
+      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_RippleLineCache.h">
+      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_PathState.h">
+      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_RippleCalc.h">
+      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\protocol\ripple_HashPrefix.h">
+      <Filter>1. Modules\ripple_data\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\protocol\ripple_TxFormat.h">
+      <Filter>1. Modules\ripple_data\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\protocol\ripple_Protocol.h">
+      <Filter>1. Modules\ripple_data\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\protocol\ripple_TxFlags.h">
+      <Filter>1. Modules\ripple_data\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_data\protocol\ripple_TxFormats.h">
+      <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

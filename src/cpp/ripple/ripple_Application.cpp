@@ -1,7 +1,6 @@
 
-
+// VFALCO TODO Wrap this up in something neater. Replace NULL with nullptr
 IApplication* theApp = NULL;
-
 
 class Application;
 

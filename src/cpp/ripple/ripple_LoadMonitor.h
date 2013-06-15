@@ -3,6 +3,8 @@
 
 // Monitors load levels and response times
 
+// VFALCO TODO Rename this. Having both LoadManager and LoadMonitor is confusing.
+//
 class LoadMonitor
 {
 public:

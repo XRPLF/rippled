@@ -3,7 +3,6 @@
 
 #include "HTTPRequest.h"
 #include "RPCHandler.h"
-#include "LoadManager.h"
 
 class RPCServer : public boost::enable_shared_from_this<RPCServer>
 {

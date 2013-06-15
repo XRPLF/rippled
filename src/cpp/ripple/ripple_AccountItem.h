@@ -35,8 +35,10 @@ public:
 
     virtual AccountItem::pointer makeItem (const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry) = 0;
 
+    // VFALCO TODO Make this const and change derived classes
     virtual LedgerEntryType getType () = 0;
 
+    // VFALCO TODO Document the int parameter
     virtual Json::Value getJson (int) = 0;
 
     SerializedLedgerEntry::pointer getSLE ()

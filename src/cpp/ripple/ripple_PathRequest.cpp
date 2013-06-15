@@ -95,7 +95,7 @@ Json::Value PathRequest::doCreate (Ledger::ref lrLedger, const Json::Value& valu
 
             if (mValid)
             {
-                RLCache::pointer cache = boost::make_shared<RLCache> (lrLedger);
+                RippleLineCache::pointer cache = boost::make_shared<RippleLineCache> (lrLedger);
                 doUpdate (cache, true);
             }
         }
@@ -220,7 +220,7 @@ Json::Value PathRequest::doStatus (const Json::Value&)
     return jvStatus;
 }
 
-bool PathRequest::doUpdate (RLCache::ref cache, bool fast)
+bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 {
     boost::recursive_mutex::scoped_lock sl (mLock);
     jvStatus = Json::objectValue;
@@ -319,7 +319,7 @@ void PathRequest::updateAll (Ledger::ref ledger, bool newOnly)
     if (requests.empty ())
         return;
 
-    RLCache::pointer cache = boost::make_shared<RLCache> (ledger);
+    RippleLineCache::pointer cache = boost::make_shared<RippleLineCache> (ledger);
 
     BOOST_FOREACH (wref wRequest, requests)
     {

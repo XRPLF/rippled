@@ -1,4 +1,27 @@
 --------------------------------------------------------------------------------
+TODO
+--------------------------------------------------------------------------------
+
+- Document in order:
+    SerializedType
+    STObject
+    SerializedLedgerEntry
+
+- Replace uint160, uint256 in argument lists, template parameter lists, and
+  data members with tyepdefs from ripple_ProtocolTypes.h
+
+--------------------------------------------------------------------------------
+
+LoadEvent
+
+    Is referenced with both a shared pointer and an auto pointer.
+
+JobQueue
+
+    getLoadEvent and getLoadEventAP differ only in the style of pointer
+    container which is returned. Unnecessary complexity.
+
+--------------------------------------------------------------------------------
 
 Naming
 
@@ -24,7 +47,7 @@ Verbose names
 
 Ledger "Skip List"
 
-  Is not really a skip list
+  Is not really a skip list data structure
 
 --------------------------------------------------------------------------------
 
@@ -42,10 +65,29 @@ Interfaces
     would be more clear:
         bool write (OutputStream& stream);
 
-
+--------------------------------------------------------------------------------
 
 Implementation
 
   LoadManager
     
     What is going on in the destructor
+
+--------------------------------------------------------------------------------
+
+boost
+
+    Unclear from the class declaration what style of shared object management
+    is used. Prefer to derive from a ReferenceCountedObject class so that the
+    behavior is explicit. Furthermore the use of intrusive containers is
+    preferred over the alternative.
+
+    make_shared <> () is awkward.
+
+boost::recursive_mutex
+
+    Recursive mutexes should never be necessary.
+    They require the "mutable" keyword for const members to acquire the lock (yuck)
+
+    Replace recursive_mutex with juce::Mutex to remove boost dependency
+

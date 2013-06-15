@@ -44,7 +44,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, uint3
         if (type == 0)
         {
             // transaction
-            mItem = boost::make_shared<SHAMapItem> (s.getPrefixHash (sHP_TransactionID), s.peekData ());
+            mItem = boost::make_shared<SHAMapItem> (s.getPrefixHash (HashPrefix::transactionID), s.peekData ());
             mType = tnTRANSACTION_NM;
         }
         else if (type == 1)
@@ -131,12 +131,12 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, uint3
         prefix |= rawNode[3];
         Serializer s (rawNode.begin () + 4, rawNode.end ());
 
-        if (prefix == sHP_TransactionID)
+        if (prefix == HashPrefix::transactionID)
         {
             mItem = boost::make_shared<SHAMapItem> (Serializer::getSHA512Half (rawNode), s.peekData ());
             mType = tnTRANSACTION_NM;
         }
-        else if (prefix == sHP_LeafNode)
+        else if (prefix == HashPrefix::leafNode)
         {
             if (s.getLength () < 32)
                 throw std::runtime_error ("short PLN node");
@@ -154,7 +154,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, uint3
             mItem = boost::make_shared<SHAMapItem> (u, s.peekData ());
             mType = tnACCOUNT_STATE;
         }
-        else if (prefix == sHP_InnerNode)
+        else if (prefix == HashPrefix::innerNode)
         {
             if (s.getLength () != 512)
                 throw std::runtime_error ("invalid PIN node");
@@ -169,7 +169,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, uint3
 
             mType = tnINNER;
         }
-        else if (prefix == sHP_TransactionNode)
+        else if (prefix == HashPrefix::txNode)
         {
             // transaction with metadata
             if (s.getLength () < 32)
@@ -214,10 +214,10 @@ bool SHAMapTreeNode::updateHash ()
     {
         if (mIsBranch != 0)
         {
-            nh = Serializer::getPrefixHash (sHP_InnerNode, reinterpret_cast<unsigned char*> (mHashes), sizeof (mHashes));
+            nh = Serializer::getPrefixHash (HashPrefix::innerNode, reinterpret_cast<unsigned char*> (mHashes), sizeof (mHashes));
 #ifdef PARANOID
             Serializer s;
-            s.add32 (sHP_InnerNode);
+            s.add32 (HashPrefix::innerNode);
 
             for (int i = 0; i < 16; ++i)
                 s.add256 (mHashes[i]);
@@ -230,12 +230,12 @@ bool SHAMapTreeNode::updateHash ()
     }
     else if (mType == tnTRANSACTION_NM)
     {
-        nh = Serializer::getPrefixHash (sHP_TransactionID, mItem->peekData ());
+        nh = Serializer::getPrefixHash (HashPrefix::transactionID, mItem->peekData ());
     }
     else if (mType == tnACCOUNT_STATE)
     {
         Serializer s (mItem->peekSerializer ().getDataLength () + (256 + 32) / 8);
-        s.add32 (sHP_LeafNode);
+        s.add32 (HashPrefix::leafNode);
         s.addRaw (mItem->peekData ());
         s.add256 (mItem->getTag ());
         nh = s.getSHA512Half ();
@@ -243,7 +243,7 @@ bool SHAMapTreeNode::updateHash ()
     else if (mType == tnTRANSACTION_MD)
     {
         Serializer s (mItem->peekSerializer ().getDataLength () + (256 + 32) / 8);
-        s.add32 (sHP_TransactionNode);
+        s.add32 (HashPrefix::txNode);
         s.addRaw (mItem->peekData ());
         s.add256 (mItem->getTag ());
         nh = s.getSHA512Half ();
@@ -275,7 +275,7 @@ void SHAMapTreeNode::addRaw (Serializer& s, SHANodeFormat format)
 
         if (format == snfPREFIX)
         {
-            s.add32 (sHP_InnerNode);
+            s.add32 (HashPrefix::innerNode);
 
             for (int i = 0; i < 16; ++i)
                 s.add256 (mHashes[i]);
@@ -307,7 +307,7 @@ void SHAMapTreeNode::addRaw (Serializer& s, SHANodeFormat format)
     {
         if (format == snfPREFIX)
         {
-            s.add32 (sHP_LeafNode);
+            s.add32 (HashPrefix::leafNode);
             s.addRaw (mItem->peekData ());
             s.add256 (mItem->getTag ());
         }
@@ -322,7 +322,7 @@ void SHAMapTreeNode::addRaw (Serializer& s, SHANodeFormat format)
     {
         if (format == snfPREFIX)
         {
-            s.add32 (sHP_TransactionID);
+            s.add32 (HashPrefix::transactionID);
             s.addRaw (mItem->peekData ());
         }
         else
@@ -335,7 +335,7 @@ void SHAMapTreeNode::addRaw (Serializer& s, SHANodeFormat format)
     {
         if (format == snfPREFIX)
         {
-            s.add32 (sHP_TransactionNode);
+            s.add32 (HashPrefix::txNode);
             s.addRaw (mItem->peekData ());
             s.add256 (mItem->getTag ());
         }
