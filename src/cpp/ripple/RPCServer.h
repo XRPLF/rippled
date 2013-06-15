@@ -16,6 +16,7 @@ private:
     NetworkOPs* mNetOps;
 
     AutoSocket mSocket;
+    boost::asio::io_service::strand mStrand;
 
     boost::asio::streambuf mLineBuffer;
     Blob mQueryVec;

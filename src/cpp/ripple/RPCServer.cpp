@@ -19,7 +19,7 @@
 SETUP_LOG (RPCServer)
 
 RPCServer::RPCServer (boost::asio::io_service& io_service, boost::asio::ssl::context& context, NetworkOPs* nopNetwork)
-    : mNetOps (nopNetwork), mSocket (io_service, context)
+    : mNetOps (nopNetwork), mSocket (io_service, context), mStrand(io_service)
 {
     mRole = RPCHandler::GUEST;
 }
@@ -28,7 +28,7 @@ void RPCServer::connected ()
 {
     //std::cerr << "RPC request" << std::endl;
     boost::asio::async_read_until (mSocket, mLineBuffer, "\r\n",
-                                   boost::bind (&RPCServer::handle_read_line, shared_from_this (), boost::asio::placeholders::error));
+                                   mStrand.wrap (boost::bind (&RPCServer::handle_read_line, shared_from_this (), boost::asio::placeholders::error)));
 }
 
 void RPCServer::handle_read_req (const boost::system::error_code& e)
@@ -49,7 +49,7 @@ void RPCServer::handle_read_req (const boost::system::error_code& e)
         mReplyStr = handleRequest (req);
 
     boost::asio::async_write (mSocket, boost::asio::buffer (mReplyStr),
-                              boost::bind (&RPCServer::handle_write, shared_from_this (), boost::asio::placeholders::error));
+                              mStrand.wrap (boost::bind (&RPCServer::handle_write, shared_from_this (), boost::asio::placeholders::error)));
 }
 
 static void dummy_handler ()
@@ -74,8 +74,8 @@ void RPCServer::handle_read_line (const boost::system::error_code& e)
     else if (action == haREAD_LINE)
     {
         boost::asio::async_read_until (mSocket, mLineBuffer, "\r\n",
-                                       boost::bind (&RPCServer::handle_read_line, shared_from_this (),
-                                               boost::asio::placeholders::error));
+                                       mStrand.wrap (boost::bind (&RPCServer::handle_read_line, shared_from_this (),
+                                               boost::asio::placeholders::error)));
     }
     else if (action == haREAD_RAW)
     {
@@ -94,7 +94,7 @@ void RPCServer::handle_read_line (const boost::system::error_code& e)
         {
             mQueryVec.resize (rLen - alreadyHave);
             boost::asio::async_read (mSocket, boost::asio::buffer (mQueryVec),
-                                     boost::bind (&RPCServer::handle_read_req, shared_from_this (), boost::asio::placeholders::error));
+                                     mStrand.wrap (boost::bind (&RPCServer::handle_read_req, shared_from_this (), boost::asio::placeholders::error)));
             WriteLog (lsTRACE, RPCServer) << "Waiting for completed request: " << rLen;
         }
         else
@@ -199,7 +199,7 @@ void RPCServer::handle_write (const boost::system::error_code& e)
         else
         {
             boost::asio::async_read_until (mSocket, mLineBuffer, "\r\n",
-                                           boost::bind (&RPCServer::handle_read_line, shared_from_this (), boost::asio::placeholders::error));
+                                           mStrand.wrap (boost::bind (&RPCServer::handle_read_line, shared_from_this (), boost::asio::placeholders::error)));
         }
     }
 
