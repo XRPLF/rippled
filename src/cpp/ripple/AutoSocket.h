@@ -107,8 +107,16 @@ public:
 			mSocket->async_shutdown(handler);
 		else
 		{
-			lowest_layer().shutdown(plain_socket::shutdown_both);
-			mSocket->get_io_service().post(boost::bind(handler, error_code()));
+			error_code ec;
+			try
+			{
+				lowest_layer().shutdown(plain_socket::shutdown_both);
+			}
+			catch (boost::system::system_error& e)
+			{
+				ec = e.code();
+			}
+			mSocket->get_io_service().post(boost::bind(handler, ec));
 		}
 	}
 
