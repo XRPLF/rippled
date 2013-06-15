@@ -1253,6 +1253,12 @@ void PeerImp::recvPropose (const boost::shared_ptr<ripple::TMProposeSet>& packet
     }
 
     bool isTrusted = theApp->getUNL ().nodeInUNL (signerPublic);
+    if (!isTrusted && theApp->getFeeTrack ().isLoaded ())
+    {
+        WriteLog (lsDEBUG, Peer) << "Dropping untrusted proposal due to load";
+        return;
+    }
+
     WriteLog (lsTRACE, Peer) << "Received " << (isTrusted ? "trusted" : "UNtrusted") << " proposal from " << mPeerId;
 
     uint256 consensusLCL = theApp->getOPs ().getConsensusLCL ();
@@ -1357,9 +1363,12 @@ void PeerImp::recvValidation (const boost::shared_ptr<ripple::TMValidation>& pac
         }
 
         bool isTrusted = theApp->getUNL ().nodeInUNL (val->getSignerPublic ());
-        theApp->getJobQueue ().addJob (isTrusted ? jtVALIDATION_t : jtVALIDATION_ut, "recvValidation->checkValidation",
+        if (isTrusted || !theApp->getFeeTrack ().isLoaded ())
+	        theApp->getJobQueue ().addJob (isTrusted ? jtVALIDATION_t : jtVALIDATION_ut, "recvValidation->checkValidation",
                                        BIND_TYPE (&checkValidation, P_1, val, signingHash, isTrusted, mCluster, packet,
                                                boost::weak_ptr<Peer> (shared_from_this ())));
+	else
+	    WriteLog(lsDEBUG, Peer) << "Dropping untrusted validation due to load";
     }
 
 #ifndef TRUST_NETWORK
