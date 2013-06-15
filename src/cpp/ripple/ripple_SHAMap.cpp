@@ -769,8 +769,10 @@ bool SHAMap::fetchRoot(uint256 const& hash, SHAMapSyncFilter* filter)
 		else
 			WriteLog (lsTRACE, SHAMap) << "Fetch root SHAMap node " << hash;
 	}
-	root = fetchNodeExternalNT(SHAMapNode(), hash);
-	if (!root)
+	Ledger::pointer newRoot = fetchNodeExternalNT(SHAMapNode(), hash);
+	if (newRoot)
+		root = newRoot;
+	else
 	{
 		Blob nodeData;
 		if (!filter || !filter->haveNode(SHAMapNode(), hash, nodeData))
