@@ -9,7 +9,7 @@ const char* TxnDBInit[] =
     "PRAGMA journal_size_limit=1582080;",
 
 #if (ULONG_MAX > UINT_MAX) && !defined (NO_SQLITE_MMAP)
-    "PRAGMA mmap_size=4294967296;",
+	"PRAGMA mmap_size=17179869184;",
 #endif
 
     "BEGIN TRANSACTION;",
@@ -284,7 +284,7 @@ const char* HashNodeDBInit[] =
     "PRAGMA journal_size_limit=1582080;",
 
 #if (ULONG_MAX > UINT_MAX) && !defined (NO_SQLITE_MMAP)
-    "PRAGMA mmap_size=4294967296;",
+	"PRAGMA mmap_size=171798691840;",
 #endif
 
     "BEGIN TRANSACTION;",
