@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 LoadEvent::LoadEvent (LoadMonitor& monitor, const std::string& name, bool shouldStart)
     : mMonitor (monitor)

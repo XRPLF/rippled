@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 // VFALCO TODO make this an inline function
 #define ADDRESS_SHARED(p)   strHex(uint64( ((char*) (p).get()) - ((char*) 0)))

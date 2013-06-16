@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 // VFALCO NOTE this looks like some facility for giving websocket
 //         a way to produce logging output.

@@ -1,5 +1,8 @@
-
 //------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 JSONCache::Key::Key (int op, uint256 const& ledger, uint160 const& object, int lastUse)
     : mLedger (ledger)

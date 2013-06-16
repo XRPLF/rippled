@@ -1,5 +1,11 @@
-#ifndef INTEGERTYPES_H
-#define INTEGERTYPES_H
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
+#ifndef RIPPLE_INTEGERTYPES_H
+#define RIPPLE_INTEGERTYPES_H
 
 // VFALCO TODO determine if Borland C is supported
 #if defined (_MSC_VER) /*|| defined(__BORLANDC__)*/

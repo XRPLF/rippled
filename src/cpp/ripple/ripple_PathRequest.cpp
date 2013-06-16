@@ -1,3 +1,9 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 SETUP_LOG (PathRequest)
 
 // VFALCO TODO Move these globals into a PathRequests collection inteface

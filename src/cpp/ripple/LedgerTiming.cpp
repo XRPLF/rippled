@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 // VFALCO Should rename ContinuousLedgerTiming to LedgerTiming
 struct LedgerTimingLog;

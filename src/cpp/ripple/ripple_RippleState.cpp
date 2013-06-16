@@ -1,4 +1,8 @@
-
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 AccountItem::pointer RippleState::makeItem (const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry)
 {

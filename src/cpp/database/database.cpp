@@ -1,7 +1,12 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 #include "database.h"
 #include <stdlib.h>
 #include <string.h>
-
 
 Database::Database (const char* host, const char* user, const char* pass) : mNumCol (0)
 {

@@ -1,3 +1,9 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 // This code is used to compare another node's transaction tree
 // to our own. It returns a map containing all items that are different
 // between two SHA maps. It is optimized not to descend down tree

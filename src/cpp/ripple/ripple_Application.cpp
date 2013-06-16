@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 // VFALCO TODO Wrap this up in something neater. Replace NULL with nullptr
 IApplication* theApp = NULL;

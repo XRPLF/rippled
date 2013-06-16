@@ -1,6 +1,13 @@
-#ifndef __PEER__
-#define __PEER__
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
+#ifndef RIPPLE_PEER_H
+#define RIPPLE_PEER_H
+
+// VFALCO TODO Couldn't this be a struct?
 typedef std::pair <std::string, int> ipPort;
 
 class Peer : public boost::enable_shared_from_this <Peer>

@@ -1,5 +1,11 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 #ifndef CPPTL_JSON_H_INCLUDED
-# define CPPTL_JSON_H_INCLUDED
+#define CPPTL_JSON_H_INCLUDED
 
 /** \brief JSON (JavaScript Object Notation).
  */

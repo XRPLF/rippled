@@ -1,5 +1,11 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 #ifndef JSON_AUTOLINK_H_INCLUDED
-# define JSON_AUTOLINK_H_INCLUDED
+#define JSON_AUTOLINK_H_INCLUDED
 
 // VFALCO TODO remove this file
 #error This file is deprecated!

@@ -1,7 +1,13 @@
-#ifndef JSONCPP_BATCHALLOCATOR_H_INCLUDED
-# define JSONCPP_BATCHALLOCATOR_H_INCLUDED
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
-# ifndef JSONCPP_DOC_EXCLUDE_IMPLEMENTATION
+#ifndef JSONCPP_BATCHALLOCATOR_H_INCLUDED
+#define JSONCPP_BATCHALLOCATOR_H_INCLUDED
+
+#ifndef JSONCPP_DOC_EXCLUDE_IMPLEMENTATION
 
 namespace Json
 {

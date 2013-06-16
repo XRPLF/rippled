@@ -1647,7 +1647,7 @@
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_Version.h">
-      <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
+      <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

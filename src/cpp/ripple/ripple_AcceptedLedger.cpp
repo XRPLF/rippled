@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 TaggedCache <uint256, AcceptedLedger, UptimeTimerAdapter> AcceptedLedger::s_cache ("AcceptedLedger", 4, 60);
 

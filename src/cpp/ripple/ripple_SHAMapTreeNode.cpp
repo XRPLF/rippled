@@ -1,3 +1,9 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 DECLARE_INSTANCE (SHAMapTreeNode);
 
 SHAMapTreeNode::SHAMapTreeNode (uint32 seq, const SHAMapNode& nodeID) : SHAMapNode (nodeID), mHash (0),
