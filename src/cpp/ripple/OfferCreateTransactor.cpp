@@ -490,13 +490,13 @@ TER OfferCreateTransactor::doApply ()
 
         if (sleCancel)
         {
-            WriteLog (lsWARNING, OfferCancelTransactor) << "OfferCreate: uCancelSequence=" << uCancelSequence;
+            WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: uCancelSequence=" << uCancelSequence;
 
             terResult   = mEngine->getNodes ().offerDelete (sleCancel, uCancelIndex, mTxnAccountID);
         }
         else
         {
-            WriteLog (lsWARNING, OfferCancelTransactor) << "OfferCreate: offer not found: "
+            WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: offer not found: "
                     << RippleAddress::createHumanAccountID (mTxnAccountID)
                     << " : " << uCancelSequence
                     << " : " << uCancelIndex.ToString ();
