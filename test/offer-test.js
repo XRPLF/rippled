@@ -73,6 +73,100 @@ buster.testCase("Offer tests", {
         });
     },
 
+  "offer create then offer create with cancel in one ledger" :
+    function (done) {
+      var self = this;
+      var final_create;
+      var sequence_first;
+      var sequence_second;
+      var dones = 0;
+
+      async.waterfall([
+          function (callback) {
+            self.remote.transaction()
+              .offer_create("root", "500", "100/USD/root")
+              .on('proposed', function (m) {
+                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+                  callback(m.result !== 'tesSUCCESS', m);
+                })
+              .on('final', function (m) {
+                  // console.log("FINAL: offer_create: %s", JSON.stringify(m));
+
+                  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
+                  buster.assert(final_create);
+
+                  if (3 === ++dones) 
+                    done();
+                })
+              .submit();
+          },
+          function (m, callback) {
+            sequence_first  = m.tx_json.Sequence;
+
+            // Test canceling existant offer.
+            self.remote.transaction()
+              .offer_create("root", "300", "100/USD/root", undefined, sequence_first)
+              .on('proposed', function (m) {
+                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+                  callback(m.result !== 'tesSUCCESS', m);
+                })
+              .on('final', function (m) {
+                  // console.log("FINAL: offer_create: %s", JSON.stringify(m));
+
+                  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
+                  buster.assert(final_create);
+
+                  if (3 === ++dones) 
+                    done();
+                })
+              .submit();
+          },
+          function (m, callback) {
+            sequence_second  = m.tx_json.Sequence;
+            self.what = "Verify offer canceled.";
+
+            testutils.verify_offer_not_found(self.remote, "root", sequence_first, callback);
+          },
+          function (callback) {
+            self.what = "Verify offer replaced.";
+
+            testutils.verify_offer(self.remote, "root", sequence_second, "300", "100/USD/root", callback);
+          },
+          function (callback) {
+            // Test canceling non-existant offer.
+            self.remote.transaction()
+              .offer_create("root", "400", "200/USD/root", undefined, sequence_first)
+              .on('proposed', function (m) {
+                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+                  callback(m.result !== 'tesSUCCESS', m);
+                })
+              .on('final', function (m) {
+                  // console.log("FINAL: offer_create: %s", JSON.stringify(m));
+
+                  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
+                  buster.assert(final_create);
+
+                  if (3 === ++dones) 
+                    done();
+                })
+              .submit();
+          },
+          function (callback) {
+            self.remote
+              .once('ledger_closed', function (message) {
+                  // console.log("LEDGER_CLOSED: %d: %s", ledger_index, ledger_hash);
+                  final_create  = message;
+                })
+              .ledger_accept();
+          }
+        ], function (error) {
+          // console.log("result: error=%s", error);
+          buster.refute(error);
+
+          done();
+        });
+    },
+
   "Offer create then self crossing offer, no trust lines with self" :
     function (done) {
       var self = this;
