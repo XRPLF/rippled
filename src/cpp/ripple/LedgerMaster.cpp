@@ -277,13 +277,13 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
         return true;
     }
 
-    if (theApp->getMasterLedgerAcquire ().isFailure (ledgerHash))
+    if (theApp->getInboundLedgers ().isFailure (ledgerHash))
     {
         WriteLog (lsTRACE, LedgerMaster) << "Already failed to acquire " << ledgerSeq;
         return false;
     }
 
-    mMissingLedger = theApp->getMasterLedgerAcquire ().findCreate (ledgerHash, ledgerSeq);
+    mMissingLedger = theApp->getInboundLedgers ().findCreate (ledgerHash, ledgerSeq);
 
     if (mMissingLedger->isComplete ())
     {
@@ -311,7 +311,7 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
 
     int fetchMax = theConfig.getSize (siLedgerFetch);
     int timeoutCount;
-    int fetchCount = theApp->getMasterLedgerAcquire ().getFetchCount (timeoutCount);
+    int fetchCount = theApp->getInboundLedgers ().getFetchCount (timeoutCount);
 
     if ((fetchCount < fetchMax) && theApp->getOPs ().isFull ())
     {
@@ -326,9 +326,9 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
             BOOST_REVERSE_FOREACH (const u_pair & it, vec)
             {
                 if ((fetchCount < fetchMax) && (it.first < ledgerSeq) &&
-                        !mCompleteLedgers.hasValue (it.first) && !theApp->getMasterLedgerAcquire ().find (it.second))
+                        !mCompleteLedgers.hasValue (it.first) && !theApp->getInboundLedgers ().find (it.second))
                 {
-                    LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire ().findCreate (it.second, it.first);
+                    InboundLedger::pointer acq = theApp->getInboundLedgers ().findCreate (it.second, it.first);
 
                     if (acq && acq->isComplete ())
                     {
@@ -384,7 +384,7 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
     return true;
 }
 
-void LedgerMaster::missingAcquireComplete (LedgerAcquire::pointer acq)
+void LedgerMaster::missingAcquireComplete (InboundLedger::pointer acq)
 {
     boost::recursive_mutex::scoped_lock ml (mLock);
 
@@ -418,6 +418,12 @@ bool LedgerMaster::shouldAcquire (uint32 currentLedger, uint32 ledgerHistory, ui
 
 void LedgerMaster::resumeAcquiring ()
 {
+    // VFALCO NOTE These returns from the middle are troubling. You might think
+    //             that calling a function called "resumeAcquiring" would
+    //             actually resume acquiring. But it doesn't always resume acquiring,
+    //             based on a myriad of conditions which short circuit the function
+    //             in ways that the caller cannot expect or predict.
+    //
     if (!theApp->getOPs ().isFull ())
         return;
 
@@ -525,7 +531,7 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger)
     if (mMissingLedger && mMissingLedger->isDone ())
     {
         if (mMissingLedger->isFailed ())
-            theApp->getMasterLedgerAcquire ().dropLedger (mMissingLedger->getHash ());
+            theApp->getInboundLedgers ().dropLedger (mMissingLedger->getHash ());
 
         mMissingLedger.reset ();
     }
@@ -628,7 +634,7 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
 
     if (!ledger)
     {
-        theApp->getMasterLedgerAcquire ().findCreate (hash, seq);
+        theApp->getInboundLedgers ().findCreate (hash, seq);
         return;
     }
 
@@ -689,13 +695,13 @@ void LedgerMaster::tryPublish ()
             }
             else
             {
-                if (theApp->getMasterLedgerAcquire ().isFailure (hash))
+                if (theApp->getInboundLedgers ().isFailure (hash))
                 {
                     WriteLog (lsWARNING, LedgerMaster) << "Unable to acquire a recent validated ledger";
                 }
                 else
                 {
-                    LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire ().findCreate (hash, seq);
+                    InboundLedger::pointer acq = theApp->getInboundLedgers ().findCreate (hash, seq);
 
                     if (!acq->isDone ())
                     {

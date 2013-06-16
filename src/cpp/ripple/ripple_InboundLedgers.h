@@ -4,37 +4,53 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGERACQUIREMASTER_H
-#define RIPPLE_LEDGERACQUIREMASTER_H
+#ifndef RIPPLE_INBOUNDLEDGERS_H
+#define RIPPLE_INBOUNDLEDGERS_H
 
 /** Manages the lifetime of inbound ledgers.
+
+    @see InboundLedger
 */
 // VFALCO TODO Rename to InboundLedgers
 // VFALCO TODO Create abstract interface
-class LedgerAcquireMaster
+class InboundLedgers
 {
 public:
     // How long before we try again to acquire the same ledger
     static const int kReacquireIntervalSeconds = 600;
 
-    LedgerAcquireMaster ()
+    InboundLedgers ()
         : mRecentFailures ("LedgerAcquireRecentFailures", 0, kReacquireIntervalSeconds)
     {
     }
 
-    LedgerAcquire::pointer findCreate (uint256 const& hash, uint32 seq);
-    LedgerAcquire::pointer find (uint256 const& hash);
-    bool hasLedger (uint256 const& ledgerHash);
-    void dropLedger (uint256 const& ledgerHash);
+    // VFALCO TODO Should this be called findOrAdd ?
+    //
+    InboundLedger::pointer findCreate (uint256 const& hash, uint32 seq);
 
-    bool awaitLedgerData (uint256 const& ledgerHash);
-    void gotLedgerData (Job&, uint256 hash, boost::shared_ptr<ripple::TMLedgerData> packet, boost::weak_ptr<Peer> peer);
+    InboundLedger::pointer find (uint256 const& hash);
+
+    bool hasLedger (LedgerHash const& ledgerHash);
+
+    void dropLedger (LedgerHash const& ledgerHash);
+
+    bool awaitLedgerData (LedgerHash const& ledgerHash);
+
+    // VFALCO TODO Why is hash passed by value?
+    // VFALCO TODO Remove the dependency on the Peer object.
+    //
+    void gotLedgerData (Job&,
+                        LedgerHash hash,
+                        boost::shared_ptr <ripple::TMLedgerData> packet,
+                        boost::weak_ptr<Peer> peer);
 
     int getFetchCount (int& timeoutCount);
+
     void logFailure (uint256 const& h)
     {
         mRecentFailures.add (h);
     }
+
     bool isFailure (uint256 const& h)
     {
         return mRecentFailures.isPresent (h, false);
@@ -45,10 +61,8 @@ public:
 
 private:
     boost::mutex mLock;
-    std::map <uint256, LedgerAcquire::pointer> mLedgers;
+    std::map <uint256, InboundLedger::pointer> mLedgers;
     KeyCache <uint256, UptimeTimerAdapter> mRecentFailures;
 };
 
 #endif
-
-// vim:ts=4

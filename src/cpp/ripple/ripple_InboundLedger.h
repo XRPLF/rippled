@@ -4,24 +4,24 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGERACQUIRE_H
-#define RIPPLE_LEDGERACQUIRE_H
+#ifndef RIPPLE_INBOUNDLEDGER_H
+#define RIPPLE_INBOUNDLEDGER_H
 
-DEFINE_INSTANCE (LedgerAcquire);
+DEFINE_INSTANCE (InboundLedger);
 
 // VFALCO TODO Rename to InboundLedger
 // A ledger we are trying to acquire
-class LedgerAcquire : private IS_INSTANCE (LedgerAcquire)
+class InboundLedger : private IS_INSTANCE (InboundLedger)
     , public PeerSet
-    , public boost::enable_shared_from_this <LedgerAcquire>
+    , public boost::enable_shared_from_this <InboundLedger>
 {
 public:
-    typedef boost::shared_ptr <LedgerAcquire> pointer;
+    typedef boost::shared_ptr <InboundLedger> pointer;
 
 public:
-    LedgerAcquire (uint256 const& hash, uint32 seq);
+    InboundLedger (uint256 const& hash, uint32 seq);
 
-    virtual ~LedgerAcquire ()
+    virtual ~InboundLedger ()
     {
         ;
     }
@@ -63,7 +63,7 @@ public:
     }
 
     // VFALCO TODO Make thise the Listener / Observer pattern
-    bool addOnComplete (FUNCTION_TYPE<void (LedgerAcquire::pointer)>);
+    bool addOnComplete (FUNCTION_TYPE<void (InboundLedger::pointer)>);
 
     bool takeBase (const std::string& data);
     bool takeTxNode (const std::list<SHAMapNode>& IDs, const std::list<Blob >& data,
@@ -117,7 +117,7 @@ private:
 
     std::vector <uint64> mRecentPeers;
 
-    std::vector <FUNCTION_TYPE <void (LedgerAcquire::pointer)> > mOnComplete;
+    std::vector <FUNCTION_TYPE <void (InboundLedger::pointer)> > mOnComplete;
 };
 
 #endif

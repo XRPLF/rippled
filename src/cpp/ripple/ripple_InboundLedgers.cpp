@@ -4,11 +4,11 @@
 */
 //==============================================================================
 
-LedgerAcquire::pointer LedgerAcquireMaster::findCreate (uint256 const& hash, uint32 seq)
+InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 seq)
 {
     assert (hash.isNonZero ());
     boost::mutex::scoped_lock sl (mLock);
-    LedgerAcquire::pointer& ptr = mLedgers[hash];
+    InboundLedger::pointer& ptr = mLedgers[hash];
 
     if (ptr)
     {
@@ -16,7 +16,7 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate (uint256 const& hash, uin
         return ptr;
     }
 
-    ptr = boost::make_shared<LedgerAcquire> (hash, seq);
+    ptr = boost::make_shared<InboundLedger> (hash, seq);
 
     if (!ptr->isDone ())
     {
@@ -29,17 +29,17 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate (uint256 const& hash, uin
         ledger->setClosed ();
         ledger->setImmutable ();
         theApp->getLedgerMaster ().storeLedger (ledger);
-        WriteLog (lsDEBUG, LedgerAcquire) << "Acquiring ledger we already have: " << hash;
+        WriteLog (lsDEBUG, InboundLedger) << "Acquiring ledger we already have: " << hash;
     }
 
     return ptr;
 }
 
-LedgerAcquire::pointer LedgerAcquireMaster::find (uint256 const& hash)
+InboundLedger::pointer InboundLedgers::find (uint256 const& hash)
 {
     assert (hash.isNonZero ());
     boost::mutex::scoped_lock sl (mLock);
-    std::map<uint256, LedgerAcquire::pointer>::iterator it = mLedgers.find (hash);
+    std::map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
 
     if (it != mLedgers.end ())
     {
@@ -47,26 +47,26 @@ LedgerAcquire::pointer LedgerAcquireMaster::find (uint256 const& hash)
         return it->second;
     }
 
-    return LedgerAcquire::pointer ();
+    return InboundLedger::pointer ();
 }
 
-bool LedgerAcquireMaster::hasLedger (uint256 const& hash)
+bool InboundLedgers::hasLedger (uint256 const& hash)
 {
     assert (hash.isNonZero ());
     boost::mutex::scoped_lock sl (mLock);
     return mLedgers.find (hash) != mLedgers.end ();
 }
 
-void LedgerAcquireMaster::dropLedger (uint256 const& hash)
+void InboundLedgers::dropLedger (uint256 const& hash)
 {
     assert (hash.isNonZero ());
     boost::mutex::scoped_lock sl (mLock);
     mLedgers.erase (hash);
 }
 
-bool LedgerAcquireMaster::awaitLedgerData (uint256 const& ledgerHash)
+bool InboundLedgers::awaitLedgerData (uint256 const& ledgerHash)
 {
-    LedgerAcquire::pointer ledger = find (ledgerHash);
+    InboundLedger::pointer ledger = find (ledgerHash);
 
     if (!ledger)
         return false;
@@ -75,19 +75,19 @@ bool LedgerAcquireMaster::awaitLedgerData (uint256 const& ledgerHash)
     return true;
 }
 
-void LedgerAcquireMaster::gotLedgerData (Job&, uint256 hash,
+void InboundLedgers::gotLedgerData (Job&, uint256 hash,
         boost::shared_ptr<ripple::TMLedgerData> packet_ptr, boost::weak_ptr<Peer> wPeer)
 {
     ripple::TMLedgerData& packet = *packet_ptr;
     Peer::pointer peer = wPeer.lock ();
 
-    WriteLog (lsTRACE, LedgerAcquire) << "Got data (" << packet.nodes ().size () << ") for acquiring ledger: " << hash;
+    WriteLog (lsTRACE, InboundLedger) << "Got data (" << packet.nodes ().size () << ") for acquiring ledger: " << hash;
 
-    LedgerAcquire::pointer ledger = find (hash);
+    InboundLedger::pointer ledger = find (hash);
 
     if (!ledger)
     {
-        WriteLog (lsTRACE, LedgerAcquire) << "Got data for ledger we're not acquiring";
+        WriteLog (lsTRACE, InboundLedger) << "Got data for ledger we're not acquiring";
 
         if (peer)
             peer->punishPeer (LT_InvalidRequest);
@@ -104,14 +104,14 @@ void LedgerAcquireMaster::gotLedgerData (Job&, uint256 hash,
     {
         if (packet.nodes_size () < 1)
         {
-            WriteLog (lsWARNING, LedgerAcquire) << "Got empty base data";
+            WriteLog (lsWARNING, InboundLedger) << "Got empty base data";
             peer->punishPeer (LT_InvalidRequest);
             return;
         }
 
         if (!ledger->takeBase (packet.nodes (0).nodedata ()))
         {
-            WriteLog (lsWARNING, LedgerAcquire) << "Got invalid base data";
+            WriteLog (lsWARNING, InboundLedger) << "Got invalid base data";
             peer->punishPeer (LT_InvalidRequest);
             return;
         }
@@ -120,12 +120,12 @@ void LedgerAcquireMaster::gotLedgerData (Job&, uint256 hash,
 
         if ((packet.nodes ().size () > 1) && !ledger->takeAsRootNode (strCopy (packet.nodes (1).nodedata ()), san))
         {
-            WriteLog (lsWARNING, LedgerAcquire) << "Included ASbase invalid";
+            WriteLog (lsWARNING, InboundLedger) << "Included ASbase invalid";
         }
 
         if ((packet.nodes ().size () > 2) && !ledger->takeTxRootNode (strCopy (packet.nodes (2).nodedata ()), san))
         {
-            WriteLog (lsWARNING, LedgerAcquire) << "Included TXbase invalid";
+            WriteLog (lsWARNING, InboundLedger) << "Included TXbase invalid";
         }
 
         if (!san.isInvalid ())
@@ -134,7 +134,7 @@ void LedgerAcquireMaster::gotLedgerData (Job&, uint256 hash,
             ledger->trigger (peer);
         }
         else
-            WriteLog (lsDEBUG, LedgerAcquire) << "Peer sends invalid base data";
+            WriteLog (lsDEBUG, InboundLedger) << "Peer sends invalid base data";
 
         return;
     }
@@ -146,7 +146,7 @@ void LedgerAcquireMaster::gotLedgerData (Job&, uint256 hash,
 
         if (packet.nodes ().size () <= 0)
         {
-            WriteLog (lsINFO, LedgerAcquire) << "Got response with no nodes";
+            WriteLog (lsINFO, InboundLedger) << "Got response with no nodes";
             peer->punishPeer (LT_InvalidRequest);
             return;
         }
@@ -157,7 +157,7 @@ void LedgerAcquireMaster::gotLedgerData (Job&, uint256 hash,
 
             if (!node.has_nodeid () || !node.has_nodedata ())
             {
-                WriteLog (lsWARNING, LedgerAcquire) << "Got bad node";
+                WriteLog (lsWARNING, InboundLedger) << "Got bad node";
                 peer->punishPeer (LT_InvalidRequest);
                 return;
             }
@@ -179,23 +179,23 @@ void LedgerAcquireMaster::gotLedgerData (Job&, uint256 hash,
             ledger->trigger (peer);
         }
         else
-            WriteLog (lsDEBUG, LedgerAcquire) << "Peer sends invalid node data";
+            WriteLog (lsDEBUG, InboundLedger) << "Peer sends invalid node data";
 
         return;
     }
 
-    WriteLog (lsWARNING, LedgerAcquire) << "Not sure what ledger data we got";
+    WriteLog (lsWARNING, InboundLedger) << "Not sure what ledger data we got";
     peer->punishPeer (LT_InvalidRequest);
 }
 
-void LedgerAcquireMaster::sweep ()
+void InboundLedgers::sweep ()
 {
     mRecentFailures.sweep ();
 
     int now = UptimeTimer::getInstance ().getElapsedSeconds ();
     boost::mutex::scoped_lock sl (mLock);
 
-    std::map<uint256, LedgerAcquire::pointer>::iterator it = mLedgers.begin ();
+    std::map<uint256, InboundLedger::pointer>::iterator it = mLedgers.begin ();
 
     while (it != mLedgers.end ())
     {
@@ -211,12 +211,12 @@ void LedgerAcquireMaster::sweep ()
     }
 }
 
-int LedgerAcquireMaster::getFetchCount (int& timeoutCount)
+int InboundLedgers::getFetchCount (int& timeoutCount)
 {
     timeoutCount = 0;
     int ret = 0;
     {
-        typedef std::pair<uint256, LedgerAcquire::pointer> u256_acq_pair;
+        typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
         boost::mutex::scoped_lock sl (mLock);
         BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
         {
@@ -230,19 +230,19 @@ int LedgerAcquireMaster::getFetchCount (int& timeoutCount)
     return ret;
 }
 
-void LedgerAcquireMaster::gotFetchPack (Job&)
+void InboundLedgers::gotFetchPack (Job&)
 {
-    std::vector<LedgerAcquire::pointer> acquires;
+    std::vector<InboundLedger::pointer> acquires;
     {
         boost::mutex::scoped_lock sl (mLock);
 
         acquires.reserve (mLedgers.size ());
-        typedef std::pair<uint256, LedgerAcquire::pointer> u256_acq_pair;
+        typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
         BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
         acquires.push_back (it.second);
     }
 
-    BOOST_FOREACH (const LedgerAcquire::pointer & acquire, acquires)
+    BOOST_FOREACH (const InboundLedger::pointer & acquire, acquires)
     {
         acquire->checkLocal ();
     }

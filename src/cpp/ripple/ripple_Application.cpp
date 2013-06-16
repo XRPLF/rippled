@@ -43,9 +43,9 @@ public:
     {
         return mLedgerMaster;
     }
-    LedgerAcquireMaster& getMasterLedgerAcquire ()
+    InboundLedgers& getInboundLedgers ()
     {
-        return mMasterLedgerAcquire;
+        return m_inboundLedgers;
     }
     TransactionMaster& getMasterTransaction ()
     {
@@ -192,7 +192,7 @@ private:
 
     LocalCredentials                  mLocalCredentials;
     LedgerMaster            mLedgerMaster;
-    LedgerAcquireMaster     mMasterLedgerAcquire;
+    InboundLedgers     m_inboundLedgers;
     TransactionMaster       mMasterTransaction;
     NetworkOPs              mNetOps;
     NodeCache               mTempNodeCache;
@@ -215,10 +215,17 @@ private:
     beast::ScopedPointer <IPeers> mPeers;
     // VFALCO End Clean stuff
 
-    DatabaseCon*             mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
+    DatabaseCon* mRpcDB;
+    DatabaseCon* mTxnDB;
+    DatabaseCon* mLedgerDB;
+    DatabaseCon* mWalletDB;
+    DatabaseCon* mNetNodeDB;
+    DatabaseCon* mPathFindDB;
+    DatabaseCon* mHashNodeDB;
 
-    leveldb::DB*             mHashNodeLDB;
-    leveldb::DB*             mEphemeralLDB;
+    // VFALCO TODO Wrap this in an interface
+    leveldb::DB* mHashNodeLDB;
+    leveldb::DB* mEphemeralLDB;
 
     PeerDoor*               mPeerDoor;
     RPCDoor*                mRPCDoor;
@@ -227,7 +234,7 @@ private:
 
     boost::asio::deadline_timer mSweepTimer;
 
-    std::map<std::string, Peer::pointer> mPeerMap;
+    std::map <std::string, Peer::pointer> mPeerMap;
     boost::recursive_mutex  mPeerMapLock;
 
     volatile bool           mShutdown;
@@ -638,7 +645,7 @@ void Application::sweep ()
     mLedgerMaster.sweep ();
     mTempNodeCache.sweep ();
     mValidations->sweep ();
-    getMasterLedgerAcquire ().sweep ();
+    getInboundLedgers ().sweep ();
     mSLECache.sweep ();
     AcceptedLedger::sweep (); // VFALCO NOTE AcceptedLedger is/has a singleton?
     SHAMap::sweep (); // VFALCO NOTE SHAMap is/has a singleton?

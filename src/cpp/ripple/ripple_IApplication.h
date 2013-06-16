@@ -28,7 +28,7 @@ class IValidations;
 
 class HashedObjectStore;
 class JobQueue;
-class LedgerAcquireMaster;
+class InboundLedgers;
 class LedgerMaster;
 class LoadManager;
 class NetworkOPs;
@@ -81,7 +81,7 @@ public:
 
     virtual HashedObjectStore&      getHashedObjectStore () = 0;
     virtual JobQueue&               getJobQueue () = 0;
-    virtual LedgerAcquireMaster&    getMasterLedgerAcquire () = 0;
+    virtual InboundLedgers&    getInboundLedgers () = 0;
     virtual LedgerMaster&           getLedgerMaster () = 0;
     virtual LoadManager&            getLoadManager () = 0;
     virtual NetworkOPs&             getOPs () = 0;

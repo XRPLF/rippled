@@ -827,7 +827,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_LedgerAcquireMaster.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_InboundLedgers.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -879,7 +879,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_LedgerAcquire.cpp">
+    <ClCompile Include="src\cpp\ripple\ripple_InboundLedger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1770,7 +1770,7 @@
     <ClInclude Include="src\cpp\ripple\HttpsClient.h" />
     <ClInclude Include="src\cpp\ripple\Interpreter.h" />
     <ClInclude Include="src\cpp\ripple\Ledger.h" />
-    <ClInclude Include="src\cpp\ripple\ripple_LedgerAcquire.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_InboundLedger.h" />
     <ClInclude Include="src\cpp\ripple\ripple_LedgerConsensus.h" />
     <ClInclude Include="src\cpp\ripple\ripple_LedgerEntrySet.h" />
     <ClInclude Include="src\cpp\ripple\ripple_LedgerHistory.h" />
@@ -1780,7 +1780,7 @@
     <ClInclude Include="src\cpp\ripple\ripple_LoadManager.h" />
     <ClInclude Include="src\cpp\ripple\ripple_Job.h" />
     <ClInclude Include="src\cpp\ripple\ripple_JobQueue.h" />
-    <ClInclude Include="src\cpp\ripple\ripple_LedgerAcquireMaster.h" />
+    <ClInclude Include="src\cpp\ripple\ripple_InboundLedgers.h" />
     <ClInclude Include="src\cpp\ripple\ripple_LoadMonitor.h" />
     <ClInclude Include="src\cpp\ripple\NetworkOPs.h" />
     <ClInclude Include="src\cpp\ripple\ripple_NicknameState.h" />

@@ -149,8 +149,8 @@
 #include "src/cpp/ripple/ripple_IValidations.h"
 
 #include "src/cpp/ripple/ripple_PeerSet.h"
-#include "src/cpp/ripple/ripple_LedgerAcquire.h"
-#include "src/cpp/ripple/ripple_LedgerAcquireMaster.h"
+#include "src/cpp/ripple/ripple_InboundLedger.h"
+#include "src/cpp/ripple/ripple_InboundLedgers.h"
 
 #include "src/cpp/database/database.h"
 #include "src/cpp/database/SqliteDatabase.h"
@@ -375,8 +375,9 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #include "src/cpp/ripple/ripple_Job.cpp"
 #include "src/cpp/ripple/ripple_JobQueue.cpp"
-#include "src/cpp/ripple/ripple_LedgerAcquire.cpp"
-#include "src/cpp/ripple/ripple_LedgerAcquireMaster.cpp"
+#include "src/cpp/ripple/ripple_InboundLedger.cpp"
+#include "src/cpp/ripple/ripple_InboundLedgers.cpp"
+#include "src/cpp/ripple/ripple_InfoSub.cpp"
 #include "src/cpp/ripple/ripple_LedgerConsensus.cpp"
 #include "src/cpp/ripple/ripple_LedgerHistory.cpp"
 #include "src/cpp/ripple/ripple_LoadEvent.cpp"

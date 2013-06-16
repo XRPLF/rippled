@@ -120,7 +120,7 @@ private:
     uint32 mCloseTime;                      // The wall time this ledger closed
     uint256 mPrevLedgerHash, mNewLedgerHash;
     Ledger::pointer mPreviousLedger;
-    LedgerAcquire::pointer mAcquiringLedger;
+    InboundLedger::pointer mAcquiringLedger;
     LedgerProposal::pointer mOurPosition;
     RippleAddress mValPublic, mValPrivate;
     bool mProposing, mValidating, mHaveCorrectLCL, mConsensusFail;

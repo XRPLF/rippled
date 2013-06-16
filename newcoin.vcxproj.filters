@@ -148,6 +148,9 @@
     <Filter Include="1. Modules\ripple_main\refactored\pathing">
       <UniqueIdentifier>{90a5527e-0de0-4d5f-a731-b6b196a013b5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_main\refactored\ledger">
+      <UniqueIdentifier>{857187f0-ff25-4ebe-af30-544b7b7f503a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpp\database\sqlite3.c">
@@ -747,15 +750,6 @@
     <ClCompile Include="src\cpp\ripple\ripple_PeerSet.cpp">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_LedgerAcquireMaster.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_LedgerAcquire.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_LedgerHistory.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_CanonicalTXSet.cpp">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClCompile>
@@ -883,7 +877,16 @@
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_LedgerEntrySet.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
+      <Filter>1. Modules\ripple_main\refactored\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_LedgerHistory.cpp">
+      <Filter>1. Modules\ripple_main\refactored\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_InboundLedger.cpp">
+      <Filter>1. Modules\ripple_main\refactored\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_InboundLedgers.cpp">
+      <Filter>1. Modules\ripple_main\refactored\ledger</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1511,17 +1514,8 @@
     <ClInclude Include="src\cpp\ripple\ripple_PeerSet.h">
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_LedgerAcquireMaster.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
     <ClInclude Include="modules\ripple_basics\types\ripple_BasicTypes.h">
       <Filter>1. Modules\ripple_basics\types</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_LedgerAcquire.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_LedgerHistory.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_CanonicalTXSet.h">
       <Filter>1. Modules\ripple_main\refactored</Filter>
@@ -1647,7 +1641,16 @@
       <Filter>1. Modules\ripple_main\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_LedgerEntrySet.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
+      <Filter>1. Modules\ripple_main\refactored\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_LedgerHistory.h">
+      <Filter>1. Modules\ripple_main\refactored\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_InboundLedger.h">
+      <Filter>1. Modules\ripple_main\refactored\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_InboundLedgers.h">
+      <Filter>1. Modules\ripple_main\refactored\ledger</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,3 +1,5 @@
+// VFALCO TODO Rename the protobuf namespace from ripple to 'wire' or something
+//
 package ripple;
 
 enum MessageType

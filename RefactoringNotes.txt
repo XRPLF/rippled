@@ -10,6 +10,8 @@ TODO
 - Replace uint160, uint256 in argument lists, template parameter lists, and
   data members with tyepdefs from ripple_ProtocolTypes.h
 
+- Consolidate SQLite database classes: DatabaseCon, Database, SqliteDatabase.
+
 --------------------------------------------------------------------------------
 
 LoadEvent
@@ -27,11 +29,15 @@ Naming
 
 Some names don't make sense.
 
-  LedgerAcquire
+  InboundLedger
     Not a noun.
     Is it really an InboundLedger ?
     Does it continue to exist after the ledger is received?
 
+  Index
+    Stop using Index to refer to keys in tables.
+    Index implies a small integer, or a data structure.
+    
 Inconsistent names
 
   We have full names like SerializedType and then acronyms like STObject

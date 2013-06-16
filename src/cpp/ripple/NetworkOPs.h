@@ -391,7 +391,7 @@ private:
           std::list<LedgerProposal::pointer> > mStoredProposals;
 
     LedgerMaster*                       mLedgerMaster;
-    LedgerAcquire::pointer              mAcquiringLedger;
+    InboundLedger::pointer              mAcquiringLedger;
 
     int                                 mCloseTimeOffset;
 

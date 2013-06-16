@@ -798,7 +798,7 @@ bool NetworkOPs::checkLastClosedLedger (const std::vector<Peer::pointer>& peerLi
         if (mAcquiringLedger)
         {
             mAcquiringLedger->abort ();
-            theApp->getMasterLedgerAcquire ().dropLedger (mAcquiringLedger->getHash ());
+            theApp->getInboundLedgers ().dropLedger (mAcquiringLedger->getHash ());
             mAcquiringLedger.reset ();
         }
 
@@ -819,11 +819,11 @@ bool NetworkOPs::checkLastClosedLedger (const std::vector<Peer::pointer>& peerLi
         WriteLog (lsINFO, NetworkOPs) << "Acquiring consensus ledger " << closedLedger;
 
         if (!mAcquiringLedger || (mAcquiringLedger->getHash () != closedLedger))
-            mAcquiringLedger = theApp->getMasterLedgerAcquire ().findCreate (closedLedger, 0);
+            mAcquiringLedger = theApp->getInboundLedgers ().findCreate (closedLedger, 0);
 
         if (!mAcquiringLedger || mAcquiringLedger->isFailed ())
         {
-            theApp->getMasterLedgerAcquire ().dropLedger (closedLedger);
+            theApp->getInboundLedgers ().dropLedger (closedLedger);
             WriteLog (lsERROR, NetworkOPs) << "Network ledger cannot be acquired";
             return true;
         }
@@ -2270,7 +2270,7 @@ void NetworkOPs::gotFetchPack (bool progress, uint32 seq)
     mLastFetchPack = 0;
     mFetchSeq = seq;        // earliest pack we have data on
     theApp->getJobQueue ().addJob (jtLEDGER_DATA, "gotFetchPack",
-                                   boost::bind (&LedgerAcquireMaster::gotFetchPack, &theApp->getMasterLedgerAcquire (), _1));
+                                   boost::bind (&InboundLedgers::gotFetchPack, &theApp->getInboundLedgers (), _1));
 }
 
 void NetworkOPs::missingNodeInLedger (uint32 seq)
@@ -2279,7 +2279,7 @@ void NetworkOPs::missingNodeInLedger (uint32 seq)
     uint256 hash = theApp->getLedgerMaster ().getHashBySeq (seq);
 
     if (hash.isNonZero ())
-        theApp->getMasterLedgerAcquire ().findCreate (hash, seq);
+        theApp->getInboundLedgers ().findCreate (hash, seq);
 }
 
 // vim:ts=4

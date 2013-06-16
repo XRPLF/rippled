@@ -2070,9 +2070,9 @@ void PeerImp::recvLedger (const boost::shared_ptr<ripple::TMLedgerData>& packet_
         return;
     }
 
-    if (theApp->getMasterLedgerAcquire ().awaitLedgerData (hash))
+    if (theApp->getInboundLedgers ().awaitLedgerData (hash))
         theApp->getJobQueue ().addJob (jtLEDGER_DATA, "gotLedgerData",
-                                       BIND_TYPE (&LedgerAcquireMaster::gotLedgerData, &theApp->getMasterLedgerAcquire (),
+                                       BIND_TYPE (&InboundLedgers::gotLedgerData, &theApp->getInboundLedgers (),
                                                P_1, hash, packet_ptr, boost::weak_ptr<Peer> (shared_from_this ())));
     else
         punishPeer (LT_UnwantedData);

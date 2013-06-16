@@ -22,7 +22,7 @@ static void TACompletionHandler (uint256 hash, SHAMap::pointer map)
 {
     boost::recursive_mutex::scoped_lock sl (theApp->getMasterLock ());
     theApp->getOPs ().mapComplete (hash, map);
-    theApp->getMasterLedgerAcquire ().dropLedger (hash);
+    theApp->getInboundLedgers ().dropLedger (hash);
 }
 
 void TransactionAcquire::done ()
