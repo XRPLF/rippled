@@ -1,12 +1,20 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 SETUP_LOG (SerializedTransaction)
 
 DECLARE_INSTANCE (SerializedTransaction);
 
-SerializedTransaction::SerializedTransaction (TransactionType type) : STObject (sfTransaction), mType (type),
-    mSigGood (false), mSigBad (false)
+SerializedTransaction::SerializedTransaction (TransactionType type)
+    : STObject (sfTransaction)
+    , mType (type)
+    , mSigGood (false)
+    , mSigBad (false)
 {
-    mFormat = TransactionFormat::getTxnFormat (type);
+    mFormat = TxFormats::getInstance ().findByType (type);
 
     if (mFormat == NULL)
     {
@@ -15,14 +23,17 @@ SerializedTransaction::SerializedTransaction (TransactionType type) : STObject (
     }
 
     set (mFormat->elements);
-    setFieldU16 (sfTransactionType, mFormat->t_type);
+    setFieldU16 (sfTransactionType, mFormat->getType ());
 }
 
-SerializedTransaction::SerializedTransaction (const STObject& object) : STObject (object),
-    mSigGood (false), mSigBad (false)
+SerializedTransaction::SerializedTransaction (STObject const& object)
+    : STObject (object)
+    , mSigGood (false)
+    , mSigBad (false)
 {
-    mType = static_cast<TransactionType> (getFieldU16 (sfTransactionType));
-    mFormat = TransactionFormat::getTxnFormat (mType);
+    mType = static_cast <TransactionType> (getFieldU16 (sfTransactionType));
+
+    mFormat = TxFormats::getInstance ().findByType (mType);
 
     if (!mFormat)
     {
@@ -41,7 +52,7 @@ SerializedTransaction::SerializedTransaction (SerializerIterator& sit) : STObjec
 {
     int length = sit.getBytesLeft ();
 
-    if ((length < TransactionMinLen) || (length > TransactionMaxLen))
+    if ((length < Protocol::txMinSizeBytes) || (length > Protocol::txMaxSizeBytes))
     {
         Log (lsERROR) << "Transaction has invalid length: " << length;
         throw std::runtime_error ("Transaction length invalid");
@@ -50,7 +61,7 @@ SerializedTransaction::SerializedTransaction (SerializerIterator& sit) : STObjec
     set (sit);
     mType = static_cast<TransactionType> (getFieldU16 (sfTransactionType));
 
-    mFormat = TransactionFormat::getTxnFormat (mType);
+    mFormat = TxFormats::getInstance ().findByType (mType);
 
     if (!mFormat)
     {
@@ -141,7 +152,7 @@ uint256 SerializedTransaction::getSigningHash () const
 uint256 SerializedTransaction::getTransactionID () const
 {
     // perhaps we should cache this
-    return getHash (sHP_TransactionID);
+    return getHash (HashPrefix::transactionID);
 }
 
 Blob SerializedTransaction::getSignature () const

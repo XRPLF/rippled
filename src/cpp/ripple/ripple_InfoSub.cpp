@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 // This is the primary interface into the "client" portion of the program.
 // Code that wants to do normal operations on the network such as

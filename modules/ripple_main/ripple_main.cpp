@@ -1,18 +1,6 @@
 //------------------------------------------------------------------------------
 /*
     Copyright (c) 2011-2013, OpenCoin, Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose with  or without fee is hereby granted,  provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES OF
-    MERCHANTABILITY  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY SPECIAL,  DIRECT, INDIRECT,  OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM LOSS OF USE, DATA OR PROFITS,  WHETHER IN AN
-    ACTION OF CONTRACT, NEGLIGENCE  OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
@@ -128,11 +116,11 @@
 #include "src/cpp/ripple/TransactionMeta.h"
 #include "src/cpp/ripple/Transaction.h"
 #include "src/cpp/ripple/ripple_AccountState.h"
-#include "src/cpp/ripple/NicknameState.h"
+#include "src/cpp/ripple/ripple_NicknameState.h"
 #include "src/cpp/ripple/Ledger.h"
 
 #include "src/cpp/ripple/SerializedValidation.h"
-#include "src/cpp/ripple/LoadManager.h" // VFALCO TODO Split this file up
+#include "src/cpp/ripple/ripple_LoadManager.h"
 
 
 // These have few dependencies
@@ -205,7 +193,7 @@
 // -----------
 
 #include "src/cpp/ripple/TransactionMaster.h"
-#include "src/cpp/ripple/Wallet.h"
+#include "src/cpp/ripple/ripple_LocalCredentials.h"
 #include "src/cpp/ripple/WSDoor.h"
 #include "src/cpp/ripple/SNTPClient.h"
 #include "src/cpp/ripple/RPCHandler.h"
@@ -218,19 +206,23 @@
 #include "src/cpp/ripple/CallRPC.h"
 #include "src/cpp/ripple/ChangeTransactor.h"
 #include "src/cpp/ripple/HTTPRequest.h"
-#include "src/cpp/ripple/HashPrefixes.h"
 #include "src/cpp/ripple/HttpsClient.h"
 #include "src/cpp/ripple/ripple_TransactionAcquire.h"
 #include "src/cpp/ripple/ripple_DisputedTx.h"
 #include "src/cpp/ripple/ripple_LedgerConsensus.h"
 #include "src/cpp/ripple/LedgerTiming.h"
-#include "src/cpp/ripple/Offer.h"
+#include "src/cpp/ripple/ripple_Offer.h"
 #include "src/cpp/ripple/OfferCancelTransactor.h"
 #include "src/cpp/ripple/OfferCreateTransactor.h"
 #include "src/cpp/ripple/ripple_PathRequest.h"
 #include "src/cpp/ripple/ParameterTable.h"
 #include "src/cpp/ripple/ParseSection.h"
-#include "src/cpp/ripple/Pathfinder.h"
+
+ #include "src/cpp/ripple/ripple_RippleLineCache.h"
+ #include "src/cpp/ripple/ripple_PathState.h"
+ #include "src/cpp/ripple/ripple_RippleCalc.h"
+#include  "src/cpp/ripple/ripple_Pathfinder.h"
+
 #include "src/cpp/ripple/PaymentTransactor.h"
 #include "src/cpp/ripple/PeerDoor.h"
 #include "src/cpp/ripple/RPC.h"
@@ -239,13 +231,12 @@
 #include "src/cpp/ripple/RPCServer.h"
 #include "src/cpp/ripple/RPCSub.h"
 #include "src/cpp/ripple/RegularKeySetTransactor.h"
-#include "src/cpp/ripple/RippleCalc.h"
-#include "src/cpp/ripple/RippleState.h"
+#include "src/cpp/ripple/ripple_RippleState.h"
 #include "src/cpp/ripple/SerializedValidation.h"
 #include "src/cpp/ripple/Transactor.h"
 #include "src/cpp/ripple/AccountSetTransactor.h"
 #include "src/cpp/ripple/TrustSetTransactor.h"
-#include "src/cpp/ripple/Version.h"
+#include "src/cpp/ripple/ripple_Version.h"
 #include "src/cpp/ripple/WSConnection.h"
 #include "src/cpp/ripple/WSHandler.h"
 #include "src/cpp/ripple/WalletAddTransactor.h"
@@ -290,11 +281,11 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/LedgerMaster.cpp"
 #include "src/cpp/ripple/LedgerProposal.cpp" // no log
 #include "src/cpp/ripple/LedgerTiming.cpp"
-#include "src/cpp/ripple/LoadManager.cpp"
+#include "src/cpp/ripple/ripple_LoadManager.cpp"
 #include "src/cpp/ripple/main.cpp"
 #include "src/cpp/ripple/NetworkOPs.cpp"
-#include "src/cpp/ripple/NicknameState.cpp" // no log
-#include "src/cpp/ripple/Offer.cpp" // no log
+#include "src/cpp/ripple/ripple_NicknameState.cpp"
+#include "src/cpp/ripple/ripple_Offer.cpp" // no log
 #include "src/cpp/ripple/OfferCancelTransactor.cpp"
 #include "src/cpp/ripple/OfferCreateTransactor.cpp"
 #include "src/cpp/ripple/Operation.cpp" // no log
@@ -310,18 +301,20 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 // Generate DH for SSL connection.
 static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 {
-    // VFALCO TODO eliminate this horrendous dependency on theApp and Wallet
-    return 512 == iKeyLength ? theApp->getWallet ().getDh512 () : theApp->getWallet ().getDh1024 ();
+    // VFALCO TODO eliminate this horrendous dependency on theApp and LocalCredentials
+    return 512 == iKeyLength ? theApp->getLocalCredentials ().getDh512 () : theApp->getLocalCredentials ().getDh1024 ();
 }
 
 #include "src/cpp/ripple/ParameterTable.cpp" // no log
 #include "src/cpp/ripple/ParseSection.cpp"
-#include "src/cpp/ripple/Pathfinder.cpp"
+#include "src/cpp/ripple/ripple_Pathfinder.cpp"
 #include "src/cpp/ripple/PaymentTransactor.cpp"
 #include "src/cpp/ripple/PeerDoor.cpp"
 #include "src/cpp/ripple/RegularKeySetTransactor.cpp"
-#include "src/cpp/ripple/RippleCalc.cpp"
-#include "src/cpp/ripple/RippleState.cpp" // no log
+#include "src/cpp/ripple/ripple_PathState.cpp"
+#include "src/cpp/ripple/ripple_RippleCalc.cpp"
+#include "src/cpp/ripple/ripple_RippleLineCache.cpp"
+#include "src/cpp/ripple/ripple_RippleState.cpp"
 #include "src/cpp/ripple/rpc.cpp"
 #include "src/cpp/ripple/RPCDoor.cpp"
 #include "src/cpp/ripple/RPCErr.cpp"
@@ -349,7 +342,7 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 3
 
-#include "src/cpp/ripple/Wallet.cpp"
+#include "src/cpp/ripple/ripple_LocalCredentials.cpp"
 #include "src/cpp/ripple/WalletAddTransactor.cpp"
 
 #include "src/cpp/ripple/ripple_HashedObject.cpp"

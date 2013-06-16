@@ -1,7 +1,11 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
-
+// VFALCO TODO Wrap this up in something neater. Replace NULL with nullptr
 IApplication* theApp = NULL;
-
 
 class Application;
 
@@ -17,9 +21,9 @@ public:
     Application ();
     ~Application ();
 
-    Wallet& getWallet ()
+    LocalCredentials& getLocalCredentials ()
     {
-        return mWallet ;
+        return mLocalCredentials ;
     }
     NetworkOPs& getOPs ()
     {
@@ -186,7 +190,7 @@ private:
 
     boost::recursive_mutex  mMasterLock;
 
-    Wallet                  mWallet;
+    LocalCredentials                  mLocalCredentials;
     LedgerMaster            mLedgerMaster;
     LedgerAcquireMaster     mMasterLedgerAcquire;
     TransactionMaster       mMasterTransaction;
@@ -461,9 +465,9 @@ void Application::setup ()
 
     //
     // Begin validation and ip maintenance.
-    // - Wallet maintains local information: including identity and network connection persistence information.
+    // - LocalCredentials maintains local information: including identity and network connection persistence information.
     //
-    mWallet.start ();
+    mLocalCredentials.start ();
 
     //
     // Set up UNL.

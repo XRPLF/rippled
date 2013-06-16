@@ -1,15 +1,12 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 //
 // Carries out the RPC.
 //
-
-#include "Pathfinder.h"
-#include "RPCHandler.h"
-#include "RPCSub.h"
-#include "Wallet.h"
-#include "RippleCalc.h"
-#include "RPCErr.h"
-#include "NicknameState.h"
-#include "Offer.h"
 
 SETUP_LOG (RPCHandler)
 
@@ -182,7 +179,7 @@ Json::Value RPCHandler::transactionSign (Json::Value jvRequest, bool bSubmit, Sc
             Ledger::pointer lSnapshot = mNetOps->getCurrentSnapshot ();
             {
                 bool bValid;
-                RLCache::pointer cache = boost::make_shared<RLCache> (lSnapshot);
+                RippleLineCache::pointer cache = boost::make_shared<RippleLineCache> (lSnapshot);
                 Pathfinder pf (cache, raSrcAddressID, dstAccountID,
                                saSendMax.getCurrency (), saSendMax.getIssuer (), saSend, bValid);
 
@@ -671,7 +668,7 @@ Json::Value RPCHandler::doDataDelete (Json::Value jvRequest, int& cost, ScopedLo
 
     Json::Value ret = Json::Value (Json::objectValue);
 
-    if (theApp->getWallet ().dataDelete (strKey))
+    if (theApp->getLocalCredentials ().dataDelete (strKey))
     {
         ret["key"]      = strKey;
     }
@@ -700,7 +697,7 @@ Json::Value RPCHandler::doDataFetch (Json::Value jvRequest, int& cost, ScopedLoc
 
     ret["key"]      = strKey;
 
-    if (theApp->getWallet ().dataFetch (strKey, strValue))
+    if (theApp->getLocalCredentials ().dataFetch (strKey, strValue))
         ret["value"]    = strValue;
 
     return ret;
@@ -723,7 +720,7 @@ Json::Value RPCHandler::doDataStore (Json::Value jvRequest, int& cost, ScopedLoc
 
     Json::Value ret = Json::Value (Json::objectValue);
 
-    if (theApp->getWallet ().dataStore (strKey, strValue))
+    if (theApp->getLocalCredentials ().dataStore (strKey, strValue))
     {
         ret["key"]      = strKey;
         ret["value"]    = strValue;
@@ -1517,7 +1514,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value jvRequest, int& cost, Scop
         jvResult["destination_account"] = raDst.humanAccountID ();
 
         Json::Value jvArray (Json::arrayValue);
-        RLCache::pointer cache = boost::make_shared<RLCache> (lSnapShot);
+        RippleLineCache::pointer cache = boost::make_shared<RippleLineCache> (lSnapShot);
 
         for (unsigned int i = 0; i != jvSrcCurrencies.size (); ++i)
         {

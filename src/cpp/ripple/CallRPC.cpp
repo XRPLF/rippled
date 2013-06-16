@@ -1,3 +1,9 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 //
 // This a trusted interface, the user is expected to provide valid input to perform valid requests.
 // Error catching and reporting is not a requirement of this command line interface.

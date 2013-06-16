@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 AccountItem::pointer Offer::makeItem (const uint160& , SerializedLedgerEntry::ref ledgerEntry)
 {

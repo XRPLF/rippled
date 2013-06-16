@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 SETUP_LOG (LedgerAcquire)
 
@@ -643,7 +648,7 @@ bool LedgerAcquire::takeBase (const std::string& data) // data must not have has
     mHaveBase = true;
 
     Serializer s (data.size () + 4);
-    s.add32 (sHP_Ledger);
+    s.add32 (HashPrefix::ledgerMaster);
     s.addRaw (data);
     theApp->getHashedObjectStore ().store (hotLEDGER, mLedger->getLedgerSeq (), s.peekData (), mHash);
 

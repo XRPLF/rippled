@@ -1,3 +1,9 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 #ifndef RIPPLE_IAPPLICATION_H
 #define RIPPLE_IAPPLICATION_H
 
@@ -31,7 +37,7 @@ class PeerDoor;
 class SerializedLedgerEntry;
 class TransactionMaster;
 class TXQueue;
-class Wallet;
+class LocalCredentials;
 
 class DatabaseCon;
 
@@ -83,7 +89,7 @@ public:
     virtual PeerDoor&               getPeerDoor () = 0;
     virtual TransactionMaster&      getMasterTransaction () = 0;
     virtual TXQueue&                getTxnQueue () = 0;
-    virtual Wallet&                 getWallet () = 0;
+    virtual LocalCredentials&                 getLocalCredentials () = 0;
 
     virtual DatabaseCon* getRpcDB () = 0;
     virtual DatabaseCon* getTxnDB () = 0;
@@ -108,4 +114,3 @@ public:
 extern IApplication* theApp;
 
 #endif
-// vim:ts=4

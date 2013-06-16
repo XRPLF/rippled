@@ -1,3 +1,9 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 // This is not really a header file, but it can be used as one with
 // appropriate #define statements.
 

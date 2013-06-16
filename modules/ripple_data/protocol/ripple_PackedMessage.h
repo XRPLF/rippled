@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 //
 // packaging of messages into length/type-prepended buffers
 // ready for transmission.

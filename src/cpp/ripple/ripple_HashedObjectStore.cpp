@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 HashedObjectStore::HashedObjectStore (int cacheSize, int cacheAge) :
     mCache ("HashedObjectStore", cacheSize, cacheAge), mNegativeCache ("HashedObjectNegativeCache", 0, 120),

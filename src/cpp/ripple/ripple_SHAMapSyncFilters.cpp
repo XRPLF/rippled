@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 ConsensusTransSetSF::ConsensusTransSetSF ()
 {
@@ -45,7 +50,7 @@ bool ConsensusTransSetSF::haveNode (const SHAMapNode& id, uint256 const& nodeHas
         // this is a transaction, and we have it
         WriteLog (lsDEBUG, TransactionAcquire) << "Node in our acquiring TX set is TXN we have";
         Serializer s;
-        s.add32 (sHP_TransactionID);
+        s.add32 (HashPrefix::transactionID);
         txn->getSTransaction ()->add (s, true);
         assert (s.getSHA512Half () == nodeHash);
         nodeData = s.peekData ();

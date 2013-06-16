@@ -1,5 +1,11 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 #ifndef JSON_WRITER_H_INCLUDED
-# define JSON_WRITER_H_INCLUDED
+#define JSON_WRITER_H_INCLUDED
 
 namespace Json
 {

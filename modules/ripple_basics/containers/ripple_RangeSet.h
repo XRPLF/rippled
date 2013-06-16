@@ -1,6 +1,15 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 #ifndef RIPPLE_RANGESET_H
 #define RIPPLE_RANGESET_H
 
+/** A sparse set of integers.
+*/
+// VFALCO TODO Replace with juce::SparseSet
 class RangeSet
 {
 public:

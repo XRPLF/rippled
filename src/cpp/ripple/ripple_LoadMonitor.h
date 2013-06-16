@@ -1,8 +1,16 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 #ifndef RIPPLE_LOADMONITOR_H
 #define RIPPLE_LOADMONITOR_H
 
 // Monitors load levels and response times
 
+// VFALCO TODO Rename this. Having both LoadManager and LoadMonitor is confusing.
+//
 class LoadMonitor
 {
 public:

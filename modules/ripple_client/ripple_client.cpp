@@ -1,18 +1,6 @@
 //------------------------------------------------------------------------------
 /*
     Copyright (c) 2011-2013, OpenCoin, Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose with  or without fee is hereby granted,  provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES OF
-    MERCHANTABILITY  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY SPECIAL,  DIRECT, INDIRECT,  OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM LOSS OF USE, DATA OR PROFITS,  WHETHER IN AN
-    ACTION OF CONTRACT, NEGLIGENCE  OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
@@ -51,11 +39,11 @@
 #include   "src/cpp/ripple/TransactionMeta.h"
 #include    "src/cpp/ripple/Transaction.h"
 #include    "src/cpp/ripple/ripple_AccountState.h"
-#include    "src/cpp/ripple/NicknameState.h"
+#include    "src/cpp/ripple/ripple_NicknameState.h"
 #include     "src/cpp/ripple/Ledger.h"
 #include   "src/cpp/ripple/LedgerEntrySet.h"
 #include    "src/cpp/ripple/TransactionEngine.h"
-#include "src/cpp/ripple/LoadManager.h"
+#include "src/cpp/ripple/ripple_LoadManager.h"
 #include  "src/cpp/ripple/ripple_Peer.h"
 #include   "src/cpp/ripple/ripple_PeerSet.h"
 #include    "src/cpp/ripple/ripple_LedgerAcquire.h"

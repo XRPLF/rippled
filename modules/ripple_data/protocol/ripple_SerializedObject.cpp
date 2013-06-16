@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 SETUP_LOG (STObject)
 
@@ -1262,12 +1267,12 @@ UPTR_T<STObject> STObject::parseJson (const Json::Value& object, SField::ref inN
                 {
                     if (field == sfTransactionType)
                     {
-                        TransactionFormat* f = TransactionFormat::getTxnFormat (strValue);
+                        TxFormat* f = TxFormats::getInstance ().findByName (strValue);
 
                         if (!f)
                             throw std::runtime_error ("Unknown transaction type");
 
-                        data.push_back (new STUInt16 (field, static_cast<uint16> (f->t_type)));
+                        data.push_back (new STUInt16 (field, static_cast<uint16> (f->getType ())));
 
                         if (*name == sfGeneric)
                             name = &sfTransaction;

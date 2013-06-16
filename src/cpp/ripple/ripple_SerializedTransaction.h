@@ -1,3 +1,9 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 #ifndef RIPPLE_SERIALIZEDTRANSACTION_H
 #define RIPPLE_SERIALIZEDTRANSACTION_H
 
@@ -64,7 +70,7 @@ public:
     void setSourceAccount (const RippleAddress & naSource);
     std::string getTransactionType () const
     {
-        return mFormat->t_name;
+        return mFormat->getName ();
     }
 
     uint32 getSequence () const
@@ -120,7 +126,7 @@ public:
 
 private:
     TransactionType mType;
-    const TransactionFormat* mFormat;
+    const TxFormat* mFormat;
 
     SerializedTransaction* duplicate () const
     {

@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 #include <string>
 
@@ -97,7 +102,9 @@ const char* RpcDBInit[] =
 
 int RpcDBCount = NUMBER (RpcDBInit);
 
-// Wallet database holds local accounts and trusted nodes
+// NodeIdentity database holds local accounts and trusted nodes
+// VFALCO NOTE but its a table not a database, so...?
+//
 const char* WalletDBInit[] =
 {
     // Node identity must be persisted for CAS routing and responsibilities.

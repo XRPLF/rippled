@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 SETUP_LOG (SerializedType)
 
@@ -124,10 +129,10 @@ std::string STUInt16::getText () const
 
     if (getFName () == sfTransactionType)
     {
-        TransactionFormat* f = TransactionFormat::getTxnFormat (value);
+        TxFormat* f = TxFormats::getInstance ().findByType (static_cast <TransactionType> (value));
 
         if (f != NULL)
-            return f->t_name;
+            return f->getName ();
     }
 
     return boost::lexical_cast<std::string> (value);
@@ -145,10 +150,10 @@ Json::Value STUInt16::getJson (int) const
 
     if (getFName () == sfTransactionType)
     {
-        TransactionFormat* f = TransactionFormat::getTxnFormat (value);
+        TxFormat* f = TxFormats::getInstance ().findByType (static_cast <TransactionType> (value));
 
         if (f != NULL)
-            return f->t_name;
+            return f->getName ();
     }
 
     return value;

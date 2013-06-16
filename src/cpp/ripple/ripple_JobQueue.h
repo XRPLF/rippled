@@ -1,3 +1,9 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 #ifndef RIPPLE_JOBQUEUE_H
 #define RIPPLE_JOBQUEUE_H
 
@@ -16,11 +22,17 @@ public:
     void shutdown ();
     void setThreadCount (int c = 0);
 
+    // VFALCO TODO Rename these to newLoadEventMeasurement or something similar
+    //             since they create the object.
+    //
     LoadEvent::pointer getLoadEvent (JobType t, const std::string& name)
     {
         return boost::make_shared<LoadEvent> (boost::ref (mJobLoads[t]), name, true);
     }
 
+    // VFALCO TODO Why do we need two versions, one which returns a shared
+    //             pointer and the other which returns an autoptr?
+    //          
     LoadEvent::autoptr getLoadEventAP (JobType t, const std::string& name)
     {
         return LoadEvent::autoptr (new LoadEvent (mJobLoads[t], name, true));

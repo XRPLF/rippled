@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 AccountState::AccountState (RippleAddress const& naAccountID)
     : mAccountID (naAccountID)

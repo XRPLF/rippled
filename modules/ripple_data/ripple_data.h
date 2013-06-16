@@ -1,18 +1,6 @@
 //------------------------------------------------------------------------------
 /*
     Copyright (c) 2011-2013, OpenCoin, Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose with  or without fee is hereby granted,  provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES OF
-    MERCHANTABILITY  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY SPECIAL,  DIRECT, INDIRECT,  OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM LOSS OF USE, DATA OR PROFITS,  WHETHER IN AN
-    ACTION OF CONTRACT, NEGLIGENCE  OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
@@ -75,8 +63,9 @@
 #include "crypto/ripple_Base58Data.h"
 
 #include "protocol/ripple_FieldNames.h"
+#include "protocol/ripple_HashPrefix.h"
 #include "protocol/ripple_PackedMessage.h"
-#include "protocol/ripple_ProtocolTypes.h"
+#include "protocol/ripple_Protocol.h"
 #include "protocol/ripple_RippleAddress.h"
 #include "protocol/ripple_RippleSystem.h"
 #include "protocol/ripple_Serializer.h" // needs CKey
@@ -85,7 +74,9 @@
 #include "protocol/ripple_SerializedObjectTemplate.h"
 #include "protocol/ripple_SerializedObject.h"
 #include "protocol/ripple_LedgerFormat.h" // needs SOTemplate from SerializedObject
-#include "protocol/ripple_TransactionFormat.h"
+#include "protocol/ripple_TxFlags.h"
+#include "protocol/ripple_TxFormat.h"
+#include "protocol/ripple_TxFormats.h"
 
 #include "utility/ripple_JSONCache.h"
 #include "utility/ripple_UptimeTimerAdapter.h"

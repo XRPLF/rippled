@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
 SETUP_LOG (LoadManager)
 
@@ -11,19 +16,18 @@ LoadManager::LoadManager (int creditRate, int creditLimit, int debitWarn, int de
     , mDeadLock (0)
     , mCosts (LT_MAX)
 {
-    addLoadCost (LoadCost (LT_InvalidRequest,     -10,        LC_CPU | LC_Network));
-    addLoadCost (LoadCost (LT_RequestNoReply,     -1,     LC_CPU | LC_Disk));
-    addLoadCost (LoadCost (LT_InvalidSignature,   -100,   LC_CPU));
-    addLoadCost (LoadCost (LT_UnwantedData,       -5,     LC_CPU | LC_Network));
-    addLoadCost (LoadCost (LT_BadData,            -20,        LC_CPU));
+    addCost (Cost (LT_InvalidRequest,     -10,   LC_CPU | LC_Network));
+    addCost (Cost (LT_RequestNoReply,      -1,   LC_CPU | LC_Disk));
+    addCost (Cost (LT_InvalidSignature,  -100,   LC_CPU));
+    addCost (Cost (LT_UnwantedData,        -5,   LC_CPU | LC_Network));
+    addCost (Cost (LT_BadData,            -20,   LC_CPU));
 
-    addLoadCost (LoadCost (LT_NewTrusted,         -10,        0));
-    addLoadCost (LoadCost (LT_NewTransaction,     -2,     0));
-    addLoadCost (LoadCost (LT_NeededData,         -10,        0));
+    addCost (Cost (LT_NewTrusted,         -10,   0));
+    addCost (Cost (LT_NewTransaction,      -2,   0));
+    addCost (Cost (LT_NeededData,         -10,   0));
 
-    addLoadCost (LoadCost (LT_RequestData,        -5,     LC_Disk | LC_Network));
-    addLoadCost (LoadCost (LT_CheapQuery,         -1,     LC_CPU));
-
+    addCost (Cost (LT_RequestData,         -5,   LC_Disk | LC_Network));
+    addCost (Cost (LT_CheapQuery,          -1,   LC_CPU));
 }
 
 void LoadManager::init ()
@@ -164,7 +168,7 @@ bool LoadManager::shouldCutoff (LoadSource& source) const
 bool LoadManager::adjust (LoadSource& source, LoadType t) const
 {
     // FIXME: Scale by category
-    LoadCost cost = mCosts[static_cast<int> (t)];
+    Cost cost = mCosts[static_cast<int> (t)];
     return adjust (source, cost.mCost);
 }
 

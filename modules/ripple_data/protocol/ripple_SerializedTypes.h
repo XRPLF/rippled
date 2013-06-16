@@ -1,3 +1,9 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 #ifndef RIPPLE_SERIALIZEDTYPES_H
 #define RIPPLE_SERIALIZEDTYPES_H
 
@@ -11,6 +17,8 @@
 // operator to copy the field name breaks the use of copy assignment just to copy values,
 // which is used in the transaction engine code.
 
+// VFALCO TODO Remove this unused enum
+/*
 enum PathFlags
 {
     PF_END              = 0x00,     // End of current path & path list.
@@ -24,6 +32,7 @@ enum PathFlags
     PF_REDEEM           = 0x40,
     PF_ISSUE            = 0x80,
 };
+*/
 
 // VFALCO TODO make these non static or otherwise clean constants.
 static const uint160 u160_zero (0), u160_one (1);
@@ -43,6 +52,9 @@ static inline const uint160& get_u160_one ()
 #define ACCOUNT_XRP         get_u160_zero()
 #define ACCOUNT_ONE         get_u160_one()                  // Used as a place holder.
 
+// VFALCO TODO Document this as it looks like a central class.
+//             STObject is derived from it
+//
 class SerializedType
 {
 public:

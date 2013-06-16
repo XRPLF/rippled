@@ -1,3 +1,9 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 #ifndef RIPPLE_ACCOUNTITEM_H
 #define RIPPLE_ACCOUNTITEM_H
 
@@ -35,8 +41,10 @@ public:
 
     virtual AccountItem::pointer makeItem (const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry) = 0;
 
+    // VFALCO TODO Make this const and change derived classes
     virtual LedgerEntryType getType () = 0;
 
+    // VFALCO TODO Document the int parameter
     virtual Json::Value getJson (int) = 0;
 
     SerializedLedgerEntry::pointer getSLE ()

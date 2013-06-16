@@ -1,3 +1,9 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
 
 #include <boost/asio.hpp>
 #include <boost/iostreams/concepts.hpp>
@@ -9,7 +15,6 @@
 #include <openssl/evp.h>
 
 #include "RPC.h"
-#include "Version.h"
 
 // Used for logging
 struct RPC

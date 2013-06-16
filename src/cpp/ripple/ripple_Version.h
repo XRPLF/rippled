@@ -1,5 +1,11 @@
-#ifndef __VERSIONS__
-#define __VERSIONS__
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
+#ifndef RIPPLE_VERSION_H
+#define RIPPLE_VERSION_H
 //
 // Versions
 //
