@@ -11,6 +11,9 @@ DECLARE_INSTANCE (LedgerEntrySet)
 
 // #define META_DEBUG
 
+// VFALCO TODO Replace this macro with a documented language constant
+//        NOTE Is this part of the protocol?
+//
 #define DIR_NODE_MAX        32
 
 void LedgerEntrySet::init (Ledger::ref ledger, uint256 const& transactionID,

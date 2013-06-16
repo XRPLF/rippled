@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef __LEDGERENTRYSET__
-#define __LEDGERENTRYSET__
+#ifndef RIPPLE_LEDGERENTRYSET_H
+#define RIPPLE_LEDGERENTRYSET_H
 
 DEFINE_INSTANCE (LedgerEntrySetEntry);
 DEFINE_INSTANCE (LedgerEntrySet);
@@ -42,9 +42,11 @@ public:
     LedgerEntryAction   mAction;
     int                 mSeq;
 
-    LedgerEntrySetEntry (SLE::ref e, LedgerEntryAction a, int s) : mEntry (e), mAction (a), mSeq (s)
+    LedgerEntrySetEntry (SLE::ref e, LedgerEntryAction a, int s)
+        : mEntry (e)
+        , mAction (a)
+        , mSeq (s)
     {
-        ;
     }
 };
 
@@ -62,12 +64,10 @@ public:
     LedgerEntrySet (Ledger::ref ledger, TransactionEngineParams tep, bool immutable = false) :
         mLedger (ledger), mParams (tep), mSeq (0), mImmutable (immutable)
     {
-        ;
     }
 
     LedgerEntrySet () : mParams (tapNONE), mSeq (0), mImmutable (false)
     {
-        ;
     }
 
     // set functions
@@ -75,17 +75,23 @@ public:
     {
         mImmutable = true;
     }
+
     bool isImmutable () const
     {
         return mImmutable;
     }
+
     LedgerEntrySet duplicate () const;  // Make a duplicate of this set
+
     void setTo (const LedgerEntrySet&); // Set this set to have the same contents as another
+
     void swapWith (LedgerEntrySet&);    // Swap the contents of two sets
+
     void invalidate ()
     {
         mLedger.reset ();
     }
+
     bool isValid () const
     {
         return !!mLedger;
@@ -95,21 +101,26 @@ public:
     {
         return mSeq;
     }
+
     TransactionEngineParams getParams () const
     {
         return mParams;
     }
+
     void bumpSeq ()
     {
         ++mSeq;
     }
+
     void init (Ledger::ref ledger, uint256 const & transactionID, uint32 ledgerID, TransactionEngineParams params);
+
     void clear ();
 
     Ledger::pointer& getLedger ()
     {
         return mLedger;
     }
+
     Ledger::ref getLedgerRef () const
     {
         return mLedger;

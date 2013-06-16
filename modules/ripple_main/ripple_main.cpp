@@ -179,7 +179,7 @@
 #include "src/cpp/ripple/ripple_AccountItems.h"
 #include "src/cpp/ripple/ripple_AcceptedLedgerTx.h"
 #include "src/cpp/ripple/ripple_AcceptedLedger.h"
-#include "src/cpp/ripple/LedgerEntrySet.h"
+#include "src/cpp/ripple/ripple_LedgerEntrySet.h"
 #include "src/cpp/ripple/TransactionEngine.h"
 #include "src/cpp/ripple/ripple_CanonicalTXSet.h"
 
@@ -277,7 +277,7 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/HttpsClient.cpp"
 #include "src/cpp/ripple/Interpreter.cpp" // no log
 #include "src/cpp/ripple/Ledger.cpp"
-#include "src/cpp/ripple/LedgerEntrySet.cpp"
+#include "src/cpp/ripple/ripple_LedgerEntrySet.cpp"
 #include "src/cpp/ripple/LedgerMaster.cpp"
 #include "src/cpp/ripple/LedgerProposal.cpp" // no log
 #include "src/cpp/ripple/LedgerTiming.cpp"

@@ -7,23 +7,57 @@
 #ifndef RIPPLE_LEDGERFORMAT_H
 #define RIPPLE_LEDGERFORMAT_H
 
+/**
+
+    These are stored in serialized data.
+
+    @ingroup protocol
+*/
 // Used as the type of a transaction or the type of a ledger entry.
 enum LedgerEntryType
 {
     ltINVALID           = -1,
+
     ltACCOUNT_ROOT      = 'a',
+
+    /** Directory node.
+
+        A directory is a vector 256-bit values. Usually they represent
+        hashes of other objects in the ledger.
+
+        Used in an append-only fashion.
+
+        (There's a little more information than this, see the template)
+    */
     ltDIR_NODE          = 'd',
+
     ltGENERATOR_MAP     = 'g',
+
+    /** Describes a trust line.
+    */
+    // VFALCO TODO Rename to TrustLine or something similar.
     ltRIPPLE_STATE      = 'r',
+
+    /** Deprecated.
+    */
     ltNICKNAME          = 'n',
+
     ltOFFER             = 'o',
+
     ltCONTRACT          = 'c',
+
     ltLEDGER_HASHES     = 'h',
+
     ltFEATURES          = 'f',
+
     ltFEE_SETTINGS      = 's',
 };
 
+/**
+    @ingroup protocol
+*/
 // Used as a prefix for computing ledger indexes (keys).
+// VFALCO TODO Why are there a separate set of prefixes? i.e. class HashPrefix
 enum LedgerNameSpace
 {
     spaceAccount        = 'a',
@@ -40,6 +74,9 @@ enum LedgerNameSpace
     spaceFee            = 'e',
 };
 
+/**
+    @ingroup protocol
+*/
 enum LedgerSpecificFlags
 {
     // ltACCOUNT_ROOT
@@ -59,6 +96,8 @@ enum LedgerSpecificFlags
     lsfHighAuth         = 0x00080000,
 };
 
+// VFALCO TODO See if we can merge LedgerEntryFormat with TxFormat
+//
 class LedgerEntryFormat
 {
 public:

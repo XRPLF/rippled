@@ -22,6 +22,10 @@
 
     @ingroup protocol
 */
+// VFALCO NOTE there are ledger entry prefixes too but they are only
+//             1 byte, find out why they are different. Maybe we should
+//             group them all together?
+//
 struct HashPrefix
 {
     // VFALCO TODO Make these Doxygen comments and expand the

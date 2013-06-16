@@ -358,6 +358,9 @@ public:
     //
 
     // Index of node which is the ripple state between two accounts for a currency.
+    // VFALCO NOTE Rename these to make it clear they are simple functions that
+    //             don't access global variables. e.g. "calculateKeyFromRippleStateAndAddress"
+    //
     static uint256 getRippleStateIndex (const RippleAddress & naA, const RippleAddress & naB, const uint160 & uCurrency);
     static uint256 getRippleStateIndex (const uint160 & uiA, const uint160 & uiB, const uint160 & uCurrency)
     {

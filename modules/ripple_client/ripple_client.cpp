@@ -41,7 +41,7 @@
 #include    "src/cpp/ripple/ripple_AccountState.h"
 #include    "src/cpp/ripple/ripple_NicknameState.h"
 #include     "src/cpp/ripple/Ledger.h"
-#include   "src/cpp/ripple/LedgerEntrySet.h"
+#include   "src/cpp/ripple/ripple_LedgerEntrySet.h"
 #include    "src/cpp/ripple/TransactionEngine.h"
 #include "src/cpp/ripple/ripple_LoadManager.h"
 #include  "src/cpp/ripple/ripple_Peer.h"
