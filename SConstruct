@@ -151,6 +151,7 @@ if FreeBSD:
 
 env.Append(
     LIBS = [
+        'rt',           # for clock_nanosleep in beast
         'protobuf',
         'z'
     ]

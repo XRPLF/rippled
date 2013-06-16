@@ -1652,6 +1652,7 @@
     <ClInclude Include="src\cpp\ripple\ripple_InboundLedgers.h">
       <Filter>1. Modules\ripple_main\refactored\ledger</Filter>
     </ClInclude>
+    <ClInclude Include="BeastConfig.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SConstruct" />

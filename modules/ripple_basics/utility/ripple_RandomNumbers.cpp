@@ -63,8 +63,7 @@ RandomNumbers& RandomNumbers::getInstance ()
 
 //------------------------------------------------------------------------------
 
-// VFALCO TODO replace WIN32 macro
-
+// VFALCO TODO replace WIN32 macro with BEAST_WIN32
 #ifdef WIN32
 
 // Get entropy from the Windows crypto provider
