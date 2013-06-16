@@ -353,6 +353,9 @@ TER RippleCalc::calcNodeDeliverRev (
 
     while (saOutAct < saOutReq)                             // Did not deliver as much as requested.
     {
+        // VFALCO TODO Why 40? Give this magic constant a name and document it
+        //        NOTE is the number 40 part of protocol?
+        //
         if (++loopCount > 40)
         {
             WriteLog (lsFATAL, RippleCalc) << "loop count exceeded";
@@ -634,6 +637,7 @@ TER RippleCalc::calcNodeDeliverFwd (
     while (tesSUCCESS == terResult
             && saInAct + saInFees < saInReq)        // Did not spend all inbound deliver funds.
     {
+        // VFALCO TODO Why 40?
         if (++loopCount > 40)
         {
             WriteLog (lsWARNING, RippleCalc) << "calcNodeDeliverFwd: max loops cndf";

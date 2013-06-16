@@ -9,7 +9,6 @@
 #include <openssl/evp.h>
 
 #include "RPC.h"
-#include "Version.h"
 
 // Used for logging
 struct RPC

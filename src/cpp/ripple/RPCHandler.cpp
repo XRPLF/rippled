@@ -662,7 +662,7 @@ Json::Value RPCHandler::doDataDelete (Json::Value jvRequest, int& cost, ScopedLo
 
     Json::Value ret = Json::Value (Json::objectValue);
 
-    if (theApp->getWallet ().dataDelete (strKey))
+    if (theApp->getLocalCredentials ().dataDelete (strKey))
     {
         ret["key"]      = strKey;
     }
@@ -691,7 +691,7 @@ Json::Value RPCHandler::doDataFetch (Json::Value jvRequest, int& cost, ScopedLoc
 
     ret["key"]      = strKey;
 
-    if (theApp->getWallet ().dataFetch (strKey, strValue))
+    if (theApp->getLocalCredentials ().dataFetch (strKey, strValue))
         ret["value"]    = strValue;
 
     return ret;
@@ -714,7 +714,7 @@ Json::Value RPCHandler::doDataStore (Json::Value jvRequest, int& cost, ScopedLoc
 
     Json::Value ret = Json::Value (Json::objectValue);
 
-    if (theApp->getWallet ().dataStore (strKey, strValue))
+    if (theApp->getLocalCredentials ().dataStore (strKey, strValue))
     {
         ret["key"]      = strKey;
         ret["value"]    = strValue;

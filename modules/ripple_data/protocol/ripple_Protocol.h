@@ -44,6 +44,7 @@ typedef uint256 LedgerHash;
 */
 // VFALCO TODO pick one. I like Index since its not an abbreviation
 typedef uint32 LedgerIndex;
+// VFALCO NOTE "LedgerSeq" appears in some SQL statement text
 typedef uint32 LedgerSeq;
 
 /** A transaction identifier.

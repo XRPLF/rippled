@@ -1,8 +1,12 @@
 #ifndef RIPPLE_RIPPLECALC_H
 #define RIPPLE_RIPPLECALC_H
 
-// VFALCO TODO What's the difference between a RippleCalc versus Pathfinder?
-//             Or a RippleState versus PathState?
+/** Calculate the quality of a payment path.
+
+    The quality is a synonym for price. Specifically, the amount of
+    input required to produce a given output along a specified path.
+*/
+// VFALCO TODO What's the difference between a RippleState versus PathState?
 //
 class RippleCalc
 {

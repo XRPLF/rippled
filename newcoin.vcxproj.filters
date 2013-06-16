@@ -432,9 +432,6 @@
     <ClCompile Include="src\cpp\ripple\TransactionEngine.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\TransactionFormats.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionMaster.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
     </ClCompile>
@@ -514,9 +511,6 @@
       <Filter>1. Modules\ripple_main\_unfactored\contracts</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\WalletAddTransactor.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Wallet.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_mess\ripple_mess.cpp">
@@ -888,6 +882,9 @@
     <ClCompile Include="modules\ripple_data\protocol\ripple_TxFormats.cpp">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_LocalCredentials.cpp">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="database\sqlite3ext.h">
@@ -1166,9 +1163,6 @@
     <ClInclude Include="src\cpp\ripple\TransactionEngine.h">
       <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\TransactionFormats.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\TransactionMaster.h">
       <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
     </ClInclude>
@@ -1245,9 +1239,6 @@
       <Filter>1. Modules\ripple_main\_unfactored\contracts</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\WalletAddTransactor.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Wallet.h">
       <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_mess\ripple_mess.h">
@@ -1357,9 +1348,6 @@
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\utility\ripple_InstanceCounter.h">
       <Filter>1. Modules\ripple_basics\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Version.h">
-      <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\WSDoor.h">
       <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
@@ -1654,6 +1642,12 @@
     </ClInclude>
     <ClInclude Include="modules\ripple_data\protocol\ripple_TxFormats.h">
       <Filter>1. Modules\ripple_data\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_LocalCredentials.h">
+      <Filter>1. Modules\ripple_main\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_Version.h">
+      <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

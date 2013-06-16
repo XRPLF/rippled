@@ -2160,7 +2160,7 @@ void PeerImp::sendHello ()
     getSessionCookie (strCookie);
     mCookieHash = Serializer::getSHA512Half (strCookie);
 
-    theApp->getWallet ().getNodePrivate ().signNodePrivate (mCookieHash, vchSig);
+    theApp->getLocalCredentials ().getNodePrivate ().signNodePrivate (mCookieHash, vchSig);
 
     ripple::TMHello h;
 
@@ -2168,7 +2168,7 @@ void PeerImp::sendHello ()
     h.set_protoversionmin (MAKE_VERSION_INT (MIN_PROTO_MAJOR, MIN_PROTO_MINOR));
     h.set_fullversion (SERVER_VERSION);
     h.set_nettime (theApp->getOPs ().getNetworkTimeNC ());
-    h.set_nodepublic (theApp->getWallet ().getNodePublic ().humanNodePublic ());
+    h.set_nodepublic (theApp->getLocalCredentials ().getNodePublic ().humanNodePublic ());
     h.set_nodeproof (&vchSig[0], vchSig.size ());
     h.set_ipv4port (theConfig.PEER_PORT);
     h.set_nodeprivate (theConfig.PEER_PRIVATE);

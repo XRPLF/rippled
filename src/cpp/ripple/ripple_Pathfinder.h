@@ -28,6 +28,12 @@ public:
 };
 #endif
 
+/** Calculates payment paths.
+
+    The @ref RippleCalc determines the quality of the found paths.
+
+    @see RippleCalc
+*/
 class Pathfinder
 {
 public:

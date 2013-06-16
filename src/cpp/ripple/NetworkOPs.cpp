@@ -728,7 +728,7 @@ bool NetworkOPs::checkLastClosedLedger (const std::vector<Peer::pointer>& peerLi
     if (mMode >= omTRACKING)
     {
         ++ourVC.nodesUsing;
-        uint160 ourAddress = theApp->getWallet ().getNodePublic ().getNodeID ();
+        uint160 ourAddress = theApp->getLocalCredentials ().getNodePublic ().getNodeID ();
 
         if (ourAddress > ourVC.highNodeUsing)
             ourVC.highNodeUsing = ourAddress;
@@ -1352,7 +1352,7 @@ Json::Value NetworkOPs::getServerInfo (bool human, bool admin)
             info["pubkey_validator"] = "none";
     }
 
-    info["pubkey_node"] = theApp->getWallet ().getNodePublic ().humanNodePublic ();
+    info["pubkey_node"] = theApp->getLocalCredentials ().getNodePublic ().humanNodePublic ();
 
 
     info["complete_ledgers"] = theApp->getLedgerMaster ().getCompleteLedgers ();

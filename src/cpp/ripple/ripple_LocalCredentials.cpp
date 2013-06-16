@@ -1,10 +1,10 @@
 
-Wallet::Wallet () : mDh512 (NULL), mDh1024 (NULL), mLedger (0)
+LocalCredentials::LocalCredentials () : mDh512 (NULL), mDh1024 (NULL), mLedger (0)
 {
     ;
 }
 
-void Wallet::start ()
+void LocalCredentials::start ()
 {
     // We need our node identity before we begin networking.
     // - Allows others to identify if they have connected multiple times.
@@ -25,7 +25,7 @@ void Wallet::start ()
 }
 
 // Retrieve network identity.
-bool Wallet::nodeIdentityLoad ()
+bool LocalCredentials::nodeIdentityLoad ()
 {
 
     Database*   db = theApp->getWalletDB ()->getDB ();
@@ -59,7 +59,7 @@ bool Wallet::nodeIdentityLoad ()
 }
 
 // Create and store a network identity.
-bool Wallet::nodeIdentityCreate ()
+bool LocalCredentials::nodeIdentityCreate ()
 {
     if (!theConfig.QUIET)
         std::cerr << "NodeIdentity: Creating." << std::endl;
@@ -114,7 +114,7 @@ bool Wallet::nodeIdentityCreate ()
     return true;
 }
 
-bool Wallet::dataDelete (const std::string& strKey)
+bool LocalCredentials::dataDelete (const std::string& strKey)
 {
     Database* db    = theApp->getRpcDB ()->getDB ();
 
@@ -124,7 +124,7 @@ bool Wallet::dataDelete (const std::string& strKey)
                                 % sqlEscape (strKey)));
 }
 
-bool Wallet::dataFetch (const std::string& strKey, std::string& strValue)
+bool LocalCredentials::dataFetch (const std::string& strKey, std::string& strValue)
 {
     Database* db    = theApp->getRpcDB ()->getDB ();
 
@@ -146,7 +146,7 @@ bool Wallet::dataFetch (const std::string& strKey, std::string& strValue)
     return bSuccess;
 }
 
-bool Wallet::dataStore (const std::string& strKey, const std::string& strValue)
+bool LocalCredentials::dataStore (const std::string& strKey, const std::string& strValue)
 {
     Database* db    = theApp->getRpcDB ()->getDB ();
 

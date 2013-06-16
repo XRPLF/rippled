@@ -494,7 +494,7 @@ bool Peers::peerConnected (Peer::ref peer, const RippleAddress& naPeer,
 
     assert (!!peer);
 
-    if (naPeer == theApp->getWallet ().getNodePublic ())
+    if (naPeer == theApp->getLocalCredentials ().getNodePublic ())
     {
         WriteLog (lsINFO, Peers) << "Pool: Connected: self: " << ADDRESS_SHARED (peer) << ": " << naPeer.humanNodePublic () << " " << strIP << " " << iPort;
     }
@@ -704,7 +704,7 @@ void Peers::peerVerified (Peer::ref peer)
 
         //WriteLog (lsINFO, Peers) << str(boost::format("Pool: Scan: connected: %s %s %s (scanned)") % ADDRESS_SHARED(peer) % strIp % iPort);
 
-        if (peer->getNodePublic () == theApp->getWallet ().getNodePublic ())
+        if (peer->getNodePublic () == theApp->getLocalCredentials ().getNodePublic ())
         {
             // Talking to ourself.  We will just back off.  This lets us maybe advertise our outside address.
 

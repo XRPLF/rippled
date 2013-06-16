@@ -1,5 +1,5 @@
-#ifndef __VERSIONS__
-#define __VERSIONS__
+#ifndef RIPPLE_VERSION_H
+#define RIPPLE_VERSION_H
 //
 // Versions
 //

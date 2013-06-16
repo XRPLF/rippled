@@ -205,7 +205,7 @@
 // -----------
 
 #include "src/cpp/ripple/TransactionMaster.h"
-#include "src/cpp/ripple/Wallet.h"
+#include "src/cpp/ripple/ripple_LocalCredentials.h"
 #include "src/cpp/ripple/WSDoor.h"
 #include "src/cpp/ripple/SNTPClient.h"
 #include "src/cpp/ripple/RPCHandler.h"
@@ -248,7 +248,7 @@
 #include "src/cpp/ripple/Transactor.h"
 #include "src/cpp/ripple/AccountSetTransactor.h"
 #include "src/cpp/ripple/TrustSetTransactor.h"
-#include "src/cpp/ripple/Version.h"
+#include "src/cpp/ripple/ripple_Version.h"
 #include "src/cpp/ripple/WSConnection.h"
 #include "src/cpp/ripple/WSHandler.h"
 #include "src/cpp/ripple/WalletAddTransactor.h"
@@ -313,8 +313,8 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 // Generate DH for SSL connection.
 static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 {
-    // VFALCO TODO eliminate this horrendous dependency on theApp and Wallet
-    return 512 == iKeyLength ? theApp->getWallet ().getDh512 () : theApp->getWallet ().getDh1024 ();
+    // VFALCO TODO eliminate this horrendous dependency on theApp and LocalCredentials
+    return 512 == iKeyLength ? theApp->getLocalCredentials ().getDh512 () : theApp->getLocalCredentials ().getDh1024 ();
 }
 
 #include "src/cpp/ripple/ParameterTable.cpp" // no log
@@ -354,7 +354,7 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 3
 
-#include "src/cpp/ripple/Wallet.cpp"
+#include "src/cpp/ripple/ripple_LocalCredentials.cpp"
 #include "src/cpp/ripple/WalletAddTransactor.cpp"
 
 #include "src/cpp/ripple/ripple_HashedObject.cpp"
