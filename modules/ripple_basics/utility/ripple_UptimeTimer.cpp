@@ -21,7 +21,7 @@ int UptimeTimer::getElapsedSeconds () const
 
     if (m_isUpdatingManually)
     {
-        // vf::memoryBarrier();
+        // memoryBarrier();
         result = m_elapsedTime;
     }
     else

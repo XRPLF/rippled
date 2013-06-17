@@ -596,9 +596,6 @@
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_Listeners.h">
       <Filter>beast_basics\threads</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_basics\threads\beast_MessageThread.h">
-      <Filter>beast_basics\threads</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_ParallelFor.h">
       <Filter>beast_basics\threads</Filter>
     </ClInclude>
@@ -935,9 +932,6 @@
       <Filter>beast_basics\threads</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_basics\threads\beast_Listeners.cpp">
-      <Filter>beast_basics\threads</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_basics\threads\beast_MessageThread.cpp">
       <Filter>beast_basics\threads</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_basics\threads\beast_ParallelFor.cpp">

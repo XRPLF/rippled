@@ -475,7 +475,7 @@ public:
     template <class Mf>
     inline void call (Mf mf)
     {
-        callf (vf::bind (mf, vf::_1));
+        callf (bind (mf, _1));
     }
 #endif
 
@@ -483,7 +483,7 @@ public:
     template <class Mf, class T1>
     void call (Mf mf, T1 t1)
     {
-        callf (vf::bind (mf, vf::_1, t1));
+        callf (bind (mf, _1, t1));
     }
 #endif
 
@@ -491,7 +491,7 @@ public:
     template <class Mf, class T1, class T2>
     void call (Mf mf, T1 t1, T2 t2)
     {
-        callf (vf::bind (mf, vf::_1, t1, t2));
+        callf (bind (mf, _1, t1, t2));
     }
 #endif
 
@@ -499,7 +499,7 @@ public:
     template <class Mf, class T1, class T2, class T3>
     void call (Mf mf, T1 t1, T2 t2, T3 t3)
     {
-        callf (vf::bind (mf, vf::_1, t1, t2, t3));
+        callf (bind (mf, _1, t1, t2, t3));
     }
 #endif
 
@@ -507,7 +507,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4>
     void call (Mf mf, T1 t1, T2 t2, T3 t3, T4 t4)
     {
-        callf (vf::bind (mf, vf::_1, t1, t2, t3, t4));
+        callf (bind (mf, _1, t1, t2, t3, t4));
     }
 #endif
 
@@ -515,7 +515,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5>
     void call (Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5)
     {
-        callf (vf::bind (mf, vf::_1, t1, t2, t3, t4, t5));
+        callf (bind (mf, _1, t1, t2, t3, t4, t5));
     }
 #endif
 
@@ -523,7 +523,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5, class T6>
     void call (Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6)
     {
-        callf (vf::bind (mf, vf::_1, t1, t2, t3, t4, t5, t6));
+        callf (bind (mf, _1, t1, t2, t3, t4, t5, t6));
     }
 #endif
 
@@ -531,7 +531,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5, class T6, class T7>
     void call (Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7)
     {
-        callf (vf::bind (mf, vf::_1, t1, t2, t3, t4, t5, t6, t7));
+        callf (bind (mf, _1, t1, t2, t3, t4, t5, t6, t7));
     }
 #endif
 
@@ -539,7 +539,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8>
     void call (Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8)
     {
-        callf (vf::bind (mf, vf::_1, t1, t2, t3, t4, t5, t6, t7, t8));
+        callf (bind (mf, _1, t1, t2, t3, t4, t5, t6, t7, t8));
     }
 #endif
     /** @} */
@@ -557,7 +557,7 @@ public:
     template <class Mf>
     inline void queue (Mf mf)
     {
-        queuef (vf::bind (mf, vf::_1));
+        queuef (bind (mf, _1));
     }
 #endif
 
@@ -565,7 +565,7 @@ public:
     template <class Mf, class T1>
     void queue (Mf mf, T1 t1)
     {
-        queuef (vf::bind (mf, vf::_1, t1));
+        queuef (bind (mf, _1, t1));
     }
 #endif
 
@@ -573,7 +573,7 @@ public:
     template <class Mf, class T1, class T2>
     void queue (Mf mf, T1 t1, T2 t2)
     {
-        queuef (vf::bind (mf, vf::_1, t1, t2));
+        queuef (bind (mf, _1, t1, t2));
     }
 #endif
 
@@ -581,7 +581,7 @@ public:
     template <class Mf, class T1, class T2, class T3>
     void queue (Mf mf, T1 t1, T2 t2, T3 t3)
     {
-        queuef (vf::bind (mf, vf::_1, t1, t2, t3));
+        queuef (bind (mf, _1, t1, t2, t3));
     }
 #endif
 
@@ -589,7 +589,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4>
     void queue (Mf mf, T1 t1, T2 t2, T3 t3, T4 t4)
     {
-        queuef (vf::bind (mf, vf::_1, t1, t2, t3, t4));
+        queuef (bind (mf, _1, t1, t2, t3, t4));
     }
 #endif
 
@@ -597,7 +597,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5>
     void queue (Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5)
     {
-        queuef (vf::bind (mf, vf::_1, t1, t2, t3, t4, t5));
+        queuef (bind (mf, _1, t1, t2, t3, t4, t5));
     }
 #endif
 
@@ -605,7 +605,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5, class T6>
     void queue (Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6)
     {
-        queuef (vf::bind (mf, vf::_1, t1, t2, t3, t4, t5, t6));
+        queuef (bind (mf, _1, t1, t2, t3, t4, t5, t6));
     }
 #endif
 
@@ -613,7 +613,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5, class T6, class T7>
     void queue (Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7)
     {
-        queuef (vf::bind (mf, vf::_1, t1, t2, t3, t4, t5, t6, t7));
+        queuef (bind (mf, _1, t1, t2, t3, t4, t5, t6, t7));
     }
 #endif
 
@@ -621,7 +621,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8>
     void queue (Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8)
     {
-        queuef (vf::bind (mf, vf::_1, t1, t2, t3, t4, t5, t6, t7, t8));
+        queuef (bind (mf, _1, t1, t2, t3, t4, t5, t6, t7, t8));
     }
 #endif
     /** @} */
@@ -645,7 +645,7 @@ public:
     template <class Mf>
     inline void update (Mf mf)
     {
-        updatef (mf, vf::bind (mf, vf::_1));
+        updatef (mf, bind (mf, _1));
     }
 #endif
 
@@ -653,7 +653,7 @@ public:
     template <class Mf, class T1>
     void update (Mf mf, T1 t1)
     {
-        updatef (mf, vf::bind (mf, vf::_1, t1));
+        updatef (mf, bind (mf, _1, t1));
     }
 #endif
 
@@ -661,7 +661,7 @@ public:
     template <class Mf, class T1, class T2>
     void update (Mf mf, T1 t1, T2 t2)
     {
-        updatef (mf, vf::bind (mf, vf::_1, t1, t2));
+        updatef (mf, bind (mf, _1, t1, t2));
     }
 #endif
 
@@ -669,7 +669,7 @@ public:
     template <class Mf, class T1, class T2, class T3>
     void update (Mf mf, T1 t1, T2 t2, T3 t3)
     {
-        updatef (mf, vf::bind (mf, vf::_1, t1, t2, t3));
+        updatef (mf, bind (mf, _1, t1, t2, t3));
     }
 #endif
 
@@ -677,7 +677,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4>
     void update (Mf mf, T1 t1, T2 t2, T3 t3, T4 t4)
     {
-        updatef (mf, vf::bind (mf, vf::_1, t1, t2, t3, t4));
+        updatef (mf, bind (mf, _1, t1, t2, t3, t4));
     }
 #endif
 
@@ -685,7 +685,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5>
     void update (Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5)
     {
-        updatef (mf, vf::bind (mf, vf::_1, t1, t2, t3, t4, t5));
+        updatef (mf, bind (mf, _1, t1, t2, t3, t4, t5));
     }
 #endif
 
@@ -693,7 +693,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5, class T6>
     void update (Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6)
     {
-        updatef (mf, vf::bind (mf, vf::_1, t1, t2, t3, t4, t5, t6));
+        updatef (mf, bind (mf, _1, t1, t2, t3, t4, t5, t6));
     }
 #endif
 
@@ -701,7 +701,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5, class T6, class T7>
     void update (Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7)
     {
-        updatef (mf, vf::bind (mf, vf::_1, t1, t2, t3, t4, t5, t6, t7));
+        updatef (mf, bind (mf, _1, t1, t2, t3, t4, t5, t6, t7));
     }
 #endif
 
@@ -709,7 +709,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8>
     void update (Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8)
     {
-        updatef (mf, vf::bind (mf, vf::_1, t1, t2, t3, t4, t5, t6, t7, t8));
+        updatef (mf, bind (mf, _1, t1, t2, t3, t4, t5, t6, t7, t8));
     }
 #endif
     /** @} */
@@ -730,7 +730,7 @@ public:
     template <class Mf>
     inline void call1 (ListenerClass* const listener, Mf mf)
     {
-        call1f (listener, vf::bind (mf, vf::_1));
+        call1f (listener, bind (mf, _1));
     }
 #endif
 
@@ -738,7 +738,7 @@ public:
     template <class Mf, class T1>
     void call1 (ListenerClass* const listener, Mf mf, T1 t1)
     {
-        call1f (listener, vf::bind (mf, vf::_1, t1));
+        call1f (listener, bind (mf, _1, t1));
     }
 #endif
 
@@ -746,7 +746,7 @@ public:
     template <class Mf, class T1, class T2>
     void call1 (ListenerClass* const listener, Mf mf, T1 t1, T2 t2)
     {
-        call1f (listener, vf::bind (mf, vf::_1, t1, t2));
+        call1f (listener, bind (mf, _1, t1, t2));
     }
 #endif
 
@@ -754,7 +754,7 @@ public:
     template <class Mf, class T1, class T2, class T3>
     void call1 (ListenerClass* const listener, Mf mf, T1 t1, T2 t2, T3 t3)
     {
-        call1f (listener, vf::bind (mf, vf::_1, t1, t2, t3));
+        call1f (listener, bind (mf, _1, t1, t2, t3));
     }
 #endif
 
@@ -762,7 +762,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4>
     void call1 (ListenerClass* const listener, Mf mf, T1 t1, T2 t2, T3 t3, T4 t4)
     {
-        call1f (listener, vf::bind (mf, vf::_1, t1, t2, t3, t4));
+        call1f (listener, bind (mf, _1, t1, t2, t3, t4));
     }
 #endif
 
@@ -770,7 +770,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5>
     void call1 (ListenerClass* const listener, Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5)
     {
-        call1f (listener, vf::bind (mf, vf::_1, t1, t2, t3, t4, t5));
+        call1f (listener, bind (mf, _1, t1, t2, t3, t4, t5));
     }
 #endif
 
@@ -778,7 +778,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5, class T6>
     void call1 (ListenerClass* const listener, Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6)
     {
-        call1f (listener, vf::bind (mf, vf::_1, t1, t2, t3, t4, t5, t6));
+        call1f (listener, bind (mf, _1, t1, t2, t3, t4, t5, t6));
     }
 #endif
 
@@ -786,7 +786,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5, class T6, class T7>
     void call1 (ListenerClass* const listener, Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7)
     {
-        call1f (listener, vf::bind (mf, vf::_1, t1, t2, t3, t4, t5, t6, t7));
+        call1f (listener, bind (mf, _1, t1, t2, t3, t4, t5, t6, t7));
     }
 #endif
 
@@ -794,7 +794,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8>
     void call1 (ListenerClass* const listener, Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8)
     {
-        call1f (listener, vf::bind (mf, vf::_1, t1, t2, t3, t4, t5, t6, t7, t8));
+        call1f (listener, bind (mf, _1, t1, t2, t3, t4, t5, t6, t7, t8));
     }
 #endif
     /** @} */
@@ -813,7 +813,7 @@ public:
     template <class Mf>
     inline void queue1 (ListenerClass* const listener, Mf mf)
     {
-        queue1f (listener, vf::bind (mf, vf::_1));
+        queue1f (listener, bind (mf, _1));
     }
 #endif
 
@@ -821,7 +821,7 @@ public:
     template <class Mf, class T1>
     void queue1 (ListenerClass* const listener, Mf mf, T1 t1)
     {
-        queue1f (listener, vf::bind (mf, vf::_1, t1));
+        queue1f (listener, bind (mf, _1, t1));
     }
 #endif
 
@@ -829,7 +829,7 @@ public:
     template <class Mf, class T1, class T2>
     void queue1 (ListenerClass* const listener, Mf mf, T1 t1, T2 t2)
     {
-        queue1f (listener, vf::bind (mf, vf::_1, t1, t2));
+        queue1f (listener, bind (mf, _1, t1, t2));
     }
 #endif
 
@@ -837,7 +837,7 @@ public:
     template <class Mf, class T1, class T2, class T3>
     void queue1 (ListenerClass* const listener, Mf mf, T1 t1, T2 t2, T3 t3)
     {
-        queue1f (listener, vf::bind (mf, vf::_1, t1, t2, t3));
+        queue1f (listener, bind (mf, _1, t1, t2, t3));
     }
 #endif
 
@@ -845,7 +845,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4>
     void queue1 (ListenerClass* const listener, Mf mf, T1 t1, T2 t2, T3 t3, T4 t4)
     {
-        queue1f (listener, vf::bind (mf, vf::_1, t1, t2, t3, t4));
+        queue1f (listener, bind (mf, _1, t1, t2, t3, t4));
     }
 #endif
 
@@ -853,7 +853,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5>
     void queue1 (ListenerClass* const listener, Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5)
     {
-        queue1f (listener, vf::bind (mf, vf::_1, t1, t2, t3, t4, t5));
+        queue1f (listener, bind (mf, _1, t1, t2, t3, t4, t5));
     }
 #endif
 
@@ -861,7 +861,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5, class T6>
     void queue1 (ListenerClass* const listener, Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6)
     {
-        queue1f (listener, vf::bind (mf, vf::_1, t1, t2, t3, t4, t5, t6));
+        queue1f (listener, bind (mf, _1, t1, t2, t3, t4, t5, t6));
     }
 #endif
 
@@ -869,7 +869,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5, class T6, class T7>
     void queue1 (ListenerClass* const listener, Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7)
     {
-        queue1f (listener, vf::bind (mf, vf::_1, t1, t2, t3, t4, t5, t6, t7));
+        queue1f (listener, bind (mf, _1, t1, t2, t3, t4, t5, t6, t7));
     }
 #endif
 
@@ -877,7 +877,7 @@ public:
     template <class Mf, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8>
     void queue1 (ListenerClass* const listener, Mf mf, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8)
     {
-        queue1f (listener, vf::bind (mf, vf::_1, t1, t2, t3, t4, t5, t6, t7, t8));
+        queue1f (listener, bind (mf, _1, t1, t2, t3, t4, t5, t6, t7, t8));
     }
 #endif
     /** @} */

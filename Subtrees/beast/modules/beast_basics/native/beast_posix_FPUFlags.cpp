@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#pragma message(BEAST_LOC_"Missing platform-specific implementation")
+//#pragma message(BEAST_LOC_"Missing platform-specific implementation")
 
 FPUFlags FPUFlags::getCurrent ()
 {

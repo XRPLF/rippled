@@ -79,18 +79,6 @@
     <Filter Include="1. Modules\ripple_data\crypto">
       <UniqueIdentifier>{095d33d8-dbf7-44d0-a675-6722b02bb3be}</UniqueIdentifier>
     </Filter>
-    <Filter Include="2. Empty">
-      <UniqueIdentifier>{786657f9-b1b3-483c-a8e6-863cc2e02eb8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="2. Empty\ripple_mess">
-      <UniqueIdentifier>{becffa9b-61f7-42d4-815a-1ec822cad0e7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="2. Empty\ripple_net">
-      <UniqueIdentifier>{7f76ce57-c428-487e-97a0-979c0990a81d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="2. Empty\ripple_db">
-      <UniqueIdentifier>{a5190241-c5bc-4e23-8ef1-6adf757c75e3}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_main\_unfactored">
       <UniqueIdentifier>{86d0831e-74e5-443b-b5f9-d6b39d5b4c97}</UniqueIdentifier>
     </Filter>
@@ -124,12 +112,6 @@
     <Filter Include="1. Modules\ripple_data\protocol">
       <UniqueIdentifier>{2f3572a9-2882-4656-ab93-82b7761c9e3d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="2. Empty\ripple_ledger">
-      <UniqueIdentifier>{b6175f9a-7d46-4b57-877f-f58b0b3bba89}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_client">
-      <UniqueIdentifier>{97c96b68-70fd-4679-89fc-c1c8c87c265e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_data\utility">
       <UniqueIdentifier>{ba524810-8446-4c50-ad59-d284747ba220}</UniqueIdentifier>
     </Filter>
@@ -150,6 +132,21 @@
     </Filter>
     <Filter Include="1. Modules\ripple_main\refactored\ledger">
       <UniqueIdentifier>{857187f0-ff25-4ebe-af30-544b7b7f503a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="2. %28Unused%29">
+      <UniqueIdentifier>{786657f9-b1b3-483c-a8e6-863cc2e02eb8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="2. %28Unused%29\ripple_net">
+      <UniqueIdentifier>{7f76ce57-c428-487e-97a0-979c0990a81d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="2. %28Unused%29\ripple_db">
+      <UniqueIdentifier>{a5190241-c5bc-4e23-8ef1-6adf757c75e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="2. %28Unused%29\ripple_ledger">
+      <UniqueIdentifier>{b6175f9a-7d46-4b57-877f-f58b0b3bba89}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="2. %28Unused%29\ripple_client">
+      <UniqueIdentifier>{97c96b68-70fd-4679-89fc-c1c8c87c265e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -481,16 +478,16 @@
       <Filter>1. Modules\ripple_basics</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_ledger\ripple_ledger.cpp">
-      <Filter>2. Empty\ripple_ledger</Filter>
+      <Filter>2. %28Unused%29\ripple_ledger</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_client\ripple_client.cpp">
-      <Filter>1. Modules\ripple_client</Filter>
+      <Filter>2. %28Unused%29\ripple_client</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ChangeTransactor.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_db\ripple_db.cpp">
-      <Filter>2. Empty\ripple_db</Filter>
+      <Filter>2. %28Unused%29\ripple_db</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\database\database.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\db</Filter>
@@ -505,7 +502,7 @@
       <Filter>1. Modules\ripple_main</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_net\ripple_net.cpp">
-      <Filter>2. Empty\ripple_net</Filter>
+      <Filter>2. %28Unused%29\ripple_net</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Interpreter.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\contracts</Filter>
@@ -515,9 +512,6 @@
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\WalletAddTransactor.cpp">
       <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="modules\ripple_mess\ripple_mess.cpp">
-      <Filter>2. Empty\ripple_mess</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_json\json\json_reader.cpp">
       <Filter>1. Modules\ripple_json\json</Filter>
@@ -888,6 +882,9 @@
     <ClCompile Include="src\cpp\ripple\ripple_InboundLedgers.cpp">
       <Filter>1. Modules\ripple_main\refactored\ledger</Filter>
     </ClCompile>
+    <ClCompile Include="Subtrees\beast\modules\beast_basics\beast_basics.cpp">
+      <Filter>0. Third Party Code\beast</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="database\sqlite3ext.h">
@@ -1212,16 +1209,16 @@
       <Filter>1. Modules\ripple_basics</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_ledger\ripple_ledger.h">
-      <Filter>2. Empty\ripple_ledger</Filter>
+      <Filter>2. %28Unused%29\ripple_ledger</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_client\ripple_client.h">
-      <Filter>1. Modules\ripple_client</Filter>
+      <Filter>2. %28Unused%29\ripple_client</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ChangeTransactor.h">
       <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_db\ripple_db.h">
-      <Filter>2. Empty\ripple_db</Filter>
+      <Filter>2. %28Unused%29\ripple_db</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\database\database.h">
       <Filter>1. Modules\ripple_main\_unfactored\db</Filter>
@@ -1233,7 +1230,7 @@
       <Filter>1. Modules\ripple_main</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_net\ripple_net.h">
-      <Filter>2. Empty\ripple_net</Filter>
+      <Filter>2. %28Unused%29\ripple_net</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Interpreter.h">
       <Filter>1. Modules\ripple_main\_unfactored\contracts</Filter>
@@ -1243,9 +1240,6 @@
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\WalletAddTransactor.h">
       <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="modules\ripple_mess\ripple_mess.h">
-      <Filter>2. Empty\ripple_mess</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\containers\ripple_KeyCache.h">
       <Filter>1. Modules\ripple_basics\containers</Filter>
