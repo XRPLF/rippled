@@ -79,7 +79,7 @@ public:
     void noAwaitData ();
     void checkLocal ();
 
-    typedef std::pair <ripple::TMGetObjectByHash::ObjectType, uint256> neededHash_t;
+    typedef std::pair <protocol::TMGetObjectByHash::ObjectType, uint256> neededHash_t;
 
     std::vector<neededHash_t> getNeededHashes ();
 

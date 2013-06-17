@@ -350,8 +350,8 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
 
         if (nextLedger)
         {
-            ripple::TMGetObjectByHash tmBH;
-            tmBH.set_type (ripple::TMGetObjectByHash::otFETCH_PACK);
+            protocol::TMGetObjectByHash tmBH;
+            tmBH.set_type (protocol::TMGetObjectByHash::otFETCH_PACK);
             tmBH.set_query (true);
             tmBH.set_seq (ledgerSeq);
             tmBH.set_ledgerhash (ledgerHash.begin (), 32);
@@ -373,7 +373,7 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
 
             if (target)
             {
-                PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tmBH, ripple::mtGET_OBJECTS);
+                PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tmBH, protocol::mtGET_OBJECTS);
                 target->sendPacket (packet, false);
             }
             else

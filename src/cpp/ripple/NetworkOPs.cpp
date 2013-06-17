@@ -295,14 +295,14 @@ void NetworkOPs::runTransactionQueue ()
 
                 if (theApp->getHashRouter ().swapSet (txn->getID (), peers, SF_RELAYED))
                 {
-                    ripple::TMTransaction tx;
+                    protocol::TMTransaction tx;
                     Serializer s;
                     dbtx->getSTransaction ()->add (s);
                     tx.set_rawtransaction (&s.getData ().front (), s.getLength ());
-                    tx.set_status (ripple::tsCURRENT);
+                    tx.set_status (protocol::tsCURRENT);
                     tx.set_receivetimestamp (getNetworkTimeNC ()); // FIXME: This should be when we received it
 
-                    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tx, ripple::mtTRANSACTION);
+                    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tx, protocol::mtTRANSACTION);
                     theApp->getPeers ().relayMessageBut (peers, packet);
                 }
             }
@@ -404,14 +404,14 @@ Transaction::pointer NetworkOPs::processTransaction (Transaction::pointer trans,
 
         if (theApp->getHashRouter ().swapSet (trans->getID (), peers, SF_RELAYED))
         {
-            ripple::TMTransaction tx;
+            protocol::TMTransaction tx;
             Serializer s;
             trans->getSTransaction ()->add (s);
             tx.set_rawtransaction (&s.getData ().front (), s.getLength ());
-            tx.set_status (ripple::tsCURRENT);
+            tx.set_status (protocol::tsCURRENT);
             tx.set_receivetimestamp (getNetworkTimeNC ()); // FIXME: This should be when we received it
 
-            PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tx, ripple::mtTRANSACTION);
+            PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tx, protocol::mtTRANSACTION);
             theApp->getPeers ().relayMessageBut (peers, packet);
         }
     }
@@ -856,15 +856,15 @@ void NetworkOPs::switchLastClosedLedger (Ledger::pointer newLedger, bool duringC
     Ledger::pointer openLedger = boost::make_shared<Ledger> (false, boost::ref (*newLedger));
     mLedgerMaster->switchLedgers (newLedger, openLedger);
 
-    ripple::TMStatusChange s;
-    s.set_newevent (ripple::neSWITCHED_LEDGER);
+    protocol::TMStatusChange s;
+    s.set_newevent (protocol::neSWITCHED_LEDGER);
     s.set_ledgerseq (newLedger->getLedgerSeq ());
     s.set_networktime (theApp->getOPs ().getNetworkTimeNC ());
     uint256 hash = newLedger->getParentHash ();
     s.set_ledgerhashprevious (hash.begin (), hash.size ());
     hash = newLedger->getHash ();
     s.set_ledgerhash (hash.begin (), hash.size ());
-    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (s, ripple::mtSTATUS_CHANGE);
+    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (s, protocol::mtSTATUS_CHANGE);
     theApp->getPeers ().relayMessage (NULL, packet);
 }
 
@@ -935,7 +935,7 @@ uint256 NetworkOPs::getConsensusLCL ()
 }
 
 void NetworkOPs::processTrustedProposal (LedgerProposal::pointer proposal,
-        boost::shared_ptr<ripple::TMProposeSet> set, RippleAddress nodePublic, uint256 checkLedger, bool sigGood)
+        boost::shared_ptr<protocol::TMProposeSet> set, RippleAddress nodePublic, uint256 checkLedger, bool sigGood)
 {
     boost::recursive_mutex::scoped_lock sl (theApp->getMasterLock ());
 
@@ -975,7 +975,7 @@ void NetworkOPs::processTrustedProposal (LedgerProposal::pointer proposal,
     {
         std::set<uint64> peers;
         theApp->getHashRouter ().swapSet (proposal->getHashRouter (), peers, SF_RELAYED);
-        PackedMessage::pointer message = boost::make_shared<PackedMessage> (*set, ripple::mtPROPOSE_LEDGER);
+        PackedMessage::pointer message = boost::make_shared<PackedMessage> (*set, protocol::mtPROPOSE_LEDGER);
         theApp->getPeers ().relayMessageBut (peers, message);
     }
     else
@@ -1028,7 +1028,7 @@ SHAMapAddNode NetworkOPs::gotTXData (const boost::shared_ptr<Peer>& peer, uint25
     return mConsensus->peerGaveNodes (peer, hash, nodeIDs, nodeData);
 }
 
-bool NetworkOPs::hasTXSet (const boost::shared_ptr<Peer>& peer, uint256 const& set, ripple::TxSetStatus status)
+bool NetworkOPs::hasTXSet (const boost::shared_ptr<Peer>& peer, uint256 const& set, protocol::TxSetStatus status)
 {
     if (!haveConsensusObject ())
     {
@@ -2130,17 +2130,17 @@ void NetworkOPs::getBookPage (Ledger::pointer lpLedger, const uint160& uTakerPay
     //  jvResult["nodes"]   = Json::Value(Json::arrayValue);
 }
 
-static void fpAppender (ripple::TMGetObjectByHash* reply, uint32 ledgerSeq,
+static void fpAppender (protocol::TMGetObjectByHash* reply, uint32 ledgerSeq,
                         const uint256& hash, const Blob& blob)
 {
-    ripple::TMIndexedObject& newObj = * (reply->add_objects ());
+    protocol::TMIndexedObject& newObj = * (reply->add_objects ());
     newObj.set_ledgerseq (ledgerSeq);
     newObj.set_hash (hash.begin (), 256 / 8);
     newObj.set_data (&blob[0], blob.size ());
 }
 
 void NetworkOPs::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
-                                boost::shared_ptr<ripple::TMGetObjectByHash> request,
+                                boost::shared_ptr<protocol::TMGetObjectByHash> request,
                                 Ledger::pointer wantLedger, Ledger::pointer haveLedger, uint32 uUptime)
 {
     if (UptimeTimer::getInstance ().getElapsedSeconds () > (uUptime + 1))
@@ -2162,20 +2162,20 @@ void NetworkOPs::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
         if (!peer)
             return;
 
-        ripple::TMGetObjectByHash reply;
+        protocol::TMGetObjectByHash reply;
         reply.set_query (false);
 
         if (request->has_seq ())
             reply.set_seq (request->seq ());
 
         reply.set_ledgerhash (request->ledgerhash ());
-        reply.set_type (ripple::TMGetObjectByHash::otFETCH_PACK);
+        reply.set_type (protocol::TMGetObjectByHash::otFETCH_PACK);
 
         do
         {
             uint32 lSeq = wantLedger->getLedgerSeq ();
 
-            ripple::TMIndexedObject& newObj = *reply.add_objects ();
+            protocol::TMIndexedObject& newObj = *reply.add_objects ();
             newObj.set_hash (wantLedger->getHash ().begin (), 256 / 8);
             Serializer s (256);
             s.add32 (HashPrefix::ledgerMaster);
@@ -2199,7 +2199,7 @@ void NetworkOPs::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
         while (wantLedger && (UptimeTimer::getInstance ().getElapsedSeconds () <= (uUptime + 1)));
 
         WriteLog (lsINFO, NetworkOPs) << "Built fetch pack with " << reply.objects ().size () << " nodes";
-        PackedMessage::pointer msg = boost::make_shared<PackedMessage> (reply, ripple::mtGET_OBJECTS);
+        PackedMessage::pointer msg = boost::make_shared<PackedMessage> (reply, protocol::mtGET_OBJECTS);
         peer->sendPacket (msg, false);
     }
     catch (...)

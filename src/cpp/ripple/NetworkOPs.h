@@ -206,17 +206,17 @@ public:
                                Blob const& myNode, std::list< Blob >& newNodes);
 
     // ledger proposal/close functions
-    void processTrustedProposal (LedgerProposal::pointer proposal, boost::shared_ptr<ripple::TMProposeSet> set,
+    void processTrustedProposal (LedgerProposal::pointer proposal, boost::shared_ptr<protocol::TMProposeSet> set,
                                  RippleAddress nodePublic, uint256 checkLedger, bool sigGood);
     SHAMapAddNode gotTXData (const boost::shared_ptr<Peer>& peer, uint256 const& hash,
                              const std::list<SHAMapNode>& nodeIDs, const std::list< Blob >& nodeData);
     bool recvValidation (SerializedValidation::ref val, const std::string& source);
     void takePosition (int seq, SHAMap::ref position);
     SHAMap::pointer getTXMap (uint256 const& hash);
-    bool hasTXSet (const boost::shared_ptr<Peer>& peer, uint256 const& set, ripple::TxSetStatus status);
+    bool hasTXSet (const boost::shared_ptr<Peer>& peer, uint256 const& set, protocol::TxSetStatus status);
     void mapComplete (uint256 const& hash, SHAMap::ref map);
     bool stillNeedTXSet (uint256 const& hash);
-    void makeFetchPack (Job&, boost::weak_ptr<Peer> peer, boost::shared_ptr<ripple::TMGetObjectByHash> request,
+    void makeFetchPack (Job&, boost::weak_ptr<Peer> peer, boost::shared_ptr<protocol::TMGetObjectByHash> request,
                         Ledger::pointer wantLedger, Ledger::pointer haveLedger, uint32 uUptime);
     bool shouldFetchPack (uint32 seq);
     void gotFetchPack (bool progress, uint32 seq);

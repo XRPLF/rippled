@@ -112,12 +112,12 @@ void TransactionAcquire::trigger (Peer::ref peer)
     if (!mHaveRoot)
     {
         WriteLog (lsTRACE, TransactionAcquire) << "TransactionAcquire::trigger " << (peer ? "havePeer" : "noPeer") << " no root";
-        ripple::TMGetLedger tmGL;
+        protocol::TMGetLedger tmGL;
         tmGL.set_ledgerhash (mHash.begin (), mHash.size ());
-        tmGL.set_itype (ripple::liTS_CANDIDATE);
+        tmGL.set_itype (protocol::liTS_CANDIDATE);
 
         if (getTimeouts () != 0)
-            tmGL.set_querytype (ripple::qtINDIRECT);
+            tmGL.set_querytype (protocol::qtINDIRECT);
 
         * (tmGL.add_nodeids ()) = SHAMapNode ().getRawString ();
         sendRequest (tmGL, peer);
@@ -140,12 +140,12 @@ void TransactionAcquire::trigger (Peer::ref peer)
             return;
         }
 
-        ripple::TMGetLedger tmGL;
+        protocol::TMGetLedger tmGL;
         tmGL.set_ledgerhash (mHash.begin (), mHash.size ());
-        tmGL.set_itype (ripple::liTS_CANDIDATE);
+        tmGL.set_itype (protocol::liTS_CANDIDATE);
 
         if (getTimeouts () != 0)
-            tmGL.set_querytype (ripple::qtINDIRECT);
+            tmGL.set_querytype (protocol::qtINDIRECT);
 
         BOOST_FOREACH (SHAMapNode & it, nodeIDs)
         * (tmGL.add_nodeids ()) = it.getRawString ();

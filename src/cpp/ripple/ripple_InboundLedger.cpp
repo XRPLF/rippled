@@ -317,12 +317,12 @@ void InboundLedger::trigger (Peer::ref peer)
         }
     }
 
-    ripple::TMGetLedger tmGL;
+    protocol::TMGetLedger tmGL;
     tmGL.set_ledgerhash (mHash.begin (), mHash.size ());
 
     if (getTimeouts () != 0)
     {
-        tmGL.set_querytype (ripple::qtINDIRECT);
+        tmGL.set_querytype (protocol::qtINDIRECT);
 
         if (!isProgress () && !mFailed && mByHash && (getTimeouts () > LEDGER_TIMEOUT_AGGRESSIVE))
         {
@@ -330,7 +330,7 @@ void InboundLedger::trigger (Peer::ref peer)
 
             if (!need.empty ())
             {
-                ripple::TMGetObjectByHash tmBH;
+                protocol::TMGetObjectByHash tmBH;
                 tmBH.set_query (true);
                 tmBH.set_ledgerhash (mHash.begin (), mHash.size ());
                 bool typeSet = false;
@@ -346,11 +346,11 @@ void InboundLedger::trigger (Peer::ref peer)
 
                     if (p.first == tmBH.type ())
                     {
-                        ripple::TMIndexedObject* io = tmBH.add_objects ();
+                        protocol::TMIndexedObject* io = tmBH.add_objects ();
                         io->set_hash (p.second.begin (), p.second.size ());
                     }
                 }
-                PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tmBH, ripple::mtGET_OBJECTS);
+                PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tmBH, protocol::mtGET_OBJECTS);
                 {
                     boost::recursive_mutex::scoped_lock sl (mLock);
 
@@ -381,7 +381,7 @@ void InboundLedger::trigger (Peer::ref peer)
 
     if (!mHaveBase && !mFailed)
     {
-        tmGL.set_itype (ripple::liBASE);
+        tmGL.set_itype (protocol::liBASE);
         WriteLog (lsTRACE, InboundLedger) << "Sending base request to " << (peer ? "selected peer" : "all peers");
         sendRequest (tmGL, peer);
         return;
@@ -397,7 +397,7 @@ void InboundLedger::trigger (Peer::ref peer)
         if (mLedger->peekTransactionMap ()->getHash ().isZero ())
         {
             // we need the root node
-            tmGL.set_itype (ripple::liTX_NODE);
+            tmGL.set_itype (protocol::liTX_NODE);
             * (tmGL.add_nodeids ()) = SHAMapNode ().getRawString ();
             WriteLog (lsTRACE, InboundLedger) << "Sending TX root request to " << (peer ? "selected peer" : "all peers");
             sendRequest (tmGL, peer);
@@ -430,7 +430,7 @@ void InboundLedger::trigger (Peer::ref peer)
 
                 if (!nodeIDs.empty ())
                 {
-                    tmGL.set_itype (ripple::liTX_NODE);
+                    tmGL.set_itype (protocol::liTX_NODE);
                     BOOST_FOREACH (SHAMapNode & it, nodeIDs)
                     {
                         * (tmGL.add_nodeids ()) = it.getRawString ();
@@ -450,7 +450,7 @@ void InboundLedger::trigger (Peer::ref peer)
         if (mLedger->peekAccountStateMap ()->getHash ().isZero ())
         {
             // we need the root node
-            tmGL.set_itype (ripple::liAS_NODE);
+            tmGL.set_itype (protocol::liAS_NODE);
             * (tmGL.add_nodeids ()) = SHAMapNode ().getRawString ();
             WriteLog (lsTRACE, InboundLedger) << "Sending AS root request to " << (peer ? "selected peer" : "all peers");
             sendRequest (tmGL, peer);
@@ -483,7 +483,7 @@ void InboundLedger::trigger (Peer::ref peer)
 
                 if (!nodeIDs.empty ())
                 {
-                    tmGL.set_itype (ripple::liAS_NODE);
+                    tmGL.set_itype (protocol::liAS_NODE);
                     BOOST_FOREACH (SHAMapNode & it, nodeIDs)
                     * (tmGL.add_nodeids ()) = it.getRawString ();
                     WriteLog (lsTRACE, InboundLedger) << "Sending AS node " << nodeIDs.size ()
@@ -506,22 +506,22 @@ void InboundLedger::trigger (Peer::ref peer)
     }
 }
 
-void PeerSet::sendRequest (const ripple::TMGetLedger& tmGL, Peer::ref peer)
+void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL, Peer::ref peer)
 {
     if (!peer)
         sendRequest (tmGL);
     else
-        peer->sendPacket (boost::make_shared<PackedMessage> (tmGL, ripple::mtGET_LEDGER), false);
+        peer->sendPacket (boost::make_shared<PackedMessage> (tmGL, protocol::mtGET_LEDGER), false);
 }
 
-void PeerSet::sendRequest (const ripple::TMGetLedger& tmGL)
+void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
 {
     boost::recursive_mutex::scoped_lock sl (mLock);
 
     if (mPeers.empty ())
         return;
 
-    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tmGL, ripple::mtGET_LEDGER);
+    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tmGL, protocol::mtGET_LEDGER);
 
     for (boost::unordered_map<uint64, int>::iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
     {
@@ -805,7 +805,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
 
     if (!mHaveBase)
     {
-        ret.push_back (std::make_pair (ripple::TMGetObjectByHash::otLEDGER, mHash));
+        ret.push_back (std::make_pair (protocol::TMGetObjectByHash::otLEDGER, mHash));
         return ret;
     }
 
@@ -814,7 +814,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
         AccountStateSF filter (mLedger->getLedgerSeq ());
         std::vector<uint256> v = mLedger->getNeededAccountStateHashes (4, &filter);
         BOOST_FOREACH (uint256 const & h, v)
-        ret.push_back (std::make_pair (ripple::TMGetObjectByHash::otSTATE_NODE, h));
+        ret.push_back (std::make_pair (protocol::TMGetObjectByHash::otSTATE_NODE, h));
     }
 
     if (!mHaveTransactions)
@@ -822,7 +822,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
         TransactionStateSF filter (mLedger->getLedgerSeq ());
         std::vector<uint256> v = mLedger->getNeededAccountStateHashes (4, &filter);
         BOOST_FOREACH (uint256 const & h, v)
-        ret.push_back (std::make_pair (ripple::TMGetObjectByHash::otTRANSACTION_NODE, h));
+        ret.push_back (std::make_pair (protocol::TMGetObjectByHash::otTRANSACTION_NODE, h));
     }
 
     return ret;

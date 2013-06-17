@@ -41,7 +41,7 @@ public:
     //
     void gotLedgerData (Job&,
                         LedgerHash hash,
-                        boost::shared_ptr <ripple::TMLedgerData> packet,
+                        boost::shared_ptr <protocol::TMLedgerData> packet,
                         boost::weak_ptr<Peer> peer);
 
     int getFetchCount (int& timeoutCount);

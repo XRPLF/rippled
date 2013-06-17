@@ -76,9 +76,9 @@ bool InboundLedgers::awaitLedgerData (uint256 const& ledgerHash)
 }
 
 void InboundLedgers::gotLedgerData (Job&, uint256 hash,
-        boost::shared_ptr<ripple::TMLedgerData> packet_ptr, boost::weak_ptr<Peer> wPeer)
+        boost::shared_ptr<protocol::TMLedgerData> packet_ptr, boost::weak_ptr<Peer> wPeer)
 {
-    ripple::TMLedgerData& packet = *packet_ptr;
+    protocol::TMLedgerData& packet = *packet_ptr;
     Peer::pointer peer = wPeer.lock ();
 
     WriteLog (lsTRACE, InboundLedger) << "Got data (" << packet.nodes ().size () << ") for acquiring ledger: " << hash;
@@ -100,7 +100,7 @@ void InboundLedgers::gotLedgerData (Job&, uint256 hash,
     if (!peer)
         return;
 
-    if (packet.type () == ripple::liBASE)
+    if (packet.type () == protocol::liBASE)
     {
         if (packet.nodes_size () < 1)
         {
@@ -139,7 +139,7 @@ void InboundLedgers::gotLedgerData (Job&, uint256 hash,
         return;
     }
 
-    if ((packet.type () == ripple::liTX_NODE) || (packet.type () == ripple::liAS_NODE))
+    if ((packet.type () == protocol::liTX_NODE) || (packet.type () == protocol::liAS_NODE))
     {
         std::list<SHAMapNode> nodeIDs;
         std::list< Blob > nodeData;
@@ -153,7 +153,7 @@ void InboundLedgers::gotLedgerData (Job&, uint256 hash,
 
         for (int i = 0; i < packet.nodes ().size (); ++i)
         {
-            const ripple::TMLedgerNode& node = packet.nodes (i);
+            const protocol::TMLedgerNode& node = packet.nodes (i);
 
             if (!node.has_nodeid () || !node.has_nodedata ())
             {
@@ -168,7 +168,7 @@ void InboundLedgers::gotLedgerData (Job&, uint256 hash,
 
         SHAMapAddNode ret;
 
-        if (packet.type () == ripple::liTX_NODE)
+        if (packet.type () == protocol::liTX_NODE)
             ledger->takeTxNode (nodeIDs, nodeData, ret);
         else
             ledger->takeAsNode (nodeIDs, nodeData, ret);

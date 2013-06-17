@@ -139,8 +139,8 @@ private:
     std::vector<uint8_t>                mReadbuf;
     std::list<PackedMessage::pointer>   mSendQ;
     PackedMessage::pointer              mSendingPacket;
-    ripple::TMStatusChange              mLastStatus;
-    ripple::TMHello                     mHello;
+    protocol::TMStatusChange              mLastStatus;
+    protocol::TMHello                     mHello;
 
 private:
     void handleShutdown (const boost::system::error_code & error)
@@ -163,33 +163,33 @@ private:
 
     void sendHello ();
 
-    void recvHello (ripple::TMHello & packet);
-    void recvTransaction (ripple::TMTransaction & packet, ScopedLock & MasterLockHolder);
-    void recvValidation (const boost::shared_ptr<ripple::TMValidation>& packet, ScopedLock & MasterLockHolder);
-    void recvGetValidation (ripple::TMGetValidations & packet);
-    void recvContact (ripple::TMContact & packet);
-    void recvGetContacts (ripple::TMGetContacts & packet);
-    void recvGetPeers (ripple::TMGetPeers & packet, ScopedLock & MasterLockHolder);
-    void recvPeers (ripple::TMPeers & packet);
-    void recvGetObjectByHash (const boost::shared_ptr<ripple::TMGetObjectByHash>& packet);
-    void recvPing (ripple::TMPing & packet);
-    void recvErrorMessage (ripple::TMErrorMsg & packet);
-    void recvSearchTransaction (ripple::TMSearchTransaction & packet);
-    void recvGetAccount (ripple::TMGetAccount & packet);
-    void recvAccount (ripple::TMAccount & packet);
-    void recvGetLedger (ripple::TMGetLedger & packet, ScopedLock & MasterLockHolder);
-    void recvLedger (const boost::shared_ptr<ripple::TMLedgerData>& packet, ScopedLock & MasterLockHolder);
-    void recvStatus (ripple::TMStatusChange & packet);
-    void recvPropose (const boost::shared_ptr<ripple::TMProposeSet>& packet);
-    void recvHaveTxSet (ripple::TMHaveTransactionSet & packet);
-    void recvProofWork (ripple::TMProofWork & packet);
+    void recvHello (protocol::TMHello & packet);
+    void recvTransaction (protocol::TMTransaction & packet, ScopedLock & MasterLockHolder);
+    void recvValidation (const boost::shared_ptr<protocol::TMValidation>& packet, ScopedLock & MasterLockHolder);
+    void recvGetValidation (protocol::TMGetValidations & packet);
+    void recvContact (protocol::TMContact & packet);
+    void recvGetContacts (protocol::TMGetContacts & packet);
+    void recvGetPeers (protocol::TMGetPeers & packet, ScopedLock & MasterLockHolder);
+    void recvPeers (protocol::TMPeers & packet);
+    void recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& packet);
+    void recvPing (protocol::TMPing & packet);
+    void recvErrorMessage (protocol::TMErrorMsg & packet);
+    void recvSearchTransaction (protocol::TMSearchTransaction & packet);
+    void recvGetAccount (protocol::TMGetAccount & packet);
+    void recvAccount (protocol::TMAccount & packet);
+    void recvGetLedger (protocol::TMGetLedger & packet, ScopedLock & MasterLockHolder);
+    void recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packet, ScopedLock & MasterLockHolder);
+    void recvStatus (protocol::TMStatusChange & packet);
+    void recvPropose (const boost::shared_ptr<protocol::TMProposeSet>& packet);
+    void recvHaveTxSet (protocol::TMHaveTransactionSet & packet);
+    void recvProofWork (protocol::TMProofWork & packet);
 
     void getSessionCookie (std::string & strDst);
 
     void addLedger (uint256 const & ledger);
     void addTxSet (uint256 const & TxSet);
 
-    void doFetchPack (const boost::shared_ptr<ripple::TMGetObjectByHash>& packet);
+    void doFetchPack (const boost::shared_ptr<protocol::TMGetObjectByHash>& packet);
 
     // VFALCO NOTE why is this a static member instead of a regular member?
     static void doProofOfWork (Job&, boost::weak_ptr <Peer>, ProofOfWork::pointer);
@@ -325,9 +325,9 @@ void PeerImp::handlePingTimer (const boost::system::error_code& ecResult)
     {
         // idle->pingsent
         mActive = 1;
-        ripple::TMPing packet;
-        packet.set_type (ripple::TMPing::ptPING);
-        sendPacket (boost::make_shared<PackedMessage> (packet, ripple::mtPING), true);
+        protocol::TMPing packet;
+        packet.set_type (protocol::TMPing::ptPING);
+        sendPacket (boost::make_shared<PackedMessage> (packet, protocol::mtPING), true);
     }
     else // active->idle
         mActive = 0;
@@ -650,7 +650,7 @@ void PeerImp::processReadBuffer ()
     ScopedLock sl (theApp->getMasterLock ());
 
     // If connected and get a mtHELLO or if not connected and get a non-mtHELLO, wrong message was sent.
-    if (mHelloed == (type == ripple::mtHELLO))
+    if (mHelloed == (type == protocol::mtHELLO))
     {
         WriteLog (lsWARNING, Peer) << "Wrong message type: " << type;
         detach ("prb1", true);
@@ -659,10 +659,10 @@ void PeerImp::processReadBuffer ()
     {
         switch (type)
         {
-        case ripple::mtHELLO:
+        case protocol::mtHELLO:
         {
             event->reName ("PeerImp::hello");
-            ripple::TMHello msg;
+            protocol::TMHello msg;
 
             if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvHello (msg);
@@ -671,10 +671,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtERROR_MSG:
+        case protocol::mtERROR_MSG:
         {
             event->reName ("PeerImp::errormessage");
-            ripple::TMErrorMsg msg;
+            protocol::TMErrorMsg msg;
 
             if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvErrorMessage (msg);
@@ -683,10 +683,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtPING:
+        case protocol::mtPING:
         {
             event->reName ("PeerImp::ping");
-            ripple::TMPing msg;
+            protocol::TMPing msg;
 
             if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvPing (msg);
@@ -695,10 +695,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtGET_CONTACTS:
+        case protocol::mtGET_CONTACTS:
         {
             event->reName ("PeerImp::getcontacts");
-            ripple::TMGetContacts msg;
+            protocol::TMGetContacts msg;
 
             if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvGetContacts (msg);
@@ -707,10 +707,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtCONTACT:
+        case protocol::mtCONTACT:
         {
             event->reName ("PeerImp::contact");
-            ripple::TMContact msg;
+            protocol::TMContact msg;
 
             if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvContact (msg);
@@ -719,10 +719,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtGET_PEERS:
+        case protocol::mtGET_PEERS:
         {
             event->reName ("PeerImp::getpeers");
-            ripple::TMGetPeers msg;
+            protocol::TMGetPeers msg;
 
             if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvGetPeers (msg, sl);
@@ -731,10 +731,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtPEERS:
+        case protocol::mtPEERS:
         {
             event->reName ("PeerImp::peers");
-            ripple::TMPeers msg;
+            protocol::TMPeers msg;
 
             if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvPeers (msg);
@@ -743,10 +743,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtSEARCH_TRANSACTION:
+        case protocol::mtSEARCH_TRANSACTION:
         {
             event->reName ("PeerImp::searchtransaction");
-            ripple::TMSearchTransaction msg;
+            protocol::TMSearchTransaction msg;
 
             if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvSearchTransaction (msg);
@@ -755,10 +755,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtGET_ACCOUNT:
+        case protocol::mtGET_ACCOUNT:
         {
             event->reName ("PeerImp::getaccount");
-            ripple::TMGetAccount msg;
+            protocol::TMGetAccount msg;
 
             if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvGetAccount (msg);
@@ -767,10 +767,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtACCOUNT:
+        case protocol::mtACCOUNT:
         {
             event->reName ("PeerImp::account");
-            ripple::TMAccount msg;
+            protocol::TMAccount msg;
 
             if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvAccount (msg);
@@ -779,10 +779,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtTRANSACTION:
+        case protocol::mtTRANSACTION:
         {
             event->reName ("PeerImp::transaction");
-            ripple::TMTransaction msg;
+            protocol::TMTransaction msg;
 
             if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvTransaction (msg, sl);
@@ -791,10 +791,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtSTATUS_CHANGE:
+        case protocol::mtSTATUS_CHANGE:
         {
             event->reName ("PeerImp::statuschange");
-            ripple::TMStatusChange msg;
+            protocol::TMStatusChange msg;
 
             if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvStatus (msg);
@@ -803,10 +803,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtPROPOSE_LEDGER:
+        case protocol::mtPROPOSE_LEDGER:
         {
             event->reName ("PeerImp::propose");
-            boost::shared_ptr<ripple::TMProposeSet> msg = boost::make_shared<ripple::TMProposeSet> ();
+            boost::shared_ptr<protocol::TMProposeSet> msg = boost::make_shared<protocol::TMProposeSet> ();
 
             if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvPropose (msg);
@@ -815,10 +815,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtGET_LEDGER:
+        case protocol::mtGET_LEDGER:
         {
             event->reName ("PeerImp::getledger");
-            ripple::TMGetLedger msg;
+            protocol::TMGetLedger msg;
 
             if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvGetLedger (msg, sl);
@@ -827,10 +827,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtLEDGER_DATA:
+        case protocol::mtLEDGER_DATA:
         {
             event->reName ("PeerImp::ledgerdata");
-            boost::shared_ptr<ripple::TMLedgerData> msg = boost::make_shared<ripple::TMLedgerData> ();
+            boost::shared_ptr<protocol::TMLedgerData> msg = boost::make_shared<protocol::TMLedgerData> ();
 
             if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvLedger (msg, sl);
@@ -839,10 +839,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtHAVE_SET:
+        case protocol::mtHAVE_SET:
         {
             event->reName ("PeerImp::haveset");
-            ripple::TMHaveTransactionSet msg;
+            protocol::TMHaveTransactionSet msg;
 
             if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvHaveTxSet (msg);
@@ -851,10 +851,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtVALIDATION:
+        case protocol::mtVALIDATION:
         {
             event->reName ("PeerImp::validation");
-            boost::shared_ptr<ripple::TMValidation> msg = boost::make_shared<ripple::TMValidation> ();
+            boost::shared_ptr<protocol::TMValidation> msg = boost::make_shared<protocol::TMValidation> ();
 
             if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvValidation (msg, sl);
@@ -864,9 +864,9 @@ void PeerImp::processReadBuffer ()
         break;
 #if 0
 
-        case ripple::mtGET_VALIDATION:
+        case protocol::mtGET_VALIDATION:
         {
-            ripple::TM msg;
+            protocol::TM msg;
 
             if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recv (msg);
@@ -877,10 +877,10 @@ void PeerImp::processReadBuffer ()
 
 #endif
 
-        case ripple::mtGET_OBJECTS:
+        case protocol::mtGET_OBJECTS:
         {
             event->reName ("PeerImp::getobjects");
-            boost::shared_ptr<ripple::TMGetObjectByHash> msg = boost::make_shared<ripple::TMGetObjectByHash> ();
+            boost::shared_ptr<protocol::TMGetObjectByHash> msg = boost::make_shared<protocol::TMGetObjectByHash> ();
 
             if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvGetObjectByHash (msg);
@@ -889,10 +889,10 @@ void PeerImp::processReadBuffer ()
         }
         break;
 
-        case ripple::mtPROOFOFWORK:
+        case protocol::mtPROOFOFWORK:
         {
             event->reName ("PeerImp::proofofwork");
-            ripple::TMProofWork msg;
+            protocol::TMProofWork msg;
 
             if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                 recvProofWork (msg);
@@ -910,7 +910,7 @@ void PeerImp::processReadBuffer ()
     }
 }
 
-void PeerImp::recvHello (ripple::TMHello& packet)
+void PeerImp::recvHello (protocol::TMHello& packet)
 {
     bool    bDetach = true;
 
@@ -1094,7 +1094,7 @@ static void checkTransaction (Job&, int flags, SerializedTransaction::pointer st
 #endif
 }
 
-void PeerImp::recvTransaction (ripple::TMTransaction& packet, ScopedLock& MasterLockHolder)
+void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& MasterLockHolder)
 {
     MasterLockHolder.unlock ();
     Transaction::pointer tx;
@@ -1147,7 +1147,7 @@ void PeerImp::recvTransaction (ripple::TMTransaction& packet, ScopedLock& Master
 }
 
 // Called from our JobQueue
-static void checkPropose (Job& job, boost::shared_ptr<ripple::TMProposeSet> packet,
+static void checkPropose (Job& job, boost::shared_ptr<protocol::TMProposeSet> packet,
                           LedgerProposal::pointer proposal, uint256 consensusLCL, RippleAddress nodePublic, boost::weak_ptr<Peer> peer)
 {
     bool sigGood = false;
@@ -1156,7 +1156,7 @@ static void checkPropose (Job& job, boost::shared_ptr<ripple::TMProposeSet> pack
     WriteLog (lsTRACE, Peer) << "Checking " << (isTrusted ? "trusted" : "UNtrusted") << " proposal";
 
     assert (packet);
-    ripple::TMProposeSet& set = *packet;
+    protocol::TMProposeSet& set = *packet;
 
     uint256 prevLedger;
 
@@ -1199,17 +1199,17 @@ static void checkPropose (Job& job, boost::shared_ptr<ripple::TMProposeSet> pack
         WriteLog (lsTRACE, Peer) << "relaying untrusted proposal";
         std::set<uint64> peers;
         theApp->getHashRouter ().swapSet (proposal->getHashRouter (), peers, SF_RELAYED);
-        PackedMessage::pointer message = boost::make_shared<PackedMessage> (set, ripple::mtPROPOSE_LEDGER);
+        PackedMessage::pointer message = boost::make_shared<PackedMessage> (set, protocol::mtPROPOSE_LEDGER);
         theApp->getPeers ().relayMessageBut (peers, message);
     }
     else
         WriteLog (lsDEBUG, Peer) << "Not relaying untrusted proposal";
 }
 
-void PeerImp::recvPropose (const boost::shared_ptr<ripple::TMProposeSet>& packet)
+void PeerImp::recvPropose (const boost::shared_ptr<protocol::TMProposeSet>& packet)
 {
     assert (packet);
-    ripple::TMProposeSet& set = *packet;
+    protocol::TMProposeSet& set = *packet;
 
     if ((set.currenttxhash ().size () != 32) || (set.nodepubkey ().size () < 28) ||
             (set.signature ().size () < 56) || (set.nodepubkey ().size () > 128) || (set.signature ().size () > 128))
@@ -1277,7 +1277,7 @@ void PeerImp::recvPropose (const boost::shared_ptr<ripple::TMProposeSet>& packet
                                            mNodePublic, boost::weak_ptr<Peer> (shared_from_this ())));
 }
 
-void PeerImp::recvHaveTxSet (ripple::TMHaveTransactionSet& packet)
+void PeerImp::recvHaveTxSet (protocol::TMHaveTransactionSet& packet)
 {
     uint256 hashes;
 
@@ -1290,7 +1290,7 @@ void PeerImp::recvHaveTxSet (ripple::TMHaveTransactionSet& packet)
     uint256 hash;
     memcpy (hash.begin (), packet.hash ().data (), 32);
 
-    if (packet.status () == ripple::tsHAVE)
+    if (packet.status () == protocol::tsHAVE)
         addTxSet (hash);
 
     if (!theApp->getOPs ().hasTXSet (shared_from_this (), hash, packet.status ()))
@@ -1298,7 +1298,7 @@ void PeerImp::recvHaveTxSet (ripple::TMHaveTransactionSet& packet)
 }
 
 static void checkValidation (Job&, SerializedValidation::pointer val, uint256 signingHash,
-                             bool isTrusted, bool isCluster, boost::shared_ptr<ripple::TMValidation> packet, boost::weak_ptr<Peer> peer)
+                             bool isTrusted, bool isCluster, boost::shared_ptr<protocol::TMValidation> packet, boost::weak_ptr<Peer> peer)
 {
 #ifndef TRUST_NETWORK
 
@@ -1325,7 +1325,7 @@ static void checkValidation (Job&, SerializedValidation::pointer val, uint256 si
         if (theApp->getOPs ().recvValidation (val, source) &&
                 theApp->getHashRouter ().swapSet (signingHash, peers, SF_RELAYED))
         {
-            PackedMessage::pointer message = boost::make_shared<PackedMessage> (*packet, ripple::mtVALIDATION);
+            PackedMessage::pointer message = boost::make_shared<PackedMessage> (*packet, protocol::mtVALIDATION);
             theApp->getPeers ().relayMessageBut (peers, message);
         }
     }
@@ -1340,7 +1340,7 @@ static void checkValidation (Job&, SerializedValidation::pointer val, uint256 si
 #endif
 }
 
-void PeerImp::recvValidation (const boost::shared_ptr<ripple::TMValidation>& packet, ScopedLock& MasterLockHolder)
+void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& packet, ScopedLock& MasterLockHolder)
 {
     MasterLockHolder.unlock ();
 
@@ -1387,22 +1387,22 @@ void PeerImp::recvValidation (const boost::shared_ptr<ripple::TMValidation>& pac
 #endif
 }
 
-void PeerImp::recvGetValidation (ripple::TMGetValidations& packet)
+void PeerImp::recvGetValidation (protocol::TMGetValidations& packet)
 {
 }
 
-void PeerImp::recvContact (ripple::TMContact& packet)
+void PeerImp::recvContact (protocol::TMContact& packet)
 {
 }
 
-void PeerImp::recvGetContacts (ripple::TMGetContacts& packet)
+void PeerImp::recvGetContacts (protocol::TMGetContacts& packet)
 {
 }
 
 // Return a list of your favorite people
 // TODO: filter out all the LAN peers
 // TODO: filter out the peer you are talking to
-void PeerImp::recvGetPeers (ripple::TMGetPeers& packet, ScopedLock& MasterLockHolder)
+void PeerImp::recvGetPeers (protocol::TMGetPeers& packet, ScopedLock& MasterLockHolder)
 {
     MasterLockHolder.unlock ();
     std::vector<std::string> addrs;
@@ -1411,7 +1411,7 @@ void PeerImp::recvGetPeers (ripple::TMGetPeers& packet, ScopedLock& MasterLockHo
 
     if (!addrs.empty ())
     {
-        ripple::TMPeers peers;
+        protocol::TMPeers peers;
 
         for (unsigned int n = 0; n < addrs.size (); n++)
         {
@@ -1421,20 +1421,20 @@ void PeerImp::recvGetPeers (ripple::TMGetPeers& packet, ScopedLock& MasterLockHo
             splitIpPort (addrs[n], strIP, iPort);
 
             // XXX This should also ipv6
-            ripple::TMIPv4EndPoint* addr = peers.add_nodes ();
+            protocol::TMIPv4EndPoint* addr = peers.add_nodes ();
             addr->set_ipv4 (inet_addr (strIP.c_str ()));
             addr->set_ipv4port (iPort);
 
             //WriteLog (lsINFO, Peer) << "Peer: Teaching: " << ADDRESS(this) << ": " << n << ": " << strIP << " " << iPort;
         }
 
-        PackedMessage::pointer message = boost::make_shared<PackedMessage> (peers, ripple::mtPEERS);
+        PackedMessage::pointer message = boost::make_shared<PackedMessage> (peers, protocol::mtPEERS);
         sendPacket (message, true);
     }
 }
 
 // TODO: filter out all the LAN peers
-void PeerImp::recvPeers (ripple::TMPeers& packet)
+void PeerImp::recvPeers (protocol::TMPeers& packet)
 {
     for (int i = 0; i < packet.nodes ().size (); ++i)
     {
@@ -1454,20 +1454,20 @@ void PeerImp::recvPeers (ripple::TMPeers& packet)
     }
 }
 
-void PeerImp::recvGetObjectByHash (const boost::shared_ptr<ripple::TMGetObjectByHash>& ptr)
+void PeerImp::recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& ptr)
 {
-    ripple::TMGetObjectByHash& packet = *ptr;
+    protocol::TMGetObjectByHash& packet = *ptr;
 
     if (packet.query ())
     {
         // this is a query
-        if (packet.type () == ripple::TMGetObjectByHash::otFETCH_PACK)
+        if (packet.type () == protocol::TMGetObjectByHash::otFETCH_PACK)
         {
             doFetchPack (ptr);
             return;
         }
 
-        ripple::TMGetObjectByHash reply;
+        protocol::TMGetObjectByHash reply;
 
         reply.set_query (false);
 
@@ -1483,7 +1483,7 @@ void PeerImp::recvGetObjectByHash (const boost::shared_ptr<ripple::TMGetObjectBy
         for (int i = 0; i < packet.objects_size (); ++i)
         {
             uint256 hash;
-            const ripple::TMIndexedObject& obj = packet.objects (i);
+            const protocol::TMIndexedObject& obj = packet.objects (i);
 
             if (obj.has_hash () && (obj.hash ().size () == (256 / 8)))
             {
@@ -1492,7 +1492,7 @@ void PeerImp::recvGetObjectByHash (const boost::shared_ptr<ripple::TMGetObjectBy
 
                 if (hObj)
                 {
-                    ripple::TMIndexedObject& newObj = *reply.add_objects ();
+                    protocol::TMIndexedObject& newObj = *reply.add_objects ();
                     newObj.set_hash (hash.begin (), hash.size ());
                     newObj.set_data (&hObj->getData ().front (), hObj->getData ().size ());
 
@@ -1507,7 +1507,7 @@ void PeerImp::recvGetObjectByHash (const boost::shared_ptr<ripple::TMGetObjectBy
 
         WriteLog (lsTRACE, Peer) << "GetObjByHash had " << reply.objects_size () << " of " << packet.objects_size ()
                                  << " for " << getIP ();
-        sendPacket (boost::make_shared<PackedMessage> (reply, ripple::mtGET_OBJECTS), true);
+        sendPacket (boost::make_shared<PackedMessage> (reply, protocol::mtGET_OBJECTS), true);
     }
     else
     {
@@ -1518,7 +1518,7 @@ void PeerImp::recvGetObjectByHash (const boost::shared_ptr<ripple::TMGetObjectBy
 
         for (int i = 0; i < packet.objects_size (); ++i)
         {
-            const ripple::TMIndexedObject& obj = packet.objects (i);
+            const protocol::TMIndexedObject& obj = packet.objects (i);
 
             if (obj.has_hash () && (obj.hash ().size () == (256 / 8)))
             {
@@ -1555,41 +1555,41 @@ void PeerImp::recvGetObjectByHash (const boost::shared_ptr<ripple::TMGetObjectBy
 
         CondLog (pLDo && (pLSeq != 0), lsDEBUG, Peer) << "Received partial fetch pack for " << pLSeq;
 
-        if (packet.type () == ripple::TMGetObjectByHash::otFETCH_PACK)
+        if (packet.type () == protocol::TMGetObjectByHash::otFETCH_PACK)
             theApp->getOPs ().gotFetchPack (progress, pLSeq);
     }
 }
 
-void PeerImp::recvPing (ripple::TMPing& packet)
+void PeerImp::recvPing (protocol::TMPing& packet)
 {
-    if (packet.type () == ripple::TMPing::ptPING)
+    if (packet.type () == protocol::TMPing::ptPING)
     {
-        packet.set_type (ripple::TMPing::ptPONG);
-        sendPacket (boost::make_shared<PackedMessage> (packet, ripple::mtPING), true);
+        packet.set_type (protocol::TMPing::ptPONG);
+        sendPacket (boost::make_shared<PackedMessage> (packet, protocol::mtPING), true);
     }
-    else if (packet.type () == ripple::TMPing::ptPONG)
+    else if (packet.type () == protocol::TMPing::ptPONG)
     {
         mActive = 2;
     }
 }
 
-void PeerImp::recvErrorMessage (ripple::TMErrorMsg& packet)
+void PeerImp::recvErrorMessage (protocol::TMErrorMsg& packet)
 {
 }
 
-void PeerImp::recvSearchTransaction (ripple::TMSearchTransaction& packet)
+void PeerImp::recvSearchTransaction (protocol::TMSearchTransaction& packet)
 {
 }
 
-void PeerImp::recvGetAccount (ripple::TMGetAccount& packet)
+void PeerImp::recvGetAccount (protocol::TMGetAccount& packet)
 {
 }
 
-void PeerImp::recvAccount (ripple::TMAccount& packet)
+void PeerImp::recvAccount (protocol::TMAccount& packet)
 {
 }
 
-void PeerImp::recvProofWork (ripple::TMProofWork& packet)
+void PeerImp::recvProofWork (protocol::TMProofWork& packet)
 {
     if (packet.has_response ())
     {
@@ -1660,7 +1660,7 @@ void PeerImp::recvProofWork (ripple::TMProofWork& packet)
     WriteLog (lsINFO, Peer) << "Received in valid proof of work object from peer";
 }
 
-void PeerImp::recvStatus (ripple::TMStatusChange& packet)
+void PeerImp::recvStatus (protocol::TMStatusChange& packet)
 {
     WriteLog (lsTRACE, Peer) << "Received status change from peer " << getIP ();
 
@@ -1672,12 +1672,12 @@ void PeerImp::recvStatus (ripple::TMStatusChange& packet)
     else
     {
         // preserve old status
-        ripple::NodeStatus status = mLastStatus.newstatus ();
+        protocol::NodeStatus status = mLastStatus.newstatus ();
         mLastStatus = packet;
         packet.set_newstatus (status);
     }
 
-    if (packet.newevent () == ripple::neLOST_SYNC)
+    if (packet.newevent () == protocol::neLOST_SYNC)
     {
         if (!mClosedLedgerHash.isZero ())
         {
@@ -1716,10 +1716,10 @@ void PeerImp::recvStatus (ripple::TMStatusChange& packet)
         mMaxLedger = packet.lastseq ();
 }
 
-void PeerImp::recvGetLedger (ripple::TMGetLedger& packet, ScopedLock& MasterLockHolder)
+void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, ScopedLock& MasterLockHolder)
 {
     SHAMap::pointer map;
-    ripple::TMLedgerData reply;
+    protocol::TMLedgerData reply;
     bool fatLeaves = true, fatRoot = false;
 
     if (packet.has_requestcookie ())
@@ -1727,7 +1727,7 @@ void PeerImp::recvGetLedger (ripple::TMGetLedger& packet, ScopedLock& MasterLock
 
     std::string logMe;
 
-    if (packet.itype () == ripple::liTS_CANDIDATE)
+    if (packet.itype () == protocol::liTS_CANDIDATE)
     {
         // Request is for a transaction candidate set
         WriteLog (lsDEBUG, Peer) << "Received request for TX candidate set data " << getIP ();
@@ -1764,7 +1764,7 @@ void PeerImp::recvGetLedger (ripple::TMGetLedger& packet, ScopedLock& MasterLock
 
                 Peer::ref selectedPeer = usablePeers[rand () % usablePeers.size ()];
                 packet.set_requestcookie (getPeerId ());
-                selectedPeer->sendPacket (boost::make_shared<PackedMessage> (packet, ripple::mtGET_LEDGER), false);
+                selectedPeer->sendPacket (boost::make_shared<PackedMessage> (packet, protocol::mtGET_LEDGER), false);
                 return;
             }
 
@@ -1775,7 +1775,7 @@ void PeerImp::recvGetLedger (ripple::TMGetLedger& packet, ScopedLock& MasterLock
 
         reply.set_ledgerseq (0);
         reply.set_ledgerhash (txHash.begin (), txHash.size ());
-        reply.set_type (ripple::liTS_CANDIDATE);
+        reply.set_type (protocol::liTS_CANDIDATE);
         fatLeaves = false; // We'll already have most transactions
         fatRoot = true; // Save a pass
     }
@@ -1826,7 +1826,7 @@ void PeerImp::recvGetLedger (ripple::TMGetLedger& packet, ScopedLock& MasterLock
 
                 Peer::ref selectedPeer = usablePeers[rand () % usablePeers.size ()];
                 packet.set_requestcookie (getPeerId ());
-                selectedPeer->sendPacket (boost::make_shared<PackedMessage> (packet, ripple::mtGET_LEDGER), false);
+                selectedPeer->sendPacket (boost::make_shared<PackedMessage> (packet, protocol::mtGET_LEDGER), false);
                 WriteLog (lsDEBUG, Peer) << "Ledger request routed";
                 return;
             }
@@ -1836,9 +1836,9 @@ void PeerImp::recvGetLedger (ripple::TMGetLedger& packet, ScopedLock& MasterLock
             ledger = theApp->getLedgerMaster ().getLedgerBySeq (packet.ledgerseq ());
             CondLog (!ledger, lsDEBUG, Peer) << "Don't have ledger " << packet.ledgerseq ();
         }
-        else if (packet.has_ltype () && (packet.ltype () == ripple::ltCURRENT))
+        else if (packet.has_ltype () && (packet.ltype () == protocol::ltCURRENT))
             ledger = theApp->getLedgerMaster ().getCurrentLedger ();
-        else if (packet.has_ltype () && (packet.ltype () == ripple::ltCLOSED) )
+        else if (packet.has_ltype () && (packet.ltype () == protocol::ltCLOSED) )
         {
             ledger = theApp->getLedgerMaster ().getClosedLedger ();
 
@@ -1878,7 +1878,7 @@ void PeerImp::recvGetLedger (ripple::TMGetLedger& packet, ScopedLock& MasterLock
         reply.set_ledgerseq (ledger->getLedgerSeq ());
         reply.set_type (packet.itype ());
 
-        if (packet.itype () == ripple::liBASE)
+        if (packet.itype () == protocol::liBASE)
         {
             // they want the ledger base data
             WriteLog (lsTRACE, Peer) << "They want ledger base data";
@@ -1912,18 +1912,18 @@ void PeerImp::recvGetLedger (ripple::TMGetLedger& packet, ScopedLock& MasterLock
                 }
             }
 
-            PackedMessage::pointer oPacket = boost::make_shared<PackedMessage> (reply, ripple::mtLEDGER_DATA);
+            PackedMessage::pointer oPacket = boost::make_shared<PackedMessage> (reply, protocol::mtLEDGER_DATA);
             sendPacket (oPacket, true);
             return;
         }
 
-        if (packet.itype () == ripple::liTX_NODE)
+        if (packet.itype () == protocol::liTX_NODE)
         {
             map = ledger->peekTransactionMap ();
             logMe += " TX:";
             logMe += map->getHash ().GetHex ();
         }
-        else if (packet.itype () == ripple::liAS_NODE)
+        else if (packet.itype () == protocol::liAS_NODE)
         {
             map = ledger->peekAccountStateMap ();
             logMe += " AS:";
@@ -1968,7 +1968,7 @@ void PeerImp::recvGetLedger (ripple::TMGetLedger& packet, ScopedLock& MasterLock
                 {
                     Serializer nID (33);
                     nodeIDIterator->addIDRaw (nID);
-                    ripple::TMLedgerNode* node = reply.add_nodes ();
+                    protocol::TMLedgerNode* node = reply.add_nodes ();
                     node->set_nodeid (nID.getDataPtr (), nID.getLength ());
                     node->set_nodedata (&rawNodeIterator->front (), rawNodeIterator->size ());
                 }
@@ -1980,13 +1980,13 @@ void PeerImp::recvGetLedger (ripple::TMGetLedger& packet, ScopedLock& MasterLock
         {
             std::string info;
 
-            if (packet.itype () == ripple::liTS_CANDIDATE)
+            if (packet.itype () == protocol::liTS_CANDIDATE)
                 info = "TS candidate";
-            else if (packet.itype () == ripple::liBASE)
+            else if (packet.itype () == protocol::liBASE)
                 info = "Ledger base";
-            else if (packet.itype () == ripple::liTX_NODE)
+            else if (packet.itype () == protocol::liTX_NODE)
                 info = "TX node";
-            else if (packet.itype () == ripple::liAS_NODE)
+            else if (packet.itype () == protocol::liAS_NODE)
                 info = "AS node";
 
             if (!packet.has_ledgerhash ())
@@ -1996,14 +1996,14 @@ void PeerImp::recvGetLedger (ripple::TMGetLedger& packet, ScopedLock& MasterLock
         }
     }
 
-    PackedMessage::pointer oPacket = boost::make_shared<PackedMessage> (reply, ripple::mtLEDGER_DATA);
+    PackedMessage::pointer oPacket = boost::make_shared<PackedMessage> (reply, protocol::mtLEDGER_DATA);
     sendPacket (oPacket, true);
 }
 
-void PeerImp::recvLedger (const boost::shared_ptr<ripple::TMLedgerData>& packet_ptr, ScopedLock& MasterLockHolder)
+void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packet_ptr, ScopedLock& MasterLockHolder)
 {
     MasterLockHolder.unlock ();
-    ripple::TMLedgerData& packet = *packet_ptr;
+    protocol::TMLedgerData& packet = *packet_ptr;
 
     if (packet.nodes ().size () <= 0)
     {
@@ -2019,7 +2019,7 @@ void PeerImp::recvLedger (const boost::shared_ptr<ripple::TMLedgerData>& packet_
         if (target)
         {
             packet.clear_requestcookie ();
-            target->sendPacket (boost::make_shared<PackedMessage> (packet, ripple::mtLEDGER_DATA), false);
+            target->sendPacket (boost::make_shared<PackedMessage> (packet, protocol::mtLEDGER_DATA), false);
         }
         else
         {
@@ -2041,7 +2041,7 @@ void PeerImp::recvLedger (const boost::shared_ptr<ripple::TMLedgerData>& packet_
 
     memcpy (hash.begin (), packet.ledgerhash ().data (), 32);
 
-    if (packet.type () == ripple::liTS_CANDIDATE)
+    if (packet.type () == protocol::liTS_CANDIDATE)
     {
         // got data for a candidate transaction set
         std::list<SHAMapNode> nodeIDs;
@@ -2049,7 +2049,7 @@ void PeerImp::recvLedger (const boost::shared_ptr<ripple::TMLedgerData>& packet_
 
         for (int i = 0; i < packet.nodes ().size (); ++i)
         {
-            const ripple::TMLedgerNode& node = packet.nodes (i);
+            const protocol::TMLedgerNode& node = packet.nodes (i);
 
             if (!node.has_nodeid () || !node.has_nodedata () || (node.nodeid ().size () != 33))
             {
@@ -2168,7 +2168,7 @@ void PeerImp::sendHello ()
 
     theApp->getLocalCredentials ().getNodePrivate ().signNodePrivate (mCookieHash, vchSig);
 
-    ripple::TMHello h;
+    protocol::TMHello h;
 
     h.set_protoversion (MAKE_VERSION_INT (PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR));
     h.set_protoversionmin (MAKE_VERSION_INT (MIN_PROTO_MAJOR, MIN_PROTO_MINOR));
@@ -2190,18 +2190,18 @@ void PeerImp::sendHello ()
         h.set_ledgerprevious (hash.begin (), hash.GetSerializeSize ());
     }
 
-    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (h, ripple::mtHELLO);
+    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (h, protocol::mtHELLO);
     sendPacket (packet, true);
 }
 
 void PeerImp::sendGetPeers ()
 {
     // Ask peer for known other peers.
-    ripple::TMGetPeers getPeers;
+    protocol::TMGetPeers getPeers;
 
     getPeers.set_doweneedthis (1);
 
-    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (getPeers, ripple::mtGET_PEERS);
+    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (getPeers, protocol::mtGET_PEERS);
 
     sendPacket (packet, true);
 }
@@ -2231,10 +2231,10 @@ void PeerImp::doProofOfWork (Job&, boost::weak_ptr <Peer> peer, ProofOfWork::poi
 
         if (pptr)
         {
-            ripple::TMProofWork reply;
+            protocol::TMProofWork reply;
             reply.set_token (pow->getToken ());
             reply.set_response (solution.begin (), solution.size ());
-            pptr->sendPacket (boost::make_shared<PackedMessage> (reply, ripple::mtPROOFOFWORK), false);
+            pptr->sendPacket (boost::make_shared<PackedMessage> (reply, protocol::mtPROOFOFWORK), false);
         }
         else
         {
@@ -2243,7 +2243,7 @@ void PeerImp::doProofOfWork (Job&, boost::weak_ptr <Peer> peer, ProofOfWork::poi
     }
 }
 
-void PeerImp::doFetchPack (const boost::shared_ptr<ripple::TMGetObjectByHash>& packet)
+void PeerImp::doFetchPack (const boost::shared_ptr<protocol::TMGetObjectByHash>& packet)
 {
     if (theApp->getFeeTrack ().isLoaded ())
     {
@@ -2332,23 +2332,23 @@ Json::Value PeerImp::getJson ()
     {
         switch (mLastStatus.newstatus ())
         {
-        case ripple::nsCONNECTING:
+        case protocol::nsCONNECTING:
             ret["status"] = "connecting";
             break;
 
-        case ripple::nsCONNECTED:
+        case protocol::nsCONNECTED:
             ret["status"] = "connected";
             break;
 
-        case ripple::nsMONITORING:
+        case protocol::nsMONITORING:
             ret["status"] = "monitoring";
             break;
 
-        case ripple::nsVALIDATING:
+        case protocol::nsVALIDATING:
             ret["status"] = "validating";
             break;
 
-        case ripple::nsSHUTTING:
+        case protocol::nsSHUTTING:
             ret["status"] = "shutting";
             break;
 

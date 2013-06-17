@@ -58,7 +58,7 @@ public:
 
     bool peerPosition (LedgerProposal::ref);
 
-    bool peerHasSet (Peer::ref peer, uint256 const & set, ripple::TxSetStatus status);
+    bool peerHasSet (Peer::ref peer, uint256 const & set, protocol::TxSetStatus status);
 
     SHAMapAddNode peerGaveNodes (Peer::ref peer, uint256 const & setHash,
                                  const std::list<SHAMapNode>& nodeIDs, const std::list< Blob >& nodeData);
@@ -95,7 +95,7 @@ private:
     uint32 roundCloseTime (uint32 closeTime);
 
     // manipulating our own position
-    void statusChange (ripple::NodeEvent, Ledger & ledger);
+    void statusChange (protocol::NodeEvent, Ledger & ledger);
     void takeInitialPosition (Ledger & initialLedger);
     void updateOurPositions ();
     void playbackProposals ();
