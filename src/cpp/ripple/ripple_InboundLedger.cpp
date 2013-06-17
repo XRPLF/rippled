@@ -289,8 +289,7 @@ void InboundLedger::trigger (Peer::ref peer)
 
     if ((mWaitCount > 0) && peer)
     {
-        mRecentPeers.push_back (peer->getPeerId ());
-        WriteLog (lsTRACE, InboundLedger) << "Deferring peer";
+        WriteLog (lsTRACE, InboundLedger) << "Skipping peer";
         return;
     }
 
@@ -314,6 +313,7 @@ void InboundLedger::trigger (Peer::ref peer)
         if (mFailed)
         {
             WriteLog (lsWARNING, InboundLedger) << " failed local for " << mHash;
+            return;
         }
     }
 
@@ -401,6 +401,7 @@ void InboundLedger::trigger (Peer::ref peer)
             * (tmGL.add_nodeids ()) = SHAMapNode ().getRawString ();
             WriteLog (lsTRACE, InboundLedger) << "Sending TX root request to " << (peer ? "selected peer" : "all peers");
             sendRequest (tmGL, peer);
+            return;
         }
         else
         {
@@ -431,13 +432,14 @@ void InboundLedger::trigger (Peer::ref peer)
                 if (!nodeIDs.empty ())
                 {
                     tmGL.set_itype (protocol::liTX_NODE);
-                    BOOST_FOREACH (SHAMapNode & it, nodeIDs)
+                    BOOST_FOREACH (SHAMapNode const& it, nodeIDs)
                     {
                         * (tmGL.add_nodeids ()) = it.getRawString ();
                     }
                     WriteLog (lsTRACE, InboundLedger) << "Sending TX node " << nodeIDs.size ()
                                                       << " request to " << (peer ? "selected peer" : "all peers");
                     sendRequest (tmGL, peer);
+                    return;
                 }
             }
         }
@@ -454,6 +456,7 @@ void InboundLedger::trigger (Peer::ref peer)
             * (tmGL.add_nodeids ()) = SHAMapNode ().getRawString ();
             WriteLog (lsTRACE, InboundLedger) << "Sending AS root request to " << (peer ? "selected peer" : "all peers");
             sendRequest (tmGL, peer);
+            return;
         }
         else
         {
@@ -484,18 +487,19 @@ void InboundLedger::trigger (Peer::ref peer)
                 if (!nodeIDs.empty ())
                 {
                     tmGL.set_itype (protocol::liAS_NODE);
-                    BOOST_FOREACH (SHAMapNode & it, nodeIDs)
-                    * (tmGL.add_nodeids ()) = it.getRawString ();
+                    BOOST_FOREACH (SHAMapNode const& it, nodeIDs)
+                    {
+                        * (tmGL.add_nodeids ()) = it.getRawString ();
+		    }
                     WriteLog (lsTRACE, InboundLedger) << "Sending AS node " << nodeIDs.size ()
                                                       << " request to " << (peer ? "selected peer" : "all peers");
                     CondLog (nodeIDs.size () == 1, lsTRACE, InboundLedger) << "AS node: " << nodeIDs[0];
                     sendRequest (tmGL, peer);
+                    return;
                 }
             }
         }
     }
-
-    mRecentPeers.clear ();
 
     if (mComplete || mFailed)
     {
