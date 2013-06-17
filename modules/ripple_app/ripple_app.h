@@ -4,17 +4,17 @@
 */
 //==============================================================================
 
-/** Include this to get the @ref ripple_main module.
+/** Include this to get the @ref ripple_app module.
 
-    @file ripple_main.h
-    @ingroup ripple_main
+    @file ripple_app.h
+    @ingroup ripple_app
 */
 
 /** Core classes.
 
     This module contains the Ripple core instance object and related objects.
 
-    @defgroup ripple_main
+    @defgroup ripple_app
 */
 
 #ifndef RIPPLE_MAIN_H

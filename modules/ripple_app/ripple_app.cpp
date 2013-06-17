@@ -4,10 +4,10 @@
 */
 //==============================================================================
 
-/** Add this to get the @ref ripple_main module.
+/** Add this to get the @ref ripple_app module.
 
-    @file ripple_main.cpp
-    @ingroup ripple_main
+    @file ripple_app.cpp
+    @ingroup ripple_app
 */
 
 //------------------------------------------------------------------------------
@@ -88,7 +88,7 @@
 #endif
 
 // VFALCO NOTE these includes generate warnings, unfortunately.
-#include "ripple_main.h"
+#include "ripple_app.h"
 
 #include "../ripple_data/ripple_data.h"
 

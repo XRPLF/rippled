@@ -4,5 +4,5 @@
 */
 //==============================================================================
 
-#define RIPPLE_MAIN_PART 3
-#include "ripple_main.cpp"
+#define RIPPLE_MAIN_PART 1
+#include "ripple_app.cpp"
