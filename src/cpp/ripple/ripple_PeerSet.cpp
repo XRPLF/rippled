@@ -4,7 +4,7 @@
 */
 //==============================================================================
 
-class LedgerAcquire;
+class InboundLedger;
 
 PeerSet::PeerSet (uint256 const& hash, int interval)
     : mHash (hash)
@@ -52,7 +52,7 @@ void PeerSet::invokeOnTimer ()
     if (!mProgress)
     {
         ++mTimeouts;
-        WriteLog (lsWARNING, LedgerAcquire) << "Timeout(" << mTimeouts << ") pc=" << mPeers.size () << " acquiring " << mHash;
+        WriteLog (lsWARNING, InboundLedger) << "Timeout(" << mTimeouts << ") pc=" << mPeers.size () << " acquiring " << mHash;
         onTimer (false);
     }
     else
@@ -78,7 +78,7 @@ void PeerSet::TimerEntry (boost::weak_ptr<PeerSet> wptr, const boost::system::er
 
         if (jc > 4)
         {
-            WriteLog (lsDEBUG, LedgerAcquire) << "Deferring PeerSet timer due to load";
+            WriteLog (lsDEBUG, InboundLedger) << "Deferring PeerSet timer due to load";
             ptr->setTimer ();
         }
         else

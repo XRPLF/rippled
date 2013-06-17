@@ -103,19 +103,15 @@ COMPILED_FILES = [
     'src/cpp/database/sqlite3.c',
     'src/cpp/leveldb_core.cpp',
     'src/cpp/websocket_core.cpp',
+    'Subtrees/beast/modules/beast_core/beast_core.cpp',
+    'Subtrees/beast/modules/beast_basics/beast_basics.cpp',
     'modules/ripple_basics/ripple_basics.cpp',
-    'modules/ripple_client/ripple_client.cpp',
     'modules/ripple_data/ripple_data.cpp',
-    'modules/ripple_db/ripple_db.cpp',
     'modules/ripple_json/ripple_json.cpp',
-    'modules/ripple_ledger/ripple_ledger.cpp',
-    'modules/ripple_main/ripple_main_pt1.cpp',
-    'modules/ripple_main/ripple_main_pt2.cpp',
-    'modules/ripple_main/ripple_main_pt3.cpp',
-    'modules/ripple_main/ripple_main_pt4.cpp',
-    'modules/ripple_mess/ripple_mess.cpp',
-    'modules/ripple_net/ripple_net.cpp',
-    'Subtrees/beast/modules/beast_core/beast_core.cpp'
+    'modules/ripple_app/ripple_app_pt1.cpp',
+    'modules/ripple_app/ripple_app_pt2.cpp',
+    'modules/ripple_app/ripple_app_pt3.cpp',
+    'modules/ripple_app/ripple_app_pt4.cpp'
     ]
 
 #-------------------------------------------------------------------------------
@@ -151,6 +147,7 @@ if FreeBSD:
 
 env.Append(
     LIBS = [
+        'rt',           # for clock_nanosleep in beast
         'protobuf',
         'z'
     ]

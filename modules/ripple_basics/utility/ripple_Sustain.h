@@ -11,6 +11,8 @@
 // and relaunches it on a fault.
 //
 // VFALCO TODO Rename this and put it in a class.
+// VFALCO TODO Reimplement cross-platform using beast::Process and its ilk
+//
 extern bool HaveSustain ();
 extern std::string StopSustain ();
 extern std::string DoSustain ();

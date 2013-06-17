@@ -82,11 +82,11 @@ void LedgerConsensus::checkOurValidation ()
     theApp->getHashRouter ().addSuppression (signingHash);
     theApp->getValidations ().addValidation (v, "localMissing");
     Blob validation = v->getSigned ();
-    ripple::TMValidation val;
+    protocol::TMValidation val;
     val.set_validation (&validation[0], validation.size ());
 #if 0
     theApp->getPeers ().relayMessage (NULL,
-                                      boost::make_shared<PackedMessage> (val, ripple::mtVALIDATION));
+                                      boost::make_shared<PackedMessage> (val, protocol::mtVALIDATION));
 #endif
     theApp->getOPs ().setLastValidation (v);
     WriteLog (lsWARNING, LedgerConsensus) << "Sending partial validation";
@@ -208,9 +208,9 @@ void LedgerConsensus::handleLCL (uint256 const& lclHash)
         WriteLog (lsWARNING, LedgerConsensus) << "Need consensus ledger " << mPrevLedgerHash;
 
         if (mAcquiringLedger)
-            theApp->getMasterLedgerAcquire ().dropLedger (mAcquiringLedger->getHash ());
+            theApp->getInboundLedgers ().dropLedger (mAcquiringLedger->getHash ());
 
-        mAcquiringLedger = theApp->getMasterLedgerAcquire ().findCreate (mPrevLedgerHash, 0);
+        mAcquiringLedger = theApp->getInboundLedgers ().findCreate (mPrevLedgerHash, 0);
         mHaveCorrectLCL = false;
         return;
     }
@@ -378,10 +378,10 @@ void LedgerConsensus::mapComplete (uint256 const& hash, SHAMap::ref map, bool ac
 
 void LedgerConsensus::sendHaveTxSet (uint256 const& hash, bool direct)
 {
-    ripple::TMHaveTransactionSet msg;
+    protocol::TMHaveTransactionSet msg;
     msg.set_hash (hash.begin (), 256 / 8);
-    msg.set_status (direct ? ripple::tsHAVE : ripple::tsCAN_GET);
-    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (msg, ripple::mtHAVE_SET);
+    msg.set_status (direct ? protocol::tsHAVE : protocol::tsCAN_GET);
+    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (msg, protocol::mtHAVE_SET);
     theApp->getPeers ().relayMessage (NULL, packet);
 }
 
@@ -396,13 +396,13 @@ void LedgerConsensus::adjustCount (SHAMap::ref map, const std::vector<uint160>& 
     }
 }
 
-void LedgerConsensus::statusChange (ripple::NodeEvent event, Ledger& ledger)
+void LedgerConsensus::statusChange (protocol::NodeEvent event, Ledger& ledger)
 {
     // Send a node status change message to our peers
-    ripple::TMStatusChange s;
+    protocol::TMStatusChange s;
 
     if (!mHaveCorrectLCL)
-        s.set_newevent (ripple::neLOST_SYNC);
+        s.set_newevent (protocol::neLOST_SYNC);
     else
         s.set_newevent (event);
 
@@ -418,7 +418,7 @@ void LedgerConsensus::statusChange (ripple::NodeEvent event, Ledger& ledger)
     s.set_firstseq (uMin);
     s.set_lastseq (uMax);
 
-    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (s, ripple::mtSTATUS_CHANGE);
+    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (s, protocol::mtSTATUS_CHANGE);
     theApp->getPeers ().relayMessage (NULL, packet);
     WriteLog (lsTRACE, LedgerConsensus) << "send status change to peer";
 }
@@ -468,7 +468,7 @@ void LedgerConsensus::closeLedger ()
     mConsensusStartTime = boost::posix_time::microsec_clock::universal_time ();
     mCloseTime = theApp->getOPs ().getCloseTimeNC ();
     theApp->getOPs ().setLastCloseTime (mCloseTime);
-    statusChange (ripple::neCLOSING_LEDGER, *mPreviousLedger);
+    statusChange (protocol::neCLOSING_LEDGER, *mPreviousLedger);
     takeInitialPosition (*theApp->getLedgerMaster ().closeLedger (true));
 }
 
@@ -803,7 +803,7 @@ void LedgerConsensus::propose ()
 {
     WriteLog (lsTRACE, LedgerConsensus) << "We propose: " <<
                                         (mOurPosition->isBowOut () ? std::string ("bowOut") : mOurPosition->getCurrentHash ().GetHex ());
-    ripple::TMProposeSet prop;
+    protocol::TMProposeSet prop;
 
     prop.set_currenttxhash (mOurPosition->getCurrentHash ().begin (), 256 / 8);
     prop.set_previousledger (mOurPosition->getPrevLedger ().begin (), 256 / 8);
@@ -815,7 +815,7 @@ void LedgerConsensus::propose ()
     prop.set_nodepubkey (&pubKey[0], pubKey.size ());
     prop.set_signature (&sig[0], sig.size ());
     theApp->getPeers ().relayMessage (NULL,
-                                      boost::make_shared<PackedMessage> (prop, ripple::mtPROPOSE_LEDGER));
+                                      boost::make_shared<PackedMessage> (prop, protocol::mtPROPOSE_LEDGER));
 }
 
 void LedgerConsensus::addDisputedTransaction (uint256 const& txID, Blob const& tx)
@@ -851,11 +851,11 @@ void LedgerConsensus::addDisputedTransaction (uint256 const& txID, Blob const& t
 
     if (theApp->getHashRouter ().setFlag (txID, SF_RELAYED))
     {
-        ripple::TMTransaction msg;
+        protocol::TMTransaction msg;
         msg.set_rawtransaction (& (tx.front ()), tx.size ());
-        msg.set_status (ripple::tsNEW);
+        msg.set_status (protocol::tsNEW);
         msg.set_receivetimestamp (theApp->getOPs ().getNetworkTimeNC ());
-        PackedMessage::pointer packet = boost::make_shared<PackedMessage> (msg, ripple::mtTRANSACTION);
+        PackedMessage::pointer packet = boost::make_shared<PackedMessage> (msg, protocol::mtTRANSACTION);
         theApp->getPeers ().relayMessage (NULL, packet);
     }
 }
@@ -919,9 +919,9 @@ bool LedgerConsensus::peerPosition (LedgerProposal::ref newPosition)
     return true;
 }
 
-bool LedgerConsensus::peerHasSet (Peer::ref peer, uint256 const& hashSet, ripple::TxSetStatus status)
+bool LedgerConsensus::peerHasSet (Peer::ref peer, uint256 const& hashSet, protocol::TxSetStatus status)
 {
-    if (status != ripple::tsHAVE) // Indirect requests are for future support
+    if (status != protocol::tsHAVE) // Indirect requests are for future support
         return true;
 
     std::vector< boost::weak_ptr<Peer> >& set = mPeerData[hashSet];
@@ -1015,14 +1015,14 @@ void LedgerConsensus::playbackProposals ()
             if (relay && theApp->getHashRouter ().swapSet (proposal.getSuppress (), set, SF_RELAYED))
             {
                 WriteLog (lsDEBUG, LedgerConsensus) << "Stored proposal delayed relay";
-                ripple::TMProposeSet set;
+                protocol::TMProposeSet set;
                 set.set_proposeseq
                 set.set_currenttxhash (, 256 / 8);
                 previousledger
                 closetime
                 nodepubkey
                 signature
-                PackedMessage::pointer message = boost::make_shared<PackedMessage> (set, ripple::mtPROPOSE_LEDGER);
+                PackedMessage::pointer message = boost::make_shared<PackedMessage> (set, protocol::mtPROPOSE_LEDGER);
                 theApp->getPeers ().relayMessageBut (peers, message);
             }
 
@@ -1241,7 +1241,7 @@ void LedgerConsensus::accept (SHAMap::ref set, LoadEvent::pointer)
         WriteLog (lsTRACE, LedgerConsensus) << p;
     }
 
-    statusChange (ripple::neACCEPTED_LEDGER, *newLCL);
+    statusChange (protocol::neACCEPTED_LEDGER, *newLCL);
 
     if (mValidating && !mConsensusFail)
     {
@@ -1262,10 +1262,10 @@ void LedgerConsensus::accept (SHAMap::ref set, LoadEvent::pointer)
         theApp->getValidations ().addValidation (v, "local");
         theApp->getOPs ().setLastValidation (v);
         Blob validation = v->getSigned ();
-        ripple::TMValidation val;
+        protocol::TMValidation val;
         val.set_validation (&validation[0], validation.size ());
         int j = theApp->getPeers ().relayMessage (NULL,
-                boost::make_shared<PackedMessage> (val, ripple::mtVALIDATION));
+                boost::make_shared<PackedMessage> (val, protocol::mtVALIDATION));
         WriteLog (lsINFO, LedgerConsensus) << "CNF Val " << newLCLHash << " to " << j << " peers";
     }
     else

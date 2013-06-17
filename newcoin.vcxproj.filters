@@ -52,9 +52,6 @@
     <Filter Include="1. Modules\ripple_basics">
       <UniqueIdentifier>{84e43f43-816e-4ccd-80c2-38b322904894}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_main">
-      <UniqueIdentifier>{1a379c07-ccf1-4636-8018-2cfc0685edf0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_basics\containers">
       <UniqueIdentifier>{96cbc9ff-0118-4844-bb4c-05aef58a60b5}</UniqueIdentifier>
     </Filter>
@@ -79,74 +76,77 @@
     <Filter Include="1. Modules\ripple_data\crypto">
       <UniqueIdentifier>{095d33d8-dbf7-44d0-a675-6722b02bb3be}</UniqueIdentifier>
     </Filter>
-    <Filter Include="2. Empty">
-      <UniqueIdentifier>{786657f9-b1b3-483c-a8e6-863cc2e02eb8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="2. Empty\ripple_mess">
-      <UniqueIdentifier>{becffa9b-61f7-42d4-815a-1ec822cad0e7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="2. Empty\ripple_net">
-      <UniqueIdentifier>{7f76ce57-c428-487e-97a0-979c0990a81d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="2. Empty\ripple_db">
-      <UniqueIdentifier>{a5190241-c5bc-4e23-8ef1-6adf757c75e3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_main\_unfactored">
-      <UniqueIdentifier>{86d0831e-74e5-443b-b5f9-d6b39d5b4c97}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_main\refactored">
-      <UniqueIdentifier>{bfd76b72-9979-469b-8fd1-834e0622728a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_main\_unfactored\contracts">
-      <UniqueIdentifier>{c7f863ce-204b-4a15-b236-24fe1e3430e5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_main\_unfactored\rpc">
-      <UniqueIdentifier>{3f351c55-360d-40bc-a136-4944ce572efd}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_main\_unfactored\transactions">
-      <UniqueIdentifier>{1d36a65a-de7c-41f9-85dd-93b29d67606e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_main\_unfactored\types">
-      <UniqueIdentifier>{1b463564-35d9-43d1-b3a0-21b344a3a1c7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_main\_unfactored\main">
-      <UniqueIdentifier>{1ccfc5ad-5cd7-4a8e-b305-08f663c2397c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_main\_unfactored\ledger">
-      <UniqueIdentifier>{c441b367-d096-401f-a3f0-5ac24290d7b7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_main\_unfactored\network">
-      <UniqueIdentifier>{78b0aa30-f238-4e41-821f-ce84dde82ceb}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_main\_unfactored\db">
-      <UniqueIdentifier>{6097a179-ddad-4c69-9a34-2e3fc2c9fa1d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_data\protocol">
       <UniqueIdentifier>{2f3572a9-2882-4656-ab93-82b7761c9e3d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="2. Empty\ripple_ledger">
-      <UniqueIdentifier>{b6175f9a-7d46-4b57-877f-f58b0b3bba89}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="1. Modules\ripple_client">
-      <UniqueIdentifier>{97c96b68-70fd-4679-89fc-c1c8c87c265e}</UniqueIdentifier>
     </Filter>
     <Filter Include="1. Modules\ripple_data\utility">
       <UniqueIdentifier>{ba524810-8446-4c50-ad59-d284747ba220}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_main\refactored\shamap">
-      <UniqueIdentifier>{5b22fcf9-c9f0-4260-9a17-7b448e30bb57}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_data\utility">
       <UniqueIdentifier>{82b7f371-8bc6-474b-b10c-18c004467b46}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_main\refactored\transactions">
+    <Filter Include="2. %28Unused%29">
+      <UniqueIdentifier>{786657f9-b1b3-483c-a8e6-863cc2e02eb8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="2. %28Unused%29\ripple_net">
+      <UniqueIdentifier>{7f76ce57-c428-487e-97a0-979c0990a81d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="2. %28Unused%29\ripple_db">
+      <UniqueIdentifier>{a5190241-c5bc-4e23-8ef1-6adf757c75e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="2. %28Unused%29\ripple_ledger">
+      <UniqueIdentifier>{b6175f9a-7d46-4b57-877f-f58b0b3bba89}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="2. %28Unused%29\ripple_client">
+      <UniqueIdentifier>{97c96b68-70fd-4679-89fc-c1c8c87c265e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_app">
+      <UniqueIdentifier>{1a379c07-ccf1-4636-8018-2cfc0685edf0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_app\_unfactored">
+      <UniqueIdentifier>{86d0831e-74e5-443b-b5f9-d6b39d5b4c97}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_app\_unfactored\contracts">
+      <UniqueIdentifier>{c7f863ce-204b-4a15-b236-24fe1e3430e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_app\_unfactored\rpc">
+      <UniqueIdentifier>{3f351c55-360d-40bc-a136-4944ce572efd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_app\_unfactored\transactions">
+      <UniqueIdentifier>{1d36a65a-de7c-41f9-85dd-93b29d67606e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_app\_unfactored\types">
+      <UniqueIdentifier>{1b463564-35d9-43d1-b3a0-21b344a3a1c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_app\_unfactored\main">
+      <UniqueIdentifier>{1ccfc5ad-5cd7-4a8e-b305-08f663c2397c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_app\_unfactored\ledger">
+      <UniqueIdentifier>{c441b367-d096-401f-a3f0-5ac24290d7b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_app\_unfactored\network">
+      <UniqueIdentifier>{78b0aa30-f238-4e41-821f-ce84dde82ceb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_app\_unfactored\db">
+      <UniqueIdentifier>{6097a179-ddad-4c69-9a34-2e3fc2c9fa1d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_app\refactored">
+      <UniqueIdentifier>{bfd76b72-9979-469b-8fd1-834e0622728a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_app\refactored\shamap">
+      <UniqueIdentifier>{5b22fcf9-c9f0-4260-9a17-7b448e30bb57}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_app\refactored\transactions">
       <UniqueIdentifier>{babbb25a-e143-4140-bc6f-16b659d8098b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_main\refactored\consensus">
+    <Filter Include="1. Modules\ripple_app\refactored\consensus">
       <UniqueIdentifier>{8b88138b-e5bd-492b-bd34-012b9f43e544}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_main\refactored\pathing">
+    <Filter Include="1. Modules\ripple_app\refactored\pathing">
       <UniqueIdentifier>{90a5527e-0de0-4d5f-a731-b6b196a013b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_app\refactored\ledger">
+      <UniqueIdentifier>{857187f0-ff25-4ebe-af30-544b7b7f503a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -424,97 +424,91 @@
       <Filter>0. Third Party Code\websocket</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Transaction.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionCheck.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionEngine.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionMaster.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionMeta.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionQueue.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Transactor.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TrustSetTransactor.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\OfferCreateTransactor.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\OfferCancelTransactor.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RegularKeySetTransactor.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\PaymentTransactor.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\AccountSetTransactor.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Operation.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\contracts</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\contracts</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Contract.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\contracts</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\contracts</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ParameterTable.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\types</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ParseSection.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\types</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_basics\ripple_basics.cpp">
       <Filter>1. Modules\ripple_basics</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_ledger\ripple_ledger.cpp">
-      <Filter>2. Empty\ripple_ledger</Filter>
+      <Filter>2. %28Unused%29\ripple_ledger</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_client\ripple_client.cpp">
-      <Filter>1. Modules\ripple_client</Filter>
+      <Filter>2. %28Unused%29\ripple_client</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ChangeTransactor.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_db\ripple_db.cpp">
-      <Filter>2. Empty\ripple_db</Filter>
+      <Filter>2. %28Unused%29\ripple_db</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\database\database.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\db</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\DBInit.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\db</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\database\SqliteDatabase.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\db</Filter>
-    </ClCompile>
-    <ClCompile Include="modules\ripple_main\ripple_main.cpp">
-      <Filter>1. Modules\ripple_main</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_net\ripple_net.cpp">
-      <Filter>2. Empty\ripple_net</Filter>
+      <Filter>2. %28Unused%29\ripple_net</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Interpreter.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\contracts</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\contracts</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ScriptData.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\contracts</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\contracts</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\WalletAddTransactor.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="modules\ripple_mess\ripple_mess.cpp">
-      <Filter>2. Empty\ripple_mess</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_json\json\json_reader.cpp">
       <Filter>1. Modules\ripple_json\json</Filter>
@@ -583,112 +577,109 @@
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\main.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\main</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\main</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\NetworkOPs.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\PeerDoor.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\SNTPClient.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\WSDoor.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClCompile>
     <ClCompile Include="Subtrees\beast\modules\beast_core\beast_core.cpp">
       <Filter>0. Third Party Code\beast</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_LoadMonitor.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_DatabaseCon.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_LoadEvent.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_LoadFeeTrack.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_Validations.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_Features.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_FeeVote.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_HashRouter.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_LogWebsockets.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_UniqueNodeList.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Ledger.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\LedgerEntrySet.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerMaster.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerProposal.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\LedgerTiming.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\OrderBookDB.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_data\crypto\ripple_CKeyDeterministic.cpp">
       <Filter>1. Modules\ripple_data\crypto</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\SerializedValidation.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_Config.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_Job.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_JobQueue.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\HTTPRequest.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\HttpsClient.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\CallRPC.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\rpc</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\rpc</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\rpc.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\rpc</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\rpc</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCDoor.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\rpc</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\rpc</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCErr.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\rpc</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\rpc</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCHandler.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\rpc</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\rpc</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCServer.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\rpc</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\rpc</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCSub.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\rpc</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\rpc</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_data\protocol\ripple_FieldNames.cpp">
       <Filter>1. Modules\ripple_data\protocol</Filter>
@@ -724,157 +715,136 @@
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_ProofOfWorkFactory.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_ProofOfWork.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_Peer.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_Peers.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_HashedObjectStore.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_HashedObject.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_data\protocol\ripple_SerializedObjectTemplate.cpp">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_InfoSub.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_PeerSet.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_LedgerAcquireMaster.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_LedgerAcquire.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ripple_LedgerHistory.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_CanonicalTXSet.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_SerializedLedger.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_SerializedTransaction.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_AcceptedLedgerTx.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_AcceptedLedger.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_data\utility\ripple_JSONCache.cpp">
       <Filter>1. Modules\ripple_data\utility</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_OrderBook.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="modules\ripple_main\ripple_main_pt1.cpp">
-      <Filter>1. Modules\ripple_main</Filter>
-    </ClCompile>
-    <ClCompile Include="modules\ripple_main\ripple_main_pt2.cpp">
-      <Filter>1. Modules\ripple_main</Filter>
-    </ClCompile>
-    <ClCompile Include="modules\ripple_main\ripple_main_pt3.cpp">
-      <Filter>1. Modules\ripple_main</Filter>
-    </ClCompile>
-    <ClCompile Include="modules\ripple_main\ripple_main_pt4.cpp">
-      <Filter>1. Modules\ripple_main</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_AccountItem.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_AccountItems.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_SHAMapDelta.cpp">
-      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+      <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_SHAMapItem.cpp">
-      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+      <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_SHAMapMissingNode.cpp">
-      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+      <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_SHAMapNode.cpp">
-      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+      <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_SHAMapSync.cpp">
-      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+      <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_SHAMapSyncFilters.cpp">
-      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+      <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_SHAMapTreeNode.cpp">
-      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+      <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_SHAMap.cpp">
-      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+      <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_basics\containers\ripple_TaggedCache.cpp">
       <Filter>1. Modules\ripple_basics\containers</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\WSConnection.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\WSHandler.cpp">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_AccountState.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="build\proto\ripple.pb.cc">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_TransactionAcquire.cpp">
-      <Filter>1. Modules\ripple_main\refactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\refactored\transactions</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_DisputedTx.cpp">
-      <Filter>1. Modules\ripple_main\refactored\consensus</Filter>
+      <Filter>1. Modules\ripple_app\refactored\consensus</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_LedgerConsensus.cpp">
-      <Filter>1. Modules\ripple_main\refactored\consensus</Filter>
+      <Filter>1. Modules\ripple_app\refactored\consensus</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_Offer.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_NicknameState.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_LoadManager.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_Application.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_PathRequest.cpp">
-      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+      <Filter>1. Modules\ripple_app\refactored\pathing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_Pathfinder.cpp">
-      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+      <Filter>1. Modules\ripple_app\refactored\pathing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_RippleState.cpp">
-      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+      <Filter>1. Modules\ripple_app\refactored\pathing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_RippleLineCache.cpp">
-      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+      <Filter>1. Modules\ripple_app\refactored\pathing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_PathState.cpp">
-      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+      <Filter>1. Modules\ripple_app\refactored\pathing</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_RippleCalc.cpp">
-      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+      <Filter>1. Modules\ripple_app\refactored\pathing</Filter>
     </ClCompile>
     <ClCompile Include="modules\ripple_data\protocol\ripple_TxFormat.cpp">
       <Filter>1. Modules\ripple_data\protocol</Filter>
@@ -883,7 +853,37 @@
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\ripple_LocalCredentials.cpp">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_LedgerEntrySet.cpp">
+      <Filter>1. Modules\ripple_app\refactored\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_LedgerHistory.cpp">
+      <Filter>1. Modules\ripple_app\refactored\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_InboundLedger.cpp">
+      <Filter>1. Modules\ripple_app\refactored\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple_InboundLedgers.cpp">
+      <Filter>1. Modules\ripple_app\refactored\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="Subtrees\beast\modules\beast_basics\beast_basics.cpp">
+      <Filter>0. Third Party Code\beast</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_app\ripple_app.cpp">
+      <Filter>1. Modules\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_app\ripple_app_pt1.cpp">
+      <Filter>1. Modules\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_app\ripple_app_pt2.cpp">
+      <Filter>1. Modules\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_app\ripple_app_pt3.cpp">
+      <Filter>1. Modules\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_app\ripple_app_pt4.cpp">
+      <Filter>1. Modules\ripple_app</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1158,91 +1158,85 @@
       <Filter>0. Third Party Code\protobuf\stubs</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Transaction.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\TransactionEngine.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\TransactionMaster.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\TransactionMeta.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\TransactionQueue.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Transactor.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\TrustSetTransactor.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\OfferCreateTransactor.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\OfferCancelTransactor.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RegularKeySetTransactor.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\PaymentTransactor.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\AccountSetTransactor.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Operation.h">
-      <Filter>1. Modules\ripple_main\_unfactored\contracts</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\contracts</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Contract.h">
-      <Filter>1. Modules\ripple_main\_unfactored\contracts</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\contracts</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ParameterTable.h">
-      <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\types</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ParseSection.h">
-      <Filter>1. Modules\ripple_main\_unfactored\types</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\types</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\ripple_basics.h">
       <Filter>1. Modules\ripple_basics</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_ledger\ripple_ledger.h">
-      <Filter>2. Empty\ripple_ledger</Filter>
+      <Filter>2. %28Unused%29\ripple_ledger</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_client\ripple_client.h">
-      <Filter>1. Modules\ripple_client</Filter>
+      <Filter>2. %28Unused%29\ripple_client</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ChangeTransactor.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_db\ripple_db.h">
-      <Filter>2. Empty\ripple_db</Filter>
+      <Filter>2. %28Unused%29\ripple_db</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\database\database.h">
-      <Filter>1. Modules\ripple_main\_unfactored\db</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\database\SqliteDatabase.h">
-      <Filter>1. Modules\ripple_main\_unfactored\db</Filter>
-    </ClInclude>
-    <ClInclude Include="modules\ripple_main\ripple_main.h">
-      <Filter>1. Modules\ripple_main</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_net\ripple_net.h">
-      <Filter>2. Empty\ripple_net</Filter>
+      <Filter>2. %28Unused%29\ripple_net</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Interpreter.h">
-      <Filter>1. Modules\ripple_main\_unfactored\contracts</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\contracts</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ScriptData.h">
-      <Filter>1. Modules\ripple_main\_unfactored\contracts</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\contracts</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\WalletAddTransactor.h">
-      <Filter>1. Modules\ripple_main\_unfactored\transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="modules\ripple_mess\ripple_mess.h">
-      <Filter>2. Empty\ripple_mess</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\containers\ripple_KeyCache.h">
       <Filter>1. Modules\ripple_basics\containers</Filter>
@@ -1350,109 +1344,106 @@
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\WSDoor.h">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\AutoSocket.h">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\NetworkOPs.h">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\PeerDoor.h">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\SNTPClient.h">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\WSConnection.h">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_LoadMonitor.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_DatabaseCon.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_ILoadFeeTrack.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IValidations.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_LoadEvent.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IFeatures.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IFeeVote.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IHashRouter.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IUniqueNodeList.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\Ledger.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\LedgerEntrySet.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerMaster.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerProposal.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\LedgerTiming.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\OrderBookDB.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\SerializedValidation.h">
-      <Filter>1. Modules\ripple_main\_unfactored\ledger</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_Config.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_Job.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_JobQueue.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\HTTPRequest.h">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\HttpsClient.h">
-      <Filter>1. Modules\ripple_main\_unfactored\network</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\CallRPC.h">
-      <Filter>1. Modules\ripple_main\_unfactored\rpc</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\rpc</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPC.h">
-      <Filter>1. Modules\ripple_main\_unfactored\rpc</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\rpc</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPCDoor.h">
-      <Filter>1. Modules\ripple_main\_unfactored\rpc</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\rpc</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPCErr.h">
-      <Filter>1. Modules\ripple_main\_unfactored\rpc</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\rpc</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPCHandler.h">
-      <Filter>1. Modules\ripple_main\_unfactored\rpc</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\rpc</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPCServer.h">
-      <Filter>1. Modules\ripple_main\_unfactored\rpc</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\rpc</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\RPCSub.h">
-      <Filter>1. Modules\ripple_main\_unfactored\rpc</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\rpc</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\WSHandler.h">
-      <Filter>1. Modules\ripple_main\_unfactored\rpc</Filter>
+      <Filter>1. Modules\ripple_app\_unfactored\rpc</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_data\protocol\ripple_FieldNames.h">
       <Filter>1. Modules\ripple_data\protocol</Filter>
@@ -1488,58 +1479,49 @@
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_ProofOfWork.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IProofOfWorkFactory.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_Peer.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IPeers.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_HashedObjectStore.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_HashedObject.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_data\protocol\ripple_SerializedObjectTemplate.h">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_InfoSub.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_PeerSet.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_LedgerAcquireMaster.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\types\ripple_BasicTypes.h">
       <Filter>1. Modules\ripple_basics\types</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_LedgerAcquire.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ripple_LedgerHistory.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_CanonicalTXSet.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_SerializedLedger.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_SerializedTransaction.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_AcceptedLedgerTx.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_AcceptedLedger.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_data\utility\ripple_UptimeTimerAdapter.h">
       <Filter>1. Modules\ripple_data\utility</Filter>
@@ -1548,40 +1530,40 @@
       <Filter>1. Modules\ripple_data\utility</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_OrderBook.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_AccountItem.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_AccountItems.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_SHAMapTreeNode.h">
-      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+      <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_SHAMapAddNode.h">
-      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+      <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_SHAMapItem.h">
-      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+      <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_SHAMapMissingNode.h">
-      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+      <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_SHAMapNode.h">
-      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+      <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_SHAMapSyncFilter.h">
-      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+      <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_SHAMapSyncFilters.h">
-      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+      <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_SHAMap.h">
-      <Filter>1. Modules\ripple_main\refactored\shamap</Filter>
+      <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_AccountState.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_data\utility\ripple_UptimeTimerAdapter.h">
       <Filter>1. Modules\ripple_data\utility</Filter>
@@ -1590,43 +1572,43 @@
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_TransactionAcquire.h">
-      <Filter>1. Modules\ripple_main\refactored\transactions</Filter>
+      <Filter>1. Modules\ripple_app\refactored\transactions</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_DisputedTx.h">
-      <Filter>1. Modules\ripple_main\refactored\consensus</Filter>
+      <Filter>1. Modules\ripple_app\refactored\consensus</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_LedgerConsensus.h">
-      <Filter>1. Modules\ripple_main\refactored\consensus</Filter>
+      <Filter>1. Modules\ripple_app\refactored\consensus</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_Offer.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_NicknameState.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_LoadManager.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_IApplication.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_PathRequest.h">
-      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+      <Filter>1. Modules\ripple_app\refactored\pathing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_Pathfinder.h">
-      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+      <Filter>1. Modules\ripple_app\refactored\pathing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_RippleState.h">
-      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+      <Filter>1. Modules\ripple_app\refactored\pathing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_RippleLineCache.h">
-      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+      <Filter>1. Modules\ripple_app\refactored\pathing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_PathState.h">
-      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+      <Filter>1. Modules\ripple_app\refactored\pathing</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_RippleCalc.h">
-      <Filter>1. Modules\ripple_main\refactored\pathing</Filter>
+      <Filter>1. Modules\ripple_app\refactored\pathing</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_data\protocol\ripple_HashPrefix.h">
       <Filter>1. Modules\ripple_data\protocol</Filter>
@@ -1644,10 +1626,26 @@
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_LocalCredentials.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\ripple_Version.h">
-      <Filter>1. Modules\ripple_main\refactored</Filter>
+      <Filter>1. Modules\ripple_app\refactored</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_LedgerEntrySet.h">
+      <Filter>1. Modules\ripple_app\refactored\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_LedgerHistory.h">
+      <Filter>1. Modules\ripple_app\refactored\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_InboundLedger.h">
+      <Filter>1. Modules\ripple_app\refactored\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ripple_InboundLedgers.h">
+      <Filter>1. Modules\ripple_app\refactored\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="BeastConfig.h" />
+    <ClInclude Include="modules\ripple_app\ripple_app.h">
+      <Filter>1. Modules\ripple_app</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

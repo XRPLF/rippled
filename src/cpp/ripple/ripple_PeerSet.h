@@ -84,8 +84,8 @@ protected:
     }
     void invokeOnTimer ();
 
-    void sendRequest (const ripple::TMGetLedger& message);
-    void sendRequest (const ripple::TMGetLedger& message, Peer::ref peer);
+    void sendRequest (const protocol::TMGetLedger& message);
+    void sendRequest (const protocol::TMGetLedger& message, Peer::ref peer);
 
 protected:
     uint256 mHash;

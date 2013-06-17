@@ -23,8 +23,9 @@ public:
 
     LocalCredentials& getLocalCredentials ()
     {
-        return mLocalCredentials ;
+        return m_localCredentials ;
     }
+ 
     NetworkOPs& getOPs ()
     {
         return mNetOps;
@@ -34,6 +35,7 @@ public:
     {
         return mIOService;
     }
+    
     boost::asio::io_service& getAuxService ()
     {
         return mAuxService;
@@ -43,46 +45,57 @@ public:
     {
         return mLedgerMaster;
     }
-    LedgerAcquireMaster& getMasterLedgerAcquire ()
+    
+    InboundLedgers& getInboundLedgers ()
     {
-        return mMasterLedgerAcquire;
+        return m_inboundLedgers;
     }
+    
     TransactionMaster& getMasterTransaction ()
     {
         return mMasterTransaction;
     }
+    
     NodeCache& getTempNodeCache ()
     {
         return mTempNodeCache;
     }
+    
     HashedObjectStore& getHashedObjectStore ()
     {
         return mHashedObjectStore;
     }
+    
     JobQueue& getJobQueue ()
     {
         return mJobQueue;
     }
+    
     boost::recursive_mutex& getMasterLock ()
     {
         return mMasterLock;
     }
+    
     LoadManager& getLoadManager ()
     {
         return mLoadMgr;
     }
+    
     TXQueue& getTxnQueue ()
     {
         return mTxnQueue;
     }
+    
     PeerDoor& getPeerDoor ()
     {
         return *mPeerDoor;
     }
+    
     OrderBookDB& getOrderBookDB ()
     {
         return mOrderBookDB;
     }
+    
     SLECache& getSLECache ()
     {
         return mSLECache;
@@ -92,30 +105,37 @@ public:
     {
         return *mFeatures;
     }
+    
     ILoadFeeTrack& getFeeTrack ()
     {
         return *mFeeTrack;
     }
+    
     IFeeVote& getFeeVote ()
     {
         return *mFeeVote;
     }
+    
     IHashRouter& getHashRouter ()
     {
         return *mHashRouter;
     }
+    
     IValidations& getValidations ()
     {
         return *mValidations;
     }
+    
     IUniqueNodeList& getUNL ()
     {
         return *mUNL;
     }
+    
     IProofOfWorkFactory& getProofOfWorkFactory ()
     {
         return *mProofOfWorkFactory;
     }
+    
     IPeers& getPeers ()
     {
         return *mPeers;
@@ -183,6 +203,7 @@ private:
     void startNewLedger ();
     bool loadOldLedger (const std::string&);
 
+private:
     boost::asio::io_service mIOService;
     boost::asio::io_service mAuxService;
     boost::asio::io_service::work mIOWork;
@@ -190,19 +211,19 @@ private:
 
     boost::recursive_mutex  mMasterLock;
 
-    LocalCredentials                  mLocalCredentials;
-    LedgerMaster            mLedgerMaster;
-    LedgerAcquireMaster     mMasterLedgerAcquire;
-    TransactionMaster       mMasterTransaction;
-    NetworkOPs              mNetOps;
-    NodeCache               mTempNodeCache;
-    HashedObjectStore       mHashedObjectStore;
-    SLECache                mSLECache;
-    SNTPClient              mSNTPClient;
-    JobQueue                mJobQueue;
-    LoadManager             mLoadMgr;
-    TXQueue                 mTxnQueue;
-    OrderBookDB             mOrderBookDB;
+    LocalCredentials   m_localCredentials;
+    LedgerMaster       mLedgerMaster;
+    InboundLedgers     m_inboundLedgers;
+    TransactionMaster  mMasterTransaction;
+    NetworkOPs         mNetOps;
+    NodeCache          mTempNodeCache;
+    HashedObjectStore  mHashedObjectStore;
+    SLECache           mSLECache;
+    SNTPClient         mSNTPClient;
+    JobQueue           mJobQueue;
+    LoadManager        mLoadMgr;
+    TXQueue            mTxnQueue;
+    OrderBookDB        mOrderBookDB;
 
     // VFALCO Clean stuff
     beast::ScopedPointer <IFeatures> mFeatures;
@@ -215,10 +236,17 @@ private:
     beast::ScopedPointer <IPeers> mPeers;
     // VFALCO End Clean stuff
 
-    DatabaseCon*             mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mNetNodeDB, *mPathFindDB, *mHashNodeDB;
+    DatabaseCon* mRpcDB;
+    DatabaseCon* mTxnDB;
+    DatabaseCon* mLedgerDB;
+    DatabaseCon* mWalletDB;
+    DatabaseCon* mNetNodeDB;
+    DatabaseCon* mPathFindDB;
+    DatabaseCon* mHashNodeDB;
 
-    leveldb::DB*             mHashNodeLDB;
-    leveldb::DB*             mEphemeralLDB;
+    // VFALCO TODO Wrap this in an interface
+    leveldb::DB* mHashNodeLDB;
+    leveldb::DB* mEphemeralLDB;
 
     PeerDoor*               mPeerDoor;
     RPCDoor*                mRPCDoor;
@@ -227,10 +255,7 @@ private:
 
     boost::asio::deadline_timer mSweepTimer;
 
-    std::map<std::string, Peer::pointer> mPeerMap;
-    boost::recursive_mutex  mPeerMapLock;
-
-    volatile bool           mShutdown;
+    bool volatile mShutdown;
 };
 
 Application::Application ()
@@ -467,7 +492,7 @@ void Application::setup ()
     // Begin validation and ip maintenance.
     // - LocalCredentials maintains local information: including identity and network connection persistence information.
     //
-    mLocalCredentials.start ();
+    m_localCredentials.start ();
 
     //
     // Set up UNL.
@@ -638,7 +663,7 @@ void Application::sweep ()
     mLedgerMaster.sweep ();
     mTempNodeCache.sweep ();
     mValidations->sweep ();
-    getMasterLedgerAcquire ().sweep ();
+    getInboundLedgers ().sweep ();
     mSLECache.sweep ();
     AcceptedLedger::sweep (); // VFALCO NOTE AcceptedLedger is/has a singleton?
     SHAMap::sweep (); // VFALCO NOTE SHAMap is/has a singleton?

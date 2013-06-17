@@ -177,7 +177,7 @@ private:
 
     bool acquireMissingLedger (Ledger::ref from, uint256 const& ledgerHash, uint32 ledgerSeq);
     void asyncAccept (Ledger::pointer);
-    void missingAcquireComplete (LedgerAcquire::pointer);
+    void missingAcquireComplete (InboundLedger::pointer);
     void pubThread ();
     void updatePaths ();
 
@@ -197,7 +197,7 @@ private:
     CanonicalTXSet mHeldTransactions;
 
     RangeSet mCompleteLedgers;
-    LedgerAcquire::pointer mMissingLedger;
+    InboundLedger::pointer mMissingLedger;
     uint32 mMissingSeq;
 
     int                         mMinValidations;    // The minimum validations to publish a ledger

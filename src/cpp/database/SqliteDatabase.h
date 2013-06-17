@@ -12,15 +12,6 @@ struct sqlite3_stmt;
 
 class SqliteDatabase : public Database
 {
-    sqlite3* mConnection;
-    sqlite3* mAuxConnection;
-    sqlite3_stmt* mCurrentStmt;
-    bool mMoreRows;
-
-    boost::mutex            walMutex;
-    JobQueue*               mWalQ;
-    bool                    walRunning;
-
 public:
     SqliteDatabase (const char* host);
 
@@ -67,6 +58,16 @@ public:
 
     int getKBUsedDB ();
     int getKBUsedAll ();
+
+private:
+    sqlite3* mConnection;
+    sqlite3* mAuxConnection;
+    sqlite3_stmt* mCurrentStmt;
+    bool mMoreRows;
+
+    boost::mutex            walMutex;
+    JobQueue*               mWalQ;
+    bool                    walRunning;
 };
 
 class SqliteStatement
