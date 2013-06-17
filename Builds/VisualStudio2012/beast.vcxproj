@@ -11,7 +11,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\.gitattributes" />
+    <None Include="..\..\.gitignore" />
     <None Include="..\..\CodingStyle.md" />
+    <None Include="..\..\Doxyfile" />
     <None Include="..\..\modules\beast_core\beast_core.mm" />
     <None Include="..\..\modules\beast_core\native\beast_mac_Files.mm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>

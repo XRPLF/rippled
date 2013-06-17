@@ -1,34 +1,21 @@
-/*============================================================================*/
+//------------------------------------------------------------------------------
 /*
-  VFLib: https://github.com/vinniefalco/VFLib
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
-  Copyright (C) 2008 by Vinnie Falco <vinnie.falco@gmail.com>
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose  with  or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
 
-  This library contains portions of other open source products covered by
-  separate licenses. Please see the corresponding source files for specific
-  terms.
-
-  VFLib is provided under the terms of The MIT License (MIT):
-
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-
-  The above copyright notice and this permission notice shall be included in
-  all copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-  IN THE SOFTWARE.
+    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
-/*============================================================================*/
+//==============================================================================
 
 #ifndef BEAST_CALLQUEUE_BEASTHEADER
 #define BEAST_CALLQUEUE_BEASTHEADER
@@ -227,7 +214,7 @@ public:
         @todo Provide an example of when synchronize() is needed in call().
     */
     /** @{ */
-#if VFLIB_VARIADIC_MAX >= 1
+#if BEAST_VARIADIC_MAX >= 1
     template <class Fn>
     void call (Fn f)
     {
@@ -235,7 +222,7 @@ public:
     }
 #endif
 
-#if VFLIB_VARIADIC_MAX >= 2
+#if BEAST_VARIADIC_MAX >= 2
     template <class Fn, class T1>
     void call (Fn f, T1 t1)
     {
@@ -243,7 +230,7 @@ public:
     }
 #endif
 
-#if VFLIB_VARIADIC_MAX >= 3
+#if BEAST_VARIADIC_MAX >= 3
     template <class Fn, class T1, class T2>
     void call (Fn f, T1 t1, T2 t2)
     {
@@ -251,7 +238,7 @@ public:
     }
 #endif
 
-#if VFLIB_VARIADIC_MAX >= 4
+#if BEAST_VARIADIC_MAX >= 4
     template <class Fn, class T1, class T2, class T3>
     void call (Fn f, T1 t1, T2 t2, T3 t3)
     {
@@ -259,7 +246,7 @@ public:
     }
 #endif
 
-#if VFLIB_VARIADIC_MAX >= 5
+#if BEAST_VARIADIC_MAX >= 5
     template <class Fn, class T1, class T2, class T3, class T4>
     void call (Fn f, T1 t1, T2 t2, T3 t3, T4 t4)
     {
@@ -267,7 +254,7 @@ public:
     }
 #endif
 
-#if VFLIB_VARIADIC_MAX >= 6
+#if BEAST_VARIADIC_MAX >= 6
     template <class Fn, class T1, class T2, class T3, class T4, class T5>
     void call (Fn f, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5)
     {
@@ -275,7 +262,7 @@ public:
     }
 #endif
 
-#if VFLIB_VARIADIC_MAX >= 7
+#if BEAST_VARIADIC_MAX >= 7
     template <class Fn, class T1, class T2, class T3, class T4, class T5, class T6>
     void call (Fn f, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6)
     {
@@ -283,7 +270,7 @@ public:
     }
 #endif
 
-#if VFLIB_VARIADIC_MAX >= 8
+#if BEAST_VARIADIC_MAX >= 8
     template <class Fn, class T1, class T2, class T3, class T4, class T5, class T6, class T7>
     void call (Fn f, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7)
     {
@@ -291,7 +278,7 @@ public:
     }
 #endif
 
-#if VFLIB_VARIADIC_MAX >= 9
+#if BEAST_VARIADIC_MAX >= 9
     template <class Fn, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8>
     void call (Fn f, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8)
     {
@@ -359,7 +346,7 @@ public:
         @see call
     */
     /** @{ */
-#if VFLIB_VARIADIC_MAX >= 1
+#if BEAST_VARIADIC_MAX >= 1
     template <class Fn>
     void queue (Fn f)
     {
@@ -367,7 +354,7 @@ public:
     }
 #endif
 
-#if VFLIB_VARIADIC_MAX >= 2
+#if BEAST_VARIADIC_MAX >= 2
     template <class Fn, class T1>
     void queue (Fn f, T1 t1)
     {
@@ -375,7 +362,7 @@ public:
     }
 #endif
 
-#if VFLIB_VARIADIC_MAX >= 3
+#if BEAST_VARIADIC_MAX >= 3
     template <class Fn, class T1, class T2>
     void queue (Fn f, T1 t1, T2 t2)
     {
@@ -383,7 +370,7 @@ public:
     }
 #endif
 
-#if VFLIB_VARIADIC_MAX >= 4
+#if BEAST_VARIADIC_MAX >= 4
     template <class Fn, class T1, class T2, class T3>
     void queue (Fn f, T1 t1, T2 t2, T3 t3)
     {
@@ -391,7 +378,7 @@ public:
     }
 #endif
 
-#if VFLIB_VARIADIC_MAX >= 5
+#if BEAST_VARIADIC_MAX >= 5
     template <class Fn, class T1, class T2, class T3, class T4>
     void queue (Fn f, T1 t1, T2 t2, T3 t3, T4 t4)
     {
@@ -399,7 +386,7 @@ public:
     }
 #endif
 
-#if VFLIB_VARIADIC_MAX >= 6
+#if BEAST_VARIADIC_MAX >= 6
     template <class Fn, class T1, class T2, class T3, class T4, class T5>
     void queue (Fn f, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5)
     {
@@ -407,7 +394,7 @@ public:
     }
 #endif
 
-#if VFLIB_VARIADIC_MAX >= 7
+#if BEAST_VARIADIC_MAX >= 7
     template <class Fn, class T1, class T2, class T3, class T4, class T5, class T6>
     void queue (Fn f, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6)
     {
@@ -415,7 +402,7 @@ public:
     }
 #endif
 
-#if VFLIB_VARIADIC_MAX >= 8
+#if BEAST_VARIADIC_MAX >= 8
     template <class Fn, class T1, class T2, class T3, class T4, class T5, class T6, class T7>
     void queue (Fn f, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7)
     {
@@ -423,7 +410,7 @@ public:
     }
 #endif
 
-#if VFLIB_VARIADIC_MAX >= 9
+#if BEAST_VARIADIC_MAX >= 9
     template <class Fn, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8>
     void queue (Fn f, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8)
     {

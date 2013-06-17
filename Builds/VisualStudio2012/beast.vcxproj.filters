@@ -27,6 +27,9 @@
     <None Include="..\..\modules\beast_core\native\java\BeastAppActivity.java">
       <Filter>beast_core\native\java</Filter>
     </None>
+    <None Include="..\..\Doxyfile" />
+    <None Include="..\..\.gitattributes" />
+    <None Include="..\..\.gitignore" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="beast_core">
