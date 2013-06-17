@@ -86,7 +86,6 @@
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_GlobalThreadGroup.h" />
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_InterruptibleThread.h" />
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_Listeners.h" />
-    <ClInclude Include="..\..\modules\beast_basics\threads\beast_MessageThread.h" />
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_ParallelFor.h" />
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_ReadWriteMutex.h" />
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_Semaphore.h" />
@@ -292,10 +291,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_basics\threads\beast_Listeners.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_basics\threads\beast_MessageThread.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
