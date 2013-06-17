@@ -284,8 +284,7 @@ void LedgerAcquire::trigger (Peer::ref peer)
 
     if ((mWaitCount > 0) && peer)
     {
-        mRecentPeers.push_back (peer->getPeerId ());
-        WriteLog (lsTRACE, LedgerAcquire) << "Deferring peer";
+        WriteLog (lsTRACE, LedgerAcquire) << "Skipping peer";
         return;
     }
 
@@ -396,6 +395,7 @@ void LedgerAcquire::trigger (Peer::ref peer)
             * (tmGL.add_nodeids ()) = SHAMapNode ().getRawString ();
             WriteLog (lsTRACE, LedgerAcquire) << "Sending TX root request to " << (peer ? "selected peer" : "all peers");
             sendRequest (tmGL, peer);
+            return;
         }
         else
         {
@@ -433,6 +433,7 @@ void LedgerAcquire::trigger (Peer::ref peer)
                     WriteLog (lsTRACE, LedgerAcquire) << "Sending TX node " << nodeIDs.size ()
                                                       << " request to " << (peer ? "selected peer" : "all peers");
                     sendRequest (tmGL, peer);
+                    return;
                 }
             }
         }
@@ -449,6 +450,7 @@ void LedgerAcquire::trigger (Peer::ref peer)
             * (tmGL.add_nodeids ()) = SHAMapNode ().getRawString ();
             WriteLog (lsTRACE, LedgerAcquire) << "Sending AS root request to " << (peer ? "selected peer" : "all peers");
             sendRequest (tmGL, peer);
+            return;
         }
         else
         {
@@ -485,12 +487,11 @@ void LedgerAcquire::trigger (Peer::ref peer)
                                                       << " request to " << (peer ? "selected peer" : "all peers");
                     CondLog (nodeIDs.size () == 1, lsTRACE, LedgerAcquire) << "AS node: " << nodeIDs[0];
                     sendRequest (tmGL, peer);
+                    return;
                 }
             }
         }
     }
-
-    mRecentPeers.clear ();
 
     if (mComplete || mFailed)
     {

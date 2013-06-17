@@ -109,8 +109,6 @@ private:
     std::set <SHAMapNode> mRecentTXNodes;
     std::set <SHAMapNode> mRecentASNodes;
 
-    std::vector <uint64> mRecentPeers;
-
     std::vector <FUNCTION_TYPE <void (LedgerAcquire::pointer)> > mOnComplete;
 };
 
