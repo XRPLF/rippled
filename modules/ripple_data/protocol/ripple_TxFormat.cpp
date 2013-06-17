@@ -43,6 +43,7 @@ void TFInit ()
             << SOElement (sfTakerPays,       SOE_REQUIRED)
             << SOElement (sfTakerGets,       SOE_REQUIRED)
             << SOElement (sfExpiration,      SOE_OPTIONAL)
+            << SOElement (sfOfferSequence,   SOE_OPTIONAL)
             ;
 
     DECLARE_TF (OfferCancel, ttOFFER_CANCEL)
