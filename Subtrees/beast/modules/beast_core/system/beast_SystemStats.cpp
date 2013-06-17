@@ -69,7 +69,7 @@ String SystemStats::getStackBacktrace()
     String result;
 
    #if BEAST_ANDROID || BEAST_MINGW
-    jassertfalse; // sorry, not implemented yet!
+    bassertfalse; // sorry, not implemented yet!
 
    #elif BEAST_WINDOWS
     HANDLE process = GetCurrentProcess();

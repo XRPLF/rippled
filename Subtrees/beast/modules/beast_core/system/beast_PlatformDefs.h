@@ -92,7 +92,7 @@
       It is only compiled in a debug build, (unless BEAST_LOG_ASSERTIONS is enabled for your build).
       @see bassert
   */
-  #define jassertfalse              { beast_LogCurrentAssertion; if (beast::beast_isRunningUnderDebugger()) beast_breakDebugger; }
+  #define bassertfalse              { beast_LogCurrentAssertion; if (beast::beast_isRunningUnderDebugger()) beast_breakDebugger; }
 
   //==============================================================================
   /** Platform-independent assertion macro.
@@ -100,19 +100,19 @@
       This macro gets turned into a no-op when you're building with debugging turned off, so be
       careful that the expression you pass to it doesn't perform any actions that are vital for the
       correct behaviour of your program!
-      @see jassertfalse
+      @see bassertfalse
   */
-  #define bassert(expression)       { if (! (expression)) jassertfalse; }
+  #define bassert(expression)       { if (! (expression)) bassertfalse; }
 
 #else
   //==============================================================================
   // If debugging is disabled, these dummy debug and assertion macros are used..
 
   #define DBG(dbgtext)
-  #define jassertfalse              { beast_LogCurrentAssertion }
+  #define bassertfalse              { beast_LogCurrentAssertion }
 
   #if BEAST_LOG_ASSERTIONS
-   #define bassert(expression)      { if (! (expression)) jassertfalse; }
+   #define bassert(expression)      { if (! (expression)) bassertfalse; }
   #else
    #define bassert(a)               {}
   #endif
@@ -202,7 +202,7 @@ namespace beast
   #define BEAST_TRY try
 
   #define BEAST_CATCH_ALL            catch (...) {}
-  #define BEAST_CATCH_ALL_ASSERT     catch (...) { jassertfalse; }
+  #define BEAST_CATCH_ALL_ASSERT     catch (...) { bassertfalse; }
 
   #if ! BEAST_MODULE_AVAILABLE_beast_gui_basics
     #define BEAST_CATCH_EXCEPTION    BEAST_CATCH_ALL

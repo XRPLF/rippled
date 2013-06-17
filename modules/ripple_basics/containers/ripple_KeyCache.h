@@ -19,7 +19,6 @@
         static int getElapsedSeconds ();
         @endcode
 
-    file vf_db.h
     @ingroup ripple_basics
 */
 template <class Key, class Timer>

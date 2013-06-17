@@ -148,13 +148,13 @@ SystemStats::OperatingSystemType SystemStats::getOperatingSystemType()
                 case 2:  return Windows8;
 
                 default:
-                    jassertfalse;  // new version needs to be added here!
+                    bassertfalse;  // new version needs to be added here!
                     return Windows8;
             }
         }
     }
 
-    jassertfalse;  // need to support whatever new version is running!
+    bassertfalse;  // need to support whatever new version is running!
     return UnknownOS;
 }
 
@@ -169,7 +169,7 @@ String SystemStats::getOperatingSystemName()
         case WinVista:          name = "Windows Vista";     break;
         case WinXP:             name = "Windows XP";        break;
         case Win2000:           name = "Windows 2000";      break;
-        default:                jassertfalse; break; // !! new type of OS?
+        default:                bassertfalse; break; // !! new type of OS?
     }
 
     return name;

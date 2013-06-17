@@ -9,6 +9,6 @@ The hope is that this will replace the use of boost and other cumbersome jalopie
 
 ## JUCE
 
-Beast is based on the juce_core module which is provided under the ISC
+Beast is based on the beast_core module which is provided under the ISC
 license. More information about JUCE is available at
 http://www.juce.com

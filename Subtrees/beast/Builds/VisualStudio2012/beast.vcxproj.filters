@@ -89,6 +89,33 @@
     <Filter Include="beast_core\zip\zlib">
       <UniqueIdentifier>{31038502-9139-4c19-bd67-8f90f08a70ca}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast_basics">
+      <UniqueIdentifier>{e3a8f3eb-7f0f-4b81-b978-0dd0823f583b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_basics\containers">
+      <UniqueIdentifier>{3e9389c0-c8f0-4657-ab11-cbbea889d3be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_basics\diagnostic">
+      <UniqueIdentifier>{ba11b980-76dd-49a4-b2c7-878e9f08f8ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_basics\events">
+      <UniqueIdentifier>{b8caa85d-f224-4e3a-966f-a19b65023869}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_basics\functor">
+      <UniqueIdentifier>{bb0bef46-51a6-4c26-8354-4df753c3bace}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_basics\math">
+      <UniqueIdentifier>{1d53386e-0732-4213-b45d-026ff3d14042}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_basics\memory">
+      <UniqueIdentifier>{9e850052-6ab7-4a65-911d-adfde81ceb5f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_basics\native">
+      <UniqueIdentifier>{811c5374-8959-4df9-aba9-a7e27b85046e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_basics\threads">
+      <UniqueIdentifier>{f58dddf7-fe43-49a2-8e57-91feba586119}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -440,6 +467,159 @@
       <Filter>beast_core\zip\zlib</Filter>
     </ClInclude>
     <ClInclude Include="BeastConfig.h" />
+    <ClInclude Include="..\..\modules\beast_basics\beast_basics.h">
+      <Filter>beast_basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\containers\beast_List.h">
+      <Filter>beast_basics\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\containers\beast_LockFreeQueue.h">
+      <Filter>beast_basics\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\containers\beast_LockFreeStack.h">
+      <Filter>beast_basics\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\containers\beast_SharedTable.h">
+      <Filter>beast_basics\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\containers\beast_SortedLookupTable.h">
+      <Filter>beast_basics\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\diagnostic\beast_CatchAny.h">
+      <Filter>beast_basics\diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\diagnostic\beast_Debug.h">
+      <Filter>beast_basics\diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\diagnostic\beast_Error.h">
+      <Filter>beast_basics\diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\diagnostic\beast_FPUFlags.h">
+      <Filter>beast_basics\diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\diagnostic\beast_LeakChecked.h">
+      <Filter>beast_basics\diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\diagnostic\beast_SafeBool.h">
+      <Filter>beast_basics\diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\diagnostic\beast_Throw.h">
+      <Filter>beast_basics\diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\events\beast_OncePerSecond.h">
+      <Filter>beast_basics\events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\events\beast_PerformedAtExit.h">
+      <Filter>beast_basics\events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\functor\beast_Bind.h">
+      <Filter>beast_basics\functor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\functor\beast_Function.h">
+      <Filter>beast_basics\functor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\math\beast_Interval.h">
+      <Filter>beast_basics\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\math\beast_Math.h">
+      <Filter>beast_basics\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\math\beast_MurmurHash.h">
+      <Filter>beast_basics\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\memory\beast_AllocatedBy.h">
+      <Filter>beast_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\memory\beast_AtomicCounter.h">
+      <Filter>beast_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\memory\beast_AtomicFlag.h">
+      <Filter>beast_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\memory\beast_AtomicPointer.h">
+      <Filter>beast_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\memory\beast_AtomicState.h">
+      <Filter>beast_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\memory\beast_CacheLine.h">
+      <Filter>beast_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\memory\beast_FifoFreeStore.h">
+      <Filter>beast_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\memory\beast_FifoFreeStoreWithoutTLS.h">
+      <Filter>beast_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\memory\beast_FifoFreeStoreWithTLS.h">
+      <Filter>beast_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\memory\beast_GlobalFifoFreeStore.h">
+      <Filter>beast_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\memory\beast_GlobalPagedFreeStore.h">
+      <Filter>beast_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\memory\beast_MemoryAlignment.h">
+      <Filter>beast_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\memory\beast_PagedFreeStore.h">
+      <Filter>beast_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\memory\beast_RefCountedSingleton.h">
+      <Filter>beast_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\memory\beast_StaticObject.h">
+      <Filter>beast_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\memory\beast_Uncopyable.h">
+      <Filter>beast_basics\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_CallQueue.h">
+      <Filter>beast_basics\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_ConcurrentObject.h">
+      <Filter>beast_basics\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_ConcurrentState.h">
+      <Filter>beast_basics\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_GlobalThreadGroup.h">
+      <Filter>beast_basics\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_InterruptibleThread.h">
+      <Filter>beast_basics\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_Listeners.h">
+      <Filter>beast_basics\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_MessageThread.h">
+      <Filter>beast_basics\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_ParallelFor.h">
+      <Filter>beast_basics\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_ReadWriteMutex.h">
+      <Filter>beast_basics\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_Semaphore.h">
+      <Filter>beast_basics\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_SerialFor.h">
+      <Filter>beast_basics\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_SharedObject.h">
+      <Filter>beast_basics\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_SpinDelay.h">
+      <Filter>beast_basics\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_ThreadGroup.h">
+      <Filter>beast_basics\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_ThreadWithCallQueue.h">
+      <Filter>beast_basics\threads</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
@@ -690,6 +870,90 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\zip\zlib\zutil.c">
       <Filter>beast_core\zip\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\beast_basics.cpp">
+      <Filter>beast_basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\diagnostic\beast_CatchAny.cpp">
+      <Filter>beast_basics\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\diagnostic\beast_Debug.cpp">
+      <Filter>beast_basics\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\diagnostic\beast_Error.cpp">
+      <Filter>beast_basics\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\diagnostic\beast_FPUFlags.cpp">
+      <Filter>beast_basics\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\diagnostic\beast_LeakChecked.cpp">
+      <Filter>beast_basics\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\events\beast_OncePerSecond.cpp">
+      <Filter>beast_basics\events</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\events\beast_PerformedAtExit.cpp">
+      <Filter>beast_basics\events</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\math\beast_MurmurHash.cpp">
+      <Filter>beast_basics\math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\memory\beast_FifoFreeStoreWithoutTLS.cpp">
+      <Filter>beast_basics\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\memory\beast_FifoFreeStoreWithTLS.cpp">
+      <Filter>beast_basics\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\memory\beast_GlobalPagedFreeStore.cpp">
+      <Filter>beast_basics\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\memory\beast_PagedFreeStore.cpp">
+      <Filter>beast_basics\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\native\beast_posix_FPUFlags.cpp">
+      <Filter>beast_basics\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\native\beast_posix_Threads.cpp">
+      <Filter>beast_basics\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\native\beast_win32_FPUFlags.cpp">
+      <Filter>beast_basics\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\native\beast_win32_Threads.cpp">
+      <Filter>beast_basics\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\threads\beast_CallQueue.cpp">
+      <Filter>beast_basics\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\threads\beast_ConcurrentObject.cpp">
+      <Filter>beast_basics\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\threads\beast_InterruptibleThread.cpp">
+      <Filter>beast_basics\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\threads\beast_Listeners.cpp">
+      <Filter>beast_basics\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\threads\beast_MessageThread.cpp">
+      <Filter>beast_basics\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\threads\beast_ParallelFor.cpp">
+      <Filter>beast_basics\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\threads\beast_ReadWriteMutex.cpp">
+      <Filter>beast_basics\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\threads\beast_Semaphore.cpp">
+      <Filter>beast_basics\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\threads\beast_SharedObject.cpp">
+      <Filter>beast_basics\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\threads\beast_ThreadGroup.cpp">
+      <Filter>beast_basics\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\threads\beast_ThreadWithCallQueue.cpp">
+      <Filter>beast_basics\threads</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

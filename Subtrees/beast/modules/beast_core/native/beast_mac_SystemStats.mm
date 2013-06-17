@@ -280,7 +280,7 @@ int64  Time::getHighResolutionTicks() noexcept          { return (int64) mach_ab
 
 bool Time::setSystemTimeToThisTime() const
 {
-    jassertfalse;
+    bassertfalse;
     return false;
 }
 

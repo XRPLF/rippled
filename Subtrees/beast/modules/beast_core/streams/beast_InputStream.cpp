@@ -92,7 +92,7 @@ int InputStream::readCompressedInt()
     const int numBytes = (sizeByte & 0x7f);
     if (numBytes > 4)
     {
-        jassertfalse;    // trying to read corrupt data - this method must only be used
+        bassertfalse;    // trying to read corrupt data - this method must only be used
                        // to read data that was written by OutputStream::writeCompressedInt()
         return 0;
     }

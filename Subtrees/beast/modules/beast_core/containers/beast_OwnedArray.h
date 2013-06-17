@@ -394,7 +394,7 @@ public:
         }
         else
         {
-            jassertfalse; // you're trying to set an object at a negative index, which doesn't have
+            bassertfalse; // you're trying to set an object at a negative index, which doesn't have
                           // any effect - but since the object is not being added, it may be leaking..
         }
     }
@@ -418,7 +418,7 @@ public:
 
         if (startIndex < 0)
         {
-            jassertfalse;
+            bassertfalse;
             startIndex = 0;
         }
 
@@ -458,7 +458,7 @@ public:
 
         if (startIndex < 0)
         {
-            jassertfalse;
+            bassertfalse;
             startIndex = 0;
         }
 

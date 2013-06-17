@@ -45,12 +45,12 @@ void Process::makeForegroundProcess()
 
 void Process::raisePrivilege()
 {
-    jassertfalse;
+    bassertfalse;
 }
 
 void Process::lowerPrivilege()
 {
-    jassertfalse;
+    bassertfalse;
 }
 
 void Process::terminate()

@@ -55,7 +55,7 @@ bool Process::openEmailWithAttachments (const String& targetEmailAddress,
 {
   #if BEAST_IOS
     //xxx probably need to use MFMailComposeViewController
-    jassertfalse;
+    bassertfalse;
     return false;
   #else
     BEAST_AUTORELEASEPOOL

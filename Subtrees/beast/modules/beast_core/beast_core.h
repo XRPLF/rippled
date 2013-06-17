@@ -53,14 +53,14 @@
 //=============================================================================
 /** Config: BEAST_LOG_ASSERTIONS
 
-    If this flag is enabled, the the bassert and jassertfalse macros will always use Logger::writeToLog()
+    If this flag is enabled, the the bassert and bassertfalse macros will always use Logger::writeToLog()
     to write a message when an assertion happens.
 
     Enabling it will also leave this turned on in release builds. When it's disabled,
-    however, the bassert and jassertfalse macros will not be compiled in a
+    however, the bassert and bassertfalse macros will not be compiled in a
     release build.
 
-    @see bassert, jassertfalse, Logger
+    @see bassert, bassertfalse, Logger
 */
 #ifndef BEAST_LOG_ASSERTIONS
  #if BEAST_ANDROID

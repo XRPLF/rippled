@@ -594,7 +594,7 @@ public:
 
             if (startIndex < 0)
             {
-                jassertfalse;
+                bassertfalse;
                 startIndex = 0;
             }
 

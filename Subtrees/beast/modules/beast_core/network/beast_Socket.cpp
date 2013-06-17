@@ -333,7 +333,7 @@ bool StreamingSocket::connect (const String& remoteHostName,
 {
     if (isListener)
     {
-        jassertfalse;    // a listener socket can't connect to another one!
+        bassertfalse;    // a listener socket can't connect to another one!
         return false;
     }
 

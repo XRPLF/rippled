@@ -94,7 +94,7 @@ bool File::isOnHardDisk() const
 
 bool File::isOnRemovableDrive() const
 {
-    jassertfalse; // xxx not implemented for linux!
+    bassertfalse; // xxx not implemented for linux!
     return false;
 }
 
@@ -209,7 +209,7 @@ File File::getSpecialLocation (const SpecialLocationType type)
             return beast_readlink ("/proc/self/exe", beast_getExecutableFile());
 
         default:
-            jassertfalse; // unknown type?
+            bassertfalse; // unknown type?
             break;
     }
 

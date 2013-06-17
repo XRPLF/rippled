@@ -344,7 +344,7 @@ public:
             if (DynamicObject* const object = v.getDynamicObject())
                 writeObject (out, *object, indentLevel, allOnOneLine);
             else
-                jassertfalse; // Only DynamicObjects can be converted to JSON!
+                bassertfalse; // Only DynamicObjects can be converted to JSON!
         }
         else
         {

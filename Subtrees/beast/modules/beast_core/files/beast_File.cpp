@@ -87,7 +87,7 @@ String File::parseAbsolutePath (const String& p)
                 "File::getCurrentWorkingDirectory().getChildFile (myUnknownPath)" would return an absolute
                 path if that's what was supplied, or would evaluate a partial path relative to the CWD.
             */
-            jassertfalse;
+            bassertfalse;
 
             path = File::getCurrentWorkingDirectory().getFullPathName().substring (0, 2) + path;
         }
@@ -101,7 +101,7 @@ String File::parseAbsolutePath (const String& p)
             "File::getCurrentWorkingDirectory().getChildFile (myUnknownPath)" would return an absolute
             path if that's what was supplied, or would evaluate a partial path relative to the CWD.
         */
-        jassertfalse;
+        bassertfalse;
 
         return File::getCurrentWorkingDirectory().getChildFile (path).getFullPathName();
     }
@@ -144,7 +144,7 @@ String File::parseAbsolutePath (const String& p)
                 "File::getCurrentWorkingDirectory().getChildFile (myUnknownPath)" would return an absolute
                 path if that's what was supplied, or would evaluate a partial path relative to the CWD.
             */
-            jassertfalse;
+            bassertfalse;
 
            #if BEAST_LOG_ASSERTIONS
             Logger::writeToLog ("Illegal absolute path: " + path);

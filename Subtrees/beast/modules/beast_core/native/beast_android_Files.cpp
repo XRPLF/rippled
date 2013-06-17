@@ -123,7 +123,7 @@ File File::getSpecialLocation (const SpecialLocationType type)
             return beast_getExecutableFile();
 
         default:
-            jassertfalse; // unknown type?
+            bassertfalse; // unknown type?
             break;
     }
 
