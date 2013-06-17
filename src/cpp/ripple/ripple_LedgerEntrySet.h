@@ -94,7 +94,7 @@ public:
 
     bool isValid () const
     {
-        return !!mLedger;
+        return mLedger != nullptr;
     }
 
     int getSeq () const
