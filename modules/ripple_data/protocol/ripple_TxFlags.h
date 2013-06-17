@@ -33,9 +33,12 @@ const uint32 tfRequireAuth          = 0x00040000;
 const uint32 tfOptionalAuth         = 0x00080000;
 const uint32 tfDisallowXRP          = 0x00100000;
 const uint32 tfAllowXRP             = 0x00200000;
+const uint32 tfDisableMaster        = 0x00400000;
+const uint32 tfEnableMaster         = 0x00800000;
 const uint32 tfAccountSetMask       = ~ (TxFlag::requireDestTag | tfOptionalDestTag
                                       | tfRequireAuth | tfOptionalAuth
-                                      | tfDisallowXRP | tfAllowXRP);
+                                      | tfDisallowXRP | tfAllowXRP
+                                      | tfDisableMaster | tfEnableMaster);
 
 // OfferCreate flags:
 const uint32 tfPassive              = 0x00010000;
