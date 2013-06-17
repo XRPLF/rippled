@@ -136,6 +136,7 @@ public:
 
     bool setFlag (uint32);
     bool clearFlag (uint32);
+    bool isFlag(uint32);
     uint32 getFlags () const;
 
     uint256 getHash (uint32 prefix) const;

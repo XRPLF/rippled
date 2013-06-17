@@ -46,6 +46,8 @@ bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman)
         {   tefNO_AUTH_REQUIRED,    "tefNO_AUTH_REQUIRED",      "Auth is not required."                                 },
         {   tefPAST_SEQ,            "tefPAST_SEQ",              "This sequence number has already past."                },
         {   tefWRONG_PRIOR,         "tefWRONG_PRIOR",           "This previous transaction does not match."             },
+        {   tefMASTER_DISABLED,     "tefMASTER_DISABLED",       "Master key is disabled."                               },
+        {   tefNO_REGULAR_KEY,      "tefNO_REGULAR_KEY",        "Regular key is not set."                               },
 
         {   telLOCAL_ERROR,         "telLOCAL_ERROR",           "Local failure."                                        },
         {   telBAD_DOMAIN,          "telBAD_DOMAIN",            "Domain too long."                                      },

@@ -531,6 +531,11 @@ bool STObject::clearFlag (uint32 f)
     return true;
 }
 
+bool STObject::isFlag (uint32 f)
+{
+    return (getFlags () & f) == f;
+}
+
 uint32 STObject::getFlags (void) const
 {
     const STUInt32* t = dynamic_cast<const STUInt32*> (peekAtPField (sfFlags));

@@ -38,8 +38,17 @@ TER RegularKeySetTransactor::doApply ()
         mTxnAccount->setFlag (lsfPasswordSpent);
     }
 
-    uint160 uAuthKeyID = mTxn.getFieldAccount160 (sfRegularKey);
-    mTxnAccount->setFieldAccount (sfRegularKey, uAuthKeyID);
+    if (mTxn.isFieldPresent (sfRegularKey))
+    {
+	uint160 uAuthKeyID = mTxn.getFieldAccount160 (sfRegularKey);
+        mTxnAccount->setFieldAccount (sfRegularKey, uAuthKeyID);
+    }
+    else
+    {
+        if (mTxnAccount->isFlag (lsfDisableMaster))
+	    return tefMASTER_DISABLED;
+        mTxnAccount->makeFieldAbsent (sfRegularKey);
+    }
 
     std::cerr << "RegularKeySet<" << std::endl;
 

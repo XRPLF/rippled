@@ -51,7 +51,7 @@ void TFInit ()
             ;
 
     DECLARE_TF (SetRegularKey, ttREGULAR_KEY_SET)
-            << SOElement (sfRegularKey,  SOE_REQUIRED)
+            << SOElement (sfRegularKey,  SOE_OPTIONAL)
             ;
 
     DECLARE_TF (Payment, ttPAYMENT)

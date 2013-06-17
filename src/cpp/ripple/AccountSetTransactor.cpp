@@ -106,6 +106,34 @@ TER AccountSetTransactor::doApply ()
     }
 
     //
+    // DisableMaster
+    //
+
+    if ((tfDisableMaster | tfEnableMaster) == (uTxFlags & (tfDisableMaster | tfEnableMaster)))
+    {
+        WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Malformed transaction: Contradictory flags set.";
+
+        return temINVALID_FLAG;
+    }
+
+    if ((uTxFlags & tfDisableMaster) && !isSetBit (uFlagsIn, lsfDisableMaster))
+    {
+        if (!mTxnAccount->isFieldPresent (sfRegularKey))
+            return tefNO_REGULAR_KEY;
+
+        WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Set lsfDisableMaster.";
+
+        uFlagsOut   |= lsfDisableMaster;
+    }
+
+    if ((uTxFlags & tfEnableMaster) && isSetBit (uFlagsIn, lsfDisableMaster))
+    {
+        WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Clear lsfDisableMaster.";
+
+        uFlagsOut   &= ~lsfDisableMaster;
+    }
+
+    //
     // EmailHash
     //
 

@@ -45,6 +45,7 @@ UPTR_T<Transactor> Transactor::makeTransactor (const SerializedTransaction& txn,
 Transactor::Transactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : mTxn (txn), mEngine (engine), mParams (params)
 {
     mHasAuthKey = false;
+    mSigMaster = false;
 }
 
 void Transactor::calculateFee ()
@@ -101,12 +102,14 @@ TER Transactor::checkSig ()
 {
     // Consistency: Check signature
     // Verify the transaction's signing public key is the key authorized for signing.
-    if (mHasAuthKey && mSigningPubKey.getAccountID () == mTxnAccount->getFieldAccount160 (sfRegularKey))
+    if (mSigningPubKey.getAccountID () == mTxnAccountID)
     {
         // Authorized to continue.
-        nothing ();
+        mSigMaster = true;
+        if (mTxnAccount->isFlag(lsfDisableMaster))
+	    return tefMASTER_DISABLED;
     }
-    else if (mSigningPubKey.getAccountID () == mTxnAccountID)
+    else if (mHasAuthKey && mSigningPubKey.getAccountID () == mTxnAccount->getFieldAccount160 (sfRegularKey))
     {
         // Authorized to continue.
         nothing ();

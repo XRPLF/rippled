@@ -29,6 +29,7 @@ protected:
     STAmount                        mSourceBalance; // Balance after fees.
     SLE::pointer                    mTxnAccount;
     bool                            mHasAuthKey;
+    bool                            mSigMaster;
     RippleAddress                   mSigningPubKey;
 
     virtual TER preCheck ();
