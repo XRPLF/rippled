@@ -175,7 +175,7 @@ uint32 BigInteger::getBitRangeAsInt (const int startBit, int numBits) const noex
 {
     if (numBits > 32)
     {
-        jassertfalse;  // use getBitRange() if you need more than 32 bits..
+        bassertfalse;  // use getBitRange() if you need more than 32 bits..
         numBits = 32;
     }
 
@@ -200,7 +200,7 @@ void BigInteger::setBitRangeAsInt (const int startBit, int numBits, uint32 value
 {
     if (numBits > 32)
     {
-        jassertfalse;
+        bassertfalse;
         numBits = 32;
     }
 
@@ -939,7 +939,7 @@ String BigInteger::toString (const int base, const int minimumNumCharacters) con
     }
     else
     {
-        jassertfalse; // can't do the specified base!
+        bassertfalse; // can't do the specified base!
         return String::empty;
     }
 

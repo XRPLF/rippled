@@ -65,7 +65,7 @@ TemporaryFile::~TemporaryFile()
            call TemporaryFile::deleteTemporaryFile() to detect those error cases and
            handle them appropriately.
         */
-        jassertfalse;
+        bassertfalse;
     }
 }
 
@@ -91,7 +91,7 @@ bool TemporaryFile::overwriteTargetFileWithTemporary() const
     {
         // There's no temporary file to use. If your write failed, you should
         // probably check, and not bother calling this method.
-        jassertfalse;
+        bassertfalse;
     }
 
     return false;

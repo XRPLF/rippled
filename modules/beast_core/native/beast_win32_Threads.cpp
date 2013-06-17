@@ -35,7 +35,7 @@ long beast_InterlockedCompareExchange (volatile long* a, long b, long c) noexcep
 
 __int64 beast_InterlockedCompareExchange64 (volatile __int64* value, __int64 newValue, __int64 valueToCompare) noexcept
 {
-    jassertfalse; // This operation isn't available in old MS compiler versions!
+    bassertfalse; // This operation isn't available in old MS compiler versions!
 
     __int64 oldValue = *value;
     if (oldValue == valueToCompare)
@@ -259,7 +259,7 @@ void beast_repeatLastProcessPriority()
             case Process::NormalPriority:       p = NORMAL_PRIORITY_CLASS; break;
             case Process::HighPriority:         p = HIGH_PRIORITY_CLASS; break;
             case Process::RealtimePriority:     p = REALTIME_PRIORITY_CLASS; break;
-            default:                            jassertfalse; return; // bad priority value
+            default:                            bassertfalse; return; // bad priority value
         }
 
         SetPriorityClass (GetCurrentProcess(), p);
@@ -302,12 +302,12 @@ void Process::setCurrentModuleInstanceHandle (void* const newHandle) noexcept
 
 void Process::raisePrivilege()
 {
-    jassertfalse; // xxx not implemented
+    bassertfalse; // xxx not implemented
 }
 
 void Process::lowerPrivilege()
 {
-    jassertfalse; // xxx not implemented
+    bassertfalse; // xxx not implemented
 }
 
 void Process::terminate()

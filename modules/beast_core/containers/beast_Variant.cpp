@@ -253,7 +253,7 @@ public:
 
     void writeToStream (const ValueUnion&, OutputStream& output) const
     {
-        jassertfalse; // Can't write an object to a stream!
+        bassertfalse; // Can't write an object to a stream!
         output.writeCompressedInt (0);
     }
 };
@@ -340,7 +340,7 @@ public:
 
     void writeToStream (const ValueUnion&, OutputStream& output) const
     {
-        jassertfalse; // Can't write a method to a stream!
+        bassertfalse; // Can't write a method to a stream!
         output.writeCompressedInt (0);
     }
 };

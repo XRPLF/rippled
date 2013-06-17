@@ -106,7 +106,7 @@ JNIEnv* getEnv() noexcept
     if (! systemInitialised)
     {
         DBG ("*** Call to getEnv() when system not initialised");
-        jassertfalse;
+        bassertfalse;
         exit (0);
     }
    #endif
@@ -302,6 +302,6 @@ double Time::getMillisecondCounterHiRes() noexcept
 
 bool Time::setSystemTimeToThisTime() const
 {
-    jassertfalse;
+    bassertfalse;
     return false;
 }

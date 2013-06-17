@@ -190,11 +190,11 @@ private:
 
   #if BEAST_PPC || BEAST_IOS
     // None of these atomics are available for PPC or for iOS 3.1 or earlier!!
-    template <typename Type> static Type OSAtomicAdd64Barrier (Type b, BEAST_MAC_ATOMICS_VOLATILE Type* a) noexcept  { jassertfalse; return *a += b; }
-    template <typename Type> static Type OSAtomicIncrement64Barrier (BEAST_MAC_ATOMICS_VOLATILE Type* a) noexcept    { jassertfalse; return ++*a; }
-    template <typename Type> static Type OSAtomicDecrement64Barrier (BEAST_MAC_ATOMICS_VOLATILE Type* a) noexcept    { jassertfalse; return --*a; }
+    template <typename Type> static Type OSAtomicAdd64Barrier (Type b, BEAST_MAC_ATOMICS_VOLATILE Type* a) noexcept  { bassertfalse; return *a += b; }
+    template <typename Type> static Type OSAtomicIncrement64Barrier (BEAST_MAC_ATOMICS_VOLATILE Type* a) noexcept    { bassertfalse; return ++*a; }
+    template <typename Type> static Type OSAtomicDecrement64Barrier (BEAST_MAC_ATOMICS_VOLATILE Type* a) noexcept    { bassertfalse; return --*a; }
     template <typename Type> static bool OSAtomicCompareAndSwap64Barrier (Type old, Type newValue, BEAST_MAC_ATOMICS_VOLATILE Type* value) noexcept
-        { jassertfalse; if (old == *value) { *value = newValue; return true; } return false; }
+        { bassertfalse; if (old == *value) { *value = newValue; return true; } return false; }
     #define BEAST_64BIT_ATOMICS_UNAVAILABLE 1
   #endif
 
@@ -242,10 +242,10 @@ private:
     #define beast_InterlockedDecrement64(a)          _InterlockedDecrement64(a)
   #else
     // None of these atomics are available in a 32-bit Windows build!!
-    template <typename Type> static Type beast_InterlockedExchangeAdd64 (volatile Type* a, Type b) noexcept  { jassertfalse; Type old = *a; *a += b; return old; }
-    template <typename Type> static Type beast_InterlockedExchange64 (volatile Type* a, Type b) noexcept     { jassertfalse; Type old = *a; *a = b; return old; }
-    template <typename Type> static Type beast_InterlockedIncrement64 (volatile Type* a) noexcept            { jassertfalse; return ++*a; }
-    template <typename Type> static Type beast_InterlockedDecrement64 (volatile Type* a) noexcept            { jassertfalse; return --*a; }
+    template <typename Type> static Type beast_InterlockedExchangeAdd64 (volatile Type* a, Type b) noexcept  { bassertfalse; Type old = *a; *a += b; return old; }
+    template <typename Type> static Type beast_InterlockedExchange64 (volatile Type* a, Type b) noexcept     { bassertfalse; Type old = *a; *a = b; return old; }
+    template <typename Type> static Type beast_InterlockedIncrement64 (volatile Type* a) noexcept            { bassertfalse; return ++*a; }
+    template <typename Type> static Type beast_InterlockedDecrement64 (volatile Type* a) noexcept            { bassertfalse; return --*a; }
     #define BEAST_64BIT_ATOMICS_UNAVAILABLE 1
   #endif
 #endif

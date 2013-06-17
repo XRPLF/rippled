@@ -25,7 +25,7 @@
 #define BEAST_WIN32_COMSMARTPTR_BEASTHEADER
 
 #ifndef _MSC_VER
-template<typename Type> struct UUIDGetter { static CLSID get() { jassertfalse; return CLSID(); } };
+template<typename Type> struct UUIDGetter { static CLSID get() { bassertfalse; return CLSID(); } };
 #define __uuidof(x)  UUIDGetter<x>::get()
 #endif
 

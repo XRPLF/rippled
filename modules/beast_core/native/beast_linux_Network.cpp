@@ -55,7 +55,7 @@ bool Process::openEmailWithAttachments (const String& /* targetEmailAddress */,
                                         const String& /* bodyText */,
                                         const StringArray& /* filesToAttach */)
 {
-    jassertfalse;    // xxx todo
+    bassertfalse;    // xxx todo
 
     return false;
 }

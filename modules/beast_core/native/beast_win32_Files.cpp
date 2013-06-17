@@ -535,7 +535,7 @@ File BEAST_CALLTYPE File::getSpecialLocation (const SpecialLocationType type)
             return WindowsFileHelpers::getModuleFileName (0);
 
         default:
-            jassertfalse; // unknown type?
+            bassertfalse; // unknown type?
             return File::nonexistent;
     }
 

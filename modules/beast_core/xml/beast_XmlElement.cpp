@@ -773,7 +773,7 @@ void XmlElement::setText (const String& newText)
     if (isTextElement())
         setAttribute (beast_xmltextContentAttributeName, newText);
     else
-        jassertfalse; // you can only change the text in a text element, not a normal one.
+        bassertfalse; // you can only change the text in a text element, not a normal one.
 }
 
 String XmlElement::getAllSubText() const

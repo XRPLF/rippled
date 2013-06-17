@@ -1110,7 +1110,7 @@ String String::replaceSection (int index, int numCharsToReplace, const String& s
     if (index < 0)
     {
         // a negative index to replace from?
-        jassertfalse;
+        bassertfalse;
         index = 0;
     }
 
@@ -1118,7 +1118,7 @@ String String::replaceSection (int index, int numCharsToReplace, const String& s
     {
         // replacing a negative number of characters?
         numCharsToReplace = 0;
-        jassertfalse;
+        bassertfalse;
     }
 
     int i = 0;
@@ -1129,7 +1129,7 @@ String String::replaceSection (int index, int numCharsToReplace, const String& s
         if (insertPoint.isEmpty())
         {
             // replacing beyond the end of the string?
-            jassertfalse;
+            bassertfalse;
             return *this + stringToInsert;
         }
 

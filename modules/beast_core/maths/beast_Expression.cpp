@@ -41,13 +41,13 @@ public:
     virtual ReferenceCountedObjectPtr<Term> createTermToEvaluateInput (const Scope&, const Term* /*inputTerm*/,
                                                                        double /*overallTarget*/, Term* /*topLevelTerm*/) const
     {
-        jassertfalse;
+        bassertfalse;
         return ReferenceCountedObjectPtr<Term>();
     }
 
     virtual String getName() const
     {
-        jassertfalse; // You shouldn't call this for an expression that's not actually a function!
+        bassertfalse; // You shouldn't call this for an expression that's not actually a function!
         return String::empty;
     }
 

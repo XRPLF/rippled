@@ -336,7 +336,7 @@ private:
             }
         }
 
-        jassertfalse; // too many threads!
+        bassertfalse; // too many threads!
     }
 };
 

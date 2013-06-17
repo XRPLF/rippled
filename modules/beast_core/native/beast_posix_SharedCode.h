@@ -855,7 +855,7 @@ void Thread::killThread()
     if (threadHandle != 0)
     {
        #if BEAST_ANDROID
-        jassertfalse; // pthread_cancel not available!
+        bassertfalse; // pthread_cancel not available!
        #else
         pthread_cancel ((pthread_t) threadHandle);
        #endif
@@ -938,7 +938,7 @@ void Thread::setCurrentThreadAffinityMask (const uint32 affinityMask)
     /* affinities aren't supported because either the appropriate header files weren't found,
        or the SUPPORT_AFFINITIES macro was turned off
     */
-    jassertfalse;
+    bassertfalse;
     (void) affinityMask;
    #endif
 }
@@ -1121,7 +1121,7 @@ struct HighResolutionTimer::Pimpl
             if (pthread_create (&thread, nullptr, timerThread, this) == 0)
                 setThreadToRealtime (thread, newPeriod);
             else
-                jassertfalse;
+                bassertfalse;
         }
     }
 

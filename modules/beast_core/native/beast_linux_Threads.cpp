@@ -41,7 +41,7 @@ void Process::setPriority (const ProcessPriority prior)
         case NormalPriority:    param.sched_priority = 0; break;
         case HighPriority:      param.sched_priority = minp + (maxp - minp) / 4; break;
         case RealtimePriority:  param.sched_priority = minp + (3 * (maxp - minp) / 4); break;
-        default:                jassertfalse; break;
+        default:                bassertfalse; break;
     }
 
     pthread_setschedparam (pthread_self(), policy, &param);
