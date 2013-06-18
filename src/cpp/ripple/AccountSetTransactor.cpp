@@ -15,6 +15,17 @@ TER AccountSetTransactor::doApply ()
     const uint32    uFlagsIn    = mTxnAccount->getFieldU32 (sfFlags);
     uint32          uFlagsOut   = uFlagsIn;
 
+    const uint32    uSetFlag    = mTxn.getFieldU32 (sfSetFlag);
+    const uint32    uClearFlag  = mTxn.getFieldU32 (sfClearFlag);
+
+    // legacy AccountSet flags
+    bool      bSetRequireDest   = (uFlagsIn & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest);
+    bool      bClearRequireDest = (uFlagsIn & tfOptionalDestTag) || (uClearFlag == asfRequireDest);
+    bool      bSetRequireAuth   = (uFlagsIn & tfRequireAuth) || (uSetFlag == asfRequireAuth);
+    bool      bClearRequireAuth = (uFlagsIn & tfOptionalAuth) || (uClearFlag == asfRequireAuth);
+    bool      bSetDisallowXRP   = (uFlagsIn & tfDisallowXRP) || (uSetFlag == asfDisallowXRP);
+    bool      bClearDisallowXRP = (uFlagsIn & tfAllowXRP) || (uClearFlag == asfDisallowXRP);
+
     if (uTxFlags & tfAccountSetMask)
     {
         WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Malformed transaction: Invalid flags set.";
@@ -26,14 +37,14 @@ TER AccountSetTransactor::doApply ()
     // RequireAuth
     //
 
-    if ((tfRequireAuth | tfOptionalAuth) == (uTxFlags & (tfRequireAuth | tfOptionalAuth)))
+    if (bSetRequireAuth && bClearRequireAuth)
     {
         WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Malformed transaction: Contradictory flags set.";
 
         return temINVALID_FLAG;
     }
 
-    if ((uTxFlags & tfRequireAuth) && !isSetBit (uFlagsIn, lsfRequireAuth))
+    if (bSetRequireAuth && !isSetBit (uFlagsIn, lsfRequireAuth))
     {
         if (mTxnAccount->getFieldU32 (sfOwnerCount))
         {
@@ -47,7 +58,7 @@ TER AccountSetTransactor::doApply ()
         uFlagsOut   |= lsfRequireAuth;
     }
 
-    if ((uTxFlags & tfOptionalAuth) && isSetBit (uFlagsIn, lsfRequireAuth))
+    if (bClearRequireAuth && isSetBit (uFlagsIn, lsfRequireAuth))
     {
         WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Clear RequireAuth.";
 
@@ -58,22 +69,21 @@ TER AccountSetTransactor::doApply ()
     // RequireDestTag
     //
 
-    // VFALCO TODO Make a function bool areBothFlagsSet (uint value, uint flag1, uint flag2)
-    if ((TxFlag::requireDestTag | tfOptionalDestTag) == (uTxFlags & (TxFlag::requireDestTag | tfOptionalDestTag)))
+    if (bSetRequireDest && bClearRequireDest)
     {
         WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Malformed transaction: Contradictory flags set.";
 
         return temINVALID_FLAG;
     }
 
-    if ((uTxFlags & TxFlag::requireDestTag) && !isSetBit (uFlagsIn, lsfRequireDestTag))
+    if (bSetRequireDest && !isSetBit (uFlagsIn, lsfRequireDestTag))
     {
         WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Set lsfRequireDestTag.";
 
         uFlagsOut   |= lsfRequireDestTag;
     }
 
-    if ((uTxFlags & tfOptionalDestTag) && isSetBit (uFlagsIn, lsfRequireDestTag))
+    if (bClearRequireDest && isSetBit (uFlagsIn, lsfRequireDestTag))
     {
         WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Clear lsfRequireDestTag.";
 
@@ -84,21 +94,21 @@ TER AccountSetTransactor::doApply ()
     // DisallowXRP
     //
 
-    if ((tfDisallowXRP | tfAllowXRP) == (uTxFlags & (tfDisallowXRP | tfAllowXRP)))
+    if (bSetDisallowXRP && bClearDisallowXRP)
     {
         WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Malformed transaction: Contradictory flags set.";
 
         return temINVALID_FLAG;
     }
 
-    if ((uTxFlags & tfDisallowXRP) && !isSetBit (uFlagsIn, lsfDisallowXRP))
+    if (bSetDisallowXRP && !isSetBit (uFlagsIn, lsfDisallowXRP))
     {
         WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Set lsfDisallowXRP.";
 
         uFlagsOut   |= lsfDisallowXRP;
     }
 
-    if ((uTxFlags & tfAllowXRP) && isSetBit (uFlagsIn, lsfDisallowXRP))
+    if (bClearDisallowXRP && isSetBit (uFlagsIn, lsfDisallowXRP))
     {
         WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Clear lsfDisallowXRP.";
 
@@ -109,24 +119,24 @@ TER AccountSetTransactor::doApply ()
     // DisableMaster
     //
 
-    if ((tfDisableMaster | tfEnableMaster) == (uTxFlags & (tfDisableMaster | tfEnableMaster)))
+    if ((uSetFlag == asfDisableMaster) && (uClearFlag == asfDisableMaster))
     {
         WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Malformed transaction: Contradictory flags set.";
 
         return temINVALID_FLAG;
     }
 
-    if ((uTxFlags & tfDisableMaster) && !isSetBit (uFlagsIn, lsfDisableMaster))
+    if ((uSetFlag == asfDisableMaster) && !isSetBit (uFlagsIn, lsfDisableMaster))
     {
         if (!mTxnAccount->isFieldPresent (sfRegularKey))
-            return tefNO_REGULAR_KEY;
+            return tecNO_REGULAR_KEY;
 
         WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Set lsfDisableMaster.";
 
         uFlagsOut   |= lsfDisableMaster;
     }
 
-    if ((uTxFlags & tfEnableMaster) && isSetBit (uFlagsIn, lsfDisableMaster))
+    if ((uClearFlag == asfDisableMaster) && isSetBit (uFlagsIn, lsfDisableMaster))
     {
         WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Clear lsfDisableMaster.";
 

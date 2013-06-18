@@ -95,7 +95,6 @@ enum TER    // aka TransactionEngineResult
     tefPAST_SEQ,
     tefWRONG_PRIOR,
     tefMASTER_DISABLED,
-    tefNO_REGULAR_KEY,
 
     // -99 .. -1: R Retry (sequence too high, no funds for txn fee, originating account non-existent)
     // Causes:
@@ -149,6 +148,8 @@ enum TER    // aka TransactionEngineResult
     tecNO_LINE_REDUNDANT        = 127,
     tecPATH_DRY                 = 128,
     tecUNFUNDED                 = 129,  // Deprecated, old ambiguous unfunded.
+    tecMASTER_DISABLED          = 130,
+    tecNO_REGULAR_KEY           = 131,
 };
 
 // VFALCO TODO change these to normal functions.

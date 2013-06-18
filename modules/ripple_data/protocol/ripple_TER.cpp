@@ -24,6 +24,8 @@ bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman)
         {   tecNO_LINE_REDUNDANT,   "tecNO_LINE_REDUNDANT",     "Can't set non-existant line to default."               },
         {   tecPATH_DRY,            "tecPATH_DRY",              "Path could not send partial amount."                   },
         {   tecPATH_PARTIAL,        "tecPATH_PARTIAL",          "Path could not send full amount."                      },
+        {   tecMASTER_DISABLED,     "tefMASTER_DISABLED",       "Master key is disabled."                               },
+        {   tecNO_REGULAR_KEY,      "tefNO_REGULAR_KEY",        "Regular key is not set."                               },
 
         {   tecUNFUNDED,            "tecUNFUNDED",              "One of _ADD, _OFFER, or _SEND. Deprecated."            },
         {   tecUNFUNDED_ADD,        "tecUNFUNDED_ADD",          "Insufficient XRP balance for WalletAdd."               },
@@ -47,7 +49,6 @@ bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman)
         {   tefPAST_SEQ,            "tefPAST_SEQ",              "This sequence number has already past."                },
         {   tefWRONG_PRIOR,         "tefWRONG_PRIOR",           "This previous transaction does not match."             },
         {   tefMASTER_DISABLED,     "tefMASTER_DISABLED",       "Master key is disabled."                               },
-        {   tefNO_REGULAR_KEY,      "tefNO_REGULAR_KEY",        "Regular key is not set."                               },
 
         {   telLOCAL_ERROR,         "telLOCAL_ERROR",           "Local failure."                                        },
         {   telBAD_DOMAIN,          "telBAD_DOMAIN",            "Domain too long."                                      },

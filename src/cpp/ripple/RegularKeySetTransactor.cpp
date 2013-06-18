@@ -46,7 +46,7 @@ TER RegularKeySetTransactor::doApply ()
     else
     {
         if (mTxnAccount->isFlag (lsfDisableMaster))
-	    return tefMASTER_DISABLED;
+	    return tecMASTER_DISABLED;
         mTxnAccount->makeFieldAbsent (sfRegularKey);
     }
 

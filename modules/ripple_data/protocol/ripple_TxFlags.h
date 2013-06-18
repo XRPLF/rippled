@@ -37,6 +37,12 @@ const uint32 tfAccountSetMask       = ~ (TxFlag::requireDestTag | tfOptionalDest
                                       | tfRequireAuth | tfOptionalAuth
                                       | tfDisallowXRP | tfAllowXRP);
 
+// AccountSet SetFlag/ClearFlag values
+const uint32 asfRequireDest         = 1;
+const uint32 asfRequireAuth         = 2;
+const uint32 asfDisallowXRP         = 3;
+const uint32 asfDisableMaster       = 4;
+
 // OfferCreate flags:
 const uint32 tfPassive              = 0x00010000;
 const uint32 tfImmediateOrCancel    = 0x00020000;
