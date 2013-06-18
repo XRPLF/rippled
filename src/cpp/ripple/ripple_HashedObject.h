@@ -38,6 +38,7 @@ class HashedObject : private IS_INSTANCE (HashedObject)
 {
 public:
     typedef boost::shared_ptr <HashedObject> pointer;
+    typedef pointer const& ref;
 
     /** Create from a vector of data.
 
