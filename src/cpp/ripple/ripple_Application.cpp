@@ -287,6 +287,7 @@ Application::Application ()
     , mPathFindDB (NULL)
     , mHashNodeDB (NULL)
     , mHashNodeLDB (NULL)
+    , mEphemeralLDB (NULL)
     , mPeerDoor (NULL)
     , mRPCDoor (NULL)
     , mWSPublicDoor (NULL)
@@ -675,6 +676,7 @@ void Application::sweep ()
 
 Application::~Application ()
 {
+    // VFALCO TODO Wrap these in ScopedPointer
     delete mTxnDB;
     delete mLedgerDB;
     delete mWalletDB;
@@ -682,7 +684,9 @@ Application::~Application ()
     delete mNetNodeDB;
     delete mPathFindDB;
     delete mHashNodeLDB;
-    delete mEphemeralLDB;
+
+    if (mEphemeralLDB != nullptr)
+        delete mEphemeralLDB;
 }
 
 void Application::startNewLedger ()
