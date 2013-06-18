@@ -7,9 +7,6 @@
 #ifndef __RPCSERVER__
 #define __RPCSERVER__
 
-#include "HTTPRequest.h"
-#include "RPCHandler.h"
-
 class RPCServer : public boost::enable_shared_from_this<RPCServer>
 {
 public:

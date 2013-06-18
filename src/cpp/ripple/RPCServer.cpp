@@ -4,20 +4,6 @@
 */
 //==============================================================================
 
-#include "RPCServer.h"
-
-#include "HttpsClient.h"
-#include "RPC.h"
-
-#include <iostream>
-
-#include <boost/bind.hpp>
-#include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/asio/read_until.hpp>
-
 #ifndef RPC_MAXIMUM_QUERY
 #define RPC_MAXIMUM_QUERY   (1024*1024)
 #endif

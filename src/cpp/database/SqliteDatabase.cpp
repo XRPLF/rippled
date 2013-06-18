@@ -4,20 +4,36 @@
 */
 //==============================================================================
 
-#include "SqliteDatabase.h"
-#include "sqlite3.h"
-
-#include <string.h>
-#include <stdio.h>
-#include <iostream>
-
-#include <boost/thread.hpp>
-#include <boost/foreach.hpp>
-#include <boost/bind.hpp>
-
 SETUP_LOG (SqliteDatabase)
 
 using namespace std;
+
+SqliteStatement::SqliteStatement (SqliteDatabase* db, const char* sql, bool aux)
+{
+    assert (db);
+
+    sqlite3* conn = aux ? db->getAuxConnection () : db->peekConnection ();
+    int j = sqlite3_prepare_v2 (conn, sql, strlen (sql) + 1, &statement, NULL);
+
+    if (j != SQLITE_OK)
+        throw j;
+}
+
+SqliteStatement::SqliteStatement (SqliteDatabase* db, const std::string& sql, bool aux)
+{
+    assert (db);
+
+    sqlite3* conn = aux ? db->getAuxConnection () : db->peekConnection ();
+    int j = sqlite3_prepare_v2 (conn, sql.c_str (), sql.size () + 1, &statement, NULL);
+
+    if (j != SQLITE_OK)
+        throw j;
+}
+
+SqliteStatement::~SqliteStatement ()
+{
+    sqlite3_finalize (statement);
+}
 
 SqliteDatabase::SqliteDatabase (const char* host) : Database (host, "", ""), mWalQ (NULL), walRunning (false)
 {
@@ -296,33 +312,6 @@ void SqliteDatabase::runWal ()
         boost::mutex::scoped_lock sl (walMutex);
         walRunning = false;
     }
-}
-
-SqliteStatement::SqliteStatement (SqliteDatabase* db, const char* sql, bool aux)
-{
-    assert (db);
-
-    sqlite3* conn = aux ? db->getAuxConnection () : db->peekConnection ();
-    int j = sqlite3_prepare_v2 (conn, sql, strlen (sql) + 1, &statement, NULL);
-
-    if (j != SQLITE_OK)
-        throw j;
-}
-
-SqliteStatement::SqliteStatement (SqliteDatabase* db, const std::string& sql, bool aux)
-{
-    assert (db);
-
-    sqlite3* conn = aux ? db->getAuxConnection () : db->peekConnection ();
-    int j = sqlite3_prepare_v2 (conn, sql.c_str (), sql.size () + 1, &statement, NULL);
-
-    if (j != SQLITE_OK)
-        throw j;
-}
-
-SqliteStatement::~SqliteStatement ()
-{
-    sqlite3_finalize (statement);
 }
 
 sqlite3_stmt* SqliteStatement::peekStatement ()

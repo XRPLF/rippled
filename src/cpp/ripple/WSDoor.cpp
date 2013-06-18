@@ -4,24 +4,6 @@
 */
 //==============================================================================
 
-
-
-//#define WSDOOR_CPP
-//#include "../websocketpp/src/sockets/autotls.hpp"
-//#include "../websocketpp/src/websocketpp.hpp"
-
-#include "WSConnection.h"
-#include "WSHandler.h"
-
-#include "WSDoor.h"
-
-#include <iostream>
-
-#include <boost/bind.hpp>
-#include <boost/foreach.hpp>
-#include <boost/mem_fn.hpp>
-#include <boost/unordered_set.hpp>
-
 SETUP_LOG (WSDoor)
 
 //

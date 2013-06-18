@@ -7,8 +7,6 @@
 #ifndef RIPPLE_RPCDOOR_H
 #define RIPPLE_RPCDOOR_H
 
-#include "RPCServer.h"
-
 /*
 Handles incoming connections from people making RPC Requests
 */

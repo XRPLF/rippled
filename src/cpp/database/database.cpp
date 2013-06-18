@@ -4,10 +4,6 @@
 */
 //==============================================================================
 
-#include "database.h"
-#include <stdlib.h>
-#include <string.h>
-
 Database::Database (const char* host, const char* user, const char* pass) : mNumCol (0)
 {
     mDBPass = pass;
