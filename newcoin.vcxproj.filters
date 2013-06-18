@@ -115,9 +115,6 @@
     <Filter Include="1. Modules\ripple_app\_unfactored\transactions">
       <UniqueIdentifier>{1d36a65a-de7c-41f9-85dd-93b29d67606e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_app\_unfactored\main">
-      <UniqueIdentifier>{1ccfc5ad-5cd7-4a8e-b305-08f663c2397c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_app\_unfactored\ledger">
       <UniqueIdentifier>{c441b367-d096-401f-a3f0-5ac24290d7b7}</UniqueIdentifier>
     </Filter>
@@ -1214,9 +1211,6 @@
     <ClInclude Include="src\cpp\database\database.h">
       <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\database\SqliteDatabase.h">
-      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
-    </ClInclude>
     <ClInclude Include="modules\ripple_net\ripple_net.h">
       <Filter>2. %28Unused%29\ripple_net</Filter>
     </ClInclude>
@@ -1643,6 +1637,9 @@
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\utility\ripple_CountedObject.h">
       <Filter>1. Modules\ripple_basics\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\database\SqliteDatabase.h">
+      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

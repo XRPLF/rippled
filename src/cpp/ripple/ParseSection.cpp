@@ -4,12 +4,6 @@
 */
 //==============================================================================
 
-#include "ParseSection.h"
-
-#include <iostream>
-#include <boost/algorithm/string.hpp>
-#include <boost/foreach.hpp>
-
 #define SECTION_DEFAULT_NAME    ""
 
 // for logging

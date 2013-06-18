@@ -8,9 +8,6 @@
 #ifndef RIPPLE_WSCONNECTION_H
 #define RIPPLE_WSCONNECTION_H
 
-#include "../websocketpp/src/sockets/autotls.hpp"
-#include "../websocketpp/src/websocketpp.hpp"
-
 // This is for logging
 struct WSConnectionLog;
 

@@ -4,7 +4,6 @@
 */
 //==============================================================================
 
-
 namespace po = boost::program_options;
 
 // VFALCO TODO make these singletons that initialize statically

@@ -4,14 +4,6 @@
 */
 //==============================================================================
 
-#include "SNTPClient.h"
-
-#include <boost/bind.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/foreach.hpp>
-
-#include <openssl/rand.h>
-
 SETUP_LOG (SNTPClient)
 
 // #define SNTP_DEBUG

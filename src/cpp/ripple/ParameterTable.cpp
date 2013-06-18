@@ -4,11 +4,6 @@
 */
 //==============================================================================
 
-#include "ParameterTable.h"
-
-#include <boost/make_shared.hpp>
-#include <boost/foreach.hpp>
-
 bool ParameterNode::setValue (const std::string& name, const Json::Value& value, Json::Value& error)
 {
     if (name.empty ()) // this node

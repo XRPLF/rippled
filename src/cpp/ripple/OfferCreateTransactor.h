@@ -7,8 +7,6 @@
 #ifndef __OFFERCREATETRANSACTOR__
 #define __OFFERCREATETRANSACTOR__
 
-#include "Transactor.h"
-
 class OfferCreateTransactor : public Transactor
 {
 public:

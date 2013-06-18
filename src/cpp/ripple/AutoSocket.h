@@ -7,17 +7,6 @@
 #ifndef __AUTOSOCKET_H_
 #define __AUTOSOCKET_H_
 
-#include <vector>
-#include <string>
-
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
-#include <boost/smart_ptr.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/asio/read_until.hpp>
-
 extern LogPartition AutoSocketPartition;
 
 // Socket wrapper that supports both SSL and non-SSL connections.

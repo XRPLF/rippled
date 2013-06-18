@@ -7,14 +7,6 @@
 #ifndef __SNTPCLIENT__
 #define __SNTPCLIENT__
 
-#include <string>
-#include <map>
-#include <vector>
-#include <list>
-
-#include <boost/thread/mutex.hpp>
-#include <boost/asio.hpp>
-
 class SNTPQuery
 {
 public:

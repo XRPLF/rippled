@@ -4,9 +4,6 @@
 */
 //==============================================================================
 
-#include "Interpreter.h"
-#include "Operation.h"
-
 /*
 We also need to charge for each op
 

@@ -29,22 +29,27 @@
 #include <vector>
 
 // VFALCO NOTE Holy smokes...that's a lot of boost!!!
-
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/read_until.hpp>
 #include <boost/asio/ssl.hpp>
+#include <boost/asio/streambuf.hpp>
 #include <boost/bimap.hpp>
-#include <boost/bimap/unordered_set_of.hpp>
+#include <boost/bimap/list_of.hpp>
 #include <boost/bimap/multiset_of.hpp>
+#include <boost/bimap/unordered_set_of.hpp>
 #include <boost/bind.hpp>
 #include <boost/cstdint.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/function.hpp>
+#include <boost/iostreams/concepts.hpp>
+#include <boost/iostreams/stream.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/mem_fn.hpp>
@@ -71,10 +76,15 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <openssl/buffer.h>
 #include <openssl/ec.h>
+#include <openssl/evp.h>
 #include <openssl/md5.h>
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
+
+// for SqliteDatabase.cpp
+#include "src/cpp/database/sqlite3.h"
 
 //------------------------------------------------------------------------------
 
@@ -91,6 +101,16 @@
 #include "ripple_app.h"
 
 #include "../ripple_data/ripple_data.h"
+
+
+
+// VFALCO NOTE Log dependencies have wormed their way into websocketpp,
+//             which needs the ripple_basic module to compile.
+//
+// VFALCO TODO Make a unity include for websocket
+//             for WSDoor, et. al.
+#include "src/cpp/websocketpp/src/sockets/autotls.hpp"
+#include "src/cpp/websocketpp/src/websocketpp.hpp"
 
 //------------------------------------------------------------------------------
 
@@ -204,6 +224,7 @@
 #include "src/cpp/ripple/ripple_IApplication.h"
 #include "src/cpp/ripple/AutoSocket.h"
 #include "src/cpp/ripple/CallRPC.h"
+#include "src/cpp/ripple/Transactor.h"
 #include "src/cpp/ripple/ChangeTransactor.h"
 #include "src/cpp/ripple/HTTPRequest.h"
 #include "src/cpp/ripple/HttpsClient.h"
@@ -226,14 +247,13 @@
 #include "src/cpp/ripple/PaymentTransactor.h"
 #include "src/cpp/ripple/PeerDoor.h"
 #include "src/cpp/ripple/RPC.h"
+#include "src/cpp/ripple/RPCServer.h"
 #include "src/cpp/ripple/RPCDoor.h"
 #include "src/cpp/ripple/RPCErr.h"
-#include "src/cpp/ripple/RPCServer.h"
 #include "src/cpp/ripple/RPCSub.h"
 #include "src/cpp/ripple/RegularKeySetTransactor.h"
 #include "src/cpp/ripple/ripple_RippleState.h"
 #include "src/cpp/ripple/SerializedValidation.h"
-#include "src/cpp/ripple/Transactor.h"
 #include "src/cpp/ripple/AccountSetTransactor.h"
 #include "src/cpp/ripple/TrustSetTransactor.h"
 #include "src/cpp/ripple/ripple_Version.h"
@@ -242,6 +262,21 @@
 #include "src/cpp/ripple/WalletAddTransactor.h"
 
 #include "../websocketpp/src/logger/logger.hpp" // for ripple_LogWebSockets.cpp
+
+#if 0
+#include <iostream>
+#include <cstdlib>
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+#include <boost/bind.hpp>
+#include <boost/iostreams/concepts.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/foreach.hpp>
+#include <boost/regex.hpp>
+#include <openssl/buffer.h>
+#include <openssl/evp.h>
+#endif
 
 //------------------------------------------------------------------------------
 

@@ -7,8 +7,6 @@
 #ifndef __TRANSACTOR__
 #define __TRANSACTOR__
 
-#include "TransactionEngine.h"
-
 class Transactor
 {
 public:

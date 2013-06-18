@@ -4,7 +4,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (OfferCreateTransactor)
 
 // Make sure an offer is still valid. If not, mark it unfunded.

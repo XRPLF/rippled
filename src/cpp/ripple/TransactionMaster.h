@@ -7,8 +7,6 @@
 #ifndef __TRANSACTIONMASTER__
 #define __TRANSACTIONMASTER__
 
-#include "Transaction.h"
-
 // Tracks all transactions in memory
 
 class TransactionMaster
