@@ -19,12 +19,12 @@ TER AccountSetTransactor::doApply ()
     const uint32    uClearFlag  = mTxn.getFieldU32 (sfClearFlag);
 
     // legacy AccountSet flags
-    bool      bSetRequireDest   = (uFlagsIn & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest);
-    bool      bClearRequireDest = (uFlagsIn & tfOptionalDestTag) || (uClearFlag == asfRequireDest);
-    bool      bSetRequireAuth   = (uFlagsIn & tfRequireAuth) || (uSetFlag == asfRequireAuth);
-    bool      bClearRequireAuth = (uFlagsIn & tfOptionalAuth) || (uClearFlag == asfRequireAuth);
-    bool      bSetDisallowXRP   = (uFlagsIn & tfDisallowXRP) || (uSetFlag == asfDisallowXRP);
-    bool      bClearDisallowXRP = (uFlagsIn & tfAllowXRP) || (uClearFlag == asfDisallowXRP);
+    bool      bSetRequireDest   = (uTxFlags & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest);
+    bool      bClearRequireDest = (uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest);
+    bool      bSetRequireAuth   = (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth);
+    bool      bClearRequireAuth = (uTxFlags & tfOptionalAuth) || (uClearFlag == asfRequireAuth);
+    bool      bSetDisallowXRP   = (uTxFlags & tfDisallowXRP) || (uSetFlag == asfDisallowXRP);
+    bool      bClearDisallowXRP = (uTxFlags & tfAllowXRP) || (uClearFlag == asfDisallowXRP);
 
     if (uTxFlags & tfAccountSetMask)
     {
