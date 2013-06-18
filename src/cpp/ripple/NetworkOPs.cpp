@@ -197,12 +197,12 @@ void NetworkOPs::submitTransaction (Job&, SerializedTransaction::pointer iTrans,
 
     // FIXME: Should submit to job queue
     theApp->getIOService ().post (boost::bind (&NetworkOPs::processTransaction, this,
-                                  boost::make_shared<Transaction> (trans, false), false, callback));
+                                  boost::make_shared<Transaction> (trans, false), false, false, callback));
 }
 
 // Sterilize transaction through serialization.
 // This is fully synchronous and deprecated
-Transaction::pointer NetworkOPs::submitTransactionSync (Transaction::ref tpTrans, bool bAdmin, bool bSubmit)
+Transaction::pointer NetworkOPs::submitTransactionSync (Transaction::ref tpTrans, bool bAdmin, bool bFailHard, bool bSubmit)
 {
     Serializer s;
     tpTrans->getSTransaction ()->add (s);
@@ -217,7 +217,7 @@ Transaction::pointer NetworkOPs::submitTransactionSync (Transaction::ref tpTrans
     else if (tpTransNew->getSTransaction ()->isEquivalent (*tpTrans->getSTransaction ()))
     {
         if (bSubmit)
-            (void) NetworkOPs::processTransaction (tpTransNew, bAdmin);
+            (void) NetworkOPs::processTransaction (tpTransNew, bAdmin, bFailHard);
     }
     else
     {
@@ -315,7 +315,7 @@ void NetworkOPs::runTransactionQueue ()
         theApp->getIOService ().post (boost::bind (&NetworkOPs::runTransactionQueue, this));
 }
 
-Transaction::pointer NetworkOPs::processTransaction (Transaction::pointer trans, bool bAdmin, stCallback callback)
+Transaction::pointer NetworkOPs::processTransaction (Transaction::pointer trans, bool bAdmin, bool bFailHard, stCallback callback)
 {
     LoadEvent::autoptr ev = theApp->getJobQueue ().getLoadEventAP (jtTXN_PROC, "ProcessTXN");
 
@@ -345,7 +345,6 @@ Transaction::pointer NetworkOPs::processTransaction (Transaction::pointer trans,
     }
 
     boost::recursive_mutex::scoped_lock sl (theApp->getMasterLock ());
-    Transaction::pointer dbtx = theApp->getMasterTransaction ().fetch (trans->getID (), true);
     bool didApply;
     TER r = mLedgerMaster->doTransaction (trans->getSTransaction (),
                                           bAdmin ? (tapOPEN_LEDGER | tapNO_CHECK_SIGN | tapADMIN) : (tapOPEN_LEDGER | tapNO_CHECK_SIGN), didApply);
@@ -386,11 +385,14 @@ Transaction::pointer NetworkOPs::processTransaction (Transaction::pointer trans,
     }
     else if (isTerRetry (r))
     {
-        // transaction should be held
-        WriteLog (lsDEBUG, NetworkOPs) << "Transaction should be held: " << r;
-        trans->setStatus (HELD);
-        theApp->getMasterTransaction ().canonicalize (trans, true);
-        mLedgerMaster->addHeldTransaction (trans);
+        if (!bFailHard)
+        {
+                // transaction should be held
+                WriteLog (lsDEBUG, NetworkOPs) << "Transaction should be held: " << r;
+                trans->setStatus (HELD);
+                theApp->getMasterTransaction ().canonicalize (trans, true);
+                mLedgerMaster->addHeldTransaction (trans);
+        }
     }
     else
     {
@@ -398,7 +400,7 @@ Transaction::pointer NetworkOPs::processTransaction (Transaction::pointer trans,
         trans->setStatus (INVALID);
     }
 
-    if (didApply || (mMode != omFULL))
+    if (didApply || ((mMode != omFULL) && !bFailHard))
     {
         std::set<uint64> peers;
 

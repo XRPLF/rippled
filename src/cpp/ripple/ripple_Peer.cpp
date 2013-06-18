@@ -1081,7 +1081,7 @@ static void checkTransaction (Job&, int flags, SerializedTransaction::pointer st
         else
             theApp->getHashRouter ().setFlag (stx->getTransactionID (), SF_SIGGOOD);
 
-        theApp->getOPs ().processTransaction (tx, isSetBit (flags, SF_TRUSTED));
+        theApp->getOPs ().processTransaction (tx, isSetBit (flags, SF_TRUSTED), false);
 
 #ifndef TRUST_NETWORK
     }

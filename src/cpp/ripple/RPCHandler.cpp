@@ -62,7 +62,7 @@ RPCHandler::RPCHandler (NetworkOPs* netOps, InfoSub::pointer infoSub) : mNetOps 
     ;
 }
 
-Json::Value RPCHandler::transactionSign (Json::Value jvRequest, bool bSubmit, ScopedLock& mlh)
+Json::Value RPCHandler::transactionSign (Json::Value jvRequest, bool bSubmit, bool bFailHard, ScopedLock& mlh)
 {
     mlh.unlock ();
 
@@ -343,7 +343,7 @@ Json::Value RPCHandler::transactionSign (Json::Value jvRequest, bool bSubmit, Sc
     try
     {
         // FIXME: For performance, should use asynch interface
-        tpTrans = mNetOps->submitTransactionSync (tpTrans, mRole == ADMIN, bSubmit);
+        tpTrans = mNetOps->submitTransactionSync (tpTrans, mRole == ADMIN, bFailHard, bSubmit);
 
         if (!tpTrans)
         {
@@ -1653,7 +1653,8 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value jvRequest, int& cost, Scop
 Json::Value RPCHandler::doSign (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
 {
     cost = rpcCOST_EXPENSIVE;
-    return transactionSign (jvRequest, false, MasterLockHolder);
+    bool bFailHard = jvRequest.isMember ("fail_hard") && jvRequest["fail_hard"].asBool ();
+    return transactionSign (jvRequest, false, bFailHard, MasterLockHolder);
 }
 
 // {
@@ -1664,7 +1665,8 @@ Json::Value RPCHandler::doSubmit (Json::Value jvRequest, int& cost, ScopedLock& 
 {
     if (!jvRequest.isMember ("tx_blob"))
     {
-        return transactionSign (jvRequest, true, MasterLockHolder);
+        bool bFailHard = jvRequest.isMember ("fail_hard") && jvRequest["fail_hard"].asBool ();
+        return transactionSign (jvRequest, true, bFailHard, MasterLockHolder);
     }
 
     Json::Value                 jvResult;
@@ -1711,7 +1713,8 @@ Json::Value RPCHandler::doSubmit (Json::Value jvRequest, int& cost, ScopedLock& 
 
     try
     {
-        (void) mNetOps->processTransaction (tpTrans, mRole == ADMIN);
+        (void) mNetOps->processTransaction (tpTrans, mRole == ADMIN,
+            jvRequest.isMember ("fail_hard") && jvRequest["fail_hard"].asBool ());
     }
     catch (std::exception& e)
     {
