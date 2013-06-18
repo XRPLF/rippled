@@ -7,8 +7,6 @@
 #ifndef RIPPLE_HASHROUTER_H
 #define RIPPLE_HASHROUTER_H
 
-DEFINE_INSTANCE (HashRouterEntry);
-
 // VFALCO TODO convert these macros to int constants
 #define SF_RELAYED      0x01    // Has already been relayed to other nodes
 #define SF_BAD          0x02    // Signature/format is bad
@@ -18,7 +16,8 @@ DEFINE_INSTANCE (HashRouterEntry);
 #define SF_TRUSTED      0x20    // comes from trusted source
 
 // VFALCO TODO move this class into the scope of class HashRouter
-class HashRouterEntry : private IS_INSTANCE (HashRouterEntry)
+class HashRouterEntry
+    : public CountedObject <HashRouterEntry>
 {
 public:
     HashRouterEntry ()  : mFlags (0)

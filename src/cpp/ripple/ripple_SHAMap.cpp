@@ -10,8 +10,6 @@
 
 SETUP_LOG (SHAMap)
 
-DECLARE_INSTANCE (SHAMap);
-
 void SHAMapNode::setMHash () const
 {
     using namespace std;

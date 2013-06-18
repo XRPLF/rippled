@@ -12,9 +12,8 @@
 
 class PathRequest;
 
-DEFINE_INSTANCE (InfoSub);
-
-class InfoSub : public IS_INSTANCE (InfoSub)
+class InfoSub
+    : public CountedObject <InfoSub>
 {
 public:
     typedef boost::shared_ptr<InfoSub>          pointer;

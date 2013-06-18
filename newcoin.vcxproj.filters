@@ -115,9 +115,6 @@
     <Filter Include="1. Modules\ripple_app\_unfactored\transactions">
       <UniqueIdentifier>{1d36a65a-de7c-41f9-85dd-93b29d67606e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_app\_unfactored\types">
-      <UniqueIdentifier>{1b463564-35d9-43d1-b3a0-21b344a3a1c7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_app\_unfactored\main">
       <UniqueIdentifier>{1ccfc5ad-5cd7-4a8e-b305-08f663c2397c}</UniqueIdentifier>
     </Filter>
@@ -468,12 +465,6 @@
     <ClCompile Include="src\cpp\ripple\Contract.cpp">
       <Filter>1. Modules\ripple_app\_unfactored\contracts</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ParameterTable.cpp">
-      <Filter>1. Modules\ripple_app\_unfactored\types</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\ParseSection.cpp">
-      <Filter>1. Modules\ripple_app\_unfactored\types</Filter>
-    </ClCompile>
     <ClCompile Include="modules\ripple_basics\ripple_basics.cpp">
       <Filter>1. Modules\ripple_basics</Filter>
     </ClCompile>
@@ -572,12 +563,6 @@
     </ClCompile>
     <ClCompile Include="modules\ripple_data\crypto\ripple_CKeyECIES.cpp">
       <Filter>1. Modules\ripple_data\crypto</Filter>
-    </ClCompile>
-    <ClCompile Include="modules\ripple_basics\utility\ripple_InstanceCounter.cpp">
-      <Filter>1. Modules\ripple_basics\utility</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\main.cpp">
-      <Filter>1. Modules\ripple_app\_unfactored\main</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\NetworkOPs.cpp">
       <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
@@ -884,6 +869,18 @@
     </ClCompile>
     <ClCompile Include="modules\ripple_app\ripple_app_pt4.cpp">
       <Filter>1. Modules\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ParameterTable.cpp">
+      <Filter>1. Modules\ripple_app\_unfactored</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ParseSection.cpp">
+      <Filter>1. Modules\ripple_app\_unfactored</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\main.cpp">
+      <Filter>1. Modules\ripple_app\_unfactored</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ripple_basics\utility\ripple_CountedObject.cpp">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1199,12 +1196,6 @@
     <ClInclude Include="src\cpp\ripple\Contract.h">
       <Filter>1. Modules\ripple_app\_unfactored\contracts</Filter>
     </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ParameterTable.h">
-      <Filter>1. Modules\ripple_app\_unfactored\types</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\ParseSection.h">
-      <Filter>1. Modules\ripple_app\_unfactored\types</Filter>
-    </ClInclude>
     <ClInclude Include="modules\ripple_basics\ripple_basics.h">
       <Filter>1. Modules\ripple_basics</Filter>
     </ClInclude>
@@ -1338,9 +1329,6 @@
       <Filter>1. Modules\ripple_data\crypto</Filter>
     </ClInclude>
     <ClInclude Include="modules\ripple_basics\utility\ripple_ScopedLock.h">
-      <Filter>1. Modules\ripple_basics\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="modules\ripple_basics\utility\ripple_InstanceCounter.h">
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\WSDoor.h">
@@ -1646,6 +1634,15 @@
     <ClInclude Include="BeastConfig.h" />
     <ClInclude Include="modules\ripple_app\ripple_app.h">
       <Filter>1. Modules\ripple_app</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ParseSection.h">
+      <Filter>1. Modules\ripple_app\_unfactored</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\ParameterTable.h">
+      <Filter>1. Modules\ripple_app\_unfactored</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ripple_basics\utility\ripple_CountedObject.h">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

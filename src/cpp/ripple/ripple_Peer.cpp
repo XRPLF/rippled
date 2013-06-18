@@ -11,10 +11,6 @@ SETUP_LOG (Peer)
 
 class PeerImp;
 
-DEFINE_INSTANCE (PeerImp);
-
-DECLARE_INSTANCE (PeerImp);
-
 // Don't try to run past receiving nonsense from a peer
 #define TRUST_NETWORK
 
@@ -25,7 +21,7 @@ DECLARE_INSTANCE (PeerImp);
 #define NODE_IDLE_SECONDS       120
 
 class PeerImp : public Peer
-    , public IS_INSTANCE (PeerImp)
+    , public CountedObject <PeerImp>
 {
 public:
     PeerImp (boost::asio::io_service & io_service,

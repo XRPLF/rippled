@@ -7,10 +7,9 @@
 #ifndef RIPPLE_SHAMAPITEM_H
 #define RIPPLE_SHAMAPITEM_H
 
-DEFINE_INSTANCE (SHAMapItem);
-
 // an item stored in a SHAMap
-class SHAMapItem : public IS_INSTANCE (SHAMapItem)
+class SHAMapItem
+    : public CountedObject <SHAMapItem>
 {
 public:
     typedef boost::shared_ptr<SHAMapItem>           pointer;

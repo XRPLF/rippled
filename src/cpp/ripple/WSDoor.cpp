@@ -24,8 +24,6 @@
 
 SETUP_LOG (WSDoor)
 
-DECLARE_INSTANCE (WebSocketConnection);
-
 //
 // This is a light weight, untrusted interface for web clients.
 // For now we don't provide proof.  Later we will.

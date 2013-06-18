@@ -7,10 +7,9 @@
 #ifndef RIPPLE_SERIALIZEDOBJECT_H
 #define RIPPLE_SERIALIZEDOBJECT_H
 
-DEFINE_INSTANCE (SerializedObject);
-DEFINE_INSTANCE (SerializedArray);
-
-class STObject : public SerializedType, private IS_INSTANCE (SerializedObject)
+class STObject
+    : public SerializedType
+    , public CountedObject <STObject>
 {
 public:
     STObject () : mType (NULL)
@@ -298,7 +297,9 @@ template<> struct range_const_iterator<STObject>
 
 //------------------------------------------------------------------------------
 
-class STArray : public SerializedType, private IS_INSTANCE (SerializedArray)
+class STArray
+    : public SerializedType
+    , public CountedObject <STArray>
 {
 public:
     typedef boost::ptr_vector<STObject>                         vector;
