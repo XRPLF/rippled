@@ -31,6 +31,8 @@ void TFInit ()
             << SOElement (sfMessageKey,      SOE_OPTIONAL)
             << SOElement (sfDomain,          SOE_OPTIONAL)
             << SOElement (sfTransferRate,    SOE_OPTIONAL)
+            << SOElement (sfSetFlag,         SOE_OPTIONAL)
+            << SOElement (sfClearFlag,       SOE_OPTIONAL)
             ;
 
     DECLARE_TF (TrustSet, ttTRUST_SET)

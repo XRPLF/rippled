@@ -79,6 +79,8 @@ FIELD (OperationLimit,       UINT32, 29)
 FIELD (ReferenceFeeUnits,    UINT32, 30)
 FIELD (ReserveBase,          UINT32, 31)
 FIELD (ReserveIncrement,     UINT32, 32)
+FIELD (SetFlag,              UINT32, 33)
+FIELD (ClearFlag,            UINT32, 34)
 
 // 64-bit integers
 FIELD (IndexNext,            UINT64, 1)
