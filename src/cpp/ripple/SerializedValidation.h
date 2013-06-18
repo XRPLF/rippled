@@ -7,11 +7,9 @@
 #ifndef RIPPLE_SERIALIZEDVALIDATION_H
 #define RIPPLE_SERIALIZEDVALIDATION_H
 
-DEFINE_INSTANCE (SerializedValidation);
-
 class SerializedValidation
     : public STObject
-    , private IS_INSTANCE (SerializedValidation)
+    , public CountedObject <SerializedValidation>
 {
 public:
     typedef boost::shared_ptr<SerializedValidation>         pointer;

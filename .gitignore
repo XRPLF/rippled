@@ -30,6 +30,7 @@ node_modules
 tmp
 
 # Ignore database directory.
+db
 db/*.db
 db/*.db-*
 

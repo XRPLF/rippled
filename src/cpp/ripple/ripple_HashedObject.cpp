@@ -6,8 +6,6 @@
 
 SETUP_LOG (HashedObject)
 
-DECLARE_INSTANCE (HashedObject);
-
 HashedObject::HashedObject (
     HashedObjectType type,
     LedgerIndex ledgerIndex,

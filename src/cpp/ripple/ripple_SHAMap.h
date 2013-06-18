@@ -7,8 +7,6 @@
 #ifndef RIPPLE_SHAMAP_H
 #define RIPPLE_SHAMAP_H
 
-DEFINE_INSTANCE (SHAMap);
-
 enum SHAMapState
 {
     smsModifying = 0,       // Objects can be added and removed (like an open ledger)
@@ -18,7 +16,8 @@ enum SHAMapState
     smsInvalid = 4,         // Map is known not to be valid (usually synching a corrupt ledger)
 };
 
-class SHAMap : public IS_INSTANCE (SHAMap)
+class SHAMap
+    : public CountedObject <SHAMap>
 {
 public:
     typedef boost::shared_ptr<SHAMap> pointer;

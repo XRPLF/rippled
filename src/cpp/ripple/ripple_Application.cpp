@@ -304,7 +304,6 @@ extern const char* RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], 
        *NetNodeDBInit[], *PathFindDBInit[];
 extern int RpcDBCount, TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount,
        NetNodeDBCount, PathFindDBCount;
-bool Instance::running = true;
 
 void Application::stop ()
 {
@@ -324,7 +323,6 @@ void Application::stop ()
     mEphemeralLDB = NULL;
 
     WriteLog (lsINFO, Application) << "Stopped: " << mIOService.stopped ();
-    Instance::shutdown ();
 }
 
 static void InitDB (DatabaseCon** dbCon, const char* fileName, const char* dbInit[], int dbCount)
