@@ -9,7 +9,8 @@ SETUP_LOG (RegularKeySetTransactor)
 
 uint64 RegularKeySetTransactor::calculateBaseFee ()
 {
-    if ( ! (mTxnAccount->getFlags () & lsfPasswordSpent)
+    if ( mTxnAccount
+            && (! (mTxnAccount->getFlags () & lsfPasswordSpent))
             && (mSigningPubKey.getAccountID () == mTxnAccountID))
     {
         // flag is armed and they signed with the right account
