@@ -52,11 +52,6 @@ void RPCServer::handle_read_req (const boost::system::error_code& e)
                               mStrand.wrap (boost::bind (&RPCServer::handle_write, shared_from_this (), boost::asio::placeholders::error)));
 }
 
-static void dummy_handler ()
-{
-    ;
-}
-
 void RPCServer::handle_read_line (const boost::system::error_code& e)
 {
     if (e)
@@ -68,7 +63,7 @@ void RPCServer::handle_read_line (const boost::system::error_code& e)
     {
         // request with no body
         WriteLog (lsWARNING, RPCServer) << "RPC HTTP request with no body";
-        mSocket.async_shutdown (boost::bind (&dummy_handler));
+        mSocket.async_shutdown (boost::bind (&RPCServer::handle_shutdown, shared_from_this(), boost::asio::placeholders::error));
         return;
     }
     else if (action == haREAD_LINE)
@@ -84,7 +79,7 @@ void RPCServer::handle_read_line (const boost::system::error_code& e)
         if ((rLen < 0) || (rLen > RPC_MAXIMUM_QUERY))
         {
             WriteLog (lsWARNING, RPCServer) << "Illegal RPC request length " << rLen;
-            mSocket.async_shutdown (boost::bind (&dummy_handler));
+            mSocket.async_shutdown (boost::bind (&RPCServer::handle_shutdown, shared_from_this(), boost::asio::placeholders::error));
             return;
         }
 
@@ -105,7 +100,7 @@ void RPCServer::handle_read_line (const boost::system::error_code& e)
         }
     }
     else
-        mSocket.async_shutdown (boost::bind (&dummy_handler));
+        mSocket.async_shutdown (boost::bind (&RPCServer::handle_shutdown, shared_from_this(), boost::asio::placeholders::error));
 }
 
 std::string RPCServer::handleRequest (const std::string& requestStr)
@@ -195,7 +190,7 @@ void RPCServer::handle_write (const boost::system::error_code& e)
         HTTPRequestAction action = mHTTPRequest.requestDone (false);
 
         if (action == haCLOSE_CONN)
-            mSocket.async_shutdown (boost::bind (&dummy_handler));
+            mSocket.async_shutdown (boost::bind (&RPCServer::handle_shutdown, shared_from_this(), boost::asio::placeholders::error));
         else
         {
             boost::asio::async_read_until (mSocket, mLineBuffer, "\r\n",
@@ -207,6 +202,11 @@ void RPCServer::handle_write (const boost::system::error_code& e)
     {
         //connection_manager_.stop(shared_from_this());
     }
+}
+
+// nothing to do, we just keep the object alive
+void RPCServer::handle_shutdown (const boost::system::error_code& e)
+{
 }
 
 // vim:ts=4
