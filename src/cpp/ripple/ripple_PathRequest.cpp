@@ -182,7 +182,7 @@ int PathRequest::parseJson (const Json::Value& jvParams, bool complete)
             const Json::Value& jvCur = jvSrcCur[i];
             uint160 uCur, uIss;
 
-            if (!jvCur.isMember ("currency") || !STAmount::currencyFromString (uCur, jvCur["currency"].asString ()))
+            if (!jvCur.isArray() || !jvCur.isMember ("currency") || !STAmount::currencyFromString (uCur, jvCur["currency"].asString ()))
             {
                 jvStatus = rpcError (rpcSRC_CUR_MALFORMED);
                 return PFR_PJ_INVALID;
