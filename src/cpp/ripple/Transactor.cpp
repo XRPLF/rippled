@@ -200,11 +200,10 @@ TER Transactor::apply ()
 
     if (terResult != tesSUCCESS) return (terResult);
 
-    calculateFee ();
-
     boost::recursive_mutex::scoped_lock sl (mEngine->getLedger ()->mLock);
 
     mTxnAccount = mEngine->entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (mTxnAccountID));
+    calculateFee ();
 
     // Find source account
     // If are only forwarding, due to resource limitations, we might verifying only some transactions, this would be probabilistic.
