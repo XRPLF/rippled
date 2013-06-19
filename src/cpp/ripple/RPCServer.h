@@ -40,6 +40,7 @@ private:
     void handle_write (const boost::system::error_code& ec);
     void handle_read_line (const boost::system::error_code& ec);
     void handle_read_req (const boost::system::error_code& ec);
+    void handle_shutdown (const boost::system::error_code& ec);
 
     std::string handleRequest (const std::string& requestStr);
 
