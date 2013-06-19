@@ -7,8 +7,6 @@
 #ifndef RIPPLE_SHAMAPTREENODE_H
 #define RIPPLE_SHAMAPTREENODE_H
 
-DEFINE_INSTANCE (SHAMapTreeNode);
-
 class SHAMap;
 
 enum SHANodeFormat
@@ -18,7 +16,9 @@ enum SHANodeFormat
     snfHASH     = 3, // just the hash
 };
 
-class SHAMapTreeNode : public SHAMapNode, public IS_INSTANCE (SHAMapTreeNode)
+class SHAMapTreeNode
+    : public SHAMapNode
+    , public CountedObject <SHAMapTreeNode>
 {
 public:
     typedef boost::shared_ptr<SHAMapTreeNode>           pointer;

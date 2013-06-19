@@ -4,10 +4,6 @@
 */
 //==============================================================================
 
-#include "RPCDoor.h"
-#include <boost/bind.hpp>
-#include <iostream>
-
 SETUP_LOG (RPCDoor)
 
 using namespace std;

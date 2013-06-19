@@ -8,11 +8,6 @@
 #ifndef RIPPLE_WSCONNECTION_H
 #define RIPPLE_WSCONNECTION_H
 
-#include "../websocketpp/src/sockets/autotls.hpp"
-#include "../websocketpp/src/websocketpp.hpp"
-
-DEFINE_INSTANCE (WebSocketConnection);
-
 // This is for logging
 struct WSConnectionLog;
 
@@ -23,8 +18,10 @@ class WSServerHandler;
 // - Subscriptions
 //
 template <typename endpoint_type>
-class WSConnection : public InfoSub, public IS_INSTANCE (WebSocketConnection),
-    public boost::enable_shared_from_this< WSConnection<endpoint_type> >
+class WSConnection
+    : public InfoSub
+    , public boost::enable_shared_from_this< WSConnection<endpoint_type> >
+    , public CountedObject <WSConnection <endpoint_type> >
 {
 public:
     typedef typename endpoint_type::connection_type connection;

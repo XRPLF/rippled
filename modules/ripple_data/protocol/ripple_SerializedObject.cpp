@@ -6,9 +6,6 @@
 
 SETUP_LOG (STObject)
 
-DECLARE_INSTANCE (SerializedObject);
-DECLARE_INSTANCE (SerializedArray);
-
 UPTR_T<SerializedType> STObject::makeDefaultObject (SerializedTypeID id, SField::ref name)
 {
     assert ((id == STI_NOTPRESENT) || (id == name.fieldType));

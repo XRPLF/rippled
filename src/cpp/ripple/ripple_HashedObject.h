@@ -18,8 +18,6 @@ enum HashedObjectType
     hotTRANSACTION_NODE = 4
 };
 
-DEFINE_INSTANCE (HashedObject);
-
 /** A blob of data with associated metadata, referenced by hash.
 
     The metadata includes the following:
@@ -34,7 +32,8 @@ DEFINE_INSTANCE (HashedObject);
 // VFALCO TODO consider making the instance a private member of SHAMap
 //         since its the primary user.
 //
-class HashedObject : private IS_INSTANCE (HashedObject)
+class HashedObject
+    : public CountedObject <HashedObject>
 {
 public:
     typedef boost::shared_ptr <HashedObject> pointer;

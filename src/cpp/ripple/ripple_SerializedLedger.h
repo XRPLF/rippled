@@ -7,8 +7,6 @@
 #ifndef RIPPLE_SERIALIZEDLEDGER_H
 #define RIPPLE_SERIALIZEDLEDGER_H
 
-DEFINE_INSTANCE (SerializedLedgerEntry);
-
 // VFALCO NOTE
 //
 //      This looks like a central class for Ripple. Almost everything that
@@ -24,7 +22,9 @@ DEFINE_INSTANCE (SerializedLedgerEntry);
 //
 //             Can we just call this LedgerEntry?
 //
-class SerializedLedgerEntry : public STObject, private IS_INSTANCE (SerializedLedgerEntry)
+class SerializedLedgerEntry
+    : public STObject
+    , public CountedObject <SerializedLedgerEntry>
 {
 public:
     typedef boost::shared_ptr<SerializedLedgerEntry>        pointer;

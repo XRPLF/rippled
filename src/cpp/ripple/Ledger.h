@@ -29,8 +29,6 @@ enum LedgerStateParms
 #define LEDGER_JSON_EXPAND      0x40000000
 #define LEDGER_JSON_FULL        0x80000000
 
-DEFINE_INSTANCE (Ledger);
-
 class SqliteStatement;
 
 // VFALCO TODO figure out exactly how this thing works.
@@ -38,12 +36,10 @@ class SqliteStatement;
 //         class. But then what is the meaning of a Ledger object? Is this
 //         really two classes in one? StoreOfAllLedgers + SingleLedgerObject?
 //
-class Ledger : public boost::enable_shared_from_this<Ledger>, public IS_INSTANCE (Ledger)
+class Ledger
+    : public boost::enable_shared_from_this <Ledger>
+    , public CountedObject <Ledger>
 {
-    // The basic Ledger structure, can be opened, closed, or synching
-    // VFALCO TODO eliminate the need for friends
-    friend class TransactionEngine;
-    friend class Transactor;
 public:
     typedef boost::shared_ptr<Ledger>           pointer;
     typedef const boost::shared_ptr<Ledger>&    ref;
@@ -428,6 +424,11 @@ protected:
     void updateFees ();
 
 private:
+    // The basic Ledger structure, can be opened, closed, or synching
+    // VFALCO TODO eliminate the need for friends
+    friend class TransactionEngine;
+    friend class Transactor;
+
     void initializeFees ();
 
 private:

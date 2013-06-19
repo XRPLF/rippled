@@ -7,14 +7,14 @@
 #ifndef RIPPLE_LEDGERCONSENSUS_H
 #define RIPPLE_LEDGERCONSENSUS_H
 
-DEFINE_INSTANCE (LedgerConsensus);
-
 /** Manager for achieving consensus on the next ledger.
 
     This object is created when the consensus process starts, and
     is destroyed when the process is complete.
 */
-class LedgerConsensus : public boost::enable_shared_from_this<LedgerConsensus>, IS_INSTANCE (LedgerConsensus)
+class LedgerConsensus
+    : public boost::enable_shared_from_this <LedgerConsensus>
+    , public CountedObject <LedgerConsensus>
 {
 public:
     LedgerConsensus (LedgerHash const & prevLCLHash, Ledger::ref previousLedger, uint32 closeTime);

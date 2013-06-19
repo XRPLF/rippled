@@ -7,14 +7,12 @@
 #ifndef RIPPLE_TRANSACTIONACQUIRE_H
 #define RIPPLE_TRANSACTIONACQUIRE_H
 
-DEFINE_INSTANCE (TransactionAcquire);
-
 // VFALCO TODO rename to PeerTxRequest
 // A transaction set we are trying to acquire
 class TransactionAcquire
-    : private IS_INSTANCE (TransactionAcquire)
-    , public PeerSet
+    : public PeerSet
     , public boost::enable_shared_from_this <TransactionAcquire>
+    , public CountedObject <TransactionAcquire>
 {
 public:
     typedef boost::shared_ptr<TransactionAcquire> pointer;

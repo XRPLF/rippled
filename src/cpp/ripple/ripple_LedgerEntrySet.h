@@ -7,9 +7,6 @@
 #ifndef RIPPLE_LEDGERENTRYSET_H
 #define RIPPLE_LEDGERENTRYSET_H
 
-DEFINE_INSTANCE (LedgerEntrySetEntry);
-DEFINE_INSTANCE (LedgerEntrySet);
-
 enum TransactionEngineParams
 {
     tapNONE             = 0x00,
@@ -35,7 +32,8 @@ enum LedgerEntryAction
     taaCREATE,  // Newly created.
 };
 
-class LedgerEntrySetEntry : private IS_INSTANCE (LedgerEntrySetEntry)
+class LedgerEntrySetEntry
+    : public CountedObject <LedgerEntrySetEntry>
 {
 public:
     SLE::pointer        mEntry;
@@ -58,7 +56,8 @@ public:
     transaction finishes, the LES is committed into the ledger to make
     the modifications. The transaction metadata is built from the LES too.
 */
-class LedgerEntrySet : private IS_INSTANCE (LedgerEntrySet)
+class LedgerEntrySet
+    : public CountedObject <LedgerEntrySet>
 {
 public:
     LedgerEntrySet (Ledger::ref ledger, TransactionEngineParams tep, bool immutable = false) :

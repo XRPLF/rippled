@@ -303,6 +303,10 @@ void HashedObjectStore::bulkWriteSQLite (Job&)
 
         {
             Database* db = theApp->getHashNodeDB ()->getDB ();
+
+
+            // VFALCO TODO Get rid of the last parameter "aux", which is set to !theConfig.RUN_STANDALONE
+            //
             static SqliteStatement pStB (db->getSqliteDB (), "BEGIN TRANSACTION;", !theConfig.RUN_STANDALONE);
             static SqliteStatement pStE (db->getSqliteDB (), "END TRANSACTION;", !theConfig.RUN_STANDALONE);
             static SqliteStatement pSt (db->getSqliteDB (),

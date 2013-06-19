@@ -7,6 +7,7 @@
 #ifndef RIPPLE_INTEGERTYPES_H
 #define RIPPLE_INTEGERTYPES_H
 
+// VFALCO TODO Get rid of these and use the types from beast instead.
 // VFALCO TODO determine if Borland C is supported
 #if defined (_MSC_VER) /*|| defined(__BORLANDC__)*/
 typedef __int64  int64;

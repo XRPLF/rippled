@@ -2401,12 +2401,14 @@ Json::Value RPCHandler::doGetCounts (Json::Value jvRequest, int& cost, ScopedLoc
     if (jvRequest.isMember ("min_count"))
         minCount = jvRequest["min_count"].asUInt ();
 
-    std::vector<InstanceType::InstanceCount> count = InstanceType::getInstanceCounts (minCount);
+    CountedObjects::List objectCounts = CountedObjects::getInstance ().getCounts (minCount);
 
     Json::Value ret (Json::objectValue);
 
-    BOOST_FOREACH (InstanceType::InstanceCount & it, count)
-    ret[it.first] = it.second;
+    BOOST_FOREACH (CountedObjects::Entry& it, objectCounts)
+    {
+        ret [it.first] = it.second;
+    }
 
     int dbKB = theApp->getLedgerDB ()->getDB ()->getKBUsedAll ();
 

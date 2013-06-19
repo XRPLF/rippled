@@ -4,29 +4,8 @@
 */
 //==============================================================================
 
-#ifndef __WSDOOR__
-#define __WSDOOR__
-
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread.hpp>
-
-#include "../websocketpp/src/sockets/autotls.hpp"
-#include "../websocketpp/src/websocketpp.hpp"
-
-/*
-#ifndef WSDOOR_CPP
-
-namespace websocketpp
-{
-    class server;
-    class server_autotls;
-}
-
-#endif
-*/
+#ifndef RIPPLE_WSDOOR_RIPPLEHEADER
+#define RIPPLE_WSDOOR_RIPPLEHEADER
 
 class WSDoor
 {
