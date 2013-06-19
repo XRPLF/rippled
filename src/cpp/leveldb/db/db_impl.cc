@@ -813,6 +813,10 @@ Status DBImpl::FinishCompactionOutputFile(CompactionState* compact,
           (unsigned long long) output_number,
           (unsigned long long) current_entries,
           (unsigned long long) current_bytes);
+
+      // rate-limit compaction file creation
+      // with a 25ms pause
+      env_->SleepForMicroseconds(25000);
     }
   }
   return s;
