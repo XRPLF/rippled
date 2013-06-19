@@ -286,10 +286,13 @@ void Log::setLogFile (boost::filesystem::path const& path)
 
     outStream = newStream;
 
-    if (pathToLog != NULL)
-        delete pathToLog;
+    if (pathToLog != &path)
+    {
+        if (pathToLog != NULL)
+            delete pathToLog;
 
-    pathToLog = new boost::filesystem::path (path);
+        pathToLog = new boost::filesystem::path (path);
+    }
 }
 
 bool LogPartition::setSeverity (const std::string& partition, LogSeverity severity)
