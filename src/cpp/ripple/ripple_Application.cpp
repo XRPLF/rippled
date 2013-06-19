@@ -610,7 +610,6 @@ void Application::setup ()
     if (!theConfig.RUN_STANDALONE)
         mPeers->start ();
 
-
     if (theConfig.RUN_STANDALONE)
     {
         WriteLog (lsWARNING, Application) << "Running in standalone mode";
@@ -618,7 +617,9 @@ void Application::setup ()
         mNetOps.setStandAlone ();
     }
     else
+    {
         mNetOps.setStateTimer ();
+    }
 }
 
 void Application::run ()
@@ -644,9 +645,10 @@ void Application::run ()
 
 void Application::sweep ()
 {
-
     boost::filesystem::space_info space = boost::filesystem::space (theConfig.DATA_DIR);
 
+    // VFALCO TODO Give this magic constant a name and move it into a well documented header
+    //
     if (space.available < (512 * 1024 * 1024))
     {
         WriteLog (lsFATAL, Application) << "Remaining free disk space is less than 512MB";

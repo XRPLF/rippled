@@ -1910,7 +1910,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="RefactoringNotes.txt" />
+    <Text Include="..\..\TODO.txt" />
     <Text Include="StyleCheatSheet.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

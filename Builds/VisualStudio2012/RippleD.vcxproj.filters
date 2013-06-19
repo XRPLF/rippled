@@ -1662,7 +1662,7 @@
     <CustomBuild Include="..\..\src\cpp\ripple\ripple.proto" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="RefactoringNotes.txt" />
     <Text Include="StyleCheatSheet.txt" />
+    <Text Include="..\..\TODO.txt" />
   </ItemGroup>
 </Project>
