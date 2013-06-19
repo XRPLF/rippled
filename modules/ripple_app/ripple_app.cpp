@@ -263,21 +263,6 @@
 
 #include "../websocketpp/src/logger/logger.hpp" // for ripple_LogWebSockets.cpp
 
-#if 0
-#include <iostream>
-#include <cstdlib>
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/bind.hpp>
-#include <boost/iostreams/concepts.hpp>
-#include <boost/iostreams/stream.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/foreach.hpp>
-#include <boost/regex.hpp>
-#include <openssl/buffer.h>
-#include <openssl/evp.h>
-#endif
-
 //------------------------------------------------------------------------------
 
 // VFALCO TODO figure out who needs these and move to a sensible private header.
