@@ -23,6 +23,11 @@ Copyright (c) 2013 Vinnie Falco <vinnie.falco@gmail.com>
   OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
   PERFORMANCE OF THIS SOFTWARE.
 
+Some code from Raw Material Software, Ltd., provided under the terms of the
+  ISC License. See the corresponding source files for more details.
+  Copyright (c) 2013 - Raw Material Software Ltd.
+  Please visit http://www.juce.com
+
 Some code from ASIO examples:
 // Copyright (c) 2003-2011 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
