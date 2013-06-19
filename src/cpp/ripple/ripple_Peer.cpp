@@ -185,7 +185,6 @@ private:
 
     void doFetchPack (const boost::shared_ptr<ripple::TMGetObjectByHash>& packet);
 
-    // VFALCO NOTE why is this a static member instead of a regular member?
     static void doProofOfWork (Job&, boost::weak_ptr <Peer>, ProofOfWork::pointer);
 };
 
@@ -1634,10 +1633,12 @@ void PeerImp::recvProofWork (ripple::TMProofWork& packet)
             return;
         }
 
+#if 0   // Until proof of work is completed, don't do it
         theApp->getJobQueue ().addJob (
             jtPROOFWORK,
             "recvProof->doProof",
             BIND_TYPE (&PeerImp::doProofOfWork, P_1, boost::weak_ptr <Peer> (shared_from_this ()), pow));
+#endif
 
         return;
     }
