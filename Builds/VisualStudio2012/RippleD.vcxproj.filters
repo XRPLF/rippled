@@ -1668,6 +1668,7 @@
     <None Include="..\..\Doxyfile" />
     <None Include="..\..\README.md" />
     <None Include="..\..\SConstruct" />
+    <None Include="..\..\CheatSheet.md" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\src\cpp\ripple\ripple.proto" />

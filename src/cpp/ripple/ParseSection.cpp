@@ -11,11 +11,11 @@ struct ParseSectionLog { };
 
 SETUP_LOG (ParseSectionLog)
 
-section ParseSection (const std::string& strInput, const bool bTrim)
+Section ParseSection (const std::string& strInput, const bool bTrim)
 {
     std::string strData (strInput);
     std::vector<std::string> vLines;
-    section secResult;
+    Section secResult;
 
     // Convert DOS format to unix.
     boost::algorithm::replace_all (strData, "\r\n", "\n");
@@ -25,11 +25,11 @@ section ParseSection (const std::string& strInput, const bool bTrim)
 
     boost::algorithm::split (vLines, strData, boost::algorithm::is_any_of ("\n"));
 
-    // Set the default section name.
+    // Set the default Section name.
     std::string strSection  = SECTION_DEFAULT_NAME;
 
-    // Initialize the default section.
-    secResult[strSection]   = section::mapped_type ();
+    // Initialize the default Section.
+    secResult[strSection]   = Section::mapped_type ();
 
     // Parse each line.
     BOOST_FOREACH (std::string & strValue, vLines)
@@ -42,14 +42,14 @@ section ParseSection (const std::string& strInput, const bool bTrim)
         }
         else if (strValue[0] == '[' && strValue[strValue.length () - 1] == ']')
         {
-            // New section.
+            // New Section.
 
             strSection              = strValue.substr (1, strValue.length () - 2);
-            secResult[strSection]   = section::mapped_type ();
+            secResult[strSection]   = Section::mapped_type ();
         }
         else
         {
-            // Another line for section.
+            // Another line for Section.
             if (bTrim)
                 boost::algorithm::trim (strValue);
 
@@ -61,7 +61,7 @@ section ParseSection (const std::string& strInput, const bool bTrim)
     return secResult;
 }
 
-void sectionEntriesPrint (std::vector<std::string>* vspEntries, const std::string& strSection)
+void SectionEntriesPrint (std::vector<std::string>* vspEntries, const std::string& strSection)
 {
     std::cerr << "[" << strSection << "]" << std::endl;
 
@@ -74,18 +74,18 @@ void sectionEntriesPrint (std::vector<std::string>* vspEntries, const std::strin
     }
 }
 
-void sectionPrint (section secInput)
+void SectionPrint (Section secInput)
 {
-    BOOST_FOREACH (section::value_type & pairSection, secInput)
+    BOOST_FOREACH (Section::value_type & pairSection, secInput)
     {
-        sectionEntriesPrint (&pairSection.second, pairSection.first);
+        SectionEntriesPrint (&pairSection.second, pairSection.first);
     }
 }
 
-section::mapped_type* sectionEntries (section& secSource, const std::string& strSection)
+Section::mapped_type* SectionEntries (Section& secSource, const std::string& strSection)
 {
-    section::iterator       it;
-    section::mapped_type*   smtResult;
+    Section::iterator       it;
+    Section::mapped_type*   smtResult;
 
     it  = secSource.find (strSection);
 
@@ -95,7 +95,7 @@ section::mapped_type* sectionEntries (section& secSource, const std::string& str
     }
     else
     {
-        //section::mapped_type& vecEntries  = it->second;
+        //Section::mapped_type& vecEntries  = it->second;
 
         smtResult   = & (it->second);
     }
@@ -103,16 +103,16 @@ section::mapped_type* sectionEntries (section& secSource, const std::string& str
     return smtResult;
 }
 
-int sectionCount (section& secSource, const std::string& strSection)
+int SectionCount (Section& secSource, const std::string& strSection)
 {
-    section::mapped_type* pmtEntries    = sectionEntries (secSource, strSection);
+    Section::mapped_type* pmtEntries    = SectionEntries (secSource, strSection);
 
     return pmtEntries ? -1 : pmtEntries->size ();
 }
 
-bool sectionSingleB (section& secSource, const std::string& strSection, std::string& strValue)
+bool SectionSingleB (Section& secSource, const std::string& strSection, std::string& strValue)
 {
-    section::mapped_type*   pmtEntries  = sectionEntries (secSource, strSection);
+    Section::mapped_type*   pmtEntries  = SectionEntries (secSource, strSection);
     bool                    bSingle     = pmtEntries && 1 == pmtEntries->size ();
 
     if (bSingle)

@@ -1840,6 +1840,7 @@
     <ClInclude Include="..\..\Subtrees\leveldb\util\random.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\CheatSheet.md" />
     <None Include="..\..\CodingStyle.md" />
     <None Include="..\..\Doxyfile" />
     <None Include="..\..\modules\ripple_json\json\json_internalarray.inl" />
