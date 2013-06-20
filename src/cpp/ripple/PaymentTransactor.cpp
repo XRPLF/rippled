@@ -4,7 +4,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (PaymentTransactor)
 
 #define RIPPLE_PATHS_MAX    6

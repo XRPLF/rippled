@@ -13,7 +13,7 @@ struct sqlite3_stmt;
 class SqliteDatabase : public Database
 {
 public:
-    SqliteDatabase (const char* host);
+    explicit SqliteDatabase (char const* host);
 
     void connect ();
     void disconnect ();
@@ -61,6 +61,7 @@ public:
 
 private:
     sqlite3* mConnection;
+    // VFALCO TODO Why do we need an "aux" connection? Should just use a second SqliteDatabase object.
     sqlite3* mAuxConnection;
     sqlite3_stmt* mCurrentStmt;
     bool mMoreRows;
@@ -80,6 +81,9 @@ protected:
     sqlite3_stmt* statement;
 
 public:
+    // VFALCO TODO This is quite a convoluted interface. A mysterious "aux" connection? 
+    //             Why not just have two SqliteDatabase objects?
+    //
     SqliteStatement (SqliteDatabase* db, const char* statement, bool aux = false);
     SqliteStatement (SqliteDatabase* db, const std::string& statement, bool aux = false);
     ~SqliteStatement ();

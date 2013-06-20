@@ -4,7 +4,6 @@
 */
 //==============================================================================
 
-
 #ifndef CACHED_TRANSACTION_NUM
 #define CACHED_TRANSACTION_NUM 65536
 #endif

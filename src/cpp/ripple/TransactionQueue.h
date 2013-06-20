@@ -9,15 +9,6 @@
 
 // Allow transactions to be signature checked out of sequence but retired in sequence
 
-#include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/bimap.hpp>
-#include <boost/bimap/unordered_set_of.hpp>
-#include <boost/bimap/list_of.hpp>
-
-#include "Transaction.h"
-
 class TXQeueue;
 
 class TXQEntry

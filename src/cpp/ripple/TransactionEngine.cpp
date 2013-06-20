@@ -10,9 +10,6 @@
 
 SETUP_LOG (TransactionEngine)
 
-
-DECLARE_INSTANCE (TransactionEngine);
-
 void TransactionEngine::txnWrite ()
 {
     // Write back the account states

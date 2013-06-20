@@ -73,7 +73,7 @@ bool RandomNumbers::platformAddEntropy ()
     DWORD count = 500;
     HCRYPTPROV cryptoHandle;
 
-    if (!CryptGetDefaultProvider (PROV_RSA_FULL, NULL, CRYPT_MACHINE_DEFAULT, name, &count))
+    if (!CryptGetDefaultProviderA (PROV_RSA_FULL, NULL, CRYPT_MACHINE_DEFAULT, name, &count))
     {
 #ifdef DEBUG
         std::cerr << "Unable to get default crypto provider" << std::endl;
@@ -81,7 +81,7 @@ bool RandomNumbers::platformAddEntropy ()
         return false;
     }
 
-    if (!CryptAcquireContext (&cryptoHandle, NULL, name, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT))
+    if (!CryptAcquireContextA (&cryptoHandle, NULL, name, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT))
     {
 #ifdef DEBUG
         std::cerr << "Unable to acquire crypto provider" << std::endl;

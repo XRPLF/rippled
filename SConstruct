@@ -92,11 +92,12 @@ else:
 INCLUDE_PATHS = [
     '.',
     'build/proto',
-    'src/cpp/leveldb',
-    'src/cpp/leveldb/port',
-    'src/cpp/leveldb/include',
-    'src/cpp/ripple',
-    'Subtrees/beast'
+    'Subtrees',
+    'Subtrees/leveldb',
+    'Subtrees/leveldb/port',
+    'Subtrees/leveldb/include',
+    'Subtrees/beast',
+    'src/cpp/ripple'
     ]
 
 COMPILED_FILES = [
@@ -160,6 +161,7 @@ env.Append(LINKFLAGS = ['-rdynamic', '-pthread'])
 env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts', '-DSQLITE_THREADSAFE=1'])
 env.Append(CXXFLAGS = ['-O0', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+BOOSTFLAGS+DEBUGFLAGS)
 env.Append(CXXFLAGS = ['-DUSE_LEVELDB'])
+env.Append(CXXFLAGS = ['-frtti'])
 
 if (int(GCC_VERSION[0]) > 4 or (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) >= 7)):
     env.Append(CXXFLAGS = ['-std=c++11'])

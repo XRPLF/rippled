@@ -4,18 +4,6 @@
 */
 //==============================================================================
 
-
-#include <boost/asio.hpp>
-#include <boost/iostreams/concepts.hpp>
-#include <boost/iostreams/stream.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/foreach.hpp>
-
-#include <openssl/buffer.h>
-#include <openssl/evp.h>
-
-#include "RPC.h"
-
 // Used for logging
 struct RPC
 {

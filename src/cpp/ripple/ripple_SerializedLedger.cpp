@@ -4,8 +4,6 @@
 */
 //==============================================================================
 
-DECLARE_INSTANCE (SerializedLedgerEntry)
-
 // For logging
 struct SerializedLedgerLog;
 

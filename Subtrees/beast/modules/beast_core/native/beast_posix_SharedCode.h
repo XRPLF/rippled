@@ -177,7 +177,8 @@ bool File::setAsCurrentWorkingDirectory() const
 //==============================================================================
 namespace
 {
-   #if BEAST_LINUX || (BEAST_IOS && ! __DARWIN_ONLY_64_BIT_INO_T) // (this iOS stuff is to avoid a simulator bug)
+   #if BEAST_LINUX || \
+       (BEAST_IOS && ! __DARWIN_ONLY_64_BIT_INO_T) // (this iOS stuff is to avoid a simulator bug)
     typedef struct stat64 beast_statStruct;
     #define BEAST_STAT     stat64
    #else
@@ -1217,7 +1218,11 @@ private:
             t.tv_sec  = (time_t) (time / 1000000000);
             t.tv_nsec = (long)   (time % 1000000000);
 
+#if BEAST_BSD
+            bassertfalse; // unimplemented
+#else
             clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &t, nullptr);
+#endif
         }
 
         uint64 time, delta;

@@ -68,7 +68,7 @@ String SystemStats::getStackBacktrace()
 {
     String result;
 
-   #if BEAST_ANDROID || BEAST_MINGW
+   #if BEAST_ANDROID || BEAST_MINGW || BEAST_BSD
     bassertfalse; // sorry, not implemented yet!
 
    #elif BEAST_WINDOWS

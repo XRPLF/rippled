@@ -16,9 +16,9 @@
 #define TXN_SQL_INCLUDED    'I'
 #define TXN_SQL_UNKNOWN     'U'
 
-DEFINE_INSTANCE (SerializedTransaction);
-
-class SerializedTransaction : public STObject, private IS_INSTANCE (SerializedTransaction)
+class SerializedTransaction
+    : public STObject
+    , public CountedObject <SerializedTransaction>
 {
 public:
     typedef boost::shared_ptr<SerializedTransaction>        pointer;

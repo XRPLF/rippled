@@ -4,12 +4,6 @@
 */
 //==============================================================================
 
-#include <boost/thread.hpp>
-
-#include "RPCSub.h"
-
-#include "CallRPC.h"
-
 SETUP_LOG (RPCSub)
 
 RPCSub::RPCSub (const std::string& strUrl, const std::string& strUsername, const std::string& strPassword)

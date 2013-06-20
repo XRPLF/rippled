@@ -7,9 +7,6 @@
 #ifndef __PEERDOOR__
 #define __PEERDOOR__
 
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
-
 /*
 Handles incoming connections from other Peers
 */

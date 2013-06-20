@@ -7,11 +7,6 @@
 #ifndef HTTPREQUEST__HPP
 #define HTTPREQUEST__HPP
 
-#include <string>
-#include <map>
-
-#include <boost/asio/streambuf.hpp>
-
 enum HTTPRequestAction
 {
     // What the application code needs to do

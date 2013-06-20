@@ -4,8 +4,6 @@
 */
 //==============================================================================
 
-#include "Transactor.h"
-
 class ChangeTransactor : public Transactor
 {
 public:

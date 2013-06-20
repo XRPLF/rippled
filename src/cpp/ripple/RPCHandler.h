@@ -7,10 +7,6 @@
 #ifndef __RPCHANDLER__
 #define __RPCHANDLER__
 
-#include <boost/unordered_set.hpp>
-
-#include "Ledger.h"
-
 #define LEDGER_CURRENT      -1
 #define LEDGER_CLOSED       -2
 #define LEDGER_VALIDATED    -3

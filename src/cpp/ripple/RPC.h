@@ -7,9 +7,6 @@
 #ifndef __RPC_h__
 #define __RPC_h__
 
-#include <string>
-#include <map>
-
 enum http_status_type
 {
     ok = 200,
