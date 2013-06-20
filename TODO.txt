@@ -2,7 +2,11 @@
 TODO
 --------------------------------------------------------------------------------
 
+- Put all the Ripple code in the ripple namespace
+
 - Remove "using namespace" statements
+
+- lift bind, function, and placeholders into ripple namespace
 
 - Make LevelDB and Ripple code work with both Unicode and non-Unicode Windows APIs
 

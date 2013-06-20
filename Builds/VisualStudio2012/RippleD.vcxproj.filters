@@ -1136,9 +1136,6 @@
     <ClInclude Include="..\..\modules\ripple_json\json\json_writer.h">
       <Filter>1. Modules\ripple_json\json</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_json\json\json.h">
-      <Filter>1. Modules\ripple_json\json\DEPRECATED</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_json\json\json_autolink.h">
       <Filter>1. Modules\ripple_json\json\DEPRECATED</Filter>
     </ClInclude>

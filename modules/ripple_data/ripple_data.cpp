@@ -18,14 +18,18 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <string>
 #include <vector>
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/range/adaptor/copied.hpp>
 #include <boost/regex.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/test/unit_test.hpp>

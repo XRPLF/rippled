@@ -1514,7 +1514,6 @@
     <ClInclude Include="..\..\modules\ripple_data\utility\ripple_JSONCache.h" />
     <ClInclude Include="..\..\modules\ripple_data\utility\ripple_UptimeTimerAdapter.h" />
     <ClInclude Include="..\..\modules\ripple_db\ripple_db.h" />
-    <ClInclude Include="..\..\modules\ripple_json\json\json.h" />
     <ClInclude Include="..\..\modules\ripple_json\json\json_autolink.h" />
     <ClInclude Include="..\..\modules\ripple_json\json\json_batchallocator.h" />
     <ClInclude Include="..\..\modules\ripple_json\json\json_config.h" />
