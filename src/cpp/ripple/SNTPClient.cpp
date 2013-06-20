@@ -244,7 +244,7 @@ bool SNTPClient::doQuery ()
 
     if (best == mServers.end ())
     {
-        WriteLog (lsINFO, SNTPClient) << "SNTP: No server to query";
+        WriteLog (lsTRACE, SNTPClient) << "SNTP: No server to query";
         return false;
     }
 

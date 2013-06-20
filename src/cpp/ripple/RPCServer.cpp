@@ -160,10 +160,10 @@ std::string RPCServer::handleRequest (const std::string& requestStr)
 
     RPCHandler mRPCHandler (mNetOps);
 
-    WriteLog (lsTRACE, RPCServer) << valParams;
+    WriteLog (lsINFO, RPCServer) << valParams;
     int cost = 10;
     Json::Value result = mRPCHandler.doRpcCommand (strMethod, valParams, mRole, cost);
-    WriteLog (lsTRACE, RPCServer) << result;
+    WriteLog (lsINFO, RPCServer) << result;
 
     std::string strReply = JSONRPCReply (result, Json::Value (), id);
     return HTTPReply (200, strReply);
