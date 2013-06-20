@@ -1870,9 +1870,9 @@ void RippleCalc::calcNodeRipple (
                 saCurAct    += saCurOut;
                 saPrvAct    = saPrvReq;
 
-                if (!uRateMax)
-                    uRateMax    = uRate;
             }
+            if (!uRateMax)
+                uRateMax    = uRate;
         }
     }
 
