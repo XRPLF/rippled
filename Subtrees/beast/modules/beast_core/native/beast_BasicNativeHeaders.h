@@ -68,11 +68,11 @@
 #elif BEAST_WINDOWS
  #if BEAST_MSVC
   #ifndef _CPPRTTI
-   #error "You're compiling without RTTI enabled! This is needed for a lot of BEAST classes, please update your compiler settings!"
+   #error "Beast requires RTTI!"
   #endif
 
   #ifndef _CPPUNWIND
-   #error "You're compiling without exceptions enabled! This is needed for a lot of BEAST classes, please update your compiler settings!"
+   #error "Beast requires RTTI!"
   #endif
 
   #pragma warning (push)
@@ -161,15 +161,13 @@
     type##localFunctionName localFunctionName = (type##localFunctionName) dll.getFunction (#functionName);
 
 //==============================================================================
-#elif BEAST_LINUX
+#elif BEAST_LINUX || BEAST_BSD
  #include <sched.h>
  #include <pthread.h>
  #include <sys/time.h>
  #include <errno.h>
  #include <sys/stat.h>
- #include <sys/dir.h>
  #include <sys/ptrace.h>
- #include <sys/vfs.h>
  #include <sys/wait.h>
  #include <sys/mman.h>
  #include <fnmatch.h>
@@ -184,11 +182,20 @@
  #include <sys/ioctl.h>
  #include <sys/socket.h>
  #include <net/if.h>
- #include <sys/sysinfo.h>
  #include <sys/file.h>
- #include <sys/prctl.h>
  #include <signal.h>
  #include <stddef.h>
+
+ #if BEAST_BSD
+  #include <dirent.h>
+  #include <sys/param.h>
+  #include <sys/mount.h>
+ #else
+  #include <sys/dir.h>
+  #include <sys/vfs.h>
+  #include <sys/sysinfo.h>
+  #include <sys/prctl.h>
+ #endif
 
 //==============================================================================
 #elif BEAST_ANDROID
