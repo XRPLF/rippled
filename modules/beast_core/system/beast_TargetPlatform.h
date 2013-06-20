@@ -59,6 +59,8 @@
   #else
     #define     BEAST_MAC 1
   #endif
+#elif defined (__FreeBSD__)
+  #define BEAST_BSD 1
 #else
   #error "Unknown platform!"
 #endif
@@ -135,7 +137,7 @@
 #endif
 
 //==============================================================================
-#if BEAST_LINUX || BEAST_ANDROID
+#if BEAST_LINUX || BEAST_ANDROID || BEAST_BSD
 
   #ifdef _DEBUG
     #define BEAST_DEBUG 1
