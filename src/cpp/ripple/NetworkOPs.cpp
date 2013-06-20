@@ -1345,6 +1345,9 @@ Json::Value NetworkOPs::getServerInfo (bool human, bool admin)
 {
     Json::Value info = Json::objectValue;
 
+    info ["build_version"] = BuildVersion::getBuildVersion ();
+    info ["client_version"] = BuildVersion::getClientVersion ();
+
     if (theConfig.TESTNET)
         info["testnet"]     = theConfig.TESTNET;
 

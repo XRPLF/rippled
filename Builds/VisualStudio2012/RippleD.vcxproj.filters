@@ -154,6 +154,9 @@
     <Filter Include="1. Modules\ripple_basics\system">
       <UniqueIdentifier>{2c4e5c32-0aab-4650-b9a1-22708e9ddc92}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_app\basics">
+      <UniqueIdentifier>{a99a2905-0d36-40c0-84f5-06db41e48367}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\cpp\protobuf_core.cpp">
@@ -1796,6 +1799,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_basics\system\ripple_OpenSSLIncludes.h">
       <Filter>1. Modules\ripple_basics\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\basics\ripple_BuildVersion.h">
+      <Filter>1. Modules\ripple_app\basics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
