@@ -992,7 +992,7 @@ void RippleCalc::calcNodeRipple (
                                    % saPrvAct
                                    % saCurAct);
 
-    assert (saCurReq.isPositive ());
+    assert (saCurReq.isPositive ()); // FIXME: saCurReq was zero
     assert (saPrvReq.getCurrency () == saCurReq.getCurrency ());
     assert (saPrvReq.getCurrency () == saPrvAct.getCurrency ());
     assert (saPrvReq.getIssuer () == saPrvAct.getIssuer ());
@@ -1617,7 +1617,8 @@ TER RippleCalc::calcNodeAccountFwd (
 
             // Previous issue part 2 : issue -> issue
             if (saPrvIssueReq != saPrvIssueAct              // Previous wants to issue.
-                    && saCurRedeemReq == saCurRedeemAct)        // Current redeeming is done can issue.
+                    && saCurRedeemReq == saCurRedeemAct        // Current redeeming is done can issue.
+                    && saCurIssueReq)                           // Current wants to issue.
             {
                 // Rate: quality in : 1.0
                 calcNodeRipple (uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq, saPrvIssueAct, saCurIssueAct, uRateMax);
