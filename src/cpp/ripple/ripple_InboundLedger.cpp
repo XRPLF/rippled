@@ -6,8 +6,6 @@
 
 SETUP_LOG (InboundLedger)
 
-DECLARE_INSTANCE (InboundLedger);
-
 // VFALCO TODO replace macros
 #define LA_DEBUG
 #define LEDGER_ACQUIRE_TIMEOUT      2000    // millisecond for each ledger timeout

@@ -7,14 +7,13 @@
 #ifndef __TRANSACTIONENGINE__
 #define __TRANSACTIONENGINE__
 
-DEFINE_INSTANCE (TransactionEngine);
-
 // A TransactionEngine applies serialized transactions to a ledger
 // It can also, verify signatures, verify fees, and give rejection reasons
 
 // One instance per ledger.
 // Only one transaction applied at a time.
-class TransactionEngine : private IS_INSTANCE (TransactionEngine)
+class TransactionEngine
+    : public CountedObject <TransactionEngine>
 {
 private:
     LedgerEntrySet      mNodes;

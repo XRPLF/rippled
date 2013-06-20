@@ -4,7 +4,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (ChangeTransactor)
 
 TER ChangeTransactor::doApply ()

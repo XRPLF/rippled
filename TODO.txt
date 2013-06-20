@@ -2,6 +2,17 @@
 TODO
 --------------------------------------------------------------------------------
 
+- Remove "using namespace" statements
+
+- Make LevelDB and Ripple code work with both Unicode and non-Unicode Windows APIs
+
+- Raise the warning level and fix everything
+
+- Go searching through VFALCO notes and fix everything
+
+- Deal with function-level statics used for SqliteDatabase (like in
+  HSBESQLite::visitAll)
+
 - Document in order:
     SerializedType
     STObject
@@ -28,11 +39,6 @@ JobQueue
 Naming
 
 Some names don't make sense.
-
-  InboundLedger
-    Not a noun.
-    Is it really an InboundLedger ?
-    Does it continue to exist after the ledger is received?
 
   Index
     Stop using Index to refer to keys in tables.

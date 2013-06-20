@@ -6,9 +6,6 @@
 
 SETUP_LOG (LedgerEntrySet)
 
-DECLARE_INSTANCE (LedgerEntrySetEntry);
-DECLARE_INSTANCE (LedgerEntrySet)
-
 // #define META_DEBUG
 
 // VFALCO TODO Replace this macro with a documented language constant

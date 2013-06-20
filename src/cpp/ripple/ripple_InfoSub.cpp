@@ -15,8 +15,6 @@
 // code assumes this node is synched (and will continue to do so until
 // there's a functional network.
 
-DECLARE_INSTANCE (InfoSub);
-
 // VFALCO TODO Figure out how to clean up these globals
 uint64 InfoSub::sSeq = 0;
 boost::mutex InfoSub::sSeqLock;

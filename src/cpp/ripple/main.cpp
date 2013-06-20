@@ -4,7 +4,6 @@
 */
 //==============================================================================
 
-
 namespace po = boost::program_options;
 
 // VFALCO TODO make these singletons that initialize statically
@@ -208,8 +207,6 @@ int main (int argc, char* argv[])
     else
         Log::setMinSeverity (lsINFO, true);
 
-    InstanceType::multiThread ();
-
     // VFALCO TODO make these singletons that initialize statically
     TFInit ();
     LEFInit ();
@@ -218,7 +215,6 @@ int main (int argc, char* argv[])
     {
         unit_test_main (init_unit_test, argc, argv);
 
-        InstanceType::shutdown ();
         return 0;
     }
 
@@ -267,7 +263,6 @@ int main (int argc, char* argv[])
         setupServer ();
         setCallingThreadName ("io");
         startServer ();
-        InstanceType::shutdown ();
     }
     else
     {
@@ -281,7 +276,6 @@ int main (int argc, char* argv[])
     if (1 == iResult && !vm.count ("quiet"))
         printHelp (desc);
 
-    InstanceType::shutdown ();
     return iResult;
 }
 // vim:ts=4

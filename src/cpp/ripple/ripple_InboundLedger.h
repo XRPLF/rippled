@@ -7,13 +7,12 @@
 #ifndef RIPPLE_INBOUNDLEDGER_H
 #define RIPPLE_INBOUNDLEDGER_H
 
-DEFINE_INSTANCE (InboundLedger);
-
 // VFALCO TODO Rename to InboundLedger
 // A ledger we are trying to acquire
-class InboundLedger : private IS_INSTANCE (InboundLedger)
-    , public PeerSet
+class InboundLedger
+    : public PeerSet
     , public boost::enable_shared_from_this <InboundLedger>
+    , public CountedObject <InboundLedger>
 {
 public:
     typedef boost::shared_ptr <InboundLedger> pointer;

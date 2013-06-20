@@ -7,8 +7,6 @@
 #ifndef __CALLRPC__
 #define __CALLRPC__
 
-#include <string>
-
 class RPCParser
 {
 public:

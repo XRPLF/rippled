@@ -40,7 +40,10 @@
 
 #include <locale>
 #include <cctype>
-#include <sys/timeb.h>
+
+#if ! BEAST_BSD
+ #include <sys/timeb.h>
+#endif
 
 #if ! BEAST_ANDROID
  #include <cwctype>
@@ -85,7 +88,7 @@
  #include <net/if.h>
  #include <sys/ioctl.h>
 
- #if ! BEAST_ANDROID
+ #if ! BEAST_ANDROID && ! BEAST_BSD
   #include <execinfo.h>
  #endif
 #endif

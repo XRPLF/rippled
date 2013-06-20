@@ -7,8 +7,6 @@
 #ifndef __PAYMENTTRANSACTOR__
 #define __PAYMENTTRANSACTOR__
 
-#include "Transactor.h"
-
 class PaymentTransactor : public Transactor
 {
 public:

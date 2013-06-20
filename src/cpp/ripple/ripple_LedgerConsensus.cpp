@@ -10,8 +10,6 @@
 
 SETUP_LOG (LedgerConsensus)
 
-DECLARE_INSTANCE (LedgerConsensus);
-
 LedgerConsensus::LedgerConsensus (uint256 const& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime)
     :  mState (lcsPRE_CLOSE), mCloseTime (closeTime), mPrevLedgerHash (prevLCLHash), mPreviousLedger (previousLedger),
        mValPublic (theConfig.VALIDATION_PUB), mValPrivate (theConfig.VALIDATION_PRIV), mConsensusFail (false),

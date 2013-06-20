@@ -7,9 +7,8 @@
 #ifndef __PROPOSELEDGER__
 #define __PROPOSELEDGER__
 
-DEFINE_INSTANCE (LedgerProposal);
-
-class LedgerProposal : private IS_INSTANCE (LedgerProposal)
+class LedgerProposal
+    : public CountedObject <LedgerProposal>
 {
 public:
     static const uint32 seqLeave = 0xffffffff; // leaving the consensus process

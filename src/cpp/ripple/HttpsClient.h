@@ -7,17 +7,6 @@
 #ifndef _HTTPS_CLIENT_
 #define _HTTPS_CLIENT_
 
-#include <deque>
-#include <string>
-
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/shared_ptr.hpp>
-
-#include "AutoSocket.h"
-
 //
 // Async https client.
 //

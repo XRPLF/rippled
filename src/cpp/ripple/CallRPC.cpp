@@ -11,26 +11,6 @@
 // Improvements to be more strict and to provide better diagnostics are welcome.
 //
 
-#include <iostream>
-#include <cstdlib>
-
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/bind.hpp>
-#include <boost/iostreams/concepts.hpp>
-#include <boost/iostreams/stream.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/foreach.hpp>
-#include <boost/regex.hpp>
-
-#include <openssl/buffer.h>
-#include <openssl/evp.h>
-
-#include "RPC.h"
-#include "RPCErr.h"
-
-#include "CallRPC.h"
-
 SETUP_LOG (RPCParser)
 
 static inline bool isSwitchChar (char c)
