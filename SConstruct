@@ -92,11 +92,12 @@ else:
 INCLUDE_PATHS = [
     '.',
     'build/proto',
-    'src/cpp/leveldb',
-    'src/cpp/leveldb/port',
-    'src/cpp/leveldb/include',
-    'src/cpp/ripple',
-    'Subtrees/beast'
+    'Subtrees',
+    'Subtrees/leveldb',
+    'Subtrees/leveldb/port',
+    'Subtrees/leveldb/include',
+    'Subtrees/beast',
+    'src/cpp/ripple'
     ]
 
 COMPILED_FILES = [

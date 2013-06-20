@@ -180,90 +180,6 @@
     <ClCompile Include="..\..\src\cpp\protobuf_core.cpp">
       <Filter>0. Third Party Code\protobuf</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\builder.cc">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\c.cc">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\c_test.c">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\db_bench.cc">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\db_impl.cc">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\db_iter.cc">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\dbformat.cc">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\filename.cc">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\log_reader.cc">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\log_test.cc">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\log_writer.cc">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\memtable.cc">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\repair.cc">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\table_cache.cc">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\version_edit.cc">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\version_set.cc">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\db\write_batch.cc">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\port\port_posix.cc">
-      <Filter>0. Third Party Code\LevelDB\port</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\port\port_win.cc">
-      <Filter>0. Third Party Code\LevelDB\port</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\table\format.cc">
-      <Filter>0. Third Party Code\LevelDB\table</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\table\iterator.cc">
-      <Filter>0. Third Party Code\LevelDB\table</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\table\merger.cc">
-      <Filter>0. Third Party Code\LevelDB\table</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\table\table.cc">
-      <Filter>0. Third Party Code\LevelDB\table</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\table\table_builder.cc">
-      <Filter>0. Third Party Code\LevelDB\table</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\table\two_level_iterator.cc">
-      <Filter>0. Third Party Code\LevelDB\table</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\table\block.cc">
-      <Filter>0. Third Party Code\LevelDB\table</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\table\block_builder.cc">
-      <Filter>0. Third Party Code\LevelDB\table</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\table\filter_block.cc">
-      <Filter>0. Third Party Code\LevelDB\table</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cpp\protobuf\src\google\protobuf\service.cc">
       <Filter>0. Third Party Code\protobuf\protobuf</Filter>
     </ClCompile>
@@ -323,54 +239,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\protobuf\src\google\protobuf\repeated_field.cc">
       <Filter>0. Third Party Code\protobuf\protobuf</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\util\bloom.cc">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\util\cache.cc">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\util\coding.cc">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\util\comparator.cc">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\util\crc32c.cc">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\util\env.cc">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\util\env_posix.cc">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\util\env_test.cc">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\util\env_win.cc">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\util\filter_policy.cc">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\util\hash.cc">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\util\histogram.cc">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\util\logging.cc">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\util\options.cc">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\util\status.cc">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\leveldb\util\arena.cc">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\protobuf\src\google\protobuf\io\coded_stream.cc">
       <Filter>0. Third Party Code\protobuf\io</Filter>
@@ -879,6 +747,144 @@
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_basics\beast_basics.cpp">
       <Filter>0. Third Party Code\beast</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\builder.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\db_bench.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\db_impl.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\db_iter.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\db_test.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\dbformat.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\filename.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\leveldb_main.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\log_reader.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\log_test.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\log_writer.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\memtable.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\repair.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\table_cache.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\version_edit.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\version_set.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\db\write_batch.cc">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\port\port_posix.cc">
+      <Filter>0. Third Party Code\LevelDB\port</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\port\port_win.cc">
+      <Filter>0. Third Party Code\LevelDB\port</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\table\block.cc">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\table\block_builder.cc">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\table\filter_block.cc">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\table\filter_block_test.cc">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\table\format.cc">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\table\iterator.cc">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\table\merger.cc">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\table\table.cc">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\table\table_builder.cc">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\table\table_test.cc">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\table\two_level_iterator.cc">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\util\options.cc">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\util\status.cc">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\util\arena.cc">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\util\bloom.cc">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\util\cache.cc">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\util\coding.cc">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\util\comparator.cc">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\util\crc32c.cc">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\util\env.cc">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\util\env_posix.cc">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\util\env_test.cc">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\util\env_win.cc">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\util\filter_policy.cc">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\util\hash.cc">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\util\histogram.cc">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\leveldb\util\logging.cc">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\cpp\websocketpp\src\common.hpp">
@@ -913,87 +919,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\websocketpp\src\websocketpp.hpp">
       <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\db\builder.h">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\db\db_impl.h">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\db\db_iter.h">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\db\dbformat.h">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\db\filename.h">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\db\log_format.h">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\db\log_reader.h">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\db\log_writer.h">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\db\memtable.h">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\db\skiplist.h">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\db\snapshot.h">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\db\table_cache.h">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\db\version_edit.h">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\db\version_set.h">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\db\write_batch_internal.h">
-      <Filter>0. Third Party Code\LevelDB\db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\port\atomic_pointer.h">
-      <Filter>0. Third Party Code\LevelDB\port</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\port\port.h">
-      <Filter>0. Third Party Code\LevelDB\port</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\port\port_posix.h">
-      <Filter>0. Third Party Code\LevelDB\port</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\port\port_win.h">
-      <Filter>0. Third Party Code\LevelDB\port</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\port\win\stdint.h">
-      <Filter>0. Third Party Code\LevelDB\port\win</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\table\format.h">
-      <Filter>0. Third Party Code\LevelDB\table</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\table\iterator_wrapper.h">
-      <Filter>0. Third Party Code\LevelDB\table</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\table\merger.h">
-      <Filter>0. Third Party Code\LevelDB\table</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\table\two_level_iterator.h">
-      <Filter>0. Third Party Code\LevelDB\table</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\table\block.h">
-      <Filter>0. Third Party Code\LevelDB\table</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\table\block_builder.h">
-      <Filter>0. Third Party Code\LevelDB\table</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\table\filter_block.h">
-      <Filter>0. Third Party Code\LevelDB\table</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\protobuf\src\google\protobuf\service.h">
       <Filter>0. Third Party Code\protobuf\protobuf</Filter>
@@ -1051,33 +976,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\protobuf\src\google\protobuf\repeated_field.h">
       <Filter>0. Third Party Code\protobuf\protobuf</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\util\arena.h">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\util\coding.h">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\util\crc32c.h">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\util\hash.h">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\util\histogram.h">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\util\logging.h">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\util\mutexlock.h">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\util\posix_logger.h">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\leveldb\util\random.h">
-      <Filter>0. Third Party Code\LevelDB\util</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\protobuf\src\google\protobuf\io\coded_stream.h">
       <Filter>0. Third Party Code\protobuf\io</Filter>
@@ -1641,6 +1539,117 @@
     <ClInclude Include="..\..\build\proto\ripple.pb.h">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\db\db_iter.h">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\db\dbformat.h">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\db\filename.h">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\db\log_format.h">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\db\log_reader.h">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\db\log_writer.h">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\db\memtable.h">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\db\skiplist.h">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\db\snapshot.h">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\db\table_cache.h">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\db\version_edit.h">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\db\version_set.h">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\db\write_batch_internal.h">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\db\builder.h">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\db\db_impl.h">
+      <Filter>0. Third Party Code\LevelDB\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\port\win\stdint.h">
+      <Filter>0. Third Party Code\LevelDB\port\win</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\port\atomic_pointer.h">
+      <Filter>0. Third Party Code\LevelDB\port</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\port\port.h">
+      <Filter>0. Third Party Code\LevelDB\port</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\port\port_posix.h">
+      <Filter>0. Third Party Code\LevelDB\port</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\port\port_win.h">
+      <Filter>0. Third Party Code\LevelDB\port</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\port\thread_annotations.h">
+      <Filter>0. Third Party Code\LevelDB\port</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\table\block.h">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\table\block_builder.h">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\table\filter_block.h">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\table\format.h">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\table\iterator_wrapper.h">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\table\merger.h">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\table\two_level_iterator.h">
+      <Filter>0. Third Party Code\LevelDB\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\util\mutexlock.h">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\util\posix_logger.h">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\util\random.h">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\util\arena.h">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\util\coding.h">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\util\crc32c.h">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\util\hash.h">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\util\histogram.h">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\leveldb\util\logging.h">
+      <Filter>0. Third Party Code\LevelDB\util</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\src\cpp\protobuf\src\google\protobuf\descriptor.proto">
@@ -1655,14 +1664,15 @@
     <None Include="..\..\modules\ripple_json\json\json_valueiterator.inl">
       <Filter>1. Modules\ripple_json\json</Filter>
     </None>
-    <None Include="Doxyfile" />
-    <None Include="SConstruct" />
+    <None Include="..\..\CodingStyle.md" />
+    <None Include="..\..\Doxyfile" />
+    <None Include="..\..\README.md" />
+    <None Include="..\..\SConstruct" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\src\cpp\ripple\ripple.proto" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="StyleCheatSheet.txt" />
     <Text Include="..\..\TODO.txt" />
   </ItemGroup>
 </Project>
