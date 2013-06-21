@@ -248,14 +248,6 @@
 #define BEAST_USE_BZIP2      0
 #endif
 
-#ifndef BEAST_USE_FREETYPE
-#define BEAST_USE_FREETYPE   0
-#endif
-
-#ifndef BEAST_USE_NATIVE_FREETYPE
-#define BEAST_USE_NATIVE_FREETYPE 1
-#endif
-
 #ifndef BEAST_USE_NATIVE_SQLITE
 #define BEAST_USE_NATIVE_SQLITE 1
 #endif
@@ -266,12 +258,6 @@
 
 /* Get this early so we can use it. */
 #include "../beast_core/system/beast_TargetPlatform.h"
-
-// Handy macro that lets pragma warnings be clicked in the output window
-// Usage: #pragma message(BEAST_LOC_"Advertise here!")
-#define BEAST_STR2_(x) #x
-#define BEAST_STR1_(x) BEAST_STR2_(x)
-#define BEAST_LOC_ __FILE__ "("BEAST_STR1_(__LINE__)") : WARNING: "
 
 #if BEAST_USE_BOOST
 #include <boost/thread/tss.hpp>
