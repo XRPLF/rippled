@@ -295,44 +295,44 @@ void Config::load ()
         }
         else
         {
-            section     secConfig   = ParseSection (strConfigFile, true);
+            Section     secConfig   = ParseSection (strConfigFile, true);
             std::string strTemp;
 
             // XXX Leak
-            section::mapped_type*   smtTmp;
+            Section::mapped_type*   smtTmp;
 
-            smtTmp  = sectionEntries (secConfig, SECTION_VALIDATORS);
+            smtTmp  = SectionEntries (secConfig, SECTION_VALIDATORS);
 
             if (smtTmp)
             {
                 VALIDATORS  = *smtTmp;
-                // sectionEntriesPrint(&VALIDATORS, SECTION_VALIDATORS);
+                // SectionEntriesPrint(&VALIDATORS, SECTION_VALIDATORS);
             }
 
-            smtTmp = sectionEntries (secConfig, SECTION_CLUSTER_NODES);
+            smtTmp = SectionEntries (secConfig, SECTION_CLUSTER_NODES);
 
             if (smtTmp)
             {
                 CLUSTER_NODES = *smtTmp;
-                // sectionEntriesPrint(&CLUSTER_NODES, SECTION_CLUSTER_NODES);
+                // SectionEntriesPrint(&CLUSTER_NODES, SECTION_CLUSTER_NODES);
             }
 
-            smtTmp  = sectionEntries (secConfig, SECTION_IPS);
+            smtTmp  = SectionEntries (secConfig, SECTION_IPS);
 
             if (smtTmp)
             {
                 IPS = *smtTmp;
-                // sectionEntriesPrint(&IPS, SECTION_IPS);
+                // SectionEntriesPrint(&IPS, SECTION_IPS);
             }
 
-            smtTmp = sectionEntries (secConfig, SECTION_SNTP);
+            smtTmp = SectionEntries (secConfig, SECTION_SNTP);
 
             if (smtTmp)
             {
                 SNTP_SERVERS = *smtTmp;
             }
 
-            smtTmp  = sectionEntries (secConfig, SECTION_RPC_STARTUP);
+            smtTmp  = SectionEntries (secConfig, SECTION_RPC_STARTUP);
 
             if (smtTmp)
             {
@@ -350,45 +350,45 @@ void Config::load ()
                 }
             }
 
-            if (sectionSingleB (secConfig, SECTION_DATABASE_PATH, DATABASE_PATH))
+            if (SectionSingleB (secConfig, SECTION_DATABASE_PATH, DATABASE_PATH))
                 DATA_DIR    = DATABASE_PATH;
 
 
-            (void) sectionSingleB (secConfig, SECTION_VALIDATORS_SITE, VALIDATORS_SITE);
+            (void) SectionSingleB (secConfig, SECTION_VALIDATORS_SITE, VALIDATORS_SITE);
 
-            (void) sectionSingleB (secConfig, SECTION_PEER_IP, PEER_IP);
+            (void) SectionSingleB (secConfig, SECTION_PEER_IP, PEER_IP);
 
-            if (sectionSingleB (secConfig, SECTION_PEER_PORT, strTemp))
+            if (SectionSingleB (secConfig, SECTION_PEER_PORT, strTemp))
                 PEER_PORT           = boost::lexical_cast<int> (strTemp);
 
-            if (sectionSingleB (secConfig, SECTION_PEER_PRIVATE, strTemp))
+            if (SectionSingleB (secConfig, SECTION_PEER_PRIVATE, strTemp))
                 PEER_PRIVATE        = boost::lexical_cast<bool> (strTemp);
 
-            smtTmp = sectionEntries (secConfig, SECTION_RPC_ADMIN_ALLOW);
+            smtTmp = SectionEntries (secConfig, SECTION_RPC_ADMIN_ALLOW);
 
             if (smtTmp)
             {
                 RPC_ADMIN_ALLOW = *smtTmp;
             }
 
-            (void) sectionSingleB (secConfig, SECTION_RPC_ADMIN_PASSWORD, RPC_ADMIN_PASSWORD);
-            (void) sectionSingleB (secConfig, SECTION_RPC_ADMIN_USER, RPC_ADMIN_USER);
-            (void) sectionSingleB (secConfig, SECTION_RPC_IP, RPC_IP);
-            (void) sectionSingleB (secConfig, SECTION_RPC_PASSWORD, RPC_PASSWORD);
-            (void) sectionSingleB (secConfig, SECTION_RPC_USER, RPC_USER);
-            (void) sectionSingleB (secConfig, SECTION_NODE_DB, NODE_DB);
-            (void) sectionSingleB (secConfig, SECTION_LDB_EPHEMERAL, LDB_EPHEMERAL);
+            (void) SectionSingleB (secConfig, SECTION_RPC_ADMIN_PASSWORD, RPC_ADMIN_PASSWORD);
+            (void) SectionSingleB (secConfig, SECTION_RPC_ADMIN_USER, RPC_ADMIN_USER);
+            (void) SectionSingleB (secConfig, SECTION_RPC_IP, RPC_IP);
+            (void) SectionSingleB (secConfig, SECTION_RPC_PASSWORD, RPC_PASSWORD);
+            (void) SectionSingleB (secConfig, SECTION_RPC_USER, RPC_USER);
+            (void) SectionSingleB (secConfig, SECTION_NODE_DB, NODE_DB);
+            (void) SectionSingleB (secConfig, SECTION_LDB_EPHEMERAL, LDB_EPHEMERAL);
 
-            if (sectionSingleB (secConfig, SECTION_RPC_PORT, strTemp))
+            if (SectionSingleB (secConfig, SECTION_RPC_PORT, strTemp))
                 RPC_PORT = boost::lexical_cast<int> (strTemp);
 
-            if (sectionSingleB (secConfig, "ledger_creator" , strTemp))
+            if (SectionSingleB (secConfig, "ledger_creator" , strTemp))
                 LEDGER_CREATOR = boost::lexical_cast<bool> (strTemp);
 
-            if (sectionSingleB (secConfig, SECTION_RPC_ALLOW_REMOTE, strTemp))
+            if (SectionSingleB (secConfig, SECTION_RPC_ALLOW_REMOTE, strTemp))
                 RPC_ALLOW_REMOTE    = boost::lexical_cast<bool> (strTemp);
 
-            if (sectionSingleB (secConfig, SECTION_NODE_SIZE, strTemp))
+            if (SectionSingleB (secConfig, SECTION_NODE_SIZE, strTemp))
             {
                 if (strTemp == "tiny")
                     NODE_SIZE = 0;
@@ -411,47 +411,47 @@ void Config::load ()
                 }
             }
 
-            if (sectionSingleB (secConfig, SECTION_ELB_SUPPORT, strTemp))
+            if (SectionSingleB (secConfig, SECTION_ELB_SUPPORT, strTemp))
                 ELB_SUPPORT         = boost::lexical_cast<bool> (strTemp);
 
-            (void) sectionSingleB (secConfig, SECTION_WEBSOCKET_IP, WEBSOCKET_IP);
+            (void) SectionSingleB (secConfig, SECTION_WEBSOCKET_IP, WEBSOCKET_IP);
 
-            if (sectionSingleB (secConfig, SECTION_WEBSOCKET_PORT, strTemp))
+            if (SectionSingleB (secConfig, SECTION_WEBSOCKET_PORT, strTemp))
                 WEBSOCKET_PORT      = boost::lexical_cast<int> (strTemp);
 
-            (void) sectionSingleB (secConfig, SECTION_WEBSOCKET_PUBLIC_IP, WEBSOCKET_PUBLIC_IP);
+            (void) SectionSingleB (secConfig, SECTION_WEBSOCKET_PUBLIC_IP, WEBSOCKET_PUBLIC_IP);
 
-            if (sectionSingleB (secConfig, SECTION_WEBSOCKET_PUBLIC_PORT, strTemp))
+            if (SectionSingleB (secConfig, SECTION_WEBSOCKET_PUBLIC_PORT, strTemp))
                 WEBSOCKET_PUBLIC_PORT   = boost::lexical_cast<int> (strTemp);
 
-            if (sectionSingleB (secConfig, SECTION_WEBSOCKET_SECURE, strTemp))
+            if (SectionSingleB (secConfig, SECTION_WEBSOCKET_SECURE, strTemp))
                 WEBSOCKET_SECURE    = boost::lexical_cast<int> (strTemp);
 
-            if (sectionSingleB (secConfig, SECTION_WEBSOCKET_PUBLIC_SECURE, strTemp))
+            if (SectionSingleB (secConfig, SECTION_WEBSOCKET_PUBLIC_SECURE, strTemp))
                 WEBSOCKET_PUBLIC_SECURE = boost::lexical_cast<int> (strTemp);
 
-            if (sectionSingleB (secConfig, SECTION_WEBSOCKET_PING_FREQ, strTemp))
+            if (SectionSingleB (secConfig, SECTION_WEBSOCKET_PING_FREQ, strTemp))
                 WEBSOCKET_PING_FREQ = boost::lexical_cast<int> (strTemp);
 
-            sectionSingleB (secConfig, SECTION_WEBSOCKET_SSL_CERT, WEBSOCKET_SSL_CERT);
-            sectionSingleB (secConfig, SECTION_WEBSOCKET_SSL_CHAIN, WEBSOCKET_SSL_CHAIN);
-            sectionSingleB (secConfig, SECTION_WEBSOCKET_SSL_KEY, WEBSOCKET_SSL_KEY);
+            SectionSingleB (secConfig, SECTION_WEBSOCKET_SSL_CERT, WEBSOCKET_SSL_CERT);
+            SectionSingleB (secConfig, SECTION_WEBSOCKET_SSL_CHAIN, WEBSOCKET_SSL_CHAIN);
+            SectionSingleB (secConfig, SECTION_WEBSOCKET_SSL_KEY, WEBSOCKET_SSL_KEY);
 
-            if (sectionSingleB (secConfig, SECTION_RPC_SECURE, strTemp))
+            if (SectionSingleB (secConfig, SECTION_RPC_SECURE, strTemp))
                 RPC_SECURE  = boost::lexical_cast<int> (strTemp);
 
-            sectionSingleB (secConfig, SECTION_RPC_SSL_CERT, RPC_SSL_CERT);
-            sectionSingleB (secConfig, SECTION_RPC_SSL_CHAIN, RPC_SSL_CHAIN);
-            sectionSingleB (secConfig, SECTION_RPC_SSL_KEY, RPC_SSL_KEY);
+            SectionSingleB (secConfig, SECTION_RPC_SSL_CERT, RPC_SSL_CERT);
+            SectionSingleB (secConfig, SECTION_RPC_SSL_CHAIN, RPC_SSL_CHAIN);
+            SectionSingleB (secConfig, SECTION_RPC_SSL_KEY, RPC_SSL_KEY);
 
 
-            sectionSingleB (secConfig, SECTION_SSL_VERIFY_FILE, SSL_VERIFY_FILE);
-            sectionSingleB (secConfig, SECTION_SSL_VERIFY_DIR, SSL_VERIFY_DIR);
+            SectionSingleB (secConfig, SECTION_SSL_VERIFY_FILE, SSL_VERIFY_FILE);
+            SectionSingleB (secConfig, SECTION_SSL_VERIFY_DIR, SSL_VERIFY_DIR);
 
-            if (sectionSingleB (secConfig, SECTION_SSL_VERIFY, strTemp))
+            if (SectionSingleB (secConfig, SECTION_SSL_VERIFY, strTemp))
                 SSL_VERIFY          = boost::lexical_cast<bool> (strTemp);
 
-            if (sectionSingleB (secConfig, SECTION_VALIDATION_SEED, strTemp))
+            if (SectionSingleB (secConfig, SECTION_VALIDATION_SEED, strTemp))
             {
                 VALIDATION_SEED.setSeedGeneric (strTemp);
 
@@ -462,7 +462,7 @@ void Config::load ()
                 }
             }
 
-            if (sectionSingleB (secConfig, SECTION_NODE_SEED, strTemp))
+            if (SectionSingleB (secConfig, SECTION_NODE_SEED, strTemp))
             {
                 NODE_SEED.setSeedGeneric (strTemp);
 
@@ -473,43 +473,43 @@ void Config::load ()
                 }
             }
 
-            (void) sectionSingleB (secConfig, SECTION_PEER_SSL_CIPHER_LIST, PEER_SSL_CIPHER_LIST);
+            (void) SectionSingleB (secConfig, SECTION_PEER_SSL_CIPHER_LIST, PEER_SSL_CIPHER_LIST);
 
-            if (sectionSingleB (secConfig, SECTION_PEER_SCAN_INTERVAL_MIN, strTemp))
+            if (SectionSingleB (secConfig, SECTION_PEER_SCAN_INTERVAL_MIN, strTemp))
                 // Minimum for min is 60 seconds.
                 PEER_SCAN_INTERVAL_MIN = std::max (60, boost::lexical_cast<int> (strTemp));
 
-            if (sectionSingleB (secConfig, SECTION_PEER_START_MAX, strTemp))
+            if (SectionSingleB (secConfig, SECTION_PEER_START_MAX, strTemp))
                 PEER_START_MAX      = std::max (1, boost::lexical_cast<int> (strTemp));
 
-            if (sectionSingleB (secConfig, SECTION_PEER_CONNECT_LOW_WATER, strTemp))
+            if (SectionSingleB (secConfig, SECTION_PEER_CONNECT_LOW_WATER, strTemp))
                 PEER_CONNECT_LOW_WATER = std::max (1, boost::lexical_cast<int> (strTemp));
 
-            if (sectionSingleB (secConfig, SECTION_NETWORK_QUORUM, strTemp))
+            if (SectionSingleB (secConfig, SECTION_NETWORK_QUORUM, strTemp))
                 NETWORK_QUORUM      = std::max (0, boost::lexical_cast<int> (strTemp));
 
-            if (sectionSingleB (secConfig, SECTION_VALIDATION_QUORUM, strTemp))
+            if (SectionSingleB (secConfig, SECTION_VALIDATION_QUORUM, strTemp))
                 VALIDATION_QUORUM   = std::max (0, boost::lexical_cast<int> (strTemp));
 
-            if (sectionSingleB (secConfig, SECTION_FEE_ACCOUNT_RESERVE, strTemp))
+            if (SectionSingleB (secConfig, SECTION_FEE_ACCOUNT_RESERVE, strTemp))
                 FEE_ACCOUNT_RESERVE = boost::lexical_cast<uint64> (strTemp);
 
-            if (sectionSingleB (secConfig, SECTION_FEE_OWNER_RESERVE, strTemp))
+            if (SectionSingleB (secConfig, SECTION_FEE_OWNER_RESERVE, strTemp))
                 FEE_OWNER_RESERVE   = boost::lexical_cast<uint64> (strTemp);
 
-            if (sectionSingleB (secConfig, SECTION_FEE_NICKNAME_CREATE, strTemp))
+            if (SectionSingleB (secConfig, SECTION_FEE_NICKNAME_CREATE, strTemp))
                 FEE_NICKNAME_CREATE = boost::lexical_cast<int> (strTemp);
 
-            if (sectionSingleB (secConfig, SECTION_FEE_OFFER, strTemp))
+            if (SectionSingleB (secConfig, SECTION_FEE_OFFER, strTemp))
                 FEE_OFFER           = boost::lexical_cast<int> (strTemp);
 
-            if (sectionSingleB (secConfig, SECTION_FEE_DEFAULT, strTemp))
+            if (SectionSingleB (secConfig, SECTION_FEE_DEFAULT, strTemp))
                 FEE_DEFAULT         = boost::lexical_cast<int> (strTemp);
 
-            if (sectionSingleB (secConfig, SECTION_FEE_OPERATION, strTemp))
+            if (SectionSingleB (secConfig, SECTION_FEE_OPERATION, strTemp))
                 FEE_CONTRACT_OPERATION  = boost::lexical_cast<int> (strTemp);
 
-            if (sectionSingleB (secConfig, SECTION_LEDGER_HISTORY, strTemp))
+            if (SectionSingleB (secConfig, SECTION_LEDGER_HISTORY, strTemp))
             {
                 boost::to_lower (strTemp);
 
@@ -521,22 +521,22 @@ void Config::load ()
                     LEDGER_HISTORY = boost::lexical_cast<uint32> (strTemp);
             }
 
-            if (sectionSingleB (secConfig, SECTION_PATH_SEARCH_SIZE, strTemp))
+            if (SectionSingleB (secConfig, SECTION_PATH_SEARCH_SIZE, strTemp))
                 PATH_SEARCH_SIZE    = boost::lexical_cast<int> (strTemp);
 
-            if (sectionSingleB (secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
+            if (SectionSingleB (secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
                 ACCOUNT_PROBE_MAX   = boost::lexical_cast<int> (strTemp);
 
-            (void) sectionSingleB (secConfig, SECTION_SMS_FROM, SMS_FROM);
-            (void) sectionSingleB (secConfig, SECTION_SMS_KEY, SMS_KEY);
-            (void) sectionSingleB (secConfig, SECTION_SMS_SECRET, SMS_SECRET);
-            (void) sectionSingleB (secConfig, SECTION_SMS_TO, SMS_TO);
-            (void) sectionSingleB (secConfig, SECTION_SMS_URL, SMS_URL);
+            (void) SectionSingleB (secConfig, SECTION_SMS_FROM, SMS_FROM);
+            (void) SectionSingleB (secConfig, SECTION_SMS_KEY, SMS_KEY);
+            (void) SectionSingleB (secConfig, SECTION_SMS_SECRET, SMS_SECRET);
+            (void) SectionSingleB (secConfig, SECTION_SMS_TO, SMS_TO);
+            (void) SectionSingleB (secConfig, SECTION_SMS_URL, SMS_URL);
 
-            if (sectionSingleB (secConfig, SECTION_VALIDATORS_FILE, strTemp))
+            if (SectionSingleB (secConfig, SECTION_VALIDATORS_FILE, strTemp))
                 VALIDATORS_FILE     = strTemp;
 
-            if (sectionSingleB (secConfig, SECTION_DEBUG_LOGFILE, strTemp))
+            if (SectionSingleB (secConfig, SECTION_DEBUG_LOGFILE, strTemp))
                 DEBUG_LOGFILE       = strTemp;
         }
     }

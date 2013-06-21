@@ -6,7 +6,6 @@
 
 #ifdef WIN32
 
-//#include <windows.h>
 // from: http://stackoverflow.com/questions/3022552/is-there-any-standard-htonl-like-function-for-64-bits-integers-in-c
 // but we don't need to check the endianness
 uint64_t htobe64 (uint64_t value)
@@ -43,5 +42,3 @@ uint32_t be32toh (uint32_t value)
 }
 
 #endif
-
-// vim:ts=4

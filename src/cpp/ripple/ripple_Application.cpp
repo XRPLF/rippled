@@ -11,9 +11,6 @@ class Application;
 
 SETUP_LOG (Application)
 
-// VFALCO TODO fix/clean this, it might have broken with the Log changes
-LogPartition AutoSocketPartition ("AutoSocket");
-
 // VFALCO TODO Move the function definitions into the class declaration
 class Application : public IApplication
 {

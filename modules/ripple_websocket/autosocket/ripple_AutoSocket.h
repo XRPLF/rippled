@@ -7,8 +7,6 @@
 #ifndef __AUTOSOCKET_H_
 #define __AUTOSOCKET_H_
 
-extern LogPartition AutoSocketPartition;
-
 // Socket wrapper that supports both SSL and non-SSL connections.
 // Generally, handle it as you would an SSL connection.
 // To force a non-SSL connection, just don't call async_handshake.
@@ -255,6 +253,8 @@ protected:
     }
 
 private:
+    static LogPartition AutoSocketPartition;
+
     socket_ptr          mSocket;
     bool                mSecure;
 

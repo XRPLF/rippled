@@ -14,7 +14,6 @@
 // VFALCO TODO replace BIND_TYPE with a namespace lift
 
 #define C11X
-#include                <functional>
 #define UPTR_T          std::unique_ptr
 #define MOVE_P(p)       std::move(p)
 #define BIND_TYPE       std::bind

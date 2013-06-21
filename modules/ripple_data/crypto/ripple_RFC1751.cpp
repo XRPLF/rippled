@@ -8,16 +8,6 @@
 // RFC 1751 code converted to C++/Boost.
 //
 
-// VFALCO TODO move these
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/foreach.hpp>
-#include <boost/range/adaptor/copied.hpp>
-#include <string>
-#include <vector>
-
 char const* RFC1751::s_dictionary [2048] =
 {
     "A", "ABE", "ACE", "ACT", "AD", "ADA", "ADD",
