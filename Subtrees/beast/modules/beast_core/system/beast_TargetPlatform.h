@@ -193,4 +193,18 @@
   #error unknown compiler
 #endif
 
+//------------------------------------------------------------------------------
+
+// Handy macro that lets pragma warnings be clicked in the output window
+//
+// Usage: #pragma message(BEAST_FILEANDLINE_ "Advertise here!")
+//
+//        Note that a space following the macro is mandatory for C++11.
+//
+// This is here so it can be used in C compilations that include this directly.
+//
+#define BEAST_PP_STR2_(x) #x
+#define BEAST_PP_STR1_(x) BEAST_PP_STR2_(x)
+#define BEAST_FILEANDLINE_ __FILE__ "(" BEAST_PP_STR1_(__LINE__) "): warning:"
+
 #endif   // BEAST_TARGETPLATFORM_BEASTHEADER

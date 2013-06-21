@@ -181,7 +181,7 @@ LPTOP_LEVEL_EXCEPTION_FILTER ScopedPlatformExceptionCatcher::s_sehPrev = 0;
 
 // TODO: POSIX SIGNAL HANDLER
 
-#pragma message(BEAST_LOC_"Missing class ScopedPlatformExceptionCatcher")
+#pragma message(BEAST_FILEANDLINE_ "Missing class ScopedPlatformExceptionCatcher")
 
 namespace vf
 {

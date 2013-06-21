@@ -48,11 +48,6 @@
 */
 //#define SQLITE_THREADSAFE 2
 
-// VFALCO TODO Move this into Beast
-#define BEAST_PP_STR2_(x) #x
-#define BEAST_PP_STR1_(x) BEAST_PP_STR2_(x)
-#define BEAST_FILEANDLINE_ __FILE__ "("BEAST_PP_STR1_(__LINE__)"): warning:"
-
 // VFALCO TODO We should try running with SQLITE_THREADSAFE==2 and see what happens.
 #if SQLITE_THREADSAFE != 2
 #pragma message(BEAST_FILEANDLINE_"Possible performance issue, SQLITE_THREADSAFE != 2")

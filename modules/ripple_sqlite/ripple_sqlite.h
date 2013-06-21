@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SQLITE_RIPPLEHEADER
 #define RIPPLE_SQLITE_RIPPLEHEADER
 
+// Include this directly because we compile under both C and C++
 #include "beast/modules/beast_core/system/beast_TargetPlatform.h"
 
 #if ! RIPPLE_SQLITE_MODULE_INCLUDED
