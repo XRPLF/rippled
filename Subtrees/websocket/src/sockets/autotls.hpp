@@ -28,15 +28,7 @@
 #ifndef WEBSOCKETPP_SOCKET_AUTOTLS_HPP
 #define WEBSOCKETPP_SOCKET_AUTOTLS_HPP
 
-#include "../common.hpp"
-#include "socket_base.hpp"
-#include "../../../ripple/AutoSocket.h"
-
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/bind.hpp>
-
-#include <iostream>
+// Note that AutoSocket.h must be included before this file
 
 namespace websocketpp {
 namespace socket {

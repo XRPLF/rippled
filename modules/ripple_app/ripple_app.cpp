@@ -104,13 +104,7 @@
 
 
 
-// VFALCO NOTE Log dependencies have wormed their way into websocketpp,
-//             which needs the ripple_basic module to compile.
-//
-// VFALCO TODO Make a unity include for websocket
-//             for WSDoor, et. al.
-#include "src/cpp/websocketpp/src/sockets/autotls.hpp"
-#include "src/cpp/websocketpp/src/websocketpp.hpp"
+#include "../modules/ripple_websocket/ripple_websocket.h"
 
 //------------------------------------------------------------------------------
 
@@ -222,7 +216,6 @@
 #include "src/cpp/ripple/ripple_DatabaseCon.h"
 
 #include "src/cpp/ripple/ripple_IApplication.h"
-#include "src/cpp/ripple/AutoSocket.h"
 #include "src/cpp/ripple/CallRPC.h"
 #include "src/cpp/ripple/Transactor.h"
 #include "src/cpp/ripple/ChangeTransactor.h"
@@ -260,8 +253,6 @@
 #include "src/cpp/ripple/WSConnection.h"
 #include "src/cpp/ripple/WSHandler.h"
 #include "src/cpp/ripple/WalletAddTransactor.h"
-
-#include "../websocketpp/src/logger/logger.hpp" // for ripple_LogWebSockets.cpp
 
 //------------------------------------------------------------------------------
 

@@ -37,10 +37,8 @@
  *
  */
 
-
-#include "sha1.h"
-
-using websocketpp::SHA1;
+namespace websocketpp
+{
 
 /*  
  *  SHA1
@@ -588,4 +586,6 @@ void SHA1::PadMessage()
 unsigned SHA1::CircularShift(int bits, unsigned word)
 {
     return ((word << bits) & 0xFFFFFFFF) | ((word & 0xFFFFFFFF) >> (32-bits));
+}
+
 }
