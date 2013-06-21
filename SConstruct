@@ -101,12 +101,12 @@ INCLUDE_PATHS = [
     ]
 
 COMPILED_FILES = [
-    'src/cpp/leveldb_core.cpp',
     'Subtrees/beast/modules/beast_core/beast_core.cpp',
     'Subtrees/beast/modules/beast_basics/beast_basics.cpp',
     'modules/ripple_basics/ripple_basics.cpp',
     'modules/ripple_data/ripple_data.cpp',
     'modules/ripple_json/ripple_json.cpp',
+    'modules/ripple_leveldb/ripple_leveldb.cpp',
     'modules/ripple_websocket/ripple_websocket.cpp',
     'modules/ripple_sqlite/ripple_sqlite.c',
     'modules/ripple_app/ripple_app_pt1.cpp',
