@@ -322,11 +322,8 @@ SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode,
         if (fullBelowCache.isPresent (iNode->getChildHash (branch)))
             return SHAMapAddNode::okay ();
 
-        try
-        {
-            iNode = getNodePointer (iNode->getChildNodeID (branch), iNode->getChildHash (branch), filter);
-        }
-        catch (SHAMapMissingNode&)
+        SHAMapTreeNode *nextNode = getNodePointerNT (iNode->getChildNodeID (branch), iNode->getChildHash (branch), filter);
+        if (!nextNode)
         {
             if (iNode->getDepth () != (node.getDepth () - 1))
             {
@@ -356,6 +353,7 @@ SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode,
             mTNByID[node] = newNode;
             return SHAMapAddNode::useful ();
         }
+        iNode = nextNode;
     }
 
     WriteLog (lsTRACE, SHAMap) << "got node, already had it (late)";
