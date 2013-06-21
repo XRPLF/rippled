@@ -83,10 +83,9 @@
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 
-// for SqliteDatabase.cpp
-#include "src/cpp/database/sqlite3.h"
 
-//------------------------------------------------------------------------------
+
+#include "../modules/ripple_sqlite/ripple_sqlite.h" // for SqliteDatabase.cpp
 
 // VFALCO TODO fix these warnings!
 #ifdef _MSC_VER

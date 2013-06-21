@@ -43,3 +43,10 @@ master
 
 **NOTE** Linux builds use the protobuf installed in /usr/lib. This will be
 fixed in a future revision.
+
+## SQLite
+
+Not technically a subtree but included here because it is a direct
+copy of the official SQLite distributions available here:
+
+http://sqlite.org/download.html

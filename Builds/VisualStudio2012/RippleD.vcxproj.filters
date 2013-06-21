@@ -7,9 +7,6 @@
     <Filter Include="0. Third Party Code\beast">
       <UniqueIdentifier>{290b7b39-a4e6-4b8b-b464-d1e458562fdd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="0. Third Party Code\SQLite">
-      <UniqueIdentifier>{60c3631e-8855-4a61-bdd3-9892d96242d5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="0. Third Party Code\LevelDB">
       <UniqueIdentifier>{83e0c1a9-5ac4-4c68-ba62-45e24bf60c85}</UniqueIdentifier>
     </Filter>
@@ -82,15 +79,6 @@
     <Filter Include="2. %28Unused%29">
       <UniqueIdentifier>{786657f9-b1b3-483c-a8e6-863cc2e02eb8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="2. %28Unused%29\ripple_net">
-      <UniqueIdentifier>{7f76ce57-c428-487e-97a0-979c0990a81d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="2. %28Unused%29\ripple_db">
-      <UniqueIdentifier>{a5190241-c5bc-4e23-8ef1-6adf757c75e3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="2. %28Unused%29\ripple_ledger">
-      <UniqueIdentifier>{b6175f9a-7d46-4b57-877f-f58b0b3bba89}</UniqueIdentifier>
-    </Filter>
     <Filter Include="2. %28Unused%29\ripple_client">
       <UniqueIdentifier>{97c96b68-70fd-4679-89fc-c1c8c87c265e}</UniqueIdentifier>
     </Filter>
@@ -145,11 +133,11 @@
     <Filter Include="1. Modules\ripple_websocket\autosocket">
       <UniqueIdentifier>{9cd9dfb0-daa3-474e-b1c7-b048f5b85e71}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_sqlite">
+      <UniqueIdentifier>{6bbe236f-79ff-4e30-928c-bf5f302b3a21}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\cpp\database\sqlite3.c">
-      <Filter>0. Third Party Code\SQLite</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cpp\leveldb_core.cpp">
       <Filter>0. Third Party Code\LevelDB</Filter>
     </ClCompile>
@@ -306,20 +294,11 @@
     <ClCompile Include="..\..\modules\ripple_basics\ripple_basics.cpp">
       <Filter>1. Modules\ripple_basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_ledger\ripple_ledger.cpp">
-      <Filter>2. %28Unused%29\ripple_ledger</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_client\ripple_client.cpp">
       <Filter>2. %28Unused%29\ripple_client</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ChangeTransactor.cpp">
       <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_db\ripple_db.cpp">
-      <Filter>2. %28Unused%29\ripple_db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_net\ripple_net.cpp">
-      <Filter>2. %28Unused%29\ripple_net</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\Interpreter.cpp">
       <Filter>1. Modules\ripple_app\_unfactored\contracts</Filter>
@@ -903,6 +882,9 @@
     <ClCompile Include="..\..\src\cpp\ripple\ripple_SqliteDatabase.cpp">
       <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_sqlite\ripple_sqlite.c">
+      <Filter>1. Modules\ripple_sqlite</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\cpp\protobuf\src\google\protobuf\service.h">
@@ -1073,20 +1055,11 @@
     <ClInclude Include="..\..\modules\ripple_basics\ripple_basics.h">
       <Filter>1. Modules\ripple_basics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_ledger\ripple_ledger.h">
-      <Filter>2. %28Unused%29\ripple_ledger</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_client\ripple_client.h">
       <Filter>2. %28Unused%29\ripple_client</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ChangeTransactor.h">
       <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_db\ripple_db.h">
-      <Filter>2. %28Unused%29\ripple_db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_net\ripple_net.h">
-      <Filter>2. %28Unused%29\ripple_net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\Interpreter.h">
       <Filter>1. Modules\ripple_app\_unfactored\contracts</Filter>
@@ -1503,12 +1476,6 @@
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_CountedObject.h">
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\database\sqlite3.h">
-      <Filter>0. Third Party Code\SQLite</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\database\sqlite3ext.h">
-      <Filter>0. Third Party Code\SQLite</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\build\proto\ripple.pb.h">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClInclude>
@@ -1727,6 +1694,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_Database.h">
       <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_sqlite\ripple_sqlite.h">
+      <Filter>1. Modules\ripple_sqlite</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
