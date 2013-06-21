@@ -50,10 +50,16 @@ namespace parser {
 
 typedef std::map<std::string,std::string> header_list;
 
+// VFALCO NOTE Can't we just use
+//
+//        std::transform (str.begin (), str.end (), str.begin (), ::tolower);
+//
+//        ?
+//
 static std::string tolower(const std::string& in)
 {
 	std::string out = in;
-	for (int i = 0; i < out.size(); ++i)
+	for (std::size_t i = 0; i < out.size(); ++i)
 		if (isupper(out[i]))
 			out[i] = ::tolower(out[i]);
 	return out;

@@ -7,13 +7,13 @@
 #ifndef _PARSE_SECTION_
 #define _PARSE_SECTION_
 
-typedef std::map<const std::string, std::vector<std::string> > section;
+typedef std::map<const std::string, std::vector<std::string> > Section;
 
-section ParseSection (const std::string& strInput, const bool bTrim);
-void sectionPrint (section secInput);
-void sectionEntriesPrint (std::vector<std::string>* vspEntries, const std::string& strSection);
-bool sectionSingleB (section& secSource, const std::string& strSection, std::string& strValue);
-int sectionCount (section& secSource, const std::string& strSection);
-section::mapped_type* sectionEntries (section& secSource, const std::string& strSection);
+Section ParseSection (const std::string& strInput, const bool bTrim);
+void SectionPrint (Section secInput);
+void SectionEntriesPrint (std::vector<std::string>* vspEntries, const std::string& strSection);
+bool SectionSingleB (Section& secSource, const std::string& strSection, std::string& strValue);
+int SectionCount (Section& secSource, const std::string& strSection);
+Section::mapped_type* SectionEntries (Section& secSource, const std::string& strSection);
 
 #endif

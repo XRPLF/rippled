@@ -103,15 +103,15 @@ private:
     void fetchProcess (std::string strDomain);
     void fetchTimerHandler (const boost::system::error_code& err);
 
-    void getValidatorsUrl (const RippleAddress& naNodePublic, section secSite);
-    void getIpsUrl (const RippleAddress& naNodePublic, section secSite);
+    void getValidatorsUrl (const RippleAddress& naNodePublic, Section secSite);
+    void getIpsUrl (const RippleAddress& naNodePublic, Section secSite);
     bool responseIps (const std::string& strSite, const RippleAddress& naNodePublic, const boost::system::error_code& err, int iStatus, const std::string& strIpsFile);
-    bool responseValidators (const std::string& strValidatorsUrl, const RippleAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, int iStatus, const std::string& strValidatorsFile);
+    bool responseValidators (const std::string& strValidatorsUrl, const RippleAddress& naNodePublic, Section secSite, const std::string& strSite, const boost::system::error_code& err, int iStatus, const std::string& strValidatorsFile);
 
-    void processIps (const std::string& strSite, const RippleAddress& naNodePublic, section::mapped_type* pmtVecStrIps);
-    int processValidators (const std::string& strSite, const std::string& strValidatorsSrc, const RippleAddress& naNodePublic, validatorSource vsWhy, section::mapped_type* pmtVecStrValidators);
+    void processIps (const std::string& strSite, const RippleAddress& naNodePublic, Section::mapped_type* pmtVecStrIps);
+    int processValidators (const std::string& strSite, const std::string& strValidatorsSrc, const RippleAddress& naNodePublic, validatorSource vsWhy, Section::mapped_type* pmtVecStrValidators);
 
-    void processFile (const std::string& strDomain, const RippleAddress& naNodePublic, section secSite);
+    void processFile (const std::string& strDomain, const RippleAddress& naNodePublic, Section secSite);
 
     bool getSeedDomains (const std::string& strDomain, seedDomain& dstSeedDomain);
     void setSeedDomains (const seedDomain& dstSeedDomain, bool bNext);
@@ -759,7 +759,7 @@ void UniqueNodeList::fetchDirty ()
 // Persist the IPs refered to by a Validator.
 // --> strSite: source of the IPs (for debugging)
 // --> naNodePublic: public key of the validating node.
-void UniqueNodeList::processIps (const std::string& strSite, const RippleAddress& naNodePublic, section::mapped_type* pmtVecStrIps)
+void UniqueNodeList::processIps (const std::string& strSite, const RippleAddress& naNodePublic, Section::mapped_type* pmtVecStrIps)
 {
     Database*   db = theApp->getWalletDB ()->getDB ();
 
@@ -829,7 +829,7 @@ void UniqueNodeList::processIps (const std::string& strSite, const RippleAddress
 // --> strValidatorsSrc: source details for display
 // --> naNodePublic: remote source public key - not valid for local
 // --> vsWhy: reason for adding validator to SeedDomains or SeedNodes.
-int UniqueNodeList::processValidators (const std::string& strSite, const std::string& strValidatorsSrc, const RippleAddress& naNodePublic, validatorSource vsWhy, section::mapped_type* pmtVecStrValidators)
+int UniqueNodeList::processValidators (const std::string& strSite, const std::string& strValidatorsSrc, const RippleAddress& naNodePublic, validatorSource vsWhy, Section::mapped_type* pmtVecStrValidators)
 {
     Database*   db              = theApp->getWalletDB ()->getDB ();
     std::string strNodePublic   = naNodePublic.isValid () ? naNodePublic.humanNodePublic () : strValidatorsSrc;
@@ -927,7 +927,7 @@ int UniqueNodeList::processValidators (const std::string& strSite, const std::st
     return iValues;
 }
 
-// Given a section with IPs, parse and persist it for a validator.
+// Given a Section with IPs, parse and persist it for a validator.
 bool UniqueNodeList::responseIps (const std::string& strSite, const RippleAddress& naNodePublic, const boost::system::error_code& err, int iStatus, const std::string& strIpsFile)
 {
     bool    bReject = !err && iStatus != 200;
@@ -936,9 +936,9 @@ bool UniqueNodeList::responseIps (const std::string& strSite, const RippleAddres
     {
         if (!err)
         {
-            section         secFile     = ParseSection (strIpsFile, true);
+            Section         secFile     = ParseSection (strIpsFile, true);
 
-            processIps (strSite, naNodePublic, sectionEntries (secFile, SECTION_IPS));
+            processIps (strSite, naNodePublic, SectionEntries (secFile, SECTION_IPS));
         }
 
         fetchFinish ();
@@ -947,9 +947,9 @@ bool UniqueNodeList::responseIps (const std::string& strSite, const RippleAddres
     return bReject;
 }
 
-// Process section [ips_url].
-// If we have a section with a single entry, fetch the url and process it.
-void UniqueNodeList::getIpsUrl (const RippleAddress& naNodePublic, section secSite)
+// Process Section [ips_url].
+// If we have a Section with a single entry, fetch the url and process it.
+void UniqueNodeList::getIpsUrl (const RippleAddress& naNodePublic, Section secSite)
 {
     std::string strIpsUrl;
     std::string strScheme;
@@ -957,7 +957,7 @@ void UniqueNodeList::getIpsUrl (const RippleAddress& naNodePublic, section secSi
     int         iPort;
     std::string strPath;
 
-    if (sectionSingleB (secSite, SECTION_IPS_URL, strIpsUrl)
+    if (SectionSingleB (secSite, SECTION_IPS_URL, strIpsUrl)
             && !strIpsUrl.empty ()
             && parseUrl (strIpsUrl, strScheme, strDomain, iPort, strPath)
             && -1 == iPort
@@ -979,8 +979,8 @@ void UniqueNodeList::getIpsUrl (const RippleAddress& naNodePublic, section secSi
     }
 }
 
-// After fetching a ripple.txt from a web site, given a section with validators, parse and persist it.
-bool UniqueNodeList::responseValidators (const std::string& strValidatorsUrl, const RippleAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, int iStatus, const std::string& strValidatorsFile)
+// After fetching a ripple.txt from a web site, given a Section with validators, parse and persist it.
+bool UniqueNodeList::responseValidators (const std::string& strValidatorsUrl, const RippleAddress& naNodePublic, Section secSite, const std::string& strSite, const boost::system::error_code& err, int iStatus, const std::string& strValidatorsFile)
 {
     bool    bReject = !err && iStatus != 200;
 
@@ -988,9 +988,9 @@ bool UniqueNodeList::responseValidators (const std::string& strValidatorsUrl, co
     {
         if (!err)
         {
-            section     secFile     = ParseSection (strValidatorsFile, true);
+            Section     secFile     = ParseSection (strValidatorsFile, true);
 
-            processValidators (strSite, strValidatorsUrl, naNodePublic, vsValidator, sectionEntries (secFile, SECTION_VALIDATORS));
+            processValidators (strSite, strValidatorsUrl, naNodePublic, vsValidator, SectionEntries (secFile, SECTION_VALIDATORS));
         }
 
         getIpsUrl (naNodePublic, secSite);
@@ -999,8 +999,8 @@ bool UniqueNodeList::responseValidators (const std::string& strValidatorsUrl, co
     return bReject;
 }
 
-// Process section [validators_url].
-void UniqueNodeList::getValidatorsUrl (const RippleAddress& naNodePublic, section secSite)
+// Process Section [validators_url].
+void UniqueNodeList::getValidatorsUrl (const RippleAddress& naNodePublic, Section secSite)
 {
     std::string strValidatorsUrl;
     std::string strScheme;
@@ -1008,7 +1008,7 @@ void UniqueNodeList::getValidatorsUrl (const RippleAddress& naNodePublic, sectio
     int         iPort;
     std::string strPath;
 
-    if (sectionSingleB (secSite, SECTION_VALIDATORS_URL, strValidatorsUrl)
+    if (SectionSingleB (secSite, SECTION_VALIDATORS_URL, strValidatorsUrl)
             && !strValidatorsUrl.empty ()
             && parseUrl (strValidatorsUrl, strScheme, strDomain, iPort, strPath)
             && -1 == iPort
@@ -1031,24 +1031,24 @@ void UniqueNodeList::getValidatorsUrl (const RippleAddress& naNodePublic, sectio
 }
 
 // Process a ripple.txt.
-void UniqueNodeList::processFile (const std::string& strDomain, const RippleAddress& naNodePublic, section secSite)
+void UniqueNodeList::processFile (const std::string& strDomain, const RippleAddress& naNodePublic, Section secSite)
 {
     //
     // Process Validators
     //
-    processValidators (strDomain, NODE_FILE_NAME, naNodePublic, vsReferral, sectionEntries (secSite, SECTION_VALIDATORS));
+    processValidators (strDomain, NODE_FILE_NAME, naNodePublic, vsReferral, SectionEntries (secSite, SECTION_VALIDATORS));
 
     //
     // Process ips
     //
-    processIps (strDomain, naNodePublic, sectionEntries (secSite, SECTION_IPS));
+    processIps (strDomain, naNodePublic, SectionEntries (secSite, SECTION_IPS));
 
     //
     // Process currencies
     //
-    section::mapped_type*   pvCurrencies;
+    Section::mapped_type*   pvCurrencies;
 
-    if ((pvCurrencies = sectionEntries (secSite, SECTION_CURRENCIES)) && pvCurrencies->size ())
+    if ((pvCurrencies = SectionEntries (secSite, SECTION_CURRENCIES)) && pvCurrencies->size ())
     {
         // XXX Process currencies.
         WriteLog (lsWARNING, UniqueNodeList) << "Ignoring currencies: not implemented.";
@@ -1064,7 +1064,7 @@ bool UniqueNodeList::responseFetch (const std::string& strDomain, const boost::s
 
     if (!bReject)
     {
-        section             secSite = ParseSection (strSiteFile, true);
+        Section             secSite = ParseSection (strSiteFile, true);
         bool                bGood   = !err;
 
         if (bGood)
@@ -1084,7 +1084,7 @@ bool UniqueNodeList::responseFetch (const std::string& strDomain, const boost::s
         //
         std::string strSite;
 
-        if (bGood && !sectionSingleB (secSite, SECTION_DOMAIN, strSite))
+        if (bGood && !SectionSingleB (secSite, SECTION_DOMAIN, strSite))
         {
             bGood   = false;
 
@@ -1108,9 +1108,9 @@ bool UniqueNodeList::responseFetch (const std::string& strDomain, const boost::s
         //
         std::string     strNodePublicKey;
 
-        if (bGood && !sectionSingleB (secSite, SECTION_PUBLIC_KEY, strNodePublicKey))
+        if (bGood && !SectionSingleB (secSite, SECTION_PUBLIC_KEY, strNodePublicKey))
         {
-            // Bad [validation_public_key] section.
+            // Bad [validation_public_key] Section.
             bGood   = false;
 
             WriteLog (lsTRACE, UniqueNodeList)
@@ -1875,9 +1875,9 @@ void UniqueNodeList::nodeBootstrap ()
 // --> strValidators: contents of a validators.txt
 void UniqueNodeList::nodeProcess (const std::string& strSite, const std::string& strValidators, const std::string& strSource)
 {
-    section secValidators   = ParseSection (strValidators, true);
+    Section secValidators   = ParseSection (strValidators, true);
 
-    section::mapped_type*   pmtEntries  = sectionEntries (secValidators, SECTION_VALIDATORS);
+    Section::mapped_type*   pmtEntries  = SectionEntries (secValidators, SECTION_VALIDATORS);
 
     if (pmtEntries)
     {

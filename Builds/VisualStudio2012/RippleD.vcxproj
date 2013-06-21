@@ -169,6 +169,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\modules\ripple_websocket\autosocket\ripple_AutoSocket.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_websocket\ripple_websocket.cpp" />
     <ClCompile Include="..\..\Subtrees\leveldb\db\builder.cc">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -406,6 +413,84 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\Subtrees\leveldb\util\status.cc">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\base64\base64.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\md5\md5.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\messages\data.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\network_utilities.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\processors\hybi_header.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\processors\hybi_util.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\rng\blank_rng.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\rng\boost_rng.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\sha1\sha.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\sha1\sha1.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\sha1\shacmp.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\sha1\shatest.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\uri.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1420,43 +1505,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\base64\base64.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\md5\md5.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\messages\data.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\network_utilities.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\processors\hybi_header.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\processors\hybi_util.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\rng\boost_rng.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\sha1\sha1.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\uri.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocket_core.cpp" />
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_basics\beast_basics.cpp" />
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_core\beast_core.cpp" />
   </ItemGroup>
@@ -1514,7 +1562,6 @@
     <ClInclude Include="..\..\modules\ripple_data\utility\ripple_JSONCache.h" />
     <ClInclude Include="..\..\modules\ripple_data\utility\ripple_UptimeTimerAdapter.h" />
     <ClInclude Include="..\..\modules\ripple_db\ripple_db.h" />
-    <ClInclude Include="..\..\modules\ripple_json\json\json.h" />
     <ClInclude Include="..\..\modules\ripple_json\json\json_autolink.h" />
     <ClInclude Include="..\..\modules\ripple_json\json\json_batchallocator.h" />
     <ClInclude Include="..\..\modules\ripple_json\json\json_config.h" />
@@ -1526,6 +1573,8 @@
     <ClInclude Include="..\..\modules\ripple_json\ripple_json.h" />
     <ClInclude Include="..\..\modules\ripple_ledger\ripple_ledger.h" />
     <ClInclude Include="..\..\modules\ripple_net\ripple_net.h" />
+    <ClInclude Include="..\..\modules\ripple_websocket\autosocket\ripple_AutoSocket.h" />
+    <ClInclude Include="..\..\modules\ripple_websocket\ripple_websocket.h" />
     <ClInclude Include="..\..\src\cpp\database\database.h" />
     <ClInclude Include="..\..\src\cpp\database\SqliteDatabase.h" />
     <ClInclude Include="..\..\src\cpp\protobuf\src\google\protobuf\descriptor.h">
@@ -1699,7 +1748,6 @@
     <ClInclude Include="..\..\src\cpp\ripple\ripple_AccountItems.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ripple_DisputedTx.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ripple_IApplication.h" />
-    <ClInclude Include="..\..\src\cpp\ripple\AutoSocket.h" />
     <ClInclude Include="..\..\src\cpp\ripple\CallRPC.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ripple_AcceptedLedgerTx.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ripple_CanonicalTXSet.h" />
@@ -1790,17 +1838,6 @@
     <ClInclude Include="..\..\src\cpp\ripple\WSConnection.h" />
     <ClInclude Include="..\..\src\cpp\ripple\WSDoor.h" />
     <ClInclude Include="..\..\src\cpp\ripple\WSHandler.h" />
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\common.hpp" />
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\connection.hpp" />
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\endpoint.hpp" />
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\network_utilities.hpp" />
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\shared_const_buffer.hpp" />
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\sockets\plain.hpp" />
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\sockets\socket_base.hpp" />
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\sockets\tls.hpp" />
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\uri.hpp" />
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\websocketpp.hpp" />
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\websocket_frame.hpp" />
     <ClInclude Include="..\..\Subtrees\leveldb\db\builder.h" />
     <ClInclude Include="..\..\Subtrees\leveldb\db\dbformat.h" />
     <ClInclude Include="..\..\Subtrees\leveldb\db\db_impl.h" />
@@ -1838,8 +1875,40 @@
     <ClInclude Include="..\..\Subtrees\leveldb\util\mutexlock.h" />
     <ClInclude Include="..\..\Subtrees\leveldb\util\posix_logger.h" />
     <ClInclude Include="..\..\Subtrees\leveldb\util\random.h" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\base64\base64.h" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\common.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\connection.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\endpoint.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\http\constants.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\http\parser.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\logger\logger.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\md5\md5.h" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\md5\md5.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\messages\control.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\messages\data.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\network_utilities.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\processors\hybi.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\processors\hybi_header.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\processors\hybi_legacy.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\processors\hybi_util.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\processors\processor.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\rng\blank_rng.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\rng\boost_rng.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\roles\client.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\roles\server.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\sha1\sha1.h" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\shared_const_buffer.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\sockets\autotls.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\sockets\plain.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\sockets\socket_base.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\sockets\tls.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\uri.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\utf8_validator\utf8_validator.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\websocketpp.hpp" />
+    <ClInclude Include="..\..\Subtrees\websocket\src\websocket_frame.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\CheatSheet.md" />
     <None Include="..\..\CodingStyle.md" />
     <None Include="..\..\Doxyfile" />
     <None Include="..\..\modules\ripple_json\json\json_internalarray.inl" />

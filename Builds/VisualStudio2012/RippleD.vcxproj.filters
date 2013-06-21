@@ -10,12 +10,6 @@
     <Filter Include="0. Third Party Code\SQLite">
       <UniqueIdentifier>{60c3631e-8855-4a61-bdd3-9892d96242d5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="0. Third Party Code\websocket">
-      <UniqueIdentifier>{cd4c41c0-3ee6-49f8-8322-d11422b892f9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="0. Third Party Code\websocket\core">
-      <UniqueIdentifier>{9fe711b6-ec1c-4a6c-9f78-2812f4627e70}</UniqueIdentifier>
-    </Filter>
     <Filter Include="0. Third Party Code\LevelDB">
       <UniqueIdentifier>{83e0c1a9-5ac4-4c68-ba62-45e24bf60c85}</UniqueIdentifier>
     </Filter>
@@ -142,37 +136,19 @@
     <Filter Include="1. Modules\ripple_app\refactored\ledger">
       <UniqueIdentifier>{857187f0-ff25-4ebe-af30-544b7b7f503a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_websocket">
+      <UniqueIdentifier>{90f3b8c4-01a1-41f1-969b-39ec650c00cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_websocket\subtree">
+      <UniqueIdentifier>{9d37d3a1-e8ac-49c5-845b-702a191f28e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_websocket\autosocket">
+      <UniqueIdentifier>{9cd9dfb0-daa3-474e-b1c7-b048f5b85e71}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\cpp\database\sqlite3.c">
       <Filter>0. Third Party Code\SQLite</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\base64\base64.cpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\rng\boost_rng.cpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\messages\data.cpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\processors\hybi_header.cpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\processors\hybi_util.cpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\md5\md5.c">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\network_utilities.cpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\sha1\sha1.cpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocketpp\src\uri.cpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\leveldb_core.cpp">
       <Filter>0. Third Party Code\LevelDB</Filter>
@@ -281,9 +257,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\protobuf\src\google\protobuf\stubs\substitute.cc">
       <Filter>0. Third Party Code\protobuf\stubs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\websocket_core.cpp">
-      <Filter>0. Third Party Code\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\Transaction.cpp">
       <Filter>1. Modules\ripple_app\_unfactored\transactions</Filter>
@@ -885,41 +858,53 @@
     <ClCompile Include="..\..\Subtrees\leveldb\util\logging.cc">
       <Filter>0. Third Party Code\LevelDB\util</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_websocket\ripple_websocket.cpp">
+      <Filter>1. Modules\ripple_websocket</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_websocket\autosocket\ripple_AutoSocket.cpp">
+      <Filter>1. Modules\ripple_websocket\autosocket</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\network_utilities.cpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\uri.cpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\base64\base64.cpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\md5\md5.c">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\messages\data.cpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\processors\hybi_header.cpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\processors\hybi_util.cpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\rng\boost_rng.cpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\rng\blank_rng.cpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\sha1\sha.cpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\sha1\sha1.cpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\sha1\shacmp.cpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\websocket\src\sha1\shatest.cpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\common.hpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\connection.hpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\endpoint.hpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\network_utilities.hpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\sockets\plain.hpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\shared_const_buffer.hpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\sockets\socket_base.hpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\sockets\tls.hpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\uri.hpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\websocket_frame.hpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\websocketpp\src\websocketpp.hpp">
-      <Filter>0. Third Party Code\websocket\core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\cpp\protobuf\src\google\protobuf\service.h">
       <Filter>0. Third Party Code\protobuf\protobuf</Filter>
     </ClInclude>
@@ -1136,9 +1121,6 @@
     <ClInclude Include="..\..\modules\ripple_json\json\json_writer.h">
       <Filter>1. Modules\ripple_json\json</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_json\json\json.h">
-      <Filter>1. Modules\ripple_json\json\DEPRECATED</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_json\json\json_autolink.h">
       <Filter>1. Modules\ripple_json\json\DEPRECATED</Filter>
     </ClInclude>
@@ -1218,9 +1200,6 @@
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\WSDoor.h">
-      <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\AutoSocket.h">
       <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\NetworkOPs.h">
@@ -1650,6 +1629,105 @@
     <ClInclude Include="..\..\Subtrees\leveldb\util\logging.h">
       <Filter>0. Third Party Code\LevelDB\util</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_websocket\ripple_websocket.h">
+      <Filter>1. Modules\ripple_websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_websocket\autosocket\ripple_AutoSocket.h">
+      <Filter>1. Modules\ripple_websocket\autosocket</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\common.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\connection.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\endpoint.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\network_utilities.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\shared_const_buffer.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\uri.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\websocket_frame.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\websocketpp.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\base64\base64.h">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\http\constants.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\http\parser.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\logger\logger.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\md5\md5.h">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\md5\md5.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\messages\data.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\messages\control.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\processors\hybi.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\processors\hybi_header.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\processors\hybi_legacy.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\processors\hybi_util.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\processors\processor.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\rng\blank_rng.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\rng\boost_rng.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\roles\client.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\roles\server.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\sha1\sha1.h">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\sockets\autotls.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\sockets\plain.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\sockets\socket_base.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\sockets\tls.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Subtrees\websocket\src\utf8_validator\utf8_validator.hpp">
+      <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\src\cpp\protobuf\src\google\protobuf\descriptor.proto">
@@ -1668,6 +1746,7 @@
     <None Include="..\..\Doxyfile" />
     <None Include="..\..\README.md" />
     <None Include="..\..\SConstruct" />
+    <None Include="..\..\CheatSheet.md" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\src\cpp\ripple\ripple.proto" />
