@@ -4,9 +4,11 @@
 */
 //==============================================================================
 
-#ifndef __DATABASE__
-#define __DATABASE__
+#ifndef RIPPLE_DATABASE_RIPPLEHEADER
+#define RIPPLE_DATABASE_RIPPLEHEADER
 
+// VFALCO Get rid of these macros
+//
 #define SQL_FOREACH(_db, _strQuery)     \
     if ((_db)->executeSQL(_strQuery))   \
         for (bool _bMore = (_db)->startIterRows(); _bMore; _bMore = (_db)->getNextRow())
@@ -23,21 +25,15 @@ class JobQueue;
 
 class Database
 {
-protected:
-    int mNumCol;
-    std::string mUser;
-    std::string mHost;
-    std::string mDBPass;
-    std::vector<std::string> mColNameTable;
-
-    bool getColNumber (const char* colName, int* retIndex);
-
 public:
+    // VFALCO TODO how are user and password even used?
+    //
     Database (const char* host, const char* user, const char* pass);
-    static Database* newMysqlDatabase (const char* host, const char* user, const char* pass);
+
     virtual ~Database ();
 
     virtual void connect () = 0;
+
     virtual void disconnect () = 0;
 
     std::string& getPass ()
@@ -104,6 +100,15 @@ public:
     {
         return -1;
     }
+
+protected:
+    bool getColNumber (const char* colName, int* retIndex);
+
+    int mNumCol;
+    std::string mUser;
+    std::string mHost;
+    std::string mDBPass;
+    std::vector <std::string> mColNameTable;
 };
 
 #endif

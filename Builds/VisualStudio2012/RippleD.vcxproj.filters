@@ -318,15 +318,6 @@
     <ClCompile Include="..\..\modules\ripple_db\ripple_db.cpp">
       <Filter>2. %28Unused%29\ripple_db</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\database\database.cpp">
-      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\DBInit.cpp">
-      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\database\SqliteDatabase.cpp">
-      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_net\ripple_net.cpp">
       <Filter>2. %28Unused%29\ripple_net</Filter>
     </ClCompile>
@@ -903,6 +894,15 @@
     <ClCompile Include="..\..\Subtrees\websocket\src\sha1\shatest.cpp">
       <Filter>1. Modules\ripple_websocket\subtree</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\cpp\ripple\ripple_DBInit.cpp">
+      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\cpp\ripple\ripple_Database.cpp">
+      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\cpp\ripple\ripple_SqliteDatabase.cpp">
+      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\cpp\protobuf\src\google\protobuf\service.h">
@@ -1084,9 +1084,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_db\ripple_db.h">
       <Filter>2. %28Unused%29\ripple_db</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\database\database.h">
-      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_net\ripple_net.h">
       <Filter>2. %28Unused%29\ripple_net</Filter>
@@ -1506,9 +1503,6 @@
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_CountedObject.h">
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\cpp\database\SqliteDatabase.h">
-      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\database\sqlite3.h">
       <Filter>0. Third Party Code\SQLite</Filter>
     </ClInclude>
@@ -1727,6 +1721,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Subtrees\websocket\src\utf8_validator\utf8_validator.hpp">
       <Filter>1. Modules\ripple_websocket\subtree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\cpp\ripple\ripple_SqliteDatabase.h">
+      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\cpp\ripple\ripple_Database.h">
+      <Filter>1. Modules\ripple_app\_unfactored\db</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

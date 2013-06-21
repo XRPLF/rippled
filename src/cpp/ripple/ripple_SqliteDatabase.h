@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SQLITEDATABASE_H
-#define RIPPLE_SQLITEDATABASE_H
+#ifndef RIPPLE_SQLITEDATABASE_RIPPLEHEADER
+#define RIPPLE_SQLITEDATABASE_RIPPLEHEADER
 
 struct sqlite3;
 struct sqlite3_stmt;

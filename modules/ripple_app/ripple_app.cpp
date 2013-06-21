@@ -166,8 +166,8 @@
 #include "src/cpp/ripple/ripple_InboundLedger.h"
 #include "src/cpp/ripple/ripple_InboundLedgers.h"
 
-#include "src/cpp/database/database.h"
-#include "src/cpp/database/SqliteDatabase.h"
+#include "src/cpp/ripple/ripple_Database.h"
+#include "src/cpp/ripple/ripple_SqliteDatabase.h"
 
 // VFALCO END CLEAN AREA
 
@@ -272,8 +272,8 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 1
 
-#include "src/cpp/database/database.cpp"
-#include "src/cpp/database/SqliteDatabase.cpp"
+#include "src/cpp/ripple/ripple_Database.cpp"
+#include "src/cpp/ripple/ripple_SqliteDatabase.cpp"
 
 #include "src/cpp/ripple/ripple_AccountItem.cpp"
 #include "src/cpp/ripple/ripple_AccountItems.cpp"
@@ -283,7 +283,7 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/ripple_CanonicalTXSet.cpp"
 #include "src/cpp/ripple/ChangeTransactor.cpp" // no log
 #include "src/cpp/ripple/Contract.cpp" // no log
-#include "src/cpp/ripple/DBInit.cpp"
+#include "src/cpp/ripple/ripple_DBInit.cpp"
 #include "src/cpp/ripple/HTTPRequest.cpp"
 #include "src/cpp/ripple/HttpsClient.cpp"
 #include "src/cpp/ripple/Interpreter.cpp" // no log
