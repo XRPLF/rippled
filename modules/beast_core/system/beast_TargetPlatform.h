@@ -116,6 +116,8 @@
 
   #if defined (__ppc__) || defined (__ppc64__)
     #define BEAST_PPC 1
+  #elif defined (__arm__)
+    #define BEAST_ARM 1
   #else
     #define BEAST_INTEL 1
   #endif
@@ -159,7 +161,11 @@
   #endif
 
   #if __MMX__ || __SSE__ || __amd64__
-    #define BEAST_INTEL 1
+    #ifdef __arm__
+      #define BEAST_ARM 1
+    #else
+      #define BEAST_INTEL 1
+    #endif
   #endif
 #endif
 
