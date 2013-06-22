@@ -467,7 +467,7 @@ class PosixEnv : public Env {
       result = IOError(fname, errno);
     }
     return result;
-  };
+  }
 
   virtual Status CreateDir(const std::string& name) {
     Status result;
@@ -475,7 +475,7 @@ class PosixEnv : public Env {
       result = IOError(name, errno);
     }
     return result;
-  };
+  }
 
   virtual Status DeleteDir(const std::string& name) {
     Status result;
@@ -483,7 +483,7 @@ class PosixEnv : public Env {
       result = IOError(name, errno);
     }
     return result;
-  };
+  }
 
   virtual Status GetFileSize(const std::string& fname, uint64_t* size) {
     Status s;
