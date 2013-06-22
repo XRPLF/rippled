@@ -139,6 +139,12 @@
     <Filter Include="1. Modules\ripple_leveldb">
       <UniqueIdentifier>{82d79c26-4932-4a48-b134-09969f45d75a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_core">
+      <UniqueIdentifier>{ce56fa36-0012-44ab-a6dd-da0391f32ba3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_core\functional">
+      <UniqueIdentifier>{f7a586fa-b21a-4c7b-b87e-5ac62f2758e4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\cpp\protobuf_core.cpp">
@@ -887,6 +893,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_leveldb\ripple_leveldb.cpp">
       <Filter>1. Modules\ripple_leveldb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\ripple_core.cpp">
+      <Filter>1. Modules\ripple_core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1703,6 +1712,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_leveldb\ripple_leveldb.h">
       <Filter>1. Modules\ripple_leveldb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\ripple_core.h">
+      <Filter>1. Modules\ripple_core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

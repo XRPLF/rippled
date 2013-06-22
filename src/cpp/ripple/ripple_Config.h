@@ -87,8 +87,17 @@ public:
     std::vector<std::string>    IPS;                    // Peer IPs from rippled.cfg.
     std::vector<std::string>    SNTP_SERVERS;           // SNTP servers from rippled.cfg.
 
-    enum StartUpType { FRESH, NORMAL, LOAD, NETWORK };
+    enum StartUpType
+    {
+        FRESH,
+        NORMAL,
+        LOAD,
+        NETWORK
+    };
     StartUpType                 START_UP;
+
+
+
     std::string                 START_LEDGER;
 
     // Database
@@ -101,6 +110,16 @@ public:
     int                         LEDGER_PROPOSAL_DELAY_SECONDS;
     int                         LEDGER_AVALANCHE_SECONDS;
     bool                        LEDGER_CREATOR;         // Should be false unless we are starting a new ledger.
+
+    /** Operate in stand-alone mode.
+
+        In stand alone mode:
+
+        - Peer connections are not attempted or accepted
+        - The ledger is not advanced automatically.
+        - If no ledger is loaded, the default ledger with the root
+          account is created.
+    */  
     bool                        RUN_STANDALONE;
 
     // Note: The following parameters do not relate to the UNL or trust at all

@@ -43,7 +43,6 @@ public:
 
 private:
     void threadEntry ();
-    void IOThread (boost::mutex::scoped_lock&);
 
     boost::mutex                    mJobLock;
     boost::condition_variable       mJobCond;
@@ -54,8 +53,6 @@ private:
     int                             mThreadCount;
     bool                            mShuttingDown;
 
-    int                             mIOThreadCount;
-    int                             mMaxIOThreadCount;
     boost::asio::io_service&        mIOService;
 
     std::map<JobType, std::pair<int, int > >    mJobCounts;
