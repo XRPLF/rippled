@@ -64,8 +64,6 @@ RPCHandler::RPCHandler (NetworkOPs* netOps, InfoSub::pointer infoSub) : mNetOps 
 
 Json::Value RPCHandler::transactionSign (Json::Value jvRequest, bool bSubmit, bool bFailHard, ScopedLock& mlh)
 {
-    mlh.unlock ();
-
     Json::Value     jvResult;
     RippleAddress   naSeed;
     RippleAddress   raSrcAddressID;
@@ -108,6 +106,7 @@ Json::Value RPCHandler::transactionSign (Json::Value jvRequest, bool bSubmit, bo
     AccountState::pointer asSrc = bOffline
                                   ? AccountState::pointer ()                              // Don't look up address if offline.
                                   : mNetOps->getAccountState (mNetOps->getCurrentSnapshot (), raSrcAddressID);
+    mlh.unlock();
 
     if (!bOffline && !asSrc)
     {
