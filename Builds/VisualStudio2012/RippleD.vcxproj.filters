@@ -390,13 +390,7 @@
     <ClCompile Include="..\..\src\cpp\ripple\WSDoor.cpp">
       <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_LoadMonitor.cpp">
-      <Filter>1. Modules\ripple_app\refactored</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_DatabaseCon.cpp">
-      <Filter>1. Modules\ripple_app\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_LoadEvent.cpp">
       <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_LoadFeeTrack.cpp">
@@ -678,9 +672,6 @@
     <ClCompile Include="..\..\src\cpp\ripple\ParameterTable.cpp">
       <Filter>1. Modules\ripple_app\_unfactored</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ParseSection.cpp">
-      <Filter>1. Modules\ripple_app\_unfactored</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\main.cpp">
       <Filter>1. Modules\ripple_app\_unfactored</Filter>
     </ClCompile>
@@ -907,6 +898,15 @@
       <Filter>1. Modules\ripple_core\functional</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\functional\ripple_LoadMonitor.cpp">
+      <Filter>1. Modules\ripple_core\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_basics\utility\ripple_IniFile.cpp">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\functional\ripple_Config.cpp">
+      <Filter>1. Modules\ripple_core\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\functional\ripple_LoadFeeTrack.cpp">
       <Filter>1. Modules\ripple_core\functional</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1208,9 +1208,6 @@
     <ClInclude Include="..\..\src\cpp\ripple\WSConnection.h">
       <Filter>1. Modules\ripple_app\_unfactored\network</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_LoadMonitor.h">
-      <Filter>1. Modules\ripple_app\refactored</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_DatabaseCon.h">
       <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
@@ -1218,9 +1215,6 @@
       <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_IValidations.h">
-      <Filter>1. Modules\ripple_app\refactored</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_LoadEvent.h">
       <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_IFeatures.h">
@@ -1491,9 +1485,6 @@
     <ClInclude Include="..\..\modules\ripple_app\ripple_app.h">
       <Filter>1. Modules\ripple_app</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ParseSection.h">
-      <Filter>1. Modules\ripple_app\_unfactored</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ParameterTable.h">
       <Filter>1. Modules\ripple_app\_unfactored</Filter>
     </ClInclude>
@@ -1738,6 +1729,15 @@
       <Filter>1. Modules\ripple_core\functional</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\functional\ripple_LoadMonitor.h">
+      <Filter>1. Modules\ripple_core\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_IniFile.h">
+      <Filter>1. Modules\ripple_basics\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\functional\ripple_Config.h">
+      <Filter>1. Modules\ripple_core\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\functional\ripple_ILoadFeeTrack.h">
       <Filter>1. Modules\ripple_core\functional</Filter>
     </ClInclude>
   </ItemGroup>

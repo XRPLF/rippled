@@ -7,6 +7,15 @@
 #ifndef RIPPLE_CONFIG_H
 #define RIPPLE_CONFIG_H
 
+// VFALCO TODO Replace these with beast "unsigned long long" generators
+// VFALCO NOTE Apparently these are used elsewhere. Make them constants in the config
+//             or in the IApplication
+//
+#define SYSTEM_CURRENCY_GIFT        1000ull
+#define SYSTEM_CURRENCY_USERS       100000000ull
+#define SYSTEM_CURRENCY_PARTS       1000000ull      // 10^SYSTEM_CURRENCY_PRECISION
+#define SYSTEM_CURRENCY_START       (SYSTEM_CURRENCY_GIFT*SYSTEM_CURRENCY_USERS*SYSTEM_CURRENCY_PARTS)
+
 // VFALCO NOTE Set this to 1 to enable code which is unnecessary
 #define ENABLE_INSECURE             0
 

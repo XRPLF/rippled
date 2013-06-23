@@ -4,6 +4,8 @@
 */
 //==============================================================================
 
+class LoadManager;
+
 class LoadFeeTrack : public ILoadFeeTrack
 {
 private:
@@ -205,5 +207,3 @@ BOOST_AUTO_TEST_CASE (LoadFeeTrack_test)
 }
 
 BOOST_AUTO_TEST_SUITE_END ()
-
-// vim:ts=4
