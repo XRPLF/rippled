@@ -870,7 +870,7 @@ void Thread::setCurrentThreadName (const String& name)
     {
         [[NSThread currentThread] setName: beastStringToNS (name)];
     }
-   #elif BEAST_LINUX
+   #elif BEAST_LINUX && (__GLIBC__ * 1000 + __GLIBC_MINOR__) >= 2012
     pthread_setname_np (pthread_self(), name.toRawUTF8());
    #endif
 }
@@ -881,7 +881,7 @@ bool Thread::setThreadPriority (void* handle, int priority)
     int policy;
     priority = blimit (0, 10, priority);
 
-    if (handle == 0)
+    if (handle == nullptr)
         handle = (void*) pthread_self();
 
     if (pthread_getschedparam ((pthread_t) handle, &policy, &param) != 0)
