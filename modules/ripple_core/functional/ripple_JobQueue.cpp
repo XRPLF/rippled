@@ -7,24 +7,27 @@
 SETUP_LOG (JobQueue)
 
 JobQueue::JobQueue (boost::asio::io_service& svc)
-    : mLastJob (0), mThreadCount (0), mShuttingDown (false), mIOThreadCount (0), mMaxIOThreadCount (1), mIOService (svc)
+    : mLastJob (0)
+    , mThreadCount (0)
+    , mShuttingDown (false)
+    , mIOService (svc)
 {
-    mJobLoads[jtPUBOLDLEDGER].setTargetLatency (10000, 15000);
-    mJobLoads[jtVALIDATION_ut].setTargetLatency (2000, 5000);
-    mJobLoads[jtPROOFWORK].setTargetLatency (2000, 5000);
-    mJobLoads[jtTRANSACTION].setTargetLatency (250, 1000);
-    mJobLoads[jtPROPOSAL_ut].setTargetLatency (500, 1250);
-    mJobLoads[jtPUBLEDGER].setTargetLatency (3000, 4500);
-    mJobLoads[jtWAL].setTargetLatency (1000, 2500);
-    mJobLoads[jtVALIDATION_t].setTargetLatency (500, 1500);
-    mJobLoads[jtWRITE].setTargetLatency (750, 1500);
-    mJobLoads[jtTRANSACTION_l].setTargetLatency (100, 500);
-    mJobLoads[jtPROPOSAL_t].setTargetLatency (100, 500);
+    mJobLoads [ jtPUBOLDLEDGER  ].setTargetLatency (10000, 15000);
+    mJobLoads [ jtVALIDATION_ut ].setTargetLatency (2000, 5000);
+    mJobLoads [ jtPROOFWORK     ].setTargetLatency (2000, 5000);
+    mJobLoads [ jtTRANSACTION   ].setTargetLatency (250, 1000);
+    mJobLoads [ jtPROPOSAL_ut   ].setTargetLatency (500, 1250);
+    mJobLoads [ jtPUBLEDGER     ].setTargetLatency (3000, 4500);
+    mJobLoads [ jtWAL           ].setTargetLatency (1000, 2500);
+    mJobLoads [ jtVALIDATION_t  ].setTargetLatency (500, 1500);
+    mJobLoads [ jtWRITE         ].setTargetLatency (750, 1500);
+    mJobLoads [ jtTRANSACTION_l ].setTargetLatency (100, 500);
+    mJobLoads [ jtPROPOSAL_t    ].setTargetLatency (100, 500);
 
-    mJobLoads[jtCLIENT].setTargetLatency (2000, 5000);
-    mJobLoads[jtPEER].setTargetLatency (200, 1250);
-    mJobLoads[jtDISK].setTargetLatency (500, 1000);
-    mJobLoads[jtACCEPTLEDGER].setTargetLatency (1000, 2500);
+    mJobLoads [ jtCLIENT        ].setTargetLatency (2000, 5000);
+    mJobLoads [ jtPEER          ].setTargetLatency (200, 1250);
+    mJobLoads [ jtDISK          ].setTargetLatency (500, 1000);
+    mJobLoads [ jtACCEPTLEDGER  ].setTargetLatency (1000, 2500);
 }
 
 void JobQueue::addJob (JobType type, const std::string& name, const FUNCTION_TYPE<void (Job&)>& jobFunc)
@@ -174,16 +177,21 @@ void JobQueue::shutdown ()
 }
 
 // set the number of thread serving the job queue to precisely this number
-void JobQueue::setThreadCount (int c)
+void JobQueue::setThreadCount (int c, bool const standaloneMode)
 {
-    if (theConfig.RUN_STANDALONE)
+    if (standaloneMode)
+    {
         c = 1;
+    }
     else if (c == 0)
     {
         c = boost::thread::hardware_concurrency ();
 
+        // VFALCO NOTE According to boost, hardware_concurrency cannot return
+        //             negative numbers/
+        //
         if (c < 0)
-            c = 2;
+            c = 2; // VFALCO NOTE Why 2?
 
         if (c > 4) // I/O will bottleneck
             c = 4;
@@ -192,12 +200,15 @@ void JobQueue::setThreadCount (int c)
         WriteLog (lsINFO, JobQueue) << "Auto-tuning to " << c << " validation/transaction/proposal threads";
     }
 
+    // VFALCO TODO Split the function up. The lower part actually does the "do",
+    //             The part above this comment figures out the value for numThreads
+    //
     boost::mutex::scoped_lock sl (mJobLock);
 
-    mMaxIOThreadCount = 1 + (c / 3);
-
     while (mJobCounts[jtDEATH].first != 0)
+    {
         mJobCond.wait (sl);
+    }
 
     while (mThreadCount < c)
     {
@@ -208,7 +219,9 @@ void JobQueue::setThreadCount (int c)
     while (mThreadCount > c)
     {
         if (mJobCounts[jtDEATH].first != 0)
+        {
             mJobCond.wait (sl);
+        }
         else
         {
             mJobSet.insert (Job (jtDEATH, 0));
@@ -217,27 +230,6 @@ void JobQueue::setThreadCount (int c)
     }
 
     mJobCond.notify_one (); // in case we sucked up someone else's signal
-}
-
-void JobQueue::IOThread (boost::mutex::scoped_lock& sl)
-{
-    // call with a lock
-    ++mIOThreadCount;
-    sl.unlock ();
-    setCallingThreadName ("IO+");
-
-    try
-    {
-        mIOService.poll ();
-    }
-    catch (...)
-    {
-        WriteLog (lsWARNING, JobQueue) << "Exception in IOThread";
-    }
-
-    setCallingThreadName ("waiting");
-    sl.lock ();
-    --mIOThreadCount;
 }
 
 // do jobs until asked to stop
@@ -249,19 +241,9 @@ void JobQueue::threadEntry ()
     {
         setCallingThreadName ("waiting");
 
-        //      bool didIO = false;
         while (mJobSet.empty () && !mShuttingDown)
         {
-            //          if ((mIOThreadCount < mMaxIOThreadCount) && !didIO && !theApp->isShutdown())
-            //          {
-            //              IOThread(sl);
-            //              didIO = true;
-            //          }
-            //          else
-            //          {
             mJobCond.wait (sl);
-            //              didIO = false;
-            //          }
         }
 
         if (mJobSet.empty ())

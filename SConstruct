@@ -101,14 +101,15 @@ INCLUDE_PATHS = [
     ]
 
 COMPILED_FILES = [
-    'src/cpp/database/sqlite3.c',
-    'src/cpp/leveldb_core.cpp',
     'Subtrees/beast/modules/beast_core/beast_core.cpp',
     'Subtrees/beast/modules/beast_basics/beast_basics.cpp',
     'modules/ripple_basics/ripple_basics.cpp',
+    'modules/ripple_core/ripple_core.cpp',
     'modules/ripple_data/ripple_data.cpp',
     'modules/ripple_json/ripple_json.cpp',
+    'modules/ripple_leveldb/ripple_leveldb.cpp',
     'modules/ripple_websocket/ripple_websocket.cpp',
+    'modules/ripple_sqlite/ripple_sqlite.c',
     'modules/ripple_app/ripple_app_pt1.cpp',
     'modules/ripple_app/ripple_app_pt2.cpp',
     'modules/ripple_app/ripple_app_pt3.cpp',
@@ -158,9 +159,11 @@ DEBUGFLAGS  = ['-g', '-DDEBUG']
 BOOSTFLAGS  = ['-DBOOST_TEST_DYN_LINK', '-DBOOST_FILESYSTEM_NO_DEPRECATED']
 
 env.Append(LINKFLAGS = ['-rdynamic', '-pthread'])
-env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts', '-DSQLITE_THREADSAFE=1'])
+env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts'])
 env.Append(CXXFLAGS = ['-O0', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+BOOSTFLAGS+DEBUGFLAGS)
-env.Append(CXXFLAGS = ['-DUSE_LEVELDB'])
+
+# RTTI is required for Beast and CountedObject.
+#
 env.Append(CXXFLAGS = ['-frtti'])
 
 if (int(GCC_VERSION[0]) > 4 or (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) >= 7)):

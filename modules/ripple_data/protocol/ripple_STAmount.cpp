@@ -231,9 +231,9 @@ std::string STAmount::createHumanCurrency (const uint160& uCurrency)
         Blob    vucVersion  = sit.getRaw (16 / 8);
         Blob    vucReserved = sit.getRaw (24 / 8);
 
-        bool    bIso    = ::isZero (vucZeros.begin (), vucZeros.size ())            // Leading zeros
-                          && ::isZero (vucVersion.begin (), vucVersion.size ())   // Zero version
-                          && ::isZero (vucReserved.begin (), vucReserved.size ()); // Reserved is zero.
+        bool    bIso    =    isZeroFilled (vucZeros.begin (), vucZeros.size ())            // Leading zeros
+                          && isZeroFilled (vucVersion.begin (), vucVersion.size ())   // Zero version
+                          && isZeroFilled (vucReserved.begin (), vucReserved.size ()); // Reserved is zero.
 
         if (bIso)
         {

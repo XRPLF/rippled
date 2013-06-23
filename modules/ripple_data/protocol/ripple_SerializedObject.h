@@ -260,17 +260,29 @@ public:
     }
 
 private:
-    boost::ptr_vector<SerializedType>   mData;
-    const SOTemplate*                   mType;
+    // VFALCO TODO these parameters should not be const references.
+    template <typename T, typename U>
+    static T range_check_cast (const U& value, const T& minimum, const T& maximum)
+    {
+        if ((value < minimum) || (value > maximum))
+            throw std::runtime_error ("Value out of range");
+
+        return static_cast<T> (value);
+    }
 
     STObject* duplicate () const
     {
         return new STObject (*this);
     }
+
     STObject (SField::ref name, boost::ptr_vector<SerializedType>& data) : SerializedType (name), mType (NULL)
     {
         mData.swap (data);
     }
+
+private:
+    boost::ptr_vector<SerializedType>   mData;
+    const SOTemplate*                   mType;
 };
 
 //------------------------------------------------------------------------------
@@ -282,17 +294,6 @@ inline STObject::iterator range_begin (STObject& x)
 inline STObject::iterator range_end (STObject& x)
 {
     return x.end ();
-}
-namespace boost
-{
-template<> struct range_mutable_iterator<STObject>
-{
-    typedef STObject::iterator type;
-};
-template<> struct range_const_iterator<STObject>
-{
-    typedef STObject::const_iterator type;
-};
 }
 
 //------------------------------------------------------------------------------
@@ -481,17 +482,5 @@ inline STArray::iterator range_end (STArray& x)
 {
     return x.end ();
 }
-namespace boost
-{
-template<> struct range_mutable_iterator<STArray>
-{
-    typedef STArray::iterator type;
-};
-template<> struct range_const_iterator<STArray>
-{
-    typedef STArray::const_iterator type;
-};
-}
 
 #endif
-// vim:ts=4

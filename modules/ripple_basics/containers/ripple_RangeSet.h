@@ -48,16 +48,4 @@ public:
     std::string toString () const;
 };
 
-// VFALCO TODO these parameters should not be const references.
-template<typename T, typename U> T range_check_cast (const U& value, const T& minimum, const T& maximum)
-{
-    if ((value < minimum) || (value > maximum))
-        throw std::runtime_error ("Value out of range");
-
-    return static_cast<T> (value);
-}
-
-
 #endif
-
-// vim:ts=4

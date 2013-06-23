@@ -150,15 +150,6 @@ inline static std::string sqlEscape (Blob const& vecSrc)
     return j;
 }
 
-template<class Iterator>
-bool isZero (Iterator first, int iSize)
-{
-    while (iSize && !*first++)
-        --iSize;
-
-    return !iSize;
-}
-
 int charUnHex (char cDigit);
 int strUnHex (std::string& strDst, const std::string& strSrc);
 

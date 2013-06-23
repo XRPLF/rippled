@@ -116,6 +116,8 @@
 
   #if defined (__ppc__) || defined (__ppc64__)
     #define BEAST_PPC 1
+  #elif defined (__arm__)
+    #define BEAST_ARM 1
   #else
     #define BEAST_INTEL 1
   #endif
@@ -159,7 +161,11 @@
   #endif
 
   #if __MMX__ || __SSE__ || __amd64__
-    #define BEAST_INTEL 1
+    #ifdef __arm__
+      #define BEAST_ARM 1
+    #else
+      #define BEAST_INTEL 1
+    #endif
   #endif
 #endif
 
@@ -192,5 +198,19 @@
 #else
   #error unknown compiler
 #endif
+
+//------------------------------------------------------------------------------
+
+// Handy macro that lets pragma warnings be clicked in the output window
+//
+// Usage: #pragma message(BEAST_FILEANDLINE_ "Advertise here!")
+//
+//        Note that a space following the macro is mandatory for C++11.
+//
+// This is here so it can be used in C compilations that include this directly.
+//
+#define BEAST_PP_STR2_(x) #x
+#define BEAST_PP_STR1_(x) BEAST_PP_STR2_(x)
+#define BEAST_FILEANDLINE_ __FILE__ "(" BEAST_PP_STR1_(__LINE__) "): warning:"
 
 #endif   // BEAST_TARGETPLATFORM_BEASTHEADER

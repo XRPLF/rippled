@@ -17,8 +17,8 @@
     @defgroup ripple_data
 */
 
-#ifndef RIPPLE_DATA_H
-#define RIPPLE_DATA_H
+#ifndef RIPPLE_DATA_RIPPLEHEADER
+#define RIPPLE_DATA_RIPPLEHEADER
 
 #include <algorithm>
 #include <cassert>
@@ -45,18 +45,17 @@
 // VFALCO TODO try to reduce these dependencies
 #include "../ripple_basics/ripple_basics.h"
 
-//------------------------------------------------------------------------------
-
-// VFALCO TODO prepare a unity header for LevelDB
 // VFALCO TODO don't expose leveldb throughout the headers
-#include "leveldb/cache.h"
-#include "leveldb/filter_policy.h"
-#include "leveldb/db.h"
-#include "leveldb/write_batch.h"
+#include "../ripple_leveldb/ripple_leveldb.h"
 
 // VFALCO TODO figure out a good place for this file, perhaps give it some
 //         additional hierarchy via directories.
 #include "ripple.pb.h"
+
+#if RIPPLE_USE_NAMESPACE
+namespace ripple
+{
+#endif
 
 #include "crypto/ripple_CBigNum.h"
 #include "crypto/ripple_Base58.h" // VFALCO TODO Can be moved to .cpp if we clean up setAlphabet stuff
@@ -80,5 +79,113 @@
 
 #include "utility/ripple_JSONCache.h"
 #include "utility/ripple_UptimeTimerAdapter.h"
+
+#if RIPPLE_USE_NAMESPACE
+}
+#endif
+
+#if RIPPLE_USE_NAMESPACE
+namespace boost
+{
+    template <>
+    struct range_mutable_iterator <ripple::STPath>
+    {
+        typedef std::vector <ripple::STPathElement>::iterator type;
+    };
+
+    template <>
+    struct range_const_iterator <ripple::STPath>
+    {
+        typedef std::vector <ripple::STPathElement>::const_iterator type;
+    };
+
+    template <>
+    struct range_mutable_iterator <ripple::STPathSet>
+    {
+        typedef std::vector <ripple::STPath>::iterator type;
+    };
+
+    template <>
+    struct range_const_iterator <ripple::STPathSet>
+    {
+        typedef std::vector <ripple::STPath>::const_iterator type;
+    };
+
+    template <>
+    struct range_mutable_iterator <ripple::STObject>
+    {
+        typedef ripple::STObject::iterator type;
+    };
+
+    template <>
+    struct range_const_iterator <ripple::STObject>
+    {
+        typedef ripple::STObject::const_iterator type;
+    };
+
+    template <>
+    struct range_mutable_iterator <ripple::STArray>
+    {
+        typedef ripple::STArray::iterator type;
+    };
+
+    template <>
+    struct range_const_iterator <ripple::STArray>
+    {
+        typedef ripple::STArray::const_iterator type;
+    };
+}
+#else
+namespace boost
+{
+    template <>
+    struct range_mutable_iterator <STPath>
+    {
+        typedef std::vector <STPathElement>::iterator type;
+    };
+
+    template <>
+    struct range_const_iterator <STPath>
+    {
+        typedef std::vector <STPathElement>::const_iterator type;
+    };
+
+    template <>
+    struct range_mutable_iterator <STPathSet>
+    {
+        typedef std::vector <STPath>::iterator type;
+    };
+
+    template <>
+    struct range_const_iterator <STPathSet>
+    {
+        typedef std::vector <STPath>::const_iterator type;
+    };
+
+    template <>
+    struct range_mutable_iterator <STObject>
+    {
+        typedef STObject::iterator type;
+    };
+
+    template <>
+    struct range_const_iterator <STObject>
+    {
+        typedef STObject::const_iterator type;
+    };
+
+    template <>
+    struct range_mutable_iterator <STArray>
+    {
+        typedef STArray::iterator type;
+    };
+
+    template <>
+    struct range_const_iterator <STArray>
+    {
+        typedef STArray::const_iterator type;
+    };
+}
+#endif
 
 #endif

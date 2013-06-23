@@ -4,8 +4,12 @@
 */
 //==============================================================================
 
-#if RIPPLE_USE_NAMESPACE
-ripple::LogPartition AutoSocket::AutoSocketPartition ("AutoSocket");
-#else
-LogPartition AutoSocket::AutoSocketPartition ("AutoSocket");
+#ifndef RIPPLE_LEVELDB_RIPPLEHEADER
+#define RIPPLE_LEVELDB_RIPPLEHEADER
+
+#include "leveldb/cache.h"
+#include "leveldb/filter_policy.h"
+#include "leveldb/db.h"
+#include "leveldb/write_batch.h"
+
 #endif

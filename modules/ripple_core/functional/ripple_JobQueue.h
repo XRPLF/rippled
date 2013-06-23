@@ -20,7 +20,7 @@ public:
     std::vector< std::pair<JobType, std::pair<int, int> > > getJobCounts (); // jobs waiting, threads doing
 
     void shutdown ();
-    void setThreadCount (int c = 0);
+    void setThreadCount (int c, bool const standaloneMode);
 
     // VFALCO TODO Rename these to newLoadEventMeasurement or something similar
     //             since they create the object.
@@ -43,7 +43,6 @@ public:
 
 private:
     void threadEntry ();
-    void IOThread (boost::mutex::scoped_lock&);
 
     boost::mutex                    mJobLock;
     boost::condition_variable       mJobCond;
@@ -54,8 +53,6 @@ private:
     int                             mThreadCount;
     bool                            mShuttingDown;
 
-    int                             mIOThreadCount;
-    int                             mMaxIOThreadCount;
     boost::asio::io_service&        mIOService;
 
     std::map<JobType, std::pair<int, int > >    mJobCounts;

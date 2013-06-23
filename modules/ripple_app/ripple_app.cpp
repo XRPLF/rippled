@@ -83,10 +83,11 @@
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 
-// for SqliteDatabase.cpp
-#include "src/cpp/database/sqlite3.h"
 
-//------------------------------------------------------------------------------
+
+#include "../modules/ripple_sqlite/ripple_sqlite.h" // for SqliteDatabase.cpp
+
+#include "../modules/ripple_core/ripple_core.h"
 
 // VFALCO TODO fix these warnings!
 #ifdef _MSC_VER
@@ -140,11 +141,7 @@
 // These have few dependencies
 #include "src/cpp/ripple/ripple_Config.h"
 #include "src/cpp/ripple/ripple_DatabaseCon.h"
-#include "src/cpp/ripple/ripple_LoadEvent.h"
-#include "src/cpp/ripple/ripple_LoadMonitor.h"
 #include "src/cpp/ripple/ripple_ProofOfWork.h"
-#include "src/cpp/ripple/ripple_Job.h"
-#include "src/cpp/ripple/ripple_JobQueue.h"
 #include "src/cpp/ripple/ripple_InfoSub.h"
 #include "src/cpp/ripple/ripple_HashedObject.h"
 #include "src/cpp/ripple/ripple_HashedObjectStore.h"
@@ -166,8 +163,8 @@
 #include "src/cpp/ripple/ripple_InboundLedger.h"
 #include "src/cpp/ripple/ripple_InboundLedgers.h"
 
-#include "src/cpp/database/database.h"
-#include "src/cpp/database/SqliteDatabase.h"
+#include "src/cpp/ripple/ripple_Database.h"
+#include "src/cpp/ripple/ripple_SqliteDatabase.h"
 
 // VFALCO END CLEAN AREA
 
@@ -272,34 +269,35 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 1
 
-#include "src/cpp/database/database.cpp"
-#include "src/cpp/database/SqliteDatabase.cpp"
+#include "src/cpp/ripple/RPCHandler.cpp"
+#include "src/cpp/ripple/Ledger.cpp"
+#include "src/cpp/ripple/ripple_SHAMap.cpp" // Uses theApp
+#include "src/cpp/ripple/ripple_SHAMapDelta.cpp"
+#include "src/cpp/ripple/ripple_SHAMapItem.cpp"
+#include "src/cpp/ripple/ripple_SHAMapNode.cpp"
+#include "src/cpp/ripple/ripple_SHAMapSync.cpp"
+#include "src/cpp/ripple/ripple_SHAMapTreeNode.cpp"
+#include "src/cpp/ripple/ripple_SHAMapMissingNode.cpp"
 
+#include "src/cpp/ripple/ripple_Database.cpp"
 #include "src/cpp/ripple/ripple_AccountItem.cpp"
 #include "src/cpp/ripple/ripple_AccountItems.cpp"
 #include "src/cpp/ripple/AccountSetTransactor.cpp"
 #include "src/cpp/ripple/ripple_AccountState.cpp"
-#include "src/cpp/ripple/CallRPC.cpp"
 #include "src/cpp/ripple/ripple_CanonicalTXSet.cpp"
-#include "src/cpp/ripple/ChangeTransactor.cpp" // no log
-#include "src/cpp/ripple/Contract.cpp" // no log
-#include "src/cpp/ripple/DBInit.cpp"
+#include "src/cpp/ripple/ChangeTransactor.cpp"
+#include "src/cpp/ripple/Contract.cpp"
+#include "src/cpp/ripple/ripple_DBInit.cpp"
 #include "src/cpp/ripple/HTTPRequest.cpp"
-#include "src/cpp/ripple/HttpsClient.cpp"
-#include "src/cpp/ripple/Interpreter.cpp" // no log
-#include "src/cpp/ripple/Ledger.cpp"
-#include "src/cpp/ripple/ripple_LedgerEntrySet.cpp"
-#include "src/cpp/ripple/LedgerMaster.cpp"
-#include "src/cpp/ripple/LedgerProposal.cpp" // no log
+#include "src/cpp/ripple/Interpreter.cpp"
+#include "src/cpp/ripple/LedgerProposal.cpp"
 #include "src/cpp/ripple/LedgerTiming.cpp"
 #include "src/cpp/ripple/ripple_LoadManager.cpp"
 #include "src/cpp/ripple/main.cpp"
-#include "src/cpp/ripple/NetworkOPs.cpp"
 #include "src/cpp/ripple/ripple_NicknameState.cpp"
-#include "src/cpp/ripple/ripple_Offer.cpp" // no log
+#include "src/cpp/ripple/ripple_Offer.cpp"
 #include "src/cpp/ripple/OfferCancelTransactor.cpp"
-#include "src/cpp/ripple/OfferCreateTransactor.cpp"
-#include "src/cpp/ripple/Operation.cpp" // no log
+#include "src/cpp/ripple/Operation.cpp"
 #include "src/cpp/ripple/OrderBookDB.cpp"
 
 #endif
@@ -316,35 +314,39 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
     return 512 == iKeyLength ? theApp->getLocalCredentials ().getDh512 () : theApp->getLocalCredentials ().getDh1024 ();
 }
 
-#include "src/cpp/ripple/ParameterTable.cpp" // no log
+#include "src/cpp/ripple/ripple_RippleCalc.cpp"
+#include "src/cpp/ripple/ripple_UniqueNodeList.cpp"
+#include "src/cpp/ripple/CallRPC.cpp"
+#include "src/cpp/ripple/ripple_InboundLedger.cpp"
+#include "src/cpp/ripple/ripple_PathState.cpp"
+#include "src/cpp/ripple/ripple_Config.cpp"
+#include "src/cpp/ripple/ripple_SqliteDatabase.cpp"
+
+#include "src/cpp/ripple/ParameterTable.cpp"
 #include "src/cpp/ripple/ParseSection.cpp"
-#include "src/cpp/ripple/ripple_Pathfinder.cpp"
 #include "src/cpp/ripple/PaymentTransactor.cpp"
 #include "src/cpp/ripple/PeerDoor.cpp"
 #include "src/cpp/ripple/RegularKeySetTransactor.cpp"
-#include "src/cpp/ripple/ripple_PathState.cpp"
-#include "src/cpp/ripple/ripple_RippleCalc.cpp"
 #include "src/cpp/ripple/ripple_RippleLineCache.cpp"
 #include "src/cpp/ripple/ripple_RippleState.cpp"
 #include "src/cpp/ripple/rpc.cpp"
 #include "src/cpp/ripple/RPCDoor.cpp"
 #include "src/cpp/ripple/RPCErr.cpp"
-#include "src/cpp/ripple/RPCHandler.cpp"
 #include "src/cpp/ripple/RPCServer.cpp"
 #include "src/cpp/ripple/RPCSub.cpp"
-#include "src/cpp/ripple/ScriptData.cpp" // no log
+#include "src/cpp/ripple/ScriptData.cpp"
 #include "src/cpp/ripple/SerializedValidation.cpp"
 #include "src/cpp/ripple/SNTPClient.cpp"
 #include "src/cpp/ripple/Transaction.cpp"
 #include "src/cpp/ripple/TransactionCheck.cpp"
 #include "src/cpp/ripple/TransactionEngine.cpp"
-#include "src/cpp/ripple/TransactionMaster.cpp" // no log
+#include "src/cpp/ripple/TransactionMaster.cpp"
 #include "src/cpp/ripple/TransactionMeta.cpp"
-#include "src/cpp/ripple/TransactionQueue.cpp" // no log
+#include "src/cpp/ripple/TransactionQueue.cpp"
 #include "src/cpp/ripple/Transactor.cpp"
 #include "src/cpp/ripple/TrustSetTransactor.cpp"
 #include "src/cpp/ripple/WSConnection.cpp"
-#include "src/cpp/ripple/WSDoor.cpp" // uses logging in WSConnection.h 
+#include "src/cpp/ripple/WSDoor.cpp"
 #include "src/cpp/ripple/WSHandler.cpp"
 
 #endif
@@ -353,30 +355,23 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 3
 
+#include "src/cpp/ripple/ripple_Peer.cpp"
+#include "src/cpp/ripple/ripple_LedgerEntrySet.cpp"
+#include "src/cpp/ripple/ripple_Application.cpp"
+#include "src/cpp/ripple/ripple_Pathfinder.cpp"
+#include "src/cpp/ripple/OfferCreateTransactor.cpp"
+#include "src/cpp/ripple/ripple_Features.cpp"
+#include "src/cpp/ripple/ripple_Validations.cpp"
+
 #include "src/cpp/ripple/ripple_LocalCredentials.cpp"
 #include "src/cpp/ripple/WalletAddTransactor.cpp"
-
 #include "src/cpp/ripple/ripple_HashedObject.cpp"
-
-#include "src/cpp/ripple/ripple_SHAMap.cpp"                 // Uses theApp
-#include "src/cpp/ripple/ripple_SHAMapDelta.cpp"
-#include "src/cpp/ripple/ripple_SHAMapItem.cpp"
-#include "src/cpp/ripple/ripple_SHAMapNode.cpp"
-#include "src/cpp/ripple/ripple_SHAMapSync.cpp"
-#include "src/cpp/ripple/ripple_SHAMapTreeNode.cpp"
-#include "src/cpp/ripple/ripple_SHAMapMissingNode.cpp"
-
 #include "src/cpp/ripple/ripple_AcceptedLedgerTx.cpp"
 #include "src/cpp/ripple/ripple_AcceptedLedger.cpp"
-#include "src/cpp/ripple/ripple_Application.cpp"
-#include "src/cpp/ripple/ripple_Config.cpp"
 #include "src/cpp/ripple/ripple_DatabaseCon.cpp"
 #include "src/cpp/ripple/ripple_DisputedTx.cpp"
-#include "src/cpp/ripple/ripple_Features.cpp"
 #include "src/cpp/ripple/ripple_FeeVote.cpp"
-#include "src/cpp/ripple/ripple_HashedObjectStore.cpp"
 #include "src/cpp/ripple/ripple_HashRouter.cpp"
-//#include "src/cpp/ripple/ripple_InfoSub.cpp"
 
 #endif
 
@@ -384,29 +379,25 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 4
 
-#include "src/cpp/ripple/ripple_Job.cpp"
-#include "src/cpp/ripple/ripple_JobQueue.cpp"
-#include "src/cpp/ripple/ripple_InboundLedger.cpp"
+#include "src/cpp/ripple/NetworkOPs.cpp"
+#include "src/cpp/ripple/ripple_LedgerConsensus.cpp"
+#include "src/cpp/ripple/ripple_Peers.cpp"
+#include "src/cpp/ripple/LedgerMaster.cpp"
+#include "src/cpp/ripple/ripple_HashedObjectStore.cpp"
+#include "src/cpp/ripple/HttpsClient.cpp"
+
 #include "src/cpp/ripple/ripple_InboundLedgers.cpp"
 #include "src/cpp/ripple/ripple_InfoSub.cpp"
-#include "src/cpp/ripple/ripple_LedgerConsensus.cpp"
 #include "src/cpp/ripple/ripple_LedgerHistory.cpp"
-#include "src/cpp/ripple/ripple_LoadEvent.cpp"
-#include "src/cpp/ripple/ripple_LoadMonitor.cpp"
-#include "src/cpp/ripple/ripple_LogWebsockets.cpp"
 #include "src/cpp/ripple/ripple_LoadFeeTrack.cpp"
 #include "src/cpp/ripple/ripple_OrderBook.cpp"
 #include "src/cpp/ripple/ripple_PathRequest.cpp"
-#include "src/cpp/ripple/ripple_Peer.cpp"
-#include "src/cpp/ripple/ripple_Peers.cpp"
 #include "src/cpp/ripple/ripple_PeerSet.cpp"
 #include "src/cpp/ripple/ripple_ProofOfWork.cpp"
 #include "src/cpp/ripple/ripple_ProofOfWorkFactory.cpp"
 #include "src/cpp/ripple/ripple_SerializedLedger.cpp"
 #include "src/cpp/ripple/ripple_SerializedTransaction.cpp"
 #include "src/cpp/ripple/ripple_TransactionAcquire.cpp"
-#include "src/cpp/ripple/ripple_Validations.cpp"
-#include "src/cpp/ripple/ripple_UniqueNodeList.cpp"
 
 #include "src/cpp/ripple/ripple_SHAMapSyncFilters.cpp" // requires Application
 

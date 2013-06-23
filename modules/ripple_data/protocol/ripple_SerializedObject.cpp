@@ -1308,14 +1308,29 @@ UPTR_T<STObject> STObject::parseJson (const Json::Value& object, SField::ref inN
 
         case STI_UINT32:
             if (value.isString ())
+            {
                 data.push_back (new STUInt32 (field, lexical_cast_st<uint32> (value.asString ())));
+            }
             else if (value.isInt ())
-                data.push_back (new STUInt32 (field, range_check_cast<uint32> (value.asInt (), 0, 4294967295u)));
+            {
+                // VFALCO NOTE value.asInt() returns an int, which can never be greater than 7fffffff, but we
+                //             are checking to make sure it is not greater than ffffffff, which can never be
+                //             less than any 32 bit value (signed or unsigned).
+                //
+                //             It seems this line only cares that value.asInt () is not negative, can someone
+                //             confirm this?
+                //
+#pragma message(BEAST_FILEANDLINE_ "Invalid signed/unsigned comparison")
+                data.push_back (new STUInt32 (field, range_check_cast <uint32> (value.asInt (), 0u, 4294967295u)));
+            }
             else if (value.isUInt ())
+            {
                 data.push_back (new STUInt32 (field, static_cast<uint32> (value.asUInt ())));
+            }
             else
+            {
                 throw std::runtime_error ("Incorrect type");
-
+            }
             break;
 
         case STI_UINT64:

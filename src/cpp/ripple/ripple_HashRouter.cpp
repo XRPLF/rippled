@@ -7,6 +7,63 @@
 // VFALCO TODO Inline the function definitions
 class HashRouter : public IHashRouter
 {
+private:
+    /** An entry in the routing table.
+    */
+    class Entry : public CountedObject <Entry>
+    {
+    public:
+        Entry ()
+            : mFlags (0)
+        {
+        }
+
+        std::set <uint64> const& peekPeers () const
+        {
+            return mPeers;
+        }
+
+        void addPeer (uint64 peer)
+        {
+            if (peer != 0)
+                mPeers.insert (peer);
+        }
+        
+        bool hasPeer (uint64 peer) const
+        {
+            return mPeers.count (peer) > 0;
+        }
+
+        int getFlags (void) const
+        {
+            return mFlags;
+        }
+
+        bool hasFlag (int mask) const
+        {
+            return (mFlags & mask) != 0;
+        }
+
+        void setFlag (int flagsToSet)
+        {
+            mFlags |= flagsToSet;
+        }
+
+        void clearFlag (int flagsToClear)
+        {
+            mFlags &= ~flagsToClear;
+        }
+
+        void swapSet (std::set <uint64>& other)
+        {
+            mPeers.swap (other);
+        }
+
+    private:
+        int mFlags;
+        std::set <uint64> mPeers;
+    };
+
 public:
     explicit HashRouter (int holdTime)
         : mHoldTime (holdTime)
@@ -21,27 +78,29 @@ public:
     bool setFlag (uint256 const& index, int flag);
     int getFlags (uint256 const& index);
 
-    HashRouterEntry getEntry (uint256 const& );
-
     bool swapSet (uint256 const& index, std::set<uint64>& peers, int flag);
 
 private:
+    Entry getEntry (uint256 const& );
+
+    Entry& findCreateEntry (uint256 const& , bool& created);
+
     boost::mutex mSuppressionMutex;
 
     // Stores all suppressed hashes and their expiration time
-    boost::unordered_map <uint256, HashRouterEntry> mSuppressionMap;
+    boost::unordered_map <uint256, Entry> mSuppressionMap;
 
     // Stores all expiration times and the hashes indexed for them
     std::map< int, std::list<uint256> > mSuppressionTimes;
 
     int mHoldTime;
-
-    HashRouterEntry& findCreateEntry (uint256 const& , bool& created);
 };
 
-HashRouterEntry& HashRouter::findCreateEntry (uint256 const& index, bool& created)
+//------------------------------------------------------------------------------
+
+HashRouter::Entry& HashRouter::findCreateEntry (uint256 const& index, bool& created)
 {
-    boost::unordered_map<uint256, HashRouterEntry>::iterator fit = mSuppressionMap.find (index);
+    boost::unordered_map<uint256, Entry>::iterator fit = mSuppressionMap.find (index);
 
     if (fit != mSuppressionMap.end ())
     {
@@ -65,7 +124,7 @@ HashRouterEntry& HashRouter::findCreateEntry (uint256 const& index, bool& create
     }
 
     mSuppressionTimes[now].push_back (index);
-    return mSuppressionMap.emplace (index, HashRouterEntry ()).first->second;
+    return mSuppressionMap.emplace (index, Entry ()).first->second;
 }
 
 bool HashRouter::addSuppression (uint256 const& index)
@@ -77,7 +136,7 @@ bool HashRouter::addSuppression (uint256 const& index)
     return created;
 }
 
-HashRouterEntry HashRouter::getEntry (uint256 const& index)
+HashRouter::Entry HashRouter::getEntry (uint256 const& index)
 {
     boost::mutex::scoped_lock sl (mSuppressionMutex);
 
@@ -99,7 +158,7 @@ bool HashRouter::addSuppressionPeer (uint256 const& index, uint64 peer, int& fla
     boost::mutex::scoped_lock sl (mSuppressionMutex);
 
     bool created;
-    HashRouterEntry& s = findCreateEntry (index, created);
+    Entry& s = findCreateEntry (index, created);
     s.addPeer (peer);
     flags = s.getFlags ();
     return created;
@@ -124,13 +183,17 @@ bool HashRouter::addSuppressionFlags (uint256 const& index, int flag)
 
 bool HashRouter::setFlag (uint256 const& index, int flag)
 {
+    // VFALCO NOTE Comments like this belong in the HEADER file,
+    //             and more importantly in a Javadoc comment so
+    //             they appear in the generated documentation.
+    //
     // return: true = changed, false = unchanged
     assert (flag != 0);
 
     boost::mutex::scoped_lock sl (mSuppressionMutex);
 
     bool created;
-    HashRouterEntry& s = findCreateEntry (index, created);
+    Entry& s = findCreateEntry (index, created);
 
     if ((s.getFlags () & flag) == flag)
         return false;
@@ -144,7 +207,7 @@ bool HashRouter::swapSet (uint256 const& index, std::set<uint64>& peers, int fla
     boost::mutex::scoped_lock sl (mSuppressionMutex);
 
     bool created;
-    HashRouterEntry& s = findCreateEntry (index, created);
+    Entry& s = findCreateEntry (index, created);
 
     if ((s.getFlags () & flag) == flag)
         return false;

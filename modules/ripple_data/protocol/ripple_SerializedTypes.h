@@ -729,6 +729,16 @@ public:
     void roundSelf ();
 
 private:
+    template <class Iterator>
+    static bool isZeroFilled (Iterator first, int iSize)
+    {
+        while (iSize && !*first++)
+            --iSize;
+
+        return !iSize;
+    }
+
+private:
     uint160 mCurrency;      // Compared by ==. Always update mIsNative.
     uint160 mIssuer;        // Not compared by ==. 0 for XRP.
 
@@ -1291,21 +1301,6 @@ inline std::vector<STPathElement>::const_iterator range_end (const STPath& x)
     return x.end ();
 }
 
-namespace boost
-{
-template<>
-struct range_mutable_iterator< STPath >
-{
-    typedef std::vector<STPathElement>::iterator type;
-};
-
-template<>
-struct range_const_iterator< STPath >
-{
-    typedef std::vector<STPathElement>::const_iterator type;
-};
-}
-
 // A set of zero or more payment paths
 class STPathSet : public SerializedType
 {
@@ -1421,21 +1416,6 @@ inline std::vector<STPath>::const_iterator range_begin (const STPathSet& x)
 inline std::vector<STPath>::const_iterator range_end (const STPathSet& x)
 {
     return x.end ();
-}
-
-namespace boost
-{
-template<>
-struct range_mutable_iterator< STPathSet >
-{
-    typedef std::vector<STPath>::iterator type;
-};
-
-template<>
-struct range_const_iterator< STPathSet >
-{
-    typedef std::vector<STPath>::const_iterator type;
-};
 }
 
 class STVector256 : public SerializedType

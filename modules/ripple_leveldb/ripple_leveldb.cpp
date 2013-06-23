@@ -1,14 +1,33 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
-// Unity build file for LevelDB by Vinnie Falco <vinnie.falco@gmail.com>
+// Unity build file for LevelDB
+
+#include "ripple_leveldb.h"
+
+#include "beast/modules/beast_core/system/beast_TargetPlatform.h"
+
+// Set the appropriate LevelDB platform macro based on our platform.
 //
+#if BEAST_WIN32
+ #define LEVELDB_PLATFORM_WINDOWS
 
-#ifdef _WIN32
-# define LEVELDB_PLATFORM_WINDOWS
+#elif BEAST_MAC || BEAST_IOS
+ #define OS_MACOSX
+
+// VFALCO TODO Distinguish between BEAST_BSD and BEAST_FREEBSD
+#elif BEAST_BSD
+ #define OS_FREEBSD
+
 #else
-# define LEVELDB_PLATFORM_POSIX
+ #define LEVELDB_PLATFORM_POSIX
+
 #endif
 
-#ifdef _MSC_VER
+#if BEAST_MSVC
 #pragma warning (push)
 #pragma warning (disable: 4018) // signed/unsigned mismatch
 #pragma warning (disable: 4244) // conversion, possible loss of data
@@ -67,32 +86,6 @@
 
 #endif
 
-//#include "leveldb/db/c.cc"
-//#include "leveldb/db/corruption_test.cc"
-//#include "leveldb/db/db_bench.cc"
-//#include "leveldb/db/db_test.cc"
-//#include "leveldb/db/dbformat_test.cc"
-//#include "leveldb/db/filename_test.cc"
-//#include "leveldb/db/leveldb_main.cc"
-//#include "leveldb/db/log_test.cc"
-//#include "leveldb/db/skiplist_test.cc"
-//#include "leveldb/db/version_edit_test.cc"
-//#include "leveldb/db/version_set_test.cc"
-//#include "leveldb/db/write_batch_test.cc"
-
-//#include "leveldb/util/arena_test.cc"
-//#include "leveldb/util/bloom_test.cc"
-//#include "leveldb/util/cache_test.cc"
-//#include "leveldb/util/coding_test.cc"
-//#include "leveldb/util/crc32c_test.cc"
-//#include "leveldb/util/env_test.cc"
-//#include "leveldb/util/testharness.cc"
-//#include "leveldb/util/testutil.cc"
-
-//#include "leveldb/table/filter_block_test.cc"
-//#include "leveldb/table/table_test.cc"
-
-#ifdef _MSC_VER
+#ifdef BEAST_MSVC
 #pragma warning (pop)
 #endif
-

@@ -8,6 +8,8 @@
 - Use long descriptive names instead of abbreviations.
 - Use "explicit" for single-argument ctors
 - Avoid globals especially objects with static storage duration
+- Order class declarations as types, public, protected, private, then data.
+- Prefer 'private' over 'protected'
 
 # Function
 

@@ -10,9 +10,13 @@
     @ingroup ripple_basics
 */
 
-#include <iostream>
-#include <fstream>
+#include "ripple_basics.h"
 
+#include <fstream>
+#include <iostream>
+
+// VFALCO TODO Rewrite Sustain to use beast::Process
+//
 // These are for Sustain Linux variants
 #ifdef __linux__
 #include <sys/types.h>
@@ -27,7 +31,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/test/unit_test.hpp>
-#include <boost/asio.hpp> // for stupid parseIpPort
+#include <boost/asio.hpp> // VFALCO NOTE just for parseIpPort (!)
 #include <boost/regex.hpp>
 
 // VFALCO TODO Replace OpenSSL randomness with a dependency-free implementation
@@ -39,16 +43,16 @@
 //
 #include <openssl/rand.h> // Because of ripple_RandomNumbers.cpp
 
+#ifdef BEAST_WIN32
+#include <windows.h>  // for ripple_RandomNumbers.cpp
+#include <wincrypt.h> // for ripple_RandomNumbers.cpp
+// Winsock #defines 'max' and does other stupid things so put it last
+#include <Winsock2.h> // for ripple_ByteOrder.cpp
+#endif
 
-#include "ripple_basics.h"
-
-
-
-// VFALCO TODO fix these warnings!
-#ifdef _MSC_VER
-//#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
-//#pragma warning (disable: 4018) // signed/unsigned mismatch
-//#pragma warning (disable: 4244) // conversion, possible loss of data
+#if RIPPLE_USE_NAMESPACE
+namespace ripple
+{
 #endif
 
 #include "containers/ripple_RangeSet.cpp"
@@ -65,16 +69,10 @@
 #include "utility/ripple_Time.cpp"
 #include "utility/ripple_UptimeTimer.cpp"
 
-#ifdef WIN32
-#include <windows.h>  // for ripple_RandomNumbers.cpp
-#include <wincrypt.h> // for ripple_RandomNumbers.cpp
-// Winsock #defines 'max' and does other stupid things so put it last
-#include <Winsock2.h> // for ripple_ByteOrder.cpp
-#endif
 #include "utility/ripple_RandomNumbers.cpp" // has Win32/Posix dependencies
 
 #include "types/ripple_UInt256.cpp"
 
-#ifdef _MSC_VER
-//#pragma warning (pop)
+#if RIPPLE_USE_NAMESPACE
+}
 #endif

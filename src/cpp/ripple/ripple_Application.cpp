@@ -351,7 +351,9 @@ static void runIO (boost::asio::io_service& io)
 
 void Application::setup ()
 {
-    mJobQueue.setThreadCount ();
+    // VFALCO NOTE: 0 means use heuristics to determine the thread count.
+    mJobQueue.setThreadCount (0, theConfig.RUN_STANDALONE);
+
     mSweepTimer.expires_from_now (boost::posix_time::seconds (10));
     mSweepTimer.async_wait (boost::bind (&Application::sweep, this));
     mLoadMgr.init ();

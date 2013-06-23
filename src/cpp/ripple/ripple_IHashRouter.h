@@ -4,66 +4,25 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HASHROUTER_H
-#define RIPPLE_HASHROUTER_H
+#ifndef RIPPLE_HASHROUTER_RIPPLEHEADER
+#define RIPPLE_HASHROUTER_RIPPLEHEADER
 
+// VFALCO NOTE Are these the flags?? Why aren't we using a packed struct?
 // VFALCO TODO convert these macros to int constants
 #define SF_RELAYED      0x01    // Has already been relayed to other nodes
+// VFALCO NOTE How can both bad and good be set on a hash?
 #define SF_BAD          0x02    // Signature/format is bad
 #define SF_SIGGOOD      0x04    // Signature is good
 #define SF_SAVED        0x08
 #define SF_RETRY        0x10    // Transaction can be retried
 #define SF_TRUSTED      0x20    // comes from trusted source
 
-// VFALCO TODO move this class into the scope of class HashRouter
-class HashRouterEntry
-    : public CountedObject <HashRouterEntry>
-{
-public:
-    HashRouterEntry ()  : mFlags (0)
-    {
-        ;
-    }
+/** Routing table for objects identified by hash.
 
-    const std::set<uint64>& peekPeers ()
-    {
-        return mPeers;
-    }
-    void addPeer (uint64 peer)
-    {
-        if (peer != 0) mPeers.insert (peer);
-    }
-    bool hasPeer (uint64 peer)
-    {
-        return mPeers.count (peer) > 0;
-    }
-
-    int getFlags (void)
-    {
-        return mFlags;
-    }
-    bool hasFlag (int f)
-    {
-        return (mFlags & f) != 0;
-    }
-    void setFlag (int f)
-    {
-        mFlags |= f;
-    }
-    void clearFlag (int f)
-    {
-        mFlags &= ~f;
-    }
-    void swapSet (std::set<uint64>& s)
-    {
-        mPeers.swap (s);
-    }
-
-protected:
-    int                     mFlags;
-    std::set<uint64>        mPeers;
-};
-
+    This table keeps track of which hashes have been received by which peers.
+    It is used to manage the routing and broadcasting of messages in the peer
+    to peer overlay.
+*/
 class IHashRouter
 {
 public:
@@ -80,17 +39,29 @@ public:
 
     virtual ~IHashRouter () { }
 
+    // VFALCO TODO Replace "Supression" terminology with something more semantically meaningful.
     virtual bool addSuppression (uint256 const& index) = 0;
 
     virtual bool addSuppressionPeer (uint256 const& index, uint64 peer) = 0;
+
     virtual bool addSuppressionPeer (uint256 const& index, uint64 peer, int& flags) = 0;
+
     virtual bool addSuppressionFlags (uint256 const& index, int flag) = 0;
-    virtual bool setFlag (uint256 const& index, int flag) = 0;
+
+    /** Set the flags on a hash.
+
+        @return `true` if the flags were changed.
+    */
+    // VFALCO TODO Rename to setFlags since it works with multiple flags.
+    virtual bool setFlag (uint256 const& index, int mask) = 0;
+
     virtual int getFlags (uint256 const& index) = 0;
 
-    virtual HashRouterEntry getEntry (uint256 const& ) = 0;
-
     virtual bool swapSet (uint256 const& index, std::set<uint64>& peers, int flag) = 0;
+
+    // VFALCO TODO This appears to be unused!
+    //
+//    virtual Entry getEntry (uint256 const&) = 0;
 };
 
 

@@ -66,6 +66,7 @@ void LoadMonitor::addCount ()
 
 void LoadMonitor::addLatency (int latency)
 {
+    // VFALCO NOTE Why does 1 become 0?
     if (latency == 1)
         latency = 0;
 
@@ -77,11 +78,15 @@ void LoadMonitor::addLatency (int latency)
     mLatencyMSAvg += latency;
     mLatencyMSPeak += latency;
 
-    int lp = mLatencyEvents * latency * 4;
+    // VFALCO NOTE Why are we multiplying by 4?
+    // VFALCO NOTE conversion from 64 to 32 bit int loses data
+#pragma message(BEAST_FILEANDLINE_ "Possible 32-bit overflow for long-running server instances.")
+    int const latencyPeak = mLatencyEvents * latency * 4;
 
-    if (mLatencyMSPeak < lp)
-        mLatencyMSPeak = lp;
+    if (mLatencyMSPeak < latencyPeak)
+        mLatencyMSPeak = latencyPeak;
 }
+
 
 void LoadMonitor::addCountAndLatency (const std::string& name, int latency)
 {
@@ -90,6 +95,7 @@ void LoadMonitor::addCountAndLatency (const std::string& name, int latency)
         WriteLog ((latency > 1000) ? lsWARNING : lsINFO, LoadMonitor) << "Job: " << name << " ExecutionTime: " << latency;
     }
 
+    // VFALCO NOTE Why does 1 become 0?
     if (latency == 1)
         latency = 0;
 
@@ -101,10 +107,13 @@ void LoadMonitor::addCountAndLatency (const std::string& name, int latency)
     mLatencyMSAvg += latency;
     mLatencyMSPeak += latency;
 
-    int lp = mLatencyEvents * latency * 4;
+    // VFALCO NOTE Why are we multiplying by 4?
+    // VFALCO NOTE conversion from 64 to 32 bit int loses data
+#pragma message(BEAST_FILEANDLINE_ "Possible 32-bit overflow for long-running server instances.")
+    int const latencyPeak = mLatencyEvents * latency * 4;
 
-    if (mLatencyMSPeak < lp)
-        mLatencyMSPeak = lp;
+    if (mLatencyMSPeak < latencyPeak)
+        mLatencyMSPeak = latencyPeak;
 }
 
 void LoadMonitor::setTargetLatency (uint64 avg, uint64 pk)
