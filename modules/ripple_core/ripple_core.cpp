@@ -12,5 +12,9 @@
 
 #include "ripple_core.h"
 
-//#include "src/cpp/ripple/ripple_Job.h"
-//#include "src/cpp/ripple/ripple_JobQueue.h"
+#include <boost/thread.hpp>
+
+#include "functional/ripple_Job.cpp"
+#include "functional/ripple_JobQueue.cpp"
+#include "functional/ripple_LoadEvent.cpp"
+#include "functional/ripple_LoadMonitor.cpp"

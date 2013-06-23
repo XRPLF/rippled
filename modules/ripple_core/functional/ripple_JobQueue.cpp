@@ -177,9 +177,9 @@ void JobQueue::shutdown ()
 }
 
 // set the number of thread serving the job queue to precisely this number
-void JobQueue::setThreadCount (int c)
+void JobQueue::setThreadCount (int c, bool const standaloneMode)
 {
-    if (theConfig.RUN_STANDALONE)
+    if (standaloneMode)
     {
         c = 1;
     }

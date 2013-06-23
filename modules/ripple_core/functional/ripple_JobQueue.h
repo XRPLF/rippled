@@ -20,7 +20,7 @@ public:
     std::vector< std::pair<JobType, std::pair<int, int> > > getJobCounts (); // jobs waiting, threads doing
 
     void shutdown ();
-    void setThreadCount (int c = 0);
+    void setThreadCount (int c, bool const standaloneMode);
 
     // VFALCO TODO Rename these to newLoadEventMeasurement or something similar
     //             since they create the object.

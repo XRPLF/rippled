@@ -169,6 +169,30 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\modules\ripple_core\functional\ripple_Job.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\functional\ripple_JobQueue.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\functional\ripple_LoadEvent.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\functional\ripple_LoadMonitor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\ripple_core.cpp" />
     <ClCompile Include="..\..\modules\ripple_leveldb\ripple_leveldb.cpp" />
     <ClCompile Include="..\..\modules\ripple_sqlite\ripple_sqlite.c">
@@ -1518,6 +1542,10 @@
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_Time.h" />
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_UptimeTimer.h" />
     <ClInclude Include="..\..\modules\ripple_client\ripple_client.h" />
+    <ClInclude Include="..\..\modules\ripple_core\functional\ripple_Job.h" />
+    <ClInclude Include="..\..\modules\ripple_core\functional\ripple_JobQueue.h" />
+    <ClInclude Include="..\..\modules\ripple_core\functional\ripple_LoadEvent.h" />
+    <ClInclude Include="..\..\modules\ripple_core\functional\ripple_LoadMonitor.h" />
     <ClInclude Include="..\..\modules\ripple_core\ripple_core.h" />
     <ClInclude Include="..\..\modules\ripple_data\crypto\ripple_Base58.h" />
     <ClInclude Include="..\..\modules\ripple_data\crypto\ripple_Base58Data.h" />

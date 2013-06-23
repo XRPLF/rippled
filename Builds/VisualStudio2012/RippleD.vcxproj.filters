@@ -897,6 +897,18 @@
     <ClCompile Include="..\..\modules\ripple_websocket\autosocket\ripple_LogWebsockets.cpp">
       <Filter>1. Modules\ripple_websocket\autosocket</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\functional\ripple_Job.cpp">
+      <Filter>1. Modules\ripple_core\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\functional\ripple_JobQueue.cpp">
+      <Filter>1. Modules\ripple_core\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\functional\ripple_LoadEvent.cpp">
+      <Filter>1. Modules\ripple_core\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\functional\ripple_LoadMonitor.cpp">
+      <Filter>1. Modules\ripple_core\functional</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\cpp\protobuf\src\google\protobuf\service.h">
@@ -1715,6 +1727,18 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\ripple_core.h">
       <Filter>1. Modules\ripple_core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\functional\ripple_Job.h">
+      <Filter>1. Modules\ripple_core\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\functional\ripple_JobQueue.h">
+      <Filter>1. Modules\ripple_core\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\functional\ripple_LoadEvent.h">
+      <Filter>1. Modules\ripple_core\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\functional\ripple_LoadMonitor.h">
+      <Filter>1. Modules\ripple_core\functional</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

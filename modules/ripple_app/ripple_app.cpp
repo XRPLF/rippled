@@ -87,6 +87,8 @@
 
 #include "../modules/ripple_sqlite/ripple_sqlite.h" // for SqliteDatabase.cpp
 
+#include "../modules/ripple_core/ripple_core.h"
+
 // VFALCO TODO fix these warnings!
 #ifdef _MSC_VER
 //#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
@@ -139,11 +141,7 @@
 // These have few dependencies
 #include "src/cpp/ripple/ripple_Config.h"
 #include "src/cpp/ripple/ripple_DatabaseCon.h"
-#include "src/cpp/ripple/ripple_LoadEvent.h"
-#include "src/cpp/ripple/ripple_LoadMonitor.h"
 #include "src/cpp/ripple/ripple_ProofOfWork.h"
-#include "src/cpp/ripple/ripple_Job.h"
-#include "src/cpp/ripple/ripple_JobQueue.h"
 #include "src/cpp/ripple/ripple_InfoSub.h"
 #include "src/cpp/ripple/ripple_HashedObject.h"
 #include "src/cpp/ripple/ripple_HashedObjectStore.h"
@@ -382,15 +380,11 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 4
 
-#include "src/cpp/ripple/ripple_Job.cpp"
-#include "src/cpp/ripple/ripple_JobQueue.cpp"
 #include "src/cpp/ripple/ripple_InboundLedger.cpp"
 #include "src/cpp/ripple/ripple_InboundLedgers.cpp"
 #include "src/cpp/ripple/ripple_InfoSub.cpp"
 #include "src/cpp/ripple/ripple_LedgerConsensus.cpp"
 #include "src/cpp/ripple/ripple_LedgerHistory.cpp"
-#include "src/cpp/ripple/ripple_LoadEvent.cpp"
-#include "src/cpp/ripple/ripple_LoadMonitor.cpp"
 #include "src/cpp/ripple/ripple_LoadFeeTrack.cpp"
 #include "src/cpp/ripple/ripple_OrderBook.cpp"
 #include "src/cpp/ripple/ripple_PathRequest.cpp"
