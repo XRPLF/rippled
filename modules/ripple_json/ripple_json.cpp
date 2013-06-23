@@ -12,17 +12,8 @@
 
 #include "ripple_json.h"
 
-// VFALCO TODO Remove unneeded includes
-#include <cstddef>
-#include <cstdio>
-#include <cstring>
-#include <iomanip>
-#include <iostream>
-#include <sstream>
 #include <stdexcept>
-#include <stdio.h>
-#include <string.h>
-#include <utility>
+#include <iomanip>
 
 #ifdef JSON_USE_CPPTL
 # include <cpptl/conststring.h>
@@ -39,11 +30,15 @@
 #define JSON_ASSERT( condition ) assert( condition );  // @todo <= change this into an exception throw
 #define JSON_ASSERT_MESSAGE( condition, message ) if (!( condition )) throw std::runtime_error( message );
 
-//#if _MSC_VER >= 1400 // VC++ 8.0
-//#pragma warning( disable : 4996 )   // disable warning about strdup being deprecated.
-//#endif
+#if RIPPLE_USE_NAMESPACE
+namespace ripple
+{
+#endif
 
 #include "json/json_reader.cpp"
 #include "json/json_value.cpp"
 #include "json/json_writer.cpp"
 
+#if RIPPLE_USE_NAMESPACE
+}
+#endif

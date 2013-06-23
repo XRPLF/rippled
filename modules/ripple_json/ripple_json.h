@@ -17,28 +17,29 @@
     @defgroup ripple_json
 */
 
-#ifndef RIPPLE_JSON_H
-#define RIPPLE_JSON_H
+#ifndef RIPPLE_JSON_RIPPLEHEADER
+#define RIPPLE_JSON_RIPPLEHEADER
 
-// VFALCO TODO Remove unneeded includes
-#include <cassert>
-#include <cstring>
-#include <cstdlib>
 #include <deque>
-#include <iostream>
 #include <stack>
+#include <string>
 #include <vector>
 
-// Needed before these cpptl includes
-#include "json/json_config.h"
+#include "json/json_config.h" // Needed before these cpptl includes
 
 #ifndef JSON_USE_CPPTL_SMALLMAP
 # include <map>
 #else
 # include <cpptl/smallmap.h>
 #endif
+
 #ifdef JSON_USE_CPPTL
 # include <cpptl/forwards.h>
+#endif
+
+#if RIPPLE_USE_NAMESPACE
+namespace ripple
+{
 #endif
 
 #include "json/json_forwards.h"
@@ -46,5 +47,9 @@
 #include "json/json_value.h"
 #include "json/json_reader.h"
 #include "json/json_writer.h"
+
+#if RIPPLE_USE_NAMESPACE
+}
+#endif
 
 #endif

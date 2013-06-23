@@ -10,13 +10,14 @@
     @ingroup ripple_data
 */
 
-#include <limits.h>
+#include "ripple_data.h"
 
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <limits.h>
 #include <map>
 #include <string>
 #include <vector>
@@ -40,20 +41,22 @@
 #include <openssl/ecdsa.h>
 #include <openssl/pem.h>
 #include <openssl/hmac.h>
-#include <openssl/rand.h>
+//#include <openssl/rand.h> // includes <windows.h> and causes errors due to #define GetMessage
 #include <openssl/err.h>
 
 // VFALCO TODO fix these warnings!
-#ifdef _MSC_VER
-//#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
+#if BEAST_MSVC
+#pragma warning (push)
 #pragma warning (disable: 4018) // signed/unsigned mismatch
-//#pragma warning (disable: 4244) // conversion, possible loss of data
 #endif
-
-#include "ripple_data.h"
 
 #ifdef min
 #undef min
+#endif
+
+#if RIPPLE_USE_NAMESPACE
+namespace ripple
+{
 #endif
 
 #include "crypto/ripple_Base58.h" // for RippleAddress
@@ -90,11 +93,15 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #include "utility/ripple_JSONCache.cpp"
 
-// VFALCO TODO Fix this for SConstruct
-#ifdef _MSC_VER
-#include "ripple.pb.cc" // BROKEN because of SConstruct
+#if RIPPLE_USE_NAMESPACE
+}
 #endif
 
-#ifdef _MSC_VER
-//#pragma warning (pop)
+// VFALCO TODO Fix this for SConstruct
+#if BEAST_MSVC
+#include "ripple.pb.cc"
+#endif
+
+#if BEAST_MSVC
+#pragma warning (pop)
 #endif

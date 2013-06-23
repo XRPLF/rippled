@@ -24,3 +24,4 @@
 #include "websocket/src/sha1/sha1.cpp"
 
 #include "autosocket/ripple_AutoSocket.cpp"
+#include "autosocket/ripple_LogWebsockets.cpp"

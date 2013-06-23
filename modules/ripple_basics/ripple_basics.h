@@ -17,41 +17,43 @@
     @defgroup ripple_basics
 */
 
-#ifndef RIPPLE_BASICS_H
-#define RIPPLE_BASICS_H
+#ifndef RIPPLE_BASICS_RIPPLEHEADER
+#define RIPPLE_BASICS_RIPPLEHEADER
 
-#include <ctime>
-#include <limits>
-#include <list>
-#include <sstream>
-#include <string>
-
-// UInt256
 #include <algorithm>
 #include <cassert>
 #include <climits>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 #include <functional>
+#include <limits>
+#include <list>
+#include <sstream>
 #include <string>
 #include <vector>
 
 #include <boost/version.hpp>
 #if BOOST_VERSION < 104700
-#error Boost 1.47 or later is required
+#error Ripple requires Boost version 1.47 or later
 #endif
 
-#include <boost/thread/recursive_mutex.hpp>
-#include <boost/filesystem.hpp> // VFALCO TODO try to eliminate thie dependency
-#include <boost/unordered_map.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/foreach.hpp>
-#include <boost/thread/recursive_mutex.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/ref.hpp>
-#include <boost/make_shared.hpp>
+// VFALCO TODO Move all boost includes into ripple_BoostHeaders.h
+//
+#include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/foreach.hpp>
+#include <boost/format.hpp>
+#include <boost/function.hpp>
+#include <boost/functional/hash.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/ref.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/recursive_mutex.hpp>
+#include <boost/unordered_map.hpp>
 
 // ByteOrder
 #ifdef WIN32
@@ -64,27 +66,21 @@
 # include <sys/types.h>
 #endif
 
-// StringUtilities
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
-
-// UInt256
-#include <boost/functional/hash.hpp>
-
-// ripple_PlatformMacros.h
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-
-// VFALCO TODO remove this dependency!!!
 #include <openssl/dh.h> // for DiffieHellmanUtil
 #include <openssl/ripemd.h> // For HashUtilities
 #include <openssl/sha.h> // For HashUtilities
 
-#include "BeastConfig.h"
+#include "BeastConfig.h" // Must come before any Beast includes
+
 #include "modules/beast_core/beast_core.h"
 #include "modules/beast_basics/beast_basics.h"
 
 #include "../ripple_json/ripple_json.h"
+
+#if RIPPLE_USE_NAMESPACE
+namespace ripple
+{
+#endif
 
 #include "utility/ripple_IntegerTypes.h" // must come first
 #include "utility/ripple_Log.h" // Needed by others
@@ -110,5 +106,9 @@
 #include "containers/ripple_RangeSet.h"
 #include "containers/ripple_SecureAllocator.h"
 #include "containers/ripple_TaggedCache.h"
+
+#if RIPPLE_USE_NAMESPACE
+}
+#endif
 
 #endif

@@ -73,6 +73,10 @@ public:
 
     static bool rfc2818_verify (const std::string& domain, bool preverified, boost::asio::ssl::verify_context& ctx)
     {
+#if RIPPLE_USE_NAMESPACE
+        using namespace ripple;
+#endif
+
         if (boost::asio::ssl::rfc2818_verification (domain) (preverified, ctx))
             return true;
 
@@ -224,6 +228,10 @@ public:
 protected:
     void handle_autodetect (callback cbFunc, const error_code& ec, size_t bytesTransferred)
     {
+#if RIPPLE_USE_NAMESPACE
+        using namespace ripple;
+#endif
+
         if (ec)
         {
             Log (lsWARNING, AutoSocketPartition) << "Handle autodetect error: " << ec;
@@ -253,8 +261,11 @@ protected:
     }
 
 private:
+#if RIPPLE_USE_NAMESPACE
+    static ripple::LogPartition AutoSocketPartition;
+#else
     static LogPartition AutoSocketPartition;
-
+#endif
     socket_ptr          mSocket;
     bool                mSecure;
 

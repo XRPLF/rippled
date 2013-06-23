@@ -414,9 +414,6 @@
     <ClCompile Include="..\..\src\cpp\ripple\ripple_HashRouter.cpp">
       <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_LogWebsockets.cpp">
-      <Filter>1. Modules\ripple_app\refactored</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_UniqueNodeList.cpp">
       <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
@@ -896,6 +893,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\ripple_core.cpp">
       <Filter>1. Modules\ripple_core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_websocket\autosocket\ripple_LogWebsockets.cpp">
+      <Filter>1. Modules\ripple_websocket\autosocket</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

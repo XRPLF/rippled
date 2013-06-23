@@ -375,7 +375,6 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_FeeVote.cpp"
 #include "src/cpp/ripple/ripple_HashedObjectStore.cpp"
 #include "src/cpp/ripple/ripple_HashRouter.cpp"
-//#include "src/cpp/ripple/ripple_InfoSub.cpp"
 
 #endif
 
@@ -392,7 +391,6 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_LedgerHistory.cpp"
 #include "src/cpp/ripple/ripple_LoadEvent.cpp"
 #include "src/cpp/ripple/ripple_LoadMonitor.cpp"
-#include "src/cpp/ripple/ripple_LogWebsockets.cpp"
 #include "src/cpp/ripple/ripple_LoadFeeTrack.cpp"
 #include "src/cpp/ripple/ripple_OrderBook.cpp"
 #include "src/cpp/ripple/ripple_PathRequest.cpp"

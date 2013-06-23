@@ -4,5 +4,8 @@
 */
 //==============================================================================
 
+#if RIPPLE_USE_NAMESPACE
+ripple::LogPartition AutoSocket::AutoSocketPartition ("AutoSocket");
+#else
 LogPartition AutoSocket::AutoSocketPartition ("AutoSocket");
-
+#endif
