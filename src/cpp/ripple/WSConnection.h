@@ -86,6 +86,8 @@ public:
     {
         if (theApp->getLoadManager ().shouldCutoff (mLoadSource))
         {
+            // VFALCO TODO This must be implemented before open sourcing
+
 #if SHOULD_DISCONNECT
             // FIXME: Must dispatch to strand
             connection_ptr ptr = mConnection.lock ();
@@ -97,6 +99,8 @@ public:
 #endif
         }
 
+        // Requests without "command" are invalid.
+        //
         if (!jvRequest.isMember ("command"))
         {
             Json::Value jvResult (Json::objectValue);
@@ -111,11 +115,12 @@ public:
                 jvResult["id"]  = jvRequest["id"];
             }
 
-            theApp->getLoadManager ().adjust (mLoadSource, -5);
+            theApp->getLoadManager ().applyLoadCharge (mLoadSource, LT_RPCInvalid);
+
             return jvResult;
         }
 
-        int cost = 10;
+        LoadType loadType = LT_RPCReference;
         RPCHandler  mRPCHandler (&mNetwork, boost::dynamic_pointer_cast<InfoSub> (this->shared_from_this ()));
         Json::Value jvResult (Json::objectValue);
 
@@ -129,11 +134,16 @@ public:
         }
         else
         {
-            jvResult["result"] = mRPCHandler.doCommand (jvRequest, iRole, cost);
+            jvResult["result"] = mRPCHandler.doCommand (jvRequest, iRole, &loadType);
         }
 
-        if (theApp->getLoadManager ().adjust (mLoadSource, -cost) && theApp->getLoadManager ().shouldWarn (mLoadSource))
+        // Debit/credit the load and see if we should include a warning.
+        //
+        if (theApp->getLoadManager ().applyLoadCharge (mLoadSource, loadType) &&
+            theApp->getLoadManager ().shouldWarn (mLoadSource))
+        {
             jvResult["warning"] = "load";
+        }
 
         // Currently we will simply unwrap errors returned by the RPC
         // API, in the future maybe we can make the responses

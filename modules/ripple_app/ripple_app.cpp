@@ -135,7 +135,7 @@
 #include "src/cpp/ripple/Ledger.h"
 
 #include "src/cpp/ripple/SerializedValidation.h"
-#include "src/cpp/ripple/ripple_LoadManager.h"
+#include "src/cpp/ripple/ripple_ILoadManager.h"
 
 // These have few dependencies
 #include "src/cpp/ripple/ripple_DatabaseCon.h"

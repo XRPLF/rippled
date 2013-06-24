@@ -10,21 +10,17 @@
 
 SETUP_LOG (RPCHandler)
 
-static const int rpcCOST_DEFAULT    = 10;
-static const int rpcCOST_EXCEPTION  = 20;
-static const int rpcCOST_EXPENSIVE  = 50;
-
-int iAdminGet (const Json::Value& jvRequest, const std::string& strRemoteIp)
+int iAdminGet (const Json::Value& params, const std::string& strRemoteIp)
 {
     int     iRole;
-    bool    bPasswordSupplied   = jvRequest.isMember ("admin_user") || jvRequest.isMember ("admin_password");
+    bool    bPasswordSupplied   = params.isMember ("admin_user") || params.isMember ("admin_password");
     bool    bPasswordRequired   = !theConfig.RPC_ADMIN_USER.empty () || !theConfig.RPC_ADMIN_PASSWORD.empty ();
 
     bool    bPasswordWrong      = bPasswordSupplied
                                   ? bPasswordRequired
                                   // Supplied, required, and incorrect.
-                                  ? theConfig.RPC_ADMIN_USER != (jvRequest.isMember ("admin_user") ? jvRequest["admin_user"].asString () : "")
-                                  || theConfig.RPC_ADMIN_PASSWORD != (jvRequest.isMember ("admin_user") ? jvRequest["admin_password"].asString () : "")
+                                  ? theConfig.RPC_ADMIN_USER != (params.isMember ("admin_user") ? params["admin_user"].asString () : "")
+                                  || theConfig.RPC_ADMIN_PASSWORD != (params.isMember ("admin_user") ? params["admin_password"].asString () : "")
                                   // Supplied and not required.
                                       : true
                                       : false;
@@ -32,7 +28,7 @@ int iAdminGet (const Json::Value& jvRequest, const std::string& strRemoteIp)
     bool    bAdminIP            = false;
 
     BOOST_FOREACH (const std::string & strAllowIp, theConfig.RPC_ADMIN_ALLOW)
-{
+    {
         if (strAllowIp == strRemoteIp)
             bAdminIP    = true;
     }
@@ -62,28 +58,28 @@ RPCHandler::RPCHandler (NetworkOPs* netOps, InfoSub::pointer infoSub) : mNetOps 
     ;
 }
 
-Json::Value RPCHandler::transactionSign (Json::Value jvRequest, bool bSubmit, bool bFailHard, ScopedLock& mlh)
+Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool bFailHard, ScopedLock& mlh)
 {
     Json::Value     jvResult;
     RippleAddress   naSeed;
     RippleAddress   raSrcAddressID;
-    bool            bOffline            = jvRequest.isMember ("offline") && jvRequest["offline"].asBool ();
+    bool            bOffline            = params.isMember ("offline") && params["offline"].asBool ();
 
-    WriteLog (lsDEBUG, RPCHandler) << boost::str (boost::format ("transactionSign: %s") % jvRequest);
+    WriteLog (lsDEBUG, RPCHandler) << boost::str (boost::format ("transactionSign: %s") % params);
 
-    if (!jvRequest.isMember ("secret") || !jvRequest.isMember ("tx_json"))
+    if (!params.isMember ("secret") || !params.isMember ("tx_json"))
     {
         return rpcError (rpcINVALID_PARAMS);
     }
 
-    Json::Value     txJSON      = jvRequest["tx_json"];
+    Json::Value     txJSON      = params["tx_json"];
 
     if (!txJSON.isObject ())
     {
         return rpcError (rpcINVALID_PARAMS);
     }
 
-    if (!naSeed.setSeedGeneric (jvRequest["secret"].asString ()))
+    if (!naSeed.setSeedGeneric (params["secret"].asString ()))
     {
         return rpcError (rpcBAD_SEED);
     }
@@ -137,13 +133,13 @@ Json::Value RPCHandler::transactionSign (Json::Value jvRequest, bool bSubmit, bo
             txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
         }
 
-        if (txJSON.isMember ("Paths") && jvRequest.isMember ("build_path"))
+        if (txJSON.isMember ("Paths") && params.isMember ("build_path"))
         {
             // Asking to build a path when providing one is an error.
             return rpcError (rpcINVALID_PARAMS);
         }
 
-        if (!txJSON.isMember ("Paths") && txJSON.isMember ("Amount") && jvRequest.isMember ("build_path"))
+        if (!txJSON.isMember ("Paths") && txJSON.isMember ("Amount") && params.isMember ("build_path"))
         {
             // Need a ripple path.
             STPathSet   spsPaths;
@@ -241,7 +237,7 @@ Json::Value RPCHandler::transactionSign (Json::Value jvRequest, bool bSubmit, bo
     bool            bHaveAuthKey    = false;
     RippleAddress   naAuthorizedPublic;
 
-    RippleAddress   naSecret            = RippleAddress::createSeedGeneric (jvRequest["secret"].asString ());
+    RippleAddress   naSecret            = RippleAddress::createSeedGeneric (params["secret"].asString ());
     RippleAddress   naMasterGenerator   = RippleAddress::createGeneratorPublic (naSecret);
 
     // Find the index of Account from the master generator, so we can generate the public and private keys.
@@ -316,7 +312,7 @@ Json::Value RPCHandler::transactionSign (Json::Value jvRequest, bool bSubmit, bo
         return jvResult;
     }
 
-    if (jvRequest.isMember ("debug_signing"))
+    if (params.isMember ("debug_signing"))
     {
         jvResult["tx_unsigned"]     = strHex (stpTrans->getSerializer ().peekData ());
         jvResult["tx_signing_hash"] = stpTrans->getSigningHash ().ToString ();
@@ -592,21 +588,21 @@ Json::Value RPCHandler::accountFromString (Ledger::ref lrLedger, RippleAddress& 
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value RPCHandler::doAccountInfo (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doAccountInfo (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = lookupLedger (jvRequest, lpLedger);
+    Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
 
-    if (!jvRequest.isMember ("account") && !jvRequest.isMember ("ident"))
+    if (!params.isMember ("account") && !params.isMember ("ident"))
         return rpcError (rpcINVALID_PARAMS);
 
-    std::string     strIdent    = jvRequest.isMember ("account") ? jvRequest["account"].asString () : jvRequest["ident"].asString ();
+    std::string     strIdent    = params.isMember ("account") ? params["account"].asString () : params["ident"].asString ();
     bool            bIndex;
-    int             iIndex      = jvRequest.isMember ("account_index") ? jvRequest["account_index"].asUInt () : 0;
-    bool            bStrict     = jvRequest.isMember ("strict") && jvRequest["strict"].asBool ();
+    int             iIndex      = params.isMember ("account_index") ? params["account_index"].asUInt () : 0;
+    bool            bStrict     = params.isMember ("strict") && params["strict"].asBool ();
     RippleAddress   naAccount;
 
     // Get info on account.
@@ -637,16 +633,16 @@ Json::Value RPCHandler::doAccountInfo (Json::Value jvRequest, int& cost, ScopedL
 //   port: <number>
 // }
 // XXX Might allow domain for manual connections.
-Json::Value RPCHandler::doConnect (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doConnect (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     if (theConfig.RUN_STANDALONE)
         return "cannot connect in standalone mode";
 
-    if (!jvRequest.isMember ("ip"))
+    if (!params.isMember ("ip"))
         return rpcError (rpcINVALID_PARAMS);
 
-    std::string strIp   = jvRequest["ip"].asString ();
-    int         iPort   = jvRequest.isMember ("port") ? jvRequest["port"].asInt () : -1;
+    std::string strIp   = params["ip"].asString ();
+    int         iPort   = params.isMember ("port") ? params["port"].asInt () : -1;
 
     // XXX Validate legal IP and port
     theApp->getPeers ().connectTo (strIp, iPort);
@@ -658,12 +654,12 @@ Json::Value RPCHandler::doConnect (Json::Value jvRequest, int& cost, ScopedLock&
 // {
 //   key: <string>
 // }
-Json::Value RPCHandler::doDataDelete (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doDataDelete (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    if (!jvRequest.isMember ("key"))
+    if (!params.isMember ("key"))
         return rpcError (rpcINVALID_PARAMS);
 
-    std::string strKey = jvRequest["key"].asString ();
+    std::string strKey = params["key"].asString ();
 
     Json::Value ret = Json::Value (Json::objectValue);
 
@@ -684,12 +680,12 @@ Json::Value RPCHandler::doDataDelete (Json::Value jvRequest, int& cost, ScopedLo
 // {
 //   key: <string>
 // }
-Json::Value RPCHandler::doDataFetch (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doDataFetch (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    if (!jvRequest.isMember ("key"))
+    if (!params.isMember ("key"))
         return rpcError (rpcINVALID_PARAMS);
 
-    std::string strKey = jvRequest["key"].asString ();
+    std::string strKey = params["key"].asString ();
     std::string strValue;
 
     Json::Value ret = Json::Value (Json::objectValue);
@@ -708,14 +704,14 @@ Json::Value RPCHandler::doDataFetch (Json::Value jvRequest, int& cost, ScopedLoc
 //   key: <string>
 //   value: <string>
 // }
-Json::Value RPCHandler::doDataStore (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doDataStore (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    if (!jvRequest.isMember ("key")
-            || !jvRequest.isMember ("value"))
+    if (!params.isMember ("key")
+            || !params.isMember ("value"))
         return rpcError (rpcINVALID_PARAMS);
 
-    std::string strKey      = jvRequest["key"].asString ();
-    std::string strValue    = jvRequest["value"].asString ();
+    std::string strKey      = params["key"].asString ();
+    std::string strValue    = params["value"].asString ();
 
     Json::Value ret = Json::Value (Json::objectValue);
 
@@ -769,14 +765,14 @@ Json::Value RPCHandler::doNicknameInfo (Json::Value params)
 //   'account_index' : <index> // optional
 // }
 // XXX This would be better if it took the ledger.
-Json::Value RPCHandler::doOwnerInfo (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doOwnerInfo (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    if (!jvRequest.isMember ("account") && !jvRequest.isMember ("ident"))
+    if (!params.isMember ("account") && !params.isMember ("ident"))
         return rpcError (rpcINVALID_PARAMS);
 
-    std::string     strIdent    = jvRequest.isMember ("account") ? jvRequest["account"].asString () : jvRequest["ident"].asString ();
+    std::string     strIdent    = params.isMember ("account") ? params["account"].asString () : params["ident"].asString ();
     bool            bIndex;
-    int             iIndex      = jvRequest.isMember ("account_index") ? jvRequest["account_index"].asUInt () : 0;
+    int             iIndex      = params.isMember ("account_index") ? params["account_index"].asUInt () : 0;
     RippleAddress   raAccount;
 
     Json::Value     ret;
@@ -794,7 +790,7 @@ Json::Value RPCHandler::doOwnerInfo (Json::Value jvRequest, int& cost, ScopedLoc
     return ret;
 }
 
-Json::Value RPCHandler::doPeers (Json::Value, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doPeers (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Json::Value jvResult (Json::objectValue);
 
@@ -803,7 +799,7 @@ Json::Value RPCHandler::doPeers (Json::Value, int& cost, ScopedLock& MasterLockH
     return jvResult;
 }
 
-Json::Value RPCHandler::doPing (Json::Value, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doPing (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     return Json::Value (Json::objectValue);
 }
@@ -813,10 +809,10 @@ Json::Value RPCHandler::doPing (Json::Value, int& cost, ScopedLock& MasterLockHo
 // issuer is the offering account
 // --> submit: 'submit|true|false': defaults to false
 // Prior to running allow each to have a credit line of what they will be getting from the other account.
-Json::Value RPCHandler::doProfile (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doProfile (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     /* need to fix now that sharedOfferCreate is gone
-    int             iArgs   = jvRequest.size();
+    int             iArgs   = params.size();
     RippleAddress   naSeedA;
     RippleAddress   naAccountA;
     uint160         uCurrencyOfferA;
@@ -826,26 +822,26 @@ Json::Value RPCHandler::doProfile (Json::Value jvRequest, int& cost, ScopedLock&
     uint32          iCount  = 100;
     bool            bSubmit = false;
 
-    if (iArgs < 6 || "offers" != jvRequest[0u].asString())
+    if (iArgs < 6 || "offers" != params[0u].asString())
     {
         return rpcError(rpcINVALID_PARAMS);
     }
 
-    if (!naSeedA.setSeedGeneric(jvRequest[1u].asString()))                          // <pass_a>
+    if (!naSeedA.setSeedGeneric(params[1u].asString()))                          // <pass_a>
         return rpcError(rpcINVALID_PARAMS);
 
-    naAccountA.setAccountID(jvRequest[2u].asString());                              // <account_a>
+    naAccountA.setAccountID(params[2u].asString());                              // <account_a>
 
-    if (!STAmount::currencyFromString(uCurrencyOfferA, jvRequest[3u].asString()))   // <currency_offer_a>
+    if (!STAmount::currencyFromString(uCurrencyOfferA, params[3u].asString()))   // <currency_offer_a>
         return rpcError(rpcINVALID_PARAMS);
 
-    naAccountB.setAccountID(jvRequest[4u].asString());                              // <account_b>
-    if (!STAmount::currencyFromString(uCurrencyOfferB, jvRequest[5u].asString()))   // <currency_offer_b>
+    naAccountB.setAccountID(params[4u].asString());                              // <account_b>
+    if (!STAmount::currencyFromString(uCurrencyOfferB, params[5u].asString()))   // <currency_offer_b>
         return rpcError(rpcINVALID_PARAMS);
 
-    iCount  = lexical_cast_s<uint32>(jvRequest[6u].asString());
+    iCount  = lexical_cast_s<uint32>(params[6u].asString());
 
-    if (iArgs >= 8 && "false" != jvRequest[7u].asString())
+    if (iArgs >= 8 && "false" != params[7u].asString())
         bSubmit = true;
 
     Log::setMinSeverity(lsFATAL,true);
@@ -905,24 +901,24 @@ Json::Value RPCHandler::doProfile (Json::Value jvRequest, int& cost, ScopedLock&
 //   difficulty: <number>       // optional
 //   secret: <secret>           // optional
 // }
-Json::Value RPCHandler::doProofCreate (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doProofCreate (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     MasterLockHolder.unlock ();
     // XXX: Add ability to create proof with arbitrary time
 
     Json::Value     jvResult (Json::objectValue);
 
-    if (jvRequest.isMember ("difficulty") || jvRequest.isMember ("secret"))
+    if (params.isMember ("difficulty") || params.isMember ("secret"))
     {
         // VFALCO TODO why aren't we using the app's factory?
         beast::ScopedPointer <IProofOfWorkFactory> pgGen (IProofOfWorkFactory::New ());
 
-        if (jvRequest.isMember ("difficulty"))
+        if (params.isMember ("difficulty"))
         {
-            if (!jvRequest["difficulty"].isIntegral ())
+            if (!params["difficulty"].isIntegral ())
                 return rpcError (rpcINVALID_PARAMS);
 
-            int iDifficulty = jvRequest["difficulty"].asInt ();
+            int iDifficulty = params["difficulty"].asInt ();
 
             if (iDifficulty < 0 || iDifficulty > ProofOfWork::sMaxDifficulty)
                 return rpcError (rpcINVALID_PARAMS);
@@ -930,9 +926,9 @@ Json::Value RPCHandler::doProofCreate (Json::Value jvRequest, int& cost, ScopedL
             pgGen->setDifficulty (iDifficulty);
         }
 
-        if (jvRequest.isMember ("secret"))
+        if (params.isMember ("secret"))
         {
-            uint256     uSecret (jvRequest["secret"].asString ());
+            uint256     uSecret (params["secret"].asString ());
             pgGen->setSecret (uSecret);
         }
 
@@ -950,16 +946,16 @@ Json::Value RPCHandler::doProofCreate (Json::Value jvRequest, int& cost, ScopedL
 // {
 //   token: <token>
 // }
-Json::Value RPCHandler::doProofSolve (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doProofSolve (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     MasterLockHolder.unlock ();
 
     Json::Value         jvResult;
 
-    if (!jvRequest.isMember ("token"))
+    if (!params.isMember ("token"))
         return rpcError (rpcINVALID_PARAMS);
 
-    std::string         strToken        = jvRequest["token"].asString ();
+    std::string         strToken        = params["token"].asString ();
 
     if (!ProofOfWork::validateToken (strToken))
         return rpcError (rpcINVALID_PARAMS);
@@ -980,35 +976,35 @@ Json::Value RPCHandler::doProofSolve (Json::Value jvRequest, int& cost, ScopedLo
 //   difficulty: <number>       // optional
 //   secret: <secret>           // optional
 // }
-Json::Value RPCHandler::doProofVerify (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doProofVerify (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     MasterLockHolder.unlock ();
     // XXX Add ability to check proof against arbitrary time
 
     Json::Value         jvResult;
 
-    if (!jvRequest.isMember ("token"))
+    if (!params.isMember ("token"))
         return rpcError (rpcINVALID_PARAMS);
 
-    if (!jvRequest.isMember ("solution"))
+    if (!params.isMember ("solution"))
         return rpcError (rpcINVALID_PARAMS);
 
-    std::string     strToken    = jvRequest["token"].asString ();
-    uint256         uSolution (jvRequest["solution"].asString ());
+    std::string     strToken    = params["token"].asString ();
+    uint256         uSolution (params["solution"].asString ());
 
     POWResult       prResult;
 
-    if (jvRequest.isMember ("difficulty") || jvRequest.isMember ("secret"))
+    if (params.isMember ("difficulty") || params.isMember ("secret"))
     {
         // VFALCO TODO why aren't we using the app's factory?
         beast::ScopedPointer <IProofOfWorkFactory> pgGen (IProofOfWorkFactory::New ());
 
-        if (jvRequest.isMember ("difficulty"))
+        if (params.isMember ("difficulty"))
         {
-            if (!jvRequest["difficulty"].isIntegral ())
+            if (!params["difficulty"].isIntegral ())
                 return rpcError (rpcINVALID_PARAMS);
 
-            int iDifficulty = jvRequest["difficulty"].asInt ();
+            int iDifficulty = params["difficulty"].asInt ();
 
             if (iDifficulty < 0 || iDifficulty > ProofOfWork::sMaxDifficulty)
                 return rpcError (rpcINVALID_PARAMS);
@@ -1016,9 +1012,9 @@ Json::Value RPCHandler::doProofVerify (Json::Value jvRequest, int& cost, ScopedL
             pgGen->setDifficulty (iDifficulty);
         }
 
-        if (jvRequest.isMember ("secret"))
+        if (params.isMember ("secret"))
         {
-            uint256     uSecret (jvRequest["secret"].asString ());
+            uint256     uSecret (params["secret"].asString ());
             pgGen->setSecret (uSecret);
         }
 
@@ -1050,10 +1046,10 @@ Json::Value RPCHandler::doProofVerify (Json::Value jvRequest, int& cost, ScopedL
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value RPCHandler::doAccountLines (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doAccountLines (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = lookupLedger (jvRequest, lpLedger);
+    Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
@@ -1066,12 +1062,12 @@ Json::Value RPCHandler::doAccountLines (Json::Value jvRequest, int& cost, Scoped
         bUnlocked = true;
     }
 
-    if (!jvRequest.isMember ("account"))
+    if (!params.isMember ("account"))
         return rpcError (rpcINVALID_PARAMS);
 
-    std::string     strIdent    = jvRequest["account"].asString ();
-    bool            bIndex      = jvRequest.isMember ("account_index");
-    int             iIndex      = bIndex ? jvRequest["account_index"].asUInt () : 0;
+    std::string     strIdent    = params["account"].asString ();
+    bool            bIndex      = params.isMember ("account_index");
+    int             iIndex      = bIndex ? params["account_index"].asUInt () : 0;
 
     RippleAddress   raAccount;
 
@@ -1080,9 +1076,9 @@ Json::Value RPCHandler::doAccountLines (Json::Value jvRequest, int& cost, Scoped
     if (!jvResult.empty ())
         return jvResult;
 
-    std::string     strPeer     = jvRequest.isMember ("peer") ? jvRequest["peer"].asString () : "";
-    bool            bPeerIndex      = jvRequest.isMember ("peer_index");
-    int             iPeerIndex      = bIndex ? jvRequest["peer_index"].asUInt () : 0;
+    std::string     strPeer     = params.isMember ("peer") ? params["peer"].asString () : "";
+    bool            bPeerIndex      = params.isMember ("peer_index");
+    int             iPeerIndex      = bIndex ? params["peer_index"].asUInt () : 0;
 
     RippleAddress   raPeer;
 
@@ -1172,10 +1168,10 @@ static void offerAdder (Json::Value& jvLines, SLE::ref offer)
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value RPCHandler::doAccountOffers (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doAccountOffers (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = lookupLedger (jvRequest, lpLedger);
+    Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
@@ -1188,12 +1184,12 @@ Json::Value RPCHandler::doAccountOffers (Json::Value jvRequest, int& cost, Scope
         bUnlocked = true;
     }
 
-    if (!jvRequest.isMember ("account"))
+    if (!params.isMember ("account"))
         return rpcError (rpcINVALID_PARAMS);
 
-    std::string     strIdent    = jvRequest["account"].asString ();
-    bool            bIndex      = jvRequest.isMember ("account_index");
-    int             iIndex      = bIndex ? jvRequest["account_index"].asUInt () : 0;
+    std::string     strIdent    = params["account"].asString ();
+    bool            bIndex      = params.isMember ("account_index");
+    int             iIndex      = bIndex ? params["account_index"].asUInt () : 0;
 
     RippleAddress   raAccount;
 
@@ -1240,7 +1236,7 @@ Json::Value RPCHandler::doAccountOffers (Json::Value jvRequest, int& cost, Scope
 //   "limit" : integer,                  // Optional.
 //   "proof" : boolean                   // Defaults to false.
 // }
-Json::Value RPCHandler::doBookOffers (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doBookOffers (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     if (theApp->getJobQueue ().getJobCountGE (jtCLIENT) > 200)
     {
@@ -1248,7 +1244,7 @@ Json::Value RPCHandler::doBookOffers (Json::Value jvRequest, int& cost, ScopedLo
     }
 
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = lookupLedger (jvRequest, lpLedger);
+    Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
@@ -1256,12 +1252,12 @@ Json::Value RPCHandler::doBookOffers (Json::Value jvRequest, int& cost, ScopedLo
     if (lpLedger->isImmutable ())
         MasterLockHolder.unlock ();
 
-    if (!jvRequest.isMember ("taker_pays") || !jvRequest.isMember ("taker_gets") || !jvRequest["taker_pays"].isObject () || !jvRequest["taker_gets"].isObject ())
+    if (!params.isMember ("taker_pays") || !params.isMember ("taker_gets") || !params["taker_pays"].isObject () || !params["taker_gets"].isObject ())
         return rpcError (rpcINVALID_PARAMS);
 
     uint160             uTakerPaysCurrencyID;
     uint160             uTakerPaysIssuerID;
-    const Json::Value&  jvTakerPays = jvRequest["taker_pays"];
+    const Json::Value&  jvTakerPays = params["taker_pays"];
 
     // Parse mandatory currency.
     if (!jvTakerPays.isMember ("currency")
@@ -1286,7 +1282,7 @@ Json::Value RPCHandler::doBookOffers (Json::Value jvRequest, int& cost, ScopedLo
 
     uint160             uTakerGetsCurrencyID;
     uint160             uTakerGetsIssuerID;
-    const Json::Value&  jvTakerGets = jvRequest["taker_gets"];
+    const Json::Value&  jvTakerGets = params["taker_gets"];
 
     // Parse mandatory currency.
     if (!jvTakerGets.isMember ("currency")
@@ -1319,18 +1315,18 @@ Json::Value RPCHandler::doBookOffers (Json::Value jvRequest, int& cost, ScopedLo
 
     RippleAddress   raTakerID;
 
-    if (!jvRequest.isMember ("taker"))
+    if (!params.isMember ("taker"))
     {
         raTakerID.setAccountID (ACCOUNT_ONE);
     }
-    else if (!raTakerID.setAccountID (jvRequest["taker"].asString ()))
+    else if (!raTakerID.setAccountID (params["taker"].asString ()))
     {
         return rpcError (rpcBAD_ISSUER);
     }
 
-    const bool          bProof      = jvRequest.isMember ("proof");
-    const unsigned int  iLimit      = jvRequest.isMember ("limit") ? jvRequest["limit"].asUInt () : 0;
-    const Json::Value   jvMarker    = jvRequest.isMember ("marker") ? jvRequest["marker"] : Json::Value (Json::nullValue);
+    const bool          bProof      = params.isMember ("proof");
+    const unsigned int  iLimit      = params.isMember ("limit") ? params["limit"].asUInt () : 0;
+    const Json::Value   jvMarker    = params.isMember ("marker") ? params["marker"] : Json::Value (Json::nullValue);
 
     mNetOps->getBookPage (lpLedger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, raTakerID.getAccountID (), bProof, iLimit, jvMarker, jvResult);
 
@@ -1341,7 +1337,7 @@ Json::Value RPCHandler::doBookOffers (Json::Value jvRequest, int& cost, ScopedLo
 // {
 //   random: <uint256>
 // }
-Json::Value RPCHandler::doRandom (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doRandom (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     MasterLockHolder.unlock ();
     uint256         uRandom;
@@ -1362,21 +1358,21 @@ Json::Value RPCHandler::doRandom (Json::Value jvRequest, int& cost, ScopedLock& 
     }
 }
 
-Json::Value RPCHandler::doPathFind (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doPathFind (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    if (!jvRequest.isMember ("subcommand") || !jvRequest["subcommand"].isString ())
+    if (!params.isMember ("subcommand") || !params["subcommand"].isString ())
         return rpcError (rpcINVALID_PARAMS);
 
     if (!mInfoSub)
         return rpcError (rpcNO_EVENTS);
 
-    std::string sSubCommand = jvRequest["subcommand"].asString ();
+    std::string sSubCommand = params["subcommand"].asString ();
 
     if (sSubCommand == "create")
     {
         mInfoSub->clearPathRequest ();
         PathRequest::pointer request = boost::make_shared<PathRequest> (mInfoSub);
-        Json::Value result = request->doCreate (mNetOps->getClosedLedger (), jvRequest);
+        Json::Value result = request->doCreate (mNetOps->getClosedLedger (), params);
 
         if (request->isValid ())
         {
@@ -1395,7 +1391,7 @@ Json::Value RPCHandler::doPathFind (Json::Value jvRequest, int& cost, ScopedLock
             return rpcError (rpcNO_PF_REQUEST);
 
         mInfoSub->clearPathRequest ();
-        return request->doClose (jvRequest);
+        return request->doClose (params);
     }
 
     if (sSubCommand == "status")
@@ -1405,7 +1401,7 @@ Json::Value RPCHandler::doPathFind (Json::Value jvRequest, int& cost, ScopedLock
         if (!request)
             return rpcNO_PF_REQUEST;
 
-        return request->doStatus (jvRequest);
+        return request->doStatus (params);
     }
 
     return rpcError (rpcINVALID_PARAMS);
@@ -1417,7 +1413,7 @@ Json::Value RPCHandler::doPathFind (Json::Value jvRequest, int& cost, ScopedLock
 //   - Allows clients to verify path exists.
 // - Return canonicalized path.
 //   - From a trusted server, allows clients to use path without manipulation.
-Json::Value RPCHandler::doRipplePathFind (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doRipplePathFind (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     int jc = theApp->getJobQueue ().getJobCountGE (jtCLIENT);
 
@@ -1431,33 +1427,33 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value jvRequest, int& cost, Scop
     RippleAddress   raDst;
     STAmount        saDstAmount;
     Ledger::pointer lpLedger;
-    Json::Value     jvResult    = lookupLedger (jvRequest, lpLedger);
+    Json::Value     jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
 
-    if (!jvRequest.isMember ("source_account"))
+    if (!params.isMember ("source_account"))
     {
         jvResult    = rpcError (rpcSRC_ACT_MISSING);
     }
-    else if (!jvRequest["source_account"].isString ()
-             || !raSrc.setAccountID (jvRequest["source_account"].asString ()))
+    else if (!params["source_account"].isString ()
+             || !raSrc.setAccountID (params["source_account"].asString ()))
     {
         jvResult    = rpcError (rpcSRC_ACT_MALFORMED);
     }
-    else if (!jvRequest.isMember ("destination_account"))
+    else if (!params.isMember ("destination_account"))
     {
         jvResult    = rpcError (rpcDST_ACT_MISSING);
     }
-    else if (!jvRequest["destination_account"].isString ()
-             || !raDst.setAccountID (jvRequest["destination_account"].asString ()))
+    else if (!params["destination_account"].isString ()
+             || !raDst.setAccountID (params["destination_account"].asString ()))
     {
         jvResult    = rpcError (rpcDST_ACT_MALFORMED);
     }
     else if (
         // Parse saDstAmount.
-        !jvRequest.isMember ("destination_amount")
-        || !saDstAmount.bSetJson (jvRequest["destination_amount"])
+        !params.isMember ("destination_amount")
+        || !saDstAmount.bSetJson (params["destination_amount"])
         || (!!saDstAmount.getCurrency () && (!saDstAmount.getIssuer () || ACCOUNT_ONE == saDstAmount.getIssuer ())))
     {
         WriteLog (lsINFO, RPCHandler) << "Bad destination_amount.";
@@ -1465,9 +1461,9 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value jvRequest, int& cost, Scop
     }
     else if (
         // Checks on source_currencies.
-        jvRequest.isMember ("source_currencies")
-        && (!jvRequest["source_currencies"].isArray ()
-            || !jvRequest["source_currencies"].size ()) // Don't allow empty currencies.
+        params.isMember ("source_currencies")
+        && (!params["source_currencies"].isArray ()
+            || !params["source_currencies"].size ()) // Don't allow empty currencies.
     )
     {
         WriteLog (lsINFO, RPCHandler) << "Bad source_currencies.";
@@ -1477,9 +1473,9 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value jvRequest, int& cost, Scop
     {
         Json::Value     jvSrcCurrencies;
 
-        if (jvRequest.isMember ("source_currencies"))
+        if (params.isMember ("source_currencies"))
         {
-            jvSrcCurrencies = jvRequest["source_currencies"];
+            jvSrcCurrencies = params["source_currencies"];
         }
         else
         {
@@ -1497,7 +1493,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value jvRequest, int& cost, Scop
             }
         }
 
-        cost = rpcCOST_EXPENSIVE;
+        *loadType = LT_RPCBurden;
         Ledger::pointer lSnapShot = boost::make_shared<Ledger> (boost::ref (*lpLedger), false);
 
         MasterLockHolder.unlock (); // As long as we have a locked copy of the ledger, we can unlock.
@@ -1649,35 +1645,35 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value jvRequest, int& cost, Scop
 //   tx_json: <object>,
 //   secret: <secret>
 // }
-Json::Value RPCHandler::doSign (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doSign (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    cost = rpcCOST_EXPENSIVE;
-    bool bFailHard = jvRequest.isMember ("fail_hard") && jvRequest["fail_hard"].asBool ();
-    return transactionSign (jvRequest, false, bFailHard, MasterLockHolder);
+    *loadType = LT_RPCBurden;
+    bool bFailHard = params.isMember ("fail_hard") && params["fail_hard"].asBool ();
+    return transactionSign (params, false, bFailHard, MasterLockHolder);
 }
 
 // {
 //   tx_json: <object>,
 //   secret: <secret>
 // }
-Json::Value RPCHandler::doSubmit (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doSubmit (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    if (!jvRequest.isMember ("tx_blob"))
+    if (!params.isMember ("tx_blob"))
     {
-        bool bFailHard = jvRequest.isMember ("fail_hard") && jvRequest["fail_hard"].asBool ();
-        return transactionSign (jvRequest, true, bFailHard, MasterLockHolder);
+        bool bFailHard = params.isMember ("fail_hard") && params["fail_hard"].asBool ();
+        return transactionSign (params, true, bFailHard, MasterLockHolder);
     }
 
     Json::Value                 jvResult;
 
-    Blob    vucBlob (strUnHex (jvRequest["tx_blob"].asString ()));
+    Blob    vucBlob (strUnHex (params["tx_blob"].asString ()));
 
     if (!vucBlob.size ())
     {
         return rpcError (rpcINVALID_PARAMS);
     }
 
-    cost = rpcCOST_EXPENSIVE;
+    *loadType = LT_RPCBurden;
 
     Serializer                  sTrans (vucBlob);
     SerializerIterator          sitTrans (sTrans);
@@ -1713,7 +1709,7 @@ Json::Value RPCHandler::doSubmit (Json::Value jvRequest, int& cost, ScopedLock& 
     try
     {
         (void) mNetOps->processTransaction (tpTrans, mRole == ADMIN,
-            jvRequest.isMember ("fail_hard") && jvRequest["fail_hard"].asBool ());
+            params.isMember ("fail_hard") && params["fail_hard"].asBool ());
     }
     catch (std::exception& e)
     {
@@ -1753,7 +1749,7 @@ Json::Value RPCHandler::doSubmit (Json::Value jvRequest, int& cost, ScopedLock& 
     }
 }
 
-Json::Value RPCHandler::doConsensusInfo (Json::Value, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doConsensusInfo (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Json::Value ret (Json::objectValue);
 
@@ -1762,7 +1758,7 @@ Json::Value RPCHandler::doConsensusInfo (Json::Value, int& cost, ScopedLock& Mas
     return ret;
 }
 
-Json::Value RPCHandler::doServerInfo (Json::Value, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doServerInfo (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Json::Value ret (Json::objectValue);
 
@@ -1771,7 +1767,7 @@ Json::Value RPCHandler::doServerInfo (Json::Value, int& cost, ScopedLock& Master
     return ret;
 }
 
-Json::Value RPCHandler::doServerState (Json::Value, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doServerState (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Json::Value ret (Json::objectValue);
 
@@ -1783,14 +1779,14 @@ Json::Value RPCHandler::doServerState (Json::Value, int& cost, ScopedLock& Maste
 // {
 //   start: <index>
 // }
-Json::Value RPCHandler::doTxHistory (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doTxHistory (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     MasterLockHolder.unlock ();
 
-    if (!jvRequest.isMember ("start"))
+    if (!params.isMember ("start"))
         return rpcError (rpcINVALID_PARAMS);
 
-    unsigned int startIndex = jvRequest["start"].asUInt ();
+    unsigned int startIndex = params["start"].asUInt ();
     Json::Value obj;
     Json::Value txs;
 
@@ -1820,14 +1816,14 @@ Json::Value RPCHandler::doTxHistory (Json::Value jvRequest, int& cost, ScopedLoc
 // {
 //   transaction: <hex>
 // }
-Json::Value RPCHandler::doTx (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doTx (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    if (!jvRequest.isMember ("transaction"))
+    if (!params.isMember ("transaction"))
         return rpcError (rpcINVALID_PARAMS);
 
-    bool binary = jvRequest.isMember ("binary") && jvRequest["binary"].asBool ();
+    bool binary = params.isMember ("binary") && params["binary"].asBool ();
 
-    std::string strTransaction  = jvRequest["transaction"].asString ();
+    std::string strTransaction  = params["transaction"].asString ();
 
     if (Transaction::isHexTxID (strTransaction))
     {
@@ -1886,7 +1882,7 @@ Json::Value RPCHandler::doTx (Json::Value jvRequest, int& cost, ScopedLock& Mast
     return rpcError (rpcNOT_IMPL);
 }
 
-Json::Value RPCHandler::doLedgerClosed (Json::Value, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doLedgerClosed (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Json::Value jvResult;
 
@@ -1899,7 +1895,7 @@ Json::Value RPCHandler::doLedgerClosed (Json::Value, int& cost, ScopedLock& Mast
     return jvResult;
 }
 
-Json::Value RPCHandler::doLedgerCurrent (Json::Value, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doLedgerCurrent (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Json::Value jvResult;
 
@@ -1913,9 +1909,9 @@ Json::Value RPCHandler::doLedgerCurrent (Json::Value, int& cost, ScopedLock& Mas
 //    ledger: 'current' | 'closed' | <uint256> | <number>,  // optional
 //    full: true | false    // optional, defaults to false.
 // }
-Json::Value RPCHandler::doLedger (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doLedger (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    if (!jvRequest.isMember ("ledger") && !jvRequest.isMember ("ledger_hash") && !jvRequest.isMember ("ledger_index"))
+    if (!params.isMember ("ledger") && !params.isMember ("ledger_hash") && !params.isMember ("ledger_index"))
     {
         Json::Value ret (Json::objectValue), current (Json::objectValue), closed (Json::objectValue);
 
@@ -1929,7 +1925,7 @@ Json::Value RPCHandler::doLedger (Json::Value jvRequest, int& cost, ScopedLock& 
     }
 
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = lookupLedger (jvRequest, lpLedger);
+    Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
@@ -1937,10 +1933,10 @@ Json::Value RPCHandler::doLedger (Json::Value jvRequest, int& cost, ScopedLock& 
     if (lpLedger->isImmutable ())
         MasterLockHolder.unlock ();
 
-    bool    bFull           = jvRequest.isMember ("full") && jvRequest["full"].asBool ();
-    bool    bTransactions   = jvRequest.isMember ("transactions") && jvRequest["transactions"].asBool ();
-    bool    bAccounts       = jvRequest.isMember ("accounts") && jvRequest["accounts"].asBool ();
-    bool    bExpand         = jvRequest.isMember ("expand") && jvRequest["expand"].asBool ();
+    bool    bFull           = params.isMember ("full") && params["full"].asBool ();
+    bool    bTransactions   = params.isMember ("transactions") && params["transactions"].asBool ();
+    bool    bAccounts       = params.isMember ("accounts") && params["accounts"].asBool ();
+    bool    bExpand         = params.isMember ("expand") && params["expand"].asBool ();
     int     iOptions        = (bFull ? LEDGER_JSON_FULL : 0)
                               | (bExpand ? LEDGER_JSON_EXPAND : 0)
                               | (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
@@ -1962,44 +1958,44 @@ Json::Value RPCHandler::doLedger (Json::Value jvRequest, int& cost, ScopedLock& 
 //   offset: integer,              // optional, defaults to 0
 //   limit: integer                // optional
 // }
-Json::Value RPCHandler::doAccountTransactions (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doAccountTransactions (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     RippleAddress   raAccount;
-    uint32          offset      = jvRequest.isMember ("offset") ? jvRequest["offset"].asUInt () : 0;
-    int             limit       = jvRequest.isMember ("limit") ? jvRequest["limit"].asUInt () : -1;
-    bool            bBinary     = jvRequest.isMember ("binary") && jvRequest["binary"].asBool ();
-    bool            bDescending = jvRequest.isMember ("descending") && jvRequest["descending"].asBool ();
-    bool            bCount      = jvRequest.isMember ("count") && jvRequest["count"].asBool ();
+    uint32          offset      = params.isMember ("offset") ? params["offset"].asUInt () : 0;
+    int             limit       = params.isMember ("limit") ? params["limit"].asUInt () : -1;
+    bool            bBinary     = params.isMember ("binary") && params["binary"].asBool ();
+    bool            bDescending = params.isMember ("descending") && params["descending"].asBool ();
+    bool            bCount      = params.isMember ("count") && params["count"].asBool ();
     uint32          uLedgerMin;
     uint32          uLedgerMax;
     uint32          uValidatedMin;
     uint32          uValidatedMax;
     bool            bValidated  = mNetOps->getValidatedRange (uValidatedMin, uValidatedMax);
 
-    if (!jvRequest.isMember ("account"))
+    if (!params.isMember ("account"))
         return rpcError (rpcINVALID_PARAMS);
 
-    if (!raAccount.setAccountID (jvRequest["account"].asString ()))
+    if (!raAccount.setAccountID (params["account"].asString ()))
         return rpcError (rpcACT_MALFORMED);
 
     // DEPRECATED
-    if (jvRequest.isMember ("ledger_min"))
+    if (params.isMember ("ledger_min"))
     {
-        jvRequest["ledger_index_min"]   = jvRequest["ledger_min"];
+        params["ledger_index_min"]   = params["ledger_min"];
         bDescending = true;
     }
 
     // DEPRECATED
-    if (jvRequest.isMember ("ledger_max"))
+    if (params.isMember ("ledger_max"))
     {
-        jvRequest["ledger_index_max"]   = jvRequest["ledger_max"];
+        params["ledger_index_max"]   = params["ledger_max"];
         bDescending = true;
     }
 
-    if (jvRequest.isMember ("ledger_index_min") || jvRequest.isMember ("ledger_index_max"))
+    if (params.isMember ("ledger_index_min") || params.isMember ("ledger_index_max"))
     {
-        int64       iLedgerMin  = jvRequest.isMember ("ledger_index_min") ? jvRequest["ledger_index_min"].asInt () : -1;
-        int64       iLedgerMax  = jvRequest.isMember ("ledger_index_max") ? jvRequest["ledger_index_max"].asInt () : -1;
+        int64       iLedgerMin  = params.isMember ("ledger_index_min") ? params["ledger_index_min"].asInt () : -1;
+        int64       iLedgerMax  = params.isMember ("ledger_index_max") ? params["ledger_index_max"].asInt () : -1;
 
         if (!bValidated && (iLedgerMin == -1 || iLedgerMax == -1))
         {
@@ -2018,7 +2014,7 @@ Json::Value RPCHandler::doAccountTransactions (Json::Value jvRequest, int& cost,
     else
     {
         Ledger::pointer l;
-        Json::Value ret = lookupLedger (jvRequest, l);
+        Json::Value ret = lookupLedger (params, l);
 
         if (!l)
             return ret;
@@ -2087,7 +2083,7 @@ Json::Value RPCHandler::doAccountTransactions (Json::Value jvRequest, int& cost,
         if (bCount)
             ret["count"]        = mNetOps->countAccountTxs (raAccount, uLedgerMin, uLedgerMax);
 
-        if (jvRequest.isMember ("limit"))
+        if (params.isMember ("limit"))
             ret["limit"]        = limit;
 
 
@@ -2107,18 +2103,18 @@ Json::Value RPCHandler::doAccountTransactions (Json::Value jvRequest, int& cost,
 // }
 //
 // This command requires admin access because it makes no sense to ask an untrusted server for this.
-Json::Value RPCHandler::doValidationCreate (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doValidationCreate (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     RippleAddress   raSeed;
     Json::Value     obj (Json::objectValue);
 
-    if (!jvRequest.isMember ("secret"))
+    if (!params.isMember ("secret"))
     {
         WriteLog (lsDEBUG, RPCHandler) << "Creating random validation seed.";
 
         raSeed.setSeedRandom ();                // Get a random seed.
     }
-    else if (!raSeed.setSeedGeneric (jvRequest["secret"].asString ()))
+    else if (!raSeed.setSeedGeneric (params["secret"].asString ()))
     {
         return rpcError (rpcBAD_SEED);
     }
@@ -2133,11 +2129,11 @@ Json::Value RPCHandler::doValidationCreate (Json::Value jvRequest, int& cost, Sc
 // {
 //   secret: <string>
 // }
-Json::Value RPCHandler::doValidationSeed (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doValidationSeed (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Json::Value obj (Json::objectValue);
 
-    if (!jvRequest.isMember ("secret"))
+    if (!params.isMember ("secret"))
     {
         std::cerr << "Unset validation seed." << std::endl;
 
@@ -2145,7 +2141,7 @@ Json::Value RPCHandler::doValidationSeed (Json::Value jvRequest, int& cost, Scop
         theConfig.VALIDATION_PUB.clear ();
         theConfig.VALIDATION_PRIV.clear ();
     }
-    else if (!theConfig.VALIDATION_SEED.setSeedGeneric (jvRequest["secret"].asString ()))
+    else if (!theConfig.VALIDATION_SEED.setSeedGeneric (params["secret"].asString ()))
     {
         theConfig.VALIDATION_PUB.clear ();
         theConfig.VALIDATION_PRIV.clear ();
@@ -2204,17 +2200,17 @@ Json::Value RPCHandler::accounts (Ledger::ref lrLedger, const RippleAddress& naM
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value RPCHandler::doWalletAccounts (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doWalletAccounts (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = lookupLedger (jvRequest, lpLedger);
+    Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
 
     RippleAddress   naSeed;
 
-    if (!jvRequest.isMember ("seed") || !naSeed.setSeedGeneric (jvRequest["seed"].asString ()))
+    if (!params.isMember ("seed") || !naSeed.setSeedGeneric (params["seed"].asString ()))
     {
         return rpcError (rpcBAD_SEED);
     }
@@ -2247,7 +2243,7 @@ Json::Value RPCHandler::doWalletAccounts (Json::Value jvRequest, int& cost, Scop
     }
 }
 
-Json::Value RPCHandler::doLogRotate (Json::Value, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doLogRotate (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     return Log::rotateLog ();
 }
@@ -2255,16 +2251,16 @@ Json::Value RPCHandler::doLogRotate (Json::Value, int& cost, ScopedLock& MasterL
 // {
 //  passphrase: <string>
 // }
-Json::Value RPCHandler::doWalletPropose (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doWalletPropose (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     MasterLockHolder.unlock ();
 
     RippleAddress   naSeed;
     RippleAddress   naAccount;
 
-    if (jvRequest.isMember ("passphrase"))
+    if (params.isMember ("passphrase"))
     {
-        naSeed  = RippleAddress::createSeedGeneric (jvRequest["passphrase"].asString ());
+        naSeed  = RippleAddress::createSeedGeneric (params["passphrase"].asString ());
     }
     else
     {
@@ -2287,12 +2283,12 @@ Json::Value RPCHandler::doWalletPropose (Json::Value jvRequest, int& cost, Scope
 // {
 //   secret: <string>
 // }
-Json::Value RPCHandler::doWalletSeed (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doWalletSeed (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     RippleAddress   raSeed;
-    bool            bSecret = jvRequest.isMember ("secret");
+    bool            bSecret = params.isMember ("secret");
 
-    if (bSecret && !raSeed.setSeedGeneric (jvRequest["secret"].asString ()))
+    if (bSecret && !raSeed.setSeedGeneric (params["secret"].asString ()))
     {
         return rpcError (rpcBAD_SEED);
     }
@@ -2326,13 +2322,13 @@ Json::Value RPCHandler::doWalletSeed (Json::Value jvRequest, int& cost, ScopedLo
 //   username: <string>,
 //   password: <string>
 // }
-Json::Value RPCHandler::doLogin (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doLogin (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    if (!jvRequest.isMember ("username")
-            || !jvRequest.isMember ("password"))
+    if (!params.isMember ("username")
+            || !params.isMember ("password"))
         return rpcError (rpcINVALID_PARAMS);
 
-    if (jvRequest["username"].asString () == theConfig.RPC_USER && jvRequest["password"].asString () == theConfig.RPC_PASSWORD)
+    if (params["username"].asString () == theConfig.RPC_USER && params["password"].asString () == theConfig.RPC_PASSWORD)
     {
         //mRole=ADMIN;
         return "logged in";
@@ -2364,26 +2360,26 @@ static void textTime (std::string& text, int& seconds, const char* unitName, int
         text += "s";
 }
 
-Json::Value RPCHandler::doFeature (Json::Value jvRequest, int& cost, ScopedLock& mlh)
+Json::Value RPCHandler::doFeature (Json::Value params, LoadType* loadType, ScopedLock& mlh)
 {
-    if (!jvRequest.isMember ("feature"))
+    if (!params.isMember ("feature"))
     {
         Json::Value jvReply = Json::objectValue;
         jvReply["features"] = theApp->getFeatureTable ().getJson (0);
         return jvReply;
     }
 
-    uint256 uFeature = theApp->getFeatureTable ().getFeature (jvRequest["feature"].asString ());
+    uint256 uFeature = theApp->getFeatureTable ().getFeature (params["feature"].asString ());
 
     if (uFeature.isZero ())
     {
-        uFeature.SetHex (jvRequest["feature"].asString ());
+        uFeature.SetHex (params["feature"].asString ());
 
         if (uFeature.isZero ())
             return rpcError (rpcBAD_FEATURE);
     }
 
-    if (!jvRequest.isMember ("vote"))
+    if (!params.isMember ("vote"))
         return theApp->getFeatureTable ().getJson (uFeature);
 
     // WRITEME
@@ -2393,12 +2389,12 @@ Json::Value RPCHandler::doFeature (Json::Value jvRequest, int& cost, ScopedLock&
 // {
 //   min_count: <number>  // optional, defaults to 10
 // }
-Json::Value RPCHandler::doGetCounts (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doGetCounts (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     int minCount = 10;
 
-    if (jvRequest.isMember ("min_count"))
-        minCount = jvRequest["min_count"].asUInt ();
+    if (params.isMember ("min_count"))
+        minCount = params["min_count"].asUInt ();
 
     CountedObjects::List objectCounts = CountedObjects::getInstance ().getCounts (minCount);
 
@@ -2455,10 +2451,10 @@ Json::Value RPCHandler::doGetCounts (Json::Value jvRequest, int& cost, ScopedLoc
     return ret;
 }
 
-Json::Value RPCHandler::doLogLevel (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doLogLevel (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     // log_level
-    if (!jvRequest.isMember ("severity"))
+    if (!params.isMember ("severity"))
     {
         // get log severities
         Json::Value ret (Json::objectValue);
@@ -2474,13 +2470,13 @@ Json::Value RPCHandler::doLogLevel (Json::Value jvRequest, int& cost, ScopedLock
         return ret;
     }
 
-    LogSeverity sv = Log::stringToSeverity (jvRequest["severity"].asString ());
+    LogSeverity sv = Log::stringToSeverity (params["severity"].asString ());
 
     if (sv == lsINVALID)
         return rpcError (rpcINVALID_PARAMS);
 
     // log_level severity
-    if (!jvRequest.isMember ("partition"))
+    if (!params.isMember ("partition"))
     {
         // set base log severity
         Log::setMinSeverity (sv, true);
@@ -2488,10 +2484,10 @@ Json::Value RPCHandler::doLogLevel (Json::Value jvRequest, int& cost, ScopedLock
     }
 
     // log_level partition severity base?
-    if (jvRequest.isMember ("partition"))
+    if (params.isMember ("partition"))
     {
         // set partition severity
-        std::string partition (jvRequest["partition"].asString ());
+        std::string partition (params["partition"].asString ());
 
         if (boost::iequals (partition, "base"))
             Log::setMinSeverity (sv, false);
@@ -2508,10 +2504,10 @@ Json::Value RPCHandler::doLogLevel (Json::Value jvRequest, int& cost, ScopedLock
 //   node: <domain>|<node_public>,
 //   comment: <comment>             // optional
 // }
-Json::Value RPCHandler::doUnlAdd (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doUnlAdd (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    std::string strNode     = jvRequest.isMember ("node") ? jvRequest["node"].asString () : "";
-    std::string strComment  = jvRequest.isMember ("comment") ? jvRequest["comment"].asString () : "";
+    std::string strNode     = params.isMember ("node") ? params["node"].asString () : "";
+    std::string strComment  = params.isMember ("comment") ? params["comment"].asString () : "";
 
     RippleAddress   raNodePublic;
 
@@ -2532,12 +2528,12 @@ Json::Value RPCHandler::doUnlAdd (Json::Value jvRequest, int& cost, ScopedLock& 
 // {
 //   node: <domain>|<public_key>
 // }
-Json::Value RPCHandler::doUnlDelete (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doUnlDelete (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    if (!jvRequest.isMember ("node"))
+    if (!params.isMember ("node"))
         return rpcError (rpcINVALID_PARAMS);
 
-    std::string strNode     = jvRequest["node"].asString ();
+    std::string strNode     = params["node"].asString ();
 
     RippleAddress   raNodePublic;
 
@@ -2555,7 +2551,7 @@ Json::Value RPCHandler::doUnlDelete (Json::Value jvRequest, int& cost, ScopedLoc
     }
 }
 
-Json::Value RPCHandler::doUnlList (Json::Value, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doUnlList (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Json::Value obj (Json::objectValue);
 
@@ -2565,7 +2561,7 @@ Json::Value RPCHandler::doUnlList (Json::Value, int& cost, ScopedLock& MasterLoc
 }
 
 // Populate the UNL from a local validators.txt file.
-Json::Value RPCHandler::doUnlLoad (Json::Value, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doUnlLoad (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     if (theConfig.VALIDATORS_FILE.empty () || !theApp->getUNL ().nodeLoad (theConfig.VALIDATORS_FILE))
     {
@@ -2577,7 +2573,7 @@ Json::Value RPCHandler::doUnlLoad (Json::Value, int& cost, ScopedLock& MasterLoc
 
 
 // Populate the UNL from ripple.com's validators.txt file.
-Json::Value RPCHandler::doUnlNetwork (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doUnlNetwork (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     theApp->getUNL ().nodeNetwork ();
 
@@ -2585,7 +2581,7 @@ Json::Value RPCHandler::doUnlNetwork (Json::Value jvRequest, int& cost, ScopedLo
 }
 
 // unl_reset
-Json::Value RPCHandler::doUnlReset (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doUnlReset (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     theApp->getUNL ().nodeReset ();
 
@@ -2593,30 +2589,30 @@ Json::Value RPCHandler::doUnlReset (Json::Value jvRequest, int& cost, ScopedLock
 }
 
 // unl_score
-Json::Value RPCHandler::doUnlScore (Json::Value, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doUnlScore (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     theApp->getUNL ().nodeScore ();
 
     return "scoring requested";
 }
 
-Json::Value RPCHandler::doSMS (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doSMS (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    if (!jvRequest.isMember ("text"))
+    if (!params.isMember ("text"))
         return rpcError (rpcINVALID_PARAMS);
 
-    HttpsClient::sendSMS (theApp->getIOService (), jvRequest["text"].asString ());
+    HttpsClient::sendSMS (theApp->getIOService (), params["text"].asString ());
 
     return "sms dispatched";
 }
-Json::Value RPCHandler::doStop (Json::Value, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doStop (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     theApp->stop ();
 
     return SYSTEM_NAME " server stopping";
 }
 
-Json::Value RPCHandler::doLedgerAccept (Json::Value, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doLedgerAccept (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Json::Value jvResult;
 
@@ -2639,19 +2635,19 @@ Json::Value RPCHandler::doLedgerAccept (Json::Value, int& cost, ScopedLock& Mast
 //   ledger_index : <ledger_index>
 // }
 // XXX In this case, not specify either ledger does not mean ledger current. It means any ledger.
-Json::Value RPCHandler::doTransactionEntry (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doTransactionEntry (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = lookupLedger (jvRequest, lpLedger);
+    Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
 
-    if (!jvRequest.isMember ("tx_hash"))
+    if (!params.isMember ("tx_hash"))
     {
         jvResult["error"]   = "fieldNotFoundTransaction";
     }
-    else if (!jvRequest.isMember ("ledger_hash") && !jvRequest.isMember ("ledger_index"))
+    else if (!params.isMember ("ledger_hash") && !params.isMember ("ledger_index"))
     {
         // We don't work on ledger current.
 
@@ -2661,7 +2657,7 @@ Json::Value RPCHandler::doTransactionEntry (Json::Value jvRequest, int& cost, Sc
     {
         uint256                     uTransID;
         // XXX Relying on trusted WSS client. Would be better to have a strict routine, returning success or failure.
-        uTransID.SetHex (jvRequest["tx_hash"].asString ());
+        uTransID.SetHex (params["tx_hash"].asString ());
 
         if (!lpLedger)
         {
@@ -2690,34 +2686,34 @@ Json::Value RPCHandler::doTransactionEntry (Json::Value jvRequest, int& cost, Sc
     return jvResult;
 }
 
-Json::Value RPCHandler::lookupLedger (Json::Value jvRequest, Ledger::pointer& lpLedger)
+Json::Value RPCHandler::lookupLedger (Json::Value params, Ledger::pointer& lpLedger)
 {
     Json::Value jvResult;
 
-    uint256         uLedger         = jvRequest.isMember ("ledger_hash") ? uint256 (jvRequest["ledger_hash"].asString ()) : 0;
-    int32           iLedgerIndex    = jvRequest.isMember ("ledger_index") && jvRequest["ledger_index"].isNumeric () ? jvRequest["ledger_index"].asInt () : LEDGER_CURRENT;
+    uint256         uLedger         = params.isMember ("ledger_hash") ? uint256 (params["ledger_hash"].asString ()) : 0;
+    int32           iLedgerIndex    = params.isMember ("ledger_index") && params["ledger_index"].isNumeric () ? params["ledger_index"].asInt () : LEDGER_CURRENT;
 
     std::string     strLedger;
 
-    if (jvRequest.isMember ("ledger_index") && !jvRequest["ledger_index"].isNumeric ())
-        strLedger   = jvRequest["ledger_index"].asString ();
+    if (params.isMember ("ledger_index") && !params["ledger_index"].isNumeric ())
+        strLedger   = params["ledger_index"].asString ();
 
     // Support for DEPRECATED "ledger".
-    if (!jvRequest.isMember ("ledger"))
+    if (!params.isMember ("ledger"))
     {
         nothing ();
     }
-    else if (jvRequest["ledger"].asString ().size () > 12)
+    else if (params["ledger"].asString ().size () > 12)
     {
-        uLedger         = uint256 (jvRequest["ledger"].asString ());
+        uLedger         = uint256 (params["ledger"].asString ());
     }
-    else if (jvRequest["ledger"].isNumeric ())
+    else if (params["ledger"].isNumeric ())
     {
-        iLedgerIndex    = jvRequest["ledger"].asInt ();
+        iLedgerIndex    = params["ledger"].asInt ();
     }
     else
     {
-        strLedger       = jvRequest["ledger"].asString ();
+        strLedger       = params["ledger"].asString ();
     }
 
     if (strLedger == "current")
@@ -2808,10 +2804,10 @@ Json::Value RPCHandler::lookupLedger (Json::Value jvRequest, Ledger::pointer& lp
 //   ledger_index : <ledger_index>
 //   ...
 // }
-Json::Value RPCHandler::doLedgerEntry (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doLedgerEntry (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = lookupLedger (jvRequest, lpLedger);
+    Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
@@ -2822,17 +2818,17 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value jvRequest, int& cost, ScopedL
     uint256     uNodeIndex;
     bool        bNodeBinary = false;
 
-    if (jvRequest.isMember ("index"))
+    if (params.isMember ("index"))
     {
         // XXX Needs to provide proof.
-        uNodeIndex.SetHex (jvRequest["index"].asString ());
+        uNodeIndex.SetHex (params["index"].asString ());
         bNodeBinary = true;
     }
-    else if (jvRequest.isMember ("account_root"))
+    else if (params.isMember ("account_root"))
     {
         RippleAddress   naAccount;
 
-        if (!naAccount.setAccountID (jvRequest["account_root"].asString ())
+        if (!naAccount.setAccountID (params["account_root"].asString ())
                 || !naAccount.getAccountID ())
         {
             jvResult["error"]   = "malformedAddress";
@@ -2842,36 +2838,36 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value jvRequest, int& cost, ScopedL
             uNodeIndex = Ledger::getAccountRootIndex (naAccount.getAccountID ());
         }
     }
-    else if (jvRequest.isMember ("directory"))
+    else if (params.isMember ("directory"))
     {
-        if (!jvRequest["directory"].isObject ())
+        if (!params["directory"].isObject ())
         {
-            uNodeIndex.SetHex (jvRequest["directory"].asString ());
+            uNodeIndex.SetHex (params["directory"].asString ());
         }
-        else if (jvRequest["directory"].isMember ("sub_index")
-                 && !jvRequest["directory"]["sub_index"].isIntegral ())
+        else if (params["directory"].isMember ("sub_index")
+                 && !params["directory"]["sub_index"].isIntegral ())
         {
             jvResult["error"]   = "malformedRequest";
         }
         else
         {
-            uint64  uSubIndex = jvRequest["directory"].isMember ("sub_index")
-                                ? jvRequest["directory"]["sub_index"].asUInt ()
+            uint64  uSubIndex = params["directory"].isMember ("sub_index")
+                                ? params["directory"]["sub_index"].asUInt ()
                                 : 0;
 
-            if (jvRequest["directory"].isMember ("dir_root"))
+            if (params["directory"].isMember ("dir_root"))
             {
                 uint256 uDirRoot;
 
-                uDirRoot.SetHex (jvRequest["dir_root"].asString ());
+                uDirRoot.SetHex (params["dir_root"].asString ());
 
                 uNodeIndex  = Ledger::getDirNodeIndex (uDirRoot, uSubIndex);
             }
-            else if (jvRequest["directory"].isMember ("owner"))
+            else if (params["directory"].isMember ("owner"))
             {
                 RippleAddress   naOwnerID;
 
-                if (!naOwnerID.setAccountID (jvRequest["directory"]["owner"].asString ()))
+                if (!naOwnerID.setAccountID (params["directory"]["owner"].asString ()))
                 {
                     jvResult["error"]   = "malformedAddress";
                 }
@@ -2888,19 +2884,19 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value jvRequest, int& cost, ScopedL
             }
         }
     }
-    else if (jvRequest.isMember ("generator"))
+    else if (params.isMember ("generator"))
     {
         RippleAddress   naGeneratorID;
 
-        if (!jvRequest["generator"].isObject ())
+        if (!params["generator"].isObject ())
         {
-            uNodeIndex.SetHex (jvRequest["generator"].asString ());
+            uNodeIndex.SetHex (params["generator"].asString ());
         }
-        else if (!jvRequest["generator"].isMember ("regular_seed"))
+        else if (!params["generator"].isMember ("regular_seed"))
         {
             jvResult["error"]   = "malformedRequest";
         }
-        else if (!naGeneratorID.setSeedGeneric (jvRequest["generator"]["regular_seed"].asString ()))
+        else if (!naGeneratorID.setSeedGeneric (params["generator"]["regular_seed"].asString ()))
         {
             jvResult["error"]   = "malformedAddress";
         }
@@ -2914,37 +2910,37 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value jvRequest, int& cost, ScopedL
             uNodeIndex  = Ledger::getGeneratorIndex (na0Public.getAccountID ());
         }
     }
-    else if (jvRequest.isMember ("offer"))
+    else if (params.isMember ("offer"))
     {
         RippleAddress   naAccountID;
 
-        if (!jvRequest["offer"].isObject ())
+        if (!params["offer"].isObject ())
         {
-            uNodeIndex.SetHex (jvRequest["offer"].asString ());
+            uNodeIndex.SetHex (params["offer"].asString ());
         }
-        else if (!jvRequest["offer"].isMember ("account")
-                 || !jvRequest["offer"].isMember ("seq")
-                 || !jvRequest["offer"]["seq"].isIntegral ())
+        else if (!params["offer"].isMember ("account")
+                 || !params["offer"].isMember ("seq")
+                 || !params["offer"]["seq"].isIntegral ())
         {
             jvResult["error"]   = "malformedRequest";
         }
-        else if (!naAccountID.setAccountID (jvRequest["offer"]["account"].asString ()))
+        else if (!naAccountID.setAccountID (params["offer"]["account"].asString ()))
         {
             jvResult["error"]   = "malformedAddress";
         }
         else
         {
-            uint32      uSequence   = jvRequest["offer"]["seq"].asUInt ();
+            uint32      uSequence   = params["offer"]["seq"].asUInt ();
 
             uNodeIndex  = Ledger::getOfferIndex (naAccountID.getAccountID (), uSequence);
         }
     }
-    else if (jvRequest.isMember ("ripple_state"))
+    else if (params.isMember ("ripple_state"))
     {
         RippleAddress   naA;
         RippleAddress   naB;
         uint160         uCurrency;
-        Json::Value     jvRippleState   = jvRequest["ripple_state"];
+        Json::Value     jvRippleState   = params["ripple_state"];
 
         if (!jvRippleState.isObject ()
                 || !jvRippleState.isMember ("currency")
@@ -3021,10 +3017,10 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value jvRequest, int& cost, ScopedL
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value RPCHandler::doLedgerHeader (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doLedgerHeader (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = lookupLedger (jvRequest, lpLedger);
+    Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
@@ -3063,15 +3059,15 @@ boost::unordered_set<RippleAddress> RPCHandler::parseAccountIds (const Json::Val
     return usnaResult;
 }
 
-Json::Value RPCHandler::doSubscribe (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doSubscribe (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);
-    uint32      uLedgerIndex = jvRequest.isMember ("ledger_index") && jvRequest["ledger_index"].isNumeric ()
-                               ? jvRequest["ledger_index"].asUInt ()
+    uint32      uLedgerIndex = params.isMember ("ledger_index") && params["ledger_index"].isNumeric ()
+                               ? params["ledger_index"].asUInt ()
                                : 0;
 
-    if (!mInfoSub && !jvRequest.isMember ("url"))
+    if (!mInfoSub && !params.isMember ("url"))
     {
         // Must be a JSON-RPC call.
         WriteLog (lsINFO, RPCHandler) << boost::str (boost::format ("doSubscribe: RPC subscribe requires a url"));
@@ -3079,22 +3075,22 @@ Json::Value RPCHandler::doSubscribe (Json::Value jvRequest, int& cost, ScopedLoc
         return rpcError (rpcINVALID_PARAMS);
     }
 
-    if (jvRequest.isMember ("url"))
+    if (params.isMember ("url"))
     {
         if (mRole != ADMIN)
             return rpcError (rpcNO_PERMISSION);
 
-        std::string strUrl      = jvRequest["url"].asString ();
-        std::string strUsername = jvRequest.isMember ("url_username") ? jvRequest["url_username"].asString () : "";
-        std::string strPassword = jvRequest.isMember ("url_password") ? jvRequest["url_password"].asString () : "";
+        std::string strUrl      = params["url"].asString ();
+        std::string strUsername = params.isMember ("url_username") ? params["url_username"].asString () : "";
+        std::string strPassword = params.isMember ("url_password") ? params["url_password"].asString () : "";
 
         // DEPRECATED
-        if (jvRequest.isMember ("username"))
-            strUsername = jvRequest["username"].asString ();
+        if (params.isMember ("username"))
+            strUsername = params["username"].asString ();
 
         // DEPRECATED
-        if (jvRequest.isMember ("password"))
-            strPassword = jvRequest["password"].asString ();
+        if (params.isMember ("password"))
+            strPassword = params["password"].asString ();
 
         ispSub  = mNetOps->findRpcSub (strUrl);
 
@@ -3109,10 +3105,10 @@ Json::Value RPCHandler::doSubscribe (Json::Value jvRequest, int& cost, ScopedLoc
         {
             WriteLog (lsTRACE, RPCHandler) << boost::str (boost::format ("doSubscribe: reusing: %s") % strUrl);
 
-            if (jvRequest.isMember ("username"))
+            if (params.isMember ("username"))
                 dynamic_cast<RPCSub*> (&*ispSub)->setUsername (strUsername);
 
-            if (jvRequest.isMember ("password"))
+            if (params.isMember ("password"))
                 dynamic_cast<RPCSub*> (&*ispSub)->setPassword (strPassword);
         }
     }
@@ -3121,11 +3117,11 @@ Json::Value RPCHandler::doSubscribe (Json::Value jvRequest, int& cost, ScopedLoc
         ispSub  = mInfoSub;
     }
 
-    if (!jvRequest.isMember ("streams"))
+    if (!params.isMember ("streams"))
     {
         nothing ();
     }
-    else if (!jvRequest["streams"].isArray ())
+    else if (!params["streams"].isArray ())
     {
         WriteLog (lsINFO, RPCHandler) << boost::str (boost::format ("doSubscribe: streams requires an array."));
 
@@ -3133,7 +3129,7 @@ Json::Value RPCHandler::doSubscribe (Json::Value jvRequest, int& cost, ScopedLoc
     }
     else
     {
-        for (Json::Value::iterator it = jvRequest["streams"].begin (); it != jvRequest["streams"].end (); it++)
+        for (Json::Value::iterator it = params["streams"].begin (); it != params["streams"].end (); it++)
         {
             if ((*it).isString ())
             {
@@ -3168,21 +3164,21 @@ Json::Value RPCHandler::doSubscribe (Json::Value jvRequest, int& cost, ScopedLoc
         }
     }
 
-    std::string strAccountsProposed = jvRequest.isMember ("accounts_proposed")
+    std::string strAccountsProposed = params.isMember ("accounts_proposed")
                                       ? "accounts_proposed"
                                       : "rt_accounts";                                    // DEPRECATED
 
-    if (!jvRequest.isMember (strAccountsProposed))
+    if (!params.isMember (strAccountsProposed))
     {
         nothing ();
     }
-    else if (!jvRequest[strAccountsProposed].isArray ())
+    else if (!params[strAccountsProposed].isArray ())
     {
         return rpcError (rpcINVALID_PARAMS);
     }
     else
     {
-        boost::unordered_set<RippleAddress> usnaAccoundIds  = parseAccountIds (jvRequest[strAccountsProposed]);
+        boost::unordered_set<RippleAddress> usnaAccoundIds  = parseAccountIds (params[strAccountsProposed]);
 
         if (usnaAccoundIds.empty ())
         {
@@ -3194,18 +3190,18 @@ Json::Value RPCHandler::doSubscribe (Json::Value jvRequest, int& cost, ScopedLoc
         }
     }
 
-    if (!jvRequest.isMember ("accounts"))
+    if (!params.isMember ("accounts"))
     {
         nothing ();
 
     }
-    else if (!jvRequest["accounts"].isArray ())
+    else if (!params["accounts"].isArray ())
     {
         return rpcError (rpcINVALID_PARAMS);
     }
     else
     {
-        boost::unordered_set<RippleAddress> usnaAccoundIds  = parseAccountIds (jvRequest["accounts"]);
+        boost::unordered_set<RippleAddress> usnaAccoundIds  = parseAccountIds (params["accounts"]);
 
         if (usnaAccoundIds.empty ())
         {
@@ -3219,17 +3215,17 @@ Json::Value RPCHandler::doSubscribe (Json::Value jvRequest, int& cost, ScopedLoc
         }
     }
 
-    if (!jvRequest.isMember ("books"))
+    if (!params.isMember ("books"))
     {
         nothing ();
     }
-    else if (!jvRequest["books"].isArray ())
+    else if (!params["books"].isArray ())
     {
         return rpcError (rpcINVALID_PARAMS);
     }
     else
     {
-        for (Json::Value::iterator it = jvRequest["books"].begin (); it != jvRequest["books"].end (); it++)
+        for (Json::Value::iterator it = params["books"].begin (); it != params["books"].end (); it++)
         {
             Json::Value&    jvSubRequest    = *it;
 
@@ -3355,23 +3351,23 @@ Json::Value RPCHandler::doSubscribe (Json::Value jvRequest, int& cost, ScopedLoc
 }
 
 // FIXME: This leaks RPCSub objects for JSON-RPC.  Shouldn't matter for anyone sane.
-Json::Value RPCHandler::doUnsubscribe (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doUnsubscribe (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);
 
-    if (!mInfoSub && !jvRequest.isMember ("url"))
+    if (!mInfoSub && !params.isMember ("url"))
     {
         // Must be a JSON-RPC call.
         return rpcError (rpcINVALID_PARAMS);
     }
 
-    if (jvRequest.isMember ("url"))
+    if (params.isMember ("url"))
     {
         if (mRole != ADMIN)
             return rpcError (rpcNO_PERMISSION);
 
-        std::string strUrl  = jvRequest["url"].asString ();
+        std::string strUrl  = params["url"].asString ();
 
         ispSub  = mNetOps->findRpcSub (strUrl);
 
@@ -3383,9 +3379,9 @@ Json::Value RPCHandler::doUnsubscribe (Json::Value jvRequest, int& cost, ScopedL
         ispSub  = mInfoSub;
     }
 
-    if (jvRequest.isMember ("streams"))
+    if (params.isMember ("streams"))
     {
-        for (Json::Value::iterator it = jvRequest["streams"].begin (); it != jvRequest["streams"].end (); it++)
+        for (Json::Value::iterator it = params["streams"].begin (); it != params["streams"].end (); it++)
         {
             if ((*it).isString ())
             {
@@ -3420,12 +3416,12 @@ Json::Value RPCHandler::doUnsubscribe (Json::Value jvRequest, int& cost, ScopedL
         }
     }
 
-    if (jvRequest.isMember ("accounts_proposed") || jvRequest.isMember ("rt_accounts"))
+    if (params.isMember ("accounts_proposed") || params.isMember ("rt_accounts"))
     {
         boost::unordered_set<RippleAddress> usnaAccoundIds  = parseAccountIds (
-                    jvRequest.isMember ("accounts_proposed")
-                    ? jvRequest["accounts_proposed"]
-                    : jvRequest["rt_accounts"]);                    // DEPRECATED
+                    params.isMember ("accounts_proposed")
+                    ? params["accounts_proposed"]
+                    : params["rt_accounts"]);                    // DEPRECATED
 
         if (usnaAccoundIds.empty ())
         {
@@ -3437,9 +3433,9 @@ Json::Value RPCHandler::doUnsubscribe (Json::Value jvRequest, int& cost, ScopedL
         }
     }
 
-    if (jvRequest.isMember ("accounts"))
+    if (params.isMember ("accounts"))
     {
-        boost::unordered_set<RippleAddress> usnaAccoundIds  = parseAccountIds (jvRequest["accounts"]);
+        boost::unordered_set<RippleAddress> usnaAccoundIds  = parseAccountIds (params["accounts"]);
 
         if (usnaAccoundIds.empty ())
         {
@@ -3451,17 +3447,17 @@ Json::Value RPCHandler::doUnsubscribe (Json::Value jvRequest, int& cost, ScopedL
         }
     }
 
-    if (!jvRequest.isMember ("books"))
+    if (!params.isMember ("books"))
     {
         nothing ();
     }
-    else if (!jvRequest["books"].isArray ())
+    else if (!params["books"].isArray ())
     {
         return rpcError (rpcINVALID_PARAMS);
     }
     else
     {
-        for (Json::Value::iterator it = jvRequest["books"].begin (); it != jvRequest["books"].end (); it++)
+        for (Json::Value::iterator it = params["books"].begin (); it != params["books"].end (); it++)
         {
             Json::Value&    jvSubRequest    = *it;
 
@@ -3545,31 +3541,28 @@ Json::Value RPCHandler::doUnsubscribe (Json::Value jvRequest, int& cost, ScopedL
 //
 // JSON-RPC provides a method and an array of params. JSON-RPC is used as a transport for a command and a request object. The
 // command is the method. The request object is supplied as the first element of the params.
-Json::Value RPCHandler::doRpcCommand (const std::string& strMethod, Json::Value& jvParams, int iRole, int& cost)
+Json::Value RPCHandler::doRpcCommand (const std::string& strMethod, Json::Value& jvParams, int iRole, LoadType* loadType)
 {
-    if (cost == 0)
-        cost = rpcCOST_DEFAULT;
-
     WriteLog (lsTRACE, RPCHandler) << "doRpcCommand:" << strMethod << ":" << jvParams;
 
     if (!jvParams.isArray () || jvParams.size () > 1)
         return rpcError (rpcINVALID_PARAMS);
 
-    Json::Value jvRequest   = jvParams.size () ? jvParams[0u] : Json::Value (Json::objectValue);
+    Json::Value params   = jvParams.size () ? jvParams[0u] : Json::Value (Json::objectValue);
 
-    if (!jvRequest.isObject ())
+    if (!params.isObject ())
         return rpcError (rpcINVALID_PARAMS);
 
     // Provide the JSON-RPC method as the field "command" in the request.
-    jvRequest["command"]    = strMethod;
+    params["command"]    = strMethod;
 
-    Json::Value jvResult    = doCommand (jvRequest, iRole, cost);
+    Json::Value jvResult    = doCommand (params, iRole, loadType);
 
     // Always report "status".  On an error report the request as received.
     if (jvResult.isMember ("error"))
     {
         jvResult["status"]  = "error";
-        jvResult["request"] = jvRequest;
+        jvResult["request"] = params;
 
     }
     else
@@ -3580,20 +3573,17 @@ Json::Value RPCHandler::doRpcCommand (const std::string& strMethod, Json::Value&
     return jvResult;
 }
 
-Json::Value RPCHandler::doInternal (Json::Value jvRequest, int& cost, ScopedLock& MasterLockHolder)
+Json::Value RPCHandler::doInternal (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     // Used for debug or special-purpose RPC commands
-    if (!jvRequest.isMember ("internal_command"))
+    if (!params.isMember ("internal_command"))
         return rpcError (rpcINVALID_PARAMS);
 
-    return RPCInternalHandler::runHandler (jvRequest["internal_command"].asString (), jvRequest["params"]);
+    return RPCInternalHandler::runHandler (params["internal_command"].asString (), params["params"]);
 }
 
-Json::Value RPCHandler::doCommand (const Json::Value& jvRequest, int iRole, int& cost)
+Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadType* loadType)
 {
-    if (cost == 0)
-        cost = rpcCOST_DEFAULT;
-
     if (iRole != ADMIN)
     {
         int jc = theApp->getJobQueue ().getJobCountGE (jtCLIENT);
@@ -3605,13 +3595,13 @@ Json::Value RPCHandler::doCommand (const Json::Value& jvRequest, int iRole, int&
         }
     }
 
-    if (!jvRequest.isMember ("command"))
+    if (!params.isMember ("command"))
         return rpcError (rpcCOMMAND_MISSING);
 
-    std::string     strCommand  = jvRequest["command"].asString ();
+    std::string     strCommand  = params["command"].asString ();
 
     WriteLog (lsTRACE, RPCHandler) << "COMMAND:" << strCommand;
-    WriteLog (lsTRACE, RPCHandler) << "REQUEST:" << jvRequest;
+    WriteLog (lsTRACE, RPCHandler) << "REQUEST:" << params;
 
     mRole   = iRole;
 
@@ -3728,7 +3718,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& jvRequest, int iRole, int&
     {
         try
         {
-            Json::Value jvRaw       = (this->* (commandsA[i].dfpFunc)) (jvRequest, cost, MasterLockHolder);
+            Json::Value jvRaw       = (this->* (commandsA[i].dfpFunc)) (params, loadType, MasterLockHolder);
 
             // Regularize result.
             if (jvRaw.isObject ())
@@ -3750,8 +3740,8 @@ Json::Value RPCHandler::doCommand (const Json::Value& jvRequest, int iRole, int&
         {
             WriteLog (lsINFO, RPCHandler) << "Caught throw: " << e.what ();
 
-            if (cost == rpcCOST_DEFAULT)
-                cost = rpcCOST_EXCEPTION;
+            if (*loadType == LT_RPCReference)
+                *loadType = LT_RPCException;
 
             return rpcError (rpcINTERNAL);
         }

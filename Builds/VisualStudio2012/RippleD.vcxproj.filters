@@ -600,9 +600,6 @@
     <ClCompile Include="..\..\src\cpp\ripple\ripple_NicknameState.cpp">
       <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_LoadManager.cpp">
-      <Filter>1. Modules\ripple_app\refactored</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_Application.cpp">
       <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
@@ -899,6 +896,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\functional\ripple_LoadFeeTrack.cpp">
       <Filter>1. Modules\ripple_core\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\cpp\ripple\ripple_LoadManager.cpp">
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1409,9 +1409,6 @@
     <ClInclude Include="..\..\src\cpp\ripple\ripple_NicknameState.h">
       <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_LoadManager.h">
-      <Filter>1. Modules\ripple_app\refactored</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_IApplication.h">
       <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
@@ -1724,6 +1721,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\functional\ripple_ILoadFeeTrack.h">
       <Filter>1. Modules\ripple_core\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\cpp\ripple\ripple_ILoadManager.h">
+      <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

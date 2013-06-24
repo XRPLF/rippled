@@ -10,6 +10,7 @@
     @ingroup ripple_client
 */
 
+/*
 #include <set>
 
 #include <boost/unordered_set.hpp>
@@ -21,6 +22,8 @@
 #include "../ripple_basics/ripple_basics.h"
 
 #include "../ripple_data/ripple_data.h"
+
+*/
 
 /*
 #include "src/cpp/ripple/ripple_InfoSub.h"
@@ -44,7 +47,7 @@
 #include     "src/cpp/ripple/Ledger.h"
 #include   "src/cpp/ripple/ripple_LedgerEntrySet.h"
 #include    "src/cpp/ripple/TransactionEngine.h"
-#include "src/cpp/ripple/ripple_LoadManager.h"
+#include "src/cpp/ripple/ripple_ILoadManager.h"
 #include  "src/cpp/ripple/ripple_Peer.h"
 #include   "src/cpp/ripple/ripple_PeerSet.h"
 #include    "src/cpp/ripple/ripple_InboundLedger.h"

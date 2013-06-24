@@ -1762,7 +1762,7 @@
     <ClInclude Include="..\..\src\cpp\ripple\LedgerMaster.h" />
     <ClInclude Include="..\..\src\cpp\ripple\LedgerProposal.h" />
     <ClInclude Include="..\..\src\cpp\ripple\LedgerTiming.h" />
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_LoadManager.h" />
+    <ClInclude Include="..\..\src\cpp\ripple\ripple_ILoadManager.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ripple_InboundLedgers.h" />
     <ClInclude Include="..\..\src\cpp\ripple\NetworkOPs.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ripple_NicknameState.h" />

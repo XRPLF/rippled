@@ -616,6 +616,9 @@ void NetworkOPs::checkState (const boost::system::error_code& result)
 
     if ((result == boost::asio::error::operation_aborted) || theConfig.RUN_STANDALONE)
     {
+        // VFALCO NOTE Should never get here. This is probably dead code.
+        //             If RUN_STANDALONE is set then this function isn't called.
+        //
         WriteLog (lsFATAL, NetworkOPs) << "Network state timer error: " << result;
         return;
     }
@@ -623,7 +626,7 @@ void NetworkOPs::checkState (const boost::system::error_code& result)
     {
         ScopedLock sl (theApp->getMasterLock ());
 
-        theApp->getLoadManager ().noDeadLock ();
+        theApp->getLoadManager ().resetDeadlockDetector ();
 
         std::vector<Peer::pointer> peerList = theApp->getPeers ().getPeerVector ();
 

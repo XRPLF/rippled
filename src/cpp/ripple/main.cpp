@@ -35,8 +35,9 @@ void startServer ()
 
             RPCHandler  rhHandler (&theApp->getOPs ());
 
-            int cost = 10;
-            Json::Value jvResult    = rhHandler.doCommand (jvCommand, RPCHandler::ADMIN, cost);
+            // VFALCO TODO Clean up this magic number
+            LoadType loadType = LT_RPCReference;
+            Json::Value jvResult    = rhHandler.doCommand (jvCommand, RPCHandler::ADMIN, &loadType);
 
             if (!theConfig.QUIET)
                 std::cerr << "Result: " << jvResult << std::endl;
