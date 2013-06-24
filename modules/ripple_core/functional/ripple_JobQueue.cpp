@@ -152,7 +152,7 @@ Json::Value JobQueue::getJson (int)
     return ret;
 }
 
-int JobQueue::isOverloaded ()
+bool JobQueue::isOverloaded ()
 {
     int count = 0;
     boost::mutex::scoped_lock sl (mJobLock);
@@ -161,7 +161,7 @@ int JobQueue::isOverloaded ()
         if (mJobLoads[i].isOver ())
             ++count;
 
-    return count;
+    return count > 0;
 }
 
 void JobQueue::shutdown ()

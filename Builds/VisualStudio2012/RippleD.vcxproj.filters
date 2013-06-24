@@ -393,9 +393,6 @@
     <ClCompile Include="..\..\src\cpp\ripple\ripple_DatabaseCon.cpp">
       <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_LoadFeeTrack.cpp">
-      <Filter>1. Modules\ripple_app\refactored</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_Validations.cpp">
       <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
@@ -433,12 +430,6 @@
       <Filter>1. Modules\ripple_app\_unfactored\ledger</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_Config.cpp">
-      <Filter>1. Modules\ripple_app\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_Job.cpp">
-      <Filter>1. Modules\ripple_app\refactored</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_JobQueue.cpp">
       <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\HTTPRequest.cpp">
@@ -1248,12 +1239,6 @@
       <Filter>1. Modules\ripple_app\_unfactored\ledger</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_Config.h">
-      <Filter>1. Modules\ripple_app\refactored</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_Job.h">
-      <Filter>1. Modules\ripple_app\refactored</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_JobQueue.h">
       <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\HTTPRequest.h">

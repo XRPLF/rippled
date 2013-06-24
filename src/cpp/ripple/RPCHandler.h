@@ -139,6 +139,9 @@ public:
     static Json::Value runHandler (const std::string& name, const Json::Value& params);
 
 private:
+    // VFALCO TODO Replace with a singleton with a well defined interface and
+    //             a lock free stack (if necessary).
+    //
     static RPCInternalHandler*  sHeadHandler;
 
     RPCInternalHandler*         mNextHandler;

@@ -202,40 +202,63 @@ void LoadManager::threadEntry ()
 {
     setCallingThreadName ("loadmgr");
 
-    // VFALCO TODO replace this with a beast Time object
+    // VFALCO TODO replace this with a beast Time object?
+    //
+    // Initialize the clock to the current time.
     boost::posix_time::ptime t = boost::posix_time::microsec_clock::universal_time ();
 
-    while (1)
+    for (;;)
     {
         {
+            // VFALCO NOTE What is this lock protecting?
             boost::mutex::scoped_lock sl (mLock);
 
+            // Check for the shutdown flag.
             if (mShutdown)
             {
+                // VFALCO NOTE Why clear the flag now?
                 mShutdown = false;
                 return;
             }
 
+            // VFALCO NOTE I think this is to reduce calls to the operating system
+            //             for retrieving the current time.
+            //
+            //        TODO Instead of incrementing can't we just retrieve the current
+            //             time again?
+            //
+            // Manually update the timer.
             UptimeTimer::getInstance ().incrementElapsedTime ();
 
-            int dlTime = UptimeTimer::getInstance ().getElapsedSeconds () - mDeadLock;
+            // Measure the amount of time we have been deadlocked, in seconds.
+            //
+            // VFALCO NOTE mDeadLock is a canary for detecting the condition.
+            int const timeSpentDeadlocked = UptimeTimer::getInstance ().getElapsedSeconds () - mDeadLock;
 
-            if (mArmed && (dlTime >= 10))
+            if (mArmed && (timeSpentDeadlocked >= 10))
             {
-                if ((dlTime % 10) == 0)
+                // Report the deadlocked condition every 10 seconds
+                if ((timeSpentDeadlocked % 10) == 0)
                 {
-                    boost::thread (BIND_TYPE (&LogDeadLock, dlTime)).detach ();
+                    // VFALCO TODO Replace this with a dedicated thread with call queue.
+                    //
+                    boost::thread (BIND_TYPE (&LogDeadLock, timeSpentDeadlocked)).detach ();
                 }
 
-                assert (dlTime < 500);
+                // If we go over 500 seconds spent deadlocked, it means that the
+                // deadlock resolution code has failed, which qualifies as undefined
+                // behavior.
+                //
+                assert (timeSpentDeadlocked < 500);
             }
 
         }
 
-        // VFALCO TODO Eliminate the dependence on the Application object by
-        //         constructing with the job queue and the fee tracker.
         bool change;
 
+        // VFALCO TODO Eliminate the dependence on the Application object.
+        //             Choices include constructing with the job queue / feetracker.
+        //             Another option is using an observer pattern to invert the dependency.
         if (theApp->getJobQueue ().isOverloaded ())
         {
             WriteLog (lsINFO, LoadManager) << theApp->getJobQueue ().getJson (0);

@@ -40,7 +40,23 @@ enum
     LC_Network = 4
 };
 
-// a single endpoint that can impose load
+/** Tracks the consumption of resources at an endpoint.
+
+    To prevent monopolization of server resources or attacks on servers,
+    resource consumption is monitored at each endpoint. When consumption
+    exceeds certain thresholds, costs are imposed. Costs include charging
+    additional XRP for transactions, requiring a proof of work to be
+    performed, or simply disconnecting the endpoint.
+
+    Currently, consumption endpoints include:
+
+    - WebSocket connections
+    - Peer connections
+
+    @note Although RPC connections consume resources, they are transient and
+          cannot be rate limited. It is advised not to expose RPC interfaces
+          to the general public.
+*/
 class LoadSource
 {
 private:
@@ -53,6 +69,13 @@ public:
     static const int lsfOutbound    = 2; // outbound connection
 
 public:
+    /** Construct a load source.
+
+        Sources with admin privileges have relaxed or no restrictions
+        on resource consumption.
+
+        @param admin    `true` if the source has admin privileges.
+    */
     explicit LoadSource (bool admin)
         : mBalance (0)
         , mFlags (admin ? lsfPrivileged : 0)
@@ -142,22 +165,6 @@ public:
 
     void init ();
 
-    int getCreditRate () const;
-
-    int getCreditLimit () const;
-
-    int getDebitWarn () const;
-
-    int getDebitLimit () const;
-
-    void setCreditRate (int);
-
-    void setCreditLimit (int);
-
-    void setDebitWarn (int);
-
-    void setDebitLimit (int);
-
     bool shouldWarn (LoadSource&) const;
 
     bool shouldCutoff (LoadSource&) const;
@@ -183,6 +190,17 @@ public:
     }
 
 private:
+    // VFALCO TODO These used to be public but are apparently not used. Find out why.
+    int getCreditRate () const;
+    int getCreditLimit () const;
+    int getDebitWarn () const;
+    int getDebitLimit () const;
+    void setCreditRate (int);
+    void setCreditLimit (int);
+    void setDebitWarn (int);
+    void setDebitLimit (int);
+
+private:
     class Cost
     {
     public:
@@ -201,7 +219,7 @@ private:
         }
 
     public:
-        // VFALCO TODO Make these private
+        // VFALCO TODO Make these private and const
         LoadType    mType;
         int         mCost;
         int         mCategories;
