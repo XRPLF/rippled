@@ -153,8 +153,11 @@ std::string RPCServer::handleRequest (const std::string& requestStr)
     RPCHandler mRPCHandler (mNetOps);
 
     WriteLog (lsINFO, RPCServer) << valParams;
-    int cost = 10;
-    Json::Value result = mRPCHandler.doRpcCommand (strMethod, valParams, mRole, cost);
+    LoadType loadType = LT_RPCReference;
+    Json::Value result = mRPCHandler.doRpcCommand (strMethod, valParams, mRole, &loadType);
+
+    // VFALCO NOTE We discard loadType since there is no endpoint to punish
+
     WriteLog (lsINFO, RPCServer) << result;
 
     std::string strReply = JSONRPCReply (result, Json::Value (), id);

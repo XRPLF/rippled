@@ -4,10 +4,14 @@
 */
 //==============================================================================
 
-#ifndef _PARSE_SECTION_
-#define _PARSE_SECTION_
+#ifndef RIPPLE_INIFILE_RIPPLEHEADER
+#define RIPPLE_INIFILE_RIPPLEHEADER
 
-typedef std::map<const std::string, std::vector<std::string> > Section;
+// VFALCO TODO Rename to IniFile and clean up
+typedef std::map <const std::string, std::vector<std::string> > Section;
+
+// VFALCO TODO Wrap this up in a class interface
+//
 
 Section ParseSection (const std::string& strInput, const bool bTrim);
 void SectionPrint (Section secInput);

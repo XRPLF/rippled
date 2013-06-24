@@ -89,6 +89,7 @@ namespace ripple
 #include "utility/ripple_ByteOrder.h"
 #include "utility/ripple_CountedObject.h"
 #include "utility/ripple_DiffieHellmanUtil.h"
+#include "utility/ripple_IniFile.h"
 #include "utility/ripple_PlatformMacros.h"
 #include "utility/ripple_RandomNumbers.h"
 #include "utility/ripple_ScopedLock.h"

@@ -90,7 +90,7 @@ void InboundLedgers::gotLedgerData (Job&, uint256 hash,
         WriteLog (lsTRACE, InboundLedger) << "Got data for ledger we're not acquiring";
 
         if (peer)
-            peer->punishPeer (LT_InvalidRequest);
+            peer->applyLoadCharge (LT_InvalidRequest);
 
         return;
     }
@@ -105,14 +105,14 @@ void InboundLedgers::gotLedgerData (Job&, uint256 hash,
         if (packet.nodes_size () < 1)
         {
             WriteLog (lsWARNING, InboundLedger) << "Got empty base data";
-            peer->punishPeer (LT_InvalidRequest);
+            peer->applyLoadCharge (LT_InvalidRequest);
             return;
         }
 
         if (!ledger->takeBase (packet.nodes (0).nodedata ()))
         {
             WriteLog (lsWARNING, InboundLedger) << "Got invalid base data";
-            peer->punishPeer (LT_InvalidRequest);
+            peer->applyLoadCharge (LT_InvalidRequest);
             return;
         }
 
@@ -147,7 +147,7 @@ void InboundLedgers::gotLedgerData (Job&, uint256 hash,
         if (packet.nodes ().size () <= 0)
         {
             WriteLog (lsINFO, InboundLedger) << "Got response with no nodes";
-            peer->punishPeer (LT_InvalidRequest);
+            peer->applyLoadCharge (LT_InvalidRequest);
             return;
         }
 
@@ -158,7 +158,7 @@ void InboundLedgers::gotLedgerData (Job&, uint256 hash,
             if (!node.has_nodeid () || !node.has_nodedata ())
             {
                 WriteLog (lsWARNING, InboundLedger) << "Got bad node";
-                peer->punishPeer (LT_InvalidRequest);
+                peer->applyLoadCharge (LT_InvalidRequest);
                 return;
             }
 
@@ -185,7 +185,7 @@ void InboundLedgers::gotLedgerData (Job&, uint256 hash,
     }
 
     WriteLog (lsWARNING, InboundLedger) << "Not sure what ledger data we got";
-    peer->punishPeer (LT_InvalidRequest);
+    peer->applyLoadCharge (LT_InvalidRequest);
 }
 
 void InboundLedgers::sweep ()

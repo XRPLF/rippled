@@ -7,15 +7,6 @@
 #ifndef RIPPLE_IAPPLICATION_H
 #define RIPPLE_IAPPLICATION_H
 
-// VFALCO TODO Replace these with beast "unsigned long long" generators
-// VFALCO NOTE Apparently these are used elsewhere. Make them constants in the config
-//             or in the IApplication
-//
-#define SYSTEM_CURRENCY_GIFT        1000ull
-#define SYSTEM_CURRENCY_USERS       100000000ull
-#define SYSTEM_CURRENCY_PARTS       1000000ull      // 10^SYSTEM_CURRENCY_PRECISION
-#define SYSTEM_CURRENCY_START       (SYSTEM_CURRENCY_GIFT*SYSTEM_CURRENCY_USERS*SYSTEM_CURRENCY_PARTS)
-
 // VFALCO TODO Fix forward declares required for header dependency loops
 class IFeatures;
 class IFeeVote;
@@ -74,6 +65,7 @@ public:
     virtual IFeeVote&               getFeeVote () = 0;
     virtual IHashRouter&            getHashRouter () = 0;
     virtual ILoadFeeTrack&          getFeeTrack () = 0;
+    virtual ILoadManager&           getLoadManager () = 0;
     virtual IPeers&                 getPeers () = 0;
     virtual IProofOfWorkFactory&    getProofOfWorkFactory () = 0;
     virtual IUniqueNodeList&        getUNL () = 0;
@@ -81,22 +73,23 @@ public:
 
     virtual HashedObjectStore&      getHashedObjectStore () = 0;
     virtual JobQueue&               getJobQueue () = 0;
-    virtual InboundLedgers&    getInboundLedgers () = 0;
+    virtual InboundLedgers&         getInboundLedgers () = 0;
     virtual LedgerMaster&           getLedgerMaster () = 0;
-    virtual LoadManager&            getLoadManager () = 0;
     virtual NetworkOPs&             getOPs () = 0;
     virtual OrderBookDB&            getOrderBookDB () = 0;
     virtual PeerDoor&               getPeerDoor () = 0;
     virtual TransactionMaster&      getMasterTransaction () = 0;
     virtual TXQueue&                getTxnQueue () = 0;
-    virtual LocalCredentials&                 getLocalCredentials () = 0;
+    virtual LocalCredentials&       getLocalCredentials () = 0;
 
     virtual DatabaseCon* getRpcDB () = 0;
     virtual DatabaseCon* getTxnDB () = 0;
     virtual DatabaseCon* getLedgerDB () = 0;
     virtual DatabaseCon* getWalletDB () = 0;
-    virtual DatabaseCon* getNetNodeDB () = 0;
-    virtual DatabaseCon* getPathFindDB () = 0;
+    // VFALCO NOTE It looks like this isn't used...
+    //virtual DatabaseCon* getNetNodeDB () = 0;
+    // VFALCO NOTE It looks like this isn't used...
+    //virtual DatabaseCon* getPathFindDB () = 0;
     virtual DatabaseCon* getHashNodeDB () = 0;
 
     virtual leveldb::DB* getHashNodeLDB () = 0;

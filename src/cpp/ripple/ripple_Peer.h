@@ -57,10 +57,10 @@ public:
 
     virtual void sendGetPeers () = 0;
 
-    virtual void punishPeer (LoadType) = 0;
+    virtual void applyLoadCharge (LoadType) = 0;
 
     // VFALCO NOTE what's with this odd parameter passing? Why the static member?
-    static void punishPeer (const boost::weak_ptr<Peer>&, LoadType);
+    static void applyLoadCharge (const boost::weak_ptr<Peer>&, LoadType);
 
     virtual Json::Value getJson () = 0;
 

@@ -38,7 +38,7 @@ public:
         return LoadEvent::autoptr (new LoadEvent (mJobLoads[t], name, true));
     }
 
-    int isOverloaded ();
+    bool isOverloaded ();
     Json::Value getJson (int c = 0);
 
 private:

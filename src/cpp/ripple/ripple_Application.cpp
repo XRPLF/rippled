@@ -4,8 +4,11 @@
 */
 //==============================================================================
 
-// VFALCO TODO Wrap this up in something neater. Replace NULL with nullptr
-IApplication* theApp = NULL;
+// VFALCO TODO Clean this global up
+volatile bool doShutdown = false;
+
+// VFALCO TODO Wrap this up in something neater.
+IApplication* theApp = nullptr;
 
 class Application;
 
@@ -73,9 +76,9 @@ public:
         return mMasterLock;
     }
     
-    LoadManager& getLoadManager ()
+    ILoadManager& getLoadManager ()
     {
-        return mLoadMgr;
+        return *m_loadManager;
     }
     
     TXQueue& getTxnQueue ()
@@ -218,7 +221,6 @@ private:
     SLECache           mSLECache;
     SNTPClient         mSNTPClient;
     JobQueue           mJobQueue;
-    LoadManager        mLoadMgr;
     TXQueue            mTxnQueue;
     OrderBookDB        mOrderBookDB;
 
@@ -231,6 +233,7 @@ private:
     beast::ScopedPointer <IUniqueNodeList> mUNL;
     beast::ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
     beast::ScopedPointer <IPeers> mPeers;
+    beast::ScopedPointer <ILoadManager> m_loadManager;
     // VFALCO End Clean stuff
 
     DatabaseCon* mRpcDB;
@@ -274,6 +277,7 @@ Application::Application ()
     , mUNL (IUniqueNodeList::New (mIOService))
     , mProofOfWorkFactory (IProofOfWorkFactory::New ())
     , mPeers (IPeers::New (mIOService))
+    , m_loadManager (ILoadManager::New ())
     // VFALCO End new stuff
     // VFALCO TODO replace all NULL with nullptr
     , mRpcDB (NULL)
@@ -296,7 +300,8 @@ Application::Application ()
     HashMaps::getInstance ().initializeNonce <size_t> ();
 }
 
-
+// VFALCO TODO Tidy these up into some class with accessors.
+//
 extern const char* RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[],
        *NetNodeDBInit[], *PathFindDBInit[];
 extern int RpcDBCount, TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount,
@@ -327,8 +332,6 @@ static void InitDB (DatabaseCon** dbCon, const char* fileName, const char* dbIni
     *dbCon = new DatabaseCon (fileName, dbInit, dbCount);
 }
 
-volatile bool doShutdown = false;
-
 #ifdef SIGINT
 void sigIntHandler (int)
 {
@@ -349,6 +352,10 @@ static void runIO (boost::asio::io_service& io)
     io.run ();
 }
 
+// VFALCO TODO Break this function up into many small initialization segments.
+//             Or better yet refactor these initializations into RAII classes
+//             which are members of the Application object.
+//
 void Application::setup ()
 {
     // VFALCO NOTE: 0 means use heuristics to determine the thread count.
@@ -356,7 +363,8 @@ void Application::setup ()
 
     mSweepTimer.expires_from_now (boost::posix_time::seconds (10));
     mSweepTimer.async_wait (boost::bind (&Application::sweep, this));
-    mLoadMgr.init ();
+
+    m_loadManager->startThread ();
 
 #ifndef WIN32
 #ifdef SIGINT
@@ -617,6 +625,8 @@ void Application::setup ()
     }
     else
     {
+        // VFALCO NOTE the state timer resets the deadlock detector.
+        //
         mNetOps.setStateTimer ();
     }
 }
@@ -629,7 +639,12 @@ void Application::run ()
     }
 
     if (!theConfig.RUN_STANDALONE)
-	    theApp->getLoadManager ().arm ();
+    {
+        // VFALCO NOTE This seems unnecessary. If we properly refactor the load
+        //             manager then the deadlock detector can just always be "armed"
+        //
+	    theApp->getLoadManager ().activateDeadlockDetector ();
+    }
 
     mIOService.run (); // This blocks
 

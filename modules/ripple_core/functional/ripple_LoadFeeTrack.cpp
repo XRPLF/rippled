@@ -4,32 +4,10 @@
 */
 //==============================================================================
 
+class LoadManager;
+
 class LoadFeeTrack : public ILoadFeeTrack
 {
-private:
-    static const int lftNormalFee = 256;        // 256 is the minimum/normal load factor
-    static const int lftFeeIncFraction = 16;    // increase fee by 1/16
-    static const int lftFeeDecFraction = 4;     // decrease fee by 1/4
-    static const int lftFeeMax = lftNormalFee * 1000000;
-
-    uint32 mLocalTxnLoadFee;        // Scale factor, lftNormalFee = normal fee
-    uint32 mRemoteTxnLoadFee;       // Scale factor, lftNormalFee = normal fee
-    int raiseCount;
-
-    boost::mutex mLock;
-
-    // VFALCO TODO Move this function to some "math utilities" file
-    // compute (value)*(mul)/(div) - avoid overflow but keep precision
-    uint64 mulDiv (uint64 value, uint32 mul, uint64 div)
-    {
-        static uint64 boundary = (0x00000000FFFFFFFF);
-
-        if (value > boundary)                           // Large value, avoid overflow
-            return (value / div) * mul;
-        else                                            // Normal value, preserve accuracy
-            return (value * mul) / div;
-    }
-
 public:
     LoadFeeTrack ()
         : mLocalTxnLoadFee (lftNormalFee)
@@ -169,6 +147,33 @@ public:
 
         return j;
     }
+
+private:
+    // VFALCO TODO Move this function to some "math utilities" file
+    // compute (value)*(mul)/(div) - avoid overflow but keep precision
+    uint64 mulDiv (uint64 value, uint32 mul, uint64 div)
+    {
+        // VFALCO TODO replace with beast::literal64bitUnsigned ()
+        //
+        static uint64 boundary = (0x00000000FFFFFFFF);
+
+        if (value > boundary)                           // Large value, avoid overflow
+            return (value / div) * mul;
+        else                                            // Normal value, preserve accuracy
+            return (value * mul) / div;
+    }
+
+private:
+    static const int lftNormalFee = 256;        // 256 is the minimum/normal load factor
+    static const int lftFeeIncFraction = 16;    // increase fee by 1/16
+    static const int lftFeeDecFraction = 4;     // decrease fee by 1/4
+    static const int lftFeeMax = lftNormalFee * 1000000;
+
+    uint32 mLocalTxnLoadFee;        // Scale factor, lftNormalFee = normal fee
+    uint32 mRemoteTxnLoadFee;       // Scale factor, lftNormalFee = normal fee
+    int raiseCount;
+
+    boost::mutex mLock;
 };
 
 //------------------------------------------------------------------------------
@@ -205,5 +210,3 @@ BOOST_AUTO_TEST_CASE (LoadFeeTrack_test)
 }
 
 BOOST_AUTO_TEST_SUITE_END ()
-
-// vim:ts=4

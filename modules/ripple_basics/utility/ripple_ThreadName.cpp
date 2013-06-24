@@ -65,6 +65,8 @@ extern void setCallingThreadName (const char* n)
         pName += " ";
     }
 
+    // VFALCO TODO Use beast::Thread::setCurrentThreadName here
+    //
     prctl (PR_SET_NAME, (pName + n).c_str (), 0, 0, 0);
 }
 #endif

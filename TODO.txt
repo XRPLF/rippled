@@ -2,6 +2,8 @@
 TODO
 --------------------------------------------------------------------------------
 
+- Remove "ENABLE_INSECURE" when the time is right.
+
 - Put all the Ripple code in the ripple namespace
   * boost unit tests create namespace problems
 
