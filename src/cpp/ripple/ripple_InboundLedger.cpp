@@ -462,7 +462,7 @@ void InboundLedger::trigger (Peer::ref peer)
             std::vector<uint256> nodeHashes;
             nodeIDs.reserve (256);
             nodeHashes.reserve (256);
-            TransactionStateSF filter (mSeq);
+            AccountStateSF filter (mSeq);
             mLedger->peekAccountStateMap ()->getMissingNodes (nodeIDs, nodeHashes, 256, &filter);
 
             if (nodeIDs.empty ())
@@ -620,7 +620,9 @@ void InboundLedger::filterNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<u
     }
 
     BOOST_FOREACH (const SHAMapNode & n, nodeIDs)
-    recentNodes.insert (n);
+    {
+        recentNodes.insert (n);
+    }
 }
 
 bool InboundLedger::takeBase (const std::string& data) // data must not have hash prefix
@@ -816,7 +818,9 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
         AccountStateSF filter (mLedger->getLedgerSeq ());
         std::vector<uint256> v = mLedger->getNeededAccountStateHashes (4, &filter);
         BOOST_FOREACH (uint256 const & h, v)
-        ret.push_back (std::make_pair (protocol::TMGetObjectByHash::otSTATE_NODE, h));
+        {
+            ret.push_back (std::make_pair (protocol::TMGetObjectByHash::otSTATE_NODE, h));
+        }
     }
 
     if (!mHaveTransactions)
@@ -824,7 +828,9 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
         TransactionStateSF filter (mLedger->getLedgerSeq ());
         std::vector<uint256> v = mLedger->getNeededAccountStateHashes (4, &filter);
         BOOST_FOREACH (uint256 const & h, v)
-        ret.push_back (std::make_pair (protocol::TMGetObjectByHash::otTRANSACTION_NODE, h));
+        {
+            ret.push_back (std::make_pair (protocol::TMGetObjectByHash::otTRANSACTION_NODE, h));
+        }
     }
 
     return ret;
@@ -855,7 +861,9 @@ Json::Value InboundLedger::getJson (int)
         Json::Value hv (Json::arrayValue);
         std::vector<uint256> v = mLedger->peekAccountStateMap ()->getNeededHashes (16, NULL);
         BOOST_FOREACH (uint256 const & h, v)
-        hv.append (h.GetHex ());
+        {
+            hv.append (h.GetHex ());
+        }
         ret["needed_state_hashes"] = hv;
     }
 
@@ -864,7 +872,9 @@ Json::Value InboundLedger::getJson (int)
         Json::Value hv (Json::arrayValue);
         std::vector<uint256> v = mLedger->peekTransactionMap ()->getNeededHashes (16, NULL);
         BOOST_FOREACH (uint256 const & h, v)
-        hv.append (h.GetHex ());
+        {
+            hv.append (h.GetHex ());
+        }
         ret["needed_transaction_hashes"] = hv;
     }
 
