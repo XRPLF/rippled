@@ -482,7 +482,9 @@ void LedgerAcquire::trigger (Peer::ref peer)
                 {
                     tmGL.set_itype (ripple::liAS_NODE);
                     BOOST_FOREACH (SHAMapNode & it, nodeIDs)
-                    * (tmGL.add_nodeids ()) = it.getRawString ();
+                    {
+                        * (tmGL.add_nodeids ()) = it.getRawString ();
+                    }
                     WriteLog (lsTRACE, LedgerAcquire) << "Sending AS node " << nodeIDs.size ()
                                                       << " request to " << (peer ? "selected peer" : "all peers");
                     CondLog (nodeIDs.size () == 1, lsTRACE, LedgerAcquire) << "AS node: " << nodeIDs[0];
@@ -613,8 +615,10 @@ void LedgerAcquire::filterNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<u
         nodeHashes.resize (max);
     }
 
-    BOOST_FOREACH (const SHAMapNode & n, nodeIDs)
-    recentNodes.insert (n);
+    BOOST_FOREACH (SHAMapNode const& n, nodeIDs)
+    {
+        recentNodes.insert (n);
+    }
 }
 
 bool LedgerAcquire::takeBase (const std::string& data) // data must not have hash prefix
@@ -810,7 +814,9 @@ std::vector<LedgerAcquire::neededHash_t> LedgerAcquire::getNeededHashes ()
         AccountStateSF filter (mLedger->getLedgerSeq ());
         std::vector<uint256> v = mLedger->getNeededAccountStateHashes (4, &filter);
         BOOST_FOREACH (uint256 const & h, v)
-        ret.push_back (std::make_pair (ripple::TMGetObjectByHash::otSTATE_NODE, h));
+        {
+            ret.push_back (std::make_pair (ripple::TMGetObjectByHash::otSTATE_NODE, h));
+        }
     }
 
     if (!mHaveTransactions)
@@ -818,7 +824,9 @@ std::vector<LedgerAcquire::neededHash_t> LedgerAcquire::getNeededHashes ()
         TransactionStateSF filter (mLedger->getLedgerSeq ());
         std::vector<uint256> v = mLedger->getNeededAccountStateHashes (4, &filter);
         BOOST_FOREACH (uint256 const & h, v)
-        ret.push_back (std::make_pair (ripple::TMGetObjectByHash::otTRANSACTION_NODE, h));
+        {
+            ret.push_back (std::make_pair (ripple::TMGetObjectByHash::otTRANSACTION_NODE, h));
+        }
     }
 
     return ret;
@@ -849,7 +857,9 @@ Json::Value LedgerAcquire::getJson (int)
         Json::Value hv (Json::arrayValue);
         std::vector<uint256> v = mLedger->peekAccountStateMap ()->getNeededHashes (16, NULL);
         BOOST_FOREACH (uint256 const & h, v)
-        hv.append (h.GetHex ());
+        {
+            hv.append (h.GetHex ());
+        }
         ret["needed_state_hashes"] = hv;
     }
 
@@ -858,7 +868,9 @@ Json::Value LedgerAcquire::getJson (int)
         Json::Value hv (Json::arrayValue);
         std::vector<uint256> v = mLedger->peekTransactionMap ()->getNeededHashes (16, NULL);
         BOOST_FOREACH (uint256 const & h, v)
-        hv.append (h.GetHex ());
+        {
+            hv.append (h.GetHex ());
+        }
         ret["needed_transaction_hashes"] = hv;
     }
 
