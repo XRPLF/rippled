@@ -260,6 +260,26 @@ public:
     }
 
 private:
+    /** Returns a value or throws if out of range.
+
+        This will throw if the source value cannot be represented
+        within the destination type.
+    */
+    // VFALCO NOTE This won't work right
+    /*
+    template <class T, class U>
+    static T getWithRangeCheck (U v)
+    {
+        if (v < std::numeric_limits <T>::min ()) ||
+            v > std::numeric_limits <T>::max ())
+        {
+            throw std::runtime_error ("Value out of range");
+        }
+
+        return static_cast <T> (v);
+    }
+    */
+
     // VFALCO TODO these parameters should not be const references.
     template <typename T, typename U>
     static T range_check_cast (const U& value, const T& minimum, const T& maximum)
