@@ -124,8 +124,13 @@ public:
     inline ObjectClass* operator[] (const int index) const noexcept
     {
         const ScopedLockType lock (getLock());
-        return isPositiveAndBelow (index, numUsed) ? data.elements [index]
-                                                   : static_cast <ObjectClass*> (nullptr);
+        if (isPositiveAndBelow (index, numUsed))
+        {
+            bassert (data.elements != nullptr);
+            return data.elements [index];
+        }
+
+        return nullptr;
     }
 
     /** Returns a pointer to the object at this index in the array, without checking whether the index is in-range.
@@ -136,7 +141,7 @@ public:
     inline ObjectClass* getUnchecked (const int index) const noexcept
     {
         const ScopedLockType lock (getLock());
-        bassert (isPositiveAndBelow (index, numUsed));
+        bassert (isPositiveAndBelow (index, numUsed) && data.elements != nullptr);
         return data.elements [index];
     }
 
@@ -243,6 +248,7 @@ public:
     {
         const ScopedLockType lock (getLock());
         data.ensureAllocatedSize (numUsed + 1);
+        bassert (data.elements != nullptr);
         data.elements [numUsed++] = const_cast <ObjectClass*> (newObject);
     }
 
@@ -274,6 +280,7 @@ public:
                 indexToInsertAt = numUsed;
 
             data.ensureAllocatedSize (numUsed + 1);
+            bassert (data.elements != nullptr);
 
             ObjectClass** const e = data.elements + indexToInsertAt;
             const int numToMove = numUsed - indexToInsertAt;
@@ -426,6 +433,7 @@ public:
             numElementsToAdd = arrayToAddFrom.size() - startIndex;
 
         data.ensureAllocatedSize (numUsed + numElementsToAdd);
+        bassert (data.elements != nullptr);
 
         while (--numElementsToAdd >= 0)
         {
@@ -466,6 +474,7 @@ public:
             numElementsToAdd = arrayToAddFrom.size() - startIndex;
 
         data.ensureAllocatedSize (numUsed + numElementsToAdd);
+        bassert (data.elements != nullptr);
 
         while (--numElementsToAdd >= 0)
         {
@@ -860,6 +869,5 @@ private:
 
     BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OwnedArray)
 };
-
 
 #endif   // BEAST_OWNEDARRAY_BEASTHEADER

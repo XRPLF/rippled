@@ -292,6 +292,7 @@ public:
     {
         const ScopedLockType lock (getLock());
         data.ensureAllocatedSize (numUsed + 1);
+        bassert (data.elements != nullptr);
         data.elements [numUsed++] = newObject;
 
         if (newObject != nullptr)
@@ -322,6 +323,7 @@ public:
                 indexToInsertAt = numUsed;
 
             data.ensureAllocatedSize (numUsed + 1);
+            bassert (data.elements != nullptr);
 
             ObjectClass** const e = data.elements + indexToInsertAt;
             const int numToMove = numUsed - indexToInsertAt;
@@ -388,6 +390,7 @@ public:
             else
             {
                 data.ensureAllocatedSize (numUsed + 1);
+                bassert (data.elements != nullptr);
                 data.elements [numUsed++] = newObject;
             }
         }
@@ -850,6 +853,5 @@ private:
     ArrayAllocationBase <ObjectClass*, TypeOfCriticalSectionToUse> data;
     int numUsed;
 };
-
 
 #endif   // BEAST_REFERENCECOUNTEDARRAY_BEASTHEADER
