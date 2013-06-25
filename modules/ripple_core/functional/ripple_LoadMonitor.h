@@ -36,7 +36,7 @@ private:
 
     boost::mutex        mLock;
     uint64              mCounts;
-    uint64              mLatencyEvents;
+    int mLatencyEvents;
     uint64              mLatencyMSAvg;
     uint64              mLatencyMSPeak;
     uint64              mTargetLatencyAvg;

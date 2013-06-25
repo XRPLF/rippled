@@ -32,6 +32,7 @@ void LoadMonitor::update ()
     if (now == mLastUpdate) // current
         return;
 
+    // VFALCO TODO Why 8?
     if ((now < mLastUpdate) || (now > (mLastUpdate + 8)))
     {
         // way out of date
@@ -45,6 +46,13 @@ void LoadMonitor::update ()
     }
 
     // do exponential decay
+    /*
+        David:
+        
+        "Imagine if you add 10 to something every second. And you
+         also reduce it by 1/4 every second. It will "idle" at 40,
+         correponding to 10 counts per second."
+    */
     do
     {
         ++mLastUpdate;
@@ -79,8 +87,6 @@ void LoadMonitor::addLatency (int latency)
     mLatencyMSPeak += latency;
 
     // VFALCO NOTE Why are we multiplying by 4?
-    // VFALCO NOTE conversion from 64 to 32 bit int loses data
-#pragma message(BEAST_FILEANDLINE_ "Possible 32-bit overflow for long-running server instances.")
     int const latencyPeak = mLatencyEvents * latency * 4;
 
     if (mLatencyMSPeak < latencyPeak)
@@ -108,8 +114,6 @@ void LoadMonitor::addCountAndLatency (const std::string& name, int latency)
     mLatencyMSPeak += latency;
 
     // VFALCO NOTE Why are we multiplying by 4?
-    // VFALCO NOTE conversion from 64 to 32 bit int loses data
-#pragma message(BEAST_FILEANDLINE_ "Possible 32-bit overflow for long-running server instances.")
     int const latencyPeak = mLatencyEvents * latency * 4;
 
     if (mLatencyMSPeak < latencyPeak)

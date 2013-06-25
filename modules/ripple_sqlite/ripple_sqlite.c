@@ -50,7 +50,7 @@
 
 // VFALCO TODO We should try running with SQLITE_THREADSAFE==2 and see what happens.
 #if SQLITE_THREADSAFE != 2
-#pragma message(BEAST_FILEANDLINE_ "Possible performance issue, SQLITE_THREADSAFE != 2")
+//#pragma message(BEAST_FILEANDLINE_ "Possible performance issue, SQLITE_THREADSAFE != 2")
 #endif
 
 #include "sqlite/sqlite3.c"
