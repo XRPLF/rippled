@@ -230,8 +230,14 @@ public:
     ElementType operator[] (const int index) const
     {
         const ScopedLockType lock (getLock());
-        return isPositiveAndBelow (index, numUsed) ? data.elements [index]
-                                                   : ElementType();
+
+        if (isPositiveAndBelow (index, numUsed))
+        {
+            bassert (data.elements != nullptr);
+            return data.elements [index];
+        }
+
+        return ElementType();
     }
 
     /** Returns one of the elements in the array, without checking the index passed in.
@@ -246,7 +252,7 @@ public:
     inline ElementType getUnchecked (const int index) const
     {
         const ScopedLockType lock (getLock());
-        bassert (isPositiveAndBelow (index, numUsed));
+        bassert (isPositiveAndBelow (index, numUsed) && data.elements != nullptr);
         return data.elements [index];
     }
 
@@ -262,7 +268,7 @@ public:
     inline ElementType& getReference (const int index) const noexcept
     {
         const ScopedLockType lock (getLock());
-        bassert (isPositiveAndBelow (index, numUsed));
+        bassert (isPositiveAndBelow (index, numUsed) && data.elements != nullptr);
         return data.elements [index];
     }
 
@@ -383,6 +389,7 @@ public:
     {
         const ScopedLockType lock (getLock());
         data.ensureAllocatedSize (numUsed + 1);
+        bassert (data.elements != nullptr);
 
         if (isPositiveAndBelow (indexToInsertAt, numUsed))
         {
@@ -1042,6 +1049,5 @@ private:
             data.shrinkToNoMoreThan (bmax (numUsed, bmax (minimumAllocatedSize, 64 / (int) sizeof (ElementType))));
     }
 };
-
 
 #endif   // BEAST_ARRAY_BEASTHEADER
