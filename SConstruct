@@ -17,9 +17,11 @@ Linux   = bool('Linux' == platform.system())
 Ubuntu  = bool(Linux and 'Ubuntu' == platform.linux_distribution()[0])
 
 if OSX or Ubuntu:
-    CTAGS = '/usr/bin/ctags'
+    CTAGS = 'ctags'
+elif FreeBSD:
+    CTAGS = 'exctags'
 else:
-    CTAGS = '/usr/bin/exuberant-ctags'
+    CTAGS = 'exuberant-ctags'
 
 #
 # scons tools
