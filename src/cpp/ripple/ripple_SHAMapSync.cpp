@@ -311,7 +311,8 @@ SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode,
     if (checkCacheNode (node)) // Do we already have this node?
         return SHAMapAddNode::okay ();
 
-    SHAMapTreeNode* iNode = root.get ();
+    SHAMapTreeNode::pointer parent = checkCacheNode(node.getParentNodeID());
+    SHAMapTreeNode* iNode = parent ? parent.get() : root.get ();
 
     while (!iNode->isLeaf () && !iNode->isFullBelow () && (iNode->getDepth () < node.getDepth ()))
     {
