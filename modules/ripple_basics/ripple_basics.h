@@ -73,7 +73,9 @@
 #include "BeastConfig.h" // Must come before any Beast includes
 
 #include "modules/beast_core/beast_core.h"
-#include "modules/beast_basics/beast_basics.h"
+
+// VFALCO TODO Fix this for FreeBSD
+//#include "modules/beast_basics/beast_basics.h"
 
 #include "../ripple_json/ripple_json.h"
 
