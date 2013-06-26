@@ -457,6 +457,18 @@ void Application::setup ()
         }
     }
 
+    if (!mHashedObjectStore.isLevelDB ())
+    {
+        theApp->getHashNodeDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+                (theConfig.getSize (siHashNodeDBCache) * 1024)));
+	theApp->getHashNodeDB ()->getDB ()->setupCheckpointing (&mJobQueue);
+    }
+
+    theApp->getLedgerDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+            (theConfig.getSize (siLgrDBCache) * 1024)));
+    theApp->getTxnDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+            (theConfig.getSize (siTxnDBCache) * 1024)));
+
     mTxnDB->getDB ()->setupCheckpointing (&mJobQueue);
     mLedgerDB->getDB ()->setupCheckpointing (&mJobQueue);
 
@@ -513,15 +525,6 @@ void Application::setup ()
     mSLECache.setTargetAge (theConfig.getSize (siSLECacheAge));
 
     mLedgerMaster.setMinValidations (theConfig.VALIDATION_QUORUM);
-
-    if (!mHashedObjectStore.isLevelDB ())
-        theApp->getHashNodeDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-                (theConfig.getSize (siHashNodeDBCache) * 1024)));
-
-    theApp->getLedgerDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-            (theConfig.getSize (siLgrDBCache) * 1024)));
-    theApp->getTxnDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-            (theConfig.getSize (siTxnDBCache) * 1024)));
 
     //
     // Allow peer connections.
