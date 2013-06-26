@@ -280,11 +280,11 @@
 #  include <tr1/functional>
 # endif
 
-#elif BEAST_LINUX
+#elif BEAST_LINUX || BEAST_BSD
 # include <tr1/functional>
 
 #else
-# error Unnkown platform!
+# error Unknown platform!
 
 #endif
 
