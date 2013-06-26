@@ -21,7 +21,7 @@ class SHAMapTreeNode
     , public CountedObject <SHAMapTreeNode>
 {
 public:
-    char const* getCountedObjectName () { return "SHAMapTreeNode"; }
+    static char const* getCountedObjectName () { return "SHAMapTreeNode"; }
 
     typedef boost::shared_ptr<SHAMapTreeNode>           pointer;
     typedef const boost::shared_ptr<SHAMapTreeNode>&    ref;

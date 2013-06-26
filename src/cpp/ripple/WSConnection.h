@@ -24,7 +24,7 @@ class WSConnection
     , public CountedObject <WSConnection <endpoint_type> >
 {
 public:
-    char const* getCountedObjectName () { return "WSConnection"; }
+    static char const* getCountedObjectName () { return "WSConnection"; }
 
     typedef typename endpoint_type::connection_type connection;
     typedef typename boost::shared_ptr<connection> connection_ptr;

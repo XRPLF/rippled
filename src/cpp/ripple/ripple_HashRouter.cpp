@@ -13,7 +13,7 @@ private:
     class Entry : public CountedObject <Entry>
     {
     public:
-        char const* getCountedObjectName () { return "HashRouterEntry"; }
+        static char const* getCountedObjectName () { return "HashRouterEntry"; }
 
         Entry ()
             : mFlags (0)

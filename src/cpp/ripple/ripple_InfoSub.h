@@ -16,7 +16,7 @@ class InfoSub
     : public CountedObject <InfoSub>
 {
 public:
-    char const* getCountedObjectName () { return "InfoSub"; }
+    static char const* getCountedObjectName () { return "InfoSub"; }
 
     typedef boost::shared_ptr<InfoSub>          pointer;
 

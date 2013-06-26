@@ -16,7 +16,7 @@ class TransactionEngine
     : public CountedObject <TransactionEngine>
 {
 public:
-    char const* getCountedObjectName () { return "TransactionEngine"; }
+    static char const* getCountedObjectName () { return "TransactionEngine"; }
 
 private:
     LedgerEntrySet      mNodes;

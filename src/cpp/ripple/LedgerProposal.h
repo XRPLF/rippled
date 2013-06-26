@@ -11,7 +11,7 @@ class LedgerProposal
     : public CountedObject <LedgerProposal>
 {
 public:
-    char const* getCountedObjectName () { return "LedgerProposal"; }
+    static char const* getCountedObjectName () { return "LedgerProposal"; }
 
     static const uint32 seqLeave = 0xffffffff; // leaving the consensus process
 

@@ -15,7 +15,7 @@ class TransactionAcquire
     , public CountedObject <TransactionAcquire>
 {
 public:
-    char const* getCountedObjectName () { return "TransactionAcquire"; }
+    static char const* getCountedObjectName () { return "TransactionAcquire"; }
 
     typedef boost::shared_ptr<TransactionAcquire> pointer;
 

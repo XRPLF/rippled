@@ -36,7 +36,7 @@ class LedgerEntrySetEntry
     : public CountedObject <LedgerEntrySetEntry>
 {
 public:
-    char const* getCountedObjectName () { return "LedgerEntrySetEntry"; }
+    static char const* getCountedObjectName () { return "LedgerEntrySetEntry"; }
 
     SLE::pointer        mEntry;
     LedgerEntryAction   mAction;
@@ -62,7 +62,7 @@ class LedgerEntrySet
     : public CountedObject <LedgerEntrySet>
 {
 public:
-    char const* getCountedObjectName () { return "LedgerEntrySet"; }
+    static char const* getCountedObjectName () { return "LedgerEntrySet"; }
 
     LedgerEntrySet (Ledger::ref ledger, TransactionEngineParams tep, bool immutable = false) :
         mLedger (ledger), mParams (tep), mSeq (0), mImmutable (immutable)

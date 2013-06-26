@@ -24,7 +24,7 @@ class PeerImp : public Peer
     , public CountedObject <PeerImp>
 {
 public:
-    char const* getCountedObjectName () { return "Peer"; }
+    static char const* getCountedObjectName () { return "Peer"; }
 
     PeerImp (boost::asio::io_service & io_service,
              boost::asio::ssl::context & ctx,

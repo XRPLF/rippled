@@ -12,7 +12,7 @@ class STObject
     , public CountedObject <STObject>
 {
 public:
-    char const* getCountedObjectName () { return "STObject"; }
+    static char const* getCountedObjectName () { return "STObject"; }
 
     STObject () : mType (NULL)
     {
@@ -325,7 +325,7 @@ class STArray
     , public CountedObject <STArray>
 {
 public:
-    char const* getCountedObjectName () { return "STArray"; }
+    static char const* getCountedObjectName () { return "STArray"; }
 
     typedef boost::ptr_vector<STObject>                         vector;
     typedef boost::ptr_vector<STObject>::iterator               iterator;

@@ -12,7 +12,7 @@ class SerializedValidation
     , public CountedObject <SerializedValidation>
 {
 public:
-    char const* getCountedObjectName () { return "SerializedValidation"; }
+    static char const* getCountedObjectName () { return "SerializedValidation"; }
 
     typedef boost::shared_ptr<SerializedValidation>         pointer;
     typedef const boost::shared_ptr<SerializedValidation>&  ref;
