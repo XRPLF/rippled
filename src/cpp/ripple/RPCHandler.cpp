@@ -1098,49 +1098,36 @@ Json::Value RPCHandler::doAccountLines (Json::Value params, LoadType* loadType, 
     if (lpLedger->hasAccount (raAccount))
     {
         jvResult["account"] = raAccount.humanAccountID ();
+        Json::Value& jsonLines = (jvResult["lines"] = Json::arrayValue);
 
-        boost::shared_ptr<Json::Value> jvsLines =
-            theApp->getOPs ().getJSONCache (JSONCache::kindLines, lpLedger->getHash (), raAccount.getAccountID ());
+        AccountItems rippleLines (raAccount.getAccountID (), lpLedger, AccountItem::pointer (new RippleState ()));
 
-        if (!jvsLines)
+        BOOST_FOREACH (AccountItem::ref item, rippleLines.getItems ())
         {
-            jvsLines = boost::make_shared<Json::Value> (Json::arrayValue);
-            Json::Value& jsonLines = *jvsLines;
+            RippleState* line = (RippleState*)item.get ();
 
-            AccountItems rippleLines (raAccount.getAccountID (), lpLedger, AccountItem::pointer (new RippleState ()));
-
-            BOOST_FOREACH (AccountItem::ref item, rippleLines.getItems ())
+            if (!raPeer.isValid () || raPeer.getAccountID () == line->getAccountIDPeer ())
             {
-                RippleState* line = (RippleState*)item.get ();
+                const STAmount&     saBalance   = line->getBalance ();
+                const STAmount&     saLimit     = line->getLimit ();
+                const STAmount&     saLimitPeer = line->getLimitPeer ();
 
-                if (!raPeer.isValid () || raPeer.getAccountID () == line->getAccountIDPeer ())
-                {
-                    const STAmount&     saBalance   = line->getBalance ();
-                    const STAmount&     saLimit     = line->getLimit ();
-                    const STAmount&     saLimitPeer = line->getLimitPeer ();
+                Json::Value&    jPeer   = jsonLines.append (Json::objectValue);
 
-                    Json::Value&    jPeer   = jsonLines.append (Json::objectValue);
-
-                    jPeer["account"]        = RippleAddress::createHumanAccountID (line->getAccountIDPeer ());
-                    // Amount reported is positive if current account holds other account's IOUs.
-                    // Amount reported is negative if other account holds current account's IOUs.
-                    jPeer["balance"]        = saBalance.getText ();
-                    jPeer["currency"]       = saBalance.getHumanCurrency ();
-                    jPeer["limit"]          = saLimit.getText ();
-                    jPeer["limit_peer"]     = saLimitPeer.getText ();
-                    jPeer["quality_in"]     = static_cast<Json::UInt> (line->getQualityIn ());
-                    jPeer["quality_out"]    = static_cast<Json::UInt> (line->getQualityOut ());
-                }
+                jPeer["account"]        = RippleAddress::createHumanAccountID (line->getAccountIDPeer ());
+                // Amount reported is positive if current account holds other account's IOUs.
+                // Amount reported is negative if other account holds current account's IOUs.
+                jPeer["balance"]        = saBalance.getText ();
+                jPeer["currency"]       = saBalance.getHumanCurrency ();
+                jPeer["limit"]          = saLimit.getText ();
+                jPeer["limit_peer"]     = saLimitPeer.getText ();
+                jPeer["quality_in"]     = static_cast<Json::UInt> (line->getQualityIn ());
+                jPeer["quality_out"]    = static_cast<Json::UInt> (line->getQualityOut ());
             }
-
-            theApp->getOPs ().storeJSONCache (JSONCache::kindLines, lpLedger->getHash (),
-                                              raAccount.getAccountID (), jvsLines);
         }
 
         if (!bUnlocked)
             MasterLockHolder.unlock ();
-
-        jvResult["lines"] = *jvsLines;
     }
     else
     {
@@ -1208,20 +1195,11 @@ Json::Value RPCHandler::doAccountOffers (Json::Value params, LoadType* loadType,
     if (!lpLedger->hasAccount (raAccount))
         return rpcError (rpcACT_NOT_FOUND);
 
-    boost::shared_ptr<Json::Value> jvsOffers =
-        theApp->getOPs ().getJSONCache (JSONCache::kindOffers, lpLedger->getHash (), raAccount.getAccountID ());
-
-    if (!jvsOffers)
-    {
-        jvsOffers = boost::make_shared<Json::Value> (Json::arrayValue);
-        lpLedger->visitAccountItems (raAccount.getAccountID (), BIND_TYPE (&offerAdder, boost::ref (*jvsOffers), P_1));
-        theApp->getOPs ().storeJSONCache (JSONCache::kindOffers, lpLedger->getHash (), raAccount.getAccountID (), jvsOffers);
-    }
+    Json::Value& jvsOffers = (jvResult["offers"] = Json::arrayValue);
+    lpLedger->visitAccountItems (raAccount.getAccountID (), BIND_TYPE (&offerAdder, boost::ref (jvsOffers), P_1));
 
     if (!bUnlocked)
         MasterLockHolder.unlock ();
-
-    jvResult["offers"] = *jvsOffers;
 
     return jvResult;
 }
