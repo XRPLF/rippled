@@ -21,6 +21,10 @@
     @deprecated
 */
 
+// needed before inclusion of stdint.h for INT32_MIN/INT32_MAX macros
+#ifndef __STDC_LIMIT_MACROS
+  #define __STDC_LIMIT_MACROS
+#endif
 
 // VFALCO NOTE Log dependencies have wormed their way into websocketpp,
 //             which needs the ripple_basic module to compile.
@@ -37,11 +41,6 @@
 #include <boost/bind.hpp>
 
 //------------------------------------------------------------------------------
-
-// VFALCO TODO This include is just to prevent a warning about
-//             redefinition of __STDC_LIMIT_MACROS. Fix it right.
-//
-#include "websocket/src/rng/boost_rng.hpp"
 
 #include "websocket/src/common.hpp"
 #include "websocket/src/sockets/socket_base.hpp"

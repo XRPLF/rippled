@@ -49,6 +49,8 @@ else:
 
 # Use openssl
 env.ParseConfig('pkg-config --cflags --libs openssl')
+# Use protobuf
+env.ParseConfig('pkg-config --cflags --libs protobuf')
 
 # The required version of boost is documented in the README file.
 #
@@ -143,15 +145,9 @@ if not FreeBSD:
         ]
     )
 
-# Apparently, pkg-config --libs protobuf on bsd fails to provide this necessary include dir.
-if FreeBSD:
-    env.Append(LINKFLAGS = ['-I/usr/local/include'])
-    env.Append(CXXFLAGS = ['-DOS_FREEBSD'])
-
 env.Append(
     LIBS = [
         'rt',           # for clock_nanosleep in beast
-        'protobuf',
         'z'
     ]
 )
@@ -183,7 +179,7 @@ TAG_SRCS    = copy.copy(COMPILED_FILES)
 # Derive the object files from the source files.
 OBJECT_FILES = []
 
-OBJECT_FILES += PROTO_SRCS
+OBJECT_FILES.append(PROTO_SRCS[0])
 
 for file in COMPILED_FILES:
     OBJECT_FILES.append('build/obj/' + file)

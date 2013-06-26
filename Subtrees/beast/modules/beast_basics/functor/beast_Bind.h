@@ -71,7 +71,7 @@ using std::tr1::placeholders::_1;
 using std::tr1::placeholders::_2;
 #endif
 
-#elif BEAST_LINUX
+#elif BEAST_LINUX || BEAST_BSD
 using std::tr1::bind;
 using std::tr1::placeholders::_1;
 using std::tr1::placeholders::_2;
