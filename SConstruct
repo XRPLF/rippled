@@ -52,6 +52,14 @@ env.ParseConfig('pkg-config --cflags --libs openssl')
 # Use protobuf
 env.ParseConfig('pkg-config --cflags --libs protobuf')
 
+# Beast uses kvm on FreeBSD
+if FreeBSD:
+    env.Append (
+        LIBS = [
+            'kvm'
+        ]
+    )
+
 # The required version of boost is documented in the README file.
 #
 # We whitelist platforms where the non -mt version is linked with pthreads.
@@ -59,6 +67,7 @@ env.ParseConfig('pkg-config --cflags --libs protobuf')
 #   If a threading library is included the platform can be whitelisted.
 #
 # FreeBSD and Ubuntu non-mt libs do link with pthreads.
+
 if FreeBSD or Ubuntu:
     env.Append(
         LIBS = [
