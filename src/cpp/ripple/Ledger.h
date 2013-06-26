@@ -41,6 +41,8 @@ class Ledger
     , public CountedObject <Ledger>
 {
 public:
+    char const* getCountedObjectName () { return "Ledger"; }
+
     typedef boost::shared_ptr<Ledger>           pointer;
     typedef const boost::shared_ptr<Ledger>&    ref;
 

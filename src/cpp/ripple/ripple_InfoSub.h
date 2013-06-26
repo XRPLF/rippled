@@ -16,6 +16,8 @@ class InfoSub
     : public CountedObject <InfoSub>
 {
 public:
+    char const* getCountedObjectName () { return "InfoSub"; }
+
     typedef boost::shared_ptr<InfoSub>          pointer;
 
     // VFALCO TODO Standardize on the names of weak / strong pointer typedefs.

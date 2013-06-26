@@ -15,6 +15,8 @@ class InboundLedger
     , public CountedObject <InboundLedger>
 {
 public:
+    char const* getCountedObjectName () { return "InboundLedger"; }
+
     typedef boost::shared_ptr <InboundLedger> pointer;
 
 public:

@@ -101,6 +101,8 @@ public:
         getCounter ().decrement ();
     }
 
+    virtual char const* getCountedObjectName () = 0;
+
 private:
     class Counter : public CountedObjects::CounterBase
     {
