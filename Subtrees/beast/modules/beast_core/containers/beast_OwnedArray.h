@@ -474,7 +474,7 @@ public:
             numElementsToAdd = arrayToAddFrom.size() - startIndex;
 
         data.ensureAllocatedSize (numUsed + numElementsToAdd);
-        bassert (data.elements != nullptr);
+        bassert (numElementsToAdd <= 0 || data.elements != nullptr); 
 
         while (--numElementsToAdd >= 0)
         {
