@@ -307,7 +307,7 @@ private:
                          (valPriorLedger && (it->second->getLedgerHash () == priorLedger))))
                 {
                     countPreferred = true;
-                    WriteLog (lsDEBUG, Validations) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash ();
+                    WriteLog (lsTRACE, Validations) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash ();
                 }
 
                 currentValidationCount& p = countPreferred ? ret[currentLedger] : ret[it->second->getLedgerHash ()];
