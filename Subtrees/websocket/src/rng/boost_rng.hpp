@@ -30,7 +30,9 @@
 #ifndef BOOST_RNG_HPP
 #define BOOST_RNG_HPP
 
-#define __STDC_LIMIT_MACROS 1
+#ifndef __STDC_LIMIT_MACROS
+  #define __STDC_LIMIT_MACROS
+#endif
 #include <stdint.h>
 
 #include <boost/random.hpp>

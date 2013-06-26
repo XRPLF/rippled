@@ -78,6 +78,17 @@
   #define beast_breakDebugger        { __asm int 3 }
 #endif
 
+#if BEAST_CLANG && defined (__has_feature) && ! defined (BEAST_ANALYZER_NORETURN)
+ #if __has_feature (attribute_analyzer_noreturn)
+  inline void __attribute__((analyzer_noreturn)) beast_assert_noreturn() {}
+  #define BEAST_ANALYZER_NORETURN beast_assert_noreturn();
+ #endif
+#endif
+
+#ifndef BEAST_ANALYZER_NORETURN
+ #define BEAST_ANALYZER_NORETURN
+#endif
+
 
 //==============================================================================
 #if BEAST_DEBUG || DOXYGEN
@@ -92,9 +103,9 @@
       It is only compiled in a debug build, (unless BEAST_LOG_ASSERTIONS is enabled for your build).
       @see bassert
   */
-  #define bassertfalse              { beast_LogCurrentAssertion; if (beast::beast_isRunningUnderDebugger()) beast_breakDebugger; }
+  #define bassertfalse              { beast_LogCurrentAssertion; if (beast::beast_isRunningUnderDebugger()) beast_breakDebugger; BEAST_ANALYZER_NORETURN }
 
-  //==============================================================================
+    //==============================================================================
   /** Platform-independent assertion macro.
 
       This macro gets turned into a no-op when you're building with debugging turned off, so be

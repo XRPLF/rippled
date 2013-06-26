@@ -109,23 +109,13 @@ private:
 
         char const* getName () const noexcept
         {
-            return getClassName ();
+            return Object::getCountedObjectName ();
         }
 
         void checkPureVirtual () const { }
     };
 
 private:
-    /* Due to a bug in Visual Studio 10 and earlier, the string returned by
-       typeid().name() will appear to leak on exit. Therefore, we should
-       only call this function when there's an actual leak, or else there
-       will be spurious leak notices at exit.
-    */
-    static char const* getClassName () noexcept
-    {
-        return typeid (Object).name ();
-    }
-
     static Counter& getCounter () noexcept
     {
         // VFALCO TODO Research the thread safety of static initializers

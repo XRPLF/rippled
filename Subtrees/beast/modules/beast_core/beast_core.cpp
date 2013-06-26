@@ -202,6 +202,13 @@ namespace beast
 #include "native/beast_linux_Threads.cpp"
 
 //==============================================================================
+#elif BEAST_BSD
+#include "native/beast_bsd_Files.cpp"
+#include "native/beast_bsd_Network.cpp"
+#include "native/beast_bsd_SystemStats.cpp"
+#include "native/beast_bsd_Threads.cpp"
+
+//==============================================================================
 #elif BEAST_ANDROID
 #include "native/beast_android_Files.cpp"
 #include "native/beast_android_Misc.cpp"

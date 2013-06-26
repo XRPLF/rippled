@@ -36,6 +36,8 @@ class HashedObject
     : public CountedObject <HashedObject>
 {
 public:
+    static char const* getCountedObjectName () { return "HashedObject"; }
+
     typedef boost::shared_ptr <HashedObject> pointer;
     typedef pointer const& ref;
 

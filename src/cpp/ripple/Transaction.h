@@ -32,6 +32,8 @@ class Transaction
     , public CountedObject <Transaction>
 {
 public:
+    static char const* getCountedObjectName () { return "Transaction"; }
+
     typedef boost::shared_ptr<Transaction> pointer;
     typedef const pointer& ref;
 

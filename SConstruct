@@ -49,6 +49,16 @@ else:
 
 # Use openssl
 env.ParseConfig('pkg-config --cflags --libs openssl')
+# Use protobuf
+env.ParseConfig('pkg-config --cflags --libs protobuf')
+
+# Beast uses kvm on FreeBSD
+if FreeBSD:
+    env.Append (
+        LIBS = [
+            'kvm'
+        ]
+    )
 
 # The required version of boost is documented in the README file.
 #
@@ -57,6 +67,7 @@ env.ParseConfig('pkg-config --cflags --libs openssl')
 #   If a threading library is included the platform can be whitelisted.
 #
 # FreeBSD and Ubuntu non-mt libs do link with pthreads.
+
 if FreeBSD or Ubuntu:
     env.Append(
         LIBS = [
@@ -104,7 +115,6 @@ INCLUDE_PATHS = [
 
 COMPILED_FILES = [
     'Subtrees/beast/modules/beast_core/beast_core.cpp',
-    'Subtrees/beast/modules/beast_basics/beast_basics.cpp',
     'modules/ripple_basics/ripple_basics.cpp',
     'modules/ripple_core/ripple_core.cpp',
     'modules/ripple_data/ripple_data.cpp',
@@ -144,15 +154,9 @@ if not FreeBSD:
         ]
     )
 
-# Apparently, pkg-config --libs protobuf on bsd fails to provide this necessary include dir.
-if FreeBSD:
-    env.Append(LINKFLAGS = ['-I/usr/local/include'])
-    env.Append(CXXFLAGS = ['-DOS_FREEBSD'])
-
 env.Append(
     LIBS = [
         'rt',           # for clock_nanosleep in beast
-        'protobuf',
         'z'
     ]
 )
@@ -184,7 +188,7 @@ TAG_SRCS    = copy.copy(COMPILED_FILES)
 # Derive the object files from the source files.
 OBJECT_FILES = []
 
-OBJECT_FILES += PROTO_SRCS
+OBJECT_FILES.append(PROTO_SRCS[0])
 
 for file in COMPILED_FILES:
     OBJECT_FILES.append('build/obj/' + file)

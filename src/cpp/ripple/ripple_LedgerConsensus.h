@@ -17,6 +17,8 @@ class LedgerConsensus
     , public CountedObject <LedgerConsensus>
 {
 public:
+    static char const* getCountedObjectName () { return "LedgerConsensus"; }
+
     LedgerConsensus (LedgerHash const & prevLCLHash, Ledger::ref previousLedger, uint32 closeTime);
 
     int startup ();

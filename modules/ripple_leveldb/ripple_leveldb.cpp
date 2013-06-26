@@ -15,15 +15,17 @@
 #if BEAST_WIN32
  #define LEVELDB_PLATFORM_WINDOWS
 
-#elif BEAST_MAC || BEAST_IOS
- #define OS_MACOSX
-
-// VFALCO TODO Distinguish between BEAST_BSD and BEAST_FREEBSD
-#elif BEAST_BSD
- #define OS_FREEBSD
-
 #else
  #define LEVELDB_PLATFORM_POSIX
+
+ #if BEAST_MAC || BEAST_IOS
+  #define OS_MACOSX
+
+ // VFALCO TODO Distinguish between BEAST_BSD and BEAST_FREEBSD
+ #elif BEAST_BSD
+  #define OS_FREEBSD
+
+ #endif
 
 #endif
 
