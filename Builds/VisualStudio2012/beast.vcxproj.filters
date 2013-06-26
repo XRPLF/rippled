@@ -952,5 +952,17 @@
     <ClCompile Include="..\..\modules\beast_basics\threads\beast_ThreadWithCallQueue.cpp">
       <Filter>beast_basics\threads</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\native\beast_bsd_SystemStats.cpp">
+      <Filter>beast_core\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\native\beast_bsd_Files.cpp">
+      <Filter>beast_core\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\native\beast_bsd_Network.cpp">
+      <Filter>beast_core\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\native\beast_bsd_Threads.cpp">
+      <Filter>beast_core\native</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

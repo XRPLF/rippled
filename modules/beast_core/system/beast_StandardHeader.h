@@ -27,7 +27,7 @@
 //==============================================================================
 /** Current BEAST version number.
 
-    See also SystemStats::getBEASTVersion() for a string version.
+    See also SystemStats::getBeastVersion() for a string version.
 */
 #define BEAST_MAJOR_VERSION      0
 #define BEAST_MINOR_VERSION      0
@@ -39,7 +39,7 @@
     Bits 8 to 16 = minor version.
     Bits 0 to 8 = point release.
 
-    See also SystemStats::getBEASTVersion() for a string version.
+    See also SystemStats::getBeastVersion() for a string version.
 */
 #define BEAST_VERSION   ((BEAST_MAJOR_VERSION << 16) + (BEAST_MINOR_VERSION << 8) + BEAST_BUILDNUMBER)
 

@@ -27,7 +27,7 @@ const SystemStats::CPUFlags& SystemStats::getCPUFlags()
     return cpuFlags;
 }
 
-String SystemStats::getBEASTVersion()
+String SystemStats::getBeastVersion()
 {
     // Some basic tests, to keep an eye on things and make sure these types work ok
     // on all platforms. Let me know if any of these assertions fail on your system!
@@ -41,7 +41,7 @@ String SystemStats::getBEASTVersion()
     static_bassert (sizeof (int64) == 8);
     static_bassert (sizeof (uint64) == 8);
 
-    return "BEAST v" BEAST_STRINGIFY(BEAST_MAJOR_VERSION)
+    return "Beast v" BEAST_STRINGIFY(BEAST_MAJOR_VERSION)
                 "." BEAST_STRINGIFY(BEAST_MINOR_VERSION)
                 "." BEAST_STRINGIFY(BEAST_BUILDNUMBER);
 }
@@ -55,7 +55,7 @@ String SystemStats::getBEASTVersion()
  {
      BeastVersionPrinter()
      {
-         DBG (SystemStats::getBEASTVersion());
+         DBG (SystemStats::getBeastVersion());
      }
  };
 
