@@ -40,6 +40,7 @@
 #include "BeastConfig.h" // Must come before any Beast includes
 
 #include "modules/beast_core/beast_core.h"
+#include "modules/beast_basics/beast_basics.h"
 
 // VFALCO TODO Fix this for FreeBSD
 //#include "modules/beast_basics/beast_basics.h"
@@ -48,6 +49,11 @@
 
 namespace ripple
 {
+
+// VFALCO TODO Make this work. We have to get rid of BIND_TYPE,
+//             FUNC_TYPE, and P_* placeholders.
+//
+//using namespace beast;
 
 using beast::int16;
 using beast::int32;

@@ -8,7 +8,9 @@ SETUP_LOG (LoadManager)
 
 //------------------------------------------------------------------------------
 
-class LoadManager : public ILoadManager
+class LoadManager
+    : public ILoadManager
+    , public beast::InterruptibleThread::EntryPoint
 {
 private:
     /*  Entry mapping utilization to cost.
@@ -58,15 +60,18 @@ private:
 
 public:
     LoadManager ()
-        : mCreditRate (100)
+        : m_thread ("loadmgr")
+        , m_logThread ("loadmgr_log")
+        , mCreditRate (100)
         , mCreditLimit (500)
         , mDebitWarn (-500)
         , mDebitLimit (-1000)
-        , mShutdown (false)
         , mArmed (false)
         , mDeadLock (0)
         , mCosts (LT_MAX)
     {
+        m_logThread.start ();
+
         /** Flags indicating the type of load.
 
             Utilization may include any combination of:
@@ -111,25 +116,14 @@ private:
     {
         UptimeTimer::getInstance ().endManualUpdates ();
 
-        // VFALCO TODO What is the purpose of this loop? Figure out
-        //             a better way to do it.
-        for (;;)
-        {
-            boost::this_thread::sleep (boost::posix_time::milliseconds (100));
-            {
-                boost::mutex::scoped_lock sl (mLock);
-
-                if (!mShutdown)
-                    return;
-            }
-        }
+        m_thread.interrupt ();
     }
 
     void startThread ()
     {
         UptimeTimer::getInstance ().beginManualUpdates ();
 
-        boost::thread (boost::bind (&LoadManager::threadEntry, this)).detach ();
+        m_thread.start (this);
     }
 
     void canonicalize (LoadSource& source, int now) const
@@ -315,28 +309,18 @@ private:
 
     // VFALCO NOTE Where's the thread object? It's not a data member...
     //
-    void threadEntry ()
+    void threadRun ()
     {
-        setCallingThreadName ("loadmgr");
-
         // VFALCO TODO replace this with a beast Time object?
         //
         // Initialize the clock to the current time.
         boost::posix_time::ptime t = boost::posix_time::microsec_clock::universal_time ();
 
-        for (;;)
+        while (! m_thread.interruptionPoint ())
         {
             {
                 // VFALCO NOTE What is this lock protecting?
                 boost::mutex::scoped_lock sl (mLock);
-
-                // Check for the shutdown flag.
-                if (mShutdown)
-                {
-                    // VFALCO NOTE Why clear the flag now?
-                    mShutdown = false;
-                    return;
-                }
 
                 // VFALCO NOTE I think this is to reduce calls to the operating system
                 //             for retrieving the current time.
@@ -361,7 +345,7 @@ private:
                     {
                         // VFALCO TODO Replace this with a dedicated thread with call queue.
                         //
-                        boost::thread (BIND_TYPE (&logDeadlock, timeSpentDeadlocked)).detach ();
+                        m_logThread.call (&logDeadlock, timeSpentDeadlocked);
                     }
 
                     // If we go over 500 seconds spent deadlocked, it means that the
@@ -370,7 +354,6 @@ private:
                     //
                     assert (timeSpentDeadlocked < 500);
                 }
-
             }
 
             bool change;
@@ -403,17 +386,21 @@ private:
                 t = boost::posix_time::microsec_clock::universal_time ();
             }
             else
+            {
                 boost::this_thread::sleep (when);
+            }
         }
     }
 
 private:
+    beast::InterruptibleThread m_thread;
+    beast::ThreadWithCallQueue m_logThread;
+
     int mCreditRate;            // credits gained/lost per second
     int mCreditLimit;           // the most credits a source can have
     int mDebitWarn;             // when a source drops below this, we warn
     int mDebitLimit;            // when a source drops below this, we cut it off (should be negative)
 
-    bool mShutdown;
     bool mArmed;
 
     int mDeadLock;              // Detect server deadlocks
