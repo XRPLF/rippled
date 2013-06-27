@@ -8,6 +8,8 @@ BOOST_AUTO_TEST_SUITE ( Utils)
 
 BOOST_AUTO_TEST_CASE ( ParseUrl )
 {
+    using namespace ripple;
+
     std::string strScheme;
     std::string strDomain;
     int         iPort;

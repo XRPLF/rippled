@@ -7,6 +7,8 @@ BOOST_AUTO_TEST_SUITE (LoadManager_test)
 
 BOOST_AUTO_TEST_CASE (LoadFeeTrack_test)
 {
+    using namespace ripple;
+
     WriteLog (lsDEBUG, LoadManager) << "Running load fee track test";
 
     Config d; // get a default configuration object

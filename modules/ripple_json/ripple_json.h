@@ -25,6 +25,8 @@
 #include <string>
 #include <vector>
 
+#include "BeastConfig.h"
+
 #include "json/json_config.h" // Needed before these cpptl includes
 
 #ifndef JSON_USE_CPPTL_SMALLMAP
@@ -37,10 +39,8 @@
 # include <cpptl/forwards.h>
 #endif
 
-#if RIPPLE_USE_NAMESPACE
 namespace ripple
 {
-#endif
 
 #include "json/json_forwards.h"
 #include "json/json_features.h"
@@ -48,8 +48,6 @@ namespace ripple
 #include "json/json_reader.h"
 #include "json/json_writer.h"
 
-#if RIPPLE_USE_NAMESPACE
 }
-#endif
 
 #endif

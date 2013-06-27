@@ -38,11 +38,12 @@
 #error Ripple requires Boost version 1.47 or later
 #endif
 
+#include "system/ripple_BoostIncludes.h"
+
 // VFALCO TODO Move all boost includes into ripple_BoostHeaders.h
 //
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/function.hpp>
@@ -79,10 +80,8 @@
 
 #include "../ripple_json/ripple_json.h"
 
-#if RIPPLE_USE_NAMESPACE
 namespace ripple
 {
-#endif
 
 #include "utility/ripple_IntegerTypes.h" // must come first
 #include "utility/ripple_Log.h" // Needed by others
@@ -110,8 +109,6 @@ namespace ripple
 #include "containers/ripple_SecureAllocator.h"
 #include "containers/ripple_TaggedCache.h"
 
-#if RIPPLE_USE_NAMESPACE
 }
-#endif
 
 #endif

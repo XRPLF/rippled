@@ -119,7 +119,7 @@ void printHelp (const po::options_description& desc)
     //  cerr << "     trust_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<quality_in>] [<quality_out>]" << endl;
 }
 
-int main (int argc, char* argv[])
+int rippleMain (int argc, char** argv)
 {
     setCallingThreadName ("main");
     int                 iResult = 0;

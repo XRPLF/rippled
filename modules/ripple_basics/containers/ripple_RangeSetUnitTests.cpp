@@ -3,10 +3,13 @@
     Copyright (c) 2011-2013, OpenCoin, Inc.
 */
 //==============================================================================
+
 BOOST_AUTO_TEST_SUITE (RangeSet_suite)
 
 BOOST_AUTO_TEST_CASE (RangeSet_test)
 {
+    using namespace ripple;
+
     WriteLog (lsTRACE, RangeSet) << "RangeSet test begins";
 
     RangeSet r1, r2;

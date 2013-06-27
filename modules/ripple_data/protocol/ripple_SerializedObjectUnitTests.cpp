@@ -8,6 +8,8 @@ BOOST_AUTO_TEST_SUITE (SerializedObject)
 
 BOOST_AUTO_TEST_CASE ( FieldManipulation_test )
 {
+    using namespace ripple;
+
     if (sfGeneric.isUseful ())
         BOOST_FAIL ("sfGeneric must not be useful");
 

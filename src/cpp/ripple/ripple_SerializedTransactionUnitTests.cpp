@@ -7,6 +7,8 @@ BOOST_AUTO_TEST_SUITE (SerializedTransactionTS)
 
 BOOST_AUTO_TEST_CASE ( STrans_test )
 {
+    using namespace ripple;
+
     RippleAddress seed;
     seed.setSeedRandom ();
     RippleAddress generator = RippleAddress::createGeneratorPublic (seed);

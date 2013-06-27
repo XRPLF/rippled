@@ -151,6 +151,9 @@
     <Filter Include="1. Modules\ripple_app\refactored\misc">
       <UniqueIdentifier>{bb14df5d-f96f-4572-9e79-5e330eed30c9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="1. Modules\ripple_basics\system">
+      <UniqueIdentifier>{2c4e5c32-0aab-4650-b9a1-22708e9ddc92}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\cpp\protobuf_core.cpp">
@@ -1784,6 +1787,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\functional\ripple_LoadFeeTrack.h">
       <Filter>1. Modules\ripple_core\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basics\system\ripple_BoostIncludes.h">
+      <Filter>1. Modules\ripple_basics\system</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

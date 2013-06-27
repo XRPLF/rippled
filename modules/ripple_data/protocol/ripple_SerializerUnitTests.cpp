@@ -8,6 +8,8 @@ BOOST_AUTO_TEST_SUITE (Serializer_suite)
 
 BOOST_AUTO_TEST_CASE ( Serializer_PrefixHash_test )
 {
+    using namespace ripple;
+
     Serializer s1;
     s1.add32 (3);
     s1.add256 (uint256 ());

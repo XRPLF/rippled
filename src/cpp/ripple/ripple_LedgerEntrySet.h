@@ -267,17 +267,5 @@ inline LedgerEntrySet::iterator range_end (LedgerEntrySet& x)
 {
     return x.end ();
 }
-namespace boost
-{
-template<> struct range_mutable_iterator<LedgerEntrySet>
-{
-    typedef LedgerEntrySet::iterator type;
-};
-template<> struct range_const_iterator<LedgerEntrySet>
-{
-    typedef LedgerEntrySet::const_iterator type;
-};
-}
 
 #endif
-// vim:ts=4

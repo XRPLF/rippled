@@ -8,6 +8,9 @@
 #define SMS_DEBUG
 #endif
 
+namespace ripple
+{
+
 static SHAMapItem::pointer makeRandomAS ()
 {
     Serializer s;
@@ -55,10 +58,14 @@ static bool confuseMap (SHAMap& map, int count)
     return true;
 }
 
+}
+
 BOOST_AUTO_TEST_SUITE ( SHAMapSync )
 
 BOOST_AUTO_TEST_CASE ( SHAMapSync_test )
 {
+    using namespace ripple;
+
     WriteLog (lsTRACE, SHAMap) << "begin sync test";
     unsigned int seed;
     RAND_pseudo_bytes (reinterpret_cast<unsigned char*> (&seed), sizeof (seed));

@@ -52,10 +52,8 @@
 //         additional hierarchy via directories.
 #include "ripple.pb.h"
 
-#if RIPPLE_USE_NAMESPACE
 namespace ripple
 {
-#endif
 
 #include "crypto/ripple_CBigNum.h"
 #include "crypto/ripple_Base58.h" // VFALCO TODO Can be moved to .cpp if we clean up setAlphabet stuff
@@ -80,11 +78,8 @@ namespace ripple
 #include "utility/ripple_JSONCache.h"
 #include "utility/ripple_UptimeTimerAdapter.h"
 
-#if RIPPLE_USE_NAMESPACE
 }
-#endif
 
-#if RIPPLE_USE_NAMESPACE
 namespace boost
 {
     template <>
@@ -135,57 +130,5 @@ namespace boost
         typedef ripple::STArray::const_iterator type;
     };
 }
-#else
-namespace boost
-{
-    template <>
-    struct range_mutable_iterator <STPath>
-    {
-        typedef std::vector <STPathElement>::iterator type;
-    };
-
-    template <>
-    struct range_const_iterator <STPath>
-    {
-        typedef std::vector <STPathElement>::const_iterator type;
-    };
-
-    template <>
-    struct range_mutable_iterator <STPathSet>
-    {
-        typedef std::vector <STPath>::iterator type;
-    };
-
-    template <>
-    struct range_const_iterator <STPathSet>
-    {
-        typedef std::vector <STPath>::const_iterator type;
-    };
-
-    template <>
-    struct range_mutable_iterator <STObject>
-    {
-        typedef STObject::iterator type;
-    };
-
-    template <>
-    struct range_const_iterator <STObject>
-    {
-        typedef STObject::const_iterator type;
-    };
-
-    template <>
-    struct range_mutable_iterator <STArray>
-    {
-        typedef STArray::iterator type;
-    };
-
-    template <>
-    struct range_const_iterator <STArray>
-    {
-        typedef STArray::const_iterator type;
-    };
-}
-#endif
 
 #endif

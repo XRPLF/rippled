@@ -5,6 +5,9 @@
 //==============================================================================
 
 // For unit tests:
+namespace ripple
+{
+
 static STAmount serdes (const STAmount& s)
 {
     Serializer ser;
@@ -16,12 +19,75 @@ static STAmount serdes (const STAmount& s)
     return STAmount::deserialize (sit);
 }
 
+static bool roundTest (int n, int d, int m)
+{
+    // check STAmount rounding
+    STAmount num (CURRENCY_ONE, ACCOUNT_ONE, n);
+    STAmount den (CURRENCY_ONE, ACCOUNT_ONE, d);
+    STAmount mul (CURRENCY_ONE, ACCOUNT_ONE, m);
+    STAmount quot = STAmount::divide (n, d, CURRENCY_ONE, ACCOUNT_ONE);
+    STAmount res = STAmount::multiply (quot, mul, CURRENCY_ONE, ACCOUNT_ONE);
+
+    if (res.isNative ())
+        BOOST_FAIL ("Product is native");
+
+    res.roundSelf ();
+
+    STAmount cmp (CURRENCY_ONE, ACCOUNT_ONE, (n * m) / d);
+
+    if (cmp.isNative ())
+        BOOST_FAIL ("Comparison amount is native");
+
+    if (res == cmp)
+        return true;
+
+    cmp.throwComparable (res);
+    WriteLog (lsWARNING, STAmount) << "(" << num.getText () << "/" << den.getText () << ") X " << mul.getText () << " = "
+                                   << res.getText () << " not " << cmp.getText ();
+    BOOST_FAIL ("Round fail");
+    return false;
+}
+
+static void mulTest (int a, int b)
+{
+    STAmount aa (CURRENCY_ONE, ACCOUNT_ONE, a);
+    STAmount bb (CURRENCY_ONE, ACCOUNT_ONE, b);
+    STAmount prod1 (STAmount::multiply (aa, bb, CURRENCY_ONE, ACCOUNT_ONE));
+
+    if (prod1.isNative ())
+        BOOST_FAIL ("product is native");
+
+    STAmount prod2 (CURRENCY_ONE, ACCOUNT_ONE, static_cast<uint64> (a) * static_cast<uint64> (b));
+
+    if (prod1 != prod2)
+    {
+        WriteLog (lsWARNING, STAmount) << "nn(" << aa.getFullText () << " * " << bb.getFullText () << ") = " << prod1.getFullText ()
+                                       << " not " << prod2.getFullText ();
+        BOOST_WARN ("Multiplication result is not exact");
+    }
+
+    aa = a;
+    prod1 = STAmount::multiply (aa, bb, CURRENCY_ONE, ACCOUNT_ONE);
+
+    if (prod1 != prod2)
+    {
+        WriteLog (lsWARNING, STAmount) << "n(" << aa.getFullText () << " * " << bb.getFullText () << ") = " << prod1.getFullText ()
+                                       << " not " << prod2.getFullText ();
+        BOOST_WARN ("Multiplication result is not exact");
+    }
+
+}
+
+}
+
 //------------------------------------------------------------------------------
 
 BOOST_AUTO_TEST_SUITE (amount)
 
 BOOST_AUTO_TEST_CASE ( setValue_test )
 {
+    using namespace ripple;
+
     STAmount    saTmp;
 
 #if 0
@@ -45,6 +111,8 @@ BOOST_AUTO_TEST_CASE ( setValue_test )
 
 BOOST_AUTO_TEST_CASE ( NativeCurrency_test )
 {
+    using namespace ripple;
+
     STAmount zero, one (1), hundred (100);
 
     if (serdes (zero) != zero) BOOST_FAIL ("STAmount fail");
@@ -184,6 +252,8 @@ BOOST_AUTO_TEST_CASE ( NativeCurrency_test )
 
 BOOST_AUTO_TEST_CASE ( CustomCurrency_test )
 {
+    using namespace ripple;
+
     STAmount zero (CURRENCY_ONE, ACCOUNT_ONE), one (CURRENCY_ONE, ACCOUNT_ONE, 1), hundred (CURRENCY_ONE, ACCOUNT_ONE, 100);
 
     serdes (one).getRaw ();
@@ -364,67 +434,10 @@ BOOST_AUTO_TEST_CASE ( CustomCurrency_test )
 
 //------------------------------------------------------------------------------
 
-static bool roundTest (int n, int d, int m)
-{
-    // check STAmount rounding
-    STAmount num (CURRENCY_ONE, ACCOUNT_ONE, n);
-    STAmount den (CURRENCY_ONE, ACCOUNT_ONE, d);
-    STAmount mul (CURRENCY_ONE, ACCOUNT_ONE, m);
-    STAmount quot = STAmount::divide (n, d, CURRENCY_ONE, ACCOUNT_ONE);
-    STAmount res = STAmount::multiply (quot, mul, CURRENCY_ONE, ACCOUNT_ONE);
-
-    if (res.isNative ())
-        BOOST_FAIL ("Product is native");
-
-    res.roundSelf ();
-
-    STAmount cmp (CURRENCY_ONE, ACCOUNT_ONE, (n * m) / d);
-
-    if (cmp.isNative ())
-        BOOST_FAIL ("Comparison amount is native");
-
-    if (res == cmp)
-        return true;
-
-    cmp.throwComparable (res);
-    WriteLog (lsWARNING, STAmount) << "(" << num.getText () << "/" << den.getText () << ") X " << mul.getText () << " = "
-                                   << res.getText () << " not " << cmp.getText ();
-    BOOST_FAIL ("Round fail");
-    return false;
-}
-
-static void mulTest (int a, int b)
-{
-    STAmount aa (CURRENCY_ONE, ACCOUNT_ONE, a);
-    STAmount bb (CURRENCY_ONE, ACCOUNT_ONE, b);
-    STAmount prod1 (STAmount::multiply (aa, bb, CURRENCY_ONE, ACCOUNT_ONE));
-
-    if (prod1.isNative ())
-        BOOST_FAIL ("product is native");
-
-    STAmount prod2 (CURRENCY_ONE, ACCOUNT_ONE, static_cast<uint64> (a) * static_cast<uint64> (b));
-
-    if (prod1 != prod2)
-    {
-        WriteLog (lsWARNING, STAmount) << "nn(" << aa.getFullText () << " * " << bb.getFullText () << ") = " << prod1.getFullText ()
-                                       << " not " << prod2.getFullText ();
-        BOOST_WARN ("Multiplication result is not exact");
-    }
-
-    aa = a;
-    prod1 = STAmount::multiply (aa, bb, CURRENCY_ONE, ACCOUNT_ONE);
-
-    if (prod1 != prod2)
-    {
-        WriteLog (lsWARNING, STAmount) << "n(" << aa.getFullText () << " * " << bb.getFullText () << ") = " << prod1.getFullText ()
-                                       << " not " << prod2.getFullText ();
-        BOOST_WARN ("Multiplication result is not exact");
-    }
-
-}
-
 BOOST_AUTO_TEST_CASE ( CurrencyMulDivTests )
 {
+    using namespace ripple;
+
     CBigNum b;
 
     for (int i = 0; i < 16; ++i)
@@ -483,6 +496,8 @@ BOOST_AUTO_TEST_CASE ( CurrencyMulDivTests )
 
 BOOST_AUTO_TEST_CASE ( UnderFlowTests )
 {
+    using namespace ripple;
+
     STAmount bigNative (STAmount::cMaxNative / 2);
     STAmount bigValue (CURRENCY_ONE, ACCOUNT_ONE,
                        (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMaxOffset - 1);
@@ -536,6 +551,8 @@ BOOST_AUTO_TEST_SUITE (amountRound)
 
 BOOST_AUTO_TEST_CASE ( amountRound_test )
 {
+    using namespace ripple;
+
     uint64 value = 25000000000000000ull;
     int offset = -14;
     STAmount::canonicalizeRound (false, value, offset, true);

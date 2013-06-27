@@ -6,20 +6,25 @@
 
 // VFALCO TODO Rename this to createFilledVector and pass an unsigned char, tidy up
 //
-static Blob IntToVUC (int v)
+namespace ripple
 {
-    Blob vuc;
+    static Blob IntToVUC (int v)
+    {
+        Blob vuc;
 
-    for (int i = 0; i < 32; ++i)
-        vuc.push_back (static_cast<unsigned char> (v));
+        for (int i = 0; i < 32; ++i)
+            vuc.push_back (static_cast<unsigned char> (v));
 
-    return vuc;
+        return vuc;
+    }
 }
 
 BOOST_AUTO_TEST_SUITE (SHAMap_suite)
 
 BOOST_AUTO_TEST_CASE ( SHAMap_test )
 {
+    using namespace ripple;
+
     // h3 and h4 differ only in the leaf, same terminal node (level 19)
     WriteLog (lsTRACE, SHAMap) << "SHAMap test";
     uint256 h1, h2, h3, h4, h5;

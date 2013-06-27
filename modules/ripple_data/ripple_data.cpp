@@ -54,10 +54,8 @@
 #undef min
 #endif
 
-#if RIPPLE_USE_NAMESPACE
 namespace ripple
 {
-#endif
 
 #include "crypto/ripple_Base58.h" // for RippleAddress
 #include "crypto/ripple_CKey.h" // needs RippleAddress VFALCO TODO remove this dependency cycle
@@ -93,9 +91,7 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #include "utility/ripple_JSONCache.cpp"
 
-#if RIPPLE_USE_NAMESPACE
 }
-#endif
 
 // These must be outside the namespace because of boost
 #include "crypto/ripple_CKeyDeterministicUnitTests.cpp"

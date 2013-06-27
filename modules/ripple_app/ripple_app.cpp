@@ -44,7 +44,6 @@
 #include <boost/cstdint.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/function.hpp>
@@ -69,12 +68,6 @@
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/weak_ptr.hpp>
-
-#if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 1
-#include <boost/test/included/unit_test.hpp>
-#endif
-
-#include <boost/test/unit_test.hpp>
 
 #include <openssl/buffer.h>
 #include <openssl/ec.h>
@@ -109,10 +102,8 @@
 
 //------------------------------------------------------------------------------
 
-#if RIPPLE_USE_NAMESPACE
 namespace ripple
 {
-#endif
 
 // VFALCO NOTE The order of these includes is critical, since they do not
 //             include their own dependencies. This is what allows us to
@@ -252,16 +243,30 @@ namespace ripple
 #include "src/cpp/ripple/WSHandler.h"
 #include "src/cpp/ripple/WalletAddTransactor.h"
 
-#if RIPPLE_USE_NAMESPACE
 }
-#endif
 
 //------------------------------------------------------------------------------
 
-#if RIPPLE_USE_NAMESPACE
+// VFALCO TODO Move this to an appropriate header
+namespace boost
+{
+    template <>
+    struct range_mutable_iterator <ripple::LedgerEntrySet>
+    {
+        typedef ripple::LedgerEntrySet::iterator type;
+    };
+
+    template <>
+    struct range_const_iterator <ripple::LedgerEntrySet>
+    {
+        typedef ripple::LedgerEntrySet::const_iterator type;
+    };
+}
+
+//------------------------------------------------------------------------------
+
 namespace ripple
 {
-#endif
 
 //------------------------------------------------------------------------------
 
@@ -415,9 +420,7 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 //------------------------------------------------------------------------------
 
-#if RIPPLE_USE_NAMESPACE
 }
-#endif
 
 //------------------------------------------------------------------------------
 
@@ -434,6 +437,19 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_SHAMapSyncUnitTests.cpp"
 #include "src/cpp/ripple/ripple_ProofOfWorkFactoryUnitTests.cpp"
 #include "src/cpp/ripple/ripple_SerializedTransactionUnitTests.cpp"
+
+//------------------------------------------------------------------------------
+
+namespace ripple
+{
+    extern int rippleMain (int argc, char** argv);
+}
+
+// Must be outside the namespace for obvious reasons
+int main (int argc, char** argv)
+{
+    return ripple::rippleMain (argc, argv);
+}
 
 #endif
 

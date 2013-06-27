@@ -20,6 +20,4 @@
  //#define BEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES
 #endif
 
-#define RIPPLE_USE_NAMESPACE 0
-
 #endif

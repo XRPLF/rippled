@@ -7,6 +7,8 @@ BOOST_AUTO_TEST_SUITE (DeterministicKeys_test)
 
 BOOST_AUTO_TEST_CASE (DeterminsticKeys_test1)
 {
+    using namespace ripple;
+
     Log (lsDEBUG) << "Beginning deterministic key test";
 
     uint128 seed1, seed2;

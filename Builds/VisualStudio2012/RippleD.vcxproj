@@ -1593,6 +1593,7 @@
     <ClInclude Include="..\..\modules\ripple_basics\containers\ripple_SecureAllocator.h" />
     <ClInclude Include="..\..\modules\ripple_basics\containers\ripple_TaggedCache.h" />
     <ClInclude Include="..\..\modules\ripple_basics\ripple_basics.h" />
+    <ClInclude Include="..\..\modules\ripple_basics\system\ripple_BoostIncludes.h" />
     <ClInclude Include="..\..\modules\ripple_basics\types\ripple_HashMaps.h" />
     <ClInclude Include="..\..\modules\ripple_basics\types\ripple_BasicTypes.h" />
     <ClInclude Include="..\..\modules\ripple_basics\types\ripple_UInt256.h" />

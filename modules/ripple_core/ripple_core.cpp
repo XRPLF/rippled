@@ -19,10 +19,8 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/thread.hpp>
 
-#if RIPPLE_USE_NAMESPACE
 namespace ripple
 {
-#endif
 
 #include "functional/ripple_Config.cpp"
 #include "functional/ripple_LoadFeeTrack.h" // private
@@ -32,9 +30,7 @@ namespace ripple
 #include "functional/ripple_LoadEvent.cpp"
 #include "functional/ripple_LoadMonitor.cpp"
 
-#if RIPPLE_USE_NAMESPACE
 }
-#endif
 
 // These must be outside the namespace
 

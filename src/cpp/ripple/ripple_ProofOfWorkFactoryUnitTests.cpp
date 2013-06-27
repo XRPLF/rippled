@@ -8,6 +8,8 @@ BOOST_AUTO_TEST_SUITE (ProofOfWork_suite)
 
 BOOST_AUTO_TEST_CASE ( ProofOfWork_test )
 {
+    using namespace ripple;
+
     ProofOfWorkFactory gen;
     ProofOfWork pow = gen.getProof ();
     WriteLog (lsINFO, ProofOfWork) << "Estimated difficulty: " << pow.getDifficulty ();

@@ -34,6 +34,8 @@
 #include <boost/asio.hpp> // VFALCO NOTE just for parseIpPort (!)
 #include <boost/regex.hpp>
 
+//#include <boost/test/included/unit_test.hpp>
+
 // VFALCO TODO Replace OpenSSL randomness with a dependency-free implementation
 //         Perhaps Schneier's Fortuna or a variant. Abstract the collection of
 //         entropy and provide OS-specific implementation. We can re-use the
@@ -50,10 +52,12 @@
 #include <Winsock2.h> // for ripple_ByteOrder.cpp
 #endif
 
-#if RIPPLE_USE_NAMESPACE
+// This brings in the definitions for the Unit Test Framework.
+//
+#include <boost/test/included/unit_test.hpp>
+
 namespace ripple
 {
-#endif
 
 #include "containers/ripple_RangeSet.cpp"
 #include "containers/ripple_TaggedCache.cpp"
@@ -74,9 +78,7 @@ namespace ripple
 
 #include "types/ripple_UInt256.cpp"
 
-#if RIPPLE_USE_NAMESPACE
 }
-#endif
 
 // These must be outside the namespace (because of boost)
 #include "containers/ripple_RangeSetUnitTests.cpp"
