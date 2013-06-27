@@ -4,13 +4,6 @@ TODO
 
 - Remove "ENABLE_INSECURE" when the time is right.
 
-- Put all the Ripple code in the ripple namespace
-  * boost unit tests create namespace problems
-
-- Remove references to BEASTApplication
-
-- Remove "using namespace" statements
-
 - lift bind, function, and placeholders into ripple namespace
 - lift beast into the ripple namespace, remove ripple's duplicated integer types
 - lift unique_ptr / auto_ptr into ripple namespace, or replace with ScopedPointer

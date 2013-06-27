@@ -10,9 +10,6 @@ namespace po = boost::program_options;
 extern void TFInit ();
 extern void LEFInit ();
 
-using namespace std;
-using namespace boost::unit_test;
-
 void setupServer ()
 {
     theApp = IApplication::New ();
@@ -56,6 +53,8 @@ bool init_unit_test ()
 
 void printHelp (const po::options_description& desc)
 {
+    using namespace std;
+
     cerr << SYSTEM_NAME "d [options] <command> <params>" << endl;
 
     cerr << desc << endl;
@@ -121,6 +120,8 @@ void printHelp (const po::options_description& desc)
 
 int rippleMain (int argc, char** argv)
 {
+    using namespace std;
+
     setCallingThreadName ("main");
     int                 iResult = 0;
     po::variables_map   vm;                                     // Map of options.
@@ -214,7 +215,7 @@ int rippleMain (int argc, char** argv)
 
     if (vm.count ("unittest"))
     {
-        unit_test_main (init_unit_test, argc, argv);
+        boost::unit_test::unit_test_main (init_unit_test, argc, argv);
 
         return 0;
     }

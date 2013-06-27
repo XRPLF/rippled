@@ -6,15 +6,14 @@
 
 SETUP_LOG (RPCDoor)
 
-using namespace std;
-using namespace boost::asio::ip;
-
 extern void initSSLContext (boost::asio::ssl::context& context,
                             std::string key_file, std::string cert_file, std::string chain_file);
 
-RPCDoor::RPCDoor (boost::asio::io_service& io_service) :
-    mAcceptor (io_service, tcp::endpoint (address::from_string (theConfig.RPC_IP), theConfig.RPC_PORT)),
-    mDelayTimer (io_service), mSSLContext (boost::asio::ssl::context::sslv23)
+RPCDoor::RPCDoor (boost::asio::io_service& io_service)
+    : mAcceptor (io_service,
+                 boost::asio::ip::tcp::endpoint (boost::asio::ip::address::from_string (theConfig.RPC_IP), theConfig.RPC_PORT))
+    , mDelayTimer (io_service)
+    , mSSLContext (boost::asio::ssl::context::sslv23)
 {
     WriteLog (lsINFO, RPCDoor) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
 

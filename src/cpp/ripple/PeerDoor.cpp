@@ -6,12 +6,9 @@
 
 SETUP_LOG (PeerDoor)
 
-using namespace std;
-using namespace boost::asio::ip;
-
 PeerDoor::PeerDoor (boost::asio::io_service& io_service) :
     mAcceptor (io_service,
-               tcp::endpoint (address ().from_string (theConfig.PEER_IP.empty () ? "0.0.0.0" : theConfig.PEER_IP),
+               boost::asio::ip::tcp::endpoint (boost::asio::ip::address ().from_string (theConfig.PEER_IP.empty () ? "0.0.0.0" : theConfig.PEER_IP),
                               theConfig.PEER_PORT)),
     mCtx (boost::asio::ssl::context::sslv23), mDelayTimer (io_service)
 {
