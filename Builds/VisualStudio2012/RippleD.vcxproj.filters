@@ -900,6 +900,9 @@
     <ClCompile Include="..\..\src\cpp\ripple\ripple_LoadManager.cpp">
       <Filter>1. Modules\ripple_app\refactored</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\cpp\ripple\LedgerUnitTests.cpp">
+      <Filter>1. Modules\ripple_app\_unfactored\ledger</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\cpp\protobuf\src\google\protobuf\service.h">
