@@ -49,7 +49,13 @@
 namespace ripple
 {
 
-#include "utility/ripple_IntegerTypes.h" // must come first
+using beast::int16;
+using beast::int32;
+using beast::int64;
+using beast::uint16;
+using beast::uint32;
+using beast::uint64;
+
 #include "utility/ripple_Log.h" // Needed by others
 
 #include "types/ripple_BasicTypes.h"

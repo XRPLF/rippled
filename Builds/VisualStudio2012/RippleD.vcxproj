@@ -1605,7 +1605,6 @@
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_DiffieHellmanUtil.h" />
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_HashUtilities.h" />
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_IniFile.h" />
-    <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_IntegerTypes.h" />
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_Log.h" />
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_PlatformMacros.h" />
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_RandomNumbers.h" />
