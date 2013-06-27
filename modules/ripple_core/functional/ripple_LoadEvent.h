@@ -10,7 +10,7 @@
 class LoadMonitor;
 
 // VFALCO NOTE What is the difference between a LoadEvent and a LoadMonitor?
-// VFALCO TODO Rename LoadEvent to LoadMonitor::Event
+// VFALCO TODO Rename LoadEvent to ScopedLoadSample
 //
 //        This looks like a scoped elapsed time measuring class
 //

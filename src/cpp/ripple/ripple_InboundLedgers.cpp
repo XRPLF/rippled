@@ -75,6 +75,16 @@ bool InboundLedgers::awaitLedgerData (uint256 const& ledgerHash)
     return true;
 }
 
+/*
+This gets called when
+    "We got some data from an inbound ledger"
+
+inboundLedgerTrigger:
+  "What do we do with this partial data?"
+  Figures out what to do with the responses to our requests for information.
+
+*/
+// means "We got some data from an inbound ledger"
 void InboundLedgers::gotLedgerData (Job&, uint256 hash,
         boost::shared_ptr<protocol::TMLedgerData> packet_ptr, boost::weak_ptr<Peer> wPeer)
 {

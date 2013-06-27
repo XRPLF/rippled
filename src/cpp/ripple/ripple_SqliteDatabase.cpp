@@ -35,7 +35,10 @@ SqliteStatement::~SqliteStatement ()
     sqlite3_finalize (statement);
 }
 
-SqliteDatabase::SqliteDatabase (const char* host) : Database (host, "", ""), mWalQ (NULL), walRunning (false)
+SqliteDatabase::SqliteDatabase (const char* host)
+    : Database (host)
+    , mWalQ (NULL)
+    , walRunning (false)
 {
     mConnection     = NULL;
     mAuxConnection  = NULL;

@@ -26,20 +26,13 @@ class JobQueue;
 class Database
 {
 public:
-    // VFALCO TODO how are user and password even used?
-    //
-    Database (const char* host, const char* user, const char* pass);
+    explicit Database (const char* host);
 
     virtual ~Database ();
 
     virtual void connect () = 0;
 
     virtual void disconnect () = 0;
-
-    std::string& getPass ()
-    {
-        return (mDBPass);
-    }
 
     // returns true if the query went ok
     virtual bool executeSQL (const char* sql, bool fail_okay = false) = 0;
@@ -105,9 +98,7 @@ protected:
     bool getColNumber (const char* colName, int* retIndex);
 
     int mNumCol;
-    std::string mUser;
     std::string mHost;
-    std::string mDBPass;
     std::vector <std::string> mColNameTable;
 };
 
