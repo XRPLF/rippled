@@ -20,12 +20,7 @@
 #ifndef RIPPLE_JSON_RIPPLEHEADER
 #define RIPPLE_JSON_RIPPLEHEADER
 
-#include <deque>
-#include <stack>
-#include <string>
-#include <vector>
-
-#include "BeastConfig.h"
+#include "../modules/ripple_basics/ripple_basics.h"
 
 #include "json/json_config.h" // Needed before these cpptl includes
 

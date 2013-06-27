@@ -12,22 +12,6 @@
 
 //------------------------------------------------------------------------------
 
-//------------------------------------------------------------------------------
-
-#include <algorithm>
-#include <bitset>
-#include <cassert>
-#include <deque>
-#include <fstream>
-#include <iostream>
-#include <list>
-#include <map>
-#include <queue>
-#include <set>
-#include <stack>
-#include <string>
-#include <vector>
-
 // VFALCO NOTE Holy smokes...that's a lot of boost!!!
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -68,15 +52,6 @@
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/weak_ptr.hpp>
-
-#include <openssl/buffer.h>
-#include <openssl/ec.h>
-#include <openssl/evp.h>
-#include <openssl/md5.h>
-#include <openssl/ripemd.h>
-#include <openssl/sha.h>
-
-
 
 #include "../modules/ripple_sqlite/ripple_sqlite.h" // for SqliteDatabase.cpp
 

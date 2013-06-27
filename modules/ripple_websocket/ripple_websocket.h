@@ -34,12 +34,6 @@
 //
 #include "../modules/ripple_basics/ripple_basics.h"
 
-#include <iostream>
-
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/bind.hpp>
-
 //------------------------------------------------------------------------------
 
 #include "websocket/src/common.hpp"

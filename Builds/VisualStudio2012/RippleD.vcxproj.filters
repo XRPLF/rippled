@@ -1791,6 +1791,12 @@
     <ClInclude Include="..\..\modules\ripple_basics\system\ripple_BoostIncludes.h">
       <Filter>1. Modules\ripple_basics\system</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basics\system\ripple_StandardIncludes.h">
+      <Filter>1. Modules\ripple_basics\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basics\system\ripple_OpenSSLIncludes.h">
+      <Filter>1. Modules\ripple_basics\system</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\src\cpp\protobuf\src\google\protobuf\descriptor.proto">

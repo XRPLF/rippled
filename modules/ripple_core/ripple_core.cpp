@@ -16,7 +16,6 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
-#include <boost/test/unit_test.hpp>
 #include <boost/thread.hpp>
 
 namespace ripple

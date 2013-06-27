@@ -20,28 +20,6 @@
 #ifndef RIPPLE_DATA_RIPPLEHEADER
 #define RIPPLE_DATA_RIPPLEHEADER
 
-#include <algorithm>
-#include <cassert>
-#include <cstdio>
-#include <list>
-#include <stdexcept>
-#include <string>
-#include <stdexcept>
-#include <vector>
-
-#include <boost/cstdint.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/ptr_container/ptr_vector.hpp> // VFALCO NOTE this looks like junk
-
-#include <openssl/bn.h>
-#include <openssl/ec.h>
-#include <openssl/ecdsa.h>
-#include <openssl/obj_mac.h>
-
-//------------------------------------------------------------------------------
-
 // VFALCO TODO try to reduce these dependencies
 #include "../ripple_basics/ripple_basics.h"
 

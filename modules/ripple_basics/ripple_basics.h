@@ -20,41 +20,11 @@
 #ifndef RIPPLE_BASICS_RIPPLEHEADER
 #define RIPPLE_BASICS_RIPPLEHEADER
 
-#include <algorithm>
-#include <cassert>
-#include <climits>
-#include <cstdio>
-#include <cstring>
-#include <ctime>
-#include <functional>
-#include <limits>
-#include <list>
-#include <sstream>
-#include <string>
-#include <vector>
-
-#include <boost/version.hpp>
-#if BOOST_VERSION < 104700
-#error Ripple requires Boost version 1.47 or later
-#endif
+#include "system/ripple_StandardIncludes.h"
 
 #include "system/ripple_BoostIncludes.h"
 
-// VFALCO TODO Move all boost includes into ripple_BoostHeaders.h
-//
-#include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/foreach.hpp>
-#include <boost/format.hpp>
-#include <boost/function.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/ref.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/recursive_mutex.hpp>
-#include <boost/unordered_map.hpp>
+#include "system/ripple_OpenSSLIncludes.h"
 
 // ByteOrder
 #ifdef WIN32
@@ -66,10 +36,6 @@
 #elif defined(__OpenBSD__)
 # include <sys/types.h>
 #endif
-
-#include <openssl/dh.h> // for DiffieHellmanUtil
-#include <openssl/ripemd.h> // For HashUtilities
-#include <openssl/sha.h> // For HashUtilities
 
 #include "BeastConfig.h" // Must come before any Beast includes
 
