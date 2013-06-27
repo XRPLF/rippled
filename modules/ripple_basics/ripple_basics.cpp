@@ -77,3 +77,7 @@ namespace ripple
 #if RIPPLE_USE_NAMESPACE
 }
 #endif
+
+// These must be outside the namespace (because of boost)
+#include "containers/ripple_RangeSetUnitTests.cpp"
+#include "utility/ripple_StringUtilitiesUnitTests.cpp"

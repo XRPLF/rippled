@@ -32,6 +32,11 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
 
+#if RIPPLE_USE_NAMESPACE
+namespace ripple
+{
+#endif
+
 // VFALCO NOTE Indentation shows dependency hierarchy
 //
 /**/#include "functional/ripple_Config.h"
@@ -40,5 +45,9 @@
 /*..*/#include "functional/ripple_LoadMonitor.h"
 /*.*/#include "functional/ripple_Job.h"
 /**/#include "functional/ripple_JobQueue.h"
+
+#if RIPPLE_USE_NAMESPACE
+}
+#endif
 
 #endif

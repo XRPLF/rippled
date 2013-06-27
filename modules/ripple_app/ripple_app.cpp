@@ -109,6 +109,11 @@
 
 //------------------------------------------------------------------------------
 
+#if RIPPLE_USE_NAMESPACE
+namespace ripple
+{
+#endif
+
 // VFALCO NOTE The order of these includes is critical, since they do not
 //             include their own dependencies. This is what allows us to
 //             linearize the include sequence and view it in one place.
@@ -246,6 +251,17 @@
 #include "src/cpp/ripple/WSConnection.h"
 #include "src/cpp/ripple/WSHandler.h"
 #include "src/cpp/ripple/WalletAddTransactor.h"
+
+#if RIPPLE_USE_NAMESPACE
+}
+#endif
+
+//------------------------------------------------------------------------------
+
+#if RIPPLE_USE_NAMESPACE
+namespace ripple
+{
+#endif
 
 //------------------------------------------------------------------------------
 
@@ -387,6 +403,7 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_PathRequest.cpp"
 #include "src/cpp/ripple/ripple_PeerSet.cpp"
 #include "src/cpp/ripple/ripple_ProofOfWork.cpp"
+#include "src/cpp/ripple/ripple_ProofOfWorkFactory.h" // private
 #include "src/cpp/ripple/ripple_ProofOfWorkFactory.cpp"
 #include "src/cpp/ripple/ripple_SerializedLedger.cpp"
 #include "src/cpp/ripple/ripple_SerializedTransaction.cpp"
@@ -397,6 +414,28 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #endif
 
 //------------------------------------------------------------------------------
+
+#if RIPPLE_USE_NAMESPACE
+}
+#endif
+
+//------------------------------------------------------------------------------
+
+#if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 4
+
+// Unit Tests
+//
+// These must be outside the namespace
+//
+// VFALCO TODO Eliminate the need for boost for unit tests.
+//
+#include "src/cpp/ripple/LedgerUnitTests.cpp"
+#include "src/cpp/ripple/ripple_SHAMapUnitTests.cpp"
+#include "src/cpp/ripple/ripple_SHAMapSyncUnitTests.cpp"
+#include "src/cpp/ripple/ripple_ProofOfWorkFactoryUnitTests.cpp"
+#include "src/cpp/ripple/ripple_SerializedTransactionUnitTests.cpp"
+
+#endif
 
 //------------------------------------------------------------------------------
 

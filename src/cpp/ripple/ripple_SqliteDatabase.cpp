@@ -6,8 +6,6 @@
 
 SETUP_LOG (SqliteDatabase)
 
-//using namespace std;
-
 SqliteStatement::SqliteStatement (SqliteDatabase* db, const char* sql, bool aux)
 {
     assert (db);
