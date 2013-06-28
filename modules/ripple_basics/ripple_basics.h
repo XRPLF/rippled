@@ -37,8 +37,6 @@
 # include <sys/types.h>
 #endif
 
-#include "BeastConfig.h" // Must come before any Beast includes
-
 #include "modules/beast_core/beast_core.h"
 #include "modules/beast_basics/beast_basics.h"
 

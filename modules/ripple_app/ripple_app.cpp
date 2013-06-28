@@ -12,6 +12,8 @@
 
 //------------------------------------------------------------------------------
 
+#include "BeastConfig.h"
+
 // VFALCO NOTE Holy smokes...that's a lot of boost!!!
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -70,8 +72,6 @@
 #include "ripple_app.h"
 
 #include "../ripple_data/ripple_data.h"
-
-
 
 #include "../modules/ripple_websocket/ripple_websocket.h"
 
