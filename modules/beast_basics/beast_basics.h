@@ -241,51 +241,11 @@
    to append the necessary macros into their AppConfig.h.
 */
 #ifndef BEAST_USE_BOOST
-#define BEAST_USE_BOOST      0
+#define BEAST_USE_BOOST 0
 #endif
 
 #ifndef BEAST_USE_LEAKCHECKED
 #define BEAST_USE_LEAKCHECKED BEAST_CHECK_MEMORY_LEAKS
-#endif
-
-/* Get this early so we can use it. */
-#include "../beast_core/system/beast_TargetPlatform.h"
-
-#if BEAST_USE_BOOST
-#include <boost/thread/tss.hpp>
-#endif
-
-#if BEAST_MSVC
-# include <crtdbg.h>
-# include <functional>
-
-#elif BEAST_IOS
-# if BEAST_USE_BOOST
-#  include <boost/bind.hpp>
-#  include <boost/function.hpp>
-# else
-#  include <ciso646>  // detect std::lib
-#  if _LIBCPP_VERSION // libc++
-#   include <functional>
-#  else // libstdc++ (GNU)
-#   include <tr1/functional>
-#  endif
-# endif
-
-#elif BEAST_MAC
-# include <ciso646>  // detect std::lib
-# if _LIBCPP_VERSION // libc++
-#  include <functional>
-# else // libstdc++ (GNU)
-#  include <tr1/functional>
-# endif
-
-#elif BEAST_LINUX || BEAST_BSD
-# include <tr1/functional>
-
-#else
-# error Unknown platform!
-
 #endif
 
 #include <algorithm>
@@ -320,6 +280,47 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* Get this early so we can use it. */
+#include "../beast_core/system/beast_TargetPlatform.h"
+
+//------------------------------------------------------------------------------
+
+// Choose a source of bind, placeholders, and function
+
+#if !BEAST_BIND_USES_STD && !BEAST_BIND_USES_TR1 && !BEAST_BIND_USES_BOOST
+# if BEAST_MSVC
+#  define BEAST_BIND_USES_STD 1
+# elif BEAST_IOS || BEAST_MAC
+#  include <ciso646>                 // detect version of std::lib
+#  if BEAST_IOS && BEAST_USE_BOOST   // Work-around for iOS bugs with bind.
+#   define BEAST_BIND_USES_BOOST 1
+#  elif _LIBCPP_VERSION // libc++
+#   define BEAST_BIND_USES_STD 1
+#  else // libstdc++ (GNU)
+#   define BEAST_BIND_USES_TR1 1
+#  endif
+# elif BEAST_LINUX || BEAST_BSD
+#  define BEAST_BIND_USES_TR1 1
+# else
+#  define BEAST_BIND_USES_STD 1
+# endif
+#endif
+
+#if BEAST_BIND_USES_STD
+# include <functional>
+#elif BEAST_BIND_USES_TR1
+# include <tr1/functional>
+#elif BEAST_BIND_USES_BOOST
+# include <boost/bind.hpp>
+# include <boost/function.hpp>
+#endif
+
+//------------------------------------------------------------------------------
+
+#if BEAST_USE_BOOST
+#include <boost/thread/tss.hpp>
+#endif
 
 #ifdef _CRTDBG_MAP_ALLOC
 #error "MSVC C Runtime Debug Macros not supported"

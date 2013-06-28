@@ -22,63 +22,13 @@
 
 /* Brings functional support into our namespace, based on environment.
 */
-#if BEAST_MSVC
-// Visual Studio has these in std.
-using std::ref;
-using std::bind;
-using std::function;
-using std::placeholders::_1;
-using std::placeholders::_2;
 
-#elif BEAST_IOS
-#if BEAST_USE_BOOST
-/* If boost is activated, use it. This works
-   around a bug with the iOS implementation of bind.
-*/
-using boost::ref
-using boost::bind;
-using boost::function;
-using ::_1;
-using ::_2;
-#else
-#if _LIBCPP_VERSION // libc++
-using std::ref;
-using std::bind;
-using std::function;
-using std::placeholders::_1;
-using std::placeholders::_2;
-#else // libstdc++ (GNU)
-using std::tr1::ref;
-using std::tr1::bind;
-using std::tr1::function;
-using std::tr1::placeholders::_1;
-using std::tr1::placeholders::_2;
-#endif
-#endif
-
-#elif BEAST_MAC
-#if _LIBCPP_VERSION // libc++
-using std::ref;
-using std::bind;
-using std::function;
-using std::placeholders::_1;
-using std::placeholders::_2;
-#else // libstdc++ (GNU)
-using std::tr1::ref;
-using std::tr1::bind;
-using std::tr1::function;
-using std::tr1::placeholders::_1;
-using std::tr1::placeholders::_2;
-#endif
-
-#elif BEAST_LINUX || BEAST_BSD
-using std::tr1::bind;
-using std::tr1::placeholders::_1;
-using std::tr1::placeholders::_2;
-
-#else
-#error Unknown platform in beast_Bind.h
-
+#ifndef BEAST_BIND_PLACEHOLDERS_N
+# if BEAST_MSVC && BEAST_BIND_USES_STD
+#  define BEAST_BIND_PLACEHOLDERS_N 20 // Visual Studio 2012
+# else
+#  define BEAST_BIND_PLACEHOLDERS_N 8 // Seems a reasonable number
+# endif
 #endif
 
 /** Max number of arguments to bind, total.
@@ -91,6 +41,278 @@ using std::tr1::placeholders::_2;
 # endif
 #else
 # define BEAST_VARIADIC_MAX 9
+#endif
+
+//------------------------------------------------------------------------------
+
+#if BEAST_BIND_USES_STD
+
+using std::ref;
+using std::bind;
+using std::function;
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 1
+using std::placeholders::_1;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 2
+using std::placeholders::_2;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 3
+using std::placeholders::_3;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 4
+using std::placeholders::_4;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 5
+using std::placeholders::_5;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 6
+using std::placeholders::_6;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 7
+using std::placeholders::_7;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 8
+using std::placeholders::_8;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 9
+using std::placeholders::_9;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 10
+using std::placeholders::_10;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 11
+using std::placeholders::_11;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 12
+using std::placeholders::_12;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 13
+using std::placeholders::_13;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 14
+using std::placeholders::_14;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 15
+using std::placeholders::_15;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 16
+using std::placeholders::_16;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 17
+using std::placeholders::_17;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 18
+using std::placeholders::_18;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 19
+using std::placeholders::_19;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 20
+using std::placeholders::_20;
+#endif
+
+//------------------------------------------------------------------------------
+
+#elif BEAST_BIND_USES_TR1
+
+using std::tr1::ref;
+using std::tr1::bind;
+using std::tr1::function;
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 1
+using std::tr1::placeholders::_1;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 2
+using std::tr1::placeholders::_2;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 3
+using std::tr1::placeholders::_3;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 4
+using std::tr1::placeholders::_4;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 5
+using std::tr1::placeholders::_5;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 6
+using std::tr1::placeholders::_6;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 7
+using std::tr1::placeholders::_7;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 8
+using std::tr1::placeholders::_8;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 9
+using std::tr1::placeholders::_9;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 10
+using std::tr1::placeholders::_10;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 11
+using std::tr1::placeholders::_11;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 12
+using std::tr1::placeholders::_12;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 13
+using std::tr1::placeholders::_13;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 14
+using std::tr1::placeholders::_14;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 15
+using std::tr1::placeholders::_15;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 16
+using std::tr1::placeholders::_16;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 17
+using std::tr1::placeholders::_17;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 18
+using std::tr1::placeholders::_18;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 19
+using std::tr1::placeholders::_19;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 20
+using std::tr1::placeholders::_20;
+#endif
+
+//------------------------------------------------------------------------------
+
+#elif BEAST_BIND_USES_BOOST
+
+using boost::ref;
+using boost::bind;
+using boost::function;
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 1
+using ::_1;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 2
+using ::_2;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 3
+using ::_3;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 4
+using ::_4;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 5
+using ::_5;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 6
+using ::_6;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 7
+using ::_7;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 8
+using ::_8;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 9
+using ::_9;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 10
+using ::_10;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 11
+using ::_11;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 12
+using ::_12;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 13
+using ::_13;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 14
+using ::_14;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 15
+using ::_15;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 16
+using ::_16;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 17
+using ::_17;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 18
+using ::_18;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 19
+using ::_19;
+#endif
+
+#if BEAST_BIND_PLACEHOLDERS_N >= 20
+using ::_20;
+#endif
+
+//------------------------------------------------------------------------------
+
+#else
+
+#error Unknown bind source in beast_Bind.h
+
 #endif
 
 #endif
