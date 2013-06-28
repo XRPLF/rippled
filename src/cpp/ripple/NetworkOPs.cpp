@@ -1341,9 +1341,17 @@ Json::Value NetworkOPs::getConsensusInfo ()
     return info;
 }
 
+// ELOMBROZO TODO Move to a constants file
+namespace BUILD_INFO
+{
+    const string BUILD_ID = "Some build info.";
+};
+
 Json::Value NetworkOPs::getServerInfo (bool human, bool admin)
 {
     Json::Value info = Json::objectValue;
+
+    info["build_id"] = BUILD_INFO::BUILD_ID;
 
     if (theConfig.TESTNET)
         info["testnet"]     = theConfig.TESTNET;
