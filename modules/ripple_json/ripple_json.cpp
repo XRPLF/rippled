@@ -10,6 +10,8 @@
     @ingroup ripple_json
 */
 
+#include "BeastConfig.h"
+
 #include "ripple_json.h"
 
 #include <stdexcept>
