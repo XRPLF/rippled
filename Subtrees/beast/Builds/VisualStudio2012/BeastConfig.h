@@ -44,6 +44,11 @@
 #define BEAST_USE_BOOST 0
 #endif
 
+// Choose one to override default for platform
+//#define BEAST_BIND_USES_STD 1
+//#define BEAST_BIND_USES_TR1 1
+//#define BEAST_BIND_USES_BOOST 1
+
 #ifndef BEAST_USE_LEAKCHECKED
 #define BEAST_USE_LEAKCHECKED BEAST_CHECK_MEMORY_LEAKS
 #endif
