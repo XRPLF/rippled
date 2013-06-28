@@ -27,6 +27,9 @@ TODO
 - lift beast into the ripple namespace, remove ripple's duplicated integer types
 - lift unique_ptr / auto_ptr into ripple namespace, or replace with ScopedPointer
 
+- Rewrite functions passed to bind to not take reference parameters, so we can
+  used std::bind instead of boost.
+
 - Make LevelDB and Ripple code work with both Unicode and non-Unicode Windows APIs
 
 - Raise the warning level and fix everything
