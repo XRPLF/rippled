@@ -241,83 +241,83 @@ using boost::bind;
 using boost::function;
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 1
-using ::_1;
+using boost::placeholders::_1;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 2
-using ::_2;
+using boost::placeholders::_2;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 3
-using ::_3;
+using boost::placeholders::_3;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 4
-using ::_4;
+using boost::placeholders::_4;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 5
-using ::_5;
+using boost::placeholders::_5;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 6
-using ::_6;
+using boost::placeholders::_6;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 7
-using ::_7;
+using boost::placeholders::_7;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 8
-using ::_8;
+using boost::placeholders::_8;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 9
-using ::_9;
+using boost::placeholders::_9;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 10
-using ::_10;
+using boost::placeholders::_10;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 11
-using ::_11;
+using boost::placeholders::_11;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 12
-using ::_12;
+using boost::placeholders::_12;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 13
-using ::_13;
+using boost::placeholders::_13;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 14
-using ::_14;
+using boost::placeholders::_14;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 15
-using ::_15;
+using boost::placeholders::_15;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 16
-using ::_16;
+using boost::placeholders::_16;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 17
-using ::_17;
+using boost::placeholders::_17;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 18
-using ::_18;
+using boost::placeholders::_18;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 19
-using ::_19;
+using boost::placeholders::_19;
 #endif
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 20
-using ::_20;
+using boost::placeholders::_20;
 #endif
 
 //------------------------------------------------------------------------------

@@ -222,12 +222,12 @@
 
   @todo Discuss the treatment of exceptions versus Error objects in the library.
 
-  @todo Discuss the additions to AppConfig.h
+  @todo Discuss the additions to BeastConfig.h
 
   @defgroup beast_core beast_core
 */
 
-/*  See the Juce notes regarding AppConfig.h
+/*  See the JUCE notes regarding BeastConfig.h
 
     This file must always be included before any Juce headers.
 
@@ -238,7 +238,7 @@
 /* BeastConfig.h must be included before this file */
 
 /* Use sensible default configurations if they forgot
-   to append the necessary macros into their AppConfig.h.
+   to append the necessary macros into their BeastConfig.h.
 */
 #ifndef BEAST_USE_BOOST
 #define BEAST_USE_BOOST 0
@@ -283,6 +283,34 @@
 
 /* Get this early so we can use it. */
 #include "../beast_core/system/beast_TargetPlatform.h"
+
+//------------------------------------------------------------------------------
+
+// This is a hack to fix boost's goofy placeholders
+#if BEAST_USE_BOOST
+#ifdef BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
+#error <boost/bind.hpp> must not be included before this file
+#endif
+// Prevent <boost/bind/placeholders.hpp> from being included
+#define BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
+#include <boost/bind/arg.hpp>
+#include <boost/config.hpp>
+// This based on <boost/bind/placeholders.cpp>
+namespace boost {
+namespace placeholders {
+extern boost::arg<1> _1;
+extern boost::arg<2> _2;
+extern boost::arg<3> _3;
+extern boost::arg<4> _4;
+extern boost::arg<5> _5;
+extern boost::arg<6> _6;
+extern boost::arg<7> _7;
+extern boost::arg<8> _8;
+extern boost::arg<9> _9;
+}
+using namespace placeholders;
+}
+#endif
 
 //------------------------------------------------------------------------------
 
