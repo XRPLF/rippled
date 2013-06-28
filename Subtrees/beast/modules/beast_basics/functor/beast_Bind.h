@@ -20,8 +20,18 @@
 #ifndef BEAST_BIND_BEASTHEADER
 #define BEAST_BIND_BEASTHEADER
 
-/* Brings functional support into our namespace, based on environment.
-*/
+// VFALCO TODO Rename this file to beast_Functional.h
+
+/*  Brings functional support into our namespace, based on environment.
+
+    Notes on bind
+
+    Difference between boost::bind and std::bind
+    http://stackoverflow.com/questions/10555566/is-there-any-difference-between-c11-stdbind-and-boostbind
+
+    Resolving conflict between boost::shared_ptr and std::shared_ptr
+    http://stackoverflow.com/questions/4682343/how-to-resolve-conflict-between-boostshared-ptr-and-using-stdshared-ptr
+*/ 
 
 #ifndef BEAST_BIND_PLACEHOLDERS_N
 # if BEAST_MSVC && BEAST_BIND_USES_STD
@@ -48,6 +58,7 @@
 #if BEAST_BIND_USES_STD
 
 using std::ref;
+using std::cref;
 using std::bind;
 using std::function;
 
@@ -136,6 +147,7 @@ using std::placeholders::_20;
 #elif BEAST_BIND_USES_TR1
 
 using std::tr1::ref;
+using std::tr1::cref;
 using std::tr1::bind;
 using std::tr1::function;
 
@@ -224,6 +236,7 @@ using std::tr1::placeholders::_20;
 #elif BEAST_BIND_USES_BOOST
 
 using boost::ref;
+using boost::cref;
 using boost::bind;
 using boost::function;
 
