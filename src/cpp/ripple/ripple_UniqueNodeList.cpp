@@ -725,7 +725,7 @@ void UniqueNodeList::scoreNext (bool bNow)
 
         // WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("scoreNext: @%s") % mtpScoreNext);
         mdtScoreTimer.expires_at (mtpScoreNext);
-        mdtScoreTimer.async_wait (BIND_TYPE (&UniqueNodeList::scoreTimerHandler, this, P_1));
+        mdtScoreTimer.async_wait (boost::bind (&UniqueNodeList::scoreTimerHandler, this, _1));
     }
 }
 
@@ -971,7 +971,7 @@ void UniqueNodeList::getIpsUrl (const RippleAddress& naNodePublic, Section secSi
             strPath,
             NODE_FILE_BYTES_MAX,
             boost::posix_time::seconds (NODE_FETCH_SECONDS),
-            BIND_TYPE (&UniqueNodeList::responseIps, this, strDomain, naNodePublic, P_1, P_2, P_3));
+            boost::bind (&UniqueNodeList::responseIps, this, strDomain, naNodePublic, _1, _2, _3));
     }
     else
     {
@@ -1273,7 +1273,7 @@ void UniqueNodeList::fetchNext ()
             mtpFetchNext    = tpNext;
 
             mdtFetchTimer.expires_at (mtpFetchNext);
-            mdtFetchTimer.async_wait (BIND_TYPE (&UniqueNodeList::fetchTimerHandler, this, P_1));
+            mdtFetchTimer.async_wait (boost::bind (&UniqueNodeList::fetchTimerHandler, this, _1));
         }
         else
         {

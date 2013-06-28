@@ -6,8 +6,6 @@
 
 // Unity build file for LevelDB
 
-#include "BeastConfig.h"
-
 #include "ripple_leveldb.h"
 
 #include "beast/modules/beast_core/system/beast_TargetPlatform.h"

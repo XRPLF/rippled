@@ -10,8 +10,6 @@
     @ingroup ripple_core
 */
 
-#include "BeastConfig.h"
-
 #include "ripple_core.h"
 
 #include <fstream>

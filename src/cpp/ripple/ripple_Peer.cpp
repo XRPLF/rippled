@@ -255,13 +255,9 @@ void PeerImp::setIpPort (const std::string& strIP, int iPort)
 
 void PeerImp::detach (const char* rsn, bool onIOStrand)
 {
-    // VFALCO NOTE So essentially, detach() is really two different functions
-    //              depending on the value of onIOStrand.
-    //        TODO Clean this up.
-    //
     if (!onIOStrand)
     {
-        mIOStrand.post (BIND_TYPE (&Peer::detach, shared_from_this (), rsn, true));
+        mIOStrand.post (boost::bind (&Peer::detach, shared_from_this (), rsn, true));
         return;
     }
 
@@ -525,7 +521,7 @@ void PeerImp::sendPacket (const PackedMessage::pointer& packet, bool onStrand)
     {
         if (!onStrand)
         {
-            mIOStrand.post (BIND_TYPE (&Peer::sendPacket, shared_from_this (), packet, true));
+            mIOStrand.post (boost::bind (&Peer::sendPacket, shared_from_this (), packet, true));
             return;
         }
 
@@ -1289,10 +1285,6 @@ void PeerImp::recvHaveTxSet (protocol::TMHaveTransactionSet& packet)
     }
 
     uint256 hash;
-
-    // VFALCO TODO There should be no use of memcpy() throughout the program.
-    //        TODO Clean up this magic number
-    //
     memcpy (hash.begin (), packet.hash ().data (), 32);
 
     if (packet.status () == protocol::tsHAVE)

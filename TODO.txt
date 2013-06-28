@@ -2,13 +2,6 @@
 TODO
 --------------------------------------------------------------------------------
 
-- Make beast::HashMap support assignment via operator[]
-- Rewrite TxFormats to use beast containers and RAII, and not leak
-- Add ICore interface
-- Make TxFormats a member of ICore instead of a singleton.
-
-- Rename LoadMonitor to LoadMeter, change LoadEvent to LoadMeter::ScopedSample
-
 - Fix all leaks on exit (!)
 
     Say there's a leak, a ledger that can never be accessed is locked in some
@@ -30,6 +23,8 @@ TODO
 
 - Remove "ENABLE_INSECURE" when the time is right.
 
+- lift bind, function, and placeholders into ripple namespace
+- lift beast into the ripple namespace, remove ripple's duplicated integer types
 - lift unique_ptr / auto_ptr into ripple namespace, or replace with ScopedPointer
 
 - Make LevelDB and Ripple code work with both Unicode and non-Unicode Windows APIs

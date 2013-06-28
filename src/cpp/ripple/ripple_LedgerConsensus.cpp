@@ -972,7 +972,7 @@ void LedgerConsensus::beginAccept (bool synchronous)
         accept (consensusSet, LoadEvent::pointer ());
     else
     {
-        theApp->getIOService ().post (BIND_TYPE (&LedgerConsensus::accept, shared_from_this (), consensusSet,
+        theApp->getIOService ().post (boost::bind (&LedgerConsensus::accept, shared_from_this (), consensusSet,
                                       theApp->getJobQueue ().getLoadEvent (jtACCEPTLEDGER, "LedgerConsensus::beginAccept")));
     }
 }

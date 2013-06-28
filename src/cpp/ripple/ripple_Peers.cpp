@@ -329,7 +329,7 @@ void Peers::policyEnforce ()
 
     // Schedule next enforcement.
     mPolicyTimer.expires_at (boost::posix_time::second_clock::universal_time () + boost::posix_time::seconds (POLICY_INTERVAL_SECONDS));
-    mPolicyTimer.async_wait (BIND_TYPE (&Peers::policyHandler, this, P_1));
+    mPolicyTimer.async_wait (boost::bind (&Peers::policyHandler, this, _1));
 }
 
 void Peers::policyHandler (const boost::system::error_code& ecResult)
@@ -856,7 +856,7 @@ void Peers::scanRefresh ()
             //  % strIpPort % tpNext % (tpNext-tpNow).total_seconds());
 
             mScanTimer.expires_at (tpNext);
-            mScanTimer.async_wait (BIND_TYPE (&Peers::scanHandler, this, P_1));
+            mScanTimer.async_wait (boost::bind (&Peers::scanHandler, this, _1));
         }
     }
 }

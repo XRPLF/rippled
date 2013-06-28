@@ -90,7 +90,7 @@ public:
         mSocket->set_verify_mode (boost::asio::ssl::verify_peer);
 
         // XXX Verify semantics of RFC 2818 are what we want.
-        mSocket->set_verify_callback (boost::bind (&rfc2818_verify, strDomain, boost::placeholders::_1, boost::placeholders::_2), ec);
+        mSocket->set_verify_callback (boost::bind (&rfc2818_verify, strDomain, _1, _2), ec);
 
         return ec;
     }

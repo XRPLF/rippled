@@ -12,9 +12,6 @@ class JobQueue
 public:
     explicit JobQueue (boost::asio::io_service&);
 
-    // VFALCO TODO make convenience functions that allow the caller to not 
-    //             have to call bind.
-    //
     void addJob (JobType type, const std::string& name, const FUNCTION_TYPE<void (Job&)>& job);
 
     int getJobCount (JobType t);        // Jobs waiting at this priority

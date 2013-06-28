@@ -290,9 +290,9 @@ void SqliteDatabase::doHook (const char* db, int pages)
     }
 
     if (mWalQ)
-        mWalQ->addJob (jtWAL, std::string ("WAL:") + mHost, BIND_TYPE (&SqliteDatabase::runWal, this));
+        mWalQ->addJob (jtWAL, std::string ("WAL:") + mHost, boost::bind (&SqliteDatabase::runWal, this));
     else
-        boost::thread (BIND_TYPE (&SqliteDatabase::runWal, this)).detach ();
+        boost::thread (boost::bind (&SqliteDatabase::runWal, this)).detach ();
 }
 
 void SqliteDatabase::runWal ()

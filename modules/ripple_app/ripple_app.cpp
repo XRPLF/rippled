@@ -12,11 +12,6 @@
 
 //------------------------------------------------------------------------------
 
-#include "BeastConfig.h"
-
-// This must come first to work around the boost placeholders issues
-#include "modules/beast_basics/beast_basics.h" 
-
 // VFALCO NOTE Holy smokes...that's a lot of boost!!!
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -29,6 +24,7 @@
 #include <boost/bimap/list_of.hpp>
 #include <boost/bimap/multiset_of.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
+#include <boost/bind.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -74,6 +70,8 @@
 #include "ripple_app.h"
 
 #include "../ripple_data/ripple_data.h"
+
+
 
 #include "../modules/ripple_websocket/ripple_websocket.h"
 

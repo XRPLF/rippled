@@ -10,8 +10,6 @@
     @ingroup ripple_data
 */
 
-#include "BeastConfig.h"
-
 #include "ripple_data.h"
 
 #include <algorithm>

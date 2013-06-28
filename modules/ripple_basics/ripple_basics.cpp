@@ -10,8 +10,6 @@
     @ingroup ripple_basics
 */
 
-#include "BeastConfig.h"
-
 #include "ripple_basics.h"
 
 // VFALCO TODO Rewrite Sustain to use beast::Process
