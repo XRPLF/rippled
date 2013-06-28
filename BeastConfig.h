@@ -27,10 +27,12 @@
 // We bind functions that take references, which is
 // unsupported on some platforms
 //
-// VFALCO TODO Rewrite functions to use pointers instead
-//             of references so we can get off boost::bind
+// VFALCO TODO Fix this problem with FreeBSD and std::bind.
+//             We need to enforce a minimum library/g++ version.
 //
-//#define BEAST_BIND_USES_BOOST 1
+#if __FreeBSD__
+#define BEAST_BIND_USES_BOOST 1
+#endif
 
 #ifndef BEAST_USE_LEAKCHECKED
 #define BEAST_USE_LEAKCHECKED BEAST_CHECK_MEMORY_LEAKS
