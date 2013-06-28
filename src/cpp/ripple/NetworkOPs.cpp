@@ -312,7 +312,7 @@ void NetworkOPs::runTransactionQueue ()
     }
 
     if (theApp->getTxnQueue ().stopProcessing (txn))
-        theApp->getIOService ().post (boost::bind (&NetworkOPs::runTransactionQueue, this));
+        theApp->getIOService ().post (BIND_TYPE (&NetworkOPs::runTransactionQueue, this));
 }
 
 Transaction::pointer NetworkOPs::processTransaction (Transaction::pointer trans, bool bAdmin, bool bFailHard, stCallback callback)
@@ -2284,7 +2284,7 @@ void NetworkOPs::gotFetchPack (bool progress, uint32 seq)
     mLastFetchPack = 0;
     mFetchSeq = seq;        // earliest pack we have data on
     theApp->getJobQueue ().addJob (jtLEDGER_DATA, "gotFetchPack",
-                                   boost::bind (&InboundLedgers::gotFetchPack, &theApp->getInboundLedgers (), _1));
+                                   BIND_TYPE (&InboundLedgers::gotFetchPack, &theApp->getInboundLedgers (), P_1));
 }
 
 void NetworkOPs::missingNodeInLedger (uint32 seq)

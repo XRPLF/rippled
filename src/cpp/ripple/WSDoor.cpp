@@ -82,7 +82,7 @@ WSDoor* WSDoor::createWSDoor (const std::string& strIp, const int iPort, bool bP
                                           % strIp
                                           % iPort);
 
-    wdpResult->mThread  = new boost::thread (boost::bind (&WSDoor::startListening, wdpResult));
+    wdpResult->mThread  = new boost::thread (BIND_TYPE (&WSDoor::startListening, wdpResult));
 
     return wdpResult;
 }
