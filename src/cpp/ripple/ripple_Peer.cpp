@@ -1285,6 +1285,10 @@ void PeerImp::recvHaveTxSet (protocol::TMHaveTransactionSet& packet)
     }
 
     uint256 hash;
+
+    // VFALCO TODO There should be no use of memcpy() throughout the program.
+    //        TODO Clean up this magic number
+    //
     memcpy (hash.begin (), packet.hash ().data (), 32);
 
     if (packet.status () == protocol::tsHAVE)
