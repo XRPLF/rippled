@@ -1202,9 +1202,6 @@
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_UptimeTimer.h">
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_IntegerTypes.h">
-      <Filter>1. Modules\ripple_basics\utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_Sustain.h">
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClInclude>

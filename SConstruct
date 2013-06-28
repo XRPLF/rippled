@@ -113,6 +113,7 @@ INCLUDE_PATHS = [
 
 COMPILED_FILES = [
     'Subtrees/beast/modules/beast_core/beast_core.cpp',
+    'Subtrees/beast/modules/beast_basics/beast_basics.cpp',
     'modules/ripple_basics/ripple_basics.cpp',
     'modules/ripple_core/ripple_core.cpp',
     'modules/ripple_data/ripple_data.cpp',

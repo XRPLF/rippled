@@ -22,9 +22,34 @@
 
 #include "system/ripple_StandardIncludes.h"
 
+// This must come before Boost, to fix the boost placeholders problem
+#include "modules/beast_basics/beast_basics.h"
+
 #include "system/ripple_BoostIncludes.h"
 
 #include "system/ripple_OpenSSLIncludes.h"
+
+//------------------------------------------------------------------------------
+
+// From
+// http://stackoverflow.com/questions/4682343/how-to-resolve-conflict-between-boostshared-ptr-and-using-stdshared-ptr
+//
+namespace boost
+{ 
+    template <class T> 
+    const T* get_pointer (std::shared_ptr<T> const& ptr) 
+    {
+        return ptr.get();
+    }
+
+    template <class T>
+    T* get_pointer (std::shared_ptr<T>& ptr)
+    {
+        return ptr.get();
+    }
+}
+
+//------------------------------------------------------------------------------
 
 // ByteOrder
 #ifdef WIN32
@@ -37,9 +62,8 @@
 # include <sys/types.h>
 #endif
 
-#include "BeastConfig.h" // Must come before any Beast includes
-
 #include "modules/beast_core/beast_core.h"
+//#include "modules/beast_basics/beast_basics.h"
 
 // VFALCO TODO Fix this for FreeBSD
 //#include "modules/beast_basics/beast_basics.h"
@@ -49,7 +73,8 @@
 namespace ripple
 {
 
-#include "utility/ripple_IntegerTypes.h" // must come first
+using namespace beast;
+
 #include "utility/ripple_Log.h" // Needed by others
 
 #include "types/ripple_BasicTypes.h"

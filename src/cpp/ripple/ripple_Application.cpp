@@ -362,7 +362,7 @@ void Application::setup ()
     mJobQueue.setThreadCount (0, theConfig.RUN_STANDALONE);
 
     mSweepTimer.expires_from_now (boost::posix_time::seconds (10));
-    mSweepTimer.async_wait (boost::bind (&Application::sweep, this));
+    mSweepTimer.async_wait (BIND_TYPE (&Application::sweep, this));
 
     m_loadManager->startThread ();
 
@@ -391,7 +391,7 @@ void Application::setup ()
             LogPartition::setSeverity (lsDEBUG);
     }
 
-    boost::thread (boost::bind (runAux, boost::ref (mAuxService))).detach ();
+    boost::thread (BIND_TYPE (runAux, boost::ref (mAuxService))).detach ();
 
     if (!theConfig.RUN_STANDALONE)
         mSNTPClient.init (theConfig.SNTP_SERVERS);
@@ -399,16 +399,16 @@ void Application::setup ()
     //
     // Construct databases.
     //
-    boost::thread t1 (boost::bind (&InitDB, &mRpcDB, "rpc.db", RpcDBInit, RpcDBCount));
-    boost::thread t2 (boost::bind (&InitDB, &mTxnDB, "transaction.db", TxnDBInit, TxnDBCount));
-    boost::thread t3 (boost::bind (&InitDB, &mLedgerDB, "ledger.db", LedgerDBInit, LedgerDBCount));
+    boost::thread t1 (BIND_TYPE (&InitDB, &mRpcDB, "rpc.db", RpcDBInit, RpcDBCount));
+    boost::thread t2 (BIND_TYPE (&InitDB, &mTxnDB, "transaction.db", TxnDBInit, TxnDBCount));
+    boost::thread t3 (BIND_TYPE (&InitDB, &mLedgerDB, "ledger.db", LedgerDBInit, LedgerDBCount));
     t1.join ();
     t2.join ();
     t3.join ();
 
-    boost::thread t4 (boost::bind (&InitDB, &mWalletDB, "wallet.db", WalletDBInit, WalletDBCount));
-    boost::thread t6 (boost::bind (&InitDB, &mNetNodeDB, "netnode.db", NetNodeDBInit, NetNodeDBCount));
-    boost::thread t7 (boost::bind (&InitDB, &mPathFindDB, "pathfind.db", PathFindDBInit, PathFindDBCount));
+    boost::thread t4 (BIND_TYPE (&InitDB, &mWalletDB, "wallet.db", WalletDBInit, WalletDBCount));
+    boost::thread t6 (BIND_TYPE (&InitDB, &mNetNodeDB, "netnode.db", NetNodeDBInit, NetNodeDBCount));
+    boost::thread t7 (BIND_TYPE (&InitDB, &mPathFindDB, "pathfind.db", PathFindDBInit, PathFindDBCount));
     t4.join ();
     t6.join ();
     t7.join ();
@@ -440,7 +440,7 @@ void Application::setup ()
     else
     {
         WriteLog (lsINFO, Application) << "SQLite used for nodes";
-        boost::thread t5 (boost::bind (&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
+        boost::thread t5 (BIND_TYPE (&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
         t5.join ();
     }
 
@@ -638,7 +638,7 @@ void Application::run ()
 {
     if (theConfig.NODE_SIZE >= 2)
     {
-        boost::thread (boost::bind (runIO, boost::ref (mIOService))).detach ();
+        boost::thread (BIND_TYPE (runIO, boost::ref (mIOService))).detach ();
     }
 
     if (!theConfig.RUN_STANDALONE)
@@ -688,7 +688,7 @@ void Application::sweep ()
     mNetOps.sweepFetchPack ();
     // VFALCO NOTE does the call to sweep() happen on another thread?
     mSweepTimer.expires_from_now (boost::posix_time::seconds (theConfig.getSize (siSweepInterval)));
-    mSweepTimer.async_wait (boost::bind (&Application::sweep, this));
+    mSweepTimer.async_wait (BIND_TYPE (&Application::sweep, this));
 }
 
 Application::~Application ()

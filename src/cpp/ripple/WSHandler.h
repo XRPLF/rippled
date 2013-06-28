@@ -77,7 +77,7 @@ public:
         }
     }
 
-    static void ssend (connection_ptr cpClient, const std::string& strMessage, bool broadcast)
+    static void ssendb (connection_ptr cpClient, const std::string& strMessage, bool broadcast)
     {
         try
         {
@@ -93,14 +93,14 @@ public:
 
     void send (connection_ptr cpClient, message_ptr mpMessage)
     {
-        cpClient->get_strand ().post (boost::bind (
+        cpClient->get_strand ().post (BIND_TYPE (
                                           &WSServerHandler<endpoint_type>::ssend, cpClient, mpMessage));
     }
 
     void send (connection_ptr cpClient, const std::string& strMessage, bool broadcast)
     {
-        cpClient->get_strand ().post (boost::bind (
-                                          &WSServerHandler<endpoint_type>::ssend, cpClient, strMessage, broadcast));
+        cpClient->get_strand ().post (BIND_TYPE (
+                                          &WSServerHandler<endpoint_type>::ssendb, cpClient, strMessage, broadcast));
     }
 
     void send (connection_ptr cpClient, const Json::Value& jvObj, bool broadcast)

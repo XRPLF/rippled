@@ -71,6 +71,12 @@ public:
     */
     explicit ThreadWithCallQueue (String name);
 
+    /** Retrieve the default entry points.
+
+        The default entry points do nothing.
+    */
+    static EntryPoints* getDefaultEntryPoints () noexcept;
+
     /** Destroy a ThreadWithCallQueue.
 
         If the thread is still running it is stopped. The destructor blocks
@@ -78,9 +84,16 @@ public:
     */
     ~ThreadWithCallQueue ();
 
-    /** Start the thread.
+    /** Start the thread, with optional entry points.
+
+        If `entryPoints` is specified then the thread runs using those
+        entry points. If ommitted, the default entry simply do nothing.
+        This is useful for creating a thread whose sole activities are
+        performed through the call queue.
+
+        @param entryPoints An optional pointer to @ref EntryPoints.
     */
-    void start (EntryPoints* const entryPoints);
+    void start (EntryPoints* const entryPoints = getDefaultEntryPoints ());
 
     /* Stop the thread.
 

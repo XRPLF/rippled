@@ -2,10 +2,34 @@
 TODO
 --------------------------------------------------------------------------------
 
+- Make beast::HashMap support assignment via operator[]
+- Rewrite TxFormats to use beast containers and RAII, and not leak
+- Add ICore interface
+- Make TxFormats a member of ICore instead of a singleton.
+
+- Rename LoadMonitor to LoadMeter, change LoadEvent to LoadMeter::ScopedSample
+
+- Fix all leaks on exit (!)
+
+    Say there's a leak, a ledger that can never be accessed is locked in some
+        structure. If the organized teardown code frees that structure, the leak
+        will not be reported.
+    Yes, so you'll detect some small subset of leaks that way.
+    You'll still have to be vigilant for the leaks that won't detect.
+    The problem is ordering. There are lots of circular dependencies.
+    The biggest problem is the order of destruction of global objects. (I think)
+    Getting rid of global objects is a good solution to that.
+    Vinnie Falco: Those I can resolve with my ReferenceCountedSingleton. And
+                  yeah thats a good approach, one that I am doing slowly anyway
+    Yeah, that's good for other reasons too, not just the unpredictability of
+        creation order that can hide bugs.
+    There may also just be some missing destructors.
+    Some of it may be things being shut down in the wrong order. Like if you shut
+        down the cache and then something that uses the cache, objects may get
+        put in the cache after it was shut down.
+
 - Remove "ENABLE_INSECURE" when the time is right.
 
-- lift bind, function, and placeholders into ripple namespace
-- lift beast into the ripple namespace, remove ripple's duplicated integer types
 - lift unique_ptr / auto_ptr into ripple namespace, or replace with ScopedPointer
 
 - Make LevelDB and Ripple code work with both Unicode and non-Unicode Windows APIs

@@ -222,12 +222,12 @@
 
   @todo Discuss the treatment of exceptions versus Error objects in the library.
 
-  @todo Discuss the additions to AppConfig.h
+  @todo Discuss the additions to BeastConfig.h
 
   @defgroup beast_core beast_core
 */
 
-/*  See the Juce notes regarding AppConfig.h
+/*  See the JUCE notes regarding BeastConfig.h
 
     This file must always be included before any Juce headers.
 
@@ -238,54 +238,14 @@
 /* BeastConfig.h must be included before this file */
 
 /* Use sensible default configurations if they forgot
-   to append the necessary macros into their AppConfig.h.
+   to append the necessary macros into their BeastConfig.h.
 */
 #ifndef BEAST_USE_BOOST
-#define BEAST_USE_BOOST      0
+#define BEAST_USE_BOOST 0
 #endif
 
 #ifndef BEAST_USE_LEAKCHECKED
 #define BEAST_USE_LEAKCHECKED BEAST_CHECK_MEMORY_LEAKS
-#endif
-
-/* Get this early so we can use it. */
-#include "../beast_core/system/beast_TargetPlatform.h"
-
-#if BEAST_USE_BOOST
-#include <boost/thread/tss.hpp>
-#endif
-
-#if BEAST_MSVC
-# include <crtdbg.h>
-# include <functional>
-
-#elif BEAST_IOS
-# if BEAST_USE_BOOST
-#  include <boost/bind.hpp>
-#  include <boost/function.hpp>
-# else
-#  include <ciso646>  // detect std::lib
-#  if _LIBCPP_VERSION // libc++
-#   include <functional>
-#  else // libstdc++ (GNU)
-#   include <tr1/functional>
-#  endif
-# endif
-
-#elif BEAST_MAC
-# include <ciso646>  // detect std::lib
-# if _LIBCPP_VERSION // libc++
-#  include <functional>
-# else // libstdc++ (GNU)
-#  include <tr1/functional>
-# endif
-
-#elif BEAST_LINUX || BEAST_BSD
-# include <tr1/functional>
-
-#else
-# error Unknown platform!
-
 #endif
 
 #include <algorithm>
@@ -320,6 +280,98 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* Get this early so we can use it. */
+#include "../beast_core/system/beast_TargetPlatform.h"
+
+//------------------------------------------------------------------------------
+
+// This is a hack to fix boost's goofy placeholders
+#if BEAST_USE_BOOST
+#ifdef BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
+#error <boost/bind.hpp> must not be included before this file
+#endif
+// Prevent <boost/bind/placeholders.hpp> from being included
+#define BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
+#include <boost/bind/arg.hpp>
+#include <boost/config.hpp>
+// This is from <boost/bind/placeholders.cpp>
+namespace boost {
+namespace placeholders {
+#if defined(__BORLANDC__) || defined(__GNUC__) && (__GNUC__ < 4)
+static inline boost::arg<1> _1() { return boost::arg<1>(); }
+static inline boost::arg<2> _2() { return boost::arg<2>(); }
+static inline boost::arg<3> _3() { return boost::arg<3>(); }
+static inline boost::arg<4> _4() { return boost::arg<4>(); }
+static inline boost::arg<5> _5() { return boost::arg<5>(); }
+static inline boost::arg<6> _6() { return boost::arg<6>(); }
+static inline boost::arg<7> _7() { return boost::arg<7>(); }
+static inline boost::arg<8> _8() { return boost::arg<8>(); }
+static inline boost::arg<9> _9() { return boost::arg<9>(); }
+#elif defined(BOOST_MSVC) || (defined(__DECCXX_VER) && __DECCXX_VER <= 60590031) || defined(__MWERKS__) || \
+    defined(__GNUC__) && (__GNUC__ == 4 && __GNUC_MINOR__ < 2)  
+static boost::arg<1> _1;
+static boost::arg<2> _2;
+static boost::arg<3> _3;
+static boost::arg<4> _4;
+static boost::arg<5> _5;
+static boost::arg<6> _6;
+static boost::arg<7> _7;
+static boost::arg<8> _8;
+static boost::arg<9> _9;
+#else
+boost::arg<1> _1;
+boost::arg<2> _2;
+boost::arg<3> _3;
+boost::arg<4> _4;
+boost::arg<5> _5;
+boost::arg<6> _6;
+boost::arg<7> _7;
+boost::arg<8> _8;
+boost::arg<9> _9;
+#endif
+}
+using namespace placeholders;
+}
+#endif
+
+//------------------------------------------------------------------------------
+
+// Choose a source of bind, placeholders, and function
+
+#if !BEAST_BIND_USES_STD && !BEAST_BIND_USES_TR1 && !BEAST_BIND_USES_BOOST
+# if BEAST_MSVC
+#  define BEAST_BIND_USES_STD 1
+# elif BEAST_IOS || BEAST_MAC
+#  include <ciso646>                 // detect version of std::lib
+#  if BEAST_IOS && BEAST_USE_BOOST   // Work-around for iOS bugs with bind.
+#   define BEAST_BIND_USES_BOOST 1
+#  elif _LIBCPP_VERSION // libc++
+#   define BEAST_BIND_USES_STD 1
+#  else // libstdc++ (GNU)
+#   define BEAST_BIND_USES_TR1 1
+#  endif
+# elif BEAST_LINUX || BEAST_BSD
+#  define BEAST_BIND_USES_TR1 1
+# else
+#  define BEAST_BIND_USES_STD 1
+# endif
+#endif
+
+#if BEAST_BIND_USES_STD
+# include <functional>
+#elif BEAST_BIND_USES_TR1
+# include <tr1/functional>
+#elif BEAST_BIND_USES_BOOST
+# include <boost/bind.hpp>
+# include <boost/function.hpp>
+#endif
+
+//------------------------------------------------------------------------------
+
+#if BEAST_USE_BOOST
+#include <boost/thread/tss.hpp>
+#endif
 
 #ifdef _CRTDBG_MAP_ALLOC
 #error "MSVC C Runtime Debug Macros not supported"
