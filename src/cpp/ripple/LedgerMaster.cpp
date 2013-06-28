@@ -306,7 +306,7 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
     if (mMissingLedger->setAccept ())
     {
         if (!mMissingLedger->addOnComplete (BIND_TYPE (&LedgerMaster::missingAcquireComplete, this, P_1)))
-            theApp->getIOService ().post (boost::bind (&LedgerMaster::missingAcquireComplete, this, mMissingLedger));
+            theApp->getIOService ().post (BIND_TYPE (&LedgerMaster::missingAcquireComplete, this, mMissingLedger));
     }
 
     int fetchMax = theConfig.getSize (siLedgerFetch);

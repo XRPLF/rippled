@@ -26,6 +26,28 @@
 
 #include "system/ripple_OpenSSLIncludes.h"
 
+//------------------------------------------------------------------------------
+
+// From
+// http://stackoverflow.com/questions/4682343/how-to-resolve-conflict-between-boostshared-ptr-and-using-stdshared-ptr
+//
+namespace boost
+{ 
+    template <class T> 
+    const T* get_pointer (std::shared_ptr<T> const& ptr) 
+    {
+        return ptr.get();
+    }
+
+    template <class T>
+    T* get_pointer (std::shared_ptr<T>& ptr)
+    {
+        return ptr.get();
+    }
+}
+
+//------------------------------------------------------------------------------
+
 // ByteOrder
 #ifdef WIN32
 // (nothing)

@@ -12,7 +12,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <PreprocessorDefinitions>_VARIADIC_MAX=8;_WIN32_WINNT=0x0600;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_VARIADIC_MAX=10;_WIN32_WINNT=0x0600;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <WarningLevel>Level3</WarningLevel>
       <AdditionalIncludeDirectories>$(RepoDir);$(RepoDir)\src\cpp\protobuf\src;$(RepoDir)\src\cpp\protobuf\vsprojects;$(RepoDir)\build\proto;$(RepoDir)\Subtrees;$(RepoDir)\Subtrees\leveldb;$(RepoDir)\Subtrees\leveldb\include;$(RepoDir)\Subtrees\beast;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

@@ -39,7 +39,7 @@ void TransactionAcquire::done ()
         map = mMap;
     }
 
-    theApp->getIOService ().post (boost::bind (&TACompletionHandler, mHash, map));
+    theApp->getIOService ().post (BIND_TYPE (&TACompletionHandler, mHash, map));
 }
 
 void TransactionAcquire::onTimer (bool progress)
