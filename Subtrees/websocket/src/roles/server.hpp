@@ -551,10 +551,13 @@ void server<endpoint>::connection<connection_type>::async_init() {
     m_connection.register_timeout(5000,fail::status::TIMEOUT_WS,
                                        "Timeout on WebSocket handshake");
 
+    static boost::arg<1> pl1;
+    static boost::arg<2> pl2;
+
 	boost::shared_ptr<std::string> stringPtr = boost::make_shared<std::string>();
 	m_connection.get_socket().async_read_until(
 		m_connection.buffer(),
-		boost::bind(&match_header, stringPtr, _1, _2),
+		boost::bind(&match_header, stringPtr, pl1, pl2),
 		m_connection.get_strand().wrap(boost::bind(
 			&type::handle_read_request,
 			m_connection.shared_from_this(),

@@ -24,9 +24,6 @@
 
 #define BEAST_USE_BOOST 1
 
-// We bind functions that take references, which is
-// unsupported on some platforms
-//
 // VFALCO TODO Fix this problem with FreeBSD and std::bind.
 //             We need to enforce a minimum library/g++ version.
 //
