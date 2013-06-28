@@ -54,16 +54,6 @@ namespace beast
 #include "threads/beast_InterruptibleThread.cpp"
 #include "threads/beast_Semaphore.cpp"
 
-#if BEAST_WINDOWS
-#include "native/beast_win32_FPUFlags.cpp"
-#include "native/beast_win32_Threads.cpp"
-
-#else
-#include "native/beast_posix_FPUFlags.cpp"
-#include "native/beast_posix_Threads.cpp"
-
-#endif
-
 #if BEAST_USE_BOOST
 #include "memory/beast_FifoFreeStoreWithTLS.cpp"
 #else
@@ -82,8 +72,35 @@ namespace beast
 #include "threads/beast_ThreadGroup.cpp"
 #include "threads/beast_ThreadWithCallQueue.cpp"
 
+#if BEAST_WINDOWS
+#include "native/beast_win32_FPUFlags.cpp"
+#include "native/beast_win32_Threads.cpp"
+
+#else
+#include "native/beast_posix_FPUFlags.cpp"
+#include "native/beast_posix_Threads.cpp"
+
+#endif
 }
 
 #if BEAST_MSVC
 #pragma warning (pop)
+#endif
+
+//------------------------------------------------------------------------------
+
+#if BEAST_USE_BOOST
+namespace boost {
+namespace placeholders {
+boost::arg<1> _1;
+boost::arg<2> _2;
+boost::arg<3> _3;
+boost::arg<4> _4;
+boost::arg<5> _5;
+boost::arg<6> _6;
+boost::arg<7> _7;
+boost::arg<8> _8;
+boost::arg<9> _9;
+}
+}
 #endif

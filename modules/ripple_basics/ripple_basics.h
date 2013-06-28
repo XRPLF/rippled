@@ -22,6 +22,9 @@
 
 #include "system/ripple_StandardIncludes.h"
 
+// This must come before Boost, to fix the boost placeholders problem
+#include "modules/beast_basics/beast_basics.h"
+
 #include "system/ripple_BoostIncludes.h"
 
 #include "system/ripple_OpenSSLIncludes.h"
@@ -62,7 +65,7 @@ namespace boost
 #endif
 
 #include "modules/beast_core/beast_core.h"
-#include "modules/beast_basics/beast_basics.h"
+//#include "modules/beast_basics/beast_basics.h"
 
 // VFALCO TODO Fix this for FreeBSD
 //#include "modules/beast_basics/beast_basics.h"
@@ -72,17 +75,7 @@ namespace boost
 namespace ripple
 {
 
-// VFALCO TODO Make this work. We have to get rid of BIND_TYPE,
-//             FUNC_TYPE, and P_* placeholders.
-//
-//using namespace beast;
-
-using beast::int16;
-using beast::int32;
-using beast::int64;
-using beast::uint16;
-using beast::uint32;
-using beast::uint64;
+using namespace beast;
 
 #include "utility/ripple_Log.h" // Needed by others
 
