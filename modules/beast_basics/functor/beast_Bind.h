@@ -48,6 +48,7 @@
 #if BEAST_BIND_USES_STD
 
 using std::ref;
+using std::cref;
 using std::bind;
 using std::function;
 
@@ -136,6 +137,7 @@ using std::placeholders::_20;
 #elif BEAST_BIND_USES_TR1
 
 using std::tr1::ref;
+using std::tr1::cref;
 using std::tr1::bind;
 using std::tr1::function;
 
@@ -224,6 +226,7 @@ using std::tr1::placeholders::_20;
 #elif BEAST_BIND_USES_BOOST
 
 using boost::ref;
+using boost::cref;
 using boost::bind;
 using boost::function;
 
