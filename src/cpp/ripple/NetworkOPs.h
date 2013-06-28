@@ -225,28 +225,6 @@ public:
     int getFetchSize ();
     void sweepFetchPack ();
 
-    float getJSONHitRate ()
-    {
-        return mJSONCache.getHitRate ();
-    }
-
-    // VFALCO TODO Rename this to getNumberOfCachedJSONItems or something similar
-    int getJSONEntries ()
-    {
-        return mJSONCache.getNumberOfEntries ();
-    }
-
-    void storeJSONCache (JSONCache::Kind kind, const uint256& ledger, const uint160& object,
-                         const boost::shared_ptr <Json::Value>& data)
-    {
-        mJSONCache.storeEntry (kind, ledger, object, data);
-    }
-
-    boost::shared_ptr<Json::Value> getJSONCache (JSONCache::Kind kind, const uint256& ledger, const uint160& object)
-    {
-        return mJSONCache.getEntry (kind, ledger, object);
-    }
-
     // network state machine
     void checkState (const boost::system::error_code& result);
     void switchLastClosedLedger (Ledger::pointer newLedger, bool duringConsensus); // Used for the "jump" case
@@ -416,8 +394,6 @@ private:
     subMapType                                          mSubServer;             // when server changes connectivity state
     subMapType                                          mSubTransactions;       // all accepted transactions
     subMapType                                          mSubRTTransactions;     // all proposed and accepted transactions
-
-    JSONCache                                           mJSONCache;
 
     TaggedCache< uint256, Blob , UptimeTimerAdapter >   mFetchPack;
     uint32                                              mLastFetchPack;

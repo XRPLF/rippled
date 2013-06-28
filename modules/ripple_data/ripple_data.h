@@ -53,7 +53,6 @@ namespace ripple
 #include "protocol/ripple_TxFormat.h"
 #include "protocol/ripple_TxFormats.h"
 
-#include "utility/ripple_JSONCache.h"
 #include "utility/ripple_UptimeTimerAdapter.h"
 
 }

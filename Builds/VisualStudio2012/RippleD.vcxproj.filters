@@ -486,9 +486,6 @@
     <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_SerializedObjectTemplate.cpp">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_data\utility\ripple_JSONCache.cpp">
-      <Filter>1. Modules\ripple_data\utility</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_SHAMapDelta.cpp">
       <Filter>1. Modules\ripple_app\refactored\shamap</Filter>
     </ClCompile>
@@ -1338,9 +1335,6 @@
       <Filter>1. Modules\ripple_basics\types</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_data\utility\ripple_UptimeTimerAdapter.h">
-      <Filter>1. Modules\ripple_data\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_data\utility\ripple_JSONCache.h">
       <Filter>1. Modules\ripple_data\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_SHAMapTreeNode.h">

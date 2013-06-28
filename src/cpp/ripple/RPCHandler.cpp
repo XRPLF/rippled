@@ -2412,8 +2412,6 @@ Json::Value RPCHandler::doGetCounts (Json::Value params, LoadType* loadType, Sco
     ret["node_hit_rate"] = theApp->getHashedObjectStore ().getCacheHitRate ();
     ret["ledger_hit_rate"] = theApp->getLedgerMaster ().getCacheHitRate ();
     ret["AL_hit_rate"] = AcceptedLedger::getCacheHitRate ();
-    ret["JC_hit_rate"] = theApp->getOPs ().getJSONHitRate ();
-    ret["JC_size"] = theApp->getOPs ().getJSONEntries ();
 
     ret["fullbelow_size"] = SHAMap::getFullBelowSize ();
 

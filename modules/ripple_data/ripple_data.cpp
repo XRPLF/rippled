@@ -88,8 +88,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "protocol/ripple_STAmount.cpp"
 #include "protocol/ripple_STAmountRound.cpp"
 
-#include "utility/ripple_JSONCache.cpp"
-
 }
 
 // These must be outside the namespace because of boost
