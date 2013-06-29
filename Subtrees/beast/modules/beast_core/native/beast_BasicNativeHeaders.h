@@ -188,6 +188,8 @@
 
  #if BEAST_BSD
   #include <dirent.h>
+  #include <ifaddrs.h>
+  #include <net/if_dl.h>
   #include <kvm.h>
   #include <langinfo.h>
   #include <sys/cdefs.h>
