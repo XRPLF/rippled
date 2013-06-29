@@ -2,13 +2,12 @@
 TODO
 --------------------------------------------------------------------------------
 
+- Replace all NULL with nullptr
+
 - Make beast::HashMap support assignment via operator[]
 - Rewrite TxFormats to use beast containers and RAII, and not leak
 - Add ICore interface
 - Make TxFormats a member of ICore instead of a singleton.
-
-- Allow manual string labels for LogPartition, to fix the problem where
-  the log partition gets a file name like "ripple_LedgerConsensus"
 
 - Rename LoadMonitor to LoadMeter, change LoadEvent to LoadMeter::ScopedSample
 

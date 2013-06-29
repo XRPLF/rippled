@@ -28,7 +28,7 @@ public:
 
 public:
     SerializedTransaction (SerializerIterator & sit);
-    SerializedTransaction (TransactionType type);
+    SerializedTransaction (TxType type);
     SerializedTransaction (const STObject & object);
 
     // STObject functions
@@ -47,7 +47,7 @@ public:
     }
     uint256 getSigningHash () const;
 
-    TransactionType getTxnType () const
+    TxType getTxnType () const
     {
         return mType;
     }
@@ -127,8 +127,8 @@ public:
     std::string getMetaSQL (Serializer rawTxn, uint32 inLedger, char status, const std::string & escapedMetaData) const;
 
 private:
-    TransactionType mType;
-    const TxFormat* mFormat;
+    TxType mType;
+    TxFormats::Item const* mFormat;
 
     SerializedTransaction* duplicate () const
     {

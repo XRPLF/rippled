@@ -45,7 +45,7 @@ Transaction::pointer Transaction::sharedTransaction (Blob const& vucTransaction,
 //
 
 Transaction::Transaction (
-    TransactionType ttKind,
+    TxType ttKind,
     const RippleAddress&    naPublicKey,
     const RippleAddress&    naSourceAccount,
     uint32                  uSeq,

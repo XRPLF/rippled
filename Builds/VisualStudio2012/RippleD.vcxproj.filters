@@ -549,9 +549,6 @@
     <ClCompile Include="..\..\src\cpp\ripple\ripple_RippleCalc.cpp">
       <Filter>1. Modules\ripple_app\refactored\pathing</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_TxFormat.cpp">
-      <Filter>1. Modules\ripple_data\protocol</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_TxFormats.cpp">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClCompile>
@@ -1394,9 +1391,6 @@
     <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_HashPrefix.h">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_TxFormat.h">
-      <Filter>1. Modules\ripple_data\protocol</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_Protocol.h">
       <Filter>1. Modules\ripple_data\protocol</Filter>
     </ClInclude>
@@ -1794,6 +1788,7 @@
     <ClInclude Include="..\..\modules\ripple_app\basics\ripple_BuildVersion.h">
       <Filter>1. Modules\ripple_app\basics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_data\utility\ripple_JSONCache.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\src\cpp\protobuf\src\google\protobuf\descriptor.proto">

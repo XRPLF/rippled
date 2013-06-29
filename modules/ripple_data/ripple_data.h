@@ -50,7 +50,6 @@ namespace ripple
 #include "protocol/ripple_SerializedObject.h"
 #include "protocol/ripple_LedgerFormat.h" // needs SOTemplate from SerializedObject
 #include "protocol/ripple_TxFlags.h"
-#include "protocol/ripple_TxFormat.h"
 #include "protocol/ripple_TxFormats.h"
 
 #include "utility/ripple_UptimeTimerAdapter.h"

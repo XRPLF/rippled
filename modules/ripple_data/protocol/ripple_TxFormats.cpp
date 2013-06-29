@@ -4,27 +4,143 @@
 */
 //==============================================================================
 
-TxFormats& TxFormats::getInstance ()
+TxFormats::Item::Item (char const* name, TxType type)
+    : m_name (name)
+    , m_type (type)
+{
+}
+
+TxFormats::Item& TxFormats::Item::operator<< (SOElement const& el)
+{
+    elements.push_back (el);
+
+    return *this;
+}
+
+std::string const& TxFormats::Item::getName () const noexcept
+{
+    return m_name;
+}
+
+TxType TxFormats::Item::getType () const noexcept
+{
+    return m_type;
+}
+
+//------------------------------------------------------------------------------
+
+void TxFormats::addCommonFields (Item& item)
+{
+    item
+        << SOElement(sfTransactionType,     SOE_REQUIRED)
+        << SOElement(sfFlags,               SOE_OPTIONAL)
+        << SOElement(sfSourceTag,           SOE_OPTIONAL)
+        << SOElement(sfAccount,             SOE_REQUIRED) 
+        << SOElement(sfSequence,            SOE_REQUIRED) 
+        << SOElement(sfPreviousTxnID,       SOE_OPTIONAL) 
+        << SOElement(sfFee,                 SOE_REQUIRED) 
+        << SOElement(sfOperationLimit,      SOE_OPTIONAL) 
+        << SOElement(sfSigningPubKey,       SOE_REQUIRED) 
+        << SOElement(sfTxnSignature,        SOE_OPTIONAL)
+        ;
+}
+
+TxFormats::TxFormats ()
+{
+    add ("AccountSet", ttACCOUNT_SET)
+            << SOElement (sfEmailHash,       SOE_OPTIONAL)
+            << SOElement (sfWalletLocator,   SOE_OPTIONAL)
+            << SOElement (sfWalletSize,      SOE_OPTIONAL)
+            << SOElement (sfMessageKey,      SOE_OPTIONAL)
+            << SOElement (sfDomain,          SOE_OPTIONAL)
+            << SOElement (sfTransferRate,    SOE_OPTIONAL)
+            << SOElement (sfSetFlag,         SOE_OPTIONAL)
+            << SOElement (sfClearFlag,       SOE_OPTIONAL)
+            ;
+
+    add ("TrustSet", ttTRUST_SET)
+            << SOElement (sfLimitAmount,     SOE_OPTIONAL)
+            << SOElement (sfQualityIn,       SOE_OPTIONAL)
+            << SOElement (sfQualityOut,      SOE_OPTIONAL)
+            ;
+
+    add ("OfferCreate", ttOFFER_CREATE)
+            << SOElement (sfTakerPays,       SOE_REQUIRED)
+            << SOElement (sfTakerGets,       SOE_REQUIRED)
+            << SOElement (sfExpiration,      SOE_OPTIONAL)
+            << SOElement (sfOfferSequence,   SOE_OPTIONAL)
+            ;
+
+    add ("OfferCancel", ttOFFER_CANCEL)
+            << SOElement (sfOfferSequence,   SOE_REQUIRED)
+            ;
+
+    add ("SetRegularKey", ttREGULAR_KEY_SET)
+            << SOElement (sfRegularKey,  SOE_OPTIONAL)
+            ;
+
+    add ("Payment", ttPAYMENT)
+            << SOElement (sfDestination,     SOE_REQUIRED)
+            << SOElement (sfAmount,          SOE_REQUIRED)
+            << SOElement (sfSendMax,         SOE_OPTIONAL)
+            << SOElement (sfPaths,           SOE_DEFAULT)
+            << SOElement (sfInvoiceID,       SOE_OPTIONAL)
+            << SOElement (sfDestinationTag,  SOE_OPTIONAL)
+            ;
+
+    add ("Contract", ttCONTRACT)
+            << SOElement (sfExpiration,      SOE_REQUIRED)
+            << SOElement (sfBondAmount,      SOE_REQUIRED)
+            << SOElement (sfStampEscrow,     SOE_REQUIRED)
+            << SOElement (sfRippleEscrow,    SOE_REQUIRED)
+            << SOElement (sfCreateCode,      SOE_OPTIONAL)
+            << SOElement (sfFundCode,        SOE_OPTIONAL)
+            << SOElement (sfRemoveCode,      SOE_OPTIONAL)
+            << SOElement (sfExpireCode,      SOE_OPTIONAL)
+            ;
+
+    add ("RemoveContract", ttCONTRACT_REMOVE)
+            << SOElement (sfTarget,          SOE_REQUIRED)
+            ;
+
+    add ("EnableFeature", ttFEATURE)
+            << SOElement (sfFeature,         SOE_REQUIRED)
+            ;
+
+    add ("SetFee", ttFEE)
+            << SOElement (sfBaseFee,             SOE_REQUIRED)
+            << SOElement (sfReferenceFeeUnits,   SOE_REQUIRED)
+            << SOElement (sfReserveBase,         SOE_REQUIRED)
+            << SOElement (sfReserveIncrement,    SOE_REQUIRED)
+            ;
+}
+
+TxFormats const& TxFormats::getInstance ()
 {
     static TxFormats instance;
 
     return instance;
 }
 
-TxFormat* TxFormats::add (TxFormat* txFormat)
+TxType TxFormats::findTypeByName (std::string const name) const
 {
-    // VFALCO TODO Figure out when and how to delete the TxFormat objects later?
-    m_types [txFormat->getType ()] = txFormat;
-    m_names [txFormat->getName ()] = txFormat;
+    Item const* const result = findByName (name);
 
-    return txFormat;
+    if (result != nullptr)
+    {
+        return result->getType ();
+    }
+    else
+    {
+        throw std::runtime_error ("Unknown format name");
+    }
 }
 
-TxFormat* TxFormats::findByType (TransactionType type)
+TxFormats::Item const* TxFormats::findByType (TxType type) const noexcept
 {
-    TxFormat* result = NULL;
+    Item* result = nullptr;
 
-    TypeMap::iterator const iter = m_types.find (type);
+    TypeMap::const_iterator const iter = m_types.find (type);
 
     if (iter != m_types.end ())
     {
@@ -34,11 +150,11 @@ TxFormat* TxFormats::findByType (TransactionType type)
     return result;
 }
 
-TxFormat* TxFormats::findByName (std::string const& name)
+TxFormats::Item const* TxFormats::findByName (std::string const& name) const noexcept
 {
-    TxFormat* result = NULL; // VFALCO TODO replace all NULL with nullptr
+    Item* result = nullptr;
 
-    NameMap::iterator const iter = m_names.find (name);
+    NameMap::const_iterator const iter = m_names.find (name);
 
     if (iter != m_names.end ())
     {
@@ -48,7 +164,14 @@ TxFormat* TxFormats::findByName (std::string const& name)
     return result;
 }
 
-TxFormats::TxFormats ()
+TxFormats::Item& TxFormats::add (char const* name, TxType type)
 {
-}
+    Item& item = m_formats.add (new Item (name, type));
 
+    addCommonFields (item);
+
+    m_types [item.getType ()] = &item;
+    m_names [item.getName ()] = &item;
+
+    return item;
+}

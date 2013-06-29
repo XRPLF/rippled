@@ -7,7 +7,6 @@
 namespace po = boost::program_options;
 
 // VFALCO TODO make these singletons that initialize statically
-extern void TFInit ();
 extern void LEFInit ();
 
 void setupServer ()
@@ -210,7 +209,6 @@ int rippleMain (int argc, char** argv)
         Log::setMinSeverity (lsINFO, true);
 
     // VFALCO TODO make these singletons that initialize statically
-    TFInit ();
     LEFInit ();
 
     if (vm.count ("unittest"))
