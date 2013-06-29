@@ -23,34 +23,28 @@
 
 void MACAddress::findAllAddresses (Array<MACAddress>& result)
 {
-#if 1
-    bassertfalse; // VFALCO TODO Implement for FreeBSD
-#else
-    const int s = socket (AF_INET, SOCK_DGRAM, 0);
-    if (s != -1)
+    ifaddrs* addrs = nullptr;
+
+    if (getifaddrs (&addrs) == 0)
     {
-        char buf [1024];
-        struct ifconf ifc;
-        ifc.ifc_len = sizeof (buf);
-        ifc.ifc_buf = buf;
-        ioctl (s, SIOCGIFCONF, &ifc);
-
-        for (unsigned int i = 0; i < ifc.ifc_len / sizeof (struct ifreq); ++i)
+        for (const ifaddrs* cursor = addrs; cursor != nullptr; cursor = cursor->ifa_next)
         {
-            struct ifreq ifr;
-            strcpy (ifr.ifr_name, ifc.ifc_req[i].ifr_name);
-
-            if (ioctl (s, SIOCGIFFLAGS, &ifr) == 0
-                 && (ifr.ifr_flags & IFF_LOOPBACK) == 0
-                 && ioctl (s, SIOCGIFHWADDR, &ifr) == 0)
+            sockaddr_storage* sto = (sockaddr_storage*) cursor->ifa_addr;
+            if (sto->ss_family == AF_LINK)
             {
-                result.addIfNotAlreadyThere (MACAddress ((const uint8*) ifr.ifr_hwaddr.sa_data));
+                const sockaddr_dl* const sadd = (const sockaddr_dl*) cursor->ifa_addr;
+
+                #ifndef IFT_ETHER
+                 #define IFT_ETHER 6
+                #endif
+
+                if (sadd->sdl_type == IFT_ETHER)
+                    result.addIfNotAlreadyThere (MACAddress (((const uint8*) sadd->sdl_data) + sadd->sdl_nlen));
             }
         }
 
-        close (s);
+        freeifaddrs (addrs);
     }
-#endif
 }
 
 

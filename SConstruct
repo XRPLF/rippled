@@ -35,6 +35,13 @@ GCC_VERSION = re.split('\.', commands.getoutput(env['CXX'] + ' -dumpversion'))
 #env.Replace(CC = 'clang')
 #env.Replace(CXX = 'clang++')
 
+# Use a newer gcc on FreeBSD
+if FreeBSD:
+    env.Replace(CC = 'gcc46')
+    env.Replace(CXX = 'g++46')
+    env.Append(CCFLAGS = ['-Wl,-rpath=/usr/local/lib/gcc46'])
+    env.Append(LINKFLAGS = ['-Wl,-rpath=/usr/local/lib/gcc46'])
+
 #
 # Builder for CTags
 #
