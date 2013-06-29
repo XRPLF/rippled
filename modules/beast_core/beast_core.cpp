@@ -112,26 +112,39 @@ namespace beast
 #include "containers/beast_NamedValueSet.cpp"
 #include "containers/beast_PropertySet.cpp"
 #include "containers/beast_Variant.cpp"
+
+#include "diagnostic/beast_Debug.cpp"
+#include "diagnostic/beast_Error.cpp"
+#include "diagnostic/beast_FPUFlags.cpp"
+#include "diagnostic/beast_LeakChecked.cpp"
+
 #include "files/beast_DirectoryIterator.cpp"
 #include "files/beast_File.cpp"
 #include "files/beast_FileInputStream.cpp"
 #include "files/beast_FileOutputStream.cpp"
 #include "files/beast_FileSearchPath.cpp"
 #include "files/beast_TemporaryFile.cpp"
+
 #include "json/beast_JSON.cpp"
+
 #include "logging/beast_FileLogger.cpp"
 #include "logging/beast_Logger.cpp"
+
 #include "maths/beast_BigInteger.cpp"
 #include "maths/beast_Expression.cpp"
 #include "maths/beast_Random.cpp"
+
 #include "memory/beast_MemoryBlock.cpp"
+
 #include "misc/beast_Result.cpp"
 #include "misc/beast_Uuid.cpp"
+
 #include "network/beast_MACAddress.cpp"
 #include "network/beast_NamedPipe.cpp"
 #include "network/beast_Socket.cpp"
 #include "network/beast_URL.cpp"
 #include "network/beast_IPAddress.cpp"
+
 #include "streams/beast_BufferedInputStream.cpp"
 #include "streams/beast_FileInputSource.cpp"
 #include "streams/beast_InputStream.cpp"
@@ -140,7 +153,9 @@ namespace beast
 #include "streams/beast_OutputStream.cpp"
 #include "streams/beast_SubregionStream.cpp"
 #include "system/beast_SystemStats.cpp"
+
 #include "text/beast_CharacterFunctions.cpp"
+
 #include "text/beast_Identifier.cpp"
 #include "text/beast_LocalisedStrings.cpp"
 #include "text/beast_String.cpp"
@@ -148,17 +163,23 @@ namespace beast
 #include "text/beast_StringPairArray.cpp"
 #include "text/beast_StringPool.cpp"
 #include "text/beast_TextDiff.cpp"
+
 #include "threads/beast_ChildProcess.cpp"
 #include "threads/beast_ReadWriteLock.cpp"
 #include "threads/beast_Thread.cpp"
 #include "threads/beast_ThreadPool.cpp"
 #include "threads/beast_TimeSliceThread.cpp"
+
 #include "time/beast_PerformanceCounter.cpp"
+#include "time/beast_PerformedAtExit.cpp"
 #include "time/beast_RelativeTime.cpp"
 #include "time/beast_Time.cpp"
+
 #include "unit_tests/beast_UnitTest.cpp"
+
 #include "xml/beast_XmlDocument.cpp"
 #include "xml/beast_XmlElement.cpp"
+
 #include "zip/beast_GZIPDecompressorInputStream.cpp"
 #include "zip/beast_GZIPCompressorOutputStream.cpp"
 #include "zip/beast_ZipFile.cpp"
@@ -221,3 +242,22 @@ namespace beast
 #include "threads/beast_HighResolutionTimer.cpp"
 
 }
+
+//------------------------------------------------------------------------------
+
+#if BEAST_BOOST_IS_AVAILABLE
+namespace boost {
+namespace placeholders {
+boost::arg<1> _1;
+boost::arg<2> _2;
+boost::arg<3> _3;
+boost::arg<4> _4;
+boost::arg<5> _5;
+boost::arg<6> _6;
+boost::arg<7> _7;
+boost::arg<8> _8;
+boost::arg<9> _9;
+}
+}
+#endif
+

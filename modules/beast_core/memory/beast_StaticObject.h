@@ -20,8 +20,6 @@
 #ifndef BEAST_STATICOBJECT_BEASTHEADER
 #define BEAST_STATICOBJECT_BEASTHEADER
 
-#include "../threads/beast_SpinDelay.h"
-
 //
 // A full suite of thread-safe objects designed for static storage duration.
 //

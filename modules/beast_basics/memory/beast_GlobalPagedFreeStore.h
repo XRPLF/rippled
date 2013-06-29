@@ -20,15 +20,13 @@
 #ifndef BEAST_GLOBALPAGEDFREESTORE_BEASTHEADER
 #define BEAST_GLOBALPAGEDFREESTORE_BEASTHEADER
 
-#include "beast_PagedFreeStore.h"
-
 /*============================================================================*/
 /**
   A PagedFreeStore singleton.
 
   @ingroup beast_concurrent
 */
-class GlobalPagedFreeStore
+class BEAST_API GlobalPagedFreeStore
     : public RefCountedSingleton <GlobalPagedFreeStore>
     , LeakChecked <GlobalPagedFreeStore>
 {

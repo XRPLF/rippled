@@ -20,8 +20,6 @@
 #ifndef BEAST_CACHELINE_BEASTHEADER
 #define BEAST_CACHELINE_BEASTHEADER
 
-#include "beast_MemoryAlignment.h"
-
 // Allows turning off of all padding,
 // e.g. for memory-constrained systems or testing.
 //

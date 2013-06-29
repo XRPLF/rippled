@@ -205,7 +205,7 @@
   @class Listeners
   @ingroup beast_concurrent
 */
-class ListenersBase
+class BEAST_API ListenersBase
 {
 public:
     struct ListenersStructureTag { };

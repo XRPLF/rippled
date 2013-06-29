@@ -40,7 +40,7 @@
   @ingroup beast_core
 */
 
-class SafeBoolBase
+class BEAST_API SafeBoolBase
 {
 private:
     void disallowed () const { }

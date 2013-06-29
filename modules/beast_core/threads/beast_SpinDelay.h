@@ -17,34 +17,28 @@
 */
 //==============================================================================
 
-#ifndef BEAST_PERFORMEDATEXIT_BEASTHEADER
-#define BEAST_PERFORMEDATEXIT_BEASTHEADER
+#ifndef BEAST_SPINDELAY_BEASTHEADER
+#define BEAST_SPINDELAY_BEASTHEADER
 
-#include "../containers/beast_LockFreeStack.h"
+//
+// Synchronization element
+//
 
-/*============================================================================*/
-/**
-  Perform an action at program exit
-
-  To use, derive your class from PerformedAtExit, and override `performAtExit()`.
-  The call will be made during the destruction of objects with static storage
-  duration, before LeakChecked performs its diagnostics.
-
-  @ingroup beast_core
-*/
-class PerformedAtExit : public LockFreeStack <PerformedAtExit>::Node
+class BEAST_API SpinDelay
 {
-protected:
-    PerformedAtExit ();
-    virtual ~PerformedAtExit () { }
+public:
+    SpinDelay () : m_count (0)
+    {
+    }
 
-protected:
-    /** Called at program exit.
-    */
-    virtual void performAtExit () = 0;
+    inline void pause ()
+    {
+        if (++m_count > 20)
+            Thread::yield ();
+    }
 
 private:
-    class Performer;
+    int m_count;
 };
 
 #endif

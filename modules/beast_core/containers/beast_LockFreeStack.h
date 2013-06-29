@@ -20,8 +20,6 @@
 #ifndef BEAST_LOCKFREESTACK_BEASTHEADER
 #define BEAST_LOCKFREESTACK_BEASTHEADER
 
-#include "../memory/beast_AtomicPointer.h"
-
 struct LockFreeStackDefaultTag;
 
 /*============================================================================*/
@@ -58,6 +56,7 @@ public:
     private:
         friend class LockFreeStack;
 
+        // VFALCO TODO Use regular Atomic<>
         AtomicPointer <Node> m_next;
     };
 

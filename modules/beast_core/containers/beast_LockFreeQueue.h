@@ -20,33 +20,31 @@
 #ifndef BEAST_LOCKFREEQUEUE_BEASTHEADER
 #define BEAST_LOCKFREEQUEUE_BEASTHEADER
 
-#include "../memory/beast_CacheLine.h"
-#include "../memory/beast_AtomicPointer.h"
-#include "../threads/beast_SpinDelay.h"
+/** Default tag for LockFreeQueue
 
-struct LockFreeQueueDefaultTag;
+    @ingroup beast_core intrusive
+*/
+struct LockFreeQueueDefaultTag { };
 
-/*============================================================================*/
-/**
-  Multiple Producer, Single Consumer (MPSC) intrusive FIFO.
+/** Multiple Producer, Single Consumer (MPSC) intrusive FIFO.
 
-  This container uses the same intrusive interface as List. It is wait-free
-  for producers and lock-free for consumers. The caller is responsible for
-  preventing the ABA problem (http://en.wikipedia.org/wiki/ABA_problem)
+    This container uses the same intrusive interface as List. It is wait-free
+    for producers and lock-free for consumers. The caller is responsible for
+    preventing the ABA problem (http://en.wikipedia.org/wiki/ABA_problem)
 
-  Invariants:
+    Invariants:
 
-  - Any thread may call push_back() at any time (Multiple Producer).
+    - Any thread may call push_back() at any time (Multiple Producer).
 
-  - Only one thread may call try_pop_front() at a time (Single Consumer)
+    - Only one thread may call try_pop_front() at a time (Single Consumer)
 
-  - The queue is signaled if there are one or more elements.
+    - The queue is signaled if there are one or more elements.
 
-  @param Tag  A type name used to distinguish lists and nodes, for
-              putting objects in multiple lists. If this parameter is
-              omitted, the default tag is used.
+    @param Tag  A type name used to distinguish lists and nodes, for
+                putting objects in multiple lists. If this parameter is
+                omitted, the default tag is used.
 
-  @ingroup beast_core intrusive
+    @ingroup beast_core intrusive
 */
 template <class Element, class Tag = LockFreeQueueDefaultTag>
 class LockFreeQueue
@@ -215,12 +213,5 @@ private:
     Node* m_tail;
     Node m_null;
 };
-
-/*============================================================================*/
-/** Default tag for LockFreeQueue
-
-    @ingroup beast_core intrusive
-*/
-struct LockFreeQueueDefaultTag { };
 
 #endif

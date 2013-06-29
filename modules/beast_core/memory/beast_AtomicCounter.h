@@ -30,7 +30,7 @@
 
     @ingroup beast_core
 */
-class AtomicCounter
+class BEAST_API AtomicCounter
 {
 public:
     /** Create a new counter.

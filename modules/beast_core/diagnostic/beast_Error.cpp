@@ -25,7 +25,7 @@ Error::Error ()
 {
 }
 
-Error::Error (const Error& other)
+Error::Error (Error const& other)
     : m_code (other.m_code)
     , m_reasonText (other.m_reasonText)
     , m_sourceFileName (other.m_sourceFileName)
@@ -42,7 +42,7 @@ Error::~Error () noexcept
     bassert (!m_needsToBeChecked);
 }
 
-Error& Error::operator= (const Error& other)
+Error& Error::operator= (Error const& other)
 {
     m_code = other.m_code;
     m_reasonText = other.m_reasonText;
@@ -73,12 +73,12 @@ bool Error::asBoolean () const
     return code () != success;
 }
 
-const String Error::getReasonText () const
+String const Error::getReasonText () const
 {
     return m_reasonText;
 }
 
-const String Error::getSourceFilename () const
+String const Error::getSourceFilename () const
 {
     return m_sourceFileName;
 }
@@ -88,9 +88,9 @@ int Error::getLineNumber () const
     return m_lineNumber;
 }
 
-Error& Error::fail (const char* sourceFileName,
+Error& Error::fail (char const* sourceFileName,
                     int lineNumber,
-                    const String reasonText,
+                    String const reasonText,
                     Code errorCode)
 {
     bassert (m_code == success);
@@ -105,7 +105,7 @@ Error& Error::fail (const char* sourceFileName,
     return *this;
 }
 
-Error& Error::fail (const char* sourceFileName,
+Error& Error::fail (char const* sourceFileName,
                     int lineNumber,
                     Code errorCode)
 {
@@ -131,9 +131,9 @@ void Error::willBeReported () const
     m_needsToBeChecked = false;
 }
 
-const char* Error::what () const noexcept
+char const* Error::what () const noexcept
 {
-    if (!m_szWhat)
+    if (! m_szWhat)
     {
         // The application could not be initialized because sqlite was denied access permission
         // The application unexpectedly quit because the exception 'sqlite was denied access permission at file ' was thrown
@@ -152,7 +152,7 @@ const char* Error::what () const noexcept
     return m_szWhat;
 }
 
-const String Error::getReasonTextForCode (Code code)
+String const Error::getReasonTextForCode (Code code)
 {
     String s;
 

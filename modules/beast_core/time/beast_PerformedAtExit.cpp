@@ -17,28 +17,54 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SPINDELAY_BEASTHEADER
-#define BEAST_SPINDELAY_BEASTHEADER
-
-//
-// Synchronization element
-//
-
-class SpinDelay
+class PerformedAtExit::ExitHook
 {
 public:
-    SpinDelay () : m_count (0)
+    typedef Static::Storage <LockFreeStack <PerformedAtExit>, PerformedAtExit> StackType;
+
+private:
+    ~ExitHook ()
     {
+        PerformedAtExit* object = s_list->pop_front ();
+
+        while (object != nullptr)
+        {
+            object->performAtExit ();
+
+            object = s_list->pop_front ();
+        }
+
+        LeakCheckedBase::detectAllLeaks ();
     }
 
-    inline void pause ()
+public:
+    static void push_front (PerformedAtExit* object)
     {
-        if (++m_count > 20)
-            Thread::yield ();
+        s_list->push_front (object);
     }
 
 private:
-    int m_count;
+    friend class PerformedAtExit;
+
+    static StackType s_list;
+
+    static ExitHook s_performer;
 };
 
+PerformedAtExit::ExitHook PerformedAtExit::ExitHook::s_performer;
+PerformedAtExit::ExitHook::StackType PerformedAtExit::ExitHook::s_list;
+
+PerformedAtExit::PerformedAtExit ()
+{
+#if BEAST_IOS
+    // Patrick Dehne:
+    //      PerformedAtExit::ExitHook::push_front crashes on iOS
+    //      if s_storage is not accessed before used
+    //
+    // VFALCO TODO Figure out why and fix it cleanly if needed.
+    //
+    char* hack = PerformedAtExit::ExitHook::s_list.s_storage;
 #endif
+
+    ExitHook::push_front (this);
+}

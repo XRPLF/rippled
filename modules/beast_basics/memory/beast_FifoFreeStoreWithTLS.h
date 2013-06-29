@@ -20,7 +20,7 @@
 #ifndef BEAST_FIFOFREESTOREWITHTLS_BEASTHEADER
 #define BEAST_FIFOFREESTOREWITHTLS_BEASTHEADER
 
-#include "beast_GlobalPagedFreeStore.h"
+#if BEAST_BOOST_IS_AVAILABLE
 
 /*============================================================================*/
 /**
@@ -39,7 +39,7 @@
 
   @ingroup beast_concurrent
 */
-class FifoFreeStoreWithTLS
+class BEAST_API FifoFreeStoreWithTLS
 {
 public:
     FifoFreeStoreWithTLS ();
@@ -63,5 +63,7 @@ private:
 
     PagedFreeStoreType::Ptr m_pages;
 };
+
+#endif
 
 #endif

@@ -20,31 +20,28 @@
 #ifndef BEAST_ERROR_BEASTHEADER
 #define BEAST_ERROR_BEASTHEADER
 
-#include "beast_SafeBool.h"
+/** A concise error report.
 
-/**
-  A concise error report.
+    This lightweight but flexible class records lets you record the file and
+    line where a recoverable error occurred, along with some optional human
+    readable text.
 
-  This lightweight but flexible class records lets you record the file and
-  line where a recoverable error occurred, along with some optional human
-  readable text.
+    A recoverable error can be passed along and turned into a non recoverable
+    error by throwing the object: it's derivation from std::exception is
+    fully compliant with the C++ exception interface.
 
-  A recoverable error can be passed along and turned into a non recoverable
-  error by throwing the object: it's derivation from std::exception is
-  fully compliant with the C++ exception interface.
-
-  @ingroup beast_core
+    @ingroup beast_core
 */
-class Error
+class BEAST_API Error
     : public std::exception
     , public SafeBool <Error>
 {
 public:
     /** Numeric code.
 
-      This enumeration is useful when the caller needs to take different
-      actions depending on the failure. For example, trying again later if
-      a file is locked.
+        This enumeration is useful when the caller needs to take different
+        actions depending on the failure. For example, trying again later if
+        a file is locked.
     */
     enum Code
     {
@@ -74,8 +71,8 @@ public:
     };
 
     Error ();
-    Error (const Error& other);
-    Error& operator= (const Error& other);
+    Error (Error const& other);
+    Error& operator= (Error const& other);
 
     virtual ~Error () noexcept;
 
@@ -84,16 +81,16 @@ public:
 
     bool asBoolean () const;
 
-    const String getReasonText () const;
-    const String getSourceFilename () const;
+    String const getReasonText () const;
+    String const getSourceFilename () const;
     int getLineNumber () const;
 
-    Error& fail (const char* sourceFileName,
+    Error& fail (char const* sourceFileName,
                  int lineNumber,
-                 const String reasonText,
+                 String const reasonText,
                  Code errorCode = general);
 
-    Error& fail (const char* sourceFileName,
+    Error& fail (char const* sourceFileName,
                  int lineNumber,
                  Code errorCode = general);
 
@@ -108,9 +105,9 @@ public:
     // for std::exception. This lets you throw an Error that should
     // terminate the application. The what() message will be less
     // descriptive so ideally you should catch the Error object instead.
-    const char* what () const noexcept;
+    char const* what () const noexcept;
 
-    static const String getReasonTextForCode (Code code);
+    static String const getReasonTextForCode (Code code);
 
 private:
     Code m_code;
@@ -118,9 +115,8 @@ private:
     String m_sourceFileName;
     int m_lineNumber;
     mutable bool m_needsToBeChecked;
-
     mutable String m_what; // created on demand
-    mutable const char* m_szWhat;
+    mutable char const* m_szWhat;
 };
 
 #endif

@@ -131,7 +131,7 @@
 
   @ingroup beast_concurrent
 */
-class CallQueue
+class BEAST_API CallQueue
 {
 public:
     //============================================================================

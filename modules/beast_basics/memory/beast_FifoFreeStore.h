@@ -20,19 +20,11 @@
 #ifndef BEAST_FIFOFREESTORE_BEASTHEADER
 #define BEAST_FIFOFREESTORE_BEASTHEADER
 
-#if BEAST_USE_BOOST
-#include "beast_FifoFreeStoreWithTLS.h"
-
-#else
-#include "beast_FifoFreeStoreWithoutTLS.h"
-
-#endif
-
 /** Selected free store based on compilation settings.
 
     @ingroup beast_concurrent
 */
-#if BEAST_USE_BOOST
+#if BEAST_BOOST_IS_AVAILABLE
 typedef FifoFreeStoreWithTLS FifoFreeStoreType;
 #else
 typedef FifoFreeStoreWithoutTLS FifoFreeStoreType;
