@@ -4,4 +4,4 @@
 */
 //==============================================================================
 
-SETUP_LOG (TaggedCacheLog)
+SETUP_LOGN (TaggedCacheLog,"TaggedCache")

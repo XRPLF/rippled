@@ -12,16 +12,16 @@ std::ofstream* Log::outStream = NULL;
 boost::filesystem::path* Log::pathToLog = NULL;
 uint32 Log::logRotateCounter = 0;
 
-#ifndef LOG_MAX_MESSAGE
-#define LOG_MAX_MESSAGE (12 * 1024)
-#endif
+//------------------------------------------------------------------------------
 
 LogPartition* LogPartition::headLog = NULL;
 
-LogPartition::LogPartition (const char* name) : mNextLog (headLog), mMinSeverity (lsWARNING)
+LogPartition::LogPartition (char const* partitionName)
+    : mNextLog (headLog)
+    , mMinSeverity (lsWARNING)
 {
-    const char* ptr = strrchr (name, '/');
-    mName = (ptr == NULL) ? name : (ptr + 1);
+    const char* ptr = strrchr (partitionName, '/');
+    mName = (ptr == NULL) ? partitionName : (ptr + 1);
 
     size_t p = mName.find (".cpp");
 
@@ -133,9 +133,9 @@ Log::~Log ()
 
     logMsg += replaceFirstSecretWithAsterisks (oss.str ());
 
-    if (logMsg.size () > LOG_MAX_MESSAGE)
+    if (logMsg.size () > maximumMessageCharacters)
     {
-        logMsg.resize (LOG_MAX_MESSAGE);
+        logMsg.resize (maximumMessageCharacters);
         logMsg += "...";
     }
 

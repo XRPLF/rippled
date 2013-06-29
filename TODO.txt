@@ -7,7 +7,14 @@ TODO
 - Add ICore interface
 - Make TxFormats a member of ICore instead of a singleton.
 
+- Allow manual string labels for LogPartition, to fix the problem where
+  the log partition gets a file name like "ripple_LedgerConsensus"
+
 - Rename LoadMonitor to LoadMeter, change LoadEvent to LoadMeter::ScopedSample
+
+- Rewrite every beast Doxygen comment, update Beast Doxyfile
+
+- Rename ripple/beast include guards to boost style, e.g. RIPPLE_LOG_H_INCLUDED
 
 - Fix all leaks on exit (!)
 
@@ -56,6 +63,7 @@ TODO
 LoadEvent
 
     Is referenced with both a shared pointer and an auto pointer.
+    Should be named LoadMeter::ScopedSample
 
 JobQueue
 
@@ -87,7 +95,9 @@ Verbose names
 
 Ledger "Skip List"
 
-  Is not really a skip list data structure
+  Is not really a skip list data structure. This is more appropriately
+  called an "index" although that name is currently used to identify hashes
+  used as keys.
 
 Duplicate Code
 
@@ -111,14 +121,6 @@ Interfaces
 
 --------------------------------------------------------------------------------
 
-Implementation
-
-  LoadManager
-    
-    What is going on in the destructor
-
---------------------------------------------------------------------------------
-
 boost
 
     Unclear from the class declaration what style of shared object management
@@ -133,5 +135,5 @@ boost::recursive_mutex
     Recursive mutexes should never be necessary.
     They require the "mutable" keyword for const members to acquire the lock (yuck)
 
-    Replace recursive_mutex with juce::Mutex to remove boost dependency
+    Replace recursive_mutex with beast::Mutex to remove boost dependency
 

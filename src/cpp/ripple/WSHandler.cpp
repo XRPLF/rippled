@@ -4,5 +4,4 @@
 */
 //==============================================================================
 
-
-SETUP_LOG (WSServerHandlerLog)
+SETUP_LOGN (WSServerHandlerLog,"WSServerHandler")
