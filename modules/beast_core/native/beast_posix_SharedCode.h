@@ -1192,7 +1192,7 @@ private:
 
         uint64_t time, delta;
 
-       #elif BEAST_ANDROID
+       #elif BEAST_ANDROID || BEAST_BSD
         Clock (double millis) noexcept  : delta ((uint64) (millis * 1000000))
         {
         }
@@ -1221,12 +1221,7 @@ private:
             struct timespec t;
             t.tv_sec  = (time_t) (time / 1000000000);
             t.tv_nsec = (long)   (time % 1000000000);
-
-#if BEAST_BSD
-            bassertfalse; // unimplemented
-#else
             clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &t, nullptr);
-#endif
         }
 
         uint64 time, delta;
