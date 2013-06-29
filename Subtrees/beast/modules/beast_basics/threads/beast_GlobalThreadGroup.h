@@ -28,7 +28,7 @@
 
   @ingroup beast_concurrent
 */
-class GlobalThreadGroup : public ThreadGroup,
+class BEAST_API GlobalThreadGroup : public ThreadGroup,
     public RefCountedSingleton <GlobalThreadGroup>
 {
 private:

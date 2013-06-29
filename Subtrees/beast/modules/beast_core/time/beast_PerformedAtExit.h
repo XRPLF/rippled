@@ -17,50 +17,36 @@
 */
 //==============================================================================
 
-class PerformedAtExit::Performer
+#ifndef BEAST_PERFORMEDATEXIT_BEASTHEADER
+#define BEAST_PERFORMEDATEXIT_BEASTHEADER
+
+/*============================================================================*/
+/**
+  Perform an action at program exit
+
+  To use, derive your class from PerformedAtExit, and override `performAtExit()`.
+  The call will be made during the destruction of objects with static storage
+  duration, before LeakChecked performs its diagnostics.
+
+  @ingroup beast_core
+*/
+// VFALCO TODO Make the linked list element a private type and use composition
+//             instead of inheritance, so that PerformedAtExit doesn't expose
+//             lock free stack node interfaces.
+//
+class BEAST_API PerformedAtExit : public LockFreeStack <PerformedAtExit>::Node
 {
-public:
-    typedef Static::Storage <LockFreeStack <PerformedAtExit>, PerformedAtExit> StackType;
+protected:
+    PerformedAtExit ();
+    virtual ~PerformedAtExit () { }
+
+protected:
+    /** Called at program exit.
+    */
+    virtual void performAtExit () = 0;
 
 private:
-    ~Performer ()
-    {
-        PerformedAtExit* object = s_list->pop_front ();
-
-        while (object != nullptr)
-        {
-            object->performAtExit ();
-
-            object = s_list->pop_front ();
-        }
-
-        LeakCheckedBase::detectAllLeaks ();
-    }
-
-public:
-    static void push_front (PerformedAtExit* object)
-    {
-        s_list->push_front (object);
-    }
-
-private:
-    friend class PerformedAtExit;
-
-    static StackType s_list;
-
-    static Performer s_performer;
+    class ExitHook;
 };
 
-PerformedAtExit::Performer PerformedAtExit::Performer::s_performer;
-PerformedAtExit::Performer::StackType PerformedAtExit::Performer::s_list;
-
-PerformedAtExit::PerformedAtExit ()
-{
-#if BEAST_IOS
-    // TODO: PerformedAtExit::Performer::push_front crashes on iOS if s_storage is not accessed before used
-    char* hack = PerformedAtExit::Performer::s_list.s_storage;
 #endif
-
-    Performer::push_front (this);
-}
-

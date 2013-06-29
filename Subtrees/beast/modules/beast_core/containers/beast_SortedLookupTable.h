@@ -20,30 +20,28 @@
 #ifndef BEAST_SORTEDLOOKUPTABLE_BEASTHEADER
 #define BEAST_SORTEDLOOKUPTABLE_BEASTHEADER
 
-//==============================================================================
-/**
-  Sorted map for fast lookups.
+/** Sorted map for fast lookups.
 
-  This container is optimized for a data set with fixed elements.
+    This container is optimized for a data set with fixed elements.
 
-  SchemaType obeys this concept:
+    SchemaType obeys this concept:
 
-  @code
+    @code
 
-  struct SchemaType
-  {
-    typename KeyType;
-    typename ValueType;
+    struct SchemaType
+    {
+        typename KeyType;
+        typename ValueType;
 
-    // Retrieve the key for a specified value.
-    KeyType getKey (Value const& value);
-  };
+        // Retrieve the key for a specified value.
+        KeyType getKey (Value const& value);
+    };
 
-  @endcode
+    @endcode
 
-  To use the table, reserve space with reserveSpaceForValues() if the number
-  of elements is known ahead of time. Then, call insert() for  all the your
-  elements. Call prepareForLookups() once then call lookupValueByKey ()
+    To use the table, reserve space with reserveSpaceForValues() if the number
+    of elements is known ahead of time. Then, call insert() for  all the your
+    elements. Call prepareForLookups() once then call lookupValueByKey ()
 */
 template <class SchemaType>
 class SortedLookupTable
@@ -51,10 +49,7 @@ class SortedLookupTable
 private:
     typedef typename SchemaType::KeyType KeyType;
     typedef typename SchemaType::ValueType ValueType;
-
     typedef std::vector <ValueType> values_t;
-
-    values_t m_values;
 
 private:
     struct SortCompare
@@ -151,6 +146,9 @@ public:
 
         return found;
     }
+
+private:
+    values_t m_values;
 };
 
 #endif

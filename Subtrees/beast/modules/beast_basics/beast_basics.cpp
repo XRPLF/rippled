@@ -41,27 +41,17 @@ namespace beast
 {
 
 #include "diagnostic/beast_CatchAny.cpp"
-#include "diagnostic/beast_Debug.cpp"
-#include "diagnostic/beast_Error.cpp"
-#include "diagnostic/beast_FPUFlags.cpp"
-#include "diagnostic/beast_LeakChecked.cpp"
 
 #include "events/beast_OncePerSecond.cpp"
-#include "events/beast_PerformedAtExit.cpp"
 
 #include "math/beast_MurmurHash.cpp"
 
 #include "threads/beast_InterruptibleThread.cpp"
 #include "threads/beast_Semaphore.cpp"
-
-#if BEAST_USE_BOOST
 #include "memory/beast_FifoFreeStoreWithTLS.cpp"
-#else
 #include "memory/beast_FifoFreeStoreWithoutTLS.cpp"
-#endif
 #include "memory/beast_GlobalPagedFreeStore.cpp"
 #include "memory/beast_PagedFreeStore.cpp"
-
 #include "threads/beast_CallQueue.cpp"
 #include "threads/beast_ConcurrentObject.cpp"
 #include "threads/beast_Listeners.cpp"
@@ -74,33 +64,13 @@ namespace beast
 
 #if BEAST_WINDOWS
 #include "native/beast_win32_FPUFlags.cpp"
-#include "native/beast_win32_Threads.cpp"
 
 #else
 #include "native/beast_posix_FPUFlags.cpp"
-#include "native/beast_posix_Threads.cpp"
 
 #endif
 }
 
 #if BEAST_MSVC
 #pragma warning (pop)
-#endif
-
-//------------------------------------------------------------------------------
-
-#if BEAST_USE_BOOST
-namespace boost {
-namespace placeholders {
-boost::arg<1> _1;
-boost::arg<2> _2;
-boost::arg<3> _3;
-boost::arg<4> _4;
-boost::arg<5> _5;
-boost::arg<6> _6;
-boost::arg<7> _7;
-boost::arg<8> _8;
-boost::arg<9> _9;
-}
-}
 #endif

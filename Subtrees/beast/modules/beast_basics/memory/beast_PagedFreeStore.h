@@ -29,7 +29,7 @@
 
   @ingroup beast_concurrent
 */
-class PagedFreeStore : private OncePerSecond
+class BEAST_API PagedFreeStore : private OncePerSecond
 {
 public:
     explicit PagedFreeStore (const size_t pageBytes);

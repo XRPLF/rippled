@@ -20,8 +20,6 @@
 #ifndef BEAST_GLOBALFIFOFREESTORE_BEASTHEADER
 #define BEAST_GLOBALFIFOFREESTORE_BEASTHEADER
 
-#include "beast_FifoFreeStore.h"
-
 /*============================================================================*/
 /**
   A @ref FifoFreeStoreType singleton.

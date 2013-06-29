@@ -30,7 +30,7 @@
 
     @ingroup beast_core
 */
-class AtomicFlag
+class BEAST_API AtomicFlag
 {
 public:
     /** Create an AtomicFlag in the reset state. */

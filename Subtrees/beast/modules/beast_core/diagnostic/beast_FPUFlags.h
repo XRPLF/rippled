@@ -28,7 +28,7 @@
 
     @ingroup beast_core
 */
-class FPUFlags
+class BEAST_API FPUFlags
 {
 public:
     /** An individual FPU flag */

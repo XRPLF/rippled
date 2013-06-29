@@ -41,7 +41,7 @@
 
   @ingroup beast_concurrent
 */
-class ConcurrentObject : Uncopyable
+class BEAST_API ConcurrentObject : Uncopyable
 {
 public:
     inline void incReferenceCount () noexcept

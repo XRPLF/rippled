@@ -20,9 +20,6 @@
 #ifndef BEAST_INTERRUPTIBLETHREAD_BEASTHEADER
 #define BEAST_INTERRUPTIBLETHREAD_BEASTHEADER
 
-#include "../diagnostic/beast_SafeBool.h"
-#include "../functor/beast_Function.h"
-
 //==============================================================================
 /**
     A thread with soft interruption support.
@@ -36,7 +33,7 @@
 
     @ingroup beast_core
 */
-class InterruptibleThread
+class BEAST_API InterruptibleThread
 {
 public:
     /** InterruptibleThread entry point.

@@ -32,7 +32,7 @@
 
     @ingroup beast_concurrent
 */
-class SharedObject : Uncopyable
+class BEAST_API SharedObject : Uncopyable
 {
 public:
     /** Abstract SharedObject scope.

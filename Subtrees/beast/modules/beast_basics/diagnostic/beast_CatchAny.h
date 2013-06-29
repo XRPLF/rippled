@@ -20,8 +20,6 @@
 #ifndef BEAST_CATCHANY_BEASTHEADER
 #define BEAST_CATCHANY_BEASTHEADER
 
-#include "../functor/beast_Function.h"
-
 /**
   Exception catcher.
 

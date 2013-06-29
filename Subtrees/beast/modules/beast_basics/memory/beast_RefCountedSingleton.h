@@ -20,9 +20,6 @@
 #ifndef BEAST_REFERENCECOUNTEDSINGLETON_BEASTHEADER
 #define BEAST_REFERENCECOUNTEDSINGLETON_BEASTHEADER
 
-#include "../events/beast_PerformedAtExit.h"
-#include "../memory/beast_StaticObject.h"
-
 /**
   Thread-safe singleton which comes into existence on first use. Use this
   instead of creating objects with static storage duration. These singletons
@@ -36,20 +33,18 @@
   @ingroup beast_core
 */
 /** @{ */
-class SingletonLifetime
+class BEAST_API SingletonLifetime
 {
     // "base classes dependent on a template parameter
     // aren't part of lookup." - ville
 public:
-    /**
-      Construction options for RefCountedSingleton
+    /** Construction options for RefCountedSingleton
 
-      @ingroup beast_core
+        @ingroup beast_core
     */
     enum Lifetime
     {
-        /** Singleton is created on first use and destroyed when
-            the last reference is removed.
+        /** Created on first use, destroyed when the last reference is removed.
         */
         createOnDemand,
 

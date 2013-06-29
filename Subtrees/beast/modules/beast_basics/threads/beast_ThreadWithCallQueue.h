@@ -40,7 +40,7 @@
 
   @ingroup beast_concurrent
 */
-class ThreadWithCallQueue
+class BEAST_API ThreadWithCallQueue
     : public CallQueue
     , private InterruptibleThread::EntryPoint
 {

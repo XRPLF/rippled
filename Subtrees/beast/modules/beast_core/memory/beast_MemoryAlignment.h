@@ -23,7 +23,12 @@
 namespace Memory
 {
 
+//------------------------------------------------------------------------------
+
 // Constants
+//
+// These need to be set based on the target CPU
+//
 
 const int cacheLineAlignBits  = 6; // 64 bytes
 const int cacheLineAlignBytes = 1 << cacheLineAlignBits;
@@ -32,6 +37,8 @@ const int cacheLineAlignMask  = cacheLineAlignBytes - 1;
 const int allocAlignBits  = 3; // 8 bytes
 const int allocAlignBytes = 1 << allocAlignBits;
 const int allocAlignMask  = allocAlignBytes - 1;
+
+//------------------------------------------------------------------------------
 
 // Returns the number of bytes needed to advance p to the correct alignment
 template <typename P>

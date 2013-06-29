@@ -24,21 +24,19 @@
 #ifndef BEAST_ABSTRACTFIFO_BEASTHEADER
 #define BEAST_ABSTRACTFIFO_BEASTHEADER
 
-#include "../memory/beast_Atomic.h"
-
-
 //==============================================================================
 /**
     Encapsulates the logic required to implement a lock-free FIFO.
 
-    This class handles the logic needed when building a single-reader, single-writer FIFO.
+    This class handles the logic needed when building a single-reader,
+    single-writer FIFO.
 
-    It doesn't actually hold any data itself, but your FIFO class can use one of these to manage
-    its position and status when reading or writing to it.
+    It doesn't actually hold any data itself, but your FIFO class can use one of
+    these to manage its position and status when reading or writing to it.
 
-    To use it, you can call prepareToWrite() to determine the position within your own buffer that
-    an incoming block of data should be stored, and prepareToRead() to find out when the next
-    outgoing block should be read from.
+    To use it, you can call prepareToWrite() to determine the position within
+    your own buffer that an incoming block of data should be stored, and
+    prepareToRead() to find out when the next outgoing block should be read from.
 
     e.g.
     @code
@@ -204,7 +202,6 @@ public:
     */
     void finishedRead (int numRead) noexcept;
 
-
 private:
     //==============================================================================
     int bufferSize;
@@ -213,5 +210,5 @@ private:
     BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AbstractFifo)
 };
 
+#endif
 
-#endif   // BEAST_ABSTRACTFIFO_BEASTHEADER

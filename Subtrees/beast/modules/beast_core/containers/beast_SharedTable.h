@@ -26,7 +26,7 @@
 
     @tparam ElementType The type of element.
 
-    @ingroup beast_gui
+    @ingroup beast_basics
 */
 template <class ElementType>
 class SharedTable
@@ -72,8 +72,7 @@ public:
 
 #if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
     SharedTable (SharedTable&& other) noexcept
-:
-    m_data (static_cast < typename Data::Ptr&& > (other.m_data))
+        : m_data (static_cast < typename Data::Ptr&& > (other.m_data))
     {
     }
 

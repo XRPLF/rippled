@@ -20,18 +20,13 @@
 #ifndef BEAST_LEAKCHECKED_BEASTHEADER
 #define BEAST_LEAKCHECKED_BEASTHEADER
 
-#include "beast_Error.h"
-#include "beast_Throw.h"
-#include "../memory/beast_StaticObject.h"
-#include "../containers/beast_LockFreeStack.h"
-
 //
 // Derived classes are automatically leak-checked on exit
 //
 
 #if BEAST_USE_LEAKCHECKED
 
-class LeakCheckedBase
+class BEAST_API LeakCheckedBase
 {
 public:
     static void detectAllLeaks ();
@@ -153,7 +148,7 @@ private:
 
 #else
 
-class LeakCheckedBase
+class BEAST_API LeakCheckedBase
 {
 private:
     friend class PerformedAtExit;

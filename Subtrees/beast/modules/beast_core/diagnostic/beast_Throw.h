@@ -16,3 +16,24 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
+#ifndef BEAST_THROW_BEASTHEADER
+#define BEAST_THROW_BEASTHEADER
+
+#include "beast_Debug.h"
+
+/** Throw an exception, with a debugger hook.
+
+    This provides an opportunity to utilize the debugger before
+    the stack is unwound.
+*/
+template <class Exception>
+inline void Throw (Exception const& e)
+{
+    // VFALCO TODO Replace with straight JUCE equivalent
+    Debug::breakPoint ();
+
+    throw e;
+}
+
+#endif

@@ -29,7 +29,7 @@
 
     @ingroup beast_core
 */
-class AtomicState
+class BEAST_API AtomicState
 {
 public:
     /** Create a new state with an optional starting value.
