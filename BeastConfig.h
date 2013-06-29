@@ -24,13 +24,6 @@
 
 #define BEAST_USE_BOOST 1
 
-// VFALCO TODO Fix this problem with FreeBSD and std::bind.
-//             We need to enforce a minimum library/g++ version.
-//
-#if __FreeBSD__
-#define BEAST_BIND_USES_BOOST 1
-#endif
-
 #ifndef BEAST_USE_LEAKCHECKED
 #define BEAST_USE_LEAKCHECKED BEAST_CHECK_MEMORY_LEAKS
 #endif
