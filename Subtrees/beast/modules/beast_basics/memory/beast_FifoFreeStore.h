@@ -24,7 +24,7 @@
 
     @ingroup beast_concurrent
 */
-#if BEAST_BOOST_IS_AVAILABLE
+#if 0//BEAST_BOOST_IS_AVAILABLE
 typedef FifoFreeStoreWithTLS FifoFreeStoreType;
 #else
 typedef FifoFreeStoreWithoutTLS FifoFreeStoreType;

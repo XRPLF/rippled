@@ -252,7 +252,7 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/LedgerProposal.cpp"
 #include "src/cpp/ripple/LedgerTiming.cpp"
 #include "src/cpp/ripple/ripple_LoadManager.cpp"
-#include "src/cpp/ripple/main.cpp"
+#include "src/cpp/ripple/ripple_Main.cpp"
 #include "src/cpp/ripple/ripple_NicknameState.cpp"
 #include "src/cpp/ripple/ripple_Offer.cpp"
 #include "src/cpp/ripple/OfferCancelTransactor.cpp"

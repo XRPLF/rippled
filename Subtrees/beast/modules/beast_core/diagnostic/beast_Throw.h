@@ -17,10 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THROW_BEASTHEADER
-#define BEAST_THROW_BEASTHEADER
-
-#include "beast_Debug.h"
+#ifndef BEAST_THROW_H_INCLUDED
+#define BEAST_THROW_H_INCLUDED
 
 /** Throw an exception, with a debugger hook.
 
@@ -30,7 +28,6 @@
 template <class Exception>
 inline void Throw (Exception const& e)
 {
-    // VFALCO TODO Replace with straight JUCE equivalent
     Debug::breakPoint ();
 
     throw e;

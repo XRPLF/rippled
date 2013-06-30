@@ -2,6 +2,12 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
+- Fix FifoFreeStoreWithTLS reference counting bug
+
+- Implement a reasonable substitute for boost's thread_local_storage
+
+- Think about doing away with BEAST_CALLTYPE and BEAST_API
+
 - Decide if headers should just include BeastConfig.h instead of making the
   host program do it.
 

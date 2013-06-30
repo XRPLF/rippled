@@ -90,10 +90,8 @@ public:
     */
     static void lowerPrivilege();
 
-    //==============================================================================
     /** Returns true if this process is being hosted by a debugger. */
     static bool BEAST_CALLTYPE isRunningUnderDebugger();
-
 
     //==============================================================================
     /** Tries to launch the OS's default reader application for a given file or URL. */

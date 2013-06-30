@@ -119,10 +119,30 @@ void printHelp (const po::options_description& desc)
 
 int rippleMain (int argc, char** argv)
 {
+    //
+    // These debug heap calls do nothing in release or non Visual Studio builds.
+    //
+
+    // Checks the heap at every allocation and deallocation (slow).
+    Debug::setAlwaysCheckHeap (false);
+    
+    // Keeps freed memory blocks and fills them with a guard value. 
+    Debug::setHeapDelayedFree (false);
+
+    // At exit, reports all memory blocks which have not been freed.
+    Debug::setHeapReportLeaks (false);
+
+#if 0
+// This is some temporary leak checking test code
+ThreadWithCallQueue t ("test");
+t.start ();
+return 0;
+#endif
+
     using namespace std;
 
     setCallingThreadName ("main");
-    int                 iResult = 0;
+    int iResult = 0;
     po::variables_map   vm;                                     // Map of options.
 
     //

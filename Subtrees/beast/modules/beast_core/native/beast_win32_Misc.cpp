@@ -285,6 +285,18 @@ bool BEAST_CALLTYPE Process::isRunningUnderDebugger()
     return beast_isRunningUnderDebugger();
 }
 
+BEAST_API void BEAST_CALLTYPE Process::breakPoint ()
+{
+#if BEAST_DEBUG
+    if (beast_isRunningUnderDebugger ())
+        beast_breakDebugger;
+
+#else
+    bassertfalse;
+
+#endif
+}
+
 //------------------------------------------------------------------------------
 
 static void* currentModuleHandle = nullptr;

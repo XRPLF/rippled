@@ -582,9 +582,6 @@
     <ClCompile Include="..\..\src\cpp\ripple\ParameterTable.cpp">
       <Filter>1. Modules\ripple_app\_unfactored</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\main.cpp">
-      <Filter>1. Modules\ripple_app\_unfactored</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_basics\utility\ripple_CountedObject.cpp">
       <Filter>1. Modules\ripple_basics\utility</Filter>
     </ClCompile>
@@ -947,6 +944,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_STAmountUnitTests.cpp">
       <Filter>1. Modules\ripple_data\protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\cpp\ripple\ripple_Main.cpp">
+      <Filter>1. Modules\ripple_app\_unfactored</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
