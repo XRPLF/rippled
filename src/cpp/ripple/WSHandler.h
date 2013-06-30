@@ -23,7 +23,9 @@ struct WSServerHandlerLog;
 // This instance dispatches all events.  There is no per connection persistence.
 
 template <typename endpoint_type>
-class WSServerHandler : public endpoint_type::handler
+class WSServerHandler
+    : public endpoint_type::handler
+    , LeakChecked <WSServerHandler <endpoint_type> >
 {
 public:
     typedef typename endpoint_type::handler::connection_ptr     connection_ptr;

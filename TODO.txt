@@ -2,6 +2,8 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
+- Merge ripple_Version.h and ripple_BuildVersion.h
+
 - Restructure the ripple sources to have this directory structure:
   /Source/ripple/ripple_core/ripple_core.h
   etc...

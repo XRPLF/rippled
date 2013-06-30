@@ -8,7 +8,7 @@
 #define RIPPLE_LEDGERHISTORY_H
 
 // VFALCO TODO Rename to OldLedgers ?
-class LedgerHistory
+class LedgerHistory : LeakChecked <LedgerHistory>
 {
 public:
     LedgerHistory ();

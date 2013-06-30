@@ -14,7 +14,9 @@ class Peers;
 
 SETUP_LOG (Peers)
 
-class Peers : public IPeers
+class Peers
+    : public IPeers
+    , LeakChecked <Peers>
 {
 public:
     explicit Peers (boost::asio::io_service& io_service)

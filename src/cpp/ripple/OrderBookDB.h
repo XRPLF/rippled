@@ -34,7 +34,7 @@ private:
     boost::recursive_mutex mLock;
 };
 
-class OrderBookDB
+class OrderBookDB : LeakChecked <OrderBookDB>
 {
 public:
     OrderBookDB ();

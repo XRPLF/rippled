@@ -10,7 +10,9 @@
 // VFALCO TODO Couldn't this be a struct?
 typedef std::pair <std::string, int> ipPort;
 
-class Peer : public boost::enable_shared_from_this <Peer>
+class Peer
+    : public boost::enable_shared_from_this <Peer>
+    , LeakChecked <Peer>
 {
 public:
     typedef boost::shared_ptr<Peer>         pointer;

@@ -83,7 +83,7 @@ private:
     @ingroup ripple_basics
 */
 template <class Object>
-class CountedObject
+class CountedObject : LeakChecked <CountedObject <Object> >
 {
 public:
     CountedObject ()

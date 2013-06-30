@@ -10,7 +10,9 @@
 #define RPC_EVENT_QUEUE_MAX 32
 
 // Subscription object for JSON-RPC
-class RPCSub : public InfoSub
+class RPCSub
+    : public InfoSub
+    , LeakChecked <RPCSub>
 {
 public:
     typedef boost::shared_ptr<RPCSub>   pointer;

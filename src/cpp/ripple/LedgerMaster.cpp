@@ -179,7 +179,7 @@ bool LedgerMaster::haveLedgerRange (uint32 from, uint32 to)
 {
     boost::recursive_mutex::scoped_lock sl (mLock);
     uint32 prevMissing = mCompleteLedgers.prevMissing (to + 1);
-    return (prevMissing == RangeSet::RangeSetAbsent) || (prevMissing < from);
+    return (prevMissing == RangeSet::absent) || (prevMissing < from);
 }
 
 bool LedgerMaster::haveLedger (uint32 seq)
@@ -202,7 +202,7 @@ bool LedgerMaster::getValidatedRange (uint32& minVal, uint32& maxVal)
 
     minVal = mCompleteLedgers.prevMissing (maxVal);
 
-    if (minVal == RangeSet::RangeSetAbsent)
+    if (minVal == RangeSet::absent)
         minVal = 0;
     else
         ++minVal;
@@ -440,7 +440,7 @@ void LedgerMaster::resumeAcquiring ()
 
     uint32 prevMissing = mCompleteLedgers.prevMissing (mFinalizedLedger->getLedgerSeq ());
 
-    if (prevMissing == RangeSet::RangeSetAbsent)
+    if (prevMissing == RangeSet::absent)
     {
         WriteLog (lsDEBUG, LedgerMaster) << "no prior missing ledger, not resuming";
         return;
@@ -564,7 +564,7 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger)
     {
         uint32 prevMissing = mCompleteLedgers.prevMissing (ledger->getLedgerSeq ());
 
-        if (prevMissing == RangeSet::RangeSetAbsent)
+        if (prevMissing == RangeSet::absent)
         {
             WriteLog (lsDEBUG, LedgerMaster) << "no prior missing ledger";
             return;

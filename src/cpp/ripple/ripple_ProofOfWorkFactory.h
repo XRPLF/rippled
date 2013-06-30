@@ -9,7 +9,9 @@
 
 // PRIVATE HEADER
 
-class ProofOfWorkFactory : public IProofOfWorkFactory
+class ProofOfWorkFactory
+    : public IProofOfWorkFactory
+    , LeakChecked <ProofOfWorkFactory>
 {
 public:
     ProofOfWorkFactory ();
