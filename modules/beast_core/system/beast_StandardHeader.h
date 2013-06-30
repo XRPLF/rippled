@@ -58,6 +58,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <climits>
+#include <cmath>
 #include <cstdarg>
 #include <cstddef>
 #include <cstdio>
@@ -178,14 +179,7 @@ extern BEAST_API bool BEAST_CALLTYPE beast_isRunningUnderDebugger();
 extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) noexcept;
 
 // These are so common that we include them early
-
-#include "../memory/beast_Uncopyable.h"
-#include "../memory/beast_Memory.h"
-#include "../maths/beast_MathsFunctions.h"
-#include "../memory/beast_ByteOrder.h"
-#include "../logging/beast_Logger.h"
-#include "../memory/beast_LeakedObjectDetector.h"
-
+// ?
 }
 
 #endif

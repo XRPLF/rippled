@@ -35,7 +35,10 @@
 
     @see Logger
 */
-class BEAST_API FileLogger  : public Logger
+class BEAST_API FileLogger
+    : public Logger
+    , LeakChecked <FileLogger>
+    , Uncopyable
 {
 public:
     //==============================================================================
@@ -126,8 +129,6 @@ private:
     CriticalSection logLock;
 
     void trimFileSize (int64 maxFileSizeBytes) const;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FileLogger)
 };
 
 

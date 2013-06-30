@@ -34,7 +34,7 @@
 
     @see InterprocessConnection
 */
-class BEAST_API NamedPipe
+class BEAST_API NamedPipe : LeakChecked <NamedPipe>, Uncopyable
 {
 public:
     //==============================================================================
@@ -92,8 +92,6 @@ private:
     ReadWriteLock lock;
 
     bool openInternal (const String& pipeName, const bool createPipe);
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NamedPipe)
 };
 
 

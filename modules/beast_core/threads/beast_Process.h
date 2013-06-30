@@ -35,7 +35,7 @@
 
     @see Thread, BEASTApplication
 */
-class BEAST_API Process
+class BEAST_API Process : Uncopyable
 {
 public:
     //==============================================================================
@@ -138,7 +138,6 @@ public:
 
 private:
     Process();
-    BEAST_DECLARE_NON_COPYABLE (Process)
 };
 
 

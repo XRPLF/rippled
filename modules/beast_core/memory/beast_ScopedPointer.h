@@ -62,7 +62,7 @@
     you'd need to return a raw pointer (or use a std::auto_ptr instead).
 */
 template <class ObjectType>
-class ScopedPointer
+class ScopedPointer : Uncopyable
 {
 public:
     //==============================================================================
@@ -215,7 +215,6 @@ private:
        It's probably best to use the latter form when writing your object declarations anyway, as
        this is a better representation of the code that you actually want the compiler to produce.
     */
-    BEAST_DECLARE_NON_COPYABLE (ScopedPointer)
   #endif
 };
 

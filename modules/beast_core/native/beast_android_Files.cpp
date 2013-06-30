@@ -148,7 +148,7 @@ bool File::moveToTrash() const
 }
 
 //==============================================================================
-class DirectoryIterator::NativeIterator::Pimpl
+class DirectoryIterator::NativeIterator::Pimpl : Uncopyable
 {
 public:
     Pimpl (const File& directory, const String& wildCard_)
@@ -202,8 +202,6 @@ public:
 private:
     String parentDir, wildCard;
     DIR* dir;
-
-    BEAST_DECLARE_NON_COPYABLE (Pimpl)
 };
 
 

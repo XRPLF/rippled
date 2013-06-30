@@ -70,7 +70,7 @@
     get a list of all the messages by searching for the TRANS() macro in the Beast source
     code).
 */
-class BEAST_API LocalisedStrings
+class BEAST_API LocalisedStrings : LeakChecked <LocalisedStrings>
 {
 public:
     //==============================================================================
@@ -176,8 +176,6 @@ private:
     StringPairArray translations;
 
     void loadFromText (const String&, bool ignoreCase);
-
-    BEAST_LEAK_DETECTOR (LocalisedStrings)
 };
 
 //==============================================================================

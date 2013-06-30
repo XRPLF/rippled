@@ -120,26 +120,19 @@ char Storage <ObjectType, Tag>::s_storage [sizeof (ObjectType)];
 class Initializer
 {
 public:
-    /*
-    bool inited () const
-    {
-      return m_state.get () == stateInitialized;
-    }
-    */
-
     // If the condition is not initialized, the first caller will
     // receive true, while concurrent callers get blocked until
     // initialization completes.
     //
-    bool begin ()
+    bool beginConstruction ()
     {
-        bool shouldInitialize;
+        bool needsInitialization = false;
 
-        if (m_state.get () == stateUninitialized)
+        if (m_state.get () != stateInitialized)
         {
             if (m_state.compareAndSetBool (stateInitializing, stateUninitialized))
             {
-                shouldInitialize = true;
+                needsInitialization = true;
             }
             else
             {
@@ -150,21 +143,15 @@ public:
                     delay.pause ();
                 }
                 while (m_state.get () != stateInitialized);
-
-                shouldInitialize = false;
             }
         }
-        else
-        {
-            shouldInitialize = false;
-        }
 
-        return shouldInitialize;
+        return needsInitialization;
     }
 
     // Called to signal that the initialization is complete
     //
-    void end ()
+    void endConstruction ()
     {
         m_state.set (stateInitialized);
     }

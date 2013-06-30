@@ -50,7 +50,7 @@
 
     @see ReadWriteLock, ScopedWriteLock
 */
-class BEAST_API ScopedReadLock
+class BEAST_API ScopedReadLock : Uncopyable
 {
 public:
     //==============================================================================
@@ -79,8 +79,6 @@ public:
 private:
     //==============================================================================
     const ReadWriteLock& lock_;
-
-    BEAST_DECLARE_NON_COPYABLE (ScopedReadLock)
 };
 
 

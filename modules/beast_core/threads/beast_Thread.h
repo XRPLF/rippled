@@ -42,7 +42,7 @@
     @see CriticalSection, WaitableEvent, Process, ThreadWithProgressWindow,
          MessageManagerLock
 */
-class BEAST_API Thread
+class BEAST_API Thread : LeakChecked <Thread>, Uncopyable
 {
 public:
     //==============================================================================
@@ -280,8 +280,6 @@ private:
     void killThread();
     void threadEntryPoint();
     static bool setThreadPriority (void*, int);
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Thread)
 };
 
 #endif   // BEAST_THREAD_BEASTHEADER

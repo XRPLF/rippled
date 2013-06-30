@@ -132,7 +132,7 @@ public:
 
 private:
     //==============================================================================
-    class NamedValue
+    class NamedValue : LeakChecked <NamedValue>
     {
     public:
         NamedValue() noexcept;
@@ -151,7 +151,6 @@ private:
         var value;
 
     private:
-        BEAST_LEAK_DETECTOR (NamedValue)
     };
 
     friend class LinkedListPointer<NamedValue>;

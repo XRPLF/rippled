@@ -36,7 +36,7 @@
 
     @see DatagramSocket, InterprocessConnection, InterprocessConnectionServer
 */
-class BEAST_API StreamingSocket
+class BEAST_API StreamingSocket : LeakChecked <StreamingSocket>, Uncopyable
 {
 public:
     //==============================================================================
@@ -163,8 +163,6 @@ private:
     bool connected, isListener;
 
     StreamingSocket (const String& hostname, int portNumber, int handle);
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StreamingSocket)
 };
 
 
@@ -177,7 +175,7 @@ private:
 
     @see StreamingSocket, InterprocessConnection, InterprocessConnectionServer
 */
-class BEAST_API DatagramSocket
+class BEAST_API DatagramSocket : LeakChecked <DatagramSocket>, Uncopyable
 {
 public:
     //==============================================================================
@@ -294,8 +292,6 @@ private:
     void* serverAddress;
 
     DatagramSocket (const String& hostname, int portNumber, int handle, int localPortNumber);
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DatagramSocket)
 };
 
 

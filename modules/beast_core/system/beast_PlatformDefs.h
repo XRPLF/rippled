@@ -141,41 +141,6 @@ template <> struct BeastStaticAssert <true> { static void dummy() {} };
 */
 #define static_bassert(expression)      beast::BeastStaticAssert<expression>::dummy();
 
-/** This is a shorthand macro for declaring stubs for a class's copy constructor and operator=.
-
-    For example, instead of
-    @code
-    class MyClass
-    {
-        etc..
-
-    private:
-        MyClass (const MyClass&);
-        MyClass& operator= (const MyClass&);
-    };@endcode
-
-    ..you can just write:
-
-    @code
-    class MyClass
-    {
-        etc..
-
-    private:
-        BEAST_DECLARE_NON_COPYABLE (MyClass)
-    };@endcode
-*/
-#define BEAST_DECLARE_NON_COPYABLE(className) \
-    className (const className&);\
-    className& operator= (const className&);
-
-/** This is a shorthand way of writing both a BEAST_DECLARE_NON_COPYABLE and
-    BEAST_LEAK_DETECTOR macro for a class.
-*/
-#define BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(className) \
-    BEAST_DECLARE_NON_COPYABLE(className) \
-    BEAST_LEAK_DETECTOR(className)
-
 /** This macro can be added to class definitions to disable the use of new/delete to
     allocate the object on the heap, forcing it to only be used as a stack or member variable.
 */

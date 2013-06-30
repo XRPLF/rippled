@@ -37,7 +37,7 @@
 
     @see ScopedLock, ScopedTryLock, ScopedUnlock, SpinLock, ReadWriteLock, Thread, InterProcessLock
 */
-class BEAST_API CriticalSection
+class BEAST_API CriticalSection : Uncopyable
 {
 public:
     //==============================================================================
@@ -111,8 +111,6 @@ private:
    #else
     mutable pthread_mutex_t internal;
    #endif
-
-    BEAST_DECLARE_NON_COPYABLE (CriticalSection)
 };
 
 
@@ -126,7 +124,7 @@ private:
 
     @see CriticalSection, Array, OwnedArray, ReferenceCountedArray
 */
-class BEAST_API DummyCriticalSection
+class BEAST_API DummyCriticalSection : Uncopyable
 {
 public:
     inline DummyCriticalSection() noexcept      {}
@@ -145,9 +143,6 @@ public:
 
     /** A dummy scoped-unlocker type to use with a dummy critical section. */
     typedef ScopedLockType ScopedUnlockType;
-
-private:
-    BEAST_DECLARE_NON_COPYABLE (DummyCriticalSection)
 };
 
 //==============================================================================

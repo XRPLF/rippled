@@ -20,24 +20,28 @@
 #ifndef BEAST_REFERENCECOUNTEDSINGLETON_BEASTHEADER
 #define BEAST_REFERENCECOUNTEDSINGLETON_BEASTHEADER
 
-/**
-  Thread-safe singleton which comes into existence on first use. Use this
-  instead of creating objects with static storage duration. These singletons
-  are automatically reference counted, so if you hold a pointer to it in every
-  object that depends on it, the order of destruction of objects is assured
-  to be correct.
+/** Thread-safe singleton which comes into existence on first use. Use this
+    instead of creating objects with static storage duration. These singletons
+    are automatically reference counted, so if you hold a pointer to it in every
+    object that depends on it, the order of destruction of objects is assured
+    to be correct.
 
-  class Object must provide the function `Object* Object::createInstance()`
+    class Object must provide the function `Object* Object::createInstance()`
 
-  @class RefCountedSingleton
-  @ingroup beast_core
+    @class RefCountedSingleton
+    @ingroup beast_core
 */
 /** @{ */
 class BEAST_API SingletonLifetime
 {
-    // "base classes dependent on a template parameter
-    // aren't part of lookup." - ville
 public:
+    // It would be nice if we didn't have to qualify the enumeration but
+    // Argument Dependent Lookup is inapplicable here because:
+    //
+    // "Base classes dependent on a template parameter aren't part of lookup."
+    //  - ville
+    //
+
     /** Construction options for RefCountedSingleton
 
         @ingroup beast_core
@@ -58,6 +62,8 @@ public:
         persistAfterCreation
     };
 };
+
+//------------------------------------------------------------------------------
 
 template <class Object>
 class RefCountedSingleton

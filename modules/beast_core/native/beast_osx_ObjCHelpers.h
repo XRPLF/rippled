@@ -64,7 +64,7 @@ struct NSObjectRetainer
 
 //==============================================================================
 template <typename SuperclassType>
-struct ObjCClass
+struct ObjCClass : Uncopyable
 {
     ObjCClass (const char* nameRoot)
         : cls (objc_allocateClassPair ([SuperclassType class], getRandomisedName (nameRoot).toUTF8(), 0))
@@ -145,8 +145,6 @@ private:
     {
         return root + String::toHexString (beast::Random::getSystemRandom().nextInt64());
     }
-
-    BEAST_DECLARE_NON_COPYABLE (ObjCClass)
 };
 
 

@@ -39,7 +39,7 @@ class MemoryBlock;
     Negative values are possible, but the value isn't stored as 2s-complement, so
     be careful if you use negative values and look at the values of individual bits.
 */
-class BEAST_API BigInteger
+class BEAST_API BigInteger : LeakChecked <BigInteger>
 {
 public:
     //==============================================================================
@@ -312,8 +312,6 @@ private:
     void ensureSize (size_t numVals);
     void shiftLeft (int bits, int startBit);
     void shiftRight (int bits, int startBit);
-
-    BEAST_LEAK_DETECTOR (BigInteger)
 };
 
 /** Writes a BigInteger to an OutputStream as a UTF8 decimal string. */

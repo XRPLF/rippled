@@ -51,7 +51,7 @@
 template <class ObjectClass,
           class TypeOfCriticalSectionToUse = DummyCriticalSection>
 
-class OwnedArray
+class OwnedArray : LeakChecked <OwnedArray <ObjectClass, TypeOfCriticalSectionToUse> >, Uncopyable
 {
 public:
     //==============================================================================
@@ -907,8 +907,6 @@ private:
         while (numUsed > 0)
             delete data.elements [--numUsed];
     }
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OwnedArray)
 };
 
 #endif   // BEAST_OWNEDARRAY_BEASTHEADER

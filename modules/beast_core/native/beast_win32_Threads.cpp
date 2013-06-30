@@ -459,7 +459,7 @@ void InterProcessLock::exit()
 }
 
 //==============================================================================
-class ChildProcess::ActiveProcess
+class ChildProcess::ActiveProcess : LeakChecked <ChildProcess::ActiveProcess>, Uncopyable
 {
 public:
     ActiveProcess (const String& command)
@@ -549,8 +549,6 @@ public:
 private:
     HANDLE readPipe, writePipe;
     PROCESS_INFORMATION processInfo;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ActiveProcess)
 };
 
 bool ChildProcess::start (const String& command)
@@ -584,7 +582,7 @@ bool ChildProcess::kill()
 }
 
 //==============================================================================
-struct HighResolutionTimer::Pimpl
+struct HighResolutionTimer::Pimpl : Uncopyable
 {
     Pimpl (HighResolutionTimer& t) noexcept  : owner (t), periodMs (0)
     {
@@ -631,6 +629,4 @@ private:
             if (timer->periodMs != 0)
                 timer->owner.hiResTimerCallback();
     }
-
-    BEAST_DECLARE_NON_COPYABLE (Pimpl)
 };

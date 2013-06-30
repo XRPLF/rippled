@@ -53,7 +53,9 @@ void ThreadPoolJob::signalJobShouldExit()
 }
 
 //==============================================================================
-class ThreadPool::ThreadPoolThread  : public Thread
+class ThreadPool::ThreadPoolThread
+    : public Thread
+    , LeakChecked <ThreadPoolThread>
 {
 public:
     ThreadPoolThread (ThreadPool& pool_)
@@ -73,8 +75,6 @@ public:
 
 private:
     ThreadPool& pool;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ThreadPoolThread)
 };
 
 //==============================================================================

@@ -26,16 +26,20 @@ File::File (const String& fullPathName)
 {
 }
 
+File::File (const File& other)
+    : fullPath (other.fullPath)
+{
+}
+
+File::~File() noexcept
+{
+}
+
 File File::createFileWithoutCheckingPath (const String& path) noexcept
 {
     File f;
     f.fullPath = path;
     return f;
-}
-
-File::File (const File& other)
-    : fullPath (other.fullPath)
-{
 }
 
 File& File::operator= (const String& newPath)

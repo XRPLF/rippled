@@ -78,28 +78,37 @@ class LeakChecked : private LeakCheckedBase
 protected:
     LeakChecked () noexcept
     {
-        if (getLeakCheckedCounter ().increment () == 0)
-        {
-            DBG ("[LOGIC] " << getLeakCheckedName ());
-            Throw (Error ().fail (__FILE__, __LINE__));
-        }
+        getCounter ().increment ();
     }
 
     LeakChecked (const LeakChecked&) noexcept
     {
-        if (getLeakCheckedCounter ().increment () == 0)
-        {
-            DBG ("[LOGIC] " << getLeakCheckedName ());
-            Throw (Error ().fail (__FILE__, __LINE__));
-        }
+        getCounter ().increment ();
     }
 
     ~LeakChecked ()
     {
-        if (getLeakCheckedCounter ().decrement () < 0)
+        if (getCounter ().decrement () < 0)
         {
-            DBG ("[LOGIC] " << getLeakCheckedName ());
-            Throw (Error ().fail (__FILE__, __LINE__));
+            /*  If you hit this, then you've managed to delete more instances
+                of this class than you've created. That indicates that you're
+                deleting some dangling pointers.
+
+                Note that although this assertion will have been triggered
+                during a destructor, it might not be this particular deletion
+                that's at fault - the incorrect one may have happened at an
+                earlier point in the program, and simply not been detected
+                until now.
+
+                Most errors like this are caused by using old-fashioned,
+                non-RAII techniques for your object management. Tut, tut.
+                Always, always use ScopedPointers, OwnedArrays,
+                ReferenceCountedObjects, etc, and avoid the 'delete' operator
+                at all costs!
+            */
+            DBG ("Dangling pointer deletion: " << getLeakCheckedName ());
+
+            bassertfalse;
         }
     }
 
@@ -130,16 +139,17 @@ private:
         return typeid (Object).name ();
     }
 
-    static Counter& getLeakCheckedCounter () noexcept
+    static Counter& getCounter () noexcept
     {
         static Counter* volatile s_instance;
         static Static::Initializer s_initializer;
 
-        if (s_initializer.begin ())
+        if (s_initializer.beginConstruction ())
         {
             static char s_storage [sizeof (Counter)];
             s_instance = new (s_storage) Counter;
-            s_initializer.end ();
+
+            s_initializer.endConstruction ();
         }
 
         return *s_instance;

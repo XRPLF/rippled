@@ -46,7 +46,7 @@ class FileOutputStream;
 
     @see FileInputStream, FileOutputStream
 */
-class BEAST_API File
+class BEAST_API File : LeakChecked <File>
 {
 public:
     //==============================================================================
@@ -76,7 +76,7 @@ public:
     File (const File& other);
 
     /** Destructor. */
-    ~File() noexcept  {}
+    ~File() noexcept;
 
     /** Sets the file based on an absolute pathname.
 
@@ -948,8 +948,6 @@ private:
     bool setFileTimesInternal (int64 m, int64 a, int64 c) const;
     void getFileTimesInternal (int64& m, int64& a, int64& c) const;
     bool setFileReadOnlyInternal (bool) const;
-
-    BEAST_LEAK_DETECTOR (File)
 };
 
 #endif   // BEAST_FILE_BEASTHEADER

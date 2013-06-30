@@ -34,7 +34,9 @@
     This lets you take a subsection of a stream and present it as an entire
     stream in its own right.
 */
-class BEAST_API SubregionStream  : public InputStream
+class BEAST_API SubregionStream
+    : public InputStream
+    , LeakChecked <SubregionStream>
 {
 public:
     //==============================================================================
@@ -80,8 +82,6 @@ public:
 private:
     OptionalScopedPointer<InputStream> source;
     const int64 startPositionInSourceStream, lengthOfSourceStream;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SubregionStream)
 };
 
 #endif   // BEAST_SUBREGIONSTREAM_BEASTHEADER

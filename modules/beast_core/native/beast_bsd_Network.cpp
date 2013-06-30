@@ -60,7 +60,9 @@ bool Process::openEmailWithAttachments (const String& /* targetEmailAddress */,
 
 
 //==============================================================================
-class WebInputStream  : public InputStream
+class WebInputStream
+    : public InputStream
+    , LeakChecked <WebInputStream>
 {
 public:
     WebInputStream (const String& address_, bool isPost_, const MemoryBlock& postData_,
@@ -439,8 +441,6 @@ private:
 
         return String::empty;
     }
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WebInputStream)
 };
 
 InputStream* URL::createNativeStream (const String& address, bool isPost, const MemoryBlock& postData,

@@ -41,6 +41,8 @@ class File;
     @see InputStream, MemoryOutputStream, FileOutputStream
 */
 class BEAST_API OutputStream
+    : public Uncopyable
+    , LeakChecked <OutputStream>
 {
 protected:
     //==============================================================================
@@ -220,8 +222,6 @@ public:
 private:
     //==============================================================================
     String newLineString;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OutputStream)
 };
 
 //==============================================================================
