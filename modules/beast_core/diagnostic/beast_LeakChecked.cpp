@@ -17,7 +17,8 @@
 */
 //==============================================================================
 
-#if BEAST_USE_LEAKCHECKED
+namespace Implemented
+{
 
 class LeakCheckedBase::CounterBase::Singleton
 {
@@ -27,16 +28,16 @@ public:
         m_list.push_front (counter);
     }
 
-    void detectAllLeaks ()
+    void checkForLeaks ()
     {
         for (;;)
         {
-            CounterBase* counter = m_list.pop_front ();
+            CounterBase* const counter = m_list.pop_front ();
 
             if (!counter)
                 break;
 
-            counter->detectLeaks ();
+            counter->checkForLeaks ();
         }
     }
 
@@ -48,6 +49,8 @@ public:
     }
 
 private:
+    friend class LeakCheckedBase;
+
     LockFreeStack <CounterBase> m_list;
 };
 
@@ -58,12 +61,7 @@ LeakCheckedBase::CounterBase::CounterBase ()
     Singleton::getInstance ().push_back (this);
 }
 
-void LeakCheckedBase::CounterBase::detectAllLeaks ()
-{
-    Singleton::getInstance ().detectAllLeaks ();
-}
-
-void LeakCheckedBase::CounterBase::detectLeaks ()
+void LeakCheckedBase::CounterBase::checkForLeaks ()
 {
     // If there's a runtime error from this line, it means there's
     // an order of destruction problem between different translation units!
@@ -91,9 +89,9 @@ void LeakCheckedBase::CounterBase::detectLeaks ()
 
 //------------------------------------------------------------------------------
 
-void LeakCheckedBase::detectAllLeaks ()
+void LeakCheckedBase::checkForLeaks ()
 {
-    CounterBase::detectAllLeaks ();
+    CounterBase::Singleton::getInstance ().checkForLeaks ();
 }
 
-#endif
+}

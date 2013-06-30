@@ -608,6 +608,9 @@
     <ClInclude Include="..\..\modules\beast_core\maths\beast_Interval.h">
       <Filter>beast_core\maths</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\time\beast_PerformedAtExit.h">
+      <Filter>beast_core\time</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
@@ -945,6 +948,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\native\beast_win32_FPUFlags.cpp">
       <Filter>beast_core\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\time\beast_PerformedAtExit.cpp">
+      <Filter>beast_core\time</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
