@@ -116,8 +116,8 @@ private:
     bool            mCluster;           // Node in our cluster
     RippleAddress   mNodePublic;        // Node public key of peer.
     std::string     mNodeName;
-    ipPort          mIpPort;
-    ipPort          mIpPortConnect;
+    IPAndPortNumber          mIpPort;
+    IPAndPortNumber          mIpPortConnect;
     uint256         mCookieHash;
     uint64          mPeerId;
     bool            mPrivate;           // Keep peer IP private.
@@ -213,7 +213,7 @@ PeerImp::PeerImp (boost::asio::io_service& io_service, boost::asio::ssl::context
 void PeerImp::handleWrite (const boost::system::error_code& error, size_t bytes_transferred)
 {
     // Call on IO strand
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
     //  if (!error)
     //      std::cerr << "PeerImp::handleWrite bytes: "<< bytes_transferred << std::endl;
 #endif
@@ -640,7 +640,7 @@ void PeerImp::processReadBuffer ()
 {
     // must not hold peer lock
     int type = PackedMessage::getType (mReadbuf);
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
     //  std::cerr << "PRB(" << type << "), len=" << (mReadbuf.size()-PackedMessage::kHeaderBytes) << std::endl;
 #endif
 
@@ -924,7 +924,7 @@ void PeerImp::recvHello (protocol::TMHello& packet)
     uint32 minTime = ourTime - 20;
     uint32 maxTime = ourTime + 20;
 
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
 
     if (packet.has_nettime ())
     {
@@ -1135,7 +1135,7 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
     }
     catch (...)
     {
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
         std::cerr << "Transaction from peer fails validity tests" << std::endl;
         Json::StyledStreamWriter w;
         w.write (std::cerr, tx->getJson (0));

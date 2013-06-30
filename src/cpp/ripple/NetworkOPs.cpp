@@ -355,7 +355,7 @@ Transaction::pointer NetworkOPs::processTransaction (Transaction::pointer trans,
     else if (isTelLocal (r) || isTerRetry (r)) // can be retried
         getApp().getHashRouter ().setFlag (trans->getID (), SF_RETRY);
 
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
 
     if (r != tesSUCCESS)
     {

@@ -367,7 +367,7 @@ void Application::setup ()
 
     m_loadManager->startThread ();
 
-#ifndef WIN32
+#if ! BEAST_WIN32
 #ifdef SIGINT
 
     if (!theConfig.RUN_STANDALONE)
@@ -385,7 +385,7 @@ void Application::setup ()
 
     if (!theConfig.DEBUG_LOGFILE.empty ())
     {
-        // Let DEBUG messages go to the file but only WARNING or higher to regular output (unless verbose)
+        // Let BEAST_DEBUG messages go to the file but only WARNING or higher to regular output (unless verbose)
         Log::setLogFile (theConfig.DEBUG_LOGFILE);
 
         if (Log::getMinSeverity () > lsDEBUG)

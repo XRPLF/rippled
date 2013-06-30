@@ -8,8 +8,10 @@
 #define RIPPLE_PEER_H_INCLUDED
 
 // VFALCO TODO Couldn't this be a struct?
-typedef std::pair <std::string, int> ipPort;
+typedef std::pair <std::string, int> IPAndPortNumber;
 
+/** Represents a peer connection in the overlay.
+*/
 class Peer
     : public boost::enable_shared_from_this <Peer>
     , LeakChecked <Peer>

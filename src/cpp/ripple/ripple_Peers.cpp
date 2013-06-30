@@ -88,15 +88,15 @@ private:
     int                     mPhase;
 
     typedef std::pair<RippleAddress, Peer::pointer>     naPeer;
-    typedef std::pair<ipPort, Peer::pointer>            pipPeer;
-    typedef std::map<ipPort, Peer::pointer>::value_type vtPeer;
+    typedef std::pair<IPAndPortNumber, Peer::pointer>            pipPeer;
+    typedef std::map<IPAndPortNumber, Peer::pointer>::value_type vtPeer;
 
     // Peers we are connecting with and non-thin peers we are connected to.
     // Only peers we know the connection ip for are listed.
     // We know the ip and port for:
     // - All outbound connections
     // - Some inbound connections (which we figured out).
-    boost::unordered_map<ipPort, Peer::pointer>         mIpMap;
+    boost::unordered_map<IPAndPortNumber, Peer::pointer>         mIpMap;
 
     // Non-thin peers which we are connected to.
     // Peers we have the public key for.
@@ -171,16 +171,16 @@ bool Peers::savePeer (const std::string& strIp, int iPort, char code)
 
     Database* db = getApp().getWalletDB ()->getDB ();
 
-    std::string ipPort  = sqlEscape (str (boost::format ("%s %d") % strIp % iPort));
+    std::string ipAndPort  = sqlEscape (str (boost::format ("%s %d") % strIp % iPort));
 
     ScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
-    std::string sql = str (boost::format ("SELECT COUNT(*) FROM PeerIps WHERE IpPort=%s;") % ipPort);
+    std::string sql = str (boost::format ("SELECT COUNT(*) FROM PeerIps WHERE IpPort=%s;") % ipAndPort);
 
     if (db->executeSQL (sql) && db->startIterRows ())
     {
         if (!db->getInt (0))
         {
-            db->executeSQL (str (boost::format ("INSERT INTO PeerIps (IpPort,Score,Source) values (%s,0,'%c');") % ipPort % code));
+            db->executeSQL (str (boost::format ("INSERT INTO PeerIps (IpPort,Score,Source) values (%s,0,'%c');") % ipAndPort % code));
             bNew    = true;
         }
         else
@@ -416,7 +416,7 @@ void Peers::connectTo (const std::string& strIp, int iPort)
 // <-- true, if already connected.
 Peer::pointer Peers::peerConnect (const std::string& strIp, int iPort)
 {
-    ipPort          pipPeer     = make_pair (strIp, iPort);
+    IPAndPortNumber          pipPeer     = make_pair (strIp, iPort);
     Peer::pointer   ppResult;
 
 
@@ -648,7 +648,7 @@ bool Peers::peerScanSet (const std::string& strIp, int iPort)
 // --> strIp: not empty
 void Peers::peerClosed (Peer::ref peer, const std::string& strIp, int iPort)
 {
-    ipPort      ipPeer          = make_pair (strIp, iPort);
+    IPAndPortNumber      ipPeer          = make_pair (strIp, iPort);
     bool        bScanRefresh    = false;
 
     // If the connection was our scan, we are no longer scanning.
@@ -664,7 +664,7 @@ void Peers::peerClosed (Peer::ref peer, const std::string& strIp, int iPort)
     bool    bRedundant  = true;
     {
         boost::recursive_mutex::scoped_lock sl (mPeerLock);
-        const boost::unordered_map<ipPort, Peer::pointer>::iterator&    itIp = mIpMap.find (ipPeer);
+        const boost::unordered_map<IPAndPortNumber, Peer::pointer>::iterator&    itIp = mIpMap.find (ipPeer);
 
         if (itIp == mIpMap.end ())
         {

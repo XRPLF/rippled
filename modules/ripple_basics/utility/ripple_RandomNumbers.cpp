@@ -63,8 +63,7 @@ RandomNumbers& RandomNumbers::getInstance ()
 
 //------------------------------------------------------------------------------
 
-// VFALCO TODO replace WIN32 macro with BEAST_WIN32
-#ifdef WIN32
+#if BEAST_WIN32
 
 // Get entropy from the Windows crypto provider
 bool RandomNumbers::platformAddEntropy ()
@@ -75,7 +74,7 @@ bool RandomNumbers::platformAddEntropy ()
 
     if (!CryptGetDefaultProviderA (PROV_RSA_FULL, NULL, CRYPT_MACHINE_DEFAULT, name, &count))
     {
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
         std::cerr << "Unable to get default crypto provider" << std::endl;
 #endif
         return false;
@@ -83,7 +82,7 @@ bool RandomNumbers::platformAddEntropy ()
 
     if (!CryptAcquireContextA (&cryptoHandle, NULL, name, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT))
     {
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
         std::cerr << "Unable to acquire crypto provider" << std::endl;
 #endif
         return false;
@@ -91,7 +90,7 @@ bool RandomNumbers::platformAddEntropy ()
 
     if (!CryptGenRandom (cryptoHandle, 128, reinterpret_cast<BYTE*> (rand)))
     {
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
         std::cerr << "Unable to get entropy from crypto provider" << std::endl;
 #endif
         CryptReleaseContext (cryptoHandle, 0);
@@ -115,7 +114,7 @@ bool RandomNumbers::platformAddEntropy ()
 
     if (!reader.is_open ())
     {
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
         std::cerr << "Unable to open random source" << std::endl;
 #endif
         return false;
@@ -127,7 +126,7 @@ bool RandomNumbers::platformAddEntropy ()
 
     if (bytesRead == 0)
     {
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
         std::cerr << "Unable to read from random source" << std::endl;
 #endif
         return false;
@@ -170,7 +169,7 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
                 int64 operator () () const
                 {
                     int64 nCounter = 0;
-#if defined(WIN32) || defined(WIN64)
+#if BEAST_WIN32
                     QueryPerformanceCounter ((LARGE_INTEGER*)&nCounter);
 #else
                     timeval t;
@@ -198,7 +197,7 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
 
     nLastPerfmon = GetTime ();
 
-#ifdef WIN32
+#if BEAST_WIN32
     // Don't need this on Linux, OpenSSL automatically uses /dev/urandom
     // Seed with the entire set of perfmon data
     unsigned char pdata[250000];

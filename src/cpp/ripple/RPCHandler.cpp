@@ -2000,7 +2000,7 @@ Json::Value RPCHandler::doAccountTransactions (Json::Value params, LoadType* loa
         uLedgerMin = uLedgerMax = l->getLedgerSeq ();
     }
 
-#ifndef DEBUG
+#ifndef BEAST_DEBUG
 
     try
     {
@@ -2066,7 +2066,7 @@ Json::Value RPCHandler::doAccountTransactions (Json::Value params, LoadType* loa
 
 
         return ret;
-#ifndef DEBUG
+#ifndef BEAST_DEBUG
     }
     catch (...)
     {

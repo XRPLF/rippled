@@ -145,11 +145,11 @@
     <Filter Include="1. Modules\ripple_app\version">
       <UniqueIdentifier>{a99a2905-0d36-40c0-84f5-06db41e48367}</UniqueIdentifier>
     </Filter>
-    <Filter Include="1. Modules\ripple_app\peer">
-      <UniqueIdentifier>{9c76b354-fcca-412c-8b5b-cae084a1d91a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="1. Modules\ripple_app\data">
       <UniqueIdentifier>{6097a179-ddad-4c69-9a34-2e3fc2c9fa1d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1. Modules\ripple_app\peers">
+      <UniqueIdentifier>{9c76b354-fcca-412c-8b5b-cae084a1d91a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -916,13 +916,13 @@
       <Filter>1. Modules\ripple_app\transactions</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_Peer.cpp">
-      <Filter>1. Modules\ripple_app\peer</Filter>
+      <Filter>1. Modules\ripple_app\peers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_Peers.cpp">
-      <Filter>1. Modules\ripple_app\peer</Filter>
+      <Filter>1. Modules\ripple_app\peers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_PeerSet.cpp">
-      <Filter>1. Modules\ripple_app\peer</Filter>
+      <Filter>1. Modules\ripple_app\peers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_HashedObject.cpp">
       <Filter>1. Modules\ripple_app\data</Filter>
@@ -940,7 +940,7 @@
       <Filter>1. Modules\ripple_app\main</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_UniqueNodeList.cpp">
-      <Filter>1. Modules\ripple_app\peer</Filter>
+      <Filter>1. Modules\ripple_app\peers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1756,16 +1756,16 @@
       <Filter>1. Modules\ripple_app\transactions</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_IProofOfWorkFactory.h">
-      <Filter>1. Modules\ripple_app\peer</Filter>
+      <Filter>1. Modules\ripple_app\peers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_IPeers.h">
-      <Filter>1. Modules\ripple_app\peer</Filter>
+      <Filter>1. Modules\ripple_app\peers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_Peer.h">
-      <Filter>1. Modules\ripple_app\peer</Filter>
+      <Filter>1. Modules\ripple_app\peers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_PeerSet.h">
-      <Filter>1. Modules\ripple_app\peer</Filter>
+      <Filter>1. Modules\ripple_app\peers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_HashedObject.h">
       <Filter>1. Modules\ripple_app\data</Filter>
@@ -1780,7 +1780,7 @@
       <Filter>1. Modules\ripple_app\main</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_IUniqueNodeList.h">
-      <Filter>1. Modules\ripple_app\peer</Filter>
+      <Filter>1. Modules\ripple_app\peers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

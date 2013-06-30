@@ -208,7 +208,7 @@ SHAMapTreeNode::pointer SHAMap::getNode (const SHAMapNode& id, uint256 const& ha
 
     if (node)
     {
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
 
         if (node->getNodeHash () != hash)
         {
@@ -925,7 +925,7 @@ int SHAMap::flushDirty (DirtyMap& map, int maxNodes, HashedObjectType t, uint32 
         s.erase ();
         it->second->addRaw (s, snfPREFIX);
 
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
 
         if (s.getSHA512Half () != it->second->getNodeHash ())
         {

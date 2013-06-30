@@ -4,13 +4,13 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_IUNIQUENODELIST_H
-#define RIPPLE_IUNIQUENODELIST_H
+#ifndef RIPPLE_IUNIQUENODELIST_H_INCLUDED
+#define RIPPLE_IUNIQUENODELIST_H_INCLUDED
 
 class IUniqueNodeList
 {
 public:
-    typedef enum
+    enum ValidatorSource
     {
         vsConfig    = 'C',  // rippled.cfg
         vsInbound   = 'I',
@@ -19,7 +19,7 @@ public:
         vsTold      = 'T',
         vsValidator = 'V',  // validators.txt
         vsWeb       = 'W',
-    } validatorSource;
+    };
 
     // VFALCO TODO rename this to use the right coding style
     typedef long score;
@@ -34,8 +34,8 @@ public:
     virtual void start () = 0;
 
     // VFALCO TODO rename all these, the "node" prefix is redundant (lol)
-    virtual void nodeAddPublic (const RippleAddress& naNodePublic, validatorSource vsWhy, const std::string& strComment) = 0;
-    virtual void nodeAddDomain (std::string strDomain, validatorSource vsWhy, const std::string& strComment = "") = 0;
+    virtual void nodeAddPublic (const RippleAddress& naNodePublic, ValidatorSource vsWhy, const std::string& strComment) = 0;
+    virtual void nodeAddDomain (std::string strDomain, ValidatorSource vsWhy, const std::string& strComment = "") = 0;
     virtual void nodeRemovePublic (const RippleAddress& naNodePublic) = 0;
     virtual void nodeRemoveDomain (std::string strDomain) = 0;
     virtual void nodeReset () = 0;
@@ -52,7 +52,7 @@ public:
 
     virtual Json::Value getUnlJson () = 0;
 
-    virtual int iSourceScore (validatorSource vsWhy) = 0;
+    virtual int iSourceScore (ValidatorSource vsWhy) = 0;
 };
 
 #endif

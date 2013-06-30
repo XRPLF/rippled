@@ -4,9 +4,9 @@
 */
 //==============================================================================
 
-// VFALCO TODO Repalce these with something more robust and without macros.
+// VFALCO TODO Replace these with something more robust and without macros.
 //
-#if !defined(WIN32) && !defined(WIN64)
+#if ! BEAST_MSVC
 #define _vsnprintf(a,b,c,d) vsnprintf(a,b,c,d)
 #endif
 

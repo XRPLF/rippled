@@ -37,7 +37,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, uint3
 
         if ((type < 0) || (type > 4))
         {
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
             std::cerr << "Invalid wire format node" << std::endl;
             std::cerr << strHex (rawNode) << std::endl;
             assert (false);

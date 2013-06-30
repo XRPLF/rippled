@@ -267,7 +267,7 @@ bool Ledger::hasAccount (const RippleAddress& accountID)
 
 AccountState::pointer Ledger::getAccountState (const RippleAddress& accountID)
 {
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
     //  std::cerr << "Ledger:getAccountState(" << accountID.humanAccountID() << ")" << std::endl;
 #endif
 

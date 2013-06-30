@@ -65,7 +65,7 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
     assert (mLedger);
     mNodes.init (mLedger, txn.getTransactionID (), mLedger->getLedgerSeq (), params);
 
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
 
     if (1)
     {
