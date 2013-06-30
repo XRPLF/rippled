@@ -263,7 +263,6 @@ namespace beast
 #include "threads/beast_SpinLock.h"
 #include "time/beast_PerformedAtExit.h"
 #include "memory/beast_SharedSingleton.h"
-#include "memory/beast_Singleton.h"
 #include "memory/beast_WeakReference.h"
 #include "memory/beast_MemoryAlignment.h"
 #include "memory/beast_CacheLine.h"
