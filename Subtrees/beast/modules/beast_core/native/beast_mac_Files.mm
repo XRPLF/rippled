@@ -251,7 +251,7 @@ File File::getSpecialLocation (const SpecialLocationType type)
             return File (resultPath.convertToPrecomposedUnicode());
     }
 
-    return File::nonexistent;
+    return File::nonexistent ();
 }
 
 //==============================================================================

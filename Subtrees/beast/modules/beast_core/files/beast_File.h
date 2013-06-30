@@ -53,7 +53,7 @@ public:
     /** Creates an (invalid) file object.
 
         The file is initially set to an empty path, so getFullPath() will return
-        an empty string, and comparing the file to File::nonexistent will return
+        an empty string, and comparing the file to File::nonexistent() will return
         true.
 
         You can use its operator= method to point it at a proper file.
@@ -100,7 +100,7 @@ public:
 
     //==============================================================================
     /** This static constant is used for referring to an 'invalid' file. */
-    static const File nonexistent;
+    static File const& nonexistent ();
 
     //==============================================================================
     /** Checks whether the file actually exists.

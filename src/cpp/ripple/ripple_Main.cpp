@@ -141,9 +141,9 @@ int rippleMain (int argc, char** argv)
     //
     Debug::setHeapReportLeaks (true);
 
-    //ThreadWithCallQueue t ("test");
-    //GlobalPagedFreeStore::getInstance ();
-    //t.start ();
+    ThreadWithCallQueue t ("test");
+    GlobalPagedFreeStore::getInstance ();
+    t.start ();
 
     return 0;
 #endif
