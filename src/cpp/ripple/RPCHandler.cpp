@@ -275,9 +275,9 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
             // ... or the master key must have been used.
             && raSrcAddressID.getAccountID () != naAccountPublic.getAccountID ())
     {
-        // std::cerr << "iIndex: " << iIndex << std::endl;
-        // std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID()) << std::endl;
-        // std::cerr << "naAccountPublic: " << strHex(naAccountPublic.getAccountID()) << std::endl;
+        // Log::out() << "iIndex: " << iIndex;
+        // Log::out() << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID());
+        // Log::out() << "naAccountPublic: " << strHex(naAccountPublic.getAccountID());
 
         return rpcError (rpcSRC_ACT_NOT_FOUND);
     }
@@ -493,9 +493,9 @@ Json::Value RPCHandler::authorize (Ledger::ref lrLedger,
 
     if (asSrc->haveAuthorizedKey () && (asSrc->getAuthorizedKey ().getAccountID () != naAccountPublic.getAccountID ()))
     {
-        // std::cerr << "iIndex: " << iIndex << std::endl;
-        // std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID()) << std::endl;
-        // std::cerr << "naAccountPublic: " << strHex(naAccountPublic.getAccountID()) << std::endl;
+        // Log::out() << "iIndex: " << iIndex;
+        // Log::out() << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID());
+        // Log::out() << "naAccountPublic: " << strHex(naAccountPublic.getAccountID());
 
         return rpcError (rpcPASSWD_CHANGED);
     }
@@ -2113,7 +2113,7 @@ Json::Value RPCHandler::doValidationSeed (Json::Value params, LoadType* loadType
 
     if (!params.isMember ("secret"))
     {
-        std::cerr << "Unset validation seed." << std::endl;
+        Log::out() << "Unset validation seed.";
 
         theConfig.VALIDATION_SEED.clear ();
         theConfig.VALIDATION_PUB.clear ();

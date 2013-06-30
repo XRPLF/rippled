@@ -196,7 +196,7 @@ bool Peers::savePeer (const std::string& strIp, int iPort, char code)
     }
     else
     {
-        std::cerr << "Error saving Peer" << std::endl;
+        Log::out() << "Error saving Peer";
     }
 
     if (bNew)

@@ -50,7 +50,7 @@ bool STAmount::currencyFromString (uint160& uDstCurrency, const std::string& sCu
 
         // std::string  sIso;
         // sIso.assign(vucIso.begin(), vucIso.end());
-        // std::cerr << "currency: " << sIso << std::endl;
+        // Log::out() << "currency: " << sIso;
 
         Serializer  s;
 

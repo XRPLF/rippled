@@ -26,7 +26,7 @@ void startServer ()
             const Json::Value& jvCommand    = theConfig.RPC_STARTUP[i];
 
             if (!theConfig.QUIET)
-                std::cerr << "Startup RPC: " << jvCommand << std::endl;
+                Log::out() << "Startup RPC: " << jvCommand;
 
             RPCHandler  rhHandler (&getApp().getOPs ());
 
@@ -35,7 +35,7 @@ void startServer ()
             Json::Value jvResult    = rhHandler.doCommand (jvCommand, RPCHandler::ADMIN, &loadType);
 
             if (!theConfig.QUIET)
-                std::cerr << "Result: " << jvResult << std::endl;
+                Log::out() << "Result: " << jvResult;
         }
     }
 
@@ -187,7 +187,7 @@ int rippleMain (int argc, char** argv)
 
     if (! RandomNumbers::getInstance ().initialize ())
     {
-        std::cerr << "Unable to add system entropy" << std::endl;
+        Log::out() << "Unable to add system entropy";
         iResult = 2;
     }
 

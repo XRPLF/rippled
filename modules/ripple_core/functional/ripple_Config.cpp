@@ -197,9 +197,9 @@ void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
     // Update default values
     load ();
 
-    // std::cerr << "CONFIG FILE: " << CONFIG_FILE << std::endl;
-    // std::cerr << "CONFIG DIR: " << CONFIG_DIR << std::endl;
-    // std::cerr << "DATA DIR: " << DATA_DIR << std::endl;
+    // Log::out() << "CONFIG FILE: " << CONFIG_FILE;
+    // Log::out() << "CONFIG DIR: " << CONFIG_DIR;
+    // Log::out() << "DATA DIR: " << DATA_DIR;
 
     boost::filesystem::create_directories (DATA_DIR, ec);
 
@@ -274,13 +274,13 @@ Config::Config ()
 void Config::load ()
 {
     if (!QUIET)
-        std::cerr << "Loading: " << CONFIG_FILE << std::endl;
+        Log::out() << "Loading: " << CONFIG_FILE;
 
     std::ifstream   ifsConfig (CONFIG_FILE.c_str (), std::ios::in);
 
     if (!ifsConfig)
     {
-        std::cerr << "Failed to open '" << CONFIG_FILE << "'." << std::endl;
+        Log::out() << "Failed to open '" << CONFIG_FILE << "'.";
     }
     else
     {
@@ -291,7 +291,7 @@ void Config::load ()
 
         if (ifsConfig.bad ())
         {
-            std::cerr << "Failed to read '" << CONFIG_FILE << "'." << std::endl;
+            Log::out() << "Failed to read '" << CONFIG_FILE << "'.";
         }
         else
         {

@@ -25,6 +25,8 @@ SerializedType& SerializedType::operator= (const SerializedType& t)
 
 void STPathSet::printDebug ()
 {
+    // VFALCO NOTE Can't use Log::out() because of std::endl
+    //
     for (int i = 0; i < value.size (); i++)
     {
         std::cerr << i << ": ";
@@ -45,13 +47,13 @@ void STPathSet::printDebug ()
 
 void STPath::printDebug ()
 {
-    std::cerr << "STPath:" << std::endl;
+    Log::out() << "STPath:";
 
     for (int i = 0; i < mPath.size (); i++)
     {
         RippleAddress nad;
         nad.setAccountID (mPath[i].mAccountID);
-        std::cerr << "   " << i << ": " << nad.humanAccountID () << std::endl;
+        Log::out() << "   " << i << ": " << nad.humanAccountID ();
     }
 }
 

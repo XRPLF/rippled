@@ -18,7 +18,7 @@ RPCServer::RPCServer (boost::asio::io_service& io_service, boost::asio::ssl::con
 
 void RPCServer::connected ()
 {
-    //std::cerr << "RPC request" << std::endl;
+    //Log::out() << "RPC request";
     boost::asio::async_read_until (mSocket, mLineBuffer, "\r\n",
                                    mStrand.wrap (boost::bind (&RPCServer::handle_read_line, shared_from_this (), boost::asio::placeholders::error)));
 }
@@ -178,7 +178,7 @@ bool RPCServer::parseAcceptRate (const std::string& sAcceptRate)
 
 void RPCServer::handle_write (const boost::system::error_code& e)
 {
-    //std::cerr << "async_write complete " << e << std::endl;
+    //Log::out() << "async_write complete " << e;
 
     if (!e)
     {

@@ -117,6 +117,63 @@ public:
 
     static std::string rotateLog ();
 
+public:
+    /** Write to log output.
+
+        All logging eventually goes through this function. If a
+        debugger is attached, the string goes to the debugging console,
+        else it goes to the standard error output. If a log file is
+        open, then the message is additionally written to the open log
+        file.
+
+        The text should not contain a newline, it will be automatically
+        added as needed.
+
+        @note  This acquires a global mutex.
+
+        @param text     The text to write.
+        @param toStdErr `true` to also write to std::cerr
+    */
+    static void print (std::string const& text,
+                       bool toStdErr = true);
+
+    /** Output stream for logging
+
+        This is a convenient replacement for writing to `std::cerr`.
+
+        Usage:
+
+        @code
+
+        Log::out () << "item1" << 2;
+
+        @endcode
+
+        It is not necessary to append a newline.
+    */
+    class out
+    {
+    public:
+        out ()
+        {
+        }
+        
+        ~out ()
+        {
+            Log::print (m_ss.str ());
+        }
+
+        template <class T>
+        out& operator<< (T t)
+        {
+            m_ss << t;
+            return *this;
+        }
+
+    private:
+        std::stringstream m_ss;
+    };
+
 private:
     enum
     {

@@ -37,7 +37,7 @@ void RandomNumbers::fillBytes (void* destinationBuffer, int numberOfBytes)
         if (! initialize ())
         {
             char const* message = "Unable to add system entropy";
-            std::cerr << message << std::endl;
+            Log::out() << message;
             throw std::runtime_error (message);
         }
     }
@@ -75,7 +75,7 @@ bool RandomNumbers::platformAddEntropy ()
     if (!CryptGetDefaultProviderA (PROV_RSA_FULL, NULL, CRYPT_MACHINE_DEFAULT, name, &count))
     {
 #ifdef BEAST_DEBUG
-        std::cerr << "Unable to get default crypto provider" << std::endl;
+        Log::out() << "Unable to get default crypto provider";
 #endif
         return false;
     }
@@ -83,7 +83,7 @@ bool RandomNumbers::platformAddEntropy ()
     if (!CryptAcquireContextA (&cryptoHandle, NULL, name, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT))
     {
 #ifdef BEAST_DEBUG
-        std::cerr << "Unable to acquire crypto provider" << std::endl;
+        Log::out() << "Unable to acquire crypto provider";
 #endif
         return false;
     }
@@ -91,7 +91,7 @@ bool RandomNumbers::platformAddEntropy ()
     if (!CryptGenRandom (cryptoHandle, 128, reinterpret_cast<BYTE*> (rand)))
     {
 #ifdef BEAST_DEBUG
-        std::cerr << "Unable to get entropy from crypto provider" << std::endl;
+        Log::out() << "Unable to get entropy from crypto provider";
 #endif
         CryptReleaseContext (cryptoHandle, 0);
         return false;
@@ -115,7 +115,7 @@ bool RandomNumbers::platformAddEntropy ()
     if (!reader.is_open ())
     {
 #ifdef BEAST_DEBUG
-        std::cerr << "Unable to open random source" << std::endl;
+        Log::out() << "Unable to open random source";
 #endif
         return false;
     }
@@ -127,7 +127,7 @@ bool RandomNumbers::platformAddEntropy ()
     if (bytesRead == 0)
     {
 #ifdef BEAST_DEBUG
-        std::cerr << "Unable to read from random source" << std::endl;
+        Log::out() << "Unable to read from random source";
 #endif
         return false;
     }

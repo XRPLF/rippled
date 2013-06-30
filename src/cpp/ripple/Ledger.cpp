@@ -268,7 +268,7 @@ bool Ledger::hasAccount (const RippleAddress& accountID)
 AccountState::pointer Ledger::getAccountState (const RippleAddress& accountID)
 {
 #ifdef BEAST_DEBUG
-    //  std::cerr << "Ledger:getAccountState(" << accountID.humanAccountID() << ")" << std::endl;
+    //  Log::out() << "Ledger:getAccountState(" << accountID.humanAccountID() << ")";
 #endif
 
     SLE::pointer sle = getSLEi (Ledger::getAccountRootIndex (accountID));

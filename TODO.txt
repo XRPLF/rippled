@@ -2,6 +2,8 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
+- Make sure the leak detector output appears on Linux and FreeBSD debug builds.
+
 - Create SharedData <LoadState>, move all load related state variables currently
   protected by separated mutexes in different classes into the LoadState, and
   use read/write locking semantics to update the values. Later, use Listeners

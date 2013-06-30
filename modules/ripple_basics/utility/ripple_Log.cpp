@@ -139,13 +139,33 @@ Log::~Log ()
         logMsg += "...";
     }
 
+    print (logMsg, mSeverity >= sMinSeverity);
+}
+
+void Log::print (std::string const& text, bool toStdErr)
+{
     boost::recursive_mutex::scoped_lock sl (sLock);
 
-    if (mSeverity >= sMinSeverity)
-        std::cerr << logMsg << std::endl;
-
+    // Always write to the log file if it is open.
+    //
     if (outStream != NULL)
-        (*outStream) << logMsg << std::endl;
+    {
+        (*outStream) << text << std::endl;
+    }
+
+    if (toStdErr)
+    {
+        if (beast_isRunningUnderDebugger ())
+        {
+            // Send it to the attached debugger's Output window
+            //
+            Logger::outputDebugString (text);
+        }
+        else
+        {
+            std::cerr << text << std::endl;
+        }
+    }
 }
 
 std::string Log::rotateLog (void)

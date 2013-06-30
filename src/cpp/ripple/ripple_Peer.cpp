@@ -4,9 +4,6 @@
 */
 //==============================================================================
 
-// VFALCO TODO make this an inline function
-#define ADDRESS(p)          strHex(uint64( ((char*) p) - ((char*) 0)))
-
 SETUP_LOG (Peer)
 
 class PeerImp;
@@ -207,7 +204,7 @@ PeerImp::PeerImp (boost::asio::io_service& io_service, boost::asio::ssl::context
     mActivityTimer (io_service),
     mIOStrand (io_service)
 {
-    WriteLog (lsDEBUG, Peer) << "CREATING PEER: " << ADDRESS (this);
+    WriteLog (lsDEBUG, Peer) << "CREATING PEER: " << addressToString (this);
 }
 
 void PeerImp::handleWrite (const boost::system::error_code& error, size_t bytes_transferred)
@@ -215,7 +212,7 @@ void PeerImp::handleWrite (const boost::system::error_code& error, size_t bytes_
     // Call on IO strand
 #ifdef BEAST_DEBUG
     //  if (!error)
-    //      std::cerr << "PeerImp::handleWrite bytes: "<< bytes_transferred << std::endl;
+    //      Log::out() << "PeerImp::handleWrite bytes: "<< bytes_transferred;
 #endif
 
     mSendingPacket.reset ();
@@ -227,7 +224,7 @@ void PeerImp::handleWrite (const boost::system::error_code& error, size_t bytes_
     }
     else if (error)
     {
-        WriteLog (lsINFO, Peer) << "Peer: Write: Error: " << ADDRESS (this) << ": bytes=" << bytes_transferred << ": " << error.category ().name () << ": " << error.message () << ": " << error;
+        WriteLog (lsINFO, Peer) << "Peer: Write: Error: " << addressToString (this) << ": bytes=" << bytes_transferred << ": " << error.category ().name () << ": " << error.message () << ": " << error;
 
         detach ("hw", true);
     }
@@ -249,7 +246,7 @@ void PeerImp::setIpPort (const std::string& strIP, int iPort)
     mLoad.rename (strIP);
 
     WriteLog (lsDEBUG, Peer) << "Peer: Set: "
-                             << ADDRESS (this) << "> "
+                             << addressToString (this) << "> "
                              << (mNodePublic.isValid () ? mNodePublic.humanNodePublic () : "-") << " " << getIP () << " " << getPort ();
 }
 
@@ -272,7 +269,7 @@ void PeerImp::detach (const char* rsn, bool onIOStrand)
         CondLog (mCluster, lsWARNING, Peer) << "Cluster peer detach \"" << mNodeName << "\": " << rsn;
         /*
         WriteLog (lsDEBUG, Peer) << "Peer: Detach: "
-            << ADDRESS(this) << "> "
+            << addressToString(this) << "> "
             << rsn << ": "
             << (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-") << " " << getIP() << " " << getPort();
             */
@@ -302,7 +299,7 @@ void PeerImp::detach (const char* rsn, bool onIOStrand)
 
         /*
         WriteLog (lsDEBUG, Peer) << "Peer: Detach: "
-            << ADDRESS(this) << "< "
+            << addressToString(this) << "< "
             << rsn << ": "
             << (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-") << " " << getIP() << " " << getPort();
             */
@@ -346,7 +343,7 @@ void PeerImp::handleVerifyTimer (const boost::system::error_code& ecResult)
     if (ecResult == boost::asio::error::operation_aborted)
     {
         // Timer canceled because deadline no longer needed.
-        // std::cerr << "Deadline cancelled." << std::endl;
+        // Log::out() << "Deadline cancelled.";
 
         nothing (); // Aborter is done.
     }
@@ -405,7 +402,7 @@ void PeerImp::connect (const std::string& strIp, int iPort)
 
     if (!err)
     {
-        WriteLog (lsINFO, Peer) << "Peer: Connect: Outbound: " << ADDRESS (this) << ": " << mIpPort.first << " " << mIpPort.second;
+        WriteLog (lsINFO, Peer) << "Peer: Connect: Outbound: " << addressToString (this) << ": " << mIpPort.first << " " << mIpPort.second;
 
         boost::asio::async_connect (
             getSocket (),
@@ -488,7 +485,7 @@ void PeerImp::connected (const boost::system::error_code& error)
     {
         // Not redundant ip and port, handshake, and start.
 
-        WriteLog (lsINFO, Peer) << "Peer: Inbound: Accepted: " << ADDRESS (this) << ": " << strIp << " " << iPort;
+        WriteLog (lsINFO, Peer) << "Peer: Inbound: Accepted: " << addressToString (this) << ": " << strIp << " " << iPort;
 
 
         mSocketSsl.set_verify_mode (boost::asio::ssl::verify_none);
@@ -498,7 +495,7 @@ void PeerImp::connected (const boost::system::error_code& error)
     }
     else if (!mDetaching)
     {
-        WriteLog (lsINFO, Peer) << "Peer: Inbound: Error: " << ADDRESS (this) << ": " << strIp << " " << iPort << " : " << error.category ().name () << ": " << error.message () << ": " << error;
+        WriteLog (lsINFO, Peer) << "Peer: Inbound: Error: " << addressToString (this) << ": " << strIp << " " << iPort << " : " << error.category ().name () << ": " << error.message () << ": " << error;
 
         detach ("ctd", false);
     }
@@ -641,10 +638,10 @@ void PeerImp::processReadBuffer ()
     // must not hold peer lock
     int type = PackedMessage::getType (mReadbuf);
 #ifdef BEAST_DEBUG
-    //  std::cerr << "PRB(" << type << "), len=" << (mReadbuf.size()-PackedMessage::kHeaderBytes) << std::endl;
+    //  Log::out() << "PRB(" << type << "), len=" << (mReadbuf.size()-PackedMessage::kHeaderBytes);
 #endif
 
-    //  std::cerr << "PeerImp::processReadBuffer: " << mIpPort.first << " " << mIpPort.second << std::endl;
+    //  Log::out() << "PeerImp::processReadBuffer: " << mIpPort.first << " " << mIpPort.second;
 
     LoadEvent::autoptr event (getApp().getJobQueue ().getLoadEventAP (jtPEER, "PeerImp::read"));
 
@@ -1136,8 +1133,9 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
     catch (...)
     {
 #ifdef BEAST_DEBUG
-        std::cerr << "Transaction from peer fails validity tests" << std::endl;
+        Log::out() << "Transaction from peer fails validity tests";
         Json::StyledStreamWriter w;
+        // VFALCO NOTE This bypasses the Log bottleneck
         w.write (std::cerr, tx->getJson (0));
 #endif
         return;
@@ -1430,7 +1428,7 @@ void PeerImp::recvGetPeers (protocol::TMGetPeers& packet, ScopedLock& MasterLock
             addr->set_ipv4 (inet_addr (strIP.c_str ()));
             addr->set_ipv4port (iPort);
 
-            //WriteLog (lsINFO, Peer) << "Peer: Teaching: " << ADDRESS(this) << ": " << n << ": " << strIP << " " << iPort;
+            //WriteLog (lsINFO, Peer) << "Peer: Teaching: " << addressToString(this) << ": " << n << ": " << strIP << " " << iPort;
         }
 
         PackedMessage::pointer message = boost::make_shared<PackedMessage> (peers, protocol::mtPEERS);
@@ -1452,7 +1450,7 @@ void PeerImp::recvPeers (protocol::TMPeers& packet)
 
         if (strIP != "0.0.0.0" && strIP != "127.0.0.1")
         {
-            //WriteLog (lsINFO, Peer) << "Peer: Learning: " << ADDRESS(this) << ": " << i << ": " << strIP << " " << iPort;
+            //WriteLog (lsINFO, Peer) << "Peer: Learning: " << addressToString(this) << ": " << i << ": " << strIP << " " << iPort;
 
             getApp().getPeers ().savePeer (strIP, iPort, IUniqueNodeList::vsTold);
         }
@@ -2310,7 +2308,7 @@ Json::Value PeerImp::getJson ()
 {
     Json::Value ret (Json::objectValue);
 
-    //ret["this"]           = ADDRESS(this);
+    //ret["this"]           = addressToString(this);
     ret["public_key"]   = mNodePublic.ToString ();
     ret["ip"]           = mIpPortConnect.first;
     //ret["port"]           = mIpPortConnect.second;
