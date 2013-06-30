@@ -38,8 +38,6 @@ typedef TaggedCache <uint256, SerializedLedgerEntry, UptimeTimerAdapter> SLECach
 class IApplication
 {
 public:
-    static IApplication* New ();
-
     virtual ~IApplication () { }
 
     /* VFALCO NOTE
@@ -104,6 +102,6 @@ public:
     virtual void sweep () = 0;
 };
 
-extern ScopedPointer <IApplication> theApp;
+extern IApplication& getApp ();
 
 #endif

@@ -645,7 +645,7 @@ Json::Value RPCHandler::doConnect (Json::Value params, LoadType* loadType, Scope
     int         iPort   = params.isMember ("port") ? params["port"].asInt () : -1;
 
     // XXX Validate legal IP and port
-    theApp->getPeers ().connectTo (strIp, iPort);
+    getApp().getPeers ().connectTo (strIp, iPort);
 
     return "connecting";
 }
@@ -663,7 +663,7 @@ Json::Value RPCHandler::doDataDelete (Json::Value params, LoadType* loadType, Sc
 
     Json::Value ret = Json::Value (Json::objectValue);
 
-    if (theApp->getLocalCredentials ().dataDelete (strKey))
+    if (getApp().getLocalCredentials ().dataDelete (strKey))
     {
         ret["key"]      = strKey;
     }
@@ -692,7 +692,7 @@ Json::Value RPCHandler::doDataFetch (Json::Value params, LoadType* loadType, Sco
 
     ret["key"]      = strKey;
 
-    if (theApp->getLocalCredentials ().dataFetch (strKey, strValue))
+    if (getApp().getLocalCredentials ().dataFetch (strKey, strValue))
         ret["value"]    = strValue;
 
     return ret;
@@ -715,7 +715,7 @@ Json::Value RPCHandler::doDataStore (Json::Value params, LoadType* loadType, Sco
 
     Json::Value ret = Json::Value (Json::objectValue);
 
-    if (theApp->getLocalCredentials ().dataStore (strKey, strValue))
+    if (getApp().getLocalCredentials ().dataStore (strKey, strValue))
     {
         ret["key"]      = strKey;
         ret["value"]    = strValue;
@@ -794,7 +794,7 @@ Json::Value RPCHandler::doPeers (Json::Value, LoadType* loadType, ScopedLock& Ma
 {
     Json::Value jvResult (Json::objectValue);
 
-    jvResult["peers"]   = theApp->getPeers ().getPeersJson ();
+    jvResult["peers"]   = getApp().getPeers ().getPeersJson ();
 
     return jvResult;
 }
@@ -937,7 +937,7 @@ Json::Value RPCHandler::doProofCreate (Json::Value params, LoadType* loadType, S
     }
     else
     {
-        jvResult["token"]   = theApp->getProofOfWorkFactory ().getProof ().getToken ();
+        jvResult["token"]   = getApp().getProofOfWorkFactory ().getProof ().getToken ();
     }
 
     return jvResult;
@@ -1025,7 +1025,7 @@ Json::Value RPCHandler::doProofVerify (Json::Value params, LoadType* loadType, S
     else
     {
         // XXX Proof should not be marked as used from this
-        prResult = theApp->getProofOfWorkFactory ().checkProof (strToken, uSolution);
+        prResult = getApp().getProofOfWorkFactory ().checkProof (strToken, uSolution);
     }
 
     std::string sToken;
@@ -1216,7 +1216,7 @@ Json::Value RPCHandler::doAccountOffers (Json::Value params, LoadType* loadType,
 // }
 Json::Value RPCHandler::doBookOffers (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    if (theApp->getJobQueue ().getJobCountGE (jtCLIENT) > 200)
+    if (getApp().getJobQueue ().getJobCountGE (jtCLIENT) > 200)
     {
         return rpcError (rpcTOO_BUSY);
     }
@@ -1355,7 +1355,7 @@ Json::Value RPCHandler::doPathFind (Json::Value params, LoadType* loadType, Scop
         if (request->isValid ())
         {
             mInfoSub->setPathRequest (request);
-            theApp->getLedgerMaster ().newPathRequest ();
+            getApp().getLedgerMaster ().newPathRequest ();
         }
 
         return result;
@@ -1393,7 +1393,7 @@ Json::Value RPCHandler::doPathFind (Json::Value params, LoadType* loadType, Scop
 //   - From a trusted server, allows clients to use path without manipulation.
 Json::Value RPCHandler::doRipplePathFind (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    int jc = theApp->getJobQueue ().getJobCountGE (jtCLIENT);
+    int jc = getApp().getJobQueue ().getJobCountGE (jtCLIENT);
 
     if (jc > 200)
     {
@@ -1775,8 +1775,8 @@ Json::Value RPCHandler::doTxHistory (Json::Value params, LoadType* loadType, Sco
                     % startIndex);
 
     {
-        Database* db = theApp->getTxnDB ()->getDB ();
-        ScopedLock sl (theApp->getTxnDB ()->getDBLock ());
+        Database* db = getApp().getTxnDB ()->getDB ();
+        ScopedLock sl (getApp().getTxnDB ()->getDBLock ());
 
         SQL_FOREACH (db, sql)
         {
@@ -1808,7 +1808,7 @@ Json::Value RPCHandler::doTx (Json::Value params, LoadType* loadType, ScopedLock
         // transaction by ID
         uint256 txid (strTransaction);
 
-        Transaction::pointer txn = theApp->getMasterTransaction ().fetch (txid, true);
+        Transaction::pointer txn = getApp().getMasterTransaction ().fetch (txid, true);
 
         if (!txn)
             return rpcError (rpcTXN_NOT_FOUND);
@@ -1893,8 +1893,8 @@ Json::Value RPCHandler::doLedger (Json::Value params, LoadType* loadType, Scoped
     {
         Json::Value ret (Json::objectValue), current (Json::objectValue), closed (Json::objectValue);
 
-        theApp->getLedgerMaster ().getCurrentLedger ()->addJson (current, 0);
-        theApp->getLedgerMaster ().getClosedLedger ()->addJson (closed, 0);
+        getApp().getLedgerMaster ().getCurrentLedger ()->addJson (current, 0);
+        getApp().getLedgerMaster ().getClosedLedger ()->addJson (closed, 0);
 
         ret["open"] = current;
         ret["closed"] = closed;
@@ -2343,11 +2343,11 @@ Json::Value RPCHandler::doFeature (Json::Value params, LoadType* loadType, Scope
     if (!params.isMember ("feature"))
     {
         Json::Value jvReply = Json::objectValue;
-        jvReply["features"] = theApp->getFeatureTable ().getJson (0);
+        jvReply["features"] = getApp().getFeatureTable ().getJson (0);
         return jvReply;
     }
 
-    uint256 uFeature = theApp->getFeatureTable ().getFeature (params["feature"].asString ());
+    uint256 uFeature = getApp().getFeatureTable ().getFeature (params["feature"].asString ());
 
     if (uFeature.isZero ())
     {
@@ -2358,7 +2358,7 @@ Json::Value RPCHandler::doFeature (Json::Value params, LoadType* loadType, Scope
     }
 
     if (!params.isMember ("vote"))
-        return theApp->getFeatureTable ().getJson (uFeature);
+        return getApp().getFeatureTable ().getJson (uFeature);
 
     // WRITEME
     return rpcError (rpcNOT_SUPPORTED);
@@ -2383,34 +2383,34 @@ Json::Value RPCHandler::doGetCounts (Json::Value params, LoadType* loadType, Sco
         ret [it.first] = it.second;
     }
 
-    int dbKB = theApp->getLedgerDB ()->getDB ()->getKBUsedAll ();
+    int dbKB = getApp().getLedgerDB ()->getDB ()->getKBUsedAll ();
 
     if (dbKB > 0)
         ret["dbKBTotal"] = dbKB;
 
-    dbKB = theApp->getLedgerDB ()->getDB ()->getKBUsedDB ();
+    dbKB = getApp().getLedgerDB ()->getDB ()->getKBUsedDB ();
 
     if (dbKB > 0)
         ret["dbKBLedger"] = dbKB;
 
-    if (!theApp->getHashedObjectStore ().isLevelDB ())
+    if (!getApp().getHashedObjectStore ().isLevelDB ())
     {
-        dbKB = theApp->getHashNodeDB ()->getDB ()->getKBUsedDB ();
+        dbKB = getApp().getHashNodeDB ()->getDB ()->getKBUsedDB ();
 
         if (dbKB > 0)
             ret["dbKBHashNode"] = dbKB;
     }
 
-    dbKB = theApp->getTxnDB ()->getDB ()->getKBUsedDB ();
+    dbKB = getApp().getTxnDB ()->getDB ()->getKBUsedDB ();
 
     if (dbKB > 0)
         ret["dbKBTransaction"] = dbKB;
 
-    ret["write_load"] = theApp->getHashedObjectStore ().getWriteLoad ();
+    ret["write_load"] = getApp().getHashedObjectStore ().getWriteLoad ();
 
-    ret["SLE_hit_rate"] = theApp->getSLECache ().getHitRate ();
-    ret["node_hit_rate"] = theApp->getHashedObjectStore ().getCacheHitRate ();
-    ret["ledger_hit_rate"] = theApp->getLedgerMaster ().getCacheHitRate ();
+    ret["SLE_hit_rate"] = getApp().getSLECache ().getHitRate ();
+    ret["node_hit_rate"] = getApp().getHashedObjectStore ().getCacheHitRate ();
+    ret["ledger_hit_rate"] = getApp().getLedgerMaster ().getCacheHitRate ();
     ret["AL_hit_rate"] = AcceptedLedger::getCacheHitRate ();
 
     ret["fullbelow_size"] = SHAMap::getFullBelowSize ();
@@ -2489,13 +2489,13 @@ Json::Value RPCHandler::doUnlAdd (Json::Value params, LoadType* loadType, Scoped
 
     if (raNodePublic.setNodePublic (strNode))
     {
-        theApp->getUNL ().nodeAddPublic (raNodePublic, IUniqueNodeList::vsManual, strComment);
+        getApp().getUNL ().nodeAddPublic (raNodePublic, IUniqueNodeList::vsManual, strComment);
 
         return "adding node by public key";
     }
     else
     {
-        theApp->getUNL ().nodeAddDomain (strNode, IUniqueNodeList::vsManual, strComment);
+        getApp().getUNL ().nodeAddDomain (strNode, IUniqueNodeList::vsManual, strComment);
 
         return "adding node by domain";
     }
@@ -2515,13 +2515,13 @@ Json::Value RPCHandler::doUnlDelete (Json::Value params, LoadType* loadType, Sco
 
     if (raNodePublic.setNodePublic (strNode))
     {
-        theApp->getUNL ().nodeRemovePublic (raNodePublic);
+        getApp().getUNL ().nodeRemovePublic (raNodePublic);
 
         return "removing node by public key";
     }
     else
     {
-        theApp->getUNL ().nodeRemoveDomain (strNode);
+        getApp().getUNL ().nodeRemoveDomain (strNode);
 
         return "removing node by domain";
     }
@@ -2531,7 +2531,7 @@ Json::Value RPCHandler::doUnlList (Json::Value, LoadType* loadType, ScopedLock& 
 {
     Json::Value obj (Json::objectValue);
 
-    obj["unl"] = theApp->getUNL ().getUnlJson ();
+    obj["unl"] = getApp().getUNL ().getUnlJson ();
 
     return obj;
 }
@@ -2539,7 +2539,7 @@ Json::Value RPCHandler::doUnlList (Json::Value, LoadType* loadType, ScopedLock& 
 // Populate the UNL from a local validators.txt file.
 Json::Value RPCHandler::doUnlLoad (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    if (theConfig.VALIDATORS_FILE.empty () || !theApp->getUNL ().nodeLoad (theConfig.VALIDATORS_FILE))
+    if (theConfig.VALIDATORS_FILE.empty () || !getApp().getUNL ().nodeLoad (theConfig.VALIDATORS_FILE))
     {
         return rpcError (rpcLOAD_FAILED);
     }
@@ -2551,7 +2551,7 @@ Json::Value RPCHandler::doUnlLoad (Json::Value, LoadType* loadType, ScopedLock& 
 // Populate the UNL from ripple.com's validators.txt file.
 Json::Value RPCHandler::doUnlNetwork (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    theApp->getUNL ().nodeNetwork ();
+    getApp().getUNL ().nodeNetwork ();
 
     return "fetching";
 }
@@ -2559,7 +2559,7 @@ Json::Value RPCHandler::doUnlNetwork (Json::Value params, LoadType* loadType, Sc
 // unl_reset
 Json::Value RPCHandler::doUnlReset (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    theApp->getUNL ().nodeReset ();
+    getApp().getUNL ().nodeReset ();
 
     return "removing nodes";
 }
@@ -2567,7 +2567,7 @@ Json::Value RPCHandler::doUnlReset (Json::Value params, LoadType* loadType, Scop
 // unl_score
 Json::Value RPCHandler::doUnlScore (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    theApp->getUNL ().nodeScore ();
+    getApp().getUNL ().nodeScore ();
 
     return "scoring requested";
 }
@@ -2577,13 +2577,13 @@ Json::Value RPCHandler::doSMS (Json::Value params, LoadType* loadType, ScopedLoc
     if (!params.isMember ("text"))
         return rpcError (rpcINVALID_PARAMS);
 
-    HttpsClient::sendSMS (theApp->getIOService (), params["text"].asString ());
+    HttpsClient::sendSMS (getApp().getIOService (), params["text"].asString ());
 
     return "sms dispatched";
 }
 Json::Value RPCHandler::doStop (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
-    theApp->stop ();
+    getApp().stop ();
 
     return SYSTEM_NAME " server stopping";
 }
@@ -2729,7 +2729,7 @@ Json::Value RPCHandler::lookupLedger (Json::Value params, Ledger::pointer& lpLed
         break;
 
     case LEDGER_CLOSED:
-        lpLedger        = theApp->getLedgerMaster ().getClosedLedger ();
+        lpLedger        = getApp().getLedgerMaster ().getClosedLedger ();
         iLedgerIndex    = lpLedger->getLedgerSeq ();
         assert (lpLedger->isImmutable () && lpLedger->isClosed ());
         break;
@@ -3299,7 +3299,7 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, LoadType* loadType, Sco
 
             if (bSnapshot)
             {
-                Ledger::pointer     lpLedger = theApp->getLedgerMaster ().getClosedLedger ();
+                Ledger::pointer     lpLedger = getApp().getLedgerMaster ().getClosedLedger ();
                 const Json::Value   jvMarker = Json::Value (Json::nullValue);
 
                 if (bBoth)
@@ -3562,7 +3562,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
 {
     if (iRole != ADMIN)
     {
-        int jc = theApp->getJobQueue ().getJobCountGE (jtCLIENT);
+        int jc = getApp().getJobQueue ().getJobCountGE (jtCLIENT);
 
         if (jc > 500)
         {
@@ -3671,7 +3671,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
         return rpcError (rpcNO_PERMISSION);
     }
 
-    ScopedLock MasterLockHolder (theApp->getMasterLock ());
+    ScopedLock MasterLockHolder (getApp().getMasterLock ());
 
     if ((commandsA[i].iOptions & optNetwork) && (mNetOps->getOperatingMode () < NetworkOPs::omSYNCING))
     {

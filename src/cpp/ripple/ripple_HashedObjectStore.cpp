@@ -123,7 +123,7 @@ bool HashedObjectStore::storeLevelDB (HashedObjectType type, uint32 index,
                                       Blob const& data, uint256 const& hash)
 {
     // return: false = already in cache, true = added to cache
-    if (!theApp->getHashNodeLDB ())
+    if (!getApp().getHashNodeLDB ())
         return true;
 
     if (mCache.touch (hash))
@@ -143,7 +143,7 @@ bool HashedObjectStore::storeLevelDB (HashedObjectType type, uint32 index,
         if (!mWritePending)
         {
             mWritePending = true;
-            theApp->getJobQueue ().addJob (jtWRITE, "HashedObject::store",
+            getApp().getJobQueue ().addJob (jtWRITE, "HashedObject::store",
                                            BIND_TYPE (&HashedObjectStore::bulkWriteLevelDB, this, P_1));
         }
     }
@@ -181,10 +181,10 @@ void HashedObjectStore::bulkWriteLevelDB (Job&)
             setSize = set.size ();
         }
 
-        LLWrite (set, theApp->getHashNodeLDB ());
+        LLWrite (set, getApp().getHashNodeLDB ());
 
         if (mEphemeralDB)
-            LLWrite (set, theApp->getEphemeralLDB ());
+            LLWrite (set, getApp().getEphemeralLDB ());
     }
 }
 
@@ -192,12 +192,12 @@ HashedObject::pointer HashedObjectStore::retrieveLevelDB (uint256 const& hash)
 {
     HashedObject::pointer obj = mCache.fetch (hash);
 
-    if (obj || mNegativeCache.isPresent (hash) || !theApp || !theApp->getHashNodeLDB ())
+    if (obj || mNegativeCache.isPresent (hash) || !getApp().getHashNodeLDB ())
         return obj;
 
     if (mEphemeralDB)
     {
-        obj = LLRetrieve (hash, theApp->getEphemeralLDB ());
+        obj = LLRetrieve (hash, getApp().getEphemeralLDB ());
 
         if (obj)
         {
@@ -207,8 +207,8 @@ HashedObject::pointer HashedObjectStore::retrieveLevelDB (uint256 const& hash)
     }
 
     {
-        LoadEvent::autoptr event (theApp->getJobQueue ().getLoadEventAP (jtHO_READ, "HOS::retrieve"));
-        obj = LLRetrieve (hash, theApp->getHashNodeLDB ());
+        LoadEvent::autoptr event (getApp().getJobQueue ().getLoadEventAP (jtHO_READ, "HOS::retrieve"));
+        obj = LLRetrieve (hash, getApp().getHashNodeLDB ());
 
         if (!obj)
         {
@@ -220,7 +220,7 @@ HashedObject::pointer HashedObjectStore::retrieveLevelDB (uint256 const& hash)
     mCache.canonicalize (hash, obj);
 
     if (mEphemeralDB)
-        LLWrite (obj, theApp->getEphemeralLDB ());
+        LLWrite (obj, getApp().getEphemeralLDB ());
 
     WriteLog (lsTRACE, HashedObject) << "HOS: " << hash << " fetch: in db";
     return obj;
@@ -230,7 +230,7 @@ bool HashedObjectStore::storeSQLite (HashedObjectType type, uint32 index,
                                      Blob const& data, uint256 const& hash)
 {
     // return: false = already in cache, true = added to cache
-    if (!theApp->getHashNodeDB ())
+    if (!getApp().getHashNodeDB ())
     {
         WriteLog (lsTRACE, HashedObject) << "HOS: no db";
         return true;
@@ -255,7 +255,7 @@ bool HashedObjectStore::storeSQLite (HashedObjectType type, uint32 index,
         if (!mWritePending)
         {
             mWritePending = true;
-            theApp->getJobQueue ().addJob (jtWRITE, "HashedObject::store",
+            getApp().getJobQueue ().addJob (jtWRITE, "HashedObject::store",
                                            BIND_TYPE (&HashedObjectStore::bulkWriteSQLite, this, P_1));
         }
     }
@@ -299,10 +299,10 @@ void HashedObjectStore::bulkWriteSQLite (Job&)
 #ifndef NO_SQLITE3_PREPARE
 
         if (mEphemeralDB)
-            LLWrite (set, theApp->getEphemeralLDB ());
+            LLWrite (set, getApp().getEphemeralLDB ());
 
         {
-            Database* db = theApp->getHashNodeDB ()->getDB ();
+            Database* db = getApp().getHashNodeDB ()->getDB ();
 
 
             // VFALCO TODO Get rid of the last parameter "aux", which is set to !theConfig.RUN_STANDALONE
@@ -367,9 +367,9 @@ void HashedObjectStore::bulkWriteSQLite (Job&)
         fAdd ("INSERT OR IGNORE INTO CommittedObjects "
               "(Hash,ObjType,LedgerIndex,Object) VALUES ('%s','%c','%u',%s);");
 
-        Database* db = theApp->getHashNodeDB ()->getDB ();
+        Database* db = getApp().getHashNodeDB ()->getDB ();
         {
-            ScopedLock sl (theApp->getHashNodeDB ()->getDBLock ());
+            ScopedLock sl (getApp().getHashNodeDB ()->getDBLock ());
 
             db->executeSQL ("BEGIN TRANSACTION;");
 
@@ -422,7 +422,7 @@ HashedObject::pointer HashedObjectStore::retrieveSQLite (uint256 const& hash)
 
     if (mEphemeralDB)
     {
-        obj = LLRetrieve (hash, theApp->getEphemeralLDB ());
+        obj = LLRetrieve (hash, getApp().getEphemeralLDB ());
 
         if (obj)
         {
@@ -431,7 +431,7 @@ HashedObject::pointer HashedObjectStore::retrieveSQLite (uint256 const& hash)
         }
     }
 
-    if (!theApp || !theApp->getHashNodeDB ())
+    if (!getApp().getHashNodeDB ())
         return obj;
 
     Blob data;
@@ -440,10 +440,10 @@ HashedObject::pointer HashedObjectStore::retrieveSQLite (uint256 const& hash)
 
 #ifndef NO_SQLITE3_PREPARE
     {
-        ScopedLock sl (theApp->getHashNodeDB ()->getDBLock ());
-        static SqliteStatement pSt (theApp->getHashNodeDB ()->getDB ()->getSqliteDB (),
+        ScopedLock sl (getApp().getHashNodeDB ()->getDBLock ());
+        static SqliteStatement pSt (getApp().getHashNodeDB ()->getDB ()->getSqliteDB (),
                                     "SELECT ObjType,LedgerIndex,Object FROM CommittedObjects WHERE Hash = ?;");
-        LoadEvent::autoptr event (theApp->getJobQueue ().getLoadEventAP (jtDISK, "HOS::retrieve"));
+        LoadEvent::autoptr event (getApp().getJobQueue ().getLoadEventAP (jtDISK, "HOS::retrieve"));
 
         pSt.bind (1, hash.GetHex ());
         int ret = pSt.step ();
@@ -470,8 +470,8 @@ HashedObject::pointer HashedObjectStore::retrieveSQLite (uint256 const& hash)
 
 
     {
-        ScopedLock sl (theApp->getHashNodeDB ()->getDBLock ());
-        Database* db = theApp->getHashNodeDB ()->getDB ();
+        ScopedLock sl (getApp().getHashNodeDB ()->getDBLock ());
+        Database* db = getApp().getHashNodeDB ()->getDB ();
 
         if (!db->executeSQL (sql) || !db->startIterRows ())
         {
@@ -525,7 +525,7 @@ HashedObject::pointer HashedObjectStore::retrieveSQLite (uint256 const& hash)
     mCache.canonicalize (hash, obj);
 
     if (mEphemeralDB)
-        LLWrite (obj, theApp->getEphemeralLDB ());
+        LLWrite (obj, getApp().getEphemeralLDB ());
 
     WriteLog (lsTRACE, HashedObject) << "HOS: " << hash << " fetch: in db";
     return obj;
@@ -537,7 +537,7 @@ int HashedObjectStore::import (const std::string& file)
     UPTR_T<Database> importDB (new SqliteDatabase (file.c_str ()));
     importDB->connect ();
 
-    leveldb::DB* db = theApp->getHashNodeLDB ();
+    leveldb::DB* db = getApp().getHashNodeLDB ();
     leveldb::WriteOptions wo;
 
     int count = 0;

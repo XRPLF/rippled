@@ -821,17 +821,17 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternalNT (const SHAMapNode& id, uint2
 {
     SHAMapTreeNode::pointer ret;
 
-    if (!theApp->running ())
+    if (!getApp().running ())
         return ret;
 
-    HashedObject::pointer obj (theApp->getHashedObjectStore ().retrieve (hash));
+    HashedObject::pointer obj (getApp().getHashedObjectStore ().retrieve (hash));
 
     if (!obj)
     {
         //      WriteLog (lsTRACE, SHAMap) << "fetchNodeExternal: missing " << hash;
         if (mLedgerSeq != 0)
         {
-            theApp->getOPs ().missingNodeInLedger (mLedgerSeq);
+            getApp().getOPs ().missingNodeInLedger (mLedgerSeq);
             mLedgerSeq = 0;
         }
 
@@ -937,7 +937,7 @@ int SHAMap::flushDirty (DirtyMap& map, int maxNodes, HashedObjectType t, uint32 
 
 #endif
 
-        theApp->getHashedObjectStore ().store (t, seq, s.peekData (), it->second->getNodeHash ());
+        getApp().getHashedObjectStore ().store (t, seq, s.peekData (), it->second->getNodeHash ());
 
         if (flushed++ >= maxNodes)
             return flushed;

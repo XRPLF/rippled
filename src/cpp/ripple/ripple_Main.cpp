@@ -11,8 +11,7 @@ extern void LEFInit ();
 
 void setupServer ()
 {
-    theApp = IApplication::New ();
-    theApp->setup ();
+    getApp().setup ();
 }
 
 void startServer ()
@@ -29,7 +28,7 @@ void startServer ()
             if (!theConfig.QUIET)
                 std::cerr << "Startup RPC: " << jvCommand << std::endl;
 
-            RPCHandler  rhHandler (&theApp->getOPs ());
+            RPCHandler  rhHandler (&getApp().getOPs ());
 
             // VFALCO TODO Clean up this magic number
             LoadType loadType = LT_RPCReference;
@@ -40,12 +39,12 @@ void startServer ()
         }
     }
 
-    theApp->run ();                 // Blocks till we get a stop RPC.
+    getApp().run ();                 // Blocks till we get a stop RPC.
 }
 
 bool init_unit_test ()
 {
-    theApp = IApplication::New ();
+    getApp ();
 
     return true;
 }

@@ -162,9 +162,9 @@ Pathfinder::Pathfinder (RippleLineCache::ref cache,
 
     bValid = true;
 
-    theApp->getOrderBookDB ().setup (mLedger);
+    getApp().getOrderBookDB ().setup (mLedger);
 
-    m_loadEvent = theApp->getJobQueue ().getLoadEvent (jtPATH_FIND, "FindPath");
+    m_loadEvent = getApp().getJobQueue ().getLoadEvent (jtPATH_FIND, "FindPath");
 
     // Construct the default path for later comparison.
 
@@ -399,7 +399,7 @@ bool Pathfinder::findPaths (const unsigned int iMaxSteps, const unsigned int iMa
         {
             // Cursor is for XRP, continue with qualifying books: XRP -> non-XRP
             std::vector<OrderBook::pointer> xrpBooks;
-            theApp->getOrderBookDB ().getBooksByTakerPays (ACCOUNT_XRP, CURRENCY_XRP, xrpBooks);
+            getApp().getOrderBookDB ().getBooksByTakerPays (ACCOUNT_XRP, CURRENCY_XRP, xrpBooks);
             BOOST_FOREACH (OrderBook::ref book, xrpBooks)
             {
                 // New end is an order book with the currency and issuer.
@@ -553,7 +553,7 @@ bool Pathfinder::findPaths (const unsigned int iMaxSteps, const unsigned int iMa
 
             // XXX Flip argument order to norm. (currency, issuer)
             std::vector<OrderBook::pointer> books;
-            theApp->getOrderBookDB ().getBooksByTakerPays (speEnd.mIssuerID, speEnd.mCurrencyID, books);
+            getApp().getOrderBookDB ().getBooksByTakerPays (speEnd.mIssuerID, speEnd.mCurrencyID, books);
 
             BOOST_FOREACH (OrderBook::ref book, books)
             {

@@ -198,7 +198,7 @@ public:
         ptr->preDestroy (); // Must be done before we return
 
         // Must be done without holding the websocket send lock
-        theApp->getJobQueue ().addJob (jtCLIENT, "WSClient::destroy",
+        getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::destroy",
                                        BIND_TYPE (&WSConnection<endpoint_type>::destroy, ptr));
     }
 
@@ -232,7 +232,7 @@ public:
         }
 
         if (bRunQ)
-            theApp->getJobQueue ().addJob (jtCLIENT, "WSClient::command",
+            getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::command",
                                            BIND_TYPE (&WSServerHandler<endpoint_type>::do_messages, this, P_1, cpClient));
     }
 
@@ -259,7 +259,7 @@ public:
             do_message (job, cpClient, ptr, msg);
         }
 
-        theApp->getJobQueue ().addJob (jtCLIENT, "WSClient::more",
+        getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::more",
                                        BIND_TYPE (&WSServerHandler<endpoint_type>::do_messages, this, P_1, cpClient));
     }
 

@@ -39,6 +39,7 @@ class SqliteStatement;
 class Ledger
     : public boost::enable_shared_from_this <Ledger>
     , public CountedObject <Ledger>
+    , Uncopyable
 {
 public:
     static char const* getCountedObjectName () { return "Ledger"; }
@@ -454,10 +455,6 @@ private:
     SHAMap::pointer mAccountStateMap;
 
     mutable boost::recursive_mutex mLock;
-
-    // VFALCO TODO derive this from beast::Uncopyable
-    Ledger (const Ledger&);             // no implementation
-    Ledger& operator= (const Ledger&);  // no implementation
 };
 
 inline LedgerStateParms operator| (const LedgerStateParms& l1, const LedgerStateParms& l2)

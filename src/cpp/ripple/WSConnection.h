@@ -37,7 +37,7 @@ public:
     //          mConnection(connection_ptr()) { ; }
 
     WSConnection (WSServerHandler<endpoint_type>* wshpHandler, const connection_ptr& cpConnection)
-        : mHandler (wshpHandler), mConnection (cpConnection), mNetwork (theApp->getOPs ()),
+        : mHandler (wshpHandler), mConnection (cpConnection), mNetwork (getApp().getOPs ()),
           mRemoteIP (cpConnection->get_socket ().lowest_layer ().remote_endpoint ().address ().to_string ()),
           mLoadSource (mRemoteIP), mPingTimer (cpConnection->get_io_service ()), mPinged (false),
           mRcvQueueRunning (false), mDead (false)
@@ -86,7 +86,7 @@ public:
     // Utilities
     Json::Value invokeCommand (Json::Value& jvRequest)
     {
-        if (theApp->getLoadManager ().shouldCutoff (mLoadSource))
+        if (getApp().getLoadManager ().shouldCutoff (mLoadSource))
         {
             // VFALCO TODO This must be implemented before open sourcing
 
@@ -117,7 +117,7 @@ public:
                 jvResult["id"]  = jvRequest["id"];
             }
 
-            theApp->getLoadManager ().applyLoadCharge (mLoadSource, LT_RPCInvalid);
+            getApp().getLoadManager ().applyLoadCharge (mLoadSource, LT_RPCInvalid);
 
             return jvResult;
         }
@@ -141,8 +141,8 @@ public:
 
         // Debit/credit the load and see if we should include a warning.
         //
-        if (theApp->getLoadManager ().applyLoadCharge (mLoadSource, loadType) &&
-            theApp->getLoadManager ().shouldWarn (mLoadSource))
+        if (getApp().getLoadManager ().applyLoadCharge (mLoadSource, loadType) &&
+            getApp().getLoadManager ().shouldWarn (mLoadSource))
         {
             jvResult["warning"] = "load";
         }

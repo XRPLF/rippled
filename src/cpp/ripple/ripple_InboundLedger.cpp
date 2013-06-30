@@ -49,18 +49,18 @@ bool InboundLedger::tryLocal ()
     if (!mHaveBase)
     {
         // Nothing we can do without the ledger base
-        HashedObject::pointer node = theApp->getHashedObjectStore ().retrieve (mHash);
+        HashedObject::pointer node = getApp().getHashedObjectStore ().retrieve (mHash);
 
         if (!node)
         {
             Blob data;
 
-            if (!theApp->getOPs ().getFetchPack (mHash, data))
+            if (!getApp().getOPs ().getFetchPack (mHash, data))
                 return false;
 
             WriteLog (lsTRACE, InboundLedger) << "Ledger base found in fetch pack";
             mLedger = boost::make_shared<Ledger> (data, true);
-            theApp->getHashedObjectStore ().store (hotLEDGER, mLedger->getLedgerSeq (), data, mHash);
+            getApp().getHashedObjectStore ().store (hotLEDGER, mLedger->getLedgerSeq (), data, mHash);
         }
         else
         {
@@ -181,7 +181,7 @@ void InboundLedger::noAwaitData ()
 
 void InboundLedger::addPeers ()
 {
-    std::vector<Peer::pointer> peerList = theApp->getPeers ().getPeerVector ();
+    std::vector<Peer::pointer> peerList = getApp().getPeers ().getPeerVector ();
 
     int vSize = peerList.size ();
 
@@ -253,13 +253,13 @@ void InboundLedger::done ()
         if (mAccept)
             mLedger->setAccepted ();
 
-        theApp->getLedgerMaster ().storeLedger (mLedger);
+        getApp().getLedgerMaster ().storeLedger (mLedger);
     }
     else
-        theApp->getInboundLedgers ().logFailure (mHash);
+        getApp().getInboundLedgers ().logFailure (mHash);
 
     if (!triggers.empty ()) // We hold the PeerSet lock, so must dispatch
-        theApp->getJobQueue ().addJob (jtLEDGER_DATA, "triggers",
+        getApp().getJobQueue ().addJob (jtLEDGER_DATA, "triggers",
                                        BIND_TYPE (LADispatch, P_1, shared_from_this (), triggers));
 }
 
@@ -355,7 +355,7 @@ void InboundLedger::trigger (Peer::ref peer)
                     for (boost::unordered_map<uint64, int>::iterator it = mPeers.begin (), end = mPeers.end ();
                             it != end; ++it)
                     {
-                        Peer::pointer iPeer = theApp->getPeers ().getPeerById (it->first);
+                        Peer::pointer iPeer = getApp().getPeers ().getPeerById (it->first);
 
                         if (iPeer)
                         {
@@ -527,7 +527,7 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
 
     for (boost::unordered_map<uint64, int>::iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
     {
-        Peer::pointer peer = theApp->getPeers ().getPeerById (it->first);
+        Peer::pointer peer = getApp().getPeers ().getPeerById (it->first);
 
         if (peer)
             peer->sendPacket (packet, false);
@@ -554,7 +554,7 @@ int PeerSet::getPeerCount () const
     int ret = 0;
 
     for (boost::unordered_map<uint64, int>::const_iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
-        if (theApp->getPeers ().hasPeer (it->first))
+        if (getApp().getPeers ().hasPeer (it->first))
             ++ret;
 
     return ret;
@@ -654,7 +654,7 @@ bool InboundLedger::takeBase (const std::string& data) // data must not have has
     Serializer s (data.size () + 4);
     s.add32 (HashPrefix::ledgerMaster);
     s.addRaw (data);
-    theApp->getHashedObjectStore ().store (hotLEDGER, mLedger->getLedgerSeq (), s.peekData (), mHash);
+    getApp().getHashedObjectStore ().store (hotLEDGER, mLedger->getLedgerSeq (), s.peekData (), mHash);
 
     progress ();
 

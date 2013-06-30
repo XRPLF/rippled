@@ -14,7 +14,7 @@ PeerSet::PeerSet (uint256 const& hash, int interval)
     , mFailed (false)
     , mProgress (true)
     , mAggressive (false)
-    , mTimer (theApp->getIOService ())
+    , mTimer (getApp().getIOService ())
 {
     mLastAction = UptimeTimer::getInstance ().getElapsedSeconds ();
     assert ((mTimerInterval > 10) && (mTimerInterval < 30000));
@@ -74,7 +74,7 @@ void PeerSet::TimerEntry (boost::weak_ptr<PeerSet> wptr, const boost::system::er
 
     if (ptr)
     {
-        int jc = theApp->getJobQueue ().getJobCountTotal (jtLEDGER_DATA);
+        int jc = getApp().getJobQueue ().getJobCountTotal (jtLEDGER_DATA);
 
         if (jc > 4)
         {
@@ -82,7 +82,7 @@ void PeerSet::TimerEntry (boost::weak_ptr<PeerSet> wptr, const boost::system::er
             ptr->setTimer ();
         }
         else
-            theApp->getJobQueue ().addJob (jtLEDGER_DATA, "timerEntry", BIND_TYPE (&PeerSet::TimerJobEntry, P_1, ptr));
+            getApp().getJobQueue ().addJob (jtLEDGER_DATA, "timerEntry", BIND_TYPE (&PeerSet::TimerJobEntry, P_1, ptr));
     }
 }
 

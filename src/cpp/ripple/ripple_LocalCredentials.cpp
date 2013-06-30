@@ -26,15 +26,15 @@ void LocalCredentials::start ()
     if (!theConfig.QUIET)
         std::cerr << "NodeIdentity: " << mNodePublicKey.humanNodePublic () << std::endl;
 
-    theApp->getUNL ().start ();
+    getApp().getUNL ().start ();
 }
 
 // Retrieve network identity.
 bool LocalCredentials::nodeIdentityLoad ()
 {
 
-    Database*   db = theApp->getWalletDB ()->getDB ();
-    ScopedLock  sl (theApp->getWalletDB ()->getDBLock ());
+    Database*   db = getApp().getWalletDB ()->getDB ();
+    ScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
     bool        bSuccess    = false;
 
     if (db->executeSQL ("SELECT * FROM NodeIdentity;") && db->startIterRows ())
@@ -103,9 +103,9 @@ bool LocalCredentials::nodeIdentityCreate ()
     //
     // Store the node information
     //
-    Database* db    = theApp->getWalletDB ()->getDB ();
+    Database* db    = getApp().getWalletDB ()->getDB ();
 
-    ScopedLock sl (theApp->getWalletDB ()->getDBLock ());
+    ScopedLock sl (getApp().getWalletDB ()->getDBLock ());
     db->executeSQL (str (boost::format ("INSERT INTO NodeIdentity (PublicKey,PrivateKey,Dh512,Dh1024) VALUES ('%s','%s',%s,%s);")
                          % naNodePublic.humanNodePublic ()
                          % naNodePrivate.humanNodePrivate ()
@@ -121,9 +121,9 @@ bool LocalCredentials::nodeIdentityCreate ()
 
 bool LocalCredentials::dataDelete (const std::string& strKey)
 {
-    Database* db    = theApp->getRpcDB ()->getDB ();
+    Database* db    = getApp().getRpcDB ()->getDB ();
 
-    ScopedLock sl (theApp->getRpcDB ()->getDBLock ());
+    ScopedLock sl (getApp().getRpcDB ()->getDBLock ());
 
     return db->executeSQL (str (boost::format ("DELETE FROM RPCData WHERE Key=%s;")
                                 % sqlEscape (strKey)));
@@ -131,9 +131,9 @@ bool LocalCredentials::dataDelete (const std::string& strKey)
 
 bool LocalCredentials::dataFetch (const std::string& strKey, std::string& strValue)
 {
-    Database* db    = theApp->getRpcDB ()->getDB ();
+    Database* db    = getApp().getRpcDB ()->getDB ();
 
-    ScopedLock sl (theApp->getRpcDB ()->getDBLock ());
+    ScopedLock sl (getApp().getRpcDB ()->getDBLock ());
 
     bool        bSuccess    = false;
 
@@ -153,9 +153,9 @@ bool LocalCredentials::dataFetch (const std::string& strKey, std::string& strVal
 
 bool LocalCredentials::dataStore (const std::string& strKey, const std::string& strValue)
 {
-    Database* db    = theApp->getRpcDB ()->getDB ();
+    Database* db    = getApp().getRpcDB ()->getDB ();
 
-    ScopedLock sl (theApp->getRpcDB ()->getDBLock ());
+    ScopedLock sl (getApp().getRpcDB ()->getDBLock ());
 
     bool        bSuccess    = false;
 

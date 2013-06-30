@@ -361,20 +361,20 @@ private:
             // VFALCO TODO Eliminate the dependence on the Application object.
             //             Choices include constructing with the job queue / feetracker.
             //             Another option is using an observer pattern to invert the dependency.
-            if (theApp->getJobQueue ().isOverloaded ())
+            if (getApp().getJobQueue ().isOverloaded ())
             {
-                WriteLog (lsINFO, LoadManager) << theApp->getJobQueue ().getJson (0);
-                change = theApp->getFeeTrack ().raiseLocalFee ();
+                WriteLog (lsINFO, LoadManager) << getApp().getJobQueue ().getJson (0);
+                change = getApp().getFeeTrack ().raiseLocalFee ();
             }
             else
             {
-                change = theApp->getFeeTrack ().lowerLocalFee ();
+                change = getApp().getFeeTrack ().lowerLocalFee ();
             }
 
             if (change)
             {
                 // VFALCO TODO replace this with a Listener / observer and subscribe in NetworkOPs or Application
-                theApp->getOPs ().reportFeeChange ();
+                getApp().getOPs ().reportFeeChange ();
             }
 
             t += boost::posix_time::seconds (1);

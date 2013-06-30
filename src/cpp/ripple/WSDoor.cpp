@@ -98,5 +98,3 @@ void WSDoor::stop ()
         mThread->join ();
     }
 }
-
-// vim:ts=4

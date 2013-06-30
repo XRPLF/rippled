@@ -28,7 +28,7 @@ InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 s
         Ledger::pointer ledger = ptr->getLedger ();
         ledger->setClosed ();
         ledger->setImmutable ();
-        theApp->getLedgerMaster ().storeLedger (ledger);
+        getApp().getLedgerMaster ().storeLedger (ledger);
         WriteLog (lsDEBUG, InboundLedger) << "Acquiring ledger we already have: " << hash;
     }
 

@@ -32,6 +32,10 @@ public:
     {
     }
 
+    ~LedgerMaster ()
+    {
+    }
+
     uint32 getCurrentLedgerIndex ();
 
     ScopedLock getLock ()
