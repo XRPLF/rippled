@@ -88,7 +88,7 @@ namespace WindowsFileHelpers
         if (SHGetSpecialFolderPath (0, path, type, FALSE))
             return File (String (path));
 
-        return File::nonexistent;
+        return File::nonexistent ();
     }
 
     File getModuleFileName (HINSTANCE moduleHandle)
@@ -536,7 +536,7 @@ File BEAST_CALLTYPE File::getSpecialLocation (const SpecialLocationType type)
 
         default:
             bassertfalse; // unknown type?
-            return File::nonexistent;
+            return File::nonexistent ();
     }
 
     return WindowsFileHelpers::getSpecialFolderPath (csidlType);

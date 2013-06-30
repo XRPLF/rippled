@@ -21,6 +21,32 @@
 */
 //==============================================================================
 
+// We need to make a shared singleton or else there are
+// issues with the leak detector and order of detruction.
+//
+class NonexistentHolder : public SharedSingleton <NonexistentHolder>
+{
+public:
+    NonexistentHolder ()
+        : SharedSingleton <NonexistentHolder> (SingletonLifetime::persistAfterCreation)
+    {
+    }
+
+    static NonexistentHolder* createInstance ()
+    {
+        return new NonexistentHolder;
+    }
+
+    File const file;
+};
+
+File const& File::nonexistent ()
+{
+    return NonexistentHolder::getInstance ()->file;
+}
+
+//------------------------------------------------------------------------------
+
 File::File (const String& fullPathName)
     : fullPath (parseAbsolutePath (fullPathName))
 {
@@ -66,9 +92,6 @@ File& File::operator= (File&& other) noexcept
     return *this;
 }
 #endif
-
-const File File::nonexistent;
-
 
 //==============================================================================
 String File::parseAbsolutePath (const String& p)
@@ -321,7 +344,7 @@ String File::getFileNameWithoutExtension() const
 
 bool File::isAChildOf (const File& potentialParent) const
 {
-    if (potentialParent == File::nonexistent)
+    if (potentialParent == File::nonexistent ())
         return false;
 
     const String ourPath (getPathUpToLastSlash());
@@ -633,7 +656,7 @@ bool File::hasFileExtension (const String& possibleSuffix) const
 File File::withFileExtension (const String& newExtension) const
 {
     if (fullPath.isEmpty())
-        return File::nonexistent;
+        return File::nonexistent ();
 
     String filePart (getFileName());
 
@@ -914,7 +937,7 @@ public:
         const File home (File::getSpecialLocation (File::userHomeDirectory));
         const File temp (File::getSpecialLocation (File::tempDirectory));
 
-        expect (! File::nonexistent.exists());
+        expect (! File::nonexistent ().exists());
         expect (home.isDirectory());
         expect (home.exists());
         expect (! home.existsAsFile());
