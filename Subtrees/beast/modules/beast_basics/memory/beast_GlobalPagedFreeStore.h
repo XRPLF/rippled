@@ -27,7 +27,7 @@
   @ingroup beast_concurrent
 */
 class BEAST_API GlobalPagedFreeStore
-    : public RefCountedSingleton <GlobalPagedFreeStore>
+    : public SharedSingleton <GlobalPagedFreeStore>
     , LeakChecked <GlobalPagedFreeStore>
 {
 private:

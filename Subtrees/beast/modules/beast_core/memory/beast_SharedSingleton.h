@@ -28,7 +28,7 @@
 
     class Object must provide the function `Object* Object::createInstance()`
 
-    @class RefCountedSingleton
+    @class SharedSingleton
     @ingroup beast_core
 */
 /** @{ */
@@ -42,7 +42,7 @@ public:
     //  - ville
     //
 
-    /** Construction options for RefCountedSingleton
+    /** Construction options for SharedSingleton
 
         @ingroup beast_core
     */
@@ -66,7 +66,7 @@ public:
 //------------------------------------------------------------------------------
 
 template <class Object>
-class RefCountedSingleton
+class SharedSingleton
     : public SingletonLifetime
     , private PerformedAtExit
 {
@@ -77,7 +77,7 @@ protected:
 
         @param lifetime The lifetime management option.
     */
-    explicit RefCountedSingleton (Lifetime const lifetime)
+    explicit SharedSingleton (Lifetime const lifetime)
         : m_lifetime (lifetime)
     {
         bassert (s_instance == nullptr);
@@ -94,7 +94,7 @@ protected:
         *s_created = true;
     }
 
-    virtual ~RefCountedSingleton ()
+    virtual ~SharedSingleton ()
     {
         bassert (s_instance == nullptr);
     }
@@ -181,20 +181,20 @@ private:
 
 private:
     static Object* s_instance;
-    static Static::Storage <LockType, RefCountedSingleton <Object> > s_mutex;
-    static Static::Storage <bool, RefCountedSingleton <Object> > s_created;
+    static Static::Storage <LockType, SharedSingleton <Object> > s_mutex;
+    static Static::Storage <bool, SharedSingleton <Object> > s_created;
 };
 /** @{ */
 
 template <class Object>
-Object* RefCountedSingleton <Object>::s_instance;
+Object* SharedSingleton <Object>::s_instance;
 
 template <class Object>
-Static::Storage <typename RefCountedSingleton <Object>::LockType, RefCountedSingleton <Object> >
-RefCountedSingleton <Object>::s_mutex;
+Static::Storage <typename SharedSingleton <Object>::LockType, SharedSingleton <Object> >
+SharedSingleton <Object>::s_mutex;
 
 template <class Object>
-Static::Storage <bool, RefCountedSingleton <Object> >
-RefCountedSingleton <Object>::s_created;
+Static::Storage <bool, SharedSingleton <Object> >
+SharedSingleton <Object>::s_created;
 
 #endif

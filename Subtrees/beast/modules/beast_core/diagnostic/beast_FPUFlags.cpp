@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-void FPUFlags::clearUnsetFlagsFrom (const FPUFlags& flags)
+void FPUFlags::clearUnsetFlagsFrom (FPUFlags const& flags)
 {
     if (!flags.getMaskNaNs ().is_set ())         m_maskNaNs.clear ();
 

@@ -65,7 +65,6 @@ bool Process::openEmailWithAttachments (const String& /* targetEmailAddress */,
 class WebInputStream
     : public InputStream
     , LeakChecked <WebInputStream>
-    , Uncopyable
 {
 public:
     WebInputStream (const String& address_, bool isPost_, const MemoryBlock& postData_,

@@ -221,6 +221,12 @@ namespace beast
 #include "native/beast_osx_ObjCHelpers.h"
 #endif
 
+#if BEAST_WINDOWS
+#include "native/beast_win32_FPUFlags.cpp"
+#else
+#include "native/beast_posix_FPUFlags.cpp"
+#endif
+
 #if BEAST_ANDROID
 #include "native/beast_android_JNIHelpers.h"
 #endif

@@ -124,20 +124,28 @@ int rippleMain (int argc, char** argv)
     //
 
     // Checks the heap at every allocation and deallocation (slow).
+    //
     Debug::setAlwaysCheckHeap (false);
     
     // Keeps freed memory blocks and fills them with a guard value. 
+    //
     Debug::setHeapDelayedFree (false);
 
     // At exit, reports all memory blocks which have not been freed.
+    //
+#if 1
     Debug::setHeapReportLeaks (false);
 
-#if 0
-// This is some temporary leak checking test code
-ThreadWithCallQueue t ("test");
-GlobalPagedFreeStore::getInstance ();
-t.start ();
-return 0;
+#else
+    // This is some temporary leak checking test code
+    //
+    Debug::setHeapReportLeaks (true);
+
+    //ThreadWithCallQueue t ("test");
+    //GlobalPagedFreeStore::getInstance ();
+    //t.start ();
+
+    return 0;
 #endif
 
     using namespace std;

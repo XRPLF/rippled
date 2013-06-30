@@ -110,14 +110,8 @@
     <Filter Include="beast_basics\memory">
       <UniqueIdentifier>{9e850052-6ab7-4a65-911d-adfde81ceb5f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_basics\native">
-      <UniqueIdentifier>{811c5374-8959-4df9-aba9-a7e27b85046e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast_basics\threads">
       <UniqueIdentifier>{f58dddf7-fe43-49a2-8e57-91feba586119}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast_core\functional">
-      <UniqueIdentifier>{b70d6403-2d7a-4377-81ff-390830ab0276}</UniqueIdentifier>
     </Filter>
     <Filter Include="beast_core\diagnostic">
       <UniqueIdentifier>{69e28551-92ea-420b-a465-75ed248e3b59}</UniqueIdentifier>
@@ -482,9 +476,6 @@
     <ClInclude Include="..\..\modules\beast_basics\functor\beast_Function.h">
       <Filter>beast_basics\functor</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_basics\math\beast_Interval.h">
-      <Filter>beast_basics\math</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_basics\math\beast_Math.h">
       <Filter>beast_basics\math</Filter>
     </ClInclude>
@@ -510,9 +501,6 @@
       <Filter>beast_basics\memory</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_basics\memory\beast_PagedFreeStore.h">
-      <Filter>beast_basics\memory</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_basics\memory\beast_RefCountedSingleton.h">
       <Filter>beast_basics\memory</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_CallQueue.h">
@@ -556,9 +544,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\containers\beast_List.h">
       <Filter>beast_core\containers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\functional\beast_Bind.h">
-      <Filter>beast_core\functional</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\memory\beast_CacheLine.h">
       <Filter>beast_core\memory</Filter>
@@ -616,6 +601,15 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\memory\beast_Uncopyable.h">
       <Filter>beast_core\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\memory\beast_SharedSingleton.h">
+      <Filter>beast_core\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\system\beast_Functional.h">
+      <Filter>beast_core\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\maths\beast_Interval.h">
+      <Filter>beast_core\maths</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -892,12 +886,6 @@
     <ClCompile Include="..\..\modules\beast_basics\memory\beast_PagedFreeStore.cpp">
       <Filter>beast_basics\memory</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_basics\native\beast_posix_FPUFlags.cpp">
-      <Filter>beast_basics\native</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_basics\native\beast_win32_FPUFlags.cpp">
-      <Filter>beast_basics\native</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_basics\threads\beast_CallQueue.cpp">
       <Filter>beast_basics\threads</Filter>
     </ClCompile>
@@ -955,5 +943,14 @@
     <ClCompile Include="..\..\modules\beast_core\threads\beast_SpinDelay.cpp">
       <Filter>beast_core\threads</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\native\beast_posix_FPUFlags.cpp">
+      <Filter>beast_core\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\native\beast_win32_FPUFlags.cpp">
+      <Filter>beast_core\native</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\TODO.txt" />
   </ItemGroup>
 </Project>
