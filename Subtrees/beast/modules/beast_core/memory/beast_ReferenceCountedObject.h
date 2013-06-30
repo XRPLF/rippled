@@ -59,7 +59,7 @@
 
     @see ReferenceCountedObjectPtr, ReferenceCountedArray, SingleThreadedReferenceCountedObject
 */
-class BEAST_API ReferenceCountedObject
+class BEAST_API ReferenceCountedObject : Uncopyable
 {
 public:
     //==============================================================================
@@ -114,8 +114,6 @@ protected:
 private:
     //==============================================================================
     Atomic <int> refCount;
-
-    BEAST_DECLARE_NON_COPYABLE (ReferenceCountedObject)
 };
 
 
@@ -130,7 +128,7 @@ private:
 
     @see ReferenceCountedObject, ReferenceCountedObjectPtr, ReferenceCountedArray
 */
-class BEAST_API SingleThreadedReferenceCountedObject
+class BEAST_API SingleThreadedReferenceCountedObject : public Uncopyable
 {
 public:
     //==============================================================================
@@ -175,8 +173,6 @@ protected:
 private:
     //==============================================================================
     int refCount;
-
-    BEAST_DECLARE_NON_COPYABLE (SingleThreadedReferenceCountedObject)
 };
 
 

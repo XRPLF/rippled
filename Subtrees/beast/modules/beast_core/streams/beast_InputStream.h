@@ -37,6 +37,8 @@ class MemoryBlock;
     @see OutputStream, MemoryInputStream, BufferedInputStream, FileInputStream
 */
 class BEAST_API InputStream
+    : public Uncopyable
+    , LeakChecked <InputStream>
 {
 public:
     /** Destructor. */
@@ -285,9 +287,6 @@ public:
 protected:
     //==============================================================================
     InputStream() noexcept {}
-
-private:
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (InputStream)
 };
 
 #endif   // BEAST_INPUTSTREAM_BEASTHEADER

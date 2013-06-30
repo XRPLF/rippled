@@ -48,14 +48,12 @@ Thread::~Thread()
 //==============================================================================
 // Use a ref-counted object to hold this shared data, so that it can outlive its static
 // shared pointer when threads are still running during static shutdown.
-struct CurrentThreadHolder   : public ReferenceCountedObject
+struct CurrentThreadHolder : public ReferenceCountedObject
 {
     CurrentThreadHolder() noexcept {}
 
     typedef ReferenceCountedObjectPtr <CurrentThreadHolder> Ptr;
     ThreadLocalValue<Thread*> value;
-
-    BEAST_DECLARE_NON_COPYABLE (CurrentThreadHolder)
 };
 
 static char currentThreadHolderLock [sizeof (SpinLock)]; // (statically initialised to zeros).

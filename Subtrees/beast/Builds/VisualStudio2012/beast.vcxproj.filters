@@ -226,9 +226,6 @@
     <ClInclude Include="..\..\modules\beast_core\memory\beast_HeapBlock.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_LeakedObjectDetector.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\memory\beast_Memory.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
@@ -617,6 +614,9 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_Throw.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\memory\beast_Uncopyable.h">
+      <Filter>beast_core\memory</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
@@ -951,6 +951,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_LeakChecked.cpp">
       <Filter>beast_core\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\threads\beast_SpinDelay.cpp">
+      <Filter>beast_core\threads</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

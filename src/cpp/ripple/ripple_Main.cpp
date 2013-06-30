@@ -135,6 +135,7 @@ int rippleMain (int argc, char** argv)
 #if 0
 // This is some temporary leak checking test code
 ThreadWithCallQueue t ("test");
+GlobalPagedFreeStore::getInstance ();
 t.start ();
 return 0;
 #endif

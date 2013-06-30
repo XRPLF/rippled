@@ -40,7 +40,8 @@
     @see Array, OwnedArray, ReferenceCountedArray
 */
 template <class ElementType, class TypeOfCriticalSectionToUse>
-class ArrayAllocationBase  : public TypeOfCriticalSectionToUse
+class ArrayAllocationBase
+    : public TypeOfCriticalSectionToUse
 {
 public:
     //==============================================================================
@@ -126,9 +127,6 @@ public:
     //==============================================================================
     HeapBlock <ElementType> elements;
     int numAllocated;
-
-private:
-    BEAST_DECLARE_NON_COPYABLE (ArrayAllocationBase)
 };
 
 #endif   // BEAST_ARRAYALLOCATIONBASE_BEASTHEADER

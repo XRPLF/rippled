@@ -21,7 +21,7 @@
 */
 //==============================================================================
 
-struct RegistryKeyWrapper
+struct RegistryKeyWrapper : Uncopyable
 {
     RegistryKeyWrapper (String name, const bool createForWriting, const DWORD wow64Flags)
         : key (0), wideCharValueName (nullptr)
@@ -130,8 +130,6 @@ struct RegistryKeyWrapper
     HKEY key;
     const wchar_t* wideCharValueName;
     String valueName;
-
-    BEAST_DECLARE_NON_COPYABLE (RegistryKeyWrapper)
 };
 
 uint32 WindowsRegistry::getBinaryValue (const String& regValuePath, MemoryBlock& result)

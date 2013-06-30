@@ -44,7 +44,9 @@
 
     @see GZIPDecompressorInputStream
 */
-class BEAST_API GZIPCompressorOutputStream  : public OutputStream
+class BEAST_API GZIPCompressorOutputStream
+    : public OutputStream
+    , LeakChecked <GZIPCompressorOutputStream>
 {
 public:
     //==============================================================================
@@ -98,8 +100,6 @@ private:
     class GZIPCompressorHelper;
     friend class ScopedPointer <GZIPCompressorHelper>;
     ScopedPointer <GZIPCompressorHelper> helper;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GZIPCompressorOutputStream)
 };
 
 #endif   // BEAST_GZIPCOMPRESSOROUTPUTSTREAM_BEASTHEADER

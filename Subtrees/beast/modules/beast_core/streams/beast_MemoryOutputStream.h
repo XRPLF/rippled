@@ -36,7 +36,9 @@
     The data that was written into the stream can then be accessed later as
     a contiguous block of memory.
 */
-class BEAST_API MemoryOutputStream  : public OutputStream
+class BEAST_API MemoryOutputStream
+    : public OutputStream
+    , LeakChecked <MemoryOutputStream>
 {
 public:
     //==============================================================================
@@ -120,8 +122,6 @@ private:
 
     void trimExternalBlockSize();
     char* prepareToWrite (size_t);
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MemoryOutputStream)
 };
 
 /** Copies all the data that has been written to a MemoryOutputStream into another stream. */

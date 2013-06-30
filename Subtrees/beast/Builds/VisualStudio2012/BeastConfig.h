@@ -63,8 +63,7 @@
 /** Config: BEAST_CHECK_MEMORY_LEAKS
 
     Enables a memory-leak check for certain objects when the app terminates.
-    See the LeakedObjectDetector and LeakChecked classes, and the
-    BEAST_LEAK_DETECTOR macro for more details about enabling leak checking for
+    See the LeakChecked class for more details about enabling leak checking for
     specific classes.
 */
 #ifndef   BEAST_CHECK_MEMORY_LEAKS

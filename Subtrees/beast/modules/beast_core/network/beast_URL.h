@@ -37,7 +37,7 @@ class XmlElement;
     This class can be used to launch URLs in browsers, and also to create
     InputStreams that can read from remote http or ftp sources.
 */
-class BEAST_API URL
+class BEAST_API URL : LeakChecked <URL>
 {
 public:
     //==============================================================================
@@ -338,7 +338,6 @@ private:
                                             OpenStreamProgressCallback* progressCallback,
                                             void* progressCallbackContext, const String& headers,
                                             const int timeOutMs, StringPairArray* responseHeaders);
-    BEAST_LEAK_DETECTOR (URL)
 };
 
 

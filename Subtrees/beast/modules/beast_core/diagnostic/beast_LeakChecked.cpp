@@ -19,8 +19,6 @@
 
 #if BEAST_USE_LEAKCHECKED
 
-/*============================================================================*/
-// Type-independent portion of Counter
 class LeakCheckedBase::CounterBase::Singleton
 {
 public:
@@ -76,8 +74,18 @@ void LeakCheckedBase::CounterBase::detectLeaks ()
 
     if (count > 0)
     {
+        /** If you hit this, then you've leaked one or more objects of the
+            specified class; the name should have been printed by the line
+            below.
+
+            If you're leaking, it's probably because you're using old-fashioned,
+            non-RAII techniques for your object management. Tut, tut. Always,
+            always use ScopedPointers, OwnedArrays, ReferenceCountedObjects,
+            etc, and avoid the 'delete' operator at all costs!
+        */
+        DBG ("Leaked objects: " << count << " of " << getClassName ());
+
         //bassertfalse;
-        DBG ("[LEAK] " << count << " of " << getClassName ());
     }
 }
 

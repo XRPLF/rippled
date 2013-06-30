@@ -17,22 +17,13 @@
 */
 //==============================================================================
 
-#ifndef BEAST_FIFOFREESTORE_BEASTHEADER
-#define BEAST_FIFOFREESTORE_BEASTHEADER
+SpinDelay::SpinDelay ()
+    : m_count (0)
+{
+}
 
-/** Selected free store based on compilation settings.
-
-    @ingroup beast_concurrent
-*/
-// VFALCO NOTE Disabled this because it seems that the TLS
-//             implementation has a leak. Although the other
-//             one also seems to have a leak.
-//
-//#if BEAST_BOOST_IS_AVAILABLE
-#if 0
-typedef FifoFreeStoreWithTLS FifoFreeStoreType;
-#else
-typedef FifoFreeStoreWithoutTLS FifoFreeStoreType;
-#endif
-
-#endif
+void SpinDelay::pause ()
+{
+    if (++m_count > 20)
+        Thread::yield ();
+}

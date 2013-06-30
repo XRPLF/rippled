@@ -128,7 +128,9 @@ public:
         in your code!
         @see WeakReference
     */
-    class SharedPointer   : public ReferenceCountingType
+    class SharedPointer
+        : public ReferenceCountingType
+        , Uncopyable
     {
     public:
         explicit SharedPointer (ObjectType* const obj) noexcept : owner (obj) {}
@@ -138,8 +140,6 @@ public:
 
     private:
         ObjectType* volatile owner;
-
-        BEAST_DECLARE_NON_COPYABLE (SharedPointer)
     };
 
     typedef ReferenceCountedObjectPtr<SharedPointer> SharedRef;
@@ -150,7 +150,7 @@ public:
         See the WeakReference class notes for an example of how to use this class.
         @see WeakReference
     */
-    class Master
+    class Master : Uncopyable
     {
     public:
         Master() noexcept {}
@@ -192,8 +192,6 @@ public:
 
     private:
         SharedRef sharedPointer;
-
-        BEAST_DECLARE_NON_COPYABLE (Master)
     };
 
 private:

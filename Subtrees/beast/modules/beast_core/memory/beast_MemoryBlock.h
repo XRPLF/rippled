@@ -33,7 +33,7 @@
     A class to hold a resizable block of raw data.
 
 */
-class BEAST_API MemoryBlock
+class BEAST_API MemoryBlock : LeakChecked <MemoryBlock>
 {
 public:
     //==============================================================================
@@ -247,8 +247,6 @@ private:
     HeapBlock <char> data;
     size_t size;
     static const char* const encodingTable;
-
-    BEAST_LEAK_DETECTOR (MemoryBlock)
 };
 
 

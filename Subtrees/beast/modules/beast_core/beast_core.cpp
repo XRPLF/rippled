@@ -183,6 +183,7 @@ namespace beast
 #include "streams/beast_MemoryOutputStream.cpp"
 #include "streams/beast_OutputStream.cpp"
 #include "streams/beast_SubregionStream.cpp"
+
 #include "system/beast_SystemStats.cpp"
 
 #include "text/beast_CharacterFunctions.cpp"
@@ -197,6 +198,7 @@ namespace beast
 
 #include "threads/beast_ChildProcess.cpp"
 #include "threads/beast_ReadWriteLock.cpp"
+#include "threads/beast_SpinDelay.cpp"
 #include "threads/beast_Thread.cpp"
 #include "threads/beast_ThreadPool.cpp"
 #include "threads/beast_TimeSliceThread.cpp"

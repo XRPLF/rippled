@@ -20,22 +20,14 @@
 #ifndef BEAST_SPINDELAY_BEASTHEADER
 #define BEAST_SPINDELAY_BEASTHEADER
 
-//
-// Synchronization element
-//
-
+/** A simple delay used to synchronize threads.
+*/
 class BEAST_API SpinDelay
 {
 public:
-    SpinDelay () : m_count (0)
-    {
-    }
+    SpinDelay ();
 
-    inline void pause ()
-    {
-        if (++m_count > 20)
-            Thread::yield ();
-    }
+    void pause ();
 
 private:
     int m_count;

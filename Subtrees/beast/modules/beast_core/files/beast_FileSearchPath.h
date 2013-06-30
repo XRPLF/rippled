@@ -34,7 +34,7 @@
 
     @see File
 */
-class BEAST_API FileSearchPath
+class BEAST_API FileSearchPath : LeakChecked <FileSearchPath>
 {
 public:
     //==============================================================================
@@ -157,8 +157,6 @@ private:
     StringArray directories;
 
     void init (const String& path);
-
-    BEAST_LEAK_DETECTOR (FileSearchPath)
 };
 
 #endif   // BEAST_FILESEARCHPATH_BEASTHEADER

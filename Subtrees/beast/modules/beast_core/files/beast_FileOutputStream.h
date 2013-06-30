@@ -34,7 +34,9 @@
 
     @see OutputStream, FileInputStream, File::createOutputStream
 */
-class BEAST_API FileOutputStream  : public OutputStream
+class BEAST_API FileOutputStream
+    : public OutputStream
+    , LeakChecked <FileOutputStream>
 {
 public:
     //==============================================================================
@@ -107,8 +109,6 @@ private:
     bool flushBuffer();
     int64 setPositionInternal (int64);
     ssize_t writeInternal (const void*, size_t);
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FileOutputStream)
 };
 
 #endif   // BEAST_FILEOUTPUTSTREAM_BEASTHEADER

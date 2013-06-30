@@ -46,7 +46,7 @@ class ThreadPoolThread;
 
     @see ThreadPool, Thread
 */
-class BEAST_API ThreadPoolJob
+class BEAST_API ThreadPoolJob : LeakChecked <ThreadPoolJob>, Uncopyable
 {
 public:
     //==============================================================================
@@ -125,8 +125,6 @@ private:
     String jobName;
     ThreadPool* pool;
     bool shouldStop, isActive, shouldBeDeleted;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ThreadPoolJob)
 };
 
 
@@ -139,7 +137,7 @@ private:
 
     @see ThreadPoolJob, Thread
 */
-class BEAST_API ThreadPool
+class BEAST_API ThreadPool : LeakChecked <ThreadPool>, Uncopyable
 {
 public:
     //==============================================================================
@@ -305,8 +303,6 @@ private:
     // Note that this method has changed, and no longer has a parameter to indicate
     // whether the jobs should be deleted - see the new method for details.
     void removeAllJobs (bool, int, bool);
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ThreadPool)
 };
 
 

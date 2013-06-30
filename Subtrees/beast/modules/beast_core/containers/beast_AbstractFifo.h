@@ -81,7 +81,7 @@
     };
     @endcode
 */
-class BEAST_API AbstractFifo
+class BEAST_API AbstractFifo : LeakChecked <AbstractFifo>, Uncopyable
 {
 public:
     //==============================================================================
@@ -206,8 +206,6 @@ private:
     //==============================================================================
     int bufferSize;
     Atomic <int> validStart, validEnd;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AbstractFifo)
 };
 
 #endif

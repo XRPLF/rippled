@@ -20,10 +20,39 @@
 #ifndef BEAST_UNCOPYABLE_BEASTHEADER
 #define BEAST_UNCOPYABLE_BEASTHEADER
 
-// Prevents warnings about missing copy
-// constructors and assignment operators.
+/** Prevent copy construction and assignment.
 
-// Ideas based on boost
+    This is used to suppress warnings and prevent unsafe operations on
+    objects which cannot be passed by value. Ideas based on Boost.
+
+    For example, instead of
+
+    @code
+
+    class MyClass
+    {
+    public:
+        //...
+
+    private:
+        MyClass (const MyClass&);
+        MyClass& operator= (const MyClass&);
+    };
+    
+    @endcode
+
+    ..you can just write:
+
+    @code
+
+    class MyClass : Uncopyable
+    {
+    public:
+        //...
+    };
+    
+    @endcode
+*/
 class Uncopyable
 {
 protected:

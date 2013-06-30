@@ -2,6 +2,9 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
+- Remove anything having to do with DLL builds like
+  BEAST_DLL, BEAST_DLL_BUILD, BEAST_DISABLE_DLL_ALLOCATORS
+
 - Fix FifoFreeStoreWithTLS reference counting bug
 
 - Implement a reasonable substitute for boost's thread_local_storage

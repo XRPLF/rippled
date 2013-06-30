@@ -198,16 +198,23 @@ namespace beast
 // Order matters, since headers don't have their own #include lines.
 // Add new includes to the bottom.
 
-#include "threads/beast_Thread.h"
-#include "threads/beast_SpinDelay.h"
+#include "memory/beast_Uncopyable.h"
+#include "maths/beast_MathsFunctions.h"
 #include "memory/beast_Atomic.h"
 #include "memory/beast_AtomicCounter.h"
 #include "memory/beast_AtomicFlag.h"
 #include "memory/beast_AtomicPointer.h"
 #include "memory/beast_AtomicState.h"
 #include "containers/beast_LockFreeStack.h"
+#include "threads/beast_SpinDelay.h"
 #include "memory/beast_StaticObject.h"
 #include "diagnostic/beast_LeakChecked.h"
+
+#include "memory/beast_Memory.h"
+#include "memory/beast_ByteOrder.h"
+#include "logging/beast_Logger.h"
+
+#include "threads/beast_Thread.h"
 
 #include "diagnostic/beast_Debug.h"
 #include "diagnostic/beast_SafeBool.h"
@@ -251,7 +258,6 @@ namespace beast
 #include "maths/beast_Range.h"
 #include "memory/beast_ByteOrder.h"
 #include "memory/beast_HeapBlock.h"
-#include "memory/beast_LeakedObjectDetector.h"
 #include "memory/beast_Memory.h"
 #include "memory/beast_MemoryBlock.h"
 #include "memory/beast_OptionalScopedPointer.h"

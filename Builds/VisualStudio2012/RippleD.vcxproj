@@ -1632,7 +1632,6 @@
     <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_TxFlags.h" />
     <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_TxFormats.h" />
     <ClInclude Include="..\..\modules\ripple_data\ripple_data.h" />
-    <ClInclude Include="..\..\modules\ripple_data\utility\ripple_JSONCache.h" />
     <ClInclude Include="..\..\modules\ripple_data\utility\ripple_UptimeTimerAdapter.h" />
     <ClInclude Include="..\..\modules\ripple_json\json\json_autolink.h" />
     <ClInclude Include="..\..\modules\ripple_json\json\json_batchallocator.h" />
