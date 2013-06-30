@@ -22,7 +22,7 @@
 
 // Original source code links in .cpp file
 
-// This file depends on some Juce declarations and defines
+// This file depends on some Beast declarations and defines
 
 namespace Murmur
 {

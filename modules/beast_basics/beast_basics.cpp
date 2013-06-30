@@ -62,13 +62,6 @@ namespace beast
 #include "threads/beast_ThreadGroup.cpp"
 #include "threads/beast_ThreadWithCallQueue.cpp"
 
-#if BEAST_WINDOWS
-#include "native/beast_win32_FPUFlags.cpp"
-
-#else
-#include "native/beast_posix_FPUFlags.cpp"
-
-#endif
 }
 
 #if BEAST_MSVC

@@ -324,7 +324,7 @@ using boost::placeholders::_20;
 
 #else
 
-#error Unknown bind source in beast_Bind.h
+#error Unknown bind source in beast_Functional.h
 
 #endif
 
