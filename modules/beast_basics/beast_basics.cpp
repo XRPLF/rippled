@@ -53,7 +53,6 @@ namespace beast
 #include "memory/beast_GlobalPagedFreeStore.cpp"
 #include "memory/beast_PagedFreeStore.cpp"
 #include "threads/beast_CallQueue.cpp"
-#include "threads/beast_ConcurrentObject.cpp"
 #include "threads/beast_Listeners.cpp"
 #include "threads/beast_ManualCallQueue.cpp"
 #include "threads/beast_ParallelFor.cpp"
