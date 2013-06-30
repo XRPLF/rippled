@@ -503,12 +503,6 @@
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_CallQueue.h">
       <Filter>beast_basics\threads</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_basics\threads\beast_ConcurrentObject.h">
-      <Filter>beast_basics\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_basics\threads\beast_ConcurrentState.h">
-      <Filter>beast_basics\threads</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_GlobalThreadGroup.h">
       <Filter>beast_basics\threads</Filter>
     </ClInclude>
@@ -610,6 +604,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\time\beast_PerformedAtExit.h">
       <Filter>beast_core\time</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_SharedData.h">
+      <Filter>beast_basics\threads</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -887,9 +884,6 @@
       <Filter>beast_basics\memory</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_basics\threads\beast_CallQueue.cpp">
-      <Filter>beast_basics\threads</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_basics\threads\beast_ConcurrentObject.cpp">
       <Filter>beast_basics\threads</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_basics\threads\beast_InterruptibleThread.cpp">

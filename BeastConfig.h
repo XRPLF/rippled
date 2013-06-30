@@ -67,7 +67,7 @@
     specific classes.
 */
 #ifndef   BEAST_CHECK_MEMORY_LEAKS
-//#define BEAST_CHECK_MEMORY_LEAKS 0
+//#define BEAST_CHECK_MEMORY_LEAKS 1
 #endif
 
 //------------------------------------------------------------------------------

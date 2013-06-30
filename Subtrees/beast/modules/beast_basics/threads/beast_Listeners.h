@@ -137,7 +137,7 @@
     void addListener (Listener* listener, CallQueue& callQueue)
     {
       // Acquire read access to the shared state.
-      ConcurrentState <State>::ReadAccess state (m_state);
+      SharedData <State>::ReadAccess state (m_state);
 
       // Add the listener.
       m_listeners.add (listener, callQueue);
@@ -171,7 +171,7 @@
 
       // Update shared state.
       {
-        ConcurrentState <State>::WriteAccess state (m_state);
+        SharedData <State>::WriteAccess state (m_state);
 
         m_state->outputLevel = newOutputLevel;
       }
@@ -188,7 +188,7 @@
       float outputLevel;
     };
 
-    ConcurrentState <State> m_state;
+    SharedData <State> m_state;
 
     ManualCallQueue m_fifo;
   };

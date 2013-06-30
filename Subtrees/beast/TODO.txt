@@ -34,7 +34,7 @@ BEAST TODO
 
 - Clean up ConcurrentObject
 
-- Rename ConcurrentState to SharedState or something?
+- Rename SharedData to SharedState or something?
 
 - Figure out what to do with ReadWriteLock, and NamedPipe which uses it?
 
