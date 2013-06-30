@@ -8,7 +8,8 @@
 volatile bool doShutdown = false;
 
 // VFALCO TODO Wrap this up in something neater.
-IApplication* theApp = nullptr;
+//IApplication* theApp = nullptr;
+ScopedPointer <IApplication> theApp;
 
 class Application;
 
@@ -461,7 +462,7 @@ void Application::setup ()
     {
         theApp->getHashNodeDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
                 (theConfig.getSize (siHashNodeDBCache) * 1024)));
-	theApp->getHashNodeDB ()->getDB ()->setupCheckpointing (&mJobQueue);
+	    theApp->getHashNodeDB ()->getDB ()->setupCheckpointing (&mJobQueue);
     }
 
     theApp->getLedgerDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
@@ -994,3 +995,4 @@ IApplication* IApplication::New ()
 {
     return new Application;
 }
+

@@ -104,6 +104,6 @@ public:
     virtual void sweep () = 0;
 };
 
-extern IApplication* theApp;
+extern ScopedPointer <IApplication> theApp;
 
 #endif
