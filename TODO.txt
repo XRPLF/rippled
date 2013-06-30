@@ -2,28 +2,40 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
+- Create SharedData <LoadState>, move all load related state variables currently
+  protected by separated mutexes in different classes into the LoadState, and
+  use read/write locking semantics to update the values. Later, use Listeners
+  to notify dependent code to resolve the dependency inversion.
+
 - Merge ripple_Version.h and ripple_BuildVersion.h
+
+- Rename LoadMonitor to LoadMeter, change LoadEvent to LoadMeter::ScopedSample
+
+- Rename LedgerMaster to Ledgers, create ILedgers interface.
 
 - Restructure the ripple sources to have this directory structure:
   /Source/ripple/ripple_core/ripple_core.h
-  etc...
+  /...
+  /Source/Subtrees/... ?
+  PROBLEM: Where to put BeastConfig.h ?
 
-- Turn on MSVC debug CRT heap checking with file and line reporting <crtdbg>
+- Figure out where previous ledgers go after a call to LedgerMaster::pushLedger()
+  and see if it is possible to clean up the leaks on exit.
 
 - Replace all NULL with nullptr
 
-- Rewrite TxFormats to use beast containers and RAII, and not leak
 - Add ICore interface
-- Make TxFormats a member of ICore instead of a singleton.
 
-- Rename LoadMonitor to LoadMeter, change LoadEvent to LoadMeter::ScopedSample
+- Make TxFormats a member of ICore instead of a singleton.
+  PROBLEM: STObject derived classes like STInt16 make direct use of the
+           singleton. It might have to remain a singleton. At the very least,
+           it should be a SharedSingleton to resolve ordering issues.
 
 - Rename include guards to boost style, e.g. RIPPLE_LOG_H_INCLUDED
 
 - Replace C11X with BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
 
 - Fix all leaks on exit (!)
-
     Say there's a leak, a ledger that can never be accessed is locked in some
         structure. If the organized teardown code frees that structure, the leak
         will not be reported.
@@ -43,7 +55,8 @@ RIPPLE TODO
 
 - Remove "ENABLE_INSECURE" when the time is right.
 
-- lift unique_ptr / auto_ptr into ripple namespace, or replace with ScopedPointer
+- lift unique_ptr / auto_ptr into ripple namespace,
+  or replace with ScopedPointer (preferred)
 
 - Make LevelDB and Ripple code work with both Unicode and non-Unicode Windows APIs
 
@@ -124,6 +137,8 @@ Interfaces
     of call. Does set(Serializer& s) flatten or unflatten the data? This
     would be more clear:
         bool write (OutputStream& stream);
+
+    We have beast for InputStream and OutputStream, we can use those now.
 
 --------------------------------------------------------------------------------
 

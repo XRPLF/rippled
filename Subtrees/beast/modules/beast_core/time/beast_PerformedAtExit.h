@@ -36,6 +36,9 @@
 //
 class BEAST_API PerformedAtExit : public LockFreeStack <PerformedAtExit>::Node
 {
+public:
+    class ExitHook;
+
 protected:
     PerformedAtExit ();
     virtual ~PerformedAtExit () { }
@@ -44,9 +47,6 @@ protected:
     /** Called at program exit.
     */
     virtual void performAtExit () = 0;
-
-private:
-    class ExitHook;
 };
 
 #endif

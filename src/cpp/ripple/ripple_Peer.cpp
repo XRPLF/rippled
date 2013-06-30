@@ -2254,6 +2254,7 @@ void PeerImp::doProofOfWork (Job&, boost::weak_ptr <Peer> peer, ProofOfWork::poi
 
 void PeerImp::doFetchPack (const boost::shared_ptr<protocol::TMGetObjectByHash>& packet)
 {
+    // VFALCO TODO Invert this dependency using an observer and shared state object.
     if (getApp().getFeeTrack ().isLoaded ())
     {
         WriteLog (lsINFO, Peer) << "Too busy to make fetch pack";
@@ -2386,12 +2387,13 @@ Peer::pointer Peer::New (boost::asio::io_service& io_service,
     return Peer::pointer (new PeerImp (io_service, ctx, id, inbound));
 }
 
-void Peer::applyLoadCharge (const boost::weak_ptr<Peer>& wp, LoadType l)
+void Peer::applyLoadCharge (boost::weak_ptr <Peer>& peerToPunish,
+                            LoadType loadThatWasImposed)
 {
-    Peer::pointer p = wp.lock ();
+    Peer::pointer p = peerToPunish.lock ();
 
-    if (p)
-        p->applyLoadCharge (l);
+    if (p != nullptr)
+    {
+        p->applyLoadCharge (loadThatWasImposed);
+    }
 }
-
-// vim:ts=4

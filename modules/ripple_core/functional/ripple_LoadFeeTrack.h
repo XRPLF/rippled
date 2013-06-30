@@ -82,6 +82,12 @@ public:
 
     bool isLoaded ()
     {
+        // VFALCO TODO This could be replaced with a SharedData and
+        //             using a read/write lock instead of a critical section.
+        //
+        //        NOTE This applies to all the locking in this class.
+        //
+        //
         boost::mutex::scoped_lock sl (mLock);
         return (raiseCount != 0) || (mLocalTxnLoadFee != lftNormalFee);
     }

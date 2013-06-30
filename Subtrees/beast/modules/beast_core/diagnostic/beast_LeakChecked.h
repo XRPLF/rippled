@@ -17,20 +17,14 @@
 */
 //==============================================================================
 
-#ifndef BEAST_LEAKCHECKED_BEASTHEADER
-#define BEAST_LEAKCHECKED_BEASTHEADER
+#ifndef BEAST_LEAKCHECKED_H_INCLUDED
+#define BEAST_LEAKCHECKED_H_INCLUDED
 
-//
-// Derived classes are automatically leak-checked on exit
-//
-
-#if BEAST_USE_LEAKCHECKED
+namespace Implemented
+{
 
 class BEAST_API LeakCheckedBase
 {
-public:
-    static void detectAllLeaks ();
-
 protected:
     class CounterBase : public LockFreeStack <CounterBase>::Node
     {
@@ -51,18 +45,23 @@ protected:
 
         virtual char const* getClassName () const = 0;
 
-        static void detectAllLeaks ();
-
     private:
-        void detectLeaks ();
+        void checkForLeaks ();
 
         virtual void checkPureVirtual () const = 0;
 
-    protected:
+    private:
+        friend class LeakCheckedBase;
+
         class Singleton;
 
         Atomic <int> m_count;
     };
+
+private:
+    friend class PerformedAtExit::ExitHook;
+
+    static void checkForLeaks ();
 };
 
 //------------------------------------------------------------------------------
@@ -81,7 +80,7 @@ protected:
         getCounter ().increment ();
     }
 
-    LeakChecked (const LeakChecked&) noexcept
+    LeakChecked (LeakChecked const&) noexcept
     {
         getCounter ().increment ();
     }
@@ -113,6 +112,8 @@ protected:
     }
 
 private:
+    // Singleton that maintains the count of this object
+    //
     class Counter : public CounterBase
     {
     public:
@@ -139,6 +140,8 @@ private:
         return typeid (Object).name ();
     }
 
+    // Retrieve the singleton for this object
+    //
     static Counter& getCounter () noexcept
     {
         static Counter* volatile s_instance;
@@ -156,14 +159,20 @@ private:
     }
 };
 
-#else
+}
+
+//------------------------------------------------------------------------------
+
+namespace Dummy
+{
 
 class BEAST_API LeakCheckedBase
 {
 private:
     friend class PerformedAtExit;
 
-    static void detectAllLeaks () { }
+public:
+    static void checkForLeaks () { }
 };
 
 template <class Object>
@@ -171,6 +180,18 @@ struct LeakChecked : LeakCheckedBase
 {
 };
 
+}
+
+//------------------------------------------------------------------------------
+
+// Lift the corresponding implementation
+//
+#if BEAST_CHECK_MEMORY_LEAKS
+using Implemented::LeakChecked;
+using Implemented::LeakCheckedBase;
+#else
+using Dummy::LeakChecked;
+using Dummy::LeakCheckedBase;
 #endif
 
 #endif

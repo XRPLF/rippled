@@ -120,8 +120,4 @@
 //#define BEAST_BIND_USES_TR1   1
 //#define BEAST_BIND_USES_BOOST 1
 
-#ifndef BEAST_USE_LEAKCHECKED
-#define BEAST_USE_LEAKCHECKED 1
-#endif
-
 #endif

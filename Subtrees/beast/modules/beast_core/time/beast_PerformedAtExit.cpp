@@ -25,6 +25,8 @@ public:
 private:
     ~ExitHook ()
     {
+        // Call all PerformedAtExit objects
+        //
         PerformedAtExit* object = s_list->pop_front ();
 
         while (object != nullptr)
@@ -34,7 +36,9 @@ private:
             object = s_list->pop_front ();
         }
 
-        LeakCheckedBase::detectAllLeaks ();
+        // Now do the leak checking
+        //
+        LeakCheckedBase::checkForLeaks ();
     }
 
 public:

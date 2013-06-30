@@ -81,10 +81,6 @@
 #define BEAST_BOOST_IS_AVAILABLE 0
 #endif
 
-#ifndef BEAST_USE_LEAKCHECKED
-#define BEAST_USE_LEAKCHECKED BEAST_CHECK_MEMORY_LEAKS
-#endif
-
 //------------------------------------------------------------------------------
 //
 // This is a hack to fix boost's goofy placeholders
@@ -208,6 +204,7 @@ namespace beast
 #include "containers/beast_LockFreeStack.h"
 #include "threads/beast_SpinDelay.h"
 #include "memory/beast_StaticObject.h"
+#include "time/beast_PerformedAtExit.h"
 #include "diagnostic/beast_LeakChecked.h"
 #include "memory/beast_Memory.h"
 #include "memory/beast_ByteOrder.h"
@@ -261,7 +258,6 @@ namespace beast
 #include "memory/beast_ReferenceCountedObject.h"
 #include "memory/beast_ScopedPointer.h"
 #include "threads/beast_SpinLock.h"
-#include "time/beast_PerformedAtExit.h"
 #include "memory/beast_SharedSingleton.h"
 #include "memory/beast_WeakReference.h"
 #include "memory/beast_MemoryAlignment.h"

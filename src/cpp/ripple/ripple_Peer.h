@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEER_H
-#define RIPPLE_PEER_H
+#ifndef RIPPLE_PEER_H_INCLUDED
+#define RIPPLE_PEER_H_INCLUDED
 
 // VFALCO TODO Couldn't this be a struct?
 typedef std::pair <std::string, int> ipPort;
@@ -15,8 +15,8 @@ class Peer
     , LeakChecked <Peer>
 {
 public:
-    typedef boost::shared_ptr<Peer>         pointer;
-    typedef const boost::shared_ptr<Peer>&  ref;
+    typedef boost::shared_ptr <Peer> pointer;
+    typedef pointer const& ref;
 
     static int const psbGotHello        = 0;
     static int const psbSentHello       = 1;
@@ -52,9 +52,6 @@ public:
 
     virtual void detach (const char*, bool onIOStrand) = 0;
 
-    //virtual bool samePeer (Peer::ref p) = 0;
-    //virtual bool samePeer (const Peer& p) = 0;
-
     virtual void sendPacket (const PackedMessage::pointer& packet, bool onStrand) = 0;
 
     virtual void sendGetPeers () = 0;
@@ -62,7 +59,12 @@ public:
     virtual void applyLoadCharge (LoadType) = 0;
 
     // VFALCO NOTE what's with this odd parameter passing? Why the static member?
-    static void applyLoadCharge (const boost::weak_ptr<Peer>&, LoadType);
+    //
+    /** Adjust this peer's load balance based on the type of load imposed.
+
+        @note Formerly named punishPeer
+    */
+    static void applyLoadCharge (boost::weak_ptr <Peer>& peerTOCharge, LoadType loadThatWasImposed);
 
     virtual Json::Value getJson () = 0;
 
@@ -90,4 +92,3 @@ public:
 };
 
 #endif
-// vim:ts=4

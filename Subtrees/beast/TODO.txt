@@ -2,6 +2,8 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
+- Make OwnedArray add routines return a pointer instead of reference
+
 - Tidy up CacheLine, MemoryAlignment
 
 - Remove anything having to do with DLL builds like
