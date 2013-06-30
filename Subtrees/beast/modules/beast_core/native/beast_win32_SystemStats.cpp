@@ -115,18 +115,6 @@ SystemStats::CPUFlags::CPUFlags()
     numCpus = (int) systemInfo.dwNumberOfProcessors;
 }
 
-#if BEAST_MSVC && BEAST_CHECK_MEMORY_LEAKS
-struct DebugFlagsInitialiser
-{
-    DebugFlagsInitialiser()
-    {
-        _CrtSetDbgFlag (_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    }
-};
-
-static DebugFlagsInitialiser debugFlagsInitialiser;
-#endif
-
 //==============================================================================
 SystemStats::OperatingSystemType SystemStats::getOperatingSystemType()
 {
