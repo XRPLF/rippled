@@ -36,6 +36,20 @@ void breakPoint ()
 
 #if BEAST_MSVC && defined (_DEBUG)
 
+#if BEAST_CHECK_MEMORY_LEAKS
+struct DebugFlagsInitialiser
+{
+    DebugFlagsInitialiser()
+    {
+        // Activate leak checks on exit in the MSVC Debug CRT (C Runtime)
+        //
+        _CrtSetDbgFlag (_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    }
+};
+
+static DebugFlagsInitialiser debugFlagsInitialiser;
+#endif
+
 void setAlwaysCheckHeap (bool bAlwaysCheck)
 {
     int flags = _CrtSetDbgFlag (_CRTDBG_REPORT_FLAG);
