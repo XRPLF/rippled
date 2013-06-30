@@ -148,7 +148,6 @@
     <ClInclude Include="..\..\modules\beast_core\memory\beast_ReferenceCountedObject.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_ScopedPointer.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_SharedSingleton.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_Singleton.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_StaticObject.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_Uncopyable.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_WeakReference.h" />
