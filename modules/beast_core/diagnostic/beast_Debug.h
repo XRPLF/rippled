@@ -17,18 +17,18 @@
 */
 //==============================================================================
 
-#ifndef BEAST_DEBUG_BEASTHEADER
-#define BEAST_DEBUG_BEASTHEADER
+#ifndef BEAST_DEBUG_H_INCLUDED
+#define BEAST_DEBUG_H_INCLUDED
 
 // Auxiliary outines for debugging
 
 namespace Debug
 {
 
-// Returns true if a debugger is attached, for any build.
-extern bool isDebuggerAttached ();
+/** Break to debugger if a debugger is attached to a debug build.
 
-// Breaks to the debugger if a debugger is attached.
+    Does nothing if no debugger is attached, or the build is not a debug build.
+*/
 extern void breakPoint ();
 
 // VFALCO NOTE IS THIS REALLY THE RIGHT PLACE FOR THESE??
@@ -46,9 +46,34 @@ String stringToCommandLine (const String& s);
 // that can contain newlines and double quotes.
 String commandLineToString (const String& commandLine);
 
-extern void setHeapAlwaysCheck (bool bAlwaysCheck);
+//
+// These control the MSVC C Runtime Debug heap.
+//
+// The calls currently do nothing on other platforms.
+//
+
+/** Calls checkHeap() at every allocation and deallocation.
+*/
+extern void setAlwaysCheckHeap (bool bAlwaysCheck);
+
+/** Keep freed memory blocks in the heap's linked list, assign them the
+    _FREE_BLOCK type, and fill them with the byte value 0xDD.
+*/
 extern void setHeapDelayedFree (bool bDelayedFree);
+
+/** Perform automatic leak checking at program exit through a call to
+    dumpMemoryLeaks() and generate an error report if the application
+    failed to free all the memory it allocated.
+*/
 extern void setHeapReportLeaks (bool bReportLeaks);
+
+/** Report all memory blocks which have not been freed.
+*/
+extern void reportLeaks ();
+
+/** Confirms the integrity of the memory blocks allocated in the
+    debug heap (debug version only.
+*/
 extern void checkHeap ();
 
 }

@@ -102,8 +102,39 @@
  #include <android/log.h>
 #endif
 
+//------------------------------------------------------------------------------
 
-//==============================================================================
+// If the MSVC debug heap headers were included, disable
+// the macros during the juce include since they conflict.
+#ifdef _CRTDBG_MAP_ALLOC
+#pragma push_macro("calloc")
+#pragma push_macro("free")
+#pragma push_macro("malloc")
+#pragma push_macro("realloc")
+#pragma push_macro("_recalloc")
+#pragma push_macro("_aligned_free")
+#pragma push_macro("_aligned_malloc")
+#pragma push_macro("_aligned_offset_malloc")
+#pragma push_macro("_aligned_realloc")
+#pragma push_macro("_aligned_recalloc")
+#pragma push_macro("_aligned_offset_realloc")
+#pragma push_macro("_aligned_offset_recalloc")
+#pragma push_macro("_aligned_msize")
+#undef calloc
+#undef free
+#undef malloc
+#undef realloc
+#undef _recalloc
+#undef _aligned_free
+#undef _aligned_malloc
+#undef _aligned_offset_malloc
+#undef _aligned_realloc
+#undef _aligned_recalloc
+#undef _aligned_offset_realloc
+#undef _aligned_offset_recalloc
+#undef _aligned_msize
+#endif
+
 namespace beast
 {
 
@@ -184,7 +215,6 @@ namespace beast
 #include "zip/beast_GZIPCompressorOutputStream.cpp"
 #include "zip/beast_ZipFile.cpp"
 
-//==============================================================================
 #if BEAST_MAC || BEAST_IOS
 #include "native/beast_osx_ObjCHelpers.h"
 #endif
@@ -198,7 +228,6 @@ namespace beast
 #include "native/beast_posix_NamedPipe.cpp"
 #endif
 
-//==============================================================================
 #if BEAST_MAC || BEAST_IOS
 #include "native/beast_mac_Files.mm"
 #include "native/beast_mac_Network.mm"
@@ -206,7 +235,6 @@ namespace beast
 #include "native/beast_mac_SystemStats.mm"
 #include "native/beast_mac_Threads.mm"
 
-//==============================================================================
 #elif BEAST_WINDOWS
 #include "native/beast_win32_ComSmartPtr.h"
 #include "native/beast_win32_Files.cpp"
@@ -215,21 +243,18 @@ namespace beast
 #include "native/beast_win32_SystemStats.cpp"
 #include "native/beast_win32_Threads.cpp"
 
-//==============================================================================
 #elif BEAST_LINUX
 #include "native/beast_linux_Files.cpp"
 #include "native/beast_linux_Network.cpp"
 #include "native/beast_linux_SystemStats.cpp"
 #include "native/beast_linux_Threads.cpp"
 
-//==============================================================================
 #elif BEAST_BSD
 #include "native/beast_bsd_Files.cpp"
 #include "native/beast_bsd_Network.cpp"
 #include "native/beast_bsd_SystemStats.cpp"
 #include "native/beast_bsd_Threads.cpp"
 
-//==============================================================================
 #elif BEAST_ANDROID
 #include "native/beast_android_Files.cpp"
 #include "native/beast_android_Misc.cpp"
@@ -260,4 +285,3 @@ boost::arg<9> _9;
 }
 }
 #endif
-

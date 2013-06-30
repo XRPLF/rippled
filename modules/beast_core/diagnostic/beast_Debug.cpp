@@ -20,35 +20,23 @@
 namespace Debug
 {
 
-//------------------------------------------------------------------------------
-
-bool isDebuggerAttached ()
-{
-    return beast_isRunningUnderDebugger ();
-}
-
-//------------------------------------------------------------------------------
-
-#if BEAST_DEBUG && defined (beast_breakDebugger)
 void breakPoint ()
 {
-    if (isDebuggerAttached ())
+#if BEAST_DEBUG
+    if (beast_isRunningUnderDebugger ())
         beast_breakDebugger;
-}
 
 #else
-void breakPoint ()
-{
-    bassertfalse
-}
+    bassertfalse;
 
 #endif
+}
 
-//----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #if BEAST_MSVC && defined (_DEBUG)
 
-void setHeapAlwaysCheck (bool bAlwaysCheck)
+void setAlwaysCheckHeap (bool bAlwaysCheck)
 {
     int flags = _CrtSetDbgFlag (_CRTDBG_REPORT_FLAG);
 
@@ -78,14 +66,21 @@ void setHeapReportLeaks (bool bReportLeaks)
     _CrtSetDbgFlag (flags);
 }
 
+void reportLeaks ()
+{
+    _CrtDumpMemoryLeaks ();
+}
+
 void checkHeap ()
 {
     _CrtCheckMemory ();
 }
 
+//------------------------------------------------------------------------------
+
 #else
 
-void setHeapAlwaysCheck (bool)
+void setAlwaysCheckHeap (bool)
 {
 }
 
@@ -94,6 +89,10 @@ void setHeapDelayedFree (bool)
 }
 
 void setHeapReportLeaks (bool)
+{
+}
+
+void reportLeaks ()
 {
 }
 

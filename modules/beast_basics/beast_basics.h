@@ -234,63 +234,7 @@ Some files contain portions of these external projects, licensed separately:
 #include <boost/thread/tss.hpp>
 #endif
 
-#ifdef _CRTDBG_MAP_ALLOC
-#error "MSVC C Runtime Debug Macros not supported"
-#endif
-
-// If the MSVC debug heap headers were included, disable
-// the macros during the juce include since they conflict.
-#ifdef _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
-#include <stdlib.h>
-#include <malloc.h>
-
-#pragma push_macro("calloc")
-#pragma push_macro("free")
-#pragma push_macro("malloc")
-#pragma push_macro("realloc")
-#pragma push_macro("_recalloc")
-#pragma push_macro("_aligned_free")
-#pragma push_macro("_aligned_malloc")
-#pragma push_macro("_aligned_offset_malloc")
-#pragma push_macro("_aligned_realloc")
-#pragma push_macro("_aligned_recalloc")
-#pragma push_macro("_aligned_offset_realloc")
-#pragma push_macro("_aligned_offset_recalloc")
-#pragma push_macro("_aligned_msize")
-
-#undef calloc
-#undef free
-#undef malloc
-#undef realloc
-#undef _recalloc
-#undef _aligned_free
-#undef _aligned_malloc
-#undef _aligned_offset_malloc
-#undef _aligned_realloc
-#undef _aligned_recalloc
-#undef _aligned_offset_realloc
-#undef _aligned_offset_recalloc
-#undef _aligned_msize
-#endif
-
 #include "../beast_core/beast_core.h"
-
-#ifdef _CRTDBG_MAP_ALLOC
-#pragma pop_macro("_aligned_msize")
-#pragma pop_macro("_aligned_offset_recalloc")
-#pragma pop_macro("_aligned_offset_realloc")
-#pragma pop_macro("_aligned_recalloc")
-#pragma pop_macro("_aligned_realloc")
-#pragma pop_macro("_aligned_offset_malloc")
-#pragma pop_macro("_aligned_malloc")
-#pragma pop_macro("_aligned_free")
-#pragma pop_macro("_recalloc")
-#pragma pop_macro("realloc")
-#pragma pop_macro("malloc")
-#pragma pop_macro("free")
-#pragma pop_macro("calloc")
-#endif
 
 /** The Beast namespace.
 

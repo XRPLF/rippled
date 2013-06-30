@@ -24,118 +24,113 @@
 #ifndef BEAST_PLATFORMDEFS_BEASTHEADER
 #define BEAST_PLATFORMDEFS_BEASTHEADER
 
-//==============================================================================
-/*  This file defines miscellaneous macros for debugging, assertions, etc.
-*/
+// This file defines miscellaneous macros for debugging, assertions, etc.
 
-//==============================================================================
 #ifdef BEAST_FORCE_DEBUG
- #undef BEAST_DEBUG
-
- #if BEAST_FORCE_DEBUG
-  #define BEAST_DEBUG 1
- #endif
+# undef BEAST_DEBUG
+# if BEAST_FORCE_DEBUG
+#  define BEAST_DEBUG 1
+# endif
 #endif
 
-/** This macro defines the C calling convention used as the standard for Beast calls. */
+/** This macro defines the C calling convention used as the standard for Beast calls.
+*/
 #if BEAST_MSVC
- #define BEAST_CALLTYPE   __stdcall
- #define BEAST_CDECL      __cdecl
+# define BEAST_CALLTYPE   __stdcall
+# define BEAST_CDECL      __cdecl
 #else
- #define BEAST_CALLTYPE
- #define BEAST_CDECL
+# define BEAST_CALLTYPE
+# define BEAST_CDECL
 #endif
 
-//==============================================================================
 // Debugging and assertion macros
 
 #if BEAST_LOG_ASSERTIONS || BEAST_DEBUG
- #define beast_LogCurrentAssertion    beast::logAssertion (__FILE__, __LINE__);
+#define beast_LogCurrentAssertion    beast::logAssertion (__FILE__, __LINE__);
 #else
- #define beast_LogCurrentAssertion
+#define beast_LogCurrentAssertion
 #endif
 
-//==============================================================================
 #if BEAST_IOS || BEAST_LINUX || BEAST_ANDROID || BEAST_PPC
-  /** This will try to break into the debugger if the app is currently being debugged.
-      If called by an app that's not being debugged, the behaiour isn't defined - it may crash or not, depending
-      on the platform.
-      @see bassert()
-  */
-  #define beast_breakDebugger        { ::kill (0, SIGTRAP); }
+/** This will try to break into the debugger if the app is currently being debugged.
+    If called by an app that's not being debugged, the behaiour isn't defined - it may crash or not, depending
+    on the platform.
+    @see bassert()
+*/
+# define beast_breakDebugger        { ::kill (0, SIGTRAP); }
 #elif BEAST_USE_INTRINSICS
-  #ifndef __INTEL_COMPILER
-    #pragma intrinsic (__debugbreak)
-  #endif
-  #define beast_breakDebugger        { __debugbreak(); }
+# ifndef __INTEL_COMPILER
+#  pragma intrinsic (__debugbreak)
+# endif
+# define beast_breakDebugger        { __debugbreak(); }
 #elif BEAST_GCC || BEAST_MAC
-  #if BEAST_NO_INLINE_ASM
-   #define beast_breakDebugger       { }
-  #else
-   #define beast_breakDebugger       { asm ("int $3"); }
-  #endif
+# if BEAST_NO_INLINE_ASM
+#  define beast_breakDebugger       { }
+# else
+#  define beast_breakDebugger       { asm ("int $3"); }
+# endif
 #else
-  #define beast_breakDebugger        { __asm int 3 }
+#  define beast_breakDebugger       { __asm int 3 }
 #endif
 
 #if BEAST_CLANG && defined (__has_feature) && ! defined (BEAST_ANALYZER_NORETURN)
- #if __has_feature (attribute_analyzer_noreturn)
-  inline void __attribute__((analyzer_noreturn)) beast_assert_noreturn() {}
-  #define BEAST_ANALYZER_NORETURN beast_assert_noreturn();
- #endif
+# if __has_feature (attribute_analyzer_noreturn)
+   inline void __attribute__((analyzer_noreturn)) beast_assert_noreturn() {}
+#  define BEAST_ANALYZER_NORETURN beast_assert_noreturn();
+# endif
 #endif
 
 #ifndef BEAST_ANALYZER_NORETURN
- #define BEAST_ANALYZER_NORETURN
+#define BEAST_ANALYZER_NORETURN
 #endif
 
+//------------------------------------------------------------------------------
 
-//==============================================================================
 #if BEAST_DEBUG || DOXYGEN
-  /** Writes a string to the standard error stream.
-      This is only compiled in a debug build.
-      @see Logger::outputDebugString
-  */
-  #define DBG(dbgtext)              { beast::String tempDbgBuf; tempDbgBuf << dbgtext; beast::Logger::outputDebugString (tempDbgBuf); }
 
-  //==============================================================================
-  /** This will always cause an assertion failure.
-      It is only compiled in a debug build, (unless BEAST_LOG_ASSERTIONS is enabled for your build).
-      @see bassert
-  */
-  #define bassertfalse              { beast_LogCurrentAssertion; if (beast::beast_isRunningUnderDebugger()) beast_breakDebugger; BEAST_ANALYZER_NORETURN }
+/** Writes a string to the standard error stream.
+    This is only compiled in a debug build.
+    @see Logger::outputDebugString
+*/
+#define DBG(dbgtext)          { beast::String tempDbgBuf; tempDbgBuf << dbgtext; beast::Logger::outputDebugString (tempDbgBuf); }
 
-    //==============================================================================
-  /** Platform-independent assertion macro.
+/** This will always cause an assertion failure.
+    It is only compiled in a debug build, (unless BEAST_LOG_ASSERTIONS is enabled for your build).
+    @see bassert
+*/
+#define bassertfalse          { beast_LogCurrentAssertion; if (beast::beast_isRunningUnderDebugger()) beast_breakDebugger; BEAST_ANALYZER_NORETURN }
 
-      This macro gets turned into a no-op when you're building with debugging turned off, so be
-      careful that the expression you pass to it doesn't perform any actions that are vital for the
-      correct behaviour of your program!
-      @see bassertfalse
+/** Platform-independent assertion macro.
+
+    This macro gets turned into a no-op when you're building with debugging turned off, so be
+    careful that the expression you pass to it doesn't perform any actions that are vital for the
+    correct behaviour of your program!
+    @see bassertfalse
   */
-  #define bassert(expression)       { if (! (expression)) bassertfalse; }
+#define bassert(expression)   { if (! (expression)) bassertfalse; }
 
 #else
-  //==============================================================================
-  // If debugging is disabled, these dummy debug and assertion macros are used..
 
-  #define DBG(dbgtext)
-  #define bassertfalse              { beast_LogCurrentAssertion }
+// If debugging is disabled, these dummy debug and assertion macros are used..
 
-  #if BEAST_LOG_ASSERTIONS
-   #define bassert(expression)      { if (! (expression)) bassertfalse; }
-  #else
-   #define bassert(a)               {}
-  #endif
+#define DBG(dbgtext)
+#define bassertfalse              { beast_LogCurrentAssertion }
+
+# if BEAST_LOG_ASSERTIONS
+#  define bassert(expression)      { if (! (expression)) bassertfalse; }
+# else
+#  define bassert(a)               {}
+# endif
 
 #endif
 
-//==============================================================================
+//------------------------------------------------------------------------------
+
 #ifndef DOXYGEN
 namespace beast
 {
-    template <bool b> struct BeastStaticAssert;
-    template <> struct BeastStaticAssert <true> { static void dummy() {} };
+template <bool b> struct BeastStaticAssert;
+template <> struct BeastStaticAssert <true> { static void dummy() {} };
 }
 #endif
 
@@ -189,8 +184,8 @@ namespace beast
     static void* operator new (size_t); \
     static void operator delete (void*);
 
+//------------------------------------------------------------------------------
 
-//==============================================================================
 #if ! DOXYGEN
  #define BEAST_JOIN_MACRO_HELPER(a, b) a ## b
  #define BEAST_STRINGIFY_MACRO_HELPER(a) #a
@@ -206,158 +201,140 @@ namespace beast
 */
 #define BEAST_STRINGIFY(item)  BEAST_STRINGIFY_MACRO_HELPER (item)
 
+//------------------------------------------------------------------------------
 
-//==============================================================================
 #if BEAST_CATCH_UNHANDLED_EXCEPTIONS
-
-  #define BEAST_TRY try
-
-  #define BEAST_CATCH_ALL            catch (...) {}
-  #define BEAST_CATCH_ALL_ASSERT     catch (...) { bassertfalse; }
-
-  #if ! BEAST_MODULE_AVAILABLE_beast_gui_basics
-    #define BEAST_CATCH_EXCEPTION    BEAST_CATCH_ALL
-  #else
-    /** Used in try-catch blocks, this macro will send exceptions to the BEASTApplication
-        object so they can be logged by the application if it wants to.
-    */
-    #define BEAST_CATCH_EXCEPTION \
-      catch (const std::exception& e)  \
-      { \
-          beast::BEASTApplication::sendUnhandledException (&e, __FILE__, __LINE__); \
-      } \
-      catch (...) \
-      { \
-          beast::BEASTApplication::sendUnhandledException (nullptr, __FILE__, __LINE__); \
-      }
-  #endif
+# define BEAST_TRY try
+# define BEAST_CATCH_ALL            catch (...) {}
+# define BEAST_CATCH_ALL_ASSERT     catch (...) { bassertfalse; }
+# define BEAST_CATCH_EXCEPTION    BEAST_CATCH_ALL
 
 #else
-
-  #define BEAST_TRY
-  #define BEAST_CATCH_EXCEPTION
-  #define BEAST_CATCH_ALL
-  #define BEAST_CATCH_ALL_ASSERT
+# define BEAST_TRY
+# define BEAST_CATCH_EXCEPTION
+# define BEAST_CATCH_ALL
+# define BEAST_CATCH_ALL_ASSERT
 
 #endif
 
-//==============================================================================
+//------------------------------------------------------------------------------
+
 #if BEAST_DEBUG || DOXYGEN
-  /** A platform-independent way of forcing an inline function.
-      Use the syntax: @code
-      forcedinline void myfunction (int x)
-      @endcode
-  */
-  #define forcedinline  inline
+/** A platform-independent way of forcing an inline function.
+    Use the syntax: @code
+    forcedinline void myfunction (int x)
+    @endcode
+*/
+# define forcedinline inline
+#elif BEAST_MSVC
+# define forcedinline __forceinline
 #else
-  #if BEAST_MSVC
-   #define forcedinline       __forceinline
-  #else
-   #define forcedinline       inline __attribute__((always_inline))
-  #endif
+# define forcedinline inline __attribute__((always_inline))
 #endif
 
 #if BEAST_MSVC || DOXYGEN
-  /** This can be placed before a stack or member variable declaration to tell the compiler
-      to align it to the specified number of bytes. */
-  #define BEAST_ALIGN(bytes)   __declspec (align (bytes))
+/** This can be placed before a stack or member variable declaration to tell
+    the compiler to align it to the specified number of bytes.
+*/
+#define BEAST_ALIGN(bytes) __declspec (align (bytes))
 #else
-  #define BEAST_ALIGN(bytes)   __attribute__ ((aligned (bytes)))
+#define BEAST_ALIGN(bytes) __attribute__ ((aligned (bytes)))
 #endif
 
-//==============================================================================
+//------------------------------------------------------------------------------
+
 // Cross-compiler deprecation macros..
 #if DOXYGEN || (BEAST_MSVC && ! BEAST_NO_DEPRECATION_WARNINGS)
- /** This can be used to wrap a function which has been deprecated. */
- #define BEAST_DEPRECATED(functionDef)     __declspec(deprecated) functionDef
+/** This can be used to wrap a function which has been deprecated. */
+# define BEAST_DEPRECATED(functionDef)     __declspec(deprecated) functionDef
 #elif BEAST_GCC  && ! BEAST_NO_DEPRECATION_WARNINGS
- #define BEAST_DEPRECATED(functionDef)     functionDef __attribute__ ((deprecated))
+# define BEAST_DEPRECATED(functionDef)     functionDef __attribute__ ((deprecated))
 #else
- #define BEAST_DEPRECATED(functionDef)     functionDef
+# define BEAST_DEPRECATED(functionDef)     functionDef
 #endif
 
-//==============================================================================
+//------------------------------------------------------------------------------
+
 #if BEAST_ANDROID && ! DOXYGEN
- #define BEAST_MODAL_LOOPS_PERMITTED 0
+# define BEAST_MODAL_LOOPS_PERMITTED 0
 #elif ! defined (BEAST_MODAL_LOOPS_PERMITTED)
- /** Some operating environments don't provide a modal loop mechanism, so this flag can be
-     used to disable any functions that try to run a modal loop. */
+ /** Some operating environments don't provide a modal loop mechanism, so this
+     flag can be used to disable any functions that try to run a modal loop.
+ */
  #define BEAST_MODAL_LOOPS_PERMITTED 1
 #endif
 
-//==============================================================================
+//------------------------------------------------------------------------------
+
 #if BEAST_GCC
- #define BEAST_PACKED __attribute__((packed))
+# define BEAST_PACKED __attribute__((packed))
 #elif ! DOXYGEN
- #define BEAST_PACKED
+# define BEAST_PACKED
 #endif
 
-//==============================================================================
+//------------------------------------------------------------------------------
+
 // Here, we'll check for C++11 compiler support, and if it's not available, define
 // a few workarounds, so that we can still use some of the newer language features.
 #if defined (__GXX_EXPERIMENTAL_CXX0X__) && defined (__GNUC__) && (__GNUC__ * 100 + __GNUC_MINOR__) >= 405
- #define BEAST_COMPILER_SUPPORTS_NOEXCEPT 1
- #define BEAST_COMPILER_SUPPORTS_NULLPTR 1
- #define BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS 1
-
- #if (__GNUC__ * 100 + __GNUC_MINOR__) >= 407 && ! defined (BEAST_COMPILER_SUPPORTS_OVERRIDE_AND_FINAL)
-  #define BEAST_COMPILER_SUPPORTS_OVERRIDE_AND_FINAL 1
- #endif
+# define BEAST_COMPILER_SUPPORTS_NOEXCEPT 1
+# define BEAST_COMPILER_SUPPORTS_NULLPTR 1
+# define BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS 1
+# if (__GNUC__ * 100 + __GNUC_MINOR__) >= 407 && ! defined (BEAST_COMPILER_SUPPORTS_OVERRIDE_AND_FINAL)
+#  define BEAST_COMPILER_SUPPORTS_OVERRIDE_AND_FINAL 1
+# endif
 #endif
 
 #if BEAST_CLANG && defined (__has_feature)
- #if __has_feature (cxx_nullptr)
-  #define BEAST_COMPILER_SUPPORTS_NULLPTR 1
- #endif
-
- #if __has_feature (cxx_noexcept)
-  #define BEAST_COMPILER_SUPPORTS_NOEXCEPT 1
- #endif
-
- #if __has_feature (cxx_rvalue_references)
-  #define BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS 1
- #endif
-
- #ifndef BEAST_COMPILER_SUPPORTS_OVERRIDE_AND_FINAL
-  #define BEAST_COMPILER_SUPPORTS_OVERRIDE_AND_FINAL 1
- #endif
-
- #ifndef BEAST_COMPILER_SUPPORTS_ARC
-  #define BEAST_COMPILER_SUPPORTS_ARC 1
- #endif
+# if __has_feature (cxx_nullptr)
+#  define BEAST_COMPILER_SUPPORTS_NULLPTR 1
+# endif
+# if __has_feature (cxx_noexcept)
+#  define BEAST_COMPILER_SUPPORTS_NOEXCEPT 1
+# endif
+# if __has_feature (cxx_rvalue_references)
+#  define BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS 1
+# endif
+# ifndef BEAST_COMPILER_SUPPORTS_OVERRIDE_AND_FINAL
+#  define BEAST_COMPILER_SUPPORTS_OVERRIDE_AND_FINAL 1
+# endif
+# ifndef BEAST_COMPILER_SUPPORTS_ARC
+#  define BEAST_COMPILER_SUPPORTS_ARC 1
+# endif
 #endif
 
 #if defined (_MSC_VER) && _MSC_VER >= 1600
- #define BEAST_COMPILER_SUPPORTS_NULLPTR 1
- #define BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS 1
+# define BEAST_COMPILER_SUPPORTS_NULLPTR 1
+# define BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS 1
 #endif
 
 #if defined (_MSC_VER) && _MSC_VER >= 1700
- #define BEAST_COMPILER_SUPPORTS_OVERRIDE_AND_FINAL 1
+# define BEAST_COMPILER_SUPPORTS_OVERRIDE_AND_FINAL 1
 #endif
 
-//==============================================================================
+//------------------------------------------------------------------------------
+
 // Declare some fake versions of nullptr and noexcept, for older compilers:
 #if ! (DOXYGEN || BEAST_COMPILER_SUPPORTS_NOEXCEPT)
- #ifdef noexcept
-  #undef noexcept
- #endif
- #define noexcept  throw()
- #if defined (_MSC_VER) && _MSC_VER > 1600
-  #define _ALLOW_KEYWORD_MACROS 1 // (to stop VC2012 complaining)
- #endif
+# ifdef noexcept
+#  undef noexcept
+# endif
+# define noexcept  throw()
+# if defined (_MSC_VER) && _MSC_VER > 1600
+#  define _ALLOW_KEYWORD_MACROS 1 // (to stop VC2012 complaining)
+# endif
 #endif
 
 #if ! (DOXYGEN || BEAST_COMPILER_SUPPORTS_NULLPTR)
- #ifdef nullptr
-  #undef nullptr
- #endif
- #define nullptr (0)
+#ifdef nullptr
+#undef nullptr
+#endif
+#define nullptr (0)
 #endif
 
 #if ! (DOXYGEN || BEAST_COMPILER_SUPPORTS_OVERRIDE_AND_FINAL)
- #undef  override
- #define override
+#undef  override
+#define override
 #endif
 
-#endif   // BEAST_PLATFORMDEFS_BEASTHEADER
+#endif

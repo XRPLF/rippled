@@ -20,6 +20,15 @@
 #ifndef BEAST_BEASTCONFIG_H_INCLUDED
 #define BEAST_BEASTCONFIG_H_INCLUDED
 
+/** Configuration file for Beast.
+
+    This sets various configurable options for Beast. In order to compile you
+    must place a copy of this file in a location where your build environment
+    can find it, and then customize its contents to suit your needs.
+
+    @file BeastConfig.h
+*/
+
 //------------------------------------------------------------------------------
 
 /** Config: BEAST_FORCE_DEBUG
@@ -94,15 +103,22 @@
 
 //------------------------------------------------------------------------------
 
-// beast_basics flags
+/** Config: BEAST_BOOST_IS_AVAILABLE
 
+    This activates boost specific features and improvements.
+*/
 #ifndef BEAST_BOOST_IS_AVAILABLE
 #define BEAST_BOOST_IS_AVAILABLE 0
 #endif
 
-// Choose one to override default for platform
-//#define BEAST_BIND_USES_STD 1
-//#define BEAST_BIND_USES_TR1 1
+/** Bind source configuration.
+
+    Set one of these to manually force a particular implementation of bind().
+    If nothing is chosen then beast will use whatever is appropriate for your
+    environment based on what is available.
+*/
+//#define BEAST_BIND_USES_STD   1
+//#define BEAST_BIND_USES_TR1   1
 //#define BEAST_BIND_USES_BOOST 1
 
 #ifndef BEAST_USE_LEAKCHECKED

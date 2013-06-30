@@ -114,6 +114,8 @@
 
 #if BEAST_MSVC && BEAST_DEBUG
 # include <crtdbg.h>
+# include <stdlib.h>
+# include <malloc.h>
 #endif
 
 #if BEAST_MSVC

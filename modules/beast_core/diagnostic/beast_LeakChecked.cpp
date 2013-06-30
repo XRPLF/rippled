@@ -76,7 +76,7 @@ void LeakCheckedBase::CounterBase::detectLeaks ()
 
     if (count > 0)
     {
-        bassertfalse;
+        //bassertfalse;
         DBG ("[LEAK] " << count << " of " << getClassName ());
     }
 }
