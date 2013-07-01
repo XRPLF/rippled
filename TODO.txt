@@ -1,6 +1,50 @@
 --------------------------------------------------------------------------------
+LEVELDB TODO
+--------------------------------------------------------------------------------
+
+- Add VisualStudio 2012 project file to our fork
+
+- Add LevelDB unity .cpp and .h to our fork
+
+- Replace Beast specific platform macros with universal macros so that the
+  unity doesn't require Beast
+
+- Submit LevelDB fork changes to Bitcoin upstream
+
+--------------------------------------------------------------------------------
+WEBSOCKET TODO
+--------------------------------------------------------------------------------
+
+*** Figure out how hard we want to fork websocket first **
+
+- Think about stripping the ripple specifics out of AutoSocket, make AutoSocket
+  part of our websocketpp fork
+
+- Regroup all the sources together in one directory
+
+- Strip includes and enforce unity
+
+- Put a new front-end on websocket to hide ALL of their classes and templates
+  from the host application, make this part of the websocket fork
+
+--------------------------------------------------------------------------------
 RIPPLE TODO
 --------------------------------------------------------------------------------
+
+- Move everything in src/cpp/ripple into ripple_app and sort them into
+  subdirectories within the module as per the project filters.
+  * Make sure there are no pending commits from David
+
+- Refactor TxFormats into template WireFormats<> and use it for transactions
+  and ledger entries, replace the redundant code with template typedefs.
+
+- Rewrite Sustain to use Beast and work on Windows as well
+  * Do not enable watchdog process if a debugger is attached
+
+- Make separate LevelDB VS2012 project for source browsing, leave ony the unity
+  .cpp in the main RippleD project
+
+- Add LevelDB unity .cpp to the LevelDB fork
 
 - Make sure the leak detector output appears on Linux and FreeBSD debug builds.
 
@@ -26,7 +70,7 @@ RIPPLE TODO
 
 - Replace all NULL with nullptr
 
-- Add ICore interface
+- Add ICore interface (incremental replacement for IApplication)
 
 - Make TxFormats a member of ICore instead of a singleton.
   PROBLEM: STObject derived classes like STInt16 make direct use of the
@@ -80,26 +124,28 @@ RIPPLE TODO
 - Consolidate SQLite database classes: DatabaseCon, Database, SqliteDatabase.
 
 --------------------------------------------------------------------------------
+RANDOM NOTES
+--------------------------------------------------------------------------------
 
 LoadEvent
 
     Is referenced with both a shared pointer and an auto pointer.
-    Should be named LoadMeter::ScopedSample
+    Should be named LoadMeter::ScopedSample. Or possibly ScopedLoadSample
 
 JobQueue
 
     getLoadEvent and getLoadEventAP differ only in the style of pointer
     container which is returned. Unnecessary complexity.
 
---------------------------------------------------------------------------------
-
-Naming
-
-Some names don't make sense.
+Naming: Some names don't make sense.
 
   Index
     Stop using Index to refer to keys in tables. Replace with "Key" ?
     Index implies a small integer, or a data structure.
+
+    This is all over the place in the Ledger API, "Index" of this and
+    "Index" of that, the terminology is imprecise and helps neither
+    understanding nor recall.
     
 Inconsistent names
 
@@ -123,8 +169,7 @@ Ledger "Skip List"
 Duplicate Code
 
   LedgerEntryFormat and TxFormat
-
---------------------------------------------------------------------------------
+  * Resolved with a todo item, create WireFormats<> template class.
 
 Interfaces
 
@@ -142,8 +187,6 @@ Interfaces
 
     We have beast for InputStream and OutputStream, we can use those now.
 
---------------------------------------------------------------------------------
-
 boost
 
     Unclear from the class declaration what style of shared object management
@@ -156,6 +199,7 @@ boost
 boost::recursive_mutex
 
     Recursive mutexes should never be necessary.
+
     They require the "mutable" keyword for const members to acquire the lock (yuck)
 
     Replace recursive_mutex with beast::Mutex to remove boost dependency

@@ -178,11 +178,11 @@ namespace ripple
 #include "src/cpp/ripple/SerializedValidation.h"
 #include "src/cpp/ripple/AccountSetTransactor.h"
 #include "src/cpp/ripple/TrustSetTransactor.h"
-#include "src/cpp/ripple/ripple_Version.h"
 #include "src/cpp/ripple/WSConnection.h"
 #include "src/cpp/ripple/WSHandler.h"
 #include "src/cpp/ripple/WalletAddTransactor.h"
 
+#include "basics/ripple_Version.h" // VFALCO TODO Should this be private?
 #include "basics/ripple_BuildVersion.h" // private
 
 }
