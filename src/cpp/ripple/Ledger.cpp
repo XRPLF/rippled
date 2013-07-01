@@ -8,7 +8,7 @@ SETUP_LOG (Ledger)
 
 Ledger::Ledger (const RippleAddress& masterID, uint64 startAmount)
     : mTotCoins (startAmount)
-    , mLedgerSeq (1)
+    , mLedgerSeq (1) // First Ledger
     , mCloseTime (0)
     , mParentCloseTime (0)
     , mCloseResolution (LEDGER_TIME_ACCURACY)
@@ -194,6 +194,7 @@ void Ledger::updateHash ()
             mAccountHash.zero ();
     }
 
+    // VFALCO TODO Fix this hard coded magic number 118
     Serializer s (118);
     s.add32 (HashPrefix::ledgerMaster);
     addRaw (s);
@@ -205,7 +206,8 @@ void Ledger::setRaw (Serializer& s, bool hasPrefix)
 {
     SerializerIterator sit (s);
 
-    if (hasPrefix) sit.get32 ();
+    if (hasPrefix)
+        sit.get32 ();
 
     mLedgerSeq =        sit.get32 ();
     mTotCoins =         sit.get64 ();
@@ -597,6 +599,7 @@ void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
 
     {
         ScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+
         getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (addLedger %
                 getHash ().GetHex () % mLedgerSeq % mParentHash.GetHex () %
                 boost::lexical_cast<std::string> (mTotCoins) % mCloseTime % mParentCloseTime %
@@ -1488,7 +1491,10 @@ uint256 Ledger::getLedgerHash (uint32 ledgerIndex)
             WriteLog (lsWARNING, Ledger) << "Ledger " << mLedgerSeq << " missing hash for " << ledgerIndex
                                          << " (" << vec.size () << "," << diff << ")";
         }
-        else WriteLog (lsWARNING, Ledger) << "Ledger " << mLedgerSeq << ":" << getHash () << " missing normal list";
+        else
+        {
+            WriteLog (lsWARNING, Ledger) << "Ledger " << mLedgerSeq << ":" << getHash () << " missing normal list";
+        }
     }
 
     if ((ledgerIndex & 0xff) != 0)

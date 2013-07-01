@@ -73,6 +73,7 @@ public:
             uint32 ledgerSeq, bool & loaded); // used for database ledgers
 
     Ledger (Blob const & rawLedger, bool hasPrefix);
+
     Ledger (const std::string & rawLedger, bool hasPrefix);
 
     Ledger (bool dummy, Ledger & previous); // ledger after this one
@@ -232,6 +233,9 @@ public:
     // next/prev function
     SLE::pointer getSLE (uint256 const & uHash); // SLE is mutable
     SLE::pointer getSLEi (uint256 const & uHash); // SLE is immutable
+
+    // VFALCO NOTE These seem to let you walk the list of ledgers
+    //
     uint256 getFirstLedgerIndex ();
     uint256 getLastLedgerIndex ();
     uint256 getNextLedgerIndex (uint256 const & uHash);                         // first node >hash

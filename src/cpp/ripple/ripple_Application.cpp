@@ -14,9 +14,15 @@ SETUP_LOG (Application)
 // VFALCO TODO Move the function definitions into the class declaration
 class Application
     : public IApplication
+    , public SharedSingleton <Application>
     , LeakChecked <Application>
 {
 public:
+    static Application* createInstance ()
+    {
+        return new Application;
+    }
+
     class Holder;
 
     Application ();
@@ -260,7 +266,8 @@ private:
 };
 
 Application::Application ()
-    : mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
+    : SharedSingleton <Application> (SingletonLifetime::persistAfterCreation)
+    , mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
     , mIOWork (mIOService)
     , mAuxWork (mAuxService)
     , mNetOps (mIOService, &mLedgerMaster)
@@ -995,37 +1002,7 @@ void Application::updateTables (bool ldbImport)
 
 //------------------------------------------------------------------------------
 
-// Since its an global with static storage duration
-// it has to be wrapped in a SharedSingleton.
-//
-class Application::Holder : public SharedSingleton <Application::Holder>
-{
-public:
-    Holder ()
-        : SharedSingleton <Holder> (SingletonLifetime::persistAfterCreation)
-        , m_application (new Application)
-    {
-    }
-
-    ~Holder ()
-    {
-    }
-
-    static Holder* createInstance ()
-    {
-        return new Holder;
-    }
-
-    IApplication& getApp ()
-    {
-        return *m_application;
-    }
-
-private:
-    ScopedPointer <IApplication> m_application;
-};
-
 IApplication& getApp ()
 {
-    return Application::Holder::getInstance ()->getApp ();
+    return *Application::getInstance ();
 }
