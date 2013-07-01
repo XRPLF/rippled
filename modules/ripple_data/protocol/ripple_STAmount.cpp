@@ -436,7 +436,7 @@ void STAmount::canonicalize ()
         ++mOffset;
     }
 
-    if (mOffset < cMinOffset)
+    if ((mOffset < cMinOffset) || (mValue < vMinValue))
     {
         mValue = 0;
         mOffset = 0;
