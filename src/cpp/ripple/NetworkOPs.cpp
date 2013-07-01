@@ -225,7 +225,7 @@ Transaction::pointer NetworkOPs::submitTransactionSync (Transaction::ref tpTrans
         WriteLog (lsFATAL, NetworkOPs) << tpTransNew->getSTransaction ()->getJson (0);
         WriteLog (lsFATAL, NetworkOPs) << tpTrans->getSTransaction ()->getJson (0);
 
-        assert (false);
+        // assert (false); "1e-95" as amount can trigger this
 
         tpTransNew.reset ();
     }
