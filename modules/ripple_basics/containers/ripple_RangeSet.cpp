@@ -83,7 +83,7 @@ uint32 RangeSet::prevMissing (uint32 v) const
         if (contains (it, v))
             return it.first - 1;
 
-        if (it.first > v)
+        if (it.first > (v + 1))
             return v + 1;
     }
     return RangeSetAbsent;
