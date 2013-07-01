@@ -379,7 +379,10 @@ bool STObject::isEquivalent (const SerializedType& t) const
     const STObject* v = dynamic_cast<const STObject*> (&t);
 
     if (!v)
+    {
+        WriteLog (lsDEBUG, STObject) << "notEquiv " << getFullText() << " not object";
         return false;
+    }
 
     boost::ptr_vector<SerializedType>::const_iterator it1 = mData.begin (), end1 = mData.end ();
     boost::ptr_vector<SerializedType>::const_iterator it2 = v->mData.begin (), end2 = v->mData.end ();
@@ -387,7 +390,19 @@ bool STObject::isEquivalent (const SerializedType& t) const
     while ((it1 != end1) && (it2 != end2))
     {
         if ((it1->getSType () != it2->getSType ()) || !it1->isEquivalent (*it2))
+        {
+            if (it1->getSType () != it2->getSType ())
+            {
+                WriteLog (lsDEBUG, STObject) << "notEquiv type " << it1->getFullText() << " != "
+                    <<  it2->getFullText();
+            }
+            else
+            {
+                WriteLog (lsDEBUG, STObject) << "notEquiv " << it1->getFullText() << " != "
+                    <<  it2->getFullText();
+            }
             return false;
+        }
 
         ++it1;
         ++it2;
@@ -1164,7 +1179,10 @@ bool STArray::isEquivalent (const SerializedType& t) const
     const STArray* v = dynamic_cast<const STArray*> (&t);
 
     if (!v)
+    {
+        WriteLog (lsDEBUG, STObject) << "notEquiv " << getFullText() << " not array";
         return false;
+    }
 
     return value == v->value;
 }

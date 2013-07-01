@@ -113,11 +113,7 @@ public:
         ;
     }
 
-    virtual bool isEquivalent (const SerializedType& t) const
-    {
-        assert (getSType () == STI_NOTPRESENT);
-        return t.getSType () == STI_NOTPRESENT;
-    }
+    virtual bool isEquivalent (const SerializedType& t) const;
 
     void addFieldID (Serializer& s) const
     {
