@@ -14,7 +14,7 @@
 // VFALCO TODO Rename to Ledgers
 //        It sounds like this holds all the ledgers...
 //
-class LedgerMaster
+class LedgerMaster : LeakChecked <LedgerMaster>
 {
 public:
     typedef FUNCTION_TYPE <void (Ledger::ref)> callback;
@@ -29,6 +29,10 @@ public:
         , mPathFindThread (false)
         , mPathFindNewLedger (false)
         , mPathFindNewRequest (false)
+    {
+    }
+
+    ~LedgerMaster ()
     {
     }
 

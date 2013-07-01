@@ -52,7 +52,7 @@
 
   @ingroup beast_concurrent
 */
-class ParallelFor : Uncopyable
+class BEAST_API ParallelFor : Uncopyable
 {
 public:
     /** Create a parallel for loop.

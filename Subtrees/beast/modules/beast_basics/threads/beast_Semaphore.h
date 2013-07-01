@@ -31,7 +31,7 @@
 
   @ingroup beast_core
 */
-class Semaphore
+class BEAST_API Semaphore
 {
 public:
     /** Create a semaphore with the specified number of resources.

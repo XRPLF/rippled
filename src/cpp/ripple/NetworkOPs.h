@@ -13,7 +13,7 @@
 class Peer;
 class LedgerConsensus;
 
-class NetworkOPs
+class NetworkOPs : LeakChecked <NetworkOPs>
 {
 public:
     enum Fault

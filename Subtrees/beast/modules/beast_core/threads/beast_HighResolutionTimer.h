@@ -38,7 +38,7 @@
 
     @see Timer
 */
-class BEAST_API HighResolutionTimer
+class BEAST_API HighResolutionTimer : LeakChecked <HighResolutionTimer>, Uncopyable
 {
 protected:
     /** Creates a HighResolutionTimer.
@@ -96,8 +96,6 @@ private:
     friend struct Pimpl;
     friend class ScopedPointer<Pimpl>;
     ScopedPointer<Pimpl> pimpl;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (HighResolutionTimer)
 };
 
 

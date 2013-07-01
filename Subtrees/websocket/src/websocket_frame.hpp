@@ -38,7 +38,7 @@
 
 #include <boost/utility.hpp>
 
-#if defined(WIN32)
+#if BEAST_WIN32
 #include <winsock2.h>
 #else
 #include <arpa/inet.h>

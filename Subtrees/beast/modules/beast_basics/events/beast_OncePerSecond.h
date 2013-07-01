@@ -20,8 +20,6 @@
 #ifndef BEAST_ONCEPERSECOND_BEASTHEADER
 #define BEAST_ONCEPERSECOND_BEASTHEADER
 
-#include "../containers/beast_List.h"
-
 /*============================================================================*/
 /**
     Provides a once per second notification.
@@ -32,7 +30,7 @@
 
     @ingroup beast_core
 */
-class OncePerSecond : Uncopyable
+class BEAST_API OncePerSecond : Uncopyable
 {
 public:
     OncePerSecond ();

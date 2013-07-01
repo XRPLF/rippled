@@ -47,7 +47,8 @@
   @ingroup beast_concurrent
 */
 
-/*============================================================================*/
+//------------------------------------------------------------------------------
+
 /**
   Scoped read lock for ReadWriteMutex.
 
@@ -72,7 +73,8 @@ private:
     LockType const& m_lock;
 };
 
-/*============================================================================*/
+//------------------------------------------------------------------------------
+
 /**
   Scoped write lock for ReadWriteMutex.
 
@@ -97,7 +99,9 @@ private:
     LockType const& m_lock;
 };
 
-class ReadWriteMutex
+//------------------------------------------------------------------------------
+
+class BEAST_API ReadWriteMutex
 {
 public:
     /** Provides the type of scoped read lock to use with a ReadWriteMutex. */

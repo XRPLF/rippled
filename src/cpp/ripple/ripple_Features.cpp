@@ -94,8 +94,8 @@ FeatureState* Features::getCreateFeature (uint256 const& featureHash, bool creat
             query.append (featureHash.GetHex ());
             query.append ("';");
 
-            ScopedLock sl (theApp->getWalletDB ()->getDBLock ());
-            Database* db = theApp->getWalletDB ()->getDB ();
+            ScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            Database* db = getApp().getWalletDB ()->getDB ();
 
             if (db->executeSQL (query) && db->startIterRows ())
             {
@@ -327,8 +327,8 @@ void Features::reportValidations (const FeatureSet& set)
 
     if (!changedFeatures.empty ())
     {
-        ScopedLock sl (theApp->getWalletDB ()->getDBLock ());
-        Database* db = theApp->getWalletDB ()->getDB ();
+        ScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        Database* db = getApp().getWalletDB ()->getDB ();
 
         db->executeSQL ("BEGIN TRANSACTION;");
         BOOST_FOREACH (uint256 const & hash, changedFeatures)

@@ -35,7 +35,7 @@ void PeerDoor::startListening ()
     Peer::pointer new_connection = Peer::New (
                                        mAcceptor.get_io_service (),
                                        mCtx,
-                                       theApp->getPeers ().assignPeerId (),
+                                       getApp().getPeers ().assignPeerId (),
                                        true);
 
     mAcceptor.async_accept (new_connection->getSocket (),

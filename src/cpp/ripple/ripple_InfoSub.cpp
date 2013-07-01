@@ -27,7 +27,7 @@ InfoSub::InfoSub ()
 
 InfoSub::~InfoSub ()
 {
-    NetworkOPs& ops = theApp->getOPs ();
+    NetworkOPs& ops = getApp().getOPs ();
     ops.unsubTransactions (mSeq);
     ops.unsubRTTransactions (mSeq);
     ops.unsubLedger (mSeq);

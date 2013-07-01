@@ -13,7 +13,7 @@
 */
 // VFALCO TODO Rename to InboundLedgers
 // VFALCO TODO Create abstract interface
-class InboundLedgers
+class InboundLedgers : LeakChecked <InboundLedger>
 {
 public:
     // How long before we try again to acquire the same ledger

@@ -65,7 +65,7 @@
 
     @see File, FileOutputStream
 */
-class BEAST_API TemporaryFile
+class BEAST_API TemporaryFile : LeakChecked <TemporaryFile>, Uncopyable
 {
 public:
     //==============================================================================
@@ -159,8 +159,6 @@ public:
 private:
     //==============================================================================
     const File temporaryFile, targetFile;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TemporaryFile)
 };
 
 #endif   // BEAST_TEMPORARYFILE_BEASTHEADER

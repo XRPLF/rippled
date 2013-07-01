@@ -35,7 +35,7 @@
     calling thread until another thread wakes it up by calling the signal()
     method.
 */
-class BEAST_API WaitableEvent
+class BEAST_API WaitableEvent : LeakChecked <WaitableEvent>, Uncopyable
 {
 public:
     //==============================================================================
@@ -45,7 +45,7 @@ public:
                             method is called. If manualReset is true, then once the event is signalled,
                             the only way to reset it will be by calling the reset() method.
     */
-    WaitableEvent (bool manualReset = false) noexcept;
+    explicit WaitableEvent (bool manualReset = false) noexcept;
 
     /** Destructor.
 
@@ -106,8 +106,6 @@ private:
     mutable pthread_mutex_t mutex;
     mutable bool triggered, manualReset;
    #endif
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WaitableEvent)
 };
 
 

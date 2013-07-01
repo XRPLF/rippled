@@ -95,6 +95,11 @@ template <typename KeyType,
           class HashFunctionToUse = DefaultHashFunctions,
           class TypeOfCriticalSectionToUse = DummyCriticalSection>
 class HashMap
+    : Uncopyable
+    , LeakChecked <HashMap <KeyType,
+                            ValueType,
+                            HashFunctionToUse,
+                            TypeOfCriticalSectionToUse> >
 {
 private:
     typedef PARAMETER_TYPE (KeyType)   KeyTypeParameter;
@@ -333,7 +338,7 @@ public:
 
 private:
     //==============================================================================
-    class HashEntry
+    class HashEntry : Uncopyable
     {
     public:
         HashEntry (KeyTypeParameter k, ValueTypeParameter val, HashEntry* const next)
@@ -343,8 +348,6 @@ private:
         const KeyType key;
         ValueType value;
         HashEntry* nextEntry;
-
-        BEAST_DECLARE_NON_COPYABLE (HashEntry)
     };
 
 public:
@@ -371,7 +374,7 @@ public:
 
         @see HashMap
     */
-    class Iterator
+    class Iterator : LeakChecked <Iterator>, Uncopyable
     {
     public:
         //==============================================================================
@@ -420,8 +423,6 @@ public:
         const HashMap& hashMap;
         HashEntry* entry;
         int index;
-
-        BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Iterator)
     };
 
 private:
@@ -439,8 +440,6 @@ private:
         bassert (isPositiveAndBelow (hash, getNumSlots())); // your hash function is generating out-of-range numbers!
         return hash;
     }
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (HashMap)
 };
 
 

@@ -7,7 +7,7 @@
 #ifndef RIPPLE_WSDOOR_RIPPLEHEADER
 #define RIPPLE_WSDOOR_RIPPLEHEADER
 
-class WSDoor
+class WSDoor : LeakChecked <WSDoor>
 {
 private:
     websocketpp::server_autotls*    mSEndpoint;

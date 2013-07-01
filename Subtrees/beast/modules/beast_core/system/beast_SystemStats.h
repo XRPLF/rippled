@@ -30,7 +30,7 @@
 /**
     Contains methods for finding out about the current hardware and OS configuration.
 */
-class BEAST_API SystemStats
+class BEAST_API SystemStats : Uncopyable
 {
 public:
     //==============================================================================
@@ -194,8 +194,6 @@ private:
 
     SystemStats();
     static const CPUFlags& getCPUFlags();
-
-    BEAST_DECLARE_NON_COPYABLE (SystemStats)
 };
 
 

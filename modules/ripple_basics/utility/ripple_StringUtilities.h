@@ -208,6 +208,10 @@ template<typename T> std::string lexical_cast_it (const T& t)
 
 bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& strDomain, int& iPort, std::string& strPath);
 
-#endif
+#define ADDRESS(p) strHex(uint64( ((char*) p) - ((char*) 0)))
 
-// vim:ts=4
+/** Convert a pointer address to a string for display purposes.
+*/
+extern std::string addressToString (void const* address);
+
+#endif

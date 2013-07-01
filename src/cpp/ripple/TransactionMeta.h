@@ -7,7 +7,7 @@
 #ifndef RIPPLE_TRANSACTIONMETA_H
 #define RIPPLE_TRANSACTIONMETA_H
 
-class TransactionMetaSet
+class TransactionMetaSet : LeakChecked <TransactionMetaSet>
 {
 public:
     typedef boost::shared_ptr<TransactionMetaSet> pointer;

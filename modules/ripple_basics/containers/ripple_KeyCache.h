@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_KEYCACHE_H
-#define RIPPLE_KEYCACHE_H
+#ifndef RIPPLE_KEYCACHE_H_INCLUDED
+#define RIPPLE_KEYCACHE_H_INCLUDED
 
 /** Maintains a cache of keys with no associated data.
 
@@ -27,7 +27,7 @@ class KeyCache
 public:
     /** Provides a type for the key.
     */
-    typedef Key                                 key_type;
+    typedef Key key_type;
 
     /** Construct with the specified name.
 
@@ -36,7 +36,10 @@ public:
     */
     KeyCache (const std::string& name,
               int size = 0,
-              int age = 120) : mName (name), mTargetSize (size), mTargetAge (age)
+              int age = 120)
+        : mName (name)
+        , mTargetSize (size)
+        , mTargetAge (age)
     {
         assert ((size >= 0) && (age > 2));
     }
@@ -80,7 +83,7 @@ public:
 
     /** Retrieve the name of this object.
     */
-    const std::string& getName ()
+    std::string const& getName ()
     {
         return mName;
     }

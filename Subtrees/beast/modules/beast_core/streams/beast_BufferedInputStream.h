@@ -37,7 +37,9 @@
     so that the source stream gets accessed in larger chunk sizes, meaning less
     work for the underlying stream.
 */
-class BEAST_API BufferedInputStream  : public InputStream
+class BEAST_API BufferedInputStream
+    : public InputStream 
+    , LeakChecked <BufferedInputStream>
 {
 public:
     //==============================================================================
@@ -84,8 +86,6 @@ private:
     int64 position, lastReadPos, bufferStart, bufferOverlap;
     HeapBlock <char> buffer;
     void ensureBuffered();
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BufferedInputStream)
 };
 
 #endif   // BEAST_BUFFEREDINPUTSTREAM_BEASTHEADER

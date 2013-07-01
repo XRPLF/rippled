@@ -14,7 +14,9 @@ class Peers;
 
 SETUP_LOG (Peers)
 
-class Peers : public IPeers
+class Peers
+    : public IPeers
+    , LeakChecked <Peers>
 {
 public:
     explicit Peers (boost::asio::io_service& io_service)
@@ -86,15 +88,15 @@ private:
     int                     mPhase;
 
     typedef std::pair<RippleAddress, Peer::pointer>     naPeer;
-    typedef std::pair<ipPort, Peer::pointer>            pipPeer;
-    typedef std::map<ipPort, Peer::pointer>::value_type vtPeer;
+    typedef std::pair<IPAndPortNumber, Peer::pointer>            pipPeer;
+    typedef std::map<IPAndPortNumber, Peer::pointer>::value_type vtPeer;
 
     // Peers we are connecting with and non-thin peers we are connected to.
     // Only peers we know the connection ip for are listed.
     // We know the ip and port for:
     // - All outbound connections
     // - Some inbound connections (which we figured out).
-    boost::unordered_map<ipPort, Peer::pointer>         mIpMap;
+    boost::unordered_map<IPAndPortNumber, Peer::pointer>         mIpMap;
 
     // Non-thin peers which we are connected to.
     // Peers we have the public key for.
@@ -148,8 +150,8 @@ void Peers::start ()
 bool Peers::getTopNAddrs (int n, std::vector<std::string>& addrs)
 {
     // XXX Filter out other local addresses (like ipv6)
-    Database*   db = theApp->getWalletDB ()->getDB ();
-    ScopedLock  sl (theApp->getWalletDB ()->getDBLock ());
+    Database*   db = getApp().getWalletDB ()->getDB ();
+    ScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
 
     SQL_FOREACH (db, str (boost::format ("SELECT IpPort FROM PeerIps LIMIT %d") % n) )
     {
@@ -167,18 +169,18 @@ bool Peers::savePeer (const std::string& strIp, int iPort, char code)
 {
     bool    bNew    = false;
 
-    Database* db = theApp->getWalletDB ()->getDB ();
+    Database* db = getApp().getWalletDB ()->getDB ();
 
-    std::string ipPort  = sqlEscape (str (boost::format ("%s %d") % strIp % iPort));
+    std::string ipAndPort  = sqlEscape (str (boost::format ("%s %d") % strIp % iPort));
 
-    ScopedLock  sl (theApp->getWalletDB ()->getDBLock ());
-    std::string sql = str (boost::format ("SELECT COUNT(*) FROM PeerIps WHERE IpPort=%s;") % ipPort);
+    ScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
+    std::string sql = str (boost::format ("SELECT COUNT(*) FROM PeerIps WHERE IpPort=%s;") % ipAndPort);
 
     if (db->executeSQL (sql) && db->startIterRows ())
     {
         if (!db->getInt (0))
         {
-            db->executeSQL (str (boost::format ("INSERT INTO PeerIps (IpPort,Score,Source) values (%s,0,'%c');") % ipPort % code));
+            db->executeSQL (str (boost::format ("INSERT INTO PeerIps (IpPort,Score,Source) values (%s,0,'%c');") % ipAndPort % code));
             bNew    = true;
         }
         else
@@ -194,7 +196,7 @@ bool Peers::savePeer (const std::string& strIp, int iPort, char code)
     }
     else
     {
-        std::cerr << "Error saving Peer" << std::endl;
+        Log::out() << "Error saving Peer";
     }
 
     if (bNew)
@@ -226,7 +228,7 @@ bool Peers::hasPeer (const uint64& id)
 // <-- true, if a peer is available to connect to
 bool Peers::peerAvailable (std::string& strIp, int& iPort)
 {
-    Database*                   db = theApp->getWalletDB ()->getDB ();
+    Database*                   db = getApp().getWalletDB ()->getDB ();
     std::vector<std::string>    vstrIpPort;
 
     // Convert mIpMap (list of open connections) to a vector of "<ip> <port>".
@@ -248,7 +250,7 @@ bool Peers::peerAvailable (std::string& strIp, int& iPort)
     std::string strIpPort;
 
     {
-        ScopedLock  sl (theApp->getWalletDB ()->getDBLock ());
+        ScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
 
         if (db->executeSQL (str (boost::format ("SELECT IpPort FROM PeerIps WHERE ScanNext IS NULL AND IpPort NOT IN (%s) LIMIT 1;")
                                  % strJoin (vstrIpPort.begin (), vstrIpPort.end (), ",")))
@@ -397,12 +399,12 @@ void Peers::relayMessageTo (const std::set<uint64>& fromPeers, const PackedMessa
 void Peers::connectTo (const std::string& strIp, int iPort)
 {
     {
-        Database*   db  = theApp->getWalletDB ()->getDB ();
-        ScopedLock  sl (theApp->getWalletDB ()->getDBLock ());
+        Database*   db  = getApp().getWalletDB ()->getDB ();
+        ScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
 
         db->executeSQL (str (boost::format ("REPLACE INTO PeerIps (IpPort,Score,Source,ScanNext) values (%s,%d,'%c',0);")
                              % sqlEscape (str (boost::format ("%s %d") % strIp % iPort))
-                             % theApp->getUNL ().iSourceScore (IUniqueNodeList::vsManual)
+                             % getApp().getUNL ().iSourceScore (IUniqueNodeList::vsManual)
                              % char (IUniqueNodeList::vsManual)));
     }
 
@@ -414,7 +416,7 @@ void Peers::connectTo (const std::string& strIp, int iPort)
 // <-- true, if already connected.
 Peer::pointer Peers::peerConnect (const std::string& strIp, int iPort)
 {
-    ipPort          pipPeer     = make_pair (strIp, iPort);
+    IPAndPortNumber          pipPeer     = make_pair (strIp, iPort);
     Peer::pointer   ppResult;
 
 
@@ -423,8 +425,8 @@ Peer::pointer Peers::peerConnect (const std::string& strIp, int iPort)
 
         if (mIpMap.find (pipPeer) == mIpMap.end ())
         {
-            ppResult = Peer::New (theApp->getIOService (),
-                                  theApp->getPeerDoor ().getSSLContext (),
+            ppResult = Peer::New (getApp().getIOService (),
+                                  getApp().getPeerDoor ().getSSLContext (),
                                   ++mLastPeer,
                                   false);
 
@@ -499,7 +501,7 @@ bool Peers::peerConnected (Peer::ref peer, const RippleAddress& naPeer,
 
     assert (!!peer);
 
-    if (naPeer == theApp->getLocalCredentials ().getNodePublic ())
+    if (naPeer == getApp().getLocalCredentials ().getNodePublic ())
     {
         WriteLog (lsINFO, Peers) << "Pool: Connected: self: " << ADDRESS_SHARED (peer) << ": " << naPeer.humanNodePublic () << " " << strIP << " " << iPort;
     }
@@ -599,8 +601,8 @@ bool Peers::peerScanSet (const std::string& strIp, int iPort)
     std::string strIpPort   = str (boost::format ("%s %d") % strIp % iPort);
     bool        bScanDirty  = false;
 
-    ScopedLock  sl (theApp->getWalletDB ()->getDBLock ());
-    Database*   db = theApp->getWalletDB ()->getDB ();
+    ScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
+    Database*   db = getApp().getWalletDB ()->getDB ();
 
     if (db->executeSQL (str (boost::format ("SELECT ScanNext FROM PeerIps WHERE IpPort=%s;")
                              % sqlEscape (strIpPort)))
@@ -646,7 +648,7 @@ bool Peers::peerScanSet (const std::string& strIp, int iPort)
 // --> strIp: not empty
 void Peers::peerClosed (Peer::ref peer, const std::string& strIp, int iPort)
 {
-    ipPort      ipPeer          = make_pair (strIp, iPort);
+    IPAndPortNumber      ipPeer          = make_pair (strIp, iPort);
     bool        bScanRefresh    = false;
 
     // If the connection was our scan, we are no longer scanning.
@@ -662,7 +664,7 @@ void Peers::peerClosed (Peer::ref peer, const std::string& strIp, int iPort)
     bool    bRedundant  = true;
     {
         boost::recursive_mutex::scoped_lock sl (mPeerLock);
-        const boost::unordered_map<ipPort, Peer::pointer>::iterator&    itIp = mIpMap.find (ipPeer);
+        const boost::unordered_map<IPAndPortNumber, Peer::pointer>::iterator&    itIp = mIpMap.find (ipPeer);
 
         if (itIp == mIpMap.end ())
         {
@@ -709,7 +711,7 @@ void Peers::peerVerified (Peer::ref peer)
 
         //WriteLog (lsINFO, Peers) << str(boost::format("Pool: Scan: connected: %s %s %s (scanned)") % ADDRESS_SHARED(peer) % strIp % iPort);
 
-        if (peer->getNodePublic () == theApp->getLocalCredentials ().getNodePublic ())
+        if (peer->getNodePublic () == getApp().getLocalCredentials ().getNodePublic ())
         {
             // Talking to ourself.  We will just back off.  This lets us maybe advertise our outside address.
 
@@ -718,8 +720,8 @@ void Peers::peerVerified (Peer::ref peer)
         else
         {
             // Talking with a different peer.
-            ScopedLock sl (theApp->getWalletDB ()->getDBLock ());
-            Database* db = theApp->getWalletDB ()->getDB ();
+            ScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            Database* db = getApp().getWalletDB ()->getDB ();
 
             db->executeSQL (boost::str (boost::format ("UPDATE PeerIps SET ScanNext=NULL,ScanInterval=0 WHERE IpPort=%s;")
                                         % sqlEscape (strIpPort)));
@@ -786,8 +788,8 @@ void Peers::scanRefresh ()
         int                         iInterval;
 
         {
-            ScopedLock  sl (theApp->getWalletDB ()->getDBLock ());
-            Database*   db = theApp->getWalletDB ()->getDB ();
+            ScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
+            Database*   db = getApp().getWalletDB ()->getDB ();
 
             if (db->executeSQL ("SELECT * FROM PeerIps INDEXED BY PeerScanIndex WHERE ScanNext NOT NULL ORDER BY ScanNext LIMIT 1;")
                     && db->startIterRows ())
@@ -832,8 +834,8 @@ void Peers::scanRefresh ()
             iInterval   *= 2;
 
             {
-                ScopedLock sl (theApp->getWalletDB ()->getDBLock ());
-                Database* db = theApp->getWalletDB ()->getDB ();
+                ScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+                Database* db = getApp().getWalletDB ()->getDB ();
 
                 db->executeSQL (boost::str (boost::format ("UPDATE PeerIps SET ScanNext=%d,ScanInterval=%d WHERE IpPort=%s;")
                                             % iToSeconds (tpNext)

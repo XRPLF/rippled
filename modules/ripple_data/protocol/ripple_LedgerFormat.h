@@ -97,7 +97,7 @@ enum LedgerSpecificFlags
     lsfHighAuth         = 0x00080000,
 };
 
-// VFALCO TODO See if we can merge LedgerEntryFormat with TxFormat
+// VFALCO TODO See if we can merge LedgerEntryFormat with TxFormats
 //
 class LedgerEntryFormat
 {

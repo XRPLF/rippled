@@ -11,7 +11,7 @@
 Handles incoming connections from other Peers
 */
 
-class PeerDoor
+class PeerDoor : LeakChecked <PeerDoor>
 {
 public:
     PeerDoor (boost::asio::io_service& io_service);

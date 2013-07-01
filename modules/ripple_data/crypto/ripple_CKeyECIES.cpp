@@ -277,7 +277,7 @@ bool checkECIES (void)
         if ((i % 100) == 0)
         {
             // generate new keys every 100 times
-            //          std::cerr << "new keys" << std::endl;
+            //          Log::out() << "new keys";
             senderPriv.MakeNewKey ();
             recipientPriv.MakeNewKey ();
 
@@ -307,7 +307,7 @@ bool checkECIES (void)
             return false;
         }
 
-        //      std::cerr << "Msg(" << msglen << ") ok " << ciphertext.size() << std::endl;
+        //Log::out() << "Msg(" << msglen << ") ok " << ciphertext.size();
     }
 
     return true;

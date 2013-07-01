@@ -75,7 +75,7 @@ void RPCSub::sendThread ()
                 WriteLog (lsINFO, RPCSub) << boost::str (boost::format ("callRPC calling: %s") % mIp);
 
                 callRPC (
-                    theApp->getIOService (),
+                    getApp().getIOService (),
                     mIp, mPort,
                     mUsername, mPassword,
                     mPath, "event",

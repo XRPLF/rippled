@@ -4,8 +4,7 @@
 */
 //==============================================================================
 
-// For logging
-struct RPCErr { };
+struct RPCErr; // for Log
 
 SETUP_LOG (RPCErr)
 

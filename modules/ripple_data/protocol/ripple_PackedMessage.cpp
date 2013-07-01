@@ -18,8 +18,8 @@ PackedMessage::PackedMessage (::google::protobuf::Message const& message, int ty
     {
         message.SerializeToArray (&mBuffer [PackedMessage::kHeaderBytes], messageBytes);
 
-#ifdef DEBUG
-        //      std::cerr << "PackedMessage: type=" << type << ", datalen=" << msg_size << std::endl;
+#ifdef BEAST_DEBUG
+        //Log::out() << "PackedMessage: type=" << type << ", datalen=" << msg_size;
 #endif
     }
 }

@@ -4,7 +4,7 @@
 */
 //==============================================================================
 
-#ifdef WIN32
+#if BEAST_WIN32
 
 // from: http://stackoverflow.com/questions/3022552/is-there-any-standard-htonl-like-function-for-64-bits-integers-in-c
 // but we don't need to check the endianness

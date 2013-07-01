@@ -44,7 +44,7 @@ public:
     static Transaction::pointer transactionFromSQL (Database * db, bool bValidate);
 
     Transaction (
-        TransactionType ttKind,
+        TxType ttKind,
         const RippleAddress &    naPublicKey,       // To prove transaction is consistent and authorized.
         const RippleAddress &    naSourceAccount,   // To identify the paying account.
         uint32                  uSeq,               // To order transactions.

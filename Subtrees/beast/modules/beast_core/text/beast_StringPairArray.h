@@ -33,7 +33,7 @@
 
     @see StringArray
 */
-class BEAST_API StringPairArray
+class BEAST_API StringPairArray : LeakChecked <StringPairArray>
 {
 public:
     //==============================================================================
@@ -150,8 +150,6 @@ private:
     //==============================================================================
     StringArray keys, values;
     bool ignoreCase;
-
-    BEAST_LEAK_DETECTOR (StringPairArray)
 };
 
 

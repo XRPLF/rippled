@@ -6,10 +6,9 @@
 
 #define SECTION_DEFAULT_NAME    ""
 
-// for logging
-struct ParseSectionLog { };
+struct ParseSectionLog; // for Log
 
-SETUP_LOG (ParseSectionLog)
+SETUP_LOGN (ParseSectionLog,"ParseSection")
 
 Section ParseSection (const std::string& strInput, const bool bTrim)
 {
@@ -63,13 +62,13 @@ Section ParseSection (const std::string& strInput, const bool bTrim)
 
 void SectionEntriesPrint (std::vector<std::string>* vspEntries, const std::string& strSection)
 {
-    std::cerr << "[" << strSection << "]" << std::endl;
+    Log::out() << "[" << strSection << "]";
 
     if (vspEntries)
     {
         BOOST_FOREACH (std::string & strValue, *vspEntries)
         {
-            std::cerr << strValue << std::endl;
+            Log::out() << strValue;
         }
     }
 }

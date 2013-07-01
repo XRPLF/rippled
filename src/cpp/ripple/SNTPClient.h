@@ -20,7 +20,7 @@ public:
     }
 };
 
-class SNTPClient
+class SNTPClient : LeakChecked <SNTPClient>
 {
 public:
     SNTPClient (boost::asio::io_service& service);

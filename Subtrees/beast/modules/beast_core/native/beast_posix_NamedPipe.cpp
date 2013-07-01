@@ -21,7 +21,7 @@
 */
 //==============================================================================
 
-class NamedPipe::Pimpl
+class NamedPipe::Pimpl : LeakChecked <Pimpl>, Uncopyable
 {
 public:
     Pimpl (const String& pipePath, bool createPipe)
@@ -164,8 +164,6 @@ private:
 
         select (handle + 1, &rset, nullptr, 0, &timeout);
     }
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Pimpl)
 };
 
 void NamedPipe::close()

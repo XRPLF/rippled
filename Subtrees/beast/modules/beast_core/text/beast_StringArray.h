@@ -34,7 +34,7 @@
 
     @see String, StringPairArray
 */
-class BEAST_API StringArray
+class BEAST_API StringArray : LeakChecked <StringArray>
 {
 public:
     //==============================================================================
@@ -396,10 +396,7 @@ public:
 
 
 private:
-    //==============================================================================
     Array <String> strings;
-
-    BEAST_LEAK_DETECTOR (StringArray)
 };
 
 

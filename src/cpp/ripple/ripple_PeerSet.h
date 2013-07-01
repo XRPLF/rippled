@@ -11,7 +11,7 @@
 
     A peer set is used to acquire a ledger or a transaction set.
 */
-class PeerSet
+class PeerSet : LeakChecked <PeerSet>
 {
 public:
     uint256 const& getHash () const

@@ -6,15 +6,15 @@
 
 SETUP_LOG (SerializedTransaction)
 
-SerializedTransaction::SerializedTransaction (TransactionType type)
+SerializedTransaction::SerializedTransaction (TxType type)
     : STObject (sfTransaction)
     , mType (type)
     , mSigGood (false)
     , mSigBad (false)
 {
-    mFormat = TxFormats::getInstance ().findByType (type);
+    mFormat = TxFormats::getInstance().findByType (type);
 
-    if (mFormat == NULL)
+    if (mFormat == nullptr)
     {
         WriteLog (lsWARNING, SerializedTransaction) << "Transaction type: " << type;
         throw std::runtime_error ("invalid transaction type");
@@ -29,9 +29,9 @@ SerializedTransaction::SerializedTransaction (STObject const& object)
     , mSigGood (false)
     , mSigBad (false)
 {
-    mType = static_cast <TransactionType> (getFieldU16 (sfTransactionType));
+    mType = static_cast <TxType> (getFieldU16 (sfTransactionType));
 
-    mFormat = TxFormats::getInstance ().findByType (mType);
+    mFormat = TxFormats::getInstance().findByType (mType);
 
     if (!mFormat)
     {
@@ -57,9 +57,9 @@ SerializedTransaction::SerializedTransaction (SerializerIterator& sit) : STObjec
     }
 
     set (sit);
-    mType = static_cast<TransactionType> (getFieldU16 (sfTransactionType));
+    mType = static_cast<TxType> (getFieldU16 (sfTransactionType));
 
-    mFormat = TxFormats::getInstance ().findByType (mType);
+    mFormat = TxFormats::getInstance().findByType (mType);
 
     if (!mFormat)
     {

@@ -4,5 +4,4 @@
 */
 //==============================================================================
 
-
-SETUP_LOG (WSConnectionLog)
+SETUP_LOGN (WSConnectionLog,"WSConnection")

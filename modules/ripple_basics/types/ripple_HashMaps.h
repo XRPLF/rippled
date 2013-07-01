@@ -14,8 +14,7 @@
     done by seeding the hashing function with a random number generated
     at program startup.
 */
-// VFALCO TODO derive from Uncopyable
-class HashMaps // : beast::Uncopayble
+class HashMaps : Uncopyable
 {
 public:
     /** Golden ratio constant used in hashing functions.

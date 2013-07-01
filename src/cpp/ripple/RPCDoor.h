@@ -11,7 +11,7 @@
 Handles incoming connections from people making RPC Requests
 */
 
-class RPCDoor
+class RPCDoor : LeakChecked <RPCDoor>
 {
 public:
     explicit RPCDoor (boost::asio::io_service& io_service);

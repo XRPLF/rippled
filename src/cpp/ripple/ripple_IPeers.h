@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_IPEERS_H
-#define RIPPLE_IPEERS_H
+#ifndef RIPPLE_IPEERS_H_INCLUDED
+#define RIPPLE_IPEERS_H_INCLUDED
 
 /** Manages the set of connected peers.
 */

@@ -28,7 +28,7 @@
 
   @see ParallelFor
 */
-class ThreadGroup
+class BEAST_API ThreadGroup
 {
 public:
     typedef FifoFreeStoreType AllocatorType;

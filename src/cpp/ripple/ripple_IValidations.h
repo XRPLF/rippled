@@ -11,7 +11,7 @@
 typedef boost::unordered_map<uint160, SerializedValidation::pointer> ValidationSet;
 typedef std::pair<int, uint160> currentValidationCount; // nodes validating and highest node ID validating
 
-class IValidations
+class IValidations : LeakChecked <IValidations>
 {
 public:
     static IValidations* New ();

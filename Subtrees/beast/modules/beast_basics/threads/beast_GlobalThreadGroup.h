@@ -28,14 +28,14 @@
 
   @ingroup beast_concurrent
 */
-class GlobalThreadGroup : public ThreadGroup,
-    public RefCountedSingleton <GlobalThreadGroup>
+class BEAST_API GlobalThreadGroup : public ThreadGroup,
+    public SharedSingleton <GlobalThreadGroup>
 {
 private:
-    friend class RefCountedSingleton <GlobalThreadGroup>;
+    friend class SharedSingleton <GlobalThreadGroup>;
 
     GlobalThreadGroup ()
-        : RefCountedSingleton <GlobalThreadGroup> (
+        : SharedSingleton <GlobalThreadGroup> (
             SingletonLifetime::persistAfterCreation)
     {
     }

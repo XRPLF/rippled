@@ -34,7 +34,7 @@ uint32 RangeSet::getFirst () const
     const_iterator it = mRanges.begin ();
 
     if (it == mRanges.end ())
-        return RangeSetAbsent;
+        return absent;
 
     return it->first;
 }
@@ -49,7 +49,7 @@ uint32 RangeSet::getNext (uint32 v) const
         if (contains (it, v + 1))
             return v + 1;
     }
-    return RangeSetAbsent;
+    return absent;
 }
 
 uint32 RangeSet::getLast () const
@@ -57,7 +57,7 @@ uint32 RangeSet::getLast () const
     const_reverse_iterator it = mRanges.rbegin ();
 
     if (it == mRanges.rend ())
-        return RangeSetAbsent;
+        return absent;
 
     return it->second;
 }
@@ -72,7 +72,7 @@ uint32 RangeSet::getPrev (uint32 v) const
         if (contains (it, v + 1))
             return v - 1;
     }
-    return RangeSetAbsent;
+    return absent;
 }
 
 uint32 RangeSet::prevMissing (uint32 v) const
@@ -86,7 +86,7 @@ uint32 RangeSet::prevMissing (uint32 v) const
         if (it.first > (v + 1))
             return v + 1;
     }
-    return RangeSetAbsent;
+    return absent;
 }
 
 void RangeSet::setValue (uint32 v)

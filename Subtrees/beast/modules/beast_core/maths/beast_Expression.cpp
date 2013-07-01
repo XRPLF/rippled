@@ -21,7 +21,8 @@
 */
 //==============================================================================
 
-class Expression::Term  : public SingleThreadedReferenceCountedObject
+class Expression::Term
+    : public SingleThreadedReferenceCountedObject
 {
 public:
     Term() {}
@@ -69,9 +70,6 @@ public:
         for (int i = getNumInputs(); --i >= 0;)
             getInput(i)->visitAllSymbols (visitor, scope, recursionDepth);
     }
-
-private:
-    BEAST_DECLARE_NON_COPYABLE (Term)
 };
 
 
@@ -295,7 +293,8 @@ struct Expression::Helpers
     };
 
     //==============================================================================
-    class DotOperator  : public BinaryTerm
+    class DotOperator
+        : public BinaryTerm
     {
     public:
         DotOperator (SymbolTerm* const l, Term* const r)  : BinaryTerm (l, r) {}
@@ -345,7 +344,9 @@ struct Expression::Helpers
 
     private:
         //==============================================================================
-        class EvaluationVisitor  : public Scope::Visitor
+        class EvaluationVisitor
+            : public Scope::Visitor
+            , Uncopyable
         {
         public:
             EvaluationVisitor (const TermPtr& t, const int recursion)
@@ -356,12 +357,11 @@ struct Expression::Helpers
             const TermPtr input;
             TermPtr output;
             const int recursionCount;
-
-        private:
-            BEAST_DECLARE_NON_COPYABLE (EvaluationVisitor)
         };
 
-        class SymbolVisitingVisitor  : public Scope::Visitor
+        class SymbolVisitingVisitor
+            : public Scope::Visitor
+            , Uncopyable
         {
         public:
             SymbolVisitingVisitor (const TermPtr& t, SymbolVisitor& v, const int recursion)
@@ -373,11 +373,11 @@ struct Expression::Helpers
             const TermPtr input;
             SymbolVisitor& visitor;
             const int recursionCount;
-
-            BEAST_DECLARE_NON_COPYABLE (SymbolVisitingVisitor)
         };
 
-        class SymbolRenamingVisitor   : public Scope::Visitor
+        class SymbolRenamingVisitor
+            : public Scope::Visitor
+            , Uncopyable
         {
         public:
             SymbolRenamingVisitor (const TermPtr& t, const Expression::Symbol& symbol_, const String& newName_, const int recursionCount_)
@@ -390,13 +390,9 @@ struct Expression::Helpers
             const Symbol& symbol;
             const String newName;
             const int recursionCount;
-
-            BEAST_DECLARE_NON_COPYABLE (SymbolRenamingVisitor)
         };
 
         SymbolTerm* getSymbol() const  { return static_cast <SymbolTerm*> (left.get()); }
-
-        BEAST_DECLARE_NON_COPYABLE (DotOperator)
     };
 
     //==============================================================================
@@ -446,7 +442,7 @@ struct Expression::Helpers
     };
 
     //==============================================================================
-    class Add  : public BinaryTerm
+    class Add : public BinaryTerm
     {
     public:
         Add (Term* const l, Term* const r) : BinaryTerm (l, r) {}
@@ -465,13 +461,10 @@ struct Expression::Helpers
 
             return new Subtract (newDest, (input == left ? right : left)->clone());
         }
-
-    private:
-        BEAST_DECLARE_NON_COPYABLE (Add)
     };
 
     //==============================================================================
-    class Subtract  : public BinaryTerm
+    class Subtract : public BinaryTerm
     {
     public:
         Subtract (Term* const l, Term* const r) : BinaryTerm (l, r) {}
@@ -493,13 +486,10 @@ struct Expression::Helpers
 
             return new Subtract (left->clone(), newDest);
         }
-
-    private:
-        BEAST_DECLARE_NON_COPYABLE (Subtract)
     };
 
     //==============================================================================
-    class Multiply  : public BinaryTerm
+    class Multiply : public BinaryTerm
     {
     public:
         Multiply (Term* const l, Term* const r) : BinaryTerm (l, r) {}
@@ -518,13 +508,10 @@ struct Expression::Helpers
 
             return new Divide (newDest, (input == left ? right : left)->clone());
         }
-
-    private:
-        BEAST_DECLARE_NON_COPYABLE (Multiply)
     };
 
     //==============================================================================
-    class Divide  : public BinaryTerm
+    class Divide : public BinaryTerm
     {
     public:
         Divide (Term* const l, Term* const r) : BinaryTerm (l, r) {}
@@ -546,9 +533,6 @@ struct Expression::Helpers
 
             return new Divide (left->clone(), newDest);
         }
-
-    private:
-        BEAST_DECLARE_NON_COPYABLE (Divide)
     };
 
     //==============================================================================
@@ -621,7 +605,9 @@ struct Expression::Helpers
     }
 
     //==============================================================================
-    class SymbolCheckVisitor  : public Term::SymbolVisitor
+    class SymbolCheckVisitor
+        : public Term::SymbolVisitor
+        , Uncopyable
     {
     public:
         SymbolCheckVisitor (const Symbol& symbol_) : wasFound (false), symbol (symbol_) {}
@@ -631,12 +617,12 @@ struct Expression::Helpers
 
     private:
         const Symbol& symbol;
-
-        BEAST_DECLARE_NON_COPYABLE (SymbolCheckVisitor)
     };
 
     //==============================================================================
-    class SymbolListVisitor  : public Term::SymbolVisitor
+    class SymbolListVisitor
+        : public Term::SymbolVisitor
+        , Uncopyable
     {
     public:
         SymbolListVisitor (Array<Symbol>& list_) : list (list_) {}
@@ -644,12 +630,10 @@ struct Expression::Helpers
 
     private:
         Array<Symbol>& list;
-
-        BEAST_DECLARE_NON_COPYABLE (SymbolListVisitor)
     };
 
     //==============================================================================
-    class Parser
+    class Parser : Uncopyable
     {
     public:
         //==============================================================================
@@ -908,8 +892,6 @@ struct Expression::Helpers
 
             return e;
         }
-
-        BEAST_DECLARE_NON_COPYABLE (Parser)
     };
 };
 

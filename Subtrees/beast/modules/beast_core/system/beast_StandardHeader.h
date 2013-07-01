@@ -24,7 +24,8 @@
 #ifndef BEAST_STANDARDHEADER_BEASTHEADER
 #define BEAST_STANDARDHEADER_BEASTHEADER
 
-//==============================================================================
+//------------------------------------------------------------------------------
+
 /** Current BEAST version number.
 
     See also SystemStats::getBeastVersion() for a string version.
@@ -43,57 +44,83 @@
 */
 #define BEAST_VERSION   ((BEAST_MAJOR_VERSION << 16) + (BEAST_MINOR_VERSION << 8) + BEAST_BUILDNUMBER)
 
+//------------------------------------------------------------------------------
 
-//==============================================================================
 #include "beast_TargetPlatform.h"  // (sets up the various BEAST_WINDOWS, BEAST_MAC, etc flags)
 #include "beast_PlatformDefs.h"
 
-//==============================================================================
 // Now we'll include some common OS headers..
 #if BEAST_MSVC
- #pragma warning (push)
- #pragma warning (disable: 4514 4245 4100)
+#pragma warning (push)
+#pragma warning (disable: 4514 4245 4100)
 #endif
 
-#include <cstdlib>
-#include <cstdarg>
+#include <algorithm>
+#include <cfloat>
 #include <climits>
-#include <limits>
 #include <cmath>
-#include <cwchar>
-#include <stdexcept>
-#include <typeinfo>
-#include <cstring>
+#include <cstdarg>
+#include <cstddef>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cwchar>
+#include <exception>
 #include <iostream>
+#include <istream>
+#include <iterator>
+#include <limits>
+#include <list>
+#include <map>
+#include <new>
+#include <numeric>
+#include <ostream>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <typeinfo>
 #include <vector>
 
+#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <float.h>
+#include <locale.h>
+#include <math.h>
+#include <memory.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #if BEAST_USE_INTRINSICS
- #include <intrin.h>
+# include <intrin.h>
 #endif
 
 #if BEAST_MAC || BEAST_IOS
- #include <libkern/OSAtomic.h>
+# include <libkern/OSAtomic.h>
 #endif
 
 #if BEAST_LINUX
- #include <signal.h>
-
- #if __INTEL_COMPILER
-  #if __ia64__
-   #include <ia64intrin.h>
-  #else
-   #include <ia32intrin.h>
-  #endif
- #endif
+# include <signal.h>
+# if __INTEL_COMPILER
+#  if __ia64__
+#   include <ia64intrin.h>
+#  else
+#   include <ia32intrin.h>
+#  endif
+# endif
 #endif
 
 #if BEAST_MSVC && BEAST_DEBUG
- #include <crtdbg.h>
+# include <crtdbg.h>
+# include <stdlib.h>
+# include <malloc.h>
 #endif
 
 #if BEAST_MSVC
- #pragma warning (pop)
+#pragma warning (pop)
 #endif
 
 #if BEAST_ANDROID
@@ -107,8 +134,12 @@
 #undef max
 #undef min
 
-//==============================================================================
+//------------------------------------------------------------------------------
+
 // DLL building settings on Windows
+//
+// VFALCO TODO Deprecate this
+//
 #if BEAST_MSVC
  #ifdef BEAST_DLL_BUILD
   #define BEAST_API __declspec (dllexport)
@@ -124,43 +155,31 @@
  #define BEAST_API __attribute__ ((visibility("default")))
 #endif
 
-//==============================================================================
+//------------------------------------------------------------------------------
+
 #ifndef BEAST_API
- #define BEAST_API  /**< This macro is added to all beast public class declarations. */
+#define BEAST_API  /**< This macro is added to all beast public class declarations. */
 #endif
 
 #if BEAST_MSVC && BEAST_DLL_BUILD
- #define BEAST_PUBLIC_IN_DLL_BUILD(declaration)  public: declaration; private:
+#define BEAST_PUBLIC_IN_DLL_BUILD(decl)  public: decl; private:
 #else
- #define BEAST_PUBLIC_IN_DLL_BUILD(declaration)  declaration;
+#define BEAST_PUBLIC_IN_DLL_BUILD(decl)  decl;
 #endif
 
 /** This macro is added to all beast public function declarations. */
 #define BEAST_PUBLIC_FUNCTION        BEAST_API BEAST_CALLTYPE
 
-#if (! defined (BEAST_CATCH_DEPRECATED_CODE_MISUSE)) && BEAST_DEBUG && ! DOXYGEN
- /** This turns on some non-essential bits of code that should prevent old code from compiling
-     in cases where method signatures have changed, etc.
- */
- #define BEAST_CATCH_DEPRECATED_CODE_MISUSE 1
-#endif
+//------------------------------------------------------------------------------
 
-#ifndef DOXYGEN
- #define BEAST_NAMESPACE beast  // This old macro is deprecated: you should just use the beast namespace directly.
-#endif
-
-//==============================================================================
-// Now include some common headers...
 namespace beast
 {
-    extern BEAST_API bool BEAST_CALLTYPE beast_isRunningUnderDebugger();
-    extern BEAST_API void BEAST_CALLTYPE logAssertion (const char* file, int line) noexcept;
 
-    #include "../memory/beast_Memory.h"
-    #include "../maths/beast_MathsFunctions.h"
-    #include "../memory/beast_ByteOrder.h"
-    #include "../logging/beast_Logger.h"
-    #include "../memory/beast_LeakedObjectDetector.h"
+extern BEAST_API bool BEAST_CALLTYPE beast_isRunningUnderDebugger();
+extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) noexcept;
+
+// These are so common that we include them early
+// ?
 }
 
-#endif   // BEAST_STANDARDHEADER_BEASTHEADER
+#endif

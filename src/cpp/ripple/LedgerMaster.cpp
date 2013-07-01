@@ -31,7 +31,7 @@ int LedgerMaster::getValidatedLedgerAge ()
         return 999999;
     }
 
-    int64 ret = theApp->getOPs ().getCloseTimeNC ();
+    int64 ret = getApp().getOPs ().getCloseTimeNC ();
     ret -= static_cast<int64> (mValidLedger->getCloseTimeNC ());
     ret = std::max (0LL, ret);
 
@@ -132,7 +132,7 @@ Ledger::pointer LedgerMaster::closeLedger (bool recover)
             {
                 TransactionEngineParams tepFlags = tapOPEN_LEDGER;
 
-                if (theApp->getHashRouter ().addSuppressionPeer (it->first.getTXID (), SF_SIGGOOD))
+                if (getApp().getHashRouter ().addSuppressionPeer (it->first.getTXID (), SF_SIGGOOD))
                     tepFlags = static_cast<TransactionEngineParams> (tepFlags | tapNO_CHECK_SIGN);
 
                 bool didApply;
@@ -171,7 +171,7 @@ TER LedgerMaster::doTransaction (SerializedTransaction::ref txn, TransactionEngi
         ledger = mEngine.getLedger ();
     }
     //  if (didApply)
-    theApp->getOPs ().pubProposedTransaction (ledger, txn, result);
+    getApp().getOPs ().pubProposedTransaction (ledger, txn, result);
     return result;
 }
 
@@ -179,7 +179,7 @@ bool LedgerMaster::haveLedgerRange (uint32 from, uint32 to)
 {
     boost::recursive_mutex::scoped_lock sl (mLock);
     uint32 prevMissing = mCompleteLedgers.prevMissing (to + 1);
-    return (prevMissing == RangeSet::RangeSetAbsent) || (prevMissing < from);
+    return (prevMissing == RangeSet::absent) || (prevMissing < from);
 }
 
 bool LedgerMaster::haveLedger (uint32 seq)
@@ -202,7 +202,7 @@ bool LedgerMaster::getValidatedRange (uint32& minVal, uint32& maxVal)
 
     minVal = mCompleteLedgers.prevMissing (maxVal);
 
-    if (minVal == RangeSet::RangeSetAbsent)
+    if (minVal == RangeSet::absent)
         minVal = 0;
     else
         ++minVal;
@@ -235,7 +235,7 @@ void LedgerMaster::asyncAccept (Ledger::pointer ledger)
 
         if (it == ledgerHashes.end ())
         {
-            if (theApp->isShutdown ())
+            if (getApp().isShutdown ())
                 return;
 
             {
@@ -272,18 +272,18 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
     if (ledger && (Ledger::getHashByIndex (ledgerSeq) == ledgerHash))
     {
         WriteLog (lsTRACE, LedgerMaster) << "Ledger hash found in database";
-        theApp->getJobQueue ().addJob (jtPUBOLDLEDGER, "LedgerMaster::asyncAccept",
+        getApp().getJobQueue ().addJob (jtPUBOLDLEDGER, "LedgerMaster::asyncAccept",
                                        BIND_TYPE (&LedgerMaster::asyncAccept, this, ledger));
         return true;
     }
 
-    if (theApp->getInboundLedgers ().isFailure (ledgerHash))
+    if (getApp().getInboundLedgers ().isFailure (ledgerHash))
     {
         WriteLog (lsTRACE, LedgerMaster) << "Already failed to acquire " << ledgerSeq;
         return false;
     }
 
-    mMissingLedger = theApp->getInboundLedgers ().findCreate (ledgerHash, ledgerSeq);
+    mMissingLedger = getApp().getInboundLedgers ().findCreate (ledgerHash, ledgerSeq);
 
     if (mMissingLedger->isComplete ())
     {
@@ -306,14 +306,14 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
     if (mMissingLedger->setAccept ())
     {
         if (!mMissingLedger->addOnComplete (BIND_TYPE (&LedgerMaster::missingAcquireComplete, this, P_1)))
-            theApp->getIOService ().post (BIND_TYPE (&LedgerMaster::missingAcquireComplete, this, mMissingLedger));
+            getApp().getIOService ().post (BIND_TYPE (&LedgerMaster::missingAcquireComplete, this, mMissingLedger));
     }
 
     int fetchMax = theConfig.getSize (siLedgerFetch);
     int timeoutCount;
-    int fetchCount = theApp->getInboundLedgers ().getFetchCount (timeoutCount);
+    int fetchCount = getApp().getInboundLedgers ().getFetchCount (timeoutCount);
 
-    if ((fetchCount < fetchMax) && theApp->getOPs ().isFull ())
+    if ((fetchCount < fetchMax) && getApp().getOPs ().isFull ())
     {
         if (timeoutCount > 2)
         {
@@ -326,9 +326,9 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
             BOOST_REVERSE_FOREACH (const u_pair & it, vec)
             {
                 if ((fetchCount < fetchMax) && (it.first < ledgerSeq) &&
-                        !mCompleteLedgers.hasValue (it.first) && !theApp->getInboundLedgers ().find (it.second))
+                        !mCompleteLedgers.hasValue (it.first) && !getApp().getInboundLedgers ().find (it.second))
                 {
-                    InboundLedger::pointer acq = theApp->getInboundLedgers ().findCreate (it.second, it.first);
+                    InboundLedger::pointer acq = getApp().getInboundLedgers ().findCreate (it.second, it.first);
 
                     if (acq && acq->isComplete ())
                     {
@@ -343,7 +343,7 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
         }
     }
 
-    if (theApp->getOPs ().shouldFetchPack (ledgerSeq) && (ledgerSeq > 40000))
+    if (getApp().getOPs ().shouldFetchPack (ledgerSeq) && (ledgerSeq > 40000))
     {
         // refill our fetch pack
         Ledger::pointer nextLedger = mLedgerHistory.getLedgerBySeq (ledgerSeq + 1);
@@ -355,7 +355,7 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
             tmBH.set_query (true);
             tmBH.set_seq (ledgerSeq);
             tmBH.set_ledgerhash (ledgerHash.begin (), 32);
-            std::vector<Peer::pointer> peerList = theApp->getPeers ().getPeerVector ();
+            std::vector<Peer::pointer> peerList = getApp().getPeers ().getPeerVector ();
 
             Peer::pointer target;
             int count = 0;
@@ -424,7 +424,7 @@ void LedgerMaster::resumeAcquiring ()
     //             based on a myriad of conditions which short circuit the function
     //             in ways that the caller cannot expect or predict.
     //
-    if (!theApp->getOPs ().isFull ())
+    if (!getApp().getOPs ().isFull ())
         return;
 
     boost::recursive_mutex::scoped_lock ml (mLock);
@@ -440,7 +440,7 @@ void LedgerMaster::resumeAcquiring ()
 
     uint32 prevMissing = mCompleteLedgers.prevMissing (mFinalizedLedger->getLedgerSeq ());
 
-    if (prevMissing == RangeSet::RangeSetAbsent)
+    if (prevMissing == RangeSet::absent)
     {
         WriteLog (lsDEBUG, LedgerMaster) << "no prior missing ledger, not resuming";
         return;
@@ -502,7 +502,7 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger)
     WriteLog (lsDEBUG, LedgerMaster) << "Ledger " << ledger->getLedgerSeq () << " accepted :" << ledger->getHash ();
     assert (ledger->peekAccountStateMap ()->getHash ().isNonZero ());
 
-    if (theApp->getOPs ().isNeedNetworkLedger ())
+    if (getApp().getOPs ().isNeedNetworkLedger ())
         return;
 
     boost::recursive_mutex::scoped_lock ml (mLock);
@@ -531,7 +531,7 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger)
     if (mMissingLedger && mMissingLedger->isDone ())
     {
         if (mMissingLedger->isFailed ())
-            theApp->getInboundLedgers ().dropLedger (mMissingLedger->getHash ());
+            getApp().getInboundLedgers ().dropLedger (mMissingLedger->getHash ());
 
         mMissingLedger.reset ();
     }
@@ -542,7 +542,7 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger)
         return;
     }
 
-    if (theApp->getJobQueue ().getJobCountTotal (jtPUBOLDLEDGER) > 1)
+    if (getApp().getJobQueue ().getJobCountTotal (jtPUBOLDLEDGER) > 1)
     {
         WriteLog (lsDEBUG, LedgerMaster) << "Too many pending ledger saves";
         return;
@@ -564,7 +564,7 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger)
     {
         uint32 prevMissing = mCompleteLedgers.prevMissing (ledger->getLedgerSeq ());
 
-        if (prevMissing == RangeSet::RangeSetAbsent)
+        if (prevMissing == RangeSet::absent)
         {
             WriteLog (lsDEBUG, LedgerMaster) << "no prior missing ledger";
             return;
@@ -609,7 +609,7 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
 
     if (mLastValidateHash.isNonZero ())
     {
-        int val = theApp->getValidations ().getTrustedValidationCount (mLastValidateHash);
+        int val = getApp().getValidations ().getTrustedValidationCount (mLastValidateHash);
         val *= MIN_VALIDATION_RATIO;
         val /= 256;
 
@@ -619,10 +619,10 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
 
     if (theConfig.RUN_STANDALONE)
         minVal = 0;
-    else if (theApp->getOPs ().isNeedNetworkLedger ())
+    else if (getApp().getOPs ().isNeedNetworkLedger ())
         minVal = 1;
 
-    if (theApp->getValidations ().getTrustedValidationCount (hash) < minVal) // nothing we can do
+    if (getApp().getValidations ().getTrustedValidationCount (hash) < minVal) // nothing we can do
         return;
 
     WriteLog (lsINFO, LedgerMaster) << "Advancing accepted ledger to " << seq << " with >= " << minVal << " validations";
@@ -634,7 +634,7 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
 
     if (!ledger)
     {
-        theApp->getInboundLedgers ().findCreate (hash, seq);
+        getApp().getInboundLedgers ().findCreate (hash, seq);
         return;
     }
 
@@ -695,13 +695,13 @@ void LedgerMaster::tryPublish ()
             }
             else
             {
-                if (theApp->getInboundLedgers ().isFailure (hash))
+                if (getApp().getInboundLedgers ().isFailure (hash))
                 {
                     WriteLog (lsWARNING, LedgerMaster) << "Unable to acquire a recent validated ledger";
                 }
                 else
                 {
-                    InboundLedger::pointer acq = theApp->getInboundLedgers ().findCreate (hash, seq);
+                    InboundLedger::pointer acq = getApp().getInboundLedgers ().findCreate (hash, seq);
 
                     if (!acq->isDone ())
                     {
@@ -722,16 +722,16 @@ void LedgerMaster::tryPublish ()
 
     if (!mPubLedgers.empty () && !mPubThread)
     {
-        theApp->getOPs ().clearNeedNetworkLedger ();
+        getApp().getOPs ().clearNeedNetworkLedger ();
         mPubThread = true;
-        theApp->getJobQueue ().addJob (jtPUBLEDGER, "Ledger::pubThread",
+        getApp().getJobQueue ().addJob (jtPUBLEDGER, "Ledger::pubThread",
                                        BIND_TYPE (&LedgerMaster::pubThread, this));
         mPathFindNewLedger = true;
 
         if (!mPathFindThread)
         {
             mPathFindThread = true;
-            theApp->getJobQueue ().addJob (jtUPDATE_PF, "updatePaths",
+            getApp().getJobQueue ().addJob (jtUPDATE_PF, "updatePaths",
                                            BIND_TYPE (&LedgerMaster::updatePaths, this));
         }
     }
@@ -757,7 +757,7 @@ void LedgerMaster::pubThread ()
                 if (published && !mPathFindThread)
                 {
                     mPathFindThread = true;
-                    theApp->getJobQueue ().addJob (jtUPDATE_PF, "updatePaths",
+                    getApp().getJobQueue ().addJob (jtUPDATE_PF, "updatePaths",
                                                    BIND_TYPE (&LedgerMaster::updatePaths, this));
                 }
 
@@ -769,7 +769,7 @@ void LedgerMaster::pubThread ()
         {
             WriteLog (lsDEBUG, LedgerMaster) << "Publishing ledger " << l->getLedgerSeq ();
             setFullLedger (l); // OPTIMIZEME: This is actually more work than we need to do
-            theApp->getOPs ().pubLedger (l);
+            getApp().getOPs ().pubLedger (l);
             published = true;
         }
     }
@@ -819,7 +819,7 @@ void LedgerMaster::newPathRequest ()
     if (!mPathFindThread)
     {
         mPathFindThread = true;
-        theApp->getJobQueue ().addJob (jtUPDATE_PF, "updatePaths",
+        getApp().getJobQueue ().addJob (jtUPDATE_PF, "updatePaths",
                                        BIND_TYPE (&LedgerMaster::updatePaths, this));
     }
 }

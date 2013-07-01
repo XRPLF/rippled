@@ -10,7 +10,7 @@
 /** Persistency layer for hashed objects.
 */
 // VFALCO TODO Move all definitions to the .cpp
-class HashedObjectStore
+class HashedObjectStore : LeakChecked <HashedObjectStore>
 {
 public:
     HashedObjectStore (int cacheSize, int cacheAge);

@@ -6,10 +6,12 @@
 
 #ifndef RIPPLE_VERSION_H
 #define RIPPLE_VERSION_H
+
 //
 // Versions
 //
 
+// VFALCO TODO Roll this together into ripple_BuildVersion
 #define SERVER_VERSION_MAJOR        0
 #define SERVER_VERSION_MINOR        9
 #define SERVER_VERSION_SUB          "-b"

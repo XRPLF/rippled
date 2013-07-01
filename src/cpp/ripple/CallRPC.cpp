@@ -1014,10 +1014,10 @@ void callRPC (
     // Connect to localhost
     if (!theConfig.QUIET)
     {
-        std::cerr << "Connecting to: " << strIp << ":" << iPort << std::endl;
-        //      std::cerr << "Username: " << strUsername << ":" << strPassword << std::endl;
-        //      std::cerr << "Path: " << strPath << std::endl;
-        //      std::cerr << "Method: " << strMethod << std::endl;
+        Log::out() << "Connecting to: " << strIp << ":" << iPort;
+        //  Log::out() << "Username: " << strUsername << ":" << strPassword;
+        //  Log::out() << "Path: " << strPath;
+        //  Log::out() << "Method: " << strMethod;
     }
 
     // HTTP basic authentication

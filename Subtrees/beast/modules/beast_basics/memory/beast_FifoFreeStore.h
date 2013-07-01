@@ -20,19 +20,16 @@
 #ifndef BEAST_FIFOFREESTORE_BEASTHEADER
 #define BEAST_FIFOFREESTORE_BEASTHEADER
 
-#if BEAST_USE_BOOST
-#include "beast_FifoFreeStoreWithTLS.h"
-
-#else
-#include "beast_FifoFreeStoreWithoutTLS.h"
-
-#endif
-
 /** Selected free store based on compilation settings.
 
     @ingroup beast_concurrent
 */
-#if BEAST_USE_BOOST
+// VFALCO NOTE Disabled this because it seems that the TLS
+//             implementation has a leak. Although the other
+//             one also seems to have a leak.
+//
+//#if BEAST_BOOST_IS_AVAILABLE
+#if 0
 typedef FifoFreeStoreWithTLS FifoFreeStoreType;
 #else
 typedef FifoFreeStoreWithoutTLS FifoFreeStoreType;

@@ -4,9 +4,9 @@
 */
 //==============================================================================
 
-// VFALCO TODO Repalce these with something more robust and without macros.
+// VFALCO TODO Replace these with something more robust and without macros.
 //
-#if !defined(WIN32) && !defined(WIN64)
+#if ! BEAST_MSVC
 #define _vsnprintf(a,b,c,d) vsnprintf(a,b,c,d)
 #endif
 
@@ -188,6 +188,7 @@ extern std::string urlEncode (const std::string& strSrc)
 // IP Port parsing
 //
 // <-- iPort: "" = -1
+// VFALCO TODO Make this not require boost... and especially boost::asio
 bool parseIpPort (const std::string& strSource, std::string& strIP, int& iPort)
 {
     boost::smatch   smMatch;
@@ -235,10 +236,10 @@ bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& s
         boost::algorithm::to_lower (strScheme);
 
         iPort   = strPort.empty () ? -1 : lexical_cast_s<int> (strPort);
-        // std::cerr << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPort << "' : " << iPort << " : '" << strPath << "'" << std::endl;
+        // Log::out() << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPort << "' : " << iPort << " : '" << strPath << "'";
     }
 
-    // std::cerr << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPath << "'" << std::endl;
+    // Log::out() << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPath << "'";
 
     return bMatch;
 }
@@ -261,3 +262,12 @@ bool parseQuality (const std::string& strSource, uint32& uQuality)
 
     return !!uQuality;
 }
+
+std::string addressToString (void const* address)
+{
+    // VFALCO TODO Clean this up, use uintptr_t and only produce a 32 bit
+    //             output on 32 bit platforms
+    //
+    return strHex (static_cast <char const*> (address) - static_cast <char const*> (0));
+}
+

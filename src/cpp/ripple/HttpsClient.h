@@ -11,7 +11,9 @@
 // Async https client.
 //
 
-class HttpsClient : public boost::enable_shared_from_this<HttpsClient>
+class HttpsClient
+    : public boost::enable_shared_from_this <HttpsClient>
+    , LeakChecked <HttpsClient>
 {
 public:
     HttpsClient (

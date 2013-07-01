@@ -103,7 +103,7 @@ bool SqliteDatabase::executeSQL (const char* sql, bool fail_ok)
     {
         if (!fail_ok)
         {
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
             WriteLog (lsWARNING, SqliteDatabase) << "Perror:" << mHost << ": " << rc;
             WriteLog (lsWARNING, SqliteDatabase) << "Statement: " << sql;
             WriteLog (lsWARNING, SqliteDatabase) << "Error: " << sqlite3_errmsg (mConnection);
@@ -137,7 +137,7 @@ bool SqliteDatabase::executeSQL (const char* sql, bool fail_ok)
 
         if (!fail_ok)
         {
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
             WriteLog (lsWARNING, SqliteDatabase) << "SQL Serror:" << mHost << ": " << rc;
             WriteLog (lsWARNING, SqliteDatabase) << "Statement: " << sql;
             WriteLog (lsWARNING, SqliteDatabase) << "Error: " << sqlite3_errmsg (mConnection);

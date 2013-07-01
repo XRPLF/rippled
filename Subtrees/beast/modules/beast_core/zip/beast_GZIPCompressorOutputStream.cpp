@@ -26,7 +26,7 @@
   ==============================================================================
 */
 
-class GZIPCompressorOutputStream::GZIPCompressorHelper
+class GZIPCompressorOutputStream::GZIPCompressorHelper : Uncopyable
 {
 public:
     GZIPCompressorHelper (const int compressionLevel, const int windowBits)
@@ -114,8 +114,6 @@ private:
 
         return false;
     }
-
-    BEAST_DECLARE_NON_COPYABLE (GZIPCompressorHelper)
 };
 
 //==============================================================================

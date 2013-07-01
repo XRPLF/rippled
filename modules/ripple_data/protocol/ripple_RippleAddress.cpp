@@ -814,17 +814,17 @@ bool RippleAddress::setSeedGeneric (const std::string& strText)
     }
     else if (setSeed (strText))
     {
-        // std::cerr << "Recognized seed." << std::endl;
+        // Log::out() << "Recognized seed.";
         nothing ();
     }
     else if (1 == setSeed1751 (strText))
     {
-        // std::cerr << "Recognized 1751 seed." << std::endl;
+        // Log::out() << "Recognized 1751 seed.";
         nothing ();
     }
     else
     {
-        // std::cerr << "Creating seed from pass phrase." << std::endl;
+        // Log::out() << "Creating seed from pass phrase.";
         setSeed (CKey::PassPhraseToKey (strText));
     }
 

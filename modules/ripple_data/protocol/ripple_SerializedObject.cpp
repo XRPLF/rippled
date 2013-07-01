@@ -1269,12 +1269,10 @@ UPTR_T<STObject> STObject::parseJson (const Json::Value& object, SField::ref inN
                 {
                     if (field == sfTransactionType)
                     {
-                        TxFormat* f = TxFormats::getInstance ().findByName (strValue);
+                        // Retrieve type from name. Throws if not found.
+                        TxType const txType = TxFormats::getInstance().findTypeByName (strValue);
 
-                        if (!f)
-                            throw std::runtime_error ("Unknown transaction type");
-
-                        data.push_back (new STUInt16 (field, static_cast<uint16> (f->getType ())));
+                        data.push_back (new STUInt16 (field, static_cast<uint16> (txType)));
 
                         if (*name == sfGeneric)
                             name = &sfTransaction;

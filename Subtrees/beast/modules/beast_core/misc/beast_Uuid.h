@@ -37,7 +37,7 @@
 
     The class includes methods for saving the ID as a string or as raw binary data.
 */
-class BEAST_API Uuid
+class BEAST_API Uuid : LeakChecked <Uuid>
 {
 public:
     //==============================================================================
@@ -101,8 +101,6 @@ public:
 private:
     //==============================================================================
     uint8 uuid[16];
-
-    BEAST_LEAK_DETECTOR (Uuid)
 };
 
 

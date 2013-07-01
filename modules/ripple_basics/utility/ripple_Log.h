@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LOG_H
-#define RIPPLE_LOG_H
+#ifndef RIPPLE_LOG_H_INCLUDED
+#define RIPPLE_LOG_H_INCLUDED
 
 enum LogSeverity
 {
@@ -20,23 +20,28 @@ enum LogSeverity
 
 //------------------------------------------------------------------------------
 
-// VFALCO TODO make this a nested class in Log
-class LogPartition
+// VFALCO TODO make this a nested class in Log?
+class LogPartition // : public List <LogPartition>::Node
 {
-protected:
-    static LogPartition* headLog;
-
-    LogPartition*       mNextLog;
-    LogSeverity         mMinSeverity;
-    std::string         mName;
-
 public:
-    LogPartition (const char* name);
+    LogPartition (const char* partitionName);
+
+    /** Retrieve the LogPartition associated with an object.
+
+        Each LogPartition is a singleton.
+    */
+    template <class Key>
+    static LogPartition const& get ()
+    {
+        static LogPartition logPartition (getPartitionName <Key> ());
+        return logPartition;
+    }
 
     bool doLog (LogSeverity s) const
     {
         return s >= mMinSeverity;
     }
+
     const std::string& getName () const
     {
         return mName;
@@ -47,33 +52,34 @@ public:
     static std::vector< std::pair<std::string, std::string> > getSeverities ();
 
 private:
-    /** Retrieve file name from a log partition.
+    /** Retrieve the name for a log partition.
     */
     template <class Key>
-    static char const* getFileName ();
-    /*
-    {
-        static_vfassert (false);
-    }
-    */
+    static char const* getPartitionName ();
 
-public:
-    template <class Key>
-    static LogPartition const& get ()
-    {
-        static LogPartition logPartition (getFileName <Key> ());
-        return logPartition;
-    }
+private:
+    // VFALCO TODO Use an intrusive linked list
+    //
+    static LogPartition* headLog;
+
+    LogPartition*       mNextLog;
+    LogSeverity         mMinSeverity;
+    std::string         mName;
 };
 
-#define SETUP_LOG(k) \
-    template <> char const* LogPartition::getFileName <k> () { return __FILE__; } \
-    struct k##Instantiator { k##Instantiator () { LogPartition::get <k> (); } }; \
-    static k##Instantiator k##Instantiator_instance;
+#define SETUP_LOG(Class) \
+    template <> char const* LogPartition::getPartitionName <Class> () { return #Class; } \
+    struct Class##Instantiator { Class##Instantiator () { LogPartition::get <Class> (); } }; \
+    static Class##Instantiator Class##Instantiator_instance;
+
+#define SETUP_LOGN(Class,Name) \
+    template <> char const* LogPartition::getPartitionName <Class> () { return Name; } \
+    struct Class##Instantiator { Class##Instantiator () { LogPartition::get <Class> (); } }; \
+    static Class##Instantiator Class##Instantiator_instance;
 
 //------------------------------------------------------------------------------
 
-class Log
+class Log : public Uncopyable
 {
 public:
     explicit Log (LogSeverity s) : mSeverity (s)
@@ -111,10 +117,73 @@ public:
 
     static std::string rotateLog ();
 
+public:
+    /** Write to log output.
+
+        All logging eventually goes through this function. If a
+        debugger is attached, the string goes to the debugging console,
+        else it goes to the standard error output. If a log file is
+        open, then the message is additionally written to the open log
+        file.
+
+        The text should not contain a newline, it will be automatically
+        added as needed.
+
+        @note  This acquires a global mutex.
+
+        @param text     The text to write.
+        @param toStdErr `true` to also write to std::cerr
+    */
+    static void print (std::string const& text,
+                       bool toStdErr = true);
+
+    /** Output stream for logging
+
+        This is a convenient replacement for writing to `std::cerr`.
+
+        Usage:
+
+        @code
+
+        Log::out () << "item1" << 2;
+
+        @endcode
+
+        It is not necessary to append a newline.
+    */
+    class out
+    {
+    public:
+        out ()
+        {
+        }
+        
+        ~out ()
+        {
+            Log::print (m_ss.str ());
+        }
+
+        template <class T>
+        out& operator<< (T t)
+        {
+            m_ss << t;
+            return *this;
+        }
+
+    private:
+        std::stringstream m_ss;
+    };
+
 private:
-    // VFALCO TODO derive from beast::Uncopyable
-    Log (const Log&);            // no implementation
-    Log& operator= (const Log&); // no implementation
+    enum
+    {
+        /** Maximum line length for log messages.
+
+            If the message exceeds this length it will be truncated
+            with elipses.
+        */
+        maximumMessageCharacters = 12 * 1024
+    };
 
     // VFALCO TODO looks like there are really TWO classes in here.
     //         One is a stream target for '<<' operator and the other

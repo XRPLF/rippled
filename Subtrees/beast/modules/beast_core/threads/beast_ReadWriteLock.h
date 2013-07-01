@@ -50,7 +50,7 @@
 
     @see ScopedReadLock, ScopedWriteLock, CriticalSection
 */
-class BEAST_API ReadWriteLock
+class BEAST_API ReadWriteLock : Uncopyable
 {
 public:
     //==============================================================================
@@ -146,8 +146,6 @@ private:
     };
 
     mutable Array <ThreadRecursionCount> readerThreads;
-
-    BEAST_DECLARE_NON_COPYABLE (ReadWriteLock)
 };
 
 

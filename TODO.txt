@@ -1,16 +1,43 @@
 --------------------------------------------------------------------------------
-TODO
+RIPPLE TODO
 --------------------------------------------------------------------------------
 
-- Make beast::HashMap support assignment via operator[]
-- Rewrite TxFormats to use beast containers and RAII, and not leak
-- Add ICore interface
-- Make TxFormats a member of ICore instead of a singleton.
+- Make sure the leak detector output appears on Linux and FreeBSD debug builds.
+
+- Create SharedData <LoadState>, move all load related state variables currently
+  protected by separated mutexes in different classes into the LoadState, and
+  use read/write locking semantics to update the values. Later, use Listeners
+  to notify dependent code to resolve the dependency inversion.
+
+- Merge ripple_Version.h and ripple_BuildVersion.h
 
 - Rename LoadMonitor to LoadMeter, change LoadEvent to LoadMeter::ScopedSample
 
-- Fix all leaks on exit (!)
+- Rename LedgerMaster to Ledgers, create ILedgers interface.
 
+- Restructure the ripple sources to have this directory structure:
+  /Source/ripple/ripple_core/ripple_core.h
+  /...
+  /Source/Subtrees/... ?
+  PROBLEM: Where to put BeastConfig.h ?
+
+- Figure out where previous ledgers go after a call to LedgerMaster::pushLedger()
+  and see if it is possible to clean up the leaks on exit.
+
+- Replace all NULL with nullptr
+
+- Add ICore interface
+
+- Make TxFormats a member of ICore instead of a singleton.
+  PROBLEM: STObject derived classes like STInt16 make direct use of the
+           singleton. It might have to remain a singleton. At the very least,
+           it should be a SharedSingleton to resolve ordering issues.
+
+- Rename include guards to boost style, e.g. RIPPLE_LOG_H_INCLUDED
+
+- Replace C11X with BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
+
+- Fix all leaks on exit (!)
     Say there's a leak, a ledger that can never be accessed is locked in some
         structure. If the organized teardown code frees that structure, the leak
         will not be reported.
@@ -30,7 +57,8 @@ TODO
 
 - Remove "ENABLE_INSECURE" when the time is right.
 
-- lift unique_ptr / auto_ptr into ripple namespace, or replace with ScopedPointer
+- lift unique_ptr / auto_ptr into ripple namespace,
+  or replace with ScopedPointer (preferred)
 
 - Make LevelDB and Ripple code work with both Unicode and non-Unicode Windows APIs
 
@@ -56,6 +84,7 @@ TODO
 LoadEvent
 
     Is referenced with both a shared pointer and an auto pointer.
+    Should be named LoadMeter::ScopedSample
 
 JobQueue
 
@@ -87,7 +116,9 @@ Verbose names
 
 Ledger "Skip List"
 
-  Is not really a skip list data structure
+  Is not really a skip list data structure. This is more appropriately
+  called an "index" although that name is currently used to identify hashes
+  used as keys.
 
 Duplicate Code
 
@@ -109,13 +140,7 @@ Interfaces
     would be more clear:
         bool write (OutputStream& stream);
 
---------------------------------------------------------------------------------
-
-Implementation
-
-  LoadManager
-    
-    What is going on in the destructor
+    We have beast for InputStream and OutputStream, we can use those now.
 
 --------------------------------------------------------------------------------
 
@@ -133,5 +158,5 @@ boost::recursive_mutex
     Recursive mutexes should never be necessary.
     They require the "mutable" keyword for const members to acquire the lock (yuck)
 
-    Replace recursive_mutex with juce::Mutex to remove boost dependency
+    Replace recursive_mutex with beast::Mutex to remove boost dependency
 

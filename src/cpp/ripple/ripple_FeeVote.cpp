@@ -105,7 +105,7 @@ public:
         VotableInteger<uint32> incReserveVote (lastClosedLedger->getReserveInc (), mTargetReserveIncrement);
 
         // get validations for ledger before flag
-        ValidationSet set = theApp->getValidations ().getValidations (lastClosedLedger->getParentHash ());
+        ValidationSet set = getApp().getValidations ().getValidations (lastClosedLedger->getParentHash ());
         BOOST_FOREACH (ValidationSet::value_type const & value, set)
         {
             SerializedValidation const& val = *value.second;

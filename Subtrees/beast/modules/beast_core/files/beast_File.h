@@ -46,14 +46,14 @@ class FileOutputStream;
 
     @see FileInputStream, FileOutputStream
 */
-class BEAST_API File
+class BEAST_API File : LeakChecked <File>
 {
 public:
     //==============================================================================
     /** Creates an (invalid) file object.
 
         The file is initially set to an empty path, so getFullPath() will return
-        an empty string, and comparing the file to File::nonexistent will return
+        an empty string, and comparing the file to File::nonexistent() will return
         true.
 
         You can use its operator= method to point it at a proper file.
@@ -76,7 +76,7 @@ public:
     File (const File& other);
 
     /** Destructor. */
-    ~File() noexcept  {}
+    ~File() noexcept;
 
     /** Sets the file based on an absolute pathname.
 
@@ -100,7 +100,7 @@ public:
 
     //==============================================================================
     /** This static constant is used for referring to an 'invalid' file. */
-    static const File nonexistent;
+    static File const& nonexistent ();
 
     //==============================================================================
     /** Checks whether the file actually exists.
@@ -948,8 +948,6 @@ private:
     bool setFileTimesInternal (int64 m, int64 a, int64 c) const;
     void getFileTimesInternal (int64& m, int64& a, int64& c) const;
     bool setFileReadOnlyInternal (bool) const;
-
-    BEAST_LEAK_DETECTOR (File)
 };
 
 #endif   // BEAST_FILE_BEASTHEADER

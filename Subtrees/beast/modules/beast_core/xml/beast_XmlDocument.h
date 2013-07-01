@@ -67,7 +67,7 @@ class InputSource;
 
     @see XmlElement
 */
-class BEAST_API XmlDocument
+class BEAST_API XmlDocument : LeakChecked <XmlDocument>, Uncopyable
 {
 public:
     //==============================================================================
@@ -173,8 +173,6 @@ private:
     String expandEntity (const String& entity);
     String expandExternalEntity (const String& entity);
     String getParameterEntity (const String& entity);
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (XmlDocument)
 };
 
 

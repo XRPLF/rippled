@@ -7,7 +7,9 @@
 #ifndef __RPCSERVER__
 #define __RPCSERVER__
 
-class RPCServer : public boost::enable_shared_from_this<RPCServer>
+class RPCServer
+    : public boost::enable_shared_from_this<RPCServer>
+    , LeakChecked <RPCServer>
 {
 public:
 

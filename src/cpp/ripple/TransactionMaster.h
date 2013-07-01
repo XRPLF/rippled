@@ -9,7 +9,7 @@
 
 // Tracks all transactions in memory
 
-class TransactionMaster
+class TransactionMaster : LeakChecked <TransactionMaster>
 {
 public:
     TransactionMaster ();

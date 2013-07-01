@@ -20,8 +20,6 @@
 #ifndef BEAST_FIFOFREESTOREWITHOUTTLS_BEASTHEADER
 #define BEAST_FIFOFREESTOREWITHOUTTLS_BEASTHEADER
 
-#include "beast_GlobalPagedFreeStore.h"
-
 /*============================================================================*/
 /**
   Lock-free FIFO memory allocator.
@@ -40,7 +38,7 @@
 
   @ingroup beast_concurrent
 */
-class FifoFreeStoreWithoutTLS
+class BEAST_API FifoFreeStoreWithoutTLS
 {
 public:
     explicit FifoFreeStoreWithoutTLS ();

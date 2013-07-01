@@ -21,89 +21,52 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CORE_BEASTHEADER
-#define BEAST_CORE_BEASTHEADER
+#ifndef BEAST_CORE_H_INCLUDED
+#define BEAST_CORE_H_INCLUDED
 
-#ifndef BEAST_BEASTCONFIG_HEADER
- /* If you fail to make sure that all your compile units are building Beast with the same set of
-    option flags, then there's a risk that different compile units will treat the classes as having
-    different memory layouts, leading to very nasty memory corruption errors when they all get
-    linked together. That's why it's best to always include the BeastConfig.h file before any beast headers.
- */
- #ifdef _MSC_VER
-#pragma message ("Have you included your BeastConfig.h file before including the Beast headers?")
- #else
-  #warning "Have you included your BeastConfig.h file before including the Beast headers?"
- #endif
+//------------------------------------------------------------------------------
+
+/*  If you fail to make sure that all your compile units are building Beast with
+    the same set of option flags, then there's a risk that different compile
+    units will treat the classes as having different memory layouts, leading to
+    very nasty memory corruption errors when they all get linked together.
+    That's why it's best to always include the BeastConfig.h file before any
+    beast headers.
+*/
+#ifndef BEAST_BEASTCONFIG_H_INCLUDED
+# ifdef _MSC_VER
+#  pragma message ("Have you included your BeastConfig.h file before including the Beast headers?")
+# else
+#  warning "Have you included your BeastConfig.h file before including the Beast headers?"
+# endif
 #endif
 
-//==============================================================================
+//------------------------------------------------------------------------------
+
 #include "system/beast_TargetPlatform.h"
 
-//=============================================================================
-/** Config: BEAST_FORCE_DEBUG
+//
+// Apply sensible defaults for the configuration settings
+//
 
-    Normally, BEAST_DEBUG is set to 1 or 0 based on compiler and project settings,
-    but if you define this value, you can override this to force it to be true or false.
-*/
-#ifndef BEAST_FORCE_DEBUG
- //#define BEAST_FORCE_DEBUG 0
-#endif
-
-//=============================================================================
-/** Config: BEAST_LOG_ASSERTIONS
-
-    If this flag is enabled, the the bassert and bassertfalse macros will always use Logger::writeToLog()
-    to write a message when an assertion happens.
-
-    Enabling it will also leave this turned on in release builds. When it's disabled,
-    however, the bassert and bassertfalse macros will not be compiled in a
-    release build.
-
-    @see bassert, bassertfalse, Logger
-*/
 #ifndef BEAST_LOG_ASSERTIONS
- #if BEAST_ANDROID
-  #define BEAST_LOG_ASSERTIONS 1
- #else
-  #define BEAST_LOG_ASSERTIONS 0
- #endif
+# if BEAST_ANDROID
+#  define BEAST_LOG_ASSERTIONS 1
+# else
+#  define BEAST_LOG_ASSERTIONS 0
+# endif
 #endif
 
-//=============================================================================
-/** Config: BEAST_CHECK_MEMORY_LEAKS
-
-    Enables a memory-leak check for certain objects when the app terminates. See the LeakedObjectDetector
-    class and the BEAST_LEAK_DETECTOR macro for more details about enabling leak checking for specific classes.
-*/
 #if BEAST_DEBUG && ! defined (BEAST_CHECK_MEMORY_LEAKS)
- #define BEAST_CHECK_MEMORY_LEAKS 1
+#define BEAST_CHECK_MEMORY_LEAKS 1
 #endif
 
-//=============================================================================
-/** Config: BEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES
-
-    In a Visual C++  build, this can be used to stop the required system libs being
-    automatically added to the link stage.
-*/
-#ifndef BEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES
- #define BEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES 0
-#endif
-
-/*  Config: BEAST_INCLUDE_ZLIB_CODE
-    This can be used to disable Beast's embedded 3rd-party zlib code.
-    You might need to tweak this if you're linking to an external zlib library in your app,
-    but for normal apps, this option should be left alone.
-
-    If you disable this, you might also want to set a value for BEAST_ZLIB_INCLUDE_PATH, to
-    specify the path where your zlib headers live.
-*/
 #ifndef BEAST_INCLUDE_ZLIB_CODE
- #define BEAST_INCLUDE_ZLIB_CODE 1
+#define BEAST_INCLUDE_ZLIB_CODE 1
 #endif
 
 #ifndef BEAST_ZLIB_INCLUDE_PATH
- #define BEAST_ZLIB_INCLUDE_PATH <zlib.h>
+#define BEAST_ZLIB_INCLUDE_PATH <zlib.h>
 #endif
 
 /*  Config: BEAST_CATCH_UNHANDLED_EXCEPTIONS
@@ -111,330 +74,274 @@
     to your BEASTApplication::unhandledException() callback.
 */
 #ifndef BEAST_CATCH_UNHANDLED_EXCEPTIONS
- //#define BEAST_CATCH_UNHANDLED_EXCEPTIONS 1
+//#define BEAST_CATCH_UNHANDLED_EXCEPTIONS 1
 #endif
 
-//=============================================================================
-//=============================================================================
-#if BEAST_MSVC
- #pragma warning (disable: 4251) // (DLL build warning, must be disabled before pushing the warning state)
- #pragma warning (push)
- #pragma warning (disable: 4786) // (long class name warning)
- #ifdef __INTEL_COMPILER
-  #pragma warning (disable: 1125)
- #endif
+#ifndef BEAST_BOOST_IS_AVAILABLE
+#define BEAST_BOOST_IS_AVAILABLE 0
 #endif
+
+//------------------------------------------------------------------------------
+//
+// This is a hack to fix boost's goofy placeholders
+//
+
+#if BEAST_BOOST_IS_AVAILABLE
+#ifdef BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
+#error <boost/bind.hpp> must not be included before this file
+#endif
+// Prevent <boost/bind/placeholders.hpp> from being included
+#define BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
+#include <boost/bind/arg.hpp>
+#include <boost/config.hpp>
+// This based on <boost/bind/placeholders.cpp>
+namespace boost {
+namespace placeholders {
+extern boost::arg<1> _1;
+extern boost::arg<2> _2;
+extern boost::arg<3> _3;
+extern boost::arg<4> _4;
+extern boost::arg<5> _5;
+extern boost::arg<6> _6;
+extern boost::arg<7> _7;
+extern boost::arg<8> _8;
+extern boost::arg<9> _9;
+}
+using namespace placeholders;
+}
+#endif
+
+//------------------------------------------------------------------------------
+//
+// Choose a source of bind, placeholders, and function
+//
+
+#if !BEAST_BIND_USES_STD && !BEAST_BIND_USES_TR1 && !BEAST_BIND_USES_BOOST
+# if BEAST_MSVC
+#  define BEAST_BIND_USES_STD 1
+# elif BEAST_IOS || BEAST_MAC
+#  include <ciso646>                        // detect version of std::lib
+#  if BEAST_IOS && BEAST_BOOST_IS_AVAILABLE // Work-around for iOS bugs with bind.
+#   define BEAST_BIND_USES_BOOST 1
+#  elif _LIBCPP_VERSION // libc++
+#   define BEAST_BIND_USES_STD 1
+#  else // libstdc++ (GNU)
+#   define BEAST_BIND_USES_TR1 1
+#  endif
+# elif BEAST_LINUX || BEAST_BSD
+#  define BEAST_BIND_USES_TR1 1
+# else
+#  define BEAST_BIND_USES_STD 1
+# endif
+#endif
+
+#if BEAST_BIND_USES_STD
+# include <functional>
+#elif BEAST_BIND_USES_TR1
+# include <tr1/functional>
+#elif BEAST_BIND_USES_BOOST
+# include <boost/bind.hpp>
+# include <boost/function.hpp>
+#endif
+
+//------------------------------------------------------------------------------
 
 #include "system/beast_StandardHeader.h"
+
+#if BEAST_MSVC
+# pragma warning (disable: 4251) // (DLL build warning, must be disabled before pushing the warning state)
+# pragma warning (push)
+# pragma warning (disable: 4786) // (long class name warning)
+# ifdef __INTEL_COMPILER
+#  pragma warning (disable: 1125)
+# endif
+#endif
+
+// If the MSVC debug heap headers were included, disable
+// the macros during the juce include since they conflict.
+#ifdef _CRTDBG_MAP_ALLOC
+#pragma push_macro("calloc")
+#pragma push_macro("free")
+#pragma push_macro("malloc")
+#pragma push_macro("realloc")
+#pragma push_macro("_recalloc")
+#pragma push_macro("_aligned_free")
+#pragma push_macro("_aligned_malloc")
+#pragma push_macro("_aligned_offset_malloc")
+#pragma push_macro("_aligned_realloc")
+#pragma push_macro("_aligned_recalloc")
+#pragma push_macro("_aligned_offset_realloc")
+#pragma push_macro("_aligned_offset_recalloc")
+#pragma push_macro("_aligned_msize")
+#undef calloc
+#undef free
+#undef malloc
+#undef realloc
+#undef _recalloc
+#undef _aligned_free
+#undef _aligned_malloc
+#undef _aligned_offset_malloc
+#undef _aligned_realloc
+#undef _aligned_recalloc
+#undef _aligned_offset_realloc
+#undef _aligned_offset_recalloc
+#undef _aligned_msize
+#endif
 
 namespace beast
 {
 
-// START_AUTOINCLUDE containers, files, json, logging, maths, memory, misc, network,
-// streams, system, text, threads, time, unit_tests, xml, zip
-#ifndef BEAST_ABSTRACTFIFO_BEASTHEADER
- #include "containers/beast_AbstractFifo.h"
-#endif
-#ifndef BEAST_ARRAY_BEASTHEADER
- #include "containers/beast_Array.h"
-#endif
-#ifndef BEAST_ARRAYALLOCATIONBASE_BEASTHEADER
- #include "containers/beast_ArrayAllocationBase.h"
-#endif
-#ifndef BEAST_DYNAMICOBJECT_BEASTHEADER
- #include "containers/beast_DynamicObject.h"
-#endif
-#ifndef BEAST_ELEMENTCOMPARATOR_BEASTHEADER
- #include "containers/beast_ElementComparator.h"
-#endif
-#ifndef BEAST_HASHMAP_BEASTHEADER
- #include "containers/beast_HashMap.h"
-#endif
-#ifndef BEAST_LINKEDLISTPOINTER_BEASTHEADER
- #include "containers/beast_LinkedListPointer.h"
-#endif
-#ifndef BEAST_NAMEDVALUESET_BEASTHEADER
- #include "containers/beast_NamedValueSet.h"
-#endif
-#ifndef BEAST_OWNEDARRAY_BEASTHEADER
- #include "containers/beast_OwnedArray.h"
-#endif
-#ifndef BEAST_PROPERTYSET_BEASTHEADER
- #include "containers/beast_PropertySet.h"
-#endif
-#ifndef BEAST_REFERENCECOUNTEDARRAY_BEASTHEADER
- #include "containers/beast_ReferenceCountedArray.h"
-#endif
-#ifndef BEAST_SCOPEDVALUESETTER_BEASTHEADER
- #include "containers/beast_ScopedValueSetter.h"
-#endif
-#ifndef BEAST_SORTEDSET_BEASTHEADER
- #include "containers/beast_SortedSet.h"
-#endif
-#ifndef BEAST_SPARSESET_BEASTHEADER
- #include "containers/beast_SparseSet.h"
-#endif
-#ifndef BEAST_VARIANT_BEASTHEADER
- #include "containers/beast_Variant.h"
-#endif
-#ifndef BEAST_DIRECTORYITERATOR_BEASTHEADER
- #include "files/beast_DirectoryIterator.h"
-#endif
-#ifndef BEAST_FILE_BEASTHEADER
- #include "files/beast_File.h"
-#endif
-#ifndef BEAST_FILEINPUTSTREAM_BEASTHEADER
- #include "files/beast_FileInputStream.h"
-#endif
-#ifndef BEAST_FILEOUTPUTSTREAM_BEASTHEADER
- #include "files/beast_FileOutputStream.h"
-#endif
-#ifndef BEAST_FILESEARCHPATH_BEASTHEADER
- #include "files/beast_FileSearchPath.h"
-#endif
-#ifndef BEAST_MEMORYMAPPEDFILE_BEASTHEADER
- #include "files/beast_MemoryMappedFile.h"
-#endif
-#ifndef BEAST_TEMPORARYFILE_BEASTHEADER
- #include "files/beast_TemporaryFile.h"
-#endif
-#ifndef BEAST_JSON_BEASTHEADER
- #include "json/beast_JSON.h"
-#endif
-#ifndef BEAST_FILELOGGER_BEASTHEADER
- #include "logging/beast_FileLogger.h"
-#endif
-#ifndef BEAST_LOGGER_BEASTHEADER
- #include "logging/beast_Logger.h"
-#endif
-#ifndef BEAST_BIGINTEGER_BEASTHEADER
- #include "maths/beast_BigInteger.h"
-#endif
-#ifndef BEAST_EXPRESSION_BEASTHEADER
- #include "maths/beast_Expression.h"
-#endif
-#ifndef BEAST_MATHSFUNCTIONS_BEASTHEADER
- #include "maths/beast_MathsFunctions.h"
-#endif
-#ifndef BEAST_RANDOM_BEASTHEADER
- #include "maths/beast_Random.h"
-#endif
-#ifndef BEAST_RANGE_BEASTHEADER
- #include "maths/beast_Range.h"
-#endif
-#ifndef BEAST_ATOMIC_BEASTHEADER
- #include "memory/beast_Atomic.h"
-#endif
-#ifndef BEAST_BYTEORDER_BEASTHEADER
- #include "memory/beast_ByteOrder.h"
-#endif
-#ifndef BEAST_HEAPBLOCK_BEASTHEADER
- #include "memory/beast_HeapBlock.h"
-#endif
-#ifndef BEAST_LEAKEDOBJECTDETECTOR_BEASTHEADER
- #include "memory/beast_LeakedObjectDetector.h"
-#endif
-#ifndef BEAST_MEMORY_BEASTHEADER
- #include "memory/beast_Memory.h"
-#endif
-#ifndef BEAST_MEMORYBLOCK_BEASTHEADER
- #include "memory/beast_MemoryBlock.h"
-#endif
-#ifndef BEAST_OPTIONALSCOPEDPOINTER_BEASTHEADER
- #include "memory/beast_OptionalScopedPointer.h"
-#endif
-#ifndef BEAST_REFERENCECOUNTEDOBJECT_BEASTHEADER
- #include "memory/beast_ReferenceCountedObject.h"
-#endif
-#ifndef BEAST_SCOPEDPOINTER_BEASTHEADER
- #include "memory/beast_ScopedPointer.h"
-#endif
-#ifndef BEAST_SINGLETON_BEASTHEADER
- #include "memory/beast_Singleton.h"
-#endif
-#ifndef BEAST_WEAKREFERENCE_BEASTHEADER
- #include "memory/beast_WeakReference.h"
-#endif
-#ifndef BEAST_RESULT_BEASTHEADER
- #include "misc/beast_Result.h"
-#endif
-#ifndef BEAST_UUID_BEASTHEADER
- #include "misc/beast_Uuid.h"
-#endif
-#ifndef BEAST_WINDOWSREGISTRY_BEASTHEADER
- #include "misc/beast_WindowsRegistry.h"
-#endif
-#ifndef BEAST_IPADDRESS_BEASTHEADER
- #include "network/beast_IPAddress.h"
-#endif
-#ifndef BEAST_MACADDRESS_BEASTHEADER
- #include "network/beast_MACAddress.h"
-#endif
-#ifndef BEAST_NAMEDPIPE_BEASTHEADER
- #include "network/beast_NamedPipe.h"
-#endif
-#ifndef BEAST_SOCKET_BEASTHEADER
- #include "network/beast_Socket.h"
-#endif
-#ifndef BEAST_URL_BEASTHEADER
- #include "network/beast_URL.h"
-#endif
-#ifndef BEAST_BUFFEREDINPUTSTREAM_BEASTHEADER
- #include "streams/beast_BufferedInputStream.h"
-#endif
-#ifndef BEAST_FILEINPUTSOURCE_BEASTHEADER
- #include "streams/beast_FileInputSource.h"
-#endif
-#ifndef BEAST_INPUTSOURCE_BEASTHEADER
- #include "streams/beast_InputSource.h"
-#endif
-#ifndef BEAST_INPUTSTREAM_BEASTHEADER
- #include "streams/beast_InputStream.h"
-#endif
-#ifndef BEAST_MEMORYINPUTSTREAM_BEASTHEADER
- #include "streams/beast_MemoryInputStream.h"
-#endif
-#ifndef BEAST_MEMORYOUTPUTSTREAM_BEASTHEADER
- #include "streams/beast_MemoryOutputStream.h"
-#endif
-#ifndef BEAST_OUTPUTSTREAM_BEASTHEADER
- #include "streams/beast_OutputStream.h"
-#endif
-#ifndef BEAST_SUBREGIONSTREAM_BEASTHEADER
- #include "streams/beast_SubregionStream.h"
-#endif
-#ifndef BEAST_PLATFORMDEFS_BEASTHEADER
- #include "system/beast_PlatformDefs.h"
-#endif
-#ifndef BEAST_STANDARDHEADER_BEASTHEADER
- #include "system/beast_StandardHeader.h"
-#endif
-#ifndef BEAST_SYSTEMSTATS_BEASTHEADER
- #include "system/beast_SystemStats.h"
-#endif
-#ifndef BEAST_TARGETPLATFORM_BEASTHEADER
- #include "system/beast_TargetPlatform.h"
-#endif
-#ifndef BEAST_CHARACTERFUNCTIONS_BEASTHEADER
- #include "text/beast_CharacterFunctions.h"
-#endif
-#ifndef BEAST_CHARPOINTER_ASCII_BEASTHEADER
- #include "text/beast_CharPointer_ASCII.h"
-#endif
-#ifndef BEAST_CHARPOINTER_UTF16_BEASTHEADER
- #include "text/beast_CharPointer_UTF16.h"
-#endif
-#ifndef BEAST_CHARPOINTER_UTF32_BEASTHEADER
- #include "text/beast_CharPointer_UTF32.h"
-#endif
-#ifndef BEAST_CHARPOINTER_UTF8_BEASTHEADER
- #include "text/beast_CharPointer_UTF8.h"
-#endif
-#ifndef BEAST_IDENTIFIER_BEASTHEADER
- #include "text/beast_Identifier.h"
-#endif
-#ifndef BEAST_LOCALISEDSTRINGS_BEASTHEADER
- #include "text/beast_LocalisedStrings.h"
-#endif
-#ifndef BEAST_NEWLINE_BEASTHEADER
- #include "text/beast_NewLine.h"
-#endif
-#ifndef BEAST_STRING_BEASTHEADER
- #include "text/beast_String.h"
-#endif
-#ifndef BEAST_STRINGARRAY_BEASTHEADER
- #include "text/beast_StringArray.h"
-#endif
-#ifndef BEAST_STRINGPAIRARRAY_BEASTHEADER
- #include "text/beast_StringPairArray.h"
-#endif
-#ifndef BEAST_STRINGPOOL_BEASTHEADER
- #include "text/beast_StringPool.h"
-#endif
-#ifndef BEAST_TEXTDIFF_BEASTHEADER
- #include "text/beast_TextDiff.h"
-#endif
-#ifndef BEAST_CHILDPROCESS_BEASTHEADER
- #include "threads/beast_ChildProcess.h"
-#endif
-#ifndef BEAST_CRITICALSECTION_BEASTHEADER
- #include "threads/beast_CriticalSection.h"
-#endif
-#ifndef BEAST_DYNAMICLIBRARY_BEASTHEADER
- #include "threads/beast_DynamicLibrary.h"
-#endif
-#ifndef BEAST_HIGHRESOLUTIONTIMER_BEASTHEADER
- #include "threads/beast_HighResolutionTimer.h"
-#endif
-#ifndef BEAST_INTERPROCESSLOCK_BEASTHEADER
- #include "threads/beast_InterProcessLock.h"
-#endif
-#ifndef BEAST_PROCESS_BEASTHEADER
- #include "threads/beast_Process.h"
-#endif
-#ifndef BEAST_READWRITELOCK_BEASTHEADER
- #include "threads/beast_ReadWriteLock.h"
-#endif
-#ifndef BEAST_SCOPEDLOCK_BEASTHEADER
- #include "threads/beast_ScopedLock.h"
-#endif
-#ifndef BEAST_SCOPEDREADLOCK_BEASTHEADER
- #include "threads/beast_ScopedReadLock.h"
-#endif
-#ifndef BEAST_SCOPEDWRITELOCK_BEASTHEADER
- #include "threads/beast_ScopedWriteLock.h"
-#endif
-#ifndef BEAST_SPINLOCK_BEASTHEADER
- #include "threads/beast_SpinLock.h"
-#endif
-#ifndef BEAST_THREAD_BEASTHEADER
- #include "threads/beast_Thread.h"
-#endif
-#ifndef BEAST_THREADLOCALVALUE_BEASTHEADER
- #include "threads/beast_ThreadLocalValue.h"
-#endif
-#ifndef BEAST_THREADPOOL_BEASTHEADER
- #include "threads/beast_ThreadPool.h"
-#endif
-#ifndef BEAST_TIMESLICETHREAD_BEASTHEADER
- #include "threads/beast_TimeSliceThread.h"
-#endif
-#ifndef BEAST_WAITABLEEVENT_BEASTHEADER
- #include "threads/beast_WaitableEvent.h"
-#endif
-#ifndef BEAST_PERFORMANCECOUNTER_BEASTHEADER
- #include "time/beast_PerformanceCounter.h"
-#endif
-#ifndef BEAST_RELATIVETIME_BEASTHEADER
- #include "time/beast_RelativeTime.h"
-#endif
-#ifndef BEAST_TIME_BEASTHEADER
- #include "time/beast_Time.h"
-#endif
-#ifndef BEAST_UNITTEST_BEASTHEADER
- #include "unit_tests/beast_UnitTest.h"
-#endif
-#ifndef BEAST_XMLDOCUMENT_BEASTHEADER
- #include "xml/beast_XmlDocument.h"
-#endif
-#ifndef BEAST_XMLELEMENT_BEASTHEADER
- #include "xml/beast_XmlElement.h"
-#endif
-#ifndef BEAST_GZIPCOMPRESSOROUTPUTSTREAM_BEASTHEADER
- #include "zip/beast_GZIPCompressorOutputStream.h"
-#endif
-#ifndef BEAST_GZIPDECOMPRESSORINPUTSTREAM_BEASTHEADER
- #include "zip/beast_GZIPDecompressorInputStream.h"
-#endif
-#ifndef BEAST_ZIPFILE_BEASTHEADER
- #include "zip/beast_ZipFile.h"
-#endif
-// END_AUTOINCLUDE
+// Order matters, since headers don't have their own #include lines.
+// Add new includes to the bottom.
+
+#include "memory/beast_Uncopyable.h"
+#include "maths/beast_MathsFunctions.h"
+#include "memory/beast_Atomic.h"
+#include "memory/beast_AtomicCounter.h"
+#include "memory/beast_AtomicFlag.h"
+#include "memory/beast_AtomicPointer.h"
+#include "memory/beast_AtomicState.h"
+#include "containers/beast_LockFreeStack.h"
+#include "threads/beast_SpinDelay.h"
+#include "memory/beast_StaticObject.h"
+#include "time/beast_PerformedAtExit.h"
+#include "diagnostic/beast_LeakChecked.h"
+#include "memory/beast_Memory.h"
+#include "memory/beast_ByteOrder.h"
+#include "logging/beast_Logger.h"
+#include "threads/beast_Thread.h"
+#include "diagnostic/beast_Debug.h"
+#include "diagnostic/beast_SafeBool.h"
+#include "diagnostic/beast_Error.h"
+#include "diagnostic/beast_FPUFlags.h"
+#include "diagnostic/beast_Throw.h"
+#include "containers/beast_AbstractFifo.h"
+#include "containers/beast_Array.h"
+#include "containers/beast_ArrayAllocationBase.h"
+#include "containers/beast_DynamicObject.h"
+#include "containers/beast_ElementComparator.h"
+#include "containers/beast_HashMap.h"
+#include "containers/beast_List.h"
+#include "containers/beast_LinkedListPointer.h"
+#include "containers/beast_LockFreeQueue.h"
+#include "containers/beast_NamedValueSet.h"
+#include "containers/beast_OwnedArray.h"
+#include "containers/beast_PropertySet.h"
+#include "containers/beast_ReferenceCountedArray.h"
+#include "containers/beast_ScopedValueSetter.h"
+#include "containers/beast_SharedTable.h"
+#include "containers/beast_SortedLookupTable.h"
+#include "containers/beast_SortedSet.h"
+#include "containers/beast_SparseSet.h"
+#include "containers/beast_Variant.h"
+#include "files/beast_DirectoryIterator.h"
+#include "files/beast_File.h"
+#include "files/beast_FileInputStream.h"
+#include "files/beast_FileOutputStream.h"
+#include "files/beast_FileSearchPath.h"
+#include "files/beast_MemoryMappedFile.h"
+#include "files/beast_TemporaryFile.h"
+#include "json/beast_JSON.h"
+#include "logging/beast_FileLogger.h"
+#include "logging/beast_Logger.h"
+#include "maths/beast_BigInteger.h"
+#include "maths/beast_Expression.h"
+#include "maths/beast_Interval.h"
+#include "maths/beast_MathsFunctions.h"
+#include "maths/beast_Random.h"
+#include "maths/beast_Range.h"
+#include "memory/beast_ByteOrder.h"
+#include "memory/beast_HeapBlock.h"
+#include "memory/beast_Memory.h"
+#include "memory/beast_MemoryBlock.h"
+#include "memory/beast_OptionalScopedPointer.h"
+#include "memory/beast_ReferenceCountedObject.h"
+#include "memory/beast_ScopedPointer.h"
+#include "threads/beast_SpinLock.h"
+#include "memory/beast_SharedSingleton.h"
+#include "memory/beast_WeakReference.h"
+#include "memory/beast_MemoryAlignment.h"
+#include "memory/beast_CacheLine.h"
+#include "misc/beast_Result.h"
+#include "misc/beast_Uuid.h"
+#include "misc/beast_WindowsRegistry.h"
+#include "network/beast_IPAddress.h"
+#include "network/beast_MACAddress.h"
+#include "network/beast_NamedPipe.h"
+#include "network/beast_Socket.h"
+#include "network/beast_URL.h"
+#include "streams/beast_BufferedInputStream.h"
+#include "streams/beast_FileInputSource.h"
+#include "streams/beast_InputSource.h"
+#include "streams/beast_InputStream.h"
+#include "streams/beast_MemoryInputStream.h"
+#include "streams/beast_MemoryOutputStream.h"
+#include "streams/beast_OutputStream.h"
+#include "streams/beast_SubregionStream.h"
+#include "system/beast_Functional.h"
+#include "system/beast_PlatformDefs.h"
+#include "system/beast_StandardHeader.h"
+#include "system/beast_SystemStats.h"
+#include "system/beast_TargetPlatform.h"
+#include "text/beast_CharacterFunctions.h"
+#include "text/beast_CharPointer_ASCII.h"
+#include "text/beast_CharPointer_UTF16.h"
+#include "text/beast_CharPointer_UTF32.h"
+#include "text/beast_CharPointer_UTF8.h"
+#include "text/beast_Identifier.h"
+#include "text/beast_LocalisedStrings.h"
+#include "text/beast_NewLine.h"
+#include "text/beast_String.h"
+#include "text/beast_StringArray.h"
+#include "text/beast_StringPairArray.h"
+#include "text/beast_StringPool.h"
+#include "text/beast_TextDiff.h"
+#include "threads/beast_ChildProcess.h"
+#include "threads/beast_CriticalSection.h"
+#include "threads/beast_DynamicLibrary.h"
+#include "threads/beast_HighResolutionTimer.h"
+#include "threads/beast_InterProcessLock.h"
+#include "threads/beast_Process.h"
+#include "threads/beast_ReadWriteLock.h"
+#include "threads/beast_ScopedLock.h"
+#include "threads/beast_ScopedReadLock.h"
+#include "threads/beast_ScopedWriteLock.h"
+#include "threads/beast_ThreadLocalValue.h"
+#include "threads/beast_ThreadPool.h"
+#include "threads/beast_TimeSliceThread.h"
+#include "threads/beast_WaitableEvent.h"
+#include "time/beast_PerformanceCounter.h"
+#include "time/beast_RelativeTime.h"
+#include "time/beast_Time.h"
+#include "unit_tests/beast_UnitTest.h"
+#include "xml/beast_XmlDocument.h"
+#include "xml/beast_XmlElement.h"
+#include "zip/beast_GZIPCompressorOutputStream.h"
+#include "zip/beast_GZIPDecompressorInputStream.h"
+#include "zip/beast_ZipFile.h"
 
 }
 
-#if BEAST_MSVC
- #pragma warning (pop)
+#ifdef _CRTDBG_MAP_ALLOC
+#pragma pop_macro("_aligned_msize")
+#pragma pop_macro("_aligned_offset_recalloc")
+#pragma pop_macro("_aligned_offset_realloc")
+#pragma pop_macro("_aligned_recalloc")
+#pragma pop_macro("_aligned_realloc")
+#pragma pop_macro("_aligned_offset_malloc")
+#pragma pop_macro("_aligned_malloc")
+#pragma pop_macro("_aligned_free")
+#pragma pop_macro("_recalloc")
+#pragma pop_macro("realloc")
+#pragma pop_macro("malloc")
+#pragma pop_macro("free")
+#pragma pop_macro("calloc")
 #endif
 
-#endif   // BEAST_CORE_BEASTHEADER
+#if BEAST_MSVC
+#pragma warning (pop)
+#endif
+
+//------------------------------------------------------------------------------
+
+#endif

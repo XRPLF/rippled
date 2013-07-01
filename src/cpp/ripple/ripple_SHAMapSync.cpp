@@ -235,7 +235,7 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode, SHANodeFormat format,
     if (!node)
         return SHAMapAddNode::invalid ();
 
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
     node->dump ();
 #endif
 

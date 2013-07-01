@@ -7,17 +7,24 @@
 // VFALCO TODO Clean this global up
 volatile bool doShutdown = false;
 
-// VFALCO TODO Wrap this up in something neater.
-IApplication* theApp = nullptr;
-
 class Application;
 
 SETUP_LOG (Application)
 
 // VFALCO TODO Move the function definitions into the class declaration
-class Application : public IApplication
+class Application
+    : public IApplication
+    , public SharedSingleton <Application>
+    , LeakChecked <Application>
 {
 public:
+    static Application* createInstance ()
+    {
+        return new Application;
+    }
+
+    class Holder;
+
     Application ();
     ~Application ();
 
@@ -248,10 +255,10 @@ private:
     leveldb::DB* mHashNodeLDB;
     leveldb::DB* mEphemeralLDB;
 
-    PeerDoor*               mPeerDoor;
-    RPCDoor*                mRPCDoor;
-    WSDoor*                 mWSPublicDoor;
-    WSDoor*                 mWSPrivateDoor;
+    ScopedPointer <PeerDoor> mPeerDoor;
+    ScopedPointer <RPCDoor>  mRPCDoor;
+    ScopedPointer <WSDoor>   mWSPublicDoor;
+    ScopedPointer <WSDoor>   mWSPrivateDoor;
 
     boost::asio::deadline_timer mSweepTimer;
 
@@ -259,7 +266,8 @@ private:
 };
 
 Application::Application ()
-    : mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
+    : SharedSingleton <Application> (SingletonLifetime::persistAfterCreation)
+    , mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
     , mIOWork (mIOService)
     , mAuxWork (mAuxService)
     , mNetOps (mIOService, &mLedgerMaster)
@@ -366,7 +374,7 @@ void Application::setup ()
 
     m_loadManager->startThread ();
 
-#ifndef WIN32
+#if ! BEAST_WIN32
 #ifdef SIGINT
 
     if (!theConfig.RUN_STANDALONE)
@@ -384,7 +392,7 @@ void Application::setup ()
 
     if (!theConfig.DEBUG_LOGFILE.empty ())
     {
-        // Let DEBUG messages go to the file but only WARNING or higher to regular output (unless verbose)
+        // Let BEAST_DEBUG messages go to the file but only WARNING or higher to regular output (unless verbose)
         Log::setLogFile (theConfig.DEBUG_LOGFILE);
 
         if (Log::getMinSeverity () > lsDEBUG)
@@ -459,14 +467,14 @@ void Application::setup ()
 
     if (!mHashedObjectStore.isLevelDB ())
     {
-        theApp->getHashNodeDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+        getApp().getHashNodeDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
                 (theConfig.getSize (siHashNodeDBCache) * 1024)));
-	theApp->getHashNodeDB ()->getDB ()->setupCheckpointing (&mJobQueue);
+	    getApp().getHashNodeDB ()->getDB ()->setupCheckpointing (&mJobQueue);
     }
 
-    theApp->getLedgerDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+    getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
             (theConfig.getSize (siLgrDBCache) * 1024)));
-    theApp->getTxnDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+    getApp().getTxnDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
             (theConfig.getSize (siTxnDBCache) * 1024)));
 
     mTxnDB->getDB ()->setupCheckpointing (&mJobQueue);
@@ -489,7 +497,7 @@ void Application::setup ()
 
         if (!loadOldLedger (theConfig.START_LEDGER))
         {
-            theApp->stop ();
+            getApp().stop ();
             exit (-1);
         }
     }
@@ -504,7 +512,7 @@ void Application::setup ()
     else
         startNewLedger ();
 
-    mOrderBookDB.setup (theApp->getLedgerMaster ().getCurrentLedger ());
+    mOrderBookDB.setup (getApp().getLedgerMaster ().getCurrentLedger ());
 
     //
     // Begin validation and ip maintenance.
@@ -646,7 +654,7 @@ void Application::run ()
         // VFALCO NOTE This seems unnecessary. If we properly refactor the load
         //             manager then the deadlock detector can just always be "armed"
         //
-	    theApp->getLoadManager ().activateDeadlockDetector ();
+	    getApp().getLoadManager ().activateDeadlockDetector ();
     }
 
     mIOService.run (); // This blocks
@@ -669,7 +677,7 @@ void Application::sweep ()
     if (space.available < (512 * 1024 * 1024))
     {
         WriteLog (lsFATAL, Application) << "Remaining free disk space is less than 512MB";
-        theApp->stop ();
+        getApp().stop ();
     }
 
     // VFALCO NOTE Does the order of calls matter?
@@ -808,37 +816,39 @@ bool serverOkay (std::string& reason)
     if (!theConfig.ELB_SUPPORT)
         return true;
 
+    /*
     if (!theApp)
     {
         reason = "Server has not started";
         return false;
     }
+    */
 
-    if (theApp->isShutdown ())
+    if (getApp().isShutdown ())
     {
         reason = "Server is shutting down";
         return false;
     }
 
-    if (theApp->getOPs ().isNeedNetworkLedger ())
+    if (getApp().getOPs ().isNeedNetworkLedger ())
     {
         reason = "Not synchronized with network yet";
         return false;
     }
 
-    if (theApp->getOPs ().getOperatingMode () < NetworkOPs::omSYNCING)
+    if (getApp().getOPs ().getOperatingMode () < NetworkOPs::omSYNCING)
     {
         reason = "Not synchronized with network";
         return false;
     }
 
-    if (theApp->getFeeTrack ().isLoaded ())
+    if (getApp().getFeeTrack ().isLoaded ())
     {
         reason = "Too much load";
         return false;
     }
 
-    if (theApp->getOPs ().isFeatureBlocked ())
+    if (getApp().getOPs ().isFeatureBlocked ())
     {
         reason = "Server version too old";
         return false;
@@ -881,12 +891,12 @@ static bool schemaHas (DatabaseCon* dbc, const std::string& dbName, int line, co
 
 static void addTxnSeqField ()
 {
-    if (schemaHas (theApp->getTxnDB (), "AccountTransactions", 0, "TxnSeq"))
+    if (schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "TxnSeq"))
         return;
 
     Log (lsWARNING) << "Transaction sequence field is missing";
 
-    Database* db = theApp->getTxnDB ()->getDB ();
+    Database* db = getApp().getTxnDB ()->getDB ();
 
     std::vector< std::pair<uint256, int> > txIDs;
     txIDs.reserve (300000);
@@ -956,18 +966,18 @@ static void addTxnSeqField ()
 void Application::updateTables (bool ldbImport)
 {
     // perform any needed table updates
-    assert (schemaHas (theApp->getTxnDB (), "AccountTransactions", 0, "TransID"));
-    assert (!schemaHas (theApp->getTxnDB (), "AccountTransactions", 0, "foobar"));
+    assert (schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "TransID"));
+    assert (!schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "foobar"));
     addTxnSeqField ();
 
-    if (schemaHas (theApp->getTxnDB (), "AccountTransactions", 0, "PRIMARY"))
+    if (schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "PRIMARY"))
     {
         Log (lsFATAL) << "AccountTransactions database should not have a primary key";
         StopSustain ();
         exit (1);
     }
 
-    if (theApp->getHashedObjectStore ().isLevelDB ())
+    if (getApp().getHashedObjectStore ().isLevelDB ())
     {
         boost::filesystem::path hashPath = theConfig.DATA_DIR / "hashnode.db";
 
@@ -976,7 +986,7 @@ void Application::updateTables (bool ldbImport)
             if (theConfig.LDB_IMPORT)
             {
                 Log (lsWARNING) << "Importing SQLite -> LevelDB";
-                theApp->getHashedObjectStore ().import (hashPath.string ());
+                getApp().getHashedObjectStore ().import (hashPath.string ());
                 Log (lsWARNING) << "Remove or remname the hashnode.db file";
             }
             else
@@ -990,7 +1000,9 @@ void Application::updateTables (bool ldbImport)
     }
 }
 
-IApplication* IApplication::New ()
+//------------------------------------------------------------------------------
+
+IApplication& getApp ()
 {
-    return new Application;
+    return *Application::getInstance ();
 }

@@ -53,7 +53,7 @@
     @endcode
 */
 template <class ObjectType>
-class LinkedListPointer
+class LinkedListPointer : Uncopyable
 {
 public:
     //==============================================================================
@@ -330,7 +330,7 @@ public:
         list, and then repeatedly call Appender::append() to add items to the end
         of the list in O(1) time.
     */
-    class Appender
+    class Appender : Uncopyable
     {
     public:
         /** Creates an appender which will add items to the given list.
@@ -351,15 +351,11 @@ public:
 
     private:
         LinkedListPointer* endOfList;
-
-        BEAST_DECLARE_NON_COPYABLE (Appender)
     };
 
 private:
     //==============================================================================
     ObjectType* item;
-
-    BEAST_DECLARE_NON_COPYABLE (LinkedListPointer)
 };
 
 

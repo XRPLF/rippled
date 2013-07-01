@@ -45,7 +45,7 @@ Transaction::pointer Transaction::sharedTransaction (Blob const& vucTransaction,
 //
 
 Transaction::Transaction (
-    TransactionType ttKind,
+    TxType ttKind,
     const RippleAddress&    naPublicKey,
     const RippleAddress&    naSourceAccount,
     uint32                  uSeq,
@@ -154,8 +154,8 @@ void Transaction::save ()
         status = TXN_SQL_UNKNOWN;
     }
 
-    Database* db = theApp->getTxnDB ()->getDB ();
-    ScopedLock dbLock (theApp->getTxnDB ()->getDBLock ());
+    Database* db = getApp().getTxnDB ()->getDB ();
+    ScopedLock dbLock (getApp().getTxnDB ()->getDBLock ());
     db->executeSQL (mTransaction->getSQLInsertReplaceHeader () + mTransaction->getSQL (getLedger (), status) + ";");
 }
 
@@ -231,8 +231,8 @@ Transaction::pointer Transaction::transactionFromSQL (const std::string& sql)
     rawTxn.resize (txSize);
 
     {
-        ScopedLock sl (theApp->getTxnDB ()->getDBLock ());
-        Database* db = theApp->getTxnDB ()->getDB ();
+        ScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+        Database* db = getApp().getTxnDB ()->getDB ();
 
         if (!db->executeSQL (sql, true) || !db->startIterRows ())
             return Transaction::pointer ();
@@ -365,7 +365,7 @@ Json::Value Transaction::getJson (int options, bool binary) const
 
         if (options == 1)
         {
-            Ledger::pointer ledger = theApp->getLedgerMaster ().getLedgerBySeq (mInLedger);
+            Ledger::pointer ledger = getApp().getLedgerMaster ().getLedgerBySeq (mInLedger);
 
             if (ledger)
                 ret["date"] = ledger->getCloseTimeNC ();

@@ -32,6 +32,8 @@
 //   affecting performance.
 //
 
+#if BEAST_BOOST_IS_AVAILABLE
+
 // This precedes every allocation
 //
 struct FifoFreeStoreWithTLS::Header
@@ -192,3 +194,5 @@ void FifoFreeStoreWithTLS::deallocate (void* p)
     if (page->release ())
         deletePage (page);
 }
+
+#endif

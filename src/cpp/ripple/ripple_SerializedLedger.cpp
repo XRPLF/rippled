@@ -4,10 +4,9 @@
 */
 //==============================================================================
 
-// For logging
-struct SerializedLedgerLog;
+struct SerializedLedgerLog; // for Log
 
-SETUP_LOG (SerializedLedgerLog)
+SETUP_LOGN (SerializedLedgerLog,"SerializedLedger")
 
 SerializedLedgerEntry::SerializedLedgerEntry (SerializerIterator& sit, uint256 const& index)
     : STObject (sfLedgerEntry), mIndex (index), mMutable (true)

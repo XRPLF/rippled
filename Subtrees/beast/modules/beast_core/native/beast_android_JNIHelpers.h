@@ -167,7 +167,7 @@ namespace
 }
 
 //==============================================================================
-class JNIClassBase
+class JNIClassBase : Uncopyable
 {
 public:
     explicit JNIClassBase (const char* classPath);
@@ -193,8 +193,6 @@ private:
     static Array<JNIClassBase*>& getClasses();
     void initialise (JNIEnv*);
     void release (JNIEnv*);
-
-    BEAST_DECLARE_NON_COPYABLE (JNIClassBase)
 };
 
 //==============================================================================

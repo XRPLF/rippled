@@ -30,7 +30,7 @@ PerformanceCounter::PerformanceCounter (const String& name_,
       totalTime (0),
       outputFile (loggingFile)
 {
-    if (outputFile != File::nonexistent)
+    if (outputFile != File::nonexistent ())
     {
         String s ("**** Counter for \"");
         s << name_ << "\" started at: "
@@ -81,7 +81,7 @@ void PerformanceCounter::printStatistics()
 
         s << newLine;
 
-        if (outputFile != File::nonexistent)
+        if (outputFile != File::nonexistent ())
             outputFile.appendText (s, false, false);
 
         numRuns = 0;

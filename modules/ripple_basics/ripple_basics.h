@@ -54,7 +54,7 @@ namespace boost
 //------------------------------------------------------------------------------
 
 // ByteOrder
-#ifdef WIN32
+#if BEAST_WIN32
 // (nothing)
 #elif __APPLE__
 # include <libkern/OSByteOrder.h>

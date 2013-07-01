@@ -23,7 +23,9 @@ struct WSServerHandlerLog;
 // This instance dispatches all events.  There is no per connection persistence.
 
 template <typename endpoint_type>
-class WSServerHandler : public endpoint_type::handler
+class WSServerHandler
+    : public endpoint_type::handler
+    , LeakChecked <WSServerHandler <endpoint_type> >
 {
 public:
     typedef typename endpoint_type::handler::connection_ptr     connection_ptr;
@@ -196,7 +198,7 @@ public:
         ptr->preDestroy (); // Must be done before we return
 
         // Must be done without holding the websocket send lock
-        theApp->getJobQueue ().addJob (jtCLIENT, "WSClient::destroy",
+        getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::destroy",
                                        BIND_TYPE (&WSConnection<endpoint_type>::destroy, ptr));
     }
 
@@ -230,7 +232,7 @@ public:
         }
 
         if (bRunQ)
-            theApp->getJobQueue ().addJob (jtCLIENT, "WSClient::command",
+            getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::command",
                                            BIND_TYPE (&WSServerHandler<endpoint_type>::do_messages, this, P_1, cpClient));
     }
 
@@ -257,7 +259,7 @@ public:
             do_message (job, cpClient, ptr, msg);
         }
 
-        theApp->getJobQueue ().addJob (jtCLIENT, "WSClient::more",
+        getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::more",
                                        BIND_TYPE (&WSServerHandler<endpoint_type>::do_messages, this, P_1, cpClient));
     }
 
