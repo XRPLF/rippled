@@ -1,6 +1,0 @@
-#!/bin/sh
-
-for SITE in $HOSTS
-do
-	(nx $SITE &)
-done
