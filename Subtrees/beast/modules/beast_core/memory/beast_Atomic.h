@@ -148,10 +148,15 @@ public:
     volatile Type value;
 
 private:
-    static inline Type castFrom32Bit (int32 value) noexcept   { return *(Type*) &value; }
-    static inline Type castFrom64Bit (int64 value) noexcept   { return *(Type*) &value; }
-    static inline int32 castTo32Bit (Type value) noexcept     { return *(int32*) &value; }
-    static inline int64 castTo64Bit (Type value) noexcept     { return *(int64*) &value; }
+    #if BEAST_CLANG || __GNUC__ >= 4
+      #define BEAST_ATTRIBUTE_MAY_ALIAS __attribute__((__may_alias__))
+    #else
+      #define BEAST_ATTRIBUTE_MAY_ALIAS
+    #endif
+    static inline Type castFrom32Bit (int32 value) noexcept   { Type * BEAST_ATTRIBUTE_MAY_ALIAS tmp = (Type*)&value; return *tmp; }
+    static inline Type castFrom64Bit (int64 value) noexcept   { Type * BEAST_ATTRIBUTE_MAY_ALIAS tmp = (Type*)&value; return *tmp; }
+    static inline int32 castTo32Bit (Type value) noexcept     { int32 * BEAST_ATTRIBUTE_MAY_ALIAS tmp = (int32*)&value; return *tmp; }
+    static inline int64 castTo64Bit (Type value) noexcept     { int64 * BEAST_ATTRIBUTE_MAY_ALIAS tmp = (int64*)&value; return *tmp; }
 
     Type operator++ (int); // better to just use pre-increment with atomics..
     Type operator-- (int);
