@@ -81,10 +81,10 @@ uint32 RangeSet::prevMissing (uint32 v) const
     BOOST_FOREACH (const value_type & it, mRanges)
     {
         if (contains (it, v))
-            return it.first - 1;
+            return (it.first == 0) ? absent : (it.first - 1);
 
-        if (it.first > (v + 1))
-            return v + 1;
+        if (it.second < (v - 1))
+            return v - 1;
     }
     return absent;
 }
