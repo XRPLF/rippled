@@ -38,6 +38,7 @@ bool powResultInfo (POWResult powCode, std::string& strToken, std::string& strHu
     return iIndex >= 0;
 }
 
+// VFALCO TODO Move these to a header because they are used by ripple_ProofOfWorkFactory.cpp
 const uint256 ProofOfWork::sMinTarget ("00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 const int ProofOfWork::sMaxIterations (1 << 23);
 const int ProofOfWork::sMaxDifficulty (30);

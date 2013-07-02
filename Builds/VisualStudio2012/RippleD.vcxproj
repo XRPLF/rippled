@@ -29,6 +29,10 @@
     <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt2.cpp" />
     <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt3.cpp" />
     <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt4.cpp" />
+    <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt5.cpp" />
+    <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt6.cpp" />
+    <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt7.cpp" />
+    <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt8.cpp" />
     <ClCompile Include="..\..\modules\ripple_basics\containers\ripple_RangeSet.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
