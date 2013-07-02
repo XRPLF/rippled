@@ -440,6 +440,10 @@ bool SHAMap::deepCompare (SHAMap& other)
 
 bool SHAMap::hasInnerNode (const SHAMapNode& nodeID, uint256 const& nodeHash)
 {
+    boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.find (nodeID);
+    if (it != mTNByID.end())
+        return it->second->getNodeHash() == nodeHash;
+
     SHAMapTreeNode* node = root.get ();
 
     while (node->isInner () && (node->getDepth () < nodeID.getDepth ()))
@@ -474,7 +478,7 @@ bool SHAMap::hasLeafNode (uint256 const& tag, uint256 const& nodeHash)
         node = getNodePointer (node->getChildNodeID (branch), nextHash);
     }
 
-    return false;
+    return node->getNodeHash() == nodeHash;
 }
 
 static void addFPtoList (std::list<SHAMap::fetchPackEntry_t>& list, const uint256& hash, const Blob& blob)
