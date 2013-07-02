@@ -889,7 +889,7 @@ bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
     SHAMapTreeNode::pointer newRoot = fetchNodeExternalNT(SHAMapNode(), hash);
     if (newRoot)
     	root = newRoot;
-	else
+    else
     {
         Blob nodeData;
 
