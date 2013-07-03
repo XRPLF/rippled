@@ -49,7 +49,7 @@ TER RippleCalc::calcNodeAdvance (
 
     TER             terResult       = tesSUCCESS;
 
-    WriteLog (lsDEBUG, RippleCalc) << "calcNodeAdvance";
+    WriteLog (lsDEBUG, RippleCalc) << "calcNodeAdvance: TakerPays:" << saTakerPays << " TakerGets:" << saTakerGets;
 
     int loopCount = 0;
 
@@ -476,6 +476,9 @@ TER RippleCalc::calcNodeDeliverRev (
                                       % saOutPassAct
                                       % saOutPlusFees);
 
+        if (saInPassReq > saTakerPays)
+            saInPassReq = saTakerPays;
+
         if (!saInPassReq)
         {
             // After rounding did not want anything.
@@ -518,9 +521,6 @@ TER RippleCalc::calcNodeDeliverRev (
 
         if (tesSUCCESS != terResult)
             break;
-
-        if (saInPassAct > saTakerPays)
-            saInPassAct = saTakerPays;
 
         if (saInPassAct < saInPassReq)
         {
@@ -691,7 +691,7 @@ TER RippleCalc::calcNodeDeliverFwd (
             STAmount    saInFunded      = STAmount::mulRound (saOutPassFunded, saOfrRate, saTakerPays, true); // Offer maximum in - Limited by by payout.
             STAmount    saInTotal       = STAmount::mulRound (saInFunded, saInFeeRate, true);               // Offer maximum in with fees.
             STAmount    saInSum         = std::min (saInTotal, saInReq - saInAct - saInFees);               // In limited by remaining.
-            STAmount    saInPassAct     = STAmount::divRound (saInSum, saInFeeRate, true);                  // In without fees.
+            STAmount    saInPassAct     = std::min (saTakerPays, STAmount::divRound (saInSum, saInFeeRate, true));     // In without fees.
             STAmount    saOutPassMax    = std::min (saOutPassFunded, STAmount::divRound (saInPassAct, saOfrRate, saTakerGets, true)); // Out limited by in remaining.
 
             STAmount    saInPassFeesMax = saInSum - saInPassAct;
@@ -790,7 +790,7 @@ TER RippleCalc::calcNodeDeliverFwd (
 
                     assert (saOutPassAct < saOutPassMax);
 
-                    saInPassAct     = STAmount::mulRound (saOutPassAct, saOfrRate, saInReq, true);
+                    saInPassAct     = std::min (saTakerPays, STAmount::mulRound (saOutPassAct, saOfrRate, saInReq, true));
                     saInPassFees    = std::min (saInPassFeesMax, STAmount::mulRound (saInPassAct, saInFeeRate, true));
                 }
 
