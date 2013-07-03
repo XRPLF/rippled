@@ -168,15 +168,19 @@ void InboundLedger::onTimer (bool progress)
 
 void InboundLedger::awaitData ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
     ++mWaitCount;
 }
 
 void InboundLedger::noAwaitData ()
-{
-    boost::recursive_mutex::scoped_lock sl (mLock);
-
-    if (mWaitCount > 0 ) --mWaitCount;
+{ // subtract one if mWaitCount is greater than zero
+    do
+    {
+       int j = mWaitCount.get();
+       if (j <= 0)
+           return;
+       if (mWaitCount.compareAndSetBool(j - 1, j))
+           return;
+    } while (1);
 }
 
 void InboundLedger::addPeers ()
@@ -285,7 +289,7 @@ void InboundLedger::trigger (Peer::ref peer)
         return;
     }
 
-    if ((mWaitCount > 0) && peer)
+    if ((mWaitCount.get() > 0) && peer)
     {
         WriteLog (lsTRACE, InboundLedger) << "Skipping peer";
         return;

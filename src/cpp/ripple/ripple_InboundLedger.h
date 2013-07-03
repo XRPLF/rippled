@@ -102,16 +102,16 @@ private:
     boost::weak_ptr <PeerSet> pmDowncast ();
 
 private:
-    Ledger::pointer mLedger;
-    bool            mHaveBase;
-    bool            mHaveState;
-    bool            mHaveTransactions;
-    bool            mAborted;
-    bool            mSignaled;
-    bool            mAccept;
-    bool            mByHash;
-    int             mWaitCount;
-    uint32          mSeq;
+    Ledger::pointer    mLedger;
+    bool               mHaveBase;
+    bool               mHaveState;
+    bool               mHaveTransactions;
+    bool               mAborted;
+    bool               mSignaled;
+    bool               mAccept;
+    bool               mByHash;
+    beast::Atomic<int> mWaitCount;
+    uint32             mSeq;
 
     std::set <SHAMapNode> mRecentTXNodes;
     std::set <SHAMapNode> mRecentASNodes;
