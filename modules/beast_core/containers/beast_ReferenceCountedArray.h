@@ -621,8 +621,8 @@ public:
     {
         const ScopedLockType lock (getLock());
 
-        const int start    = jlimit (0, numUsed, startIndex);
-        const int endIndex = jlimit (0, numUsed, startIndex + numberToRemove);
+        const int start    = blimit (0, numUsed, startIndex);
+        const int endIndex = blimit (0, numUsed, startIndex + numberToRemove);
 
         if (endIndex > start)
         {
