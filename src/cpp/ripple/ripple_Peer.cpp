@@ -1122,8 +1122,11 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
         if (mCluster)
             flags |= SF_TRUSTED | SF_SIGGOOD;
 
-        theApp->getJobQueue ().addJob (jtTRANSACTION, "recvTransction->checkTransaction",
+        if (theApp->getJobQueue().getJobCount(jtTRANSACTION) < 100)
+            theApp->getJobQueue ().addJob (jtTRANSACTION, "recvTransction->checkTransaction",
                                        BIND_TYPE (&checkTransaction, P_1, flags, stx, boost::weak_ptr<Peer> (shared_from_this ())));
+        else
+            WriteLog(lsINFO, Peer) << " Transaction queue is full";
 
 #ifndef TRUST_NETWORK
     }
