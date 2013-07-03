@@ -224,6 +224,7 @@ public:
     */
     // VFALCO TODO Simplify the two stage initialization to one stage (construction).
     virtual void startThread () = 0;
+    virtual void stopThread () = 0;
 
     /** Turn on deadlock detection.
 

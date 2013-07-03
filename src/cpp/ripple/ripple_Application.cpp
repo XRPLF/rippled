@@ -333,6 +333,7 @@ void Application::stop ()
     mEphemeralLDB = NULL;
 
     WriteLog (lsINFO, Application) << "Stopped: " << mIOService.stopped ();
+    mShutdown = false;
 }
 
 static void InitDB (DatabaseCon** dbCon, const char* fileName, const char* dbInit[], int dbCount)
@@ -469,7 +470,7 @@ void Application::setup ()
     {
         getApp().getHashNodeDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
                 (theConfig.getSize (siHashNodeDBCache) * 1024)));
-	    getApp().getHashNodeDB ()->getDB ()->setupCheckpointing (&mJobQueue);
+        getApp().getHashNodeDB ()->getDB ()->setupCheckpointing (&mJobQueue);
     }
 
     getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
@@ -665,7 +666,12 @@ void Application::run ()
     if (mWSPrivateDoor)
         mWSPrivateDoor->stop ();
 
+    getApp().getLoadManager().stopThread();
+    mSweepTimer.cancel();
+
     WriteLog (lsINFO, Application) << "Done.";
+    while (mShutdown)
+        boost::this_thread::sleep (boost::posix_time::milliseconds (100));
 }
 
 void Application::sweep ()
