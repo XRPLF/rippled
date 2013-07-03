@@ -288,7 +288,8 @@ void NetworkOPs::runTransactionQueue ()
                 dbtx->setStatus (INVALID);
             }
 
-            if (didApply || (mMode != omFULL))
+//            if (didApply || (mMode != omFULL))
+            if (didApply)
             {
                 std::set<uint64> peers;
 
