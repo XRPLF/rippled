@@ -519,6 +519,9 @@ TER RippleCalc::calcNodeDeliverRev (
         if (tesSUCCESS != terResult)
             break;
 
+        if (saInPassAct > saTakerPays)
+            saInPassAct = saTakerPays;
+
         if (saInPassAct < saInPassReq)
         {
             // Adjust output to conform to limited input.
