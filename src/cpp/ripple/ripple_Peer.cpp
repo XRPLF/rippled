@@ -1101,10 +1101,11 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
         Serializer s (packet.rawtransaction ());
         SerializerIterator sit (s);
         SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction> (boost::ref (sit));
+        uint256 txID = stx->getTransactionID();
 
         int flags;
 
-        if (! theApp->getHashRouter ().addSuppressionPeer (stx->getTransactionID (), mPeerId, flags))
+        if (! theApp->getHashRouter ().addSuppressionPeer (txID, mPeerId, flags))
         {
             // we have seen this transaction recently
             if (isSetBit (flags, SF_BAD))
@@ -1117,7 +1118,12 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
                 return;
         }
 
-        WriteLog (lsDEBUG, Peer) << "Got new transaction from peer " << getDisplayName () << " : " << stx->getTransactionID ();
+        if (theApp->getMasterTransaction().fetch(txID, true))
+        {
+            WriteLog (lsDEBUG, Peer) << "Peer " << getDisplayName() << " send old TX " << txID;
+        }
+
+        WriteLog (lsDEBUG, Peer) << "Got new transaction from peer " << getDisplayName () << " : " << txID;
 
         if (mCluster)
             flags |= SF_TRUSTED | SF_SIGGOOD;
