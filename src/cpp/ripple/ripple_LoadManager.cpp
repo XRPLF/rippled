@@ -210,7 +210,8 @@ private:
         if (source.isPrivileged ()) // privileged sources never warn/cutoff
             return false;
 
-        if ((source.mBalance >= mDebitLimit) && (source.mLastWarning == now)) // no need to warn
+        if ( (source.mBalance >= mDebitWarn) ||
+            ((source.mBalance >= mDebitLimit) && (source.mLastWarning == now)))
             return false;
 
         return true;

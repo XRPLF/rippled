@@ -198,7 +198,7 @@ PeerImp::PeerImp (boost::asio::io_service& io_service, boost::asio::ssl::context
     mCluster (false),
     mPeerId (peerID),
     mPrivate (false),
-    mLoad (""),
+    mLoad (std::string()),
     mMinLedger (0),
     mMaxLedger (0),
     mSocketSsl (io_service, ctx),
@@ -975,6 +975,8 @@ void PeerImp::recvHello (protocol::TMHello& packet)
         {
             mCluster = true;
             mLoad.setPrivileged ();
+            if (!mNodeName.empty())
+                mLoad.rename (mNodeName);
             WriteLog (lsINFO, Peer) << "Cluster connection to \"" << (mNodeName.empty () ? getIP () : mNodeName)
                                     << "\" established";
         }
@@ -1121,6 +1123,7 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
         if (theApp->getMasterTransaction().fetch(txID, true))
         {
             WriteLog (lsDEBUG, Peer) << "Peer " << getDisplayName() << " send old TX " << txID;
+            applyLoadCharge (LT_InvalidRequest);
             return;
         }
 
@@ -2217,11 +2220,28 @@ void PeerImp::sendGetPeers ()
 
 void PeerImp::applyLoadCharge (LoadType loadType)
 {
+    // IMPLEMENATION IS INCOMPLETE
+
+    // VFALCO TODO This needs to implemented before open sourcing.
+
     if (theApp->getLoadManager ().applyLoadCharge (mLoad, loadType))
     {
-        // UNIMPLEMENTED
-
-        // VFALCO TODO This needs to implemented before open sourcing.
+        if (mCluster)
+        {
+            WriteLog (lsWARNING, Peer) << "aLC: " << getDisplayName() << " load from cluster";
+        }
+        else if (theApp->getLoadManager ().shouldCutoff(mLoad))
+        {
+            WriteLog (lsWARNING, Peer) << "aLC: " << getDisplayName() << " should cutoff";
+        }
+        else if (theApp->getLoadManager ().shouldWarn (mLoad))
+        {
+            WriteLog (lsWARNING, Peer) << "aLC: " << getDisplayName() << " load warning";
+        }
+        else
+        {
+            WriteLog (lsWARNING, Peer) << "aLC: " << getDisplayName() << " cannot figure out";
+        }
     }
 }
 
