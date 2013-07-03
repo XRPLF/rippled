@@ -305,14 +305,6 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 4
 
-// This is for PeerDoor and WSDoor
-// Generate DH for SSL connection.
-static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
-{
-    // VFALCO TODO eliminate this horrendous dependency on theApp and LocalCredentials
-    return 512 == iKeyLength ? getApp ().getLocalCredentials ().getDh512 () : getApp ().getLocalCredentials ().getDh1024 ();
-}
-
 #include "src/cpp/ripple/ripple_UniqueNodeList.cpp"
 #include "src/cpp/ripple/ripple_InboundLedger.cpp"
 #include "src/cpp/ripple/ripple_SqliteDatabase.cpp"
