@@ -1124,7 +1124,7 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
 
         if (theApp->getJobQueue().getJobCount(jtTRANSACTION) > 100)
             WriteLog(lsINFO, Peer) << "Transaction queue is full";
-        else if (theApp->getLedgerMaster()->getValidatedLedgerAge() > 240)
+        else if (theApp->getLedgerMaster().getValidatedLedgerAge() > 240)
             WriteLog(lsINFO, Peer) << "No new transactions until synchronized";
         else
             theApp->getJobQueue ().addJob (jtTRANSACTION, "recvTransction->checkTransaction",
