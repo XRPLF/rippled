@@ -265,7 +265,7 @@ void NetworkOPs::runTransactionQueue ()
             if (isTerRetry (r))
             {
                 // transaction should be held
-                WriteLog (lsDEBUG, NetworkOPs) << "Transaction should be held: " << r;
+                WriteLog (lsDEBUG, NetworkOPs) << "QTransaction should be held: " << r;
                 dbtx->setStatus (HELD);
                 theApp->getMasterTransaction ().canonicalize (dbtx, true);
                 mLedgerMaster->addHeldTransaction (dbtx);
@@ -273,18 +273,18 @@ void NetworkOPs::runTransactionQueue ()
             else if (r == tefPAST_SEQ)
             {
                 // duplicate or conflict
-                WriteLog (lsINFO, NetworkOPs) << "Transaction is obsolete";
+                WriteLog (lsINFO, NetworkOPs) << "QTransaction is obsolete";
                 dbtx->setStatus (OBSOLETE);
             }
             else if (r == tesSUCCESS)
             {
-                WriteLog (lsINFO, NetworkOPs) << "Transaction is now included in open ledger";
+                WriteLog (lsINFO, NetworkOPs) << "QTransaction is now included in open ledger";
                 dbtx->setStatus (INCLUDED);
                 theApp->getMasterTransaction ().canonicalize (dbtx, true);
             }
             else
             {
-                WriteLog (lsDEBUG, NetworkOPs) << "Status other than success " << r;
+                WriteLog (lsDEBUG, NetworkOPs) << "QStatus other than success " << r;
                 dbtx->setStatus (INVALID);
             }
 
