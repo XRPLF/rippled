@@ -1121,6 +1121,7 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
         if (theApp->getMasterTransaction().fetch(txID, true))
         {
             WriteLog (lsDEBUG, Peer) << "Peer " << getDisplayName() << " send old TX " << txID;
+            return;
         }
 
         WriteLog (lsDEBUG, Peer) << "Got new transaction from peer " << getDisplayName () << " : " << txID;
