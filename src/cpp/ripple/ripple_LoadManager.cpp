@@ -201,6 +201,8 @@ private:
 
         // We do it this way in case we want to add exponential decay later
         int now = UptimeTimer::getInstance ().getElapsedSeconds ();
+
+        boost::mutex::scoped_lock sl (mLock);
         canonicalize (source, now);
         source.mBalance += credits;
 

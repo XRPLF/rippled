@@ -25,6 +25,7 @@ Ledger::ref LedgerMaster::getCurrentSnapshot ()
 
 int LedgerMaster::getValidatedLedgerAge ()
 {
+    boost::recursive_mutex::scoped_lock ml (mLock);
     if (!mValidLedger)
     {
         WriteLog (lsDEBUG, LedgerMaster) << "No validated ledger";
@@ -37,6 +38,27 @@ int LedgerMaster::getValidatedLedgerAge ()
 
     WriteLog (lsTRACE, LedgerMaster) << "Validated ledger age is " << ret;
     return static_cast<int> (ret);
+}
+
+bool LedgerMaster::isCaughtUp(std::string& reason)
+{
+    if (getValidatedLedgerAge() > 180)
+    {
+        reason = "No recently-validated ledger";
+        return false;
+    }
+    boost::recursive_mutex::scoped_lock ml (mLock);
+    if (!mValidLedger || !mPubLedger)
+    {
+        reason = "No published ledger";
+        return false;
+    }
+    if (mValidLedger->getLedgerSeq() > (mPubLedger->getLedgerSeq() + 3))
+    {
+        reason = "Published ledger lags validated ledger";
+        return false;
+    }
+    return true;
 }
 
 void LedgerMaster::addHeldTransaction (Transaction::ref transaction)

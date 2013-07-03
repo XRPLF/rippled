@@ -60,6 +60,7 @@ public:
         return mPubLedger;
     }
     int getValidatedLedgerAge ();
+    bool isCaughtUp(std::string& reason);
 
     TER doTransaction (SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply);
 
