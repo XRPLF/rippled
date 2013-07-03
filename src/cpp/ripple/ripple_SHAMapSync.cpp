@@ -520,7 +520,7 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
         {
             Serializer s;
             root->addRaw (s, snfPREFIX);
-            func (root->getNodeHash (), s.peekData ());
+            func (boost::cref(root->getNodeHash ()), boost::cref(s.peekData ()));
         }
 
         return;
@@ -543,7 +543,7 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
         // 1) Add this node to the pack
         Serializer s;
         node->addRaw (s, snfPREFIX);
-        func (node->getNodeHash (), s.peekData ());
+        func (boost::cref(node->getNodeHash ()), boost::cref(s.peekData ()));
         --max;
 
         // 2) push non-matching child inner nodes
@@ -565,7 +565,7 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
                 {
                     Serializer s;
                     node->addRaw (s, snfPREFIX);
-                    func (node->getNodeHash (), s.peekData ());
+                    func (boost::cref(node->getNodeHash ()), boost::cref(s.peekData ()));
                     --max;
                 }
             }
