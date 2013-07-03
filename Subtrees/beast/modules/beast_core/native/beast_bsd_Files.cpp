@@ -23,10 +23,10 @@
 
 enum
 {
-    U_ISOFS_SUPER_MAGIC = 0x9660,   // linux/iso_fs.h
-    U_MSDOS_SUPER_MAGIC = 0x4d44,   // linux/msdos_fs.h
-    U_NFS_SUPER_MAGIC = 0x6969,     // linux/nfs_fs.h
-    U_SMB_SUPER_MAGIC = 0x517B      // linux/smb_fs.h
+    U_ISOFS_SUPER_MAGIC = 5,
+    U_MSDOS_SUPER_MAGIC = 2,
+    U_NFS_SUPER_MAGIC = 1,
+    U_SMB_SUPER_MAGIC = 8
 };
 
 //==============================================================================
@@ -94,7 +94,7 @@ bool File::isOnHardDisk() const
 
 bool File::isOnRemovableDrive() const
 {
-    bassertfalse; // xxx not implemented for linux!
+    bassertfalse; // XXX not implemented for FreeBSD!
     return false;
 }
 
@@ -336,8 +336,8 @@ bool Process::openDocument (const String& fileName, const String& parameters)
          || ! isFileExecutable (fileName))
     {
         // create a command that tries to launch a bunch of likely browsers
-        const char* const browserNames[] = { "xdg-open", "/etc/alternatives/x-www-browser", "firefox", "mozilla",
-                                             "google-chrome", "chromium-browser", "opera", "konqueror" };
+        const char* const browserNames[] = { "xdg-open", "firefox", "seamonkey",
+                                             "chrome", "opera", "konqueror" };
         StringArray cmdLines;
 
         for (int i = 0; i < numElementsInArray (browserNames); ++i)
