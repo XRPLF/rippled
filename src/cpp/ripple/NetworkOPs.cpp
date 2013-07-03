@@ -259,9 +259,8 @@ void NetworkOPs::runTransactionQueue ()
 
             if (isTemMalformed (r)) // malformed, cache bad
                 theApp->getHashRouter ().setFlag (txn->getID (), SF_BAD);
-            else if (isTelLocal (r) || isTerRetry (r)) // can be retried
-                theApp->getHashRouter ().setFlag (txn->getID (), SF_RETRY);
-
+//            else if (isTelLocal (r) || isTerRetry (r)) // can be retried
+//                theApp->getHashRouter ().setFlag (txn->getID (), SF_RETRY);
 
             if (isTerRetry (r))
             {
@@ -352,8 +351,8 @@ Transaction::pointer NetworkOPs::processTransaction (Transaction::pointer trans,
 
     if (isTemMalformed (r)) // malformed, cache bad
         theApp->getHashRouter ().setFlag (trans->getID (), SF_BAD);
-    else if (isTelLocal (r) || isTerRetry (r)) // can be retried
-        theApp->getHashRouter ().setFlag (trans->getID (), SF_RETRY);
+//    else if (isTelLocal (r) || isTerRetry (r)) // can be retried
+//        theApp->getHashRouter ().setFlag (trans->getID (), SF_RETRY);
 
 #ifdef DEBUG
 
