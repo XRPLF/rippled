@@ -208,23 +208,27 @@ class ILoadManager
 public:
     /** Create a new manager.
 
+        The manager thread begins running immediately.
+
         @note The thresholds for warnings and punishments are in
               the ctor-initializer
     */
     static ILoadManager* New ();
 
+    /** Destroy the manager.
+
+        The destructor returns only after the thread has stopped.
+    */
     virtual ~ILoadManager () { }
 
     /** Start the associated thread.
 
         This is here to prevent the deadlock detector from activating during
         a lengthy program initialization.
-
-        @note In stand-alone mode, this might not get called.
     */
     // VFALCO TODO Simplify the two stage initialization to one stage (construction).
+    //        NOTE In stand-alone mode the load manager thread isn't started
     virtual void startThread () = 0;
-    virtual void stopThread () = 0;
 
     /** Turn on deadlock detection.
 

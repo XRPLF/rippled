@@ -54,20 +54,9 @@ void Process::terminate()
 
 BEAST_API bool BEAST_CALLTYPE beast_isRunningUnderDebugger()
 {
-    static char testResult = 0;
-
-    if (testResult == 0)
-    {
-        testResult = (char) ptrace (PT_TRACE_ME, 0, 0, 0);
-
-        if (testResult >= 0)
-        {
-            ptrace (PT_DETACH, 0, (caddr_t) 1, 0);
-            testResult = 1;
-        }
-    }
-
-    return testResult < 0;
+    // XXX not implemented for FreeBSD!
+    bassertfalse;
+    return false;
 }
 
 BEAST_API bool BEAST_CALLTYPE Process::isRunningUnderDebugger()

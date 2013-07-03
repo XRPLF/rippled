@@ -24,11 +24,6 @@
 #ifndef BEAST_OWNEDARRAY_BEASTHEADER
 #define BEAST_OWNEDARRAY_BEASTHEADER
 
-#include "beast_ArrayAllocationBase.h"
-#include "beast_ElementComparator.h"
-#include "../threads/beast_CriticalSection.h"
-
-
 //==============================================================================
 /** An array designed for holding objects.
 
@@ -51,7 +46,9 @@
 template <class ObjectClass,
           class TypeOfCriticalSectionToUse = DummyCriticalSection>
 
-class OwnedArray : LeakChecked <OwnedArray <ObjectClass, TypeOfCriticalSectionToUse> >, Uncopyable
+class OwnedArray
+    : LeakChecked <OwnedArray <ObjectClass, TypeOfCriticalSectionToUse> >
+    , Uncopyable
 {
 public:
     //==============================================================================
@@ -242,23 +239,15 @@ public:
         as this will obviously cause deletion of dangling pointers.
 
         @param newObject       the new object to add to the array
-        @returns               the object that was added
-
         @see set, insert, addIfNotAlreadyThere, addSorted
     */
-    ObjectClass const& add (ObjectClass const* const newObject) noexcept
+    ObjectClass* add (ObjectClass* const newObject) noexcept
     {
         const ScopedLockType lock (getLock());
         data.ensureAllocatedSize (numUsed + 1);
         bassert (data.elements != nullptr);
         data.elements [numUsed++] = const_cast <ObjectClass*> (newObject);
-        return *newObject;
-    }
-
-    ObjectClass& add (ObjectClass* const newObject) noexcept
-    {
-        add (const_cast <ObjectClass const*> (newObject));
-        return *newObject;
+        return const_cast <ObjectClass*> (newObject);
     }
 
     /** Inserts a new object into the array at the given index.
@@ -276,12 +265,10 @@ public:
 
         @param indexToInsertAt      the index at which the new element should be inserted
         @param newObject            the new object to add to the array
-        @returns                    the object that was added
-
         @see add, addSorted, addIfNotAlreadyThere, set
     */
-    ObjectClass const& insert (int indexToInsertAt,
-                               ObjectClass const* const newObject) noexcept
+    void insert (int indexToInsertAt,
+                 ObjectClass* const newObject) noexcept
     {
         if (indexToInsertAt >= 0)
         {
@@ -306,15 +293,6 @@ public:
         {
             add (newObject);
         }
-
-        return *newObject;
-    }
-
-    ObjectClass& insert (int indexToInsertAt,
-                          ObjectClass* const newObject) noexcept
-    {
-        insert (indexToInsertAt, const_cast <ObjectClass const*> (newObject));
-        return *newObject;
     }
 
     /** Inserts an array of values into this array at a given position.
@@ -363,22 +341,13 @@ public:
         If the array already contains a matching object, nothing will be done.
 
         @param newObject   the new object to add to the array
-        @returns           the object
     */
-    ObjectClass const& addIfNotAlreadyThere (ObjectClass const* const newObject) noexcept
+    void addIfNotAlreadyThere (ObjectClass* const newObject) noexcept
     {
         const ScopedLockType lock (getLock());
 
         if (! contains (newObject))
             add (newObject);
-
-        return *newObject;
-    }
-
-    ObjectClass& addIfNotAlreadyThere (ObjectClass* const newObject) noexcept
-    {
-        addIfNotAlreadyThere (const_cast <ObjectClass const*> (newObject));
-        return *newObject;
     }
 
     /** Replaces an object in the array with a different one.
@@ -392,13 +361,11 @@ public:
         @param indexToChange        the index whose value you want to change
         @param newObject            the new value to set for this index.
         @param deleteOldElement     whether to delete the object that's being replaced with the new one
-        @returns                    the object that was set
-
         @see add, insert, remove
     */
-    ObjectClass const& set (int const indexToChange,
-                            ObjectClass const* const newObject,
-                            bool const deleteOldElement = true)
+    void set (const int indexToChange,
+              const ObjectClass* const newObject,
+              const bool deleteOldElement = true)
     {
         if (indexToChange >= 0)
         {
@@ -435,16 +402,6 @@ public:
             bassertfalse; // you're trying to set an object at a negative index, which doesn't have
                           // any effect - but since the object is not being added, it may be leaking..
         }
-
-        return *newObject;
-    }
-
-    ObjectClass& set (int const indexToChange,
-                      ObjectClass* const newObject,
-                      bool const deleteOldElement = true)
-    {
-        set (indexToChange, const_cast <ObjectClass const*> (newObject), deleteOldElement);
-        return *newObject;
     }
 
     /** Adds elements from another array to the end of this array.
@@ -515,7 +472,7 @@ public:
             numElementsToAdd = arrayToAddFrom.size() - startIndex;
 
         data.ensureAllocatedSize (numUsed + numElementsToAdd);
-        bassert (numElementsToAdd <= 0 || data.elements != nullptr); 
+        bassert (numElementsToAdd <= 0 || data.elements != nullptr);
 
         while (--numElementsToAdd >= 0)
         {
@@ -909,4 +866,5 @@ private:
     }
 };
 
-#endif   // BEAST_OWNEDARRAY_BEASTHEADER
+
+#endif

@@ -59,7 +59,13 @@ public:
 
         /** The singleton is created on first use and persists until program exit.
         */
-        persistAfterCreation
+        persistAfterCreation,
+
+        /** The singleton is created when needed and never destroyed.
+
+            This is useful for applications which do not have a clean exit.
+        */
+        neverDestroyed
     };
 };
 
@@ -82,7 +88,8 @@ protected:
     {
         bassert (s_instance == nullptr);
 
-        if (m_lifetime == persistAfterCreation)
+        if (m_lifetime == persistAfterCreation ||
+            m_lifetime == neverDestroyed)
         {
             incReferenceCount ();
         }
@@ -155,6 +162,9 @@ private:
     {
         bool destroy;
 
+        // Handle the condition where one thread is releasing the last
+        // reference just as another thread is trying to acquire it.
+        //
         {
             LockType::ScopedLockType lock (*s_mutex);
 
@@ -171,6 +181,8 @@ private:
 
         if (destroy)
         {
+            bassert (m_lifetime != neverDestroyed);
+
             delete this;
         }
     }

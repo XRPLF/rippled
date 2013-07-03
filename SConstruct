@@ -131,7 +131,11 @@ COMPILED_FILES = [
     'modules/ripple_app/ripple_app_pt1.cpp',
     'modules/ripple_app/ripple_app_pt2.cpp',
     'modules/ripple_app/ripple_app_pt3.cpp',
-    'modules/ripple_app/ripple_app_pt4.cpp'
+    'modules/ripple_app/ripple_app_pt4.cpp',
+    'modules/ripple_app/ripple_app_pt5.cpp',
+    'modules/ripple_app/ripple_app_pt6.cpp',
+    'modules/ripple_app/ripple_app_pt7.cpp',
+    'modules/ripple_app/ripple_app_pt8.cpp'
     ]
 
 #-------------------------------------------------------------------------------
