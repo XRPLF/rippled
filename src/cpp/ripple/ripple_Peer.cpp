@@ -1122,11 +1122,13 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
         if (mCluster)
             flags |= SF_TRUSTED | SF_SIGGOOD;
 
-        if (theApp->getJobQueue().getJobCount(jtTRANSACTION) < 100)
+        if (theApp->getJobQueue().getJobCount(jtTRANSACTION) > 100)
+            WriteLog(lsINFO, Peer) << "Transaction queue is full";
+        else if (theApp->getLedgerMaster()->getValidatedLedgerAge() > 240)
+            WriteLog(lsINFO, Peer) << "No new transactions until synchronized";
+        else
             theApp->getJobQueue ().addJob (jtTRANSACTION, "recvTransction->checkTransaction",
                                        BIND_TYPE (&checkTransaction, P_1, flags, stx, boost::weak_ptr<Peer> (shared_from_this ())));
-        else
-            WriteLog(lsINFO, Peer) << " Transaction queue is full";
 
 #ifndef TRUST_NETWORK
     }
