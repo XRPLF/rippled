@@ -2208,7 +2208,7 @@ void NetworkOPs::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
             if (reply.objects ().size () >= 256)
                 break;
 
-            haveLedger = wantLedger;
+            haveLedger = MOVE_P(wantLedger);
             wantLedger = getLedgerByHash (haveLedger->getParentHash ());
         }
         while (wantLedger && (UptimeTimer::getInstance ().getElapsedSeconds () <= (uUptime + 1)));
