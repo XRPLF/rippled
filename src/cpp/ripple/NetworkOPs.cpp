@@ -101,20 +101,7 @@ uint32 NetworkOPs::getLedgerID (uint256 const& hash)
 
 Ledger::pointer NetworkOPs::getLedgerBySeq (const uint32 seq)
 {
-    Ledger::pointer ret;
-
-    ret = mLedgerMaster->getLedgerBySeq (seq);
-
-    if (ret)
-        return ret;
-
-    if (!haveLedger (seq))
-        return ret;
-
-    // We should have this ledger but we don't
-    WriteLog (lsWARNING, NetworkOPs) << "We should have ledger " << seq;
-
-    return ret;
+    return mLedgerMaster->getLedgerBySeq (seq);
 }
 
 uint32 NetworkOPs::getCurrentLedgerID ()
