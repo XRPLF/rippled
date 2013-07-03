@@ -1117,7 +1117,7 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
                 return;
         }
 
-        WriteLog (lsDEBUG, Peer) << "Got new transaction from peer " << getIP () << " : " << stx->getTransactionID ();
+        WriteLog (lsDEBUG, Peer) << "Got new transaction from peer " << getDisplayName () << " : " << stx->getTransactionID ();
 
         if (mCluster)
             flags |= SF_TRUSTED | SF_SIGGOOD;
