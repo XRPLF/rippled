@@ -208,3 +208,23 @@ boost::recursive_mutex
 
     Replace recursive_mutex with beast::Mutex to remove boost dependency
 
+--------------------------------------------------------------------------------
+Davidisms
+--------------------------------------------------------------------------------
+
+(Figure out a good place to record information like this permanently)
+
+Regarding a defect where a failing transaction was being submitted over and over
+  again on the network (July 3, 2013)
+
+  The core problem was an interaction between two bits of logic.
+  1) Normally, we won't relay a transaction again if we already recently relayed
+     it. But this is bypassed if the transaction failed in a way that could
+     allow it to succeed later. This way, if one server discovers a transaction
+     can now work, it can get all servers to retry it.
+  2) Normally, we won't relay a transaction if we think it can't claim a fee.
+     But if we're not sure it can't claim a fee because we're in an unhealthy
+     state, we propagate the transaction to let other servers decide if they
+     think it can claim a fee.
+  With these two bits of logic, two unhealthy servers could infinitely propagate
+     a transaction back and forth between each other.

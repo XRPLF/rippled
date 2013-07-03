@@ -54,7 +54,8 @@ void Process::terminate()
 
 BEAST_API bool BEAST_CALLTYPE beast_isRunningUnderDebugger()
 {
-    bassertfalse; // XXX not implemented for FreeBSD!
+    // XXX not implemented for FreeBSD!
+    bassertfalse;
     return false;
 }
 

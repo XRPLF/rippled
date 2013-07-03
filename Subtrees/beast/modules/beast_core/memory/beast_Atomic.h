@@ -148,15 +148,14 @@ public:
     volatile Type value;
 
 private:
-    #if BEAST_CLANG || __GNUC__ >= 4
-      #define BEAST_ATTRIBUTE_MAY_ALIAS __attribute__((__may_alias__))
-    #else
-      #define BEAST_ATTRIBUTE_MAY_ALIAS
-    #endif
-    static inline Type castFrom32Bit (int32 value) noexcept   { Type * BEAST_ATTRIBUTE_MAY_ALIAS tmp = (Type*)&value; return *tmp; }
-    static inline Type castFrom64Bit (int64 value) noexcept   { Type * BEAST_ATTRIBUTE_MAY_ALIAS tmp = (Type*)&value; return *tmp; }
-    static inline int32 castTo32Bit (Type value) noexcept     { int32 * BEAST_ATTRIBUTE_MAY_ALIAS tmp = (int32*)&value; return *tmp; }
-    static inline int64 castTo64Bit (Type value) noexcept     { int64 * BEAST_ATTRIBUTE_MAY_ALIAS tmp = (int64*)&value; return *tmp; }
+    template <typename Dest, typename Source>
+    static inline Dest castTo (Source value) noexcept { union { Dest d; Source s; } u; u.s = value; return u.d; }
+
+    static inline Type castFrom32Bit (int32 value) noexcept { return castTo <Type, int32> (value); }
+    static inline Type castFrom64Bit (int64 value) noexcept { return castTo <Type, int64> (value); }
+    static inline int32 castTo32Bit (Type value) noexcept { return castTo <int32, Type> (value); }
+    static inline int64 castTo64Bit (Type value) noexcept { return castTo <int64, Type> (value); }
+
 
     Type operator++ (int); // better to just use pre-increment with atomics..
     Type operator-- (int);

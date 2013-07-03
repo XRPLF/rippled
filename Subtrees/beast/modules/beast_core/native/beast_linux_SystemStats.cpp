@@ -78,7 +78,7 @@ int SystemStats::getMemorySizeInMegabytes()
     struct sysinfo sysi;
 
     if (sysinfo (&sysi) == 0)
-        return (sysi.totalram * sysi.mem_unit / (1024 * 1024));
+        return sysi.totalram * sysi.mem_unit / (1024 * 1024);
 
     return 0;
 }
@@ -94,11 +94,8 @@ String SystemStats::getLogonName()
     const char* user = getenv ("USER");
 
     if (user == nullptr)
-    {
-        struct passwd* const pw = getpwuid (getuid());
-        if (pw != nullptr)
+        if (passwd* const pw = getpwuid (getuid()))
             user = pw->pw_name;
-    }
 
     return CharPointer_UTF8 (user);
 }
@@ -117,11 +114,12 @@ String SystemStats::getComputerName()
     return String::empty;
 }
 
-String getLocaleValue (nl_item key)
+static String getLocaleValue (nl_item key)
 {
     const char* oldLocale = ::setlocale (LC_ALL, "");
-    return String (const_cast <const char*> (nl_langinfo (key)));
+    String result (String::fromUTF8 (nl_langinfo (key)));
     ::setlocale (LC_ALL, oldLocale);
+    return result;
 }
 
 String SystemStats::getUserLanguage()    { return getLocaleValue (_NL_IDENTIFICATION_LANGUAGE); }
@@ -141,7 +139,7 @@ SystemStats::CPUFlags::CPUFlags()
 }
 
 //==============================================================================
-uint32 beast_millisecondsSinceStartup() noexcept
+uint32 BEAST_millisecondsSinceStartup() noexcept
 {
     timespec t;
     clock_gettime (CLOCK_MONOTONIC, &t);
