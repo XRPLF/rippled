@@ -657,8 +657,8 @@ public:
                       const bool deleteObjects = true)
     {
         const ScopedLockType lock (getLock());
-        const int endIndex = jlimit (0, numUsed, startIndex + numberToRemove);
-        startIndex = jlimit (0, numUsed, startIndex);
+        const int endIndex = blimit (0, numUsed, startIndex + numberToRemove);
+        startIndex = blimit (0, numUsed, startIndex);
 
         if (endIndex > startIndex)
         {
