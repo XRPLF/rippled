@@ -294,6 +294,7 @@ void NetworkOPs::runTransactionQueue ()
 
                 if (theApp->getHashRouter ().swapSet (txn->getID (), peers, SF_RELAYED))
                 {
+                    WriteLog (lsDEBUG, NetworkOPs) << "relaying";
                     protocol::TMTransaction tx;
                     Serializer s;
                     dbtx->getSTransaction ()->add (s);
@@ -304,6 +305,8 @@ void NetworkOPs::runTransactionQueue ()
                     PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tx, protocol::mtTRANSACTION);
                     theApp->getPeers ().relayMessageBut (peers, packet);
                 }
+                else
+                    WriteLog(lsDEBUG, NetworkOPs) << "recently relayed";
             }
 
             txn->doCallbacks (r);

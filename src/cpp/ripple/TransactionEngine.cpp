@@ -146,7 +146,7 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
             }
         }
         else
-            WriteLog (lsDEBUG, TransactionEngine) << "Not applying transaction";
+            WriteLog (lsDEBUG, TransactionEngine) << "Not applying transaction " << txID;
 
         if (didApply)
         {
