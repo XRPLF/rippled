@@ -67,7 +67,6 @@ public:
         , mDebitWarn (-500)
         , mDebitLimit (-1000)
         , mArmed (false)
-        , mRunning (false)
         , mDeadLock (0)
         , mCosts (LT_MAX)
     {
@@ -110,6 +109,8 @@ public:
 
         addCost (Cost (LT_RequestData,         -5,   flagDisk | flagNet));
         addCost (Cost (LT_CheapQuery,          -1,   flagCpu));
+
+        UptimeTimer::getInstance ().beginManualUpdates ();
     }
 
 private:
@@ -117,29 +118,12 @@ private:
     {
         UptimeTimer::getInstance ().endManualUpdates ();
 
-        if (mRunning)
-        {
-            m_thread.interrupt ();
-            m_thread.join ();
-        }
+        m_thread.interrupt ();
     }
 
     void startThread ()
     {
-        UptimeTimer::getInstance ().beginManualUpdates ();
-
         m_thread.start (this);
-        mRunning = true;
-    }
-
-    void stopThread()
-    {
-        if (mRunning)
-        {
-            m_thread.interrupt ();
-            m_thread.join ();
-            mRunning = false;
-        }
     }
 
     void canonicalize (LoadSource& source, int now) const
@@ -417,7 +401,7 @@ private:
     int mDebitWarn;             // when a source drops below this, we warn
     int mDebitLimit;            // when a source drops below this, we cut it off (should be negative)
 
-    bool mArmed, mRunning;
+    bool mArmed;
 
     int mDeadLock;              // Detect server deadlocks
 

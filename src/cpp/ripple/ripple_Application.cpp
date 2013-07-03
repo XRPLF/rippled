@@ -266,7 +266,20 @@ private:
 };
 
 Application::Application ()
+//
+// VFALCO NOTE Change this to control whether or not the Application
+//             object is destroyed on exit
+//
+#if 1
+    // Application object will be deleted on exit. If the code doesn't exit
+    // cleanly this could cause hangs or crashes on exit.
+    //
     : SharedSingleton <Application> (SingletonLifetime::persistAfterCreation)
+#else
+    // This will make it so that the Application object is not deleted on exit.
+    //
+    : SharedSingleton <Application> (SingletonLifetime::neverDestroyed)
+#endif
     , mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
     , mIOWork (mIOService)
     , mAuxWork (mAuxService)
@@ -306,6 +319,21 @@ Application::Application ()
 {
     // VFALCO TODO remove these once the call is thread safe.
     HashMaps::getInstance ().initializeNonce <size_t> ();
+}
+
+Application::~Application ()
+{
+    // VFALCO TODO Wrap these in ScopedPointer
+    delete mTxnDB;
+    delete mLedgerDB;
+    delete mWalletDB;
+    delete mHashNodeDB;
+    delete mNetNodeDB;
+    delete mPathFindDB;
+    delete mHashNodeLDB;
+
+    if (mEphemeralLDB != nullptr)
+        delete mEphemeralLDB;
 }
 
 // VFALCO TODO Tidy these up into some class with accessors.
@@ -666,10 +694,18 @@ void Application::run ()
     if (mWSPrivateDoor)
         mWSPrivateDoor->stop ();
 
-    getApp().getLoadManager().stopThread();
+    // VFALCO TODO Try to not have to do this early, by using observers to
+    //             eliminate LoadManager's dependency inversions.
+    //
+    // This deletes the object and therefore, stops the thread.
+    m_loadManager = nullptr;
+
     mSweepTimer.cancel();
 
     WriteLog (lsINFO, Application) << "Done.";
+
+    // VFALCO NOTE This is a sign that something is wrong somewhere, it
+    //             shouldn't be necessary to sleep until some flag is set.
     while (mShutdown)
         boost::this_thread::sleep (boost::posix_time::milliseconds (100));
 }
@@ -703,21 +739,6 @@ void Application::sweep ()
     // VFALCO NOTE does the call to sweep() happen on another thread?
     mSweepTimer.expires_from_now (boost::posix_time::seconds (theConfig.getSize (siSweepInterval)));
     mSweepTimer.async_wait (BIND_TYPE (&Application::sweep, this));
-}
-
-Application::~Application ()
-{
-    // VFALCO TODO Wrap these in ScopedPointer
-    delete mTxnDB;
-    delete mLedgerDB;
-    delete mWalletDB;
-    delete mHashNodeDB;
-    delete mNetNodeDB;
-    delete mPathFindDB;
-    delete mHashNodeLDB;
-
-    if (mEphemeralLDB != nullptr)
-        delete mEphemeralLDB;
 }
 
 void Application::startNewLedger ()

@@ -31,6 +31,10 @@ WEBSOCKET TODO
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
+- Remove dependence on JobQueue, LoadFeeTrack, and NetworkOPs from LoadManager
+  by providing an observer (beast::ListenerList or Listeners). This way
+  LoadManager does not need stopThread() function.
+
 - Move everything in src/cpp/ripple into ripple_app and sort them into
   subdirectories within the module as per the project filters.
   * Make sure there are no pending commits from David

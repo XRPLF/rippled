@@ -1347,9 +1347,6 @@
     <ClInclude Include="..\..\src\cpp\ripple\ripple_IHashRouter.h">
       <Filter>[1] Ripple\ripple_app\_misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_ILoadManager.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_InfoSub.h">
       <Filter>[1] Ripple\ripple_app\_misc</Filter>
     </ClInclude>
@@ -1532,6 +1529,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\WalletAddTransactor.h">
       <Filter>[1] Ripple\ripple_app\_transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\cpp\ripple\ripple_ILoadManager.h">
+      <Filter>[1] Ripple\ripple_app\_main</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
