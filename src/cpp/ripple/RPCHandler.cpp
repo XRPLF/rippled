@@ -3682,9 +3682,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
         return rpcError (rpcNO_NETWORK);
     }
 
-    // XXX Should verify we have a current ledger.
-
-    if ((commandsA[i].iOptions & optCurrent) && false)
+    if ((commandsA[i].iOptions & optCurrent) && (theApp->getLedgerMaster().getValidatedLedgerAge() > 60))
     {
         return rpcError (rpcNO_CURRENT);
     }
