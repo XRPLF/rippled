@@ -34,6 +34,12 @@ public:
 
     std::string toString () const;
 
+    /** Check invariants of the data.
+
+        This is for diagnostics, and does nothing in release builds.
+    */
+    void checkInternalConsistency () const noexcept;
+
 private:
     void simplify ();
 

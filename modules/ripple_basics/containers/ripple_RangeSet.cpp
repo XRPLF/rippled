@@ -85,6 +85,7 @@ uint32 RangeSet::prevMissing (uint32 v) const
     {
         if (it.second < (v - 1))
             return v - 1;
+
         if (it.first >= v)
             return (it.first == 0) ? absent : (it.first - 1);
     }
@@ -97,6 +98,7 @@ void RangeSet::setValue (uint32 v)
     if (!hasValue (v))
     {
         mRanges[v] = v;
+        
         simplify ();
     }
 }
@@ -112,6 +114,7 @@ void RangeSet::setRange (uint32 minV, uint32 maxV)
     }
 
     mRanges[minV] = maxV;
+
     simplify ();
 }
 
@@ -124,20 +127,30 @@ void RangeSet::clearValue (uint32 v)
             if (it->first == v)
             {
                 if (it->second == v)
+                {
                     mRanges.erase (it);
+
+                    checkInternalConsistency ();
+                }
                 else
                 {
                     mRanges[v + 1] = it->second;
                     it->second = v - 1;
+
+                    checkInternalConsistency ();
                 }
             }
             else if (it->second == v)
+            {
                 -- (it->second);
+            }
             else
             {
                 uint32 oldEnd = it->second;
                 it->second = v - 1;
                 mRanges[v + 1] = oldEnd;
+
+                checkInternalConsistency ();
             }
 
             return;
@@ -170,6 +183,8 @@ void RangeSet::simplify ()
 {
     iterator it = mRanges.begin ();
 
+    checkInternalConsistency ();
+
     while (1)
     {
         iterator nit = it;
@@ -182,8 +197,41 @@ void RangeSet::simplify ()
             // ranges overlap
             it->second = nit->second;
             mRanges.erase (nit);
+
+            checkInternalConsistency ();
         }
         else
+        {
             it = nit;
+        }
     }
 }
+
+void RangeSet::checkInternalConsistency () const noexcept
+{
+#if BEAST_DEBUG
+    if (mRanges.size () > 1)
+    {
+        const_iterator const last = std::prev (mRanges.end ());
+
+        for (const_iterator cur = mRanges.begin (); cur != last; ++cur)
+        {
+            const_iterator const next = std::next (cur);
+
+            bassert (cur->first <= cur->second);
+
+            bassert (next->first <= next->second);
+
+            bassert (cur->second + 1 < next->first);
+        }
+    }
+    else if (mRanges.size () == 1)
+    {
+        const_iterator const iter = mRanges.begin ();
+
+        bassert (iter->first <= iter->second);
+    }
+
+#endif
+}
+
