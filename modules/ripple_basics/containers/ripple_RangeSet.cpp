@@ -75,22 +75,52 @@ uint32 RangeSet::getPrev (uint32 v) const
     return absent;
 }
 
+// Return the largest number not in the set that is less than the given number
+//
 uint32 RangeSet::prevMissing (uint32 v) const
 {
-    // largest number not in the set that is less than the given number
-    if (v == 0)
-        return absent;
+    uint32 result = absent;
 
-    BOOST_REVERSE_FOREACH (const value_type & it, mRanges)
+    if (v != 0)
     {
-        if (it.second < (v - 1))
-            return v - 1;
+        checkInternalConsistency ();
 
-        if (it.first >= v)
-            return (it.first == 0) ? absent : (it.first - 1);
+        for (const_reverse_iterator cur = mRanges.rbegin (); cur != mRanges.rend (); ++cur)
+        {
+            // See if v is in the range
+            if (contains (*cur, v))
+            {
+                if (cur->first > 0)
+                    result = cur->first - 1;
+                else
+                    result = absent;
+
+                break;
+            }
+            else if (v > cur->second)
+            {
+                // This range is "above" the interval
+
+                if (v == cur->second + 1)
+                {
+                    if (cur->first > 0)
+                        result = cur->first - 1;
+                    else
+                        result = absent;
+                }
+                else
+                {
+                    result = v - 1;
+                }
+
+                break;
+            }
+        }
     }
 
-    return v - 1;
+    bassert (result == absent || !hasValue (result));
+
+    return result;
 }
 
 void RangeSet::setValue (uint32 v)
