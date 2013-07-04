@@ -139,7 +139,7 @@ SystemStats::CPUFlags::CPUFlags()
 }
 
 //==============================================================================
-uint32 BEAST_millisecondsSinceStartup() noexcept
+uint32 beast_millisecondsSinceStartup() noexcept
 {
     timespec t;
     clock_gettime (CLOCK_MONOTONIC, &t);
