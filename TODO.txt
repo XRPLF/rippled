@@ -31,6 +31,9 @@ WEBSOCKET TODO
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
+- Class to represent IP and Port number, with members to print, check syntax,
+  etc... replace the boost calls.
+
 - Remove dependence on JobQueue, LoadFeeTrack, and NetworkOPs from LoadManager
   by providing an observer (beast::ListenerList or Listeners). This way
   LoadManager does not need stopThread() function.

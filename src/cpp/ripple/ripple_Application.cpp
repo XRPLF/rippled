@@ -588,7 +588,7 @@ void Application::setup ()
     //
     // Allow RPC connections.
     //
-    if (!theConfig.RPC_IP.empty () && theConfig.RPC_PORT)
+    if (! theConfig.getRpcIP().empty () && theConfig.getRpcPort() != 0)
     {
         try
         {
