@@ -159,15 +159,10 @@ void RangeSet::clearValue (uint32 v)
                 if (it->second == v)
                 {
                     mRanges.erase (it);
-
-                    checkInternalConsistency ();
                 }
                 else
                 {
-                    mRanges[v + 1] = it->second;
-                    it->second = v - 1;
-
-                    checkInternalConsistency ();
+                    ++ (it->first);
                 }
             }
             else if (it->second == v)
@@ -179,10 +174,9 @@ void RangeSet::clearValue (uint32 v)
                 uint32 oldEnd = it->second;
                 it->second = v - 1;
                 mRanges[v + 1] = oldEnd;
-
-                checkInternalConsistency ();
             }
 
+            checkInternalConsistency();
             return;
         }
     }
@@ -213,22 +207,21 @@ void RangeSet::simplify ()
 {
     iterator it = mRanges.begin ();
 
-    checkInternalConsistency ();
-
     while (1)
     {
         iterator nit = it;
 
         if (++nit == mRanges.end ())
+        {
+            checkInternalConsistency();
             return;
+        }
 
         if (it->second >= (nit->first - 1))
         {
             // ranges overlap
             it->second = nit->second;
             mRanges.erase (nit);
-
-            checkInternalConsistency ();
         }
         else
         {
