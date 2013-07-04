@@ -166,7 +166,7 @@ TxFormats::Item const* TxFormats::findByName (std::string const& name) const noe
 
 TxFormats::Item& TxFormats::add (char const* name, TxType type)
 {
-    Item& item = m_formats.add (new Item (name, type));
+    Item& item = *m_formats.add (new Item (name, type));
 
     addCommonFields (item);
 

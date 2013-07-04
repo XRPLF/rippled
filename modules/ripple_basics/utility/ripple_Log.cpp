@@ -155,6 +155,7 @@ void Log::print (std::string const& text, bool toStdErr)
 
     if (toStdErr)
     {
+#if BEAST_MSVC
         if (beast_isRunningUnderDebugger ())
         {
             // Send it to the attached debugger's Output window
@@ -162,6 +163,7 @@ void Log::print (std::string const& text, bool toStdErr)
             Logger::outputDebugString (text);
         }
         else
+#endif
         {
             std::cerr << text << std::endl;
         }
