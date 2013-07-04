@@ -120,8 +120,7 @@ void RangeSet::clearValue (uint32 v)
                     mRanges.erase (it);
                 else
                 {
-                    mRanges[v + 1] = it->second;
-                    it->second = v - 1;
+                    ++ (it->first);
                 }
             }
             else if (it->second == v)
