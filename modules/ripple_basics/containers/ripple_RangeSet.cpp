@@ -78,15 +78,18 @@ uint32 RangeSet::getPrev (uint32 v) const
 uint32 RangeSet::prevMissing (uint32 v) const
 {
     // largest number not in the set that is less than the given number
+    if (v == 0)
+        return absent;
+
     BOOST_REVERSE_FOREACH (const value_type & it, mRanges)
     {
-        if (contains (it, v))
-            return (it.first == 0) ? absent : (it.first - 1);
-
         if (it.second < (v - 1))
             return v - 1;
+        if (it.first >= v)
+            return (it.first == 0) ? absent : (it.first - 1);
     }
-    return absent;
+
+    return v - 1;
 }
 
 void RangeSet::setValue (uint32 v)
