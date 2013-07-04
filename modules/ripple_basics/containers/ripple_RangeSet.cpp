@@ -99,7 +99,7 @@ uint32 RangeSet::prevMissing (uint32 v) const
             }
             else if (v > cur->second)
             {
-                // This range is "above" the interval
+                // v lies "above" the interval
 
                 if (v == cur->second + 1)
                 {
@@ -116,6 +116,8 @@ uint32 RangeSet::prevMissing (uint32 v) const
                 break;
             }
         }
+
+        result = v - 1;
     }
 
     bassert (result == absent || !hasValue (result));
