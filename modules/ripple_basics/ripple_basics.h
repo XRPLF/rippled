@@ -77,6 +77,7 @@ namespace ripple
 
 using namespace beast;
 
+#include "utility/ripple_LogFile.h"
 #include "utility/ripple_Log.h" // Needed by others
 
 #include "types/ripple_BasicTypes.h"

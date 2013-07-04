@@ -128,7 +128,7 @@ public:
         - The ledger is not advanced automatically.
         - If no ledger is loaded, the default ledger with the root
           account is created.
-    */  
+    */
     bool                        RUN_STANDALONE;
 
     // Note: The following parameters do not relate to the UNL or trust at all
@@ -201,7 +201,11 @@ public:
     */
     String const getRpcAddress ()
     {
-        return String (m_rpcIP.c_str ()) << ":" << m_rpcPort;
+        String s;
+
+        s << m_rpcIP.c_str () << ":" << m_rpcPort;
+
+        return s;
     }
 
 private:
