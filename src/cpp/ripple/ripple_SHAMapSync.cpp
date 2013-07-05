@@ -56,7 +56,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
 
                     if (!d)
                     {
-                        // node is not in the map
+                        // node is not in the database
                         nodeIDs.push_back (childID);
                         hashes.push_back (childHash);
 
@@ -77,12 +77,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
         if (have_all)
         {
             node->setFullBelow ();
-
-            if (mType == smtSTATE)
-            {
-                fullBelowCache.add (node->getNodeHash ());
-                dropBelow (node);
-            }
+            fullBelowCache.add (node->getNodeHash ());
         }
     }
 
@@ -148,12 +143,7 @@ std::vector<uint256> SHAMap::getNeededHashes (int max, SHAMapSyncFilter* filter)
         if (have_all)
         {
             node->setFullBelow ();
-
-            if (mType == smtSTATE)
-            {
-                fullBelowCache.add (node->getNodeHash ());
-                dropBelow (node);
-            }
+            fullBelowCache.add (node->getNodeHash ());
         }
     }
 

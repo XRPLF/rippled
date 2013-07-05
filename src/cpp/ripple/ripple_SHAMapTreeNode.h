@@ -122,7 +122,7 @@ public:
         return !!mItem;
     }
     SHAMapItem::ref peekItem ()
-    {
+    { // CAUTION: Do not modify the item
         return mItem;
     }
     SHAMapItem::pointer getItem () const;
