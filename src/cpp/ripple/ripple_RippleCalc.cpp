@@ -186,8 +186,10 @@ TER RippleCalc::calcNodeAdvance (
                 // Offer is expired.
                 WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: expired offer";
 
-                assert (musUnfundedFound.find (uOfferIndex) != musUnfundedFound.end ()); // Verify reverse found it too.
-                // Just skip it. It will be deleted.
+                if (bReverse)
+                    musUnfundedFound.insert(uOfferIndex);
+                else // it will already be deleted
+                    assert (musUnfundedFound.find (uOfferIndex) != musUnfundedFound.end ()); // Verify reverse found it too.
                 continue;
             }
             else if (!saTakerPays.isPositive () || !saTakerGets.isPositive ())
