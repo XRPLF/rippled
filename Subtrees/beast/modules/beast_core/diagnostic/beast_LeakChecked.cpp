@@ -89,6 +89,31 @@ void LeakCheckedBase::CounterBase::checkForLeaks ()
 
 //------------------------------------------------------------------------------
 
+void LeakCheckedBase::reportDanglingPointer (char const* objectName)
+{
+    /*  If you hit this, then you've managed to delete more instances
+        of this class than you've created. That indicates that you're
+        deleting some dangling pointers.
+
+        Note that although this assertion will have been triggered
+        during a destructor, it might not be this particular deletion
+        that's at fault - the incorrect one may have happened at an
+        earlier point in the program, and simply not been detected
+        until now.
+
+        Most errors like this are caused by using old-fashioned,
+        non-RAII techniques for your object management. Tut, tut.
+        Always, always use ScopedPointers, OwnedArrays,
+        ReferenceCountedObjects, etc, and avoid the 'delete' operator
+        at all costs!
+    */
+    DBG ("Dangling pointer deletion: " << objectName);
+
+    bassertfalse;
+}
+
+//------------------------------------------------------------------------------
+
 void LeakCheckedBase::checkForLeaks ()
 {
     CounterBase::Singleton::getInstance ().checkForLeaks ();
