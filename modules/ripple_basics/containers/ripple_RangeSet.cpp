@@ -85,6 +85,10 @@ uint32 RangeSet::prevMissing (uint32 v) const
     {
         checkInternalConsistency ();
 
+        // Handle the case where the loop reaches the terminating condition
+        //
+        result = v - 1;
+
         for (const_reverse_iterator cur = mRanges.rbegin (); cur != mRanges.rend (); ++cur)
         {
             // See if v is in the range
@@ -99,7 +103,7 @@ uint32 RangeSet::prevMissing (uint32 v) const
             }
             else if (v > cur->second)
             {
-                // This range is "above" the interval
+                // v lies "above" the interval
 
                 if (v == cur->second + 1)
                 {
@@ -107,10 +111,6 @@ uint32 RangeSet::prevMissing (uint32 v) const
                         result = cur->first - 1;
                     else
                         result = absent;
-                }
-                else
-                {
-                    result = v - 1;
                 }
 
                 break;
