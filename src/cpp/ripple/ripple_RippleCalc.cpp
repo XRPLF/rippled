@@ -2366,6 +2366,7 @@ void TransactionEngine::calcOfferBridgeNext (
         {
             // Offer is expired.
             WriteLog (lsINFO, RippleCalc) << "calcOfferFirst: encountered expired offer";
+            musUnfundedFound.insert(uOfferIndex);
         }
         else
         {
