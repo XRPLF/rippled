@@ -878,12 +878,13 @@ int commandLineRPC (const std::vector<std::string>& vCmd)
 
             callRPC (
                 isService,
-                theConfig.RPC_IP, theConfig.RPC_PORT,
-                theConfig.RPC_USER, theConfig.RPC_PASSWORD,
+                theConfig.getRpcIP (),
+                theConfig.getRpcPort (),
+                theConfig.RPC_USER,
+                theConfig.RPC_PASSWORD,
                 "",
                 jvRequest.isMember ("method")           // Allow parser to rewrite method.
-                ? jvRequest["method"].asString ()
-                : vCmd[0],
+                    ? jvRequest["method"].asString () : vCmd[0],
                 jvParams,                               // Parsed, execute.
                 false,
                 BIND_TYPE (callRPCHandler, &jvOutput, P_1));

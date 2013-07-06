@@ -115,6 +115,13 @@ public:
 
     static void setLogFile (boost::filesystem::path const& pathToLogFile);
 
+    /** Rotate the log file.
+
+        The log file is closed and reopened. This is for compatibility
+        with log management tools.
+
+        @return A human readable string describing the result of the operation.
+    */
     static std::string rotateLog ();
 
 public:
@@ -185,17 +192,13 @@ private:
         maximumMessageCharacters = 12 * 1024
     };
 
-    // VFALCO TODO looks like there are really TWO classes in here.
-    //         One is a stream target for '<<' operator and the other
-    //         is a singleton. Split the singleton out to a new class.
-    //
-    static boost::recursive_mutex sLock;
-    static LogSeverity sMinSeverity;
-    static std::ofstream* outStream;
-    static boost::filesystem::path* pathToLog;
-    static uint32 logRotateCounter;
-
     static std::string replaceFirstSecretWithAsterisks (std::string s);
+
+    // Singleton variables
+    //
+    static LogFile s_logFile;
+    static boost::recursive_mutex s_lock;
+    static LogSeverity sMinSeverity;
 
     mutable std::ostringstream  oss;
     LogSeverity                 mSeverity;

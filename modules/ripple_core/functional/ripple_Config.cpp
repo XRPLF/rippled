@@ -209,6 +209,7 @@ void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
 
 Config::Config ()
     : SSL_CONTEXT (boost::asio::ssl::context::sslv23)
+    , m_rpcPort (5001)
 {
     //
     // Defaults
@@ -218,7 +219,6 @@ Config::Config ()
     NETWORK_START_TIME      = 1319844908;
 
     PEER_PORT               = SYSTEM_PEER_PORT;
-    RPC_PORT                = 5001;
     RPC_SECURE              = 0;
     WEBSOCKET_PORT          = SYSTEM_WEBSOCKET_PORT;
     WEBSOCKET_PUBLIC_PORT   = SYSTEM_WEBSOCKET_PUBLIC_PORT;
@@ -373,14 +373,14 @@ void Config::load ()
 
             (void) SectionSingleB (secConfig, SECTION_RPC_ADMIN_PASSWORD, RPC_ADMIN_PASSWORD);
             (void) SectionSingleB (secConfig, SECTION_RPC_ADMIN_USER, RPC_ADMIN_USER);
-            (void) SectionSingleB (secConfig, SECTION_RPC_IP, RPC_IP);
+            (void) SectionSingleB (secConfig, SECTION_RPC_IP, m_rpcIP);
             (void) SectionSingleB (secConfig, SECTION_RPC_PASSWORD, RPC_PASSWORD);
             (void) SectionSingleB (secConfig, SECTION_RPC_USER, RPC_USER);
             (void) SectionSingleB (secConfig, SECTION_NODE_DB, NODE_DB);
             (void) SectionSingleB (secConfig, SECTION_LDB_EPHEMERAL, LDB_EPHEMERAL);
 
             if (SectionSingleB (secConfig, SECTION_RPC_PORT, strTemp))
-                RPC_PORT = boost::lexical_cast<int> (strTemp);
+                m_rpcPort = boost::lexical_cast<int> (strTemp);
 
             if (SectionSingleB (secConfig, "ledger_creator" , strTemp))
                 LEDGER_CREATOR = boost::lexical_cast<bool> (strTemp);

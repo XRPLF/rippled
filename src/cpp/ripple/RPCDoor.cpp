@@ -11,11 +11,11 @@ extern void initSSLContext (boost::asio::ssl::context& context,
 
 RPCDoor::RPCDoor (boost::asio::io_service& io_service)
     : mAcceptor (io_service,
-                 boost::asio::ip::tcp::endpoint (boost::asio::ip::address::from_string (theConfig.RPC_IP), theConfig.RPC_PORT))
+                 boost::asio::ip::tcp::endpoint (boost::asio::ip::address::from_string (theConfig.getRpcIP ()), theConfig.getRpcPort ()))
     , mDelayTimer (io_service)
     , mSSLContext (boost::asio::ssl::context::sslv23)
 {
-    WriteLog (lsINFO, RPCDoor) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
+    WriteLog (lsINFO, RPCDoor) << "RPC port: " << theConfig.getRpcAddress().toRawUTF8() << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
 
     if (theConfig.RPC_SECURE != 0)
         initSSLContext (mSSLContext, theConfig.RPC_SSL_KEY, theConfig.RPC_SSL_CERT, theConfig.RPC_SSL_CHAIN);
@@ -25,7 +25,7 @@ RPCDoor::RPCDoor (boost::asio::io_service& io_service)
 
 RPCDoor::~RPCDoor ()
 {
-    WriteLog (lsINFO, RPCDoor) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
+    WriteLog (lsINFO, RPCDoor) << "RPC port: " << theConfig.getRpcAddress().toRawUTF8() << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
 }
 
 void RPCDoor::startListening ()

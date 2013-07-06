@@ -57,6 +57,10 @@ void printHelp (const po::options_description& desc)
 
     cerr << desc << endl;
 
+    cerr << "Options: " << endl;
+    cerr << "     -rpc-ip=<ip-address>[':'<port-number>]" << endl;
+    cerr << "     -rpc-port=<port-number>" << endl;
+    cerr << endl;
     cerr << "Commands: " << endl;
     cerr << "     account_info <account>|<nickname>|<seed>|<pass_phrase>|<key> [<ledger>] [strict]" << endl;
     cerr << "     account_lines <account> <account>|\"\" [<ledger>]" << endl;
@@ -155,6 +159,7 @@ int rippleMain (int argc, char** argv)
     int iResult = 0;
     po::variables_map   vm;                                     // Map of options.
 
+    // VFALCO TODO Replace boost program options with something from Beast.
     //
     // Set up option parsing.
     //
@@ -163,6 +168,8 @@ int rippleMain (int argc, char** argv)
     ("help,h", "Display this message.")
     ("conf", po::value<std::string> (), "Specify the configuration file.")
     ("rpc", "Perform rpc command (default).")
+    ("rpc_ip", po::value <std::string> (), "Specify the IP address for RPC command.")
+    ("rpc_port", po::value <int> (), "Specify the port number for RPC command.")
     ("standalone,a", "Run with no peers.")
     ("testnet,t", "Run in test net mode.")
     ("unittest,u", "Perform unit tests.")
@@ -232,13 +239,21 @@ int rippleMain (int argc, char** argv)
     }
 
     if (vm.count ("quiet"))
+    {
         Log::setMinSeverity (lsFATAL, true);
+    }
     else if (vm.count ("verbose"))
+    {
         Log::setMinSeverity (lsTRACE, true);
+    }
     else
+    {
         Log::setMinSeverity (lsINFO, true);
+    }
 
-    // VFALCO TODO make these singletons that initialize statically
+    // VFALCO TODO make this a singleton that initializes statically
+    //             Or could make it a SharedSingleton
+    //
     LEFInit ();
 
     if (vm.count ("unittest"))
@@ -281,6 +296,26 @@ int rippleMain (int argc, char** argv)
 
         if (theConfig.VALIDATION_QUORUM < 2)
             theConfig.VALIDATION_QUORUM = 2;
+    }
+
+    if (iResult == 0)
+    {
+        // These overrides must happen after the config file is loaded.
+
+        // Override the RPC destination IP address
+        //
+        if (vm.count ("rpc_ip"))
+        {
+            theConfig.setRpcIP (vm ["rpc_ip"].as <std::string> ());
+        }
+
+        // Override the RPC destination port number
+        //
+        if (vm.count ("rpc_port"))
+        {
+            // VFALCO TODO This should be a short.
+            theConfig.setRpcPort (vm ["rpc_port"].as <int> ());
+        }
     }
 
     if (iResult)

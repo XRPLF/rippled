@@ -20,12 +20,12 @@
   },
 
   "scripts": {
-    "test": "node_modules/buster/bin/buster test"
+    "test": "./node_modules/buster/bin/buster test"
   },
 
   "repository": {
     "type": "git",
-    "url": "git://github.com/jedmccaleb/NewCoin.git"
+    "url": "git://github.com/ripple/rippled.git"
   },
 
   "readmeFilename": "README.md"

@@ -4,13 +4,9 @@
 */
 //==============================================================================
 
-boost::recursive_mutex Log::sLock;
-
+LogFile Log::s_logFile;
+boost::recursive_mutex Log::s_lock;
 LogSeverity Log::sMinSeverity = lsINFO;
-
-std::ofstream* Log::outStream = NULL;
-boost::filesystem::path* Log::pathToLog = NULL;
-uint32 Log::logRotateCounter = 0;
 
 //------------------------------------------------------------------------------
 
@@ -40,25 +36,6 @@ std::vector< std::pair<std::string, std::string> > LogPartition::getSeverities (
 
     return sevs;
 }
-
-//------------------------------------------------------------------------------
-
-// VFALCO TODO remove original code once we know the replacement is correct.
-// Original code
-/*
-std::string ls = oss.str();
-size_t s = ls.find("\"secret\"");
-if (s != std::string::npos)
-{
-    s += 8;
-    size_t sEnd = ls.size() - 1;
-    if (sEnd > (s + 35))
-        sEnd = s + 35;
-    for (int i = s; i < sEnd; ++i)
-        ls[i] = '*';
-}
-logMsg += ls;
-*/
 
 //------------------------------------------------------------------------------
 
@@ -144,14 +121,10 @@ Log::~Log ()
 
 void Log::print (std::string const& text, bool toStdErr)
 {
-    boost::recursive_mutex::scoped_lock sl (sLock);
+    boost::recursive_mutex::scoped_lock sl (s_lock);
 
-    // Always write to the log file if it is open.
-    //
-    if (outStream != NULL)
-    {
-        (*outStream) << text << std::endl;
-    }
+    // Does nothing if not open.
+    s_logFile.writeln (text);
 
     if (toStdErr)
     {
@@ -170,61 +143,23 @@ void Log::print (std::string const& text, bool toStdErr)
     }
 }
 
-std::string Log::rotateLog (void)
+std::string Log::rotateLog ()
 {
-    boost::recursive_mutex::scoped_lock sl (sLock);
-    boost::filesystem::path abs_path;
-    std::string abs_path_str;
+    bool const wasOpened = s_logFile.closeAndReopen ();
 
-    uint32 failsafe = 0;
-
-    std::string abs_new_path_str;
-
-    do
+    if (wasOpened)
     {
-        std::string s;
-        std::stringstream out;
-
-        failsafe++;
-
-        if (failsafe == std::numeric_limits<uint32>::max ())
-        {
-            return "unable to create new log file; too many log files!";
-        }
-
-        abs_path        = boost::filesystem::absolute ("");
-        abs_path        /= *pathToLog;
-        abs_path_str    = abs_path.parent_path ().string ();
-
-        out << logRotateCounter;
-        s = out.str ();
-
-        abs_new_path_str = abs_path_str + "/" + s + "_" + pathToLog->filename ().string ();
-
-        logRotateCounter++;
-
+        return "The log file was closed and reopened.";
     }
-    while (boost::filesystem::exists (boost::filesystem::path (abs_new_path_str)));
-
-    outStream->close ();
-
-    try
+    else
     {
-        boost::filesystem::rename (abs_path, boost::filesystem::path (abs_new_path_str));
+        return "The log file could not be closed and reopened.";
     }
-    catch (...)
-    {
-        // unable to rename existing log file
-    }
-
-    setLogFile (*pathToLog);
-
-    return abs_new_path_str;
 }
 
 void Log::setMinSeverity (LogSeverity s, bool all)
 {
-    boost::recursive_mutex::scoped_lock sl (sLock);
+    boost::recursive_mutex::scoped_lock sl (s_lock);
 
     sMinSeverity = s;
 
@@ -234,7 +169,7 @@ void Log::setMinSeverity (LogSeverity s, bool all)
 
 LogSeverity Log::getMinSeverity ()
 {
-    boost::recursive_mutex::scoped_lock sl (sLock);
+    boost::recursive_mutex::scoped_lock sl (s_lock);
 
     return sMinSeverity;
 }
@@ -292,28 +227,11 @@ LogSeverity Log::stringToSeverity (const std::string& s)
 
 void Log::setLogFile (boost::filesystem::path const& path)
 {
-    std::ofstream* newStream = new std::ofstream (path.c_str (), std::fstream::app);
+    bool const wasOpened = s_logFile.open (path.c_str ());
 
-    if (!newStream->good ())
+    if (! wasOpened)
     {
         Log (lsFATAL) << "Unable to open logfile " << path;
-        delete newStream;
-        newStream = NULL;
-    }
-
-    boost::recursive_mutex::scoped_lock sl (sLock);
-
-    if (outStream != NULL)
-        delete outStream;
-
-    outStream = newStream;
-
-    if (pathToLog != &path)
-    {
-        if (pathToLog != NULL)
-            delete pathToLog;
-
-        pathToLog = new boost::filesystem::path (path);
     }
 }
 
