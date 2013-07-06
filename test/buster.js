@@ -1,6 +1,6 @@
 var config = module.exports;
 
-config["Newcoin tests"] = {
+config["Ripple tests"] = {
     rootPath: "../",
     environment: "node",
     tests: [
