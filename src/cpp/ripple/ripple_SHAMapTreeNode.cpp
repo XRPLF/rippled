@@ -19,7 +19,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, uint32 seq) : SHAMap
 }
 
 SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& node, SHAMapItem::ref item, TNType type, uint32 seq) :
-    SHAMapNode (node), mItem (item), mSeq (seq), mType (type), mIsBranch (0), mFullBelow (true)
+    SHAMapNode (node), mItem (item), mSeq (seq), mType (type), mIsBranch (0), mFullBelow (false)
 {
     assert (item->peekData ().size () >= 12);
     updateHash ();
