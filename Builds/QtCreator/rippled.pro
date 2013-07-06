@@ -11,7 +11,7 @@ protobuf_h.input = PROTOS
 protobuf_h.output = $${PROTOS_DIR}/${QMAKE_FILE_BASE}.pb.h
 protobuf_h.depends = ${QMAKE_FILE_NAME}
 protobuf_h.commands = protoc --cpp_out=$${PROTOS_DIR} --proto_path=${QMAKE_FILE_PATH} ${QMAKE_FILE_NAME}
-protobuf_h.variable_out = GENERATED_FILES
+protobuf_h.variable_out = HEADERS
 QMAKE_EXTRA_COMPILERS += protobuf_h
 
 protobuf_cc.name = protobuf implementation
@@ -19,7 +19,7 @@ protobuf_cc.input = PROTOS
 protobuf_cc.output = $${PROTOS_DIR}/${QMAKE_FILE_BASE}.pb.cc
 protobuf_cc.depends = $${PROTOS_DIR}/${QMAKE_FILE_BASE}.pb.h
 protobuf_cc.commands = $$escape_expand(\\n)
-protobuf_cc.variable_out = SOURCES
+#protobuf_cc.variable_out = SOURCES
 QMAKE_EXTRA_COMPILERS += protobuf_cc
 
 # Ripple compilation
@@ -49,10 +49,13 @@ INCLUDEPATH += \
     "../../Subtrees/leveldb/include" \
     $${PROTOS_DIR}
 
-HEADERS += \
-    $$files(../../Subtrees/beast/modules/*, true) \
-    $$files(../../modules/*, true) \
-    $$files(../../src/cpp/ripple/*, true) \
+OTHER_FILES += \
+    $$files(../../Subtrees/beast/*) \
+    $$files(../../Subtrees/beast/modules/beast_basics/diagnostic/*)
+
+#   $$files(../../Subtrees/beast/modules/beast_core/, true)
+#   $$files(../../modules/*, true) \
+#   $$files(../../src/cpp/ripple/*, true) \
 
 UI_HEADERS_DIR += ../../modules/ripple_basics
 
@@ -74,8 +77,7 @@ SOURCES += \
     ../../modules/ripple_json/ripple_json.cpp \
     ../../modules/ripple_leveldb/ripple_leveldb.cpp \
     ../../modules/ripple_sqlite/ripple_sqlite.c \
-    ../../modules/ripple_websocket/ripple_websocket.cpp \
-    ../../build/proto/ripple.pb.cc
+    ../../modules/ripple_websocket/ripple_websocket.cpp
 
 LIBS += \
     -lboost_date_time-mt\
