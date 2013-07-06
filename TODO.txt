@@ -1,35 +1,10 @@
 --------------------------------------------------------------------------------
-LEVELDB TODO
---------------------------------------------------------------------------------
-
-- Add VisualStudio 2012 project file to our fork
-
-- Add LevelDB unity .cpp and .h to our fork
-
-- Replace Beast specific platform macros with universal macros so that the
-  unity doesn't require Beast
-
-- Submit LevelDB fork changes to Bitcoin upstream
-
---------------------------------------------------------------------------------
-WEBSOCKET TODO
---------------------------------------------------------------------------------
-
-*** Figure out how hard we want to fork websocket first **
-
-- Think about stripping the ripple specifics out of AutoSocket, make AutoSocket
-  part of our websocketpp fork
-
-- Regroup all the sources together in one directory
-
-- Strip includes and enforce unity
-
-- Put a new front-end on websocket to hide ALL of their classes and templates
-  from the host application, make this part of the websocket fork
-
---------------------------------------------------------------------------------
 RIPPLE TODO
 --------------------------------------------------------------------------------
+
+- Profile/VTune the application to identify hot spots
+  * Determine why rippled has a slow startup on Windows
+  * Improve the performance when running all unit tests on Windows
 
 - Class to represent IP and Port number, with members to print, check syntax,
   etc... replace the boost calls.
@@ -131,7 +106,46 @@ RIPPLE TODO
 - Consolidate SQLite database classes: DatabaseCon, Database, SqliteDatabase.
 
 --------------------------------------------------------------------------------
-RANDOM NOTES
+LEVELDB TODO
+--------------------------------------------------------------------------------
+
+- Add VisualStudio 2012 project file to our fork
+
+- Add LevelDB unity .cpp and .h to our fork
+
+- Replace Beast specific platform macros with universal macros so that the
+  unity doesn't require Beast
+
+- Submit LevelDB fork changes to Bitcoin upstream
+
+--------------------------------------------------------------------------------
+WEBSOCKET TODO
+--------------------------------------------------------------------------------
+
+*** Figure out how hard we want to fork websocket first **
+
+- Think about stripping the ripple specifics out of AutoSocket, make AutoSocket
+  part of our websocketpp fork
+
+- Regroup all the sources together in one directory
+
+- Strip includes and enforce unity
+
+- Put a new front-end on websocket to hide ALL of their classes and templates
+  from the host application, make this part of the websocket fork
+
+--------------------------------------------------------------------------------
+PROTOCOL BUFFERS TODO
+--------------------------------------------------------------------------------
+
+- Create/maintain the protobuf Git repo (original uses SVN)
+
+- Update the subtree
+
+- Make a Visual Studio 2012 Project for source browsing
+
+--------------------------------------------------------------------------------
+NOTES
 --------------------------------------------------------------------------------
 
 LoadEvent
