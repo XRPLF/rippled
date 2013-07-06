@@ -1,3 +1,4 @@
+
 # Ripple protocol buffers
 
 PROTOS = ../../src/cpp/ripple/ripple.proto
