@@ -72,7 +72,7 @@ public:
     {
         return getFieldU16 (sfLedgerEntryType);
     }
-    const LedgerEntryFormat* getFormat ()
+    LedgerFormats::Item const* getFormat ()
     {
         return mFormat;
     }
@@ -98,7 +98,7 @@ private:
 private:
     uint256                     mIndex;
     LedgerEntryType             mType;
-    const LedgerEntryFormat*    mFormat;
+    LedgerFormats::Item const*  mFormat;
     bool                        mMutable;
 };
 
