@@ -59,6 +59,11 @@ public:
         KeyType const m_type;
     };
 
+private:
+    // VFALCO TODO use String instead of std::string
+    typedef std::map <std::string, Item*> NameMap;
+    typedef std::map <KeyType, Item*> TypeMap;
+
 public:
     /** Create the known formats object.
 
@@ -104,7 +109,7 @@ public:
     {
         Item* result = nullptr;
 
-        TypeMap::const_iterator const iter = m_types.find (type);
+        typename TypeMap::const_iterator const iter = m_types.find (type);
 
         if (iter != m_types.end ())
         {
@@ -121,7 +126,7 @@ protected:
     {
         Item* result = nullptr;
 
-        NameMap::const_iterator const iter = m_names.find (name);
+        typename NameMap::const_iterator const iter = m_names.find (name);
 
         if (iter != m_names.end ())
         {
@@ -159,10 +164,6 @@ protected:
     virtual void addCommonFields (Item& item) = 0;
 
 private:
-    // VFALCO TODO use String instead of std::string
-    typedef std::map <std::string, Item*> NameMap;
-    typedef std::map <KeyType, Item*> TypeMap;
-
     OwnedArray <Item> m_formats;
     NameMap m_names;
     TypeMap m_types;
