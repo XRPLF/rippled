@@ -162,13 +162,9 @@ void RangeSet::clearValue (uint32 v)
                 }
                 else
                 {
-<<<<<<< HEAD
                     uint32 oldEnd = it->second;
                     mRanges.erase(it);
                     mRanges[v + 1] = oldEnd;
-=======
-                    ++ (it->first);
->>>>>>> 89b4d70... Fix a bug in RangeSet::clearValue
                 }
             }
             else if (it->second == v)
