@@ -4,21 +4,18 @@
 */
 //==============================================================================
 
-// VFALCO TODO make this an inline function
-#define ADDRESS_SHARED(p)   strHex(uint64( ((char*) (p).get()) - ((char*) 0)))
-
-// How often to enforce policies.
-#define POLICY_INTERVAL_SECONDS 5
-
-class Peers;
-
-SETUP_LOG (Peers)
-
 class Peers
     : public IPeers
     , LeakChecked <Peers>
 {
 public:
+    enum
+    {
+        /** Frequency of policy enforcement.
+        */
+        policyIntervalSeconds = 5
+    };
+
     explicit Peers (boost::asio::io_service& io_service)
         : mLastPeer (0)
         , mPhase (0)
@@ -330,7 +327,7 @@ void Peers::policyEnforce ()
     }
 
     // Schedule next enforcement.
-    mPolicyTimer.expires_at (boost::posix_time::second_clock::universal_time () + boost::posix_time::seconds (POLICY_INTERVAL_SECONDS));
+    mPolicyTimer.expires_at (boost::posix_time::second_clock::universal_time () + boost::posix_time::seconds (policyIntervalSeconds));
     mPolicyTimer.async_wait (BIND_TYPE (&Peers::policyHandler, this, P_1));
 }
 
@@ -503,7 +500,7 @@ bool Peers::peerConnected (Peer::ref peer, const RippleAddress& naPeer,
 
     if (naPeer == getApp().getLocalCredentials ().getNodePublic ())
     {
-        WriteLog (lsINFO, Peers) << "Pool: Connected: self: " << ADDRESS_SHARED (peer) << ": " << naPeer.humanNodePublic () << " " << strIP << " " << iPort;
+        WriteLog (lsINFO, Peers) << "Pool: Connected: self: " << addressToString (peer.get()) << ": " << naPeer.humanNodePublic () << " " << strIP << " " << iPort;
     }
     else
     {
@@ -513,7 +510,7 @@ bool Peers::peerConnected (Peer::ref peer, const RippleAddress& naPeer,
         if (itCm == mConnectedMap.end ())
         {
             // New connection.
-            //WriteLog (lsINFO, Peers) << "Pool: Connected: new: " << ADDRESS_SHARED(peer) << ": " << naPeer.humanNodePublic() << " " << strIP << " " << iPort;
+            //WriteLog (lsINFO, Peers) << "Pool: Connected: new: " << addressToString (peer.get()) << ": " << naPeer.humanNodePublic() << " " << strIP << " " << iPort;
 
             mConnectedMap[naPeer]   = peer;
             bNew                    = true;
@@ -529,7 +526,7 @@ bool Peers::peerConnected (Peer::ref peer, const RippleAddress& naPeer,
             if (itCm->second->getIP ().empty ())
             {
                 // Old peer did not know it's IP.
-                //WriteLog (lsINFO, Peers) << "Pool: Connected: redundant: outbound: " << ADDRESS_SHARED(peer) << " discovered: " << ADDRESS_SHARED(itCm->second) << ": " << strIP << " " << iPort;
+                //WriteLog (lsINFO, Peers) << "Pool: Connected: redundant: outbound: " << addressToString (peer.get()) << " discovered: " << addressToString(itCm->second) << ": " << strIP << " " << iPort;
 
                 itCm->second->setIpPort (strIP, iPort);
 
@@ -539,14 +536,14 @@ bool Peers::peerConnected (Peer::ref peer, const RippleAddress& naPeer,
             else
             {
                 // Old peer knew its IP.  Do nothing.
-                //WriteLog (lsINFO, Peers) << "Pool: Connected: redundant: outbound: rediscovered: " << ADDRESS_SHARED(peer) << " " << strIP << " " << iPort;
+                //WriteLog (lsINFO, Peers) << "Pool: Connected: redundant: outbound: rediscovered: " << addressToString (peer.get()) << " " << strIP << " " << iPort;
 
                 nothing ();
             }
         }
         else
         {
-            //WriteLog (lsINFO, Peers) << "Pool: Connected: redundant: inbound: " << ADDRESS_SHARED(peer) << " " << strIP << " " << iPort;
+            //WriteLog (lsINFO, Peers) << "Pool: Connected: redundant: inbound: " << addressToString (peer.get()) << " " << strIP << " " << iPort;
 
             nothing ();
         }
@@ -669,13 +666,13 @@ void Peers::peerClosed (Peer::ref peer, const std::string& strIp, int iPort)
         if (itIp == mIpMap.end ())
         {
             // Did not find it.  Not already connecting or connected.
-            WriteLog (lsWARNING, Peers) << "Pool: Closed: UNEXPECTED: " << ADDRESS_SHARED (peer) << ": " << strIp << " " << iPort;
+            WriteLog (lsWARNING, Peers) << "Pool: Closed: UNEXPECTED: " << addressToString (peer.get()) << ": " << strIp << " " << iPort;
             // XXX Internal error.
         }
         else if (mIpMap[ipPeer] == peer)
         {
             // We were the identified connection.
-            //WriteLog (lsINFO, Peers) << "Pool: Closed: identified: " << ADDRESS_SHARED(peer) << ": " << strIp << " " << iPort;
+            //WriteLog (lsINFO, Peers) << "Pool: Closed: identified: " << addressToString (peer.get()) << ": " << strIp << " " << iPort;
 
             // Delete our entry.
             mIpMap.erase (itIp);
@@ -685,7 +682,7 @@ void Peers::peerClosed (Peer::ref peer, const std::string& strIp, int iPort)
         else
         {
             // Found it.  But, we were redundant.
-            //WriteLog (lsINFO, Peers) << "Pool: Closed: redundant: " << ADDRESS_SHARED(peer) << ": " << strIp << " " << iPort;
+            //WriteLog (lsINFO, Peers) << "Pool: Closed: redundant: " << addressToString (peer.get()) << ": " << strIp << " " << iPort;
         }
     }
 
@@ -709,7 +706,7 @@ void Peers::peerVerified (Peer::ref peer)
 
         std::string strIpPort   = str (boost::format ("%s %d") % strIp % iPort);
 
-        //WriteLog (lsINFO, Peers) << str(boost::format("Pool: Scan: connected: %s %s %s (scanned)") % ADDRESS_SHARED(peer) % strIp % iPort);
+        //WriteLog (lsINFO, Peers) << str(boost::format("Pool: Scan: connected: %s %s %s (scanned)") % addressToString (peer.get()) % strIp % iPort);
 
         if (peer->getNodePublic () == getApp().getLocalCredentials ().getNodePublic ())
         {
@@ -880,4 +877,5 @@ bool Peers::isMessageKnown (PackedMessage::pointer msg)
 }
 #endif
 
-// vim:ts=4
+SETUP_LOG (Peers)
+
