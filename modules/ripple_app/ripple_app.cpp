@@ -15,7 +15,7 @@
 #include "BeastConfig.h"
 
 // This must come first to work around the boost placeholders issues
-#include "modules/beast_basics/beast_basics.h" 
+#include "beast/modules/beast_basics/beast_basics.h"
 
 // VFALCO NOTE Holy smokes...that's a lot of boost!!!
 #include <boost/algorithm/string.hpp>
@@ -57,9 +57,9 @@
 #include <boost/unordered_set.hpp>
 #include <boost/weak_ptr.hpp>
 
-#include "../modules/ripple_sqlite/ripple_sqlite.h" // for SqliteDatabase.cpp
+#include "../ripple_sqlite/ripple_sqlite.h" // for SqliteDatabase.cpp
 
-#include "../modules/ripple_core/ripple_core.h"
+#include "../ripple_core/ripple_core.h"
 
 // VFALCO TODO fix these warnings!
 #ifdef _MSC_VER

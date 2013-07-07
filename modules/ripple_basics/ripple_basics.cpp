@@ -56,6 +56,7 @@ namespace ripple
 #include "containers/ripple_TaggedCache.cpp"
 
 #include "utility/ripple_Log.cpp"
+#include "utility/ripple_LogFile.cpp"
 
 #include "utility/ripple_ByteOrder.cpp"
 #include "utility/ripple_CountedObject.cpp"

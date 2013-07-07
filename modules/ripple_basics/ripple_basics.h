@@ -23,7 +23,7 @@
 #include "system/ripple_StandardIncludes.h"
 
 // This must come before Boost, to fix the boost placeholders problem
-#include "modules/beast_basics/beast_basics.h"
+#include "beast/modules/beast_basics/beast_basics.h"
 
 #include "system/ripple_BoostIncludes.h"
 
@@ -36,9 +36,9 @@
 //
 #if __cplusplus > 201100L
 namespace boost
-{ 
-    template <class T> 
-    const T* get_pointer (std::shared_ptr<T> const& ptr) 
+{
+    template <class T>
+    const T* get_pointer (std::shared_ptr<T> const& ptr)
     {
         return ptr.get();
     }
@@ -64,11 +64,7 @@ namespace boost
 # include <sys/types.h>
 #endif
 
-#include "modules/beast_core/beast_core.h"
-//#include "modules/beast_basics/beast_basics.h"
-
-// VFALCO TODO Fix this for FreeBSD
-//#include "modules/beast_basics/beast_basics.h"
+#include "beast/modules/beast_core/beast_core.h"
 
 #include "../ripple_json/ripple_json.h"
 
@@ -77,6 +73,7 @@ namespace ripple
 
 using namespace beast;
 
+#include "utility/ripple_LogFile.h"
 #include "utility/ripple_Log.h" // Needed by others
 
 #include "types/ripple_BasicTypes.h"
