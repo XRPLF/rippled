@@ -56,7 +56,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
 
                     if (!d)
                     {
-                        // node is not in the map
+                        // node is not in the database
                         nodeIDs.push_back (childID);
                         hashes.push_back (childHash);
 

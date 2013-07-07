@@ -31,7 +31,7 @@ public:
     //
     static inline int getDefaultHoldTime ()
     {
-        return 120;
+        return 300;
     }
 
     // VFALCO TODO rename the parameter to entryHoldTimeInSeconds

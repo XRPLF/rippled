@@ -195,6 +195,8 @@ private:
 
         // We do it this way in case we want to add exponential decay later
         int now = UptimeTimer::getInstance ().getElapsedSeconds ();
+
+        boost::mutex::scoped_lock sl (mLock);
         canonicalize (source, now);
         source.mBalance += credits;
 
@@ -204,7 +206,8 @@ private:
         if (source.isPrivileged ()) // privileged sources never warn/cutoff
             return false;
 
-        if ((source.mBalance >= mDebitLimit) && (source.mLastWarning == now)) // no need to warn
+        if ( (source.mBalance >= mDebitWarn) ||
+            ((source.mBalance >= mDebitLimit) && (source.mLastWarning == now)))
             return false;
 
         return true;

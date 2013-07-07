@@ -843,14 +843,6 @@ bool serverOkay (std::string& reason)
     if (!theConfig.ELB_SUPPORT)
         return true;
 
-    /*
-    if (!theApp)
-    {
-        reason = "Server has not started";
-        return false;
-    }
-    */
-
     if (getApp().isShutdown ())
     {
         reason = "Server is shutting down";
@@ -868,6 +860,9 @@ bool serverOkay (std::string& reason)
         reason = "Not synchronized with network";
         return false;
     }
+
+    if (!getApp().getLedgerMaster().isCaughtUp(reason))
+        return false;
 
     if (getApp().getFeeTrack ().isLoaded ())
     {

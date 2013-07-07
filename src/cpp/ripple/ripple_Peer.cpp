@@ -197,7 +197,7 @@ PeerImp::PeerImp (boost::asio::io_service& io_service, boost::asio::ssl::context
     mCluster (false),
     mPeerId (peerID),
     mPrivate (false),
-    mLoad (""),
+    mLoad (std::string()),
     mMinLedger (0),
     mMaxLedger (0),
     mSocketSsl (io_service, ctx),
@@ -978,6 +978,8 @@ void PeerImp::recvHello (protocol::TMHello& packet)
         {
             mCluster = true;
             mLoad.setPrivileged ();
+            if (!mNodeName.empty())
+                mLoad.rename (mNodeName);
             WriteLog (lsINFO, Peer) << "Cluster connection to \"" << (mNodeName.empty () ? getIP () : mNodeName)
                                     << "\" established";
         }
@@ -1104,10 +1106,11 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
         Serializer s (packet.rawtransaction ());
         SerializerIterator sit (s);
         SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction> (boost::ref (sit));
+        uint256 txID = stx->getTransactionID();
 
         int flags;
 
-        if (! getApp().getHashRouter ().addSuppressionPeer (stx->getTransactionID (), mPeerId, flags))
+        if (! getApp().getHashRouter ().addSuppressionPeer (txID, mPeerId, flags))
         {
             // we have seen this transaction recently
             if (isSetBit (flags, SF_BAD))
@@ -1120,12 +1123,24 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
                 return;
         }
 
-        WriteLog (lsDEBUG, Peer) << "Got new transaction from peer";
+        if (getApp().getMasterTransaction().fetch(txID, true))
+        {
+            WriteLog (lsDEBUG, Peer) << "Peer " << getDisplayName() << " send old TX " << txID;
+            applyLoadCharge (LT_InvalidRequest);
+            return;
+        }
+
+        WriteLog (lsDEBUG, Peer) << "Got new transaction from peer " << getDisplayName () << " : " << txID;
 
         if (mCluster)
             flags |= SF_TRUSTED | SF_SIGGOOD;
 
-        getApp().getJobQueue ().addJob (jtTRANSACTION, "recvTransction->checkTransaction",
+        if (getApp().getJobQueue().getJobCount(jtTRANSACTION) > 100)
+            WriteLog(lsINFO, Peer) << "Transaction queue is full";
+        else if (getApp().getLedgerMaster().getValidatedLedgerAge() > 240)
+            WriteLog(lsINFO, Peer) << "No new transactions until synchronized";
+        else
+            getApp().getJobQueue ().addJob (jtTRANSACTION, "recvTransction->checkTransaction",
                                        BIND_TYPE (&checkTransaction, P_1, flags, stx, boost::weak_ptr<Peer> (shared_from_this ())));
 
 #ifndef TRUST_NETWORK
@@ -2213,11 +2228,28 @@ void PeerImp::sendGetPeers ()
 
 void PeerImp::applyLoadCharge (LoadType loadType)
 {
+    // IMPLEMENTATION IS INCOMPLETE
+
+    // VFALCO TODO This needs to completed before open sourcing.
+
     if (getApp().getLoadManager ().applyLoadCharge (mLoad, loadType))
     {
-        // UNIMPLEMENTED
-
-        // VFALCO TODO This needs to implemented before open sourcing.
+        if (mCluster)
+        {
+            WriteLog (lsWARNING, Peer) << "aLC: " << getDisplayName() << " load from cluster";
+        }
+        else if (getApp().getLoadManager ().shouldCutoff(mLoad))
+        {
+            WriteLog (lsWARNING, Peer) << "aLC: " << getDisplayName() << " should cutoff";
+        }
+        else if (getApp().getLoadManager ().shouldWarn (mLoad))
+        {
+            WriteLog (lsWARNING, Peer) << "aLC: " << getDisplayName() << " load warning";
+        }
+        else
+        {
+            WriteLog (lsWARNING, Peer) << "aLC: " << getDisplayName() << " cannot figure out";
+        }
     }
 }
 

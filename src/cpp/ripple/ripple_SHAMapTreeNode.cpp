@@ -356,12 +356,10 @@ void SHAMapTreeNode::addRaw (Serializer& s, SHANodeFormat format)
 
 bool SHAMapTreeNode::setItem (SHAMapItem::ref i, TNType type)
 {
-    uint256 hash = getNodeHash ();
     mType = type;
     mItem = i;
     assert (isLeaf ());
-    updateHash ();
-    return getNodeHash () != hash;
+    return updateHash ();
 }
 
 SHAMapItem::pointer SHAMapTreeNode::getItem () const

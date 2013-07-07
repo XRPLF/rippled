@@ -246,14 +246,14 @@ void NetworkOPs::runTransactionQueue ()
 
             if (isTemMalformed (r)) // malformed, cache bad
                 getApp().getHashRouter ().setFlag (txn->getID (), SF_BAD);
-            else if (isTelLocal (r) || isTerRetry (r)) // can be retried
-                getApp().getHashRouter ().setFlag (txn->getID (), SF_RETRY);
+//            else if (isTelLocal (r) || isTerRetry (r)) // can be retried
+//                getApp().getHashRouter ().setFlag (txn->getID (), SF_RETRY);
 
 
             if (isTerRetry (r))
             {
                 // transaction should be held
-                WriteLog (lsDEBUG, NetworkOPs) << "Transaction should be held: " << r;
+                WriteLog (lsDEBUG, NetworkOPs) << "QTransaction should be held: " << r;
                 dbtx->setStatus (HELD);
                 getApp().getMasterTransaction ().canonicalize (dbtx, true);
                 mLedgerMaster->addHeldTransaction (dbtx);
@@ -261,27 +261,29 @@ void NetworkOPs::runTransactionQueue ()
             else if (r == tefPAST_SEQ)
             {
                 // duplicate or conflict
-                WriteLog (lsINFO, NetworkOPs) << "Transaction is obsolete";
+                WriteLog (lsINFO, NetworkOPs) << "QTransaction is obsolete";
                 dbtx->setStatus (OBSOLETE);
             }
             else if (r == tesSUCCESS)
             {
-                WriteLog (lsINFO, NetworkOPs) << "Transaction is now included in open ledger";
+                WriteLog (lsINFO, NetworkOPs) << "QTransaction is now included in open ledger";
                 dbtx->setStatus (INCLUDED);
                 getApp().getMasterTransaction ().canonicalize (dbtx, true);
             }
             else
             {
-                WriteLog (lsDEBUG, NetworkOPs) << "Status other than success " << r;
+                WriteLog (lsDEBUG, NetworkOPs) << "QStatus other than success " << r;
                 dbtx->setStatus (INVALID);
             }
 
-            if (didApply || (mMode != omFULL))
+//            if (didApply || (mMode != omFULL))
+            if (didApply)
             {
                 std::set<uint64> peers;
 
                 if (getApp().getHashRouter ().swapSet (txn->getID (), peers, SF_RELAYED))
                 {
+                    WriteLog (lsDEBUG, NetworkOPs) << "relaying";
                     protocol::TMTransaction tx;
                     Serializer s;
                     dbtx->getSTransaction ()->add (s);
@@ -292,6 +294,8 @@ void NetworkOPs::runTransactionQueue ()
                     PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tx, protocol::mtTRANSACTION);
                     getApp().getPeers ().relayMessageBut (peers, packet);
                 }
+                else
+                    WriteLog(lsDEBUG, NetworkOPs) << "recently relayed";
             }
 
             txn->doCallbacks (r);
@@ -339,8 +343,8 @@ Transaction::pointer NetworkOPs::processTransaction (Transaction::pointer trans,
 
     if (isTemMalformed (r)) // malformed, cache bad
         getApp().getHashRouter ().setFlag (trans->getID (), SF_BAD);
-    else if (isTelLocal (r) || isTerRetry (r)) // can be retried
-        getApp().getHashRouter ().setFlag (trans->getID (), SF_RETRY);
+//    else if (isTelLocal (r) || isTerRetry (r)) // can be retried
+//        getApp().getHashRouter ().setFlag (trans->getID (), SF_RETRY);
 
 #ifdef BEAST_DEBUG
 

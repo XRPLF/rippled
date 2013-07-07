@@ -822,6 +822,18 @@
     <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt8.cpp">
       <Filter>[1] Ripple\ripple_app</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt5.cpp">
+      <Filter>1. Modules\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt6.cpp">
+      <Filter>1. Modules\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt7.cpp">
+      <Filter>1. Modules\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt8.cpp">
+      <Filter>1. Modules\ripple_app</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h">

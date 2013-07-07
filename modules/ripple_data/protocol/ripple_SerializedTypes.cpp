@@ -22,6 +22,14 @@ SerializedType& SerializedType::operator= (const SerializedType& t)
     return *this;
 }
 
+bool SerializedType::isEquivalent (const SerializedType& t) const
+{
+    assert (getSType () == STI_NOTPRESENT);
+    if (t.getSType () == STI_NOTPRESENT)
+        return true;
+    WriteLog (lsDEBUG, SerializedType) << "notEquiv " << getFullText() << " not STI_NOTPRESENT";
+    return false;
+}
 
 void STPathSet::printDebug ()
 {
