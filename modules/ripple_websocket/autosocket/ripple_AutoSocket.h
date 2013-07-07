@@ -7,13 +7,13 @@
 #ifndef __AUTOSOCKET_H_
 #define __AUTOSOCKET_H_
 
+namespace basio = boost::asio;
+namespace bassl = basio::ssl;
+
 // Socket wrapper that supports both SSL and non-SSL connections.
 // Generally, handle it as you would an SSL connection.
 // To force a non-SSL connection, just don't call async_handshake.
 // To force SSL only inbound, call setSSLOnly.
-
-namespace basio = boost::asio;
-namespace bassl = basio::ssl;
 
 class AutoSocket
 {
@@ -118,7 +118,8 @@ public:
         }
     }
 
-    template <typename ShutdownHandler> void async_shutdown (ShutdownHandler handler)
+    template <typename ShutdownHandler>
+    void async_shutdown (ShutdownHandler handler)
     {
         if (isSecure ())
             mSocket->async_shutdown (handler);
@@ -137,7 +138,8 @@ public:
         }
     }
 
-    template <typename Seq, typename Handler> void async_read_some (const Seq& buffers, Handler handler)
+    template <typename Seq, typename Handler>
+    void async_read_some (const Seq& buffers, Handler handler)
     {
         if (isSecure ())
             mSocket->async_read_some (buffers, handler);
@@ -172,7 +174,8 @@ public:
             basio::async_read_until (PlainSocket (), buffers, cond, handler);
     }
 
-    template <typename Buf, typename Handler> void async_write (const Buf& buffers, Handler handler)
+    template <typename Buf, typename Handler>
+    void async_write (const Buf& buffers, Handler handler)
     {
         if (isSecure ())
             boost::asio::async_write (*mSocket, buffers, handler);
@@ -207,7 +210,8 @@ public:
             boost::asio::async_read (PlainSocket (), buffers, cond, handler);
     }
 
-    template <typename Buf, typename Handler> void async_read (const Buf& buffers, Handler handler)
+    template <typename Buf, typename Handler>
+    void async_read (const Buf& buffers, Handler handler)
     {
         if (isSecure ())
             boost::asio::async_read (*mSocket, buffers, handler);
@@ -215,7 +219,8 @@ public:
             boost::asio::async_read (PlainSocket (), buffers, handler);
     }
 
-    template <typename Seq, typename Handler> void async_write_some (const Seq& buffers, Handler handler)
+    template <typename Seq, typename Handler>
+    void async_write_some (const Seq& buffers, Handler handler)
     {
         if (isSecure ())
             mSocket->async_write_some (buffers, handler);
@@ -265,5 +270,3 @@ private:
 };
 
 #endif
-
-// vim:ts=4

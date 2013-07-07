@@ -30,10 +30,11 @@ public:
 
     void handleConnect (const boost::system::error_code & error, boost::asio::ip::tcp::resolver::iterator it);
 
-    std::string& getIP ()
+    std::string const& getIP ()
     {
         return mIpPort.first;
     }
+
     std::string getDisplayName ()
     {
         return mCluster ? mNodeName : mIpPort.first;
