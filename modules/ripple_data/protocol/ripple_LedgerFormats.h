@@ -4,12 +4,14 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGERFORMAT_H
-#define RIPPLE_LEDGERFORMAT_H
+#ifndef RIPPLE_LEDGERFORMATS_H_INCLUDED
+#define RIPPLE_LEDGERFORMATS_H_INCLUDED
 
-/**
+/** Ledger entry types.
 
     These are stored in serialized data.
+
+    @note Changing these values results in a hard fork.
 
     @ingroup protocol
 */

@@ -276,6 +276,22 @@ namespace beast
 
 }
 
+#ifdef _CRTDBG_MAP_ALLOC
+#pragma pop_macro("calloc")
+#pragma pop_macro("free")
+#pragma pop_macro("malloc")
+#pragma pop_macro("realloc")
+#pragma pop_macro("_recalloc")
+#pragma pop_macro("_aligned_free")
+#pragma pop_macro("_aligned_malloc")
+#pragma pop_macro("_aligned_offset_malloc")
+#pragma pop_macro("_aligned_realloc")
+#pragma pop_macro("_aligned_recalloc")
+#pragma pop_macro("_aligned_offset_realloc")
+#pragma pop_macro("_aligned_offset_recalloc")
+#pragma pop_macro("_aligned_msize")
+#endif
+
 //------------------------------------------------------------------------------
 
 #if BEAST_BOOST_IS_AVAILABLE
