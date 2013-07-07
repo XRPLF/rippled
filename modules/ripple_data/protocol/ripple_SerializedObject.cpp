@@ -1288,7 +1288,7 @@ UPTR_T<STObject> STObject::parseJson (const Json::Value& object, SField::ref inN
                     if (field == sfTransactionType)
                     {
                         // Retrieve type from name. Throws if not found.
-                        TxType const txType = TxFormats::getInstance().findTypeByName (strValue);
+                        TxType const txType = TxFormats::getInstance()->findTypeByName (strValue);
 
                         data.push_back (new STUInt16 (field, static_cast<uint16> (txType)));
 
@@ -1297,12 +1297,9 @@ UPTR_T<STObject> STObject::parseJson (const Json::Value& object, SField::ref inN
                     }
                     else if (field == sfLedgerEntryType)
                     {
-                        LedgerEntryFormat* f = LedgerEntryFormat::getLgrFormat (strValue);
+                        LedgerEntryType const type = LedgerFormats::getInstance()->findTypeByName (strValue);
 
-                        if (!f)
-                            throw std::runtime_error ("Unknown ledger entry type");
-
-                        data.push_back (new STUInt16 (field, static_cast<uint16> (f->t_type)));
+                        data.push_back (new STUInt16 (field, static_cast<uint16> (type)));
 
                         if (*name == sfGeneric)
                             name = &sfLedgerEntry;

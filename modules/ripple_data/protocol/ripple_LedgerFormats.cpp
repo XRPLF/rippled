@@ -4,22 +4,10 @@
 */
 //==============================================================================
 
-std::map <int, LedgerEntryFormat*> LedgerEntryFormat::byType;
-
-std::map <std::string, LedgerEntryFormat*> LedgerEntryFormat::byName;
-
-#define LEF_BASE                                            \
-            << SOElement(sfLedgerIndex,             SOE_OPTIONAL)   \
-            << SOElement(sfLedgerEntryType,         SOE_REQUIRED)   \
-            << SOElement(sfFlags,                   SOE_REQUIRED)
-
-#define DECLARE_LEF(name, type) lef = new LedgerEntryFormat(#name, type); (*lef) LEF_BASE
-
-void LEFInit ()
+LedgerFormats::LedgerFormats ()
+    : SharedSingleton <LedgerFormats> (SingletonLifetime::persistAfterCreation)
 {
-    LedgerEntryFormat* lef;
-
-    DECLARE_LEF (AccountRoot, ltACCOUNT_ROOT)
+    add ("AccountRoot", ltACCOUNT_ROOT)
             << SOElement (sfAccount,             SOE_REQUIRED)
             << SOElement (sfSequence,            SOE_REQUIRED)
             << SOElement (sfBalance,             SOE_REQUIRED)
@@ -35,7 +23,7 @@ void LEFInit ()
             << SOElement (sfDomain,              SOE_OPTIONAL)
             ;
 
-    DECLARE_LEF (Contract, ltCONTRACT)
+    add ("Contract", ltCONTRACT)
             << SOElement (sfAccount,             SOE_REQUIRED)
             << SOElement (sfBalance,             SOE_REQUIRED)
             << SOElement (sfPreviousTxnID,       SOE_REQUIRED)
@@ -50,7 +38,7 @@ void LEFInit ()
             << SOElement (sfExpireCode,          SOE_OPTIONAL)
             ;
 
-    DECLARE_LEF (DirectoryNode, ltDIR_NODE)
+    add ("DirectoryNode", ltDIR_NODE)
             << SOElement (sfOwner,               SOE_OPTIONAL)  // for owner directories
             << SOElement (sfTakerPaysCurrency,   SOE_OPTIONAL)  // for order book directories
             << SOElement (sfTakerPaysIssuer,     SOE_OPTIONAL)  // for order book directories
@@ -63,16 +51,16 @@ void LEFInit ()
             << SOElement (sfIndexPrevious,       SOE_OPTIONAL)
             ;
 
-    DECLARE_LEF (GeneratorMap, ltGENERATOR_MAP)
+    add ("GeneratorMap", ltGENERATOR_MAP)
             << SOElement (sfGenerator,           SOE_REQUIRED)
             ;
 
-    DECLARE_LEF (Nickname, ltNICKNAME)
+    add ("Nickname", ltNICKNAME)
             << SOElement (sfAccount,             SOE_REQUIRED)
             << SOElement (sfMinimumOffer,        SOE_OPTIONAL)
             ;
 
-    DECLARE_LEF (Offer, ltOFFER)
+    add ("Offer", ltOFFER)
             << SOElement (sfAccount,             SOE_REQUIRED)
             << SOElement (sfSequence,            SOE_REQUIRED)
             << SOElement (sfTakerPays,           SOE_REQUIRED)
@@ -85,7 +73,7 @@ void LEFInit ()
             << SOElement (sfExpiration,          SOE_OPTIONAL)
             ;
 
-    DECLARE_LEF (RippleState, ltRIPPLE_STATE)
+    add ("RippleState", ltRIPPLE_STATE)
             << SOElement (sfBalance,             SOE_REQUIRED)
             << SOElement (sfLowLimit,            SOE_REQUIRED)
             << SOElement (sfHighLimit,           SOE_REQUIRED)
@@ -99,17 +87,17 @@ void LEFInit ()
             << SOElement (sfHighQualityOut,      SOE_OPTIONAL)
             ;
 
-    DECLARE_LEF (LedgerHashes, ltLEDGER_HASHES)
+    add ("LedgerHashes", ltLEDGER_HASHES)
             << SOElement (sfFirstLedgerSequence, SOE_OPTIONAL) // Remove if we do a ledger restart
             << SOElement (sfLastLedgerSequence,  SOE_OPTIONAL)
             << SOElement (sfHashes,              SOE_REQUIRED)
             ;
 
-    DECLARE_LEF (EnabledFeatures, ltFEATURES)
+    add ("EnabledFeatures", ltFEATURES)
             << SOElement (sfFeatures, SOE_REQUIRED)
             ;
 
-    DECLARE_LEF (FeeSettings, ltFEE_SETTINGS)
+    add ("FeeSettings", ltFEE_SETTINGS)
             << SOElement (sfBaseFee,             SOE_REQUIRED)
             << SOElement (sfReferenceFeeUnits,   SOE_REQUIRED)
             << SOElement (sfReserveBase,         SOE_REQUIRED)
@@ -117,34 +105,16 @@ void LEFInit ()
             ;
 }
 
-LedgerEntryFormat* LedgerEntryFormat::getLgrFormat (LedgerEntryType t)
+LedgerFormats* LedgerFormats::createInstance ()
 {
-    std::map<int, LedgerEntryFormat*>::iterator it = byType.find (static_cast<int> (t));
-
-    if (it == byType.end ())
-        return NULL;
-
-    return it->second;
+    return new LedgerFormats;
 }
 
-LedgerEntryFormat* LedgerEntryFormat::getLgrFormat (int t)
+void LedgerFormats::addCommonFields (Item& item)
 {
-    std::map<int, LedgerEntryFormat*>::iterator it = byType.find ((t));
-
-    if (it == byType.end ())
-        return NULL;
-
-    return it->second;
+    item
+        << SOElement(sfLedgerIndex,             SOE_OPTIONAL)
+        << SOElement(sfLedgerEntryType,         SOE_REQUIRED)
+        << SOElement(sfFlags,                   SOE_REQUIRED)
+        ;
 }
-
-LedgerEntryFormat* LedgerEntryFormat::getLgrFormat (const std::string& t)
-{
-    std::map<std::string, LedgerEntryFormat*>::iterator it = byName.find ((t));
-
-    if (it == byName.end ())
-        return NULL;
-
-    return it->second;
-}
-
-// vim:ts=4

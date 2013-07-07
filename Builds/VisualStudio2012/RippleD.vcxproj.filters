@@ -264,9 +264,6 @@
     <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_FieldNames.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_LedgerFormat.cpp">
-      <Filter>[1] Ripple\ripple_data\protocol</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_PackedMessage.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
@@ -825,6 +822,9 @@
     <ClCompile Include="..\..\modules\ripple_basics\utility\ripple_LogFile.cpp">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_LedgerFormats.cpp">
+      <Filter>[1] Ripple\ripple_data\protocol</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h">
@@ -955,9 +955,6 @@
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_HashPrefix.h">
-      <Filter>[1] Ripple\ripple_data\protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_LedgerFormat.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_PackedMessage.h">
@@ -1538,6 +1535,12 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_LogFile.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_KnownFormats.h">
+      <Filter>[1] Ripple\ripple_data\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_LedgerFormats.h">
+      <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
