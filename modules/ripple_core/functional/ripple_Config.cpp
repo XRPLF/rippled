@@ -208,8 +208,8 @@ void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
 }
 
 Config::Config ()
-    : SSL_CONTEXT (boost::asio::ssl::context::sslv23)
-    , m_rpcPort (5001)
+    : m_rpcPort (5001)
+    , SSL_CONTEXT (boost::asio::ssl::context::sslv23)
 {
     //
     // Defaults
