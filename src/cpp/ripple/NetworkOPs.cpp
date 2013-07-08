@@ -24,6 +24,7 @@ NetworkOPs::NetworkOPs (boost::asio::io_service& io_service, LedgerMaster* pLedg
     , mProposing (false)
     , mValidating (false)
     , mFeatureBlocked (false)
+    //, m_netTimer (this)
     , mNetTimer (io_service)
     , mLedgerMaster (pLedgerMaster)
     , mCloseTimeOffset (0)
@@ -38,6 +39,12 @@ NetworkOPs::NetworkOPs (boost::asio::io_service& io_service, LedgerMaster* pLedg
     , mLastLoadBase (256)
     , mLastLoadFactor (256)
 {
+//    m_netTimer.setExpirationRecurring (LEDGER_GRANULARITY / 1000.0);
+}
+
+void NetworkOPs::onDeadlineTimer ()
+{
+//    WriteLog (lsINFO, NetworkOPs) << "NetworkOPs::onDeadlineTimer ()";
 }
 
 std::string NetworkOPs::strOperatingMode ()
@@ -1109,7 +1116,7 @@ void NetworkOPs::pubServer ()
         jvObj ["load_base"]     = (mLastLoadBase = getApp().getFeeTrack ().getLoadBase ());
         jvObj ["load_factor"]   = (mLastLoadFactor = getApp().getFeeTrack ().getLoadFactor ());
 
-        NetworkOPs::subMapType::const_iterator it = mSubServer.begin ();
+        NetworkOPs::SubMapType::const_iterator it = mSubServer.begin ();
 
         while (it != mSubServer.end ())
         {
@@ -1510,7 +1517,7 @@ void NetworkOPs::pubProposedTransaction (Ledger::ref lpCurrent, SerializedTransa
 
     {
         boost::recursive_mutex::scoped_lock sl (mMonitorLock);
-        NetworkOPs::subMapType::const_iterator it = mSubRTTransactions.begin ();
+        NetworkOPs::SubMapType::const_iterator it = mSubRTTransactions.begin ();
 
         while (it != mSubRTTransactions.end ())
         {
@@ -1560,7 +1567,7 @@ void NetworkOPs::pubLedger (Ledger::ref accepted)
             if (mMode >= omSYNCING)
                 jvObj["validated_ledgers"]  = getApp().getLedgerMaster ().getCompleteLedgers ();
 
-            NetworkOPs::subMapType::const_iterator it = mSubLedger.begin ();
+            NetworkOPs::SubMapType::const_iterator it = mSubLedger.begin ();
 
             while (it != mSubLedger.end ())
             {
@@ -1642,7 +1649,7 @@ void NetworkOPs::pubValidatedTransaction (Ledger::ref alAccepted, const Accepted
     {
         boost::recursive_mutex::scoped_lock sl (mMonitorLock);
 
-        NetworkOPs::subMapType::const_iterator it = mSubTransactions.begin ();
+        NetworkOPs::SubMapType::const_iterator it = mSubTransactions.begin ();
 
         while (it != mSubTransactions.end ())
         {
@@ -1695,7 +1702,7 @@ void NetworkOPs::pubAccountTransaction (Ledger::ref lpCurrent, const AcceptedLed
 
                 if (simiIt != mSubRTAccount.end ())
                 {
-                    NetworkOPs::subMapType::const_iterator it = simiIt->second.begin ();
+                    NetworkOPs::SubMapType::const_iterator it = simiIt->second.begin ();
 
                     while (it != simiIt->second.end ())
                     {
@@ -1718,7 +1725,7 @@ void NetworkOPs::pubAccountTransaction (Ledger::ref lpCurrent, const AcceptedLed
 
                     if (simiIt != mSubAccount.end ())
                     {
-                        NetworkOPs::subMapType::const_iterator it = simiIt->second.begin ();
+                        NetworkOPs::SubMapType::const_iterator it = simiIt->second.begin ();
 
                         while (it != simiIt->second.end ())
                         {
@@ -1779,7 +1786,7 @@ void NetworkOPs::subAccount (InfoSub::ref isrListener, const boost::unordered_se
         if (simIterator == subMap.end ())
         {
             // Not found, note that account has a new single listner.
-            subMapType  usisElement;
+            SubMapType  usisElement;
             usisElement[isrListener->getSeq ()] = isrListener;
             subMap.insert (simIterator, make_pair (naAccountID.getAccountID (), usisElement));
         }
