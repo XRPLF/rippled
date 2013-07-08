@@ -7,9 +7,6 @@
 #ifndef __AUTOSOCKET_H_
 #define __AUTOSOCKET_H_
 
-namespace basio = boost::asio;
-namespace bassl = basio::ssl;
-
 // Socket wrapper that supports both SSL and non-SSL connections.
 // Generally, handle it as you would an SSL connection.
 // To force a non-SSL connection, just don't call async_handshake.
@@ -18,7 +15,7 @@ namespace bassl = basio::ssl;
 class AutoSocket
 {
 public:
-    typedef bassl::stream<basio::ip::tcp::socket>   ssl_socket;
+    typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket>   ssl_socket;
     typedef boost::shared_ptr<ssl_socket>           socket_ptr;
     typedef ssl_socket::next_layer_type             plain_socket;
     typedef ssl_socket::lowest_layer_type           lowest_layer_type;
@@ -27,12 +24,12 @@ public:
     typedef boost::function<void (error_code)>       callback;
 
 public:
-    AutoSocket (basio::io_service& s, bassl::context& c) : mSecure (false), mBuffer (4)
+    AutoSocket (boost::asio::io_service& s, boost::asio::ssl::context& c) : mSecure (false), mBuffer (4)
     {
         mSocket = boost::make_shared<ssl_socket> (boost::ref (s), boost::ref (c));
     }
 
-    AutoSocket (basio::io_service& s, bassl::context& c, bool secureOnly, bool plainOnly)
+    AutoSocket (boost::asio::io_service& s, boost::asio::ssl::context& c, bool secureOnly, bool plainOnly)
         : mSecure (secureOnly), mBuffer ((plainOnly || secureOnly) ? 0 : 4)
     {
         mSocket = boost::make_shared<ssl_socket> (boost::ref (s), boost::ref (c));
@@ -112,9 +109,9 @@ public:
         else
         {
             // autodetect
-            mSocket->next_layer ().async_receive (basio::buffer (mBuffer), basio::socket_base::message_peek,
+            mSocket->next_layer ().async_receive (boost::asio::buffer (mBuffer), boost::asio::socket_base::message_peek,
                                                   boost::bind (&AutoSocket::handle_autodetect, this, cbFunc,
-                                                          basio::placeholders::error, basio::placeholders::bytes_transferred));
+                                                          boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
         }
     }
 
@@ -151,27 +148,27 @@ public:
     void async_read_until (const Seq& buffers, Condition condition, Handler handler)
     {
         if (isSecure ())
-            basio::async_read_until (*mSocket, buffers, condition, handler);
+            boost::asio::async_read_until (*mSocket, buffers, condition, handler);
         else
-            basio::async_read_until (PlainSocket (), buffers, condition, handler);
+            boost::asio::async_read_until (PlainSocket (), buffers, condition, handler);
     }
 
     template <typename Allocator, typename Handler>
-    void async_read_until (basio::basic_streambuf<Allocator>& buffers, const std::string& delim, Handler handler)
+    void async_read_until (boost::asio::basic_streambuf<Allocator>& buffers, const std::string& delim, Handler handler)
     {
         if (isSecure ())
-            basio::async_read_until (*mSocket, buffers, delim, handler);
+            boost::asio::async_read_until (*mSocket, buffers, delim, handler);
         else
-            basio::async_read_until (PlainSocket (), buffers, delim, handler);
+            boost::asio::async_read_until (PlainSocket (), buffers, delim, handler);
     }
 
     template <typename Allocator, typename MatchCondition, typename Handler>
-    void async_read_until (basio::basic_streambuf<Allocator>& buffers, MatchCondition cond, Handler handler)
+    void async_read_until (boost::asio::basic_streambuf<Allocator>& buffers, MatchCondition cond, Handler handler)
     {
         if (isSecure ())
-            basio::async_read_until (*mSocket, buffers, cond, handler);
+            boost::asio::async_read_until (*mSocket, buffers, cond, handler);
         else
-            basio::async_read_until (PlainSocket (), buffers, cond, handler);
+            boost::asio::async_read_until (PlainSocket (), buffers, cond, handler);
     }
 
     template <typename Buf, typename Handler>
@@ -202,7 +199,7 @@ public:
     }
 
     template <typename Allocator, typename Condition, typename Handler>
-    void async_read (basio::basic_streambuf<Allocator>& buffers, Condition cond, Handler handler)
+    void async_read (boost::asio::basic_streambuf<Allocator>& buffers, Condition cond, Handler handler)
     {
         if (isSecure ())
             boost::asio::async_read (*mSocket, buffers, cond, handler);

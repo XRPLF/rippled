@@ -121,13 +121,6 @@ INCLUDE_PATHS = [
 COMPILED_FILES = [
     'Subtrees/beast/modules/beast_core/beast_core.cpp',
     'Subtrees/beast/modules/beast_basics/beast_basics.cpp',
-    'modules/ripple_basics/ripple_basics.cpp',
-    'modules/ripple_core/ripple_core.cpp',
-    'modules/ripple_data/ripple_data.cpp',
-    'modules/ripple_json/ripple_json.cpp',
-    'modules/ripple_leveldb/ripple_leveldb.cpp',
-    'modules/ripple_websocket/ripple_websocket.cpp',
-    'modules/ripple_sqlite/ripple_sqlite.c',
     'modules/ripple_app/ripple_app_pt1.cpp',
     'modules/ripple_app/ripple_app_pt2.cpp',
     'modules/ripple_app/ripple_app_pt3.cpp',
@@ -135,7 +128,16 @@ COMPILED_FILES = [
     'modules/ripple_app/ripple_app_pt5.cpp',
     'modules/ripple_app/ripple_app_pt6.cpp',
     'modules/ripple_app/ripple_app_pt7.cpp',
-    'modules/ripple_app/ripple_app_pt8.cpp'
+    'modules/ripple_app/ripple_app_pt8.cpp',
+    'modules/ripple_basics/ripple_basics.cpp',
+    'modules/ripple_basio/ripple_basio.cpp',
+    'modules/ripple_core/ripple_core.cpp',
+    'modules/ripple_data/ripple_data.cpp',
+    'modules/ripple_json/ripple_json.cpp',
+    'modules/ripple_leveldb/ripple_leveldb.cpp',
+    'modules/ripple_net/ripple_net.cpp',
+    'modules/ripple_websocket/ripple_websocket.cpp',
+    'modules/ripple_sqlite/ripple_sqlite.c'
     ]
 
 #-------------------------------------------------------------------------------

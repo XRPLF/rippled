@@ -71,11 +71,13 @@ SOURCES += \
     ../../modules/ripple_app/ripple_app_pt7.cpp \
     ../../modules/ripple_app/ripple_app_pt8.cpp \
     ../../modules/ripple_basics/ripple_basics.cpp \
+    ../../modules/ripple_basio/ripple_basio.cpp \
     ../../modules/ripple_core/ripple_core.cpp \
     ../../modules/ripple_client/ripple_client.cpp \
     ../../modules/ripple_data/ripple_data.cpp \
     ../../modules/ripple_json/ripple_json.cpp \
     ../../modules/ripple_leveldb/ripple_leveldb.cpp \
+    ../../modules/ripple_net/ripple_net.cpp \
     ../../modules/ripple_sqlite/ripple_sqlite.c \
     ../../modules/ripple_websocket/ripple_websocket.cpp
 

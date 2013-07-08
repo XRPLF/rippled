@@ -75,6 +75,8 @@
 
 #include "../ripple_data/ripple_data.h"
 
+#include "../ripple_net/ripple_net.h"
+
 #include "../modules/ripple_websocket/ripple_websocket.h"
 
 //------------------------------------------------------------------------------
@@ -151,7 +153,6 @@ namespace ripple
 #include "src/cpp/ripple/CallRPC.h"
 #include "src/cpp/ripple/Transactor.h"
 #include "src/cpp/ripple/ChangeTransactor.h"
-#include "src/cpp/ripple/HTTPRequest.h"
 #include "src/cpp/ripple/HttpsClient.h"
 #include "src/cpp/ripple/ripple_TransactionAcquire.h"
 #include "src/cpp/ripple/ripple_DisputedTx.h"
@@ -260,7 +261,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/AccountSetTransactor.cpp"
 #include "src/cpp/ripple/ripple_CanonicalTXSet.cpp"
 #include "src/cpp/ripple/Contract.cpp"
-#include "src/cpp/ripple/HTTPRequest.cpp"
 #include "src/cpp/ripple/LedgerProposal.cpp"
 #include "src/cpp/ripple/ripple_LoadManager.cpp"
 #include "src/cpp/ripple/ripple_NicknameState.cpp"

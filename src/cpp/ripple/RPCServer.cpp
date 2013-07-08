@@ -49,22 +49,22 @@ void RPCServer::handle_read_line (const boost::system::error_code& e)
     if (e)
         return;
 
-    HTTPRequestAction action = mHTTPRequest.consume (mLineBuffer);
+    HTTPRequest::Action action = mHTTPRequest.consume (mLineBuffer);
 
-    if (action == haDO_REQUEST)
+    if (action == HTTPRequest::haDO_REQUEST)
     {
         // request with no body
         WriteLog (lsWARNING, RPCServer) << "RPC HTTP request with no body";
         mSocket.async_shutdown (mStrand.wrap (boost::bind (&RPCServer::handle_shutdown, shared_from_this(), boost::asio::placeholders::error)));
         return;
     }
-    else if (action == haREAD_LINE)
+    else if (action == HTTPRequest::haREAD_LINE)
     {
         boost::asio::async_read_until (mSocket, mLineBuffer, "\r\n",
                                        mStrand.wrap (boost::bind (&RPCServer::handle_read_line, shared_from_this (),
                                                boost::asio::placeholders::error)));
     }
-    else if (action == haREAD_RAW)
+    else if (action == HTTPRequest::haREAD_RAW)
     {
         int rLen = mHTTPRequest.getDataSize ();
 
@@ -182,9 +182,9 @@ void RPCServer::handle_write (const boost::system::error_code& e)
 
     if (!e)
     {
-        HTTPRequestAction action = mHTTPRequest.requestDone (false);
+        HTTPRequest::Action action = mHTTPRequest.requestDone (false);
 
-        if (action == haCLOSE_CONN)
+        if (action == HTTPRequest::haCLOSE_CONN)
             mSocket.async_shutdown (mStrand.wrap (boost::bind (&RPCServer::handle_shutdown, shared_from_this(), boost::asio::placeholders::error)));
         else
         {
