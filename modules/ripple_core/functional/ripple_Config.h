@@ -181,6 +181,14 @@ public:
     */
     int getRpcPort () const { return m_rpcPort; }
 
+    /** Set the client or server RPC IP and optional port.
+
+        @note The string is not syntax checked.
+
+        @param newAddress A string in the format <ip-address>[':'<port-number>]
+    */
+    void setRpcIpAndOptionalPort (std::string const& newAddress);
+
     /** Set the client or server RPC IP.
 
         @note The string is not syntax-checked.

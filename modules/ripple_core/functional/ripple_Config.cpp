@@ -578,5 +578,23 @@ int Config::getSize (SizedItemName item)
     return -1;
 }
 
+void Config::setRpcIpAndOptionalPort (std::string const& newAddress)
+{
+    String const s (newAddress.c_str ());
+    
+    int const colonPosition = s.lastIndexOfChar (':');
 
-// vim:ts=4
+    if (colonPosition != -1)
+    {
+        String const ipPart = s.substring (0, colonPosition);
+        String const portPart = s.substring (colonPosition + 1, s.length ());
+
+        setRpcIP (ipPart.toRawUTF8 ());
+        setRpcPort (portPart.getIntValue ());
+    }
+    else
+    {
+        setRpcIP (newAddress);
+    }
+}
+

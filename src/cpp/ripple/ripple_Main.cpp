@@ -164,7 +164,7 @@ int rippleMain (int argc, char** argv)
     ("help,h", "Display this message.")
     ("conf", po::value<std::string> (), "Specify the configuration file.")
     ("rpc", "Perform rpc command (default).")
-    ("rpc_ip", po::value <std::string> (), "Specify the IP address for RPC command.")
+    ("rpc_ip", po::value <std::string> (), "Specify the IP address for RPC command. Format: <ip-address>[':'<port-number>]")
     ("rpc_port", po::value <int> (), "Specify the port number for RPC command.")
     ("standalone,a", "Run with no peers.")
     ("testnet,t", "Run in test net mode.")
@@ -302,7 +302,7 @@ int rippleMain (int argc, char** argv)
         //
         if (vm.count ("rpc_ip"))
         {
-            theConfig.setRpcIP (vm ["rpc_ip"].as <std::string> ());
+            theConfig.setRpcIpAndOptionalPort (vm ["rpc_ip"].as <std::string> ());
         }
 
         // Override the RPC destination port number
