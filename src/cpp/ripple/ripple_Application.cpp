@@ -43,11 +43,6 @@ public:
         return mIOService;
     }
     
-    boost::asio::io_service& getAuxService ()
-    {
-        return mAuxService;
-    }
-
     LedgerMaster& getLedgerMaster ()
     {
         return mLedgerMaster;
@@ -214,7 +209,6 @@ private:
     boost::asio::io_service mIOService;
     boost::asio::io_service mAuxService;
     boost::asio::io_service::work mIOWork;
-    boost::asio::io_service::work mAuxWork;
 
     boost::recursive_mutex  mMasterLock;
 
@@ -282,7 +276,6 @@ Application::Application ()
 #endif
     , mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
     , mIOWork (mIOService)
-    , mAuxWork (mAuxService)
     , mNetOps (mIOService, &mLedgerMaster)
     , mTempNodeCache ("NodeCache", 16384, 90)
     , mHashedObjectStore (16384, 300)
