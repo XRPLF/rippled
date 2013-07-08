@@ -18,13 +18,25 @@ SETUP_LOG (NetworkOPs)
 // code assumes this node is synched (and will continue to do so until
 // there's a functional network.
 
-NetworkOPs::NetworkOPs (boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
-    mMode (omDISCONNECTED), mNeedNetworkLedger (false), mProposing (false), mValidating (false),
-    mFeatureBlocked (false),
-    mNetTimer (io_service), mLedgerMaster (pLedgerMaster), mCloseTimeOffset (0), mLastCloseProposers (0),
-    mLastCloseConvergeTime (1000 * LEDGER_IDLE_INTERVAL), mLastCloseTime (0), mLastValidationTime (0),
-    mFetchPack ("FetchPack", 2048, 20), mLastFetchPack (0), mFetchSeq (static_cast<uint32> (-1)),
-    mLastLoadBase (256), mLastLoadFactor (256)
+NetworkOPs::NetworkOPs (boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster)
+    : mMode (omDISCONNECTED)
+    , mNeedNetworkLedger (false)
+    , mProposing (false)
+    , mValidating (false)
+    , mFeatureBlocked (false)
+    , mNetTimer (io_service)
+    , mLedgerMaster (pLedgerMaster)
+    , mCloseTimeOffset (0)
+    , mLastCloseProposers (0)
+    , mLastCloseConvergeTime (1000 * LEDGER_IDLE_INTERVAL)
+    , mLastCloseTime (0)
+    , mLastValidationTime (0)
+    , mFetchPack ("FetchPack", 2048, 20)
+    , mLastFetchPack (0)
+    // VFALCO TODO Give this magic number a name
+    , mFetchSeq (static_cast <uint32> (-1))
+    , mLastLoadBase (256)
+    , mLastLoadFactor (256)
 {
 }
 
@@ -2278,11 +2290,18 @@ bool NetworkOPs::shouldFetchPack (uint32 seq)
     int size = mFetchPack.getCacheSize ();
 
     if (size == 0)
+    {
+        // VFALCO TODO Give this magic number a name
+        //
         mFetchSeq = static_cast<uint32> (-1);
+    }
     else if (mFetchPack.getCacheSize () > 64)
+    {
         return false;
+    }
 
     mLastFetchPack = now;
+
     return true;
 }
 

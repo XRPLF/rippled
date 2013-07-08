@@ -18,7 +18,7 @@ void HTTPRequest::reset ()
     eState = await_request;
 }
 
-HTTPRequestAction HTTPRequest::requestDone (bool forceClose)
+HTTPRequest::Action HTTPRequest::requestDone (bool forceClose)
 {
     if (forceClose || bShouldClose)
         return haCLOSE_CONN;
@@ -35,7 +35,7 @@ std::string HTTPRequest::getReplyHeaders (bool forceClose)
         return "Connection: Keep-Alive\r\n";
 }
 
-HTTPRequestAction HTTPRequest::consume (boost::asio::streambuf& buf)
+HTTPRequest::Action HTTPRequest::consume (boost::asio::streambuf& buf)
 {
     std::string line;
     std::istream is (&buf);

@@ -208,6 +208,10 @@ private:
 private:
     boost::asio::io_service mIOService;
     boost::asio::io_service mAuxService;
+    // The lifetime of the io_service::work object informs the io_service
+    // of when the work starts and finishes. io_service::run() will not exit
+    // while the work object exists.
+    //
     boost::asio::io_service::work mIOWork;
 
     boost::recursive_mutex  mMasterLock;

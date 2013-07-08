@@ -397,6 +397,11 @@ private:
 
     TaggedCache< uint256, Blob , UptimeTimerAdapter >   mFetchPack;
     uint32                                              mLastFetchPack;
+
+    // VFALCO TODO Document the special value uint32(-1) for this member
+    //             and replace uint32(-1) with a constant. It is initialized
+    //             in the ctor-initializer list to this constant.
+    //
     uint32                                              mFetchSeq;
 
     uint32                                              mLastLoadBase;
