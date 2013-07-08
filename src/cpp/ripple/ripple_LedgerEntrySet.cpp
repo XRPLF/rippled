@@ -1577,7 +1577,9 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
 {
     TER terResult   = tesSUCCESS;
 
-    if (!saAmount)
+    assert (!saAmount.isNegative ());
+
+    if (!saAmount || (uSenderID == uReceiverID))
     {
         nothing ();
     }
@@ -1597,8 +1599,6 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
                                            % RippleAddress::createHumanAccountID (uReceiverID)
                                            % (sleReceiver ? (sleReceiver->getFieldAmount (sfBalance)).getFullText () : "-")
                                            % saAmount.getFullText ());
-
-        assert (!saAmount.isNegative ());
 
         if (sleSender)
         {
@@ -1635,7 +1635,6 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
                                            % RippleAddress::createHumanAccountID (uReceiverID)
                                            % saAmount.getFullText ());
 
-        assert (!saAmount.isNegative ());
 
         terResult   = rippleSend (uSenderID, uReceiverID, saAmount, saActual);
     }
