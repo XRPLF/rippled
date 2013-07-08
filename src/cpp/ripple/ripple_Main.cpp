@@ -57,10 +57,6 @@ void printHelp (const po::options_description& desc)
 
     cerr << desc << endl;
 
-    cerr << "Options: " << endl;
-    cerr << "     -rpc_ip=<ip-address>[':'<port-number>]" << endl;
-    cerr << "     -rpc_port=<port-number>" << endl;
-    cerr << endl;
     cerr << "Commands: " << endl;
     cerr << "     account_info <account>|<nickname>|<seed>|<pass_phrase>|<key> [<ledger>] [strict]" << endl;
     cerr << "     account_lines <account> <account>|\"\" [<ledger>]" << endl;
