@@ -66,6 +66,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_basics\beast_basics.h" />
     <ClInclude Include="..\..\modules\beast_basics\diagnostic\beast_CatchAny.h" />
+    <ClInclude Include="..\..\modules\beast_basics\events\beast_DeadlineTimer.h" />
     <ClInclude Include="..\..\modules\beast_basics\events\beast_OncePerSecond.h" />
     <ClInclude Include="..\..\modules\beast_basics\functor\beast_Function.h" />
     <ClInclude Include="..\..\modules\beast_basics\math\beast_Math.h" />
@@ -235,6 +236,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\events\beast_DeadlineTimer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_basics\events\beast_OncePerSecond.cpp">

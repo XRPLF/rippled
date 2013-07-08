@@ -114,18 +114,17 @@ public:
 
     void stop (bool const wait);
 
-    /**
-      Determine if the thread needs interruption.
+    /** Determine if the thread needs interruption.
 
-      Should be called periodically by the idle function. If interruptionPoint
-      returns true or throws, it must not be called again until the idle function
-      returns and is re-entered.
+        Should be called periodically by the idle function. If interruptionPoint
+        returns true or throws, it must not be called again until the idle function
+        returns and is re-entered.
 
-      @invariant No previous calls to interruptionPoint() made after the idle
-                 function entry point returned `true`.
+        @invariant No previous calls to interruptionPoint() made after the idle
+                   function entry point returned `true`.
 
-      @return `false` if the idle function may continue, or `true` if the
-              idle function must return as soon as possible.
+        @return `false` if the idle function may continue, or `true` if the
+                idle function must return as soon as possible.
     */
     bool interruptionPoint ();
 
