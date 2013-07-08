@@ -57,10 +57,6 @@ void printHelp (const po::options_description& desc)
 
     cerr << desc << endl;
 
-    cerr << "Options: " << endl;
-    cerr << "     -rpc-ip=<ip-address>[':'<port-number>]" << endl;
-    cerr << "     -rpc-port=<port-number>" << endl;
-    cerr << endl;
     cerr << "Commands: " << endl;
     cerr << "     account_info <account>|<nickname>|<seed>|<pass_phrase>|<key> [<ledger>] [strict]" << endl;
     cerr << "     account_lines <account> <account>|\"\" [<ledger>]" << endl;
@@ -168,7 +164,7 @@ int rippleMain (int argc, char** argv)
     ("help,h", "Display this message.")
     ("conf", po::value<std::string> (), "Specify the configuration file.")
     ("rpc", "Perform rpc command (default).")
-    ("rpc_ip", po::value <std::string> (), "Specify the IP address for RPC command.")
+    ("rpc_ip", po::value <std::string> (), "Specify the IP address for RPC command. Format: <ip-address>[':'<port-number>]")
     ("rpc_port", po::value <int> (), "Specify the port number for RPC command.")
     ("standalone,a", "Run with no peers.")
     ("testnet,t", "Run in test net mode.")
@@ -306,7 +302,7 @@ int rippleMain (int argc, char** argv)
         //
         if (vm.count ("rpc_ip"))
         {
-            theConfig.setRpcIP (vm ["rpc_ip"].as <std::string> ());
+            theConfig.setRpcIpAndOptionalPort (vm ["rpc_ip"].as <std::string> ());
         }
 
         // Override the RPC destination port number
