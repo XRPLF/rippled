@@ -42,6 +42,7 @@ namespace beast
 
 #include "diagnostic/beast_CatchAny.cpp"
 
+#include "events/beast_DeadlineTimer.cpp"
 #include "events/beast_OncePerSecond.cpp"
 
 #include "math/beast_MurmurHash.cpp"

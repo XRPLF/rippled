@@ -41,7 +41,7 @@ private:
     {
         for (;;)
         {
-            const bool interrupted = m_thread.wait (1000);
+            bool const interrupted = m_thread.wait (1000);
 
             if (interrupted)
                 break;
