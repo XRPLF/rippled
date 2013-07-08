@@ -224,7 +224,7 @@ void BookListeners::publish (Json::Value& jvObj)
     std::string sObj = jfwWriter.write (jvObj);
 
     boost::recursive_mutex::scoped_lock sl (mLock);
-    NetworkOPs::subMapType::const_iterator it = mListeners.begin ();
+    NetworkOPs::SubMapType::const_iterator it = mListeners.begin ();
 
     while (it != mListeners.end ())
     {

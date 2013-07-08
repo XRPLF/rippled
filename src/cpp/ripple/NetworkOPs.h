@@ -13,7 +13,9 @@
 class Peer;
 class LedgerConsensus;
 
-class NetworkOPs : LeakChecked <NetworkOPs>
+class NetworkOPs
+    : public DeadlineTimer::Listener
+    , LeakChecked <NetworkOPs>
 {
 public:
     enum Fault
@@ -34,6 +36,7 @@ public:
     };
 
 #if 0
+    // VFALCO TODO Make this happen
     /** Subscription data interface.
     */
     class Subscriber
@@ -45,10 +48,10 @@ public:
         */
         virtual void onSubscriberReceiveJSON (Json::Value const& json) { }
     };
-    typedef boost::unordered_map <uint64, Subscriber::WeakPtr> subMapType;
+    typedef boost::unordered_map <uint64, Subscriber::WeakPtr> SubMapType;
 #endif
 
-    typedef boost::unordered_map <uint64, InfoSub::wptr> subMapType;
+    typedef boost::unordered_map <uint64, InfoSub::wptr> SubMapType;
 
 public:
     NetworkOPs (boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
@@ -352,9 +355,24 @@ public:
     InfoSub::pointer    addRpcSub (const std::string& strUrl, InfoSub::ref rspEntry);
 
 private:
-    typedef boost::unordered_map<uint160, subMapType>               subInfoMapType;
-    typedef boost::unordered_map<uint160, subMapType>::value_type   subInfoMapValue;
-    typedef boost::unordered_map<uint160, subMapType>::iterator     subInfoMapIterator;
+    void onDeadlineTimer ();
+
+    void setMode (OperatingMode);
+
+    Json::Value transJson (const SerializedTransaction& stTxn, TER terResult, bool bValidated, Ledger::ref lpCurrent);
+    bool haveConsensusObject ();
+
+    Json::Value pubBootstrapAccountInfo (Ledger::ref lpAccepted, const RippleAddress& naAccountID);
+
+    void pubValidatedTransaction (Ledger::ref alAccepted, const AcceptedLedgerTx& alTransaction);
+    void pubAccountTransaction (Ledger::ref lpCurrent, const AcceptedLedgerTx& alTransaction, bool isAccepted);
+
+    void pubServer ();
+
+private:
+    typedef boost::unordered_map <uint160, SubMapType>               subInfoMapType;
+    typedef boost::unordered_map <uint160, SubMapType>::value_type   subInfoMapValue;
+    typedef boost::unordered_map <uint160, SubMapType>::iterator     subInfoMapIterator;
 
     typedef boost::unordered_map<std::string, InfoSub::pointer>     subRpcMapType;
 
@@ -363,6 +381,7 @@ private:
     bool                                mProposing, mValidating;
     bool                                mFeatureBlocked;
     boost::posix_time::ptime            mConnectTime;
+    //DeadlineTimer m_netTimer;
     boost::asio::deadline_timer         mNetTimer;
     boost::shared_ptr<LedgerConsensus>  mConsensus;
     boost::unordered_map < uint160,
@@ -390,10 +409,10 @@ private:
 
     subRpcMapType                                       mRpcSubMap;
 
-    subMapType                                          mSubLedger;             // accepted ledgers
-    subMapType                                          mSubServer;             // when server changes connectivity state
-    subMapType                                          mSubTransactions;       // all accepted transactions
-    subMapType                                          mSubRTTransactions;     // all proposed and accepted transactions
+    SubMapType                                          mSubLedger;             // accepted ledgers
+    SubMapType                                          mSubServer;             // when server changes connectivity state
+    SubMapType                                          mSubTransactions;       // all accepted transactions
+    SubMapType                                          mSubRTTransactions;     // all proposed and accepted transactions
 
     TaggedCache< uint256, Blob , UptimeTimerAdapter >   mFetchPack;
     uint32                                              mLastFetchPack;
@@ -406,19 +425,6 @@ private:
 
     uint32                                              mLastLoadBase;
     uint32                                              mLastLoadFactor;
-
-    void setMode (OperatingMode);
-
-    Json::Value transJson (const SerializedTransaction& stTxn, TER terResult, bool bValidated, Ledger::ref lpCurrent);
-    bool haveConsensusObject ();
-
-    Json::Value pubBootstrapAccountInfo (Ledger::ref lpAccepted, const RippleAddress& naAccountID);
-
-    void pubValidatedTransaction (Ledger::ref alAccepted, const AcceptedLedgerTx& alTransaction);
-    void pubAccountTransaction (Ledger::ref lpCurrent, const AcceptedLedgerTx& alTransaction, bool isAccepted);
-
-    void pubServer ();
 };
 
 #endif
-// vim:ts=4
