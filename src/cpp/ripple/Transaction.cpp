@@ -122,41 +122,8 @@ void Transaction::setStatus (TransStatus ts, uint32 lseq)
 }
 
 void Transaction::save ()
-{
-    if ((mStatus == INVALID) || (mStatus == REMOVED))
-        return;
-
-    char status;
-
-    switch (mStatus)
-    {
-    case NEW:
-        status = TXN_SQL_NEW;
-        break;
-
-    case INCLUDED:
-        status = TXN_SQL_INCLUDED;
-        break;
-
-    case CONFLICTED:
-        status = TXN_SQL_CONFLICT;
-        break;
-
-    case COMMITTED:
-        status = TXN_SQL_VALIDATED;
-        break;
-
-    case HELD:
-        status = TXN_SQL_HELD;
-        break;
-
-    default:
-        status = TXN_SQL_UNKNOWN;
-    }
-
-    Database* db = theApp->getTxnDB ()->getDB ();
-    ScopedLock dbLock (theApp->getTxnDB ()->getDBLock ());
-    db->executeSQL (mTransaction->getSQLInsertReplaceHeader () + mTransaction->getSQL (getLedger (), status) + ";");
+{ // This can destroy metadata, so don't do it
+    return;
 }
 
 Transaction::pointer Transaction::transactionFromSQL (Database* db, bool bValidate)
