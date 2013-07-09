@@ -1604,6 +1604,9 @@ Json::Value NetworkOPs::transJson (const SerializedTransaction& stTxn, TER terRe
         jvObj["ledger_hash"]            = lpCurrent->getHash ().ToString ();
         jvObj["transaction"]["date"]    = lpCurrent->getCloseTimeNC ();
         jvObj["validated"]              = true;
+
+        // WRITEME: Put the account next seq here
+
     }
     else
     {
