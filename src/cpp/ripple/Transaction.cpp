@@ -156,6 +156,8 @@ void Transaction::save ()
 
     Database* db = getApp().getTxnDB ()->getDB ();
     ScopedLock dbLock (getApp().getTxnDB ()->getDBLock ());
+
+    // FIXME: This can destroy metadata
     db->executeSQL (mTransaction->getSQLInsertReplaceHeader () + mTransaction->getSQL (getLedger (), status) + ";");
 }
 

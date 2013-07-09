@@ -1227,6 +1227,10 @@ NetworkOPs::getAccountTxs (const RippleAddress& account, int32 minLedger, int32 
             }
             else rawMeta.resize (metaSize);
 
+            if (rawMeta.getLength() == 0)
+            { // FIXME metadata isn't in the table, update metadata and sequence in Transactions DB from ledger
+            }
+
             TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet> (txn->getID (), txn->getLedger (), rawMeta.getData ());
             ret.push_back (std::pair<Transaction::pointer, TransactionMetaSet::pointer> (txn, meta));
         }

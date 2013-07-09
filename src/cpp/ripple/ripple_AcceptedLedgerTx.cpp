@@ -10,7 +10,7 @@ AcceptedLedgerTx::AcceptedLedgerTx (uint32 seq, SerializerIterator& sit)
     SerializerIterator  txnIt (txnSer);
 
     mTxn =      boost::make_shared<SerializedTransaction> (boost::ref (txnIt));
-    mRawMeta =   sit.getVL ();
+    mRawMeta =  sit.getVL ();
     mMeta =     boost::make_shared<TransactionMetaSet> (mTxn->getTransactionID (), seq, mRawMeta);
     mAffected = mMeta->getAffectedAccounts ();
     mResult =   mMeta->getResultTER ();
