@@ -65,7 +65,6 @@ enum LoadType
 class LoadSource
 {
 public:
-    // VFALCO TODO Why even bother with a warning? Why can't we just drop?
     // VFALCO TODO Use these dispositions
     /*
     enum Disposition
@@ -200,6 +199,13 @@ private:
 /** Manages load sources.
 
     This object creates an associated thread to maintain a clock.
+
+    When the server is overloaded by a particular peer it issues a warning
+    first. This allows friendly peers to reduce their consumption of resources,
+    or disconnect from the server.
+
+    The warning system is used instead of merely dropping, because hostile
+    peers can just reconnect anyway.
 
     @see LoadSource, LoadType
 */

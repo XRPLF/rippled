@@ -250,4 +250,6 @@ A node is "full below" if we believe we have (either in the database or
   node in a hash tree. When trying to acquire a hash tree/map, if a node is
   full below, we know not to bother with anything below that node.
 
-The fullBelowCache is a cache of hashes of nodes that are full below.
+The fullBelowCache is a cache of hashes of nodes that are full below. Which means
+  there are no missing children
+
