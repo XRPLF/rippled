@@ -78,6 +78,7 @@ void printHelp (const po::options_description& desc)
     cerr << "     ledger_current" << endl;
     cerr << "     ledger_header <ledger>" << endl;
     cerr << "     logrotate " << endl;
+    cerr << "     min_fee" << endl;
     cerr << "     peers" << endl;
     cerr << "     proof_create [<difficulty>] [<secret>]" << endl;
     cerr << "     proof_solve <token>" << endl;
