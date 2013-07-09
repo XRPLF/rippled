@@ -182,7 +182,7 @@ namespace ripple
 
 #include "basics/ripple_Version.h" // VFALCO TODO Should this be private?
 #include "basics/ripple_BuildVersion.h" // private
-#include "basics/ripple_RPCServer.h"
+#include "basics/ripple_RPCServerHandler.h"
 
 #include "src/cpp/ripple/RPCDoor.h" // needs RPCServer
 
@@ -229,7 +229,7 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 1
 
-#include "basics/ripple_RPCServer.cpp"
+#include "basics/ripple_RPCServerHandler.cpp"
 
 #include "src/cpp/ripple/Ledger.cpp"
 #include "src/cpp/ripple/ripple_SHAMapDelta.cpp"

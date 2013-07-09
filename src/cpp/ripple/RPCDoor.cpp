@@ -6,11 +6,14 @@
 
 SETUP_LOG (RPCDoor)
 
+// VFALCO TODO Clean up this loose extern
+//
 extern void initSSLContext (boost::asio::ssl::context& context,
                             std::string key_file, std::string cert_file, std::string chain_file);
 
-RPCDoor::RPCDoor (boost::asio::io_service& io_service)
-    : mAcceptor (io_service,
+RPCDoor::RPCDoor (boost::asio::io_service& io_service, RPCServer::Handler& handler)
+    : m_rpcServerHandler (handler)
+    , mAcceptor (io_service,
                  boost::asio::ip::tcp::endpoint (boost::asio::ip::address::from_string (theConfig.getRpcIP ()), theConfig.getRpcPort ()))
     , mDelayTimer (io_service)
     , mSSLContext (boost::asio::ssl::context::sslv23)
@@ -30,7 +33,7 @@ RPCDoor::~RPCDoor ()
 
 void RPCDoor::startListening ()
 {
-    RPCServer::pointer new_connection = RPCServer::New (mAcceptor.get_io_service (), mSSLContext, &getApp().getOPs ());
+    RPCServer::pointer new_connection = RPCServer::New (mAcceptor.get_io_service (), mSSLContext, m_rpcServerHandler);
     mAcceptor.set_option (boost::asio::ip::tcp::acceptor::reuse_address (true));
 
     mAcceptor.async_accept (new_connection->getRawSocket (),
