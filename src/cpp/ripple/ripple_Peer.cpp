@@ -1274,7 +1274,7 @@ void PeerImp::recvPropose (const boost::shared_ptr<protocol::TMProposeSet>& pack
     }
 
     bool isTrusted = getApp().getUNL ().nodeInUNL (signerPublic);
-    if (!isTrusted && getApp().getFeeTrack ().isLoaded ())
+    if (!isTrusted && getApp().getFeeTrack ().isLoadedLocal ())
     {
         WriteLog (lsDEBUG, Peer) << "Dropping untrusted proposal due to load";
         return;
@@ -1388,7 +1388,7 @@ void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& p
         }
 
         bool isTrusted = getApp().getUNL ().nodeInUNL (val->getSignerPublic ());
-        if (isTrusted || !getApp().getFeeTrack ().isLoaded ())
+        if (isTrusted || !getApp().getFeeTrack ().isLoadedLocal ())
 	        getApp().getJobQueue ().addJob (isTrusted ? jtVALIDATION_t : jtVALIDATION_ut, "recvValidation->checkValidation",
                                        BIND_TYPE (&checkValidation, P_1, val, signingHash, isTrusted, mCluster, packet,
                                                boost::weak_ptr<Peer> (shared_from_this ())));
@@ -2286,7 +2286,7 @@ void PeerImp::doProofOfWork (Job&, boost::weak_ptr <Peer> peer, ProofOfWork::poi
 void PeerImp::doFetchPack (const boost::shared_ptr<protocol::TMGetObjectByHash>& packet)
 {
     // VFALCO TODO Invert this dependency using an observer and shared state object.
-    if (getApp().getFeeTrack ().isLoaded ())
+    if (getApp().getFeeTrack ().isLoadedLocal ())
     {
         WriteLog (lsINFO, Peer) << "Too busy to make fetch pack";
         return;

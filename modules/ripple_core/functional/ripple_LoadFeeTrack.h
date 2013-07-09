@@ -80,7 +80,19 @@ public:
         return std::max (mLocalTxnLoadFee, mRemoteTxnLoadFee);
     }
 
-    bool isLoaded ()
+    void setClusterFee (uint32 fee)
+    {
+        boost::mutex::scoped_lock sl (mLock);
+        mClusterTxnLoadFee = fee;
+    }
+
+    uint32 getClusterFee ()
+    {
+        boost::mutex::scoped_lock sl (mLock);
+        return mClusterTxnLoadFee;
+    }
+
+    bool isLoadedLocal ()
     {
         // VFALCO TODO This could be replaced with a SharedData and
         //             using a read/write lock instead of a critical section.
@@ -90,6 +102,18 @@ public:
         //
         boost::mutex::scoped_lock sl (mLock);
         return (raiseCount != 0) || (mLocalTxnLoadFee != lftNormalFee);
+    }
+
+    bool isLoadedCluster ()
+    {
+        // VFALCO TODO This could be replaced with a SharedData and
+        //             using a read/write lock instead of a critical section.
+        //
+        //        NOTE This applies to all the locking in this class.
+        //
+        //
+        boost::mutex::scoped_lock sl (mLock);
+        return (raiseCount != 0) || (mLocalTxnLoadFee != lftNormalFee) || (mClusterTxnLoadFee != lftNormalFee);
     }
 
     void setRemoteFee (uint32 f)
@@ -181,6 +205,7 @@ private:
 
     uint32 mLocalTxnLoadFee;        // Scale factor, lftNormalFee = normal fee
     uint32 mRemoteTxnLoadFee;       // Scale factor, lftNormalFee = normal fee
+    uint32 mClusterTxnLoadFee;      // Scale factor, lftNormalFee = normal fee
     int raiseCount;
 
     boost::mutex mLock;

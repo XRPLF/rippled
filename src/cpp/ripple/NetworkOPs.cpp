@@ -2183,7 +2183,7 @@ void NetworkOPs::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
         return;
     }
 
-    if (getApp().getFeeTrack ().isLoaded ())
+    if (getApp().getFeeTrack ().isLoadedLocal ())
     {
         WriteLog (lsINFO, NetworkOPs) << "Too busy to make fetch pack";
         return;

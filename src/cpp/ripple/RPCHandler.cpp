@@ -60,7 +60,7 @@ RPCHandler::RPCHandler (NetworkOPs* netOps, InfoSub::pointer infoSub) : mNetOps 
 
 Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool bFailHard, ScopedLock& mlh)
 {
-    if (getApp().getFeeTrack().isLoaded() && (mRole != ADMIN))
+    if (getApp().getFeeTrack().isLoadedCluster() && (mRole != ADMIN))
         return rpcError(rpcTOO_BUSY);
 
     Json::Value     jvResult;

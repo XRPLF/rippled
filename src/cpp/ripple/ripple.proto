@@ -7,6 +7,7 @@ enum MessageType
     mtERROR_MSG             = 2;
     mtPING                  = 3;
     mtPROOFOFWORK           = 4;
+    mtCLUSTER               = 5;
 
     // network presence detection
     mtGET_CONTACTS          = 10;
@@ -74,6 +75,21 @@ message TMHello
     optional bool           nodePrivate     = 11; // Request to not forward IP.
     optional TMProofWork    proofOfWork     = 12; // request/provide proof of work
     optional bool           testNet         = 13; // Running as testnet.
+}
+
+// The status of a node in our cluster
+message TMClusterNode
+{
+    required bytes           publicKey       = 1;
+    optional string          nodeName        = 2;
+    optional uint32          nodeLoad        = 3;
+    optional uint32          lastHeard       = 4;
+}
+
+// The status of all nodes in the cluster
+message TMCluster
+{
+    repeated TMClusterNode   clusterNodes    = 1;
 }
 
 

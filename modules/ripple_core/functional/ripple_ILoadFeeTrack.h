@@ -43,9 +43,12 @@ public:
 
     virtual Json::Value getJson (uint64 baseFee, uint32 referenceFeeUnits) = 0;
 
+    virtual void setClusterFee (uint32) = 0;
+    virtual uint32 getClusterFee () = 0;
     virtual bool raiseLocalFee () = 0;
     virtual bool lowerLocalFee () = 0;
-    virtual bool isLoaded () = 0;
+    virtual bool isLoadedLocal () = 0;
+    virtual bool isLoadedCluster () = 0;
 };
 
 #endif

@@ -867,7 +867,7 @@ bool serverOkay (std::string& reason)
     if (!getApp().getLedgerMaster().isCaughtUp(reason))
         return false;
 
-    if (getApp().getFeeTrack ().isLoaded ())
+    if (getApp().getFeeTrack ().isLoadedLocal ())
     {
         reason = "Too much load";
         return false;
