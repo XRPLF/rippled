@@ -192,8 +192,8 @@ TER LedgerMaster::doTransaction (SerializedTransaction::ref txn, TransactionEngi
         result = mEngine.applyTransaction (*txn, params, didApply);
         ledger = mEngine.getLedger ();
     }
-    //  if (didApply)
-    getApp().getOPs ().pubProposedTransaction (ledger, txn, result);
+    if (didApply)
+       getApp().getOPs ().pubProposedTransaction (ledger, txn, result);
     return result;
 }
 
