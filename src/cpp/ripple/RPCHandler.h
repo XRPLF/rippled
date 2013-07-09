@@ -34,7 +34,7 @@ public:
 
     Json::Value doCommand       (const Json::Value& jvRequest, int role, LoadType* loadType);
 
-    Json::Value doRpcCommand    (const std::string& strCommand, Json::Value& jvParams, int iRole, LoadType* loadType);
+    Json::Value doRpcCommand    (const std::string& strCommand, Json::Value const& jvParams, int iRole, LoadType* loadType);
 
 private:
     typedef Json::Value (RPCHandler::*doFuncPtr) (

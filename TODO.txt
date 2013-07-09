@@ -2,6 +2,8 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
+- Tidy up convenience functions in RPC.h
+
 - Maybe rename RPCServer to RPCClientServicer
 
 - Take away the "I" prefix from abstract interface classes, in both the class

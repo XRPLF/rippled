@@ -221,6 +221,7 @@ private:
     InboundLedgers     m_inboundLedgers;
     TransactionMaster  mMasterTransaction;
     NetworkOPs         mNetOps;
+    RPCServerHandler   m_rpcServerHandler;
     NodeCache          mTempNodeCache;
     HashedObjectStore  mHashedObjectStore;
     SLECache           mSLECache;
@@ -281,6 +282,7 @@ Application::Application ()
     , mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
     , mIOWork (mIOService)
     , mNetOps (&mLedgerMaster)
+    , m_rpcServerHandler (mNetOps)
     , mTempNodeCache ("NodeCache", 16384, 90)
     , mHashedObjectStore (16384, 300)
     , mSLECache ("LedgerEntryCache", 4096, 120)
@@ -589,7 +591,7 @@ void Application::setup ()
     {
         try
         {
-            mRPCDoor = new RPCDoor (mIOService);
+            mRPCDoor = new RPCDoor (mIOService, m_rpcServerHandler);
         }
         catch (const std::exception& e)
         {

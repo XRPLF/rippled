@@ -843,8 +843,11 @@
     <ClCompile Include="..\..\modules\ripple_net\basics\ripple_HttpsClient.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\basics\ripple_RPCServer.cpp">
+    <ClCompile Include="..\..\modules\ripple_app\basics\ripple_RPCServerHandler.cpp">
       <Filter>[1] Ripple\ripple_app\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\basics\ripple_RPCServer.cpp">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1575,8 +1578,11 @@
     <ClInclude Include="..\..\modules\ripple_net\basics\ripple_HttpsClient.h">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\basics\ripple_RPCServer.h">
+    <ClInclude Include="..\..\modules\ripple_app\basics\ripple_RPCServerHandler.h">
       <Filter>[1] Ripple\ripple_app\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\ripple_RPCServer.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
