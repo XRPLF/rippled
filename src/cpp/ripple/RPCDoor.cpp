@@ -43,6 +43,8 @@ bool RPCDoor::isClientAllowed (const std::string& ip)
     if (theConfig.RPC_ALLOW_REMOTE)
         return true;
 
+    // VFALCO TODO Represent ip addresses as a structure. Use isLoopback() member here
+    //
     if (ip == "127.0.0.1")
         return true;
 
@@ -58,7 +60,7 @@ void RPCDoor::handleConnect (RPCServer::pointer new_connection, const boost::sys
         // Restrict callers by IP
         try
         {
-            if (!isClientAllowed (new_connection->getRawSocket ().remote_endpoint ().address ().to_string ()))
+            if (! isClientAllowed (new_connection->getRemoteAddressText ()))
             {
                 startListening ();
                 return;

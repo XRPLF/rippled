@@ -28,6 +28,12 @@ public:
     virtual boost::asio::ip::tcp::socket& getRawSocket () = 0;
 
     virtual void connected () = 0;
+
+    /** Retrieve the remote address as a string.
+    
+        @return A std::string representing the remote address.
+    */
+    virtual std::string getRemoteAddressText () = 0;
 };
 
 #endif
