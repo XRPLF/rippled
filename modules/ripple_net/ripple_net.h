@@ -22,10 +22,14 @@
 
 #include "../ripple_basics/ripple_basics.h"
 
+#include "../ripple_websocket/ripple_websocket.h"
+
 namespace ripple
 {
 
 #include "basics/ripple_HTTPRequest.h"
+
+#include "client/ripple_HttpsClient.h"
 
 }
 

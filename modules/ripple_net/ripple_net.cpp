@@ -14,9 +14,14 @@
 
 #include "ripple_net.h"
 
+// VFALCO TODO Remove this dependency on theConfig
+#include "../modules/ripple_core/ripple_core.h" // theConfig for HttpsClient
+
 namespace ripple
 {
 
 #include "basics/ripple_HTTPRequest.cpp"
+
+#include "client/ripple_HttpsClient.cpp"
 
 }

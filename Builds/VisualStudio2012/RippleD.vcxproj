@@ -358,6 +358,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\client\ripple_HttpsClient.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_net\ripple_net.cpp" />
     <ClCompile Include="..\..\modules\ripple_sqlite\ripple_sqlite.c" />
     <ClCompile Include="..\..\modules\ripple_websocket\autosocket\ripple_AutoSocket.cpp">
@@ -393,12 +399,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\Contract.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\HttpsClient.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1391,6 +1391,7 @@
     <ClInclude Include="..\..\modules\ripple_json\ripple_json.h" />
     <ClInclude Include="..\..\modules\ripple_leveldb\ripple_leveldb.h" />
     <ClInclude Include="..\..\modules\ripple_net\basics\ripple_HTTPRequest.h" />
+    <ClInclude Include="..\..\modules\ripple_net\client\ripple_HttpsClient.h" />
     <ClInclude Include="..\..\modules\ripple_net\ripple_net.h" />
     <ClInclude Include="..\..\modules\ripple_sqlite\ripple_sqlite.h" />
     <ClInclude Include="..\..\modules\ripple_websocket\autosocket\ripple_AutoSocket.h" />
@@ -1399,7 +1400,6 @@
     <ClInclude Include="..\..\src\cpp\ripple\CallRPC.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ChangeTransactor.h" />
     <ClInclude Include="..\..\src\cpp\ripple\Contract.h" />
-    <ClInclude Include="..\..\src\cpp\ripple\HttpsClient.h" />
     <ClInclude Include="..\..\src\cpp\ripple\Interpreter.h" />
     <ClInclude Include="..\..\src\cpp\ripple\Ledger.h" />
     <ClInclude Include="..\..\src\cpp\ripple\LedgerMaster.h" />
