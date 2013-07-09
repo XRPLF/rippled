@@ -169,8 +169,6 @@ namespace ripple
 #include "src/cpp/ripple/PaymentTransactor.h"
 #include "src/cpp/ripple/PeerDoor.h"
 #include "src/cpp/ripple/RPC.h"
-#include "src/cpp/ripple/RPCServer.h"
-#include "src/cpp/ripple/RPCDoor.h"
 #include "src/cpp/ripple/RPCErr.h"
 #include "src/cpp/ripple/RPCSub.h"
 #include "src/cpp/ripple/RegularKeySetTransactor.h"
@@ -184,6 +182,9 @@ namespace ripple
 
 #include "basics/ripple_Version.h" // VFALCO TODO Should this be private?
 #include "basics/ripple_BuildVersion.h" // private
+#include "basics/ripple_RPCServer.h"
+
+#include "src/cpp/ripple/RPCDoor.h" // needs RPCServer
 
 }
 
@@ -227,6 +228,8 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 //------------------------------------------------------------------------------
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 1
+
+#include "basics/ripple_RPCServer.cpp"
 
 #include "src/cpp/ripple/Ledger.cpp"
 #include "src/cpp/ripple/ripple_SHAMapDelta.cpp"
@@ -312,7 +315,6 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/RegularKeySetTransactor.cpp"
 #include "src/cpp/ripple/ripple_RippleState.cpp"
 #include "src/cpp/ripple/RPCDoor.cpp"
-#include "src/cpp/ripple/RPCServer.cpp"
 #include "src/cpp/ripple/ScriptData.cpp"
 #include "src/cpp/ripple/SNTPClient.cpp"
 #include "src/cpp/ripple/TransactionCheck.cpp"

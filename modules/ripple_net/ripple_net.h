@@ -28,8 +28,7 @@ namespace ripple
 {
 
 #include "basics/ripple_HTTPRequest.h"
-
-#include "client/ripple_HttpsClient.h"
+#include "basics/ripple_HttpsClient.h"
 
 }
 

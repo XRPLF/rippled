@@ -7,9 +7,10 @@
 #ifndef RIPPLE_HTTPSCLIENT_H_INCLUDED
 #define RIPPLE_HTTPSCLIENT_H_INCLUDED
 
+// VFALCO TODO Make this an abstract interface.
+//
 /** Provides an asynchronous HTTPS client implementation.
 */
-
 class HttpsClient
     : public boost::enable_shared_from_this <HttpsClient>
     , LeakChecked <HttpsClient>
