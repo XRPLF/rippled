@@ -54,7 +54,9 @@ public:
     typedef boost::unordered_map <uint64, InfoSub::wptr> SubMapType;
 
 public:
-    NetworkOPs (boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
+    // VFALCO TODO Make LedgerMaster a SharedObjectPtr or a reference.
+    //
+    explicit NetworkOPs (LedgerMaster* pLedgerMaster);
 
     // network information
     uint32 getNetworkTimeNC ();                 // Our best estimate of wall time in seconds from 1/1/2000
@@ -229,7 +231,9 @@ public:
     void sweepFetchPack ();
 
     // network state machine
-    void checkState (const boost::system::error_code& result);
+
+    // VFALCO TODO Try to make all these private since they seem to be...private
+    //
     void switchLastClosedLedger (Ledger::pointer newLedger, bool duringConsensus); // Used for the "jump" case
     bool checkLastClosedLedger (const std::vector<Peer::pointer>&, uint256& networkClosed);
     int beginConsensus (uint256 const& networkClosed, Ledger::pointer closingLedger);
@@ -370,9 +374,8 @@ private:
     void pubServer ();
 
 private:
-    typedef boost::unordered_map <uint160, SubMapType>               subInfoMapType;
-    typedef boost::unordered_map <uint160, SubMapType>::value_type   subInfoMapValue;
-    typedef boost::unordered_map <uint160, SubMapType>::iterator     subInfoMapIterator;
+    typedef boost::unordered_map <uint160, SubMapType>               SubInfoMapType;
+    typedef boost::unordered_map <uint160, SubMapType>::iterator     SubInfoMapIterator;
 
     typedef boost::unordered_map<std::string, InfoSub::pointer>     subRpcMapType;
 
@@ -381,8 +384,7 @@ private:
     bool                                mProposing, mValidating;
     bool                                mFeatureBlocked;
     boost::posix_time::ptime            mConnectTime;
-    //DeadlineTimer m_netTimer;
-    boost::asio::deadline_timer         mNetTimer;
+    DeadlineTimer m_netTimer;
     boost::shared_ptr<LedgerConsensus>  mConsensus;
     boost::unordered_map < uint160,
           std::list<LedgerProposal::pointer> > mStoredProposals;
@@ -404,8 +406,8 @@ private:
 
     // XXX Split into more locks.
     boost::recursive_mutex                              mMonitorLock;
-    subInfoMapType                                      mSubAccount;
-    subInfoMapType                                      mSubRTAccount;
+    SubInfoMapType                                      mSubAccount;
+    SubInfoMapType                                      mSubRTAccount;
 
     subRpcMapType                                       mRpcSubMap;
 
