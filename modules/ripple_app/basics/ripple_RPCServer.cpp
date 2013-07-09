@@ -281,6 +281,17 @@ private:
                 boost::asio::placeholders::error)));
     }
 
+    //--------------------------------------------------------------------------
+
+    std::string getRemoteAddressText ()
+    {
+        std::string address;
+
+        address = mSocket.PlainSocket ().remote_endpoint ().address ().to_string ();
+
+        return address;
+    }
+
 private:
     NetworkOPs* const mNetOps;
 

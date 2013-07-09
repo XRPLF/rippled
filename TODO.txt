@@ -2,6 +2,12 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
+- Maybe rename RPCServer to RPCClientServicer
+
+- Take away the "I" prefix from abstract interface classes, in both the class
+  name and the file name. It is messing up sorting in the IDE. Use "Imp" or
+  suffix for implementations.
+
 - Profile/VTune the application to identify hot spots
   * Determine why rippled has a slow startup on Windows
   * Improve the performance when running all unit tests on Windows
