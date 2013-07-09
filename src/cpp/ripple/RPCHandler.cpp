@@ -1633,6 +1633,14 @@ Json::Value RPCHandler::doSign (Json::Value params, LoadType* loadType, ScopedLo
     return transactionSign (params, false, bFailHard, MasterLockHolder);
 }
 
+Json::Value RPCHandler::doGetMinFee (Json::Value params, LoadType* loadType, ScopedLock& MasterLockHolder)
+{
+    Json::Value ret;
+    STAmount fee = mNetOps->getMinFee (mRole == ADMIN);
+    ret["fee"] = fee.getText ();
+    return ret;
+}
+
 // {
 //   tx_json: <object>,
 //   secret: <secret>
@@ -3611,6 +3619,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
         {   "ledger_header",        &RPCHandler::doLedgerHeader,        false,  optCurrent  },
         {   "log_level",            &RPCHandler::doLogLevel,            true,   optNone     },
         {   "logrotate",            &RPCHandler::doLogRotate,           true,   optNone     },
+        {   "min_fee",              &RPCHandler::doGetMinFee,           false,  optNetwork  },
         //      {   "nickname_info",        &RPCHandler::doNicknameInfo,        false,  optCurrent  },
         {   "owner_info",           &RPCHandler::doOwnerInfo,           false,  optCurrent  },
         {   "peers",                &RPCHandler::doPeers,               true,   optNone     },

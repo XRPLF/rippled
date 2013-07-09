@@ -57,6 +57,11 @@ void TransactionEngine::txnWrite ()
     }
 }
 
+STAmount TransactionEngine::getMinFee(bool bAdmin)
+{
+    return STAmount (getLedger ()->scaleFeeLoad (theConfig.FEE_DEFAULT, bAdmin));
+}
+
 TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, TransactionEngineParams params,
         bool& didApply)
 {

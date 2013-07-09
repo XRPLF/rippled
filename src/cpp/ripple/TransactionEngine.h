@@ -86,6 +86,7 @@ public:
         mNodes.entryModify (sleEntry);
     }
 
+    STAmount getMinFee(bool bAdmin);
     TER applyTransaction (const SerializedTransaction&, TransactionEngineParams, bool & didApply);
     bool checkInvariants (TER result, const SerializedTransaction & txn, TransactionEngineParams params);
 };

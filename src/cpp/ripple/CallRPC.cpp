@@ -753,6 +753,7 @@ Json::Value RPCParser::parseCommand (std::string strMethod, Json::Value jvParams
         {   "ledger_header",        &RPCParser::parseLedgerId,              1,  1   },
         {   "log_level",            &RPCParser::parseLogLevel,              0,  2   },
         {   "logrotate",            &RPCParser::parseAsIs,                  0,  0   },
+        {   "min_fee",              &RPCParser::parseAsIs,                  0,  0   },
         //      {   "nickname_info",        &RPCParser::parseNicknameInfo,          1,  1   },
         {   "owner_info",           &RPCParser::parseAccountItems,          1,  2   },
         {   "peers",                &RPCParser::parseAsIs,                  0,  0   },

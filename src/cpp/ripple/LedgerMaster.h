@@ -66,6 +66,8 @@ public:
     int getValidatedLedgerAge ();
     bool isCaughtUp(std::string& reason);
 
+    STAmount getMinFee (bool bAdmin);
+
     TER doTransaction (SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply);
 
     int getMinValidations ()
