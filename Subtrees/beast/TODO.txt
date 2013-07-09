@@ -2,6 +2,8 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
+- Design a WeakPtr / SharedPtr / SharedObject intrusive system
+
 - Implement beast::Bimap?
 
 - Use Bimap for storage in the DeadlineTimer::Manager, to support
