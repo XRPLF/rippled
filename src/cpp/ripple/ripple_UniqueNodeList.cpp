@@ -311,12 +311,12 @@ public:
     bool nodeInCluster (const RippleAddress& naNodePublic, std::string& name)
     {
         boost::recursive_mutex::scoped_lock sl (mUNLLock);
-        std::map<RippleAddress, std::string>::iterator it = m_clusterNodes.find (naNodePublic);
+        std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.find (naNodePublic);
 
         if (it == m_clusterNodes.end ())
             return false;
 
-        name = it->second;
+        name = it->second.getName();
         return true;
     }
 
@@ -600,7 +600,7 @@ private:
                 RippleAddress a = RippleAddress::createNodePublic (match[1]);
 
                 if (a.isValid ())
-                    m_clusterNodes.insert (std::make_pair (a, match[2]));
+                    m_clusterNodes.insert (std::make_pair (a, ClusterNodeStatus(match[2])));
             }
             else
                 WriteLog (lsWARNING, UniqueNodeList) << "Entry in cluster list invalid: '" << c << "'";
@@ -1971,7 +1971,7 @@ private:
     boost::posix_time::ptime        mtpFetchNext;       // Time of to start next fetch.
     DeadlineTimer m_fetchTimer;                         // Timer to start fetching.
 
-    std::map<RippleAddress, std::string> m_clusterNodes;
+    std::map<RippleAddress, ClusterNodeStatus> m_clusterNodes;
 };
 
 UniqueNodeList* UniqueNodeList::New ()

@@ -174,6 +174,7 @@ namespace ripple
 #include "src/cpp/ripple/ripple_RippleState.h"
 #include "src/cpp/ripple/SerializedValidation.h"
 #include "src/cpp/ripple/AccountSetTransactor.h"
+#include "src/cpp/ripple/ripple_ClusterNodeStatus.h"
 #include "src/cpp/ripple/TrustSetTransactor.h"
 #include "src/cpp/ripple/WSConnection.h"
 #include "src/cpp/ripple/ripple_WSHandler.h"
