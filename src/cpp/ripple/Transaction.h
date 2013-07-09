@@ -134,9 +134,6 @@ public:
         mInLedger = ledger;
     }
 
-    // database functions
-    void save ();
-
     bool operator< (const Transaction&) const;
     bool operator> (const Transaction&) const;
     bool operator== (const Transaction&) const;

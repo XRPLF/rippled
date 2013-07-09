@@ -255,7 +255,7 @@ void NetworkOPs::runTransactionQueue ()
                 // transaction should be held
                 WriteLog (lsDEBUG, NetworkOPs) << "QTransaction should be held: " << r;
                 dbtx->setStatus (HELD);
-                getApp().getMasterTransaction ().canonicalize (dbtx, true);
+                getApp().getMasterTransaction ().canonicalize (dbtx);
                 mLedgerMaster->addHeldTransaction (dbtx);
             }
             else if (r == tefPAST_SEQ)
@@ -268,7 +268,7 @@ void NetworkOPs::runTransactionQueue ()
             {
                 WriteLog (lsINFO, NetworkOPs) << "QTransaction is now included in open ledger";
                 dbtx->setStatus (INCLUDED);
-                getApp().getMasterTransaction ().canonicalize (dbtx, true);
+                getApp().getMasterTransaction ().canonicalize (dbtx);
             }
             else
             {
@@ -366,7 +366,7 @@ Transaction::pointer NetworkOPs::processTransaction (Transaction::pointer trans,
     {
         WriteLog (lsINFO, NetworkOPs) << "Transaction is now included in open ledger";
         trans->setStatus (INCLUDED);
-        getApp().getMasterTransaction ().canonicalize (trans, true);
+        getApp().getMasterTransaction ().canonicalize (trans);
     }
     else if (r == tefPAST_SEQ)
     {
@@ -381,7 +381,7 @@ Transaction::pointer NetworkOPs::processTransaction (Transaction::pointer trans,
                 // transaction should be held
                 WriteLog (lsDEBUG, NetworkOPs) << "Transaction should be held: " << r;
                 trans->setStatus (HELD);
-                getApp().getMasterTransaction ().canonicalize (trans, true);
+                getApp().getMasterTransaction ().canonicalize (trans);
                 mLedgerMaster->addHeldTransaction (trans);
         }
     }
@@ -1228,7 +1228,12 @@ NetworkOPs::getAccountTxs (const RippleAddress& account, int32 minLedger, int32 
             else rawMeta.resize (metaSize);
 
             if (rawMeta.getLength() == 0)
-            { // FIXME metadata isn't in the table, update metadata and sequence in Transactions DB from ledger
+            { // Work around a bug that could leave the metadata missing
+                uint32 seq = static_cast<uint32>(db->getBigInt("AccountTransactions.LedgerSeq"));
+                WriteLog(lsWARNING, NetworkOPs) << "Recovering ledger " << seq << ", txn " << txn->getID();
+                Ledger::pointer ledger = getLedgerBySeq(seq);
+                if (ledger)
+                    ledger->pendSave(false);
             }
 
             TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet> (txn->getID (), txn->getLedger (), rawMeta.getData ());
@@ -2225,7 +2230,7 @@ void NetworkOPs::sweepFetchPack ()
 
 void NetworkOPs::addFetchPack (uint256 const& hash, boost::shared_ptr< Blob >& data)
 {
-    mFetchPack.canonicalize (hash, data, false);
+    mFetchPack.canonicalize (hash, data);
 }
 
 bool NetworkOPs::getFetchPack (uint256 const& hash, Blob& data)

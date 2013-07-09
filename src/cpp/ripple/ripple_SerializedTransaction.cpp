@@ -248,26 +248,6 @@ std::string SerializedTransaction::getMetaSQLValueHeader ()
     return "(TransID, TransType, FromAcct, FromSeq, LedgerSeq, Status, RawTxn, TxnMeta)";
 }
 
-std::string SerializedTransaction::getSQLInsertHeader ()
-{
-    return "INSERT INTO Transactions " + getSQLValueHeader () + " VALUES ";
-}
-
-std::string SerializedTransaction::getSQLInsertIgnoreHeader ()
-{
-    return "INSERT OR IGNORE INTO Transactions " + getSQLValueHeader () + " VALUES ";
-}
-
-std::string SerializedTransaction::getSQLInsertReplaceHeader ()
-{
-    return "INSERT OR REPLACE INTO Transactions " + getSQLValueHeader () + " VALUES ";
-}
-
-std::string SerializedTransaction::getMetaSQLInsertHeader ()
-{
-    return "INSERT INTO Transactions " + getMetaSQLValueHeader () + " VALUES ";
-}
-
 std::string SerializedTransaction::getMetaSQLInsertReplaceHeader ()
 {
     return "INSERT OR REPLACE INTO Transactions " + getMetaSQLValueHeader () + " VALUES ";

@@ -373,7 +373,7 @@ Transaction::pointer Ledger::getTransaction (uint256 const& transID) const
     if (txn->getStatus () == NEW)
         txn->setStatus (mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
 
-    getApp().getMasterTransaction ().canonicalize (txn, false);
+    getApp().getMasterTransaction ().canonicalize (txn);
     return txn;
 }
 
@@ -452,7 +452,7 @@ bool Ledger::getTransaction (uint256 const& txID, Transaction::pointer& txn, Tra
     if (txn->getStatus () == NEW)
         txn->setStatus (mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
 
-    getApp().getMasterTransaction ().canonicalize (txn, false);
+    getApp().getMasterTransaction ().canonicalize (txn);
     return true;
 }
 

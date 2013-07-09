@@ -114,14 +114,12 @@ public:
     static std::string getSQLValueHeader ();
     static std::string getSQLInsertHeader ();
     static std::string getSQLInsertIgnoreHeader ();
-    static std::string getSQLInsertReplaceHeader ();
     std::string getSQL (std::string & sql, uint32 inLedger, char status) const;
     std::string getSQL (uint32 inLedger, char status) const;
     std::string getSQL (Serializer rawTxn, uint32 inLedger, char status) const;
 
     // SQL Functions with metadata
     static std::string getMetaSQLValueHeader ();
-    static std::string getMetaSQLInsertHeader ();
     static std::string getMetaSQLInsertReplaceHeader ();
     std::string getMetaSQL (uint32 inLedger, const std::string & escapedMetaData) const;
     std::string getMetaSQL (Serializer rawTxn, uint32 inLedger, char status, const std::string & escapedMetaData) const;

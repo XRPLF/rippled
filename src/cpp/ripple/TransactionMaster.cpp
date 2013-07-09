@@ -80,7 +80,7 @@ SerializedTransaction::pointer TransactionMaster::fetch (SHAMapItem::ref item, S
     return txn;
 }
 
-bool TransactionMaster::canonicalize (Transaction::pointer& txn, bool may_be_new)
+bool TransactionMaster::canonicalize (Transaction::pointer& txn)
 {
     uint256 tid = txn->getID ();
 
@@ -89,9 +89,6 @@ bool TransactionMaster::canonicalize (Transaction::pointer& txn, bool may_be_new
 
     if (mCache.canonicalize (tid, txn))
         return true;
-
-    if (may_be_new)
-        txn->save ();
 
     return false;
 }
