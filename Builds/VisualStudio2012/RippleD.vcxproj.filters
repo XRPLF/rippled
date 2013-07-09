@@ -145,12 +145,6 @@
     <Filter Include="[1] Ripple\ripple_net\basics">
       <UniqueIdentifier>{febf2e7e-f071-4a6c-9b81-68498fc8ea57}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[1] Ripple\ripple_net\client">
-      <UniqueIdentifier>{10893147-455d-4a9e-ad3b-ec12d296a03d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[1] Ripple\ripple_net\peer">
-      <UniqueIdentifier>{03c077b7-8ae4-4e00-9eb5-78295cfd377d}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Subtrees\sqlite\sqlite3.c">
@@ -846,11 +840,11 @@
     <ClCompile Include="..\..\modules\ripple_net\basics\ripple_HTTPRequest.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\RPCServer.cpp">
-      <Filter>[1] Ripple\ripple_app\_network</Filter>
+    <ClCompile Include="..\..\modules\ripple_net\basics\ripple_HttpsClient.cpp">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_net\client\ripple_HttpsClient.cpp">
-      <Filter>[1] Ripple\ripple_net\client</Filter>
+    <ClCompile Include="..\..\modules\ripple_app\basics\ripple_RPCServer.cpp">
+      <Filter>[1] Ripple\ripple_app\basics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1578,11 +1572,11 @@
     <ClInclude Include="..\..\modules\ripple_net\basics\ripple_HTTPRequest.h">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\RPCServer.h">
-      <Filter>[1] Ripple\ripple_app\_network</Filter>
+    <ClInclude Include="..\..\modules\ripple_net\basics\ripple_HttpsClient.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_net\client\ripple_HttpsClient.h">
-      <Filter>[1] Ripple\ripple_net\client</Filter>
+    <ClInclude Include="..\..\modules\ripple_app\basics\ripple_RPCServer.h">
+      <Filter>[1] Ripple\ripple_app\basics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

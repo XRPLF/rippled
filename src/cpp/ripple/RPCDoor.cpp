@@ -30,7 +30,7 @@ RPCDoor::~RPCDoor ()
 
 void RPCDoor::startListening ()
 {
-    RPCServer::pointer new_connection = RPCServer::create (mAcceptor.get_io_service (), mSSLContext, &getApp().getOPs ());
+    RPCServer::pointer new_connection = RPCServer::New (mAcceptor.get_io_service (), mSSLContext, &getApp().getOPs ());
     mAcceptor.set_option (boost::asio::ip::tcp::acceptor::reuse_address (true));
 
     mAcceptor.async_accept (new_connection->getRawSocket (),

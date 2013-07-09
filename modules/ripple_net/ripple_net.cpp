@@ -21,7 +21,6 @@ namespace ripple
 {
 
 #include "basics/ripple_HTTPRequest.cpp"
-
-#include "client/ripple_HttpsClient.cpp"
+#include "basics/ripple_HttpsClient.cpp"
 
 }
