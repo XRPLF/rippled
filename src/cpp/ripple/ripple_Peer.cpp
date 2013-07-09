@@ -160,6 +160,7 @@ private:
     void sendHello ();
 
     void recvHello (protocol::TMHello & packet);
+    void recvCluster (protocol::TMCluster & packet);
     void recvTransaction (protocol::TMTransaction & packet, ScopedLock & MasterLockHolder);
     void recvValidation (const boost::shared_ptr<protocol::TMValidation>& packet, ScopedLock & MasterLockHolder);
     void recvGetValidation (protocol::TMGetValidations & packet);
@@ -669,6 +670,17 @@ void PeerImp::processReadBuffer ()
                 WriteLog (lsWARNING, Peer) << "parse error: " << type;
         }
         break;
+
+        case protocol::mtCLUSTER:
+        {
+            event->reName ("PeerImp::cluster");
+            protocol::TMCluster msg;
+
+            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                recvCluster (msg);
+	    else
+	        WriteLog (lsWARNING, Peer) << "parse error: " << type;
+        }
 
         case protocol::mtERROR_MSG:
         {
@@ -1404,6 +1416,11 @@ void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& p
     }
 
 #endif
+}
+
+void PeerImp::recvCluster (protocol::TMCluster& packet)
+{
+    // WRITEME
 }
 
 void PeerImp::recvGetValidation (protocol::TMGetValidations& packet)
