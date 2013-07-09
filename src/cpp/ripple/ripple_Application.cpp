@@ -280,7 +280,7 @@ Application::Application ()
 #endif
     , mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
     , mIOWork (mIOService)
-    , mNetOps (mIOService, &mLedgerMaster)
+    , mNetOps (&mLedgerMaster)
     , mTempNodeCache ("NodeCache", 16384, 90)
     , mHashedObjectStore (16384, 300)
     , mSLECache ("LedgerEntryCache", 4096, 120)

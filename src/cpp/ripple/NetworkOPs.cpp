@@ -4,7 +4,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (NetworkOPs)
 
 // This is the primary interface into the "client" portion of the program.
@@ -18,14 +17,13 @@ SETUP_LOG (NetworkOPs)
 // code assumes this node is synched (and will continue to do so until
 // there's a functional network.
 
-NetworkOPs::NetworkOPs (boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster)
+NetworkOPs::NetworkOPs (LedgerMaster* pLedgerMaster)
     : mMode (omDISCONNECTED)
     , mNeedNetworkLedger (false)
     , mProposing (false)
     , mValidating (false)
     , mFeatureBlocked (false)
-    //, m_netTimer (this)
-    , mNetTimer (io_service)
+    , m_netTimer (this)
     , mLedgerMaster (pLedgerMaster)
     , mCloseTimeOffset (0)
     , mLastCloseProposers (0)
@@ -39,17 +37,56 @@ NetworkOPs::NetworkOPs (boost::asio::io_service& io_service, LedgerMaster* pLedg
     , mLastLoadBase (256)
     , mLastLoadFactor (256)
 {
-//    m_netTimer.setExpirationRecurring (LEDGER_GRANULARITY / 1000.0);
 }
 
 void NetworkOPs::onDeadlineTimer ()
 {
-//    WriteLog (lsINFO, NetworkOPs) << "NetworkOPs::onDeadlineTimer ()";
+    ScopedLock sl (getApp().getMasterLock ());
+
+    getApp().getLoadManager ().resetDeadlockDetector ();
+
+    std::size_t const numPeers = getApp().getPeers ().getPeerVector ().size ();
+
+    // do we have sufficient peers? If not, we are disconnected.
+    if (numPeers < theConfig.NETWORK_QUORUM)
+    {
+        if (mMode != omDISCONNECTED)
+        {
+            setMode (omDISCONNECTED);
+            WriteLog (lsWARNING, NetworkOPs)
+                << "Node count (" << numPeers << ") "
+                << "has fallen below quorum (" << theConfig.NETWORK_QUORUM << ").";
+        }
+
+        return;
+    }
+
+    if (mMode == omDISCONNECTED)
+    {
+        setMode (omCONNECTED);
+        WriteLog (lsINFO, NetworkOPs) << "Node count (" << numPeers << ") is sufficient.";
+    }
+
+    // Check if the last validated ledger forces a change between these states
+    if (mMode == omSYNCING)
+    {
+        setMode (omSYNCING);
+    }
+    else if (mMode == omCONNECTED)
+    {
+        setMode (omCONNECTED);
+    }
+
+    if (!mConsensus)
+        tryStartConsensus ();
+
+    if (mConsensus)
+        mConsensus->timerEntry ();
 }
 
 std::string NetworkOPs::strOperatingMode ()
 {
-    static const char*  paStatusToken[] =
+    static const char* paStatusToken [] =
     {
         "disconnected",
         "connected",
@@ -73,7 +110,10 @@ std::string NetworkOPs::strOperatingMode ()
 boost::posix_time::ptime NetworkOPs::getNetworkTimePT ()
 {
     int offset = 0;
+
     getApp().getSystemTimeOffset (offset);
+
+    // VFALCO TODO Replace this with a beast call
     return boost::posix_time::microsec_clock::universal_time () + boost::posix_time::seconds (offset);
 }
 
@@ -587,8 +627,7 @@ void NetworkOPs::setFeatureBlocked ()
 
 void NetworkOPs::setStateTimer ()
 {
-    mNetTimer.expires_from_now (boost::posix_time::milliseconds (LEDGER_GRANULARITY));
-    mNetTimer.async_wait (boost::bind (&NetworkOPs::checkState, this, boost::asio::placeholders::error));
+    m_netTimer.setRecurringExpiration (LEDGER_GRANULARITY / 1000.0);
 }
 
 class ValidationCount
@@ -599,19 +638,23 @@ public:
 
     ValidationCount () : trustedValidations (0), nodesUsing (0)
     {
-        ;
     }
+
     bool operator> (const ValidationCount& v)
     {
-        if (trustedValidations > v.trustedValidations) return true;
+        if (trustedValidations > v.trustedValidations)
+            return true;
 
-        if (trustedValidations < v.trustedValidations) return false;
+        if (trustedValidations < v.trustedValidations)
+            return false;
 
         if (trustedValidations == 0)
         {
-            if (nodesUsing > v.nodesUsing) return true;
+            if (nodesUsing > v.nodesUsing)
+                return true;
 
-            if (nodesUsing < v.nodesUsing) return false;
+            if (nodesUsing < v.nodesUsing) return
+                false;
 
             return highNodeUsing > v.highNodeUsing;
         }
@@ -619,61 +662,6 @@ public:
         return highValidation > v.highValidation;
     }
 };
-
-void NetworkOPs::checkState (const boost::system::error_code& result)
-{
-    // Network state machine
-
-    if ((result == boost::asio::error::operation_aborted) || theConfig.RUN_STANDALONE)
-    {
-        // VFALCO NOTE Should never get here. This is probably dead code.
-        //             If RUN_STANDALONE is set then this function isn't called.
-        //
-        WriteLog (lsFATAL, NetworkOPs) << "Network state timer error: " << result;
-        return;
-    }
-
-    {
-        ScopedLock sl (getApp().getMasterLock ());
-
-        getApp().getLoadManager ().resetDeadlockDetector ();
-
-        std::vector<Peer::pointer> peerList = getApp().getPeers ().getPeerVector ();
-
-        // do we have sufficient peers? If not, we are disconnected.
-        if (peerList.size () < theConfig.NETWORK_QUORUM)
-        {
-            if (mMode != omDISCONNECTED)
-            {
-                setMode (omDISCONNECTED);
-                WriteLog (lsWARNING, NetworkOPs) << "Node count (" << peerList.size () <<
-                                                 ") has fallen below quorum (" << theConfig.NETWORK_QUORUM << ").";
-            }
-
-            return;
-        }
-
-        if (mMode == omDISCONNECTED)
-        {
-            setMode (omCONNECTED);
-            WriteLog (lsINFO, NetworkOPs) << "Node count (" << peerList.size () << ") is sufficient.";
-        }
-
-        // Check if the last validated ledger forces a change between these states
-        if (mMode == omSYNCING)
-            setMode (omSYNCING);
-        else if (mMode == omCONNECTED)
-            setMode (omCONNECTED);
-
-        if (!mConsensus)
-            tryStartConsensus ();
-
-        if (mConsensus)
-            mConsensus->timerEntry ();
-    }
-
-    setStateTimer ();
-}
 
 void NetworkOPs::tryStartConsensus ()
 {
@@ -1698,7 +1686,7 @@ void NetworkOPs::pubAccountTransaction (Ledger::ref lpCurrent, const AcceptedLed
         {
             BOOST_FOREACH (const RippleAddress & affectedAccount, alTx.getAffected ())
             {
-                subInfoMapIterator  simiIt  = mSubRTAccount.find (affectedAccount.getAccountID ());
+                SubInfoMapIterator  simiIt  = mSubRTAccount.find (affectedAccount.getAccountID ());
 
                 if (simiIt != mSubRTAccount.end ())
                 {
@@ -1767,7 +1755,7 @@ void NetworkOPs::pubAccountTransaction (Ledger::ref lpCurrent, const AcceptedLed
 
 void NetworkOPs::subAccount (InfoSub::ref isrListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs, uint32 uLedgerIndex, bool rt)
 {
-    subInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
+    SubInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
 
     // For the connection, monitor each account.
     BOOST_FOREACH (const RippleAddress & naAccountID, vnaAccountIDs)
@@ -1781,7 +1769,7 @@ void NetworkOPs::subAccount (InfoSub::ref isrListener, const boost::unordered_se
 
     BOOST_FOREACH (const RippleAddress & naAccountID, vnaAccountIDs)
     {
-        subInfoMapType::iterator    simIterator = subMap.find (naAccountID.getAccountID ());
+        SubInfoMapType::iterator    simIterator = subMap.find (naAccountID.getAccountID ());
 
         if (simIterator == subMap.end ())
         {
@@ -1800,7 +1788,7 @@ void NetworkOPs::subAccount (InfoSub::ref isrListener, const boost::unordered_se
 
 void NetworkOPs::unsubAccount (uint64 uSeq, const boost::unordered_set<RippleAddress>& vnaAccountIDs, bool rt)
 {
-    subInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
+    SubInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
 
     // For the connection, unmonitor each account.
     // FIXME: Don't we need to unsub?
@@ -1813,7 +1801,7 @@ void NetworkOPs::unsubAccount (uint64 uSeq, const boost::unordered_set<RippleAdd
 
     BOOST_FOREACH (const RippleAddress & naAccountID, vnaAccountIDs)
     {
-        subInfoMapType::iterator    simIterator = subMap.find (naAccountID.getAccountID ());
+        SubInfoMapType::iterator    simIterator = subMap.find (naAccountID.getAccountID ());
 
 
         if (simIterator == subMap.end ())
