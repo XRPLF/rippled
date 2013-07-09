@@ -4,12 +4,11 @@
 */
 //==============================================================================
 
-#ifndef _HTTPS_CLIENT_
-#define _HTTPS_CLIENT_
+#ifndef RIPPLE_HTTPSCLIENT_H_INCLUDED
+#define RIPPLE_HTTPSCLIENT_H_INCLUDED
 
-//
-// Async https client.
-//
+/** Provides an asynchronous HTTPS client implementation.
+*/
 
 class HttpsClient
     : public boost::enable_shared_from_this <HttpsClient>
@@ -22,29 +21,36 @@ public:
         std::size_t responseMax
     );
 
+    // VFALCO NOTE Putting "https" is redundant, the class is
+    //             already called HttpsClient.
+    //
+    // VFALCO TODO Rename these to request, get, and next.
+    //
     void httpsRequest (
         bool bSSL,
         std::deque<std::string> deqSites,
-        FUNCTION_TYPE<void (boost::asio::streambuf& sb, const std::string& strHost)> build,
+        FUNCTION_TYPE <void (boost::asio::streambuf& sb, const std::string& strHost)> build,
         boost::posix_time::time_duration timeout,
-        FUNCTION_TYPE<bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
+        FUNCTION_TYPE <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
 
     void httpsGet (
         bool bSSL,
         std::deque<std::string> deqSites,
         const std::string& strPath,
         boost::posix_time::time_duration timeout,
-        FUNCTION_TYPE<bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
+        FUNCTION_TYPE <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
 
+    // VFALCO TODO These statics all belong in some HttpsClientOperations class
+    //
     static void httpsGet (
         bool bSSL,
         boost::asio::io_service& io_service,
-        std::deque<std::string> deqSites,
+        std::deque <std::string> deqSites,
         const unsigned short port,
         const std::string& strPath,
         std::size_t responseMax,
         boost::posix_time::time_duration timeout,
-        FUNCTION_TYPE<bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
+        FUNCTION_TYPE <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
 
     static void httpsGet (
         bool bSSL,
@@ -54,17 +60,17 @@ public:
         const std::string& strPath,
         std::size_t responseMax,
         boost::posix_time::time_duration timeout,
-        FUNCTION_TYPE<bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
+        FUNCTION_TYPE <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
 
     static void httpsRequest (
         bool bSSL,
         boost::asio::io_service& io_service,
         std::string strSite,
         const unsigned short port,
-        FUNCTION_TYPE<void (boost::asio::streambuf& sb, const std::string& strHost)> build,
+        FUNCTION_TYPE <void (boost::asio::streambuf& sb, const std::string& strHost)> build,
         std::size_t responseMax,
         boost::posix_time::time_duration timeout,
-        FUNCTION_TYPE<bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
+        FUNCTION_TYPE <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
 
     static void sendSMS (boost::asio::io_service& io_service, const std::string& strText);
 
@@ -119,4 +125,4 @@ private:
 };
 
 #endif
-// vim:ts=4
+

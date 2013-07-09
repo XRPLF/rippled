@@ -153,7 +153,6 @@ namespace ripple
 #include "src/cpp/ripple/CallRPC.h"
 #include "src/cpp/ripple/Transactor.h"
 #include "src/cpp/ripple/ChangeTransactor.h"
-#include "src/cpp/ripple/HttpsClient.h"
 #include "src/cpp/ripple/ripple_TransactionAcquire.h"
 #include "src/cpp/ripple/ripple_DisputedTx.h"
 #include "src/cpp/ripple/ripple_LedgerConsensus.h"
@@ -378,7 +377,6 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #include "src/cpp/ripple/ripple_LedgerConsensus.cpp"
 #include "src/cpp/ripple/LedgerMaster.cpp"
-#include "src/cpp/ripple/HttpsClient.cpp"
 
 #include "src/cpp/ripple/ripple_InfoSub.cpp"
 #include "src/cpp/ripple/ripple_OrderBook.cpp"

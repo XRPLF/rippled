@@ -10,6 +10,9 @@
 
 SETUP_LOG (HttpsClient)
 
+// VFALCO NOTE Why use theConfig.SSL_CONTEXT instead of just passing it?
+//        TODO Remove all theConfig deps from this file
+//
 HttpsClient::HttpsClient (boost::asio::io_service& io_service,
                           const unsigned short port,
                           std::size_t responseMax)
@@ -313,11 +316,18 @@ void HttpsClient::handleHeader (const boost::system::error_code& ecResult, std::
             mResponseMax = size;
     }
 
-    if (mResponseMax == 0) // no body wanted or available
+    if (mResponseMax == 0)
+    {
+        // no body wanted or available
         invokeComplete (ecResult, mStatus);
-    else if (mBody.size () >= mResponseMax) // we got the whole thing
+    }
+    else if (mBody.size () >= mResponseMax) 
+    {
+        // we got the whole thing
         invokeComplete (ecResult, mStatus, mBody);
+    }
     else
+    {
         mSocket.async_read (
             mResponse.prepare (mResponseMax - mBody.size ()),
             boost::asio::transfer_all (),
@@ -325,6 +335,7 @@ void HttpsClient::handleHeader (const boost::system::error_code& ecResult, std::
                          shared_from_this (),
                          boost::asio::placeholders::error,
                          boost::asio::placeholders::bytes_transferred));
+    }
 }
 
 void HttpsClient::handleData (const boost::system::error_code& ecResult, std::size_t bytes_transferred)
