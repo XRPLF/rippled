@@ -81,11 +81,10 @@ message TMHello
 message TMClusterNode
 {
     required bytes           publicKey       = 1;
-    required uint32          reportSeq       = 2;
-    optional string          nodeName        = 3;
-    optional uint32          nodeLoad        = 4;
-    optional uint32          lastHeard       = 5;
-    optional string          address         = 6;
+    required uint32          reportTime      = 2;
+    required uint32          nodeLoad        = 3;
+    optional string          nodeName        = 4;
+    optional string          address         = 5;
 }
 
 // The status of all nodes in the cluster

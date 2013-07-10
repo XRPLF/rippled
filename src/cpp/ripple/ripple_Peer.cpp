@@ -1429,9 +1429,18 @@ void PeerImp::recvCluster (protocol::TMCluster& packet)
     {
         protocol::TMClusterNode const& node = packet.clusternodes(i);
 
-        // Extract RippleAddress and build ClusterNodeStatus
-        // WRITEME
+        std::string name;
+        if (node.has_nodename())
+	    name = node.nodename();
+        ClusterNodeStatus s(name, node.nodeload(), node.reporttime());
+
+        RippleAddress nodePub;
+        nodePub.setNodePublic(node.publickey());
+
+        getApp().getUNL().nodeUpdate(nodePub, s);
     }
+
+    getApp().getFeeTrack().setClusterFee(getApp().getUNL().getClusterFee());
 }
 
 void PeerImp::recvGetValidation (protocol::TMGetValidations& packet)

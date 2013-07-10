@@ -342,6 +342,35 @@ public:
 
     //--------------------------------------------------------------------------
 
+    uint32 getClusterFee ()
+    {
+        uint64 totFee = 0;
+        int totCount = 0;
+
+        int thresh = getApp().getOPs().getNetworkTimeNC();
+        if (thresh <= 120)
+            thresh = 1;
+        else
+            thresh -= 120;
+
+        boost::recursive_mutex::scoped_lock sl (mUNLLock);
+        {
+            for (std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.begin(),
+                end = m_clusterNodes.end(); it != end; ++it)
+            {
+                if (it->second.getReportTime() >= thresh)
+                {
+                    ++totCount;
+                    totFee += it->second.getLoadFee();
+                }
+            }
+        }
+
+        return (totCount == 0) ? 0 : static_cast<uint32>(totFee / totCount);
+    }
+
+    //--------------------------------------------------------------------------
+
     void nodeBootstrap ()
     {
         int         iDomains    = 0;

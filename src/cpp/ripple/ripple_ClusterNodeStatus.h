@@ -8,15 +8,14 @@ class ClusterNodeStatus
 {
 public:
 
-    ClusterNodeStatus() : mSeq(0), mLoadFee(0), mReportTime(0)
+    ClusterNodeStatus() : mLoadFee(0), mReportTime(0)
     { ; }
 
-    ClusterNodeStatus(std::string const& name) : mNodeName(name), mSeq(0), mLoadFee(0), mReportTime(0)
+    ClusterNodeStatus(std::string const& name) : mNodeName(name), mLoadFee(0), mReportTime(0)
     { ; }
 
-    ClusterNodeStatus(uint32 seq, const std::string& name, uint32 fee, uint32 rtime) :
+    ClusterNodeStatus(const std::string& name, uint32 fee, uint32 rtime) :
         mNodeName(name),
-        mSeq(seq),
         mLoadFee(fee),
         mReportTime(rtime)
     { ; }
@@ -24,11 +23,6 @@ public:
     std::string const& getName()
     {
         return mNodeName;
-    }
-
-    uint32 getSeq()
-    {
-        return mSeq;
     }
 
     uint32 getLoadFee()
@@ -43,9 +37,8 @@ public:
 
     void update(ClusterNodeStatus const& status)
     {
-        if (status.mSeq > mSeq)
+        if (status.mReportTime > mReportTime)
         {
-            mSeq = status.mSeq;
             mLoadFee = status.mLoadFee;
             mReportTime = status.mReportTime;
             if (mNodeName.empty() || !status.mNodeName.empty())
@@ -55,7 +48,6 @@ public:
 
 private:
     std::string       mNodeName;
-    uint32            mSeq;
     uint32            mLoadFee;
     uint32            mReportTime;
 };
