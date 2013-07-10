@@ -176,7 +176,7 @@ namespace ripple
 #include "src/cpp/ripple/AccountSetTransactor.h"
 #include "src/cpp/ripple/TrustSetTransactor.h"
 #include "src/cpp/ripple/WSConnection.h"
-#include "src/cpp/ripple/WSHandler.h"
+#include "src/cpp/ripple/ripple_WSHandler.h"
 #include "src/cpp/ripple/WalletAddTransactor.h"
 
 #include "basics/ripple_Version.h" // VFALCO TODO Should this be private?
@@ -319,7 +319,7 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/TransactionMaster.cpp"
 #include "src/cpp/ripple/TransactionQueue.cpp"
 #include "src/cpp/ripple/TrustSetTransactor.cpp"
-#include "src/cpp/ripple/WSHandler.cpp"
+#include "src/cpp/ripple/ripple_WSHandler.cpp"
 
 #endif
 
