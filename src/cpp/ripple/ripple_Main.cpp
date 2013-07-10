@@ -174,7 +174,7 @@ int rippleMain (int argc, char** argv)
     ("start", "Start from a fresh Ledger.")
     ("net", "Get the initial ledger from the network.")
     ("fg", "Run in the foreground.")
-    ("import", "Import SQLite node DB into LevelDB.")
+    ("import", po::value<std::string> (), "Import old DB into new DB.")
     ;
 
     // Interpret positional arguments as --parameters.
@@ -271,7 +271,8 @@ int rippleMain (int argc, char** argv)
 
     if (vm.count ("start")) theConfig.START_UP = Config::FRESH;
 
-    if (vm.count ("import")) theConfig.LDB_IMPORT = true;
+    if (vm.count ("import"))
+        theConfig.DB_IMPORT = vm["import"].as<std::string> ();
 
     if (vm.count ("ledger"))
     {

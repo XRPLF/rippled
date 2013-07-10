@@ -2401,14 +2401,6 @@ Json::Value RPCHandler::doGetCounts (Json::Value params, LoadType* loadType, Sco
     if (dbKB > 0)
         ret["dbKBLedger"] = dbKB;
 
-    if (!getApp().getNodeStore ().isLevelDB ())
-    {
-        dbKB = getApp().getHashNodeDB ()->getDB ()->getKBUsedDB ();
-
-        if (dbKB > 0)
-            ret["dbKBHashNode"] = dbKB;
-    }
-
     dbKB = getApp().getTxnDB ()->getDB ()->getKBUsedDB ();
 
     if (dbKB > 0)

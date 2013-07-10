@@ -256,7 +256,7 @@ public:
     void sweep ();
 
 private:
-    void updateTables (bool);
+    void updateTables ();
     void startNewLedger ();
     bool loadOldLedger (const std::string&);
 
@@ -445,53 +445,6 @@ void Application::setup ()
     options.create_if_missing = true;
     options.block_cache = leveldb::NewLRUCache (theConfig.getSize (siHashNodeDBCache) * 1024 * 1024);
 
-    if (theConfig.NODE_SIZE >= 2)
-        options.filter_policy = leveldb::NewBloomFilterPolicy (10);
-
-    if (theConfig.LDB_IMPORT)
-        options.write_buffer_size = 32 << 20;
-
-    if (m_nodeStore.isLevelDB ())
-    {
-        WriteLog (lsINFO, Application) << "LevelDB used for nodes";
-        leveldb::Status status = leveldb::DB::Open (options, (theConfig.DATA_DIR / "hashnode").string (), &mHashNodeLDB);
-
-        if (!status.ok () || !mHashNodeLDB)
-        {
-            WriteLog (lsFATAL, Application) << "Unable to open/create hash node db: "
-                                            << (theConfig.DATA_DIR / "hashnode").string ()
-                                            << " " << status.ToString ();
-            StopSustain ();
-            exit (3);
-        }
-    }
-    else
-    {
-        WriteLog (lsINFO, Application) << "SQLite used for nodes";
-        boost::thread t5 (BIND_TYPE (&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
-        t5.join ();
-    }
-
-    if (!theConfig.LDB_EPHEMERAL.empty ())
-    {
-        leveldb::Status status = leveldb::DB::Open (options, theConfig.LDB_EPHEMERAL, &mEphemeralLDB);
-
-        if (!status.ok () || !mEphemeralLDB)
-        {
-            WriteLog (lsFATAL, Application) << "Unable to open/create epehemeral db: "
-                                            << theConfig.LDB_EPHEMERAL << " " << status.ToString ();
-            StopSustain ();
-            exit (3);
-        }
-    }
-
-    if (!m_nodeStore.isLevelDB ())
-    {
-        getApp().getHashNodeDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-                (theConfig.getSize (siHashNodeDBCache) * 1024)));
-        getApp().getHashNodeDB ()->getDB ()->setupCheckpointing (&mJobQueue);
-    }
-
     getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
             (theConfig.getSize (siLgrDBCache) * 1024)));
     getApp().getTxnDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
@@ -501,7 +454,7 @@ void Application::setup ()
     mLedgerDB->getDB ()->setupCheckpointing (&mJobQueue);
 
     if (!theConfig.RUN_STANDALONE)
-        updateTables (theConfig.LDB_IMPORT);
+        updateTables ();
 
     mFeatures->addInitialFeatures ();
 
@@ -980,7 +933,7 @@ static void addTxnSeqField ()
     db->executeSQL ("END TRANSACTION;");
 }
 
-void Application::updateTables (bool ldbImport)
+void Application::updateTables ()
 {
     // perform any needed table updates
     assert (schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "TransID"));
@@ -994,27 +947,8 @@ void Application::updateTables (bool ldbImport)
         exit (1);
     }
 
-    if (getApp().getNodeStore ().isLevelDB ())
-    {
-        boost::filesystem::path hashPath = theConfig.DATA_DIR / "hashnode.db";
-
-        if (boost::filesystem::exists (hashPath))
-        {
-            if (theConfig.LDB_IMPORT)
-            {
-                Log (lsWARNING) << "Importing SQLite -> LevelDB";
-                getApp().getNodeStore ().import (hashPath.string ());
-                Log (lsWARNING) << "Remove or remname the hashnode.db file";
-            }
-            else
-            {
-                Log (lsWARNING) << "SQLite hashnode database exists. Please either remove or import";
-                Log (lsWARNING) << "To import, start with the '--import' option. Otherwise, remove hashnode.db";
-                StopSustain ();
-                exit (1);
-            }
-        }
-    }
+    if (!theConfig.DB_IMPORT.empty())
+    	getApp().getNodeStore().import(theConfig.DB_IMPORT);
 }
 
 //------------------------------------------------------------------------------

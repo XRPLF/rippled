@@ -83,8 +83,6 @@ public:
     */
     static void addBackendFactory (BackendFactory& factory);
 
-    bool isLevelDB ();
-
     float getCacheHitRate ();
 
     bool store (NodeObjectType type, uint32 index, Blob const& data,
@@ -121,8 +119,6 @@ private:
 
     std::vector< boost::shared_ptr<NodeObject> > mWriteSet;
     bool mWritePending;
-    bool mLevelDB;
-    bool mEphemeralDB;
 };
 
 #endif

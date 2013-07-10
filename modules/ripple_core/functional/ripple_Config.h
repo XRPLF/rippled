@@ -85,8 +85,8 @@ public:
     boost::filesystem::path     DEBUG_LOGFILE;
     boost::filesystem::path     VALIDATORS_FILE;        // As specifed in rippled.cfg.
     std::string                 NODE_DB;                // Database to use for nodes
-    std::string                 LDB_EPHEMERAL;          // Database for temporary storage
-    bool                        LDB_IMPORT;             // Import into LevelDB
+    std::string                 FASTNODE_DB;            // Database for temporary storage
+    std::string                 DB_IMPORT;              // Import from old DB
     bool                        ELB_SUPPORT;            // Support Amazon ELB
 
     std::string                 VALIDATORS_SITE;        // Where to find validators.txt on the Internet.

@@ -13,48 +13,16 @@ NodeStore::NodeStore (String backendParameters, String fastBackendParameters, in
     , mWriteGeneration (0)
     , mWriteLoad (0)
     , mWritePending (false)
-    , mLevelDB (false)
-    , mEphemeralDB (false)
 {
     if (fastBackendParameters.isNotEmpty ())
         m_fastBackend = createBackend (fastBackendParameters);
 
     mWriteSet.reserve (128);
-
-    // VFALCO TODO Eliminate usage of theConfig
-    //             This can be done by passing required parameters through
-    //             the backendParameters string.
-    //
-    if (theConfig.NODE_DB == "leveldb" || theConfig.NODE_DB == "LevelDB")
-    {
-        mLevelDB = true;
-    }
-    else if (theConfig.NODE_DB == "SQLite" || theConfig.NODE_DB == "sqlite")
-    {
-        mLevelDB = false;
-    }
-    else
-    {
-        WriteLog (lsFATAL, NodeObject) << "Incorrect database selection";
-        assert (false);
-    }
-
-    if (!theConfig.LDB_EPHEMERAL.empty ())
-    {
-        // VFALCO NOTE This is cryptic
-        mEphemeralDB = true;
-    }
 }
 
 void NodeStore::addBackendFactory (BackendFactory& factory)
 {
     s_factories.add (&factory);
-}
-
-// DEPRECATED
-bool NodeStore::isLevelDB ()
-{
-    return mLevelDB;
 }
 
 float NodeStore::getCacheHitRate ()
@@ -121,7 +89,6 @@ bool NodeStore::store (NodeObjectType type, uint32 index,
 
 void NodeStore::bulkWrite (Job&)
 {
-    assert (mLevelDB);
     int setSize = 0;
 
     while (1)
