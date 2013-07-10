@@ -4,10 +4,10 @@
 */
 //==============================================================================
 
-SETUP_LOG (HashedObject)
+SETUP_LOG (NodeObject)
 
-HashedObject::HashedObject (
-    HashedObjectType type,
+NodeObject::NodeObject (
+    NodeObjectType type,
     LedgerIndex ledgerIndex,
     Blob const& binaryDataToCopy,
     uint256 const& hash)
@@ -18,8 +18,8 @@ HashedObject::HashedObject (
 {
 }
 
-HashedObject::HashedObject (
-    HashedObjectType type,
+NodeObject::NodeObject (
+    NodeObjectType type,
     LedgerIndex ledgerIndex,
     void const* bufferToCopy,
     int bytesInBuffer,
@@ -32,22 +32,22 @@ HashedObject::HashedObject (
 {
 }
 
-HashedObjectType HashedObject::getType () const
+NodeObjectType NodeObject::getType () const
 {
     return mType;
 }
 
-uint256 const& HashedObject::getHash () const
+uint256 const& NodeObject::getHash () const
 {
     return mHash;
 }
 
-LedgerIndex HashedObject::getIndex () const
+LedgerIndex NodeObject::getIndex () const
 {
     return mLedgerIndex;
 }
 
-Blob const& HashedObject::getData () const
+Blob const& NodeObject::getData () const
 {
     return mData;
 }

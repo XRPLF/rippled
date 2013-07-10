@@ -16,7 +16,7 @@ HashedObjectStore::HashedObjectStore (int cacheSize, int cacheAge) :
         mLevelDB = false;
     else
     {
-        WriteLog (lsFATAL, HashedObject) << "Incorrect database selection";
+        WriteLog (lsFATAL, NodeObject) << "Incorrect database selection";
         assert (false);
     }
 
@@ -46,7 +46,7 @@ int HashedObjectStore::getWriteLoad ()
 }
 
 // low-level retrieve
-HashedObject::pointer HashedObjectStore::LLRetrieve (uint256 const& hash, leveldb::DB* db)
+NodeObject::pointer HashedObjectStore::LLRetrieve (uint256 const& hash, leveldb::DB* db)
 {
     std::string sData;
 
@@ -56,21 +56,21 @@ HashedObject::pointer HashedObjectStore::LLRetrieve (uint256 const& hash, leveld
     if (!st.ok ())
     {
         assert (st.IsNotFound ());
-        return HashedObject::pointer ();
+        return NodeObject::pointer ();
     }
 
     const unsigned char* bufPtr = reinterpret_cast<const unsigned char*> (&sData[0]);
     uint32 index = htonl (*reinterpret_cast<const uint32*> (bufPtr));
     int htype = bufPtr[8];
 
-    return boost::make_shared<HashedObject> (static_cast<HashedObjectType> (htype), index,
+    return boost::make_shared<NodeObject> (static_cast<NodeObjectType> (htype), index,
             bufPtr + 9, sData.size () - 9, hash);
 }
 
 // low-level write single
-void HashedObjectStore::LLWrite (boost::shared_ptr<HashedObject> ptr, leveldb::DB* db)
+void HashedObjectStore::LLWrite (boost::shared_ptr<NodeObject> ptr, leveldb::DB* db)
 {
-    HashedObject& obj = *ptr;
+    NodeObject& obj = *ptr;
     Blob rawData (9 + obj.getData ().size ());
     unsigned char* bufPtr = &rawData.front ();
 
@@ -85,19 +85,19 @@ void HashedObjectStore::LLWrite (boost::shared_ptr<HashedObject> ptr, leveldb::D
 
     if (!st.ok ())
     {
-        WriteLog (lsFATAL, HashedObject) << "Failed to store hash node";
+        WriteLog (lsFATAL, NodeObject) << "Failed to store hash node";
         assert (false);
     }
 }
 
 // low-level write set
-void HashedObjectStore::LLWrite (const std::vector< boost::shared_ptr<HashedObject> >& set, leveldb::DB* db)
+void HashedObjectStore::LLWrite (const std::vector< boost::shared_ptr<NodeObject> >& set, leveldb::DB* db)
 {
     leveldb::WriteBatch batch;
 
-    BOOST_FOREACH (const boost::shared_ptr<HashedObject>& it, set)
+    BOOST_FOREACH (const boost::shared_ptr<NodeObject>& it, set)
     {
-        const HashedObject& obj = *it;
+        const NodeObject& obj = *it;
         Blob rawData (9 + obj.getData ().size ());
         unsigned char* bufPtr = &rawData.front ();
 
@@ -114,12 +114,12 @@ void HashedObjectStore::LLWrite (const std::vector< boost::shared_ptr<HashedObje
 
     if (!st.ok ())
     {
-        WriteLog (lsFATAL, HashedObject) << "Failed to store hash node";
+        WriteLog (lsFATAL, NodeObject) << "Failed to store hash node";
         assert (false);
     }
 }
 
-bool HashedObjectStore::storeLevelDB (HashedObjectType type, uint32 index,
+bool HashedObjectStore::storeLevelDB (NodeObjectType type, uint32 index,
                                       Blob const& data, uint256 const& hash)
 {
     // return: false = already in cache, true = added to cache
@@ -133,7 +133,7 @@ bool HashedObjectStore::storeLevelDB (HashedObjectType type, uint32 index,
     assert (hash == Serializer::getSHA512Half (data));
 #endif
 
-    HashedObject::pointer object = boost::make_shared<HashedObject> (type, index, data, hash);
+    NodeObject::pointer object = boost::make_shared<NodeObject> (type, index, data, hash);
 
     if (!mCache.canonicalize (hash, object))
     {
@@ -143,7 +143,7 @@ bool HashedObjectStore::storeLevelDB (HashedObjectType type, uint32 index,
         if (!mWritePending)
         {
             mWritePending = true;
-            getApp().getJobQueue ().addJob (jtWRITE, "HashedObject::store",
+            getApp().getJobQueue ().addJob (jtWRITE, "NodeObject::store",
                                            BIND_TYPE (&HashedObjectStore::bulkWriteLevelDB, this, P_1));
         }
     }
@@ -159,7 +159,7 @@ void HashedObjectStore::bulkWriteLevelDB (Job&)
 
     while (1)
     {
-        std::vector< boost::shared_ptr<HashedObject> > set;
+        std::vector< boost::shared_ptr<NodeObject> > set;
         set.reserve (128);
 
         {
@@ -188,9 +188,9 @@ void HashedObjectStore::bulkWriteLevelDB (Job&)
     }
 }
 
-HashedObject::pointer HashedObjectStore::retrieveLevelDB (uint256 const& hash)
+NodeObject::pointer HashedObjectStore::retrieveLevelDB (uint256 const& hash)
 {
-    HashedObject::pointer obj = mCache.fetch (hash);
+    NodeObject::pointer obj = mCache.fetch (hash);
 
     if (obj || mNegativeCache.isPresent (hash) || !getApp().getHashNodeLDB ())
         return obj;
@@ -222,46 +222,46 @@ HashedObject::pointer HashedObjectStore::retrieveLevelDB (uint256 const& hash)
     if (mEphemeralDB)
         LLWrite (obj, getApp().getEphemeralLDB ());
 
-    WriteLog (lsTRACE, HashedObject) << "HOS: " << hash << " fetch: in db";
+    WriteLog (lsTRACE, NodeObject) << "HOS: " << hash << " fetch: in db";
     return obj;
 }
 
-bool HashedObjectStore::storeSQLite (HashedObjectType type, uint32 index,
+bool HashedObjectStore::storeSQLite (NodeObjectType type, uint32 index,
                                      Blob const& data, uint256 const& hash)
 {
     // return: false = already in cache, true = added to cache
     if (!getApp().getHashNodeDB ())
     {
-        WriteLog (lsTRACE, HashedObject) << "HOS: no db";
+        WriteLog (lsTRACE, NodeObject) << "HOS: no db";
         return true;
     }
 
     if (mCache.touch (hash))
     {
-        WriteLog (lsTRACE, HashedObject) << "HOS: " << hash << " store: incache";
+        WriteLog (lsTRACE, NodeObject) << "HOS: " << hash << " store: incache";
         return false;
     }
 
     assert (hash == Serializer::getSHA512Half (data));
 
-    HashedObject::pointer object = boost::make_shared<HashedObject> (type, index, data, hash);
+    NodeObject::pointer object = boost::make_shared<NodeObject> (type, index, data, hash);
 
     if (!mCache.canonicalize (hash, object))
     {
-        //      WriteLog (lsTRACE, HashedObject) << "Queuing write for " << hash;
+        //      WriteLog (lsTRACE, NodeObject) << "Queuing write for " << hash;
         boost::mutex::scoped_lock sl (mWriteMutex);
         mWriteSet.push_back (object);
 
         if (!mWritePending)
         {
             mWritePending = true;
-            getApp().getJobQueue ().addJob (jtWRITE, "HashedObject::store",
+            getApp().getJobQueue ().addJob (jtWRITE, "NodeObject::store",
                                            BIND_TYPE (&HashedObjectStore::bulkWriteSQLite, this, P_1));
         }
     }
 
     //  else
-    //      WriteLog (lsTRACE, HashedObject) << "HOS: already had " << hash;
+    //      WriteLog (lsTRACE, NodeObject) << "HOS: already had " << hash;
     mNegativeCache.del (hash);
 
     return true;
@@ -274,7 +274,7 @@ void HashedObjectStore::bulkWriteSQLite (Job&)
 
     while (1)
     {
-        std::vector< boost::shared_ptr<HashedObject> > set;
+        std::vector< boost::shared_ptr<NodeObject> > set;
         set.reserve (128);
 
         {
@@ -294,7 +294,7 @@ void HashedObjectStore::bulkWriteSQLite (Job&)
             mWriteLoad = std::max (setSize, static_cast<int> (mWriteSet.size ()));
             setSize = set.size ();
         }
-        //      WriteLog (lsTRACE, HashedObject) << "HOS: writing " << set.size();
+        //      WriteLog (lsTRACE, NodeObject) << "HOS: writing " << set.size();
 
 #ifndef NO_SQLITE3_PREPARE
 
@@ -316,7 +316,7 @@ void HashedObjectStore::bulkWriteSQLite (Job&)
             pStB.step ();
             pStB.reset ();
 
-            BOOST_FOREACH (const boost::shared_ptr<HashedObject>& it, set)
+            BOOST_FOREACH (const boost::shared_ptr<NodeObject>& it, set)
             {
                 const char* type;
 
@@ -350,7 +350,7 @@ void HashedObjectStore::bulkWriteSQLite (Job&)
 
                 if (!pSt.isDone (ret))
                 {
-                    WriteLog (lsFATAL, HashedObject) << "Error saving hashed object " << ret;
+                    WriteLog (lsFATAL, NodeObject) << "Error saving hashed object " << ret;
                     assert (false);
                 }
 
@@ -373,7 +373,7 @@ void HashedObjectStore::bulkWriteSQLite (Job&)
 
             db->executeSQL ("BEGIN TRANSACTION;");
 
-            BOOST_FOREACH (const boost::shared_ptr<HashedObject>& it, set)
+            BOOST_FOREACH (const boost::shared_ptr<NodeObject>& it, set)
             {
                 char type;
 
@@ -410,9 +410,9 @@ void HashedObjectStore::bulkWriteSQLite (Job&)
     }
 }
 
-HashedObject::pointer HashedObjectStore::retrieveSQLite (uint256 const& hash)
+NodeObject::pointer HashedObjectStore::retrieveSQLite (uint256 const& hash)
 {
-    HashedObject::pointer obj = mCache.fetch (hash);
+    NodeObject::pointer obj = mCache.fetch (hash);
 
     if (obj)
         return obj;
@@ -452,7 +452,7 @@ HashedObject::pointer HashedObjectStore::retrieveSQLite (uint256 const& hash)
         {
             pSt.reset ();
             mNegativeCache.add (hash);
-            WriteLog (lsTRACE, HashedObject) << "HOS: " << hash << " fetch: not in db";
+            WriteLog (lsTRACE, NodeObject) << "HOS: " << hash << " fetch: not in db";
             return obj;
         }
 
@@ -494,7 +494,7 @@ HashedObject::pointer HashedObjectStore::retrieveSQLite (uint256 const& hash)
     assert (Serializer::getSHA512Half (data) == hash);
 #endif
 
-    HashedObjectType htype = hotUNKNOWN;
+    NodeObjectType htype = hotUNKNOWN;
 
     switch (type[0])
     {
@@ -516,24 +516,24 @@ HashedObject::pointer HashedObjectStore::retrieveSQLite (uint256 const& hash)
 
     default:
         assert (false);
-        WriteLog (lsERROR, HashedObject) << "Invalid hashed object";
+        WriteLog (lsERROR, NodeObject) << "Invalid hashed object";
         mNegativeCache.add (hash);
         return obj;
     }
 
-    obj = boost::make_shared<HashedObject> (htype, index, data, hash);
+    obj = boost::make_shared<NodeObject> (htype, index, data, hash);
     mCache.canonicalize (hash, obj);
 
     if (mEphemeralDB)
         LLWrite (obj, getApp().getEphemeralLDB ());
 
-    WriteLog (lsTRACE, HashedObject) << "HOS: " << hash << " fetch: in db";
+    WriteLog (lsTRACE, NodeObject) << "HOS: " << hash << " fetch: in db";
     return obj;
 }
 
 int HashedObjectStore::import (const std::string& file)
 {
-    WriteLog (lsWARNING, HashedObject) << "Hashed object import from \"" << file << "\".";
+    WriteLog (lsWARNING, NodeObject) << "Hashed object import from \"" << file << "\".";
     UPTR_T<Database> importDB (new SqliteDatabase (file.c_str ()));
     importDB->connect ();
 
@@ -551,7 +551,7 @@ int HashedObjectStore::import (const std::string& file)
 
         if (hash.isZero ())
         {
-            WriteLog (lsWARNING, HashedObject) << "zero hash found in import table";
+            WriteLog (lsWARNING, NodeObject) << "zero hash found in import table";
         }
         else
         {
@@ -568,7 +568,7 @@ int HashedObjectStore::import (const std::string& file)
 
             std::string type;
             importDB->getStr ("ObjType", type);
-            HashedObjectType htype = hotUNKNOWN;
+            NodeObjectType htype = hotUNKNOWN;
 
             switch (type[0])
             {
@@ -590,7 +590,7 @@ int HashedObjectStore::import (const std::string& file)
 
             default:
                 assert (false);
-                WriteLog (lsERROR, HashedObject) << "Invalid hashed object";
+                WriteLog (lsERROR, NodeObject) << "Invalid hashed object";
             }
 
             * (bufPtr + 8) = static_cast<unsigned char> (htype);
@@ -601,7 +601,7 @@ int HashedObjectStore::import (const std::string& file)
 
             if (!st.ok ())
             {
-                WriteLog (lsFATAL, HashedObject) << "Failed to store hash node";
+                WriteLog (lsFATAL, NodeObject) << "Failed to store hash node";
                 assert (false);
             }
 
@@ -610,11 +610,11 @@ int HashedObjectStore::import (const std::string& file)
 
         if ((count % 10000) == 0)
         {
-            WriteLog (lsINFO, HashedObject) << "Import in progress: " << count;
+            WriteLog (lsINFO, NodeObject) << "Import in progress: " << count;
         }
     }
 
-    WriteLog (lsWARNING, HashedObject) << "Imported " << count << " nodes";
+    WriteLog (lsWARNING, NodeObject) << "Imported " << count << " nodes";
     return count;
 }
 

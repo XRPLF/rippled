@@ -16,7 +16,7 @@ std::string HSBESQLite::getDataBaseName()
     return mName;
 }
 
-bool HSBESQLite::store(HashedObject::ref object)
+bool HSBESQLite::store(NodeObject::ref object)
 {
     ScopedLock sl(mDb->getDBLock());
     static SqliteStatement pSt(mDb->getDB()->getSqliteDB(),
@@ -28,7 +28,7 @@ bool HSBESQLite::store(HashedObject::ref object)
     return true;
 }
 
-bool HSBESQLite::bulkStore(const std::vector< HashedObject::pointer >& objects)
+bool HSBESQLite::bulkStore(const std::vector< NodeObject::pointer >& objects)
 {
     ScopedLock sl(mDb->getDBLock());
     static SqliteStatement pStB(mDb->getDB()->getSqliteDB(), "BEGIN TRANSACTION;");
@@ -40,7 +40,7 @@ bool HSBESQLite::bulkStore(const std::vector< HashedObject::pointer >& objects)
     pStB.step();
     pStB.reset();
 
-    BOOST_FOREACH(HashedObject::ref object, objects)
+    BOOST_FOREACH(NodeObject::ref object, objects)
     {
         bind(pSt, object);
         pSt.step();
@@ -54,9 +54,9 @@ bool HSBESQLite::bulkStore(const std::vector< HashedObject::pointer >& objects)
 
 }
 
-HashedObject::pointer HSBESQLite::retrieve(uint256 const& hash)
+NodeObject::pointer HSBESQLite::retrieve(uint256 const& hash)
 {
-    HashedObject::pointer ret;
+    NodeObject::pointer ret;
 
     {
         ScopedLock sl(mDb->getDBLock());
@@ -66,7 +66,7 @@ HashedObject::pointer HSBESQLite::retrieve(uint256 const& hash)
         pSt.bind(1, hash.GetHex());
 
         if (pSt.isRow(pSt.step()))
-            ret = boost::make_shared<HashedObject>(getType(pSt.peekString(0)), pSt.getUInt32(1), pSt.getBlob(2), hash);
+            ret = boost::make_shared<NodeObject>(getType(pSt.peekString(0)), pSt.getUInt32(1), pSt.getBlob(2), hash);
 
         pSt.reset();
     }
@@ -74,7 +74,7 @@ HashedObject::pointer HSBESQLite::retrieve(uint256 const& hash)
     return ret;
 }
 
-void HSBESQLite::visitAll(FUNCTION_TYPE<void (HashedObject::pointer)> func)
+void HSBESQLite::visitAll(FUNCTION_TYPE<void (NodeObject::pointer)> func)
 {
     uint256 hash;
 
@@ -84,13 +84,13 @@ void HSBESQLite::visitAll(FUNCTION_TYPE<void (HashedObject::pointer)> func)
     while (pSt.isRow(pSt.step()))
     {
         hash.SetHexExact(pSt.getString(3));
-        func(boost::make_shared<HashedObject>(getType(pSt.peekString(0)), pSt.getUInt32(1), pSt.getBlob(2), hash));
+        func(boost::make_shared<NodeObject>(getType(pSt.peekString(0)), pSt.getUInt32(1), pSt.getBlob(2), hash));
     }
 
     pSt.reset();
 }
 
-void HSBESQLite::bind(SqliteStatement& statement, HashedObject::ref object)
+void HSBESQLite::bind(SqliteStatement& statement, NodeObject::ref object)
 {
     char const* type;
     switch (object->getType())
@@ -108,9 +108,9 @@ void HSBESQLite::bind(SqliteStatement& statement, HashedObject::ref object)
     statement.bindStatic(4, object->getData());
 }
 
-HashedObjectType HSBESQLite::getType(std::string const& type)
+NodeObjectType HSBESQLite::getType(std::string const& type)
 {
-    HashedObjectType htype = hotUNKNOWN;
+    NodeObjectType htype = hotUNKNOWN;
     if (!type.empty())
     {
         switch (type[0])

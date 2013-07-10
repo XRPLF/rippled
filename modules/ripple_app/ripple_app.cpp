@@ -94,7 +94,7 @@ namespace ripple
 #include "src/cpp/ripple/ripple_SqliteDatabase.h"
 #include "src/cpp/ripple/ripple_DBInit.h"
 
-#include "node/ripple_HashedObject.h"
+#include "node/ripple_NodeObject.h"
 #include "node/ripple_HashedObjectStore.h"
 #include "node/ripple_HashStoreBE.h"
 #include "node/ripple_HSBELevelDB.h"
@@ -235,7 +235,7 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 1
 
 #include "basics/ripple_RPCServerHandler.cpp"
-#include "node/ripple_HashedObject.cpp"
+#include "node/ripple_NodeObject.cpp"
 #include "node/ripple_HashedObjectStore.cpp"
 #include "node/ripple_HSBELevelDB.cpp"
 #include "node/ripple_HSBESqlite.cpp"

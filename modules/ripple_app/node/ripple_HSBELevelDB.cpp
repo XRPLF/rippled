@@ -23,7 +23,7 @@ std::string HSBELevelDB::getDataBaseName()
     return mName;
 }
 
-bool HSBELevelDB::store(HashedObject::ref obj)
+bool HSBELevelDB::store(NodeObject::ref obj)
 {
     Blob blob (toBlob (obj));
     return mDB->Put (leveldb::WriteOptions (),
@@ -31,11 +31,11 @@ bool HSBELevelDB::store(HashedObject::ref obj)
         leveldb::Slice (reinterpret_cast<char const*>(&blob.front ()), blob.size ())).ok ();
 }
 
-bool HSBELevelDB::bulkStore(const std::vector< HashedObject::pointer >& objs)
+bool HSBELevelDB::bulkStore(const std::vector< NodeObject::pointer >& objs)
 {
     leveldb::WriteBatch batch;
 
-    BOOST_FOREACH (HashedObject::ref obj, objs)
+    BOOST_FOREACH (NodeObject::ref obj, objs)
     {
         Blob blob (toBlob (obj));
         batch.Put (
@@ -45,18 +45,18 @@ bool HSBELevelDB::bulkStore(const std::vector< HashedObject::pointer >& objs)
     return mDB->Write (leveldb::WriteOptions (), &batch).ok ();
 }
 
-HashedObject::pointer HSBELevelDB::retrieve(uint256 const& hash)
+NodeObject::pointer HSBELevelDB::retrieve(uint256 const& hash)
 {
     std::string sData;
     if (!mDB->Get (leveldb::ReadOptions (),
         leveldb::Slice (reinterpret_cast<char const*>(hash.begin ()), 256 / 8), &sData).ok ())
     {
-        return HashedObject::pointer();
+        return NodeObject::pointer();
     }
     return fromBinary(hash, &sData[0], sData.size ());
 }
 
-void HSBELevelDB::visitAll(FUNCTION_TYPE<void (HashedObject::pointer)> func)
+void HSBELevelDB::visitAll(FUNCTION_TYPE<void (NodeObject::pointer)> func)
 {
     leveldb::Iterator* it = mDB->NewIterator (leveldb::ReadOptions ());
     for (it->SeekToFirst (); it->Valid (); it->Next ())
@@ -70,7 +70,7 @@ void HSBELevelDB::visitAll(FUNCTION_TYPE<void (HashedObject::pointer)> func)
     }
 }
 
-Blob HSBELevelDB::toBlob(HashedObject::ref obj)
+Blob HSBELevelDB::toBlob(NodeObject::ref obj)
 {
     Blob rawData (9 + obj->getData ().size ());
     unsigned char* bufPtr = &rawData.front();
@@ -83,7 +83,7 @@ Blob HSBELevelDB::toBlob(HashedObject::ref obj)
     return rawData;
 }
 
-HashedObject::pointer HSBELevelDB::fromBinary(uint256 const& hash,
+NodeObject::pointer HSBELevelDB::fromBinary(uint256 const& hash,
     char const* data, int size)
 {
     if (size < 9)
@@ -92,6 +92,6 @@ HashedObject::pointer HSBELevelDB::fromBinary(uint256 const& hash,
     uint32 index = htonl (*reinterpret_cast<const uint32*> (data));
     int htype = data[8];
 
-    return boost::make_shared<HashedObject> (static_cast<HashedObjectType> (htype), index,
+    return boost::make_shared<NodeObject> (static_cast<NodeObjectType> (htype), index,
         data + 9, size - 9, hash);
 }

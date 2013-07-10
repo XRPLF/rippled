@@ -9,7 +9,7 @@
 
 /** The types of hashed objects.
 */
-enum HashedObjectType
+enum NodeObjectType
 {
     hotUNKNOWN = 0,
     hotLEDGER = 1,
@@ -32,20 +32,20 @@ enum HashedObjectType
 // VFALCO TODO consider making the instance a private member of SHAMap
 //         since its the primary user.
 //
-class HashedObject
-    : public CountedObject <HashedObject>
+class NodeObject
+    : public CountedObject <NodeObject>
 {
 public:
-    static char const* getCountedObjectName () { return "HashedObject"; }
+    static char const* getCountedObjectName () { return "NodeObject"; }
 
-    typedef boost::shared_ptr <HashedObject> pointer;
+    typedef boost::shared_ptr <NodeObject> pointer;
     typedef pointer const& ref;
 
     /** Create from a vector of data.
 
         @note A copy of the data is created.
     */
-    HashedObject (HashedObjectType type,
+    NodeObject (NodeObjectType type,
                   LedgerIndex ledgerIndex,
                   Blob const & binaryDataToCopy,
                   uint256 const & hash);
@@ -54,7 +54,7 @@ public:
 
         @note A copy of the data is created.
     */
-    HashedObject (HashedObjectType type,
+    NodeObject (NodeObjectType type,
                   LedgerIndex ledgerIndex,
                   void const * bufferToCopy,
                   int bytesInBuffer,
@@ -62,7 +62,7 @@ public:
 
     /** Retrieve the type of this object.
     */
-    HashedObjectType getType () const;
+    NodeObjectType getType () const;
 
     /** Retrieve the hash metadata.
     */
@@ -78,7 +78,7 @@ public:
     Blob const& getData () const;
 
 private:
-    HashedObjectType const mType;
+    NodeObjectType const mType;
     uint256 const mHash;
     LedgerIndex const mLedgerIndex;
     Blob const mData;

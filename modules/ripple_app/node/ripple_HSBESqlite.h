@@ -14,19 +14,19 @@ public:
 
     std::string getDataBaseName();
 
-    bool store(HashedObject::ref);
-    bool bulkStore(const std::vector< HashedObject::pointer >&);
+    bool store(NodeObject::ref);
+    bool bulkStore(const std::vector< NodeObject::pointer >&);
 
-    HashedObject::pointer retrieve(uint256 const& hash);
+    NodeObject::pointer retrieve(uint256 const& hash);
 
-    void visitAll(FUNCTION_TYPE<void (HashedObject::pointer)>);
+    void visitAll(FUNCTION_TYPE<void (NodeObject::pointer)>);
 
 private:
     std::string      mName;
     DatabaseCon*     mDb;
 
-    void bind(SqliteStatement& statement, HashedObject::ref object);
-    HashedObjectType getType(std::string const&);
+    void bind(SqliteStatement& statement, NodeObject::ref object);
+    NodeObjectType getType(std::string const&);
 };
 
 #endif

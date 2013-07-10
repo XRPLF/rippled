@@ -25,7 +25,7 @@ public:
         return mCache.getHitRate ();
     }
 
-    bool store (HashedObjectType type, uint32 index, Blob const& data,
+    bool store (NodeObjectType type, uint32 index, Blob const& data,
                 uint256 const& hash)
     {
         if (mLevelDB)
@@ -34,7 +34,7 @@ public:
         return storeSQLite (type, index, data, hash);
     }
 
-    HashedObject::pointer retrieve (uint256 const& hash)
+    NodeObject::pointer retrieve (uint256 const& hash)
     {
         if (mLevelDB)
             return retrieveLevelDB (hash);
@@ -42,14 +42,14 @@ public:
         return retrieveSQLite (hash);
     }
 
-    bool storeSQLite (HashedObjectType type, uint32 index, Blob const& data,
+    bool storeSQLite (NodeObjectType type, uint32 index, Blob const& data,
                       uint256 const& hash);
-    HashedObject::pointer retrieveSQLite (uint256 const& hash);
+    NodeObject::pointer retrieveSQLite (uint256 const& hash);
     void bulkWriteSQLite (Job&);
 
-    bool storeLevelDB (HashedObjectType type, uint32 index, Blob const& data,
+    bool storeLevelDB (NodeObjectType type, uint32 index, Blob const& data,
                        uint256 const& hash);
-    HashedObject::pointer retrieveLevelDB (uint256 const& hash);
+    NodeObject::pointer retrieveLevelDB (uint256 const& hash);
     void bulkWriteLevelDB (Job&);
 
 
@@ -65,12 +65,12 @@ public:
     int import (const std::string& fileName);
 
 private:
-    static HashedObject::pointer LLRetrieve (uint256 const& hash, leveldb::DB* db);
-    static void LLWrite (boost::shared_ptr<HashedObject> ptr, leveldb::DB* db);
-    static void LLWrite (const std::vector< boost::shared_ptr<HashedObject> >& set, leveldb::DB* db);
+    static NodeObject::pointer LLRetrieve (uint256 const& hash, leveldb::DB* db);
+    static void LLWrite (boost::shared_ptr<NodeObject> ptr, leveldb::DB* db);
+    static void LLWrite (const std::vector< boost::shared_ptr<NodeObject> >& set, leveldb::DB* db);
 
 private:
-    TaggedCache<uint256, HashedObject, UptimeTimerAdapter>  mCache;
+    TaggedCache<uint256, NodeObject, UptimeTimerAdapter>  mCache;
     KeyCache <uint256, UptimeTimerAdapter> mNegativeCache;
 
     boost::mutex                mWriteMutex;
@@ -78,7 +78,7 @@ private:
     int                         mWriteGeneration;
     int                         mWriteLoad;
 
-    std::vector< boost::shared_ptr<HashedObject> > mWriteSet;
+    std::vector< boost::shared_ptr<NodeObject> > mWriteSet;
     bool mWritePending;
     bool mLevelDB;
     bool mEphemeralDB;

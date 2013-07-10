@@ -141,7 +141,7 @@ public:
     bool compare (SHAMap::ref otherMap, Delta & differences, int maxCount);
 
     int armDirty ();
-    static int flushDirty (DirtyMap & dirtyMap, int maxNodes, HashedObjectType t, uint32 seq);
+    static int flushDirty (DirtyMap & dirtyMap, int maxNodes, NodeObjectType t, uint32 seq);
     boost::shared_ptr<DirtyMap> disarmDirty ();
 
     void setSeq (uint32 seq)

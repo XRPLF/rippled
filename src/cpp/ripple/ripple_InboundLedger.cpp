@@ -49,7 +49,7 @@ bool InboundLedger::tryLocal ()
     if (!mHaveBase)
     {
         // Nothing we can do without the ledger base
-        HashedObject::pointer node = getApp().getHashedObjectStore ().retrieve (mHash);
+        NodeObject::pointer node = getApp().getHashedObjectStore ().retrieve (mHash);
 
         if (!node)
         {

@@ -824,7 +824,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternalNT (const SHAMapNode& id, uint2
     if (!getApp().running ())
         return ret;
 
-    HashedObject::pointer obj (getApp().getHashedObjectStore ().retrieve (hash));
+    NodeObject::pointer obj (getApp().getHashedObjectStore ().retrieve (hash));
 
     if (!obj)
     {
@@ -913,7 +913,7 @@ int SHAMap::armDirty ()
     return ++mSeq;
 }
 
-int SHAMap::flushDirty (DirtyMap& map, int maxNodes, HashedObjectType t, uint32 seq)
+int SHAMap::flushDirty (DirtyMap& map, int maxNodes, NodeObjectType t, uint32 seq)
 {
     int flushed = 0;
     Serializer s;
