@@ -1593,9 +1593,6 @@
     <ClInclude Include="..\..\modules\ripple_basio\boost\ripple_SslContext.h">
       <Filter>[1] Ripple\ripple_basio\boost</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\node\ripple_HashStoreBE.h">
-      <Filter>[1] Ripple\ripple_app\node</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_HSBELevelDB.h">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>

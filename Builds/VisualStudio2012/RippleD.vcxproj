@@ -1344,7 +1344,6 @@
     <ClInclude Include="..\..\modules\ripple_app\basics\ripple_Version.h" />
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_NodeObject.h" />
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_NodeStore.h" />
-    <ClInclude Include="..\..\modules\ripple_app\node\ripple_HashStoreBE.h" />
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_HSBELevelDB.h" />
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_HSBESqlite.h" />
     <ClInclude Include="..\..\modules\ripple_app\ripple_app.h" />

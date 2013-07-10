@@ -96,7 +96,6 @@ namespace ripple
 
 #include "node/ripple_NodeObject.h"
 #include "node/ripple_NodeStore.h"
-#include "node/ripple_HashStoreBE.h"
 #include "node/ripple_HSBELevelDB.h"
 #include "node/ripple_HSBESqlite.h"
 
