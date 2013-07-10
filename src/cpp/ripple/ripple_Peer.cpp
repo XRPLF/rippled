@@ -1420,7 +1420,18 @@ void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& p
 
 void PeerImp::recvCluster (protocol::TMCluster& packet)
 {
-    // WRITEME
+    if (!mCluster)
+    {
+        applyLoadCharge(LT_UnwantedData);
+        return;
+    }
+    for (int i = 0; i < packet.clusternodes().size(); ++i)
+    {
+        protocol::TMClusterNode const& node = packet.clusternodes(i);
+
+        // Extract RippleAddress and build ClusterNodeStatus
+        // WRITEME
+    }
 }
 
 void PeerImp::recvGetValidation (protocol::TMGetValidations& packet)

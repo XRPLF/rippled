@@ -45,6 +45,8 @@ public:
     virtual bool nodeInUNL (const RippleAddress& naNodePublic) = 0;
     virtual bool nodeInCluster (const RippleAddress& naNodePublic) = 0;
     virtual bool nodeInCluster (const RippleAddress& naNodePublic, std::string& name) = 0;
+    virtual void nodeUpdate (const RippleAddress& naNodePublic, ClusterNodeStatus const& cnsStatus) = 0;
+    virtual std::map<RippleAddress, ClusterNodeStatus> getClusterStatus () = 0;
 
     virtual void nodeBootstrap () = 0;
     virtual bool nodeLoad (boost::filesystem::path pConfig) = 0;

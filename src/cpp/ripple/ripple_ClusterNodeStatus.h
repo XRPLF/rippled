@@ -8,6 +8,9 @@ class ClusterNodeStatus
 {
 public:
 
+    ClusterNodeStatus() : mSeq(0), mLoadFee(0), mReportTime(0)
+    { ; }
+
     ClusterNodeStatus(std::string const& name) : mNodeName(name), mSeq(0), mLoadFee(0), mReportTime(0)
     { ; }
 
@@ -30,8 +33,8 @@ public:
 
     uint32 getLoadFee()
     {
-    	return mLoadFee;
-    }  
+        return mLoadFee;
+    }
 
     uint32 getReportTime()
     {
