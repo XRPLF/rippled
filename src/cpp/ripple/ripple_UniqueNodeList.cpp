@@ -322,22 +322,22 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void nodeUpdate (const RippleAddress& naNodePublic, ClusterNodeStatus const& cnsStatus)
+    bool nodeUpdate (const RippleAddress& naNodePublic, ClusterNodeStatus const& cnsStatus)
     {
-    	boost::recursive_mutex::scoped_lock sl (mUNLLock);
-    	m_clusterNodes[naNodePublic].update(cnsStatus);
+        boost::recursive_mutex::scoped_lock sl (mUNLLock);
+        return m_clusterNodes[naNodePublic].update(cnsStatus);
     }
 
     //--------------------------------------------------------------------------
 
     std::map<RippleAddress, ClusterNodeStatus> getClusterStatus ()
     {
-    	std::map<RippleAddress, ClusterNodeStatus> ret;
-    	{
-	    boost::recursive_mutex::scoped_lock sl (mUNLLock);
-	    ret = m_clusterNodes;
-    	}
-    	return ret;
+        std::map<RippleAddress, ClusterNodeStatus> ret;
+        {
+            boost::recursive_mutex::scoped_lock sl (mUNLLock);
+            ret = m_clusterNodes;
+        }
+        return ret;
     }
 
     //--------------------------------------------------------------------------

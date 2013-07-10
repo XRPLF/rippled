@@ -64,6 +64,8 @@ public:
 
     virtual bool isConnected () const = 0;
 
+    virtual bool isInCluster () const = 0;
+
     virtual bool isInbound () const = 0;
 
     virtual bool isOutbound () const = 0;

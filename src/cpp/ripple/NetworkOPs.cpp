@@ -24,6 +24,7 @@ NetworkOPs::NetworkOPs (LedgerMaster* pLedgerMaster)
     , mValidating (false)
     , mFeatureBlocked (false)
     , m_netTimer (this)
+    , m_clusterTimer (this)
     , mLedgerMaster (pLedgerMaster)
     , mCloseTimeOffset (0)
     , mLastCloseProposers (0)
@@ -39,8 +40,14 @@ NetworkOPs::NetworkOPs (LedgerMaster* pLedgerMaster)
 {
 }
 
-void NetworkOPs::onDeadlineTimer (DeadlineTimer&)
+void NetworkOPs::onDeadlineTimer (DeadlineTimer& timer)
 {
+    if (timer == m_clusterTimer)
+    {
+        doClusterReport();
+        return;
+    }
+
     ScopedLock sl (getApp().getMasterLock ());
 
     getApp().getLoadManager ().resetDeadlockDetector ();
@@ -628,6 +635,7 @@ void NetworkOPs::setFeatureBlocked ()
 void NetworkOPs::setStateTimer ()
 {
     m_netTimer.setRecurringExpiration (LEDGER_GRANULARITY / 1000.0);
+    m_clusterTimer.setRecurringExpiration (10.0);
 }
 
 class ValidationCount
@@ -2338,6 +2346,33 @@ void NetworkOPs::missingNodeInLedger (uint32 seq)
 
     if (hash.isNonZero ())
         getApp().getInboundLedgers ().findCreate (hash, seq);
+}
+
+void NetworkOPs::doClusterReport ()
+{
+    ClusterNodeStatus us("", getApp().getFeeTrack().getLocalFee(), getNetworkTimeNC());
+    if (!getApp().getUNL().nodeUpdate(getApp().getLocalCredentials().getNodePublic(), us))
+    {
+        WriteLog (lsDEBUG, NetworkOPs) << "To soon to send cluster update";
+        return;
+    }
+
+    std::map<RippleAddress, ClusterNodeStatus> nodes = getApp().getUNL().getClusterStatus();
+
+    protocol::TMCluster cluster;
+    for (std::map<RippleAddress, ClusterNodeStatus>::iterator it = nodes.begin(),
+            end = nodes.end(); it != end; ++it)
+    {
+        protocol::TMClusterNode& node = *cluster.add_clusternodes();
+        node.set_publickey(it->first.humanNodePublic());
+        node.set_reporttime(it->second.getReportTime());
+        node.set_nodeload(it->second.getLoadFee());
+        if (!it->second.getName().empty())
+	    node.set_nodename(it->second.getName());
+    }
+
+    PackedMessage::pointer message = boost::make_shared<PackedMessage>(cluster, protocol::mtCLUSTER);
+    getApp().getPeers().relayMessageCluster (NULL, message);
 }
 
 // vim:ts=4

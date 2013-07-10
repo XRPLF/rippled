@@ -80,7 +80,7 @@ message TMHello
 // The status of a node in our cluster
 message TMClusterNode
 {
-    required bytes           publicKey       = 1;
+    required string          publicKey       = 1;
     required uint32          reportTime      = 2;
     required uint32          nodeLoad        = 3;
     optional string          nodeName        = 4;

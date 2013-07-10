@@ -21,6 +21,7 @@ public:
 
     // Send message to network.
     virtual int relayMessage (Peer* fromPeer, const PackedMessage::pointer& msg) = 0;
+    virtual int relayMessageCluster (Peer* fromPeer, const PackedMessage::pointer& msg) = 0;
     virtual void relayMessageTo (const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg) = 0;
     virtual void relayMessageBut (const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg) = 0;
 

@@ -29,6 +29,7 @@ public:
 
     // Send message to network.
     int relayMessage (Peer* fromPeer, const PackedMessage::pointer& msg);
+    int relayMessageCluster (Peer* fromPeer, const PackedMessage::pointer& msg);
     void relayMessageTo (const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg);
     void relayMessageBut (const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg);
 
@@ -356,6 +357,22 @@ int Peers::relayMessage (Peer* fromPeer, const PackedMessage::pointer& msg)
     BOOST_FOREACH (Peer::ref peer, peerVector)
     {
         if ((!fromPeer || ! (peer.get () == fromPeer)) && peer->isConnected ())
+        {
+            ++sentTo;
+            peer->sendPacket (msg, false);
+        }
+    }
+
+    return sentTo;
+}
+
+int Peers::relayMessageCluster (Peer* fromPeer, const PackedMessage::pointer& msg)
+{
+    int sentTo = 0;
+    std::vector<Peer::pointer> peerVector = getPeerVector ();
+    BOOST_FOREACH (Peer::ref peer, peerVector)
+    {
+        if ((!fromPeer || ! (peer.get () == fromPeer)) && peer->isConnected () && peer->isInCluster ())
         {
             ++sentTo;
             peer->sendPacket (msg, false);

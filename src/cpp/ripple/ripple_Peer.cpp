@@ -70,6 +70,10 @@ public:
     {
         return mHelloed && !mDetaching;
     }
+    bool isInCluster () const
+    {
+        return mCluster;
+    }
     bool isInbound () const
     {
         return mInbound;
@@ -1425,6 +1429,7 @@ void PeerImp::recvCluster (protocol::TMCluster& packet)
         applyLoadCharge(LT_UnwantedData);
         return;
     }
+
     for (int i = 0; i < packet.clusternodes().size(); ++i)
     {
         protocol::TMClusterNode const& node = packet.clusternodes(i);

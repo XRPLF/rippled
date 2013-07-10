@@ -308,6 +308,8 @@ public:
     uint256 getConsensusLCL ();
     void reportFeeChange ();
 
+    void doClusterReport ();
+
     //Helper function to generate SQL query to get transactions
     std::string transactionsSQL (std::string selection, const RippleAddress& account,
                                  int32 minLedger, int32 maxLedger, bool descending, uint32 offset, int limit,
@@ -384,7 +386,8 @@ private:
     bool                                mProposing, mValidating;
     bool                                mFeatureBlocked;
     boost::posix_time::ptime            mConnectTime;
-    DeadlineTimer m_netTimer;
+    DeadlineTimer                       m_netTimer;
+    DeadlineTimer                       m_clusterTimer;
     boost::shared_ptr<LedgerConsensus>  mConsensus;
     boost::unordered_map < uint160,
           std::list<LedgerProposal::pointer> > mStoredProposals;

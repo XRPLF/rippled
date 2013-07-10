@@ -35,15 +35,15 @@ public:
         return mReportTime;
     }
 
-    void update(ClusterNodeStatus const& status)
+    bool update(ClusterNodeStatus const& status)
     {
-        if (status.mReportTime > mReportTime)
-        {
-            mLoadFee = status.mLoadFee;
-            mReportTime = status.mReportTime;
-            if (mNodeName.empty() || !status.mNodeName.empty())
-                mNodeName = status.mNodeName;
-        }
+        if (status.mReportTime <= mReportTime)
+            return false;
+        mLoadFee = status.mLoadFee;
+        mReportTime = status.mReportTime;
+        if (mNodeName.empty() || !status.mNodeName.empty())
+            mNodeName = status.mNodeName;
+        return true;
     }
 
 private:
