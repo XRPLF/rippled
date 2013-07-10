@@ -97,7 +97,7 @@ public:
                             //
                             // Note that this happens while the lock is held.
                             //
-                            iter->m_listener->onDeadlineTimer ();
+                            iter->m_listener->onDeadlineTimer (*iter);
 
                             // Remove it from the list.
                             m_items.erase (iter);

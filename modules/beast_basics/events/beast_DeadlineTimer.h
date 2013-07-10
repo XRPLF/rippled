@@ -35,7 +35,7 @@ public:
     class Listener
     {
     public:
-        virtual void onDeadlineTimer () { }
+        virtual void onDeadlineTimer (DeadlineTimer&) { }
     };
 
 public:
@@ -63,6 +63,22 @@ public:
     /** Reset the timer so that no more notifications are sent.
     */
     void reset ();
+
+    /** Equality comparison.
+
+        Timers are equal if they have the same address.
+    */
+    inline bool operator== (DeadlineTimer const& other) const
+    {
+        return this == &other;
+    }
+
+    /** Inequality comparison.
+    */
+    inline bool operator!= (DeadlineTimer const& other) const
+    {
+        return this != &other;
+    }
 
 private:
     class Manager;
