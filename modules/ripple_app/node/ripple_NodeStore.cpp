@@ -219,3 +219,29 @@ NodeObject::pointer NodeStore::retrieve (uint256 const& hash)
     WriteLog (lsTRACE, NodeObject) << "HOS: " << hash << " fetch: in db";
     return obj;
 }
+
+static void importFunc(HashStoreBE::pointer dest, std::vector<HashedObject::pointer>& objects,
+    HashedObject::pointer object)
+{
+    if (objects.size() >= 128)
+    {
+        dest->bulkStore(objects);
+        objects.clear();
+        objects.reserve(128);
+    }
+    objects.push_back(object);
+}
+
+int HashedObjectStore::import (HashStoreBE::ref src, HashStoreBE::ref dest)
+{
+    WriteLog (lsWARNING, HashedObject) << "Node import from \""
+        << src->getBackEndName() << ":" << src->getDataBaseName()
+        << "\" to \"" << dest->getBackEndName() << ":" << dest->getDataBaseName() << "\".";
+
+    std::vector<HashedObject::pointer> objects;
+    objects.reserve(128);
+    src->visitAll(BIND_TYPE(&importFunc, dest, boost::ref(objects), P_1));
+
+    if (!objects.empty())
+        dest->bulkStore(objects);
+}
