@@ -684,6 +684,7 @@ void LedgerMaster::tryPublish ()
     }
     else if (mValidLedger->getLedgerSeq () > mPubLedger->getLedgerSeq ())
     {
+        int acq = 0;
         for (uint32 seq = mPubLedger->getLedgerSeq () + 1; seq <= mValidLedger->getLedgerSeq (); ++seq)
         {
             WriteLog (lsTRACE, LedgerMaster) << "Trying to publish ledger " << seq;
@@ -692,7 +693,7 @@ void LedgerMaster::tryPublish ()
             uint256 hash;
 
             if (seq == mValidLedger->getLedgerSeq ())
-            {
+            { // We need to publish the ledger we just fully validated
                 ledger = mValidLedger;
                 hash = ledger->getHash ();
             }
@@ -710,35 +711,28 @@ void LedgerMaster::tryPublish ()
                 ledger = mLedgerHistory.getLedgerByHash (hash);
             }
 
-            if (ledger)
-            {
-                mPubLedger = ledger;
-                mPubLedgers.push_back (ledger);
-            }
-            else
-            {
-                if (getApp().getInboundLedgers ().isFailure (hash))
+            if (!ledger && (++acq < 4))
+            { // We can try to acquire the ledger we need
+	        InboundLedger::pointer acq = getApp().getInboundLedgers ().findCreate (hash, seq);
+
+                if (!acq->isDone ())
                 {
-                    WriteLog (lsWARNING, LedgerMaster) << "Unable to acquire a recent validated ledger";
+                    acq->setAccept ();
+                }
+                else if (acq->isComplete () && !acq->isFailed ())
+                {
+                    ledger = acq->getLedger();
                 }
                 else
-                {
-                    InboundLedger::pointer acq = getApp().getInboundLedgers ().findCreate (hash, seq);
-
-                    if (!acq->isDone ())
-                    {
-                        acq->setAccept ();
-                        break;
-                    }
-                    else if (acq->isComplete () && !acq->isFailed ())
-                    {
-                        mPubLedger = acq->getLedger ();
-                        mPubLedgers.push_back (mPubLedger);
-                    }
-                    else
-                        WriteLog (lsWARNING, LedgerMaster) << "Failed to acquire a published ledger";
-                }
+                    WriteLog (lsWARNING, LedgerMaster) << "Failed to acquire a published ledger";
             }
+
+            if (ledger && (ledger->getLedgerSeq() == (mPubLedger->getLedgerSeq() + 1)))
+            { // We acquired the next ledger we need to publish
+	        mPubLedger = ledger;
+                mPubLedgers.push_back (mPubLedger);
+            }
+
         }
     }
 
