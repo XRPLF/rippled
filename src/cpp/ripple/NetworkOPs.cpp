@@ -39,7 +39,7 @@ NetworkOPs::NetworkOPs (LedgerMaster* pLedgerMaster)
 {
 }
 
-void NetworkOPs::onDeadlineTimer ()
+void NetworkOPs::onDeadlineTimer (DeadlineTimer&)
 {
     ScopedLock sl (getApp().getMasterLock ());
 

@@ -359,7 +359,7 @@ public:
     InfoSub::pointer    addRpcSub (const std::string& strUrl, InfoSub::ref rspEntry);
 
 private:
-    void onDeadlineTimer ();
+    void onDeadlineTimer (DeadlineTimer&);
 
     void setMode (OperatingMode);
 
