@@ -6,8 +6,9 @@
 
 Array <NodeStore::BackendFactory*> NodeStore::s_factories;
 
-NodeStore::NodeStore (String parameters, int cacheSize, int cacheAge)
-    : mCache ("NodeStore", cacheSize, cacheAge)
+NodeStore::NodeStore (String backendParameters, String fastBackendParameters, int cacheSize, int cacheAge)
+    : m_backend (createBackend (backendParameters))
+    , mCache ("NodeStore", cacheSize, cacheAge)
     , mNegativeCache ("HashedObjectNegativeCache", 0, 120)
     , mWriteGeneration (0)
     , mWriteLoad (0)
@@ -15,36 +16,8 @@ NodeStore::NodeStore (String parameters, int cacheSize, int cacheAge)
     , mLevelDB (false)
     , mEphemeralDB (false)
 {
-    StringPairArray keyValues = parseKeyValueParameters (parameters, '|');
-
-    String const& type = keyValues ["type"];
-
-    if (type.isNotEmpty ())
-    {
-        BackendFactory* factory = nullptr;
-
-        for (int i = 0; i < s_factories.size (); ++i)
-        {
-            if (s_factories [i]->getName () == type)
-            {
-                factory = s_factories [i];
-                break;
-            }
-        }
-
-        if (factory != nullptr)
-        {
-            m_backend = factory->createInstance (keyValues);
-        }
-        else
-        {
-            throw std::runtime_error ("unkown backend type");
-        }
-    }
-    else
-    {
-        throw std::runtime_error ("missing backend type");
-    }
+    if (fastBackendParameters.isNotEmpty ())
+        m_fastBackend = createBackend (fastBackendParameters);
 
     mWriteSet.reserve (128);
 
@@ -177,8 +150,8 @@ void NodeStore::bulkWrite (Job&)
 
         m_backend->bulkStore (set);
 
-        if (m_backendFast)
-            m_backendFast->bulkStore (set);
+        if (m_fastBackend)
+            m_fastBackend->bulkStore (set);
     }
 }
 
@@ -189,9 +162,9 @@ NodeObject::pointer NodeStore::retrieve (uint256 const& hash)
     if (obj || mNegativeCache.isPresent (hash) || !getApp().getHashNodeLDB ())
         return obj;
 
-    if (m_backendFast)
+    if (m_fastBackend)
     {
-        obj = m_backendFast->retrieve (hash);
+        obj = m_fastBackend->retrieve (hash);
 
         if (obj)
         {
@@ -213,35 +186,82 @@ NodeObject::pointer NodeStore::retrieve (uint256 const& hash)
 
     mCache.canonicalize (hash, obj);
 
-    if (m_backendFast)
-        m_backendFast->store(obj);
+    if (m_fastBackend)
+        m_fastBackend->store(obj);
 
     WriteLog (lsTRACE, NodeObject) << "HOS: " << hash << " fetch: in db";
     return obj;
 }
 
-static void importFunc(HashStoreBE::pointer dest, std::vector<HashedObject::pointer>& objects,
-    HashedObject::pointer object)
+void NodeStore::importVisitor (
+    std::vector <NodeObject::pointer>& objects,
+    NodeObject::pointer object)
 {
     if (objects.size() >= 128)
     {
-        dest->bulkStore(objects);
-        objects.clear();
-        objects.reserve(128);
+        m_backend->bulkStore (objects);
+
+        objects.clear ();
+        objects.reserve (128);
     }
-    objects.push_back(object);
+
+    objects.push_back (object);
 }
 
-int HashedObjectStore::import (HashStoreBE::ref src, HashStoreBE::ref dest)
+int NodeStore::import (String sourceBackendParameters)
 {
-    WriteLog (lsWARNING, HashedObject) << "Node import from \""
-        << src->getBackEndName() << ":" << src->getDataBaseName()
-        << "\" to \"" << dest->getBackEndName() << ":" << dest->getDataBaseName() << "\".";
+    ScopedPointer <Backend> srcBackend = createBackend (sourceBackendParameters);
 
-    std::vector<HashedObject::pointer> objects;
-    objects.reserve(128);
-    src->visitAll(BIND_TYPE(&importFunc, dest, boost::ref(objects), P_1));
+    WriteLog (lsWARNING, NodeObject) <<
+        "Node import from '" << srcBackend->getDataBaseName() << "' to '"
+                             << m_backend->getDataBaseName() << "'.";
 
-    if (!objects.empty())
-        dest->bulkStore(objects);
+    std::vector <NodeObject::pointer> objects;
+    
+    objects.reserve (128);
+    
+    srcBackend->visitAll (BIND_TYPE (&NodeStore::importVisitor, this, boost::ref (objects), P_1));
+
+    if (!objects.empty ())
+        m_backend->bulkStore (objects);
+
+    return 0;
+}
+
+NodeStore::Backend* NodeStore::createBackend (String const& parameters)
+{
+    Backend* backend = nullptr;
+
+    StringPairArray keyValues = parseKeyValueParameters (parameters, '|');
+
+    String const& type = keyValues ["type"];
+
+    if (type.isNotEmpty ())
+    {
+        BackendFactory* factory = nullptr;
+
+        for (int i = 0; i < s_factories.size (); ++i)
+        {
+            if (s_factories [i]->getName () == type)
+            {
+                factory = s_factories [i];
+                break;
+            }
+        }
+
+        if (factory != nullptr)
+        {
+            backend = factory->createInstance (keyValues);
+        }
+        else
+        {
+            throw std::runtime_error ("unkown backend type");
+        }
+    }
+    else
+    {
+        throw std::runtime_error ("missing backend type");
+    }
+
+    return backend;
 }

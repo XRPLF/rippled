@@ -34,11 +34,11 @@ public:
 
         // Store a group of objects
         // This function will only be called from a single thread
-        virtual bool bulkStore(const std::vector< NodeObject::pointer >&) = 0;
+        virtual bool bulkStore (const std::vector< NodeObject::pointer >&) = 0;
 
         // Visit every object in the database
         // This function will only be called during an import operation
-        virtual void visitAll(FUNCTION_TYPE<void (NodeObject::pointer)>) = 0;
+        virtual void visitAll (FUNCTION_TYPE <void (NodeObject::pointer)>) = 0;
     };
 
 public:
@@ -68,7 +68,13 @@ public:
         The key "type" must exist, it defines the backend. For example
             "type=LevelDB|path=/mnt/ephemeral"
     */
-    NodeStore (String parameters, int cacheSize, int cacheAge);
+    // VFALCO NOTE Is cacheSize in bytes? objects? KB?
+    //             Is cacheAge in minutes? seconds?
+    //
+    NodeStore (String backendParameters,
+               String fastBackendParameters,
+               int cacheSize,
+               int cacheAge);
 
     /** Add the specified backend factory to the list of available factories.
 
@@ -92,19 +98,18 @@ public:
     void sweep ();
     int getWriteLoad ();
 
-    int import (const std::string& fileName);
+    int import (String sourceBackendParameters);
 
 private:
-    static NodeObject::pointer LLRetrieve (uint256 const& hash, leveldb::DB* db);
-    static void LLWrite (boost::shared_ptr<NodeObject> ptr, leveldb::DB* db);
-    static void LLWrite (const std::vector< boost::shared_ptr<NodeObject> >& set, leveldb::DB* db);
+    void importVisitor (std::vector <NodeObject::pointer>& objects, NodeObject::pointer object);
+    
+    static Backend* createBackend (String const& parameters);
 
-private:
     static Array <BackendFactory*> s_factories;
 
 private:
     ScopedPointer <Backend> m_backend;
-    ScopedPointer <Backend> m_backendFast;
+    ScopedPointer <Backend> m_fastBackend;
 
     TaggedCache<uint256, NodeObject, UptimeTimerAdapter>  mCache;
     KeyCache <uint256, UptimeTimerAdapter> mNegativeCache;
