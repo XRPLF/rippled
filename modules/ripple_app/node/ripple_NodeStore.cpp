@@ -177,16 +177,16 @@ void NodeStore::importVisitor (
 
 int NodeStore::import (String sourceBackendParameters)
 {
-    ScopedPointer <Backend> srcBackend = createBackend (sourceBackendParameters);
+    ScopedPointer <NodeStore::Backend> srcBackend (createBackend (sourceBackendParameters));
 
     WriteLog (lsWARNING, NodeObject) <<
         "Node import from '" << srcBackend->getDataBaseName() << "' to '"
                              << m_backend->getDataBaseName() << "'.";
 
     std::vector <NodeObject::pointer> objects;
-    
+
     objects.reserve (128);
-    
+
     srcBackend->visitAll (BIND_TYPE (&NodeStore::importVisitor, this, boost::ref (objects), P_1));
 
     if (!objects.empty ())
