@@ -1431,12 +1431,19 @@ Json::Value NetworkOPs::getServerInfo (bool human, bool admin)
             static_cast<double> (getApp().getFeeTrack ().getLoadFactor ()) / getApp().getFeeTrack ().getLoadBase ();
         if (admin)
         {
-            info["load_factor_local"] =
-                static_cast<double> (getApp().getFeeTrack ().getLocalFee ()) / getApp().getFeeTrack ().getLoadBase ();
-            info["load_factor_net"] =
-                static_cast<double> (getApp().getFeeTrack ().getRemoteFee ()) / getApp().getFeeTrack ().getLoadBase ();
-            info["load_factor_cluster"] =
-                static_cast<double> (getApp().getFeeTrack ().getClusterFee ()) / getApp().getFeeTrack ().getLoadBase ();
+            uint32 base = getApp().getFeeTrack().getLoadBase();
+            uint32 fee = getApp().getFeeTrack().getLocalFee();
+            if (fee != base)
+                info["load_factor_local"] =
+                    static_cast<double> (fee) / base;
+            fee = getApp().getFeeTrack ().getRemoteFee();
+            if (fee != base)
+                info["load_factor_net"] =
+                    static_cast<double> (fee) / base;
+            fee = getApp().getFeeTrack().getClusterFee();
+            if (fee != base)
+                info["load_factor_cluster"] =
+                    static_cast<double> (fee) / base;
         }
     }
 

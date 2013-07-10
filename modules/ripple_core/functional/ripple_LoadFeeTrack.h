@@ -16,6 +16,7 @@ public:
     LoadFeeTrack ()
         : mLocalTxnLoadFee (lftNormalFee)
         , mRemoteTxnLoadFee (lftNormalFee)
+        , mClusterTxnLoadFee (lftNormalFee)
         , raiseCount (0)
     {
     }
