@@ -43,11 +43,24 @@ public:
         bassert (m_items.empty ());
     }
 
-    void activate (DeadlineTimer* timer)
+    // Okay to call on an active timer.
+    // However, an extra notification may still happen due to concurrency.
+    //
+    void activate (DeadlineTimer* timer, double secondsRecurring, Time const& when)
     {
+        bassert (secondsRecurring >= 0);
+
         LockType::ScopedLockType lock (m_mutex);
 
-        bassert (! timer->m_isActive);
+        if (timer->m_isActive)
+        {
+            m_items.erase (m_items.iterator_to (*timer));
+
+            timer->m_isActive = false;
+        }
+
+        timer->m_secondsRecurring = secondsRecurring;
+        timer->m_notificationTime = when;
 
         insertSorted (*timer);
         timer->m_isActive = true;
@@ -219,26 +232,25 @@ DeadlineTimer::~DeadlineTimer ()
 
 void DeadlineTimer::setExpiration (double secondsUntilDeadline)
 {
-    m_secondsRecurring = 0;
-    m_notificationTime = Time::getCurrentTime () + RelativeTime (secondsUntilDeadline);
+    bassert (secondsUntilDeadline > 0);
 
-    m_manager->activate (this);
+    Time const when = Time::getCurrentTime () + RelativeTime (secondsUntilDeadline);
+
+    m_manager->activate (this, 0, when);
 }
 
 void DeadlineTimer::setRecurringExpiration (double secondsUntilDeadline)
 {
-    m_secondsRecurring = secondsUntilDeadline;
-    m_notificationTime = Time::getCurrentTime () + RelativeTime (secondsUntilDeadline);
+    bassert (secondsUntilDeadline > 0);
 
-    m_manager->activate (this);
+    Time const when = Time::getCurrentTime () + RelativeTime (secondsUntilDeadline);
+
+    m_manager->activate (this, secondsUntilDeadline, when);
 }
 
-void DeadlineTimer::setExpirationTime (Time absoluteDeadline)
+void DeadlineTimer::setExpirationTime (Time const& when)
 {
-    m_secondsRecurring = 0;
-    m_notificationTime = absoluteDeadline;
-
-    m_manager->activate (this);
+    m_manager->activate (this, 0, when);
 }
 
 void DeadlineTimer::reset ()

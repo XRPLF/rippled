@@ -46,21 +46,49 @@ public:
     ~DeadlineTimer ();
 
     /** Set the timer to go off once in the future.
+
+        If the timer is already active, this will reset it.
+
+        @note If the timer is already active, a notification may still
+              occur due to concurrency.
+
+        @param secondsUntilDeadline The number of seconds until the timer
+                                    will send a notification. This must be
+                                    greater than zero.
     */
     void setExpiration (double secondsUntilDeadline);
 
     /** Set the timer to go off repeatedly with the specified frequency.
+
+        If the timer is already active, this will reset it.
+
+        @note If the timer is already active, a notification may still
+              occur due to concurrency.
+
+        @param secondsUntilDeadline The number of seconds until the timer
+                                    will send a notification. This must be
+                                    greater than zero.
     */
     void setRecurringExpiration (double secondsUntilDeadline);
 
     /** Set the timer to go off at a specific time.
 
+        If the timer is already active, this will reset it.
+
+        @note If the timer is already active, a notification may still
+              occur due to concurrency.
+
         @note If the time is in the past, the timer will go off
               immediately.
     */
-    void setExpirationTime (Time absoluteDeadline);
+    void setExpirationTime (Time const& when);
 
     /** Reset the timer so that no more notifications are sent.
+
+        It is okay to call this on an inactive timer.
+
+        @note If the timer is already active, a notification may still
+              occur due to concurrency.
     */
     void reset ();
 
