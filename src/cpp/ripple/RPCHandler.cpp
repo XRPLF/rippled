@@ -70,6 +70,11 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
 
     WriteLog (lsDEBUG, RPCHandler) << boost::str (boost::format ("transactionSign: %s") % params);
 
+    if (!bOffline && (getApp().getLedgerMaster().getValidatedLedgerAge() > 120))
+    {
+        return rpcError (rpcNO_CURRENT);
+    }
+
     if (!params.isMember ("secret") || !params.isMember ("tx_json"))
     {
         return rpcError (rpcINVALID_PARAMS);
@@ -3622,7 +3627,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
         {   "proof_verify",         &RPCHandler::doProofVerify,         true,   optNone     },
         {   "random",               &RPCHandler::doRandom,              false,  optNone     },
         {   "ripple_path_find",     &RPCHandler::doRipplePathFind,      false,  optCurrent  },
-        {   "sign",                 &RPCHandler::doSign,                false,  optCurrent  },
+        {   "sign",                 &RPCHandler::doSign,                false,  optNone     },
         {   "submit",               &RPCHandler::doSubmit,              false,  optCurrent  },
         {   "server_info",          &RPCHandler::doServerInfo,          false,  optNone     },
         {   "server_state",         &RPCHandler::doServerState,         false,  optNone     },
@@ -3683,7 +3688,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
         return rpcError (rpcNO_NETWORK);
     }
 
-    if ((commandsA[i].iOptions & optCurrent) && (getApp().getLedgerMaster().getValidatedLedgerAge() > 60))
+    if ((commandsA[i].iOptions & optCurrent) && (getApp().getLedgerMaster().getValidatedLedgerAge() > 120))
     {
         return rpcError (rpcNO_CURRENT);
     }
