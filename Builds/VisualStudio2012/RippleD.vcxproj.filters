@@ -666,9 +666,6 @@
     <ClCompile Include="..\..\src\cpp\ripple\ripple_Validations.cpp">
       <Filter>[1] Ripple\ripple_app\_misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\SNTPClient.cpp">
-      <Filter>[1] Ripple\ripple_app\_network</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\WSConnection.cpp">
       <Filter>[1] Ripple\ripple_app\_network</Filter>
     </ClCompile>
@@ -847,6 +844,9 @@
       <Filter>[1] Ripple\ripple_app\basics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_net\basics\ripple_RPCServer.cpp">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\basics\ripple_SNTPClient.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1398,9 +1398,6 @@
     <ClInclude Include="..\..\src\cpp\ripple\ripple_SerializedTransaction.h">
       <Filter>[1] Ripple\ripple_app\_misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\SNTPClient.h">
-      <Filter>[1] Ripple\ripple_app\_network</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\WSConnection.h">
       <Filter>[1] Ripple\ripple_app\_network</Filter>
     </ClInclude>
@@ -1582,6 +1579,9 @@
       <Filter>[1] Ripple\ripple_app\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_net\basics\ripple_RPCServer.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\ripple_SNTPClient.h">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClInclude>
   </ItemGroup>
