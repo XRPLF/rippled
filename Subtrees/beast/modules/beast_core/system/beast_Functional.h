@@ -17,10 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_BIND_BEASTHEADER
-#define BEAST_BIND_BEASTHEADER
-
-// VFALCO TODO Rename this file to beast_Functional.h
+#ifndef BEAST_FUNCTIONAL_BEASTHEADER
+#define BEAST_FUNCTIONAL_BEASTHEADER
 
 /*  Brings functional support into our namespace, based on environment.
 

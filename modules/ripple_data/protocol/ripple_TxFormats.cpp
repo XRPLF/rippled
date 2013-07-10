@@ -4,48 +4,8 @@
 */
 //==============================================================================
 
-TxFormats::Item::Item (char const* name, TxType type)
-    : m_name (name)
-    , m_type (type)
-{
-}
-
-TxFormats::Item& TxFormats::Item::operator<< (SOElement const& el)
-{
-    elements.push_back (el);
-
-    return *this;
-}
-
-std::string const& TxFormats::Item::getName () const noexcept
-{
-    return m_name;
-}
-
-TxType TxFormats::Item::getType () const noexcept
-{
-    return m_type;
-}
-
-//------------------------------------------------------------------------------
-
-void TxFormats::addCommonFields (Item& item)
-{
-    item
-        << SOElement(sfTransactionType,     SOE_REQUIRED)
-        << SOElement(sfFlags,               SOE_OPTIONAL)
-        << SOElement(sfSourceTag,           SOE_OPTIONAL)
-        << SOElement(sfAccount,             SOE_REQUIRED) 
-        << SOElement(sfSequence,            SOE_REQUIRED) 
-        << SOElement(sfPreviousTxnID,       SOE_OPTIONAL) 
-        << SOElement(sfFee,                 SOE_REQUIRED) 
-        << SOElement(sfOperationLimit,      SOE_OPTIONAL) 
-        << SOElement(sfSigningPubKey,       SOE_REQUIRED) 
-        << SOElement(sfTxnSignature,        SOE_OPTIONAL)
-        ;
-}
-
 TxFormats::TxFormats ()
+    : SharedSingleton <TxFormats> (SingletonLifetime::persistAfterCreation)
 {
     add ("AccountSet", ttACCOUNT_SET)
             << SOElement (sfEmailHash,       SOE_OPTIONAL)
@@ -115,63 +75,23 @@ TxFormats::TxFormats ()
             ;
 }
 
-TxFormats const& TxFormats::getInstance ()
+void TxFormats::addCommonFields (Item& item)
 {
-    static TxFormats instance;
-
-    return instance;
+    item
+        << SOElement(sfTransactionType,     SOE_REQUIRED)
+        << SOElement(sfFlags,               SOE_OPTIONAL)
+        << SOElement(sfSourceTag,           SOE_OPTIONAL)
+        << SOElement(sfAccount,             SOE_REQUIRED) 
+        << SOElement(sfSequence,            SOE_REQUIRED) 
+        << SOElement(sfPreviousTxnID,       SOE_OPTIONAL) 
+        << SOElement(sfFee,                 SOE_REQUIRED) 
+        << SOElement(sfOperationLimit,      SOE_OPTIONAL) 
+        << SOElement(sfSigningPubKey,       SOE_REQUIRED) 
+        << SOElement(sfTxnSignature,        SOE_OPTIONAL)
+        ;
 }
 
-TxType TxFormats::findTypeByName (std::string const name) const
+TxFormats* TxFormats::createInstance ()
 {
-    Item const* const result = findByName (name);
-
-    if (result != nullptr)
-    {
-        return result->getType ();
-    }
-    else
-    {
-        throw std::runtime_error ("Unknown format name");
-    }
-}
-
-TxFormats::Item const* TxFormats::findByType (TxType type) const noexcept
-{
-    Item* result = nullptr;
-
-    TypeMap::const_iterator const iter = m_types.find (type);
-
-    if (iter != m_types.end ())
-    {
-        result = iter->second;
-    }
-
-    return result;
-}
-
-TxFormats::Item const* TxFormats::findByName (std::string const& name) const noexcept
-{
-    Item* result = nullptr;
-
-    NameMap::const_iterator const iter = m_names.find (name);
-
-    if (iter != m_names.end ())
-    {
-        result = iter->second;
-    }
-
-    return result;
-}
-
-TxFormats::Item& TxFormats::add (char const* name, TxType type)
-{
-    Item& item = *m_formats.add (new Item (name, type));
-
-    addCommonFields (item);
-
-    m_types [item.getType ()] = &item;
-    m_names [item.getName ()] = &item;
-
-    return item;
+    return new TxFormats;
 }

@@ -2,9 +2,19 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
+- Tidy up convenience functions in RPC.h
+
+- Maybe rename RPCServer to RPCClientServicer
+
+- Take away the "I" prefix from abstract interface classes, in both the class
+  name and the file name. It is messing up sorting in the IDE. Use "Imp" or
+  suffix for implementations.
+
 - Profile/VTune the application to identify hot spots
   * Determine why rippled has a slow startup on Windows
   * Improve the performance when running all unit tests on Windows
+
+- Rename "fullBelow" to something like haveAllDescendants or haveAllChildren.
 
 - Class to represent IP and Port number, with members to print, check syntax,
   etc... replace the boost calls.
@@ -16,9 +26,6 @@ RIPPLE TODO
 - Move everything in src/cpp/ripple into ripple_app and sort them into
   subdirectories within the module as per the project filters.
   * Make sure there are no pending commits from David
-
-- Refactor TxFormats into template WireFormats<> and use it for transactions
-  and ledger entries, replace the redundant code with template typedefs.
 
 - Rewrite Sustain to use Beast and work on Windows as well
   * Do not enable watchdog process if a debugger is attached
@@ -245,3 +252,12 @@ Regarding a defect where a failing transaction was being submitted over and over
      think it can claim a fee.
   With these two bits of logic, two unhealthy servers could infinitely propagate
      a transaction back and forth between each other.
+
+A node is "full below" if we believe we have (either in the database or
+  scheduled to be stored in the database) the contents of every node below that
+  node in a hash tree. When trying to acquire a hash tree/map, if a node is
+  full below, we know not to bother with anything below that node.
+
+The fullBelowCache is a cache of hashes of nodes that are full below. Which means
+  there are no missing children
+

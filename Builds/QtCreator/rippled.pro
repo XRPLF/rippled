@@ -1,23 +1,26 @@
+
+# Ripple protocol buffers
+
+PROTOS = ../../src/cpp/ripple/ripple.proto
+PROTOS_DIR = ../../build/proto
+
 # Google Protocol Buffers support
 
-PROTOPATH += .
-PROTOPATH += ../Protocol
-for(p, PROTOPATH):PROTOPATHS += --proto_path=$${p}
+protobuf_h.name = protobuf header
+protobuf_h.input = PROTOS
+protobuf_h.output = $${PROTOS_DIR}/${QMAKE_FILE_BASE}.pb.h
+protobuf_h.depends = ${QMAKE_FILE_NAME}
+protobuf_h.commands = protoc --cpp_out=$${PROTOS_DIR} --proto_path=${QMAKE_FILE_PATH} ${QMAKE_FILE_NAME}
+protobuf_h.variable_out = HEADERS
+QMAKE_EXTRA_COMPILERS += protobuf_h
 
-protobuf_decl.name = protobuf header
-protobuf_decl.input = PROTOS
-protobuf_decl.output = ${QMAKE_FILE_BASE}.pb.h
-protobuf_decl.commands = protoc --cpp_out="../../build/proto/" --proto_path="../../src/cpp/ripple" ${QMAKE_FILE_NAME}
-protobuf_decl.variable_out = GENERATED_FILES
-QMAKE_EXTRA_COMPILERS += protobuf_decl
-
-protobuf_impl.name = protobuf implementation
-protobuf_impl.input = PROTOS
-protobuf_impl.output = ${QMAKE_FILE_BASE}.pb.cc
-protobuf_impl.depends = ${QMAKE_FILE_BASE}.pb.h
-protobuf_impl.commands = $$escape_expand(\n)
-protobuf_impl.variable_out = GENERATED_SOURCES
-QMAKE_EXTRA_COMPILERS += protobuf_impl
+protobuf_cc.name = protobuf implementation
+protobuf_cc.input = PROTOS
+protobuf_cc.output = $${PROTOS_DIR}/${QMAKE_FILE_BASE}.pb.cc
+protobuf_cc.depends = $${PROTOS_DIR}/${QMAKE_FILE_BASE}.pb.h
+protobuf_cc.commands = $$escape_expand(\\n)
+#protobuf_cc.variable_out = SOURCES
+QMAKE_EXTRA_COMPILERS += protobuf_cc
 
 # Ripple compilation
 
@@ -25,10 +28,11 @@ DESTDIR = ../../build/QtCreator
 OBJECTS_DIR = ../../build/QtCreator/obj
 
 TEMPLATE = app
-CONFIG += console thread
+CONFIG += console thread warn_off
 CONFIG -= qt gui
 
-QMAKE_CXXFLAGS += \
+linux-gg++:QMAKE_CXXFLAGS += \
+    -Wall \
     -Wno-sign-compare \
     -Wno-char-subscripts \
     -Wno-invalid-offsetof \
@@ -39,11 +43,21 @@ QMAKE_CXXFLAGS += \
 
 INCLUDEPATH += \
     "../.." \
-    "../../build/proto" \
     "../../Subtrees" \
     "../../Subtrees/leveldb/" \
     "../../Subtrees/leveldb/port" \
-    "../../Subtrees/leveldb/include"
+    "../../Subtrees/leveldb/include" \
+    $${PROTOS_DIR}
+
+OTHER_FILES += \
+    $$files(../../Subtrees/beast/*) \
+    $$files(../../Subtrees/beast/modules/beast_basics/diagnostic/*)
+
+#   $$files(../../Subtrees/beast/modules/beast_core/, true)
+#   $$files(../../modules/*, true) \
+#   $$files(../../src/cpp/ripple/*, true) \
+
+UI_HEADERS_DIR += ../../modules/ripple_basics
 
 SOURCES += \
     ../../Subtrees/beast/modules/beast_basics/beast_basics.cpp \
@@ -57,16 +71,15 @@ SOURCES += \
     ../../modules/ripple_app/ripple_app_pt7.cpp \
     ../../modules/ripple_app/ripple_app_pt8.cpp \
     ../../modules/ripple_basics/ripple_basics.cpp \
+    ../../modules/ripple_basio/ripple_basio.cpp \
     ../../modules/ripple_core/ripple_core.cpp \
     ../../modules/ripple_client/ripple_client.cpp \
     ../../modules/ripple_data/ripple_data.cpp \
     ../../modules/ripple_json/ripple_json.cpp \
     ../../modules/ripple_leveldb/ripple_leveldb.cpp \
+    ../../modules/ripple_net/ripple_net.cpp \
     ../../modules/ripple_sqlite/ripple_sqlite.c \
-    ../../modules/ripple_websocket/ripple_websocket.cpp \
-    ../../build/proto/ripple.pb.cc
-
-PROTOS = ../../src/cpp/ripple/ripple.proto
+    ../../modules/ripple_websocket/ripple_websocket.cpp
 
 LIBS += \
     -lboost_date_time-mt\
@@ -79,7 +92,3 @@ LIBS += \
     -lprotobuf \
     -lssl \
     -lrt
-
-
-
-

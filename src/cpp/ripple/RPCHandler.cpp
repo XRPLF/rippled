@@ -3520,7 +3520,7 @@ Json::Value RPCHandler::doUnsubscribe (Json::Value params, LoadType* loadType, S
 //
 // JSON-RPC provides a method and an array of params. JSON-RPC is used as a transport for a command and a request object. The
 // command is the method. The request object is supplied as the first element of the params.
-Json::Value RPCHandler::doRpcCommand (const std::string& strMethod, Json::Value& jvParams, int iRole, LoadType* loadType)
+Json::Value RPCHandler::doRpcCommand (const std::string& strMethod, Json::Value const& jvParams, int iRole, LoadType* loadType)
 {
     WriteLog (lsTRACE, RPCHandler) << "doRpcCommand:" << strMethod << ":" << jvParams;
 

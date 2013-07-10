@@ -131,18 +131,20 @@ std::string STUInt16::getText () const
 {
     if (getFName () == sfLedgerEntryType)
     {
-        LedgerEntryFormat* f = LedgerEntryFormat::getLgrFormat (value);
+        LedgerFormats::Item const* const item =
+            LedgerFormats::getInstance ()->findByType (static_cast <LedgerEntryType> (value));
 
-        if (f != NULL)
-            return f->t_name;
+        if (item != nullptr)
+            return item->getName ();
     }
 
     if (getFName () == sfTransactionType)
     {
-        TxFormats::Item const* f = TxFormats::getInstance().findByType (static_cast <TxType> (value));
+        TxFormats::Item const* const item =
+            TxFormats::getInstance()->findByType (static_cast <TxType> (value));
 
-        if (f != NULL)
-            return f->getName ();
+        if (item != nullptr)
+            return item->getName ();
     }
 
     return boost::lexical_cast<std::string> (value);
@@ -152,18 +154,20 @@ Json::Value STUInt16::getJson (int) const
 {
     if (getFName () == sfLedgerEntryType)
     {
-        LedgerEntryFormat* f = LedgerEntryFormat::getLgrFormat (value);
+        LedgerFormats::Item const* const item =
+            LedgerFormats::getInstance ()->findByType (static_cast <LedgerEntryType> (value));
 
-        if (f != NULL)
-            return f->t_name;
+        if (item != nullptr)
+            return item->getName ();
     }
 
     if (getFName () == sfTransactionType)
     {
-        TxFormats::Item const* f = TxFormats::getInstance().findByType (static_cast <TxType> (value));
+        TxFormats::Item const* const item =
+            TxFormats::getInstance()->findByType (static_cast <TxType> (value));
 
-        if (f != NULL)
-            return f->getName ();
+        if (item != nullptr)
+            return item->getName ();
     }
 
     return value;

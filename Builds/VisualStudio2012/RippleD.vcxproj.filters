@@ -133,6 +133,18 @@
     <Filter Include="[1] Ripple\ripple_app\_shamap">
       <UniqueIdentifier>{e54bae0e-09f1-483e-bcf7-fb6b17b8d561}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\ripple_basio">
+      <UniqueIdentifier>{c6a852db-1174-4bf6-a726-ebaabf595743}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_basio\boost">
+      <UniqueIdentifier>{c977169f-d68b-4a59-aa0b-f7d49157d9ac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_net">
+      <UniqueIdentifier>{c84fc3af-f487-4eba-af78-d4be009f76d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_net\basics">
+      <UniqueIdentifier>{febf2e7e-f071-4a6c-9b81-68498fc8ea57}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Subtrees\sqlite\sqlite3.c">
@@ -262,9 +274,6 @@
       <Filter>[1] Ripple\ripple_data\crypto</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_FieldNames.cpp">
-      <Filter>[1] Ripple\ripple_data\protocol</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_LedgerFormat.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_PackedMessage.cpp">
@@ -657,15 +666,6 @@
     <ClCompile Include="..\..\src\cpp\ripple\ripple_Validations.cpp">
       <Filter>[1] Ripple\ripple_app\_misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\HTTPRequest.cpp">
-      <Filter>[1] Ripple\ripple_app\_network</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\HttpsClient.cpp">
-      <Filter>[1] Ripple\ripple_app\_network</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\SNTPClient.cpp">
-      <Filter>[1] Ripple\ripple_app\_network</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\WSConnection.cpp">
       <Filter>[1] Ripple\ripple_app\_network</Filter>
     </ClCompile>
@@ -718,9 +718,6 @@
       <Filter>[1] Ripple\ripple_app\_rpc</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\RPCHandler.cpp">
-      <Filter>[1] Ripple\ripple_app\_rpc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\RPCServer.cpp">
       <Filter>[1] Ripple\ripple_app\_rpc</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\RPCSub.cpp">
@@ -824,6 +821,33 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_basics\utility\ripple_LogFile.cpp">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_LedgerFormats.cpp">
+      <Filter>[1] Ripple\ripple_data\protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_basio\ripple_basio.cpp">
+      <Filter>[1] Ripple\ripple_basio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_basio\boost\ripple_IoService.cpp">
+      <Filter>[1] Ripple\ripple_basio\boost</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\ripple_net.cpp">
+      <Filter>[1] Ripple\ripple_net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\basics\ripple_HTTPRequest.cpp">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\basics\ripple_HttpsClient.cpp">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\basics\ripple_RPCServerHandler.cpp">
+      <Filter>[1] Ripple\ripple_app\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\basics\ripple_RPCServer.cpp">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\basics\ripple_SNTPClient.cpp">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -955,9 +979,6 @@
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_HashPrefix.h">
-      <Filter>[1] Ripple\ripple_data\protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_LedgerFormat.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_PackedMessage.h">
@@ -1377,15 +1398,6 @@
     <ClInclude Include="..\..\src\cpp\ripple\ripple_SerializedTransaction.h">
       <Filter>[1] Ripple\ripple_app\_misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\HTTPRequest.h">
-      <Filter>[1] Ripple\ripple_app\_network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\HttpsClient.h">
-      <Filter>[1] Ripple\ripple_app\_network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\SNTPClient.h">
-      <Filter>[1] Ripple\ripple_app\_network</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\WSConnection.h">
       <Filter>[1] Ripple\ripple_app\_network</Filter>
     </ClInclude>
@@ -1450,9 +1462,6 @@
       <Filter>[1] Ripple\ripple_app\_rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\RPCHandler.h">
-      <Filter>[1] Ripple\ripple_app\_rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\RPCServer.h">
       <Filter>[1] Ripple\ripple_app\_rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\CallRPC.h">
@@ -1539,6 +1548,42 @@
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_LogFile.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_KnownFormats.h">
+      <Filter>[1] Ripple\ripple_data\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_LedgerFormats.h">
+      <Filter>[1] Ripple\ripple_data\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basio\ripple_basio.h">
+      <Filter>[1] Ripple\ripple_basio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basio\ripple_basio_impl.h">
+      <Filter>[1] Ripple\ripple_basio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basio\ripple_basio_fwdecl.h">
+      <Filter>[1] Ripple\ripple_basio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basio\boost\ripple_IoService.h">
+      <Filter>[1] Ripple\ripple_basio\boost</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\ripple_net.h">
+      <Filter>[1] Ripple\ripple_net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\ripple_HTTPRequest.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\ripple_HttpsClient.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\basics\ripple_RPCServerHandler.h">
+      <Filter>[1] Ripple\ripple_app\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\ripple_RPCServer.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\ripple_SNTPClient.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\src\cpp\ripple\ripple.proto" />
@@ -1556,6 +1601,8 @@
     <None Include="..\..\CheatSheet.md" />
     <None Include="..\..\CodingStyle.md" />
     <None Include="..\..\Doxyfile" />
+    <None Include="..\..\SConstruct" />
+    <None Include="..\QtCreator\rippled.pro" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\TODO.txt" />

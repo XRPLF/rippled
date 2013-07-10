@@ -17,9 +17,11 @@
     @defgroup ripple_app
 */
 
-#ifndef RIPPLE_MAIN_H
-#define RIPPLE_MAIN_H
+#ifndef RIPPLE_APP_H_INCLUDED
+#define RIPPLE_APP_H_INCLUDED
 
 #include "modules/ripple_basics/ripple_basics.h"
+
+#include "modules/ripple_basio/ripple_basio.h"
 
 #endif

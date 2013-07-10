@@ -54,7 +54,6 @@ public:
     virtual boost::recursive_mutex&  getMasterLock () = 0;
 
     virtual boost::asio::io_service& getIOService () = 0;
-    virtual boost::asio::io_service& getAuxService () = 0;
 
     virtual NodeCache&              getTempNodeCache () = 0;
     virtual SLECache&               getSLECache () = 0;

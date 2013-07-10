@@ -6,9 +6,6 @@
 
 namespace po = boost::program_options;
 
-// VFALCO TODO make these singletons that initialize statically
-extern void LEFInit ();
-
 void setupServer ()
 {
     getApp().setup ();
@@ -250,8 +247,6 @@ int rippleMain (int argc, char** argv)
     // VFALCO TODO make this a singleton that initializes statically
     //             Or could make it a SharedSingleton
     //
-    LEFInit ();
-
     if (vm.count ("unittest"))
     {
         boost::unit_test::unit_test_main (init_unit_test, argc, argv);

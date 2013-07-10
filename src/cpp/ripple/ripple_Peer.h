@@ -20,14 +20,6 @@ public:
     typedef boost::shared_ptr <Peer> pointer;
     typedef pointer const& ref;
 
-    static int const psbGotHello        = 0;
-    static int const psbSentHello       = 1;
-    static int const psbInMap           = 2;
-    static int const psbTrusted         = 3;
-    static int const psbNoLedgers       = 4;
-    static int const psbNoTransactions  = 5;
-    static int const psbDownLevel       = 6;
-
 public:
     static pointer New (boost::asio::io_service& io_service,
                         boost::asio::ssl::context& ctx,
@@ -38,7 +30,7 @@ public:
     virtual void handleConnect (const boost::system::error_code& error,
                                 boost::asio::ip::tcp::resolver::iterator it) = 0;
 
-    virtual std::string& getIP () = 0;
+    virtual std::string const& getIP () = 0;
 
     virtual std::string getDisplayName () = 0;
 

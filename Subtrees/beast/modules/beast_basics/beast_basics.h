@@ -247,6 +247,7 @@ namespace beast
 
 #include "functor/beast_Function.h"
 #include "diagnostic/beast_CatchAny.h"
+#include "events/beast_DeadlineTimer.h"
 #include "events/beast_OncePerSecond.h"
 #include "math/beast_Math.h"
 #include "math/beast_MurmurHash.h"

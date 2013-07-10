@@ -4,23 +4,23 @@
 */
 //==============================================================================
 
-#ifndef HTTPREQUEST__HPP
-#define HTTPREQUEST__HPP
+#ifndef RIPPLE_HTTPREQUEST_H_INCLUDED
+#define RIPPLE_HTTPREQUEST_H_INCLUDED
 
-enum HTTPRequestAction
-{
-    // What the application code needs to do
-    haERROR         = 0,
-    haREAD_LINE     = 1,
-    haREAD_RAW      = 2,
-    haDO_REQUEST    = 3,
-    haCLOSE_CONN    = 4
-};
-
+/** An HTTP request we are handling from a client.
+*/
 class HTTPRequest
 {
-    // an HTTP request we are handling from a client
 public:
+    enum Action
+    {
+        // What the application code needs to do
+        haERROR         = 0,
+        haREAD_LINE     = 1,
+        haREAD_RAW      = 2,
+        haDO_REQUEST    = 3,
+        haCLOSE_CONN    = 4
+    };
 
     HTTPRequest () : eState (await_request), iDataSize (0), bShouldClose (true)
     {
@@ -59,8 +59,8 @@ public:
     }
     std::string getReplyHeaders (bool forceClose);
 
-    HTTPRequestAction consume (boost::asio::streambuf&);
-    HTTPRequestAction requestDone (bool forceClose); // call after reply is sent
+    Action consume (boost::asio::streambuf&);
+    Action requestDone (bool forceClose); // call after reply is sent
 
     int getDataSize ()
     {

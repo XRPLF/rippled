@@ -2,6 +2,16 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
+- Design a WeakPtr / SharedPtr / SharedObject intrusive system
+
+- Implement beast::Bimap?
+
+- Use Bimap for storage in the DeadlineTimer::Manager, to support
+  thousands of timers.
+
+- Think about adding a shouldStop bool to InterruptibleThread, along
+  with a shouldStop () function returning bool, and a stop() method.
+
 - Make OwnedArray add routines return a pointer instead of reference
 
 - Tidy up CacheLine, MemoryAlignment

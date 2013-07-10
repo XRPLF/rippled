@@ -75,6 +75,8 @@
 
 #include "../ripple_data/ripple_data.h"
 
+#include "../ripple_net/ripple_net.h"
+
 #include "../modules/ripple_websocket/ripple_websocket.h"
 
 //------------------------------------------------------------------------------
@@ -142,7 +144,6 @@ namespace ripple
 #include "src/cpp/ripple/TransactionMaster.h"
 #include "src/cpp/ripple/ripple_LocalCredentials.h"
 #include "src/cpp/ripple/WSDoor.h"
-#include "src/cpp/ripple/SNTPClient.h"
 #include "src/cpp/ripple/RPCHandler.h"
 #include "src/cpp/ripple/TransactionQueue.h"
 #include "src/cpp/ripple/OrderBookDB.h"
@@ -151,8 +152,6 @@ namespace ripple
 #include "src/cpp/ripple/CallRPC.h"
 #include "src/cpp/ripple/Transactor.h"
 #include "src/cpp/ripple/ChangeTransactor.h"
-#include "src/cpp/ripple/HTTPRequest.h"
-#include "src/cpp/ripple/HttpsClient.h"
 #include "src/cpp/ripple/ripple_TransactionAcquire.h"
 #include "src/cpp/ripple/ripple_DisputedTx.h"
 #include "src/cpp/ripple/ripple_LedgerConsensus.h"
@@ -169,8 +168,6 @@ namespace ripple
 #include "src/cpp/ripple/PaymentTransactor.h"
 #include "src/cpp/ripple/PeerDoor.h"
 #include "src/cpp/ripple/RPC.h"
-#include "src/cpp/ripple/RPCServer.h"
-#include "src/cpp/ripple/RPCDoor.h"
 #include "src/cpp/ripple/RPCErr.h"
 #include "src/cpp/ripple/RPCSub.h"
 #include "src/cpp/ripple/RegularKeySetTransactor.h"
@@ -184,6 +181,9 @@ namespace ripple
 
 #include "basics/ripple_Version.h" // VFALCO TODO Should this be private?
 #include "basics/ripple_BuildVersion.h" // private
+#include "basics/ripple_RPCServerHandler.h"
+
+#include "src/cpp/ripple/RPCDoor.h" // needs RPCServer
 
 }
 
@@ -228,6 +228,8 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 1
 
+#include "basics/ripple_RPCServerHandler.cpp"
+
 #include "src/cpp/ripple/Ledger.cpp"
 #include "src/cpp/ripple/ripple_SHAMapDelta.cpp"
 #include "src/cpp/ripple/ripple_SHAMapNode.cpp"
@@ -260,7 +262,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/AccountSetTransactor.cpp"
 #include "src/cpp/ripple/ripple_CanonicalTXSet.cpp"
 #include "src/cpp/ripple/Contract.cpp"
-#include "src/cpp/ripple/HTTPRequest.cpp"
 #include "src/cpp/ripple/LedgerProposal.cpp"
 #include "src/cpp/ripple/ripple_LoadManager.cpp"
 #include "src/cpp/ripple/ripple_NicknameState.cpp"
@@ -313,9 +314,7 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/RegularKeySetTransactor.cpp"
 #include "src/cpp/ripple/ripple_RippleState.cpp"
 #include "src/cpp/ripple/RPCDoor.cpp"
-#include "src/cpp/ripple/RPCServer.cpp"
 #include "src/cpp/ripple/ScriptData.cpp"
-#include "src/cpp/ripple/SNTPClient.cpp"
 #include "src/cpp/ripple/TransactionCheck.cpp"
 #include "src/cpp/ripple/TransactionMaster.cpp"
 #include "src/cpp/ripple/TransactionQueue.cpp"
@@ -378,7 +377,6 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #include "src/cpp/ripple/ripple_LedgerConsensus.cpp"
 #include "src/cpp/ripple/LedgerMaster.cpp"
-#include "src/cpp/ripple/HttpsClient.cpp"
 
 #include "src/cpp/ripple/ripple_InfoSub.cpp"
 #include "src/cpp/ripple/ripple_OrderBook.cpp"

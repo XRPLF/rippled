@@ -209,13 +209,15 @@ template <> struct BeastStaticAssert <true> { static void dummy() {} };
 //------------------------------------------------------------------------------
 
 // Cross-compiler deprecation macros..
-#if DOXYGEN || (BEAST_MSVC && ! BEAST_NO_DEPRECATION_WARNINGS)
-/** This can be used to wrap a function which has been deprecated. */
-# define BEAST_DEPRECATED(functionDef)     __declspec(deprecated) functionDef
-#elif BEAST_GCC  && ! BEAST_NO_DEPRECATION_WARNINGS
-# define BEAST_DEPRECATED(functionDef)     functionDef __attribute__ ((deprecated))
+#ifdef DOXYGEN
+ /** This macro can be used to wrap a function which has been deprecated. */
+ #define BEAST_DEPRECATED(functionDef)
+#elif BEAST_MSVC && ! BEAST_NO_DEPRECATION_WARNINGS
+ #define BEAST_DEPRECATED(functionDef) __declspec(deprecated) functionDef
+#elif BEAST_GCC && ! BEAST_NO_DEPRECATION_WARNINGS
+ #define BEAST_DEPRECATED(functionDef) functionDef __attribute__ ((deprecated))
 #else
-# define BEAST_DEPRECATED(functionDef)     functionDef
+ #define BEAST_DEPRECATED(functionDef) functionDef
 #endif
 
 //------------------------------------------------------------------------------

@@ -43,11 +43,6 @@ public:
         return mIOService;
     }
     
-    boost::asio::io_service& getAuxService ()
-    {
-        return mAuxService;
-    }
-
     LedgerMaster& getLedgerMaster ()
     {
         return mLedgerMaster;
@@ -213,8 +208,11 @@ private:
 private:
     boost::asio::io_service mIOService;
     boost::asio::io_service mAuxService;
+    // The lifetime of the io_service::work object informs the io_service
+    // of when the work starts and finishes. io_service::run() will not exit
+    // while the work object exists.
+    //
     boost::asio::io_service::work mIOWork;
-    boost::asio::io_service::work mAuxWork;
 
     boost::recursive_mutex  mMasterLock;
 
@@ -223,6 +221,7 @@ private:
     InboundLedgers     m_inboundLedgers;
     TransactionMaster  mMasterTransaction;
     NetworkOPs         mNetOps;
+    RPCServerHandler   m_rpcServerHandler;
     NodeCache          mTempNodeCache;
     HashedObjectStore  mHashedObjectStore;
     SLECache           mSLECache;
@@ -282,8 +281,8 @@ Application::Application ()
 #endif
     , mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
     , mIOWork (mIOService)
-    , mAuxWork (mAuxService)
-    , mNetOps (mIOService, &mLedgerMaster)
+    , mNetOps (&mLedgerMaster)
+    , m_rpcServerHandler (mNetOps)
     , mTempNodeCache ("NodeCache", 16384, 90)
     , mHashedObjectStore (16384, 300)
     , mSLECache ("LedgerEntryCache", 4096, 120)
@@ -592,7 +591,7 @@ void Application::setup ()
     {
         try
         {
-            mRPCDoor = new RPCDoor (mIOService);
+            mRPCDoor = new RPCDoor (mIOService, m_rpcServerHandler);
         }
         catch (const std::exception& e)
         {

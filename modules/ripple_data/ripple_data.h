@@ -47,10 +47,11 @@ namespace ripple
 #include "protocol/ripple_TER.h"
 #include "protocol/ripple_SerializedTypes.h" // needs Serializer, TER
 #include "protocol/ripple_SerializedObjectTemplate.h"
+ #include "protocol/ripple_KnownFormats.h"
+ #include "protocol/ripple_LedgerFormats.h" // needs SOTemplate from SerializedObjectTemplate
+ #include "protocol/ripple_TxFormats.h"
 #include "protocol/ripple_SerializedObject.h"
-#include "protocol/ripple_LedgerFormat.h" // needs SOTemplate from SerializedObject
 #include "protocol/ripple_TxFlags.h"
-#include "protocol/ripple_TxFormats.h"
 
 #include "utility/ripple_UptimeTimerAdapter.h"
 

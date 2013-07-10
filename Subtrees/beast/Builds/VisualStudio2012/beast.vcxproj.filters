@@ -608,6 +608,9 @@
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_SharedData.h">
       <Filter>beast_basics\threads</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\events\beast_DeadlineTimer.h">
+      <Filter>beast_basics\events</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
@@ -945,6 +948,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\time\beast_PerformedAtExit.cpp">
       <Filter>beast_core\time</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\events\beast_DeadlineTimer.cpp">
+      <Filter>beast_basics\events</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
