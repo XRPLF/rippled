@@ -45,7 +45,10 @@ public:
         , mNetOps (&mLedgerMaster)
         , m_rpcServerHandler (mNetOps)
         , mTempNodeCache ("NodeCache", 16384, 90)
-        , m_nodeStore ("type=LevelDB|path=/mnt/stuff|compact=1", "", 16384, 300)
+        , m_nodeStore (
+            theConfig.NODE_DB,
+            theConfig.FASTNODE_DB,
+            16384, 300)
         , mSLECache ("LedgerEntryCache", 4096, 120)
         , mSNTPClient (mAuxService)
         , mJobQueue (mIOService)
