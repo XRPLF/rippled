@@ -86,17 +86,7 @@ public:
 
     NodeObject::pointer retrieve (uint256 const& hash);
 
-    bool storeSQLite (NodeObjectType type, uint32 index, Blob const& data,
-                      uint256 const& hash);
-    NodeObject::pointer retrieveSQLite (uint256 const& hash);
-    void bulkWriteSQLite (Job&);
-
-    bool storeLevelDB (NodeObjectType type, uint32 index, Blob const& data,
-                       uint256 const& hash);
-    NodeObject::pointer retrieveLevelDB (uint256 const& hash);
-    void bulkWriteLevelDB (Job&);
-
-
+    void bulkWrite (Job&);
     void waitWrite ();
     void tune (int size, int age);
     void sweep ();
@@ -114,6 +104,7 @@ private:
 
 private:
     ScopedPointer <Backend> m_backend;
+    ScopedPointer <Backend> m_backendFast;
 
     TaggedCache<uint256, NodeObject, UptimeTimerAdapter>  mCache;
     KeyCache <uint256, UptimeTimerAdapter> mNegativeCache;
