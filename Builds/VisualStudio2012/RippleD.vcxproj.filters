@@ -855,10 +855,10 @@
     <ClCompile Include="..\..\modules\ripple_app\node\ripple_HSBESqlite.cpp">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\node\ripple_HashedObjectStore.cpp">
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_NodeObject.cpp">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\node\ripple_NodeObject.cpp">
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_NodeStore.cpp">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1605,10 +1605,10 @@
     <ClInclude Include="..\..\src\cpp\ripple\ripple_DBInit.h">
       <Filter>[1] Ripple\ripple_app\_data</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\node\ripple_HashedObjectStore.h">
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_NodeObject.h">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\node\ripple_NodeObject.h">
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_NodeStore.h">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>
   </ItemGroup>

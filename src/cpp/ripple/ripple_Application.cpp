@@ -63,7 +63,7 @@ public:
         return mTempNodeCache;
     }
     
-    HashedObjectStore& getHashedObjectStore ()
+    NodeStore& getHashedObjectStore ()
     {
         return mHashedObjectStore;
     }
@@ -223,7 +223,7 @@ private:
     NetworkOPs         mNetOps;
     RPCServerHandler   m_rpcServerHandler;
     NodeCache          mTempNodeCache;
-    HashedObjectStore  mHashedObjectStore;
+    NodeStore  mHashedObjectStore;
     SLECache           mSLECache;
     SNTPClient         mSNTPClient;
     JobQueue           mJobQueue;

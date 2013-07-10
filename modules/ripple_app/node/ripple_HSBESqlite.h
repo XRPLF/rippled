@@ -1,7 +1,7 @@
 #ifndef HSBESQLITE_H
 #define HSBESQLITE_H
 
-class HSBESQLite : public HashStoreBE
+class HSBESQLite : public NodeStore::Backend
 {
 public:
     HSBESQLite(std::string const& path);

@@ -1,7 +1,7 @@
 #ifndef HSBELEVELDB_H
 #define HSBELEVELDB_H
 
-class HSBELevelDB : public HashStoreBE
+class HSBELevelDB : public NodeStore::Backend
 {
 public:
     HSBELevelDB(std::string const& path);

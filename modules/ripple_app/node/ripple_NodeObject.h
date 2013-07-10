@@ -4,10 +4,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HASHEDOBJECT_H
-#define RIPPLE_HASHEDOBJECT_H
+#ifndef RIPPLE_NODEOBJECT_H_INCLUDED
+#define RIPPLE_NODEOBJECT_H_INCLUDED
 
-/** The types of hashed objects.
+/** The types of node objects.
 */
 enum NodeObjectType
 {
@@ -29,11 +29,7 @@ enum NodeObjectType
     @note No checking is performed to make sure the hash matches the data.
     @see SHAMap
 */
-// VFALCO TODO consider making the instance a private member of SHAMap
-//         since its the primary user.
-//
-class NodeObject
-    : public CountedObject <NodeObject>
+class NodeObject : public CountedObject <NodeObject>
 {
 public:
     static char const* getCountedObjectName () { return "NodeObject"; }
@@ -85,4 +81,3 @@ private:
 };
 
 #endif
-// vim:ts=4

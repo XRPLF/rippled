@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-HashedObjectStore::HashedObjectStore (int cacheSize, int cacheAge) :
-    mCache ("HashedObjectStore", cacheSize, cacheAge), mNegativeCache ("HashedObjectNegativeCache", 0, 120),
+NodeStore::NodeStore (int cacheSize, int cacheAge) :
+    mCache ("NodeStore", cacheSize, cacheAge), mNegativeCache ("HashedObjectNegativeCache", 0, 120),
     mWriteGeneration (0), mWriteLoad (0), mWritePending (false), mLevelDB (false), mEphemeralDB (false)
 {
     mWriteSet.reserve (128);
@@ -24,13 +24,13 @@ HashedObjectStore::HashedObjectStore (int cacheSize, int cacheAge) :
         mEphemeralDB = true;
 }
 
-void HashedObjectStore::tune (int size, int age)
+void NodeStore::tune (int size, int age)
 {
     mCache.setTargetSize (size);
     mCache.setTargetAge (age);
 }
 
-void HashedObjectStore::waitWrite ()
+void NodeStore::waitWrite ()
 {
     boost::mutex::scoped_lock sl (mWriteMutex);
     int gen = mWriteGeneration;
@@ -39,14 +39,14 @@ void HashedObjectStore::waitWrite ()
         mWriteCondition.wait (sl);
 }
 
-int HashedObjectStore::getWriteLoad ()
+int NodeStore::getWriteLoad ()
 {
     boost::mutex::scoped_lock sl (mWriteMutex);
     return std::max (mWriteLoad, static_cast<int> (mWriteSet.size ()));
 }
 
 // low-level retrieve
-NodeObject::pointer HashedObjectStore::LLRetrieve (uint256 const& hash, leveldb::DB* db)
+NodeObject::pointer NodeStore::LLRetrieve (uint256 const& hash, leveldb::DB* db)
 {
     std::string sData;
 
@@ -68,7 +68,7 @@ NodeObject::pointer HashedObjectStore::LLRetrieve (uint256 const& hash, leveldb:
 }
 
 // low-level write single
-void HashedObjectStore::LLWrite (boost::shared_ptr<NodeObject> ptr, leveldb::DB* db)
+void NodeStore::LLWrite (boost::shared_ptr<NodeObject> ptr, leveldb::DB* db)
 {
     NodeObject& obj = *ptr;
     Blob rawData (9 + obj.getData ().size ());
@@ -91,7 +91,7 @@ void HashedObjectStore::LLWrite (boost::shared_ptr<NodeObject> ptr, leveldb::DB*
 }
 
 // low-level write set
-void HashedObjectStore::LLWrite (const std::vector< boost::shared_ptr<NodeObject> >& set, leveldb::DB* db)
+void NodeStore::LLWrite (const std::vector< boost::shared_ptr<NodeObject> >& set, leveldb::DB* db)
 {
     leveldb::WriteBatch batch;
 
@@ -119,7 +119,7 @@ void HashedObjectStore::LLWrite (const std::vector< boost::shared_ptr<NodeObject
     }
 }
 
-bool HashedObjectStore::storeLevelDB (NodeObjectType type, uint32 index,
+bool NodeStore::storeLevelDB (NodeObjectType type, uint32 index,
                                       Blob const& data, uint256 const& hash)
 {
     // return: false = already in cache, true = added to cache
@@ -144,7 +144,7 @@ bool HashedObjectStore::storeLevelDB (NodeObjectType type, uint32 index,
         {
             mWritePending = true;
             getApp().getJobQueue ().addJob (jtWRITE, "NodeObject::store",
-                                           BIND_TYPE (&HashedObjectStore::bulkWriteLevelDB, this, P_1));
+                                           BIND_TYPE (&NodeStore::bulkWriteLevelDB, this, P_1));
         }
     }
 
@@ -152,7 +152,7 @@ bool HashedObjectStore::storeLevelDB (NodeObjectType type, uint32 index,
     return true;
 }
 
-void HashedObjectStore::bulkWriteLevelDB (Job&)
+void NodeStore::bulkWriteLevelDB (Job&)
 {
     assert (mLevelDB);
     int setSize = 0;
@@ -188,7 +188,7 @@ void HashedObjectStore::bulkWriteLevelDB (Job&)
     }
 }
 
-NodeObject::pointer HashedObjectStore::retrieveLevelDB (uint256 const& hash)
+NodeObject::pointer NodeStore::retrieveLevelDB (uint256 const& hash)
 {
     NodeObject::pointer obj = mCache.fetch (hash);
 
@@ -226,7 +226,7 @@ NodeObject::pointer HashedObjectStore::retrieveLevelDB (uint256 const& hash)
     return obj;
 }
 
-bool HashedObjectStore::storeSQLite (NodeObjectType type, uint32 index,
+bool NodeStore::storeSQLite (NodeObjectType type, uint32 index,
                                      Blob const& data, uint256 const& hash)
 {
     // return: false = already in cache, true = added to cache
@@ -256,7 +256,7 @@ bool HashedObjectStore::storeSQLite (NodeObjectType type, uint32 index,
         {
             mWritePending = true;
             getApp().getJobQueue ().addJob (jtWRITE, "NodeObject::store",
-                                           BIND_TYPE (&HashedObjectStore::bulkWriteSQLite, this, P_1));
+                                           BIND_TYPE (&NodeStore::bulkWriteSQLite, this, P_1));
         }
     }
 
@@ -267,7 +267,7 @@ bool HashedObjectStore::storeSQLite (NodeObjectType type, uint32 index,
     return true;
 }
 
-void HashedObjectStore::bulkWriteSQLite (Job&)
+void NodeStore::bulkWriteSQLite (Job&)
 {
     assert (!mLevelDB);
     int setSize = 0;
@@ -410,7 +410,7 @@ void HashedObjectStore::bulkWriteSQLite (Job&)
     }
 }
 
-NodeObject::pointer HashedObjectStore::retrieveSQLite (uint256 const& hash)
+NodeObject::pointer NodeStore::retrieveSQLite (uint256 const& hash)
 {
     NodeObject::pointer obj = mCache.fetch (hash);
 
@@ -531,7 +531,7 @@ NodeObject::pointer HashedObjectStore::retrieveSQLite (uint256 const& hash)
     return obj;
 }
 
-int HashedObjectStore::import (const std::string& file)
+int NodeStore::import (const std::string& file)
 {
     WriteLog (lsWARNING, NodeObject) << "Hashed object import from \"" << file << "\".";
     UPTR_T<Database> importDB (new SqliteDatabase (file.c_str ()));
