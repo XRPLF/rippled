@@ -335,13 +335,6 @@ Application::~Application ()
         delete mEphemeralLDB;
 }
 
-// VFALCO TODO Tidy these up into some class with accessors.
-//
-extern const char* RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[],
-       *NetNodeDBInit[], *PathFindDBInit[];
-extern int RpcDBCount, TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount,
-       NetNodeDBCount, PathFindDBCount;
-
 void Application::stop ()
 {
     WriteLog (lsINFO, Application) << "Received shutdown request";

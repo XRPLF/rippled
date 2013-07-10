@@ -145,6 +145,9 @@
     <Filter Include="[1] Ripple\ripple_app\_misc\_consensus">
       <UniqueIdentifier>{82a6d3f3-fa01-4cc6-9730-f928e61b9929}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\ripple_app\node">
+      <UniqueIdentifier>{bd48a825-192f-4d5e-9230-661fdd65f9b6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Subtrees\sqlite\sqlite3.c">
@@ -549,12 +552,6 @@
     <ClCompile Include="..\..\src\cpp\ripple\ripple_DBInit.cpp">
       <Filter>[1] Ripple\ripple_app\_data</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_HashedObject.cpp">
-      <Filter>[1] Ripple\ripple_app\_data</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_HashedObjectStore.cpp">
-      <Filter>[1] Ripple\ripple_app\_data</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_SqliteDatabase.cpp">
       <Filter>[1] Ripple\ripple_app\_data</Filter>
     </ClCompile>
@@ -851,6 +848,18 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_basio\boost\ripple_SslContext.cpp">
       <Filter>[1] Ripple\ripple_basio\boost</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_HSBELevelDB.cpp">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_HSBESqlite.cpp">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_HashedObject.cpp">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_HashedObjectStore.cpp">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1299,12 +1308,6 @@
     <ClInclude Include="..\..\src\cpp\ripple\ripple_DatabaseCon.h">
       <Filter>[1] Ripple\ripple_app\_data</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_HashedObject.h">
-      <Filter>[1] Ripple\ripple_app\_data</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_HashedObjectStore.h">
-      <Filter>[1] Ripple\ripple_app\_data</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_SqliteDatabase.h">
       <Filter>[1] Ripple\ripple_app\_data</Filter>
     </ClInclude>
@@ -1589,6 +1592,24 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_basio\boost\ripple_SslContext.h">
       <Filter>[1] Ripple\ripple_basio\boost</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_HashStoreBE.h">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_HSBELevelDB.h">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_HSBESqlite.h">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\cpp\ripple\ripple_DBInit.h">
+      <Filter>[1] Ripple\ripple_app\_data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_HashedObject.h">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_HashedObjectStore.h">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

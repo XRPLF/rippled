@@ -89,7 +89,17 @@ namespace ripple
 //             linearize the include sequence and view it in one place.
 //
 
-#include "src/cpp/ripple/ripple_HashedObject.h"
+#include "src/cpp/ripple/ripple_Database.h"
+#include "src/cpp/ripple/ripple_DatabaseCon.h"
+#include "src/cpp/ripple/ripple_SqliteDatabase.h"
+#include "src/cpp/ripple/ripple_DBInit.h"
+
+#include "node/ripple_HashedObject.h"
+#include "node/ripple_HashedObjectStore.h"
+#include "node/ripple_HashStoreBE.h"
+#include "node/ripple_HSBELevelDB.h"
+#include "node/ripple_HSBESqlite.h"
+
 #include "src/cpp/ripple/ripple_SHAMapItem.h"
 #include "src/cpp/ripple/ripple_SHAMapNode.h"
 #include "src/cpp/ripple/ripple_SHAMapTreeNode.h"
@@ -106,11 +116,8 @@ namespace ripple
 #include "src/cpp/ripple/Ledger.h"
 #include "src/cpp/ripple/SerializedValidation.h"
 #include "src/cpp/ripple/ripple_ILoadManager.h"
-#include "src/cpp/ripple/ripple_DatabaseCon.h"
 #include "src/cpp/ripple/ripple_ProofOfWork.h"
 #include "src/cpp/ripple/ripple_InfoSub.h"
-#include "src/cpp/ripple/ripple_HashedObject.h"
-#include "src/cpp/ripple/ripple_HashedObjectStore.h"
 #include "src/cpp/ripple/ripple_OrderBook.h"
 #include "src/cpp/ripple/ripple_SHAMapSyncFilters.h"
 #include "src/cpp/ripple/ripple_IFeatures.h"
@@ -125,8 +132,6 @@ namespace ripple
 #include "src/cpp/ripple/ripple_PeerSet.h"
 #include "src/cpp/ripple/ripple_InboundLedger.h"
 #include "src/cpp/ripple/ripple_InboundLedgers.h"
-#include "src/cpp/ripple/ripple_Database.h"
-#include "src/cpp/ripple/ripple_SqliteDatabase.h"
 #include "src/cpp/ripple/ScriptData.h"
 #include "src/cpp/ripple/Contract.h"
 #include "src/cpp/ripple/Interpreter.h"
@@ -230,6 +235,10 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 1
 
 #include "basics/ripple_RPCServerHandler.cpp"
+#include "node/ripple_HashedObject.cpp"
+#include "node/ripple_HashedObjectStore.cpp"
+#include "node/ripple_HSBELevelDB.cpp"
+#include "node/ripple_HSBESqlite.cpp"
 
 #include "src/cpp/ripple/Ledger.cpp"
 #include "src/cpp/ripple/ripple_SHAMapDelta.cpp"
@@ -240,12 +249,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/ripple_AccountItems.cpp"
 #include "src/cpp/ripple/ripple_AccountState.cpp"
 #include "src/cpp/ripple/ChangeTransactor.cpp"
-#include "src/cpp/ripple/ripple_DBInit.cpp"
-#include "src/cpp/ripple/Interpreter.cpp"
-#include "src/cpp/ripple/LedgerTiming.cpp"
-#include "src/cpp/ripple/ripple_Main.cpp"
-#include "src/cpp/ripple/ripple_Offer.cpp"
-#include "src/cpp/ripple/Operation.cpp"
 
 #endif
 
@@ -337,6 +340,9 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_AcceptedLedgerTx.cpp"
 #include "src/cpp/ripple/ripple_DatabaseCon.cpp"
 #include "src/cpp/ripple/ripple_FeeVote.cpp"
+#include "src/cpp/ripple/ripple_DBInit.cpp"
+#include "src/cpp/ripple/Interpreter.cpp"
+#include "src/cpp/ripple/LedgerTiming.cpp"
 
 #endif
 
@@ -349,10 +355,11 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_Features.cpp"
 
 #include "src/cpp/ripple/ripple_LocalCredentials.cpp"
-#include "src/cpp/ripple/ripple_HashedObject.cpp"
 #include "src/cpp/ripple/ripple_AcceptedLedger.cpp"
 #include "src/cpp/ripple/ripple_DisputedTx.cpp"
 #include "src/cpp/ripple/ripple_HashRouter.cpp"
+#include "src/cpp/ripple/ripple_Main.cpp"
+#include "src/cpp/ripple/ripple_Offer.cpp"
 
 #endif
 
@@ -362,13 +369,13 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #include "src/cpp/ripple/NetworkOPs.cpp"
 #include "src/cpp/ripple/ripple_Peers.cpp"
-#include "src/cpp/ripple/ripple_HashedObjectStore.cpp"
 
 #include "src/cpp/ripple/ripple_InboundLedgers.cpp"
 #include "src/cpp/ripple/ripple_LedgerHistory.cpp"
 #include "src/cpp/ripple/ripple_PathRequest.cpp"
 #include "src/cpp/ripple/ripple_SerializedLedger.cpp"
 #include "src/cpp/ripple/ripple_TransactionAcquire.cpp"
+#include "src/cpp/ripple/Operation.cpp"
 
 #endif
 
