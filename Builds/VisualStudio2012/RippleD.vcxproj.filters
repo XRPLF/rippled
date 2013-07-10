@@ -849,6 +849,9 @@
     <ClCompile Include="..\..\src\cpp\ripple\ripple_WSHandler.cpp">
       <Filter>[1] Ripple\ripple_app\_network</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_basio\boost\ripple_SslContext.cpp">
+      <Filter>[1] Ripple\ripple_basio\boost</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h">
@@ -1583,6 +1586,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_UniqueNodeList.h">
       <Filter>[1] Ripple\ripple_app\_peers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basio\boost\ripple_SslContext.h">
+      <Filter>[1] Ripple\ripple_basio\boost</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

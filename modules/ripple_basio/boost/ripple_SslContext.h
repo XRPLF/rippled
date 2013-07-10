@@ -21,6 +21,12 @@ public:
 
     operator boost::asio::ssl::context& ();
 
+    static void initializeFromFile (
+        boost::asio::ssl::context& context,
+        std::string key_file,
+        std::string cert_file,
+        std::string chain_file);
+
 private:
     SslContext ();
 

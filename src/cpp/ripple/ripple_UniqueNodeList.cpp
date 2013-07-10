@@ -91,8 +91,8 @@ private:
 public:
     UniqueNodeListImp ()
         : m_scoreTimer (this)
-        , m_fetchTimer (this)
         , mFetchActive (0)
+        , m_fetchTimer (this)
     {
     }
 
@@ -135,7 +135,7 @@ public:
 
     // This is called when the application is started.
     // Get update times and start fetching and scoring as needed.
-    void UniqueNodeListImp::start ()
+    void start ()
     {
         miscLoad ();
 
@@ -414,7 +414,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    bool UniqueNodeListImp::nodeLoad (boost::filesystem::path pConfig)
+    bool nodeLoad (boost::filesystem::path pConfig)
     {
         if (pConfig.empty ())
         {
@@ -1084,12 +1084,7 @@ private:
                            + boost::posix_time::seconds (secondsFromNow);
 
             // WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("scoreNext: @%s") % mtpScoreNext);
-#if 1
             m_scoreTimer.setExpiration (secondsFromNow);
-#else
-            mdtScoreTimer.expires_at (mtpScoreNext);
-            mdtScoreTimer.async_wait (BIND_TYPE (&UniqueNodeListImp::scoreTimerHandler, this, P_1));
-#endif
         }
     }
 
@@ -1281,14 +1276,9 @@ private:
                 // Fetch needs to happen in the future.  Set a timer to wake us.
                 mtpFetchNext    = tpNext;
 
-#if 1
                 double const seconds = (tpNext - tpNow).seconds ();
 
                 m_fetchTimer.setExpiration (seconds);
-#else
-                mdtFetchTimer.expires_at (mtpFetchNext);
-                mdtFetchTimer.async_wait (BIND_TYPE (&UniqueNodeListImp::fetchTimerHandler, this, P_1));
-#endif
             }
             else
             {

@@ -6,11 +6,6 @@
 
 SETUP_LOG (RPCDoor)
 
-// VFALCO TODO Clean up this loose extern
-//
-extern void initSSLContext (boost::asio::ssl::context& context,
-                            std::string key_file, std::string cert_file, std::string chain_file);
-
 RPCDoor::RPCDoor (boost::asio::io_service& io_service, RPCServer::Handler& handler)
     : m_rpcServerHandler (handler)
     , mAcceptor (io_service,
@@ -21,7 +16,15 @@ RPCDoor::RPCDoor (boost::asio::io_service& io_service, RPCServer::Handler& handl
     WriteLog (lsINFO, RPCDoor) << "RPC port: " << theConfig.getRpcAddress().toRawUTF8() << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
 
     if (theConfig.RPC_SECURE != 0)
-        initSSLContext (mSSLContext, theConfig.RPC_SSL_KEY, theConfig.RPC_SSL_CERT, theConfig.RPC_SSL_CHAIN);
+    {
+        // VFALCO TODO This could be a method of theConfig
+        //
+        basio::SslContext::initializeFromFile (
+            mSSLContext,
+            theConfig.RPC_SSL_KEY,
+            theConfig.RPC_SSL_CERT,
+            theConfig.RPC_SSL_CHAIN);
+    }
 
     startListening ();
 }

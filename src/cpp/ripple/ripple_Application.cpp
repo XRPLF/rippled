@@ -569,7 +569,7 @@ void Application::setup ()
     {
         try
         {
-            mPeerDoor = new PeerDoor (
+            mPeerDoor = PeerDoor::New (
                 theConfig.PEER_IP,
                 theConfig.PEER_PORT,
                 theConfig.PEER_SSL_CIPHER_LIST,

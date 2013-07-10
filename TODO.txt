@@ -2,6 +2,10 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
+- See if UniqueNodeList is really used, and if its not used remove it. If
+  only some small part of it is used, then delete the rest. David says
+  that it is broken anyway.
+
 - Roll a simple wrapper for sqlite relational stuff like loading the UNL
   Completely hide the specifics of SQLite and/or beast::db
 
@@ -263,4 +267,30 @@ A node is "full below" if we believe we have (either in the database or
 
 The fullBelowCache is a cache of hashes of nodes that are full below. Which means
   there are no missing children
+
+
+What we want from the unique node list:
+  - Some number of trusted roots (known by domain)
+    probably organizations whose job is to provide a list of validators
+  - We imagine the IRGA for example would establish some group whose job is to
+    maintain a list of validators. There would be a public list of criteria
+    that they would use to vet the validator. Things like:
+    * Not anonymous
+    * registered business
+    * Physical location
+    * Agree not to cease operations without notice / arbitrarily
+    * Responsive to complaints
+  - Identifiable jurisdiction
+    * Homogeneity in the jurisdiction is a business risk
+    * If all validators are in the same jurisdiction this is a business risk
+  - OpenCoin sets criteria for the organizations
+  - Rippled will ship with a list of trusted root "certificates"
+    In other words this is a list of trusted domains from which the software
+      can contact each trusted root and retrieve a list of "good" validators
+      and then do something with that information
+  - All the validation information would be public, including the broadcast
+    messages.
+  - The goal is to easily identify bad actors and assess network health
+    * Malicious intent
+    * Or, just hardware problems (faulty drive or memory)
 

@@ -7,9 +7,6 @@
 #ifndef RIPPLE_WSHANDLER_H_INCLUDED
 #define RIPPLE_WSHANDLER_H_INCLUDED
 
-extern void initSSLContext (boost::asio::ssl::context& context,
-                            std::string key_file, std::string cert_file, std::string chain_file);
-
 extern bool serverOkay (std::string& reason);
 
 template <typename endpoint_type>
@@ -52,8 +49,11 @@ public:
     {
         if (theConfig.WEBSOCKET_SECURE != 0)
         {
-            initSSLContext (*mCtx, theConfig.WEBSOCKET_SSL_KEY,
-                            theConfig.WEBSOCKET_SSL_CERT, theConfig.WEBSOCKET_SSL_CHAIN);
+            basio::SslContext::initializeFromFile (
+                *mCtx,
+                theConfig.WEBSOCKET_SSL_KEY,
+                theConfig.WEBSOCKET_SSL_CERT,
+                theConfig.WEBSOCKET_SSL_CHAIN);
         }
     }
 

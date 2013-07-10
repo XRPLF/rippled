@@ -4,35 +4,23 @@
 */
 //==============================================================================
 
-#ifndef __PEERDOOR__
-#define __PEERDOOR__
+#ifndef RIPPLE_PEERDOOR_H_INCLUDED
+#define RIPPLE_PEERDOOR_H_INCLUDED
 
-/*
-Handles incoming connections from other Peers
+/** Handles incoming connections from peers.
 */
-
 class PeerDoor : LeakChecked <PeerDoor>
 {
 public:
-    PeerDoor (std::string const& ip,
-              int port,
-              std::string const& sslCiphers,
-              boost::asio::io_service& io_service);
+    virtual ~PeerDoor () { }
 
-    boost::asio::ssl::context&  getSSLContext ()
-    {
-        return mCtx;
-    }
+    static PeerDoor* New (
+        std::string const& ip,
+        int port,
+        std::string const& sslCiphers,
+        boost::asio::io_service& io_service);
 
-private:
-    boost::asio::ip::tcp::acceptor  mAcceptor;
-    boost::asio::ssl::context       mCtx;
-    boost::asio::deadline_timer     mDelayTimer;
-
-    void    startListening ();
-    void    handleConnect (Peer::pointer new_connection, const boost::system::error_code& error);
+    virtual boost::asio::ssl::context& getSSLContext () = 0;
 };
 
 #endif
-
-// vim:ts=4

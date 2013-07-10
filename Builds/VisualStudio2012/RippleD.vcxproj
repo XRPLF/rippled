@@ -148,6 +148,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_basio\boost\ripple_SslContext.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_basio\ripple_basio.cpp" />
     <ClCompile Include="..\..\modules\ripple_client\ripple_client.cpp" />
     <ClCompile Include="..\..\modules\ripple_core\functional\ripple_Config.cpp">
@@ -1352,6 +1358,7 @@
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_Time.h" />
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_UptimeTimer.h" />
     <ClInclude Include="..\..\modules\ripple_basio\boost\ripple_IoService.h" />
+    <ClInclude Include="..\..\modules\ripple_basio\boost\ripple_SslContext.h" />
     <ClInclude Include="..\..\modules\ripple_basio\ripple_basio.h" />
     <ClInclude Include="..\..\modules\ripple_basio\ripple_basio_fwdecl.h" />
     <ClInclude Include="..\..\modules\ripple_basio\ripple_basio_impl.h" />
