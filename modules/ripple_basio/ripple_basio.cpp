@@ -22,5 +22,6 @@ namespace ripple
 {
 
 #include "boost/ripple_IoService.cpp"
+#include "boost/ripple_SslContext.cpp"
 
 }

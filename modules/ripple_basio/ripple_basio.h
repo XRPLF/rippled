@@ -28,6 +28,7 @@ namespace ripple
 using namespace beast;
 
 #include "boost/ripple_IoService.h"
+#include "boost/ripple_SslContext.h"
 
 }
 

@@ -9,6 +9,7 @@
 
 // Once everything is converted, these can be moved to ripple_basio.cpp
 #include <boost/asio/io_service.hpp>
+#include <boost/asio/ssl.hpp>
 
 /** Implementations for boost::asio abstractions.
 
