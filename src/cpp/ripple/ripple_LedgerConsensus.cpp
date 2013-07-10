@@ -75,6 +75,7 @@ void LedgerConsensus::checkOurValidation ()
     uint256 signingHash;
     SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
                                       (mPreviousLedger->getHash (), getApp().getOPs ().getValidationTimeNC (), mValPublic, false);
+    addLoad(v);
     v->setTrusted ();
     v->sign (signingHash, mValPrivate);
     getApp().getHashRouter ().addSuppression (signingHash);
@@ -1247,6 +1248,7 @@ void LedgerConsensus::accept (SHAMap::ref set, LoadEvent::pointer)
         SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
                                           (newLCLHash, getApp().getOPs ().getValidationTimeNC (), mValPublic, mProposing);
         v->setFieldU32 (sfLedgerSequence, newLCL->getLedgerSeq ());
+        addLoad(v);
 
         if (((newLCL->getLedgerSeq () + 1) % 256) == 0) // next ledger is flag ledger
         {
@@ -1331,6 +1333,16 @@ void LedgerConsensus::accept (SHAMap::ref set, LoadEvent::pointer)
 void LedgerConsensus::endConsensus ()
 {
     getApp().getOPs ().endConsensus (mHaveCorrectLCL);
+}
+
+void LedgerConsensus::addLoad(SerializedValidation::ref val)
+{
+    uint32 fee = std::max(
+        getApp().getFeeTrack().getLocalFee(),
+        getApp().getFeeTrack().getClusterFee());
+    uint32 ref = getApp().getFeeTrack().getLoadBase();
+    if (fee > ref)
+        val->setFieldU32(sfLoadFee, fee);
 }
 
 void LedgerConsensus::simulate ()

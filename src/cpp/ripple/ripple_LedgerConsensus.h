@@ -108,6 +108,8 @@ private:
     void beginAccept (bool synchronous);
     void endConsensus ();
 
+    void addLoad (SerializedValidation::ref val);
+
 private:
     // VFALCO TODO Rename these to look pretty
     enum LCState
