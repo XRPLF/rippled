@@ -2,6 +2,9 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
+- Roll a simple wrapper for sqlite relational stuff like loading the UNL
+  Completely hide the specifics of SQLite and/or beast::db
+
 - Tidy up convenience functions in RPC.h
 
 - Maybe rename RPCServer to RPCClientServicer

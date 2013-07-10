@@ -128,7 +128,7 @@ public:
         return *mValidations;
     }
     
-    IUniqueNodeList& getUNL ()
+    UniqueNodeList& getUNL ()
     {
         return *mUNL;
     }
@@ -236,7 +236,7 @@ private:
     beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
     beast::ScopedPointer <IHashRouter> mHashRouter;
     beast::ScopedPointer <IValidations> mValidations;
-    beast::ScopedPointer <IUniqueNodeList> mUNL;
+    beast::ScopedPointer <UniqueNodeList> mUNL;
     beast::ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
     beast::ScopedPointer <IPeers> mPeers;
     beast::ScopedPointer <ILoadManager> m_loadManager;
@@ -294,7 +294,7 @@ Application::Application ()
     , mFeeTrack (ILoadFeeTrack::New ())
     , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
     , mValidations (IValidations::New ())
-    , mUNL (IUniqueNodeList::New (mIOService))
+    , mUNL (UniqueNodeList::New ())
     , mProofOfWorkFactory (IProofOfWorkFactory::New ())
     , mPeers (IPeers::New (mIOService))
     , m_loadManager (ILoadManager::New ())

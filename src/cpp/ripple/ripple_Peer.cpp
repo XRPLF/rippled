@@ -1021,7 +1021,7 @@ void PeerImp::recvHello (protocol::TMHello& packet)
                     // Don't save IP address if the node wants privacy.
                     // Note: We don't go so far as to delete it.  If a node which has previously announced itself now wants
                     // privacy, it should at least change its port.
-                    getApp().getPeers ().savePeer (strIP, iPort, IUniqueNodeList::vsInbound);
+                    getApp().getPeers ().savePeer (strIP, iPort, UniqueNodeList::vsInbound);
                 }
             }
 
@@ -1468,7 +1468,7 @@ void PeerImp::recvPeers (protocol::TMPeers& packet)
         {
             //WriteLog (lsINFO, Peer) << "Peer: Learning: " << addressToString(this) << ": " << i << ": " << strIP << " " << iPort;
 
-            getApp().getPeers ().savePeer (strIP, iPort, IUniqueNodeList::vsTold);
+            getApp().getPeers ().savePeer (strIP, iPort, UniqueNodeList::vsTold);
         }
     }
 }

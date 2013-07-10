@@ -119,7 +119,7 @@ namespace ripple
 #include "src/cpp/ripple/ripple_Peer.h" // VFALCO TODO Rename to IPeer
 #include "src/cpp/ripple/ripple_IPeers.h"
 #include "src/cpp/ripple/ripple_IProofOfWorkFactory.h"
-#include "src/cpp/ripple/ripple_IUniqueNodeList.h"
+#include "src/cpp/ripple/ripple_UniqueNodeList.h"
 #include "src/cpp/ripple/ripple_IValidations.h"
 #include "src/cpp/ripple/ripple_PeerSet.h"
 #include "src/cpp/ripple/ripple_InboundLedger.h"

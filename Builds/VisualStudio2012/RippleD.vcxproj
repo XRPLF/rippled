@@ -1445,7 +1445,7 @@
     <ClInclude Include="..\..\src\cpp\ripple\ripple_InfoSub.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ripple_IPeers.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ripple_IProofOfWorkFactory.h" />
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_IUniqueNodeList.h" />
+    <ClInclude Include="..\..\src\cpp\ripple\ripple_UniqueNodeList.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ripple_IValidations.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ripple_LedgerConsensus.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ripple_LedgerEntrySet.h" />

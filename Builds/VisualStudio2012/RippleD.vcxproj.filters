@@ -97,9 +97,6 @@
     <Filter Include="[0] Subtrees\leveldb\port\win">
       <UniqueIdentifier>{223ac5ce-c9a0-4196-9b75-4f5fbe8bfa00}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[1] Ripple\ripple_app\_consensus">
-      <UniqueIdentifier>{82a6d3f3-fa01-4cc6-9730-f928e61b9929}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[1] Ripple\ripple_app\_contracts">
       <UniqueIdentifier>{46bda3c0-166b-4188-8f6b-da6f6ff638fc}</UniqueIdentifier>
     </Filter>
@@ -144,6 +141,9 @@
     </Filter>
     <Filter Include="[1] Ripple\ripple_net\basics">
       <UniqueIdentifier>{febf2e7e-f071-4a6c-9b81-68498fc8ea57}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_app\_misc\_consensus">
+      <UniqueIdentifier>{82a6d3f3-fa01-4cc6-9730-f928e61b9929}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -535,10 +535,10 @@
       <Filter>[1] Ripple\ripple_app\_contracts</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_DisputedTx.cpp">
-      <Filter>[1] Ripple\ripple_app\_consensus</Filter>
+      <Filter>[1] Ripple\ripple_app\_misc\_consensus</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_LedgerConsensus.cpp">
-      <Filter>[1] Ripple\ripple_app\_consensus</Filter>
+      <Filter>[1] Ripple\ripple_app\_misc\_consensus</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_Database.cpp">
       <Filter>[1] Ripple\ripple_app\_data</Filter>
@@ -1285,10 +1285,10 @@
       <Filter>[1] Ripple\ripple_app\_contracts</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_DisputedTx.h">
-      <Filter>[1] Ripple\ripple_app\_consensus</Filter>
+      <Filter>[1] Ripple\ripple_app\_misc\_consensus</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_LedgerConsensus.h">
-      <Filter>[1] Ripple\ripple_app\_consensus</Filter>
+      <Filter>[1] Ripple\ripple_app\_misc\_consensus</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_Database.h">
       <Filter>[1] Ripple\ripple_app\_data</Filter>
@@ -1414,9 +1414,6 @@
       <Filter>[1] Ripple\ripple_app\_peers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_PeerSet.h">
-      <Filter>[1] Ripple\ripple_app\_peers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_IUniqueNodeList.h">
       <Filter>[1] Ripple\ripple_app\_peers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_IPeers.h">
@@ -1583,6 +1580,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_WSHandler.h">
       <Filter>[1] Ripple\ripple_app\_network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\cpp\ripple\ripple_UniqueNodeList.h">
+      <Filter>[1] Ripple\ripple_app\_peers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

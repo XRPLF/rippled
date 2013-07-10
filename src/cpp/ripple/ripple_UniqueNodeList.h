@@ -4,10 +4,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_IUNIQUENODELIST_H_INCLUDED
-#define RIPPLE_IUNIQUENODELIST_H_INCLUDED
+#ifndef RIPPLE_UNIQUENODELIST_H_INCLUDED
+#define RIPPLE_UNIQUENODELIST_H_INCLUDED
 
-class IUniqueNodeList
+class UniqueNodeList
 {
 public:
     enum ValidatorSource
@@ -26,9 +26,9 @@ public:
 
 public:
     // VFALCO TODO make this not use boost::asio...
-    static IUniqueNodeList* New (boost::asio::io_service& io_service);
+    static UniqueNodeList* New ();
 
-    virtual ~IUniqueNodeList () { }
+    virtual ~UniqueNodeList () { }
 
     // VFALCO TODO Roll this into the constructor so there is one less state.
     virtual void start () = 0;

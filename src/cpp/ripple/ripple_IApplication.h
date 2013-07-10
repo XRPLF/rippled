@@ -14,7 +14,7 @@ class IHashRouter;
 class ILoadFeeTrack;
 class IPeers;
 class IProofOfWorkFactory;
-class IUniqueNodeList;
+class UniqueNodeList;
 class IValidations;
 
 class HashedObjectStore;
@@ -65,7 +65,7 @@ public:
     virtual ILoadManager&           getLoadManager () = 0;
     virtual IPeers&                 getPeers () = 0;
     virtual IProofOfWorkFactory&    getProofOfWorkFactory () = 0;
-    virtual IUniqueNodeList&        getUNL () = 0;
+    virtual UniqueNodeList&        getUNL () = 0;
     virtual IValidations&           getValidations () = 0;
 
     virtual HashedObjectStore&      getHashedObjectStore () = 0;
@@ -82,6 +82,12 @@ public:
     virtual DatabaseCon* getRpcDB () = 0;
     virtual DatabaseCon* getTxnDB () = 0;
     virtual DatabaseCon* getLedgerDB () = 0;
+
+    /** Retrieve the "wallet database"
+
+        It looks like this is used to store the unique node list.
+    */
+    // VFALCO TODO Rename, document this
     virtual DatabaseCon* getWalletDB () = 0;
     // VFALCO NOTE It looks like this isn't used...
     //virtual DatabaseCon* getNetNodeDB () = 0;

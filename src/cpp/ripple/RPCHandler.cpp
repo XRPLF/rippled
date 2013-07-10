@@ -2492,13 +2492,13 @@ Json::Value RPCHandler::doUnlAdd (Json::Value params, LoadType* loadType, Scoped
 
     if (raNodePublic.setNodePublic (strNode))
     {
-        getApp().getUNL ().nodeAddPublic (raNodePublic, IUniqueNodeList::vsManual, strComment);
+        getApp().getUNL ().nodeAddPublic (raNodePublic, UniqueNodeList::vsManual, strComment);
 
         return "adding node by public key";
     }
     else
     {
-        getApp().getUNL ().nodeAddDomain (strNode, IUniqueNodeList::vsManual, strComment);
+        getApp().getUNL ().nodeAddDomain (strNode, UniqueNodeList::vsManual, strComment);
 
         return "adding node by domain";
     }
