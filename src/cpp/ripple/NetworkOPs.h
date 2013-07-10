@@ -361,7 +361,8 @@ public:
     InfoSub::pointer    addRpcSub (const std::string& strUrl, InfoSub::ref rspEntry);
 
 private:
-    void onDeadlineTimer (DeadlineTimer&);
+    void processNetTimer ();
+    void onDeadlineTimer (DeadlineTimer& timer);
 
     void setMode (OperatingMode);
 

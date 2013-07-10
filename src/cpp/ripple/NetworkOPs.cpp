@@ -40,14 +40,8 @@ NetworkOPs::NetworkOPs (LedgerMaster* pLedgerMaster)
 {
 }
 
-void NetworkOPs::onDeadlineTimer (DeadlineTimer& timer)
+void NetworkOPs::processNetTimer ()
 {
-    if (timer == m_clusterTimer)
-    {
-        doClusterReport();
-        return;
-    }
-
     ScopedLock sl (getApp().getMasterLock ());
 
     getApp().getLoadManager ().resetDeadlockDetector ();
@@ -89,6 +83,18 @@ void NetworkOPs::onDeadlineTimer (DeadlineTimer& timer)
 
     if (mConsensus)
         mConsensus->timerEntry ();
+}
+
+void NetworkOPs::onDeadlineTimer (DeadlineTimer& timer)
+{
+    if (timer == m_netTimer)
+    {
+        processNetTimer ();
+    }
+    else if (timer == m_clusterTimer)
+    {
+        doClusterReport();
+    }
 }
 
 std::string NetworkOPs::strOperatingMode ()
@@ -635,6 +641,7 @@ void NetworkOPs::setFeatureBlocked ()
 void NetworkOPs::setStateTimer ()
 {
     m_netTimer.setRecurringExpiration (LEDGER_GRANULARITY / 1000.0);
+
     m_clusterTimer.setRecurringExpiration (10.0);
 }
 
