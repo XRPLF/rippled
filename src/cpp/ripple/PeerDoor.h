@@ -14,7 +14,10 @@ Handles incoming connections from other Peers
 class PeerDoor : LeakChecked <PeerDoor>
 {
 public:
-    PeerDoor (boost::asio::io_service& io_service);
+    PeerDoor (std::string const& ip,
+              int port,
+              std::string const& sslCiphers,
+              boost::asio::io_service& io_service);
 
     boost::asio::ssl::context&  getSSLContext ()
     {

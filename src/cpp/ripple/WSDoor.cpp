@@ -19,7 +19,8 @@ SETUP_LOG (WSDoor)
 // - We only talk to NetworkOPs (so we will work even in thin mode)
 // - NetworkOPs is smart enough to subscribe and or pass back messages
 //
-
+// VFALCO NOTE NetworkOPs isn't used here...
+//
 void WSDoor::startListening ()
 {
     setCallingThreadName ("websocket");

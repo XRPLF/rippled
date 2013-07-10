@@ -569,7 +569,11 @@ void Application::setup ()
     {
         try
         {
-            mPeerDoor = new PeerDoor (mIOService);
+            mPeerDoor = new PeerDoor (
+                theConfig.PEER_IP,
+                theConfig.PEER_PORT,
+                theConfig.PEER_SSL_CIPHER_LIST,
+                mIOService);
         }
         catch (const std::exception& e)
         {

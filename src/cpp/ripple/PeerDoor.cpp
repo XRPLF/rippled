@@ -6,26 +6,32 @@
 
 SETUP_LOG (PeerDoor)
 
-PeerDoor::PeerDoor (boost::asio::io_service& io_service) :
-    mAcceptor (io_service,
-               boost::asio::ip::tcp::endpoint (boost::asio::ip::address ().from_string (theConfig.PEER_IP.empty () ? "0.0.0.0" : theConfig.PEER_IP),
-                              theConfig.PEER_PORT)),
-    mCtx (boost::asio::ssl::context::sslv23), mDelayTimer (io_service)
+// PEER_IP, PEER_PORT, PEER_SSL_CIPHER_LIST
+PeerDoor::PeerDoor (
+    std::string const& ip,
+    int port,
+    std::string const& sslCiphers,
+    boost::asio::io_service& io_service)
+    : mAcceptor (
+        io_service,
+        boost::asio::ip::tcp::endpoint (boost::asio::ip::address ().from_string (ip.empty () ? "0.0.0.0" : ip),
+        port))
+    , mCtx (boost::asio::ssl::context::sslv23)
+    , mDelayTimer (io_service)
 {
     mCtx.set_options (
-        boost::asio::ssl::context::default_workarounds
-        | boost::asio::ssl::context::no_sslv2
-        | boost::asio::ssl::context::single_dh_use);
+        boost::asio::ssl::context::default_workarounds |
+        boost::asio::ssl::context::no_sslv2 |
+        boost::asio::ssl::context::single_dh_use);
 
     SSL_CTX_set_tmp_dh_callback (mCtx.native_handle (), handleTmpDh);
 
-    if (1 != SSL_CTX_set_cipher_list (mCtx.native_handle (), theConfig.PEER_SSL_CIPHER_LIST.c_str ()))
+    if (SSL_CTX_set_cipher_list (mCtx.native_handle (), sslCiphers.c_str ()) != 1)
         std::runtime_error ("Error setting cipher list (no valid ciphers).");
 
-
-    if (!theConfig.PEER_IP.empty () && theConfig.PEER_PORT)
+    if (! ip.empty () && port != 0)
     {
-        Log (lsINFO) << "Peer port: " << theConfig.PEER_IP << " " << theConfig.PEER_PORT;
+        Log (lsINFO) << "Peer port: " << ip << " " << port;
         startListening ();
     }
 }
