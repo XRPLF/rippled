@@ -56,7 +56,7 @@ public:
 
         /** Create an instance of this factory's backend.
         */
-        virtual Backend* createInstance (HashMap <String, String> const& keyValueParameters);
+        virtual Backend* createInstance (HashMap <String, String> const& keyValueParameters) = 0;
     };
 
 public:

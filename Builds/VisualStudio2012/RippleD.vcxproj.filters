@@ -849,16 +849,16 @@
     <ClCompile Include="..\..\modules\ripple_basio\boost\ripple_SslContext.cpp">
       <Filter>[1] Ripple\ripple_basio\boost</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\node\ripple_HSBELevelDB.cpp">
-      <Filter>[1] Ripple\ripple_app\node</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\node\ripple_HSBESqlite.cpp">
-      <Filter>[1] Ripple\ripple_app\node</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\node\ripple_NodeObject.cpp">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\node\ripple_NodeStore.cpp">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_NodeStoreLevelDB.cpp">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_NodeStoreSqlite.cpp">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1593,12 +1593,6 @@
     <ClInclude Include="..\..\modules\ripple_basio\boost\ripple_SslContext.h">
       <Filter>[1] Ripple\ripple_basio\boost</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\node\ripple_HSBELevelDB.h">
-      <Filter>[1] Ripple\ripple_app\node</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\node\ripple_HSBESqlite.h">
-      <Filter>[1] Ripple\ripple_app\node</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_DBInit.h">
       <Filter>[1] Ripple\ripple_app\_data</Filter>
     </ClInclude>
@@ -1606,6 +1600,12 @@
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_NodeStore.h">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_NodeStoreLevelDB.h">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_NodeStoreSqlite.h">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>
   </ItemGroup>
