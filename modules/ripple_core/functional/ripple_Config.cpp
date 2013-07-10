@@ -21,7 +21,7 @@
 #define SECTION_FEE_ACCOUNT_RESERVE     "fee_account_reserve"
 #define SECTION_FEE_OWNER_RESERVE       "fee_owner_reserve"
 #define SECTION_NODE_DB                 "node_db"
-#define SECTION_LDB_EPHEMERAL           "ephemeral_db"
+#define SECTION_FASTNODE_DB             "temp_db"
 #define SECTION_LEDGER_HISTORY          "ledger_history"
 #define SECTION_IPS                     "ips"
 #define SECTION_NETWORK_QUORUM          "network_quorum"
@@ -263,9 +263,6 @@ Config::Config ()
 
     SSL_VERIFY              = true;
 
-    NODE_DB                 = "sqlite";
-
-    LDB_IMPORT              = false;
     ELB_SUPPORT             = false;
     RUN_STANDALONE          = false;
     START_UP                = NORMAL;
@@ -377,7 +374,7 @@ void Config::load ()
             (void) SectionSingleB (secConfig, SECTION_RPC_PASSWORD, RPC_PASSWORD);
             (void) SectionSingleB (secConfig, SECTION_RPC_USER, RPC_USER);
             (void) SectionSingleB (secConfig, SECTION_NODE_DB, NODE_DB);
-            (void) SectionSingleB (secConfig, SECTION_LDB_EPHEMERAL, LDB_EPHEMERAL);
+            (void) SectionSingleB (secConfig, SECTION_FASTNODE_DB, FASTNODE_DB);
 
             if (SectionSingleB (secConfig, SECTION_RPC_PORT, strTemp))
                 m_rpcPort = boost::lexical_cast<int> (strTemp);

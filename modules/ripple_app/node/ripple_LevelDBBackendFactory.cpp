@@ -19,7 +19,7 @@ public:
             options.filter_policy = leveldb::NewBloomFilterPolicy (10);
 
         leveldb::Status status = leveldb::DB::Open (options, path, &mDB);
-        if (!status.ok () || mDB)
+        if (!status.ok () || !mDB)
             throw (std::runtime_error (std::string("Unable to open/create leveldb: ") + status.ToString()));
     }
 
