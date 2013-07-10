@@ -77,7 +77,7 @@ public:
     uint32 getLoadFactor ()
     {
         boost::mutex::scoped_lock sl (mLock);
-        return std::max (mLocalTxnLoadFee, mRemoteTxnLoadFee);
+        return std::max(mClusterTxnLoadFee, std::max (mLocalTxnLoadFee, mRemoteTxnLoadFee));
     }
 
     void setClusterFee (uint32 fee)

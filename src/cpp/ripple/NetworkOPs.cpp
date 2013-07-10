@@ -1426,8 +1426,19 @@ Json::Value NetworkOPs::getServerInfo (bool human, bool admin)
         info["load_factor"] = getApp().getFeeTrack ().getLoadFactor ();
     }
     else
+    {
         info["load_factor"] =
             static_cast<double> (getApp().getFeeTrack ().getLoadFactor ()) / getApp().getFeeTrack ().getLoadBase ();
+        if (admin)
+        {
+            info["load_factor_local"] =
+                static_cast<double> (getApp().getFeeTrack ().getLocalFee ()) / getApp().getFeeTrack ().getLoadBase ();
+            info["load_factor_net"] =
+                static_cast<double> (getApp().getFeeTrack ().getRemoteFee ()) / getApp().getFeeTrack ().getLoadBase ();
+            info["load_factor_cluster"] =
+                static_cast<double> (getApp().getFeeTrack ().getClusterFee ()) / getApp().getFeeTrack ().getLoadBase ();
+        }
+    }
 
     bool valid = false;
     Ledger::pointer lpClosed    = getValidatedLedger ();
