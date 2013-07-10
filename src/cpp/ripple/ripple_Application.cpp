@@ -938,6 +938,19 @@ static void addTxnSeqField ()
 
 void Application::updateTables ()
 {
+    if (theConfig.NODE_DB.empty ())
+    {
+        Log (lsFATAL) << "The NODE_DB configuration setting MUST be set";
+        StopSustain ();
+        exit (1);
+    }
+    else if (theConfig.NODE_DB == "LevelDB" || theConfig.NODE_DB == "SQLite")
+    {
+        Log (lsFATAL) << "The NODE_DB setting has been updated, your value is out of date";
+        StopSustain ();
+        exit (1);
+    }
+
     // perform any needed table updates
     assert (schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "TransID"));
     assert (!schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "foobar"));
