@@ -861,6 +861,9 @@
     <ClCompile Include="..\..\modules\ripple_app\node\ripple_LevelDBBackendFactory.cpp">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_NullBackendFactory.cpp">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h">
@@ -1606,6 +1609,9 @@
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_LevelDBBackendFactory.h">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_NullBackendFactory.h">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>
   </ItemGroup>
