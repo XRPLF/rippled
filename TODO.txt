@@ -2,6 +2,10 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
+- Move everything in src/cpp/ripple into ripple_app and sort them into
+  subdirectories within the module as per the project filters.
+  * Make sure there are no pending commits from David
+
 - See if UniqueNodeList is really used, and if its not used remove it. If
   only some small part of it is used, then delete the rest. David says
   that it is broken anyway.
@@ -29,10 +33,6 @@ RIPPLE TODO
 - Remove dependence on JobQueue, LoadFeeTrack, and NetworkOPs from LoadManager
   by providing an observer (beast::ListenerList or Listeners). This way
   LoadManager does not need stopThread() function.
-
-- Move everything in src/cpp/ripple into ripple_app and sort them into
-  subdirectories within the module as per the project filters.
-  * Make sure there are no pending commits from David
 
 - Rewrite Sustain to use Beast and work on Windows as well
   * Do not enable watchdog process if a debugger is attached

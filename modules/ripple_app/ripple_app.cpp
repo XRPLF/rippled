@@ -91,10 +91,10 @@ namespace ripple
 //             linearize the include sequence and view it in one place.
 //
 
-#include "src/cpp/ripple/ripple_Database.h"
-#include "src/cpp/ripple/ripple_DatabaseCon.h"
-#include "src/cpp/ripple/ripple_SqliteDatabase.h"
-#include "src/cpp/ripple/ripple_DBInit.h"
+#include "data/ripple_Database.h"
+#include "data/ripple_DatabaseCon.h"
+#include "data/ripple_SqliteDatabase.h"
+#include "data/ripple_DBInit.h"
 
 #include "node/ripple_NodeObject.h"
 #include "node/ripple_NodeStore.h"
@@ -136,10 +136,6 @@ namespace ripple
 #include "src/cpp/ripple/ripple_PeerSet.h"
 #include "src/cpp/ripple/ripple_InboundLedger.h"
 #include "src/cpp/ripple/ripple_InboundLedgers.h"
-#include "src/cpp/ripple/ScriptData.h"
-#include "src/cpp/ripple/Contract.h"
-#include "src/cpp/ripple/Interpreter.h"
-#include "src/cpp/ripple/Operation.h"
 #include "src/cpp/ripple/ripple_AccountItem.h"
 #include "src/cpp/ripple/ripple_AccountItems.h"
 #include "src/cpp/ripple/ripple_AcceptedLedgerTx.h"
@@ -157,7 +153,6 @@ namespace ripple
 #include "src/cpp/ripple/RPCHandler.h"
 #include "src/cpp/ripple/TransactionQueue.h"
 #include "src/cpp/ripple/OrderBookDB.h"
-#include "src/cpp/ripple/ripple_DatabaseCon.h"
 #include "src/cpp/ripple/ripple_IApplication.h"
 #include "src/cpp/ripple/CallRPC.h"
 #include "src/cpp/ripple/Transactor.h"
@@ -188,6 +183,11 @@ namespace ripple
 #include "src/cpp/ripple/WSConnection.h"
 #include "src/cpp/ripple/ripple_WSHandler.h"
 #include "src/cpp/ripple/WalletAddTransactor.h"
+
+#include "contracts/ripple_ScriptData.h"
+#include "contracts/ripple_Contract.h"
+#include "contracts/ripple_Interpreter.h"
+#include "contracts/ripple_Operation.h"
 
 #include "basics/ripple_Version.h" // VFALCO TODO Should this be private?
 #include "basics/ripple_BuildVersion.h" // private
@@ -252,10 +252,14 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/ripple_SHAMapNode.cpp"
 #include "src/cpp/ripple/ripple_SHAMapTreeNode.cpp"
 
-#include "src/cpp/ripple/ripple_Database.cpp"
 #include "src/cpp/ripple/ripple_AccountItems.cpp"
 #include "src/cpp/ripple/ripple_AccountState.cpp"
 #include "src/cpp/ripple/ChangeTransactor.cpp"
+
+#include "contracts/ripple_Contract.cpp"
+#include "contracts/ripple_Operation.cpp"
+#include "contracts/ripple_ScriptData.cpp"
+#include "contracts/ripple_Interpreter.cpp"
 
 #endif
 
@@ -272,12 +276,16 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/ripple_AccountItem.cpp"
 #include "src/cpp/ripple/AccountSetTransactor.cpp"
 #include "src/cpp/ripple/ripple_CanonicalTXSet.cpp"
-#include "src/cpp/ripple/Contract.cpp"
 #include "src/cpp/ripple/LedgerProposal.cpp"
 #include "src/cpp/ripple/ripple_LoadManager.cpp"
 #include "src/cpp/ripple/ripple_NicknameState.cpp"
 #include "src/cpp/ripple/OfferCancelTransactor.cpp"
 #include "src/cpp/ripple/OrderBookDB.cpp"
+
+#include "data/ripple_Database.cpp"
+#include "data/ripple_DatabaseCon.cpp"
+#include "data/ripple_SqliteDatabase.cpp"
+#include "data/ripple_DBInit.cpp"
 
 #endif
 
@@ -319,13 +327,11 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #include "src/cpp/ripple/ripple_UniqueNodeList.cpp"
 #include "src/cpp/ripple/ripple_InboundLedger.cpp"
-#include "src/cpp/ripple/ripple_SqliteDatabase.cpp"
 
 #include "src/cpp/ripple/PaymentTransactor.cpp"
 #include "src/cpp/ripple/RegularKeySetTransactor.cpp"
 #include "src/cpp/ripple/ripple_RippleState.cpp"
 #include "src/cpp/ripple/RPCDoor.cpp"
-#include "src/cpp/ripple/ScriptData.cpp"
 #include "src/cpp/ripple/TransactionCheck.cpp"
 #include "src/cpp/ripple/TransactionMaster.cpp"
 #include "src/cpp/ripple/TransactionQueue.cpp"
@@ -345,10 +351,7 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #include "src/cpp/ripple/WalletAddTransactor.cpp"
 #include "src/cpp/ripple/ripple_AcceptedLedgerTx.cpp"
-#include "src/cpp/ripple/ripple_DatabaseCon.cpp"
 #include "src/cpp/ripple/ripple_FeeVote.cpp"
-#include "src/cpp/ripple/ripple_DBInit.cpp"
-#include "src/cpp/ripple/Interpreter.cpp"
 #include "src/cpp/ripple/LedgerTiming.cpp"
 
 #endif
@@ -382,7 +385,6 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_PathRequest.cpp"
 #include "src/cpp/ripple/ripple_SerializedLedger.cpp"
 #include "src/cpp/ripple/ripple_TransactionAcquire.cpp"
-#include "src/cpp/ripple/Operation.cpp"
 
 #endif
 

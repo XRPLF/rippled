@@ -97,15 +97,6 @@
     <Filter Include="[0] Subtrees\leveldb\port\win">
       <UniqueIdentifier>{223ac5ce-c9a0-4196-9b75-4f5fbe8bfa00}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[1] Ripple\ripple_app\_contracts">
-      <UniqueIdentifier>{46bda3c0-166b-4188-8f6b-da6f6ff638fc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[1] Ripple\ripple_app\_data">
-      <UniqueIdentifier>{01ac5649-14bd-4c61-ac6b-169742a86036}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[1] Ripple\ripple_app\_ledger">
-      <UniqueIdentifier>{85ea08c2-f8a6-477b-8d59-9a7339761d20}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[1] Ripple\ripple_app\_main">
       <UniqueIdentifier>{cf19fa31-c40b-4203-b497-63a8c3dcb282}</UniqueIdentifier>
     </Filter>
@@ -147,6 +138,15 @@
     </Filter>
     <Filter Include="[1] Ripple\ripple_app\node">
       <UniqueIdentifier>{bd48a825-192f-4d5e-9230-661fdd65f9b6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_app\contracts">
+      <UniqueIdentifier>{3ac448dc-9f2e-472b-9f3c-cf9140dddf3a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_app\data">
+      <UniqueIdentifier>{28809512-5c30-469f-a094-90839fbfa210}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_app\ledger">
+      <UniqueIdentifier>{85ea08c2-f8a6-477b-8d59-9a7339761d20}</UniqueIdentifier>
     </Filter>
     <Filter Include="[1] Ripple\ripple_mdb">
       <UniqueIdentifier>{6a769530-8edf-4836-afc8-8836fe315603}</UniqueIdentifier>
@@ -531,74 +531,11 @@
     <ClCompile Include="..\..\modules\ripple_client\ripple_client.cpp">
       <Filter>[1] Ripple\ripple_client</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\Contract.cpp">
-      <Filter>[1] Ripple\ripple_app\_contracts</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\Interpreter.cpp">
-      <Filter>[1] Ripple\ripple_app\_contracts</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\Operation.cpp">
-      <Filter>[1] Ripple\ripple_app\_contracts</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ScriptData.cpp">
-      <Filter>[1] Ripple\ripple_app\_contracts</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_DisputedTx.cpp">
       <Filter>[1] Ripple\ripple_app\_misc\_consensus</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_LedgerConsensus.cpp">
       <Filter>[1] Ripple\ripple_app\_misc\_consensus</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_Database.cpp">
-      <Filter>[1] Ripple\ripple_app\_data</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_DatabaseCon.cpp">
-      <Filter>[1] Ripple\ripple_app\_data</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_DBInit.cpp">
-      <Filter>[1] Ripple\ripple_app\_data</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_SqliteDatabase.cpp">
-      <Filter>[1] Ripple\ripple_app\_data</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\Ledger.cpp">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\LedgerMaster.cpp">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\LedgerProposal.cpp">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\LedgerTiming.cpp">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\LedgerUnitTests.cpp">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\OrderBookDB.cpp">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_AcceptedLedger.cpp">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_AcceptedLedgerTx.cpp">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_InboundLedger.cpp">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_InboundLedgers.cpp">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_LedgerEntrySet.cpp">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_LedgerHistory.cpp">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\SerializedValidation.cpp">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ParameterTable.cpp">
       <Filter>[1] Ripple\ripple_app\_main</Filter>
@@ -875,6 +812,30 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_hyperleveldb\ripple_hyperleveldb.cpp">
       <Filter>[1] Ripple\ripple_hyperleveldb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\contracts\ripple_Contract.cpp">
+      <Filter>[1] Ripple\ripple_app\contracts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\contracts\ripple_Interpreter.cpp">
+      <Filter>[1] Ripple\ripple_app\contracts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\contracts\ripple_Operation.cpp">
+      <Filter>[1] Ripple\ripple_app\contracts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\contracts\ripple_ScriptData.cpp">
+      <Filter>[1] Ripple\ripple_app\contracts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\data\ripple_Database.cpp">
+      <Filter>[1] Ripple\ripple_app\data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\data\ripple_DatabaseCon.cpp">
+      <Filter>[1] Ripple\ripple_app\data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\data\ripple_DBInit.cpp">
+      <Filter>[1] Ripple\ripple_app\data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\data\ripple_SqliteDatabase.cpp">
+      <Filter>[1] Ripple\ripple_app\data</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1299,68 +1260,11 @@
     <ClInclude Include="..\..\modules\ripple_client\ripple_client.h">
       <Filter>[1] Ripple\ripple_client</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\Contract.h">
-      <Filter>[1] Ripple\ripple_app\_contracts</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\Interpreter.h">
-      <Filter>[1] Ripple\ripple_app\_contracts</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\Operation.h">
-      <Filter>[1] Ripple\ripple_app\_contracts</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ScriptData.h">
-      <Filter>[1] Ripple\ripple_app\_contracts</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_DisputedTx.h">
       <Filter>[1] Ripple\ripple_app\_misc\_consensus</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_LedgerConsensus.h">
       <Filter>[1] Ripple\ripple_app\_misc\_consensus</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_Database.h">
-      <Filter>[1] Ripple\ripple_app\_data</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_DatabaseCon.h">
-      <Filter>[1] Ripple\ripple_app\_data</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_SqliteDatabase.h">
-      <Filter>[1] Ripple\ripple_app\_data</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\Ledger.h">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\LedgerMaster.h">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\LedgerProposal.h">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\LedgerTiming.h">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\OrderBookDB.h">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_AcceptedLedger.h">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_AcceptedLedgerTx.h">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_InboundLedger.h">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_InboundLedgers.h">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_LedgerEntrySet.h">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_LedgerHistory.h">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\SerializedValidation.h">
-      <Filter>[1] Ripple\ripple_app\_ledger</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ParameterTable.h">
       <Filter>[1] Ripple\ripple_app\_main</Filter>
@@ -1608,9 +1512,6 @@
     <ClInclude Include="..\..\modules\ripple_basio\boost\ripple_SslContext.h">
       <Filter>[1] Ripple\ripple_basio\boost</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_DBInit.h">
-      <Filter>[1] Ripple\ripple_app\_data</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_NodeObject.h">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>
@@ -1631,6 +1532,30 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_hyperleveldb\ripple_hyperleveldb.h">
       <Filter>[1] Ripple\ripple_hyperleveldb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\contracts\ripple_Contract.h">
+      <Filter>[1] Ripple\ripple_app\contracts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\contracts\ripple_Interpreter.h">
+      <Filter>[1] Ripple\ripple_app\contracts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\contracts\ripple_Operation.h">
+      <Filter>[1] Ripple\ripple_app\contracts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\contracts\ripple_ScriptData.h">
+      <Filter>[1] Ripple\ripple_app\contracts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\data\ripple_Database.h">
+      <Filter>[1] Ripple\ripple_app\data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\data\ripple_DatabaseCon.h">
+      <Filter>[1] Ripple\ripple_app\data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\data\ripple_DBInit.h">
+      <Filter>[1] Ripple\ripple_app\data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\data\ripple_SqliteDatabase.h">
+      <Filter>[1] Ripple\ripple_app\data</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
