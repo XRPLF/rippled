@@ -25,7 +25,62 @@ public:
 
     class Holder;
 
-    Application ();
+    Application ()
+    //
+    // VFALCO NOTE Change this to control whether or not the Application
+    //             object is destroyed on exit
+    //
+    #if 1
+        // Application object will be deleted on exit. If the code doesn't exit
+        // cleanly this could cause hangs or crashes on exit.
+        //
+        : SharedSingleton <Application> (SingletonLifetime::persistAfterCreation)
+    #else
+        // This will make it so that the Application object is not deleted on exit.
+        //
+        : SharedSingleton <Application> (SingletonLifetime::neverDestroyed)
+    #endif
+        , mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
+        , mIOWork (mIOService)
+        , mNetOps (&mLedgerMaster)
+        , m_rpcServerHandler (mNetOps)
+        , mTempNodeCache ("NodeCache", 16384, 90)
+        , m_nodeStore ("type=LevelDB|path=/mnt/stuff|compact=1", 16384, 300)
+        , mSLECache ("LedgerEntryCache", 4096, 120)
+        , mSNTPClient (mAuxService)
+        , mJobQueue (mIOService)
+        // VFALCO New stuff
+        , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
+        , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
+        , mFeeTrack (ILoadFeeTrack::New ())
+        , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
+        , mValidations (IValidations::New ())
+        , mUNL (UniqueNodeList::New ())
+        , mProofOfWorkFactory (IProofOfWorkFactory::New ())
+        , mPeers (IPeers::New (mIOService))
+        , m_loadManager (ILoadManager::New ())
+        // VFALCO End new stuff
+        // VFALCO TODO replace all NULL with nullptr
+        , mRpcDB (NULL)
+        , mTxnDB (NULL)
+        , mLedgerDB (NULL)
+        , mWalletDB (NULL) // VFALCO NOTE are all these 'NULL' ctor params necessary?
+        , mNetNodeDB (NULL)
+        , mPathFindDB (NULL)
+        , mHashNodeDB (NULL)
+        , mHashNodeLDB (NULL)
+        , mEphemeralLDB (NULL)
+        , mPeerDoor (NULL)
+        , mRPCDoor (NULL)
+        , mWSPublicDoor (NULL)
+        , mWSPrivateDoor (NULL)
+        , mSweepTimer (mAuxService)
+        , mShutdown (false)
+    {
+        // VFALCO TODO remove these once the call is thread safe.
+        HashMaps::getInstance ().initializeNonce <size_t> ();
+    }
+
     ~Application ();
 
     LocalCredentials& getLocalCredentials ()
@@ -63,9 +118,9 @@ public:
         return mTempNodeCache;
     }
     
-    NodeStore& getHashedObjectStore ()
+    NodeStore& getNodeStore ()
     {
-        return mHashedObjectStore;
+        return m_nodeStore;
     }
     
     JobQueue& getJobQueue ()
@@ -223,7 +278,7 @@ private:
     NetworkOPs         mNetOps;
     RPCServerHandler   m_rpcServerHandler;
     NodeCache          mTempNodeCache;
-    NodeStore  mHashedObjectStore;
+    NodeStore  m_nodeStore;
     SLECache           mSLECache;
     SNTPClient         mSNTPClient;
     JobQueue           mJobQueue;
@@ -264,62 +319,6 @@ private:
     bool volatile mShutdown;
 };
 
-Application::Application ()
-//
-// VFALCO NOTE Change this to control whether or not the Application
-//             object is destroyed on exit
-//
-#if 1
-    // Application object will be deleted on exit. If the code doesn't exit
-    // cleanly this could cause hangs or crashes on exit.
-    //
-    : SharedSingleton <Application> (SingletonLifetime::persistAfterCreation)
-#else
-    // This will make it so that the Application object is not deleted on exit.
-    //
-    : SharedSingleton <Application> (SingletonLifetime::neverDestroyed)
-#endif
-    , mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
-    , mIOWork (mIOService)
-    , mNetOps (&mLedgerMaster)
-    , m_rpcServerHandler (mNetOps)
-    , mTempNodeCache ("NodeCache", 16384, 90)
-    , mHashedObjectStore (16384, 300)
-    , mSLECache ("LedgerEntryCache", 4096, 120)
-    , mSNTPClient (mAuxService)
-    , mJobQueue (mIOService)
-    // VFALCO New stuff
-    , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
-    , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
-    , mFeeTrack (ILoadFeeTrack::New ())
-    , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
-    , mValidations (IValidations::New ())
-    , mUNL (UniqueNodeList::New ())
-    , mProofOfWorkFactory (IProofOfWorkFactory::New ())
-    , mPeers (IPeers::New (mIOService))
-    , m_loadManager (ILoadManager::New ())
-    // VFALCO End new stuff
-    // VFALCO TODO replace all NULL with nullptr
-    , mRpcDB (NULL)
-    , mTxnDB (NULL)
-    , mLedgerDB (NULL)
-    , mWalletDB (NULL) // VFALCO NOTE are all these 'NULL' ctor params necessary?
-    , mNetNodeDB (NULL)
-    , mPathFindDB (NULL)
-    , mHashNodeDB (NULL)
-    , mHashNodeLDB (NULL)
-    , mEphemeralLDB (NULL)
-    , mPeerDoor (NULL)
-    , mRPCDoor (NULL)
-    , mWSPublicDoor (NULL)
-    , mWSPrivateDoor (NULL)
-    , mSweepTimer (mAuxService)
-    , mShutdown (false)
-{
-    // VFALCO TODO remove these once the call is thread safe.
-    HashMaps::getInstance ().initializeNonce <size_t> ();
-}
-
 Application::~Application ()
 {
     // VFALCO TODO Wrap these in ScopedPointer
@@ -341,7 +340,7 @@ void Application::stop ()
     StopSustain ();
     mShutdown = true;
     mIOService.stop ();
-    mHashedObjectStore.waitWrite ();
+    m_nodeStore.waitWrite ();
     mValidations->flush ();
     mAuxService.stop ();
     mJobQueue.shutdown ();
@@ -452,7 +451,7 @@ void Application::setup ()
     if (theConfig.LDB_IMPORT)
         options.write_buffer_size = 32 << 20;
 
-    if (mHashedObjectStore.isLevelDB ())
+    if (m_nodeStore.isLevelDB ())
     {
         WriteLog (lsINFO, Application) << "LevelDB used for nodes";
         leveldb::Status status = leveldb::DB::Open (options, (theConfig.DATA_DIR / "hashnode").string (), &mHashNodeLDB);
@@ -486,7 +485,7 @@ void Application::setup ()
         }
     }
 
-    if (!mHashedObjectStore.isLevelDB ())
+    if (!m_nodeStore.isLevelDB ())
     {
         getApp().getHashNodeDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
                 (theConfig.getSize (siHashNodeDBCache) * 1024)));
@@ -548,7 +547,7 @@ void Application::setup ()
         getUNL ().nodeBootstrap ();
 
     mValidations->tune (theConfig.getSize (siValidationsSize), theConfig.getSize (siValidationsAge));
-    mHashedObjectStore.tune (theConfig.getSize (siNodeCacheSize), theConfig.getSize (siNodeCacheAge));
+    m_nodeStore.tune (theConfig.getSize (siNodeCacheSize), theConfig.getSize (siNodeCacheAge));
     mLedgerMaster.tune (theConfig.getSize (siLedgerSize), theConfig.getSize (siLedgerAge));
     mSLECache.setTargetSize (theConfig.getSize (siSLECacheSize));
     mSLECache.setTargetAge (theConfig.getSize (siSLECacheAge));
@@ -723,7 +722,7 @@ void Application::sweep ()
     //         have listeners register for "onSweep ()" notification.
     //
     mMasterTransaction.sweep ();
-    mHashedObjectStore.sweep ();
+    m_nodeStore.sweep ();
     mLedgerMaster.sweep ();
     mTempNodeCache.sweep ();
     mValidations->sweep ();
@@ -995,7 +994,7 @@ void Application::updateTables (bool ldbImport)
         exit (1);
     }
 
-    if (getApp().getHashedObjectStore ().isLevelDB ())
+    if (getApp().getNodeStore ().isLevelDB ())
     {
         boost::filesystem::path hashPath = theConfig.DATA_DIR / "hashnode.db";
 
@@ -1004,7 +1003,7 @@ void Application::updateTables (bool ldbImport)
             if (theConfig.LDB_IMPORT)
             {
                 Log (lsWARNING) << "Importing SQLite -> LevelDB";
-                getApp().getHashedObjectStore ().import (hashPath.string ());
+                getApp().getNodeStore ().import (hashPath.string ());
                 Log (lsWARNING) << "Remove or remname the hashnode.db file";
             }
             else

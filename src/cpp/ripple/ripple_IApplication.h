@@ -68,7 +68,7 @@ public:
     virtual UniqueNodeList&        getUNL () = 0;
     virtual IValidations&           getValidations () = 0;
 
-    virtual NodeStore&      getHashedObjectStore () = 0;
+    virtual NodeStore&      getNodeStore () = 0;
     virtual JobQueue&               getJobQueue () = 0;
     virtual InboundLedgers&         getInboundLedgers () = 0;
     virtual LedgerMaster&           getLedgerMaster () = 0;

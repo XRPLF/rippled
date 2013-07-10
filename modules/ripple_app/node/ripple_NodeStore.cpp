@@ -4,16 +4,62 @@
 */
 //==============================================================================
 
-NodeStore::NodeStore (int cacheSize, int cacheAge) :
-    mCache ("NodeStore", cacheSize, cacheAge), mNegativeCache ("HashedObjectNegativeCache", 0, 120),
-    mWriteGeneration (0), mWriteLoad (0), mWritePending (false), mLevelDB (false), mEphemeralDB (false)
+Array <NodeStore::BackendFactory*> NodeStore::s_factories;
+
+NodeStore::NodeStore (String parameters, int cacheSize, int cacheAge)
+    : mCache ("NodeStore", cacheSize, cacheAge)
+    , mNegativeCache ("HashedObjectNegativeCache", 0, 120)
+    , mWriteGeneration (0)
+    , mWriteLoad (0)
+    , mWritePending (false)
+    , mLevelDB (false)
+    , mEphemeralDB (false)
 {
+    StringPairArray keyValues = parseKeyValueParameters (parameters, '|');
+
+    String const& type = keyValues ["type"];
+
+    if (type.isNotEmpty ())
+    {
+        BackendFactory* factory = nullptr;
+
+        for (int i = 0; i < s_factories.size (); ++i)
+        {
+            if (s_factories [i]->getName () == type)
+            {
+                factory = s_factories [i];
+                break;
+            }
+        }
+
+        if (factory != nullptr)
+        {
+            m_backend = factory->createInstance (keyValues);
+        }
+        else
+        {
+            throw std::runtime_error ("unkown backend type");
+        }
+    }
+    else
+    {
+        throw std::runtime_error ("missing backend type");
+    }
+
     mWriteSet.reserve (128);
 
+    // VFALCO TODO Eliminate usage of theConfig
+    //             This can be done by passing required parameters through
+    //             the backendParameters string.
+    //
     if (theConfig.NODE_DB == "leveldb" || theConfig.NODE_DB == "LevelDB")
+    {
         mLevelDB = true;
+    }
     else if (theConfig.NODE_DB == "SQLite" || theConfig.NODE_DB == "sqlite")
+    {
         mLevelDB = false;
+    }
     else
     {
         WriteLog (lsFATAL, NodeObject) << "Incorrect database selection";
@@ -21,13 +67,55 @@ NodeStore::NodeStore (int cacheSize, int cacheAge) :
     }
 
     if (!theConfig.LDB_EPHEMERAL.empty ())
+    {
+        // VFALCO NOTE This is cryptic
         mEphemeralDB = true;
+    }
+}
+
+void NodeStore::addBackendFactory (BackendFactory& factory)
+{
+    s_factories.add (&factory);
+}
+
+// DEPRECATED
+bool NodeStore::isLevelDB ()
+{
+    return mLevelDB;
+}
+
+float NodeStore::getCacheHitRate ()
+{
+    return mCache.getHitRate ();
+}
+
+bool NodeStore::store (NodeObjectType type, uint32 index, Blob const& data,
+            uint256 const& hash)
+{
+    if (mLevelDB)
+        return storeLevelDB (type, index, data, hash);
+
+    return storeSQLite (type, index, data, hash);
+}
+
+NodeObject::pointer NodeStore::retrieve (uint256 const& hash)
+{
+    if (mLevelDB)
+        return retrieveLevelDB (hash);
+
+    return retrieveSQLite (hash);
 }
 
 void NodeStore::tune (int size, int age)
 {
     mCache.setTargetSize (size);
     mCache.setTargetAge (age);
+}
+
+void NodeStore::sweep ()
+{
+    mCache.sweep ();
+    mNegativeCache.sweep ();
 }
 
 void NodeStore::waitWrite ()
@@ -617,5 +705,3 @@ int NodeStore::import (const std::string& file)
     WriteLog (lsWARNING, NodeObject) << "Imported " << count << " nodes";
     return count;
 }
-
-// vim:ts=4

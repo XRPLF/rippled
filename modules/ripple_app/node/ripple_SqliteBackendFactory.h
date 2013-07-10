@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORESQLITE_H_INCLUDED
-#define RIPPLE_NODESTORESQLITE_H_INCLUDED
+#ifndef RIPPLE_SQLITEBACKENDFACTORY_H_INCLUDED
+#define RIPPLE_SQLITEBACKENDFACTORY_H_INCLUDED
 
 /** Factory to produce SQLite backends for the NodeStore.
 */
@@ -21,7 +21,7 @@ public:
     static SqliteBackendFactory& getInstance ();
 
     String getName () const;
-    NodeStore::Backend* createInstance (HashMap <String, String> const& keyValueParameters);
+    NodeStore::Backend* createInstance (StringPairArray const& keyValues);
 };
 
 #endif

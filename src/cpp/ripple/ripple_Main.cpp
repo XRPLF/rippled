@@ -181,9 +181,10 @@ int rippleMain (int argc, char** argv)
     po::positional_options_description p;
     p.add ("parameters", -1);
 
-    //
-    // Prepare to run
-    //
+    // These must be added before the Application object is created
+    NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
+    NodeStore::addBackendFactory (LevelDBBackendFactory::getInstance ());
+    
 
     if (! RandomNumbers::getInstance ().initialize ())
     {

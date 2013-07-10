@@ -159,7 +159,7 @@ String SqliteBackendFactory::getName () const
     return "Sqlite";
 }
 
-NodeStore::Backend* SqliteBackendFactory::createInstance (HashMap <String, String> const& keyValueParameters)
+NodeStore::Backend* SqliteBackendFactory::createInstance (StringPairArray const& keyValues)
 {
-    return new Backend (keyValueParameters ["path"].toStdString ());
+    return new Backend (keyValues ["path"].toStdString ());
 }

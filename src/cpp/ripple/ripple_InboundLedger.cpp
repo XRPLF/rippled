@@ -49,7 +49,7 @@ bool InboundLedger::tryLocal ()
     if (!mHaveBase)
     {
         // Nothing we can do without the ledger base
-        NodeObject::pointer node = getApp().getHashedObjectStore ().retrieve (mHash);
+        NodeObject::pointer node = getApp().getNodeStore ().retrieve (mHash);
 
         if (!node)
         {
@@ -60,7 +60,7 @@ bool InboundLedger::tryLocal ()
 
             WriteLog (lsTRACE, InboundLedger) << "Ledger base found in fetch pack";
             mLedger = boost::make_shared<Ledger> (data, true);
-            getApp().getHashedObjectStore ().store (hotLEDGER, mLedger->getLedgerSeq (), data, mHash);
+            getApp().getNodeStore ().store (hotLEDGER, mLedger->getLedgerSeq (), data, mHash);
         }
         else
         {
@@ -658,7 +658,7 @@ bool InboundLedger::takeBase (const std::string& data) // data must not have has
     Serializer s (data.size () + 4);
     s.add32 (HashPrefix::ledgerMaster);
     s.addRaw (data);
-    getApp().getHashedObjectStore ().store (hotLEDGER, mLedger->getLedgerSeq (), s.peekData (), mHash);
+    getApp().getNodeStore ().store (hotLEDGER, mLedger->getLedgerSeq (), s.peekData (), mHash);
 
     progress ();
 

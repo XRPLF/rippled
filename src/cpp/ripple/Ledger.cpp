@@ -533,7 +533,7 @@ void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
     Serializer s (128);
     s.add32 (HashPrefix::ledgerMaster);
     addRaw (s);
-    getApp().getHashedObjectStore ().store (hotLEDGER, mLedgerSeq, s.peekData (), mHash);
+    getApp().getNodeStore ().store (hotLEDGER, mLedgerSeq, s.peekData (), mHash);
 
     AcceptedLedger::pointer aLedger = AcceptedLedger::makeAcceptedLedger (shared_from_this ());
 

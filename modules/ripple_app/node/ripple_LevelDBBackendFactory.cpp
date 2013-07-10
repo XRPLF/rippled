@@ -133,9 +133,9 @@ String LevelDBBackendFactory::getName () const
     return "LevelDB";
 }
 
-NodeStore::Backend* LevelDBBackendFactory::createInstance (HashMap <String, String> const& keyValueParameters)
+NodeStore::Backend* LevelDBBackendFactory::createInstance (StringPairArray const& keyValues)
 {
-    return nullptr;
+    return new LevelDBBackendFactory::Backend (keyValues ["path"].toStdString ());
 }
 
 //------------------------------------------------------------------------------

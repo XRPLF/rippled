@@ -23,15 +23,14 @@ public:
         //
         typedef boost::shared_ptr <Backend> pointer;
 
-        Backend()                { ; }
-        virtual ~Backend()       { ; }
+        virtual ~Backend () { }
 
         virtual std::string getDataBaseName() = 0;
 
         // Store/retrieve a single object
         // These functions must be thread safe
-        virtual bool store(NodeObject::ref) = 0;
-        virtual NodeObject::pointer retrieve(uint256 const &hash) = 0;
+        virtual bool store (NodeObject::ref) = 0;
+        virtual NodeObject::pointer retrieve (uint256 const &hash) = 0;
 
         // Store a group of objects
         // This function will only be called from a single thread
@@ -56,38 +55,36 @@ public:
 
         /** Create an instance of this factory's backend.
         */
-        virtual Backend* createInstance (HashMap <String, String> const& keyValueParameters) = 0;
+        virtual Backend* createInstance (StringPairArray const& keyValues) = 0;
     };
 
 public:
-    NodeStore (int cacheSize, int cacheAge);
+    /** Construct a node store.
 
-    bool isLevelDB ()
-    {
-        return mLevelDB;
-    }
+        parameters has the format:
 
-    float getCacheHitRate ()
-    {
-        return mCache.getHitRate ();
-    }
+        <key>=<value>['|'<key>=<value>]
+
+        The key "type" must exist, it defines the backend. For example
+            "type=LevelDB|path=/mnt/ephemeral"
+    */
+    NodeStore (String parameters, int cacheSize, int cacheAge);
+
+    /** Add the specified backend factory to the list of available factories.
+
+        The names of available factories are compared against the "type"
+        value in the parameter list on construction.
+    */
+    static void addBackendFactory (BackendFactory& factory);
+
+    bool isLevelDB ();
+
+    float getCacheHitRate ();
 
     bool store (NodeObjectType type, uint32 index, Blob const& data,
-                uint256 const& hash)
-    {
-        if (mLevelDB)
-            return storeLevelDB (type, index, data, hash);
+                uint256 const& hash);
 
-        return storeSQLite (type, index, data, hash);
-    }
-
-    NodeObject::pointer retrieve (uint256 const& hash)
-    {
-        if (mLevelDB)
-            return retrieveLevelDB (hash);
-
-        return retrieveSQLite (hash);
-    }
+    NodeObject::pointer retrieve (uint256 const& hash);
 
     bool storeSQLite (NodeObjectType type, uint32 index, Blob const& data,
                       uint256 const& hash);
@@ -102,11 +99,7 @@ public:
 
     void waitWrite ();
     void tune (int size, int age);
-    void sweep ()
-    {
-        mCache.sweep ();
-        mNegativeCache.sweep ();
-    }
+    void sweep ();
     int getWriteLoad ();
 
     int import (const std::string& fileName);
@@ -117,6 +110,11 @@ private:
     static void LLWrite (const std::vector< boost::shared_ptr<NodeObject> >& set, leveldb::DB* db);
 
 private:
+    static Array <BackendFactory*> s_factories;
+
+private:
+    ScopedPointer <Backend> m_backend;
+
     TaggedCache<uint256, NodeObject, UptimeTimerAdapter>  mCache;
     KeyCache <uint256, UptimeTimerAdapter> mNegativeCache;
 

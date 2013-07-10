@@ -2401,7 +2401,7 @@ Json::Value RPCHandler::doGetCounts (Json::Value params, LoadType* loadType, Sco
     if (dbKB > 0)
         ret["dbKBLedger"] = dbKB;
 
-    if (!getApp().getHashedObjectStore ().isLevelDB ())
+    if (!getApp().getNodeStore ().isLevelDB ())
     {
         dbKB = getApp().getHashNodeDB ()->getDB ()->getKBUsedDB ();
 
@@ -2414,10 +2414,10 @@ Json::Value RPCHandler::doGetCounts (Json::Value params, LoadType* loadType, Sco
     if (dbKB > 0)
         ret["dbKBTransaction"] = dbKB;
 
-    ret["write_load"] = getApp().getHashedObjectStore ().getWriteLoad ();
+    ret["write_load"] = getApp().getNodeStore ().getWriteLoad ();
 
     ret["SLE_hit_rate"] = getApp().getSLECache ().getHitRate ();
-    ret["node_hit_rate"] = getApp().getHashedObjectStore ().getCacheHitRate ();
+    ret["node_hit_rate"] = getApp().getNodeStore ().getCacheHitRate ();
     ret["ledger_hit_rate"] = getApp().getLedgerMaster ().getCacheHitRate ();
     ret["AL_hit_rate"] = AcceptedLedger::getCacheHitRate ();
 

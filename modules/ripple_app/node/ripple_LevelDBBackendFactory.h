@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORELEVELDB_H_INCLUDED
-#define RIPPLE_NODESTORELEVELDB_H_INCLUDED
+#ifndef RIPPLE_LEVELDBBACKENDFACTORY_H_INCLUDED
+#define RIPPLE_LEVELDBBACKENDFACTORY_H_INCLUDED
 
 /** Factory to produce LevelDB backends for the NodeStore.
 */
@@ -21,7 +21,7 @@ public:
     static LevelDBBackendFactory& getInstance ();
 
     String getName () const;
-    NodeStore::Backend* createInstance (HashMap <String, String> const& keyValueParameters);
+    NodeStore::Backend* createInstance (StringPairArray const& keyValues);
 };
 
 #endif
