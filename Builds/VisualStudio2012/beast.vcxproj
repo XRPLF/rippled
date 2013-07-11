@@ -87,7 +87,6 @@
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_ReadWriteMutex.h" />
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_Semaphore.h" />
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_SerialFor.h" />
-    <ClInclude Include="..\..\modules\beast_basics\threads\beast_SharedObject.h" />
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_ThreadGroup.h" />
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_ThreadWithCallQueue.h" />
     <ClInclude Include="..\..\modules\beast_core\beast_core.h" />
@@ -311,12 +310,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_basics\threads\beast_Semaphore.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_basics\threads\beast_SharedObject.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

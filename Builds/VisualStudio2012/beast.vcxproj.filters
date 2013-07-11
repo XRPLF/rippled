@@ -524,9 +524,6 @@
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_SerialFor.h">
       <Filter>beast_basics\threads</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_basics\threads\beast_SharedObject.h">
-      <Filter>beast_basics\threads</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_ThreadGroup.h">
       <Filter>beast_basics\threads</Filter>
     </ClInclude>
@@ -902,9 +899,6 @@
       <Filter>beast_basics\threads</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_basics\threads\beast_Semaphore.cpp">
-      <Filter>beast_basics\threads</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_basics\threads\beast_SharedObject.cpp">
       <Filter>beast_basics\threads</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_basics\threads\beast_ThreadGroup.cpp">
