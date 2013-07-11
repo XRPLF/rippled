@@ -126,7 +126,7 @@ NodeObject::pointer NodeStore::retrieve (uint256 const& hash)
 {
     NodeObject::pointer obj = mCache.fetch (hash);
 
-    if (obj || mNegativeCache.isPresent (hash) || !getApp().getHashNodeLDB ())
+    if (obj || mNegativeCache.isPresent (hash))
         return obj;
 
     if (m_fastBackend)
