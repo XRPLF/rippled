@@ -837,6 +837,45 @@
     <ClCompile Include="..\..\modules\ripple_app\data\ripple_SqliteDatabase.cpp">
       <Filter>[1] Ripple\ripple_app\data</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ledger\Ledger.cpp">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ledger\LedgerMaster.cpp">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ledger\LedgerProposal.cpp">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ledger\LedgerTiming.cpp">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ledger\LedgerUnitTests.cpp">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ledger\OrderBookDB.cpp">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ledger\ripple_AcceptedLedger.cpp">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ledger\ripple_AcceptedLedgerTx.cpp">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ledger\ripple_InboundLedger.cpp">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ledger\ripple_InboundLedgers.cpp">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ledger\ripple_LedgerEntrySet.cpp">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ledger\ripple_LedgerHistory.cpp">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ledger\SerializedValidation.cpp">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h">
@@ -1556,6 +1595,42 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\data\ripple_SqliteDatabase.h">
       <Filter>[1] Ripple\ripple_app\data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\ledger\Ledger.h">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\ledger\LedgerMaster.h">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\ledger\LedgerProposal.h">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\ledger\LedgerTiming.h">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\ledger\OrderBookDB.h">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\ledger\ripple_AcceptedLedger.h">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\ledger\ripple_AcceptedLedgerTx.h">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\ledger\ripple_InboundLedger.h">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\ledger\ripple_InboundLedgers.h">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\ledger\ripple_LedgerEntrySet.h">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\ledger\ripple_LedgerHistory.h">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\ledger\SerializedValidation.h">
+      <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

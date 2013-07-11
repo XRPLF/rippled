@@ -117,8 +117,8 @@ namespace ripple
 #include "src/cpp/ripple/Transaction.h"
 #include "src/cpp/ripple/ripple_AccountState.h"
 #include "src/cpp/ripple/ripple_NicknameState.h"
-#include "src/cpp/ripple/Ledger.h"
-#include "src/cpp/ripple/SerializedValidation.h"
+#include "ledger/Ledger.h"
+#include "ledger/SerializedValidation.h"
 #include "src/cpp/ripple/ripple_ILoadManager.h"
 #include "src/cpp/ripple/ripple_ProofOfWork.h"
 #include "src/cpp/ripple/ripple_InfoSub.h"
@@ -134,25 +134,25 @@ namespace ripple
 #include "src/cpp/ripple/ripple_UniqueNodeList.h"
 #include "src/cpp/ripple/ripple_IValidations.h"
 #include "src/cpp/ripple/ripple_PeerSet.h"
-#include "src/cpp/ripple/ripple_InboundLedger.h"
-#include "src/cpp/ripple/ripple_InboundLedgers.h"
+#include "ledger/ripple_InboundLedger.h"
+#include "ledger/ripple_InboundLedgers.h"
 #include "src/cpp/ripple/ripple_AccountItem.h"
 #include "src/cpp/ripple/ripple_AccountItems.h"
-#include "src/cpp/ripple/ripple_AcceptedLedgerTx.h"
-#include "src/cpp/ripple/ripple_AcceptedLedger.h"
-#include "src/cpp/ripple/ripple_LedgerEntrySet.h"
+#include "ledger/ripple_AcceptedLedgerTx.h"
+#include "ledger/ripple_AcceptedLedger.h"
+#include "ledger/ripple_LedgerEntrySet.h"
 #include "src/cpp/ripple/TransactionEngine.h"
 #include "src/cpp/ripple/ripple_CanonicalTXSet.h"
-#include "src/cpp/ripple/ripple_LedgerHistory.h"
-#include "src/cpp/ripple/LedgerMaster.h"
-#include "src/cpp/ripple/LedgerProposal.h"
+#include "ledger/ripple_LedgerHistory.h"
+#include "ledger/LedgerMaster.h"
+#include "ledger/LedgerProposal.h"
 #include "src/cpp/ripple/NetworkOPs.h"
 #include "src/cpp/ripple/TransactionMaster.h"
 #include "src/cpp/ripple/ripple_LocalCredentials.h"
 #include "src/cpp/ripple/WSDoor.h"
 #include "src/cpp/ripple/RPCHandler.h"
 #include "src/cpp/ripple/TransactionQueue.h"
-#include "src/cpp/ripple/OrderBookDB.h"
+#include "ledger/OrderBookDB.h"
 #include "src/cpp/ripple/ripple_IApplication.h"
 #include "src/cpp/ripple/CallRPC.h"
 #include "src/cpp/ripple/Transactor.h"
@@ -160,7 +160,7 @@ namespace ripple
 #include "src/cpp/ripple/ripple_TransactionAcquire.h"
 #include "src/cpp/ripple/ripple_DisputedTx.h"
 #include "src/cpp/ripple/ripple_LedgerConsensus.h"
-#include "src/cpp/ripple/LedgerTiming.h"
+#include "ledger/LedgerTiming.h"
 #include "src/cpp/ripple/ripple_Offer.h"
 #include "src/cpp/ripple/OfferCancelTransactor.h"
 #include "src/cpp/ripple/OfferCreateTransactor.h"
@@ -177,7 +177,6 @@ namespace ripple
 #include "src/cpp/ripple/RPCSub.h"
 #include "src/cpp/ripple/RegularKeySetTransactor.h"
 #include "src/cpp/ripple/ripple_RippleState.h"
-#include "src/cpp/ripple/SerializedValidation.h"
 #include "src/cpp/ripple/AccountSetTransactor.h"
 #include "src/cpp/ripple/TrustSetTransactor.h"
 #include "src/cpp/ripple/WSConnection.h"
@@ -247,7 +246,7 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "node/ripple_NullBackendFactory.cpp"
 #include "node/ripple_SqliteBackendFactory.cpp"
 
-#include "src/cpp/ripple/Ledger.cpp"
+#include "ledger/Ledger.cpp"
 #include "src/cpp/ripple/ripple_SHAMapDelta.cpp"
 #include "src/cpp/ripple/ripple_SHAMapNode.cpp"
 #include "src/cpp/ripple/ripple_SHAMapTreeNode.cpp"
@@ -276,11 +275,11 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "src/cpp/ripple/ripple_AccountItem.cpp"
 #include "src/cpp/ripple/AccountSetTransactor.cpp"
 #include "src/cpp/ripple/ripple_CanonicalTXSet.cpp"
-#include "src/cpp/ripple/LedgerProposal.cpp"
+#include "ledger/LedgerProposal.cpp"
 #include "src/cpp/ripple/ripple_LoadManager.cpp"
 #include "src/cpp/ripple/ripple_NicknameState.cpp"
 #include "src/cpp/ripple/OfferCancelTransactor.cpp"
-#include "src/cpp/ripple/OrderBookDB.cpp"
+#include "ledger/OrderBookDB.cpp"
 
 #include "data/ripple_Database.cpp"
 #include "data/ripple_DatabaseCon.cpp"
@@ -311,7 +310,7 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/rpc.cpp"
 #include "src/cpp/ripple/RPCErr.cpp"
 #include "src/cpp/ripple/RPCSub.cpp"
-#include "src/cpp/ripple/SerializedValidation.cpp"
+#include "ledger/SerializedValidation.cpp"
 #include "src/cpp/ripple/Transaction.cpp"
 #include "src/cpp/ripple/TransactionEngine.cpp"
 #include "src/cpp/ripple/TransactionMeta.cpp"
@@ -326,7 +325,7 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 4
 
 #include "src/cpp/ripple/ripple_UniqueNodeList.cpp"
-#include "src/cpp/ripple/ripple_InboundLedger.cpp"
+#include "ledger/ripple_InboundLedger.cpp"
 
 #include "src/cpp/ripple/PaymentTransactor.cpp"
 #include "src/cpp/ripple/RegularKeySetTransactor.cpp"
@@ -350,9 +349,9 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/ripple_Validations.cpp"
 
 #include "src/cpp/ripple/WalletAddTransactor.cpp"
-#include "src/cpp/ripple/ripple_AcceptedLedgerTx.cpp"
+#include "ledger/ripple_AcceptedLedgerTx.cpp"
 #include "src/cpp/ripple/ripple_FeeVote.cpp"
-#include "src/cpp/ripple/LedgerTiming.cpp"
+#include "ledger/LedgerTiming.cpp"
 
 #endif
 
@@ -360,12 +359,12 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 6
 
-#include "src/cpp/ripple/ripple_LedgerEntrySet.cpp"
+#include "ledger/ripple_LedgerEntrySet.cpp"
 #include "src/cpp/ripple/ripple_Pathfinder.cpp"
 #include "src/cpp/ripple/ripple_Features.cpp"
 
 #include "src/cpp/ripple/ripple_LocalCredentials.cpp"
-#include "src/cpp/ripple/ripple_AcceptedLedger.cpp"
+#include "ledger/ripple_AcceptedLedger.cpp"
 #include "src/cpp/ripple/ripple_DisputedTx.cpp"
 #include "src/cpp/ripple/ripple_HashRouter.cpp"
 #include "src/cpp/ripple/ripple_Main.cpp"
@@ -380,8 +379,8 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "src/cpp/ripple/NetworkOPs.cpp"
 #include "src/cpp/ripple/ripple_Peers.cpp"
 
-#include "src/cpp/ripple/ripple_InboundLedgers.cpp"
-#include "src/cpp/ripple/ripple_LedgerHistory.cpp"
+#include "ledger/ripple_InboundLedgers.cpp"
+#include "ledger/ripple_LedgerHistory.cpp"
 #include "src/cpp/ripple/ripple_PathRequest.cpp"
 #include "src/cpp/ripple/ripple_SerializedLedger.cpp"
 #include "src/cpp/ripple/ripple_TransactionAcquire.cpp"
@@ -393,7 +392,7 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 8
 
 #include "src/cpp/ripple/ripple_LedgerConsensus.cpp"
-#include "src/cpp/ripple/LedgerMaster.cpp"
+#include "ledger/LedgerMaster.cpp"
 
 #include "src/cpp/ripple/ripple_InfoSub.cpp"
 #include "src/cpp/ripple/ripple_OrderBook.cpp"
@@ -421,7 +420,7 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 //
 // VFALCO TODO Eliminate the need for boost for unit tests.
 //
-#include "src/cpp/ripple/LedgerUnitTests.cpp"
+#include "ledger/LedgerUnitTests.cpp"
 #include "src/cpp/ripple/ripple_SHAMapUnitTests.cpp"
 #include "src/cpp/ripple/ripple_SHAMapSyncUnitTests.cpp"
 #include "src/cpp/ripple/ripple_ProofOfWorkFactoryUnitTests.cpp" // Requires ProofOfWorkFactory.h
