@@ -112,9 +112,14 @@ public:
 
                 rc = mdb_put(txn, m_dbi, &key, &data, 0);
                 if (rc != 0)
+                {
+                    assert(false);
                     break;
+                }
 	    }
         }
+        else
+            assert(false);
 
         if (rc == 0)
             rc = mdb_txn_commit(txn);
@@ -147,6 +152,8 @@ public:
 	    else
 	        assert(rc == MDB_NOTFOUND);
         }
+        else
+            assert(false);
 
         mdb_txn_abort(txn);
 
