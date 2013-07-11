@@ -4,6 +4,8 @@
 */
 //==============================================================================
 
+#if RIPPLE_MDB_AVAILABLE
+
 class MdbBackendFactory::Backend : public NodeStore::Backend
 {
 public:
@@ -129,5 +131,4 @@ NodeStore::Backend* MdbBackendFactory::createInstance (StringPairArray const& ke
     return new MdbBackendFactory::Backend (keyValues);
 }
 
-//------------------------------------------------------------------------------
-
+#endif

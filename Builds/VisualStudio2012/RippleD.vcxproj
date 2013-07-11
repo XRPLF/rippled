@@ -394,6 +394,7 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_json\ripple_json.cpp" />
     <ClCompile Include="..\..\modules\ripple_leveldb\ripple_leveldb.cpp" />
+    <ClCompile Include="..\..\modules\ripple_mdb\ripple_mdb.c" />
     <ClCompile Include="..\..\modules\ripple_net\basics\ripple_HTTPRequest.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1427,6 +1428,7 @@
     <ClInclude Include="..\..\modules\ripple_json\json\json_writer.h" />
     <ClInclude Include="..\..\modules\ripple_json\ripple_json.h" />
     <ClInclude Include="..\..\modules\ripple_leveldb\ripple_leveldb.h" />
+    <ClInclude Include="..\..\modules\ripple_mdb\ripple_mdb.h" />
     <ClInclude Include="..\..\modules\ripple_net\basics\ripple_HTTPRequest.h" />
     <ClInclude Include="..\..\modules\ripple_net\basics\ripple_HttpsClient.h" />
     <ClInclude Include="..\..\modules\ripple_net\basics\ripple_RPCServer.h" />

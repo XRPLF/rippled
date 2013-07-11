@@ -10,8 +10,6 @@
 
 #include "ripple_mdb.h"
 
-#include "beast/modules/beast_core/system/beast_TargetPlatform.h"
-
 #if RIPPLE_MDB_AVAILABLE
 
 #include "mdb/libraries/liblmdb/mdb.c"

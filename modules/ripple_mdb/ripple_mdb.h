@@ -7,6 +7,8 @@
 #ifndef RIPPLE_MDB_H_INCLUDED
 #define RIPPLE_MDB_H_INCLUDED
 
+#include "beast/modules/beast_core/system/beast_TargetPlatform.h"
+
 #if ! BEAST_WIN32
 #define RIPPLE_MDB_AVAILABLE 1
 
