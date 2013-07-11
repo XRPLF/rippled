@@ -11,7 +11,6 @@ SETUP_LOG (InboundLedger)
 #define LEDGER_ACQUIRE_TIMEOUT      2000    // millisecond for each ledger timeout
 #define LEDGER_TIMEOUT_COUNT        10      // how many timeouts before we giveup
 #define LEDGER_TIMEOUT_AGGRESSIVE   6       // how many timeouts before we get aggressive
-#define TRUST_NETWORK
 
 InboundLedger::InboundLedger (uint256 const& hash, uint32 seq)
     : PeerSet (hash, LEDGER_ACQUIRE_TIMEOUT)
@@ -159,7 +158,7 @@ void InboundLedger::onTimer (bool progress)
         int pc = getPeerCount ();
         WriteLog (lsDEBUG, InboundLedger) << "No progress(" << pc << ") for ledger " << pc <<  mHash;
 
-        if (pc == 0)
+        if (pc < 3)
             addPeers ();
         else
             trigger (Peer::pointer ());
