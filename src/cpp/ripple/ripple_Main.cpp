@@ -122,8 +122,8 @@ int rippleMain (int argc, char** argv)
     // Checks the heap at every allocation and deallocation (slow).
     //
     //Debug::setAlwaysCheckHeap (false);
-    
-    // Keeps freed memory blocks and fills them with a guard value. 
+
+    // Keeps freed memory blocks and fills them with a guard value.
     //
     //Debug::setHeapDelayedFree (false);
 
@@ -184,7 +184,9 @@ int rippleMain (int argc, char** argv)
     // These must be added before the Application object is created
     NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
     NodeStore::addBackendFactory (LevelDBBackendFactory::getInstance ());
-    
+#if RIPPLE_MDB_AVAILABLE
+    NodeStore::addBackendFactory (MdbBackendFactory::getInstance ());
+#endif
 
     if (! RandomNumbers::getInstance ().initialize ())
     {

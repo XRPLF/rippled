@@ -77,6 +77,7 @@ SOURCES += \
     ../../modules/ripple_data/ripple_data.cpp \
     ../../modules/ripple_json/ripple_json.cpp \
     ../../modules/ripple_leveldb/ripple_leveldb.cpp \
+    ../../modules/ripple_mdb/ripple_mdb.c \
     ../../modules/ripple_net/ripple_net.cpp \
     ../../modules/ripple_sqlite/ripple_sqlite.c \
     ../../modules/ripple_websocket/ripple_websocket.cpp
