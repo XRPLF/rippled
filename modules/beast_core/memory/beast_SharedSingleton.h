@@ -107,7 +107,7 @@ protected:
     }
 
 public:
-    typedef ReferenceCountedObjectPtr <Object> Ptr;
+    typedef SharedObjectPtr <Object> Ptr;
 
     /** Retrieve a reference to the singleton.
     */

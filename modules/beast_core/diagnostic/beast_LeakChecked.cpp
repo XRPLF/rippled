@@ -78,7 +78,7 @@ void LeakCheckedBase::CounterBase::checkForLeaks ()
 
             If you're leaking, it's probably because you're using old-fashioned,
             non-RAII techniques for your object management. Tut, tut. Always,
-            always use ScopedPointers, OwnedArrays, ReferenceCountedObjects,
+            always use ScopedPointers, OwnedArrays, SharedObjects,
             etc, and avoid the 'delete' operator at all costs!
         */
         DBG ("Leaked objects: " << count << " of " << getClassName ());
@@ -104,7 +104,7 @@ void LeakCheckedBase::reportDanglingPointer (char const* objectName)
         Most errors like this are caused by using old-fashioned,
         non-RAII techniques for your object management. Tut, tut.
         Always, always use ScopedPointers, OwnedArrays,
-        ReferenceCountedObjects, etc, and avoid the 'delete' operator
+        SharedObjects, etc, and avoid the 'delete' operator
         at all costs!
     */
     DBG ("Dangling pointer deletion: " << objectName);

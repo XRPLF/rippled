@@ -24,7 +24,7 @@
 #ifndef BEAST_REFERENCECOUNTEDARRAY_BEASTHEADER
 #define BEAST_REFERENCECOUNTEDARRAY_BEASTHEADER
 
-#include "../memory/beast_ReferenceCountedObject.h"
+#include "../memory/beast_SharedObject.h"
 #include "beast_ArrayAllocationBase.h"
 #include "beast_ElementComparator.h"
 #include "../threads/beast_CriticalSection.h"
@@ -32,9 +32,9 @@
 
 //==============================================================================
 /**
-    Holds a list of objects derived from ReferenceCountedObject.
+    Holds a list of objects derived from SharedObject.
 
-    A ReferenceCountedArray holds objects derived from ReferenceCountedObject,
+    A ReferenceCountedArray holds objects derived from SharedObject,
     and takes care of incrementing and decrementing their ref counts when they
     are added and removed from the array.
 
@@ -47,11 +47,11 @@ template <class ObjectClass, class TypeOfCriticalSectionToUse = DummyCriticalSec
 class ReferenceCountedArray
 {
 public:
-    typedef ReferenceCountedObjectPtr<ObjectClass> ObjectClassPtr;
+    typedef SharedObjectPtr<ObjectClass> ObjectClassPtr;
 
     //==============================================================================
     /** Creates an empty array.
-        @see ReferenceCountedObject, Array, OwnedArray
+        @see SharedObject, Array, OwnedArray
     */
     ReferenceCountedArray() noexcept
         : numUsed (0)

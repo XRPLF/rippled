@@ -24,7 +24,7 @@
 #ifndef BEAST_EXPRESSION_BEASTHEADER
 #define BEAST_EXPRESSION_BEASTHEADER
 
-#include "../memory/beast_ReferenceCountedObject.h"
+#include "../memory/beast_SharedObject.h"
 #include "../containers/beast_Array.h"
 #include "../memory/beast_ScopedPointer.h"
 
@@ -260,8 +260,8 @@ private:
     friend class Term;
     friend struct Helpers;
     friend class ScopedPointer<Term>;
-    friend class ReferenceCountedObjectPtr<Term>;
-    ReferenceCountedObjectPtr<Term> term;
+    friend class SharedObjectPtr<Term>;
+    SharedObjectPtr<Term> term;
 
     explicit Expression (Term*);
 };

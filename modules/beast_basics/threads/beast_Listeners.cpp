@@ -103,10 +103,10 @@ private:
 // Each Entry holds a group and the current Call (which can be updated).
 //
 struct ListenersBase::Proxy::Entry : Entries::Node,
-        ReferenceCountedObject,
+        SharedObject,
         AllocatedBy <AllocatorType>
 {
-    typedef ReferenceCountedObjectPtr <Entry> Ptr;
+    typedef SharedObjectPtr <Entry> Ptr;
 
     explicit Entry (Group* g)
         : group (g)

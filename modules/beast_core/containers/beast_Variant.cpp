@@ -45,7 +45,7 @@ public:
     virtual double toDouble (const ValueUnion&) const noexcept                  { return 0; }
     virtual String toString (const ValueUnion&) const                           { return String::empty; }
     virtual bool toBool (const ValueUnion&) const noexcept                      { return false; }
-    virtual ReferenceCountedObject* toObject (const ValueUnion&) const noexcept { return nullptr; }
+    virtual SharedObject* toObject (const ValueUnion&) const noexcept { return nullptr; }
     virtual Array<var>* toArray (const ValueUnion&) const noexcept              { return nullptr; }
     virtual MemoryBlock* toBinary (const ValueUnion&) const noexcept            { return nullptr; }
 
@@ -243,7 +243,7 @@ public:
 
     String toString (const ValueUnion& data) const                            { return "Object 0x" + String::toHexString ((int) (pointer_sized_int) data.objectValue); }
     bool toBool (const ValueUnion& data) const noexcept                       { return data.objectValue != 0; }
-    ReferenceCountedObject* toObject (const ValueUnion& data) const noexcept  { return data.objectValue; }
+    SharedObject* toObject (const ValueUnion& data) const noexcept  { return data.objectValue; }
     bool isObject() const noexcept                                            { return true; }
 
     bool equals (const ValueUnion& data, const ValueUnion& otherData, const VariantType& otherType) const noexcept
@@ -388,7 +388,7 @@ var::var (const wchar_t* const v)     : type (&VariantType_String::instance) { n
 var::var (const void* v, size_t sz)   : type (&VariantType_Binary::instance) { value.binaryValue = new MemoryBlock (v, sz); }
 var::var (const MemoryBlock& v)       : type (&VariantType_Binary::instance) { value.binaryValue = new MemoryBlock (v); }
 
-var::var (ReferenceCountedObject* const object)  : type (&VariantType_Object::instance)
+var::var (SharedObject* const object)  : type (&VariantType_Object::instance)
 {
     value.objectValue = object;
 
@@ -416,7 +416,7 @@ var::operator float() const noexcept                    { return (float) type->t
 var::operator double() const noexcept                   { return type->toDouble (value); }
 String var::toString() const                            { return type->toString (value); }
 var::operator String() const                            { return type->toString (value); }
-ReferenceCountedObject* var::getObject() const noexcept { return type->toObject (value); }
+SharedObject* var::getObject() const noexcept { return type->toObject (value); }
 Array<var>* var::getArray() const noexcept              { return type->toArray (value); }
 MemoryBlock* var::getBinaryData() const noexcept        { return type->toBinary (value); }
 DynamicObject* var::getDynamicObject() const noexcept   { return dynamic_cast <DynamicObject*> (getObject()); }
@@ -437,7 +437,7 @@ var& var::operator= (const char* const v)        { type->cleanUp (value); type =
 var& var::operator= (const wchar_t* const v)     { type->cleanUp (value); type = &VariantType_String::instance; new (value.stringValue) String (v); return *this; }
 var& var::operator= (const String& v)            { type->cleanUp (value); type = &VariantType_String::instance; new (value.stringValue) String (v); return *this; }
 var& var::operator= (const Array<var>& v)        { var v2 (v); swapWith (v2); return *this; }
-var& var::operator= (ReferenceCountedObject* v)  { var v2 (v); swapWith (v2); return *this; }
+var& var::operator= (SharedObject* v)  { var v2 (v); swapWith (v2); return *this; }
 var& var::operator= (MethodFunction v)           { var v2 (v); swapWith (v2); return *this; }
 
 #if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS

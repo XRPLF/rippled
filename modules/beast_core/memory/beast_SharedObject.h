@@ -32,16 +32,16 @@
     Adds reference-counting to an object.
 
     To add reference-counting to a class, derive it from this class, and
-    use the ReferenceCountedObjectPtr class to point to it.
+    use the SharedObjectPtr class to point to it.
 
     e.g. @code
-    class MyClass : public ReferenceCountedObject
+    class MyClass : public SharedObject
     {
         void foo();
 
         // This is a neat way of declaring a typedef for a pointer class,
         // rather than typing out the full templated name each time..
-        typedef ReferenceCountedObjectPtr<MyClass> Ptr;
+        typedef SharedObjectPtr<MyClass> Ptr;
     };
 
     MyClass::Ptr p = new MyClass();
@@ -50,16 +50,16 @@
     p2->foo();
     @endcode
 
-    Once a new ReferenceCountedObject has been assigned to a pointer, be
+    Once a new SharedObject has been assigned to a pointer, be
     careful not to delete the object manually.
 
     This class uses an Atomic<int> value to hold the reference count, so that it
     the pointers can be passed between threads safely. For a faster but non-thread-safe
-    version, use SingleThreadedReferenceCountedObject instead.
+    version, use SingleThreadedSharedObject instead.
 
-    @see ReferenceCountedObjectPtr, ReferenceCountedArray, SingleThreadedReferenceCountedObject
+    @see SharedObjectPtr, ReferenceCountedArray, SingleThreadedSharedObject
 */
-class BEAST_API ReferenceCountedObject : Uncopyable
+class BEAST_API SharedObject : Uncopyable
 {
 public:
     //==============================================================================
@@ -92,12 +92,12 @@ public:
 protected:
     //==============================================================================
     /** Creates the reference-counted object (with an initial ref count of zero). */
-    ReferenceCountedObject()
+    SharedObject()
     {
     }
 
     /** Destructor. */
-    virtual ~ReferenceCountedObject()
+    virtual ~SharedObject()
     {
         // it's dangerous to delete an object that's still referenced by something else!
         bassert (getReferenceCount() == 0);
@@ -121,14 +121,14 @@ private:
 /**
     Adds reference-counting to an object.
 
-    This is effectively a version of the ReferenceCountedObject class, but which
+    This is effectively a version of the SharedObject class, but which
     uses a non-atomic counter, and so is not thread-safe (but which will be more
     efficient).
-    For more details on how to use it, see the ReferenceCountedObject class notes.
+    For more details on how to use it, see the SharedObject class notes.
 
-    @see ReferenceCountedObject, ReferenceCountedObjectPtr, ReferenceCountedArray
+    @see SharedObject, SharedObjectPtr, ReferenceCountedArray
 */
-class BEAST_API SingleThreadedReferenceCountedObject : public Uncopyable
+class BEAST_API SingleThreadedSharedObject : public Uncopyable
 {
 public:
     //==============================================================================
@@ -161,10 +161,10 @@ public:
 protected:
     //==============================================================================
     /** Creates the reference-counted object (with an initial ref count of zero). */
-    SingleThreadedReferenceCountedObject() : refCount (0)  {}
+    SingleThreadedSharedObject() : refCount (0)  {}
 
     /** Destructor. */
-    virtual ~SingleThreadedReferenceCountedObject()
+    virtual ~SingleThreadedSharedObject()
     {
         // it's dangerous to delete an object that's still referenced by something else!
         bassert (getReferenceCount() == 0);
@@ -181,26 +181,26 @@ private:
     A smart-pointer class which points to a reference-counted object.
 
     The template parameter specifies the class of the object you want to point to - the easiest
-    way to make a class reference-countable is to simply make it inherit from ReferenceCountedObject,
+    way to make a class reference-countable is to simply make it inherit from SharedObject,
     but if you need to, you could roll your own reference-countable class by implementing a pair of
     mathods called incReferenceCount() and decReferenceCount().
 
     When using this class, you'll probably want to create a typedef to abbreviate the full
     templated name - e.g.
-    @code typedef ReferenceCountedObjectPtr<MyClass> MyClassPtr;@endcode
+    @code typedef SharedObjectPtr<MyClass> MyClassPtr;@endcode
 
-    @see ReferenceCountedObject, ReferenceCountedObjectArray
+    @see SharedObject, SharedObjectArray
 */
-template <class ReferenceCountedObjectClass>
-class ReferenceCountedObjectPtr
+template <class SharedObjectClass>
+class SharedObjectPtr
 {
 public:
     /** The class being referenced by this pointer. */
-    typedef ReferenceCountedObjectClass ReferencedType;
+    typedef SharedObjectClass ReferencedType;
 
     //==============================================================================
     /** Creates a pointer to a null object. */
-    inline ReferenceCountedObjectPtr() noexcept
+    inline SharedObjectPtr() noexcept
         : referencedObject (nullptr)
     {
     }
@@ -209,7 +209,7 @@ public:
 
         This will increment the object's reference-count if it is non-null.
     */
-    inline ReferenceCountedObjectPtr (ReferenceCountedObjectClass* const refCountedObject) noexcept
+    inline SharedObjectPtr (SharedObjectClass* const refCountedObject) noexcept
         : referencedObject (refCountedObject)
     {
         if (refCountedObject != nullptr)
@@ -219,7 +219,7 @@ public:
     /** Copies another pointer.
         This will increment the object's reference-count (if it is non-null).
     */
-    inline ReferenceCountedObjectPtr (const ReferenceCountedObjectPtr& other) noexcept
+    inline SharedObjectPtr (const SharedObjectPtr& other) noexcept
         : referencedObject (other.referencedObject)
     {
         if (referencedObject != nullptr)
@@ -228,7 +228,7 @@ public:
 
    #if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
     /** Takes-over the object from another pointer. */
-    inline ReferenceCountedObjectPtr (ReferenceCountedObjectPtr&& other) noexcept
+    inline SharedObjectPtr (SharedObjectPtr&& other) noexcept
         : referencedObject (other.referencedObject)
     {
         other.referencedObject = nullptr;
@@ -239,8 +239,8 @@ public:
         This will increment the object's reference-count (if it is non-null).
     */
     template <class DerivedClass>
-    inline ReferenceCountedObjectPtr (const ReferenceCountedObjectPtr<DerivedClass>& other) noexcept
-        : referencedObject (static_cast <ReferenceCountedObjectClass*> (other.get()))
+    inline SharedObjectPtr (const SharedObjectPtr<DerivedClass>& other) noexcept
+        : referencedObject (static_cast <SharedObjectClass*> (other.get()))
     {
         if (referencedObject != nullptr)
             referencedObject->incReferenceCount();
@@ -251,7 +251,7 @@ public:
         The reference count of the old object is decremented, and it might be
         deleted if it hits zero. The new object's count is incremented.
     */
-    ReferenceCountedObjectPtr& operator= (const ReferenceCountedObjectPtr& other)
+    SharedObjectPtr& operator= (const SharedObjectPtr& other)
     {
         return operator= (other.referencedObject);
     }
@@ -262,14 +262,14 @@ public:
         deleted if it hits zero. The new object's count is incremented.
     */
     template <class DerivedClass>
-    ReferenceCountedObjectPtr& operator= (const ReferenceCountedObjectPtr<DerivedClass>& other)
+    SharedObjectPtr& operator= (const SharedObjectPtr<DerivedClass>& other)
     {
-        return operator= (static_cast <ReferenceCountedObjectClass*> (other.get()));
+        return operator= (static_cast <SharedObjectClass*> (other.get()));
     }
 
    #if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
     /** Takes-over the object from another pointer. */
-    ReferenceCountedObjectPtr& operator= (ReferenceCountedObjectPtr&& other)
+    SharedObjectPtr& operator= (SharedObjectPtr&& other)
     {
         std::swap (referencedObject, other.referencedObject);
         return *this;
@@ -281,14 +281,14 @@ public:
         The reference count of the old object is decremented, and it might be
         deleted if it hits zero. The new object's count is incremented.
     */
-    ReferenceCountedObjectPtr& operator= (ReferenceCountedObjectClass* const newObject)
+    SharedObjectPtr& operator= (SharedObjectClass* const newObject)
     {
         if (referencedObject != newObject)
         {
             if (newObject != nullptr)
                 newObject->incReferenceCount();
 
-            ReferenceCountedObjectClass* const oldObject = referencedObject;
+            SharedObjectClass* const oldObject = referencedObject;
             referencedObject = newObject;
 
             if (oldObject != nullptr)
@@ -303,7 +303,7 @@ public:
         This will decrement the object's reference-count, and may delete it if it
         gets to zero.
     */
-    inline ~ReferenceCountedObjectPtr()
+    inline ~SharedObjectPtr()
     {
         if (referencedObject != nullptr)
             referencedObject->decReferenceCount();
@@ -312,13 +312,13 @@ public:
     /** Returns the object that this pointer references.
         The pointer returned may be zero, of course.
     */
-    inline operator ReferenceCountedObjectClass*() const noexcept
+    inline operator SharedObjectClass*() const noexcept
     {
         return referencedObject;
     }
 
     // the -> operator is called on the referenced object
-    inline ReferenceCountedObjectClass* operator->() const noexcept
+    inline SharedObjectClass* operator->() const noexcept
     {
         return referencedObject;
     }
@@ -326,7 +326,7 @@ public:
     /** Returns the object that this pointer references.
         The pointer returned may be zero, of course.
     */
-    inline ReferenceCountedObjectClass* get() const noexcept
+    inline SharedObjectClass* get() const noexcept
     {
         return referencedObject;
     }
@@ -334,55 +334,55 @@ public:
     /** Returns the object that this pointer references.
         The pointer returned may be zero, of course.
     */
-    inline ReferenceCountedObjectClass* getObject() const noexcept
+    inline SharedObjectClass* getObject() const noexcept
     {
         return referencedObject;
     }
 
 private:
     //==============================================================================
-    ReferenceCountedObjectClass* referencedObject;
+    SharedObjectClass* referencedObject;
 };
 
 
-/** Compares two ReferenceCountedObjectPointers. */
-template <class ReferenceCountedObjectClass>
-bool operator== (const ReferenceCountedObjectPtr<ReferenceCountedObjectClass>& object1, ReferenceCountedObjectClass* const object2) noexcept
+/** Compares two SharedObjectPointers. */
+template <class SharedObjectClass>
+bool operator== (const SharedObjectPtr<SharedObjectClass>& object1, SharedObjectClass* const object2) noexcept
 {
     return object1.get() == object2;
 }
 
-/** Compares two ReferenceCountedObjectPointers. */
-template <class ReferenceCountedObjectClass>
-bool operator== (const ReferenceCountedObjectPtr<ReferenceCountedObjectClass>& object1, const ReferenceCountedObjectPtr<ReferenceCountedObjectClass>& object2) noexcept
+/** Compares two SharedObjectPointers. */
+template <class SharedObjectClass>
+bool operator== (const SharedObjectPtr<SharedObjectClass>& object1, const SharedObjectPtr<SharedObjectClass>& object2) noexcept
 {
     return object1.get() == object2.get();
 }
 
-/** Compares two ReferenceCountedObjectPointers. */
-template <class ReferenceCountedObjectClass>
-bool operator== (ReferenceCountedObjectClass* object1, ReferenceCountedObjectPtr<ReferenceCountedObjectClass>& object2) noexcept
+/** Compares two SharedObjectPointers. */
+template <class SharedObjectClass>
+bool operator== (SharedObjectClass* object1, SharedObjectPtr<SharedObjectClass>& object2) noexcept
 {
     return object1 == object2.get();
 }
 
-/** Compares two ReferenceCountedObjectPointers. */
-template <class ReferenceCountedObjectClass>
-bool operator!= (const ReferenceCountedObjectPtr<ReferenceCountedObjectClass>& object1, const ReferenceCountedObjectClass* object2) noexcept
+/** Compares two SharedObjectPointers. */
+template <class SharedObjectClass>
+bool operator!= (const SharedObjectPtr<SharedObjectClass>& object1, const SharedObjectClass* object2) noexcept
 {
     return object1.get() != object2;
 }
 
-/** Compares two ReferenceCountedObjectPointers. */
-template <class ReferenceCountedObjectClass>
-bool operator!= (const ReferenceCountedObjectPtr<ReferenceCountedObjectClass>& object1, ReferenceCountedObjectPtr<ReferenceCountedObjectClass>& object2) noexcept
+/** Compares two SharedObjectPointers. */
+template <class SharedObjectClass>
+bool operator!= (const SharedObjectPtr<SharedObjectClass>& object1, SharedObjectPtr<SharedObjectClass>& object2) noexcept
 {
     return object1.get() != object2.get();
 }
 
-/** Compares two ReferenceCountedObjectPointers. */
-template <class ReferenceCountedObjectClass>
-bool operator!= (ReferenceCountedObjectClass* object1, ReferenceCountedObjectPtr<ReferenceCountedObjectClass>& object2) noexcept
+/** Compares two SharedObjectPointers. */
+template <class SharedObjectClass>
+bool operator!= (SharedObjectClass* object1, SharedObjectPtr<SharedObjectClass>& object2) noexcept
 {
     return object1 != object2.get();
 }

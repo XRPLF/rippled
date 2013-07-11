@@ -214,11 +214,11 @@ public:
 
     typedef GlobalFifoFreeStore <ListenersBase> CallAllocatorType;
 
-    class Call : public ReferenceCountedObject,
+    class Call : public SharedObject,
         public AllocatedBy <CallAllocatorType>
     {
     public:
-        typedef ReferenceCountedObjectPtr <Call> Ptr;
+        typedef SharedObjectPtr <Call> Ptr;
         virtual void operator () (void* const listener) = 0;
     };
 
@@ -238,11 +238,11 @@ private:
     // Maintains a list of listeners registered on the same CallQueue
     //
     class Group : public Groups::Node,
-        public ReferenceCountedObject,
+        public SharedObject,
         public AllocatedBy <AllocatorType>
     {
     public:
-        typedef ReferenceCountedObjectPtr <Group> Ptr;
+        typedef SharedObjectPtr <Group> Ptr;
 
         explicit Group    (CallQueue& callQueue);
         ~Group            ();

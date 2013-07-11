@@ -229,9 +229,6 @@
     <ClInclude Include="..\..\modules\beast_core\memory\beast_OptionalScopedPointer.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_ReferenceCountedObject.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\memory\beast_ScopedPointer.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
@@ -607,6 +604,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_basics\events\beast_DeadlineTimer.h">
       <Filter>beast_basics\events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\memory\beast_SharedObject.h">
+      <Filter>beast_core\memory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

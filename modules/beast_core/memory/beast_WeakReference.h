@@ -24,7 +24,7 @@
 #ifndef BEAST_WEAKREFERENCE_BEASTHEADER
 #define BEAST_WEAKREFERENCE_BEASTHEADER
 
-#include "beast_ReferenceCountedObject.h"
+#include "beast_SharedObject.h"
 
 
 //==============================================================================
@@ -75,7 +75,7 @@
 
     @see WeakReference::Master
 */
-template <class ObjectType, class ReferenceCountingType = ReferenceCountedObject>
+template <class ObjectType, class ReferenceCountingType = SharedObject>
 class WeakReference
 {
 public:
@@ -142,7 +142,7 @@ public:
         ObjectType* volatile owner;
     };
 
-    typedef ReferenceCountedObjectPtr<SharedPointer> SharedRef;
+    typedef SharedObjectPtr<SharedPointer> SharedRef;
 
     //==============================================================================
     /**
