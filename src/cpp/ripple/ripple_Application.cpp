@@ -15,6 +15,7 @@ SETUP_LOG (Application)
 class ApplicationImp
     : public Application
     , public SharedSingleton <ApplicationImp>
+    , public Validators::Listener
     , LeakChecked <ApplicationImp>
 {
 public:
@@ -53,6 +54,7 @@ public:
         , mSNTPClient (mAuxService)
         , mJobQueue (mIOService)
         // VFALCO New stuff
+        , m_validators (Validators::New (this))
         , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
         , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
         , mFeeTrack (ILoadFeeTrack::New ())
@@ -98,7 +100,6 @@ public:
         if (mEphemeralLDB != nullptr)
             delete mEphemeralLDB;
     }
-
 
     LocalCredentials& getLocalCredentials ()
     {
@@ -173,6 +174,11 @@ public:
     SLECache& getSLECache ()
     {
         return mSLECache;
+    }
+
+    Validators& getValidators ()
+    {
+        return *m_validators;
     }
 
     IFeatures& getFeatureTable ()
@@ -303,6 +309,7 @@ private:
     OrderBookDB        mOrderBookDB;
 
     // VFALCO Clean stuff
+    beast::ScopedPointer <Validators> m_validators;
     beast::ScopedPointer <IFeatures> mFeatures;
     beast::ScopedPointer <IFeeVote> mFeeVote;
     beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;

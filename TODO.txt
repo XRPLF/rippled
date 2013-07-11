@@ -2,6 +2,8 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
+- Rename RPCHandler to CallHandler
+
 - Move everything in src/cpp/ripple into ripple_app and sort them into
   subdirectories within the module as per the project filters.
   * Make sure there are no pending commits from David

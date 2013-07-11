@@ -58,6 +58,7 @@ public:
     virtual NodeCache&              getTempNodeCache () = 0;
     virtual SLECache&               getSLECache () = 0;
 
+    virtual Validators&             getValidators () = 0;
     virtual IFeatures&              getFeatureTable () = 0;
     virtual IFeeVote&               getFeeVote () = 0;
     virtual IHashRouter&            getHashRouter () = 0;
