@@ -255,7 +255,7 @@ namespace beast
 #include "memory/beast_Memory.h"
 #include "memory/beast_MemoryBlock.h"
 #include "memory/beast_OptionalScopedPointer.h"
-#include "memory/beast_ReferenceCountedObject.h"
+#include "memory/beast_SharedObject.h"
 #include "memory/beast_ScopedPointer.h"
 #include "threads/beast_SpinLock.h"
 #include "memory/beast_SharedSingleton.h"

@@ -48,11 +48,11 @@ Thread::~Thread()
 //==============================================================================
 // Use a ref-counted object to hold this shared data, so that it can outlive its static
 // shared pointer when threads are still running during static shutdown.
-struct CurrentThreadHolder : public ReferenceCountedObject
+struct CurrentThreadHolder : public SharedObject
 {
     CurrentThreadHolder() noexcept {}
 
-    typedef ReferenceCountedObjectPtr <CurrentThreadHolder> Ptr;
+    typedef SharedObjectPtr <CurrentThreadHolder> Ptr;
     ThreadLocalValue<Thread*> value;
 };
 

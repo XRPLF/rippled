@@ -20,98 +20,97 @@
 #ifndef BEAST_SHAREDDATA_H_INCLUDED
 #define BEAST_SHAREDDATA_H_INCLUDED
 
-/*============================================================================*/
-/**
-  Structured access to a shared state.
+/** Structured access to a shared state.
 
-  This template wraps an object containing members representing state
-  information shared between multiple threads of execution, where any thread
-  may need to read or write as needed. Synchronized access to the concurrent
-  state is enforced at compile time through strongly typed accessor classes.
-  This interface design facilitates source code pattern matching to find all
-  areas where a concurrent state is accessed.
+    This template wraps an object containing members representing state
+    information shared between multiple threads of execution, where any thread
+    may need to read or write as needed. Synchronized access to the concurrent
+    state is enforced at compile time through strongly typed accessor classes.
+    This interface design facilitates source code pattern matching to find all
+    areas where a concurrent state is accessed.
 
-  There are three types of access:
+    There are three types of access:
 
-  - ReadAccess
+    - ReadAccess
 
-    Allows read access to the underlying object as `const`. ReadAccess may be
-    granted to one or more threads simultaneously. If one or more threads have
-    ReadAccess, requests to obtain WriteAccess are blocked.
+        Allows read access to the underlying object as `const`. ReadAccess may
+        be granted to one or more threads simultaneously. If one or more
+        threads have ReadAccess, requests to obtain WriteAccess are blocked.
 
-  - WriteAccess
+    - WriteAccess
 
-    Allows exclusive read/write access the underlying object. A WriteAccess
-    request blocks until all existing ReadAccess and WriteAccess requests are
-    released. While a WriteAccess exists, requests for ReadAccess will block.
+        Allows exclusive read/write access the underlying object. A WriteAccess
+        request blocks until all existing ReadAccess and WriteAccess requests
+        are released. While a WriteAccess exists, requests for ReadAccess
+        will block.
 
-  - UnlockedAccess
+    - UnlockedAccess
 
-    Allows read access to the underlying object without using the lock. This
-    can be helpful when designing concurrent structures through composition.
-    It also makes it easier to search for places in code which use unlocked
-    access.
+        Allows read access to the underlying object without using the lock.
+        This can be helpful when designing concurrent structures through
+        composition. It also makes it easier to search for places in code
+        which use unlocked access.
 
-  This code example demonstrates various forms of access to a SharedData:
+    This code example demonstrates various forms of access to a SharedData:
 
-  @code
+    @code
 
-  struct SharedData
-  {
-    int value1;
-    String value2;
-  };
-
-  typedef SharedData <SharedData> SharedState;
-
-  SharedState sharedState;
-
-  void readExample ()
-  {
-    SharedState::ReadAccess state (sharedState);
-
-    print (state->value1);   // read access
-    print (state->value2);   // read access
-
-    state->value1 = 42;      // write disallowed: compile error
-  }
-
-  void writeExample ()
-  {
-    SharedState::WriteAccess state (sharedState);
-
-    state->value2 = "Label"; // write access
-  }
-
-  @endcode
-
-  Forwarding constructors with up to eight parameters are provided. This lets
-  you write constructors into the underlying data object. For example:
-
-  @code
-
-  struct SharedData
-  {
-    explicit SharedData (int numSlots)
+    struct SharedData
     {
-      m_array.reserve (numSlots);
+        int value1;
+        String value2;
+    };
+
+    typedef SharedData <SharedData> SharedState;
+
+    SharedState sharedState;
+
+    void readExample ()
+    {
+        SharedState::ReadAccess state (sharedState);
+
+        print (state->value1);   // read access
+        print (state->value2);   // read access
+
+        state->value1 = 42;      // write disallowed: compile error
     }
 
-    std::vector <AudioSampleBuffer*> m_array;
-  };
+    void writeExample ()
+    {
+        SharedState::WriteAccess state (sharedState);
 
-  // Construct SharedData with one parameter
-  SharedData <SharedData> sharedState (16);
+        state->value2 = "Label"; // write access
+    }
 
-  @endcode
+    @endcode
 
-  @param Object The type of object to encapsulate.
+    Forwarding constructors with up to eight parameters are provided. This lets
+    you write constructors into the underlying data object. For example:
 
-  @warning Recursive calls are not supported. It is generally not possible for
-            a thread of execution to acquire write access while it already has
-  read access. Such an attempt will result in undefined behavior. Calling into
-  unknown code while holding a lock can cause deadlock. See
-  @ref CallQueue::queue().
+    @code
+
+    struct SharedData
+    {
+        explicit SharedData (int numSlots)
+        {
+            m_array.reserve (numSlots);
+        }
+
+        std::vector <AudioSampleBuffer*> m_array;
+    };
+
+    // Construct SharedData with one parameter
+    SharedData <SharedData> sharedState (16);
+
+    @endcode
+
+    @param Object The type of object to encapsulate.
+
+    @warning Recursive calls are not supported. It is generally not possible for
+             a thread of execution to acquire write access while it already has
+             read access. Such an attempt will result in undefined behavior.
+             Calling into unknown code while holding a lock can cause deadlock.
+             See @ref CallQueue::queue().
 */
 template <class Object>
 class SharedData : Uncopyable

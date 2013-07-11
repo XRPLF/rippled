@@ -112,7 +112,7 @@ private:
     class Manager;
 
     Listener* const m_listener;
-    ReferenceCountedObjectPtr <Manager> m_manager;
+    SharedObjectPtr <Manager> m_manager;
     bool m_isActive;
     Time m_notificationTime;
     double m_secondsRecurring; // non zero if recurring

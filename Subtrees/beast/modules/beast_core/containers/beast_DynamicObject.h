@@ -25,7 +25,7 @@
 #define BEAST_DYNAMICOBJECT_BEASTHEADER
 
 #include "beast_NamedValueSet.h"
-#include "../memory/beast_ReferenceCountedObject.h"
+#include "../memory/beast_SharedObject.h"
 
 
 //==============================================================================
@@ -40,7 +40,7 @@
     methods.
 */
 class BEAST_API DynamicObject
-    : public ReferenceCountedObject
+    : public SharedObject
     , LeakChecked <DynamicObject>
 {
 public:
@@ -50,7 +50,7 @@ public:
     /** Destructor. */
     virtual ~DynamicObject();
 
-    typedef ReferenceCountedObjectPtr<DynamicObject> Ptr;
+    typedef SharedObjectPtr<DynamicObject> Ptr;
 
     //==============================================================================
     /** Returns true if the object has a property with this name.

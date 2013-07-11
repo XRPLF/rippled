@@ -30,7 +30,7 @@
 #include "../containers/beast_Array.h"
 
 #ifndef DOXYGEN
- class ReferenceCountedObject;
+ class SharedObject;
  class DynamicObject;
 #endif
 
@@ -39,7 +39,7 @@
     A variant class, that can be used to hold a range of primitive values.
 
     A var object can hold a range of simple primitive values, strings, or
-    any kind of ReferenceCountedObject. The var class is intended to act like
+    any kind of SharedObject. The var class is intended to act like
     the kind of values used in dynamic scripting languages.
 
     You can save/load var objects either in a small, proprietary binary format
@@ -73,7 +73,7 @@ public:
     var (const wchar_t* value);
     var (const String& value);
     var (const Array<var>& value);
-    var (ReferenceCountedObject* object);
+    var (SharedObject* object);
     var (MethodFunction method) noexcept;
     var (const void* binaryData, size_t dataSize);
     var (const MemoryBlock& binaryData);
@@ -87,7 +87,7 @@ public:
     var& operator= (const wchar_t* value);
     var& operator= (const String& value);
     var& operator= (const Array<var>& value);
-    var& operator= (ReferenceCountedObject* object);
+    var& operator= (SharedObject* object);
     var& operator= (MethodFunction method);
 
    #if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
@@ -125,7 +125,7 @@ public:
     */
     MemoryBlock* getBinaryData() const noexcept;
 
-    ReferenceCountedObject* getObject() const noexcept;
+    SharedObject* getObject() const noexcept;
     DynamicObject* getDynamicObject() const noexcept;
 
     //==============================================================================
@@ -275,7 +275,7 @@ private:
         bool boolValue;
         double doubleValue;
         char stringValue [sizeof (String)];
-        ReferenceCountedObject* objectValue;
+        SharedObject* objectValue;
         Array<var>* arrayValue;
         MemoryBlock* binaryValue;
         MethodFunction methodValue;

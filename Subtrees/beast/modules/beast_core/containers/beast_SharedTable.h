@@ -156,10 +156,10 @@ public:
     }
 
 private:
-    class Data : public ReferenceCountedObject
+    class Data : public SharedObject
     {
     public:
-        typedef ReferenceCountedObjectPtr <Data> Ptr;
+        typedef SharedObjectPtr <Data> Ptr;
 
         explicit Data (int numEntries)
             : m_numEntries (numEntries)
@@ -200,7 +200,7 @@ private:
     {
     }
 
-    ReferenceCountedObjectPtr <Data> m_data;
+    SharedObjectPtr <Data> m_data;
 };
 
 template <class ElementType>
