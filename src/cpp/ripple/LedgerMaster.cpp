@@ -73,6 +73,7 @@ void LedgerMaster::pushLedger (Ledger::pointer newLedger)
     // Caller should already have properly assembled this ledger into "ready-to-close" form --
     // all candidate transactions must already be applied
     WriteLog (lsINFO, LedgerMaster) << "PushLedger: " << newLedger->getHash ();
+
     boost::recursive_mutex::scoped_lock ml (mLock);
 
     if (!mPubLedger)
@@ -661,6 +662,16 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
     }
 
     mValidLedger = ledger;
+
+    uint64 fee, fee2, ref;
+    ref = getApp().getFeeTrack().getLoadBase();
+    int count = getApp().getValidations().getFeeAverage(ledger->getHash(), ref, fee);
+    int count2 = getApp().getValidations().getFeeAverage(ledger->getParentHash(), ref, fee2);
+
+    if ((count + count2) == 0)
+        getApp().getFeeTrack().setRemoteFee(ref);
+    else
+        getApp().getFeeTrack().setRemoteFee(((fee * count) + (fee2 * count2)) / (count + count2));
 
     tryPublish ();
 }

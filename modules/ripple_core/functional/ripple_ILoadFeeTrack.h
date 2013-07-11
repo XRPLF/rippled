@@ -32,9 +32,7 @@ public:
     // Scale using load as well as base rate
     virtual uint64 scaleFeeLoad (uint64 fee, uint64 baseFee, uint32 referenceFeeUnits, bool bAdmin) = 0;
 
-    // VFALCO NOTE This appears to be unused, so I'm hiding the declaration.
-    //
-    //virtual void setRemoteFee (uint32) = 0;
+    virtual void setRemoteFee (uint32) = 0;
 
     virtual uint32 getRemoteFee () = 0;
     virtual uint32 getLocalFee () = 0;

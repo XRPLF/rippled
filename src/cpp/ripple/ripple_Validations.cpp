@@ -205,6 +205,36 @@ private:
         return trusted;
     }
 
+    int getFeeAverage (uint256 const& ledger, uint64 ref, uint64& fee)
+    {
+        int trusted = 0;
+        fee = 0;
+
+        boost::mutex::scoped_lock sl (mValidationLock);
+        VSpointer set = findSet (ledger);
+
+        if (set)
+        {
+            BOOST_FOREACH (u160_val_pair & it, *set)
+            {
+                if (it.second->isTrusted ())
+                {
+                    ++trusted;
+                    if (it.second->isFieldPresent(sfLoadFee))
+                        fee += it.second->getFieldU64(sfLoadFee);
+                    else
+                        fee += ref;
+		}
+            }
+        }
+
+        if (trusted == 0)
+            fee = ref;
+        else
+            fee /= trusted;
+        return trusted;
+    }
+
     int getNodesAfter (uint256 const& ledger)
     {
         // Number of trusted nodes that have moved past this ledger
