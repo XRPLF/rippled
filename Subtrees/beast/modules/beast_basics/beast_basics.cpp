@@ -58,7 +58,6 @@ namespace beast
 #include "threads/beast_ManualCallQueue.cpp"
 #include "threads/beast_ParallelFor.cpp"
 #include "threads/beast_ReadWriteMutex.cpp"
-#include "threads/beast_SharedObject.cpp"
 #include "threads/beast_ThreadGroup.cpp"
 #include "threads/beast_ThreadWithCallQueue.cpp"
 
