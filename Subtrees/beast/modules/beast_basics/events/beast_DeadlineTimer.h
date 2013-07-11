@@ -49,8 +49,8 @@ public:
 
         If the timer is already active, this will reset it.
 
-        @note If the timer is already active, a notification may still
-              occur due to concurrency.
+        @note If the timer is already active, the old one might go off
+              before this function returns.
 
         @param secondsUntilDeadline The number of seconds until the timer
                                     will send a notification. This must be
@@ -62,8 +62,8 @@ public:
 
         If the timer is already active, this will reset it.
 
-        @note If the timer is already active, a notification may still
-              occur due to concurrency.
+        @note If the timer is already active, the old one might go off
+              before this function returns.
 
         @param secondsUntilDeadline The number of seconds until the timer
                                     will send a notification. This must be
@@ -75,8 +75,8 @@ public:
 
         If the timer is already active, this will reset it.
 
-        @note If the timer is already active, a notification may still
-              occur due to concurrency.
+        @note If the timer is already active, the old one might go off
+              before this function returns.
 
         @note If the time is in the past, the timer will go off
               immediately.
@@ -87,8 +87,8 @@ public:
 
         It is okay to call this on an inactive timer.
 
-        @note If the timer is already active, a notification may still
-              occur due to concurrency.
+        @note It is guaranteed that no notifications will occur after this
+              function returns.
     */
     void reset ();
 
