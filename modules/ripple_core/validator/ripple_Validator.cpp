@@ -4,6 +4,7 @@
 */
 //==============================================================================
 
-Validator::Validator ()
+Validator::Validator (PublicKey const& publicKey)
+    : m_publicKey (publicKey)
 {
 }

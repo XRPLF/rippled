@@ -17,20 +17,51 @@
 class Validators : Uncopyable
 {
 public:
-    class Listener
+    /** Provides a ValidatorList.
+    */
+    class Source
     {
     public:
-        //virtual void onValidatorsChosen (ValidatorList validators) { }
+        /** Destroy the source.
+
+            If a fetch is active, it will be aborted before the
+            destructor returns.
+        */
+        virtual ~Source () { }
+
+        /** Fetch the validator list from this source.
+
+            This call blocks.
+        */
+        virtual ValidatorList::Ptr fetch () = 0;
     };
 
 public:
+    /** Receive event notifications on Validators operations.
+    */
+    class Listener
+    {
+    public:
+        virtual void onValidatorsChosen (ChosenValidators::Ptr list) { }
+    };
+
+public:
+    /** Create a new Validators object.
+    */
     static Validators* New (Listener* listener);
 
+    /** Destroy the object.
+
+        Any pending source fetch operations are aborted.
+
+        There may be some listener calls made before the
+        destructor returns.
+    */
     virtual ~Validators () { }
 
-    virtual void addTrustedUri (String uri) = 0;
-
-    virtual void start () = 0;
+    /** Add a source of validators.
+    */
+    virtual void addSource (Source* source) = 0;
 };
 
 #endif

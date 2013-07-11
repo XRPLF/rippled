@@ -2,6 +2,14 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
+- Unit Test attention
+
+- NodeStore backend unit test
+
+- Validations unit test
+
+--------------------------------------------------------------------------------
+
 - Rename RPCHandler to CallHandler
 
 - Move everything in src/cpp/ripple into ripple_app and sort them into
@@ -227,7 +235,7 @@ Interfaces
 boost
 
     Unclear from the class declaration what style of shared object management
-    is used. Prefer to derive from a ReferenceCountedObject class so that the
+    is used. Prefer to derive from a SharedObject class so that the
     behavior is explicit. Furthermore the use of intrusive containers is
     preferred over the alternative.
 
@@ -302,6 +310,17 @@ What we want from the unique node list:
 
 
 --------------------------------------------------------------------------------
+ChosenValidators
+--------------------------------------------------------------------------------
+
+TODO:
+  Write up from end-user perspective on the deployment and administration
+  of this feature, on the wiki. "DRAFT" or "PROPOSE" to mark it as provisional.
+  Template: https://ripple.com/wiki/Federation_protocol
+  - What to do if you're a publisher of ValidatorList
+  - What to do if you're a rippled administrator
+  - Overview of how ChosenValidators works
+
 
 Goals:
   Make default configuration of rippled secure.

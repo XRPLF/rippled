@@ -38,7 +38,11 @@ namespace ripple
 /**/#include "functional/ripple_JobQueue.h"
 
 #include "validator/ripple_Validator.h"
+#include "validator/ripple_ValidatorList.h"
+#include "validator/ripple_ChosenValidators.h"
 #include "validator/ripple_Validators.h"
+#include "validator/ripple_StringsValidatorSource.h"
+#include "validator/ripple_TrustedUriValidatorSource.h"
 
 }
 
