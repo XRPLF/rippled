@@ -12,20 +12,20 @@ class Application;
 SETUP_LOG (Application)
 
 // VFALCO TODO Move the function definitions into the class declaration
-class Application
-    : public IApplication
-    , public SharedSingleton <Application>
-    , LeakChecked <Application>
+class ApplicationImp
+    : public Application
+    , public SharedSingleton <ApplicationImp>
+    , LeakChecked <ApplicationImp>
 {
 public:
-    static Application* createInstance ()
+    static ApplicationImp* createInstance ()
     {
-        return new Application;
+        return new ApplicationImp;
     }
 
     class Holder;
 
-    Application ()
+    ApplicationImp ()
     //
     // VFALCO NOTE Change this to control whether or not the Application
     //             object is destroyed on exit
@@ -34,7 +34,7 @@ public:
         // Application object will be deleted on exit. If the code doesn't exit
         // cleanly this could cause hangs or crashes on exit.
         //
-        : SharedSingleton <Application> (SingletonLifetime::persistAfterCreation)
+        : SharedSingleton <ApplicationImp> (SingletonLifetime::persistAfterCreation)
     #else
         // This will make it so that the Application object is not deleted on exit.
         //
@@ -84,7 +84,21 @@ public:
         HashMaps::getInstance ().initializeNonce <size_t> ();
     }
 
-    ~Application ();
+    ~ApplicationImp ()
+    {
+        // VFALCO TODO Wrap these in ScopedPointer
+        delete mTxnDB;
+        delete mLedgerDB;
+        delete mWalletDB;
+        delete mHashNodeDB;
+        delete mNetNodeDB;
+        delete mPathFindDB;
+        delete mHashNodeLDB;
+
+        if (mEphemeralLDB != nullptr)
+            delete mEphemeralLDB;
+    }
+
 
     LocalCredentials& getLocalCredentials ()
     {
@@ -322,22 +336,7 @@ private:
     bool volatile mShutdown;
 };
 
-Application::~Application ()
-{
-    // VFALCO TODO Wrap these in ScopedPointer
-    delete mTxnDB;
-    delete mLedgerDB;
-    delete mWalletDB;
-    delete mHashNodeDB;
-    delete mNetNodeDB;
-    delete mPathFindDB;
-    delete mHashNodeLDB;
-
-    if (mEphemeralLDB != nullptr)
-        delete mEphemeralLDB;
-}
-
-void Application::stop ()
+void ApplicationImp::stop ()
 {
     WriteLog (lsINFO, Application) << "Received shutdown request";
     StopSustain ();
@@ -387,13 +386,13 @@ static void runIO (boost::asio::io_service& io)
 //             Or better yet refactor these initializations into RAII classes
 //             which are members of the Application object.
 //
-void Application::setup ()
+void ApplicationImp::setup ()
 {
     // VFALCO NOTE: 0 means use heuristics to determine the thread count.
     mJobQueue.setThreadCount (0, theConfig.RUN_STANDALONE);
 
     mSweepTimer.expires_from_now (boost::posix_time::seconds (10));
-    mSweepTimer.async_wait (BIND_TYPE (&Application::sweep, this));
+    mSweepTimer.async_wait (BIND_TYPE (&ApplicationImp::sweep, this));
 
     m_loadManager->startThread ();
 
@@ -622,7 +621,7 @@ void Application::setup ()
     }
 }
 
-void Application::run ()
+void ApplicationImp::run ()
 {
     if (theConfig.NODE_SIZE >= 2)
     {
@@ -661,7 +660,7 @@ void Application::run ()
         boost::this_thread::sleep (boost::posix_time::milliseconds (100));
 }
 
-void Application::sweep ()
+void ApplicationImp::sweep ()
 {
     boost::filesystem::space_info space = boost::filesystem::space (theConfig.DATA_DIR);
 
@@ -689,10 +688,10 @@ void Application::sweep ()
     mNetOps.sweepFetchPack ();
     // VFALCO NOTE does the call to sweep() happen on another thread?
     mSweepTimer.expires_from_now (boost::posix_time::seconds (theConfig.getSize (siSweepInterval)));
-    mSweepTimer.async_wait (BIND_TYPE (&Application::sweep, this));
+    mSweepTimer.async_wait (BIND_TYPE (&ApplicationImp::sweep, this));
 }
 
-void Application::startNewLedger ()
+void ApplicationImp::startNewLedger ()
 {
     // New stuff.
     RippleAddress   rootSeedMaster      = RippleAddress::createSeedGeneric ("masterpassphrase");
@@ -722,7 +721,7 @@ void Application::startNewLedger ()
     }
 }
 
-bool Application::loadOldLedger (const std::string& l)
+bool ApplicationImp::loadOldLedger (const std::string& l)
 {
     try
     {
@@ -936,7 +935,7 @@ static void addTxnSeqField ()
     db->executeSQL ("END TRANSACTION;");
 }
 
-void Application::updateTables ()
+void ApplicationImp::updateTables ()
 {
     if (theConfig.NODE_DB.empty ())
     {
@@ -969,7 +968,7 @@ void Application::updateTables ()
 
 //------------------------------------------------------------------------------
 
-IApplication& getApp ()
+Application& getApp ()
 {
-    return *Application::getInstance ();
+    return *ApplicationImp::getInstance ();
 }

@@ -153,7 +153,7 @@ namespace ripple
 #include "src/cpp/ripple/RPCHandler.h"
 #include "src/cpp/ripple/TransactionQueue.h"
 #include "ledger/OrderBookDB.h"
-#include "src/cpp/ripple/ripple_IApplication.h"
+#include "src/cpp/ripple/ripple_Application.h"
 #include "src/cpp/ripple/CallRPC.h"
 #include "src/cpp/ripple/Transactor.h"
 #include "src/cpp/ripple/ChangeTransactor.h"

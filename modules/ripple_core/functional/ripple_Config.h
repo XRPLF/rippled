@@ -9,7 +9,7 @@
 
 // VFALCO TODO Replace these with beast "unsigned long long" generators
 // VFALCO NOTE Apparently these are used elsewhere. Make them constants in the config
-//             or in the IApplication
+//             or in the Application
 //
 #define SYSTEM_CURRENCY_GIFT        1000ull
 #define SYSTEM_CURRENCY_USERS       100000000ull

@@ -1489,7 +1489,7 @@
     <ClInclude Include="..\..\src\cpp\ripple\ripple_AccountState.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ripple_CanonicalTXSet.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ripple_DisputedTx.h" />
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_IApplication.h" />
+    <ClInclude Include="..\..\src\cpp\ripple\ripple_Application.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ripple_IFeatures.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ripple_IFeeVote.h" />
     <ClInclude Include="..\..\src\cpp\ripple\ripple_IHashRouter.h" />

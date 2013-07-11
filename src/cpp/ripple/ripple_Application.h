@@ -35,10 +35,10 @@ class DatabaseCon;
 typedef TaggedCache <uint256, Blob , UptimeTimerAdapter> NodeCache;
 typedef TaggedCache <uint256, SerializedLedgerEntry, UptimeTimerAdapter> SLECache;
 
-class IApplication
+class Application
 {
 public:
-    virtual ~IApplication () { }
+    virtual ~Application () { }
 
     /* VFALCO NOTE
 
@@ -107,6 +107,6 @@ public:
     virtual void sweep () = 0;
 };
 
-extern IApplication& getApp ();
+extern Application& getApp ();
 
 #endif

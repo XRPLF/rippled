@@ -1317,9 +1317,6 @@
     <ClInclude Include="..\..\src\cpp\ripple\ParameterTable.h">
       <Filter>[1] Ripple\ripple_app\_main</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_IApplication.h">
-      <Filter>[1] Ripple\ripple_app\_main</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\cpp\ripple\ripple_LocalCredentials.h">
       <Filter>[1] Ripple\ripple_app\_main</Filter>
     </ClInclude>
@@ -1646,6 +1643,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\ledger\SerializedValidation.h">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\cpp\ripple\ripple_Application.h">
+      <Filter>[1] Ripple\ripple_app\_main</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
