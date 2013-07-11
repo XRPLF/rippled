@@ -154,6 +154,9 @@
     <Filter Include="[1] Ripple\ripple_hyperleveldb">
       <UniqueIdentifier>{571acd5b-065c-4202-8de3-8692735171dc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\ripple_core\validator">
+      <UniqueIdentifier>{efccddf1-024d-41c4-b7f5-26ce2dd79f21}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Subtrees\sqlite\sqlite3.c">
@@ -836,6 +839,12 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\data\ripple_SqliteDatabase.cpp">
       <Filter>[1] Ripple\ripple_app\data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\validator\ripple_Validator.cpp">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\validator\ripple_Validators.cpp">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\ledger\Ledger.cpp">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
@@ -1595,6 +1604,12 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\data\ripple_SqliteDatabase.h">
       <Filter>[1] Ripple\ripple_app\data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\validator\ripple_Validator.h">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\validator\ripple_Validators.h">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\ledger\Ledger.h">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>

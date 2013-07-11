@@ -37,6 +37,9 @@ namespace ripple
 /*.*/#include "functional/ripple_Job.h"
 /**/#include "functional/ripple_JobQueue.h"
 
+#include "validator/ripple_Validator.h"
+#include "validator/ripple_Validators.h"
+
 }
 
 #endif

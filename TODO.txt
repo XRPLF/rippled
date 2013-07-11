@@ -294,3 +294,87 @@ What we want from the unique node list:
     * Malicious intent
     * Or, just hardware problems (faulty drive or memory)
 
+
+
+
+
+
+--------------------------------------------------------------------------------
+
+Goals:
+  Make default configuration of rippled secure.
+    * Ship with TrustedUriList
+    * Also have a preset RankedValidators
+  Eliminate administrative burden of maintaining
+  Produce the ChosenValidators list.
+  Allow quantitative analysis of network health.
+
+What determines that a validator is good?
+  - Are they present (i.e. sending validations)
+  - Are they on the consensus ledger
+  - What percentage of consensus rounds do they participate in
+  - Are they stalling consensus
+    * Measurements of constructive/destructive behavior is
+      calculated in units of percentage of ledgers for which
+      the behavior is measured.
+
+Nouns
+
+  Validator
+    - Signs ledgers and participate in consensus
+    - Fields
+      * Public key
+      * Friendly name
+      * Jurisdiction 
+      * Org type: profit, nonprofit, "profit/gateway"
+    - Metadata
+      * Visible on the network?
+      * On the consensus ledger?
+      * Percentage of recent participation in consensus
+      * Frequency of stalling the consensus process
+
+  ValidatorSource
+    - Abstract
+    - Provides a list of Validator
+
+  ValidatorList
+    - Essentially an array of Validator
+
+  TrustedUriValidatorSource
+    - ValidatorSource which uses HTTPS and a predefined URI
+    - Domain owner is responsible for removing bad validators
+
+  TrustedUriValidatorSource::List
+    - Essentially an array of TrustedUriValidatorSource
+    - Can be read from a file
+
+  LocalFileValidatorSource
+    - ValidatorSource which reads information from a local file.
+
+TrustedUriList // A copy of this ships with the app
+* has a KnownValidators
+
+KnownValidators
+* A series of KnownValidator that comes from a TrustedUri
+* Persistent storage has a timestamp
+
+RankedValidators
+* Created as the union of all KnownValidators with "weight" being the
+number of appearances.
+
+ChosenValidators
+* Result of the algorithm that chooses a random subset of RankedKnownValidators
+* "local health" percentage is the percent of validations from this list that
+you've seen recently. And have they been behaving.
+
+Process:
+
+For each TrustedUri:
+Perform HTTPS request to retrieve a KnownValidators list
+
+Create the union of all unique KnownValidator, keyed by public key
+- Calculate the number of appearances to determine the "weight"
+
+Algorithm:
+
+ChosenValidators chooseRandomSubset (RankedKnownValidators)
