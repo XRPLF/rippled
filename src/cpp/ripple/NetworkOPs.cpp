@@ -378,6 +378,11 @@ void NetworkOPs::runTransactionQueue ()
         getApp().getIOService ().post (BIND_TYPE (&NetworkOPs::runTransactionQueue, this));
 }
 
+STAmount NetworkOPs::getMinFee (bool bAdmin)
+{
+    return mLedgerMaster->getMinFee(bAdmin);
+}
+
 Transaction::pointer NetworkOPs::processTransaction (Transaction::pointer trans, bool bAdmin, bool bFailHard, stCallback callback)
 {
     LoadEvent::autoptr ev = getApp().getJobQueue ().getLoadEventAP (jtTXN_PROC, "ProcessTXN");

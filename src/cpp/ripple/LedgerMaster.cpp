@@ -183,6 +183,12 @@ Ledger::pointer LedgerMaster::closeLedger (bool recover)
     return Ledger::pointer (new Ledger (*closingLedger, true));
 }
 
+STAmount LedgerMaster::getMinFee (bool bAdmin)
+{
+    boost::recursive_mutex::scoped_lock sl (mLock);
+    return mEngine.getMinFee(bAdmin);     
+}
+
 TER LedgerMaster::doTransaction (SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply)
 {
     Ledger::pointer ledger;

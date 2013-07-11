@@ -141,6 +141,7 @@ public:
     Transaction::pointer submitTransactionSync (Transaction::ref tpTrans, bool bAdmin, bool bFailHard, bool bSubmit);
 
     void runTransactionQueue ();
+    STAmount getMinFee (bool bAdmin);
     Transaction::pointer processTransaction (Transaction::pointer, bool bAdmin, bool bFailHard, stCallback);
     Transaction::pointer processTransaction (Transaction::pointer transaction, bool bAdmin, bool bFailHard)
     {

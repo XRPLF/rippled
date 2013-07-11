@@ -98,6 +98,7 @@ private:
     Json::Value doConsensusInfo         (Json::Value params, LoadType* loadType, ScopedLock& mlh);
     Json::Value doFeature               (Json::Value params, LoadType* loadType, ScopedLock& mlh);
     Json::Value doGetCounts             (Json::Value params, LoadType* loadType, ScopedLock& mlh);
+    Json::Value doGetMinFee             (Json::Value params, LoadType* loadType, ScopedLock& mlh);
     Json::Value doInternal              (Json::Value params, LoadType* loadType, ScopedLock& mlh);
     Json::Value doLedger                (Json::Value params, LoadType* loadType, ScopedLock& mlh);
     Json::Value doLedgerAccept          (Json::Value params, LoadType* loadType, ScopedLock& mlh);
