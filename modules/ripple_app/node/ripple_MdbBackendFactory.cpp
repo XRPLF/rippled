@@ -121,6 +121,7 @@ public:
         else if (txn)
             mdb_txn_abort(txn);
 
+        assert(rc == 0);
         return rc == 0;
     }
 
@@ -131,7 +132,7 @@ public:
         MDB_txn *txn = nullptr;
         int rc = 0;
 
-        rc = mdb_txn_begin(m_env, NULL, 0, &txn);
+        rc = mdb_txn_begin(m_env, NULL, MDB_RDONLY, &txn);
 
         if (rc == 0)
         {
@@ -143,6 +144,8 @@ public:
 	    rc = mdb_get(txn, m_dbi, &key, &data);
 	    if (rc == 0)
 	        ret = fromBinary(hash, static_cast<char *>(data.mv_data), data.mv_size);
+	    else
+	        assert(rc == MDB_NOTFOUND);
         }
 
         mdb_txn_abort(txn);
