@@ -1,0 +1,47 @@
+.TH MDB_STAT 1 "2012/12/12" "LMDB 0.9.5"
+.\" Copyright 2012 Howard Chu, Symas Corp. All Rights Reserved.
+.\" Copying restrictions apply.  See COPYRIGHT/LICENSE.
+.SH NAME
+mdb_stat \- LMDB environment status tool
+.SH SYNOPSIS
+.B mdb_stat
+.BR \ envpath
+[\c
+.BR \-e ]
+[\c
+.BR \-f [ f [ f ]]]
+[\c
+.BR \-n ]
+[\c
+.BR \-a \ |
+.BI \-s \ subdb\fR]
+.SH DESCRIPTION
+The
+.B mdb_stat
+utility displays the status of an LMDB environment.
+.SH OPTIONS
+.TP
+.BR \-e
+Display information about the database environment.
+.TP
+.BR \-f
+Display information about the environment freelist.
+If \fB\-ff\fP is given, summarize each freelist entry.
+If \fB\-fff\fP is given, display the full list of page IDs in the freelist.
+.TP
+.BR \-n
+Display the status of an LMDB database which does not use subdirectories.
+.TP
+.BR \-a
+Display the status of all of the subdatabases in the environment.
+.TP
+.BR \-s \ subdb
+Display the status of a specific subdatabase.
+.SH DIAGNOSTICS
+Exit status is zero if no errors occur.
+Errors result in a non-zero exit status and
+a diagnostic message being written to standard error.
+.SH "SEE ALSO"
+.BR mdb_copy (1)
+.SH AUTHOR
+Howard Chu of Symas Corporation <http://www.symas.com>
