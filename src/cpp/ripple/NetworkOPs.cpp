@@ -920,7 +920,7 @@ int NetworkOPs::beginConsensus (uint256 const& networkClosed, Ledger::pointer cl
 
 bool NetworkOPs::haveConsensusObject ()
 {
-    if (mConsensus)
+    if (mConsensus != nullptr)
         return true;
 
     if ((mMode == omFULL) || (mMode == omTRACKING))
@@ -941,7 +941,7 @@ bool NetworkOPs::haveConsensusObject ()
         }
     }
 
-    return mConsensus;
+    return mConsensus != nullptr;
 }
 
 uint256 NetworkOPs::getConsensusLCL ()
