@@ -19,15 +19,24 @@ public:
 
         error = mdb_env_create (&m_env);
 
+        if (error == 0) // Should use the size of the file plus the free space on the disk
+       	    error = mdb_env_set_mapsize(m_env, 512L * 1024L * 1024L * 1024L);
+
         if (error == 0)
-        {
             error = mdb_env_open (
                         m_env,
                         keyValues ["path"].toStdString().c_str (),
-                        0,
-                        0);
+                        MDB_NOTLS,
+                        0664);
 
-        }
+        MDB_txn * txn;
+	if (error == 0)
+            error = mdb_txn_begin(m_env, NULL, 0, &txn);
+        if (error == 0)
+            error = mdb_dbi_open(txn, NULL, 0, &m_dbi);
+        if (error == 0)
+            error = mdb_txn_commit(txn);
+
 
         if (error != 0)
         {
@@ -35,36 +44,115 @@ public:
             s << "Error #" << error << " creating mdb environment";
             throw std::runtime_error (s.toStdString ());
         }
+        m_name = keyValues ["path"].toStdString();
     }
 
     ~Backend ()
     {
         if (m_env != nullptr)
+        {
+            mdb_dbi_close(m_env, m_dbi);
             mdb_env_close (m_env);
+        }
     }
 
     std::string getDataBaseName()
     {
-        return std::string ();
+        return m_name;
     }
 
     bool store (NodeObject::ref obj)
     {
-        return false;
+        MDB_txn *txn = nullptr;
+        int rc = 0;
+
+        rc = mdb_txn_begin(m_env, NULL, 0, &txn);
+
+        if (rc == 0)
+        {
+            MDB_val key, data;
+            Blob blob (toBlob (obj));
+
+            key.mv_size = (256 / 8);
+            key.mv_data = const_cast<unsigned char *>(obj->getHash().begin());
+
+            data.mv_size = blob.size();
+            data.mv_data = &blob.front();
+
+            rc = mdb_put(txn, m_dbi, &key, &data, 0);
+        }
+
+        if (rc == 0)
+            rc = mdb_txn_commit(txn);
+        else if (txn)
+            mdb_txn_abort(txn);
+
+        return rc == 0;
     }
 
     bool bulkStore (std::vector <NodeObject::pointer> const& objs)
     {
-        return false;
+        MDB_txn *txn = nullptr;
+        int rc = 0;
+
+        rc = mdb_txn_begin(m_env, NULL, 0, &txn);
+
+        if (rc == 0)
+        {
+	    BOOST_FOREACH (NodeObject::ref obj, objs)
+	    {
+		MDB_val key, data;
+		Blob blob (toBlob (obj));
+
+		key.mv_size = (256 / 8);
+		key.mv_data = const_cast<unsigned char *>(obj->getHash().begin());
+
+		data.mv_size = blob.size();
+		data.mv_data = &blob.front();
+
+                rc = mdb_put(txn, m_dbi, &key, &data, 0);
+                if (rc != 0)
+                    break;
+	    }
+        }
+
+        if (rc == 0)
+            rc = mdb_txn_commit(txn);
+        else if (txn)
+            mdb_txn_abort(txn);
+
+        return rc == 0;
     }
 
     NodeObject::pointer retrieve (uint256 const& hash)
     {
-        return NodeObject::pointer ();
+        NodeObject::pointer ret;
+
+        MDB_txn *txn = nullptr;
+        int rc = 0;
+
+        rc = mdb_txn_begin(m_env, NULL, 0, &txn);
+
+        if (rc == 0)
+        {
+            MDB_val key, data;
+
+	    key.mv_size = (256 / 8);
+	    key.mv_data = const_cast<unsigned char *>(hash.begin());
+
+	    rc = mdb_get(txn, m_dbi, &key, &data);
+	    if (rc == 0)
+	        ret = fromBinary(hash, static_cast<char *>(data.mv_data), data.mv_size);
+        }
+
+        mdb_txn_abort(txn);
+
+        return ret;
     }
 
     void visitAll (FUNCTION_TYPE <void (NodeObject::pointer)> func)
-    {
+    { // WRITEME
+        assert(false);
     }
 
     Blob toBlob (NodeObject::ref obj) const
@@ -101,7 +189,9 @@ public:
     }
 
 private:
-    MDB_env* m_env;
+    std::string m_name;
+    MDB_env*    m_env;
+    MDB_dbi     m_dbi;
 };
 
 //------------------------------------------------------------------------------
