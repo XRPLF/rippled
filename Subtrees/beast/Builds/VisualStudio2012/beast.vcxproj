@@ -116,6 +116,7 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_LeakChecked.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_SafeBool.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_Throw.h" />
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_DirectoryIterator.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_File.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_FileInputStream.h" />
@@ -210,7 +211,6 @@
     <ClInclude Include="..\..\modules\beast_core\time\beast_PerformedAtExit.h" />
     <ClInclude Include="..\..\modules\beast_core\time\beast_RelativeTime.h" />
     <ClInclude Include="..\..\modules\beast_core\time\beast_Time.h" />
-    <ClInclude Include="..\..\modules\beast_core\unit_tests\beast_UnitTest.h" />
     <ClInclude Include="..\..\modules\beast_core\xml\beast_XmlDocument.h" />
     <ClInclude Include="..\..\modules\beast_core\xml\beast_XmlElement.h" />
     <ClInclude Include="..\..\modules\beast_core\zip\beast_GZIPCompressorOutputStream.h" />
@@ -377,6 +377,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_LeakChecked.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -785,12 +791,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\time\beast_Time.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\unit_tests\beast_UnitTest.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

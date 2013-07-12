@@ -77,9 +77,6 @@
     <Filter Include="beast_core\time">
       <UniqueIdentifier>{d3ea4af5-ae48-4144-a2ef-a212342d72ee}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_core\unit_tests">
-      <UniqueIdentifier>{0a8a6870-87a4-4f19-bbd3-b277f94bb83e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast_core\xml">
       <UniqueIdentifier>{a1a38659-7779-41d6-8a3c-068433c4deaf}</UniqueIdentifier>
     </Filter>
@@ -406,9 +403,6 @@
     <ClInclude Include="..\..\modules\beast_core\time\beast_Time.h">
       <Filter>beast_core\time</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\unit_tests\beast_UnitTest.h">
-      <Filter>beast_core\unit_tests</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\xml\beast_XmlDocument.h">
       <Filter>beast_core\xml</Filter>
     </ClInclude>
@@ -607,6 +601,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\memory\beast_SharedObject.h">
       <Filter>beast_core\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.h">
+      <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -808,9 +805,6 @@
     <ClCompile Include="..\..\modules\beast_core\time\beast_Time.cpp">
       <Filter>beast_core\time</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\unit_tests\beast_UnitTest.cpp">
-      <Filter>beast_core\unit_tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\xml\beast_XmlDocument.cpp">
       <Filter>beast_core\xml</Filter>
     </ClCompile>
@@ -945,6 +939,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_basics\events\beast_DeadlineTimer.cpp">
       <Filter>beast_basics\events</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.cpp">
+      <Filter>beast_core\diagnostic</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
