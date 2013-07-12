@@ -899,8 +899,11 @@ void PeerImp::processReadBuffer ()
 
         default:
             event->reName ("PeerImp::unknown");
-            WriteLog (lsWARNING, Peer) << "Unknown Msg: " << type;
-            WriteLog (lsWARNING, Peer) << strHex (&mReadbuf[0], mReadbuf.size ());
+            if (type != 5)
+            { // TEMPORARY: Don't warn on cluster message
+                WriteLog (lsWARNING, Peer) << "Unknown Msg: " << type;
+                WriteLog (lsWARNING, Peer) << strHex (&mReadbuf[0], mReadbuf.size ());
+	    }
         }
     }
 }
