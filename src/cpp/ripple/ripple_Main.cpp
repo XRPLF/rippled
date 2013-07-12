@@ -113,6 +113,48 @@ void printHelp (const po::options_description& desc)
     //  cerr << "     trust_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<quality_in>] [<quality_out>]" << endl;
 }
 
+//------------------------------------------------------------------------------
+
+/** Run the Beast unit tests.
+*/
+static void runBeastUnitTests ()
+{
+    UnitTestRunner tr;
+
+    tr.setAssertOnFailure (false);
+    tr.setPassesAreLogged (false);
+
+    tr.runAllTests ();
+
+    // Report
+    for (int i = 0; i < tr.getNumResults (); ++i)
+    {
+        UnitTestRunner::TestResult const& r (*tr.getResult (i));
+                
+        for (int j = 0; j < r.messages.size (); ++i)
+            Log::out () << r.messages [j].toStdString ();
+    }
+}
+
+//------------------------------------------------------------------------------
+
+/** Run the Boost unit tests.
+
+    @note These are deprecated. We want to migrate to using only
+          the Beast unit testing framework. Please do not add more
+          Boost based unit tests.
+*/
+// VFALCO NOTE What are argc and argv for?
+//             Where does the boost unit test framework write its output?
+//
+static void runBoostUnitTests (int argc, char* argv [])
+{
+    // DEPRECATED
+    boost::unit_test::unit_test_main (init_unit_test, argc, argv);
+}
+
+//------------------------------------------------------------------------------
+
 int rippleMain (int argc, char** argv)
 {
     //
@@ -166,6 +208,7 @@ int rippleMain (int argc, char** argv)
     ("standalone,a", "Run with no peers.")
     ("testnet,t", "Run in test net mode.")
     ("unittest,u", "Perform unit tests.")
+    ("unittest2", "Perform new unit tests.")
     ("parameters", po::value< vector<string> > (), "Specify comma separated parameters.")
     ("quiet,q", "Reduce diagnotics.")
     ("verbose,v", "Verbose logging.")
@@ -250,13 +293,18 @@ int rippleMain (int argc, char** argv)
         Log::setMinSeverity (lsINFO, true);
     }
 
-    // VFALCO TODO make this a singleton that initializes statically
-    //             Or could make it a SharedSingleton
+    // Run the unit tests if requested.
     //
     if (vm.count ("unittest"))
     {
-        boost::unit_test::unit_test_main (init_unit_test, argc, argv);
+        // DEPRECATED
+        runBoostUnitTests (argc, argv);
+        return 0;
+    }
 
+    if (vm.count ("unittest2"))
+    {
+        runBeastUnitTests ();
         return 0;
     }
 
