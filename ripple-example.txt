@@ -108,7 +108,6 @@
 #    LTC
 #
 
-
 [validation_public_key]
 n9MZTnHe5D5Q2cgE8oV2usFwRqhUvEA8MwP5Mu1XVD6TxmssPRev
 
