@@ -148,6 +148,7 @@ namespace beast
 #include "diagnostic/beast_Error.cpp"
 #include "diagnostic/beast_FPUFlags.cpp"
 #include "diagnostic/beast_LeakChecked.cpp"
+#include "diagnostic/beast_UnitTest.cpp"
 
 #include "files/beast_DirectoryIterator.cpp"
 #include "files/beast_File.cpp"
@@ -207,8 +208,6 @@ namespace beast
 #include "time/beast_PerformedAtExit.cpp"
 #include "time/beast_RelativeTime.cpp"
 #include "time/beast_Time.cpp"
-
-#include "unit_tests/beast_UnitTest.cpp"
 
 #include "xml/beast_XmlDocument.cpp"
 #include "xml/beast_XmlElement.cpp"

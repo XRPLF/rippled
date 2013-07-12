@@ -120,4 +120,6 @@
 //#define BEAST_BIND_USES_TR1   1
 //#define BEAST_BIND_USES_BOOST 1
 
+#define BEAST_UNIT_TESTS 1
+
 #endif
