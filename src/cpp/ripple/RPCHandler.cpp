@@ -107,9 +107,10 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
         return rpcError (rpcINVALID_PARAMS);
     }
 
+    Ledger::pointer lSnapshot = mNetOps->getCurrentSnapshot ();
     AccountState::pointer asSrc = bOffline
                                   ? AccountState::pointer ()                              // Don't look up address if offline.
-                                  : mNetOps->getAccountState (mNetOps->getCurrentSnapshot (), raSrcAddressID);
+                                  : mNetOps->getAccountState (lSnapshot, raSrcAddressID);
     mlh.unlock();
 
     if (!bOffline && !asSrc)
@@ -179,7 +180,6 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
                 return rpcError (rpcINVALID_PARAMS);
             }
 
-            Ledger::pointer lSnapshot = mNetOps->getCurrentSnapshot ();
             {
                 bool bValid;
                 RippleLineCache::pointer cache = boost::make_shared<RippleLineCache> (lSnapshot);
@@ -232,8 +232,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
 
     if (!bOffline)
     {
-        Ledger::pointer lpCurrent       = mNetOps->getCurrentSnapshot ();
-        SLE::pointer    sleAccountRoot  = mNetOps->getSLEi (lpCurrent, Ledger::getAccountRootIndex (raSrcAddressID.getAccountID ()));
+        SLE::pointer    sleAccountRoot  = mNetOps->getSLEi (lSnapshot, Ledger::getAccountRootIndex (raSrcAddressID.getAccountID ()));
 
         if (!sleAccountRoot)
         {
