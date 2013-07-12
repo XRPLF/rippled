@@ -154,6 +154,18 @@ void InboundLedger::onTimer (bool progress)
 
     if (!progress)
     {
+        if (isDone())
+        {
+            WriteLog (lsINFO, InboundLedger) << "Already done " << mHash;
+            return;
+        }
+        checkLocal();
+        if (isDone())
+        {
+            WriteLog (lsINFO, InboundLedger) << "Completed fetch " << mHash;
+            return;
+        }
+
         mAggressive = true;
         mByHash = true;
         int pc = getPeerCount ();
