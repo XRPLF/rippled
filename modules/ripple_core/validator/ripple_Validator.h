@@ -14,7 +14,7 @@
 class Validator
 {
 public:
-    typedef RippleAddress PublicKey;
+    typedef uint256 PublicKey;
 
     explicit Validator (PublicKey const& publicKey);
 

@@ -218,3 +218,23 @@ Validators* Validators::New (Listener* listener)
 {
     return new ValidatorsImp (listener);
 }
+
+//------------------------------------------------------------------------------
+
+/** Produces validators for unit tests.
+*/
+class TestValidatorSource : public Validators::Source
+{
+public:
+    static Validator makeValidator (int publicKeyIndex)
+    {
+
+    }
+
+    ValidatorList::Ptr fetch ()
+    {
+        ValidatorList::Ptr list = new ValidatorList;
+
+        return list;
+    }
+};

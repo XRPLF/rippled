@@ -41,6 +41,9 @@ public:
 
         // Visit every object in the database
         // This function will only be called during an import operation
+        //
+        // VFALCO TODO Replace FUNCTION_TYPE with a beast lift.
+        //
         virtual void visitAll (FUNCTION_TYPE <void (NodeObject::pointer)>) = 0;
 
         // VFALCO TODO Put this bulk writing logic into a separate class.
