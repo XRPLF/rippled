@@ -173,13 +173,11 @@ String TextDiff::Change::appliedTo (const String& text) const noexcept
 }
 
 //==============================================================================
-//==============================================================================
-#if BEAST_UNIT_TESTS
 
-class DiffTests  : public UnitTest
+class DiffTests  : public UnitTestType <DiffTests>
 {
 public:
-    DiffTests() : UnitTest ("TextDiff class") {}
+    DiffTests() : UnitTestType <DiffTests> ("TextDiff") {}
 
     static String createString()
     {
@@ -231,6 +229,6 @@ public:
     }
 };
 
-static DiffTests diffTests;
-
+#if BEAST_UNIT_TESTS
+template class UnitTestType <DiffTests>;
 #endif

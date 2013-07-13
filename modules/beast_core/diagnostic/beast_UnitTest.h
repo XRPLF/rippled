@@ -26,46 +26,9 @@
 
 #include "../text/beast_StringArray.h"
 #include "../containers/beast_OwnedArray.h"
-class UnitTestRunner;
+class UnitTests;
 
-
-//==============================================================================
-/**
-    This is a base class for classes that perform a unit test.
-
-    To write a test using this class, your code should look something like this:
-
-    @code
-    class MyTest  : public UnitTest
-    {
-    public:
-        MyTest()  : UnitTest ("Foobar testing") {}
-
-        void runTest()
-        {
-            beginTest ("Part 1");
-
-            expect (myFoobar.doesSomething());
-            expect (myFoobar.doesSomethingElse());
-
-            beginTest ("Part 2");
-
-            expect (myOtherFoobar.doesSomething());
-            expect (myOtherFoobar.doesSomethingElse());
-
-            ...etc..
-        }
-    };
-
-    // Creating a static instance will automatically add the instance to the array
-    // returned by UnitTest::getAllTests(), so the test will be included when you call
-    // UnitTestRunner::runAllTests()
-    static MyTest test;
-    @endcode
-
-    To run a test, use the UnitTestRunner class.
-
-    @see UnitTestRunner
+/** Factored base class for unit test template.
 */
 class BEAST_API UnitTest : Uncopyable
 {
@@ -80,11 +43,11 @@ public:
     /** Returns the name of the test. */
     const String& getName() const noexcept       { return name; }
 
-    /** Runs the test, using the specified UnitTestRunner.
+    /** Runs the test, using the specified UnitTests.
         You shouldn't need to call this method directly - use
-        UnitTestRunner::runTests() instead.
+        UnitTests::runTests() instead.
     */
-    void performTest (UnitTestRunner* runner);
+    void performTest (UnitTests* runner);
 
     /** Returns the set of all UnitTest objects that currently exist. */
     static Array<UnitTest*>& getAllTests();
@@ -163,9 +126,8 @@ public:
 private:
     //==============================================================================
     const String name;
-    UnitTestRunner* runner;
+    UnitTests* runner;
 };
-
 
 //==============================================================================
 /**
@@ -174,20 +136,20 @@ private:
     You can instantiate one of these objects and use it to invoke tests on a set of
     UnitTest objects.
 
-    By using a subclass of UnitTestRunner, you can intercept logging messages and
+    By using a subclass of UnitTests, you can intercept logging messages and
     perform custom behaviour when each test completes.
 
     @see UnitTest
 */
-class BEAST_API UnitTestRunner : Uncopyable
+class BEAST_API UnitTests : Uncopyable
 {
 public:
     //==============================================================================
     /** */
-    UnitTestRunner();
+    UnitTests();
 
     /** Destructor. */
-    virtual ~UnitTestRunner();
+    virtual ~UnitTests();
 
     /** Runs a set of tests.
 
@@ -199,7 +161,7 @@ public:
     /** Runs all the UnitTest objects that currently exist.
         This calls runTests() for all the objects listed in UnitTest::getAllTests().
     */
-    void runAllTests();
+    void runAllTests ();
 
     /** Sets a flag to indicate whether an assertion should be triggered if a test fails.
         This is true by default.
@@ -222,11 +184,13 @@ public:
     {
         /** The main name of this test (i.e. the name of the UnitTest object being run). */
         String unitTestName;
+
         /** The name of the current subcategory (i.e. the name that was set when UnitTest::beginTest() was called). */
         String subcategoryName;
 
         /** The number of UnitTest::expect() calls that succeeded. */
         int passes;
+
         /** The number of UnitTest::expect() calls that failed. */
         int failures;
 
@@ -248,34 +212,87 @@ protected:
     /** Called when the list of results changes.
         You can override this to perform some sort of behaviour when results are added.
     */
-    virtual void resultsUpdated();
+    virtual void resultsUpdated ();
 
     /** Logs a message about the current test progress.
         By default this just writes the message to the Logger class, but you could override
         this to do something else with the data.
     */
-    virtual void logMessage (const String& message);
+    virtual void logMessage (String const& message);
 
     /** This can be overridden to let the runner know that it should abort the tests
         as soon as possible, e.g. because the thread needs to stop.
     */
-    virtual bool shouldAbortTests();
+    virtual bool shouldAbortTests ();
 
 private:
-    //==============================================================================
     friend class UnitTest;
-
-    UnitTest* currentTest;
-    String currentSubCategory;
-    OwnedArray <TestResult, CriticalSection> results;
-    bool assertOnFailure, logPasses;
 
     void beginNewTest (UnitTest* test, const String& subCategory);
     void endTest();
 
     void addPass();
     void addFail (const String& failureMessage);
+
+    UnitTest* currentTest;
+    String currentSubCategory;
+    OwnedArray <TestResult, CriticalSection> results;
+    bool assertOnFailure;
+    bool logPasses;
 };
 
+//------------------------------------------------------------------------------
 
-#endif   // BEAST_UNITTEST_BEASTHEADER
+/** This is a base class for classes that perform a unit test.
+
+    To write a test using this class, your code should look something like this:
+
+    @code
+
+    class MyTest : public UnitTestType <MyTest>
+    {
+    public:
+        MyTest() : UnitTestType <MyTest> ("Foobar testing") { }
+
+        void runTest()
+        {
+            beginTest ("Part 1");
+
+            expect (myFoobar.doesSomething());
+            expect (myFoobar.doesSomethingElse());
+
+            beginTest ("Part 2");
+
+            expect (myOtherFoobar.doesSomething());
+            expect (myOtherFoobar.doesSomethingElse());
+
+            //...
+        }
+    };
+
+    // Explicit template instantiation is required to make the unit
+    // test get automatically added to the set of unit tests.
+    template class UnitTestType <MyTest>;
+
+    @endcode
+
+    To run one or more unit tests, use the UnitTests class.
+
+    @see UnitTests
+*/
+template <class Type>
+class UnitTestType : public UnitTest
+{
+public:
+    explicit UnitTestType (String const& name)
+        : UnitTest (name)
+    {
+    }
+
+    static Type s_test;
+};
+
+template <class Type>
+Type UnitTestType <Type>::s_test;
+
+#endif

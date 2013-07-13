@@ -125,13 +125,13 @@ void AbstractFifo::finishedRead (int numRead) noexcept
 }
 
 //==============================================================================
-//==============================================================================
-#if BEAST_UNIT_TESTS
 
-class AbstractFifoTests  : public UnitTest
+class AbstractFifoTests  : public UnitTestType <AbstractFifoTests>
 {
 public:
-    AbstractFifoTests() : UnitTest ("Abstract Fifo") {}
+    AbstractFifoTests() : UnitTestType <AbstractFifoTests> ("Abstract Fifo")
+    {
+    }
 
     class WriteThread  : public Thread
     {
@@ -201,7 +201,7 @@ public:
                     && (size1 == 0 || (start1 >= 0 && start1 < fifo.getTotalSize()))
                     && (size2 == 0 || (start2 >= 0 && start2 < fifo.getTotalSize())))
             {
-                expect (false, "prepareToRead returned -ve values");
+                expect (false, "prepareToRead returned negative values");
                 break;
             }
 
@@ -224,6 +224,6 @@ public:
     }
 };
 
-static AbstractFifoTests fifoUnitTests;
-
+#if BEAST_UNIT_TESTS
+template class UnitTestType <AbstractFifoTests>;
 #endif

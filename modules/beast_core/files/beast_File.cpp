@@ -921,14 +921,12 @@ MemoryMappedFile::MemoryMappedFile (const File& file, const Range<int64>& fileRa
     openInternal (file, mode);
 }
 
-
 //==============================================================================
-#if BEAST_UNIT_TESTS
 
-class FileTests  : public UnitTest
+class FileTests : public UnitTestType <FileTests>
 {
 public:
-    FileTests() : UnitTest ("Files") {}
+    FileTests() : UnitTestType <FileTests> ("File") {}
 
     void runTest()
     {
@@ -1108,6 +1106,7 @@ public:
     }
 };
 
-static FileTests fileUnitTests;
-
+#if BEAST_UNIT_TESTS
+template class UnitTestType <FileTests>;
 #endif
+

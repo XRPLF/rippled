@@ -157,12 +157,11 @@ bool GZIPCompressorOutputStream::setPosition (int64 /*newPosition*/)
 }
 
 //==============================================================================
-#if BEAST_UNIT_TESTS
 
-class GZIPTests  : public UnitTest
+class GZIPTests : public UnitTestType <GZIPTests>
 {
 public:
-    GZIPTests()   : UnitTest ("GZIP") {}
+    GZIPTests()  : UnitTestType <GZIPTests> ("GZIP") {}
 
     void runTest()
     {
@@ -206,6 +205,6 @@ public:
     }
 };
 
-static GZIPTests gzipTests;
-
+#if BEAST_UNIT_TESTS
+template class UnitTestType <GZIPTests>;
 #endif

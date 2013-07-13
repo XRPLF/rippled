@@ -194,6 +194,9 @@ namespace beast
 // Order matters, since headers don't have their own #include lines.
 // Add new includes to the bottom.
 
+#include "system/beast_PlatformDefs.h"
+#include "system/beast_TargetPlatform.h"
+
 #include "memory/beast_Uncopyable.h"
 #include "maths/beast_MathsFunctions.h"
 #include "memory/beast_Atomic.h"
@@ -204,6 +207,14 @@ namespace beast
 #include "containers/beast_LockFreeStack.h"
 #include "threads/beast_SpinDelay.h"
 #include "memory/beast_StaticObject.h"
+
+#include "text/beast_String.h"
+#include "text/beast_CharacterFunctions.h"
+#include "text/beast_CharPointer_ASCII.h"
+#include "text/beast_CharPointer_UTF16.h"
+#include "text/beast_CharPointer_UTF32.h"
+#include "text/beast_CharPointer_UTF8.h"
+
 #include "time/beast_PerformedAtExit.h"
 #include "diagnostic/beast_LeakChecked.h"
 #include "memory/beast_Memory.h"
@@ -280,19 +291,10 @@ namespace beast
 #include "streams/beast_OutputStream.h"
 #include "streams/beast_SubregionStream.h"
 #include "system/beast_Functional.h"
-#include "system/beast_PlatformDefs.h"
-#include "system/beast_StandardHeader.h"
 #include "system/beast_SystemStats.h"
-#include "system/beast_TargetPlatform.h"
-#include "text/beast_CharacterFunctions.h"
-#include "text/beast_CharPointer_ASCII.h"
-#include "text/beast_CharPointer_UTF16.h"
-#include "text/beast_CharPointer_UTF32.h"
-#include "text/beast_CharPointer_UTF8.h"
 #include "text/beast_Identifier.h"
 #include "text/beast_LocalisedStrings.h"
 #include "text/beast_NewLine.h"
-#include "text/beast_String.h"
 #include "text/beast_StringArray.h"
 #include "text/beast_StringPairArray.h"
 #include "text/beast_StringPool.h"

@@ -2074,12 +2074,11 @@ String String::fromUTF8 (const char* const buffer, int bufferSizeBytes)
 
 //==============================================================================
 //==============================================================================
-#if BEAST_UNIT_TESTS
 
-class StringTests  : public UnitTest
+class StringTests  : public UnitTestType <StringTests>
 {
 public:
-    StringTests() : UnitTest ("String class") {}
+    StringTests() : UnitTestType <StringTests> ("String") {}
 
     template <class CharPointerType>
     struct TestUTFConversion
@@ -2403,6 +2402,6 @@ public:
     }
 };
 
-static StringTests stringUnitTests;
-
+#if BEAST_UNIT_TESTS
+template class UnitTestType <StringTests>;
 #endif
