@@ -2,6 +2,8 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
+- Examples for different backend key/value config settings
+
 - Unit Test attention
 
 - NodeStore backend unit test
@@ -312,6 +314,21 @@ What we want from the unique node list:
 --------------------------------------------------------------------------------
 ChosenValidators
 --------------------------------------------------------------------------------
+
+David:
+  I've cut 2 of the 6 active client-facing servers to hyper. Since then, we've
+  had 5 spinouts on 3 servers, none of them on the 2 I've cut over. But they
+  are also the most recently restarted servers, so it's not a 100% fair test.
+
+  Maybe OC should have a URL that you can query to get the latest list of URI's
+  for OC-approved organzations that publish lists of validators. The server and
+  client can ship with that master trust URL and also the list of URI's at the
+  time it's released, in case for some reason it can't pull from OC. That would
+  make the default installation safe even against major changes in the
+  organizations that publish validator lists.
+
+  The difference is that if an organization that provides lists of validators
+  goes rogue, administrators don't have to act.
 
 TODO:
   Write up from end-user perspective on the deployment and administration

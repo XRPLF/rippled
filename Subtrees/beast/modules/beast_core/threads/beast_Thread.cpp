@@ -251,12 +251,11 @@ void SpinLock::enter() const noexcept
 }
 
 //==============================================================================
-#if BEAST_UNIT_TESTS
 
-class AtomicTests  : public UnitTest
+class AtomicTests : public UnitTestType <AtomicTests>
 {
 public:
-    AtomicTests() : UnitTest ("Atomics") {}
+    AtomicTests() : UnitTestType <AtomicTests> ("Atomic") {}
 
     void runTest()
     {
@@ -351,6 +350,6 @@ public:
     };
 };
 
-static AtomicTests atomicUnitTests;
-
+#if BEAST_UNIT_TESTS
+template class UnitTestType <AtomicTests>;
 #endif

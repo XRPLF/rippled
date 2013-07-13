@@ -119,7 +119,7 @@ void printHelp (const po::options_description& desc)
 */
 static void runBeastUnitTests ()
 {
-    UnitTestRunner tr;
+    UnitTests tr;
 
     tr.setAssertOnFailure (false);
     tr.setPassesAreLogged (false);
@@ -129,7 +129,7 @@ static void runBeastUnitTests ()
     // Report
     for (int i = 0; i < tr.getNumResults (); ++i)
     {
-        UnitTestRunner::TestResult const& r (*tr.getResult (i));
+        UnitTests::TestResult const& r (*tr.getResult (i));
                 
         for (int j = 0; j < r.messages.size (); ++i)
             Log::out () << r.messages [j].toStdString ();

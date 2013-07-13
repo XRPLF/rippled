@@ -41,7 +41,7 @@ Array<UnitTest*>& UnitTest::getAllTests()
 void UnitTest::initialise()  {}
 void UnitTest::shutdown()   {}
 
-void UnitTest::performTest (UnitTestRunner* const runner_)
+void UnitTest::performTest (UnitTests* const runner_)
 {
     bassert (runner_ != nullptr);
     runner = runner_;
@@ -70,42 +70,42 @@ void UnitTest::expect (const bool result, const String& failureMessage)
 }
 
 //==============================================================================
-UnitTestRunner::UnitTestRunner()
+UnitTests::UnitTests()
     : currentTest (nullptr),
       assertOnFailure (true),
       logPasses (false)
 {
 }
 
-UnitTestRunner::~UnitTestRunner()
+UnitTests::~UnitTests()
 {
 }
 
-void UnitTestRunner::setAssertOnFailure (bool shouldAssert) noexcept
+void UnitTests::setAssertOnFailure (bool shouldAssert) noexcept
 {
     assertOnFailure = shouldAssert;
 }
 
-void UnitTestRunner::setPassesAreLogged (bool shouldDisplayPasses) noexcept
+void UnitTests::setPassesAreLogged (bool shouldDisplayPasses) noexcept
 {
     logPasses = shouldDisplayPasses;
 }
 
-int UnitTestRunner::getNumResults() const noexcept
+int UnitTests::getNumResults() const noexcept
 {
     return results.size();
 }
 
-const UnitTestRunner::TestResult* UnitTestRunner::getResult (int index) const noexcept
+const UnitTests::TestResult* UnitTests::getResult (int index) const noexcept
 {
     return results [index];
 }
 
-void UnitTestRunner::resultsUpdated()
+void UnitTests::resultsUpdated()
 {
 }
 
-void UnitTestRunner::runTests (const Array<UnitTest*>& tests)
+void UnitTests::runTests (const Array<UnitTest*>& tests)
 {
     results.clear();
     resultsUpdated();
@@ -128,22 +128,22 @@ void UnitTestRunner::runTests (const Array<UnitTest*>& tests)
     endTest();
 }
 
-void UnitTestRunner::runAllTests()
+void UnitTests::runAllTests()
 {
     runTests (UnitTest::getAllTests());
 }
 
-void UnitTestRunner::logMessage (const String& message)
+void UnitTests::logMessage (const String& message)
 {
     Logger::writeToLog (message);
 }
 
-bool UnitTestRunner::shouldAbortTests()
+bool UnitTests::shouldAbortTests()
 {
     return false;
 }
 
-void UnitTestRunner::beginNewTest (UnitTest* const test, const String& subCategory)
+void UnitTests::beginNewTest (UnitTest* const test, const String& subCategory)
 {
     endTest();
     currentTest = test;
@@ -160,7 +160,7 @@ void UnitTestRunner::beginNewTest (UnitTest* const test, const String& subCatego
     resultsUpdated();
 }
 
-void UnitTestRunner::endTest()
+void UnitTests::endTest()
 {
     if (results.size() > 0)
     {
@@ -183,7 +183,7 @@ void UnitTestRunner::endTest()
     }
 }
 
-void UnitTestRunner::addPass()
+void UnitTests::addPass()
 {
     {
         const ScopedLock sl (results.getLock());
@@ -204,7 +204,7 @@ void UnitTestRunner::addPass()
     resultsUpdated();
 }
 
-void UnitTestRunner::addFail (const String& failureMessage)
+void UnitTests::addFail (const String& failureMessage)
 {
     {
         const ScopedLock sl (results.getLock());

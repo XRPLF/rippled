@@ -133,12 +133,11 @@ void Random::fillBitsRandomly (BigInteger& arrayToChange, int startBit, int numB
 }
 
 //==============================================================================
-#if BEAST_UNIT_TESTS
 
-class RandomTests  : public UnitTest
+class RandomTests  : public UnitTestType <RandomTests>
 {
 public:
-    RandomTests() : UnitTest ("Random") {}
+    RandomTests() : UnitTestType <RandomTests> ("Random") {}
 
     void runTest()
     {
@@ -166,6 +165,6 @@ public:
     }
 };
 
-static RandomTests randomTests;
-
+#if BEAST_UNIT_TESTS
+template class UnitTestType <RandomTests>;
 #endif
