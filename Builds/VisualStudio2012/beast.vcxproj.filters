@@ -964,6 +964,9 @@
     <ClCompile Include="..\..\modules\beast_crypto\beast_crypto.cpp">
       <Filter>beast_crypto</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\beast_crypto\math\beast_UnsignedInteger.cpp">
+      <Filter>beast_crypto\math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\TODO.txt" />

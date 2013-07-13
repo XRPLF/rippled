@@ -20,26 +20,22 @@
 #ifndef BEAST_SAFEBOOL_BEASTHEADER
 #define BEAST_SAFEBOOL_BEASTHEADER
 
-/**
-  Safe evaluation of class as `bool`.
+/** Safe evaluation of class as `bool`.
 
-  This allows a class to be safely evaluated as a bool without the usual harmful
-  side effects of the straightforward operator conversion approach. To use it,
-  derive your class from SafeBool and implement `asBoolean()` as:
+    This allows a class to be safely evaluated as a bool without the usual
+    harmful side effects of the straightforward operator conversion approach.
+    To use it, derive your class from SafeBool and implement `asBoolean()` as:
 
-  @code
+    @code
 
-  bool asBoolean () const;
+    bool asBoolean () const;
 
-  @endcode
+    @endcode
 
-  Ideas from http://www.artima.com/cppsource/safebool.html
+    Ideas from http://www.artima.com/cppsource/safebool.html
 
-  @class SafeBool
-
-  @ingroup beast_core
+    @class SafeBool
 */
-
 class BEAST_API SafeBoolBase
 {
 private:
