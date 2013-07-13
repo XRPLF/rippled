@@ -187,6 +187,10 @@ env.Append(CXXFLAGS = ['-frtti'])
 if (int(GCC_VERSION[0]) > 4 or (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) >= 7)):
     env.Append(CXXFLAGS = ['-std=c++11'])
 
+# FreeBSD doesn't support O_DSYNC
+if FreeBSD:
+    env.Append(CPPFLAGS = ['-DMDB_DSYNC=O_SYNC'])
+
 if OSX:
     env.Append(LINKFLAGS = ['-L/usr/local/opt/openssl/lib'])
     env.Append(CXXFLAGS = ['-I/usr/local/opt/openssl/include'])
