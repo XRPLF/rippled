@@ -80,10 +80,12 @@
 #
 # [validators]:
 #   Only valid in "rippled.cfg", "ripple.txt", and the referered [validators_url].
-#   List of Newcoin validators this node recommends.
+#   List of Ripple validators this node recommends.
 #
 #   For domains, rippled will probe for https web servers at the specied
 #   domain in the following order: ripple.DOMAIN, www.DOMAIN, DOMAIN
+#
+#	These are encoded 257-bit secp256k1 public keys.
 #
 #   Examples:
 #    redstem.com
