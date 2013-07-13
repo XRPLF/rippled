@@ -309,6 +309,8 @@ int rippleMain (int argc, char** argv)
     //
     if (vm.count ("unittest"))
     {
+        runBeastUnitTests ();
+
         // DEPRECATED
         runBoostUnitTests (argc, argv);
         return 0;

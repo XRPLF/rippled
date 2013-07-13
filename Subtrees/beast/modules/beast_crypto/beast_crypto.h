@@ -37,6 +37,8 @@
 # endif
 #endif
 
+#include "../beast_core/beast_core.h"
+
 //------------------------------------------------------------------------------
 
 namespace beast

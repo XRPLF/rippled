@@ -29,6 +29,8 @@
 
 #include "system/ripple_OpenSSLIncludes.h"
 
+#include "beast/modules/beast_crypto/beast_crypto.h"
+
 //------------------------------------------------------------------------------
 
 // From

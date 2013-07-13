@@ -24,4 +24,6 @@
 namespace beast
 {
 
+#include "math/beast_UnsignedInteger.cpp"
+
 }

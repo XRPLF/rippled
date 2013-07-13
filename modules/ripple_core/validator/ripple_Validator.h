@@ -14,7 +14,10 @@
 class Validator
 {
 public:
-    typedef uint256 PublicKey;
+    // VFALCO TODO magic number argh!!!
+    //             This type should be located elsewhere.
+    //
+    typedef UnsignedInteger <33> PublicKey;
 
     explicit Validator (PublicKey const& publicKey);
 

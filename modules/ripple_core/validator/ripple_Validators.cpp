@@ -226,15 +226,51 @@ Validators* Validators::New (Listener* listener)
 class TestValidatorSource : public Validators::Source
 {
 public:
-    static Validator makeValidator (int publicKeyIndex)
+    static Validator createValidator (unsigned int publicKeyIndex)
     {
+        Validator validator (Validator::PublicKey::createFromInteger (publicKeyIndex));
 
+        return validator;
+    }
+
+    TestValidatorSource (unsigned startIndex, int numEntries)
+        : m_startIndex (startIndex)
+        , m_numEntries (numEntries)
+    {
     }
 
     ValidatorList::Ptr fetch ()
     {
         ValidatorList::Ptr list = new ValidatorList;
 
+        for (unsigned int publicKeyIndex = m_startIndex;
+             publicKeyIndex < m_startIndex + m_numEntries;
+             ++publicKeyIndex)
+        {
+            list->add (createValidator (publicKeyIndex));
+        }
+
         return list;
     }
+
+private:
+    unsigned const m_startIndex;
+    int const m_numEntries;
 };
+
+//------------------------------------------------------------------------------
+
+class ValidatorListTests : public UnitTestType <ValidatorListTests>
+{
+public:
+    ValidatorListTests () : UnitTestType <ValidatorListTests> ("ValidatorList")
+    {
+    }
+
+    void runTest ()
+    {
+        beginTest ("ValidatorList");
+    }
+};
+
+template class UnitTestType <ValidatorListTests>;
