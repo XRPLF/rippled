@@ -10,14 +10,9 @@ NodeStore::NodeStore (String backendParameters, String fastBackendParameters, in
     : m_backend (createBackend (backendParameters))
     , mCache ("NodeStore", cacheSize, cacheAge)
     , mNegativeCache ("HashedObjectNegativeCache", 0, 120)
-    , mWriteGeneration (0)
-    , mWriteLoad (0)
-    , mWritePending (false)
 {
     if (fastBackendParameters.isNotEmpty ())
         m_fastBackend = createBackend (fastBackendParameters);
-
-    mWriteSet.reserve (128);
 }
 
 void NodeStore::addBackendFactory (BackendFactory& factory)
@@ -44,17 +39,14 @@ void NodeStore::sweep ()
 
 void NodeStore::waitWrite ()
 {
-    boost::mutex::scoped_lock sl (mWriteMutex);
-    int gen = mWriteGeneration;
-
-    while (mWritePending && (mWriteGeneration == gen))
-        mWriteCondition.wait (sl);
+    m_backend->waitWrite ();
+    if (m_fastBackend)
+        m_fastBackend->waitWrite ();
 }
 
 int NodeStore::getWriteLoad ()
 {
-    boost::mutex::scoped_lock sl (mWriteMutex);
-    return std::max (mWriteLoad, static_cast<int> (mWriteSet.size ()));
+    return m_backend->getWriteLoad ();
 }
 
 bool NodeStore::store (NodeObjectType type, uint32 index,
@@ -72,54 +64,13 @@ bool NodeStore::store (NodeObjectType type, uint32 index,
 
     if (!mCache.canonicalize (hash, object))
     {
-        boost::mutex::scoped_lock sl (mWriteMutex);
-        mWriteSet.push_back (object);
-
-        if (!mWritePending)
-        {
-            mWritePending = true;
-            getApp().getJobQueue ().addJob (jtWRITE, "NodeObject::store",
-                                           BIND_TYPE (&NodeStore::bulkWrite, this, P_1));
-        }
+        m_backend->store (object);
+        if (m_fastBackend)
+            m_fastBackend->store (object);
     }
 
     mNegativeCache.del (hash);
     return true;
-}
-
-void NodeStore::bulkWrite (Job&)
-{
-    int setSize = 0;
-
-    while (1)
-    {
-        std::vector< boost::shared_ptr<NodeObject> > set;
-        set.reserve (128);
-
-        {
-            boost::mutex::scoped_lock sl (mWriteMutex);
-
-            mWriteSet.swap (set);
-            assert (mWriteSet.empty ());
-            ++mWriteGeneration;
-            mWriteCondition.notify_all ();
-
-            if (set.empty ())
-            {
-                mWritePending = false;
-                mWriteLoad = 0;
-                return;
-            }
-
-            mWriteLoad = std::max (setSize, static_cast<int> (mWriteSet.size ()));
-            setSize = set.size ();
-        }
-
-        m_backend->bulkStore (set);
-
-        if (m_fastBackend)
-            m_fastBackend->bulkStore (set);
-    }
 }
 
 NodeObject::pointer NodeStore::retrieve (uint256 const& hash)
@@ -231,4 +182,66 @@ NodeStore::Backend* NodeStore::createBackend (String const& parameters)
     }
 
     return backend;
+}
+
+bool NodeStore::Backend::store (NodeObject::ref object)
+{
+    boost::mutex::scoped_lock sl (mWriteMutex);
+    mWriteSet.push_back (object);
+
+    if (!mWritePending)
+    {
+        mWritePending = true;
+        getApp().getJobQueue ().addJob (jtWRITE, "NodeObject::store",
+				       BIND_TYPE (&NodeStore::Backend::bulkWrite, this, P_1));
+    }
+    return true;
+}
+
+void NodeStore::Backend::bulkWrite (Job &)
+{
+    int setSize = 0;
+
+    while (1)
+    {
+        std::vector< boost::shared_ptr<NodeObject> > set;
+        set.reserve (128);
+
+        {
+            boost::mutex::scoped_lock sl (mWriteMutex);
+
+            mWriteSet.swap (set);
+            assert (mWriteSet.empty ());
+            ++mWriteGeneration;
+            mWriteCondition.notify_all ();
+
+            if (set.empty ())
+            {
+                mWritePending = false;
+                mWriteLoad = 0;
+                return;
+            }
+
+            mWriteLoad = std::max (setSize, static_cast<int> (mWriteSet.size ()));
+            setSize = set.size ();
+        }
+
+        bulkStore (set);
+    }
+}
+
+void NodeStore::Backend::waitWrite ()
+{
+    boost::mutex::scoped_lock sl (mWriteMutex);
+    int gen = mWriteGeneration;
+
+    while (mWritePending && (mWriteGeneration == gen))
+        mWriteCondition.wait (sl);
+}
+
+int NodeStore::Backend::getWriteLoad ()
+{
+    boost::mutex::scoped_lock sl (mWriteMutex);
+
+    return std::max (mWriteLoad, static_cast<int> (mWriteSet.size ()));
 }

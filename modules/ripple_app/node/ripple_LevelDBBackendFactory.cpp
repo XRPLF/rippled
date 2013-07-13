@@ -33,14 +33,6 @@ public:
         return mName;
     }
 
-    bool store (NodeObject::ref obj)
-    {
-        Blob blob (toBlob (obj));
-        return mDB->Put (leveldb::WriteOptions (),
-            leveldb::Slice (reinterpret_cast<char const*>(obj->getHash ().begin ()), 256 / 8),
-            leveldb::Slice (reinterpret_cast<char const*>(&blob.front ()), blob.size ())).ok ();
-    }
-
     bool bulkStore (const std::vector< NodeObject::pointer >& objs)
     {
         leveldb::WriteBatch batch;
