@@ -897,6 +897,9 @@
     <ClCompile Include="..\..\modules\ripple_core\validator\ripple_StringsValidatorSource.cpp">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Subtrees\beast\modules\beast_crypto\beast_crypto.cpp">
+      <Filter>[0] Subtrees\beast</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h">

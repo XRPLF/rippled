@@ -1032,6 +1032,7 @@
     </ClCompile>
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_basics\beast_basics.cpp" />
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_core\beast_core.cpp" />
+    <ClCompile Include="..\..\Subtrees\beast\modules\beast_crypto\beast_crypto.cpp" />
     <ClCompile Include="..\..\Subtrees\leveldb\db\builder.cc">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

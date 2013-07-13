@@ -23,7 +23,18 @@
     <None Include="..\..\.gitignore" />
     <None Include="..\..\CodingStyle.md" />
     <None Include="..\..\Doxyfile" />
-    <None Include="..\..\modules\beast_core\beast_core.mm" />
+    <None Include="..\..\modules\beast_basics\beast_basics.mm">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="..\..\modules\beast_core\beast_core.mm">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
     <None Include="..\..\modules\beast_core\native\beast_mac_Files.mm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -61,6 +72,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
     <None Include="..\..\modules\beast_core\zip\zlib\README" />
+    <None Include="..\..\modules\beast_crypto\beast_crypto.mm">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
     <None Include="..\..\README.md" />
   </ItemGroup>
   <ItemGroup>
@@ -227,6 +244,8 @@
     <ClInclude Include="..\..\modules\beast_core\zip\zlib\zconf.in.h" />
     <ClInclude Include="..\..\modules\beast_core\zip\zlib\zlib.h" />
     <ClInclude Include="..\..\modules\beast_core\zip\zlib\zutil.h" />
+    <ClInclude Include="..\..\modules\beast_crypto\beast_crypto.h" />
+    <ClInclude Include="..\..\modules\beast_crypto\math\beast_UnsignedInteger.h" />
     <ClInclude Include="BeastConfig.h" />
   </ItemGroup>
   <ItemGroup>
@@ -892,6 +911,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\modules\beast_crypto\beast_crypto.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\TODO.txt" />
