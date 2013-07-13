@@ -61,35 +61,6 @@ public:
         return m_name;
     }
 
-    bool store (NodeObject::ref obj)
-    {
-        MDB_txn *txn = nullptr;
-        int rc = 0;
-
-        rc = mdb_txn_begin(m_env, NULL, 0, &txn);
-
-        if (rc == 0)
-        {
-            MDB_val key, data;
-            Blob blob (toBlob (obj));
-
-            key.mv_size = (256 / 8);
-            key.mv_data = const_cast<unsigned char *>(obj->getHash().begin());
-
-            data.mv_size = blob.size();
-            data.mv_data = &blob.front();
-
-            rc = mdb_put(txn, m_dbi, &key, &data, 0);
-        }
-
-        if (rc == 0)
-            rc = mdb_txn_commit(txn);
-        else if (txn)
-            mdb_txn_abort(txn);
-
-        return rc == 0;
-    }
-
     bool bulkStore (std::vector <NodeObject::pointer> const& objs)
     {
         MDB_txn *txn = nullptr;

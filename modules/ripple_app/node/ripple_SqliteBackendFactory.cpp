@@ -24,18 +24,6 @@ public:
         return mName;
     }
 
-    bool store(NodeObject::ref object)
-    {
-        ScopedLock sl(mDb->getDBLock());
-        static SqliteStatement pSt(mDb->getDB()->getSqliteDB(),
-            "INSERT OR IGNORE INTO CommittedObjects "
-                "(Hash,ObjType,LedgerIndex,Object) VALUES (?, ?, ?, ?);");
-        bind(pSt, object);
-        pSt.step();
-        pSt.reset();
-        return true;
-    }
-
     bool bulkStore(const std::vector< NodeObject::pointer >& objects)
     {
         ScopedLock sl(mDb->getDBLock());

@@ -23,13 +23,18 @@ public:
         //
         typedef boost::shared_ptr <Backend> pointer;
 
+        Backend () : mWriteGeneration(0), mWriteLoad(0), mWritePending(false)
+        {
+            mWriteSet.reserve(128);
+        }
+
         virtual ~Backend () { }
 
         virtual std::string getDataBaseName() = 0;
 
         // Store/retrieve a single object
         // These functions must be thread safe
-        virtual bool store (NodeObject::ref) = 0;
+        virtual bool store (NodeObject::ref);
         virtual NodeObject::pointer retrieve (uint256 const &hash) = 0;
 
         // Store a group of objects
@@ -39,6 +44,18 @@ public:
         // Visit every object in the database
         // This function will only be called during an import operation
         virtual void visitAll (FUNCTION_TYPE <void (NodeObject::pointer)>) = 0;
+
+        virtual void bulkWrite (Job &);
+        virtual void waitWrite ();
+        virtual int getWriteLoad ();
+
+    protected:
+        boost::mutex                                 mWriteMutex;
+        boost::condition_variable                    mWriteCondition;
+        int                                          mWriteGeneration;
+        int                                          mWriteLoad;
+        bool                                         mWritePending;
+        std::vector <boost::shared_ptr<NodeObject> > mWriteSet;
     };
 
 public:
@@ -90,7 +107,6 @@ public:
 
     NodeObject::pointer retrieve (uint256 const& hash);
 
-    void bulkWrite (Job&);
     void waitWrite ();
     void tune (int size, int age);
     void sweep ();
@@ -111,14 +127,6 @@ private:
 
     TaggedCache<uint256, NodeObject, UptimeTimerAdapter>  mCache;
     KeyCache <uint256, UptimeTimerAdapter> mNegativeCache;
-
-    boost::mutex                mWriteMutex;
-    boost::condition_variable   mWriteCondition;
-    int                         mWriteGeneration;
-    int                         mWriteLoad;
-
-    std::vector< boost::shared_ptr<NodeObject> > mWriteSet;
-    bool mWritePending;
 };
 
 #endif
