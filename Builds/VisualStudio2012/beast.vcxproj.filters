@@ -30,6 +30,12 @@
     <None Include="..\..\Doxyfile" />
     <None Include="..\..\.gitattributes" />
     <None Include="..\..\.gitignore" />
+    <None Include="..\..\modules\beast_crypto\beast_crypto.mm">
+      <Filter>beast_crypto</Filter>
+    </None>
+    <None Include="..\..\modules\beast_basics\beast_basics.mm">
+      <Filter>beast_basics</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="beast_core">
@@ -112,6 +118,12 @@
     </Filter>
     <Filter Include="beast_core\diagnostic">
       <UniqueIdentifier>{69e28551-92ea-420b-a465-75ed248e3b59}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_crypto">
+      <UniqueIdentifier>{62b1f8e3-79e4-46cc-b3fb-a12754aef249}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_crypto\math">
+      <UniqueIdentifier>{1170f2bc-2456-410a-ab2b-c45f6ed37b9e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -605,6 +617,12 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_crypto\math\beast_UnsignedInteger.h">
+      <Filter>beast_crypto\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_crypto\beast_crypto.h">
+      <Filter>beast_crypto</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
@@ -942,6 +960,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.cpp">
       <Filter>beast_core\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_crypto\beast_crypto.cpp">
+      <Filter>beast_crypto</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
