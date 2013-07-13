@@ -115,11 +115,23 @@ void printHelp (const po::options_description& desc)
 
 //------------------------------------------------------------------------------
 
+// OUr custom unit test runner
+class RippleUnitTests : public UnitTests
+{
+public:
+    void logMessage (String const& message)
+    {
+        Log::out () << message.toStdString ();
+    }
+};
+
+//------------------------------------------------------------------------------
+
 /** Run the Beast unit tests.
 */
 static void runBeastUnitTests ()
 {
-    UnitTests tr;
+    RippleUnitTests tr;
 
     tr.setAssertOnFailure (false);
     tr.setPassesAreLogged (false);
