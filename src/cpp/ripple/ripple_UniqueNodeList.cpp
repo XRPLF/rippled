@@ -371,6 +371,37 @@ public:
 
     //--------------------------------------------------------------------------
 
+    void addClusterStatus (Json::Value& obj)
+    {
+        boost::recursive_mutex::scoped_lock sl (mUNLLock);
+        if (m_clusterNodes.size() > 1) // nodes other than us
+        {
+            int          now   = getApp().getOPs().getNetworkTimeNC();
+            uint32       ref   = getApp().getFeeTrack().getLoadBase();
+            Json::Value& nodes = (obj["cluster"] = Json::objectValue);
+
+            for (std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.begin(),
+                end = m_clusterNodes.end(); it != end; ++it)
+            {
+                if (it->first != getApp().getLocalCredentials().getNodePublic())
+                {
+                    Json::Value& node = nodes[it->first.humanNodePublic()];
+
+                    if (!it->second.getName().empty())
+                        node["tag"] = it->second.getName();
+
+                    if ((it->second.getLoadFee() != ref) && (it->second.getLoadFee() != 0))
+                        node["fee"] = static_cast<double>(it->second.getLoadFee()) / ref;
+
+                    if (it->second.getReportTime() != 0)
+                        node["age"] = (it->second.getReportTime() >= now) ? 0 : (now - it->second.getReportTime());
+                }
+            }
+        }
+    }
+
+    //--------------------------------------------------------------------------
+
     void nodeBootstrap ()
     {
         int         iDomains    = 0;
