@@ -803,6 +803,8 @@ Json::Value RPCHandler::doPeers (Json::Value, LoadType* loadType, ScopedLock& Ma
 
     jvResult["peers"]   = getApp().getPeers ().getPeersJson ();
 
+    getApp().getUNL().addClusterStatus(jvResult);
+
     return jvResult;
 }
 
