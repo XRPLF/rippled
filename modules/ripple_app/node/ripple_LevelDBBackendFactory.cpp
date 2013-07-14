@@ -7,18 +7,33 @@
 class LevelDBBackendFactory::Backend : public NodeStore::Backend
 {
 public:
-    Backend (std::string const& path)
-        : mName(path)
+    Backend (StringPairArray const& keyValues)
+        : mName(keyValues ["path"].toStdString ())
         , mDB(NULL)
     {
+        if (mName.empty())
+            throw std::runtime_error ("Missing path in LevelDB backend");
+
         leveldb::Options options;
         options.create_if_missing = true;
-        options.block_cache = leveldb::NewLRUCache (theConfig.getSize (siHashNodeDBCache) * 1024 * 1024);
 
-        if (theConfig.NODE_SIZE >= 2)
-            options.filter_policy = leveldb::NewBloomFilterPolicy (10);
+        if (keyValues["cache_mb"].isEmpty())
+            options.block_cache = leveldb::NewLRUCache (theConfig.getSize (siHashNodeDBCache) * 1024 * 1024);
+        else
+            options.block_cache = leveldb::NewLRUCache (keyValues["cache_mb"].getIntValue() * 1024L * 1024L);
 
-        leveldb::Status status = leveldb::DB::Open (options, path, &mDB);
+        if (keyValues["filter_bits"].isEmpty())
+        {
+            if (theConfig.NODE_SIZE >= 2)
+                options.filter_policy = leveldb::NewBloomFilterPolicy (10);
+        }
+        else if (keyValues["filter_bits"].getIntValue() != 0)
+            options.filter_policy = leveldb::NewBloomFilterPolicy (keyValues["filter_bits"].getIntValue());
+
+        if (!keyValues["open_files"].isEmpty())
+            options.max_open_files = keyValues["open_files"].getIntValue();
+
+        leveldb::Status status = leveldb::DB::Open (options, mName, &mDB);
         if (!status.ok () || !mDB)
             throw (std::runtime_error (std::string("Unable to open/create leveldb: ") + status.ToString()));
     }
@@ -127,7 +142,7 @@ String LevelDBBackendFactory::getName () const
 
 NodeStore::Backend* LevelDBBackendFactory::createInstance (StringPairArray const& keyValues)
 {
-    return new LevelDBBackendFactory::Backend (keyValues ["path"].toStdString ());
+    return new LevelDBBackendFactory::Backend (keyValues);
 }
 
 //------------------------------------------------------------------------------
