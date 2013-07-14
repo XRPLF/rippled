@@ -532,10 +532,10 @@ void JSON::writeToStream (OutputStream& output, const var& data, const bool allO
 //==============================================================================
 //==============================================================================
 
-class JSONTests  : public UnitTestType <JSONTests>
+class JSONTests  : public UnitTest
 {
 public:
-    JSONTests() : UnitTestType <JSONTests> ("JSON") {}
+    JSONTests() : UnitTest ("JSON") { }
 
     static String createRandomWideCharString (Random& r)
     {
@@ -640,5 +640,5 @@ public:
 };
 
 #if BEAST_UNIT_TESTS
-template class UnitTestType <JSONTests>;
+static JSONTests jsonTests;
 #endif

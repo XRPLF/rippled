@@ -6,6 +6,23 @@
 
 /*
 
+Goal:
+
+  Provide the listener with a ValidatorList.
+  - This forms the UNL
+
+Task:
+
+  fetch ValidatorInfo array from a source
+
+  - We have the old one and the new one, compute the following:
+
+    * unchanged validators list
+    * new validators list
+    * removed validators list
+
+  - From the unchanged / new / removed, figure out what to do.
+
 Two important questions:
 
 - Are there any validators in my ChosenValidators that I dont want
@@ -25,7 +42,7 @@ public:
     enum
     {
         // We will fetch a source at this interval
-         hoursBetweenFetches = 24
+        hoursBetweenFetches = 24
 
         ,secondsBetweenFetches = hoursBetweenFetches * 60 * 60
 
@@ -75,8 +92,7 @@ public:
         Status status;
         Time whenToFetch;
 
-        /** The number of times a fetch has failed.
-        */
+        // The number of times a fetch has failed.
         int numberOfFailures;
     };
 
@@ -159,7 +175,10 @@ public:
             sorted.ensureStorageAllocated (arrayToSort.size ());
 
             for (int i = 0; i < arrayToSort.size (); ++i)
-                sorted.addSorted (ValidatorInfoCompare(), arrayToSort [i]);
+            {
+                ValidatorInfoCompare compare;
+                sorted.addSorted (compare, arrayToSort [i]);
+            }
 
             arrayToSort.swapWithArray (sorted);
         }
@@ -167,6 +186,59 @@ public:
         void fetchSource (SourceInfo& sourceInfo)
         {
 
+        }
+
+        // Given the old list and the new list for a source, this
+        // computes which validators were added or removed, and
+        // updates some statistics. It also produces the new list.
+        //
+        void processFetch (FetchResult* pFetchResult,
+                           ValidatorInfoArray& oldList,
+                           ValidatorInfoArray& newList)
+        {
+            ValidatorsImp::FetchResult& fetchResult (*pFetchResult);
+
+            // First sort both arrays.
+            //
+            ValidatorInfoCompare compare;
+            oldList.sort (compare, true);
+            newList.sort (compare, true);
+
+            // Now walk both arrays and do an element-wise
+            // comparison to determine the set intersection.
+            //
+            for (int i = 0; i < bmax (oldList.size (), newList.size ()); ++i)
+            {
+                if (i >= oldList.size ())
+                {
+                    // newList [i] not present in oldList
+                    // newList [i] was added
+                }
+                else if (i >= newList.size ())
+                {
+                    // oldList [i] not present in newList
+                    // oldList [i] no longer present
+                }
+                else
+                {
+                    int const result = ValidatorInfoCompare::compareElements (oldList [i], newList [i]);
+
+                    if (result < 0)
+                    {
+                        // oldList [i] not present in newList
+                        // oldList [i] was removed
+                    }
+                    else if (result > 0)
+                    {
+                        // newList [i] not present in oldList
+                        // newList [i] was added
+                    }
+                    else
+                    {
+                        // no change in validator
+                    }
+                }
+            }
         }
 
     private:
@@ -327,13 +399,14 @@ private:
 
 //------------------------------------------------------------------------------
 
-class ValidatorListTests : public UnitTestType <ValidatorListTests>
+class ValidatorListTests : public UnitTest
 {
 public:
-    ValidatorListTests () : UnitTestType <ValidatorListTests> ("ValidatorList")
+    ValidatorListTests () : UnitTest ("ValidatorList")
     {
     }
 
+    // Check public key routines
     void publicKeyTest ()
     {
         beginTest ("compare");
@@ -345,17 +418,34 @@ public:
         expect (two > one, "should be greater");
     }
 
+    // Verify the test fetching
     void fetchTest ()
     {
         beginTest ("fetch");
 
-        TestValidatorSource source (0, 32);
-
         ValidatorsImp::ValidatorInfoArray results;
 
-        source.fetch (results);
+        TestValidatorSource (0, 32).fetch (results);
 
         expect (results.size () == 32, "size should be 32");
+    }
+
+    // Check logic for comparing a source's fetch results
+    void processFetchTest ()
+    {
+        beginTest ("process fetch");
+
+        ValidatorsImp::ValidatorInfoArray oldList;
+        TestValidatorSource (1, 2).fetch (oldList);
+        expect (oldList.size () == 2, "size should be 2");
+
+        ValidatorsImp::ValidatorInfoArray newList;
+        TestValidatorSource (2, 2).fetch (newList);
+        expect (newList.size () == 2, "size should be 2");
+
+        ValidatorsImp::FetchResult fetchResult;
+
+        ValidatorsImp::Logic ().processFetch (&fetchResult, oldList, newList);
     }
 
     void runTest ()
@@ -363,31 +453,10 @@ public:
         publicKeyTest ();
 
         fetchTest ();
+
+        processFetchTest ();
     }
 };
 
-template class UnitTestType <ValidatorListTests>;
-
-/*
-
-Goal:
-
-  Provide the listener with a ValidatorList.
-  - This forms the UNL
-
-Task:
-
-  fetch ValidatorInfo array from a source
-
-  - We have the old one and the new one, compute the following:
-
-    * unchanged validators list
-    * new validators list
-    * removed validators list
-
-  - From the unchanged / new / removed, figure out what to do.
-
-*/
-
-
+static ValidatorListTests validatorListTests;
 

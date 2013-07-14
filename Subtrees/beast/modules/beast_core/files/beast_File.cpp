@@ -923,10 +923,10 @@ MemoryMappedFile::MemoryMappedFile (const File& file, const Range<int64>& fileRa
 
 //==============================================================================
 
-class FileTests : public UnitTestType <FileTests>
+class FileTests : public UnitTest
 {
 public:
-    FileTests() : UnitTestType <FileTests> ("File") {}
+    FileTests() : UnitTest ("File") {}
 
     void runTest()
     {
@@ -1107,6 +1107,6 @@ public:
 };
 
 #if BEAST_UNIT_TESTS
-template class UnitTestType <FileTests>;
+static FileTests fileTests;
 #endif
 

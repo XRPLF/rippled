@@ -28,14 +28,50 @@
 #include "../containers/beast_OwnedArray.h"
 class UnitTests;
 
-/** Factored base class for unit test template.
+
+/** This is a base class for classes that perform a unit test.
+
+    To write a test using this class, your code should look something like this:
+
+    @code
+
+    class MyTest : public UnitTest
+    {
+    public:
+        MyTest() : UnitTest ("Foobar testing") { }
+
+        void runTest()
+        {
+            beginTest ("Part 1");
+
+            expect (myFoobar.doesSomething());
+            expect (myFoobar.doesSomethingElse());
+
+            beginTest ("Part 2");
+
+            expect (myOtherFoobar.doesSomething());
+            expect (myOtherFoobar.doesSomethingElse());
+
+            //...
+        }
+    };
+
+    // Explicit template instantiation is required to make the unit
+    // test get automatically added to the set of unit tests.
+    template class UnitTestType <MyTest>;
+
+    @endcode
+
+    To run one or more unit tests, use the UnitTests class.
+
+    @see UnitTests
 */
 class BEAST_API UnitTest : Uncopyable
 {
 public:
     //==============================================================================
     /** Creates a test with the given name. */
-    explicit UnitTest (const String& name);
+    explicit UnitTest (String const& name);
 
     /** Destructor. */
     virtual ~UnitTest();
@@ -240,59 +276,5 @@ private:
     bool assertOnFailure;
     bool logPasses;
 };
-
-//------------------------------------------------------------------------------
-
-/** This is a base class for classes that perform a unit test.
-
-    To write a test using this class, your code should look something like this:
-
-    @code
-
-    class MyTest : public UnitTestType <MyTest>
-    {
-    public:
-        MyTest() : UnitTestType <MyTest> ("Foobar testing") { }
-
-        void runTest()
-        {
-            beginTest ("Part 1");
-
-            expect (myFoobar.doesSomething());
-            expect (myFoobar.doesSomethingElse());
-
-            beginTest ("Part 2");
-
-            expect (myOtherFoobar.doesSomething());
-            expect (myOtherFoobar.doesSomethingElse());
-
-            //...
-        }
-    };
-
-    // Explicit template instantiation is required to make the unit
-    // test get automatically added to the set of unit tests.
-    template class UnitTestType <MyTest>;
-
-    @endcode
-
-    To run one or more unit tests, use the UnitTests class.
-
-    @see UnitTests
-*/
-template <class Type>
-class UnitTestType : public UnitTest
-{
-public:
-    explicit UnitTestType (String const& name)
-        : UnitTest (name)
-    {
-    }
-
-    static Type s_test;
-};
-
-template <class Type>
-Type UnitTestType <Type>::s_test;
 
 #endif

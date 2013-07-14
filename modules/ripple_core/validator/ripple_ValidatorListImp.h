@@ -22,7 +22,7 @@ public:
     {
     }
 
-    int size () const
+    int size () const noexcept
     {
         return m_list.size ();
     }
