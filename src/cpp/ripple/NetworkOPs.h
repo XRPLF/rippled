@@ -80,6 +80,10 @@ public:
     {
         return mLedgerMaster->getValidatedLedger ();
     }
+    Ledger::ref     getPublishedLedger ()
+    {
+        return mLedgerMaster->getPublishedLedger ();
+    }
     Ledger::ref     getCurrentLedger ()
     {
         return mLedgerMaster->getCurrentLedger ();

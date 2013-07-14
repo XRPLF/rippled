@@ -1509,6 +1509,12 @@ Json::Value NetworkOPs::getServerInfo (bool human, bool admin)
             info["validated_ledger"] = l;
         else
             info["closed_ledger"] = l;
+
+        Ledger::pointer lpPublished = getPublishedLedger ();
+        if (!lpPublished)
+            info["published_ledger"] = "none";
+        else if (lpPublished->getLedgerSeq() != lpClosed->getLedgerSeq())
+            info["published_ledger"] = lpPublished->getLedgerSeq();
     }
 
     return info;
@@ -2375,7 +2381,7 @@ void NetworkOPs::doClusterReport ()
         node.set_reporttime(it->second.getReportTime());
         node.set_nodeload(it->second.getLoadFee());
         if (!it->second.getName().empty())
-	    node.set_nodename(it->second.getName());
+            node.set_nodename(it->second.getName());
     }
 
     PackedMessage::pointer message = boost::make_shared<PackedMessage>(cluster, protocol::mtCLUSTER);
