@@ -126,10 +126,10 @@ void AbstractFifo::finishedRead (int numRead) noexcept
 
 //==============================================================================
 
-class AbstractFifoTests  : public UnitTestType <AbstractFifoTests>
+class AbstractFifoTests  : public UnitTest
 {
 public:
-    AbstractFifoTests() : UnitTestType <AbstractFifoTests> ("Abstract Fifo")
+    AbstractFifoTests() : UnitTest ("Abstract Fifo")
     {
     }
 
@@ -225,5 +225,5 @@ public:
 };
 
 #if BEAST_UNIT_TESTS
-template class UnitTestType <AbstractFifoTests>;
+static AbstractFifoTests abstractFifoTests;
 #endif

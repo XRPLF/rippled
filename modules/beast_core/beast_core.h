@@ -207,6 +207,7 @@ namespace beast
 #include "containers/beast_LockFreeStack.h"
 #include "threads/beast_SpinDelay.h"
 #include "memory/beast_StaticObject.h"
+#include "memory/beast_Memory.h"
 
 #include "text/beast_String.h"
 #include "text/beast_CharacterFunctions.h"
@@ -217,7 +218,6 @@ namespace beast
 
 #include "time/beast_PerformedAtExit.h"
 #include "diagnostic/beast_LeakChecked.h"
-#include "memory/beast_Memory.h"
 #include "memory/beast_ByteOrder.h"
 #include "logging/beast_Logger.h"
 #include "threads/beast_Thread.h"

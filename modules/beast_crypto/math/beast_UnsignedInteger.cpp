@@ -17,11 +17,10 @@
 */
 //==============================================================================
 
-class UnsignedIntegerTests : public UnitTestType <UnsignedIntegerTests>
+class UnsignedIntegerTests : public UnitTest
 {
 public:
-    UnsignedIntegerTests ()
-        : UnitTestType <UnsignedIntegerTests> ("UnsignedInteger")
+    UnsignedIntegerTests () : UnitTest ("UnsignedInteger")
     {
     }
 
@@ -84,5 +83,5 @@ private:
 };
 
 #if BEAST_UNIT_TESTS
-template class UnitTestType <UnsignedIntegerTests>;
+static UnsignedIntegerTests unsignedIntegerTests;
 #endif

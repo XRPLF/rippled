@@ -58,10 +58,10 @@ String ChildProcess::readAllProcessOutput()
 
 //==============================================================================
 
-class ChildProcessTests  : public UnitTestType <ChildProcessTests>
+class ChildProcessTests  : public UnitTest
 {
 public:
-    ChildProcessTests() : UnitTestType <ChildProcessTests> ("ChildProcess") {}
+    ChildProcessTests() : UnitTest ("ChildProcess") {}
 
     void runTest()
     {
@@ -83,5 +83,5 @@ public:
 };
 
 #if BEAST_UNIT_TESTS
-template class UnitTestType <ChildProcessTests>;
+static ChildProcessTests childProcessTests;
 #endif

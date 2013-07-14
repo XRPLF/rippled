@@ -146,7 +146,7 @@ public:
     */
     bool asBoolean () const noexcept
     {
-        return isNonZero ();
+        return isNotZero ();
     }
 
     /** Access a particular byte.

@@ -89,10 +89,10 @@ int64 MemoryInputStream::getPosition()
 
 //==============================================================================
 
-class MemoryStreamTests  : public UnitTestType <MemoryStreamTests>
+class MemoryStreamTests : public UnitTest
 {
 public:
-    MemoryStreamTests() : UnitTestType <MemoryStreamTests> ("MemoryStream") {}
+    MemoryStreamTests() : UnitTest ("MemoryStream") { }
 
     void runTest()
     {
@@ -149,6 +149,5 @@ public:
 };
 
 #if BEAST_UNIT_TESTS
-template class UnitTestType <MemoryStreamTests>;
+static MemoryStreamTests memoryStreamTests;
 #endif
-
