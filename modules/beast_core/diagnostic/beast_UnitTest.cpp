@@ -155,8 +155,7 @@ void UnitTestRunner::beginNewTest (UnitTest* const test, const String& subCatego
     r->passes = 0;
     r->failures = 0;
 
-    logMessage ("-----------------------------------------------------------------");
-    logMessage ("Starting test: " + r->unitTestName + " / " + subCategory + "...");
+    logMessage ("Test: " + r->unitTestName + "/" + subCategory + "...");
 
     resultsUpdated();
 }
@@ -179,7 +178,7 @@ void UnitTestRunner::endTest()
         }
         else
         {
-            logMessage ("All tests completed successfully");
+            //logMessage ("All tests completed successfully");
         }
     }
 }
