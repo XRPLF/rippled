@@ -58,11 +58,19 @@ public:
         return mFinalizedLedger;
     }
 
-    // The published ledger is the last fully validated ledger
+    // The validated ledger is the last fully validated ledger
     Ledger::ref getValidatedLedger ()
+    {
+        return mValidLedger;
+    }
+
+    // This is the last ledger we published to clients and can lag the validated ledger
+    Ledger::ref getPublishedLedger ()
     {
         return mPubLedger;
     }
+
+    int getPublishedLedgerAge ();
     int getValidatedLedgerAge ();
     bool isCaughtUp(std::string& reason);
 
