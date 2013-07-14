@@ -16,6 +16,7 @@ public:
     //             have to call bind.
     //
     void addJob (JobType type, const std::string& name, const FUNCTION_TYPE<void (Job&)>& job);
+    void addLimitJob (JobType type, const std::string& name, int limit, const FUNCTION_TYPE<void (Job&)>& job);
 
     int getJobCount (JobType t);        // Jobs waiting at this priority
     int getJobCountTotal (JobType t);   // Jobs waiting plus running at this priority
@@ -59,6 +60,8 @@ private:
     boost::asio::io_service&        mIOService;
 
     std::map<JobType, std::pair<int, int > >    mJobCounts;
+
+    bool getJob (Job& job);
 };
 
 #endif

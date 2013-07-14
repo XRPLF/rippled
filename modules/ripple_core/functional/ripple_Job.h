@@ -66,6 +66,7 @@ public:
     // VFALCO TODO try to remove the dependency on LoadMonitor.
     Job (JobType type,
          std::string const& name,
+         int limit,
          uint64 index,
          LoadMonitor& lm,
          FUNCTION_TYPE <void (Job&)> const& job);
@@ -75,6 +76,8 @@ public:
     void doJob ();
 
     void rename (const std::string& n);
+
+    int getLimit () const;
 
     // These comparison operators make the jobs sort in priority order in the job set
     bool operator< (const Job& j) const;
@@ -90,6 +93,7 @@ private:
     FUNCTION_TYPE <void (Job&)> mJob;
     LoadEvent::pointer          m_loadEvent;
     std::string                 mName;
+    int                         m_limit;
 };
 
 #endif
