@@ -82,7 +82,8 @@ void PeerSet::TimerEntry (boost::weak_ptr<PeerSet> wptr, const boost::system::er
             ptr->setTimer ();
         }
         else
-            getApp().getJobQueue ().addJob (jtLEDGER_DATA, "timerEntry", BIND_TYPE (&PeerSet::TimerJobEntry, P_1, ptr));
+            getApp().getJobQueue ().addLimitJob (jtLEDGER_DATA, "timerEntry", 2,
+                BIND_TYPE (&PeerSet::TimerJobEntry, P_1, ptr));
     }
 }
 
