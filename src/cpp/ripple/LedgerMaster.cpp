@@ -138,6 +138,8 @@ void LedgerMaster::storeLedger (Ledger::pointer ledger)
 
     if (ledger->isAccepted ())
         mLedgerHistory.addAcceptedLedger (ledger, false);
+
+    checkAccept (ledger->getHash(), ledger->getLedgerSeq());
 }
 
 Ledger::pointer LedgerMaster::closeLedger (bool recover)
