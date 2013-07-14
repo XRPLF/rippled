@@ -221,7 +221,7 @@ private:
                 {
                     ++trusted;
                     if (it.second->isFieldPresent(sfLoadFee))
-                        fee += it.second->getFieldU64(sfLoadFee);
+                        fee += it.second->getFieldU32(sfLoadFee);
                     else
                         fee += ref;
 		}
