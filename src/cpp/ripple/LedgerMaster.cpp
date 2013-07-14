@@ -23,6 +23,23 @@ Ledger::ref LedgerMaster::getCurrentSnapshot ()
     return mCurrentSnapshot;
 }
 
+int LedgerMaster::getPublishedLedgerAge ()
+{
+    boost::recursive_mutex::scoped_lock ml (mLock);
+    if (!mPubLedger)
+    {
+        WriteLog (lsDEBUG, LedgerMaster) << "No published ledger";
+        return 999999;
+    }
+
+    int64 ret = getApp().getOPs ().getCloseTimeNC ();
+    ret -= static_cast<int64> (mPubLedger->getCloseTimeNC ());
+    ret = std::max (0LL, ret);
+
+    WriteLog (lsTRACE, LedgerMaster) << "Published ledger age is " << ret;
+    return static_cast<int> (ret);
+}
+
 int LedgerMaster::getValidatedLedgerAge ()
 {
     boost::recursive_mutex::scoped_lock ml (mLock);
@@ -42,7 +59,7 @@ int LedgerMaster::getValidatedLedgerAge ()
 
 bool LedgerMaster::isCaughtUp(std::string& reason)
 {
-    if (getValidatedLedgerAge() > 180)
+    if (getPublishedLedgerAge() > 180)
     {
         reason = "No recently-validated ledger";
         return false;
@@ -138,6 +155,8 @@ void LedgerMaster::storeLedger (Ledger::pointer ledger)
 
     if (ledger->isAccepted ())
         mLedgerHistory.addAcceptedLedger (ledger, false);
+
+    checkAccept (ledger->getHash(), ledger->getLedgerSeq());
 }
 
 Ledger::pointer LedgerMaster::closeLedger (bool recover)
