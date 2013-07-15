@@ -225,16 +225,21 @@ int InboundLedgers::getFetchCount (int& timeoutCount)
 {
     timeoutCount = 0;
     int ret = 0;
+
+    std::map<uint256, InboundLedger::pointer> inboundLedgers;
+
     {
-        typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
         boost::mutex::scoped_lock sl (mLock);
-        BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
+        inboundLedgers = mLedgers;
+    }
+
+    typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
+    BOOST_FOREACH (const u256_acq_pair & it, inboundLedgers)
+    {
+        if (it.second->isActive ())
         {
-            if (it.second->isActive ())
-            {
-                ++ret;
-                timeoutCount += it.second->getTimeouts ();
-            }
+            ++ret;
+            timeoutCount += it.second->getTimeouts ();
         }
     }
     return ret;
