@@ -2,6 +2,8 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
+- Rename HeapBlock routines to not conflict with _CRTDBG_MAP_ALLOC macros
+
 - Design a WeakPtr / SharedPtr / SharedObject intrusive system
 
 - Implement beast::Bimap?
