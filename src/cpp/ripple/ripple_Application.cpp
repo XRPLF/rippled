@@ -343,12 +343,17 @@ private:
     bool volatile mShutdown;
 };
 
+// VFALCO TODO Why do we even have this function?
+//             It could just be handled in the destructor.
+//
 void ApplicationImp::stop ()
 {
     WriteLog (lsINFO, Application) << "Received shutdown request";
     StopSustain ();
     mShutdown = true;
     mIOService.stop ();
+    // VFALCO TODO We shouldn't have to explicitly call this function.
+    //             The NodeStore destructor should take care of it.
     m_nodeStore.waitWrite ();
     mValidations->flush ();
     mAuxService.stop ();

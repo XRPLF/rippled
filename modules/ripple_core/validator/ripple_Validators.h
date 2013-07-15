@@ -33,7 +33,7 @@ public:
 
             This call blocks.
         */
-        virtual ValidatorList::Ptr fetch () = 0;
+        virtual void fetch (Array <ValidatorInfo>& results) = 0;
     };
 
 public:
@@ -42,7 +42,7 @@ public:
     class Listener
     {
     public:
-        virtual void onValidatorsChosen (ChosenValidators::Ptr list) { }
+        virtual void onValidatorsChosen (ValidatorList::Ptr list) { }
     };
 
 public:

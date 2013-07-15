@@ -885,12 +885,6 @@
     <ClCompile Include="..\..\modules\ripple_app\ledger\SerializedValidation.cpp">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_core\validator\ripple_ValidatorList.cpp">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_core\validator\ripple_ChosenValidators.cpp">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\validator\ripple_TrustedUriValidatorSource.cpp">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClCompile>
@@ -1665,13 +1659,13 @@
     <ClInclude Include="..\..\modules\ripple_core\validator\ripple_ValidatorList.h">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_core\validator\ripple_ChosenValidators.h">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\validator\ripple_TrustedUriValidatorSource.h">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\validator\ripple_StringsValidatorSource.h">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\validator\ripple_ValidatorListImp.h">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
   </ItemGroup>

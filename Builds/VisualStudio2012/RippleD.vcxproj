@@ -355,12 +355,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\ripple_core.cpp" />
-    <ClCompile Include="..\..\modules\ripple_core\validator\ripple_ChosenValidators.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\validator\ripple_StringsValidatorSource.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -374,12 +368,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\validator\ripple_Validator.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_core\validator\ripple_ValidatorList.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1453,11 +1441,11 @@
     <ClInclude Include="..\..\modules\ripple_core\functional\ripple_LoadFeeTrack.h" />
     <ClInclude Include="..\..\modules\ripple_core\functional\ripple_LoadMonitor.h" />
     <ClInclude Include="..\..\modules\ripple_core\ripple_core.h" />
-    <ClInclude Include="..\..\modules\ripple_core\validator\ripple_ChosenValidators.h" />
     <ClInclude Include="..\..\modules\ripple_core\validator\ripple_StringsValidatorSource.h" />
     <ClInclude Include="..\..\modules\ripple_core\validator\ripple_TrustedUriValidatorSource.h" />
     <ClInclude Include="..\..\modules\ripple_core\validator\ripple_Validator.h" />
     <ClInclude Include="..\..\modules\ripple_core\validator\ripple_ValidatorList.h" />
+    <ClInclude Include="..\..\modules\ripple_core\validator\ripple_ValidatorListImp.h" />
     <ClInclude Include="..\..\modules\ripple_core\validator\ripple_Validators.h" />
     <ClInclude Include="..\..\modules\ripple_data\crypto\ripple_Base58.h" />
     <ClInclude Include="..\..\modules\ripple_data\crypto\ripple_Base58Data.h" />

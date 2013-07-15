@@ -12,6 +12,10 @@ RIPPLE TODO
 
 --------------------------------------------------------------------------------
 
+- Replace endian conversion calls with beast calls:
+  htobe32, be32toh, ntohl, etc...
+  Start by removing the system headers which provide these routines, if possible
+
 - Rename RPCHandler to CallHandler
 
 - Move everything in src/cpp/ripple into ripple_app and sort them into
@@ -389,30 +393,22 @@ Nouns
   LocalFileValidatorSource
     - ValidatorSource which reads information from a local file.
 
-TrustedUriList // A copy of this ships with the app
-* has a KnownValidators
+  TrustedUriList // A copy of this ships with the app
+  * has a KnownValidators
 
-KnownValidators
-* A series of KnownValidator that comes from a TrustedUri
-* Persistent storage has a timestamp
+  KnownValidators
+  * A series of KnownValidator that comes from a TrustedUri
+  * Persistent storage has a timestamp
 
-RankedValidators
-* Created as the union of all KnownValidators with "weight" being the
-number of appearances.
+  RankedValidators
+  * Created as the union of all KnownValidators with "weight" being the
+  number of appearances.
 
-ChosenValidators
-* Result of the algorithm that chooses a random subset of RankedKnownValidators
-* "local health" percentage is the percent of validations from this list that
-you've seen recently. And have they been behaving.
+  ChosenValidators
+  * Result of the algorithm that chooses a random subset of RankedKnownValidators
+  * "local health" percentage is the percent of validations from this list that
+  you've seen recently. And have they been behaving.
 
-Process:
+Algorithm
 
-For each TrustedUri:
-Perform HTTPS request to retrieve a KnownValidators list
-
-Create the union of all unique KnownValidator, keyed by public key
-- Calculate the number of appearances to determine the "weight"
-
-Algorithm:
-
-ChosenValidators chooseRandomSubset (RankedKnownValidators)
+  When updating a source

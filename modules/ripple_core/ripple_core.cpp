@@ -31,9 +31,8 @@ namespace ripple
 #include "functional/ripple_LoadEvent.cpp"
 #include "functional/ripple_LoadMonitor.cpp"
 
-#include "validator/ripple_ChosenValidators.cpp"
 #include "validator/ripple_Validator.cpp"
-#include "validator/ripple_ValidatorList.cpp"
+#include "validator/ripple_ValidatorListImp.h" // private
 #include "validator/ripple_Validators.cpp"
 #include "validator/ripple_StringsValidatorSource.cpp"
 #include "validator/ripple_TrustedUriValidatorSource.cpp"

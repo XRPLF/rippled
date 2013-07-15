@@ -41,7 +41,7 @@
     To make all the array's methods thread-safe, pass in "CriticalSection" as the templated
     TypeOfCriticalSectionToUse parameter, instead of the default DummyCriticalSection.
 
-    @see Array, ReferenceCountedArray, StringArray, CriticalSection
+    @see Array, SharedObjectArray, StringArray, CriticalSection
 */
 template <class ObjectClass,
           class TypeOfCriticalSectionToUse = DummyCriticalSection>

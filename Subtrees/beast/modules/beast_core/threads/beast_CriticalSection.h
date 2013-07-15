@@ -122,7 +122,7 @@ private:
     This is currently used by some templated classes, and most compilers should
     manage to optimise it out of existence.
 
-    @see CriticalSection, Array, OwnedArray, ReferenceCountedArray
+    @see CriticalSection, Array, OwnedArray, SharedObjectArray
 */
 class BEAST_API DummyCriticalSection : Uncopyable
 {

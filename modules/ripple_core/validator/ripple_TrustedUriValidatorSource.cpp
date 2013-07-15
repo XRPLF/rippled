@@ -16,11 +16,8 @@ public:
     {
     }
 
-    ValidatorList::Ptr fetch ()
+    void fetch (Array <ValidatorInfo>& results)
     {
-        ValidatorList::Ptr list = new ValidatorList;
-
-        return list;
     }
 
 private:

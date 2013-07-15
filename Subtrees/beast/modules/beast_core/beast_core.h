@@ -239,7 +239,7 @@ namespace beast
 #include "containers/beast_NamedValueSet.h"
 #include "containers/beast_OwnedArray.h"
 #include "containers/beast_PropertySet.h"
-#include "containers/beast_ReferenceCountedArray.h"
+#include "containers/beast_SharedObjectArray.h"
 #include "containers/beast_ScopedValueSetter.h"
 #include "containers/beast_SharedTable.h"
 #include "containers/beast_SortedLookupTable.h"

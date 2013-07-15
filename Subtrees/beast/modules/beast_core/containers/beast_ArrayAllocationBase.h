@@ -37,7 +37,7 @@
     It inherits from a critical section class to allow the arrays to use
     the "empty base class optimisation" pattern to reduce their footprint.
 
-    @see Array, OwnedArray, ReferenceCountedArray
+    @see Array, OwnedArray, SharedObjectArray
 */
 template <class ElementType, class TypeOfCriticalSectionToUse>
 class ArrayAllocationBase

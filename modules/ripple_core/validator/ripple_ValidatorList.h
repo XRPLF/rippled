@@ -18,27 +18,17 @@ class ValidatorList : public SharedObject
 public:
     typedef SharedObjectPtr <ValidatorList> Ptr;
 
-    /** Create an empty list.
-    */
-    ValidatorList ();
-
-    ~ValidatorList ();
+    virtual ~ValidatorList () { }
 
     /** Retrieve the number of items.
     */
-    int size () const;
+    virtual int size () const noexcept = 0;
 
-    Validator& operator[] (int index);
-
-    bool isSigned () const;
+    virtual Validator::Ptr operator[] (int index) = 0;
 
     /** Add a validator to the list.
     */
-    void add (Validator const& validator);
-
-private:
-    bool m_isSigned;
-    Array <Validator> m_list;
+    virtual void add (Validator::Ptr validator) = 0;
 };
 
 #endif
