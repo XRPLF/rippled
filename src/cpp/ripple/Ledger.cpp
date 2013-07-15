@@ -894,39 +894,27 @@ bool Ledger::getHashesByIndex (uint32 ledgerIndex, uint256& ledgerHash, uint256&
 
 std::map< uint32, std::pair<uint256, uint256> > Ledger::getHashesByIndex (uint32 minSeq, uint32 maxSeq)
 {
-#ifndef NO_SQLITE_PREPARE
     std::map< uint32, std::pair<uint256, uint256> > ret;
+
+    std::string sql = "SELECT LedgerSeq,LedgerHash,PrevHash FROM Ledgers WHERE LedgerSeq >= ";
+    sql.append (boost::lexical_cast<std::string> (minSeq));
+    sql.append (" AND LedgerSeq <= ");
+    sql.append (boost::lexical_cast<std::string> (maxSeq));
+    sql.append (";");
+
     DatabaseCon* con = getApp().getLedgerDB ();
     ScopedLock sl (con->getDBLock ());
 
-    SqliteStatement pSt (con->getDB ()->getSqliteDB (),
-                         "SELECT LedgerSeq,LedgerHash,PrevHash FROM Ledgers INDEXED BY SeqLedger "
-                         "WHERE LedgerSeq >= ? AND LedgerSeq <= ?;");
+    SqliteStatement pSt (con->getDB ()->getSqliteDB (), sql);
 
-    std::pair<uint256, uint256> hashes;
-
-    pSt.bind (1, minSeq);
-    pSt.bind (2, maxSeq);
-
-    do
+    while (pSt.isRow (pSt.step ()))
     {
-        int r = pSt.step ();
-
-        if (pSt.isDone (r))
-            return ret;
-
-        if (!pSt.isRow (r))
-            return ret;
-
+        std::pair<uint256, uint256>& hashes = ret[pSt.getUInt32 (0)];
         hashes.first.SetHexExact (pSt.peekString (1));
         hashes.second.SetHexExact (pSt.peekString (2));
-        ret[pSt.getUInt32 (0)] = hashes;
     }
-    while (1);
 
-#else
-#error SQLite prepare is required
-#endif
+    return ret;
 }
 
 Ledger::pointer Ledger::getLastFullLedger ()
