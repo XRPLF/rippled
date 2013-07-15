@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/filename.h"
+#include "filename.h"
 
-#include "db/dbformat.h"
-#include "port/port.h"
-#include "util/logging.h"
-#include "util/testharness.h"
+#include "dbformat.h"
+#include "../port/port.h"
+#include "../util/logging.h"
+#include "../util/testharness.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class FileNameTest { };
 
@@ -115,7 +115,7 @@ TEST(FileNameTest, Construction) {
   ASSERT_EQ(kTempFile, type);
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

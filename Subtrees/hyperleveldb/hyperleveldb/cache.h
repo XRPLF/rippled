@@ -15,13 +15,13 @@
 // they want something more sophisticated (like scan-resistance, a
 // custom eviction policy, variable cache sizing, etc.)
 
-#ifndef STORAGE_LEVELDB_INCLUDE_CACHE_H_
-#define STORAGE_LEVELDB_INCLUDE_CACHE_H_
+#ifndef STORAGE_HYPERLEVELDB_INCLUDE_CACHE_H_
+#define STORAGE_HYPERLEVELDB_INCLUDE_CACHE_H_
 
 #include <stdint.h>
-#include "hyperleveldb/slice.h"
+#include "slice.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class Cache;
 
@@ -94,6 +94,6 @@ class Cache {
   void operator=(const Cache&);
 };
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_UTIL_CACHE_H_
+#endif  // STORAGE_HYPERLEVELDB_UTIL_CACHE_H_

@@ -6,21 +6,21 @@
 
 #include <map>
 #include <string>
-#include "db/dbformat.h"
-#include "db/memtable.h"
-#include "db/write_batch_internal.h"
-#include "hyperleveldb/db.h"
-#include "hyperleveldb/env.h"
-#include "hyperleveldb/iterator.h"
-#include "hyperleveldb/table_builder.h"
-#include "table/block.h"
-#include "table/block_builder.h"
-#include "table/format.h"
-#include "util/random.h"
-#include "util/testharness.h"
-#include "util/testutil.h"
+#include "../db/dbformat.h"
+#include "../db/memtable.h"
+#include "../db/write_batch_internal.h"
+#include "../hyperleveldb/db.h"
+#include "../hyperleveldb/env.h"
+#include "../hyperleveldb/iterator.h"
+#include "../hyperleveldb/table_builder.h"
+#include "block.h"
+#include "block_builder.h"
+#include "format.h"
+#include "../util/random.h"
+#include "../util/testharness.h"
+#include "../util/testutil.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 // Return reverse of "key".
 // Used to test non-lexicographic comparators.
@@ -869,7 +869,7 @@ TEST(TableTest, ApproximateOffsetOfCompressed) {
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"),    4000,   6000));
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

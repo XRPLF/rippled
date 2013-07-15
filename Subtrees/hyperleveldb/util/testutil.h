@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_UTIL_TESTUTIL_H_
-#define STORAGE_LEVELDB_UTIL_TESTUTIL_H_
+#ifndef STORAGE_HYPERLEVELDB_UTIL_TESTUTIL_H_
+#define STORAGE_HYPERLEVELDB_UTIL_TESTUTIL_H_
 
-#include "hyperleveldb/env.h"
-#include "hyperleveldb/slice.h"
-#include "util/random.h"
+#include "../hyperleveldb/env.h"
+#include "../hyperleveldb/slice.h"
+#include "random.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 namespace test {
 
 // Store in *dst a random string of length "len" and return a Slice that
@@ -48,6 +48,6 @@ class ErrorEnv : public EnvWrapper {
 };
 
 }  // namespace test
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_UTIL_TESTUTIL_H_
+#endif  // STORAGE_HYPERLEVELDB_UTIL_TESTUTIL_H_

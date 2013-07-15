@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "hyperleveldb/iterator.h"
+#include "../hyperleveldb/iterator.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 Iterator::Iterator() {
   cleanup_.function = NULL;
@@ -64,4 +64,4 @@ Iterator* NewErrorIterator(const Status& status) {
   return new EmptyIterator(status);
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

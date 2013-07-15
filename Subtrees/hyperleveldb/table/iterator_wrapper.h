@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_TABLE_ITERATOR_WRAPPER_H_
-#define STORAGE_LEVELDB_TABLE_ITERATOR_WRAPPER_H_
+#ifndef STORAGE_HYPERLEVELDB_TABLE_ITERATOR_WRAPPER_H_
+#define STORAGE_HYPERLEVELDB_TABLE_ITERATOR_WRAPPER_H_
 
-namespace leveldb {
+namespace hyperleveldb {
 
 // A internal wrapper class with an interface similar to Iterator that
 // caches the valid() and key() results for an underlying iterator.
@@ -58,6 +58,6 @@ class IteratorWrapper {
   Slice key_;
 };
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_TABLE_ITERATOR_WRAPPER_H_
+#endif  // STORAGE_HYPERLEVELDB_TABLE_ITERATOR_WRAPPER_H_

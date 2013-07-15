@@ -7,10 +7,10 @@
 // specific port_<platform>.h file.  Use this file as a reference for
 // how to port this package to a new platform.
 
-#ifndef STORAGE_LEVELDB_PORT_PORT_EXAMPLE_H_
-#define STORAGE_LEVELDB_PORT_PORT_EXAMPLE_H_
+#ifndef STORAGE_HYPERLEVELDB_PORT_PORT_EXAMPLE_H_
+#define STORAGE_HYPERLEVELDB_PORT_PORT_EXAMPLE_H_
 
-namespace leveldb {
+namespace hyperleveldb {
 namespace port {
 
 // TODO(jorlow): Many of these belong more in the environment class rather than
@@ -130,6 +130,6 @@ extern bool Snappy_Uncompress(const char* input_data, size_t input_length,
 extern bool GetHeapProfile(void (*func)(void*, const char*, int), void* arg);
 
 }  // namespace port
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_PORT_PORT_EXAMPLE_H_
+#endif  // STORAGE_HYPERLEVELDB_PORT_PORT_EXAMPLE_H_

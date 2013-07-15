@@ -3,10 +3,10 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include <stdio.h>
-#include "port/port.h"
-#include "hyperleveldb/status.h"
+#include "../port/port.h"
+#include "../hyperleveldb/status.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 const char* Status::CopyState(const char* state) {
   uint32_t size;
@@ -72,4 +72,4 @@ std::string Status::ToString() const {
   }
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

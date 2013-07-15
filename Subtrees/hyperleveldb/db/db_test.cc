@@ -2,22 +2,22 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "hyperleveldb/db.h"
-#include "hyperleveldb/filter_policy.h"
-#include "db/db_impl.h"
-#include "db/filename.h"
-#include "db/version_set.h"
-#include "db/write_batch_internal.h"
-#include "hyperleveldb/cache.h"
-#include "hyperleveldb/env.h"
-#include "hyperleveldb/table.h"
-#include "util/hash.h"
-#include "util/logging.h"
-#include "util/mutexlock.h"
-#include "util/testharness.h"
-#include "util/testutil.h"
+#include "../hyperleveldb/db.h"
+#include "../hyperleveldb/filter_policy.h"
+#include "db_impl.h"
+#include "filename.h"
+#include "version_set.h"
+#include "write_batch_internal.h"
+#include "../hyperleveldb/cache.h"
+#include "../hyperleveldb/env.h"
+#include "../hyperleveldb/table.h"
+#include "../util/hash.h"
+#include "../util/logging.h"
+#include "../util/mutexlock.h"
+#include "../util/testharness.h"
+#include "../util/testutil.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 static std::string RandomString(Random* rnd, int len) {
   std::string r;
@@ -2049,7 +2049,7 @@ void BM_LogAndApply(int iters, int num_base_files) {
           buf, iters, us, ((float)us) / iters);
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 int main(int argc, char** argv) {
   if (argc > 1 && std::string(argv[1]) == "--benchmark") {

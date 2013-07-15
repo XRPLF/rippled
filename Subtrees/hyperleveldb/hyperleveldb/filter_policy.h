@@ -13,12 +13,12 @@
 // Most people will want to use the builtin bloom filter support (see
 // NewBloomFilterPolicy() below).
 
-#ifndef STORAGE_LEVELDB_INCLUDE_FILTER_POLICY_H_
-#define STORAGE_LEVELDB_INCLUDE_FILTER_POLICY_H_
+#ifndef STORAGE_HYPERLEVELDB_INCLUDE_FILTER_POLICY_H_
+#define STORAGE_HYPERLEVELDB_INCLUDE_FILTER_POLICY_H_
 
 #include <string>
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class Slice;
 
@@ -67,4 +67,4 @@ extern const FilterPolicy* NewBloomFilterPolicy(int bits_per_key);
 
 }
 
-#endif  // STORAGE_LEVELDB_INCLUDE_FILTER_POLICY_H_
+#endif  // STORAGE_HYPERLEVELDB_INCLUDE_FILTER_POLICY_H_

@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/log_reader.h"
+#include "log_reader.h"
 
 #include <stdio.h>
-#include "hyperleveldb/env.h"
-#include "util/coding.h"
-#include "util/crc32c.h"
+#include "../hyperleveldb/env.h"
+#include "../util/coding.h"
+#include "../util/crc32c.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 namespace log {
 
 Reader::Reporter::~Reporter() {
@@ -256,4 +256,4 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
 }
 
 }  // namespace log
-}  // namespace leveldb
+}  // namespace hyperleveldb

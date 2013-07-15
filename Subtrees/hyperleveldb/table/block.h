@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_TABLE_BLOCK_H_
-#define STORAGE_LEVELDB_TABLE_BLOCK_H_
+#ifndef STORAGE_HYPERLEVELDB_TABLE_BLOCK_H_
+#define STORAGE_HYPERLEVELDB_TABLE_BLOCK_H_
 
 #include <stddef.h>
 #include <stdint.h>
-#include "hyperleveldb/iterator.h"
+#include "../hyperleveldb/iterator.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 struct BlockContents;
 class Comparator;
@@ -39,6 +39,6 @@ class Block {
   class Iter;
 };
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_TABLE_BLOCK_H_
+#endif  // STORAGE_HYPERLEVELDB_TABLE_BLOCK_H_

@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_DB_BUILDER_H_
-#define STORAGE_LEVELDB_DB_BUILDER_H_
+#ifndef STORAGE_HYPERLEVELDB_DB_BUILDER_H_
+#define STORAGE_HYPERLEVELDB_DB_BUILDER_H_
 
-#include "hyperleveldb/status.h"
+#include "../hyperleveldb/status.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 struct Options;
 struct FileMetaData;
@@ -29,6 +29,6 @@ extern Status BuildTable(const std::string& dbname,
                          Iterator* iter,
                          FileMetaData* meta);
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_DB_BUILDER_H_
+#endif  // STORAGE_HYPERLEVELDB_DB_BUILDER_H_

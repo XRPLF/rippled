@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_TABLE_FORMAT_H_
-#define STORAGE_LEVELDB_TABLE_FORMAT_H_
+#ifndef STORAGE_HYPERLEVELDB_TABLE_FORMAT_H_
+#define STORAGE_HYPERLEVELDB_TABLE_FORMAT_H_
 
 #include <string>
 #include <stdint.h>
-#include "hyperleveldb/slice.h"
-#include "hyperleveldb/status.h"
-#include "hyperleveldb/table_builder.h"
+#include "../hyperleveldb/slice.h"
+#include "../hyperleveldb/status.h"
+#include "../hyperleveldb/table_builder.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class Block;
 class RandomAccessFile;
@@ -103,6 +103,6 @@ inline BlockHandle::BlockHandle()
       size_(~static_cast<uint64_t>(0)) {
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_TABLE_FORMAT_H_
+#endif  // STORAGE_HYPERLEVELDB_TABLE_FORMAT_H_

@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "helpers/memenv/memenv.h"
+#include "memenv.h"
 
-#include "db/db_impl.h"
-#include "hyperleveldb/db.h"
-#include "hyperleveldb/env.h"
-#include "util/testharness.h"
+#include "../../db/db_impl.h"
+#include "../../hyperleveldb/db.h"
+#include "../../hyperleveldb/env.h"
+#include "../../util/testharness.h"
 #include <string>
 #include <vector>
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class MemEnvTest {
  public:
@@ -225,7 +225,7 @@ TEST(MemEnvTest, DBTest) {
   delete db;
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

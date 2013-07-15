@@ -2,20 +2,20 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "hyperleveldb/table_builder.h"
+#include "../hyperleveldb/table_builder.h"
 
 #include <assert.h>
-#include "hyperleveldb/comparator.h"
-#include "hyperleveldb/env.h"
-#include "hyperleveldb/filter_policy.h"
-#include "hyperleveldb/options.h"
-#include "table/block_builder.h"
-#include "table/filter_block.h"
-#include "table/format.h"
-#include "util/coding.h"
-#include "util/crc32c.h"
+#include "../hyperleveldb/comparator.h"
+#include "../hyperleveldb/env.h"
+#include "../hyperleveldb/filter_policy.h"
+#include "../hyperleveldb/options.h"
+#include "block_builder.h"
+#include "filter_block.h"
+#include "format.h"
+#include "../util/coding.h"
+#include "../util/crc32c.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 struct TableBuilder::Rep {
   Options options;
@@ -266,4 +266,4 @@ uint64_t TableBuilder::FileSize() const {
   return rep_->offset;
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

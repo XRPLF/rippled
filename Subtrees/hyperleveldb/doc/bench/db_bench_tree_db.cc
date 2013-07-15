@@ -80,7 +80,7 @@ static void DBSynchronize(kyotocabinet::TreeDB* db_)
   }
 }
 
-namespace leveldb {
+namespace hyperleveldb {
 
 // Helper for quickly generating random data.
 namespace {
@@ -479,7 +479,7 @@ class Benchmark {
   }
 };
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 int main(int argc, char** argv) {
   std::string default_db_path;

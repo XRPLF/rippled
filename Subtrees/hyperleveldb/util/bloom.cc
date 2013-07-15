@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "hyperleveldb/filter_policy.h"
+#include "../hyperleveldb/filter_policy.h"
 
-#include "hyperleveldb/slice.h"
-#include "util/hash.h"
+#include "../hyperleveldb/slice.h"
+#include "hash.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 namespace {
 static uint32_t BloomHash(const Slice& key) {
@@ -92,4 +92,4 @@ const FilterPolicy* NewBloomFilterPolicy(int bits_per_key) {
   return new BloomFilterPolicy(bits_per_key);
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

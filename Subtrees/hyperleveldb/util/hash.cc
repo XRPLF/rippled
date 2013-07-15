@@ -3,8 +3,8 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include <string.h>
-#include "util/coding.h"
-#include "util/hash.h"
+#include "coding.h"
+#include "hash.h"
 
 // The FALLTHROUGH_INTENDED macro can be used to annotate implicit fall-through
 // between switch labels. The real definition should be provided externally.
@@ -13,7 +13,7 @@
 #define FALLTHROUGH_INTENDED do { } while (0)
 #endif
 
-namespace leveldb {
+namespace hyperleveldb {
 
 uint32_t Hash(const char* data, size_t n, uint32_t seed) {
   // Similar to murmur hash
@@ -49,4 +49,4 @@ uint32_t Hash(const char* data, size_t n, uint32_t seed) {
 }
 
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

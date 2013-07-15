@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_UTIL_MUTEXLOCK_H_
-#define STORAGE_LEVELDB_UTIL_MUTEXLOCK_H_
+#ifndef STORAGE_HYPERLEVELDB_UTIL_MUTEXLOCK_H_
+#define STORAGE_HYPERLEVELDB_UTIL_MUTEXLOCK_H_
 
-#include "port/port.h"
-#include "port/thread_annotations.h"
+#include "../port/port.h"
+#include "../port/thread_annotations.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 // Helper class that locks a mutex on construction and unlocks the mutex when
 // the destructor of the MutexLock object is invoked.
@@ -35,7 +35,7 @@ class SCOPED_LOCKABLE MutexLock {
   void operator=(const MutexLock&);
 };
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 
-#endif  // STORAGE_LEVELDB_UTIL_MUTEXLOCK_H_
+#endif  // STORAGE_HYPERLEVELDB_UTIL_MUTEXLOCK_H_

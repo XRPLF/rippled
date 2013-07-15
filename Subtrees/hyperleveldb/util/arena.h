@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_UTIL_ARENA_H_
-#define STORAGE_LEVELDB_UTIL_ARENA_H_
+#ifndef STORAGE_HYPERLEVELDB_UTIL_ARENA_H_
+#define STORAGE_HYPERLEVELDB_UTIL_ARENA_H_
 
 #include <cstddef>
 #include <vector>
 #include <assert.h>
 #include <stdint.h>
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class Arena {
  public:
@@ -63,6 +63,6 @@ inline char* Arena::Allocate(size_t bytes) {
   return AllocateFallback(bytes);
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_UTIL_ARENA_H_
+#endif  // STORAGE_HYPERLEVELDB_UTIL_ARENA_H_

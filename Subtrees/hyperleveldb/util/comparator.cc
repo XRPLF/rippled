@@ -4,12 +4,12 @@
 
 #include <algorithm>
 #include <stdint.h>
-#include "hyperleveldb/comparator.h"
-#include "hyperleveldb/slice.h"
-#include "port/port.h"
-#include "util/logging.h"
+#include "../hyperleveldb/comparator.h"
+#include "../hyperleveldb/slice.h"
+#include "../port/port.h"
+#include "logging.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 Comparator::~Comparator() { }
 
@@ -66,7 +66,7 @@ class BytewiseComparatorImpl : public Comparator {
 };
 }  // namespace
 
-static port::OnceType once = LEVELDB_ONCE_INIT;
+static port::OnceType onceComparator = LEVELDB_ONCE_INIT;
 static const Comparator* bytewise;
 
 static void InitModule() {
@@ -74,8 +74,8 @@ static void InitModule() {
 }
 
 const Comparator* BytewiseComparator() {
-  port::InitOnce(&once, InitModule);
+  port::InitOnce(&onceComparator, InitModule);
   return bytewise;
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

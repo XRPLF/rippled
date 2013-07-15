@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "util/coding.h"
+#include "coding.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 void EncodeFixed32(char* buf, uint32_t value) {
   if (port::kLittleEndian) {
@@ -191,4 +191,4 @@ bool GetLengthPrefixedSlice(Slice* input, Slice* result) {
   }
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

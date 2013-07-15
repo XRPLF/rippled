@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "util/arena.h"
+#include "arena.h"
 
-#include "util/random.h"
-#include "util/testharness.h"
+#include "random.h"
+#include "testharness.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class ArenaTest { };
 
@@ -61,7 +61,7 @@ TEST(ArenaTest, Simple) {
   }
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_INCLUDE_DB_H_
-#define STORAGE_LEVELDB_INCLUDE_DB_H_
+#ifndef STORAGE_HYPERLEVELDB_INCLUDE_DB_H_
+#define STORAGE_HYPERLEVELDB_INCLUDE_DB_H_
 
 #include <stdint.h>
 #include <stdio.h>
-#include "hyperleveldb/iterator.h"
-#include "hyperleveldb/options.h"
+#include "iterator.h"
+#include "options.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 // Update Makefile if you change these
 static const int kMajorVersion = 1;
@@ -156,6 +156,6 @@ Status DestroyDB(const std::string& name, const Options& options);
 // on a database that contains important information.
 Status RepairDB(const std::string& dbname, const Options& options);
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_INCLUDE_DB_H_
+#endif  // STORAGE_HYPERLEVELDB_INCLUDE_DB_H_

@@ -5,10 +5,10 @@
 // Log format information shared by reader and writer.
 // See ../doc/log_format.txt for more detail.
 
-#ifndef STORAGE_LEVELDB_DB_LOG_FORMAT_H_
-#define STORAGE_LEVELDB_DB_LOG_FORMAT_H_
+#ifndef STORAGE_HYPERLEVELDB_DB_LOG_FORMAT_H_
+#define STORAGE_HYPERLEVELDB_DB_LOG_FORMAT_H_
 
-namespace leveldb {
+namespace hyperleveldb {
 namespace log {
 
 enum RecordType {
@@ -30,6 +30,6 @@ static const int kBlockSize = 32768;
 static const int kHeaderSize = 4 + 1 + 2;
 
 }  // namespace log
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_DB_LOG_FORMAT_H_
+#endif  // STORAGE_HYPERLEVELDB_DB_LOG_FORMAT_H_

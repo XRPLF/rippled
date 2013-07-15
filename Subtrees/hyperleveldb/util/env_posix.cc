@@ -20,14 +20,14 @@
 #if defined(LEVELDB_PLATFORM_ANDROID)
 #include <sys/stat.h>
 #endif
-#include "hyperleveldb/env.h"
-#include "hyperleveldb/slice.h"
-#include "port/port.h"
-#include "util/logging.h"
-#include "util/mutexlock.h"
-#include "util/posix_logger.h"
+#include "../hyperleveldb/env.h"
+#include "../hyperleveldb/slice.h"
+#include "../port/port.h"
+#include "logging.h"
+#include "mutexlock.h"
+#include "posix_logger.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 namespace {
 
@@ -686,13 +686,13 @@ void PosixEnv::StartThread(void (*function)(void* arg), void* arg) {
 
 }  // namespace
 
-static pthread_once_t once = PTHREAD_ONCE_INIT;
+static pthread_once_t oncePosix = PTHREAD_ONCE_INIT;
 static Env* default_env;
 static void InitDefaultEnv() { default_env = new PosixEnv; }
 
 Env* Env::Default() {
-  pthread_once(&once, InitDefaultEnv);
+  pthread_once(&oncePosix, InitDefaultEnv);
   return default_env;
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

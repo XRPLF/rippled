@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "hyperleveldb/env.h"
+#include "../hyperleveldb/env.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 Env::~Env() {
 }
@@ -93,4 +93,4 @@ Status ReadFileToString(Env* env, const std::string& fname, std::string* data) {
 EnvWrapper::~EnvWrapper() {
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

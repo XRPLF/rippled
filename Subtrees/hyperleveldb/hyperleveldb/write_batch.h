@@ -18,13 +18,13 @@
 // non-const method, all threads accessing the same WriteBatch must use
 // external synchronization.
 
-#ifndef STORAGE_LEVELDB_INCLUDE_WRITE_BATCH_H_
-#define STORAGE_LEVELDB_INCLUDE_WRITE_BATCH_H_
+#ifndef STORAGE_HYPERLEVELDB_INCLUDE_WRITE_BATCH_H_
+#define STORAGE_HYPERLEVELDB_INCLUDE_WRITE_BATCH_H_
 
 #include <string>
-#include "hyperleveldb/status.h"
+#include "status.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class Slice;
 
@@ -59,6 +59,6 @@ class WriteBatch {
   // Intentionally copyable
 };
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_INCLUDE_WRITE_BATCH_H_
+#endif  // STORAGE_HYPERLEVELDB_INCLUDE_WRITE_BATCH_H_

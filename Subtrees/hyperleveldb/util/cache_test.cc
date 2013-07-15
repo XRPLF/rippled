@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "hyperleveldb/cache.h"
+#include "../hyperleveldb/cache.h"
 
 #include <vector>
-#include "util/coding.h"
-#include "util/testharness.h"
+#include "coding.h"
+#include "testharness.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 // Conversions between numeric keys/values and the types expected by Cache.
 static std::string EncodeKey(int k) {
@@ -179,7 +179,7 @@ TEST(CacheTest, NewId) {
   ASSERT_NE(a, b);
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

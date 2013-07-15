@@ -4,8 +4,8 @@
 
 // MSVC didn't ship with this file until the 2010 version.
 
-#ifndef STORAGE_LEVELDB_PORT_WIN_STDINT_H_
-#define STORAGE_LEVELDB_PORT_WIN_STDINT_H_
+#ifndef STORAGE_HYPERLEVELDB_PORT_WIN_STDINT_H_
+#define STORAGE_HYPERLEVELDB_PORT_WIN_STDINT_H_
 
 #if !defined(_MSC_VER)
 #error This file should only be included when compiling with MSVC.
@@ -21,4 +21,4 @@ typedef unsigned short        uint16_t;
 typedef unsigned int          uint32_t;
 typedef unsigned long long    uint64_t;
 
-#endif  // STORAGE_LEVELDB_PORT_WIN_STDINT_H_
+#endif  // STORAGE_HYPERLEVELDB_PORT_WIN_STDINT_H_

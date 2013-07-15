@@ -10,14 +10,14 @@
 // non-const method, all threads accessing the same TableBuilder must use
 // external synchronization.
 
-#ifndef STORAGE_LEVELDB_INCLUDE_TABLE_BUILDER_H_
-#define STORAGE_LEVELDB_INCLUDE_TABLE_BUILDER_H_
+#ifndef STORAGE_HYPERLEVELDB_INCLUDE_TABLE_BUILDER_H_
+#define STORAGE_HYPERLEVELDB_INCLUDE_TABLE_BUILDER_H_
 
 #include <stdint.h>
-#include "hyperleveldb/options.h"
-#include "hyperleveldb/status.h"
+#include "options.h"
+#include "status.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class BlockBuilder;
 class BlockHandle;
@@ -87,6 +87,6 @@ class TableBuilder {
   void operator=(const TableBuilder&);
 };
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_INCLUDE_TABLE_BUILDER_H_
+#endif  // STORAGE_HYPERLEVELDB_INCLUDE_TABLE_BUILDER_H_

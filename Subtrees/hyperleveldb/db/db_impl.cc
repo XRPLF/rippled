@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/db_impl.h"
+#include "db_impl.h"
 
 #include <algorithm>
 #include <set>
@@ -10,30 +10,30 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <vector>
-#include "db/builder.h"
-#include "db/db_iter.h"
-#include "db/dbformat.h"
-#include "db/filename.h"
-#include "db/log_reader.h"
-#include "db/log_writer.h"
-#include "db/memtable.h"
-#include "db/table_cache.h"
-#include "db/version_set.h"
-#include "db/write_batch_internal.h"
-#include "hyperleveldb/db.h"
-#include "hyperleveldb/env.h"
-#include "hyperleveldb/status.h"
-#include "hyperleveldb/table.h"
-#include "hyperleveldb/table_builder.h"
-#include "port/port.h"
-#include "table/block.h"
-#include "table/merger.h"
-#include "table/two_level_iterator.h"
-#include "util/coding.h"
-#include "util/logging.h"
-#include "util/mutexlock.h"
+#include "builder.h"
+#include "db_iter.h"
+#include "dbformat.h"
+#include "filename.h"
+#include "log_reader.h"
+#include "log_writer.h"
+#include "memtable.h"
+#include "table_cache.h"
+#include "version_set.h"
+#include "write_batch_internal.h"
+#include "../hyperleveldb/db.h"
+#include "../hyperleveldb/env.h"
+#include "../hyperleveldb/status.h"
+#include "../hyperleveldb/table.h"
+#include "../hyperleveldb/table_builder.h"
+#include "../port/port.h"
+#include "../table/block.h"
+#include "../table/merger.h"
+#include "../table/two_level_iterator.h"
+#include "../util/coding.h"
+#include "../util/logging.h"
+#include "../util/mutexlock.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 const int kNumNonTableCacheFiles = 10;
 
@@ -145,7 +145,7 @@ DBImpl::DBImpl(const Options& options, const std::string& dbname)
   versions_ = new VersionSet(dbname_, &options_, table_cache_,
                              &internal_comparator_);
 
-  for (int i = 0; i < leveldb::config::kNumLevels; ++i) {
+  for (int i = 0; i < config::kNumLevels; ++i) {
     levels_locked_[i] = false;
   }
   mutex_.Unlock();
@@ -1613,4 +1613,4 @@ Status DestroyDB(const std::string& dbname, const Options& options) {
   return result;
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

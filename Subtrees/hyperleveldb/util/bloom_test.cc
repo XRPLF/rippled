@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "hyperleveldb/filter_policy.h"
+#include "../hyperleveldb/filter_policy.h"
 
-#include "util/coding.h"
-#include "util/logging.h"
-#include "util/testharness.h"
-#include "util/testutil.h"
+#include "coding.h"
+#include "logging.h"
+#include "testharness.h"
+#include "testutil.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 static const int kVerbose = 1;
 
@@ -153,7 +153,7 @@ TEST(BloomTest, VaryingLengths) {
 
 // Different bits-per-byte
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

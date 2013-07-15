@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/log_reader.h"
-#include "db/log_writer.h"
-#include "hyperleveldb/env.h"
-#include "util/coding.h"
-#include "util/crc32c.h"
-#include "util/random.h"
-#include "util/testharness.h"
+#include "log_reader.h"
+#include "log_writer.h"
+#include "../hyperleveldb/env.h"
+#include "../util/coding.h"
+#include "../util/crc32c.h"
+#include "../util/random.h"
+#include "../util/testharness.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 namespace log {
 
 // Construct a string of the specified length made out of the supplied
@@ -502,7 +502,7 @@ TEST(LogTest, ReadPastEnd) {
 }
 
 }  // namespace log
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

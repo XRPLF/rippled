@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "hyperleveldb/env.h"
+#include "../hyperleveldb/env.h"
 
-#include "port/port.h"
-#include "util/testharness.h"
+#include "../port/port.h"
+#include "testharness.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 static const int kDelayMicros = 100000;
 
@@ -97,7 +97,7 @@ TEST(EnvPosixTest, StartThread) {
   ASSERT_EQ(state.val, 3);
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

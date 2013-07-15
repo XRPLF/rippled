@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "util/arena.h"
+#include "arena.h"
 #include <assert.h>
 
-namespace leveldb {
+namespace hyperleveldb {
 
 static const int kBlockSize = 4096;
 
@@ -65,4 +65,4 @@ char* Arena::AllocateNewBlock(size_t block_bytes) {
   return result;
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

@@ -3,20 +3,20 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include <stdio.h>
-#include "db/dbformat.h"
-#include "db/filename.h"
-#include "db/log_reader.h"
-#include "db/version_edit.h"
-#include "db/write_batch_internal.h"
-#include "hyperleveldb/env.h"
-#include "hyperleveldb/iterator.h"
-#include "hyperleveldb/options.h"
-#include "hyperleveldb/status.h"
-#include "hyperleveldb/table.h"
-#include "hyperleveldb/write_batch.h"
-#include "util/logging.h"
+#include "dbformat.h"
+#include "filename.h"
+#include "log_reader.h"
+#include "version_edit.h"
+#include "write_batch_internal.h"
+#include "../hyperleveldb/env.h"
+#include "../hyperleveldb/iterator.h"
+#include "../hyperleveldb/options.h"
+#include "../hyperleveldb/status.h"
+#include "../hyperleveldb/table.h"
+#include "../hyperleveldb/write_batch.h"
+#include "../util/logging.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 namespace {
 
@@ -209,7 +209,7 @@ bool HandleDumpCommand(Env* env, char** files, int num) {
 }
 
 }
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 static void Usage() {
   fprintf(

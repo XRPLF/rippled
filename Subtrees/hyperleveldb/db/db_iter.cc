@@ -2,17 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/db_iter.h"
+#include "db_iter.h"
 
-#include "db/filename.h"
-#include "db/dbformat.h"
-#include "hyperleveldb/env.h"
-#include "hyperleveldb/iterator.h"
-#include "port/port.h"
-#include "util/logging.h"
-#include "util/mutexlock.h"
+#include "filename.h"
+#include "dbformat.h"
+#include "../hyperleveldb/env.h"
+#include "../hyperleveldb/iterator.h"
+#include "../port/port.h"
+#include "../util/logging.h"
+#include "../util/mutexlock.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 #if 0
 static void DumpInternalIter(Iterator* iter) {
@@ -296,4 +296,4 @@ Iterator* NewDBIterator(
   return new DBIter(dbname, env, user_key_comparator, internal_iter, sequence);
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

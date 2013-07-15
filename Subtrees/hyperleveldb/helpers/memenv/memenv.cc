@@ -2,18 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "helpers/memenv/memenv.h"
+#include "memenv.h"
 
-#include "hyperleveldb/env.h"
-#include "hyperleveldb/status.h"
-#include "port/port.h"
-#include "util/mutexlock.h"
+#include "../../hyperleveldb/env.h"
+#include "../../hyperleveldb/status.h"
+#include "../../port/port.h"
+#include "../../util/mutexlock.h"
 #include <map>
 #include <string.h>
 #include <string>
 #include <vector>
 
-namespace leveldb {
+namespace hyperleveldb {
 
 namespace {
 
@@ -380,4 +380,4 @@ Env* NewMemEnv(Env* base_env) {
   return new InMemoryEnv(base_env);
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

@@ -7,16 +7,16 @@
 // * In addition we support variable length "varint" encoding
 // * Strings are encoded prefixed by their length in varint format
 
-#ifndef STORAGE_LEVELDB_UTIL_CODING_H_
-#define STORAGE_LEVELDB_UTIL_CODING_H_
+#ifndef STORAGE_HYPERLEVELDB_UTIL_CODING_H_
+#define STORAGE_HYPERLEVELDB_UTIL_CODING_H_
 
 #include <stdint.h>
 #include <string.h>
 #include <string>
-#include "hyperleveldb/slice.h"
-#include "port/port.h"
+#include "../hyperleveldb/slice.h"
+#include "../port/port.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 // Standard Put... routines append to a string
 extern void PutFixed32(std::string* dst, uint32_t value);
@@ -99,6 +99,6 @@ inline const char* GetVarint32Ptr(const char* p,
   return GetVarint32PtrFallback(p, limit, value);
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_UTIL_CODING_H_
+#endif  // STORAGE_HYPERLEVELDB_UTIL_CODING_H_

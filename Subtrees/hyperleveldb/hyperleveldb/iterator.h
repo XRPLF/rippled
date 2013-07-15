@@ -12,13 +12,13 @@
 // non-const method, all threads accessing the same Iterator must use
 // external synchronization.
 
-#ifndef STORAGE_LEVELDB_INCLUDE_ITERATOR_H_
-#define STORAGE_LEVELDB_INCLUDE_ITERATOR_H_
+#ifndef STORAGE_HYPERLEVELDB_INCLUDE_ITERATOR_H_
+#define STORAGE_HYPERLEVELDB_INCLUDE_ITERATOR_H_
 
-#include "hyperleveldb/slice.h"
-#include "hyperleveldb/status.h"
+#include "slice.h"
+#include "status.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class Iterator {
  public:
@@ -95,6 +95,6 @@ extern Iterator* NewEmptyIterator();
 // Return an empty iterator with the specified status.
 extern Iterator* NewErrorIterator(const Status& status);
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_INCLUDE_ITERATOR_H_
+#endif  // STORAGE_HYPERLEVELDB_INCLUDE_ITERATOR_H_

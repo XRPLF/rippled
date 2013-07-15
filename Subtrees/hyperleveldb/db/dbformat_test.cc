@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/dbformat.h"
-#include "util/logging.h"
-#include "util/testharness.h"
+#include "dbformat.h"
+#include "../util/logging.h"
+#include "../util/testharness.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 static std::string IKey(const std::string& user_key,
                         uint64_t seq,
@@ -105,7 +105,7 @@ TEST(FormatTest, InternalKeyShortestSuccessor) {
             ShortSuccessor(IKey("\xff\xff", 100, kTypeValue)));
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

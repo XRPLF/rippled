@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "table/merger.h"
+#include "merger.h"
 
-#include "hyperleveldb/comparator.h"
-#include "hyperleveldb/iterator.h"
-#include "table/iterator_wrapper.h"
+#include "../hyperleveldb/comparator.h"
+#include "../hyperleveldb/iterator.h"
+#include "iterator_wrapper.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 namespace {
 class MergingIterator : public Iterator {
@@ -194,4 +194,4 @@ Iterator* NewMergingIterator(const Comparator* cmp, Iterator** list, int n) {
   }
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

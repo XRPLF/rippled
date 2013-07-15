@@ -5,18 +5,18 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "db/db_impl.h"
-#include "db/version_set.h"
-#include "hyperleveldb/cache.h"
-#include "hyperleveldb/db.h"
-#include "hyperleveldb/env.h"
-#include "hyperleveldb/write_batch.h"
-#include "port/port.h"
-#include "util/crc32c.h"
-#include "util/histogram.h"
-#include "util/mutexlock.h"
-#include "util/random.h"
-#include "util/testutil.h"
+#include "db_impl.h"
+#include "version_set.h"
+#include "../hyperleveldb/cache.h"
+#include "../hyperleveldb/db.h"
+#include "../hyperleveldb/env.h"
+#include "../hyperleveldb/write_batch.h"
+#include "../port/port.h"
+#include "../util/crc32c.h"
+#include "../util/histogram.h"
+#include "../util/mutexlock.h"
+#include "../util/random.h"
+#include "../util/testutil.h"
 
 // Comma-separated list of operations to run in the specified order
 //   Actual benchmarks:
@@ -102,7 +102,7 @@ static bool FLAGS_use_existing_db = false;
 // Use the db with the following name.
 static const char* FLAGS_db = NULL;
 
-namespace leveldb {
+namespace hyperleveldb {
 
 namespace {
 
@@ -921,7 +921,7 @@ class Benchmark {
   }
 };
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 int main(int argc, char** argv) {
   FLAGS_write_buffer_size = leveldb::Options().write_buffer_size;

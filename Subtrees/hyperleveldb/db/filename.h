@@ -4,16 +4,16 @@
 //
 // File names used by DB code
 
-#ifndef STORAGE_LEVELDB_DB_FILENAME_H_
-#define STORAGE_LEVELDB_DB_FILENAME_H_
+#ifndef STORAGE_HYPERLEVELDB_DB_FILENAME_H_
+#define STORAGE_HYPERLEVELDB_DB_FILENAME_H_
 
 #include <stdint.h>
 #include <string>
-#include "hyperleveldb/slice.h"
-#include "hyperleveldb/status.h"
-#include "port/port.h"
+#include "../hyperleveldb/slice.h"
+#include "../hyperleveldb/status.h"
+#include "../port/port.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class Env;
 
@@ -75,6 +75,6 @@ extern Status SetCurrentFile(Env* env, const std::string& dbname,
                              uint64_t descriptor_number);
 
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_DB_FILENAME_H_
+#endif  // STORAGE_HYPERLEVELDB_DB_FILENAME_H_

@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/memtable.h"
-#include "db/dbformat.h"
-#include "hyperleveldb/comparator.h"
-#include "hyperleveldb/env.h"
-#include "hyperleveldb/iterator.h"
-#include "util/coding.h"
-#include "util/mutexlock.h"
+#include "memtable.h"
+#include "dbformat.h"
+#include "../hyperleveldb/comparator.h"
+#include "../hyperleveldb/env.h"
+#include "../hyperleveldb/iterator.h"
+#include "../util/coding.h"
+#include "../util/mutexlock.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 static Slice GetLengthPrefixedSlice(const char* data) {
   uint32_t len;
@@ -157,4 +157,4 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
   return false;
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

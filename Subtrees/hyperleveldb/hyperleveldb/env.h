@@ -10,16 +10,16 @@
 // All Env implementations are safe for concurrent access from
 // multiple threads without any external synchronization.
 
-#ifndef STORAGE_LEVELDB_INCLUDE_ENV_H_
-#define STORAGE_LEVELDB_INCLUDE_ENV_H_
+#ifndef STORAGE_HYPERLEVELDB_INCLUDE_ENV_H_
+#define STORAGE_HYPERLEVELDB_INCLUDE_ENV_H_
 
 #include <cstdarg>
 #include <string>
 #include <vector>
 #include <stdint.h>
-#include "hyperleveldb/status.h"
+#include "status.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class FileLock;
 class Logger;
@@ -332,6 +332,6 @@ class EnvWrapper : public Env {
   Env* target_;
 };
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_INCLUDE_ENV_H_
+#endif  // STORAGE_HYPERLEVELDB_INCLUDE_ENV_H_

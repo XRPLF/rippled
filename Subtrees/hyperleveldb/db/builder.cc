@@ -2,17 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/builder.h"
+#include "builder.h"
 
-#include "db/filename.h"
-#include "db/dbformat.h"
-#include "db/table_cache.h"
-#include "db/version_edit.h"
-#include "hyperleveldb/db.h"
-#include "hyperleveldb/env.h"
-#include "hyperleveldb/iterator.h"
+#include "filename.h"
+#include "dbformat.h"
+#include "table_cache.h"
+#include "version_edit.h"
+#include "../hyperleveldb/db.h"
+#include "../hyperleveldb/env.h"
+#include "../hyperleveldb/iterator.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 Status BuildTable(const std::string& dbname,
                   Env* env,
@@ -85,4 +85,4 @@ Status BuildTable(const std::string& dbname,
   return s;
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

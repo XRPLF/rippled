@@ -2,19 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "hyperleveldb/c.h"
+#include "c.h"
 
 #include <stdlib.h>
 #include <unistd.h>
-#include "hyperleveldb/cache.h"
-#include "hyperleveldb/comparator.h"
-#include "hyperleveldb/db.h"
-#include "hyperleveldb/env.h"
-#include "hyperleveldb/filter_policy.h"
-#include "hyperleveldb/iterator.h"
-#include "hyperleveldb/options.h"
-#include "hyperleveldb/status.h"
-#include "hyperleveldb/write_batch.h"
+#include "../hyperleveldb/cache.h"
+#include "../hyperleveldb/comparator.h"
+#include "../hyperleveldb/db.h"
+#include "../hyperleveldb/env.h"
+#include "../hyperleveldb/filter_policy.h"
+#include "../hyperleveldb/iterator.h"
+#include "../hyperleveldb/options.h"
+#include "../hyperleveldb/status.h"
+#include "../hyperleveldb/write_batch.h"
 
 using leveldb::Cache;
 using leveldb::Comparator;

@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_TABLE_BLOCK_BUILDER_H_
-#define STORAGE_LEVELDB_TABLE_BLOCK_BUILDER_H_
+#ifndef STORAGE_HYPERLEVELDB_TABLE_BLOCK_BUILDER_H_
+#define STORAGE_HYPERLEVELDB_TABLE_BLOCK_BUILDER_H_
 
 #include <vector>
 
 #include <stdint.h>
-#include "hyperleveldb/slice.h"
+#include "../hyperleveldb/slice.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 struct Options;
 
@@ -52,6 +52,6 @@ class BlockBuilder {
   void operator=(const BlockBuilder&);
 };
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_TABLE_BLOCK_BUILDER_H_
+#endif  // STORAGE_HYPERLEVELDB_TABLE_BLOCK_BUILDER_H_

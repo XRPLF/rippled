@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "table/filter_block.h"
+#include "filter_block.h"
 
-#include "hyperleveldb/filter_policy.h"
-#include "util/coding.h"
+#include "../hyperleveldb/filter_policy.h"
+#include "../util/coding.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 // See doc/table_format.txt for an explanation of the filter block format.
 

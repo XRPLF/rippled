@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "util/coding.h"
+#include "coding.h"
 
-#include "util/testharness.h"
+#include "testharness.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class Coding { };
 
@@ -189,7 +189,7 @@ TEST(Coding, Strings) {
   ASSERT_EQ("", input.ToString());
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

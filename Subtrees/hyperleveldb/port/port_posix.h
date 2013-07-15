@@ -4,8 +4,8 @@
 //
 // See port_example.h for documentation for the following types/functions.
 
-#ifndef STORAGE_LEVELDB_PORT_PORT_POSIX_H_
-#define STORAGE_LEVELDB_PORT_PORT_POSIX_H_
+#ifndef STORAGE_HYPERLEVELDB_PORT_PORT_POSIX_H_
+#define STORAGE_HYPERLEVELDB_PORT_PORT_POSIX_H_
 
 #undef PLATFORM_IS_LITTLE_ENDIAN
 #if defined(OS_MACOSX)
@@ -47,7 +47,7 @@
 #endif
 #include <stdint.h>
 #include <string>
-#include "port/atomic_pointer.h"
+#include "atomic_pointer.h"
 
 #ifndef PLATFORM_IS_LITTLE_ENDIAN
 #define PLATFORM_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
@@ -74,7 +74,7 @@
 #define fdatasync fsync
 #endif
 
-namespace leveldb {
+namespace hyperleveldb {
 namespace port {
 
 static const bool kLittleEndian = PLATFORM_IS_LITTLE_ENDIAN;
@@ -152,6 +152,6 @@ inline bool GetHeapProfile(void (*func)(void*, const char*, int), void* arg) {
 }
 
 } // namespace port
-} // namespace leveldb
+} // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_PORT_PORT_POSIX_H_
+#endif  // STORAGE_HYPERLEVELDB_PORT_PORT_POSIX_H_

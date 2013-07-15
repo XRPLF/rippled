@@ -2,17 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_UTIL_TESTHARNESS_H_
-#define STORAGE_LEVELDB_UTIL_TESTHARNESS_H_
+#ifndef STORAGE_HYPERLEVELDB_UTIL_TESTHARNESS_H_
+#define STORAGE_HYPERLEVELDB_UTIL_TESTHARNESS_H_
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <sstream>
-#include "hyperleveldb/env.h"
-#include "hyperleveldb/slice.h"
-#include "util/random.h"
+#include "../hyperleveldb/env.h"
+#include "../hyperleveldb/slice.h"
+#include "random.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 namespace test {
 
 // Run some of the tests registered by the TEST() macro.  If the
@@ -133,6 +133,6 @@ extern bool RegisterTest(const char* base, const char* name, void (*func)());
 
 
 }  // namespace test
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_UTIL_TESTHARNESS_H_
+#endif  // STORAGE_HYPERLEVELDB_UTIL_TESTHARNESS_H_

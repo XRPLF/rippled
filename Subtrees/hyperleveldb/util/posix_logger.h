@@ -5,16 +5,16 @@
 // Logger implementation that can be shared by all environments
 // where enough posix functionality is available.
 
-#ifndef STORAGE_LEVELDB_UTIL_POSIX_LOGGER_H_
-#define STORAGE_LEVELDB_UTIL_POSIX_LOGGER_H_
+#ifndef STORAGE_HYPERLEVELDB_UTIL_POSIX_LOGGER_H_
+#define STORAGE_HYPERLEVELDB_UTIL_POSIX_LOGGER_H_
 
 #include <algorithm>
 #include <stdio.h>
 #include <sys/time.h>
 #include <time.h>
-#include "hyperleveldb/env.h"
+#include "../hyperleveldb/env.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class PosixLogger : public Logger {
  private:
@@ -93,6 +93,6 @@ class PosixLogger : public Logger {
   }
 };
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_UTIL_POSIX_LOGGER_H_
+#endif  // STORAGE_HYPERLEVELDB_UTIL_POSIX_LOGGER_H_

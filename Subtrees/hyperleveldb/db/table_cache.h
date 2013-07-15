@@ -4,17 +4,17 @@
 //
 // Thread-safe (provides internal synchronization)
 
-#ifndef STORAGE_LEVELDB_DB_TABLE_CACHE_H_
-#define STORAGE_LEVELDB_DB_TABLE_CACHE_H_
+#ifndef STORAGE_HYPERLEVELDB_DB_TABLE_CACHE_H_
+#define STORAGE_HYPERLEVELDB_DB_TABLE_CACHE_H_
 
 #include <string>
 #include <stdint.h>
-#include "db/dbformat.h"
-#include "hyperleveldb/cache.h"
-#include "hyperleveldb/table.h"
-#include "port/port.h"
+#include "dbformat.h"
+#include "../hyperleveldb/cache.h"
+#include "../hyperleveldb/table.h"
+#include "../port/port.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class Env;
 
@@ -56,6 +56,6 @@ class TableCache {
   Status FindTable(uint64_t file_number, uint64_t file_size, Cache::Handle**);
 };
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_DB_TABLE_CACHE_H_
+#endif  // STORAGE_HYPERLEVELDB_DB_TABLE_CACHE_H_

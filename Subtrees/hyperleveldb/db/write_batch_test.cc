@@ -4,13 +4,13 @@
 
 #include "hyperleveldb/db.h"
 
-#include "db/memtable.h"
-#include "db/write_batch_internal.h"
-#include "hyperleveldb/env.h"
-#include "util/logging.h"
-#include "util/testharness.h"
+#include "memtable.h"
+#include "write_batch_internal.h"
+#include "../hyperleveldb/env.h"
+#include "../util/logging.h"
+#include "../util/testharness.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 static std::string PrintContents(WriteBatch* b) {
   InternalKeyComparator cmp(BytewiseComparator());
@@ -113,7 +113,7 @@ TEST(WriteBatchTest, Append) {
             PrintContents(&b1));
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

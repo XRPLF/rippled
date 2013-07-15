@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "table/filter_block.h"
+#include "../table/filter_block.h"
 
-#include "hyperleveldb/filter_policy.h"
-#include "util/coding.h"
-#include "util/hash.h"
-#include "util/logging.h"
-#include "util/testharness.h"
-#include "util/testutil.h"
+#include "../hyperleveldb/filter_policy.h"
+#include "coding.h"
+#include "hash.h"
+#include "logging.h"
+#include "testharness.h"
+#include "testutil.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 // For testing: emit an array with one hash value per key
 class TestHashFilter : public FilterPolicy {
@@ -121,7 +121,7 @@ TEST(FilterBlockTest, MultiChunk) {
   ASSERT_TRUE(! reader.KeyMayMatch(9000, "bar"));
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

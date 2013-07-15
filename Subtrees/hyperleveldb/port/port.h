@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_PORT_PORT_H_
-#define STORAGE_LEVELDB_PORT_PORT_H_
+#ifndef STORAGE_HYPERLEVELDB_PORT_PORT_H_
+#define STORAGE_HYPERLEVELDB_PORT_PORT_H_
 
 #include <string.h>
 
@@ -11,9 +11,9 @@
 // porting to a new platform, see "port_example.h" for documentation
 // of what the new port_<platform>.h file must provide.
 #if defined(LEVELDB_PLATFORM_POSIX)
-#  include "port/port_posix.h"
+#  include "port_posix.h"
 #elif defined(LEVELDB_PLATFORM_CHROMIUM)
-#  include "port/port_chromium.h"
+#  include "port_chromium.h"
 #endif
 
-#endif  // STORAGE_LEVELDB_PORT_PORT_H_
+#endif  // STORAGE_HYPERLEVELDB_PORT_PORT_H_

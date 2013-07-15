@@ -12,18 +12,18 @@
 // Version,VersionSet are thread-compatible, but require external
 // synchronization on all accesses.
 
-#ifndef STORAGE_LEVELDB_DB_VERSION_SET_H_
-#define STORAGE_LEVELDB_DB_VERSION_SET_H_
+#ifndef STORAGE_HYPERLEVELDB_DB_VERSION_SET_H_
+#define STORAGE_HYPERLEVELDB_DB_VERSION_SET_H_
 
 #include <map>
 #include <set>
 #include <vector>
-#include "db/dbformat.h"
-#include "db/version_edit.h"
-#include "port/port.h"
-#include "port/thread_annotations.h"
+#include "dbformat.h"
+#include "version_edit.h"
+#include "../port/port.h"
+#include "../port/thread_annotations.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 namespace log { class Writer; }
 
@@ -385,6 +385,6 @@ class Compaction {
   size_t level_ptrs_[config::kNumLevels];
 };
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_DB_VERSION_SET_H_
+#endif  // STORAGE_HYPERLEVELDB_DB_VERSION_SET_H_

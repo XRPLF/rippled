@@ -6,12 +6,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "hyperleveldb/cache.h"
-#include "port/port.h"
-#include "util/hash.h"
-#include "util/mutexlock.h"
+#include "../hyperleveldb/cache.h"
+#include "../port/port.h"
+#include "hash.h"
+#include "mutexlock.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 Cache::~Cache() {
 }
@@ -322,4 +322,4 @@ Cache* NewLRUCache(size_t capacity) {
   return new ShardedLRUCache(capacity);
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

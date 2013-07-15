@@ -5,15 +5,15 @@
 // Must not be included from any .h files to avoid polluting the namespace
 // with macros.
 
-#ifndef STORAGE_LEVELDB_UTIL_LOGGING_H_
-#define STORAGE_LEVELDB_UTIL_LOGGING_H_
+#ifndef STORAGE_HYPERLEVELDB_UTIL_LOGGING_H_
+#define STORAGE_HYPERLEVELDB_UTIL_LOGGING_H_
 
 #include <stdio.h>
 #include <stdint.h>
 #include <string>
-#include "port/port.h"
+#include "../port/port.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class Slice;
 class WritableFile;
@@ -42,6 +42,6 @@ extern bool ConsumeChar(Slice* in, char c);
 // unspecified state.
 extern bool ConsumeDecimalNumber(Slice* in, uint64_t* val);
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_UTIL_LOGGING_H_
+#endif  // STORAGE_HYPERLEVELDB_UTIL_LOGGING_H_

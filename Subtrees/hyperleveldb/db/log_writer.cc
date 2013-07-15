@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/log_writer.h"
+#include "log_writer.h"
 
 #include <stdint.h>
-#include "hyperleveldb/env.h"
-#include "util/coding.h"
-#include "util/crc32c.h"
-#include "util/mutexlock.h"
+#include "../hyperleveldb/env.h"
+#include "../util/coding.h"
+#include "../util/crc32c.h"
+#include "../util/mutexlock.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 namespace log {
 
 Writer::Writer(WritableFile* dest)
@@ -129,4 +129,4 @@ Status Writer::EmitPhysicalRecordAt(RecordType t, const char* ptr, uint64_t offs
 }
 
 }  // namespace log
-}  // namespace leveldb
+}  // namespace hyperleveldb

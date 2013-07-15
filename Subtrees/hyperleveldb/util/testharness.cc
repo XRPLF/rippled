@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "util/testharness.h"
+#include "testharness.h"
 
 #include <string>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
-namespace leveldb {
+namespace hyperleveldb {
 namespace test {
 
 namespace {
@@ -74,4 +74,4 @@ int RandomSeed() {
 }
 
 }  // namespace test
-}  // namespace leveldb
+}  // namespace hyperleveldb

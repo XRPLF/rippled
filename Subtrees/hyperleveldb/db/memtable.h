@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_DB_MEMTABLE_H_
-#define STORAGE_LEVELDB_DB_MEMTABLE_H_
+#ifndef STORAGE_HYPERLEVELDB_DB_MEMTABLE_H_
+#define STORAGE_HYPERLEVELDB_DB_MEMTABLE_H_
 
 #include <string>
-#include "hyperleveldb/db.h"
-#include "db/dbformat.h"
-#include "db/skiplist.h"
-#include "util/arena.h"
+#include "../hyperleveldb/db.h"
+#include "dbformat.h"
+#include "skiplist.h"
+#include "../util/arena.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class InternalKeyComparator;
 class Mutex;
@@ -89,6 +89,6 @@ class MemTable {
   void operator=(const MemTable&);
 };
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_DB_MEMTABLE_H_
+#endif  // STORAGE_HYPERLEVELDB_DB_MEMTABLE_H_

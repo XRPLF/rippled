@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/table_cache.h"
+#include "table_cache.h"
 
-#include "db/filename.h"
-#include "hyperleveldb/env.h"
-#include "hyperleveldb/table.h"
-#include "util/coding.h"
+#include "filename.h"
+#include "../hyperleveldb/env.h"
+#include "../hyperleveldb/table.h"
+#include "../util/coding.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 struct TableAndFile {
   RandomAccessFile* file;
@@ -118,4 +118,4 @@ void TableCache::Evict(uint64_t file_number) {
   cache_->Erase(Slice(buf, sizeof(buf)));
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

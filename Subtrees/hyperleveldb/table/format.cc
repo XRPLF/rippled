@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "table/format.h"
+#include "format.h"
 
-#include "hyperleveldb/env.h"
-#include "port/port.h"
-#include "table/block.h"
-#include "util/coding.h"
-#include "util/crc32c.h"
+#include "../hyperleveldb/env.h"
+#include "../port/port.h"
+#include "block.h"
+#include "../util/coding.h"
+#include "../util/crc32c.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 void BlockHandle::EncodeTo(std::string* dst) const {
   // Sanity check that all fields have been set
@@ -142,4 +142,4 @@ Status ReadBlock(RandomAccessFile* file,
   return Status::OK();
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb

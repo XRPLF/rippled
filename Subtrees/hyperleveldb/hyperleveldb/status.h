@@ -10,13 +10,13 @@
 // non-const method, all threads accessing the same Status must use
 // external synchronization.
 
-#ifndef STORAGE_LEVELDB_INCLUDE_STATUS_H_
-#define STORAGE_LEVELDB_INCLUDE_STATUS_H_
+#ifndef STORAGE_HYPERLEVELDB_INCLUDE_STATUS_H_
+#define STORAGE_HYPERLEVELDB_INCLUDE_STATUS_H_
 
 #include <string>
-#include "hyperleveldb/slice.h"
+#include "slice.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class Status {
  public:
@@ -101,6 +101,6 @@ inline void Status::operator=(const Status& s) {
   }
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_INCLUDE_STATUS_H_
+#endif  // STORAGE_HYPERLEVELDB_INCLUDE_STATUS_H_

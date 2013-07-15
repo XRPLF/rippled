@@ -2,19 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_DB_FORMAT_H_
-#define STORAGE_LEVELDB_DB_FORMAT_H_
+#ifndef STORAGE_HYPERLEVELDB_DB_FORMAT_H_
+#define STORAGE_HYPERLEVELDB_DB_FORMAT_H_
 
 #include <stdio.h>
-#include "hyperleveldb/comparator.h"
-#include "hyperleveldb/db.h"
-#include "hyperleveldb/filter_policy.h"
-#include "hyperleveldb/slice.h"
-#include "hyperleveldb/table_builder.h"
-#include "util/coding.h"
-#include "util/logging.h"
+#include "../hyperleveldb/comparator.h"
+#include "../hyperleveldb/db.h"
+#include "../hyperleveldb/filter_policy.h"
+#include "../hyperleveldb/slice.h"
+#include "../hyperleveldb/table_builder.h"
+#include "../util/coding.h"
+#include "../util/logging.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 // Grouping of constants.  We may want to make some of these
 // parameters set via options.
@@ -224,6 +224,6 @@ inline LookupKey::~LookupKey() {
   if (start_ != space_) delete[] start_;
 }
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_DB_FORMAT_H_
+#endif  // STORAGE_HYPERLEVELDB_DB_FORMAT_H_

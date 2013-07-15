@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_INCLUDE_OPTIONS_H_
-#define STORAGE_LEVELDB_INCLUDE_OPTIONS_H_
+#ifndef STORAGE_HYPERLEVELDB_INCLUDE_OPTIONS_H_
+#define STORAGE_HYPERLEVELDB_INCLUDE_OPTIONS_H_
 
 #include <stddef.h>
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class Cache;
 class Comparator;
@@ -190,6 +190,6 @@ struct WriteOptions {
   }
 };
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_INCLUDE_OPTIONS_H_
+#endif  // STORAGE_HYPERLEVELDB_INCLUDE_OPTIONS_H_

@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_INCLUDE_TABLE_H_
-#define STORAGE_LEVELDB_INCLUDE_TABLE_H_
+#ifndef STORAGE_HYPERLEVELDB_INCLUDE_TABLE_H_
+#define STORAGE_HYPERLEVELDB_INCLUDE_TABLE_H_
 
 #include <stdint.h>
-#include "hyperleveldb/iterator.h"
+#include "iterator.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class Block;
 class BlockHandle;
@@ -80,6 +80,6 @@ class Table {
   void operator=(const Table&);
 };
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_INCLUDE_TABLE_H_
+#endif  // STORAGE_HYPERLEVELDB_INCLUDE_TABLE_H_

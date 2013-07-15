@@ -2,20 +2,20 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_DB_DB_IMPL_H_
-#define STORAGE_LEVELDB_DB_DB_IMPL_H_
+#ifndef STORAGE_HYPERLEVELDB_DB_DB_IMPL_H_
+#define STORAGE_HYPERLEVELDB_DB_DB_IMPL_H_
 
 #include <deque>
 #include <set>
-#include "db/dbformat.h"
-#include "db/log_writer.h"
-#include "db/snapshot.h"
-#include "hyperleveldb/db.h"
-#include "hyperleveldb/env.h"
-#include "port/port.h"
-#include "port/thread_annotations.h"
+#include "dbformat.h"
+#include "log_writer.h"
+#include "snapshot.h"
+#include "../hyperleveldb/db.h"
+#include "../hyperleveldb/env.h"
+#include "../port/port.h"
+#include "../port/thread_annotations.h"
 
-namespace leveldb {
+namespace hyperleveldb {
 
 class MemTable;
 class TableCache;
@@ -154,7 +154,7 @@ class DBImpl : public DB {
   std::set<uint64_t> pending_outputs_;
 
   bool allow_background_activity_;
-  bool levels_locked_[leveldb::config::kNumLevels];
+  bool levels_locked_[config::kNumLevels];
   int num_bg_threads_;
   // Tell the foreground that background has done something of note
   port::CondVar bg_fg_cv_;
@@ -218,6 +218,6 @@ extern Options SanitizeOptions(const std::string& db,
                                const InternalFilterPolicy* ipolicy,
                                const Options& src);
 
-}  // namespace leveldb
+}  // namespace hyperleveldb
 
-#endif  // STORAGE_LEVELDB_DB_DB_IMPL_H_
+#endif  // STORAGE_HYPERLEVELDB_DB_DB_IMPL_H_
