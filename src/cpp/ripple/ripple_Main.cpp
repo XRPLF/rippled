@@ -184,6 +184,9 @@ int rippleMain (int argc, char** argv)
     // These must be added before the Application object is created
     NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
     NodeStore::addBackendFactory (LevelDBBackendFactory::getInstance ());
+#if RIPPLE_HYPERLEVELDB_AVAILABLE
+    NodeStore::addBackendFactory (HyperLevelDBBackendFactory::getInstance ());
+#endif
 #if RIPPLE_MDB_AVAILABLE
     NodeStore::addBackendFactory (MdbBackendFactory::getInstance ());
 #endif
