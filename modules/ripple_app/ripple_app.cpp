@@ -17,6 +17,10 @@
 // This must come first to work around the boost placeholders issues
 #include "beast/modules/beast_basics/beast_basics.h"
 
+#if BEAST_LINUX || BEAST_MAC || BEAST_BSD
+#include <sys/resource.h>
+#endif
+
 // VFALCO NOTE Holy smokes...that's a lot of boost!!!
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
