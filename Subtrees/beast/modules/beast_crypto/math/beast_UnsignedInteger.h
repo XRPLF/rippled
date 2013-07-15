@@ -76,10 +76,10 @@ public:
     template <class IntegerType>
     UnsignedInteger <Bytes>& operator= (IntegerType value)
     {
-        static_bassert (sizeof (Bytes) >= sizeof (IntegerType));
+        static_bassert (Bytes >= sizeof (IntegerType));
         clear ();
         value = ByteOrder::swapIfLittleEndian (value);
-        memcpy (end () - sizeof (value), &value, sizeof (value));
+        memcpy (end () - sizeof (value), &value, bmin (Bytes, sizeof (value)));
         return *this;
     }
 
