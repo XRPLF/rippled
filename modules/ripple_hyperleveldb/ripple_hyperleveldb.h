@@ -4,12 +4,24 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEVELDB_RIPPLEHEADER
-#define RIPPLE_LEVELDB_RIPPLEHEADER
+#ifndef RIPPLE_HYPERLEVELDB_RIPPLEHEADER
+#define RIPPLE_HYPERLEVELDB_RIPPLEHEADER
 
-//#include "hyperleveldb/hyperleveldb/cache.h"
-//#include "hyperleveldb/hyperleveldb/filter_policy.h"
+#include "beast/modules/beast_core/system/beast_TargetPlatform.h"
+
+#if ! BEAST_WIN32
+
+#define RIPPLE_HYPERLEVELDB_AVAILABLE 1
+
+#include "hyperleveldb/hyperleveldb/cache.h"
+#include "hyperleveldb/hyperleveldb/filter_policy.h"
 #include "hyperleveldb/hyperleveldb/db.h"
-//#include "hyperleveldb/hyperleveldb/write_batch.h"
+#include "hyperleveldb/hyperleveldb/write_batch.h"
+
+#else
+
+#define RIPPLE_HYPERLEVELDB_AVAILABLE 0
+
+#endif
 
 #endif

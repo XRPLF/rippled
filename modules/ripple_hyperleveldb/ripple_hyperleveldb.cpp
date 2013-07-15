@@ -10,7 +10,7 @@
 
 #include "ripple_hyperleveldb.h"
 
-#include "beast/modules/beast_core/system/beast_TargetPlatform.h"
+#if RIPPLE_HYPERLEVELDB_AVAILABLE
 
 // Set the appropriate LevelDB platform macro based on our platform.
 //
@@ -92,4 +92,6 @@
 
 #ifdef BEAST_MSVC
 #pragma warning (pop)
+#endif
+
 #endif

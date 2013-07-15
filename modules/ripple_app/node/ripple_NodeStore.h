@@ -9,7 +9,6 @@
 
 /** Persistency layer for NodeObject
 */
-// VFALCO TODO Move all definitions to the .cpp
 class NodeStore : LeakChecked <NodeStore>
 {
 public:
@@ -18,12 +17,11 @@ public:
     class Backend
     {
     public:
-        // VFALCO TODO Remove this, the backend should not be a shared
-        //             object it should be ScopedPointer owned.
-        //
-        typedef boost::shared_ptr <Backend> pointer;
-
-        Backend () : mWriteGeneration(0), mWriteLoad(0), mWritePending(false)
+        // VFALCO TODO Move the function definition to the .cpp
+        Backend ()
+            : mWriteGeneration(0)
+            , mWriteLoad(0)
+            , mWritePending(false)
         {
             mWriteSet.reserve(128);
         }
@@ -45,11 +43,13 @@ public:
         // This function will only be called during an import operation
         virtual void visitAll (FUNCTION_TYPE <void (NodeObject::pointer)>) = 0;
 
+        // VFALCO TODO Put this bulk writing logic into a separate class.
         virtual void bulkWrite (Job &);
         virtual void waitWrite ();
         virtual int getWriteLoad ();
 
     protected:
+        // VFALCO TODO Put this bulk writing logic into a separate class.
         boost::mutex                                 mWriteMutex;
         boost::condition_variable                    mWriteCondition;
         int                                          mWriteGeneration;

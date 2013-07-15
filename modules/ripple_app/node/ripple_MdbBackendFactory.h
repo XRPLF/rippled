@@ -7,6 +7,8 @@
 #ifndef RIPPLE_MDBBACKENDFACTORY_H_INCLUDED
 #define RIPPLE_MDBBACKENDFACTORY_H_INCLUDED
 
+#if RIPPLE_MDB_AVAILABLE
+
 /** Factory to produce a backend using MDB.
 
     @note MDB is not currently available for Win32
@@ -25,5 +27,7 @@ public:
     String getName () const;
     NodeStore::Backend* createInstance (StringPairArray const& keyValues);
 };
+
+#endif
 
 #endif

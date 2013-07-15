@@ -75,6 +75,8 @@
 
 #include "../ripple_data/ripple_data.h"
 #include "../ripple_mdb/ripple_mdb.h"
+#include "../ripple_leveldb/ripple_leveldb.h"
+#include "../ripple_hyperleveldb/ripple_hyperleveldb.h"
 #include "../ripple_net/ripple_net.h"
 
 #include "../modules/ripple_websocket/ripple_websocket.h"
@@ -97,6 +99,7 @@ namespace ripple
 #include "node/ripple_NodeObject.h"
 #include "node/ripple_NodeStore.h"
 #include "node/ripple_LevelDBBackendFactory.h"
+#include "node/ripple_HyperLevelDBBackendFactory.h"
 #include "node/ripple_MdbBackendFactory.h"
 #include "node/ripple_NullBackendFactory.h"
 #include "node/ripple_SqliteBackendFactory.h"
@@ -239,6 +242,7 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "node/ripple_NodeObject.cpp"
 #include "node/ripple_NodeStore.cpp"
 #include "node/ripple_LevelDBBackendFactory.cpp"
+#include "node/ripple_HyperLevelDBBackendFactory.cpp"
 #include "node/ripple_MdbBackendFactory.cpp"
 #include "node/ripple_NullBackendFactory.cpp"
 #include "node/ripple_SqliteBackendFactory.cpp"
