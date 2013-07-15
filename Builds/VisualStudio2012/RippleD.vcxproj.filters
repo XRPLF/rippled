@@ -894,6 +894,9 @@
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_crypto\beast_crypto.cpp">
       <Filter>[0] Subtrees\beast</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_HyperLevelDBBackendFactory.cpp">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h">
@@ -1667,6 +1670,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\validator\ripple_ValidatorListImp.h">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_HyperLevelDBBackendFactory.h">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
