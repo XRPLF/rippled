@@ -15,7 +15,7 @@ void setupServer ()
          if (rl.rlim_cur != rl.rlim_max)
          {
              rl.rlim_cur = rl.rlim_max;
-             setrlimit(RLIMIT_NOFILE, &r1);
+             setrlimit(RLIMIT_NOFILE, &rl);
          }
     }
 #endif
