@@ -34,7 +34,7 @@
 /**
     Holds a list of objects derived from SharedObject.
 
-    A ReferenceCountedArray holds objects derived from SharedObject,
+    A SharedObjectArray holds objects derived from SharedObject,
     and takes care of incrementing and decrementing their ref counts when they
     are added and removed from the array.
 
@@ -44,7 +44,7 @@
     @see Array, OwnedArray, StringArray
 */
 template <class ObjectClass, class TypeOfCriticalSectionToUse = DummyCriticalSection>
-class ReferenceCountedArray
+class SharedObjectArray
 {
 public:
     typedef SharedObjectPtr<ObjectClass> ObjectClassPtr;
@@ -53,13 +53,13 @@ public:
     /** Creates an empty array.
         @see SharedObject, Array, OwnedArray
     */
-    ReferenceCountedArray() noexcept
+    SharedObjectArray() noexcept
         : numUsed (0)
     {
     }
 
     /** Creates a copy of another array */
-    ReferenceCountedArray (const ReferenceCountedArray& other) noexcept
+    SharedObjectArray (const SharedObjectArray& other) noexcept
     {
         const ScopedLockType lock (other.getLock());
         numUsed = other.size();
@@ -73,9 +73,9 @@ public:
 
     /** Creates a copy of another array */
     template <class OtherObjectClass, class OtherCriticalSection>
-    ReferenceCountedArray (const ReferenceCountedArray<OtherObjectClass, OtherCriticalSection>& other) noexcept
+    SharedObjectArray (const SharedObjectArray<OtherObjectClass, OtherCriticalSection>& other) noexcept
     {
-        const typename ReferenceCountedArray<OtherObjectClass, OtherCriticalSection>::ScopedLockType lock (other.getLock());
+        const typename SharedObjectArray<OtherObjectClass, OtherCriticalSection>::ScopedLockType lock (other.getLock());
         numUsed = other.size();
         data.setAllocatedSize (numUsed);
         memcpy (data.elements, other.getRawDataPointer(), numUsed * sizeof (ObjectClass*));
@@ -88,9 +88,9 @@ public:
     /** Copies another array into this one.
         Any existing objects in this array will first be released.
     */
-    ReferenceCountedArray& operator= (const ReferenceCountedArray& other) noexcept
+    SharedObjectArray& operator= (const SharedObjectArray& other) noexcept
     {
-        ReferenceCountedArray otherCopy (other);
+        SharedObjectArray otherCopy (other);
         swapWithArray (otherCopy);
         return *this;
     }
@@ -99,9 +99,9 @@ public:
         Any existing objects in this array will first be released.
     */
     template <class OtherObjectClass>
-    ReferenceCountedArray<ObjectClass, TypeOfCriticalSectionToUse>& operator= (const ReferenceCountedArray<OtherObjectClass, TypeOfCriticalSectionToUse>& other) noexcept
+    SharedObjectArray<ObjectClass, TypeOfCriticalSectionToUse>& operator= (const SharedObjectArray<OtherObjectClass, TypeOfCriticalSectionToUse>& other) noexcept
     {
-        ReferenceCountedArray<ObjectClass, TypeOfCriticalSectionToUse> otherCopy (other);
+        SharedObjectArray<ObjectClass, TypeOfCriticalSectionToUse> otherCopy (other);
         swapWithArray (otherCopy);
         return *this;
     }
@@ -109,7 +109,7 @@ public:
     /** Destructor.
         Any objects in the array will be released, and may be deleted if not referenced from elsewhere.
     */
-    ~ReferenceCountedArray()
+    ~SharedObjectArray()
     {
         clear();
     }
@@ -409,7 +409,7 @@ public:
                                     all available elements will be copied.
         @see add
     */
-    void addArray (const ReferenceCountedArray<ObjectClass, TypeOfCriticalSectionToUse>& arrayToAddFrom,
+    void addArray (const SharedObjectArray<ObjectClass, TypeOfCriticalSectionToUse>& arrayToAddFrom,
                    int startIndex = 0,
                    int numElementsToAdd = -1) noexcept
     {
@@ -740,7 +740,7 @@ public:
         If you need to exchange two arrays, this is vastly quicker than using copy-by-value
         because it just swaps their internal pointers.
     */
-    void swapWithArray (ReferenceCountedArray& otherArray) noexcept
+    void swapWithArray (SharedObjectArray& otherArray) noexcept
     {
         const ScopedLockType lock1 (getLock());
         const ScopedLockType lock2 (otherArray.getLock());
@@ -754,7 +754,7 @@ public:
 
         @returns true only if the other array contains the same objects in the same order
     */
-    bool operator== (const ReferenceCountedArray& other) const noexcept
+    bool operator== (const SharedObjectArray& other) const noexcept
     {
         const ScopedLockType lock2 (other.getLock());
         const ScopedLockType lock1 (getLock());
@@ -773,7 +773,7 @@ public:
 
         @see operator==
     */
-    bool operator!= (const ReferenceCountedArray<ObjectClass, TypeOfCriticalSectionToUse>& other) const noexcept
+    bool operator!= (const SharedObjectArray<ObjectClass, TypeOfCriticalSectionToUse>& other) const noexcept
     {
         return ! operator== (other);
     }

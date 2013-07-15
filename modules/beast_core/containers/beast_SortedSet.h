@@ -53,7 +53,7 @@
     To make all the set's methods thread-safe, pass in "CriticalSection" as the templated
     TypeOfCriticalSectionToUse parameter, instead of the default DummyCriticalSection.
 
-    @see Array, OwnedArray, ReferenceCountedArray, StringArray, CriticalSection
+    @see Array, OwnedArray, SharedObjectArray, StringArray, CriticalSection
 */
 template <class ElementType, class TypeOfCriticalSectionToUse = DummyCriticalSection>
 class SortedSet

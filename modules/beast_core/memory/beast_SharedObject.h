@@ -57,7 +57,7 @@
     the pointers can be passed between threads safely. For a faster but non-thread-safe
     version, use SingleThreadedSharedObject instead.
 
-    @see SharedObjectPtr, ReferenceCountedArray, SingleThreadedSharedObject
+    @see SharedObjectPtr, SharedObjectArray, SingleThreadedSharedObject
 */
 class BEAST_API SharedObject : Uncopyable
 {
@@ -126,7 +126,7 @@ private:
     efficient).
     For more details on how to use it, see the SharedObject class notes.
 
-    @see SharedObject, SharedObjectPtr, ReferenceCountedArray
+    @see SharedObject, SharedObjectPtr, SharedObjectArray
 */
 class BEAST_API SingleThreadedSharedObject : public Uncopyable
 {

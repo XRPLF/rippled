@@ -160,9 +160,6 @@
     <ClInclude Include="..\..\modules\beast_core\containers\beast_PropertySet.h">
       <Filter>beast_core\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_ReferenceCountedArray.h">
-      <Filter>beast_core\containers</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\containers\beast_ScopedValueSetter.h">
       <Filter>beast_core\containers</Filter>
     </ClInclude>
@@ -622,6 +619,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_crypto\beast_crypto.h">
       <Filter>beast_crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\containers\beast_SharedObjectArray.h">
+      <Filter>beast_core\containers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

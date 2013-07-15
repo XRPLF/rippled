@@ -120,7 +120,7 @@
     <ClInclude Include="..\..\modules\beast_core\containers\beast_NamedValueSet.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\beast_OwnedArray.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\beast_PropertySet.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_ReferenceCountedArray.h" />
+    <ClInclude Include="..\..\modules\beast_core\containers\beast_SharedObjectArray.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\beast_ScopedValueSetter.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\beast_SharedTable.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\beast_SortedLookupTable.h" />
