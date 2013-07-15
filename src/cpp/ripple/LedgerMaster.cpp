@@ -752,7 +752,14 @@ void LedgerMaster::tryPublish ()
                     ledger = acq->getLedger();
                 }
                 else
+                {
                     WriteLog (lsWARNING, LedgerMaster) << "Failed to acquire a published ledger";
+                    getApp().getInboundLedgers().dropLedger(hash);
+                    acq = getApp().getInboundLedgers().findCreate(hash, seq);
+                    acq->setAccept();
+                    if (acq->isDone())
+                        ledger = acq->getLedger();
+                }
             }
 
             if (ledger && (ledger->getLedgerSeq() == (mPubLedger->getLedgerSeq() + 1)))
