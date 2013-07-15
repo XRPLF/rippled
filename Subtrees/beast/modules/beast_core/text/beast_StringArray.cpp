@@ -499,6 +499,11 @@ void StringArray::appendNumbersToDuplicates (const bool ignoreCase,
     }
 }
 
+void StringArray::ensureStorageAllocated (int minNumElements)
+{
+    strings.ensureStorageAllocated (minNumElements);
+}
+
 void StringArray::minimiseStorageOverheads()
 {
     strings.minimiseStorageOverheads();
