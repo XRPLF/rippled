@@ -8,6 +8,18 @@ namespace po = boost::program_options;
 
 void setupServer ()
 {
+#ifdef RLIMIT_NOFILE
+    struct rlimit rl;
+    if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
+    {
+         if (rl.rlim_cur != rl.rlim_max)
+         {
+             rl.rlim_cur = rl.rlim_max;
+             setrlimit(RLIMIT_NOFILE, &r1);
+         }
+    }
+#endif
+
     getApp().setup ();
 }
 
