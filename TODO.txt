@@ -2,6 +2,17 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
+Vinnie's Short List (Changes day to day)
+- Convert some Ripple boost unit tests to Beast.
+- Eliminate new technical in NodeStore::Backend
+- Improve NodeObject to construct with just a size.
+- Work on KeyvaDB
+- Finish unit tests and code for Validators
+
+--------------------------------------------------------------------------------
+
+- Rewrite boost program_options in Beast
+
 - Examples for different backend key/value config settings
 
 - Unit Test attention
@@ -9,8 +20,6 @@ RIPPLE TODO
 - NodeStore backend unit test
 
 - Validations unit test
-
---------------------------------------------------------------------------------
 
 - Replace endian conversion calls with beast calls:
   htobe32, be32toh, ntohl, etc...

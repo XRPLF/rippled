@@ -157,6 +157,18 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_KeyvaDB.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_KeyvaDBBackendFactory.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\node\ripple_NodeObject.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1402,6 +1414,8 @@
     <ClInclude Include="..\..\modules\ripple_app\ledger\ripple_LedgerHistory.h" />
     <ClInclude Include="..\..\modules\ripple_app\ledger\SerializedValidation.h" />
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_HyperLevelDBBackendFactory.h" />
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_KeyvaDB.h" />
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_KeyvaDBBackendFactory.h" />
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_NodeObject.h" />
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_NodeStore.h" />
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_LevelDBBackendFactory.h" />
@@ -1732,7 +1746,7 @@
       <PrecompiledHeader>
       </PrecompiledHeader>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_CRTDBG_MAP_ALLOC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <MinimalRebuild>false</MinimalRebuild>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>

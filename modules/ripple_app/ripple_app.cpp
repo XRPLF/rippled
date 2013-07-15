@@ -104,6 +104,7 @@ namespace ripple
 #include "node/ripple_NodeStore.h"
 #include "node/ripple_LevelDBBackendFactory.h"
 #include "node/ripple_HyperLevelDBBackendFactory.h"
+#include "node/ripple_KeyvaDBBackendFactory.h"
 #include "node/ripple_MdbBackendFactory.h"
 #include "node/ripple_NullBackendFactory.h"
 #include "node/ripple_SqliteBackendFactory.h"
@@ -249,6 +250,9 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "node/ripple_MdbBackendFactory.cpp"
 #include "node/ripple_NullBackendFactory.cpp"
 #include "node/ripple_SqliteBackendFactory.cpp"
+#include "node/ripple_KeyvaDB.h" // private
+#include "node/ripple_KeyvaDB.cpp"
+#include "node/ripple_KeyvaDBBackendFactory.cpp"
 
 #include "ledger/Ledger.cpp"
 #include "src/cpp/ripple/ripple_SHAMapDelta.cpp"

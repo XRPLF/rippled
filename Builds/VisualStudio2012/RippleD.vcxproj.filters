@@ -897,6 +897,12 @@
     <ClCompile Include="..\..\modules\ripple_app\node\ripple_HyperLevelDBBackendFactory.cpp">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_KeyvaDB.cpp">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_KeyvaDBBackendFactory.cpp">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h">
@@ -1672,6 +1678,12 @@
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_HyperLevelDBBackendFactory.h">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_KeyvaDB.h">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_KeyvaDBBackendFactory.h">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>
   </ItemGroup>

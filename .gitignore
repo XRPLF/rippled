@@ -63,3 +63,7 @@ DerivedData
 
 # Intel Parallel Studio 2013 XE
 My Amplifier XE Results - RippleD
+
+# KeyvaDB files
+*.key
+*.val

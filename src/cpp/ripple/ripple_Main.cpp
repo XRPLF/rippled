@@ -155,7 +155,7 @@ static void runBeastUnitTests ()
     {
         UnitTests::TestResult const& r (*tr.getResult (i));
                 
-        for (int j = 0; j < r.messages.size (); ++i)
+        for (int j = 0; j < r.messages.size (); ++j)
             Log::out () << r.messages [j].toStdString ();
     }
 }
@@ -252,6 +252,7 @@ int rippleMain (int argc, char** argv)
     // These must be added before the Application object is created
     NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
     NodeStore::addBackendFactory (LevelDBBackendFactory::getInstance ());
+    NodeStore::addBackendFactory (KeyvaDBBackendFactory::getInstance ());
 #if RIPPLE_HYPERLEVELDB_AVAILABLE
     NodeStore::addBackendFactory (HyperLevelDBBackendFactory::getInstance ());
 #endif
