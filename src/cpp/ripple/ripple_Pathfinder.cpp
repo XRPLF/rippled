@@ -508,10 +508,12 @@ bool Pathfinder::findPaths (const unsigned int iMaxSteps, const unsigned int iMa
                     else
                     {
                         // save this candidate
-                        int out = getPathsOut (speEnd.mCurrencyID, uPeerID, bRequireAuth, dstCurrency, mDstAccountID);
+                        int out = getPathsOut (speEnd.mCurrencyID, uPeerID, dstCurrency, mDstAccountID);
 
                         if (out != 0)
-                            candidates.push_back (std::make_pair (out, uPeerID));
+                                candidates.push_back (std::make_pair (out, uPeerID));
+			else
+                            WriteLog(lsTRACE, Pathfinder) << "findPaths: " << RippleAddress::createHumanAccountID(uPeerID) << " has no paths out";
                     }
                 }
 
@@ -803,7 +805,7 @@ bool Pathfinder::matchesOrigin (const uint160& currency, const uint160& issuer)
 }
 
 int Pathfinder::getPathsOut (const uint160& currencyID, const uint160& accountID,
-                             bool authRequired, bool isDstCurrency, const uint160& dstAccount)
+                             bool isDstCurrency, const uint160& dstAccount)
 {
 #ifdef C11X
     std::pair<const uint160&, const uint160&> accountCurrency (currencyID, accountID);
@@ -814,6 +816,9 @@ int Pathfinder::getPathsOut (const uint160& currencyID, const uint160& accountID
 
     if (it != mPOMap.end ())
         return it->second;
+
+    int aFlags = mLedger->getSLEi(Ledger::getAccountRootIndex(accountID))->getFieldU32(sfFlags);
+    bool bAuthRequired = aFlags & lsfRequireAuth;
 
     int count = 0;
     AccountItems& rippleLines (mRLCache->getRippleLines (accountID));
@@ -826,10 +831,10 @@ int Pathfinder::getPathsOut (const uint160& currencyID, const uint160& accountID
         else if (!rspEntry->getBalance ().isPositive () &&
                  (!rspEntry->getLimitPeer ()
                   || -rspEntry->getBalance () >= rspEntry->getLimitPeer ()
-                  ||  (authRequired && !rspEntry->getAuth ())))
+                  ||  (bAuthRequired && !rspEntry->getAuth ())))
             nothing ();
         else if (isDstCurrency && (dstAccount == rspEntry->getAccountIDPeer ()))
-            count += 100; // count a path to the destination extra
+            count += 10000; // count a path to the destination extra
         else
             ++count;
     }
