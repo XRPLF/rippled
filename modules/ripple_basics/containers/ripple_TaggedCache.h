@@ -62,7 +62,58 @@ public:
     void sweep ();
     void clear ();
 
-    bool touch (const key_type& key);
+    /** Refresh the expiration time on a key.
+
+        @param key The key to refresh.
+        @return `true` if the key was found and the object is cached.
+    */
+    bool refreshIfPresent (const key_type& key)
+    {
+        bool found = false;
+
+        // If present, make current in cache
+        boost::recursive_mutex::scoped_lock sl (mLock);
+
+        cache_iterator cit = mCache.find (key);
+
+        if (cit != mCache.end ())
+        {
+            cache_entry& entry = cit->second;
+
+            if (! entry.isCached ())
+            {
+                // Convert weak to strong.
+                entry.ptr = entry.lock ();
+
+                if (entry.isCached ())
+                {
+                    // We just put the object back in cache
+                    ++mCacheCount;
+                    entry.touch ();
+                    found = true;
+                }
+                else
+                {
+                    // Couldn't get strong pointer, 
+                    // object fell out of the cache so remove the entry.
+                    mCache.erase (cit);
+                }
+            }
+            else
+            {
+                // It's cached so update the timer
+                entry.touch ();
+                found = true;
+            }
+        }
+        else
+        {
+            // not present
+        }
+
+        return found;
+    }
+
     bool del (const key_type& key, bool valid);
     bool canonicalize (const key_type& key, boost::shared_ptr<c_Data>& data, bool replace = false);
     bool store (const key_type& key, const c_Data& data);
@@ -262,40 +313,6 @@ void TaggedCache<c_Key, c_Data, Timer>::sweep ()
         WriteLog (lsTRACE, TaggedCacheLog) << mName << ": cache = " << mCache.size () << "-" << cacheRemovals <<
                                            ", map-=" << mapRemovals;
     }
-}
-
-template<typename c_Key, typename c_Data, class Timer>
-bool TaggedCache<c_Key, c_Data, Timer>::touch (const key_type& key)
-{
-    // If present, make current in cache
-    boost::recursive_mutex::scoped_lock sl (mLock);
-
-    cache_iterator cit = mCache.find (key);
-
-    if (cit == mCache.end ()) // Don't have the object
-        return false;
-
-    cache_entry& entry = cit->second;
-
-    if (entry.isCached ())
-    {
-        entry.touch ();
-        return true;
-    }
-
-    entry.ptr = entry.lock ();
-
-    if (entry.isCached ())
-    {
-        // We just put the object back in cache
-        ++mCacheCount;
-        entry.touch ();
-        return true;
-    }
-
-    // Object fell out
-    mCache.erase (cit);
-    return false;
 }
 
 template<typename c_Key, typename c_Data, class Timer>

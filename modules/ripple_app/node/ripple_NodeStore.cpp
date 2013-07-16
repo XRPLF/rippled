@@ -4,15 +4,109 @@
 */
 //==============================================================================
 
+//
+// NodeStore::Backend
+//
+
+NodeStore::Backend::Backend ()
+    : mWriteGeneration(0)
+    , mWriteLoad(0)
+    , mWritePending(false)
+{
+    mWriteSet.reserve (bulkWriteBatchSize);
+}
+
+bool NodeStore::Backend::store (NodeObject::ref object)
+{
+    boost::mutex::scoped_lock sl (mWriteMutex);
+    mWriteSet.push_back (object);
+
+    if (!mWritePending)
+    {
+        mWritePending = true;
+
+        // VFALCO TODO Eliminate this dependency on the Application object.
+        getApp().getJobQueue ().addJob (
+            jtWRITE,
+            "NodeObject::store",
+            BIND_TYPE (&NodeStore::Backend::bulkWrite, this, P_1));
+    }
+    return true;
+}
+
+void NodeStore::Backend::bulkWrite (Job &)
+{
+    int setSize = 0;
+
+    // VFALCO NOTE Use the canonical for(;;) instead.
+    //             Or better, provide a proper terminating condition.
+    while (1)
+    {
+        std::vector< boost::shared_ptr<NodeObject> > set;
+        set.reserve (bulkWriteBatchSize);
+
+        {
+            boost::mutex::scoped_lock sl (mWriteMutex);
+
+            mWriteSet.swap (set);
+            assert (mWriteSet.empty ());
+            ++mWriteGeneration;
+            mWriteCondition.notify_all ();
+
+            if (set.empty ())
+            {
+                mWritePending = false;
+                mWriteLoad = 0;
+
+                // VFALCO NOTE Fix this function to not return from the middle
+                return;
+            }
+
+            mWriteLoad = std::max (setSize, static_cast<int> (mWriteSet.size ()));
+            setSize = set.size ();
+        }
+
+        bulkStore (set);
+    }
+}
+
+// VFALCO TODO This function should not be needed. Instead, the
+//             destructor should handle flushing of the bulk write buffer.
+//
+void NodeStore::Backend::waitWrite ()
+{
+    boost::mutex::scoped_lock sl (mWriteMutex);
+    int gen = mWriteGeneration;
+
+    while (mWritePending && (mWriteGeneration == gen))
+        mWriteCondition.wait (sl);
+}
+
+int NodeStore::Backend::getWriteLoad ()
+{
+    boost::mutex::scoped_lock sl (mWriteMutex);
+
+    return std::max (mWriteLoad, static_cast<int> (mWriteSet.size ()));
+}
+
+//------------------------------------------------------------------------------
+
+//
+// NodeStore
+//
+
 Array <NodeStore::BackendFactory*> NodeStore::s_factories;
 
-NodeStore::NodeStore (String backendParameters, String fastBackendParameters, int cacheSize, int cacheAge)
+NodeStore::NodeStore (String backendParameters,
+                      String fastBackendParameters,
+                      int cacheSize,
+                      int cacheAge)
     : m_backend (createBackend (backendParameters))
-    , mCache ("NodeStore", cacheSize, cacheAge)
-    , mNegativeCache ("HashedObjectNegativeCache", 0, 120)
+    , m_fastBackend (fastBackendParameters.isNotEmpty () ? createBackend (fastBackendParameters)
+                                                         : nullptr)
+    , m_cache ("NodeStore", cacheSize, cacheAge)
+    , m_negativeCache ("NoteStoreNegativeCache", 0, 120)
 {
-    if (fastBackendParameters.isNotEmpty ())
-        m_fastBackend = createBackend (fastBackendParameters);
 }
 
 void NodeStore::addBackendFactory (BackendFactory& factory)
@@ -22,19 +116,19 @@ void NodeStore::addBackendFactory (BackendFactory& factory)
 
 float NodeStore::getCacheHitRate ()
 {
-    return mCache.getHitRate ();
+    return m_cache.getHitRate ();
 }
 
 void NodeStore::tune (int size, int age)
 {
-    mCache.setTargetSize (size);
-    mCache.setTargetAge (age);
+    m_cache.setTargetSize (size);
+    m_cache.setTargetAge (age);
 }
 
 void NodeStore::sweep ()
 {
-    mCache.sweep ();
-    mNegativeCache.sweep ();
+    m_cache.sweep ();
+    m_negativeCache.sweep ();
 }
 
 void NodeStore::waitWrite ()
@@ -52,32 +146,49 @@ int NodeStore::getWriteLoad ()
 bool NodeStore::store (NodeObjectType type, uint32 index,
                                       Blob const& data, uint256 const& hash)
 {
-    // return: false = already in cache, true = added to cache
-    if (mCache.touch (hash))
-        return false;
+    bool wasStored = false;
 
+    bool const keyFoundAndObjectCached = m_cache.refreshIfPresent (hash);
+
+    // VFALCO NOTE What happens if the key is found, but the object
+    //             fell out of the cache? We will end up passing it
+    //             to the backend anyway.
+    //      
+    if (! keyFoundAndObjectCached)
+    {
+
+// VFALCO TODO Rename this to RIPPLE_NODESTORE_VERIFY_HASHES and make
+//             it be 1 or 0 instead of merely defined or undefined.
+//
 #ifdef PARANOID
-    assert (hash == Serializer::getSHA512Half (data));
+        assert (hash == Serializer::getSHA512Half (data));
 #endif
 
-    NodeObject::pointer object = boost::make_shared<NodeObject> (type, index, data, hash);
+        NodeObject::pointer object = boost::make_shared<NodeObject> (type, index, data, hash);
 
-    if (!mCache.canonicalize (hash, object))
-    {
-        m_backend->store (object);
-        if (m_fastBackend)
-            m_fastBackend->store (object);
+        // VFALCO NOTE What does it mean to canonicalize an object?
+        //
+        if (!m_cache.canonicalize (hash, object))
+        {
+            m_backend->store (object);
+
+            if (m_fastBackend)
+                m_fastBackend->store (object);
+        }
+
+        m_negativeCache.del (hash);
+
+        wasStored = true;
     }
 
-    mNegativeCache.del (hash);
-    return true;
+    return wasStored;
 }
 
 NodeObject::pointer NodeStore::retrieve (uint256 const& hash)
 {
-    NodeObject::pointer obj = mCache.fetch (hash);
+    NodeObject::pointer obj = m_cache.fetch (hash);
 
-    if (obj || mNegativeCache.isPresent (hash))
+    if (obj || m_negativeCache.isPresent (hash))
         return obj;
 
     if (m_fastBackend)
@@ -86,7 +197,7 @@ NodeObject::pointer NodeStore::retrieve (uint256 const& hash)
 
         if (obj)
         {
-            mCache.canonicalize (hash, obj);
+            m_cache.canonicalize (hash, obj);
             return obj;
         }
     }
@@ -97,17 +208,18 @@ NodeObject::pointer NodeStore::retrieve (uint256 const& hash)
 
         if (!obj)
         {
-            mNegativeCache.add (hash);
+            m_negativeCache.add (hash);
             return obj;
         }
     }
 
-    mCache.canonicalize (hash, obj);
+    m_cache.canonicalize (hash, obj);
 
     if (m_fastBackend)
         m_fastBackend->store(obj);
 
     WriteLog (lsTRACE, NodeObject) << "HOS: " << hash << " fetch: in db";
+
     return obj;
 }
 
@@ -115,12 +227,12 @@ void NodeStore::importVisitor (
     std::vector <NodeObject::pointer>& objects,
     NodeObject::pointer object)
 {
-    if (objects.size() >= 128)
+    if (objects.size() >= bulkWriteBatchSize)
     {
         m_backend->bulkStore (objects);
 
         objects.clear ();
-        objects.reserve (128);
+        objects.reserve (bulkWriteBatchSize);
     }
 
     objects.push_back (object);
@@ -136,7 +248,7 @@ int NodeStore::import (String sourceBackendParameters)
 
     std::vector <NodeObject::pointer> objects;
 
-    objects.reserve (128);
+    objects.reserve (bulkWriteBatchSize);
 
     srcBackend->visitAll (BIND_TYPE (&NodeStore::importVisitor, this, boost::ref (objects), P_1));
 
@@ -182,66 +294,4 @@ NodeStore::Backend* NodeStore::createBackend (String const& parameters)
     }
 
     return backend;
-}
-
-bool NodeStore::Backend::store (NodeObject::ref object)
-{
-    boost::mutex::scoped_lock sl (mWriteMutex);
-    mWriteSet.push_back (object);
-
-    if (!mWritePending)
-    {
-        mWritePending = true;
-        getApp().getJobQueue ().addJob (jtWRITE, "NodeObject::store",
-				       BIND_TYPE (&NodeStore::Backend::bulkWrite, this, P_1));
-    }
-    return true;
-}
-
-void NodeStore::Backend::bulkWrite (Job &)
-{
-    int setSize = 0;
-
-    while (1)
-    {
-        std::vector< boost::shared_ptr<NodeObject> > set;
-        set.reserve (128);
-
-        {
-            boost::mutex::scoped_lock sl (mWriteMutex);
-
-            mWriteSet.swap (set);
-            assert (mWriteSet.empty ());
-            ++mWriteGeneration;
-            mWriteCondition.notify_all ();
-
-            if (set.empty ())
-            {
-                mWritePending = false;
-                mWriteLoad = 0;
-                return;
-            }
-
-            mWriteLoad = std::max (setSize, static_cast<int> (mWriteSet.size ()));
-            setSize = set.size ();
-        }
-
-        bulkStore (set);
-    }
-}
-
-void NodeStore::Backend::waitWrite ()
-{
-    boost::mutex::scoped_lock sl (mWriteMutex);
-    int gen = mWriteGeneration;
-
-    while (mWritePending && (mWriteGeneration == gen))
-        mWriteCondition.wait (sl);
-}
-
-int NodeStore::Backend::getWriteLoad ()
-{
-    boost::mutex::scoped_lock sl (mWriteMutex);
-
-    return std::max (mWriteLoad, static_cast<int> (mWriteSet.size ()));
 }
