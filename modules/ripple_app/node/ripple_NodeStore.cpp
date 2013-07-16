@@ -193,7 +193,7 @@ NodeObject::pointer NodeStore::retrieve (uint256 const& hash)
 
     if (m_fastBackend)
     {
-        obj = m_fastBackend->retrieve (hash);
+        obj = retrieve (m_fastBackend, hash);
 
         if (obj)
         {
@@ -203,16 +203,26 @@ NodeObject::pointer NodeStore::retrieve (uint256 const& hash)
     }
 
     {
-        LoadEvent::autoptr event (getApp().getJobQueue ().getLoadEventAP (jtHO_READ, "HOS::retrieve"));
-        obj = m_backend->retrieve(hash);
+        // m_hooks->onRetrieveBegin ()
 
-        if (!obj)
+        // VFALCO TODO Why is this an autoptr? Why can't it just be a plain old object?
+        //
+        LoadEvent::autoptr event (getApp().getJobQueue ().getLoadEventAP (jtHO_READ, "HOS::retrieve"));
+
+        obj = retrieve (m_backend, hash);
+
+        if (obj == nullptr)
         {
             m_negativeCache.add (hash);
-            return obj;
+
+            // VFALCO TODO Eliminate return from middle of function
+
+            return obj; // VFALCO NOTE This is nullptr, why return obj? 
         }
+
     }
 
+    // VFALCO NOTE What does this do?
     m_cache.canonicalize (hash, obj);
 
     if (m_fastBackend)
@@ -221,6 +231,13 @@ NodeObject::pointer NodeStore::retrieve (uint256 const& hash)
     WriteLog (lsTRACE, NodeObject) << "HOS: " << hash << " fetch: in db";
 
     return obj;
+}
+
+//------------------------------------------------------------------------------
+
+NodeObject::pointer NodeStore::retrieve (Backend* backend, uint256 const& hash)
+{
+    return backend->retrieve (hash);
 }
 
 void NodeStore::importVisitor (

@@ -11,6 +11,8 @@ Vinnie's Short List (Changes day to day)
 
 --------------------------------------------------------------------------------
 
+- Replace base_uint and uintXXX with UnsignedInteger
+
 - Rewrite boost program_options in Beast
 
 - Examples for different backend key/value config settings

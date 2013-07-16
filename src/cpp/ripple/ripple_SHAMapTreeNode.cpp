@@ -4,8 +4,14 @@
 */
 //==============================================================================
 
-SHAMapTreeNode::SHAMapTreeNode (uint32 seq, const SHAMapNode& nodeID) : SHAMapNode (nodeID), mHash (0),
-    mSeq (seq), mAccessSeq (seq), mType (tnERROR), mIsBranch (0), mFullBelow (false)
+SHAMapTreeNode::SHAMapTreeNode (uint32 seq, const SHAMapNode& nodeID)
+    : SHAMapNode (nodeID)
+    , mHash (uint64(0))
+    , mSeq (seq)
+    , mAccessSeq (seq)
+    , mType (tnERROR)
+    , mIsBranch (0)
+    , mFullBelow (false)
 {
 }
 

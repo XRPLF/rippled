@@ -19,13 +19,18 @@ public:
         */
         // VFALCO TODO Make this a tunable parameter in the key value pairs
         bulkWriteBatchSize = 128
+
+        /** Size of the fixed keys, in bytes.
+        */
+        ,keyBytes = 32 // 256 bit hash
     };
 
     /** Interface to inform callers of cetain activities.
     */
     class Hooks
     {
-        virtual void on
+        virtual void onRetrieveBegin () { }
+        virtual void onRetrieveEnd () { }
     };
 
     /** Back end used for the store.
@@ -43,10 +48,18 @@ public:
         //             It should just deal with a fixed key and raw data.
         //
         virtual bool store (NodeObject::ref);
+        //virtual bool put (void const* key, void const* value, int valueBytes) { return false; }
 
         /** Retrieve an individual object.
         */
         virtual NodeObject::pointer retrieve (uint256 const &hash) = 0;
+
+        struct GetCallback
+        {
+            virtual void* getBufferForValue (int valueBytes) = 0;
+        };
+
+        virtual bool get (void const* key, GetCallback* callback) { return false; }
 
         // Visit every object in the database
         // This function will only be called during an import operation
@@ -161,6 +174,8 @@ public:
     int import (String sourceBackendParameters);
 
 private:
+    NodeObject::pointer retrieve (Backend* backend, uint256 const& hash);
+
     void importVisitor (std::vector <NodeObject::pointer>& objects, NodeObject::pointer object);
     
     static Backend* createBackend (String const& parameters);

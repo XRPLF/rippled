@@ -343,6 +343,7 @@ bool TaggedCache<c_Key, c_Data, Timer>::del (const key_type& key, bool valid)
     return ret;
 }
 
+// VFALCO NOTE What does it mean to canonicalize the data?
 template<typename c_Key, typename c_Data, class Timer>
 bool TaggedCache<c_Key, c_Data, Timer>::canonicalize (const key_type& key, boost::shared_ptr<c_Data>& data, bool replace)
 {
