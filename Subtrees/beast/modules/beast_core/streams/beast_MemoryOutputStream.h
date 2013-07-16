@@ -28,7 +28,6 @@
 #include "../memory/beast_MemoryBlock.h"
 #include "../memory/beast_ScopedPointer.h"
 
-
 //==============================================================================
 /**
     Writes data to an internal memory buffer, which grows as required.
@@ -36,9 +35,10 @@
     The data that was written into the stream can then be accessed later as
     a contiguous block of memory.
 */
-class BEAST_API MemoryOutputStream
+class BEAST_API  MemoryOutputStream
     : public OutputStream
     , LeakChecked <MemoryOutputStream>
+    , Uncopyable
 {
 public:
     //==============================================================================
@@ -108,11 +108,11 @@ public:
     */
     void flush();
 
-    bool write (const void* buffer, size_t howMany);
-    int64 getPosition()                                 { return position; }
-    bool setPosition (int64 newPosition);
-    int writeFromInputStream (InputStream& source, int64 maxNumBytesToWrite);
-    void writeRepeatedByte (uint8 byte, size_t numTimesToRepeat);
+    bool write (const void*, size_t) override;
+    int64 getPosition() override                                 { return position; }
+    bool setPosition (int64) override;
+    int writeFromInputStream (InputStream&, int64 maxNumBytesToWrite) override;
+    bool writeRepeatedByte (uint8 byte, size_t numTimesToRepeat) override;
 
 private:
     //==============================================================================
@@ -128,4 +128,4 @@ private:
 OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const MemoryOutputStream& streamToRead);
 
 
-#endif   // BEAST_MEMORYOUTPUTSTREAM_BEASTHEADER
+#endif
