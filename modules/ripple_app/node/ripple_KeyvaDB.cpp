@@ -523,7 +523,7 @@ public:
         maxPayloadBytes = 8 * 1024
     };
 
-    KeyvaDBTests () : UnitTest ("KevyaDB")
+    KeyvaDBTests () : UnitTest ("KeyvaDB")
     {
     }
 
@@ -565,6 +565,7 @@ public:
         ScopedPointer <KeyvaDB> db (KeyvaDB::New (KeyBytes, keyPath, valPath, true));
 
         Payload payload (maxPayloadBytes);
+        Payload check (maxPayloadBytes);
 
         {
             // Create an array of ascending integers.
@@ -578,13 +579,18 @@ public:
             // Write all the keys of integers.
             for (unsigned int i = 0; i < maxItems; ++i)
             {
-                unsigned int num = items [i];
+                unsigned int keyIndex = items [i];
                 
-                KeyType const key = KeyType::createFromInteger (num);
+                KeyType const key = KeyType::createFromInteger (keyIndex);
 
-                payload.repeatableRandomFill (1, maxPayloadBytes, i + seedValue);
+                payload.repeatableRandomFill (1, maxPayloadBytes, keyIndex + seedValue);
 
                 db->put (key.cbegin (), payload.data.getData (), payload.bytes);
+
+                {
+                    // VFALCO TODO Check what we just wrote?
+                    //db->get (key.cbegin (), check.data.getData (), payload.bytes);
+                }
             }
         }
 
@@ -594,15 +600,15 @@ public:
             // random seeks at this point.
             //
             PayloadGetCallback cb;
-            for (unsigned int i = 0; i < maxItems; ++i)
+            for (unsigned int keyIndex = 0; keyIndex < maxItems; ++keyIndex)
             {
-                KeyType const v = KeyType::createFromInteger (i);
+                KeyType const v = KeyType::createFromInteger (keyIndex);
 
                 bool const found = db->get (v.cbegin (), &cb);
 
                 expect (found, "Should be found");
 
-                payload.repeatableRandomFill (1, maxPayloadBytes, i + seedValue);
+                payload.repeatableRandomFill (1, maxPayloadBytes, keyIndex + seedValue);
 
                 expect (payload == cb.payload, "Should be equal");
             }
@@ -611,9 +617,8 @@ public:
 
     void runTest ()
     {
-        //testKeySize <4> (512);
-        //testKeySize <32> (4096);
-        testKeySize <8> (64);
+        testKeySize <4> (512);
+        testKeySize <32> (4096);
     }
 };
 
