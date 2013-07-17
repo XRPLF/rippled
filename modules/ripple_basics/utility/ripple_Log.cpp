@@ -145,6 +145,8 @@ void Log::print (std::string const& text, bool toStdErr)
 
 std::string Log::rotateLog ()
 {
+    boost::recursive_mutex::scoped_lock sl (s_lock);
+
     bool const wasOpened = s_logFile.closeAndReopen ();
 
     if (wasOpened)

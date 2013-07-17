@@ -62,7 +62,7 @@ private:
     bool matchesOrigin (const uint160& currency, const uint160& issuer);
 
     int getPathsOut (const uint160& currency, const uint160& accountID,
-                     bool isAuthRequired, bool isDestCurrency, const uint160& dest);
+                     bool isDestCurrency, const uint160& dest);
 
 private:
     uint160             mSrcAccountID;

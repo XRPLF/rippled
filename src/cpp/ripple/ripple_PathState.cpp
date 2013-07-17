@@ -295,8 +295,9 @@ TER PathState::pushNode (
 
                         terResult   = terNO_ACCOUNT;
                     }
-                    else if (isSetBit (sleBck->getFieldU32 (sfFlags), lsfRequireAuth)
+                    else if ((isSetBit (sleBck->getFieldU32 (sfFlags), lsfRequireAuth)
                              && !isSetBit (sleRippleState->getFieldU32 (sfFlags), (bHigh ? lsfHighAuth : lsfLowAuth)))
+                             && sleRippleState->getFieldAmount(sfBalance).isZero()) // CHECKME
                     {
                         WriteLog (lsWARNING, RippleCalc) << "pushNode: delay: can't receive IOUs from issuer without auth.";
 
