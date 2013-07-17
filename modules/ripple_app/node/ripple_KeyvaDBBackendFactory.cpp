@@ -33,19 +33,17 @@ public:
         return m_path.toStdString ();
     }
 
-    void writeObject (NodeObject const& object)
+    void writeObject (NodeObject::ref object)
     {
-        m_db->put (
-            object.getHash ().begin (),
-            &object.getData () [0],
-            object.getData ().size ());
+        Blob blob (toBlob (object));
+        m_db->put (object->getHash ().begin (), &blob [0], blob.size ());
     }
 
     bool bulkStore (std::vector <NodeObject::pointer> const& objs)
     {
         for (size_t i = 0; i < objs.size (); ++i)
         {
-            writeObject (*objs [i]);
+            writeObject (objs [i]);
         }
 
         return true;
