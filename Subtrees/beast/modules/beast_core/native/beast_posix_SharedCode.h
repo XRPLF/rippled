@@ -551,7 +551,7 @@ Result RandomAccessFile::nativeOpen (File const& path, Mode mode)
     }
     else if (mode == readWrite)
     {
-        const int f = ::open (file.getFullPathName().toUTF8(), O_RDWR + O_CREAT, 00644);
+        const int f = ::open (path.getFullPathName().toUTF8(), O_RDWR + O_CREAT, 00644);
 
         if (f != -1)
         {

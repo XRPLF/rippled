@@ -216,11 +216,11 @@ public:
         for (int i = 0; i < numRecords; ++i)
         {
             Payload p (records [i].bytes);
-            
+
             p.repeatableRandomFill (records [i].bytes,
                                     records [i].bytes,
                                     records [i].index + seedValue);
-            
+
             file.setPosition (records [i].offset);
 
             Result result = file.write (p.data.getData (), p.bytes);
@@ -228,7 +228,7 @@ public:
             expect (result.wasOk (), "Should be ok");
         }
     }
-    
+
     void readRecords (RandomAccessFile& file,
                       int numRecords,
                       HeapBlock <Record>const & records,
@@ -276,17 +276,20 @@ public:
 
         expect (result.wasOk (), "Should be ok");
 
-        HeapBlock <Record> records (numRecords);
+        if (result.wasOk ())
+        {
+            HeapBlock <Record> records (numRecords);
 
-        createRecords (records, numRecords, maxPayload, seedValue);
+            createRecords (records, numRecords, maxPayload, seedValue);
 
-        writeRecords (file, numRecords, records, seedValue);
+            writeRecords (file, numRecords, records, seedValue);
 
-        readRecords (file, numRecords, records, seedValue);
+            readRecords (file, numRecords, records, seedValue);
 
-        repeatableShuffle (numRecords, records, seedValue);
+            repeatableShuffle (numRecords, records, seedValue);
 
-        readRecords (file, numRecords, records, seedValue);
+            readRecords (file, numRecords, records, seedValue);
+        }
     }
 
     void runTest ()
