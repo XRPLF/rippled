@@ -226,6 +226,7 @@ namespace beast
 #include "diagnostic/beast_Error.h"
 #include "diagnostic/beast_FPUFlags.h"
 #include "diagnostic/beast_UnitTest.h"
+#include "diagnostic/beast_UnitTestUtilities.h"
 #include "diagnostic/beast_Throw.h"
 #include "containers/beast_AbstractFifo.h"
 #include "containers/beast_Array.h"

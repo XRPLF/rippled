@@ -157,60 +157,148 @@ Result RandomAccessFile::flushBuffer ()
 class RandomAccessFileTests : public UnitTest
 {
 public:
-    RandomAccessFileTests () : UnitTest ("RandomAccessFile")
+    RandomAccessFileTests ()
+        : UnitTest ("RandomAccessFile")
+        , numRecords (1000)
+        , seedValue (50)
     {
     }
 
-    struct Payload
+    /*  For this test we will create a file which consists of a fixed
+        number of variable length records. Each record is numbered sequentially
+        start at 1. To calculate the position of each record we first build
+        a table of size/offset pairs using a pseudorandom number generator.
+    */
+    struct Record
     {
-        Payload (int maxBytes)
-            : bufferSize (maxBytes)
-            , data (maxBytes)
-        {
-        }
-
-        // Create a pseudo-random payload
-        void generate (int64 seedValue) noexcept
-        {
-            Random r (seedValue);
-
-            bytes = 1 + r.nextInt (bufferSize);
-
-            bassert (bytes >= 1 && bytes <= bufferSize);
-
-            for (int i = 0; i < bytes; ++i)
-                data [i] = static_cast <unsigned char> (r.nextInt ());
-        }
-
-        bool operator== (Payload const& other) const noexcept
-        {
-            if (bytes == other.bytes)
-            {
-                return memcmp (data.getData (), other.data.getData (), bytes) == 0;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        int const bufferSize;
+        int index;
         int bytes;
-        HeapBlock <char> data;
+        int offset;
     };
 
-    void runTest ()
-    {
-        RandomAccessFile file;
+    typedef HeapBlock <Record> Records;
 
-        beginTest ("open");
+    // Produce the pseudo-random set of records.
+    static void createRecords (HeapBlock <Record>& records,
+                               int numRecords,
+                               int maxBytes,
+                               int64 seedValue)
+    {
+        using namespace UnitTestUtilities;
+
+        Random r (seedValue);
+
+        records.malloc (numRecords);
+
+        int offset = 0;
+
+        for (int i = 0; i < numRecords; ++i)
+        {
+            int const bytes = r.nextInt (maxBytes) + 1;
+
+            records [i].index = i;
+            records [i].bytes = bytes;
+            records [i].offset = offset;
+
+            offset += bytes;
+        }
+
+        repeatableShuffle (numRecords, records, seedValue);
+    }
+
+    void writeRecords (RandomAccessFile& file,
+                       int numRecords,
+                       HeapBlock <Record> const& records,
+                       int64 seedValue)
+    {
+        using namespace UnitTestUtilities;
+
+        for (int i = 0; i < numRecords; ++i)
+        {
+            Payload p (records [i].bytes);
+            
+            p.repeatableRandomFill (records [i].bytes,
+                                    records [i].bytes,
+                                    records [i].index + seedValue);
+            
+            file.setPosition (records [i].offset);
+
+            Result result = file.write (p.data.getData (), p.bytes);
+
+            expect (result.wasOk (), "Should be ok");
+        }
+    }
+    
+    void readRecords (RandomAccessFile& file,
+                      int numRecords,
+                      HeapBlock <Record>const & records,
+                      int64 seedValue)
+    {
+        using namespace UnitTestUtilities;
+
+        for (int i = 0; i < numRecords; ++i)
+        {
+            int const bytes = records [i].bytes;
+
+            Payload p1 (bytes);
+            Payload p2 (bytes);
+
+            p1.repeatableRandomFill (bytes, bytes, records [i].index + seedValue);
+
+            file.setPosition (records [i].offset);
+
+            Result result = file.read (p2.data.getData (), bytes);
+
+            expect (result.wasOk (), "Should be ok");
+
+            if (result.wasOk ())
+            {
+                p2.bytes = bytes;
+
+                expect (p1 == p2, "Should be equal");
+            }
+        }
+    }
+
+    void testFile (int const bufferSize)
+    {
+        using namespace UnitTestUtilities;
+
+        String s;
+        s << "bufferSize = " << String (bufferSize);
+        beginTest (s);
+
+        int const maxPayload = bmax (1000, bufferSize * 2);
+
+        RandomAccessFile file (bufferSize);
 
         Result result = file.open (File::createTempFile ("tests"), RandomAccessFile::readWrite);
 
         expect (result.wasOk (), "Should be ok");
+
+        HeapBlock <Record> records (numRecords);
+
+        createRecords (records, numRecords, maxPayload, seedValue);
+
+        writeRecords (file, numRecords, records, seedValue);
+
+        readRecords (file, numRecords, records, seedValue);
+
+        repeatableShuffle (numRecords, records, seedValue);
+
+        readRecords (file, numRecords, records, seedValue);
+    }
+
+    void runTest ()
+    {
+        testFile (0);
+        testFile (1000);
+        testFile (10000);
     }
 
 private:
+    int const numRecords;
+    int64 const seedValue;
 };
 
 static RandomAccessFileTests randomAccessFileTests;

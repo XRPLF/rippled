@@ -149,6 +149,7 @@ namespace beast
 #include "diagnostic/beast_FPUFlags.cpp"
 #include "diagnostic/beast_LeakChecked.cpp"
 #include "diagnostic/beast_UnitTest.cpp"
+#include "diagnostic/beast_UnitTestUtilities.cpp"
 
 #include "files/beast_DirectoryIterator.cpp"
 #include "files/beast_File.cpp"

@@ -626,6 +626,9 @@
     <ClInclude Include="..\..\modules\beast_core\files\beast_RandomAccessFile.h">
       <Filter>beast_core\files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTestUtilities.h">
+      <Filter>beast_core\diagnostic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
@@ -972,6 +975,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\files\beast_RandomAccessFile.cpp">
       <Filter>beast_core\files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_UnitTestUtilities.cpp">
+      <Filter>beast_core\diagnostic</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
