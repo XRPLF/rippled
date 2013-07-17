@@ -56,9 +56,10 @@ class UnitTests;
         }
     };
 
-    // Explicit template instantiation is required to make the unit
-    // test get automatically added to the set of unit tests.
-    template class UnitTestType <MyTest>;
+    // This makes the unit test available in the global list
+    // It doesn't have to be static.
+    //
+    static MyTest myTest;
 
     @endcode
 
@@ -186,6 +187,10 @@ public:
 
     /** Destructor. */
     virtual ~UnitTests();
+
+    /** Run a particular test.
+    */
+    void runTest (String const& name);
 
     /** Runs a set of tests.
 

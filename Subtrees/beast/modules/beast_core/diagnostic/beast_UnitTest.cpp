@@ -105,6 +105,33 @@ void UnitTests::resultsUpdated()
 {
 }
 
+void UnitTests::runTest (String const& name)
+{
+    results.clear();
+    resultsUpdated();
+
+    Array<UnitTest*>& tests = UnitTest::getAllTests ();
+
+    for (int i = 0; i < tests.size(); ++i)
+    {
+        UnitTest& test = *tests [i];
+
+        if (test.getName () == name)
+        {
+            try
+            {
+                test.performTest (this);
+            }
+            catch (...)
+            {
+                addFail ("An unhandled exception was thrown!");
+            }
+
+            break;
+        }
+    }
+}
+
 void UnitTests::runTests (const Array<UnitTest*>& tests)
 {
     results.clear();
