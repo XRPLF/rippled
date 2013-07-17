@@ -414,6 +414,8 @@ Result RandomAccessFile::nativeRead (void* buffer, ByteCount numBytes, ByteCount
     if (! ReadFile ((HANDLE) fileHandle, buffer, (DWORD) numBytes, &actualNum, 0))
         result = WindowsFileHelpers::getResultForLastError();
 
+    currentPosition += actualNum;
+
     if (pActualAmount != nullptr)
         *pActualAmount = actualNum;
 
