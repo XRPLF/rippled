@@ -28,7 +28,7 @@
 
     @tparam Bytes The number of bytes of storage.
 */
-template <unsigned int Bytes>
+template <size_t Bytes>
 class UnsignedInteger : public SafeBool <UnsignedInteger <Bytes> > 
 {
 public:

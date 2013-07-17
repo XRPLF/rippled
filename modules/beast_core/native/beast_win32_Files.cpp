@@ -403,7 +403,7 @@ Result RandomAccessFile::nativeSetPosition (FileOffset newPosition)
     return result;
 }
 
-Result RandomAccessFile::nativeRead (void* buffer, ByteCount numBytes, ByteCount* pActualAmount )
+Result RandomAccessFile::nativeRead (void* buffer, ByteCount numBytes, ByteCount* pActualAmount)
 {
     bassert (isOpen ());
 

@@ -505,21 +505,10 @@ Result FileOutputStream::truncate()
 }
 
 //==============================================================================
-RandomAccessFile::RandomAccessFile (int bufferSizeToUse) noexcept
-    : fileHandle (nullptr)
-    , currentPosition (0)
-    , writeBuffer (bufferSizeToUse)
-{
-}
 
-RandomAccessFile::~RandomAccessFile ()
+Result RandomAccessFile::nativeOpen (File const& path, Mode mode)
 {
-    close ();
-}
-
-Result RandomAccessFile::open (File const& path, Mode mode)
-{
-    close ();
+    bassert (! isOpen ());
 
     Result result (Result::ok ());
 
@@ -533,7 +522,7 @@ Result RandomAccessFile::open (File const& path, Mode mode)
             break;
 
         default:
-        case readWRite:
+        case readWrite:
             oflag = O_RDWR;
             break;
         };
@@ -562,7 +551,7 @@ Result RandomAccessFile::open (File const& path, Mode mode)
     }
     else if (mode == readWrite)
     {
-        const int f = open (file.getFullPathName().toUTF8(), O_RDWR + O_CREAT, 00644);
+        const int f = ::open (file.getFullPathName().toUTF8(), O_RDWR + O_CREAT, 00644);
 
         if (f != -1)
         {
@@ -583,17 +572,17 @@ Result RandomAccessFile::open (File const& path, Mode mode)
     return result;
 }
 
-void RandomAccessFile::close ()
+void RandomAccessFile::nativeClose ()
 {
-    if (fileHandle != nullptr)
-    {
-        file = File::nonexistent ();
-        ::close (getFD (fileHandle));
-        fileHandle = nullptr;
-    }
+    bassert (isOpen ());
+
+    file = File::nonexistent ();
+    ::close (getFD (fileHandle));
+    fileHandle = nullptr;
+    currentPosition = 0;
 }
 
-Result RandomAccessFile::setPosition (Offset newPosition)
+Result RandomAccessFile::nativeSetPosition (FileOffset newPosition)
 {
     bassert (isOpen ());
 
@@ -607,7 +596,7 @@ Result RandomAccessFile::setPosition (Offset newPosition)
     return result;
 }
 
-Result RandomAccessFile::read (void* buffer, ByteCount numBytes, ByteCount* pActualAmount )
+Result RandomAccessFile::nativeRead (void* buffer, ByteCount numBytes, ByteCount* pActualAmount)
 {
     bassert (isOpen ());
 
@@ -624,20 +613,20 @@ Result RandomAccessFile::read (void* buffer, ByteCount numBytes, ByteCount* pAct
     if (pActualAmount != nullptr)
         *pActualAmount = amount;
 
-    return (size_t) result;
+    return result;
 }
 
-Result RandomAccessFile::write (void const* data, ByteCount numBytes, size_t* pActualAmount)
+Result RandomAccessFile::nativeWrite (void const* data, ByteCount numBytes, size_t* pActualAmount)
 {
     bassert (isOpen ());
 
     Result result (Result::ok ());
 
-    ssize_t const actual = ::write (getFD (fileHandle), data, numBytes);
+    ssize_t actual = ::write (getFD (fileHandle), data, numBytes);
 
     if (actual == -1)
     {
-        status = getResultForErrno();
+        result = getResultForErrno();
         actual = 0;
     }
 
@@ -647,31 +636,34 @@ Result RandomAccessFile::write (void const* data, ByteCount numBytes, size_t* pA
     return result;
 }
 
-Result RandomAccessFile::truncate ()
+Result RandomAccessFile::nativeTruncate ()
 {
+    bassert (isOpen ());
+
     flush();
 
     return getResultForReturnValue (ftruncate (getFD (fileHandle), (off_t) currentPosition));
 }
 
-void RandomAccessFile::flush ()
+Result RandomAccessFile::nativeFlush ()
 {
     bassert (isOpen ());
 
-    if (fileHandle != nullptr)
-    {
-        if (fsync (getFD (fileHandle)) == -1)
-            status = getResultForErrno();
+    Result result (Result::ok ());
 
-       #if BEAST_ANDROID
-        // This stuff tells the OS to asynchronously update the metadata
-        // that the OS has cached aboud the file - this metadata is used
-        // when the device is acting as a USB drive, and unless it's explicitly
-        // refreshed, it'll get out of step with the real file.
-        const LocalRef<jstring> t (javaString (file.getFullPathName()));
-        android.activity.callVoidMethod (BeastAppActivity.scanFile, t.get());
-       #endif
-    }
+    if (fsync (getFD (fileHandle)) == -1)
+        result = getResultForErrno();
+
+   #if BEAST_ANDROID
+    // This stuff tells the OS to asynchronously update the metadata
+    // that the OS has cached aboud the file - this metadata is used
+    // when the device is acting as a USB drive, and unless it's explicitly
+    // refreshed, it'll get out of step with the real file.
+    const LocalRef<jstring> t (javaString (file.getFullPathName()));
+    android.activity.callVoidMethod (BeastAppActivity.scanFile, t.get());
+   #endif
+
+    return result;
 }
 
 //==============================================================================
