@@ -45,13 +45,16 @@
 
     @code
 
-    class MyClass : Uncopyable
+    class MyClass : public Uncopyable
     {
     public:
         //...
     };
     
     @endcode
+
+    @note The derivation should be public or else child classes which
+          also derive from Uncopyable may not compile.
 */
 class Uncopyable
 {

@@ -140,6 +140,7 @@
     <ClInclude Include="..\..\modules\beast_core\files\beast_FileOutputStream.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_FileSearchPath.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_MemoryMappedFile.h" />
+    <ClInclude Include="..\..\modules\beast_core\files\beast_RandomAccessFile.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_TemporaryFile.h" />
     <ClInclude Include="..\..\modules\beast_core\json\beast_JSON.h" />
     <ClInclude Include="..\..\modules\beast_core\logging\beast_FileLogger.h" />
@@ -435,6 +436,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\files\beast_RandomAccessFile.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\files\beast_TemporaryFile.cpp">

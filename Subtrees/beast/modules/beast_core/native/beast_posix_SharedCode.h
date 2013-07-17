@@ -505,6 +505,176 @@ Result FileOutputStream::truncate()
 }
 
 //==============================================================================
+RandomAccessFile::RandomAccessFile (int bufferSizeToUse) noexcept
+    : fileHandle (nullptr)
+    , currentPosition (0)
+    , writeBuffer (bufferSizeToUse)
+{
+}
+
+RandomAccessFile::~RandomAccessFile ()
+{
+    close ();
+}
+
+Result RandomAccessFile::open (File const& path, Mode mode)
+{
+    close ();
+
+    Result result (Result::ok ());
+
+    if (path.exists())
+    {
+        int oflag;
+        switch (mode)
+        {
+        case readOnly:
+            oflag = O_RDONLY;
+            break;
+
+        default:
+        case readWRite:
+            oflag = O_RDWR;
+            break;
+        };
+
+        const int f = ::open (path.getFullPathName().toUTF8(), oflag, 00644);
+
+        if (f != -1)
+        {
+            currentPosition = lseek (f, 0, SEEK_SET);
+
+            if (currentPosition >= 0)
+            {
+                file = path;
+                fileHandle = fdToVoidPointer (f);
+            }
+            else
+            {
+                result = getResultForErrno();
+                ::close (f);
+            }
+        }
+        else
+        {
+            result = getResultForErrno();
+        }
+    }
+    else if (mode == readWrite)
+    {
+        const int f = open (file.getFullPathName().toUTF8(), O_RDWR + O_CREAT, 00644);
+
+        if (f != -1)
+        {
+            file = path;
+            fileHandle = fdToVoidPointer (f);
+        }
+        else
+        {
+            result = getResultForErrno();
+        }
+    }
+    else
+    {
+        // file doesn't exist and we're opening read-only
+        Result::fail (String (strerror (ENOENT)));
+    }
+
+    return result;
+}
+
+void RandomAccessFile::close ()
+{
+    if (fileHandle != nullptr)
+    {
+        file = File::nonexistent ();
+        ::close (getFD (fileHandle));
+        fileHandle = nullptr;
+    }
+}
+
+Result RandomAccessFile::setPosition (Offset newPosition)
+{
+    bassert (isOpen ());
+
+    Result result (Result::ok ());
+
+    off_t const actual = lseek (getFD (fileHandle), newPosition, SEEK_SET);
+
+    if (actual != newPosition)
+        result = getResultForErrno();
+
+    return result;
+}
+
+Result RandomAccessFile::read (void* buffer, ByteCount numBytes, ByteCount* pActualAmount )
+{
+    bassert (isOpen ());
+
+    Result result (Result::ok ());
+
+    ssize_t amount = ::read (getFD (fileHandle), buffer, numBytes);
+
+    if (amount < 0)
+    {
+        result = getResultForErrno();
+        amount = 0;
+    }
+
+    if (pActualAmount != nullptr)
+        *pActualAmount = amount;
+
+    return (size_t) result;
+}
+
+Result RandomAccessFile::write (void const* data, ByteCount numBytes, size_t* pActualAmount)
+{
+    bassert (isOpen ());
+
+    Result result (Result::ok ());
+
+    ssize_t const actual = ::write (getFD (fileHandle), data, numBytes);
+
+    if (actual == -1)
+    {
+        status = getResultForErrno();
+        actual = 0;
+    }
+
+    if (pActualAmount != nullptr)
+        *pActualAmount = actual;
+
+    return result;
+}
+
+Result RandomAccessFile::truncate ()
+{
+    flush();
+
+    return getResultForReturnValue (ftruncate (getFD (fileHandle), (off_t) currentPosition));
+}
+
+void RandomAccessFile::flush ()
+{
+    bassert (isOpen ());
+
+    if (fileHandle != nullptr)
+    {
+        if (fsync (getFD (fileHandle)) == -1)
+            status = getResultForErrno();
+
+       #if BEAST_ANDROID
+        // This stuff tells the OS to asynchronously update the metadata
+        // that the OS has cached aboud the file - this metadata is used
+        // when the device is acting as a USB drive, and unless it's explicitly
+        // refreshed, it'll get out of step with the real file.
+        const LocalRef<jstring> t (javaString (file.getFullPathName()));
+        android.activity.callVoidMethod (BeastAppActivity.scanFile, t.get());
+       #endif
+    }
+}
+
+//==============================================================================
 String SystemStats::getEnvironmentVariable (const String& name, const String& defaultValue)
 {
     if (const char* s = ::getenv (name.toUTF8()))

@@ -252,6 +252,7 @@ namespace beast
 #include "files/beast_FileOutputStream.h"
 #include "files/beast_FileSearchPath.h"
 #include "files/beast_MemoryMappedFile.h"
+#include "files/beast_RandomAccessFile.h"
 #include "files/beast_TemporaryFile.h"
 #include "json/beast_JSON.h"
 #include "logging/beast_FileLogger.h"

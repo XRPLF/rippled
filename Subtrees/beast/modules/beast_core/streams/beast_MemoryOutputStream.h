@@ -38,7 +38,6 @@
 class BEAST_API  MemoryOutputStream
     : public OutputStream
     , LeakChecked <MemoryOutputStream>
-    , Uncopyable
 {
 public:
     //==============================================================================
