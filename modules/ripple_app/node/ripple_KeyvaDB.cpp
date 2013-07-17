@@ -32,8 +32,8 @@ private:
     struct State
     {
         State ()
-            : keyFile (0)//16384) // buffer size
-            , valFile (0)//16384) // buffer size
+            : keyFile (16384) // buffer size
+            , valFile (16384) // buffer size
         {
         }
 
