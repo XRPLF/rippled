@@ -199,16 +199,18 @@ public:
         HeapBlock <char> data;
     };
 
-
     void runTest ()
     {
+        RandomAccessFile file;
+
+        beginTest ("open");
+
         Result result = file.open (File::createTempFile ("tests"), RandomAccessFile::readWrite);
 
         expect (result.wasOk (), "Should be ok");
     }
 
 private:
-    RandomAccessFile file;
 };
 
 static RandomAccessFileTests randomAccessFileTests;

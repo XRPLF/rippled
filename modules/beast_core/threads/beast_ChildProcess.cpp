@@ -82,6 +82,4 @@ public:
     }
 };
 
-#if BEAST_UNIT_TESTS
 static ChildProcessTests childProcessTests;
-#endif

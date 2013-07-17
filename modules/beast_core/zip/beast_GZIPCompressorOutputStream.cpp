@@ -205,6 +205,4 @@ public:
     }
 };
 
-#if BEAST_UNIT_TESTS
 static GZIPTests gzipTests;
-#endif

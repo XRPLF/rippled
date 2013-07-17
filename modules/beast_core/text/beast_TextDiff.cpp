@@ -229,6 +229,4 @@ public:
     }
 };
 
-#if BEAST_UNIT_TESTS
 static DiffTests diffTests;
-#endif

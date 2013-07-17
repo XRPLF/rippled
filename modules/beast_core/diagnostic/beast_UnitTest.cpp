@@ -182,9 +182,9 @@ void UnitTests::beginNewTest (UnitTest* const test, const String& subCategory)
     r->passes = 0;
     r->failures = 0;
 
-    logMessage ("Test: " + r->unitTestName + "/" + subCategory + "...");
+    logMessage ("Test '" + r->unitTestName + "': " + subCategory);
 
-    resultsUpdated();
+    resultsUpdated ();
 }
 
 void UnitTests::endTest()
@@ -241,8 +241,8 @@ void UnitTests::addFail (const String& failureMessage)
 
         r->failures++;
 
-        String message ("!!! Test ");
-        message << (r->failures + r->passes) << " failed";
+        String message ("Failure, #");
+        message << (r->failures + r->passes);
 
         if (failureMessage.isNotEmpty())
             message << ": " << failureMessage;

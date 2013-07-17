@@ -29,7 +29,7 @@ public:
     {
         String s;
 
-        s << "UnsignedInteger <" << String(Bytes) << ">";
+        s << "Bytes=" << String(Bytes);
 
         beginTest (s);
 
@@ -82,6 +82,4 @@ public:
 private:
 };
 
-#if BEAST_UNIT_TESTS
 static UnsignedIntegerTests unsignedIntegerTests;
-#endif

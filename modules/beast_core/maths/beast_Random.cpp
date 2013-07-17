@@ -165,6 +165,4 @@ public:
     }
 };
 
-#if BEAST_UNIT_TESTS
 static RandomTests randomTests;
-#endif
