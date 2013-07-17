@@ -134,6 +134,7 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_SafeBool.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_Throw.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.h" />
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTestUtilities.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_DirectoryIterator.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_File.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_FileInputStream.h" />
@@ -407,6 +408,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_UnitTestUtilities.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\files\beast_DirectoryIterator.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
