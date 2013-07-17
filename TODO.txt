@@ -5,7 +5,6 @@ RIPPLE TODO
 Vinnie's Short List (Changes day to day)
 - Convert some Ripple boost unit tests to Beast.
 - Eliminate new technical in NodeStore::Backend
-- Improve NodeObject to construct with just a size.
 - Work on KeyvaDB
 - Finish unit tests and code for Validators
 

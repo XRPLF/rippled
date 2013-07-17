@@ -32,8 +32,8 @@ private:
     struct State
     {
         State ()
-            : keyFile (16384) // buffer size
-            , valFile (16384) // buffer size
+            : keyFile (0)//16384) // buffer size
+            , valFile (0)//16384) // buffer size
         {
         }
 
@@ -523,81 +523,14 @@ public:
         maxPayloadBytes = 8 * 1024
     };
 
-    // The payload is used as the value to store
-    struct Payload
-    {
-        Payload (int maxBytes)
-            : bufferSize (maxBytes)
-            , data (maxBytes)
-        {
-        }
-
-        // Create a pseudo-random payload
-        void generate (int64 seedValue) noexcept
-        {
-            Random r (seedValue);
-
-            bytes = 1 + r.nextInt (bufferSize);
-
-            bassert (bytes >= 1 && bytes <= bufferSize);
-
-            for (int i = 0; i < bytes; ++i)
-                data [i] = static_cast <unsigned char> (r.nextInt ());
-        }
-
-        bool operator== (Payload const& other) const noexcept
-        {
-            if (bytes == other.bytes)
-            {
-                return memcmp (data.getData (), other.data.getData (), bytes) == 0;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        int const bufferSize;
-        int bytes;
-        HeapBlock <char> data;
-    };
-
-public:
     KeyvaDBTests () : UnitTest ("KevyaDB")
     {
-    }
-
-    // Make sure the Payload object works first!
-    void testPayload ()
-    {
-        beginTest ("Payload");
-        Payload p1 (maxPayloadBytes);
-        Payload p2 (maxPayloadBytes);
-        for (int i = 0; i < 256; ++i)
-        {
-            p1.generate (i);
-            p2.generate (i);
-            expect (p1 == p2, "Should be equal");
-        }
-    }
-
-    template <class T>
-    void repeatableShuffle (int const numberOfItems, HeapBlock <T>& items)
-    {
-        Random r (69);
-
-        for (int i = numberOfItems - 1; i > 0; --i)
-        {
-            int const choice = r.nextInt (i + 1);
-
-            std::swap (items [i], items [choice]);
-        }
     }
 
     // Retrieval callback stores the value in a Payload object for comparison
     struct PayloadGetCallback : KeyvaDB::GetCallback
     {
-        Payload payload;
+        UnitTestUtilities::Payload payload;
 
         PayloadGetCallback () : payload (maxPayloadBytes)
         {
@@ -608,16 +541,20 @@ public:
             bassert (valueBytes <= maxPayloadBytes);
 
             payload.bytes = valueBytes;
-                    
+
             return payload.data.getData ();
         }
     };
 
     template <unsigned int KeyBytes>
-    void testSize (unsigned int const maxItems)
+    void testKeySize (unsigned int const maxItems)
     {
+        using namespace UnitTestUtilities;
+
         typedef UnsignedInteger <KeyBytes> KeyType;
-    
+
+        int64 const seedValue = 50;
+   
         String s;
         s << "keyBytes=" << String (KeyBytes) << ", maxItems=" << String (maxItems);
         beginTest (s);
@@ -636,7 +573,7 @@ public:
                 items [i] = i;
 
             // Now shuffle it deterministically.
-            repeatableShuffle (maxItems, items);
+            repeatableShuffle (maxItems, items, seedValue);
 
             // Write all the keys of integers.
             for (unsigned int i = 0; i < maxItems; ++i)
@@ -645,7 +582,7 @@ public:
                 
                 KeyType const key = KeyType::createFromInteger (num);
 
-                payload.generate (num);
+                payload.repeatableRandomFill (1, maxPayloadBytes, i + seedValue);
 
                 db->put (key.cbegin (), payload.data.getData (), payload.bytes);
             }
@@ -665,7 +602,7 @@ public:
 
                 expect (found, "Should be found");
 
-                payload.generate (i);
+                payload.repeatableRandomFill (1, maxPayloadBytes, i + seedValue);
 
                 expect (payload == cb.payload, "Should be equal");
             }
@@ -674,11 +611,9 @@ public:
 
     void runTest ()
     {
-        testPayload ();
-
-        //testSize <4> (512);
-        //testSize <32> (4096);
-        testSize <4> (4);
+        //testKeySize <4> (512);
+        //testKeySize <32> (4096);
+        testKeySize <8> (64);
     }
 };
 
