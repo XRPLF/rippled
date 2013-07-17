@@ -1132,6 +1132,10 @@ Json::Value RPCHandler::doAccountLines (Json::Value params, LoadType* loadType, 
                 jPeer["limit_peer"]     = saLimitPeer.getText ();
                 jPeer["quality_in"]     = static_cast<Json::UInt> (line->getQualityIn ());
                 jPeer["quality_out"]    = static_cast<Json::UInt> (line->getQualityOut ());
+                if (line->getAuth())
+                    jPeer["authorized"] = true;
+                if (line->getAuthPeer())
+                    jPeer["peer_authorized"] = true;
             }
         }
 
@@ -3681,7 +3685,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
         return rpcError (rpcNO_NETWORK);
     }
 
-    if ((commandsA[i].iOptions & optCurrent) && (getApp().getLedgerMaster().getValidatedLedgerAge() > 120))
+    if (!theConfig.RUN_STANDALONE && (commandsA[i].iOptions & optCurrent) && (getApp().getLedgerMaster().getValidatedLedgerAge() > 120))
     {
         return rpcError (rpcNO_CURRENT);
     }

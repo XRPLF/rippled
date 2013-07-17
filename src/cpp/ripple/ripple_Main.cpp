@@ -237,6 +237,7 @@ int rippleMain (int argc, char** argv)
     ("quiet,q", "Reduce diagnotics.")
     ("verbose,v", "Verbose logging.")
     ("load", "Load the current ledger from the local DB.")
+    ("replay","Replay a ledger close.")
     ("ledger", po::value<std::string> (), "Load the specified ledger and start from .")
     ("start", "Start from a fresh Ledger.")
     ("net", "Get the initial ledger from the network.")
@@ -356,7 +357,10 @@ int rippleMain (int argc, char** argv)
     if (vm.count ("ledger"))
     {
         theConfig.START_LEDGER = vm["ledger"].as<std::string> ();
-        theConfig.START_UP = Config::LOAD;
+        if (vm.count("replay"))
+            theConfig.START_UP = Config::REPLAY;
+        else
+            theConfig.START_UP = Config::LOAD;
     }
     else if (vm.count ("load"))
     {

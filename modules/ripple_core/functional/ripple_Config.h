@@ -101,6 +101,7 @@ public:
         FRESH,
         NORMAL,
         LOAD,
+        REPLAY,
         NETWORK
     };
     StartUpType                 START_UP;

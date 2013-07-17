@@ -281,7 +281,7 @@ public:
 private:
     void updateTables ();
     void startNewLedger ();
-    bool loadOldLedger (const std::string&);
+    bool loadOldLedger (const std::string&, bool);
 
 private:
     boost::asio::io_service mIOService;
@@ -478,11 +478,11 @@ void ApplicationImp::setup ()
 
         startNewLedger ();
     }
-    else if (theConfig.START_UP == Config::LOAD)
+    else if ((theConfig.START_UP == Config::LOAD) || (theConfig.START_UP == Config::REPLAY))
     {
         WriteLog (lsINFO, Application) << "Loading specified Ledger";
 
-        if (!loadOldLedger (theConfig.START_LEDGER))
+        if (!loadOldLedger (theConfig.START_LEDGER, theConfig.START_UP == Config::REPLAY))
         {
             getApp().stop ();
             exit (-1);
@@ -733,11 +733,11 @@ void ApplicationImp::startNewLedger ()
     }
 }
 
-bool ApplicationImp::loadOldLedger (const std::string& l)
+bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
 {
     try
     {
-        Ledger::pointer loadLedger;
+        Ledger::pointer loadLedger, replayLedger;
 
         if (l.empty () || (l == "latest"))
             loadLedger = Ledger::getLastFullLedger ();
@@ -755,6 +755,18 @@ bool ApplicationImp::loadOldLedger (const std::string& l)
         {
             WriteLog (lsFATAL, Application) << "No Ledger found?" << std::endl;
             return false;
+        }
+
+        if (bReplay)
+        { // Replay a ledger close with same prior ledger and transactions
+            replayLedger = loadLedger; // this ledger holds the transactions we want to replay
+            loadLedger = Ledger::loadByIndex (replayLedger->getLedgerSeq() - 1); // this is the prior ledger
+            if (!loadLedger || (replayLedger->getParentHash() != loadLedger->getHash()))
+            {
+                WriteLog (lsFATAL, Application) << "Replay ledger missing/damaged";
+                assert (false);
+                return false;
+            }
         }
 
         loadLedger->setClosed ();
@@ -785,6 +797,24 @@ bool ApplicationImp::loadOldLedger (const std::string& l)
         Ledger::pointer openLedger = boost::make_shared<Ledger> (false, boost::ref (*loadLedger));
         mLedgerMaster.switchLedgers (loadLedger, openLedger);
         mNetOps.setLastCloseTime (loadLedger->getCloseTimeNC ());
+
+        if (bReplay)
+        { // inject transaction from replayLedger into consensus set
+            SHAMap::ref txns = replayLedger->peekTransactionMap();
+            Ledger::ref cur = getLedgerMaster().getCurrentLedger();
+
+            for (SHAMapItem::pointer it = txns->peekFirstItem(); it != nullptr; it = txns->peekNextItem(it->getTag()))
+            {
+                Transaction::pointer txn = replayLedger->getTransaction(it->getTag());
+                WriteLog (lsINFO, Application) << txn->getJson(0);
+                Serializer s;
+                txn->getSTransaction()->add(s);
+                if (!cur->addTransaction(it->getTag(), s))
+                {
+                    WriteLog (lsWARNING, Application) << "Unable to add transaction " << it->getTag();
+                }
+            }
+        }
     }
     catch (SHAMapMissingNode&)
     {
