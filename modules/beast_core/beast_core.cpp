@@ -155,6 +155,7 @@ namespace beast
 #include "files/beast_FileInputStream.cpp"
 #include "files/beast_FileOutputStream.cpp"
 #include "files/beast_FileSearchPath.cpp"
+#include "files/beast_RandomAccessFile.cpp"
 #include "files/beast_TemporaryFile.cpp"
 
 #include "json/beast_JSON.cpp"

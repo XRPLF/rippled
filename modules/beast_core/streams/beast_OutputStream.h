@@ -40,7 +40,7 @@ class File;
 
     @see InputStream, MemoryOutputStream, FileOutputStream
 */
-class BEAST_API  OutputStream
+class BEAST_API  OutputStream : public Uncopyable
 {
 protected:
     //==============================================================================
