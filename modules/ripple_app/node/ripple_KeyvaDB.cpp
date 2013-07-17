@@ -398,7 +398,7 @@ public:
                 // Binary tree insertion.
                 // Link the last key record to the new key
                 {
-                    if (findResult.compare == -1)
+                    if (findResult.compare < 0)
                     {
                         findResult.keyRecord.leftIndex = state->newKeyIndex;
                     }
