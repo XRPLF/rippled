@@ -234,28 +234,28 @@ public:
     */
     bool operator< (UnsignedInteger <Bytes> const& other) const noexcept
     {
-        return compare (other) == -1;
+        return compare (other) < 0;
     }
 
     /** Ordered comparison.
     */
     bool operator<= (UnsignedInteger <Bytes> const& other) const noexcept
     {
-        return compare (other) != 1;
+        return compare (other) <= 0;
     }
 
     /** Ordered comparison.
     */
     bool operator> (UnsignedInteger <Bytes> const& other) const noexcept
     {
-        return compare (other) == 1;
+        return compare (other) > 0;
     }
 
     /** Ordered comparison.
     */
     bool operator>= (UnsignedInteger <Bytes> const& other) const noexcept
     {
-        return compare (other) != -1;
+        return compare (other) >= 0;
     }
 
     /** Perform bitwise logical-not.
