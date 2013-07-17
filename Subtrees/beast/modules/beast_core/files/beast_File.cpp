@@ -1106,7 +1106,5 @@ public:
     }
 };
 
-#if BEAST_UNIT_TESTS
 static FileTests fileTests;
-#endif
 

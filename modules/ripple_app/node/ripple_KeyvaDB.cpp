@@ -619,7 +619,7 @@ public:
         typedef UnsignedInteger <KeyBytes> KeyType;
     
         String s;
-        s << "keyBytes=" << String (KeyBytes);
+        s << "keyBytes=" << String (KeyBytes) << ", maxItems=" << String (maxItems);
         beginTest (s);
 
         // Set up the key and value files and open the db.

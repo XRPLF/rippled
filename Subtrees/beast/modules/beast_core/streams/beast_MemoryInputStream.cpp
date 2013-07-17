@@ -148,6 +148,4 @@ public:
     }
 };
 
-#if BEAST_UNIT_TESTS
 static MemoryStreamTests memoryStreamTests;
-#endif

@@ -224,6 +224,4 @@ public:
     }
 };
 
-#if BEAST_UNIT_TESTS
 static AbstractFifoTests abstractFifoTests;
-#endif

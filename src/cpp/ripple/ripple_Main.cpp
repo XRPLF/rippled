@@ -141,14 +141,21 @@ public:
 
 /** Run the Beast unit tests.
 */
-static void runBeastUnitTests ()
+static void runBeastUnitTests (std::string const& individualTest = "")
 {
     RippleUnitTests tr;
 
     tr.setAssertOnFailure (false);
     tr.setPassesAreLogged (false);
 
-    tr.runAllTests ();
+    if (individualTest.empty ())
+    {
+        tr.runAllTests ();
+    }
+    else
+    {
+        tr.runTest (individualTest.c_str ());
+    }
 
     // Report
     for (int i = 0; i < tr.getNumResults (); ++i)
@@ -232,7 +239,7 @@ int rippleMain (int argc, char** argv)
     ("standalone,a", "Run with no peers.")
     ("testnet,t", "Run in test net mode.")
     ("unittest,u", "Perform unit tests.")
-    ("unittest2", "Perform new unit tests.")
+    ("unittest2", po::value <std::string> ()->implicit_value (""), "Perform new unit tests.")
     ("parameters", po::value< vector<string> > (), "Specify comma separated parameters.")
     ("quiet,q", "Reduce diagnotics.")
     ("verbose,v", "Verbose logging.")
@@ -332,7 +339,10 @@ int rippleMain (int argc, char** argv)
 
     if (vm.count ("unittest2"))
     {
-        runBeastUnitTests ();
+        std::string const test = vm ["unittest2"].as <std::string> ();
+
+        runBeastUnitTests (test);
+
         return 0;
     }
 

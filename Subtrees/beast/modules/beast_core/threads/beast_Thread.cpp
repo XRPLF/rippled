@@ -350,6 +350,4 @@ public:
     };
 };
 
-#if BEAST_UNIT_TESTS
 static AtomicTests atomicTests;
-#endif

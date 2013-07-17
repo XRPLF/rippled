@@ -639,6 +639,4 @@ public:
     }
 };
 
-#if BEAST_UNIT_TESTS
 static JSONTests jsonTests;
-#endif
