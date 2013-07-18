@@ -89,15 +89,9 @@ public:
         It looks like this is used to store the unique node list.
     */
     // VFALCO TODO Rename, document this
+    //        NOTE This will be replaced by class Validators
+    //
     virtual DatabaseCon* getWalletDB () = 0;
-    // VFALCO NOTE It looks like this isn't used...
-    //virtual DatabaseCon* getNetNodeDB () = 0;
-    // VFALCO NOTE It looks like this isn't used...
-    //virtual DatabaseCon* getPathFindDB () = 0;
-    virtual DatabaseCon* getHashNodeDB () = 0;
-
-    virtual leveldb::DB* getHashNodeLDB () = 0;
-    virtual leveldb::DB* getEphemeralLDB () = 0;
 
     virtual bool getSystemTimeOffset (int& offset) = 0;
     virtual bool isShutdown () = 0;

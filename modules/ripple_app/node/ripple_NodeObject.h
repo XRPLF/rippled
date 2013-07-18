@@ -64,40 +64,6 @@ public:
                 int bytesInBuffer,
                 uint256 const & hash);
 
-    /** Create from a key/value blob.
-
-        This is the format in which a NodeObject is stored in the
-        persistent storage layer.
-
-        @see NodeStore
-    */
-    NodeObject (void const* key, void const* value, int valueBytes);
-
-    /** Parsed key/value blob into NodeObject components.
-
-        This will extract the information required to construct
-        a NodeObject. It also does consistency checking and returns
-        the result, so it is possible to determine if the data
-        is corrupted without throwing an exception. Note all forms
-        of corruption are detected so further analysis will be
-        needed to eliminate false positives.
-
-        This is the format in which a NodeObject is stored in the
-        persistent storage layer.
-    */
-    struct DecodedBlob
-    {
-        DecodedBlob (void const* key, void const* value, int valueBytes);
-
-        bool success;
-
-        void const* key;
-        LedgerIndex ledgerIndex;
-        NodeObjectType objectType;
-        unsigned char const* objectData;
-        int dataBytes;
-    };
-        
     /** Retrieve the type of this object.
     */
     NodeObjectType getType () const;
@@ -114,6 +80,10 @@ public:
     /** Retrieve the binary data.
     */
     Blob const& getData () const;
+
+    /** See if this object has the same data as another object.
+    */
+    bool isCloneOf (NodeObject const& other) const;
 
 private:
     NodeObjectType mType;

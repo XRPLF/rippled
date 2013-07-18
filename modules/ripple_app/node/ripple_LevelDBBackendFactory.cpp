@@ -7,11 +7,12 @@
 class LevelDBBackendFactory::Backend : public NodeStore::Backend
 {
 public:
-    Backend (StringPairArray const& keyValues)
-        : mName(keyValues ["path"].toStdString ())
-        , mDB(NULL)
+    Backend (int keyBytes, StringPairArray const& keyValues)
+        : m_keyBytes (keyBytes)
+        , m_name(keyValues ["path"].toStdString ())
+        , m_db(NULL)
     {
-        if (mName.empty())
+        if (m_name.empty())
             throw std::runtime_error ("Missing path in LevelDB backend");
 
         leveldb::Options options;
@@ -33,20 +34,82 @@ public:
         if (!keyValues["open_files"].isEmpty())
             options.max_open_files = keyValues["open_files"].getIntValue();
 
-        leveldb::Status status = leveldb::DB::Open (options, mName, &mDB);
-        if (!status.ok () || !mDB)
+        leveldb::Status status = leveldb::DB::Open (options, m_name, &m_db);
+        if (!status.ok () || !m_db)
             throw (std::runtime_error (std::string("Unable to open/create leveldb: ") + status.ToString()));
     }
 
     ~Backend ()
     {
-        delete mDB;
+        delete m_db;
     }
 
     std::string getDataBaseName()
     {
-        return mName;
+        return m_name;
     }
+
+    //--------------------------------------------------------------------------
+
+    struct StdString
+    {
+        std::string blob;
+    };
+
+    typedef RecycledObjectPool <StdString> StdStringPool;
+
+    //--------------------------------------------------------------------------
+
+    Status get (void const* key, GetCallback* callback)
+    {
+        Status status (ok);
+
+        leveldb::ReadOptions const options;
+        leveldb::Slice const slice (static_cast <char const*> (key), m_keyBytes);
+
+        {
+            // These are reused std::string objects,
+            // required for leveldb's funky interface.
+            //
+            StdStringPool::ScopedItem item (m_stringPool);
+            std::string& blob = item.getObject ().blob;
+
+            leveldb::Status getStatus = m_db->Get (options, slice, &blob);
+
+            if (getStatus.ok ())
+            {
+                void* const buffer = callback->getStorageForValue (blob.size ());
+
+                if (buffer != nullptr)
+                {
+                    memcpy (buffer, blob.data (), blob.size ());
+                }
+                else
+                {
+                    Throw (std::bad_alloc ());
+                }
+            }
+            else
+            {
+                if (getStatus.IsCorruption ())
+                {
+                    status = dataCorrupt;
+                }
+                else if (getStatus.IsNotFound ())
+                {
+                    status = notFound;
+                }
+                else
+                {
+                    status = unknown;
+                }
+            }
+        }
+
+        return status;
+    }
+
+    //--------------------------------------------------------------------------
 
     bool bulkStore (const std::vector< NodeObject::pointer >& objs)
     {
@@ -56,17 +119,17 @@ public:
         {
             Blob blob (toBlob (obj));
             batch.Put (
-                leveldb::Slice (reinterpret_cast<char const*>(obj->getHash ().begin ()), 256 / 8),
+                leveldb::Slice (reinterpret_cast<char const*>(obj->getHash ().begin ()), m_keyBytes),
                 leveldb::Slice (reinterpret_cast<char const*>(&blob.front ()), blob.size ()));
         }
-        return mDB->Write (leveldb::WriteOptions (), &batch).ok ();
+        return m_db->Write (leveldb::WriteOptions (), &batch).ok ();
     }
 
     NodeObject::pointer retrieve (uint256 const& hash)
     {
         std::string sData;
-        if (!mDB->Get (leveldb::ReadOptions (),
-            leveldb::Slice (reinterpret_cast<char const*>(hash.begin ()), 256 / 8), &sData).ok ())
+        if (!m_db->Get (leveldb::ReadOptions (),
+            leveldb::Slice (reinterpret_cast<char const*>(hash.begin ()), m_keyBytes), &sData).ok ())
         {
             return NodeObject::pointer();
         }
@@ -75,14 +138,19 @@ public:
 
     void visitAll (FUNCTION_TYPE<void (NodeObject::pointer)> func)
     {
-        leveldb::Iterator* it = mDB->NewIterator (leveldb::ReadOptions ());
+        leveldb::Iterator* it = m_db->NewIterator (leveldb::ReadOptions ());
         for (it->SeekToFirst (); it->Valid (); it->Next ())
         {
-            if (it->key ().size () == 256 / 8)
+            if (it->key ().size () == m_keyBytes)
             {
                 uint256 hash;
-                memcpy(hash.begin(), it->key ().data(), 256 / 8);
+                memcpy(hash.begin(), it->key ().data(), m_keyBytes);
                 func (fromBinary (hash, it->value ().data (), it->value ().size ()));
+            }
+            else
+            {
+                // VFALCO NOTE What does it mean to find an
+                //             incorrectly sized key? Corruption?
             }
         }
     }
@@ -114,8 +182,10 @@ public:
     }
 
 private:
-    std::string mName;
-    leveldb::DB* mDB;
+    size_t const m_keyBytes;
+    StdStringPool m_stringPool;
+    std::string m_name;
+    leveldb::DB* m_db;
 };
 
 //------------------------------------------------------------------------------
@@ -140,9 +210,9 @@ String LevelDBBackendFactory::getName () const
     return "LevelDB";
 }
 
-NodeStore::Backend* LevelDBBackendFactory::createInstance (StringPairArray const& keyValues)
+NodeStore::Backend* LevelDBBackendFactory::createInstance (size_t keyBytes, StringPairArray const& keyValues)
 {
-    return new LevelDBBackendFactory::Backend (keyValues);
+    return new LevelDBBackendFactory::Backend (keyBytes, keyValues);
 }
 
 //------------------------------------------------------------------------------

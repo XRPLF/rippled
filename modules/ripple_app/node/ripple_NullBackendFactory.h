@@ -23,7 +23,7 @@ public:
     static NullBackendFactory& getInstance ();
 
     String getName () const;
-    NodeStore::Backend* createInstance (StringPairArray const& keyValues);
+    NodeStore::Backend* createInstance (size_t keyBytes, StringPairArray const& keyValues);
 };
 
 #endif

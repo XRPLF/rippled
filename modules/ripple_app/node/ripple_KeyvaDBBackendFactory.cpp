@@ -7,15 +7,9 @@
 class KeyvaDBBackendFactory::Backend : public NodeStore::Backend
 {
 public:
-    typedef UnsignedInteger <32> Key;
-
-    enum
-    {
-        keyBytes = Key::sizeInBytes
-    };
-
-    explicit Backend (StringPairArray const& keyValues)
-        : m_path (keyValues ["path"])
+    Backend (size_t keyBytes, StringPairArray const& keyValues)
+        : m_keyBytes (keyBytes)
+        , m_path (keyValues ["path"])
         , m_db (KeyvaDB::New (
                     keyBytes,
                     File::getCurrentWorkingDirectory().getChildFile (m_path).withFileExtension ("key"),
@@ -32,6 +26,48 @@ public:
     {
         return m_path.toStdString ();
     }
+
+    //--------------------------------------------------------------------------
+
+    Status get (void const* key, GetCallback* callback)
+    {
+        Status status (ok);
+
+        struct ForwardingGetCallback : KeyvaDB::GetCallback
+        {
+            ForwardingGetCallback (Backend::GetCallback* callback)
+                : m_callback (callback)
+            {
+            }
+
+            void* getStorageForValue (int valueBytes)
+            {
+                return m_callback->getStorageForValue (valueBytes);
+            }
+
+        private:
+            Backend::GetCallback* const m_callback;
+        };
+
+        ForwardingGetCallback cb (callback);
+
+        // VFALCO TODO Can't we get KeyvaDB to provide a proper status?
+        //
+        bool const found = m_db->get (key, &cb);
+
+        if (found)
+        {
+            status = ok;
+        }
+        else
+        {
+            status = notFound;
+        }
+
+        return status;
+    }
+
+    //--------------------------------------------------------------------------
 
     void writeObject (NodeObject::ref object)
     {
@@ -54,7 +90,7 @@ public:
         int valueBytes;
         HeapBlock <char> data;
 
-        void* createStorageForValue (int valueBytes_)
+        void* getStorageForValue (int valueBytes_)
         {
             valueBytes = valueBytes_;
 
@@ -112,6 +148,7 @@ public:
     }
 
 private:
+    size_t const m_keyBytes;
     String m_path;
     ScopedPointer <KeyvaDB> m_db;
 };
@@ -138,9 +175,9 @@ String KeyvaDBBackendFactory::getName () const
     return "KeyvaDB";
 }
 
-NodeStore::Backend* KeyvaDBBackendFactory::createInstance (StringPairArray const& keyValues)
+NodeStore::Backend* KeyvaDBBackendFactory::createInstance (size_t keyBytes, StringPairArray const& keyValues)
 {
-    return new KeyvaDBBackendFactory::Backend (keyValues);
+    return new KeyvaDBBackendFactory::Backend (keyBytes, keyValues);
 }
 
 //------------------------------------------------------------------------------

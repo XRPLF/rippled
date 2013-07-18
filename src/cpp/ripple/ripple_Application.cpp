@@ -46,10 +46,11 @@ public:
         , mNetOps (&mLedgerMaster)
         , m_rpcServerHandler (mNetOps)
         , mTempNodeCache ("NodeCache", 16384, 90)
-        , m_nodeStore (
+        , m_nodeStore (NodeStore::New (
             theConfig.NODE_DB,
             theConfig.FASTNODE_DB,
-            16384, 300)
+            16384,
+            300))
         , mSLECache ("LedgerEntryCache", 4096, 120)
         , mSNTPClient (mAuxService)
         , mJobQueue (mIOService)
@@ -70,11 +71,6 @@ public:
         , mTxnDB (NULL)
         , mLedgerDB (NULL)
         , mWalletDB (NULL) // VFALCO NOTE are all these 'NULL' ctor params necessary?
-        , mNetNodeDB (NULL)
-        , mPathFindDB (NULL)
-        , mHashNodeDB (NULL)
-        , mHashNodeLDB (NULL)
-        , mEphemeralLDB (NULL)
         , mPeerDoor (NULL)
         , mRPCDoor (NULL)
         , mWSPublicDoor (NULL)
@@ -92,13 +88,6 @@ public:
         delete mTxnDB;
         delete mLedgerDB;
         delete mWalletDB;
-        delete mHashNodeDB;
-        delete mNetNodeDB;
-        delete mPathFindDB;
-        delete mHashNodeLDB;
-
-        if (mEphemeralLDB != nullptr)
-            delete mEphemeralLDB;
     }
 
     LocalCredentials& getLocalCredentials ()
@@ -138,7 +127,7 @@ public:
     
     NodeStore& getNodeStore ()
     {
-        return m_nodeStore;
+        return *m_nodeStore;
     }
     
     JobQueue& getJobQueue ()
@@ -247,27 +236,6 @@ public:
     {
         return mWalletDB;
     }
-    DatabaseCon* getNetNodeDB ()
-    {
-        return mNetNodeDB;
-    }
-    DatabaseCon* getPathFindDB ()
-    {
-        return mPathFindDB;
-    }
-    DatabaseCon* getHashNodeDB ()
-    {
-        return mHashNodeDB;
-    }
-
-    leveldb::DB* getHashNodeLDB ()
-    {
-        return mHashNodeLDB;
-    }
-    leveldb::DB* getEphemeralLDB ()
-    {
-        return mEphemeralLDB;
-    }
 
     bool isShutdown ()
     {
@@ -302,7 +270,7 @@ private:
     NetworkOPs         mNetOps;
     RPCServerHandler   m_rpcServerHandler;
     NodeCache          mTempNodeCache;
-    NodeStore  m_nodeStore;
+    ScopedPointer <NodeStore> m_nodeStore;
     SLECache           mSLECache;
     SNTPClient         mSNTPClient;
     JobQueue           mJobQueue;
@@ -326,13 +294,6 @@ private:
     DatabaseCon* mTxnDB;
     DatabaseCon* mLedgerDB;
     DatabaseCon* mWalletDB;
-    DatabaseCon* mNetNodeDB;
-    DatabaseCon* mPathFindDB;
-    DatabaseCon* mHashNodeDB;
-
-    // VFALCO TODO Wrap this in an interface
-    leveldb::DB* mHashNodeLDB;
-    leveldb::DB* mEphemeralLDB;
 
     ScopedPointer <PeerDoor> mPeerDoor;
     ScopedPointer <RPCDoor>  mRPCDoor;
@@ -353,18 +314,10 @@ void ApplicationImp::stop ()
     StopSustain ();
     mShutdown = true;
     mIOService.stop ();
-    // VFALCO TODO We shouldn't have to explicitly call this function.
-    //             The NodeStore destructor should take care of it.
-    m_nodeStore.waitWrite ();
+    m_nodeStore = nullptr;
     mValidations->flush ();
     mAuxService.stop ();
     mJobQueue.shutdown ();
-
-    delete mHashNodeLDB;
-    mHashNodeLDB = NULL;
-
-    delete mEphemeralLDB;
-    mEphemeralLDB = NULL;
 
     WriteLog (lsINFO, Application) << "Stopped: " << mIOService.stopped ();
     mShutdown = false;
@@ -445,16 +398,11 @@ void ApplicationImp::setup ()
     boost::thread t1 (BIND_TYPE (&InitDB, &mRpcDB, "rpc.db", RpcDBInit, RpcDBCount));
     boost::thread t2 (BIND_TYPE (&InitDB, &mTxnDB, "transaction.db", TxnDBInit, TxnDBCount));
     boost::thread t3 (BIND_TYPE (&InitDB, &mLedgerDB, "ledger.db", LedgerDBInit, LedgerDBCount));
+    boost::thread t4 (BIND_TYPE (&InitDB, &mWalletDB, "wallet.db", WalletDBInit, WalletDBCount));
     t1.join ();
     t2.join ();
     t3.join ();
-
-    boost::thread t4 (BIND_TYPE (&InitDB, &mWalletDB, "wallet.db", WalletDBInit, WalletDBCount));
-    boost::thread t6 (BIND_TYPE (&InitDB, &mNetNodeDB, "netnode.db", NetNodeDBInit, NetNodeDBCount));
-    boost::thread t7 (BIND_TYPE (&InitDB, &mPathFindDB, "pathfind.db", PathFindDBInit, PathFindDBCount));
     t4.join ();
-    t6.join ();
-    t7.join ();
 
     leveldb::Options options;
     options.create_if_missing = true;
@@ -515,7 +463,7 @@ void ApplicationImp::setup ()
         getUNL ().nodeBootstrap ();
 
     mValidations->tune (theConfig.getSize (siValidationsSize), theConfig.getSize (siValidationsAge));
-    m_nodeStore.tune (theConfig.getSize (siNodeCacheSize), theConfig.getSize (siNodeCacheAge));
+    m_nodeStore->tune (theConfig.getSize (siNodeCacheSize), theConfig.getSize (siNodeCacheAge));
     mLedgerMaster.tune (theConfig.getSize (siLedgerSize), theConfig.getSize (siLedgerAge));
     mSLECache.setTargetSize (theConfig.getSize (siSLECacheSize));
     mSLECache.setTargetAge (theConfig.getSize (siSLECacheAge));
@@ -697,7 +645,7 @@ void ApplicationImp::doSweep(Job& j)
     //
 
     mMasterTransaction.sweep ();
-    m_nodeStore.sweep ();
+    m_nodeStore->sweep ();
     mLedgerMaster.sweep ();
     mTempNodeCache.sweep ();
     mValidations->sweep ();

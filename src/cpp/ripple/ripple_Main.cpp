@@ -257,15 +257,16 @@ int rippleMain (int argc, char** argv)
     p.add ("parameters", -1);
 
     // These must be added before the Application object is created
-    NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
-    NodeStore::addBackendFactory (LevelDBBackendFactory::getInstance ());
-    NodeStore::addBackendFactory (KeyvaDBBackendFactory::getInstance ());
 #if RIPPLE_HYPERLEVELDB_AVAILABLE
     NodeStore::addBackendFactory (HyperLevelDBBackendFactory::getInstance ());
 #endif
+    NodeStore::addBackendFactory (KeyvaDBBackendFactory::getInstance ());
+    NodeStore::addBackendFactory (LevelDBBackendFactory::getInstance ());
 #if RIPPLE_MDB_AVAILABLE
     NodeStore::addBackendFactory (MdbBackendFactory::getInstance ());
 #endif
+    NodeStore::addBackendFactory (NullBackendFactory::getInstance ());
+    NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
 
     if (! RandomNumbers::getInstance ().initialize ())
     {

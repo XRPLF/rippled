@@ -115,7 +115,22 @@ public:
     }
 
     bool del (const key_type& key, bool valid);
+
+    /** Replace aliased objects with originals.
+
+        Due to concurrency it is possible for two separate objects with
+        the same content and referring to the same unique "thing" to exist.
+        This routine eliminates the duplicate and performs a replacement
+        on the callers shared pointer if needed.
+
+        @param key The key corresponding to the object
+        @param data A shared pointer to the data corresponding to the object.
+        @param replace `true` if `data` is the up to date version of the object.
+
+        @return `true` if the operation was successful.
+    */
     bool canonicalize (const key_type& key, boost::shared_ptr<c_Data>& data, bool replace = false);
+    
     bool store (const key_type& key, const c_Data& data);
     boost::shared_ptr<c_Data> fetch (const key_type& key);
     bool retrieve (const key_type& key, c_Data& data);

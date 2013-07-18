@@ -9,8 +9,9 @@
 class HyperLevelDBBackendFactory::Backend : public NodeStore::Backend
 {
 public:
-    Backend (StringPairArray const& keyValues)
-        : mName(keyValues ["path"].toStdString ())
+    Backend (size_t keyBytes, StringPairArray const& keyValues)
+        : m_keyBytes (keyBytes)
+        , mName(keyValues ["path"].toStdString ())
         , mDB(NULL)
     {
         if (mName.empty())
@@ -58,7 +59,7 @@ public:
         {
             Blob blob (toBlob (obj));
             batch.Put (
-                hyperleveldb::Slice (reinterpret_cast<char const*>(obj->getHash ().begin ()), 256 / 8),
+                hyperleveldb::Slice (reinterpret_cast<char const*>(obj->getHash ().begin ()), m_keyBytes),
                 hyperleveldb::Slice (reinterpret_cast<char const*>(&blob.front ()), blob.size ()));
         }
         return mDB->Write (hyperleveldb::WriteOptions (), &batch).ok ();
@@ -68,7 +69,7 @@ public:
     {
         std::string sData;
         if (!mDB->Get (hyperleveldb::ReadOptions (),
-            hyperleveldb::Slice (reinterpret_cast<char const*>(hash.begin ()), 256 / 8), &sData).ok ())
+            hyperleveldb::Slice (reinterpret_cast<char const*>(hash.begin ()), m_keyBytes), &sData).ok ())
         {
             return NodeObject::pointer();
         }
@@ -80,10 +81,10 @@ public:
         hyperleveldb::Iterator* it = mDB->NewIterator (hyperleveldb::ReadOptions ());
         for (it->SeekToFirst (); it->Valid (); it->Next ())
         {
-            if (it->key ().size () == 256 / 8)
+            if (it->key ().size () == m_keyBytes)
             {
                 uint256 hash;
-                memcpy(hash.begin(), it->key ().data(), 256 / 8);
+                memcpy(hash.begin(), it->key ().data(), m_keyBytes);
                 func (fromBinary (hash, it->value ().data (), it->value ().size ()));
             }
         }
@@ -116,6 +117,7 @@ public:
     }
 
 private:
+    size_t const m_keyBytes;
     std::string mName;
     hyperleveldb::DB* mDB;
 };
@@ -142,9 +144,9 @@ String HyperLevelDBBackendFactory::getName () const
     return "HyperLevelDB";
 }
 
-NodeStore::Backend* HyperLevelDBBackendFactory::createInstance (StringPairArray const& keyValues)
+NodeStore::Backend* HyperLevelDBBackendFactory::createInstance (size_t keyBytes, StringPairArray const& keyValues)
 {
-    return new HyperLevelDBBackendFactory::Backend (keyValues);
+    return new HyperLevelDBBackendFactory::Backend (keyBytes, keyValues);
 }
 
 //------------------------------------------------------------------------------

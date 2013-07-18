@@ -62,7 +62,7 @@ String NullBackendFactory::getName () const
     return "none";
 }
 
-NodeStore::Backend* NullBackendFactory::createInstance (StringPairArray const& keyValues)
+NodeStore::Backend* NullBackendFactory::createInstance (size_t, StringPairArray const&)
 {
     return new NullBackendFactory::Backend;
 }

@@ -44,6 +44,9 @@ void NetworkOPs::processNetTimer ()
 {
     ScopedLock sl (getApp().getMasterLock ());
 
+    Application& app (getApp ());
+    ILoadManager& mgr (app.getLoadManager ());
+
     getApp().getLoadManager ().resetDeadlockDetector ();
 
     std::size_t const numPeers = getApp().getPeers ().getPeerVector ().size ();

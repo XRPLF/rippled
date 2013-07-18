@@ -3,6 +3,19 @@
     Copyright (c) 2011-2013, OpenCoin, Inc.
 */
 //==============================================================================
+/*
+
+TODO
+
+- Check consistency / range checking on read
+
+- Cache top level tree nodes
+
+- Coalesce I/O in RandomAccessFile
+
+- Delete / file compaction
+
+*/
 
 class KeyvaDBImp : public KeyvaDB
 {
@@ -336,9 +349,9 @@ public:
 
     bool get (void const* key, GetCallback* callback)
     {
-        // VFALCO TODD Swap these two lines
-        SharedState::WriteAccess state (m_state);
         FindResult findResult (m_keyStorage.getData ());
+
+        SharedState::WriteAccess state (m_state);
 
         bool found = false;
 
@@ -348,7 +361,7 @@ public:
 
             if (found)
             {
-                void* const destStorage = callback->createStorageForValue (findResult.keyRecord.valSize);
+                void* const destStorage = callback->getStorageForValue (findResult.keyRecord.valSize);
 
                 RandomAccessFileInputStream stream (state->valFile);
 
@@ -536,7 +549,7 @@ public:
         {
         }
 
-        void* createStorageForValue (int valueBytes)
+        void* getStorageForValue (int valueBytes)
         {
             bassert (valueBytes <= maxPayloadBytes);
 

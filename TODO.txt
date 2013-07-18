@@ -10,7 +10,11 @@ Vinnie's Short List (Changes day to day)
 
 --------------------------------------------------------------------------------
 
+- Replace master lock with 
+
 - Replace base_uint and uintXXX with UnsignedInteger
+  * Need to specialize UnsignedInteger to work efficiently with 4 and 8 byte
+    multiples of the size.
 
 - Rewrite boost program_options in Beast
 

@@ -34,13 +34,54 @@ public:
     };
 
     /** Back end used for the store.
+
+        A Backend implements a persistent key/value storage system.
+        Keys sizes are all fixed within the same database.
     */
     class Backend
     {
     public:
+        /** Return codes from operations.
+        */
+        enum Status
+        {
+            ok,
+            notFound,
+            dataCorrupt,
+            unknown
+        };
+
         Backend ();
 
         virtual ~Backend () { }
+
+        /** Provides storage for retrieved objects.
+        */
+        struct GetCallback
+        {
+            /** Get storage for an object.
+
+                @param sizeInBytes The number of bytes needed to store the value.
+                
+                @return A pointer to a buffer large enough to hold all the bytes.
+            */
+            virtual void* getStorageForValue (size_t sizeInBytes) = 0;
+        };
+
+        /** Retrieve a single object.
+
+            If the object is not found or an error is encountered, the
+            result will indicate the condition.
+
+            @param key A pointer to the key data.
+            @param callback The callback used to obtain storage for the value.
+
+            @return The result of the operation.
+        */
+        virtual Status get (void const* key, GetCallback* callback) { return notFound; }
+
+
+
 
         /** Store a single object.
         */
@@ -54,13 +95,6 @@ public:
         */
         virtual NodeObject::pointer retrieve (uint256 const &hash) = 0;
 
-        struct GetCallback
-        {
-            virtual void* getBufferForValue (int valueBytes) = 0;
-        };
-
-        virtual bool get (void const* key, GetCallback* callback) { return false; }
-
         // Visit every object in the database
         // This function will only be called during an import operation
         //
@@ -69,7 +103,7 @@ public:
         virtual void visitAll (FUNCTION_TYPE <void (NodeObject::pointer)>) = 0;
 
     private:
-        friend class NodeStore;
+        friend class NodeStoreImp;
 
         // VFALCO TODO Put this bulk writing logic into a separate class.
         //        NOTE Why are these virtual?
@@ -115,8 +149,13 @@ public:
         virtual String getName () const = 0;
 
         /** Create an instance of this factory's backend.
+            
+            @param keyBytes The fixed number of bytes per key.
+            @param keyValues A set of key/value configuration pairs.
+
+            @return A pointer to the Backend object.
         */
-        virtual Backend* createInstance (StringPairArray const& keyValues) = 0;
+        virtual Backend* createInstance (size_t keyBytes, StringPairArray const& keyValues) = 0;
     };
 
 public:
@@ -133,10 +172,10 @@ public:
     //             Is cacheAge in minutes? seconds?
     //             These should be in the parameters.
     //
-    NodeStore (String backendParameters,
-               String fastBackendParameters,
-               int cacheSize,
-               int cacheAge);
+    static NodeStore* New (String backendParameters,
+                           String fastBackendParameters,
+                           int cacheSize,
+                           int cacheAge);
 
     /** Add the specified backend factory to the list of available factories.
 
@@ -146,52 +185,31 @@ public:
     static void addBackendFactory (BackendFactory& factory);
 
     // VFALCO TODO Document this.
-    float getCacheHitRate ();
+    virtual float getCacheHitRate () = 0;
 
     // VFALCO TODO Document this.
-    bool store (NodeObjectType type, uint32 index, Blob const& data,
-                uint256 const& hash);
+    virtual bool store (NodeObjectType type, uint32 index, Blob const& data,
+                uint256 const& hash) = 0;
 
     // VFALCO TODO Document this.
-    NodeObject::pointer retrieve (uint256 const& hash);
-
-    // VFALCO TODO Document this.
-    void waitWrite ();
+    //        TODO Replace uint256 with void*
+    //
+    virtual NodeObject::pointer retrieve (uint256 const& hash) = 0;
 
     // VFALCO TODO Document this.
     //        TODO Document the parameter meanings.
-    void tune (int size, int age);
+    virtual void tune (int size, int age) = 0;
 
     // VFALCO TODO Document this.
-    void sweep ();
+    virtual void sweep () = 0;
 
     // VFALCO TODO Document this.
     //             What are the units of the return value?
-    int getWriteLoad ();
+    virtual int getWriteLoad () = 0;
 
     // VFALCO TODO Document this.
     //        NOTE What's the return value?
-    int import (String sourceBackendParameters);
-
-private:
-    NodeObject::pointer retrieve (Backend* backend, uint256 const& hash);
-
-    void importVisitor (std::vector <NodeObject::pointer>& objects, NodeObject::pointer object);
-    
-    static Backend* createBackend (String const& parameters);
-
-    static Array <BackendFactory*> s_factories;
-
-private:
-    // Persistent key/value storage.
-    ScopedPointer <Backend> m_backend;
-
-    // Larger key/value storage, but not necessarily persistent.
-    ScopedPointer <Backend> m_fastBackend;
-
-    // VFALCO NOTE What are these things for? We need comments.
-    TaggedCache <uint256, NodeObject, UptimeTimerAdapter> m_cache;
-    KeyCache <uint256, UptimeTimerAdapter> m_negativeCache;
+    virtual int import (String sourceBackendParameters) = 0;
 };
 
 #endif
