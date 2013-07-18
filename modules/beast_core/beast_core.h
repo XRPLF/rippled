@@ -276,6 +276,7 @@ namespace beast
 #include "memory/beast_WeakReference.h"
 #include "memory/beast_MemoryAlignment.h"
 #include "memory/beast_CacheLine.h"
+#include "memory/beast_RecycledObjectPool.h"
 #include "misc/beast_Result.h"
 #include "misc/beast_Uuid.h"
 #include "misc/beast_WindowsRegistry.h"

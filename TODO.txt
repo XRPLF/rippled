@@ -2,6 +2,8 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
+- Macro for acquiring a ScopedLock that records file and line.
+
 - Rename HeapBlock routines to not conflict with _CRTDBG_MAP_ALLOC macros
 
 - Design a WeakPtr / SharedPtr / SharedObject intrusive system
