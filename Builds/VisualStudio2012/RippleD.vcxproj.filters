@@ -972,9 +972,6 @@
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_RandomNumbers.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_ScopedLock.h">
-      <Filter>[1] Ripple\ripple_basics\utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_StringUtilities.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
@@ -1691,6 +1688,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_MdbBackendFactory.h">
       <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_ScopedLock.h">
+      <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

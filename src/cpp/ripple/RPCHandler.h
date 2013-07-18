@@ -40,7 +40,7 @@ private:
     typedef Json::Value (RPCHandler::*doFuncPtr) (
         Json::Value params,
         LoadType* loadType,
-        ScopedLock& MasterLockHolder);
+        Application::ScopedLockType& MasterLockHolder);
 
     // VFALCO TODO Document these and give the enumeration a label.
     enum
@@ -57,7 +57,7 @@ private:
 
     boost::unordered_set <RippleAddress> parseAccountIds (const Json::Value& jvArray);
 
-    Json::Value transactionSign (Json::Value jvRequest, bool bSubmit, bool bFailHard, ScopedLock& mlh);
+    Json::Value transactionSign (Json::Value jvRequest, bool bSubmit, bool bFailHard, Application::ScopedLockType& mlh);
 
     Json::Value lookupLedger (Json::Value jvRequest, Ledger::pointer& lpLedger);
 
@@ -89,70 +89,70 @@ private:
         const int iIndex,
         const bool bStrict);
 
-    Json::Value doAccountInfo           (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doAccountLines          (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doAccountOffers         (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doAccountTransactions   (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doBookOffers            (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doConnect               (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doConsensusInfo         (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doFeature               (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doGetCounts             (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doInternal              (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doLedger                (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doLedgerAccept          (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doLedgerClosed          (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doLedgerCurrent         (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doLedgerEntry           (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doLedgerHeader          (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doLogLevel              (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doLogRotate             (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doNicknameInfo          (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doOwnerInfo             (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doPathFind              (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doPeers                 (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doPing                  (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doProfile               (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doProofCreate           (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doProofSolve            (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doProofVerify           (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doRandom                (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doRipplePathFind        (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doSMS                   (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doServerInfo            (Json::Value params, LoadType* loadType, ScopedLock& mlh); // for humans
-    Json::Value doServerState           (Json::Value params, LoadType* loadType, ScopedLock& mlh); // for machines
-    Json::Value doSessionClose          (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doSessionOpen           (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doSign                  (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doStop                  (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doSubmit                (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doSubscribe             (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doTransactionEntry      (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doTx                    (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doTxHistory             (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doUnlAdd                (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doUnlDelete             (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doUnlFetch              (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doUnlList               (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doUnlLoad               (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doUnlNetwork            (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doUnlReset              (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doUnlScore              (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doUnsubscribe           (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doValidationCreate      (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doValidationSeed        (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doWalletAccounts        (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doWalletLock            (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doWalletPropose         (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doWalletSeed            (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doWalletUnlock          (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doWalletVerify          (Json::Value params, LoadType* loadType, ScopedLock& mlh);
+    Json::Value doAccountInfo           (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doAccountLines          (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doAccountOffers         (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doAccountTransactions   (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doBookOffers            (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doConnect               (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doConsensusInfo         (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doFeature               (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doGetCounts             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doInternal              (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doLedger                (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doLedgerAccept          (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doLedgerClosed          (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doLedgerCurrent         (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doLedgerEntry           (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doLedgerHeader          (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doLogLevel              (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doLogRotate             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doNicknameInfo          (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doOwnerInfo             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doPathFind              (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doPeers                 (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doPing                  (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doProfile               (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doProofCreate           (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doProofSolve            (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doProofVerify           (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doRandom                (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doRipplePathFind        (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doSMS                   (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doServerInfo            (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh); // for humans
+    Json::Value doServerState           (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh); // for machines
+    Json::Value doSessionClose          (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doSessionOpen           (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doSign                  (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doStop                  (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doSubmit                (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doSubscribe             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doTransactionEntry      (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doTx                    (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doTxHistory             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doUnlAdd                (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doUnlDelete             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doUnlFetch              (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doUnlList               (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doUnlLoad               (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doUnlNetwork            (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doUnlReset              (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doUnlScore              (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doUnsubscribe           (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doValidationCreate      (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doValidationSeed        (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doWalletAccounts        (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doWalletLock            (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doWalletPropose         (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doWalletSeed            (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doWalletUnlock          (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doWalletVerify          (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
 
 #if ENABLE_INSECURE
-    Json::Value doDataDelete            (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doDataFetch             (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doDataStore             (Json::Value params, LoadType* loadType, ScopedLock& mlh);
-    Json::Value doLogin                 (Json::Value params, LoadType* loadType, ScopedLock& mlh);
+    Json::Value doDataDelete            (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doDataFetch             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doDataStore             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doLogin                 (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
 #endif
 
 private:

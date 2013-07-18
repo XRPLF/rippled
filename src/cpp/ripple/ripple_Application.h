@@ -38,8 +38,6 @@ typedef TaggedCache <uint256, SerializedLedgerEntry, UptimeTimerAdapter> SLECach
 class Application
 {
 public:
-    virtual ~Application () { }
-
     /* VFALCO NOTE
 
         The master lock protects:
@@ -51,7 +49,110 @@ public:
 
         other things
     */
-    virtual boost::recursive_mutex&  getMasterLock () = 0;
+#if 1
+    class ScopedLockType;
+
+    class MasterLockType
+    {
+    public:
+        MasterLockType ()
+            : m_fileName ("")
+            , m_lineNumber (0)
+        {
+        }
+
+        // Note that these are not exactly thread safe.
+
+        char const* getFileName () const noexcept
+        {
+            return m_fileName;
+        }
+
+        int getLineNumber () const noexcept
+        {
+            return m_lineNumber;
+        }
+
+    private:
+        friend class ScopedLockType;
+
+        void setOwner (char const* fileName, int lineNumber)
+        {
+            m_fileName = fileName;
+            m_lineNumber = lineNumber;
+        }
+
+        void resetOwner ()
+        {
+            m_fileName = "";
+            m_lineNumber = 0;
+        }
+
+        boost::recursive_mutex m_mutex;
+        char const* m_fileName;
+        int m_lineNumber;
+    };
+
+    class ScopedLockType
+    {
+    public:
+        explicit ScopedLockType (MasterLockType& mutex,
+                                 char const* fileName,
+                                 int lineNumber)
+            : m_mutex (mutex)
+            , m_lock (mutex.m_mutex)
+        {
+            mutex.setOwner (fileName, lineNumber);
+        }
+
+        ~ScopedLockType ()
+        {
+            if (m_lock.owns_lock ())
+                m_mutex.resetOwner ();
+        }
+
+        void unlock ()
+        {
+            if (m_lock.owns_lock ())
+                m_mutex.resetOwner ();
+
+            m_lock.unlock ();
+        }
+
+    private:
+        MasterLockType& m_mutex;
+        boost::recursive_mutex::scoped_lock m_lock;
+    };
+
+#else
+    typedef boost::recursive_mutex MasterLockType;
+
+    typedef boost::recursive_mutex::scoped_lock ScopedLockType;
+
+#endif
+
+    virtual MasterLockType& getMasterLock () = 0;
+
+
+
+
+public:
+    struct State
+    {
+        // Stuff in here is accessed concurrently and requires a WriteAccess
+    };
+    
+    typedef SharedData <State> SharedState;
+
+    SharedState& getSharedState () noexcept { return m_sharedState; }
+
+    SharedState const& getSharedState () const noexcept { return m_sharedState; }
+
+private:
+    SharedState m_sharedState;
+
+public:
+    virtual ~Application () { }
 
     virtual boost::asio::io_service& getIOService () = 0;
 

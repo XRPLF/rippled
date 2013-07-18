@@ -18,9 +18,13 @@ TransactionAcquire::TransactionAcquire (uint256 const& hash) : PeerSet (hash, TX
 
 static void TACompletionHandler (uint256 hash, SHAMap::pointer map)
 {
-    boost::recursive_mutex::scoped_lock sl (getApp().getMasterLock ());
-    getApp().getOPs ().mapComplete (hash, map);
-    getApp().getInboundLedgers ().dropLedger (hash);
+    {
+        Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
+
+        getApp().getOPs ().mapComplete (hash, map);
+
+        getApp().getInboundLedgers ().dropLedger (hash);
+    }
 }
 
 void TransactionAcquire::done ()
@@ -50,7 +54,7 @@ void TransactionAcquire::onTimer (bool progress)
     {
         WriteLog (lsWARNING, TransactionAcquire) << "Ten timeouts on TX set " << getHash ();
         {
-            boost::recursive_mutex::scoped_lock sl (getApp().getMasterLock ());
+            Application::ScopedLockType lock (getApp().getMasterLock (), __FILE__, __LINE__);
 
             if (getApp().getOPs ().stillNeedTXSet (mHash))
             {

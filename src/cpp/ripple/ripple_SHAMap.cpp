@@ -822,6 +822,10 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternalNT (const SHAMapNode& id, uint2
     if (!getApp().running ())
         return ret;
 
+    // These are for diagnosing a crash on exit
+    Application& app (getApp ());
+    NodeStore& nodeStore (app.getNodeStore ());
+
     NodeObject::pointer obj (getApp().getNodeStore ().retrieve (hash));
 
     if (!obj)
