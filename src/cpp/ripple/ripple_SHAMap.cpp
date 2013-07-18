@@ -69,7 +69,7 @@ SHAMap::pointer SHAMap::snapShot (bool isMutable)
     return ret;
 }
 
-std::stack<SHAMapTreeNode::pointer> SHAMap::getStack (uint256 const& id, bool include_nonmatching_leaf, bool partialOk)
+std::stack<SHAMapTreeNode::pointer> SHAMap::getStack (uint256 const& id, bool include_nonmatching_leaf)
 {
     // Walk the tree as far as possible to the specified identifier
     // produce a stack of nodes along the way, with the terminal node at the top
@@ -92,9 +92,6 @@ std::stack<SHAMapTreeNode::pointer> SHAMap::getStack (uint256 const& id, bool in
         }
         catch (SHAMapMissingNode& mn)
         {
-            if (partialOk)
-                return stack;
-
             mn.setTargetNode (id);
             throw;
         }
@@ -317,7 +314,8 @@ SHAMapTreeNode* SHAMap::firstBelow (SHAMapTreeNode* node)
     do
     {
         // Walk down the tree
-        if (node->hasItem ()) return node;
+        if (node->hasItem ())
+            return node;
 
         bool foundNode = false;
 
@@ -468,10 +466,10 @@ SHAMapItem::pointer SHAMap::peekNextItem (uint256 const& id)
 
 SHAMapItem::pointer SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNType& type)
 {
-    // Get a pointer to the next item in the tree after a given item - item must be in tree
+    // Get a pointer to the next item in the tree after a given item - item need not be in tree
     boost::recursive_mutex::scoped_lock sl (mLock);
 
-    std::stack<SHAMapTreeNode::pointer> stack = getStack (id, true, false);
+    std::stack<SHAMapTreeNode::pointer> stack = getStack (id, true);
 
     while (!stack.empty ())
     {
@@ -494,8 +492,8 @@ SHAMapItem::pointer SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNT
                     assert (firstNode);
                     firstNode = firstBelow (firstNode);
 
-                    if (!firstNode)
-                        throw std::runtime_error ("missing node");
+                    if (!firstNode || firstNode->isInner ())
+                        throw std::runtime_error ("missing/corrupt node");
 
                     type = firstNode->getType ();
                     return firstNode->peekItem ();
@@ -506,12 +504,12 @@ SHAMapItem::pointer SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNT
     return no_item;
 }
 
-// Get a pointer to the previous item in the tree after a given item - item must be in tree
+// Get a pointer to the previous item in the tree after a given item - item need not be in tree
 SHAMapItem::pointer SHAMap::peekPrevItem (uint256 const& id)
 {
     boost::recursive_mutex::scoped_lock sl (mLock);
 
-    std::stack<SHAMapTreeNode::pointer> stack = getStack (id, true, false);
+    std::stack<SHAMapTreeNode::pointer> stack = getStack (id, true);
 
     while (!stack.empty ())
     {
@@ -596,7 +594,7 @@ bool SHAMap::delItem (uint256 const& id)
     boost::recursive_mutex::scoped_lock sl (mLock);
     assert (mState != smsImmutable);
 
-    std::stack<SHAMapTreeNode::pointer> stack = getStack (id, true, false);
+    std::stack<SHAMapTreeNode::pointer> stack = getStack (id, true);
 
     if (stack.empty ())
         throw std::runtime_error ("missing node");
@@ -677,7 +675,7 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
     boost::recursive_mutex::scoped_lock sl (mLock);
     assert (mState != smsImmutable);
 
-    std::stack<SHAMapTreeNode::pointer> stack = getStack (tag, true, false);
+    std::stack<SHAMapTreeNode::pointer> stack = getStack (tag, true);
 
     if (stack.empty ())
         throw std::runtime_error ("missing node");
@@ -775,7 +773,7 @@ bool SHAMap::updateGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasM
     boost::recursive_mutex::scoped_lock sl (mLock);
     assert (mState != smsImmutable);
 
-    std::stack<SHAMapTreeNode::pointer> stack = getStack (tag, true, false);
+    std::stack<SHAMapTreeNode::pointer> stack = getStack (tag, true);
 
     if (stack.empty ())
         throw std::runtime_error ("missing node");
