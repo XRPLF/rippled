@@ -431,7 +431,6 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "ledger/LedgerUnitTests.cpp"
 #include "src/cpp/ripple/ripple_SHAMapUnitTests.cpp"
 #include "src/cpp/ripple/ripple_SHAMapSyncUnitTests.cpp"
-#include "src/cpp/ripple/ripple_ProofOfWorkFactoryUnitTests.cpp" // Requires ProofOfWorkFactory.h
 #include "src/cpp/ripple/ripple_SerializedTransactionUnitTests.cpp"
 
 //------------------------------------------------------------------------------

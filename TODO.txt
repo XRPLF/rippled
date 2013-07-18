@@ -3,6 +3,8 @@ RIPPLE TODO
 --------------------------------------------------------------------------------
 
 Vinnie's Short List (Changes day to day)
+- Memory NodeStore::Backend for unit tests
+- Improved Mutex to track deadlocks
 - Convert some Ripple boost unit tests to Beast.
 - Eliminate new technical in NodeStore::Backend
 - Work on KeyvaDB

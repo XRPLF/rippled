@@ -594,9 +594,6 @@
     <ClCompile Include="..\..\src\cpp\ripple\ripple_ProofOfWorkFactory.cpp">
       <Filter>[1] Ripple\ripple_app\_misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_ProofOfWorkFactoryUnitTests.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_SerializedLedger.cpp">
       <Filter>[1] Ripple\ripple_app\_misc</Filter>
     </ClCompile>
