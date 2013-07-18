@@ -818,7 +818,7 @@ int Pathfinder::getPathsOut (const uint160& currencyID, const uint160& accountID
         return it->second;
 
     int aFlags = mLedger->getSLEi(Ledger::getAccountRootIndex(accountID))->getFieldU32(sfFlags);
-    bool bAuthRequired = aFlags & lsfRequireAuth;
+    bool const bAuthRequired = (aFlags & lsfRequireAuth) != 0;
 
     int count = 0;
     AccountItems& rippleLines (mRLCache->getRippleLines (accountID));
