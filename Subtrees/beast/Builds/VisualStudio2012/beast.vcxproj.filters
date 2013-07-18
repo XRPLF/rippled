@@ -629,6 +629,9 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTestUtilities.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\memory\beast_RecycledObjectPool.h">
+      <Filter>beast_core\memory</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
