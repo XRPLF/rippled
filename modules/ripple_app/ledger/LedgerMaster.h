@@ -88,6 +88,7 @@ public:
     void pushLedger (Ledger::pointer newLedger);
     void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL, bool fromConsensus);
     void storeLedger (Ledger::pointer);
+    void forceValid (Ledger::pointer);
 
     void setFullLedger (Ledger::pointer ledger);
 

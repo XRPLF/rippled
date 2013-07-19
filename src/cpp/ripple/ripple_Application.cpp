@@ -796,6 +796,7 @@ bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
 
         Ledger::pointer openLedger = boost::make_shared<Ledger> (false, boost::ref (*loadLedger));
         mLedgerMaster.switchLedgers (loadLedger, openLedger);
+        mLedgerMaster.forceValid(loadLedger);
         mNetOps.setLastCloseTime (loadLedger->getCloseTimeNC ());
 
         if (bReplay)

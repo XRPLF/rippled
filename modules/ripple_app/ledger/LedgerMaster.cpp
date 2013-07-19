@@ -157,6 +157,14 @@ void LedgerMaster::storeLedger (Ledger::pointer ledger)
         mLedgerHistory.addAcceptedLedger (ledger, false);
 }
 
+void LedgerMaster::forceValid (Ledger::pointer ledger)
+{
+    if (!mValidLedger || (mPubLedger->getLedgerSeq() < ledger->getLedgerSeq()))
+        mValidLedger = ledger;
+    if (!mPubLedger || (mPubLedger->getLedgerSeq() < 2))
+        mPubLedger = ledger;
+}
+
 Ledger::pointer LedgerMaster::closeLedger (bool recover)
 {
     boost::recursive_mutex::scoped_lock sl (mLock);
