@@ -24,6 +24,7 @@
 Random::Random (const int64 seedValue) noexcept
     : seed (seedValue)
 {
+    nextInt (); // fixes a bug where the first int is always 0
 }
 
 Random::Random()
@@ -39,6 +40,8 @@ Random::~Random() noexcept
 void Random::setSeed (const int64 newSeed) noexcept
 {
     seed = newSeed;
+
+    nextInt (); // fixes a bug where the first int is always 0
 }
 
 void Random::combineSeed (const int64 seedValue) noexcept
@@ -56,6 +59,8 @@ void Random::setSeedRandomly()
     combineSeed (Time::getHighResolutionTicksPerSecond());
     combineSeed (Time::currentTimeMillis());
     globalSeed ^= seed;
+
+    nextInt (); // fixes a bug where the first int is always 0
 }
 
 Random& Random::getSystemRandom() noexcept
