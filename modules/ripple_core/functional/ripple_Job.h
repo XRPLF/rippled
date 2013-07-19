@@ -28,8 +28,9 @@ enum JobType
     jtWRITE         = 13,   // Write out hashed objects
     jtTRANSACTION_l = 14,   // A local transaction
     jtPROPOSAL_t    = 15,   // A proposal from a trusted source
-    jtADMIN         = 16,   // An administrative operation
-    jtDEATH         = 17,   // job of death, used internally
+    jtSWEEP         = 16,   // Sweep for stale structures
+    jtADMIN         = 17,   // An administrative operation
+    jtDEATH         = 18,   // job of death, used internally
 
     // special types not dispatched by the job pool
     jtPEER          = 24,
@@ -40,6 +41,7 @@ enum JobType
     jtPATH_FIND     = 29,
     jtHO_READ       = 30,
     jtHO_WRITE      = 31,
+    jtGENERIC       = 32,   // Used just to measure time
 }; // CAUTION: If you add new types, add them to JobType.cpp too
 
 // VFALCO TODO move this into the enum so it calculates itself?

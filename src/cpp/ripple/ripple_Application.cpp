@@ -277,6 +277,7 @@ public:
     void run ();
     void stop ();
     void sweep ();
+    void doSweep (Job&);
 
 private:
     void updateTables ();
@@ -684,10 +685,17 @@ void ApplicationImp::sweep ()
         getApp().stop ();
     }
 
+    mJobQueue.addJob(jtSWEEP, "sweep",
+        BIND_TYPE(&ApplicationImp::doSweep, this, P_1));
+}
+
+void ApplicationImp::doSweep(Job& j)
+{
     // VFALCO NOTE Does the order of calls matter?
     // VFALCO TODO fix the dependency inversion using an observer,
     //         have listeners register for "onSweep ()" notification.
     //
+
     mMasterTransaction.sweep ();
     m_nodeStore.sweep ();
     mLedgerMaster.sweep ();
@@ -698,7 +706,7 @@ void ApplicationImp::sweep ()
     AcceptedLedger::sweep (); // VFALCO NOTE AcceptedLedger is/has a singleton?
     SHAMap::sweep (); // VFALCO NOTE SHAMap is/has a singleton?
     mNetOps.sweepFetchPack ();
-    // VFALCO NOTE does the call to sweep() happen on another thread?
+
     mSweepTimer.expires_from_now (boost::posix_time::seconds (theConfig.getSize (siSweepInterval)));
     mSweepTimer.async_wait (BIND_TYPE (&ApplicationImp::sweep, this));
 }
