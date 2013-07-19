@@ -434,7 +434,8 @@ bool SHAMap::hasInnerNode (const SHAMapNode& nodeID, uint256 const& nodeHash)
 {
     boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.find (nodeID);
     if (it != mTNByID.end())
-        return it->second->getNodeHash() == nodeHash;
+        if (it->second->getNodeHash() == nodeHash)
+            return true;
 
     SHAMapTreeNode* node = root.get ();
 
