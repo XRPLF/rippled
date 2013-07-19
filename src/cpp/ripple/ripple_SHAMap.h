@@ -193,7 +193,7 @@ private:
     static KeyCache <uint256, UptimeTimerAdapter> fullBelowCache;
 
     void dirtyUp (std::stack<SHAMapTreeNode::pointer>& stack, uint256 const & target, uint256 prevHash);
-    std::stack<SHAMapTreeNode::pointer> getStack (uint256 const & id, bool include_nonmatching_leaf, bool partialOk);
+    std::stack<SHAMapTreeNode::pointer> getStack (uint256 const & id, bool include_nonmatching_leaf);
     SHAMapTreeNode::pointer walkTo (uint256 const & id, bool modify);
     SHAMapTreeNode* walkToPointer (uint256 const & id);
     SHAMapTreeNode::pointer checkCacheNode (const SHAMapNode&);

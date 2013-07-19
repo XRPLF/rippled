@@ -571,7 +571,7 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
 std::list<Blob > SHAMap::getTrustedPath (uint256 const& index)
 {
     boost::recursive_mutex::scoped_lock sl (mLock);
-    std::stack<SHAMapTreeNode::pointer> stack = SHAMap::getStack (index, false, false);
+    std::stack<SHAMapTreeNode::pointer> stack = SHAMap::getStack (index, false);
 
     if (stack.empty () || !stack.top ()->isLeaf ())
         throw std::runtime_error ("requested leaf not present");
