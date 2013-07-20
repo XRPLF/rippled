@@ -19,9 +19,9 @@ public:
         , m_path (keyValues ["path"])
         , m_db (KeyvaDB::New (
                     keyBytes,
+                    3,
                     File::getCurrentWorkingDirectory().getChildFile (m_path).withFileExtension ("key"),
-                    File::getCurrentWorkingDirectory().getChildFile (m_path).withFileExtension ("val"),
-                    false))
+                    File::getCurrentWorkingDirectory().getChildFile (m_path).withFileExtension ("val")))
     {
     }
 

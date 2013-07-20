@@ -29,7 +29,7 @@ private:
     typedef int32 KeyIndex;
 
     // Size of a value.
-    typedef int32 ByteSize;
+    typedef size_t ByteSize;
 
 private:
     enum
@@ -44,12 +44,6 @@ private:
     // Accessed by multiple threads
     struct State
     {
-        State ()
-            : keyFile (16384) // buffer size
-            , valFile (16384) // buffer size
-        {
-        }
-
         RandomAccessFile keyFile;
         RandomAccessFile valFile;
         KeyIndex newKeyIndex;
@@ -89,12 +83,17 @@ private:
 
 public:
     KeyvaDBImp (int keyBytes,
+                int keyBlockDepth,
                 File keyPath,
-                File valPath,
-                bool filesAreTemporary)
+                File valPath)
         : m_keyBytes (keyBytes)
-        , m_keyRecordBytes (getKeyRecordBytes ())
-        , m_filesAreTemporary (filesAreTemporary)
+        , m_keyBlockDepth (keyBlockDepth)
+        , m_keyRecordBytes (
+            sizeof (FileOffset) +
+            sizeof (ByteSize) +
+            sizeof (KeyIndex) +
+            sizeof (KeyIndex) +
+            keyBytes)
         , m_keyStorage (keyBytes)
     {
         SharedState::WriteAccess state (m_state);
@@ -105,11 +104,20 @@ public:
 
         if (fileSize == 0)
         {
+            // VFALCO TODO Better error handling here
             // initialize the key file
-            RandomAccessFileOutputStream stream (state->keyFile);
-            stream.setPosition (keyFileHeaderBytes - 1);
-            stream.writeByte (0);
-            stream.flush ();
+            Result result = state->keyFile.setPosition (keyFileHeaderBytes - 1);
+            if (result.wasOk ())
+            {
+                char byte = 0;
+           
+                result = state->keyFile.write (&byte, 1);
+
+                if (result.wasOk ())
+                {
+                    state->keyFile.flush ();
+                }
+            }
         }
 
         state->newKeyIndex = 1 + (state->keyFile.getFile ().getSize () - keyFileHeaderBytes) / m_keyRecordBytes;
@@ -124,43 +132,9 @@ public:
         SharedState::WriteAccess state (m_state);
 
         flushInternal (state);
-
-        // Delete the database files if requested.
-        //
-        if (m_filesAreTemporary)
-        {
-            {
-                File const path = state->keyFile.getFile ();
-                state->keyFile.close ();
-                path.deleteFile ();
-            }
-
-            {
-                File const path = state->valFile.getFile ();
-                state->valFile.close ();
-                path.deleteFile ();
-            }
-        }
     }
 
     //--------------------------------------------------------------------------
-
-    // Returns the number of physical bytes in a key record.
-    // This is specific to the format of the data.
-    //
-    int getKeyRecordBytes () const noexcept
-    {
-        int bytes = 0;
-
-        bytes += sizeof (FileOffset);       // valFileOffset
-        bytes += sizeof (ByteSize);         // valSize
-        bytes += sizeof (KeyIndex);         // leftIndex
-        bytes += sizeof (KeyIndex);         // rightIndex
-
-        bytes += m_keyBytes;
-
-        return bytes;
-    }
 
     FileOffset calcKeyRecordOffset (KeyIndex keyIndex)
     {
@@ -180,25 +154,42 @@ public:
     {
         FileOffset const byteOffset = calcKeyRecordOffset (keyIndex);
 
-        RandomAccessFileInputStream stream (state->keyFile);
+        Result result = state->keyFile.setPosition (byteOffset);
 
-        bool const success = stream.setPosition (byteOffset);
-
-        if (success)
+        if (result.wasOk ())
         {
-            // This defines the file format!
-            keyRecord->valFileOffset = stream.readInt64BigEndian ();
-            keyRecord->valSize = stream.readIntBigEndian ();
-            keyRecord->leftIndex = stream.readIntBigEndian ();
-            keyRecord->rightIndex = stream.readIntBigEndian ();
+            MemoryBlock data (m_keyRecordBytes);
+    
+            size_t bytesRead;
+            
+            result = state->keyFile.read (data.getData (), m_keyRecordBytes, &bytesRead);
 
-            // Grab the key
-            stream.read (keyRecord->key, m_keyBytes);
+            if (result.wasOk ())
+            {
+                if (bytesRead == m_keyRecordBytes)
+                {
+                    MemoryInputStream stream (data, false);
+
+                    // This defines the file format!
+                    keyRecord->valFileOffset = stream.readInt64BigEndian ();
+                    keyRecord->valSize = stream.readIntBigEndian ();
+                    keyRecord->leftIndex = stream.readIntBigEndian ();
+                    keyRecord->rightIndex = stream.readIntBigEndian ();
+
+                    // Grab the key
+                    stream.read (keyRecord->key, m_keyBytes);
+                }
+                else
+                {
+                    result = Result::fail ("KeyvaDB: amountRead != m_keyRecordBytes");
+                }
+            }
         }
-        else
+
+        if (! result.wasOk ())
         {
             String s;
-            s << "KeyvaDB: Seek failed in " << state->keyFile.getFile ().getFileName ();
+            s << "KeyvaDB readKeyRecord failed in " << state->keyFile.getFile ().getFileName ();
             Throw (std::runtime_error (s.toStdString ()));
         }
     }
@@ -211,15 +202,15 @@ public:
     {
         FileOffset const byteOffset = calcKeyRecordOffset (keyIndex);
 
-        RandomAccessFileOutputStream stream (state->keyFile);
+        int const bytes = includingKey ? m_keyRecordBytes : m_keyRecordBytes - m_keyBytes;
 
-        bool const success = stream.setPosition (byteOffset);
+        // VFALCO TODO Recycle this buffer
+        MemoryBlock data (bytes);
 
-        if (success)
         {
+            MemoryOutputStream stream (data, false);
+
             // This defines the file format!
-            // VFALCO TODO Make OutputStream return the bool errors here
-            //
             stream.writeInt64BigEndian (keyRecord.valFileOffset);
             stream.writeIntBigEndian (keyRecord.valSize);
             stream.writeIntBigEndian (keyRecord.leftIndex);
@@ -227,23 +218,30 @@ public:
 
             // Write the key
             if (includingKey)
-            {
-                bool const success = stream.write (keyRecord.key, m_keyBytes);
+                stream.write (keyRecord.key, m_keyBytes);
+        }
 
-                if (! success)
+        Result result = state->keyFile.setPosition (byteOffset);
+
+        if (result.wasOk ())
+        {
+            size_t bytesWritten;
+            
+            result = state->keyFile.write (data.getData (), bytes, &bytesWritten);
+
+            if (result.wasOk ())
+            {
+                if (bytesWritten != bytes)
                 {
-                    String s;
-                    s << "KeyvaDB: Write failed in " << state->keyFile.getFile ().getFileName ();
-                    Throw (std::runtime_error (s.toStdString ()));
+                    result = Result::fail ("KeyvaDB: bytesWritten != bytes");
                 }
             }
-
-            //stream.flush ();
         }
-        else
+        
+        if (!result.wasOk ())
         {
             String s;
-            s << "KeyvaDB: Seek failed in " << state->keyFile.getFile ().getFileName ();
+            s << "KeyvaDB: writeKeyRecord failed in " << state->keyFile.getFile ().getFileName ();
             Throw (std::runtime_error (s.toStdString ()));
         }
     }
@@ -252,29 +250,31 @@ public:
     // VFALCO TODO return a Result
     void writeValue (void const* const value, ByteSize valueBytes, SharedState::WriteAccess& state)
     {
-        RandomAccessFileOutputStream stream (state->valFile);
+        Result result = state->valFile.setPosition (state->valFileSize);
 
-        bool const success = stream.setPosition (state->valFileSize);
-
-        if (success)
+        if (result.wasOk ())
         {
-            bool const success = stream.write (value, static_cast <size_t> (valueBytes));
+            size_t bytesWritten;
 
-            if (! success)
+            result = state->valFile.write (value, valueBytes, &bytesWritten);
+
+            if (result.wasOk ())
             {
-                String s;
-                s << "KeyvaDB: Write failed in " << state->valFile.getFile ().getFileName ();
-                Throw (std::runtime_error (s.toStdString ()));
+                if (bytesWritten == valueBytes)
+                {
+                    state->valFileSize += valueBytes;
+                }
+                else
+                {
+                    result = Result::fail ("KeyvaDB: bytesWritten != valueBytes");
+                }
             }
-
-            state->valFileSize += valueBytes;
-
-            //stream.flush ();
         }
-        else
+        
+        if (! result.wasOk ())
         {
             String s;
-            s << "KeyvaDB: Seek failed in " << state->valFile.getFile ().getFileName ();
+            s << "KeyvaDB: writeValue failed in " << state->valFile.getFile ().getFileName ();
             Throw (std::runtime_error (s.toStdString ()));
         }
     }
@@ -363,23 +363,27 @@ public:
             {
                 void* const destStorage = callback->getStorageForValue (findResult.keyRecord.valSize);
 
-                RandomAccessFileInputStream stream (state->valFile);
+                Result result = state->valFile.setPosition (findResult.keyRecord.valFileOffset);
 
-                bool const success = stream.setPosition (findResult.keyRecord.valFileOffset);
-
-                if (! success)
+                if (result.wasOk ())
                 {
-                    String s;
-                    s << "KeyvaDB: Seek failed in " << state->valFile.getFile ().getFileName ();
-                    Throw (std::runtime_error (s.toStdString ()));
+                    size_t bytesRead;
+
+                    result = state->valFile.read (destStorage, findResult.keyRecord.valSize, &bytesRead);
+
+                    if (result.wasOk ())
+                    {
+                        if (bytesRead != findResult.keyRecord.valSize)
+                        {
+                            result = Result::fail ("KeyvaDB: bytesRead != valSize");
+                        }
+                    }
                 }
 
-                int const bytesRead = stream.read (destStorage, findResult.keyRecord.valSize);
-
-                if (bytesRead != findResult.keyRecord.valSize)
+                if (! result.wasOk ())
                 {
                     String s;
-                    s << "KeyvaDB: Couldn't read a value from " << state->valFile.getFile ().getFileName ();
+                    s << "KeyvaDB: get in " << state->valFile.getFile ().getFileName ();
                     Throw (std::runtime_error (s.toStdString ()));
                 }
             }
@@ -515,15 +519,15 @@ private:
 
 private:
     int const m_keyBytes;
+    int const m_keyBlockDepth;
     int const m_keyRecordBytes;
-    bool const m_filesAreTemporary;
     SharedState m_state;
     HeapBlock <char> m_keyStorage;
 };
 
-KeyvaDB* KeyvaDB::New (int keyBytes, File keyPath, File valPath, bool filesAreTemporary)
+KeyvaDB* KeyvaDB::New (int keyBytes, int keyBlockDepth, File keyPath, File valPath)
 {
-    return new KeyvaDBImp (keyBytes, keyPath, valPath, filesAreTemporary);
+    return new KeyvaDBImp (keyBytes, keyBlockDepth, keyPath, valPath);
 }
 
 //------------------------------------------------------------------------------
@@ -559,7 +563,24 @@ public:
         }
     };
 
-    template <unsigned int KeyBytes>
+    KeyvaDB* createDB (unsigned int keyBytes, File const& path)
+    {
+        File const keyPath = path.withFileExtension (".key");
+        File const valPath = path.withFileExtension (".val");
+
+        return KeyvaDB::New (keyBytes, 1, keyPath, valPath);
+    }
+
+    void deleteDBFiles (File const& path)
+    {
+        File const keyPath = path.withFileExtension (".key");
+        File const valPath = path.withFileExtension (".val");
+
+        keyPath.deleteFile ();
+        valPath.deleteFile ();
+    }
+
+    template <size_t KeyBytes>
     void testKeySize (unsigned int const maxItems)
     {
         using namespace UnitTestUtilities;
@@ -569,17 +590,16 @@ public:
         int64 const seedValue = 50;
 
         String s;
-        s << "keyBytes=" << String (KeyBytes) << ", maxItems=" << String (maxItems);
+
+        s << "keyBytes=" << String (uint64(KeyBytes)) << ", maxItems=" << String (maxItems);
         beginTest (s);
 
         // Set up the key and value files
-        File const tempFile (File::createTempFile (""));
-        File const keyPath = tempFile.withFileExtension (".key");
-        File const valPath = tempFile.withFileExtension (".val");
+        File const path (File::createTempFile (""));
 
         {
             // open the db
-            ScopedPointer <KeyvaDB> db (KeyvaDB::New (KeyBytes, keyPath, valPath, false));
+            ScopedPointer <KeyvaDB> db (createDB (KeyBytes, path));
 
             Payload payload (maxPayloadBytes);
             Payload check (maxPayloadBytes);
@@ -634,7 +654,7 @@ public:
 
         {
             // Re-open the database and confirm the data
-            ScopedPointer <KeyvaDB> db (KeyvaDB::New (KeyBytes, keyPath, valPath, false));
+            ScopedPointer <KeyvaDB> db (createDB (KeyBytes, path));
 
             Payload payload (maxPayloadBytes);
             Payload check (maxPayloadBytes);
@@ -654,8 +674,7 @@ public:
             }
         }
 
-        keyPath.deleteFile ();
-        valPath.deleteFile ();
+        deleteDBFiles (path);
     }
 
     void runTest ()

@@ -19,9 +19,9 @@ public:
     };
 
     static KeyvaDB* New (int keyBytes,
+                         int keyBlockDepth,
                          File keyPath,
-                         File valPath,
-                         bool filesAreTemporary);
+                         File valPath);
 
     virtual ~KeyvaDB () { }
 
