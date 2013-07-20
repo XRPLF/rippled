@@ -3,10 +3,6 @@
     This file is part of Beast: https://github.com/vinniefalco/Beast
     Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
-    Portions of this file are from JUCE.
-    Copyright (c) 2013 - Raw Material Software Ltd.
-    Please visit http://www.juce.com
-
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
@@ -54,16 +50,17 @@ void RandomAccessFile::close ()
 
 Result RandomAccessFile::setPosition (FileOffset newPosition)
 {
-    Result result (Result::ok ());
-
     if (newPosition != currentPosition)
     {
         flushBuffer ();
 
-        result = nativeSetPosition (newPosition);
+        // VFALCO NOTE I dislike return from the middle but
+        //             Result::ok() is showing up in the profile
+        //
+        return nativeSetPosition (newPosition);
     }
 
-    return result;
+    return Result::ok ();
 }
 
 Result RandomAccessFile::read (void* buffer, ByteCount numBytes, ByteCount* pActualAmount)
@@ -157,16 +154,13 @@ Result RandomAccessFile::flushBuffer ()
 class RandomAccessFileTests : public UnitTest
 {
 public:
-    RandomAccessFileTests ()
-        : UnitTest ("RandomAccessFile", "beast")
-        , numRecords (1000)
-        , seedValue (50)
+    RandomAccessFileTests () : UnitTest ("RandomAccessFile", "beast")
     {
     }
 
     /*  For this test we will create a file which consists of a fixed
         number of variable length records. Each record is numbered sequentially
-        start at 1. To calculate the position of each record we first build
+        starting at 0. To calculate the position of each record we first build
         a table of size/offset pairs using a pseudorandom number generator.
     */
     struct Record
@@ -206,6 +200,8 @@ public:
         repeatableShuffle (numRecords, records, seedValue);
     }
 
+    // Write all the records to the file.
+    // The payload is pseudo-randomly generated.
     void writeRecords (RandomAccessFile& file,
                        int numRecords,
                        HeapBlock <Record> const& records,
@@ -229,23 +225,26 @@ public:
         }
     }
 
+    // Read the records and verify the consistency.
     void readRecords (RandomAccessFile& file,
                       int numRecords,
-                      HeapBlock <Record>const & records,
+                      HeapBlock <Record> const& records,
                       int64 seedValue)
     {
         using namespace UnitTestUtilities;
 
         for (int i = 0; i < numRecords; ++i)
         {
-            int const bytes = records [i].bytes;
+            Record const& record (records [i]);
+
+            int const bytes = record.bytes;
 
             Payload p1 (bytes);
             Payload p2 (bytes);
 
-            p1.repeatableRandomFill (bytes, bytes, records [i].index + seedValue);
+            p1.repeatableRandomFill (bytes, bytes, record.index + seedValue);
 
-            file.setPosition (records [i].offset);
+            file.setPosition (record.offset);
 
             Result result = file.read (p2.data.getData (), bytes);
 
@@ -260,48 +259,68 @@ public:
         }
     }
 
-    void testFile (int const bufferSize)
+    // Perform the test at the given buffer size.
+    void testFile (int const numRecords, int const bufferSize)
     {
         using namespace UnitTestUtilities;
 
-        String s;
-        s << "bufferSize = " << String (bufferSize);
-        beginTest (s);
+        int const seedValue = 50;
+
+        beginTest (String ("numRecords=") + String (numRecords) + ", bufferSize=" + String (bufferSize));
 
         int const maxPayload = bmax (1000, bufferSize * 2);
 
-        RandomAccessFile file (bufferSize);
+        // Calculate the path
+        File const path (File::createTempFile ("RandomAccessFile"));
 
-        Result result = file.open (File::createTempFile ("tests"), RandomAccessFile::readWrite);
+        // Create a predictable set of records
+        HeapBlock <Record> records (numRecords);
+        createRecords (records, numRecords, maxPayload, seedValue);
 
-        expect (result.wasOk (), "Should be ok");
+        Result result (Result::ok ());
+
+        {
+            // Create the file
+            RandomAccessFile file (bufferSize);
+            result = file.open (path, RandomAccessFile::readWrite);
+            expect (result.wasOk (), "Should be ok");
+
+            if (result.wasOk ())
+            {
+                writeRecords (file, numRecords, records, seedValue);
+
+                readRecords (file, numRecords, records, seedValue);
+
+                repeatableShuffle (numRecords, records, seedValue);
+
+                readRecords (file, numRecords, records, seedValue);
+            }
+        }
 
         if (result.wasOk ())
         {
-            HeapBlock <Record> records (numRecords);
+            // Re-open the file in read only mode
+            RandomAccessFile file (bufferSize);
+            result = file.open (path, RandomAccessFile::readOnly);
+            expect (result.wasOk (), "Should be ok");
 
-            createRecords (records, numRecords, maxPayload, seedValue);
-
-            writeRecords (file, numRecords, records, seedValue);
-
-            readRecords (file, numRecords, records, seedValue);
-
-            repeatableShuffle (numRecords, records, seedValue);
-
-            readRecords (file, numRecords, records, seedValue);
+            if (result.wasOk ())
+            {
+                readRecords (file, numRecords, records, seedValue);
+            }
         }
     }
 
     void runTest ()
     {
-        testFile (0);
-        testFile (1000);
-        testFile (10000);
+        int const numRecords = 1000;
+
+        testFile (numRecords, 0);
+        testFile (numRecords, 1000);
+        testFile (numRecords, 10000);
     }
 
 private:
-    int const numRecords;
-    int64 const seedValue;
 };
 
 static RandomAccessFileTests randomAccessFileTests;

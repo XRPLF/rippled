@@ -41,6 +41,9 @@
     @note All files are opened in binary mode. No text newline conversions
           are performed.
 
+    @note None of these members are thread safe. The caller is responsible
+          for synchronization.
+
     @see FileInputStream, FileOutputStream
 */
 class BEAST_API  RandomAccessFile : Uncopyable, LeakChecked <RandomAccessFile>
@@ -140,7 +143,7 @@ public:
         by `buffer` is at least as large as `bytesToRead`.
 
         @note The file must have been opened with read permission.
-        
+
         @param buffer The memory to store the incoming data
         @param numBytes The number of bytes to read.
         @param pActualAmount Pointer to store the actual amount read, or `nullptr`.
@@ -212,7 +215,7 @@ public:
     int read (void* destBuffer, int maxBytesToRead)
     {
         size_t actualBytes = 0;
-        m_file.read (destBuffer, maxBytesToRead, &actualBytes);        
+        m_file.read (destBuffer, maxBytesToRead, &actualBytes);
         return actualBytes;
     }
 
