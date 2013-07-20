@@ -21,8 +21,13 @@
 */
 //==============================================================================
 
-UnitTest::UnitTest (const String& name_)
-    : name (name_), runner (nullptr)
+UnitTest::UnitTest (String const& name,
+                    String const& group,
+                    When when)
+    : m_name (name)
+    , m_group (group)
+    , m_when (when)
+    , m_runner (nullptr)
 {
     getAllTests().add (this);
 }
@@ -32,19 +37,25 @@ UnitTest::~UnitTest()
     getAllTests().removeFirstMatchingValue (this);
 }
 
-Array<UnitTest*>& UnitTest::getAllTests()
+UnitTest::TestList& UnitTest::getAllTests()
 {
-    static Array<UnitTest*> tests;
-    return tests;
+    static TestList s_tests;
+
+    return s_tests;
 }
 
-void UnitTest::initialise()  {}
-void UnitTest::shutdown()   {}
-
-void UnitTest::performTest (UnitTests* const runner_)
+void UnitTest::initialise()
 {
-    bassert (runner_ != nullptr);
-    runner = runner_;
+}
+
+void UnitTest::shutdown()
+{
+}
+
+void UnitTest::performTest (UnitTests* const runner)
+{
+    bassert (runner != nullptr);
+    m_runner = runner;
 
     initialise();
     runTest();
@@ -53,23 +64,24 @@ void UnitTest::performTest (UnitTests* const runner_)
 
 void UnitTest::logMessage (const String& message)
 {
-    runner->logMessage (message);
+    m_runner->logMessage (message);
 }
 
 void UnitTest::beginTest (const String& testName)
 {
-    runner->beginNewTest (this, testName);
+    m_runner->beginNewTest (this, testName);
 }
 
 void UnitTest::expect (const bool result, const String& failureMessage)
 {
     if (result)
-        runner->addPass();
+        m_runner->addPass();
     else
-        runner->addFail (failureMessage);
+        m_runner->addFail (failureMessage);
 }
 
 //==============================================================================
+
 UnitTests::UnitTests()
     : currentTest (nullptr),
       assertOnFailure (true),
@@ -105,35 +117,52 @@ void UnitTests::resultsUpdated()
 {
 }
 
+void UnitTests::runTest (UnitTest& test)
+{
+    try
+    {
+        test.performTest (this);
+    }
+    catch (std::exception& e)
+    {
+        String s;
+        s << "Got an exception: " << e.what ();
+        addFail (s);
+    }
+    catch (...)
+    {
+        addFail ("Got an unhandled exception");
+    }
+}
+
 void UnitTests::runTest (String const& name)
 {
     results.clear();
     resultsUpdated();
 
-    Array<UnitTest*>& tests = UnitTest::getAllTests ();
+    UnitTest::TestList& tests (UnitTest::getAllTests ());
 
     for (int i = 0; i < tests.size(); ++i)
     {
         UnitTest& test = *tests [i];
 
-        if (test.getName () == name)
+        if (test.getGroup () == name && test.getWhen () == UnitTest::runAlways)
         {
-            try
-            {
-                test.performTest (this);
-            }
-            catch (...)
-            {
-                addFail ("An unhandled exception was thrown!");
-            }
-
+            runTest (test);
+        }
+        else if (test.getName () == name)
+        {
+            runTest (test);
             break;
         }
+
     }
 }
 
-void UnitTests::runTests (const Array<UnitTest*>& tests)
+void UnitTests::runAllTests ()
 {
+    UnitTest::TestList& tests (UnitTest::getAllTests ());
+
     results.clear();
     resultsUpdated();
 
@@ -142,22 +171,14 @@ void UnitTests::runTests (const Array<UnitTest*>& tests)
         if (shouldAbortTests())
             break;
 
-        try
-        {
-            tests.getUnchecked(i)->performTest (this);
-        }
-        catch (...)
-        {
-            addFail ("An unhandled exception was thrown!");
-        }
+        UnitTest& test = *tests [i];
+
+        if (test.getWhen () == UnitTest::runAlways)
+            runTest (test);
     }
 
     endTest();
-}
 
-void UnitTests::runAllTests()
-{
-    runTests (UnitTest::getAllTests());
 }
 
 void UnitTests::logMessage (const String& message)
@@ -177,7 +198,7 @@ void UnitTests::beginNewTest (UnitTest* const test, const String& subCategory)
 
     TestResult* const r = new TestResult();
     results.add (r);
-    r->unitTestName = test->getName();
+    r->unitTestName = test->getGroup() + "::" + test->getName();
     r->subcategoryName = subCategory;
     r->passes = 0;
     r->failures = 0;

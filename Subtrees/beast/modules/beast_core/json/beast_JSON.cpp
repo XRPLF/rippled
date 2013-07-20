@@ -535,7 +535,7 @@ void JSON::writeToStream (OutputStream& output, const var& data, const bool allO
 class JSONTests  : public UnitTest
 {
 public:
-    JSONTests() : UnitTest ("JSON") { }
+    JSONTests() : UnitTest ("JSON", "beast") { }
 
     static String createRandomWideCharString (Random& r)
     {

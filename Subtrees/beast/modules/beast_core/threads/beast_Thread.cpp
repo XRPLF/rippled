@@ -255,7 +255,7 @@ void SpinLock::enter() const noexcept
 class AtomicTests : public UnitTest
 {
 public:
-    AtomicTests() : UnitTest ("Atomic") {}
+    AtomicTests() : UnitTest ("Atomic", "beast") {}
 
     void runTest()
     {

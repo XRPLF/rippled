@@ -129,7 +129,7 @@ void AbstractFifo::finishedRead (int numRead) noexcept
 class AbstractFifoTests  : public UnitTest
 {
 public:
-    AbstractFifoTests() : UnitTest ("Abstract Fifo")
+    AbstractFifoTests() : UnitTest ("Abstract Fifo", "beast")
     {
     }
 
