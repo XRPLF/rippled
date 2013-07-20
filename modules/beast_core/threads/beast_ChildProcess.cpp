@@ -61,7 +61,7 @@ String ChildProcess::readAllProcessOutput()
 class ChildProcessTests  : public UnitTest
 {
 public:
-    ChildProcessTests() : UnitTest ("ChildProcess") {}
+    ChildProcessTests() : UnitTest ("ChildProcess", "beast") {}
 
     void runTest()
     {

@@ -92,7 +92,7 @@ int64 MemoryInputStream::getPosition()
 class MemoryStreamTests : public UnitTest
 {
 public:
-    MemoryStreamTests() : UnitTest ("MemoryStream") { }
+    MemoryStreamTests() : UnitTest ("MemoryStream", "beast") { }
 
     void runTest()
     {

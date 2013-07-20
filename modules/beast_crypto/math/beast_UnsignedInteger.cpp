@@ -20,7 +20,7 @@
 class UnsignedIntegerTests : public UnitTest
 {
 public:
-    UnsignedIntegerTests () : UnitTest ("UnsignedInteger")
+    UnsignedIntegerTests () : UnitTest ("UnsignedInteger", "beast")
     {
     }
 

@@ -158,7 +158,7 @@ class RandomAccessFileTests : public UnitTest
 {
 public:
     RandomAccessFileTests ()
-        : UnitTest ("RandomAccessFile")
+        : UnitTest ("RandomAccessFile", "beast")
         , numRecords (1000)
         , seedValue (50)
     {

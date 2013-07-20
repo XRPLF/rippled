@@ -926,7 +926,7 @@ MemoryMappedFile::MemoryMappedFile (const File& file, const Range<int64>& fileRa
 class FileTests : public UnitTest
 {
 public:
-    FileTests() : UnitTest ("File") {}
+    FileTests() : UnitTest ("File", "beast") {}
 
     void runTest()
     {
