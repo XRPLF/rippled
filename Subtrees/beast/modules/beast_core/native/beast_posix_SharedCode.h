@@ -586,54 +586,70 @@ Result RandomAccessFile::nativeSetPosition (FileOffset newPosition)
 {
     bassert (isOpen ());
 
-    Result result (Result::ok ());
+    off_t const actualPosition = lseek (getFD (fileHandle), newPosition, SEEK_SET);
 
-    off_t const actual = lseek (getFD (fileHandle), newPosition, SEEK_SET);
+    currentPosition = actualPosition;
 
-    if (actual != newPosition)
-        result = getResultForErrno();
+    if (actualPosition != newPosition)
+    {
+        // VFALCO NOTE I dislike return from the middle but
+        //             Result::ok() is showing up in the profile
+        //
+        return getResultForErrno();
+    }
 
-    return result;
+    return Result::ok();
 }
 
 Result RandomAccessFile::nativeRead (void* buffer, ByteCount numBytes, ByteCount* pActualAmount)
 {
     bassert (isOpen ());
 
-    Result result (Result::ok ());
+    ssize_t bytesRead = ::read (getFD (fileHandle), buffer, numBytes);
 
-    ssize_t amount = ::read (getFD (fileHandle), buffer, numBytes);
-
-    if (amount < 0)
+    if (bytesRead < 0)
     {
-        result = getResultForErrno();
-        amount = 0;
+        if (pActualAmount != nullptr)
+            *pActualAmount = 0;
+
+        // VFALCO NOTE I dislike return from the middle but
+        //             Result::ok() is showing up in the profile
+        //
+        return getResultForErrno();
     }
 
-    if (pActualAmount != nullptr)
-        *pActualAmount = amount;
+    currentPosition += bytesRead;
 
-    return result;
+    if (pActualAmount != nullptr)
+        *pActualAmount = bytesRead;
+
+    return Result::ok();
 }
 
 Result RandomAccessFile::nativeWrite (void const* data, ByteCount numBytes, size_t* pActualAmount)
 {
     bassert (isOpen ());
 
-    Result result (Result::ok ());
+    ssize_t bytesWritten = ::write (getFD (fileHandle), data, numBytes);
 
-    ssize_t actual = ::write (getFD (fileHandle), data, numBytes);
-
-    if (actual == -1)
+    // write(3) says that the actual return will be exactly -1 on
+    // error, but we will assume anything negative indicates failure.
+    //
+    if (bytesWritten < 0)
     {
-        result = getResultForErrno();
-        actual = 0;
+        if (pActualAmount != nullptr)
+            *pActualAmount = 0;
+
+        // VFALCO NOTE I dislike return from the middle but
+        //             Result::ok() is showing up in the profile
+        //
+        return getResultForErrno();
     }
 
     if (pActualAmount != nullptr)
-        *pActualAmount = actual;
+        *pActualAmount = bytesWritten;
 
-    return result;
+    return Result::ok();
 }
 
 Result RandomAccessFile::nativeTruncate ()
@@ -654,14 +670,14 @@ Result RandomAccessFile::nativeFlush ()
     if (fsync (getFD (fileHandle)) == -1)
         result = getResultForErrno();
 
-   #if BEAST_ANDROID
+#if BEAST_ANDROID
     // This stuff tells the OS to asynchronously update the metadata
     // that the OS has cached aboud the file - this metadata is used
     // when the device is acting as a USB drive, and unless it's explicitly
     // refreshed, it'll get out of step with the real file.
     const LocalRef<jstring> t (javaString (file.getFullPathName()));
     android.activity.callVoidMethod (BeastAppActivity.scanFile, t.get());
-   #endif
+#endif
 
     return result;
 }
