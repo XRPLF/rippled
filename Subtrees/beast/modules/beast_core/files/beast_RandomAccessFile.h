@@ -3,10 +3,6 @@
     This file is part of Beast: https://github.com/vinniefalco/Beast
     Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
-    Portions of this file are from JUCE.
-    Copyright (c) 2013 - Raw Material Software Ltd.
-    Please visit http://www.juce.com
-
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
@@ -33,10 +29,6 @@
     the file, and performing read and write operations. There are also methods
     provided for obtaining an input or output stream which will work with
     the file.
-
-    Writes are batched using an internal buffer. The buffer is flushed when
-    it fills, the current position is manually changed, or the file
-    is closed. It is also possible to explicitly flush the buffer.
 
     @note All files are opened in binary mode. No text newline conversions
           are performed.
@@ -76,7 +68,7 @@ public:
 
         @see open, isOpen
     */
-    explicit RandomAccessFile (int bufferSizeToUse = 16384) noexcept;
+    RandomAccessFile () noexcept;
 
     /** Destroy the file object.
 
@@ -182,12 +174,11 @@ public:
 
     //==============================================================================
 private:
-    Result flushBuffer ();
-
     // Some of these these methods are implemented natively on
     // the corresponding platform.
     //
     // See beast_posix_SharedCode.h and beast_win32_Files.cpp
+    //
     Result nativeOpen (File const& path, Mode mode);
     void nativeClose ();
     Result nativeSetPosition (FileOffset newPosition);
@@ -200,45 +191,6 @@ private:
     File file;
     void* fileHandle;
     FileOffset currentPosition;
-    ByteCount const bufferSize;
-    ByteCount bytesInBuffer;
-    HeapBlock <char> writeBuffer;
-};
-
-class BEAST_API RandomAccessFileInputStream : public InputStream
-{
-public:
-    explicit RandomAccessFileInputStream (RandomAccessFile& file) : m_file (file) { }
-
-    int64 getTotalLength() { return m_file.getFile ().getSize (); }
-    bool isExhausted() { return getPosition () == getTotalLength (); }
-    int read (void* destBuffer, int maxBytesToRead)
-    {
-        size_t actualBytes = 0;
-        m_file.read (destBuffer, maxBytesToRead, &actualBytes);
-        return actualBytes;
-    }
-
-    int64 getPosition() { return m_file.getPosition (); }
-    bool setPosition (int64 newPosition) { return m_file.setPosition (newPosition); }
-    void skipNextBytes (int64 numBytesToSkip) { m_file.setPosition (getPosition () + numBytesToSkip); }
-
-private:
-    RandomAccessFile& m_file;
-};
-
-class BEAST_API  RandomAccessFileOutputStream : public OutputStream
-{
-public:
-    explicit RandomAccessFileOutputStream (RandomAccessFile& file) : m_file (file) { }
-
-    void flush() { m_file.flush (); }
-    int64 getPosition() { return m_file.getPosition (); }
-    bool setPosition (int64 newPosition) { return m_file.setPosition (newPosition); }
-    bool write (const void* dataToWrite, size_t numberOfBytes) { return m_file.write (dataToWrite, numberOfBytes); }
-
-private:
-    RandomAccessFile& m_file;
 };
 
 #endif
