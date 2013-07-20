@@ -17,12 +17,9 @@
 */
 //==============================================================================
 
-RandomAccessFile::RandomAccessFile (int bufferSizeToUse) noexcept
+RandomAccessFile::RandomAccessFile () noexcept
     : fileHandle (nullptr)
     , currentPosition (0)
-    , bufferSize (bufferSizeToUse)
-    , bytesInBuffer (0)
-    , writeBuffer (bmax (bufferSizeToUse, 16)) // enforce minimum size of 16
 {
 }
 
@@ -42,7 +39,6 @@ void RandomAccessFile::close ()
 {
     if (isOpen ())
     {
-        flushBuffer ();
         nativeFlush ();
         nativeClose ();
     }
@@ -52,8 +48,6 @@ Result RandomAccessFile::setPosition (FileOffset newPosition)
 {
     if (newPosition != currentPosition)
     {
-        flushBuffer ();
-
         // VFALCO NOTE I dislike return from the middle but
         //             Result::ok() is showing up in the profile
         //
@@ -76,37 +70,10 @@ Result RandomAccessFile::write (const void* data, ByteCount numBytes, ByteCount*
 
     ByteCount amountWritten = 0;
 
-    if (bytesInBuffer + numBytes < bufferSize)
-    {
-        memcpy (writeBuffer + bytesInBuffer, data, numBytes);
-        bytesInBuffer += numBytes;
-        currentPosition += numBytes;
-    }
-    else
-    {
-        result = flushBuffer ();
+    result = nativeWrite (data, numBytes, &amountWritten);
 
-        if (result.wasOk ())
-        {
-            if (numBytes < bufferSize)
-            {
-                bassert (bytesInBuffer == 0);
-
-                memcpy (writeBuffer + bytesInBuffer, data, numBytes);
-                bytesInBuffer += numBytes;
-                currentPosition += numBytes;
-            }
-            else
-            {
-                ByteCount bytesWritten;
-
-                result = nativeWrite (data, numBytes, &bytesWritten);
-
-                if (result.wasOk ())
-                    currentPosition += bytesWritten;
-            }
-        }
-    }
+    if (result.wasOk ())
+        currentPosition += amountWritten;
 
     if (pActualAmount != nullptr)
         *pActualAmount = amountWritten;
@@ -126,27 +93,7 @@ Result RandomAccessFile::truncate ()
 
 Result RandomAccessFile::flush ()
 {
-    Result result = flushBuffer ();
-
-    if (result.wasOk ())
-        result = nativeFlush ();
-
-    return result;
-}
-
-Result RandomAccessFile::flushBuffer ()
-{
-    bassert (isOpen ());
-
-    Result result (Result::ok ());
-
-    if (bytesInBuffer > 0)
-    {
-        result = nativeWrite (writeBuffer, bytesInBuffer);
-        bytesInBuffer = 0;
-    }
-
-    return result;
+    return nativeFlush ();
 }
 
 //------------------------------------------------------------------------------
@@ -157,6 +104,11 @@ public:
     RandomAccessFileTests () : UnitTest ("RandomAccessFile", "beast")
     {
     }
+
+    enum
+    {
+        maxPayload = 8192
+    };
 
     /*  For this test we will create a file which consists of a fixed
         number of variable length records. Each record is numbered sequentially
@@ -260,15 +212,13 @@ public:
     }
 
     // Perform the test at the given buffer size.
-    void testFile (int const numRecords, int const bufferSize)
+    void testFile (int const numRecords)
     {
         using namespace UnitTestUtilities;
 
         int const seedValue = 50;
 
-        beginTest (String ("numRecords=") + String (numRecords) + ", bufferSize=" + String (bufferSize));
-
-        int const maxPayload = bmax (1000, bufferSize * 2);
+        beginTest (String ("numRecords=") + String (numRecords));
 
         // Calculate the path
         File const path (File::createTempFile ("RandomAccessFile"));
@@ -281,7 +231,7 @@ public:
 
         {
             // Create the file
-            RandomAccessFile file (bufferSize);
+            RandomAccessFile file;
             result = file.open (path, RandomAccessFile::readWrite);
             expect (result.wasOk (), "Should be ok");
 
@@ -300,7 +250,7 @@ public:
         if (result.wasOk ())
         {
             // Re-open the file in read only mode
-            RandomAccessFile file (bufferSize);
+            RandomAccessFile file;
             result = file.open (path, RandomAccessFile::readOnly);
             expect (result.wasOk (), "Should be ok");
 
@@ -313,11 +263,7 @@ public:
 
     void runTest ()
     {
-        int const numRecords = 1000;
-
-        testFile (numRecords, 0);
-        testFile (numRecords, 1000);
-        testFile (numRecords, 10000);
+        testFile (10000);
     }
 
 private:
