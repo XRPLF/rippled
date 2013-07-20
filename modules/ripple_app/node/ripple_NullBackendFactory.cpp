@@ -15,28 +15,31 @@ public:
     {
     }
 
-    std::string getDataBaseName()
+    std::string getName()
     {
         return std::string ();
     }
 
-    bool store (NodeObject::ref obj)
+    Status fetch (void const*, NodeObject::Ptr*)
     {
-        return false;
+        return notFound;
+    }
+    
+    void store (NodeObject::ref object)
+    {
+    }
+    
+    void storeBatch (NodeStore::Batch const& batch)
+    {
     }
 
-    bool bulkStore (const std::vector< NodeObject::pointer >& objs)
+    void visitAll (VisitCallback& callback)
     {
-        return false;
     }
 
-    NodeObject::pointer retrieve (uint256 const& hash)
+    int getWriteLoad ()
     {
-        return NodeObject::pointer ();
-    }
-
-    void visitAll (FUNCTION_TYPE <void (NodeObject::pointer)> func)
-    {
+        return 0;
     }
 };
 
@@ -62,7 +65,10 @@ String NullBackendFactory::getName () const
     return "none";
 }
 
-NodeStore::Backend* NullBackendFactory::createInstance (size_t, StringPairArray const&)
+NodeStore::Backend* NullBackendFactory::createInstance (
+    size_t,
+    StringPairArray const&,
+    NodeStore::Scheduler&)
 {
     return new NullBackendFactory::Backend;
 }

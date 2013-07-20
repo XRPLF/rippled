@@ -365,14 +365,24 @@ public:
         return reinterpret_cast<unsigned char*> (pn + WIDTH);
     }
 
-    const unsigned char* begin () const
+    unsigned char const* cbegin () const noexcept
     {
-        return reinterpret_cast<const unsigned char*> (pn);
+        return reinterpret_cast <unsigned char const*> (pn);
     }
 
-    const unsigned char* end () const
+    unsigned char const* cend () const noexcept
     {
-        return reinterpret_cast<const unsigned char*> (pn + WIDTH);
+        return reinterpret_cast<unsigned char const*> (pn + WIDTH);
+    }
+
+    const unsigned char* begin () const noexcept
+    {
+        return cbegin ();
+    }
+
+    const unsigned char* end () const noexcept
+    {
+        return cend ();
     }
 
     unsigned int size () const

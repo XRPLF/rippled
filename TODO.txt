@@ -3,16 +3,19 @@ RIPPLE TODO
 --------------------------------------------------------------------------------
 
 Vinnie's Short List (Changes day to day)
+- Finish writing the NodeStore unit tests
+- Finish converting backends to new API
 - Memory NodeStore::Backend for unit tests
+- Performance test for NodeStore::Backend
 - Improved Mutex to track deadlocks
-- Convert some Ripple boost unit tests to Beast.
-- Eliminate new technical in NodeStore::Backend
 - Work on KeyvaDB
+- Import beast::db and use it in SQliteBackend
 - Finish unit tests and code for Validators
+- Convert some Ripple boost unit tests to Beast.
 
 --------------------------------------------------------------------------------
 
-- Replace master lock with 
+- Replace all throw with beast::Throw
 
 - Replace base_uint and uintXXX with UnsignedInteger
   * Need to specialize UnsignedInteger to work efficiently with 4 and 8 byte

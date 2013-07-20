@@ -243,7 +243,7 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode, SHANodeFormat format,
     {
         Serializer s;
         root->addRaw (s, snfPREFIX);
-        filter->gotNode (false, *root, root->getNodeHash (), s.peekData (), root->getType ());
+        filter->gotNode (false, *root, root->getNodeHash (), s.modData (), root->getType ());
     }
 
     return SHAMapAddNode::useful ();
@@ -281,7 +281,7 @@ SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SH
     {
         Serializer s;
         root->addRaw (s, snfPREFIX);
-        filter->gotNode (false, *root, root->getNodeHash (), s.peekData (), root->getType ());
+        filter->gotNode (false, *root, root->getNodeHash (), s.modData (), root->getType ());
     }
 
     return SHAMapAddNode::useful ();
@@ -345,7 +345,7 @@ SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode,
             {
                 Serializer s;
                 newNode->addRaw (s, snfPREFIX);
-                filter->gotNode (false, node, iNode->getChildHash (branch), s.peekData (), newNode->getType ());
+                filter->gotNode (false, node, iNode->getChildHash (branch), s.modData (), newNode->getType ());
             }
 
             mTNByID[node] = newNode;

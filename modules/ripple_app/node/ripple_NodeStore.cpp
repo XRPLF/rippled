@@ -4,49 +4,164 @@
 */
 //==============================================================================
 
-//
-// NodeStore::Backend
-//
-
-NodeStore::Backend::Backend ()
-    : mWriteGeneration(0)
-    , mWriteLoad(0)
-    , mWritePending(false)
+NodeStore::DecodedBlob::DecodedBlob (void const* key, void const* value, int valueBytes)
 {
-    mWriteSet.reserve (bulkWriteBatchSize);
+    /*  Data format:
+
+        Bytes
+
+        0...3       LedgerIndex     32-bit big endian integer
+        4...7       Unused?         An unused copy of the LedgerIndex
+        8           char            One of NodeObjectType
+        9...end                     The body of the object data
+    */
+
+    m_success = false;
+    m_key = key;
+    // VFALCO NOTE Ledger indexes should have started at 1
+    m_ledgerIndex = LedgerIndex (-1);
+    m_objectType = hotUNKNOWN;
+    m_objectData = nullptr;
+    m_dataBytes = bmax (0, valueBytes - 9);
+
+    if (valueBytes > 4)
+    {
+        LedgerIndex const* index = static_cast <LedgerIndex const*> (value);
+        m_ledgerIndex = ByteOrder::swapIfLittleEndian (*index);
+    }
+
+    // VFALCO NOTE What about bytes 4 through 7 inclusive?
+
+    if (valueBytes > 8)
+    {
+        unsigned char const* byte = static_cast <unsigned char const*> (value);
+        m_objectType = static_cast <NodeObjectType> (byte [8]);
+    }
+
+    if (valueBytes > 9)
+    {
+        m_objectData = static_cast <unsigned char const*> (value) + 9;
+
+        switch (m_objectType)
+        {
+        case hotUNKNOWN:
+        default:
+            break;
+
+        case hotLEDGER:
+        case hotTRANSACTION:
+        case hotACCOUNT_NODE:
+        case hotTRANSACTION_NODE:
+            m_success = true;
+            break;
+        }
+    }
 }
 
-bool NodeStore::Backend::store (NodeObject::ref object)
+NodeObject::Ptr NodeStore::DecodedBlob::createObject ()
 {
-    boost::mutex::scoped_lock sl (mWriteMutex);
+    bassert (m_success);
+
+    NodeObject::Ptr object;
+
+    if (m_success)
+    {
+        Blob data (m_dataBytes);
+
+        memcpy (data.data (), m_objectData, m_dataBytes);
+
+        object = NodeObject::createObject (
+            m_objectType, m_ledgerIndex, data, uint256 (m_key));
+    }
+
+    return object;
+}
+
+//------------------------------------------------------------------------------
+
+void NodeStore::EncodedBlob::prepare (NodeObject::Ptr const& object)
+{
+    m_key = object->getHash ().begin ();
+
+    // This is how many bytes we need in the flat data
+    m_size = object->getData ().size () + 9;
+
+    m_data.ensureSize (m_size);
+
+    // These sizes must be the same!
+    static_bassert (sizeof (uint32) == sizeof (object->getIndex ()));
+
+    {
+        uint32* buf = static_cast <uint32*> (m_data.getData ());
+
+        buf [0] = ByteOrder::swapIfLittleEndian (object->getIndex ());
+        buf [1] = ByteOrder::swapIfLittleEndian (object->getIndex ());
+    }
+
+    {
+        unsigned char* buf = static_cast <unsigned char*> (m_data.getData ());
+
+        buf [8] = static_cast <unsigned char> (object->getType ());
+
+        memcpy (&buf [9], object->getData ().data (), object->getData ().size ());
+    }
+}
+
+//==============================================================================
+
+NodeStore::BatchWriter::BatchWriter (Callback& callback, Scheduler& scheduler)
+    : m_callback (callback)
+    , m_scheduler (scheduler)
+    , mWriteGeneration (0)
+    , mWriteLoad (0)
+    , mWritePending (false)
+{
+    mWriteSet.reserve (batchWritePreallocationSize);
+}
+
+NodeStore::BatchWriter::~BatchWriter ()
+{
+    waitForWriting ();
+}
+
+void NodeStore::BatchWriter::store (NodeObject::ref object)
+{
+    LockType::scoped_lock sl (mWriteMutex);
+
     mWriteSet.push_back (object);
 
-    if (!mWritePending)
+    if (! mWritePending)
     {
         mWritePending = true;
 
-        // VFALCO TODO Eliminate this dependency on the Application object.
-        getApp().getJobQueue ().addJob (
-            jtWRITE,
-            "NodeObject::store",
-            BIND_TYPE (&NodeStore::Backend::bulkWrite, this, P_1));
+        m_scheduler.scheduleTask (this);
     }
-    return true;
 }
 
-void NodeStore::Backend::bulkWrite (Job &)
+int NodeStore::BatchWriter::getWriteLoad ()
+{
+    LockType::scoped_lock sl (mWriteMutex);
+
+    return std::max (mWriteLoad, static_cast<int> (mWriteSet.size ()));
+}
+
+void NodeStore::BatchWriter::performScheduledTask ()
+{
+    writeBatch ();
+}
+
+void NodeStore::BatchWriter::writeBatch ()
 {
     int setSize = 0;
 
-    // VFALCO NOTE Use the canonical for(;;) instead.
-    //             Or better, provide a proper terminating condition.
-    while (1)
+    for (;;)
     {
         std::vector< boost::shared_ptr<NodeObject> > set;
-        set.reserve (bulkWriteBatchSize);
+
+        set.reserve (batchWritePreallocationSize);
 
         {
-            boost::mutex::scoped_lock sl (mWriteMutex);
+            LockType::scoped_lock sl (mWriteMutex);
 
             mWriteSet.swap (set);
             assert (mWriteSet.empty ());
@@ -62,162 +177,43 @@ void NodeStore::Backend::bulkWrite (Job &)
                 return;
             }
 
+            // VFALCO NOTE On the first trip through, mWriteLoad will be 0.
+            //             This is probably not intended. Perhaps the order
+            //             of calls isn't quite right
+            //
             mWriteLoad = std::max (setSize, static_cast<int> (mWriteSet.size ()));
+
             setSize = set.size ();
         }
 
-        bulkStore (set);
+        m_callback.writeBatch (set);
     }
 }
 
-// VFALCO TODO This function should not be needed. Instead, the
-//             destructor should handle flushing of the bulk write buffer.
-//
-void NodeStore::Backend::waitWrite ()
+void NodeStore::BatchWriter::waitForWriting ()
 {
-    boost::mutex::scoped_lock sl (mWriteMutex);
+    LockType::scoped_lock sl (mWriteMutex);
     int gen = mWriteGeneration;
 
     while (mWritePending && (mWriteGeneration == gen))
         mWriteCondition.wait (sl);
 }
 
-int NodeStore::Backend::getWriteLoad ()
+//==============================================================================
+
+class NodeStoreImp
+    : public NodeStore
+    , LeakChecked <NodeStoreImp>
 {
-    boost::mutex::scoped_lock sl (mWriteMutex);
-
-    return std::max (mWriteLoad, static_cast<int> (mWriteSet.size ()));
-}
-
-//------------------------------------------------------------------------------
-
-//
-// NodeStore
-//
-
-class NodeStoreImp : public NodeStore
-{
-public:
-    /** Size of a key.
-    */
-    enum
-    {
-        keyBytes = 32
-    };
-
-    /** Parsed key/value blob into NodeObject components.
-
-        This will extract the information required to construct
-        a NodeObject. It also does consistency checking and returns
-        the result, so it is possible to determine if the data
-        is corrupted without throwing an exception. Note all forms
-        of corruption are detected so further analysis will be
-        needed to eliminate false positives.
-
-        This is the format in which a NodeObject is stored in the
-        persistent storage layer.
-    */
-    struct DecodedBlob
-    {
-        /** Construct the decoded blob from raw data.
-
-            The `success` member will indicate if the operation was succesful.
-        */
-        DecodedBlob (void const* keyParam, void const* value, int valueBytes)
-        {
-            /*  Data format:
-
-                Bytes
-
-                0...3       LedgerIndex     32-bit big endian integer
-                4...7       Unused?         An unused copy of the LedgerIndex
-                8           char            One of NodeObjectType
-                9...end                     The body of the object data
-            */
-
-            success = false;
-            key = keyParam;
-            // VFALCO NOTE Ledger indexes should have started at 1
-            ledgerIndex = LedgerIndex (-1);
-            objectType = hotUNKNOWN;
-            objectData = nullptr;
-            dataBytes = bmax (0, valueBytes - 9);
-
-            if (dataBytes > 4)
-            {
-                LedgerIndex const* index = static_cast <LedgerIndex const*> (value);
-                ledgerIndex = ByteOrder::swapIfLittleEndian (*index);
-            }
-
-            // VFALCO NOTE What about bytes 4 through 7 inclusive?
-
-            if (dataBytes > 8)
-            {
-                unsigned char const* byte = static_cast <unsigned char const*> (value);
-                objectType = static_cast <NodeObjectType> (byte [8]);
-            }
-
-            if (dataBytes > 9)
-            {
-                objectData = static_cast <unsigned char const*> (value) + 9;
-
-                switch (objectType)
-                {
-                case hotUNKNOWN:
-                default:
-                    break;
-
-                case hotLEDGER:
-                case hotTRANSACTION:
-                case hotACCOUNT_NODE:
-                case hotTRANSACTION_NODE:
-                    success = true;
-                    break;
-                }
-            }
-        }
-
-        /** Create a NodeObject from this data.
-        */
-        NodeObject::pointer createObject ()
-        {
-            NodeObject::pointer object;
-
-            if (success)
-            {
-                // VFALCO NOTE I dislke these shared pointers from boost
-                object = boost::make_shared <NodeObject> (
-                    objectType, ledgerIndex, objectData, dataBytes, uint256 (key));
-            }
-
-            return object;
-        }
-
-        bool success;
-
-        void const* key;
-        LedgerIndex ledgerIndex;
-        NodeObjectType objectType;
-        unsigned char const* objectData;
-        int dataBytes;
-    };
-
-    //--------------------------------------------------------------------------
-
-    class EncodedBlob
-    {
-        HeapBlock <char> data;
-    };
-
 public:
     NodeStoreImp (String backendParameters,
                   String fastBackendParameters,
-                  int cacheSize,
-                  int cacheAge)
-        : m_backend (createBackend (backendParameters))
-        , m_fastBackend (fastBackendParameters.isNotEmpty () ? createBackend (fastBackendParameters)
-                                                             : nullptr)
-        , m_cache ("NodeStore", cacheSize, cacheAge)
+                  Scheduler& scheduler)
+        : m_scheduler (scheduler)
+        , m_backend (createBackend (backendParameters, scheduler))
+        , m_fastBackend (fastBackendParameters.isNotEmpty ()
+            ? createBackend (fastBackendParameters, scheduler) : nullptr)
+        , m_cache ("NodeStore", 16384, 300)
         , m_negativeCache ("NoteStoreNegativeCache", 0, 120)
     {
     }
@@ -227,84 +223,21 @@ public:
         // VFALCO NOTE This shouldn't be necessary, the backend can
         //             just handle it in the destructor.
         //
+        /*
         m_backend->waitWrite ();
 
         if (m_fastBackend)
             m_fastBackend->waitWrite ();
-    }
-
-    float getCacheHitRate ()
-    {
-        return m_cache.getHitRate ();
-    }
-
-    void tune (int size, int age)
-    {
-        m_cache.setTargetSize (size);
-        m_cache.setTargetAge (age);
-    }
-
-    void sweep ()
-    {
-        m_cache.sweep ();
-        m_negativeCache.sweep ();
-    }
-
-    int getWriteLoad ()
-    {
-        return m_backend->getWriteLoad ();
-    }
-
-    bool store (NodeObjectType type,
-                uint32 index,
-                Blob const& data,
-                uint256 const& hash)
-    {
-        bool wasStored = false;
-
-        bool const keyFoundAndObjectCached = m_cache.refreshIfPresent (hash);
-
-        // VFALCO NOTE What happens if the key is found, but the object
-        //             fell out of the cache? We will end up passing it
-        //             to the backend anyway.
-        //      
-        if (! keyFoundAndObjectCached)
-        {
-
-    // VFALCO TODO Rename this to RIPPLE_NODESTORE_VERIFY_HASHES and make
-    //             it be 1 or 0 instead of merely defined or undefined.
-    //
-    #ifdef PARANOID
-            assert (hash == Serializer::getSHA512Half (data));
-    #endif
-
-            NodeObject::pointer object = boost::make_shared <NodeObject> (type, index, data, hash);
-
-            // VFALCO NOTE What does it mean to canonicalize an object?
-            //
-            if (!m_cache.canonicalize (hash, object))
-            {
-                m_backend->store (object);
-
-                if (m_fastBackend)
-                    m_fastBackend->store (object);
-            }
-
-            m_negativeCache.del (hash);
-
-            wasStored = true;
-        }
-
-        return wasStored;
+        */
     }
 
     //------------------------------------------------------------------------------
 
-    NodeObject::pointer retrieve (uint256 const& hash)
+    NodeObject::Ptr fetch (uint256 const& hash)
     {
         // See if the object already exists in the cache
         //
-        NodeObject::pointer obj = m_cache.fetch (hash);
+        NodeObject::Ptr obj = m_cache.fetch (hash);
 
         if (obj == nullptr)
         {
@@ -320,7 +253,7 @@ public:
                 //
                 if (m_fastBackend != nullptr)
                 {
-                    obj = retrieveInternal (m_fastBackend, hash);
+                    obj = fetchInternal (m_fastBackend, hash);
 
                     // If we found the object, avoid storing it again later.
                     if (obj != nullptr)
@@ -335,16 +268,14 @@ public:
                     //
                     {
                         // Monitor this operation's load since it is expensive.
-
-                        // m_hooks->onRetrieveBegin ()
-
+                        //
                         // VFALCO TODO Why is this an autoptr? Why can't it just be a plain old object?
                         //
-                        LoadEvent::autoptr event (getApp().getJobQueue ().getLoadEventAP (jtHO_READ, "HOS::retrieve"));
+                        // VFALCO NOTE Commented this out because it breaks the unit test!
+                        //
+                        //LoadEvent::autoptr event (getApp().getJobQueue ().getLoadEventAP (jtHO_READ, "HOS::retrieve"));
 
-                        obj = retrieveInternal (m_backend, hash);
-
-                        // m_hooks->onRetrieveEnd ()
+                        obj = fetchInternal (m_backend, hash);
                     }
 
                     // If it's not in the main database, remember that so we
@@ -389,47 +320,27 @@ public:
         return obj;
     }
 
-    NodeObject::pointer retrieveInternal (Backend* backend, uint256 const& hash)
+    NodeObject::Ptr fetchInternal (Backend* backend, uint256 const& hash)
     {
-        // VFALCO TODO Make this not allocate and free on each call
-        //
-        struct MyGetCallback : Backend::GetCallback
+        NodeObject::Ptr object;
+
+        Backend::Status const status = backend->fetch (hash.begin (), &object);
+
+        switch (status)
         {
-            void* getStorageForValue (size_t sizeInBytes)
-            {
-                bytes = sizeInBytes;
-                data.malloc (sizeInBytes);
+        case Backend::ok:
+        case Backend::notFound:
+            break;
 
-                return &data [0];
-            }
-
-            size_t bytes;
-            HeapBlock <char> data;
-        };
-
-        NodeObject::pointer object;
-
-        MyGetCallback cb;
-        Backend::Status const status = backend->get (hash.begin (), &cb);
-
-        if (status == Backend::ok)
-        {
-            // Deserialize the payload into its components.
+        case Backend::dataCorrupt:
+            // VFALCO TODO Deal with encountering corrupt data!
             //
-            DecodedBlob decoded (hash.begin (), cb.data.getData (), cb.bytes);
+            WriteLog (lsFATAL, NodeObject) << "Corrupt NodeObject #" << hash;
+            break;
 
-            if (decoded.success)
-            {
-                object = decoded.createObject ();
-            }
-            else
-            {
-                // Houston, we've had a problem. Data is likely corrupt.
-
-                // VFALCO TODO Deal with encountering corrupt data!
-
-                WriteLog (lsFATAL, NodeObject) << "Corrupt NodeObject #" << hash;
-            }
+        default:
+            WriteLog (lsWARNING, NodeObject) << "Unknown status=" << status;
+            break;
         }
 
         return object;
@@ -437,42 +348,119 @@ public:
 
     //------------------------------------------------------------------------------
 
-    void importVisitor (
-        std::vector <NodeObject::pointer>& objects,
-        NodeObject::pointer object)
+    void store (NodeObjectType type,
+                uint32 index,
+                Blob& data,
+                uint256 const& hash)
     {
-        if (objects.size() >= bulkWriteBatchSize)
+        bool const keyFoundAndObjectCached = m_cache.refreshIfPresent (hash);
+
+        // VFALCO NOTE What happens if the key is found, but the object
+        //             fell out of the cache? We will end up passing it
+        //             to the backend anyway.
+        //
+        if (! keyFoundAndObjectCached)
         {
-            m_backend->bulkStore (objects);
 
-            objects.clear ();
-            objects.reserve (bulkWriteBatchSize);
+            // VFALCO TODO Rename this to RIPPLE_VERIFY_NODEOBJECT_KEYS and make
+            //             it be 1 or 0 instead of merely defined or undefined.
+            //
+            #if RIPPLE_VERIFY_NODEOBJECT_KEYS
+            assert (hash == Serializer::getSHA512Half (data));
+            #endif
+
+            NodeObject::Ptr object = NodeObject::createObject (
+                type, index, data, hash);
+
+            if (!m_cache.canonicalize (hash, object))
+            {
+                m_backend->store (object);
+
+                if (m_fastBackend)
+                    m_fastBackend->store (object);
+            }
+
+            m_negativeCache.del (hash);
         }
-
-        objects.push_back (object);
     }
 
-    int import (String sourceBackendParameters)
+    //------------------------------------------------------------------------------
+
+    float getCacheHitRate ()
     {
-        ScopedPointer <NodeStore::Backend> srcBackend (createBackend (sourceBackendParameters));
+        return m_cache.getHitRate ();
+    }
+
+    void tune (int size, int age)
+    {
+        m_cache.setTargetSize (size);
+        m_cache.setTargetAge (age);
+    }
+
+    void sweep ()
+    {
+        m_cache.sweep ();
+        m_negativeCache.sweep ();
+    }
+
+    int getWriteLoad ()
+    {
+        return m_backend->getWriteLoad ();
+    }
+
+    //------------------------------------------------------------------------------
+
+    void import (String sourceBackendParameters)
+    {
+        class ImportVisitCallback : public Backend::VisitCallback
+        {
+        public:
+            explicit ImportVisitCallback (Backend& backend)
+                : m_backend (backend)
+            {
+                m_objects.reserve (batchWritePreallocationSize);
+            }
+
+            ~ImportVisitCallback ()
+            {
+                if (! m_objects.empty ())
+                    m_backend.storeBatch (m_objects);
+            }
+
+            void visitObject (NodeObject::Ptr const& object)
+            {
+                if (m_objects.size () >= batchWritePreallocationSize)
+                {
+                    m_backend.storeBatch (m_objects);
+
+                    m_objects.clear ();
+                    m_objects.reserve (batchWritePreallocationSize);
+                }
+
+                m_objects.push_back (object);
+            }
+
+        private:
+            Backend& m_backend;
+            Batch m_objects;
+        };
+
+        //--------------------------------------------------------------------------
+
+        ScopedPointer <Backend> srcBackend (createBackend (sourceBackendParameters, m_scheduler));
 
         WriteLog (lsWARNING, NodeObject) <<
-            "Node import from '" << srcBackend->getDataBaseName() << "' to '"
-                                 << m_backend->getDataBaseName() << "'.";
+            "Node import from '" << srcBackend->getName() << "' to '"
+                                 << m_backend->getName() << "'.";
 
-        std::vector <NodeObject::pointer> objects;
+        ImportVisitCallback callback (*m_backend);
 
-        objects.reserve (bulkWriteBatchSize);
-
-        srcBackend->visitAll (BIND_TYPE (&NodeStoreImp::importVisitor, this, boost::ref (objects), P_1));
-
-        if (!objects.empty ())
-            m_backend->bulkStore (objects);
-
-        return 0;
+        srcBackend->visitAll (callback);
     }
 
-    NodeStore::Backend* createBackend (String const& parameters)
+    //------------------------------------------------------------------------------
+
+    static NodeStore::Backend* createBackend (String const& parameters, Scheduler& scheduler)
     {
         Backend* backend = nullptr;
 
@@ -486,7 +474,7 @@ public:
 
             for (int i = 0; i < s_factories.size (); ++i)
             {
-                if (s_factories [i]->getName () == type)
+                if (s_factories [i]->getName ().compareIgnoreCase (type) == 0)
                 {
                     factory = s_factories [i];
                     break;
@@ -495,16 +483,16 @@ public:
 
             if (factory != nullptr)
             {
-                backend = factory->createInstance (keyBytes, keyValues);
+                backend = factory->createInstance (keyBytes, keyValues, scheduler);
             }
             else
             {
-                throw std::runtime_error ("unkown backend type");
+                Throw (std::runtime_error ("unknown backend type"));
             }
         }
         else
         {
-            throw std::runtime_error ("missing backend type");
+            Throw (std::runtime_error ("missing backend type"));
         }
 
         return backend;
@@ -515,10 +503,12 @@ public:
         s_factories.add (&factory);
     }
 
+    //------------------------------------------------------------------------------
+
 private:
     static Array <NodeStore::BackendFactory*> s_factories;
 
-    RecycledObjectPool <EncodedBlob> m_blobPool;
+    Scheduler& m_scheduler;
 
     // Persistent key/value storage.
     ScopedPointer <Backend> m_backend;
@@ -542,72 +532,597 @@ void NodeStore::addBackendFactory (BackendFactory& factory)
 
 NodeStore* NodeStore::New (String backendParameters,
                            String fastBackendParameters,
-                           int cacheSize,
-                           int cacheAge)
+                           Scheduler& scheduler)
 {
     return new NodeStoreImp (backendParameters,
                              fastBackendParameters,
-                             cacheSize,
-                             cacheAge);
+                             scheduler);
 }
 
-//------------------------------------------------------------------------------
+//==============================================================================
 
-class NodeStoreTests : public UnitTest
+// Some common code for the unit tests
+//
+class NodeStoreUnitTest : public UnitTest
 {
 public:
+    // Tunable parameters
+    //
     enum
     {
         maxPayloadBytes = 1000,
-
-        numObjects = 1000
+        numObjectsToTest = 1000
     };
 
-    NodeStoreTests () : UnitTest ("NodeStore")
-    {
-    }
+    // Shorthand type names
+    //
+    typedef NodeStore::Backend Backend;
+    typedef NodeStore::Batch Batch;
 
-    // Create a pseudo-random object
-    static NodeObject* createNodeObject (int index, int64 seedValue, HeapBlock <char>& payloadBuffer)
+    // Immediately performs the task
+    struct TestScheduler : NodeStore::Scheduler
     {
-        Random r (seedValue + index);
-
-        NodeObjectType type;
-        switch (r.nextInt (4))
+        void scheduleTask (Task* task)
         {
-        case 0: type = hotLEDGER; break;
-        case 1: type = hotTRANSACTION; break;
-        case 2: type = hotACCOUNT_NODE; break;
-        case 3: type = hotTRANSACTION_NODE; break;
-        default:
-            type = hotUNKNOWN;
-            break;
-        };
+            task->performScheduledTask ();
+        }
+    };
 
-        LedgerIndex ledgerIndex = 1 + r.nextInt (1024 * 1024);
+    // Creates predictable objects
+    class PredictableObjectFactory
+    {
+    public:
+        explicit PredictableObjectFactory (int64 seedValue)
+            : m_seedValue (seedValue)
+        {
+        }
 
-        uint256 hash;
-        r.nextBlob (hash.begin (), hash.size ());
+        NodeObject::Ptr createObject (int index)
+        {
+            Random r (m_seedValue + index);
 
-        int payloadBytes = 1 + r.nextInt (maxPayloadBytes);
-        r.nextBlob (payloadBuffer.getData (), payloadBytes);
+            NodeObjectType type;
+            switch (r.nextInt (4))
+            {
+            case 0: type = hotLEDGER; break;
+            case 1: type = hotTRANSACTION; break;
+            case 2: type = hotACCOUNT_NODE; break;
+            case 3: type = hotTRANSACTION_NODE; break;
+            default:
+                type = hotUNKNOWN;
+                break;
+            };
 
-        return new NodeObject (type, ledgerIndex, payloadBuffer.getData (), payloadBytes, hash);
+            LedgerIndex ledgerIndex = 1 + r.nextInt (1024 * 1024);
+
+            uint256 hash;
+            r.nextBlob (hash.begin (), hash.size ());
+
+            int const payloadBytes = 1 + r.nextInt (maxPayloadBytes);
+
+            Blob data (payloadBytes);
+
+            r.nextBlob (data.data (), payloadBytes);
+
+            return NodeObject::createObject (type, ledgerIndex, data, hash);
+        }
+
+    private:
+        int64 const m_seedValue;
+    };
+
+public:
+    NodeStoreUnitTest (String name, UnitTest::When when = UnitTest::runAlways)
+        : UnitTest (name, "ripple", when)
+    {
     }
 
-    void runTest ()
+    // Create a predictable batch of objects
+    static void createPredictableBatch (Batch& batch, int startingIndex, int numObjects, int64 seedValue)
     {
-        beginTest ("create");
+        batch.reserve (numObjects);
 
-        int64 const seedValue = 50;
-
-        HeapBlock <char> payloadBuffer (maxPayloadBytes);
+        PredictableObjectFactory factory (seedValue);
 
         for (int i = 0; i < numObjects; ++i)
+            batch.push_back (factory.createObject (startingIndex + i));
+    }
+
+    // Compare two batches for equality
+    static bool areBatchesEqual (Batch const& lhs, Batch const& rhs)
+    {
+        bool result = true;
+
+        if (lhs.size () == rhs.size ())
         {
-            ScopedPointer <NodeObject> object (createNodeObject (i, seedValue, payloadBuffer));
+            for (int i = 0; i < lhs.size (); ++i)
+            {
+                if (! lhs [i]->isCloneOf (rhs [i]))
+                {
+                    result = false;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            result = false;
+        }
+
+        return result;
+    }
+
+    // Store a batch in a backend
+    void storeBatch (Backend& backend, Batch const& batch)
+    {
+        for (int i = 0; i < batch.size (); ++i)
+        {
+            backend.store (batch [i]);
+        }
+    }
+
+    // Get a copy of a batch in a backend
+    void fetchCopyOfBatch (Backend& backend, Batch* pCopy, Batch const& batch)
+    {
+        pCopy->clear ();
+        pCopy->reserve (batch.size ());
+
+        for (int i = 0; i < batch.size (); ++i)
+        {
+            NodeObject::Ptr object;
+
+            Backend::Status const status = backend.fetch (
+                batch [i]->getHash ().cbegin (), &object);
+
+            expect (status == Backend::ok, "Should be ok");
+
+            if (status == Backend::ok)
+            {
+                expect (object != nullptr, "Should not be null");
+
+                pCopy->push_back (object);
+            }
+        }
+    }
+
+    // Store all objects in a batch
+    static void storeBatch (NodeStore& db, NodeStore::Batch const& batch)
+    {
+        for (int i = 0; i < batch.size (); ++i)
+        {
+            NodeObject::Ptr const object (batch [i]);
+
+            Blob data (object->getData ());
+
+            db.store (object->getType (),
+                      object->getIndex (),
+                      data,
+                      object->getHash ());
+        }
+    }
+
+    // Fetch all the hashes in one batch, into another batch.
+    static void fetchCopyOfBatch (NodeStore& db,
+                                  NodeStore::Batch* pCopy,
+                                  NodeStore::Batch const& batch)
+    {
+        pCopy->clear ();
+        pCopy->reserve (batch.size ());
+
+        for (int i = 0; i < batch.size (); ++i)
+        {
+            NodeObject::Ptr object = db.fetch (batch [i]->getHash ());
+
+            if (object != nullptr)
+                pCopy->push_back (object);
         }
     }
 };
 
+//------------------------------------------------------------------------------
+
+// Tests predictable batches, and NodeObject blob encoding
+//
+class NodeStoreBasicsTests : public NodeStoreUnitTest
+{
+public:
+    typedef NodeStore::EncodedBlob EncodedBlob;
+    typedef NodeStore::DecodedBlob DecodedBlob;
+
+    NodeStoreBasicsTests () : NodeStoreUnitTest ("NodeStoreBasics")
+    {
+    }
+
+    // Make sure predictable object generation works!
+    void testBatches (int64 const seedValue)
+    {
+        beginTest ("batch");
+
+        Batch batch1;
+        createPredictableBatch (batch1, 0, numObjectsToTest, seedValue);
+
+        Batch batch2;
+        createPredictableBatch (batch2, 0, numObjectsToTest, seedValue);
+
+        expect (areBatchesEqual (batch1, batch2), "Should be equal");
+
+        Batch batch3;
+        createPredictableBatch (batch3, 1, numObjectsToTest, seedValue);
+
+        expect (! areBatchesEqual (batch1, batch3), "Should be equal");
+    }
+
+    // Checks encoding/decoding blobs
+    void testBlobs (int64 const seedValue)
+    {
+        beginTest ("encoding");
+
+        Batch batch;
+        createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
+
+        EncodedBlob encoded;
+        for (int i = 0; i < batch.size (); ++i)
+        {
+            encoded.prepare (batch [i]);
+
+            DecodedBlob decoded (encoded.getKey (), encoded.getData (), encoded.getSize ());
+
+            expect (decoded.wasOk (), "Should be ok");
+
+            if (decoded.wasOk ())
+            {
+                NodeObject::Ptr const object (decoded.createObject ());
+
+                expect (batch [i]->isCloneOf (object), "Should be clones");
+            }
+        }
+    }
+
+    void runTest ()
+    {
+        int64 const seedValue = 50;
+
+        testBatches (seedValue);
+
+        testBlobs (seedValue);
+    }
+};
+
+static NodeStoreBasicsTests nodeStoreBasicsTests;
+
+//------------------------------------------------------------------------------
+
+// Tests the NodeStore::Backend interface
+//
+class NodeStoreBackendTests : public NodeStoreUnitTest
+{
+public:
+    NodeStoreBackendTests () : NodeStoreUnitTest ("NodeStoreBackend")
+    {
+    }
+
+    //--------------------------------------------------------------------------
+
+    void testBackend (String type, int64 const seedValue)
+    {
+        beginTest (String ("NodeStore::Backend type=") + type);
+
+        String params;
+        params << "type=" << type
+               << "|path=" << File::createTempFile ("unittest").getFullPathName ();
+
+        // Create a batch
+        NodeStore::Batch batch;
+        createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
+        //createPredictableBatch (batch, 0, 10, seedValue);
+
+        {
+            // Open the backend
+            ScopedPointer <Backend> backend (
+                NodeStoreImp::createBackend (params, m_scheduler));
+
+            // Write the batch
+            storeBatch (*backend, batch);
+
+            {
+                // Read it back in
+                NodeStore::Batch copy;
+                fetchCopyOfBatch (*backend, &copy, batch);
+                expect (areBatchesEqual (batch, copy), "Should be equal");
+            }
+
+            {
+                // Reorder and read the copy again
+                NodeStore::Batch copy;
+                UnitTestUtilities::repeatableShuffle (batch.size (), batch, seedValue);
+                fetchCopyOfBatch (*backend, &copy, batch);
+                expect (areBatchesEqual (batch, copy), "Should be equal");
+            }
+        }
+
+        {
+            // Re-open the backend
+            ScopedPointer <Backend> backend (
+                NodeStoreImp::createBackend (params, m_scheduler));
+
+            // Read it back in
+            NodeStore::Batch copy;
+            fetchCopyOfBatch (*backend, &copy, batch);
+            // Canonicalize the source and destination batches
+            std::sort (batch.begin (), batch.end (), NodeObject::LessThan ());
+            std::sort (copy.begin (), copy.end (), NodeObject::LessThan ());
+            expect (areBatchesEqual (batch, copy), "Should be equal");
+        }
+    }
+
+    void runTest ()
+    {
+        int const seedValue = 50;
+
+        testBackend ("keyvadb", seedValue);
+
+        testBackend ("leveldb", seedValue);
+
+        testBackend ("sqlite", seedValue);
+
+        #if RIPPLE_HYPERLEVELDB_AVAILABLE
+        testBackend ("hyperleveldb", seedValue);
+        #endif
+
+        #if RIPPLE_MDB_AVAILABLE
+        testBackend ("mdb", seedValue);
+        #endif
+    }
+
+private:
+    TestScheduler m_scheduler;
+};
+
+static NodeStoreBackendTests nodeStoreBackendTests;
+
+//------------------------------------------------------------------------------
+
+class NodeStoreTimingTests : public NodeStoreUnitTest
+{
+public:
+    enum
+    {
+        numObjectsToTest     = 10000
+    };
+
+    NodeStoreTimingTests ()
+        : NodeStoreUnitTest ("NodeStoreTiming", UnitTest::runManual)
+    {
+    }
+
+    class Stopwatch
+    {
+    public:
+        Stopwatch ()
+        {
+        }
+
+        void start ()
+        {
+            m_startTime = Time::getHighResolutionTicks ();
+        }
+
+        double getElapsed ()
+        {
+            int64 const now = Time::getHighResolutionTicks();
+
+            return Time::highResolutionTicksToSeconds (now - m_startTime);
+        }
+
+    private:
+        int64 m_startTime;
+    };
+
+    void testBackend (String type, int64 const seedValue)
+    {
+        String s;
+        s << "Testing backend '" << type << "' performance";
+        beginTest (s);
+
+        String params;
+        params << "type=" << type
+               << "|path=" << File::createTempFile ("unittest").getFullPathName ();
+
+        // Create batches
+        NodeStore::Batch batch1;
+        createPredictableBatch (batch1, 0, numObjectsToTest, seedValue);
+        NodeStore::Batch batch2;
+        createPredictableBatch (batch2, 0, numObjectsToTest, seedValue);
+
+        // Open the backend
+        ScopedPointer <Backend> backend (
+            NodeStoreImp::createBackend (params, m_scheduler));
+
+        Stopwatch t;
+
+        // Individual write batch test
+        t.start ();
+        storeBatch (*backend, batch1);
+        s = "";
+        s << "  Single write: " << String (t.getElapsed (), 2) << " seconds";
+        logMessage (s);
+
+        // Bulk write batch test
+        t.start ();
+        backend->storeBatch (batch2);
+        s = "";
+        s << "  Batch write:  " << String (t.getElapsed (), 2) << " seconds";
+        logMessage (s);
+
+        // Read test
+        Batch copy;
+        t.start ();
+        fetchCopyOfBatch (*backend, &copy, batch1);
+        fetchCopyOfBatch (*backend, &copy, batch2);
+        s = "";
+        s << "  Batch read:   " << String (t.getElapsed (), 2) << " seconds";
+        logMessage (s);
+    }
+
+    void runTest ()
+    {
+        int const seedValue = 50;
+
+        testBackend ("keyvadb", seedValue);
+
+#if 0
+        testBackend ("leveldb", seedValue);
+
+        testBackend ("sqlite", seedValue);
+
+        #if RIPPLE_HYPERLEVELDB_AVAILABLE
+        testBackend ("hyperleveldb", seedValue);
+        #endif
+
+        #if RIPPLE_MDB_AVAILABLE
+        testBackend ("mdb", seedValue);
+        #endif
+#endif
+    }
+
+private:
+    TestScheduler m_scheduler;
+};
+
+//------------------------------------------------------------------------------
+
+class NodeStoreTests : public NodeStoreUnitTest
+{
+public:
+    NodeStoreTests () : NodeStoreUnitTest ("NodeStore")
+    {
+    }
+
+    void testImport (String destBackendType, String srcBackendType, int64 seedValue)
+    {
+        String srcParams;
+        srcParams << "type=" << srcBackendType
+                  << "|path=" << File::createTempFile ("unittest").getFullPathName ();
+
+        // Create a batch
+        NodeStore::Batch batch;
+        createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
+
+        // Write to source db
+        {
+            ScopedPointer <NodeStore> src (NodeStore::New (srcParams, "", m_scheduler));
+
+            storeBatch (*src, batch);
+        }
+
+        String destParams;
+        destParams << "type=" << destBackendType
+                   << "|path=" << File::createTempFile ("unittest").getFullPathName ();
+
+        ScopedPointer <NodeStore> dest (NodeStore::New (
+            destParams, "", m_scheduler));
+
+        beginTest (String ("import into '") + destBackendType + "' from '" + srcBackendType + "'");
+
+        // Do the import
+        dest->import (srcParams);
+
+        // Get the results of the import
+        NodeStore::Batch copy;
+        fetchCopyOfBatch (*dest, &copy, batch);
+
+        // Canonicalize the source and destination batches
+        std::sort (batch.begin (), batch.end (), NodeObject::LessThan ());
+        std::sort (copy.begin (), copy.end (), NodeObject::LessThan ());
+        expect (areBatchesEqual (batch, copy), "Should be equal");
+
+    }
+
+    void testBackend (String type, int64 const seedValue)
+    {
+        beginTest (String ("NodeStore backend type=") + type);
+
+        String params;
+        params << "type=" << type
+               << "|path=" << File::createTempFile ("unittest").getFullPathName ();
+
+        // Create a batch
+        NodeStore::Batch batch;
+        createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
+
+        {
+            // Open the database
+            ScopedPointer <NodeStore> db (NodeStore::New (params, "", m_scheduler));
+
+            // Write the batch
+            storeBatch (*db, batch);
+
+            {
+                // Read it back in
+                NodeStore::Batch copy;
+                fetchCopyOfBatch (*db, &copy, batch);
+                expect (areBatchesEqual (batch, copy), "Should be equal");
+            }
+
+            {
+                // Reorder and read the copy again
+                NodeStore::Batch copy;
+                UnitTestUtilities::repeatableShuffle (batch.size (), batch, seedValue);
+                fetchCopyOfBatch (*db, &copy, batch);
+                expect (areBatchesEqual (batch, copy), "Should be equal");
+            }
+        }
+
+        {
+            // Re-open the database
+            ScopedPointer <NodeStore> db (NodeStore::New (params, "", m_scheduler));
+
+            // Read it back in
+            NodeStore::Batch copy;
+            fetchCopyOfBatch (*db, &copy, batch);
+            // Canonicalize the source and destination batches
+            std::sort (batch.begin (), batch.end (), NodeObject::LessThan ());
+            std::sort (copy.begin (), copy.end (), NodeObject::LessThan ());
+            expect (areBatchesEqual (batch, copy), "Should be equal");
+        }
+    }
+
+public:
+    void runTest ()
+    {
+        int64 const seedValue = 50;
+
+        //
+        // Backend tests
+        //
+
+        testBackend ("keyvadb", seedValue);
+
+        testBackend ("leveldb", seedValue);
+
+        testBackend ("sqlite", seedValue);
+
+        #if RIPPLE_HYPERLEVELDB_AVAILABLE
+        testBackend ("hyperleveldb", seedValue);
+        #endif
+
+        #if RIPPLE_MDB_AVAILABLE
+        testBackend ("mdb", seedValue);
+        #endif
+
+        //
+        // Import tests
+        //
+
+        //testImport ("leveldb", "keyvadb", seedValue);
+//testImport ("sqlite", "leveldb", seedValue);
+        testImport ("leveldb", "sqlite", seedValue);
+    }
+
+private:
+    TestScheduler m_scheduler;
+};
+
 static NodeStoreTests nodeStoreTests;
+
+static NodeStoreTimingTests nodeStoreTimingTests;

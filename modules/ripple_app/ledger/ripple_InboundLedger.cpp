@@ -48,7 +48,7 @@ bool InboundLedger::tryLocal ()
     if (!mHaveBase)
     {
         // Nothing we can do without the ledger base
-        NodeObject::pointer node = getApp().getNodeStore ().retrieve (mHash);
+        NodeObject::pointer node = getApp().getNodeStore ().fetch (mHash);
 
         if (!node)
         {
@@ -672,7 +672,7 @@ bool InboundLedger::takeBase (const std::string& data) // data must not have has
     Serializer s (data.size () + 4);
     s.add32 (HashPrefix::ledgerMaster);
     s.addRaw (data);
-    getApp().getNodeStore ().store (hotLEDGER, mLedger->getLedgerSeq (), s.peekData (), mHash);
+    getApp().getNodeStore ().store (hotLEDGER, mLedger->getLedgerSeq (), s.modData (), mHash);
 
     progress ();
 

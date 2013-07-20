@@ -21,7 +21,10 @@ public:
     static LevelDBBackendFactory& getInstance ();
 
     String getName () const;
-    NodeStore::Backend* createInstance (size_t keyBytes, StringPairArray const& keyValues);
+
+    NodeStore::Backend* createInstance (size_t keyBytes,
+                                        StringPairArray const& keyValues,
+                                        NodeStore::Scheduler& scheduler);
 };
 
 #endif

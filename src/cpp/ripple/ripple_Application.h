@@ -65,12 +65,12 @@ public:
 
         char const* getFileName () const noexcept
         {
-            return m_fileName;
+            return m_fileName.get ();
         }
 
         int getLineNumber () const noexcept
         {
-            return m_lineNumber;
+            return m_lineNumber.get ();
         }
 
     private:
@@ -78,19 +78,19 @@ public:
 
         void setOwner (char const* fileName, int lineNumber)
         {
-            m_fileName = fileName;
-            m_lineNumber = lineNumber;
+            m_fileName.set (fileName);
+            m_lineNumber.set (lineNumber);
         }
 
         void resetOwner ()
         {
-            m_fileName = "";
-            m_lineNumber = 0;
+            m_fileName.set ("");
+            m_lineNumber.set (0);
         }
 
         boost::recursive_mutex m_mutex;
-        char const* m_fileName;
-        int m_lineNumber;
+        Atomic <char const*> m_fileName;
+        Atomic <int> m_lineNumber;
     };
 
     class ScopedLockType

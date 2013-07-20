@@ -156,15 +156,6 @@ static void runBeastUnitTests (std::string const& individualTest = "")
     {
         tr.runTest (individualTest.c_str ());
     }
-
-    // Report
-    for (int i = 0; i < tr.getNumResults (); ++i)
-    {
-        UnitTests::TestResult const& r (*tr.getResult (i));
-                
-        for (int j = 0; j < r.messages.size (); ++j)
-            Log::out () << r.messages [j].toStdString ();
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -257,16 +248,16 @@ int rippleMain (int argc, char** argv)
     p.add ("parameters", -1);
 
     // These must be added before the Application object is created
+    NodeStore::addBackendFactory (KeyvaDBBackendFactory::getInstance ());
+    NodeStore::addBackendFactory (LevelDBBackendFactory::getInstance ());
+    NodeStore::addBackendFactory (NullBackendFactory::getInstance ());
+    NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
 #if RIPPLE_HYPERLEVELDB_AVAILABLE
     NodeStore::addBackendFactory (HyperLevelDBBackendFactory::getInstance ());
 #endif
-    NodeStore::addBackendFactory (KeyvaDBBackendFactory::getInstance ());
-    NodeStore::addBackendFactory (LevelDBBackendFactory::getInstance ());
 #if RIPPLE_MDB_AVAILABLE
     NodeStore::addBackendFactory (MdbBackendFactory::getInstance ());
 #endif
-    NodeStore::addBackendFactory (NullBackendFactory::getInstance ());
-    NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
 
     if (! RandomNumbers::getInstance ().initialize ())
     {

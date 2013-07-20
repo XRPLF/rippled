@@ -16,6 +16,7 @@ class ApplicationImp
     : public Application
     , public SharedSingleton <ApplicationImp>
     , public Validators::Listener
+    , public NodeStore::Scheduler
     , LeakChecked <ApplicationImp>
 {
 public:
@@ -46,15 +47,14 @@ public:
         , mNetOps (new NetworkOPs (&mLedgerMaster))
         , m_rpcServerHandler (*mNetOps)
         , mTempNodeCache ("NodeCache", 16384, 90)
-        , m_nodeStore (NodeStore::New (
-            theConfig.NODE_DB,
-            theConfig.FASTNODE_DB,
-            16384,
-            300))
         , mSLECache ("LedgerEntryCache", 4096, 120)
         , mSNTPClient (mAuxService)
         , mJobQueue (mIOService)
         // VFALCO New stuff
+        , m_nodeStore (NodeStore::New (
+            theConfig.NODE_DB,
+            theConfig.FASTNODE_DB,
+            *this))
         , m_validators (Validators::New (this))
         , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
         , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
@@ -92,11 +92,28 @@ public:
         delete mWalletDB;
     }
 
+    //--------------------------------------------------------------------------
+
+    static void callScheduledTask (NodeStore::Scheduler::Task* task, Job&)
+    {
+        task->performScheduledTask ();
+    }
+
+    void scheduleTask (NodeStore::Scheduler::Task* task)
+    {
+        getJobQueue ().addJob (
+            jtWRITE,
+            "NodeObject::store",
+            BIND_TYPE (&ApplicationImp::callScheduledTask, task, P_1));
+    }
+
+    //--------------------------------------------------------------------------
+
     LocalCredentials& getLocalCredentials ()
     {
         return m_localCredentials ;
     }
- 
+
     NetworkOPs& getOPs ()
     {
         return *mNetOps;
@@ -106,62 +123,62 @@ public:
     {
         return mIOService;
     }
-    
+
     LedgerMaster& getLedgerMaster ()
     {
         return mLedgerMaster;
     }
-    
+
     InboundLedgers& getInboundLedgers ()
     {
         return m_inboundLedgers;
     }
-    
+
     TransactionMaster& getMasterTransaction ()
     {
         return mMasterTransaction;
     }
-    
+
     NodeCache& getTempNodeCache ()
     {
         return mTempNodeCache;
     }
-    
+
     NodeStore& getNodeStore ()
     {
         return *m_nodeStore;
     }
-    
+
     JobQueue& getJobQueue ()
     {
         return mJobQueue;
     }
-    
+
     MasterLockType& getMasterLock ()
     {
         return mMasterLock;
     }
-    
+
     ILoadManager& getLoadManager ()
     {
         return *m_loadManager;
     }
-    
+
     TXQueue& getTxnQueue ()
     {
         return mTxnQueue;
     }
-    
+
     PeerDoor& getPeerDoor ()
     {
         return *mPeerDoor;
     }
-    
+
     OrderBookDB& getOrderBookDB ()
     {
         return mOrderBookDB;
     }
-    
+
     SLECache& getSLECache ()
     {
         return mSLECache;
@@ -176,37 +193,37 @@ public:
     {
         return *mFeatures;
     }
-    
+
     ILoadFeeTrack& getFeeTrack ()
     {
         return *mFeeTrack;
     }
-    
+
     IFeeVote& getFeeVote ()
     {
         return *mFeeVote;
     }
-    
+
     IHashRouter& getHashRouter ()
     {
         return *mHashRouter;
     }
-    
+
     IValidations& getValidations ()
     {
         return *mValidations;
     }
-    
+
     UniqueNodeList& getUNL ()
     {
         return *mUNL;
     }
-    
+
     IProofOfWorkFactory& getProofOfWorkFactory ()
     {
         return *mProofOfWorkFactory;
     }
-    
+
     IPeers& getPeers ()
     {
         return *mPeers;
@@ -272,7 +289,6 @@ private:
     ScopedPointer <NetworkOPs> mNetOps;
     RPCServerHandler   m_rpcServerHandler;
     NodeCache          mTempNodeCache;
-    ScopedPointer <NodeStore> m_nodeStore;
     SLECache           mSLECache;
     SNTPClient         mSNTPClient;
     JobQueue           mJobQueue;
@@ -280,16 +296,17 @@ private:
     OrderBookDB        mOrderBookDB;
 
     // VFALCO Clean stuff
-    beast::ScopedPointer <Validators> m_validators;
-    beast::ScopedPointer <IFeatures> mFeatures;
-    beast::ScopedPointer <IFeeVote> mFeeVote;
-    beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
-    beast::ScopedPointer <IHashRouter> mHashRouter;
-    beast::ScopedPointer <IValidations> mValidations;
-    beast::ScopedPointer <UniqueNodeList> mUNL;
-    beast::ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
-    beast::ScopedPointer <IPeers> mPeers;
-    beast::ScopedPointer <ILoadManager> m_loadManager;
+    ScopedPointer <NodeStore> m_nodeStore;
+    ScopedPointer <Validators> m_validators;
+    ScopedPointer <IFeatures> mFeatures;
+    ScopedPointer <IFeeVote> mFeeVote;
+    ScopedPointer <ILoadFeeTrack> mFeeTrack;
+    ScopedPointer <IHashRouter> mHashRouter;
+    ScopedPointer <IValidations> mValidations;
+    ScopedPointer <UniqueNodeList> mUNL;
+    ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
+    ScopedPointer <IPeers> mPeers;
+    ScopedPointer <ILoadManager> m_loadManager;
     // VFALCO End Clean stuff
 
     DatabaseCon* mRpcDB;
@@ -382,7 +399,7 @@ void ApplicationImp::setup ()
 
     if (!theConfig.DEBUG_LOGFILE.empty ())
     {
-        // Let BEAST_DEBUG messages go to the file but only WARNING or higher to regular output (unless verbose)
+        // Let debug messages go to the file but only WARNING or higher to regular output (unless verbose)
         Log::setLogFile (theConfig.DEBUG_LOGFILE);
 
         if (Log::getMinSeverity () > lsDEBUG)
@@ -596,7 +613,7 @@ void ApplicationImp::run ()
         // VFALCO NOTE This seems unnecessary. If we properly refactor the load
         //             manager then the deadlock detector can just always be "armed"
         //
-	    getApp().getLoadManager ().activateDeadlockDetector ();
+        getApp().getLoadManager ().activateDeadlockDetector ();
     }
 
     mIOService.run (); // This blocks
@@ -964,7 +981,7 @@ void ApplicationImp::updateTables ()
     }
 
     if (!theConfig.DB_IMPORT.empty())
-    	getApp().getNodeStore().import(theConfig.DB_IMPORT);
+        getApp().getNodeStore().import(theConfig.DB_IMPORT);
 }
 
 //------------------------------------------------------------------------------

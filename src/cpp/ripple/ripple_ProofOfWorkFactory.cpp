@@ -236,7 +236,7 @@ IProofOfWorkFactory* IProofOfWorkFactory::New ()
 class ProofOfWorkTests : public UnitTest
 {
 public:
-    ProofOfWorkTests () : UnitTest ("ProofOfWork")
+    ProofOfWorkTests () : UnitTest ("ProofOfWork", "ripple")
     {
     }
 

@@ -1554,7 +1554,7 @@ void PeerImp::recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObject
             if (obj.has_hash () && (obj.hash ().size () == (256 / 8)))
             {
                 memcpy (hash.begin (), obj.hash ().data (), 256 / 8);
-                NodeObject::pointer hObj = getApp().getNodeStore ().retrieve (hash);
+                NodeObject::pointer hObj = getApp().getNodeStore ().fetch (hash);
 
                 if (hObj)
                 {

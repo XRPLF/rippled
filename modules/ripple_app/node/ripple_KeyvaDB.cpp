@@ -463,9 +463,9 @@ public:
             keyRecord.valSize = valueBytes;
             keyRecord.leftIndex = 0;
             keyRecord.rightIndex = 0;
-            
+
             memcpy (keyRecord.key, key, m_keyBytes);
-            
+
             writeKeyRecord (keyRecord, state->newKeyIndex, state, true);
 
             // Key file has grown by one.
@@ -536,7 +536,7 @@ public:
         maxPayloadBytes = 8 * 1024
     };
 
-    KeyvaDBTests () : UnitTest ("KeyvaDB")
+    KeyvaDBTests () : UnitTest ("KeyvaDB", "ripple")
     {
     }
 
@@ -567,51 +567,78 @@ public:
         typedef UnsignedInteger <KeyBytes> KeyType;
 
         int64 const seedValue = 50;
-   
+
         String s;
         s << "keyBytes=" << String (KeyBytes) << ", maxItems=" << String (maxItems);
         beginTest (s);
 
-        // Set up the key and value files and open the db.
-        File const keyPath = File::createTempFile ("").withFileExtension (".key");
-        File const valPath = File::createTempFile ("").withFileExtension (".val");
-        ScopedPointer <KeyvaDB> db (KeyvaDB::New (KeyBytes, keyPath, valPath, true));
-
-        Payload payload (maxPayloadBytes);
-        Payload check (maxPayloadBytes);
+        // Set up the key and value files
+        File const tempFile (File::createTempFile (""));
+        File const keyPath = tempFile.withFileExtension (".key");
+        File const valPath = tempFile.withFileExtension (".val");
 
         {
-            // Create an array of ascending integers.
-            HeapBlock <unsigned int> items (maxItems);
-            for (unsigned int i = 0; i < maxItems; ++i)
-                items [i] = i;
+            // open the db
+            ScopedPointer <KeyvaDB> db (KeyvaDB::New (KeyBytes, keyPath, valPath, false));
 
-            // Now shuffle it deterministically.
-            repeatableShuffle (maxItems, items, seedValue);
+            Payload payload (maxPayloadBytes);
+            Payload check (maxPayloadBytes);
 
-            // Write all the keys of integers.
-            for (unsigned int i = 0; i < maxItems; ++i)
             {
-                unsigned int keyIndex = items [i];
-                
-                KeyType const key = KeyType::createFromInteger (keyIndex);
+                // Create an array of ascending integers.
+                HeapBlock <unsigned int> items (maxItems);
+                for (unsigned int i = 0; i < maxItems; ++i)
+                    items [i] = i;
 
-                payload.repeatableRandomFill (1, maxPayloadBytes, keyIndex + seedValue);
+                // Now shuffle it deterministically.
+                repeatableShuffle (maxItems, items, seedValue);
 
-                db->put (key.cbegin (), payload.data.getData (), payload.bytes);
-
+                // Write all the keys of integers.
+                for (unsigned int i = 0; i < maxItems; ++i)
                 {
-                    // VFALCO TODO Check what we just wrote?
-                    //db->get (key.cbegin (), check.data.getData (), payload.bytes);
+                    unsigned int keyIndex = items [i];
+
+                    KeyType const key = KeyType::createFromInteger (keyIndex);
+
+                    payload.repeatableRandomFill (1, maxPayloadBytes, keyIndex + seedValue);
+
+                    db->put (key.cbegin (), payload.data.getData (), payload.bytes);
+
+                    {
+                        // VFALCO TODO Check what we just wrote?
+                        //db->get (key.cbegin (), check.data.getData (), payload.bytes);
+                    }
+                }
+            }
+
+            {
+                // Go through all of our keys and try to retrieve them.
+                // since this is done in ascending order, we should get
+                // random seeks at this point.
+                //
+                PayloadGetCallback cb;
+                for (unsigned int keyIndex = 0; keyIndex < maxItems; ++keyIndex)
+                {
+                    KeyType const v = KeyType::createFromInteger (keyIndex);
+
+                    bool const found = db->get (v.cbegin (), &cb);
+
+                    expect (found, "Should be found");
+
+                    payload.repeatableRandomFill (1, maxPayloadBytes, keyIndex + seedValue);
+
+                    expect (payload == cb.payload, "Should be equal");
                 }
             }
         }
 
         {
-            // Go through all of our keys and try to retrieve them.
-            // since this is done in ascending order, we should get
-            // random seeks at this point.
-            //
+            // Re-open the database and confirm the data
+            ScopedPointer <KeyvaDB> db (KeyvaDB::New (KeyBytes, keyPath, valPath, false));
+
+            Payload payload (maxPayloadBytes);
+            Payload check (maxPayloadBytes);
+
             PayloadGetCallback cb;
             for (unsigned int keyIndex = 0; keyIndex < maxItems; ++keyIndex)
             {
@@ -626,12 +653,15 @@ public:
                 expect (payload == cb.payload, "Should be equal");
             }
         }
+
+        keyPath.deleteFile ();
+        valPath.deleteFile ();
     }
 
     void runTest ()
     {
-        testKeySize <4> (512);
-        testKeySize <32> (4096);
+        testKeySize <4> (500);
+        testKeySize <32> (4000);
     }
 };
 

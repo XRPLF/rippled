@@ -530,10 +530,12 @@ void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
     assert (getTransHash () == mTransactionMap->getHash ());
 
     // Save the ledger header in the hashed object store
-    Serializer s (128);
-    s.add32 (HashPrefix::ledgerMaster);
-    addRaw (s);
-    getApp().getNodeStore ().store (hotLEDGER, mLedgerSeq, s.peekData (), mHash);
+    {
+        Serializer s (128);
+        s.add32 (HashPrefix::ledgerMaster);
+        addRaw (s);
+        getApp().getNodeStore ().store (hotLEDGER, mLedgerSeq, s.modData (), mHash);
+    }
 
     AcceptedLedger::pointer aLedger = AcceptedLedger::makeAcceptedLedger (shared_from_this ());
 

@@ -128,7 +128,7 @@ SHAMapNode SHAMapNode::getChildNodeID (int m) const
 // Which branch would contain the specified hash
 int SHAMapNode::selectBranch (uint256 const& hash) const
 {
-#ifdef PARANOID
+#if RIPPLE_VERIFY_NODEOBJECT_KEYS
 
     if (mDepth >= 64)
     {

@@ -6,9 +6,16 @@
 
 class KeyvaDBBackendFactory::Backend : public NodeStore::Backend
 {
+private:
+    typedef RecycledObjectPool <MemoryBlock> MemoryPool;
+    typedef RecycledObjectPool <NodeStore::EncodedBlob> EncodedBlobPool;
+
 public:
-    Backend (size_t keyBytes, StringPairArray const& keyValues)
+    Backend (size_t keyBytes,
+             StringPairArray const& keyValues,
+             NodeStore::Scheduler& scheduler)
         : m_keyBytes (keyBytes)
+        , m_scheduler (scheduler)
         , m_path (keyValues ["path"])
         , m_db (KeyvaDB::New (
                     keyBytes,
@@ -22,34 +29,53 @@ public:
     {
     }
 
-    std::string getDataBaseName ()
+    std::string getName ()
     {
         return m_path.toStdString ();
     }
 
     //--------------------------------------------------------------------------
 
-    Status get (void const* key, GetCallback* callback)
+    Status fetch (void const* key, NodeObject::Ptr* pObject)
     {
+        pObject->reset ();
+
         Status status (ok);
 
-        struct ForwardingGetCallback : KeyvaDB::GetCallback
+        struct Callback : KeyvaDB::GetCallback
         {
-            ForwardingGetCallback (Backend::GetCallback* callback)
-                : m_callback (callback)
+            explicit Callback (MemoryBlock& block)
+                : m_block (block)
             {
             }
 
             void* getStorageForValue (int valueBytes)
             {
-                return m_callback->getStorageForValue (valueBytes);
+                m_size = valueBytes;
+                m_block.ensureSize (valueBytes);
+
+                return m_block.getData ();
+            }
+
+            void const* getData () const noexcept
+            {
+                return m_block.getData ();
+            }
+
+            size_t getSize () const noexcept
+            {
+                return m_size;
             }
 
         private:
-            Backend::GetCallback* const m_callback;
+            MemoryBlock& m_block;
+            size_t m_size;
         };
 
-        ForwardingGetCallback cb (callback);
+        MemoryPool::ScopedItem item (m_memoryPool);
+        MemoryBlock& block (item.getObject ());
+
+        Callback cb (block);
 
         // VFALCO TODO Can't we get KeyvaDB to provide a proper status?
         //
@@ -57,7 +83,18 @@ public:
 
         if (found)
         {
-            status = ok;
+            NodeStore::DecodedBlob decoded (key, cb.getData (), cb.getSize ());
+
+            if (decoded.wasOk ())
+            {
+                *pObject = decoded.createObject ();
+
+                status = ok;
+            }
+            else
+            {
+                status = dataCorrupt;
+            }
         }
         else
         {
@@ -67,90 +104,45 @@ public:
         return status;
     }
 
-    //--------------------------------------------------------------------------
-
-    void writeObject (NodeObject::ref object)
+    void store (NodeObject::ref object)
     {
-        Blob blob (toBlob (object));
-        m_db->put (object->getHash ().begin (), &blob [0], blob.size ());
+        EncodedBlobPool::ScopedItem item (m_blobPool);
+        NodeStore::EncodedBlob& encoded (item.getObject ());
+
+        encoded.prepare (object);
+
+        m_db->put (encoded.getKey (), encoded.getData (), encoded.getSize ());
     }
 
-    bool bulkStore (std::vector <NodeObject::pointer> const& objs)
+    void storeBatch (NodeStore::Batch const& batch)
     {
-        for (size_t i = 0; i < objs.size (); ++i)
-        {
-            writeObject (objs [i]);
-        }
-
-        return true;
+        for (int i = 0; i < batch.size (); ++i)
+            store (batch [i]);
     }
 
-    struct MyGetCallback : KeyvaDB::GetCallback
+    void visitAll (VisitCallback& callback)
     {
-        int valueBytes;
-        HeapBlock <char> data;
-
-        void* getStorageForValue (int valueBytes_)
-        {
-            valueBytes = valueBytes_;
-
-            data.malloc (valueBytes);
-
-            return data.getData ();
-        }
-    };
-
-    NodeObject::pointer retrieve (uint256 const& hash)
-    {
-        NodeObject::pointer result;
-
-        MyGetCallback cb;
-
-        bool const found = m_db->get (hash.begin (), &cb);
-
-        if (found)
-        {
-            result = fromBinary (hash, cb.data.getData (), cb.valueBytes);
-        }
-
-        return result;
-    }
-
-    void visitAll (FUNCTION_TYPE<void (NodeObject::pointer)> func)
-    {
+        // VFALCO TODO Implement this!
+        //
         bassertfalse;
+        //m_db->visitAll ();
     }
 
-    Blob toBlob (NodeObject::ref obj)
+    int getWriteLoad ()
     {
-        Blob rawData (9 + obj->getData ().size ());
-        unsigned char* bufPtr = &rawData.front();
-
-        *reinterpret_cast<uint32*> (bufPtr + 0) = ntohl (obj->getIndex ());
-        *reinterpret_cast<uint32*> (bufPtr + 4) = ntohl (obj->getIndex ());
-        * (bufPtr + 8) = static_cast<unsigned char> (obj->getType ());
-        memcpy (bufPtr + 9, &obj->getData ().front (), obj->getData ().size ());
-
-        return rawData;
+        // we dont do pending writes
+        return 0;
     }
 
-    NodeObject::pointer fromBinary (uint256 const& hash, char const* data, int size)
-    {
-        if (size < 9)
-            throw std::runtime_error ("undersized object");
-
-        uint32 index = htonl (*reinterpret_cast <const uint32*> (data));
-        
-        int htype = data[8];
-
-        return boost::make_shared <NodeObject> (static_cast<NodeObjectType> (htype), index,
-            data + 9, size - 9, hash);
-    }
+    //--------------------------------------------------------------------------
 
 private:
     size_t const m_keyBytes;
+    NodeStore::Scheduler& m_scheduler;
     String m_path;
     ScopedPointer <KeyvaDB> m_db;
+    MemoryPool m_memoryPool;
+    EncodedBlobPool m_blobPool;
 };
 
 //------------------------------------------------------------------------------
@@ -175,9 +167,12 @@ String KeyvaDBBackendFactory::getName () const
     return "KeyvaDB";
 }
 
-NodeStore::Backend* KeyvaDBBackendFactory::createInstance (size_t keyBytes, StringPairArray const& keyValues)
+NodeStore::Backend* KeyvaDBBackendFactory::createInstance (
+    size_t keyBytes,
+    StringPairArray const& keyValues,
+    NodeStore::Scheduler& scheduler)
 {
-    return new KeyvaDBBackendFactory::Backend (keyBytes, keyValues);
+    return new KeyvaDBBackendFactory::Backend (keyBytes, keyValues, scheduler);
 }
 
 //------------------------------------------------------------------------------

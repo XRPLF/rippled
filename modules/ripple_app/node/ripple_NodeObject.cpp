@@ -11,27 +11,27 @@ SETUP_LOG (NodeObject)
 NodeObject::NodeObject (
     NodeObjectType type,
     LedgerIndex ledgerIndex,
-    Blob const& binaryDataToCopy,
-    uint256 const& hash)
+    Blob& data,
+    uint256 const& hash,
+    PrivateAccess)
     : mType (type)
     , mHash (hash)
     , mLedgerIndex (ledgerIndex)
-    , mData (binaryDataToCopy)
 {
+    // Take over the caller's buffer
+    mData.swap (data);
 }
 
-NodeObject::NodeObject (
+NodeObject::Ptr NodeObject::createObject (
     NodeObjectType type,
     LedgerIndex ledgerIndex,
-    void const* bufferToCopy,
-    int bytesInBuffer,
-    uint256 const& hash)
-    : mType (type)
-    , mHash (hash)
-    , mLedgerIndex (ledgerIndex)
-    , mData (static_cast <unsigned char const*> (bufferToCopy),
-             static_cast <unsigned char const*> (bufferToCopy) + bytesInBuffer)
+    Blob& data,
+    uint256 const & hash)
 {
+    // The boost::ref is important or
+    // else it will be passed by  value!
+    return boost::make_shared <NodeObject> (
+        type, ledgerIndex, boost::ref (data), hash, PrivateAccess ());
 }
 
 NodeObjectType NodeObject::getType () const
@@ -54,14 +54,21 @@ Blob const& NodeObject::getData () const
     return mData;
 }
 
-bool NodeObject::isCloneOf (NodeObject const& other) const
+bool NodeObject::isCloneOf (NodeObject::Ptr const& other) const
 {
-    return
-        mType == other.mType &&
-        mHash == other.mHash &&
-        mLedgerIndex == other.mLedgerIndex &&
-        mData == other.mData
-        ;
+    if (mType != other->mType)
+        return false;
+
+    if (mHash != other->mHash)
+        return false;
+
+    if (mLedgerIndex != other->mLedgerIndex)
+        return false;
+
+    if (mData != other->mData)
+        return false;
+
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -70,7 +77,7 @@ class NodeObjectTests : public UnitTest
 {
 public:
 
-    NodeObjectTests () : UnitTest ("NodeObject")
+    NodeObjectTests () : UnitTest ("NodeObject", "ripple")
     {
     }
 

@@ -48,8 +48,7 @@ void NetworkOPs::processNetTimer ()
         // VFALCO NOTE This is for diagnosing a crash on exit
         Application& app (getApp ());
         ILoadManager& mgr (app.getLoadManager ());
-
-        getApp().getLoadManager ().resetDeadlockDetector ();
+        mgr.resetDeadlockDetector ();
 
         std::size_t const numPeers = getApp().getPeers ().getPeerVector ().size ();
 
