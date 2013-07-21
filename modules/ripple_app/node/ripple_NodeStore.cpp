@@ -470,7 +470,7 @@ public:
 
             if (factory != nullptr)
             {
-                backend = factory->createInstance (keyBytes, keyValues, scheduler);
+                backend = factory->createInstance (NodeObject::keyBytes, keyValues, scheduler);
             }
             else
             {

@@ -7,31 +7,69 @@
 #ifndef RIPPLE_NODESTORE_H_INCLUDED
 #define RIPPLE_NODESTORE_H_INCLUDED
 
+// Javadoc comments are added to all public classes, member functions,
+// type definitions, data types, and global variables (which we should
+// minimize the use of.
+//
+// A Javadoc comment is introduced with an extra asterisk following the
+// beginning of a normal C++ style comment, or by using a triple forward slash.
+//
+// Structure of a Javadoc comment:
+
+/** Brief one line description.
+
+    A more detailed description, which may be broken up into multiple
+    paragraphs. Doxygen commands are prefixed with the at-sign '@'. For
+    example, here's a formatted code snippet:
+
+    @code
+
+    int main (int argc, char** argv)
+    {
+        return 0;
+    }
+
+    @endcode
+
+    You can also add a note, or document an invariant:
+
+    @note This appears as its own note.
+
+    @invariant This must not be called while holding the lock.
+
+    When documenting functions, you can use these Doxygen commands
+    to annotate the parameters, return value, template types.
+
+    @param  argc    The number of arguments to the program.
+    @param  argv    An array of strings argc in size, one for each argument.
+
+    @return The return value of the program, passed to to the enclosing process.
+*/    
+
+/** Functions can be documented with just the brief description, like this */
+
+/// Here's the alternate form of a brief description.
+
+//------------------------------------------------------------------------------
+
 /** Persistency layer for NodeObject
 
-    A Node is a ledger object which is uniquely identified by a key,
-    which is the 256-bit hash of the body of the node. The payload is
-    a variable length block of serialized data.
+    A Node is a ledger object which is uniquely identified by a key, which is
+    the 256-bit hash of the body of the node. The payload is a variable length
+    block of serialized data.
 
-    All ledger data is stored as node objects and as such, needs to
-    be persisted between launches. Furthermore, since the set of
-    node objects will in general be larger than the amount of available
-    memory, purged node objects which are later accessed must be retrieved
-    from the node store.
+    All ledger data is stored as node objects and as such, needs to be persisted
+    between launches. Furthermore, since the set of node objects will in
+    general be larger than the amount of available memory, purged node objects
+    which are later accessed must be retrieved from the node store.
+
+    @see NodeObject
 */
 class NodeStore
 {
 public:
     enum
     {
-        /** Size of the fixed keys, in bytes.
-
-            We use a 256-bit hash for the keys.
-
-            @see NodeObject
-        */
-        keyBytes = 32,
-
         // This is only used to pre-allocate the array for
         // batch objects and does not affect the amount written.
         //
@@ -44,28 +82,24 @@ public:
 
     /** Parsed key/value blob into NodeObject components.
 
-        This will extract the information required to construct a NodeObject.
-        It also does consistency checking and returns the result, so it is
-        possible to determine if the data is corrupted without throwing an
-        exception. Not all forms of corruption are detected so further analysis
-        will be needed to eliminate false positives.
+        This will extract the information required to construct a NodeObject. It
+        also does consistency checking and returns the result, so it is possible
+        to determine if the data is corrupted without throwing an exception. Not
+        all forms of corruption are detected so further analysis will be needed
+        to eliminate false negatives.
 
-        @note This is the format in which a NodeObject is stored in the
-              persistent storage layer.
+        @note This defines the database format of a NodeObject!
     */
     class DecodedBlob
     {
     public:
-        /** Construct the decoded blob from raw data.
-        */
+        /** Construct the decoded blob from raw data. */
         DecodedBlob (void const* key, void const* value, int valueBytes);
 
-        /** Determine if the decoding was successful.
-        */
+        /** Determine if the decoding was successful. */
         bool wasOk () const noexcept { return m_success; }
 
-        /** Create a NodeObject from this data.
-        */
+        /** Create a NodeObject from this data. */
         NodeObject::Ptr createObject ();
 
     private:
@@ -84,8 +118,7 @@ public:
 
         These get recycled to prevent many small allocations.
 
-        @note This is the format in which a NodeObject is stored in the
-              persistent storage layer.
+        @note This defines the database format of a NodeObject!
     */
     struct EncodedBlob
     {
@@ -107,13 +140,16 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Provides the asynchronous scheduling feature.
+    /** Provides optional asynchronous scheduling for backends.
+
+        For improved performance, a backend has the option of performing writes
+        in batches. These writes can be scheduled using the provided scheduler
+        object.
     */
     class Scheduler
     {
     public:
-        /** Derived classes perform scheduled tasks.
-        */
+        /** Derived classes perform scheduled tasks. */
         struct Task
         {
             virtual ~Task () { }
@@ -135,9 +171,11 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** A helper to assist with batch writing.
+    /** Helps with batch writing.
 
-        The batch writes are performed with a scheduled task.
+        The batch writes are performed with a scheduled task. Use of the
+        class it not required. A backend can implement its own write batching,
+        or skip write batching if doing so yields a performance benefit.
 
         @see Scheduler
     */
@@ -148,15 +186,13 @@ public:
     class BatchWriter : private Scheduler::Task
     {
     public:
-        /** This callback does the actual writing.
-        */
+        /** This callback does the actual writing. */
         struct Callback
         {
             virtual void writeBatch (Batch const& batch) = 0;
         };
 
-        /** Create a batch writer.
-        */
+        /** Create a batch writer. */
         BatchWriter (Callback& callback, Scheduler& scheduler);
 
         /** Destroy a batch writer.
@@ -170,10 +206,9 @@ public:
             This will add to the batch and initiate a scheduled task to
             write the batch out.
         */
-        void store (NodeObject::ref object);
+        void store (NodeObject::Ptr const& object);
 
-        /** Get an estimate of the amount of writing I/O pending.
-        */
+        /** Get an estimate of the amount of writing I/O pending. */
         int getWriteLoad ();
 
     private:
@@ -197,16 +232,19 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Back end used for the store.
+    /** A backend used for the store.
 
-        A Backend implements a persistent key/value storage system.
-        Keys sizes are all fixed within the same database.
+        The NodeStore uses a swappable backend so that other database systems
+        can be tried. Different databases may offer various features such
+        as improved performance, fault tolerant or distributed storage, or
+        all in-memory operation.
+
+        A given instance of a backend is fixed to a particular key size.
     */
     class Backend
     {
     public:
-        /** Return codes from operations.
-        */
+        /** Return codes from operations. */
         enum Status
         {
             ok,
@@ -217,9 +255,9 @@ public:
 
         /** Destroy the backend.
 
-            All open files are closed and flushed. If there are batched
-            writes or other tasks scheduled, they will be completed before
-            this call returns.
+            All open files are closed and flushed. If there are batched writes
+            or other tasks scheduled, they will be completed before this call
+            returns.
         */
         virtual ~Backend () { }
 
@@ -274,12 +312,14 @@ public:
             
             This is usually called during import.
 
+            @note This routine will not be called concurrently with itself
+                  or other methods.
+
             @see import
         */
         virtual void visitAll (VisitCallback& callback) = 0;
 
-        /** Estimate the number of write operations pending.
-        */
+        /** Estimate the number of write operations pending. */
         virtual int getWriteLoad () = 0;
     };
 
@@ -292,8 +332,7 @@ public:
     public:
         virtual ~BackendFactory () { }
 
-        /** Retrieve the name of this factory.
-        */
+        /** Retrieve the name of this factory. */
         virtual String getName () const = 0;
 
         /** Create an instance of this factory's backend.
@@ -351,9 +390,9 @@ public:
 
     /** Fetch an object.
 
-        If the object is known to be not in the database, isn't found in
-        the database during the fetch, or failed to load correctly during
-        the fetch, `nullptr` is returned.
+        If the object is known to be not in the database, isn't found in the
+        database during the fetch, or failed to load correctly during the fetch,
+        `nullptr` is returned.
 
         @note This can be called concurrently.
 
@@ -387,6 +426,12 @@ public:
     */
     virtual void import (String sourceBackendParameters) = 0;
 
+    /** Retrieve the estimated number of pending write operations.
+
+        This is used for diagnostics.
+    */
+    virtual int getWriteLoad () = 0;
+
     // VFALCO TODO Document this.
     virtual float getCacheHitRate () = 0;
 
@@ -397,11 +442,6 @@ public:
     // VFALCO TODO Document this.
     virtual void sweep () = 0;
 
-    /** Retrieve the estimated number of pending write operations.
-
-        This is used for diagnostics.
-    */
-    virtual int getWriteLoad () = 0;
 };
 
 #endif

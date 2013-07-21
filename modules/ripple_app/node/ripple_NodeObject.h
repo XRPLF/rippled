@@ -34,6 +34,17 @@ class NodeObject : public CountedObject <NodeObject>
 public:
     static char const* getCountedObjectName () { return "NodeObject"; }
 
+    enum
+    {
+        /** Size of the fixed keys, in bytes.
+
+            We use a 256-bit hash for the keys.
+
+            @see NodeObject
+        */
+        keyBytes = 32,
+    };
+
     /** The type used to hold the hash.
 
         The hahes are fixed size, SHA256.
