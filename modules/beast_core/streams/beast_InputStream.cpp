@@ -65,10 +65,22 @@ short InputStream::readShortBigEndian()
 
 int InputStream::readInt()
 {
+    static_bassert (sizeof (int) == 4);
+
     char temp[4];
 
     if (read (temp, 4) == 4)
         return (int) ByteOrder::littleEndianInt (temp);
+
+    return 0;
+}
+
+int32 InputStream::readInt32()
+{
+    char temp[4];
+
+    if (read (temp, 4) == 4)
+        return (int32) ByteOrder::littleEndianInt (temp);
 
     return 0;
 }
@@ -79,6 +91,16 @@ int InputStream::readIntBigEndian()
 
     if (read (temp, 4) == 4)
         return (int) ByteOrder::bigEndianInt (temp);
+
+    return 0;
+}
+
+int32 InputStream::readInt32BigEndian()
+{
+    char temp[4];
+
+    if (read (temp, 4) == 4)
+        return (int32) ByteOrder::bigEndianInt (temp);
 
     return 0;
 }
@@ -229,3 +251,71 @@ void InputStream::skipNextBytes (int64 numBytesToSkip)
             numBytesToSkip -= read (temp, (int) bmin (numBytesToSkip, (int64) skipBufferSize));
     }
 }
+
+//------------------------------------------------------------------------------
+
+// Unfortunately, putting these in the header causes duplicate
+// definition linker errors, even with the inline keyword!
+
+template <>
+char InputStream::readType <char> () { return readByte (); }
+
+template <>
+short InputStream::readType <short> () { return readShort (); }
+
+template <>
+int32 InputStream::readType <int32> () { return readInt32 (); }
+
+template <>
+int64 InputStream::readType <int64> () { return readInt64 (); }
+
+template <>
+unsigned char InputStream::readType <unsigned char> () { return static_cast <unsigned char> (readByte ()); }
+
+template <>
+unsigned short InputStream::readType <unsigned short> () { return static_cast <unsigned short> (readShort ()); }
+
+template <>
+uint32 InputStream::readType <uint32> () { return static_cast <uint32> (readInt32 ()); }
+
+template <>
+uint64 InputStream::readType <uint64> () { return static_cast <uint64> (readInt64 ()); }
+
+template <>
+float InputStream::readType <float> () { return readFloat (); }
+
+template <>
+double InputStream::readType <double> () { return readDouble (); }
+
+//------------------------------------------------------------------------------
+
+template <>
+char InputStream::readTypeBigEndian <char> () { return readByte (); }
+
+template <>
+short InputStream::readTypeBigEndian <short> () { return readShortBigEndian (); }
+
+template <>
+int32 InputStream::readTypeBigEndian <int32> () { return readInt32BigEndian (); }
+
+template <>
+int64 InputStream::readTypeBigEndian <int64> () { return readInt64BigEndian (); }
+
+template <>
+unsigned char InputStream::readTypeBigEndian <unsigned char> () { return static_cast <unsigned char> (readByte ()); }
+
+template <>
+unsigned short InputStream::readTypeBigEndian <unsigned short> () { return static_cast <unsigned short> (readShortBigEndian ()); }
+
+template <>
+uint32 InputStream::readTypeBigEndian <uint32> () { return static_cast <uint32> (readInt32BigEndian ()); }
+
+template <>
+uint64 InputStream::readTypeBigEndian <uint64> () { return static_cast <uint64> (readInt64BigEndian ()); }
+
+template <>
+float InputStream::readTypeBigEndian <float> () { return readFloatBigEndian (); }
+
+template <>
+double InputStream::readTypeBigEndian <double> () { return readDoubleBigEndian (); }
+

@@ -93,14 +93,32 @@ bool OutputStream::writeShortBigEndian (short value)
     return write (&v, 2);
 }
 
+bool OutputStream::writeInt32 (int32 value)
+{
+    static_bassert (sizeof (int32) == 4);
+
+    const unsigned int v = ByteOrder::swapIfBigEndian ((uint32) value);
+    return write (&v, 4);
+}
+
 bool OutputStream::writeInt (int value)
 {
+    static_bassert (sizeof (int) == 4);
+
     const unsigned int v = ByteOrder::swapIfBigEndian ((unsigned int) value);
+    return write (&v, 4);
+}
+
+bool OutputStream::writeInt32BigEndian (int value)
+{
+    static_bassert (sizeof (int32) == 4);
+    const uint32 v = ByteOrder::swapIfLittleEndian ((uint32) value);
     return write (&v, 4);
 }
 
 bool OutputStream::writeIntBigEndian (int value)
 {
+    static_bassert (sizeof (int) == 4);
     const unsigned int v = ByteOrder::swapIfLittleEndian ((unsigned int) value);
     return write (&v, 4);
 }
@@ -329,3 +347,70 @@ BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const N
 {
     return stream << stream.getNewLineString();
 }
+
+//------------------------------------------------------------------------------
+
+// Unfortunately, putting these in the header causes duplicate
+// definition linker errors, even with the inline keyword!
+
+template <>
+BEAST_API bool OutputStream::writeType <char> (char v) { return writeByte (v); }
+
+template <>
+BEAST_API bool OutputStream::writeType <short> (short v) { return writeShort (v); }
+
+template <>
+BEAST_API bool OutputStream::writeType <int32> (int32 v) { return writeInt32 (v); }
+
+template <>
+BEAST_API bool OutputStream::writeType <int64> (int64 v) { return writeInt64 (v); }
+
+template <>
+BEAST_API bool OutputStream::writeType <unsigned char> (unsigned char v) { return writeByte (static_cast <char> (v)); }
+
+template <>
+BEAST_API bool OutputStream::writeType <unsigned short> (unsigned short v) { return writeShort (static_cast <short> (v)); }
+
+template <>
+BEAST_API bool OutputStream::writeType <uint32> (uint32 v) { return writeInt32 (static_cast <int32> (v)); }
+
+template <>
+BEAST_API bool OutputStream::writeType <uint64> (uint64 v) { return writeInt64 (static_cast <int64> (v)); }
+
+template <>
+BEAST_API bool OutputStream::writeType <float> (float v) { return writeFloat (v); }
+
+template <>
+BEAST_API bool OutputStream::writeType <double> (double v) { return writeDouble (v); }
+
+//------------------------------------------------------------------------------
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <char> (char v) { return writeByte (v); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <short> (short v) { return writeShortBigEndian (v); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <int32> (int32 v) { return writeInt32BigEndian (v); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <int64> (int64 v) { return writeInt64BigEndian (v); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <unsigned char> (unsigned char v) { return writeByte (static_cast <char> (v)); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <unsigned short> (unsigned short v) { return writeShortBigEndian (static_cast <short> (v)); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <uint32> (uint32 v) { return writeInt32BigEndian (static_cast <int32> (v)); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <uint64> (uint64 v) { return writeInt64BigEndian (static_cast <int64> (v)); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <float> (float v) { return writeFloatBigEndian (v); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <double> (double v) { return writeDoubleBigEndian (v); }

@@ -120,12 +120,18 @@ public:
         @returns false if the write operation fails for some reason
         @see InputStream::readInt
     */
+    virtual bool writeInt32 (int32 value);
+
+    // DEPRECATED, assumes sizeof (int) == 4!
     virtual bool writeInt (int value);
 
     /** Writes a 32-bit integer to the stream in a big-endian byte order.
         @returns false if the write operation fails for some reason
         @see InputStream::readIntBigEndian
     */
+    virtual bool writeInt32BigEndian (int32 value);
+
+    // DEPRECATED, assumes sizeof (int) == 4!
     virtual bool writeIntBigEndian (int value);
 
     /** Writes a 64-bit integer to the stream in a little-endian byte order.
@@ -167,6 +173,23 @@ public:
         @returns false if the write operation fails for some reason
     */
     virtual bool writeDoubleBigEndian (double value);
+
+    /** Write a type using a template specialization.
+
+        This is useful when doing template meta-programming.
+    */
+    template <class T>
+    bool writeType (T value);
+
+    /** Write a type using a template specialization.
+
+        The raw encoding of the type is written to the stream as a big-endian value
+        where applicable.
+
+        This is useful when doing template meta-programming.
+    */
+    template <class T>
+    bool writeTypeBigEndian (T value);
 
     /** Writes a byte to the output stream a given number of times.
         @returns false if the write operation fails for some reason
