@@ -21,6 +21,19 @@ Branch
 ripple-fork
 ```
 
+## LightningDB (a.k.a. MDB)
+
+A supposedly fast memory-mapped key value database system
+
+Repository <br>
+```
+git://gitorious.org/mdb/mdb.git
+```
+Branch
+```
+mdb.master
+```
+
 ## websocket
 
 Ripple's fork of websocketpp has some incompatible changes and Ripple specific includes.
