@@ -887,7 +887,7 @@ class NodeStoreTimingTests : public NodeStoreUnitTest
 public:
     enum
     {
-        numObjectsToTest     = 10000
+        numObjectsToTest     = 50000
     };
 
     NodeStoreTimingTests ()
@@ -970,7 +970,7 @@ public:
 
         testBackend ("keyvadb", seedValue);
 
-#if 0
+#if 1
         testBackend ("leveldb", seedValue);
 
         testBackend ("sqlite", seedValue);

@@ -29,7 +29,7 @@ private:
     typedef int32 KeyIndex;
 
     // Size of a value.
-    typedef size_t ByteSize;
+    typedef uint32 ByteSize;
 
 private:
     enum
@@ -110,7 +110,7 @@ public:
             if (result.wasOk ())
             {
                 char byte = 0;
-           
+
                 result = state->keyFile.write (&byte, 1);
 
                 if (result.wasOk ())
@@ -159,9 +159,9 @@ public:
         if (result.wasOk ())
         {
             MemoryBlock data (m_keyRecordBytes);
-    
+
             size_t bytesRead;
-            
+
             result = state->keyFile.read (data.getData (), m_keyRecordBytes, &bytesRead);
 
             if (result.wasOk ())
@@ -171,10 +171,10 @@ public:
                     MemoryInputStream stream (data, false);
 
                     // This defines the file format!
-                    keyRecord->valFileOffset = stream.readInt64BigEndian ();
-                    keyRecord->valSize = stream.readIntBigEndian ();
-                    keyRecord->leftIndex = stream.readIntBigEndian ();
-                    keyRecord->rightIndex = stream.readIntBigEndian ();
+                    stream.readTypeBigEndianInto (&keyRecord->valFileOffset);
+                    stream.readTypeBigEndianInto (&keyRecord->valSize);
+                    stream.readTypeBigEndianInto (&keyRecord->leftIndex);
+                    stream.readTypeBigEndianInto (&keyRecord->rightIndex);
 
                     // Grab the key
                     stream.read (keyRecord->key, m_keyBytes);
@@ -211,10 +211,10 @@ public:
             MemoryOutputStream stream (data, false);
 
             // This defines the file format!
-            stream.writeInt64BigEndian (keyRecord.valFileOffset);
-            stream.writeIntBigEndian (keyRecord.valSize);
-            stream.writeIntBigEndian (keyRecord.leftIndex);
-            stream.writeIntBigEndian (keyRecord.rightIndex);
+            stream.writeTypeBigEndian (keyRecord.valFileOffset);
+            stream.writeTypeBigEndian (keyRecord.valSize);
+            stream.writeTypeBigEndian (keyRecord.leftIndex);
+            stream.writeTypeBigEndian (keyRecord.rightIndex);
 
             // Write the key
             if (includingKey)
@@ -226,7 +226,7 @@ public:
         if (result.wasOk ())
         {
             size_t bytesWritten;
-            
+
             result = state->keyFile.write (data.getData (), bytes, &bytesWritten);
 
             if (result.wasOk ())
@@ -237,7 +237,7 @@ public:
                 }
             }
         }
-        
+
         if (!result.wasOk ())
         {
             String s;
@@ -270,7 +270,7 @@ public:
                 }
             }
         }
-        
+
         if (! result.wasOk ())
         {
             String s;
@@ -394,6 +394,27 @@ public:
 
     //--------------------------------------------------------------------------
 
+    // Compares two key records for equality
+    bool areKeyRecordsEqual (KeyRecord const& lhs, KeyRecord const& rhs)
+    {
+        return lhs.leftIndex == rhs.leftIndex &&
+               lhs.rightIndex == rhs.rightIndex &&
+               lhs.valFileOffset == rhs.valFileOffset &&
+               lhs.valSize == rhs.valSize &&
+               (memcmp (lhs.key, rhs.key, m_keyBytes) == 0);
+    }
+
+    // Makes sure a key record matches disk
+    void checkKeyRecord (KeyRecord const& keyRecord, KeyIndex keyIndex, SharedState::WriteAccess& state)
+    {
+        MemoryBlock keyStorage (m_keyBytes);
+        KeyRecord checkRecord (keyStorage.getData ());
+        readKeyRecord (&checkRecord, keyIndex, state);
+
+        bassert (areKeyRecordsEqual (checkRecord, keyRecord));
+    }
+
+    // Write a key value pair. Does nothing if the key exists.
     void put (void const* key, void const* value, int valueBytes)
     {
         bassert (valueBytes > 0);
@@ -425,6 +446,8 @@ public:
                     }
 
                     writeKeyRecord (findResult.keyRecord, findResult.keyIndex, state, false);
+
+                    //checkKeyRecord (findResult.keyRecord, findResult.keyIndex, state);
                 }
 
                 // Write the new key
@@ -437,6 +460,8 @@ public:
                     memcpy (findResult.keyRecord.key, key, m_keyBytes);
 
                     writeKeyRecord (findResult.keyRecord, state->newKeyIndex, state, true);
+
+                    //checkKeyRecord (findResult.keyRecord, findResult.keyIndex, state);
                 }
 
                 // Key file has grown by one.
@@ -645,9 +670,12 @@ public:
 
                     expect (found, "Should be found");
 
-                    payload.repeatableRandomFill (1, maxPayloadBytes, keyIndex + seedValue);
+                    if (found)
+                    {
+                        payload.repeatableRandomFill (1, maxPayloadBytes, keyIndex + seedValue);
 
-                    expect (payload == cb.payload, "Should be equal");
+                        expect (payload == cb.payload, "Should be equal");
+                    }
                 }
             }
         }
@@ -668,9 +696,12 @@ public:
 
                 expect (found, "Should be found");
 
-                payload.repeatableRandomFill (1, maxPayloadBytes, keyIndex + seedValue);
+                if (found)
+                {
+                    payload.repeatableRandomFill (1, maxPayloadBytes, keyIndex + seedValue);
 
-                expect (payload == cb.payload, "Should be equal");
+                    expect (payload == cb.payload, "Should be equal");
+                }
             }
         }
 
