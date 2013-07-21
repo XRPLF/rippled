@@ -220,15 +220,6 @@ public:
 
     ~NodeStoreImp ()
     {
-        // VFALCO NOTE This shouldn't be necessary, the backend can
-        //             just handle it in the destructor.
-        //
-        /*
-        m_backend->waitWrite ();
-
-        if (m_fastBackend)
-            m_fastBackend->waitWrite ();
-        */
     }
 
     //------------------------------------------------------------------------------
@@ -361,13 +352,9 @@ public:
         //
         if (! keyFoundAndObjectCached)
         {
-
-            // VFALCO TODO Rename this to RIPPLE_VERIFY_NODEOBJECT_KEYS and make
-            //             it be 1 or 0 instead of merely defined or undefined.
-            //
-            #if RIPPLE_VERIFY_NODEOBJECT_KEYS
+        #if RIPPLE_VERIFY_NODEOBJECT_KEYS
             assert (hash == Serializer::getSHA512Half (data));
-            #endif
+        #endif
 
             NodeObject::Ptr object = NodeObject::createObject (
                 type, index, data, hash);
@@ -887,7 +874,7 @@ class NodeStoreTimingTests : public NodeStoreUnitTest
 public:
     enum
     {
-        numObjectsToTest     = 50000
+        numObjectsToTest     = 20000
     };
 
     NodeStoreTimingTests ()
@@ -970,10 +957,7 @@ public:
 
         testBackend ("keyvadb", seedValue);
 
-#if 1
         testBackend ("leveldb", seedValue);
-
-        testBackend ("sqlite", seedValue);
 
         #if RIPPLE_HYPERLEVELDB_AVAILABLE
         testBackend ("hyperleveldb", seedValue);
@@ -982,7 +966,8 @@ public:
         #if RIPPLE_MDB_AVAILABLE
         testBackend ("mdb", seedValue);
         #endif
-#endif
+
+        testBackend ("sqlite", seedValue);
     }
 
 private:
@@ -1102,21 +1087,31 @@ public:
 
         testBackend ("sqlite", seedValue);
 
-        #if RIPPLE_HYPERLEVELDB_AVAILABLE
+    #if RIPPLE_HYPERLEVELDB_AVAILABLE
         testBackend ("hyperleveldb", seedValue);
-        #endif
+    #endif
 
-        #if RIPPLE_MDB_AVAILABLE
+    #if RIPPLE_MDB_AVAILABLE
         testBackend ("mdb", seedValue);
-        #endif
+    #endif
 
         //
         // Import tests
         //
 
-        //testImport ("leveldb", "keyvadb", seedValue);
-//testImport ("sqlite", "leveldb", seedValue);
-        testImport ("leveldb", "sqlite", seedValue);
+        //testImport ("keyvadb", "keyvadb", seedValue);
+
+        testImport ("leveldb", "leveldb", seedValue);
+
+    #if RIPPLE_HYPERLEVELDB_AVAILABLE
+        testImport ("hyperleveldb", "hyperleveldb", seedValue);
+    #endif
+
+    #if RIPPLE_MDB_AVAILABLE
+        testImport ("mdb", "mdb", seedValue);
+    #endif
+
+        testImport ("sqlite", "sqlite", seedValue);
     }
 
 private:

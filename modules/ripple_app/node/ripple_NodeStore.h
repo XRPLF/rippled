@@ -44,12 +44,11 @@ public:
 
     /** Parsed key/value blob into NodeObject components.
 
-        This will extract the information required to construct
-        a NodeObject. It also does consistency checking and returns
-        the result, so it is possible to determine if the data
-        is corrupted without throwing an exception. Note all forms
-        of corruption are detected so further analysis will be
-        needed to eliminate false positives.
+        This will extract the information required to construct a NodeObject.
+        It also does consistency checking and returns the result, so it is
+        possible to determine if the data is corrupted without throwing an
+        exception. Not all forms of corruption are detected so further analysis
+        will be needed to eliminate false positives.
 
         @note This is the format in which a NodeObject is stored in the
               persistent storage layer.
@@ -352,9 +351,9 @@ public:
 
     /** Fetch an object.
 
-        If the object is known to be not in the database, not
-        in the database, or failed to load correctly, nullptr is
-        returned.
+        If the object is known to be not in the database, isn't found in
+        the database during the fetch, or failed to load correctly during
+        the fetch, `nullptr` is returned.
 
         @note This can be called concurrently.
 
@@ -381,6 +380,13 @@ public:
                         Blob& data,
                         uint256 const& hash) = 0;
 
+    /** Import objects from another database.
+
+        The other NodeStore database is constructed using the specified
+        backend parameters.
+    */
+    virtual void import (String sourceBackendParameters) = 0;
+
     // VFALCO TODO Document this.
     virtual float getCacheHitRate () = 0;
 
@@ -396,9 +402,6 @@ public:
         This is used for diagnostics.
     */
     virtual int getWriteLoad () = 0;
-
-    // VFALCO TODO Document this.
-    virtual void import (String sourceBackendParameters) = 0;
 };
 
 #endif

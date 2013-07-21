@@ -26,36 +26,88 @@ private:
     typedef int64 FileOffset;
 
     // Index of a key.
+    //
+    // The value is broken up into two parts. The key block index,
+    // and a 1 based index within the keyblock corresponding to the
+    // internal key number.
+    //
     typedef int32 KeyIndex;
+    typedef int32 KeyBlockIndex;
 
     // Size of a value.
     typedef uint32 ByteSize;
 
 private:
+    // returns the number of keys in a key block with the specified depth
+    static int calcKeysAtDepth (int depth)
+    {
+        return (1U << depth) - 1;
+    }
+
+    // returns the number of bytes in a key record
+    static int calcKeyRecordBytes (int keyBytes)
+    {
+        // This depends on the format of a serialized key record
+        return
+            sizeof (FileOffset) +
+            sizeof (ByteSize) +
+            sizeof (KeyIndex) +
+            sizeof (KeyIndex) +
+            keyBytes
+            ;
+    }
+
+    // returns the number of bytes in a key block
+    static int calcKeyBlockBytes (int depth, int keyBytes)
+    {
+        return calcKeysAtDepth (depth) * calcKeyRecordBytes (keyBytes);
+    }
+
+public:
+    enum
+    {
+        currentVersion = 1
+    };
+
+
+    //--------------------------------------------------------------------------
+
+    struct KeyAddress
+    {
+        // 1 based key block number
+        uint32 blockNumber;
+
+        // 1 based key index within the block, breadth-first left to right
+        uint32 keyNumber;
+    };
+
     enum
     {
         // The size of the fixed area at the beginning of the key file.
         // This is used to store some housekeeping information like the
         // key size and version number.
         //
-        keyFileHeaderBytes = 1024
+        masterHeaderBytes = 1000
     };
 
-    // Accessed by multiple threads
-    struct State
+    // The master record is at the beginning of the key file
+    struct MasterRecord
     {
-        RandomAccessFile keyFile;
-        RandomAccessFile valFile;
-        KeyIndex newKeyIndex;
-        FileOffset valFileSize;
+        // version number, starting from 1
+        int32 version;
 
-        bool hasKeys () const noexcept
+        KeyBlockIndex nextKeyBlockIndex;
+
+        void write (OutputStream& stream)
         {
-            return newKeyIndex > 1;
+            stream.writeTypeBigEndian (version);
+        }
+
+        void read (InputStream& stream)
+        {
+            stream.readTypeBigEndianInto (&version);
         }
     };
-
-    typedef SharedData <State> SharedState;
 
     // Key records are indexed starting at one.
     struct KeyRecord
@@ -81,19 +133,110 @@ private:
         void* const key;
     };
 
-public:
+    //--------------------------------------------------------------------------
+
+    // A complete keyblock. The contents of the memory for the key block
+    // are identical to the format on disk. Therefore it is necessary to
+    // use the serialization routines to extract or update the key records.
+    //
+    class KeyBlock
+    {
+    public:
+        KeyBlock (int depth, int keyBytes)
+            : m_depth  (depth)
+            , m_keyBytes (keyBytes)
+            , m_storage (calcKeyBlockBytes (depth, keyBytes))
+        {
+        }
+
+        void read (InputStream& stream)
+        {
+            stream.read (m_storage.getData (), calcKeyBlockBytes (m_depth, m_keyBytes));
+        }
+
+        void write (OutputStream& stream)
+        {
+            stream.write (m_storage.getData (), calcKeyBlockBytes (m_depth, m_keyBytes));
+        }
+
+        void readKeyRecord (KeyRecord* keyRecord, int keyIndex)
+        {
+            bassert (keyIndex >=1 && keyIndex <= calcKeysAtDepth (m_depth));
+
+            size_t const byteOffset = (keyIndex - 1) * calcKeyRecordBytes (m_keyBytes);
+
+            MemoryInputStream stream (
+                addBytesToPointer (m_storage.getData (), byteOffset),
+                calcKeyRecordBytes (m_keyBytes),
+                false);
+
+            stream.readTypeBigEndianInto (&keyRecord->valFileOffset);
+            stream.readTypeBigEndianInto (&keyRecord->valSize);
+            stream.readTypeBigEndianInto (&keyRecord->leftIndex);
+            stream.readTypeBigEndianInto (&keyRecord->rightIndex);
+            stream.read (keyRecord->key, m_keyBytes);
+        }
+
+        void writeKeyRecord (KeyRecord const& keyRecord, int keyIndex)
+        {
+            bassert (keyIndex >=1 && keyIndex <= calcKeysAtDepth (m_depth));
+
+#if 0
+            size_t const byteOffset = (keyIndex - 1) * calcKeyRecordBytes (m_keyBytes);
+
+            MemoryOutputStream stream (
+                addBytesToPointer (m_storage.getData (), byteOffset),
+                calcKeyRecordBytes (m_keyBytes));
+
+            stream.writeTypeBigEndian (keyRecord.valFileOffset);
+            stream.writeTypeBigEndian (keyRecord.valSize);
+            stream.writeTypeBigEndian (keyRecord.leftIndex);
+            stream.writeTypeBigEndian (keyRecord.rightIndex);
+            stream.write (keyRecord.key, m_keyBytes);
+#endif
+        }
+
+    private:
+        int const m_depth;
+        int const m_keyBytes;
+        MemoryBlock m_storage;
+    };
+
+    //--------------------------------------------------------------------------
+
+    // Concurrent data
+    //
+    struct State
+    {
+        RandomAccessFile keyFile;
+        RandomAccessFile valFile;
+        MasterRecord masterRecord;
+        KeyIndex newKeyIndex;
+        FileOffset valFileSize;
+
+        bool hasKeys () const noexcept
+        {
+            return newKeyIndex > 1;
+        }
+    };
+
+    typedef SharedData <State> SharedState;
+
+    //--------------------------------------------------------------------------
+
+    int const m_keyBytes;
+    int const m_keyBlockDepth;
+    SharedState m_state;
+    HeapBlock <char> m_keyStorage;
+
+    //--------------------------------------------------------------------------
+
     KeyvaDBImp (int keyBytes,
                 int keyBlockDepth,
                 File keyPath,
                 File valPath)
         : m_keyBytes (keyBytes)
         , m_keyBlockDepth (keyBlockDepth)
-        , m_keyRecordBytes (
-            sizeof (FileOffset) +
-            sizeof (ByteSize) +
-            sizeof (KeyIndex) +
-            sizeof (KeyIndex) +
-            keyBytes)
         , m_keyStorage (keyBytes)
     {
         SharedState::WriteAccess state (m_state);
@@ -106,7 +249,7 @@ public:
         {
             // VFALCO TODO Better error handling here
             // initialize the key file
-            Result result = state->keyFile.setPosition (keyFileHeaderBytes - 1);
+            Result result = state->keyFile.setPosition (masterHeaderBytes - 1);
             if (result.wasOk ())
             {
                 char byte = 0;
@@ -120,7 +263,8 @@ public:
             }
         }
 
-        state->newKeyIndex = 1 + (state->keyFile.getFile ().getSize () - keyFileHeaderBytes) / m_keyRecordBytes;
+        state->newKeyIndex = 1 + (state->keyFile.getFile ().getSize () - masterHeaderBytes)
+                               / calcKeyRecordBytes (m_keyBytes);
 
         openFile (&state->valFile, valPath);
 
@@ -134,13 +278,47 @@ public:
         flushInternal (state);
     }
 
+    // Open a file for reading and writing.
+    // Creates the file if it doesn't exist.
+    static void openFile (RandomAccessFile* file, File path)
+    {
+        Result const result = file->open (path, RandomAccessFile::readWrite);
+
+        if (! result)
+        {
+            String s;
+            s << "KeyvaDB: Couldn't open " << path.getFileName () << " for writing.";
+            Throw (std::runtime_error (s.toStdString ()));
+        }
+    }
+
+    //--------------------------------------------------------------------------
+
+    Result createMasterRecord (SharedState::WriteAccess& state)
+    {
+        MemoryBlock buffer (masterHeaderBytes, true);
+
+        Result result = state->keyFile.setPosition (0);
+
+        if (result.wasOk ())
+        {
+            MasterRecord mr;
+
+            mr.version = 1;
+
+            result = state->keyFile.write (buffer.getData (), buffer.getSize ());
+        }
+
+        return result;
+    }
+
     //--------------------------------------------------------------------------
 
     FileOffset calcKeyRecordOffset (KeyIndex keyIndex)
     {
         bassert (keyIndex > 0);
 
-        FileOffset const byteOffset = keyFileHeaderBytes + (keyIndex - 1) * m_keyRecordBytes;
+        FileOffset const byteOffset = masterHeaderBytes + (keyIndex - 1) * calcKeyRecordBytes (m_keyBytes);
 
         return byteOffset;
     }
@@ -158,15 +336,15 @@ public:
 
         if (result.wasOk ())
         {
-            MemoryBlock data (m_keyRecordBytes);
+            MemoryBlock data (calcKeyRecordBytes (m_keyBytes));
 
             size_t bytesRead;
 
-            result = state->keyFile.read (data.getData (), m_keyRecordBytes, &bytesRead);
+            result = state->keyFile.read (data.getData (), calcKeyRecordBytes (m_keyBytes), &bytesRead);
 
             if (result.wasOk ())
             {
-                if (bytesRead == m_keyRecordBytes)
+                if (bytesRead == calcKeyRecordBytes (m_keyBytes))
                 {
                     MemoryInputStream stream (data, false);
 
@@ -181,7 +359,7 @@ public:
                 }
                 else
                 {
-                    result = Result::fail ("KeyvaDB: amountRead != m_keyRecordBytes");
+                    result = Result::fail ("KeyvaDB: amountRead != calcKeyRecordBytes()");
                 }
             }
         }
@@ -202,7 +380,7 @@ public:
     {
         FileOffset const byteOffset = calcKeyRecordOffset (keyIndex);
 
-        int const bytes = includingKey ? m_keyRecordBytes : m_keyRecordBytes - m_keyBytes;
+        int const bytes = calcKeyRecordBytes (m_keyBytes) - (includingKey ? 0 : m_keyBytes);
 
         // VFALCO TODO Recycle this buffer
         MemoryBlock data (bytes);
@@ -290,6 +468,7 @@ public:
 
         int compare;         // result of the last comparison
         KeyIndex keyIndex;   // index we looked at last
+        //KeyBlock keyBlock;   // KeyBlock we looked at last
         KeyRecord keyRecord; // KeyRecord we looked at last
     };
 
@@ -394,26 +573,6 @@ public:
 
     //--------------------------------------------------------------------------
 
-    // Compares two key records for equality
-    bool areKeyRecordsEqual (KeyRecord const& lhs, KeyRecord const& rhs)
-    {
-        return lhs.leftIndex == rhs.leftIndex &&
-               lhs.rightIndex == rhs.rightIndex &&
-               lhs.valFileOffset == rhs.valFileOffset &&
-               lhs.valSize == rhs.valSize &&
-               (memcmp (lhs.key, rhs.key, m_keyBytes) == 0);
-    }
-
-    // Makes sure a key record matches disk
-    void checkKeyRecord (KeyRecord const& keyRecord, KeyIndex keyIndex, SharedState::WriteAccess& state)
-    {
-        MemoryBlock keyStorage (m_keyBytes);
-        KeyRecord checkRecord (keyStorage.getData ());
-        readKeyRecord (&checkRecord, keyIndex, state);
-
-        bassert (areKeyRecordsEqual (checkRecord, keyRecord));
-    }
-
     // Write a key value pair. Does nothing if the key exists.
     void put (void const* key, void const* value, int valueBytes)
     {
@@ -446,8 +605,6 @@ public:
                     }
 
                     writeKeyRecord (findResult.keyRecord, findResult.keyIndex, state, false);
-
-                    //checkKeyRecord (findResult.keyRecord, findResult.keyIndex, state);
                 }
 
                 // Write the new key
@@ -460,8 +617,6 @@ public:
                     memcpy (findResult.keyRecord.key, key, m_keyBytes);
 
                     writeKeyRecord (findResult.keyRecord, state->newKeyIndex, state, true);
-
-                    //checkKeyRecord (findResult.keyRecord, findResult.keyIndex, state);
                 }
 
                 // Key file has grown by one.
@@ -472,12 +627,8 @@ public:
             }
             else
             {
-                // Do nothing
-                /*
-                String s;
-                s << "KeyvaDB: Attempt to write a duplicate key!";
-                Throw (std::runtime_error (s.toStdString ()));
-                */
+                // Key already exists, do nothing.
+                // We could check to make sure the payloads are the same.
             }
         }
         else
@@ -524,30 +675,6 @@ public:
         state->keyFile.flush ();
         state->valFile.flush ();
     }
-
-    //--------------------------------------------------------------------------
-
-private:
-    // Open a file for reading and writing.
-    // Creates the file if it doesn't exist.
-    static void openFile (RandomAccessFile* file, File path)
-    {
-        Result const result = file->open (path, RandomAccessFile::readWrite);
-
-        if (! result)
-        {
-            String s;
-            s << "KeyvaDB: Couldn't open " << path.getFileName () << " for writing.";
-            Throw (std::runtime_error (s.toStdString ()));
-        }
-    }
-
-private:
-    int const m_keyBytes;
-    int const m_keyBlockDepth;
-    int const m_keyRecordBytes;
-    SharedState m_state;
-    HeapBlock <char> m_keyStorage;
 };
 
 KeyvaDB* KeyvaDB::New (int keyBytes, int keyBlockDepth, File keyPath, File valPath)

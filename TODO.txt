@@ -3,6 +3,7 @@ RIPPLE TODO
 --------------------------------------------------------------------------------
 
 Vinnie's Short List (Changes day to day)
+- Give mdb a proper spot in Subtrees/
 - Finish writing the NodeStore unit tests
 - Finish converting backends to new API
 - Memory NodeStore::Backend for unit tests
