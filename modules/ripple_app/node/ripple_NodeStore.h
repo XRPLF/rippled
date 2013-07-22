@@ -33,6 +33,8 @@ public:
 
     typedef std::vector <NodeObject::Ptr> Batch;
 
+    typedef StringPairArray Parameters;
+
     //--------------------------------------------------------------------------
 
     /** Parsed key/value blob into NodeObject components.
@@ -299,11 +301,25 @@ public:
             @return A pointer to the Backend object.
         */
         virtual Backend* createInstance (size_t keyBytes,
-                                         StringPairArray const& keyValues,
+                                         Parameters const& parameters,
                                          Scheduler& scheduler) = 0;
     };
 
     //--------------------------------------------------------------------------
+
+    /** Create a Parameters from a String.
+
+        Parameter strings have the format:
+
+        <key>=<value>['|'<key>=<value>]
+
+        The key "type" must exist, it defines the choice of backend.
+        For example
+            `type=LevelDB|path=/mnt/ephemeral`
+
+        This is a convenience function for unit tests.
+    */
+    static Parameters parseDelimitedKeyValueString (String s, beast_wchar delimiter='|');
 
     /** Construct a node store.
 
@@ -323,8 +339,16 @@ public:
 
         @return A pointer to the created object.
     */
-    static NodeStore* New (String backendParameters,
-                           String fastBackendParameters,
+    static NodeStore* New (Parameters const& backendParameters,
+                           Parameters const& fastBackendParameters,
+                           Scheduler& scheduler);
+
+    /** Construct a node store from a pipe delimited parameter string.
+
+        This is used for unit tests.
+    */
+    static NodeStore* New (String const& backendParameters,
+                           String const& fastBackendParameters,
                            Scheduler& scheduler);
 
     /** Destroy the node store.
@@ -386,7 +410,7 @@ public:
         The other NodeStore database is constructed using the specified
         backend parameters.
     */
-    virtual void import (String sourceBackendParameters) = 0;
+    virtual void import (Parameters const& sourceBackendParameters) = 0;
 
     /** Retrieve the estimated number of pending write operations.
 

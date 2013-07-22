@@ -3,7 +3,8 @@ RIPPLE TODO
 --------------------------------------------------------------------------------
 
 Vinnie's Short List (Changes day to day)
-- Refactor Section code into COnfigFile
+- Add fast backend to the unit test
+- Refactor Section code into ConfigFile
 - Change NodeStore config file format to multiline key/value pairs
 - Improved Mutex to track deadlocks
 - Memory NodeStore::Backend for unit tests [*]

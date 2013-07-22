@@ -271,42 +271,4 @@ std::string addressToString (void const* address)
     return strHex (static_cast <char const*> (address) - static_cast <char const*> (0));
 }
 
-StringPairArray parseKeyValueParameters (String parameters, beast_wchar delimiter)
-{
-    StringPairArray keyValues;
-
-    while (parameters.isNotEmpty ())
-    {
-        String pair;
-
-        {
-            int const delimiterPos = parameters.indexOfChar (delimiter);
-
-            if (delimiterPos != -1)
-            {
-                pair = parameters.substring (0, delimiterPos);
-
-                parameters = parameters.substring (delimiterPos + 1);
-            }
-            else
-            {
-                pair = parameters;
-
-                parameters = String::empty;
-            }
-        }
-
-        int const equalPos = pair.indexOfChar ('=');
-
-        if (equalPos != -1)
-        {
-            String const key = pair.substring (0, equalPos);
-            String const value = pair.substring (equalPos + 1, pair.length ());
-
-            keyValues.set (key, value);
-        }
-    }
-
-    return keyValues;
-}
 

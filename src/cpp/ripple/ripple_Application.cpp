@@ -52,8 +52,8 @@ public:
         , mJobQueue (mIOService)
         // VFALCO New stuff
         , m_nodeStore (NodeStore::New (
-            theConfig.NODE_DB,
-            theConfig.FASTNODE_DB,
+            theConfig.nodeDatabase,
+            theConfig.ephemeralNodeDatabase,
             *this))
         , m_validators (Validators::New (this))
         , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
@@ -955,15 +955,9 @@ static void addTxnSeqField ()
 
 void ApplicationImp::updateTables ()
 {
-    if (theConfig.NODE_DB.empty ())
+    if (theConfig.nodeDatabase.size () <= 0)
     {
-        Log (lsFATAL) << "The NODE_DB configuration setting MUST be set";
-        StopSustain ();
-        exit (1);
-    }
-    else if (theConfig.NODE_DB == "LevelDB" || theConfig.NODE_DB == "SQLite")
-    {
-        Log (lsFATAL) << "The NODE_DB setting has been updated, your value is out of date";
+        Log (lsFATAL) << "The [node_db] configuration setting has been updated and must be set";
         StopSustain ();
         exit (1);
     }
@@ -986,7 +980,7 @@ void ApplicationImp::updateTables ()
             "Node import from '" << theConfig.DB_IMPORT << "' to '"
                                  << getApp().getNodeStore().getName () << "'.";
 
-        getApp().getNodeStore().import(theConfig.DB_IMPORT);
+        getApp().getNodeStore().import(NodeStore::parseDelimitedKeyValueString (theConfig.DB_IMPORT));
     }
 }
 

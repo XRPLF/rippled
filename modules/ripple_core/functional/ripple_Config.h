@@ -84,8 +84,12 @@ public:
     boost::filesystem::path     DATA_DIR;
     boost::filesystem::path     DEBUG_LOGFILE;
     boost::filesystem::path     VALIDATORS_FILE;        // As specifed in rippled.cfg.
-    std::string                 NODE_DB;                // Database to use for nodes
-    std::string                 FASTNODE_DB;            // Database for temporary storage
+
+    StringPairArray nodeDatabase;
+    StringPairArray ephemeralNodeDatabase;
+    //std::string                 NODE_DB;                // Database to use for nodes
+    //std::string                 FASTNODE_DB;            // Database for temporary storage
+
     std::string                 DB_IMPORT;              // Import from old DB
     bool                        ELB_SUPPORT;            // Support Amazon ELB
 

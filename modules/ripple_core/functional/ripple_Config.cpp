@@ -373,8 +373,8 @@ void Config::load ()
             (void) SectionSingleB (secConfig, SECTION_RPC_IP, m_rpcIP);
             (void) SectionSingleB (secConfig, SECTION_RPC_PASSWORD, RPC_PASSWORD);
             (void) SectionSingleB (secConfig, SECTION_RPC_USER, RPC_USER);
-            (void) SectionSingleB (secConfig, SECTION_NODE_DB, NODE_DB);
-            (void) SectionSingleB (secConfig, SECTION_FASTNODE_DB, FASTNODE_DB);
+            theConfig.nodeDatabase = parseKeyValueSection (secConfig, SECTION_NODE_DB);
+            theConfig.ephemeralNodeDatabase = parseKeyValueSection (secConfig, SECTION_FASTNODE_DB);
 
             if (SectionSingleB (secConfig, SECTION_RPC_PORT, strTemp))
                 m_rpcPort = boost::lexical_cast<int> (strTemp);

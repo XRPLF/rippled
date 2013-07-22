@@ -106,7 +106,7 @@ int SectionCount (Section& secSource, const std::string& strSection)
 {
     Section::mapped_type* pmtEntries    = SectionEntries (secSource, strSection);
 
-    return pmtEntries ? -1 : pmtEntries->size ();
+    return pmtEntries ? pmtEntries->size () : 0;
 }
 
 bool SectionSingleB (Section& secSource, const std::string& strSection, std::string& strValue)
@@ -128,4 +128,34 @@ bool SectionSingleB (Section& secSource, const std::string& strSection, std::str
     return bSingle;
 }
 
-// vim:ts=4
+StringPairArray parseKeyValueSection (Section& secSource, std::string const& strSection)
+{
+    StringPairArray result;
+
+    int const count = SectionCount (secSource, strSection);
+
+    typedef Section::mapped_type Entries;
+
+    Entries* const entries = SectionEntries (secSource, strSection);
+
+    if (entries != nullptr)
+    {
+        for (Entries::const_iterator iter = entries->begin (); iter != entries->end (); ++iter)
+        {
+            String const line (iter->c_str ());
+
+            int const equalPos = line.indexOfChar ('=');
+
+            if (equalPos != -1)
+            {
+                String const key = line.substring (0, equalPos);
+                String const value = line.substring (equalPos + 1, line.length ());
+
+                result.set (key, value);
+            }
+        }
+    }
+
+    return result;
+}
+

@@ -206,12 +206,12 @@ class NodeStoreImp
     , LeakChecked <NodeStoreImp>
 {
 public:
-    NodeStoreImp (String backendParameters,
-                  String fastBackendParameters,
+    NodeStoreImp (Parameters const& backendParameters,
+                  Parameters const& fastBackendParameters,
                   Scheduler& scheduler)
         : m_scheduler (scheduler)
         , m_backend (createBackend (backendParameters, scheduler))
-        , m_fastBackend (fastBackendParameters.isNotEmpty ()
+        , m_fastBackend ((fastBackendParameters.size () > 0)
             ? createBackend (fastBackendParameters, scheduler) : nullptr)
         , m_cache ("NodeStore", 16384, 300)
         , m_negativeCache ("NoteStoreNegativeCache", 0, 120)
@@ -402,7 +402,7 @@ public:
 
     //------------------------------------------------------------------------------
 
-    void import (String sourceBackendParameters)
+    void import (Parameters const& sourceBackendParameters)
     {
         class ImportVisitCallback : public Backend::VisitCallback
         {
@@ -448,13 +448,11 @@ public:
 
     //------------------------------------------------------------------------------
 
-    static NodeStore::Backend* createBackend (String const& parameters, Scheduler& scheduler)
+    static NodeStore::Backend* createBackend (Parameters const& parameters, Scheduler& scheduler)
     {
         Backend* backend = nullptr;
 
-        StringPairArray keyValues = parseKeyValueParameters (parameters, '|');
-
-        String const& type = keyValues ["type"];
+        String const& type = parameters ["type"];
 
         if (type.isNotEmpty ())
         {
@@ -471,7 +469,7 @@ public:
 
             if (factory != nullptr)
             {
-                backend = factory->createInstance (NodeObject::keyBytes, keyValues, scheduler);
+                backend = factory->createInstance (NodeObject::keyBytes, parameters, scheduler);
             }
             else
             {
@@ -484,6 +482,11 @@ public:
         }
 
         return backend;
+    }
+
+    static NodeStore::Backend* createBackend (String const& parameterString, Scheduler& scheduler)
+    {
+        return createBackend (parseDelimitedKeyValueString (parameterString), scheduler);
     }
 
     static void addBackendFactory (BackendFactory& factory)
@@ -513,17 +516,65 @@ Array <NodeStore::BackendFactory*> NodeStoreImp::s_factories;
 
 //------------------------------------------------------------------------------
 
+NodeStore::Parameters NodeStore::parseDelimitedKeyValueString (String parameters, beast_wchar delimiter)
+{
+    StringPairArray keyValues;
+
+    while (parameters.isNotEmpty ())
+    {
+        String pair;
+
+        {
+            int const delimiterPos = parameters.indexOfChar (delimiter);
+
+            if (delimiterPos != -1)
+            {
+                pair = parameters.substring (0, delimiterPos);
+
+                parameters = parameters.substring (delimiterPos + 1);
+            }
+            else
+            {
+                pair = parameters;
+
+                parameters = String::empty;
+            }
+        }
+
+        int const equalPos = pair.indexOfChar ('=');
+
+        if (equalPos != -1)
+        {
+            String const key = pair.substring (0, equalPos);
+            String const value = pair.substring (equalPos + 1, pair.length ());
+
+            keyValues.set (key, value);
+        }
+    }
+
+    return keyValues;
+}
+
 void NodeStore::addBackendFactory (BackendFactory& factory)
 {
     NodeStoreImp::addBackendFactory (factory);
 }
 
-NodeStore* NodeStore::New (String backendParameters,
-                           String fastBackendParameters,
+NodeStore* NodeStore::New (Parameters const& backendParameters,
+                           Parameters const& fastBackendParameters,
                            Scheduler& scheduler)
 {
     return new NodeStoreImp (backendParameters,
                              fastBackendParameters,
+                             scheduler);
+}
+
+NodeStore* NodeStore::New (String const& backendParameters,
+                           String const& fastBackendParameters,
+                           Scheduler& scheduler)
+{
+    return new NodeStoreImp (parseDelimitedKeyValueString (backendParameters),
+                             parseDelimitedKeyValueString (fastBackendParameters),
                              scheduler);
 }
 
@@ -924,7 +975,8 @@ public:
 
         // Open the backend
         ScopedPointer <Backend> backend (
-            NodeStoreImp::createBackend (params, m_scheduler));
+            NodeStoreImp::createBackend (
+            NodeStore::parseDelimitedKeyValueString (params), m_scheduler));
 
         Stopwatch t;
 
@@ -1011,7 +1063,7 @@ public:
         beginTest (String ("import into '") + destBackendType + "' from '" + srcBackendType + "'");
 
         // Do the import
-        dest->import (srcParams);
+        dest->import (NodeStore::parseDelimitedKeyValueString (srcParams));
 
         // Get the results of the import
         NodeStore::Batch copy;
@@ -1026,7 +1078,10 @@ public:
 
     void testBackend (String type, int64 const seedValue)
     {
-        beginTest (String ("NodeStore backend type=") + type);
+        String s;
+        s << String ("NodeStore backend type=") + type;
+
+        beginTest (s);
 
         String params;
         params << "type=" << type
