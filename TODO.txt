@@ -3,13 +3,16 @@ RIPPLE TODO
 --------------------------------------------------------------------------------
 
 Vinnie's Short List (Changes day to day)
-- Memory NodeStore::Backend for unit tests
+- Refactor Section code into COnfigFile
+- Change NodeStore config file format to multiline key/value pairs
 - Improved Mutex to track deadlocks
-- Work on KeyvaDB
-- Import beast::db and use it in SQliteBackend
+- Memory NodeStore::Backend for unit tests [*]
 - Finish unit tests and code for Validators
-- Convert some Ripple boost unit tests to Beast.
+- Import beast::db and use it in SQliteBackend
+- Convert some Ripple boost unit tests to Beast. [*]
 - Move all code into modules/
+- Work on KeyvaDB
+[*] These can be handled by external developers
 
 --------------------------------------------------------------------------------
 
