@@ -138,7 +138,7 @@ bool InboundLedger::tryLocal ()
     return mComplete;
 }
 
-void InboundLedger::onTimer (bool progress)
+void InboundLedger::onTimer (bool progress, boost::recursive_mutex::scoped_lock&)
 {
     mRecentTXNodes.clear ();
     mRecentASNodes.clear ();

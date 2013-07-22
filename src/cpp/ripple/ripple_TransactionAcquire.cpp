@@ -42,22 +42,26 @@ void TransactionAcquire::done ()
     getApp().getIOService ().post (BIND_TYPE (&TACompletionHandler, mHash, map));
 }
 
-void TransactionAcquire::onTimer (bool progress)
+void TransactionAcquire::onTimer (bool progress, boost::recursive_mutex::scoped_lock& psl)
 {
     bool aggressive = false;
 
     if (getTimeouts () > 10)
     {
         WriteLog (lsWARNING, TransactionAcquire) << "Ten timeouts on TX set " << getHash ();
-        {
-            boost::recursive_mutex::scoped_lock sl (getApp().getMasterLock ());
-
-            if (getApp().getOPs ().stillNeedTXSet (mHash))
+        { // FIXME: Acquire the master lock here can deadlock
+            psl.unlock();
             {
-                WriteLog (lsWARNING, TransactionAcquire) << "Still need it";
-                mTimeouts = 0;
-                aggressive = true;
-            }
+                boost::recursive_mutex::scoped_lock sl (getApp().getMasterLock ());
+
+                if (getApp().getOPs ().stillNeedTXSet (mHash))
+                {
+                    WriteLog (lsWARNING, TransactionAcquire) << "Still need it";
+                    mTimeouts = 0;
+                    aggressive = true;
+                }
+	    }
+	    psl.lock();
         }
 
         if (!aggressive)
