@@ -143,6 +143,9 @@ const char* Job::toString (JobType t)
     case jtHO_WRITE:
         return "nodeWrite";
 
+    case jtSWEEP:
+        return "sweep";
+
     default:
         assert (false);
         return "unknown";
