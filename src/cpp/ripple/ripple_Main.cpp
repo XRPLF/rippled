@@ -299,7 +299,7 @@ int rippleMain (int argc, char** argv)
     if (HaveSustain () &&
             !iResult && !vm.count ("parameters") && !vm.count ("fg") && !vm.count ("standalone") && !vm.count ("unittest"))
     {
-        std::string logMe = DoSustain (theConfig.DEBUG_LOGFILE.c_str());
+        std::string logMe = DoSustain (theConfig.DEBUG_LOGFILE.string());
 
         if (!logMe.empty ())
             Log (lsWARNING) << logMe;
