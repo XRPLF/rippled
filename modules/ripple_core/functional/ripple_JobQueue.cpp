@@ -44,7 +44,9 @@ void JobQueue::addLimitJob (JobType type, const std::string& name, int limit, co
     if (type != jtCLIENT) // FIXME: Workaround incorrect client shutdown ordering
         assert (mThreadCount != 0); // do not add jobs to a queue with no threads
 
-    mJobSet.insert (Job (type, name, limit, ++mLastJob, mJobLoads[type], jobFunc));
+    std::pair< std::set <Job>::iterator, bool > it =
+        mJobSet.insert (Job (type, name, limit, ++mLastJob, mJobLoads[type], jobFunc));
+    it.first->peekEvent().start(); // start timing how long it stays in the queue
     ++mJobCounts[type].first;
     mJobCond.notify_one ();
 }
