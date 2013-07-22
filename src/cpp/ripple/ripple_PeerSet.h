@@ -67,11 +67,11 @@ private:
 
     // VFALCO TODO try to make some of these private
 protected:
-    PeerSet (uint256 const& hash, int interval);
+    PeerSet (uint256 const& hash, int interval, bool txnData);
     virtual ~PeerSet () { }
 
     virtual void newPeer (Peer::ref) = 0;
-    virtual void onTimer (bool progress) = 0;
+    virtual void onTimer (bool progress, boost::recursive_mutex::scoped_lock&) = 0;
     virtual boost::weak_ptr<PeerSet> pmDowncast () = 0;
 
     void setComplete ()
@@ -95,6 +95,7 @@ protected:
     bool mFailed;
     bool mProgress;
     bool mAggressive;
+    bool mTxnData;
     int mLastAction;
 
 

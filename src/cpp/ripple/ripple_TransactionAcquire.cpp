@@ -11,7 +11,9 @@ SETUP_LOG (TransactionAcquire)
 typedef std::map<uint160, LedgerProposal::pointer>::value_type u160_prop_pair;
 typedef std::map<uint256, DisputedTx::pointer>::value_type u256_lct_pair;
 
-TransactionAcquire::TransactionAcquire (uint256 const& hash) : PeerSet (hash, TX_ACQUIRE_TIMEOUT), mHaveRoot (false)
+TransactionAcquire::TransactionAcquire (uint256 const& hash)
+    : PeerSet (hash, TX_ACQUIRE_TIMEOUT, true)
+    , mHaveRoot (false)
 {
     mMap = boost::make_shared<SHAMap> (smtTRANSACTION, hash);
 }
@@ -46,23 +48,30 @@ void TransactionAcquire::done ()
     getApp().getIOService ().post (BIND_TYPE (&TACompletionHandler, mHash, map));
 }
 
-void TransactionAcquire::onTimer (bool progress)
+void TransactionAcquire::onTimer (bool progress, boost::recursive_mutex::scoped_lock& psl)
 {
     bool aggressive = false;
 
     if (getTimeouts () > 10)
     {
         WriteLog (lsWARNING, TransactionAcquire) << "Ten timeouts on TX set " << getHash ();
+        psl.unlock();
         {
             Application::ScopedLockType lock (getApp().getMasterLock (), __FILE__, __LINE__);
 
             if (getApp().getOPs ().stillNeedTXSet (mHash))
             {
-                WriteLog (lsWARNING, TransactionAcquire) << "Still need it";
-                mTimeouts = 0;
-                aggressive = true;
-            }
+                boost::recursive_mutex::scoped_lock sl (getApp().getMasterLock ());
+
+                if (getApp().getOPs ().stillNeedTXSet (mHash))
+                {
+                    WriteLog (lsWARNING, TransactionAcquire) << "Still need it";
+                    mTimeouts = 0;
+                    aggressive = true;
+                }
+	    }
         }
+        psl.lock();
 
         if (!aggressive)
         {

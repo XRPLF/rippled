@@ -1272,15 +1272,6 @@ NetworkOPs::getAccountTxs (const RippleAddress& account, int32 minLedger, int32 
                     ledger->pendSave(false);
             }
 
-            if (rawMeta.getLength() == 0)
-            { // Work around a bug that could leave the metadata missing
-                uint32 seq = static_cast<uint32>(db->getBigInt("AccountTransactions.LedgerSeq"));
-                WriteLog(lsWARNING, NetworkOPs) << "Recovering ledger " << seq << ", txn " << txn->getID();
-                Ledger::pointer ledger = getLedgerBySeq(seq);
-                if (ledger)
-                    ledger->pendSave(false);
-            }
-
             TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet> (txn->getID (), txn->getLedger (), rawMeta.getData ());
             ret.push_back (std::pair<Transaction::pointer, TransactionMetaSet::pointer> (txn, meta));
         }

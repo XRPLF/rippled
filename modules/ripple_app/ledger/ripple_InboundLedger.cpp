@@ -13,7 +13,7 @@ SETUP_LOG (InboundLedger)
 #define LEDGER_TIMEOUT_AGGRESSIVE   6       // how many timeouts before we get aggressive
 
 InboundLedger::InboundLedger (uint256 const& hash, uint32 seq)
-    : PeerSet (hash, LEDGER_ACQUIRE_TIMEOUT)
+    : PeerSet (hash, LEDGER_ACQUIRE_TIMEOUT, false)
     , mHaveBase (false)
     , mHaveState (false)
     , mHaveTransactions (false)
@@ -138,7 +138,7 @@ bool InboundLedger::tryLocal ()
     return mComplete;
 }
 
-void InboundLedger::onTimer (bool progress)
+void InboundLedger::onTimer (bool progress, boost::recursive_mutex::scoped_lock&)
 {
     mRecentTXNodes.clear ();
     mRecentASNodes.clear ();
@@ -844,7 +844,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
     if (!mHaveTransactions)
     {
         TransactionStateSF filter (mLedger->getLedgerSeq ());
-        std::vector<uint256> v = mLedger->getNeededAccountStateHashes (4, &filter);
+        std::vector<uint256> v = mLedger->getNeededTransactionHashes (4, &filter);
         BOOST_FOREACH (uint256 const & h, v)
         {
             ret.push_back (std::make_pair (protocol::TMGetObjectByHash::otTRANSACTION_NODE, h));

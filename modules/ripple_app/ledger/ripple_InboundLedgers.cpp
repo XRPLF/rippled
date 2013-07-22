@@ -23,7 +23,7 @@ InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 s
         ptr->addPeers ();
         ptr->setTimer (); // Cannot call in constructor
     }
-    else
+    else if (ptr->isComplete ())
     {
         Ledger::pointer ledger = ptr->getLedger ();
         ledger->setClosed ();

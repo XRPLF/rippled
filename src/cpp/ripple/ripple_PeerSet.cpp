@@ -6,7 +6,7 @@
 
 class InboundLedger;
 
-PeerSet::PeerSet (uint256 const& hash, int interval)
+PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData)
     : mHash (hash)
     , mTimerInterval (interval)
     , mTimeouts (0)
@@ -14,6 +14,7 @@ PeerSet::PeerSet (uint256 const& hash, int interval)
     , mFailed (false)
     , mProgress (true)
     , mAggressive (false)
+    , mTxnData (txnData)
     , mTimer (getApp().getIOService ())
 {
     mLastAction = UptimeTimer::getInstance ().getElapsedSeconds ();
@@ -53,12 +54,12 @@ void PeerSet::invokeOnTimer ()
     {
         ++mTimeouts;
         WriteLog (lsWARNING, InboundLedger) << "Timeout(" << mTimeouts << ") pc=" << mPeers.size () << " acquiring " << mHash;
-        onTimer (false);
+        onTimer (false, sl);
     }
     else
     {
         mProgress = false;
-        onTimer (true);
+        onTimer (true, sl);
     }
 
     if (!isDone ())
@@ -74,16 +75,24 @@ void PeerSet::TimerEntry (boost::weak_ptr<PeerSet> wptr, const boost::system::er
 
     if (ptr)
     {
-        int jc = getApp().getJobQueue ().getJobCountTotal (jtLEDGER_DATA);
-
-        if (jc > 4)
+        if (ptr->mTxnData)
         {
-            WriteLog (lsDEBUG, InboundLedger) << "Deferring PeerSet timer due to load";
-            ptr->setTimer ();
+            getApp().getJobQueue ().addLimitJob (jtTXN_DATA, "timerEntry", 2,
+                BIND_TYPE (&PeerSet::TimerJobEntry, P_1, ptr));
         }
         else
-            getApp().getJobQueue ().addLimitJob (jtLEDGER_DATA, "timerEntry", 2,
-                BIND_TYPE (&PeerSet::TimerJobEntry, P_1, ptr));
+        {
+            int jc = getApp().getJobQueue ().getJobCountTotal (jtLEDGER_DATA);
+
+            if (jc > 4)
+            {
+                WriteLog (lsDEBUG, InboundLedger) << "Deferring PeerSet timer due to load";
+                ptr->setTimer ();
+            }
+            else
+                getApp().getJobQueue ().addLimitJob (jtLEDGER_DATA, "timerEntry", 2,
+                    BIND_TYPE (&PeerSet::TimerJobEntry, P_1, ptr));
+	}
     }
 }
 
