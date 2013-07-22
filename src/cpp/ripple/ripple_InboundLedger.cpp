@@ -844,7 +844,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
     if (!mHaveTransactions)
     {
         TransactionStateSF filter (mLedger->getLedgerSeq ());
-        std::vector<uint256> v = mLedger->getNeededAccountStateHashes (4, &filter);
+        std::vector<uint256> v = mLedger->getNeededTransactionHashes (4, &filter);
         BOOST_FOREACH (uint256 const & h, v)
         {
             ret.push_back (std::make_pair (protocol::TMGetObjectByHash::otTRANSACTION_NODE, h));
