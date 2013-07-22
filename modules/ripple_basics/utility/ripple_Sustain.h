@@ -15,6 +15,6 @@
 //
 extern bool HaveSustain ();
 extern std::string StopSustain ();
-extern std::string DoSustain ();
+extern std::string DoSustain (std::string logFile);
 
 #endif

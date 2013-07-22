@@ -34,7 +34,7 @@ std::string StopSustain ()
     return "Terminating monitor";
 }
 
-std::string DoSustain ()
+std::string DoSustain (std::string logFile)
 {
     int childCount = 0;
     pManager = getpid ();
@@ -72,7 +72,9 @@ std::string DoSustain ()
         while (kill (pChild, 0) == 0);
 
         rename ("core", boost::str (boost::format ("core.%d") % static_cast<int> (pChild)).c_str ());
-        rename ("debug.log", boost::str (boost::format ("debug.log.%d") % static_cast<int> (pChild)).c_str ());
+        if (!logFile.empty())
+            rename (logFile.c_str(),
+	        boost::str (boost::format ("%s.%d") % logFile % static_cast<int> (pChild)).c_str ());
     }
 }
 
@@ -82,7 +84,7 @@ bool HaveSustain ()
 {
     return false;
 }
-std::string DoSustain ()
+std::string DoSustain (std::string)
 {
     return std::string ();
 }
