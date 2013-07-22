@@ -503,10 +503,7 @@ void LedgerMaster::resumeAcquiring ()
         if (nextLedger)
             acquireMissingLedger (nextLedger, nextLedger->getParentHash (), nextLedger->getLedgerSeq () - 1);
         else
-        {
-            mCompleteLedgers.clearValue (prevMissing);
             WriteLog (lsINFO, LedgerMaster) << "We have a gap at: " << prevMissing + 1;
-        }
     }
 }
 
