@@ -130,6 +130,9 @@ const char* Job::toString (JobType t)
     case jtTXN_PROC:
         return "processTransaction";
 
+    case jtTXN_DATA:
+        return "fetchTxnData";
+
     case jtOB_SETUP:
         return "orderBookSetup";
 

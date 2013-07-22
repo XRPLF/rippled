@@ -17,20 +17,21 @@ enum JobType
     jtPUBOLDLEDGER  = 2,    // An old ledger has been accepted
     jtVALIDATION_ut = 3,    // A validation from an untrusted source
     jtPROOFWORK     = 4,    // A proof of work demand from another server
-    jtPROPOSAL_ut   = 5,    // A proposal from an untrusted source
-    jtLEDGER_DATA   = 6,    // Received data for a ledger we're acquiring
-    jtUPDATE_PF     = 7,    // Update pathfinding requests
-    jtCLIENT        = 8,    // A websocket command from the client
-    jtTRANSACTION   = 9,    // A transaction received from the network
-    jtPUBLEDGER     = 10,   // Publish a fully-accepted ledger
-    jtWAL           = 11,   // Write-ahead logging
-    jtVALIDATION_t  = 12,   // A validation from a trusted source
-    jtWRITE         = 13,   // Write out hashed objects
-    jtTRANSACTION_l = 14,   // A local transaction
-    jtPROPOSAL_t    = 15,   // A proposal from a trusted source
-    jtSWEEP         = 16,   // Sweep for stale structures
-    jtADMIN         = 17,   // An administrative operation
-    jtDEATH         = 18,   // job of death, used internally
+    jtTRANSACTION_l = 5,    // A local transaction
+    jtPROPOSAL_ut   = 6,    // A proposal from an untrusted source
+    jtLEDGER_DATA   = 7,    // Received data for a ledger we're acquiring
+    jtUPDATE_PF     = 8,    // Update pathfinding requests
+    jtCLIENT        = 9,    // A websocket command from the client
+    jtTRANSACTION   = 10,    // A transaction received from the network
+    jtPUBLEDGER     = 11,   // Publish a fully-accepted ledger
+    jtTXN_DATA      = 12,   // Fetch a proposed set
+    jtWAL           = 13,   // Write-ahead logging
+    jtVALIDATION_t  = 14,   // A validation from a trusted source
+    jtWRITE         = 15,   // Write out hashed objects
+    jtPROPOSAL_t    = 16,   // A proposal from a trusted source
+    jtSWEEP         = 17,   // Sweep for stale structures
+    jtADMIN         = 18,   // An administrative operation
+    jtDEATH         = 19,   // job of death, used internally
 
     // special types not dispatched by the job pool
     jtPEER          = 24,

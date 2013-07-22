@@ -13,7 +13,7 @@ SETUP_LOG (InboundLedger)
 #define LEDGER_TIMEOUT_AGGRESSIVE   6       // how many timeouts before we get aggressive
 
 InboundLedger::InboundLedger (uint256 const& hash, uint32 seq)
-    : PeerSet (hash, LEDGER_ACQUIRE_TIMEOUT)
+    : PeerSet (hash, LEDGER_ACQUIRE_TIMEOUT, false)
     , mHaveBase (false)
     , mHaveState (false)
     , mHaveTransactions (false)
