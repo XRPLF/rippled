@@ -61,14 +61,9 @@ void TransactionAcquire::onTimer (bool progress, boost::recursive_mutex::scoped_
 
             if (getApp().getOPs ().stillNeedTXSet (mHash))
             {
-                boost::recursive_mutex::scoped_lock sl (getApp().getMasterLock ());
-
-                if (getApp().getOPs ().stillNeedTXSet (mHash))
-                {
-                    WriteLog (lsWARNING, TransactionAcquire) << "Still need it";
-                    mTimeouts = 0;
-                    aggressive = true;
-                }
+                WriteLog (lsWARNING, TransactionAcquire) << "Still need it";
+                mTimeouts = 0;
+                aggressive = true;
 	    }
         }
         psl.lock();
