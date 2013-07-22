@@ -9,6 +9,7 @@ Vinnie's Short List (Changes day to day)
 - Import beast::db and use it in SQliteBackend
 - Finish unit tests and code for Validators
 - Convert some Ripple boost unit tests to Beast.
+- Move all code into modules/
 
 --------------------------------------------------------------------------------
 

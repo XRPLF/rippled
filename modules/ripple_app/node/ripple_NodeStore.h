@@ -7,51 +7,6 @@
 #ifndef RIPPLE_NODESTORE_H_INCLUDED
 #define RIPPLE_NODESTORE_H_INCLUDED
 
-// Javadoc comments are added to all public classes, member functions,
-// type definitions, data types, and global variables (which we should
-// minimize the use of.
-//
-// A Javadoc comment is introduced with an extra asterisk following the
-// beginning of a normal C++ style comment, or by using a triple forward slash.
-//
-// Structure of a Javadoc comment:
-
-/** Brief one line description.
-
-    A more detailed description, which may be broken up into multiple
-    paragraphs. Doxygen commands are prefixed with the at-sign '@'. For
-    example, here's a formatted code snippet:
-
-    @code
-
-    int main (int argc, char** argv)
-    {
-        return 0;
-    }
-
-    @endcode
-
-    You can also add a note, or document an invariant:
-
-    @note This appears as its own note.
-
-    @invariant This must not be called while holding the lock.
-
-    When documenting functions, you can use these Doxygen commands
-    to annotate the parameters, return value, template types.
-
-    @param  argc    The number of arguments to the program.
-    @param  argv    An array of strings argc in size, one for each argument.
-
-    @return The return value of the program, passed to to the enclosing process.
-*/    
-
-/** Functions can be documented with just the brief description, like this */
-
-/// Here's the alternate form of a brief description.
-
-//------------------------------------------------------------------------------
-
 /** Persistency layer for NodeObject
 
     A Node is a ledger object which is uniquely identified by a key, which is
@@ -378,6 +333,13 @@ public:
         and files closed before this returns.
     */
     virtual ~NodeStore () { }
+
+    /** Retrieve the name associated with this backend.
+
+        This is used for diagnostics and may not reflect the actual path
+        or paths used by the underlying backend.
+    */
+    virtual String getName () const = 0;
 
     /** Add the specified backend factory to the list of available factories.
 

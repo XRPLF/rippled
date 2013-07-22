@@ -222,6 +222,11 @@ public:
     {
     }
 
+    String getName () const
+    {
+        return m_backend->getName ();
+    }
+
     //------------------------------------------------------------------------------
 
     NodeObject::Ptr fetch (uint256 const& hash)
@@ -435,10 +440,6 @@ public:
         //--------------------------------------------------------------------------
 
         ScopedPointer <Backend> srcBackend (createBackend (sourceBackendParameters, m_scheduler));
-
-        WriteLog (lsWARNING, NodeObject) <<
-            "Node import from '" << srcBackend->getName() << "' to '"
-                                 << m_backend->getName() << "'.";
 
         ImportVisitCallback callback (*m_backend);
 
@@ -736,7 +737,7 @@ public:
         Batch batch3;
         createPredictableBatch (batch3, 1, numObjectsToTest, seedValue);
 
-        expect (! areBatchesEqual (batch1, batch3), "Should be equal");
+        expect (! areBatchesEqual (batch1, batch3), "Should not be equal");
     }
 
     // Checks encoding/decoding blobs
@@ -959,13 +960,13 @@ public:
 
         testBackend ("leveldb", seedValue);
 
-        #if RIPPLE_HYPERLEVELDB_AVAILABLE
+    #if RIPPLE_HYPERLEVELDB_AVAILABLE
         testBackend ("hyperleveldb", seedValue);
-        #endif
+    #endif
 
-        #if RIPPLE_MDB_AVAILABLE
+    #if RIPPLE_MDB_AVAILABLE
         testBackend ("mdb", seedValue);
-        #endif
+    #endif
 
         testBackend ("sqlite", seedValue);
     }

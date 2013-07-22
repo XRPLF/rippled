@@ -981,7 +981,13 @@ void ApplicationImp::updateTables ()
     }
 
     if (!theConfig.DB_IMPORT.empty())
+    {
+        WriteLog (lsWARNING, NodeObject) <<
+            "Node import from '" << theConfig.DB_IMPORT << "' to '"
+                                 << getApp().getNodeStore().getName () << "'.";
+
         getApp().getNodeStore().import(theConfig.DB_IMPORT);
+    }
 }
 
 //------------------------------------------------------------------------------
