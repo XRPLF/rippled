@@ -54,12 +54,12 @@ void PeerSet::invokeOnTimer ()
     {
         ++mTimeouts;
         WriteLog (lsWARNING, InboundLedger) << "Timeout(" << mTimeouts << ") pc=" << mPeers.size () << " acquiring " << mHash;
-        onTimer (false);
+        onTimer (false, sl);
     }
     else
     {
         mProgress = false;
-        onTimer (true);
+        onTimer (true, sl);
     }
 
     if (!isDone ())

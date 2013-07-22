@@ -71,7 +71,7 @@ protected:
     virtual ~PeerSet () { }
 
     virtual void newPeer (Peer::ref) = 0;
-    virtual void onTimer (bool progress) = 0;
+    virtual void onTimer (bool progress, boost::recursive_mutex::scoped_lock&) = 0;
     virtual boost::weak_ptr<PeerSet> pmDowncast () = 0;
 
     void setComplete ()
