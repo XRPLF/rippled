@@ -92,7 +92,7 @@ public:
 
     /** Reads a boolean from the stream.
 
-        The bool is encoded as a single byte - 0 for false, nonzero for true.
+        The bool is encoded as a single byte - non-zero for true, 0 for false. 
 
         If the stream is exhausted, this will return false.
 
@@ -117,8 +117,7 @@ public:
 
     /** Reads two bytes from the stream as a little-endian 16-bit value.
 
-        If the next two bytes read are byte1 and byte2, this returns
-        (byte2 | (byte1 << 8)).
+        If the next two bytes read are byte1 and byte2, this returns (byte1 | (byte2 << 8)). 
 
         If the stream is exhausted partway through reading the bytes, this will return zero.
 
