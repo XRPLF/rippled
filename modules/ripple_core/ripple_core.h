@@ -30,6 +30,7 @@ namespace ripple
 
 // VFALCO NOTE Indentation shows dependency hierarchy
 //
+/***/#include "functional/ripple_ConfigSections.h"
 /**/#include "functional/ripple_Config.h"
 /**/#include "functional/ripple_ILoadFeeTrack.h"
 /*..*/#include "functional/ripple_LoadEvent.h"

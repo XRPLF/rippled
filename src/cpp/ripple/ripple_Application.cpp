@@ -974,13 +974,15 @@ void ApplicationImp::updateTables ()
         exit (1);
     }
 
-    if (!theConfig.DB_IMPORT.empty())
+    if (theConfig.importNodeDatabase.size () > 0)
     {
+        ScopedPointer <NodeStore> source (NodeStore::New (theConfig.importNodeDatabase));
+
         WriteLog (lsWARNING, NodeObject) <<
-            "Node import from '" << theConfig.DB_IMPORT << "' to '"
+            "Node import from '" << source->getName () << "' to '"
                                  << getApp().getNodeStore().getName () << "'.";
 
-        getApp().getNodeStore().import(NodeStore::parseDelimitedKeyValueString (theConfig.DB_IMPORT));
+        getApp().getNodeStore().import (*source);
     }
 }
 

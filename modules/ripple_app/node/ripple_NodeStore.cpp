@@ -402,7 +402,12 @@ public:
 
     //------------------------------------------------------------------------------
 
-    void import (Parameters const& sourceBackendParameters)
+    void visitAll (Backend::VisitCallback& callback)
+    {
+        m_backend->visitAll (callback);
+    }
+
+    void import (NodeStore& sourceDatabase)
     {
         class ImportVisitCallback : public Backend::VisitCallback
         {
@@ -439,16 +444,15 @@ public:
 
         //--------------------------------------------------------------------------
 
-        ScopedPointer <Backend> srcBackend (createBackend (sourceBackendParameters, m_scheduler));
-
         ImportVisitCallback callback (*m_backend);
 
-        srcBackend->visitAll (callback);
+        sourceDatabase.visitAll (callback);
     }
 
     //------------------------------------------------------------------------------
 
-    static NodeStore::Backend* createBackend (Parameters const& parameters, Scheduler& scheduler)
+    static NodeStore::Backend* createBackend (
+        Parameters const& parameters, Scheduler& scheduler = getSynchronousScheduler ())
     {
         Backend* backend = nullptr;
 
@@ -484,11 +488,6 @@ public:
         return backend;
     }
 
-    static NodeStore::Backend* createBackend (String const& parameterString, Scheduler& scheduler)
-    {
-        return createBackend (parseDelimitedKeyValueString (parameterString), scheduler);
-    }
-
     static void addBackendFactory (BackendFactory& factory)
     {
         s_factories.add (&factory);
@@ -516,65 +515,33 @@ Array <NodeStore::BackendFactory*> NodeStoreImp::s_factories;
 
 //------------------------------------------------------------------------------
 
-NodeStore::Parameters NodeStore::parseDelimitedKeyValueString (String parameters, beast_wchar delimiter)
-{
-    StringPairArray keyValues;
-
-    while (parameters.isNotEmpty ())
-    {
-        String pair;
-
-        {
-            int const delimiterPos = parameters.indexOfChar (delimiter);
-
-            if (delimiterPos != -1)
-            {
-                pair = parameters.substring (0, delimiterPos);
-
-                parameters = parameters.substring (delimiterPos + 1);
-            }
-            else
-            {
-                pair = parameters;
-
-                parameters = String::empty;
-            }
-        }
-
-        int const equalPos = pair.indexOfChar ('=');
-
-        if (equalPos != -1)
-        {
-            String const key = pair.substring (0, equalPos);
-            String const value = pair.substring (equalPos + 1, pair.length ());
-
-            keyValues.set (key, value);
-        }
-    }
-
-    return keyValues;
-}
-
 void NodeStore::addBackendFactory (BackendFactory& factory)
 {
     NodeStoreImp::addBackendFactory (factory);
 }
 
+NodeStore::Scheduler& NodeStore::getSynchronousScheduler ()
+{
+    // Simple scheduler that performs the task immediately
+    struct SynchronousScheduler : Scheduler
+    {
+        void scheduleTask (Task* task)
+        {
+            task->performScheduledTask ();
+        }
+    };
+
+    static SynchronousScheduler scheduler;
+
+    return scheduler;
+}
+
 NodeStore* NodeStore::New (Parameters const& backendParameters,
-                           Parameters const& fastBackendParameters,
+                           Parameters fastBackendParameters,
                            Scheduler& scheduler)
 {
     return new NodeStoreImp (backendParameters,
                              fastBackendParameters,
-                             scheduler);
-}
-
-NodeStore* NodeStore::New (String const& backendParameters,
-                           String const& fastBackendParameters,
-                           Scheduler& scheduler)
-{
-    return new NodeStoreImp (parseDelimitedKeyValueString (backendParameters),
-                             parseDelimitedKeyValueString (fastBackendParameters),
                              scheduler);
 }
 
@@ -597,15 +564,6 @@ public:
     //
     typedef NodeStore::Backend Backend;
     typedef NodeStore::Batch Batch;
-
-    // Immediately performs the task
-    struct TestScheduler : NodeStore::Scheduler
-    {
-        void scheduleTask (Task* task)
-        {
-            task->performScheduledTask ();
-        }
-    };
 
     // Creates predictable objects
     class PredictableObjectFactory
@@ -846,19 +804,18 @@ public:
     {
         beginTest (String ("NodeStore::Backend type=") + type);
 
-        String params;
-        params << "type=" << type
-               << "|path=" << File::createTempFile ("unittest").getFullPathName ();
+        StringPairArray params;
+        File const path (File::createTempFile ("node_db"));
+        params.set ("type", type);
+        params.set ("path", path.getFullPathName ());
 
         // Create a batch
         NodeStore::Batch batch;
         createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
-        //createPredictableBatch (batch, 0, 10, seedValue);
 
         {
             // Open the backend
-            ScopedPointer <Backend> backend (
-                NodeStoreImp::createBackend (params, m_scheduler));
+            ScopedPointer <Backend> backend (NodeStoreImp::createBackend (params));
 
             // Write the batch
             storeBatch (*backend, batch);
@@ -881,8 +838,7 @@ public:
 
         {
             // Re-open the backend
-            ScopedPointer <Backend> backend (
-                NodeStoreImp::createBackend (params, m_scheduler));
+            ScopedPointer <Backend> backend (NodeStoreImp::createBackend (params));
 
             // Read it back in
             NodeStore::Batch copy;
@@ -893,6 +849,8 @@ public:
             expect (areBatchesEqual (batch, copy), "Should be equal");
         }
     }
+
+    //--------------------------------------------------------------------------
 
     void runTest ()
     {
@@ -912,9 +870,6 @@ public:
         testBackend ("mdb", seedValue);
         #endif
     }
-
-private:
-    TestScheduler m_scheduler;
 };
 
 static NodeStoreBackendTests nodeStoreBackendTests;
@@ -957,15 +912,18 @@ public:
         int64 m_startTime;
     };
 
+    //--------------------------------------------------------------------------
+
     void testBackend (String type, int64 const seedValue)
     {
         String s;
         s << "Testing backend '" << type << "' performance";
         beginTest (s);
 
-        String params;
-        params << "type=" << type
-               << "|path=" << File::createTempFile ("unittest").getFullPathName ();
+        StringPairArray params;
+        File const path (File::createTempFile ("node_db"));
+        params.set ("type", type);
+        params.set ("path", path.getFullPathName ());
 
         // Create batches
         NodeStore::Batch batch1;
@@ -974,9 +932,7 @@ public:
         createPredictableBatch (batch2, 0, numObjectsToTest, seedValue);
 
         // Open the backend
-        ScopedPointer <Backend> backend (
-            NodeStoreImp::createBackend (
-            NodeStore::parseDelimitedKeyValueString (params), m_scheduler));
+        ScopedPointer <Backend> backend (NodeStoreImp::createBackend (params));
 
         Stopwatch t;
 
@@ -1004,6 +960,8 @@ public:
         logMessage (s);
     }
 
+    //--------------------------------------------------------------------------
+
     void runTest ()
     {
         int const seedValue = 50;
@@ -1022,10 +980,9 @@ public:
 
         testBackend ("sqlite", seedValue);
     }
-
-private:
-    TestScheduler m_scheduler;
 };
+
+static NodeStoreTimingTests nodeStoreTimingTests;
 
 //------------------------------------------------------------------------------
 
@@ -1038,9 +995,10 @@ public:
 
     void testImport (String destBackendType, String srcBackendType, int64 seedValue)
     {
-        String srcParams;
-        srcParams << "type=" << srcBackendType
-                  << "|path=" << File::createTempFile ("unittest").getFullPathName ();
+        File const node_db (File::createTempFile ("node_db"));
+        StringPairArray srcParams;
+        srcParams.set ("type", srcBackendType);
+        srcParams.set ("path", node_db.getFullPathName ());
 
         // Create a batch
         NodeStore::Batch batch;
@@ -1048,26 +1006,33 @@ public:
 
         // Write to source db
         {
-            ScopedPointer <NodeStore> src (NodeStore::New (srcParams, "", m_scheduler));
+            ScopedPointer <NodeStore> src (NodeStore::New (srcParams));
 
             storeBatch (*src, batch);
         }
 
-        String destParams;
-        destParams << "type=" << destBackendType
-                   << "|path=" << File::createTempFile ("unittest").getFullPathName ();
-
-        ScopedPointer <NodeStore> dest (NodeStore::New (
-            destParams, "", m_scheduler));
-
-        beginTest (String ("import into '") + destBackendType + "' from '" + srcBackendType + "'");
-
-        // Do the import
-        dest->import (NodeStore::parseDelimitedKeyValueString (srcParams));
-
-        // Get the results of the import
         NodeStore::Batch copy;
-        fetchCopyOfBatch (*dest, &copy, batch);
+
+        {
+            // Re-open the db
+            ScopedPointer <NodeStore> src (NodeStore::New (srcParams));
+
+            // Set up the destination database
+            File const dest_db (File::createTempFile ("dest_db"));
+            StringPairArray destParams;
+            destParams.set ("type", destBackendType);
+            destParams.set ("path", dest_db.getFullPathName ());
+
+            ScopedPointer <NodeStore> dest (NodeStore::New (destParams));
+
+            beginTest (String ("import into '") + destBackendType + "' from '" + srcBackendType + "'");
+
+            // Do the import
+            dest->import (*src);
+
+            // Get the results of the import
+            fetchCopyOfBatch (*dest, &copy, batch);
+        }
 
         // Canonicalize the source and destination batches
         std::sort (batch.begin (), batch.end (), NodeObject::LessThan ());
@@ -1076,16 +1041,29 @@ public:
 
     }
 
-    void testBackend (String type, int64 const seedValue)
+    //--------------------------------------------------------------------------
+
+    void testNodeStore (String type, bool const useEphemeralDatabase, int64 const seedValue)
     {
         String s;
-        s << String ("NodeStore backend type=") + type;
+        s << String ("NodeStore backend '") + type + "'";
+        if (useEphemeralDatabase)
+            s << " (with ephemeral database)";
 
         beginTest (s);
 
-        String params;
-        params << "type=" << type
-               << "|path=" << File::createTempFile ("unittest").getFullPathName ();
+        File const node_db (File::createTempFile ("node_db"));
+        StringPairArray nodeParams;
+        nodeParams.set ("type", type);
+        nodeParams.set ("path", node_db.getFullPathName ());
+
+        File const temp_db  (File::createTempFile ("temp_db"));
+        StringPairArray tempParams;
+        if (useEphemeralDatabase)
+        {
+            tempParams.set ("type", type);
+            tempParams.set ("path", temp_db.getFullPathName ());
+        }
 
         // Create a batch
         NodeStore::Batch batch;
@@ -1093,7 +1071,7 @@ public:
 
         {
             // Open the database
-            ScopedPointer <NodeStore> db (NodeStore::New (params, "", m_scheduler));
+            ScopedPointer <NodeStore> db (NodeStore::New (nodeParams, tempParams));
 
             // Write the batch
             storeBatch (*db, batch);
@@ -1115,12 +1093,28 @@ public:
         }
 
         {
-            // Re-open the database
-            ScopedPointer <NodeStore> db (NodeStore::New (params, "", m_scheduler));
+            // Re-open the database without the ephemeral DB
+            ScopedPointer <NodeStore> db (NodeStore::New (nodeParams));
 
             // Read it back in
             NodeStore::Batch copy;
             fetchCopyOfBatch (*db, &copy, batch);
+
+            // Canonicalize the source and destination batches
+            std::sort (batch.begin (), batch.end (), NodeObject::LessThan ());
+            std::sort (copy.begin (), copy.end (), NodeObject::LessThan ());
+            expect (areBatchesEqual (batch, copy), "Should be equal");
+        }
+
+        if (useEphemeralDatabase)
+        {
+            // Verify the ephemeral db
+            ScopedPointer <NodeStore> db (NodeStore::New (tempParams, StringPairArray ()));
+
+            // Read it back in
+            NodeStore::Batch copy;
+            fetchCopyOfBatch (*db, &copy, batch);
+
             // Canonicalize the source and destination batches
             std::sort (batch.begin (), batch.end (), NodeObject::LessThan ());
             std::sort (copy.begin (), copy.end (), NodeObject::LessThan ());
@@ -1128,33 +1122,29 @@ public:
         }
     }
 
-public:
-    void runTest ()
+    //--------------------------------------------------------------------------
+
+    void runBackendTests (bool useEphemeralDatabase, int64 const seedValue)
     {
-        int64 const seedValue = 50;
+        testNodeStore ("keyvadb", useEphemeralDatabase, seedValue);
 
-        //
-        // Backend tests
-        //
+        testNodeStore ("leveldb", useEphemeralDatabase, seedValue);
 
-        testBackend ("keyvadb", seedValue);
-
-        testBackend ("leveldb", seedValue);
-
-        testBackend ("sqlite", seedValue);
+        testNodeStore ("sqlite", useEphemeralDatabase, seedValue);
 
     #if RIPPLE_HYPERLEVELDB_AVAILABLE
-        testBackend ("hyperleveldb", seedValue);
+        testNodeStore ("hyperleveldb", useEphemeralDatabase, seedValue);
     #endif
 
     #if RIPPLE_MDB_AVAILABLE
-        testBackend ("mdb", seedValue);
+        testNodeStore ("mdb", useEphemeralDatabase, seedValue);
     #endif
+    }
 
-        //
-        // Import tests
-        //
+    //--------------------------------------------------------------------------
 
+    void runImportTests (int64 const seedValue)
+    {
         //testImport ("keyvadb", "keyvadb", seedValue);
 
         testImport ("leveldb", "leveldb", seedValue);
@@ -1170,10 +1160,18 @@ public:
         testImport ("sqlite", "sqlite", seedValue);
     }
 
-private:
-    TestScheduler m_scheduler;
+    //--------------------------------------------------------------------------
+
+    void runTest ()
+    {
+        int64 const seedValue = 50;
+
+        runBackendTests (false, seedValue);
+
+        runBackendTests (true, seedValue);
+
+        runImportTests (seedValue);
+    }
 };
 
 static NodeStoreTests nodeStoreTests;
-
-static NodeStoreTimingTests nodeStoreTimingTests;

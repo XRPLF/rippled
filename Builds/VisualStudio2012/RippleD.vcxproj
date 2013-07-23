@@ -1456,6 +1456,7 @@
     <ClInclude Include="..\..\modules\ripple_basio\ripple_basio_impl.h" />
     <ClInclude Include="..\..\modules\ripple_client\ripple_client.h" />
     <ClInclude Include="..\..\modules\ripple_core\functional\ripple_Config.h" />
+    <ClInclude Include="..\..\modules\ripple_core\functional\ripple_ConfigSections.h" />
     <ClInclude Include="..\..\modules\ripple_core\functional\ripple_ILoadFeeTrack.h" />
     <ClInclude Include="..\..\modules\ripple_core\functional\ripple_Job.h" />
     <ClInclude Include="..\..\modules\ripple_core\functional\ripple_JobQueue.h" />

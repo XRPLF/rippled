@@ -25,6 +25,6 @@ Section::mapped_type* SectionEntries (Section& secSource, const std::string& str
     Each line is in the form <key>=<value>.
     Spaces are considered part of the key and value.
 */
-StringPairArray parseKeyValueSection (Section& secSource, std::string const& strSection);
+StringPairArray parseKeyValueSection (Section& secSource, String const& strSection);
 
 #endif

@@ -128,15 +128,18 @@ bool SectionSingleB (Section& secSource, const std::string& strSection, std::str
     return bSingle;
 }
 
-StringPairArray parseKeyValueSection (Section& secSource, std::string const& strSection)
+StringPairArray parseKeyValueSection (Section& secSource, String const& strSection)
 {
     StringPairArray result;
 
-    int const count = SectionCount (secSource, strSection);
+    // yuck.
+    std::string const stdStrSection (strSection.toStdString ());
+
+    int const count = SectionCount (secSource, stdStrSection);
 
     typedef Section::mapped_type Entries;
 
-    Entries* const entries = SectionEntries (secSource, strSection);
+    Entries* const entries = SectionEntries (secSource, stdStrSection);
 
     if (entries != nullptr)
     {

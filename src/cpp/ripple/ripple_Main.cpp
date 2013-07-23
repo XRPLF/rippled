@@ -216,6 +216,15 @@ int rippleMain (int argc, char** argv)
     int iResult = 0;
     po::variables_map   vm;                                     // Map of options.
 
+    String importDescription;
+    {
+        importDescription <<
+            "Import an existing node database (specified in the " <<
+            "[" << ConfigSection::importNodeDatabase () << "] configuration file section) "
+            "into the current node database (specified in the " <<
+            "[" << ConfigSection::nodeDatabase () << "] configuration file section). ";
+    }
+
     // VFALCO TODO Replace boost program options with something from Beast.
     //
     // Set up option parsing.
@@ -240,7 +249,7 @@ int rippleMain (int argc, char** argv)
     ("start", "Start from a fresh Ledger.")
     ("net", "Get the initial ledger from the network.")
     ("fg", "Run in the foreground.")
-    ("import", po::value<std::string> (), "Import old DB into new DB.")
+    ("import", importDescription.toStdString ().c_str ())
     ;
 
     // Interpret positional arguments as --parameters.
@@ -354,8 +363,14 @@ int rippleMain (int argc, char** argv)
 
     if (vm.count ("start")) theConfig.START_UP = Config::FRESH;
 
+    // Handle a one-time import option
+    //
     if (vm.count ("import"))
-        theConfig.DB_IMPORT = vm["import"].as<std::string> ();
+    {
+        String const optionString (vm ["import"].as <std::string> ());
+
+        theConfig.importNodeDatabase = parseDelimitedKeyValueString (optionString);
+    }
 
     if (vm.count ("ledger"))
     {

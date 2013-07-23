@@ -102,6 +102,8 @@ public:
         For improved performance, a backend has the option of performing writes
         in batches. These writes can be scheduled using the provided scheduler
         object.
+
+        @see BatchWriter
     */
     class Scheduler
     {
@@ -272,7 +274,7 @@ public:
             @note This routine will not be called concurrently with itself
                   or other methods.
 
-            @see import
+            @see import, VisitCallback
         */
         virtual void visitAll (VisitCallback& callback) = 0;
 
@@ -307,49 +309,38 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Create a Parameters from a String.
-
-        Parameter strings have the format:
-
-        <key>=<value>['|'<key>=<value>]
-
-        The key "type" must exist, it defines the choice of backend.
-        For example
-            `type=LevelDB|path=/mnt/ephemeral`
-
-        This is a convenience function for unit tests.
-    */
-    static Parameters parseDelimitedKeyValueString (String s, beast_wchar delimiter='|');
-
     /** Construct a node store.
 
-        Parameter strings have the format:
+        The parameters are key value pairs passed to the backend. The
+        'type' key must exist, it defines the choice of backend. Most
+        backends also require a 'path' field.
+        
+        Some choices for 'type' are:
+            HyperLevelDB, LevelDB, SQLite, KeyvaDB, MDB
 
-        <key>=<value>['|'<key>=<value>]
+        If the fastBackendParameter is omitted or empty, no ephemeral database
+        is used. If the scheduler parameter is omited or unspecified, a
+        synchronous scheduler is used which performs all tasks immediately on
+        the caller's thread.
 
-        The key "type" must exist, it defines the choice of backend.
-        For example
-            `type=LevelDB|path=/mnt/ephemeral`
+        @note If the database cannot be opened or created, an exception is thrown.
 
         @param backendParameters The parameter string for the persistent backend.
-        @param fastBackendParameters The parameter string for the ephemeral backend.
-        @param cacheSize ?
-        @param cacheAge ?
-        @param scheduler The scheduler to use for performing asynchronous tasks.
+        @param fastBackendParameters [optional] The parameter string for the ephemeral backend.                        
+        @param scheduler [optional The scheduler to use for performing asynchronous tasks.
 
-        @return A pointer to the created object.
+        @return The opened database.
     */
     static NodeStore* New (Parameters const& backendParameters,
-                           Parameters const& fastBackendParameters,
-                           Scheduler& scheduler);
+                           Parameters fastBackendParameters = Parameters (),
+                           Scheduler& scheduler = getSynchronousScheduler ());
 
-    /** Construct a node store from a pipe delimited parameter string.
+    /** Get the synchronous scheduler.
 
-        This is used for unit tests.
+        The synchronous scheduler performs all tasks immediately, before
+        returning to the caller, using the caller's thread.
     */
-    static NodeStore* New (String const& backendParameters,
-                           String const& fastBackendParameters,
-                           Scheduler& scheduler);
+    static Scheduler& getSynchronousScheduler ();
 
     /** Destroy the node store.
 
@@ -405,12 +396,20 @@ public:
                         Blob& data,
                         uint256 const& hash) = 0;
 
-    /** Import objects from another database.
+    /** Visit every object in the database
+            
+        This is usually called during import.
 
-        The other NodeStore database is constructed using the specified
-        backend parameters.
+        @note This routine will not be called concurrently with itself
+                or other methods.
+
+        @see import
     */
-    virtual void import (Parameters const& sourceBackendParameters) = 0;
+    virtual void visitAll (Backend::VisitCallback& callback) = 0;
+
+    /** Import objects from another database. */
+    virtual void import (NodeStore& sourceDatabase) = 0;
+
 
     /** Retrieve the estimated number of pending write operations.
 
