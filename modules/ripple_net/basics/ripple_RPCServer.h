@@ -47,6 +47,8 @@ public:
         boost::asio::ssl::context& context,
         Handler& handler);
 
+    virtual ~RPCServer () { }
+
     /** Called when the connection is established.
     */
     virtual void connected () = 0;

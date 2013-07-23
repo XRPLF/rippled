@@ -4,20 +4,15 @@ RIPPLE TODO
 
 Items marked '*' can be handled by third parties.
 
-
 Vinnie's Short List (Changes day to day)
 - Make theConfig a SharedSingleton to prevent leak warnings
-- Add fast backend to the unit test
 - Refactor Section code into ConfigFile
-- Change NodeStore config file format to multiline key/value pairs
 - Improved Mutex to track deadlocks
-- Memory NodeStore::Backend for unit tests [*]
 - Finish unit tests and code for Validators
 - Import beast::db and use it in SQliteBackend
-- Convert some Ripple boost unit tests to Beast. [*]
+* Convert some Ripple boost unit tests to Beast.
 - Move all code into modules/
 - Work on KeyvaDB
-[*] These can be handled by external developers
 
 --------------------------------------------------------------------------------
 

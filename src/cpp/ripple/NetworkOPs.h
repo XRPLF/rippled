@@ -58,6 +58,8 @@ public:
     //
     explicit NetworkOPs (LedgerMaster* pLedgerMaster);
 
+    virtual ~NetworkOPs () { }
+
     // network information
     uint32 getNetworkTimeNC ();                 // Our best estimate of wall time in seconds from 1/1/2000
     uint32 getCloseTimeNC ();                   // Our best estimate of current ledger close time
