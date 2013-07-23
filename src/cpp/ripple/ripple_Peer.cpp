@@ -1179,7 +1179,8 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
 
 // Called from our JobQueue
 static void checkPropose (Job& job, boost::shared_ptr<protocol::TMProposeSet> packet,
-                          LedgerProposal::pointer proposal, uint256 consensusLCL, RippleAddress nodePublic, boost::weak_ptr<Peer> peer)
+                          LedgerProposal::pointer proposal, uint256 consensusLCL, RippleAddress nodePublic,
+                          boost::weak_ptr<Peer> peer, bool fromCluster)
 {
     bool sigGood = false;
     bool isTrusted = (job.getType () == jtPROPOSAL_t);
@@ -1197,7 +1198,7 @@ static void checkPropose (Job& job, boost::shared_ptr<protocol::TMProposeSet> pa
         WriteLog (lsTRACE, Peer) << "proposal with previous ledger";
         memcpy (prevLedger.begin (), set.previousledger ().data (), 256 / 8);
 
-        if (!proposal->checkSign (set.signature ()))
+        if (!fromCluster && !proposal->checkSign (set.signature ()))
         {
             Peer::pointer p = peer.lock ();
             WriteLog (lsWARNING, Peer) << "proposal with previous ledger fails signature check: " <<
@@ -1305,7 +1306,7 @@ void PeerImp::recvPropose (const boost::shared_ptr<protocol::TMProposeSet>& pack
 
     getApp().getJobQueue ().addJob (isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut, "recvPropose->checkPropose",
                                    BIND_TYPE (&checkPropose, P_1, packet, proposal, consensusLCL,
-                                           mNodePublic, boost::weak_ptr<Peer> (shared_from_this ())));
+                                           mNodePublic, boost::weak_ptr<Peer> (shared_from_this ()), mCluster));
 }
 
 void PeerImp::recvHaveTxSet (protocol::TMHaveTransactionSet& packet)
