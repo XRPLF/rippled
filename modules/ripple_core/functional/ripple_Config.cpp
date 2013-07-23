@@ -20,6 +20,67 @@
 //
 Config theConfig;
 
+Config::Config ()
+    : m_rpcPort (5001)
+    , SSL_CONTEXT (boost::asio::ssl::context::sslv23)
+{
+    //
+    // Defaults
+    //
+
+    TESTNET                 = false;
+    NETWORK_START_TIME      = 1319844908;
+
+    PEER_PORT               = SYSTEM_PEER_PORT;
+    RPC_SECURE              = 0;
+    WEBSOCKET_PORT          = SYSTEM_WEBSOCKET_PORT;
+    WEBSOCKET_PUBLIC_PORT   = SYSTEM_WEBSOCKET_PUBLIC_PORT;
+    WEBSOCKET_PUBLIC_SECURE = 1;
+    WEBSOCKET_SECURE        = 0;
+    WEBSOCKET_PING_FREQ     = (5 * 60);
+    NUMBER_CONNECTIONS      = 30;
+
+    // a new ledger every minute
+    LEDGER_SECONDS          = 60;
+    LEDGER_CREATOR          = false;
+
+    RPC_ALLOW_REMOTE        = false;
+    RPC_ADMIN_ALLOW.push_back ("127.0.0.1");
+
+    PEER_SSL_CIPHER_LIST    = DEFAULT_PEER_SSL_CIPHER_LIST;
+    PEER_SCAN_INTERVAL_MIN  = DEFAULT_PEER_SCAN_INTERVAL_MIN;
+
+    PEER_START_MAX          = DEFAULT_PEER_START_MAX;
+    PEER_CONNECT_LOW_WATER  = DEFAULT_PEER_CONNECT_LOW_WATER;
+
+    PEER_PRIVATE            = false;
+
+    TRANSACTION_FEE_BASE    = DEFAULT_FEE_DEFAULT;
+
+    NETWORK_QUORUM          = 0;    // Don't need to see other nodes
+    VALIDATION_QUORUM       = 1;    // Only need one node to vouch
+
+    FEE_ACCOUNT_RESERVE     = DEFAULT_FEE_ACCOUNT_RESERVE;
+    FEE_OWNER_RESERVE       = DEFAULT_FEE_OWNER_RESERVE;
+    FEE_NICKNAME_CREATE     = DEFAULT_FEE_NICKNAME_CREATE;
+    FEE_OFFER               = DEFAULT_FEE_OFFER;
+    FEE_DEFAULT             = DEFAULT_FEE_DEFAULT;
+    FEE_CONTRACT_OPERATION  = DEFAULT_FEE_OPERATION;
+
+    LEDGER_HISTORY          = 256;
+
+    PATH_SEARCH_SIZE        = DEFAULT_PATH_SEARCH_SIZE;
+    ACCOUNT_PROBE_MAX       = 10;
+
+    VALIDATORS_SITE         = DEFAULT_VALIDATORS_SITE;
+
+    SSL_VERIFY              = true;
+
+    ELB_SUPPORT             = false;
+    RUN_STANDALONE          = false;
+    START_UP                = NORMAL;
+}
+
 void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
 {
     boost::system::error_code   ec;
@@ -142,67 +203,6 @@ void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
 
     if (ec)
         throw std::runtime_error (boost::str (boost::format ("Can not create %s") % DATA_DIR));
-}
-
-Config::Config ()
-    : m_rpcPort (5001)
-    , SSL_CONTEXT (boost::asio::ssl::context::sslv23)
-{
-    //
-    // Defaults
-    //
-
-    TESTNET                 = false;
-    NETWORK_START_TIME      = 1319844908;
-
-    PEER_PORT               = SYSTEM_PEER_PORT;
-    RPC_SECURE              = 0;
-    WEBSOCKET_PORT          = SYSTEM_WEBSOCKET_PORT;
-    WEBSOCKET_PUBLIC_PORT   = SYSTEM_WEBSOCKET_PUBLIC_PORT;
-    WEBSOCKET_PUBLIC_SECURE = 1;
-    WEBSOCKET_SECURE        = 0;
-    WEBSOCKET_PING_FREQ     = (5 * 60);
-    NUMBER_CONNECTIONS      = 30;
-
-    // a new ledger every minute
-    LEDGER_SECONDS          = 60;
-    LEDGER_CREATOR          = false;
-
-    RPC_ALLOW_REMOTE        = false;
-    RPC_ADMIN_ALLOW.push_back ("127.0.0.1");
-
-    PEER_SSL_CIPHER_LIST    = DEFAULT_PEER_SSL_CIPHER_LIST;
-    PEER_SCAN_INTERVAL_MIN  = DEFAULT_PEER_SCAN_INTERVAL_MIN;
-
-    PEER_START_MAX          = DEFAULT_PEER_START_MAX;
-    PEER_CONNECT_LOW_WATER  = DEFAULT_PEER_CONNECT_LOW_WATER;
-
-    PEER_PRIVATE            = false;
-
-    TRANSACTION_FEE_BASE    = DEFAULT_FEE_DEFAULT;
-
-    NETWORK_QUORUM          = 0;    // Don't need to see other nodes
-    VALIDATION_QUORUM       = 1;    // Only need one node to vouch
-
-    FEE_ACCOUNT_RESERVE     = DEFAULT_FEE_ACCOUNT_RESERVE;
-    FEE_OWNER_RESERVE       = DEFAULT_FEE_OWNER_RESERVE;
-    FEE_NICKNAME_CREATE     = DEFAULT_FEE_NICKNAME_CREATE;
-    FEE_OFFER               = DEFAULT_FEE_OFFER;
-    FEE_DEFAULT             = DEFAULT_FEE_DEFAULT;
-    FEE_CONTRACT_OPERATION  = DEFAULT_FEE_OPERATION;
-
-    LEDGER_HISTORY          = 256;
-
-    PATH_SEARCH_SIZE        = DEFAULT_PATH_SEARCH_SIZE;
-    ACCOUNT_PROBE_MAX       = 10;
-
-    VALIDATORS_SITE         = DEFAULT_VALIDATORS_SITE;
-
-    SSL_VERIFY              = true;
-
-    ELB_SUPPORT             = false;
-    RUN_STANDALONE          = false;
-    START_UP                = NORMAL;
 }
 
 void Config::load ()

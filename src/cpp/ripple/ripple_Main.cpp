@@ -51,8 +51,17 @@ void startServer ()
     getApp().run ();                 // Blocks till we get a stop RPC.
 }
 
+void setupConfigForUnitTests (Config* config)
+{
+    config->nodeDatabase = parseDelimitedKeyValueString ("type=memory");
+    config->ephemeralNodeDatabase = StringPairArray ();
+    config->importNodeDatabase = StringPairArray ();
+}
+
 bool init_unit_test ()
 {
+    setupConfigForUnitTests (&theConfig);
+
     getApp ();
 
     return true;
