@@ -4,8 +4,14 @@
 */
 //==============================================================================
 
-SHAMapTreeNode::SHAMapTreeNode (uint32 seq, const SHAMapNode& nodeID) : SHAMapNode (nodeID), mHash (0),
-    mSeq (seq), mAccessSeq (seq), mType (tnERROR), mIsBranch (0), mFullBelow (false)
+SHAMapTreeNode::SHAMapTreeNode (uint32 seq, const SHAMapNode& nodeID)
+    : SHAMapNode (nodeID)
+    , mHash (uint64(0))
+    , mSeq (seq)
+    , mAccessSeq (seq)
+    , mType (tnERROR)
+    , mIsBranch (0)
+    , mFullBelow (false)
 {
 }
 
@@ -201,7 +207,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, uint3
     if (hashValid)
     {
         mHash = hash;
-#ifdef PARANOID
+#if RIPPLE_VERIFY_NODEOBJECT_KEYS
         updateHash ();
         assert (mHash == hash);
 #endif
@@ -219,7 +225,7 @@ bool SHAMapTreeNode::updateHash ()
         if (mIsBranch != 0)
         {
             nh = Serializer::getPrefixHash (HashPrefix::innerNode, reinterpret_cast<unsigned char*> (mHashes), sizeof (mHashes));
-#ifdef PARANOID
+#if RIPPLE_VERIFY_NODEOBJECT_KEYS
             Serializer s;
             s.add32 (HashPrefix::innerNode);
 

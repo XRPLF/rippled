@@ -231,3 +231,72 @@ IProofOfWorkFactory* IProofOfWorkFactory::New ()
     return new ProofOfWorkFactory;
 }
 
+//------------------------------------------------------------------------------
+
+class ProofOfWorkTests : public UnitTest
+{
+public:
+    ProofOfWorkTests () : UnitTest ("ProofOfWork", "ripple")
+    {
+    }
+
+    void runTest ()
+    {
+        using namespace ripple;
+
+        ProofOfWorkFactory gen;
+        ProofOfWork pow = gen.getProof ();
+
+        String s;
+        
+        s << "solve difficulty " << String (pow.getDifficulty ());
+        beginTest ("solve");
+
+        uint256 solution = pow.solve (16777216);
+
+        expect (! solution.isZero (), "Should be solved");
+
+        expect (pow.checkSolution (solution), "Should be checked");
+
+        // Why is this emitted?
+        //WriteLog (lsDEBUG, ProofOfWork) << "A bad nonce error is expected";
+
+        POWResult r = gen.checkProof (pow.getToken (), uint256 ());
+
+        expect (r == powBADNONCE, "Should show bad nonce for empty solution");
+
+        expect (gen.checkProof (pow.getToken (), solution) == powOK, "Solution should check with issuer");
+
+        //WriteLog (lsDEBUG, ProofOfWork) << "A reused nonce error is expected";
+
+        expect (gen.checkProof (pow.getToken (), solution) == powREUSED, "Reuse solution should be detected");
+
+    #ifdef SOLVE_POWS
+
+        for (int i = 0; i < 12; ++i)
+        {
+            gen.setDifficulty (i);
+            ProofOfWork pow = gen.getProof ();
+            WriteLog (lsINFO, ProofOfWork) << "Level: " << i << ", Estimated difficulty: " << pow.getDifficulty ();
+            uint256 solution = pow.solve (131072);
+
+            if (solution.isZero ())
+            {
+                //WriteLog (lsINFO, ProofOfWork) << "Giving up";
+            }
+            else
+            {
+                //WriteLog (lsINFO, ProofOfWork) << "Solution found";
+
+                if (gen.checkProof (pow.getToken (), solution) != powOK)
+                {
+                    //WriteLog (lsFATAL, ProofOfWork) << "Solution fails";
+                }
+            }
+        }
+
+    #endif
+    }
+};
+
+static ProofOfWorkTests proofOfWorkTests;

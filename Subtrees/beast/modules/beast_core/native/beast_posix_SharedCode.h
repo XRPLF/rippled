@@ -505,6 +505,184 @@ Result FileOutputStream::truncate()
 }
 
 //==============================================================================
+
+Result RandomAccessFile::nativeOpen (File const& path, Mode mode)
+{
+    bassert (! isOpen ());
+
+    Result result (Result::ok ());
+
+    if (path.exists())
+    {
+        int oflag;
+        switch (mode)
+        {
+        case readOnly:
+            oflag = O_RDONLY;
+            break;
+
+        default:
+        case readWrite:
+            oflag = O_RDWR;
+            break;
+        };
+
+        const int f = ::open (path.getFullPathName().toUTF8(), oflag, 00644);
+
+        if (f != -1)
+        {
+            currentPosition = lseek (f, 0, SEEK_SET);
+
+            if (currentPosition >= 0)
+            {
+                file = path;
+                fileHandle = fdToVoidPointer (f);
+            }
+            else
+            {
+                result = getResultForErrno();
+                ::close (f);
+            }
+        }
+        else
+        {
+            result = getResultForErrno();
+        }
+    }
+    else if (mode == readWrite)
+    {
+        const int f = ::open (path.getFullPathName().toUTF8(), O_RDWR + O_CREAT, 00644);
+
+        if (f != -1)
+        {
+            file = path;
+            fileHandle = fdToVoidPointer (f);
+        }
+        else
+        {
+            result = getResultForErrno();
+        }
+    }
+    else
+    {
+        // file doesn't exist and we're opening read-only
+        Result::fail (String (strerror (ENOENT)));
+    }
+
+    return result;
+}
+
+void RandomAccessFile::nativeClose ()
+{
+    bassert (isOpen ());
+
+    file = File::nonexistent ();
+    ::close (getFD (fileHandle));
+    fileHandle = nullptr;
+    currentPosition = 0;
+}
+
+Result RandomAccessFile::nativeSetPosition (FileOffset newPosition)
+{
+    bassert (isOpen ());
+
+    off_t const actualPosition = lseek (getFD (fileHandle), newPosition, SEEK_SET);
+
+    currentPosition = actualPosition;
+
+    if (actualPosition != newPosition)
+    {
+        // VFALCO NOTE I dislike return from the middle but
+        //             Result::ok() is showing up in the profile
+        //
+        return getResultForErrno();
+    }
+
+    return Result::ok();
+}
+
+Result RandomAccessFile::nativeRead (void* buffer, ByteCount numBytes, ByteCount* pActualAmount)
+{
+    bassert (isOpen ());
+
+    ssize_t bytesRead = ::read (getFD (fileHandle), buffer, numBytes);
+
+    if (bytesRead < 0)
+    {
+        if (pActualAmount != nullptr)
+            *pActualAmount = 0;
+
+        // VFALCO NOTE I dislike return from the middle but
+        //             Result::ok() is showing up in the profile
+        //
+        return getResultForErrno();
+    }
+
+    currentPosition += bytesRead;
+
+    if (pActualAmount != nullptr)
+        *pActualAmount = bytesRead;
+
+    return Result::ok();
+}
+
+Result RandomAccessFile::nativeWrite (void const* data, ByteCount numBytes, size_t* pActualAmount)
+{
+    bassert (isOpen ());
+
+    ssize_t bytesWritten = ::write (getFD (fileHandle), data, numBytes);
+
+    // write(3) says that the actual return will be exactly -1 on
+    // error, but we will assume anything negative indicates failure.
+    //
+    if (bytesWritten < 0)
+    {
+        if (pActualAmount != nullptr)
+            *pActualAmount = 0;
+
+        // VFALCO NOTE I dislike return from the middle but
+        //             Result::ok() is showing up in the profile
+        //
+        return getResultForErrno();
+    }
+
+    if (pActualAmount != nullptr)
+        *pActualAmount = bytesWritten;
+
+    return Result::ok();
+}
+
+Result RandomAccessFile::nativeTruncate ()
+{
+    bassert (isOpen ());
+
+    flush();
+
+    return getResultForReturnValue (ftruncate (getFD (fileHandle), (off_t) currentPosition));
+}
+
+Result RandomAccessFile::nativeFlush ()
+{
+    bassert (isOpen ());
+
+    Result result (Result::ok ());
+
+    if (fsync (getFD (fileHandle)) == -1)
+        result = getResultForErrno();
+
+#if BEAST_ANDROID
+    // This stuff tells the OS to asynchronously update the metadata
+    // that the OS has cached aboud the file - this metadata is used
+    // when the device is acting as a USB drive, and unless it's explicitly
+    // refreshed, it'll get out of step with the real file.
+    const LocalRef<jstring> t (javaString (file.getFullPathName()));
+    android.activity.callVoidMethod (BeastAppActivity.scanFile, t.get());
+#endif
+
+    return result;
+}
+
+//==============================================================================
 String SystemStats::getEnvironmentVariable (const String& name, const String& defaultValue)
 {
     if (const char* s = ::getenv (name.toUTF8()))

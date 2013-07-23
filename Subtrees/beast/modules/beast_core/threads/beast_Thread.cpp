@@ -255,7 +255,7 @@ void SpinLock::enter() const noexcept
 class AtomicTests : public UnitTest
 {
 public:
-    AtomicTests() : UnitTest ("Atomic") {}
+    AtomicTests() : UnitTest ("Atomic", "beast") {}
 
     void runTest()
     {
@@ -350,6 +350,4 @@ public:
     };
 };
 
-#if BEAST_UNIT_TESTS
 static AtomicTests atomicTests;
-#endif

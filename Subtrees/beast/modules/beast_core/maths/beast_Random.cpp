@@ -24,6 +24,7 @@
 Random::Random (const int64 seedValue) noexcept
     : seed (seedValue)
 {
+    nextInt (); // fixes a bug where the first int is always 0
 }
 
 Random::Random()
@@ -39,6 +40,8 @@ Random::~Random() noexcept
 void Random::setSeed (const int64 newSeed) noexcept
 {
     seed = newSeed;
+
+    nextInt (); // fixes a bug where the first int is always 0
 }
 
 void Random::combineSeed (const int64 seedValue) noexcept
@@ -56,6 +59,8 @@ void Random::setSeedRandomly()
     combineSeed (Time::getHighResolutionTicksPerSecond());
     combineSeed (Time::currentTimeMillis());
     globalSeed ^= seed;
+
+    nextInt (); // fixes a bug where the first int is always 0
 }
 
 Random& Random::getSystemRandom() noexcept
@@ -98,6 +103,23 @@ double Random::nextDouble() noexcept
     return static_cast <uint32> (nextInt()) / (double) 0xffffffff;
 }
 
+void Random::nextBlob (void* buffer, size_t bytes)
+{
+    int const remainder = bytes % sizeof (int64);
+
+    {
+        int64* dest = static_cast <int64*> (buffer);
+        for (int i = bytes / sizeof (int64); i > 0; --i)
+            *dest++ = nextInt64 ();
+        buffer = dest;
+    }
+
+    {
+        int64 const val = nextInt64 ();
+        memcpy (buffer, &val, remainder);
+    }
+}
+
 BigInteger Random::nextLargeNumber (const BigInteger& maximumValue)
 {
     BigInteger n;
@@ -137,7 +159,7 @@ void Random::fillBitsRandomly (BigInteger& arrayToChange, int startBit, int numB
 class RandomTests  : public UnitTest
 {
 public:
-    RandomTests() : UnitTest ("Random") {}
+    RandomTests() : UnitTest ("Random", "beast") {}
 
     void runTest()
     {
@@ -165,6 +187,4 @@ public:
     }
 };
 
-#if BEAST_UNIT_TESTS
 static RandomTests randomTests;
-#endif

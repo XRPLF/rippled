@@ -26,10 +26,7 @@
 
 #include "../text/beast_String.h"
 
-
-//==============================================================================
-/**
-    Represents the 'success' or 'failure' of an operation, and holds an associated
+/** Represents the 'success' or 'failure' of an operation, and holds an associated
     error message to describe the error when there's a failure.
 
     E.g.
@@ -55,12 +52,12 @@
     }
     @endcode
 */
-class BEAST_API Result
+class BEAST_API  Result
 {
 public:
     //==============================================================================
     /** Creates and returns a 'successful' result. */
-    static Result ok() noexcept;
+    static Result ok() noexcept { return Result(); }
 
     /** Creates a 'failure' result.
         If you pass a blank error message in here, a default "Unknown Error" message
@@ -94,12 +91,12 @@ public:
     const String& getErrorMessage() const noexcept;
 
     //==============================================================================
-    Result (const Result& other);
-    Result& operator= (const Result& other);
+    Result (const Result&);
+    Result& operator= (const Result&);
 
    #if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
-    Result (Result&& other) noexcept;
-    Result& operator= (Result&& other) noexcept;
+    Result (Result&&) noexcept;
+    Result& operator= (Result&&) noexcept;
    #endif
 
     bool operator== (const Result& other) const noexcept;
@@ -108,6 +105,9 @@ public:
 private:
     String errorMessage;
 
+    // The default constructor is not for public use!
+    // Instead, use Result::ok() or Result::fail()
+    Result() noexcept;
     explicit Result (const String&) noexcept;
 
     // These casts are private to prevent people trying to use the Result object in numeric contexts
@@ -115,5 +115,5 @@ private:
     operator void*() const;
 };
 
+#endif
 
-#endif   // BEAST_RESULT_BEASTHEADER

@@ -37,7 +37,7 @@ public:
 };
 
 // A class that unlocks on construction and locks on destruction
-
+/*
 class ScopedUnlock
 {
 protected:
@@ -80,5 +80,6 @@ private:
     ScopedUnlock (const ScopedUnlock&); // no implementation
     ScopedUnlock& operator= (const ScopedUnlock&); // no implementation
 };
+*/
 
 #endif

@@ -12,7 +12,7 @@
 
 #if RIPPLE_MDB_AVAILABLE
 
-#include "libraries/liblmdb/mdb.c"
-#include "libraries/liblmdb/midl.c"
+#include "mdb/libraries/liblmdb/mdb.c"
+#include "mdb/libraries/liblmdb/midl.c"
 
 #endif

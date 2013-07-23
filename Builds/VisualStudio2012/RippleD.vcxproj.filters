@@ -594,9 +594,6 @@
     <ClCompile Include="..\..\src\cpp\ripple\ripple_ProofOfWorkFactory.cpp">
       <Filter>[1] Ripple\ripple_app\_misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_ProofOfWorkFactoryUnitTests.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cpp\ripple\ripple_SerializedLedger.cpp">
       <Filter>[1] Ripple\ripple_app\_misc</Filter>
     </ClCompile>
@@ -807,9 +804,6 @@
     <ClCompile Include="..\..\modules\ripple_app\node\ripple_LevelDBBackendFactory.cpp">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\node\ripple_NullBackendFactory.cpp">
-      <Filter>[1] Ripple\ripple_app\node</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_mdb\ripple_mdb.c">
       <Filter>[1] Ripple\ripple_mdb</Filter>
     </ClCompile>
@@ -897,6 +891,21 @@
     <ClCompile Include="..\..\modules\ripple_app\node\ripple_HyperLevelDBBackendFactory.cpp">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_KeyvaDB.cpp">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_KeyvaDBBackendFactory.cpp">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_NullBackendFactory.cpp">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_MdbBackendFactory.cpp">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\beast\modules\beast_db\beast_db.cpp">
+      <Filter>[0] Subtrees\beast</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h">
@@ -961,9 +970,6 @@
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_RandomNumbers.h">
-      <Filter>[1] Ripple\ripple_basics\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_ScopedLock.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_StringUtilities.h">
@@ -1581,9 +1587,6 @@
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_LevelDBBackendFactory.h">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\node\ripple_NullBackendFactory.h">
-      <Filter>[1] Ripple\ripple_app\node</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_mdb\ripple_mdb.h">
       <Filter>[1] Ripple\ripple_mdb</Filter>
     </ClInclude>
@@ -1673,6 +1676,24 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_HyperLevelDBBackendFactory.h">
       <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_KeyvaDB.h">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_KeyvaDBBackendFactory.h">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_NullBackendFactory.h">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_MdbBackendFactory.h">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_ScopedLock.h">
+      <Filter>[1] Ripple\ripple_basics\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\functional\ripple_ConfigSections.h">
+      <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

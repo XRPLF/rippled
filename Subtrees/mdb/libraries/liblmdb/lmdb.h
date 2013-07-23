@@ -166,7 +166,7 @@ typedef int mdb_filehandle_t;
 /** Library minor version */
 #define MDB_VERSION_MINOR	9
 /** Library patch version */
-#define MDB_VERSION_PATCH	6
+#define MDB_VERSION_PATCH	7
 
 /** Combine args a,b,c into a single integer for easy version comparisons */
 #define MDB_VERINT(a,b,c)	(((a) << 24) | ((b) << 16) | (c))
@@ -889,6 +889,15 @@ int  mdb_dbi_open(MDB_txn *txn, const char *name, unsigned int flags, MDB_dbi *d
 	 */
 int  mdb_stat(MDB_txn *txn, MDB_dbi dbi, MDB_stat *stat);
 
+	/** @brief Retrieve the DB flags for a database handle.
+	 *
+	 * @param[in] env An environment handle returned by #mdb_env_create()
+	 * @param[in] dbi A database handle returned by #mdb_dbi_open()
+	 * @param[out] flags Address where the flags will be returned.
+	 * @return A non-zero error value on failure and 0 on success.
+	 */
+int mdb_dbi_flags(MDB_env *env, MDB_dbi dbi, unsigned int *flags);
+
 	/** @brief Close a database handle.
 	 *
 	 * This call is not mutex protected. Handles should only be closed by
@@ -1289,6 +1298,31 @@ int  mdb_cmp(MDB_txn *txn, MDB_dbi dbi, const MDB_val *a, const MDB_val *b);
 	 * @return < 0 if a < b, 0 if a == b, > 0 if a > b
 	 */
 int  mdb_dcmp(MDB_txn *txn, MDB_dbi dbi, const MDB_val *a, const MDB_val *b);
+
+	/** @brief A callback function used to print a message from the library.
+	 *
+	 * @param[in] msg The string to be printed.
+	 * @param[in] ctx An arbitrary context pointer for the callback.
+	 * @return < 0 on failure, 0 on success.
+	 */
+typedef int (MDB_msg_func)(const char *msg, void *ctx);
+
+	/** @brief Dump the entries in the reader lock table.
+	 *
+	 * @param[in] env An environment handle returned by #mdb_env_create()
+	 * @param[in] func A #MDB_msg_func function
+	 * @param[in] ctx Anything the message function needs
+	 * @return < 0 on failure, 0 on success.
+	 */
+int	mdb_reader_list(MDB_env *env, MDB_msg_func *func, void *ctx);
+
+	/** @brief Check for stale entries in the reader lock table.
+	 *
+	 * @param[in] env An environment handle returned by #mdb_env_create()
+	 * @param[out] dead Number of stale slots that were cleared
+	 * @return 0 on success, non-zero on failure.
+	 */
+int	mdb_reader_check(MDB_env *env, int *dead);
 /**	@} */
 
 #ifdef __cplusplus

@@ -84,9 +84,41 @@ public:
     boost::filesystem::path     DATA_DIR;
     boost::filesystem::path     DEBUG_LOGFILE;
     boost::filesystem::path     VALIDATORS_FILE;        // As specifed in rippled.cfg.
-    std::string                 NODE_DB;                // Database to use for nodes
-    std::string                 FASTNODE_DB;            // Database for temporary storage
-    std::string                 DB_IMPORT;              // Import from old DB
+
+    /** Parameters for the main NodeStore database.
+
+        This is 1 or more strings of the form <key>=<value>
+        The 'type' and 'path' keys are required, see rippled-example.cfg
+
+        @see NodeStore
+    */
+    StringPairArray nodeDatabase;
+
+    /** Parameters for the ephemeral NodeStore database.
+
+        This is an auxiliary database for the NodeStore, usually placed
+        on a separate faster volume. However, the volume data may not persist
+        between launches. Use of the ephemeral database is optional.
+
+        The format is the same as that for @ref nodeDatabase
+
+        @see NodeStore
+    */
+    StringPairArray ephemeralNodeDatabase;
+
+    /** Parameters for importing an old database in to the current node database.
+
+        If this is not empty, then it specifies the key/value parameters for
+        another node database from which to import all data into the current
+        node database specified by @ref nodeDatabase.
+
+        The format of this string is in the form:
+            <key>'='<value>['|'<key>'='value]
+
+        @see parseDelimitedKeyValueString
+    */
+    StringPairArray importNodeDatabase;
+
     bool                        ELB_SUPPORT;            // Support Amazon ELB
 
     std::string                 VALIDATORS_SITE;        // Where to find validators.txt on the Internet.

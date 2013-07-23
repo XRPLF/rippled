@@ -74,14 +74,12 @@ typedef MDB_ID *MDB_IDL;
 		xidl[xlen] = (id); \
 	} while (0)
 
-#if 0	/* superseded by append/sort */
-	/** Insert an ID into an IDL.
-	 * @param[in,out] ids	The IDL to insert into.
-	 * @param[in] id	The ID to insert.
-	 * @return	0 on success, -1 if ID was already present, -2 on error.
+	/** Search for an ID in an IDL.
+	 * @param[in] ids	The IDL to search.
+	 * @param[in] id	The ID to search for.
+	 * @return	The index of the first ID greater than or equal to \b id.
 	 */
-int mdb_midl_insert( MDB_IDL ids, MDB_ID id );
-#endif
+unsigned mdb_midl_search( MDB_IDL ids, MDB_ID id );
 
 	/** Allocate an IDL.
 	 * Allocates memory for an IDL of the given size.

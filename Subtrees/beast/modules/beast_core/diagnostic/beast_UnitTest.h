@@ -28,7 +28,6 @@
 #include "../containers/beast_OwnedArray.h"
 class UnitTests;
 
-
 /** This is a base class for classes that perform a unit test.
 
     To write a test using this class, your code should look something like this:
@@ -56,9 +55,10 @@ class UnitTests;
         }
     };
 
-    // Explicit template instantiation is required to make the unit
-    // test get automatically added to the set of unit tests.
-    template class UnitTestType <MyTest>;
+    // This makes the unit test available in the global list
+    // It doesn't have to be static.
+    //
+    static MyTest myTest;
 
     @endcode
 
@@ -69,15 +69,38 @@ class UnitTests;
 class BEAST_API UnitTest : Uncopyable
 {
 public:
+    enum When
+    {
+        runAlways,
+        runManual
+    };
+
+    /** The type of a list of tests.
+    */
+    typedef Array <UnitTest*, CriticalSection> TestList;
+
     //==============================================================================
-    /** Creates a test with the given name. */
-    explicit UnitTest (String const& name);
+    /** Creates a test with the given name, group, and run option.
+
+        The group is used when you want to run all tests in a particular group
+        instead of all tests in general. The run option allows you to write some
+        tests that are only available manually. For examplem, a performance unit
+        test that takes a long time which you might not want to run every time
+        you run all tests.
+    */
+    explicit UnitTest (String const& name, String const& group = "", When when = runAlways);
 
     /** Destructor. */
     virtual ~UnitTest();
 
     /** Returns the name of the test. */
-    const String& getName() const noexcept       { return name; }
+    const String& getName() const noexcept { return m_name; }
+
+    /** Returns the group of the test. */
+    String const& getGroup () const noexcept { return m_group; }
+
+    /** Returns the run option of the test. */
+    When getWhen () const noexcept { return m_when; }
 
     /** Runs the test, using the specified UnitTests.
         You shouldn't need to call this method directly - use
@@ -86,7 +109,7 @@ public:
     void performTest (UnitTests* runner);
 
     /** Returns the set of all UnitTest objects that currently exist. */
-    static Array<UnitTest*>& getAllTests();
+    static TestList& getAllTests();
 
     //==============================================================================
     /** You can optionally implement this method to set up your test.
@@ -155,14 +178,16 @@ public:
 
     //==============================================================================
     /** Writes a message to the test log.
-        This can only be called from within your runTest() method.
+        This can only be called during your runTest() method.
     */
     void logMessage (const String& message);
 
 private:
     //==============================================================================
-    const String name;
-    UnitTests* runner;
+    String const m_name;
+    String const m_group;
+    When const m_when;
+    UnitTests* m_runner;
 };
 
 //==============================================================================
@@ -187,12 +212,14 @@ public:
     /** Destructor. */
     virtual ~UnitTests();
 
-    /** Runs a set of tests.
-
-        The tests are performed in order, and the results are logged. To run all the
-        registered UnitTest objects that exist, use runAllTests().
+    /** Run the specified unit test.
+    
+        Subclasses can override this to do extra stuff.
     */
-    void runTests (const Array<UnitTest*>& tests);
+    virtual void runTest (UnitTest& test);
+
+    /** Run a particular test or group. */
+    void runTest (String const& name);
 
     /** Runs all the UnitTest objects that currently exist.
         This calls runTests() for all the objects listed in UnitTest::getAllTests().

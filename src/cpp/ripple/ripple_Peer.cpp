@@ -165,12 +165,12 @@ private:
 
     void recvHello (protocol::TMHello & packet);
     void recvCluster (protocol::TMCluster & packet);
-    void recvTransaction (protocol::TMTransaction & packet, ScopedLock & MasterLockHolder);
-    void recvValidation (const boost::shared_ptr<protocol::TMValidation>& packet, ScopedLock & MasterLockHolder);
+    void recvTransaction (protocol::TMTransaction & packet, Application::ScopedLockType& masterLockHolder);
+    void recvValidation (const boost::shared_ptr<protocol::TMValidation>& packet, Application::ScopedLockType& masterLockHolder);
     void recvGetValidation (protocol::TMGetValidations & packet);
     void recvContact (protocol::TMContact & packet);
     void recvGetContacts (protocol::TMGetContacts & packet);
-    void recvGetPeers (protocol::TMGetPeers & packet, ScopedLock & MasterLockHolder);
+    void recvGetPeers (protocol::TMGetPeers & packet, Application::ScopedLockType& masterLockHolder);
     void recvPeers (protocol::TMPeers & packet);
     void recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& packet);
     void recvPing (protocol::TMPing & packet);
@@ -178,8 +178,8 @@ private:
     void recvSearchTransaction (protocol::TMSearchTransaction & packet);
     void recvGetAccount (protocol::TMGetAccount & packet);
     void recvAccount (protocol::TMAccount & packet);
-    void recvGetLedger (protocol::TMGetLedger & packet, ScopedLock & MasterLockHolder);
-    void recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packet, ScopedLock & MasterLockHolder);
+    void recvGetLedger (protocol::TMGetLedger & packet, Application::ScopedLockType& masterLockHolder);
+    void recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packet, Application::ScopedLockType& masterLockHolder);
     void recvStatus (protocol::TMStatusChange & packet);
     void recvPropose (const boost::shared_ptr<protocol::TMProposeSet>& packet);
     void recvHaveTxSet (protocol::TMHaveTransactionSet & packet);
@@ -630,8 +630,11 @@ void PeerImp::handleReadBody (const boost::system::error_code& error)
             WriteLog (lsINFO, Peer) << "Peer: Body: Error: " << getIP () << ": " << error.category ().name () << ": " << error.message () << ": " << error;
         }
 
-        boost::recursive_mutex::scoped_lock sl (getApp().getMasterLock ());
-        detach ("hrb", true);
+        {
+            Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
+         
+            detach ("hrb", true);
+        }
         return;
     }
 
@@ -651,276 +654,278 @@ void PeerImp::processReadBuffer ()
 
     LoadEvent::autoptr event (getApp().getJobQueue ().getLoadEventAP (jtPEER, "PeerImp::read"));
 
-    ScopedLock sl (getApp().getMasterLock ());
-
-    // If connected and get a mtHELLO or if not connected and get a non-mtHELLO, wrong message was sent.
-    if (mHelloed == (type == protocol::mtHELLO))
     {
-        WriteLog (lsWARNING, Peer) << "Wrong message type: " << type;
-        detach ("prb1", true);
-    }
-    else
-    {
-        switch (type)
-        {
-        case protocol::mtHELLO:
-        {
-            event->reName ("PeerImp::hello");
-            protocol::TMHello msg;
+        Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvHello (msg);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
+        // If connected and get a mtHELLO or if not connected and get a non-mtHELLO, wrong message was sent.
+        if (mHelloed == (type == protocol::mtHELLO))
+        {
+            WriteLog (lsWARNING, Peer) << "Wrong message type: " << type;
+            detach ("prb1", true);
         }
-        break;
-
-        case protocol::mtCLUSTER:
+        else
         {
-            event->reName ("PeerImp::cluster");
-            protocol::TMCluster msg;
+            switch (type)
+            {
+            case protocol::mtHELLO:
+            {
+                event->reName ("PeerImp::hello");
+                protocol::TMHello msg;
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvCluster (msg);
-	    else
-	        WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvHello (msg);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-        case protocol::mtERROR_MSG:
-        {
-            event->reName ("PeerImp::errormessage");
-            protocol::TMErrorMsg msg;
+            case protocol::mtCLUSTER:
+            {
+                event->reName ("PeerImp::cluster");
+                protocol::TMCluster msg;
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvErrorMessage (msg);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvCluster (msg);
+	        else
+	            WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
 
-        case protocol::mtPING:
-        {
-            event->reName ("PeerImp::ping");
-            protocol::TMPing msg;
+            case protocol::mtERROR_MSG:
+            {
+                event->reName ("PeerImp::errormessage");
+                protocol::TMErrorMsg msg;
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvPing (msg);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvErrorMessage (msg);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-        case protocol::mtGET_CONTACTS:
-        {
-            event->reName ("PeerImp::getcontacts");
-            protocol::TMGetContacts msg;
+            case protocol::mtPING:
+            {
+                event->reName ("PeerImp::ping");
+                protocol::TMPing msg;
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvGetContacts (msg);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvPing (msg);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-        case protocol::mtCONTACT:
-        {
-            event->reName ("PeerImp::contact");
-            protocol::TMContact msg;
+            case protocol::mtGET_CONTACTS:
+            {
+                event->reName ("PeerImp::getcontacts");
+                protocol::TMGetContacts msg;
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvContact (msg);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvGetContacts (msg);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-        case protocol::mtGET_PEERS:
-        {
-            event->reName ("PeerImp::getpeers");
-            protocol::TMGetPeers msg;
+            case protocol::mtCONTACT:
+            {
+                event->reName ("PeerImp::contact");
+                protocol::TMContact msg;
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvGetPeers (msg, sl);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvContact (msg);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-        case protocol::mtPEERS:
-        {
-            event->reName ("PeerImp::peers");
-            protocol::TMPeers msg;
+            case protocol::mtGET_PEERS:
+            {
+                event->reName ("PeerImp::getpeers");
+                protocol::TMGetPeers msg;
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvPeers (msg);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvGetPeers (msg, lock);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-        case protocol::mtSEARCH_TRANSACTION:
-        {
-            event->reName ("PeerImp::searchtransaction");
-            protocol::TMSearchTransaction msg;
+            case protocol::mtPEERS:
+            {
+                event->reName ("PeerImp::peers");
+                protocol::TMPeers msg;
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvSearchTransaction (msg);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvPeers (msg);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-        case protocol::mtGET_ACCOUNT:
-        {
-            event->reName ("PeerImp::getaccount");
-            protocol::TMGetAccount msg;
+            case protocol::mtSEARCH_TRANSACTION:
+            {
+                event->reName ("PeerImp::searchtransaction");
+                protocol::TMSearchTransaction msg;
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvGetAccount (msg);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvSearchTransaction (msg);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-        case protocol::mtACCOUNT:
-        {
-            event->reName ("PeerImp::account");
-            protocol::TMAccount msg;
+            case protocol::mtGET_ACCOUNT:
+            {
+                event->reName ("PeerImp::getaccount");
+                protocol::TMGetAccount msg;
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvAccount (msg);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvGetAccount (msg);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-        case protocol::mtTRANSACTION:
-        {
-            event->reName ("PeerImp::transaction");
-            protocol::TMTransaction msg;
+            case protocol::mtACCOUNT:
+            {
+                event->reName ("PeerImp::account");
+                protocol::TMAccount msg;
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvTransaction (msg, sl);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvAccount (msg);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-        case protocol::mtSTATUS_CHANGE:
-        {
-            event->reName ("PeerImp::statuschange");
-            protocol::TMStatusChange msg;
+            case protocol::mtTRANSACTION:
+            {
+                event->reName ("PeerImp::transaction");
+                protocol::TMTransaction msg;
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvStatus (msg);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvTransaction (msg, lock);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-        case protocol::mtPROPOSE_LEDGER:
-        {
-            event->reName ("PeerImp::propose");
-            boost::shared_ptr<protocol::TMProposeSet> msg = boost::make_shared<protocol::TMProposeSet> ();
+            case protocol::mtSTATUS_CHANGE:
+            {
+                event->reName ("PeerImp::statuschange");
+                protocol::TMStatusChange msg;
 
-            if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvPropose (msg);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvStatus (msg);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-        case protocol::mtGET_LEDGER:
-        {
-            event->reName ("PeerImp::getledger");
-            protocol::TMGetLedger msg;
+            case protocol::mtPROPOSE_LEDGER:
+            {
+                event->reName ("PeerImp::propose");
+                boost::shared_ptr<protocol::TMProposeSet> msg = boost::make_shared<protocol::TMProposeSet> ();
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvGetLedger (msg, sl);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvPropose (msg);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-        case protocol::mtLEDGER_DATA:
-        {
-            event->reName ("PeerImp::ledgerdata");
-            boost::shared_ptr<protocol::TMLedgerData> msg = boost::make_shared<protocol::TMLedgerData> ();
+            case protocol::mtGET_LEDGER:
+            {
+                event->reName ("PeerImp::getledger");
+                protocol::TMGetLedger msg;
 
-            if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvLedger (msg, sl);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvGetLedger (msg, lock);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-        case protocol::mtHAVE_SET:
-        {
-            event->reName ("PeerImp::haveset");
-            protocol::TMHaveTransactionSet msg;
+            case protocol::mtLEDGER_DATA:
+            {
+                event->reName ("PeerImp::ledgerdata");
+                boost::shared_ptr<protocol::TMLedgerData> msg = boost::make_shared<protocol::TMLedgerData> ();
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvHaveTxSet (msg);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvLedger (msg, lock);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-        case protocol::mtVALIDATION:
-        {
-            event->reName ("PeerImp::validation");
-            boost::shared_ptr<protocol::TMValidation> msg = boost::make_shared<protocol::TMValidation> ();
+            case protocol::mtHAVE_SET:
+            {
+                event->reName ("PeerImp::haveset");
+                protocol::TMHaveTransactionSet msg;
 
-            if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvValidation (msg, sl);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
-#if 0
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvHaveTxSet (msg);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-        case protocol::mtGET_VALIDATION:
-        {
-            protocol::TM msg;
+            case protocol::mtVALIDATION:
+            {
+                event->reName ("PeerImp::validation");
+                boost::shared_ptr<protocol::TMValidation> msg = boost::make_shared<protocol::TMValidation> ();
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recv (msg);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvValidation (msg, lock);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
+    #if 0
 
-#endif
+            case protocol::mtGET_VALIDATION:
+            {
+                protocol::TM msg;
 
-        case protocol::mtGET_OBJECTS:
-        {
-            event->reName ("PeerImp::getobjects");
-            boost::shared_ptr<protocol::TMGetObjectByHash> msg = boost::make_shared<protocol::TMGetObjectByHash> ();
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recv (msg);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
-            if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvGetObjectByHash (msg);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+    #endif
 
-        case protocol::mtPROOFOFWORK:
-        {
-            event->reName ("PeerImp::proofofwork");
-            protocol::TMProofWork msg;
+            case protocol::mtGET_OBJECTS:
+            {
+                event->reName ("PeerImp::getobjects");
+                boost::shared_ptr<protocol::TMGetObjectByHash> msg = boost::make_shared<protocol::TMGetObjectByHash> ();
 
-            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                recvProofWork (msg);
-            else
-                WriteLog (lsWARNING, Peer) << "parse error: " << type;
-        }
-        break;
+                if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvGetObjectByHash (msg);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
+
+            case protocol::mtPROOFOFWORK:
+            {
+                event->reName ("PeerImp::proofofwork");
+                protocol::TMProofWork msg;
+
+                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvProofWork (msg);
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
+            }
+            break;
 
 
-        default:
-            event->reName ("PeerImp::unknown");
-            WriteLog (lsWARNING, Peer) << "Unknown Msg: " << type;
-            WriteLog (lsWARNING, Peer) << strHex (&mReadbuf[0], mReadbuf.size ());
+            default:
+                event->reName ("PeerImp::unknown");
+                WriteLog (lsWARNING, Peer) << "Unknown Msg: " << type;
+                WriteLog (lsWARNING, Peer) << strHex (&mReadbuf[0], mReadbuf.size ());
+            }
         }
     }
 }
@@ -1111,9 +1116,9 @@ static void checkTransaction (Job&, int flags, SerializedTransaction::pointer st
 #endif
 }
 
-void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& MasterLockHolder)
+void PeerImp::recvTransaction (protocol::TMTransaction& packet, Application::ScopedLockType& masterLockHolder)
 {
-    MasterLockHolder.unlock ();
+    masterLockHolder.unlock ();
     Transaction::pointer tx;
 #ifndef TRUST_NETWORK
 
@@ -1376,9 +1381,9 @@ static void checkValidation (Job&, SerializedValidation::pointer val, uint256 si
 #endif
 }
 
-void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& packet, ScopedLock& MasterLockHolder)
+void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& packet, Application::ScopedLockType& masterLockHolder)
 {
-    MasterLockHolder.unlock ();
+    masterLockHolder.unlock ();
 
     if (packet->validation ().size () < 50)
     {
@@ -1464,9 +1469,9 @@ void PeerImp::recvGetContacts (protocol::TMGetContacts& packet)
 // Return a list of your favorite people
 // TODO: filter out all the LAN peers
 // TODO: filter out the peer you are talking to
-void PeerImp::recvGetPeers (protocol::TMGetPeers& packet, ScopedLock& MasterLockHolder)
+void PeerImp::recvGetPeers (protocol::TMGetPeers& packet, Application::ScopedLockType& masterLockHolder)
 {
-    MasterLockHolder.unlock ();
+    masterLockHolder.unlock ();
     std::vector<std::string> addrs;
 
     getApp().getPeers ().getTopNAddrs (30, addrs);
@@ -1550,7 +1555,7 @@ void PeerImp::recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObject
             if (obj.has_hash () && (obj.hash ().size () == (256 / 8)))
             {
                 memcpy (hash.begin (), obj.hash ().data (), 256 / 8);
-                NodeObject::pointer hObj = getApp().getNodeStore ().retrieve (hash);
+                NodeObject::pointer hObj = getApp().getNodeStore ().fetch (hash);
 
                 if (hObj)
                 {
@@ -1780,7 +1785,7 @@ void PeerImp::recvStatus (protocol::TMStatusChange& packet)
         mMaxLedger = packet.lastseq ();
 }
 
-void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, ScopedLock& MasterLockHolder)
+void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedLockType& masterLockHolder)
 {
     SHAMap::pointer map;
     protocol::TMLedgerData reply;
@@ -1930,7 +1935,7 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, ScopedLock& MasterLo
         }
 
         if (ledger->isImmutable ())
-            MasterLockHolder.unlock ();
+            masterLockHolder.unlock ();
         else
         {
             WriteLog (lsWARNING, Peer) << "Request for data from mutable ledger";
@@ -2064,9 +2069,9 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, ScopedLock& MasterLo
     sendPacket (oPacket, true);
 }
 
-void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packet_ptr, ScopedLock& MasterLockHolder)
+void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packet_ptr, Application::ScopedLockType& masterLockHolder)
 {
-    MasterLockHolder.unlock ();
+    masterLockHolder.unlock ();
     protocol::TMLedgerData& packet = *packet_ptr;
 
     if (packet.nodes ().size () <= 0)

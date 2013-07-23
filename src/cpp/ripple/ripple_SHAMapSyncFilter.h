@@ -12,29 +12,18 @@
 class SHAMapSyncFilter
 {
 public:
-    SHAMapSyncFilter ()
-    {
-    }
+    virtual ~SHAMapSyncFilter () { }
 
-    virtual ~SHAMapSyncFilter ()
-    {
-    }
-
+    // Note that the nodeData is overwritten by this call
     virtual void gotNode (bool fromFilter,
                           SHAMapNode const& id,
                           uint256 const& nodeHash,
-                          Blob const& nodeData,
-                          SHAMapTreeNode::TNType type)
-    {
-    }
+                          Blob& nodeData,
+                          SHAMapTreeNode::TNType type) = 0;
 
     virtual bool haveNode (SHAMapNode const& id,
                            uint256 const& nodeHash,
-                           Blob& nodeData)
-    {
-        return false;
-    }
+                           Blob& nodeData) = 0;
 };
 
 #endif
-// vim:ts=4

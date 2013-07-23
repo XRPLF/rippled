@@ -28,7 +28,6 @@
 #include "../memory/beast_MemoryBlock.h"
 #include "../memory/beast_ScopedPointer.h"
 
-
 //==============================================================================
 /**
     Writes data to an internal memory buffer, which grows as required.
@@ -36,14 +35,20 @@
     The data that was written into the stream can then be accessed later as
     a contiguous block of memory.
 */
-class BEAST_API MemoryOutputStream
+//==============================================================================
+/**
+    Writes data to an internal memory buffer, which grows as required.
+
+    The data that was written into the stream can then be accessed later as
+    a contiguous block of memory.
+*/
+class BEAST_API  MemoryOutputStream
     : public OutputStream
     , LeakChecked <MemoryOutputStream>
 {
 public:
     //==============================================================================
     /** Creates an empty memory stream, ready to be written into.
-
         @param initialSize  the intial amount of capacity to allocate for writing into
     */
     MemoryOutputStream (size_t initialSize = 256);
@@ -62,6 +67,14 @@ public:
     */
     MemoryOutputStream (MemoryBlock& memoryBlockToWriteTo,
                         bool appendToExistingBlockContent);
+
+    /** Creates a MemoryOutputStream that will write into a user-supplied, fixed-size
+        block of memory.
+
+        When using this mode, the stream will write directly into this memory area until
+        it's full, at which point write operations will fail.
+    */
+    MemoryOutputStream (void* destBuffer, size_t destBufferSize);
 
     /** Destructor.
         This will free any data that was written to it.
@@ -88,7 +101,7 @@ public:
     void preallocate (size_t bytesToPreallocate);
 
     /** Appends the utf-8 bytes for a unicode character */
-    void appendUTF8Char (beast_wchar character);
+    bool appendUTF8Char (beast_wchar character);
 
     /** Returns a String created from the (UTF8) data that has been written to the stream. */
     String toUTF8() const;
@@ -108,24 +121,24 @@ public:
     */
     void flush();
 
-    bool write (const void* buffer, size_t howMany);
-    int64 getPosition()                                 { return position; }
-    bool setPosition (int64 newPosition);
-    int writeFromInputStream (InputStream& source, int64 maxNumBytesToWrite);
-    void writeRepeatedByte (uint8 byte, size_t numTimesToRepeat);
+    bool write (const void*, size_t) override;
+    int64 getPosition() override                                 { return position; }
+    bool setPosition (int64) override;
+    int writeFromInputStream (InputStream&, int64 maxNumBytesToWrite) override;
+    bool writeRepeatedByte (uint8 byte, size_t numTimesToRepeat) override;
 
 private:
-    //==============================================================================
-    MemoryBlock& data;
-    MemoryBlock internalBlock;
-    size_t position, size;
-
     void trimExternalBlockSize();
     char* prepareToWrite (size_t);
+
+    //==============================================================================
+    MemoryBlock* const blockToUse;
+    MemoryBlock internalBlock;
+    void* externalData;
+    size_t position, size, availableSize;
 };
 
 /** Copies all the data that has been written to a MemoryOutputStream into another stream. */
 OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const MemoryOutputStream& streamToRead);
 
-
-#endif   // BEAST_MEMORYOUTPUTSTREAM_BEASTHEADER
+#endif

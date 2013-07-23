@@ -271,7 +271,7 @@ std::string addressToString (void const* address)
     return strHex (static_cast <char const*> (address) - static_cast <char const*> (0));
 }
 
-StringPairArray parseKeyValueParameters (String parameters, beast_wchar delimiter)
+StringPairArray parseDelimitedKeyValueString (String parameters, beast_wchar delimiter)
 {
     StringPairArray keyValues;
 
@@ -309,4 +309,3 @@ StringPairArray parseKeyValueParameters (String parameters, beast_wchar delimite
 
     return keyValues;
 }
-

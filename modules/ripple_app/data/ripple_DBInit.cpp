@@ -283,32 +283,15 @@ const char* WalletDBInit[] =
 int WalletDBCount = NUMBER (WalletDBInit);
 
 // Hash node database holds nodes indexed by hash
-const char* HashNodeDBInit[] =
-{
-    "PRAGMA synchronous=NORMAL;",
-    "PRAGMA journal_mode=WAL;",
-    "PRAGMA journal_size_limit=1582080;",
-
-#if (ULONG_MAX > UINT_MAX) && !defined (NO_SQLITE_MMAP)
-	"PRAGMA mmap_size=171798691840;",
-#endif
-
-    "BEGIN TRANSACTION;",
-
-    "CREATE TABLE CommittedObjects (				\
-		Hash		CHARACTER(64) PRIMARY KEY,		\
-		ObjType		CHAR(1)	NOT	NULL,				\
-		LedgerIndex	BIGINT UNSIGNED,				\
-		Object		BLOB							\
-	);",
-
-    "END TRANSACTION;"
-};
+// VFALCO TODO Remove this since it looks unused
+/*
 
 int HashNodeDBCount = NUMBER (HashNodeDBInit);
+*/
 
 // Net node database holds nodes seen on the network
 // XXX Not really used needs replacement.
+/*
 const char* NetNodeDBInit[] =
 {
     "CREATE TABLE KnownNodes	(					\
@@ -320,7 +303,10 @@ const char* NetNodeDBInit[] =
 };
 
 int NetNodeDBCount = NUMBER (NetNodeDBInit);
+*/
 
+// This appears to be unused
+/*
 const char* PathFindDBInit[] =
 {
     "PRAGMA synchronous = OFF;            ",
@@ -353,5 +339,5 @@ const char* PathFindDBInit[] =
 };
 
 int PathFindDBCount = NUMBER (PathFindDBInit);
+*/
 
-// vim:ts=4

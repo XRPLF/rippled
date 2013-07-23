@@ -3,7 +3,9 @@
 ########################################################################
 # Configuration. The compiler options must enable threaded compilation.
 #
-# Preprocessor macros (for CPPFLAGS) of interest:
+# Preprocessor macros (for CPPFLAGS) of interest...
+# Note that the defaults should already be correct for most
+# platforms; you should not need to change any of these:
 #
 # To compile successfully if the default does not:
 # - MDB_USE_POSIX_SEM	(enabled by default on BSD, Apple)
@@ -11,7 +13,7 @@
 #	semaphores and shared mutexes have different behaviors and
 #	different problems, see the Caveats section in lmdb.h.
 #
-# For best performence or to compile successfully:
+# For best performance or to compile successfully:
 # - MDB_DSYNC = "O_DSYNC" (default) or "O_SYNC" (less efficient)
 #	If O_DSYNC is undefined but exists in /usr/include,
 #	preferably set some compiler flag to get the definition.
@@ -25,14 +27,13 @@
 # Data format:
 # - MDB_MAXKEYSIZE
 #	Controls data packing and limits, see mdb.c.
-#
-# Debugging:
-# - MDB_DEBUG, MDB_PARANOID.
+#	You might need to change this if the default size is too small.
 #
 CC	= gcc
 W	= -W -Wall -Wno-unused-parameter -Wbad-function-cast
+THREADS = -pthread
 OPT = -O2 -g
-CFLAGS	= -pthread $(OPT) $(W) $(XCFLAGS)
+CFLAGS	= $(THREADS) $(OPT) $(W) $(XCFLAGS)
 LDLIBS	=
 SOLIBS	=
 prefix	= /usr/local

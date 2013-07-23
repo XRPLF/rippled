@@ -6,171 +6,242 @@
 
 #if RIPPLE_MDB_AVAILABLE
 
-class MdbBackendFactory::Backend : public NodeStore::Backend
+class MdbBackendFactory::Backend
+    : public NodeStore::Backend
+    , public NodeStore::BatchWriter::Callback
+    , LeakChecked <MdbBackendFactory::Backend>
 {
 public:
-    explicit Backend (StringPairArray const& keyValues)
-        : m_env (nullptr)
+    typedef NodeStore::Batch Batch;
+    typedef NodeStore::EncodedBlob EncodedBlob;
+    typedef NodeStore::DecodedBlob DecodedBlob;
+
+    explicit Backend (size_t keyBytes,
+                      StringPairArray const& keyValues,
+                      NodeStore::Scheduler& scheduler)
+        : m_keyBytes (keyBytes)
+        , m_scheduler (scheduler)
+        , m_batch (*this, scheduler)
+        , m_env (nullptr)
     {
-        if (keyValues ["path"].isEmpty ())
-            throw std::runtime_error ("Missing path in MDB backend");
+        String path (keyValues ["path"]);
 
-        int error = 0;
+        if (path.isEmpty ())
+            Throw (std::runtime_error ("Missing path in MDB backend"));
 
-        error = mdb_env_create (&m_env);
+        m_basePath = path.toStdString();
 
-        if (error == 0) // Should use the size of the file plus the free space on the disk
-       	    error = mdb_env_set_mapsize(m_env, 512L * 1024L * 1024L * 1024L);
+        // Regarding the path supplied to mdb_env_open:
+        // This directory must already exist and be writable.
+        //
+        File dir (File::getCurrentWorkingDirectory().getChildFile (path));
+        Result result = dir.createDirectory ();
 
-        if (error == 0)
-            error = mdb_env_open (
-                        m_env,
-                        keyValues ["path"].toStdString().c_str (),
-                        MDB_NOTLS,
-                        0664);
+        if (result.wasOk ())
+        {
+            int error = mdb_env_create (&m_env);
 
-        MDB_txn * txn;
-	if (error == 0)
-            error = mdb_txn_begin(m_env, NULL, 0, &txn);
-        if (error == 0)
-            error = mdb_dbi_open(txn, NULL, 0, &m_dbi);
-        if (error == 0)
-            error = mdb_txn_commit(txn);
+            // Should use the size of the file plus the free space on the disk
+            if (error == 0)
+                error = mdb_env_set_mapsize (m_env, 512L * 1024L * 1024L * 1024L);
 
+            if (error == 0)
+                error = mdb_env_open (
+                            m_env,
+                            m_basePath.c_str (),
+                            MDB_NOTLS,
+                            0664);
 
-        if (error != 0)
+            MDB_txn* txn;
+
+            if (error == 0)
+                error = mdb_txn_begin (m_env, NULL, 0, &txn);
+
+            if (error == 0)
+                error = mdb_dbi_open (txn, NULL, 0, &m_dbi);
+
+            if (error == 0)
+                error = mdb_txn_commit (txn);
+
+            if (error != 0)
+            {
+                String s;
+                s << "Error #" << error << " creating mdb environment";
+                Throw (std::runtime_error (s.toStdString ()));
+            }
+        }
+        else
         {
             String s;
-            s << "Error #" << error << " creating mdb environment";
-            throw std::runtime_error (s.toStdString ());
+            s << "MDB Backend failed to create directory, " << result.getErrorMessage ();
+            Throw (std::runtime_error (s.toStdString().c_str()));
         }
-        m_name = keyValues ["path"].toStdString();
     }
 
     ~Backend ()
     {
         if (m_env != nullptr)
         {
-            mdb_dbi_close(m_env, m_dbi);
+            mdb_dbi_close (m_env, m_dbi);
             mdb_env_close (m_env);
         }
     }
 
-    std::string getDataBaseName()
+    std::string getName()
     {
-        return m_name;
+        return m_basePath;
     }
 
-    bool bulkStore (std::vector <NodeObject::pointer> const& objs)
+    //--------------------------------------------------------------------------
+
+    template <class T>
+    unsigned char* mdb_cast (T* p)
     {
-        MDB_txn *txn = nullptr;
-        int rc = 0;
+        return const_cast <unsigned char*> (static_cast <unsigned char const*> (p));
+    }
 
-        rc = mdb_txn_begin(m_env, NULL, 0, &txn);
+    Status fetch (void const* key, NodeObject::Ptr* pObject)
+    {
+        pObject->reset ();
 
-        if (rc == 0)
+        Status status (ok);
+
+        MDB_txn* txn = nullptr;
+
+        int error = 0;
+
+        error = mdb_txn_begin (m_env, NULL, MDB_RDONLY, &txn);
+
+        if (error == 0)
         {
-	    BOOST_FOREACH (NodeObject::ref obj, objs)
-	    {
-		MDB_val key, data;
-		Blob blob (toBlob (obj));
+            MDB_val dbkey;
+            MDB_val data;
 
-		key.mv_size = (256 / 8);
-		key.mv_data = const_cast<unsigned char *>(obj->getHash().begin());
+            dbkey.mv_size = m_keyBytes;
+            dbkey.mv_data = mdb_cast (key);
 
-		data.mv_size = blob.size();
-		data.mv_data = &blob.front();
+            error = mdb_get (txn, m_dbi, &dbkey, &data);
 
-                rc = mdb_put(txn, m_dbi, &key, &data, 0);
-                if (rc != 0)
+            if (error == 0)
+            {
+                DecodedBlob decoded (key, data.mv_data, data.mv_size);
+
+                if (decoded.wasOk ())
                 {
-                    assert(false);
+                    *pObject = decoded.createObject ();
+                }
+                else
+                {
+                    status = dataCorrupt;
+                }
+            }
+            else if (error == MDB_NOTFOUND)
+            {
+                status = notFound;
+            }
+            else
+            {
+                status = unknown;
+
+                WriteLog (lsWARNING, NodeObject) << "MDB txn failed, code=" << error;
+            }
+
+            mdb_txn_abort (txn);
+        }
+        else
+        {
+            status = unknown;
+
+            WriteLog (lsWARNING, NodeObject) << "MDB txn failed, code=" << error;
+        }
+
+        return status;
+    }
+
+    void store (NodeObject::ref object)
+    {
+        m_batch.store (object);
+    }
+
+    void storeBatch (Batch const& batch)
+    {
+        MDB_txn* txn = nullptr;
+
+        int error = 0;
+
+        error = mdb_txn_begin (m_env, NULL, 0, &txn);
+
+        if (error == 0)
+        {
+            EncodedBlob::Pool::ScopedItem item (m_blobPool);
+
+            BOOST_FOREACH (NodeObject::Ptr const& object, batch)
+            {
+                EncodedBlob& encoded (item.getObject ());
+
+                encoded.prepare (object);
+
+                MDB_val key;
+                key.mv_size = m_keyBytes;
+                key.mv_data = mdb_cast (encoded.getKey ());
+
+                MDB_val data;
+                data.mv_size = encoded.getSize ();
+                data.mv_data = mdb_cast (encoded.getData ());
+
+                error = mdb_put (txn, m_dbi, &key, &data, 0);
+
+                if (error != 0)
+                {
+                    WriteLog (lsWARNING, NodeObject) << "mdb_put failed, error=" << error;
                     break;
                 }
-	    }
+            }
+
+            if (error == 0)
+            {
+                error = mdb_txn_commit(txn);
+
+                if (error != 0)
+                {
+                    WriteLog (lsWARNING, NodeObject) << "mdb_txn_commit failed, error=" << error;
+                }
+            }
+            else
+            {
+                mdb_txn_abort (txn);
+            }
         }
         else
-            assert(false);
-
-        if (rc == 0)
-            rc = mdb_txn_commit(txn);
-        else if (txn)
-            mdb_txn_abort(txn);
-
-        assert(rc == 0);
-        return rc == 0;
-    }
-
-    NodeObject::pointer retrieve (uint256 const& hash)
-    {
-        NodeObject::pointer ret;
-
-        MDB_txn *txn = nullptr;
-        int rc = 0;
-
-        rc = mdb_txn_begin(m_env, NULL, MDB_RDONLY, &txn);
-
-        if (rc == 0)
         {
-            MDB_val key, data;
-
-	    key.mv_size = (256 / 8);
-	    key.mv_data = const_cast<unsigned char *>(hash.begin());
-
-	    rc = mdb_get(txn, m_dbi, &key, &data);
-	    if (rc == 0)
-	        ret = fromBinary(hash, static_cast<char *>(data.mv_data), data.mv_size);
-	    else
-	        assert(rc == MDB_NOTFOUND);
+            WriteLog (lsWARNING, NodeObject) << "mdb_txn_begin failed, error=" << error;
         }
-        else
-            assert(false);
-
-        mdb_txn_abort(txn);
-
-        return ret;
     }
 
-    void visitAll (FUNCTION_TYPE <void (NodeObject::pointer)> func)
-    { // WRITEME
-        assert(false);
-    }
-
-    Blob toBlob (NodeObject::ref obj) const
+    void visitAll (VisitCallback& callback)
     {
-        Blob rawData (9 + obj->getData ().size ());
-        unsigned char* bufPtr = &rawData.front();
-
-        *reinterpret_cast <uint32*> (bufPtr + 0) = ntohl (obj->getIndex ());
-
-        *reinterpret_cast <uint32*> (bufPtr + 4) = ntohl (obj->getIndex ());
-
-        *(bufPtr + 8) = static_cast <unsigned char> (obj->getType ());
-
-        memcpy (bufPtr + 9, &obj->getData ().front (), obj->getData ().size ());
-
-        return rawData;
+        // VFALCO TODO Implement this!
+        bassertfalse;
     }
 
-    NodeObject::pointer fromBinary (uint256 const& hash, char const* data, int size) const
+    int getWriteLoad ()
     {
-        if (size < 9)
-            throw std::runtime_error ("undersized object");
+        return m_batch.getWriteLoad ();
+    }
 
-        uint32 const index = htonl (*reinterpret_cast <uint32 const*> (data));
+    //--------------------------------------------------------------------------
 
-        int const htype = data [8];
-
-        return boost::make_shared <NodeObject> (
-                    static_cast <NodeObjectType> (htype),
-                    index,
-                    data + 9,
-                    size - 9,
-                    hash);
+    void writeBatch (Batch const& batch)
+    {
+        storeBatch (batch);
     }
 
 private:
-    std::string m_name;
+    size_t const m_keyBytes;
+    NodeStore::Scheduler& m_scheduler;
+    NodeStore::BatchWriter m_batch;
+    NodeStore::EncodedBlob::Pool m_blobPool;
+    std::string m_basePath;
     MDB_env*    m_env;
     MDB_dbi     m_dbi;
 };
@@ -197,9 +268,12 @@ String MdbBackendFactory::getName () const
     return "mdb";
 }
 
-NodeStore::Backend* MdbBackendFactory::createInstance (StringPairArray const& keyValues)
+NodeStore::Backend* MdbBackendFactory::createInstance (
+    size_t keyBytes,
+    StringPairArray const& keyValues,
+    NodeStore::Scheduler& scheduler)
 {
-    return new MdbBackendFactory::Backend (keyValues);
+    return new MdbBackendFactory::Backend (keyBytes, keyValues, scheduler);
 }
 
 #endif

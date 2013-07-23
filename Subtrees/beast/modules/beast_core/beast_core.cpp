@@ -149,12 +149,14 @@ namespace beast
 #include "diagnostic/beast_FPUFlags.cpp"
 #include "diagnostic/beast_LeakChecked.cpp"
 #include "diagnostic/beast_UnitTest.cpp"
+#include "diagnostic/beast_UnitTestUtilities.cpp"
 
 #include "files/beast_DirectoryIterator.cpp"
 #include "files/beast_File.cpp"
 #include "files/beast_FileInputStream.cpp"
 #include "files/beast_FileOutputStream.cpp"
 #include "files/beast_FileSearchPath.cpp"
+#include "files/beast_RandomAccessFile.cpp"
 #include "files/beast_TemporaryFile.cpp"
 
 #include "json/beast_JSON.cpp"

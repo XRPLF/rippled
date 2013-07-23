@@ -62,9 +62,75 @@ public:
     void sweep ();
     void clear ();
 
-    bool touch (const key_type& key);
+    /** Refresh the expiration time on a key.
+
+        @param key The key to refresh.
+        @return `true` if the key was found and the object is cached.
+    */
+    bool refreshIfPresent (const key_type& key)
+    {
+        bool found = false;
+
+        // If present, make current in cache
+        boost::recursive_mutex::scoped_lock sl (mLock);
+
+        cache_iterator cit = mCache.find (key);
+
+        if (cit != mCache.end ())
+        {
+            cache_entry& entry = cit->second;
+
+            if (! entry.isCached ())
+            {
+                // Convert weak to strong.
+                entry.ptr = entry.lock ();
+
+                if (entry.isCached ())
+                {
+                    // We just put the object back in cache
+                    ++mCacheCount;
+                    entry.touch ();
+                    found = true;
+                }
+                else
+                {
+                    // Couldn't get strong pointer, 
+                    // object fell out of the cache so remove the entry.
+                    mCache.erase (cit);
+                }
+            }
+            else
+            {
+                // It's cached so update the timer
+                entry.touch ();
+                found = true;
+            }
+        }
+        else
+        {
+            // not present
+        }
+
+        return found;
+    }
+
     bool del (const key_type& key, bool valid);
+
+    /** Replace aliased objects with originals.
+
+        Due to concurrency it is possible for two separate objects with
+        the same content and referring to the same unique "thing" to exist.
+        This routine eliminates the duplicate and performs a replacement
+        on the callers shared pointer if needed.
+
+        @param key The key corresponding to the object
+        @param data A shared pointer to the data corresponding to the object.
+        @param replace `true` if `data` is the up to date version of the object.
+
+        @return `true` if the operation was successful.
+    */
     bool canonicalize (const key_type& key, boost::shared_ptr<c_Data>& data, bool replace = false);
+    
     bool store (const key_type& key, const c_Data& data);
     boost::shared_ptr<c_Data> fetch (const key_type& key);
     bool retrieve (const key_type& key, c_Data& data);
@@ -265,40 +331,6 @@ void TaggedCache<c_Key, c_Data, Timer>::sweep ()
 }
 
 template<typename c_Key, typename c_Data, class Timer>
-bool TaggedCache<c_Key, c_Data, Timer>::touch (const key_type& key)
-{
-    // If present, make current in cache
-    boost::recursive_mutex::scoped_lock sl (mLock);
-
-    cache_iterator cit = mCache.find (key);
-
-    if (cit == mCache.end ()) // Don't have the object
-        return false;
-
-    cache_entry& entry = cit->second;
-
-    if (entry.isCached ())
-    {
-        entry.touch ();
-        return true;
-    }
-
-    entry.ptr = entry.lock ();
-
-    if (entry.isCached ())
-    {
-        // We just put the object back in cache
-        ++mCacheCount;
-        entry.touch ();
-        return true;
-    }
-
-    // Object fell out
-    mCache.erase (cit);
-    return false;
-}
-
-template<typename c_Key, typename c_Data, class Timer>
 bool TaggedCache<c_Key, c_Data, Timer>::del (const key_type& key, bool valid)
 {
     // Remove from cache, if !valid, remove from map too. Returns true if removed from cache
@@ -326,6 +358,7 @@ bool TaggedCache<c_Key, c_Data, Timer>::del (const key_type& key, bool valid)
     return ret;
 }
 
+// VFALCO NOTE What does it mean to canonicalize the data?
 template<typename c_Key, typename c_Data, class Timer>
 bool TaggedCache<c_Key, c_Data, Timer>::canonicalize (const key_type& key, boost::shared_ptr<c_Data>& data, bool replace)
 {

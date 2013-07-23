@@ -1179,155 +1179,157 @@ void LedgerConsensus::accept (SHAMap::ref set, LoadEvent::pointer)
     if (set->getHash ().isNonZero ()) // put our set where others can get it later
         getApp().getOPs ().takePosition (mPreviousLedger->getLedgerSeq (), set);
 
-    boost::recursive_mutex::scoped_lock masterLock (getApp().getMasterLock ());
-    assert (set->getHash () == mOurPosition->getCurrentHash ());
-
-    getApp().getOPs ().peekStoredProposals ().clear (); // these are now obsolete
-
-    uint32 closeTime = roundCloseTime (mOurPosition->getCloseTime ());
-    bool closeTimeCorrect = true;
-
-    if (closeTime == 0)
     {
-        // we agreed to disagree
-        closeTimeCorrect = false;
-        closeTime = mPreviousLedger->getCloseTimeNC () + 1;
-    }
+        Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
 
-    WriteLog (lsDEBUG, LedgerConsensus) << "Report: Prop=" << (mProposing ? "yes" : "no") << " val=" << (mValidating ? "yes" : "no") <<
-                                        " corLCL=" << (mHaveCorrectLCL ? "yes" : "no") << " fail=" << (mConsensusFail ? "yes" : "no");
-    WriteLog (lsDEBUG, LedgerConsensus) << "Report: Prev = " << mPrevLedgerHash << ":" << mPreviousLedger->getLedgerSeq ();
-    WriteLog (lsDEBUG, LedgerConsensus) << "Report: TxSt = " << set->getHash () << ", close " << closeTime << (closeTimeCorrect ? "" : "X");
+        assert (set->getHash () == mOurPosition->getCurrentHash ());
 
-    CanonicalTXSet failedTransactions (set->getHash ());
+        getApp().getOPs ().peekStoredProposals ().clear (); // these are now obsolete
 
-    Ledger::pointer newLCL = boost::make_shared<Ledger> (false, boost::ref (*mPreviousLedger));
+        uint32 closeTime = roundCloseTime (mOurPosition->getCloseTime ());
+        bool closeTimeCorrect = true;
 
-    newLCL->peekTransactionMap ()->armDirty ();
-    newLCL->peekAccountStateMap ()->armDirty ();
-    WriteLog (lsDEBUG, LedgerConsensus) << "Applying consensus set transactions to the last closed ledger";
-    applyTransactions (set, newLCL, newLCL, failedTransactions, false);
-    newLCL->updateSkipList ();
-    newLCL->setClosed ();
-    boost::shared_ptr<SHAMap::DirtyMap> acctNodes = newLCL->peekAccountStateMap ()->disarmDirty ();
-    boost::shared_ptr<SHAMap::DirtyMap> txnNodes = newLCL->peekTransactionMap ()->disarmDirty ();
-
-    // write out dirty nodes (temporarily done here) Most come before setAccepted
-    int fc;
-
-    while ((fc = SHAMap::flushDirty (*acctNodes, 256, hotACCOUNT_NODE, newLCL->getLedgerSeq ())) > 0)
-    {
-        WriteLog (lsTRACE, LedgerConsensus) << "Flushed " << fc << " dirty state nodes";
-    }
-
-    while ((fc = SHAMap::flushDirty (*txnNodes, 256, hotTRANSACTION_NODE, newLCL->getLedgerSeq ())) > 0)
-    {
-        WriteLog (lsTRACE, LedgerConsensus) << "Flushed " << fc << " dirty transaction nodes";
-    }
-
-    newLCL->setAccepted (closeTime, mCloseResolution, closeTimeCorrect);
-    newLCL->updateHash ();
-    newLCL->setImmutable ();
-
-    WriteLog (lsDEBUG, LedgerConsensus) << "Report: NewL  = " << newLCL->getHash () << ":" << newLCL->getLedgerSeq ();
-    uint256 newLCLHash = newLCL->getHash ();
-
-    if (ShouldLog (lsTRACE, LedgerConsensus))
-    {
-        WriteLog (lsTRACE, LedgerConsensus) << "newLCL";
-        Json::Value p;
-        newLCL->addJson (p, LEDGER_JSON_DUMP_TXRP | LEDGER_JSON_DUMP_STATE);
-        WriteLog (lsTRACE, LedgerConsensus) << p;
-    }
-
-    statusChange (protocol::neACCEPTED_LEDGER, *newLCL);
-
-    if (mValidating && !mConsensusFail)
-    {
-        uint256 signingHash;
-        SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
-                                          (newLCLHash, getApp().getOPs ().getValidationTimeNC (), mValPublic, mProposing);
-        v->setFieldU32 (sfLedgerSequence, newLCL->getLedgerSeq ());
-        addLoad(v);
-
-        if (((newLCL->getLedgerSeq () + 1) % 256) == 0) // next ledger is flag ledger
+        if (closeTime == 0)
         {
-            getApp().getFeeVote ().doValidation (newLCL, *v);
-            getApp().getFeatureTable ().doValidation (newLCL, *v);
+            // we agreed to disagree
+            closeTimeCorrect = false;
+            closeTime = mPreviousLedger->getCloseTimeNC () + 1;
         }
 
-        v->sign (signingHash, mValPrivate);
-        v->setTrusted ();
-        getApp().getHashRouter ().addSuppression (signingHash); // suppress it if we receive it
-        getApp().getValidations ().addValidation (v, "local");
-        getApp().getOPs ().setLastValidation (v);
-        Blob validation = v->getSigned ();
-        protocol::TMValidation val;
-        val.set_validation (&validation[0], validation.size ());
-        int j = getApp().getPeers ().relayMessage (NULL,
-                boost::make_shared<PackedMessage> (val, protocol::mtVALIDATION));
-        WriteLog (lsINFO, LedgerConsensus) << "CNF Val " << newLCLHash << " to " << j << " peers";
-    }
-    else
-        WriteLog (lsINFO, LedgerConsensus) << "CNF newLCL " << newLCLHash;
+        WriteLog (lsDEBUG, LedgerConsensus) << "Report: Prop=" << (mProposing ? "yes" : "no") << " val=" << (mValidating ? "yes" : "no") <<
+                                            " corLCL=" << (mHaveCorrectLCL ? "yes" : "no") << " fail=" << (mConsensusFail ? "yes" : "no");
+        WriteLog (lsDEBUG, LedgerConsensus) << "Report: Prev = " << mPrevLedgerHash << ":" << mPreviousLedger->getLedgerSeq ();
+        WriteLog (lsDEBUG, LedgerConsensus) << "Report: TxSt = " << set->getHash () << ", close " << closeTime << (closeTimeCorrect ? "" : "X");
 
-    Ledger::pointer newOL = boost::make_shared<Ledger> (true, boost::ref (*newLCL));
-    ScopedLock sl ( getApp().getLedgerMaster ().getLock ());
+        CanonicalTXSet failedTransactions (set->getHash ());
 
-    // Apply disputed transactions that didn't get in
-    TransactionEngine engine (newOL);
-    BOOST_FOREACH (u256_lct_pair & it, mDisputes)
-    {
-        if (!it.second->getOurVote ())
+        Ledger::pointer newLCL = boost::make_shared<Ledger> (false, boost::ref (*mPreviousLedger));
+
+        newLCL->peekTransactionMap ()->armDirty ();
+        newLCL->peekAccountStateMap ()->armDirty ();
+        WriteLog (lsDEBUG, LedgerConsensus) << "Applying consensus set transactions to the last closed ledger";
+        applyTransactions (set, newLCL, newLCL, failedTransactions, false);
+        newLCL->updateSkipList ();
+        newLCL->setClosed ();
+        boost::shared_ptr<SHAMap::DirtyMap> acctNodes = newLCL->peekAccountStateMap ()->disarmDirty ();
+        boost::shared_ptr<SHAMap::DirtyMap> txnNodes = newLCL->peekTransactionMap ()->disarmDirty ();
+
+        // write out dirty nodes (temporarily done here) Most come before setAccepted
+        int fc;
+
+        while ((fc = SHAMap::flushDirty (*acctNodes, 256, hotACCOUNT_NODE, newLCL->getLedgerSeq ())) > 0)
         {
-            // we voted NO
-            try
+            WriteLog (lsTRACE, LedgerConsensus) << "Flushed " << fc << " dirty state nodes";
+        }
+
+        while ((fc = SHAMap::flushDirty (*txnNodes, 256, hotTRANSACTION_NODE, newLCL->getLedgerSeq ())) > 0)
+        {
+            WriteLog (lsTRACE, LedgerConsensus) << "Flushed " << fc << " dirty transaction nodes";
+        }
+
+        newLCL->setAccepted (closeTime, mCloseResolution, closeTimeCorrect);
+        newLCL->updateHash ();
+        newLCL->setImmutable ();
+
+        WriteLog (lsDEBUG, LedgerConsensus) << "Report: NewL  = " << newLCL->getHash () << ":" << newLCL->getLedgerSeq ();
+        uint256 newLCLHash = newLCL->getHash ();
+
+        if (ShouldLog (lsTRACE, LedgerConsensus))
+        {
+            WriteLog (lsTRACE, LedgerConsensus) << "newLCL";
+            Json::Value p;
+            newLCL->addJson (p, LEDGER_JSON_DUMP_TXRP | LEDGER_JSON_DUMP_STATE);
+            WriteLog (lsTRACE, LedgerConsensus) << p;
+        }
+
+        statusChange (protocol::neACCEPTED_LEDGER, *newLCL);
+
+        if (mValidating && !mConsensusFail)
+        {
+            uint256 signingHash;
+            SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
+                                              (newLCLHash, getApp().getOPs ().getValidationTimeNC (), mValPublic, mProposing);
+            v->setFieldU32 (sfLedgerSequence, newLCL->getLedgerSeq ());
+            addLoad(v);
+
+            if (((newLCL->getLedgerSeq () + 1) % 256) == 0) // next ledger is flag ledger
             {
-                WriteLog (lsDEBUG, LedgerConsensus) << "Test applying disputed transaction that did not get in";
-                SerializerIterator sit (it.second->peekTransaction ());
-                SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction> (boost::ref (sit));
+                getApp().getFeeVote ().doValidation (newLCL, *v);
+                getApp().getFeatureTable ().doValidation (newLCL, *v);
+            }
 
-                if (applyTransaction (engine, txn, newOL, true, false))
-                    failedTransactions.push_back (txn);
-            }
-            catch (...)
-            {
-                WriteLog (lsDEBUG, LedgerConsensus) << "Failed to apply transaction we voted NO on";
-            }
+            v->sign (signingHash, mValPrivate);
+            v->setTrusted ();
+            getApp().getHashRouter ().addSuppression (signingHash); // suppress it if we receive it
+            getApp().getValidations ().addValidation (v, "local");
+            getApp().getOPs ().setLastValidation (v);
+            Blob validation = v->getSigned ();
+            protocol::TMValidation val;
+            val.set_validation (&validation[0], validation.size ());
+            int j = getApp().getPeers ().relayMessage (NULL,
+                    boost::make_shared<PackedMessage> (val, protocol::mtVALIDATION));
+            WriteLog (lsINFO, LedgerConsensus) << "CNF Val " << newLCLHash << " to " << j << " peers";
         }
-    }
+        else
+            WriteLog (lsINFO, LedgerConsensus) << "CNF newLCL " << newLCLHash;
 
-    WriteLog (lsDEBUG, LedgerConsensus) << "Applying transactions from current open ledger";
-    applyTransactions (getApp().getLedgerMaster ().getCurrentLedger ()->peekTransactionMap (), newOL, newLCL,
-                       failedTransactions, true);
-    getApp().getLedgerMaster ().pushLedger (newLCL, newOL, !mConsensusFail);
-    mNewLedgerHash = newLCL->getHash ();
-    mState = lcsACCEPTED;
-    sl.unlock ();
+        Ledger::pointer newOL = boost::make_shared<Ledger> (true, boost::ref (*newLCL));
+        ScopedLock sl ( getApp().getLedgerMaster ().getLock ());
 
-    if (mValidating)
-    {
-        // see how close our close time is to other node's close time reports
-        WriteLog (lsINFO, LedgerConsensus) << "We closed at " << boost::lexical_cast<std::string> (mCloseTime);
-        uint64 closeTotal = mCloseTime;
-        int closeCount = 1;
-
-        for (std::map<uint32, int>::iterator it = mCloseTimes.begin (), end = mCloseTimes.end (); it != end; ++it)
+        // Apply disputed transactions that didn't get in
+        TransactionEngine engine (newOL);
+        BOOST_FOREACH (u256_lct_pair & it, mDisputes)
         {
-            // FIXME: Use median, not average
-            WriteLog (lsINFO, LedgerConsensus) << boost::lexical_cast<std::string> (it->second) << " time votes for "
-                                               << boost::lexical_cast<std::string> (it->first);
-            closeCount += it->second;
-            closeTotal += static_cast<uint64> (it->first) * static_cast<uint64> (it->second);
+            if (!it.second->getOurVote ())
+            {
+                // we voted NO
+                try
+                {
+                    WriteLog (lsDEBUG, LedgerConsensus) << "Test applying disputed transaction that did not get in";
+                    SerializerIterator sit (it.second->peekTransaction ());
+                    SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction> (boost::ref (sit));
+
+                    if (applyTransaction (engine, txn, newOL, true, false))
+                        failedTransactions.push_back (txn);
+                }
+                catch (...)
+                {
+                    WriteLog (lsDEBUG, LedgerConsensus) << "Failed to apply transaction we voted NO on";
+                }
+            }
         }
 
-        closeTotal += (closeCount / 2);
-        closeTotal /= closeCount;
-        int offset = static_cast<int> (closeTotal) - static_cast<int> (mCloseTime);
-        WriteLog (lsINFO, LedgerConsensus) << "Our close offset is estimated at " << offset << " (" << closeCount << ")";
-        getApp().getOPs ().closeTimeOffset (offset);
-    }
+        WriteLog (lsDEBUG, LedgerConsensus) << "Applying transactions from current open ledger";
+        applyTransactions (getApp().getLedgerMaster ().getCurrentLedger ()->peekTransactionMap (), newOL, newLCL,
+                           failedTransactions, true);
+        getApp().getLedgerMaster ().pushLedger (newLCL, newOL, !mConsensusFail);
+        mNewLedgerHash = newLCL->getHash ();
+        mState = lcsACCEPTED;
+        sl.unlock ();
 
+        if (mValidating)
+        {
+            // see how close our close time is to other node's close time reports
+            WriteLog (lsINFO, LedgerConsensus) << "We closed at " << boost::lexical_cast<std::string> (mCloseTime);
+            uint64 closeTotal = mCloseTime;
+            int closeCount = 1;
+
+            for (std::map<uint32, int>::iterator it = mCloseTimes.begin (), end = mCloseTimes.end (); it != end; ++it)
+            {
+                // FIXME: Use median, not average
+                WriteLog (lsINFO, LedgerConsensus) << boost::lexical_cast<std::string> (it->second) << " time votes for "
+                                                   << boost::lexical_cast<std::string> (it->first);
+                closeCount += it->second;
+                closeTotal += static_cast<uint64> (it->first) * static_cast<uint64> (it->second);
+            }
+
+            closeTotal += (closeCount / 2);
+            closeTotal /= closeCount;
+            int offset = static_cast<int> (closeTotal) - static_cast<int> (mCloseTime);
+            WriteLog (lsINFO, LedgerConsensus) << "Our close offset is estimated at " << offset << " (" << closeCount << ")";
+            getApp().getOPs ().closeTimeOffset (offset);
+        }
+    }
 }
 
 void LedgerConsensus::endConsensus ()

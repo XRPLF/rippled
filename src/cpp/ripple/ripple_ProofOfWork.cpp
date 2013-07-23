@@ -177,4 +177,5 @@ bool ProofOfWork::validateToken (const std::string& strToken)
     return boost::regex_match (strToken, smMatch, reToken);
 }
 
-// vim:ts=4
+//------------------------------------------------------------------------------
+

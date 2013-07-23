@@ -4,97 +4,177 @@
 */
 //==============================================================================
 
+static const char* s_nodeStoreDBInit [] =
+{
+    "PRAGMA synchronous=NORMAL;",
+    "PRAGMA journal_mode=WAL;",
+    "PRAGMA journal_size_limit=1582080;",
+
+#if (ULONG_MAX > UINT_MAX) && !defined (NO_SQLITE_MMAP)
+    "PRAGMA mmap_size=171798691840;",
+#endif
+
+    "BEGIN TRANSACTION;",
+
+    "CREATE TABLE CommittedObjects (				\
+        Hash		CHARACTER(64) PRIMARY KEY,		\
+        ObjType		CHAR(1)	NOT	NULL,				\
+        LedgerIndex	BIGINT UNSIGNED,				\
+        Object		BLOB							\
+    );",
+
+    "END TRANSACTION;"
+};
+
+static int s_nodeStoreDBCount = NUMBER (s_nodeStoreDBInit);
+
+//------------------------------------------------------------------------------
+
 class SqliteBackendFactory::Backend : public NodeStore::Backend
 {
 public:
-    Backend(std::string const& path) : mName(path)
+    Backend (size_t keyBytes, std::string const& path)
+        : m_keyBytes (keyBytes)
+        , m_name (path)
+        , m_db (new DatabaseCon(path, s_nodeStoreDBInit, s_nodeStoreDBCount))
     {
-        mDb = new DatabaseCon(path, HashNodeDBInit, HashNodeDBCount);
-        mDb->getDB()->executeSQL(boost::str(boost::format("PRAGMA cache_size=-%d;") %
-            (theConfig.getSize(siHashNodeDBCache) * 1024)));
+        String s;
+
+        // VFALCO TODO Remove this dependency on theConfig
+        //
+        s << "PRAGMA cache_size=-" << String (theConfig.getSize(siHashNodeDBCache) * 1024);
+        m_db->getDB()->executeSQL (s.toStdString ().c_str ());
     }
 
-    Backend()
+    ~Backend()
     {
-        delete mDb;
     }
 
-    std::string getDataBaseName()
+    std::string getName()
     {
-        return mName;
+        return m_name;
     }
 
-    bool bulkStore(const std::vector< NodeObject::pointer >& objects)
+    //--------------------------------------------------------------------------
+
+    Status fetch (void const* key, NodeObject::Ptr* pObject)
     {
-        ScopedLock sl(mDb->getDBLock());
-        static SqliteStatement pStB(mDb->getDB()->getSqliteDB(), "BEGIN TRANSACTION;");
-        static SqliteStatement pStE(mDb->getDB()->getSqliteDB(), "END TRANSACTION;");
-        static SqliteStatement pSt(mDb->getDB()->getSqliteDB(),
+        Status result = ok;
+
+        pObject->reset ();
+
+        {
+            ScopedLock sl (m_db->getDBLock());
+
+            uint256 const hash (key);
+
+            static SqliteStatement pSt (m_db->getDB()->getSqliteDB(),
+                "SELECT ObjType,LedgerIndex,Object FROM CommittedObjects WHERE Hash = ?;");
+
+            pSt.bind (1, hash.GetHex());
+
+            if (pSt.isRow (pSt.step()))
+            {
+                // VFALCO NOTE This is unfortunately needed,
+                //             the DatabaseCon creates the blob?
+                Blob data (pSt.getBlob (2));
+                *pObject = NodeObject::createObject (
+                    getTypeFromString (pSt.peekString (0)),
+                    pSt.getUInt32 (1),
+                    data,
+                    hash);
+            }
+            else
+            {
+                result = notFound;
+            }
+
+            pSt.reset();
+        }
+
+        return result;
+    }
+
+    void store (NodeObject::ref object)
+    {
+        NodeStore::Batch batch;
+
+        batch.push_back (object);
+
+        storeBatch (batch);
+    }
+
+    void storeBatch (NodeStore::Batch const& batch)
+    {
+        // VFALCO TODO Rewrite this to use Beast::db
+
+        ScopedLock sl (m_db->getDBLock());
+
+        static SqliteStatement pStB (m_db->getDB()->getSqliteDB(), "BEGIN TRANSACTION;");
+        static SqliteStatement pStE (m_db->getDB()->getSqliteDB(), "END TRANSACTION;");
+        static SqliteStatement pSt (m_db->getDB()->getSqliteDB(),
             "INSERT OR IGNORE INTO CommittedObjects "
                 "(Hash,ObjType,LedgerIndex,Object) VALUES (?, ?, ?, ?);");
 
         pStB.step();
         pStB.reset();
 
-        BOOST_FOREACH(NodeObject::ref object, objects)
+        BOOST_FOREACH (NodeObject::Ptr const& object, batch)
         {
-            bind(pSt, object);
+            doBind (pSt, object);
+
             pSt.step();
             pSt.reset();
         }
 
         pStE.step();
         pStE.reset();
-
-        return true;
-
     }
 
-    NodeObject::pointer retrieve(uint256 const& hash)
+    void visitAll (VisitCallback& callback)
     {
-        NodeObject::pointer ret;
+        // No lock needed as per the visitAll() API
 
-        {
-            ScopedLock sl(mDb->getDBLock());
-            static SqliteStatement pSt(mDb->getDB()->getSqliteDB(),
-                "SELECT ObjType,LedgerIndex,Object FROM CommittedObjects WHERE Hash = ?;");
-
-            pSt.bind(1, hash.GetHex());
-
-            if (pSt.isRow(pSt.step()))
-                ret = boost::make_shared<NodeObject>(getType(pSt.peekString(0)), pSt.getUInt32(1), pSt.getBlob(2), hash);
-
-            pSt.reset();
-        }
-
-        return ret;
-    }
-
-    void visitAll(FUNCTION_TYPE<void (NodeObject::pointer)> func)
-    {
         uint256 hash;
 
-        static SqliteStatement pSt(mDb->getDB()->getSqliteDB(),
+        static SqliteStatement pSt(m_db->getDB()->getSqliteDB(),
             "SELECT ObjType,LedgerIndex,Object,Hash FROM CommittedObjects;");
 
-        while (pSt.isRow(pSt.step()))
+        while (pSt.isRow (pSt.step()))
         {
             hash.SetHexExact(pSt.getString(3));
-            func(boost::make_shared<NodeObject>(getType(pSt.peekString(0)), pSt.getUInt32(1), pSt.getBlob(2), hash));
+
+            // VFALCO NOTE This is unfortunately needed,
+            //             the DatabaseCon creates the blob?
+            Blob data (pSt.getBlob (2));
+            NodeObject::Ptr const object (NodeObject::createObject (
+                getTypeFromString (pSt.peekString (0)),
+                pSt.getUInt32 (1),
+                data,
+                hash));
+
+            callback.visitObject (object);
         }
 
-        pSt.reset();
+        pSt.reset ();
     }
 
-    void bind(SqliteStatement& statement, NodeObject::ref object)
+    int getWriteLoad ()
+    {
+        return 0;
+    }
+
+    //--------------------------------------------------------------------------
+
+    void doBind (SqliteStatement& statement, NodeObject::ref object)
     {
         char const* type;
         switch (object->getType())
         {
-            case hotLEDGER:                type = "L"; break;
+            case hotLEDGER:             type = "L"; break;
             case hotTRANSACTION:        type = "T"; break;
-            case hotACCOUNT_NODE:        type = "A"; break;
-            case hotTRANSACTION_NODE:    type = "N"; break;
+            case hotACCOUNT_NODE:       type = "A"; break;
+            case hotTRANSACTION_NODE:   type = "N"; break;
             default:                    type = "U";
         }
 
@@ -104,25 +184,27 @@ public:
         statement.bindStatic(4, object->getData());
     }
 
-    NodeObjectType getType(std::string const& type)
+    NodeObjectType getTypeFromString (std::string const& s)
     {
-        NodeObjectType htype = hotUNKNOWN;
-        if (!type.empty())
+        NodeObjectType type = hotUNKNOWN;
+
+        if (!s.empty ())
         {
-            switch (type[0])
+            switch (s [0])
             {
-                case 'L': htype = hotLEDGER; break;
-                case 'T': htype = hotTRANSACTION; break;
-                case 'A': htype = hotACCOUNT_NODE; break;
-                case 'N': htype = hotTRANSACTION_NODE; break;
+                case 'L': type = hotLEDGER; break;
+                case 'T': type = hotTRANSACTION; break;
+                case 'A': type = hotACCOUNT_NODE; break;
+                case 'N': type = hotTRANSACTION_NODE; break;
             }
         }
-        return htype;
+        return type;
     }
 
 private:
-    std::string      mName;
-    DatabaseCon*     mDb;
+    size_t const m_keyBytes;
+    std::string const m_name;
+    ScopedPointer <DatabaseCon> m_db;
 };
 
 //------------------------------------------------------------------------------
@@ -147,7 +229,10 @@ String SqliteBackendFactory::getName () const
     return "Sqlite";
 }
 
-NodeStore::Backend* SqliteBackendFactory::createInstance (StringPairArray const& keyValues)
+NodeStore::Backend* SqliteBackendFactory::createInstance (
+    size_t keyBytes,
+    StringPairArray const& keyValues,
+    NodeStore::Scheduler& scheduler)
 {
-    return new Backend (keyValues ["path"].toStdString ());
+    return new Backend (keyBytes, keyValues ["path"].toStdString ());
 }

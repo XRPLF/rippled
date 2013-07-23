@@ -12,7 +12,7 @@
 #if ! BEAST_WIN32
 #define RIPPLE_MDB_AVAILABLE 1
 
-#include "libraries/liblmdb/lmdb.h"
+#include "mdb/libraries/liblmdb/lmdb.h"
 
 #else
 // mdb is unsupported on Win32

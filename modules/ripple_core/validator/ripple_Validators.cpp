@@ -402,7 +402,7 @@ private:
 class ValidatorListTests : public UnitTest
 {
 public:
-    ValidatorListTests () : UnitTest ("ValidatorList")
+    ValidatorListTests () : UnitTest ("ValidatorList", "ripple")
     {
     }
 

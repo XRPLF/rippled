@@ -65,6 +65,8 @@
 
 #include "../ripple_core/ripple_core.h"
 
+#include "beast/modules/beast_db/beast_db.h"
+
 // VFALCO TODO fix these warnings!
 #ifdef _MSC_VER
 //#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
@@ -102,8 +104,9 @@ namespace ripple
 
 #include "node/ripple_NodeObject.h"
 #include "node/ripple_NodeStore.h"
-#include "node/ripple_LevelDBBackendFactory.h"
 #include "node/ripple_HyperLevelDBBackendFactory.h"
+#include "node/ripple_KeyvaDBBackendFactory.h"
+#include "node/ripple_LevelDBBackendFactory.h"
 #include "node/ripple_MdbBackendFactory.h"
 #include "node/ripple_NullBackendFactory.h"
 #include "node/ripple_SqliteBackendFactory.h"
@@ -154,10 +157,10 @@ namespace ripple
 #include "src/cpp/ripple/TransactionMaster.h"
 #include "src/cpp/ripple/ripple_LocalCredentials.h"
 #include "src/cpp/ripple/WSDoor.h"
+#include "src/cpp/ripple/ripple_Application.h"
 #include "src/cpp/ripple/RPCHandler.h"
 #include "src/cpp/ripple/TransactionQueue.h"
 #include "ledger/OrderBookDB.h"
-#include "src/cpp/ripple/ripple_Application.h"
 #include "src/cpp/ripple/CallRPC.h"
 #include "src/cpp/ripple/Transactor.h"
 #include "src/cpp/ripple/ChangeTransactor.h"
@@ -244,10 +247,11 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "basics/ripple_RPCServerHandler.cpp"
 #include "node/ripple_NodeObject.cpp"
 #include "node/ripple_NodeStore.cpp"
-#include "node/ripple_LevelDBBackendFactory.cpp"
 #include "node/ripple_HyperLevelDBBackendFactory.cpp"
-#include "node/ripple_MdbBackendFactory.cpp"
+#include "node/ripple_KeyvaDBBackendFactory.cpp"
+#include "node/ripple_LevelDBBackendFactory.cpp"
 #include "node/ripple_NullBackendFactory.cpp"
+#include "node/ripple_MdbBackendFactory.cpp"
 #include "node/ripple_SqliteBackendFactory.cpp"
 
 #include "ledger/Ledger.cpp"
@@ -427,7 +431,6 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "ledger/LedgerUnitTests.cpp"
 #include "src/cpp/ripple/ripple_SHAMapUnitTests.cpp"
 #include "src/cpp/ripple/ripple_SHAMapSyncUnitTests.cpp"
-#include "src/cpp/ripple/ripple_ProofOfWorkFactoryUnitTests.cpp" // Requires ProofOfWorkFactory.h
 #include "src/cpp/ripple/ripple_SerializedTransactionUnitTests.cpp"
 
 //------------------------------------------------------------------------------

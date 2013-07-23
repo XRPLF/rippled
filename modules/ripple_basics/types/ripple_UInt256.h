@@ -19,6 +19,10 @@ inline int Testuint256AdHoc (std::vector<std::string> vArg);
 
 // We have to keep a separate base class without constructors
 // so the compiler will let us use it in a union
+//
+// VFALCO NOTE This class produces undefined behavior when
+//             BITS is not a multiple of 32!!!
+//
 template<unsigned int BITS>
 class base_uint
 {
@@ -30,6 +34,22 @@ protected:
     unsigned int pn[WIDTH];
 
 public:
+    base_uint ()
+    {
+    }
+
+    /** Construct from a raw pointer.
+    
+        The buffer pointed to by `data` must be at least 32 bytes.
+    */
+    explicit base_uint (void const* data)
+    {
+        // BITS must be a multiple of 32
+        static_bassert ((BITS % 32) == 0);
+
+        memcpy (&pn [0], data, BITS / 8);
+    }
+
     bool isZero () const
     {
         for (int i = 0; i < WIDTH; i++)
@@ -345,14 +365,24 @@ public:
         return reinterpret_cast<unsigned char*> (pn + WIDTH);
     }
 
-    const unsigned char* begin () const
+    unsigned char const* cbegin () const noexcept
     {
-        return reinterpret_cast<const unsigned char*> (pn);
+        return reinterpret_cast <unsigned char const*> (pn);
     }
 
-    const unsigned char* end () const
+    unsigned char const* cend () const noexcept
     {
-        return reinterpret_cast<const unsigned char*> (pn + WIDTH);
+        return reinterpret_cast<unsigned char const*> (pn + WIDTH);
+    }
+
+    const unsigned char* begin () const noexcept
+    {
+        return cbegin ();
+    }
+
+    const unsigned char* end () const noexcept
+    {
+        return cend ();
     }
 
     unsigned int size () const
@@ -474,6 +504,11 @@ public:
         *this = b;
     }
 
+    explicit uint256 (void const* data)
+        : base_uint256 (data)
+    {
+    }
+
     uint256& operator= (uint64 uHost)
     {
         zero ();
@@ -590,7 +625,7 @@ template<unsigned int BITS> inline std::ostream& operator<< (std::ostream& out, 
 
 inline int Testuint256AdHoc (std::vector<std::string> vArg)
 {
-    uint256 g (0);
+    uint256 g (uint64 (0));
 
     printf ("%s\n", g.ToString ().c_str ());
     --g;

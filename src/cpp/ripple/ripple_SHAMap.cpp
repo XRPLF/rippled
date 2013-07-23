@@ -205,7 +205,7 @@ SHAMapTreeNode::pointer SHAMap::getNode (const SHAMapNode& id, uint256 const& ha
 
     if (node)
     {
-#ifdef BEAST_DEBUG
+#if BEAST_DEBUG
 
         if (node->getNodeHash () != hash)
         {
@@ -213,7 +213,7 @@ SHAMapTreeNode::pointer SHAMap::getNode (const SHAMapNode& id, uint256 const& ha
             WriteLog (lsFATAL, SHAMap) << "ID: " << id;
             WriteLog (lsFATAL, SHAMap) << "TgtHash " << hash;
             WriteLog (lsFATAL, SHAMap) << "NodHash " << node->getNodeHash ();
-            throw std::runtime_error ("invalid node");
+            Throw (std::runtime_error ("invalid node"));
         }
 
 #endif
@@ -230,7 +230,7 @@ SHAMapTreeNode* SHAMap::getNodePointer (const SHAMapNode& id, uint256 const& has
     SHAMapTreeNode* ret = getNodePointerNT (id, hash);
 
     if (!ret)
-        throw SHAMapMissingNode (mType, id, hash);
+        Throw (SHAMapMissingNode (mType, id, hash));
 
     return ret;
 }
@@ -251,7 +251,7 @@ SHAMapTreeNode* SHAMap::getNodePointer (const SHAMapNode& id, uint256 const& has
     SHAMapTreeNode* ret = getNodePointerNT (id, hash, filter);
 
     if (!ret)
-        throw SHAMapMissingNode (mType, id, hash);
+        Throw (SHAMapMissingNode (mType, id, hash));
 
     return ret;
 }
@@ -493,7 +493,7 @@ SHAMapItem::pointer SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNT
                     firstNode = firstBelow (firstNode);
 
                     if (!firstNode || firstNode->isInner ())
-                        throw std::runtime_error ("missing/corrupt node");
+                        Throw (std::runtime_error ("missing/corrupt node"));
 
                     type = firstNode->getType ();
                     return firstNode->peekItem ();
@@ -531,7 +531,7 @@ SHAMapItem::pointer SHAMap::peekPrevItem (uint256 const& id)
                     SHAMapTreeNode* item = firstBelow (node.get ());
 
                     if (!item)
-                        throw std::runtime_error ("missing node");
+                        Throw (std::runtime_error ("missing node"));
 
                     return item->peekItem ();
                 }
@@ -597,7 +597,7 @@ bool SHAMap::delItem (uint256 const& id)
     std::stack<SHAMapTreeNode::pointer> stack = getStack (id, true);
 
     if (stack.empty ())
-        throw std::runtime_error ("missing node");
+        Throw (std::runtime_error ("missing node"));
 
     SHAMapTreeNode::pointer leaf = stack.top ();
     stack.pop ();
@@ -678,7 +678,7 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
     std::stack<SHAMapTreeNode::pointer> stack = getStack (tag, true);
 
     if (stack.empty ())
-        throw std::runtime_error ("missing node");
+        Throw (std::runtime_error ("missing node"));
 
     SHAMapTreeNode::pointer node = stack.top ();
     stack.pop ();
@@ -703,7 +703,7 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
             WriteLog (lsFATAL, SHAMap) << "NewNode: " << *newNode;
             dump ();
             assert (false);
-            throw std::runtime_error ("invalid inner node");
+            Throw (std::runtime_error ("invalid inner node"));
         }
 
         trackNewNode (newNode);
@@ -776,7 +776,7 @@ bool SHAMap::updateGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasM
     std::stack<SHAMapTreeNode::pointer> stack = getStack (tag, true);
 
     if (stack.empty ())
-        throw std::runtime_error ("missing node");
+        Throw (std::runtime_error ("missing node"));
 
     SHAMapTreeNode::pointer node = stack.top ();
     stack.pop ();
@@ -810,7 +810,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal (const SHAMapNode& id, uint256
     SHAMapTreeNode::pointer ret = fetchNodeExternalNT (id, hash);
 
     if (!ret)
-        throw SHAMapMissingNode (mType, id, hash);
+        Throw (SHAMapMissingNode (mType, id, hash));
 
     return ret;
 }
@@ -822,7 +822,10 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternalNT (const SHAMapNode& id, uint2
     if (!getApp().running ())
         return ret;
 
-    NodeObject::pointer obj (getApp().getNodeStore ().retrieve (hash));
+    // These are for diagnosing a crash on exit
+    Application& app (getApp ());
+    NodeStore& nodeStore (app.getNodeStore ());
+    NodeObject::pointer obj (nodeStore.fetch (hash));
 
     if (!obj)
     {
@@ -885,8 +888,11 @@ bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
     }
 
     SHAMapTreeNode::pointer newRoot = fetchNodeExternalNT(SHAMapNode(), hash);
+    
     if (newRoot)
+    {
     	root = newRoot;
+    }
     else
     {
         Blob nodeData;
@@ -935,7 +941,7 @@ int SHAMap::flushDirty (DirtyMap& map, int maxNodes, NodeObjectType t, uint32 se
 
 #endif
 
-        getApp().getNodeStore ().store (t, seq, s.peekData (), it->second->getNodeHash ());
+        getApp().getNodeStore ().store (t, seq, s.modData (), it->second->getNodeHash ());
 
         if (flushed++ >= maxNodes)
             return flushed;
