@@ -344,14 +344,8 @@ public:
 
     uint32 getClusterFee ()
     {
-        uint64 totFee = 0;
-        int totCount = 0;
-
-        int thresh = getApp().getOPs().getNetworkTimeNC();
-        if (thresh <= 120)
-            thresh = 1;
-        else
-            thresh -= 120;
+        int thresh = getApp().getOPs().getNetworkTimeNC() - 120;
+        uint32 a = 0, b = 0;
 
         boost::recursive_mutex::scoped_lock sl (mUNLLock);
         {
@@ -360,13 +354,22 @@ public:
             {
                 if (it->second.getReportTime() >= thresh)
                 {
-                    ++totCount;
-                    totFee += it->second.getLoadFee();
+                    uint32 fee = it->second.getLoadFee();
+                    if (fee > b)
+                    {
+                        if (fee > a)
+                        {
+                            b = a;
+                            a = fee;
+                        }
+                        else
+                            b = fee;
+                    }
                 }
             }
         }
 
-        return (totCount == 0) ? 0 : static_cast<uint32>(totFee / totCount);
+        return (b == 0) ? a : ((a + b + 1) / 2);
     }
 
     //--------------------------------------------------------------------------
