@@ -20,7 +20,7 @@
 class UnitTestUtilitiesTests : public UnitTest
 {
 public:
-    UnitTestUtilitiesTests () : UnitTest ("UnitTestUtilities")
+    UnitTestUtilitiesTests () : UnitTest ("UnitTestUtilities", "beast")
     {
     }
 
