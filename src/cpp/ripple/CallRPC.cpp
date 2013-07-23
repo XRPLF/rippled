@@ -116,6 +116,18 @@ Json::Value RPCParser::parseInternal (const Json::Value& jvParams)
     return v;
 }
 
+// fetch_info [clear]
+Json::Value RPCParser::parseFetchInfo (const Json::Value& jvParams)
+{
+    Json::Value     jvRequest (Json::objectValue);
+    unsigned int    iParams = jvParams.size ();
+
+    if (iParams != 0)
+        jvRequest[jvParams[0u].asString()] = true;
+
+    return jvRequest;
+}
+
 // account_tx accountID [ledger_min [ledger_max [limit [offset]]]] [binary] [count] [descending]
 Json::Value RPCParser::parseAccountTransactions (const Json::Value& jvParams)
 {
@@ -743,6 +755,7 @@ Json::Value RPCParser::parseCommand (std::string strMethod, Json::Value jvParams
         {   "connect",              &RPCParser::parseConnect,               1,  2   },
         {   "consensus_info",       &RPCParser::parseAsIs,                  0,  0   },
         {   "feature",              &RPCParser::parseFeature,               0,  2   },
+        {   "fetch_info",           &RPCParser::parseFetchInfo,             0,  1   },
         {   "get_counts",           &RPCParser::parseGetCounts,             0,  1   },
         {   "json",                 &RPCParser::parseJson,                  2,  2   },
         {   "ledger",               &RPCParser::parseLedger,                0,  2   },

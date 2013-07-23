@@ -302,6 +302,8 @@ public:
     }
     Json::Value getConsensusInfo ();
     Json::Value getServerInfo (bool human, bool admin);
+    void clearLedgerFetch ();
+    Json::Value getLedgerFetchInfo ();
     uint32 acceptLedger ();
     boost::unordered_map < uint160,
           std::list<LedgerProposal::pointer> > & peekStoredProposals ()

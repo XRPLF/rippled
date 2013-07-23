@@ -1749,6 +1749,21 @@ Json::Value RPCHandler::doConsensusInfo (Json::Value, LoadType* loadType, Scoped
     return ret;
 }
 
+Json::Value RPCHandler::doFetchInfo (Json::Value jvParams, LoadType* loadType, ScopedLock& MasterLockHolder)
+{
+    Json::Value ret (Json::objectValue);
+
+    if (jvParams.isMember("clear") && jvParams["clear"].asBool())
+    {
+        mNetOps->clearLedgerFetch();
+        ret["clear"] = true;
+    }
+
+    ret["info"] = mNetOps->getLedgerFetchInfo();
+
+    return ret;
+}
+
 Json::Value RPCHandler::doServerInfo (Json::Value, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
     Json::Value ret (Json::objectValue);
@@ -3605,6 +3620,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
         {   "get_counts",           &RPCHandler::doGetCounts,           true,   optNone     },
         {   "internal",             &RPCHandler::doInternal,            true,   optNone     },
         {   "feature",              &RPCHandler::doFeature,             true,   optNone     },
+        {   "fetch_info",           &RPCHandler::doFetchInfo,           true,   optNone     },
         {   "ledger",               &RPCHandler::doLedger,              false,  optNetwork  },
         {   "ledger_accept",        &RPCHandler::doLedgerAccept,        true,   optCurrent  },
         {   "ledger_closed",        &RPCHandler::doLedgerClosed,        false,  optClosed   },

@@ -148,6 +148,14 @@ public:
         return true;
     }
 
+    /** Empty the cache
+    */
+    void clear ()
+    {
+        boost::mutex::scoped_lock sl (mNCLock);
+        mCache.clear ();
+    }
+
     /** Remove stale entries from the cache.
     */
     void sweep ()

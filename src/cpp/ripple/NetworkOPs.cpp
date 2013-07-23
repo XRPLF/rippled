@@ -1511,6 +1511,16 @@ Json::Value NetworkOPs::getServerInfo (bool human, bool admin)
     return info;
 }
 
+void NetworkOPs::clearLedgerFetch ()
+{
+    getApp().getInboundLedgers().clearFailures();
+}
+
+Json::Value NetworkOPs::getLedgerFetchInfo ()
+{
+    return getApp().getInboundLedgers().getInfo();
+}
+
 //
 // Monitoring: publisher side
 //

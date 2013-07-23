@@ -56,6 +56,10 @@ public:
         return mRecentFailures.isPresent (h, false);
     }
 
+    void clearFailures();
+
+    Json::Value getInfo();
+
     void gotFetchPack (Job&);
     void sweep ();
 

@@ -263,4 +263,35 @@ void InboundLedgers::gotFetchPack (Job&)
     }
 }
 
+void InboundLedgers::clearFailures ()
+{
+    boost::mutex::scoped_lock sl (mLock);
+
+    mRecentFailures.clear();
+    mLedgers.clear();
+}
+
+Json::Value InboundLedgers::getInfo()
+{
+    Json::Value ret(Json::objectValue);
+    boost::mutex::scoped_lock sl (mLock);
+
+    std::vector<InboundLedger::pointer> acquires;
+    {
+        boost::mutex::scoped_lock sl (mLock);
+
+        acquires.reserve (mLedgers.size ());
+        typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
+        BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
+        acquires.push_back (it.second);
+    }
+
+    BOOST_FOREACH (const InboundLedger::pointer & acquire, acquires)
+    {
+        // WRITEME
+    }
+
+    return ret;
+}
+
 // vim:ts=4
