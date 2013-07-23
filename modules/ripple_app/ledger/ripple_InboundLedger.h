@@ -51,6 +51,10 @@ public:
     {
         mAborted = true;
     }
+    uint32 getSeq ()
+    {
+        return mSeq;
+    }
 
     // VFALCO NOTE what is the meaning of the return value?
     bool setAccept ()

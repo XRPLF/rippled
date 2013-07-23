@@ -276,19 +276,23 @@ Json::Value InboundLedgers::getInfo()
     Json::Value ret(Json::objectValue);
     boost::mutex::scoped_lock sl (mLock);
 
-    std::vector<InboundLedger::pointer> acquires;
+    typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
+    std::vector<u256_acq_pair> acquires;
     {
         boost::mutex::scoped_lock sl (mLock);
 
         acquires.reserve (mLedgers.size ());
-        typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
-        BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
-        acquires.push_back (it.second);
+       BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
+           acquires.push_back (it);
     }
 
-    BOOST_FOREACH (const InboundLedger::pointer & acquire, acquires)
+    BOOST_FOREACH (const u256_acq_pair& it, acquires)
     {
-        // WRITEME
+        uint32 seq = it.second->getSeq();
+        if (seq > 1)
+            ret[boost::lexical_cast<std::string>(seq)] = it.second->getJson(0);
+        else
+            ret[it.first.GetHex()] = it.second->getJson(0);
     }
 
     return ret;

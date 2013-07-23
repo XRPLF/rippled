@@ -857,6 +857,9 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
 Json::Value InboundLedger::getJson (int)
 {
     Json::Value ret (Json::objectValue);
+
+    boost::recursive_mutex::scoped_lock sl (mLock);
+
     ret["hash"] = mHash.GetHex ();
 
     if (mComplete)
