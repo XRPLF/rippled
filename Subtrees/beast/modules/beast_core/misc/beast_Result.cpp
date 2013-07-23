@@ -21,6 +21,8 @@
 */
 //==============================================================================
 
+Result::Result() noexcept {}
+
 Result::Result (const String& message) noexcept
     : errorMessage (message)
 {
@@ -58,11 +60,6 @@ bool Result::operator== (const Result& other) const noexcept
 bool Result::operator!= (const Result& other) const noexcept
 {
     return errorMessage != other.errorMessage;
-}
-
-Result Result::ok() noexcept
-{
-    return Result (String::empty);
 }
 
 Result Result::fail (const String& errorMessage) noexcept

@@ -9,7 +9,7 @@ ConsensusTransSetSF::ConsensusTransSetSF ()
 }
 
 void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNode& id, uint256 const& nodeHash,
-                                   Blob const& nodeData, SHAMapTreeNode::TNType type)
+                                   Blob& nodeData, SHAMapTreeNode::TNType type)
 {
     if (fromFilter)
         return;
@@ -70,7 +70,7 @@ AccountStateSF::AccountStateSF (uint32 ledgerSeq)
 void AccountStateSF::gotNode (bool fromFilter,
                               SHAMapNode const& id,
                               uint256 const& nodeHash,
-                              Blob const& nodeData,
+                              Blob& nodeData,
                               SHAMapTreeNode::TNType)
 {
     getApp().getNodeStore ().store (hotACCOUNT_NODE, mLedgerSeq, nodeData, nodeHash);
@@ -93,7 +93,7 @@ TransactionStateSF::TransactionStateSF (uint32 ledgerSeq)
 void TransactionStateSF::gotNode (bool fromFilter,
                                   SHAMapNode const& id,
                                   uint256 const& nodeHash,
-                                  Blob const& nodeData,
+                                  Blob& nodeData,
                                   SHAMapTreeNode::TNType type)
 {
     getApp().getNodeStore ().store (

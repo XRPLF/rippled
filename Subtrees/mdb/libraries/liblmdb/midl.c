@@ -31,8 +31,7 @@
  */
 #define CMP(x,y)	 ( (x) < (y) ? -1 : (x) > (y) )
 
-#if 0	/* superseded by append/sort */
-static unsigned mdb_midl_search( MDB_IDL ids, MDB_ID id )
+unsigned mdb_midl_search( MDB_IDL ids, MDB_ID id )
 {
 	/*
 	 * binary search of id in ids
@@ -67,6 +66,7 @@ static unsigned mdb_midl_search( MDB_IDL ids, MDB_ID id )
 	return cursor;
 }
 
+#if 0	/* superseded by append/sort */
 int mdb_midl_insert( MDB_IDL ids, MDB_ID id )
 {
 	unsigned x, i;

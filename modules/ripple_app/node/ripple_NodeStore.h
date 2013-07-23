@@ -8,60 +8,282 @@
 #define RIPPLE_NODESTORE_H_INCLUDED
 
 /** Persistency layer for NodeObject
+
+    A Node is a ledger object which is uniquely identified by a key, which is
+    the 256-bit hash of the body of the node. The payload is a variable length
+    block of serialized data.
+
+    All ledger data is stored as node objects and as such, needs to be persisted
+    between launches. Furthermore, since the set of node objects will in
+    general be larger than the amount of available memory, purged node objects
+    which are later accessed must be retrieved from the node store.
+
+    @see NodeObject
 */
-class NodeStore : LeakChecked <NodeStore>
+class NodeStore
 {
 public:
-    /** Back end used for the store.
+    enum
+    {
+        // This is only used to pre-allocate the array for
+        // batch objects and does not affect the amount written.
+        //
+        batchWritePreallocationSize = 128
+    };
+
+    typedef std::vector <NodeObject::Ptr> Batch;
+
+    typedef StringPairArray Parameters;
+
+    //--------------------------------------------------------------------------
+
+    /** Parsed key/value blob into NodeObject components.
+
+        This will extract the information required to construct a NodeObject. It
+        also does consistency checking and returns the result, so it is possible
+        to determine if the data is corrupted without throwing an exception. Not
+        all forms of corruption are detected so further analysis will be needed
+        to eliminate false negatives.
+
+        @note This defines the database format of a NodeObject!
+    */
+    class DecodedBlob
+    {
+    public:
+        /** Construct the decoded blob from raw data. */
+        DecodedBlob (void const* key, void const* value, int valueBytes);
+
+        /** Determine if the decoding was successful. */
+        bool wasOk () const noexcept { return m_success; }
+
+        /** Create a NodeObject from this data. */
+        NodeObject::Ptr createObject ();
+
+    private:
+        bool m_success;
+
+        void const* m_key;
+        LedgerIndex m_ledgerIndex;
+        NodeObjectType m_objectType;
+        unsigned char const* m_objectData;
+        int m_dataBytes;
+    };
+
+    //--------------------------------------------------------------------------
+
+    /** Utility for producing flattened node objects.
+
+        These get recycled to prevent many small allocations.
+
+        @note This defines the database format of a NodeObject!
+    */
+    struct EncodedBlob
+    {
+        typedef RecycledObjectPool <EncodedBlob> Pool;
+
+        void prepare (NodeObject::Ptr const& object);
+
+        void const* getKey () const noexcept { return m_key; }
+
+        size_t getSize () const noexcept { return m_size; }
+
+        void const* getData () const noexcept { return m_data.getData (); }
+
+    private:
+        void const* m_key;
+        MemoryBlock m_data;
+        size_t m_size;
+    };
+
+    //--------------------------------------------------------------------------
+
+    /** Provides optional asynchronous scheduling for backends.
+
+        For improved performance, a backend has the option of performing writes
+        in batches. These writes can be scheduled using the provided scheduler
+        object.
+
+        @see BatchWriter
+    */
+    class Scheduler
+    {
+    public:
+        /** Derived classes perform scheduled tasks. */
+        struct Task
+        {
+            virtual ~Task () { }
+
+            /** Performs the task.
+
+                The call may take place on a foreign thread.
+            */
+            virtual void performScheduledTask () = 0;
+        };
+
+        /** Schedules a task.
+
+            Depending on the implementation, this could happen
+            immediately or get deferred.
+        */
+        virtual void scheduleTask (Task* task) = 0;
+    };
+
+    //--------------------------------------------------------------------------
+
+    /** Helps with batch writing.
+
+        The batch writes are performed with a scheduled task. Use of the
+        class it not required. A backend can implement its own write batching,
+        or skip write batching if doing so yields a performance benefit.
+
+        @see Scheduler
+    */
+    // VFALCO NOTE I'm not entirely happy having placed this here,
+    //             because whoever needs to use NodeStore certainly doesn't
+    //             need to see the implementation details of BatchWriter.
+    //
+    class BatchWriter : private Scheduler::Task
+    {
+    public:
+        /** This callback does the actual writing. */
+        struct Callback
+        {
+            virtual void writeBatch (Batch const& batch) = 0;
+        };
+
+        /** Create a batch writer. */
+        BatchWriter (Callback& callback, Scheduler& scheduler);
+
+        /** Destroy a batch writer.
+
+            Anything pending in the batch is written out before this returns.
+        */
+        ~BatchWriter ();
+
+        /** Store the object.
+
+            This will add to the batch and initiate a scheduled task to
+            write the batch out.
+        */
+        void store (NodeObject::Ptr const& object);
+
+        /** Get an estimate of the amount of writing I/O pending. */
+        int getWriteLoad ();
+
+    private:
+        void performScheduledTask ();
+        void writeBatch ();
+        void waitForWriting ();
+
+    private:
+        typedef boost::recursive_mutex LockType;
+        typedef boost::condition_variable_any CondvarType;
+
+        Callback& m_callback;
+        Scheduler& m_scheduler;
+        LockType mWriteMutex;
+        CondvarType mWriteCondition;
+        int mWriteGeneration;
+        int mWriteLoad;
+        bool mWritePending;
+        Batch mWriteSet;
+    };
+
+    //--------------------------------------------------------------------------
+
+    /** A backend used for the store.
+
+        The NodeStore uses a swappable backend so that other database systems
+        can be tried. Different databases may offer various features such
+        as improved performance, fault tolerant or distributed storage, or
+        all in-memory operation.
+
+        A given instance of a backend is fixed to a particular key size.
     */
     class Backend
     {
     public:
-        // VFALCO TODO Move the function definition to the .cpp
-        Backend ()
-            : mWriteGeneration(0)
-            , mWriteLoad(0)
-            , mWritePending(false)
+        /** Return codes from operations. */
+        enum Status
         {
-            mWriteSet.reserve(128);
-        }
+            ok,
+            notFound,
+            dataCorrupt,
+            unknown
+        };
 
+        /** Destroy the backend.
+
+            All open files are closed and flushed. If there are batched writes
+            or other tasks scheduled, they will be completed before this call
+            returns.
+        */
         virtual ~Backend () { }
 
-        virtual std::string getDataBaseName() = 0;
+        /** Get the human-readable name of this backend.
 
-        // Store/retrieve a single object
-        // These functions must be thread safe
-        virtual bool store (NodeObject::ref);
-        virtual NodeObject::pointer retrieve (uint256 const &hash) = 0;
+            This is used for diagnostic output.
+        */
+        virtual std::string getName() = 0;
 
-        // Store a group of objects
-        // This function will only be called from a single thread
-        virtual bool bulkStore (const std::vector< NodeObject::pointer >&) = 0;
+        /** Fetch a single object.
 
-        // Visit every object in the database
-        // This function will only be called during an import operation
-        //
-        // VFALCO TODO Replace FUNCTION_TYPE with a beast lift.
-        //
-        virtual void visitAll (FUNCTION_TYPE <void (NodeObject::pointer)>) = 0;
+            If the object is not found or an error is encountered, the
+            result will indicate the condition.
 
-        // VFALCO TODO Put this bulk writing logic into a separate class.
-        virtual void bulkWrite (Job &);
-        virtual void waitWrite ();
-        virtual int getWriteLoad ();
+            @note This will be called concurrently.
 
-    protected:
-        // VFALCO TODO Put this bulk writing logic into a separate class.
-        boost::mutex                                 mWriteMutex;
-        boost::condition_variable                    mWriteCondition;
-        int                                          mWriteGeneration;
-        int                                          mWriteLoad;
-        bool                                         mWritePending;
-        std::vector <boost::shared_ptr<NodeObject> > mWriteSet;
+            @param key A pointer to the key data.
+            @param pObject [out] The created object if successful.
+
+            @return The result of the operation.
+        */
+        virtual Status fetch (void const* key, NodeObject::Ptr* pObject) = 0;
+
+        /** Store a single object.
+
+            Depending on the implementation this may happen immediately
+            or deferred using a scheduled task.
+
+            @note This will be called concurrently.
+
+            @param object The object to store.
+        */
+        virtual void store (NodeObject::Ptr const& object) = 0;
+
+        /** Store a group of objects.
+            
+            @note This function will not be called concurrently with
+                  itself or @ref store.
+        */
+        virtual void storeBatch (Batch const& batch) = 0;
+
+        /** Callback for iterating through objects.
+
+            @see visitAll
+        */
+        struct VisitCallback
+        {
+            virtual void visitObject (NodeObject::Ptr const& object) = 0;
+        };
+
+        /** Visit every object in the database
+            
+            This is usually called during import.
+
+            @note This routine will not be called concurrently with itself
+                  or other methods.
+
+            @see import, VisitCallback
+        */
+        virtual void visitAll (VisitCallback& callback) = 0;
+
+        /** Estimate the number of write operations pending. */
+        virtual int getWriteLoad () = 0;
     };
 
-public:
+    //--------------------------------------------------------------------------
+
     /** Factory to produce backends.
     */
     class BackendFactory
@@ -69,67 +291,142 @@ public:
     public:
         virtual ~BackendFactory () { }
 
-        /** Retrieve the name of this factory.
-        */
+        /** Retrieve the name of this factory. */
         virtual String getName () const = 0;
 
         /** Create an instance of this factory's backend.
+            
+            @param keyBytes The fixed number of bytes per key.
+            @param keyValues A set of key/value configuration pairs.
+            @param scheduler The scheduler to use for running tasks.
+
+            @return A pointer to the Backend object.
         */
-        virtual Backend* createInstance (StringPairArray const& keyValues) = 0;
+        virtual Backend* createInstance (size_t keyBytes,
+                                         Parameters const& parameters,
+                                         Scheduler& scheduler) = 0;
     };
 
-public:
+    //--------------------------------------------------------------------------
+
     /** Construct a node store.
 
-        parameters has the format:
+        The parameters are key value pairs passed to the backend. The
+        'type' key must exist, it defines the choice of backend. Most
+        backends also require a 'path' field.
+        
+        Some choices for 'type' are:
+            HyperLevelDB, LevelDB, SQLite, KeyvaDB, MDB
 
-        <key>=<value>['|'<key>=<value>]
+        If the fastBackendParameter is omitted or empty, no ephemeral database
+        is used. If the scheduler parameter is omited or unspecified, a
+        synchronous scheduler is used which performs all tasks immediately on
+        the caller's thread.
 
-        The key "type" must exist, it defines the backend. For example
-            "type=LevelDB|path=/mnt/ephemeral"
+        @note If the database cannot be opened or created, an exception is thrown.
+
+        @param backendParameters The parameter string for the persistent backend.
+        @param fastBackendParameters [optional] The parameter string for the ephemeral backend.                        
+        @param scheduler [optional The scheduler to use for performing asynchronous tasks.
+
+        @return The opened database.
     */
-    // VFALCO NOTE Is cacheSize in bytes? objects? KB?
-    //             Is cacheAge in minutes? seconds?
-    //
-    NodeStore (String backendParameters,
-               String fastBackendParameters,
-               int cacheSize,
-               int cacheAge);
+    static NodeStore* New (Parameters const& backendParameters,
+                           Parameters fastBackendParameters = Parameters (),
+                           Scheduler& scheduler = getSynchronousScheduler ());
+
+    /** Get the synchronous scheduler.
+
+        The synchronous scheduler performs all tasks immediately, before
+        returning to the caller, using the caller's thread.
+    */
+    static Scheduler& getSynchronousScheduler ();
+
+    /** Destroy the node store.
+
+        All pending operations are completed, pending writes flushed,
+        and files closed before this returns.
+    */
+    virtual ~NodeStore () { }
+
+    /** Retrieve the name associated with this backend.
+
+        This is used for diagnostics and may not reflect the actual path
+        or paths used by the underlying backend.
+    */
+    virtual String getName () const = 0;
 
     /** Add the specified backend factory to the list of available factories.
 
         The names of available factories are compared against the "type"
         value in the parameter list on construction.
+
+        @param factory The factory to add.
     */
     static void addBackendFactory (BackendFactory& factory);
 
-    float getCacheHitRate ();
+    /** Fetch an object.
 
-    bool store (NodeObjectType type, uint32 index, Blob const& data,
-                uint256 const& hash);
+        If the object is known to be not in the database, isn't found in the
+        database during the fetch, or failed to load correctly during the fetch,
+        `nullptr` is returned.
 
-    NodeObject::pointer retrieve (uint256 const& hash);
+        @note This can be called concurrently.
 
-    void waitWrite ();
-    void tune (int size, int age);
-    void sweep ();
-    int getWriteLoad ();
+        @param hash The key of the object to retrieve.  
 
-    int import (String sourceBackendParameters);
+        @return The object, or nullptr if it couldn't be retrieved.
+    */
+    virtual NodeObject::pointer fetch (uint256 const& hash) = 0;
 
-private:
-    void importVisitor (std::vector <NodeObject::pointer>& objects, NodeObject::pointer object);
-    
-    static Backend* createBackend (String const& parameters);
+    /** Store the object.
 
-    static Array <BackendFactory*> s_factories;
+        The caller's Blob parameter is overwritten.
 
-private:
-    ScopedPointer <Backend> m_backend;
-    ScopedPointer <Backend> m_fastBackend;
+        @param type The type of object.
+        @param ledgerIndex The ledger in which the object appears.
+        @param data The payload of the object. The caller's
+                    variable is overwritten.
+        @param hash The 256-bit hash of the payload data.
 
-    TaggedCache<uint256, NodeObject, UptimeTimerAdapter>  mCache;
-    KeyCache <uint256, UptimeTimerAdapter> mNegativeCache;
+        @return `true` if the object was stored?              
+    */
+    virtual void store (NodeObjectType type,
+                        uint32 ledgerIndex,
+                        Blob& data,
+                        uint256 const& hash) = 0;
+
+    /** Visit every object in the database
+            
+        This is usually called during import.
+
+        @note This routine will not be called concurrently with itself
+                or other methods.
+
+        @see import
+    */
+    virtual void visitAll (Backend::VisitCallback& callback) = 0;
+
+    /** Import objects from another database. */
+    virtual void import (NodeStore& sourceDatabase) = 0;
+
+
+    /** Retrieve the estimated number of pending write operations.
+
+        This is used for diagnostics.
+    */
+    virtual int getWriteLoad () = 0;
+
+    // VFALCO TODO Document this.
+    virtual float getCacheHitRate () = 0;
+
+    // VFALCO TODO Document this.
+    //        TODO Document the parameter meanings.
+    virtual void tune (int size, int age) = 0;
+
+    // VFALCO TODO Document this.
+    virtual void sweep () = 0;
+
 };
 
 #endif

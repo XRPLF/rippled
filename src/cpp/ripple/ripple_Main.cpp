@@ -141,22 +141,20 @@ public:
 
 /** Run the Beast unit tests.
 */
-static void runBeastUnitTests ()
+static void runBeastUnitTests (std::string const& individualTest = "")
 {
     RippleUnitTests tr;
 
     tr.setAssertOnFailure (false);
     tr.setPassesAreLogged (false);
 
-    tr.runAllTests ();
-
-    // Report
-    for (int i = 0; i < tr.getNumResults (); ++i)
+    if (individualTest.empty ())
     {
-        UnitTests::TestResult const& r (*tr.getResult (i));
-                
-        for (int j = 0; j < r.messages.size (); ++i)
-            Log::out () << r.messages [j].toStdString ();
+        tr.runAllTests ();
+    }
+    else
+    {
+        tr.runTest (individualTest.c_str ());
     }
 }
 
@@ -218,6 +216,15 @@ int rippleMain (int argc, char** argv)
     int iResult = 0;
     po::variables_map   vm;                                     // Map of options.
 
+    String importDescription;
+    {
+        importDescription <<
+            "Import an existing node database (specified in the " <<
+            "[" << ConfigSection::importNodeDatabase () << "] configuration file section) "
+            "into the current node database (specified in the " <<
+            "[" << ConfigSection::nodeDatabase () << "] configuration file section). ";
+    }
+
     // VFALCO TODO Replace boost program options with something from Beast.
     //
     // Set up option parsing.
@@ -232,7 +239,7 @@ int rippleMain (int argc, char** argv)
     ("standalone,a", "Run with no peers.")
     ("testnet,t", "Run in test net mode.")
     ("unittest,u", "Perform unit tests.")
-    ("unittest2", "Perform new unit tests.")
+    ("unittest2", po::value <std::string> ()->implicit_value (""), "Perform new unit tests.")
     ("parameters", po::value< vector<string> > (), "Specify comma separated parameters.")
     ("quiet,q", "Reduce diagnotics.")
     ("verbose,v", "Verbose logging.")
@@ -242,7 +249,7 @@ int rippleMain (int argc, char** argv)
     ("start", "Start from a fresh Ledger.")
     ("net", "Get the initial ledger from the network.")
     ("fg", "Run in the foreground.")
-    ("import", po::value<std::string> (), "Import old DB into new DB.")
+    ("import", importDescription.toStdString ().c_str ())
     ;
 
     // Interpret positional arguments as --parameters.
@@ -250,8 +257,10 @@ int rippleMain (int argc, char** argv)
     p.add ("parameters", -1);
 
     // These must be added before the Application object is created
-    NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
+    NodeStore::addBackendFactory (KeyvaDBBackendFactory::getInstance ());
     NodeStore::addBackendFactory (LevelDBBackendFactory::getInstance ());
+    NodeStore::addBackendFactory (NullBackendFactory::getInstance ());
+    NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
 #if RIPPLE_HYPERLEVELDB_AVAILABLE
     NodeStore::addBackendFactory (HyperLevelDBBackendFactory::getInstance ());
 #endif
@@ -299,7 +308,7 @@ int rippleMain (int argc, char** argv)
     if (HaveSustain () &&
             !iResult && !vm.count ("parameters") && !vm.count ("fg") && !vm.count ("standalone") && !vm.count ("unittest"))
     {
-        std::string logMe = DoSustain (theConfig.DEBUG_LOGFILE.c_str());
+        std::string logMe = DoSustain (theConfig.DEBUG_LOGFILE.string());
 
         if (!logMe.empty ())
             Log (lsWARNING) << logMe;
@@ -331,7 +340,10 @@ int rippleMain (int argc, char** argv)
 
     if (vm.count ("unittest2"))
     {
-        runBeastUnitTests ();
+        std::string const test = vm ["unittest2"].as <std::string> ();
+
+        runBeastUnitTests (test);
+
         return 0;
     }
 
@@ -351,8 +363,14 @@ int rippleMain (int argc, char** argv)
 
     if (vm.count ("start")) theConfig.START_UP = Config::FRESH;
 
+    // Handle a one-time import option
+    //
     if (vm.count ("import"))
-        theConfig.DB_IMPORT = vm["import"].as<std::string> ();
+    {
+        String const optionString (vm ["import"].as <std::string> ());
+
+        theConfig.importNodeDatabase = parseDelimitedKeyValueString (optionString);
+    }
 
     if (vm.count ("ledger"))
     {

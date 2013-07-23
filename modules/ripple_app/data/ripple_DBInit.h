@@ -12,19 +12,11 @@ extern const char* RpcDBInit[];
 extern const char* TxnDBInit[];
 extern const char* LedgerDBInit[];
 extern const char* WalletDBInit[];
-extern const char* HashNodeDBInit[];
 
 // VFALCO TODO Figure out what these counts are for
 extern int RpcDBCount;
 extern int TxnDBCount;
 extern int LedgerDBCount;
 extern int WalletDBCount;
-extern int HashNodeDBCount;
-
-// VFALCO TODO Seems these two aren't used so delete EVERYTHING.
-extern const char* NetNodeDBInit[];
-extern const char* PathFindDBInit[];
-extern int NetNodeDBCount;
-extern int PathFindDBCount;
 
 #endif

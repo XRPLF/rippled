@@ -2,6 +2,12 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
+- Specialize UnsignedInteger<> for peformance in the storage format
+
+- Macro for acquiring a ScopedLock that records file and line.
+
+- Rename HeapBlock routines to not conflict with _CRTDBG_MAP_ALLOC macros
+
 - Design a WeakPtr / SharedPtr / SharedObject intrusive system
 
 - Implement beast::Bimap?

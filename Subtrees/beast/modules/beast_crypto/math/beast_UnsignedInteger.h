@@ -28,7 +28,7 @@
 
     @tparam Bytes The number of bytes of storage.
 */
-template <unsigned int Bytes>
+template <size_t Bytes>
 class UnsignedInteger : public SafeBool <UnsignedInteger <Bytes> > 
 {
 public:
@@ -76,10 +76,10 @@ public:
     template <class IntegerType>
     UnsignedInteger <Bytes>& operator= (IntegerType value)
     {
-        static_bassert (sizeof (Bytes) >= sizeof (IntegerType));
+        static_bassert (Bytes >= sizeof (IntegerType));
         clear ();
         value = ByteOrder::swapIfLittleEndian (value);
-        memcpy (end () - sizeof (value), &value, sizeof (value));
+        memcpy (end () - sizeof (value), &value, bmin (Bytes, sizeof (value)));
         return *this;
     }
 
@@ -234,28 +234,28 @@ public:
     */
     bool operator< (UnsignedInteger <Bytes> const& other) const noexcept
     {
-        return compare (other) == -1;
+        return compare (other) < 0;
     }
 
     /** Ordered comparison.
     */
     bool operator<= (UnsignedInteger <Bytes> const& other) const noexcept
     {
-        return compare (other) != 1;
+        return compare (other) <= 0;
     }
 
     /** Ordered comparison.
     */
     bool operator> (UnsignedInteger <Bytes> const& other) const noexcept
     {
-        return compare (other) == 1;
+        return compare (other) > 0;
     }
 
     /** Ordered comparison.
     */
     bool operator>= (UnsignedInteger <Bytes> const& other) const noexcept
     {
-        return compare (other) != -1;
+        return compare (other) >= 0;
     }
 
     /** Perform bitwise logical-not.

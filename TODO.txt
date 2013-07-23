@@ -2,15 +2,39 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
-- Examples for different backend key/value config settings
+Items marked '*' can be handled by third parties.
 
-- Unit Test attention
 
-- NodeStore backend unit test
-
-- Validations unit test
+Vinnie's Short List (Changes day to day)
+- Make theConfig a SharedSingleton to prevent leak warnings
+- Add fast backend to the unit test
+- Refactor Section code into ConfigFile
+- Change NodeStore config file format to multiline key/value pairs
+- Improved Mutex to track deadlocks
+- Memory NodeStore::Backend for unit tests [*]
+- Finish unit tests and code for Validators
+- Import beast::db and use it in SQliteBackend
+- Convert some Ripple boost unit tests to Beast. [*]
+- Move all code into modules/
+- Work on KeyvaDB
+[*] These can be handled by external developers
 
 --------------------------------------------------------------------------------
+
+- Raise the warning level and fix everything
+
+* Restyle all the macros in ripple_ConfigSection.h
+
+* Replace all throw with beast::Throw
+  Only in the ripple sources, not in Subtrees/ or protobuf or websocket
+
+- Replace base_uint and uintXXX with UnsignedInteger
+  * Need to specialize UnsignedInteger to work efficiently with 4 and 8 byte
+    multiples of the size.
+
+- Rewrite boost program_options in Beast
+
+- Validations unit test
 
 - Replace endian conversion calls with beast calls:
   htobe32, be32toh, ntohl, etc...
@@ -117,8 +141,6 @@ RIPPLE TODO
   or replace with ScopedPointer (preferred)
 
 - Make LevelDB and Ripple code work with both Unicode and non-Unicode Windows APIs
-
-- Raise the warning level and fix everything
 
 - Go searching through VFALCO notes and fix everything
 

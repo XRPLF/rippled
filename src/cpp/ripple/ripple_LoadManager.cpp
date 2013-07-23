@@ -250,6 +250,11 @@ private:
     static void logDeadlock (int dlTime)
     {
         WriteLog (lsWARNING, LoadManager) << "Server stalled for " << dlTime << " seconds.";
+
+        char const* fileName = getApp ().getMasterLock ().getFileName ();
+        int lineNumber = getApp ().getMasterLock ().getLineNumber ();
+
+        WriteLog (lsWARNING, LoadManager) << "Master lock owned by " << File (fileName).getFileName ().toStdString () << ", line " << lineNumber;
     }
 
 private:

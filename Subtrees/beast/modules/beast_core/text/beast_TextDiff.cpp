@@ -177,7 +177,7 @@ String TextDiff::Change::appliedTo (const String& text) const noexcept
 class DiffTests  : public UnitTest
 {
 public:
-    DiffTests() : UnitTest ("TextDiff") {}
+    DiffTests() : UnitTest ("TextDiff", "beast") {}
 
     static String createString()
     {
@@ -229,6 +229,4 @@ public:
     }
 };
 
-#if BEAST_UNIT_TESTS
 static DiffTests diffTests;
-#endif

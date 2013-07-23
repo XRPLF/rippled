@@ -42,47 +42,52 @@ NetworkOPs::NetworkOPs (LedgerMaster* pLedgerMaster)
 
 void NetworkOPs::processNetTimer ()
 {
-    ScopedLock sl (getApp().getMasterLock ());
-
-    getApp().getLoadManager ().resetDeadlockDetector ();
-
-    std::size_t const numPeers = getApp().getPeers ().getPeerVector ().size ();
-
-    // do we have sufficient peers? If not, we are disconnected.
-    if (numPeers < theConfig.NETWORK_QUORUM)
     {
-        if (mMode != omDISCONNECTED)
+        Application::ScopedLockType lock (getApp().getMasterLock (), __FILE__, __LINE__);
+
+        // VFALCO NOTE This is for diagnosing a crash on exit
+        Application& app (getApp ());
+        ILoadManager& mgr (app.getLoadManager ());
+        mgr.resetDeadlockDetector ();
+
+        std::size_t const numPeers = getApp().getPeers ().getPeerVector ().size ();
+
+        // do we have sufficient peers? If not, we are disconnected.
+        if (numPeers < theConfig.NETWORK_QUORUM)
         {
-            setMode (omDISCONNECTED);
-            WriteLog (lsWARNING, NetworkOPs)
-                << "Node count (" << numPeers << ") "
-                << "has fallen below quorum (" << theConfig.NETWORK_QUORUM << ").";
+            if (mMode != omDISCONNECTED)
+            {
+                setMode (omDISCONNECTED);
+                WriteLog (lsWARNING, NetworkOPs)
+                    << "Node count (" << numPeers << ") "
+                    << "has fallen below quorum (" << theConfig.NETWORK_QUORUM << ").";
+            }
+
+            return;
         }
 
-        return;
-    }
+        if (mMode == omDISCONNECTED)
+        {
+            setMode (omCONNECTED);
+            WriteLog (lsINFO, NetworkOPs) << "Node count (" << numPeers << ") is sufficient.";
+        }
 
-    if (mMode == omDISCONNECTED)
-    {
-        setMode (omCONNECTED);
-        WriteLog (lsINFO, NetworkOPs) << "Node count (" << numPeers << ") is sufficient.";
-    }
+        // Check if the last validated ledger forces a change between these states
+        if (mMode == omSYNCING)
+        {
+            setMode (omSYNCING);
+        }
+        else if (mMode == omCONNECTED)
+        {
+            setMode (omCONNECTED);
+        }
 
-    // Check if the last validated ledger forces a change between these states
-    if (mMode == omSYNCING)
-    {
-        setMode (omSYNCING);
-    }
-    else if (mMode == omCONNECTED)
-    {
-        setMode (omCONNECTED);
-    }
+        if (!mConsensus)
+            tryStartConsensus ();
 
-    if (!mConsensus)
-        tryStartConsensus ();
-
-    if (mConsensus)
-        mConsensus->timerEntry ();
+        if (mConsensus)
+            mConsensus->timerEntry ();
+    }
 }
 
 void NetworkOPs::onDeadlineTimer (DeadlineTimer& timer)
@@ -306,71 +311,72 @@ void NetworkOPs::runTransactionQueue ()
         {
             LoadEvent::autoptr ev = getApp().getJobQueue ().getLoadEventAP (jtTXN_PROC, "runTxnQ");
 
-            boost::recursive_mutex::scoped_lock sl (getApp().getMasterLock ());
-
-            Transaction::pointer dbtx = getApp().getMasterTransaction ().fetch (txn->getID (), true);
-            assert (dbtx);
-
-            bool didApply;
-            TER r = mLedgerMaster->doTransaction (dbtx->getSTransaction (),
-                                                  tapOPEN_LEDGER | tapNO_CHECK_SIGN, didApply);
-            dbtx->setResult (r);
-
-            if (isTemMalformed (r)) // malformed, cache bad
-                getApp().getHashRouter ().setFlag (txn->getID (), SF_BAD);
-//            else if (isTelLocal (r) || isTerRetry (r)) // can be retried
-//                getApp().getHashRouter ().setFlag (txn->getID (), SF_RETRY);
-
-
-            if (isTerRetry (r))
             {
-                // transaction should be held
-                WriteLog (lsDEBUG, NetworkOPs) << "QTransaction should be held: " << r;
-                dbtx->setStatus (HELD);
-                getApp().getMasterTransaction ().canonicalize (dbtx);
-                mLedgerMaster->addHeldTransaction (dbtx);
-            }
-            else if (r == tefPAST_SEQ)
-            {
-                // duplicate or conflict
-                WriteLog (lsINFO, NetworkOPs) << "QTransaction is obsolete";
-                dbtx->setStatus (OBSOLETE);
-            }
-            else if (r == tesSUCCESS)
-            {
-                WriteLog (lsINFO, NetworkOPs) << "QTransaction is now included in open ledger";
-                dbtx->setStatus (INCLUDED);
-                getApp().getMasterTransaction ().canonicalize (dbtx);
-            }
-            else
-            {
-                WriteLog (lsDEBUG, NetworkOPs) << "QStatus other than success " << r;
-                dbtx->setStatus (INVALID);
-            }
+                Application::ScopedLockType lock (getApp().getMasterLock (), __FILE__, __LINE__);
 
-//            if (didApply || (mMode != omFULL))
-            if (didApply)
-            {
-                std::set<uint64> peers;
+                Transaction::pointer dbtx = getApp().getMasterTransaction ().fetch (txn->getID (), true);
+                assert (dbtx);
 
-                if (getApp().getHashRouter ().swapSet (txn->getID (), peers, SF_RELAYED))
+                bool didApply;
+                TER r = mLedgerMaster->doTransaction (dbtx->getSTransaction (),
+                                                      tapOPEN_LEDGER | tapNO_CHECK_SIGN, didApply);
+                dbtx->setResult (r);
+
+                if (isTemMalformed (r)) // malformed, cache bad
+                    getApp().getHashRouter ().setFlag (txn->getID (), SF_BAD);
+    //            else if (isTelLocal (r) || isTerRetry (r)) // can be retried
+    //                getApp().getHashRouter ().setFlag (txn->getID (), SF_RETRY);
+
+
+                if (isTerRetry (r))
                 {
-                    WriteLog (lsDEBUG, NetworkOPs) << "relaying";
-                    protocol::TMTransaction tx;
-                    Serializer s;
-                    dbtx->getSTransaction ()->add (s);
-                    tx.set_rawtransaction (&s.getData ().front (), s.getLength ());
-                    tx.set_status (protocol::tsCURRENT);
-                    tx.set_receivetimestamp (getNetworkTimeNC ()); // FIXME: This should be when we received it
-
-                    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tx, protocol::mtTRANSACTION);
-                    getApp().getPeers ().relayMessageBut (peers, packet);
+                    // transaction should be held
+                    WriteLog (lsDEBUG, NetworkOPs) << "QTransaction should be held: " << r;
+                    dbtx->setStatus (HELD);
+                    getApp().getMasterTransaction ().canonicalize (dbtx);
+                    mLedgerMaster->addHeldTransaction (dbtx);
+                }
+                else if (r == tefPAST_SEQ)
+                {
+                    // duplicate or conflict
+                    WriteLog (lsINFO, NetworkOPs) << "QTransaction is obsolete";
+                    dbtx->setStatus (OBSOLETE);
+                }
+                else if (r == tesSUCCESS)
+                {
+                    WriteLog (lsINFO, NetworkOPs) << "QTransaction is now included in open ledger";
+                    dbtx->setStatus (INCLUDED);
+                    getApp().getMasterTransaction ().canonicalize (dbtx);
                 }
                 else
-                    WriteLog(lsDEBUG, NetworkOPs) << "recently relayed";
-            }
+                {
+                    WriteLog (lsDEBUG, NetworkOPs) << "QStatus other than success " << r;
+                    dbtx->setStatus (INVALID);
+                }
 
-            txn->doCallbacks (r);
+                if (didApply /*|| (mMode != omFULL)*/ )
+                {
+                    std::set <uint64> peers;
+
+                    if (getApp().getHashRouter ().swapSet (txn->getID (), peers, SF_RELAYED))
+                    {
+                        WriteLog (lsDEBUG, NetworkOPs) << "relaying";
+                        protocol::TMTransaction tx;
+                        Serializer s;
+                        dbtx->getSTransaction ()->add (s);
+                        tx.set_rawtransaction (&s.getData ().front (), s.getLength ());
+                        tx.set_status (protocol::tsCURRENT);
+                        tx.set_receivetimestamp (getNetworkTimeNC ()); // FIXME: This should be when we received it
+
+                        PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tx, protocol::mtTRANSACTION);
+                        getApp().getPeers ().relayMessageBut (peers, packet);
+                    }
+                    else
+                        WriteLog(lsDEBUG, NetworkOPs) << "recently relayed";
+                }
+
+                txn->doCallbacks (r);
+            }
         }
     }
 
@@ -407,77 +413,79 @@ Transaction::pointer NetworkOPs::processTransaction (Transaction::pointer trans,
         getApp().getHashRouter ().setFlag (trans->getID (), SF_SIGGOOD);
     }
 
-    boost::recursive_mutex::scoped_lock sl (getApp().getMasterLock ());
-    bool didApply;
-    TER r = mLedgerMaster->doTransaction (trans->getSTransaction (),
-                                          bAdmin ? (tapOPEN_LEDGER | tapNO_CHECK_SIGN | tapADMIN) : (tapOPEN_LEDGER | tapNO_CHECK_SIGN), didApply);
-    trans->setResult (r);
+    {
+        Application::ScopedLockType lock (getApp().getMasterLock (), __FILE__, __LINE__);
 
-    if (isTemMalformed (r)) // malformed, cache bad
-        getApp().getHashRouter ().setFlag (trans->getID (), SF_BAD);
-//    else if (isTelLocal (r) || isTerRetry (r)) // can be retried
-//        getApp().getHashRouter ().setFlag (trans->getID (), SF_RETRY);
+        bool didApply;
+        TER r = mLedgerMaster->doTransaction (trans->getSTransaction (),
+                                              bAdmin ? (tapOPEN_LEDGER | tapNO_CHECK_SIGN | tapADMIN) : (tapOPEN_LEDGER | tapNO_CHECK_SIGN), didApply);
+        trans->setResult (r);
+
+        if (isTemMalformed (r)) // malformed, cache bad
+            getApp().getHashRouter ().setFlag (trans->getID (), SF_BAD);
+    //    else if (isTelLocal (r) || isTerRetry (r)) // can be retried
+    //        getApp().getHashRouter ().setFlag (trans->getID (), SF_RETRY);
 
 #ifdef BEAST_DEBUG
-
-    if (r != tesSUCCESS)
-    {
-        std::string token, human;
-        CondLog (transResultInfo (r, token, human), lsINFO, NetworkOPs) << "TransactionResult: " << token << ": " << human;
-    }
+        if (r != tesSUCCESS)
+        {
+            std::string token, human;
+            CondLog (transResultInfo (r, token, human), lsINFO, NetworkOPs) << "TransactionResult: " << token << ": " << human;
+        }
 
 #endif
 
-    if (callback)
-        callback (trans, r);
+        if (callback)
+            callback (trans, r);
 
-    if (r == tefFAILURE)
-        throw Fault (IO_ERROR);
+        if (r == tefFAILURE)
+            throw Fault (IO_ERROR);
 
-    if (r == tesSUCCESS)
-    {
-        WriteLog (lsINFO, NetworkOPs) << "Transaction is now included in open ledger";
-        trans->setStatus (INCLUDED);
-        getApp().getMasterTransaction ().canonicalize (trans);
-    }
-    else if (r == tefPAST_SEQ)
-    {
-        // duplicate or conflict
-        WriteLog (lsINFO, NetworkOPs) << "Transaction is obsolete";
-        trans->setStatus (OBSOLETE);
-    }
-    else if (isTerRetry (r))
-    {
-        if (!bFailHard)
+        if (r == tesSUCCESS)
         {
-                // transaction should be held
-                WriteLog (lsDEBUG, NetworkOPs) << "Transaction should be held: " << r;
-                trans->setStatus (HELD);
-                getApp().getMasterTransaction ().canonicalize (trans);
-                mLedgerMaster->addHeldTransaction (trans);
+            WriteLog (lsINFO, NetworkOPs) << "Transaction is now included in open ledger";
+            trans->setStatus (INCLUDED);
+            getApp().getMasterTransaction ().canonicalize (trans);
         }
-    }
-    else
-    {
-        WriteLog (lsDEBUG, NetworkOPs) << "Status other than success " << r;
-        trans->setStatus (INVALID);
-    }
-
-    if (didApply || ((mMode != omFULL) && !bFailHard))
-    {
-        std::set<uint64> peers;
-
-        if (getApp().getHashRouter ().swapSet (trans->getID (), peers, SF_RELAYED))
+        else if (r == tefPAST_SEQ)
         {
-            protocol::TMTransaction tx;
-            Serializer s;
-            trans->getSTransaction ()->add (s);
-            tx.set_rawtransaction (&s.getData ().front (), s.getLength ());
-            tx.set_status (protocol::tsCURRENT);
-            tx.set_receivetimestamp (getNetworkTimeNC ()); // FIXME: This should be when we received it
+            // duplicate or conflict
+            WriteLog (lsINFO, NetworkOPs) << "Transaction is obsolete";
+            trans->setStatus (OBSOLETE);
+        }
+        else if (isTerRetry (r))
+        {
+            if (!bFailHard)
+            {
+                    // transaction should be held
+                    WriteLog (lsDEBUG, NetworkOPs) << "Transaction should be held: " << r;
+                    trans->setStatus (HELD);
+                    getApp().getMasterTransaction ().canonicalize (trans);
+                    mLedgerMaster->addHeldTransaction (trans);
+            }
+        }
+        else
+        {
+            WriteLog (lsDEBUG, NetworkOPs) << "Status other than success " << r;
+            trans->setStatus (INVALID);
+        }
 
-            PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tx, protocol::mtTRANSACTION);
-            getApp().getPeers ().relayMessageBut (peers, packet);
+        if (didApply || ((mMode != omFULL) && !bFailHard))
+        {
+            std::set<uint64> peers;
+
+            if (getApp().getHashRouter ().swapSet (trans->getID (), peers, SF_RELAYED))
+            {
+                protocol::TMTransaction tx;
+                Serializer s;
+                trans->getSTransaction ()->add (s);
+                tx.set_rawtransaction (&s.getData ().front (), s.getLength ());
+                tx.set_status (protocol::tsCURRENT);
+                tx.set_receivetimestamp (getNetworkTimeNC ()); // FIXME: This should be when we received it
+
+                PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tx, protocol::mtTRANSACTION);
+                getApp().getPeers ().relayMessageBut (peers, packet);
+            }
         }
     }
 
@@ -955,49 +963,53 @@ uint256 NetworkOPs::getConsensusLCL ()
 void NetworkOPs::processTrustedProposal (LedgerProposal::pointer proposal,
         boost::shared_ptr<protocol::TMProposeSet> set, RippleAddress nodePublic, uint256 checkLedger, bool sigGood)
 {
-    boost::recursive_mutex::scoped_lock sl (getApp().getMasterLock ());
-
-    bool relay = true;
-
-    if (!haveConsensusObject ())
     {
-        WriteLog (lsINFO, NetworkOPs) << "Received proposal outside consensus window";
+        Application::ScopedLockType lock (getApp().getMasterLock (), __FILE__, __LINE__);
 
-        if (mMode == omFULL)
-            relay = false;
-    }
-    else
-    {
-        storeProposal (proposal, nodePublic);
+        bool relay = true;
 
-        uint256 consensusLCL = mConsensus->getLCL ();
-
-        if (!set->has_previousledger () && (checkLedger != consensusLCL))
+        if (!haveConsensusObject ())
         {
-            WriteLog (lsWARNING, NetworkOPs) << "Have to re-check proposal signature due to consensus view change";
-            assert (proposal->hasSignature ());
-            proposal->setPrevLedger (consensusLCL);
+            WriteLog (lsINFO, NetworkOPs) << "Received proposal outside consensus window";
 
-            if (proposal->checkSign ())
-                sigGood = true;
+            if (mMode == omFULL)
+                relay = false;
+        }
+        else
+        {
+            storeProposal (proposal, nodePublic);
+
+            uint256 consensusLCL = mConsensus->getLCL ();
+
+            if (!set->has_previousledger () && (checkLedger != consensusLCL))
+            {
+                WriteLog (lsWARNING, NetworkOPs) << "Have to re-check proposal signature due to consensus view change";
+                assert (proposal->hasSignature ());
+                proposal->setPrevLedger (consensusLCL);
+
+                if (proposal->checkSign ())
+                    sigGood = true;
+            }
+
+            if (sigGood && (consensusLCL == proposal->getPrevLedger ()))
+            {
+                relay = mConsensus->peerPosition (proposal);
+                WriteLog (lsTRACE, NetworkOPs) << "Proposal processing finished, relay=" << relay;
+            }
         }
 
-        if (sigGood && (consensusLCL == proposal->getPrevLedger ()))
+        if (relay)
         {
-            relay = mConsensus->peerPosition (proposal);
-            WriteLog (lsTRACE, NetworkOPs) << "Proposal processing finished, relay=" << relay;
+            std::set<uint64> peers;
+            getApp().getHashRouter ().swapSet (proposal->getHashRouter (), peers, SF_RELAYED);
+            PackedMessage::pointer message = boost::make_shared<PackedMessage> (*set, protocol::mtPROPOSE_LEDGER);
+            getApp().getPeers ().relayMessageBut (peers, message);
+        }
+        else
+        {
+            WriteLog (lsINFO, NetworkOPs) << "Not relaying trusted proposal";
         }
     }
-
-    if (relay)
-    {
-        std::set<uint64> peers;
-        getApp().getHashRouter ().swapSet (proposal->getHashRouter (), peers, SF_RELAYED);
-        PackedMessage::pointer message = boost::make_shared<PackedMessage> (*set, protocol::mtPROPOSE_LEDGER);
-        getApp().getPeers ().relayMessageBut (peers, message);
-    }
-    else
-        WriteLog (lsINFO, NetworkOPs) << "Not relaying trusted proposal";
 }
 
 SHAMap::pointer NetworkOPs::getTXMap (uint256 const& hash)
@@ -1039,8 +1051,10 @@ SHAMapAddNode NetworkOPs::gotTXData (const boost::shared_ptr<Peer>& peer, uint25
 {
 
     boost::shared_ptr<LedgerConsensus> consensus;
+
     {
-        ScopedLock mlh(getApp().getMasterLock());
+        Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
+
         consensus = mConsensus;
     }
 

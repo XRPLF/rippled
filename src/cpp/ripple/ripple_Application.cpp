@@ -16,6 +16,7 @@ class ApplicationImp
     : public Application
     , public SharedSingleton <ApplicationImp>
     , public Validators::Listener
+    , public NodeStore::Scheduler
     , LeakChecked <ApplicationImp>
 {
 public:
@@ -43,17 +44,17 @@ public:
     #endif
         , mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
         , mIOWork (mIOService)
-        , mNetOps (&mLedgerMaster)
-        , m_rpcServerHandler (mNetOps)
+        , mNetOps (new NetworkOPs (&mLedgerMaster))
+        , m_rpcServerHandler (*mNetOps)
         , mTempNodeCache ("NodeCache", 16384, 90)
-        , m_nodeStore (
-            theConfig.NODE_DB,
-            theConfig.FASTNODE_DB,
-            16384, 300)
         , mSLECache ("LedgerEntryCache", 4096, 120)
         , mSNTPClient (mAuxService)
         , mJobQueue (mIOService)
         // VFALCO New stuff
+        , m_nodeStore (NodeStore::New (
+            theConfig.nodeDatabase,
+            theConfig.ephemeralNodeDatabase,
+            *this))
         , m_validators (Validators::New (this))
         , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
         , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
@@ -70,11 +71,6 @@ public:
         , mTxnDB (NULL)
         , mLedgerDB (NULL)
         , mWalletDB (NULL) // VFALCO NOTE are all these 'NULL' ctor params necessary?
-        , mNetNodeDB (NULL)
-        , mPathFindDB (NULL)
-        , mHashNodeDB (NULL)
-        , mHashNodeLDB (NULL)
-        , mEphemeralLDB (NULL)
         , mPeerDoor (NULL)
         , mRPCDoor (NULL)
         , mWSPublicDoor (NULL)
@@ -88,89 +84,101 @@ public:
 
     ~ApplicationImp ()
     {
+        mNetOps = nullptr;
+
         // VFALCO TODO Wrap these in ScopedPointer
         delete mTxnDB;
         delete mLedgerDB;
         delete mWalletDB;
-        delete mHashNodeDB;
-        delete mNetNodeDB;
-        delete mPathFindDB;
-        delete mHashNodeLDB;
-
-        if (mEphemeralLDB != nullptr)
-            delete mEphemeralLDB;
     }
+
+    //--------------------------------------------------------------------------
+
+    static void callScheduledTask (NodeStore::Scheduler::Task* task, Job&)
+    {
+        task->performScheduledTask ();
+    }
+
+    void scheduleTask (NodeStore::Scheduler::Task* task)
+    {
+        getJobQueue ().addJob (
+            jtWRITE,
+            "NodeObject::store",
+            BIND_TYPE (&ApplicationImp::callScheduledTask, task, P_1));
+    }
+
+    //--------------------------------------------------------------------------
 
     LocalCredentials& getLocalCredentials ()
     {
         return m_localCredentials ;
     }
- 
+
     NetworkOPs& getOPs ()
     {
-        return mNetOps;
+        return *mNetOps;
     }
 
     boost::asio::io_service& getIOService ()
     {
         return mIOService;
     }
-    
+
     LedgerMaster& getLedgerMaster ()
     {
         return mLedgerMaster;
     }
-    
+
     InboundLedgers& getInboundLedgers ()
     {
         return m_inboundLedgers;
     }
-    
+
     TransactionMaster& getMasterTransaction ()
     {
         return mMasterTransaction;
     }
-    
+
     NodeCache& getTempNodeCache ()
     {
         return mTempNodeCache;
     }
-    
+
     NodeStore& getNodeStore ()
     {
-        return m_nodeStore;
+        return *m_nodeStore;
     }
-    
+
     JobQueue& getJobQueue ()
     {
         return mJobQueue;
     }
-    
-    boost::recursive_mutex& getMasterLock ()
+
+    MasterLockType& getMasterLock ()
     {
         return mMasterLock;
     }
-    
+
     ILoadManager& getLoadManager ()
     {
         return *m_loadManager;
     }
-    
+
     TXQueue& getTxnQueue ()
     {
         return mTxnQueue;
     }
-    
+
     PeerDoor& getPeerDoor ()
     {
         return *mPeerDoor;
     }
-    
+
     OrderBookDB& getOrderBookDB ()
     {
         return mOrderBookDB;
     }
-    
+
     SLECache& getSLECache ()
     {
         return mSLECache;
@@ -185,37 +193,37 @@ public:
     {
         return *mFeatures;
     }
-    
+
     ILoadFeeTrack& getFeeTrack ()
     {
         return *mFeeTrack;
     }
-    
+
     IFeeVote& getFeeVote ()
     {
         return *mFeeVote;
     }
-    
+
     IHashRouter& getHashRouter ()
     {
         return *mHashRouter;
     }
-    
+
     IValidations& getValidations ()
     {
         return *mValidations;
     }
-    
+
     UniqueNodeList& getUNL ()
     {
         return *mUNL;
     }
-    
+
     IProofOfWorkFactory& getProofOfWorkFactory ()
     {
         return *mProofOfWorkFactory;
     }
-    
+
     IPeers& getPeers ()
     {
         return *mPeers;
@@ -247,27 +255,6 @@ public:
     {
         return mWalletDB;
     }
-    DatabaseCon* getNetNodeDB ()
-    {
-        return mNetNodeDB;
-    }
-    DatabaseCon* getPathFindDB ()
-    {
-        return mPathFindDB;
-    }
-    DatabaseCon* getHashNodeDB ()
-    {
-        return mHashNodeDB;
-    }
-
-    leveldb::DB* getHashNodeLDB ()
-    {
-        return mHashNodeLDB;
-    }
-    leveldb::DB* getEphemeralLDB ()
-    {
-        return mEphemeralLDB;
-    }
 
     bool isShutdown ()
     {
@@ -293,16 +280,15 @@ private:
     //
     boost::asio::io_service::work mIOWork;
 
-    boost::recursive_mutex  mMasterLock;
+    MasterLockType mMasterLock;
 
     LocalCredentials   m_localCredentials;
     LedgerMaster       mLedgerMaster;
     InboundLedgers     m_inboundLedgers;
     TransactionMaster  mMasterTransaction;
-    NetworkOPs         mNetOps;
+    ScopedPointer <NetworkOPs> mNetOps;
     RPCServerHandler   m_rpcServerHandler;
     NodeCache          mTempNodeCache;
-    NodeStore  m_nodeStore;
     SLECache           mSLECache;
     SNTPClient         mSNTPClient;
     JobQueue           mJobQueue;
@@ -310,29 +296,23 @@ private:
     OrderBookDB        mOrderBookDB;
 
     // VFALCO Clean stuff
-    beast::ScopedPointer <Validators> m_validators;
-    beast::ScopedPointer <IFeatures> mFeatures;
-    beast::ScopedPointer <IFeeVote> mFeeVote;
-    beast::ScopedPointer <ILoadFeeTrack> mFeeTrack;
-    beast::ScopedPointer <IHashRouter> mHashRouter;
-    beast::ScopedPointer <IValidations> mValidations;
-    beast::ScopedPointer <UniqueNodeList> mUNL;
-    beast::ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
-    beast::ScopedPointer <IPeers> mPeers;
-    beast::ScopedPointer <ILoadManager> m_loadManager;
+    ScopedPointer <NodeStore> m_nodeStore;
+    ScopedPointer <Validators> m_validators;
+    ScopedPointer <IFeatures> mFeatures;
+    ScopedPointer <IFeeVote> mFeeVote;
+    ScopedPointer <ILoadFeeTrack> mFeeTrack;
+    ScopedPointer <IHashRouter> mHashRouter;
+    ScopedPointer <IValidations> mValidations;
+    ScopedPointer <UniqueNodeList> mUNL;
+    ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
+    ScopedPointer <IPeers> mPeers;
+    ScopedPointer <ILoadManager> m_loadManager;
     // VFALCO End Clean stuff
 
     DatabaseCon* mRpcDB;
     DatabaseCon* mTxnDB;
     DatabaseCon* mLedgerDB;
     DatabaseCon* mWalletDB;
-    DatabaseCon* mNetNodeDB;
-    DatabaseCon* mPathFindDB;
-    DatabaseCon* mHashNodeDB;
-
-    // VFALCO TODO Wrap this in an interface
-    leveldb::DB* mHashNodeLDB;
-    leveldb::DB* mEphemeralLDB;
 
     ScopedPointer <PeerDoor> mPeerDoor;
     ScopedPointer <RPCDoor>  mRPCDoor;
@@ -353,18 +333,10 @@ void ApplicationImp::stop ()
     StopSustain ();
     mShutdown = true;
     mIOService.stop ();
-    // VFALCO TODO We shouldn't have to explicitly call this function.
-    //             The NodeStore destructor should take care of it.
-    m_nodeStore.waitWrite ();
+    m_nodeStore = nullptr;
     mValidations->flush ();
     mAuxService.stop ();
     mJobQueue.shutdown ();
-
-    delete mHashNodeLDB;
-    mHashNodeLDB = NULL;
-
-    delete mEphemeralLDB;
-    mEphemeralLDB = NULL;
 
     WriteLog (lsINFO, Application) << "Stopped: " << mIOService.stopped ();
     mShutdown = false;
@@ -427,7 +399,7 @@ void ApplicationImp::setup ()
 
     if (!theConfig.DEBUG_LOGFILE.empty ())
     {
-        // Let BEAST_DEBUG messages go to the file but only WARNING or higher to regular output (unless verbose)
+        // Let debug messages go to the file but only WARNING or higher to regular output (unless verbose)
         Log::setLogFile (theConfig.DEBUG_LOGFILE);
 
         if (Log::getMinSeverity () > lsDEBUG)
@@ -445,16 +417,11 @@ void ApplicationImp::setup ()
     boost::thread t1 (BIND_TYPE (&InitDB, &mRpcDB, "rpc.db", RpcDBInit, RpcDBCount));
     boost::thread t2 (BIND_TYPE (&InitDB, &mTxnDB, "transaction.db", TxnDBInit, TxnDBCount));
     boost::thread t3 (BIND_TYPE (&InitDB, &mLedgerDB, "ledger.db", LedgerDBInit, LedgerDBCount));
+    boost::thread t4 (BIND_TYPE (&InitDB, &mWalletDB, "wallet.db", WalletDBInit, WalletDBCount));
     t1.join ();
     t2.join ();
     t3.join ();
-
-    boost::thread t4 (BIND_TYPE (&InitDB, &mWalletDB, "wallet.db", WalletDBInit, WalletDBCount));
-    boost::thread t6 (BIND_TYPE (&InitDB, &mNetNodeDB, "netnode.db", NetNodeDBInit, NetNodeDBCount));
-    boost::thread t7 (BIND_TYPE (&InitDB, &mPathFindDB, "pathfind.db", PathFindDBInit, PathFindDBCount));
     t4.join ();
-    t6.join ();
-    t7.join ();
 
     leveldb::Options options;
     options.create_if_missing = true;
@@ -493,7 +460,7 @@ void ApplicationImp::setup ()
     {
         // This should probably become the default once we have a stable network
         if (!theConfig.RUN_STANDALONE)
-            mNetOps.needNetworkLedger ();
+            mNetOps->needNetworkLedger ();
 
         startNewLedger ();
     }
@@ -515,7 +482,7 @@ void ApplicationImp::setup ()
         getUNL ().nodeBootstrap ();
 
     mValidations->tune (theConfig.getSize (siValidationsSize), theConfig.getSize (siValidationsAge));
-    m_nodeStore.tune (theConfig.getSize (siNodeCacheSize), theConfig.getSize (siNodeCacheAge));
+    m_nodeStore->tune (theConfig.getSize (siNodeCacheSize), theConfig.getSize (siNodeCacheAge));
     mLedgerMaster.tune (theConfig.getSize (siLedgerSize), theConfig.getSize (siLedgerAge));
     mSLECache.setTargetSize (theConfig.getSize (siSLECacheSize));
     mSLECache.setTargetAge (theConfig.getSize (siSLECacheAge));
@@ -624,13 +591,13 @@ void ApplicationImp::setup ()
     {
         WriteLog (lsWARNING, Application) << "Running in standalone mode";
 
-        mNetOps.setStandAlone ();
+        mNetOps->setStandAlone ();
     }
     else
     {
         // VFALCO NOTE the state timer resets the deadlock detector.
         //
-        mNetOps.setStateTimer ();
+        mNetOps->setStateTimer ();
     }
 }
 
@@ -646,7 +613,7 @@ void ApplicationImp::run ()
         // VFALCO NOTE This seems unnecessary. If we properly refactor the load
         //             manager then the deadlock detector can just always be "armed"
         //
-	    getApp().getLoadManager ().activateDeadlockDetector ();
+        getApp().getLoadManager ().activateDeadlockDetector ();
     }
 
     mIOService.run (); // This blocks
@@ -697,7 +664,7 @@ void ApplicationImp::doSweep(Job& j)
     //
 
     mMasterTransaction.sweep ();
-    m_nodeStore.sweep ();
+    m_nodeStore->sweep ();
     mLedgerMaster.sweep ();
     mTempNodeCache.sweep ();
     mValidations->sweep ();
@@ -705,8 +672,8 @@ void ApplicationImp::doSweep(Job& j)
     mSLECache.sweep ();
     AcceptedLedger::sweep (); // VFALCO NOTE AcceptedLedger is/has a singleton?
     SHAMap::sweep (); // VFALCO NOTE SHAMap is/has a singleton?
-    mNetOps.sweepFetchPack ();
-
+    mNetOps->sweepFetchPack ();
+    // VFALCO NOTE does the call to sweep() happen on another thread?
     mSweepTimer.expires_from_now (boost::posix_time::seconds (theConfig.getSize (siSweepInterval)));
     mSweepTimer.async_wait (BIND_TYPE (&ApplicationImp::sweep, this));
 }
@@ -737,7 +704,7 @@ void ApplicationImp::startNewLedger ()
         secondLedger->setAccepted ();
         mLedgerMaster.pushLedger (secondLedger, boost::make_shared<Ledger> (true, boost::ref (*secondLedger)), false);
         assert (!!secondLedger->getAccountState (rootAddress));
-        mNetOps.setLastCloseTime (secondLedger->getCloseTimeNC ());
+        mNetOps->setLastCloseTime (secondLedger->getCloseTimeNC ());
     }
 }
 
@@ -805,7 +772,7 @@ bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
         Ledger::pointer openLedger = boost::make_shared<Ledger> (false, boost::ref (*loadLedger));
         mLedgerMaster.switchLedgers (loadLedger, openLedger);
         mLedgerMaster.forceValid(loadLedger);
-        mNetOps.setLastCloseTime (loadLedger->getCloseTimeNC ());
+        mNetOps->setLastCloseTime (loadLedger->getCloseTimeNC ());
 
         if (bReplay)
         { // inject transaction from replayLedger into consensus set
@@ -988,15 +955,9 @@ static void addTxnSeqField ()
 
 void ApplicationImp::updateTables ()
 {
-    if (theConfig.NODE_DB.empty ())
+    if (theConfig.nodeDatabase.size () <= 0)
     {
-        Log (lsFATAL) << "The NODE_DB configuration setting MUST be set";
-        StopSustain ();
-        exit (1);
-    }
-    else if (theConfig.NODE_DB == "LevelDB" || theConfig.NODE_DB == "SQLite")
-    {
-        Log (lsFATAL) << "The NODE_DB setting has been updated, your value is out of date";
+        Log (lsFATAL) << "The [node_db] configuration setting has been updated and must be set";
         StopSustain ();
         exit (1);
     }
@@ -1013,8 +974,16 @@ void ApplicationImp::updateTables ()
         exit (1);
     }
 
-    if (!theConfig.DB_IMPORT.empty())
-    	getApp().getNodeStore().import(theConfig.DB_IMPORT);
+    if (theConfig.importNodeDatabase.size () > 0)
+    {
+        ScopedPointer <NodeStore> source (NodeStore::New (theConfig.importNodeDatabase));
+
+        WriteLog (lsWARNING, NodeObject) <<
+            "Node import from '" << source->getName () << "' to '"
+                                 << getApp().getNodeStore().getName () << "'.";
+
+        getApp().getNodeStore().import (*source);
+    }
 }
 
 //------------------------------------------------------------------------------

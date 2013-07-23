@@ -6,118 +6,208 @@
 
 #if RIPPLE_HYPERLEVELDB_AVAILABLE
 
-class HyperLevelDBBackendFactory::Backend : public NodeStore::Backend
+class HyperLevelDBBackendFactory::Backend
+    : public NodeStore::Backend
+    , public NodeStore::BatchWriter::Callback
+    , LeakChecked <HyperLevelDBBackendFactory::Backend>
 {
 public:
-    Backend (StringPairArray const& keyValues)
-        : mName(keyValues ["path"].toStdString ())
-        , mDB(NULL)
+    typedef RecycledObjectPool <std::string> StringPool;
+
+    Backend (size_t keyBytes,
+             StringPairArray const& keyValues,
+             NodeStore::Scheduler& scheduler)
+        : m_keyBytes (keyBytes)
+        , m_scheduler (scheduler)
+        , m_batch (*this, scheduler)
+        , m_name (keyValues ["path"].toStdString ())
     {
-        if (mName.empty())
-            throw std::runtime_error ("Missing path in LevelDB backend");
+        if (m_name.empty ())
+            Throw (std::runtime_error ("Missing path in LevelDB backend"));
 
         hyperleveldb::Options options;
         options.create_if_missing = true;
 
-        if (keyValues["cache_mb"].isEmpty())
+        if (keyValues ["cache_mb"].isEmpty ())
+        {
             options.block_cache = hyperleveldb::NewLRUCache (theConfig.getSize (siHashNodeDBCache) * 1024 * 1024);
+        }
         else
+        {
             options.block_cache = hyperleveldb::NewLRUCache (keyValues["cache_mb"].getIntValue() * 1024L * 1024L);
+        }
 
-        if (keyValues["filter_bits"].isEmpty())
+        if (keyValues ["filter_bits"].isEmpty())
         {
             if (theConfig.NODE_SIZE >= 2)
                 options.filter_policy = hyperleveldb::NewBloomFilterPolicy (10);
         }
-        else if (keyValues["filter_bits"].getIntValue() != 0)
-            options.filter_policy = hyperleveldb::NewBloomFilterPolicy (keyValues["filter_bits"].getIntValue());
+        else if (keyValues ["filter_bits"].getIntValue() != 0)
+        {
+            options.filter_policy = hyperleveldb::NewBloomFilterPolicy (keyValues ["filter_bits"].getIntValue ());
+        }
 
-        if (!keyValues["open_files"].isEmpty())
-            options.max_open_files = keyValues["open_files"].getIntValue();
+        if (! keyValues["open_files"].isEmpty ())
+        {
+            options.max_open_files = keyValues ["open_files"].getIntValue();
+        }
 
-        hyperleveldb::Status status = hyperleveldb::DB::Open (options, mName, &mDB);
-        if (!status.ok () || !mDB)
-            throw (std::runtime_error (std::string("Unable to open/create leveldb: ") + status.ToString()));
+        hyperleveldb::DB* db = nullptr;
+        hyperleveldb::Status status = hyperleveldb::DB::Open (options, m_name, &db);
+        if (!status.ok () || !db)
+            Throw (std::runtime_error (std::string("Unable to open/create leveldb: ") + status.ToString()));
+
+        m_db = db;
     }
 
     ~Backend ()
     {
-        delete mDB;
     }
 
-    std::string getDataBaseName()
+    std::string getName()
     {
-        return mName;
+        return m_name;
     }
 
-    bool bulkStore (const std::vector< NodeObject::pointer >& objs)
-    {
-        hyperleveldb::WriteBatch batch;
+    //--------------------------------------------------------------------------
 
-        BOOST_FOREACH (NodeObject::ref obj, objs)
+    Status fetch (void const* key, NodeObject::Ptr* pObject)
+    {
+        pObject->reset ();
+
+        Status status (ok);
+
+        hyperleveldb::ReadOptions const options;
+        hyperleveldb::Slice const slice (static_cast <char const*> (key), m_keyBytes);
+
         {
-            Blob blob (toBlob (obj));
-            batch.Put (
-                hyperleveldb::Slice (reinterpret_cast<char const*>(obj->getHash ().begin ()), 256 / 8),
-                hyperleveldb::Slice (reinterpret_cast<char const*>(&blob.front ()), blob.size ()));
+            // These are reused std::string objects,
+            // required for leveldb's funky interface.
+            //
+            StringPool::ScopedItem item (m_stringPool);
+            std::string& string = item.getObject ();
+
+            hyperleveldb::Status getStatus = m_db->Get (options, slice, &string);
+
+            if (getStatus.ok ())
+            {
+                NodeStore::DecodedBlob decoded (key, string.data (), string.size ());
+
+                if (decoded.wasOk ())
+                {
+                    *pObject = decoded.createObject ();
+                }
+                else
+                {
+                    // Decoding failed, probably corrupted!
+                    //
+                    status = dataCorrupt;
+                }
+            }
+            else
+            {
+                if (getStatus.IsCorruption ())
+                {
+                    status = dataCorrupt;
+                }
+                else if (getStatus.IsNotFound ())
+                {
+                    status = notFound;
+                }
+                else
+                {
+                    status = unknown;
+                }
+            }
         }
-        return mDB->Write (hyperleveldb::WriteOptions (), &batch).ok ();
+
+        return status;
     }
 
-    NodeObject::pointer retrieve (uint256 const& hash)
+    void store (NodeObject::ref object)
     {
-        std::string sData;
-        if (!mDB->Get (hyperleveldb::ReadOptions (),
-            hyperleveldb::Slice (reinterpret_cast<char const*>(hash.begin ()), 256 / 8), &sData).ok ())
+        m_batch.store (object);
+    }
+
+    void storeBatch (NodeStore::Batch const& batch)
+    {
+        hyperleveldb::WriteBatch wb;
+
         {
-            return NodeObject::pointer();
+            NodeStore::EncodedBlob::Pool::ScopedItem item (m_blobPool);
+
+            BOOST_FOREACH (NodeObject::ref object, batch)
+            {
+                item.getObject ().prepare (object);
+
+                wb.Put (
+                    hyperleveldb::Slice (reinterpret_cast <char const*> (
+                        item.getObject ().getKey ()), m_keyBytes),
+                    hyperleveldb::Slice (reinterpret_cast <char const*> (
+                        item.getObject ().getData ()), item.getObject ().getSize ()));
+            }
         }
-        return fromBinary(hash, &sData[0], sData.size ());
+
+        hyperleveldb::WriteOptions const options;
+
+        m_db->Write (options, &wb).ok ();
     }
 
-    void visitAll (FUNCTION_TYPE<void (NodeObject::pointer)> func)
+    void visitAll (VisitCallback& callback)
     {
-        hyperleveldb::Iterator* it = mDB->NewIterator (hyperleveldb::ReadOptions ());
+        hyperleveldb::ReadOptions const options;
+
+        ScopedPointer <hyperleveldb::Iterator> it (m_db->NewIterator (options));
+
         for (it->SeekToFirst (); it->Valid (); it->Next ())
         {
-            if (it->key ().size () == 256 / 8)
+            if (it->key ().size () == m_keyBytes)
             {
-                uint256 hash;
-                memcpy(hash.begin(), it->key ().data(), 256 / 8);
-                func (fromBinary (hash, it->value ().data (), it->value ().size ()));
+                NodeStore::DecodedBlob decoded (it->key ().data (),
+                                                it->value ().data (),
+                                                it->value ().size ());
+
+                if (decoded.wasOk ())
+                {
+                    NodeObject::Ptr object (decoded.createObject ());
+
+                    callback.visitObject (object);
+                }
+                else
+                {
+                    // Uh oh, corrupted data!
+                    WriteLog (lsFATAL, NodeObject) << "Corrupt NodeObject #" << uint256 (it->key ().data ());
+                }
+            }
+            else
+            {
+                // VFALCO NOTE What does it mean to find an
+                //             incorrectly sized key? Corruption?
+                WriteLog (lsFATAL, NodeObject) << "Bad key size = " << it->key ().size ();
             }
         }
     }
 
-    Blob toBlob(NodeObject::ref obj)
+    int getWriteLoad ()
     {
-        Blob rawData (9 + obj->getData ().size ());
-        unsigned char* bufPtr = &rawData.front();
-
-        *reinterpret_cast<uint32*> (bufPtr + 0) = ntohl (obj->getIndex ());
-        *reinterpret_cast<uint32*> (bufPtr + 4) = ntohl (obj->getIndex ());
-        * (bufPtr + 8) = static_cast<unsigned char> (obj->getType ());
-        memcpy (bufPtr + 9, &obj->getData ().front (), obj->getData ().size ());
-
-        return rawData;
+        return m_batch.getWriteLoad ();
     }
 
-    NodeObject::pointer fromBinary(uint256 const& hash,
-        char const* data, int size)
+    //--------------------------------------------------------------------------
+
+    void writeBatch (NodeStore::Batch const& batch)
     {
-        if (size < 9)
-            throw std::runtime_error ("undersized object");
-
-        uint32 index = htonl (*reinterpret_cast<const uint32*> (data));
-        int htype = data[8];
-
-        return boost::make_shared<NodeObject> (static_cast<NodeObjectType> (htype), index,
-            data + 9, size - 9, hash);
+        storeBatch (batch);
     }
 
 private:
-    std::string mName;
-    hyperleveldb::DB* mDB;
+    size_t const m_keyBytes;
+    NodeStore::Scheduler& m_scheduler;
+    NodeStore::BatchWriter m_batch;
+    StringPool m_stringPool;
+    NodeStore::EncodedBlob::Pool m_blobPool;
+    std::string m_name;
+    ScopedPointer <hyperleveldb::DB> m_db;
 };
 
 //------------------------------------------------------------------------------
@@ -142,9 +232,12 @@ String HyperLevelDBBackendFactory::getName () const
     return "HyperLevelDB";
 }
 
-NodeStore::Backend* HyperLevelDBBackendFactory::createInstance (StringPairArray const& keyValues)
+NodeStore::Backend* HyperLevelDBBackendFactory::createInstance (
+    size_t keyBytes,
+    StringPairArray const& keyValues,
+    NodeStore::Scheduler& scheduler)
 {
-    return new HyperLevelDBBackendFactory::Backend (keyValues);
+    return new HyperLevelDBBackendFactory::Backend (keyBytes, keyValues, scheduler);
 }
 
 //------------------------------------------------------------------------------

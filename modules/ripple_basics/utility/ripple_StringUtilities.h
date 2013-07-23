@@ -214,8 +214,12 @@ bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& s
 */
 extern std::string addressToString (void const* address);
 
-/** Parse a pipe delimited key/value parameter string.
+/** Create a Parameters from a String.
+
+    Parameter strings have the format:
+
+    <key>=<value>['|'<key>=<value>]
 */
-StringPairArray parseKeyValueParameters (String parameters, beast_wchar delimiter);
+extern StringPairArray parseDelimitedKeyValueString (String s, beast_wchar delimiter='|');
 
 #endif

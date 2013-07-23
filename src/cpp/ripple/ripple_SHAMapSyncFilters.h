@@ -17,10 +17,11 @@ class ConsensusTransSetSF : public SHAMapSyncFilter
 public:
     ConsensusTransSetSF ();
 
+    // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
                   SHAMapNode const& id,
                   uint256 const& nodeHash,
-                  Blob const& nodeData,
+                  Blob& nodeData,
                   SHAMapTreeNode::TNType);
 
     bool haveNode (SHAMapNode const& id,
@@ -35,10 +36,11 @@ class AccountStateSF : public SHAMapSyncFilter
 public:
     explicit AccountStateSF (uint32 ledgerSeq);
 
+    // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
                   SHAMapNode const& id,
                   uint256 const& nodeHash,
-                  Blob const& nodeData,
+                  Blob& nodeData,
                   SHAMapTreeNode::TNType);
 
     bool haveNode (SHAMapNode const& id,
@@ -56,10 +58,11 @@ class TransactionStateSF : public SHAMapSyncFilter
 public:
     explicit TransactionStateSF (uint32 ledgerSeq);
 
+    // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
                   SHAMapNode const& id,
                   uint256 const& nodeHash,
-                  Blob const& nodeData,
+                  Blob& nodeData,
                   SHAMapTreeNode::TNType);
 
     bool haveNode (SHAMapNode const& id,

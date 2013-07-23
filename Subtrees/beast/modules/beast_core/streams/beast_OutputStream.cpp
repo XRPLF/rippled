@@ -61,48 +61,69 @@ OutputStream::~OutputStream()
 }
 
 //==============================================================================
-void OutputStream::writeBool (const bool b)
+bool OutputStream::writeBool (const bool b)
 {
-    writeByte (b ? (char) 1
-                 : (char) 0);
+    return writeByte (b ? (char) 1
+                        : (char) 0);
 }
 
-void OutputStream::writeByte (char byte)
+bool OutputStream::writeByte (char byte)
 {
-    write (&byte, 1);
+    return write (&byte, 1);
 }
 
-void OutputStream::writeRepeatedByte (uint8 byte, size_t numTimesToRepeat)
+bool OutputStream::writeRepeatedByte (uint8 byte, size_t numTimesToRepeat)
 {
     for (size_t i = 0; i < numTimesToRepeat; ++i)
-        writeByte ((char) byte);
+        if (! writeByte ((char) byte))
+            return false;
+
+    return true;
 }
 
-void OutputStream::writeShort (short value)
+bool OutputStream::writeShort (short value)
 {
     const unsigned short v = ByteOrder::swapIfBigEndian ((unsigned short) value);
-    write (&v, 2);
+    return write (&v, 2);
 }
 
-void OutputStream::writeShortBigEndian (short value)
+bool OutputStream::writeShortBigEndian (short value)
 {
     const unsigned short v = ByteOrder::swapIfLittleEndian ((unsigned short) value);
-    write (&v, 2);
+    return write (&v, 2);
 }
 
-void OutputStream::writeInt (int value)
+bool OutputStream::writeInt32 (int32 value)
 {
+    static_bassert (sizeof (int32) == 4);
+
+    const unsigned int v = ByteOrder::swapIfBigEndian ((uint32) value);
+    return write (&v, 4);
+}
+
+bool OutputStream::writeInt (int value)
+{
+    static_bassert (sizeof (int) == 4);
+
     const unsigned int v = ByteOrder::swapIfBigEndian ((unsigned int) value);
-    write (&v, 4);
+    return write (&v, 4);
 }
 
-void OutputStream::writeIntBigEndian (int value)
+bool OutputStream::writeInt32BigEndian (int value)
 {
-    const unsigned int v = ByteOrder::swapIfLittleEndian ((unsigned int) value);
-    write (&v, 4);
+    static_bassert (sizeof (int32) == 4);
+    const uint32 v = ByteOrder::swapIfLittleEndian ((uint32) value);
+    return write (&v, 4);
 }
 
-void OutputStream::writeCompressedInt (int value)
+bool OutputStream::writeIntBigEndian (int value)
+{
+    static_bassert (sizeof (int) == 4);
+    const unsigned int v = ByteOrder::swapIfLittleEndian ((unsigned int) value);
+    return write (&v, 4);
+}
+
+bool OutputStream::writeCompressedInt (int value)
 {
     unsigned int un = (value < 0) ? (unsigned int) -value
                                   : (unsigned int) value;
@@ -121,60 +142,60 @@ void OutputStream::writeCompressedInt (int value)
     if (value < 0)
         data[0] |= 0x80;
 
-    write (data, num + 1);
+    return write (data, num + 1);
 }
 
-void OutputStream::writeInt64 (int64 value)
+bool OutputStream::writeInt64 (int64 value)
 {
     const uint64 v = ByteOrder::swapIfBigEndian ((uint64) value);
-    write (&v, 8);
+    return write (&v, 8);
 }
 
-void OutputStream::writeInt64BigEndian (int64 value)
+bool OutputStream::writeInt64BigEndian (int64 value)
 {
     const uint64 v = ByteOrder::swapIfLittleEndian ((uint64) value);
-    write (&v, 8);
+    return write (&v, 8);
 }
 
-void OutputStream::writeFloat (float value)
+bool OutputStream::writeFloat (float value)
 {
     union { int asInt; float asFloat; } n;
     n.asFloat = value;
-    writeInt (n.asInt);
+    return writeInt (n.asInt);
 }
 
-void OutputStream::writeFloatBigEndian (float value)
+bool OutputStream::writeFloatBigEndian (float value)
 {
     union { int asInt; float asFloat; } n;
     n.asFloat = value;
-    writeIntBigEndian (n.asInt);
+    return writeIntBigEndian (n.asInt);
 }
 
-void OutputStream::writeDouble (double value)
+bool OutputStream::writeDouble (double value)
 {
     union { int64 asInt; double asDouble; } n;
     n.asDouble = value;
-    writeInt64 (n.asInt);
+    return writeInt64 (n.asInt);
 }
 
-void OutputStream::writeDoubleBigEndian (double value)
+bool OutputStream::writeDoubleBigEndian (double value)
 {
     union { int64 asInt; double asDouble; } n;
     n.asDouble = value;
-    writeInt64BigEndian (n.asInt);
+    return writeInt64BigEndian (n.asInt);
 }
 
-void OutputStream::writeString (const String& text)
+bool OutputStream::writeString (const String& text)
 {
     // (This avoids using toUTF8() to prevent the memory bloat that it would leave behind
     // if lots of large, persistent strings were to be written to streams).
     const size_t numBytes = text.getNumBytesAsUTF8() + 1;
     HeapBlock<char> temp (numBytes);
     text.copyToUTF8 (temp, numBytes);
-    write (temp, numBytes);
+    return write (temp, numBytes);
 }
 
-void OutputStream::writeText (const String& text, const bool asUTF16,
+bool OutputStream::writeText (const String& text, const bool asUTF16,
                               const bool writeUTF16ByteOrderMark)
 {
     if (asUTF16)
@@ -196,7 +217,9 @@ void OutputStream::writeText (const String& text, const bool asUTF16,
                 writeShort ((short) '\r');
 
             lastCharWasReturn = (c == L'\r');
-            writeShort ((short) c);
+
+            if (! writeShort ((short) c))
+                return false;
         }
     }
     else
@@ -209,9 +232,12 @@ void OutputStream::writeText (const String& text, const bool asUTF16,
             if (*t == '\n')
             {
                 if (t > src)
-                    write (src, (int) (t - src));
+                    if (! write (src, (int) (t - src)))
+                        return false;
 
-                write ("\r\n", 2);
+                if (! write ("\r\n", 2))
+                    return false;
+
                 src = t + 1;
             }
             else if (*t == '\r')
@@ -222,7 +248,8 @@ void OutputStream::writeText (const String& text, const bool asUTF16,
             else if (*t == 0)
             {
                 if (t > src)
-                    write (src, (int) (t - src));
+                    if (! write (src, (int) (t - src)))
+                        return false;
 
                 break;
             }
@@ -230,6 +257,8 @@ void OutputStream::writeText (const String& text, const bool asUTF16,
             ++t;
         }
     }
+
+    return true;
 }
 
 int OutputStream::writeFromInputStream (InputStream& source, int64 numBytesToWrite)
@@ -318,3 +347,70 @@ BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const N
 {
     return stream << stream.getNewLineString();
 }
+
+//------------------------------------------------------------------------------
+
+// Unfortunately, putting these in the header causes duplicate
+// definition linker errors, even with the inline keyword!
+
+template <>
+BEAST_API bool OutputStream::writeType <char> (char v) { return writeByte (v); }
+
+template <>
+BEAST_API bool OutputStream::writeType <short> (short v) { return writeShort (v); }
+
+template <>
+BEAST_API bool OutputStream::writeType <int32> (int32 v) { return writeInt32 (v); }
+
+template <>
+BEAST_API bool OutputStream::writeType <int64> (int64 v) { return writeInt64 (v); }
+
+template <>
+BEAST_API bool OutputStream::writeType <unsigned char> (unsigned char v) { return writeByte (static_cast <char> (v)); }
+
+template <>
+BEAST_API bool OutputStream::writeType <unsigned short> (unsigned short v) { return writeShort (static_cast <short> (v)); }
+
+template <>
+BEAST_API bool OutputStream::writeType <uint32> (uint32 v) { return writeInt32 (static_cast <int32> (v)); }
+
+template <>
+BEAST_API bool OutputStream::writeType <uint64> (uint64 v) { return writeInt64 (static_cast <int64> (v)); }
+
+template <>
+BEAST_API bool OutputStream::writeType <float> (float v) { return writeFloat (v); }
+
+template <>
+BEAST_API bool OutputStream::writeType <double> (double v) { return writeDouble (v); }
+
+//------------------------------------------------------------------------------
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <char> (char v) { return writeByte (v); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <short> (short v) { return writeShortBigEndian (v); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <int32> (int32 v) { return writeInt32BigEndian (v); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <int64> (int64 v) { return writeInt64BigEndian (v); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <unsigned char> (unsigned char v) { return writeByte (static_cast <char> (v)); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <unsigned short> (unsigned short v) { return writeShortBigEndian (static_cast <short> (v)); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <uint32> (uint32 v) { return writeInt32BigEndian (static_cast <int32> (v)); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <uint64> (uint64 v) { return writeInt64BigEndian (static_cast <int64> (v)); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <float> (float v) { return writeFloatBigEndian (v); }
+
+template <>
+BEAST_API bool OutputStream::writeTypeBigEndian <double> (double v) { return writeDoubleBigEndian (v); }

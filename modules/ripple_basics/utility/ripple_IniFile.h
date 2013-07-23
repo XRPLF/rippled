@@ -20,4 +20,11 @@ bool SectionSingleB (Section& secSource, const std::string& strSection, std::str
 int SectionCount (Section& secSource, const std::string& strSection);
 Section::mapped_type* SectionEntries (Section& secSource, const std::string& strSection);
 
+/** Parse a section of lines as a key/value array.
+
+    Each line is in the form <key>=<value>.
+    Spaces are considered part of the key and value.
+*/
+StringPairArray parseKeyValueSection (Section& secSource, String const& strSection);
+
 #endif

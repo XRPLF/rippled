@@ -20,9 +20,13 @@ TransactionAcquire::TransactionAcquire (uint256 const& hash)
 
 static void TACompletionHandler (uint256 hash, SHAMap::pointer map)
 {
-    boost::recursive_mutex::scoped_lock sl (getApp().getMasterLock ());
-    getApp().getOPs ().mapComplete (hash, map);
-    getApp().getInboundLedgers ().dropLedger (hash);
+    {
+        Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
+
+        getApp().getOPs ().mapComplete (hash, map);
+
+        getApp().getInboundLedgers ().dropLedger (hash);
+    }
 }
 
 void TransactionAcquire::done ()
@@ -51,20 +55,18 @@ void TransactionAcquire::onTimer (bool progress, boost::recursive_mutex::scoped_
     if (getTimeouts () > 10)
     {
         WriteLog (lsWARNING, TransactionAcquire) << "Ten timeouts on TX set " << getHash ();
-        { // FIXME: Acquire the master lock here can deadlock
-            psl.unlock();
-            {
-                boost::recursive_mutex::scoped_lock sl (getApp().getMasterLock ());
+        psl.unlock();
+        {
+            Application::ScopedLockType lock (getApp().getMasterLock (), __FILE__, __LINE__);
 
-                if (getApp().getOPs ().stillNeedTXSet (mHash))
-                {
-                    WriteLog (lsWARNING, TransactionAcquire) << "Still need it";
-                    mTimeouts = 0;
-                    aggressive = true;
-                }
+            if (getApp().getOPs ().stillNeedTXSet (mHash))
+            {
+                WriteLog (lsWARNING, TransactionAcquire) << "Still need it";
+                mTimeouts = 0;
+                aggressive = true;
 	    }
-	    psl.lock();
         }
+        psl.lock();
 
         if (!aggressive)
         {

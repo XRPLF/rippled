@@ -308,6 +308,163 @@ Result FileOutputStream::truncate()
 }
 
 //==============================================================================
+
+Result RandomAccessFile::nativeOpen (File const& path, Mode mode)
+{
+    bassert (! isOpen ());
+
+    Result result (Result::ok ());
+
+    DWORD dwDesiredAccess;
+    switch (mode)
+    {
+    case readOnly:
+        dwDesiredAccess = GENERIC_READ;
+        break;
+
+    default:
+    case readWrite:
+        dwDesiredAccess = GENERIC_READ | GENERIC_WRITE;
+        break;   
+    };
+
+    DWORD dwCreationDisposition;
+    switch (mode)
+    {
+    case readOnly:
+        dwCreationDisposition = OPEN_EXISTING;
+        break;
+
+    default:
+    case readWrite:
+         dwCreationDisposition = OPEN_ALWAYS;
+         break;
+    };
+
+    HANDLE h = CreateFile (path.getFullPathName().toWideCharPointer(),
+                           dwDesiredAccess,
+                           FILE_SHARE_READ,
+                           0,
+                           dwCreationDisposition,
+                           FILE_ATTRIBUTE_NORMAL,
+                           0);
+
+    if (h != INVALID_HANDLE_VALUE)
+    {
+        file = path;
+        fileHandle = h;
+
+        result = setPosition (0);
+
+        if (result.failed ())
+            nativeClose ();
+    }
+    else
+    {
+        result = WindowsFileHelpers::getResultForLastError();
+    }
+
+    return result;
+}
+
+void RandomAccessFile::nativeClose ()
+{
+    bassert (isOpen ());
+
+    CloseHandle ((HANDLE) fileHandle);
+
+    file = File::nonexistent ();
+    fileHandle = nullptr;
+    currentPosition = 0;
+}
+
+Result RandomAccessFile::nativeSetPosition (FileOffset newPosition)
+{
+    bassert (isOpen ());
+
+    Result result (Result::ok ());
+
+    LARGE_INTEGER li;
+    li.QuadPart = newPosition;
+    li.LowPart = SetFilePointer ((HANDLE) fileHandle,
+                                 (LONG) li.LowPart,
+                                 &li.HighPart,
+                                 FILE_BEGIN);
+
+    if (li.LowPart != INVALID_SET_FILE_POINTER)
+    {
+        currentPosition = li.QuadPart;
+    }
+    else
+    {
+        result = WindowsFileHelpers::getResultForLastError();
+    }
+
+    return result;
+}
+
+Result RandomAccessFile::nativeRead (void* buffer, ByteCount numBytes, ByteCount* pActualAmount)
+{
+    bassert (isOpen ());
+
+    Result result (Result::ok ());
+
+    DWORD actualNum = 0;
+
+    if (! ReadFile ((HANDLE) fileHandle, buffer, (DWORD) numBytes, &actualNum, 0))
+        result = WindowsFileHelpers::getResultForLastError();
+
+    currentPosition += actualNum;
+
+    if (pActualAmount != nullptr)
+        *pActualAmount = actualNum;
+
+    return result;
+}
+
+Result RandomAccessFile::nativeWrite (void const* data, ByteCount numBytes, size_t* pActualAmount)
+{
+    bassert (isOpen ());
+
+    Result result (Result::ok ());
+
+    DWORD actualNum = 0;
+
+    if (! WriteFile ((HANDLE) fileHandle, data, (DWORD) numBytes, &actualNum, 0))
+        result = WindowsFileHelpers::getResultForLastError();
+
+    if (pActualAmount != nullptr)
+        *pActualAmount = actualNum;
+
+    return result;
+}
+
+Result RandomAccessFile::nativeTruncate ()
+{
+    bassert (isOpen ());
+
+    Result result (Result::ok ());
+
+    if (! SetEndOfFile ((HANDLE) fileHandle))
+        result = WindowsFileHelpers::getResultForLastError();
+
+    return result;
+}
+
+Result RandomAccessFile::nativeFlush ()
+{
+    bassert (isOpen ());
+
+    Result result (Result::ok ());
+
+    if (! FlushFileBuffers ((HANDLE) fileHandle))
+        result = WindowsFileHelpers::getResultForLastError();
+
+    return result;
+}
+
+
+//==============================================================================
 void MemoryMappedFile::openInternal (const File& file, AccessMode mode)
 {
     bassert (mode == readOnly || mode == readWrite);

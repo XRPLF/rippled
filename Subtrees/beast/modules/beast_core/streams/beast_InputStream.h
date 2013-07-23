@@ -92,7 +92,7 @@ public:
 
     /** Reads a boolean from the stream.
 
-        The bool is encoded as a single byte - 1 for true, 0 for false.
+        The bool is encoded as a single byte - non-zero for true, 0 for false. 
 
         If the stream is exhausted, this will return false.
 
@@ -111,10 +111,13 @@ public:
     */
     virtual short readShort();
 
+    // VFALCO TODO Implement these functions
+    //virtual int16 readInt16 ();
+    //virtual uint16 readUInt16 ();
+
     /** Reads two bytes from the stream as a little-endian 16-bit value.
 
-        If the next two bytes read are byte1 and byte2, this returns
-        (byte2 | (byte1 << 8)).
+        If the next two bytes read are byte1 and byte2, this returns (byte1 | (byte2 << 8)). 
 
         If the stream is exhausted partway through reading the bytes, this will return zero.
 
@@ -131,6 +134,13 @@ public:
 
         @see OutputStream::writeInt, readIntBigEndian
     */
+    virtual int32 readInt32();
+
+    // VFALCO TODO Implement these functions
+    //virtual int16 readInt16BigEndian ();
+    //virtual uint16 readUInt16BigEndian ();
+
+    // DEPRECATED, assumes sizeof(int) == 4!
     virtual int readInt();
 
     /** Reads four bytes from the stream as a big-endian 32-bit value.
@@ -142,6 +152,9 @@ public:
 
         @see OutputStream::writeIntBigEndian, readInt
     */
+    virtual int32 readInt32BigEndian();
+
+    // DEPRECATED, assumes sizeof(int) == 4!
     virtual int readIntBigEndian();
 
     /** Reads eight bytes from the stream as a little-endian 64-bit value.
@@ -216,6 +229,49 @@ public:
     */
     virtual int readCompressedInt();
 
+    /** Reads a type using a template specialization.
+
+        This is useful when doing template meta-programming.
+    */
+    template <class T>
+    T readType ();
+
+    /** Reads a type using a template specialization.
+
+        The variable is passed as a parameter so that the template type
+        can be deduced.
+
+        This is useful when doing template meta-programming.
+    */
+    template <class T>
+    void readTypeInto (T* p)
+    {
+        *p = readType <T> ();
+    }
+
+    /** Reads a type from a big endian stream using a template specialization.
+
+        The raw encoding of the type is read from the stream as a big-endian value
+        where applicable.
+
+        This is useful when doing template meta-programming.
+    */
+    template <class T>
+    T readTypeBigEndian ();
+
+    /** Reads a type using a template specialization.
+
+        The variable is passed as a parameter so that the template type
+        can be deduced.
+
+        This is useful when doing template meta-programming.
+    */
+    template <class T>
+    void readTypeBigEndianInto (T* p)
+    {
+        *p = readTypeBigEndian <T> ();
+    }
+
     //==============================================================================
     /** Reads a UTF-8 string from the stream, up to the next linefeed or carriage return.
 
@@ -289,4 +345,4 @@ protected:
     InputStream() noexcept {}
 };
 
-#endif   // BEAST_INPUTSTREAM_BEASTHEADER
+#endif
