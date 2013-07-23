@@ -502,7 +502,6 @@ uint256 Ledger::getHash ()
 void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
 {
     WriteLog (lsTRACE, Ledger) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq ();
-    static boost::format ledgerExists ("SELECT LedgerSeq FROM Ledgers INDEXED BY SeqLedger where LedgerSeq = %u;");
     static boost::format deleteLedger ("DELETE FROM Ledgers WHERE LedgerSeq = %u;");
     static boost::format deleteTrans1 ("DELETE FROM Transactions WHERE LedgerSeq = %u;");
     static boost::format deleteTrans2 ("DELETE FROM AccountTransactions WHERE LedgerSeq = %u;");
