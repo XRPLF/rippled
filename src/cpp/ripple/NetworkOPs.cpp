@@ -2354,7 +2354,8 @@ void NetworkOPs::missingNodeInLedger (uint32 seq)
 
 void NetworkOPs::doClusterReport ()
 {
-    ClusterNodeStatus us("", getApp().getFeeTrack().getLocalFee(), getNetworkTimeNC());
+    bool synced = (getApp().getLedgerMaster().getValidatedLedgerAge() <= 240);
+    ClusterNodeStatus us("", synced ? getApp().getFeeTrack().getLocalFee() : 0, getNetworkTimeNC());
     if (!getApp().getUNL().nodeUpdate(getApp().getLocalCredentials().getNodePublic(), us))
     {
         WriteLog (lsDEBUG, NetworkOPs) << "To soon to send cluster update";
