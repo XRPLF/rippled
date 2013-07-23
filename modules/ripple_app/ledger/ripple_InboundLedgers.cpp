@@ -274,7 +274,6 @@ void InboundLedgers::clearFailures ()
 Json::Value InboundLedgers::getInfo()
 {
     Json::Value ret(Json::objectValue);
-    boost::mutex::scoped_lock sl (mLock);
 
     typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
     std::vector<u256_acq_pair> acquires;
@@ -282,7 +281,7 @@ Json::Value InboundLedgers::getInfo()
         boost::mutex::scoped_lock sl (mLock);
 
         acquires.reserve (mLedgers.size ());
-       BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
+        BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
            acquires.push_back (it);
     }
 
