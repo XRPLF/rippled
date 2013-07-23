@@ -1751,6 +1751,8 @@ Json::Value RPCHandler::doConsensusInfo (Json::Value, LoadType* loadType, Scoped
 
 Json::Value RPCHandler::doFetchInfo (Json::Value jvParams, LoadType* loadType, ScopedLock& MasterLockHolder)
 {
+    MasterLockHolder.unlock ();
+
     Json::Value ret (Json::objectValue);
 
     if (jvParams.isMember("clear") && jvParams["clear"].asBool())
