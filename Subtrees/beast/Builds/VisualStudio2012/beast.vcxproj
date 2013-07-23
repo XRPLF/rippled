@@ -78,6 +78,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
+    <None Include="..\..\modules\beast_db\beast_db.mm">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
     <None Include="..\..\README.md" />
   </ItemGroup>
   <ItemGroup>
@@ -249,6 +255,8 @@
     <ClInclude Include="..\..\modules\beast_core\zip\zlib\zutil.h" />
     <ClInclude Include="..\..\modules\beast_crypto\beast_crypto.h" />
     <ClInclude Include="..\..\modules\beast_crypto\math\beast_UnsignedInteger.h" />
+    <ClInclude Include="..\..\modules\beast_db\beast_db.h" />
+    <ClInclude Include="..\..\modules\beast_db\keyvalue\beast_KeyvaDB.h" />
     <ClInclude Include="BeastConfig.h" />
   </ItemGroup>
   <ItemGroup>
@@ -928,6 +936,13 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_crypto\beast_crypto.cpp" />
     <ClCompile Include="..\..\modules\beast_crypto\math\beast_UnsignedInteger.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_db\beast_db.cpp" />
+    <ClCompile Include="..\..\modules\beast_db\keyvalue\beast_KeyvaDB.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

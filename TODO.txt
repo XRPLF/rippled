@@ -4,6 +4,7 @@ RIPPLE TODO
 
 Items marked '*' can be handled by third parties.
 
+
 Vinnie's Short List (Changes day to day)
 - Make theConfig a SharedSingleton to prevent leak warnings
 - Add fast backend to the unit test
@@ -19,6 +20,8 @@ Vinnie's Short List (Changes day to day)
 [*] These can be handled by external developers
 
 --------------------------------------------------------------------------------
+
+- Raise the warning level and fix everything
 
 * Restyle all the macros in ripple_ConfigSection.h
 
@@ -138,8 +141,6 @@ Vinnie's Short List (Changes day to day)
   or replace with ScopedPointer (preferred)
 
 - Make LevelDB and Ripple code work with both Unicode and non-Unicode Windows APIs
-
-- Raise the warning level and fix everything
 
 - Go searching through VFALCO notes and fix everything
 

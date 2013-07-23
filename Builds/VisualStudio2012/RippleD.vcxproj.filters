@@ -903,6 +903,9 @@
     <ClCompile Include="..\..\modules\ripple_app\node\ripple_MdbBackendFactory.cpp">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Subtrees\beast\modules\beast_db\beast_db.cpp">
+      <Filter>[0] Subtrees\beast</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h">

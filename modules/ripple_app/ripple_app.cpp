@@ -65,6 +65,8 @@
 
 #include "../ripple_core/ripple_core.h"
 
+#include "beast/modules/beast_db/beast_db.h"
+
 // VFALCO TODO fix these warnings!
 #ifdef _MSC_VER
 //#pragma warning (push) // Causes spurious C4503 "decorated name exceeds maximum length"
@@ -246,8 +248,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "node/ripple_NodeObject.cpp"
 #include "node/ripple_NodeStore.cpp"
 #include "node/ripple_HyperLevelDBBackendFactory.cpp"
-#include "node/ripple_KeyvaDB.h" // private
-#include "node/ripple_KeyvaDB.cpp"
 #include "node/ripple_KeyvaDBBackendFactory.cpp"
 #include "node/ripple_LevelDBBackendFactory.cpp"
 #include "node/ripple_NullBackendFactory.cpp"

@@ -36,6 +36,9 @@
     <None Include="..\..\modules\beast_basics\beast_basics.mm">
       <Filter>beast_basics</Filter>
     </None>
+    <None Include="..\..\modules\beast_db\beast_db.mm">
+      <Filter>beast_db</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="beast_core">
@@ -124,6 +127,12 @@
     </Filter>
     <Filter Include="beast_crypto\math">
       <UniqueIdentifier>{1170f2bc-2456-410a-ab2b-c45f6ed37b9e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_db">
+      <UniqueIdentifier>{4834218f-f13f-41bc-a8a0-50314a3a99a3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_db\keyvalue">
+      <UniqueIdentifier>{15a98fee-1b52-45eb-9480-514b8750d755}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -632,6 +641,12 @@
     <ClInclude Include="..\..\modules\beast_core\memory\beast_RecycledObjectPool.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_db\beast_db.h">
+      <Filter>beast_db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_db\keyvalue\beast_KeyvaDB.h">
+      <Filter>beast_db\keyvalue</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
@@ -981,6 +996,12 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_UnitTestUtilities.cpp">
       <Filter>beast_core\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_db\beast_db.cpp">
+      <Filter>beast_db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_db\keyvalue\beast_KeyvaDB.cpp">
+      <Filter>beast_db\keyvalue</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
