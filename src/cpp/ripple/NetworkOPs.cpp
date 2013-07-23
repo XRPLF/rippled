@@ -1119,6 +1119,9 @@ void NetworkOPs::pubServer ()
         jvObj ["load_base"]     = (mLastLoadBase = getApp().getFeeTrack ().getLoadBase ());
         jvObj ["load_factor"]   = (mLastLoadFactor = getApp().getFeeTrack ().getLoadFactor ());
 
+        Json::FastWriter w;
+        std::string sObj = w.write (jvObj);
+
         NetworkOPs::SubMapType::const_iterator it = mSubServer.begin ();
 
         while (it != mSubServer.end ())
@@ -1129,7 +1132,7 @@ void NetworkOPs::pubServer ()
             //             the deletion of subscribers with the sending of JSON data.
             if (p)
             {
-                p->send (jvObj, true);
+                p->send (jvObj, sObj, true);
 
                 ++it;
             }
@@ -1674,6 +1677,9 @@ void NetworkOPs::pubValidatedTransaction (Ledger::ref alAccepted, const Accepted
     Json::Value jvObj   = transJson (*alTx.getTxn (), alTx.getResult (), true, alAccepted);
     jvObj["meta"] = alTx.getMeta ()->getJson (0);
 
+    Json::FastWriter w;
+    std::string sObj = w.write (jvObj);
+
     {
         boost::recursive_mutex::scoped_lock sl (mMonitorLock);
 
@@ -1685,7 +1691,7 @@ void NetworkOPs::pubValidatedTransaction (Ledger::ref alAccepted, const Accepted
 
             if (p)
             {
-                p->send (jvObj, true);
+                p->send (jvObj, sObj, true);
                 ++it;
             }
             else
@@ -1700,7 +1706,7 @@ void NetworkOPs::pubValidatedTransaction (Ledger::ref alAccepted, const Accepted
 
             if (p)
             {
-                p->send (jvObj, true);
+                p->send (jvObj, sObj, true);
                 ++it;
             }
             else
@@ -1782,9 +1788,12 @@ void NetworkOPs::pubAccountTransaction (Ledger::ref lpCurrent, const AcceptedLed
         if (alTx.isApplied ())
             jvObj["meta"] = alTx.getMeta ()->getJson (0);
 
+        Json::FastWriter w;
+        std::string sObj = w.write (jvObj);
+
         BOOST_FOREACH (InfoSub::ref isrListener, notify)
         {
-            isrListener->send (jvObj, true);
+            isrListener->send (jvObj, sObj, true);
         }
     }
 }
