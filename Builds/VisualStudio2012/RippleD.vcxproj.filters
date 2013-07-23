@@ -891,9 +891,6 @@
     <ClCompile Include="..\..\modules\ripple_app\node\ripple_HyperLevelDBBackendFactory.cpp">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\node\ripple_KeyvaDB.cpp">
-      <Filter>[1] Ripple\ripple_app\node</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\node\ripple_KeyvaDBBackendFactory.cpp">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClCompile>
@@ -905,6 +902,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_db\beast_db.cpp">
       <Filter>[0] Subtrees\beast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\node\ripple_MemoryBackendFactory.cpp">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1677,9 +1677,6 @@
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_HyperLevelDBBackendFactory.h">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\node\ripple_KeyvaDB.h">
-      <Filter>[1] Ripple\ripple_app\node</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_KeyvaDBBackendFactory.h">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>
@@ -1694,6 +1691,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\functional\ripple_ConfigSections.h">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\node\ripple_MemoryBackendFactory.h">
+      <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

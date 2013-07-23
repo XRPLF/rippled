@@ -108,6 +108,7 @@ namespace ripple
 #include "node/ripple_KeyvaDBBackendFactory.h"
 #include "node/ripple_LevelDBBackendFactory.h"
 #include "node/ripple_MdbBackendFactory.h"
+#include "node/ripple_MemoryBackendFactory.h"
 #include "node/ripple_NullBackendFactory.h"
 #include "node/ripple_SqliteBackendFactory.h"
 
@@ -250,6 +251,7 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "node/ripple_HyperLevelDBBackendFactory.cpp"
 #include "node/ripple_KeyvaDBBackendFactory.cpp"
 #include "node/ripple_LevelDBBackendFactory.cpp"
+#include "node/ripple_MemoryBackendFactory.cpp"
 #include "node/ripple_NullBackendFactory.cpp"
 #include "node/ripple_MdbBackendFactory.cpp"
 #include "node/ripple_SqliteBackendFactory.cpp"

@@ -4,23 +4,23 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SQLITEBACKENDFACTORY_H_INCLUDED
-#define RIPPLE_SQLITEBACKENDFACTORY_H_INCLUDED
+#ifndef RIPPLE_MEMORYBACKENDFACTORY_H_INCLUDED
+#define RIPPLE_MEMORYBACKENDFACTORY_H_INCLUDED
 
-/** Factory to produce SQLite backends for the NodeStore.
+/** Factory to produce a RAM based backend for the NodeStore.
 
     @see NodeStore
 */
-class SqliteBackendFactory : public NodeStore::BackendFactory
+class MemoryBackendFactory : public NodeStore::BackendFactory
 {
 private:
     class Backend;
 
-    SqliteBackendFactory ();
-    ~SqliteBackendFactory ();
+    MemoryBackendFactory ();
+    ~MemoryBackendFactory ();
 
 public:
-    static SqliteBackendFactory& getInstance ();
+    static MemoryBackendFactory& getInstance ();
 
     String getName () const;
 

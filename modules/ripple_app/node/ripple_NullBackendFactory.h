@@ -10,6 +10,8 @@
 /** Factory to produce a null backend.
 
     This is for standalone / testing mode.
+
+    @see NodeStore
 */
 class NullBackendFactory : public NodeStore::BackendFactory
 {

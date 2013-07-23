@@ -10,6 +10,8 @@
 #if RIPPLE_HYPERLEVELDB_AVAILABLE
 
 /** Factory to produce HyperLevelDB backends for the NodeStore.
+
+    @see NodeStore
 */
 class HyperLevelDBBackendFactory : public NodeStore::BackendFactory
 {

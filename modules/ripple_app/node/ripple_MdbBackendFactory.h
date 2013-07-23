@@ -12,6 +12,8 @@
 /** Factory to produce a backend using MDB.
 
     @note MDB is not currently available for Win32
+
+    @see NodeStore
 */
 class MdbBackendFactory : public NodeStore::BackendFactory
 {

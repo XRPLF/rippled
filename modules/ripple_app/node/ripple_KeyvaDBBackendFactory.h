@@ -8,6 +8,8 @@
 #define RIPPLE_KEYVABACKENDFACTORY_H_INCLUDED
 
 /** Factory to produce KeyvaDB backends for the NodeStore.
+
+    @see NodeStore
 */
 class KeyvaDBBackendFactory : public NodeStore::BackendFactory
 {

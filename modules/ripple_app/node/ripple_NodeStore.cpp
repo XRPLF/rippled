@@ -1043,7 +1043,10 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void testNodeStore (String type, bool const useEphemeralDatabase, int64 const seedValue)
+    void testNodeStore (String type,
+                        bool const useEphemeralDatabase,
+                        bool const testPersistence,
+                        int64 const seedValue)
     {
         String s;
         s << String ("NodeStore backend '") + type + "'";
@@ -1092,33 +1095,36 @@ public:
             }
         }
 
+        if (testPersistence)
         {
-            // Re-open the database without the ephemeral DB
-            ScopedPointer <NodeStore> db (NodeStore::New (nodeParams));
+            {
+                // Re-open the database without the ephemeral DB
+                ScopedPointer <NodeStore> db (NodeStore::New (nodeParams));
 
-            // Read it back in
-            NodeStore::Batch copy;
-            fetchCopyOfBatch (*db, &copy, batch);
+                // Read it back in
+                NodeStore::Batch copy;
+                fetchCopyOfBatch (*db, &copy, batch);
 
-            // Canonicalize the source and destination batches
-            std::sort (batch.begin (), batch.end (), NodeObject::LessThan ());
-            std::sort (copy.begin (), copy.end (), NodeObject::LessThan ());
-            expect (areBatchesEqual (batch, copy), "Should be equal");
-        }
+                // Canonicalize the source and destination batches
+                std::sort (batch.begin (), batch.end (), NodeObject::LessThan ());
+                std::sort (copy.begin (), copy.end (), NodeObject::LessThan ());
+                expect (areBatchesEqual (batch, copy), "Should be equal");
+            }
 
-        if (useEphemeralDatabase)
-        {
-            // Verify the ephemeral db
-            ScopedPointer <NodeStore> db (NodeStore::New (tempParams, StringPairArray ()));
+            if (useEphemeralDatabase)
+            {
+                // Verify the ephemeral db
+                ScopedPointer <NodeStore> db (NodeStore::New (tempParams, StringPairArray ()));
 
-            // Read it back in
-            NodeStore::Batch copy;
-            fetchCopyOfBatch (*db, &copy, batch);
+                // Read it back in
+                NodeStore::Batch copy;
+                fetchCopyOfBatch (*db, &copy, batch);
 
-            // Canonicalize the source and destination batches
-            std::sort (batch.begin (), batch.end (), NodeObject::LessThan ());
-            std::sort (copy.begin (), copy.end (), NodeObject::LessThan ());
-            expect (areBatchesEqual (batch, copy), "Should be equal");
+                // Canonicalize the source and destination batches
+                std::sort (batch.begin (), batch.end (), NodeObject::LessThan ());
+                std::sort (copy.begin (), copy.end (), NodeObject::LessThan ());
+                expect (areBatchesEqual (batch, copy), "Should be equal");
+            }
         }
     }
 
@@ -1126,18 +1132,18 @@ public:
 
     void runBackendTests (bool useEphemeralDatabase, int64 const seedValue)
     {
-        testNodeStore ("keyvadb", useEphemeralDatabase, seedValue);
+        testNodeStore ("keyvadb", useEphemeralDatabase, true, seedValue);
 
-        testNodeStore ("leveldb", useEphemeralDatabase, seedValue);
+        testNodeStore ("leveldb", useEphemeralDatabase, true, seedValue);
 
-        testNodeStore ("sqlite", useEphemeralDatabase, seedValue);
+        testNodeStore ("sqlite", useEphemeralDatabase, true, seedValue);
 
     #if RIPPLE_HYPERLEVELDB_AVAILABLE
-        testNodeStore ("hyperleveldb", useEphemeralDatabase, seedValue);
+        testNodeStore ("hyperleveldb", useEphemeralDatabase, true, seedValue);
     #endif
 
     #if RIPPLE_MDB_AVAILABLE
-        testNodeStore ("mdb", useEphemeralDatabase, seedValue);
+        testNodeStore ("mdb", useEphemeralDatabase, true, seedValue);
     #endif
     }
 
@@ -1165,6 +1171,8 @@ public:
     void runTest ()
     {
         int64 const seedValue = 50;
+
+        testNodeStore ("memory", false, false, seedValue);
 
         runBackendTests (false, seedValue);
 

@@ -8,6 +8,8 @@
 #define RIPPLE_LEVELDBBACKENDFACTORY_H_INCLUDED
 
 /** Factory to produce LevelDB backends for the NodeStore.
+
+    @see NodeStore
 */
 class LevelDBBackendFactory : public NodeStore::BackendFactory
 {
