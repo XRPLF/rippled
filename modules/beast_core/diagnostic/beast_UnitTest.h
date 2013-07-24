@@ -136,6 +136,14 @@ public:
     */
     void beginTest (const String& testName);
 
+    /** Passes a test.
+    */
+    void pass ();
+
+    /** Fails a test with the specified message.
+    */
+    void fail (String const& failureMessage);
+
     //==============================================================================
     /** Checks that the result of a test is true, and logs this result.
 
