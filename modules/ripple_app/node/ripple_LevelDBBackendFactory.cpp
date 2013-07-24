@@ -30,7 +30,7 @@ public:
 
         if (keyValues["cache_mb"].isEmpty())
         {
-            options.block_cache = leveldb::NewLRUCache (theConfig.getSize (siHashNodeDBCache) * 1024 * 1024);
+            options.block_cache = leveldb::NewLRUCache (getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
         }
         else
         {
@@ -39,7 +39,7 @@ public:
 
         if (keyValues["filter_bits"].isEmpty())
         {
-            if (theConfig.NODE_SIZE >= 2)
+            if (getConfig ().NODE_SIZE >= 2)
                 options.filter_policy = leveldb::NewBloomFilterPolicy (10);
         }
         else if (keyValues["filter_bits"].getIntValue() != 0)

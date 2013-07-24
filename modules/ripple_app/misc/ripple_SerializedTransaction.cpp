@@ -144,7 +144,7 @@ std::vector<RippleAddress> SerializedTransaction::getMentionedAccounts () const
 
 uint256 SerializedTransaction::getSigningHash () const
 {
-    return STObject::getSigningHash (theConfig.SIGN_TRANSACTION);
+    return STObject::getSigningHash (getConfig ().SIGN_TRANSACTION);
 }
 
 uint256 SerializedTransaction::getTransactionID () const
@@ -287,3 +287,57 @@ std::string SerializedTransaction::getMetaSQL (Serializer rawTxn, uint32 inLedge
                 % getTransactionID ().GetHex () % getTransactionType () % getSourceAccount ().humanAccountID ()
                 % getSequence () % inLedger % status % rTxn % escapedMetaData);
 }
+
+//------------------------------------------------------------------------------
+
+class SerializedTransactionTests : public UnitTest
+{
+public:
+    SerializedTransactionTests () : UnitTest ("SerializedTransaction", "ripple")
+    {
+    }
+
+    void runTest ()
+    {
+        beginTest ("tx");
+
+        RippleAddress seed;
+        seed.setSeedRandom ();
+        RippleAddress generator = RippleAddress::createGeneratorPublic (seed);
+        RippleAddress publicAcct = RippleAddress::createAccountPublic (generator, 1);
+        RippleAddress privateAcct = RippleAddress::createAccountPrivate (generator, seed, 1);
+
+        SerializedTransaction j (ttACCOUNT_SET);
+        j.setSourceAccount (publicAcct);
+        j.setSigningPubKey (publicAcct);
+        j.setFieldVL (sfMessageKey, publicAcct.getAccountPublic ());
+        j.sign (privateAcct);
+
+        if (!j.checkSign ()) fail ("Transaction fails signature test");
+
+        Serializer rawTxn;
+        j.add (rawTxn);
+        SerializerIterator sit (rawTxn);
+        SerializedTransaction copy (sit);
+
+        if (copy != j)
+        {
+            Log (lsFATAL) << j.getJson (0);
+            Log (lsFATAL) << copy.getJson (0);
+            fail ("Transaction fails serialize/deserialize test");
+        }
+
+        UPTR_T<STObject> new_obj = STObject::parseJson (j.getJson (0), sfGeneric);
+
+        if (new_obj.get () == NULL) fail ("Unable to build object from json");
+
+        if (STObject (j) != *new_obj)
+        {
+            Log (lsINFO) << "ORIG: " << j.getJson (0);
+            Log (lsINFO) << "BUILT " << new_obj->getJson (0);
+            fail ("Built a different transaction");
+        }
+    }
+};
+
+static SerializedTransactionTests serializedTransactionTests;

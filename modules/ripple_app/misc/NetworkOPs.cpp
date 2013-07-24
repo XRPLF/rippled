@@ -53,14 +53,14 @@ void NetworkOPs::processNetTimer ()
         std::size_t const numPeers = getApp().getPeers ().getPeerVector ().size ();
 
         // do we have sufficient peers? If not, we are disconnected.
-        if (numPeers < theConfig.NETWORK_QUORUM)
+        if (numPeers < getConfig ().NETWORK_QUORUM)
         {
             if (mMode != omDISCONNECTED)
             {
                 setMode (omDISCONNECTED);
                 WriteLog (lsWARNING, NetworkOPs)
                     << "Node count (" << numPeers << ") "
-                    << "has fallen below quorum (" << theConfig.NETWORK_QUORUM << ").";
+                    << "has fallen below quorum (" << getConfig ().NETWORK_QUORUM << ").";
             }
 
             return;
@@ -1394,8 +1394,8 @@ Json::Value NetworkOPs::getServerInfo (bool human, bool admin)
     info ["build_version"] = BuildVersion::getBuildVersion ();
     info ["client_version"] = BuildVersion::getClientVersion ();
 
-    if (theConfig.TESTNET)
-        info["testnet"]     = theConfig.TESTNET;
+    if (getConfig ().TESTNET)
+        info["testnet"]     = getConfig ().TESTNET;
 
     info["server_state"] = strOperatingMode ();
 
@@ -1406,8 +1406,8 @@ Json::Value NetworkOPs::getServerInfo (bool human, bool admin)
 
     if (admin)
     {
-        if (theConfig.VALIDATION_PUB.isValid ())
-            info["pubkey_validator"] = theConfig.VALIDATION_PUB.humanNodePublic ();
+        if (getConfig ().VALIDATION_PUB.isValid ())
+            info["pubkey_validator"] = getConfig ().VALIDATION_PUB.humanNodePublic ();
         else
             info["pubkey_validator"] = "none";
     }
@@ -1982,11 +1982,11 @@ bool NetworkOPs::subServer (InfoSub::ref isrListener, Json::Value& jvResult)
 {
     uint256         uRandom;
 
-    if (theConfig.RUN_STANDALONE)
-        jvResult["stand_alone"] = theConfig.RUN_STANDALONE;
+    if (getConfig ().RUN_STANDALONE)
+        jvResult["stand_alone"] = getConfig ().RUN_STANDALONE;
 
-    if (theConfig.TESTNET)
-        jvResult["testnet"]     = theConfig.TESTNET;
+    if (getConfig ().TESTNET)
+        jvResult["testnet"]     = getConfig ().TESTNET;
 
     RandomNumbers::getInstance ().fillBytes (uRandom.begin (), uRandom.size ());
     jvResult["random"]          = uRandom.ToString ();

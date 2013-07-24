@@ -2,6 +2,10 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
+- Set sqlite thread safety model to '2' in beast_sqlite
+
+- Document and rename all the sqdb files and classes
+
 - Specialize UnsignedInteger<> for peformance in the storage format
 
 - Macro for acquiring a ScopedLock that records file and line.

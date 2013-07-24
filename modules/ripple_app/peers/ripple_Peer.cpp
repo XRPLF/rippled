@@ -954,12 +954,12 @@ void PeerImp::recvHello (protocol::TMHello& packet)
 
 #endif
 
-    if ((packet.has_testnet () && packet.testnet ()) != theConfig.TESTNET)
+    if ((packet.has_testnet () && packet.testnet ()) != getConfig ().TESTNET)
     {
         // Format: actual/requested.
         WriteLog (lsINFO, Peer) << boost::str (boost::format ("Recv(Hello): Network mismatch: %d/%d")
                                                % packet.testnet ()
-                                               % theConfig.TESTNET);
+                                               % getConfig ().TESTNET);
     }
     else if (packet.has_nettime () && ((packet.nettime () < minTime) || (packet.nettime () > maxTime)))
     {
@@ -1289,7 +1289,7 @@ void PeerImp::recvPropose (const boost::shared_ptr<protocol::TMProposeSet>& pack
 
     RippleAddress signerPublic = RippleAddress::createNodePublic (strCopy (set.nodepubkey ()));
 
-    if (signerPublic == theConfig.VALIDATION_PUB)
+    if (signerPublic == getConfig ().VALIDATION_PUB)
     {
         WriteLog (lsTRACE, Peer) << "Received our own proposal from peer " << mPeerId;
         return;
@@ -2245,9 +2245,9 @@ void PeerImp::sendHello ()
     h.set_nettime (getApp().getOPs ().getNetworkTimeNC ());
     h.set_nodepublic (getApp().getLocalCredentials ().getNodePublic ().humanNodePublic ());
     h.set_nodeproof (&vchSig[0], vchSig.size ());
-    h.set_ipv4port (theConfig.PEER_PORT);
-    h.set_nodeprivate (theConfig.PEER_PRIVATE);
-    h.set_testnet (theConfig.TESTNET);
+    h.set_ipv4port (getConfig ().PEER_PORT);
+    h.set_nodeprivate (getConfig ().PEER_PRIVATE);
+    h.set_testnet (getConfig ().TESTNET);
 
     Ledger::pointer closedLedger = getApp().getLedgerMaster ().getClosedLedger ();
 

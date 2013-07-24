@@ -881,20 +881,20 @@ int commandLineRPC (const std::vector<std::string>& vCmd)
 
             jvParams.append (jvRequest);
 
-            if (!theConfig.RPC_ADMIN_USER.empty ())
-                jvRequest["admin_user"]     = theConfig.RPC_ADMIN_USER;
+            if (!getConfig ().RPC_ADMIN_USER.empty ())
+                jvRequest["admin_user"]     = getConfig ().RPC_ADMIN_USER;
 
-            if (!theConfig.RPC_ADMIN_PASSWORD.empty ())
-                jvRequest["admin_password"] = theConfig.RPC_ADMIN_PASSWORD;
+            if (!getConfig ().RPC_ADMIN_PASSWORD.empty ())
+                jvRequest["admin_password"] = getConfig ().RPC_ADMIN_PASSWORD;
 
             boost::asio::io_service         isService;
 
             callRPC (
                 isService,
-                theConfig.getRpcIP (),
-                theConfig.getRpcPort (),
-                theConfig.RPC_USER,
-                theConfig.RPC_PASSWORD,
+                getConfig ().getRpcIP (),
+                getConfig ().getRpcPort (),
+                getConfig ().RPC_USER,
+                getConfig ().RPC_PASSWORD,
                 "",
                 jvRequest.isMember ("method")           // Allow parser to rewrite method.
                     ? jvRequest["method"].asString () : vCmd[0],
@@ -1026,7 +1026,7 @@ void callRPC (
     FUNCTION_TYPE<void (const Json::Value& jvInput)> callbackFuncP)
 {
     // Connect to localhost
-    if (!theConfig.QUIET)
+    if (!getConfig ().QUIET)
     {
         Log::out() << "Connecting to: " << strIp << ":" << iPort;
         //  Log::out() << "Username: " << strUsername << ":" << strPassword;

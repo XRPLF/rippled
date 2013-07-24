@@ -209,7 +209,7 @@ public:
 
         if (ptr)
         {
-            mPingTimer.expires_from_now (boost::posix_time::seconds (theConfig.WEBSOCKET_PING_FREQ));
+            mPingTimer.expires_from_now (boost::posix_time::seconds (getConfig ().WEBSOCKET_PING_FREQ));
             mPingTimer.async_wait (ptr->get_strand ().wrap (boost::bind (
                                        &WSConnection<endpoint_type>::pingTimer, mConnection, mHandler, boost::asio::placeholders::error)));
         }

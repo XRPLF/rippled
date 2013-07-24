@@ -357,7 +357,7 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
             getApp().getIOService ().post (BIND_TYPE (&LedgerMaster::missingAcquireComplete, this, mMissingLedger));
     }
 
-    int fetchMax = theConfig.getSize (siLedgerFetch);
+    int fetchMax = getConfig ().getSize (siLedgerFetch);
     int timeoutCount;
     int fetchCount = getApp().getInboundLedgers ().getFetchCount (timeoutCount);
 
@@ -480,7 +480,7 @@ void LedgerMaster::resumeAcquiring ()
     if (mMissingLedger && mMissingLedger->isDone ())
         mMissingLedger.reset ();
 
-    if (mMissingLedger || !theConfig.LEDGER_HISTORY)
+    if (mMissingLedger || !getConfig ().LEDGER_HISTORY)
     {
         CondLog (mMissingLedger, lsDEBUG, LedgerMaster) << "Fetch already in progress, not resuming";
         return;
@@ -494,7 +494,7 @@ void LedgerMaster::resumeAcquiring ()
         return;
     }
 
-    if (shouldAcquire (mCurrentLedger->getLedgerSeq (), theConfig.LEDGER_HISTORY, prevMissing))
+    if (shouldAcquire (mCurrentLedger->getLedgerSeq (), getConfig ().LEDGER_HISTORY, prevMissing))
     {
         WriteLog (lsTRACE, LedgerMaster) << "Resuming at " << prevMissing;
         assert (!mCompleteLedgers.hasValue (prevMissing));
@@ -581,7 +581,7 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger)
         mMissingLedger.reset ();
     }
 
-    if (mMissingLedger || !theConfig.LEDGER_HISTORY)
+    if (mMissingLedger || !getConfig ().LEDGER_HISTORY)
     {
         CondLog (mMissingLedger, lsDEBUG, LedgerMaster) << "Fetch already in progress, " << mMissingLedger->getTimeouts () << " timeouts";
         return;
@@ -596,7 +596,7 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger)
     // see if there's a ledger gap we need to fill
     if (!mCompleteLedgers.hasValue (ledger->getLedgerSeq () - 1))
     {
-        if (!shouldAcquire (mCurrentLedger->getLedgerSeq (), theConfig.LEDGER_HISTORY, ledger->getLedgerSeq () - 1))
+        if (!shouldAcquire (mCurrentLedger->getLedgerSeq (), getConfig ().LEDGER_HISTORY, ledger->getLedgerSeq () - 1))
         {
             WriteLog (lsTRACE, LedgerMaster) << "Don't need any ledgers";
             return;
@@ -615,7 +615,7 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger)
             return;
         }
 
-        if (shouldAcquire (mCurrentLedger->getLedgerSeq (), theConfig.LEDGER_HISTORY, prevMissing))
+        if (shouldAcquire (mCurrentLedger->getLedgerSeq (), getConfig ().LEDGER_HISTORY, prevMissing))
         {
             WriteLog (lsDEBUG, LedgerMaster) << "Ledger " << prevMissing << " is needed";
             assert (!mCompleteLedgers.hasValue (prevMissing));
@@ -662,7 +662,7 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
             minVal = val;
     }
 
-    if (theConfig.RUN_STANDALONE)
+    if (getConfig ().RUN_STANDALONE)
         minVal = 0;
     else if (getApp().getOPs ().isNeedNetworkLedger ())
         minVal = 1;

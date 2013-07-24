@@ -42,7 +42,7 @@ public:
 
         // VFALCO TODO Remove this dependency on theConfig
         //
-        s << "PRAGMA cache_size=-" << String (theConfig.getSize(siHashNodeDBCache) * 1024);
+        s << "PRAGMA cache_size=-" << String (getConfig ().getSize(siHashNodeDBCache) * 1024);
         m_db->getDB()->executeSQL (s.toStdString ().c_str ());
     }
 

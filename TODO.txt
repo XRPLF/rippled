@@ -6,13 +6,10 @@ Items marked '*' can be handled by third parties.
 
 Vinnie's Short List (Changes day to day)
 - Review boost::asio wrappers and consolidation of network code in ripple_net
-- Make theConfig a SharedSingleton to prevent leak warnings
 - Refactor Section code into ConfigFile
 - Improved Mutex to track deadlocks
 - Finish unit tests and code for Validators
 - Import beast::db and use it in SQliteBackend
-* Convert some Ripple boost unit tests to Beast.
-- Move all code into modules/
 - Work on KeyvaDB
 
 --------------------------------------------------------------------------------

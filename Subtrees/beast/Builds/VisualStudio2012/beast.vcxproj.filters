@@ -134,6 +134,24 @@
     <Filter Include="beast_db\keyvalue">
       <UniqueIdentifier>{15a98fee-1b52-45eb-9480-514b8750d755}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast_sqlite">
+      <UniqueIdentifier>{cbf5f5a3-5d66-4b6d-996d-20ed14b41793}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_sqlite\sqlite">
+      <UniqueIdentifier>{acd9ab9d-3ba8-4c60-bfb8-36799d9d7a06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_sqdb">
+      <UniqueIdentifier>{67b47aab-8e6a-4acd-9291-d95a8795d6ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_sqdb\api">
+      <UniqueIdentifier>{e666952d-d490-40a2-aa05-2d63ea23284f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_sqdb\detail">
+      <UniqueIdentifier>{3f969218-0a32-41f1-8e05-9a47247cf494}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_sqdb\source">
+      <UniqueIdentifier>{10ef778f-6b81-437e-a6ef-558ff4163acc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -647,6 +665,75 @@
     <ClInclude Include="..\..\modules\beast_db\keyvalue\beast_KeyvaDB.h">
       <Filter>beast_db\keyvalue</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqlite\beast_sqlite.h">
+      <Filter>beast_sqlite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqlite\sqlite\sqlite3.h">
+      <Filter>beast_sqlite\sqlite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqlite\sqlite\sqlite3ext.h">
+      <Filter>beast_sqlite\sqlite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\beast_sqdb.h">
+      <Filter>beast_sqdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\api\backend.h">
+      <Filter>beast_sqdb\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\api\blob.h">
+      <Filter>beast_sqdb\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\api\into.h">
+      <Filter>beast_sqdb\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\api\session.h">
+      <Filter>beast_sqdb\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\api\statement.h">
+      <Filter>beast_sqdb\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\api\transaction.h">
+      <Filter>beast_sqdb\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\api\type_conversion_traits.h">
+      <Filter>beast_sqdb\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\api\use.h">
+      <Filter>beast_sqdb\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\detail\error_codes.h">
+      <Filter>beast_sqdb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\detail\exchange_traits.h">
+      <Filter>beast_sqdb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\detail\into_type.h">
+      <Filter>beast_sqdb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\detail\once_temp_type.h">
+      <Filter>beast_sqdb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\detail\prepare_temp_type.h">
+      <Filter>beast_sqdb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\detail\ref_counted_prepare_info.h">
+      <Filter>beast_sqdb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\detail\ref_counted_statement.h">
+      <Filter>beast_sqdb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\detail\statement_imp.h">
+      <Filter>beast_sqdb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\detail\type_conversion.h">
+      <Filter>beast_sqdb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\detail\type_ptr.h">
+      <Filter>beast_sqdb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_sqdb\detail\use_type.h">
+      <Filter>beast_sqdb\detail</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
@@ -1002,6 +1089,51 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_db\keyvalue\beast_KeyvaDB.cpp">
       <Filter>beast_db\keyvalue</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqlite\beast_sqlite.c">
+      <Filter>beast_sqlite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqlite\sqlite\sqlite3.c">
+      <Filter>beast_sqlite\sqlite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqdb\beast_sqdb.cpp">
+      <Filter>beast_sqdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqdb\source\blob.cpp">
+      <Filter>beast_sqdb\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqdb\source\error_codes.cpp">
+      <Filter>beast_sqdb\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqdb\source\into_type.cpp">
+      <Filter>beast_sqdb\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqdb\source\once_temp_type.cpp">
+      <Filter>beast_sqdb\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqdb\source\prepare_temp_type.cpp">
+      <Filter>beast_sqdb\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqdb\source\ref_counted_prepare_info.cpp">
+      <Filter>beast_sqdb\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqdb\source\ref_counted_statement.cpp">
+      <Filter>beast_sqdb\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqdb\source\session.cpp">
+      <Filter>beast_sqdb\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqdb\source\statement.cpp">
+      <Filter>beast_sqdb\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqdb\source\statement_imp.cpp">
+      <Filter>beast_sqdb\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqdb\source\transaction.cpp">
+      <Filter>beast_sqdb\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqdb\source\use_type.cpp">
+      <Filter>beast_sqdb\source</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

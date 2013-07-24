@@ -704,3 +704,32 @@ Blob SerializerIterator::getRaw (int iLength)
 
     return mSerializer.getRaw (iPos, iLength);
 }
+
+//------------------------------------------------------------------------------
+
+class SerializerTests : public UnitTest
+{
+public:
+    SerializerTests () : UnitTest ("Serializer", "ripple")
+    {
+    }
+
+    void runTest ()
+    {
+        beginTest ("hash");
+
+        Serializer s1;
+        s1.add32 (3);
+        s1.add256 (uint256 ());
+
+        Serializer s2;
+        s2.add32 (0x12345600);
+        s2.addRaw (s1.peekData ());
+
+        expect (s1.getPrefixHash (0x12345600) == s2.getSHA512Half ());
+    }
+};
+
+static SerializerTests serializerTests;
+
+

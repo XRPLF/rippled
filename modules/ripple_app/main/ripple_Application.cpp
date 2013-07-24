@@ -25,8 +25,6 @@ public:
         return new ApplicationImp;
     }
 
-    class Holder;
-
     ApplicationImp ()
     //
     // VFALCO NOTE Change this to control whether or not the Application
@@ -42,7 +40,7 @@ public:
         //
         : SharedSingleton <Application> (SingletonLifetime::neverDestroyed)
     #endif
-        , mIOService ((theConfig.NODE_SIZE >= 2) ? 2 : 1)
+        , mIOService ((getConfig ().NODE_SIZE >= 2) ? 2 : 1)
         , mIOWork (mIOService)
         , mNetOps (new NetworkOPs (&mLedgerMaster))
         , m_rpcServerHandler (*mNetOps)
@@ -52,8 +50,8 @@ public:
         , mJobQueue (mIOService)
         // VFALCO New stuff
         , m_nodeStore (NodeStore::New (
-            theConfig.nodeDatabase,
-            theConfig.ephemeralNodeDatabase,
+            getConfig ().nodeDatabase,
+            getConfig ().ephemeralNodeDatabase,
             *this))
         , m_validators (Validators::New (this))
         , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
@@ -374,7 +372,7 @@ static void runIO (boost::asio::io_service& io)
 void ApplicationImp::setup ()
 {
     // VFALCO NOTE: 0 means use heuristics to determine the thread count.
-    mJobQueue.setThreadCount (0, theConfig.RUN_STANDALONE);
+    mJobQueue.setThreadCount (0, getConfig ().RUN_STANDALONE);
 
     mSweepTimer.expires_from_now (boost::posix_time::seconds (10));
     mSweepTimer.async_wait (BIND_TYPE (&ApplicationImp::sweep, this));
@@ -384,7 +382,7 @@ void ApplicationImp::setup ()
 #if ! BEAST_WIN32
 #ifdef SIGINT
 
-    if (!theConfig.RUN_STANDALONE)
+    if (!getConfig ().RUN_STANDALONE)
     {
         struct sigaction sa;
         memset (&sa, 0, sizeof (sa));
@@ -397,10 +395,10 @@ void ApplicationImp::setup ()
 
     assert (mTxnDB == NULL);
 
-    if (!theConfig.DEBUG_LOGFILE.empty ())
+    if (!getConfig ().DEBUG_LOGFILE.empty ())
     {
         // Let debug messages go to the file but only WARNING or higher to regular output (unless verbose)
-        Log::setLogFile (theConfig.DEBUG_LOGFILE);
+        Log::setLogFile (getConfig ().DEBUG_LOGFILE);
 
         if (Log::getMinSeverity () > lsDEBUG)
             LogPartition::setSeverity (lsDEBUG);
@@ -408,8 +406,8 @@ void ApplicationImp::setup ()
 
     boost::thread (BIND_TYPE (runAux, boost::ref (mAuxService))).detach ();
 
-    if (!theConfig.RUN_STANDALONE)
-        mSNTPClient.init (theConfig.SNTP_SERVERS);
+    if (!getConfig ().RUN_STANDALONE)
+        mSNTPClient.init (getConfig ().SNTP_SERVERS);
 
     //
     // Construct databases.
@@ -425,41 +423,41 @@ void ApplicationImp::setup ()
 
     leveldb::Options options;
     options.create_if_missing = true;
-    options.block_cache = leveldb::NewLRUCache (theConfig.getSize (siHashNodeDBCache) * 1024 * 1024);
+    options.block_cache = leveldb::NewLRUCache (getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
 
     getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-            (theConfig.getSize (siLgrDBCache) * 1024)));
+            (getConfig ().getSize (siLgrDBCache) * 1024)));
     getApp().getTxnDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-            (theConfig.getSize (siTxnDBCache) * 1024)));
+            (getConfig ().getSize (siTxnDBCache) * 1024)));
 
     mTxnDB->getDB ()->setupCheckpointing (&mJobQueue);
     mLedgerDB->getDB ()->setupCheckpointing (&mJobQueue);
 
-    if (!theConfig.RUN_STANDALONE)
+    if (!getConfig ().RUN_STANDALONE)
         updateTables ();
 
     mFeatures->addInitialFeatures ();
 
-    if (theConfig.START_UP == Config::FRESH)
+    if (getConfig ().START_UP == Config::FRESH)
     {
         WriteLog (lsINFO, Application) << "Starting new Ledger";
 
         startNewLedger ();
     }
-    else if ((theConfig.START_UP == Config::LOAD) || (theConfig.START_UP == Config::REPLAY))
+    else if ((getConfig ().START_UP == Config::LOAD) || (getConfig ().START_UP == Config::REPLAY))
     {
         WriteLog (lsINFO, Application) << "Loading specified Ledger";
 
-        if (!loadOldLedger (theConfig.START_LEDGER, theConfig.START_UP == Config::REPLAY))
+        if (!loadOldLedger (getConfig ().START_LEDGER, getConfig ().START_UP == Config::REPLAY))
         {
             getApp().stop ();
             exit (-1);
         }
     }
-    else if (theConfig.START_UP == Config::NETWORK)
+    else if (getConfig ().START_UP == Config::NETWORK)
     {
         // This should probably become the default once we have a stable network
-        if (!theConfig.RUN_STANDALONE)
+        if (!getConfig ().RUN_STANDALONE)
             mNetOps->needNetworkLedger ();
 
         startNewLedger ();
@@ -478,28 +476,28 @@ void ApplicationImp::setup ()
     //
     // Set up UNL.
     //
-    if (!theConfig.RUN_STANDALONE)
+    if (!getConfig ().RUN_STANDALONE)
         getUNL ().nodeBootstrap ();
 
-    mValidations->tune (theConfig.getSize (siValidationsSize), theConfig.getSize (siValidationsAge));
-    m_nodeStore->tune (theConfig.getSize (siNodeCacheSize), theConfig.getSize (siNodeCacheAge));
-    mLedgerMaster.tune (theConfig.getSize (siLedgerSize), theConfig.getSize (siLedgerAge));
-    mSLECache.setTargetSize (theConfig.getSize (siSLECacheSize));
-    mSLECache.setTargetAge (theConfig.getSize (siSLECacheAge));
+    mValidations->tune (getConfig ().getSize (siValidationsSize), getConfig ().getSize (siValidationsAge));
+    m_nodeStore->tune (getConfig ().getSize (siNodeCacheSize), getConfig ().getSize (siNodeCacheAge));
+    mLedgerMaster.tune (getConfig ().getSize (siLedgerSize), getConfig ().getSize (siLedgerAge));
+    mSLECache.setTargetSize (getConfig ().getSize (siSLECacheSize));
+    mSLECache.setTargetAge (getConfig ().getSize (siSLECacheAge));
 
-    mLedgerMaster.setMinValidations (theConfig.VALIDATION_QUORUM);
+    mLedgerMaster.setMinValidations (getConfig ().VALIDATION_QUORUM);
 
     //
     // Allow peer connections.
     //
-    if (!theConfig.RUN_STANDALONE)
+    if (!getConfig ().RUN_STANDALONE)
     {
         try
         {
             mPeerDoor = PeerDoor::New (
-                theConfig.PEER_IP,
-                theConfig.PEER_PORT,
-                theConfig.PEER_SSL_CIPHER_LIST,
+                getConfig ().PEER_IP,
+                getConfig ().PEER_PORT,
+                getConfig ().PEER_SSL_CIPHER_LIST,
                 mIOService);
         }
         catch (const std::exception& e)
@@ -518,7 +516,7 @@ void ApplicationImp::setup ()
     //
     // Allow RPC connections.
     //
-    if (! theConfig.getRpcIP().empty () && theConfig.getRpcPort() != 0)
+    if (! getConfig ().getRpcIP().empty () && getConfig ().getRpcPort() != 0)
     {
         try
         {
@@ -540,11 +538,11 @@ void ApplicationImp::setup ()
     //
     // Allow private WS connections.
     //
-    if (!theConfig.WEBSOCKET_IP.empty () && theConfig.WEBSOCKET_PORT)
+    if (!getConfig ().WEBSOCKET_IP.empty () && getConfig ().WEBSOCKET_PORT)
     {
         try
         {
-            mWSPrivateDoor  = WSDoor::createWSDoor (theConfig.WEBSOCKET_IP, theConfig.WEBSOCKET_PORT, false);
+            mWSPrivateDoor  = WSDoor::createWSDoor (getConfig ().WEBSOCKET_IP, getConfig ().WEBSOCKET_PORT, false);
         }
         catch (const std::exception& e)
         {
@@ -562,11 +560,11 @@ void ApplicationImp::setup ()
     //
     // Allow public WS connections.
     //
-    if (!theConfig.WEBSOCKET_PUBLIC_IP.empty () && theConfig.WEBSOCKET_PUBLIC_PORT)
+    if (!getConfig ().WEBSOCKET_PUBLIC_IP.empty () && getConfig ().WEBSOCKET_PUBLIC_PORT)
     {
         try
         {
-            mWSPublicDoor   = WSDoor::createWSDoor (theConfig.WEBSOCKET_PUBLIC_IP, theConfig.WEBSOCKET_PUBLIC_PORT, true);
+            mWSPublicDoor   = WSDoor::createWSDoor (getConfig ().WEBSOCKET_PUBLIC_IP, getConfig ().WEBSOCKET_PUBLIC_PORT, true);
         }
         catch (const std::exception& e)
         {
@@ -584,10 +582,10 @@ void ApplicationImp::setup ()
     //
     // Begin connecting to network.
     //
-    if (!theConfig.RUN_STANDALONE)
+    if (!getConfig ().RUN_STANDALONE)
         mPeers->start ();
 
-    if (theConfig.RUN_STANDALONE)
+    if (getConfig ().RUN_STANDALONE)
     {
         WriteLog (lsWARNING, Application) << "Running in standalone mode";
 
@@ -603,12 +601,12 @@ void ApplicationImp::setup ()
 
 void ApplicationImp::run ()
 {
-    if (theConfig.NODE_SIZE >= 2)
+    if (getConfig ().NODE_SIZE >= 2)
     {
         boost::thread (BIND_TYPE (runIO, boost::ref (mIOService))).detach ();
     }
 
-    if (!theConfig.RUN_STANDALONE)
+    if (!getConfig ().RUN_STANDALONE)
     {
         // VFALCO NOTE This seems unnecessary. If we properly refactor the load
         //             manager then the deadlock detector can just always be "armed"
@@ -642,7 +640,7 @@ void ApplicationImp::run ()
 
 void ApplicationImp::sweep ()
 {
-    boost::filesystem::space_info space = boost::filesystem::space (theConfig.DATA_DIR);
+    boost::filesystem::space_info space = boost::filesystem::space (getConfig ().DATA_DIR);
 
     // VFALCO TODO Give this magic constant a name and move it into a well documented header
     //
@@ -674,7 +672,7 @@ void ApplicationImp::doSweep(Job& j)
     SHAMap::sweep (); // VFALCO NOTE SHAMap is/has a singleton?
     mNetOps->sweepFetchPack ();
     // VFALCO NOTE does the call to sweep() happen on another thread?
-    mSweepTimer.expires_from_now (boost::posix_time::seconds (theConfig.getSize (siSweepInterval)));
+    mSweepTimer.expires_from_now (boost::posix_time::seconds (getConfig ().getSize (siSweepInterval)));
     mSweepTimer.async_wait (BIND_TYPE (&ApplicationImp::sweep, this));
 }
 
@@ -808,7 +806,7 @@ bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
 
 bool serverOkay (std::string& reason)
 {
-    if (!theConfig.ELB_SUPPORT)
+    if (!getConfig ().ELB_SUPPORT)
         return true;
 
     if (getApp().isShutdown ())
@@ -955,7 +953,7 @@ static void addTxnSeqField ()
 
 void ApplicationImp::updateTables ()
 {
-    if (theConfig.nodeDatabase.size () <= 0)
+    if (getConfig ().nodeDatabase.size () <= 0)
     {
         Log (lsFATAL) << "The [node_db] configuration setting has been updated and must be set";
         StopSustain ();
@@ -974,9 +972,9 @@ void ApplicationImp::updateTables ()
         exit (1);
     }
 
-    if (theConfig.importNodeDatabase.size () > 0)
+    if (getConfig ().importNodeDatabase.size () > 0)
     {
-        ScopedPointer <NodeStore> source (NodeStore::New (theConfig.importNodeDatabase));
+        ScopedPointer <NodeStore> source (NodeStore::New (getConfig ().importNodeDatabase));
 
         WriteLog (lsWARNING, NodeObject) <<
             "Node import from '" << source->getName () << "' to '"

@@ -14,20 +14,20 @@ int iAdminGet (const Json::Value& params, const std::string& strRemoteIp)
 {
     int     iRole;
     bool    bPasswordSupplied   = params.isMember ("admin_user") || params.isMember ("admin_password");
-    bool    bPasswordRequired   = !theConfig.RPC_ADMIN_USER.empty () || !theConfig.RPC_ADMIN_PASSWORD.empty ();
+    bool    bPasswordRequired   = !getConfig ().RPC_ADMIN_USER.empty () || !getConfig ().RPC_ADMIN_PASSWORD.empty ();
 
     bool    bPasswordWrong      = bPasswordSupplied
                                   ? bPasswordRequired
                                   // Supplied, required, and incorrect.
-                                  ? theConfig.RPC_ADMIN_USER != (params.isMember ("admin_user") ? params["admin_user"].asString () : "")
-                                  || theConfig.RPC_ADMIN_PASSWORD != (params.isMember ("admin_user") ? params["admin_password"].asString () : "")
+                                  ? getConfig ().RPC_ADMIN_USER != (params.isMember ("admin_user") ? params["admin_user"].asString () : "")
+                                  || getConfig ().RPC_ADMIN_PASSWORD != (params.isMember ("admin_user") ? params["admin_password"].asString () : "")
                                   // Supplied and not required.
                                       : true
                                       : false;
     // Meets IP restriction for admin.
     bool    bAdminIP            = false;
 
-    BOOST_FOREACH (const std::string & strAllowIp, theConfig.RPC_ADMIN_ALLOW)
+    BOOST_FOREACH (const std::string & strAllowIp, getConfig ().RPC_ADMIN_ALLOW)
     {
         if (strAllowIp == strRemoteIp)
             bAdminIP    = true;
@@ -132,7 +132,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
                 || "TrustSet" == sType))
     {
 //        feeReq = lSnapshot->scaleFeeLoad(, 
-        txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
+        txJSON["Fee"] = (int) getConfig ().FEE_DEFAULT;
     }
 
     if ("Payment" == sType)
@@ -194,7 +194,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
                 Pathfinder pf (cache, raSrcAddressID, dstAccountID,
                                saSendMax.getCurrency (), saSendMax.getIssuer (), saSend, bValid);
 
-                if (!bValid || !pf.findPaths (theConfig.PATH_SEARCH_SIZE, 3, spsPaths))
+                if (!bValid || !pf.findPaths (getConfig ().PATH_SEARCH_SIZE, 3, spsPaths))
                 {
                     WriteLog (lsDEBUG, RPCHandler) << "transactionSign: build_path: No paths found.";
 
@@ -211,6 +211,16 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
                 }
             }
         }
+    }
+
+    if (!txJSON.isMember ("Fee")
+            && (
+                "AccountSet" == txJSON["TransactionType"].asString ()
+                || "OfferCreate" == txJSON["TransactionType"].asString ()
+                || "OfferCancel" == txJSON["TransactionType"].asString ()
+                || "TrustSet" == txJSON["TransactionType"].asString ()))
+    {
+        txJSON["Fee"] = (int) getConfig ().FEE_DEFAULT;
     }
 
     if (!txJSON.isMember ("Sequence"))
@@ -252,7 +262,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
 
     // Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
     // related.
-    while (!bFound && iIndex != theConfig.ACCOUNT_PROBE_MAX)
+    while (!bFound && iIndex != getConfig ().ACCOUNT_PROBE_MAX)
     {
         naMasterAccountPublic.setAccountPublic (naMasterGenerator, iIndex);
 
@@ -473,7 +483,7 @@ Json::Value RPCHandler::authorize (Ledger::ref lrLedger,
 
     // Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
     // related.
-    while (!bFound && iIndex != theConfig.ACCOUNT_PROBE_MAX)
+    while (!bFound && iIndex != getConfig ().ACCOUNT_PROBE_MAX)
     {
         naMasterAccountPublic.setAccountPublic (naMasterGenerator, iIndex);
 
@@ -640,7 +650,7 @@ Json::Value RPCHandler::doAccountInfo (Json::Value params, LoadType* loadType, A
 // XXX Might allow domain for manual connections.
 Json::Value RPCHandler::doConnect (Json::Value params, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
 {
-    if (theConfig.RUN_STANDALONE)
+    if (getConfig ().RUN_STANDALONE)
         return "cannot connect in standalone mode";
 
     if (!params.isMember ("ip"))
@@ -864,7 +874,7 @@ Json::Value RPCHandler::doProfile (Json::Value params, LoadType* loadType, Appli
         STAmount                saSrcBalanceA;
 
         Json::Value             jvObjA      = authorize(uint256(0), naSeedA, naAccountA, naAccountPublicA, naAccountPrivateA,
-            saSrcBalanceA, theConfig.FEE_DEFAULT, asSrcA, naMasterGeneratorA);
+            saSrcBalanceA, getConfig ().FEE_DEFAULT, asSrcA, naMasterGeneratorA);
 
         if (!jvObjA.empty())
             return jvObjA;
@@ -873,7 +883,7 @@ Json::Value RPCHandler::doProfile (Json::Value params, LoadType* loadType, Appli
             naAccountPublicA, naAccountPrivateA,
             naAccountA,                                                 // naSourceAccount,
             asSrcA->getSeq(),                                           // uSeq
-            theConfig.FEE_DEFAULT,
+            getConfig ().FEE_DEFAULT,
             0,                                                          // uSourceTag,
             false,                                                      // bPassive
             STAmount(uCurrencyOfferA, naAccountA.getAccountID(), 1),    // saTakerPays
@@ -1538,7 +1548,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, LoadType* loadType
             bool        bValid;
             Pathfinder  pf (cache, raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount, bValid);
 
-            if (!bValid || !pf.findPaths (theConfig.PATH_SEARCH_SIZE, 3, spsComputed))
+            if (!bValid || !pf.findPaths (getConfig ().PATH_SEARCH_SIZE, 3, spsComputed))
             {
                 WriteLog (lsWARNING, RPCHandler) << "ripple_path_find: No paths found.";
             }
@@ -2143,25 +2153,25 @@ Json::Value RPCHandler::doValidationSeed (Json::Value params, LoadType* loadType
     {
         Log::out() << "Unset validation seed.";
 
-        theConfig.VALIDATION_SEED.clear ();
-        theConfig.VALIDATION_PUB.clear ();
-        theConfig.VALIDATION_PRIV.clear ();
+        getConfig ().VALIDATION_SEED.clear ();
+        getConfig ().VALIDATION_PUB.clear ();
+        getConfig ().VALIDATION_PRIV.clear ();
     }
-    else if (!theConfig.VALIDATION_SEED.setSeedGeneric (params["secret"].asString ()))
+    else if (!getConfig ().VALIDATION_SEED.setSeedGeneric (params["secret"].asString ()))
     {
-        theConfig.VALIDATION_PUB.clear ();
-        theConfig.VALIDATION_PRIV.clear ();
+        getConfig ().VALIDATION_PUB.clear ();
+        getConfig ().VALIDATION_PRIV.clear ();
 
         return rpcError (rpcBAD_SEED);
     }
     else
     {
-        theConfig.VALIDATION_PUB = RippleAddress::createNodePublic (theConfig.VALIDATION_SEED);
-        theConfig.VALIDATION_PRIV = RippleAddress::createNodePrivate (theConfig.VALIDATION_SEED);
+        getConfig ().VALIDATION_PUB = RippleAddress::createNodePublic (getConfig ().VALIDATION_SEED);
+        getConfig ().VALIDATION_PRIV = RippleAddress::createNodePrivate (getConfig ().VALIDATION_SEED);
 
-        obj["validation_public_key"]    = theConfig.VALIDATION_PUB.humanNodePublic ();
-        obj["validation_seed"]          = theConfig.VALIDATION_SEED.humanSeed ();
-        obj["validation_key"]           = theConfig.VALIDATION_SEED.humanSeed1751 ();
+        obj["validation_public_key"]    = getConfig ().VALIDATION_PUB.humanNodePublic ();
+        obj["validation_seed"]          = getConfig ().VALIDATION_SEED.humanSeed ();
+        obj["validation_key"]           = getConfig ().VALIDATION_SEED.humanSeed1751 ();
     }
 
     return obj;
@@ -2334,7 +2344,7 @@ Json::Value RPCHandler::doLogin (Json::Value params, LoadType* loadType, Applica
             || !params.isMember ("password"))
         return rpcError (rpcINVALID_PARAMS);
 
-    if (params["username"].asString () == theConfig.RPC_USER && params["password"].asString () == theConfig.RPC_PASSWORD)
+    if (params["username"].asString () == getConfig ().RPC_USER && params["password"].asString () == getConfig ().RPC_PASSWORD)
     {
         //mRole=ADMIN;
         return "logged in";
@@ -2559,7 +2569,7 @@ Json::Value RPCHandler::doUnlList (Json::Value, LoadType* loadType, Application:
 // Populate the UNL from a local validators.txt file.
 Json::Value RPCHandler::doUnlLoad (Json::Value, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
 {
-    if (theConfig.VALIDATORS_FILE.empty () || !getApp().getUNL ().nodeLoad (theConfig.VALIDATORS_FILE))
+    if (getConfig ().VALIDATORS_FILE.empty () || !getApp().getUNL ().nodeLoad (getConfig ().VALIDATORS_FILE))
     {
         return rpcError (rpcLOAD_FAILED);
     }
@@ -2612,7 +2622,7 @@ Json::Value RPCHandler::doLedgerAccept (Json::Value, LoadType* loadType, Applica
 {
     Json::Value jvResult;
 
-    if (!theConfig.RUN_STANDALONE)
+    if (!getConfig ().RUN_STANDALONE)
     {
         jvResult["error"]   = "notStandAlone";
     }
@@ -3702,7 +3712,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
             return rpcError (rpcNO_NETWORK);
         }
 
-        if (!theConfig.RUN_STANDALONE && (commandsA[i].iOptions & optCurrent) && (getApp().getLedgerMaster().getValidatedLedgerAge() > 120))
+        if (!getConfig ().RUN_STANDALONE && (commandsA[i].iOptions & optCurrent) && (getApp().getLedgerMaster().getValidatedLedgerAge() > 120))
         {
             return rpcError (rpcNO_CURRENT);
         }

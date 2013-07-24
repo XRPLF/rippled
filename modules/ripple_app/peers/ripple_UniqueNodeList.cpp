@@ -428,49 +428,49 @@ public:
         bool    bLoaded = iDomains || iNodes;
 
         // Always merge in the file specified in the config.
-        if (!theConfig.VALIDATORS_FILE.empty ())
+        if (!getConfig ().VALIDATORS_FILE.empty ())
         {
             WriteLog (lsINFO, UniqueNodeList) << "Bootstrapping UNL: loading from unl_default.";
 
-            bLoaded = nodeLoad (theConfig.VALIDATORS_FILE);
+            bLoaded = nodeLoad (getConfig ().VALIDATORS_FILE);
         }
 
         // If never loaded anything try the current directory.
-        if (!bLoaded && theConfig.VALIDATORS_FILE.empty ())
+        if (!bLoaded && getConfig ().VALIDATORS_FILE.empty ())
         {
             WriteLog (lsINFO, UniqueNodeList) << boost::str (boost::format ("Bootstrapping UNL: loading from '%s'.")
-                                              % theConfig.VALIDATORS_BASE);
+                                              % getConfig ().VALIDATORS_BASE);
 
-            bLoaded = nodeLoad (theConfig.VALIDATORS_BASE);
+            bLoaded = nodeLoad (getConfig ().VALIDATORS_BASE);
         }
 
         // Always load from rippled.cfg
-        if (!theConfig.VALIDATORS.empty ())
+        if (!getConfig ().VALIDATORS.empty ())
         {
             RippleAddress   naInvalid;  // Don't want a referrer on added entries.
 
             WriteLog (lsINFO, UniqueNodeList) << boost::str (boost::format ("Bootstrapping UNL: loading from '%s'.")
-                                              % theConfig.CONFIG_FILE);
+                                              % getConfig ().CONFIG_FILE);
 
-            if (processValidators ("local", theConfig.CONFIG_FILE.string (), naInvalid, vsConfig, &theConfig.VALIDATORS))
+            if (processValidators ("local", getConfig ().CONFIG_FILE.string (), naInvalid, vsConfig, &getConfig ().VALIDATORS))
                 bLoaded = true;
         }
 
         if (!bLoaded)
         {
             WriteLog (lsINFO, UniqueNodeList) << boost::str (boost::format ("Bootstrapping UNL: loading from '%s'.")
-                                              % theConfig.VALIDATORS_SITE);
+                                              % getConfig ().VALIDATORS_SITE);
 
             nodeNetwork ();
         }
 
-        if (!theConfig.IPS.empty ())
+        if (!getConfig ().IPS.empty ())
         {
             std::vector<std::string>    vstrValues;
 
-            vstrValues.reserve (theConfig.IPS.size ());
+            vstrValues.reserve (getConfig ().IPS.size ());
 
-            BOOST_FOREACH (const std::string & strPeer, theConfig.IPS)
+            BOOST_FOREACH (const std::string & strPeer, getConfig ().IPS)
             {
                 std::string     strIP;
                 int             iPort;
@@ -552,14 +552,14 @@ public:
 
     void nodeNetwork ()
     {
-        if (!theConfig.VALIDATORS_SITE.empty ())
+        if (!getConfig ().VALIDATORS_SITE.empty ())
         {
             HttpsClient::httpsGet (
                 true,
                 getApp().getIOService (),
-                theConfig.VALIDATORS_SITE,
+                getConfig ().VALIDATORS_SITE,
                 443,
-                theConfig.VALIDATORS_URI,
+                getConfig ().VALIDATORS_URI,
                 VALIDATORS_FILE_BYTES_MAX,
                 boost::posix_time::seconds (VALIDATORS_FETCH_SECONDS),
                 BIND_TYPE (&UniqueNodeListImp::validatorsResponse, this, P_1, P_2, P_3));
@@ -674,7 +674,7 @@ private:
     void trustedLoad ()
     {
         boost::regex rNode ("\\`\\s*(\\S+)[\\s]*(.*)\\'");
-        BOOST_FOREACH (const std::string & c, theConfig.CLUSTER_NODES)
+        BOOST_FOREACH (const std::string & c, getConfig ().CLUSTER_NODES)
         {
             boost::smatch match;
 
@@ -1992,7 +1992,7 @@ private:
 
             if (!err)
             {
-                nodeProcess ("network", strResponse, theConfig.VALIDATORS_SITE);
+                nodeProcess ("network", strResponse, getConfig ().VALIDATORS_SITE);
             }
             else
             {
@@ -2027,7 +2027,7 @@ private:
         else
         {
             WriteLog (lsWARNING, UniqueNodeList) << boost::str (boost::format ("'%s' missing [" SECTION_VALIDATORS "].")
-                                                 % theConfig.VALIDATORS_BASE);
+                                                 % getConfig ().VALIDATORS_BASE);
         }
     }
 

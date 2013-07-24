@@ -18,7 +18,11 @@
 
 // VFALCO TODO Convert this to a SharedSingleton to prevent exit leaks
 //
-Config theConfig;
+Config& getConfig ()
+{
+    static Config config;
+    return config;
+}
 
 Config::Config ()
     : m_rpcPort (5001)
@@ -315,13 +319,13 @@ void Config::load ()
             //
             // VFALCO BEGIN CLEAN
             //
-            theConfig.nodeDatabase = parseKeyValueSection (
+            getConfig ().nodeDatabase = parseKeyValueSection (
                 secConfig, ConfigSection::nodeDatabase ());
 
-            theConfig.ephemeralNodeDatabase = parseKeyValueSection (
+            getConfig ().ephemeralNodeDatabase = parseKeyValueSection (
                 secConfig, ConfigSection::tempNodeDatabase ());
 
-            theConfig.importNodeDatabase = parseKeyValueSection (
+            getConfig ().importNodeDatabase = parseKeyValueSection (
                 secConfig, ConfigSection::importNodeDatabase ());
             //
             // VFALCO END CLEAN
