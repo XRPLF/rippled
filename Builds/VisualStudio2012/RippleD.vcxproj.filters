@@ -37,9 +37,6 @@
     <Filter Include="[1] Ripple\ripple_leveldb">
       <UniqueIdentifier>{487f6b35-d0a3-4b34-85c1-94e2aad4c9ff}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[1] Ripple\ripple_sqlite">
-      <UniqueIdentifier>{e119423b-04d2-4ce8-9794-1c2abd6a9cb5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[1] Ripple\ripple_websocket">
       <UniqueIdentifier>{6ad1f6a2-1710-43ac-96d4-f6b54fd8379e}</UniqueIdentifier>
     </Filter>
@@ -323,9 +320,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_leveldb\ripple_leveldb.cpp">
       <Filter>[1] Ripple\ripple_leveldb</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_sqlite\ripple_sqlite.c">
-      <Filter>[1] Ripple\ripple_sqlite</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_websocket\autosocket\ripple_AutoSocket.cpp">
       <Filter>[1] Ripple\ripple_websocket\autosocket</Filter>
@@ -613,9 +607,6 @@
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\ledger\LedgerTiming.cpp">
-      <Filter>[1] Ripple\ripple_app\ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\ledger\LedgerUnitTests.cpp">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\ledger\OrderBookDB.cpp">
@@ -1079,9 +1070,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_leveldb\ripple_leveldb.h">
       <Filter>[1] Ripple\ripple_leveldb</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_sqlite\ripple_sqlite.h">
-      <Filter>[1] Ripple\ripple_sqlite</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_websocket\autosocket\ripple_AutoSocket.h">
       <Filter>[1] Ripple\ripple_websocket\autosocket</Filter>
