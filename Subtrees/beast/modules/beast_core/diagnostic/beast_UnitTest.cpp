@@ -72,12 +72,26 @@ void UnitTest::beginTest (const String& testName)
     m_runner->beginNewTest (this, testName);
 }
 
+void UnitTest::pass ()
+{
+    m_runner->addPass();
+}
+
+void UnitTest::fail (String const& failureMessage)
+{
+    m_runner->addFail (failureMessage);
+}
+
 void UnitTest::expect (const bool result, const String& failureMessage)
 {
     if (result)
-        m_runner->addPass();
+    {
+        pass ();
+    }
     else
-        m_runner->addFail (failureMessage);
+    {
+        fail (failureMessage);
+    }
 }
 
 //==============================================================================
