@@ -112,84 +112,84 @@ namespace ripple
 #include "node/ripple_NullBackendFactory.h"
 #include "node/ripple_SqliteBackendFactory.h"
 
-#include "src/cpp/ripple/ripple_SHAMapItem.h"
-#include "src/cpp/ripple/ripple_SHAMapNode.h"
-#include "src/cpp/ripple/ripple_SHAMapTreeNode.h"
-#include "src/cpp/ripple/ripple_SHAMapMissingNode.h"
-#include "src/cpp/ripple/ripple_SHAMapSyncFilter.h"
-#include "src/cpp/ripple/ripple_SHAMapAddNode.h"
-#include "src/cpp/ripple/ripple_SHAMap.h"
-#include "src/cpp/ripple/ripple_SerializedTransaction.h"
-#include "src/cpp/ripple/ripple_SerializedLedger.h"
-#include "src/cpp/ripple/TransactionMeta.h"
-#include "src/cpp/ripple/Transaction.h"
-#include "src/cpp/ripple/ripple_AccountState.h"
-#include "src/cpp/ripple/ripple_NicknameState.h"
+#include "shamap/ripple_SHAMapItem.h"
+#include "shamap/ripple_SHAMapNode.h"
+#include "shamap/ripple_SHAMapTreeNode.h"
+#include "shamap/ripple_SHAMapMissingNode.h"
+#include "shamap/ripple_SHAMapSyncFilter.h"
+#include "shamap/ripple_SHAMapAddNode.h"
+#include "shamap/ripple_SHAMap.h"
+#include "misc/ripple_SerializedTransaction.h"
+#include "misc/ripple_SerializedLedger.h"
+#include "tx/TransactionMeta.h"
+#include "tx/Transaction.h"
+#include "misc/ripple_AccountState.h"
+#include "misc/ripple_NicknameState.h"
 #include "ledger/Ledger.h"
 #include "ledger/SerializedValidation.h"
-#include "src/cpp/ripple/ripple_ILoadManager.h"
-#include "src/cpp/ripple/ripple_ProofOfWork.h"
-#include "src/cpp/ripple/ripple_InfoSub.h"
-#include "src/cpp/ripple/ripple_OrderBook.h"
-#include "src/cpp/ripple/ripple_SHAMapSyncFilters.h"
-#include "src/cpp/ripple/ripple_IFeatures.h"
-#include "src/cpp/ripple/ripple_IFeeVote.h"
-#include "src/cpp/ripple/ripple_IHashRouter.h"
-#include "src/cpp/ripple/ripple_Peer.h" // VFALCO TODO Rename to IPeer
-#include "src/cpp/ripple/ripple_IPeers.h"
-#include "src/cpp/ripple/ripple_IProofOfWorkFactory.h"
-#include "src/cpp/ripple/ripple_ClusterNodeStatus.h"
-#include "src/cpp/ripple/ripple_UniqueNodeList.h"
-#include "src/cpp/ripple/ripple_IValidations.h"
-#include "src/cpp/ripple/ripple_PeerSet.h"
+#include "main/ripple_ILoadManager.h"
+#include "misc/ripple_ProofOfWork.h"
+#include "misc/ripple_InfoSub.h"
+#include "misc/ripple_OrderBook.h"
+#include "shamap/ripple_SHAMapSyncFilters.h"
+#include "misc/ripple_IFeatures.h"
+#include "misc/ripple_IFeeVote.h"
+#include "misc/ripple_IHashRouter.h"
+#include "peers/ripple_Peer.h" // VFALCO TODO Rename to IPeer
+#include "peers/ripple_IPeers.h"
+#include "misc/ripple_IProofOfWorkFactory.h"
+#include "peers/ripple_ClusterNodeStatus.h"
+#include "peers/ripple_UniqueNodeList.h"
+#include "misc/ripple_IValidations.h"
+#include "peers/ripple_PeerSet.h"
 #include "ledger/ripple_InboundLedger.h"
 #include "ledger/ripple_InboundLedgers.h"
-#include "src/cpp/ripple/ripple_AccountItem.h"
-#include "src/cpp/ripple/ripple_AccountItems.h"
+#include "misc/ripple_AccountItem.h"
+#include "misc/ripple_AccountItems.h"
 #include "ledger/ripple_AcceptedLedgerTx.h"
 #include "ledger/ripple_AcceptedLedger.h"
 #include "ledger/ripple_LedgerEntrySet.h"
-#include "src/cpp/ripple/TransactionEngine.h"
-#include "src/cpp/ripple/ripple_CanonicalTXSet.h"
+#include "tx/TransactionEngine.h"
+#include "misc/ripple_CanonicalTXSet.h"
 #include "ledger/ripple_LedgerHistory.h"
 #include "ledger/LedgerMaster.h"
 #include "ledger/LedgerProposal.h"
-#include "src/cpp/ripple/NetworkOPs.h"
-#include "src/cpp/ripple/TransactionMaster.h"
-#include "src/cpp/ripple/ripple_LocalCredentials.h"
-#include "src/cpp/ripple/WSDoor.h"
-#include "src/cpp/ripple/ripple_Application.h"
-#include "src/cpp/ripple/RPCHandler.h"
-#include "src/cpp/ripple/TransactionQueue.h"
+#include "misc/NetworkOPs.h"
+#include "tx/TransactionMaster.h"
+#include "main/ripple_LocalCredentials.h"
+#include "network/WSDoor.h"
+#include "main/ripple_Application.h"
+#include "rpc/RPCHandler.h"
+#include "tx/TransactionQueue.h"
 #include "ledger/OrderBookDB.h"
-#include "src/cpp/ripple/CallRPC.h"
-#include "src/cpp/ripple/Transactor.h"
-#include "src/cpp/ripple/ChangeTransactor.h"
-#include "src/cpp/ripple/ripple_TransactionAcquire.h"
-#include "src/cpp/ripple/ripple_DisputedTx.h"
-#include "src/cpp/ripple/ripple_LedgerConsensus.h"
+#include "rpc/CallRPC.h"
+#include "tx/Transactor.h"
+#include "tx/ChangeTransactor.h"
+#include "tx/ripple_TransactionAcquire.h"
+#include "consensus/ripple_DisputedTx.h"
+#include "consensus/ripple_LedgerConsensus.h"
 #include "ledger/LedgerTiming.h"
-#include "src/cpp/ripple/ripple_Offer.h"
-#include "src/cpp/ripple/OfferCancelTransactor.h"
-#include "src/cpp/ripple/OfferCreateTransactor.h"
-#include "src/cpp/ripple/ripple_PathRequest.h"
-#include "src/cpp/ripple/ParameterTable.h"
- #include "src/cpp/ripple/ripple_RippleLineCache.h"
- #include "src/cpp/ripple/ripple_PathState.h"
- #include "src/cpp/ripple/ripple_RippleCalc.h"
-#include  "src/cpp/ripple/ripple_Pathfinder.h"
-#include "src/cpp/ripple/PaymentTransactor.h"
-#include "src/cpp/ripple/PeerDoor.h"
-#include "src/cpp/ripple/RPC.h"
-#include "src/cpp/ripple/RPCErr.h"
-#include "src/cpp/ripple/RPCSub.h"
-#include "src/cpp/ripple/RegularKeySetTransactor.h"
-#include "src/cpp/ripple/ripple_RippleState.h"
-#include "src/cpp/ripple/AccountSetTransactor.h"
-#include "src/cpp/ripple/TrustSetTransactor.h"
-#include "src/cpp/ripple/WSConnection.h"
-#include "src/cpp/ripple/ripple_WSHandler.h"
-#include "src/cpp/ripple/WalletAddTransactor.h"
+#include "misc/ripple_Offer.h"
+#include "tx/OfferCancelTransactor.h"
+#include "tx/OfferCreateTransactor.h"
+#include "paths/ripple_PathRequest.h"
+#include "main/ParameterTable.h"
+ #include "paths/ripple_RippleLineCache.h"
+ #include "paths/ripple_PathState.h"
+ #include "paths/ripple_RippleCalc.h"
+#include  "paths/ripple_Pathfinder.h"
+#include "tx/PaymentTransactor.h"
+#include "peers/PeerDoor.h"
+#include "rpc/RPC.h"
+#include "rpc/RPCErr.h"
+#include "rpc/RPCSub.h"
+#include "tx/RegularKeySetTransactor.h"
+#include "paths/ripple_RippleState.h"
+#include "tx/AccountSetTransactor.h"
+#include "tx/TrustSetTransactor.h"
+#include "network/WSConnection.h"
+#include "network/ripple_WSHandler.h"
+#include "tx/WalletAddTransactor.h"
 
 #include "contracts/ripple_ScriptData.h"
 #include "contracts/ripple_Contract.h"
@@ -200,7 +200,7 @@ namespace ripple
 #include "basics/ripple_BuildVersion.h" // private
 #include "basics/ripple_RPCServerHandler.h"
 
-#include "src/cpp/ripple/RPCDoor.h" // needs RPCServer
+#include "rpc/RPCDoor.h" // needs RPCServer
 
 }
 
@@ -257,13 +257,13 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "node/ripple_SqliteBackendFactory.cpp"
 
 #include "ledger/Ledger.cpp"
-#include "src/cpp/ripple/ripple_SHAMapDelta.cpp"
-#include "src/cpp/ripple/ripple_SHAMapNode.cpp"
-#include "src/cpp/ripple/ripple_SHAMapTreeNode.cpp"
+#include "shamap/ripple_SHAMapDelta.cpp"
+#include "shamap/ripple_SHAMapNode.cpp"
+#include "shamap/ripple_SHAMapTreeNode.cpp"
 
-#include "src/cpp/ripple/ripple_AccountItems.cpp"
-#include "src/cpp/ripple/ripple_AccountState.cpp"
-#include "src/cpp/ripple/ChangeTransactor.cpp"
+#include "misc/ripple_AccountItems.cpp"
+#include "misc/ripple_AccountState.cpp"
+#include "tx/ChangeTransactor.cpp"
 
 #include "contracts/ripple_Contract.cpp"
 #include "contracts/ripple_Operation.cpp"
@@ -276,19 +276,19 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 2
 
-#include "src/cpp/ripple/RPCHandler.cpp"
-#include "src/cpp/ripple/ripple_SHAMap.cpp" // Uses theApp
-#include "src/cpp/ripple/ripple_SHAMapItem.cpp"
-#include "src/cpp/ripple/ripple_SHAMapSync.cpp"
-#include "src/cpp/ripple/ripple_SHAMapMissingNode.cpp"
+#include "rpc/RPCHandler.cpp"
+#include "shamap/ripple_SHAMap.cpp" // Uses theApp
+#include "shamap/ripple_SHAMapItem.cpp"
+#include "shamap/ripple_SHAMapSync.cpp"
+#include "shamap/ripple_SHAMapMissingNode.cpp"
 
-#include "src/cpp/ripple/ripple_AccountItem.cpp"
-#include "src/cpp/ripple/AccountSetTransactor.cpp"
-#include "src/cpp/ripple/ripple_CanonicalTXSet.cpp"
+#include "misc/ripple_AccountItem.cpp"
+#include "tx/AccountSetTransactor.cpp"
+#include "misc/ripple_CanonicalTXSet.cpp"
 #include "ledger/LedgerProposal.cpp"
-#include "src/cpp/ripple/ripple_LoadManager.cpp"
-#include "src/cpp/ripple/ripple_NicknameState.cpp"
-#include "src/cpp/ripple/OfferCancelTransactor.cpp"
+#include "main/ripple_LoadManager.cpp"
+#include "misc/ripple_NicknameState.cpp"
+#include "tx/OfferCancelTransactor.cpp"
 #include "ledger/OrderBookDB.cpp"
 
 #include "data/ripple_Database.cpp"
@@ -310,23 +310,23 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
     return 512 == iKeyLength ? getApp().getLocalCredentials ().getDh512 () : getApp().getLocalCredentials ().getDh1024 ();
 }
 
-#include "src/cpp/ripple/ripple_RippleCalc.cpp"
-#include "src/cpp/ripple/CallRPC.cpp"
-#include "src/cpp/ripple/ripple_PathState.cpp"
+#include "paths/ripple_RippleCalc.cpp"
+#include "paths/ripple_PathState.cpp"
+#include "rpc/CallRPC.cpp"
 
-#include "src/cpp/ripple/ParameterTable.cpp"
-#include "src/cpp/ripple/PeerDoor.cpp"
-#include "src/cpp/ripple/ripple_RippleLineCache.cpp"
-#include "src/cpp/ripple/rpc.cpp"
-#include "src/cpp/ripple/RPCErr.cpp"
-#include "src/cpp/ripple/RPCSub.cpp"
+#include "main/ParameterTable.cpp"
+#include "peers/PeerDoor.cpp"
+#include "paths/ripple_RippleLineCache.cpp"
+#include "rpc/rpc.cpp"
+#include "rpc/RPCErr.cpp"
+#include "rpc/RPCSub.cpp"
 #include "ledger/SerializedValidation.cpp"
-#include "src/cpp/ripple/Transaction.cpp"
-#include "src/cpp/ripple/TransactionEngine.cpp"
-#include "src/cpp/ripple/TransactionMeta.cpp"
-#include "src/cpp/ripple/Transactor.cpp"
-#include "src/cpp/ripple/WSConnection.cpp"
-#include "src/cpp/ripple/WSDoor.cpp"
+#include "tx/Transaction.cpp"
+#include "tx/TransactionEngine.cpp"
+#include "tx/TransactionMeta.cpp"
+#include "tx/Transactor.cpp"
+#include "network/WSConnection.cpp"
+#include "network/WSDoor.cpp"
 
 #endif
 
@@ -334,18 +334,18 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 4
 
-#include "src/cpp/ripple/ripple_UniqueNodeList.cpp"
+#include "peers/ripple_UniqueNodeList.cpp"
 #include "ledger/ripple_InboundLedger.cpp"
 
-#include "src/cpp/ripple/PaymentTransactor.cpp"
-#include "src/cpp/ripple/RegularKeySetTransactor.cpp"
-#include "src/cpp/ripple/ripple_RippleState.cpp"
-#include "src/cpp/ripple/RPCDoor.cpp"
-#include "src/cpp/ripple/TransactionCheck.cpp"
-#include "src/cpp/ripple/TransactionMaster.cpp"
-#include "src/cpp/ripple/TransactionQueue.cpp"
-#include "src/cpp/ripple/TrustSetTransactor.cpp"
-#include "src/cpp/ripple/ripple_WSHandler.cpp"
+#include "tx/PaymentTransactor.cpp"
+#include "tx/RegularKeySetTransactor.cpp"
+#include "paths/ripple_RippleState.cpp"
+#include "rpc/RPCDoor.cpp"
+#include "tx/TransactionCheck.cpp"
+#include "tx/TransactionMaster.cpp"
+#include "tx/TransactionQueue.cpp"
+#include "tx/TrustSetTransactor.cpp"
+#include "network/ripple_WSHandler.cpp"
 
 #endif
 
@@ -353,14 +353,14 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 5
 
-#include "src/cpp/ripple/ripple_Peer.cpp"
-#include "src/cpp/ripple/ripple_Application.cpp"
-#include "src/cpp/ripple/OfferCreateTransactor.cpp"
-#include "src/cpp/ripple/ripple_Validations.cpp"
+#include "peers/ripple_Peer.cpp"
+#include "main/ripple_Application.cpp"
+#include "tx/OfferCreateTransactor.cpp"
+#include "misc/ripple_Validations.cpp"
 
-#include "src/cpp/ripple/WalletAddTransactor.cpp"
+#include "tx/WalletAddTransactor.cpp"
 #include "ledger/ripple_AcceptedLedgerTx.cpp"
-#include "src/cpp/ripple/ripple_FeeVote.cpp"
+#include "misc/ripple_FeeVote.cpp"
 #include "ledger/LedgerTiming.cpp"
 
 #endif
@@ -370,15 +370,15 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 6
 
 #include "ledger/ripple_LedgerEntrySet.cpp"
-#include "src/cpp/ripple/ripple_Pathfinder.cpp"
-#include "src/cpp/ripple/ripple_Features.cpp"
+#include "paths/ripple_Pathfinder.cpp"
+#include "misc/ripple_Features.cpp"
 
-#include "src/cpp/ripple/ripple_LocalCredentials.cpp"
+#include "main/ripple_LocalCredentials.cpp"
 #include "ledger/ripple_AcceptedLedger.cpp"
-#include "src/cpp/ripple/ripple_DisputedTx.cpp"
-#include "src/cpp/ripple/ripple_HashRouter.cpp"
-#include "src/cpp/ripple/ripple_Main.cpp"
-#include "src/cpp/ripple/ripple_Offer.cpp"
+#include "consensus/ripple_DisputedTx.cpp"
+#include "misc/ripple_HashRouter.cpp"
+#include "main/ripple_Main.cpp"
+#include "misc/ripple_Offer.cpp"
 
 #endif
 
@@ -386,14 +386,14 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 7
 
-#include "src/cpp/ripple/NetworkOPs.cpp"
-#include "src/cpp/ripple/ripple_Peers.cpp"
+#include "misc/NetworkOPs.cpp"
+#include "peers/ripple_Peers.cpp"
 
 #include "ledger/ripple_InboundLedgers.cpp"
 #include "ledger/ripple_LedgerHistory.cpp"
-#include "src/cpp/ripple/ripple_PathRequest.cpp"
-#include "src/cpp/ripple/ripple_SerializedLedger.cpp"
-#include "src/cpp/ripple/ripple_TransactionAcquire.cpp"
+#include "paths/ripple_PathRequest.cpp"
+#include "misc/ripple_SerializedLedger.cpp"
+#include "tx/ripple_TransactionAcquire.cpp"
 
 #endif
 
@@ -401,18 +401,17 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 8
 
-#include "src/cpp/ripple/ripple_LedgerConsensus.cpp"
+#include "consensus/ripple_LedgerConsensus.cpp"
 #include "ledger/LedgerMaster.cpp"
+#include "peers/ripple_PeerSet.cpp"
+#include "misc/ripple_InfoSub.cpp"
+#include "misc/ripple_OrderBook.cpp"
+#include "misc/ripple_ProofOfWork.cpp"
+#include "misc/ripple_ProofOfWorkFactory.h" // private
+#include "misc/ripple_ProofOfWorkFactory.cpp" // requires ProofOfWork.cpp for ProofOfWork::sMaxDifficulty
+#include "misc/ripple_SerializedTransaction.cpp"
 
-#include "src/cpp/ripple/ripple_InfoSub.cpp"
-#include "src/cpp/ripple/ripple_OrderBook.cpp"
-#include "src/cpp/ripple/ripple_PeerSet.cpp"
-#include "src/cpp/ripple/ripple_ProofOfWork.cpp"
-#include "src/cpp/ripple/ripple_ProofOfWorkFactory.h" // private
-#include "src/cpp/ripple/ripple_ProofOfWorkFactory.cpp" // requires ProofOfWork.cpp for ProofOfWork::sMaxDifficulty
-#include "src/cpp/ripple/ripple_SerializedTransaction.cpp"
-
-#include "src/cpp/ripple/ripple_SHAMapSyncFilters.cpp" // requires Application
+#include "shamap/ripple_SHAMapSyncFilters.cpp" // requires Application
 
 #endif
 
@@ -431,9 +430,9 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 // VFALCO TODO Eliminate the need for boost for unit tests.
 //
 #include "ledger/LedgerUnitTests.cpp"
-#include "src/cpp/ripple/ripple_SHAMapUnitTests.cpp"
-#include "src/cpp/ripple/ripple_SHAMapSyncUnitTests.cpp"
-#include "src/cpp/ripple/ripple_SerializedTransactionUnitTests.cpp"
+#include "shamap/ripple_SHAMapUnitTests.cpp"
+#include "shamap/ripple_SHAMapSyncUnitTests.cpp"
+#include "misc/ripple_SerializedTransactionUnitTests.cpp"
 
 //------------------------------------------------------------------------------
 

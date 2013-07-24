@@ -5,6 +5,7 @@ RIPPLE TODO
 Items marked '*' can be handled by third parties.
 
 Vinnie's Short List (Changes day to day)
+- Review boost::asio wrappers and consolidation of network code in ripple_net
 - Make theConfig a SharedSingleton to prevent leak warnings
 - Refactor Section code into ConfigFile
 - Improved Mutex to track deadlocks
@@ -15,6 +16,10 @@ Vinnie's Short List (Changes day to day)
 - Work on KeyvaDB
 
 --------------------------------------------------------------------------------
+
+- Take away the "I" prefix from abstract interface classes, in both the class
+  name and the file name. It is messing up sorting in the IDE. Use "Imp" or
+  suffix for implementations.
 
 - Raise the warning level and fix everything
 
@@ -51,10 +56,6 @@ Vinnie's Short List (Changes day to day)
 - Tidy up convenience functions in RPC.h
 
 - Maybe rename RPCServer to RPCClientServicer
-
-- Take away the "I" prefix from abstract interface classes, in both the class
-  name and the file name. It is messing up sorting in the IDE. Use "Imp" or
-  suffix for implementations.
 
 - Profile/VTune the application to identify hot spots
   * Determine why rippled has a slow startup on Windows
