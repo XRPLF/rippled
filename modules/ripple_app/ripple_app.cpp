@@ -61,11 +61,13 @@
 #include <boost/unordered_set.hpp>
 #include <boost/weak_ptr.hpp>
 
-#include "../ripple_sqlite/ripple_sqlite.h" // for SqliteDatabase.cpp
+//#include "../ripple_sqlite/ripple_sqlite.h" // for SqliteDatabase.cpp
 
 #include "../ripple_core/ripple_core.h"
 
 #include "beast/modules/beast_db/beast_db.h"
+#include "beast/modules/beast_sqdb/beast_sqdb.h"
+#include "beast/modules/beast_sqlite/beast_sqlite.h"
 
 // VFALCO TODO fix these warnings!
 #ifdef _MSC_VER

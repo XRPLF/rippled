@@ -906,6 +906,12 @@
     <ClCompile Include="..\..\modules\ripple_app\tx\WalletAddTransactor.cpp">
       <Filter>[1] Ripple\ripple_app\tx</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Subtrees\beast\modules\beast_sqdb\beast_sqdb.cpp">
+      <Filter>[0] Subtrees\beast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Subtrees\beast\modules\beast_sqlite\beast_sqlite.c">
+      <Filter>[0] Subtrees\beast</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h">

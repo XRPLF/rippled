@@ -57,11 +57,6 @@
 */
 //#define SQLITE_THREADSAFE 2
 
-/* When compiled with SQLITE_THREADSAFE=2, SQLite can be used in a
-   multithreaded program so long as no two threads attempt to use the
-   same database connection at the same time.
-*/
-
 #include "sqlite/sqlite3.c"
 
 #if BEAST_MSVC

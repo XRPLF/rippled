@@ -1019,7 +1019,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_net\ripple_net.cpp" />
-    <ClCompile Include="..\..\modules\ripple_sqlite\ripple_sqlite.c" />
+    <ClCompile Include="..\..\modules\ripple_sqlite\ripple_sqlite.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_websocket\autosocket\ripple_AutoSocket.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1038,6 +1043,8 @@
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_core\beast_core.cpp" />
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_crypto\beast_crypto.cpp" />
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_db\beast_db.cpp" />
+    <ClCompile Include="..\..\Subtrees\beast\modules\beast_sqdb\beast_sqdb.cpp" />
+    <ClCompile Include="..\..\Subtrees\beast\modules\beast_sqlite\beast_sqlite.c" />
     <ClCompile Include="..\..\Subtrees\leveldb\db\builder.cc">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

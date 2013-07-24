@@ -141,8 +141,7 @@ COMPILED_FILES = [
     'modules/ripple_leveldb/ripple_leveldb.cpp',
     'modules/ripple_mdb/ripple_mdb.c',
     'modules/ripple_net/ripple_net.cpp',
-    'modules/ripple_websocket/ripple_websocket.cpp',
-    'modules/ripple_sqlite/ripple_sqlite.c'
+    'modules/ripple_websocket/ripple_websocket.cpp'
     ]
 
 #-------------------------------------------------------------------------------
