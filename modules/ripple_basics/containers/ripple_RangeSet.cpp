@@ -251,7 +251,23 @@ public:
     {
     }
 
-    void runTest ()
+    RangeSet createPredefinedSet ()
+    {
+        RangeSet set;
+
+        // Set will include:
+        // [ 0, 5]
+        // [10,15]
+        // [20,25]
+        // etc...
+
+        for (int i = 0; i < 10; ++i)
+            set.setRange (10 * i, 10 * i + 5);
+
+        return set;
+    }
+
+    void testMembership ()
     {
         beginTest ("membership");
 
@@ -268,6 +284,30 @@ public:
         expect (!r1.hasValue (5));
 
         expect (r2.hasValue (9));
+    }
+
+    void testPrevMissing ()
+    {
+        beginTest ("prevMissing");
+
+        RangeSet const set = createPredefinedSet ();
+
+        for (int i = 0; i < 100; ++i)
+        {
+            int const oneBelowRange = (10*(i/10))-1;
+
+            int const expectedPrevMissing =
+                ((i % 10) > 6) ? (i-1) : oneBelowRange;
+
+            expect (set.prevMissing (i) == expectedPrevMissing);
+        }
+    }
+
+    void runTest ()
+    {
+        testMembership ();
+
+        testPrevMissing ();
 
         // TODO: Traverse functions must be tested
     }

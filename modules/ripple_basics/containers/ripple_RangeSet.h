@@ -28,8 +28,12 @@ public:
     // largest number not in the set that is less than the given number
     uint32 prevMissing (uint32) const;
 
+    // Add an item to the set
     void setValue (uint32);
+
+    // Add the closed interval to the set
     void setRange (uint32, uint32);
+
     void clearValue (uint32);
 
     std::string toString () const;
