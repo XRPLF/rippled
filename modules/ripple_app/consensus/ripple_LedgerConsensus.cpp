@@ -12,7 +12,7 @@ SETUP_LOG (LedgerConsensus)
 
 LedgerConsensus::LedgerConsensus (uint256 const& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime)
     :  mState (lcsPRE_CLOSE), mCloseTime (closeTime), mPrevLedgerHash (prevLCLHash), mPreviousLedger (previousLedger),
-       mValPublic (theConfig.VALIDATION_PUB), mValPrivate (theConfig.VALIDATION_PRIV), mConsensusFail (false),
+       mValPublic (getConfig ().VALIDATION_PUB), mValPrivate (getConfig ().VALIDATION_PRIV), mConsensusFail (false),
        mCurrentMSeconds (0), mClosePercent (0), mHaveCloseTimeConsensus (false),
        mConsensusStartTime (boost::posix_time::microsec_clock::universal_time ())
 {
@@ -226,7 +226,7 @@ void LedgerConsensus::takeInitialPosition (Ledger& initialLedger)
 {
     SHAMap::pointer initialSet;
 
-    if ((theConfig.RUN_STANDALONE || (mProposing && mHaveCorrectLCL))
+    if ((getConfig ().RUN_STANDALONE || (mProposing && mHaveCorrectLCL))
             && ((mPreviousLedger->getLedgerSeq () % 256) == 0))
     {
         // previous ledger was flag ledger

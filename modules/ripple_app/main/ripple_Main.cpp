@@ -28,13 +28,13 @@ void startServer ()
     //
     // Execute start up rpc commands.
     //
-    if (theConfig.RPC_STARTUP.isArray ())
+    if (getConfig ().RPC_STARTUP.isArray ())
     {
-        for (int i = 0; i != theConfig.RPC_STARTUP.size (); ++i)
+        for (int i = 0; i != getConfig ().RPC_STARTUP.size (); ++i)
         {
-            const Json::Value& jvCommand    = theConfig.RPC_STARTUP[i];
+            const Json::Value& jvCommand    = getConfig ().RPC_STARTUP[i];
 
-            if (!theConfig.QUIET)
+            if (!getConfig ().QUIET)
                 Log::out() << "Startup RPC: " << jvCommand;
 
             RPCHandler  rhHandler (&getApp().getOPs ());
@@ -43,28 +43,12 @@ void startServer ()
             LoadType loadType = LT_RPCReference;
             Json::Value jvResult    = rhHandler.doCommand (jvCommand, RPCHandler::ADMIN, &loadType);
 
-            if (!theConfig.QUIET)
+            if (!getConfig ().QUIET)
                 Log::out() << "Result: " << jvResult;
         }
     }
 
     getApp().run ();                 // Blocks till we get a stop RPC.
-}
-
-void setupConfigForUnitTests (Config* config)
-{
-    config->nodeDatabase = parseDelimitedKeyValueString ("type=memory");
-    config->ephemeralNodeDatabase = StringPairArray ();
-    config->importNodeDatabase = StringPairArray ();
-}
-
-bool init_unit_test ()
-{
-    setupConfigForUnitTests (&theConfig);
-
-    getApp ();
-
-    return true;
 }
 
 void printHelp (const po::options_description& desc)
@@ -137,47 +121,39 @@ void printHelp (const po::options_description& desc)
 //------------------------------------------------------------------------------
 
 // OUr custom unit test runner
+//
 class RippleUnitTests : public UnitTests
 {
 public:
+    RippleUnitTests ()
+    {
+        // VFALCO NOTE It sucks that we have to do this but some
+        //             code demands the Application object exists.
+        //
+        //             To find out who, just change the 1 to 0
+#if 1
+        setupConfigForUnitTests (&getConfig ());
+
+        getApp ();
+#endif
+
+        setAssertOnFailure (false);
+        setPassesAreLogged (false);
+    }
+
     void logMessage (String const& message)
     {
         Log::out () << message.toStdString ();
     }
+
+private:
+    void setupConfigForUnitTests (Config* config)
+    {
+        config->nodeDatabase = parseDelimitedKeyValueString ("type=memory");
+        config->ephemeralNodeDatabase = StringPairArray ();
+        config->importNodeDatabase = StringPairArray ();
+    }
 };
-
-//------------------------------------------------------------------------------
-
-/** Run the Beast unit tests.
-*/
-static void runBeastUnitTests (std::string const& individualTest = "")
-{
-    // VFALCO NOTE It sucks that we have to do this but some
-    //             code demands the Application object exists.
-    //
-    //             To find out who, just change the #if
-#if 1
-    {
-        setupConfigForUnitTests (&theConfig);
-
-        getApp ();
-    }
-#endif
-
-    RippleUnitTests tr;
-
-    tr.setAssertOnFailure (false);
-    tr.setPassesAreLogged (false);
-
-    if (individualTest.empty ())
-    {
-        tr.runAllTests ();
-    }
-    else
-    {
-        tr.runTest (individualTest.c_str ());
-    }
-}
 
 //------------------------------------------------------------------------------
 
@@ -312,7 +288,7 @@ int rippleMain (int argc, char** argv)
     if (HaveSustain () &&
             !iResult && !vm.count ("parameters") && !vm.count ("fg") && !vm.count ("standalone") && !vm.count ("unittest"))
     {
-        std::string logMe = DoSustain (theConfig.DEBUG_LOGFILE.string());
+        std::string logMe = DoSustain (getConfig ().DEBUG_LOGFILE.string());
 
         if (!logMe.empty ())
             Log (lsWARNING) << logMe;
@@ -335,28 +311,37 @@ int rippleMain (int argc, char** argv)
     //
     if (vm.count ("unittest"))
     {
-        std::string const test = vm ["unittest"].as <std::string> ();
+        String const arg = vm ["unittest"].as <std::string> ();
 
-        runBeastUnitTests (test);
+        RippleUnitTests tr;
+
+        if (arg == "")
+        {
+            tr.runAllTests ();
+        }
+        else
+        {
+            tr.runTest (arg);
+        }
 
         return 0;
     }
 
     if (!iResult)
     {
-        theConfig.setup (
+        getConfig ().setup (
             vm.count ("conf") ? vm["conf"].as<std::string> () : "", // Config file.
             !!vm.count ("testnet"),                                 // Testnet flag.
             !!vm.count ("quiet"));                                  // Quiet flag.
 
         if (vm.count ("standalone"))
         {
-            theConfig.RUN_STANDALONE = true;
-            theConfig.LEDGER_HISTORY = 0;
+            getConfig ().RUN_STANDALONE = true;
+            getConfig ().LEDGER_HISTORY = 0;
         }
     }
 
-    if (vm.count ("start")) theConfig.START_UP = Config::FRESH;
+    if (vm.count ("start")) getConfig ().START_UP = Config::FRESH;
 
     // Handle a one-time import option
     //
@@ -364,27 +349,27 @@ int rippleMain (int argc, char** argv)
     {
         String const optionString (vm ["import"].as <std::string> ());
 
-        theConfig.importNodeDatabase = parseDelimitedKeyValueString (optionString);
+        getConfig ().importNodeDatabase = parseDelimitedKeyValueString (optionString);
     }
 
     if (vm.count ("ledger"))
     {
-        theConfig.START_LEDGER = vm["ledger"].as<std::string> ();
+        getConfig ().START_LEDGER = vm["ledger"].as<std::string> ();
         if (vm.count("replay"))
-            theConfig.START_UP = Config::REPLAY;
+            getConfig ().START_UP = Config::REPLAY;
         else
-            theConfig.START_UP = Config::LOAD;
+            getConfig ().START_UP = Config::LOAD;
     }
     else if (vm.count ("load"))
     {
-        theConfig.START_UP = Config::LOAD;
+        getConfig ().START_UP = Config::LOAD;
     }
     else if (vm.count ("net"))
     {
-        theConfig.START_UP = Config::NETWORK;
+        getConfig ().START_UP = Config::NETWORK;
 
-        if (theConfig.VALIDATION_QUORUM < 2)
-            theConfig.VALIDATION_QUORUM = 2;
+        if (getConfig ().VALIDATION_QUORUM < 2)
+            getConfig ().VALIDATION_QUORUM = 2;
     }
 
     if (iResult == 0)
@@ -395,7 +380,7 @@ int rippleMain (int argc, char** argv)
         //
         if (vm.count ("rpc_ip"))
         {
-            theConfig.setRpcIpAndOptionalPort (vm ["rpc_ip"].as <std::string> ());
+            getConfig ().setRpcIpAndOptionalPort (vm ["rpc_ip"].as <std::string> ());
         }
 
         // Override the RPC destination port number
@@ -403,7 +388,7 @@ int rippleMain (int argc, char** argv)
         if (vm.count ("rpc_port"))
         {
             // VFALCO TODO This should be a short.
-            theConfig.setRpcPort (vm ["rpc_port"].as <int> ());
+            getConfig ().setRpcPort (vm ["rpc_port"].as <int> ());
         }
     }
 

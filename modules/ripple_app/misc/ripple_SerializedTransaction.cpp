@@ -144,7 +144,7 @@ std::vector<RippleAddress> SerializedTransaction::getMentionedAccounts () const
 
 uint256 SerializedTransaction::getSigningHash () const
 {
-    return STObject::getSigningHash (theConfig.SIGN_TRANSACTION);
+    return STObject::getSigningHash (getConfig ().SIGN_TRANSACTION);
 }
 
 uint256 SerializedTransaction::getTransactionID () const

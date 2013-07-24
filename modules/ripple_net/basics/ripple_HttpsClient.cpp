@@ -10,20 +10,20 @@
 
 SETUP_LOG (HttpsClient)
 
-// VFALCO NOTE Why use theConfig.SSL_CONTEXT instead of just passing it?
+// VFALCO NOTE Why use getConfig ().SSL_CONTEXT instead of just passing it?
 //        TODO Remove all theConfig deps from this file
 //
 HttpsClient::HttpsClient (boost::asio::io_service& io_service,
                           const unsigned short port,
                           std::size_t responseMax)
-    : mSocket (io_service, theConfig.SSL_CONTEXT)
+    : mSocket (io_service, getConfig ().SSL_CONTEXT)
     , mResolver (io_service)
     , mHeader (maxClientHeaderBytes)
     , mPort (port)
     , mResponseMax (responseMax)
     , mDeadline (io_service)
 {
-    if (!theConfig.SSL_VERIFY)
+    if (!getConfig ().SSL_VERIFY)
         mSocket.SSLSocket ().set_verify_mode (boost::asio::ssl::verify_none);
 }
 
@@ -201,7 +201,7 @@ void HttpsClient::handleConnect (const boost::system::error_code& ecResult)
     {
         WriteLog (lsTRACE, HttpsClient) << "Connected.";
 
-        if (theConfig.SSL_VERIFY)
+        if (getConfig ().SSL_VERIFY)
         {
             mShutdown   = mSocket.verify (mDeqSites[0]);
 
@@ -469,9 +469,9 @@ void HttpsClient::sendSMS (boost::asio::io_service& io_service, const std::strin
     int         iPort;
     std::string strPath;
 
-    if (theConfig.SMS_URL == "" || !parseUrl (theConfig.SMS_URL, strScheme, strDomain, iPort, strPath))
+    if (getConfig ().SMS_URL == "" || !parseUrl (getConfig ().SMS_URL, strScheme, strDomain, iPort, strPath))
     {
-        WriteLog (lsWARNING, HttpsClient) << "SMSRequest: Bad URL:" << theConfig.SMS_URL;
+        WriteLog (lsWARNING, HttpsClient) << "SMSRequest: Bad URL:" << getConfig ().SMS_URL;
     }
     else
     {
@@ -481,10 +481,10 @@ void HttpsClient::sendSMS (boost::asio::io_service& io_service, const std::strin
         std::string strURI  =
             boost::str (boost::format ("%s?from=%s&to=%s&api_key=%s&api_secret=%s&text=%s")
                         % (strPath.empty () ? "/" : strPath)
-                        % theConfig.SMS_FROM
-                        % theConfig.SMS_TO
-                        % theConfig.SMS_KEY
-                        % theConfig.SMS_SECRET
+                        % getConfig ().SMS_FROM
+                        % getConfig ().SMS_TO
+                        % getConfig ().SMS_KEY
+                        % getConfig ().SMS_SECRET
                         % urlEncode (strText));
 
         // WriteLog (lsINFO) << "SMS: Request:" << strURI;

@@ -321,7 +321,7 @@ public:
     void load ();
 };
 
-extern Config theConfig;
+extern Config& getConfig ();
 
 #endif
 

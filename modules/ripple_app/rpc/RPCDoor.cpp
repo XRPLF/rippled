@@ -9,21 +9,21 @@ SETUP_LOG (RPCDoor)
 RPCDoor::RPCDoor (boost::asio::io_service& io_service, RPCServer::Handler& handler)
     : m_rpcServerHandler (handler)
     , mAcceptor (io_service,
-                 boost::asio::ip::tcp::endpoint (boost::asio::ip::address::from_string (theConfig.getRpcIP ()), theConfig.getRpcPort ()))
+                 boost::asio::ip::tcp::endpoint (boost::asio::ip::address::from_string (getConfig ().getRpcIP ()), getConfig ().getRpcPort ()))
     , mDelayTimer (io_service)
     , mSSLContext (boost::asio::ssl::context::sslv23)
 {
-    WriteLog (lsINFO, RPCDoor) << "RPC port: " << theConfig.getRpcAddress().toRawUTF8() << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
+    WriteLog (lsINFO, RPCDoor) << "RPC port: " << getConfig ().getRpcAddress().toRawUTF8() << " allow remote: " << getConfig ().RPC_ALLOW_REMOTE;
 
-    if (theConfig.RPC_SECURE != 0)
+    if (getConfig ().RPC_SECURE != 0)
     {
         // VFALCO TODO This could be a method of theConfig
         //
         basio::SslContext::initializeFromFile (
             mSSLContext,
-            theConfig.RPC_SSL_KEY,
-            theConfig.RPC_SSL_CERT,
-            theConfig.RPC_SSL_CHAIN);
+            getConfig ().RPC_SSL_KEY,
+            getConfig ().RPC_SSL_CERT,
+            getConfig ().RPC_SSL_CHAIN);
     }
 
     startListening ();
@@ -31,7 +31,7 @@ RPCDoor::RPCDoor (boost::asio::io_service& io_service, RPCServer::Handler& handl
 
 RPCDoor::~RPCDoor ()
 {
-    WriteLog (lsINFO, RPCDoor) << "RPC port: " << theConfig.getRpcAddress().toRawUTF8() << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
+    WriteLog (lsINFO, RPCDoor) << "RPC port: " << getConfig ().getRpcAddress().toRawUTF8() << " allow remote: " << getConfig ().RPC_ALLOW_REMOTE;
 }
 
 void RPCDoor::startListening ()
@@ -46,7 +46,7 @@ void RPCDoor::startListening ()
 
 bool RPCDoor::isClientAllowed (const std::string& ip)
 {
-    if (theConfig.RPC_ALLOW_REMOTE)
+    if (getConfig ().RPC_ALLOW_REMOTE)
         return true;
 
     // VFALCO TODO Represent ip addresses as a structure. Use isLoopback() member here

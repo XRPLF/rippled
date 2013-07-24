@@ -135,7 +135,7 @@ void splitIpPort (const std::string& strIpPort, std::string& strIp, int& iPort)
 
 void Peers::start ()
 {
-    if (theConfig.RUN_STANDALONE)
+    if (getConfig ().RUN_STANDALONE)
         return;
 
     // Start running policy.
@@ -274,16 +274,16 @@ void Peers::policyLowWater ()
     int         iPort;
 
     // Find an entry to connect to.
-    if (getPeerCount () > theConfig.PEER_CONNECT_LOW_WATER)
+    if (getPeerCount () > getConfig ().PEER_CONNECT_LOW_WATER)
     {
         // Above low water mark, don't need more connections.
-        WriteLog (lsTRACE, Peers) << "Pool: Low water: sufficient connections: " << mConnectedMap.size () << "/" << theConfig.PEER_CONNECT_LOW_WATER;
+        WriteLog (lsTRACE, Peers) << "Pool: Low water: sufficient connections: " << mConnectedMap.size () << "/" << getConfig ().PEER_CONNECT_LOW_WATER;
 
         nothing ();
     }
 
 #if 0
-    else if (miConnectStarting == theConfig.PEER_START_MAX)
+    else if (miConnectStarting == getConfig ().PEER_START_MAX)
     {
         // Too many connections starting to start another.
         nothing ();
@@ -625,7 +625,7 @@ bool Peers::peerScanSet (const std::string& strIp, int iPort)
         if (db->getNull ("ScanNext"))
         {
             // Non-scanning connection terminated.  Schedule for scanning.
-            int                         iInterval   = theConfig.PEER_SCAN_INTERVAL_MIN;
+            int                         iInterval   = getConfig ().PEER_SCAN_INTERVAL_MIN;
             boost::posix_time::ptime    tpNow       = boost::posix_time::second_clock::universal_time ();
             boost::posix_time::ptime    tpNext      = tpNow + boost::posix_time::seconds (iInterval);
 
@@ -766,10 +766,10 @@ void Peers::scanHandler (const boost::system::error_code& ecResult)
 
 void Peers::makeConfigured ()
 {
-    if (theConfig.RUN_STANDALONE)
+    if (getConfig ().RUN_STANDALONE)
         return;
 
-    BOOST_FOREACH (const std::string & strPeer, theConfig.IPS)
+    BOOST_FOREACH (const std::string & strPeer, getConfig ().IPS)
     {
         std::string strIP;
         int iPort;
@@ -782,7 +782,7 @@ void Peers::makeConfigured ()
 // Scan ips as per db entries.
 void Peers::scanRefresh ()
 {
-    if (theConfig.RUN_STANDALONE)
+    if (getConfig ().RUN_STANDALONE)
     {
         nothing ();
     }
@@ -838,7 +838,7 @@ void Peers::scanRefresh ()
 
             (void) mScanTimer.cancel ();
 
-            iInterval   = std::max (iInterval, theConfig.PEER_SCAN_INTERVAL_MIN);
+            iInterval   = std::max (iInterval, getConfig ().PEER_SCAN_INTERVAL_MIN);
 
             tpNext      = tpNow + boost::posix_time::seconds (iInterval);
 

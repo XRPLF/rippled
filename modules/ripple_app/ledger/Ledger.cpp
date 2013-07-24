@@ -607,7 +607,7 @@ void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
                 mCloseResolution % mCloseFlags % mAccountHash.GetHex () % mTransHash.GetHex ()));
     }
 
-    if (!fromConsensus && (theConfig.NODE_SIZE < 2)) // tiny or small
+    if (!fromConsensus && (getConfig ().NODE_SIZE < 2)) // tiny or small
         dropCache ();
 
     if (getApp().getJobQueue ().getJobCountTotal (jtPUBOLDLEDGER) < 2)
@@ -1845,10 +1845,10 @@ void Ledger::initializeFees ()
 
 void Ledger::updateFees ()
 {
-    mBaseFee = theConfig.FEE_DEFAULT;
+    mBaseFee = getConfig ().FEE_DEFAULT;
     mReferenceFeeUnits = 10;
-    mReserveBase = theConfig.FEE_ACCOUNT_RESERVE;
-    mReserveIncrement = theConfig.FEE_OWNER_RESERVE;
+    mReserveBase = getConfig ().FEE_ACCOUNT_RESERVE;
+    mReserveIncrement = getConfig ().FEE_OWNER_RESERVE;
 
     LedgerStateParms p = lepNONE;
     SLE::pointer sle = getASNode (p, Ledger::getLedgerFeeIndex (), ltFEE_SETTINGS);
