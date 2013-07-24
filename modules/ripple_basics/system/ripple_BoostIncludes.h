@@ -25,9 +25,6 @@
 // This is better than setting it in some Makefile or IDE Project file.
 //
 #define BOOST_FILESYSTEM_NO_DEPRECATED
-#define BOOST_TEST_NO_LIB
-#define BOOST_TEST_ALTERNATIVE_INIT_API
-#define BOOST_TEST_NO_MAIN
 
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
@@ -47,7 +44,6 @@
 #include <boost/ref.hpp>
 #include <boost/regex.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/test/unit_test.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/recursive_mutex.hpp>

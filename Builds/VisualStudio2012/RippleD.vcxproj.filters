@@ -189,9 +189,6 @@
     <ClCompile Include="..\..\modules\ripple_basics\containers\ripple_RangeSet.cpp">
       <Filter>[1] Ripple\ripple_basics\containers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_basics\containers\ripple_RangeSetUnitTests.cpp">
-      <Filter>[1] Ripple\ripple_basics\containers</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_basics\containers\ripple_TaggedCache.cpp">
       <Filter>[1] Ripple\ripple_basics\containers</Filter>
     </ClCompile>
@@ -217,9 +214,6 @@
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_basics\utility\ripple_StringUtilities.cpp">
-      <Filter>[1] Ripple\ripple_basics\utility</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_basics\utility\ripple_StringUtilitiesUnitTests.cpp">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_basics\utility\ripple_Sustain.cpp">
@@ -252,9 +246,6 @@
     <ClCompile Include="..\..\modules\ripple_core\functional\ripple_LoadFeeTrack.cpp">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_core\functional\ripple_LoadFeeTrackUnitTests.cpp">
-      <Filter>[1] Ripple\ripple_core\functional</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\functional\ripple_LoadMonitor.cpp">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClCompile>
@@ -276,9 +267,6 @@
     <ClCompile Include="..\..\modules\ripple_data\crypto\ripple_CKeyDeterministic.cpp">
       <Filter>[1] Ripple\ripple_data\crypto</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_data\crypto\ripple_CKeyDeterministicUnitTests.cpp">
-      <Filter>[1] Ripple\ripple_data\crypto</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_data\crypto\ripple_CKeyECIES.cpp">
       <Filter>[1] Ripple\ripple_data\crypto</Filter>
     </ClCompile>
@@ -294,16 +282,10 @@
     <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_RippleAddress.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_RippleAddressUnitTests.cpp">
-      <Filter>[1] Ripple\ripple_data\protocol</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_SerializedObject.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_SerializedObjectTemplate.cpp">
-      <Filter>[1] Ripple\ripple_data\protocol</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_SerializedObjectUnitTests.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_SerializedTypes.cpp">
@@ -312,16 +294,10 @@
     <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_Serializer.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_SerializerUnitTests.cpp">
-      <Filter>[1] Ripple\ripple_data\protocol</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_STAmount.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_STAmountRound.cpp">
-      <Filter>[1] Ripple\ripple_data\protocol</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_STAmountUnitTests.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_TER.cpp">
@@ -753,9 +729,6 @@
     <ClCompile Include="..\..\modules\ripple_app\misc\ripple_SerializedTransaction.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_SerializedTransactionUnitTests.cpp">
-      <Filter>[1] Ripple\ripple_app\misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\misc\ripple_Validations.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
@@ -843,13 +816,7 @@
     <ClCompile Include="..\..\modules\ripple_app\shamap\ripple_SHAMapSyncFilters.cpp">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\shamap\ripple_SHAMapSyncUnitTests.cpp">
-      <Filter>[1] Ripple\ripple_app\shamap</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\shamap\ripple_SHAMapTreeNode.cpp">
-      <Filter>[1] Ripple\ripple_app\shamap</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\shamap\ripple_SHAMapUnitTests.cpp">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\consensus\ripple_LedgerConsensus.cpp">

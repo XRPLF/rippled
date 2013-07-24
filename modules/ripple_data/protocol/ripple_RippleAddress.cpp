@@ -865,3 +865,79 @@ RippleAddress RippleAddress::createSeedGeneric (const std::string& strText)
 
     return naNew;
 }
+
+//------------------------------------------------------------------------------
+
+class RippleAddressTests : public UnitTest
+{
+public:
+    RippleAddressTests () : UnitTest ("RippleAddress", "ripple")
+    {
+    }
+
+    void runTest ()
+    {
+        beginTest ("public/private");
+
+        // Construct a seed.
+        RippleAddress   naSeed;
+
+        expect (naSeed.setSeedGeneric ("masterpassphrase"));
+        expect (naSeed.humanSeed () == "snoPBrXtMeMyMHUVTgbuqAfg1SUTb", naSeed.humanSeed ());
+
+        // Create node public/private key pair
+        RippleAddress   naNodePublic    = RippleAddress::createNodePublic (naSeed);
+        RippleAddress   naNodePrivate   = RippleAddress::createNodePrivate (naSeed);
+
+        expect (naNodePublic.humanNodePublic () == "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9", naNodePublic.humanNodePublic ());
+        expect (naNodePrivate.humanNodePrivate () == "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe", naNodePrivate.humanNodePrivate ());
+
+        // Check node signing.
+        Blob vucTextSrc = strCopy ("Hello, nurse!");
+        uint256 uHash   = Serializer::getSHA512Half (vucTextSrc);
+        Blob vucTextSig;
+
+        naNodePrivate.signNodePrivate (uHash, vucTextSig);
+        expect (naNodePublic.verifyNodePublic (uHash, vucTextSig), "Verify failed.");
+
+        // Construct a public generator from the seed.
+        RippleAddress   naGenerator     = RippleAddress::createGeneratorPublic (naSeed);
+
+        expect (naGenerator.humanGenerator () == "fhuJKrhSDzV2SkjLn9qbwm5AaRmrxDPfFsHDCP6yfDZWcxDFz4mt", naGenerator.humanGenerator ());
+
+        // Create account #0 public/private key pair.
+        RippleAddress   naAccountPublic0    = RippleAddress::createAccountPublic (naGenerator, 0);
+        RippleAddress   naAccountPrivate0   = RippleAddress::createAccountPrivate (naGenerator, naSeed, 0);
+
+        expect (naAccountPublic0.humanAccountID () == "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", naAccountPublic0.humanAccountID ());
+        expect (naAccountPublic0.humanAccountPublic () == "aBQG8RQAzjs1eTKFEAQXr2gS4utcDiEC9wmi7pfUPTi27VCahwgw", naAccountPublic0.humanAccountPublic ());
+        expect (naAccountPrivate0.humanAccountPrivate () == "p9JfM6HHi64m6mvB6v5k7G2b1cXzGmYiCNJf6GHPKvFTWdeRVjh", naAccountPrivate0.humanAccountPrivate ());
+
+        // Create account #1 public/private key pair.
+        RippleAddress   naAccountPublic1    = RippleAddress::createAccountPublic (naGenerator, 1);
+        RippleAddress   naAccountPrivate1   = RippleAddress::createAccountPrivate (naGenerator, naSeed, 1);
+
+        expect (naAccountPublic1.humanAccountID () == "r4bYF7SLUMD7QgSLLpgJx38WJSY12ViRjP", naAccountPublic1.humanAccountID ());
+        expect (naAccountPublic1.humanAccountPublic () == "aBPXpTfuLy1Bhk3HnGTTAqnovpKWQ23NpFMNkAF6F1Atg5vDyPrw", naAccountPublic1.humanAccountPublic ());
+        expect (naAccountPrivate1.humanAccountPrivate () == "p9JEm822LMrzJii1k7TvdphfENTp6G5jr253Xa5rkzUWVr8ogQt", naAccountPrivate1.humanAccountPrivate ());
+
+        // Check account signing.
+        expect (naAccountPrivate0.accountPrivateSign (uHash, vucTextSig), "Signing failed.");
+        expect (naAccountPublic0.accountPublicVerify (uHash, vucTextSig), "Verify failed.");
+        expect (!naAccountPublic1.accountPublicVerify (uHash, vucTextSig), "Anti-verify failed.");
+
+        expect (naAccountPrivate1.accountPrivateSign (uHash, vucTextSig), "Signing failed.");
+        expect (naAccountPublic1.accountPublicVerify (uHash, vucTextSig), "Verify failed.");
+        expect (!naAccountPublic0.accountPublicVerify (uHash, vucTextSig), "Anti-verify failed.");
+
+        // Check account encryption.
+        Blob vucTextCipher
+            = naAccountPrivate0.accountPrivateEncrypt (naAccountPublic1, vucTextSrc);
+        Blob vucTextRecovered
+            = naAccountPrivate1.accountPrivateDecrypt (naAccountPublic0, vucTextCipher);
+
+        expect (vucTextSrc == vucTextRecovered, "Encrypt-decrypt failed.");
+    }
+};
+
+static RippleAddressTests rippleAddressTests;

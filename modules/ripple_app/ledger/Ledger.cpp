@@ -1914,3 +1914,25 @@ std::vector<uint256> Ledger::getNeededAccountStateHashes (int max, SHAMapSyncFil
 
     return ret;
 }
+
+//------------------------------------------------------------------------------
+
+class LedgerTests : public UnitTest
+{
+public:
+    LedgerTests () : UnitTest ("Ledger", "ripple")
+    {
+    }
+
+    void runTest ()
+    {
+        beginTest ("uint256");
+
+        uint256 uBig ("D2DC44E5DC189318DB36EF87D2104CDF0A0FE3A4B698BEEE55038D7EA4C68000");
+
+        // VFALCO NOTE This fails in the original version as well.
+        expect (6125895493223874560 == Ledger::getQuality (uBig));
+    }
+};
+
+static LedgerTests ledgerTests;

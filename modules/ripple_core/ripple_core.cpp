@@ -38,7 +38,3 @@ namespace ripple
 #include "validator/ripple_TrustedUriValidatorSource.cpp"
 
 }
-
-// These must be outside the namespace
-
-#include "functional/ripple_LoadFeeTrackUnitTests.cpp"

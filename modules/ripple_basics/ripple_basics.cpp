@@ -27,8 +27,6 @@
 #include <sys/wait.h>
 #endif
 
-//#include <boost/test/included/unit_test.hpp>
-
 // VFALCO TODO Replace OpenSSL randomness with a dependency-free implementation
 //         Perhaps Schneier's Fortuna or a variant. Abstract the collection of
 //         entropy and provide OS-specific implementation. We can re-use the
@@ -44,10 +42,6 @@
 // Winsock #defines 'max' and does other stupid things so put it last
 #include <Winsock2.h> // for ripple_ByteOrder.cpp
 #endif
-
-// This brings in the definitions for the Unit Test Framework.
-//
-#include <boost/test/included/unit_test.hpp>
 
 namespace ripple
 {
@@ -73,7 +67,3 @@ namespace ripple
 #include "types/ripple_UInt256.cpp"
 
 }
-
-// These must be outside the namespace (because of boost)
-#include "containers/ripple_RangeSetUnitTests.cpp"
-#include "utility/ripple_StringUtilitiesUnitTests.cpp"

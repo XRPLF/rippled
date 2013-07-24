@@ -425,19 +425,6 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 8
 
-// Unit Tests
-//
-// These must be outside the namespace
-//
-// VFALCO TODO Eliminate the need for boost for unit tests.
-//
-#include "ledger/LedgerUnitTests.cpp"
-#include "shamap/ripple_SHAMapUnitTests.cpp"
-#include "shamap/ripple_SHAMapSyncUnitTests.cpp"
-#include "misc/ripple_SerializedTransactionUnitTests.cpp"
-
-//------------------------------------------------------------------------------
-
 namespace ripple
 {
     extern int rippleMain (int argc, char** argv);

@@ -152,6 +152,18 @@ public:
 */
 static void runBeastUnitTests (std::string const& individualTest = "")
 {
+    // VFALCO NOTE It sucks that we have to do this but some
+    //             code demands the Application object exists.
+    //
+    //             To find out who, just change the #if
+#if 1
+    {
+        setupConfigForUnitTests (&theConfig);
+
+        getApp ();
+    }
+#endif
+
     RippleUnitTests tr;
 
     tr.setAssertOnFailure (false);
@@ -165,23 +177,6 @@ static void runBeastUnitTests (std::string const& individualTest = "")
     {
         tr.runTest (individualTest.c_str ());
     }
-}
-
-//------------------------------------------------------------------------------
-
-/** Run the Boost unit tests.
-
-    @note These are deprecated. We want to migrate to using only
-          the Beast unit testing framework. Please do not add more
-          Boost based unit tests.
-*/
-// VFALCO NOTE What are argc and argv for?
-//             Where does the boost unit test framework write its output?
-//
-static void runBoostUnitTests (int argc, char* argv [])
-{
-    // DEPRECATED
-    boost::unit_test::unit_test_main (init_unit_test, argc, argv);
 }
 
 //------------------------------------------------------------------------------
@@ -247,8 +242,7 @@ int rippleMain (int argc, char** argv)
     ("rpc_port", po::value <int> (), "Specify the port number for RPC command.")
     ("standalone,a", "Run with no peers.")
     ("testnet,t", "Run in test net mode.")
-    ("unittest,u", "Perform unit tests.")
-    ("unittest2", po::value <std::string> ()->implicit_value (""), "Perform new unit tests.")
+    ("unittest,u", po::value <std::string> ()->implicit_value (""), "Perform unit tests.")
     ("parameters", po::value< vector<string> > (), "Specify comma separated parameters.")
     ("quiet,q", "Reduce diagnotics.")
     ("verbose,v", "Verbose logging.")
@@ -341,16 +335,7 @@ int rippleMain (int argc, char** argv)
     //
     if (vm.count ("unittest"))
     {
-        runBeastUnitTests ();
-
-        // DEPRECATED
-        runBoostUnitTests (argc, argv);
-        return 0;
-    }
-
-    if (vm.count ("unittest2"))
-    {
-        std::string const test = vm ["unittest2"].as <std::string> ();
+        std::string const test = vm ["unittest"].as <std::string> ();
 
         runBeastUnitTests (test);
 
