@@ -15,7 +15,7 @@ Ledger::Ledger (const RippleAddress& masterID, uint64 startAmount)
     , mCloseFlags (0)
     , mClosed (false)
     , mValidHash (false)
-    , mAccepted (false)
+    , mValidated (false)
     , mImmutable (false)
     , mTransactionMap (boost::make_shared <SHAMap> (smtTRANSACTION))
     , mAccountStateMap (boost::make_shared <SHAMap> (smtSTATE))
@@ -59,7 +59,7 @@ Ledger::Ledger (uint256 const& parentHash,
     , mCloseFlags (closeFlags)
     , mClosed (false)
     , mValidHash (false)
-    , mAccepted (false)
+    , mValidated (false)
     , mImmutable (true)
     , mTransactionMap (boost::make_shared <SHAMap> (smtTRANSACTION, transHash))
     , mAccountStateMap (boost::make_shared <SHAMap> (smtSTATE, accountHash))
@@ -98,7 +98,7 @@ Ledger::Ledger (Ledger& ledger,
     , mCloseFlags (ledger.mCloseFlags)
     , mClosed (ledger.mClosed)
     , mValidHash (false)
-    , mAccepted (ledger.mAccepted)
+    , mValidated (ledger.mValidated)
     , mImmutable (!isMutable)
     , mTransactionMap (ledger.mTransactionMap->snapShot (isMutable))
     , mAccountStateMap (ledger.mAccountStateMap->snapShot (isMutable))
@@ -117,7 +117,7 @@ Ledger::Ledger (bool /* dummy */,
     , mCloseFlags (0)
     , mClosed (false)
     , mValidHash (false)
-    , mAccepted (false)
+    , mValidated (true)
     , mImmutable (false)
     , mTransactionMap (boost::make_shared <SHAMap> (smtTRANSACTION))
     , mAccountStateMap (prevLedger.mAccountStateMap->snapShot (true))
@@ -149,7 +149,7 @@ Ledger::Ledger (Blob const& rawLedger,
                 bool hasPrefix)
     : mClosed (false)
     , mValidHash (false)
-    , mAccepted (false)
+    , mValidated (false)
     , mImmutable (true)
 {
     Serializer s (rawLedger);
@@ -160,7 +160,7 @@ Ledger::Ledger (Blob const& rawLedger,
 }
 
 Ledger::Ledger (const std::string& rawLedger, bool hasPrefix) :
-    mClosed (false), mValidHash (false), mAccepted (false), mImmutable (true)
+    mClosed (false), mValidHash (false), mValidated (false), mImmutable (true)
 {
     Serializer s (rawLedger);
     setRaw (s, hasPrefix);

@@ -970,6 +970,12 @@ bool LedgerEntrySet::dirNext (
             sleNode     = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeNext));
             uDirEntry   = 0;
 
+            if (!sleNode)
+            { // This should never happen
+                WriteLog (lsFATAL, LedgerEntrySet) << "Corrupt directory: index:" << uRootIndex << " next:" << uNodeNext;
+                throw std::runtime_error ("Corrupt directory");
+            }
+
             return dirNext (uRootIndex, sleNode, uDirEntry, uEntryIndex);
         }
     }
