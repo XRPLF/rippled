@@ -64,7 +64,7 @@ SOURCES += \
     ../../Subtrees/beast/modules/beast_crypto/beast_crypto.cpp \
     ../../Subtrees/beast/modules/beast_db/beast_db.cpp \
     ../../Subtrees/beast/modules/beast_sqdb/beast_sqdb.cpp \
-    ../../Subtrees/beast/modules/beast_sqlite/beast_sqlite.cpp \
+    ../../Subtrees/beast/modules/beast_sqlite/beast_sqlite.c \
     ../../modules/ripple_app/ripple_app_pt1.cpp \
     ../../modules/ripple_app/ripple_app_pt2.cpp \
     ../../modules/ripple_app/ripple_app_pt3.cpp \
