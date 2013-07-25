@@ -110,7 +110,7 @@ uint32 RangeSet::prevMissing (uint32 v) const
                     if (cur->first > 0)
                         result = cur->first - 1;
                     else
-                        result = absent;
+                        result = v - 1;
                 }
 
                 break;
