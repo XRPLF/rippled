@@ -105,22 +105,15 @@ void LedgerMaster::pushLedger (Ledger::pointer newLedger)
     mFinalizedLedger = mCurrentLedger;
     mCurrentLedger = newLedger;
     mEngine.setLedger (newLedger);
+    mLedgerHistory.addLedger (newLedger);
 }
 
 void LedgerMaster::pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL, bool fromConsensus)
 {
-    assert (newLCL->isClosed () && newLCL->isAccepted ());
-    assert (!newOL->isClosed () && !newOL->isAccepted ());
+    assert (newLCL->isClosed () && newLCL->isImmutable());
+    assert (!newOL->isClosed ());
 
     boost::recursive_mutex::scoped_lock ml (mLock);
-
-    if (newLCL->isAccepted ())
-    {
-        assert (newLCL->isClosed ());
-        assert (newLCL->isImmutable ());
-        mLedgerHistory.addAcceptedLedger (newLCL, fromConsensus);
-        WriteLog (lsINFO, LedgerMaster) << "StashAccepted: " << newLCL->getHash ();
-    }
 
     {
         boost::recursive_mutex::scoped_lock ml (mLock);
@@ -152,9 +145,6 @@ void LedgerMaster::switchLedgers (Ledger::pointer lastClosed, Ledger::pointer cu
 void LedgerMaster::storeLedger (Ledger::pointer ledger)
 {
     mLedgerHistory.addLedger (ledger);
-
-    if (ledger->isAccepted ())
-        mLedgerHistory.addAcceptedLedger (ledger, false);
 }
 
 Ledger::pointer LedgerMaster::closeLedger (bool recover)
@@ -330,7 +320,10 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
         Ledger::pointer lgr = mMissingLedger->getLedger ();
 
         if (lgr && (lgr->getLedgerSeq () == ledgerSeq))
+        {
+            lgr->setValidated();
             missingAcquireComplete (mMissingLedger);
+        }
 
         mMissingLedger.reset ();
         return true;
@@ -373,8 +366,8 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
                     if (acq && acq->isComplete ())
                     {
                         acq->getLedger ()->setAccepted ();
-                        setFullLedger (acq->getLedger ());
-                        mLedgerHistory.addAcceptedLedger (acq->getLedger (), false);
+                        setValidatedLedger (acq->getLedger ());
+                        mLedgerHistory.addValidatedLedger (acq->getLedger ());
                     }
                     else
                         ++fetchCount;
@@ -438,9 +431,8 @@ void LedgerMaster::missingAcquireComplete (InboundLedger::pointer acq)
 
     if (acq->isComplete ())
     {
-        acq->getLedger ()->setAccepted ();
-        setFullLedger (acq->getLedger ());
-        mLedgerHistory.addAcceptedLedger (acq->getLedger (), false);
+        setValidatedLedger (acq->getLedger ());
+        mLedgerHistory.addValidatedLedger (acq->getLedger ());
     }
 }
 
@@ -536,7 +528,7 @@ void LedgerMaster::fixMismatch (Ledger::ref ledger)
     CondLog (invalidate != 0, lsWARNING, LedgerMaster) << "All " << invalidate << " prior ledgers invalidated";
 }
 
-void LedgerMaster::setFullLedger (Ledger::pointer ledger)
+void LedgerMaster::setValidatedLedger (Ledger::pointer ledger)
 {
     // A new ledger has been accepted as part of the trusted chain
     WriteLog (lsDEBUG, LedgerMaster) << "Ledger " << ledger->getLedgerSeq () << " accepted :" << ledger->getHash ();
@@ -547,13 +539,11 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger)
 
     boost::recursive_mutex::scoped_lock ml (mLock);
 
+    ledger->setValidated();
+
     mCompleteLedgers.setValue (ledger->getLedgerSeq ());
 
-    if (Ledger::getHashByIndex (ledger->getLedgerSeq ()) != ledger->getHash ())
-    {
-        ledger->pendSave (false);
-        return;
-    }
+    ledger->pendSaveValidated ();
 
     if ((ledger->getLedgerSeq () != 0) && mCompleteLedgers.hasValue (ledger->getLedgerSeq () - 1))
     {
@@ -819,7 +809,7 @@ void LedgerMaster::pubThread ()
         BOOST_FOREACH (Ledger::ref l, ledgers)
         {
             WriteLog (lsDEBUG, LedgerMaster) << "Publishing ledger " << l->getLedgerSeq ();
-            setFullLedger (l); // OPTIMIZEME: This is actually more work than we need to do
+            setValidatedLedger (l);
             getApp().getOPs ().pubLedger (l);
             published = true;
         }

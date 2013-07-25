@@ -27,19 +27,16 @@ void LedgerHistory::addLedger (Ledger::pointer ledger)
     mLedgersByHash.canonicalize (ledger->getHash (), ledger, true);
 }
 
-void LedgerHistory::addAcceptedLedger (Ledger::pointer ledger, bool fromConsensus)
+void LedgerHistory::addValidatedLedger (Ledger::pointer ledger)
 {
-    assert (ledger && ledger->isAccepted () && ledger->isImmutable ());
+    assert (ledger && ledger->isValidated () && ledger->isImmutable ());
     assert (ledger->peekAccountStateMap ()->getHash ().isNonZero ());
     uint256 h (ledger->getHash ());
     boost::recursive_mutex::scoped_lock sl (mLedgersByHash.peekMutex ());
-    mLedgersByHash.canonicalize (h, ledger, true);
-    assert (ledger);
-    assert (ledger->isAccepted ());
-    assert (ledger->isImmutable ());
+    mLedgersByHash.canonicalize (h, ledger);
     mLedgersByIndex[ledger->getLedgerSeq ()] = ledger->getHash ();
 
-    ledger->pendSave (fromConsensus);
+    ledger->pendSaveValidated ();
 }
 
 uint256 LedgerHistory::getLedgerHash (uint32 index)
@@ -126,7 +123,7 @@ Ledger::pointer LedgerHistory::canonicalizeLedger (Ledger::pointer ledger, bool 
     boost::recursive_mutex::scoped_lock sl (mLedgersByHash.peekMutex ());
     mLedgersByHash.canonicalize (h, ledger);
 
-    if (ledger->isAccepted ())
+    if (ledger->isValidated ())
         mLedgersByIndex[ledger->getLedgerSeq ()] = ledger->getHash ();
 
     return ledger;
