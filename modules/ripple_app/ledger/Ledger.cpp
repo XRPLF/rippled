@@ -15,7 +15,7 @@ Ledger::Ledger (const RippleAddress& masterID, uint64 startAmount)
     , mCloseFlags (0)
     , mClosed (false)
     , mValidHash (false)
-    , mValidated (false)
+    , mAccepted (false)
     , mImmutable (false)
     , mTransactionMap (boost::make_shared <SHAMap> (smtTRANSACTION))
     , mAccountStateMap (boost::make_shared <SHAMap> (smtSTATE))
@@ -59,7 +59,7 @@ Ledger::Ledger (uint256 const& parentHash,
     , mCloseFlags (closeFlags)
     , mClosed (false)
     , mValidHash (false)
-    , mValidated (false)
+    , mAccepted (false)
     , mImmutable (true)
     , mTransactionMap (boost::make_shared <SHAMap> (smtTRANSACTION, transHash))
     , mAccountStateMap (boost::make_shared <SHAMap> (smtSTATE, accountHash))
@@ -98,7 +98,7 @@ Ledger::Ledger (Ledger& ledger,
     , mCloseFlags (ledger.mCloseFlags)
     , mClosed (ledger.mClosed)
     , mValidHash (false)
-    , mValidated (ledger.mValidated)
+    , mAccepted (ledger.mAccepted)
     , mImmutable (!isMutable)
     , mTransactionMap (ledger.mTransactionMap->snapShot (isMutable))
     , mAccountStateMap (ledger.mAccountStateMap->snapShot (isMutable))
@@ -117,7 +117,7 @@ Ledger::Ledger (bool /* dummy */,
     , mCloseFlags (0)
     , mClosed (false)
     , mValidHash (false)
-    , mValidated (true)
+    , mAccepted (false)
     , mImmutable (false)
     , mTransactionMap (boost::make_shared <SHAMap> (smtTRANSACTION))
     , mAccountStateMap (prevLedger.mAccountStateMap->snapShot (true))
@@ -149,7 +149,7 @@ Ledger::Ledger (Blob const& rawLedger,
                 bool hasPrefix)
     : mClosed (false)
     , mValidHash (false)
-    , mValidated (false)
+    , mAccepted (false)
     , mImmutable (true)
 {
     Serializer s (rawLedger);
@@ -160,7 +160,7 @@ Ledger::Ledger (Blob const& rawLedger,
 }
 
 Ledger::Ledger (const std::string& rawLedger, bool hasPrefix) :
-    mClosed (false), mValidHash (false), mValidated (false), mImmutable (true)
+    mClosed (false), mValidHash (false), mAccepted (false), mImmutable (true)
 {
     Serializer s (rawLedger);
     setRaw (s, hasPrefix);
@@ -243,10 +243,11 @@ void Ledger::addRaw (Serializer& s) const
 void Ledger::setAccepted (uint32 closeTime, int closeResolution, bool correctCloseTime)
 {
     // used when we witnessed the consensus
-    assert (mClosed);
+    assert (mClosed && !mAccepted);
     mCloseTime = correctCloseTime ? roundCloseTime (closeTime, closeResolution) : closeTime;
     mCloseResolution = closeResolution;
     mCloseFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
+    mAccepted = true;
     setImmutable ();
 }
 
@@ -257,6 +258,7 @@ void Ledger::setAccepted ()
     if ((mCloseFlags & sLCF_NoConsensusTime) == 0)
         mCloseTime = roundCloseTime (mCloseTime, mCloseResolution);
 
+    mAccepted = true;
     setImmutable ();
 }
 
@@ -497,9 +499,9 @@ uint256 Ledger::getHash ()
     return mHash;
 }
 
-void Ledger::saveValidatedLedger (Job&)
+void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
 {
-    WriteLog (lsTRACE, Ledger) << "saveValidatedLedger ";
+    WriteLog (lsTRACE, Ledger) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq ();
     static boost::format deleteLedger ("DELETE FROM Ledgers WHERE LedgerSeq = %u;");
     static boost::format deleteTrans1 ("DELETE FROM Transactions WHERE LedgerSeq = %u;");
     static boost::format deleteTrans2 ("DELETE FROM AccountTransactions WHERE LedgerSeq = %u;");
@@ -520,7 +522,7 @@ void Ledger::saveValidatedLedger (Job&)
     if (getAccountHash () != mAccountStateMap->getHash ())
     {
         WriteLog (lsFATAL, Ledger) << "sAL: " << getAccountHash () << " != " << mAccountStateMap->getHash ();
-        WriteLog (lsFATAL, Ledger) << "saveValidatedLedger: seq=" << mLedgerSeq;
+        WriteLog (lsFATAL, Ledger) << "saveAcceptedLedger: seq=" << mLedgerSeq << ", fromcons=" << fromConsensus;
         assert (false);
     }
 
@@ -604,6 +606,9 @@ void Ledger::saveValidatedLedger (Job&)
                 boost::lexical_cast<std::string> (mTotCoins) % mCloseTime % mParentCloseTime %
                 mCloseResolution % mCloseFlags % mAccountHash.GetHex () % mTransHash.GetHex ()));
     }
+
+    if (!fromConsensus && (getConfig ().NODE_SIZE < 2)) // tiny or small
+        dropCache ();
 
     if (getApp().getJobQueue ().getJobCountTotal (jtPUBOLDLEDGER) < 2)
         getApp().getLedgerMaster ().resumeAcquiring ();
@@ -728,8 +733,10 @@ Ledger::pointer Ledger::getSQL (const std::string& sql)
     if (!loaded)
         return Ledger::pointer ();
 
-    ret->setValidated ();
     ret->setClosed ();
+
+    if (getApp().getOPs ().haveLedger (ledgerSeq))
+        ret->setAccepted ();
 
     if (ret->getHash () != ledgerHash)
     {
@@ -794,7 +801,9 @@ void Ledger::getSQL2 (Ledger::ref ret)
 {
     ret->setClosed ();
     ret->setImmutable ();
-    ret->setValidated ();
+
+    if (getApp().getOPs ().haveLedger (ret->getLedgerSeq ()))
+        ret->setAccepted ();
 
     WriteLog (lsTRACE, Ledger) << "Loaded ledger: " << ret->getHash ().GetHex ();
 }
@@ -951,7 +960,7 @@ Json::Value Ledger::getJson (int options)
         ledger["ledger_hash"]       = mHash.GetHex ();
         ledger["transaction_hash"]  = mTransHash.GetHex ();
         ledger["account_hash"]      = mAccountHash.GetHex ();
-        ledger["validated"]         = mValidated;
+        ledger["accepted"]          = mAccepted;
         ledger["total_coins"]       = boost::lexical_cast<std::string> (mTotCoins);
 
         if (mCloseTime != 0)
@@ -1795,19 +1804,17 @@ uint32 Ledger::roundCloseTime (uint32 closeTime, uint32 closeResolution)
     return closeTime - (closeTime % closeResolution);
 }
 
-void Ledger::pendSaveValidated ()
+void Ledger::pendSave (bool fromConsensus)
 {
-    if (getApp().getHashRouter ().setFlag (getHash (), SF_SAVED))
+    if (!fromConsensus && !getApp().getHashRouter ().setFlag (getHash (), SF_SAVED))
         return;
 
-    assert (isImmutable() && isValidated());
-
-    bool isNew = getLedgerSeq() > getApp().getLedgerMaster().getPublishedLedger()->getLedgerSeq();
+    assert (isImmutable ());
 
     getApp().getJobQueue ().addJob (
-            isNew ? jtPUBLEDGER : jtPUBOLDLEDGER,
-            isNew ? "Ledger::pendSave" : "Ledger::pendOldSave",
-            BIND_TYPE (&Ledger::saveValidatedLedger, shared_from_this (), P_1));
+        fromConsensus ? jtPUBLEDGER : jtPUBOLDLEDGER,
+        fromConsensus ? "Ledger::pendSave" : "Ledger::pendOldSave",
+        BIND_TYPE (&Ledger::saveAcceptedLedger, shared_from_this (), P_1, fromConsensus));
 
 }
 

@@ -93,18 +93,14 @@ public:
     }
     void setAccepted (uint32 closeTime, int closeResolution, bool correctCloseTime);
     void setAccepted ();
-    void setValidated ()
-    {
-        mValidated = mClosed = true;
-    }
     void setImmutable ();
     bool isClosed ()
     {
         return mClosed;
     }
-    bool isValidated ()
+    bool isAccepted ()
     {
-        return mValidated;
+        return mAccepted;
     }
     bool isImmutable ()
     {
@@ -232,7 +228,7 @@ public:
     static uint256 getHashByIndex (uint32 index);
     static bool getHashesByIndex (uint32 index, uint256 & ledgerHash, uint256 & parentHash);
     static std::map< uint32, std::pair<uint256, uint256> > getHashesByIndex (uint32 minSeq, uint32 maxSeq);
-    void pendSaveValidated ();
+    void pendSave (bool fromConsensus);
 
     // next/prev function
     SLE::pointer getSLE (uint256 const & uHash); // SLE is mutable
@@ -430,7 +426,7 @@ protected:
     // returned SLE is immutable
     SLE::pointer getASNodeI (uint256 const & nodeID, LedgerEntryType let);
 
-    void saveValidatedLedger (Job&);
+    void saveAcceptedLedger (Job&, bool fromConsensus);
 
     void updateFees ();
 
@@ -453,7 +449,7 @@ private:
     uint32      mParentCloseTime;   // when the previous ledger closed
     int         mCloseResolution;   // the resolution for this ledger close time (2-120 seconds)
     uint32      mCloseFlags;        // flags indicating how this ledger close took place
-    bool        mClosed, mValidHash, mValidated, mImmutable;
+    bool        mClosed, mValidHash, mAccepted, mImmutable;
 
     uint32      mReferenceFeeUnits;                 // Fee units for the reference transaction
     uint32      mReserveBase, mReserveIncrement;    // Reserve basse and increment in fee units
