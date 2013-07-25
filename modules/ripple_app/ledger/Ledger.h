@@ -421,6 +421,7 @@ public:
     uint64 scaleFeeBase (uint64 fee);
     uint64 scaleFeeLoad (uint64 fee, bool bAdmin);
 
+    static std::set<uint32> getPendingSaves();
 
     Json::Value getJson (int options);
     void addJson (Json::Value&, int options);
@@ -467,6 +468,10 @@ private:
     SHAMap::pointer mAccountStateMap;
 
     mutable boost::recursive_mutex mLock;
+
+    // ledgers not fully saved, validated ledger present but DB may not be correct yet
+    static boost::mutex      sPendingSaveLock;
+    static std::set<uint32>  sPendingSaves;
 };
 
 inline LedgerStateParms operator| (const LedgerStateParms& l1, const LedgerStateParms& l2)

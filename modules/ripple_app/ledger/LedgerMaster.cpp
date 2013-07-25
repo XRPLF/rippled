@@ -244,7 +244,7 @@ bool LedgerMaster::getValidatedRange (uint32& minVal, uint32& maxVal)
     if (!mValidLedger)
         return false;
 
-    maxVal = mValidLedger->getLedgerSeq ();
+    maxVal = mPubLedger->getLedgerSeq ();
 
     if (maxVal == 0)
         return false;
@@ -255,6 +255,37 @@ bool LedgerMaster::getValidatedRange (uint32& minVal, uint32& maxVal)
         minVal = 0;
     else
         ++minVal;
+
+    // Remove from the validated range any ledger sequences that may not be
+    // fully updated in the database yet
+
+    std::set<uint32> sPendingSaves = Ledger::getPendingSaves();
+
+    if (!sPendingSaves.empty() && ((minVal != 0) || (maxVal != 0)))
+    {
+        // Ensure we shrink the tips as much as possible
+        // If we have 7-9 and 8,9 are invalid, we don't want to see the 8 and shrink to just 9
+        // because then we'll have nothing when we could have 7.
+        while (sPendingSaves.count(maxVal) > 0)
+            --maxVal;
+        while (sPendingSaves.count(minVal) > 0)
+            ++minVal;
+
+        // Best effort for remaining exclusions
+        BOOST_FOREACH(uint32 v, sPendingSaves)
+        {
+            if ((v >= minVal) && (v <= maxVal))
+            {
+                if (v > ((minVal + maxVal) / 2))
+                    maxVal = v - 1;
+                else
+                    minVal = v + 1;
+            }
+        }
+
+        if (minVal > maxVal)
+            minVal = maxVal = 0;
+    }
 
     return true;
 }

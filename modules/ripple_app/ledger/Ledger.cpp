@@ -615,6 +615,11 @@ void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
     if (!fromConsensus && (getConfig ().NODE_SIZE < 2)) // tiny or small
         dropCache ();
 
+    { // Clients can now trust the database for information about this ledger sequence
+        boost::mutex::scoped_lock sl (sPendingSaveLock);
+        sPendingSaves.erase(getLedgerSeq());
+    }
+
     if (getApp().getJobQueue ().getJobCountTotal (jtPUBOLDLEDGER) < 2)
         getApp().getLedgerMaster ().resumeAcquiring ();
     else
@@ -1816,11 +1821,23 @@ void Ledger::pendSave (bool fromConsensus)
 
     assert (isImmutable ());
 
+    {
+        boost::mutex::scoped_lock sl (sPendingSaveLock);
+        if (!sPendingSaves.insert(getLedgerSeq()).second)
+            return;
+    }
+
     getApp().getJobQueue ().addJob (
         fromConsensus ? jtPUBLEDGER : jtPUBOLDLEDGER,
         fromConsensus ? "Ledger::pendSave" : "Ledger::pendOldSave",
         BIND_TYPE (&Ledger::saveAcceptedLedger, shared_from_this (), P_1, fromConsensus));
 
+}
+
+std::set<uint32> Ledger::getPendingSaves()
+{
+   boost::mutex::scoped_lock sl (sPendingSaveLock);
+   return sPendingSaves;
 }
 
 void Ledger::ownerDirDescriber (SLE::ref sle, const uint160& owner)
@@ -1941,3 +1958,6 @@ public:
 };
 
 static LedgerTests ledgerTests;
+
+boost::mutex Ledger::sPendingSaveLock;
+std::set<uint32> Ledger::sPendingSaves;
