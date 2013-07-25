@@ -691,6 +691,7 @@ TER LedgerEntrySet::dirAdd (
             sleNode     = entryCreate (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeDir));
             sleNode->setFieldU64 (sfIndexPrevious, uNodeDir - 1);
             sleNode->setFieldH256 (sfRootIndex, uRootIndex);
+            entryModify (sleNode);
             fDescriber (sleNode);
 
             svIndexes   = STVector256 ();
