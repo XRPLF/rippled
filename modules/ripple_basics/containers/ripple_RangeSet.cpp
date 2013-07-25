@@ -91,28 +91,10 @@ uint32 RangeSet::prevMissing (uint32 v) const
 
         for (const_reverse_iterator cur = mRanges.rbegin (); cur != mRanges.rend (); ++cur)
         {
-            // See if v is in the range
-            if (contains (*cur, v))
+            // See if v-1 is in the range
+            if (contains (*cur, result))
             {
-                if (cur->first > 0)
-                    result = cur->first - 1;
-                else
-                    result = absent;
-
-                break;
-            }
-            else if (v > cur->second)
-            {
-                // v lies "above" the interval
-
-                if (v == cur->second + 1)
-                {
-                    if (cur->first > 0)
-                        result = cur->first - 1;
-                    else
-                        result = v - 1;
-                }
-
+                result = cur->first - 1;
                 break;
             }
         }
