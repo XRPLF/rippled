@@ -36,8 +36,9 @@ public:
         uint32 feeFactor = std::max (mLocalTxnLoadFee, mRemoteTxnLoadFee);
 
         // Let admins pay the normal fee until the local load exceeds four times the remote
-        if (bAdmin && (feeFactor > mRemoteTxnLoadFee) && (feeFactor < (4 * mRemoteTxnLoadFee)))
-            feeFactor = mRemoteTxnLoadFee;
+        uint32 uRemFee = std::max(mRemoteTxnLoadFee, mClusterTxnLoadFee);
+        if (bAdmin && (feeFactor > uRemFee) && (feeFactor < (4 * uRemFee)))
+            feeFactor = uRemFee;
 
         {
             boost::mutex::scoped_lock sl (mLock);
