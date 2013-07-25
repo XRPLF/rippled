@@ -225,7 +225,7 @@ bool LedgerMaster::getValidatedRange (uint32& minVal, uint32& maxVal)
     minVal = mCompleteLedgers.prevMissing (maxVal);
 
     if (minVal == RangeSet::RangeSetAbsent)
-        minVal = 0;
+        minVal = maxVal;
     else
         ++minVal;
 
