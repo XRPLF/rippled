@@ -961,13 +961,6 @@ bool LedgerEntrySet::dirNext (
             if (!sleNext)
             { // This should never happen
                 WriteLog (lsFATAL, LedgerEntrySet) << "Corrupt directory: index:" << uRootIndex << " next:" << uNodeNext;
-#if 0
-                if (!read_only)
-                {
-                   sleNode->setFieldU64 (sfIndexNext, 0);
-                   entryModify(sleNode);
-                }
-#endif
                 return false;
             }
 
@@ -978,7 +971,6 @@ bool LedgerEntrySet::dirNext (
 
     uEntryIndex = vuiIndexes[uDirEntry++];
     WriteLog (lsTRACE, LedgerEntrySet) << boost::str (boost::format ("dirNext: uDirEntry=%d uEntryIndex=%s") % uDirEntry % uEntryIndex);
-    // FIXME
 
     return true;
 }
