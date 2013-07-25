@@ -106,6 +106,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
     {
         return rpcError (rpcINVALID_PARAMS);
     }
+    std::string sType = txJSON["TransactionType"].asString ();
 
     Ledger::pointer lSnapshot = mNetOps->getCurrentSnapshot ();
     AccountState::pointer asSrc = bOffline
@@ -122,7 +123,19 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
         return rpcError (rpcSRC_ACT_NOT_FOUND);
     }
 
-    if ("Payment" == txJSON["TransactionType"].asString ())
+    if (!txJSON.isMember ("Fee")
+            && (
+                "AccountSet" == sType
+                || "Payment" == sType
+                || "OfferCreate" == sType
+                || "OfferCancel" == sType
+                || "TrustSet" == sType))
+    {
+//        feeReq = lSnapshot->scaleFeeLoad(, 
+        txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
+    }
+
+    if ("Payment" == sType)
     {
 
         RippleAddress dstAccountID;
@@ -135,11 +148,6 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
         if (!dstAccountID.setAccountID (txJSON["Destination"].asString ()))
         {
             return rpcError (rpcDST_ACT_MALFORMED);
-        }
-
-        if (!txJSON.isMember ("Fee"))
-        {
-            txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
         }
 
         if (txJSON.isMember ("Paths") && params.isMember ("build_path"))
@@ -203,16 +211,6 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
                 }
             }
         }
-    }
-
-    if (!txJSON.isMember ("Fee")
-            && (
-                "AccountSet" == txJSON["TransactionType"].asString ()
-                || "OfferCreate" == txJSON["TransactionType"].asString ()
-                || "OfferCancel" == txJSON["TransactionType"].asString ()
-                || "TrustSet" == txJSON["TransactionType"].asString ()))
-    {
-        txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
     }
 
     if (!txJSON.isMember ("Sequence"))
