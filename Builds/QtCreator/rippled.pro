@@ -1,7 +1,7 @@
 
 # Ripple protocol buffers
 
-PROTOS = ../../src/cpp/ripple/ripple.proto
+PROTOS = ../../modules/ripple_data/protocol/ripple.proto
 PROTOS_DIR = ../../build/proto
 
 # Google Protocol Buffers support
@@ -55,7 +55,6 @@ OTHER_FILES += \
 
 #   $$files(../../Subtrees/beast/modules/beast_core/, true)
 #   $$files(../../modules/*, true) \
-#   $$files(../../src/cpp/ripple/*, true) \
 
 UI_HEADERS_DIR += ../../modules/ripple_basics
 

@@ -97,30 +97,6 @@
     <Filter Include="[0] Subtrees\leveldb\port\win">
       <UniqueIdentifier>{223ac5ce-c9a0-4196-9b75-4f5fbe8bfa00}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[1] Ripple\ripple_app\_main">
-      <UniqueIdentifier>{cf19fa31-c40b-4203-b497-63a8c3dcb282}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[1] Ripple\ripple_app\_network">
-      <UniqueIdentifier>{7c14e9df-6d8d-4ba3-b208-f89c1d0b6b30}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[1] Ripple\ripple_app\_pathing">
-      <UniqueIdentifier>{66d2d40a-72bd-41f5-9cf9-1f464a40bb04}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[1] Ripple\ripple_app\_peers">
-      <UniqueIdentifier>{ec6b9e0e-4a92-4c06-833d-441d51b0b163}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[1] Ripple\ripple_app\_rpc">
-      <UniqueIdentifier>{d46790be-df64-4e31-b51c-ac9e95a24747}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[1] Ripple\ripple_app\_transactions">
-      <UniqueIdentifier>{7b3efe80-291a-49bc-b32e-085b5af47f98}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[1] Ripple\ripple_app\_misc">
-      <UniqueIdentifier>{29393027-f1ed-4700-bbd1-c880091ab96b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[1] Ripple\ripple_app\_shamap">
-      <UniqueIdentifier>{e54bae0e-09f1-483e-bcf7-fb6b17b8d561}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[1] Ripple\ripple_basio">
       <UniqueIdentifier>{c6a852db-1174-4bf6-a726-ebaabf595743}</UniqueIdentifier>
     </Filter>
@@ -132,9 +108,6 @@
     </Filter>
     <Filter Include="[1] Ripple\ripple_net\basics">
       <UniqueIdentifier>{febf2e7e-f071-4a6c-9b81-68498fc8ea57}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[1] Ripple\ripple_app\_misc\_consensus">
-      <UniqueIdentifier>{82a6d3f3-fa01-4cc6-9730-f928e61b9929}</UniqueIdentifier>
     </Filter>
     <Filter Include="[1] Ripple\ripple_app\node">
       <UniqueIdentifier>{bd48a825-192f-4d5e-9230-661fdd65f9b6}</UniqueIdentifier>
@@ -156,6 +129,33 @@
     </Filter>
     <Filter Include="[1] Ripple\ripple_core\validator">
       <UniqueIdentifier>{efccddf1-024d-41c4-b7f5-26ce2dd79f21}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_app\main">
+      <UniqueIdentifier>{cf19fa31-c40b-4203-b497-63a8c3dcb282}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_app\misc">
+      <UniqueIdentifier>{29393027-f1ed-4700-bbd1-c880091ab96b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_app\network">
+      <UniqueIdentifier>{7c14e9df-6d8d-4ba3-b208-f89c1d0b6b30}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_app\paths">
+      <UniqueIdentifier>{66d2d40a-72bd-41f5-9cf9-1f464a40bb04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_app\peers">
+      <UniqueIdentifier>{ec6b9e0e-4a92-4c06-833d-441d51b0b163}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_app\rpc">
+      <UniqueIdentifier>{d46790be-df64-4e31-b51c-ac9e95a24747}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_app\shamap">
+      <UniqueIdentifier>{e54bae0e-09f1-483e-bcf7-fb6b17b8d561}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_app\tx">
+      <UniqueIdentifier>{7b3efe80-291a-49bc-b32e-085b5af47f98}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_app\consensus">
+      <UniqueIdentifier>{82a6d3f3-fa01-4cc6-9730-f928e61b9929}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -534,216 +534,6 @@
     <ClCompile Include="..\..\modules\ripple_client\ripple_client.cpp">
       <Filter>[1] Ripple\ripple_client</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_DisputedTx.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc\_consensus</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_LedgerConsensus.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc\_consensus</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ParameterTable.cpp">
-      <Filter>[1] Ripple\ripple_app\_main</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_Application.cpp">
-      <Filter>[1] Ripple\ripple_app\_main</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_LoadManager.cpp">
-      <Filter>[1] Ripple\ripple_app\_main</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_LocalCredentials.cpp">
-      <Filter>[1] Ripple\ripple_app\_main</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_Main.cpp">
-      <Filter>[1] Ripple\ripple_app\_main</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_AccountItem.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_AccountItems.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_AccountState.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_CanonicalTXSet.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_Features.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_FeeVote.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_HashRouter.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_InfoSub.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_NicknameState.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_Offer.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_OrderBook.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_ProofOfWork.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_ProofOfWorkFactory.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_SerializedLedger.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_SerializedTransaction.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_SerializedTransactionUnitTests.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_Validations.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\WSConnection.cpp">
-      <Filter>[1] Ripple\ripple_app\_network</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\WSDoor.cpp">
-      <Filter>[1] Ripple\ripple_app\_network</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\PeerDoor.cpp">
-      <Filter>[1] Ripple\ripple_app\_peers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_Peer.cpp">
-      <Filter>[1] Ripple\ripple_app\_peers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_PeerSet.cpp">
-      <Filter>[1] Ripple\ripple_app\_peers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_Peers.cpp">
-      <Filter>[1] Ripple\ripple_app\_peers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_UniqueNodeList.cpp">
-      <Filter>[1] Ripple\ripple_app\_peers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\NetworkOPs.cpp">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_Pathfinder.cpp">
-      <Filter>[1] Ripple\ripple_app\_pathing</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_PathRequest.cpp">
-      <Filter>[1] Ripple\ripple_app\_pathing</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_PathState.cpp">
-      <Filter>[1] Ripple\ripple_app\_pathing</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_RippleCalc.cpp">
-      <Filter>[1] Ripple\ripple_app\_pathing</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_RippleLineCache.cpp">
-      <Filter>[1] Ripple\ripple_app\_pathing</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_RippleState.cpp">
-      <Filter>[1] Ripple\ripple_app\_pathing</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\RPCDoor.cpp">
-      <Filter>[1] Ripple\ripple_app\_rpc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\RPCErr.cpp">
-      <Filter>[1] Ripple\ripple_app\_rpc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\RPCHandler.cpp">
-      <Filter>[1] Ripple\ripple_app\_rpc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\RPCSub.cpp">
-      <Filter>[1] Ripple\ripple_app\_rpc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\rpc.cpp">
-      <Filter>[1] Ripple\ripple_app\_rpc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\CallRPC.cpp">
-      <Filter>[1] Ripple\ripple_app\_rpc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_SHAMap.cpp">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_SHAMapDelta.cpp">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_SHAMapItem.cpp">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_SHAMapMissingNode.cpp">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_SHAMapNode.cpp">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_SHAMapSync.cpp">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_SHAMapSyncFilters.cpp">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_SHAMapSyncUnitTests.cpp">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_SHAMapTreeNode.cpp">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_SHAMapUnitTests.cpp">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\AccountSetTransactor.cpp">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ChangeTransactor.cpp">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\OfferCancelTransactor.cpp">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\OfferCreateTransactor.cpp">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\PaymentTransactor.cpp">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\RegularKeySetTransactor.cpp">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_TransactionAcquire.cpp">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\Transaction.cpp">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\TransactionCheck.cpp">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\TransactionEngine.cpp">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\TransactionMaster.cpp">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\TransactionMeta.cpp">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\TransactionQueue.cpp">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\Transactor.cpp">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\TrustSetTransactor.cpp">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\WalletAddTransactor.cpp">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt5.cpp">
       <Filter>[1] Ripple\ripple_app</Filter>
     </ClCompile>
@@ -785,9 +575,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_net\basics\ripple_SNTPClient.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cpp\ripple\ripple_WSHandler.cpp">
-      <Filter>[1] Ripple\ripple_app\_network</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_basio\boost\ripple_SslContext.cpp">
       <Filter>[1] Ripple\ripple_basio\boost</Filter>
@@ -905,6 +692,219 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\node\ripple_MemoryBackendFactory.cpp">
       <Filter>[1] Ripple\ripple_app\node</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\main\ParameterTable.cpp">
+      <Filter>[1] Ripple\ripple_app\main</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\main\ripple_Application.cpp">
+      <Filter>[1] Ripple\ripple_app\main</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\main\ripple_LoadManager.cpp">
+      <Filter>[1] Ripple\ripple_app\main</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\main\ripple_LocalCredentials.cpp">
+      <Filter>[1] Ripple\ripple_app\main</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\main\ripple_Main.cpp">
+      <Filter>[1] Ripple\ripple_app\main</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_AccountItem.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_AccountItems.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_AccountState.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_CanonicalTXSet.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_Features.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_FeeVote.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_HashRouter.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_InfoSub.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_NicknameState.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_Offer.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_OrderBook.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_ProofOfWork.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_ProofOfWorkFactory.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_SerializedLedger.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_SerializedTransaction.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_SerializedTransactionUnitTests.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_Validations.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\NetworkOPs.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\network\WSConnection.cpp">
+      <Filter>[1] Ripple\ripple_app\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\network\WSDoor.cpp">
+      <Filter>[1] Ripple\ripple_app\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\network\ripple_WSHandler.cpp">
+      <Filter>[1] Ripple\ripple_app\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\paths\ripple_Pathfinder.cpp">
+      <Filter>[1] Ripple\ripple_app\paths</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\paths\ripple_PathRequest.cpp">
+      <Filter>[1] Ripple\ripple_app\paths</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\paths\ripple_PathState.cpp">
+      <Filter>[1] Ripple\ripple_app\paths</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\paths\ripple_RippleCalc.cpp">
+      <Filter>[1] Ripple\ripple_app\paths</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\paths\ripple_RippleLineCache.cpp">
+      <Filter>[1] Ripple\ripple_app\paths</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\paths\ripple_RippleState.cpp">
+      <Filter>[1] Ripple\ripple_app\paths</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\peers\ripple_Peer.cpp">
+      <Filter>[1] Ripple\ripple_app\peers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\peers\ripple_Peers.cpp">
+      <Filter>[1] Ripple\ripple_app\peers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\peers\ripple_PeerSet.cpp">
+      <Filter>[1] Ripple\ripple_app\peers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\peers\ripple_UniqueNodeList.cpp">
+      <Filter>[1] Ripple\ripple_app\peers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\peers\PeerDoor.cpp">
+      <Filter>[1] Ripple\ripple_app\peers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\rpc\CallRPC.cpp">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\rpc\rpc.cpp">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\rpc\RPCDoor.cpp">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\rpc\RPCErr.cpp">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\rpc\RPCHandler.cpp">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\rpc\RPCSub.cpp">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\shamap\ripple_SHAMap.cpp">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\shamap\ripple_SHAMapDelta.cpp">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\shamap\ripple_SHAMapItem.cpp">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\shamap\ripple_SHAMapMissingNode.cpp">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\shamap\ripple_SHAMapNode.cpp">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\shamap\ripple_SHAMapSync.cpp">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\shamap\ripple_SHAMapSyncFilters.cpp">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\shamap\ripple_SHAMapSyncUnitTests.cpp">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\shamap\ripple_SHAMapTreeNode.cpp">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\shamap\ripple_SHAMapUnitTests.cpp">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\consensus\ripple_LedgerConsensus.cpp">
+      <Filter>[1] Ripple\ripple_app\consensus</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\consensus\ripple_DisputedTx.cpp">
+      <Filter>[1] Ripple\ripple_app\consensus</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\AccountSetTransactor.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\ChangeTransactor.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\OfferCancelTransactor.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\OfferCreateTransactor.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\PaymentTransactor.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\RegularKeySetTransactor.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\ripple_TransactionAcquire.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\Transaction.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\TransactionCheck.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\TransactionEngine.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\TransactionMaster.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\TransactionMeta.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\TransactionQueue.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\Transactor.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\TrustSetTransactor.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\WalletAddTransactor.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1326,206 +1326,11 @@
     <ClInclude Include="..\..\modules\ripple_client\ripple_client.h">
       <Filter>[1] Ripple\ripple_client</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_DisputedTx.h">
-      <Filter>[1] Ripple\ripple_app\_misc\_consensus</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_LedgerConsensus.h">
-      <Filter>[1] Ripple\ripple_app\_misc\_consensus</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ParameterTable.h">
-      <Filter>[1] Ripple\ripple_app\_main</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_LocalCredentials.h">
-      <Filter>[1] Ripple\ripple_app\_main</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_AccountItem.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_AccountItems.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_AccountState.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_CanonicalTXSet.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_IFeatures.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_IFeeVote.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_IHashRouter.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_InfoSub.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_IValidations.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_NicknameState.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_Offer.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_OrderBook.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_ProofOfWork.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_ProofOfWorkFactory.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_SerializedLedger.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_SerializedTransaction.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\WSConnection.h">
-      <Filter>[1] Ripple\ripple_app\_network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\WSDoor.h">
-      <Filter>[1] Ripple\ripple_app\_network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\Peer.h">
-      <Filter>[1] Ripple\ripple_app\_peers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\PeerDoor.h">
-      <Filter>[1] Ripple\ripple_app\_peers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_Peer.h">
-      <Filter>[1] Ripple\ripple_app\_peers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_PeerSet.h">
-      <Filter>[1] Ripple\ripple_app\_peers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_IPeers.h">
-      <Filter>[1] Ripple\ripple_app\_peers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\NetworkOPs.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_IProofOfWorkFactory.h">
-      <Filter>[1] Ripple\ripple_app\_misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_Pathfinder.h">
-      <Filter>[1] Ripple\ripple_app\_pathing</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_PathRequest.h">
-      <Filter>[1] Ripple\ripple_app\_pathing</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_PathState.h">
-      <Filter>[1] Ripple\ripple_app\_pathing</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_RippleCalc.h">
-      <Filter>[1] Ripple\ripple_app\_pathing</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_RippleLineCache.h">
-      <Filter>[1] Ripple\ripple_app\_pathing</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_RippleState.h">
-      <Filter>[1] Ripple\ripple_app\_pathing</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\RPCSub.h">
-      <Filter>[1] Ripple\ripple_app\_rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\RPC.h">
-      <Filter>[1] Ripple\ripple_app\_rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\RPCDoor.h">
-      <Filter>[1] Ripple\ripple_app\_rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\RPCErr.h">
-      <Filter>[1] Ripple\ripple_app\_rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\RPCHandler.h">
-      <Filter>[1] Ripple\ripple_app\_rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\CallRPC.h">
-      <Filter>[1] Ripple\ripple_app\_rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_SHAMap.h">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_SHAMapAddNode.h">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_SHAMapItem.h">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_SHAMapMissingNode.h">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_SHAMapNode.h">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_SHAMapSyncFilter.h">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_SHAMapSyncFilters.h">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_SHAMapTreeNode.h">
-      <Filter>[1] Ripple\ripple_app\_shamap</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\basics\ripple_BuildVersion.h">
       <Filter>[1] Ripple\ripple_app\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\basics\ripple_Version.h">
       <Filter>[1] Ripple\ripple_app\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\AccountSetTransactor.h">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ChangeTransactor.h">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\OfferCancelTransactor.h">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\OfferCreateTransactor.h">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\PaymentTransactor.h">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\RegularKeySetTransactor.h">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_TransactionAcquire.h">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\Transaction.h">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\TransactionEngine.h">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\TransactionMaster.h">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\TransactionMeta.h">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\TransactionQueue.h">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\Transactor.h">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\TrustSetTransactor.h">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\WalletAddTransactor.h">
-      <Filter>[1] Ripple\ripple_app\_transactions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_ILoadManager.h">
-      <Filter>[1] Ripple\ripple_app\_main</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_LogFile.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
@@ -1565,12 +1370,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_net\basics\ripple_SNTPClient.h">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_WSHandler.h">
-      <Filter>[1] Ripple\ripple_app\_network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_UniqueNodeList.h">
-      <Filter>[1] Ripple\ripple_app\_peers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_basio\boost\ripple_SslContext.h">
       <Filter>[1] Ripple\ripple_basio\boost</Filter>
@@ -1659,9 +1458,6 @@
     <ClInclude Include="..\..\modules\ripple_app\ledger\SerializedValidation.h">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\cpp\ripple\ripple_Application.h">
-      <Filter>[1] Ripple\ripple_app\_main</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\validator\ripple_ValidatorList.h">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
@@ -1695,9 +1491,218 @@
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_MemoryBackendFactory.h">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\main\ParameterTable.h">
+      <Filter>[1] Ripple\ripple_app\main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\main\ripple_Application.h">
+      <Filter>[1] Ripple\ripple_app\main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\main\ripple_ILoadManager.h">
+      <Filter>[1] Ripple\ripple_app\main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\main\ripple_LocalCredentials.h">
+      <Filter>[1] Ripple\ripple_app\main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\NetworkOPs.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_AccountItem.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_AccountItems.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_AccountState.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_CanonicalTXSet.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IFeatures.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IFeeVote.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IHashRouter.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_InfoSub.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IProofOfWorkFactory.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IValidations.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_NicknameState.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_Offer.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_OrderBook.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_ProofOfWork.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_ProofOfWorkFactory.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_SerializedLedger.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_SerializedTransaction.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\network\ripple_WSHandler.h">
+      <Filter>[1] Ripple\ripple_app\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\network\WSConnection.h">
+      <Filter>[1] Ripple\ripple_app\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\network\WSDoor.h">
+      <Filter>[1] Ripple\ripple_app\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\paths\ripple_Pathfinder.h">
+      <Filter>[1] Ripple\ripple_app\paths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\paths\ripple_PathRequest.h">
+      <Filter>[1] Ripple\ripple_app\paths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\paths\ripple_PathState.h">
+      <Filter>[1] Ripple\ripple_app\paths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\paths\ripple_RippleCalc.h">
+      <Filter>[1] Ripple\ripple_app\paths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\paths\ripple_RippleLineCache.h">
+      <Filter>[1] Ripple\ripple_app\paths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\paths\ripple_RippleState.h">
+      <Filter>[1] Ripple\ripple_app\paths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\peers\PeerDoor.h">
+      <Filter>[1] Ripple\ripple_app\peers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\peers\ripple_IPeers.h">
+      <Filter>[1] Ripple\ripple_app\peers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\peers\ripple_Peer.h">
+      <Filter>[1] Ripple\ripple_app\peers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\peers\ripple_PeerSet.h">
+      <Filter>[1] Ripple\ripple_app\peers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\peers\ripple_UniqueNodeList.h">
+      <Filter>[1] Ripple\ripple_app\peers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\peers\Peer.h">
+      <Filter>[1] Ripple\ripple_app\peers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\peers\ripple_ClusterNodeStatus.h">
+      <Filter>[1] Ripple\ripple_app\peers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\rpc\CallRPC.h">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\rpc\RPC.h">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\rpc\RPCDoor.h">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\rpc\RPCErr.h">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\rpc\RPCHandler.h">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\rpc\RPCSub.h">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\shamap\ripple_SHAMap.h">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\shamap\ripple_SHAMapAddNode.h">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\shamap\ripple_SHAMapItem.h">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\shamap\ripple_SHAMapMissingNode.h">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\shamap\ripple_SHAMapNode.h">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\shamap\ripple_SHAMapSyncFilter.h">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\shamap\ripple_SHAMapSyncFilters.h">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\shamap\ripple_SHAMapTreeNode.h">
+      <Filter>[1] Ripple\ripple_app\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\consensus\ripple_DisputedTx.h">
+      <Filter>[1] Ripple\ripple_app\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\consensus\ripple_LedgerConsensus.h">
+      <Filter>[1] Ripple\ripple_app\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\AccountSetTransactor.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\ChangeTransactor.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\OfferCancelTransactor.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\OfferCreateTransactor.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\PaymentTransactor.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\RegularKeySetTransactor.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\ripple_TransactionAcquire.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\Transaction.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\TransactionEngine.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\TransactionMaster.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\TransactionMeta.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\TransactionQueue.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\Transactor.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\TrustSetTransactor.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\WalletAddTransactor.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\src\cpp\ripple\ripple.proto" />
+    <CustomBuild Include="..\..\modules\ripple_data\protocol\ripple.proto">
+      <Filter>[1] Ripple\ripple_data\protocol</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\modules\ripple_json\json\json_internalarray.inl">

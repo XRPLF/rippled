@@ -1,8 +1,11 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
 
-
-
-#ifndef RIPPLE_CLUSTERNODESTATUS_H
-#define RIPPLE_CLUSTERNODESTATUS_H
+#ifndef RIPPLE_CLUSTERNODESTATUS_H_INCLUDED
+#define RIPPLE_CLUSTERNODESTATUS_H_INCLUDED
 
 class ClusterNodeStatus
 {
@@ -11,7 +14,7 @@ public:
     ClusterNodeStatus() : mLoadFee(0), mReportTime(0)
     { ; }
 
-    ClusterNodeStatus(std::string const& name) : mNodeName(name), mLoadFee(0), mReportTime(0)
+    explicit ClusterNodeStatus(std::string const& name) : mNodeName(name), mLoadFee(0), mReportTime(0)
     { ; }
 
     ClusterNodeStatus(const std::string& name, uint32 fee, uint32 rtime) :

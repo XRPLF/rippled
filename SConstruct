@@ -114,8 +114,7 @@ INCLUDE_PATHS = [
     'Subtrees/leveldb',
     'Subtrees/leveldb/port',
     'Subtrees/leveldb/include',
-    'Subtrees/beast',
-    'src/cpp/ripple'
+    'Subtrees/beast'
     ]
 
 COMPILED_FILES = [
@@ -198,7 +197,7 @@ if OSX:
     env.Append(LINKFLAGS = ['-L/usr/local/opt/openssl/lib'])
     env.Append(CXXFLAGS = ['-I/usr/local/opt/openssl/include'])
 
-PROTO_SRCS = env.Protoc([], 'src/cpp/ripple/ripple.proto', PROTOCOUTDIR='build/proto', PROTOCPYTHONOUTDIR=None)
+PROTO_SRCS = env.Protoc([], 'modules/ripple_data/protocol/ripple.proto', PROTOCOUTDIR='build/proto', PROTOCPYTHONOUTDIR=None)
 env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')
 
 # Only tag actual Ripple files.

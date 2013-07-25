@@ -3,7 +3,6 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
     <RepoDir>..\..</RepoDir>
-    <SrcDir>$(RepoDir)\src\cpp\ripple</SrcDir>
   </PropertyGroup>
   <PropertyGroup>
     <OutDir>$(RepoDir)\build\VisualStudio2012\$(Configuration).$(Platform)\</OutDir>
@@ -26,9 +25,6 @@
   <ItemGroup>
     <BuildMacro Include="RepoDir">
       <Value>$(RepoDir)</Value>
-    </BuildMacro>
-    <BuildMacro Include="SrcDir">
-      <Value>$(SrcDir)</Value>
     </BuildMacro>
   </ItemGroup>
 </Project>
