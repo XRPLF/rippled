@@ -25,7 +25,7 @@ JobQueue::JobQueue (boost::asio::io_service& svc)
     mJobLoads [ jtPROPOSAL_t    ].setTargetLatency (100, 500);
 
     mJobLoads [ jtCLIENT        ].setTargetLatency (2000, 5000);
-    mJobLoads [ jtPEER          ].setTargetLatency (200, 1250);
+    mJobLoads [ jtPEER          ].setTargetLatency (200, 2500);
     mJobLoads [ jtDISK          ].setTargetLatency (500, 1000);
     mJobLoads [ jtACCEPTLEDGER  ].setTargetLatency (1000, 2500);
 }
