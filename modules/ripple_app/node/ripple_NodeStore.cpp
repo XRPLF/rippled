@@ -177,13 +177,9 @@ void NodeStore::BatchWriter::writeBatch ()
                 return;
             }
 
-            // VFALCO NOTE On the first trip through, mWriteLoad will be 0.
-            //             This is probably not intended. Perhaps the order
-            //             of calls isn't quite right
-            //
-            mWriteLoad = std::max (setSize, static_cast<int> (mWriteSet.size ()));
-
-            setSize = set.size ();
+            int newSetSize = mWriteSet.size();
+            mWriteLoad = std::max (setSize, newSetSize);
+            newSetSize = set.size ();
         }
 
         m_callback.writeBatch (set);
