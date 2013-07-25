@@ -148,6 +148,9 @@ const char* Job::toString (JobType t)
     case jtSWEEP:
         return "sweep";
 
+    case jtGENERIC:
+        return "generic";
+
     default:
         assert (false);
         return "unknown";

@@ -109,6 +109,9 @@ Json::Value JobQueue::getJson (int)
 
     for (int i = 0; i < NUM_JOB_TYPES; ++i)
     {
+        if (static_cast<JobType>(i) == jtGENERIC)
+            continue;
+
         uint64 count, latencyAvg, latencyPeak;
         int jobCount, threadCount;
         bool isOver;
