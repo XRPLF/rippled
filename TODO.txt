@@ -14,6 +14,9 @@ Vinnie's Short List (Changes day to day)
 
 --------------------------------------------------------------------------------
 
+- Use static creation member functions instead of endless constructor
+  variations in base_uint, uint256, and family.
+
 - Take away the "I" prefix from abstract interface classes, in both the class
   name and the file name. It is messing up sorting in the IDE. Use "Imp" or
   suffix for implementations.

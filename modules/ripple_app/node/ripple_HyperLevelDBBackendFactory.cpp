@@ -176,7 +176,7 @@ public:
                 else
                 {
                     // Uh oh, corrupted data!
-                    WriteLog (lsFATAL, NodeObject) << "Corrupt NodeObject #" << uint256 (it->key ().data ());
+                    WriteLog (lsFATAL, NodeObject) << "Corrupt NodeObject #" << uint256::fromVoid (it->key ().data ());
                 }
             }
             else

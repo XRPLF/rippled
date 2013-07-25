@@ -38,17 +38,22 @@ public:
     {
     }
 
+protected:
+    // This is to disambiguate from other 1 parameter ctors
+    struct FromVoid { };
+
     /** Construct from a raw pointer.
     
         The buffer pointed to by `data` must be at least 32 bytes.
     */
-    explicit base_uint (void const* data)
+    base_uint (void const* data, FromVoid)
     {
         // BITS must be a multiple of 32
         static_bassert ((BITS % 32) == 0);
 
         memcpy (&pn [0], data, BITS / 8);
     }
+public:
 
     bool isZero () const
     {
@@ -504,9 +509,15 @@ public:
         *this = b;
     }
 
-    explicit uint256 (void const* data)
-        : base_uint256 (data)
+private:
+    uint256 (void const* data, FromVoid)
+        : base_uint256 (data, FromVoid ())
     {
+    }
+public:
+    static uint256 fromVoid (void const* data)
+    {
+        return uint256 (data, FromVoid ());
     }
 
     uint256& operator= (uint64 uHost)

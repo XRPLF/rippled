@@ -66,7 +66,7 @@ public:
         {
             ScopedLock sl (m_db->getDBLock());
 
-            uint256 const hash (key);
+            uint256 const hash (uint256::fromVoid (key));
 
             static SqliteStatement pSt (m_db->getDB()->getSqliteDB(),
                 "SELECT ObjType,LedgerIndex,Object FROM CommittedObjects WHERE Hash = ?;");

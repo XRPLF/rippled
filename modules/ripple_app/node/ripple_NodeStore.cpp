@@ -71,7 +71,7 @@ NodeObject::Ptr NodeStore::DecodedBlob::createObject ()
         memcpy (data.data (), m_objectData, m_dataBytes);
 
         object = NodeObject::createObject (
-            m_objectType, m_ledgerIndex, data, uint256 (m_key));
+            m_objectType, m_ledgerIndex, data, uint256::fromVoid (m_key));
     }
 
     return object;

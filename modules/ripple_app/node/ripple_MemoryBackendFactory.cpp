@@ -28,7 +28,7 @@ public:
 
     Status fetch (void const* key, NodeObject::Ptr* pObject)
     {
-        uint256 const hash (key);
+        uint256 const hash (uint256::fromVoid (key));
 
         Map::iterator iter = m_map.find (hash);
 
