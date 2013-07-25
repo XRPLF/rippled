@@ -90,7 +90,7 @@ public:
     void storeLedger (Ledger::pointer);
     void forceValid (Ledger::pointer);
 
-    void setFullLedger (Ledger::pointer ledger);
+    void setValidatedLedger (Ledger::pointer ledger);
 
     void switchLedgers (Ledger::pointer lastClosed, Ledger::pointer newCurrent);
 
