@@ -33,6 +33,7 @@ exports.servers = {
     // 'validation_seed' : "shhDFVsmS2GSu5vUyZSPXYfj1r79h",
     // 'validators' : "n9L8LZZCwsdXzKUN9zoVxs4YznYXZ9hEhsQZY7aVpxtFaSceiyDZ beta",
     'local_signing' : false,
+    'node_db': 'type=memory'
   }
 };
 
