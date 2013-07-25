@@ -893,6 +893,8 @@ TER LedgerEntrySet::dirDelete (
             // Fix next to point to its new previous.
             sleNext->setFieldU64 (sfIndexPrevious, uNodePrevious);
             entryModify (sleNext);
+
+            entryDelete(sleNode);
         }
         // Last node.
         else if (bKeepRoot || uNodePrevious)
@@ -973,7 +975,7 @@ bool LedgerEntrySet::dirNext (
             if (!sleNode)
             { // This should never happen
                 WriteLog (lsFATAL, LedgerEntrySet) << "Corrupt directory: index:" << uRootIndex << " next:" << uNodeNext;
-                throw std::runtime_error ("Corrupt directory");
+                return false;
             }
 
             return dirNext (uRootIndex, sleNode, uDirEntry, uEntryIndex);
