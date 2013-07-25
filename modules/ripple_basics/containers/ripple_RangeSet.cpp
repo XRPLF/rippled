@@ -66,6 +66,7 @@ uint32 RangeSet::getPrev (uint32 v) const
             return it.second;
 
         if (contains (it, v + 1))
+            return v - 1;
     }
     return RangeSetAbsent;
 }
@@ -83,7 +84,7 @@ uint32 RangeSet::prevMissing (uint32 v) const
         if (contains (it, v - 1))
         { // We have (v-1) in the set
             if (it.first == 0)
-                return RangeSetAbent;
+                return RangeSetAbsent;
             return it.first - 1;
         }
     }
@@ -189,6 +190,23 @@ void RangeSet::simplify ()
     }
 }
 
+static RangeSet createPredefinedRangeSet ()
+{
+    RangeSet set;
+
+    // Set will include:
+    // [ 0, 5]
+    // [10,15]
+    // [20,25]
+    // etc...
+
+    for (int i = 0; i < 10; ++i)
+        set.setRange (10 * i, 10 * i + 5);
+
+    return set;
+}
+
+
 BOOST_AUTO_TEST_SUITE (RangeSet_suite)
 
 BOOST_AUTO_TEST_CASE (RangeSet_test)
@@ -214,6 +232,23 @@ BOOST_AUTO_TEST_CASE (RangeSet_test)
     WriteLog (lsTRACE, RangeSet) << "RangeSet test complete";
 }
 
-BOOST_AUTO_TEST_SUITE_END ()
+BOOST_AUTO_TEST_CASE (RangeSetPrevMissing_test)
+{
+    RangeSet const set = createPredefinedRangeSet ();
 
-// vim:ts=4
+    for (int i = 0; i < 100; ++i)
+    {
+        int const oneBelowRange = (10*(i/10))-1;
+
+        int const expectedPrevMissing =
+            ((i % 10) > 6) ? (i-1) : oneBelowRange;
+
+        bool const pass = set.prevMissing (i) == expectedPrevMissing;
+
+        BOOST_REQUIRE (pass);
+
+        assert (pass);
+    }
+}
+
+BOOST_AUTO_TEST_SUITE_END ()
