@@ -52,7 +52,7 @@ void SerializedValidation::sign (uint256& signingHash, const RippleAddress& raPr
 
 uint256 SerializedValidation::getSigningHash () const
 {
-    return STObject::getSigningHash (theConfig.SIGN_VALIDATION);
+    return STObject::getSigningHash (getConfig ().SIGN_VALIDATION);
 }
 
 uint256 SerializedValidation::getLedgerHash () const

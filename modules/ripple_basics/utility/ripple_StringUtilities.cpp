@@ -309,3 +309,61 @@ StringPairArray parseDelimitedKeyValueString (String parameters, beast_wchar del
 
     return keyValues;
 }
+
+//------------------------------------------------------------------------------
+
+class StringUtilitiesTests : public UnitTest
+{
+public:
+    StringUtilitiesTests () : UnitTest ("StringUtilities", "ripple")
+    {
+    }
+
+    void runTest ()
+    {
+        beginTest ("parseUrl");
+
+        std::string strScheme;
+        std::string strDomain;
+        int         iPort;
+        std::string strPath;
+
+        if (!parseUrl ("lower://domain", strScheme, strDomain, iPort, strPath))
+            fail ("parseUrl: lower://domain failed");
+
+        if (strScheme != "lower")
+            fail ("parseUrl: lower://domain : scheme failed");
+
+        if (strDomain != "domain")
+            fail ("parseUrl: lower://domain : domain failed");
+
+        if (iPort != -1)
+            fail ("parseUrl: lower://domain : port failed");
+
+        if (strPath != "")
+            fail ("parseUrl: lower://domain : path failed");
+
+        if (!parseUrl ("UPPER://domain:234/", strScheme, strDomain, iPort, strPath))
+            fail ("parseUrl: UPPER://domain:234/ failed");
+
+        if (strScheme != "upper")
+            fail ("parseUrl: UPPER://domain:234/ : scheme failed");
+
+        if (iPort != 234)
+            fail (boost::str (boost::format ("parseUrl: UPPER://domain:234/ : port failed: %d") % iPort));
+
+        if (strPath != "/")
+            fail ("parseUrl: UPPER://domain:234/ : path failed");
+
+        if (!parseUrl ("Mixed://domain/path", strScheme, strDomain, iPort, strPath))
+            fail ("parseUrl: Mixed://domain/path failed");
+
+        if (strScheme != "mixed")
+            fail ("parseUrl: Mixed://domain/path tolower failed");
+
+        if (strPath != "/path")
+            fail ("parseUrl: Mixed://domain/path path failed");
+    }
+};
+
+static StringUtilitiesTests stringUtilitiesTests;

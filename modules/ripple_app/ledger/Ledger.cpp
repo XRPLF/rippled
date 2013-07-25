@@ -607,7 +607,7 @@ void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
                 mCloseResolution % mCloseFlags % mAccountHash.GetHex () % mTransHash.GetHex ()));
     }
 
-    if (!fromConsensus && (theConfig.NODE_SIZE < 2)) // tiny or small
+    if (!fromConsensus && (getConfig ().NODE_SIZE < 2)) // tiny or small
         dropCache ();
 
     if (getApp().getJobQueue ().getJobCountTotal (jtPUBOLDLEDGER) < 2)
@@ -1845,10 +1845,10 @@ void Ledger::initializeFees ()
 
 void Ledger::updateFees ()
 {
-    mBaseFee = theConfig.FEE_DEFAULT;
+    mBaseFee = getConfig ().FEE_DEFAULT;
     mReferenceFeeUnits = 10;
-    mReserveBase = theConfig.FEE_ACCOUNT_RESERVE;
-    mReserveIncrement = theConfig.FEE_OWNER_RESERVE;
+    mReserveBase = getConfig ().FEE_ACCOUNT_RESERVE;
+    mReserveIncrement = getConfig ().FEE_OWNER_RESERVE;
 
     LedgerStateParms p = lepNONE;
     SLE::pointer sle = getASNode (p, Ledger::getLedgerFeeIndex (), ltFEE_SETTINGS);
@@ -1914,3 +1914,25 @@ std::vector<uint256> Ledger::getNeededAccountStateHashes (int max, SHAMapSyncFil
 
     return ret;
 }
+
+//------------------------------------------------------------------------------
+
+class LedgerTests : public UnitTest
+{
+public:
+    LedgerTests () : UnitTest ("Ledger", "ripple")
+    {
+    }
+
+    void runTest ()
+    {
+        beginTest ("uint256");
+
+        uint256 uBig ("D2DC44E5DC189318DB36EF87D2104CDF0A0FE3A4B698BEEE55038D7EA4C68000");
+
+        // VFALCO NOTE This fails in the original version as well.
+        expect (6125895493223874560 == Ledger::getQuality (uBig));
+    }
+};
+
+static LedgerTests ledgerTests;

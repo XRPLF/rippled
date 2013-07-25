@@ -242,3 +242,36 @@ void RangeSet::checkInternalConsistency () const noexcept
 #endif
 }
 
+//------------------------------------------------------------------------------
+
+class RangeSetTests : public UnitTest
+{
+public:
+    RangeSetTests () : UnitTest ("RangeSet", "ripple")
+    {
+    }
+
+    void runTest ()
+    {
+        beginTest ("membership");
+
+        RangeSet r1, r2;
+
+        r1.setRange (1, 10);
+        r1.clearValue (5);
+        r1.setRange (11, 20);
+
+        r2.setRange (1, 4);
+        r2.setRange (6, 10);
+        r2.setRange (10, 20);
+
+        expect (!r1.hasValue (5));
+
+        expect (r2.hasValue (9));
+
+        // TODO: Traverse functions must be tested
+    }
+};
+
+static RangeSetTests rangeSetTests;
+

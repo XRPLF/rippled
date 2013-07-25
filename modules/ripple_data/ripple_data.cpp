@@ -91,13 +91,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 }
 
-// These must be outside the namespace because of boost
-#include "crypto/ripple_CKeyDeterministicUnitTests.cpp"
-#include "protocol/ripple_RippleAddressUnitTests.cpp"
-#include "protocol/ripple_SerializedObjectUnitTests.cpp"
-#include "protocol/ripple_SerializerUnitTests.cpp"
-#include "protocol/ripple_STAmountUnitTests.cpp"
-
 // VFALCO TODO Fix this for SConstruct
 #if BEAST_MSVC
 #include "ripple.pb.cc"

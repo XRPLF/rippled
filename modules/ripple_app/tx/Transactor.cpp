@@ -54,7 +54,7 @@ void Transactor::calculateFee ()
 
 uint64 Transactor::calculateBaseFee ()
 {
-    return theConfig.FEE_DEFAULT;
+    return getConfig ().FEE_DEFAULT;
 }
 
 TER Transactor::payFee ()

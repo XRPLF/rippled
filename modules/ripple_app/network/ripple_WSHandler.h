@@ -47,13 +47,13 @@ protected:
 public:
     WSServerHandler (boost::shared_ptr<boost::asio::ssl::context> spCtx, bool bPublic) : mCtx (spCtx), mPublic (bPublic)
     {
-        if (theConfig.WEBSOCKET_SECURE != 0)
+        if (getConfig ().WEBSOCKET_SECURE != 0)
         {
             basio::SslContext::initializeFromFile (
                 *mCtx,
-                theConfig.WEBSOCKET_SSL_KEY,
-                theConfig.WEBSOCKET_SSL_CERT,
-                theConfig.WEBSOCKET_SSL_CHAIN);
+                getConfig ().WEBSOCKET_SSL_KEY,
+                getConfig ().WEBSOCKET_SSL_CERT,
+                getConfig ().WEBSOCKET_SSL_CHAIN);
         }
     }
 

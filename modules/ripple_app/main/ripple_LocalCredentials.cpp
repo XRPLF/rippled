@@ -23,7 +23,7 @@ void LocalCredentials::start ()
             throw std::runtime_error ("unable to retrieve new node identity.");
     }
 
-    if (!theConfig.QUIET)
+    if (!getConfig ().QUIET)
         Log::out() << "NodeIdentity: " << mNodePublicKey.humanNodePublic ();
 
     getApp().getUNL ().start ();
@@ -54,10 +54,10 @@ bool LocalCredentials::nodeIdentityLoad ()
         bSuccess    = true;
     }
 
-    if (theConfig.NODE_PUB.isValid () && theConfig.NODE_PRIV.isValid ())
+    if (getConfig ().NODE_PUB.isValid () && getConfig ().NODE_PRIV.isValid ())
     {
-        mNodePublicKey = theConfig.NODE_PUB;
-        mNodePrivateKey = theConfig.NODE_PRIV;
+        mNodePublicKey = getConfig ().NODE_PUB;
+        mNodePrivateKey = getConfig ().NODE_PRIV;
     }
 
     return bSuccess;
@@ -66,7 +66,7 @@ bool LocalCredentials::nodeIdentityLoad ()
 // Create and store a network identity.
 bool LocalCredentials::nodeIdentityCreate ()
 {
-    if (!theConfig.QUIET)
+    if (!getConfig ().QUIET)
         Log::out() << "NodeIdentity: Creating.";
 
     //
@@ -113,7 +113,7 @@ bool LocalCredentials::nodeIdentityCreate ()
                          % sqlEscape (strDh1024)));
     // XXX Check error result.
 
-    if (!theConfig.QUIET)
+    if (!getConfig ().QUIET)
         Log::out() << "NodeIdentity: Created.";
 
     return true;

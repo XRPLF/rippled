@@ -15,7 +15,7 @@ namespace Script
 
 int Operation::getFee ()
 {
-    return (theConfig.FEE_CONTRACT_OPERATION);
+    return (getConfig ().FEE_CONTRACT_OPERATION);
 }
 
 }

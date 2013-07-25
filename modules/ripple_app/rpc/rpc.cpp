@@ -105,7 +105,7 @@ std::string HTTPReply (int nStatus, const std::string& strMsg)
 
     std::string access;
 
-    if (theConfig.RPC_ALLOW_REMOTE) access = "Access-Control-Allow-Origin: *\r\n";
+    if (getConfig ().RPC_ALLOW_REMOTE) access = "Access-Control-Allow-Origin: *\r\n";
     else access = "";
 
     return strprintf (
@@ -221,7 +221,7 @@ bool HTTPAuthorized (const std::map<std::string, std::string>& mapHeaders)
     std::map<std::string, std::string>::const_iterator it = mapHeaders.find ("authorization");
 
     if ((it == mapHeaders.end ()) || (it->second.substr (0, 6) != "Basic "))
-        return theConfig.RPC_USER.empty () && theConfig.RPC_PASSWORD.empty ();
+        return getConfig ().RPC_USER.empty () && getConfig ().RPC_PASSWORD.empty ();
 
     std::string strUserPass64 = it->second.substr (6);
     boost::trim (strUserPass64);
@@ -233,7 +233,7 @@ bool HTTPAuthorized (const std::map<std::string, std::string>& mapHeaders)
 
     std::string strUser = strUserPass.substr (0, nColon);
     std::string strPassword = strUserPass.substr (nColon + 1);
-    return (strUser == theConfig.RPC_USER) && (strPassword == theConfig.RPC_PASSWORD);
+    return (strUser == getConfig ().RPC_USER) && (strPassword == getConfig ().RPC_PASSWORD);
 }
 
 //

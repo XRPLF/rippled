@@ -14,10 +14,10 @@ DatabaseCon::DatabaseCon (const std::string& strName, const char* initStrings[],
     //         responsibility to pass in the path. Add a member function to Application
     //         or Config to compute this path.
     //
-    boost::filesystem::path pPath   = (theConfig.RUN_STANDALONE &&
-                                          ((theConfig.START_UP != Config::LOAD) && (theConfig.START_UP != Config::REPLAY)))
+    boost::filesystem::path pPath   = (getConfig ().RUN_STANDALONE &&
+                                          ((getConfig ().START_UP != Config::LOAD) && (getConfig ().START_UP != Config::REPLAY)))
                                       ? ""                                // Use temporary files.
-                                      : (theConfig.DATA_DIR / strName);       // Use regular db files.
+                                      : (getConfig ().DATA_DIR / strName);       // Use regular db files.
 
     mDatabase = new SqliteDatabase (pPath.string ().c_str ());
     mDatabase->connect ();

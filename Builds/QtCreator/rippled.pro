@@ -63,6 +63,8 @@ SOURCES += \
     ../../Subtrees/beast/modules/beast_core/beast_core.cpp \
     ../../Subtrees/beast/modules/beast_crypto/beast_crypto.cpp \
     ../../Subtrees/beast/modules/beast_db/beast_db.cpp \
+    ../../Subtrees/beast/modules/beast_sqdb/beast_sqdb.cpp \
+    ../../Subtrees/beast/modules/beast_sqlite/beast_sqlite.c \
     ../../modules/ripple_app/ripple_app_pt1.cpp \
     ../../modules/ripple_app/ripple_app_pt2.cpp \
     ../../modules/ripple_app/ripple_app_pt3.cpp \
@@ -81,7 +83,6 @@ SOURCES += \
     ../../modules/ripple_leveldb/ripple_leveldb.cpp \
     ../../modules/ripple_mdb/ripple_mdb.c \
     ../../modules/ripple_net/ripple_net.cpp \
-    ../../modules/ripple_sqlite/ripple_sqlite.c \
     ../../modules/ripple_websocket/ripple_websocket.cpp
 
 LIBS += \

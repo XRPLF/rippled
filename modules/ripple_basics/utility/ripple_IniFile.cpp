@@ -135,8 +135,6 @@ StringPairArray parseKeyValueSection (Section& secSource, String const& strSecti
     // yuck.
     std::string const stdStrSection (strSection.toStdString ());
 
-    int const count = SectionCount (secSource, stdStrSection);
-
     typedef Section::mapped_type Entries;
 
     Entries* const entries = SectionEntries (secSource, stdStrSection);
