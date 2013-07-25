@@ -3300,7 +3300,7 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, LoadType* loadType, Sco
 
             if (bSnapshot)
             {
-                Ledger::pointer     lpLedger = getApp().getLedgerMaster ().getClosedLedger ();
+                Ledger::pointer     lpLedger = getApp().getLedgerMaster ().getPublishedLedger ();
                 const Json::Value   jvMarker = Json::Value (Json::nullValue);
 
                 if (bBoth)
