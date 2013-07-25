@@ -679,24 +679,9 @@ TER LedgerEntrySet::dirAdd (
         }
         else
         {
-            // Have old last point to new node, if it was not root.
-            if (uNodeDir == 1)
-            {
-                // Previous node is root node.
-
-                sleRoot->setFieldU64 (sfIndexNext, uNodeDir);
-            }
-            else
-            {
-                // Previous node is not root node.
-
-                SLE::pointer    slePrevious = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeDir - 1));
-
-                slePrevious->setFieldU64 (sfIndexNext, uNodeDir);
-                entryModify (slePrevious);
-
-                sleNode->setFieldU64 (sfIndexPrevious, uNodeDir - 1);
-            }
+            // Have old last point to new node
+            sleNode->setFieldU64 (sfIndexNext, uNodeDir);
+            entryModify (sleNode);
 
             // Have root point to new node.
             sleRoot->setFieldU64 (sfIndexPrevious, uNodeDir);
@@ -704,6 +689,7 @@ TER LedgerEntrySet::dirAdd (
 
             // Create the new node.
             sleNode     = entryCreate (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeDir));
+            sleNode->setFieldU64 (sfIndexPrevious, uNodeDir - 1);
             sleNode->setFieldH256 (sfRootIndex, uRootIndex);
             fDescriber (sleNode);
 
@@ -969,21 +955,30 @@ bool LedgerEntrySet::dirNext (
         }
         else
         {
-            sleNode     = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeNext));
+            SLE::pointer sleNext = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeNext));
             uDirEntry   = 0;
 
-            if (!sleNode)
+            if (!sleNext)
             { // This should never happen
                 WriteLog (lsFATAL, LedgerEntrySet) << "Corrupt directory: index:" << uRootIndex << " next:" << uNodeNext;
+#if 0
+                if (!read_only)
+                {
+                   sleNode->setFieldU64 (sfIndexNext, 0);
+                   entryModify(sleNode);
+                }
+#endif
                 return false;
             }
 
+            sleNode = sleNext;
             return dirNext (uRootIndex, sleNode, uDirEntry, uEntryIndex);
         }
     }
 
     uEntryIndex = vuiIndexes[uDirEntry++];
     WriteLog (lsTRACE, LedgerEntrySet) << boost::str (boost::format ("dirNext: uDirEntry=%d uEntryIndex=%s") % uDirEntry % uEntryIndex);
+    // FIXME
 
     return true;
 }
