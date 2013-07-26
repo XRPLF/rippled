@@ -28,26 +28,52 @@
 #include "beast_LinkedListPointer.h"
 #include "../memory/beast_ScopedPointer.h"
 
+/** Simple hash functions for use with HashMap.
 
-//==============================================================================
-/**
-    A simple class to generate hash functions for some primitive types, intended for
-    use with the HashMap class.
     @see HashMap
 */
+// VFALCO TODO Rewrite the hash functions to return a uint32, and not
+//             take the upperLimit parameter. Just do the mod in the
+//             calling function for simplicity.
 class DefaultHashFunctions
 {
 public:
     /** Generates a simple hash from an integer. */
-    static int generateHash (const int key, const int upperLimit) noexcept        { return std::abs (key) % upperLimit; }
+    int generateHash (const int key, const int upperLimit) const noexcept        { return std::abs (key) % upperLimit; }
     /** Generates a simple hash from an int64. */
-    static int generateHash (const int64 key, const int upperLimit) noexcept      { return std::abs ((int) key) % upperLimit; }
+    int generateHash (const int64 key, const int upperLimit) const noexcept      { return std::abs ((int) key) % upperLimit; }
     /** Generates a simple hash from a string. */
-    static int generateHash (const String& key, const int upperLimit) noexcept    { return (int) (((uint32) key.hashCode()) % (uint32) upperLimit); }
+    int generateHash (const String& key, const int upperLimit) const noexcept    { return (int) (((uint32) key.hashCode()) % (uint32) upperLimit); }
     /** Generates a simple hash from a variant. */
-    static int generateHash (const var& key, const int upperLimit) noexcept       { return generateHash (key.toString(), upperLimit); }
+    int generateHash (const var& key, const int upperLimit) const noexcept       { return generateHash (key.toString(), upperLimit); }
 };
 
+/** Hardened hash functions for use with HashMap.
+
+    The seed is used to make the hash unpredictable. This prevents
+    attackers from exploiting crafted inputs to produce degenerate
+    containers.
+*/
+class HardenedHashFunctions
+{
+public:
+    /** Construct a hash function.
+
+        If a seed is specified it will be used, else a random seed
+        will be generated from the system.
+
+        @param seedToUse An optional seed to use.
+    */
+    explicit HardenedHashFunctions (int seedToUse = Random::getSystemRandom ().nextInt ())
+        : m_seed (seedToUse)
+    {
+    }
+
+    // VFALCO TODO Need hardened versions of these functions which use the seed!
+
+private:
+    int m_seed;
+};
 
 //==============================================================================
 /**
@@ -60,7 +86,7 @@ public:
     @code
     struct MyHashGenerator
     {
-        static int generateHash (MyKeyType key, int upperLimit)
+        int generateHash (MyKeyType key, int upperLimit)
         {
             // The function must return a value 0 <= x < upperLimit
             return someFunctionOfMyKeyType (key) % upperLimit;
@@ -68,9 +94,9 @@ public:
     };
     @endcode
 
-    Like the Array class, the key and value types are expected to be copy-by-value types, so
-    if you define them to be pointer types, this class won't delete the objects that they
-    point to.
+    Like the Array class, the key and value types are expected to be copy-by-value
+    types, so if you define them to be pointer types, this class won't delete the
+    objects that they point to.
 
     If you don't supply a class for the HashFunctionToUse template parameter, the
     default one provides some simple mappings for strings and ints.
@@ -87,6 +113,9 @@ public:
     for (HashMap<int, String>::Iterator i (hash); i.next();)
         DBG (i.getKey() << " -> " << i.getValue());
     @endcode
+
+    @tparam HashFunctionToUse The type of hash functions, which must be copy
+                              constructible.
 
     @see CriticalSection, DefaultHashFunctions, NamedValueSet, SortedSet
 */
@@ -109,12 +138,20 @@ public:
     //==============================================================================
     /** Creates an empty hash-map.
 
-        The numberOfSlots parameter specifies the number of hash entries the map will use. This
-        will be the "upperLimit" parameter that is passed to your generateHash() function. The number
-        of hash slots will grow automatically if necessary, or it can be remapped manually using remapTable().
+        The numberOfSlots parameter specifies the number of hash entries the map will
+        use. This will be the "upperLimit" parameter that is passed to your generateHash()
+        function. The number of hash slots will grow automatically if necessary, or
+        it can be remapped manually using remapTable().
+
+        @param hashFunctionToUse An instance of HashFunctionToUse, which will be
+                                 copied and stored to use with the HashMap. This
+                                 can be left out if HashFunctionToUse has a default
+                                 constructor.
     */
-    explicit HashMap (const int numberOfSlots = defaultHashTableSize)
-       : totalNumItems (0)
+    explicit HashMap (const int numberOfSlots = defaultHashTableSize,
+                      HashFunctionToUse hashFunctionToUse_ = HashFunctionToUse ())
+       : hashFunctionToUse (hashFunctionToUse_)
+       , totalNumItems (0)
     {
         slots.insertMultiple (0, nullptr, numberOfSlots);
     }
@@ -430,13 +467,14 @@ private:
     enum { defaultHashTableSize = 101 };
     friend class Iterator;
 
+    HashFunctionToUse const hashFunctionToUse;
     Array <HashEntry*> slots;
     int totalNumItems;
     TypeOfCriticalSectionToUse lock;
 
     int generateHashFor (KeyTypeParameter key) const
     {
-        const int hash = HashFunctionToUse::generateHash (key, getNumSlots());
+        const int hash = hashFunctionToUse.generateHash (key, getNumSlots());
         bassert (isPositiveAndBelow (hash, getNumSlots())); // your hash function is generating out-of-range numbers!
         return hash;
     }
