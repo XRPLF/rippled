@@ -101,6 +101,17 @@ public:
         numUsed = 0;
     }
 
+    /** Removes all elements from the array without freeing the array's allocated storage.
+
+        @see clear
+    */
+    void clearQuick()
+    {
+        const ScopedLockType lock (getLock());
+        deleteAllElements();
+        numUsed = 0;
+    }
+
     //==============================================================================
     /** Returns the number of items currently in the array.
         @see operator[]
