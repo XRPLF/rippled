@@ -1651,14 +1651,16 @@ buster.testCase("Offer tfSell", {
   "basic sell" :
     function (done) {
       var self = this;
-      var final_create;
+      var final_create, seq_carol;
 
       async.waterfall([
           function (callback) {
             // Provide micro amounts to compensate for fees to make results round nice.
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "350.000020", ["alice", "bob", "mtgox"], callback);
+            var req_amount = self.remote.reserve(1).add(self.remote.fee_tx(20)).add(100000000);
+            testutils.create_accounts(self.remote, "root", req_amount.to_json(),
+                                      ["alice", "bob", "mtgox"], callback);
           },
           function (callback) {
             self.what = "Set limits.";
@@ -1687,19 +1689,21 @@ buster.testCase("Offer tfSell", {
               .set_flags('Sell')            // Should not matter at all.
               .on('proposed', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  if (m.result !== 'tesSUCCESS') {
+                    throw new Error("Bob's OfferCreate tx did not succeed: "+m.result);
+                  } else callback(null);
 
                   seq_carol = m.tx_json.sequence;
                 })
               .submit();
           },
           function (callback) {
-            // Alice has 350 fees - a reserve of 50 = 250 reserve = 100 available.
+            // Alice has 350 + fees - a reserve of 50 = 250 reserve = 100 available.
             // Ask for more than available to prove reserve works.
             self.what = "Create offer alice.";
 
             self.remote.transaction()
-              .offer_create("alice", "100/USD/mtgox", "100.0")
+              .offer_create("alice", "200/USD/mtgox", "200.0")
               .set_flags('Sell')            // Should not matter at all.
               .on('proposed', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
@@ -1732,7 +1736,7 @@ buster.testCase("Offer tfSell", {
           },
         ], function (error) {
           // console.log("result: error=%s", error);
-          buster.refute(error);
+          buster.refute(error, self.what);
 
           done();
         });
@@ -1741,7 +1745,7 @@ buster.testCase("Offer tfSell", {
   "2x sell exceed limit" :
     function (done) {
       var self = this;
-      var final_create;
+      var final_create, seq_carol;
 
       async.waterfall([
           function (callback) {
@@ -1797,7 +1801,9 @@ buster.testCase("Offer tfSell", {
               .set_flags('Sell')
               .on('proposed', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  if (m.result !== 'tesSUCCESS') {
+                    callback(new Error("Alice's OfferCreate didn't succeed: "+m.result));
+                  } else callback(null);
 
                   seq_carol = m.tx_json.sequence;
                 })
