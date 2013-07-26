@@ -45,8 +45,6 @@ namespace beast
 #include "events/beast_DeadlineTimer.cpp"
 #include "events/beast_OncePerSecond.cpp"
 
-#include "math/beast_MurmurHash.cpp"
-
 #include "threads/beast_InterruptibleThread.cpp"
 #include "threads/beast_Semaphore.cpp"
 #include "memory/beast_FifoFreeStoreWithTLS.cpp"

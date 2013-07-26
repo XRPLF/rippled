@@ -43,6 +43,42 @@ public:
     typedef unsigned char* iterator;
     typedef unsigned char const* const_iterator;
 
+    /** Hardened hash function for use with HashMap.
+
+        The seed is used to make the hash unpredictable. This prevents
+        attackers from exploiting crafted inputs to produce degenerate
+        containers.
+
+        @see HashMap
+    */
+    class HashFunction
+    {
+    public:
+        /** Construct a hash function.
+
+            If a seed is specified it will be used, else a random seed
+            will be generated from the system.
+
+            @param seedToUse An optional seed to use.
+        */
+        explicit HashFunction (int seedToUse = Random::getSystemRandom ().nextInt ())
+            : m_seed (seedToUse)
+        {
+        }
+        
+        /** Generates a simple hash from an UnsignedInteger. */
+        int generateHash (UnsignedInteger <Bytes> const& key, const int upperLimit) const noexcept
+        {
+            uint32 hashCode;
+            Murmur::Hash (key.cbegin (), key.sizeInBytes, m_seed, &hashCode);
+            // Shouldn't produce negative numbers since upperLimit is an int?
+            return static_cast <int> (hashCode % upperLimit);
+        }
+
+    private:
+        int m_seed;
+    };
+
     /** Construct the object.
 
         The values are uninitialized.
