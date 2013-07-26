@@ -160,7 +160,9 @@ var create_accounts = function (remote, src, amount, accounts, callback) {
       .on('proposed', function (m) {
           // console.log("proposed: %s", JSON.stringify(m));
 
-          callback(m.result != 'tesSUCCESS');
+          if (m.result != 'tesSUCCESS') {
+            callback(new Error("Payment to create account did not succeed."));
+          } else callback(null);
         })
       .on('error', function (m) {
           // console.log("error: %s", JSON.stringify(m));
