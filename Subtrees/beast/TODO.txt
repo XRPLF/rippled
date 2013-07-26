@@ -2,6 +2,8 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
+- Implement HardenedHashFunctions
+
 - Set sqlite thread safety model to '2' in beast_sqlite
 
 - Document and rename all the sqdb files and classes

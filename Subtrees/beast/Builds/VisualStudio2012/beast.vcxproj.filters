@@ -503,9 +503,6 @@
     <ClInclude Include="..\..\modules\beast_basics\math\beast_Math.h">
       <Filter>beast_basics\math</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_basics\math\beast_MurmurHash.h">
-      <Filter>beast_basics\math</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_basics\memory\beast_AllocatedBy.h">
       <Filter>beast_basics\memory</Filter>
     </ClInclude>
@@ -733,6 +730,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_sqdb\detail\use_type.h">
       <Filter>beast_sqdb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\maths\beast_MurmurHash.h">
+      <Filter>beast_core\maths</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -991,9 +991,6 @@
     <ClCompile Include="..\..\modules\beast_basics\events\beast_OncePerSecond.cpp">
       <Filter>beast_basics\events</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_basics\math\beast_MurmurHash.cpp">
-      <Filter>beast_basics\math</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_basics\memory\beast_FifoFreeStoreWithoutTLS.cpp">
       <Filter>beast_basics\memory</Filter>
     </ClCompile>
@@ -1134,6 +1131,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_sqdb\source\use_type.cpp">
       <Filter>beast_sqdb\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\maths\beast_MurmurHash.cpp">
+      <Filter>beast_core\maths</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -166,6 +166,7 @@ namespace beast
 
 #include "maths/beast_BigInteger.cpp"
 #include "maths/beast_Expression.cpp"
+#include "maths/beast_MurmurHash.cpp"
 #include "maths/beast_Random.cpp"
 
 #include "memory/beast_MemoryBlock.cpp"

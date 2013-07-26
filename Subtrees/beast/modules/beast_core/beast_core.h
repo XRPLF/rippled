@@ -262,6 +262,7 @@ namespace beast
 #include "maths/beast_Expression.h"
 #include "maths/beast_Interval.h"
 #include "maths/beast_MathsFunctions.h"
+#include "maths/beast_MurmurHash.h"
 #include "maths/beast_Random.h"
 #include "maths/beast_Range.h"
 #include "memory/beast_ByteOrder.h"

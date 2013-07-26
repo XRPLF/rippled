@@ -250,7 +250,6 @@ namespace beast
 #include "events/beast_DeadlineTimer.h"
 #include "events/beast_OncePerSecond.h"
 #include "math/beast_Math.h"
-#include "math/beast_MurmurHash.h"
 #include "memory/beast_AllocatedBy.h"
 #include "memory/beast_PagedFreeStore.h"
 #include "memory/beast_GlobalPagedFreeStore.h"
