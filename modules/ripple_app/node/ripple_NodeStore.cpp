@@ -1156,7 +1156,7 @@ public:
     #endif
 
     #if RIPPLE_MDB_AVAILABLE
-        testImport ("mdb", "mdb", seedValue);
+        //testImport ("mdb", "mdb", seedValue);
     #endif
 
         testImport ("sqlite", "sqlite", seedValue);
