@@ -1,6 +1,8 @@
 Ripple - P2P Payment Network
 ============================
 
+[![Build Status](http://ci.ripple.com/jenkins/buildStatus/icon?job=rippled)](http://ci.ripple.com/jenkins/job/rippled/)
+
 Some portions of this source code are currently closed source.
 
 This is the repository for Ripple's `rippled`, reference P2P network server.
