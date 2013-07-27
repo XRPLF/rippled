@@ -15,8 +15,9 @@ public:
     {
     }
 
-    void fetch (Array <ValidatorInfo>& results)
+    Array <Validator::Info> fetch ()
     {
+        return Array <Validator::Info> ();
     }
 
 private:

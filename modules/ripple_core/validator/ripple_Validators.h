@@ -33,19 +33,21 @@ public:
 
             This call blocks.
         */
-        virtual void fetch (Array <ValidatorInfo>& results) = 0;
+        virtual Array <Validator::Info> fetch () =0;
     };
 
-public:
+    //--------------------------------------------------------------------------
+
     /** Receive event notifications on Validators operations.
     */
     class Listener
     {
     public:
-        virtual void onValidatorsChosen (ValidatorList::Ptr list) { }
+        virtual void onValidatorsChosen (Validator::List::Ptr list) { }
     };
 
-public:
+    //--------------------------------------------------------------------------
+
     /** Create a new Validators object.
     */
     static Validators* New (Listener* listener);

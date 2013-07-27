@@ -32,7 +32,7 @@ namespace ripple
 #include "functional/ripple_LoadMonitor.cpp"
 
 #include "validator/ripple_Validator.cpp"
-#include "validator/ripple_ValidatorListImp.h" // private
+#include "validator/ripple_ValidatorImp.h" // private
 #include "validator/ripple_Validators.cpp"
 #include "validator/ripple_StringsValidatorSource.cpp"
 #include "validator/ripple_TrustedUriValidatorSource.cpp"

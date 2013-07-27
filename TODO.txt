@@ -2,31 +2,46 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
-Items marked '*' can be handled by third parties.
 
-Vinnie's Short List (Changes day to day)
+Vinnie's List: Changes day to day, descending priority
+  (Items marked '*' can be handled by others.)
+
+* Make everyone check GitHub Issues every day
+- Finish unit tests and code for Validators
+- Do something about the throw() reporting weaknesses:
+  * Make sure all Sconstruct and .pro builds have debug symbols in release
+  * Replace all throw with beast::Throw()
+    (Only in ripple sources, not in Subtrees/, protobuf, or websocket)
+  - Add file and line capabilities to beast::Throw()
+  - Allow beast::Throw to be hooked for logging
+  - Add stack trace capability to beast::Throw() diagnostics via the hook
+    (use the existing beast::SystemStats::getStackBacktrace())
+  - Implement getStackBacktrace for BEAST_BSD targets
+- Use the result of the beast UnitTests as the return code for main()
+* Document the command line options for the beast unit test framework
+- Tidy up all the loose files at the root of the repository
+  - What the heck is up with site_scons/site_tools/protoc.py?
 - Review boost::asio wrappers and consolidation of network code in ripple_net
 - Refactor Section code into ConfigFile
 - Improved Mutex to track deadlocks
-- Finish unit tests and code for Validators
-- Import beast::db and use it in SQliteBackend
 - Work on KeyvaDB
 
 --------------------------------------------------------------------------------
 
-- Use static creation member functions instead of endless constructor
-  variations in base_uint, uint256, and family.
-
-- Take away the "I" prefix from abstract interface classes, in both the class
+* Take away the "I" prefix from abstract interface classes, in both the class
   name and the file name. It is messing up sorting in the IDE. Use "Imp" or
   suffix for implementations.
 
-- Raise the warning level and fix everything
-
 * Restyle all the macros in ripple_ConfigSection.h
 
-* Replace all throw with beast::Throw
-  Only in the ripple sources, not in Subtrees/ or protobuf or websocket
+- Clean up the remainder of src/
+
+- Replace home-made database wrappers with beast::sqdb
+
+- Use static creation member functions instead of endless constructor
+  variations in base_uint, uint256, and family.
+
+- Raise the warning level and fix everything
 
 - Replace base_uint and uintXXX with UnsignedInteger
   * Need to specialize UnsignedInteger to work efficiently with 4 and 8 byte
@@ -42,16 +57,9 @@ Vinnie's Short List (Changes day to day)
 
 - Rename RPCHandler to CallHandler
 
-- Move everything in src/cpp/ripple into ripple_app and sort them into
-  subdirectories within the module as per the project filters.
-  * Make sure there are no pending commits from David
-
 - See if UniqueNodeList is really used, and if its not used remove it. If
   only some small part of it is used, then delete the rest. David says
   that it is broken anyway.
-
-- Roll a simple wrapper for sqlite relational stuff like loading the UNL
-  Completely hide the specifics of SQLite and/or beast::db
 
 - Tidy up convenience functions in RPC.h
 

@@ -4,7 +4,9 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATORLIST_H_INCLUDED
-#define RIPPLE_VALIDATORLIST_H_INCLUDED
+#ifndef RIPPLE_VALIDATORLISTIMP_H_INCLUDED
+#define RIPPLE_VALIDATORLISTIMP_H_INCLUDED
+
+// This is a private header
 
 #endif

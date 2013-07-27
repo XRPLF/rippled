@@ -1465,7 +1465,7 @@
     <ClInclude Include="..\..\modules\ripple_core\validator\ripple_TrustedUriValidatorSource.h" />
     <ClInclude Include="..\..\modules\ripple_core\validator\ripple_Validator.h" />
     <ClInclude Include="..\..\modules\ripple_core\validator\ripple_ValidatorList.h" />
-    <ClInclude Include="..\..\modules\ripple_core\validator\ripple_ValidatorListImp.h" />
+    <ClInclude Include="..\..\modules\ripple_core\validator\ripple_ValidatorImp.h" />
     <ClInclude Include="..\..\modules\ripple_core\validator\ripple_Validators.h" />
     <ClInclude Include="..\..\modules\ripple_data\crypto\ripple_Base58.h" />
     <ClInclude Include="..\..\modules\ripple_data\crypto\ripple_Base58Data.h" />

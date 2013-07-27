@@ -7,7 +7,7 @@
 class TrustedUriValidatorSourceImp : public TrustedUriValidatorSource
 {
 public:
-    TrustedUriValidatorSourceImp (String const url)
+    explicit TrustedUriValidatorSourceImp (String const url)
         : m_url (url)
     {
     }
@@ -16,8 +16,9 @@ public:
     {
     }
 
-    void fetch (Array <ValidatorInfo>& results)
+    Array <Validator::Info> fetch ()
     {
+        return Array <Validator::Info> ();
     }
 
 private:

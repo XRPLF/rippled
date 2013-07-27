@@ -36,6 +36,7 @@ class ValidatorsImp
     : public Validators
     , private ThreadWithCallQueue::EntryPoints
     , private DeadlineTimer::Listener
+    , LeakChecked <ValidatorsImp>
 {
 public:
     // Tunable constants
@@ -47,7 +48,7 @@ public:
         ,secondsBetweenFetches = hoursBetweenFetches * 60 * 60
 
         // Wake up every hour to check source times
-        ,timerGranularity = 60 * 60
+        ,secondsPerUpdate = 60 * 60
 
         // This tunes the preallocated arrays
         ,expectedNumberOfResults = 1000
@@ -55,24 +56,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    struct ValidatorInfoCompare
-    {
-        static int compareElements (ValidatorInfo const& lhs, ValidatorInfo const& rhs)
-        {
-            int result;
-
-            if (lhs.publicKey < rhs.publicKey)
-                result = -1;
-            else if (lhs.publicKey > rhs.publicKey)
-                result = 1;
-            else
-                result = 0;
-
-            return result;
-        }
-    };
-
-    struct SourceInfo
+    struct SourceInfo : LeakChecked <SourceInfo>
     {
         enum Status
         {
@@ -88,53 +72,57 @@ public:
         {
         }
 
-        Source* source;
+        ScopedPointer <Source> const source;
         Status status;
         Time whenToFetch;
+        int numberOfFailures; // of fetch()
 
-        // The number of times a fetch has failed.
-        int numberOfFailures;
+        Validator::List::Ptr lastFetchResults;
     };
 
     // This is what comes back from a source
-    typedef Array <SourceInfo> SourceInfoArray;
-
-    typedef Array <ValidatorInfo> ValidatorInfoArray;
+    typedef OwnedArray <SourceInfo> SourceInfoArray;
 
     // The result of performing a fetch
     struct FetchResult
     {
+#if 0
         // This is what comes back from the fetch
-        ValidatorInfoArray updatedList;
+        Validator::ListImp::Ptr updatedList;
 
         // The original list before the fetch
-        SharedObjectArray <Validator> oldList;
+        Validator::List oldList;
 
         // The new list after the fetch
-        SharedObjectArray <Validator> newList;
+        Validator::List newList;
 
         // The list of validators that were added
-        SharedObjectArray <Validator> addedList;
+        Validator::List addedList;
 
         // The list of validators that were removed
-        SharedObjectArray <Validator> removedList;
+        Validator::List removedList;
+#endif
 
         FetchResult ()
         {
+            /*
             updatedList.ensureStorageAllocated (expectedNumberOfResults);
             oldList.ensureStorageAllocated (expectedNumberOfResults);
             newList.ensureStorageAllocated (expectedNumberOfResults);
             addedList.ensureStorageAllocated (expectedNumberOfResults);
             removedList.ensureStorageAllocated (expectedNumberOfResults);
+            */
         }
 
         void clear ()
         {
-            updatedList.clearQuick ();
+            /*
+            //updatedList.clearQuick ();
             oldList.clear ();
             newList.clear ();
             addedList.clear ();
             removedList.clear ();
+            */
         }
     };
 
@@ -145,18 +133,21 @@ public:
     //
     class Logic
     {
+    private:
+        HashMap <Validator::PublicKey,
+                 Validator::Ptr,
+                 Validator::PublicKey::HashFunction> m_map;
+                 
+        SourceInfoArray m_sourceInfo;
+
     public:
         Logic ()
-            : m_knownValidators (new ValidatorListImp)
-            , m_chosenValidators (new ValidatorListImp)
         {
         }
 
         void addSource (Source* source)
         {
-            m_sources.add (source);
-
-            m_sourceInfo.add (SourceInfo (source));
+            m_sourceInfo.add (new SourceInfo (source));
         }
 
         SourceInfoArray& getSources ()
@@ -164,28 +155,19 @@ public:
             return m_sourceInfo;
         }
 
-        void processValidatorInfo (ValidatorInfoArray& fetchResults)
+        void sortValidatorInfo (Array <Validator::Info>& arrayToSort)
         {
-        }
-
-        void sortValidatorInfo (ValidatorInfoArray& arrayToSort)
-        {
-            ValidatorInfoArray sorted;
+            Array <Validator::Info> sorted;
 
             sorted.ensureStorageAllocated (arrayToSort.size ());
 
             for (int i = 0; i < arrayToSort.size (); ++i)
             {
-                ValidatorInfoCompare compare;
+                Validator::Info::Compare compare;
                 sorted.addSorted (compare, arrayToSort [i]);
             }
 
             arrayToSort.swapWithArray (sorted);
-        }
-
-        void fetchSource (SourceInfo& sourceInfo)
-        {
-
         }
 
         // Given the old list and the new list for a source, this
@@ -193,14 +175,15 @@ public:
         // updates some statistics. It also produces the new list.
         //
         void processFetch (FetchResult* pFetchResult,
-                           ValidatorInfoArray& oldList,
-                           ValidatorInfoArray& newList)
+                           Validator::List& oldList,
+                           Validator::List& newList)
         {
+#if 0
             ValidatorsImp::FetchResult& fetchResult (*pFetchResult);
 
             // First sort both arrays.
             //
-            ValidatorInfoCompare compare;
+            Validator::Info::Compare compare;
             oldList.sort (compare, true);
             newList.sort (compare, true);
 
@@ -221,7 +204,8 @@ public:
                 }
                 else
                 {
-                    int const result = ValidatorInfoCompare::compareElements (oldList [i], newList [i]);
+                    int const result = Validator::Info::Compare::compareElements (
+                        oldList [i], newList [i]);
 
                     if (result < 0)
                     {
@@ -239,13 +223,59 @@ public:
                     }
                 }
             }
+#endif
         }
 
-    private:
-        OwnedArray <Source> m_sources;
-        SourceInfoArray m_sourceInfo;
-        ValidatorList::Ptr m_knownValidators;
-        ValidatorList::Ptr m_chosenValidators;
+        // Produces an array of references to validators given the validator info.
+        Validator::List::Ptr createListFromInfo (Array <Validator::Info> const& info)
+        {
+            SharedObjectArray <Validator> items;
+
+            items.ensureStorageAllocated (info.size ());
+
+            for (int i = 0; i < info.size (); ++i)
+            {
+                Validator::PublicKey const& key (info [i].publicKey);
+
+                Validator::Ptr validator = m_map [key];
+
+                if (validator == nullptr)
+                {
+                    validator = new Validator (key);
+
+                    m_map [key] = validator;
+                }
+
+                items.add (validator);
+            }
+
+            return new Validator::List (items);
+        }
+
+        // Fetch the validators from a source and process the result
+        //
+        void fetchSource (SourceInfo& sourceInfo)
+        {
+            Array <Validator::Info> fetchedInfo = sourceInfo.source->fetch ();
+
+            if (fetchedInfo.size () != 0)
+            {
+                sourceInfo.status = SourceInfo::statusFetched;
+
+                sourceInfo.whenToFetch = Time::getCurrentTime () +
+                    RelativeTime (hoursBetweenFetches * 60.0 * 60.0);
+
+                //processFetchedInfo (fetchedInfo);
+            }
+            else
+            {
+                // Failed to fetch
+                // Don't update fetch time
+                sourceInfo.status = SourceInfo::statusFailed;
+                sourceInfo.numberOfFailures++;
+            }
+        }
+
     };
 
     //--------------------------------------------------------------------------
@@ -280,51 +310,21 @@ public:
         m_thread.interrupt ();
     }
 
-    // Goes through all the sources and refreshes them as needed
+    // Fetch sources whose deadline timers have arrived.
     //
     bool scanSources ()
     {
         bool interrupted = false;
 
-        Time currentTime = Time::getCurrentTime ();
-
-        ValidatorInfoArray fetchResults;
-        fetchResults.ensureStorageAllocated (1000);
-
-        SourceInfoArray sourceInfoArray (m_logic.getSources ());
-
-        // Find a source that needs to be processed
-        //
-        for (int i = 0; i < sourceInfoArray.size (); ++i)
+        for (int i = 0; i < m_logic.getSources ().size (); ++i)
         {
-            SourceInfo& sourceInfo (sourceInfoArray.getReference (i));
+            SourceInfo& sourceInfo (*m_logic.getSources ()[i]);
 
-            // See if we need to refresh its list
-            //
+            Time const currentTime = Time::getCurrentTime ();
+
             if (currentTime <= sourceInfo.whenToFetch)
             {
-                sourceInfo.source->fetch (fetchResults);
-
-                currentTime = Time::getCurrentTime ();
-
-                if (fetchResults.size () != 0)
-                {
-                    sourceInfo.status = SourceInfo::statusFetched;
-                    sourceInfo.whenToFetch = currentTime + RelativeTime (hoursBetweenFetches * 60.0 * 60.0);
-
-                    m_logic.processValidatorInfo (fetchResults);
-
-                    //m_listener->onValidatorsChosen (chosenValidators);
-                }
-                else
-                {
-                    // Failed to fetch
-                    // Don't update fetch time
-                    sourceInfo.status = SourceInfo::statusFailed;
-                    sourceInfo.numberOfFailures++;
-                }
-
-                fetchResults.clearQuick ();
+                m_logic.fetchSource (sourceInfo);
             }
 
             interrupted = m_thread.interruptionPoint ();
@@ -338,7 +338,7 @@ public:
 
     void threadInit ()
     {
-        m_timer.setRecurringExpiration (timerGranularity);
+        m_timer.setRecurringExpiration (secondsPerUpdate);
     }
 
     void threadExit ()
@@ -368,95 +368,77 @@ Validators* Validators::New (Listener* listener)
 
 //------------------------------------------------------------------------------
 
-// Produces validators for unit tests.
-class TestValidatorSource : public Validators::Source
+class ValidatorsTests : public UnitTest
 {
 public:
-    TestValidatorSource (unsigned int startIndex, int numEntries)
-        : m_startIndex (startIndex)
-        , m_numEntries (numEntries)
+    // Produces validators for unit tests.
+    class TestSource : public Validators::Source
     {
-    }
-
-    void fetch (Array <ValidatorInfo>& results)
-    {
-        for (unsigned int publicKeyIndex = m_startIndex;
-             publicKeyIndex < m_startIndex + m_numEntries;
-             ++publicKeyIndex)
+    public:
+        TestSource (unsigned int startIndex, unsigned int endIndex)
+            : m_startIndex (startIndex)
+            , m_endIndex (endIndex)
         {
-            ValidatorInfo info;
-
-            info.publicKey = Validator::PublicKey::createFromInteger (publicKeyIndex);
-
-            results.add (info);
         }
-    }
 
-private:
-    unsigned const m_startIndex;
-    int const m_numEntries;
-};
+        Array <Validator::Info> fetch ()
+        {
+            Array <Validator::Info> results;
 
-//------------------------------------------------------------------------------
+            for (unsigned int publicKeyIndex = m_startIndex; publicKeyIndex <= m_endIndex; ++publicKeyIndex)
+            {
+                Validator::Info info;
 
-class ValidatorListTests : public UnitTest
-{
-public:
-    ValidatorListTests () : UnitTest ("ValidatorList", "ripple")
+                info.publicKey = Validator::PublicKey::createFromInteger (publicKeyIndex);
+
+                results.add (info);
+            }
+
+            return results;
+        }
+
+    private:
+        unsigned int const m_startIndex;
+        unsigned int const m_endIndex;
+    };
+
+    //--------------------------------------------------------------------------
+
+    ValidatorsTests () : UnitTest ("Validators", "ripple")
     {
-    }
-
-    // Check public key routines
-    void publicKeyTest ()
-    {
-        beginTest ("compare");
-
-        ValidatorInfo::PublicKey one (ValidatorInfo::PublicKey::createFromInteger (1U));
-        ValidatorInfo::PublicKey two (ValidatorInfo::PublicKey::createFromInteger (2U));
-
-        expect (one < two, "should be less");
-        expect (two > one, "should be greater");
-    }
-
-    // Verify the test fetching
-    void fetchTest ()
-    {
-        beginTest ("fetch");
-
-        ValidatorsImp::ValidatorInfoArray results;
-
-        TestValidatorSource (0, 32).fetch (results);
-
-        expect (results.size () == 32, "size should be 32");
     }
 
     // Check logic for comparing a source's fetch results
-    void processFetchTest ()
+    void processTest ()
     {
-        beginTest ("process fetch");
+        beginTest ("process");
 
-        ValidatorsImp::ValidatorInfoArray oldList;
-        TestValidatorSource (1, 2).fetch (oldList);
-        expect (oldList.size () == 2, "size should be 2");
+        {
+            Array <Validator::Info> results = TestSource (1, 32).fetch ();
+            expect (results.size () == 32);
+        }
 
-        ValidatorsImp::ValidatorInfoArray newList;
-        TestValidatorSource (2, 2).fetch (newList);
-        expect (newList.size () == 2, "size should be 2");
+        {
+            Array <Validator::Info> oldList = TestSource (1, 2).fetch ();
+            expect (oldList.size () == 2);
 
-        ValidatorsImp::FetchResult fetchResult;
+            Array <Validator::Info> newList = TestSource (2, 3).fetch ();
+            expect (newList.size () == 2);
 
-        ValidatorsImp::Logic ().processFetch (&fetchResult, oldList, newList);
+            ValidatorsImp::Logic logic;
+
+            Validator::List::Ptr list = logic.createListFromInfo (newList);
+
+            //ValidatorsImp::FetchResult fetchResult;
+            //ValidatorsImp::Logic ().processFetch (&fetchResult, oldList, newList);
+        }
     }
 
     void runTest ()
     {
-        publicKeyTest ();
-
-        fetchTest ();
-
-        processFetchTest ();
+        processTest ();
     }
 };
 
-static ValidatorListTests validatorListTests;
+static ValidatorsTests validatorsTests;
 
