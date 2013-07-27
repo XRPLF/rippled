@@ -571,10 +571,11 @@ public:
         If you need to exchange two arrays, this is vastly quicker than using copy-by-value
         because it just swaps their internal pointers.
     */
-    void swapWithArray (Array& otherArray) noexcept
+    template <class OtherArrayType>
+    void swapWithArray (OtherArrayType& otherArray) noexcept
     {
         const ScopedLockType lock1 (getLock());
-        const ScopedLockType lock2 (otherArray.getLock());
+        const typename OtherArrayType::ScopedLockType lock2 (otherArray.getLock());
 
         data.swapWith (otherArray.data);
         std::swap (numUsed, otherArray.numUsed);

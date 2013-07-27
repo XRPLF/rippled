@@ -1,3 +1,11 @@
+Write code in a clear, self-documenting style but use comments where necessary.
+Use Test Driven Development. It encourages designing interfaces first, before implementation.
+Don't Repeat Yourself, “D.R.Y.”. Put redundant code in a class so it can be re-used and unit tested.
+Expose as little of a class as possible. Prefer private over protected. Prefer protected over public. The smaller the interface footprint, the easier it is to write unit tests and comprehend the operation of the class. This is the Interface Segregation Principle.
+Use language constants (enum or static const) with descriptive names instead of hard-coded “magic numbers.”
+Make classes depend on as few external classes or routines as possible. Ideally, no dependencies.
+Don't limit flexibility of parameters by forcing the caller to use specific types where general types would work.
+
 --------------------------------------------------------------------------------
 
 # Coding Standards
@@ -175,6 +183,9 @@ overlooked. Blank lines are used to separate code into "paragraphs."
 
 ## Miscellaneous
 
+* Constrain the scope of identifiers to the smallest area that needs it. Consider
+  using nested classes or classes inside functions, if doing so will expose less
+  interface and implementation overall.
 * `goto` statements should not be used at all, even if the alternative is
   more verbose code. The only exception is when implementing an algorithm in
   a function as a state machine.

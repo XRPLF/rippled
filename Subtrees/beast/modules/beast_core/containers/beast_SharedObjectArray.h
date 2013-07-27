@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_REFERENCECOUNTEDARRAY_BEASTHEADER
-#define BEAST_REFERENCECOUNTEDARRAY_BEASTHEADER
+#ifndef BEAST_SHAREDOBJECTARRAY_H_INCLUDED
+#define BEAST_SHAREDOBJECTARRAY_H_INCLUDED
 
 #include "../memory/beast_SharedObject.h"
 #include "beast_ArrayAllocationBase.h"
@@ -740,10 +740,11 @@ public:
         If you need to exchange two arrays, this is vastly quicker than using copy-by-value
         because it just swaps their internal pointers.
     */
-    void swapWithArray (SharedObjectArray& otherArray) noexcept
+    template <class OtherArrayType>
+    void swapWithArray (OtherArrayType& otherArray) noexcept
     {
         const ScopedLockType lock1 (getLock());
-        const ScopedLockType lock2 (otherArray.getLock());
+        const typename OtherArrayType::ScopedLockType lock2 (otherArray.getLock());
 
         data.swapWith (otherArray.data);
         std::swap (numUsed, otherArray.numUsed);
