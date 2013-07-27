@@ -285,8 +285,14 @@ int rippleMain (int argc, char** argv)
         iResult = 1;
     }
 
-    if (HaveSustain () &&
-            !iResult && !vm.count ("parameters") && !vm.count ("fg") && !vm.count ("standalone") && !vm.count ("unittest"))
+    // Use a watchdog process unless we're invoking a stand alone type of mode
+    //
+    if (HaveSustain ()
+        && !iResult
+        && !vm.count ("parameters")
+        && !vm.count ("fg")
+        && !vm.count ("standalone")
+        && !vm.count ("unittest"))
     {
         std::string logMe = DoSustain (getConfig ().DEBUG_LOGFILE.string());
 
@@ -308,6 +314,7 @@ int rippleMain (int argc, char** argv)
     }
 
     // Run the unit tests if requested.
+    // The unit tests will exit the application with an appropriate return code.
     //
     if (vm.count ("unittest"))
     {
@@ -324,7 +331,9 @@ int rippleMain (int argc, char** argv)
             tr.runTest (arg);
         }
 
-        return 0;
+        iResult = tr.anyTestsFailed () ? EXIT_FAILURE : EXIT_SUCCESS;
+
+        return iResult;
     }
 
     if (!iResult)
@@ -392,24 +401,23 @@ int rippleMain (int argc, char** argv)
         }
     }
 
-    if (iResult)
+    if (iResult == 0)
     {
-        nothing ();
-    }
-    else if (!vm.count ("parameters"))
-    {
-        // No arguments. Run server.
-        setupServer ();
-        setCallingThreadName ("io");
-        startServer ();
-    }
-    else
-    {
-        // Have a RPC command.
-        setCallingThreadName ("rpc");
-        std::vector<std::string> vCmd   = vm["parameters"].as<std::vector<std::string> > ();
+        if (!vm.count ("parameters"))
+        {
+            // No arguments. Run server.
+            setupServer ();
+            setCallingThreadName ("io");
+            startServer ();
+        }
+        else
+        {
+            // Have a RPC command.
+            setCallingThreadName ("rpc");
+            std::vector<std::string> vCmd   = vm["parameters"].as<std::vector<std::string> > ();
 
-        iResult = commandLineRPC (vCmd);
+            iResult = commandLineRPC (vCmd);
+        }
     }
 
     if (1 == iResult && !vm.count ("quiet"))
@@ -417,4 +425,3 @@ int rippleMain (int argc, char** argv)
 
     return iResult;
 }
-// vim:ts=4
