@@ -90,7 +90,7 @@ public:
 
     //==============================================================================
     /** Clears the array, optionally deleting the objects inside it first. */
-    void clear (const bool deleteObjects = true)
+    void clear (bool deleteObjects = true)
     {
         const ScopedLockType lock (getLock());
 
@@ -101,14 +101,19 @@ public:
         numUsed = 0;
     }
 
-    /** Removes all elements from the array without freeing the array's allocated storage.
+    /** Clears the array, optionally deleting the objects inside it first.
+
+        The array's allocated storage is preserved.
 
         @see clear
     */
-    void clearQuick()
+    void clearQuick(bool deleteObjects = true)
     {
         const ScopedLockType lock (getLock());
-        deleteAllElements();
+
+        if (deleteObjects)
+            deleteAllObjects();
+
         numUsed = 0;
     }
 

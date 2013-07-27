@@ -2,7 +2,11 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
-- Implement HardenedHashFunctions
+- HashMap work:
+  - Add unit test
+  - Return size_t from hash function, take out upperLimit, move mod % to caller
+  - Make hash function a functor using operator()
+  - Implement HardenedHashFunctions
 
 - Set sqlite thread safety model to '2' in beast_sqlite
 
