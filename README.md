@@ -1,7 +1,7 @@
 Ripple - P2P Payment Network
 ============================
 
-[![Build Status](http://ci.ripple.com/jenkins/buildStatus/icon?job=rippled)](http://ci.ripple.com/jenkins/job/rippled/)
+[![Build Status](https://ci.ripple.com/jenkins/buildStatus/icon?job=rippled)](https://ci.ripple.com/jenkins/job/rippled/)
 
 Some portions of this source code are currently closed source.
 
