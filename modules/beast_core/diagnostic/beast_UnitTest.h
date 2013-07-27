@@ -279,6 +279,9 @@ public:
     */
     const TestResult* getResult (int index) const noexcept;
 
+    /** Returns `true` if any test failed. */
+    bool anyTestsFailed () const noexcept;
+
 protected:
     /** Called when the list of results changes.
         You can override this to perform some sort of behaviour when results are added.

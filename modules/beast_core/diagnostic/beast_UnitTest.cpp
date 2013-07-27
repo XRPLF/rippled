@@ -127,6 +127,17 @@ const UnitTests::TestResult* UnitTests::getResult (int index) const noexcept
     return results [index];
 }
 
+bool UnitTests::anyTestsFailed () const noexcept
+{
+    for (int i = 0; i < results.size (); ++i)
+    {
+        if (results [i]->failures > 0)
+            return true;
+    }
+
+    return false;
+}
+
 void UnitTests::resultsUpdated()
 {
 }
