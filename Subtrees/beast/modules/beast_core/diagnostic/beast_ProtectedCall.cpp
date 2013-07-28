@@ -205,11 +205,11 @@ END_BEAST_NAMESPACE
 
 //------------------------------------------------------------------------------
 
+#if 0
 bool CatchAny (Function <void (void)> f, bool returnFromException)
 {
     bool caughtException = true; // assume the worst
 
-#if 0
     try
     {
         //ScopedPlatformExceptionCatcher platformExceptionCatcher;
@@ -271,6 +271,41 @@ bool CatchAny (Function <void (void)> f, bool returnFromException)
             }
         }
     }
-#endif
     return caughtException;
+}
+#endif
+
+//------------------------------------------------------------------------------
+
+void ProtectedCall::DefaultHandler::onException (ProtectedCall::Exception const& e) const
+{
+}
+
+Static::Storage <Atomic <ProtectedCall::Handler const*>, ProtectedCall>
+    ProtectedCall::s_handler;
+
+void ProtectedCall::setHandler (Handler const& handler)
+{
+    s_handler->set (&handler);
+}
+
+void ProtectedCall::call (Call& call)
+{
+    static DefaultHandler const defaultHandler;
+
+    Handler const* handler = s_handler->get ();
+
+    if (handler == nullptr)
+        handler = &defaultHandler;
+
+    try
+    {
+        call ();
+    }
+    catch (...)
+    {
+        Exception e;
+
+        handler->onException (e);
+    }
 }

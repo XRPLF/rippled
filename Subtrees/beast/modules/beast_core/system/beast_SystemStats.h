@@ -24,8 +24,6 @@
 #ifndef BEAST_SYSTEMSTATS_BEASTHEADER
 #define BEAST_SYSTEMSTATS_BEASTHEADER
 
-#include "../text/beast_StringArray.h"
-
 //==============================================================================
 /**
     Contains methods for finding out about the current hardware and OS configuration.

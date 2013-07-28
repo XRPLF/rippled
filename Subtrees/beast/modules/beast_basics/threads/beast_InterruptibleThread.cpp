@@ -205,7 +205,6 @@ void InterruptibleThread::run ()
 
     m_runEvent.wait ();
 
-    //CatchAny (m_function);
     m_entryPoint->threadRun ();
 }
 
