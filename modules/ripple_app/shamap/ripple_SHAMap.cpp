@@ -1103,7 +1103,7 @@ public:
 
         i = sMap.peekNextItem (i->getTag ());
 
-        unexpected (i, "bad traverse");
+        unexpected (!!i, "bad traverse");
 
         sMap.addItem (i4, true, false);
         sMap.delItem (i2.getTag ());
@@ -1123,7 +1123,7 @@ public:
 
         i = sMap.peekNextItem (i->getTag ());
 
-        unexpected (i, "bad traverse");
+        unexpected (!!i, "bad traverse");
 
 
 
