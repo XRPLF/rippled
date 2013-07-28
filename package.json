@@ -21,7 +21,7 @@
   },
 
   "scripts": {
-    "test": "./node_modules/buster/bin/buster test"
+    "test": "./node_modules/buster/bin/buster-test"
   },
 
   "repository": {
