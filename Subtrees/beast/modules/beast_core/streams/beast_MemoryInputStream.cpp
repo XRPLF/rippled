@@ -96,7 +96,7 @@ public:
 
     void runTest()
     {
-        beginTest ("Basics");
+        beginTestCase ("Basics");
         Random r;
 
         int randomInt = r.nextInt();

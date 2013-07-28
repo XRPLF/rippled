@@ -210,7 +210,7 @@ public:
 
     void runTest()
     {
-        beginTest ("TextDiff");
+        beginTestCase ("TextDiff");
 
         testDiff (String::empty, String::empty);
         testDiff ("x", String::empty);

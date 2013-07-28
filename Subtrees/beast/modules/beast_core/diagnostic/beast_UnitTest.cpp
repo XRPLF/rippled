@@ -21,11 +21,11 @@
 */
 //==============================================================================
 
-UnitTest::UnitTest (String const& name,
-                    String const& group,
+UnitTest::UnitTest (String const& className,
+                    String const& packageName,
                     When when)
-    : m_name (name)
-    , m_group (group)
+    : m_className (className)
+    , m_packageName (packageName)
     , m_when (when)
     , m_runner (nullptr)
 {
@@ -35,6 +35,16 @@ UnitTest::UnitTest (String const& name,
 UnitTest::~UnitTest()
 {
     getAllTests().removeFirstMatchingValue (this);
+}
+
+String const& UnitTest::getClassName() const noexcept
+{
+    return m_className;
+}
+
+String const& UnitTest::getPackageName() const noexcept
+{
+    return m_packageName;
 }
 
 UnitTest::TestList& UnitTest::getAllTests()
@@ -52,39 +62,53 @@ void UnitTest::shutdown()
 {
 }
 
-void UnitTest::performTest (UnitTests* const runner)
+ScopedPointer <UnitTest::Suite>& UnitTest::run (UnitTests* const runner)
 {
     bassert (runner != nullptr);
     m_runner = runner;
 
+    m_suite = new Suite (m_className, m_packageName);
+
     initialise();
-    runTest();
+
+    try
+    {
+        runTest();
+    }
+    catch (...)
+    {
+        failException ();
+    }
+
     shutdown();
+
+    finishCase ();
+
+    m_suite->secondsElapsed = RelativeTime (
+        Time::getCurrentTime () - m_suite->whenStarted).inSeconds ();
+
+    return m_suite;
 }
 
-void UnitTest::logMessage (const String& message)
+void UnitTest::logMessage (String const& message)
 {
     m_runner->logMessage (message);
 }
 
-void UnitTest::beginTest (const String& testName)
+void UnitTest::beginTestCase (String const& name)
 {
-    m_runner->beginNewTest (this, testName);
+    finishCase ();
+
+    String s;
+    s << m_packageName << "/" << m_className << ": " << name;
+    logMessage (s);
+
+    m_case = new Case (name, m_className);
 }
 
-void UnitTest::pass ()
+void UnitTest::expect (bool trueCondition, String const& failureMessage)
 {
-    m_runner->addPass();
-}
-
-void UnitTest::fail (String const& failureMessage)
-{
-    m_runner->addFail (failureMessage);
-}
-
-void UnitTest::expect (const bool result, const String& failureMessage)
-{
-    if (result)
+    if (trueCondition)
     {
         pass ();
     }
@@ -94,12 +118,96 @@ void UnitTest::expect (const bool result, const String& failureMessage)
     }
 }
 
+void UnitTest::unexpected (bool falseCondition, String const& failureMessage)
+{
+    if (! falseCondition)
+    {
+        pass ();
+    }
+    else
+    {
+        fail (failureMessage);
+    }
+}
+
+void UnitTest::pass ()
+{
+    // If this goes off it means you forgot to call beginTestCase()!
+    bassert (m_case != nullptr);
+
+    Item item (true);
+
+    m_case->items.add (item);
+}
+
+void UnitTest::fail (String const& failureMessage)
+{
+    // If this goes off it means you forgot to call beginTestCase()!
+    bassert (m_case != nullptr);
+
+    Item item (false, failureMessage);
+
+    m_case->failures++;
+    int const caseNumber = m_case->items.add (item);
+
+    String s;
+    s << "#" << String (caseNumber) << " failed: " << failureMessage;
+    logMessage (s);
+
+    m_runner->onFailure ();
+}
+
+void UnitTest::failException ()
+{
+    Item item (false, "An exception was thrown");
+
+    if (m_case != nullptr)
+    {
+        m_case->failures++;
+    }
+    else
+    {
+        // This hack gives us a test case, to handle the condition where an
+        // exception was thrown before beginTestCase() was called.
+        //
+        beginTestCase ("Exception outside test case");
+    }
+
+    int const caseNumber = m_case->items.add (item);
+
+    String s;
+    s << "#" << String (caseNumber) << " threw an exception ";
+    logMessage (s);
+
+    m_runner->onFailure ();
+}
+
+//------------------------------------------------------------------------------
+
+void UnitTest::finishCase ()
+{
+    if (m_case != nullptr)
+    {
+        // If this goes off it means you forgot to
+        // report any passing test case items!
+        //
+        bassert (m_case->items.size () > 0);
+
+        m_case->secondsElapsed = RelativeTime (
+            Time::getCurrentTime () - m_case->whenStarted).inSeconds ();
+
+        m_suite->tests += m_case->items.size ();
+        m_suite->failures += m_case->failures;
+
+        m_suite->cases.add (m_case.release ());
+    }
+}
+
 //==============================================================================
 
 UnitTests::UnitTests()
-    : currentTest (nullptr),
-      assertOnFailure (true),
-      logPasses (false)
+    : m_assertOnFailure (false)
+    , m_currentTest (nullptr)
 {
 }
 
@@ -109,106 +217,86 @@ UnitTests::~UnitTests()
 
 void UnitTests::setAssertOnFailure (bool shouldAssert) noexcept
 {
-    assertOnFailure = shouldAssert;
+    m_assertOnFailure = shouldAssert;
 }
 
-void UnitTests::setPassesAreLogged (bool shouldDisplayPasses) noexcept
+UnitTests::Results const& UnitTests::getResults () const noexcept
 {
-    logPasses = shouldDisplayPasses;
-}
-
-int UnitTests::getNumResults() const noexcept
-{
-    return results.size();
-}
-
-const UnitTests::TestResult* UnitTests::getResult (int index) const noexcept
-{
-    return results [index];
+    return *m_results;
 }
 
 bool UnitTests::anyTestsFailed () const noexcept
 {
-    for (int i = 0; i < results.size (); ++i)
-    {
-        if (results [i]->failures > 0)
-            return true;
-    }
-
-    return false;
+    return m_results->failures > 0;
 }
 
-void UnitTests::resultsUpdated()
+void UnitTests::runTests (Array <UnitTest*> const& tests)
 {
-}
+    m_results = new Results;
 
-void UnitTests::runTest (UnitTest& test)
-{
-    try
-    {
-        test.performTest (this);
-    }
-    catch (std::exception& e)
-    {
-        String s;
-        s << "Got an exception: " << e.what ();
-        addFail (s);
-    }
-    catch (...)
-    {
-        addFail ("Got an unhandled exception");
-    }
-}
-
-void UnitTests::runTest (String const& name)
-{
-    results.clear();
-    resultsUpdated();
-
-    UnitTest::TestList& tests (UnitTest::getAllTests ());
-
-    for (int i = 0; i < tests.size(); ++i)
-    {
-        UnitTest& test = *tests [i];
-
-        if (test.getGroup () == name && test.getWhen () == UnitTest::runAlways)
-        {
-            runTest (test);
-        }
-        else if (test.getName () == name)
-        {
-            runTest (test);
-            break;
-        }
-
-    }
-}
-
-void UnitTests::runAllTests ()
-{
-    UnitTest::TestList& tests (UnitTest::getAllTests ());
-
-    results.clear();
-    resultsUpdated();
-
-    for (int i = 0; i < tests.size(); ++i)
+    for (int i = 0; i < tests.size (); ++i)
     {
         if (shouldAbortTests())
             break;
 
-        UnitTest& test = *tests [i];
-
-        if (test.getWhen () == UnitTest::runAlways)
-            runTest (test);
+        runTest (*tests [i]);
     }
 
-    endTest();
-
+    m_results->secondsElapsed = RelativeTime (
+        Time::getCurrentTime () - m_results->whenStarted).inSeconds ();
 }
 
-void UnitTests::logMessage (const String& message)
+void UnitTests::runAllTests ()
 {
-    Logger::writeToLog (message);
+    UnitTest::TestList const& allTests (UnitTest::getAllTests ());
+
+    Array <UnitTest*> tests;
+
+    tests.ensureStorageAllocated (allTests.size ());
+
+    for (int i = 0; i < allTests.size(); ++i)
+    {
+        UnitTest* const test = allTests [i];
+
+        if (test->getWhen () == UnitTest::runAlways)
+        {
+            tests.add (test);
+        }
+    }
+
+    runTests (tests);
+}
+
+void UnitTests::runTestsByName (String const& name)
+{
+    UnitTest::TestList const& allTests (UnitTest::getAllTests ());
+
+    Array <UnitTest*> tests;
+
+    tests.ensureStorageAllocated (allTests.size ());
+
+    for (int i = 0; i < allTests.size(); ++i)
+    {
+        UnitTest* const test = allTests [i];
+
+        if (test->getPackageName () == name && test->getWhen () == UnitTest::runAlways)
+        {
+            tests.add (test);
+        }
+        else if (test->getClassName () == name)
+        {
+            tests.add (test);
+            break;
+        }
+    }
+
+    runTests (tests);
+}
+ 
+void UnitTests::onFailure ()
+{
+    // A failure occurred and the setting to assert on failures is turned on.
+    bassert (! m_assertOnFailure)
 }
 
 bool UnitTests::shouldAbortTests()
@@ -216,89 +304,25 @@ bool UnitTests::shouldAbortTests()
     return false;
 }
 
-void UnitTests::beginNewTest (UnitTest* const test, const String& subCategory)
+void UnitTests::logMessage (const String& message)
 {
-    endTest();
-    currentTest = test;
-
-    TestResult* const r = new TestResult();
-    results.add (r);
-    r->unitTestName = test->getGroup() + "::" + test->getName();
-    r->subcategoryName = subCategory;
-    r->passes = 0;
-    r->failures = 0;
-
-    logMessage ("Test '" + r->unitTestName + "': " + subCategory);
-
-    resultsUpdated ();
+    Logger::writeToLog (message);
 }
 
-void UnitTests::endTest()
+void UnitTests::runTest (UnitTest& test)
 {
-    if (results.size() > 0)
+    try
     {
-        TestResult* const r = results.getLast();
+        ScopedPointer <UnitTest::Suite> suite (test.run (this).release ());
 
-        if (r->failures > 0)
-        {
-            String m ("FAILED!!  ");
-            m << r->failures << (r->failures == 1 ? " test" : " tests")
-              << " failed, out of a total of " << (r->passes + r->failures);
+        m_results->tests += suite->cases.size ();
+        m_results->failures += suite->failures;
 
-            logMessage (String::empty);
-            logMessage (m);
-            logMessage (String::empty);
-        }
-        else
-        {
-            //logMessage ("All tests completed successfully");
-        }
+        m_results->suites.add (suite.release ());
     }
-}
-
-void UnitTests::addPass()
-{
+    catch (...)
     {
-        const ScopedLock sl (results.getLock());
-
-        TestResult* const r = results.getLast();
-        bassert (r != nullptr); // You need to call UnitTest::beginTest() before performing any tests!
-
-        r->passes++;
-
-        if (logPasses)
-        {
-            String message ("Test ");
-            message << (r->failures + r->passes) << " passed";
-            logMessage (message);
-        }
+        // Should never get here.
+        Throw (std::runtime_error ("unhandled exception during unit tests"));
     }
-
-    resultsUpdated();
-}
-
-void UnitTests::addFail (const String& failureMessage)
-{
-    {
-        const ScopedLock sl (results.getLock());
-
-        TestResult* const r = results.getLast();
-        bassert (r != nullptr); // You need to call UnitTest::beginTest() before performing any tests!
-
-        r->failures++;
-
-        String message ("Failure, #");
-        message << (r->failures + r->passes);
-
-        if (failureMessage.isNotEmpty())
-            message << ": " << failureMessage;
-
-        r->messages.add (message);
-
-        logMessage (message);
-    }
-
-    resultsUpdated();
-
-    if (assertOnFailure) { bassertfalse; }
 }

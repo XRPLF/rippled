@@ -259,7 +259,7 @@ public:
 
     void runTest()
     {
-        beginTest ("Misc");
+        beginTestCase ("Misc");
 
         char a1[7];
         expect (numElementsInArray(a1) == 7);
@@ -270,28 +270,28 @@ public:
         expect (ByteOrder::swap ((uint32) 0x11223344) == 0x44332211);
         expect (ByteOrder::swap ((uint64) literal64bit (0x1122334455667788)) == literal64bit (0x8877665544332211));
 
-        beginTest ("Atomic int");
+        beginTestCase ("int");
         AtomicTester <int>::testInteger (*this);
-        beginTest ("Atomic unsigned int");
+        beginTestCase ("unsigned int");
         AtomicTester <unsigned int>::testInteger (*this);
-        beginTest ("Atomic int32");
+        beginTestCase ("int32");
         AtomicTester <int32>::testInteger (*this);
-        beginTest ("Atomic uint32");
+        beginTestCase ("uint32");
         AtomicTester <uint32>::testInteger (*this);
-        beginTest ("Atomic long");
+        beginTestCase ("long");
         AtomicTester <long>::testInteger (*this);
-        beginTest ("Atomic void*");
+        beginTestCase ("void*");
         AtomicTester <void*>::testInteger (*this);
-        beginTest ("Atomic int*");
+        beginTestCase ("int*");
         AtomicTester <int*>::testInteger (*this);
-        beginTest ("Atomic float");
+        beginTestCase ("float");
         AtomicTester <float>::testFloat (*this);
       #if ! BEAST_64BIT_ATOMICS_UNAVAILABLE  // 64-bit intrinsics aren't available on some old platforms
-        beginTest ("Atomic int64");
+        beginTestCase ("int64");
         AtomicTester <int64>::testInteger (*this);
-        beginTest ("Atomic uint64");
+        beginTestCase ("uint64");
         AtomicTester <uint64>::testInteger (*this);
-        beginTest ("Atomic double");
+        beginTestCase ("double");
         AtomicTester <double>::testFloat (*this);
       #endif
     }

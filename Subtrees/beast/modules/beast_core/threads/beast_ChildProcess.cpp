@@ -65,7 +65,7 @@ public:
 
     void runTest()
     {
-        beginTest ("Child Processes");
+        beginTestCase ("Child Processes");
 
       #if BEAST_WINDOWS || BEAST_MAC || BEAST_LINUX
         ChildProcess p;

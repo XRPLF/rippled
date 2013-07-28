@@ -20,8 +20,6 @@
 #ifndef BEAST_UNITTESTUTILITIES_H_INCLUDED
 #define BEAST_UNITTESTUTILITIES_H_INCLUDED
 
-#include "../maths/beast_Random.h"
-
 namespace UnitTestUtilities
 {
 
@@ -39,6 +37,8 @@ void repeatableShuffle (int const numberOfItems, T& arrayOfItems, int64 seedValu
         std::swap (arrayOfItems [i], arrayOfItems [choice]);
     }
 }
+
+//------------------------------------------------------------------------------
 
 /** A block of memory used for test data.
 */
@@ -93,6 +93,37 @@ public:
 
     int bytes;
     HeapBlock <char> data;
+};
+
+//------------------------------------------------------------------------------
+
+/** Format unit test results in JUnit XML format.
+
+    The output can be used directly with the Jenkins CI server with
+    the appropriate JUnit plugin.
+
+    JUnit FAQ:      http://junit.sourceforge.net/doc/faq/faq.htm
+
+    Jenkins Home:   http://jenkins-ci.org/
+
+    @see UnitTest, UnitTests
+*/
+
+class JUnitXMLFormatter : Uncopyable
+{
+public:
+    JUnitXMLFormatter (UnitTests const& tests);
+
+    String createDocumentString ();
+
+private:
+    static String timeToString (Time const& time);
+    static String secondsToString (double seconds);
+
+private:
+    UnitTests const& m_tests;
+    String const m_currentTime;
+    String const m_hostName;
 };
 
 }

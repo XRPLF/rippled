@@ -165,7 +165,7 @@ public:
 
     void runTest()
     {
-        beginTest ("GZIP");
+        beginTestCase ("GZIP");
         Random rng;
 
         for (int i = 100; --i >= 0;)

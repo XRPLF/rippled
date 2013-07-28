@@ -24,8 +24,6 @@
 #ifndef BEAST_UNITTEST_BEASTHEADER
 #define BEAST_UNITTEST_BEASTHEADER
 
-#include "../text/beast_StringArray.h"
-#include "../containers/beast_OwnedArray.h"
 class UnitTests;
 
 /** This is a base class for classes that perform a unit test.
@@ -34,6 +32,17 @@ class UnitTests;
 
     @code
 
+
+
+
+
+    FIX THE EXAMPLE FOR THE NEW API!
+
+
+
+
+
+
     class MyTest : public UnitTest
     {
     public:
@@ -41,12 +50,12 @@ class UnitTests;
 
         void runTest()
         {
-            beginTest ("Part 1");
+            beginTestCase ("Part 1");
 
             expect (myFoobar.doesSomething());
             expect (myFoobar.doesSomethingElse());
 
-            beginTest ("Part 2");
+            beginTestCase ("Part 2");
 
             expect (myOtherFoobar.doesSomething());
             expect (myOtherFoobar.doesSomethingElse());
@@ -69,17 +78,93 @@ class UnitTests;
 class BEAST_API UnitTest : Uncopyable
 {
 public:
+    /** When the test should be run.
+
+        Tests that run always will be incuded in all tests or in a group test.
+        Manual tests will only run when they are individually targeted. This
+        lets you leave out slow tests or peformance tests from the main test set.
+    */
     enum When
     {
         runAlways,
         runManual
     };
 
+    /** Describes a single test item.
+
+        An item created for each call to the test functions, such as @ref expect
+        or @expectEquals.
+    */
+    struct Item
+    {
+        explicit Item (bool passed_, String failureMessage_ = "")
+            : passed (passed_)
+            , failureMessage (failureMessage_)
+        {
+        }
+
+        bool passed;
+        String failureMessage;
+    };
+
+    /** Describes a test case.
+        A test case represents a group of Item objects.
+    */
+    struct Case
+    {
+        explicit Case (String const& name_, String const& className_)
+            : name (name_)
+            , className (className_)
+            , whenStarted (Time::getCurrentTime ())
+            , secondsElapsed (0)
+            , failures (0)
+        {
+        }
+
+        String name;
+        String className;
+
+        Time whenStarted;
+        double secondsElapsed;
+
+        int failures;
+
+        Array <Item, CriticalSection> items;
+    };
+
+    /** Contains the results of a test.
+
+        One of these objects is instantiated each time UnitTest::beginTestCase() is called, and
+        it contains details of the number of subsequent UnitTest::expect() calls that are
+        made.
+    */
+    struct Suite
+    {
+        Suite (String const& className_, String const& packageName_)
+            : className (className_)
+            , packageName (packageName_)
+            , whenStarted (Time::getCurrentTime ()) // hack for now
+            , secondsElapsed (0)
+            , tests (0)
+            , failures (0)
+        {
+        }
+
+        String className;
+        String packageName;
+        Time whenStarted;
+        double secondsElapsed;
+        int tests;
+        int failures;
+        OwnedArray <Case, CriticalSection> cases;
+    };
+
     /** The type of a list of tests.
     */
     typedef Array <UnitTest*, CriticalSection> TestList;
 
-    //==============================================================================
+    //--------------------------------------------------------------------------
+
     /** Creates a test with the given name, group, and run option.
 
         The group is used when you want to run all tests in a particular group
@@ -88,16 +173,26 @@ public:
         test that takes a long time which you might not want to run every time
         you run all tests.
     */
-    explicit UnitTest (String const& name, String const& group = "", When when = runAlways);
+    /*
+        suiteName: A name 
+        className: The name of the class that the unit test exercises
+        packageName: A real or pseudo "namespace" describing the general area of
+                     functionality to which the specified class belongs.
+                     Examples: "network", "core", "ui"
+                     A package name can appear in multiple testsuite instances.
+    */    
+    explicit UnitTest (String const& name,
+                       String const& group = "",
+                       When when = runAlways);
 
     /** Destructor. */
     virtual ~UnitTest();
 
-    /** Returns the name of the test. */
-    const String& getName() const noexcept { return m_name; }
+    /** Returns the class name of the test. */
+    const String& getClassName() const noexcept;
 
-    /** Returns the group of the test. */
-    String const& getGroup () const noexcept { return m_group; }
+    /** Returns the package name of the test. */
+    String const& getPackageName () const noexcept;
 
     /** Returns the run option of the test. */
     When getWhen () const noexcept { return m_when; }
@@ -106,12 +201,13 @@ public:
         You shouldn't need to call this method directly - use
         UnitTests::runTests() instead.
     */
-    void performTest (UnitTests* runner);
+    ScopedPointer <Suite>& run (UnitTests* runner);
 
     /** Returns the set of all UnitTest objects that currently exist. */
     static TestList& getAllTests();
 
-    //==============================================================================
+    //--------------------------------------------------------------------------
+
     /** You can optionally implement this method to set up your test.
         This method will be called before runTest().
     */
@@ -124,27 +220,19 @@ public:
 
     /** Implement this method in your subclass to actually run your tests.
 
-        The content of your implementation should call beginTest() and expect()
+        The content of your implementation should call beginTestCase() and expect()
         to perform the tests.
     */
     virtual void runTest() = 0;
 
-    //==============================================================================
     /** Tells the system that a new subsection of tests is beginning.
         This should be called from your runTest() method, and may be called
         as many times as you like, to demarcate different sets of tests.
     */
-    void beginTest (const String& testName);
+    void beginTestCase (String const& name);
 
-    /** Passes a test.
-    */
-    void pass ();
+    // beginTestCase ()
 
-    /** Fails a test with the specified message.
-    */
-    void fail (String const& failureMessage);
-
-    //==============================================================================
     /** Checks that the result of a test is true, and logs this result.
 
         In your runTest() method, you should call this method for each condition that
@@ -153,17 +241,25 @@ public:
         @code
         void runTest()
         {
-            beginTest ("basic tests");
+            beginTestCase ("basic tests");
             expect (x + y == 2);
             expect (getThing() == someThing);
             ...etc...
         }
         @endcode
 
-        If testResult is true, a pass is logged; if it's false, a failure is logged.
+        If Suite is true, a pass is logged; if it's false, a failure is logged.
         If the failure message is specified, it will be written to the log if the test fails.
     */
-    void expect (bool testResult, const String& failureMessage = String::empty);
+    void expect (bool trueCondition, String const& failureMessage = String::empty);
+
+    /** Checks that the result of a test is false, and logs this result.
+
+        This is basically the opposite of expect().
+
+        @see expect
+    */
+    void unexpected (bool falseCondition, String const& failureMessage = String::empty);
 
     /** Compares two values, and if they don't match, prints out a message containing the
         expected and actual result values.
@@ -184,6 +280,15 @@ public:
         expect (result, failureMessage);
     }
 
+    /** Causes the test item to pass. */
+    void pass ();
+
+    /** Causes the test item to fail. */
+    void fail (String const& failureMessage);
+
+    /** Records an exception in the test item. */
+    void failException ();
+
     //==============================================================================
     /** Writes a message to the test log.
         This can only be called during your runTest() method.
@@ -191,11 +296,16 @@ public:
     void logMessage (const String& message);
 
 private:
+    void finishCase ();
+
+private:
     //==============================================================================
-    String const m_name;
-    String const m_group;
+    String const m_className;
+    String const m_packageName;
     When const m_when;
     UnitTests* m_runner;
+    ScopedPointer <Suite> m_suite;
+    ScopedPointer <Case> m_case;
 };
 
 //==============================================================================
@@ -213,80 +323,67 @@ private:
 class BEAST_API UnitTests : Uncopyable
 {
 public:
-    //==============================================================================
+    struct Results
+    {
+        Results ()
+            : whenStarted (Time::getCurrentTime ())
+            , tests (0)
+            , failures (0)
+        {
+        }
+
+        Time whenStarted;
+        double secondsElapsed;
+        int tests;
+        int failures;
+
+        OwnedArray <UnitTest::Suite> suites;
+    };
+
     /** */
     UnitTests();
 
     /** Destructor. */
     virtual ~UnitTests();
 
-    /** Run the specified unit test.
-    
-        Subclasses can override this to do extra stuff.
+    /** Sets a flag to indicate whether an assertion should be triggered if a test fails.
+        This is true by default.
     */
-    virtual void runTest (UnitTest& test);
+    void setAssertOnFailure (bool shouldAssert) noexcept;
 
-    /** Run a particular test or group. */
-    void runTest (String const& name);
+    /** Retrieve the information on all the suites that were run.
+        This is overwritten every time new tests are run.
+    */
+    Results const& getResults () const noexcept;
+
+    /** Returns `true` if any test failed. */
+    bool anyTestsFailed () const noexcept;
+
+    //--------------------------------------------------------------------------
+
+    /** Runs the specified list of tests.
+        This is used internally and won't normally need to be called.
+    */
+    void runTests (Array <UnitTest*> const& tests);
 
     /** Runs all the UnitTest objects that currently exist.
         This calls runTests() for all the objects listed in UnitTest::getAllTests().
     */
     void runAllTests ();
 
-    /** Sets a flag to indicate whether an assertion should be triggered if a test fails.
-        This is true by default.
-    */
-    void setAssertOnFailure (bool shouldAssert) noexcept;
-
-    /** Sets a flag to indicate whether successful tests should be logged.
-        By default, this is set to false, so that only failures will be displayed in the log.
-    */
-    void setPassesAreLogged (bool shouldDisplayPasses) noexcept;
-
-    //==============================================================================
-    /** Contains the results of a test.
-
-        One of these objects is instantiated each time UnitTest::beginTest() is called, and
-        it contains details of the number of subsequent UnitTest::expect() calls that are
-        made.
-    */
-    struct TestResult
-    {
-        /** The main name of this test (i.e. the name of the UnitTest object being run). */
-        String unitTestName;
-
-        /** The name of the current subcategory (i.e. the name that was set when UnitTest::beginTest() was called). */
-        String subcategoryName;
-
-        /** The number of UnitTest::expect() calls that succeeded. */
-        int passes;
-
-        /** The number of UnitTest::expect() calls that failed. */
-        int failures;
-
-        /** A list of messages describing the failed tests. */
-        StringArray messages;
-    };
-
-    /** Returns the number of TestResult objects that have been performed.
-        @see getResult
-    */
-    int getNumResults() const noexcept;
-
-    /** Returns one of the TestResult objects that describes a test that has been run.
-        @see getNumResults
-    */
-    const TestResult* getResult (int index) const noexcept;
-
-    /** Returns `true` if any test failed. */
-    bool anyTestsFailed () const noexcept;
+    /** Run a particular test or group. */
+    void runTestsByName (String const& name);
 
 protected:
-    /** Called when the list of results changes.
-        You can override this to perform some sort of behaviour when results are added.
+    friend class UnitTest;
+
+    /** Called on a failure. */
+    void onFailure ();
+
+    /** This can be overridden to let the runner know that it should abort the tests
+        as soon as possible, e.g. because the thread needs to stop.
     */
-    virtual void resultsUpdated ();
+    virtual bool shouldAbortTests ();
 
     /** Logs a message about the current test progress.
         By default this just writes the message to the Logger class, but you could override
@@ -294,25 +391,13 @@ protected:
     */
     virtual void logMessage (String const& message);
 
-    /** This can be overridden to let the runner know that it should abort the tests
-        as soon as possible, e.g. because the thread needs to stop.
-    */
-    virtual bool shouldAbortTests ();
+private:
+    void runTest (UnitTest& test);
 
 private:
-    friend class UnitTest;
-
-    void beginNewTest (UnitTest* test, const String& subCategory);
-    void endTest();
-
-    void addPass();
-    void addFail (const String& failureMessage);
-
-    UnitTest* currentTest;
-    String currentSubCategory;
-    OwnedArray <TestResult, CriticalSection> results;
-    bool assertOnFailure;
-    bool logPasses;
+    bool m_assertOnFailure;
+    ScopedPointer <Results> m_results;
+    UnitTest* m_currentTest;
 };
 
 #endif
