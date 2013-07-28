@@ -180,7 +180,7 @@ public:
 
     void runTest()
     {
-        beginTest ("AbstractFifo");
+        beginTestCase ("AbstractFifo");
 
         int buffer [5000];
         AbstractFifo fifo (numElementsInArray (buffer));
@@ -189,6 +189,8 @@ public:
 
         int n = 0;
         Random r;
+
+        bool failed = false;
 
         for (int count = 100000; --count >= 0;)
         {
@@ -205,8 +207,6 @@ public:
                 break;
             }
 
-            bool failed = false;
-
             for (int i = 0; i < size1; ++i)
                 failed = (buffer [start1 + i] != n++) || failed;
 
@@ -215,12 +215,13 @@ public:
 
             if (failed)
             {
-                expect (false, "read values were incorrect");
                 break;
             }
 
             fifo.finishedRead (size1 + size2);
         }
+
+        expect (! failed, "read values were incorrect");
     }
 };
 
