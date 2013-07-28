@@ -877,7 +877,7 @@ public:
 
     void runTest ()
     {
-        beginTest ("public/private");
+        beginTestCase ("public/private");
 
         // Construct a seed.
         RippleAddress   naSeed;

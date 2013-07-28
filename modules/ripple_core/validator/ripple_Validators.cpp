@@ -411,7 +411,7 @@ public:
     // Check logic for comparing a source's fetch results
     void processTest ()
     {
-        beginTest ("process");
+        beginTestCase ("process");
 
         {
             Array <Validator::Info> results = TestSource (1, 32).fetch ();

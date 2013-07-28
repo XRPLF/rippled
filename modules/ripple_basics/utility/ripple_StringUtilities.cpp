@@ -321,48 +321,48 @@ public:
 
     void runTest ()
     {
-        beginTest ("parseUrl");
+        beginTestCase ("parseUrl");
 
         std::string strScheme;
         std::string strDomain;
         int         iPort;
         std::string strPath;
 
-        if (!parseUrl ("lower://domain", strScheme, strDomain, iPort, strPath))
-            fail ("parseUrl: lower://domain failed");
+        unexpected (!parseUrl ("lower://domain", strScheme, strDomain, iPort, strPath),
+            "parseUrl: lower://domain failed");
 
-        if (strScheme != "lower")
-            fail ("parseUrl: lower://domain : scheme failed");
+        unexpected (strScheme != "lower",
+            "parseUrl: lower://domain : scheme failed");
 
-        if (strDomain != "domain")
-            fail ("parseUrl: lower://domain : domain failed");
+        unexpected (strDomain != "domain",
+            "parseUrl: lower://domain : domain failed");
 
-        if (iPort != -1)
-            fail ("parseUrl: lower://domain : port failed");
+        unexpected (iPort != -1,
+            "parseUrl: lower://domain : port failed");
 
-        if (strPath != "")
-            fail ("parseUrl: lower://domain : path failed");
+        unexpected (strPath != "",
+            "parseUrl: lower://domain : path failed");
 
-        if (!parseUrl ("UPPER://domain:234/", strScheme, strDomain, iPort, strPath))
-            fail ("parseUrl: UPPER://domain:234/ failed");
+        unexpected (!parseUrl ("UPPER://domain:234/", strScheme, strDomain, iPort, strPath),
+            "parseUrl: UPPER://domain:234/ failed");
 
-        if (strScheme != "upper")
-            fail ("parseUrl: UPPER://domain:234/ : scheme failed");
+        unexpected (strScheme != "upper",
+            "parseUrl: UPPER://domain:234/ : scheme failed");
 
-        if (iPort != 234)
-            fail (boost::str (boost::format ("parseUrl: UPPER://domain:234/ : port failed: %d") % iPort));
+        unexpected (iPort != 234,
+            boost::str (boost::format ("parseUrl: UPPER://domain:234/ : port failed: %d") % iPort));
 
-        if (strPath != "/")
-            fail ("parseUrl: UPPER://domain:234/ : path failed");
+        unexpected (strPath != "/",
+            "parseUrl: UPPER://domain:234/ : path failed");
 
-        if (!parseUrl ("Mixed://domain/path", strScheme, strDomain, iPort, strPath))
-            fail ("parseUrl: Mixed://domain/path failed");
+        unexpected (!parseUrl ("Mixed://domain/path", strScheme, strDomain, iPort, strPath),
+            "parseUrl: Mixed://domain/path failed");
 
-        if (strScheme != "mixed")
-            fail ("parseUrl: Mixed://domain/path tolower failed");
+        unexpected (strScheme != "mixed",
+            "parseUrl: Mixed://domain/path tolower failed");
 
-        if (strPath != "/path")
-            fail ("parseUrl: Mixed://domain/path path failed");
+        unexpected (strPath != "/path",
+            "parseUrl: Mixed://domain/path path failed");
     }
 };
 

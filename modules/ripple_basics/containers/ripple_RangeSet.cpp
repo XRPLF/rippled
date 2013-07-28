@@ -269,7 +269,7 @@ public:
 
     void testMembership ()
     {
-        beginTest ("membership");
+        beginTestCase ("membership");
 
         RangeSet r1, r2;
 
@@ -288,7 +288,7 @@ public:
 
     void testPrevMissing ()
     {
-        beginTest ("prevMissing");
+        beginTestCase ("prevMissing");
 
         RangeSet const set = createPredefinedSet ();
 

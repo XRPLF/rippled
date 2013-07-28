@@ -1351,6 +1351,10 @@ public:
 
             return false;
         }
+        else
+        {
+            pass ();
+        }
         
         return true;
     }
@@ -1372,6 +1376,10 @@ public:
 
             fail ("Multiplication result is not exact");
         }
+        else
+        {
+            pass ();
+        }
 
         aa = a;
         prod1 = STAmount::multiply (aa, bb, CURRENCY_ONE, ACCOUNT_ONE);
@@ -1382,14 +1390,17 @@ public:
                                            << " not " << prod2.getFullText ();
             fail ("Multiplication result is not exact");
         }
-
+        else
+        {
+            pass ();
+        }
     }
 
     //--------------------------------------------------------------------------
 
     void testSetValue ()
     {
-        beginTest ("set value");
+        beginTestCase ("set value");
 
         STAmount    saTmp;
 
@@ -1414,296 +1425,296 @@ public:
 
     void testNativeCurrency ()
     {
-        beginTest ("native currency");
+        beginTestCase ("native currency");
 
         STAmount zero, one (1), hundred (100);
 
-        if (serializeAndDeserialize (zero) != zero) fail ("STAmount fail");
+        unexpected (serializeAndDeserialize (zero) != zero, "STAmount fail");
 
-        if (serializeAndDeserialize (one) != one) fail ("STAmount fail");
+        unexpected (serializeAndDeserialize (one) != one, "STAmount fail");
 
-        if (serializeAndDeserialize (hundred) != hundred) fail ("STAmount fail");
+        unexpected (serializeAndDeserialize (hundred) != hundred, "STAmount fail");
 
-        if (!zero.isNative ()) fail ("STAmount fail");
+        unexpected (!zero.isNative (), "STAmount fail");
 
-        if (!hundred.isNative ()) fail ("STAmount fail");
+        unexpected (!hundred.isNative (), "STAmount fail");
 
-        if (!zero.isZero ()) fail ("STAmount fail");
+        unexpected (!zero.isZero (), "STAmount fail");
 
-        if (one.isZero ()) fail ("STAmount fail");
+        unexpected (one.isZero (), "STAmount fail");
 
-        if (hundred.isZero ()) fail ("STAmount fail");
+        unexpected (hundred.isZero (), "STAmount fail");
 
-        if ((zero < zero)) fail ("STAmount fail");
+        unexpected ((zero < zero), "STAmount fail");
 
-        if (! (zero < one)) fail ("STAmount fail");
+        unexpected (! (zero < one), "STAmount fail");
 
-        if (! (zero < hundred)) fail ("STAmount fail");
+        unexpected (! (zero < hundred), "STAmount fail");
 
-        if ((one < zero)) fail ("STAmount fail");
+        unexpected ((one < zero), "STAmount fail");
 
-        if ((one < one)) fail ("STAmount fail");
+        unexpected ((one < one), "STAmount fail");
 
-        if (! (one < hundred)) fail ("STAmount fail");
+        unexpected (! (one < hundred), "STAmount fail");
 
-        if ((hundred < zero)) fail ("STAmount fail");
+        unexpected ((hundred < zero), "STAmount fail");
 
-        if ((hundred < one)) fail ("STAmount fail");
+        unexpected ((hundred < one), "STAmount fail");
 
-        if ((hundred < hundred)) fail ("STAmount fail");
+        unexpected ((hundred < hundred), "STAmount fail");
 
-        if ((zero > zero)) fail ("STAmount fail");
+        unexpected ((zero > zero), "STAmount fail");
 
-        if ((zero > one)) fail ("STAmount fail");
+        unexpected ((zero > one), "STAmount fail");
 
-        if ((zero > hundred)) fail ("STAmount fail");
+        unexpected ((zero > hundred), "STAmount fail");
 
-        if (! (one > zero)) fail ("STAmount fail");
+        unexpected (! (one > zero), "STAmount fail");
 
-        if ((one > one)) fail ("STAmount fail");
+        unexpected ((one > one), "STAmount fail");
 
-        if ((one > hundred)) fail ("STAmount fail");
+        unexpected ((one > hundred), "STAmount fail");
 
-        if (! (hundred > zero)) fail ("STAmount fail");
+        unexpected (! (hundred > zero), "STAmount fail");
 
-        if (! (hundred > one)) fail ("STAmount fail");
+        unexpected (! (hundred > one), "STAmount fail");
 
-        if ((hundred > hundred)) fail ("STAmount fail");
+        unexpected ((hundred > hundred), "STAmount fail");
 
-        if (! (zero <= zero)) fail ("STAmount fail");
+        unexpected (! (zero <= zero), "STAmount fail");
 
-        if (! (zero <= one)) fail ("STAmount fail");
+        unexpected (! (zero <= one), "STAmount fail");
 
-        if (! (zero <= hundred)) fail ("STAmount fail");
+        unexpected (! (zero <= hundred), "STAmount fail");
 
-        if ((one <= zero)) fail ("STAmount fail");
+        unexpected ((one <= zero), "STAmount fail");
 
-        if (! (one <= one)) fail ("STAmount fail");
+        unexpected (! (one <= one), "STAmount fail");
 
-        if (! (one <= hundred)) fail ("STAmount fail");
+        unexpected (! (one <= hundred), "STAmount fail");
 
-        if ((hundred <= zero)) fail ("STAmount fail");
+        unexpected ((hundred <= zero), "STAmount fail");
 
-        if ((hundred <= one)) fail ("STAmount fail");
+        unexpected ((hundred <= one), "STAmount fail");
 
-        if (! (hundred <= hundred)) fail ("STAmount fail");
+        unexpected (! (hundred <= hundred), "STAmount fail");
 
-        if (! (zero >= zero)) fail ("STAmount fail");
+        unexpected (! (zero >= zero), "STAmount fail");
 
-        if ((zero >= one)) fail ("STAmount fail");
+        unexpected ((zero >= one), "STAmount fail");
 
-        if ((zero >= hundred)) fail ("STAmount fail");
+        unexpected ((zero >= hundred), "STAmount fail");
 
-        if (! (one >= zero)) fail ("STAmount fail");
+        unexpected (! (one >= zero), "STAmount fail");
 
-        if (! (one >= one)) fail ("STAmount fail");
+        unexpected (! (one >= one), "STAmount fail");
 
-        if ((one >= hundred)) fail ("STAmount fail");
+        unexpected ((one >= hundred), "STAmount fail");
 
-        if (! (hundred >= zero)) fail ("STAmount fail");
+        unexpected (! (hundred >= zero), "STAmount fail");
 
-        if (! (hundred >= one)) fail ("STAmount fail");
+        unexpected (! (hundred >= one), "STAmount fail");
 
-        if (! (hundred >= hundred)) fail ("STAmount fail");
+        unexpected (! (hundred >= hundred), "STAmount fail");
 
-        if (! (zero == zero)) fail ("STAmount fail");
+        unexpected (! (zero == zero), "STAmount fail");
 
-        if ((zero == one)) fail ("STAmount fail");
+        unexpected ((zero == one), "STAmount fail");
 
-        if ((zero == hundred)) fail ("STAmount fail");
+        unexpected ((zero == hundred), "STAmount fail");
 
-        if ((one == zero)) fail ("STAmount fail");
+        unexpected ((one == zero), "STAmount fail");
 
-        if (! (one == one)) fail ("STAmount fail");
+        unexpected (! (one == one), "STAmount fail");
 
-        if ((one == hundred)) fail ("STAmount fail");
+        unexpected ((one == hundred), "STAmount fail");
 
-        if ((hundred == zero)) fail ("STAmount fail");
+        unexpected ((hundred == zero), "STAmount fail");
 
-        if ((hundred == one)) fail ("STAmount fail");
+        unexpected ((hundred == one), "STAmount fail");
 
-        if (! (hundred == hundred)) fail ("STAmount fail");
+        unexpected (! (hundred == hundred), "STAmount fail");
 
-        if ((zero != zero)) fail ("STAmount fail");
+        unexpected ((zero != zero), "STAmount fail");
 
-        if (! (zero != one)) fail ("STAmount fail");
+        unexpected (! (zero != one), "STAmount fail");
 
-        if (! (zero != hundred)) fail ("STAmount fail");
+        unexpected (! (zero != hundred), "STAmount fail");
 
-        if (! (one != zero)) fail ("STAmount fail");
+        unexpected (! (one != zero), "STAmount fail");
 
-        if ((one != one)) fail ("STAmount fail");
+        unexpected ((one != one), "STAmount fail");
 
-        if (! (one != hundred)) fail ("STAmount fail");
+        unexpected (! (one != hundred), "STAmount fail");
 
-        if (! (hundred != zero)) fail ("STAmount fail");
+        unexpected (! (hundred != zero), "STAmount fail");
 
-        if (! (hundred != one)) fail ("STAmount fail");
+        unexpected (! (hundred != one), "STAmount fail");
 
-        if ((hundred != hundred)) fail ("STAmount fail");
+        unexpected ((hundred != hundred), "STAmount fail");
 
-        if (STAmount ().getText () != "0") fail ("STAmount fail");
+        unexpected (STAmount ().getText () != "0", "STAmount fail");
 
-        if (STAmount (31).getText () != "31") fail ("STAmount fail");
+        unexpected (STAmount (31).getText () != "31", "STAmount fail");
 
-        if (STAmount (310).getText () != "310") fail ("STAmount fail");
+        unexpected (STAmount (310).getText () != "310", "STAmount fail");
     }
 
     //--------------------------------------------------------------------------
 
     void testCustomCurrency ()
     {
-        beginTest ("custom currency");
+        beginTestCase ("custom currency");
 
         STAmount zero (CURRENCY_ONE, ACCOUNT_ONE), one (CURRENCY_ONE, ACCOUNT_ONE, 1), hundred (CURRENCY_ONE, ACCOUNT_ONE, 100);
 
         serializeAndDeserialize (one).getRaw ();
 
-        if (serializeAndDeserialize (zero) != zero) fail ("STAmount fail");
+        unexpected (serializeAndDeserialize (zero) != zero, "STAmount fail");
 
-        if (serializeAndDeserialize (one) != one) fail ("STAmount fail");
+        unexpected (serializeAndDeserialize (one) != one, "STAmount fail");
 
-        if (serializeAndDeserialize (hundred) != hundred) fail ("STAmount fail");
+        unexpected (serializeAndDeserialize (hundred) != hundred, "STAmount fail");
 
-        if (zero.isNative ()) fail ("STAmount fail");
+        unexpected (zero.isNative (), "STAmount fail");
 
-        if (hundred.isNative ()) fail ("STAmount fail");
+        unexpected (hundred.isNative (), "STAmount fail");
 
-        if (!zero.isZero ()) fail ("STAmount fail");
+        unexpected (!zero.isZero (), "STAmount fail");
 
-        if (one.isZero ()) fail ("STAmount fail");
+        unexpected (one.isZero (), "STAmount fail");
 
-        if (hundred.isZero ()) fail ("STAmount fail");
+        unexpected (hundred.isZero (), "STAmount fail");
 
-        if ((zero < zero)) fail ("STAmount fail");
+        unexpected ((zero < zero), "STAmount fail");
 
-        if (! (zero < one)) fail ("STAmount fail");
+        unexpected (! (zero < one), "STAmount fail");
 
-        if (! (zero < hundred)) fail ("STAmount fail");
+        unexpected (! (zero < hundred), "STAmount fail");
 
-        if ((one < zero)) fail ("STAmount fail");
+        unexpected ((one < zero), "STAmount fail");
 
-        if ((one < one)) fail ("STAmount fail");
+        unexpected ((one < one), "STAmount fail");
 
-        if (! (one < hundred)) fail ("STAmount fail");
+        unexpected (! (one < hundred), "STAmount fail");
 
-        if ((hundred < zero)) fail ("STAmount fail");
+        unexpected ((hundred < zero), "STAmount fail");
 
-        if ((hundred < one)) fail ("STAmount fail");
+        unexpected ((hundred < one), "STAmount fail");
 
-        if ((hundred < hundred)) fail ("STAmount fail");
+        unexpected ((hundred < hundred), "STAmount fail");
 
-        if ((zero > zero)) fail ("STAmount fail");
+        unexpected ((zero > zero), "STAmount fail");
 
-        if ((zero > one)) fail ("STAmount fail");
+        unexpected ((zero > one), "STAmount fail");
 
-        if ((zero > hundred)) fail ("STAmount fail");
+        unexpected ((zero > hundred), "STAmount fail");
 
-        if (! (one > zero)) fail ("STAmount fail");
+        unexpected (! (one > zero), "STAmount fail");
 
-        if ((one > one)) fail ("STAmount fail");
+        unexpected ((one > one), "STAmount fail");
 
-        if ((one > hundred)) fail ("STAmount fail");
+        unexpected ((one > hundred), "STAmount fail");
 
-        if (! (hundred > zero)) fail ("STAmount fail");
+        unexpected (! (hundred > zero), "STAmount fail");
 
-        if (! (hundred > one)) fail ("STAmount fail");
+        unexpected (! (hundred > one), "STAmount fail");
 
-        if ((hundred > hundred)) fail ("STAmount fail");
+        unexpected ((hundred > hundred), "STAmount fail");
 
-        if (! (zero <= zero)) fail ("STAmount fail");
+        unexpected (! (zero <= zero), "STAmount fail");
 
-        if (! (zero <= one)) fail ("STAmount fail");
+        unexpected (! (zero <= one), "STAmount fail");
 
-        if (! (zero <= hundred)) fail ("STAmount fail");
+        unexpected (! (zero <= hundred), "STAmount fail");
 
-        if ((one <= zero)) fail ("STAmount fail");
+        unexpected ((one <= zero), "STAmount fail");
 
-        if (! (one <= one)) fail ("STAmount fail");
+        unexpected (! (one <= one), "STAmount fail");
 
-        if (! (one <= hundred)) fail ("STAmount fail");
+        unexpected (! (one <= hundred), "STAmount fail");
 
-        if ((hundred <= zero)) fail ("STAmount fail");
+        unexpected ((hundred <= zero), "STAmount fail");
 
-        if ((hundred <= one)) fail ("STAmount fail");
+        unexpected ((hundred <= one), "STAmount fail");
 
-        if (! (hundred <= hundred)) fail ("STAmount fail");
+        unexpected (! (hundred <= hundred), "STAmount fail");
 
-        if (! (zero >= zero)) fail ("STAmount fail");
+        unexpected (! (zero >= zero), "STAmount fail");
 
-        if ((zero >= one)) fail ("STAmount fail");
+        unexpected ((zero >= one), "STAmount fail");
 
-        if ((zero >= hundred)) fail ("STAmount fail");
+        unexpected ((zero >= hundred), "STAmount fail");
 
-        if (! (one >= zero)) fail ("STAmount fail");
+        unexpected (! (one >= zero), "STAmount fail");
 
-        if (! (one >= one)) fail ("STAmount fail");
+        unexpected (! (one >= one), "STAmount fail");
 
-        if ((one >= hundred)) fail ("STAmount fail");
+        unexpected ((one >= hundred), "STAmount fail");
 
-        if (! (hundred >= zero)) fail ("STAmount fail");
+        unexpected (! (hundred >= zero), "STAmount fail");
 
-        if (! (hundred >= one)) fail ("STAmount fail");
+        unexpected (! (hundred >= one), "STAmount fail");
 
-        if (! (hundred >= hundred)) fail ("STAmount fail");
+        unexpected (! (hundred >= hundred), "STAmount fail");
 
-        if (! (zero == zero)) fail ("STAmount fail");
+        unexpected (! (zero == zero), "STAmount fail");
 
-        if ((zero == one)) fail ("STAmount fail");
+        unexpected ((zero == one), "STAmount fail");
 
-        if ((zero == hundred)) fail ("STAmount fail");
+        unexpected ((zero == hundred), "STAmount fail");
 
-        if ((one == zero)) fail ("STAmount fail");
+        unexpected ((one == zero), "STAmount fail");
 
-        if (! (one == one)) fail ("STAmount fail");
+        unexpected (! (one == one), "STAmount fail");
 
-        if ((one == hundred)) fail ("STAmount fail");
+        unexpected ((one == hundred), "STAmount fail");
 
-        if ((hundred == zero)) fail ("STAmount fail");
+        unexpected ((hundred == zero), "STAmount fail");
 
-        if ((hundred == one)) fail ("STAmount fail");
+        unexpected ((hundred == one), "STAmount fail");
 
-        if (! (hundred == hundred)) fail ("STAmount fail");
+        unexpected (! (hundred == hundred), "STAmount fail");
 
-        if ((zero != zero)) fail ("STAmount fail");
+        unexpected ((zero != zero), "STAmount fail");
 
-        if (! (zero != one)) fail ("STAmount fail");
+        unexpected (! (zero != one), "STAmount fail");
 
-        if (! (zero != hundred)) fail ("STAmount fail");
+        unexpected (! (zero != hundred), "STAmount fail");
 
-        if (! (one != zero)) fail ("STAmount fail");
+        unexpected (! (one != zero), "STAmount fail");
 
-        if ((one != one)) fail ("STAmount fail");
+        unexpected ((one != one), "STAmount fail");
 
-        if (! (one != hundred)) fail ("STAmount fail");
+        unexpected (! (one != hundred), "STAmount fail");
 
-        if (! (hundred != zero)) fail ("STAmount fail");
+        unexpected (! (hundred != zero), "STAmount fail");
 
-        if (! (hundred != one)) fail ("STAmount fail");
+        unexpected (! (hundred != one), "STAmount fail");
 
-        if ((hundred != hundred)) fail ("STAmount fail");
+        unexpected ((hundred != hundred), "STAmount fail");
 
-        if (STAmount (CURRENCY_ONE, ACCOUNT_ONE).getText () != "0") fail ("STAmount fail");
+        unexpected (STAmount (CURRENCY_ONE, ACCOUNT_ONE).getText () != "0", "STAmount fail");
 
-        if (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 31).getText () != "31") fail ("STAmount fail");
+        unexpected (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 31).getText () != "31", "STAmount fail");
 
-        if (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 31, 1).getText () != "310") fail ("STAmount fail");
+        unexpected (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 31, 1).getText () != "310", "STAmount fail");
 
-        if (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 31, -1).getText () != "3.1") fail ("STAmount fail");
+        unexpected (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 31, -1).getText () != "3.1", "STAmount fail");
 
-        if (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 31, -2).getText () != "0.31") fail ("STAmount fail");
+        unexpected (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 31, -2).getText () != "0.31", "STAmount fail");
 
-        if (STAmount::multiply (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 20), STAmount (3), CURRENCY_ONE, ACCOUNT_ONE).getText () != "60")
-            fail ("STAmount multiply fail 1");
+        unexpected (STAmount::multiply (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 20), STAmount (3), CURRENCY_ONE, ACCOUNT_ONE).getText () != "60",
+            "STAmount multiply fail 1");
 
-        if (STAmount::multiply (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 20), STAmount (3), uint160 (), ACCOUNT_XRP).getText () != "60")
-            fail ("STAmount multiply fail 2");
+        unexpected (STAmount::multiply (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 20), STAmount (3), uint160 (), ACCOUNT_XRP).getText () != "60",
+            "STAmount multiply fail 2");
 
-        if (STAmount::multiply (STAmount (20), STAmount (3), CURRENCY_ONE, ACCOUNT_ONE).getText () != "60")
-            fail ("STAmount multiply fail 3");
+        unexpected (STAmount::multiply (STAmount (20), STAmount (3), CURRENCY_ONE, ACCOUNT_ONE).getText () != "60",
+            "STAmount multiply fail 3");
 
-        if (STAmount::multiply (STAmount (20), STAmount (3), uint160 (), ACCOUNT_XRP).getText () != "60")
-            fail ("STAmount multiply fail 4");
+        unexpected (STAmount::multiply (STAmount (20), STAmount (3), uint160 (), ACCOUNT_XRP).getText () != "60",
+            "STAmount multiply fail 4");
 
         if (STAmount::divide (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount (3), CURRENCY_ONE, ACCOUNT_ONE).getText () != "20")
         {
@@ -1712,30 +1723,34 @@ public:
                                                  STAmount (3), CURRENCY_ONE, ACCOUNT_ONE).getText ();
             fail ("STAmount divide fail");
         }
+        else
+        {
+            pass ();
+        }
 
-        if (STAmount::divide (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount (3), uint160 (), ACCOUNT_XRP).getText () != "20")
-            fail ("STAmount divide fail");
+        unexpected (STAmount::divide (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount (3), uint160 (), ACCOUNT_XRP).getText () != "20",
+            "STAmount divide fail");
 
-        if (STAmount::divide (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 3), CURRENCY_ONE, ACCOUNT_ONE).getText () != "20")
-            fail ("STAmount divide fail");
+        unexpected (STAmount::divide (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 3), CURRENCY_ONE, ACCOUNT_ONE).getText () != "20",
+            "STAmount divide fail");
 
-        if (STAmount::divide (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 3), uint160 (), ACCOUNT_XRP).getText () != "20")
-            fail ("STAmount divide fail");
+        unexpected (STAmount::divide (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 3), uint160 (), ACCOUNT_XRP).getText () != "20",
+            "STAmount divide fail");
 
         STAmount a1 (CURRENCY_ONE, ACCOUNT_ONE, 60), a2 (CURRENCY_ONE, ACCOUNT_ONE, 10, -1);
 
-        if (STAmount::divide (a2, a1, CURRENCY_ONE, ACCOUNT_ONE) != STAmount::setRate (STAmount::getRate (a1, a2)))
-            fail ("STAmount setRate(getRate) fail");
+        unexpected (STAmount::divide (a2, a1, CURRENCY_ONE, ACCOUNT_ONE) != STAmount::setRate (STAmount::getRate (a1, a2)),
+            "STAmount setRate(getRate) fail");
 
-        if (STAmount::divide (a1, a2, CURRENCY_ONE, ACCOUNT_ONE) != STAmount::setRate (STAmount::getRate (a2, a1)))
-            fail ("STAmount setRate(getRate) fail");
+        unexpected (STAmount::divide (a1, a2, CURRENCY_ONE, ACCOUNT_ONE) != STAmount::setRate (STAmount::getRate (a2, a1)),
+            "STAmount setRate(getRate) fail");
     }
 
     //--------------------------------------------------------------------------
 
     void testArithmetic ()
     {
-        beginTest ("arithmetic");
+        beginTestCase ("arithmetic");
 
         CBigNum b;
 
@@ -1751,34 +1766,38 @@ public:
                 WriteLog (lsFATAL, STAmount) << r << " != " << b.getuint64 () << " " << b.ToString (16);
                 fail ("setull64/getull64 failure");
             }
+            else
+            {
+                pass ();
+            }
         }
 
         // Test currency multiplication and division operations such as
         // convertToDisplayAmount, convertToInternalAmount, getRate, getClaimed, and getNeeded
 
-        if (STAmount::getRate (STAmount (1), STAmount (10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull))
-            fail ("STAmount getRate fail 1");
+        unexpected (STAmount::getRate (STAmount (1), STAmount (10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
+            "STAmount getRate fail 1");
 
-        if (STAmount::getRate (STAmount (10), STAmount (1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull))
-            fail ("STAmount getRate fail 2");
+        unexpected (STAmount::getRate (STAmount (10), STAmount (1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
+            "STAmount getRate fail 2");
 
-        if (STAmount::getRate (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 1), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull))
-            fail ("STAmount getRate fail 3");
+        unexpected (STAmount::getRate (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 1), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
+            "STAmount getRate fail 3");
 
-        if (STAmount::getRate (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 10), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull))
-            fail ("STAmount getRate fail 4");
+        unexpected (STAmount::getRate (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 10), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
+            "STAmount getRate fail 4");
 
-        if (STAmount::getRate (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 1), STAmount (10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull))
-            fail ("STAmount getRate fail 5");
+        unexpected (STAmount::getRate (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 1), STAmount (10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
+            "STAmount getRate fail 5");
 
-        if (STAmount::getRate (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 10), STAmount (1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull))
-            fail ("STAmount getRate fail 6");
+        unexpected (STAmount::getRate (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 10), STAmount (1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
+            "STAmount getRate fail 6");
 
-        if (STAmount::getRate (STAmount (1), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull))
-            fail ("STAmount getRate fail 7");
+        unexpected (STAmount::getRate (STAmount (1), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
+            "STAmount getRate fail 7");
 
-        if (STAmount::getRate (STAmount (10), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull))
-            fail ("STAmount getRate fail 8");
+        unexpected (STAmount::getRate (STAmount (10), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
+            "STAmount getRate fail 8");
 
         roundTest (1, 3, 3);
         roundTest (2, 3, 9);
@@ -1795,7 +1814,7 @@ public:
 
     void testUnderflow ()
     {
-        beginTest ("underflow");
+        beginTestCase ("underflow");
 
         STAmount bigNative (STAmount::cMaxNative / 2);
         STAmount bigValue (CURRENCY_ONE, ACCOUNT_ONE,
@@ -1843,7 +1862,7 @@ public:
         //             Change this to actually do something.
 
 #if 0
-        beginTest ("rounding ");
+        beginTestCase ("rounding ");
 
         uint64 value = 25000000000000000ull;
         int offset = -14;

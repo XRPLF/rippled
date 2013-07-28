@@ -1572,10 +1572,9 @@ public:
 
     void runTest ()
     {
-        beginTest ("serialization");
+        beginTestCase ("serialization");
 
-        if (sfGeneric.isUseful ())
-            fail ("sfGeneric must not be useful");
+        unexpected (sfGeneric.isUseful (), "sfGeneric must not be useful");
 
         SField sfTestVL (STI_VL, 255, "TestVL");
         SField sfTestH256 (STI_HASH256, 255, "TestH256");
@@ -1591,16 +1590,16 @@ public:
         STObject object1 (elements, sfTestObject);
         STObject object2 (object1);
 
-        if (object1.getSerializer () != object2.getSerializer ()) fail ("STObject error 1");
+        unexpected (object1.getSerializer () != object2.getSerializer (), "STObject error 1");
 
-        if (object1.isFieldPresent (sfTestH256) || !object1.isFieldPresent (sfTestVL))
-            fail ("STObject error");
+        unexpected (object1.isFieldPresent (sfTestH256) || !object1.isFieldPresent (sfTestVL),
+            "STObject error");
 
         object1.makeFieldPresent (sfTestH256);
 
-        if (!object1.isFieldPresent (sfTestH256)) fail ("STObject Error 2");
+        unexpected (!object1.isFieldPresent (sfTestH256), "STObject Error 2");
 
-        if (object1.getFieldH256 (sfTestH256) != uint256 ()) fail ("STObject error 3");
+        unexpected (object1.getFieldH256 (sfTestH256) != uint256 (), "STObject error 3");
 
         if (object1.getSerializer () == object2.getSerializer ())
         {
@@ -1608,26 +1607,30 @@ public:
             WriteLog (lsINFO, STObject) << "O2: " << object2.getJson (0);
             fail ("STObject error 4");
         }
+        else
+        {
+            pass ();
+        }
 
         object1.makeFieldAbsent (sfTestH256);
 
-        if (object1.isFieldPresent (sfTestH256)) fail ("STObject error 5");
+        unexpected (object1.isFieldPresent (sfTestH256), "STObject error 5");
 
-        if (object1.getFlags () != 0) fail ("STObject error 6");
+        unexpected (object1.getFlags () != 0, "STObject error 6");
 
-        if (object1.getSerializer () != object2.getSerializer ()) fail ("STObject error 7");
+        unexpected (object1.getSerializer () != object2.getSerializer (), "STObject error 7");
 
         STObject copy (object1);
 
-        if (object1.isFieldPresent (sfTestH256)) fail ("STObject error 8");
+        unexpected (object1.isFieldPresent (sfTestH256), "STObject error 8");
 
-        if (copy.isFieldPresent (sfTestH256)) fail ("STObject error 9");
+        unexpected (copy.isFieldPresent (sfTestH256), "STObject error 9");
 
-        if (object1.getSerializer () != copy.getSerializer ()) fail ("STObject error 10");
+        unexpected (object1.getSerializer () != copy.getSerializer (), "STObject error 10");
 
         copy.setFieldU32 (sfTestU32, 1);
 
-        if (object1.getSerializer () == copy.getSerializer ()) fail ("STObject error 11");
+        unexpected (object1.getSerializer () == copy.getSerializer (), "STObject error 11");
 
         for (int i = 0; i < 1000; i++)
         {
@@ -1641,9 +1644,9 @@ public:
 
             STObject object3 (elements, it, sfTestObject);
 
-            if (object1.getFieldVL (sfTestVL) != j) fail ("STObject error");
+            unexpected (object1.getFieldVL (sfTestVL) != j, "STObject error");
 
-            if (object3.getFieldVL (sfTestVL) != j) fail ("STObject error");
+            unexpected (object3.getFieldVL (sfTestVL) != j, "STObject error");
         }
     }
 };

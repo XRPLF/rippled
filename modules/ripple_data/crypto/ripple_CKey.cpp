@@ -21,7 +21,7 @@ public:
 
     void runTest ()
     {
-        beginTest ("determinism");
+        beginTestCase ("determinism");
 
         uint128 seed1, seed2;
         seed1.SetHex ("71ED064155FFADFA38782C5E0158CB26");
@@ -32,20 +32,20 @@ public:
         root1.GetPrivateKeyU (priv1);
         root2.GetPrivateKeyU (priv2);
 
-        if (priv1.GetHex () != "7CFBA64F771E93E817E15039215430B53F7401C34931D111EAB3510B22DBB0D8")
-            fail ("Incorrect private key for generator");
+        unexpected (priv1.GetHex () != "7CFBA64F771E93E817E15039215430B53F7401C34931D111EAB3510B22DBB0D8",
+            "Incorrect private key for generator");
 
-        if (priv2.GetHex () != "98BC2EACB26EB021D1A6293C044D88BA2F0B6729A2772DEEBF2E21A263C1740B")
-            fail ("Incorrect private key for generator");
+        unexpected (priv2.GetHex () != "98BC2EACB26EB021D1A6293C044D88BA2F0B6729A2772DEEBF2E21A263C1740B",
+            "Incorrect private key for generator");
 
         RippleAddress nSeed;
         nSeed.setSeed (seed1);
 
-        if (nSeed.humanSeed () != "shHM53KPZ87Gwdqarm1bAmPeXg8Tn")
-            fail ("Incorrect human seed");
+        unexpected (nSeed.humanSeed () != "shHM53KPZ87Gwdqarm1bAmPeXg8Tn",
+            "Incorrect human seed");
 
-        if (nSeed.humanSeed1751 () != "MAD BODY ACE MINT OKAY HUB WHAT DATA SACK FLAT DANA MATH")
-            fail ("Incorrect 1751 seed");
+        unexpected (nSeed.humanSeed1751 () != "MAD BODY ACE MINT OKAY HUB WHAT DATA SACK FLAT DANA MATH",
+            "Incorrect 1751 seed");
     }
 };
 

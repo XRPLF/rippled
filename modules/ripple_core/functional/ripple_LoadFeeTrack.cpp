@@ -23,6 +23,8 @@ public:
         Config d; // get a default configuration object
         LoadFeeTrack l;
 
+        beginTestCase ("fee scaling");
+
         expect (l.scaleFeeBase (10000, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE) == 10000);
         expect (l.scaleFeeLoad (10000, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE, false) == 10000);
         expect (l.scaleFeeBase (1, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE) == 1);

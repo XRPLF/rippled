@@ -1074,7 +1074,7 @@ public:
 
     void runTest ()
     {
-        beginTest ("add/traverse");
+        beginTestCase ("add/traverse");
 
         // h3 and h4 differ only in the leaf, same terminal node (level 19)
         uint256 h1, h2, h3, h4, h5;
@@ -1087,23 +1087,23 @@ public:
         SHAMap sMap (smtFREE);
         SHAMapItem i1 (h1, IntToVUC (1)), i2 (h2, IntToVUC (2)), i3 (h3, IntToVUC (3)), i4 (h4, IntToVUC (4)), i5 (h5, IntToVUC (5));
 
-        if (!sMap.addItem (i2, true, false)) fail ("no add");
+        unexpected (!sMap.addItem (i2, true, false), "no add");
 
-        if (!sMap.addItem (i1, true, false)) fail ("no add");
+        unexpected (!sMap.addItem (i1, true, false), "no add");
 
         SHAMapItem::pointer i;
 
         i = sMap.peekFirstItem ();
 
-        if (!i || (*i != i1)) fail ("bad traverse");
+        unexpected (!i || (*i != i1), "bad traverse");
 
         i = sMap.peekNextItem (i->getTag ());
 
-        if (!i || (*i != i2)) fail ("bad traverse");
+        unexpected (!i || (*i != i2), "bad traverse");
 
         i = sMap.peekNextItem (i->getTag ());
 
-        if (i) fail ("bad traverse");
+        unexpected (i, "bad traverse");
 
         sMap.addItem (i4, true, false);
         sMap.delItem (i2.getTag ());
@@ -1111,36 +1111,36 @@ public:
 
         i = sMap.peekFirstItem ();
 
-        if (!i || (*i != i1)) fail ("bad traverse");
+        unexpected (!i || (*i != i1), "bad traverse");
 
         i = sMap.peekNextItem (i->getTag ());
 
-        if (!i || (*i != i3)) fail ("bad traverse");
+        unexpected (!i || (*i != i3), "bad traverse");
 
         i = sMap.peekNextItem (i->getTag ());
 
-        if (!i || (*i != i4)) fail ("bad traverse");
+        unexpected (!i || (*i != i4), "bad traverse");
 
         i = sMap.peekNextItem (i->getTag ());
 
-        if (i) fail ("bad traverse");
+        unexpected (i, "bad traverse");
 
 
 
-        beginTest ("snapshot");
+        beginTestCase ("snapshot");
 
         uint256 mapHash = sMap.getHash ();
         SHAMap::pointer map2 = sMap.snapShot (false);
 
-        if (sMap.getHash () != mapHash) fail ("bad snapshot");
+        unexpected (sMap.getHash () != mapHash, "bad snapshot");
 
-        if (map2->getHash () != mapHash) fail ("bad snapshot");
+        unexpected (map2->getHash () != mapHash, "bad snapshot");
 
-        if (!sMap.delItem (sMap.peekFirstItem ()->getTag ())) fail ("bad mod");
+        unexpected (!sMap.delItem (sMap.peekFirstItem ()->getTag ()), "bad mod");
 
-        if (sMap.getHash () == mapHash) fail ("bad snapshot");
+        unexpected (sMap.getHash () == mapHash, "bad snapshot");
 
-        if (map2->getHash () != mapHash) fail ("bad snapshot");
+        unexpected (map2->getHash () != mapHash, "bad snapshot");
     }
 };
 

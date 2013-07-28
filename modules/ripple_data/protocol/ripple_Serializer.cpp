@@ -716,7 +716,7 @@ public:
 
     void runTest ()
     {
-        beginTest ("hash");
+        beginTestCase ("hash");
 
         Serializer s1;
         s1.add32 (3);

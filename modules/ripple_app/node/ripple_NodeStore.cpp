@@ -729,7 +729,7 @@ public:
     // Make sure predictable object generation works!
     void testBatches (int64 const seedValue)
     {
-        beginTest ("batch");
+        beginTestCase ("batch");
 
         Batch batch1;
         createPredictableBatch (batch1, 0, numObjectsToTest, seedValue);
@@ -748,7 +748,7 @@ public:
     // Checks encoding/decoding blobs
     void testBlobs (int64 const seedValue)
     {
-        beginTest ("encoding");
+        beginTestCase ("encoding");
 
         Batch batch;
         createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
@@ -798,7 +798,7 @@ public:
 
     void testBackend (String type, int64 const seedValue)
     {
-        beginTest (String ("NodeStore::Backend type=") + type);
+        beginTestCase (String ("NodeStore::Backend type=") + type);
 
         StringPairArray params;
         File const path (File::createTempFile ("node_db"));
@@ -914,7 +914,7 @@ public:
     {
         String s;
         s << "Testing backend '" << type << "' performance";
-        beginTest (s);
+        beginTestCase (s);
 
         StringPairArray params;
         File const path (File::createTempFile ("node_db"));
@@ -1021,7 +1021,7 @@ public:
 
             ScopedPointer <NodeStore> dest (NodeStore::New (destParams));
 
-            beginTest (String ("import into '") + destBackendType + "' from '" + srcBackendType + "'");
+            beginTestCase (String ("import into '") + destBackendType + "' from '" + srcBackendType + "'");
 
             // Do the import
             dest->import (*src);
@@ -1049,7 +1049,7 @@ public:
         if (useEphemeralDatabase)
             s << " (with ephemeral database)";
 
-        beginTest (s);
+        beginTestCase (s);
 
         File const node_db (File::createTempFile ("node_db"));
         StringPairArray nodeParams;

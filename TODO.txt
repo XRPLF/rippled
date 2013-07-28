@@ -5,18 +5,23 @@ RIPPLE TODO
 Vinnie's List: Changes day to day, descending priority
   (Items marked '*' can be handled by others.)
 
+- Remove unnecessary beast .mm files
 * Make everyone check GitHub Issues every day
 - Finish unit tests and code for Validators
 - Do something about the throw() reporting weaknesses:
   * Make sure all Sconstruct and .pro builds have debug symbols in release
   * Replace all throw with beast::Throw()
     (Only in ripple sources, not in Subtrees/, protobuf, or websocket)
+  - Improved Beast exception object, provides __FILE__ and __LINE__
   - Add file and line capabilities to beast::Throw()
   - Allow beast::Throw to be hooked for logging
   - Add stack trace capability to beast::Throw() diagnostics via the hook
     (use the existing beast::SystemStats::getStackBacktrace())
   - Implement getStackBacktrace for BEAST_BSD targets
-- Use the result of the beast UnitTests as the return code for main()
+  - Add UnhandledExceptionCatcher to beast
+  - Return EXIT_FAILURE on unhandled exception
+- Add "FailingTests" and "PassingTests" to beast, run manually, to
+  help test CI scripts.
 * Document the command line options for the beast unit test framework
 - Tidy up all the loose files at the root of the repository
   - What the heck is up with site_scons/site_tools/protoc.py?
@@ -26,6 +31,10 @@ Vinnie's List: Changes day to day, descending priority
 - Work on KeyvaDB
 
 --------------------------------------------------------------------------------
+
+- Get rid of the WriteLog() stuff in the ripple tests and make it report the
+  message directly to the UnitTest object. Then update the JUnit XML output
+  routines to also write the auxiliary messages.
 
 * Take away the "I" prefix from abstract interface classes, in both the class
   name and the file name. It is messing up sorting in the IDE. Use "Imp" or

@@ -250,7 +250,7 @@ public:
         String s;
         
         s << "solve difficulty " << String (pow.getDifficulty ());
-        beginTest ("solve");
+        beginTestCase ("solve");
 
         uint256 solution = pow.solve (16777216);
 

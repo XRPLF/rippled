@@ -1926,7 +1926,7 @@ public:
 
     void runTest ()
     {
-        beginTest ("uint256");
+        beginTestCase ("uint256");
 
         uint256 uBig ("D2DC44E5DC189318DB36EF87D2104CDF0A0FE3A4B698BEEE55038D7EA4C68000");
 

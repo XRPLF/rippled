@@ -125,12 +125,13 @@ void printHelp (const po::options_description& desc)
 class RippleUnitTests : public UnitTests
 {
 public:
-    RippleUnitTests ()
+    explicit RippleUnitTests (bool shouldLog)
+        : m_shouldLog (shouldLog)
     {
         // VFALCO NOTE It sucks that we have to do this but some
         //             code demands the Application object exists.
         //
-        //             To find out who, just change the 1 to 0
+        //        TODO To find out who, just change the #if 1 to #if 0
 #if 1
         setupConfigForUnitTests (&getConfig ());
 
@@ -138,12 +139,12 @@ public:
 #endif
 
         setAssertOnFailure (false);
-        setPassesAreLogged (false);
     }
 
     void logMessage (String const& message)
     {
-        Log::out () << message.toStdString ();
+        if (m_shouldLog)
+            Log::out () << message.toStdString ();
     }
 
 private:
@@ -153,7 +154,47 @@ private:
         config->ephemeralNodeDatabase = StringPairArray ();
         config->importNodeDatabase = StringPairArray ();
     }
+
+private:
+    bool const m_shouldLog;
 };
+
+static int runUnitTests (String const& whichTests, String const& format)
+{
+    bool const shouldLog = format != "junit";
+
+    if (format != "junit" && format != "text" && format != "")
+    {
+        String s;
+        s << "Warning, unknown unittest-format='" << format << "'";
+        Log::out () << s.toStdString ();
+    }
+
+    RippleUnitTests tr (shouldLog);
+
+    if (whichTests == "")
+    {
+        tr.runAllTests ();
+    }
+    else
+    {
+        tr.runTestsByName (whichTests);
+    }
+
+    if (format == "junit")
+    {
+        UnitTestUtilities::JUnitXMLFormatter f (tr);
+
+        String const s = f.createDocumentString ();
+
+        Log::out () << s.toStdString ();
+    }
+    else
+    {
+    }
+
+    return tr.anyTestsFailed () ? EXIT_FAILURE : EXIT_SUCCESS;
+}
 
 //------------------------------------------------------------------------------
 
@@ -219,6 +260,7 @@ int rippleMain (int argc, char** argv)
     ("standalone,a", "Run with no peers.")
     ("testnet,t", "Run in test net mode.")
     ("unittest,u", po::value <std::string> ()->implicit_value (""), "Perform unit tests.")
+    ("unittest-format", po::value <std::string> ()->implicit_value ("text"), "Format unit test output. Choices are 'text', 'junit'")
     ("parameters", po::value< vector<string> > (), "Specify comma separated parameters.")
     ("quiet,q", "Reduce diagnotics.")
     ("verbose,v", "Verbose logging.")
@@ -318,22 +360,12 @@ int rippleMain (int argc, char** argv)
     //
     if (vm.count ("unittest"))
     {
-        String const arg = vm ["unittest"].as <std::string> ();
+        String format;
 
-        RippleUnitTests tr;
+        if (vm.count ("unittest-format"))
+            format = vm ["unittest-format"].as <std::string> ();
 
-        if (arg == "")
-        {
-            tr.runAllTests ();
-        }
-        else
-        {
-            tr.runTest (arg);
-        }
-
-        iResult = tr.anyTestsFailed () ? EXIT_FAILURE : EXIT_SUCCESS;
-
-        return iResult;
+        return runUnitTests (vm ["unittest"].as <std::string> (), format);
     }
 
     if (!iResult)

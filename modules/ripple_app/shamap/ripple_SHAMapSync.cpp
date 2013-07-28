@@ -653,7 +653,6 @@ public:
 
     void runTest ()
     {
-        beginTest ("sync");
         unsigned int seed;
 
         // VFALCO TODO Replace this with beast::Random
@@ -668,9 +667,9 @@ public:
 
 
 
-        beginTest ("add/remove");
+        beginTestCase ("add/remove");
 
-        if (!confuseMap (source, 500)) fail ("ConfuseMap");
+        unexpected (!confuseMap (source, 500), "ConfuseMap");
 
         source.setImmutable ();
 
@@ -686,20 +685,12 @@ public:
 
         destination.setSynching ();
 
-        if (!source.getNodeFat (SHAMapNode (), nodeIDs, gotNodes, (rand () % 2) == 0, (rand () % 2) == 0))
-        {
-            fail ("GetNodeFat");
-        }
+        unexpected (!source.getNodeFat (SHAMapNode (), nodeIDs, gotNodes, (rand () % 2) == 0, (rand () % 2) == 0),
+            "GetNodeFat");
 
-        if (gotNodes.size () < 1)
-        {
-            fail ("NodeSize");
-        }
+        unexpected (gotNodes.size () < 1, "NodeSize");
 
-        if (!destination.addRootNode (*gotNodes.begin (), snfWIRE, NULL))
-        {
-            fail ("AddRootNode");
-        }
+        unexpected (!destination.addRootNode (*gotNodes.begin (), snfWIRE, NULL), "AddRootNode");
 
         nodeIDs.clear ();
         gotNodes.clear ();
@@ -726,6 +717,10 @@ public:
                     WriteLog (lsFATAL, SHAMap) << "GetNodeFat fails";
                     fail ("GetNodeFat");
                 }
+                else
+                {
+                    pass ();
+                }
             }
 
             assert (gotNodeIDs.size () == gotNodes.size ());
@@ -735,6 +730,10 @@ public:
             if (gotNodeIDs.empty ())
             {
                 fail ("Got Node ID");
+            }
+            else
+            {
+                pass ();
             }
 
             for (nodeIDIterator = gotNodeIDs.begin (), rawNodeIterator = gotNodes.begin ();
@@ -749,6 +748,10 @@ public:
                 {
                     WriteLog (lsTRACE, SHAMap) << "AddKnownNode fails";
                     fail ("AddKnownNode");
+                }
+                else
+                {
+                    pass ();
                 }
             }
 
@@ -767,6 +770,10 @@ public:
         if (!source.deepCompare (destination))
         {
             fail ("Deep Compare");
+        }
+        else
+        {
+            pass ();
         }
 
 #ifdef SMS_DEBUG

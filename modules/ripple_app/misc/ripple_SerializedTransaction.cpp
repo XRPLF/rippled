@@ -299,7 +299,7 @@ public:
 
     void runTest ()
     {
-        beginTest ("tx");
+        beginTestCase ("tx");
 
         RippleAddress seed;
         seed.setSeedRandom ();
@@ -313,7 +313,7 @@ public:
         j.setFieldVL (sfMessageKey, publicAcct.getAccountPublic ());
         j.sign (privateAcct);
 
-        if (!j.checkSign ()) fail ("Transaction fails signature test");
+        unexpected (!j.checkSign (), "Transaction fails signature test");
 
         Serializer rawTxn;
         j.add (rawTxn);
@@ -326,6 +326,10 @@ public:
             Log (lsFATAL) << copy.getJson (0);
             fail ("Transaction fails serialize/deserialize test");
         }
+        else
+        {
+            pass ();
+        }
 
         UPTR_T<STObject> new_obj = STObject::parseJson (j.getJson (0), sfGeneric);
 
@@ -336,6 +340,10 @@ public:
             Log (lsINFO) << "ORIG: " << j.getJson (0);
             Log (lsINFO) << "BUILT " << new_obj->getJson (0);
             fail ("Built a different transaction");
+        }
+        else
+        {
+            pass ();
         }
     }
 };
