@@ -5,6 +5,9 @@ RIPPLE TODO
 Vinnie's List: Changes day to day, descending priority
   (Items marked '*' can be handled by others.)
 
+- Show summary for text output of unit test results
+- Make ProofOfWorkTests manual since they aren't used
+
 * Make everyone check GitHub Issues every day
 - Do something about the throw() reporting weaknesses:
   * Make sure all Sconstruct and .pro builds have debug symbols in release
@@ -26,6 +29,14 @@ Vinnie's List: Changes day to day, descending priority
 - Refactor Section code into ConfigFile
 - Improved Mutex to track deadlocks
 - Work on KeyvaDB
+
+
+
+David Feature:
+- override config items from command line
+- change config via RPC, this is for debugging
+
+
 
 --------------------------------------------------------------------------------
 

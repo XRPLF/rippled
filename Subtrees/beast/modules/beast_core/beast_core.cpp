@@ -193,7 +193,7 @@ namespace beast
 #include "system/beast_SystemStats.cpp"
 
 #include "text/beast_CharacterFunctions.cpp"
-
+#include "text/beast_LexicalCast.cpp"
 #include "text/beast_Identifier.cpp"
 #include "text/beast_LocalisedStrings.cpp"
 #include "text/beast_String.cpp"
