@@ -17,54 +17,24 @@
 */
 //==============================================================================
 
-#ifndef BEAST_UNCOPYABLE_H_INCLUDED
-#define BEAST_UNCOPYABLE_H_INCLUDED
+#ifndef BEAST_MAIN_H_INCLUDED
+#define BEAST_MAIN_H_INCLUDED
 
-/** Prevent copy construction and assignment.
-
-    This is used to suppress warnings and prevent unsafe operations on
-    objects which cannot be passed by value. Ideas based on Boost.
-
-    For example, instead of
-
-    @code
-
-    class MyClass
-    {
-    public:
-        //...
-
-    private:
-        MyClass (const MyClass&);
-        MyClass& operator= (const MyClass&);
-    };
-    
-    @endcode
-
-    ..you can just write:
-
-    @code
-
-    class MyClass : public Uncopyable
-    {
-    public:
-        //...
-    };
-    
-    @endcode
-
-    @note The derivation should be public or else child classes which
-          also derive from Uncopyable may not compile.
+/** Represents a command line program's entry point.
 */
-class Uncopyable
+class BEAST_API Main : Uncopyable
 {
-protected:
-    inline Uncopyable () { }
-    inline ~Uncopyable () { }
+public:
+    Main (int argc, char const* const* argv);
 
-private:
-    Uncopyable (Uncopyable const&);
-    Uncopyable const& operator= (Uncopyable const&);
+    int getExitCode () const;
+
+    static Main& getInstance ();
+
+protected:
+    int const m_argc;
+    char const* const* const m_argv;
 };
 
 #endif
+

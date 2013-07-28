@@ -194,10 +194,12 @@ namespace beast
 // Order matters, since headers don't have their own #include lines.
 // Add new includes to the bottom.
 
+#include "memory/beast_Uncopyable.h"
+
 #include "system/beast_PlatformDefs.h"
 #include "system/beast_TargetPlatform.h"
+#include "system/beast_Functional.h"
 
-#include "memory/beast_Uncopyable.h"
 #include "maths/beast_MathsFunctions.h"
 #include "memory/beast_Atomic.h"
 #include "memory/beast_AtomicCounter.h"
@@ -226,6 +228,7 @@ namespace beast
 #include "diagnostic/beast_Error.h"
 #include "diagnostic/beast_FPUFlags.h"
 #include "diagnostic/beast_Throw.h"
+#include "diagnostic/beast_ProtectedCall.h"
 #include "containers/beast_AbstractFifo.h"
 #include "containers/beast_Array.h"
 #include "containers/beast_ArrayAllocationBase.h"
@@ -276,6 +279,7 @@ namespace beast
 #include "memory/beast_MemoryAlignment.h"
 #include "memory/beast_CacheLine.h"
 #include "memory/beast_RecycledObjectPool.h"
+#include "misc/beast_Main.h"
 #include "misc/beast_Result.h"
 #include "misc/beast_Uuid.h"
 #include "misc/beast_WindowsRegistry.h"
@@ -292,7 +296,7 @@ namespace beast
 #include "streams/beast_MemoryOutputStream.h"
 #include "streams/beast_OutputStream.h"
 #include "streams/beast_SubregionStream.h"
-#include "system/beast_Functional.h"
+
 #include "system/beast_SystemStats.h"
 #include "text/beast_Identifier.h"
 #include "text/beast_LocalisedStrings.h"

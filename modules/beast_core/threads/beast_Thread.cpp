@@ -98,7 +98,7 @@ void Thread::threadEntryPoint()
 // used to wrap the incoming call from the platform-specific code
 void BEAST_API beast_threadEntryPoint (void* userData)
 {
-    static_cast <Thread*> (userData)->threadEntryPoint();
+    ProtectedCall (&Thread::threadEntryPoint, static_cast <Thread*> (userData));
 }
 
 //==============================================================================

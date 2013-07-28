@@ -17,54 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_UNCOPYABLE_H_INCLUDED
-#define BEAST_UNCOPYABLE_H_INCLUDED
-
-/** Prevent copy construction and assignment.
-
-    This is used to suppress warnings and prevent unsafe operations on
-    objects which cannot be passed by value. Ideas based on Boost.
-
-    For example, instead of
-
-    @code
-
-    class MyClass
-    {
-    public:
-        //...
-
-    private:
-        MyClass (const MyClass&);
-        MyClass& operator= (const MyClass&);
-    };
-    
-    @endcode
-
-    ..you can just write:
-
-    @code
-
-    class MyClass : public Uncopyable
-    {
-    public:
-        //...
-    };
-    
-    @endcode
-
-    @note The derivation should be public or else child classes which
-          also derive from Uncopyable may not compile.
-*/
-class Uncopyable
+Main::Main (int argc, char const* const* argv)
+    : m_argc (argc)
+    , m_argv (argv)
 {
-protected:
-    inline Uncopyable () { }
-    inline ~Uncopyable () { }
-
-private:
-    Uncopyable (Uncopyable const&);
-    Uncopyable const& operator= (Uncopyable const&);
-};
-
-#endif
+}

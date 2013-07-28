@@ -2,6 +2,8 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
+- Import secp256k1 from sipa
+
 - HashMap work:
   - Add unit test
   - Return size_t from hash function, take out upperLimit, move mod % to caller

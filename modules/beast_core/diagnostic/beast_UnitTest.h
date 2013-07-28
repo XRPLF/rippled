@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_UNITTEST_BEASTHEADER
-#define BEAST_UNITTEST_BEASTHEADER
+#ifndef BEAST_UNITTEST_H_INCLUDED
+#define BEAST_UNITTEST_H_INCLUDED
 
 class UnitTests;
 
@@ -31,17 +31,6 @@ class UnitTests;
     To write a test using this class, your code should look something like this:
 
     @code
-
-
-
-
-
-    FIX THE EXAMPLE FOR THE NEW API!
-
-
-
-
-
 
     class MyTest : public UnitTest
     {

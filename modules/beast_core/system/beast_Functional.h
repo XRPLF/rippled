@@ -55,10 +55,20 @@
 
 #if BEAST_BIND_USES_STD
 
+namespace functional
+{
+
 using std::ref;
 using std::cref;
 using std::bind;
 using std::function;
+
+}
+
+using namespace functional;
+
+namespace placeholders
+{
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 1
 using std::placeholders::_1;
@@ -140,14 +150,28 @@ using std::placeholders::_19;
 using std::placeholders::_20;
 #endif
 
+}
+
+using namespace placeholders;
+
 //------------------------------------------------------------------------------
 
 #elif BEAST_BIND_USES_TR1
+
+namespace functional
+{
 
 using std::tr1::ref;
 using std::tr1::cref;
 using std::tr1::bind;
 using std::tr1::function;
+
+}
+
+using namespace functional;
+
+namespace placeholders
+{
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 1
 using std::tr1::placeholders::_1;
@@ -229,14 +253,28 @@ using std::tr1::placeholders::_19;
 using std::tr1::placeholders::_20;
 #endif
 
+}
+
+using namespace placeholders;
+
 //------------------------------------------------------------------------------
 
 #elif BEAST_BIND_USES_BOOST
+
+namespace functional
+{
 
 using boost::ref;
 using boost::cref;
 using boost::bind;
 using boost::function;
+
+}
+
+using namespace functional;
+
+namespace placeholders
+{
 
 #if BEAST_BIND_PLACEHOLDERS_N >= 1
 using boost::placeholders::_1;
@@ -317,6 +355,10 @@ using boost::placeholders::_19;
 #if BEAST_BIND_PLACEHOLDERS_N >= 20
 using boost::placeholders::_20;
 #endif
+
+}
+
+using namespace placeholders;
 
 //------------------------------------------------------------------------------
 

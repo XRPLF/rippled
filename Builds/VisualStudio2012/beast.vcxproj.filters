@@ -92,9 +92,6 @@
     <Filter Include="beast_basics">
       <UniqueIdentifier>{e3a8f3eb-7f0f-4b81-b978-0dd0823f583b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_basics\diagnostic">
-      <UniqueIdentifier>{ba11b980-76dd-49a4-b2c7-878e9f08f8ce}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast_basics\events">
       <UniqueIdentifier>{b8caa85d-f224-4e3a-966f-a19b65023869}</UniqueIdentifier>
     </Filter>
@@ -482,9 +479,6 @@
     <ClInclude Include="..\..\modules\beast_basics\beast_basics.h">
       <Filter>beast_basics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_basics\diagnostic\beast_CatchAny.h">
-      <Filter>beast_basics\diagnostic</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_basics\events\beast_OncePerSecond.h">
       <Filter>beast_basics\events</Filter>
     </ClInclude>
@@ -724,6 +718,12 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\maths\beast_MurmurHash.h">
       <Filter>beast_core\maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_ProtectedCall.h">
+      <Filter>beast_core\diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\misc\beast_Main.h">
+      <Filter>beast_core\misc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -976,9 +976,6 @@
     <ClCompile Include="..\..\modules\beast_basics\beast_basics.cpp">
       <Filter>beast_basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_basics\diagnostic\beast_CatchAny.cpp">
-      <Filter>beast_basics\diagnostic</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_basics\events\beast_OncePerSecond.cpp">
       <Filter>beast_basics\events</Filter>
     </ClCompile>
@@ -1125,6 +1122,12 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\maths\beast_MurmurHash.cpp">
       <Filter>beast_core\maths</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_ProtectedCall.cpp">
+      <Filter>beast_core\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\misc\beast_Main.cpp">
+      <Filter>beast_core\misc</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
