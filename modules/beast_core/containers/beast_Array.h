@@ -364,13 +364,15 @@ public:
     /** Appends a new element at the end of the array.
 
         @param newElement       the new object to add to the array
+        @return The index of the new item, or -1 if it already existed.
         @see set, insert, addIfNotAlreadyThere, addSorted, addUsingDefaultSort, addArray
     */
-    void add (ParameterType newElement)
+    int add (ParameterType newElement)
     {
         const ScopedLockType lock (getLock());
         data.ensureAllocatedSize (numUsed + 1);
         new (data.elements + numUsed++) ElementType (newElement);
+        return numUsed;
     }
 
     /** Inserts a new element into the array at a given position.
@@ -494,13 +496,16 @@ public:
         will be done.
 
         @param newElement   the new object to add to the array
+        @return The index of the new item, or -1 if it already existed.
     */
-    void addIfNotAlreadyThere (ParameterType newElement)
+    int addIfNotAlreadyThere (ParameterType newElement)
     {
         const ScopedLockType lock (getLock());
 
         if (! contains (newElement))
-            add (newElement);
+            return add (newElement);
+
+        return -1;
     }
 
     /** Replaces an element with a new value.
