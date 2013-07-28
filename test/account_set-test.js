@@ -7,8 +7,7 @@ var Request     = require("ripple-lib").Request;
 var Server      = require("./server").Server;
 
 var testutils   = require("./testutils");
-
-var config  = require('ripple-lib').config.load(require('./config'));
+var config      = testutils.init_config();
 
 // How long to wait for server to start.
 var serverDelay = 1500;

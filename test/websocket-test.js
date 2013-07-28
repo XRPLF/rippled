@@ -1,9 +1,10 @@
-var buster  = require("buster");
+var buster    = require("buster");
 
-var Server  = require("./server").Server;
-var Remote  = require("ripple-lib").Remote;
+var Server    = require("./server").Server;
+var Remote    = require("ripple-lib").Remote;
 
-var config  = require('ripple-lib').config.load(require('./config'));
+var testutils = require('./testutils');
+var config    = testutils.init_config();
 
 buster.testRunner.timeout = 5000;
 
