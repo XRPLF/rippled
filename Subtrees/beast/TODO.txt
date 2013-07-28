@@ -2,6 +2,8 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
+- Remove timeout forced-kill from Thread::stopThread ()
+
 - Import secp256k1 from sipa
 
 - HashMap work:
