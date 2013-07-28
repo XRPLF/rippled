@@ -7,10 +7,12 @@ var testconfig  = require("./testconfig.js");
 
 exports.accounts = testconfig.accounts;
 
-// Where to find the binary.
-exports.rippled = path.resolve("build/rippled");
-
 exports.server_default  = "alpha";
+
+exports.default_server_config = {
+  // Where to find the binary.
+  rippled_path: path.resolve(__dirname, "../build/rippled")
+};
 
 //
 // Configuration for servers.

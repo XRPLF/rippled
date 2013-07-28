@@ -22,7 +22,6 @@ var path          = require("path");
 var util          = require("util");
 var EventEmitter  = require('events').EventEmitter;
 
-var config        = require("./config");
 var nodeutils     = require("./nodeutils");
 
 // Create a server object
@@ -58,8 +57,8 @@ var Server = function (name, config, verbose) {
 
 util.inherits(Server, EventEmitter);
 
-Server.from_config = function (name, verbose) {
-  return new Server(name, config.servers[name], verbose);
+Server.from_config = function (name, config, verbose) {
+  return new Server(name, config, verbose);
 };
 
 Server.prototype.on = function (e, c) {
@@ -106,7 +105,7 @@ Server.prototype._serverSpawnSync = function() {
 
   // Spawn in standalone mode for now.
   this.child = child.spawn(
-    config.rippled,
+    this.config.rippled_path,
     args,
     {
       cwd: this.serverPath(),
@@ -116,7 +115,10 @@ Server.prototype._serverSpawnSync = function() {
 
   if (!this.quiet)
     console.log("server: start %s: %s --conf=%s",
-      this.child.pid, config.rippled, args.join(" "), this.configPath());
+                this.child.pid,
+                this.config.rippled_path,
+                args.join(" "),
+                this.configPath());
 
   // By default, just log exits.
   this.child.on('exit', function(code, signal) {

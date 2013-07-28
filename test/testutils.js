@@ -1,11 +1,10 @@
 var async       = require("async");
+var extend      = require("extend");
 
 var Amount      = require("ripple-lib").Amount;
 var Remote      = require("ripple-lib").Remote;
 var Server      = require("./server").Server;
 var Transaction = require("ripple-lib").Transaction;
-
-var config      = require('ripple-lib').config.load(require('./config'));
 
 var account_dump = function (remote, account, callback) {
   var self = this;
@@ -65,6 +64,8 @@ var account_dump = function (remote, account, callback) {
  * @param host {String} Identifier for the host configuration to be used.
  */
 var build_setup = function (opts, host) {
+  var config = get_config();
+
   opts = opts || {};
 
   // Normalize options
@@ -100,8 +101,12 @@ var build_setup = function (opts, host) {
       function runServerStep(callback) {
         if (opts.no_server) return callback();
 
+        var server_config = extend({}, config.default_server_config,
+                                   config.servers[host]);
+
         data.server = Server
-                        .from_config(host, !!opts.verbose_server)
+                        .from_config(host, server_config,
+                                     !!opts.verbose_server)
                         .on('started', callback)
                         .on('exited', function () {
                             // If know the remote, tell it server is gone.
@@ -127,6 +132,7 @@ var build_setup = function (opts, host) {
  * @param host {String} Identifier for the host configuration to be used.
  */
 var build_teardown = function (host) {
+  var config = get_config();
 
   return function (done) {
     host = host || config.server_default;
@@ -218,16 +224,20 @@ var credit_limit = function (remote, src, amount, callback) {
   }
 };
 
-function init_config() {
-  var cfg;
+function get_config() {
+  var cfg = require('./config-example');
 
   // See if the person testing wants to override the configuration by creating a
   // file called test/config.js.
   try {
-    cfg = require('./config');
-  } catch (e) {
-    cfg = require('./config-example');
-  }
+    cfg = extend({}, cfg, require('./config'));
+  } catch (e) { }
+
+  return cfg;
+}
+
+function init_config() {
+  var cfg = get_config();
 
   return require('ripple-lib').config.load(cfg);
 }
@@ -500,6 +510,7 @@ exports.build_teardown          = build_teardown;
 exports.create_accounts         = create_accounts;
 exports.credit_limit            = credit_limit;
 exports.credit_limits           = credit_limits;
+exports.get_config              = get_config;
 exports.init_config             = init_config;
 exports.ledger_close            = ledger_close;
 exports.payment                 = payment;
