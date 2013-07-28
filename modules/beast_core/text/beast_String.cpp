@@ -2130,7 +2130,7 @@ public:
     void runTest()
     {
         {
-            beginTest ("Basics");
+            beginTestCase ("Basics");
 
             expect (String().length() == 0);
             expect (String() == String::empty);
@@ -2163,7 +2163,7 @@ public:
         }
 
         {
-            beginTest ("Operations");
+            beginTestCase ("Operations");
 
             String s ("012345678");
             expect (s.hashCode() != 0);
@@ -2208,7 +2208,7 @@ public:
             s2 += "xyz";
             expect (s2 == "1234567890xyz");
 
-            beginTest ("Numeric conversions");
+            beginTestCase ("Numeric conversions");
             expect (String::empty.getIntValue() == 0);
             expect (String::empty.getDoubleValue() == 0.0);
             expect (String::empty.getFloatValue() == 0.0f);
@@ -2232,7 +2232,7 @@ public:
             expect (String::toHexString (data, 8, 1).equalsIgnoreCase ("01 02 03 04 0a 0b 0c 0d"));
             expect (String::toHexString (data, 8, 2).equalsIgnoreCase ("0102 0304 0a0b 0c0d"));
 
-            beginTest ("Subsections");
+            beginTestCase ("Subsections");
             String s3;
             s3 = "abcdeFGHIJ";
             expect (s3.equalsIgnoreCase ("ABCdeFGhiJ"));
@@ -2363,7 +2363,7 @@ public:
         }
 
         {
-            beginTest ("UTF conversions");
+            beginTestCase ("UTF conversions");
 
             TestUTFConversion <CharPointer_UTF32>::test (*this);
             TestUTFConversion <CharPointer_UTF8>::test (*this);
@@ -2371,7 +2371,7 @@ public:
         }
 
         {
-            beginTest ("StringArray");
+            beginTestCase ("StringArray");
 
             StringArray s;
             s.addTokens ("4,3,2,1,0", ";,", "x");

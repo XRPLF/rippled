@@ -760,7 +760,7 @@ public:
         String s;
 
         s << "keyBytes=" << String (uint64(KeyBytes)) << ", maxItems=" << String (maxItems);
-        beginTest (s);
+        beginTestCase (s);
 
         // Set up the key and value files
         File const path (File::createTempFile (""));

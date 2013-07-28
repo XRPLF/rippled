@@ -218,7 +218,7 @@ public:
 
         int const seedValue = 50;
 
-        beginTest (String ("numRecords=") + String (numRecords));
+        beginTestCase (String ("numRecords=") + String (numRecords));
 
         // Calculate the path
         File const path (File::createTempFile ("RandomAccessFile"));

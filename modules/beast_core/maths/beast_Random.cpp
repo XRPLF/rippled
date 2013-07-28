@@ -163,7 +163,7 @@ public:
 
     void runTest()
     {
-        beginTest ("Random");
+        beginTestCase ("Random");
 
         for (int j = 10; --j >= 0;)
         {

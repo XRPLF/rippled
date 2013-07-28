@@ -609,7 +609,7 @@ public:
 
     void runTest()
     {
-        beginTest ("JSON");
+        beginTestCase ("JSON");
         Random r;
         r.setSeedRandomly();
 

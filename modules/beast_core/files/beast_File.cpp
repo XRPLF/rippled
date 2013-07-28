@@ -930,7 +930,7 @@ public:
 
     void runTest()
     {
-        beginTest ("Reading");
+        beginTestCase ("Reading");
 
         const File home (File::getSpecialLocation (File::userHomeDirectory));
         const File temp (File::getSpecialLocation (File::tempDirectory));
@@ -967,7 +967,7 @@ public:
             expect (numRootsExisting > 0);
         }
 
-        beginTest ("Writing");
+        beginTestCase ("Writing");
 
         File demoFolder (temp.getChildFile ("Beast UnitTests Temp Folder.folder"));
         expect (demoFolder.deleteRecursively());
@@ -1053,7 +1053,7 @@ public:
             expect (tempFile.getSize() == 10);
         }
 
-        beginTest ("Memory-mapped files");
+        beginTestCase ("Memory-mapped files");
 
         {
             MemoryMappedFile mmf (tempFile, MemoryMappedFile::readOnly);
@@ -1084,7 +1084,7 @@ public:
             expect (tempFile2.deleteFile());
         }
 
-        beginTest ("More writing");
+        beginTestCase ("More writing");
 
         expect (tempFile.appendData ("abcdefghij", 10));
         expect (tempFile.getSize() == 20);

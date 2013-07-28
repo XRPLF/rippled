@@ -31,7 +31,7 @@ public:
 
         s << "Bytes=" << String(Bytes);
 
-        beginTest (s);
+        beginTestCase (s);
 
         UnsignedInteger <Bytes> zero;
         zero.fill (0);
