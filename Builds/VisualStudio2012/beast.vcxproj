@@ -192,6 +192,7 @@
     <ClInclude Include="..\..\modules\beast_core\text\beast_CharPointer_UTF32.h" />
     <ClInclude Include="..\..\modules\beast_core\text\beast_CharPointer_UTF8.h" />
     <ClInclude Include="..\..\modules\beast_core\text\beast_Identifier.h" />
+    <ClInclude Include="..\..\modules\beast_core\text\beast_LexicalCast.h" />
     <ClInclude Include="..\..\modules\beast_core\text\beast_LocalisedStrings.h" />
     <ClInclude Include="..\..\modules\beast_core\text\beast_NewLine.h" />
     <ClInclude Include="..\..\modules\beast_core\text\beast_String.h" />
@@ -746,6 +747,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\text\beast_LexicalCast.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\text\beast_LocalisedStrings.cpp">

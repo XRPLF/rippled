@@ -26,7 +26,7 @@
     the stack is unwound.
 */
 template <class Exception>
-inline void Throw (Exception const& e)
+inline void Throw (Exception const& e, char const* = "", int = 0)
 {
     Debug::breakPoint ();
 
