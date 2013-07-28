@@ -218,6 +218,20 @@ var credit_limit = function (remote, src, amount, callback) {
   }
 };
 
+function init_config() {
+  var cfg;
+
+  // See if the person testing wants to override the configuration by creating a
+  // file called test/config.js.
+  try {
+    cfg = require('./config');
+  } catch (e) {
+    cfg = require('./config-example');
+  }
+
+  return require('ripple-lib').config.load(cfg);
+}
+
 var verify_limit = function (remote, src, amount, callback) {
   assert(4 === arguments.length);
 
@@ -486,6 +500,7 @@ exports.build_teardown          = build_teardown;
 exports.create_accounts         = create_accounts;
 exports.credit_limit            = credit_limit;
 exports.credit_limits           = credit_limits;
+exports.init_config             = init_config;
 exports.ledger_close            = ledger_close;
 exports.payment                 = payment;
 exports.payments                = payments;
