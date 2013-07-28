@@ -10,7 +10,7 @@
   },
 
   "dependencies": {
-    "ripple-lib": "0.7.17",
+    "ripple-lib": "0.7.18",
     "async": "~0.1.22",
     "extend": "~1.1.1",
     "simple-jsonrpc": "~0.0.1"
