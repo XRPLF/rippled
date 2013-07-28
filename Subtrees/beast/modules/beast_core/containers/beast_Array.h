@@ -132,7 +132,7 @@ public:
         if (this != &other)
         {
             Array<ElementType, TypeOfCriticalSectionToUse> otherCopy (other);
-            swapWithArray (otherCopy);
+            swapWith (otherCopy);
         }
 
         return *this;
@@ -577,7 +577,7 @@ public:
         because it just swaps their internal pointers.
     */
     template <class OtherArrayType>
-    void swapWithArray (OtherArrayType& otherArray) noexcept
+    void swapWith (OtherArrayType& otherArray) noexcept
     {
         const ScopedLockType lock1 (getLock());
         const typename OtherArrayType::ScopedLockType lock2 (otherArray.getLock());

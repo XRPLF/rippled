@@ -443,9 +443,10 @@ public:
         If you need to exchange two arrays, this is vastly quicker than using copy-by-value
         because it just swaps their internal pointers.
     */
-    void swapWith (SortedSet& otherSet) noexcept
+    template <class OtherSortedSetType>
+    void swapWith (OtherSortedSetType& otherSet) noexcept
     {
-        data.swapWithArray (otherSet.data);
+        data.swapWith (otherSet.data);
     }
 
     //==============================================================================

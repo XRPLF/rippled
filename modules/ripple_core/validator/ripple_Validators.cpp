@@ -167,7 +167,7 @@ public:
                 sorted.addSorted (compare, arrayToSort [i]);
             }
 
-            arrayToSort.swapWithArray (sorted);
+            arrayToSort.swapWith (sorted);
         }
 
         // Given the old list and the new list for a source, this

@@ -70,7 +70,7 @@ public:
 
         explicit List (SharedObjectArray <Validator>& list)
         {
-            m_list.swapWithArray (list);
+            m_list.swapWith (list);
         }
 
         ~List ()
