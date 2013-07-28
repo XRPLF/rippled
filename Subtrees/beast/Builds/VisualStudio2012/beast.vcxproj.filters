@@ -30,15 +30,6 @@
     <None Include="..\..\Doxyfile" />
     <None Include="..\..\.gitattributes" />
     <None Include="..\..\.gitignore" />
-    <None Include="..\..\modules\beast_crypto\beast_crypto.mm">
-      <Filter>beast_crypto</Filter>
-    </None>
-    <None Include="..\..\modules\beast_basics\beast_basics.mm">
-      <Filter>beast_basics</Filter>
-    </None>
-    <None Include="..\..\modules\beast_db\beast_db.mm">
-      <Filter>beast_db</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="beast_core">

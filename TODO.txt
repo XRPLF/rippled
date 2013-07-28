@@ -5,9 +5,7 @@ RIPPLE TODO
 Vinnie's List: Changes day to day, descending priority
   (Items marked '*' can be handled by others.)
 
-- Remove unnecessary beast .mm files
 * Make everyone check GitHub Issues every day
-- Finish unit tests and code for Validators
 - Do something about the throw() reporting weaknesses:
   * Make sure all Sconstruct and .pro builds have debug symbols in release
   * Replace all throw with beast::Throw()
@@ -20,8 +18,7 @@ Vinnie's List: Changes day to day, descending priority
   - Implement getStackBacktrace for BEAST_BSD targets
   - Add UnhandledExceptionCatcher to beast
   - Return EXIT_FAILURE on unhandled exception
-- Add "FailingTests" and "PassingTests" to beast, run manually, to
-  help test CI scripts.
+- Finish unit tests and code for Validators
 * Document the command line options for the beast unit test framework
 - Tidy up all the loose files at the root of the repository
   - What the heck is up with site_scons/site_tools/protoc.py?
