@@ -58,7 +58,12 @@ public:
     */
     void setNumberOfThreads (int numberOfThreads);
 
-    /** Pause and wait for all threads.
+    /** Pause all threads and wait until they are paused.
+
+        If a thread is processing a task it will pause as soon as the task
+        completes. There may still be tasks signaled even after all threads
+        have paused.
+
         @note This function is not thread-safe.
     */
     void pauseAllThreadsAndWait ();
