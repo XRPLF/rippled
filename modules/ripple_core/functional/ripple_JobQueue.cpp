@@ -6,11 +6,10 @@
 
 SETUP_LOG (JobQueue)
 
-JobQueue::JobQueue (boost::asio::io_service& svc)
+JobQueue::JobQueue ()
     : mLastJob (0)
     , mThreadCount (0)
     , mShuttingDown (false)
-    , mIOService (svc)
 {
     mJobLoads [ jtPUBOLDLEDGER  ].setTargetLatency (10000, 15000);
     mJobLoads [ jtVALIDATION_ut ].setTargetLatency (2000, 5000);

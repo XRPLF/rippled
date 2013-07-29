@@ -10,7 +10,7 @@
 class JobQueue
 {
 public:
-    explicit JobQueue (boost::asio::io_service&);
+    JobQueue ();
 
     // VFALCO TODO make convenience functions that allow the caller to not 
     //             have to call bind.
@@ -56,8 +56,6 @@ private:
     LoadMonitor                     mJobLoads [NUM_JOB_TYPES];
     int                             mThreadCount;
     bool                            mShuttingDown;
-
-    boost::asio::io_service&        mIOService;
 
     std::map<JobType, std::pair<int, int > >    mJobCounts;
 
