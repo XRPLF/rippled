@@ -376,7 +376,7 @@ namespace NumberToStringConverters
     // pass in a pointer to the END of a buffer..
     static char* numberToString (char* t, const int64 n) noexcept
     {
-        if (n > 0)
+        if (n >= 0)
             return printDigits (t, static_cast<uint64> (n));
 
         // NB: this needs to be careful not to call -std::numeric_limits<int64>::min(),
@@ -393,7 +393,7 @@ namespace NumberToStringConverters
 
     static char* numberToString (char* t, const int n) noexcept
     {
-        if (n > 0)
+        if (n >= 0)
             return printDigits (t, static_cast<unsigned int> (n));
 
         // NB: this needs to be careful not to call -std::numeric_limits<int>::min(),
@@ -2213,6 +2213,24 @@ public:
             expect (String::toHexString (0x1234abcd).equalsIgnoreCase ("1234abcd"));
             expect (String::toHexString ((int64) 0x1234abcd).equalsIgnoreCase ("1234abcd"));
             expect (String::toHexString ((short) 0x12ab).equalsIgnoreCase ("12ab"));
+
+            expectEquals (String (int (0)), "0");
+            expectEquals (String (short (0)), "0");
+            expectEquals (String (int64 (0)), "0");
+            expectEquals (String ((unsigned int) 0), "0");
+            expectEquals (String ((unsigned short) 0), "0");
+            expectEquals (String (uint64 (0)), "0");
+
+            expectEquals (String (int (-1)), "-1");
+            expectEquals (String (short (-1)), "-1");
+            expectEquals (String (int64 (-1)), "-1");
+
+            expectEquals (String (int (1)), "1");
+            expectEquals (String (short (1)), "1");
+            expectEquals (String (int64 (1)), "1");
+            expectEquals (String ((unsigned int) 1), "1");
+            expectEquals (String ((unsigned short) 1), "1");
+            expectEquals (String (uint64 (1)), "1");
 
             unsigned char data[] = { 1, 2, 3, 4, 0xa, 0xb, 0xc, 0xd };
             expect (String::toHexString (data, 8, 0).equalsIgnoreCase ("010203040a0b0c0d"));
