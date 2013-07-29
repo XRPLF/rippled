@@ -35,7 +35,7 @@ class UnitTests;
     class MyTest : public UnitTest
     {
     public:
-        MyTest() : UnitTest ("Foobar testing") { }
+        MyTest() : UnitTest ("Foobar testing", "packageName") { }
 
         void runTest()
         {
