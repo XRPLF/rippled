@@ -14,6 +14,7 @@ Ledger::Ledger (const RippleAddress& masterID, uint64 startAmount)
     , mCloseResolution (LEDGER_TIME_ACCURACY)
     , mCloseFlags (0)
     , mClosed (false)
+    , mValidated (false)
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (false)
@@ -58,6 +59,7 @@ Ledger::Ledger (uint256 const& parentHash,
     , mCloseResolution (closeResolution)
     , mCloseFlags (closeFlags)
     , mClosed (false)
+    , mValidated (false)
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (true)
@@ -97,6 +99,7 @@ Ledger::Ledger (Ledger& ledger,
     , mCloseResolution (ledger.mCloseResolution)
     , mCloseFlags (ledger.mCloseFlags)
     , mClosed (ledger.mClosed)
+    , mValidated (ledger.mValidated)
     , mValidHash (false)
     , mAccepted (ledger.mAccepted)
     , mImmutable (!isMutable)
@@ -116,6 +119,7 @@ Ledger::Ledger (bool /* dummy */,
     , mCloseResolution (prevLedger.mCloseResolution)
     , mCloseFlags (0)
     , mClosed (false)
+    , mValidated (false)
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (false)
@@ -148,6 +152,7 @@ Ledger::Ledger (bool /* dummy */,
 Ledger::Ledger (Blob const& rawLedger,
                 bool hasPrefix)
     : mClosed (false)
+    , mValidated (false)
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (true)
@@ -160,7 +165,7 @@ Ledger::Ledger (Blob const& rawLedger,
 }
 
 Ledger::Ledger (const std::string& rawLedger, bool hasPrefix) :
-    mClosed (false), mValidHash (false), mAccepted (false), mImmutable (true)
+    mClosed (false), mValidated(false), mValidHash (false), mAccepted (false), mImmutable (true)
 {
     Serializer s (rawLedger);
     setRaw (s, hasPrefix);

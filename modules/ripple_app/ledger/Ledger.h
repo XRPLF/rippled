@@ -91,6 +91,10 @@ public:
     {
         mClosed = true;
     }
+    void setValidated()
+    {
+        mValidated = true;
+    }
     void setAccepted (uint32 closeTime, int closeResolution, bool correctCloseTime);
     void setAccepted ();
     void setImmutable ();
@@ -101,6 +105,10 @@ public:
     bool isAccepted ()
     {
         return mAccepted;
+    }
+    bool isValidated ()
+    {
+        return mValidated;
     }
     bool isImmutable ()
     {
@@ -449,7 +457,7 @@ private:
     uint32      mParentCloseTime;   // when the previous ledger closed
     int         mCloseResolution;   // the resolution for this ledger close time (2-120 seconds)
     uint32      mCloseFlags;        // flags indicating how this ledger close took place
-    bool        mClosed, mValidHash, mAccepted, mImmutable;
+    bool        mClosed, mValidated, mValidHash, mAccepted, mImmutable;
 
     uint32      mReferenceFeeUnits;                 // Fee units for the reference transaction
     uint32      mReserveBase, mReserveIncrement;    // Reserve basse and increment in fee units

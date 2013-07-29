@@ -159,6 +159,7 @@ void LedgerMaster::storeLedger (Ledger::pointer ledger)
 
 void LedgerMaster::forceValid (Ledger::pointer ledger)
 {
+    ledger->setValidated();
     if (!mValidLedger || (mPubLedger->getLedgerSeq() < ledger->getLedgerSeq()))
         mValidLedger = ledger;
     if (!mPubLedger || (mPubLedger->getLedgerSeq() < 2))
@@ -683,6 +684,7 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
         return;
     }
 
+    ledger->setValidated();
     mValidLedger = ledger;
 
     uint64 fee, fee2, ref;
@@ -769,6 +771,7 @@ void LedgerMaster::tryPublish ()
 
             if (ledger && (ledger->getLedgerSeq() == (mPubLedger->getLedgerSeq() + 1)))
             { // We acquired the next ledger we need to publish
+                ledger->setValidated();
 	        mPubLedger = ledger;
                 mPubLedgers.push_back (mPubLedger);
             }
