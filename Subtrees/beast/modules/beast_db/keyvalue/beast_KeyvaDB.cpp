@@ -708,7 +708,7 @@ public:
         maxPayloadBytes = 8 * 1024
     };
 
-    KeyvaDBTests () : UnitTest ("KeyvaDB", "ripple")
+    KeyvaDBTests () : UnitTest ("KeyvaDB", "beast")
     {
     }
 
