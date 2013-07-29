@@ -10,6 +10,8 @@
 class JobQueue : private Workers::Callback
 {
 public:
+    typedef std::map<JobType, std::pair<int, int > > JobCounts;
+
     JobQueue ();
 
     ~JobQueue ();
@@ -48,25 +50,17 @@ public:
     Json::Value getJson (int c = 0);
 
 private:
-    void threadEntry ();
-
+    bool getJob (Job& job);
     void processTask ();
 
 private:
     Workers m_workers;
-
-    boost::mutex                    mJobLock;
-    boost::condition_variable       mJobCond;
-
-    uint64                          mLastJob;
-    std::set <Job>                  mJobSet;
-    LoadMonitor                     mJobLoads [NUM_JOB_TYPES];
-    int                             mThreadCount;
-    bool                            mShuttingDown;
-
-    std::map<JobType, std::pair<int, int > >    mJobCounts;
-
-    bool getJob (Job& job);
+    
+    boost::mutex mJobLock; // VFALCO TODO Replace with CriticalSection
+    uint64 mLastJob;
+    std::set <Job> mJobSet;
+    LoadMonitor mJobLoads [NUM_JOB_TYPES];
+    JobCounts mJobCounts;
 };
 
 #endif
