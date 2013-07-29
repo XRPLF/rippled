@@ -6,9 +6,8 @@ Vinnie's List: Changes day to day, descending priority
   (Items marked '*' can be handled by others.)
 
 - Show summary for text output of unit test results
-- Make ProofOfWorkTests manual since they aren't used
-
 * Make everyone check GitHub Issues every day
+- Make ProofOfWorkTests manual since they aren't used
 - Do something about the throw() reporting weaknesses:
   * Make sure all Sconstruct and .pro builds have debug symbols in release
   * Replace all throw with beast::Throw()
