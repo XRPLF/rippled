@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#ifndef BEAST_P_H_INCLUDED
+#ifndef BEAST_PROTECTEDCALL_H_INCLUDED
 #define BEAST_PROTECTEDCALL_H_INCLUDED
 
 /** Call a function in a protected exception context.
