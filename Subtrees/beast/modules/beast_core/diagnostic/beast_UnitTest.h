@@ -316,6 +316,7 @@ public:
     {
         Results ()
             : whenStarted (Time::getCurrentTime ())
+            , cases (0)
             , tests (0)
             , failures (0)
         {
@@ -323,6 +324,7 @@ public:
 
         Time whenStarted;
         double secondsElapsed;
+        int cases;
         int tests;
         int failures;
 

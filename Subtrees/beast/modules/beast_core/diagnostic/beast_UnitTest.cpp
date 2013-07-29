@@ -315,7 +315,8 @@ void UnitTests::runTest (UnitTest& test)
     {
         ScopedPointer <UnitTest::Suite> suite (test.run (this).release ());
 
-        m_results->tests += suite->cases.size ();
+        m_results->cases += suite->cases.size ();
+        m_results->tests += suite->tests;
         m_results->failures += suite->failures;
 
         m_results->suites.add (suite.release ());
