@@ -728,6 +728,9 @@
     <ClInclude Include="..\..\modules\beast_core\text\beast_LexicalCast.h">
       <Filter>beast_core\text</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_basics\threads\beast_Workers.h">
+      <Filter>beast_basics\threads</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
@@ -1134,6 +1137,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\text\beast_LexicalCast.cpp">
       <Filter>beast_core\text</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_basics\threads\beast_Workers.cpp">
+      <Filter>beast_basics\threads</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

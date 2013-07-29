@@ -56,6 +56,7 @@ namespace beast
 #include "threads/beast_ReadWriteMutex.cpp"
 #include "threads/beast_ThreadGroup.cpp"
 #include "threads/beast_ThreadWithCallQueue.cpp"
+#include "threads/beast_Workers.cpp"
 
 }
 
