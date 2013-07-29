@@ -71,11 +71,6 @@ public:
     */
     int getNumberOfThreads () const;
 
-    template <class F, class T1>
-    void operator () (int numberOfIterations, T1 t1)
-    {
-    }
-
     /** Execute parallel for loop.
 
         Functor is called once for each value in the range
