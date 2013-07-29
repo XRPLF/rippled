@@ -361,18 +361,34 @@ namespace NumberToStringConverters
     // pass in a pointer to the END of a buffer..
     static char* numberToString (char* t, const int64 n) noexcept
     {
-        *--t = 0;
-        int64 v = (n >= 0) ? n : -n;
-
-        do
+        if (n > 0)
         {
-            *--t = (char) ('0' + (int) (v % 10));
-            v /= 10;
+            *--t = 0;
+            uint64 v = static_cast <uint64> (n);
 
-        } while (v > 0);
+            do
+            {
+                *--t = (char) ('0' + (int) (v % 10));
+                v /= 10;
 
-        if (n < 0)
+            }
+            while (v > 0);
+        }
+        else
+        {
+            *--t = 0;
+            uint64 v = ((uint64)(-(n + 1)) + 1);
+
+            do
+            {
+                *--t = (char) ('0' + (int) (v % 10));
+                v /= 10;
+
+            }
+            while (v > 0);
+
             *--t = '-';
+        }
 
         return t;
     }
