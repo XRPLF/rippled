@@ -80,9 +80,11 @@ void CriticalSection::exit() const noexcept
 }
 
 //==============================================================================
-WaitableEvent::WaitableEvent (const bool manualReset) noexcept
+WaitableEvent::WaitableEvent (const bool manualReset, bool initiallySignaled) noexcept
     : internal (CreateEvent (0, manualReset ? TRUE : FALSE, FALSE, 0))
 {
+    if (initiallySignaled)
+        signal ();
 }
 
 WaitableEvent::~WaitableEvent() noexcept

@@ -54,7 +54,7 @@ void CriticalSection::exit() const noexcept
 
 
 //==============================================================================
-WaitableEvent::WaitableEvent (const bool useManualReset) noexcept
+WaitableEvent::WaitableEvent (const bool useManualReset, bool initiallySignaled) noexcept
     : triggered (false), manualReset (useManualReset)
 {
     pthread_cond_init (&condition, 0);
@@ -65,6 +65,9 @@ WaitableEvent::WaitableEvent (const bool useManualReset) noexcept
     pthread_mutexattr_setprotocol (&atts, PTHREAD_PRIO_INHERIT);
    #endif
     pthread_mutex_init (&mutex, &atts);
+
+    if (initiallySignaled)
+        signal ();
 }
 
 WaitableEvent::~WaitableEvent() noexcept

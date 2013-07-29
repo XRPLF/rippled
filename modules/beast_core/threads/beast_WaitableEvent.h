@@ -44,8 +44,11 @@ public:
         @param manualReset  If this is false, the event will be reset automatically when the wait()
                             method is called. If manualReset is true, then once the event is signalled,
                             the only way to reset it will be by calling the reset() method.
+
+        @param initiallySignaled If this is true then the event will be signaled when
+                                 the constructor returns.
     */
-    explicit WaitableEvent (bool manualReset = false) noexcept;
+    explicit WaitableEvent (bool manualReset = false, bool initiallySignaled = false) noexcept;
 
     /** Destructor.
 
