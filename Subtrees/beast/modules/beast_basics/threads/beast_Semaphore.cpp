@@ -17,23 +17,6 @@
 */
 //==============================================================================
 
-Semaphore::WaitingThread::WaitingThread ()
-    : m_event (false) // auto-reset
-{
-}
-
-void Semaphore::WaitingThread::wait ()
-{
-    m_event.wait ();
-}
-
-void Semaphore::WaitingThread::signal ()
-{
-    m_event.signal ();
-}
-
-//==============================================================================
-
 Semaphore::Semaphore (int initialCount)
     : m_counter (initialCount)
 {
@@ -75,8 +58,10 @@ void Semaphore::signal (int amount)
     }
 }
 
-void Semaphore::wait ()
+bool Semaphore::wait (int timeOutMilliseconds)
 {
+    bool signaled = true;
+
     // Always prepare the WaitingThread object first, either
     // from the delete list or through a new allocation.
     //
@@ -107,11 +92,34 @@ void Semaphore::wait ()
     if (waitingThread != nullptr)
     {
         // Yes so do it.
-        waitingThread->wait ();
+        signaled = waitingThread->wait (timeOutMilliseconds);
 
         // If the wait is satisfied, then we've been taken off the
         // waiting list so put waitingThread back in the delete list.
         //
         m_deleteList.push_front (waitingThread);
     }
+
+    return signaled;
 }
+
+//------------------------------------------------------------------------------
+
+Semaphore::WaitingThread::WaitingThread ()
+    : m_event (false) // auto-reset
+{
+}
+
+bool Semaphore::WaitingThread::wait (int timeOutMilliseconds)
+{
+    return m_event.wait (timeOutMilliseconds);
+}
+
+void Semaphore::WaitingThread::signal ()
+{
+    m_event.signal ();
+}
+
+//------------------------------------------------------------------------------
+
+// VFALCO TODO Unit Tests!
