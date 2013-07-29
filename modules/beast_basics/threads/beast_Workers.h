@@ -43,16 +43,28 @@ public:
 
     ~Workers ();
 
-    /** Set the desired number of threads.
+    /** Retrieve the desired number of threads.
 
+        This just returns the number of active threads that were requested. If
+        there was a recent call to setNumberOfThreads, the actual number of active
+        threads may be temporarily different from what was last requested.
+
+        @note This function is not thread-safe.
+    */
+    int getNumberOfThreads () const noexcept;
+
+    /** Set the desired number of threads.
         @note This function is not thread-safe.
     */
     void setNumberOfThreads (int numberOfThreads);
 
+    /** Pause and wait for all threads.
+        @note This function is not thread-safe.
+    */
+    void pauseAllThreadsAndWait ();
+
     /** Increment the number of tasks.
-
         The callback will be called for each task.
-
         @note This function is thread-safe.
     */
     void addTask ();
@@ -60,8 +72,20 @@ public:
     //--------------------------------------------------------------------------
 
 private:
+    struct PausedTag { };
+
+    /*  A Worker executes tasks on its provided thread.
+
+        These are the states:
+
+        Active: Running the task processing loop.
+        Idle:   Active, but blocked on waiting for a task.
+        Pausd:  Blocked waiting to exit or become active.
+    */
+
     class Worker
         : public LockFreeStack <Worker>::Node
+        , public LockFreeStack <Worker, PausedTag>::Node
         , public Thread
     {
     public:
@@ -81,14 +105,13 @@ private:
 
 private:
     Callback& m_callback;
-    Semaphore m_semaphore;
-    int m_numberOfThreads;
-
-    WaitableEvent m_allPaused;
-    Atomic <int> m_activeCount;
-    Atomic <int> m_pauseCount;
-    LockFreeStack <Worker> m_active;
-    LockFreeStack <Worker> m_paused;
+    WaitableEvent m_allPaused;                   // signaled when all threads paused
+    Semaphore m_semaphore;                       // each pending task is 1 resource
+    int m_numberOfThreads;                       // how many we want active now
+    Atomic <int> m_activeCount;                  // to know when all are paused
+    Atomic <int> m_pauseCount;                   // how many threads need to pause now
+    LockFreeStack <Worker> m_everyone;           // holds all created workers
+    LockFreeStack <Worker, PausedTag> m_paused;  // holds just paused workers
 };
 
 #endif
