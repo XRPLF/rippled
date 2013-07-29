@@ -21,9 +21,35 @@ SETUP_LOG (WSDoor)
 //
 // VFALCO NOTE NetworkOPs isn't used here...
 //
-void WSDoor::startListening ()
+
+WSDoor::WSDoor (std::string const& strIp, int iPort, bool bPublic)
+    : Thread ("websocket")
+    , mPublic (bPublic)
+    , mIp (strIp)
+    , mPort (iPort)
 {
-    setCallingThreadName ("websocket");
+}
+
+WSDoor::~WSDoor ()
+{
+    {
+        CriticalSection::ScopedLockType lock (m_endpointLock);
+
+        if (m_endpoint != nullptr)
+            m_endpoint->stop ();
+    }
+
+    m_thread.signalThreadShouldExit ();
+    m_thread.waitForThreadToExit ();
+}
+
+void WSDoor::run ()
+{
+    WriteLog (lsINFO, WSDoor) << boost::str (boost::format ("Websocket: %s: Listening: %s %d ")
+                                        % (mPublic ? "Public" : "Private")
+                                        % mIp
+                                        % mPort);
+
     // Generate a single SSL context for use by all connections.
     boost::shared_ptr<boost::asio::ssl::context>    mCtx;
     mCtx    = boost::make_shared<boost::asio::ssl::context> (boost::asio::ssl::context::sslv23);
@@ -35,11 +61,13 @@ void WSDoor::startListening ()
 
     SSL_CTX_set_tmp_dh_callback (mCtx->native_handle (), handleTmpDh);
 
-    // Construct a single handler for all requests.
     websocketpp::server_autotls::handler::ptr   handler (new WSServerHandler<websocketpp::server_autotls> (mCtx, mPublic));
 
-    // Construct a websocket server.
-    mSEndpoint      = new websocketpp::server_autotls (handler);
+    {
+        CriticalSection::ScopedLockType lock (m_endpointLock);
+
+        m_endpoint = new websocketpp::server_autotls (handler);
+    }
 
     // mEndpoint->alog().unset_level(websocketpp::log::alevel::ALL);
     // mEndpoint->elog().unset_level(websocketpp::log::elevel::ALL);
@@ -47,7 +75,7 @@ void WSDoor::startListening ()
     // Call the main-event-loop of the websocket server.
     try
     {
-        mSEndpoint->listen (
+        m_endpoint->listen (
             boost::asio::ip::tcp::endpoint (
                 boost::asio::ip::address ().from_string (mIp), mPort));
     }
@@ -60,7 +88,7 @@ void WSDoor::startListening ()
             // https://github.com/zaphoyd/websocketpp/issues/98
             try
             {
-                mSEndpoint->get_io_service ().run ();
+                m_endpoint->get_io_service ().run ();
                 break;
             }
             catch (websocketpp::exception& e)
@@ -70,32 +98,18 @@ void WSDoor::startListening ()
         }
     }
 
-    delete mSEndpoint;
-}
-
-WSDoor* WSDoor::createWSDoor (const std::string& strIp, const int iPort, bool bPublic)
-{
-    WSDoor* wdpResult   = new WSDoor (strIp, iPort, bPublic);
-
-    WriteLog (lsINFO, WSDoor) <<
-                              boost::str (boost::format ("Websocket: %s: Listening: %s %d ")
-                                          % (bPublic ? "Public" : "Private")
-                                          % strIp
-                                          % iPort);
-
-    wdpResult->mThread  = new boost::thread (BIND_TYPE (&WSDoor::startListening, wdpResult));
-
-    return wdpResult;
+    delete m_endpoint;
 }
 
 void WSDoor::stop ()
 {
-    if (mThread)
     {
-        if (mSEndpoint)
-            mSEndpoint->stop ();
+        CriticalSection::ScopedLockType lock (m_endpointLock);
 
-
-        mThread->join ();
+        if (m_endpoint != nullptr)
+            m_endpoint->stop ();
     }
+
+    m_thread.signalThreadShouldExit ();
+    m_thread.waitForThreadToExit ();
 }

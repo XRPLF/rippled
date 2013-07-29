@@ -7,28 +7,24 @@
 #ifndef RIPPLE_WSDOOR_RIPPLEHEADER
 #define RIPPLE_WSDOOR_RIPPLEHEADER
 
-class WSDoor : LeakChecked <WSDoor>
+class WSDoor : protected Thread, LeakChecked <WSDoor>
 {
-private:
-    websocketpp::server_autotls*    mSEndpoint;
+public:
+    WSDoor (std::string const& strIp, int iPort, bool bPublic);
 
-    boost::thread*                  mThread;
+    ~WSDoor ();
+
+    void stop ();
+
+private:
+    void run ();
+
+private:
+    ScopedPointer <websocketpp::server_autotls*> m_endpoint;
+    CriticalSection m_endpointLock;
     bool                            mPublic;
     std::string                     mIp;
     int                             mPort;
-
-    void        startListening ();
-
-public:
-
-    WSDoor (const std::string& strIp, int iPort, bool bPublic) : mSEndpoint (0), mThread (0), mPublic (bPublic), mIp (strIp), mPort (iPort)
-    {
-        ;
-    }
-
-    void        stop ();
-
-    static WSDoor* createWSDoor (const std::string& strIp, const int iPort, bool bPublic);
 };
 
 #endif
