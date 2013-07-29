@@ -144,7 +144,9 @@ public:
     void logMessage (String const& message)
     {
         if (m_shouldLog)
-            Log::out () << message.toStdString ();
+        {
+            std::cout << message.toStdString () << std::endl;
+        }
     }
 
 private:
