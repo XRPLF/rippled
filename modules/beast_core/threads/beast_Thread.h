@@ -150,7 +150,7 @@ public:
                                     is less than zero, it will wait forever.
         @returns    true if the thread exits, or false if the timeout expires first.
     */
-    bool waitForThreadToExit (int timeOutMilliseconds) const;
+    bool waitForThreadToExit (int timeOutMilliseconds = -1) const;
 
     //==============================================================================
     /** Changes the thread's priority.
