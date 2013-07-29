@@ -5,10 +5,10 @@ RIPPLE TODO
 Vinnie's List: Changes day to day, descending priority
   (Items marked '*' can be handled by others.)
 
+- Allow skipped/disabled unit tests and reporting.
 - Show summary for text output of unit test results
 - Make ProofOfWorkTests manual since they aren't used
 
-* Make everyone check GitHub Issues every day
 - Do something about the throw() reporting weaknesses:
   * Make sure all Sconstruct and .pro builds have debug symbols in release
   * Replace all throw with beast::Throw()
@@ -40,8 +40,22 @@ David Feature:
 
 --------------------------------------------------------------------------------
 
+- Consolidate databases
+
+- Figure out why we need WAL sqlite mode if we no longer use sqlite for the node store
+
 - Add "skipped" field to beginTestCase() to disable a test but still record
   that it was skipped in the output. Like for mdb import.
+
+- use beast DeadlineTimer for sweep in Application
+
+- Make SNTP Client have its own io_service
+
+- Get rid of 'ref' typedefs that really mean const&
+
+- Use secp256k1 from beast
+
+- Fix xsd/dtd line in JUnit XML output
 
 - Get rid of the WriteLog() stuff in the ripple tests and make it report the
   message directly to the UnitTest object. Then update the JUnit XML output

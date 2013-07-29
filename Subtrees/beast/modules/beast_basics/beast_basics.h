@@ -268,6 +268,7 @@ namespace beast
 #include "threads/beast_ManualCallQueue.h"
 #include "threads/beast_ParallelFor.h"
 #include "threads/beast_ThreadWithCallQueue.h"
+#include "threads/beast_Workers.h"
 
 }
 

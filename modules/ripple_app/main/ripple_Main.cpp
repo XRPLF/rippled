@@ -145,7 +145,20 @@ public:
     {
         if (m_shouldLog)
         {
+#if BEAST_MSVC
+            if (beast_isRunningUnderDebugger ())
+            {
+                Logger::outputDebugString (message);
+            }
+            else
+            {
+                std::cout << message.toStdString () << std::endl;
+            }
+
+#else
             std::cout << message.toStdString () << std::endl;
+
+#endif
         }
     }
 

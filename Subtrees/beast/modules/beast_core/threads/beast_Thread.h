@@ -113,7 +113,7 @@ public:
                                     value in here will wait forever.
         @see signalThreadShouldExit, threadShouldExit, waitForThreadToExit, isThreadRunning
     */
-    void stopThread (int timeOutMilliseconds);
+    void stopThread (int timeOutMilliseconds = -1);
 
     //==============================================================================
     /** Returns true if the thread is currently active */
@@ -150,7 +150,7 @@ public:
                                     is less than zero, it will wait forever.
         @returns    true if the thread exits, or false if the timeout expires first.
     */
-    bool waitForThreadToExit (int timeOutMilliseconds) const;
+    bool waitForThreadToExit (int timeOutMilliseconds = -1) const;
 
     //==============================================================================
     /** Changes the thread's priority.
@@ -205,7 +205,7 @@ public:
 
         @returns    true if the event has been signalled, false if the timeout expires.
     */
-    bool wait (int timeOutMilliseconds) const;
+    bool wait (int timeOutMilliseconds = -1) const;
 
     /** Wakes up the thread.
 

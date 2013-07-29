@@ -20,6 +20,118 @@ class ApplicationImp
     , LeakChecked <ApplicationImp>
 {
 public:
+    // RAII container for a boost::asio::io_service run by beast threads
+    class IoServiceThread
+    {
+    public:
+        IoServiceThread (String const& name,
+                         int expectedConcurrency,
+                         int numberOfExtraThreads = 0)
+            : m_name (name)
+            , m_service (expectedConcurrency)
+            , m_work (m_service)
+        {
+            m_threads.ensureStorageAllocated (numberOfExtraThreads);
+
+            for (int i = 0; i < numberOfExtraThreads; ++i)
+                m_threads.add (new ServiceThread (m_name, m_service));
+        }
+
+        ~IoServiceThread ()
+        {
+            m_service.stop ();
+
+            // the dtor of m_threads will block until each thread exits.
+        }
+
+        // TEMPORARY HACK for compatibility with old code
+        void runExtraThreads ()
+        {
+            for (int i = 0; i < m_threads.size (); ++i)
+                m_threads [i]->start ();
+        }
+
+        // Run on the callers thread.
+        // This will block until stop is issued.
+        void run ()
+        {
+            Thread const* const currentThread (Thread::getCurrentThread());
+
+            String previousThreadName;
+
+            if (currentThread != nullptr)
+            {
+                previousThreadName = currentThread->getThreadName ();
+            }
+            else
+            {
+                // we're on the main thread
+                previousThreadName = "main"; // for vanity
+            }
+
+            Thread::setCurrentThreadName (m_name);
+
+            m_service.run ();
+
+            Thread::setCurrentThreadName (previousThreadName);
+        }
+
+        void stop ()
+        {
+            m_service.stop ();
+        }
+
+        boost::asio::io_service& getService ()
+        {
+            return m_service;
+        }
+
+        operator boost::asio::io_service& ()
+        {
+            return m_service;
+        }
+
+    private:
+        class ServiceThread : Thread
+        {
+        public:
+            explicit ServiceThread (String const& name, boost::asio::io_service& service)
+                : Thread (name)
+                , m_service (service)
+            {
+                //startThread ();
+            }
+
+            ~ServiceThread ()
+            {
+                m_service.stop ();
+
+                stopThread (-1); // wait forever
+            }
+
+            void start ()
+            {
+                startThread ();
+            }
+
+            void run ()
+            {
+                m_service.run ();
+            }
+
+        private:
+            boost::asio::io_service& m_service;
+        };
+
+    private:
+        String const m_name;
+        boost::asio::io_service m_service;
+        boost::asio::io_service::work m_work;
+        OwnedArray <ServiceThread> m_threads;
+    };
+
+    //--------------------------------------------------------------------------
+
     static ApplicationImp* createInstance ()
     {
         return new ApplicationImp;
@@ -40,14 +152,15 @@ public:
         //
         : SharedSingleton <Application> (SingletonLifetime::neverDestroyed)
     #endif
-        , mIOService ((getConfig ().NODE_SIZE >= 2) ? 2 : 1)
-        , mIOWork (mIOService)
+        , m_mainService ("io",
+                         (getConfig ().NODE_SIZE >= 2) ? 2 : 1,
+                         (getConfig ().NODE_SIZE >= 2) ? 1 : 0)
+        , m_auxService ("auxio", 1, 1)
         , mNetOps (new NetworkOPs (&mLedgerMaster))
         , m_rpcServerHandler (*mNetOps)
         , mTempNodeCache ("NodeCache", 16384, 90)
         , mSLECache ("LedgerEntryCache", 4096, 120)
-        , mSNTPClient (mAuxService)
-        , mJobQueue (mIOService)
+        , mSNTPClient (m_auxService)
         // VFALCO New stuff
         , m_nodeStore (NodeStore::New (
             getConfig ().nodeDatabase,
@@ -61,7 +174,7 @@ public:
         , mValidations (IValidations::New ())
         , mUNL (UniqueNodeList::New ())
         , mProofOfWorkFactory (IProofOfWorkFactory::New ())
-        , mPeers (IPeers::New (mIOService))
+        , mPeers (IPeers::New (m_mainService))
         , m_loadManager (ILoadManager::New ())
         // VFALCO End new stuff
         // VFALCO TODO replace all NULL with nullptr
@@ -73,7 +186,7 @@ public:
         , mRPCDoor (NULL)
         , mWSPublicDoor (NULL)
         , mWSPrivateDoor (NULL)
-        , mSweepTimer (mAuxService)
+        , mSweepTimer (m_auxService)
         , mShutdown (false)
     {
         // VFALCO TODO remove these once the call is thread safe.
@@ -119,7 +232,7 @@ public:
 
     boost::asio::io_service& getIOService ()
     {
-        return mIOService;
+        return m_mainService;
     }
 
     LedgerMaster& getLedgerMaster ()
@@ -258,7 +371,266 @@ public:
     {
         return mShutdown;
     }
-    void setup ();
+
+    //--------------------------------------------------------------------------
+
+    static DatabaseCon* openDatabaseCon (const char* fileName,
+                                         const char* dbInit[],
+                                         int dbCount)
+    {
+        return new DatabaseCon (fileName, dbInit, dbCount);
+    }
+
+    void initSqliteDb (int index)
+    {
+        switch (index)
+        {
+        case 0: mRpcDB = openDatabaseCon ("rpc.db", RpcDBInit, RpcDBCount); break;
+        case 1: mTxnDB = openDatabaseCon ("transaction.db", TxnDBInit, TxnDBCount); break;
+        case 2: mLedgerDB = openDatabaseCon ("ledger.db", LedgerDBInit, LedgerDBCount); break;
+        case 3: mWalletDB = openDatabaseCon ("wallet.db", WalletDBInit, WalletDBCount); break;
+        };
+    }
+
+    // VFALCO TODO Is it really necessary to init the dbs in parallel?
+    void initSqliteDbs ()
+    {
+        int const count = 4;
+
+        ThreadGroup threadGroup (count);
+        ParallelFor (threadGroup).loop (count, &ApplicationImp::initSqliteDb, this);
+    }
+
+#ifdef SIGINT
+    static void sigIntHandler (int)
+    {
+        doShutdown = true;
+    }
+#endif
+
+    // VFALCO TODO Break this function up into many small initialization segments.
+    //             Or better yet refactor these initializations into RAII classes
+    //             which are members of the Application object.
+    //
+    void setup ()
+    {
+        // VFALCO NOTE: 0 means use heuristics to determine the thread count.
+        mJobQueue.setThreadCount (0, getConfig ().RUN_STANDALONE);
+
+        mSweepTimer.expires_from_now (boost::posix_time::seconds (10));
+        mSweepTimer.async_wait (BIND_TYPE (&ApplicationImp::sweep, this));
+
+        m_loadManager->startThread ();
+
+    #if ! BEAST_WIN32
+    #ifdef SIGINT
+
+        if (!getConfig ().RUN_STANDALONE)
+        {
+            struct sigaction sa;
+            memset (&sa, 0, sizeof (sa));
+            sa.sa_handler = &ApplicationImp::sigIntHandler;
+            sigaction (SIGINT, &sa, NULL);
+        }
+
+    #endif
+    #endif
+
+        assert (mTxnDB == NULL);
+
+        if (!getConfig ().DEBUG_LOGFILE.empty ())
+        {
+            // Let debug messages go to the file but only WARNING or higher to regular output (unless verbose)
+            Log::setLogFile (getConfig ().DEBUG_LOGFILE);
+
+            if (Log::getMinSeverity () > lsDEBUG)
+                LogPartition::setSeverity (lsDEBUG);
+        }
+
+        if (!getConfig ().RUN_STANDALONE)
+            mSNTPClient.init (getConfig ().SNTP_SERVERS);
+
+        initSqliteDbs ();
+
+        leveldb::Options options;
+        options.create_if_missing = true;
+        options.block_cache = leveldb::NewLRUCache (getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
+
+        getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+                (getConfig ().getSize (siLgrDBCache) * 1024)));
+        getApp().getTxnDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+                (getConfig ().getSize (siTxnDBCache) * 1024)));
+
+        mTxnDB->getDB ()->setupCheckpointing (&mJobQueue);
+        mLedgerDB->getDB ()->setupCheckpointing (&mJobQueue);
+
+        if (!getConfig ().RUN_STANDALONE)
+            updateTables ();
+
+        mFeatures->addInitialFeatures ();
+
+        if (getConfig ().START_UP == Config::FRESH)
+        {
+            WriteLog (lsINFO, Application) << "Starting new Ledger";
+
+            startNewLedger ();
+        }
+        else if ((getConfig ().START_UP == Config::LOAD) || (getConfig ().START_UP == Config::REPLAY))
+        {
+            WriteLog (lsINFO, Application) << "Loading specified Ledger";
+
+            if (!loadOldLedger (getConfig ().START_LEDGER, getConfig ().START_UP == Config::REPLAY))
+            {
+                getApp().stop ();
+                exit (-1);
+            }
+        }
+        else if (getConfig ().START_UP == Config::NETWORK)
+        {
+            // This should probably become the default once we have a stable network
+            if (!getConfig ().RUN_STANDALONE)
+                mNetOps->needNetworkLedger ();
+
+            startNewLedger ();
+        }
+        else
+            startNewLedger ();
+
+        mOrderBookDB.setup (getApp().getLedgerMaster ().getCurrentLedger ());
+
+        //
+        // Begin validation and ip maintenance.
+        // - LocalCredentials maintains local information: including identity and network connection persistence information.
+        //
+        m_localCredentials.start ();
+
+        //
+        // Set up UNL.
+        //
+        if (!getConfig ().RUN_STANDALONE)
+            getUNL ().nodeBootstrap ();
+
+        mValidations->tune (getConfig ().getSize (siValidationsSize), getConfig ().getSize (siValidationsAge));
+        m_nodeStore->tune (getConfig ().getSize (siNodeCacheSize), getConfig ().getSize (siNodeCacheAge));
+        mLedgerMaster.tune (getConfig ().getSize (siLedgerSize), getConfig ().getSize (siLedgerAge));
+        mSLECache.setTargetSize (getConfig ().getSize (siSLECacheSize));
+        mSLECache.setTargetAge (getConfig ().getSize (siSLECacheAge));
+
+        mLedgerMaster.setMinValidations (getConfig ().VALIDATION_QUORUM);
+
+        //
+        // Allow peer connections.
+        //
+        if (!getConfig ().RUN_STANDALONE)
+        {
+            try
+            {
+                mPeerDoor = PeerDoor::New (
+                    getConfig ().PEER_IP,
+                    getConfig ().PEER_PORT,
+                    getConfig ().PEER_SSL_CIPHER_LIST,
+                    m_mainService);
+            }
+            catch (const std::exception& e)
+            {
+                // Must run as directed or exit.
+                WriteLog (lsFATAL, Application) << boost::str (boost::format ("Can not open peer service: %s") % e.what ());
+
+                exit (3);
+            }
+        }
+        else
+        {
+            WriteLog (lsINFO, Application) << "Peer interface: disabled";
+        }
+
+        //
+        // Allow RPC connections.
+        //
+        if (! getConfig ().getRpcIP().empty () && getConfig ().getRpcPort() != 0)
+        {
+            try
+            {
+                mRPCDoor = new RPCDoor (m_mainService, m_rpcServerHandler);
+            }
+            catch (const std::exception& e)
+            {
+                // Must run as directed or exit.
+                WriteLog (lsFATAL, Application) << boost::str (boost::format ("Can not open RPC service: %s") % e.what ());
+
+                exit (3);
+            }
+        }
+        else
+        {
+            WriteLog (lsINFO, Application) << "RPC interface: disabled";
+        }
+
+        //
+        // Allow private WS connections.
+        //
+        if (!getConfig ().WEBSOCKET_IP.empty () && getConfig ().WEBSOCKET_PORT)
+        {
+            try
+            {
+                mWSPrivateDoor  = new WSDoor (getConfig ().WEBSOCKET_IP, getConfig ().WEBSOCKET_PORT, false);
+            }
+            catch (const std::exception& e)
+            {
+                // Must run as directed or exit.
+                WriteLog (lsFATAL, Application) << boost::str (boost::format ("Can not open private websocket service: %s") % e.what ());
+
+                exit (3);
+            }
+        }
+        else
+        {
+            WriteLog (lsINFO, Application) << "WS private interface: disabled";
+        }
+
+        //
+        // Allow public WS connections.
+        //
+        if (!getConfig ().WEBSOCKET_PUBLIC_IP.empty () && getConfig ().WEBSOCKET_PUBLIC_PORT)
+        {
+            try
+            {
+                mWSPublicDoor   = new WSDoor (getConfig ().WEBSOCKET_PUBLIC_IP, getConfig ().WEBSOCKET_PUBLIC_PORT, true);
+            }
+            catch (const std::exception& e)
+            {
+                // Must run as directed or exit.
+                WriteLog (lsFATAL, Application) << boost::str (boost::format ("Can not open public websocket service: %s") % e.what ());
+
+                exit (3);
+            }
+        }
+        else
+        {
+            WriteLog (lsINFO, Application) << "WS public interface: disabled";
+        }
+
+        //
+        // Begin connecting to network.
+        //
+        if (!getConfig ().RUN_STANDALONE)
+            mPeers->start ();
+
+        if (getConfig ().RUN_STANDALONE)
+        {
+            WriteLog (lsWARNING, Application) << "Running in standalone mode";
+
+            mNetOps->setStandAlone ();
+        }
+        else
+        {
+            // VFALCO NOTE the state timer resets the deadlock detector.
+            //
+            mNetOps->setStateTimer ();
+        }
+    }
+
+
     void run ();
     void stop ();
     void sweep ();
@@ -270,13 +642,12 @@ private:
     bool loadOldLedger (const std::string&, bool);
 
 private:
-    boost::asio::io_service mIOService;
-    boost::asio::io_service mAuxService;
-    // The lifetime of the io_service::work object informs the io_service
-    // of when the work starts and finishes. io_service::run() will not exit
-    // while the work object exists.
-    //
-    boost::asio::io_service::work mIOWork;
+    IoServiceThread m_mainService;
+    IoServiceThread m_auxService;
+
+    //boost::asio::io_service mIOService;
+    //boost::asio::io_service mAuxService;
+    //boost::asio::io_service::work mIOWork;
 
     MasterLockType mMasterLock;
 
@@ -330,281 +701,24 @@ void ApplicationImp::stop ()
     WriteLog (lsINFO, Application) << "Received shutdown request";
     StopSustain ();
     mShutdown = true;
-    mIOService.stop ();
+    m_mainService.stop ();
     m_nodeStore = nullptr;
     mValidations->flush ();
-    mAuxService.stop ();
+    m_auxService.stop ();
     mJobQueue.shutdown ();
 
-    WriteLog (lsINFO, Application) << "Stopped: " << mIOService.stopped ();
+    //WriteLog (lsINFO, Application) << "Stopped: " << mIOService.stopped 
+
     mShutdown = false;
-}
-
-static void InitDB (DatabaseCon** dbCon, const char* fileName, const char* dbInit[], int dbCount)
-{
-    *dbCon = new DatabaseCon (fileName, dbInit, dbCount);
-}
-
-#ifdef SIGINT
-void sigIntHandler (int)
-{
-    doShutdown = true;
-}
-#endif
-
-// VFALCO TODO Figure this out it looks like the wrong tool
-static void runAux (boost::asio::io_service& svc)
-{
-    setCallingThreadName ("aux");
-    svc.run ();
-}
-
-static void runIO (boost::asio::io_service& io)
-{
-    setCallingThreadName ("io");
-    io.run ();
-}
-
-// VFALCO TODO Break this function up into many small initialization segments.
-//             Or better yet refactor these initializations into RAII classes
-//             which are members of the Application object.
-//
-void ApplicationImp::setup ()
-{
-    // VFALCO NOTE: 0 means use heuristics to determine the thread count.
-    mJobQueue.setThreadCount (0, getConfig ().RUN_STANDALONE);
-
-    mSweepTimer.expires_from_now (boost::posix_time::seconds (10));
-    mSweepTimer.async_wait (BIND_TYPE (&ApplicationImp::sweep, this));
-
-    m_loadManager->startThread ();
-
-#if ! BEAST_WIN32
-#ifdef SIGINT
-
-    if (!getConfig ().RUN_STANDALONE)
-    {
-        struct sigaction sa;
-        memset (&sa, 0, sizeof (sa));
-        sa.sa_handler = sigIntHandler;
-        sigaction (SIGINT, &sa, NULL);
-    }
-
-#endif
-#endif
-
-    assert (mTxnDB == NULL);
-
-    if (!getConfig ().DEBUG_LOGFILE.empty ())
-    {
-        // Let debug messages go to the file but only WARNING or higher to regular output (unless verbose)
-        Log::setLogFile (getConfig ().DEBUG_LOGFILE);
-
-        if (Log::getMinSeverity () > lsDEBUG)
-            LogPartition::setSeverity (lsDEBUG);
-    }
-
-    boost::thread (BIND_TYPE (runAux, boost::ref (mAuxService))).detach ();
-
-    if (!getConfig ().RUN_STANDALONE)
-        mSNTPClient.init (getConfig ().SNTP_SERVERS);
-
-    //
-    // Construct databases.
-    //
-    boost::thread t1 (BIND_TYPE (&InitDB, &mRpcDB, "rpc.db", RpcDBInit, RpcDBCount));
-    boost::thread t2 (BIND_TYPE (&InitDB, &mTxnDB, "transaction.db", TxnDBInit, TxnDBCount));
-    boost::thread t3 (BIND_TYPE (&InitDB, &mLedgerDB, "ledger.db", LedgerDBInit, LedgerDBCount));
-    boost::thread t4 (BIND_TYPE (&InitDB, &mWalletDB, "wallet.db", WalletDBInit, WalletDBCount));
-    t1.join ();
-    t2.join ();
-    t3.join ();
-    t4.join ();
-
-    leveldb::Options options;
-    options.create_if_missing = true;
-    options.block_cache = leveldb::NewLRUCache (getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
-
-    getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-            (getConfig ().getSize (siLgrDBCache) * 1024)));
-    getApp().getTxnDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-            (getConfig ().getSize (siTxnDBCache) * 1024)));
-
-    mTxnDB->getDB ()->setupCheckpointing (&mJobQueue);
-    mLedgerDB->getDB ()->setupCheckpointing (&mJobQueue);
-
-    if (!getConfig ().RUN_STANDALONE)
-        updateTables ();
-
-    mFeatures->addInitialFeatures ();
-
-    if (getConfig ().START_UP == Config::FRESH)
-    {
-        WriteLog (lsINFO, Application) << "Starting new Ledger";
-
-        startNewLedger ();
-    }
-    else if ((getConfig ().START_UP == Config::LOAD) || (getConfig ().START_UP == Config::REPLAY))
-    {
-        WriteLog (lsINFO, Application) << "Loading specified Ledger";
-
-        if (!loadOldLedger (getConfig ().START_LEDGER, getConfig ().START_UP == Config::REPLAY))
-        {
-            getApp().stop ();
-            exit (-1);
-        }
-    }
-    else if (getConfig ().START_UP == Config::NETWORK)
-    {
-        // This should probably become the default once we have a stable network
-        if (!getConfig ().RUN_STANDALONE)
-            mNetOps->needNetworkLedger ();
-
-        startNewLedger ();
-    }
-    else
-        startNewLedger ();
-
-    mOrderBookDB.setup (getApp().getLedgerMaster ().getCurrentLedger ());
-
-    //
-    // Begin validation and ip maintenance.
-    // - LocalCredentials maintains local information: including identity and network connection persistence information.
-    //
-    m_localCredentials.start ();
-
-    //
-    // Set up UNL.
-    //
-    if (!getConfig ().RUN_STANDALONE)
-        getUNL ().nodeBootstrap ();
-
-    mValidations->tune (getConfig ().getSize (siValidationsSize), getConfig ().getSize (siValidationsAge));
-    m_nodeStore->tune (getConfig ().getSize (siNodeCacheSize), getConfig ().getSize (siNodeCacheAge));
-    mLedgerMaster.tune (getConfig ().getSize (siLedgerSize), getConfig ().getSize (siLedgerAge));
-    mSLECache.setTargetSize (getConfig ().getSize (siSLECacheSize));
-    mSLECache.setTargetAge (getConfig ().getSize (siSLECacheAge));
-
-    mLedgerMaster.setMinValidations (getConfig ().VALIDATION_QUORUM);
-
-    //
-    // Allow peer connections.
-    //
-    if (!getConfig ().RUN_STANDALONE)
-    {
-        try
-        {
-            mPeerDoor = PeerDoor::New (
-                getConfig ().PEER_IP,
-                getConfig ().PEER_PORT,
-                getConfig ().PEER_SSL_CIPHER_LIST,
-                mIOService);
-        }
-        catch (const std::exception& e)
-        {
-            // Must run as directed or exit.
-            WriteLog (lsFATAL, Application) << boost::str (boost::format ("Can not open peer service: %s") % e.what ());
-
-            exit (3);
-        }
-    }
-    else
-    {
-        WriteLog (lsINFO, Application) << "Peer interface: disabled";
-    }
-
-    //
-    // Allow RPC connections.
-    //
-    if (! getConfig ().getRpcIP().empty () && getConfig ().getRpcPort() != 0)
-    {
-        try
-        {
-            mRPCDoor = new RPCDoor (mIOService, m_rpcServerHandler);
-        }
-        catch (const std::exception& e)
-        {
-            // Must run as directed or exit.
-            WriteLog (lsFATAL, Application) << boost::str (boost::format ("Can not open RPC service: %s") % e.what ());
-
-            exit (3);
-        }
-    }
-    else
-    {
-        WriteLog (lsINFO, Application) << "RPC interface: disabled";
-    }
-
-    //
-    // Allow private WS connections.
-    //
-    if (!getConfig ().WEBSOCKET_IP.empty () && getConfig ().WEBSOCKET_PORT)
-    {
-        try
-        {
-            mWSPrivateDoor  = WSDoor::createWSDoor (getConfig ().WEBSOCKET_IP, getConfig ().WEBSOCKET_PORT, false);
-        }
-        catch (const std::exception& e)
-        {
-            // Must run as directed or exit.
-            WriteLog (lsFATAL, Application) << boost::str (boost::format ("Can not open private websocket service: %s") % e.what ());
-
-            exit (3);
-        }
-    }
-    else
-    {
-        WriteLog (lsINFO, Application) << "WS private interface: disabled";
-    }
-
-    //
-    // Allow public WS connections.
-    //
-    if (!getConfig ().WEBSOCKET_PUBLIC_IP.empty () && getConfig ().WEBSOCKET_PUBLIC_PORT)
-    {
-        try
-        {
-            mWSPublicDoor   = WSDoor::createWSDoor (getConfig ().WEBSOCKET_PUBLIC_IP, getConfig ().WEBSOCKET_PUBLIC_PORT, true);
-        }
-        catch (const std::exception& e)
-        {
-            // Must run as directed or exit.
-            WriteLog (lsFATAL, Application) << boost::str (boost::format ("Can not open public websocket service: %s") % e.what ());
-
-            exit (3);
-        }
-    }
-    else
-    {
-        WriteLog (lsINFO, Application) << "WS public interface: disabled";
-    }
-
-    //
-    // Begin connecting to network.
-    //
-    if (!getConfig ().RUN_STANDALONE)
-        mPeers->start ();
-
-    if (getConfig ().RUN_STANDALONE)
-    {
-        WriteLog (lsWARNING, Application) << "Running in standalone mode";
-
-        mNetOps->setStandAlone ();
-    }
-    else
-    {
-        // VFALCO NOTE the state timer resets the deadlock detector.
-        //
-        mNetOps->setStateTimer ();
-    }
 }
 
 void ApplicationImp::run ()
 {
-    if (getConfig ().NODE_SIZE >= 2)
-    {
-        boost::thread (BIND_TYPE (runIO, boost::ref (mIOService))).detach ();
-    }
+    // VFALCO TODO The unit tests crash if we try to
+    //             run these threads in the IoService constructor
+    //             so this hack makes them start later.
+    //
+    m_mainService.runExtraThreads ();
 
     if (!getConfig ().RUN_STANDALONE)
     {
@@ -614,7 +728,7 @@ void ApplicationImp::run ()
         getApp().getLoadManager ().activateDeadlockDetector ();
     }
 
-    mIOService.run (); // This blocks
+    m_mainService.run (); // This blocks until the io_service is stopped.
 
     if (mWSPublicDoor)
         mWSPublicDoor->stop ();

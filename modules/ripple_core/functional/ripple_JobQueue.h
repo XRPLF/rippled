@@ -4,13 +4,17 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_JOBQUEUE_H
-#define RIPPLE_JOBQUEUE_H
+#ifndef RIPPLE_JOBQUEUE_H_INCLUDED
+#define RIPPLE_JOBQUEUE_H_INCLUDED
 
-class JobQueue
+class JobQueue : private Workers::Callback
 {
 public:
-    explicit JobQueue (boost::asio::io_service&);
+    typedef std::map<JobType, std::pair<int, int > > JobCounts;
+
+    JobQueue ();
+
+    ~JobQueue ();
 
     // VFALCO TODO make convenience functions that allow the caller to not 
     //             have to call bind.
@@ -46,22 +50,17 @@ public:
     Json::Value getJson (int c = 0);
 
 private:
-    void threadEntry ();
-
-    boost::mutex                    mJobLock;
-    boost::condition_variable       mJobCond;
-
-    uint64                          mLastJob;
-    std::set <Job>                  mJobSet;
-    LoadMonitor                     mJobLoads [NUM_JOB_TYPES];
-    int                             mThreadCount;
-    bool                            mShuttingDown;
-
-    boost::asio::io_service&        mIOService;
-
-    std::map<JobType, std::pair<int, int > >    mJobCounts;
-
     bool getJob (Job& job);
+    void processTask ();
+
+private:
+    Workers m_workers;
+    
+    boost::mutex mJobLock; // VFALCO TODO Replace with CriticalSection
+    uint64 mLastJob;
+    std::set <Job> mJobSet;
+    LoadMonitor mJobLoads [NUM_JOB_TYPES];
+    JobCounts mJobCounts;
 };
 
 #endif

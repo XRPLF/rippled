@@ -33,8 +33,11 @@ SqliteStatement::~SqliteStatement ()
     sqlite3_finalize (statement);
 }
 
+//------------------------------------------------------------------------------
+
 SqliteDatabase::SqliteDatabase (const char* host)
     : Database (host)
+    , m_thread ("sqlitedb")
     , mWalQ (NULL)
     , walRunning (false)
 {
@@ -290,9 +293,13 @@ void SqliteDatabase::doHook (const char* db, int pages)
     }
 
     if (mWalQ)
+    {
         mWalQ->addJob (jtWAL, std::string ("WAL:") + mHost, BIND_TYPE (&SqliteDatabase::runWal, this));
+    }
     else
-        boost::thread (BIND_TYPE (&SqliteDatabase::runWal, this)).detach ();
+    {
+        m_thread.call (&SqliteDatabase::runWal, this);
+    }
 }
 
 void SqliteDatabase::runWal ()

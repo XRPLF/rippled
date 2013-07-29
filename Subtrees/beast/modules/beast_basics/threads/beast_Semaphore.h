@@ -49,8 +49,12 @@ public:
     void signal (int amount = 1);
 
     /** Wait for a resource.
+
+        A negative time-out value means that the method will wait indefinitely.
+
+        @returns true if the event has been signalled, false if the timeout expires.
     */
-    void wait ();
+    bool wait (int timeOutMilliseconds = -1);
 
 private:
     class WaitingThread
@@ -60,7 +64,7 @@ private:
     public:
         WaitingThread ();
 
-        void wait ();
+        bool wait (int timeOutMilliseconds);
         void signal ();
 
     private:
