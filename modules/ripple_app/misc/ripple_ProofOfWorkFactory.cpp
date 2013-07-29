@@ -31,6 +31,10 @@ ProofOfWork ProofOfWorkFactory::getProof ()
 
 POWResult ProofOfWorkFactory::checkProof (const std::string& token, uint256 const& solution)
 {
+    // VFALCO COmmented this out because Dave said it wasn't used
+    //        and also we dont have the lexicalCast from a vector of strings to a time_t
+
+#if 0
     // challenge - target - iterations - time - validator
 
     std::vector<std::string> fields;
@@ -93,7 +97,7 @@ POWResult ProofOfWorkFactory::checkProof (const std::string& token, uint256 cons
             return powREUSED;
         }
     }
-
+#endif
     return powOK;
 }
 

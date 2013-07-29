@@ -598,7 +598,7 @@ void server<endpoint>::connection<connection_type>::handle_read_request(
                 std::string reply =
                     "<?xml version=\"1.0\"?><cross-domain-policy>"
                     "<allow-access-from domain=\"*\" to-ports=\"";
-				reply += boost::lexical_cast<std::string>(m_connection.get_raw_socket().local_endpoint().port());
+				reply += beast::lexicalCastThrow <std::string>(m_connection.get_raw_socket().local_endpoint().port());
 				reply += "\"/></cross-domain-policy>";
 				reply.append("\0", 1);
 
