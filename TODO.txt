@@ -40,6 +40,8 @@ David Feature:
 
 --------------------------------------------------------------------------------
 
+- Add convenience variadic functions to JobQueue that do the bind for you
+
 - Consolidate databases
 
 - Figure out why we need WAL sqlite mode if we no longer use sqlite for the node store
