@@ -253,8 +253,8 @@ public:
     /** Compares two values, and if they don't match, prints out a message containing the
         expected and actual result values.
     */
-    template <class ValueType>
-    void expectEquals (ValueType actual, ValueType expected, String failureMessage = String::empty)
+    template <class ActualType, class ExpectedType>
+    void expectEquals (ActualType actual, ExpectedType expected, String failureMessage = String::empty)
     {
         const bool result = (actual == expected);
 
