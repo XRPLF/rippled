@@ -1111,7 +1111,7 @@ bool STAmount::applyOffer (
         saOfferGetsAvailable    = std::min (saOfferGets, mulRound (saOfferPaysAvailable, saOfferRate, saOfferGets, true));
     }
 
-    WriteLog (lsINFO, STAmount) << "applyOffer: saOfferPaysAvailable=" << saOfferFundsAvailable.getFullText ();
+    WriteLog (lsINFO, STAmount) << "applyOffer: saOfferPaysAvailable=" << saOfferPaysAvailable.getFullText ();
     WriteLog (lsINFO, STAmount) << "applyOffer: saOfferGetsAvailable=" << saOfferGetsAvailable.getFullText ();
 
     STAmount    saTakerPaysAvailable    = std::min (saTakerPays, saTakerFundsAvailable);
@@ -1123,9 +1123,9 @@ bool STAmount::applyOffer (
     WriteLog (lsINFO, STAmount) << "applyOffer: saTakerPaysLimited=" << saTakerPaysLimited.getFullText ();
 
     // Align saTakerGetsLimited with saTakerPaysLimited.
-    STAmount    saTakerGetsLimited      = saTakerPaysLimited >= saOfferGetsAvailable
+    STAmount    saTakerGetsLimited      = saTakerPaysLimited >= saOfferGetsAvailable              // Cannot actually be greater
                                           ? saOfferPaysAvailable                                  // Potentially take entire offer. Avoid math shenanigans.
-                                          : std::min (saOfferPaysAvailable, divRound (saTakerPaysLimited, saOfferRate, saTakerGets, true)); // Taker a portion of offer.
+                                          : std::min (saOfferPaysAvailable, divRound (saTakerPaysLimited, saOfferRate, saTakerGets, true)); // Take a portion of offer.
 
     WriteLog (lsINFO, STAmount) << "applyOffer: saOfferRate=" << saOfferRate.getFullText ();
     WriteLog (lsINFO, STAmount) << "applyOffer: saTakerGetsLimited=" << saTakerGetsLimited.getFullText ();
@@ -1136,10 +1136,9 @@ bool STAmount::applyOffer (
     saTakerGot  = bSell
                   ? saTakerGetsLimited                            // Get all available that are paid for.
                   : std::min (saTakerGets, saTakerGetsLimited);   // Limit by wanted.
-    saTakerPaid = saTakerGot >= saOfferPaysAvailable
-                  ? saOfferGetsAvailable
-                  : std::min (saOfferGetsAvailable, mulRound (saTakerGot, saOfferRate, saTakerFunds, true));
-    saTakerPaid = std::min (saTakerPaid, saTakerPaysAvailable);     // Due to rounding must clamp.
+    saTakerPaid = saTakerGot >= saTakerGetsLimited
+                  ? saTakerPaysLimited
+                  : std::min (saTakerPaysLimited, mulRound (saTakerGot, saOfferRate, saTakerFunds, true));
 
     WriteLog (lsINFO, STAmount) << "applyOffer: saTakerGot=" << saTakerGot.getFullText ();
     WriteLog (lsINFO, STAmount) << "applyOffer: saTakerPaid=" << saTakerPaid.getFullText ();
