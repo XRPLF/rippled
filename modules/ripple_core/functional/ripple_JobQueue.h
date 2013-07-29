@@ -4,13 +4,15 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_JOBQUEUE_H
-#define RIPPLE_JOBQUEUE_H
+#ifndef RIPPLE_JOBQUEUE_H_INCLUDED
+#define RIPPLE_JOBQUEUE_H_INCLUDED
 
-class JobQueue
+class JobQueue : private Workers::Callback
 {
 public:
     JobQueue ();
+
+    ~JobQueue ();
 
     // VFALCO TODO make convenience functions that allow the caller to not 
     //             have to call bind.
@@ -47,6 +49,11 @@ public:
 
 private:
     void threadEntry ();
+
+    void processTask ();
+
+private:
+    Workers m_workers;
 
     boost::mutex                    mJobLock;
     boost::condition_variable       mJobCond;
