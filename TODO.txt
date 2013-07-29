@@ -40,6 +40,10 @@ David Feature:
 
 --------------------------------------------------------------------------------
 
+- Consolidate databases
+
+- Figure out why we need WAL sqlite mode if we no longer use sqlite for the node store
+
 - Add "skipped" field to beginTestCase() to disable a test but still record
   that it was skipped in the output. Like for mdb import.
 

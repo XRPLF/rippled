@@ -57,6 +57,8 @@ public:
     int getKBUsedAll ();
 
 private:
+    ThreadWithCallQueue m_thread;
+
     sqlite3* mConnection;
     // VFALCO TODO Why do we need an "aux" connection? Should just use a second SqliteDatabase object.
     sqlite3* mAuxConnection;

@@ -28,6 +28,7 @@ WSDoor::WSDoor (std::string const& strIp, int iPort, bool bPublic)
     , mIp (strIp)
     , mPort (iPort)
 {
+    startThread ();
 }
 
 WSDoor::~WSDoor ()
@@ -39,8 +40,8 @@ WSDoor::~WSDoor ()
             m_endpoint->stop ();
     }
 
-    m_thread.signalThreadShouldExit ();
-    m_thread.waitForThreadToExit ();
+    signalThreadShouldExit ();
+    waitForThreadToExit ();
 }
 
 void WSDoor::run ()
@@ -110,6 +111,6 @@ void WSDoor::stop ()
             m_endpoint->stop ();
     }
 
-    m_thread.signalThreadShouldExit ();
-    m_thread.waitForThreadToExit ();
+    signalThreadShouldExit ();
+    waitForThreadToExit ();
 }

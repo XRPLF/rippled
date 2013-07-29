@@ -20,7 +20,7 @@ private:
     void run ();
 
 private:
-    ScopedPointer <websocketpp::server_autotls*> m_endpoint;
+    ScopedPointer <websocketpp::server_autotls> m_endpoint;
     CriticalSection m_endpointLock;
     bool                            mPublic;
     std::string                     mIp;

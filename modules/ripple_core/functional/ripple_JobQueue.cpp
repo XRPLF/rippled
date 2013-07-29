@@ -195,7 +195,7 @@ void JobQueue::setThreadCount (int c, bool const standaloneMode)
     }
     else if (c == 0)
     {
-        c = boost::thread::hardware_concurrency ();
+        c = SystemStats::getNumCpus ();
 
         // VFALCO NOTE According to boost, hardware_concurrency cannot return
         //             negative numbers/
