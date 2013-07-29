@@ -291,7 +291,7 @@ void ProtectedCall::setHandler (Handler const& handler)
 
 void ProtectedCall::call (Call& c)
 {
-    static DefaultHandler const defaultHandler;
+    static DefaultHandler defaultHandler;
 
     Handler const* handler = s_handler->get ();
 
