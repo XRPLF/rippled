@@ -189,7 +189,7 @@ static int runUnitTests (String const& whichTests, String const& format)
 
         String const s = f.createDocumentString ();
 
-        Log::out () << s.toStdString ();
+        std::cout << s.toStdString ();
     }
     else
     {
