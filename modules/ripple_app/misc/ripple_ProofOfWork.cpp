@@ -65,7 +65,7 @@ ProofOfWork::ProofOfWork (const std::string& token)
     mToken = token;
     mChallenge.SetHex (fields[0]);
     mTarget.SetHex (fields[1]);
-    mIterations = lexical_cast_s<int> (fields[2]);
+    mIterations = lexicalCast <int> (fields[2]);
 }
 
 bool ProofOfWork::isValid () const

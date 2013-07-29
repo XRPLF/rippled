@@ -1230,8 +1230,8 @@ NetworkOPs::transactionsSQL (std::string selection, const RippleAddress& account
                     % (descending ? "DESC" : "ASC")
                     % (descending ? "DESC" : "ASC")
                     % (descending ? "DESC" : "ASC")
-                    % boost::lexical_cast<std::string> (offset)
-                    % boost::lexical_cast<std::string> (numberOfResults)
+                    % lexicalCastThrow <std::string> (offset)
+                    % lexicalCastThrow <std::string> (numberOfResults)
                    );
     WriteLog (lsTRACE, NetworkOPs) << "txSQL query: " << sql;
     return sql;

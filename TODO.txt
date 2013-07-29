@@ -40,6 +40,9 @@ David Feature:
 
 --------------------------------------------------------------------------------
 
+- Add "skipped" field to beginTestCase() to disable a test but still record
+  that it was skipped in the output. Like for mdb import.
+
 - Get rid of the WriteLog() stuff in the ripple tests and make it report the
   message directly to the UnitTest object. Then update the JUnit XML output
   routines to also write the auxiliary messages.

@@ -408,7 +408,7 @@ void SHAMapTreeNode::dump ()
 std::string SHAMapTreeNode::getString () const
 {
     std::string ret = "NodeID(";
-    ret += boost::lexical_cast<std::string> (getDepth ());
+    ret += lexicalCastThrow <std::string> (getDepth ());
     ret += ",";
     ret += getNodeID ().GetHex ();
     ret += ")";
@@ -419,7 +419,7 @@ std::string SHAMapTreeNode::getString () const
             if (!isEmptyBranch (i))
             {
                 ret += "\nb";
-                ret += boost::lexical_cast<std::string> (i);
+                ret += lexicalCastThrow <std::string> (i);
                 ret += " = ";
                 ret += mHashes[i].GetHex ();
             }
@@ -441,7 +441,7 @@ std::string SHAMapTreeNode::getString () const
         ret += "\n  Hash=";
         ret += mHash.GetHex ();
         ret += "/";
-        ret += lexical_cast_i (mItem->peekSerializer ().getDataLength ());
+        ret += lexicalCast <std::string> (mItem->peekSerializer ().getDataLength ());
     }
 
     return ret;

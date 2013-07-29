@@ -38,7 +38,6 @@
 #include <boost/format.hpp>
 #include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/ptr_container/ptr_vector.hpp> // VFALCO NOTE this looks like junk
 #include <boost/ref.hpp>

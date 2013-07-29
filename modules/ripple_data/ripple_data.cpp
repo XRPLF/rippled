@@ -31,7 +31,6 @@
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/range/adaptor/copied.hpp>
 #include <boost/regex.hpp>
 #include <boost/unordered_map.hpp>

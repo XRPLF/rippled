@@ -856,7 +856,7 @@ Json::Value RPCHandler::doProfile (Json::Value params, LoadType* loadType, Appli
     if (!STAmount::currencyFromString(uCurrencyOfferB, params[5u].asString()))   // <currency_offer_b>
         return rpcError(rpcINVALID_PARAMS);
 
-    iCount  = lexical_cast_s<uint32>(params[6u].asString());
+    iCount  = lexicalCast <uint32>(params[6u].asString());
 
     if (iArgs >= 8 && "false" != params[7u].asString())
         bSubmit = true;
@@ -2368,7 +2368,7 @@ static void textTime (std::string& text, int& seconds, const char* unitName, int
     if (!text.empty ())
         text += ", ";
 
-    text += boost::lexical_cast<std::string> (i);
+    text += lexicalCastThrow <std::string> (i);
     text += " ";
     text += unitName;
 

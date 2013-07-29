@@ -130,7 +130,7 @@ void splitIpPort (const std::string& strIpPort, std::string& strIp, int& iPort)
     boost::split (vIpPort, strIpPort, boost::is_any_of (" "));
 
     strIp   = vIpPort[0];
-    iPort   = boost::lexical_cast<int> (vIpPort[1]);
+    iPort   = lexicalCastThrow <int> (vIpPort[1]);
 }
 
 void Peers::start ()

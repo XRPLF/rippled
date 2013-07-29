@@ -297,10 +297,10 @@ void Config::load ()
             (void) SectionSingleB (secConfig, SECTION_PEER_IP, PEER_IP);
 
             if (SectionSingleB (secConfig, SECTION_PEER_PORT, strTemp))
-                PEER_PORT           = boost::lexical_cast<int> (strTemp);
+                PEER_PORT           = lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_PEER_PRIVATE, strTemp))
-                PEER_PRIVATE        = boost::lexical_cast<bool> (strTemp);
+                PEER_PRIVATE        = lexicalCastThrow <bool> (strTemp);
 
             smtTmp = SectionEntries (secConfig, SECTION_RPC_ADMIN_ALLOW);
 
@@ -333,13 +333,13 @@ void Config::load ()
             //---------------------------------------
 
             if (SectionSingleB (secConfig, SECTION_RPC_PORT, strTemp))
-                m_rpcPort = boost::lexical_cast<int> (strTemp);
+                m_rpcPort = lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, "ledger_creator" , strTemp))
-                LEDGER_CREATOR = boost::lexical_cast<bool> (strTemp);
+                LEDGER_CREATOR = lexicalCastThrow <bool> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_RPC_ALLOW_REMOTE, strTemp))
-                RPC_ALLOW_REMOTE    = boost::lexical_cast<bool> (strTemp);
+                RPC_ALLOW_REMOTE    = lexicalCastThrow <bool> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_NODE_SIZE, strTemp))
             {
@@ -355,7 +355,7 @@ void Config::load ()
                     NODE_SIZE = 4;
                 else
                 {
-                    NODE_SIZE = boost::lexical_cast<int> (strTemp);
+                    NODE_SIZE = lexicalCastThrow <int> (strTemp);
 
                     if (NODE_SIZE < 0)
                         NODE_SIZE = 0;
@@ -365,33 +365,33 @@ void Config::load ()
             }
 
             if (SectionSingleB (secConfig, SECTION_ELB_SUPPORT, strTemp))
-                ELB_SUPPORT         = boost::lexical_cast<bool> (strTemp);
+                ELB_SUPPORT         = lexicalCastThrow <bool> (strTemp);
 
             (void) SectionSingleB (secConfig, SECTION_WEBSOCKET_IP, WEBSOCKET_IP);
 
             if (SectionSingleB (secConfig, SECTION_WEBSOCKET_PORT, strTemp))
-                WEBSOCKET_PORT      = boost::lexical_cast<int> (strTemp);
+                WEBSOCKET_PORT      = lexicalCastThrow <int> (strTemp);
 
             (void) SectionSingleB (secConfig, SECTION_WEBSOCKET_PUBLIC_IP, WEBSOCKET_PUBLIC_IP);
 
             if (SectionSingleB (secConfig, SECTION_WEBSOCKET_PUBLIC_PORT, strTemp))
-                WEBSOCKET_PUBLIC_PORT   = boost::lexical_cast<int> (strTemp);
+                WEBSOCKET_PUBLIC_PORT   = lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_WEBSOCKET_SECURE, strTemp))
-                WEBSOCKET_SECURE    = boost::lexical_cast<int> (strTemp);
+                WEBSOCKET_SECURE    = lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_WEBSOCKET_PUBLIC_SECURE, strTemp))
-                WEBSOCKET_PUBLIC_SECURE = boost::lexical_cast<int> (strTemp);
+                WEBSOCKET_PUBLIC_SECURE = lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_WEBSOCKET_PING_FREQ, strTemp))
-                WEBSOCKET_PING_FREQ = boost::lexical_cast<int> (strTemp);
+                WEBSOCKET_PING_FREQ = lexicalCastThrow <int> (strTemp);
 
             SectionSingleB (secConfig, SECTION_WEBSOCKET_SSL_CERT, WEBSOCKET_SSL_CERT);
             SectionSingleB (secConfig, SECTION_WEBSOCKET_SSL_CHAIN, WEBSOCKET_SSL_CHAIN);
             SectionSingleB (secConfig, SECTION_WEBSOCKET_SSL_KEY, WEBSOCKET_SSL_KEY);
 
             if (SectionSingleB (secConfig, SECTION_RPC_SECURE, strTemp))
-                RPC_SECURE  = boost::lexical_cast<int> (strTemp);
+                RPC_SECURE  = lexicalCastThrow <int> (strTemp);
 
             SectionSingleB (secConfig, SECTION_RPC_SSL_CERT, RPC_SSL_CERT);
             SectionSingleB (secConfig, SECTION_RPC_SSL_CHAIN, RPC_SSL_CHAIN);
@@ -402,7 +402,7 @@ void Config::load ()
             SectionSingleB (secConfig, SECTION_SSL_VERIFY_DIR, SSL_VERIFY_DIR);
 
             if (SectionSingleB (secConfig, SECTION_SSL_VERIFY, strTemp))
-                SSL_VERIFY          = boost::lexical_cast<bool> (strTemp);
+                SSL_VERIFY          = lexicalCastThrow <bool> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_VALIDATION_SEED, strTemp))
             {
@@ -430,37 +430,37 @@ void Config::load ()
 
             if (SectionSingleB (secConfig, SECTION_PEER_SCAN_INTERVAL_MIN, strTemp))
                 // Minimum for min is 60 seconds.
-                PEER_SCAN_INTERVAL_MIN = std::max (60, boost::lexical_cast<int> (strTemp));
+                PEER_SCAN_INTERVAL_MIN = std::max (60, lexicalCastThrow <int> (strTemp));
 
             if (SectionSingleB (secConfig, SECTION_PEER_START_MAX, strTemp))
-                PEER_START_MAX      = std::max (1, boost::lexical_cast<int> (strTemp));
+                PEER_START_MAX      = std::max (1, lexicalCastThrow <int> (strTemp));
 
             if (SectionSingleB (secConfig, SECTION_PEER_CONNECT_LOW_WATER, strTemp))
-                PEER_CONNECT_LOW_WATER = std::max (1, boost::lexical_cast<int> (strTemp));
+                PEER_CONNECT_LOW_WATER = std::max (1, lexicalCastThrow <int> (strTemp));
 
             if (SectionSingleB (secConfig, SECTION_NETWORK_QUORUM, strTemp))
-                NETWORK_QUORUM      = std::max (0, boost::lexical_cast<int> (strTemp));
+                NETWORK_QUORUM      = std::max (0, lexicalCastThrow <int> (strTemp));
 
             if (SectionSingleB (secConfig, SECTION_VALIDATION_QUORUM, strTemp))
-                VALIDATION_QUORUM   = std::max (0, boost::lexical_cast<int> (strTemp));
+                VALIDATION_QUORUM   = std::max (0, lexicalCastThrow <int> (strTemp));
 
             if (SectionSingleB (secConfig, SECTION_FEE_ACCOUNT_RESERVE, strTemp))
-                FEE_ACCOUNT_RESERVE = boost::lexical_cast<uint64> (strTemp);
+                FEE_ACCOUNT_RESERVE = lexicalCastThrow <uint64> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_FEE_OWNER_RESERVE, strTemp))
-                FEE_OWNER_RESERVE   = boost::lexical_cast<uint64> (strTemp);
+                FEE_OWNER_RESERVE   = lexicalCastThrow <uint64> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_FEE_NICKNAME_CREATE, strTemp))
-                FEE_NICKNAME_CREATE = boost::lexical_cast<int> (strTemp);
+                FEE_NICKNAME_CREATE = lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_FEE_OFFER, strTemp))
-                FEE_OFFER           = boost::lexical_cast<int> (strTemp);
+                FEE_OFFER           = lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_FEE_DEFAULT, strTemp))
-                FEE_DEFAULT         = boost::lexical_cast<int> (strTemp);
+                FEE_DEFAULT         = lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_FEE_OPERATION, strTemp))
-                FEE_CONTRACT_OPERATION  = boost::lexical_cast<int> (strTemp);
+                FEE_CONTRACT_OPERATION  = lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_LEDGER_HISTORY, strTemp))
             {
@@ -471,14 +471,14 @@ void Config::load ()
                 else if (strTemp == "full")
                     LEDGER_HISTORY = 1000000000u;
                 else
-                    LEDGER_HISTORY = boost::lexical_cast<uint32> (strTemp);
+                    LEDGER_HISTORY = lexicalCastThrow <uint32> (strTemp);
             }
 
             if (SectionSingleB (secConfig, SECTION_PATH_SEARCH_SIZE, strTemp))
-                PATH_SEARCH_SIZE    = boost::lexical_cast<int> (strTemp);
+                PATH_SEARCH_SIZE    = lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
-                ACCOUNT_PROBE_MAX   = boost::lexical_cast<int> (strTemp);
+                ACCOUNT_PROBE_MAX   = lexicalCastThrow <int> (strTemp);
 
             (void) SectionSingleB (secConfig, SECTION_SMS_FROM, SMS_FROM);
             (void) SectionSingleB (secConfig, SECTION_SMS_KEY, SMS_KEY);

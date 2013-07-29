@@ -209,7 +209,7 @@ bool parseIpPort (const std::string& strSource, std::string& strIP, int& iPort)
         if (bValid)
         {
             strIP   = addrIP.to_string ();
-            iPort   = strPortRaw.empty () ? -1 : boost::lexical_cast<int> (strPortRaw);
+            iPort   = strPortRaw.empty () ? -1 : lexicalCastThrow <int> (strPortRaw);
         }
     }
 
@@ -235,7 +235,7 @@ bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& s
 
         boost::algorithm::to_lower (strScheme);
 
-        iPort   = strPort.empty () ? -1 : lexical_cast_s<int> (strPort);
+        iPort   = strPort.empty () ? -1 : lexicalCast <int> (strPort);
         // Log::out() << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPort << "' : " << iPort << " : '" << strPath << "'";
     }
 
@@ -250,11 +250,11 @@ bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& s
 // - floats multiplied by a billion
 bool parseQuality (const std::string& strSource, uint32& uQuality)
 {
-    uQuality    = lexical_cast_s<uint32> (strSource);
+    uQuality    = lexicalCast <uint32> (strSource);
 
     if (!uQuality)
     {
-        float   fQuality    = lexical_cast_s<float> (strSource);
+        float   fQuality    = lexicalCast <float> (strSource);
 
         if (fQuality)
             uQuality    = (uint32) (QUALITY_ONE * fQuality);

@@ -181,7 +181,7 @@ STAmount::STAmount (SField::ref n, const Json::Value& v)
     {
         if (mIsNative)
         {
-            int64 val = lexical_cast_st<int64> (value.asString ());
+            int64 val = lexicalCastThrow <int64> (value.asString ());
 
             if (val >= 0)
                 mValue = val;
@@ -276,13 +276,13 @@ bool STAmount::setValue (const std::string& sAmount)
 
         if (!smMatch[4].matched) // integer only
         {
-            mValue = lexical_cast_s<uint64> (smMatch[2]);
+            mValue = lexicalCast <uint64> (std::string (smMatch[2]));
             mOffset = 0;
         }
         else
         {
             // integer and fraction
-            mValue = lexical_cast_s<uint64> (smMatch[2] + smMatch[4]);
+            mValue = lexicalCast <uint64> (smMatch[2] + smMatch[4]);
             mOffset = - (smMatch[4].length ());
         }
 
@@ -290,9 +290,9 @@ bool STAmount::setValue (const std::string& sAmount)
         {
             // we have an exponent
             if (smMatch[6].matched && (smMatch[6] == "-"))
-                mOffset -= lexical_cast_s<int> (smMatch[7]);
+                mOffset -= lexicalCast <int> (std::string (smMatch[7]));
             else
-                mOffset += lexical_cast_s<int> (smMatch[7]);
+                mOffset += lexicalCast <int> (std::string (smMatch[7]));
         }
     }
     catch (...)
@@ -593,15 +593,15 @@ std::string STAmount::getRaw () const
 
     if (mIsNative)
     {
-        if (mIsNegative) return std::string ("-") + lexical_cast_i (mValue);
-        else return lexical_cast_i (mValue);
+        if (mIsNegative) return std::string ("-") + lexicalCast <std::string> (mValue);
+        else return lexicalCast <std::string> (mValue);
     }
 
     if (mIsNegative)
         return mCurrency.GetHex () + ": -" +
-               lexical_cast_i (mValue) + "e" + lexical_cast_i (mOffset);
+               lexicalCast <std::string> (mValue) + "e" + lexicalCast <std::string> (mOffset);
     else return mCurrency.GetHex () + ": " +
-                    lexical_cast_i (mValue) + "e" + lexical_cast_i (mOffset);
+                    lexicalCast <std::string> (mValue) + "e" + lexicalCast <std::string> (mOffset);
 }
 
 std::string STAmount::getText () const
@@ -612,21 +612,21 @@ std::string STAmount::getText () const
     if (mIsNative)
     {
         if (mIsNegative)
-            return std::string ("-") +  lexical_cast_i (mValue);
-        else return lexical_cast_i (mValue);
+            return std::string ("-") +  lexicalCast <std::string> (mValue);
+        else return lexicalCast <std::string> (mValue);
     }
 
     if ((mOffset != 0) && ((mOffset < -25) || (mOffset > -5)))
     {
         if (mIsNegative)
-            return std::string ("-") + lexical_cast_i (mValue) +
-                   "e" + lexical_cast_i (mOffset);
+            return std::string ("-") + lexicalCast <std::string> (mValue) +
+                   "e" + lexicalCast <std::string> (mOffset);
         else
-            return lexical_cast_i (mValue) + "e" + lexical_cast_i (mOffset);
+            return lexicalCast <std::string> (mValue) + "e" + lexicalCast <std::string> (mOffset);
     }
 
     std::string val = "000000000000000000000000000";
-    val += lexical_cast_i (mValue);
+    val += lexicalCast <std::string> (mValue);
     val += "00000000000000000000000";
 
     std::string pre = val.substr (0, mOffset + 43);

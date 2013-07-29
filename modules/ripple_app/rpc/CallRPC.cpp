@@ -56,7 +56,7 @@ static bool jvParseLedger (Json::Value& jvRequest, const std::string& strLedger)
     }
     else
     {
-        jvRequest["ledger_index"]   = lexical_cast_s<uint32> (strLedger);
+        jvRequest["ledger_index"]   = lexicalCast <uint32> (strLedger);
     }
 
     return true;
@@ -319,7 +319,7 @@ Json::Value RPCParser::parseFeature (const Json::Value& jvParams)
         jvRequest["feature"]    = jvParams[0u].asString ();
 
     if (jvParams.size () > 1)
-        jvRequest["vote"]       = boost::lexical_cast<bool> (jvParams[1u].asString ());
+        jvRequest["vote"]       = lexicalCastThrow <bool> (jvParams[1u].asString ());
 
     return jvRequest;
 }
@@ -387,7 +387,7 @@ Json::Value RPCParser::parseLedgerId (const Json::Value& jvParams)
     }
     else
     {
-        jvRequest["ledger_index"]   = lexical_cast_s<uint32> (strLedger);
+        jvRequest["ledger_index"]   = lexicalCast <uint32> (strLedger);
     }
 
     return jvRequest;
@@ -460,7 +460,7 @@ Json::Value RPCParser::parseAccountRaw (const Json::Value& jvParams, bool bPeer)
         strPeer = jvParams[iCursor].asString ();
 
     int             iIndex      = 0;
-    //  int             iIndex      = jvParams.size() >= 2 ? lexical_cast_s<int>(jvParams[1u].asString()) : 0;
+    //  int             iIndex      = jvParams.size() >= 2 ? lexicalCast <int>(jvParams[1u].asString()) : 0;
 
     RippleAddress   raAddress;
 
@@ -934,7 +934,7 @@ int commandLineRPC (const std::vector<std::string>& vCmd)
             jvOutput["status"]  = "error";
 
             nRet    = jvOutput.isMember ("error_code")
-                      ? lexical_cast_s<int> (jvOutput["error_code"].asString ())
+                      ? lexicalCast <int> (jvOutput["error_code"].asString ())
                       : 1;
         }
 

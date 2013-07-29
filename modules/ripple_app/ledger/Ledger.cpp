@@ -579,9 +579,9 @@ void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
                     sql += "','";
                     sql += it->humanAccountID ();
                     sql += "',";
-                    sql += boost::lexical_cast<std::string> (getLedgerSeq ());
+                    sql += lexicalCastThrow <std::string> (getLedgerSeq ());
                     sql += ",";
-                    sql += boost::lexical_cast<std::string> (vt.second->getTxnSeq ());
+                    sql += lexicalCastThrow <std::string> (vt.second->getTxnSeq ());
                     sql += ")";
                 }
 
@@ -603,7 +603,7 @@ void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
 
         getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (addLedger %
                 getHash ().GetHex () % mLedgerSeq % mParentHash.GetHex () %
-                boost::lexical_cast<std::string> (mTotCoins) % mCloseTime % mParentCloseTime %
+                lexicalCastThrow <std::string> (mTotCoins) % mCloseTime % mParentCloseTime %
                 mCloseResolution % mCloseFlags % mAccountHash.GetHex () % mTransHash.GetHex ()));
     }
 
@@ -675,7 +675,7 @@ Ledger::pointer Ledger::loadByIndex (uint32 ledgerIndex)
 {
     // This is a low-level function with no caching
     std::string sql = "SELECT * from Ledgers WHERE LedgerSeq='";
-    sql.append (boost::lexical_cast<std::string> (ledgerIndex));
+    sql.append (lexicalCastThrow <std::string> (ledgerIndex));
     sql.append ("';");
     return getSQL (sql);
 }
@@ -813,7 +813,7 @@ uint256 Ledger::getHashByIndex (uint32 ledgerIndex)
     uint256 ret;
 
     std::string sql = "SELECT LedgerHash FROM Ledgers INDEXED BY SeqLedger WHERE LedgerSeq='";
-    sql.append (boost::lexical_cast<std::string> (ledgerIndex));
+    sql.append (lexicalCastThrow <std::string> (ledgerIndex));
     sql.append ("';");
 
     std::string hash;
@@ -867,7 +867,7 @@ bool Ledger::getHashesByIndex (uint32 ledgerIndex, uint256& ledgerHash, uint256&
 #else
 
     std::string sql = "SELECT LedgerHash,PrevHash FROM Ledgers WHERE LedgerSeq='";
-    sql.append (boost::lexical_cast<std::string> (ledgerIndex));
+    sql.append (lexicalCastThrow <std::string> (ledgerIndex));
     sql.append ("';");
 
     std::string hash, prevHash;
@@ -898,9 +898,9 @@ std::map< uint32, std::pair<uint256, uint256> > Ledger::getHashesByIndex (uint32
     std::map< uint32, std::pair<uint256, uint256> > ret;
 
     std::string sql = "SELECT LedgerSeq,LedgerHash,PrevHash FROM Ledgers WHERE LedgerSeq >= ";
-    sql.append (boost::lexical_cast<std::string> (minSeq));
+    sql.append (lexicalCastThrow <std::string> (minSeq));
     sql.append (" AND LedgerSeq <= ");
-    sql.append (boost::lexical_cast<std::string> (maxSeq));
+    sql.append (lexicalCastThrow <std::string> (maxSeq));
     sql.append (";");
 
     DatabaseCon* con = getApp().getLedgerDB ();
@@ -944,10 +944,10 @@ Json::Value Ledger::getJson (int options)
 
     boost::recursive_mutex::scoped_lock sl (mLock);
 
-    ledger["seqNum"]                = boost::lexical_cast<std::string> (mLedgerSeq); // DEPRECATED
+    ledger["seqNum"]                = lexicalCastThrow <std::string> (mLedgerSeq); // DEPRECATED
 
     ledger["parent_hash"]           = mParentHash.GetHex ();
-    ledger["ledger_index"]          = boost::lexical_cast<std::string> (mLedgerSeq);
+    ledger["ledger_index"]          = lexicalCastThrow <std::string> (mLedgerSeq);
 
     if (mClosed || bFull)
     {
@@ -955,13 +955,13 @@ Json::Value Ledger::getJson (int options)
             ledger["closed"] = true;
 
         ledger["hash"]              = mHash.GetHex ();                              // DEPRECATED
-        ledger["totalCoins"]        = boost::lexical_cast<std::string> (mTotCoins); // DEPRECATED
+        ledger["totalCoins"]        = lexicalCastThrow <std::string> (mTotCoins); // DEPRECATED
 
         ledger["ledger_hash"]       = mHash.GetHex ();
         ledger["transaction_hash"]  = mTransHash.GetHex ();
         ledger["account_hash"]      = mAccountHash.GetHex ();
         ledger["accepted"]          = mAccepted;
-        ledger["total_coins"]       = boost::lexical_cast<std::string> (mTotCoins);
+        ledger["total_coins"]       = lexicalCastThrow <std::string> (mTotCoins);
 
         if (mCloseTime != 0)
         {

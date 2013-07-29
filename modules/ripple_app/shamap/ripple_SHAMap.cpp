@@ -934,7 +934,7 @@ int SHAMap::flushDirty (DirtyMap& map, int maxNodes, NodeObjectType t, uint32 se
         if (s.getSHA512Half () != it->second->getNodeHash ())
         {
             WriteLog (lsFATAL, SHAMap) << * (it->second);
-            WriteLog (lsFATAL, SHAMap) << lexical_cast_i (s.getDataLength ());
+            WriteLog (lsFATAL, SHAMap) << lexicalCast <std::string> (s.getDataLength ());
             WriteLog (lsFATAL, SHAMap) << s.getSHA512Half () << " != " << it->second->getNodeHash ();
             assert (false);
         }

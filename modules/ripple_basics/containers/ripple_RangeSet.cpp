@@ -175,10 +175,10 @@ std::string RangeSet::toString () const
             ret += ",";
 
         if (it.first == it.second)
-            ret += boost::lexical_cast<std::string> ((it.first));
+            ret += lexicalCastThrow <std::string> ((it.first));
         else
-            ret += boost::lexical_cast<std::string> (it.first) + "-"
-                   + boost::lexical_cast<std::string> (it.second);
+            ret += lexicalCastThrow <std::string> (it.first) + "-"
+                   + lexicalCastThrow <std::string> (it.second);
     }
 
     if (ret.empty ())

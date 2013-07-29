@@ -289,7 +289,7 @@ Json::Value InboundLedgers::getInfo()
     {
         uint32 seq = it.second->getSeq();
         if (seq > 1)
-            ret[boost::lexical_cast<std::string>(seq)] = it.second->getJson(0);
+            ret[lexicalCastThrow <std::string>(seq)] = it.second->getJson(0);
         else
             ret[it.first.GetHex()] = it.second->getJson(0);
     }

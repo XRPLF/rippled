@@ -377,7 +377,7 @@ void PeerImp::connect (const std::string& strIp, int iPort)
     mIpPortConnect  = mIpPort;
     assert (!mIpPort.first.empty ());
 
-    boost::asio::ip::tcp::resolver::query   query (strIp, boost::lexical_cast<std::string> (iPortAct),
+    boost::asio::ip::tcp::resolver::query   query (strIp, lexicalCastThrow <std::string> (iPortAct),
             boost::asio::ip::resolver_query_base::numeric_host | boost::asio::ip::resolver_query_base::numeric_service);
     boost::asio::ip::tcp::resolver              resolver (getApp().getIOService ());
     boost::system::error_code                   err;
@@ -2411,8 +2411,8 @@ Json::Value PeerImp::getJson ()
 
     if (mHello.has_protoversion () &&
             (mHello.protoversion () != MAKE_VERSION_INT (PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR)))
-        ret["protocol"] = boost::lexical_cast<std::string> (GET_VERSION_MAJOR (mHello.protoversion ())) + "." +
-                          boost::lexical_cast<std::string> (GET_VERSION_MINOR (mHello.protoversion ()));
+        ret["protocol"] = lexicalCastThrow <std::string> (GET_VERSION_MAJOR (mHello.protoversion ())) + "." +
+                          lexicalCastThrow <std::string> (GET_VERSION_MINOR (mHello.protoversion ()));
 
     if (!!mClosedLedgerHash)
         ret["ledger"] = mClosedLedgerHash.GetHex ();

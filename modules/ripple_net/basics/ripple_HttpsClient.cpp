@@ -80,7 +80,7 @@ void HttpsClient::httpsNext ()
     boost::shared_ptr <boost::asio::ip::tcp::resolver::query> query (
         new boost::asio::ip::tcp::resolver::query (
             mDeqSites[0],
-            boost::lexical_cast <std::string> (mPort),
+            lexicalCast <std::string> (mPort),
             boost::asio::ip::resolver_query_base::numeric_service));
     mQuery  = query;
 
@@ -303,14 +303,14 @@ void HttpsClient::handleHeader (const boost::system::error_code& ecResult, std::
         return;
     }
 
-    mStatus = lexical_cast_st<int> (smMatch[1]);
+    mStatus = lexicalCastThrow <int> (std::string (smMatch[1]));
 
     if (boost::regex_match (strHeader, smMatch, reBody)) // we got some body
         mBody = smMatch[1];
 
     if (boost::regex_match (strHeader, smMatch, reSize))
     {
-        int size = lexical_cast_st<int> (smMatch[1]);
+        int size = lexicalCastThrow <int> (std::string(smMatch[1]));
 
         if (size < mResponseMax)
             mResponseMax = size;

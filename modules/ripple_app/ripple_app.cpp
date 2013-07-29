@@ -41,7 +41,6 @@
 #include <boost/function.hpp>
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/mem_fn.hpp>
 #include <boost/pointer_cast.hpp>

@@ -85,8 +85,8 @@ Json::Value rpcError (int iError, Json::Value jvResult)
     for (i = NUMBER (errorInfoA); i-- && errorInfoA[i].iError != iError;)
         ;
 
-    jvResult["error"]           = i >= 0 ? errorInfoA[i].pToken : lexical_cast_i (iError);
-    jvResult["error_message"]   = i >= 0 ? errorInfoA[i].pMessage : lexical_cast_i (iError);
+    jvResult["error"]           = i >= 0 ? errorInfoA[i].pToken : lexicalCast <std::string> (iError);
+    jvResult["error_message"]   = i >= 0 ? errorInfoA[i].pMessage : lexicalCast <std::string> (iError);
     jvResult["error_code"]      = iError;
 
     if (i >= 0)

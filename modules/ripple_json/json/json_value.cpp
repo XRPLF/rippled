@@ -738,7 +738,7 @@ Value::asString () const
         return value_.bool_ ? "true" : "false";
 
     case intValue:
-        return boost::lexical_cast<std::string> (value_.int_);
+        return lexicalCastThrow <std::string> (value_.int_);
 
     case uintValue:
     case realValue:
@@ -784,7 +784,7 @@ Value::asInt () const
         return value_.bool_ ? 1 : 0;
 
     case stringValue:
-        return boost::lexical_cast<int> (value_.string_);
+        return lexicalCastThrow <int> (value_.string_);
 
     case arrayValue:
     case objectValue:
@@ -820,7 +820,7 @@ Value::asUInt () const
         return value_.bool_ ? 1 : 0;
 
     case stringValue:
-        return boost::lexical_cast<unsigned int> (value_.string_);
+        return lexicalCastThrow <unsigned int> (value_.string_);
 
     case arrayValue:
     case objectValue:

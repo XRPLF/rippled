@@ -58,7 +58,7 @@ UPTR_T<SerializedType> STObject::makeDefaultObject (SerializedTypeID id, SField:
         return UPTR_T<SerializedType> (new STArray (name));
 
     default:
-        WriteLog (lsFATAL, STObject) << "Object type: " << lexical_cast_i (id);
+        WriteLog (lsFATAL, STObject) << "Object type: " << lexicalCast <std::string> (id);
         assert (false);
         throw std::runtime_error ("Unknown object type");
     }
@@ -1044,7 +1044,7 @@ Json::Value STObject::getJson (int options) const
         if (it.getSType () != STI_NOTPRESENT)
         {
             if (!it.getFName ().hasName ())
-                ret[lexical_cast_i (index)] = it.getJson (options);
+                ret[lexicalCast <std::string> (index)] = it.getJson (options);
             else
                 ret[it.getName ()] = it.getJson (options);
         }
@@ -1153,7 +1153,7 @@ Json::Value STArray::getJson (int p) const
             Json::Value inner = Json::objectValue;
 
             if (!object.getFName ().hasName ())
-                inner[lexical_cast_i (index)] = object.getJson (p);
+                inner[lexicalCast <std::string> (index)] = object.getJson (p);
             else
                 inner[object.getName ()] = object.getJson (p);
 
@@ -1253,10 +1253,10 @@ UPTR_T<STObject> STObject::parseJson (const Json::Value& object, SField::ref inN
                     if (FUNCTION_THAT_DOESNT_EXIST (value.asString (), terCode))
                         value = static_cast<int> (terCode);
                     else
-                        data.push_back (new STUInt8 (field, lexical_cast_st<unsigned char> (value.asString ())));
+                        data.push_back (new STUInt8 (field, lexicalCastThrow <unsigned char> (value.asString ())));
                 }
 
-                data.push_back (new STUInt8 (field, lexical_cast_st<unsigned char> (value.asString ())));
+                data.push_back (new STUInt8 (field, lexicalCastThrow <unsigned char> (value.asString ())));
 #endif
             }
             else if (value.isInt ())
@@ -1308,7 +1308,7 @@ UPTR_T<STObject> STObject::parseJson (const Json::Value& object, SField::ref inN
                         throw std::runtime_error ("Invalid field data");
                 }
                 else
-                    data.push_back (new STUInt16 (field, lexical_cast_st<uint16> (strValue)));
+                    data.push_back (new STUInt16 (field, lexicalCastThrow <uint16> (strValue)));
             }
             else if (value.isInt ())
                 data.push_back (new STUInt16 (field, range_check_cast<uint16> (value.asInt (), 0, 65535)));
@@ -1322,7 +1322,7 @@ UPTR_T<STObject> STObject::parseJson (const Json::Value& object, SField::ref inN
         case STI_UINT32:
             if (value.isString ())
             {
-                data.push_back (new STUInt32 (field, lexical_cast_st<uint32> (value.asString ())));
+                data.push_back (new STUInt32 (field, lexicalCastThrow <uint32> (value.asString ())));
             }
             else if (value.isInt ())
             {

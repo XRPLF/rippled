@@ -58,10 +58,10 @@ POWResult ProofOfWorkFactory::checkProof (const std::string& token, uint256 cons
     challenge.SetHex (fields[0]);
     target.SetHex (fields[1]);
 
-    time_t t = lexical_cast_s<time_t> (fields[3]);
+    time_t t = lexicalCast <time_t> (fields[3]);
     time_t now = time (NULL);
 
-    int iterations = lexical_cast_s<int> (fields[2]);
+    int iterations = lexicalCast <int> (fields[2]);
 
     {
         boost::mutex::scoped_lock sl (mLock);

@@ -43,7 +43,7 @@ SField::SField (SerializedTypeID tid, int fv) : fieldCode (FIELD_CODE (tid, fv))
     fieldMeta (sMD_Default), fieldNum (++num), signingField (true)
 {
     // call with the map mutex
-    fieldName = lexical_cast_i (tid) + "/" + lexical_cast_i (fv);
+    fieldName = lexicalCast <std::string> (tid) + "/" + lexicalCast <std::string> (fv);
     codeToField[fieldCode] = this;
     assert ((fv != 1) || ((tid != STI_ARRAY) && (tid != STI_OBJECT)));
 }
@@ -108,8 +108,8 @@ std::string SField::getName () const
     if (fieldValue == 0)
         return "";
 
-    return boost::lexical_cast<std::string> (static_cast<int> (fieldType)) + "/" +
-           boost::lexical_cast<std::string> (fieldValue);
+    return lexicalCastThrow <std::string> (static_cast<int> (fieldType)) + "/" +
+           lexicalCastThrow <std::string> (fieldValue);
 }
 
 SField::ref SField::getField (const std::string& fieldName)

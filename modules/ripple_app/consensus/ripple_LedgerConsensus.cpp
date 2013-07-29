@@ -1310,15 +1310,15 @@ void LedgerConsensus::accept (SHAMap::ref set, LoadEvent::pointer)
         if (mValidating)
         {
             // see how close our close time is to other node's close time reports
-            WriteLog (lsINFO, LedgerConsensus) << "We closed at " << boost::lexical_cast<std::string> (mCloseTime);
+            WriteLog (lsINFO, LedgerConsensus) << "We closed at " << lexicalCastThrow <std::string> (mCloseTime);
             uint64 closeTotal = mCloseTime;
             int closeCount = 1;
 
             for (std::map<uint32, int>::iterator it = mCloseTimes.begin (), end = mCloseTimes.end (); it != end; ++it)
             {
                 // FIXME: Use median, not average
-                WriteLog (lsINFO, LedgerConsensus) << boost::lexical_cast<std::string> (it->second) << " time votes for "
-                                                   << boost::lexical_cast<std::string> (it->first);
+                WriteLog (lsINFO, LedgerConsensus) << lexicalCastThrow <std::string> (it->second) << " time votes for "
+                                                   << lexicalCastThrow <std::string> (it->first);
                 closeCount += it->second;
                 closeTotal += static_cast<uint64> (it->first) * static_cast<uint64> (it->second);
             }
@@ -1464,7 +1464,7 @@ Json::Value LedgerConsensus::getJson (bool full)
             Json::Value ctj (Json::objectValue);
             BOOST_FOREACH (ct_t & ct, mCloseTimes)
             {
-                ctj[boost::lexical_cast<std::string> (ct.first)] = ct.second;
+                ctj[lexicalCastThrow <std::string> (ct.first)] = ct.second;
             }
             ret["close_times"] = ctj;
         }

@@ -722,7 +722,7 @@ bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
             loadLedger = Ledger::loadByHash (hash);
         }
         else // assume by sequence
-            loadLedger = Ledger::loadByIndex (boost::lexical_cast<uint32> (l));
+            loadLedger = Ledger::loadByIndex (lexicalCastThrow <uint32> (l));
 
         if (!loadLedger)
         {

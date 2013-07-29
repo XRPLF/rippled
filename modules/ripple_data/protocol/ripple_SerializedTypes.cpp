@@ -98,7 +98,7 @@ std::string STUInt8::getText () const
             return human;
     }
 
-    return boost::lexical_cast<std::string> (value);
+    return lexicalCastThrow <std::string> (value);
 }
 
 Json::Value STUInt8::getJson (int) const
@@ -147,7 +147,7 @@ std::string STUInt16::getText () const
             return item->getName ();
     }
 
-    return boost::lexical_cast<std::string> (value);
+    return lexicalCastThrow <std::string> (value);
 }
 
 Json::Value STUInt16::getJson (int) const
@@ -186,7 +186,7 @@ STUInt32* STUInt32::construct (SerializerIterator& u, SField::ref name)
 
 std::string STUInt32::getText () const
 {
-    return boost::lexical_cast<std::string> (value);
+    return lexicalCastThrow <std::string> (value);
 }
 
 Json::Value STUInt32::getJson (int) const
@@ -207,7 +207,7 @@ STUInt64* STUInt64::construct (SerializerIterator& u, SField::ref name)
 
 std::string STUInt64::getText () const
 {
-    return boost::lexical_cast<std::string> (value);
+    return lexicalCastThrow <std::string> (value);
 }
 
 Json::Value STUInt64::getJson (int) const

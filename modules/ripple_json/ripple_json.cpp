@@ -21,9 +21,6 @@
 # include <cpptl/conststring.h>
 #endif
 
-// VFALCO TODO eliminate this boost dependency
-#include <boost/lexical_cast.hpp>
-
 #ifndef JSON_USE_SIMPLE_INTERNAL_ALLOCATOR
 #include "json/json_batchallocator.h"
 #endif
