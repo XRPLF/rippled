@@ -206,6 +206,17 @@ static int runUnitTests (String const& whichTests, String const& format)
     }
     else
     {
+        UnitTests::Results const& r (tr.getResults ());
+
+        String s;
+
+        s << "Summary: " <<
+            String (r.suites.size ()) << " suites, " <<
+            String (r.cases) << " cases, " <<
+            String (r.tests) << " tests, " <<
+            String (r.failures) << " failure" << ((r.failures != 1) ? "s" : "") << ".";
+
+        tr.logMessage (s);
     }
 
     return tr.anyTestsFailed () ? EXIT_FAILURE : EXIT_SUCCESS;

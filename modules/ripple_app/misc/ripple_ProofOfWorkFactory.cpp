@@ -34,7 +34,6 @@ POWResult ProofOfWorkFactory::checkProof (const std::string& token, uint256 cons
     // VFALCO COmmented this out because Dave said it wasn't used
     //        and also we dont have the lexicalCast from a vector of strings to a time_t
 
-#if 0
     // challenge - target - iterations - time - validator
 
     std::vector<std::string> fields;
@@ -58,7 +57,14 @@ POWResult ProofOfWorkFactory::checkProof (const std::string& token, uint256 cons
     challenge.SetHex (fields[0]);
     target.SetHex (fields[1]);
 
-    time_t t = lexicalCast <time_t> (fields[3]);
+    time_t t;
+#if 0
+    // Broken with lexicalCast<> changes
+    t = lexicalCast <time_t> (fields[3]);
+#else
+    t = static_cast <time_t> (lexicalCast <uint64> (fields [3]));
+#endif
+
     time_t now = time (NULL);
 
     int iterations = lexicalCast <int> (fields[2]);
@@ -97,7 +103,7 @@ POWResult ProofOfWorkFactory::checkProof (const std::string& token, uint256 cons
             return powREUSED;
         }
     }
-#endif
+
     return powOK;
 }
 

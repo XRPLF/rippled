@@ -289,9 +289,9 @@ void ProtectedCall::setHandler (Handler const& handler)
     s_handler->set (&handler);
 }
 
-void ProtectedCall::call (Call& call)
+void ProtectedCall::call (Call& c)
 {
-    static DefaultHandler const defaultHandler;
+    static DefaultHandler defaultHandler;
 
     Handler const* handler = s_handler->get ();
 
@@ -300,7 +300,7 @@ void ProtectedCall::call (Call& call)
 
     try
     {
-        call ();
+        c ();
     }
     catch (...)
     {
@@ -309,3 +309,26 @@ void ProtectedCall::call (Call& call)
         handler->onException (e);
     }
 }
+
+//------------------------------------------------------------------------------
+
+class ProtectedCallTests : public UnitTest
+{
+public:
+    ProtectedCallTests () : UnitTest ("ProtectedCall", "beast", runManual)
+    {
+    }
+
+    void runTest ()
+    {
+        beginTestCase ("backtrace");
+
+        pass ();
+
+        String const s = SystemStats::getStackBacktrace ();
+
+        Logger::outputDebugString (s);
+    }
+};
+
+static ProtectedCallTests protectedCallTests;

@@ -7,7 +7,9 @@
 #ifndef RIPPLE_SQLITEDATABASE_RIPPLEHEADER
 #define RIPPLE_SQLITEDATABASE_RIPPLEHEADER
 
-class SqliteDatabase : public Database
+class SqliteDatabase
+    : public Database
+    , LeakChecked <SqliteDatabase>
 {
 public:
     explicit SqliteDatabase (char const* host);

@@ -1680,6 +1680,7 @@
     <None Include="..\..\Doxyfile" />
     <None Include="..\..\SConstruct" />
     <None Include="..\QtCreator\rippled.pro" />
+    <None Include="..\..\rippled-example.cfg" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\TODO.txt" />
