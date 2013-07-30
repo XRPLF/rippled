@@ -14,7 +14,7 @@
 // VFALCO TODO Roll this together into ripple_BuildVersion
 #define SERVER_VERSION_MAJOR        0
 #define SERVER_VERSION_MINOR        9
-#define SERVER_VERSION_SUB          "-b"
+#define SERVER_VERSION_SUB          "-c"
 #define SERVER_NAME                 "Ripple"
 
 #define SV_STRINGIZE(x)             SV_STRINGIZE2(x)

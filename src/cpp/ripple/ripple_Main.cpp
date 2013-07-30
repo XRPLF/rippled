@@ -194,8 +194,10 @@ int rippleMain (int argc, char** argv)
     p.add ("parameters", -1);
 
     // These must be added before the Application object is created
+    NodeStore::addBackendFactory (MemoryBackendFactory::getInstance ());
     NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
     NodeStore::addBackendFactory (LevelDBBackendFactory::getInstance ());
+    NodeStore::addBackendFactory (NullBackendFactory::getInstance ());
 #if RIPPLE_HYPERLEVELDB_AVAILABLE
     NodeStore::addBackendFactory (HyperLevelDBBackendFactory::getInstance ());
 #endif
@@ -243,7 +245,7 @@ int rippleMain (int argc, char** argv)
     if (HaveSustain () &&
             !iResult && !vm.count ("parameters") && !vm.count ("fg") && !vm.count ("standalone") && !vm.count ("unittest"))
     {
-        std::string logMe = DoSustain (theConfig.DEBUG_LOGFILE.c_str());
+        std::string logMe = DoSustain (theConfig.DEBUG_LOGFILE.string());
 
         if (!logMe.empty ())
             Log (lsWARNING) << logMe;
