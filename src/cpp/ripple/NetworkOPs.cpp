@@ -1255,7 +1255,7 @@ NetworkOPs::getAccountTxs (const RippleAddress& account, int32 minLedger, int32 
                 WriteLog(lsWARNING, NetworkOPs) << "Recovering ledger " << seq << ", txn " << txn->getID();
                 Ledger::pointer ledger = getLedgerBySeq(seq);
                 if (ledger)
-                    ledger->pendSaveValidated();
+                    ledger->pendSave(false);
             }
 
             TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet> (txn->getID (), txn->getLedger (), rawMeta.getData ());
