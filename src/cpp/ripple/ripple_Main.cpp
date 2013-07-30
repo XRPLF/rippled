@@ -194,6 +194,7 @@ int rippleMain (int argc, char** argv)
     p.add ("parameters", -1);
 
     // These must be added before the Application object is created
+    NodeStore::addBackendFactory (MemoryBackendFactory::getInstance ());
     NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
     NodeStore::addBackendFactory (LevelDBBackendFactory::getInstance ());
     NodeStore::addBackendFactory (NullBackendFactory::getInstance ());
