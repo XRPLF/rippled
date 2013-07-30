@@ -41,6 +41,8 @@ SqliteDatabase::SqliteDatabase (const char* host)
     , mWalQ (NULL)
     , walRunning (false)
 {
+    m_thread.start ();
+
     mConnection     = NULL;
     mAuxConnection  = NULL;
     mCurrentStmt    = NULL;
