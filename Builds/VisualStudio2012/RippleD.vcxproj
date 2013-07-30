@@ -1599,6 +1599,7 @@
     <None Include="..\..\modules\ripple_json\json\json_internalarray.inl" />
     <None Include="..\..\modules\ripple_json\json\json_internalmap.inl" />
     <None Include="..\..\modules\ripple_json\json\json_valueiterator.inl" />
+    <None Include="..\..\rippled-example.cfg" />
     <None Include="..\..\SConstruct" />
     <None Include="..\QtCreator\rippled.pro" />
   </ItemGroup>
