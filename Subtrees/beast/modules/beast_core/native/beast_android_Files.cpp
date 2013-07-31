@@ -227,6 +227,7 @@ bool Process::openDocument (const String& fileName, const String& parameters)
 {
     const LocalRef<jstring> t (javaString (fileName));
     android.activity.callVoidMethod (BeastAppActivity.launchURL, t.get());
+    return true;
 }
 
 void File::revealToUser() const
