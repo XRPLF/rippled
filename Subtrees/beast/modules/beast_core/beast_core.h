@@ -213,6 +213,8 @@ namespace beast
 
 #include "text/beast_String.h"
 
+#include "threads/beast_CriticalSection.h"
+#include "diagnostic/beast_FatalError.h"
 #include "diagnostic/beast_SafeBool.h"
 #include "diagnostic/beast_Error.h"
 #include "diagnostic/beast_Debug.h"
@@ -309,7 +311,6 @@ namespace beast
 #include "text/beast_StringPool.h"
 #include "text/beast_TextDiff.h"
 #include "threads/beast_ChildProcess.h"
-#include "threads/beast_CriticalSection.h"
 #include "threads/beast_DynamicLibrary.h"
 #include "threads/beast_HighResolutionTimer.h"
 #include "threads/beast_InterProcessLock.h"

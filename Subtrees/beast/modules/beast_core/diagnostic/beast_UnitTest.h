@@ -64,7 +64,7 @@ class UnitTests;
 
     @see UnitTests
 */
-class BEAST_API UnitTest : Uncopyable
+class BEAST_API UnitTest : public Uncopyable
 {
 public:
     /** When the test should be run.

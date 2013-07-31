@@ -146,6 +146,7 @@ namespace beast
 
 #include "diagnostic/beast_Debug.cpp"
 #include "diagnostic/beast_Error.cpp"
+#include "diagnostic/beast_FatalError.cpp"
 #include "diagnostic/beast_FPUFlags.cpp"
 #include "diagnostic/beast_LeakChecked.cpp"
 #include "diagnostic/beast_ProtectedCall.cpp"
