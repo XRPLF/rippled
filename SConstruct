@@ -53,9 +53,9 @@ else:
     env.Replace(CTAGS = CTAGS, CTAGSOPTIONS = '--tag-relative')
 
 # Use openssl
-env.ParseConfig('pkg-config --cflags --libs openssl')
+env.ParseConfig('pkg-config --static --cflags --libs openssl')
 # Use protobuf
-env.ParseConfig('pkg-config --cflags --libs protobuf')
+env.ParseConfig('pkg-config --static --cflags --libs protobuf')
 
 # Beast uses kvm on FreeBSD
 if FreeBSD:
