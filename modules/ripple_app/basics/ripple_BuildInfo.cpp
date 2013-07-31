@@ -17,12 +17,10 @@ String const& BuildInfo::getVersionString ()
     //--------------------------------------------------------------------------
     ;
 
-    struct StaticInitializer
+    struct SanityChecker
     {
-        StaticInitializer ()
+        SanityChecker ()
         {
-            // Sanity checking on the raw text
-
             Version v;
 
             if (! v.parse (rawText) || v.print () != rawText)
@@ -34,39 +32,54 @@ String const& BuildInfo::getVersionString ()
         String versionString;
     };
 
-    static StaticInitializer value;
+    static SanityChecker value;
 
     return value.versionString;
 }
 
-// The protocol version we speak and prefer.
-//
 BuildInfo::Protocol const& BuildInfo::getCurrentProtocol ()
 {
-    static Protocol currentProtocol (1, 2);
+    static Protocol currentProtocol (
+    
+    //--------------------------------------------------------------------------
+    //
+    // The protocol version we speak and prefer (edit this if necessary)
+    //
+        1,  // major
+        2   // minor
+    //
+    //--------------------------------------------------------------------------
+    );
 
     return currentProtocol;
 }
 
-// The oldest protocol version we will accept.
-//
 BuildInfo::Protocol const& BuildInfo::getMinimumProtocol ()
 {
-    static Protocol minimumProtocol (1, 2);
+    static Protocol minimumProtocol (
+
+    //--------------------------------------------------------------------------
+    //
+    // The oldest protocol version we will accept. (edit this if necessary)
+    //
+        1,  // major
+        2   // minor
+    //
+    //--------------------------------------------------------------------------
+    );
 
     return minimumProtocol;
 }
 
-
-
 // Don't touch anything below this line
+//
 //------------------------------------------------------------------------------
 
 char const* BuildInfo::getFullVersionString ()
 {
-    struct StaticInitializer
+    struct PrettyPrinter
     {
-        StaticInitializer ()
+        PrettyPrinter ()
         {
             String s;
             
@@ -78,7 +91,7 @@ char const* BuildInfo::getFullVersionString ()
         std::string fullVersionString;
     };
 
-    static StaticInitializer value;
+    static PrettyPrinter value;
 
     return value.fullVersionString.c_str ();
 }

@@ -20,7 +20,7 @@ struct BuildInfo
 
         The version string is formatted thusly:
 
-            <major> '.' <minor> '.' ['-' <suffix>]
+            <major> '.' <minor> ['-' <suffix>]
 
         The minor version number is always padded with leading zeroes
         to bring the number of characters up to exactly three. For example,
@@ -52,8 +52,8 @@ struct BuildInfo
     /** The server version's components. */
     struct Version
     {
-        int    vmajor;   // 0+
-        int    vminor;   // 0-999
+        int    vmajor;  // 0+
+        int    vminor;  // 0-999
         String suffix;  // Can be empty
 
         //----
