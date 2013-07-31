@@ -239,14 +239,19 @@ public:
     /** Reads a type using a template specialization.
 
         The variable is passed as a parameter so that the template type
-        can be deduced.
+        can be deduced. The return value indicates whether or not there
+        was sufficient data in the stream to read the value.
 
-        This is useful when doing template meta-programming.
     */
     template <class T>
-    void readTypeInto (T* p)
+    bool readTypeInto (T* p)
     {
-        *p = readType <T> ();
+        if (getNumBytesRemaining () >= sizeof (T))
+        {
+            *p = readType <T> ();
+            return true;
+        }
+        return false;
     }
 
     /** Reads a type from a big endian stream using a template specialization.
@@ -262,14 +267,18 @@ public:
     /** Reads a type using a template specialization.
 
         The variable is passed as a parameter so that the template type
-        can be deduced.
-
-        This is useful when doing template meta-programming.
+        can be deduced. The return value indicates whether or not there
+        was sufficient data in the stream to read the value.
     */
     template <class T>
-    void readTypeBigEndianInto (T* p)
+    bool readTypeBigEndianInto (T* p)
     {
-        *p = readTypeBigEndian <T> ();
+        if (getNumBytesRemaining () >= sizeof (T))
+        {
+            *p = readTypeBigEndian <T> ();
+            return true;
+        }
+        return false;
     }
 
     //==============================================================================
