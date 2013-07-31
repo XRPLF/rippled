@@ -13,6 +13,7 @@ BEAST TODO
   - Return size_t from hash function, take out upperLimit, move mod % to caller
   - Make hash function a functor using operator()
   - Implement HardenedHashFunctions
+  - Fix problem with assigning to the result of operator[] maybe use a proxy?
 
 - Set sqlite thread safety model to '2' in beast_sqlite
 

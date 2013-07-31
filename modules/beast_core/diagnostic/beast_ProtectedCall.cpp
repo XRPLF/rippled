@@ -277,7 +277,7 @@ bool CatchAny (Function <void (void)> f, bool returnFromException)
 
 //------------------------------------------------------------------------------
 
-void ProtectedCall::DefaultHandler::onException (ProtectedCall::Exception const& e) const
+void ProtectedCall::DefaultHandler::onException (ProtectedCall::Exception const&) const
 {
 }
 
