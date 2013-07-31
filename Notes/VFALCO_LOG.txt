@@ -1,0 +1,6 @@
+Vinnie Falco's Change Log
+
+2013/07/30
+
+- Add FatalErrorReporter to main
+- Rewrote the build and protocol version numbering code

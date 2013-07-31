@@ -376,6 +376,8 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "ledger/ripple_AcceptedLedger.cpp"
 #include "consensus/ripple_DisputedTx.cpp"
 #include "misc/ripple_HashRouter.cpp"
+ #include "main/ripple_FatalErrorReporter.h" // private
+#include "main/ripple_FatalErrorReporter.cpp"
 #include "main/ripple_Main.cpp"
 #include "misc/ripple_Offer.cpp"
 

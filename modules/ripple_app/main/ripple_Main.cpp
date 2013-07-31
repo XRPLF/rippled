@@ -226,6 +226,8 @@ static int runUnitTests (String const& whichTests, String const& format)
 
 int rippleMain (int argc, char** argv)
 {
+    FatalErrorReporter reporter;
+
     //
     // These debug heap calls do nothing in release or non Visual Studio builds.
     //

@@ -154,6 +154,12 @@
     <Filter Include="[1] Ripple\ripple_app\consensus">
       <UniqueIdentifier>{82a6d3f3-fa01-4cc6-9730-f928e61b9929}</UniqueIdentifier>
     </Filter>
+    <Filter Include="%28Notes%29">
+      <UniqueIdentifier>{73c81ca5-1f7e-4ffc-bb42-72306afc78ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[2] Build">
+      <UniqueIdentifier>{c69b07a2-44e5-4b06-99a9-81f5d137ea15}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Subtrees\sqlite\sqlite3.c">
@@ -873,6 +879,9 @@
     <ClCompile Include="..\..\modules\ripple_app\basics\ripple_BuildInfo.cpp">
       <Filter>[1] Ripple\ripple_app\basics</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\main\ripple_FatalErrorReporter.cpp">
+      <Filter>[1] Ripple\ripple_app\main</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h">
@@ -881,7 +890,6 @@
     <ClInclude Include="..\..\Subtrees\sqlite\sqlite3ext.h">
       <Filter>[0] Subtrees\sqlite</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\BeastConfig.h" />
     <ClInclude Include="..\..\modules\ripple_app\ripple_app.h">
       <Filter>[1] Ripple\ripple_app</Filter>
     </ClInclude>
@@ -1659,6 +1667,12 @@
     <ClInclude Include="..\..\modules\ripple_app\basics\ripple_BuildInfo.h">
       <Filter>[1] Ripple\ripple_app\basics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\main\ripple_FatalErrorReporter.h">
+      <Filter>[1] Ripple\ripple_app\main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\BeastConfig.h">
+      <Filter>[2] Build</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\modules\ripple_data\protocol\ripple.proto">
@@ -1675,14 +1689,31 @@
     <None Include="..\..\modules\ripple_json\json\json_valueiterator.inl">
       <Filter>[1] Ripple\ripple_json\json</Filter>
     </None>
-    <None Include="..\..\CheatSheet.md" />
-    <None Include="..\..\CodingStyle.md" />
-    <None Include="..\..\Doxyfile" />
-    <None Include="..\..\SConstruct" />
-    <None Include="..\QtCreator\rippled.pro" />
-    <None Include="..\..\rippled-example.cfg" />
+    <None Include="..\..\CheatSheet.md">
+      <Filter>%28Notes%29</Filter>
+    </None>
+    <None Include="..\..\CodingStyle.md">
+      <Filter>%28Notes%29</Filter>
+    </None>
+    <None Include="..\..\Doxyfile">
+      <Filter>[2] Build</Filter>
+    </None>
+    <None Include="..\..\rippled-example.cfg">
+      <Filter>[2] Build</Filter>
+    </None>
+    <None Include="..\QtCreator\rippled.pro">
+      <Filter>[2] Build</Filter>
+    </None>
+    <None Include="..\..\SConstruct">
+      <Filter>[2] Build</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\..\TODO.txt" />
+    <Text Include="..\..\Notes\VFALCO_LOG.txt">
+      <Filter>%28Notes%29</Filter>
+    </Text>
+    <Text Include="..\..\Notes\VFALCO_TODO.txt">
+      <Filter>%28Notes%29</Filter>
+    </Text>
   </ItemGroup>
 </Project>

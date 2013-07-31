@@ -2,8 +2,30 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
+REMINDER: KEEP CHANGE LOG UP TO DATE
+
 Vinnie's List: Changes day to day, descending priority
   (Items marked '*' can be handled by others.)
+
+- Get rid of boost::filesystem
+- Deeply create directories specified in config settings
+- Finish unit tests and code for Validators
+* Document the command line options for the beast unit test framework
+- Review boost::asio wrappers and consolidation of network code in ripple_net
+- Refactor Section code into ConfigFile
+- Improved Mutex to track deadlocks
+- Work on KeyvaDB
+- Allow skipped/disabled unit tests and reporting.
+
+David Features:
+- override config items from command line
+- change config via RPC, this is for debugging
+
+--------------------------------------------------------------------------------
+
+- What the heck is up with site_scons/site_tools/protoc.py?
+
+- Figure out the right behavior of ProtectedCall
 
 - Do something about the throw() reporting weaknesses:
   * Make sure all Sconstruct and .pro builds have debug symbols in release
@@ -18,21 +40,7 @@ Vinnie's List: Changes day to day, descending priority
   - Add UnhandledExceptionCatcher to beast
   - Return EXIT_FAILURE on unhandled exception
 
-- Finish unit tests and code for Validators
-* Document the command line options for the beast unit test framework
-- Tidy up all the loose files at the root of the repository
-  - What the heck is up with site_scons/site_tools/protoc.py?
-- Review boost::asio wrappers and consolidation of network code in ripple_net
-- Refactor Section code into ConfigFile
-- Improved Mutex to track deadlocks
-- Work on KeyvaDB
-- Allow skipped/disabled unit tests and reporting.
-
-David Features:
-- override config items from command line
-- change config via RPC, this is for debugging
-
---------------------------------------------------------------------------------
+- Option to print the list of available unit tests
 
 - Add convenience variadic functions to JobQueue that do the bind for you
 
@@ -63,7 +71,7 @@ David Features:
 
 * Restyle all the macros in ripple_ConfigSection.h
 
-- Clean up the remainder of src/
+- Move src/protobuf to Subtrees and deal with protobuf_core.cpp
 
 - Replace home-made database wrappers with beast::sqdb
 
@@ -77,8 +85,6 @@ David Features:
     multiples of the size.
 
 - Rewrite boost program_options in Beast
-
-- Validations unit test
 
 - Replace endian conversion calls with beast calls:
   htobe32, be32toh, ntohl, etc...
