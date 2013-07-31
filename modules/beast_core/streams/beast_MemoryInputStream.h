@@ -53,7 +53,7 @@ public:
     */
     MemoryInputStream (const void* sourceData,
                        size_t sourceDataSize,
-                       bool keepInternalCopyOfData);
+                       bool keepInternalCopyOfData = false);
 
     /** Creates a MemoryInputStream.
 
