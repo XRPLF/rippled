@@ -1562,9 +1562,6 @@
     <ClInclude Include="..\..\modules\ripple_app\peers\ripple_UniqueNodeList.h">
       <Filter>[1] Ripple\ripple_app\peers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\peers\Peer.h">
-      <Filter>[1] Ripple\ripple_app\peers</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\peers\ripple_ClusterNodeStatus.h">
       <Filter>[1] Ripple\ripple_app\peers</Filter>
     </ClInclude>

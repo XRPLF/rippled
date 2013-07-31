@@ -1435,7 +1435,6 @@
     <ClInclude Include="..\..\modules\ripple_app\paths\ripple_RippleCalc.h" />
     <ClInclude Include="..\..\modules\ripple_app\paths\ripple_RippleLineCache.h" />
     <ClInclude Include="..\..\modules\ripple_app\paths\ripple_RippleState.h" />
-    <ClInclude Include="..\..\modules\ripple_app\peers\Peer.h" />
     <ClInclude Include="..\..\modules\ripple_app\peers\PeerDoor.h" />
     <ClInclude Include="..\..\modules\ripple_app\peers\ripple_ClusterNodeStatus.h" />
     <ClInclude Include="..\..\modules\ripple_app\peers\ripple_IPeers.h" />
