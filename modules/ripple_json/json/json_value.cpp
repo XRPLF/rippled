@@ -378,6 +378,18 @@ Value::Value ( const std::string& value )
                      (unsigned int)value.length () );
 
 }
+Value::Value (beast::String const& beastString)
+    : type_ ( stringValue )
+    , allocated_ ( true )
+    , comments_ ( 0 )
+# ifdef JSON_VALUE_USE_INTERNAL_MAP
+    , itemIsUsed_ ( 0 )
+#endif
+{
+    value_.string_ = valueAllocator ()->duplicateStringValue ( beastString.toStdString ().c_str (),
+                     (unsigned int)beastString.length () );
+
+}
 
 Value::Value ( const StaticString& value )
     : type_ ( stringValue )

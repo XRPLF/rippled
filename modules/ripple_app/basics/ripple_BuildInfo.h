@@ -107,39 +107,6 @@ struct BuildInfo
 
     /** The oldest protocol version we will accept. */
     static Protocol const& getMinimumProtocol ();
-
-    //--------------------------------------------------------------------------
-    //
-    // DEPRECATED STUFF
-    //
-
-    /** Retrieve the build version number.
-
-        This is typically incremented when an official version is publshed
-        with a list of changes.
-
-        Format is:
-
-            <major>.<minor>.<bugfix>
-    */
-    static char const* getBuildVersion ()
-    {
-        return "0.0.1";
-    }
-
-    /** Retrieve the client API version number.
-
-        The client API version is incremented whenever a new feature
-        or breaking change is made to the websocket / RPC interface.
-
-        Format is:
-
-            <version-number>
-    */
-    static char const* getClientVersion ()
-    {
-        return "1";
-    }
 };
 
 #endif

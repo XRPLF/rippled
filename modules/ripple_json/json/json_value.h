@@ -193,6 +193,7 @@ public:
      */
     Value ( const StaticString& value );
     Value ( const std::string& value );
+    Value (beast::String const& beastString);
 # ifdef JSON_USE_CPPTL
     Value ( const CppTL::ConstString& value );
 # endif

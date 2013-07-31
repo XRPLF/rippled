@@ -1387,12 +1387,28 @@ Json::Value NetworkOPs::getConsensusInfo ()
     return info;
 }
 
+
 Json::Value NetworkOPs::getServerInfo (bool human, bool admin)
 {
     Json::Value info = Json::objectValue;
 
-    info ["build_version"] = BuildInfo::getBuildVersion ();
-    info ["client_version"] = BuildInfo::getClientVersion ();
+    // hostid: unique string describing the machine
+    if (human)
+    {
+        if (! admin)
+        {
+            // For a non admin connection, hash the node ID into a single RFC1751 word
+            Blob const& addr (getApp().getLocalCredentials ().getNodePublic ().getNodePublic ());
+            info ["hostid"] = RFC1751::getWordFromBlob (addr.data (), addr.size ());
+        }
+        else
+        {
+            // Only admins get the hostname for security reasons
+            info ["hostid"] = SystemStats::getComputerName();
+        }
+    }
+
+    info ["build_version"] = BuildInfo::getVersionString ();
 
     if (getConfig ().TESTNET)
         info["testnet"]     = getConfig ().TESTNET;
